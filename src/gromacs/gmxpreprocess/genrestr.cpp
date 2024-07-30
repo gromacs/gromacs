@@ -139,7 +139,6 @@ int gmx_genrestr(int argc, char* argv[])
     FILE*             out;
     int               igrp;
     real              d, dd, lo, hi;
-    const char *      xfn, *nfn;
     matrix            box;
     gmx_bool          bFreeze;
     rvec              dx, *x = nullptr, *v = nullptr;
@@ -158,10 +157,10 @@ int gmx_genrestr(int argc, char* argv[])
 
     bFreeze = opt2bSet("-of", NFILE, fnm) || opt2parg_bSet("-freeze", asize(pa), pa);
     bDisre  = bDisre || opt2parg_bSet("-disre_dist", npargs, pa);
-    xfn     = opt2fn_null("-f", NFILE, fnm);
-    nfn     = opt2fn_null("-n", NFILE, fnm);
+    std::optional<std::filesystem::path> xfn = opt2path_optional("-f", NFILE, fnm);
+    std::optional<std::filesystem::path> nfn = opt2path_optional("-n", NFILE, fnm);
 
-    if ((nfn == nullptr) && (xfn == nullptr))
+    if (!nfn && !xfn)
     {
         gmx_fatal(FARGS, "no index file and no structure file supplied");
     }
@@ -181,10 +180,10 @@ int gmx_genrestr(int argc, char* argv[])
     int*        indexGroups     = nullptr;
     char*       indexGroupNames = nullptr;
 
-    if (xfn != nullptr)
+    if (xfn)
     {
         fprintf(stderr, "\nReading structure file\n");
-        readConfAndTopology(xfn, &haveTopology, &mtop, nullptr, &x, &v, box);
+        readConfAndTopology(xfn.value(), &haveTopology, &mtop, nullptr, &x, &v, box);
         title = *mtop.name;
         atoms = gmx_mtop_global_atoms(mtop);
         if (atoms.pdbinfo == nullptr)
@@ -198,7 +197,7 @@ int gmx_genrestr(int argc, char* argv[])
     {
         if (!haveTopology || !atoms.pdbinfo)
         {
-            gmx_fatal(FARGS, "No B-factors in input file %s, use a pdb file next time.", xfn);
+            gmx_fatal(FARGS, "No B-factors in input file %s, use a pdb file next time.", xfn.value().c_str());
         }
 
         out = opt2FILE("-of", NFILE, fnm, "w");

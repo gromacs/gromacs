@@ -3875,13 +3875,13 @@ static void processEnsembleTemperature(t_inputrec* ir, const bool allAtomsCouple
     }
 }
 
-void do_index(const char*                    mdparin,
-              const char*                    ndx,
-              gmx_mtop_t*                    mtop,
-              bool                           bVerbose,
-              const gmx::MDModulesNotifiers& mdModulesNotifiers,
-              t_inputrec*                    ir,
-              WarningHandler*                wi)
+void do_index(const char*                                 mdparin,
+              const std::optional<std::filesystem::path>& ndx,
+              gmx_mtop_t*                                 mtop,
+              bool                                        bVerbose,
+              const gmx::MDModulesNotifiers&              mdModulesNotifiers,
+              t_inputrec*                                 ir,
+              WarningHandler*                             wi)
 {
     int       natoms;
     t_symtab* symtab;
@@ -3897,9 +3897,9 @@ void do_index(const char*                    mdparin,
         fprintf(stderr, "processing index file...\n");
     }
     std::vector<IndexGroup> defaultIndexGroups;
-    if (ndx != nullptr)
+    if (ndx)
     {
-        defaultIndexGroups = init_index(ndx);
+        defaultIndexGroups = init_index(ndx.value());
     }
     else
     {

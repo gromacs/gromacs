@@ -35,6 +35,8 @@
 #ifndef GMX_GMXPREPROCESS_READIR_H
 #define GMX_GMXPREPROCESS_READIR_H
 
+#include <filesystem>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -141,13 +143,13 @@ void get_ir(const char*     mdparin,
  * function is called. Also prints the input file back to mdparout.
  */
 
-void do_index(const char*                    mdparin,
-              const char*                    ndx,
-              gmx_mtop_t*                    mtop,
-              bool                           bVerbose,
-              const gmx::MDModulesNotifiers& mdModulesNotifiers,
-              t_inputrec*                    ir,
-              WarningHandler*                wi);
+void do_index(const char*                                 mdparin,
+              const std::optional<std::filesystem::path>& ndx,
+              gmx_mtop_t*                                 mtop,
+              bool                                        bVerbose,
+              const gmx::MDModulesNotifiers&              mdModulesNotifiers,
+              t_inputrec*                                 ir,
+              WarningHandler*                             wi);
 /* Read the index file and assign grp numbers to atoms.
  */
 

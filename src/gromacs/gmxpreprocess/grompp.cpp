@@ -572,26 +572,26 @@ static void molinfo2mtop(gmx::ArrayRef<const MoleculeInformation> mi, gmx_mtop_t
     }
 }
 
-static void new_status(const char*                           topfile,
-                       const char*                           topppfile,
-                       const char*                           confin,
-                       t_gromppopts*                         opts,
-                       t_inputrec*                           ir,
-                       gmx_bool                              bZero,
-                       bool                                  bGenVel,
-                       bool                                  bVerbose,
-                       t_state*                              state,
-                       PreprocessingAtomTypes*               atypes,
-                       gmx_mtop_t*                           sys,
-                       std::vector<MoleculeInformation>*     mi,
-                       std::unique_ptr<MoleculeInformation>* intermolecular_interactions,
-                       gmx::ArrayRef<InteractionsOfType>     interactions,
-                       CombinationRule*                      comb,
-                       double*                               reppow,
-                       real*                                 fudgeQQ,
-                       gmx_bool                              bMorse,
-                       WarningHandler*                       wi,
-                       const gmx::MDLogger&                  logger)
+static void new_status(const char*                                 topfile,
+                       const std::optional<std::filesystem::path>& topppfile,
+                       const char*                                 confin,
+                       t_gromppopts*                               opts,
+                       t_inputrec*                                 ir,
+                       gmx_bool                                    bZero,
+                       bool                                        bGenVel,
+                       bool                                        bVerbose,
+                       t_state*                                    state,
+                       PreprocessingAtomTypes*                     atypes,
+                       gmx_mtop_t*                                 sys,
+                       std::vector<MoleculeInformation>*           mi,
+                       std::unique_ptr<MoleculeInformation>*       intermolecular_interactions,
+                       gmx::ArrayRef<InteractionsOfType>           interactions,
+                       CombinationRule*                            comb,
+                       double*                                     reppow,
+                       real*                                       fudgeQQ,
+                       gmx_bool                                    bMorse,
+                       WarningHandler*                             wi,
+                       const gmx::MDLogger&                        logger)
 {
     std::vector<gmx_molblock_t> molblock;
     int                         i, nmismatch;
@@ -813,16 +813,16 @@ static void copy_state(const char* slog, t_trxframe* fr, bool bReadVel, t_state*
     *use_time = fr->time;
 }
 
-static void cont_status(const char*             slog,
-                        const char*             ener,
-                        bool                    bNeedVel,
-                        bool                    bGenVel,
-                        real                    fr_time,
-                        t_inputrec*             ir,
-                        t_state*                state,
-                        gmx_mtop_t*             sys,
-                        const gmx_output_env_t* oenv,
-                        const gmx::MDLogger&    logger)
+static void cont_status(const char*                                 slog,
+                        const std::optional<std::filesystem::path>& ener,
+                        bool                                        bNeedVel,
+                        bool                                        bGenVel,
+                        real                                        fr_time,
+                        t_inputrec*                                 ir,
+                        t_state*                                    state,
+                        gmx_mtop_t*                                 sys,
+                        const gmx_output_env_t*                     oenv,
+                        const gmx::MDLogger&                        logger)
 /* If fr_time == -1 read the last frame available which is complete */
 {
     bool         bReadVel;
@@ -908,7 +908,7 @@ static void cont_status(const char*             slog,
     if ((ir->pressureCouplingOptions.epc != PressureCoupling::No || ir->etc == TemperatureCoupling::NoseHoover)
         && ener)
     {
-        get_enx_state(ener, use_time, sys->groups, ir, state);
+        get_enx_state(ener.value(), use_time, sys->groups, ir, state);
         preserveBoxShape(ir->pressureCouplingOptions, ir->deform, state->box_rel, state->boxv);
     }
 }
@@ -2161,7 +2161,7 @@ int gmx_grompp(int argc, char* argv[])
 
     t_state state;
     new_status(fn,
-               opt2fn_null("-pp", NFILE, fnm),
+               opt2path_optional("-pp", NFILE, fnm),
                opt2fn("-c", NFILE, fnm),
                opts,
                ir,
@@ -2407,7 +2407,7 @@ int gmx_grompp(int argc, char* argv[])
     {
         GMX_LOG(logger.info).asParagraph().appendTextFormatted("initialising group options...");
     }
-    do_index(mdparin, ftp2fn_null(efNDX, NFILE, fnm), &sys, bVerbose, mdModules.notifiers(), ir, &wi);
+    do_index(mdparin, ftp2path_optional(efNDX, NFILE, fnm), &sys, bVerbose, mdModules.notifiers(), ir, &wi);
 
     // Notify topology to MdModules for pre-processing after all indexes were built
     mdModules.notifiers().preProcessingNotifier_.notify(&sys);
@@ -2537,7 +2537,7 @@ int gmx_grompp(int argc, char* argv[])
                     .appendTextFormatted("getting data from old trajectory ...");
         }
         cont_status(ftp2fn(efTRN, NFILE, fnm),
-                    ftp2fn_null(efEDR, NFILE, fnm),
+                    ftp2path_optional(efEDR, NFILE, fnm),
                     bNeedVel,
                     bGenVel,
                     fr_time,

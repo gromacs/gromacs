@@ -518,26 +518,26 @@ static void make_atoms_sys(gmx::ArrayRef<const gmx_molblock_t>      molblock,
 }
 
 
-static char** read_topol(const char*                           infile,
-                         const char*                           outfile,
-                         const char*                           define,
-                         const char*                           include,
-                         t_symtab*                             symtab,
-                         PreprocessingAtomTypes*               atypes,
-                         std::vector<MoleculeInformation>*     molinfo,
-                         std::unique_ptr<MoleculeInformation>* intermolecular_interactions,
-                         gmx::ArrayRef<InteractionsOfType>     interactions,
-                         CombinationRule*                      combination_rule,
-                         double*                               reppow,
-                         t_gromppopts*                         opts,
-                         real*                                 fudgeQQ,
-                         std::vector<gmx_molblock_t>*          molblock,
-                         bool*                                 ffParametrizedWithHBondConstraints,
-                         bool                                  bFEP,
-                         bool                                  bZero,
-                         bool                                  usingFullRangeElectrostatics,
-                         WarningHandler*                       wi,
-                         const gmx::MDLogger&                  logger)
+static char** read_topol(const char*                                 infile,
+                         const std::optional<std::filesystem::path>& outfile,
+                         const char*                                 define,
+                         const char*                                 include,
+                         t_symtab*                                   symtab,
+                         PreprocessingAtomTypes*                     atypes,
+                         std::vector<MoleculeInformation>*           molinfo,
+                         std::unique_ptr<MoleculeInformation>*       intermolecular_interactions,
+                         gmx::ArrayRef<InteractionsOfType>           interactions,
+                         CombinationRule*                            combination_rule,
+                         double*                                     reppow,
+                         t_gromppopts*                               opts,
+                         real*                                       fudgeQQ,
+                         std::vector<gmx_molblock_t>*                molblock,
+                         bool*                ffParametrizedWithHBondConstraints,
+                         bool                 bFEP,
+                         bool                 bZero,
+                         bool                 usingFullRangeElectrostatics,
+                         WarningHandler*      wi,
+                         const gmx::MDLogger& logger)
 {
     FILE*                out;
     int                  sl;
@@ -570,7 +570,7 @@ static char** read_topol(const char*                           infile,
      */
     if (outfile)
     {
-        out = gmx_fio_fopen(outfile, "w");
+        out = gmx_fio_fopen(outfile.value(), "w");
     }
     else
     {
@@ -1173,24 +1173,24 @@ static char** read_topol(const char*                           infile,
     return title;
 }
 
-char** do_top(bool                                  bVerbose,
-              const char*                           topfile,
-              const char*                           topppfile,
-              t_gromppopts*                         opts,
-              bool                                  bZero,
-              t_symtab*                             symtab,
-              gmx::ArrayRef<InteractionsOfType>     interactions,
-              CombinationRule*                      combination_rule,
-              double*                               repulsion_power,
-              real*                                 fudgeQQ,
-              PreprocessingAtomTypes*               atypes,
-              std::vector<MoleculeInformation>*     molinfo,
-              std::unique_ptr<MoleculeInformation>* intermolecular_interactions,
-              const t_inputrec*                     ir,
-              std::vector<gmx_molblock_t>*          molblock,
-              bool*                                 ffParametrizedWithHBondConstraints,
-              WarningHandler*                       wi,
-              const gmx::MDLogger&                  logger)
+char** do_top(bool                                        bVerbose,
+              const char*                                 topfile,
+              const std::optional<std::filesystem::path>& topppfile,
+              t_gromppopts*                               opts,
+              bool                                        bZero,
+              t_symtab*                                   symtab,
+              gmx::ArrayRef<InteractionsOfType>           interactions,
+              CombinationRule*                            combination_rule,
+              double*                                     repulsion_power,
+              real*                                       fudgeQQ,
+              PreprocessingAtomTypes*                     atypes,
+              std::vector<MoleculeInformation>*           molinfo,
+              std::unique_ptr<MoleculeInformation>*       intermolecular_interactions,
+              const t_inputrec*                           ir,
+              std::vector<gmx_molblock_t>*                molblock,
+              bool*                                       ffParametrizedWithHBondConstraints,
+              WarningHandler*                             wi,
+              const gmx::MDLogger&                        logger)
 {
     char** title;
 

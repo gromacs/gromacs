@@ -589,7 +589,7 @@ int gmx_genion(int argc, char* argv[])
         {
             int* index = nullptr;
             int  nwa;
-            get_index(&atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &nwa, &index, &grpname);
+            get_index(&atoms, ftp2path_optional(efNDX, NFILE, fnm), 1, &nwa, &index, &grpname);
             solventGroup.assign(index, index + nwa);
             sfree(index);
         }

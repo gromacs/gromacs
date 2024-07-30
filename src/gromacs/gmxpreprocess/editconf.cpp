@@ -725,7 +725,8 @@ int gmx_editconf(int argc, char* argv[])
 #define NPA asize(pa)
 
     FILE*             out;
-    const char *      infile, *outfile;
+    const char*       infile;
+    const char*       outfile;
     int               outftp, inftp, natom, i, j, n_bfac, itype, ntype;
     double *          bfac    = nullptr, c6, c12;
     int*              bfac_nr = nullptr;
@@ -950,7 +951,7 @@ int gmx_editconf(int argc, char* argv[])
         if (bIndex)
         {
             fprintf(stderr, "\nSelect a group for determining the system size:\n");
-            get_index(&atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &ssize, &sindex, &sgrpname);
+            get_index(&atoms, ftp2path_optional(efNDX, NFILE, fnm), 1, &ssize, &sindex, &sgrpname);
         }
         else
         {
@@ -985,7 +986,7 @@ int gmx_editconf(int argc, char* argv[])
 
         /* Get a group for principal component analysis */
         fprintf(stderr, "\nSelect group for the determining the orientation\n");
-        get_index(&atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, &grpnames);
+        get_index(&atoms, ftp2path_optional(efNDX, NFILE, fnm), 1, &isize, &index, &grpnames);
 
         /* Orient the principal axes along the coordinate axes */
         orient_princ(&atoms, isize, index, natom, x, bHaveV ? v : nullptr, nullptr);
@@ -1026,7 +1027,7 @@ int gmx_editconf(int argc, char* argv[])
         if (bIndex)
         {
             fprintf(stderr, "\nSelect a group that you want to align:\n");
-            get_index(&atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &numAlignmentAtoms, &aindex, &agrpname);
+            get_index(&atoms, ftp2path_optional(efNDX, NFILE, fnm), 1, &numAlignmentAtoms, &aindex, &agrpname);
         }
         else
         {
@@ -1085,7 +1086,7 @@ int gmx_editconf(int argc, char* argv[])
         if (bIndex)
         {
             fprintf(stderr, "\nSelect a group that you want to translate:\n");
-            get_index(&atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &ssize, &sindex, &sgrpname);
+            get_index(&atoms, ftp2path_optional(efNDX, NFILE, fnm), 1, &ssize, &sindex, &sgrpname);
         }
         else
         {
@@ -1277,7 +1278,7 @@ int gmx_editconf(int argc, char* argv[])
     if (bIndex)
     {
         fprintf(stderr, "\nSelect a group for output:\n");
-        get_index(&atoms, opt2fn_null("-n", NFILE, fnm), 1, &isize, &index, &grpname);
+        get_index(&atoms, opt2path_optional("-n", NFILE, fnm), 1, &isize, &index, &grpname);
 
         if (resnr_start >= 0)
         {
