@@ -65,6 +65,10 @@
 
 #include "testutils/testasserts.h"
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -1002,3 +1006,5 @@ TEST(OptionsAssignerEnumTest, HandlesEnumDefaultValueFromVector)
 }
 
 } // namespace
+} // namespace test
+} // namespace gmx

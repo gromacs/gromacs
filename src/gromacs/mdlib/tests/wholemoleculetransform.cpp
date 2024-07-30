@@ -65,7 +65,8 @@
 
 namespace gmx
 {
-
+namespace test
+{
 namespace
 {
 
@@ -157,5 +158,5 @@ TEST(WholeMoleculeTransform, HandlesReordering)
 }
 
 } // namespace
-
+} // namespace test
 } // namespace gmx

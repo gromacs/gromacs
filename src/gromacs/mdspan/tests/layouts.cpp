@@ -53,6 +53,10 @@
 
 namespace gmx
 {
+namespace test
+{
+namespace
+{
 
 template<class Layout, ptrdiff_t... E_STATIC>
 struct LayoutTests
@@ -162,4 +166,6 @@ TEST(LayoutTests, LayoutRightOperator)
     test.check_operator(0, 0, 0, 0, 0, 0);
 }
 
+} // namespace
+} // namespace test
 } // namespace gmx

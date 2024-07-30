@@ -48,6 +48,10 @@
 
 #include "testutils/stringtest.h"
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -194,3 +198,5 @@ TEST_F(TextTableFormatterTest, HandlesEmptyColumns)
 }
 
 } // namespace
+} // namespace test
+} // namespace gmx

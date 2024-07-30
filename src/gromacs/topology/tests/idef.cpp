@@ -50,6 +50,8 @@
 
 namespace gmx
 {
+namespace test
+{
 namespace
 {
 
@@ -146,5 +148,5 @@ TEST(InteractionListTest, ClearingWorks)
 }
 
 } // namespace
-
+} // namespace test
 } // namespace gmx

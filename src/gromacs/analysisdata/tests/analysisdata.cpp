@@ -65,6 +65,10 @@ using gmx::test::AnalysisDataTestInput;
 using gmx::test::MockAnalysisDataModule;
 using gmx::test::MockAnalysisDataModulePointer;
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -433,3 +437,5 @@ TEST(DISABLED_AnalysisDataCommonTest, GenericTests)
 #endif
 
 } // namespace
+} // namespace test
+} // namespace gmx

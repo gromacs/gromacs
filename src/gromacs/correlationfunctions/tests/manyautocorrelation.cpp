@@ -58,6 +58,8 @@
 
 namespace gmx
 {
+namespace test
+{
 namespace
 {
 
@@ -84,5 +86,5 @@ TEST_F(ManyAutocorrelationTest, DifferentLength)
 #endif
 
 } // namespace
-
+} // namespace test
 } // namespace gmx

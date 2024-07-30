@@ -50,6 +50,10 @@ namespace gmxapi
 class SessionResources;
 } // namespace gmxapi
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -88,3 +92,5 @@ TEST(RestraintManager, restraintList)
 }
 
 } // end namespace
+} // namespace test
+} // namespace gmx

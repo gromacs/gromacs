@@ -62,6 +62,10 @@
 #include "testutils/testfilemanager.h"
 #include "testutils/textblockmatchers.h"
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -240,3 +244,5 @@ std::vector<std::tuple<bool, std::string, std::string>> cmapValidInputOutput = {
 INSTANTIATE_TEST_SUITE_P(CMAPDefinesAndErrors, GromppDirectiveTest, testing::ValuesIn(cmapValidInputOutput));
 
 } // namespace
+} // namespace test
+} // namespace gmx

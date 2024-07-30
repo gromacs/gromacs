@@ -62,6 +62,10 @@
 
 using gmx::test::TestFileManager;
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -649,3 +653,5 @@ TEST_F(SelectionFileOptionTest, GivesErrorWithMultipleFiles)
 }
 
 } // namespace
+} // namespace test
+} // namespace gmx

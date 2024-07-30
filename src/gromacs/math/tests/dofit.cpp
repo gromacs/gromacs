@@ -54,6 +54,10 @@
 
 #include "testutils/testasserts.h"
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -105,3 +109,5 @@ TEST_F(StructureSimilarityTest, YieldsCorrectRhoWidthIndex)
 }
 
 } // namespace
+} // namespace test
+} // namespace gmx

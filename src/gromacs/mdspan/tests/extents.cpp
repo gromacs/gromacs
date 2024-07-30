@@ -95,6 +95,10 @@
 
 namespace gmx
 {
+namespace test
+{
+namespace
+{
 
 template<ptrdiff_t... E_STATIC>
 class ExtentsTest
@@ -207,4 +211,7 @@ TEST(ExtentsTest, Assignment)
         EXPECT_EQ(e3.extent(r), e1.extent(r));
     }
 }
+
+} // namespace
+} // namespace test
 } // namespace gmx

@@ -59,6 +59,10 @@
 #include "testutils/stringtest.h"
 #include "testutils/testasserts.h"
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -170,3 +174,5 @@ TEST_F(HelpTopicFormattingTest, FormatsCompositeTopicWithSubTopics)
 }
 
 } // namespace
+} // namespace test
+} // namespace gmx

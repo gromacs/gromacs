@@ -56,7 +56,8 @@
 
 namespace gmx
 {
-
+namespace test
+{
 namespace
 {
 
@@ -125,5 +126,5 @@ TEST_F(Entropy, QuasiHarmonic_200_Linear)
 }
 
 } // namespace
-
+} // namespace test
 } // namespace gmx

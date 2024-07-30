@@ -63,6 +63,10 @@
 
 namespace gmx
 {
+namespace test
+{
+namespace
+{
 
 TEST(MrcDensityMapHeaderTest, DataSizeIsZeroForDefaultHeader)
 {
@@ -166,4 +170,6 @@ TEST(MrcDensityMapHeaderTest, IsSane)
     EXPECT_FALSE(mrcHeaderIsSane(header));
 }
 
+} // namespace
+} // namespace test
 } // namespace gmx

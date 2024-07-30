@@ -53,6 +53,10 @@
 
 #include "testutils/refdata.h"
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -165,3 +169,5 @@ TEST_F(KeyValueTreeSerializerTest, ObjectWithObjects)
 }
 
 } // namespace
+} // namespace test
+} // namespace gmx

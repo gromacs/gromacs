@@ -54,6 +54,10 @@
 
 namespace gmx
 {
+namespace test
+{
+namespace
+{
 
 TEST(MdSpanExtension, SlicingAllStatic)
 {
@@ -183,4 +187,7 @@ TEST(MdSpanExtension, divisionWorks)
     EXPECT_EQ(result[0][1][0], -1);
     EXPECT_EQ(result[1][0][0], 0);
 }
+
+} // namespace
+} // namespace test
 } // namespace gmx

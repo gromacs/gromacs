@@ -57,7 +57,6 @@
 
 namespace gmx
 {
-
 #if GMX_SIMD_HAVE_REAL
 
 /* SimdInt32 is a strange type which would never belong in an interface,
@@ -79,6 +78,8 @@ class ArrayRef<const SimdInt32> : public internal::SimdArrayRef<const SimdInt32>
     using Base::Base;
 };
 
+namespace test
+{
 namespace
 {
 
@@ -246,6 +247,7 @@ TYPED_TEST(ArrayRefArithmeticTest, Basic)
 #    endif // GTEST_HAS_TYPED_TEST
 
 } // namespace
+} // namespace test
 
 #endif // GMX_HAVE_SIMD_REAL
 

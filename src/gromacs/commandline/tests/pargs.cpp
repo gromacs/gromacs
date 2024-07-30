@@ -70,6 +70,10 @@
 
 struct gmx_output_env_t;
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -506,3 +510,5 @@ TEST_F(ParseCommonArgsTest, CanKeepUnknownArgs)
 }
 
 } // namespace
+} // namespace test
+} // namespace gmx

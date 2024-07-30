@@ -52,6 +52,10 @@
 
 #include "moduletest.h"
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -214,3 +218,5 @@ TEST_F(AngleModuleTest, HandlesOneVsMultipleVectorGroupsAngles)
 }
 
 } // namespace
+} // namespace test
+} // namespace gmx

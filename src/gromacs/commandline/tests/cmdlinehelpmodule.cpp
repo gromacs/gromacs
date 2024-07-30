@@ -62,6 +62,10 @@
 
 #include "cmdlinemodulemanagertest.h"
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -157,3 +161,5 @@ TEST_F(CommandLineHelpModuleTest, ExportsHelp)
 }
 
 } // namespace
+} // namespace test
+} // namespace gmx

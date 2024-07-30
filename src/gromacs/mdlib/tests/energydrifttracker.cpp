@@ -51,7 +51,8 @@
 
 namespace gmx
 {
-
+namespace test
+{
 namespace
 {
 
@@ -84,5 +85,5 @@ TEST(EnergyDriftTracker, manyPointsWorks)
 }
 
 } // namespace
-
+} // namespace test
 } // namespace gmx

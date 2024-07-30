@@ -58,6 +58,10 @@
 
 #include "moduletest.h"
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -122,3 +126,5 @@ TEST_F(TrajectoryModuleTest, HandlesNoForces)
 }
 
 } // namespace
+} // namespace test
+} // namespace gmx

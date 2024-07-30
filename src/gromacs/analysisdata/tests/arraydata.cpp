@@ -57,6 +57,10 @@
 
 using gmx::test::AnalysisDataTestInput;
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -152,3 +156,5 @@ TEST_F(AnalysisArrayDataTest, CanSetXAxisBeforeRowCount)
 }
 
 } // namespace
+} // namespace test
+} // namespace gmx

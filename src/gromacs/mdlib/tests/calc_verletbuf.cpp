@@ -59,7 +59,8 @@
 
 namespace gmx
 {
-
+namespace test
+{
 namespace
 {
 
@@ -240,5 +241,5 @@ TEST(EffectiveAtomDensity, LargeValuesHandledWell)
 }
 
 } // namespace
-
+} // namespace test
 } // namespace gmx

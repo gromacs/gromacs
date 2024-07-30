@@ -59,7 +59,8 @@
 
 namespace gmx
 {
-
+namespace test
+{
 namespace
 {
 
@@ -104,5 +105,5 @@ TEST(MrcSerializer, DefaultHeaderIdenticalAfterRoundTrip)
 }
 
 } // namespace
-
+} // namespace test
 } // namespace gmx

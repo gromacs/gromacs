@@ -68,6 +68,10 @@
 
 #include "testutils/stringtest.h"
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -365,3 +369,5 @@ TEST_F(CommandLineHelpWriterTest, HandlesKnownIssues)
 }
 
 } // namespace
+} // namespace test
+} // namespace gmx

@@ -57,6 +57,10 @@
 #include "testutils/testasserts.h"
 #include "testutils/testfileredirector.h"
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -393,3 +397,5 @@ TEST_F(FileNameOptionManagerTest, AcceptsCompressedInputFile)
 }
 
 } // namespace
+} // namespace test
+} // namespace gmx

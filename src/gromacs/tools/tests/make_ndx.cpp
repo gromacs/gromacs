@@ -50,6 +50,10 @@
 #include "testutils/testfilemanager.h"
 #include "testutils/textblockmatchers.h"
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -131,3 +135,5 @@ TEST_F(GmxMakeNdx, Splitat)
 }
 
 } // namespace
+} // namespace test
+} // namespace gmx

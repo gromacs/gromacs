@@ -52,7 +52,8 @@
 
 namespace gmx
 {
-
+namespace test
+{
 namespace
 {
 
@@ -233,4 +234,5 @@ TEST(StringToEnumValueConverterTest, CustomConverterWorks)
 }
 
 } // namespace
+} // namespace test
 } // namespace gmx

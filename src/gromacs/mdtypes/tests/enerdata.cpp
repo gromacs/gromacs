@@ -61,7 +61,8 @@
 
 namespace gmx
 {
-
+namespace test
+{
 namespace
 {
 
@@ -198,4 +199,5 @@ TEST(ForeingLambdaTermsDhdl, SeparateVdwCoul)
     }
 }
 
+} // namespace test
 } // namespace gmx

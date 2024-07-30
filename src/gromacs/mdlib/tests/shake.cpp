@@ -55,6 +55,8 @@
 
 namespace gmx
 {
+namespace test
+{
 namespace
 {
 
@@ -353,4 +355,5 @@ TEST_F(ShakeTest, ConstrainsThreeBondsWithCommonAtoms)
 }
 
 } // namespace
+} // namespace test
 } // namespace gmx

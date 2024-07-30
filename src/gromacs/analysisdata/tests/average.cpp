@@ -61,6 +61,10 @@
 
 using gmx::test::AnalysisDataTestInput;
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -289,3 +293,5 @@ TEST_F(FrameAverageModuleTest, HandlesMultipleDataSets)
 }
 
 } // namespace
+} // namespace test
+} // namespace gmx

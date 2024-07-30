@@ -65,8 +65,9 @@
 namespace gmx
 {
 class OptionManagerContainer;
-} // namespace gmx
 
+namespace test
+{
 namespace
 {
 
@@ -336,3 +337,5 @@ TEST(AbstractOptionStorageTest, AllowsEmptyValues)
 }
 
 } // namespace
+} // namespace test
+} // namespace gmx

@@ -79,6 +79,10 @@
 
 struct gmx_ana_indexgrps_t;
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -1571,3 +1575,5 @@ TEST_F(SelectionCollectionDataTest, CopiedSelectionWithIndexPostCompilation)
 }
 
 } // namespace
+} // namespace test
+} // namespace gmx

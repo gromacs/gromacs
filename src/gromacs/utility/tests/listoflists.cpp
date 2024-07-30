@@ -59,7 +59,8 @@
 
 namespace gmx
 {
-
+namespace test
+{
 namespace
 {
 
@@ -230,5 +231,5 @@ TEST(ListOfLists, AppendsListOfListsWithOffset)
 }
 
 } // namespace
-
+} // namespace test
 } // namespace gmx

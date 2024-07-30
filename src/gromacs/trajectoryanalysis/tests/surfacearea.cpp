@@ -64,6 +64,10 @@
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -370,3 +374,5 @@ TEST_F(SurfaceAreaTest, Computes100PointsWithTriclinicPBC)
 }
 
 } // namespace
+} // namespace test
+} // namespace gmx

@@ -66,6 +66,10 @@
 
 struct gmx_ana_poscalc_t;
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -507,3 +511,5 @@ TEST_F(PositionCalculationTest, HandlesOverlappingStaticCalculations)
 // TODO: Check for handling of more multiple calculation cases
 
 } // namespace
+} // namespace test
+} // namespace gmx

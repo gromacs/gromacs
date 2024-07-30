@@ -54,6 +54,10 @@
 
 #include "moduletest.h"
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -109,3 +113,5 @@ TEST_F(ConvertTrjModuleTest, WorksWithAtomsAndSelection)
 }
 
 } // namespace
+} // namespace test
+} // namespace gmx

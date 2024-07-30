@@ -48,6 +48,10 @@
 
 #include "testutils/testasserts.h"
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -209,3 +213,5 @@ TEST(HashedMap, ResizesTable)
 }
 
 } // namespace
+} // namespace test
+} // namespace gmx

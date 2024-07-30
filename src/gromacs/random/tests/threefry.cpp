@@ -56,7 +56,8 @@
 
 namespace gmx
 {
-
+namespace test
+{
 namespace
 {
 
@@ -246,5 +247,5 @@ TEST_F(ThreeFry2x64Test, ExhaustInternalCounter)
 }
 
 } // namespace
-
+} // namespace test
 } // namespace gmx

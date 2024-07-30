@@ -77,6 +77,8 @@
 
 namespace gmx
 {
+namespace test
+{
 namespace
 {
 
@@ -443,5 +445,5 @@ TEST_F(PullTest, TransformationCoordDummyExpression)
 #endif // HAVE_MUPARSER
 
 } // namespace
-
+} // namespace test
 } // namespace gmx

@@ -61,6 +61,10 @@
 
 using gmx::test::AnalysisDataTestInput;
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -531,3 +535,5 @@ TEST_F(AbstractAverageHistogramTest, ResamplesAtDoubleBinWidthWithIntegerBins)
 }
 
 } // namespace
+} // namespace test
+} // namespace gmx

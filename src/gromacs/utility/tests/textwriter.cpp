@@ -51,6 +51,10 @@
 
 #include "testutils/stringtest.h"
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -146,3 +150,5 @@ TEST_F(TextWriterTest, PreservesTrailingWhitespace)
 }
 
 } // namespace
+} // namespace test
+} // namespace gmx

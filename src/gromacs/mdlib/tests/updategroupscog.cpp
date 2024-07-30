@@ -61,7 +61,8 @@
 
 namespace gmx
 {
-
+namespace test
+{
 namespace
 {
 
@@ -163,4 +164,5 @@ TEST(UpdateGroupsCog, ComputesCogs)
 }
 
 } // namespace
+} // namespace test
 } // namespace gmx

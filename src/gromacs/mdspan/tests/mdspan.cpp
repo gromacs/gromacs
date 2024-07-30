@@ -101,7 +101,8 @@
 
 namespace gmx
 {
-
+namespace test
+{
 namespace
 {
 
@@ -329,5 +330,5 @@ TYPED_TEST(MdSpanTest, Operator)
 }
 
 } // namespace
-
+} // namespace test
 } // namespace gmx

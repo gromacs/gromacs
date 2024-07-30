@@ -48,6 +48,10 @@
 #include "testutils/stringtest.h"
 #include "testutils/testfilemanager.h"
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -212,3 +216,5 @@ TEST_F(LoggerTest, LogsToStreamAndFile)
 }
 
 } // namespace
+} // namespace test
+} // namespace gmx

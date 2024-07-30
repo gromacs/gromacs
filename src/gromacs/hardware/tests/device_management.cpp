@@ -56,6 +56,10 @@
 #include "gromacs/utility/inmemoryserializer.h"
 #include "gromacs/utility/stringutil.h"
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -103,3 +107,5 @@ TEST(DevicesManagerTest, Serialization)
 }
 
 } // namespace
+} // namespace test
+} // namespace gmx

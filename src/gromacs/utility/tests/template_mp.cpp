@@ -41,6 +41,8 @@
 
 namespace gmx
 {
+namespace test
+{
 namespace
 {
 
@@ -100,4 +102,5 @@ TEST(TemplateMPTest, DispatchTemplatedFunctionEnumBool)
 }
 
 } // anonymous namespace
+} // namespace test
 } // namespace gmx

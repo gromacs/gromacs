@@ -50,7 +50,8 @@
 
 namespace gmx
 {
-
+namespace test
+{
 namespace
 {
 
@@ -177,5 +178,5 @@ TEST(MDModulesNotifierTest, AddConsumerOfTwoResources)
 
 
 } // namespace
-
+} // namespace test
 } // namespace gmx

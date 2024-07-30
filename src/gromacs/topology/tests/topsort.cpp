@@ -61,6 +61,8 @@
 
 namespace gmx
 {
+namespace test
+{
 namespace
 {
 
@@ -252,5 +254,5 @@ TEST(TopSortTest, SortsMoreComplexIdefWithPerturbedInteractions)
 }
 
 } // namespace
-
+} // namespace test
 } // namespace gmx

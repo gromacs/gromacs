@@ -62,6 +62,10 @@
 
 #include "moduletest.h"
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -158,3 +162,5 @@ TEST_F(RdfModuleTest, CalculatesXY)
 }
 
 } // namespace
+} // namespace test
+} // namespace gmx

@@ -55,6 +55,8 @@
 
 namespace gmx
 {
+namespace test
+{
 namespace
 {
 
@@ -179,4 +181,5 @@ TEST(EnumerationHelpersTest, ArrayRefOfEnumerationArrayWorks)
 }
 
 } // namespace
+} // namespace test
 } // namespace gmx

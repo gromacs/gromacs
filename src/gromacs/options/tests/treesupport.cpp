@@ -65,6 +65,10 @@
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -420,3 +424,5 @@ TEST_F(TreeValueSupportTest, SupportsEnumOption)
 }
 
 } // namespace
+} // namespace test
+} // namespace gmx

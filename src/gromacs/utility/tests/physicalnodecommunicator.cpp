@@ -44,6 +44,8 @@
 
 namespace gmx
 {
+namespace test
+{
 namespace
 {
 
@@ -59,4 +61,5 @@ TEST(PhysicalNodeCommunicatorTest, CanCallBarrier)
 }
 
 } // namespace
+} // namespace test
 } // namespace gmx

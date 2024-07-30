@@ -51,6 +51,10 @@
 #include "testutils/simulationdatabase.h"
 #include "testutils/testfilemanager.h"
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -68,3 +72,5 @@ TEST_F(TngTest, CloseBeforeOpenIsNotFatal)
 }
 
 } // namespace
+} // namespace test
+} // namespace gmx

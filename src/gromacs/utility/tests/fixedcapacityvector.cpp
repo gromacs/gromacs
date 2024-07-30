@@ -53,7 +53,8 @@
 
 namespace gmx
 {
-
+namespace test
+{
 namespace
 {
 
@@ -280,5 +281,5 @@ TEST(FixedCapacityVectorTest, ConstMethodsWork)
 }
 
 } // namespace
-
+} // namespace test
 } // namespace gmx

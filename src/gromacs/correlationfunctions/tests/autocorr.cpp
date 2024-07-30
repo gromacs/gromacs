@@ -66,6 +66,8 @@
 
 namespace gmx
 {
+namespace test
+{
 namespace
 {
 
@@ -229,5 +231,5 @@ TEST_F(AutocorrTest, EacP4)
 
 
 } // namespace
-
+} // namespace test
 } // namespace gmx
