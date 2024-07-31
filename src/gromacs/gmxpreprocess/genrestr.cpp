@@ -197,7 +197,9 @@ int gmx_genrestr(int argc, char* argv[])
     {
         if (!haveTopology || !atoms.pdbinfo)
         {
-            gmx_fatal(FARGS, "No B-factors in input file %s, use a pdb file next time.", xfn.value().c_str());
+            gmx_fatal(FARGS,
+                      "No B-factors in input file %s, use a pdb file next time.",
+                      xfn.value().string().c_str());
         }
 
         out = opt2FILE("-of", NFILE, fnm, "w");
