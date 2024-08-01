@@ -276,7 +276,7 @@ const char* nbnxmKernelTypeToName(const NbnxmKernelType kernelType)
 
 /*! \brief Returns the most suitable kernel type and Ewald handling */
 static NbnxmKernelSetup pick_nbnxn_kernel(const gmx::MDLogger&     mdlog,
-                                          gmx_bool                 use_simd_kernels,
+                                          bool                     use_simd_kernels,
                                           const gmx_hw_info_t&     hardwareInfo,
                                           const PairlistType       gpuPairlistType,
                                           const NonbondedResource& nonbondedResource,
@@ -477,7 +477,7 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
 
     // This will later be obtained from the device information to get the optimal layout for the
     // device. For now we just use the one layout we have.
-    const auto gpuPairlistLayout = sc_layoutType;
+    const auto gpuPairlistLayout = PairlistType::Hierarchical8x8x8;
 
     NbnxmKernelSetup kernelSetup = pick_nbnxn_kernel(
             mdlog, forcerec.use_simd_kernels, hardwareInfo, gpuPairlistLayout, nonbondedResource, inputrec);

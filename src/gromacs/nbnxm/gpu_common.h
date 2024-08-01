@@ -297,8 +297,13 @@ bool gpu_try_finish_task(NbnxmGpu*           nb,
         // TODO: this needs to be moved later because conditional wait could brake timing
         // with a future OpenCL implementation, but with CUDA timing is anyway disabled
         // in all cases where we skip the wait.
-        gpu_accumulate_timings(
-                nb->timings, nb->timers, nb->plist[iLocality].get(), aloc, stepWork, nb->bDoTime);
+        std::visit(
+                [&](auto&& plist)
+                {
+                    gpu_accumulate_timings(
+                            nb->timings, nb->timers, plist[iLocality].get(), aloc, stepWork, nb->bDoTime);
+                },
+                nb->plist);
 
         if (stepWork.computeEnergy || stepWork.computeVirial)
         {
@@ -320,7 +325,7 @@ bool gpu_try_finish_task(NbnxmGpu*           nb,
     }
 
     /* Turn off initial list pruning (doesn't hurt if this is not pair-search step). */
-    nb->plist[iLocality]->haveFreshList = false;
+    std::visit([&](auto&& plist) { plist[iLocality]->haveFreshList = false; }, nb->plist);
 
     return true;
 }

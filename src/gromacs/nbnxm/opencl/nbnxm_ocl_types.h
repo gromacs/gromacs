@@ -45,6 +45,7 @@
 #define GMX_NBNXM_NBNXM_OPENCL_TYPES_H
 
 #include <memory>
+#include <variant>
 
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/gmxopencl.h"
@@ -174,7 +175,7 @@ struct NbnxmGpu
     //! parameters required for the non-bonded calc.
     NBParamGpu* nbparam = nullptr;
     //! pair-list data structures (local and non-local)
-    gmx::EnumerationArray<InteractionLocality, std::unique_ptr<GpuPairlist>> plist = { nullptr };
+    std::variant<EnumerationArray<InteractionLocality, std::unique_ptr<GpuPairlist<PairlistType::Hierarchical8x8x8>>>> plist;
     //! staging area where fshift/energies get downloaded
     NBStagingData nbst;
 

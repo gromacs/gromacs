@@ -115,7 +115,8 @@ void launchNbnxmKernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const In
 
 void launchNbnxmKernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const InteractionLocality iloc, bool doPrune)
 {
-    const int subGroupSize = getNbnxmSubGroupSize(nb->deviceContext_->deviceInfo(), sc_layoutType);
+    const int subGroupSize =
+            getNbnxmSubGroupSize(nb->deviceContext_->deviceInfo(), PairlistType::Hierarchical8x8x8);
     switch (subGroupSize)
     {
         // Ensure any changes are in sync with device_management_sycl.cpp, nbnxm_sycl_kernel_body.h, and the #if above

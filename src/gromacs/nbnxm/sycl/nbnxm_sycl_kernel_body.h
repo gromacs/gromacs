@@ -101,9 +101,10 @@ using mode = sycl::access_mode;
  * Note: This causes massive amount of spills with the tabulated kernel on gfx803 using ROCm 5.3.
  * We don't disable it only for the tabulated kernel as the analytical is the default anyway.
  */
+template<PairlistType pairlistType>
 static inline void reduceForceJAmdDpp(Float3 f, const int tidxi, const int aidx, sycl::global_ptr<Float3> a_f)
 {
-    constexpr int c_clSize = sc_gpuClusterSize(sc_layoutType);
+    constexpr int c_clSize = sc_gpuClusterSize(pairlistType);
     static_assert(c_clSize == 8 || c_clSize == 4);
 
     f[0] += amdDppUpdateShfl<float, /* row_shl:1 */ 0x101>(f[0]);
@@ -138,13 +139,14 @@ static inline void reduceForceJAmdDpp(Float3 f, const int tidxi, const int aidx,
  * c_clSize consecutive threads hold the force components of a j-atom which we
  * reduced in log2(cl_Size) steps using shift and atomically accumulate them into \p a_f.
  */
+template<PairlistType pairlistType>
 static inline void reduceForceJShuffle(Float3                   f,
                                        const sycl::nd_item<3>&  itemIdx,
                                        const int                tidxi,
                                        const int                aidx,
                                        sycl::global_ptr<Float3> a_f)
 {
-    constexpr int c_clSize = sc_gpuClusterSize(sc_layoutType);
+    constexpr int c_clSize = sc_gpuClusterSize(pairlistType);
     static_assert(c_clSize == 8 || c_clSize == 4);
     sycl::sub_group sg = itemIdx.get_sub_group();
 
@@ -223,6 +225,7 @@ static inline float groupReduce(const sycl::nd_item<3> itemIdx,
  *
  * TODO: implement binary reduction flavor for the case where cl_Size is power of two.
  */
+template<PairlistType pairlistType>
 static inline void reduceForceJGeneric(sycl::local_ptr<float>   sm_buf,
                                        Float3                   f,
                                        const sycl::nd_item<3>&  itemIdx,
@@ -231,7 +234,7 @@ static inline void reduceForceJGeneric(sycl::local_ptr<float>   sm_buf,
                                        const int                aidx,
                                        sycl::global_ptr<Float3> a_f)
 {
-    constexpr int        c_clSize         = sc_gpuClusterSize(sc_layoutType);
+    constexpr int        c_clSize         = sc_gpuClusterSize(pairlistType);
     static constexpr int sc_fBufferStride = c_clSize * c_clSize;
     int                  tidx             = tidxi + tidxj * c_clSize;
     sm_buf[0 * sc_fBufferStride + tidx]   = f[0];
@@ -258,7 +261,7 @@ static inline void reduceForceJGeneric(sycl::local_ptr<float>   sm_buf,
 
 /*! \brief Reduce c_clSize j-force components using either shifts or local memory and atomically accumulate into a_f.
  */
-template<bool useShuffleReduction>
+template<PairlistType pairlistType, bool useShuffleReduction>
 static inline void reduceForceJ(sycl::local_ptr<float>   sm_buf,
                                 Float3                   f,
                                 const sycl::nd_item<3>   itemIdx,
@@ -269,14 +272,14 @@ static inline void reduceForceJ(sycl::local_ptr<float>   sm_buf,
 {
     if constexpr (!useShuffleReduction)
     {
-        reduceForceJGeneric(sm_buf, f, itemIdx, tidxi, tidxj, aidx, a_f);
+        reduceForceJGeneric<pairlistType>(sm_buf, f, itemIdx, tidxi, tidxj, aidx, a_f);
     }
     else
     {
 #if defined(__SYCL_DEVICE_ONLY__) && defined(__AMDGCN__)
-        reduceForceJAmdDpp(f, tidxi, aidx, a_f);
+        reduceForceJAmdDpp<pairlistType>(f, tidxi, aidx, a_f);
 #else
-        reduceForceJShuffle(f, itemIdx, tidxi, aidx, a_f);
+        reduceForceJShuffle<pairlistType>(f, itemIdx, tidxi, aidx, a_f);
 #endif
     }
 }
@@ -286,7 +289,7 @@ static inline void reduceForceJ(sycl::local_ptr<float>   sm_buf,
  * Note that this reduction is unoptimized and some of the barrier synchronization
  * used could be avoided on >=8-wide architectures.
  */
-template<typename FCiBufferWrapperX, typename FCiBufferWrapperY, typename FCiBufferWrapperZ>
+template<PairlistType pairlistType, typename FCiBufferWrapperX, typename FCiBufferWrapperY, typename FCiBufferWrapperZ>
 static inline void reduceForceIAndFShiftGeneric(sycl::local_ptr<float>   sm_buf,
                                                 const FCiBufferWrapperX& fCiBufX,
                                                 const FCiBufferWrapperY& fCiBufY,
@@ -300,8 +303,8 @@ static inline void reduceForceIAndFShiftGeneric(sycl::local_ptr<float>   sm_buf,
                                                 sycl::global_ptr<Float3> a_f,
                                                 sycl::global_ptr<Float3> a_fShift)
 {
-    constexpr int        c_clSize           = sc_gpuClusterSize(sc_layoutType);
-    constexpr int        c_superClusterSize = sc_gpuClusterPerSuperCluster(sc_layoutType);
+    constexpr int        c_clSize           = sc_gpuClusterSize(pairlistType);
+    constexpr int        c_superClusterSize = sc_gpuClusterPerSuperCluster(pairlistType);
     static constexpr int bufStride          = c_clSize * c_clSize;
     static constexpr int clSizeLog2         = gmx::StaticLog2<c_clSize>::value;
     const int            tidx               = tidxi + tidxj * c_clSize;
@@ -354,7 +357,7 @@ static inline void reduceForceIAndFShiftGeneric(sycl::local_ptr<float>   sm_buf,
            storing the reduction result above. */
         if (tidxj < 3)
         {
-            if constexpr (c_avoidFloatingPointAtomics(sc_layoutType))
+            if constexpr (c_avoidFloatingPointAtomics(pairlistType))
             {
                 /* Intel Xe (Gen12LP) and earlier GPUs implement floating-point atomics via
                  * a compare-and-swap (CAS) loop. It has particularly poor performance when
@@ -392,7 +395,7 @@ static inline void reduceForceIAndFShiftGeneric(sycl::local_ptr<float>   sm_buf,
  * Three steps (e.g., AMD CDNA, c_clSize == 8, subGroupSize == 64): similar to the two-step
  * approach, but we have two times less atomicFetchAdd's.
  */
-template<int numShuffleReductionSteps, typename FCiBufferWrapperX, typename FCiBufferWrapperY, typename FCiBufferWrapperZ>
+template<PairlistType pairlistType, int numShuffleReductionSteps, typename FCiBufferWrapperX, typename FCiBufferWrapperY, typename FCiBufferWrapperZ>
 typename std::enable_if_t<numShuffleReductionSteps != 1, void> static inline reduceForceIAndFShiftShuffles(
         const FCiBufferWrapperX& fCiBufX,
         const FCiBufferWrapperY& fCiBufY,
@@ -406,8 +409,8 @@ typename std::enable_if_t<numShuffleReductionSteps != 1, void> static inline red
         sycl::global_ptr<Float3> a_f,
         sycl::global_ptr<Float3> a_fShift)
 {
-    constexpr int         c_superClusterSize = sc_gpuClusterPerSuperCluster(sc_layoutType);
-    constexpr int         c_clSize           = sc_gpuClusterSize(sc_layoutType);
+    constexpr int         c_superClusterSize = sc_gpuClusterPerSuperCluster(pairlistType);
+    constexpr int         c_clSize           = sc_gpuClusterSize(pairlistType);
     const sycl::sub_group sg                 = itemIdx.get_sub_group();
     static_assert(numShuffleReductionSteps == 2 || numShuffleReductionSteps == 3);
     SYCL_ASSERT(sg.get_max_local_range()[0] >= 4 * c_clSize
@@ -542,7 +545,7 @@ typename std::enable_if_t<numShuffleReductionSteps != 1, void> static inline red
  * is poorly handled by some hardware (e.g., Intel Gen9-11 and Xe LP). This can be remediated
  * by using local memory reduction after shuffles, but that's a TODO.
  */
-template<int numShuffleReductionSteps, typename FCiBufferWrapperX, typename FCiBufferWrapperY, typename FCiBufferWrapperZ>
+template<PairlistType pairlistType, int numShuffleReductionSteps, typename FCiBufferWrapperX, typename FCiBufferWrapperY, typename FCiBufferWrapperZ>
 typename std::enable_if_t<numShuffleReductionSteps == 1, void> static inline reduceForceIAndFShiftShuffles(
         const FCiBufferWrapperX& fCiBufX,
         const FCiBufferWrapperY& fCiBufY,
@@ -556,8 +559,8 @@ typename std::enable_if_t<numShuffleReductionSteps == 1, void> static inline red
         sycl::global_ptr<Float3> a_f,
         sycl::global_ptr<Float3> a_fShift)
 {
-    constexpr int         c_superClusterSize = sc_gpuClusterPerSuperCluster(sc_layoutType);
-    constexpr int         c_clSize           = sc_gpuClusterSize(sc_layoutType);
+    constexpr int         c_superClusterSize = sc_gpuClusterPerSuperCluster(pairlistType);
+    constexpr int         c_clSize           = sc_gpuClusterSize(pairlistType);
     const sycl::sub_group sg                 = itemIdx.get_sub_group();
     SYCL_ASSERT(sg.get_max_local_range()[0] >= 2 * c_clSize
                 && "Subgroup too small even for 1-step shuffle reduction");
@@ -618,7 +621,7 @@ typename std::enable_if_t<numShuffleReductionSteps == 1, void> static inline red
  *
  * This implementation works only with power of two array sizes.
  */
-template<bool useShuffleReduction, int subGroupSize, typename FCiBufferWrapperX, typename FCiBufferWrapperY, typename FCiBufferWrapperZ>
+template<bool useShuffleReduction, PairlistType pairlistType, typename FCiBufferWrapperX, typename FCiBufferWrapperY, typename FCiBufferWrapperZ>
 static inline void reduceForceIAndFShift(sycl::local_ptr<float>   sm_buf,
                                          const FCiBufferWrapperX& fCiBufX,
                                          const FCiBufferWrapperY& fCiBufY,
@@ -633,19 +636,21 @@ static inline void reduceForceIAndFShift(sycl::local_ptr<float>   sm_buf,
                                          sycl::global_ptr<Float3> a_fShift)
 {
     // must have power of two elements in fCiBuf
-    static_assert(gmx::isPowerOfTwo(sc_gpuClusterPerSuperCluster(sc_layoutType)));
-    constexpr int c_clSize = sc_gpuClusterSize(sc_layoutType);
+    static_assert(gmx::isPowerOfTwo(sc_gpuClusterPerSuperCluster(pairlistType)));
+    constexpr int c_clSize     = sc_gpuClusterSize(pairlistType);
+    constexpr int subGroupSize = sc_gpuParallelExecutionWidth(pairlistType);
+
     if constexpr (useShuffleReduction)
     {
         constexpr int numSteps = gmx::StaticLog2<subGroupSize / c_clSize>::value;
         static_assert(numSteps > 0 && numSteps <= 3,
                       "Invalid combination of sub-group size and cluster size");
-        reduceForceIAndFShiftShuffles<numSteps>(
+        reduceForceIAndFShiftShuffles<pairlistType, numSteps>(
                 fCiBufX, fCiBufY, fCiBufZ, calcFShift, itemIdx, tidxi, tidxj, sci, shift, a_f, a_fShift);
     }
     else
     {
-        reduceForceIAndFShiftGeneric(
+        reduceForceIAndFShiftGeneric<pairlistType>(
                 sm_buf, fCiBufX, fCiBufY, fCiBufZ, calcFShift, itemIdx, tidxi, tidxj, sci, shift, a_f, a_fShift);
     }
 }
@@ -653,7 +658,7 @@ static inline void reduceForceIAndFShift(sycl::local_ptr<float>   sm_buf,
 /*! \brief Main kernel for NBNXM.
  *
  */
-template<int subGroupSize, bool doPruneNBL, bool doCalcEnergies, enum ElecType elecType, enum VdwType vdwType>
+template<PairlistType pairlistType, bool doPruneNBL, bool doCalcEnergies, enum ElecType elecType, enum VdwType vdwType>
 static auto nbnxmKernel(sycl::handler& cgh,
                         const Float4* __restrict__ gm_xq,
                         Float3* __restrict__ gm_f,
@@ -661,9 +666,9 @@ static auto nbnxmKernel(sycl::handler& cgh,
                         Float3* __restrict__ gm_fShift,
                         float* __restrict__ gm_energyElec,
                         float* __restrict__ gm_energyVdw,
-                        nbnxn_cj_packed_t* __restrict__ gm_plistCJPacked,
+                        nbnxn_cj_packed_t<pairlistType>* __restrict__ gm_plistCJPacked,
                         const nbnxn_sci_t* __restrict__ gm_plistSci,
-                        const nbnxn_excl_t* __restrict__ gm_plistExcl,
+                        const nbnxn_excl_t<pairlistType>* __restrict__ gm_plistExcl,
                         const Float2* __restrict__ gm_ljComb /* used iff ljComb<vdwType> */,
                         const int* __restrict__ gm_atomTypes /* used iff !ljComb<vdwType> */,
                         const Float2* __restrict__ gm_nbfp /* used iff !ljComb<vdwType> */,
@@ -691,12 +696,13 @@ static auto nbnxmKernel(sycl::handler& cgh,
 {
     static constexpr EnergyFunctionProperties<elecType, vdwType> props;
 
-    constexpr int          c_clSize               = sc_gpuClusterSize(sc_layoutType);
+    constexpr int          c_clSize               = sc_gpuClusterSize(pairlistType);
     constexpr int          c_clSizeSq             = c_clSize * c_clSize;
-    constexpr int          c_splitClSize          = sc_gpuSplitJClusterSize(sc_layoutType);
-    constexpr int          c_superClusterSize     = sc_gpuClusterPerSuperCluster(sc_layoutType);
-    constexpr int          c_nbnxnGpuJgroupSize   = sc_gpuJgroupSize(sc_layoutType);
-    constexpr unsigned int superClInteractionMask = sc_superClInteractionMask(sc_layoutType);
+    constexpr int          c_splitClSize          = sc_gpuSplitJClusterSize(pairlistType);
+    constexpr int          c_superClusterSize     = sc_gpuClusterPerSuperCluster(pairlistType);
+    constexpr int          c_nbnxnGpuJgroupSize   = sc_gpuJgroupSize(pairlistType);
+    constexpr unsigned int superClInteractionMask = sc_superClInteractionMask(pairlistType);
+    constexpr int          subGroupSize           = sc_gpuParallelExecutionWidth(pairlistType);
 
     // The post-prune j-i cluster-pair organization is linked to how exclusion and interaction mask
     // data is stored. Currently, this is ideally suited for 32-wide subgroup size but slightly less
@@ -1215,7 +1221,7 @@ static auto nbnxmKernel(sycl::handler& cgh,
                     maskJI += maskJI;
                 } // for (int i = 0; i < c_nbnxnGpuNumClusterPerSupercluster; i++)
                 /* reduce j forces */
-                reduceForceJ<useShuffleReductionForceJ>(
+                reduceForceJ<pairlistType, useShuffleReductionForceJ>(
                         sm_reductionBuffer, fCjBuf, itemIdx, tidxi, tidxj, aj, gm_f);
             } // for (int jm = 0; jm < c_nbnxnGpuJgroupSize; jm++)
             if constexpr (doPruneNBL)
@@ -1233,7 +1239,7 @@ static auto nbnxmKernel(sycl::handler& cgh,
         /* skip central shifts when summing shift forces */
         const bool doCalcShift = (calcShift && nbSci.shift != gmx::c_centralShiftIndex);
 
-        reduceForceIAndFShift<useShuffleReductionForceI, subGroupSize>(
+        reduceForceIAndFShift<useShuffleReductionForceI, pairlistType>(
                 sm_reductionBuffer, fCiBufX, fCiBufY, fCiBufZ, doCalcShift, itemIdx, tidxi, tidxj, sci, nbSci.shift, gm_f, gm_fShift);
 
         if constexpr (doCalcEnergies)
@@ -1274,9 +1280,10 @@ static auto nbnxmKernel(sycl::handler& cgh,
 }
 
 //! \brief NBNXM kernel launch code.
-template<int subGroupSize, bool doPruneNBL, bool doCalcEnergies, enum ElecType elecType, enum VdwType vdwType, class... Args>
+template<PairlistType pairlistType, bool doPruneNBL, bool doCalcEnergies, enum ElecType elecType, enum VdwType vdwType, class... Args>
 static void launchNbnxmKernel(const DeviceStream& deviceStream, const int numSci, Args&&... args)
 {
+    constexpr int subGroupSize = sc_gpuParallelExecutionWidth(pairlistType);
     using kernelNameType = NbnxmKernel<doPruneNBL, doCalcEnergies, elecType, vdwType, subGroupSize>;
 
     /* Kernel launch config:
@@ -1284,7 +1291,7 @@ static void launchNbnxmKernel(const DeviceStream& deviceStream, const int numSci
      *   and j-cluster concurrency, in x, y, and z, respectively.
      * - The 1D block-grid contains as many blocks as super-clusters.
      */
-    constexpr int           c_clSize  = sc_gpuClusterSize(sc_layoutType);
+    constexpr int           c_clSize  = sc_gpuClusterSize(pairlistType);
     const int               numBlocks = numSci;
     const sycl::range<3>    blockSize{ 1, c_clSize, c_clSize };
     const sycl::range<3>    globalSize{ numBlocks * blockSize[0], blockSize[1], blockSize[2] };
@@ -1296,20 +1303,20 @@ static void launchNbnxmKernel(const DeviceStream& deviceStream, const int numSci
             q,
             [&](sycl::handler& cgh)
             {
-                auto kernel = nbnxmKernel<subGroupSize, doPruneNBL, doCalcEnergies, elecType, vdwType>(
+                auto kernel = nbnxmKernel<pairlistType, doPruneNBL, doCalcEnergies, elecType, vdwType>(
                         cgh, std::forward<Args>(args)...);
                 cgh.parallel_for<kernelNameType>(range, kernel);
             });
 }
 
 //! \brief Select templated kernel and launch it.
-template<int subGroupSize, bool doPruneNBL, bool doCalcEnergies, class... Args>
+template<PairlistType pairlistType, bool doPruneNBL, bool doCalcEnergies, class... Args>
 void chooseAndLaunchNbnxmKernel(enum ElecType elecType, enum VdwType vdwType, Args&&... args)
 {
     gmx::dispatchTemplatedFunction(
             [&](auto elecType_, auto vdwType_)
             {
-                return launchNbnxmKernel<subGroupSize, doPruneNBL, doCalcEnergies, elecType_, vdwType_>(
+                return launchNbnxmKernel<pairlistType, doPruneNBL, doCalcEnergies, elecType_, vdwType_>(
                         std::forward<Args>(args)...);
             },
             elecType,
@@ -1321,51 +1328,60 @@ void launchNbnxmKernelHelper(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, co
 {
     NBAtomDataGpu*      adat         = nb->atdat;
     NBParamGpu*         nbp          = nb->nbparam;
-    auto*               plist        = nb->plist[iloc].get();
     const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
-
-    GMX_ASSERT(doPruneNBL == (plist->haveFreshList && !nb->didPrune[iloc]), "Wrong template called");
     GMX_ASSERT(doCalcEnergies == stepWork.computeEnergy, "Wrong template called");
 
-    chooseAndLaunchNbnxmKernel<subGroupSize, doPruneNBL, doCalcEnergies>(
-            nbp->elecType,
-            nbp->vdwType,
-            deviceStream,
-            plist->numSci,
-            adat->xq.get_pointer(),
-            adat->f.get_pointer(),
-            adat->shiftVec.get_pointer(),
-            adat->fShift.get_pointer(),
-            adat->eElec.get_pointer(),
-            adat->eLJ.get_pointer(),
-            plist->cjPacked.get_pointer(),
-            (doPruneNBL || !nbnxmSortListsOnGpu()) ? plist->sci.get_pointer()
-                                                   : plist->sorting.sciSorted.get_pointer(),
-            plist->excl.get_pointer(),
-            adat->ljComb.get_pointer(),
-            adat->atomTypes.get_pointer(),
-            nbp->nbfp.get_pointer(),
-            nbp->nbfp_comb.get_pointer(),
-            nbp->coulomb_tab.get_pointer(),
-            plist->sorting.sciHistogram.get_pointer(),
-            plist->sorting.sciCount.get_pointer(),
-            adat->numTypes,
-            nbp->rcoulomb_sq,
-            nbp->rvdw_sq,
-            nbp->two_k_rf,
-            nbp->ewald_beta,
-            nbp->rlistOuter_sq,
-            nbp->sh_ewald,
-            nbp->epsfac,
-            nbp->ewaldcoeff_lj * nbp->ewaldcoeff_lj,
-            nbp->c_rf,
-            nbp->dispersion_shift,
-            nbp->repulsion_shift,
-            nbp->vdw_switch,
-            nbp->rvdw_switch,
-            nbp->sh_lj_ewald,
-            nbp->coulomb_tab_scale,
-            stepWork.computeVirial);
+    std::visit(
+            [&](auto&& pairlist)
+            {
+                auto* plist                 = pairlist[iloc].get();
+                using T                     = std::decay_t<decltype(*plist)>;
+                constexpr auto pairlistType = getPairlistTypeFromPairlist<T>();
+
+                GMX_ASSERT(doPruneNBL == (plist->haveFreshList && !nb->didPrune[iloc]),
+                           "Wrong template called");
+
+                chooseAndLaunchNbnxmKernel<pairlistType, doPruneNBL, doCalcEnergies>(
+                        nbp->elecType,
+                        nbp->vdwType,
+                        deviceStream,
+                        plist->numSci,
+                        adat->xq.get_pointer(),
+                        adat->f.get_pointer(),
+                        adat->shiftVec.get_pointer(),
+                        adat->fShift.get_pointer(),
+                        adat->eElec.get_pointer(),
+                        adat->eLJ.get_pointer(),
+                        plist->cjPacked.get_pointer(),
+                        (doPruneNBL || !nbnxmSortListsOnGpu()) ? plist->sci.get_pointer()
+                                                               : plist->sorting.sciSorted.get_pointer(),
+                        plist->excl.get_pointer(),
+                        adat->ljComb.get_pointer(),
+                        adat->atomTypes.get_pointer(),
+                        nbp->nbfp.get_pointer(),
+                        nbp->nbfp_comb.get_pointer(),
+                        nbp->coulomb_tab.get_pointer(),
+                        plist->sorting.sciHistogram.get_pointer(),
+                        plist->sorting.sciCount.get_pointer(),
+                        adat->numTypes,
+                        nbp->rcoulomb_sq,
+                        nbp->rvdw_sq,
+                        nbp->two_k_rf,
+                        nbp->ewald_beta,
+                        nbp->rlistOuter_sq,
+                        nbp->sh_ewald,
+                        nbp->epsfac,
+                        nbp->ewaldcoeff_lj * nbp->ewaldcoeff_lj,
+                        nbp->c_rf,
+                        nbp->dispersion_shift,
+                        nbp->repulsion_shift,
+                        nbp->vdw_switch,
+                        nbp->rvdw_switch,
+                        nbp->sh_lj_ewald,
+                        nbp->coulomb_tab_scale,
+                        stepWork.computeVirial);
+            },
+            nb->plist);
 }
 
 } // namespace gmx

@@ -124,10 +124,11 @@ int gpu_min_ci_balanced(NbnxmGpu* nb)
 namespace
 {
 
-size_t cudaCubWrapper(size_t              temporaryBufferSize,
-                      char*               temporaryBuffer,
-                      GpuPairlist*        d_plist,
-                      const DeviceStream& deviceStream)
+template<PairlistType pairlistType>
+size_t cudaCubWrapper(size_t                     temporaryBufferSize,
+                      char*                      temporaryBuffer,
+                      GpuPairlist<pairlistType>* d_plist,
+                      const DeviceStream&        deviceStream)
 {
     size_t size = temporaryBufferSize;
     cub::DeviceScan::ExclusiveSum(temporaryBuffer,
@@ -141,17 +142,29 @@ size_t cudaCubWrapper(size_t              temporaryBufferSize,
 
 } // namespace
 
-size_t getExclusiveScanWorkingArraySize(GpuPairlist* plist, const DeviceStream& deviceStream)
+template<PairlistType pairlistType>
+size_t getExclusiveScanWorkingArraySize(GpuPairlist<pairlistType>* plist, const DeviceStream& deviceStream)
 {
     return cudaCubWrapper(0, nullptr, plist, deviceStream);
 }
 
-void performExclusiveScan(size_t              temporaryBufferSize,
-                          char*               temporaryBuffer,
-                          GpuPairlist*        plist,
-                          const DeviceStream& deviceStream)
+template<PairlistType pairlistType>
+void performExclusiveScan(size_t                     temporaryBufferSize,
+                          char*                      temporaryBuffer,
+                          GpuPairlist<pairlistType>* plist,
+                          const DeviceStream&        deviceStream)
 {
     std::ignore = cudaCubWrapper(temporaryBufferSize, temporaryBuffer, plist, deviceStream);
 }
+
+template size_t getExclusiveScanWorkingArraySize<PairlistType::Hierarchical8x8x8>(
+        GpuPairlist<PairlistType::Hierarchical8x8x8>* plist,
+        const DeviceStream&                           deviceStream);
+
+template void performExclusiveScan<PairlistType::Hierarchical8x8x8>(
+        size_t                                        temporaryBufferSize,
+        char*                                         temporaryBuffer,
+        GpuPairlist<PairlistType::Hierarchical8x8x8>* plist,
+        const DeviceStream&                           deviceStream);
 
 } // namespace gmx

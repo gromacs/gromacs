@@ -51,101 +51,115 @@
 namespace gmx
 {
 
-static void launchSciSortOnGpu(GpuPairlist* plist, const int maxWorkGroupSize, const DeviceStream& deviceStream);
+template<PairlistType pairlistType>
+static void launchSciSortOnGpu(GpuPairlist<pairlistType>* plist,
+                               int                        maxWorkGroupSize,
+                               const DeviceStream&        deviceStream);
 
 void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, const int numParts)
 {
-    auto* plist = nb->plist[iloc].get();
+    std::visit(
+            [&](auto&& pairlist)
+            {
+                auto* plist = pairlist[iloc].get();
 
-    if (plist->haveFreshList)
-    {
-        GMX_ASSERT(numParts == 1, "With first pruning we expect 1 part");
+                if (plist->haveFreshList)
+                {
+                    GMX_ASSERT(numParts == 1, "With first pruning we expect 1 part");
 
-        /* Set rollingPruningNumParts to signal that it is not set */
-        plist->rollingPruningNumParts = 0;
-    }
-    else
-    {
-        if (plist->rollingPruningNumParts == 0)
-        {
-            plist->rollingPruningNumParts = numParts;
-        }
-        else
-        {
-            GMX_ASSERT(numParts == plist->rollingPruningNumParts,
-                       "It is not allowed to change numParts in between list generation steps");
-        }
-    }
+                    /* Set rollingPruningNumParts to signal that it is not set */
+                    plist->rollingPruningNumParts = 0;
+                }
+                else
+                {
+                    if (plist->rollingPruningNumParts == 0)
+                    {
+                        plist->rollingPruningNumParts = numParts;
+                    }
+                    else
+                    {
+                        GMX_ASSERT(numParts == plist->rollingPruningNumParts,
+                                   "It is not allowed to change numParts in between list "
+                                   "generation steps");
+                    }
+                }
 
-    /* Compute the max number of list entries to prune across all passes
-     * Note that the actual number for a specific pass will be computed inside the kernel.
-     * Also note that this implementation (parts tracking on device) differs from some
-     * other backends (parts tracking on host, passed as kernel argument).
-     */
+                /* Compute the max number of list entries to prune across all passes
+                 * Note that the actual number for a specific pass will be computed inside the
+                 * kernel. Also note that this implementation (parts tracking on device) differs
+                 * from some other backends (parts tracking on host, passed as kernel argument).
+                 */
 
-    /* Compute the max number of list entries to prune in this pass */
-    const int numSciInPartMax = gmx::divideRoundUp(plist->numSci, numParts);
+                /* Compute the max number of list entries to prune in this pass */
+                const int numSciInPartMax = gmx::divideRoundUp(plist->numSci, numParts);
 
-    /* Don't launch the kernel if there is no work to do */
-    if (numSciInPartMax <= 0)
-    {
-        plist->haveFreshList = false;
-        return;
-    }
+                /* Don't launch the kernel if there is no work to do */
+                if (numSciInPartMax <= 0)
+                {
+                    plist->haveFreshList = false;
+                    return;
+                }
 
-    launchNbnxmKernelPruneOnly(nb, iloc, numParts, numSciInPartMax);
-    if (plist->haveFreshList && nbnxmSortListsOnGpu())
-    {
-        const auto& deviceInfo = nb->deviceContext_->deviceInfo();
-        launchSciSortOnGpu(plist, deviceInfo.maxWorkGroupSize, *nb->deviceStreams[iloc]);
-    }
+                launchNbnxmKernelPruneOnly(nb, iloc, numParts, numSciInPartMax);
+                if (plist->haveFreshList && nbnxmSortListsOnGpu())
+                {
+                    const auto& deviceInfo = nb->deviceContext_->deviceInfo();
+                    launchSciSortOnGpu(plist, deviceInfo.maxWorkGroupSize, *nb->deviceStreams[iloc]);
+                }
 
-    if (plist->haveFreshList)
-    {
-        plist->haveFreshList = false;
-        nb->didPrune[iloc]   = true; // Mark that pruning has been done
-    }
-    else
-    {
-        nb->didRollingPrune[iloc] = true; // Mark that rolling pruning has been done
-    }
+                if (plist->haveFreshList)
+                {
+                    plist->haveFreshList = false;
+                    nb->didPrune[iloc]   = true; // Mark that pruning has been done
+                }
+                else
+                {
+                    nb->didRollingPrune[iloc] = true; // Mark that rolling pruning has been done
+                }
+            },
+            nb->plist);
 }
 
 
 void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const InteractionLocality iloc)
 {
-    const NBParamGpu* nbp   = nb->nbparam;
-    auto*             plist = nb->plist[iloc].get();
+    const NBParamGpu* nbp = nb->nbparam;
+    std::visit(
+            [&](auto&& pairlist)
+            {
+                auto* plist = pairlist[iloc].get();
 
-    if (canSkipNonbondedWork(*nb, iloc))
-    {
-        plist->haveFreshList = false;
-        return;
-    }
+                if (canSkipNonbondedWork(*nb, iloc))
+                {
+                    plist->haveFreshList = false;
+                    return;
+                }
 
-    if (nbp->useDynamicPruning && plist->haveFreshList)
-    {
-        // Prunes for rlistOuter and rlistInner, sets plist->haveFreshList=false
-        gpu_launch_kernel_pruneonly(nb, iloc, 1);
-    }
+                if (nbp->useDynamicPruning && plist->haveFreshList)
+                {
+                    // Prunes for rlistOuter and rlistInner, sets plist->haveFreshList=false
+                    gpu_launch_kernel_pruneonly(nb, iloc, 1);
+                }
 
-    if (plist->numSci == 0)
-    {
-        /* Don't launch an empty local kernel */
-        return;
-    }
+                if (plist->numSci == 0)
+                {
+                    /* Don't launch an empty local kernel */
+                    return;
+                }
 
-    /* Whether we need to call a combined prune and interaction kernel or just an interaction
-     * kernel. doPrune being true implies we are not using dynamic pruning and are in the first
-     * call to the interaction kernel after a neighbour list step */
-    bool doPrune = (plist->haveFreshList && !nb->timers->interaction[iloc].didPrune);
+                /* Whether we need to call a combined prune and interaction kernel or just an interaction
+                 * kernel. doPrune being true implies we are not using dynamic pruning and are in the first
+                 * call to the interaction kernel after a neighbour list step */
+                bool doPrune = (plist->haveFreshList && !nb->timers->interaction[iloc].didPrune);
 
-    launchNbnxmKernel(nb, stepWork, iloc, doPrune);
-    if (doPrune && nbnxmSortListsOnGpu())
-    {
-        const auto& deviceInfo = nb->deviceContext_->deviceInfo();
-        launchSciSortOnGpu(plist, deviceInfo.maxWorkGroupSize, *nb->deviceStreams[iloc]);
-    }
+                launchNbnxmKernel(nb, stepWork, iloc, doPrune);
+                if (doPrune && nbnxmSortListsOnGpu())
+                {
+                    const auto& deviceInfo = nb->deviceContext_->deviceInfo();
+                    launchSciSortOnGpu(plist, deviceInfo.maxWorkGroupSize, *nb->deviceStreams[iloc]);
+                }
+            },
+            nb->plist);
 }
 
 /*! \brief SYCL exclusive prefix sum kernel for list sorting.
@@ -238,7 +252,8 @@ static void launchPrefixSumKernel(sycl::queue& q, GpuPairlistSorting* sorting)
             });
 }
 
-static void launchBucketSortKernel(sycl::queue& q, GpuPairlist* plist)
+template<PairlistType pairlistType>
+static void launchBucketSortKernel(sycl::queue& q, GpuPairlist<pairlistType>* plist)
 {
     const size_t size = plist->numSci;
     gmx::syclSubmitWithoutEvent(
@@ -253,7 +268,11 @@ static void launchBucketSortKernel(sycl::queue& q, GpuPairlist* plist)
                                                  plist->sorting.sciSorted.get_pointer()));
             });
 }
-static void launchSciSortOnGpu(GpuPairlist* plist, const int maxWorkGroupSize, const DeviceStream& deviceStream)
+
+template<PairlistType pairlistType>
+static void launchSciSortOnGpu(GpuPairlist<pairlistType>* plist,
+                               const int                  maxWorkGroupSize,
+                               const DeviceStream&        deviceStream)
 {
     sycl::queue q = deviceStream.stream();
 

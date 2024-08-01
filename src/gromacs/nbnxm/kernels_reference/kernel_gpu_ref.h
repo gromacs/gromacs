@@ -44,6 +44,7 @@
 #define GMX_NBNXM_KERNELS_REFERENCE_KERNEL_GPU_REF_H
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/nbnxm/nbnxm_enums.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
@@ -52,21 +53,25 @@ struct t_forcerec;
 
 namespace gmx
 {
+template<PairlistType>
 struct NbnxnPairlistGpu;
 struct nbnxn_atomdata_t;
 class StepWorkload;
 
+static constexpr auto sc_referncePairlistLayout = PairlistType::Hierarchical8x8x8;
+using ReferenceKernelPairlist                   = NbnxnPairlistGpu<sc_referncePairlistLayout>;
+
 //! Reference (slow) kernel for nb n vs n GPU type pair lists
-void nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu*    nbl,
-                          const nbnxn_atomdata_t*    nbat,
-                          const interaction_const_t* iconst,
-                          ArrayRef<const RVec>       shiftvec,
-                          const StepWorkload&        stepWork,
-                          int                        clearF,
-                          ArrayRef<real>             f,
-                          real*                      fshift,
-                          real*                      Vc,
-                          real*                      Vvdw);
+void nbnxn_kernel_gpu_ref(const ReferenceKernelPairlist* nbl,
+                          const nbnxn_atomdata_t*        nbat,
+                          const interaction_const_t*     iconst,
+                          ArrayRef<const RVec>           shiftvec,
+                          const StepWorkload&            stepWork,
+                          int                            clearF,
+                          ArrayRef<real>                 f,
+                          real*                          fshift,
+                          real*                          Vc,
+                          real*                          Vvdw);
 
 } // namespace gmx
 

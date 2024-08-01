@@ -367,6 +367,7 @@ public:
 
 /*! \internal
  * \brief GPU pair list structure */
+template<PairlistType layoutType>
 class GpuPairlist
 {
 public:
@@ -400,7 +401,7 @@ public:
     //! allocation size of cjPacked
     int packedJClustersAllocationSize = -1;
     //! Packed j cluster list, contains j cluster number and index into the i cluster list
-    DeviceBuffer<nbnxn_cj_packed_t> cjPacked = nullptr;
+    DeviceBuffer<nbnxn_cj_packed_t<layoutType>> cjPacked = nullptr;
     //! # of packed j clusters * # of warps
     int numIMask = -1;
     //! allocation size of imask
@@ -408,7 +409,7 @@ public:
     //! imask for 2 warps for each 4*j cluster group
     DeviceBuffer<unsigned int> imask = nullptr;
     //! atom interaction bits
-    DeviceBuffer<nbnxn_excl_t> excl = nullptr;
+    DeviceBuffer<nbnxn_excl_t<layoutType>> excl = nullptr;
     //! count for excl
     int numExcl = 1;
     //! allocation size of excl
@@ -468,6 +469,16 @@ constexpr bool elecEwaldTab = EnergyFunctionProperties<elecType, VdwType::Count>
 template<enum VdwType vdwType>
 constexpr bool ljEwald = EnergyFunctionProperties<ElecType::Count, vdwType>().vdwEwald;
 //@}
+
+extern template GpuPairlist<PairlistType::Hierarchical8x8x8>::GpuPairlist();
+
+extern template GpuPairlist<PairlistType::Hierarchical8x8x8>::~GpuPairlist();
+
+template<typename T>
+constexpr PairlistType getPairlistTypeFromPairlist()
+{
+    return PairlistType::Hierarchical8x8x8;
+}
 
 } // namespace gmx
 

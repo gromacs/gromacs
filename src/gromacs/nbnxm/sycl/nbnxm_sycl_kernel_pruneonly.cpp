@@ -64,13 +64,13 @@ class NbnxmKernelPruneOnly;
 /*! \brief Prune-only kernel for NBNXM.
  *
  */
-template<bool haveFreshList, PairlistType layoutType>
+template<bool haveFreshList, PairlistType pairlistType>
 auto nbnxmKernelPruneOnly(sycl::handler& cgh,
                           const int      numSci,
                           const int      numParts,
                           const Float4* __restrict__ gm_xq,
                           const Float3* __restrict__ gm_shiftVec,
-                          nbnxn_cj_packed_t* __restrict__ gm_plistCJPacked,
+                          nbnxn_cj_packed_t<pairlistType>* __restrict__ gm_plistCJPacked,
                           const nbnxn_sci_t* __restrict__ gm_plistSci,
                           unsigned int* __restrict__ gm_plistIMask,
                           int* __restrict__ gm_rollingPruningPart,
@@ -79,10 +79,10 @@ auto nbnxmKernelPruneOnly(sycl::handler& cgh,
                           const float rlistOuterSq,
                           const float rlistInnerSq)
 {
-    constexpr int          c_clSize               = sc_gpuClusterSize(layoutType);
-    constexpr int          c_superClusterSize     = sc_gpuClusterPerSuperCluster(layoutType);
-    constexpr int          c_clusterPairSplit     = sc_gpuClusterPairSplit(layoutType);
-    constexpr unsigned int superClInteractionMask = sc_superClInteractionMask(layoutType);
+    constexpr int          c_clSize               = sc_gpuClusterSize(pairlistType);
+    constexpr int          c_superClusterSize     = sc_gpuClusterPerSuperCluster(pairlistType);
+    constexpr int          c_clusterPairSplit     = sc_gpuClusterPairSplit(pairlistType);
+    constexpr unsigned int superClInteractionMask = sc_superClInteractionMask(pairlistType);
 
     /* shmem buffer for i x+q pre-loading */
     sycl::local_accessor<Float4, 1> sm_xq(sycl::range<1>(c_superClusterSize * c_clSize), cgh);
@@ -98,7 +98,7 @@ auto nbnxmKernelPruneOnly(sycl::handler& cgh,
         }
     }();
 
-    constexpr int warpSize = sc_gpuParallelExecutionWidth(layoutType);
+    constexpr int warpSize = sc_gpuParallelExecutionWidth(pairlistType);
 
     /* Somewhat weird behavior inherited from OpenCL.
      * With clSize == 4, we use sub_group size of 16 (not enforced in OpenCL implementation, but chosen
@@ -207,7 +207,7 @@ auto nbnxmKernelPruneOnly(sycl::handler& cgh,
 
             if (imaskCheck)
             {
-                for (int jm = 0; jm < sc_gpuJgroupSize(layoutType); jm++)
+                for (int jm = 0; jm < sc_gpuJgroupSize(pairlistType); jm++)
                 {
                     if (imaskCheck & (superClInteractionMask << (jm * c_superClusterSize)))
                     {
@@ -254,7 +254,7 @@ auto nbnxmKernelPruneOnly(sycl::handler& cgh,
                 if constexpr (haveFreshList)
                 {
                     /* copy the list pruned to rlistOuter to a separate buffer */
-                    gm_plistIMask[jPacked * sc_gpuClusterPairSplit(layoutType) + widx] = imaskFull;
+                    gm_plistIMask[jPacked * sc_gpuClusterPairSplit(pairlistType) + widx] = imaskFull;
                     if constexpr (nbnxmSortListsOnGpu())
                     {
                         /* add to neighbour count, to be used in bucket sci sort */
@@ -329,29 +329,42 @@ void chooseAndLaunchNbnxmKernelPruneOnly(bool haveFreshList, Args&&... args)
 
 void launchNbnxmKernelPruneOnly(NbnxmGpu* nb, const InteractionLocality iloc, const int numParts, const int numSciInPartMax)
 {
-    NBAtomDataGpu*      adat          = nb->atdat;
-    NBParamGpu*         nbp           = nb->nbparam;
-    auto*               plist         = nb->plist[iloc].get();
-    const bool          haveFreshList = plist->haveFreshList;
-    const DeviceStream& deviceStream  = *nb->deviceStreams[iloc];
+    NBAtomDataGpu*      adat         = nb->atdat;
+    NBParamGpu*         nbp          = nb->nbparam;
+    const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
 
-    chooseAndLaunchNbnxmKernelPruneOnly<sc_layoutType>(
-            haveFreshList,
-            deviceStream,
-            numSciInPartMax,
-            plist->numSci,
-            numParts,
-            adat->xq.get_pointer(),
-            adat->shiftVec.get_pointer(),
-            plist->cjPacked.get_pointer(),
-            (haveFreshList || !nbnxmSortListsOnGpu()) ? plist->sci.get_pointer()
-                                                      : plist->sorting.sciSorted.get_pointer(),
-            plist->imask.get_pointer(),
-            plist->d_rollingPruningPart.get_pointer(),
-            plist->sorting.sciHistogram.get_pointer(),
-            plist->sorting.sciCount.get_pointer(),
-            nbp->rlistOuter_sq,
-            nbp->rlistInner_sq);
+    std::visit(
+            [&](auto&& pairlist)
+            {
+                auto* plist                  = pairlist[iloc].get();
+                using T                      = std::decay_t<decltype(*plist)>;
+                constexpr auto layoutType    = getPairlistTypeFromPairlist<T>();
+                const bool     haveFreshList = plist->haveFreshList;
+
+                if constexpr (isGpuSpecificPairlist(layoutType))
+                {
+
+                    chooseAndLaunchNbnxmKernelPruneOnly<layoutType>(
+                            haveFreshList,
+                            deviceStream,
+                            numSciInPartMax,
+                            plist->numSci,
+                            numParts,
+                            adat->xq.get_pointer(),
+                            adat->shiftVec.get_pointer(),
+                            plist->cjPacked.get_pointer(),
+                            (haveFreshList || !nbnxmSortListsOnGpu())
+                                    ? plist->sci.get_pointer()
+                                    : plist->sorting.sciSorted.get_pointer(),
+                            plist->imask.get_pointer(),
+                            plist->d_rollingPruningPart.get_pointer(),
+                            plist->sorting.sciHistogram.get_pointer(),
+                            plist->sorting.sciCount.get_pointer(),
+                            nbp->rlistOuter_sq,
+                            nbp->rlistInner_sq);
+                }
+            },
+            nb->plist);
 }
 
 } // namespace gmx

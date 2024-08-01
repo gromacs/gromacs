@@ -418,11 +418,12 @@ select_nbnxn_kernel(NbnxmGpu* nb, enum ElecType elecType, enum VdwType vdwType, 
 
 /*! \brief Calculates the amount of shared memory required by the nonbonded kernel in use.
  */
+template<PairlistType layoutType>
 static inline int calc_shmem_required_nonbonded(enum VdwType vdwType, bool bPrefetchLjParam)
 {
     int       shmem;
-    const int c_clSize           = sc_gpuClusterSize(sc_layoutType);
-    const int c_superClusterSize = sc_gpuClusterPerSuperCluster(sc_layoutType);
+    const int c_clSize           = sc_gpuClusterSize(layoutType);
+    const int c_superClusterSize = sc_gpuClusterPerSuperCluster(layoutType);
 
     /* size of shmem (force-buffers/xq/atom type preloading) */
     /* NOTE: with the default kernel on sm3.0 we need shmem only for pre-loading */
@@ -431,7 +432,7 @@ static inline int calc_shmem_required_nonbonded(enum VdwType vdwType, bool bPref
     /* cj in shared memory, for both warps separately
      * TODO: in the "nowarp kernels we load cj only once  so the factor 2 is not needed.
      */
-    shmem += 2 * sc_gpuJgroupSize(sc_layoutType) * sizeof(int); /* cjs  */
+    shmem += 2 * sc_gpuJgroupSize(layoutType) * sizeof(int); /* cjs  */
     if (bPrefetchLjParam)
     {
         if (useLjCombRule(vdwType))
@@ -504,144 +505,154 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const In
 {
     NBAtomDataGpu*      adat         = nb->atdat;
     NBParamGpu*         nbp          = nb->nbparam;
-    auto*               plist        = nb->plist[iloc].get();
     GpuTimers*          timers       = nb->timers;
     const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
 
-    constexpr int c_clSize           = sc_gpuClusterSize(sc_layoutType);
-    constexpr int c_superClusterSize = sc_gpuClusterPerSuperCluster(sc_layoutType);
+    std::visit(
+            [&](auto&& pairlist)
+            {
+                auto* plist               = pairlist[iloc].get();
+                using T                   = std::decay_t<decltype(*plist)>;
+                constexpr auto layoutType = getPairlistTypeFromPairlist<T>();
 
-    bool bDoTime = nb->bDoTime;
+                constexpr int c_clSize           = sc_gpuClusterSize(layoutType);
+                constexpr int c_superClusterSize = sc_gpuClusterPerSuperCluster(layoutType);
 
-    cl_nbparam_params_t nbparams_params;
+                bool bDoTime = nb->bDoTime;
 
-    /* Don't launch the non-local kernel if there is no work to do.
-       Doing the same for the local kernel is more complicated, since the
-       local part of the force array also depends on the non-local kernel.
-       So to avoid complicating the code and to reduce the risk of bugs,
-       we always call the local kernel and later (not in
-       this function) the stream wait, local f copyback and the f buffer
-       clearing. All these operations, except for the local interaction kernel,
-       are needed for the non-local interactions. The skip of the local kernel
-       call is taken care of later in this function. */
-    if (canSkipNonbondedWork(*nb, iloc))
-    {
-        plist->haveFreshList = false;
+                cl_nbparam_params_t nbparams_params;
 
-        return;
-    }
+                /* Don't launch the non-local kernel if there is no work to do.
+                   Doing the same for the local kernel is more complicated, since the
+                   local part of the force array also depends on the non-local kernel.
+                   So to avoid complicating the code and to reduce the risk of bugs,
+                   we always call the local kernel and later (not in
+                   this function) the stream wait, local f copyback and the f buffer
+                   clearing. All these operations, except for the local interaction kernel,
+                   are needed for the non-local interactions. The skip of the local kernel
+                   call is taken care of later in this function. */
+                if (canSkipNonbondedWork(*nb, iloc))
+                {
+                    plist->haveFreshList = false;
 
-    if (nbp->useDynamicPruning && plist->haveFreshList)
-    {
-        /* Prunes for rlistOuter and rlistInner, sets plist->haveFreshList=false
-           (that's the way the timing accounting can distinguish between
-           separate prune kernel and combined force+prune).
-         */
-        gpu_launch_kernel_pruneonly(nb, iloc, 1);
-    }
+                    return;
+                }
 
-    if (plist->numSci == 0)
-    {
-        /* Don't launch an empty local kernel (is not allowed with OpenCL).
-         */
-        return;
-    }
+                if (nbp->useDynamicPruning && plist->haveFreshList)
+                {
+                    /* Prunes for rlistOuter and rlistInner, sets plist->haveFreshList=false
+                       (that's the way the timing accounting can distinguish between
+                       separate prune kernel and combined force+prune).
+                     */
+                    gpu_launch_kernel_pruneonly(nb, iloc, 1);
+                }
 
-    /* beginning of timed nonbonded calculation section */
-    if (bDoTime)
-    {
-        timers->interaction[iloc].nb_k.openTimingRegion(deviceStream);
-    }
+                if (plist->numSci == 0)
+                {
+                    /* Don't launch an empty local kernel (is not allowed with OpenCL).
+                     */
+                    return;
+                }
 
-    /* kernel launch config */
+                /* beginning of timed nonbonded calculation section */
+                if (bDoTime)
+                {
+                    timers->interaction[iloc].nb_k.openTimingRegion(deviceStream);
+                }
 
-    KernelLaunchConfig config;
-    config.sharedMemorySize = calc_shmem_required_nonbonded(nbp->vdwType, nb->bPrefetchLjParam);
-    config.blockSize[0]     = c_clSize;
-    config.blockSize[1]     = c_clSize;
-    config.gridSize[0]      = plist->numSci;
+                /* kernel launch config */
 
-    validate_global_work_size(config, 3, &nb->deviceContext_->deviceInfo());
+                KernelLaunchConfig config;
+                config.sharedMemorySize =
+                        calc_shmem_required_nonbonded<layoutType>(nbp->vdwType, nb->bPrefetchLjParam);
+                config.blockSize[0] = c_clSize;
+                config.blockSize[1] = c_clSize;
+                config.gridSize[0]  = plist->numSci;
 
-    if (debug)
-    {
-        fprintf(debug,
-                "Non-bonded GPU launch configuration:\n\tLocal work size: %zux%zux%zu\n\t"
-                "Global work size : %zux%zu\n\t#Super-clusters/clusters: %d/%d (%d)\n",
-                config.blockSize[0],
-                config.blockSize[1],
-                config.blockSize[2],
-                config.blockSize[0] * config.gridSize[0],
-                config.blockSize[1] * config.gridSize[1],
-                plist->numSci * c_superClusterSize,
-                c_superClusterSize,
-                plist->numAtomsPerCluster);
-    }
+                validate_global_work_size(config, 3, &nb->deviceContext_->deviceInfo());
 
-    fillin_ocl_structures(nbp, &nbparams_params);
+                if (debug)
+                {
+                    fprintf(debug,
+                            "Non-bonded GPU launch configuration:\n\tLocal work size: "
+                            "%zux%zux%zu\n\t"
+                            "Global work size : %zux%zu\n\t#Super-clusters/clusters: %d/%d (%d)\n",
+                            config.blockSize[0],
+                            config.blockSize[1],
+                            config.blockSize[2],
+                            config.blockSize[0] * config.gridSize[0],
+                            config.blockSize[1] * config.gridSize[1],
+                            plist->numSci * c_superClusterSize,
+                            c_superClusterSize,
+                            plist->numAtomsPerCluster);
+                }
 
-    auto* timingEvent = bDoTime ? timers->interaction[iloc].nb_k.fetchNextEvent() : nullptr;
-    constexpr char kernelName[] = "k_calc_nb";
-    const auto     kernel =
-            select_nbnxn_kernel(nb,
-                                nbp->elecType,
-                                nbp->vdwType,
-                                stepWork.computeEnergy,
-                                (plist->haveFreshList && !nb->timers->interaction[iloc].didPrune));
+                fillin_ocl_structures(nbp, &nbparams_params);
+
+                auto* timingEvent = bDoTime ? timers->interaction[iloc].nb_k.fetchNextEvent() : nullptr;
+                constexpr char kernelName[] = "k_calc_nb";
+                const auto     kernel       = select_nbnxn_kernel(
+                        nb,
+                        nbp->elecType,
+                        nbp->vdwType,
+                        stepWork.computeEnergy,
+                        (plist->haveFreshList && !nb->timers->interaction[iloc].didPrune));
 
 
-    // The OpenCL kernel takes int as second to last argument because bool is
-    // not supported as a kernel argument type (sizeof(bool) is implementation defined).
-    const int computeFshift = static_cast<int>(stepWork.computeVirial);
-    if (useLjCombRule(nb->nbparam->vdwType))
-    {
-        const auto kernelArgs = prepareGpuKernelArguments(kernel,
-                                                          config,
-                                                          &nbparams_params,
-                                                          &adat->xq,
-                                                          &adat->f,
-                                                          &adat->eLJ,
-                                                          &adat->eElec,
-                                                          &adat->fShift,
-                                                          &adat->ljComb,
-                                                          &adat->shiftVec,
-                                                          &nbp->nbfp,
-                                                          &nbp->nbfp_comb,
-                                                          &nbp->coulomb_tab,
-                                                          &plist->sci,
-                                                          &plist->cjPacked,
-                                                          &plist->excl,
-                                                          &computeFshift);
+                // The OpenCL kernel takes int as second to last argument because bool is
+                // not supported as a kernel argument type (sizeof(bool) is implementation defined).
+                const int computeFshift = static_cast<int>(stepWork.computeVirial);
+                if (useLjCombRule(nb->nbparam->vdwType))
+                {
+                    const auto kernelArgs = prepareGpuKernelArguments(kernel,
+                                                                      config,
+                                                                      &nbparams_params,
+                                                                      &adat->xq,
+                                                                      &adat->f,
+                                                                      &adat->eLJ,
+                                                                      &adat->eElec,
+                                                                      &adat->fShift,
+                                                                      &adat->ljComb,
+                                                                      &adat->shiftVec,
+                                                                      &nbp->nbfp,
+                                                                      &nbp->nbfp_comb,
+                                                                      &nbp->coulomb_tab,
+                                                                      &plist->sci,
+                                                                      &plist->cjPacked,
+                                                                      &plist->excl,
+                                                                      &computeFshift);
 
-        launchGpuKernel(kernel, config, deviceStream, timingEvent, kernelName, kernelArgs);
-    }
-    else
-    {
-        const auto kernelArgs = prepareGpuKernelArguments(kernel,
-                                                          config,
-                                                          &adat->numTypes,
-                                                          &nbparams_params,
-                                                          &adat->xq,
-                                                          &adat->f,
-                                                          &adat->eLJ,
-                                                          &adat->eElec,
-                                                          &adat->fShift,
-                                                          &adat->atomTypes,
-                                                          &adat->shiftVec,
-                                                          &nbp->nbfp,
-                                                          &nbp->nbfp_comb,
-                                                          &nbp->coulomb_tab,
-                                                          &plist->sci,
-                                                          &plist->cjPacked,
-                                                          &plist->excl,
-                                                          &computeFshift);
-        launchGpuKernel(kernel, config, deviceStream, timingEvent, kernelName, kernelArgs);
-    }
+                    launchGpuKernel(kernel, config, deviceStream, timingEvent, kernelName, kernelArgs);
+                }
+                else
+                {
+                    const auto kernelArgs = prepareGpuKernelArguments(kernel,
+                                                                      config,
+                                                                      &adat->numTypes,
+                                                                      &nbparams_params,
+                                                                      &adat->xq,
+                                                                      &adat->f,
+                                                                      &adat->eLJ,
+                                                                      &adat->eElec,
+                                                                      &adat->fShift,
+                                                                      &adat->atomTypes,
+                                                                      &adat->shiftVec,
+                                                                      &nbp->nbfp,
+                                                                      &nbp->nbfp_comb,
+                                                                      &nbp->coulomb_tab,
+                                                                      &plist->sci,
+                                                                      &plist->cjPacked,
+                                                                      &plist->excl,
+                                                                      &computeFshift);
+                    launchGpuKernel(kernel, config, deviceStream, timingEvent, kernelName, kernelArgs);
+                }
 
-    if (bDoTime)
-    {
-        timers->interaction[iloc].nb_k.closeTimingRegion(deviceStream);
-    }
+                if (bDoTime)
+                {
+                    timers->interaction[iloc].nb_k.closeTimingRegion(deviceStream);
+                }
+            },
+            nb->plist);
 }
 
 
@@ -653,12 +664,13 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const In
  * \param[in] num_threads_z cjPacked concurrency equal to the number of threads/work items in the
  * 3-rd dimension. \returns   the amount of local memory in bytes required by the pruning kernel
  */
+template<PairlistType layoutType>
 static inline int calc_shmem_required_prune(const int num_threads_z)
 {
     int       shmem;
-    const int c_clSize           = sc_gpuClusterSize(sc_layoutType);
-    const int c_superClusterSize = sc_gpuClusterPerSuperCluster(sc_layoutType);
-    const int c_clusterPairSplit = sc_gpuClusterPairSplit(sc_layoutType);
+    const int c_clSize           = sc_gpuClusterSize(layoutType);
+    const int c_superClusterSize = sc_gpuClusterPerSuperCluster(layoutType);
+    const int c_clusterPairSplit = sc_gpuClusterPairSplit(layoutType);
 
     /* i-atom x in shared memory (for convenience we load all 4 components including q) */
     shmem = c_superClusterSize * c_clSize * sizeof(float) * 4;
@@ -666,7 +678,7 @@ static inline int calc_shmem_required_prune(const int num_threads_z)
      * Note: only need to load once per wavefront, but to keep the code simple,
      * for now we load twice on AMD.
      */
-    shmem += num_threads_z * c_clusterPairSplit * sc_gpuJgroupSize(sc_layoutType) * sizeof(int);
+    shmem += num_threads_z * c_clusterPairSplit * sc_gpuJgroupSize(layoutType) * sizeof(int);
     /* Warp vote, requires one uint per warp/32 threads per block. */
     shmem += sizeof(cl_uint) * 2 * num_threads_z;
 
@@ -679,138 +691,149 @@ static inline int calc_shmem_required_prune(const int num_threads_z)
  */
 void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, const int numParts)
 {
-    NBAtomDataGpu*      adat               = nb->atdat;
-    NBParamGpu*         nbp                = nb->nbparam;
-    auto*               plist              = nb->plist[iloc].get();
-    GpuTimers*          timers             = nb->timers;
-    const DeviceStream& deviceStream       = *nb->deviceStreams[iloc];
-    bool                bDoTime            = nb->bDoTime;
-    constexpr int       c_clSize           = sc_gpuClusterSize(sc_layoutType);
-    constexpr int       c_superClusterSize = sc_gpuClusterPerSuperCluster(sc_layoutType);
+    NBAtomDataGpu*      adat         = nb->atdat;
+    NBParamGpu*         nbp          = nb->nbparam;
+    GpuTimers*          timers       = nb->timers;
+    const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
+    bool                bDoTime      = nb->bDoTime;
 
-    if (plist->haveFreshList)
-    {
-        GMX_ASSERT(numParts == 1, "With first pruning we expect 1 part");
+    std::visit(
+            [&](auto&& pairlist)
+            {
+                auto* plist               = pairlist[iloc].get();
+                using T                   = std::decay_t<decltype(*plist)>;
+                constexpr auto layoutType = getPairlistTypeFromPairlist<T>();
 
-        /* Set rollingPruningNumParts to signal that it is not set */
-        plist->rollingPruningNumParts = 0;
-        plist->rollingPruningPart     = 0;
-    }
-    else
-    {
-        if (plist->rollingPruningNumParts == 0)
-        {
-            plist->rollingPruningNumParts = numParts;
-        }
-        else
-        {
-            GMX_ASSERT(numParts == plist->rollingPruningNumParts,
-                       "It is not allowed to change numParts in between list generation steps");
-        }
-    }
 
-    /* Use a local variable for part and update in plist, so we can return here
-     * without duplicating the part increment code.
-     */
-    int part = plist->rollingPruningPart;
+                constexpr int c_clSize           = sc_gpuClusterSize(layoutType);
+                constexpr int c_superClusterSize = sc_gpuClusterPerSuperCluster(layoutType);
 
-    plist->rollingPruningPart++;
-    if (plist->rollingPruningPart >= plist->rollingPruningNumParts)
-    {
-        plist->rollingPruningPart = 0;
-    }
+                if (plist->haveFreshList)
+                {
+                    GMX_ASSERT(numParts == 1, "With first pruning we expect 1 part");
+                    /* Set rollingPruningNumParts to signal that it is not set */
+                    plist->rollingPruningNumParts = 0;
+                    plist->rollingPruningPart     = 0;
+                }
+                else
+                {
+                    if (plist->rollingPruningNumParts == 0)
+                    {
+                        plist->rollingPruningNumParts = numParts;
+                    }
+                    else
+                    {
+                        GMX_ASSERT(numParts == plist->rollingPruningNumParts,
+                                   "It is not allowed to change numParts in between list "
+                                   "generation steps");
+                    }
+                }
 
-    /* Compute the number of list entries to prune in this pass */
-    int numSciInPart = (plist->numSci - part + numParts - 1) / numParts;
+                /* Use a local variable for part and update in plist, so we can return here
+                 * without duplicating the part increment code.
+                 */
+                int part = plist->rollingPruningPart;
 
-    /* Don't launch the kernel if there is no work to do. */
-    if (numSciInPart <= 0)
-    {
-        plist->haveFreshList = false;
+                plist->rollingPruningPart++;
+                if (plist->rollingPruningPart >= plist->rollingPruningNumParts)
+                {
+                    plist->rollingPruningPart = 0;
+                }
 
-        return;
-    }
+                /* Compute the number of list entries to prune in this pass */
+                int numSciInPart = (plist->numSci - part + numParts - 1) / numParts;
 
-    GpuRegionTimer* timer = nullptr;
-    if (bDoTime)
-    {
-        timer = &(plist->haveFreshList ? timers->interaction[iloc].prune_k
-                                       : timers->interaction[iloc].rollingPrune_k);
-    }
+                /* Don't launch the kernel if there is no work to do. */
+                if (numSciInPart <= 0)
+                {
+                    plist->haveFreshList = false;
 
-    /* beginning of timed prune calculation section */
-    if (bDoTime)
-    {
-        timer->openTimingRegion(deviceStream);
-    }
+                    return;
+                }
 
-    /* Kernel launch config:
-     * - The thread block dimensions match the size of i-clusters, j-clusters,
-     *   and j-cluster concurrency, in x, y, and z, respectively.
-     * - The 1D block-grid contains as many blocks as super-clusters.
-     */
-    int num_threads_z = c_pruneKernelJPackedConcurrency;
-    /* kernel launch config */
-    KernelLaunchConfig config;
-    config.sharedMemorySize = calc_shmem_required_prune(num_threads_z);
-    config.blockSize[0]     = c_clSize;
-    config.blockSize[1]     = c_clSize;
-    config.blockSize[2]     = num_threads_z;
-    config.gridSize[0]      = numSciInPart;
+                GpuRegionTimer* timer = nullptr;
+                if (bDoTime)
+                {
+                    timer = &(plist->haveFreshList ? timers->interaction[iloc].prune_k
+                                                   : timers->interaction[iloc].rollingPrune_k);
+                }
 
-    validate_global_work_size(config, 3, &nb->deviceContext_->deviceInfo());
+                /* beginning of timed prune calculation section */
+                if (bDoTime)
+                {
+                    timer->openTimingRegion(deviceStream);
+                }
 
-    if (debug)
-    {
-        fprintf(debug,
-                "Pruning GPU kernel launch configuration:\n\tLocal work size: %zux%zux%zu\n\t"
-                "\tGlobal work size: %zux%zu\n\t#Super-clusters/clusters: %d/%d (%d)\n"
-                "\tShMem: %zu\n",
-                config.blockSize[0],
-                config.blockSize[1],
-                config.blockSize[2],
-                config.blockSize[0] * config.gridSize[0],
-                config.blockSize[1] * config.gridSize[1],
-                plist->numSci * c_superClusterSize,
-                c_superClusterSize,
-                plist->numAtomsPerCluster,
-                config.sharedMemorySize);
-    }
+                /* Kernel launch config:
+                 * - The thread block dimensions match the size of i-clusters, j-clusters,
+                 *   and j-cluster concurrency, in x, y, and z, respectively.
+                 * - The 1D block-grid contains as many blocks as super-clusters.
+                 */
+                int num_threads_z = c_pruneKernelJPackedConcurrency;
+                /* kernel launch config */
+                KernelLaunchConfig config;
+                config.sharedMemorySize = calc_shmem_required_prune<layoutType>(num_threads_z);
+                config.blockSize[0]     = c_clSize;
+                config.blockSize[1]     = c_clSize;
+                config.blockSize[2]     = num_threads_z;
+                config.gridSize[0]      = numSciInPart;
 
-    cl_nbparam_params_t nbparams_params;
-    fillin_ocl_structures(nbp, &nbparams_params);
+                validate_global_work_size(config, 3, &nb->deviceContext_->deviceInfo());
 
-    auto*          timingEvent  = bDoTime ? timer->fetchNextEvent() : nullptr;
-    constexpr char kernelName[] = "k_pruneonly";
-    const auto     pruneKernel  = selectPruneKernel(nb->kernel_pruneonly, plist->haveFreshList);
-    const auto     kernelArgs   = prepareGpuKernelArguments(pruneKernel,
-                                                      config,
-                                                      &nbparams_params,
-                                                      &adat->xq,
-                                                      &adat->shiftVec,
-                                                      &plist->sci,
-                                                      &plist->cjPacked,
-                                                      &plist->imask,
-                                                      &numParts,
-                                                      &part);
-    launchGpuKernel(pruneKernel, config, deviceStream, timingEvent, kernelName, kernelArgs);
+                if (debug)
+                {
+                    fprintf(debug,
+                            "Pruning GPU kernel launch configuration:\n\tLocal work size: "
+                            "%zux%zux%zu\n\t"
+                            "\tGlobal work size: %zux%zu\n\t#Super-clusters/clusters: %d/%d (%d)\n"
+                            "\tShMem: %zu\n",
+                            config.blockSize[0],
+                            config.blockSize[1],
+                            config.blockSize[2],
+                            config.blockSize[0] * config.gridSize[0],
+                            config.blockSize[1] * config.gridSize[1],
+                            plist->numSci * c_superClusterSize,
+                            c_superClusterSize,
+                            plist->numAtomsPerCluster,
+                            config.sharedMemorySize);
+                }
 
-    if (plist->haveFreshList)
-    {
-        plist->haveFreshList = false;
-        /* Mark that pruning has been done */
-        nb->timers->interaction[iloc].didPrune = true;
-    }
-    else
-    {
-        /* Mark that rolling pruning has been done */
-        nb->timers->interaction[iloc].didRollingPrune = true;
-    }
+                cl_nbparam_params_t nbparams_params;
+                fillin_ocl_structures(nbp, &nbparams_params);
 
-    if (bDoTime)
-    {
-        timer->closeTimingRegion(deviceStream);
-    }
+                auto*          timingEvent  = bDoTime ? timer->fetchNextEvent() : nullptr;
+                constexpr char kernelName[] = "k_pruneonly";
+                const auto pruneKernel = selectPruneKernel(nb->kernel_pruneonly, plist->haveFreshList);
+                const auto kernelArgs = prepareGpuKernelArguments(pruneKernel,
+                                                                  config,
+                                                                  &nbparams_params,
+                                                                  &adat->xq,
+                                                                  &adat->shiftVec,
+                                                                  &plist->sci,
+                                                                  &plist->cjPacked,
+                                                                  &plist->imask,
+                                                                  &numParts,
+                                                                  &part);
+                launchGpuKernel(pruneKernel, config, deviceStream, timingEvent, kernelName, kernelArgs);
+
+                if (plist->haveFreshList)
+                {
+                    plist->haveFreshList = false;
+                    /* Mark that pruning has been done */
+                    nb->timers->interaction[iloc].didPrune = true;
+                }
+                else
+                {
+                    /* Mark that rolling pruning has been done */
+                    nb->timers->interaction[iloc].didRollingPrune = true;
+                }
+
+                if (bDoTime)
+                {
+                    timer->closeTimingRegion(deviceStream);
+                }
+            },
+            nb->plist);
 }
 
 } // namespace gmx

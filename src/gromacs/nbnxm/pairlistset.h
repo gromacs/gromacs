@@ -49,10 +49,12 @@
 #define GMX_NBNXM_PAIRLISTSET_H
 
 #include <memory>
+#include <variant>
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/locality.h"
+#include "gromacs/nbnxm/nbnxm_enums.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
@@ -99,18 +101,8 @@ public:
     //! Returns the lists of CPU pairlists
     ArrayRef<const NbnxnPairlistCpu> cpuLists() const { return cpuLists_; }
 
-    //! Returns a pointer to the GPU pairlist, nullptr when not present
-    const NbnxnPairlistGpu* gpuList() const
-    {
-        if (!gpuLists_.empty())
-        {
-            return gpuLists_.data();
-        }
-        else
-        {
-            return nullptr;
-        }
-    }
+    //! Returns the variant containing the pairlists
+    const auto& gpuList() const { return gpuLists_; }
 
     //! Returns the lists of free-energy pairlists, empty when nonbonded interactions are not perturbed
     ArrayRef<const std::unique_ptr<t_nblist>> fepLists() const { return fepLists_; }
@@ -123,8 +115,8 @@ private:
     std::vector<NbnxnPairlistCpu> cpuLists_;
     //! List of working list for rebalancing CPU lists
     std::vector<NbnxnPairlistCpu> cpuListsWork_;
-    //! List of pairlists in GPU layout
-    std::vector<NbnxnPairlistGpu> gpuLists_;
+    //! List of pairlists in GPU layout, variant for different kernel types
+    std::variant<std::vector<NbnxnPairlistGpu<PairlistType::Hierarchical8x8x8>>> gpuLists_;
     //! Pairlist parameters describing setup and ranges
     const PairlistParams& params_;
     //! Tells whether multiple lists get merged into one (the first) after creation

@@ -69,7 +69,10 @@ namespace gmx
  */
 template<PairlistType pairlistType, bool haveFreshList, int threadZ, int minBlocksPp>
 __launch_bounds__(c_clSizeSq<pairlistType>* threadZ, minBlocksPp) __global__
-        static void nbnxmKernelPruneOnly(NBAtomDataGpu atdat, NBParamGpu nbparam, GpuPairlist plist, int numParts)
+        static void nbnxmKernelPruneOnly(NBAtomDataGpu             atdat,
+                                         NBParamGpu                nbparam,
+                                         GpuPairlist<pairlistType> plist,
+                                         int                       numParts)
 {
     {
         constexpr int c_clSize                 = sc_gpuClusterSize(pairlistType);
@@ -103,9 +106,9 @@ __launch_bounds__(c_clSizeSq<pairlistType>* threadZ, minBlocksPp) __global__
             return;
         }
 
-        const float3*      shiftVec         = asFloat3(atdat.shiftVec);
-        nbnxn_cj_packed_t* gm_plistCJPacked = plist.cjPacked;
-        const nbnxn_sci_t* plistSci         = haveFreshList ? plist.sci : plist.sorting.sciSorted;
+        const float3*                    shiftVec         = asFloat3(atdat.shiftVec);
+        nbnxn_cj_packed_t<pairlistType>* gm_plistCJPacked = plist.cjPacked;
+        const nbnxn_sci_t* plistSci = haveFreshList ? plist.sci : plist.sorting.sciSorted;
         int*               gm_plistSciHistogram = plist.sorting.sciHistogram;
         int*               gm_sciCount          = plist.sorting.sciCount;
         unsigned int*      gm_plistIMask        = plist.imask;
@@ -352,15 +355,26 @@ void chooseAndLaunchNbnxmKernelPruneOnly(bool                     haveFreshList,
 
 void launchNbnxmKernelPruneOnly(NbnxmGpu* nb, const InteractionLocality iloc, const int* numParts, const int numSciInPart)
 {
-    NBAtomDataGpu*           adat          = nb->atdat;
-    NBParamGpu*              nbp           = nb->nbparam;
-    const DeviceStream&      deviceStream  = *nb->deviceStreams[iloc];
-    const DeviceInformation& deviceInfo    = nb->deviceContext_->deviceInfo();
-    auto*                    plist         = nb->plist[iloc].get();
-    const bool               haveFreshList = plist->haveFreshList;
+    NBAtomDataGpu*           adat         = nb->atdat;
+    NBParamGpu*              nbp          = nb->nbparam;
+    const DeviceStream&      deviceStream = *nb->deviceStreams[iloc];
+    const DeviceInformation& deviceInfo   = nb->deviceContext_->deviceInfo();
 
-    chooseAndLaunchNbnxmKernelPruneOnly<sc_layoutType>(
-            haveFreshList, deviceInfo, deviceStream, numSciInPart, adat, nbp, plist, numParts);
+    std::visit(
+            [&](auto&& pairlists)
+            {
+                auto*      plist            = pairlists[iloc].get();
+                const bool haveFreshList    = plist->haveFreshList;
+                using T                     = std::decay_t<decltype(*plist)>;
+                constexpr auto pairlistType = getPairlistTypeFromPairlist<T>();
+
+                if constexpr (isGpuSpecificPairlist(pairlistType))
+                {
+                    chooseAndLaunchNbnxmKernelPruneOnly<pairlistType>(
+                            haveFreshList, deviceInfo, deviceStream, numSciInPart, adat, nbp, plist, numParts);
+                }
+            },
+            nb->plist);
 }
 
 } // namespace gmx

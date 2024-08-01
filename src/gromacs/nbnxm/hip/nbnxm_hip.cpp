@@ -55,102 +55,114 @@ namespace gmx
 
 void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, const int numParts)
 {
-    auto* plist = nb->plist[iloc].get();
+    std::visit(
+            [&](auto&& pairlists)
+            {
+                auto* plist = pairlists[iloc].get();
 
-    if (plist->haveFreshList)
-    {
-        GMX_ASSERT(numParts == 1, "With first pruning we expect 1 part");
+                if (plist->haveFreshList)
+                {
+                    GMX_ASSERT(numParts == 1, "With first pruning we expect 1 part");
 
-        /* Set rollingPruningNumParts to signal that it is not set */
-        plist->rollingPruningNumParts = 0;
-    }
-    else
-    {
-        if (plist->rollingPruningNumParts == 0)
-        {
-            plist->rollingPruningNumParts = numParts;
-        }
-        else
-        {
-            GMX_ASSERT(numParts == plist->rollingPruningNumParts,
-                       "It is not allowed to change numParts in between list "
-                       "generation steps");
-        }
-    }
+                    /* Set rollingPruningNumParts to signal that it is not set */
+                    plist->rollingPruningNumParts = 0;
+                }
+                else
+                {
+                    if (plist->rollingPruningNumParts == 0)
+                    {
+                        plist->rollingPruningNumParts = numParts;
+                    }
+                    else
+                    {
+                        GMX_ASSERT(numParts == plist->rollingPruningNumParts,
+                                   "It is not allowed to change numParts in between list "
+                                   "generation steps");
+                    }
+                }
 
-    /* Compute the number of list entries to prune in this pass */
-    const int numSciInPart = divideRoundUp(plist->numSci, numParts);
+                /* Compute the number of list entries to prune in this pass */
+                const int numSciInPart = divideRoundUp(plist->numSci, numParts);
 
-    /* Don't launch the kernel if there is no work to do */
-    if (numSciInPart <= 0)
-    {
-        plist->haveFreshList = false;
-        return;
-    }
+                /* Don't launch the kernel if there is no work to do */
+                if (numSciInPart <= 0)
+                {
+                    plist->haveFreshList = false;
+                    return;
+                }
 
-    launchNbnxmKernelPruneOnly(nb, iloc, &numParts, numSciInPart);
-    if (plist->haveFreshList)
-    {
-        launchNbnxmKernelSciSort(nb, iloc);
-        plist->haveFreshList = false;
-        nb->didPrune[iloc]   = true; // Mark that pruning has been done
-    }
-    else
-    {
-        nb->didRollingPrune[iloc] = true; // Mark that rolling pruning has been done
-    }
+                launchNbnxmKernelPruneOnly(nb, iloc, &numParts, numSciInPart);
+                if (plist->haveFreshList)
+                {
+                    launchNbnxmKernelSciSort(nb, iloc);
+                    plist->haveFreshList = false;
+                    nb->didPrune[iloc]   = true; // Mark that pruning has been done
+                }
+                else
+                {
+                    nb->didRollingPrune[iloc] = true; // Mark that rolling pruning has been done
+                }
 
-    if (GMX_NATIVE_WINDOWS)
-    {
-        const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
-        /* Windows: force flushing WDDM queue */
-        hipError_t stat = hipStreamQuery(deviceStream.stream());
-        checkDeviceError(stat, "hipStreamQuery failed at Windows: force flushing WDDM queue");
-    }
+                if (GMX_NATIVE_WINDOWS)
+                {
+                    const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
+                    /* Windows: force flushing WDDM queue */
+                    hipError_t stat = hipStreamQuery(deviceStream.stream());
+                    checkDeviceError(stat,
+                                     "hipStreamQuery failed at Windows: force flushing WDDM queue");
+                }
+            },
+            nb->plist);
 }
 
 void gpu_launch_kernel(NbnxmGpu* nb, const StepWorkload& stepWork, const InteractionLocality iloc)
 {
-    const NBParamGpu* nbp   = nb->nbparam;
-    auto*             plist = nb->plist[iloc].get();
+    const NBParamGpu* nbp = nb->nbparam;
+    std::visit(
+            [&](auto&& pairlists)
+            {
+                auto* plist = pairlists[iloc].get();
 
-    if (canSkipNonbondedWork(*nb, iloc))
-    {
-        plist->haveFreshList = false;
-        return;
-    }
+                if (canSkipNonbondedWork(*nb, iloc))
+                {
+                    plist->haveFreshList = false;
+                    return;
+                }
 
-    if (nbp->useDynamicPruning && plist->haveFreshList)
-    {
-        // Prunes for rlistOuter and rlistInner, sets plist->haveFreshList=false
-        gpu_launch_kernel_pruneonly(nb, iloc, 1);
-    }
+                if (nbp->useDynamicPruning && plist->haveFreshList)
+                {
+                    // Prunes for rlistOuter and rlistInner, sets plist->haveFreshList=false
+                    gpu_launch_kernel_pruneonly(nb, iloc, 1);
+                }
 
-    if (plist->numSci == 0)
-    {
-        /* Don't launch an empty local kernel */
-        return;
-    }
+                if (plist->numSci == 0)
+                {
+                    /* Don't launch an empty local kernel */
+                    return;
+                }
 
 
-    /* Whether we need to call a combined prune and interaction kernel or just an interaction
-     * kernel. doPrune being true implies we are not using dynamic pruning and are in the first
-     * call to the interaction kernel after a neighbour list step */
-    bool doPrune = (plist->haveFreshList && !nb->timers->interaction[iloc].didPrune);
+                /* Whether we need to call a combined prune and interaction kernel or just an interaction
+                 * kernel. doPrune being true implies we are not using dynamic pruning and are in the first
+                 * call to the interaction kernel after a neighbour list step */
+                bool doPrune = (plist->haveFreshList && !nb->timers->interaction[iloc].didPrune);
 
-    launchNbnxmKernel(nb, stepWork, iloc, doPrune);
-    if (doPrune)
-    {
-        launchNbnxmKernelSciSort(nb, iloc);
-    }
+                launchNbnxmKernel(nb, stepWork, iloc, doPrune);
+                if (doPrune)
+                {
+                    launchNbnxmKernelSciSort(nb, iloc);
+                }
 
-    if (GMX_NATIVE_WINDOWS)
-    {
-        const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
-        /* Windows: force flushing WDDM queue */
-        hipError_t stat = hipStreamQuery(deviceStream.stream());
-        checkDeviceError(stat, "hipStreamQuery failed at Windows: force flushing WDDM queue");
-    }
+                if (GMX_NATIVE_WINDOWS)
+                {
+                    const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
+                    /* Windows: force flushing WDDM queue */
+                    hipError_t stat = hipStreamQuery(deviceStream.stream());
+                    checkDeviceError(stat,
+                                     "hipStreamQuery failed at Windows: force flushing WDDM queue");
+                }
+            },
+            nb->plist);
 }
 
 } // namespace gmx
