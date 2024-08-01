@@ -42,10 +42,14 @@ namespace gmx
 
 #ifndef FUNCTION_DECLARATION_ONLY
 /* Instantiate external template functions */
-template __global__ void
-nbnxn_kernel_prune_cuda<false>(const NBAtomDataGpu, const NBParamGpu, const GpuPairlist, int);
-template __global__ void
-nbnxn_kernel_prune_cuda<true>(const NBAtomDataGpu, const NBParamGpu, const GpuPairlist, int);
+template __global__ void nbnxn_kernel_prune_cuda<false>(const NBAtomDataGpu,
+                                                        const NBParamGpu,
+                                                        const GpuPairlist<sc_cudaSpecificLayout>,
+                                                        int);
+template __global__ void nbnxn_kernel_prune_cuda<true>(const NBAtomDataGpu,
+                                                       const NBParamGpu,
+                                                       const GpuPairlist<sc_cudaSpecificLayout>,
+                                                       int);
 #endif
 
 } // namespace gmx

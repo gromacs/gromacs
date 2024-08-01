@@ -59,8 +59,13 @@ namespace gmx
  */
 static inline bool canSkipNonbondedWork(const NbnxmGpu& nb, InteractionLocality iloc)
 {
-    assert(nb.plist[iloc]);
-    return (iloc == InteractionLocality::NonLocal && nb.plist[iloc]->numSci == 0);
+    return std::visit(
+            [&](auto&& plist) -> bool
+            {
+                assert(plist[iloc]);
+                return (iloc == InteractionLocality::NonLocal && plist[iloc]->numSci == 0);
+            },
+            nb.plist);
 }
 
 /*! \brief Calculate atom range and return start index and length.

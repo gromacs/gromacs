@@ -66,7 +66,7 @@ namespace gmx
 {
 
 __launch_bounds__(c_sciSortingThreadsPerBlock) static __global__
-        void nbnxnKernelBucketSciSort(GpuPairlist plist)
+        void nbnxnKernelBucketSciSort(GpuPairlist<sc_cudaSpecificLayout> plist)
 {
     int size = plist.numSci;
 

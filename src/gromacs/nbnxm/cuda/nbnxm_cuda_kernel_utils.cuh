@@ -62,6 +62,10 @@
 namespace gmx
 {
 
+/* Convenience defines */
+//! CUDA device specific pairlist layout
+static constexpr PairlistType sc_cudaSpecificLayout = PairlistType::Hierarchical8x8x8;
+
 /*! \brief Log of the i and j cluster size.
  *  change this together with c_clSize !*/
 static const int __device__ c_clusterSizeLog2 = gmx::StaticLog2<c_clusterSize>::value;

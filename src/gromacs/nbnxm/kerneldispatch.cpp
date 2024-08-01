@@ -56,6 +56,7 @@
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
 #include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/nbnxm/nbnxm_enums.h"
 #include "gromacs/nbnxm/pairlist.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/timing/wallcycle.h"
@@ -461,6 +462,7 @@ void nonbonded_verlet_t::dispatchNonbondedKernel(gmx::InteractionLocality       
                                                  t_nrnb*             nrnb) const
 {
     const PairlistSet& pairlistSet = pairlistSets().pairlistSet(iLocality);
+    using GpuEmulatePairlists      = std::vector<NbnxnPairlistGpu<PairlistType::Hierarchical8x8x8>>;
 
     switch (kernelSetup().kernelType)
     {
@@ -483,7 +485,7 @@ void nonbonded_verlet_t::dispatchNonbondedKernel(gmx::InteractionLocality       
         case NbnxmKernelType::Gpu8x8x8: gpu_launch_kernel(gpuNbv_, stepWork, iLocality); break;
 
         case NbnxmKernelType::Cpu8x8x8_PlainC:
-            nbnxn_kernel_gpu_ref(pairlistSet.gpuList(),
+            nbnxn_kernel_gpu_ref(std::get<GpuEmulatePairlists>(pairlistSet.gpuList()).data(),
                                  nbat_.get(),
                                  ic,
                                  shiftvec,
