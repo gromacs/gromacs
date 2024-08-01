@@ -654,7 +654,8 @@ void gmx::LegacySimulator::do_md()
     std::unique_ptr<RAMD> ramd = nullptr;
     if (ir->bRAMD)
     {
-        ramd = std::make_unique<RAMD>(*ir->ramdParams, pullWork_, startingBehavior_, cr_, nFile_, fnm_, oenv_, fpLog_);
+        ramd = std::make_unique<RAMD>(
+                *ir->ramdParams, pullWork_, startingBehavior_, cr_, nFile_, fnm_, oenv_, fpLog_);
         fr_->forceProviders->addForceProvider(ramd.get());
     }
 

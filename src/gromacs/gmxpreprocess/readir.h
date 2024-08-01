@@ -42,8 +42,8 @@
 
 #include "gromacs/fileio/readinp.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdtypes/ramd_params.h"
 #include "gromacs/mdtypes/multipletimestepping.h"
+#include "gromacs/mdtypes/ramd_params.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
