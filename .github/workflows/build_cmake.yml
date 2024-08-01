@@ -33,9 +33,9 @@ jobs:
             openmp_var: "Off"
           }
         - {
-            name: "macOS 11 gcc with OpenCL", artifact: "macOS-gcc-OpenCL.7z",
-            os: macos-11, # Don't upgrade to macOS 12, see Issue #4646
-            cc: "gcc-10", cxx: "g++-10",
+            name: "macOS 14 gcc with OpenCL", artifact: "macOS-gcc-OpenCL.7z",
+            os: macos-14,
+            cc: "gcc-11", cxx: "g++-11",
             gpu_var: "OpenCL",
             openmp_var: "On"
 
