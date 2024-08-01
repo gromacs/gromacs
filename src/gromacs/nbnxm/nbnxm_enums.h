@@ -150,6 +150,7 @@ enum class PairlistType : int
     Count
 };
 
+//! If we use a pairlist that is GPU specific for our backend
 static constexpr bool sc_isGpuSpecificPairlist(const PairlistType pairlistType)
 {
     return pairlistType == PairlistType::Hierarchical8x8x8;

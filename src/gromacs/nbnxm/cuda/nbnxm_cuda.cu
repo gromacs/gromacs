@@ -43,10 +43,13 @@
 #include <cassert>
 #include <cstdlib>
 
+#include <memory>
+
 #include <cub/device/device_scan.cuh>
 
 #include "gromacs/nbnxm/gpu_types_common.h"
 #include "gromacs/nbnxm/nbnxm_gpu.h"
+#include "gromacs/utility/enumerationhelpers.h"
 
 #if defined(_MSVC)
 #    include <limits>
@@ -123,7 +126,14 @@ namespace gmx
 {
 
 /*! Nonbonded kernel function pointer type */
-typedef void (*nbnxn_cu_kfunc_ptr_t)(const NBAtomDataGpu, const NBParamGpu, const GpuPairlist, bool);
+typedef void (*nbnxn_cu_kfunc_ptr_t)(const NBAtomDataGpu,
+                                     const NBParamGpu,
+                                     const GpuPairlist<sc_cudaSpecificLayout>,
+                                     bool);
+
+//! CUDA specific location specific pairlist
+using CudaPairlistByLocality =
+        gmx::EnumerationArray<InteractionLocality, std::unique_ptr<GpuPairlist<sc_cudaSpecificLayout>>>;
 
 /*********************************/
 
@@ -477,7 +487,8 @@ static inline int calc_shmem_required_nonbonded(const int                       
  * Take counts prepared in combined prune and interaction kernel and use them to sort plist.
  * Note that this sorted list is not available in the combined prune and interaction kernel
  * itself, which causes a performance degredation of 1-10% for that initial call */
-static inline void gpuLaunchKernelSciSort(GpuPairlist* plist, const DeviceStream& deviceStream)
+static inline void gpuLaunchKernelSciSort(GpuPairlist<sc_cudaSpecificLayout>* plist,
+                                          const DeviceStream&                 deviceStream)
 {
     performExclusiveScan(plist->sorting.nscanTemporary, plist->sorting.scanTemporary, plist, deviceStream);
 
@@ -517,7 +528,7 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const In
 {
     NBAtomDataGpu*      adat         = nb->atdat;
     NBParamGpu*         nbp          = nb->nbparam;
-    auto*               plist        = nb->plist[iloc].get();
+    auto*               plist        = std::get<CudaPairlistByLocality>(nb->plist)[iloc].get();
     GpuTimers*          timers       = nb->timers;
     const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
 
@@ -665,7 +676,7 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
 {
     NBAtomDataGpu*      adat         = nb->atdat;
     NBParamGpu*         nbp          = nb->nbparam;
-    auto*               plist        = nb->plist[iloc].get();
+    auto*               plist        = std::get<CudaPairlistByLocality>(nb->plist)[iloc].get();
     GpuTimers*          timers       = nb->timers;
     const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
 
