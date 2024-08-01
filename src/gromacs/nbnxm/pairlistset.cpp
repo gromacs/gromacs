@@ -46,9 +46,11 @@
 
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/nbnxm/nbnxm_enums.h"
 #include "gromacs/nbnxm/pairlist.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/template_mp.h"
 
 #include "atompairlist.h"
 #include "pairlist.h"
@@ -143,16 +145,17 @@ void appendPlainPairlistCpu(PlainPairlist*          plainPairlist,
     }
 }
 
-void appendPlainPairlistGpu(PlainPairlist*          plainPairlist,
-                            const NbnxnPairlistGpu& pairlist,
-                            const real              range,
-                            const nbnxn_atomdata_t& nbat,
-                            ArrayRef<const int>     atomIndices)
+template<PairlistType pairlistType>
+void appendPlainPairlistGpu(PlainPairlist*                        plainPairlist,
+                            const NbnxnPairlistGpu<pairlistType>& pairlist,
+                            const real                            range,
+                            const nbnxn_atomdata_t&               nbat,
+                            ArrayRef<const int>                   atomIndices)
 {
-    constexpr int c_clSize = detail::c_nbnxnGpuClusterSize;
-    constexpr int c_splitClusterSize = detail::c_nbnxnGpuClusterSize / detail::c_nbnxnGpuClusterpairSplit;
+    constexpr int c_clSize           = sc_gpuClusterSize(pairlistType);
+    constexpr int c_splitClusterSize = gmx::sc_gpuSplitJClusterSize(pairlistType);
 
-    constexpr int c_numClusterPerCell = sc_gpuNumClusterPerCell(sc_layoutType);
+    constexpr int c_numClusterPerCell = sc_gpuNumClusterPerCell(pairlistType);
 
     GMX_ASSERT(pairlist.na_ci == c_clSize,
                "The cluster size in the pairlist should match the GPU cluster size");
@@ -178,11 +181,11 @@ void appendPlainPairlistGpu(PlainPairlist*          plainPairlist,
 
         for (int jPackIndex = iEntry.cjPackedBegin; jPackIndex < iEntry.cjPackedEnd; jPackIndex++)
         {
-            const nbnxn_cj_packed_t& jPack = pairlist.cjPacked.list_[jPackIndex];
+            const auto& jPack = pairlist.cjPacked.list_[jPackIndex];
 
-            for (int jInPack = 0; jInPack < sc_gpuJgroupSize(sc_layoutType); jInPack++)
+            for (int jInPack = 0; jInPack < sc_gpuJgroupSize(pairlistType); jInPack++)
             {
-                GMX_ASSERT(sc_gpuClusterPairSplit(sc_layoutType) == 1
+                GMX_ASSERT(sc_gpuClusterPairSplit(pairlistType) == 1
                                    || jPack.imei[0].imask == jPack.imei[1].imask,
                            "This code assumed that the pairlist is not pruned and contains whole "
                            "cluster pairs");
@@ -257,9 +260,23 @@ void PairlistSet::appendPlainPairlist(PlainPairlist*          plainPairlist,
 
     if (sc_isGpuSpecificPairlist(params_.pairlistType))
     {
-        GMX_ASSERT(gpuList() != nullptr, "We expect a GPU pairlist to be present");
+        gmx::dispatchTemplatedFunction(
+                [&](auto pairlist_)
+                {
+                    if constexpr (sc_isGpuSpecificPairlist(pairlist_))
+                    {
+                        using T                     = std::decay_t<decltype(pairlist_)>;
+                        constexpr auto pairlistType = getPairlistTypeFromGpuPairlist<T>();
 
-        appendPlainPairlistGpu(plainPairlist, *gpuList(), range, nbat, atomIndices);
+                        appendPlainPairlistGpu(
+                                plainPairlist,
+                                std::get<std::vector<NbnxnPairlistGpu<pairlistType>>>(gpuList())[0],
+                                range,
+                                nbat,
+                                atomIndices);
+                    }
+                },
+                params_.pairlistType);
     }
     else
     {

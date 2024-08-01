@@ -94,10 +94,11 @@ int gpu_min_ci_balanced(NbnxmGpu* nb)
 namespace
 {
 
-size_t hipRocprimWrapper(size_t              temporaryBufferSize,
-                         char*               temporaryBuffer,
-                         gmx::GpuPairlist*   plist,
-                         const DeviceStream& deviceStream)
+template<PairlistType pairlistType>
+size_t hipRocprimWrapper(size_t                          temporaryBufferSize,
+                         char*                           temporaryBuffer,
+                         gmx::GpuPairlist<pairlistType>* plist,
+                         const DeviceStream&             deviceStream)
 {
     size_t size = temporaryBufferSize;
 
@@ -116,18 +117,30 @@ size_t hipRocprimWrapper(size_t              temporaryBufferSize,
 
 } // namespace
 
-size_t getExclusiveScanWorkingArraySize(GpuPairlist* plist, const DeviceStream& deviceStream)
+template<PairlistType pairlistType>
+size_t getExclusiveScanWorkingArraySize(GpuPairlist<pairlistType>* plist, const DeviceStream& deviceStream)
 {
     return hipRocprimWrapper(0, nullptr, plist, deviceStream);
 }
 
-void performExclusiveScan(size_t              temporaryBufferSize,
-                          char*               temporaryBuffer,
-                          GpuPairlist*        plist,
-                          const DeviceStream& deviceStream)
+template<PairlistType pairlistType>
+void performExclusiveScan(size_t                     temporaryBufferSize,
+                          char*                      temporaryBuffer,
+                          GpuPairlist<pairlistType>* plist,
+                          const DeviceStream&        deviceStream)
 {
     std::ignore = hipRocprimWrapper(temporaryBufferSize, temporaryBuffer, plist, deviceStream);
 }
+
+template size_t getExclusiveScanWorkingArraySize<PairlistType::Hierarchical8x8x8>(
+        GpuPairlist<PairlistType::Hierarchical8x8x8>* plist,
+        const DeviceStream&                           deviceStream);
+
+template void performExclusiveScan<PairlistType::Hierarchical8x8x8>(
+        size_t                                        temporaryBufferSize,
+        char*                                         temporaryBuffer,
+        GpuPairlist<PairlistType::Hierarchical8x8x8>* plist,
+        const DeviceStream&                           deviceStream);
 
 // reset our custom defines
 #if __GFX10__ || __GFX11__ || __GFX12__
