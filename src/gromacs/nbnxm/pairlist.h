@@ -213,12 +213,13 @@ struct nbnxn_im_ei_t
 };
 
 //! Packed j-cluster list element
+template<PairlistType layoutType>
 struct nbnxn_cj_packed_t
 {
     //! The packed j-clusters
-    int cj[sc_gpuJgroupSize(sc_layoutType)];
+    int cj[sc_gpuJgroupSize(layoutType)];
     //! The i-cluster mask data for 2 warps
-    nbnxn_im_ei_t imei[sc_gpuClusterPairSplit(sc_layoutType)];
+    nbnxn_im_ei_t imei[sc_gpuClusterPairSplit(layoutType)];
     //! Check if two instances are the same.
     bool operator==(const nbnxn_cj_packed_t& other) const
     {
@@ -231,21 +232,22 @@ struct nbnxn_cj_packed_t
  *
  * Four j-cluster indices are stored per integer in an nbnxn_cj_packed_t.
  */
+template<PairlistType layoutType>
 class PackedJClusterList
 {
 public:
     explicit PackedJClusterList(const PinningPolicy pinningPolicy) : list_({}, { pinningPolicy }) {}
     //! The list of packed j-cluster groups
-    HostVector<nbnxn_cj_packed_t> list_;
+    HostVector<nbnxn_cj_packed_t<layoutType>> list_;
     //! Return the j-cluster index for \c index from the pack list
     int cj(const int index) const
     {
-        return list_[index / sc_gpuJgroupSize(sc_layoutType)].cj[index & (sc_gpuJgroupSize(sc_layoutType) - 1)];
+        return list_[index / sc_gpuJgroupSize(layoutType)].cj[index & (sc_gpuJgroupSize(layoutType) - 1)];
     }
     //! Return the i-cluster interaction mask for the first cluster in \c index
     unsigned int imask0(const int index) const
     {
-        return list_[index / sc_gpuJgroupSize(sc_layoutType)].imei[0].imask;
+        return list_[index / sc_gpuJgroupSize(layoutType)].imei[0].imask;
     }
     //! Return the size of the list (not the number of packed elements)
     Index size() const noexcept { return list_.size(); }
@@ -254,10 +256,11 @@ public:
     //! Resize the packed list
     void resize(Index count) { list_.resize(count); }
     //! Add a new element to the packed list
-    void push_back(const decltype(list_)::value_type& value) { list_.push_back(value); }
+    void push_back(const typename decltype(list_)::value_type& value) { list_.push_back(value); }
 };
 
 //! Struct for storing the atom-pair interaction bits for a cluster pair in a GPU pairlist
+template<PairlistType layoutType>
 struct nbnxn_excl_t
 {
     //! Constructor, sets no exclusions, so all atom pairs interacting
@@ -272,7 +275,7 @@ struct nbnxn_excl_t
     MSVC_DIAGNOSTIC_RESET
 
     //! Topology exclusion interaction bits per warp
-    unsigned int pair[sc_gpuExclSize(sc_layoutType)];
+    unsigned int pair[sc_gpuExclSize(layoutType)];
     //! Check if two instances are the same.
     bool operator==(const nbnxn_excl_t& other) const
     {
@@ -319,6 +322,7 @@ struct NbnxnPairlistCpu
  *       all vectors should use default initialization. But when
  *       changing this, excl should be initialized when adding entries.
  */
+template<PairlistType layoutType>
 struct NbnxnPairlistGpu
 {
     /*! \brief Constructor
@@ -341,9 +345,9 @@ struct NbnxnPairlistGpu
     //! The i-super-cluster list, indexes into cjPacked list;
     HostVector<nbnxn_sci_t> sci;
     //! The list of packed j-cluster groups
-    PackedJClusterList cjPacked;
+    PackedJClusterList<layoutType> cjPacked;
     //! Atom interaction bits (non-exclusions)
-    HostVector<nbnxn_excl_t> excl;
+    HostVector<nbnxn_excl_t<layoutType>> excl;
     //! The total number of i-clusters
     int nci_tot;
 

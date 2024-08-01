@@ -85,7 +85,7 @@ namespace gmx
 {
 
 Grid::Geometry::Geometry(const PairlistType pairlistType) :
-    isSimple_(pairlistType != PairlistType::Hierarchical8x8x8),
+    isSimple_(!isGpuSpecificPairlist(pairlistType)),
     numAtomsICluster_(IClusterSizePerListType[pairlistType]),
     numAtomsJCluster_(JClusterSizePerListType[pairlistType]),
     numAtomsPerCell_((isSimple_ ? 1 : sc_gpuNumClusterPerCell(pairlistType)) * numAtomsICluster_),

@@ -47,6 +47,7 @@
 
 #include "gromacs/gpu_utils/gpu_macros.h"
 #include "gromacs/mdtypes/locality.h"
+#include "gromacs/nbnxm/nbnxm_enums.h"
 
 #include "nbnxm.h"
 
@@ -59,10 +60,11 @@ namespace gmx
 struct NbnxmGpu;
 struct NBAtomDataGpu;
 struct nbnxn_atomdata_t;
+template<PairlistType>
 struct NbnxnPairlistGpu;
 struct PairlistParams;
 class DeviceStreamManager;
-
+template<PairlistType>
 class GpuPairlist;
 
 /** Initializes the data structures related to GPU nonbonded calculations. */
@@ -75,10 +77,18 @@ NbnxmGpu* gpu_init(const DeviceStreamManager gmx_unused& deviceStreamManager,
                    bool gmx_unused bLocalAndNonlocal) GPU_FUNC_TERM_WITH_RETURN(nullptr);
 
 /** Initializes pair-list data for GPU, called at every pair search step. */
-GPU_FUNC_QUALIFIER
-void gpu_init_pairlist(NbnxmGpu gmx_unused*                      nb,
-                       const struct NbnxnPairlistGpu gmx_unused* h_nblist,
-                       InteractionLocality gmx_unused            iloc) GPU_FUNC_TERM;
+template<PairlistType pairlistType>
+GPU_FUNC_QUALIFIER void gpu_init_pairlist(NbnxmGpu gmx_unused* nb,
+                                          const struct NbnxnPairlistGpu<pairlistType> gmx_unused* h_nblist,
+                                          InteractionLocality gmx_unused iloc) GPU_FUNC_TERM;
+
+#if GMX_GPU
+extern template void gpu_init_pairlist<PairlistType::Hierarchical8x8x8>(
+        NbnxmGpu*                                                nb,
+        const NbnxnPairlistGpu<PairlistType::Hierarchical8x8x8>* h_nblist,
+        InteractionLocality                                      iloc);
+
+#endif
 
 /** Initializes atom-data on the GPU, called at every pair search step. */
 GPU_FUNC_QUALIFIER
@@ -136,17 +146,31 @@ DeviceBuffer<RVec> gpu_get_f(NbnxmGpu gmx_unused* nb) GPU_FUNC_TERM_WITH_RETURN(
  * This is only used for CUDA/HIP, where the actual size is calculate based on the list.
  * For SYCL, the default value of 0 is important for the code to work correctly, this is why we have it set here.
  * */
-CUDA_HIP_FUNC_QUALIFIER
-size_t getExclusiveScanWorkingArraySize(GpuPairlist*        CUDA_HIP_FUNC_ARGUMENT(plist),
-                                        const DeviceStream& CUDA_HIP_FUNC_ARGUMENT(deviceStream))
+template<PairlistType pairlistType>
+CUDA_HIP_FUNC_QUALIFIER size_t
+getExclusiveScanWorkingArraySize(GpuPairlist<pairlistType>* CUDA_HIP_FUNC_ARGUMENT(plist),
+                                 const DeviceStream&        CUDA_HIP_FUNC_ARGUMENT(deviceStream))
         CUDA_HIP_FUNC_TERM_WITH_RETURN(0);
 
 /*! \brief Perform exclusive scan to obtain input for sci sorting. */
-CUDA_HIP_FUNC_QUALIFIER
-void performExclusiveScan(size_t       CUDA_HIP_FUNC_ARGUMENT(temporaryBufferSize),
-                          char*        CUDA_HIP_FUNC_ARGUMENT(temporaryBuffer),
-                          GpuPairlist* CUDA_HIP_FUNC_ARGUMENT(plist),
-                          const DeviceStream& CUDA_HIP_FUNC_ARGUMENT(deviceStream)) CUDA_HIP_FUNC_TERM;
+template<PairlistType pairlistType>
+CUDA_HIP_FUNC_QUALIFIER void
+performExclusiveScan(size_t                     CUDA_HIP_FUNC_ARGUMENT(temporaryBufferSize),
+                     char*                      CUDA_HIP_FUNC_ARGUMENT(temporaryBuffer),
+                     GpuPairlist<pairlistType>* CUDA_HIP_FUNC_ARGUMENT(plist),
+                     const DeviceStream& CUDA_HIP_FUNC_ARGUMENT(deviceStream)) CUDA_HIP_FUNC_TERM;
+
+#if GMX_GPU_CUDA || GMX_GPU_HIP
+extern template size_t getExclusiveScanWorkingArraySize<PairlistType::Hierarchical8x8x8>(
+        GpuPairlist<PairlistType::Hierarchical8x8x8>* plist,
+        const DeviceStream&                           deviceStream);
+
+extern template void performExclusiveScan<PairlistType::Hierarchical8x8x8>(
+        size_t                                        temporaryBufferSize,
+        char*                                         temporaryBuffer,
+        GpuPairlist<PairlistType::Hierarchical8x8x8>* plist,
+        const DeviceStream&                           deviceStream);
+#endif
 
 } // namespace gmx
 

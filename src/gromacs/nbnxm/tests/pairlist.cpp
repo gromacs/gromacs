@@ -51,8 +51,10 @@
 #    include "gromacs/gpu_utils/devicebuffer.h"
 #    include "gromacs/gpu_utils/gpu_utils.h"
 #    include "gromacs/gpu_utils/hostallocator.h"
+#    include "gromacs/hardware/architecture.h"
 #    include "gromacs/hardware/device_management.h"
 #    include "gromacs/nbnxm/gpu_types_common.h"
+#    include "gromacs/utility/template_mp.h"
 
 #    include "testutils/test_hardware_environment.h"
 #    include "testutils/testasserts.h"
@@ -71,15 +73,16 @@ namespace
 {
 
 //! Helper wrapper for host resident data
+template<PairlistType pairlistType>
 struct HostBuffers
 {
-    HostVector<nbnxn_sci_t>       h_sci;
-    HostVector<nbnxn_cj_packed_t> h_cjPacked;
-    HostVector<nbnxn_excl_t>      h_excl;
-    HostVector<int>               h_rollingPrunePart;
+    HostVector<nbnxn_sci_t>                     h_sci;
+    HostVector<nbnxn_cj_packed_t<pairlistType>> h_cjPacked;
+    HostVector<nbnxn_excl_t<pairlistType>>      h_excl;
+    HostVector<int>                             h_rollingPrunePart;
 
     //! We only build this with our test data size and with pinning when possible
-    HostBuffers(int dataSize)
+    HostBuffers<pairlistType>(int dataSize)
     {
         changePinningPolicy(&h_sci, gmx::PinningPolicy::PinnedIfSupported);
         changePinningPolicy(&h_cjPacked, gmx::PinningPolicy::PinnedIfSupported);
@@ -94,7 +97,8 @@ struct HostBuffers
 };
 
 //! Allocate device side buffers for testing
-void allocateDeviceBuffers(GpuPairlist* pairlist, int allocationSize, const DeviceContext& deviceContext)
+template<PairlistType pairlistType>
+void allocateDeviceBuffers(GpuPairlist<pairlistType>* pairlist, int allocationSize, const DeviceContext& deviceContext)
 {
     pairlist->sciAllocationSize                  = allocationSize;
     pairlist->packedJClustersAllocationSize      = allocationSize;
@@ -108,9 +112,10 @@ void allocateDeviceBuffers(GpuPairlist* pairlist, int allocationSize, const Devi
 }
 
 //! Set up host resident data structures with junk test data.
-HostBuffers prepareHostBuffers(int dataSize)
+template<PairlistType pairlistType>
+HostBuffers<pairlistType> prepareHostBuffers(int dataSize)
 {
-    HostBuffers hostbuffers(dataSize);
+    HostBuffers<pairlistType> hostbuffers(dataSize);
 
     int counter = 0;
     for (auto& value : hostbuffers.h_sci)
@@ -123,11 +128,11 @@ HostBuffers prepareHostBuffers(int dataSize)
 
     for (auto& value : hostbuffers.h_cjPacked)
     {
-        for (int index = 0; index < sc_gpuClusterPairSplit(sc_layoutType); index++)
+        for (int index = 0; index < sc_gpuClusterPairSplit(pairlistType); index++)
         {
             value.imei[index].excl_ind = counter++;
         }
-        for (int index = 0; index < sc_gpuJgroupSize(sc_layoutType); index++)
+        for (int index = 0; index < sc_gpuJgroupSize(pairlistType); index++)
         {
             value.cj[index] = counter++;
         }
@@ -135,7 +140,7 @@ HostBuffers prepareHostBuffers(int dataSize)
 
     for (auto& value : hostbuffers.h_excl)
     {
-        for (int index = 0; index < sc_gpuExclSize(sc_layoutType); index++)
+        for (int index = 0; index < sc_gpuExclSize(pairlistType); index++)
         {
             value.pair[index] = counter++;
         }
@@ -150,10 +155,11 @@ HostBuffers prepareHostBuffers(int dataSize)
 }
 
 //! H2D data transfer. Only for checking device side data, transfer is tested elsewhere
-void transferHostToDevice(GpuPairlist*        pairlist,
-                          const HostBuffers&  hostbuffers,
-                          int                 dataSize,
-                          const DeviceStream& deviceStream)
+template<PairlistType pairlistType>
+void transferHostToDevice(GpuPairlist<pairlistType>*       pairlist,
+                          const HostBuffers<pairlistType>& hostbuffers,
+                          int                              dataSize,
+                          const DeviceStream&              deviceStream)
 {
 
     copyToDeviceBuffer(
@@ -177,7 +183,11 @@ void transferHostToDevice(GpuPairlist*        pairlist,
 }
 
 //! D2H data transfer. Only for checking device side data, transfer is tested elsewhere
-void transferDeviceToHost(GpuPairlist* pairlist, HostBuffers* hostbuffers, int dataSize, const DeviceStream& deviceStream)
+template<PairlistType pairlistType>
+void transferDeviceToHost(GpuPairlist<pairlistType>* pairlist,
+                          HostBuffers<pairlistType>* hostbuffers,
+                          int                        dataSize,
+                          const DeviceStream&        deviceStream)
 {
 
     copyFromDeviceBuffer(
@@ -201,12 +211,13 @@ void transferDeviceToHost(GpuPairlist* pairlist, HostBuffers* hostbuffers, int d
 }
 
 //! Set up pairlist data structure and transfer data to it
-void initPairlistWithData(int                  dataSize,
-                          int                  allocationSize,
-                          GpuPairlist*         pairlist,
-                          const HostBuffers&   hostbuffers,
-                          const DeviceContext& deviceContext,
-                          const DeviceStream&  deviceStream)
+template<PairlistType pairlistType>
+void initPairlistWithData(int                              dataSize,
+                          int                              allocationSize,
+                          GpuPairlist<pairlistType>*       pairlist,
+                          const HostBuffers<pairlistType>& hostbuffers,
+                          const DeviceContext&             deviceContext,
+                          const DeviceStream&              deviceStream)
 {
     allocateDeviceBuffers(pairlist, allocationSize, deviceContext);
 
@@ -214,7 +225,8 @@ void initPairlistWithData(int                  dataSize,
 }
 
 //! Check that all fields in pairlist are properly allocated
-void checkPairlistConsistency(const GpuPairlist& pairlist, int allocationSize)
+template<PairlistType pairlistType>
+void checkPairlistConsistency(const GpuPairlist<pairlistType>& pairlist, int allocationSize)
 {
     checkDeviceBuffer(pairlist.sci, allocationSize);
     checkDeviceBuffer(pairlist.cjPacked, allocationSize);
@@ -223,12 +235,13 @@ void checkPairlistConsistency(const GpuPairlist& pairlist, int allocationSize)
 }
 
 //! Check that device buffer data is valid after transfer to back and forth
-void checkValuesFromPairlist(GpuPairlist*        pairlist,
-                             const HostBuffers&  inputBuffers,
-                             int                 dataSize,
-                             const DeviceStream& deviceStream)
+template<PairlistType pairlistType>
+void checkValuesFromPairlist(GpuPairlist<pairlistType>*       pairlist,
+                             const HostBuffers<pairlistType>& inputBuffers,
+                             int                              dataSize,
+                             const DeviceStream&              deviceStream)
 {
-    HostBuffers fromDevice(dataSize);
+    HostBuffers<pairlistType> fromDevice(dataSize);
 
     transferDeviceToHost(pairlist, &fromDevice, dataSize, deviceStream);
 
@@ -244,18 +257,29 @@ TEST(GpuPairlistTest, PairlistInitWorks)
     for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
     {
         testDevice->deviceContext().activate();
+        auto          pairlistType   = PairlistType::Hierarchical8x8x8;
         constexpr int dataSize       = 23;
         constexpr int allocationSize = 42;
-        GpuPairlist   pairlist{};
-        auto          hostbuffers = prepareHostBuffers(dataSize);
-        initPairlistWithData(dataSize,
-                             allocationSize,
-                             &pairlist,
-                             hostbuffers,
-                             testDevice->deviceContext(),
-                             testDevice->deviceStream());
-        checkPairlistConsistency(pairlist, allocationSize);
-        checkValuesFromPairlist(&pairlist, hostbuffers, dataSize, testDevice->deviceStream());
+
+        gmx::dispatchTemplatedFunction(
+                [&](auto pairlistType_)
+                {
+                    if constexpr (isGpuSpecificPairlist(pairlistType_))
+                    {
+                        GpuPairlist<pairlistType_> pairlist{};
+                        auto hostbuffers = prepareHostBuffers<pairlistType_>(dataSize);
+                        initPairlistWithData(dataSize,
+                                             allocationSize,
+                                             &pairlist,
+                                             hostbuffers,
+                                             testDevice->deviceContext(),
+                                             testDevice->deviceStream());
+                        checkPairlistConsistency(pairlist, allocationSize);
+                        checkValuesFromPairlist(
+                                &pairlist, hostbuffers, dataSize, testDevice->deviceStream());
+                    }
+                },
+                pairlistType);
     }
 }
 

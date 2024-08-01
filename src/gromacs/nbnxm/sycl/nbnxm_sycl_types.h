@@ -43,6 +43,7 @@
 #define NBNXM_SYCL_TYPES_H
 
 #include <memory>
+#include <variant>
 
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/devicebuffer_sycl.h"
@@ -99,7 +100,7 @@ struct NbnxmGpu
     /*! \brief parameters required for the non-bonded calc. */
     NBParamGpu* nbparam = nullptr;
     /*! \brief pair-list data structures (local and non-local) */
-    EnumerationArray<InteractionLocality, std::unique_ptr<GpuPairlist>> plist = { { nullptr } };
+    std::variant<EnumerationArray<InteractionLocality, std::unique_ptr<GpuPairlist<PairlistType::Hierarchical8x8x8>>>> plist;
     /*! \brief staging area where fshift/energies get downloaded. Will be removed in SYCL. */
     NBStagingData nbst;
     /*! \brief local and non-local GPU streams */

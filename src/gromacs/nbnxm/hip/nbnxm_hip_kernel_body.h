@@ -571,7 +571,7 @@ reduceEnergyWarpShuffle(float localLJ, float localEl, float* gm_LJ, float* gm_El
  */
 template<bool doPruneNBL, bool doCalcEnergies, enum ElecType elecType, enum VdwType vdwType, int nthreadZ, int minBlocksPerMp, PairlistType pairlistType>
 __launch_bounds__(c_clSizeSq<pairlistType>* nthreadZ, minBlocksPerMp) __global__
-        static void nbnxmKernel(NBAtomDataGpu atdat, NBParamGpu nbparam, GpuPairlist plist, bool doCalcShift)
+        static void nbnxmKernel(NBAtomDataGpu atdat, NBParamGpu nbparam, GpuPairlist<pairlistType> plist, bool doCalcShift)
 {
     {
 
@@ -593,8 +593,8 @@ __launch_bounds__(c_clSizeSq<pairlistType>* nthreadZ, minBlocksPerMp) __global__
         const int bidx       = blockIdx.x;
         const int tidxInWarp = tidx & (c_parallelExecutionWidth - 1);
 
-        using NbnxmExcl     = nbnxn_excl_t;
-        using NbnxmCjPacked = nbnxn_cj_packed_t;
+        using NbnxmExcl     = nbnxn_excl_t<pairlistType>;
+        using NbnxmCjPacked = nbnxn_cj_packed_t<pairlistType>;
 
         AmdFastBuffer<const float4> gm_xq{ atdat.xq };
         float3*                     gm_f             = asFloat3(atdat.f);
@@ -1156,13 +1156,29 @@ void launchNbnxmKernelHelper(NbnxmGpu* nb, const StepWorkload& stepWork, const I
     const DeviceStream&      deviceStream = *nb->deviceStreams[iloc];
     const DeviceInformation& deviceInfo   = nb->deviceContext_->deviceInfo();
 
-    auto* plist = nb->plist[iloc].get();
+    std::visit(
+            [&](auto&& pairlists)
+            {
+                auto* plist                 = pairlists[iloc].get();
+                using T                     = std::decay_t<decltype(*plist)>;
+                constexpr auto pairlistType = getPairlistTypeFromPairlist<T>();
 
-    GMX_ASSERT(doPruneNBL == (plist->haveFreshList && !nb->didPrune[iloc]), "Wrong template called");
-    GMX_ASSERT(doCalcEnergies == stepWork.computeEnergy, "Wrong template called");
+                GMX_ASSERT(doPruneNBL == (plist->haveFreshList && !nb->didPrune[iloc]),
+                           "Wrong template called");
+                GMX_ASSERT(doCalcEnergies == stepWork.computeEnergy, "Wrong template called");
 
-    chooseAndLaunchNbnxmKernel<sc_layoutType, hasLargeRegisterPool, doPruneNBL, doCalcEnergies>(
-            nbp->elecType, nbp->vdwType, deviceStream, plist->numSci, deviceInfo, adat, nbp, plist, &stepWork.computeVirial);
+                chooseAndLaunchNbnxmKernel<pairlistType, hasLargeRegisterPool, doPruneNBL, doCalcEnergies>(
+                        nbp->elecType,
+                        nbp->vdwType,
+                        deviceStream,
+                        plist->numSci,
+                        deviceInfo,
+                        adat,
+                        nbp,
+                        plist,
+                        &stepWork.computeVirial);
+            },
+            nb->plist);
 }
 
 } // namespace gmx

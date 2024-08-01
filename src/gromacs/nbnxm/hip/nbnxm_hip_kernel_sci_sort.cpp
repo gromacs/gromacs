@@ -49,6 +49,9 @@
 namespace gmx
 {
 
+namespace
+{
+
 /*! \brief HIP bucket sci sort kernel.
  *
  *  Sorts sci in order from most to least neighbours, using the count sort algorithm
@@ -65,8 +68,9 @@ namespace gmx
  *     have in the sorted sci list. All other sci with i neighbours will be placed randomly in
  * positions plist.sorting.sciOffset[i] to plist.sorting.sciOffset[i+1] exclusive
  */
-template<int threadsPerBlock>
-__launch_bounds__(threadsPerBlock) __global__ void nbnxmKernelBucketSciSort(GpuPairlist plist)
+template<PairlistType pairlistType, int threadsPerBlock>
+__launch_bounds__(threadsPerBlock) __global__
+        void nbnxmKernelBucketSciSort(GpuPairlist<pairlistType> plist)
 {
     int size = plist.numSci;
 
@@ -90,7 +94,8 @@ __launch_bounds__(threadsPerBlock) __global__ void nbnxmKernelBucketSciSort(GpuP
 }
 
 //! \brief NBNXM kernel launch code.
-void launchNbnxmKernelHelperSciSort(const DeviceStream& deviceStream, GpuPairlist* plist)
+template<PairlistType pairlistType>
+void launchNbnxmKernelHelperSciSort(const DeviceStream& deviceStream, GpuPairlist<pairlistType>* plist)
 {
     performExclusiveScan(plist->sorting.nscanTemporary, plist->sorting.scanTemporary, plist, deviceStream);
 
@@ -98,19 +103,31 @@ void launchNbnxmKernelHelperSciSort(const DeviceStream& deviceStream, GpuPairlis
     configSortSci.blockSize[0]     = c_sciSortingThreadsPerBlock;
     configSortSci.blockSize[1]     = 1;
     configSortSci.blockSize[2]     = 1;
-    configSortSci.gridSize[0]      = gmx::divideRoundUp(plist->numSci, c_sciSortingThreadsPerBlock);
+    configSortSci.gridSize[0]      = divideRoundUp(plist->numSci, c_sciSortingThreadsPerBlock);
     configSortSci.sharedMemorySize = 0;
-    const auto kernelSciSort       = nbnxmKernelBucketSciSort<c_sciSortingThreadsPerBlock>;
-    const auto kernelSciSortArgs   = prepareGpuKernelArguments(kernelSciSort, configSortSci, plist);
+    const auto kernelSciSort = nbnxmKernelBucketSciSort<pairlistType, c_sciSortingThreadsPerBlock>;
+    const auto kernelSciSortArgs = prepareGpuKernelArguments(kernelSciSort, configSortSci, plist);
 
     launchGpuKernel(kernelSciSort, configSortSci, deviceStream, nullptr, "nbnxn_kernel_sci_sort", kernelSciSortArgs);
 }
 
+} // namespace
+
 void launchNbnxmKernelSciSort(NbnxmGpu* nb, InteractionLocality iloc)
 {
     const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
-    auto*               plist        = nb->plist[iloc].get();
-    launchNbnxmKernelHelperSciSort(deviceStream, plist);
+    std::visit(
+            [&](auto&& pairlists)
+            {
+                auto* plist                 = pairlists[iloc].get();
+                using T                     = std::decay_t<decltype(*plist)>;
+                constexpr auto pairlistType = gmx::getPairlistTypeFromPairlist<T>();
+                if constexpr (isGpuSpecificPairlist(pairlistType))
+                {
+                    launchNbnxmKernelHelperSciSort<pairlistType>(deviceStream, plist);
+                }
+            },
+            nb->plist);
 }
 
 } // namespace gmx

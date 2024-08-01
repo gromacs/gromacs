@@ -176,46 +176,56 @@ void nbnxn_gpu_compile_kernels(NbnxmGpu* nb)
         std::string extraDefines =
                 makeDefinesForKernelTypes(bFastGen, nb->nbparam->elecType, nb->nbparam->vdwType);
 
-        /* Here we pass macros and static const/constexpr int variables defined
-         * in include files outside the opencl as macros, to avoid
-         * including those files in the plain-C JIT compilation that happens
-         * at runtime.
-         * Note that we need to re-add the the suffix to the floating point literals
-         * passed the to the kernel to avoid type ambiguity.
-         */
-        extraDefines += gmx::formatString(
-                " -Dc_nbnxnGpuClusterSize=%d"
-                " -DNBNXM_MIN_DISTANCE_SQUARED_VALUE_FLOAT=%g"
-                " -Dc_nbnxnGpuNumClusterPerSupercluster=%d"
-                " -Dc_nbnxnGpuJgroupSize=%d"
-                " -Dc_centralShiftIndex=%d"
-                "%s",
-                sc_gpuClusterSize(sc_layoutType),
-                c_nbnxnMinDistanceSquared,
-                sc_gpuClusterPerSuperCluster(sc_layoutType),
-                sc_gpuJgroupSize(sc_layoutType),
-                gmx::c_centralShiftIndex,
-                (nb->bPrefetchLjParam) ? " -DIATYPE_SHMEM" : "");
-        try
-        {
-            /* TODO when we have a proper MPI-aware logging module,
-               the log output here should be written there */
-            program = gmx::ocl::compileProgram(stderr,
-                                               "gromacs/nbnxm/opencl",
-                                               "nbnxm_ocl_kernels.cl",
-                                               extraDefines,
-                                               nb->deviceContext_->context(),
-                                               nb->deviceContext_->deviceInfo().oclDeviceId,
-                                               nb->deviceContext_->deviceInfo().deviceVendor);
-        }
-        catch (gmx::GromacsException& e)
-        {
-            e.prependContext(
-                    gmx::formatString("Failed to compile/load nbnxm kernels for GPU #%d %s\n",
-                                      nb->deviceContext_->deviceInfo().id,
-                                      nb->deviceContext_->deviceInfo().device_name));
-            throw;
-        }
+        std::visit(
+                [&](auto&& pairlist)
+                {
+                    auto* plist               = pairlist[gmx::InteractionLocality::Local].get();
+                    using T                   = std::decay_t<decltype(*plist)>;
+                    constexpr auto layoutType = getPairlistTypeFromPairlist<T>();
+
+
+                    /* Here we pass macros and static const/constexpr int variables defined
+                     * in include files outside the opencl as macros, to avoid
+                     * including those files in the plain-C JIT compilation that happens
+                     * at runtime.
+                     * Note that we need to re-add the the suffix to the floating point literals
+                     * passed the to the kernel to avoid type ambiguity.
+                     */
+                    extraDefines += gmx::formatString(
+                            " -Dc_nbnxnGpuClusterSize=%d"
+                            " -DNBNXM_MIN_DISTANCE_SQUARED_VALUE_FLOAT=%g"
+                            " -Dc_nbnxnGpuNumClusterPerSupercluster=%d"
+                            " -Dc_nbnxnGpuJgroupSize=%d"
+                            " -Dc_centralShiftIndex=%d"
+                            "%s",
+                            sc_gpuClusterSize(layoutType),
+                            c_nbnxnMinDistanceSquared,
+                            sc_gpuClusterPerSuperCluster(layoutType),
+                            sc_gpuJgroupSize(layoutType),
+                            gmx::c_centralShiftIndex,
+                            (nb->bPrefetchLjParam) ? " -DIATYPE_SHMEM" : "");
+                    try
+                    {
+                        /* TODO when we have a proper MPI-aware logging module,
+                           the log output here should be written there */
+                        program = gmx::ocl::compileProgram(stderr,
+                                                           "gromacs/nbnxm/opencl",
+                                                           "nbnxm_ocl_kernels.cl",
+                                                           extraDefines,
+                                                           nb->deviceContext_->context(),
+                                                           nb->deviceContext_->deviceInfo().oclDeviceId,
+                                                           nb->deviceContext_->deviceInfo().deviceVendor);
+                    }
+                    catch (gmx::GromacsException& e)
+                    {
+                        e.prependContext(gmx::formatString(
+                                "Failed to compile/load nbnxm kernels for GPU #%d %s\n",
+                                nb->deviceContext_->deviceInfo().id,
+                                nb->deviceContext_->deviceInfo().device_name));
+                        throw;
+                    }
+                },
+                nb->plist);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 

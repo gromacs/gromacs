@@ -67,7 +67,7 @@ enum class ClusterDistanceKernelType : int
 static inline ClusterDistanceKernelType getClusterDistanceKernelType(const PairlistType pairlistType,
                                                                      const nbnxn_atomdata_t& atomdata)
 {
-    if (pairlistType == PairlistType::Hierarchical8x8x8)
+    if (isGpuSpecificPairlist(pairlistType))
     {
         return ClusterDistanceKernelType::Gpu;
     }

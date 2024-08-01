@@ -229,6 +229,11 @@ gmx_add_nvcc_flag_if_supported(GMX_CUDA_NVCC_FLAGS NVCC_HAS_STATIC_GLOBAL_TEMPLA
 # Add warnings
 gmx_add_nvcc_flag_if_supported(GMX_CUDA_NVCC_FLAGS NVCC_HAS_PTXAS_WARN_DOUBLE_USAGE -Xptxas=-warn-double-usage)
 gmx_add_nvcc_flag_if_supported(GMX_CUDA_NVCC_FLAGS NVCC_HAS_PTXAS_WERROR -Xptxas=-Werror)
+# debug flags
+string(TOUPPER "${CMAKE_BUILD_TYPE}" _cmake_build_type)
+if(${_cmake_build_type} MATCHES "DEB") # should match all builds that include debug symbols, but exclude other RELWITH* builds
+        gmx_add_nvcc_flag_if_supported(GMX_CUDA_NVCC_FLAGS NVCC_HAS_LINEINFO -lineinfo)
+endif()
 
 # strip gencode/arch from GMX_CUDA_NVCC_GENCODE_FLAGS only keep the arch numbers
 string(REGEX REPLACE "([A-Za-z=_-])" ""  GMX_CUDA_NVCC_GENCODE_FLAGS "${GMX_CUDA_NVCC_GENCODE_FLAGS}")

@@ -658,7 +658,7 @@ void setupDynamicPairlistPruning(const MDLogger&            mdlog,
                                     JClusterSizePerListType[listParams->pairlistType] };
 
     /* Currently emulation mode does not support dual pair-lists */
-    const bool useGpuList = sc_isGpuPairListType[listParams->pairlistType];
+    const bool useGpuList = isGpuSpecificPairlist(listParams->pairlistType);
 
     if (supportsDynamicPairlistGenerationInterval(inputrec) && getenv("GMX_DISABLE_DYNAMICPRUNING") == nullptr)
     {
@@ -813,7 +813,7 @@ void printNbnxmPressureError(const MDLogger&       mdlog,
     if (listParams.useDynamicPruning)
     {
         /* Currently emulation mode does not support dual pair-lists */
-        const bool useGpuList = sc_isGpuPairListType[listParams.pairlistType];
+        const bool useGpuList = isGpuSpecificPairlist(listParams.pairlistType);
 
         // Add the error due to the pruning of the inner list.
         // The errors are not completely independent, so this results
