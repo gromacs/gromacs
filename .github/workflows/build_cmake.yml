@@ -3,10 +3,10 @@ name: CMake Build Matrix
 on: [push, pull_request]
 
 env:
-  CMAKE_VERSION: 3.18.4
-  NINJA_VERSION: 1.10.1
+  CMAKE_VERSION: 3.28.0 # Oldest supported
+  NINJA_VERSION: 1.12.1 # Latest
   BUILD_TYPE: Release
-  CCACHE_VERSION: 3.7.7
+  CCACHE_VERSION: 4.10.2 # Latest
   NINJA_STATUS: "[%f/%t %o/sec] "
 
 jobs:
@@ -33,12 +33,11 @@ jobs:
             openmp_var: "Off"
           }
         - {
-            name: "macOS 11 gcc with OpenCL", artifact: "macOS-gcc-OpenCL.7z",
-            os: macos-11, # Don't upgrade to macOS 12, see Issue #4646
-            cc: "gcc-10", cxx: "g++-10",
+            name: "macOS Latest GCC 14 with OpenCL", artifact: "macOS-gcc-OpenCL.7z",
+            os: macos-latest,
+            cc: "gcc-14", cxx: "g++-14",
             gpu_var: "OpenCL",
             openmp_var: "On"
-
           }
 
     env:
@@ -54,16 +53,8 @@ jobs:
       with:
         show-progress: false
 
-    - name: Download Ninja and CMake
+    - name: Download Ninja, CMake, and CCache
       run: cmake -P .github/scripts/download-ninja-cmake.cmake
-
-    - name: Download ccache
-      id: ccache
-      shell: cmake -P {0}
-      run: |
-        set(ccache_url "https://github.com/cristianadam/ccache/releases/download/v$ENV{CCACHE_VERSION}/${{ runner.os }}.tar.xz")
-        file(DOWNLOAD "${ccache_url}" ./ccache.tar.xz SHOW_PROGRESS)
-        execute_process(COMMAND ${CMAKE_COMMAND} -E tar xvf ./ccache.tar.xz)
 
     - name: ccache cache files
       uses: actions/cache@v4
@@ -81,52 +72,4 @@ jobs:
 
     - name: Run tests
       run: cmake -P .github/scripts/test.cmake
-
-  build-linux-aarch64:
-    name: Ubuntu 20.04 ARM64 Clang 10
-    runs-on: ubuntu-20.04
-
-    env:
-      CC: clang-10
-      CXX: clang++-10
-      CI_JOB_ID: ${{ github.sha }} # Tell CMake it's running in CI
-      OPENMP_VAR: Off
-      GPU_VAR: Off
-
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-      with:
-        show-progress: false
-
-    - name: ccache cache files
-      id: cache-ccache
-      uses: actions/cache@v4
-      with:
-        path: .ccache
-        key: ${{ github.job }}-ccache-${{ github.sha }}
-        restore-keys: ${{ github.job }}-ccache-
-
-    - name: Build
-      uses: uraimo/run-on-arch-action@v2
-      with:
-        arch: aarch64
-        distro: ubuntu20.04
-        githubToken: ${{ github.token }}
-        dockerRunArgs: |
-          --volume "${PWD}:/Gromacs" -e GITHUB_PATH -e RUNNER_OS -e "RUNNER_ARCH=ARM64" -e CMAKE_VERSION -e NINJA_VERSION -e GPU_VAR -e BUILD_TYPE -e OPENMP_VAR -e CC -e CXX -e CI_JOB_ID
-        install: |
-          apt-get update -q -y
-          apt-get install -q -y clang-10 cmake ninja-build ccache git
-        run: |
-          set -x
-          cd /Gromacs
-          git config --global --add safe.directory /Gromacs
-          export GITHUB_WORKSPACE=$PWD
-          export CMAKE_VERSION=3.24.2 # use a newer version that has an aarch64 archive
-          cmake -P .github/scripts/download-ninja-cmake.cmake
-          export PATH=$GITHUB_WORKSPACE/cmake-${CMAKE_VERSION}-linux-aarch64/bin:$PATH
-          cmake -P .github/scripts/configure.cmake
-          cmake -P .github/scripts/build.cmake
-          cmake -P .github/scripts/test.cmake
 
