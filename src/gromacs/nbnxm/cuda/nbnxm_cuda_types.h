@@ -44,6 +44,7 @@
 #define NBNXM_CUDA_TYPES_H
 
 #include <memory>
+#include <variant>
 
 #include "gromacs/gpu_utils/cuda_arch_utils.cuh"
 #include "gromacs/gpu_utils/cudautils.cuh"
@@ -97,8 +98,8 @@ struct NbnxmGpu
     int ncxy_ind_alloc = 0;
     /*! \brief parameters required for the non-bonded calc. */
     NBParamGpu* nbparam = nullptr;
-    /*! \brief pair-list data structures (local and non-local) */
-    EnumerationArray<InteractionLocality, std::unique_ptr<GpuPairlist>> plist = { { nullptr } };
+    /*! \brief pair-list data structures (local and non-local). Only single variant supported for CUDA */
+    std::variant<EnumerationArray<InteractionLocality, std::unique_ptr<GpuPairlist<PairlistType::Hierarchical8x8x8>>>> plist;
     /*! \brief fep-list data structures (local and non-local) */
     EnumerationArray<InteractionLocality, std::unique_ptr<GpuFeplist>> feplist = { { nullptr } };
     /*! \brief host buffers required for the FEP H2D copies */
