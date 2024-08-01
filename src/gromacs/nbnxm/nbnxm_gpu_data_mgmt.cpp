@@ -85,6 +85,7 @@
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/template_mp.h"
 
 #include "atompairlist.h"
 #include "nbnxm_gpu.h"
@@ -256,9 +257,13 @@ GpuPairlistSorting::~GpuPairlistSorting()
 }
 
 
-GpuPairlist::GpuPairlist() {}
+template<PairlistType pairlistType>
+GpuPairlist<pairlistType>::GpuPairlist()
+{
+}
 
-GpuPairlist::~GpuPairlist()
+template<PairlistType pairlistType>
+GpuPairlist<pairlistType>::~GpuPairlist()
 {
     try
     {
@@ -291,6 +296,10 @@ GpuFeplist::~GpuFeplist()
         fprintf(stderr, "Internal error in destructor of GpuFeplist: %s\n", e.what());
     }
 }
+
+template GpuPairlist<PairlistType::Hierarchical8x8x8>::GpuPairlist();
+
+template GpuPairlist<PairlistType::Hierarchical8x8x8>::~GpuPairlist();
 
 static inline void init_timings(gmx_wallclock_gpu_nbnxn_t* t)
 {
@@ -525,15 +534,18 @@ static inline void initNbparam(NBParamGpu*                     nbp,
     }
 }
 
-using GpuPairlistByLocality = EnumerationArray<InteractionLocality, std::unique_ptr<GpuPairlist>>;
+template<PairlistType pairlistType>
+using GpuPairlistByLocality =
+        EnumerationArray<InteractionLocality, std::unique_ptr<GpuPairlist<pairlistType>>>;
 
-static GpuPairlistByLocality initializeGpuLists(bool localAndNonLocal)
+template<PairlistType pairlistType>
+static GpuPairlistByLocality<pairlistType> initializeGpuLists(bool localAndNonLocal)
 {
-    GpuPairlistByLocality list;
-    list[InteractionLocality::Local] = std::make_unique<GpuPairlist>();
+    GpuPairlistByLocality<pairlistType> list;
+    list[InteractionLocality::Local] = std::make_unique<GpuPairlist<pairlistType>>();
     if (localAndNonLocal)
     {
-        list[InteractionLocality::NonLocal] = std::make_unique<GpuPairlist>();
+        list[InteractionLocality::NonLocal] = std::make_unique<GpuPairlist<pairlistType>>();
     }
     return list;
 }
@@ -613,7 +625,15 @@ NbnxmGpu* gpu_init(const DeviceStreamManager& deviceStreamManager,
     nb->nbparam        = new NBParamGpu;
     nb->fephostdata    = new GpuFepHostData;
 
-    nb->plist = initializeGpuLists(bLocalAndNonlocal);
+    gmx::dispatchTemplatedFunction(
+            [&](auto pairlistType_)
+            {
+                if constexpr (sc_isGpuSpecificPairlist(pairlistType_))
+                {
+                    nb->plist = initializeGpuLists<pairlistType_>(bLocalAndNonlocal);
+                }
+            },
+            listParams.pairlistType);
 
     nb->bUseTwoStreams = bLocalAndNonlocal;
 
@@ -725,146 +745,155 @@ void gpu_upload_shiftvec(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom)
 }
 
 //! This function is documented in the header file
-void gpu_init_pairlist(NbnxmGpu* nb, const NbnxnPairlistGpu* h_plist, const InteractionLocality iloc)
+template<PairlistType pairlistType>
+void gpu_init_pairlist(NbnxmGpu* nb, const NbnxnPairlistGpu<pairlistType>* h_plist, const InteractionLocality iloc)
 {
-    char sbuf[STRLEN];
-    // Timing accumulation should happen only if there was work to do
-    // because getLastRangeTime() gets skipped with empty lists later
-    // which leads to the counter not being reset.
-    bool                bDoTime      = (nb->bDoTime && !h_plist->sci.empty());
-    const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
-    auto*               d_plist      = nb->plist[iloc].get();
+    if constexpr (sc_isGpuSpecificPairlist(pairlistType))
+    {
+        char sbuf[STRLEN];
+        // Timing accumulation should happen only if there was work to do
+        // because getLastRangeTime() gets skipped with empty lists later
+        // which leads to the counter not being reset.
+        bool                bDoTime      = (nb->bDoTime && !h_plist->sci.empty());
+        const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
+        auto& d_plist = std::get<GpuPairlistByLocality<pairlistType>>(nb->plist)[iloc];
 
-    if (d_plist->numAtomsPerCluster < 0)
-    {
-        d_plist->numAtomsPerCluster = h_plist->na_ci;
-    }
-    else
-    {
-        if (d_plist->numAtomsPerCluster != h_plist->na_ci)
+        if (d_plist->numAtomsPerCluster < 0)
         {
-            sprintf(sbuf,
-                    "In init_plist: the #atoms per cell has changed (from %d to %d)",
-                    d_plist->numAtomsPerCluster,
-                    h_plist->na_ci);
-            gmx_incons(sbuf);
+            d_plist->numAtomsPerCluster = h_plist->na_ci;
         }
-    }
+        else
+        {
+            if (d_plist->numAtomsPerCluster != h_plist->na_ci)
+            {
+                sprintf(sbuf,
+                        "In init_plist: the #atoms per cell has changed (from %d to %d)",
+                        d_plist->numAtomsPerCluster,
+                        h_plist->na_ci);
+                gmx_incons(sbuf);
+            }
+        }
 
-    GpuTimers::Interaction& iTimers = nb->timers->interaction[iloc];
+        GpuTimers::Interaction& iTimers = nb->timers->interaction[iloc];
 
-    if (bDoTime)
-    {
-        iTimers.pl_h2d.openTimingRegion(deviceStream);
-        iTimers.didPairlistH2D = true;
-    }
+        if (bDoTime)
+        {
+            iTimers.pl_h2d.openTimingRegion(deviceStream);
+            iTimers.didPairlistH2D = true;
+        }
 
-    // TODO most of this function is same in CUDA and OpenCL, move into the header
-    const DeviceContext& deviceContext = *nb->deviceContext_;
+        // TODO most of this function is same in CUDA and OpenCL, move into the header
+        const DeviceContext& deviceContext = *nb->deviceContext_;
 
-    reallocateDeviceBuffer(
-            &d_plist->sci, h_plist->sci.size(), &d_plist->numSci, &d_plist->sciAllocationSize, deviceContext);
-    copyToDeviceBuffer(&d_plist->sci,
-                       h_plist->sci.data(),
-                       0,
-                       h_plist->sci.size(),
-                       deviceStream,
-                       GpuApiCallBehavior::Async,
-                       bDoTime ? iTimers.pl_h2d.fetchNextEvent() : nullptr);
-
-    /* gpu sorting is only implemented for cuda */
-    if (nbnxmSortListsOnGpu())
-    {
-        reallocateDeviceBuffer(&d_plist->sorting.sciSorted,
-                               h_plist->sci.size(),
-                               &d_plist->sorting.nsciSorted,
-                               &d_plist->sorting.sciSortedNalloc,
-                               deviceContext);
-        copyToDeviceBuffer(&d_plist->sorting.sciSorted,
+        reallocateDeviceBuffer(
+                &d_plist->sci, h_plist->sci.size(), &d_plist->numSci, &d_plist->sciAllocationSize, deviceContext);
+        copyToDeviceBuffer(&d_plist->sci,
                            h_plist->sci.data(),
                            0,
                            h_plist->sci.size(),
                            deviceStream,
                            GpuApiCallBehavior::Async,
                            bDoTime ? iTimers.pl_h2d.fetchNextEvent() : nullptr);
-        reallocateDeviceBuffer(&d_plist->sorting.sciCount,
-                               h_plist->sci.size(),
-                               &d_plist->sorting.nsciCounted,
-                               &d_plist->sorting.sciCountedNalloc,
-                               deviceContext);
 
-        if (d_plist->sorting.nscanTemporary == -1)
+        /* gpu sorting is only implemented for cuda */
+        if (nbnxmSortListsOnGpu())
         {
-            reallocateDeviceBuffer(&d_plist->sorting.sciHistogram,
-                                   c_sciHistogramSize + 1,
-                                   &d_plist->sorting.nsciHistogram,
-                                   &d_plist->sorting.sciHistogramNalloc,
+            reallocateDeviceBuffer(&d_plist->sorting.sciSorted,
+                                   h_plist->sci.size(),
+                                   &d_plist->sorting.nsciSorted,
+                                   &d_plist->sorting.sciSortedNalloc,
+                                   deviceContext);
+            copyToDeviceBuffer(&d_plist->sorting.sciSorted,
+                               h_plist->sci.data(),
+                               0,
+                               h_plist->sci.size(),
+                               deviceStream,
+                               GpuApiCallBehavior::Async,
+                               bDoTime ? iTimers.pl_h2d.fetchNextEvent() : nullptr);
+            reallocateDeviceBuffer(&d_plist->sorting.sciCount,
+                                   h_plist->sci.size(),
+                                   &d_plist->sorting.nsciCounted,
+                                   &d_plist->sorting.sciCountedNalloc,
                                    deviceContext);
 
-            reallocateDeviceBuffer(&d_plist->sorting.sciOffset,
-                                   c_sciHistogramSize,
-                                   &d_plist->sorting.nsciOffset,
-                                   &d_plist->sorting.sciOffsetNalloc,
-                                   deviceContext);
+            if (d_plist->sorting.nscanTemporary == -1)
+            {
+                reallocateDeviceBuffer(&d_plist->sorting.sciHistogram,
+                                       c_sciHistogramSize + 1,
+                                       &d_plist->sorting.nsciHistogram,
+                                       &d_plist->sorting.sciHistogramNalloc,
+                                       deviceContext);
 
-            size_t scanTemporarySize = getExclusiveScanWorkingArraySize(d_plist, deviceStream);
+                reallocateDeviceBuffer(&d_plist->sorting.sciOffset,
+                                       c_sciHistogramSize,
+                                       &d_plist->sorting.nsciOffset,
+                                       &d_plist->sorting.sciOffsetNalloc,
+                                       deviceContext);
 
-            reallocateDeviceBuffer(&d_plist->sorting.scanTemporary,
-                                   scanTemporarySize,
-                                   &d_plist->sorting.nscanTemporary,
-                                   &d_plist->sorting.scanTemporaryNalloc,
-                                   deviceContext);
+                size_t scanTemporarySize = getExclusiveScanWorkingArraySize(d_plist.get(), deviceStream);
+
+                reallocateDeviceBuffer(&d_plist->sorting.scanTemporary,
+                                       scanTemporarySize,
+                                       &d_plist->sorting.nscanTemporary,
+                                       &d_plist->sorting.scanTemporaryNalloc,
+                                       deviceContext);
+            }
+
+            clearDeviceBufferAsync(&d_plist->sorting.sciHistogram, 0, c_sciHistogramSize, deviceStream);
         }
 
-        clearDeviceBufferAsync(&d_plist->sorting.sciHistogram, 0, c_sciHistogramSize, deviceStream);
-    }
-
-    reallocateDeviceBuffer(&d_plist->cjPacked,
+        reallocateDeviceBuffer(&d_plist->cjPacked,
+                               h_plist->cjPacked.size(),
+                               &d_plist->numPackedJClusters,
+                               &d_plist->packedJClustersAllocationSize,
+                               deviceContext);
+        copyToDeviceBuffer(&d_plist->cjPacked,
+                           h_plist->cjPacked.list_.data(),
+                           0,
                            h_plist->cjPacked.size(),
-                           &d_plist->numPackedJClusters,
-                           &d_plist->packedJClustersAllocationSize,
-                           deviceContext);
-    copyToDeviceBuffer(&d_plist->cjPacked,
-                       h_plist->cjPacked.list_.data(),
-                       0,
-                       h_plist->cjPacked.size(),
-                       deviceStream,
-                       GpuApiCallBehavior::Async,
-                       bDoTime ? iTimers.pl_h2d.fetchNextEvent() : nullptr);
+                           deviceStream,
+                           GpuApiCallBehavior::Async,
+                           bDoTime ? iTimers.pl_h2d.fetchNextEvent() : nullptr);
 
-    reallocateDeviceBuffer(&d_plist->imask,
-                           h_plist->cjPacked.size() * sc_gpuClusterPairSplit(sc_layoutType),
-                           &d_plist->numIMask,
-                           &d_plist->iMaskAllocationSize,
-                           deviceContext);
+        reallocateDeviceBuffer(&d_plist->imask,
+                               h_plist->cjPacked.size() * sc_gpuClusterPairSplit(pairlistType),
+                               &d_plist->numIMask,
+                               &d_plist->iMaskAllocationSize,
+                               deviceContext);
 
-    reallocateDeviceBuffer(
-            &d_plist->excl, h_plist->excl.size(), &d_plist->numExcl, &d_plist->exclAllocationSize, deviceContext);
-    copyToDeviceBuffer(&d_plist->excl,
-                       h_plist->excl.data(),
-                       0,
-                       h_plist->excl.size(),
-                       deviceStream,
-                       GpuApiCallBehavior::Async,
-                       bDoTime ? iTimers.pl_h2d.fetchNextEvent() : nullptr);
+        reallocateDeviceBuffer(
+                &d_plist->excl, h_plist->excl.size(), &d_plist->numExcl, &d_plist->exclAllocationSize, deviceContext);
+        copyToDeviceBuffer(&d_plist->excl,
+                           h_plist->excl.data(),
+                           0,
+                           h_plist->excl.size(),
+                           deviceStream,
+                           GpuApiCallBehavior::Async,
+                           bDoTime ? iTimers.pl_h2d.fetchNextEvent() : nullptr);
 
-    // Part index is managed on device, through a buffer containing a separate copy of the index
-    // per block, to allow asynchronous incrementation on the GPU without CPU involvement.
-    reallocateDeviceBuffer(&d_plist->d_rollingPruningPart,
-                           d_plist->numSci,
-                           &d_plist->d_rollingPruningPartSize,
-                           &d_plist->d_rollingPruningPartAllocationSize,
-                           *nb->deviceContext_);
-    clearDeviceBufferAsync(&d_plist->d_rollingPruningPart, 0, d_plist->numSci, deviceStream);
+        // Part index is managed on device, through a buffer containing a separate copy of the index
+        // per block, to allow asynchronous incrementation on the GPU without CPU involvement.
+        reallocateDeviceBuffer(&d_plist->d_rollingPruningPart,
+                               d_plist->numSci,
+                               &d_plist->d_rollingPruningPartSize,
+                               &d_plist->d_rollingPruningPartAllocationSize,
+                               *nb->deviceContext_);
+        clearDeviceBufferAsync(&d_plist->d_rollingPruningPart, 0, d_plist->numSci, deviceStream);
 
-    if (bDoTime)
-    {
-        iTimers.pl_h2d.closeTimingRegion(deviceStream);
+        if (bDoTime)
+        {
+            iTimers.pl_h2d.closeTimingRegion(deviceStream);
+        }
+
+        /* need to prune the pair list during the next step */
+        d_plist->haveFreshList = true;
     }
-
-    /* need to prune the pair list during the next step */
-    d_plist->haveFreshList = true;
 }
+
+template void gpu_init_pairlist<PairlistType::Hierarchical8x8x8>(
+        NbnxmGpu*                                                nb,
+        const NbnxnPairlistGpu<PairlistType::Hierarchical8x8x8>* h_plist,
+        const InteractionLocality                                iloc);
 
 void gpu_init_feppairlist(NbnxmGpu*                 nb,
                           const AtomPairlist&       h_feplist,
@@ -1239,8 +1268,14 @@ void setupGpuShortRangeWorkLow(NbnxmGpu*                 nb,
     // There is short-range work if the pair list for the provided
     // interaction locality contains entries or if there is any
     // bonded work (as this is not split into local/nonlocal).
-    nb->haveWork[iLocality] = ((nb->plist[iLocality]->numSci != 0)
-                               || (listedForcesGpu != nullptr && listedForcesGpu->haveInteractions()));
+    std::visit(
+            [&](auto&& plist)
+            {
+                nb->haveWork[iLocality] =
+                        ((plist[iLocality]->numSci != 0)
+                         || (listedForcesGpu != nullptr && listedForcesGpu->haveInteractions()));
+            },
+            nb->plist);
 }
 
 bool haveGpuShortRangeWork(const NbnxmGpu* nb, const InteractionLocality interactionLocality)
@@ -1482,7 +1517,6 @@ void gpu_copy_xq_to_gpu(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom, const Atom
     const InteractionLocality iloc = atomToInteractionLocality(atomLocality);
 
     NBAtomDataGpu*      adat         = nb->atdat;
-    auto*               plist        = nb->plist[iloc].get();
     GpuTimers*          timers       = nb->timers;
     const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
 
@@ -1499,7 +1533,7 @@ void gpu_copy_xq_to_gpu(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom, const Atom
      */
     if ((iloc == InteractionLocality::NonLocal) && !haveGpuShortRangeWork(nb, iloc))
     {
-        plist->haveFreshList = false;
+        std::visit([&](auto&& plist) { plist[iloc]->haveFreshList = false; }, nb->plist);
 
         // The event is marked for Local interactions unconditionally,
         // so it has to be released here because of the early return
