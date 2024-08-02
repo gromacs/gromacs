@@ -36,7 +36,6 @@
 #include "mdoutf.h"
 
 #include "config.h"
-#include "gmxpre-config.h"
 
 #include <cstdlib>
 #include <cstring>

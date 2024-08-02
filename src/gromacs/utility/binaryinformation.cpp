@@ -42,7 +42,6 @@
 #include "gromacs/utility/binaryinformation.h"
 
 #include "config.h"
-#include "gmxpre-config.h"
 
 #include <climits>
 

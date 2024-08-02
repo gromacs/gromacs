@@ -35,8 +35,6 @@
 
 #include "trajectory_writing.h"
 
-#include "gmxpre-config.h"
-
 #include <filesystem>
 #include <memory>
 

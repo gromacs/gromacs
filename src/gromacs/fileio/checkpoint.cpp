@@ -38,8 +38,6 @@
 
 #include "checkpoint.h"
 
-#include "gmxpre-config.h"
-
 #include <cerrno>
 #include <cinttypes>
 #include <cstdlib>

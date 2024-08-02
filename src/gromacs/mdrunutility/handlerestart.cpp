@@ -51,7 +51,6 @@
 #include "handlerestart.h"
 
 #include "config.h"
-#include "gmxpre-config.h"
 
 #include <fcntl.h>
 

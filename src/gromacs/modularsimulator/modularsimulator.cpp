@@ -42,8 +42,6 @@
 
 #include "modularsimulator.h"
 
-#include "gmxpre-config.h"
-
 #include <filesystem>
 #include <optional>
 #include <string_view>

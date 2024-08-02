@@ -42,8 +42,6 @@
 
 #include "logging.h"
 
-#include "gmxpre-config.h"
-
 #include <filesystem>
 #include <memory>
 #include <string>

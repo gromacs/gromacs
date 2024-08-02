@@ -36,7 +36,6 @@
 #include "gmxfio.h"
 
 #include "config.h"
-#include "gmxpre-config.h"
 
 #include <cerrno>
 #include <cstdio>

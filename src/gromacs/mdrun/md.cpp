@@ -40,8 +40,6 @@
  */
 #include "gmxpre.h"
 
-#include "gmxpre-config.h"
-
 #include <cinttypes>
 #include <cmath>
 #include <cstdio>

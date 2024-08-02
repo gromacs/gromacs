@@ -36,7 +36,6 @@
 #include "gromacs/utility/fatalerror.h"
 
 #include "config.h"
-#include "gmxpre-config.h"
 
 #include <cerrno>
 #include <cstdarg>

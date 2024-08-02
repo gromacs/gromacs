@@ -36,7 +36,6 @@
 #include "gromacs/utility/futil.h"
 
 #include "config.h"
-#include "gmxpre-config.h"
 
 #include <fcntl.h>
 

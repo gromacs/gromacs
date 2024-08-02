@@ -43,7 +43,6 @@
 #include "runner.h"
 
 #include "config.h"
-#include "gmxpre-config.h"
 
 #include <cassert>
 #include <cinttypes>
