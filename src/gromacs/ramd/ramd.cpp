@@ -36,6 +36,7 @@
 #include "ramd.h"
 
 #include <cassert>
+
 #include <numeric>
 
 #include "gromacs/commandline/filenm.h"
@@ -59,8 +60,8 @@ RAMD::RAMD(const RAMDParams&           params,
            int                         nfile,
            const t_filenm              fnm[],
            const gmx_output_env_t*     oenv,
-           FILE*                       log)
-  : params(params),
+           FILE*                       log) :
+    params(params),
     pull(pull),
     random_spherical_direction_generator(params.seed, params.old_angle_dist),
     direction(params.ngroup),
@@ -74,7 +75,7 @@ RAMD::RAMD(const RAMDParams&           params,
 {
     for (int g = 0; g < params.ngroup; ++g)
     {
-        register_external_pull_potential(pull, g * 3    , "RAMD");
+        register_external_pull_potential(pull, g * 3, "RAMD");
         register_external_pull_potential(pull, g * 3 + 1, "RAMD");
         register_external_pull_potential(pull, g * 3 + 2, "RAMD");
         direction[g] = random_spherical_direction_generator();
@@ -104,7 +105,7 @@ RAMD::RAMD(const RAMDParams&           params,
     }
 }
 
-void RAMD::calculateForces(const ForceProviderInput& forceProviderInput,
+void RAMD::calculateForces(const ForceProviderInput&             forceProviderInput,
                            [[maybe_unused]] ForceProviderOutput* forceProviderOutput)
 {
     t_pbc pbc;
@@ -150,10 +151,16 @@ void RAMD::calculateForces(const ForceProviderInput& forceProviderInput,
             if (MAIN(cr) and debug)
             {
                 fprintf(debug, "==== RAMD ==== group %d\n", g);
-                fprintf(debug, "==== RAMD ==== COM ligand position at [%g, %g, %g]\n",
-                        com_lig_curr[0], com_lig_curr[1], com_lig_curr[2]);
-                fprintf(debug, "==== RAMD ==== COM receptor position at [%g, %g, %g]\n",
-                        com_rec_curr[0], com_rec_curr[1], com_rec_curr[2]);
+                fprintf(debug,
+                        "==== RAMD ==== COM ligand position at [%g, %g, %g]\n",
+                        com_lig_curr[0],
+                        com_lig_curr[1],
+                        com_lig_curr[2]);
+                fprintf(debug,
+                        "==== RAMD ==== COM receptor position at [%g, %g, %g]\n",
+                        com_rec_curr[0],
+                        com_rec_curr[1],
+                        com_rec_curr[2]);
                 fprintf(debug,
                         "==== RAMD ==== Distance between COM of receptor and COM of ligand is %g\n",
                         curr_dist);
@@ -167,15 +174,21 @@ void RAMD::calculateForces(const ForceProviderInput& forceProviderInput,
             if (curr_dist >= params.group[g].max_dist)
             {
                 ligand_exited[g] = 1;
-                if (!params.connected_ligands) {
+                if (!params.connected_ligands)
+                {
                     direction[g] = DVec(0.0, 0.0, 0.0);
                 }
                 if (MAIN(cr))
                 {
-                    fprintf(this->log, "==== RAMD ==== RAMD group %d has exited the binding site in step %ld\n",
-                            g, step);
+                    fprintf(this->log,
+                            "==== RAMD ==== RAMD group %d has exited the binding site in step "
+                            "%ld\n",
+                            g,
+                            step);
                 }
-            } else if (ligand_exited[g] == 1) {
+            }
+            else if (ligand_exited[g] == 1)
+            {
                 ligand_exited[g] = 0;
             }
 
@@ -186,12 +199,19 @@ void RAMD::calculateForces(const ForceProviderInput& forceProviderInput,
 
             if (MAIN(cr) and debug)
             {
-                fprintf(debug, "==== RAMD ==== Previous COM ligand position at [%g, %g, %g]\n",
-                        com_lig_prev[g][0], com_lig_prev[g][1], com_lig_prev[g][2]);
-                fprintf(debug, "==== RAMD ==== Previous COM receptor position at [%g, %g, %g]\n",
-                        com_rec_prev[g][0], com_rec_prev[g][1], com_rec_prev[g][2]);
                 fprintf(debug,
-                        "==== RAMD ==== Change in receptor-ligand distance since last RAMD evaluation "
+                        "==== RAMD ==== Previous COM ligand position at [%g, %g, %g]\n",
+                        com_lig_prev[g][0],
+                        com_lig_prev[g][1],
+                        com_lig_prev[g][2]);
+                fprintf(debug,
+                        "==== RAMD ==== Previous COM receptor position at [%g, %g, %g]\n",
+                        com_rec_prev[g][0],
+                        com_rec_prev[g][1],
+                        com_rec_prev[g][2]);
+                fprintf(debug,
+                        "==== RAMD ==== Change in receptor-ligand distance since last RAMD "
+                        "evaluation "
                         "is %g\n",
                         walk_dist);
             }
@@ -201,8 +221,11 @@ void RAMD::calculateForces(const ForceProviderInput& forceProviderInput,
                 direction[g] = random_spherical_direction_generator();
                 if (MAIN(cr) and debug)
                 {
-                    fprintf(debug, "==== RAMD ==== New random direction is [%g, %g, %g]\n",
-                            direction[g][0], direction[g][1], direction[g][2]);
+                    fprintf(debug,
+                            "==== RAMD ==== New random direction is [%g, %g, %g]\n",
+                            direction[g][0],
+                            direction[g][1],
+                            direction[g][2]);
                 }
             }
 

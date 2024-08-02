@@ -46,9 +46,7 @@ class RandomSphericalDirectionGenerator
 {
 public:
     RandomSphericalDirectionGenerator(int64_t seed, bool use_old_angle_dist = false) :
-        engine(seed),
-        dist(0.0, 1.0),
-        use_old_angle_dist(use_old_angle_dist)
+        engine(seed), dist(0.0, 1.0), use_old_angle_dist(use_old_angle_dist)
     {
         if (use_old_angle_dist)
         {

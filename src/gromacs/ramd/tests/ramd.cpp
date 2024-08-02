@@ -33,6 +33,8 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/ramd/ramd.h"
+
 #include <gtest/gtest.h>
 
 #include "gromacs/commandline/filenm.h"
@@ -43,8 +45,8 @@
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pulling/pull_internal.h"
-#include "gromacs/ramd/ramd.h"
 #include "gromacs/topology/topology.h"
+
 #include "testutils/testfilemanager.h"
 #include "testutils/topologyhelpers.h"
 
@@ -59,32 +61,30 @@ TEST(RAMDTest, CalculateForces1WDHI)
 {
     gmx_mtop_t mtop;
     t_inputrec ir;
-    t_state state;
+    t_state    state;
     read_tpx_state(TestFileManager::getInputFilePath("data/1WDHI/topol.tpr").u8string(), &ir, &state, &mtop);
 
-    WarningHandler wi{true, 0};
+    WarningHandler wi{ true, 0 };
 
     pull_t* pull = set_pull_init(
-        &ir, mtop, state.x, state.box, state.lambda[FreeEnergyPerturbationCouplingType::Mass], &wi);
+            &ir, mtop, state.x, state.box, state.lambda[FreeEnergyPerturbationCouplingType::Mass], &wi);
 
-    t_filenm fnm[] = {
-        { efXVG, "-ramd", "ramd", ffOPTWR }
-    };
+    t_filenm fnm[] = { { efXVG, "-ramd", "ramd", ffOPTWR } };
 
-    auto cr = std::make_unique<t_commrec>();
-    auto ramd = std::make_unique<RAMD>(*ir.ramdParams, pull, StartingBehavior::NewSimulation,
-        cr.get(), 1, fnm, nullptr);
+    auto cr   = std::make_unique<t_commrec>();
+    auto ramd = std::make_unique<RAMD>(
+            *ir.ramdParams, pull, StartingBehavior::NewSimulation, cr.get(), 1, fnm, nullptr);
 
     ASSERT_NEAR(0.0, pull->coord[0].scalarForce, 1e-6);
 
-    PaddedVector<RVec> x = {{0, 0, 0}};
-    std::vector<real> chargeA{1};
-    matrix box = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
+    PaddedVector<RVec> x = { { 0, 0, 0 } };
+    std::vector<real>  chargeA{ 1 };
+    matrix             box = { { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 } };
     ForceProviderInput forceProviderInput(x, ssize(chargeA), chargeA, {}, 0.0, 0, box, *cr);
 
-    PaddedVector<RVec> f = {{0, 0, 0}};
-    ForceWithVirial forceWithVirial(f, true);
-    gmx_enerdata_t enerd(1, 0);
+    PaddedVector<RVec>  f = { { 0, 0, 0 } };
+    ForceWithVirial     forceWithVirial(f, true);
+    gmx_enerdata_t      enerd(1, 0);
     ForceProviderOutput forceProviderOutput(&forceWithVirial, &enerd);
 
     ramd->calculateForces(forceProviderInput, &forceProviderOutput);

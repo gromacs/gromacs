@@ -53,18 +53,15 @@ namespace gmx
 class RAMD final : public IForceProvider
 {
 public:
-
     /*! \brief RAMD ForceProvider.
-    *
-    * \param[in]     ramdParams              RAMD parameters.
-    * \param[in,out] pull                    Pointer to pull object.
-    * \param[in]     startingBehavior        Describes whether this is a restart appending to output
-    *                                        files.
-    * \param[in]     cr                      Struct for communication, can be nullptr.
-    * \param[in]     nfile                   Number of files.
-    * \param[in]     fnm                     Filename struct.
-    * \param[in]     oenv                    The output environment information.
-    */
+     *
+     * \param[in]     ramdParams              RAMD parameters.
+     * \param[in,out] pull                    Pointer to pull object.
+     * \param[in]     startingBehavior        Describes whether this is a restart appending to
+     * output files. \param[in]     cr                      Struct for communication, can be
+     * nullptr. \param[in]     nfile                   Number of files. \param[in]     fnm Filename
+     * struct. \param[in]     oenv                    The output environment information.
+     */
     RAMD(const RAMDParams&           params,
          pull_t*                     pull,
          const gmx::StartingBehavior startingBehavior,
@@ -80,14 +77,14 @@ public:
 
     RAMDParams getParams() const { return params; }
 
-    gmx_bool getWriteTrajectoryAndReset() {
-        gmx_bool tmp = this->write_trajectory;
+    gmx_bool getWriteTrajectoryAndReset()
+    {
+        gmx_bool tmp           = this->write_trajectory;
         this->write_trajectory = false;
         return tmp;
     }
 
 private:
-
     /// RAMD parameters
     const RAMDParams& params;
 
@@ -120,7 +117,6 @@ private:
 
     /// Logfile
     FILE* log;
-
 };
 
 } // namespace gmx

@@ -44,64 +44,88 @@
 
 void read_ramdparams(std::vector<t_inpfile>* inp, gmx::RAMDParams* ramdparams, WarningHandler* wi)
 {
-    ramdparams->seed = get_eint(inp, "ramd-seed", 1234, wi);
+    ramdparams->seed   = get_eint(inp, "ramd-seed", 1234, wi);
     ramdparams->ngroup = get_eint(inp, "ramd-ngroups", 1, wi);
     snew(ramdparams->group, ramdparams->ngroup);
 
     for (int i = 0; i < ramdparams->ngroup; i++)
     {
-        auto ramdgrp = &ramdparams->group[i];
-        auto ramd_prefix = std::string("ramd-group") + std::to_string(i + 1);
+        auto ramdgrp      = &ramdparams->group[i];
+        auto ramd_prefix  = std::string("ramd-group") + std::to_string(i + 1);
         auto pull1_prefix = std::string("pull-group") + std::to_string(i * 2 + 1);
         auto pull2_prefix = std::string("pull-group") + std::to_string(i * 2 + 2);
 
-        inp->emplace_back(0, 1, false, false, false, pull1_prefix + "-name",
-            get_estr(inp, ramd_prefix + "-receptor", "Protein"));
-        inp->emplace_back(0, 1, false, false, false, pull1_prefix + "-pbcatom",
-            get_estr(inp, ramd_prefix + "-receptor-pbcatom", "0"));
+        inp->emplace_back(0,
+                          1,
+                          false,
+                          false,
+                          false,
+                          pull1_prefix + "-name",
+                          get_estr(inp, ramd_prefix + "-receptor", "Protein"));
+        inp->emplace_back(0,
+                          1,
+                          false,
+                          false,
+                          false,
+                          pull1_prefix + "-pbcatom",
+                          get_estr(inp, ramd_prefix + "-receptor-pbcatom", "0"));
 
-        inp->emplace_back(0, 1, false, false, false, pull2_prefix + "-name",
-            get_estr(inp, ramd_prefix + "-ligand", "INH"));
-        inp->emplace_back(0, 1, false, false, false, pull2_prefix + "-pbcatom",
-            get_estr(inp, ramd_prefix + "-ligand-pbcatom", "0"));
+        inp->emplace_back(0,
+                          1,
+                          false,
+                          false,
+                          false,
+                          pull2_prefix + "-name",
+                          get_estr(inp, ramd_prefix + "-ligand", "INH"));
+        inp->emplace_back(0,
+                          1,
+                          false,
+                          false,
+                          false,
+                          pull2_prefix + "-pbcatom",
+                          get_estr(inp, ramd_prefix + "-ligand-pbcatom", "0"));
 
-        ramdgrp->force = get_ereal(inp, ramd_prefix + "-force", 600, wi);
+        ramdgrp->force      = get_ereal(inp, ramd_prefix + "-force", 600, wi);
         ramdgrp->r_min_dist = get_ereal(inp, ramd_prefix + "-r-min-dist", 0.0025, wi);
-        ramdgrp->max_dist  = get_ereal(inp, ramd_prefix + "-max-dist", 4.0, wi);
+        ramdgrp->max_dist   = get_ereal(inp, ramd_prefix + "-max-dist", 4.0, wi);
     }
 
-    inp->emplace_back(0, 1, false, false, false, "pull-pbc-ref-prev-step-com",
-        get_estr(inp, "ramd-pbc-ref-prev-step-com", "yes"));
+    inp->emplace_back(0,
+                      1,
+                      false,
+                      false,
+                      false,
+                      "pull-pbc-ref-prev-step-com",
+                      get_estr(inp, "ramd-pbc-ref-prev-step-com", "yes"));
 
-    ramdparams->eval_freq = get_eint(inp, "ramd-eval-freq", 50, wi);
+    ramdparams->eval_freq      = get_eint(inp, "ramd-eval-freq", 50, wi);
     ramdparams->force_out_freq = get_eint(inp, "ramd-force-out-freq", 100, wi);
     ramdparams->old_angle_dist = getEnum<Boolean>(inp, "ramd-old-angle-dist", wi) != Boolean::No;
 
-    inp->emplace_back(0, 1, false, false, false, "pull-ngroups",
-        std::to_string(ramdparams->ngroup * 2));
-    inp->emplace_back(0, 1, false, false, false, "pull-nstxout",
-        std::to_string(ramdparams->force_out_freq));
-    inp->emplace_back(0, 1, false, false, false, "pull-nstfout",
-        std::to_string(ramdparams->force_out_freq));
-    inp->emplace_back(0, 1, false, false, false, "pull-ncoords",
-        std::to_string(ramdparams->ngroup * 3));
+    inp->emplace_back(0, 1, false, false, false, "pull-ngroups", std::to_string(ramdparams->ngroup * 2));
+    inp->emplace_back(
+            0, 1, false, false, false, "pull-nstxout", std::to_string(ramdparams->force_out_freq));
+    inp->emplace_back(
+            0, 1, false, false, false, "pull-nstfout", std::to_string(ramdparams->force_out_freq));
+    inp->emplace_back(0, 1, false, false, false, "pull-ncoords", std::to_string(ramdparams->ngroup * 3));
 
-    std::vector<std::string> v{"1 0 0", "0 1 0", "0 0 1"};
+    std::vector<std::string> v{ "1 0 0", "0 1 0", "0 0 1" };
     for (int i = 0; i < ramdparams->ngroup; ++i)
     {
         for (int d = 0; d < 3; ++d)
         {
             auto prefix = std::string("pull-coord") + std::to_string(i * 3 + d + 1);
-            inp->emplace_back(0, 1, false, false, false,
-                prefix + "-groups", std::to_string(i * 2 + 1) + " " + std::to_string(i * 2 + 2));
-            inp->emplace_back(0, 1, false, false, false,
-                prefix + "-type", "external-potential");
-            inp->emplace_back(0, 1, false, false, false,
-                prefix + "-potential-provider", "RAMD");
-            inp->emplace_back(0, 1, false, false, false,
-                prefix + "-geometry", "direction");
-            inp->emplace_back(0, 1, false, false, false,
-                prefix + "-vec", v[d]);
+            inp->emplace_back(0,
+                              1,
+                              false,
+                              false,
+                              false,
+                              prefix + "-groups",
+                              std::to_string(i * 2 + 1) + " " + std::to_string(i * 2 + 2));
+            inp->emplace_back(0, 1, false, false, false, prefix + "-type", "external-potential");
+            inp->emplace_back(0, 1, false, false, false, prefix + "-potential-provider", "RAMD");
+            inp->emplace_back(0, 1, false, false, false, prefix + "-geometry", "direction");
+            inp->emplace_back(0, 1, false, false, false, prefix + "-vec", v[d]);
         }
     }
 

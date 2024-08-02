@@ -45,8 +45,8 @@
 #include "vectypes.h"
 
 /// Print BasicVector
-template <typename T>
-std::ostream& operator << (std::ostream& os, gmx::BasicVector<T> const& v)
+template<typename T>
+std::ostream& operator<<(std::ostream& os, gmx::BasicVector<T> const& v)
 {
     return os << "[" << v[0] << " ," << v[1] << " ," << v[2] << "]";
 }

@@ -36,6 +36,7 @@
 #include "gromacs/ramd/randomsphericaldirectiongenerator.h"
 
 #include <cmath>
+
 #include <vector>
 
 #include <gtest/gtest.h>
