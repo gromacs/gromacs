@@ -1565,8 +1565,8 @@ int Mdrunner::mdrunner()
     DeviceInformation* deviceInfo = gpuTaskAssignments.initDevice();
 
     // We will later get the pairlist type from the device information here, for now we hard code it.
-    const auto pairlistType = PairlistType::Hierarchical8x8x8;
-    GMX_RELEASE_ASSERT(sc_gpuClusterSize(pairlistType) >= 4,
+    const auto deviceSpecificPairlistType = PairlistType::Hierarchical8x8x8;
+    GMX_RELEASE_ASSERT(sc_gpuClusterSize(deviceSpecificPairlistType) >= 4,
                        "The verlet scheme setup relies on the GPU cluster size to be at least 4");
 
     // TODO Currently this is always built, yet DD partition code
@@ -1892,6 +1892,7 @@ int Mdrunner::mdrunner()
                                  *hwinfo_,
                                  runScheduleWork.simulationWork.useGpuNonbonded,
                                  deviceStreamManager.get(),
+                                 deviceSpecificPairlistType,
                                  mtop,
                                  runScheduleWork.simulationWork.haveFillerParticlesInLocalState,
                                  PAR(cr) ? &observablesReducerBuilder : nullptr,

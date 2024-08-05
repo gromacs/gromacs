@@ -144,6 +144,7 @@ struct NbnxmGpu;
 struct nbnxn_atomdata_t;
 class PairSearch;
 class PairlistSets;
+enum class PairlistType;
 template<typename>
 class ArrayRefWithPadding;
 class DeviceStreamManager;
@@ -455,7 +456,8 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const MDLogger&            md
                                                    const gmx_hw_info_t&       hardwareInfo,
                                                    bool                       useGpuForNonbonded,
                                                    const DeviceStreamManager* deviceStreamManager,
-                                                   const gmx_mtop_t&          mtop,
+                                                   PairlistType      deviceSpecificlPairlistType,
+                                                   const gmx_mtop_t& mtop,
                                                    bool localAtomOrderMatchesNbnxmOrder,
                                                    ObservablesReducerBuilder* observablesReducerBuilder,
                                                    ArrayRef<const RVec> coordinates,
