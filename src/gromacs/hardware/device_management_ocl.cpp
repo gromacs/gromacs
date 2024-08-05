@@ -297,8 +297,6 @@ static DeviceStatus isDeviceFunctional(const DeviceInformation& deviceInfo)
                                                             : DeviceStatus::IncompatibleOclAmdRdna)
                                                  : DeviceStatus::Incompatible;
         case DeviceVendor::Intel:
-            return GMX_GPU_NB_CLUSTER_SIZE == 4 ? DeviceStatus::Compatible
-                                                : DeviceStatus::IncompatibleClusterSize;
         case DeviceVendor::Apple: return DeviceStatus::Compatible;
         default: return DeviceStatus::Incompatible;
     }

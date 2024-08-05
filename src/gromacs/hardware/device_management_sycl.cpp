@@ -301,9 +301,11 @@ bool isDeviceDetectionFunctional(std::string* errorMessage)
  * \brief Checks that device \c deviceInfo is compatible with GROMACS.
  *
  * \param[in]  syclDevice              SYCL device handle.
+ * \param[in]  supportedSubGroupSizes  List of supported sub-group sizes as reported by the device.
  * \returns                            The status enumeration value for the checked device.
  */
-static DeviceStatus isDeviceCompatible(const sycl::device& syclDevice)
+static DeviceStatus isDeviceCompatible(const sycl::device&      syclDevice,
+                                       gmx::ArrayRef<const int> supportedSubGroupSizes)
 {
     try
     {
@@ -317,6 +319,18 @@ static DeviceStatus isDeviceCompatible(const sycl::device& syclDevice)
         {
             // While some kernels (leapfrog) can run without shared/local memory, this is a bad sign
             return DeviceStatus::Incompatible;
+        }
+
+        const std::vector<int> compiledNbnxmSubGroupSizes{ 8, 32, 64 };
+        const auto subGroupSizeSupportedByDevice = [&supportedSubGroupSizes](const int sgSize) -> bool {
+            return std::find(supportedSubGroupSizes.begin(), supportedSubGroupSizes.end(), sgSize)
+                   != supportedSubGroupSizes.end();
+        };
+        if (std::none_of(compiledNbnxmSubGroupSizes.begin(),
+                         compiledNbnxmSubGroupSizes.end(),
+                         subGroupSizeSupportedByDevice))
+        {
+            return DeviceStatus::IncompatibleClusterSize;
         }
 
         /* Host device can not be used, because NBNXM requires sub-groups, which are not supported.
@@ -421,7 +435,8 @@ static bool isDeviceFunctional(const sycl::device& syclDevice, std::string* erro
 static DeviceStatus checkDevice(size_t deviceId, const DeviceInformation& deviceInfo)
 {
 
-    DeviceStatus supportStatus = isDeviceCompatible(deviceInfo.syclDevice);
+    DeviceStatus supportStatus =
+            isDeviceCompatible(deviceInfo.syclDevice, deviceInfo.supportedSubGroupSizes);
     if (supportStatus != DeviceStatus::Compatible)
     {
         return supportStatus;

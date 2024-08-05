@@ -98,8 +98,7 @@ auto nbnxmKernelPruneOnly(sycl::handler& cgh,
         }
     }();
 
-    constexpr int warpSize     = sc_gpuParallelExecutionWidth(pairlistType);
-    constexpr int subGroupSize = warpSize;
+    constexpr int subGroupSize = sc_gpuParallelExecutionWidth(pairlistType);
 
     /* Somewhat weird behavior inherited from OpenCL.
      * With clSize == 4, we use sub_group size of 16 (not enforced in OpenCL implementation, but chosen
@@ -108,7 +107,7 @@ auto nbnxmKernelPruneOnly(sycl::handler& cgh,
      * For clSize == But we need to set specific sub_group size >= 32 for clSize == 8 for correctness,
      * but it causes very poor performance.
      */
-    constexpr int gmx_unused requiredSubGroupSize = (c_clSize == 4) ? 16 : warpSize;
+    constexpr int gmx_unused requiredSubGroupSize = (c_clSize == 4) ? 16 : subGroupSize;
 
     /* Requirements:
      * Work group (block) must have range (c_clSize, c_clSize, ...) (for itemIdx calculation, easy
@@ -138,7 +137,7 @@ auto nbnxmKernelPruneOnly(sycl::handler& cgh,
         }
 
         const sycl::sub_group sg   = itemIdx.get_sub_group();
-        const int             widx = tidx / warpSize;
+        const int             widx = tidx / subGroupSize;
 
         // my i super-cluster's index = sciOffset + current bidx * numParts + part
         const nbnxn_sci_t nbSci          = gm_plistSci[bidx * numParts + part];
