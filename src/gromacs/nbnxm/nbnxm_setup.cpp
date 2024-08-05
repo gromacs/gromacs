@@ -460,7 +460,8 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
                                                    const bool           useGpuForNonbonded,
                                                    const bool           useGpuForNonbondedFE,
                                                    const gmx::DeviceStreamManager* deviceStreamManager,
-                                                   const gmx_mtop_t& mtop,
+                                                   const PairlistType deviceSpecificlPairlistType,
+                                                   const gmx_mtop_t&  mtop,
                                                    const bool localAtomOrderMatchesNbnxmOrder,
                                                    gmx::ObservablesReducerBuilder* observablesReducerBuilder,
                                                    gmx::ArrayRef<const gmx::RVec> coordinates,
@@ -486,12 +487,8 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
         nonbondedResource = NonbondedResource::Cpu;
     }
 
-    // This will later be obtained from the device information to get the optimal layout for the
-    // device. For now we just use the one layout we have.
-    const auto gpuPairlistLayout = PairlistType::Hierarchical8x8x8;
-
     NbnxmKernelSetup kernelSetup = pick_nbnxn_kernel(
-            mdlog, forcerec.use_simd_kernels, hardwareInfo, gpuPairlistLayout, nonbondedResource, inputrec);
+            mdlog, forcerec.use_simd_kernels, hardwareInfo, deviceSpecificlPairlistType, nonbondedResource, inputrec);
 
     const bool haveMultipleDomains = havePPDomainDecomposition(dd);
 
@@ -502,7 +499,7 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
                             && (forcerec.efep != FreeEnergyPerturbationType::Expanded);
 
     PairlistParams pairlistParams(
-            kernelSetup.kernelType, gpuPairlistLayout, bFEP_NonBonded, inputrec.rlist, haveMultipleDomains);
+            kernelSetup.kernelType, deviceSpecificlPairlistType, bFEP_NonBonded, inputrec.rlist, haveMultipleDomains);
     pairlistParams.haveNonbondedFEGpu_ = bFepGpuNonBonded;
 
     const real effectiveAtomDensity = computeEffectiveAtomDensity(
