@@ -509,10 +509,8 @@ static inline int assignInteractionsForAtom(const AtomIndexSet&       atomIndexS
                  * in each dimension is zero, for dimensions
                  * with 2 DD cells an extra check may be necessary.
                  */
-                ivec k_zero, k_plus;
+                gmx::BasicVector<bool> haveZeroShift({ false, false, false });
                 bUse = true;
-                clear_ivec(k_zero);
-                clear_ivec(k_plus);
                 for (int k = 1; k <= nral && bUse; k++)
                 {
                     /* Get the global index using the offset in the molecule */
@@ -531,43 +529,43 @@ static inline int assignInteractionsForAtom(const AtomIndexSet&       atomIndexS
                          * locally, or it comes from more than one cell
                          * away.
                          */
-                        bUse = FALSE;
+                        bUse = false;
                     }
                     else
                     {
                         tiatoms[k] = entry->la;
+
+                        GMX_ASSERT(!haveSingleDomain,
+                                   "The single domain case does a continue above");
+
                         for (int d = 0; d < DIM; d++)
                         {
                             if (zones.shift[entry->cell][d] == 0)
                             {
-                                k_zero[d] = k;
+                                haveZeroShift[d] = true;
                             }
-                            else
+                        }
+
+                        if (checkDistanceMultiBody && k > 1)
+                        {
+                            /* We check that distances between consecutive atoms in multi-body
+                             * interactions are within the cut-off distance. This guarantees
+                             * that each multi-body interaction is assigned to at most one domain.
+                             * This works because no PBC is applied for distance calculations
+                             * along dimensions with DD and because the atom pairs between which
+                             * the distances are checked are the same on each DD-rank.
+                             */
+                            if (dd_dist2(pbc_null, coordinates, tiatoms[k - 1], entry->la) >= cutoffSquared)
                             {
-                                k_plus[d] = k;
+                                bUse = false;
                             }
                         }
                     }
                 }
+
                 if constexpr (!haveSingleDomain)
                 {
-                    bUse = (bUse && (k_zero[XX] != 0) && (k_zero[YY] != 0) && (k_zero[ZZ] != 0));
-                    if (checkDistanceMultiBody)
-                    {
-                        for (int d = 0; (d < DIM && bUse); d++)
-                        {
-                            /* Check if the distance falls within
-                             * the cut-off to avoid possible multiple
-                             * assignments of bonded interactions.
-                             */
-                            if (rcheck[d] && k_plus[d]
-                                && dd_dist2(pbc_null, coordinates, tiatoms[k_zero[d]], tiatoms[k_plus[d]])
-                                           >= cutoffSquared)
-                            {
-                                bUse = FALSE;
-                            }
-                        }
-                    }
+                    bUse = (bUse && haveZeroShift[XX] && haveZeroShift[YY] && haveZeroShift[ZZ]);
                 }
             }
             if (bUse)
