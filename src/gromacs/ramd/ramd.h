@@ -55,12 +55,15 @@ class RAMD final : public IForceProvider
 public:
     /*! \brief RAMD ForceProvider.
      *
-     * \param[in]     ramdParams              RAMD parameters.
-     * \param[in,out] pull                    Pointer to pull object.
-     * \param[in]     startingBehavior        Describes whether this is a restart appending to
-     * output files. \param[in]     cr                      Struct for communication, can be
-     * nullptr. \param[in]     nfile                   Number of files. \param[in]     fnm Filename
-     * struct. \param[in]     oenv                    The output environment information.
+     * \param[in]     params              RAMD parameters.
+     * \param[in,out] pull                Pointer to pull object.
+     * \param[in]     startingBehavior    Describes whether this is a restart
+     *                                    appending to output files.
+     * \param[in]     cr                  Struct for communication, can be nullptr.
+     * \param[in]     nfile               Number of files.
+     * \param[in]     fnm                 Filename struct.
+     * \param[in]     oenv                The output environment information.
+     * \param[in]     log                 Logfile pointer.
      */
     RAMD(const RAMDParams&           params,
          pull_t*                     pull,
