@@ -57,12 +57,12 @@ namespace test
 namespace
 {
 
-TEST(RAMDTest, CalculateForces1WDHI)
+TEST(RAMDTest, CalculateForces)
 {
     gmx_mtop_t mtop;
     t_inputrec ir;
     t_state    state;
-    read_tpx_state(TestFileManager::getInputFilePath("data/1WDHI/topol.tpr").u8string(), &ir, &state, &mtop);
+    read_tpx_state(TestFileManager::getInputFilePath("data/4water/topol.tpr").u8string(), &ir, &state, &mtop);
 
     WarningHandler wi{ true, 0 };
 
@@ -89,7 +89,7 @@ TEST(RAMDTest, CalculateForces1WDHI)
 
     ramd->calculateForces(forceProviderInput, &forceProviderOutput);
 
-    ASSERT_NEAR(528.87046337127686, pull->coord[0].scalarForce, 1e-6);
+    ASSERT_NEAR(-13.056352734565735, pull->coord[0].scalarForce, 1e-6);
 }
 
 } // namespace
