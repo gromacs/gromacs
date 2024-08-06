@@ -181,28 +181,30 @@ static void ddindex2xyz(const ivec nc, int ind, ivec xyz)
     xyz[ZZ] = ind % nc[ZZ];
 }
 
-static int ddcoord2ddnodeid(gmx_domdec_t* dd, ivec c)
+//! Returns the MPI rank for the PP domain corresponding to \p coord
+static int ddRankFromDDCoord(const gmx_domdec_t& dd, const gmx::IVec& coord)
 {
-    int ddnodeid = -1;
+    int rank = -1;
 
-    const CartesianRankSetup& cartSetup = dd->comm->cartesianRankSetup;
-    const int                 ddindex   = dd_index(dd->numCells, c);
+    const CartesianRankSetup& cartSetup = dd.comm->cartesianRankSetup;
+    const int                 ddindex   = dd_index(dd.numCells, coord);
     if (cartSetup.bCartesianPP_PME)
     {
-        ddnodeid = cartSetup.ddindex2ddnodeid[ddindex];
+        rank = cartSetup.ddindex2ddnodeid[ddindex];
     }
     else if (cartSetup.bCartesianPP)
     {
 #if GMX_MPI
-        MPI_Cart_rank(dd->mpi_comm_all, c, &ddnodeid);
+        gmx::IVec tmp = coord;
+        MPI_Cart_rank(dd.mpi_comm_all, static_cast<int*>(&tmp[0]), &rank);
 #endif
     }
     else
     {
-        ddnodeid = ddindex;
+        rank = ddindex;
     }
 
-    return ddnodeid;
+    return rank;
 }
 
 int ddglatnr(const gmx_domdec_t* dd, int i)
@@ -1069,18 +1071,21 @@ static void make_load_communicators(gmx_domdec_t gmx_unused* dd)
 /*! \brief Sets up the relation between neighboring domains and zones */
 static void setup_neighbor_relations(gmx_domdec_t* dd)
 {
-    ivec tmp, s;
     GMX_ASSERT((dd->ndim >= 0) && (dd->ndim <= DIM), "Must have valid number of dimensions for DD");
+
+    const std::array<int, 2> shifts = { 1, -1 };
 
     for (int d = 0; d < dd->ndim; d++)
     {
         const int dim = dd->dim[d];
-        copy_ivec(dd->ci, tmp);
-        tmp[dim]           = (tmp[dim] + 1) % dd->numCells[dim];
-        dd->neighbor[d][0] = ddcoord2ddnodeid(dd, tmp);
-        copy_ivec(dd->ci, tmp);
-        tmp[dim]           = (tmp[dim] - 1 + dd->numCells[dim]) % dd->numCells[dim];
-        dd->neighbor[d][1] = ddcoord2ddnodeid(dd, tmp);
+
+        for (gmx::Index i = 0; i < gmx::ssize(shifts); i++)
+        {
+            gmx::IVec tmp      = dd->ci;
+            tmp[dim]           = (tmp[dim] + shifts[i] + dd->numCells[dim]) % dd->numCells[dim];
+            dd->neighbor[d][i] = ddRankFromDDCoord(*dd, tmp);
+        }
+
         if (debug)
         {
             fprintf(debug,
@@ -1092,38 +1097,25 @@ static void setup_neighbor_relations(gmx_domdec_t* dd)
         }
     }
 
-    int nzone  = (1 << dd->ndim);
-    int nizone = (1 << std::max(dd->ndim - 1, 0));
-    assert(nizone >= 1 && nizone <= DD_MAXIZONE);
+    const int nzone  = (1 << dd->ndim);
+    const int nizone = (1 << std::max(dd->ndim - 1, 0));
+    GMX_RELEASE_ASSERT(nizone >= 1 && nizone <= DD_MAXIZONE,
+                       "We should have at least one i-zone and not more than the number of zones");
 
-    gmx_domdec_zones_t* zones = &dd->comm->zones;
+    gmx_domdec_zones_t& zones = dd->comm->zones;
+
+    zones.n = nzone;
 
     for (int i = 0; i < nzone; i++)
     {
         int m = 0;
-        clear_ivec(zones->shift[i]);
+        clear_ivec(zones.shift[i]);
         for (int d = 0; d < dd->ndim; d++)
         {
-            zones->shift[i][dd->dim[d]] = dd_zo[i][m++];
+            zones.shift[i][dd->dim[d]] = dd_zo[i][m++];
         }
     }
 
-    zones->n = nzone;
-    for (int i = 0; i < nzone; i++)
-    {
-        for (int d = 0; d < DIM; d++)
-        {
-            s[d] = dd->ci[d] - zones->shift[i][d];
-            if (s[d] < 0)
-            {
-                s[d] += dd->numCells[d];
-            }
-            else if (s[d] >= dd->numCells[d])
-            {
-                s[d] -= dd->numCells[d];
-            }
-        }
-    }
     for (int iZoneIndex = 0; iZoneIndex < nizone; iZoneIndex++)
     {
         GMX_RELEASE_ASSERT(
@@ -1152,7 +1144,7 @@ static void setup_neighbor_relations(gmx_domdec_t* dd)
                 iZone.shift1[dim] = -1;
                 for (int jZone : iZone.jZoneRange)
                 {
-                    int shift_diff = zones->shift[jZone][dim] - zones->shift[iZoneIndex][dim];
+                    int shift_diff = zones.shift[jZone][dim] - zones.shift[iZoneIndex][dim];
                     if (shift_diff < iZone.shift0[dim])
                     {
                         iZone.shift0[dim] = shift_diff;
@@ -1165,7 +1157,7 @@ static void setup_neighbor_relations(gmx_domdec_t* dd)
             }
         }
 
-        zones->iZones.push_back(iZone);
+        zones.iZones.push_back(iZone);
     }
 
     if (!isDlbDisabled(dd->comm->dlbState))
