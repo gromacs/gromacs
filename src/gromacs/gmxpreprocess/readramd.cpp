@@ -50,10 +50,10 @@ void read_ramdparams(std::vector<t_inpfile>* inp, gmx::RAMDParams* ramdparams, W
 
     for (int i = 0; i < ramdparams->ngroup; i++)
     {
-        auto ramdgrp      = &ramdparams->group[i];
-        auto ramd_prefix  = std::string("ramd-group") + std::to_string(i + 1);
-        auto pull1_prefix = std::string("pull-group") + std::to_string(i * 2 + 1);
-        auto pull2_prefix = std::string("pull-group") + std::to_string(i * 2 + 2);
+        auto* ramdgrp      = &ramdparams->group[i];
+        auto  ramd_prefix  = std::string("ramd-group") + std::to_string(i + 1);
+        auto  pull1_prefix = std::string("pull-group") + std::to_string(i * 2 + 1);
+        auto  pull2_prefix = std::string("pull-group") + std::to_string(i * 2 + 2);
 
         inp->emplace_back(0,
                           1,

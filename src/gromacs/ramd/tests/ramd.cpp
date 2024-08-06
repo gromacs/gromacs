@@ -84,7 +84,7 @@ TEST(RAMDTest, CalculateForces1WDHI)
 
     PaddedVector<RVec>  f = { { 0, 0, 0 } };
     ForceWithVirial     forceWithVirial(f, true);
-    gmx_enerdata_t      enerd(1, 0);
+    gmx_enerdata_t      enerd(1, nullptr);
     ForceProviderOutput forceProviderOutput(&forceWithVirial, &enerd);
 
     ramd->calculateForces(forceProviderInput, &forceProviderOutput);
