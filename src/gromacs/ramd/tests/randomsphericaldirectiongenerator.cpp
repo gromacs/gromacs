@@ -53,7 +53,7 @@ struct RandomSphericalDirectionGeneratorTest : public ::testing::Test
     int number_of_directions = 1000000;
     int number_of_buckets    = 32;
 
-    std::vector<int> create_histogram(std::vector<double> const& data)
+    std::vector<int> create_histogram(std::vector<double> const& data) const
     {
         const double     bucket_size = 2 * M_PI / number_of_buckets;
         std::vector<int> histogram(number_of_buckets, 0);
