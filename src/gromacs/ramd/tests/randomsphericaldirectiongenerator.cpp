@@ -66,7 +66,7 @@ struct RandomSphericalDirectionGeneratorTest : public ::testing::Test
         return histogram;
     }
 
-    void check_distribution(int x, int y, std::vector<DVec> const& random_directions)
+    void check_distribution(int x, int y, std::vector<DVec> const& random_directions) const
     {
         std::vector<double> thetas(random_directions.size());
         for (size_t i = 0; i < random_directions.size(); ++i)
