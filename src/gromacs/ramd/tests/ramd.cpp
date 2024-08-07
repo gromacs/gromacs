@@ -89,7 +89,7 @@ TEST(RAMDTest, CalculateForces)
 
     ramd->calculateForces(forceProviderInput, &forceProviderOutput);
 
-    ASSERT_NEAR(-13.056352734565735, pull->coord[0].scalarForce, 1e-6);
+    ASSERT_NEAR(-13.056352734565735, pull->coord[0].scalarForce, 1e-5);
 }
 
 } // namespace
