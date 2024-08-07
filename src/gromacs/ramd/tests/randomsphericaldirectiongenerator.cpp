@@ -53,7 +53,7 @@ struct RandomSphericalDirectionGeneratorTest : public ::testing::Test
     int number_of_directions = 1000000;
     int number_of_buckets    = 32;
 
-    std::vector<int> create_histogram(int number_of_buckets, std::vector<double> const& data)
+    std::vector<int> create_histogram(std::vector<double> const& data)
     {
         const double     bucket_size = 2 * M_PI / number_of_buckets;
         std::vector<int> histogram(number_of_buckets, 0);
@@ -74,7 +74,7 @@ struct RandomSphericalDirectionGeneratorTest : public ::testing::Test
             thetas[i] = std::atan2(random_directions[i][y], random_directions[i][x]);
         }
 
-        auto histogram   = create_histogram(32, thetas);
+        auto histogram   = create_histogram(thetas);
         int  mean        = number_of_directions / number_of_buckets;
         int  lower_bound = mean - mean * 0.1;
         int  upper_bound = mean + mean * 0.1;
