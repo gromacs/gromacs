@@ -136,7 +136,7 @@ int tMPI_Cart_get(tMPI_Comm comm, int maxdims, int *dims, int *periods,
     return TMPI_SUCCESS;
 }
 
-int tMPI_Cart_rank(tMPI_Comm comm, int *coords, int *rank)
+int tMPI_Cart_rank(tMPI_Comm comm, const int *coords, int *rank)
 {
     int i, mul = 1, ret = 0;
 
@@ -213,7 +213,7 @@ int tMPI_Cart_coords(tMPI_Comm comm, int rank, int maxdims, int *coords)
 
 
 
-int tMPI_Cart_map(tMPI_Comm comm, int ndims, int *dims, int *periods,
+int tMPI_Cart_map(tMPI_Comm comm, int ndims, const int *dims, const int *periods,
                   int *newrank)
 {
     /* this function doesn't actually do anything beyond returning the current
@@ -256,8 +256,8 @@ int tMPI_Cart_map(tMPI_Comm comm, int ndims, int *dims, int *periods,
 
 /* initialize Cartesian topology info in comm. If ndims==0, dims and periods
    are not referenced */
-static void tMPI_Cart_init(tMPI_Comm *comm_cart, int ndims, int *dims,
-                           int *periods)
+static void tMPI_Cart_init(tMPI_Comm *comm_cart, int ndims, const int *dims,
+                           const int *periods)
 {
     int newrank = -1;
     int i;
@@ -298,7 +298,7 @@ void tMPI_Cart_destroy(struct cart_topol *cart)
     }
 }
 
-int tMPI_Cart_create(tMPI_Comm comm_old, int ndims, int *dims, int *periods,
+int tMPI_Cart_create(tMPI_Comm comm_old, int ndims, const int *dims, const int *periods,
                      int reorder, tMPI_Comm *comm_cart)
 {
     int myrank = tMPI_Comm_seek_rank(comm_old, tMPI_Get_current());
@@ -353,7 +353,7 @@ int tMPI_Cart_create(tMPI_Comm comm_old, int ndims, int *dims, int *periods,
 }
 
 
-int tMPI_Cart_sub(tMPI_Comm comm, int *remain_dims, tMPI_Comm *newcomm)
+int tMPI_Cart_sub(tMPI_Comm comm, const int *remain_dims, tMPI_Comm *newcomm)
 {
     int  myrank;
     int  ndims     = 0;

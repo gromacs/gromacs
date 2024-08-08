@@ -58,12 +58,13 @@
 
 /* macros to define functions and prototypes based on a name and an operation */
 #define FNr(tp, fname, fn) \
-    static void tMPI_ ## tp ## _ ## fname  (void *dest, void *src_a, void *src_b, \
+    static void tMPI_ ## tp ## _ ## fname  (void *dest, \
+                                            const void *src_a, const void *src_b, \
                                             int count) \
     { \
         /*printf("in function %s, count=%d\n", __FUNCTION__, count);*/ \
-        TYPE *a = (TYPE*)src_a; \
-        TYPE *b = (TYPE*)src_b; \
+        const TYPE *a = (const TYPE*)src_a; \
+        const TYPE *b = (const TYPE*)src_b; \
         TYPE *d = (TYPE*)dest; \
         int   i; \
         for (i = 0; i < count; i++) { \
@@ -73,12 +74,13 @@
 #define FN(tp, fname, fn) FNr(tp, fname, fn)
 
 #define OPFNr(tp, fname, operator)  \
-              static void tMPI_ ## tp ## _ ## fname  (void *dest, void *src_a, void *src_b, \
+              static void tMPI_ ## tp ## _ ## fname  (void *dest, \
+                                                      const void *src_a, const void *src_b, \
                                                       int count) \
               { \
                   /*printf("in function %s, count=%d\n", __FUNCTION__, count);*/ \
-                  TYPE *a = (TYPE*)src_a; \
-                  TYPE *b = (TYPE*)src_b; \
+                  const TYPE *a = (const TYPE*)src_a; \
+                  const TYPE *b = (const TYPE*)src_b; \
                   TYPE *d = (TYPE*)dest; \
                   int i; \
                   for (i = 0; i < count; i++) { \

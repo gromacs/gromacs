@@ -638,7 +638,7 @@ struct tmpi_graph_topol_
  **************************************************************************/
 
 /* tMPI_Reduce Op functions */
-typedef void (*tMPI_Op_fn)(void*, void*, void*, int);
+typedef void (*tMPI_Op_fn)(void*, const void*, const void*, int);
 
 
 struct tmpi_datatype_component
@@ -824,7 +824,7 @@ void tMPI_Copy_buffer_destroy(struct copy_buffer *cb);
 
 
 /* reduce ops: run a single iteration of a reduce operation on a, b -> dest */
-int tMPI_Reduce_run_op(void *dest, void *src_a, void *src_b,
+int tMPI_Reduce_run_op(void *dest, const void *src_a, const void *src_b,
                        tMPI_Datatype datatype, int count, tMPI_Op op,
                        tMPI_Comm comm);
 

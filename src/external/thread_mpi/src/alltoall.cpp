@@ -59,7 +59,7 @@
 
 
 
-int tMPI_Alltoall(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
+int tMPI_Alltoall(const void* sendbuf, int sendcount, tMPI_Datatype sendtype,
                   void* recvbuf, int recvcount, tMPI_Datatype recvtype,
                   tMPI_Comm comm)
 {
@@ -170,9 +170,9 @@ int tMPI_Alltoall(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
 }
 
 
-int tMPI_Alltoallv(void* sendbuf, int *sendcounts, int *sdispls,
+int tMPI_Alltoallv(const void* sendbuf, const int *sendcounts, const int *sdispls,
                    tMPI_Datatype sendtype,
-                   void* recvbuf, int *recvcounts, int *rdispls,
+                   void* recvbuf, const int *recvcounts, const int *rdispls,
                    tMPI_Datatype recvtype,
                    tMPI_Comm comm)
 

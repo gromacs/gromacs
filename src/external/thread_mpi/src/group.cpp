@@ -178,7 +178,7 @@ int tMPI_Comm_group(tMPI_Comm comm, tMPI_Group *group)
 }
 
 
-int tMPI_Group_incl(tMPI_Group group, int n, int *ranks, tMPI_Group *newgroup)
+int tMPI_Group_incl(tMPI_Group group, int n, const int *ranks, tMPI_Group *newgroup)
 {
     int        i;
     tMPI_Group ng;

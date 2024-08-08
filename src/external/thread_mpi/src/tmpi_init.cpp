@@ -908,7 +908,7 @@ double tMPI_Wtick(void)
 #endif
 }
 
-int tMPI_Get_count(tMPI_Status *status, tMPI_Datatype datatype, int *count)
+int tMPI_Get_count(const tMPI_Status *status, tMPI_Datatype datatype, int *count)
 {
 #ifdef TMPI_TRACE
     tMPI_Trace_print("tMPI_Get_count(%p, %p, %p)", status, datatype, count);

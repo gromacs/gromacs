@@ -195,7 +195,7 @@ int tMPI_Scatter(const void* sendbuf, int sendcount, tMPI_Datatype sendtype,
 
 
 
-int tMPI_Scatterv(const void* sendbuf, int *sendcounts, int *displs,
+int tMPI_Scatterv(const void* sendbuf, const int *sendcounts, const int *displs,
                   tMPI_Datatype sendtype, void* recvbuf, int recvcount,
                   tMPI_Datatype recvtype, int root, tMPI_Comm comm)
 {

@@ -166,7 +166,7 @@ int tMPI_Gather(const void* sendbuf, int sendcount, tMPI_Datatype sendtype,
 
 
 int tMPI_Gatherv(const void* sendbuf, int sendcount, tMPI_Datatype sendtype,
-                 void* recvbuf, int *recvcounts, int *displs,
+                 void* recvbuf, const int *recvcounts, const int *displs,
                  tMPI_Datatype recvtype, int root, tMPI_Comm comm)
 {
     int                 synct;

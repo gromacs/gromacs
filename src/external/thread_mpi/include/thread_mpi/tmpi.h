@@ -515,7 +515,7 @@ int tMPI_Comm_get_errhandler(tMPI_Comm comm, tMPI_Errhandler *errhandler);
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 TMPI_EXPORT
-int tMPI_Error_string(int errorcode, char *string, size_t *resultlen);
+int tMPI_Error_string(int errorcode, char *string, int *resultlen);
 /** \} */
 
 
@@ -599,7 +599,7 @@ int tMPI_Group_rank(tMPI_Group group, int *rank);
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 TMPI_EXPORT
-int tMPI_Group_incl(tMPI_Group group, int n, int *ranks, tMPI_Group *newgroup);
+int tMPI_Group_incl(tMPI_Group group, int n, const int *ranks, tMPI_Group *newgroup);
 
 /** Get a pointer to the group in the comm.
 
@@ -764,7 +764,7 @@ int tMPI_Cart_get(tMPI_Comm comm, int maxdims, int *dims, int *periods,
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 TMPI_EXPORT
-int tMPI_Cart_rank(tMPI_Comm comm, int *coords, int *rank);
+int tMPI_Cart_rank(tMPI_Comm comm, const int *coords, int *rank);
 
 /** Get coordinates of a process rank in a Cartesian topology.
 
@@ -789,7 +789,7 @@ int tMPI_Cart_coords(tMPI_Comm comm, int rank, int maxdims, int *coords);
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 TMPI_EXPORT
-int tMPI_Cart_map(tMPI_Comm comm, int ndims, int *dims, int *periods,
+int tMPI_Cart_map(tMPI_Comm comm, int ndims, const int *dims, const int *periods,
                   int *newrank);
 
 /** Create a comm with a Cartesian topology.
@@ -804,7 +804,7 @@ int tMPI_Cart_map(tMPI_Comm comm, int ndims, int *dims, int *periods,
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 TMPI_EXPORT
-int tMPI_Cart_create(tMPI_Comm comm_old, int ndims, int *dims, int *periods,
+int tMPI_Cart_create(tMPI_Comm comm_old, int ndims, const int *dims, const int *periods,
                      int reorder, tMPI_Comm *comm_cart);
 
 /** Create a comms that are sub-spaces of the Cartesian topology communicator.
@@ -819,7 +819,7 @@ int tMPI_Cart_create(tMPI_Comm comm_old, int ndims, int *dims, int *periods,
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 TMPI_EXPORT
-int tMPI_Cart_sub(tMPI_Comm comm, int *remain_dims, tMPI_Comm *newcomm);
+int tMPI_Cart_sub(tMPI_Comm comm, const int *remain_dims, tMPI_Comm *newcomm);
 
 /*! \} */
 
@@ -906,7 +906,7 @@ int tMPI_Recv(void* buf, int count, tMPI_Datatype datatype, int source,
     \param[in]  recvcount   The maximum number of items to receive.
     \param[in]  recvtype    The data type of the items in recvbuf.
     \param[in]  source      The rank of the source thread (or TMPI_ANY_SOURCE).
-    \param[in]  recvtag     The recveive message tag (or TMPI_ANY_TAG).
+    \param[in]  recvtag     The receive message tag (or TMPI_ANY_TAG).
     \param[in]  comm        The shared communicator.
     \param[out] status      The received message status.
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
@@ -1092,7 +1092,7 @@ int tMPI_Testsome(int incount, tMPI_Request *array_of_requests,
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 TMPI_EXPORT
-int tMPI_Get_count(tMPI_Status *status, tMPI_Datatype datatype, int *count);
+int tMPI_Get_count(const tMPI_Status *status, tMPI_Datatype datatype, int *count);
 /*! \} */
 
 
@@ -1182,7 +1182,7 @@ int tMPI_Gather(const void* sendbuf, int sendcount, tMPI_Datatype sendtype,
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 TMPI_EXPORT
 int tMPI_Gatherv(const void* sendbuf, int sendcount, tMPI_Datatype sendtype,
-                 void* recvbuf, int *recvcounts, int *displs,
+                 void* recvbuf, const int *recvcounts, const int *displs,
                  tMPI_Datatype recvtype, int root, tMPI_Comm comm);
 
 
@@ -1229,7 +1229,7 @@ int tMPI_Scatter(const void* sendbuf, int sendcount, tMPI_Datatype sendtype,
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 TMPI_EXPORT
-int tMPI_Scatterv(const void* sendbuf, int *sendcounts, int *displs,
+int tMPI_Scatterv(const void* sendbuf, const int *sendcounts, const int *displs,
                   tMPI_Datatype sendtype, void* recvbuf, int recvcount,
                   tMPI_Datatype recvtype, int root, tMPI_Comm comm);
 
@@ -1250,7 +1250,7 @@ int tMPI_Scatterv(const void* sendbuf, int *sendcounts, int *displs,
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 TMPI_EXPORT
-int tMPI_Alltoall(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
+int tMPI_Alltoall(const void* sendbuf, int sendcount, tMPI_Datatype sendtype,
                   void* recvbuf, int recvcount, tMPI_Datatype recvtype,
                   tMPI_Comm comm);
 
@@ -1276,9 +1276,9 @@ int tMPI_Alltoall(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 TMPI_EXPORT
-int tMPI_Alltoallv(void* sendbuf, int *sendcounts, int *sdispls,
-                   tMPI_Datatype sendtype, void* recvbuf, int *recvcounts,
-                   int *rdispls, tMPI_Datatype recvtype, tMPI_Comm comm);
+int tMPI_Alltoallv(const void* sendbuf, const int *sendcounts, const int *sdispls,
+                   tMPI_Datatype sendtype, void* recvbuf, const int *recvcounts,
+                   const int *rdispls, tMPI_Datatype recvtype, tMPI_Comm comm);
 
 /*! \} */
 
@@ -1309,7 +1309,7 @@ int tMPI_Alltoallv(void* sendbuf, int *sendcounts, int *sdispls,
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 TMPI_EXPORT
-int tMPI_Reduce(void* sendbuf, void* recvbuf, int count,
+int tMPI_Reduce(const void* sendbuf, void* recvbuf, int count,
                 tMPI_Datatype datatype, tMPI_Op op, int root, tMPI_Comm comm);
 
 
@@ -1331,7 +1331,7 @@ int tMPI_Reduce(void* sendbuf, void* recvbuf, int count,
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 TMPI_EXPORT
-int tMPI_Allreduce(void* sendbuf, void* recvbuf, int count,
+int tMPI_Allreduce(const void* sendbuf, void* recvbuf, int count,
                    tMPI_Datatype datatype, tMPI_Op op, tMPI_Comm comm);
 
 /** Do an tMPI_Reduce, but with the following assumption:
@@ -1339,7 +1339,7 @@ int tMPI_Allreduce(void* sendbuf, void* recvbuf, int count,
     sendbuf has the value TMPI_IN_PLACE (in which case the values of
     sendbuf may be changed in that thread).
 
-    This avoids unnecesary memory allocations associated with the normal
+    This avoids unnecessary memory allocations associated with the normal
     tMPI_Reduce.
 
     Collective function.
@@ -1357,7 +1357,7 @@ int tMPI_Allreduce(void* sendbuf, void* recvbuf, int count,
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 TMPI_EXPORT
-int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count,
+int tMPI_Reduce_fast(const void* sendbuf, void* recvbuf, int count,
                      tMPI_Datatype datatype, tMPI_Op op, int root,
                      tMPI_Comm comm);
 
@@ -1378,7 +1378,7 @@ int tMPI_Reduce_fast(void* sendbuf, void* recvbuf, int count,
 
     \return  TMPI_SUCCESS on success, TMPI_FAILURE on failure.  */
 TMPI_EXPORT
-int tMPI_Scan(void* sendbuf, void* recvbuf, int count,
+int tMPI_Scan(const void* sendbuf, void* recvbuf, int count,
               tMPI_Datatype datatype, tMPI_Op op, tMPI_Comm comm);
 
 
