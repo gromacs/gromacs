@@ -1572,7 +1572,7 @@ static void do_inputrec(gmx::ISerializer* serializer, t_inputrec* ir, int file_v
                 serializer->doInt(&ir->ramdParams->ngroup);
                 if (serializer->reading())
                 {
-                    snew(ir->ramdParams->group, ir->ramdParams->ngroup);
+                    ir->ramdParams->group.resize(ir->ramdParams->ngroup);
                 }
                 for (int g = 0; g < ir->ramdParams->ngroup; g++)
                 {

@@ -46,7 +46,7 @@ void read_ramdparams(std::vector<t_inpfile>* inp, gmx::RAMDParams* ramdparams, W
 {
     ramdparams->seed   = get_eint(inp, "ramd-seed", 1234, wi);
     ramdparams->ngroup = get_eint(inp, "ramd-ngroups", 1, wi);
-    snew(ramdparams->group, ramdparams->ngroup);
+    ramdparams->group.resize(ramdparams->ngroup);
 
     for (int i = 0; i < ramdparams->ngroup; i++)
     {
