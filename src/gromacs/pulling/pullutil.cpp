@@ -316,7 +316,8 @@ static void make_cyl_refgrps(const t_commrec*     cr,
         pullAllReduce(cr, comm, pull->coord.size() * c_cylinderBufferStride, comm->cylinderBuffer.data());
     }
 
-    bufferOffset = 0;
+    int pullCoordIndex = 0;
+    bufferOffset       = 0;
     for (pull_coord_work_t& pcrd : pull->coord)
     {
         if (pcrd.params_.eGeom == PullGroupGeometry::Cylinder)
@@ -328,8 +329,18 @@ static void make_cyl_refgrps(const t_commrec*     cr,
             auto buffer = gmx::constArrayRefFromArray(comm->cylinderBuffer.data() + bufferOffset,
                                                       c_cylinderBufferStride);
             bufferOffset += c_cylinderBufferStride;
-            double wmass          = buffer[0];
-            double wwmass         = buffer[1];
+            const double wmass  = buffer[0];
+            const double wwmass = buffer[1];
+            if (wmass == 0)
+            {
+                gmx_fatal(FARGS,
+                          "The mass of the cylinder selection of pull group %d is zero. "
+                          "This means that group %d does not cover the whole area. "
+                          "Maybe you did not put the correct group as group 1 in the pull "
+                          "coordinate?",
+                          pullCoordIndex + 1,
+                          pullCoordIndex + 1);
+            }
             dynamicGroup0.mwscale = 1.0 / wmass;
             /* Cylinder pulling can't be used with constraints, but we set
              * wscale and invtm anyhow, in case someone would like to use them.
@@ -359,6 +370,8 @@ static void make_cyl_refgrps(const t_commrec*     cr,
                 spatialData.ffrad[m] = (buffer[6 + m] + buffer[3 + m] * spatialData.cyl_dev) / wmass;
             }
         }
+
+        pullCoordIndex++;
     }
 }
 
