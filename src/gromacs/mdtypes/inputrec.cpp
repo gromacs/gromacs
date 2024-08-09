@@ -642,7 +642,7 @@ static void pr_pull(FILE* fp, int indent, const pull_params_t& pull)
     }
 }
 
-static void pr_ramd_group(FILE* fp, int indent, int g, const gmx::RAMDGroup grp)
+static void pr_ramd_group(FILE* fp, int indent, int g, const gmx::RAMDGroup& grp)
 {
     pr_indent(fp, indent);
     fprintf(fp, "ramd-group %d:\n", g);
@@ -652,10 +652,10 @@ static void pr_ramd_group(FILE* fp, int indent, int g, const gmx::RAMDGroup grp)
     PR("r_min_dist", grp.r_min_dist);
 }
 
-static void pr_ramd(FILE* fp, int indent, const gmx::RAMDParams ramd)
+static void pr_ramd(FILE* fp, int indent, const gmx::RAMDParams& ramd)
 {
     PI("ramd-seed", ramd.seed);
-    PI("ramd-ngroups", ramd.ngroup);
+    PI("ramd-ngroup", ramd.ngroup);
     for (int g = 0; g < ramd.ngroup; g++)
     {
         pr_ramd_group(fp, indent, g, ramd.group[g]);
