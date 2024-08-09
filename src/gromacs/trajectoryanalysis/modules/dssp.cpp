@@ -1706,7 +1706,7 @@ void Dssp::analyzeFrame(int frnr, const t_trxframe& fr, t_pbc* pbc, TrajectoryAn
 void Dssp::finishAnalysis(int /*nframes*/)
 {
     please_cite(stdout, "Kabsch1983");
-    please_cite(stdout, "Gorelov2024");
+    please_cite(stdout, "Gorelov2024a");
 }
 
 void Dssp::writeOutput()

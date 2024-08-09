@@ -83,6 +83,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/real.h"
 
 namespace gmx
@@ -883,6 +884,7 @@ void Hbond::finishAnalysis(int /*nframes*/)
         averageHistogramAng.normalizeProbability();
         averageHistogramAng.done();
     }
+    please_cite(stdout, "Gorelov2024b");
 }
 
 std::vector<HBond> Hbond::prepareFrameData(const std::vector<HbondStorageFrame>& data) const

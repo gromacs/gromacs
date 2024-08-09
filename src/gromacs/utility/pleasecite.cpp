@@ -431,12 +431,19 @@ void please_cite(FILE* fp, const char* key)
           "Protein J.",
           2023,
           "10.1007/s10930-023-10137-1" },
-        { "Gorelov2024",
+        { "Gorelov2024a",
           "S. Gorelov, A. Titov, O. Tolicheva, A. Konevega, A. Shvetsov",
           "DSSP in GROMACS: Tool for Defining Secondary Structures of Proteins in Trajectories",
           "Journal of Chemical Information and Modeling",
           2024,
           "10.1021/acs.jcim.3c01344" },
+        { "Gorelov2024b",
+          "S. Gorelov, A. Titov, O. Tolicheva, A. Konevega, A. Shvetsov",
+          "Determination of Hydrogen Bonds in GROMACS: A New Implementation to Overcome Memory "
+          "Limitation",
+          "Journal of Chemical Information and Modeling",
+          2024,
+          "10.1021/acs.jcim.3c02087" },
     };
 #define NSTR static_cast<int>(asize(citedb))
 
