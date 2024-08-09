@@ -53,7 +53,6 @@
 
 // False positive ODR violation detection
 // See https://github.com/google/sanitizers/issues/1017
-extern "C" const char* __asan_default_options();
 extern "C" const char* __asan_default_options()
 {
     return "detect_odr_violation=1";
