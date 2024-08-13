@@ -42,12 +42,10 @@
 
 #include <filesystem>
 #include <string>
-#include <utility>
+#include <tuple>
 #include <vector>
 
 #include <gtest/gtest.h>
-
-#include "gtest/gtest.h"
 
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/gmxpreprocess/grompp.h"
