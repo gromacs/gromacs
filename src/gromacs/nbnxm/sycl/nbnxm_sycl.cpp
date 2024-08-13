@@ -47,7 +47,7 @@
 #include "nbnxm_sycl_kernel_pruneonly.h"
 #include "nbnxm_sycl_types.h"
 
-namespace Nbnxm
+namespace gmx
 {
 
 static void launchSciSortOnGpu(GpuPairlist* plist, const DeviceStream& deviceStream);
@@ -110,7 +110,7 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
 }
 
 
-void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const Nbnxm::InteractionLocality iloc)
+void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const InteractionLocality iloc)
 {
     const NBParamGpu* nbp   = nb->nbparam;
     auto*             plist = nb->plist[iloc].get();
@@ -255,4 +255,4 @@ static void launchSciSortOnGpu(GpuPairlist* plist, const DeviceStream& deviceStr
     launchBucketSortKernel(q, plist);
 }
 
-} // namespace Nbnxm
+} // namespace gmx

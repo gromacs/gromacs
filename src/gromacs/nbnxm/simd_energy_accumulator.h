@@ -75,10 +75,6 @@
 namespace gmx
 {
 
-//! Convenience type for vector with aligned memory
-template<typename T>
-using AlignedVector = std::vector<T, gmx::AlignedAllocator<T>>;
-
 class EnergyGroupsPerCluster;
 
 #if GMX_SIMD

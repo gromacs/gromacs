@@ -48,7 +48,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/timing/wallcycle.h"
 
-struct nonbonded_verlet_t;
+
 struct t_commrec;
 struct t_forcerec;
 struct t_inputrec;
@@ -58,6 +58,7 @@ class t_state;
 
 namespace gmx
 {
+struct nonbonded_verlet_t;
 class MDLogger;
 template<typename T>
 class ArrayRef;
@@ -76,15 +77,15 @@ bool pme_loadbal_is_active(const pme_load_balancing_t* pme_lb);
  * The PME grid in pmedata is reused for smaller grids to lower the memory
  * usage.
  */
-void pme_loadbal_init(pme_load_balancing_t**     pme_lb_p,
-                      t_commrec*                 cr,
-                      const gmx::MDLogger&       mdlog,
-                      const t_inputrec&          ir,
-                      const matrix               box,
-                      const interaction_const_t& ic,
-                      const nonbonded_verlet_t&  nbv,
-                      gmx_pme_t*                 pmedata,
-                      gmx_bool                   bUseGPU);
+void pme_loadbal_init(pme_load_balancing_t**         pme_lb_p,
+                      t_commrec*                     cr,
+                      const gmx::MDLogger&           mdlog,
+                      const t_inputrec&              ir,
+                      const matrix                   box,
+                      const interaction_const_t&     ic,
+                      const gmx::nonbonded_verlet_t& nbv,
+                      gmx_pme_t*                     pmedata,
+                      gmx_bool                       bUseGPU);
 
 /*! \brief Process cycles and PME load balance when necessary
  *

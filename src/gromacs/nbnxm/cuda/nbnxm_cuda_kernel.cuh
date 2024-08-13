@@ -50,6 +50,10 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/pbcutil/ishift.h"
+
+namespace gmx
+{
+
 /* Note that floating-point constants in CUDA code should be suffixed
  * with f (e.g. 0.5f), to stop the compiler producing intermediate
  * code that is in double precision.
@@ -155,7 +159,7 @@ __launch_bounds__(THREADS_PER_BLOCK)
         __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #    endif /* CALC_ENERGIES */
 #endif     /* PRUNE_NBL */
-                (NBAtomDataGpu atdat, NBParamGpu nbparam, Nbnxm::GpuPairlist plist, bool bCalcFshift)
+                (NBAtomDataGpu atdat, NBParamGpu nbparam, GpuPairlist plist, bool bCalcFshift)
 #ifdef FUNCTION_DECLARATION_ONLY
                         ; /* Only do function declaration, omit the function body. */
 #else
@@ -549,7 +553,7 @@ __launch_bounds__(THREADS_PER_BLOCK)
                                 F_invr = inv_r6 * (c12 * inv_r6 - c6) * inv_r2;
 #        if defined CALC_ENERGIES || defined LJ_POT_SWITCH
                                 E_lj_p = int_bit
-                                         * (c12 * (inv_r6 * inv_r6 + nbparam.repulsion_shift.cpot) * c_oneTwelveth
+                                         * (c12 * (inv_r6 * inv_r6 + nbparam.repulsion_shift.cpot) * c_oneTwelfth
                                             - c6 * (inv_r6 + nbparam.dispersion_shift.cpot) * c_oneSixth);
 #        endif
 #    else /* !LJ_COMB_LB || CALC_ENERGIES */
@@ -753,3 +757,5 @@ __launch_bounds__(THREADS_PER_BLOCK)
 #undef LJ_EWALD
 
 #undef LJ_COMB
+
+} // namespace gmx

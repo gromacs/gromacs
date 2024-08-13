@@ -50,15 +50,13 @@
 
 #include "pairlist.h"
 
-enum class PairlistType;
 enum class PbcType : int;
 namespace gmx
 {
+enum class PairlistType;
 enum class PinningPolicy : int;
-} // namespace gmx
 
-
-void SearchCycleCounting::printCycles(FILE* fp, gmx::ArrayRef<const PairsearchWork> work) const
+void SearchCycleCounting::printCycles(FILE* fp, ArrayRef<const PairsearchWork> work) const
 {
     fprintf(fp, "\n");
     fprintf(fp,
@@ -95,14 +93,16 @@ PairsearchWork::~PairsearchWork() = default;
 
 PairSearch::PairSearch(const PbcType             pbcType,
                        const bool                doTestParticleInsertion,
-                       const gmx::IVec*          numDDCells,
+                       const IVec*               numDDCells,
                        const gmx_domdec_zones_t* ddZones,
                        const PairlistType        pairlistType,
                        const bool                haveFep,
                        const int                 maxNumThreads,
-                       gmx::PinningPolicy        pinningPolicy) :
+                       PinningPolicy             pinningPolicy) :
     gridSet_(pbcType, doTestParticleInsertion, numDDCells, ddZones, pairlistType, haveFep, maxNumThreads, pinningPolicy),
     work_(maxNumThreads)
 {
     cycleCounting_.recordCycles_ = (getenv("GMX_NBNXN_CYCLE") != nullptr);
 }
+
+} // namespace gmx

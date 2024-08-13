@@ -87,14 +87,8 @@
 
 #include "nbnxm_ocl_types.h"
 
-namespace Nbnxm
+namespace gmx
 {
-
-/*! \brief Convenience constants */
-//@{
-static constexpr int c_clSize = c_nbnxnGpuClusterSize;
-//@}
-
 
 /*! \brief Validates the input global work size parameter.
  */
@@ -505,12 +499,12 @@ static void fillin_ocl_structures(NBParamGpu* nbp, cl_nbparam_params_t* nbparams
    misc_ops_done event to record the point in time when the above  operations
    are finished and synchronize with this event in the non-local stream.
  */
-void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const Nbnxm::InteractionLocality iloc)
+void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const InteractionLocality iloc)
 {
     NBAtomDataGpu*      adat         = nb->atdat;
     NBParamGpu*         nbp          = nb->nbparam;
     auto*               plist        = nb->plist[iloc].get();
-    Nbnxm::GpuTimers*   timers       = nb->timers;
+    GpuTimers*          timers       = nb->timers;
     const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
 
     bool bDoTime = nb->bDoTime;
@@ -539,7 +533,7 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const Nb
            (that's the way the timing accounting can distinguish between
            separate prune kernel and combined force+prune).
          */
-        Nbnxm::gpu_launch_kernel_pruneonly(nb, iloc, 1);
+        gpu_launch_kernel_pruneonly(nb, iloc, 1);
     }
 
     if (plist->numSci == 0)
@@ -681,7 +675,7 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
     NBAtomDataGpu*      adat         = nb->atdat;
     NBParamGpu*         nbp          = nb->nbparam;
     auto*               plist        = nb->plist[iloc].get();
-    Nbnxm::GpuTimers*   timers       = nb->timers;
+    GpuTimers*          timers       = nb->timers;
     const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
     bool                bDoTime      = nb->bDoTime;
 
@@ -810,4 +804,4 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
     }
 }
 
-} // namespace Nbnxm
+} // namespace gmx

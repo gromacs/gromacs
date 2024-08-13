@@ -50,8 +50,11 @@
 #include "nbnxm_sycl_kernel_utils.h"
 #include "nbnxm_sycl_types.h"
 
+namespace gmx
+{
+
 //! \brief Class name for NBNXM kernel
-template<bool doPruneNBL, bool doCalcEnergies, enum Nbnxm::ElecType elecType, enum Nbnxm::VdwType vdwType, int subGroupSize>
+template<bool doPruneNBL, bool doCalcEnergies, enum ElecType elecType, enum VdwType vdwType, int subGroupSize>
 class NbnxmKernel;
 
 /*! \brief Macro to control the enablement of manually-packed Float3 structure.
@@ -72,9 +75,6 @@ using FCiFloat3 = AmdPackedFloat3;
 #else
 using FCiFloat3 = Float3;
 #endif
-
-namespace Nbnxm
-{
 
 //! \brief Set of boolean constants mimicking preprocessor macros.
 template<enum ElecType elecType, enum VdwType vdwType>
@@ -1593,4 +1593,4 @@ void launchNbnxmKernelHelper(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, co
             stepWork.computeVirial);
 }
 
-} // namespace Nbnxm
+} // namespace gmx

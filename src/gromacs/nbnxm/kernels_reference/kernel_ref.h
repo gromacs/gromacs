@@ -44,6 +44,9 @@
 
 #include "gromacs/nbnxm/kernel_common.h"
 
+namespace gmx
+{
+
 //! All the different CPU reference kernel functions.
 //! \{
 NbnxmKernelFunc nbnxn_kernel_ElecRF_VdwLJ_F_ref;
@@ -221,5 +224,7 @@ static NbnxmKernelFunc* const nbnxn_kernel_energrp_ref[static_cast<int>(CoulombK
 //! \}
 
 #endif /* INCLUDE_KERNELFUNCTION_TABLES */
+
+} // namespace gmx
 
 #endif

@@ -54,6 +54,9 @@
 #include "nbnxm_cuda_kernel_utils.cuh"
 #include "nbnxm_cuda_types.h"
 
+namespace gmx
+{
+
 /* Note that floating-point constants in CUDA code should be suffixed
  * with f (e.g. 0.5f), to stop the compiler producing intermediate
  * code that is in double precision.
@@ -104,16 +107,16 @@
  */
 template<bool haveFreshList>
 __launch_bounds__(THREADS_PER_BLOCK, MIN_BLOCKS_PER_MP) __global__
-        void nbnxn_kernel_prune_cuda(NBAtomDataGpu atdat, NBParamGpu nbparam, Nbnxm::GpuPairlist plist, int numParts)
+        void nbnxn_kernel_prune_cuda(NBAtomDataGpu atdat, NBParamGpu nbparam, GpuPairlist plist, int numParts)
 #ifdef FUNCTION_DECLARATION_ONLY
                 ; /* Only do function declaration, omit the function body. */
 
 // Add extern declarations so each translation unit understands that
 // there will be a definition provided.
 extern template __global__ void
-nbnxn_kernel_prune_cuda<true>(const NBAtomDataGpu, const NBParamGpu, const Nbnxm::GpuPairlist, int);
+nbnxn_kernel_prune_cuda<true>(const NBAtomDataGpu, const NBParamGpu, const GpuPairlist, int);
 extern template __global__ void
-nbnxn_kernel_prune_cuda<false>(const NBAtomDataGpu, const NBParamGpu, const Nbnxm::GpuPairlist, int);
+nbnxn_kernel_prune_cuda<false>(const NBAtomDataGpu, const NBParamGpu, const GpuPairlist, int);
 #else
 {
 
@@ -349,3 +352,5 @@ nbnxn_kernel_prune_cuda<false>(const NBAtomDataGpu, const NBParamGpu, const Nbnx
 #undef NTHREAD_Z
 #undef MIN_BLOCKS_PER_MP
 #undef THREADS_PER_BLOCK
+
+} // namespace gmx

@@ -47,26 +47,27 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
-struct NbnxnPairlistGpu;
-struct nbnxn_atomdata_t;
 struct interaction_const_t;
 struct t_forcerec;
 
 namespace gmx
 {
+struct NbnxnPairlistGpu;
+struct nbnxn_atomdata_t;
 class StepWorkload;
-}
 
 //! Reference (slow) kernel for nb n vs n GPU type pair lists
-void nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu*        nbl,
-                          const nbnxn_atomdata_t*        nbat,
-                          const interaction_const_t*     iconst,
-                          gmx::ArrayRef<const gmx::RVec> shiftvec,
-                          const gmx::StepWorkload&       stepWork,
-                          int                            clearF,
-                          gmx::ArrayRef<real>            f,
-                          real*                          fshift,
-                          real*                          Vc,
-                          real*                          Vvdw);
+void nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu*    nbl,
+                          const nbnxn_atomdata_t*    nbat,
+                          const interaction_const_t* iconst,
+                          ArrayRef<const RVec>       shiftvec,
+                          const StepWorkload&        stepWork,
+                          int                        clearF,
+                          ArrayRef<real>             f,
+                          real*                      fshift,
+                          real*                      Vc,
+                          real*                      Vvdw);
+
+} // namespace gmx
 
 #endif

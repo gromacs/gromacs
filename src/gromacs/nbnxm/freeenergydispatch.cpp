@@ -70,6 +70,9 @@
 #include "pairlistset.h"
 #include "pairlistsets.h"
 
+namespace gmx
+{
+
 FreeEnergyDispatch::FreeEnergyDispatch(const int numEnergyGroups) :
     foreignGroupPairEnergies_(numEnergyGroups),
     threadedForceBuffer_(gmx_omp_nthreads_get(ModuleMultiThread::Nonbonded), false, numEnergyGroups),
@@ -465,3 +468,5 @@ void nonbonded_verlet_t::dispatchFreeEnergyKernels(const gmx::ArrayRefWithPaddin
                                                    nrnb,
                                                    wcycle_);
 }
+
+} // namespace gmx

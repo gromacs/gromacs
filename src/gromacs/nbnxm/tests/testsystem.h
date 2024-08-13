@@ -45,10 +45,9 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/listoflists.h"
 
-enum class LJCombinationRule : int;
-
 namespace gmx
 {
+enum class LJCombinationRule : int;
 
 namespace test
 {

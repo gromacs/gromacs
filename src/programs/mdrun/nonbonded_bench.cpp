@@ -78,8 +78,8 @@ public:
     int  run() override;
 
 private:
-    int                       sizeFactor_ = 1;
-    Nbnxm::KernelBenchOptions benchmarkOptions_;
+    int                     sizeFactor_ = 1;
+    NbnxmKernelBenchOptions benchmarkOptions_;
 };
 
 void NonbondedBenchmark::initOptions(IOptionsContainer* options, ICommandLineOptionsModuleSettings* settings)
@@ -161,13 +161,13 @@ void NonbondedBenchmark::initOptions(IOptionsContainer* options, ICommandLineOpt
 
     settings->setHelpText(desc);
 
-    static const EnumerationArray<Nbnxm::BenchMarkKernels, const char*> c_nbnxmSimdStrings = {
+    static const EnumerationArray<NbnxmBenchMarkKernels, const char*> c_nbnxmSimdStrings = {
         { "auto", "no", "4xm", "2xmm" }
     };
-    static const EnumerationArray<Nbnxm::BenchMarkCombRule, const char*> c_combRuleStrings = {
+    static const EnumerationArray<NbnxmBenchMarkCombRule, const char*> c_combRuleStrings = {
         { "geometric", "lb", "none" }
     };
-    static const EnumerationArray<Nbnxm::BenchMarkCoulomb, const char*> c_coulombTypeStrings = {
+    static const EnumerationArray<NbnxmBenchMarkCoulomb, const char*> c_coulombTypeStrings = {
         { "ewald", "reaction-field" }
     };
 
@@ -175,12 +175,12 @@ void NonbondedBenchmark::initOptions(IOptionsContainer* options, ICommandLineOpt
             IntegerOption("size").store(&sizeFactor_).description("The system size is 3000 atoms times this value"));
     options->addOption(
             IntegerOption("nt").store(&benchmarkOptions_.numThreads).description("The number of OpenMP threads to use"));
-    options->addOption(EnumOption<Nbnxm::BenchMarkKernels>("simd")
+    options->addOption(EnumOption<NbnxmBenchMarkKernels>("simd")
                                .store(&benchmarkOptions_.nbnxmSimd)
                                .enumValue(c_nbnxmSimdStrings)
                                .description("SIMD type, auto runs all supported SIMD setups or no "
                                             "SIMD when SIMD is not supported"));
-    options->addOption(EnumOption<Nbnxm::BenchMarkCoulomb>("coulomb")
+    options->addOption(EnumOption<NbnxmBenchMarkCoulomb>("coulomb")
                                .store(&benchmarkOptions_.coulombType)
                                .enumValue(c_coulombTypeStrings)
                                .description("The functional form for the Coulomb interactions"));
@@ -188,7 +188,7 @@ void NonbondedBenchmark::initOptions(IOptionsContainer* options, ICommandLineOpt
             BooleanOption("table")
                     .store(&benchmarkOptions_.useTabulatedEwaldCorr)
                     .description("Use lookup table for Ewald correction instead of analytical"));
-    options->addOption(EnumOption<Nbnxm::BenchMarkCombRule>("combrule")
+    options->addOption(EnumOption<NbnxmBenchMarkCombRule>("combrule")
                                .store(&benchmarkOptions_.ljCombinationRule)
                                .enumValue(c_combRuleStrings)
                                .description("The LJ combination rule"));
@@ -231,7 +231,7 @@ void NonbondedBenchmark::optionsFinished()
 
 int NonbondedBenchmark::run()
 {
-    Nbnxm::bench(sizeFactor_, benchmarkOptions_);
+    bench(sizeFactor_, benchmarkOptions_);
 
     return 0;
 }

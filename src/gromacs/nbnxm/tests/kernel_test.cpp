@@ -151,7 +151,7 @@ struct KernelOptions
     //! The number of OpenMP threads to use
     int numThreads = 1;
     //! The kernel setup
-    Nbnxm::KernelSetup kernelSetup;
+    NbnxmKernelSetup kernelSetup;
     //! The modifier for the VdW interactions
     InteractionModifiers vdwModifier = InteractionModifiers::PotShift;
     //! The LJ combination rule
@@ -213,7 +213,7 @@ std::unique_ptr<nonbonded_verlet_t> setupNbnxmForBenchInstance(const KernelOptio
 
     PairlistParams pairlistParams(options.kernelSetup.kernelType, false, options.pairlistCutoff, false);
 
-    Nbnxm::GridSet gridSet(
+    GridSet gridSet(
             PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false, numThreads, pinPolicy);
 
     auto pairlistSets = std::make_unique<PairlistSets>(pairlistParams, false, 0);
@@ -265,9 +265,9 @@ std::unique_ptr<nonbonded_verlet_t> setupNbnxmForBenchInstance(const KernelOptio
 struct KernelInputParameters
 {
     //! This type must match the layout of \c KernelInputParameters
-    using TupleT = std::tuple<Nbnxm::KernelType, CoulombKernelType, int, EnergyHandling>;
+    using TupleT = std::tuple<NbnxmKernelType, CoulombKernelType, int, EnergyHandling>;
     //! The kernel type and cluster pair layout
-    Nbnxm::KernelType kernelType;
+    NbnxmKernelType kernelType;
     //! The Coulomb kernel type
     CoulombKernelType coulombKernelType;
     //! The VdW interaction type
@@ -377,7 +377,7 @@ std::string nameOfTest(const testing::TestParamInfo<KernelInputParameters>& info
     }
     std::string testName =
             formatString("type_%s_Tab%s_%s_Coulomb%s_Vdw%s",
-                         lookup_kernel_name(info.param.kernelType),
+                         nbnxmKernelTypeToName(info.param.kernelType),
                          info.param.coulombKernelType == CoulombKernelType::Table
                                          || info.param.coulombKernelType == CoulombKernelType::TableTwin
                                  ? "Yes"
@@ -457,8 +457,8 @@ TEST_P(NbnxmKernelTest, WorksWith)
 
         // Coulomb settings
         options_.kernelSetup.ewaldExclusionType = isTabulated(parameters_.coulombKernelType)
-                                                          ? Nbnxm::EwaldExclusionType::Table
-                                                          : Nbnxm::EwaldExclusionType::Analytical;
+                                                          ? EwaldExclusionType::Table
+                                                          : EwaldExclusionType::Analytical;
         options_.coulombType                    = parameters_.coulombKernelType;
 
         // Van der Waals settings
@@ -494,7 +494,7 @@ TEST_P(NbnxmKernelTest, WorksWith)
                                  "double-precision build of GROMACS";
             }
 
-            if (options_.kernelSetup.kernelType == Nbnxm::KernelType::Cpu4x4_PlainC)
+            if (options_.kernelSetup.kernelType == NbnxmKernelType::Cpu4x4_PlainC)
             {
                 GTEST_SKIP() << "Plain-C kernels are never used to generate reference data";
             }
@@ -506,19 +506,19 @@ TEST_P(NbnxmKernelTest, WorksWith)
             }
         }
 
-        if (!sc_haveNbnxmSimd4xmKernels && parameters_.kernelType == Nbnxm::KernelType::Cpu4xN_Simd_4xN)
+        if (!sc_haveNbnxmSimd4xmKernels && parameters_.kernelType == NbnxmKernelType::Cpu4xN_Simd_4xN)
         {
             GTEST_SKIP()
                     << "Cannot test or generate data for 4xN kernels without suitable SIMD support";
         }
 
-        if (!sc_haveNbnxmSimd2xmmKernels && parameters_.kernelType == Nbnxm::KernelType::Cpu4xN_Simd_2xNN)
+        if (!sc_haveNbnxmSimd2xmmKernels && parameters_.kernelType == NbnxmKernelType::Cpu4xN_Simd_2xNN)
         {
             GTEST_SKIP() << "Cannot test or generate data for 2xNN kernels without suitable SIMD "
                             "support";
         }
 
-        if (options_.kernelSetup.kernelType == Nbnxm::KernelType::Cpu4x4_PlainC
+        if (options_.kernelSetup.kernelType == NbnxmKernelType::Cpu4x4_PlainC
             && (options_.coulombType == CoulombKernelType::Ewald
                 || options_.coulombType == CoulombKernelType::EwaldTwin))
         {
@@ -526,7 +526,7 @@ TEST_P(NbnxmKernelTest, WorksWith)
                     << "Analytical Ewald is not implemented for the plain-C kernel, skip this test";
         }
 
-        if (options_.kernelSetup.kernelType == Nbnxm::KernelType::Cpu4x4_PlainC
+        if (options_.kernelSetup.kernelType == NbnxmKernelType::Cpu4x4_PlainC
             && (parameters_.vdwKernelType == vdwktLJCUT_COMBGEOM
                 || parameters_.vdwKernelType == vdwktLJCUT_COMBLB))
         {
@@ -649,9 +649,9 @@ TEST_P(NbnxmKernelTest, WorksWith)
 INSTANTIATE_TEST_SUITE_P(Combinations,
                          NbnxmKernelTest,
                          ::testing::ConvertGenerator<KernelInputParameters::TupleT>(::testing::Combine(
-                                 ::testing::Values(Nbnxm::KernelType::Cpu4x4_PlainC,
-                                                   Nbnxm::KernelType::Cpu4xN_Simd_4xN,
-                                                   Nbnxm::KernelType::Cpu4xN_Simd_2xNN),
+                                 ::testing::Values(NbnxmKernelType::Cpu4x4_PlainC,
+                                                   NbnxmKernelType::Cpu4xN_Simd_4xN,
+                                                   NbnxmKernelType::Cpu4xN_Simd_2xNN),
                                  ::testing::Values(CoulombKernelType::ReactionField,
                                                    CoulombKernelType::Ewald,
                                                    CoulombKernelType::EwaldTwin,

@@ -40,12 +40,12 @@
 #ifndef GMX_NBNXN_CUDA_NBNXN_CUDA_H
 #define GMX_NBNXN_CUDA_NBNXN_CUDA_H
 
-namespace Nbnxm
+namespace gmx
 {
 
 //! Set up the cache configuration for the non-bonded kernels.
 void cuda_set_cacheconfig();
 
-} // namespace Nbnxm
+} // namespace gmx
 
 #endif

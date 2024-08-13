@@ -48,6 +48,9 @@
 #include "gromacs/nbnxm/cuda/nbnxm_cuda_types.h"
 #include "gromacs/nbnxm/grid.h"
 
+namespace gmx
+{
+
 /*! \brief CUDA kernel for transforming position coordinates from rvec to nbnxm layout.
  *
  * TODO:
@@ -106,9 +109,6 @@ static __global__ void nbnxn_gpu_x_to_nbat_x_kernel(int numColumns,
 }
 
 
-namespace Nbnxm
-{
-
 //! Number of CUDA threads in a block
 // TODO Optimize this through experimentation
 constexpr static int c_bufOpsThreadsPerBlock = 128;
@@ -146,4 +146,4 @@ void launchNbnxmKernelTransformXToXq(const Grid&          grid,
     launchGpuKernel(kernelFn, config, deviceStream, nullptr, "XbufferOps", kernelArgs);
 }
 
-} // namespace Nbnxm
+} // namespace gmx

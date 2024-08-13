@@ -47,32 +47,33 @@
 
 #include "nbnxm_simd.h"
 
-struct nbnxn_atomdata_t;
-struct NbnxnPairlistCpu;
-
 namespace gmx
 {
+
+struct nbnxn_atomdata_t;
+struct NbnxnPairlistCpu;
 template<typename>
 class ArrayRef;
-}
 
 //! Prune a single NbnxnPairlistCpu entry with distance rlistInner
 template<KernelLayout kernelLayout>
-void nbnxmSimdPruneKernel(NbnxnPairlistCpu*              nbl,
-                          const nbnxn_atomdata_t&        nbat,
-                          gmx::ArrayRef<const gmx::RVec> shiftvec,
-                          real                           rlistInner);
+void nbnxmSimdPruneKernel(NbnxnPairlistCpu*       nbl,
+                          const nbnxn_atomdata_t& nbat,
+                          ArrayRef<const RVec>    shiftvec,
+                          real                    rlistInner);
 
 #if GMX_HAVE_NBNXM_SIMD_2XMM
-extern template void nbnxmSimdPruneKernel<KernelLayout::r2xMM>(NbnxnPairlistCpu*              nbl,
-                                                               const nbnxn_atomdata_t&        nbat,
-                                                               gmx::ArrayRef<const gmx::RVec> shiftvec,
-                                                               real rlistInner);
+extern template void nbnxmSimdPruneKernel<KernelLayout::r2xMM>(NbnxnPairlistCpu*       nbl,
+                                                               const nbnxn_atomdata_t& nbat,
+                                                               ArrayRef<const RVec>    shiftvec,
+                                                               real                    rlistInner);
 #endif
 
 #if GMX_HAVE_NBNXM_SIMD_4XM
-extern template void nbnxmSimdPruneKernel<KernelLayout::r4xM>(NbnxnPairlistCpu*              nbl,
-                                                              const nbnxn_atomdata_t&        nbat,
-                                                              gmx::ArrayRef<const gmx::RVec> shiftvec,
-                                                              real rlistInner);
+extern template void nbnxmSimdPruneKernel<KernelLayout::r4xM>(NbnxnPairlistCpu*       nbl,
+                                                              const nbnxn_atomdata_t& nbat,
+                                                              ArrayRef<const RVec>    shiftvec,
+                                                              real                    rlistInner);
 #endif
+
+} // namespace gmx

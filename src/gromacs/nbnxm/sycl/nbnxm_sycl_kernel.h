@@ -45,7 +45,6 @@ namespace gmx
 {
 enum class InteractionLocality;
 class StepWorkload;
-} // namespace gmx
 struct NbnxmGpu;
 
 // Ensure any changes are in sync with device_management_sycl.cpp
@@ -54,10 +53,6 @@ struct NbnxmGpu;
 #define SYCL_NBNXM_SUPPORTS_SUBGROUP_SIZE_64 \
     (GMX_GPU_NB_CLUSTER_SIZE == 8 && !(GMX_SYCL_HIPSYCL && !GMX_HIPSYCL_HAVE_HIP_TARGET))
 
-namespace Nbnxm
-{
-using gmx::InteractionLocality;
-
 /*! \brief Launch SYCL NBNXM kernel.
  *
  * \param nb Non-bonded parameters.
@@ -65,8 +60,8 @@ using gmx::InteractionLocality;
  * \param iloc Interaction locality.
  * \param doPrune Whether to do neighborlist pruning.
  */
-void launchNbnxmKernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, InteractionLocality iloc, bool doPrune);
+void launchNbnxmKernel(NbnxmGpu* nb, const StepWorkload& stepWork, InteractionLocality iloc, bool doPrune);
 
-} // namespace Nbnxm
+} // namespace gmx
 
 #endif // GMX_NBNXM_SYCL_NBNXM_SYCL_KERNEL_H

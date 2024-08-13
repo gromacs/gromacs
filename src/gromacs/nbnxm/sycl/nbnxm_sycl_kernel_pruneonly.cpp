@@ -56,7 +56,7 @@ using mode = sycl::access_mode;
 template<bool haveFreshList>
 class NbnxmKernelPruneOnly;
 
-namespace Nbnxm
+namespace gmx
 {
 
 /*! \brief Prune-only kernel for NBNXM.
@@ -343,4 +343,4 @@ void launchNbnxmKernelPruneOnly(NbnxmGpu* nb, const InteractionLocality iloc, co
                                         nbp->rlistInner_sq);
 }
 
-} // namespace Nbnxm
+} // namespace gmx

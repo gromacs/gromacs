@@ -49,11 +49,13 @@
 
 #include "nbnxm_geometry.h"
 
+namespace gmx
+{
 
-PairlistParams::PairlistParams(const Nbnxm::KernelType kernelType,
-                               const bool              haveFep,
-                               const real              rlist,
-                               const bool              haveMultipleDomains) :
+PairlistParams::PairlistParams(const NbnxmKernelType kernelType,
+                               const bool            haveFep,
+                               const real            rlist,
+                               const bool            haveMultipleDomains) :
     haveFep_(haveFep),
     rlistOuter(rlist),
     rlistInner(rlist),
@@ -64,13 +66,13 @@ PairlistParams::PairlistParams(const Nbnxm::KernelType kernelType,
     numRollingPruningParts(1),
     lifetime(-1)
 {
-    if (!Nbnxm::kernelTypeUsesSimplePairlist(kernelType))
+    if (!kernelTypeUsesSimplePairlist(kernelType))
     {
         pairlistType = PairlistType::HierarchicalNxN;
     }
     else
     {
-        switch (Nbnxm::sc_jClusterSize(kernelType))
+        switch (sc_jClusterSize(kernelType))
         {
             case 2: pairlistType = PairlistType::Simple4x2; break;
             case 4: pairlistType = PairlistType::Simple4x4; break;
@@ -79,3 +81,5 @@ PairlistParams::PairlistParams(const Nbnxm::KernelType kernelType,
         }
     }
 }
+
+} // namespace gmx

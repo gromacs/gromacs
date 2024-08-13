@@ -50,6 +50,9 @@
 
 #include "pairlistparams.h"
 
+namespace gmx
+{
+
 //! The types of kernel for calculating the distance between pairs of atom clusters
 enum class ClusterDistanceKernelType : int
 {
@@ -105,5 +108,7 @@ static inline ClusterDistanceKernelType getClusterDistanceKernelType(const Pairl
     GMX_RELEASE_ASSERT(false, "We should have returned before getting here");
     return ClusterDistanceKernelType::CpuPlainC;
 }
+
+} // namespace gmx
 
 #endif

@@ -53,18 +53,13 @@
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
 
-struct NbnxmPairlistCpuWork;
-struct NbnxmPairlistGpuWork;
 struct t_nblist;
 
+namespace gmx
+{
 
-//! Convenience type for vector with aligned memory
-template<typename T>
-using AlignedVector = std::vector<T, gmx::AlignedAllocator<T>>;
-
-//! Convenience type for vector that avoids initialization at resize()
-template<typename T>
-using FastVector = std::vector<T, gmx::DefaultInitializationAllocator<T>>;
+struct NbnxmPairlistCpuWork;
+struct NbnxmPairlistGpuWork;
 
 /*! \brief Cache-line protection buffer
  *
@@ -109,11 +104,11 @@ public:
     //! Return the exclusion mask for \c index
     unsigned int& excl(int index) { return list_[index].excl; }
     //! Return the size of the list (not the number of packed elements)
-    gmx::Index size() const noexcept { return list_.size(); }
+    Index size() const noexcept { return list_.size(); }
     //! Return whether the list is empty
     bool empty() const noexcept { return size() == 0; }
     //! Resize the list
-    void resize(gmx::Index count) { list_.resize(count); }
+    void resize(Index count) { list_.resize(count); }
     //! Add a new element to the list
     void push_back(const decltype(list_)::value_type& value) { list_.push_back(value); }
 };
@@ -291,12 +286,9 @@ struct nbnxn_cj_packed_t
 class PackedJClusterList
 {
 public:
-    explicit PackedJClusterList(const gmx::PinningPolicy pinningPolicy) :
-        list_({}, { pinningPolicy })
-    {
-    }
+    explicit PackedJClusterList(const PinningPolicy pinningPolicy) : list_({}, { pinningPolicy }) {}
     //! The list of packed j-cluster groups
-    gmx::HostVector<nbnxn_cj_packed_t> list_;
+    HostVector<nbnxn_cj_packed_t> list_;
     //! Return the j-cluster index for \c index from the pack list
     int cj(const int index) const
     {
@@ -308,11 +300,11 @@ public:
         return list_[index / c_nbnxnGpuJgroupSize].imei[0].imask;
     }
     //! Return the size of the list (not the number of packed elements)
-    gmx::Index size() const noexcept { return list_.size(); }
+    Index size() const noexcept { return list_.size(); }
     //! Return whether the list is empty
     bool empty() const noexcept { return size() == 0; }
     //! Resize the packed list
-    void resize(gmx::Index count) { list_.resize(count); }
+    void resize(Index count) { list_.resize(count); }
     //! Add a new element to the packed list
     void push_back(const decltype(list_)::value_type& value) { list_.push_back(value); }
 };
@@ -385,7 +377,7 @@ struct NbnxnPairlistGpu
      *
      * \param[in] pinningPolicy  Sets the pinning policy for all buffers used on the GPU
      */
-    NbnxnPairlistGpu(gmx::PinningPolicy pinningPolicy);
+    NbnxnPairlistGpu(PinningPolicy pinningPolicy);
 
     //! Cache protection
     gmx_cache_protect_t cp0;
@@ -399,11 +391,11 @@ struct NbnxnPairlistGpu
     //! The radius for constructing the list
     real rlist;
     //! The i-super-cluster list, indexes into cjPacked list;
-    gmx::HostVector<nbnxn_sci_t> sci;
+    HostVector<nbnxn_sci_t> sci;
     //! The list of packed j-cluster groups
     PackedJClusterList cjPacked;
     //! Atom interaction bits (non-exclusions)
-    gmx::HostVector<nbnxn_excl_t> excl;
+    HostVector<nbnxn_excl_t> excl;
     //! The total number of i-clusters
     int nci_tot;
 
@@ -413,5 +405,7 @@ struct NbnxnPairlistGpu
     //! Cache protection
     gmx_cache_protect_t cp1;
 };
+
+} // namespace gmx
 
 #endif

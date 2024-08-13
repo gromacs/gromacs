@@ -61,13 +61,13 @@
 
 class DeviceContext;
 class DeviceStream;
-struct NBAtomDataGpu;
 struct gmx_enerdata_t;
 struct gmx_ffparams_t;
 struct gmx_wallcycle;
 
 namespace gmx
 {
+struct NBAtomDataGpu;
 class StepWorkload;
 
 //! Returns whether there are any interactions in ilists suitable for a GPU.

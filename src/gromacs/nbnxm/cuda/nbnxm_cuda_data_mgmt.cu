@@ -81,7 +81,7 @@
  * device_atomic_functions.h used by nbnxm_cuda_types.h. Seen in cuda 10 and 11 with gcc-11. */
 #undef __WSB_DEPRECATION_MESSAGE
 
-namespace Nbnxm
+namespace gmx
 {
 
 /* This is a heuristically determined parameter for the Kepler
@@ -132,4 +132,4 @@ void getExclusiveScanWorkingArraySize(size_t& scan_size, GpuPairlist* d_plist, c
                                   deviceStream.stream());
 }
 
-} // namespace Nbnxm
+} // namespace gmx

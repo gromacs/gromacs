@@ -59,6 +59,9 @@
 
 #include "nbnxm_ocl_types.h"
 
+namespace gmx
+{
+
 /*! \brief Array of the defines needed to generate a specific eel flavour
  *
  * The twin-cutoff entries are not normally used, because those setups are
@@ -117,11 +120,8 @@ static const char* kernel_VdW_family_definitions[] = {
  *
  * \throws std::bad_alloc if out of memory
  */
-static std::string makeDefinesForKernelTypes(bool                 bFastGen,
-                                             enum Nbnxm::ElecType elecType,
-                                             enum Nbnxm::VdwType  vdwType)
+static std::string makeDefinesForKernelTypes(bool bFastGen, enum ElecType elecType, enum VdwType vdwType)
 {
-    using Nbnxm::ElecType;
     std::string defines_for_kernel_types;
 
     if (bFastGen)
@@ -221,3 +221,5 @@ void nbnxn_gpu_compile_kernels(NbnxmGpu* nb)
 
     nb->dev_rundata->program = program;
 }
+
+} // namespace gmx

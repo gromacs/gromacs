@@ -49,4 +49,9 @@
 
 #include "pairlistwork.h"
 
+namespace gmx
+{
+
 PairlistSet::~PairlistSet() = default;
+
+} // namespace gmx

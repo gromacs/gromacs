@@ -71,7 +71,7 @@
 
 #include "nbnxm_ocl_types.h"
 
-namespace Nbnxm
+namespace gmx
 {
 
 /*! \brief This parameter should be determined heuristically from the
@@ -226,4 +226,4 @@ int gpu_min_ci_balanced(NbnxmGpu* nb)
     }
 }
 
-} // namespace Nbnxm
+} // namespace gmx

@@ -52,7 +52,7 @@
 #include "boundingbox.h"
 #include "boundingbox_simd.h"
 
-namespace Nbnxm
+namespace gmx
 {
 
 //! Loads a corner of a bounding box into a float vector
@@ -105,8 +105,6 @@ static inline float dotProduct(const gmx::BasicVector<float>& v1, const gmx::Bas
  */
 static inline float clusterBoundingBoxDistance2(const BoundingBox& bb_i, const BoundingBox& bb_j)
 {
-    using namespace gmx;
-
 #if NBNXN_SEARCH_BB_SIMD4
     using T = Simd4Float;
 
@@ -148,8 +146,6 @@ clusterBoundingBoxDistance2_xxxx_simd4_inner(const float*                       
                                              const std::array<gmx::Simd4Float, DIM>& jUpperCorner,
                                              float* distancesSquared)
 {
-    using namespace gmx;
-
     constexpr int stride = c_packedBoundingBoxesDimSize;
 
     const int shi = boundingBoxStart * c_numBoundingBoxBounds1D * DIM;
@@ -195,8 +191,6 @@ gmx_unused static void clusterBoundingBoxDistance2_xxxx_simd4(const float* bb_j,
                                                               const float* bb_i,
                                                               float*       d2)
 {
-    using namespace gmx;
-
     constexpr int stride = c_packedBoundingBoxesDimSize;
 
     const std::array<Simd4Float, DIM> jLowerCorner = { Simd4Float(bb_j[0 * stride]),
@@ -218,6 +212,6 @@ gmx_unused static void clusterBoundingBoxDistance2_xxxx_simd4(const float* bb_j,
 
 #endif /* NBNXN_SEARCH_BB_SIMD4 */
 
-} // namespace Nbnxm
+} // namespace gmx
 
 #endif // GMX_NBNXM_BOUNDINGBOXDISTANCE_H

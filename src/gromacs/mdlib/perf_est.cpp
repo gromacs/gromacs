@@ -327,7 +327,7 @@ static void pp_verlet_load(const gmx_mtop_t& mtop,
     *nlj_tot = nqlj + nlj;
 
     /* Effective radius of a CPU pairlist including the pairs beyond rlist */
-    r_eff = ir.rlist + nbnxmPairlistVolumeRadiusIncrease(false, mtop.natoms / det(box));
+    r_eff = ir.rlist + gmx::nbnxmPairlistVolumeRadiusIncrease(false, mtop.natoms / det(box));
 
     /* The average number of pairs per atom */
     nppa = 0.5 * 4 / 3 * M_PI * r_eff * r_eff * r_eff * mtop.natoms / det(box);

@@ -74,6 +74,9 @@ enum ePruneKind
     ePruneNR
 };
 
+namespace gmx
+{
+
 /*! \internal
  * \brief Data structure shared between the OpenCL device code and OpenCL host code
  *
@@ -83,9 +86,9 @@ typedef struct cl_nbparam_params
 {
 
     //! type of electrostatics
-    enum Nbnxm::ElecType elecType;
+    enum ElecType elecType;
     //! type of VdW impl.
-    enum Nbnxm::VdwType vdwType;
+    enum VdwType vdwType;
 
     //! charge multiplication factor
     float epsfac;
@@ -143,10 +146,10 @@ struct NbnxmGpu
     /**< Pointers to non-bonded kernel functions
      * organized similar with nb_kfunc_xxx arrays in nbnxn_ocl.cpp */
     ///@{
-    cl_kernel kernel_noener_noprune_ptr[Nbnxm::c_numElecTypes][Nbnxm::c_numVdwTypes] = { { nullptr } };
-    cl_kernel kernel_ener_noprune_ptr[Nbnxm::c_numElecTypes][Nbnxm::c_numVdwTypes] = { { nullptr } };
-    cl_kernel kernel_noener_prune_ptr[Nbnxm::c_numElecTypes][Nbnxm::c_numVdwTypes] = { { nullptr } };
-    cl_kernel kernel_ener_prune_ptr[Nbnxm::c_numElecTypes][Nbnxm::c_numVdwTypes] = { { nullptr } };
+    cl_kernel kernel_noener_noprune_ptr[c_numElecTypes][c_numVdwTypes] = { { nullptr } };
+    cl_kernel kernel_ener_noprune_ptr[c_numElecTypes][c_numVdwTypes]   = { { nullptr } };
+    cl_kernel kernel_noener_prune_ptr[c_numElecTypes][c_numVdwTypes]   = { { nullptr } };
+    cl_kernel kernel_ener_prune_ptr[c_numElecTypes][c_numVdwTypes]     = { { nullptr } };
     ///@}
     //! prune kernels, ePruneKind defined the kernel kinds
     cl_kernel kernel_pruneonly[ePruneNR] = { nullptr };
@@ -171,7 +174,7 @@ struct NbnxmGpu
     //! parameters required for the non-bonded calc.
     NBParamGpu* nbparam = nullptr;
     //! pair-list data structures (local and non-local)
-    gmx::EnumerationArray<Nbnxm::InteractionLocality, std::unique_ptr<Nbnxm::GpuPairlist>> plist = { nullptr };
+    gmx::EnumerationArray<InteractionLocality, std::unique_ptr<GpuPairlist>> plist = { nullptr };
     //! staging area where fshift/energies get downloaded
     NBStagingData nbst;
 
@@ -196,7 +199,7 @@ struct NbnxmGpu
     int ncxy_ind_alloc = 0;
 
     //! local and non-local GPU queues
-    gmx::EnumerationArray<Nbnxm::InteractionLocality, const DeviceStream*> deviceStreams;
+    gmx::EnumerationArray<InteractionLocality, const DeviceStream*> deviceStreams;
 
     /*! \brief Events used for synchronization */
     /*! \{ */
@@ -214,15 +217,17 @@ struct NbnxmGpu
     //! True if there has been local/nonlocal GPU work, either bonded or nonbonded, scheduled
     //  to be executed in the current domain. As long as bonded work is not split up into
     //  local/nonlocal, if there is bonded GPU work, both flags will be true.
-    gmx::EnumerationArray<Nbnxm::InteractionLocality, bool> haveWork;
+    gmx::EnumerationArray<InteractionLocality, bool> haveWork;
 
 
     //! True if event-based timing is enabled.
     bool bDoTime = false;
     //! OpenCL event-based timers.
-    Nbnxm::GpuTimers* timers = nullptr;
+    GpuTimers* timers = nullptr;
     //! Timing data. TODO: deprecate this and query timers for accumulated data instead
     gmx_wallclock_gpu_nbnxn_t* timings = nullptr;
 };
+
+} // namespace gmx
 
 #endif /* NBNXN_OPENCL_TYPES_H */

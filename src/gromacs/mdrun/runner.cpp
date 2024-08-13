@@ -875,7 +875,7 @@ static void finish_run(FILE*                     fplog,
     if (printReport)
     {
         auto* nbnxn_gpu_timings =
-                (nbv != nullptr && nbv->useGpu()) ? Nbnxm::gpu_get_timings(nbv->gpuNbv()) : nullptr;
+                (nbv != nullptr && nbv->useGpu()) ? gpu_get_timings(nbv->gpuNbv()) : nullptr;
         gmx_wallclock_gpu_pme_t pme_gpu_timings = {};
 
         if (pme_gpu_task_enabled(pme))
@@ -1884,19 +1884,18 @@ int Mdrunner::mdrunner()
                     runScheduleWork.simulationWork.useNvshmem);
         }
 
-        fr->nbv = Nbnxm::init_nb_verlet(
-                mdlog,
-                *inputrec,
-                *fr,
-                cr,
-                *hwinfo_,
-                runScheduleWork.simulationWork.useGpuNonbonded,
-                deviceStreamManager.get(),
-                mtop,
-                PAR(cr) ? &observablesReducerBuilder : nullptr,
-                isSimulationMainRank ? globalState->x : gmx::ArrayRef<const gmx::RVec>(),
-                box,
-                wcycle.get());
+        fr->nbv = init_nb_verlet(mdlog,
+                                 *inputrec,
+                                 *fr,
+                                 cr,
+                                 *hwinfo_,
+                                 runScheduleWork.simulationWork.useGpuNonbonded,
+                                 deviceStreamManager.get(),
+                                 mtop,
+                                 PAR(cr) ? &observablesReducerBuilder : nullptr,
+                                 isSimulationMainRank ? globalState->x : gmx::ArrayRef<const gmx::RVec>(),
+                                 box,
+                                 wcycle.get());
         // TODO: Move the logic below to a GPU bonded builder
         if (runScheduleWork.simulationWork.useGpuBonded)
         {

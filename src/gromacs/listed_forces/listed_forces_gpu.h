@@ -62,12 +62,11 @@ struct gmx_ffparams_t;
 struct gmx_mtop_t;
 struct t_inputrec;
 struct gmx_wallcycle;
-struct NBAtomDataGpu;
-
 
 namespace gmx
 {
 
+struct NBAtomDataGpu;
 template<typename>
 class ArrayRef;
 class StepWorkload;

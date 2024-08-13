@@ -52,10 +52,10 @@
 
 #include "pairlist.h"
 
-namespace Nbnxm
+namespace gmx
 {
-enum class KernelType;
-}
+
+enum class NbnxmKernelType;
 
 //! The available pair list types
 enum class PairlistType : int
@@ -89,7 +89,7 @@ struct PairlistParams
 {
     /*! \brief Constructor producing a struct with dynamic pruning disabled
      */
-    PairlistParams(Nbnxm::KernelType kernelType, bool haveFep, real rlist, bool haveMultipleDomains);
+    PairlistParams(NbnxmKernelType kernelType, bool haveFep, real rlist, bool haveMultipleDomains);
 
     //! The type of cluster-pair list
     PairlistType pairlistType;
@@ -112,5 +112,7 @@ struct PairlistParams
     //! Lifetime in steps of the pair-list
     int lifetime;
 };
+
+} // namespace gmx
 
 #endif

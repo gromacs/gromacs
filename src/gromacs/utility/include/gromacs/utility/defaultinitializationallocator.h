@@ -44,6 +44,7 @@
 #define GMX_UTILITY_DEFAULTINITIALIZATIONALLOCATOR_H
 
 #include <memory>
+#include <vector>
 
 namespace gmx
 {
@@ -84,6 +85,10 @@ public:
         a_t::construct(static_cast<A&>(*this), ptr, std::forward<Args>(args)...);
     }
 };
+
+//! Convenience type for vector that avoids initialization at resize()
+template<typename T>
+using FastVector = std::vector<T, DefaultInitializationAllocator<T>>;
 
 } // namespace gmx
 

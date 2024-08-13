@@ -98,7 +98,7 @@ namespace
  * PairlistSet currently can not be copied.
  */
 std::pair<std::unique_ptr<nbnxn_atomdata_t>, std::unique_ptr<PairlistSet>>
-diagonalPairlist(const Nbnxm::KernelType kernelType, const int numAtoms)
+diagonalPairlist(const NbnxmKernelType kernelType, const int numAtoms)
 {
     const gmx::MDLogger emptyLogger;
 
@@ -109,7 +109,7 @@ diagonalPairlist(const Nbnxm::KernelType kernelType, const int numAtoms)
 
     const PairlistParams pairlistParams(kernelType, false, 1, false);
 
-    Nbnxm::GridSet gridSet(
+    GridSet gridSet(
             PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false, 1, gmx::PinningPolicy::CannotBePinned);
 
     std::vector<real> nbfp{ 0.0_real, 0.0_real };
@@ -166,12 +166,12 @@ diagonalPairlist(const Nbnxm::KernelType kernelType, const int numAtoms)
 }
 
 // Class that sets up and holds a set of N atoms and a full NxM pairlist
-class CpuListDiagonalExclusionsTest : public ::testing::TestWithParam<Nbnxm::KernelType>
+class CpuListDiagonalExclusionsTest : public ::testing::TestWithParam<NbnxmKernelType>
 {
 public:
     CpuListDiagonalExclusionsTest()
     {
-        const Nbnxm::KernelType kernelType = GetParam();
+        const NbnxmKernelType kernelType = GetParam();
 
         const PairlistParams pairlistParams(kernelType, false, 1, false);
 
@@ -225,14 +225,14 @@ TEST_P(CpuListDiagonalExclusionsTest, CheckMask)
     }
 }
 
-const auto testKernelTypes = ::testing::Values(Nbnxm::KernelType::Cpu4x4_PlainC
+const auto testKernelTypes = ::testing::Values(NbnxmKernelType::Cpu4x4_PlainC
 #if GMX_HAVE_NBNXM_SIMD_4XM
                                                ,
-                                               Nbnxm::KernelType::Cpu4xN_Simd_4xN
+                                               NbnxmKernelType::Cpu4xN_Simd_4xN
 #endif
 #if GMX_HAVE_NBNXM_SIMD_2XMM
                                                ,
-                                               Nbnxm::KernelType::Cpu4xN_Simd_2xNN
+                                               NbnxmKernelType::Cpu4xN_Simd_2xNN
 #endif
 );
 

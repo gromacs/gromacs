@@ -57,21 +57,14 @@
 #ifndef NBNXM_CUDA_KERNEL_UTILS_CUH
 #    define NBNXM_CUDA_KERNEL_UTILS_CUH
 
+namespace gmx
+{
+
 /*! \brief Log of the i and j cluster size.
  *  change this together with c_clSize !*/
 static const int __device__ c_clSizeLog2 = 3;
-/*! \brief Square of cluster size. */
-static const int __device__ c_clSizeSq = c_clSize * c_clSize;
-/*! \brief j-cluster size after split (4 in the current implementation). */
-static const int __device__ c_splitClSize = c_clSize / c_nbnxnGpuClusterpairSplit;
 /*! \brief Stride in the force accumulation buffer */
 static const int __device__ c_fbufStride = c_clSizeSq;
-/*! \brief i-cluster interaction mask for a super-cluster with all c_nbnxnGpuNumClusterPerSupercluster=8 bits set */
-static const unsigned __device__ superClInteractionMask =
-        ((1U << c_nbnxnGpuNumClusterPerSupercluster) - 1U);
-
-static const float __device__ c_oneSixth    = 0.16666667F;
-static const float __device__ c_oneTwelveth = 0.08333333F;
 
 /*! Convert LJ sigma,epsilon parameters to C6,C12. */
 static __forceinline__ __device__ void
@@ -686,5 +679,7 @@ reduce_energy_warp_shfl(float E_lj, float E_el, float* e_lj, float* e_el, int ti
         atomicAdd(e_el, E_el);
     }
 }
+
+} // namespace gmx
 
 #endif /* NBNXN_CUDA_KERNEL_UTILS_CUH */

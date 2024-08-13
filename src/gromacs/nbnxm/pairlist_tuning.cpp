@@ -79,6 +79,9 @@
 #include "nbnxm_geometry.h"
 #include "pairlistsets.h"
 
+namespace gmx
+{
+
 /*! \brief Returns if we can (heuristically) change nstlist and rlist
  *
  * \param [in] ir  The input parameter record
@@ -136,15 +139,15 @@ static real getPressureTolerance(const real inputrecVerletBufferPressureToleranc
     {
         if (inputrecVerletBufferPressureTolerance > 0)
         {
-            GMX_THROW(gmx::InvalidInputError(
-                    "GMX_VERLET_BUFFER_PRESSURE_TOLERANCE cannot be used when "
-                    "verlet-buffer-pressure-tolerance is set in the tpr file"));
+            GMX_THROW(
+                    InvalidInputError("GMX_VERLET_BUFFER_PRESSURE_TOLERANCE cannot be used when "
+                                      "verlet-buffer-pressure-tolerance is set in the tpr file"));
         }
 
         pressureTolerance = std::stod(pressureToleranceString);
         if (pressureTolerance <= 0)
         {
-            GMX_THROW(gmx::InvalidInputError("Max pressure error should be positive"));
+            GMX_THROW(InvalidInputError("Max pressure error should be positive"));
         }
     }
     else
@@ -155,15 +158,15 @@ static real getPressureTolerance(const real inputrecVerletBufferPressureToleranc
     return pressureTolerance;
 }
 
-void increaseNstlist(FILE*               fp,
-                     t_commrec*          cr,
-                     t_inputrec*         ir,
-                     int                 nstlist_cmdline,
-                     const gmx_mtop_t*   mtop,
-                     const matrix        box,
-                     const real          effectiveAtomDensity,
-                     bool                useOrEmulateGpuForNonbondeds,
-                     const gmx::CpuInfo& cpuinfo)
+void increaseNstlist(FILE*             fp,
+                     t_commrec*        cr,
+                     t_inputrec*       ir,
+                     int               nstlist_cmdline,
+                     const gmx_mtop_t* mtop,
+                     const matrix      box,
+                     const real        effectiveAtomDensity,
+                     bool              useOrEmulateGpuForNonbondeds,
+                     const CpuInfo&    cpuinfo)
 {
     if (!EI_DYNAMICS(ir->eI))
     {
@@ -187,7 +190,7 @@ void increaseNstlist(FILE*               fp,
      * performed every ir->mtsFactor steps due to multiple time stepping,
      * we scale all nstlist values by this factor.
      */
-    const int mtsFactor = gmx::nonbondedMtsFactor(*ir);
+    const int mtsFactor = nonbondedMtsFactor(*ir);
 
     if (nstlist_cmdline <= 0)
     {
@@ -325,7 +328,7 @@ void increaseNstlist(FILE*               fp,
                                          listSetup);
 
         /* Does rlist fit in the box? */
-        bBox = (gmx::square(rlist_new) < max_cutoff2(ir->pbcType, box));
+        bBox = (square(rlist_new) < max_cutoff2(ir->pbcType, box));
         bDD  = true;
         if (bBox && haveDDAtomOrdering(*cr))
         {
@@ -344,8 +347,7 @@ void increaseNstlist(FILE*               fp,
             // nstlist tuning happens before GPU DD is initialized so we can't check
             // whether the new cutoff would conflict with direct GPU communication.
             const bool checkGpuDdLimitation = false;
-            bDD                             = change_dd_cutoff(
-                    cr, box, gmx::ArrayRef<const gmx::RVec>(), rlist_new, checkGpuDdLimitation);
+            bDD = change_dd_cutoff(cr, box, ArrayRef<const RVec>(), rlist_new, checkGpuDdLimitation);
         }
 
         if (debug)
@@ -354,8 +356,8 @@ void increaseNstlist(FILE*               fp,
                     "nstlist %d rlist %.3f bBox %s bDD %s\n",
                     ir->nstlist,
                     rlist_new,
-                    gmx::boolToString(bBox),
-                    gmx::boolToString(bDD));
+                    boolToString(bBox),
+                    boolToString(bDD));
         }
 
         bCont = false;
@@ -512,7 +514,7 @@ static void setDynamicPairlistPruningParameters(const t_inputrec&          input
      * we only compute them every mtsFactor steps, so all parameters here
      * should be a multiple of mtsFactor.
      */
-    listParams->mtsFactor = gmx::nonbondedMtsFactor(inputrec);
+    listParams->mtsFactor = nonbondedMtsFactor(inputrec);
 
     const int mtsFactor = listParams->mtsFactor;
 
@@ -632,15 +634,14 @@ static std::string formatListSetup(const std::string& listName,
     listSetup += "updated every ";
     // Make the shortest int format string that fits nstListForSpacing
     std::string nstListFormat =
-            "%" + gmx::formatString("%zu", gmx::formatString("%d", nstListForSpacing).size()) + "d";
-    listSetup += gmx::formatString(nstListFormat.c_str(), nstList);
-    listSetup += gmx::formatString(
-            " steps, buffer %.3f nm, rlist %.3f nm\n", rList - interactionCutoff, rList);
+            "%" + formatString("%zu", formatString("%d", nstListForSpacing).size()) + "d";
+    listSetup += formatString(nstListFormat.c_str(), nstList);
+    listSetup += formatString(" steps, buffer %.3f nm, rlist %.3f nm\n", rList - interactionCutoff, rList);
 
     return listSetup;
 }
 
-void setupDynamicPairlistPruning(const gmx::MDLogger&       mdlog,
+void setupDynamicPairlistPruning(const MDLogger&            mdlog,
                                  const t_inputrec&          inputrec,
                                  const gmx_mtop_t&          mtop,
                                  const real                 effectiveAtomDensity,
@@ -720,11 +721,10 @@ void setupDynamicPairlistPruning(const gmx::MDLogger&       mdlog,
     const real interactionCutoff = std::max(interactionConst.rcoulomb, interactionConst.rvdw);
     if (listParams->useDynamicPruning)
     {
-        mesg += gmx::formatString(
-                "Using a dual %dx%d pair-list setup updated with dynamic%s pruning:\n",
-                ls.cluster_size_i,
-                ls.cluster_size_j,
-                listParams->numRollingPruningParts > 1 ? ", rolling" : "");
+        mesg += formatString("Using a dual %dx%d pair-list setup updated with dynamic%s pruning:\n",
+                             ls.cluster_size_i,
+                             ls.cluster_size_j,
+                             listParams->numRollingPruningParts > 1 ? ", rolling" : "");
         mesg += formatListSetup(
                 "outer", inputrec.nstlist, inputrec.nstlist, listParams->rlistOuter, interactionCutoff);
         mesg += formatListSetup(
@@ -732,7 +732,7 @@ void setupDynamicPairlistPruning(const gmx::MDLogger&       mdlog,
     }
     else
     {
-        mesg += gmx::formatString("Using a %dx%d pair-list setup:\n", ls.cluster_size_i, ls.cluster_size_j);
+        mesg += formatString("Using a %dx%d pair-list setup:\n", ls.cluster_size_i, ls.cluster_size_j);
         mesg += formatListSetup(
                 "", inputrec.nstlist, inputrec.nstlist, listParams->rlistOuter, interactionCutoff);
     }
@@ -771,7 +771,7 @@ void setupDynamicPairlistPruning(const gmx::MDLogger&       mdlog,
                                               listSetup1x1);
         }
 
-        mesg += gmx::formatString(
+        mesg += formatString(
                 "At tolerance %g kJ/mol/ps per atom, equivalent classical 1x1 list would be:\n",
                 inputrec.verletbuf_tol);
         if (listParams->useDynamicPruning)
@@ -790,7 +790,7 @@ void setupDynamicPairlistPruning(const gmx::MDLogger&       mdlog,
     GMX_LOG(mdlog.info).asParagraph().appendText(mesg);
 }
 
-void printNbnxmPressureError(const gmx::MDLogger&  mdlog,
+void printNbnxmPressureError(const MDLogger&       mdlog,
                              const t_inputrec&     inputrec,
                              const gmx_mtop_t&     mtop,
                              const real            effectiveAtomDensity,
@@ -820,7 +820,9 @@ void printNbnxmPressureError(const gmx::MDLogger&  mdlog,
 
     GMX_LOG(mdlog.info)
             .asParagraph()
-            .appendText(gmx::formatString("The average pressure is off by at most %.2f bar due to "
-                                          "missing LJ interactions",
-                                          pressureError));
+            .appendText(formatString("The average pressure is off by at most %.2f bar due to "
+                                     "missing LJ interactions",
+                                     pressureError));
 }
+
+} // namespace gmx

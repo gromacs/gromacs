@@ -47,7 +47,7 @@
 
 #include "nbnxm_sycl_types.h"
 
-namespace Nbnxm
+namespace gmx
 {
 
 static int getNbnxmSubGroupSize(const DeviceInformation& deviceInfo)
@@ -133,4 +133,4 @@ void launchNbnxmKernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const In
     }
 }
 
-} // namespace Nbnxm
+} // namespace gmx

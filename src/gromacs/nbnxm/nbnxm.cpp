@@ -55,17 +55,20 @@
 
 /*! \cond INTERNAL */
 
-void nonbonded_verlet_t::putAtomsOnGrid(const matrix                   box,
-                                        int                            gridIndex,
-                                        const gmx::RVec&               lowerCorner,
-                                        const gmx::RVec&               upperCorner,
-                                        const gmx::UpdateGroupsCog*    updateGroupsCog,
-                                        gmx::Range<int>                atomRange,
-                                        real                           atomDensity,
-                                        gmx::ArrayRef<const int32_t>   atomInfo,
-                                        gmx::ArrayRef<const gmx::RVec> x,
-                                        int                            numAtomsMoved,
-                                        const int*                     move)
+namespace gmx
+{
+
+void nonbonded_verlet_t::putAtomsOnGrid(const matrix            box,
+                                        int                     gridIndex,
+                                        const RVec&             lowerCorner,
+                                        const RVec&             upperCorner,
+                                        const UpdateGroupsCog*  updateGroupsCog,
+                                        Range<int>              atomRange,
+                                        real                    atomDensity,
+                                        ArrayRef<const int32_t> atomInfo,
+                                        ArrayRef<const RVec>    x,
+                                        int                     numAtomsMoved,
+                                        const int*              move)
 {
     pairSearch_->putOnGrid(box,
                            gridIndex,
@@ -84,8 +87,8 @@ void nonbonded_verlet_t::putAtomsOnGrid(const matrix                   box,
 /* Calls nbnxn_put_on_grid for all non-local domains */
 void nbnxn_put_on_grid_nonlocal(nonbonded_verlet_t*              nbv,
                                 const struct gmx_domdec_zones_t* zones,
-                                gmx::ArrayRef<const int32_t>     atomInfo,
-                                gmx::ArrayRef<const gmx::RVec>   x)
+                                ArrayRef<const int32_t>          atomInfo,
+                                ArrayRef<const RVec>             x)
 {
     for (int zone = 1; zone < zones->n; zone++)
     {
@@ -120,14 +123,14 @@ bool nonbonded_verlet_t::isDynamicPruningStepGpu(int64_t step) const
     return pairlistSets_->isDynamicPruningStepGpu(step);
 }
 
-gmx::ArrayRef<const int> nonbonded_verlet_t::getLocalAtomOrder() const
+ArrayRef<const int> nonbonded_verlet_t::getLocalAtomOrder() const
 {
     /* Return the atom order for the home cell (index 0) */
-    const Nbnxm::Grid& grid = pairSearch_->gridSet().grid(0);
+    const Grid& grid = pairSearch_->gridSet().grid(0);
 
     const int numIndices = grid.atomIndexEnd() - grid.firstAtomInColumn(0);
 
-    return gmx::constArrayRefFromArray(pairSearch_->gridSet().atomIndices().data(), numIndices);
+    return constArrayRefFromArray(pairSearch_->gridSet().atomIndices().data(), numIndices);
 }
 
 void nonbonded_verlet_t::setLocalAtomOrder() const
@@ -135,15 +138,14 @@ void nonbonded_verlet_t::setLocalAtomOrder() const
     pairSearch_->setLocalAtomOrder();
 }
 
-void nonbonded_verlet_t::setAtomProperties(gmx::ArrayRef<const int>     atomTypes,
-                                           gmx::ArrayRef<const real>    atomCharges,
-                                           gmx::ArrayRef<const int32_t> atomInfo) const
+void nonbonded_verlet_t::setAtomProperties(ArrayRef<const int>     atomTypes,
+                                           ArrayRef<const real>    atomCharges,
+                                           ArrayRef<const int32_t> atomInfo) const
 {
     nbnxn_atomdata_set(nbat_.get(), pairSearch_->gridSet(), atomTypes, atomCharges, atomInfo);
 }
 
-void nonbonded_verlet_t::convertCoordinates(const gmx::AtomLocality        locality,
-                                            gmx::ArrayRef<const gmx::RVec> coordinates)
+void nonbonded_verlet_t::convertCoordinates(const AtomLocality locality, ArrayRef<const RVec> coordinates)
 {
     wallcycle_start(wcycle_, WallCycleCounter::NbXFBufOps);
     wallcycle_sub_start(wcycle_, WallCycleSubCounter::NBXBufOps);
@@ -155,9 +157,9 @@ void nonbonded_verlet_t::convertCoordinates(const gmx::AtomLocality        local
     wallcycle_stop(wcycle_, WallCycleCounter::NbXFBufOps);
 }
 
-void nonbonded_verlet_t::convertCoordinatesGpu(const gmx::AtomLocality locality,
-                                               DeviceBuffer<gmx::RVec> d_x,
-                                               GpuEventSynchronizer*   xReadyOnDevice)
+void nonbonded_verlet_t::convertCoordinatesGpu(const AtomLocality    locality,
+                                               DeviceBuffer<RVec>    d_x,
+                                               GpuEventSynchronizer* xReadyOnDevice)
 {
     wallcycle_start(wcycle_, WallCycleCounter::LaunchGpuPp);
     wallcycle_sub_start(wcycle_, WallCycleSubCounter::LaunchGpuNBXBufOps);
@@ -168,18 +170,17 @@ void nonbonded_verlet_t::convertCoordinatesGpu(const gmx::AtomLocality locality,
     wallcycle_stop(wcycle_, WallCycleCounter::LaunchGpuPp);
 }
 
-gmx::ArrayRef<const int> nonbonded_verlet_t::getGridIndices() const
+ArrayRef<const int> nonbonded_verlet_t::getGridIndices() const
 {
     return pairSearch_->gridSet().cells();
 }
 
-void nonbonded_verlet_t::atomdata_add_nbat_f_to_f(const gmx::AtomLocality  locality,
-                                                  gmx::ArrayRef<gmx::RVec> force)
+void nonbonded_verlet_t::atomdata_add_nbat_f_to_f(const AtomLocality locality, ArrayRef<RVec> force)
 {
 
     /* Skip the reduction if there was no short-range GPU work to do
      * (either NB or both NB and bonded work). */
-    if (!pairlistIsSimple() && !Nbnxm::haveGpuShortRangeWork(gpuNbv_, atomToInteractionLocality(locality)))
+    if (!pairlistIsSimple() && !haveGpuShortRangeWork(gpuNbv_, atomToInteractionLocality(locality)))
     {
         return;
     }
@@ -193,20 +194,18 @@ void nonbonded_verlet_t::atomdata_add_nbat_f_to_f(const gmx::AtomLocality  local
     wallcycle_stop(wcycle_, WallCycleCounter::NbXFBufOps);
 }
 
-int nonbonded_verlet_t::getNumAtoms(const gmx::AtomLocality locality) const
+int nonbonded_verlet_t::getNumAtoms(const AtomLocality locality) const
 {
     int numAtoms = 0;
     switch (locality)
     {
-        case gmx::AtomLocality::All: numAtoms = pairSearch_->gridSet().numRealAtomsTotal(); break;
-        case gmx::AtomLocality::Local: numAtoms = pairSearch_->gridSet().numRealAtomsLocal(); break;
-        case gmx::AtomLocality::NonLocal:
+        case AtomLocality::All: numAtoms = pairSearch_->gridSet().numRealAtomsTotal(); break;
+        case AtomLocality::Local: numAtoms = pairSearch_->gridSet().numRealAtomsLocal(); break;
+        case AtomLocality::NonLocal:
             numAtoms = pairSearch_->gridSet().numRealAtomsTotal()
                        - pairSearch_->gridSet().numRealAtomsLocal();
             break;
-        case gmx::AtomLocality::Count:
-            GMX_ASSERT(false, "Count is invalid locality specifier");
-            break;
+        case AtomLocality::Count: GMX_ASSERT(false, "Count is invalid locality specifier"); break;
     }
     return numAtoms;
 }
@@ -226,23 +225,23 @@ void nonbonded_verlet_t::changePairlistRadii(real rlistOuter, real rlistInner) c
     pairlistSets_->changePairlistRadii(rlistOuter, rlistInner);
 }
 
-void nonbonded_verlet_t::setupGpuShortRangeWork(const gmx::ListedForcesGpu*    listedForcesGpu,
-                                                const gmx::InteractionLocality iLocality) const
+void nonbonded_verlet_t::setupGpuShortRangeWork(const ListedForcesGpu*    listedForcesGpu,
+                                                const InteractionLocality iLocality) const
 {
     if (useGpu() && !emulateGpu())
     {
-        Nbnxm::setupGpuShortRangeWork(gpuNbv_, listedForcesGpu, iLocality);
+        setupGpuShortRangeWorkLow(gpuNbv_, listedForcesGpu, iLocality);
     }
 }
 
 void nonbonded_verlet_t::atomdata_init_copy_x_to_nbat_x_gpu() const
 {
-    Nbnxm::nbnxn_gpu_init_x_to_nbat_x(pairSearch_->gridSet(), gpuNbv_);
+    nbnxn_gpu_init_x_to_nbat_x(pairSearch_->gridSet(), gpuNbv_);
 }
 
 bool buildSupportsNonbondedOnGpu(std::string* error)
 {
-    gmx::MessageStringCollector errorReasons;
+    MessageStringCollector errorReasons;
     // Before changing the prefix string, make sure that it is not searched for in regression tests.
     errorReasons.startContext("Nonbonded interactions on GPUs are not supported in:");
     errorReasons.appendIf(GMX_DOUBLE, "Double precision build of GROMACS");
@@ -255,5 +254,7 @@ bool buildSupportsNonbondedOnGpu(std::string* error)
     }
     return errorReasons.isEmpty();
 }
+
+} // namespace gmx
 
 /*! \endcond */

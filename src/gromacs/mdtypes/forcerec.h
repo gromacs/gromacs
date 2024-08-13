@@ -51,7 +51,6 @@
 
 /* Abstract type for PME that is defined only in the routine that use them. */
 struct gmx_pme_t;
-struct nonbonded_verlet_t;
 struct bonded_threading_t;
 class DispersionCorrection;
 class ListedForces;
@@ -62,6 +61,7 @@ struct interaction_const_t;
 
 namespace gmx
 {
+struct nonbonded_verlet_t;
 class DeviceStreamManager;
 class ListedForcesGpu;
 class GpuForceReduction;
@@ -197,7 +197,7 @@ struct t_forcerec
     std::unique_ptr<gmx::WholeMoleculeTransform> wholeMoleculeTransform;
 
     /* The Nbnxm Verlet non-bonded machinery */
-    std::unique_ptr<nonbonded_verlet_t> nbv;
+    std::unique_ptr<gmx::nonbonded_verlet_t> nbv;
 
     /* The wall tables (if used) */
     int                                                     nwall = 0;

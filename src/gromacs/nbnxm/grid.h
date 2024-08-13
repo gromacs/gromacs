@@ -67,17 +67,12 @@
 
 #include "boundingbox.h"
 
-struct nbnxn_atomdata_t;
-enum class PairlistType;
-
 namespace gmx
 {
+
+struct nbnxn_atomdata_t;
+enum class PairlistType;
 class UpdateGroupsCog;
-} // namespace gmx
-
-namespace Nbnxm
-{
-
 struct GridSetData;
 struct GridWork;
 
@@ -141,11 +136,11 @@ public:
     struct Dimensions
     {
         //! The lower corner of the (local) grid
-        gmx::RVec lowerCorner;
+        RVec lowerCorner;
         //! The upper corner of the (local) grid
-        gmx::RVec upperCorner;
+        RVec upperCorner;
         //! The physical grid size: upperCorner - lowerCorner
-        gmx::RVec gridSize;
+        RVec gridSize;
         //! An estimate for the atom number density of the region targeted by the grid
         real atomDensity;
         //! The maximum distance an atom can be outside of a cell and outside of the grid
@@ -159,7 +154,7 @@ public:
     };
 
     //! Constructs a grid given the type of pairlist
-    Grid(PairlistType pairlistType, const bool& haveFep, gmx::PinningPolicy pinningPolicy);
+    Grid(PairlistType pairlistType, const bool& haveFep, PinningPolicy pinningPolicy);
 
     //! Returns the geometry of the grid cells
     const Geometry& geometry() const { return geometry_; }
@@ -206,11 +201,11 @@ public:
     /*! \brief Returns a view of the number of non-filler, atoms for each grid column
      *
      * \todo Needs a useful name. */
-    gmx::ArrayRef<const int> cxy_na() const { return cxy_na_; }
+    ArrayRef<const int> cxy_na() const { return cxy_na_; }
     /*! \brief Returns a view of the grid-local cell index for each grid column
      *
      * \todo Needs a useful name. */
-    gmx::ArrayRef<const int> cxy_ind() const { return cxy_ind_; }
+    ArrayRef<const int> cxy_ind() const { return cxy_ind_; }
 
     //! Returns the number of real atoms in the column
     int numAtomsPerCell() const { return geometry_.numAtomsPerCell; }
@@ -237,22 +232,22 @@ public:
     unsigned int fepBits(int clusterIndex) const { return fep_[clusterIndex]; }
 
     //! Returns the i-bounding boxes for all clusters on the grid
-    gmx::ArrayRef<const BoundingBox> iBoundingBoxes() const { return bb_; }
+    ArrayRef<const BoundingBox> iBoundingBoxes() const { return bb_; }
 
     //! Returns the j-bounding boxes for all clusters on the grid
-    gmx::ArrayRef<const BoundingBox> jBoundingBoxes() const { return bbj_; }
+    ArrayRef<const BoundingBox> jBoundingBoxes() const { return bbj_; }
 
     //! Returns the packed bounding boxes for all clusters on the grid, empty with a CPU list
-    gmx::ArrayRef<const float> packedBoundingBoxes() const { return pbb_; }
+    ArrayRef<const float> packedBoundingBoxes() const { return pbb_; }
 
     //! Returns the bounding boxes along z for all cells on the grid
-    gmx::ArrayRef<const BoundingBox1D> zBoundingBoxes() const { return bbcz_; }
+    ArrayRef<const BoundingBox1D> zBoundingBoxes() const { return bbcz_; }
 
     //! Returns the flags for all clusters on the grid
-    gmx::ArrayRef<const int> clusterFlags() const { return flags_; }
+    ArrayRef<const int> clusterFlags() const { return flags_; }
 
     //! Returns the number of clusters for all cells on the grid, empty with a CPU geometry
-    gmx::ArrayRef<const int> numClustersPerCell() const { return numClusters_; }
+    ArrayRef<const int> numClustersPerCell() const { return numClusters_; }
 
     //! Returns the cluster index for an atom
     int atomToCluster(int atomIndex) const { return (atomIndex >> geometry_.numAtomsICluster2Log); }
@@ -279,65 +274,65 @@ public:
      * \param[in,out] atomDensity  The atom density, will be computed when <= 0
      * \param[in] maxAtomGroupRadius  The maximum radius of atom groups
      */
-    void setDimensions(int              ddZone,
-                       int              numAtoms,
-                       const gmx::RVec& lowerCorner,
-                       const gmx::RVec& upperCorner,
-                       real*            atomDensity,
-                       real             maxAtomGroupRadius);
+    void setDimensions(int         ddZone,
+                       int         numAtoms,
+                       const RVec& lowerCorner,
+                       const RVec& upperCorner,
+                       real*       atomDensity,
+                       real        maxAtomGroupRadius);
 
     //! Sets the cell indices using indices in \p gridSetData and \p gridWork
-    void setCellIndices(int                            ddZone,
-                        int                            cellOffset,
-                        GridSetData*                   gridSetData,
-                        gmx::ArrayRef<GridWork>        gridWork,
-                        gmx::Range<int>                atomRange,
-                        gmx::ArrayRef<const int32_t>   atomInfo,
-                        gmx::ArrayRef<const gmx::RVec> x,
-                        int                            numAtomsMoved,
-                        nbnxn_atomdata_t*              nbat);
+    void setCellIndices(int                     ddZone,
+                        int                     cellOffset,
+                        GridSetData*            gridSetData,
+                        ArrayRef<GridWork>      gridWork,
+                        Range<int>              atomRange,
+                        ArrayRef<const int32_t> atomInfo,
+                        ArrayRef<const RVec>    x,
+                        int                     numAtomsMoved,
+                        nbnxn_atomdata_t*       nbat);
 
     //! Determine in which grid columns atoms should go, store cells and atom counts in \p cell and \p cxy_na
-    static void calcColumnIndices(const Grid::Dimensions&        gridDims,
-                                  const gmx::UpdateGroupsCog*    updateGroupsCog,
-                                  gmx::Range<int>                atomRange,
-                                  gmx::ArrayRef<const gmx::RVec> x,
-                                  int                            dd_zone,
-                                  const int*                     move,
-                                  int                            thread,
-                                  int                            nthread,
-                                  gmx::ArrayRef<int>             cell,
-                                  gmx::ArrayRef<int>             cxy_na);
+    static void calcColumnIndices(const Grid::Dimensions& gridDims,
+                                  const UpdateGroupsCog*  updateGroupsCog,
+                                  Range<int>              atomRange,
+                                  ArrayRef<const RVec>    x,
+                                  int                     dd_zone,
+                                  const int*              move,
+                                  int                     thread,
+                                  int                     nthread,
+                                  ArrayRef<int>           cell,
+                                  ArrayRef<int>           cxy_na);
 
 private:
     /*! \brief Fill a pair search cell with atoms
      *
      * Potentially sorts atoms and sets the interaction flags.
      */
-    void fillCell(GridSetData*                   gridSetData,
-                  nbnxn_atomdata_t*              nbat,
-                  int                            atomStart,
-                  int                            atomEnd,
-                  gmx::ArrayRef<const int32_t>   atomInfo,
-                  gmx::ArrayRef<const gmx::RVec> x);
+    void fillCell(GridSetData*            gridSetData,
+                  nbnxn_atomdata_t*       nbat,
+                  int                     atomStart,
+                  int                     atomEnd,
+                  ArrayRef<const int32_t> atomInfo,
+                  ArrayRef<const RVec>    x);
 
     //! Spatially sort the atoms within the given column range, for CPU geometry
-    void sortColumnsCpuGeometry(GridSetData*                   gridSetData,
-                                int                            dd_zone,
-                                gmx::ArrayRef<const int32_t>   atomInfo,
-                                gmx::ArrayRef<const gmx::RVec> x,
-                                nbnxn_atomdata_t*              nbat,
-                                gmx::Range<int>                columnRange,
-                                gmx::ArrayRef<int>             sort_work);
+    void sortColumnsCpuGeometry(GridSetData*            gridSetData,
+                                int                     dd_zone,
+                                ArrayRef<const int32_t> atomInfo,
+                                ArrayRef<const RVec>    x,
+                                nbnxn_atomdata_t*       nbat,
+                                Range<int>              columnRange,
+                                ArrayRef<int>           sort_work);
 
     //! Spatially sort the atoms within the given column range, for GPU geometry
-    void sortColumnsGpuGeometry(GridSetData*                   gridSetData,
-                                int                            dd_zone,
-                                gmx::ArrayRef<const int32_t>   atomInfo,
-                                gmx::ArrayRef<const gmx::RVec> x,
-                                nbnxn_atomdata_t*              nbat,
-                                gmx::Range<int>                columnRange,
-                                gmx::ArrayRef<int>             sort_work);
+    void sortColumnsGpuGeometry(GridSetData*            gridSetData,
+                                int                     dd_zone,
+                                ArrayRef<const int32_t> atomInfo,
+                                ArrayRef<const RVec>    x,
+                                nbnxn_atomdata_t*       nbat,
+                                Range<int>              columnRange,
+                                ArrayRef<int>           sort_work);
 
     /* Data members */
     //! The geometry of the grid clusters and cells
@@ -361,11 +356,11 @@ private:
     /*! \brief The number of, non-filler, atoms for each grid column.
      *
      * \todo Needs a useful name. */
-    gmx::HostVector<int> cxy_na_;
+    HostVector<int> cxy_na_;
     /*! \brief The grid-local cell index for each grid column
      *
      * \todo Needs a useful name. */
-    gmx::HostVector<int> cxy_ind_;
+    HostVector<int> cxy_ind_;
 
     //! The number of cluster for each cell
     std::vector<int> numClusters_;
@@ -374,13 +369,13 @@ private:
     //! Bounding boxes in z for the cells
     std::vector<BoundingBox1D> bbcz_;
     //! 3D bounding boxes for the sub cells
-    std::vector<BoundingBox, gmx::AlignedAllocator<BoundingBox>> bb_;
+    std::vector<BoundingBox, AlignedAllocator<BoundingBox>> bb_;
     //! 3D j-bounding boxes for the case where the i- and j-cluster sizes are different
-    std::vector<BoundingBox, gmx::AlignedAllocator<BoundingBox>> bbjStorage_;
+    std::vector<BoundingBox, AlignedAllocator<BoundingBox>> bbjStorage_;
     //! 3D j-bounding boxes
-    gmx::ArrayRef<BoundingBox> bbj_;
+    ArrayRef<BoundingBox> bbj_;
     //! 3D bounding boxes in packed xxxx format per cell
-    std::vector<float, gmx::AlignedAllocator<float>> pbb_;
+    std::vector<float, AlignedAllocator<float>> pbb_;
 
     //! Tells whether we have perturbed interactions, authorative source is in GridSet (never modified)
     const bool& haveFep_;
@@ -415,21 +410,21 @@ private:
  *
  * \returns When \p computeGridDensityRatio==true, the ratio of the effective 2D grid density and the uniform grid density
  */
-real generateAndFill2DGrid(Grid*                          grid,
-                           gmx::ArrayRef<GridWork>        gridWork,
-                           gmx::HostVector<int>*          cells,
-                           const rvec                     lowerCorner,
-                           const rvec                     upperCorner,
-                           const gmx::UpdateGroupsCog*    updateGroupsCog,
-                           gmx::Range<int>                atomRange,
-                           real*                          atomDensity,
-                           real                           maxAtomGroupRadius,
-                           gmx::ArrayRef<const gmx::RVec> x,
-                           int                            ddZone,
-                           const int*                     move,
-                           int                            numAtomsMoved,
-                           bool                           computeGridDensityRatio);
+real generateAndFill2DGrid(Grid*                  grid,
+                           ArrayRef<GridWork>     gridWork,
+                           HostVector<int>*       cells,
+                           const rvec             lowerCorner,
+                           const rvec             upperCorner,
+                           const UpdateGroupsCog* updateGroupsCog,
+                           Range<int>             atomRange,
+                           real*                  atomDensity,
+                           real                   maxAtomGroupRadius,
+                           ArrayRef<const RVec>   x,
+                           int                    ddZone,
+                           const int*             move,
+                           int                    numAtomsMoved,
+                           bool                   computeGridDensityRatio);
 
-} // namespace Nbnxm
+} // namespace gmx
 
 #endif

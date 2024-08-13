@@ -48,11 +48,14 @@
 #    include "simd_load_store_functions.h"
 #endif
 
+namespace gmx
+{
+
 template<KernelLayout kernelLayout>
-void nbnxmSimdPruneKernel(NbnxnPairlistCpu*              nbl,
-                          const nbnxn_atomdata_t&        nbat,
-                          gmx::ArrayRef<const gmx::RVec> shiftvec,
-                          real                           rlistInner)
+void nbnxmSimdPruneKernel(NbnxnPairlistCpu*       nbl,
+                          const nbnxn_atomdata_t& nbat,
+                          ArrayRef<const RVec>    shiftvec,
+                          real                    rlistInner)
 {
 #if GMX_SIMD
     using namespace gmx;
@@ -172,7 +175,7 @@ void nbnxmSimdPruneKernel(NbnxnPairlistCpu*              nbl,
                 wco[i] = (rsq[i] < rlist2_S);
             }
 
-            constexpr int numIterations = gmx::StaticLog2<nR>::value;
+            constexpr int numIterations = StaticLog2<nR>::value;
             for (int iter = 0; iter < numIterations; iter++)
             {
                 const int offset = (1 << iter);
@@ -214,15 +217,17 @@ void nbnxmSimdPruneKernel(NbnxnPairlistCpu*              nbl,
 }
 
 #if GMX_HAVE_NBNXM_SIMD_2XMM
-template void nbnxmSimdPruneKernel<KernelLayout::r2xMM>(NbnxnPairlistCpu*              nbl,
-                                                        const nbnxn_atomdata_t&        nbat,
-                                                        gmx::ArrayRef<const gmx::RVec> shiftvec,
-                                                        real                           rlistInner);
+template void nbnxmSimdPruneKernel<KernelLayout::r2xMM>(NbnxnPairlistCpu*       nbl,
+                                                        const nbnxn_atomdata_t& nbat,
+                                                        ArrayRef<const RVec>    shiftvec,
+                                                        real                    rlistInner);
 #endif
 
 #if GMX_HAVE_NBNXM_SIMD_4XM
-template void nbnxmSimdPruneKernel<KernelLayout::r4xM>(NbnxnPairlistCpu*              nbl,
-                                                       const nbnxn_atomdata_t&        nbat,
-                                                       gmx::ArrayRef<const gmx::RVec> shiftvec,
-                                                       real                           rlistInner);
+template void nbnxmSimdPruneKernel<KernelLayout::r4xM>(NbnxnPairlistCpu*       nbl,
+                                                       const nbnxn_atomdata_t& nbat,
+                                                       ArrayRef<const RVec>    shiftvec,
+                                                       real                    rlistInner);
 #endif
+
+} // namespace gmx

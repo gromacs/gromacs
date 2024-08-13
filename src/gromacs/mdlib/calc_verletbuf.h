@@ -54,13 +54,8 @@ namespace gmx
 template<typename>
 class ArrayRef;
 class RangePartitioning;
+enum class NbnxmKernelType;
 } // namespace gmx
-
-namespace Nbnxm
-{
-enum class KernelType;
-} // namespace Nbnxm
-
 
 struct VerletbufListSetup
 {
@@ -82,7 +77,7 @@ static const real verlet_buffer_ratio_NVE_T0     = 0.10;
 
 /* Returns the pair-list setup for the given nbnxn kernel type.
  */
-VerletbufListSetup verletbufGetListSetup(Nbnxm::KernelType nbnxnKernelType);
+VerletbufListSetup verletbufGetListSetup(gmx::NbnxmKernelType nbnxnKernelType);
 
 //! \brief Chance target to use in minCellSizeForAtomDisplacement()
 enum class ChanceTarget

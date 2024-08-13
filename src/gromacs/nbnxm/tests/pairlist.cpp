@@ -94,7 +94,7 @@ struct HostBuffers
 };
 
 //! Allocate device side buffers for testing
-void allocateDeviceBuffers(Nbnxm::GpuPairlist* pairlist, int allocationSize, const DeviceContext& deviceContext)
+void allocateDeviceBuffers(GpuPairlist* pairlist, int allocationSize, const DeviceContext& deviceContext)
 {
     pairlist->sciAllocationSize                  = allocationSize;
     pairlist->packedJClustersAllocationSize      = allocationSize;
@@ -150,7 +150,7 @@ HostBuffers prepareHostBuffers(int dataSize)
 }
 
 //! H2D data transfer. Only for checking device side data, transfer is tested elsewhere
-void transferHostToDevice(Nbnxm::GpuPairlist* pairlist,
+void transferHostToDevice(GpuPairlist*        pairlist,
                           const HostBuffers&  hostbuffers,
                           int                 dataSize,
                           const DeviceStream& deviceStream)
@@ -177,10 +177,7 @@ void transferHostToDevice(Nbnxm::GpuPairlist* pairlist,
 }
 
 //! D2H data transfer. Only for checking device side data, transfer is tested elsewhere
-void transferDeviceToHost(Nbnxm::GpuPairlist* pairlist,
-                          HostBuffers*        hostbuffers,
-                          int                 dataSize,
-                          const DeviceStream& deviceStream)
+void transferDeviceToHost(GpuPairlist* pairlist, HostBuffers* hostbuffers, int dataSize, const DeviceStream& deviceStream)
 {
 
     copyFromDeviceBuffer(
@@ -206,7 +203,7 @@ void transferDeviceToHost(Nbnxm::GpuPairlist* pairlist,
 //! Set up pairlist data structure and transfer data to it
 void initPairlistWithData(int                  dataSize,
                           int                  allocationSize,
-                          Nbnxm::GpuPairlist*  pairlist,
+                          GpuPairlist*         pairlist,
                           const HostBuffers&   hostbuffers,
                           const DeviceContext& deviceContext,
                           const DeviceStream&  deviceStream)
@@ -217,7 +214,7 @@ void initPairlistWithData(int                  dataSize,
 }
 
 //! Check that all fields in pairlist are properly allocated
-void checkPairlistConsistency(const Nbnxm::GpuPairlist& pairlist, int allocationSize)
+void checkPairlistConsistency(const GpuPairlist& pairlist, int allocationSize)
 {
     checkDeviceBuffer(pairlist.sci, allocationSize);
     checkDeviceBuffer(pairlist.cjPacked, allocationSize);
@@ -226,7 +223,7 @@ void checkPairlistConsistency(const Nbnxm::GpuPairlist& pairlist, int allocation
 }
 
 //! Check that device buffer data is valid after transfer to back and forth
-void checkValuesFromPairlist(Nbnxm::GpuPairlist* pairlist,
+void checkValuesFromPairlist(GpuPairlist*        pairlist,
                              const HostBuffers&  inputBuffers,
                              int                 dataSize,
                              const DeviceStream& deviceStream)
@@ -247,10 +244,10 @@ TEST(GpuPairlistTest, PairlistInitWorks)
     for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
     {
         testDevice->deviceContext().activate();
-        constexpr int      dataSize       = 23;
-        constexpr int      allocationSize = 42;
-        Nbnxm::GpuPairlist pairlist{};
-        auto               hostbuffers = prepareHostBuffers(dataSize);
+        constexpr int dataSize       = 23;
+        constexpr int allocationSize = 42;
+        GpuPairlist   pairlist{};
+        auto          hostbuffers = prepareHostBuffers(dataSize);
         initPairlistWithData(dataSize,
                              allocationSize,
                              &pairlist,

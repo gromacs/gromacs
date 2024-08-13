@@ -50,25 +50,21 @@
 
 #include "nbnxm.h"
 
-struct NbnxmGpu;
-struct NBAtomDataGpu;
 struct gmx_wallclock_gpu_nbnxn_t;
-struct nbnxn_atomdata_t;
-struct NbnxnPairlistGpu;
-struct PairlistParams;
 struct interaction_const_t;
 
 namespace gmx
 {
+struct NbnxmGpu;
+struct NBAtomDataGpu;
+struct nbnxn_atomdata_t;
+struct NbnxnPairlistGpu;
+struct PairlistParams;
 class DeviceStreamManager;
-}
-
-namespace Nbnxm
-{
 
 /** Initializes the data structures related to GPU nonbonded calculations. */
 GPU_FUNC_QUALIFIER
-NbnxmGpu* gpu_init(const gmx::DeviceStreamManager gmx_unused& deviceStreamManager,
+NbnxmGpu* gpu_init(const DeviceStreamManager gmx_unused& deviceStreamManager,
                    const interaction_const_t gmx_unused* ic,
                    const PairlistParams gmx_unused& listParams,
                    const nbnxn_atomdata_t gmx_unused* nbat,
@@ -79,7 +75,7 @@ NbnxmGpu* gpu_init(const gmx::DeviceStreamManager gmx_unused& deviceStreamManage
 GPU_FUNC_QUALIFIER
 void gpu_init_pairlist(NbnxmGpu gmx_unused*          nb,
                        const struct NbnxnPairlistGpu gmx_unused* h_nblist,
-                       gmx::InteractionLocality gmx_unused       iloc) GPU_FUNC_TERM;
+                       InteractionLocality gmx_unused            iloc) GPU_FUNC_TERM;
 
 /** Initializes atom-data on the GPU, called at every pair search step. */
 GPU_FUNC_QUALIFIER
@@ -130,9 +126,8 @@ NBAtomDataGpu* gpuGetNBAtomData(NbnxmGpu gmx_unused* nb) GPU_FUNC_TERM_WITH_RETU
 /** Returns forces device buffer.
  */
 GPU_FUNC_QUALIFIER
-DeviceBuffer<gmx::RVec> gpu_get_f(NbnxmGpu gmx_unused* nb)
-        GPU_FUNC_TERM_WITH_RETURN(DeviceBuffer<gmx::RVec>{});
+DeviceBuffer<RVec> gpu_get_f(NbnxmGpu gmx_unused* nb) GPU_FUNC_TERM_WITH_RETURN(DeviceBuffer<RVec>{});
 
-} // namespace Nbnxm
+} // namespace gmx
 
 #endif

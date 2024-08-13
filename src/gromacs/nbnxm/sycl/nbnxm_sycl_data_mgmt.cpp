@@ -51,7 +51,7 @@
 
 #include "nbnxm_sycl_types.h"
 
-namespace Nbnxm
+namespace gmx
 {
 
 void gpu_init_platform_specific(NbnxmGpu* /* nb */)
@@ -79,4 +79,4 @@ int gpu_min_ci_balanced(NbnxmGpu* nb)
     return balancedFactor * numComputeUnits / numComputeUnitsFactor;
 }
 
-} // namespace Nbnxm
+} // namespace gmx

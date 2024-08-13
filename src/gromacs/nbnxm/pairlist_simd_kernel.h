@@ -50,23 +50,22 @@
 
 #include "clusterdistancekerneltype.h"
 
-struct NbnxnPairlistCpu;
-struct NbnxnPairlistCpuWork;
-
-namespace Nbnxm
+namespace gmx
 {
+struct NbnxmPairlistCpu;
+struct NbnxmPairlistCpuWork;
 class Grid;
 
 //! Copies PBC shifted i-cell packed atom coordinates to working array for the 4xM layout
 void setICellCoordinatesSimd4xM(int                   ci,
-                                const gmx::RVec&      shift,
+                                const RVec&           shift,
                                 int gmx_unused        stride,
                                 const real*           x,
                                 NbnxmPairlistCpuWork* work);
 
 //! Copies PBC shifted i-cell packed atom coordinates to working array for the 2xMM layout
 void setICellCoordinatesSimd2xMM(int                   ci,
-                                 const gmx::RVec&      shift,
+                                 const RVec&           shift,
                                  int gmx_unused        stride,
                                  const real*           x,
                                  NbnxmPairlistCpuWork* work);
@@ -125,6 +124,6 @@ void makeClusterListSimd2xMM(const Grid&              jGrid,
                              float                    rbb2,
                              int* gmx_restrict        numDistanceChecks);
 
-} // namespace Nbnxm
+} // namespace gmx
 
 #endif // GMX_NBNXM_PAIRLIST_SIMD_KERNEL_H

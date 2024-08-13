@@ -60,29 +60,20 @@
 #include "gromacs/utility/bitmask.h"
 #include "gromacs/utility/real.h"
 
+class GpuEventSynchronizer;
+
 namespace gmx
 {
+
 template<bool, bool>
 class EnergyAccumulator;
 class EnergyGroupsPerCluster;
 class MDLogger;
-} // namespace gmx
-
 struct NbnxmGpu;
 struct nbnxn_atomdata_t;
 struct nonbonded_verlet_t;
-
-class GpuEventSynchronizer;
-
-namespace Nbnxm
-{
+enum class NbnxmKernelType;
 class GridSet;
-enum class KernelType;
-} // namespace Nbnxm
-
-//! Convenience type for vector with aligned memory
-template<typename T>
-using AlignedVector = std::vector<T, gmx::AlignedAllocator<T>>;
 
 enum
 {
@@ -122,7 +113,7 @@ struct nbnxn_atomdata_output_t
      * \param[in] numEnergyGroups  The number of energy groups
      * \param[in] pinningPolicy    Sets the pinning policy for all buffers used on the GPU
      */
-    nbnxn_atomdata_output_t(Nbnxm::KernelType kernelType, int numEnergyGroups, gmx::PinningPolicy pinningPolicy);
+    nbnxn_atomdata_output_t(NbnxmKernelType kernelType, int numEnergyGroups, PinningPolicy pinningPolicy);
 
     //! Move constructor
     nbnxn_atomdata_output_t(nbnxn_atomdata_output_t&&) noexcept;
@@ -132,18 +123,18 @@ struct nbnxn_atomdata_output_t
 
 
     //! f, size natoms*fstride
-    gmx::HostVector<real> f;
+    HostVector<real> f;
     //! Shift force array, size c_numShiftVectors*DIM
-    gmx::HostVector<real> fshift;
+    HostVector<real> fshift;
     //! Temporary Van der Waals group energy storage
-    gmx::HostVector<real> Vvdw;
+    HostVector<real> Vvdw;
     //! Temporary Coulomb group energy storage
-    gmx::HostVector<real> Vc;
+    HostVector<real> Vc;
 
     //! Accumulator for energy output with a single energy group
-    std::unique_ptr<gmx::EnergyAccumulator<false, true>> accumulatorSingleEnergies;
+    std::unique_ptr<EnergyAccumulator<false, true>> accumulatorSingleEnergies;
     //! Accumulator for energy output with multiple energy groups
-    std::unique_ptr<gmx::EnergyAccumulator<true, true>> accumulatorGroupEnergies;
+    std::unique_ptr<EnergyAccumulator<true, true>> accumulatorGroupEnergies;
 };
 
 /*! \brief Block size in atoms for the non-bonded thread force-buffer reduction.
@@ -190,7 +181,7 @@ const char* enumValueToString(LJCombinationRule enumValue);
 struct nbnxn_atomdata_t
 { //NOLINT(clang-analyzer-optin.performance.Padding)
 
-    nbnxn_atomdata_t(gmx::PinningPolicy pinningPolicy);
+    nbnxn_atomdata_t(PinningPolicy pinningPolicy);
 
     ~nbnxn_atomdata_t();
 
@@ -202,35 +193,35 @@ struct nbnxn_atomdata_t
          *
          * \param[in] pinningPolicy  Sets the pinning policy for all data that might be transfered to a GPU
          */
-        Params(gmx::PinningPolicy pinningPolicy);
+        Params(PinningPolicy pinningPolicy);
 
         //! The number of different atom types
         int numTypes;
         //! Lennard-Jone 6*C6 and 12*C12 parameters, size numTypes*2*2
-        gmx::HostVector<real> nbfp;
+        HostVector<real> nbfp;
         //! Combination rule, see enum defined above
         LJCombinationRule ljCombinationRule;
         //! LJ parameters per atom type, size numTypes*2
-        gmx::HostVector<real> nbfp_comb;
+        HostVector<real> nbfp_comb;
         //! As nbfp, but with a stride for the present SIMD architecture
         AlignedVector<real> nbfp_aligned;
         //! Atom types per atom
-        gmx::HostVector<int> type;
+        HostVector<int> type;
         //! LJ parameters per atom for fast SIMD loading
-        gmx::HostVector<real> lj_comb;
+        HostVector<real> lj_comb;
         //! Charges per atom, not set with format nbatXYZQ
-        gmx::HostVector<real> q;
+        HostVector<real> q;
         //! The number of energy groups
         int numEnergyGroups;
         //! The list of energy groups per i-cluster
-        std::unique_ptr<gmx::EnergyGroupsPerCluster> energyGroupsPerCluster;
+        std::unique_ptr<EnergyGroupsPerCluster> energyGroupsPerCluster;
     };
 
     /*! \internal
      * \brief Diagonal and topology exclusion helper data for all SIMD kernels. */
     struct SimdMasks
     {
-        SimdMasks(Nbnxm::KernelType kernelType);
+        SimdMasks(NbnxmKernelType kernelType);
 
         //! Helper data for setting up diagonal exclusion masks in the SIMD 4xN kernels
         AlignedVector<real> diagonal_4xn_j_minus_i;
@@ -269,12 +260,12 @@ struct nbnxn_atomdata_t
      * \param[in] numEnergyGroups    Number of energy groups
      * \param[in] numOutputBuffers   Number of output data structures
      */
-    nbnxn_atomdata_t(gmx::PinningPolicy                      pinningPolicy,
-                     const gmx::MDLogger&                    mdlog,
-                     Nbnxm::KernelType                       kernelType,
+    nbnxn_atomdata_t(PinningPolicy                           pinningPolicy,
+                     const MDLogger&                         mdlog,
+                     NbnxmKernelType                         kernelType,
                      const std::optional<LJCombinationRule>& ljCombinationRule,
                      LJCombinationRule                       pmeLJCombinationRule,
-                     gmx::ArrayRef<const real>               nbfp,
+                     ArrayRef<const real>                    nbfp,
                      bool                                    addFillerAtomType,
                      int                                     numEnergyGroups,
                      int                                     numOutputBuffers);
@@ -292,10 +283,10 @@ struct nbnxn_atomdata_t
     int numLocalAtoms() const { return numLocalAtoms_; }
 
     //! Return the coordinate buffer, and q with xFormat==nbatXYZQ
-    gmx::ArrayRef<const real> x() const { return x_; }
+    ArrayRef<const real> x() const { return x_; }
 
     //! Return the coordinate buffer, and q with xFormat==nbatXYZQ
-    gmx::ArrayRef<real> x() { return x_; }
+    ArrayRef<real> x() { return x_; }
 
     //! Masks for handling exclusions in the SIMD kernels
     const SimdMasks& simdMasks() const { return simdMasks_; }
@@ -317,7 +308,7 @@ struct nbnxn_atomdata_t
     const nbnxn_atomdata_output_t& outputBuffer(int thread) const { return outputBuffers_[thread]; }
 
     //! Returns the list of output buffers
-    gmx::ArrayRef<const nbnxn_atomdata_output_t> outputBuffers() const { return outputBuffers_; }
+    ArrayRef<const nbnxn_atomdata_output_t> outputBuffers() const { return outputBuffers_; }
 
     //! Returns whether buffer flags are used
     bool useBufferFlags() const { return useBufferFlags_; }
@@ -331,7 +322,7 @@ struct nbnxn_atomdata_t
      * \param[in]  gridSet     The grids data.
      * \param[out] totalForce  Buffer to accumulate resulting force
      */
-    void reduceForces(gmx::AtomLocality locality, const Nbnxm::GridSet& gridSet, rvec* totalForce);
+    void reduceForces(AtomLocality locality, const GridSet& gridSet, rvec* totalForce);
 
     /*! \brief Clears the force buffer.
      *
@@ -361,7 +352,7 @@ public:
     //! Do we need to update shift_vec every step?
     bool bDynamicBox;
     //! Shift vectors, copied from t_forcerec
-    gmx::HostVector<gmx::RVec> shift_vec;
+    HostVector<RVec> shift_vec;
     //! stride for a coordinate in x (usually 3 or 4)
     int xstride;
     //! stride for a coordinate in f (usually 3 or 4)
@@ -369,7 +360,7 @@ public:
 
 private:
     //! x and possibly q, size natoms*xstride
-    gmx::HostVector<real> x_;
+    HostVector<real> x_;
 
     //! Masks for handling exclusions in the SIMD kernels
     SimdMasks simdMasks_;
@@ -392,14 +383,14 @@ private:
 void copy_rvec_to_nbat_real(const int* a, int na, int na_round, const rvec* x, int nbatFormat, real* xnb, int a0);
 
 //! Sets the atomdata after pair search
-void nbnxn_atomdata_set(nbnxn_atomdata_t*            nbat,
-                        const Nbnxm::GridSet&        gridSet,
-                        gmx::ArrayRef<const int>     atomTypes,
-                        gmx::ArrayRef<const real>    atomCharges,
-                        gmx::ArrayRef<const int32_t> atomInfo);
+void nbnxn_atomdata_set(nbnxn_atomdata_t*       nbat,
+                        const GridSet&          gridSet,
+                        ArrayRef<const int>     atomTypes,
+                        ArrayRef<const real>    atomCharges,
+                        ArrayRef<const int32_t> atomInfo);
 
 //! Copy the shift vectors to nbat
-void nbnxn_atomdata_copy_shiftvec(bool dynamic_box, gmx::ArrayRef<gmx::RVec> shift_vec, nbnxn_atomdata_t* nbat);
+void nbnxn_atomdata_copy_shiftvec(bool dynamic_box, ArrayRef<RVec> shift_vec, nbnxn_atomdata_t* nbat);
 
 /*! \brief Transform coordinates to xbat layout
  *
@@ -410,10 +401,10 @@ void nbnxn_atomdata_copy_shiftvec(bool dynamic_box, gmx::ArrayRef<gmx::RVec> shi
  * \param[in] coordinates  Coordinates in plain rvec format.
  * \param[in,out] nbat     Data in NBNXM format, used for mapping formats and to locate the output buffer.
  */
-void nbnxn_atomdata_copy_x_to_nbat_x(const Nbnxm::GridSet& gridSet,
-                                     gmx::AtomLocality     locality,
-                                     const rvec*           coordinates,
-                                     nbnxn_atomdata_t*     nbat);
+void nbnxn_atomdata_copy_x_to_nbat_x(const GridSet&    gridSet,
+                                     AtomLocality      locality,
+                                     const rvec*       coordinates,
+                                     nbnxn_atomdata_t* nbat);
 
 /*! \brief Transform coordinates to xbat layout on GPU
  *
@@ -428,13 +419,15 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const Nbnxm::GridSet& gridSet,
  *                                 If there is no need to wait for any event (e.g., the wait has already been
  *                                 enqueued into the appropriate stream), it can be \c nullptr.
  */
-void nbnxn_atomdata_x_to_nbat_x_gpu(const Nbnxm::GridSet&   gridSet,
-                                    gmx::AtomLocality       locality,
-                                    NbnxmGpu*               gpu_nbv,
-                                    DeviceBuffer<gmx::RVec> d_x,
-                                    GpuEventSynchronizer*   xReadyOnDevice);
+void nbnxn_atomdata_x_to_nbat_x_gpu(const GridSet&        gridSet,
+                                    AtomLocality          locality,
+                                    NbnxmGpu*             gpu_nbv,
+                                    DeviceBuffer<RVec>    d_x,
+                                    GpuEventSynchronizer* xReadyOnDevice);
 
 //! Add the fshift force stored in nbat to fshift
-void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t& nbat, gmx::ArrayRef<gmx::RVec> fshift);
+void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t& nbat, ArrayRef<RVec> fshift);
+
+} // namespace gmx
 
 #endif

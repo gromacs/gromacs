@@ -42,7 +42,7 @@
 
 #include "nbnxm_sycl_kernel_body.h"
 
-namespace Nbnxm
+namespace gmx
 {
 #if SYCL_NBNXM_SUPPORTS_SUBGROUP_SIZE_8
 template void launchNbnxmKernelHelper<8, true, false>(NbnxmGpu*                 nb,
@@ -59,4 +59,4 @@ template void launchNbnxmKernelHelper<64, true, false>(NbnxmGpu*                
                                                        const gmx::StepWorkload&  stepWork,
                                                        const InteractionLocality iloc);
 #endif
-} // namespace Nbnxm
+} // namespace gmx

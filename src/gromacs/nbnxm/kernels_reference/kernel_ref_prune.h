@@ -45,20 +45,21 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-struct nbnxn_atomdata_t;
-struct NbnxnPairlistCpu;
-
 namespace gmx
 {
+struct nbnxn_atomdata_t;
+struct NbnxnPairlistCpu;
 template<typename>
 class ArrayRef;
-}
+
 /*! \brief Prune a single NbnxnPairlistCpu entry with distance \p rlistInner
  *
  * Reads a cluster pairlist \p nbl->ciOuter, \p nbl->cjOuter and writes
  * all cluster pairs within \p rlistInner to \p nbl->ci, \p nbl->cj.
  */
-void nbnxn_kernel_prune_ref(NbnxnPairlistCpu*              nbl,
-                            const nbnxn_atomdata_t*        nbat,
-                            gmx::ArrayRef<const gmx::RVec> shiftvec,
-                            real                           rlistInner);
+void nbnxn_kernel_prune_ref(NbnxnPairlistCpu*       nbl,
+                            const nbnxn_atomdata_t* nbat,
+                            ArrayRef<const RVec>    shiftvec,
+                            real                    rlistInner);
+
+} // namespace gmx

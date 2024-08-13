@@ -52,18 +52,21 @@
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/utility/fatalerror.h"
 
+namespace gmx
+{
+
 static constexpr int c_clSize = c_nbnxnGpuClusterSize;
 
-void nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu*        nbl,
-                          const nbnxn_atomdata_t*        nbat,
-                          const interaction_const_t*     iconst,
-                          gmx::ArrayRef<const gmx::RVec> shiftvec,
-                          const gmx::StepWorkload&       stepWork,
-                          int                            clearF,
-                          gmx::ArrayRef<real>            f,
-                          real*                          fshift,
-                          real*                          Vc,
-                          real*                          Vvdw)
+void nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu*    nbl,
+                          const nbnxn_atomdata_t*    nbat,
+                          const interaction_const_t* iconst,
+                          ArrayRef<const RVec>       shiftvec,
+                          const StepWorkload&        stepWork,
+                          int                        clearF,
+                          ArrayRef<real>             f,
+                          real*                      fshift,
+                          real*                      Vc,
+                          real*                      Vvdw)
 {
     real                fscal = NAN;
     real                vcoul = 0;
@@ -117,7 +120,7 @@ void nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu*        nbl,
         real       vctot         = 0;
         real       Vvdwtot       = 0;
 
-        if (nbln.shift == gmx::c_centralShiftIndex
+        if (nbln.shift == c_centralShiftIndex
             && nbl->cjPacked.list_[cjPackedBegin].cj[0] == sci * c_nbnxnGpuNumClusterPerSupercluster)
         {
             /* we have the diagonal:
@@ -188,7 +191,7 @@ void nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu*        nbl,
                             {
                                 const int ja = cj * c_clSize + jc;
 
-                                if (nbln.shift == gmx::c_centralShiftIndex && ci == cj && ja <= ia)
+                                if (nbln.shift == c_centralShiftIndex && ci == cj && ja <= ia)
                                 {
                                     continue;
                                 }
@@ -226,7 +229,7 @@ void nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu*        nbl,
                                 // Ensure distance do not become so small that r^-12 overflows
                                 rsq = std::max(rsq, c_nbnxnMinDistanceSquared);
 
-                                const real rinv   = gmx::invsqrt(rsq);
+                                const real rinv   = invsqrt(rsq);
                                 const real rinvsq = rinv * rinv;
 
                                 const real qq = iq * x[js + 3];
@@ -349,6 +352,8 @@ void nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu*        nbl,
         fprintf(debug, "generic kernel non-zero pair interactions:   %d\n", npair_tot);
         fprintf(debug,
                 "ratio non-zero/post-prune pair interactions: %4.2f\n",
-                npair_tot / static_cast<double>(nhwu_pruned * gmx::exactDiv(nbl->na_ci, 2) * nbl->na_ci));
+                npair_tot / static_cast<double>(nhwu_pruned * exactDiv(nbl->na_ci, 2) * nbl->na_ci));
     }
 }
+
+} // namespace gmx

@@ -62,8 +62,11 @@
 #ifndef NBNXM_CUDA_KERNEL_SCI_SORT_CUH
 #define NBNXM_CUDA_KERNEL_SCI_SORT_CUH
 
+namespace gmx
+{
+
 __launch_bounds__(c_sciSortingThreadsPerBlock) static __global__
-        void nbnxnKernelBucketSciSort(Nbnxm::GpuPairlist plist)
+        void nbnxnKernelBucketSciSort(GpuPairlist plist)
 {
     int size = plist.numSci;
 
@@ -85,5 +88,7 @@ __launch_bounds__(c_sciSortingThreadsPerBlock) static __global__
         plist.sorting.sciSorted[sciOffset] = sci;
     }
 }
+
+} // namespace gmx
 
 #endif /* NBNXM_CUDA_KERNEL_SCI_SORT_CUH */

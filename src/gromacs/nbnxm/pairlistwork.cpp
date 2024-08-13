@@ -50,6 +50,9 @@
 
 #include "boundingbox_simd.h"
 
+namespace gmx
+{
+
 NbnxmPairlistGpuWork::ISuperClusterData::ISuperClusterData() :
     bb(c_gpuNumClusterPerCell),
 #if NBNXN_SEARCH_BB_SIMD4
@@ -63,3 +66,5 @@ NbnxmPairlistGpuWork::NbnxmPairlistGpuWork() :
     distanceBuffer(c_gpuNumClusterPerCell), sci_sort({}, { gmx::PinningPolicy::PinnedIfSupported })
 {
 }
+
+} // namespace gmx

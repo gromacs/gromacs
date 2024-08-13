@@ -47,13 +47,11 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/simd/simd.h"
 
-namespace Nbnxm
+namespace gmx
 {
 
 /*! \brief The number of bounds along one dimension of a bounding box */
 static constexpr int c_numBoundingBoxBounds1D = 2;
-
-} // namespace Nbnxm
 
 #ifndef DOXYGEN
 
@@ -90,7 +88,7 @@ static constexpr int c_packedBoundingBoxesDimSize = GMX_SIMD4_WIDTH;
 
 //! Total number of corners (floats) in a pack of bounding boxes
 static constexpr int c_packedBoundingBoxesSize =
-        c_packedBoundingBoxesDimSize * DIM * Nbnxm::c_numBoundingBoxBounds1D;
+        c_packedBoundingBoxesDimSize * DIM * c_numBoundingBoxBounds1D;
 
 //! Returns the starting index of the bounding box pack that contains the given cluster
 static constexpr int packedBoundingBoxesIndex(int clusterIndex)
@@ -106,5 +104,7 @@ static constexpr int packedBoundingBoxesIndex(int clusterIndex)
 #    endif /* NBNXN_SEARCH_BB_SIMD4 */
 
 #endif // !DOXYGEN
+
+} // namespace gmx
 
 #endif // GMX_NBNXM_BOUNDINGBOX_SIMD_H

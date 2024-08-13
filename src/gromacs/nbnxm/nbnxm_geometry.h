@@ -54,35 +54,35 @@
 
 #include "pairlist.h"
 
+namespace gmx
+{
+
 /*! \brief Returns the base-2 log of n.
  * *
  * Generates a fatal error when n is not an integer power of 2.
  */
 static inline int get_2log(int n)
 {
-    if (!gmx::isPowerOfTwo(n))
+    if (!isPowerOfTwo(n))
     {
         gmx_fatal(FARGS, "nbnxn na_c (%d) is not a power of 2", n);
     }
 
-    return gmx::log2I(n);
+    return log2I(n);
 }
 
-namespace Nbnxm
-{
-
 //! The nbnxn i-cluster size in atoms for the given NBNxM kernel type
-static constexpr int sc_iClusterSize(const KernelType kernelType)
+static constexpr int sc_iClusterSize(const NbnxmKernelType kernelType)
 {
     switch (kernelType)
     {
-        case KernelType::Cpu4x4_PlainC:
-        case KernelType::Cpu4xN_Simd_4xN:
-        case KernelType::Cpu4xN_Simd_2xNN: return 4;
-        case KernelType::Gpu8x8x8:
-        case KernelType::Cpu8x8x8_PlainC: return c_nbnxnGpuClusterSize;
-        case KernelType::NotSet:
-        case KernelType::Count: return 0;
+        case NbnxmKernelType::Cpu4x4_PlainC:
+        case NbnxmKernelType::Cpu4xN_Simd_4xN:
+        case NbnxmKernelType::Cpu4xN_Simd_2xNN: return 4;
+        case NbnxmKernelType::Gpu8x8x8:
+        case NbnxmKernelType::Cpu8x8x8_PlainC: return c_nbnxnGpuClusterSize;
+        case NbnxmKernelType::NotSet:
+        case NbnxmKernelType::Count: return 0;
     }
 
     return 0;
@@ -93,45 +93,40 @@ static constexpr int sc_iClusterSize(const KernelType kernelType)
  * \note When including this file in files compiled for SYCL devices only,
  *       this function can not be called for SIMD kernel types. This is asserted.
  */
-static constexpr int sc_jClusterSize(const KernelType kernelType)
+static constexpr int sc_jClusterSize(const NbnxmKernelType kernelType)
 {
     switch (kernelType)
     {
-        case KernelType::Cpu4x4_PlainC: return 4;
+        case NbnxmKernelType::Cpu4x4_PlainC: return 4;
 #if GMX_SIMD
-        case KernelType::Cpu4xN_Simd_4xN: return GMX_SIMD_REAL_WIDTH;
-        case KernelType::Cpu4xN_Simd_2xNN: return GMX_SIMD_REAL_WIDTH / 2;
+        case NbnxmKernelType::Cpu4xN_Simd_4xN: return GMX_SIMD_REAL_WIDTH;
+        case NbnxmKernelType::Cpu4xN_Simd_2xNN: return GMX_SIMD_REAL_WIDTH / 2;
 #else
-        case KernelType::Cpu4xN_Simd_4xN: return 0;
-        case KernelType::Cpu4xN_Simd_2xNN: return 0;
+        case NbnxmKernelType::Cpu4xN_Simd_4xN: return 0;
+        case NbnxmKernelType::Cpu4xN_Simd_2xNN: return 0;
 #endif
-        case KernelType::Gpu8x8x8: return c_nbnxnGpuClusterSize / 2;
-        case KernelType::Cpu8x8x8_PlainC: return c_nbnxnGpuClusterSize / 2;
-        case KernelType::NotSet:
-        case KernelType::Count: return 0;
+        case NbnxmKernelType::Gpu8x8x8:
+        case NbnxmKernelType::Cpu8x8x8_PlainC: return c_nbnxnGpuClusterSize / 2;
+        case NbnxmKernelType::NotSet:
+        case NbnxmKernelType::Count: return 0;
     }
 
     return 0;
 }
 
 /*! \brief Returns whether the pair-list corresponding to nb_kernel_type is simple */
-static constexpr bool kernelTypeUsesSimplePairlist(const KernelType kernelType)
+static constexpr bool kernelTypeUsesSimplePairlist(const NbnxmKernelType kernelType)
 {
-    return (kernelType == KernelType::Cpu4x4_PlainC || kernelType == KernelType::Cpu4xN_Simd_4xN
-            || kernelType == KernelType::Cpu4xN_Simd_2xNN);
+    return (kernelType == NbnxmKernelType::Cpu4x4_PlainC || kernelType == NbnxmKernelType::Cpu4xN_Simd_4xN
+            || kernelType == NbnxmKernelType::Cpu4xN_Simd_2xNN);
 }
 
 //! Returns whether a SIMD kernel is in use
-static constexpr bool kernelTypeIsSimd(const KernelType kernelType)
+static constexpr bool kernelTypeIsSimd(const NbnxmKernelType kernelType)
 {
-    return (kernelType == KernelType::Cpu4xN_Simd_4xN || kernelType == KernelType::Cpu4xN_Simd_2xNN);
+    return (kernelType == NbnxmKernelType::Cpu4xN_Simd_4xN
+            || kernelType == NbnxmKernelType::Cpu4xN_Simd_2xNN);
 }
-
-//! The fixed size of the exclusion mask array for a half GPU cluster pair
-static constexpr int c_nbnxnGpuExclSize =
-        c_nbnxnGpuClusterSize * c_nbnxnGpuClusterSize / c_nbnxnGpuClusterpairSplit;
-
-} // namespace Nbnxm
 
 /*! \brief Returns the increase in pairlist radius when including volume of pairs beyond rlist
  *
@@ -153,6 +148,8 @@ real nbnxmPairlistVolumeRadiusIncrease(bool useGpu, real atomDensity);
  * \note This routine does not know which cluster layout is used and assumes the most common one.
  *       Therefore this should only be used to estimates, not for setting a pair list buffer.
  */
-real nbnxn_get_rlist_effective_inc(int clusterSize, const gmx::RVec& averageClusterBoundingBox);
+real nbnxn_get_rlist_effective_inc(int clusterSize, const RVec& averageClusterBoundingBox);
+
+} // namespace gmx
 
 #endif

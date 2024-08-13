@@ -44,17 +44,12 @@
 
 class DeviceStream;
 struct interaction_const_t;
-struct NBParamGpu;
-struct PairlistParams;
 
 namespace gmx
 {
+struct NBParamGpu;
+struct PairlistParams;
 enum class InteractionLocality;
-}
-
-namespace Nbnxm
-{
-
 class GpuPairlist;
 
 /*! \brief Initializes the NBNXM GPU data structures. */
@@ -74,6 +69,6 @@ inline void getExclusiveScanWorkingArraySize(size_t& scan_size, GpuPairlist*, co
 }
 #endif
 
-} // namespace Nbnxm
+} // namespace gmx
 
 #endif // GMX_NBNXM_NBNXM_GPU_DATA_MGMT_H

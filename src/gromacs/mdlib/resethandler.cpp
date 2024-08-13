@@ -183,7 +183,7 @@ bool ResetHandler::resetCountersImpl(int64_t                     step,
 
         if (nbv && nbv->useGpu())
         {
-            Nbnxm::gpu_reset_timings(nbv);
+            gpu_reset_timings(nbv);
         }
 
         if (pme_gpu_task_enabled(pme))

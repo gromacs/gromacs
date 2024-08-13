@@ -41,40 +41,19 @@
 #define GMX_NBNXM_SYCL_NBNXN_SYCL_KERNEL_UTILS_H
 
 #include "gromacs/gpu_utils/sycl_kernel_utils.h"
+#include "gromacs/nbnxm/gpu_types_common.h"
 #include "gromacs/nbnxm/pairlist.h"
 #include "gromacs/nbnxm/pairlistparams.h"
 
-namespace Nbnxm
+namespace gmx
 {
-
-#ifndef GMX_NBNXN_PRUNE_KERNEL_JPACKED_CONCURRENCY
-//! \brief Default for the prune kernel's jPacked processing concurrency.
-#    define GMX_NBNXN_PRUNE_KERNEL_JPACKED_CONCURRENCY 4
-#endif
 
 /*! \brief Prune kernel's jPacked processing concurrency.
  *
  *  The \c GMX_NBNXN_PRUNE_KERNEL_JPACKED_CONCURRENCY macro allows compile-time override.
  */
-static constexpr int c_syclPruneKernelJPackedConcurrency = GMX_NBNXN_PRUNE_KERNEL_JPACKED_CONCURRENCY;
+static constexpr int c_syclPruneKernelJPackedConcurrency = c_pruneKernelJPackedConcurrency;
 
-/* Convenience constants */
-/*! \cond */
-// cluster size = number of atoms per cluster.
-static constexpr int c_clSize = c_nbnxnGpuClusterSize;
-// Square of cluster size.
-static constexpr int c_clSizeSq = c_clSize * c_clSize;
-// j-cluster size after split (4 in the current implementation).
-static constexpr int c_splitClSize = c_clSize / c_nbnxnGpuClusterpairSplit;
-// i-cluster interaction mask for a super-cluster with all c_nbnxnGpuNumClusterPerSupercluster=8 bits set.
-static constexpr unsigned superClInteractionMask = ((1U << c_nbnxnGpuNumClusterPerSupercluster) - 1U);
-
-// 1/sqrt(pi), same value as \c M_FLOAT_1_SQRTPI in other NB kernels.
-static constexpr float c_OneOverSqrtPi = 0.564189583547756F;
-// 1/6, same value as in other NB kernels.
-static constexpr float c_oneSixth = 0.16666667F;
-// 1/12, same value as in other NB kernels.
-static constexpr float c_oneTwelfth = 0.08333333F;
 /*! \endcond */
 
 /*! \brief Explicit uniform load across the warp
@@ -93,6 +72,6 @@ static constexpr float c_oneTwelfth = 0.08333333F;
 #    define UNIFORM_LOAD_CLUSTER_PAIR_DATA(x) (x)
 #endif
 
-} // namespace Nbnxm
+} // namespace gmx
 
 #endif // GMX_NBNXM_SYCL_NBNXN_SYCL_KERNEL_UTILS_H

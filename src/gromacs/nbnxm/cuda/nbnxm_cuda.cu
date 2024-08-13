@@ -117,7 +117,7 @@
 
 #include "nbnxm_cuda_kernel_sci_sort.cuh"
 
-namespace Nbnxm
+namespace gmx
 {
 
 /*! Nonbonded kernel function pointer type */
@@ -479,7 +479,7 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const In
     NBAtomDataGpu*      adat         = nb->atdat;
     NBParamGpu*         nbp          = nb->nbparam;
     auto*               plist        = nb->plist[iloc].get();
-    Nbnxm::GpuTimers*   timers       = nb->timers;
+    GpuTimers*          timers       = nb->timers;
     const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
 
     bool bDoTime = nb->bDoTime;
@@ -607,7 +607,7 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
     NBAtomDataGpu*      adat         = nb->atdat;
     NBParamGpu*         nbp          = nb->nbparam;
     auto*               plist        = nb->plist[iloc].get();
-    Nbnxm::GpuTimers*   timers       = nb->timers;
+    GpuTimers*          timers       = nb->timers;
     const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
 
     bool bDoTime = nb->bDoTime;
@@ -748,4 +748,4 @@ void cuda_set_cacheconfig()
     }
 }
 
-} // namespace Nbnxm
+} // namespace gmx

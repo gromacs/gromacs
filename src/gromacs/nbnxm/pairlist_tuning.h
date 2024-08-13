@@ -50,17 +50,16 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
 
-namespace gmx
-{
-class CpuInfo;
-class MDLogger;
-} // namespace gmx
-
 struct gmx_mtop_t;
 struct interaction_const_t;
-struct PairlistParams;
 struct t_commrec;
 struct t_inputrec;
+
+namespace gmx
+{
+struct PairlistParams;
+class CpuInfo;
+class MDLogger;
 
 /*! \brief Try to increase nstlist when using the Verlet cut-off scheme
  *
@@ -74,15 +73,15 @@ struct t_inputrec;
  * \param[in]     useOrEmulateGpuForNonbondeds  Tells if we are using a GPU for non-bondeds
  * \param[in]     cpuinfo  Information about the CPU(s)
  */
-void increaseNstlist(FILE*               fplog,
-                     t_commrec*          cr,
-                     t_inputrec*         ir,
-                     int                 nstlistOnCmdline,
-                     const gmx_mtop_t*   mtop,
-                     const matrix        box,
-                     real                effectiveAtomDensity,
-                     bool                useOrEmulateGpuForNonbondeds,
-                     const gmx::CpuInfo& cpuinfo);
+void increaseNstlist(FILE*             fplog,
+                     t_commrec*        cr,
+                     t_inputrec*       ir,
+                     int               nstlistOnCmdline,
+                     const gmx_mtop_t* mtop,
+                     const matrix      box,
+                     real              effectiveAtomDensity,
+                     bool              useOrEmulateGpuForNonbondeds,
+                     const CpuInfo&    cpuinfo);
 
 /*! \brief Set up the dynamic pairlist pruning
  *
@@ -93,7 +92,7 @@ void increaseNstlist(FILE*               fplog,
  * \param[in]     interactionConst The nonbonded interactions constants
  * \param[in,out] listParams       The list setup parameters
  */
-void setupDynamicPairlistPruning(const gmx::MDLogger&       mdlog,
+void setupDynamicPairlistPruning(const MDLogger&            mdlog,
                                  const t_inputrec&          inputrec,
                                  const gmx_mtop_t&          mtop,
                                  real                       effectiveAtomDensity,
@@ -113,10 +112,12 @@ void setupDynamicPairlistPruning(const gmx::MDLogger&       mdlog,
  * \param[in]     effectiveAtomDensity  The effective atom density of the system
  * \param[in]     listParams       The list setup parameters
  */
-void printNbnxmPressureError(const gmx::MDLogger&  mdlog,
+void printNbnxmPressureError(const MDLogger&       mdlog,
                              const t_inputrec&     inputrec,
                              const gmx_mtop_t&     mtop,
                              real                  effectiveAtomDensity,
                              const PairlistParams& listParams);
+
+} // namespace gmx
 
 #endif /* NBNXM_PAIRLIST_TUNING_H */

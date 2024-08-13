@@ -219,7 +219,7 @@ void GmxNBForceCalculatorCpu::CpuImpl::compute(gmx::ArrayRef<const gmx::RVec> co
             gmx::InteractionLocality::Local,
             backend_.interactionConst_,
             backend_.stepWork_,
-            enbvClearFYes,
+            gmx::enbvClearFYes,
             backend_.forcerec_.shift_vec,
             backend_.enerd_.grpp.energyGroupPairTerms[backend_.forcerec_.haveBuckingham ? NonBondedEnergyTerms::BuckinghamSR
                                                                                         : NonBondedEnergyTerms::LJSR],

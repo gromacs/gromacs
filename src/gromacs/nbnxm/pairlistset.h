@@ -59,23 +59,18 @@
 
 #include "pairlist.h"
 
-struct nbnxn_atomdata_t;
-struct PairlistParams;
-struct PairsearchWork;
-struct SearchCycleCounting;
 struct t_nrnb;
 struct t_nblist;
 
 namespace gmx
 {
+struct SearchCycleCounting;
+struct nbnxn_atomdata_t;
+struct PairlistParams;
+struct PairsearchWork;
 template<typename>
 class ListOfLists;
-}
-
-namespace Nbnxm
-{
 class GridSet;
-}
 
 /*! \internal
  * \brief An object that holds the local or non-local pairlists
@@ -89,20 +84,20 @@ public:
     ~PairlistSet();
 
     //! Constructs the pairlists in the set using the coordinates in \p nbat
-    void constructPairlists(gmx::InteractionLocality      locality,
-                            const Nbnxm::GridSet&         gridSet,
-                            gmx::ArrayRef<PairsearchWork> searchWork,
-                            nbnxn_atomdata_t*             nbat,
-                            const gmx::ListOfLists<int>&  exclusions,
-                            int                           minimumIlistCountForGpuBalancing,
-                            t_nrnb*                       nrnb,
-                            SearchCycleCounting*          searchCycleCounting);
+    void constructPairlists(InteractionLocality      locality,
+                            const GridSet&           gridSet,
+                            ArrayRef<PairsearchWork> searchWork,
+                            nbnxn_atomdata_t*        nbat,
+                            const ListOfLists<int>&  exclusions,
+                            int                      minimumIlistCountForGpuBalancing,
+                            t_nrnb*                  nrnb,
+                            SearchCycleCounting*     searchCycleCounting);
 
     //! Dispatch the kernel for dynamic pairlist pruning
-    void dispatchPruneKernel(const nbnxn_atomdata_t* nbat, gmx::ArrayRef<const gmx::RVec> shift_vec);
+    void dispatchPruneKernel(const nbnxn_atomdata_t* nbat, ArrayRef<const RVec> shift_vec);
 
     //! Returns the lists of CPU pairlists
-    gmx::ArrayRef<const NbnxnPairlistCpu> cpuLists() const { return cpuLists_; }
+    ArrayRef<const NbnxnPairlistCpu> cpuLists() const { return cpuLists_; }
 
     //! Returns a pointer to the GPU pairlist, nullptr when not present
     const NbnxnPairlistGpu* gpuList() const
@@ -118,7 +113,7 @@ public:
     }
 
     //! Returns the lists of free-energy pairlists, empty when nonbonded interactions are not perturbed
-    gmx::ArrayRef<const std::unique_ptr<t_nblist>> fepLists() const { return fepLists_; }
+    ArrayRef<const std::unique_ptr<t_nblist>> fepLists() const { return fepLists_; }
 
     //! Returns the number of perturbed excluded pairs that are within distance rlist
     int numPerturbedExclusionsWithinRlist() const { return numPerturbedExclusionsWithinRlist_; }
@@ -150,5 +145,7 @@ public:
     //! Total number of atom pairs for Q kernel
     int natpair_q_;
 };
+
+} // namespace gmx
 
 #endif

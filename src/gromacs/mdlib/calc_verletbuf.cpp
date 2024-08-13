@@ -130,15 +130,15 @@ struct pot_derivatives_t
     real md3; // -V''' at the cutoff
 };
 
-VerletbufListSetup verletbufGetListSetup(Nbnxm::KernelType nbnxnKernelType)
+VerletbufListSetup verletbufGetListSetup(gmx::NbnxmKernelType nbnxnKernelType)
 {
     /* Note that the current buffer estimation code only handles clusters
      * of size 1, 2 or 4, so for 4x8 or 8x8 we use the estimate for 4x4.
      */
     VerletbufListSetup listSetup;
 
-    listSetup.cluster_size_i = Nbnxm::sc_iClusterSize(nbnxnKernelType);
-    listSetup.cluster_size_j = Nbnxm::sc_jClusterSize(nbnxnKernelType);
+    listSetup.cluster_size_i = sc_iClusterSize(nbnxnKernelType);
+    listSetup.cluster_size_j = sc_jClusterSize(nbnxnKernelType);
 
     return listSetup;
 }
@@ -150,23 +150,23 @@ VerletbufListSetup verletbufGetSafeListSetup(ListSetupType listType)
      * i- and j-cluster sizes, so we potentially overestimate, but never
      * underestimate, the buffer drift.
      */
-    Nbnxm::KernelType nbnxnKernelType;
+    gmx::NbnxmKernelType nbnxnKernelType;
 
     if (listType == ListSetupType::Gpu)
     {
-        nbnxnKernelType = Nbnxm::KernelType::Gpu8x8x8;
+        nbnxnKernelType = gmx::NbnxmKernelType::Gpu8x8x8;
     }
 #if GMX_SIMD && GMX_USE_SIMD_KERNELS
     else if (listType == ListSetupType::CpuSimdWhenSupported)
     {
         /* We use the smallest cluster size to be on the safe side */
-        nbnxnKernelType = (sc_haveNbnxmSimd2xmmKernels ? Nbnxm::KernelType::Cpu4xN_Simd_2xNN
-                                                       : Nbnxm::KernelType::Cpu4xN_Simd_4xN);
+        nbnxnKernelType = (sc_haveNbnxmSimd2xmmKernels ? gmx::NbnxmKernelType::Cpu4xN_Simd_2xNN
+                                                       : gmx::NbnxmKernelType::Cpu4xN_Simd_4xN);
     }
 #endif
     else
     {
-        nbnxnKernelType = Nbnxm::KernelType::Cpu4x4_PlainC;
+        nbnxnKernelType = gmx::NbnxmKernelType::Cpu4x4_PlainC;
     }
 
     return verletbufGetListSetup(nbnxnKernelType);

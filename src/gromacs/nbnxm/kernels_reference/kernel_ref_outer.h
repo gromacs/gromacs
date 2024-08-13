@@ -32,10 +32,13 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 
+namespace gmx
+{
+
 #define UNROLLI 4
 #define UNROLLJ 4
 
-static_assert(UNROLLI == Nbnxm::sc_iClusterSize(Nbnxm::KernelType::Cpu4x4_PlainC),
+static_assert(UNROLLI == sc_iClusterSize(NbnxmKernelType::Cpu4x4_PlainC),
               "UNROLLI should match the i-cluster size");
 
 /* We could use nbat->xstride and nbat->fstride, but macros might be faster */
@@ -358,3 +361,5 @@ void
 
 #undef UNROLLI
 #undef UNROLLJ
+
+} // namespace gmx

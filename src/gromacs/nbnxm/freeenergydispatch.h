@@ -53,17 +53,16 @@
 struct gmx_enerdata_t;
 struct gmx_wallcycle;
 struct interaction_const_t;
-class PairlistSets;
 struct t_lambda;
 struct t_nrnb;
 
 namespace gmx
 {
+class PairlistSets;
 template<typename>
 class ArrayRefWithPadding;
 class ForceWithShiftForces;
 class StepWorkload;
-} // namespace gmx
 
 /*! \internal
  *  \brief Temporary data and methods for handling dispatching of the nbnxm free-energy kernels
@@ -78,33 +77,35 @@ public:
     void setupFepThreadedForceBuffer(int numAtomsForce, const PairlistSets& pairlistSets);
 
     //! Dispatches the non-bonded free-energy kernels, thread parallel and reduces the output
-    void dispatchFreeEnergyKernels(const PairlistSets&                              pairlistSets,
-                                   const gmx::ArrayRefWithPadding<const gmx::RVec>& coords,
-                                   gmx::ForceWithShiftForces*     forceWithShiftForces,
-                                   bool                           useSimd,
-                                   int                            ntype,
-                                   const interaction_const_t&     ic,
-                                   gmx::ArrayRef<const gmx::RVec> shiftvec,
-                                   gmx::ArrayRef<const real>      nbfp,
-                                   gmx::ArrayRef<const real>      nbfp_grid,
-                                   gmx::ArrayRef<const real>      chargeA,
-                                   gmx::ArrayRef<const real>      chargeB,
-                                   gmx::ArrayRef<const int>       typeA,
-                                   gmx::ArrayRef<const int>       typeB,
-                                   gmx::ArrayRef<const real>      lambda,
-                                   gmx_enerdata_t*                enerd,
-                                   const gmx::StepWorkload&       stepWork,
-                                   t_nrnb*                        nrnb,
-                                   gmx_wallcycle*                 wcycle);
+    void dispatchFreeEnergyKernels(const PairlistSets&                    pairlistSets,
+                                   const ArrayRefWithPadding<const RVec>& coords,
+                                   ForceWithShiftForces*                  forceWithShiftForces,
+                                   bool                                   useSimd,
+                                   int                                    ntype,
+                                   const interaction_const_t&             ic,
+                                   ArrayRef<const RVec>                   shiftvec,
+                                   ArrayRef<const real>                   nbfp,
+                                   ArrayRef<const real>                   nbfp_grid,
+                                   ArrayRef<const real>                   chargeA,
+                                   ArrayRef<const real>                   chargeB,
+                                   ArrayRef<const int>                    typeA,
+                                   ArrayRef<const int>                    typeB,
+                                   ArrayRef<const real>                   lambda,
+                                   gmx_enerdata_t*                        enerd,
+                                   const StepWorkload&                    stepWork,
+                                   t_nrnb*                                nrnb,
+                                   gmx_wallcycle*                         wcycle);
 
 private:
     //! Temporary array for storing foreign lambda group pair energies
     gmx_grppairener_t foreignGroupPairEnergies_;
 
     //! Threaded force buffer for nonbonded FEP
-    gmx::ThreadedForceBuffer<gmx::RVec> threadedForceBuffer_;
+    ThreadedForceBuffer<RVec> threadedForceBuffer_;
     //! Threaded buffer for nonbonded FEP foreign energies and dVdl, no forces, so numAtoms = 0
-    gmx::ThreadedForceBuffer<gmx::RVec> threadedForeignEnergyBuffer_;
+    ThreadedForceBuffer<RVec> threadedForeignEnergyBuffer_;
 };
+
+} // namespace gmx
 
 #endif // GMX_NBNXM_FREEENERGYDISPATCH_H

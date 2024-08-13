@@ -49,6 +49,9 @@
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/utility/gmxassert.h"
 
+namespace gmx
+{
+
 void clear_fshift(real* fshift)
 {
     for (int i = 0; i < gmx::c_numShiftVectors * DIM; i++)
@@ -82,3 +85,5 @@ void reduce_energies_over_lists(const nbnxn_atomdata_t* nbat, int nlist, real* V
         }
     }
 }
+
+} // namespace gmx

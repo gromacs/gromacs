@@ -63,6 +63,9 @@
 #    include "gromacs/gpu_utils/gpuregiontimer_sycl.h"
 #endif
 
+namespace gmx
+{
+
 /*! \brief Number of separate bins used during sorting of plist on gpu
  *
  * Ideally this number would be increased for very large system sizes (the cpu version of sorting
@@ -88,6 +91,25 @@ static constexpr int c_sciSortingThreadsPerBlock = 256;
 //! Default for the prune kernel's jPacked processing concurrency.
 static constexpr int c_pruneKernelJPackedConcurrency = GMX_NBNXN_PRUNE_KERNEL_JPACKED_CONCURRENCY;
 
+/* Convenience constants */
+/*! \cond */
+// cluster size = number of atoms per cluster.
+static constexpr int c_clSize = c_nbnxnGpuClusterSize;
+// Square of cluster size.
+static constexpr int c_clSizeSq = c_clSize * c_clSize;
+// j-cluster size after split (4 in the current implementation).
+static constexpr int c_splitClSize = c_clSize / c_nbnxnGpuClusterpairSplit;
+// i-cluster interaction mask for a super-cluster with all c_nbnxnGpuNumClusterPerSupercluster=8 bits set.
+static constexpr unsigned superClInteractionMask = ((1U << c_nbnxnGpuNumClusterPerSupercluster) - 1U);
+
+// 1/sqrt(pi), same value as \c M_FLOAT_1_SQRTPI in other NB kernels.
+static constexpr float c_OneOverSqrtPi = 0.564189583547756F;
+// 1/6, same value as in other NB kernels.
+static constexpr float c_oneSixth = 0.16666667F;
+// 1/12, same value as in other NB kernels.
+static constexpr float c_oneTwelfth = 0.08333333F;
+/*! \endcond */
+
 /*! \internal
  * \brief Staging area for temporary data downloaded from the GPU.
  *
@@ -97,11 +119,11 @@ static constexpr int c_pruneKernelJPackedConcurrency = GMX_NBNXN_PRUNE_KERNEL_JP
 struct NBStagingData
 {
     //! LJ energy
-    gmx::HostVector<float> eLJ;
+    HostVector<float> eLJ;
     //! electrostatic energy
-    gmx::HostVector<float> eElec;
+    HostVector<float> eElec;
     //! shift forces
-    gmx::HostVector<Float3> fShift;
+    HostVector<Float3> fShift;
 };
 
 /** \internal
@@ -149,9 +171,9 @@ struct NBParamGpu
 {
 
     //! type of electrostatics
-    enum Nbnxm::ElecType elecType;
+    enum ElecType elecType;
     //! type of VdW impl.
-    enum Nbnxm::VdwType vdwType;
+    enum VdwType vdwType;
 
     //! charge multiplication factor
     float epsfac;
@@ -208,12 +230,6 @@ struct NBParamGpu
     DeviceTexture coulomb_tab_texobj;
 };
 
-namespace Nbnxm
-{
-
-using gmx::AtomLocality;
-using gmx::InteractionLocality;
-
 /*! \internal
  * \brief GPU region timers used for timing GPU kernels and H2D/D2H transfers.
  *
@@ -257,9 +273,9 @@ struct GpuTimers
     //! timer for atom data transfer (every PS step)
     GpuRegionTimer atdat;
     //! timers for coordinate/force transfers (every step)
-    gmx::EnumerationArray<AtomLocality, XFTransfers> xf;
+    EnumerationArray<AtomLocality, XFTransfers> xf;
     //! timers for interaction related transfers
-    gmx::EnumerationArray<InteractionLocality, Nbnxm::GpuTimers::Interaction> interaction;
+    EnumerationArray<InteractionLocality, GpuTimers::Interaction> interaction;
 };
 
 
@@ -389,6 +405,6 @@ public:
     int d_rollingPruningPartAllocationSize = -1;
 };
 
-} // namespace Nbnxm
+} // namespace gmx
 
 #endif

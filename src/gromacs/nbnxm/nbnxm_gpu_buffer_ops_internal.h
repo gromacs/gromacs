@@ -42,11 +42,10 @@
 #include "gromacs/gpu_utils/gputraits.h"
 
 class DeviceStream;
-struct NbnxmGpu;
 
-namespace Nbnxm
+namespace gmx
 {
-
+struct NbnxmGpu;
 class Grid;
 
 /*! \brief Launch coordinate layout conversion kernel
@@ -65,4 +64,4 @@ void launchNbnxmKernelTransformXToXq(const Grid&          grid,
                                      unsigned int         numColumnsMax,
                                      int                  gridId);
 
-} // namespace Nbnxm
+} // namespace gmx

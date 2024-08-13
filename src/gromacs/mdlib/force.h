@@ -91,6 +91,9 @@ struct ewald_corr_thread_t
     tensor                                                          vir_lj;
 };
 
+namespace gmx
+{
+
 /* Perform the force and, if requested, energy computation
  *
  * Without multiple time stepping the force is returned in force->force().
@@ -104,36 +107,38 @@ struct ewald_corr_thread_t
  * force->forceMtsCombined(). This forceMts can be used directly in a standard
  * leap-frog integrator to do multiple time stepping.
  */
-void do_force(FILE*                               log,
-              const t_commrec*                    cr,
-              const gmx_multisim_t*               ms,
-              const t_inputrec&                   inputrec,
-              const gmx::MDModulesNotifiers&      mdModulesNotifiers,
-              gmx::Awh*                           awh,
-              gmx_enfrot*                         enforcedRotation,
-              gmx::ImdSession*                    imdSession,
-              pull_t*                             pull_work,
-              int64_t                             step,
-              t_nrnb*                             nrnb,
-              gmx_wallcycle*                      wcycle,
-              const gmx_localtop_t*               top,
-              const matrix                        box,
-              gmx::ArrayRefWithPadding<gmx::RVec> coordinates,
-              gmx::ArrayRef<gmx::RVec>            velocities,
-              const history_t*                    hist,
-              gmx::ForceBuffersView*              force,
-              tensor                              vir_force,
-              const t_mdatoms*                    mdatoms,
-              gmx_enerdata_t*                     enerd,
-              gmx::ArrayRef<const real>           lambda,
-              t_forcerec*                         fr,
-              const gmx::MdrunScheduleWorkload&   runScheduleWork,
-              gmx::VirtualSitesHandler*           vsite,
-              rvec                                mu_tot,
-              double                              t,
-              gmx_edsam*                          ed,
-              CpuPpLongRangeNonbondeds*           longRangeNonbondeds,
-              const DDBalanceRegionHandler&       ddBalanceRegionHandler);
+void do_force(FILE*                         log,
+              const t_commrec*              cr,
+              const gmx_multisim_t*         ms,
+              const t_inputrec&             inputrec,
+              const MDModulesNotifiers&     mdModulesNotifiers,
+              Awh*                          awh,
+              gmx_enfrot*                   enforcedRotation,
+              ImdSession*                   imdSession,
+              pull_t*                       pull_work,
+              int64_t                       step,
+              t_nrnb*                       nrnb,
+              gmx_wallcycle*                wcycle,
+              const gmx_localtop_t*         top,
+              const matrix                  box,
+              ArrayRefWithPadding<RVec>     coordinates,
+              ArrayRef<RVec>                velocities,
+              const history_t*              hist,
+              ForceBuffersView*             force,
+              tensor                        vir_force,
+              const t_mdatoms*              mdatoms,
+              gmx_enerdata_t*               enerd,
+              ArrayRef<const real>          lambda,
+              t_forcerec*                   fr,
+              const MdrunScheduleWorkload&  runScheduleWork,
+              VirtualSitesHandler*          vsite,
+              rvec                          mu_tot,
+              double                        t,
+              gmx_edsam*                    ed,
+              CpuPpLongRangeNonbondeds*     longRangeNonbondeds,
+              const DDBalanceRegionHandler& ddBalanceRegionHandler);
+
+} // namespace gmx
 
 /* Communicate coordinates (if parallel).
  * Do neighbor searching (if necessary).
@@ -143,8 +148,6 @@ void do_force(FILE*                               log,
  *
  * f is always required.
  */
-
-
 class CpuPpLongRangeNonbondeds
 {
 public:

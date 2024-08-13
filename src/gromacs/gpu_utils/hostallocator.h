@@ -248,6 +248,10 @@ void changePinningPolicy(PinnableVector* v, PinningPolicy pinningPolicy)
     *v = PinnableVector(std::move(*v), { pinningPolicy });
 }
 
+//! Convenience type for vector with aligned memory
+template<typename T>
+using AlignedVector = std::vector<T, AlignedAllocator<T>>;
+
 } // namespace gmx
 
 #endif

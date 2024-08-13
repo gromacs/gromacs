@@ -49,7 +49,7 @@
 
 using mode = sycl::access_mode;
 
-namespace Nbnxm
+namespace gmx
 {
 
 /*! \brief SYCL kernel for transforming position coordinates from rvec to nbnxm layout.
@@ -121,4 +121,4 @@ void launchNbnxmKernelTransformXToXq(const Grid&          grid,
     });
 }
 
-} // namespace Nbnxm
+} // namespace gmx

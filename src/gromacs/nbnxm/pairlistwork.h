@@ -54,6 +54,9 @@
 #include "boundingbox.h"
 #include "pairlist.h"
 
+namespace gmx
+{
+
 //! Working data for the actual i-supercell during pair search \internal
 struct NbnxmPairlistCpuWork
 {
@@ -68,7 +71,7 @@ struct NbnxmPairlistCpuWork
         }
 
         //! The bounding boxes, pbc shifted, for each cluster
-        AlignedVector<Nbnxm::BoundingBox> bb;
+        AlignedVector<BoundingBox> bb;
         //! The coordinates, pbc shifted, for each atom
         std::vector<real> x;
         //! Aligned list for storing 4*DIM*GMX_SIMD_REAL_WIDTH reals
@@ -100,7 +103,7 @@ struct NbnxmPairlistGpuWork
         ISuperClusterData();
 
         //! The bounding boxes, pbc shifted, for each cluster
-        AlignedVector<Nbnxm::BoundingBox> bb;
+        AlignedVector<BoundingBox> bb;
         //! As bb, but in packed xxxx format
         AlignedVector<float> bbPacked;
         //! The coordinates, pbc shifted, for each atom
@@ -125,10 +128,12 @@ struct NbnxmPairlistGpuWork
     std::vector<int> sortBuffer;
 
     //! Second sci array, for sorting
-    gmx::HostVector<nbnxn_sci_t> sci_sort;
+    HostVector<nbnxn_sci_t> sci_sort;
 
     //! Protect data from cache pollution between threads
     gmx_cache_protect_t cp1;
 };
+
+} // namespace gmx
 
 #endif

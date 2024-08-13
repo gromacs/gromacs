@@ -49,11 +49,11 @@
 
 #include "gromacs/utility/real.h"
 
-namespace Nbnxm
+namespace gmx
 {
 
 //! Enum for selecting the SIMD kernel type for benchmarks
-enum class BenchMarkKernels : int
+enum class NbnxmBenchMarkKernels : int
 {
     SimdAuto,
     SimdNo,
@@ -63,7 +63,7 @@ enum class BenchMarkKernels : int
 };
 
 //! Enum for selecting the combination rule for kernel benchmarks
-enum class BenchMarkCombRule : int
+enum class NbnxmBenchMarkCombRule : int
 {
     RuleGeom,
     RuleLB,
@@ -72,7 +72,7 @@ enum class BenchMarkCombRule : int
 };
 
 //! Enum for selecting coulomb type for kernel benchmarks
-enum class BenchMarkCoulomb : int
+enum class NbnxmBenchMarkCoulomb : int
 {
     Pme,
     ReactionField,
@@ -82,16 +82,16 @@ enum class BenchMarkCoulomb : int
 /*! \internal \brief
  * The options for the kernel benchmarks
  */
-struct KernelBenchOptions
+struct NbnxmKernelBenchOptions
 {
     //! Whether to use a GPU, currently GPUs are not supported
     bool useGpu = false;
     //! The number of OpenMP threads to use
     int numThreads = 1;
     //! The SIMD type for the kernel
-    BenchMarkKernels nbnxmSimd = BenchMarkKernels::SimdAuto;
+    NbnxmBenchMarkKernels nbnxmSimd = NbnxmBenchMarkKernels::SimdAuto;
     //! The LJ combination rule
-    BenchMarkCombRule ljCombinationRule = BenchMarkCombRule::RuleGeom;
+    NbnxmBenchMarkCombRule ljCombinationRule = NbnxmBenchMarkCombRule::RuleGeom;
     //! Use i-cluster half-LJ optimization for clusters with <= half LJ
     bool useHalfLJOptimization = false;
     //! The pairlist and interaction cut-off
@@ -101,7 +101,7 @@ struct KernelBenchOptions
     //! Whether to compute energies (shift forces for virial are always computed on CPU)
     bool computeVirialAndEnergy = false;
     //! The Coulomb interaction function
-    BenchMarkCoulomb coulombType = BenchMarkCoulomb::Pme;
+    NbnxmBenchMarkCoulomb coulombType = NbnxmBenchMarkCoulomb::Pme;
     //! Whether to use tabulated PME grid correction instead of analytical, not applicable with simd=no
     bool useTabulatedEwaldCorr = false;
     //! Whether to run all combinations of Coulomb type, combination rule and SIMD
@@ -131,8 +131,8 @@ struct KernelBenchOptions
  * \param[in] sizeFactor How much should the system size be increased.
  * \param[in] options How the benchmark will be run.
  */
-void bench(int sizeFactor, const KernelBenchOptions& options);
+void bench(int sizeFactor, const NbnxmKernelBenchOptions& options);
 
-} // namespace Nbnxm
+} // namespace gmx
 
 #endif

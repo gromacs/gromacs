@@ -46,7 +46,7 @@
 #include "gromacs/nbnxm/nbnxm_gpu.h"
 #include "gromacs/nbnxm/nbnxm_gpu_buffer_ops_internal.h"
 
-namespace Nbnxm
+namespace gmx
 {
 
 void launchNbnxmKernelTransformXToXq(const Grid& /* grid */,
@@ -59,4 +59,4 @@ void launchNbnxmKernelTransformXToXq(const Grid& /* grid */,
     GMX_RELEASE_ASSERT(false, "NBNXM buffer ops are not supported with OpenCL");
 }
 
-} // namespace Nbnxm
+} // namespace gmx
