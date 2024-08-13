@@ -49,6 +49,7 @@
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/utility/real.h"
 
+#include "nbnxm_enums.h"
 #include "pairlist.h"
 
 struct interaction_const_t;
@@ -60,38 +61,6 @@ enum class LongRangeVdW : int;
 namespace gmx
 {
 enum class EwaldExclusionType : int;
-
-//! \brief Kinds of electrostatic treatments in SIMD Verlet kernels
-enum class CoulombKernelType : int
-{
-    ReactionField,
-    Table,
-    TableTwin,
-    Ewald,
-    EwaldTwin,
-    Count
-};
-
-//! \brief Whether have a separate cut-off check for VDW interactions
-enum class VdwCutoffCheck : int
-{
-    No,
-    Yes
-};
-
-//! \brief Kind of Lennard-Jones Ewald treatments in NBNxM SIMD kernels
-enum class LJEwald : int
-{
-    None,
-    CombGeometric
-};
-
-enum class EnergyOutput : int
-{
-    None,
-    System,
-    GroupPairs
-};
 
 /*! \brief Pair-interaction kernel type that also calculates energies.
  */

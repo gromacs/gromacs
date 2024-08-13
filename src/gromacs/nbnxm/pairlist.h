@@ -53,6 +53,8 @@
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
 
+#include "nbnxm_enums.h"
+
 struct t_nblist;
 
 namespace gmx
@@ -153,58 +155,8 @@ constexpr double c_nbnxnMinDistanceSquared = 1.0e-36;
 #else
 // The worst intermediate value we might evaluate is r^-12, which
 // means we should ensure r^2 stays above pow(GMX_FLOAT_MAX,-1.0/6.0)*1.01 (some margin)
-constexpr float      c_nbnxnMinDistanceSquared  = 3.82e-07F; // r > 6.2e-4
+constexpr float c_nbnxnMinDistanceSquared = 3.82e-07F; // r > 6.2e-4
 #endif
-
-//! The i- and j-cluster size for GPU lists, 8 atoms for CUDA, set at configure time for OpenCL and SYCL
-#if GMX_GPU_OPENCL || GMX_GPU_SYCL
-static constexpr int c_nbnxnGpuClusterSize = GMX_GPU_NB_CLUSTER_SIZE;
-#else
-static constexpr int c_nbnxnGpuClusterSize      = 8;
-#endif
-
-/*! \brief The number of clusters along a direction in a pair-search grid cell for GPU lists
- *
- * Typically all 2, but X can be 1 when targeting Intel Ponte Vecchio */
-//! \{
-static constexpr int c_gpuNumClusterPerCellZ = GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Z;
-static constexpr int c_gpuNumClusterPerCellY = GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Y;
-static constexpr int c_gpuNumClusterPerCellX = GMX_GPU_NB_NUM_CLUSTER_PER_CELL_X;
-//! \}
-//! The number of clusters in a pair-search grid cell for GPU lists
-static constexpr int c_gpuNumClusterPerCell =
-        c_gpuNumClusterPerCellZ * c_gpuNumClusterPerCellY * c_gpuNumClusterPerCellX;
-
-/*! \brief The number of clusters in a super-cluster, used for GPU
- *
- * Configured via GMX_GPU_NB_NUM_CLUSTER_PER_CELL_[XYZ] CMake options.
- * Typically 8 (2*2*2), but can be 4 (1*2*2) when targeting Intel Ponte Vecchio. */
-constexpr int c_nbnxnGpuNumClusterPerSupercluster =
-        c_gpuNumClusterPerCellX * c_gpuNumClusterPerCellY * c_gpuNumClusterPerCellZ;
-
-/*! \brief With GPU kernels we group cluster pairs in 4 to optimize memory usage
- * of integers containing 32 bits.
- */
-constexpr int c_nbnxnGpuJgroupSize = (32 / c_nbnxnGpuNumClusterPerSupercluster);
-
-/*! \brief The number of sub-parts used for data storage for a GPU cluster pair
- *
- * In CUDA the number of threads in a warp is 32 and we have cluster pairs
- * of 8*8=64 atoms, so it's convenient to store data for cluster pair halves,
- * i.e. split in 2.
- *
- * On architectures with 64-wide execution however it is better to avoid splitting
- * (e.g. AMD GCN, CDNA and later).
- */
-#if GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT
-static constexpr int c_nbnxnGpuClusterpairSplit = 1;
-#else
-static constexpr int c_nbnxnGpuClusterpairSplit = 2;
-#endif
-
-//! The fixed size of the exclusion mask array for a half GPU cluster pair
-static constexpr int c_nbnxnGpuExclSize =
-        c_nbnxnGpuClusterSize * c_nbnxnGpuClusterSize / c_nbnxnGpuClusterpairSplit;
 
 //! Whether we want to use GPU for neighbour list sorting
 constexpr bool nbnxmSortListsOnGpu()

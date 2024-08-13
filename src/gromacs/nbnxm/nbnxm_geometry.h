@@ -52,7 +52,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 
-#include "pairlist.h"
+#include "nbnxm_enums.h"
 
 namespace gmx
 {

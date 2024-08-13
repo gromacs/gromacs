@@ -76,6 +76,7 @@
 #include "boundingbox_simd.h"
 #include "gridsetdata.h"
 #include "nbnxm_geometry.h"
+#include "pairlist.h"
 #include "pairlistparams.h"
 
 namespace gmx

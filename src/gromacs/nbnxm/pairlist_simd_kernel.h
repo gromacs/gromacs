@@ -48,7 +48,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-#include "clusterdistancekerneltype.h"
+#include "pairlistwork.h"
 
 namespace gmx
 {

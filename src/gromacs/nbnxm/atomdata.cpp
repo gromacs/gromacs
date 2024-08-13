@@ -69,6 +69,7 @@
 
 #include "grid.h"
 #include "gridset.h"
+#include "nbnxm_enums.h"
 #include "nbnxm_geometry.h"
 #include "nbnxm_gpu.h"
 #include "pairlist.h"

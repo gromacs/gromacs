@@ -44,28 +44,15 @@
 #ifndef GMX_NBNXM_PAIRLISTPARAMS_H
 #define GMX_NBNXM_PAIRLISTPARAMS_H
 
-#include "config.h"
-
-#include "gromacs/mdtypes/locality.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
 
-#include "pairlist.h"
+#include "nbnxm_enums.h"
 
 namespace gmx
 {
 
 enum class NbnxmKernelType;
-
-//! The available pair list types
-enum class PairlistType : int
-{
-    Simple4x2,
-    Simple4x4,
-    Simple4x8,
-    HierarchicalNxN,
-    Count
-};
 
 //! Gives the i-cluster size for each pairlist type
 static constexpr gmx::EnumerationArray<PairlistType, int> IClusterSizePerListType = {

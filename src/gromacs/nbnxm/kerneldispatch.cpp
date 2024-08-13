@@ -71,6 +71,7 @@
 #include "gromacs/utility/stringutil.h"
 
 #include "kernel_common.h"
+#include "nbnxm_enums.h"
 #include "nbnxm_geometry.h"
 #include "nbnxm_gpu.h"
 #include "nbnxm_simd.h"

@@ -118,6 +118,8 @@
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
 
+#include "nbnxm_enums.h"
+
 struct DeviceInformation;
 class ExclusionChecker;
 struct gmx_domdec_zones_t;
@@ -155,79 +157,6 @@ class Range;
 class StepWorkload;
 class UpdateGroupsCog;
 
-/*! \brief Nbnxm electrostatic GPU kernel flavors.
- *
- *  Types of electrostatics implementations available in the GPU non-bonded
- *  force kernels. These represent both the electrostatics types implemented
- *  by the kernels (cut-off, RF, and Ewald - a subset of what's defined in
- *  enums.h) as well as encode implementation details analytical/tabulated
- *  and single or twin cut-off (for Ewald kernels).
- *  Note that the cut-off and RF kernels have only analytical flavor and unlike
- *  in the CPU kernels, the tabulated kernels are ATM Ewald-only.
- *
- *  The row-order of pointers to different electrostatic kernels defined in
- *  nbnxn_cuda.cu by the nb_*_kfunc_ptr function pointer table
- *  should match the order of enumerated types below.
- */
-enum class ElecType : int
-{
-    Cut,          //!< Plain cut-off
-    RF,           //!< Reaction field
-    EwaldTab,     //!< Tabulated Ewald with single cut-off
-    EwaldTabTwin, //!< Tabulated Ewald with twin cut-off
-    EwaldAna,     //!< Analytical Ewald with single cut-off
-    EwaldAnaTwin, //!< Analytical Ewald with twin cut-off
-    Count         //!< Number of valid values
-};
-
-//! Number of possible \ref ElecType values.
-constexpr int c_numElecTypes = static_cast<int>(ElecType::Count);
-
-/*! \brief Nbnxm VdW GPU kernel flavors.
- *
- * The enumerates values correspond to the LJ implementations in the GPU non-bonded
- * kernels.
- *
- * The column-order of pointers to different electrostatic kernels defined in
- * nbnxn_cuda_ocl.cpp/.cu by the nb_*_kfunc_ptr function pointer table
- * should match the order of enumerated types below.
- */
-enum class VdwType : int
-{
-    Cut,         //!< Plain cut-off
-    CutCombGeom, //!< Cut-off with geometric combination rules
-    CutCombLB,   //!< Cut-off with Lorentz-Berthelot combination rules
-    FSwitch,     //!< Smooth force switch
-    PSwitch,     //!< Smooth potential switch
-    EwaldGeom,   //!< Ewald with geometric combination rules
-    EwaldLB,     //!< Ewald with Lorentz-Berthelot combination rules
-    Count        //!< Number of valid values
-};
-
-//! Number of possible \ref VdwType values.
-constexpr int c_numVdwTypes = static_cast<int>(VdwType::Count);
-
-/*! \brief Nonbonded NxN kernel types: plain C, CPU SIMD, GPU, GPU emulation */
-enum class NbnxmKernelType : int
-{
-    NotSet = 0,
-    Cpu4x4_PlainC,
-    Cpu4xN_Simd_4xN,
-    Cpu4xN_Simd_2xNN,
-    Gpu8x8x8,
-    Cpu8x8x8_PlainC,
-    Count
-};
-
-/*! \brief Ewald exclusion types */
-enum class EwaldExclusionType : int
-{
-    NotSet = 0,
-    Table,
-    Analytical,
-    DecidedByGpuModule
-};
-
 /* \brief The non-bonded setup, also affects the pairlist construction kernel */
 struct NbnxmKernelSetup
 {
@@ -236,13 +165,6 @@ struct NbnxmKernelSetup
     //! Ewald exclusion computation handling type, currently only used for CPU
     EwaldExclusionType ewaldExclusionType = EwaldExclusionType::NotSet;
 };
-
-/*! \brief Return a string identifying the kernel type.
- *
- * \param [in] kernelType   nonbonded kernel type, takes values from the nbnxn_kernel_type enum
- * \returns                 a string identifying the kernel corresponding to the type passed as argument
- */
-const char* nbnxmKernelTypeToName(NbnxmKernelType kernelType);
 
 /*! \brief Flag to tell the nonbonded kernels whether to clear the force output buffers */
 enum
@@ -291,7 +213,7 @@ public:
     ~nonbonded_verlet_t();
 
     //! Returns whether a GPU is use for the non-bonded calculations
-    bool useGpu() const { return kernelSetup_.kernelType == NbnxmKernelType::Gpu8x8x8; }
+    bool useGpu() const { return isGpuKernelType(kernelSetup_.kernelType); }
 
     //! Returns whether a GPU is emulated for the non-bonded calculations
     bool emulateGpu() const { return kernelSetup_.kernelType == NbnxmKernelType::Cpu8x8x8_PlainC; }
