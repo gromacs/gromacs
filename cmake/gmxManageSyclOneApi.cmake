@@ -124,6 +124,16 @@ if (HAVE_W_NO_INCORRECT_SUB_GROUP_SIZE_RESULT)
     set(SYCL_TOOLCHAIN_CXX_FLAGS "${SYCL_TOOLCHAIN_CXX_FLAGS} -Wno-incorrect-sub-group-size")
 endif()
 
+# Force small GRF size on PVC, see #5105
+gmx_check_compiler_flag(
+    "-ftarget-register-alloc-mode=pvc:small"
+    "CXX"
+    HAVE_TARGET_REGISTER_ALLOC_MODE_FLAG
+)
+if (HAVE_TARGET_REGISTER_ALLOC_MODE_FLAG)
+    set(SYCL_TOOLCHAIN_LINKER_FLAGS "${SYCL_TOOLCHAIN_LINKER_FLAGS} -ftarget-register-alloc-mode=pvc:small")
+endif()
+
 if("${SYCL_CXX_FLAGS_EXTRA}" MATCHES "fsycl-targets=.*(nvptx64|amdgcn|amd_gpu|nvidia_gpu)")
     # When compiling for NVIDIA/AMD, Intel LLVM produces tons of harmless warnings, ignore them
     set(SYCL_WARNINGS_CXX_FLAGS "-Wno-linker-warnings -Wno-override-module -Wno-sycl-target")

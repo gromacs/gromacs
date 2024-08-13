@@ -54,6 +54,8 @@ themselves were unaffacted by this issue.
 
 mdrun now computes the initial bonded distancs with periodic molecules
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+mdrun now computes the initial bonded distances with periodic molecules
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 When using periodic molecules, mdrun could quit with an error message
 about multiple assignments of bonded interactions telling the user to
@@ -131,4 +133,14 @@ Miscellaneous
 
 Fix detection of rocFFT installed in non-standard locations
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Fix performance regression on PVC with oneAPI 2024.2
+""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+oneAPI 2024.2 enabled automatic GRF selection by the device compiler,
+causing up to 50% worse NBNxM kernel performance on Intel Data Center GPU Max
+(Ponte Vecchio) devices. We now force the use of small GRF mode on PVC
+to avoid that. Arc GPUs were not affected.
+
+:issue:`5105`
 
