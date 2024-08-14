@@ -122,7 +122,6 @@
 
 struct DeviceInformation;
 class ExclusionChecker;
-struct gmx_domdec_zones_t;
 struct gmx_enerdata_t;
 struct gmx_hw_info_t;
 struct gmx_mtop_t;
@@ -146,6 +145,7 @@ class PairlistSets;
 template<typename>
 class ArrayRefWithPadding;
 class DeviceStreamManager;
+class DomdecZones;
 class ForceWithShiftForces;
 class ListedForcesGpu;
 template<typename>
@@ -438,10 +438,10 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const MDLogger&            md
  * with domain decomposition. Should be called after calling
  * nbnxn_search_put_on_grid for the local atoms / home zone.
  */
-void nbnxn_put_on_grid_nonlocal(nonbonded_verlet_t*              nb_verlet,
-                                const struct gmx_domdec_zones_t* zones,
-                                ArrayRef<const int32_t>          atomInfo,
-                                ArrayRef<const RVec>             x);
+void nbnxn_put_on_grid_nonlocal(nonbonded_verlet_t*     nb_verlet,
+                                const gmx::DomdecZones& zones,
+                                ArrayRef<const int32_t> atomInfo,
+                                ArrayRef<const RVec>    x);
 
 /*! \brief Check if GROMACS has been built with GPU support.
  *

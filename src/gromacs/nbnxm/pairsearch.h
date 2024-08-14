@@ -66,12 +66,11 @@
 #include "gridset.h"
 #include "pairlist.h"
 
-struct gmx_domdec_zones_t;
-struct t_nblist;
 enum class PbcType : int;
 
 namespace gmx
 {
+class DomdecZones;
 struct PairsearchWork;
 enum class PairlistType;
 class UpdateGroupsCog;
@@ -224,14 +223,14 @@ public:
      * \param[in] maxNumThreads            The maximum number of threads used in the search
      * \param[in] pinningPolicy            Sets the pinning policy for all buffers used on the GPU
      */
-    PairSearch(PbcType                   pbcType,
-               bool                      doTestParticleInsertion,
-               const IVec*               numDDCells,
-               const gmx_domdec_zones_t* zones,
-               PairlistType              pairlistType,
-               bool                      haveFep,
-               int                       maxNumThreads,
-               PinningPolicy             pinningPolicy);
+    PairSearch(PbcType            pbcType,
+               bool               doTestParticleInsertion,
+               const IVec*        numDDCells,
+               const DomdecZones* zones,
+               PairlistType       pairlistType,
+               bool               haveFep,
+               int                maxNumThreads,
+               PinningPolicy      pinningPolicy);
 
     //! Sets the order of the local atoms to the order grid atom ordering
     void setLocalAtomOrder() { gridSet_.setLocalAtomOrder(); }

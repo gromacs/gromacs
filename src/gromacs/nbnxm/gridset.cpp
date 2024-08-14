@@ -86,10 +86,10 @@ static int numGrids(const GridSet::DomainSetup& domainSetup)
     }
 }
 
-GridSet::DomainSetup::DomainSetup(const PbcType             pbcType,
-                                  const bool                doTestParticleInsertion,
-                                  const IVec*               numDDCells,
-                                  const gmx_domdec_zones_t* ddZones) :
+GridSet::DomainSetup::DomainSetup(const PbcType      pbcType,
+                                  const bool         doTestParticleInsertion,
+                                  const IVec*        numDDCells,
+                                  const DomdecZones* ddZones) :
     pbcType_(pbcType),
     doTestParticleInsertion_(doTestParticleInsertion),
     haveMultipleDomains(numDDCells != nullptr
@@ -102,14 +102,14 @@ GridSet::DomainSetup::DomainSetup(const PbcType             pbcType,
     }
 }
 
-GridSet::GridSet(const PbcType             pbcType,
-                 const bool                doTestParticleInsertion,
-                 const IVec*               numDDCells,
-                 const gmx_domdec_zones_t* ddZones,
-                 const PairlistType        pairlistType,
-                 const bool                haveFep,
-                 const int                 numThreads,
-                 PinningPolicy             pinningPolicy) :
+GridSet::GridSet(const PbcType      pbcType,
+                 const bool         doTestParticleInsertion,
+                 const IVec*        numDDCells,
+                 const DomdecZones* ddZones,
+                 const PairlistType pairlistType,
+                 const bool         haveFep,
+                 const int          numThreads,
+                 PinningPolicy      pinningPolicy) :
     domainSetup_(pbcType, doTestParticleInsertion, numDDCells, ddZones),
     grids_(numGrids(domainSetup_), Grid(pairlistType, haveFep_, pinningPolicy)),
     haveFep_(haveFep),

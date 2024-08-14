@@ -85,6 +85,7 @@ namespace gmx
 {
 struct AtomInfoWithinMoleculeBlock;
 class DeviceStreamManager;
+class DomdecZones;
 class ForceWithShiftForces;
 class MDLogger;
 class RangePartitioning;
@@ -109,8 +110,8 @@ int ddglatnr(const gmx_domdec_t* dd, int i);
  */
 void dd_store_state(const gmx_domdec_t& dd, t_state* state);
 
-/*! \brief Returns a pointer to the gmx_domdec_zones_t struct */
-struct gmx_domdec_zones_t* domdec_zones(struct gmx_domdec_t* dd);
+/*! \brief Returns a const reference to the gmx::DomdecZones object */
+const gmx::DomdecZones& getDomdecZones(const gmx_domdec_t& dd);
 
 /*! \brief Returns the range for atoms in zones*/
 int dd_numAtomsZones(const gmx_domdec_t& dd);

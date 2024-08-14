@@ -155,22 +155,6 @@ static const char* enumValueToString(DlbState enumValue)
     return dlbStateNames[enumValue];
 }
 
-/* The DD zone order */
-static const ivec dd_zo[DD_MAXZONE] = { { 0, 0, 0 }, { 1, 0, 0 }, { 1, 1, 0 }, { 0, 1, 0 },
-                                        { 0, 1, 1 }, { 0, 0, 1 }, { 1, 0, 1 }, { 1, 1, 1 } };
-
-/* The non-bonded zone-pair setup for domain decomposition
- * The first number is the i-zone, the second number the first j-zone seen by
- * this i-zone, the third number the last+1 j-zone seen by this i-zone.
- * As is, this is for 3D decomposition, where there are 4 i-zones.
- * With 2D decomposition use only the first 2 i-zones and a last+1 j-zone of 4.
- * With 1D decomposition use only the first i-zone and a last+1 j-zone of 2.
- */
-static const int ddNonbondedZonePairRanges[DD_MAXIZONE][3] = { { 0, 0, 8 },
-                                                               { 1, 3, 6 },
-                                                               { 2, 5, 6 },
-                                                               { 3, 5, 7 } };
-
 //! The minimum step interval for DD algorithms requiring global communication
 static constexpr int sc_minimumGCStepInterval = 100;
 
@@ -246,9 +230,9 @@ void dd_store_state(const gmx_domdec_t& dd, t_state* state)
     state->ddp_count_cg_gl = dd.ddp_count;
 }
 
-gmx_domdec_zones_t* domdec_zones(gmx_domdec_t* dd)
+const gmx::DomdecZones& getDomdecZones(const gmx_domdec_t& dd)
 {
-    return &dd->comm->zones;
+    return dd.zones;
 }
 
 int dd_numAtomsZones(const gmx_domdec_t& dd)
@@ -383,7 +367,7 @@ void dd_move_f(gmx_domdec_t* dd, gmx::ForceWithShiftForces* forceWithShiftForces
     gmx::ArrayRef<gmx::RVec> fshift = forceWithShiftForces->shiftForces();
 
     gmx_domdec_comm_t& comm    = *dd->comm;
-    int                nzone   = comm.zones.n / 2;
+    int                nzone   = dd->zones.numZones() / 2;
     int                nat_tot = comm.atomRanges.end(DDAtomRanges::Type::Zones);
     for (int d = dd->ndim - 1; d >= 0; d--)
     {
@@ -1095,69 +1079,6 @@ static void setup_neighbor_relations(gmx_domdec_t* dd)
                     dd->neighbor[d][0],
                     dd->neighbor[d][1]);
         }
-    }
-
-    const int nzone  = (1 << dd->ndim);
-    const int nizone = (1 << std::max(dd->ndim - 1, 0));
-    GMX_RELEASE_ASSERT(nizone >= 1 && nizone <= DD_MAXIZONE,
-                       "We should have at least one i-zone and not more than the number of zones");
-
-    gmx_domdec_zones_t& zones = dd->comm->zones;
-
-    zones.n = nzone;
-
-    for (int i = 0; i < nzone; i++)
-    {
-        int m = 0;
-        clear_ivec(zones.shift[i]);
-        for (int d = 0; d < dd->ndim; d++)
-        {
-            zones.shift[i][dd->dim[d]] = dd_zo[i][m++];
-        }
-    }
-
-    for (int iZoneIndex = 0; iZoneIndex < nizone; iZoneIndex++)
-    {
-        GMX_RELEASE_ASSERT(
-                ddNonbondedZonePairRanges[iZoneIndex][0] == iZoneIndex,
-                "The first element for each ddNonbondedZonePairRanges should match its index");
-
-        DDPairInteractionRanges iZone;
-        iZone.iZoneIndex = iZoneIndex;
-        /* dd_zp3 is for 3D decomposition, for fewer dimensions use only
-         * j-zones up to nzone.
-         */
-        iZone.jZoneRange = gmx::Range<int>(std::min(ddNonbondedZonePairRanges[iZoneIndex][1], nzone),
-                                           std::min(ddNonbondedZonePairRanges[iZoneIndex][2], nzone));
-        for (int dim = 0; dim < DIM; dim++)
-        {
-            if (dd->numCells[dim] == 1)
-            {
-                /* All shifts should be allowed */
-                iZone.shift0[dim] = -1;
-                iZone.shift1[dim] = 1;
-            }
-            else
-            {
-                /* Determine the min/max j-zone shift wrt the i-zone */
-                iZone.shift0[dim] = 1;
-                iZone.shift1[dim] = -1;
-                for (int jZone : iZone.jZoneRange)
-                {
-                    int shift_diff = zones.shift[jZone][dim] - zones.shift[iZoneIndex][dim];
-                    if (shift_diff < iZone.shift0[dim])
-                    {
-                        iZone.shift0[dim] = shift_diff;
-                    }
-                    if (shift_diff > iZone.shift1[dim])
-                    {
-                        iZone.shift1[dim] = shift_diff;
-                    }
-                }
-            }
-        }
-
-        zones.iZones.push_back(iZone);
     }
 
     if (!isDlbDisabled(dd->comm->dlbState))
@@ -2740,7 +2661,10 @@ static DDSettings getDDSettings(const gmx::MDLogger&     mdlog,
     return ddSettings;
 }
 
-gmx_domdec_t::gmx_domdec_t(const t_inputrec& ir) : unitCellInfo(ir) {}
+gmx_domdec_t::gmx_domdec_t(const t_inputrec& ir, gmx::ArrayRef<const int> ddDims) :
+    unitCellInfo(ir), zones(ddDims)
+{
+}
 
 gmx_domdec_t::~gmx_domdec_t() = default;
 
@@ -2930,7 +2854,8 @@ std::unique_ptr<gmx_domdec_t> DomainDecompositionBuilder::Impl::build(LocalAtomS
                                                                       const t_state& localState,
                                                                       ObservablesReducerBuilder* observablesReducerBuilder)
 {
-    auto dd = std::make_unique<gmx_domdec_t>(ir_);
+    auto dd = std::make_unique<gmx_domdec_t>(
+            ir_, arrayRefFromArray(ddGridSetup_.ddDimensions, ddGridSetup_.numDDDimensions));
 
     copy_ivec(ddCellIndex_, dd->ci);
 

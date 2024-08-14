@@ -64,7 +64,6 @@ enum class DdRankOrder : int;
 }
 // namespace
 
-
 //! Indices to communicate in a dimension
 struct gmx_domdec_ind_t
 {
@@ -73,15 +72,15 @@ struct gmx_domdec_ind_t
      * cell that requires communication, the last entry contains the total
      * number of atoms that needs to be communicated.
      */
-    int nsend[DD_MAXIZONE + 2] = {};
-    int nrecv[DD_MAXIZONE + 2] = {};
+    int nsend[gmx::sc_maxNumIZones + 2] = {};
+    int nrecv[gmx::sc_maxNumIZones + 2] = {};
     //! @}
     //! The charge groups to send
     std::vector<int> index;
     //! @{
     /* The atom range for non-in-place communication */
-    int cell2at0[DD_MAXIZONE] = {};
-    int cell2at1[DD_MAXIZONE] = {};
+    int cell2at0[gmx::sc_maxNumIZones] = {};
+    int cell2at1[gmx::sc_maxNumIZones] = {};
     //! @}
 };
 
@@ -625,9 +624,6 @@ struct gmx_domdec_comm_t // NOLINT (clang-analyzer-optin.performance.Padding)
     /**< The old \p cell_x1, to check cg displacements */
     gmx::RVec old_cell_x1 = { 0, 0, 0 };
 
-    /** The communication setup and charge group boundaries for the zones */
-    gmx_domdec_zones_t zones;
-
     /* The zone limits for DD dimensions 1 and 2 (not 0), determined from
      * cell boundaries of neighboring cells for staggered grids when using
      * dynamic load balancing.
@@ -655,9 +651,6 @@ struct gmx_domdec_comm_t // NOLINT (clang-analyzer-optin.performance.Padding)
      *  stored as DD partitioning call count.
      */
     int64_t main_cg_ddp_count = 0;
-
-    /** The number of cg's received from the direct neighbors */
-    std::array<int, DD_MAXZONE> zone_ncg1 = { 0 };
 
     /** The atom ranges in the local state */
     DDAtomRanges atomRanges;

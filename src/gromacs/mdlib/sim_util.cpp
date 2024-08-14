@@ -1359,7 +1359,7 @@ static void doPairSearch(const t_commrec*             cr,
     else
     {
         wallcycle_sub_start(wcycle, WallCycleSubCounter::NBSGridNonLocal);
-        nbnxn_put_on_grid_nonlocal(nbv, domdec_zones(cr->dd), fr->atomInfo, x.unpaddedArrayRef());
+        nbnxn_put_on_grid_nonlocal(nbv, getDomdecZones(*cr->dd), fr->atomInfo, x.unpaddedArrayRef());
         wallcycle_sub_stop(wcycle, WallCycleSubCounter::NBSGridNonLocal);
     }
 

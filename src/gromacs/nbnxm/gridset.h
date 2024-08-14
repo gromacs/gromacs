@@ -64,12 +64,11 @@
 #include "grid.h"
 #include "gridsetdata.h"
 
-struct gmx_domdec_zones_t;
-
 enum class PbcType : int;
 
 namespace gmx
 {
+class DomdecZones;
 enum class PairlistType;
 class UpdateGroupsCog;
 enum class PinningPolicy : int;
@@ -93,10 +92,10 @@ public:
     struct DomainSetup
     {
         //! Constructor, without DD \p numDDCells and \p ddZones should be nullptr
-        DomainSetup(PbcType                   pbcType,
-                    bool                      doTestParticleInsertion,
-                    const IVec*               numDDCells,
-                    const gmx_domdec_zones_t* ddZones);
+        DomainSetup(PbcType            pbcType,
+                    bool               doTestParticleInsertion,
+                    const IVec*        numDDCells,
+                    const DomdecZones* ddZones);
 
         //! The type of PBC
         PbcType pbcType_;
@@ -107,18 +106,18 @@ public:
         //! Are there multiple domains along each dimension?
         std::array<bool, DIM> haveMultipleDomainsPerDim;
         //! The domain decomposition zone setup
-        const gmx_domdec_zones_t* zones;
+        const gmx::DomdecZones* zones;
     };
 
     //! Constructs a grid set for 1 or multiple DD zones, when numDDCells!=nullptr
-    GridSet(PbcType                   pbcType,
-            bool                      doTestParticleInsertion,
-            const IVec*               numDDCells,
-            const gmx_domdec_zones_t* ddZones,
-            PairlistType              pairlistType,
-            bool                      haveFep,
-            int                       numThreads,
-            PinningPolicy             pinningPolicy);
+    GridSet(PbcType            pbcType,
+            bool               doTestParticleInsertion,
+            const IVec*        numDDCells,
+            const DomdecZones* ddZones,
+            PairlistType       pairlistType,
+            bool               haveFep,
+            int                numThreads,
+            PinningPolicy      pinningPolicy);
 
     //! Puts the atoms on the grid with index \p gridIndex and copies the coordinates to \p nbat
     void putOnGrid(const matrix            box,

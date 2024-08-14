@@ -92,7 +92,7 @@ void GpuHaloExchange::Impl::reinitHalo(DeviceBuffer<Float3> d_coordinatesBuffer,
     int numAtomsTotal = numHomeAtoms_;
     for (int i = 0; i <= dimIndex_; i++)
     {
-        GMX_ASSERT(numZoneTemp <= DD_MAXIZONE, "Too many domain decomposition zones");
+        GMX_ASSERT(numZoneTemp <= sc_maxNumIZones, "Too many domain decomposition zones");
         int pulseMax = (i == dimIndex_) ? pulse_ : (comm.cd[i].numPulses() - 1);
         for (int p = 0; p <= pulseMax; p++)
         {

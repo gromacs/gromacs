@@ -44,7 +44,7 @@
 
 #include "nbnxm.h"
 
-#include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/domdec/domdec_zones.h"
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/message_string_collector.h"
@@ -85,26 +85,19 @@ void nonbonded_verlet_t::putAtomsOnGrid(const matrix            box,
 }
 
 /* Calls nbnxn_put_on_grid for all non-local domains */
-void nbnxn_put_on_grid_nonlocal(nonbonded_verlet_t*              nbv,
-                                const struct gmx_domdec_zones_t* zones,
-                                ArrayRef<const int32_t>          atomInfo,
-                                ArrayRef<const RVec>             x)
+void nbnxn_put_on_grid_nonlocal(nonbonded_verlet_t*     nbv,
+                                const DomdecZones&      zones,
+                                ArrayRef<const int32_t> atomInfo,
+                                ArrayRef<const RVec>    x)
 {
-    for (int zone = 1; zone < zones->n; zone++)
+    for (int zone = 1; zone < zones.numZones(); zone++)
     {
-        rvec c0, c1;
-        for (int d = 0; d < DIM; d++)
-        {
-            c0[d] = zones->size[zone].bb_x0[d];
-            c1[d] = zones->size[zone].bb_x1[d];
-        }
-
         nbv->putAtomsOnGrid(nullptr,
                             zone,
-                            c0,
-                            c1,
+                            zones.sizes(zone).bb_x0,
+                            zones.sizes(zone).bb_x1,
                             nullptr,
-                            { zones->cg_range[zone], zones->cg_range[zone + 1] },
+                            zones.atomRange(zone),
                             -1,
                             atomInfo,
                             x,

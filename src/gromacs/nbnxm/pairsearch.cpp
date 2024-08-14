@@ -91,14 +91,14 @@ PairsearchWork::PairsearchWork() :
 
 PairsearchWork::~PairsearchWork() = default;
 
-PairSearch::PairSearch(const PbcType             pbcType,
-                       const bool                doTestParticleInsertion,
-                       const IVec*               numDDCells,
-                       const gmx_domdec_zones_t* ddZones,
-                       const PairlistType        pairlistType,
-                       const bool                haveFep,
-                       const int                 maxNumThreads,
-                       PinningPolicy             pinningPolicy) :
+PairSearch::PairSearch(const PbcType      pbcType,
+                       const bool         doTestParticleInsertion,
+                       const IVec*        numDDCells,
+                       const DomdecZones* ddZones,
+                       const PairlistType pairlistType,
+                       const bool         haveFep,
+                       const int          maxNumThreads,
+                       PinningPolicy      pinningPolicy) :
     gridSet_(pbcType, doTestParticleInsertion, numDDCells, ddZones, pairlistType, haveFep, maxNumThreads, pinningPolicy),
     work_(maxNumThreads)
 {

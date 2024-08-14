@@ -204,7 +204,7 @@ void write_dd_pdb(const char*       fn,
         if (i < dd->comm->atomRanges.end(DDAtomRanges::Type::Zones))
         {
             c = 0;
-            while (i >= dd->comm->zones.cg_range[c + 1])
+            while (i >= *dd->zones.atomRange(c).end())
             {
                 c++;
             }
@@ -212,11 +212,11 @@ void write_dd_pdb(const char*       fn,
         }
         else if (i < dd->comm->atomRanges.end(DDAtomRanges::Type::Vsites))
         {
-            b = dd->comm->zones.n;
+            b = dd->zones.numZones();
         }
         else
         {
-            b = dd->comm->zones.n + 1;
+            b = dd->zones.numZones() + 1;
         }
         gmx_fprintf_pdb_atomline(out,
                                  PdbRecordType::Atom,

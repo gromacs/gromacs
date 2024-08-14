@@ -51,7 +51,7 @@
 #include <string>
 #include <type_traits>
 
-#include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/domdec/domdec_zones.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
@@ -2187,7 +2187,7 @@ static real effective_buffer_1x1_vs_MxN(const Grid& iGrid, const Grid& jGrid)
 }
 
 /* Estimates the interaction volume^2 for non-local interactions */
-static real nonlocal_vol2(const struct gmx_domdec_zones_t* zones, const rvec ls, real r)
+static real nonlocal_vol2(const gmx::DomdecZones& zones, const rvec ls, real r)
 {
     real vol2_est_tot = 0;
 
@@ -2198,20 +2198,20 @@ static real nonlocal_vol2(const struct gmx_domdec_zones_t* zones, const rvec ls,
      * as small parts as possible.
      */
 
-    for (int z = 0; z < zones->n; z++)
+    for (int z = 0; z < zones.numZones(); z++)
     {
-        if (zones->shift[z][XX] + zones->shift[z][YY] + zones->shift[z][ZZ] == 1)
+        if (zones.shift(z)[XX] + zones.shift(z)[YY] + zones.shift(z)[ZZ] == 1)
         {
             real cl = 0;
             real ca = 1;
             real za = 1;
             for (int d = 0; d < DIM; d++)
             {
-                if (zones->shift[z][d] == 0)
+                if (zones.shift(z)[d] == 0)
                 {
                     cl += 0.5 * ls[d];
                     ca *= ls[d];
-                    za *= zones->size[z].x1[d] - zones->size[z].x0[d];
+                    za *= zones.sizes(z).x1[d] - zones.sizes(z).x0[d];
                 }
             }
 
@@ -2271,10 +2271,10 @@ static void get_nsubpair_target(const GridSet&            gridSet,
     const real r_eff_sup = rlist + nbnxn_get_rlist_effective_inc(numAtomsCluster, ls);
 
     real nsp_est_nl = 0;
-    if (gridSet.domainSetup().haveMultipleDomains && gridSet.domainSetup().zones->n != 1)
+    if (gridSet.domainSetup().haveMultipleDomains && gridSet.domainSetup().zones->numZones() != 1)
     {
         nsp_est_nl = square(dims.atomDensity / numAtomsCluster)
-                     * nonlocal_vol2(gridSet.domainSetup().zones, ls, r_eff_sup);
+                     * nonlocal_vol2(*gridSet.domainSetup().zones, ls, r_eff_sup);
     }
 
     real nsp_est = nsp_est_nl;
@@ -3624,12 +3624,12 @@ static Range<int> getIZoneRange(const GridSet::DomainSetup& domainSetup, const I
     else
     {
         /* Non-local: we need all i-zones */
-        return { 0, int(domainSetup.zones->iZones.size()) };
+        return { 0, domainSetup.zones->numIZones() };
     }
 }
 
 /* Returns the j-zone range for pairlist construction for the give locality and i-zone */
-static Range<int> getJZoneRange(const gmx_domdec_zones_t* ddZones,
+static Range<int> getJZoneRange(const gmx::DomdecZones*   ddZones,
                                 const InteractionLocality locality,
                                 const int                 iZone)
 {
@@ -3641,12 +3641,12 @@ static Range<int> getJZoneRange(const gmx_domdec_zones_t* ddZones,
     else if (iZone == 0)
     {
         /* Non-local: we need to avoid the local (zone 0 vs 0) interactions */
-        return { 1, *ddZones->iZones[iZone].jZoneRange.end() };
+        return { 1, ddZones->jZoneRange(iZone).end() };
     }
     else
     {
         /* Non-local with non-local i-zone: use all j-zones */
-        return ddZones->iZones[iZone].jZoneRange;
+        return ddZones->jZoneRange(iZone);
     }
 }
 
@@ -3703,7 +3703,7 @@ void PairlistSet::constructPairlists(InteractionLocality      locality,
         }
     }
 
-    const gmx_domdec_zones_t* ddZones = gridSet.domainSetup().zones;
+    const gmx::DomdecZones* ddZones = gridSet.domainSetup().zones;
     GMX_ASSERT(locality == InteractionLocality::Local || ddZones != nullptr,
                "Nonlocal interaction locality with null ddZones.");
 
@@ -3735,7 +3735,7 @@ void PairlistSet::constructPairlists(InteractionLocality      locality,
             /* With GPU: generate progressively smaller lists for
              * load balancing for local only or non-local with 2 zones.
              */
-            const bool progBal = (locality == InteractionLocality::Local || ddZones->n <= 2);
+            const bool progBal = (locality == InteractionLocality::Local || ddZones->numZones() <= 2);
 
 #pragma omp parallel for num_threads(numLists) schedule(static)
             for (int th = 0; th < numLists; th++)
@@ -3989,7 +3989,8 @@ void PairlistSets::construct(const InteractionLocality iLocality,
      */
     GMX_RELEASE_ASSERT(
             exclusions.empty() || (!ddZones && exclusions.ssize() == gridSet.numRealAtomsTotal())
-                    || (ddZones && exclusions.ssize() == ddZones->cg_range[ddZones->iZones.size()]),
+                    || (ddZones
+                        && exclusions.ssize() == *ddZones->atomRange(ddZones->numIZones() - 1).end()),
             "exclusions should either be empty or the number of lists should match the number of "
             "local i-atoms");
 
