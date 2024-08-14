@@ -40,6 +40,7 @@
 #ifndef GMX_FILEIO_H5MD_IO_H
 #define GMX_FILEIO_H5MD_IO_H
 
+#include <filesystem>
 #include <string>
 #include <vector>
 
@@ -92,7 +93,7 @@ public:
      * overwritten, but extended. 'r' means only reading.
      * \throws FileIOError if fileName is specified and the file cannot be opened.
      */
-    H5md(const std::string& fileName = "", const char mode = '\0');
+    H5md(const std::filesystem::path& fileName = "", const char mode = '\0');
 
     ~H5md();
 

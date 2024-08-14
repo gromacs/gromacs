@@ -152,7 +152,7 @@ void setPluginPath()
 namespace gmx
 {
 
-H5md::H5md(const std::string& fileName, const char mode)
+H5md::H5md(const std::filesystem::path& fileName, const char mode)
 {
 #if GMX_USE_HDF5
     H5Eset_auto2(H5E_DEFAULT, nullptr, nullptr); // Disable HDF5 error output, e.g. when items are not found.

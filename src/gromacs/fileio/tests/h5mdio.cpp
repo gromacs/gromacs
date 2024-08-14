@@ -75,7 +75,7 @@ public:
     {
         clear_mat(refBox_);
         referenceH5mdIo_   = nullptr;
-        referenceFilename_ = fileManager_.getTemporaryFilePath(getFileSuffix("ref")).u8string();
+        referenceFilename_ = fileManager_.getTemporaryFilePath(getFileSuffix("ref"));
         refX_              = nullptr;
         refV_              = nullptr;
         refF_              = nullptr;
@@ -402,7 +402,7 @@ private:
 
 
     gmx::test::TestFileManager fileManager_;
-    std::string                referenceFilename_;
+    std::filesystem::path      referenceFilename_;
     gmx::H5md*                 referenceH5mdIo_;
     rvec*                      refX_;
     rvec*                      refV_;
