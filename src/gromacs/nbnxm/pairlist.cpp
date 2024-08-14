@@ -3481,7 +3481,7 @@ static void rebalanceSimpleLists(ArrayRef<const NbnxnPairlistCpu> srcSet,
 
             if (cjGlobal + src->ncjInUse > cjStart)
             {
-                for (Index i = 0; i < ssize(src->ci) && cjGlobal < cjEnd; i++)
+                for (Index i = 0; i < gmx::ssize(src->ci) && cjGlobal < cjEnd; i++)
                 {
                     const nbnxn_ci_t* srcCi = &src->ci[i];
                     int               ncj   = srcCi->cj_ind_end - srcCi->cj_ind_start;
@@ -3571,7 +3571,7 @@ static void sort_sci(NbnxnPairlistGpu* nbl)
     NbnxmPairlistGpuWork& work = *nbl->work;
 
     /* We will distinguish differences up to double the average */
-    const int m = static_cast<int>((2 * ssize(nbl->cjPacked)) / ssize(nbl->sci));
+    const int m = static_cast<int>((2 * ssize(nbl->cjPacked)) / gmx::ssize(nbl->sci));
 
     /* Resize work.sci_sort so we can sort into it */
     work.sci_sort.resize(nbl->sci.size());

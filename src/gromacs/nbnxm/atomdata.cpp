@@ -1165,7 +1165,7 @@ static void nbnxn_atomdata_add_nbat_f_to_f_part(const GridSet&                 g
 void nbnxn_atomdata_t::reduceForcesOverThreads()
 {
     // The number of output buffers should match the number of OpenMP threads
-    const int nth = ssize(outputBuffers_);
+    const int nth = gmx::ssize(outputBuffers_);
 
 #pragma omp parallel for num_threads(nth) schedule(static)
     for (int th = 0; th < nth; th++)
@@ -1186,7 +1186,7 @@ void nbnxn_atomdata_t::reduceForcesOverThreads()
                 const int i1 = (b + 1) * NBNXN_BUFFERFLAG_SIZE * fstride;
 
                 int nfptr = 0;
-                for (Index out = 1; out < ssize(outputBuffers_); out++)
+                for (Index out = 1; out < gmx::ssize(outputBuffers_); out++)
                 {
                     if (bitmask_is_set(flags[b], out))
                     {
