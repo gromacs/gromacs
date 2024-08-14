@@ -34,13 +34,11 @@
 /*! \libinternal \file
  *  \brief Implements a GpuEventSynchronizer class for SYCL.
  *
- *  This implementation relies on SYCL_INTEL_enqueue_barrier proposal,
- *  https://github.com/intel/llvm/blob/sycl/sycl/doc/extensions/EnqueueBarrier/enqueue_barrier.asciidoc
- *
- *  Using event-based synchronization is not recommended for SYCL.
- *  SYCL queues are out-of-order and rely on data dependencies, allowing only to wait
- *  for a specific kernel (by capturing the \c event returned from \c queue.submit) or for all
- *  the tasks in the queue (\c queue.wait).
+ *  There is no way to do this efficiently within the SYCL standard.
+ *  With DPC++, this implementation relies on SYCL_EXT_ONEAPI_ENQUEUE_BARRIER extension,
+ *  which directly enqueues a CUDA-like barrier event.
+ *  With AdaptiveCpp, it relies on ACPP_EXT_ENQUEUE_CUSTOM_OPERATION extension to submit
+ *  an empty operation (that can have dependencies and returns an event).
  *
  *  \author Erik Lindahl <erik.lindahl@gmail.com>
  *  \author Andrey Alekseenko <al42and@gmail.com>
@@ -79,28 +77,21 @@ public:
      */
     inline void mark(const DeviceStream& deviceStream)
     {
-#    if GMX_SYCL_HIPSYCL
-        // This will not launch any GPU operation, but it will mark an event which is returned;
-        // it is functionally equivalent with ext_oneapi_submit_barrier().
+#    if defined(ACPP_EXT_ENQUEUE_CUSTOM_OPERATION) || defined(HIPSYCL_EXT_ENQUEUE_CUSTOM_OPERATION)
+        // This will not launch any GPU operation, but it will mark an event which is returned
         events_ = { deviceStream.stream().hipSYCL_enqueue_custom_operation([=](sycl::interop_handle&) {}) };
-        isMarked_ = true;
-#    else
-        // Relies on SYCL_INTEL_enqueue_barrier
-#        if __SYCL_COMPILER_VERSION >= 20211123
+#    elif defined(SYCL_EXT_ONEAPI_ENQUEUE_BARRIER)
         events_ = { deviceStream.stream().ext_oneapi_submit_barrier() };
-#        else
-        events_ = { deviceStream.stream().submit_barrier() };
-#        endif
+#    else
+        // We can do full stream synchronization here, but it's so inefficient we better bail out
+#        error "Either ACPP_EXT_ENQUEUE_CUSTOM_OPERATION or SYCL_EXT_ONEAPI_ENQUEUE_BARRIER is needed"
 #    endif
     }
 
     //! Synchronizes the host thread on the marked event.
     inline void wait()
     {
-#    if GMX_SYCL_DPCPP
         // Note: this is not to prevent use-before-marking, but for checking the DPC++ vs hipSYCL consistency
-        GMX_ASSERT(events_.size() <= 1, "One event expected in DPC++, but we have several!");
-#    endif
         for (auto& event : events_)
         {
             event.wait_and_throw();
@@ -109,20 +100,18 @@ public:
 
     inline void enqueueWait(const DeviceStream& deviceStream)
     {
-#    if GMX_SYCL_HIPSYCL
+#    if defined(ACPP_EXT_ENQUEUE_CUSTOM_OPERATION) || defined(HIPSYCL_EXT_ENQUEUE_CUSTOM_OPERATION)
         // Submit an empty operation that depends on all the events recorded.
         deviceStream.stream().submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
             cgh.depends_on(events_);
             cgh.hipSYCL_enqueue_custom_operation([=](sycl::interop_handle&) {});
         });
-#    else
-        GMX_ASSERT(events_.size() <= 1, "One event expected in DPC++, but we have several!");
-        // Relies on SYCL_INTEL_enqueue_barrier extensions
-#        if __SYCL_COMPILER_VERSION >= 20211123
+#    elif defined(SYCL_EXT_ONEAPI_ENQUEUE_BARRIER)
+        // Relies on sycl_ext_oneapi_enqueue_barrier extensions
         deviceStream.stream().ext_oneapi_submit_barrier(events_);
-#        else
-        deviceStream.stream().submit_barrier(events_);
-#        endif
+#    else
+        // In over-synchronization case, we would do nothing, since we would have already synced
+#        error "Either ACPP_EXT_ENQUEUE_CUSTOM_OPERATION or SYCL_EXT_ONEAPI_ENQUEUE_BARRIER is needed"
 #    endif
     }
 
@@ -138,33 +127,15 @@ public:
     }
 
     //! Checks whether this object encapsulates an underlying event.
-    inline bool isMarked() const
-    {
-#    if GMX_SYCL_HIPSYCL
-        return isMarked_;
-#    else
-        return !events_.empty();
-#    endif
-    }
+    inline bool isMarked() const { return !events_.empty(); }
 
     //! Reset the event to unmarked state.
-    inline void reset()
-    {
-        events_.clear();
-#    if GMX_SYCL_HIPSYCL
-        isMarked_ = false;
-#    endif
-    }
+    inline void reset() { events_.clear(); }
 
 private:
+    /* We can only ever have 0 or 1 event, but the Intel extension uses std::vector as
+     * a function argument, so we use it instead of an optional. */
     std::vector<sycl::event> events_;
-#    if GMX_SYCL_HIPSYCL
-    /*! \brief Flag to track event marking in hipSYCL.
-     *
-     * In hipSYCL, we can have empty \ref events_ after marking if there were no pending tasks in
-     * the queue. So, we use an explicit flag to check the event state. */
-    bool isMarked_ = false;
-#    endif
 };
 
 #endif // DOXYGEN
