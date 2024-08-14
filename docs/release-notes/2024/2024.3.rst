@@ -42,7 +42,7 @@ be assigned to incorrect energy group pairs. With free-energy calculations
 this could lead to illegal memory access.
 
 :issue:`5109`
-       
+
 Correct AWH metric with free-energy and Beutler soft-core
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -75,6 +75,16 @@ simulations.
 
 :issue:`5087`
 
+Added an assert to ensure valid cutoff when calculating atom density
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Simulations with :mdp:`rvdw` and :mdp:`rcoulomb` set to 0 could crash
+with a segmentation fault when calculating the effective atom density.
+This is now handled by asserting valid values and halting with a proper
+explanation.
+
+:issue:`5095`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -85,7 +95,7 @@ The format of ``md.log`` files changed in 2024 which broke the ability of
 ``gmx tune_pme`` to understand how previous runs worked by parsing that
 file. Now ``gmx tune_pme`` understands better.
 
-Avoid crash of convert-tpr on velocity-less tpr files 
+Avoid crash of convert-tpr on velocity-less tpr files
 """""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 The convert-tpr now works on tpr files that do not contain velocities,
@@ -111,10 +121,18 @@ A restriction to not generate TPR files for the Andersen thermostat with constra
 
 :issue:`5093`
 
-Fixed filenames of generated CP2K files in QMMM MdModule 
+Fixed filenames of generated CP2K files in QMMM MdModule
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 If there were no files provided with ``grompp -qmi`` option, module used ``topol/_cp2k.inp`` instead of ``topol_cp2k.inp``
+
+Added a check in ``gmx grompp`` to ensure that cutoffs are valid
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+At least one of :mdp:`rvdw` and :mdp:`rcoulomb` must be > 0 when using the Verlet cutoff scheme.
+This is now checked by ``gmx grompp``.
+
+:issue:`5095`
 
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
