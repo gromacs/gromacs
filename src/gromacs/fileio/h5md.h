@@ -46,8 +46,8 @@
 
 #include "gromacs/utility/real.h"
 
-#include "h5md_datablock.h"
-#include "h5md_util.h"
+#include "h5md_low_level_util.h"
+#include "h5md_time_datablock.h"
 
 enum class PbcType : int;
 struct gmx_moltype_t;

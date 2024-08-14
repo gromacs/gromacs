@@ -47,7 +47,7 @@
  * the datatype real cannot be used. */
 #include "gromacs/utility/real.h"
 
-#include "h5md_util.h"
+#include "h5md_low_level_util.h"
 
 namespace gmx
 {

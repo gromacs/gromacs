@@ -40,6 +40,8 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/fileio/h5md.h"
+
 #include "config.h"
 
 #include <string>
@@ -47,8 +49,7 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/fileio/filetypes.h"
-#include "gromacs/fileio/gmx_h5md_io.h"
-#include "gromacs/fileio/h5md_io.h"
+#include "gromacs/fileio/h5md_high_level_util.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/trajectoryanalysis/topologyinformation.h"
 #include "gromacs/utility/exceptions.h"

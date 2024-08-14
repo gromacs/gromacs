@@ -50,9 +50,9 @@
 #    include "gromacs/math/vectypes.h"
 #    include "gromacs/utility/exceptions.h"
 
-#    include "h5md_datablock.h"
-#    include "h5md_io.h"
-#    include "h5md_util.h"
+#    include "h5md.h"
+#    include "h5md_low_level_util.h"
+#    include "h5md_time_datablock.h"
 
 namespace gmx
 {

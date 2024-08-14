@@ -54,7 +54,7 @@
 #    include "gromacs/utility/fatalerror.h"
 #    include "gromacs/utility/gmxassert.h"
 
-#    include "h5md_util.h"
+#    include "h5md_low_level_util.h"
 
 namespace
 {

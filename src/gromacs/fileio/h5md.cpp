@@ -39,7 +39,7 @@
 
 #include "gmxpre.h"
 
-#include "h5md_io.h"
+#include "h5md.h"
 
 #include "config.h"
 
@@ -58,8 +58,8 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/programcontext.h"
 
-#include "h5md_datablock.h"
-#include "h5md_util.h"
+#include "h5md_low_level_util.h"
+#include "h5md_time_datablock.h"
 
 #if GMX_USE_HDF5
 CLANG_DIAGNOSTIC_IGNORE("-Wold-style-cast")
