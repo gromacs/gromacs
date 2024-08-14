@@ -76,49 +76,56 @@
 
 /*---------------- BONDED HIP kernels--------------*/
 
+/* There are some troubles optimizing the dynamic array
+ * member access despite the fact that all the loops are unrolled.
+ *
+ * See https://developer.nvidia.com/blog/fast-dynamic-indexing-private-arrays-cuda/
+ * for a details on why dynamic access is problematic.
+ *
+ * This wrapper avoid dynamic accesses into the array, replacing them
+ * with a `switch` instead.
+ */
 template<typename T>
-struct fixed_array
+struct FTypeArray
 {
-    T values[gmx::numFTypesOnGpu];
+    static_assert(gmx::numFTypesOnGpu == 8,
+                  "Please update the member initializer list and the switch below");
 
-    fixed_array(T vs[gmx::numFTypesOnGpu])
+    constexpr FTypeArray(const T in[gmx::numFTypesOnGpu]) :
+        data{ in[0], in[1], in[2], in[3], in[4], in[5], in[6], in[7] }
     {
-        for (int i = 0; i < gmx::numFTypesOnGpu; i++)
-        {
-            values[i] = vs[i];
-        }
     }
-
-    __device__ __forceinline__ T operator[](int index) const
+    __device__ __forceinline__ constexpr T operator[](int index) const
     {
         // return values[index];
 
         switch (index)
         {
-            case 0: return values[0];
-            case 1: return values[1];
-            case 2: return values[2];
-            case 3: return values[3];
-            case 4: return values[4];
-            case 5: return values[5];
-            case 6: return values[6];
-            default: return values[7];
+            case 0: return data[0];
+            case 1: return data[1];
+            case 2: return data[2];
+            case 3: return data[3];
+            case 4: return data[4];
+            case 5: return data[5];
+            case 6: return data[6];
+            default: return data[7];
         }
     }
+    T data[gmx::numFTypesOnGpu];
 };
 
 
 __device__ __forceinline__ float3 hipHeadSegmentedSum(float3 input, const bool flag)
 {
-    unsigned long long warp_flags = __ballot(flag);
+    unsigned long long warpFlags = __ballot(flag);
 
-    warp_flags >>= 1;
+    warpFlags >>= 1;
     unsigned int lane_id = (threadIdx.x & (warpSize - 1));
 
-    warp_flags &= static_cast<unsigned long long>(-1)
-                  ^ ((static_cast<unsigned long long>(1) << lane_id) - 1U);
-    warp_flags |= static_cast<unsigned long long>(1) << (warpSize - 1U);
-    unsigned int valid_items = __ffsll(warp_flags);
+    warpFlags &= static_cast<unsigned long long>(-1)
+                 ^ ((static_cast<unsigned long long>(1) << lane_id) - 1U);
+    warpFlags |= static_cast<unsigned long long>(1) << (warpSize - 1U);
+    unsigned int valid_items = __ffsll(warpFlags);
 
     float3 output = input;
 #pragma unroll
@@ -139,7 +146,7 @@ __device__ __forceinline__ void storeForce(float3 gm_f[], int i, float3 f)
 {
     // Combine forces of consecutive lanes that write forces for the same atom
     // but do it only if all lanes are active (the last block may have fewer lanes active or some
-    // lanes may not pass tolerace conditions etc.)
+    // lanes may not pass tolerance conditions etc.)
     if (__popcll(__ballot(1)) == warpSize)
     {
         const int  prev_lane_i = __shfl_up(i, 1);
@@ -168,6 +175,8 @@ __device__ __forceinline__ void storeForce(float3 gm_f[], int i, float3 f)
 }
 
 /* Harmonic */
+
+template<bool calcEner>
 __device__ __forceinline__ static void
 harmonic_gpu(const float kA, const float xA, const float x, float* V, float* F)
 {
@@ -178,7 +187,10 @@ harmonic_gpu(const float kA, const float xA, const float x, float* V, float* F)
     dx2 = dx * dx;
 
     *F = -kA * dx;
-    *V = half * kA * dx2;
+    if constexpr (calcEner)
+    {
+        *V = half * kA * dx2;
+    }
 }
 
 template<bool calcVir, bool calcEner>
@@ -208,9 +220,10 @@ __device__ void bonds_gpu(const int       i,
 
         float vbond;
         float fbond;
-        harmonic_gpu(d_forceparams[type].harmonic.krA, d_forceparams[type].harmonic.rA, dr, &vbond, &fbond);
+        harmonic_gpu<calcEner>(
+                d_forceparams[type].harmonic.krA, d_forceparams[type].harmonic.rA, dr, &vbond, &fbond);
 
-        if (calcEner)
+        if constexpr (calcEner)
         {
             *vtot_loc += vbond;
         }
@@ -221,10 +234,13 @@ __device__ void bonds_gpu(const int       i,
             fbond *= __frsqrt_rn(dr2);
 
             fij = fbond * dx;
-            if (calcVir && ki != gmx::c_centralShiftIndex)
+            if constexpr (calcVir)
             {
-                atomicAdd(&sm_fShiftLoc[ki], fij);
-                atomicAdd(&sm_fShiftLoc[gmx::c_centralShiftIndex], -fij);
+                if (ki != gmx::c_centralShiftIndex)
+                {
+                    atomicAdd(&sm_fShiftLoc[ki], fij);
+                    atomicAdd(&sm_fShiftLoc[gmx::c_centralShiftIndex], -fij);
+                }
             }
         }
         storeForce(gm_f, ai, fij);
@@ -282,13 +298,13 @@ __device__ void angles_gpu(const int       i,
 
         float va;
         float dVdt;
-        harmonic_gpu(d_forceparams[type].harmonic.krA,
-                     d_forceparams[type].harmonic.rA * HIP_DEG2RAD_F,
-                     theta,
-                     &va,
-                     &dVdt);
+        harmonic_gpu<calcEner>(d_forceparams[type].harmonic.krA,
+                               d_forceparams[type].harmonic.rA * HIP_DEG2RAD_F,
+                               theta,
+                               &va,
+                               &dVdt);
 
-        if (calcEner)
+        if constexpr (calcEner)
         {
             *vtot_loc += va;
         }
@@ -316,7 +332,7 @@ __device__ void angles_gpu(const int       i,
             storeForce(gm_f, aj, f_j);
             storeForce(gm_f, ak, f_k);
 
-            if (calcVir)
+            if constexpr (calcVir)
             {
                 atomicAdd(&sm_fShiftLoc[t1], f_i);
                 atomicAdd(&sm_fShiftLoc[gmx::c_centralShiftIndex], f_j);
@@ -360,9 +376,9 @@ __device__ void urey_bradley_gpu(const int       i,
 
         float va;
         float dVdt;
-        harmonic_gpu(kthA, th0A, theta, &va, &dVdt);
+        harmonic_gpu<calcEner>(kthA, th0A, theta, &va, &dVdt);
 
-        if (calcEner)
+        if constexpr (calcEner)
         {
             *vtot_loc += va;
         }
@@ -375,7 +391,7 @@ __device__ void urey_bradley_gpu(const int       i,
 
         float vbond;
         float fbond;
-        harmonic_gpu(kUBA, r13A, dr, &vbond, &fbond);
+        harmonic_gpu<calcEner>(kUBA, r13A, dr, &vbond, &fbond);
 
         float3 f_i = make_float3(0.0F);
         float3 f_j = make_float3(0.0F);
@@ -399,7 +415,7 @@ __device__ void urey_bradley_gpu(const int       i,
             f_j = -f_i - f_k;
 
 
-            if (calcVir)
+            if constexpr (calcVir)
             {
                 atomicAdd(&sm_fShiftLoc[t1], f_i);
                 atomicAdd(&sm_fShiftLoc[gmx::c_centralShiftIndex], f_j);
@@ -410,7 +426,7 @@ __device__ void urey_bradley_gpu(const int       i,
         /* Time for the bond calculations */
         if (dr2 != 0.0F)
         {
-            if (calcEner)
+            if constexpr (calcEner)
             {
                 *vtot_loc += vbond;
             }
@@ -421,10 +437,13 @@ __device__ void urey_bradley_gpu(const int       i,
             f_i += fik;
             f_k -= fik;
 
-            if (calcVir && ki != gmx::c_centralShiftIndex)
+            if constexpr (calcVir)
             {
-                atomicAdd(&sm_fShiftLoc[ki], fik);
-                atomicAdd(&sm_fShiftLoc[gmx::c_centralShiftIndex], -fik);
+                if (ki != gmx::c_centralShiftIndex)
+                {
+                    atomicAdd(&sm_fShiftLoc[ki], fik);
+                    atomicAdd(&sm_fShiftLoc[gmx::c_centralShiftIndex], -fik);
+                }
             }
         }
 
@@ -522,7 +541,7 @@ __device__ static void do_dih_fup_gpu(const int            i,
         storeForce(gm_f, k, -f_k);
         storeForce(gm_f, l, f_l);
 
-        if (calcVir)
+        if constexpr (calcVir)
         {
             float3 dx_jl;
             int    t3 = pbcDxAiuc<calcVir>(pbcAiuc, gm_xq[l], gm_xq[j], dx_jl);
@@ -574,7 +593,7 @@ __device__ void pdihs_gpu(const int       i,
                     &vpd,
                     &ddphi);
 
-        if (calcEner)
+        if constexpr (calcEner)
         {
             *vtot_loc += vpd;
         }
@@ -644,35 +663,35 @@ __device__ void rbdihs_gpu(const int       i,
         float rbp = parm[1];
         ddphi += rbp * cosfac;
         cosfac *= cos_phi;
-        if (calcEner)
+        if constexpr (calcEner)
         {
             v += cosfac * rbp;
         }
         rbp = parm[2];
         ddphi += c2 * rbp * cosfac;
         cosfac *= cos_phi;
-        if (calcEner)
+        if constexpr (calcEner)
         {
             v += cosfac * rbp;
         }
         rbp = parm[3];
         ddphi += c3 * rbp * cosfac;
         cosfac *= cos_phi;
-        if (calcEner)
+        if constexpr (calcEner)
         {
             v += cosfac * rbp;
         }
         rbp = parm[4];
         ddphi += c4 * rbp * cosfac;
         cosfac *= cos_phi;
-        if (calcEner)
+        if constexpr (calcEner)
         {
             v += cosfac * rbp;
         }
         rbp = parm[5];
         ddphi += c5 * rbp * cosfac;
         cosfac *= cos_phi;
-        if (calcEner)
+        if constexpr (calcEner)
         {
             v += cosfac * rbp;
         }
@@ -681,7 +700,7 @@ __device__ void rbdihs_gpu(const int       i,
 
         do_dih_fup_gpu<calcVir>(
                 ai, aj, ak, al, ddphi, r_ij, r_kj, r_kl, m, n, gm_f, sm_fShiftLoc, pbcAiuc, gm_xq, t1, t2, t3);
-        if (calcEner)
+        if constexpr (calcEner)
         {
             *vtot_loc += v;
         }
@@ -752,7 +771,7 @@ __device__ void idihs_gpu(const int       i,
         do_dih_fup_gpu<calcVir>(
                 ai, aj, ak, al, -ddphi, r_ij, r_kj, r_kl, m, n, gm_f, sm_fShiftLoc, pbcAiuc, gm_xq, t1, t2, t3);
 
-        if (calcEner)
+        if constexpr (calcEner)
         {
             *vtot_loc += -0.5F * ddphi * dp;
         }
@@ -805,13 +824,16 @@ __device__ void pairs_gpu(const int       i,
         /* Add the forces */
         storeForce(gm_f, ai, f);
         storeForce(gm_f, aj, -f);
-        if (calcVir && fshift_index != gmx::c_centralShiftIndex)
+        if constexpr (calcVir)
         {
-            atomicAdd(&sm_fShiftLoc[fshift_index], f);
-            atomicAdd(&sm_fShiftLoc[gmx::c_centralShiftIndex], -f);
+            if (fshift_index != gmx::c_centralShiftIndex)
+            {
+                atomicAdd(&sm_fShiftLoc[fshift_index], f);
+                atomicAdd(&sm_fShiftLoc[gmx::c_centralShiftIndex], -f);
+            }
         }
 
-        if (calcEner)
+        if constexpr (calcEner)
         {
             *vtotVdw_loc += (c12 * rinv6 - c6) * rinv6;
             *vtotElec_loc += velec;
@@ -829,13 +851,13 @@ __launch_bounds__(c_threadsBondedPerBlock) __global__ void bonded_kernel_gpu(
         //! Scale factor
         float electrostaticsScaleFactor,
         //! The bonded types on GPU
-        const fixed_array<int> fTypesOnGpu,
+        const FTypeArray<int> fTypesOnGpu,
         //! The number of bonds for every function type
-        const fixed_array<int> numFTypeBonds,
+        const FTypeArray<int> numFTypeBonds,
         //! The start index in the range of each interaction type
-        const fixed_array<int> fTypeRangeStart,
+        const FTypeArray<int> fTypeRangeStart,
         //! The end index in the range of each interaction type
-        const fixed_array<int> fTypeRangeEnd,
+        const FTypeArray<int> fTypeRangeEnd,
         //! Force parameters (on GPU)
         t_iparams* d_forceParams,
         //! Coordinates before the timestep (on GPU)
@@ -847,7 +869,7 @@ __launch_bounds__(c_threadsBondedPerBlock) __global__ void bonded_kernel_gpu(
         //! Total Energy (on GPU)
         float* d_vTot,
         //! Interaction list atoms (on GPU)
-        const fixed_array<t_iatom*> d_iatoms)
+        const FTypeArray<t_iatom*> d_iatoms)
 {
     assert(blockDim.y == 1 && blockDim.z == 1);
     const int tid          = blockIdx.x * blockDim.x + threadIdx.x;
@@ -858,7 +880,7 @@ __launch_bounds__(c_threadsBondedPerBlock) __global__ void bonded_kernel_gpu(
     extern __shared__ float3 sm_dynamicShmem[];
     float3*                  sm_fShiftLoc = sm_dynamicShmem;
 
-    if (calcVir)
+    if constexpr (calcVir)
     {
         if (threadIdx.x < c_numShiftVectors)
         {
@@ -926,7 +948,7 @@ __launch_bounds__(c_threadsBondedPerBlock) __global__ void bonded_kernel_gpu(
         }
     }
 
-    if (calcEner)
+    if constexpr (calcEner)
     {
 #pragma unroll
         for (int j = 0; j < numFTypesOnGpu; j++)
@@ -963,7 +985,7 @@ __launch_bounds__(c_threadsBondedPerBlock) __global__ void bonded_kernel_gpu(
         }
     }
     /* Accumulate shift vectors from shared memory to global memory on the first c_numShiftVectors threads of the block. */
-    if (calcVir)
+    if constexpr (calcVir)
     {
         __syncthreads();
         if (threadIdx.x < c_numShiftVectors)
@@ -993,12 +1015,12 @@ void ListedForcesGpu::Impl::launchKernel()
 
     auto kernelPtr = bonded_kernel_gpu<calcVir, calcEner>;
 
-    fixed_array<int>      fTypesOnGpu(kernelParams_.fTypesOnGpu);
-    fixed_array<int>      numFTypeBonds(kernelParams_.numFTypeBonds);
-    fixed_array<int>      fTypeRangeStart(kernelParams_.fTypeRangeStart);
-    fixed_array<int>      fTypeRangeEnd(kernelParams_.fTypeRangeEnd);
-    fixed_array<t_iatom*> d_iatoms(kernelBuffers_.d_iatoms);
-    const auto            kernelArgs = prepareGpuKernelArguments(kernelPtr,
+    FTypeArray<int>      fTypesOnGpu(kernelParams_.fTypesOnGpu);
+    FTypeArray<int>      numFTypeBonds(kernelParams_.numFTypeBonds);
+    FTypeArray<int>      fTypeRangeStart(kernelParams_.fTypeRangeStart);
+    FTypeArray<int>      fTypeRangeEnd(kernelParams_.fTypeRangeEnd);
+    FTypeArray<t_iatom*> d_iatoms(kernelBuffers_.d_iatoms);
+    const auto           kernelArgs = prepareGpuKernelArguments(kernelPtr,
                                                       kernelLaunchConfig_,
                                                       &kernelParams_.pbcAiuc,
                                                       &kernelParams_.electrostaticsScaleFactor,

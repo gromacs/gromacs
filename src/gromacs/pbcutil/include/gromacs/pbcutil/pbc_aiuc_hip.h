@@ -100,19 +100,19 @@ pbcDxAiuc(const PbcAiuc& pbcAiuc, const float4 r1, const float4 r2, float3& dr)
     dr.y = r1.y - r2.y;
     dr.z = r1.z - r2.z;
 
-    float shz = rintf(dr.z * pbcAiuc.invBoxDiagZ);
+    const float shz = rintf(dr.z * pbcAiuc.invBoxDiagZ);
     dr.x -= shz * pbcAiuc.boxZX;
     dr.y -= shz * pbcAiuc.boxZY;
     dr.z -= shz * pbcAiuc.boxZZ;
 
-    float shy = rintf(dr.y * pbcAiuc.invBoxDiagY);
+    const float shy = rintf(dr.y * pbcAiuc.invBoxDiagY);
     dr.x -= shy * pbcAiuc.boxYX;
     dr.y -= shy * pbcAiuc.boxYY;
 
-    float shx = rintf(dr.x * pbcAiuc.invBoxDiagX);
+    const float shx = rintf(dr.x * pbcAiuc.invBoxDiagX);
     dr.x -= shx * pbcAiuc.boxXX;
 
-    if (returnShift)
+    if constexpr (returnShift)
     {
         int3 ishift;
 
@@ -153,16 +153,16 @@ static __forceinline__ __host__ __device__ float3 pbcDxAiuc(const PbcAiuc& pbcAi
 {
     float3 dr = r1 - r2;
 
-    float shz = rintf(dr.z * pbcAiuc.invBoxDiagZ);
+    const float shz = rintf(dr.z * pbcAiuc.invBoxDiagZ);
     dr.x -= shz * pbcAiuc.boxZX;
     dr.y -= shz * pbcAiuc.boxZY;
     dr.z -= shz * pbcAiuc.boxZZ;
 
-    float shy = rintf(dr.y * pbcAiuc.invBoxDiagY);
+    const float shy = rintf(dr.y * pbcAiuc.invBoxDiagY);
     dr.x -= shy * pbcAiuc.boxYX;
     dr.y -= shy * pbcAiuc.boxYY;
 
-    float shx = rintf(dr.x * pbcAiuc.invBoxDiagX);
+    const float shx = rintf(dr.x * pbcAiuc.invBoxDiagX);
     dr.x -= shx * pbcAiuc.boxXX;
 
     return dr;
