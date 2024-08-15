@@ -39,13 +39,13 @@ definitions. Experienced HPC users can skip this section.
         A group of cores that share some kind of locality, such as a
         shared cache. This makes it more efficient to spread
         computational work over cores within a socket than over cores
-        in different sockets. Modern processors often have more than
-        one socket.
+        in different sockets. Modern server and workstation class machines
+        often have more than one CPU socket.
 
     node
         A group of sockets that share coarser-level locality, such as
         shared access to the same memory without requiring any network
-        hardware. A normal laptop or desktop computer is a node. A
+        hardware. A normal personal computer or racked server is a node. A
         node is often the smallest amount of a large compute cluster
         that a user can request to use.
 
