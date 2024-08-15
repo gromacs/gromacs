@@ -484,9 +484,9 @@ void launchLincsGpuKernel(LincsGpuKernelParameters*   kernelParams,
     config.gridSize[2]  = 1;
 
     gmx::dispatchTemplatedFunction(
-            [&](auto updateVelocities_, auto computeVirial_, auto haveCoupledConstraints_)
+            [&](auto updateVelocities_, auto computeVirial_)
             {
-                auto kernelPtr = lincsKernel<updateVelocities_, computeVirial_, haveCoupledConstraints_>;
+                auto kernelPtr = lincsKernel<updateVelocities_, computeVirial_>;
 
 
                 // Shared memory is used to store:
@@ -521,8 +521,7 @@ void launchLincsGpuKernel(LincsGpuKernelParameters*   kernelParams,
                                 kernelArgs);
             },
             updateVelocities,
-            computeVirial,
-            kernelParams->haveCoupledConstraints);
+            computeVirial);
 }
 
 } // namespace gmx
