@@ -74,7 +74,7 @@ static std::string         s_provenanceGroupName                = "/modules/prov
 
 
 /*! \brief The container of the H5MD data. The class is designed to read/write data according to de Buyl et al., 2014
- * (https://www.sciencedirect.com/science/article/pii/S0010465514000447) and https://www.nongnu.org/h5md/h5md.html
+ * (https://doi.org/10.1016/j.cpc.2014.01.018) and https://www.nongnu.org/h5md/h5md.html
  * The class contains a number of standard data blocks that are commonly used by GROMACS. */
 class H5md
 {
