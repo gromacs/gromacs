@@ -708,7 +708,7 @@ std::string getDeviceInformationString(const DeviceInformation& deviceInfo)
             }
         }
         return gmx::formatString(
-                "#%d: name: %s%s, vendor: %s, device version: %s, driver version %s, status: %s",
+                "#%d: name: %s%s, vendor: %s, device version: %s, driver version: %s, status: %s",
                 deviceInfo.id,
                 deviceInfo.syclDevice.get_info<sycl::info::device::name>().c_str(),
                 deviceArchitecture.c_str(),

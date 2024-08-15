@@ -525,16 +525,16 @@ void gmx_print_version_info(gmx::TextWriter* writer)
     writer->writeLine("CUDA runtime:        " + gmx::getCudaRuntimeVersionString());
 #endif
 #if GMX_SYCL_DPCPP
+    writer->writeLine("SYCL version:        oneAPI DPC++ " + gmx::getSyclCompilerVersion());
     writer->writeLine(formatString("SYCL compiler flags: %s", SYCL_DPCPP_COMPILER_FLAGS));
     writer->writeLine(formatString("SYCL linker flags:   %s", SYCL_DPCPP_LINKER_FLAGS));
-    writer->writeLine("SYCL DPC++ version:  " + gmx::getSyclCompilerVersion());
 #endif
 #if GMX_SYCL_HIPSYCL
-    writer->writeLine(formatString("hipSYCL launcher:    %s", SYCL_HIPSYCL_COMPILER_LAUNCHER));
-    writer->writeLine(formatString("hipSYCL flags:       %s", SYCL_HIPSYCL_COMPILER_FLAGS));
-    writer->writeLine(formatString("hipSYCL GPU flags:   %s", SYCL_HIPSYCL_DEVICE_COMPILER_FLAGS));
-    writer->writeLine(formatString("hipSYCL targets:     %s", SYCL_HIPSYCL_TARGETS));
-    writer->writeLine("hipSYCL version:     " + gmx::getSyclCompilerVersion());
+    writer->writeLine("SYCL version:        " + gmx::getSyclCompilerVersion());
+    writer->writeLine(formatString("SYCL compiler:       %s", SYCL_HIPSYCL_COMPILER_LAUNCHER));
+    writer->writeLine(formatString("SYCL compiler flags: %s", SYCL_HIPSYCL_COMPILER_FLAGS));
+    writer->writeLine(formatString("SYCL GPU flags:      %s", SYCL_HIPSYCL_DEVICE_COMPILER_FLAGS));
+    writer->writeLine(formatString("SYCL targets:        %s", SYCL_HIPSYCL_TARGETS));
 #endif
 #if GMX_GPU_HIP
     writer->writeLine(formatString("HIP compiler:        %s", HIP_COMPILER_INFO));

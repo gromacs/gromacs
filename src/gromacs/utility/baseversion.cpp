@@ -90,11 +90,11 @@ const char* getGpuImplementationString()
         {
             if (GMX_SYCL_DPCPP)
             {
-                return "SYCL (DPCPP)";
+                return "SYCL (oneAPI DPC++)";
             }
             else if (GMX_SYCL_HIPSYCL)
             {
-                return "SYCL (hipSYCL)";
+                return "SYCL (AdaptiveCpp)";
             }
             else
             {
