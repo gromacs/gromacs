@@ -60,6 +60,10 @@
 #include "testutils/tprfilegenerator.h"
 
 #if GMX_USE_HDF5
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 /*! \brief
@@ -92,7 +96,7 @@ public:
     /*! \brief Open a file used as reference for further tests. */
     void openReferenceFile(const char mode)
     {
-        referenceH5mdIo_ = new gmx::H5md(referenceFilename_, mode);
+        referenceH5mdIo_ = new H5md(referenceFilename_, mode);
     }
 
     /*! \brief Close the reference file. */
@@ -115,8 +119,8 @@ public:
     void checkH5mdRootVersionNumber()
     {
         std::string fileVersion   = referenceH5mdIo_->getH5mdRootVersionNumber();
-        std::string versionString = std::to_string(gmx::c_h5mdMajorVersion) + "."
-                                    + std::to_string(gmx::c_h5mdMinorVersion);
+        std::string versionString = std::to_string(c_h5mdMajorVersion) + "."
+                                    + std::to_string(c_h5mdMinorVersion);
         EXPECT_STREQ(fileVersion.c_str(), versionString.c_str());
     }
 
@@ -164,8 +168,8 @@ public:
         int divisor = refAtomCount_ % 8 == 0 ? 4 : 3;
         for (size_t i = 0; i < refAtomCount_; ++i)
         {
-            gmx::RVec v(0.1, 0.22, -frame * 0.001);
-            gmx::RVec x(i / divisor + 0.05 * (i % divisor) + frame * v[0],
+            RVec v(0.1, 0.22, -frame * 0.001);
+            RVec x(i / divisor + 0.05 * (i % divisor) + frame * v[0],
                         i / divisor + 0.05 * (i % divisor) + frame * v[1],
                         i / divisor + 0.05 * (i % divisor) + frame * v[2]);
             copy_rvec(x, refX_[i]);
@@ -176,15 +180,15 @@ public:
     /* Generate a tpr and read it */
     void generateReferenceTopology()
     {
-        gmx::test::TprAndFileManager fileManager("lysozyme");
+        TprAndFileManager fileManager("lysozyme");
         topologyInfo_.fillFromInputFile(fileManager.tprName());
     }
 
     /* Initialize the molecular system information in the reference H5MD file. */
     void setupMolecularSystem()
     {
-        gmx::setupMolecularSystemParticleData(referenceH5mdIo_, *topologyInfo_.mtop());
-        gmx::setupMolecularSystemTopology(referenceH5mdIo_, *topologyInfo_.mtop(), {}, "", true);
+        setupMolecularSystemParticleData(referenceH5mdIo_, *topologyInfo_.mtop());
+        setupMolecularSystemTopology(referenceH5mdIo_, *topologyInfo_.mtop(), {}, "", true);
     }
 
     void checkTopologies()
@@ -193,7 +197,7 @@ public:
         for (size_t i = 0; i < topology->moleculeBlockIndices.size(); i++)
         {
             MoleculeBlockIndices fileMoleculeBlockIndices =
-                    gmx::getMoleculeBlockIndicesByIndex(referenceH5mdIo_, i);
+                    getMoleculeBlockIndicesByIndex(referenceH5mdIo_, i);
             EXPECT_EQ(topology->moleculeBlockIndices[i].numAtomsPerMolecule,
                       fileMoleculeBlockIndices.numAtomsPerMolecule);
             EXPECT_EQ(topology->moleculeBlockIndices[i].globalAtomStart,
@@ -217,7 +221,7 @@ public:
 
     void writeReferenceTrajectoryFrame(int step, real time, real lambda)
     {
-        gmx::writeFrameToStandardDataBlocks(
+        writeFrameToStandardDataBlocks(
                 referenceH5mdIo_, step, time, lambda, refBox_, refAtomCount_, refX_, refV_, refF_, refCompressionAbsoluteError_);
     }
 
@@ -255,7 +259,7 @@ public:
         snew(testX, refAtomCount_);
         snew(testV, refAtomCount_);
         snew(testF, refAtomCount_);
-        gmx::readNextFrameOfStandardDataBlocks(referenceH5mdIo_,
+        readNextFrameOfStandardDataBlocks(referenceH5mdIo_,
                                                &testStep,
                                                &testTime,
                                                &testLambda,
@@ -274,13 +278,13 @@ public:
         real referenceLambda = static_cast<real>(referenceStep) / referenceNumFrames;
 
         EXPECT_EQ(referenceStep, testStep);
-        EXPECT_REAL_EQ_TOL(referenceTime, testTime, gmx::test::defaultRealTolerance());
+        EXPECT_REAL_EQ_TOL(referenceTime, testTime, defaultRealTolerance());
         EXPECT_TRUE(testReadLambda);
         EXPECT_TRUE(testReadBox);
         EXPECT_TRUE(testReadX);
         EXPECT_TRUE(testReadV);
         EXPECT_FALSE(testReadF);
-        EXPECT_REAL_EQ_TOL(referenceLambda, testLambda, gmx::test::defaultRealTolerance());
+        EXPECT_REAL_EQ_TOL(referenceLambda, testLambda, defaultRealTolerance());
 
         if (refCompressionAbsoluteError_ == 0)
         {
@@ -290,13 +294,13 @@ public:
         else
         {
             EXPECT_REAL_EQ_TOL(
-                    refCompressionAbsoluteError_, testAbsoluteError, gmx::test::defaultRealTolerance());
+                    refCompressionAbsoluteError_, testAbsoluteError, defaultRealTolerance());
         }
         for (int d1 = 0; d1 < DIM; d1++)
         {
             for (int d2 = 0; d2 < DIM; d2++)
             {
-                EXPECT_REAL_EQ_TOL(refBox_[d1][d2], testBox[d1][d2], gmx::test::defaultRealTolerance());
+                EXPECT_REAL_EQ_TOL(refBox_[d1][d2], testBox[d1][d2], defaultRealTolerance());
             }
         }
         for (size_t atom = 0; atom < refAtomCount_; atom++)
@@ -309,9 +313,9 @@ public:
                 }
                 else
                 {
-                    EXPECT_REAL_EQ_TOL(refX_[atom][d], testX[atom][d], gmx::test::defaultRealTolerance());
+                    EXPECT_REAL_EQ_TOL(refX_[atom][d], testX[atom][d], defaultRealTolerance());
                 }
-                EXPECT_REAL_EQ_TOL(refV_[atom][d], testV[atom][d], gmx::test::defaultRealTolerance());
+                EXPECT_REAL_EQ_TOL(refV_[atom][d], testV[atom][d], defaultRealTolerance());
             }
         }
         sfree(testX);
@@ -372,14 +376,14 @@ public:
         {
             EXPECT_STREQ(refWaterAtomNames_[i].c_str(), testWaterAtomNames[i].c_str());
             EXPECT_REAL_EQ_TOL(
-                    refWaterPartialCharges_[i], testWaterCharges[i], gmx::test::defaultRealTolerance());
+                    refWaterPartialCharges_[i], testWaterCharges[i], defaultRealTolerance());
             EXPECT_EQ(refWaterAtomicNumbers_[i], testWaterElementNumbers[i]);
         }
         for (size_t i = 0; i < refNumLigandNameElements; i++)
         {
             EXPECT_STREQ(refLigandAtomNames_[i].c_str(), testLigandAtomNames[i].c_str());
             EXPECT_REAL_EQ_TOL(
-                    refLigandPartialCharges_[i], testLigandCharges[i], gmx::test::defaultRealTolerance());
+                    refLigandPartialCharges_[i], testLigandCharges[i], defaultRealTolerance());
         }
     }
 
@@ -402,9 +406,9 @@ private:
     }
 
 
-    gmx::test::TestFileManager fileManager_;
+    TestFileManager fileManager_;
     std::filesystem::path      referenceFilename_;
-    gmx::H5md*                 referenceH5mdIo_;
+    H5md*                 referenceH5mdIo_;
     rvec*                      refX_;
     rvec*                      refV_;
     rvec*                      refF_;
@@ -416,7 +420,7 @@ private:
     std::vector<int>           refWaterAtomicNumbers_;
     std::vector<std::string>   refLigandAtomNames_;
     std::vector<real>          refLigandPartialCharges_;
-    gmx::TopologyInformation   topologyInfo_;
+    TopologyInformation   topologyInfo_;
 };
 
 /*! \brief Tests that opening (creating a new), closing, re-opening and closing
@@ -424,7 +428,7 @@ private:
  */
 TEST_F(H5mdIoTest, CanCreateAndCloseH5mdFile)
 {
-    EXPECT_THROW_GMX(openReferenceFile('r'), gmx::FileIOError);
+    EXPECT_THROW_GMX(openReferenceFile('r'), FileIOError);
     EXPECT_FALSE(isReferenceFileOpen());
     openReferenceFile('w');
     EXPECT_TRUE(isReferenceFileOpen());
@@ -483,7 +487,7 @@ TEST_P(H5mdIoTest, HighLevelWriteRead)
         generateReferenceCoordinatesAndVelocities(i);
         if (getRefAtomCount() <= 0)
         {
-            EXPECT_THROW_GMX(writeReferenceTrajectoryFrame(i, time, lambda), gmx::FileIOError);
+            EXPECT_THROW_GMX(writeReferenceTrajectoryFrame(i, time, lambda), FileIOError);
         }
         else
         {
@@ -529,20 +533,23 @@ INSTANTIATE_TEST_SUITE_P(H5mdTestWriteReadCombinations,
 
 
 } // namespace
+} // namespace test
 
-extern template void gmx::H5md::setNumericDataSet<real>(const std::string&,
+extern template void H5md::setNumericDataSet<real>(const std::string&,
                                                         const std::string&,
                                                         const std::vector<real>&,
                                                         const std::string&,
                                                         bool);
-extern template void gmx::H5md::setNumericDataSet<int>(const std::string&,
+extern template void H5md::setNumericDataSet<int>(const std::string&,
                                                        const std::string&,
                                                        const std::vector<int>&,
                                                        const std::string&,
                                                        bool);
 
-extern template std::vector<real> gmx::H5md::readNumericDataSet<real>(const std::string&,
+extern template std::vector<real> H5md::readNumericDataSet<real>(const std::string&,
                                                                       const std::string&);
-extern template std::vector<int> gmx::H5md::readNumericDataSet<int>(const std::string&, const std::string&);
+extern template std::vector<int> H5md::readNumericDataSet<int>(const std::string&, const std::string&);
+
+} // namespace gmx
 
 #endif // GMX_USE_HDF5
