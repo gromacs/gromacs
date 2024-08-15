@@ -66,6 +66,7 @@
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
 #include "gromacs/nbnxm/grid.h"
 #include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/nbnxm/nbnxm_gpu_data_mgmt.h"
 #include "gromacs/nbnxm/pairlist.h"
 #include "gromacs/timing/gpu_timing.h"
 #include "gromacs/utility/cstringutil.h"
@@ -433,14 +434,7 @@ static inline int calc_shmem_required_nonbonded(const int               num_thre
  * itself, which causes a performance degredation of 1-10% for that initial call */
 static inline void gpuLaunchKernelSciSort(GpuPairlist* plist, const DeviceStream& deviceStream)
 {
-    size_t scanTemporarySize = static_cast<size_t>(plist->sorting.nscanTemporary);
-
-    cub::DeviceScan::ExclusiveSum(plist->sorting.scanTemporary,
-                                  scanTemporarySize,
-                                  plist->sorting.sciHistogram,
-                                  plist->sorting.sciOffset,
-                                  c_sciHistogramSize,
-                                  deviceStream.stream());
+    performExclusiveScan(plist->sorting.nscanTemporary, plist->sorting.scanTemporary, plist, deviceStream);
 
     KernelLaunchConfig configSortSci;
     configSortSci.blockSize[0]     = c_sciSortingThreadsPerBlock;

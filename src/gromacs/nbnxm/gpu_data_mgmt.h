@@ -52,6 +52,7 @@
 
 struct gmx_wallclock_gpu_nbnxn_t;
 struct interaction_const_t;
+class DeviceStream;
 
 namespace gmx
 {
@@ -61,6 +62,8 @@ struct nbnxn_atomdata_t;
 struct NbnxnPairlistGpu;
 struct PairlistParams;
 class DeviceStreamManager;
+
+class GpuPairlist;
 
 /** Initializes the data structures related to GPU nonbonded calculations. */
 GPU_FUNC_QUALIFIER
@@ -127,6 +130,23 @@ NBAtomDataGpu* gpuGetNBAtomData(NbnxmGpu gmx_unused* nb) GPU_FUNC_TERM_WITH_RETU
  */
 GPU_FUNC_QUALIFIER
 DeviceBuffer<RVec> gpu_get_f(NbnxmGpu gmx_unused* nb) GPU_FUNC_TERM_WITH_RETURN(DeviceBuffer<RVec>{});
+
+/*! \brief Calculates working memory required for exclusive sum, used in neighbour list sorting on GPU.
+ *
+ * This is only used for CUDA/HIP, where the actual size is calculate based on the list.
+ * For SYCL, the default value of 0 is important for the code to work correctly, this is why we have it set here.
+ * */
+CUDA_FUNC_QUALIFIER
+size_t getExclusiveScanWorkingArraySize(GpuPairlist*        CUDA_FUNC_ARGUMENT(plist),
+                                        const DeviceStream& CUDA_FUNC_ARGUMENT(deviceStream))
+        CUDA_FUNC_TERM_WITH_RETURN(0);
+
+/*! \brief Perform exclusive scan to obtain input for sci sorting. */
+CUDA_FUNC_QUALIFIER
+void performExclusiveScan(size_t              CUDA_FUNC_ARGUMENT(temporaryBufferSize),
+                          char*               CUDA_FUNC_ARGUMENT(temporaryBuffer),
+                          GpuPairlist*        CUDA_FUNC_ARGUMENT(plist),
+                          const DeviceStream& CUDA_FUNC_ARGUMENT(deviceStream)) CUDA_FUNC_TERM;
 
 } // namespace gmx
 

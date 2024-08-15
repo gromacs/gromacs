@@ -607,8 +607,7 @@ void gpu_init_pairlist(NbnxmGpu* nb, const NbnxnPairlistGpu* h_plist, const Inte
                                    &d_plist->sorting.sciOffsetNalloc,
                                    deviceContext);
 
-            size_t scanTemporarySize = 0;
-            getExclusiveScanWorkingArraySize(scanTemporarySize, d_plist, deviceStream);
+            size_t scanTemporarySize = getExclusiveScanWorkingArraySize(d_plist, deviceStream);
 
             reallocateDeviceBuffer(&d_plist->sorting.scanTemporary,
                                    scanTemporarySize,

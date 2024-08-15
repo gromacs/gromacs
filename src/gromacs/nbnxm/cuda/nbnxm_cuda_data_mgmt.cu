@@ -62,6 +62,7 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
+#include "gromacs/nbnxm/gpu_types_common.h"
 #include "gromacs/nbnxm/gridset.h"
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/nbnxm/nbnxm_gpu.h"
@@ -120,16 +121,37 @@ int gpu_min_ci_balanced(NbnxmGpu* nb)
                          : 0;
 }
 
-/* Calculate size of working memory required for exclusive sum, part of sorting the neighbour list,
- * by calling exclusive sum with nullptr */
-void getExclusiveScanWorkingArraySize(size_t& scan_size, GpuPairlist* d_plist, const DeviceStream& deviceStream)
+namespace
 {
-    cub::DeviceScan::ExclusiveSum(nullptr,
-                                  scan_size,
+
+size_t cudaCubWrapper(size_t              temporaryBufferSize,
+                      char*               temporaryBuffer,
+                      GpuPairlist*        d_plist,
+                      const DeviceStream& deviceStream)
+{
+    size_t size = temporaryBufferSize;
+    cub::DeviceScan::ExclusiveSum(temporaryBuffer,
+                                  size,
                                   d_plist->sorting.sciHistogram,
                                   d_plist->sorting.sciOffset,
                                   c_sciHistogramSize,
                                   deviceStream.stream());
+    return size;
+}
+
+} // namespace
+
+size_t getExclusiveScanWorkingArraySize(GpuPairlist* plist, const DeviceStream& deviceStream)
+{
+    return cudaCubWrapper(0, nullptr, plist, deviceStream);
+}
+
+void performExclusiveScan(size_t              temporaryBufferSize,
+                          char*               temporaryBuffer,
+                          GpuPairlist*        plist,
+                          const DeviceStream& deviceStream)
+{
+    std::ignore = cudaCubWrapper(temporaryBufferSize, temporaryBuffer, plist, deviceStream);
 }
 
 } // namespace gmx
