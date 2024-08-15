@@ -51,6 +51,8 @@
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/arrayref.h"
 
+#define HAVE_GPU_UPDATE_CONSTRAINTS (GMX_GPU && !GMX_GPU_OPENCL)
+
 class DeviceContext;
 class DeviceStream;
 class GpuEventSynchronizer;

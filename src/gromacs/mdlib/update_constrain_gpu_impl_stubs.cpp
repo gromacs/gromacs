@@ -62,7 +62,7 @@ struct t_grp_tcstat;
 struct t_inputrec;
 struct t_mdatoms;
 
-#if !GMX_GPU_CUDA && !GMX_GPU_SYCL
+#if !HAVE_GPU_UPDATE_CONSTRAINTS
 
 namespace gmx
 {
@@ -148,4 +148,4 @@ bool UpdateConstrainGpu::areConstraintsSupported()
 
 } // namespace gmx
 
-#endif /* !GMX_GPU_CUDA && !GMX_GPU_SYCL */
+#endif /* !!HAVE_GPU_UPDATE_CONSTRAINTS */

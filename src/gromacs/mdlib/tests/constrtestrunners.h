@@ -58,9 +58,9 @@
 #include "constrtestdata.h"
 
 /*
- * GPU version of constraints is only available with CUDA and SYCL.
+ * GPU version of constraints is not available with OPENCL.
  */
-#define GPU_CONSTRAINTS_SUPPORTED (GMX_GPU_CUDA || GMX_GPU_SYCL)
+#define GPU_CONSTRAINTS_SUPPORTED (GMX_GPU && !GMX_GPU_OPENCL)
 
 struct t_pbc;
 

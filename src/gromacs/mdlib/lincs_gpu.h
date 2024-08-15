@@ -105,6 +105,8 @@ struct LincsGpuKernelParameters
     DeviceBuffer<float> d_matrixA;
     //! Mass factors (GPU)
     DeviceBuffer<float> d_massFactors;
+    //! Sizes for constraint groups if no coupled constraints are found
+    DeviceBuffer<int> d_constraintGroupSize;
 };
 
 /*! \internal \brief Class with interfaces and data for GPU version of LINCS. */

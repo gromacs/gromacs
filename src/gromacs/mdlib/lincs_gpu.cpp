@@ -54,6 +54,7 @@
 
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/gputraits.h"
+#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/constr.h"
@@ -127,8 +128,7 @@ LincsGpu::LincsGpu(int                  numIterations,
                    const DeviceStream&  deviceStream) :
     deviceContext_(deviceContext), deviceStream_(deviceStream)
 {
-    GMX_RELEASE_ASSERT(bool(GMX_GPU_CUDA) || bool(GMX_GPU_SYCL),
-                       "LINCS GPU is only implemented in CUDA and SYCL.");
+    GMX_RELEASE_ASSERT(GMX_GPU && !GMX_GPU_OPENCL, "LINCS GPU is not implemented in OPENCL.");
     kernelParams_.numIterations  = numIterations;
     kernelParams_.expansionOrder = expansionOrder;
 
@@ -162,6 +162,10 @@ LincsGpu::~LincsGpu()
         freeDeviceBuffer(&kernelParams_.d_coupledConstraintsIndices);
         freeDeviceBuffer(&kernelParams_.d_massFactors);
         freeDeviceBuffer(&kernelParams_.d_matrixA);
+        if constexpr (GMX_GPU_HIP)
+        {
+            freeDeviceBuffer(&kernelParams_.d_constraintGroupSize);
+        }
     }
     if (numAtomsAlloc_ > 0)
     {
@@ -223,18 +227,19 @@ void LincsGpu::set(const InteractionDefinitions& idef, int numAtoms, const Array
     GMX_ASSERT(!(numAtoms == 0 && !idef.il[F_CONSTR].empty()),
                "The number of atoms needs to be > 0 if there are constraints in the domain.");
 
-    GMX_RELEASE_ASSERT(bool(GMX_GPU_CUDA) || bool(GMX_GPU_SYCL),
-                       "LINCS GPU is only implemented in CUDA and SYCL.");
+    GMX_RELEASE_ASSERT(GMX_GPU && !GMX_GPU_OPENCL, "LINCS GPU is not implemented in OPENCL.");
     // List of constrained atoms (CPU memory)
-    std::vector<AtomPair> constraintsHost;
+    HostVector<AtomPair> constraintsHost;
     // Equilibrium distances for the constraints (CPU)
-    std::vector<float> constraintsTargetLengthsHost;
+    HostVector<float> constraintsTargetLengthsHost;
     // Number of constraints, coupled with the current one (CPU)
-    std::vector<int> coupledConstraintsCountsHost;
+    HostVector<int> coupledConstraintsCountsHost;
     // List of coupled with the current one (CPU)
-    std::vector<int> coupledConstraintsIndicesHost;
+    HostVector<int> coupledConstraintsIndicesHost;
     // Mass factors (CPU)
-    std::vector<float> massFactorsHost;
+    HostVector<float> massFactorsHost;
+    // List of constraint groups that share a heavy atom
+    HostVector<int> constraintGroupSize;
 
     // List of constrained atoms in local topology
     ArrayRef<const int> iatoms         = idef.il[F_CONSTR].iatoms;
@@ -292,6 +297,8 @@ void LincsGpu::set(const InteractionDefinitions& idef, int numAtoms, const Array
     std::fill(constraintsHost.begin(), constraintsHost.end(), pair);
     constraintsTargetLengthsHost.resize(kernelParams_.numConstraintsThreads, 0.0);
     std::fill(constraintsTargetLengthsHost.begin(), constraintsTargetLengthsHost.end(), 0.0);
+    constraintGroupSize.resize(kernelParams_.numConstraintsThreads, -1);
+
 
     const int gmx_unused numOmpThreads = gmx_omp_nthreads_get(ModuleMultiThread::Lincs);
 #pragma omp parallel for num_threads(numOmpThreads) schedule(static)
@@ -346,6 +353,70 @@ void LincsGpu::set(const InteractionDefinitions& idef, int numAtoms, const Array
     coupledConstraintsCountsHost.resize(kernelParams_.numConstraintsThreads, 0);
     coupledConstraintsIndicesHost.resize(maxCoupledConstraints_ * kernelParams_.numConstraintsThreads, -1);
     massFactorsHost.resize(maxCoupledConstraints_ * kernelParams_.numConstraintsThreads, -1);
+
+    if constexpr (GMX_GPU_HIP)
+    {
+        /* In order to reduce contention on atomicAdds when running on
+         * later AMD devices, we are splitting the constraint array
+         * into multiple chunks of c_threadsPerBlock size in order
+         * to search adjacent pairs with the same i value.
+         *
+         * One good example is when you have multiple hydrogen
+         * groups (ethane depicted with 2 CH3 hydrogen grous):
+         *
+         *       H  H
+         *       |  |
+         *    H--C--C--H
+         *       |  |
+         *       H  H
+         *
+         * Carbons are bonded to multiple hydrogen, so each
+         * C-H constrain will contend on the C atom 3 times.
+         * Atomics performance may wildy vary from device to
+         * device, so it's better to reduce reliance on atomics
+         * as much as we can.
+         *
+         * The logic here is to sweep over the constraints
+         * and look up hydrogen groups (CH3 groups depicted)
+         * and accumulate all updates in the heavy atom before
+         * we do an atomicAdd().
+         *
+         * atomicAdd might still be needed since it's possible
+         * that constraints from different thread blocks
+         * to update the same heavy atom - need to validate this!
+         */
+        int c1 = 0;
+        while (c1 < numConstraints)
+        {
+            AtomPair previousPair{ -1, -1 };
+            for (int c2 = 0; c2 < c_threadsPerBlock; c1++, c2++)
+            {
+                AtomPair currentPair    = constraintsHost[c1];
+                int      hydrogenGroups = 0;
+                while (currentPair.i == previousPair.i)
+                {
+                    if (currentPair.j == previousPair.j)
+                    {
+                        std::swap(currentPair.i, currentPair.j);
+                    }
+                    hydrogenGroups++;
+                    currentPair = constraintsHost[c1 + hydrogenGroups];
+                }
+                previousPair = currentPair;
+                // now advances c1 to the first atom in the next hydrogen group
+                if (hydrogenGroups > 0)
+                {
+                    constraintGroupSize[c1 - 1] = hydrogenGroups;
+                    for (int cgc = 0; cgc < hydrogenGroups; cgc++)
+                    {
+                        constraintGroupSize[c1 + cgc] = 0;
+                    }
+                    c1 += hydrogenGroups;
+                    c2 += hydrogenGroups;
+                }
+            }
+        }
+    }
 
 #pragma omp parallel for num_threads(numOmpThreads) schedule(static)
     for (int c1 = 0; c1 < numConstraints; c1++)
@@ -424,6 +495,10 @@ void LincsGpu::set(const InteractionDefinitions& idef, int numAtoms, const Array
             freeDeviceBuffer(&kernelParams_.d_coupledConstraintsIndices);
             freeDeviceBuffer(&kernelParams_.d_massFactors);
             freeDeviceBuffer(&kernelParams_.d_matrixA);
+            if constexpr (GMX_GPU_HIP)
+            {
+                freeDeviceBuffer(&kernelParams_.d_constraintGroupSize);
+            }
         }
 
         numConstraintsThreadsAlloc_ = kernelParams_.numConstraintsThreads;
@@ -446,6 +521,12 @@ void LincsGpu::set(const InteractionDefinitions& idef, int numAtoms, const Array
         allocateDeviceBuffer(&kernelParams_.d_matrixA,
                              maxCoupledConstraints_ * kernelParams_.numConstraintsThreads,
                              deviceContext_);
+        if constexpr (GMX_GPU_HIP)
+        {
+            allocateDeviceBuffer(&kernelParams_.d_constraintGroupSize,
+                                 kernelParams_.numConstraintsThreads,
+                                 deviceContext_);
+        }
     }
 
     // (Re)allocate the memory, if the number of atoms has increased.
@@ -495,6 +576,16 @@ void LincsGpu::set(const InteractionDefinitions& idef, int numAtoms, const Array
                        deviceStream_,
                        GpuApiCallBehavior::Sync,
                        nullptr);
+    if constexpr (GMX_GPU_HIP)
+    {
+        copyToDeviceBuffer(&kernelParams_.d_constraintGroupSize,
+                           constraintGroupSize.data(),
+                           0,
+                           kernelParams_.numConstraintsThreads,
+                           deviceStream_,
+                           GpuApiCallBehavior::Sync,
+                           nullptr);
+    }
 
     GMX_RELEASE_ASSERT(!invmass.empty(), "Masses of atoms should be specified.\n");
     copyToDeviceBuffer(&kernelParams_.d_inverseMasses,
