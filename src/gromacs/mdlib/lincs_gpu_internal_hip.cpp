@@ -85,7 +85,7 @@ constexpr static int c_maxThreadsPerBlock = c_threadsPerBlock;
  * \param[in,out] kernelParams  All parameters and pointers for the kernel condensed in single struct.
  * \param[in]     invdt         Inverse timestep (needed to update velocities).
  */
-template<bool updateVelocities, bool computeVirial, bool haveCoupledConstraints>
+template<bool updateVelocities, bool computeVirial>
 __launch_bounds__(c_maxThreadsPerBlock) __global__ void lincsKernel(LincsGpuKernelParameters kernelParams,
                                                                     const float3* __restrict__ gm_x,
                                                                     float3*     gm_xp,
@@ -189,9 +189,11 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__ void lincsKernel(LincsGpuKern
     }
 
     // Keep track if we are operating on a constraint group
-    int        constraintGroupSize       = gm_constraintGroupSize[threadIndex];
-    const bool haveValidConstraintGroup  = constraintGroupSize != -1;
-    const bool operateOnConstraintGroups = haveCoupledConstraints || haveValidConstraintGroup;
+    const int constraintGroupSize = gm_constraintGroupSize[threadIndex];
+    // This is only valid if the value has been changed away from -1
+    const bool haveValidConstraintGroup = constraintGroupSize != -1;
+    // Any number greater than 0 means we have grouped constraints
+    const bool haveGroupedConstraints = constraintGroupSize > 0;
 
     // Skipping in dummy threads
     if (!isDummyThread)
@@ -241,7 +243,7 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__ void lincsKernel(LincsGpuKern
     // Save updated coordinates before correction for the rotational lengthening
     float3 tmp = rc * lagrangeScaled;
 
-    if (operateOnConstraintGroups)
+    if (haveValidConstraintGroup)
     {
         float3 corr          = -tmp * inverseMassi;
         sm_xpi[threadIdx.x]  = make_float4(xi.x, xi.y, xi.z, 0.f);
@@ -253,11 +255,12 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__ void lincsKernel(LincsGpuKern
     // Writing for all but dummy constraints
     if (!isDummyThread)
     {
-        if (operateOnConstraintGroups)
+        if (haveGroupedConstraints)
         {
             for (int gc = 0; gc <= constraintGroupSize; gc++)
             {
                 // thread with constraingGroupSize == 1 updates the shared memory position
+                // Keep it in LDS - no atomics
                 float4 r_corr = sm_corr[threadIdx.x + gc];
                 xi += make_float3(r_corr.x, r_corr.y, r_corr.z);
             }
@@ -287,7 +290,7 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__ void lincsKernel(LincsGpuKern
 
         if (!isDummyThread)
         {
-            if (operateOnConstraintGroups)
+            if (haveValidConstraintGroup)
             {
                 xi = make_float3(sm_xpi[threadIdx.x].x, sm_xpi[threadIdx.x].y, sm_xpi[threadIdx.x].z);
             }
@@ -347,14 +350,14 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__ void lincsKernel(LincsGpuKern
         if (!isDummyThread)
         {
             float3 tmp = rc * sqrtmu_sol;
-            if (operateOnConstraintGroups)
+            if (haveValidConstraintGroup)
             {
                 float3 corr          = -tmp * inverseMassi;
                 sm_corr[threadIdx.x] = make_float4(corr.x, corr.y, corr.z, 0.f);
             }
             __syncthreads();
 
-            if (operateOnConstraintGroups)
+            if (haveGroupedConstraints)
             {
                 float3 sumI = make_float3(0.f, 0.f, 0.f);
                 for (int gc = 0; gc <= constraintGroupSize; gc++)
@@ -379,7 +382,7 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__ void lincsKernel(LincsGpuKern
     // now flush sm_xp_i to global memory
     if (!isDummyThread)
     {
-        if (operateOnConstraintGroups)
+        if (haveGroupedConstraints)
         {
             gm_xp[i] = xi;
         }
