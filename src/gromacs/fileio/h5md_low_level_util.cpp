@@ -101,7 +101,6 @@ void setLossySz3CompressionProperties(const hid_t  propertyList,
     SZ3::Config configuration;
     if (get_SZ3_conf_from_H5(propertyList, configuration) < 0)
     {
-        H5Eprint2(H5E_DEFAULT, nullptr);
         throw gmx::FileIOError("Cannot get SZ3 compression configuration.");
     }
     configuration.cmprAlgo       = sz3CompressionAlgorithm;
@@ -118,13 +117,11 @@ void setLossySz3CompressionProperties(const hid_t  propertyList,
             propertyList, H5Z_FILTER_SZ3, H5Z_FLAG_MANDATORY, cd_nelmts, cd_values.data());
     if (status < 0)
     {
-        H5Eprint2(H5E_DEFAULT, nullptr);
         throw gmx::FileIOError("Cannot set SZ3 compression configuration.");
     }
 
     if (H5Zfilter_avail(H5Z_FILTER_SZ3) < 0)
     {
-        H5Eprint2(H5E_DEFAULT, nullptr);
         throw gmx::FileIOError("SZ3 filter not available.");
     }
 }
@@ -142,14 +139,12 @@ hid_t openOrCreateGroup(const hid_t container, const char* name)
         hid_t linkPropertyList = H5Pcreate(H5P_LINK_CREATE); // create group creation property list
         if (linkPropertyList < 0)
         {
-            H5Eprint2(H5E_DEFAULT, nullptr);
             throw gmx::FileIOError("Cannot create linkPropertyList when creating group.");
         }
         H5Pset_create_intermediate_group(linkPropertyList, 1); // set intermediate link creation
         group = H5Gcreate(container, name, linkPropertyList, H5P_DEFAULT, H5P_DEFAULT);
         if (group < 0)
         {
-            H5Eprint2(H5E_DEFAULT, nullptr);
             throw gmx::FileIOError("Cannot create group.");
         }
     }
@@ -174,7 +169,6 @@ void registerSz3FilterImplicitly()
     ssize_t numHdf5Errors = H5Eget_num(H5E_DEFAULT);
     if (status < 0 || numHdf5Errors > 0)
     {
-        H5Eprint2(H5E_DEFAULT, nullptr);
         throw gmx::FileIOError(
                 "Cannot use SZ3 compression filter. Please check that the SZ3 filter is in "
                 "HDF5_PLUGIN_PATH.");
@@ -237,7 +231,6 @@ hid_t openOrCreateDataSet(const hid_t                container,
             case CompressionAlgorithm::LosslessNoShuffle:
                 if (H5Pset_deflate(createPropertyList, 1) < 0)
                 {
-                    H5Eprint2(H5E_DEFAULT, nullptr);
                     throw gmx::FileIOError("Cannot set GZIP compression.");
                 }
                 break;
@@ -258,7 +251,6 @@ hid_t openOrCreateDataSet(const hid_t                container,
                 container, name, dataType, dataSpace, H5P_DEFAULT, createPropertyList, accessPropertyList);
         if (dataSet < 0)
         {
-            H5Eprint2(H5E_DEFAULT, nullptr);
             throw gmx::FileIOError("Cannot create dataSet.");
         }
 
@@ -321,7 +313,6 @@ void writeData(const hid_t dataSet, const void* data, const hsize_t frameToWrite
     }
     if (H5Sselect_hyperslab(dataSpace, H5S_SELECT_SET, fileOffset, nullptr, outputBlockSize, nullptr) < 0)
     {
-        H5Eprint2(H5E_DEFAULT, nullptr);
         throw gmx::FileIOError("Cannot select the output region.");
     }
 
@@ -329,7 +320,6 @@ void writeData(const hid_t dataSet, const void* data, const hsize_t frameToWrite
     hid_t dataType        = H5Dget_type(dataSet);
     if (H5Dwrite(dataSet, dataType, memoryDataspace, dataSpace, H5P_DEFAULT, data) < 0)
     {
-        H5Eprint2(H5E_DEFAULT, nullptr);
         throw gmx::FileIOError("Error writing data.");
     }
 
@@ -358,7 +348,6 @@ void readData(const hid_t   dataSet,
     hid_t dataSpace = H5Dget_space(dataSet);
     if (dataSpace < 0)
     {
-        H5Eprint2(H5E_DEFAULT, nullptr);
         throw gmx::FileIOError(
                 "The main data block of the time dependent data set cannot be found.");
     }
@@ -397,7 +386,6 @@ void readData(const hid_t   dataSet,
     }
     if (H5Sselect_hyperslab(dataSpace, H5S_SELECT_SET, fileOffset, nullptr, inputBlockSize, nullptr) < 0)
     {
-        H5Eprint2(H5E_DEFAULT, nullptr);
         throw gmx::FileIOError("Cannot select the input region.");
     }
     *totalNumElements = totalBlockSize;
@@ -411,7 +399,6 @@ void readData(const hid_t   dataSet,
         char** tmpBuffer = static_cast<char**>(malloc(dataTypeSize * totalBlockSize));
         if (H5Dread(dataSet, nativeDatatype, memoryDataspace, dataSpace, H5P_DEFAULT, tmpBuffer) < 0)
         {
-            H5Eprint2(H5E_DEFAULT, nullptr);
             throw gmx::FileIOError("Error reading data set.");
         }
         size_t maxLength = 0;
@@ -441,7 +428,6 @@ void readData(const hid_t   dataSet,
         }
         if (H5Dread(dataSet, nativeDatatype, memoryDataspace, dataSpace, H5P_DEFAULT, *buffer) < 0)
         {
-            H5Eprint2(H5E_DEFAULT, nullptr);
             throw gmx::FileIOError("Error reading data set.");
         }
     }
@@ -492,7 +478,6 @@ void setVersionAttribute(const hid_t group, const int majorVersion, const int mi
     const int value[2] = { majorVersion, minorVersion };
     if (H5Awrite(attribute, dataType, &value) < 0)
     {
-        H5Eprint2(H5E_DEFAULT, nullptr);
         throw gmx::FileIOError("Cannot write attribute.");
     }
     H5Aclose(attribute);
@@ -510,7 +495,6 @@ bool getVersionAttribute(const hid_t group, int* majorVersion, int* minorVersion
     int   value[2];
     if (H5Aread(attribute, dataType, &value) < 0)
     {
-        H5Eprint2(H5E_DEFAULT, nullptr);
         throw gmx::FileIOError("Cannot write attribute.");
     }
     *majorVersion = value[0];
@@ -531,7 +515,6 @@ void setAttribute(const hid_t dataSet, const char* name, const T value, const hi
     }
     if (H5Awrite(attribute, dataType, &value) < 0)
     {
-        H5Eprint2(H5E_DEFAULT, nullptr);
         throw gmx::FileIOError("Cannot write attribute.");
     }
     H5Aclose(attribute);
@@ -552,7 +535,6 @@ void setAttribute(const hid_t dataSet, const char* name, const char* value)
     }
     if (H5Awrite(attribute, dataType, value) < 0)
     {
-        H5Eprint2(H5E_DEFAULT, nullptr);
         throw gmx::FileIOError("Cannot write attribute.");
     }
     H5Aclose(attribute);
@@ -569,7 +551,6 @@ bool getAttribute(const hid_t dataSet, const char* name, T* value)
     hid_t dataType = H5Aget_type(attribute);
     if (H5Aread(attribute, dataType, value) < 0)
     {
-        H5Eprint2(H5E_DEFAULT, nullptr);
         throw gmx::FileIOError("Cannot read attribute.");
     }
 
@@ -595,7 +576,6 @@ bool getAttribute(const hid_t dataSet, const char* name, char** value)
     memset(*value, NULL, allocationSize);
     if (H5Aread(attribute, dataType, *value) < 0)
     {
-        H5Eprint2(H5E_DEFAULT, nullptr);
         throw gmx::FileIOError("Cannot read attribute.");
     }
 
@@ -619,7 +599,6 @@ void setAttributeStringList(const hid_t dataSet, const char* name, const char va
     }
     if (H5Awrite(attribute, dataType, &value[0]) < 0)
     {
-        H5Eprint2(H5E_DEFAULT, nullptr);
         throw gmx::FileIOError("Cannot write attribute.");
     }
     H5Aclose(attribute);

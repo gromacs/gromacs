@@ -91,7 +91,6 @@ GmxH5mdTimeDataBlock::GmxH5mdTimeDataBlock(hid_t                container,
         hid_t createPropertyList = H5Dget_create_plist(tmpDataSet);
         if (H5Pget_chunk(createPropertyList, DIM, chunkDims) < 0)
         {
-            H5Eprint2(H5E_DEFAULT, nullptr);
             throw gmx::FileIOError("Error getting chunk size of data set.");
         }
         H5Dclose(tmpDataSet);
@@ -105,7 +104,6 @@ GmxH5mdTimeDataBlock::GmxH5mdTimeDataBlock(hid_t                container,
         if (H5Pset_chunk_cache(accessPropertyList, H5D_CHUNK_CACHE_NSLOTS_DEFAULT, cacheSize, H5D_CHUNK_CACHE_W0_DEFAULT)
             < 0)
         {
-            H5Eprint2(H5E_DEFAULT, nullptr);
             throw gmx::FileIOError("Error setting chunk size of data set.");
         }
         mainDataSet_ = H5Dopen(group_, c_valueName, accessPropertyList);
@@ -271,7 +269,6 @@ void GmxH5mdTimeDataBlock::updateNumWrittenFrames()
     const int numDims   = H5Sget_simple_extent_ndims(dataSpace);
     if (numDims != 1)
     {
-        H5Eprint2(H5E_DEFAULT, nullptr);
         throw gmx::FileIOError("The step data set should be one-dimensional.");
     }
     hsize_t dimExtents;
@@ -300,7 +297,6 @@ void GmxH5mdTimeDataBlock::updateNumWrittenFrames()
         hid_t         memSpace        = H5Screate_simple(1, &memorySpaceSize, nullptr);
         if (H5Dread(stepDataSet_, datatype, memSpace, dataSpace, H5P_DEFAULT, &stepData) < 0)
         {
-            H5Eprint2(H5E_DEFAULT, nullptr);
             throw gmx::FileIOError(
                     "Error reading step data set when determining the number of frames.");
         }
@@ -313,7 +309,6 @@ size_t GmxH5mdTimeDataBlock::getNumParticles() const
     hid_t dataSpace = H5Dget_space(mainDataSet_);
     if (dataSpace < 0)
     {
-        H5Eprint2(H5E_DEFAULT, nullptr);
         throw gmx::FileIOError(
                 "The main data block of the time dependent data set cannot be found.");
     }

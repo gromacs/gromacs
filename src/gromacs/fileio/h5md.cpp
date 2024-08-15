@@ -247,7 +247,6 @@ void H5md::flush()
         }
         if (H5Fflush(file_, H5F_SCOPE_LOCAL) < 0)
         {
-            H5Eprint2(H5E_DEFAULT, nullptr);
             throw gmx::FileIOError("Error flushing H5MD.");
         }
     }
@@ -281,7 +280,6 @@ int H5md::initGroupTimeDataBlocksFromFile(const std::string& groupName)
                    static_cast<void*>(&dataBlocks_))
         < 0)
     {
-        H5Eprint2(H5E_DEFAULT, nullptr);
         throw gmx::FileIOError("Error iterating over particles data blocks.");
     }
     return dataBlocks_.size() - numDataBlocksBefore;
@@ -994,7 +992,6 @@ void H5md::addToProvenanceRecord(const std::string& commandLine,
         hid_t dataSpace = H5Dget_space(commandLineDataSet);
         if (dataSpace < 0)
         {
-            H5Eprint2(H5E_DEFAULT, nullptr);
             throw gmx::FileIOError("The main data block of the provenance record cannot be found.");
         }
         H5Sget_simple_extent_dims(dataSpace, &numFrames, nullptr);
