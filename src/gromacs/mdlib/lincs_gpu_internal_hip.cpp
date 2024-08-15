@@ -1,8 +1,7 @@
-#include "hip/hip_runtime.h"
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright 2019- The GROMACS Authors
+ * Copyright 2024- The GROMACS Authors
  * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
  * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
  *
@@ -179,19 +178,14 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__ void lincsKernel(LincsGpuKern
     __shared__ float4 sm_corr[c_threadsPerBlock];
     __shared__ float4 sm_xpi[c_threadsPerBlock];
 
-
-    int coupledConstraintsCount = 0;
-    if constexpr (haveCoupledConstraints)
+    // Only non-zero values are saved (for coupled constraints)
+    int coupledConstraintsCount = gm_coupledConstraintsCounts[threadIndex];
+    for (int n = 0; n < coupledConstraintsCount; n++)
     {
-        // Only non-zero values are saved (for coupled constraints)
-        coupledConstraintsCount = gm_coupledConstraintsCounts[threadIndex];
-        for (int n = 0; n < coupledConstraintsCount; n++)
-        {
-            int    index = n * numConstraintsThreads + threadIndex;
-            int    c1    = gm_coupledConstraintsIndices[index];
-            float3 rc1   = sm_r[c1];
-            gm_matrixA[index] = gm_massFactors[index] * (rc.x * rc1.x + rc.y * rc1.y + rc.z * rc1.z);
-        }
+        int    index      = n * numConstraintsThreads + threadIndex;
+        int    c1         = gm_coupledConstraintsIndices[index];
+        float3 rc1        = sm_r[c1];
+        gm_matrixA[index] = gm_massFactors[index] * (rc.x * rc1.x + rc.y * rc1.y + rc.z * rc1.z);
     }
 
     // Keep track if we are operating on a constraint group
@@ -222,29 +216,25 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__ void lincsKernel(LincsGpuKern
     // Save current right-hand-side vector in the shared memory
     sm_rhs[threadIdx.x] = sol;
 
-    if constexpr (haveCoupledConstraints)
+    for (int rec = 0; rec < expansionOrder; rec++)
     {
-        for (int rec = 0; rec < expansionOrder; rec++)
+        // Making sure that all sm_rhs are saved before they are accessed in a loop below
+        __syncthreads();
+        float mvb = 0.0F;
+
+        for (int n = 0; n < coupledConstraintsCount; n++)
         {
-            // Making sure that all sm_rhs are saved before they are accessed in a loop below
-            __syncthreads();
-            float mvb = 0.0F;
-
-            for (int n = 0; n < coupledConstraintsCount; n++)
-            {
-                int index = n * numConstraintsThreads + threadIndex;
-                int c1    = gm_coupledConstraintsIndices[index];
-                // Convolute current right-hand-side with A
-                // Different, non overlapping parts of sm_rhs[..] are read during odd and even iterations
-                mvb = mvb + gm_matrixA[index] * sm_rhs[c1 + c_threadsPerBlock * (rec % 2)];
-            }
-            // 'Switch' rhs vectors, save current result
-            // These values will be accessed in the loop above during the next iteration.
-            sm_rhs[threadIdx.x + c_threadsPerBlock * ((rec + 1) % 2)] = mvb;
-            sol                                                       = sol + mvb;
+            int index = n * numConstraintsThreads + threadIndex;
+            int c1    = gm_coupledConstraintsIndices[index];
+            // Convolute current right-hand-side with A
+            // Different, non overlapping parts of sm_rhs[..] are read during odd and even iterations
+            mvb = mvb + gm_matrixA[index] * sm_rhs[c1 + c_threadsPerBlock * (rec % 2)];
         }
+        // 'Switch' rhs vectors, save current result
+        // These values will be accessed in the loop above during the next iteration.
+        sm_rhs[threadIdx.x + c_threadsPerBlock * ((rec + 1) % 2)] = mvb;
+        sol                                                       = sol + mvb;
     }
-
     // Current mass-scaled Lagrange multipliers
     lagrangeScaled = sqrtReducedMass * sol;
 
@@ -328,27 +318,24 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__ void lincsKernel(LincsGpuKern
         sm_rhs[threadIdx.x] = proj;
         float sol           = proj;
 
-        if constexpr (haveCoupledConstraints)
+        /*
+         * Same matrix inversion as above is used for updated data
+         */
+        for (int rec = 0; rec < expansionOrder; rec++)
         {
-            /*
-             * Same matrix inversion as above is used for updated data
-             */
-            for (int rec = 0; rec < expansionOrder; rec++)
+            // Make sure that all elements of rhs are saved into shared memory
+            __syncthreads();
+            float mvb = 0;
+
+            for (int n = 0; n < coupledConstraintsCount; n++)
             {
-                // Make sure that all elements of rhs are saved into shared memory
-                __syncthreads();
-                float mvb = 0;
+                int index = n * numConstraintsThreads + threadIndex;
+                int c1    = gm_coupledConstraintsIndices[index];
 
-                for (int n = 0; n < coupledConstraintsCount; n++)
-                {
-                    int index = n * numConstraintsThreads + threadIndex;
-                    int c1    = gm_coupledConstraintsIndices[index];
-
-                    mvb = mvb + gm_matrixA[index] * sm_rhs[c1 + c_threadsPerBlock * (rec % 2)];
-                }
-                sm_rhs[threadIdx.x + c_threadsPerBlock * ((rec + 1) % 2)] = mvb;
-                sol                                                       = sol + mvb;
+                mvb = mvb + gm_matrixA[index] * sm_rhs[c1 + c_threadsPerBlock * (rec % 2)];
             }
+            sm_rhs[threadIdx.x + c_threadsPerBlock * ((rec + 1) % 2)] = mvb;
+            sol                                                       = sol + mvb;
         }
 
         // Add corrections to Lagrange multipliers
