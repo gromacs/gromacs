@@ -64,10 +64,10 @@ void nonbonded_verlet_t::putAtomsOnGrid(const matrix            box,
                                         const RVec&             upperCorner,
                                         const UpdateGroupsCog*  updateGroupsCog,
                                         Range<int>              atomRange,
+                                        int                     numGridAtoms,
                                         real                    atomDensity,
                                         ArrayRef<const int32_t> atomInfo,
                                         ArrayRef<const RVec>    x,
-                                        int                     numAtomsMoved,
                                         const int*              move)
 {
     pairSearch_->putOnGrid(box,
@@ -76,10 +76,10 @@ void nonbonded_verlet_t::putAtomsOnGrid(const matrix            box,
                            upperCorner,
                            updateGroupsCog,
                            atomRange,
+                           numGridAtoms,
                            atomDensity,
                            atomInfo,
                            x,
-                           numAtomsMoved,
                            move,
                            nbat_.get());
 }
@@ -98,10 +98,10 @@ void nbnxn_put_on_grid_nonlocal(nonbonded_verlet_t*     nbv,
                             zones.sizes(zone).bb_x1,
                             nullptr,
                             zones.atomRange(zone),
+                            zones.atomRange(zone).size(),
                             -1,
                             atomInfo,
                             x,
-                            0,
                             nullptr);
     }
 }

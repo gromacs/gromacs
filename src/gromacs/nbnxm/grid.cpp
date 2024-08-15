@@ -1378,9 +1378,9 @@ void Grid::setCellIndices(int                  ddZone,
                           GridSetData*         gridSetData,
                           ArrayRef<GridWork>   gridWork,
                           const Range<int>     atomRange,
+                          const int            numGridAtomsWithoutFillers,
                           ArrayRef<const int>  atomInfo,
                           ArrayRef<const RVec> x,
-                          const int            numAtomsMoved,
                           nbnxn_atomdata_t*    nbat)
 {
     cellOffset_ = cellOffset;
@@ -1425,6 +1425,7 @@ void Grid::setCellIndices(int                  ddZone,
     numCellsColumnMax_ = ncz_max;
 
     /* Resize grid and atom data which depend on the number of cells */
+    const int numAtomsMoved = atomRange.size() - numGridAtomsWithoutFillers;
     resizeForNumberOfCells(atomIndexEnd(), numAtomsMoved, ddZone, gridSetData, nbat);
 
     if (debug)
@@ -1548,17 +1549,16 @@ real generateAndFill2DGrid(Grid*                  grid,
                            const rvec             upperCorner,
                            const UpdateGroupsCog* updateGroupsCog,
                            const Range<int>       atomRange,
+                           const int              numGridAtomsWithoutFillers,
                            real*                  atomDensity,
                            const real             maxAtomGroupRadius,
                            ArrayRef<const RVec>   x,
                            const int              ddZone,
                            const int*             move,
-                           const int              numAtomsMoved,
                            const bool             computeGridDensityRatio)
 {
-    const int n = atomRange.size();
-
-    grid->setDimensions(ddZone, n - numAtomsMoved, lowerCorner, upperCorner, atomDensity, maxAtomGroupRadius);
+    grid->setDimensions(
+            ddZone, numGridAtomsWithoutFillers, lowerCorner, upperCorner, atomDensity, maxAtomGroupRadius);
 
     for (GridWork& work : gridWork)
     {

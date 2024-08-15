@@ -287,9 +287,9 @@ public:
                         GridSetData*            gridSetData,
                         ArrayRef<GridWork>      gridWork,
                         Range<int>              atomRange,
+                        int                     numGridAtomsWithoutFillers,
                         ArrayRef<const int32_t> atomInfo,
                         ArrayRef<const RVec>    x,
-                        int                     numAtomsMoved,
                         nbnxn_atomdata_t*       nbat);
 
     //! Determine in which grid columns atoms should go, store cells and atom counts in \p cell and \p cxy_na
@@ -399,13 +399,13 @@ private:
  * \param[in] lowerCorner   The minimum Cartesian coordinates of the grid
  * \param[in] upperCorner   The maximum Cartesian coordinates of the grid
  * \param[in] updateGroupsCog  The center of geometry of update groups, can be nullptr
- * \param[in] atomRange     The range of atoms to put on this grid
+ * \param[in] atomRange     The range of atoms to put on this grid, may include moved atoms
+ * \param[in] numGridAtomsWithoutFillers  The number of non-filler atoms to put on this grid
  * \param[in,out] atomDensity  The atom density, will be computed when <= 0
  * \param[in] maxAtomGroupRadius  The maximum radius of atom groups
  * \param[in] x             The coordinates of the atoms
  * \param[in] ddZone        The domain decomposition zone
  * \param[in] move          Tells whether atoms have moved to another DD domain
- * \param[in] numAtomsMoved  The number of atoms that moved to another DD domain
  * \param[in] computeGridDensityRatio  When true, return the grid density ratio
  *
  * \returns When \p computeGridDensityRatio==true, the ratio of the effective 2D grid density and the uniform grid density
@@ -417,12 +417,12 @@ real generateAndFill2DGrid(Grid*                  grid,
                            const rvec             upperCorner,
                            const UpdateGroupsCog* updateGroupsCog,
                            Range<int>             atomRange,
+                           int                    numGridAtomsWithoutFillers,
                            real*                  atomDensity,
                            real                   maxAtomGroupRadius,
                            ArrayRef<const RVec>   x,
                            int                    ddZone,
                            const int*             move,
-                           int                    numAtomsMoved,
                            bool                   computeGridDensityRatio);
 
 } // namespace gmx

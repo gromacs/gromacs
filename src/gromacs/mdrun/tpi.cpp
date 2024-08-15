@@ -826,7 +826,7 @@ double TestParticleInsertion::insertIntoFrame(const double           t,
 
             /* Put the inserted molecule on it's own search grid */
             fr_.nbv->putAtomsOnGrid(
-                    box, 1, xInit, xInit, nullptr, testAtomsRange_, -1, fr_.atomInfo, x, 0, nullptr);
+                    box, 1, xInit, xInit, nullptr, testAtomsRange_, *testAtomsRange_.end(), -1, fr_.atomInfo, x, nullptr);
 
             /* TODO: Avoid updating all atoms at every bNS step */
             fr_.nbv->setAtomProperties(mdatoms_.typeA, mdatoms_.chargeA, fr_.atomInfo);
@@ -1187,8 +1187,17 @@ void LegacySimulator::do_tpi()
         /* Put all atoms except for the inserted ones on the grid */
         rvec vzero       = { 0, 0, 0 };
         rvec boxDiagonal = { box[XX][XX], box[YY][YY], box[ZZ][ZZ] };
-        fr_->nbv->putAtomsOnGrid(
-                box, 0, vzero, boxDiagonal, nullptr, { 0, *testAtomsRange.begin() }, -1, fr_->atomInfo, x, 0, nullptr);
+        fr_->nbv->putAtomsOnGrid(box,
+                                 0,
+                                 vzero,
+                                 boxDiagonal,
+                                 nullptr,
+                                 { 0, *testAtomsRange.begin() },
+                                 *testAtomsRange.begin(),
+                                 -1,
+                                 fr_->atomInfo,
+                                 x,
+                                 nullptr);
 
         gmx_edsam* const ed = nullptr;
 

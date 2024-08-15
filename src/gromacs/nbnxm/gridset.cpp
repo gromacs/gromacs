@@ -161,10 +161,10 @@ void GridSet::putOnGrid(const matrix            box,
                         const rvec              upperCorner,
                         const UpdateGroupsCog*  updateGroupsCog,
                         const Range<int>        atomRange,
+                        const int               numGridAtoms,
                         real                    atomDensity,
                         ArrayRef<const int32_t> atomInfo,
                         ArrayRef<const RVec>    x,
-                        const int               numAtomsMoved,
                         const int*              move,
                         nbnxn_atomdata_t*       nbat)
 {
@@ -176,11 +176,11 @@ void GridSet::putOnGrid(const matrix            box,
     {
         copy_mat(box, box_);
 
-        numRealAtomsLocal_ = *atomRange.end() - numAtomsMoved;
+        numRealAtomsLocal_ = numGridAtoms;
         /* We assume that nbnxn_put_on_grid is called first
          * for the local atoms (gridIndex=0).
          */
-        numRealAtomsTotal_ = *atomRange.end() - numAtomsMoved;
+        numRealAtomsTotal_ = numGridAtoms;
 
         maxAtomGroupRadius = (updateGroupsCog ? updateGroupsCog->maxUpdateGroupRadius() : 0);
 
@@ -241,12 +241,12 @@ void GridSet::putOnGrid(const matrix            box,
                                                  upperCorner,
                                                  updateGroupsCog,
                                                  atomRange,
+                                                 numGridAtoms,
                                                  &atomDensity,
                                                  maxAtomGroupRadius,
                                                  x,
                                                  ddZone,
                                                  move,
-                                                 numAtomsMoved,
                                                  computeGridDensityRatio);
 
         iteration++;
@@ -254,7 +254,7 @@ void GridSet::putOnGrid(const matrix            box,
 
     /* Copy the already computed cell indices to the grid and sort, when needed */
     grid.setCellIndices(
-            ddZone, cellOffset, &gridSetData_, gridWork_, atomRange, atomInfo, x, numAtomsMoved, nbat);
+            ddZone, cellOffset, &gridSetData_, gridWork_, atomRange, numGridAtoms, atomInfo, x, nbat);
 
     if (gridIndex == gmx::ssize(grids_) - 1)
     {

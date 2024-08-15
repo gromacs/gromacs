@@ -268,10 +268,10 @@ static std::unique_ptr<nonbonded_verlet_t> setupNbnxmForBenchInstance(const Nbnx
                         upperCorner,
                         nullptr,
                         { 0, int(system.coordinates.size()) },
+                        system.coordinates.size(),
                         atomDensity,
                         atomInfo,
                         system.coordinates,
-                        0,
                         nullptr);
 
     nbv->constructPairlist(InteractionLocality::Local, system.excls, 0, &nrnb);

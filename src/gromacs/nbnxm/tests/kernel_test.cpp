@@ -248,10 +248,10 @@ std::unique_ptr<nonbonded_verlet_t> setupNbnxmForBenchInstance(const KernelOptio
                         upperCorner,
                         nullptr,
                         { 0, int(system.coordinates.size()) },
+                        system.coordinates.size(),
                         atomDensity,
                         system.atomInfo,
                         system.coordinates,
-                        0,
                         nullptr);
 
     nbv->constructPairlist(gmx::InteractionLocality::Local, system.excls, 0, nullptr);

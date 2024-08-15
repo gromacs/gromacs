@@ -141,10 +141,10 @@ diagonalPairlist(const NbnxmKernelType kernelType, const int numAtoms)
                       upperCorner,
                       nullptr,
                       { 0, numAtoms },
+                      numAtoms,
                       numAtoms / det(box),
                       atomInfo,
                       coords,
-                      0,
                       nullptr,
                       nbat.get());
 

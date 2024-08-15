@@ -169,10 +169,10 @@ void GmxNBForceCalculatorCpu::CpuImpl::updatePairlist(gmx::ArrayRef<gmx::RVec> c
                                   upperCorner,
                                   nullptr,
                                   { 0, int(coordinates.size()) },
+                                  coordinates.size(),
                                   particleDensity,
                                   system_.particleInfo_,
                                   coordinates,
-                                  0,
                                   nullptr);
 
     backend_.nbv_->constructPairlist(

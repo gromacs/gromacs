@@ -126,10 +126,10 @@ public:
                    const rvec              upperCorner,
                    const UpdateGroupsCog*  updateGroupsCog,
                    Range<int>              atomRange,
+                   int                     numGridAtoms,
                    real                    atomDensity,
                    ArrayRef<const int32_t> atomInfo,
                    ArrayRef<const RVec>    x,
-                   int                     numAtomsMoved,
                    const int*              move,
                    nbnxn_atomdata_t*       nbat);
 

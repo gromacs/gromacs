@@ -2839,7 +2839,9 @@ void dd_partition_system(FILE*                     fplog,
         {
             homeZoneVolume *= dd->zones.sizes(0).x1[dim] - dd->zones.sizes(0).x0[dim];
         }
-        const real atomDensity = (dd->numHomeAtoms - ncg_moved) / homeZoneVolume;
+        // The home atom list still contains moved atoms, compute the new atom count
+        const int  newNumHomeAtoms = dd->numHomeAtoms - ncg_moved;
+        const real atomDensity     = newNumHomeAtoms / homeZoneVolume;
 
         fr->nbv->putAtomsOnGrid(state_local->box,
                                 0,
@@ -2847,10 +2849,10 @@ void dd_partition_system(FILE*                     fplog,
                                 dd->zones.sizes(0).bb_x1,
                                 comm->updateGroupsCog.get(),
                                 { 0, dd->numHomeAtoms },
+                                newNumHomeAtoms,
                                 atomDensity,
                                 fr->atomInfo,
                                 state_local->x,
-                                ncg_moved,
                                 bRedist ? comm->movedBuffer.data() : nullptr);
 
         if (debug)

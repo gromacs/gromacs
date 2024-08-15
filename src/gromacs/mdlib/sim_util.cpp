@@ -1352,8 +1352,17 @@ static void doPairSearch(const t_commrec*             cr,
         const rvec vzero       = { 0.0_real, 0.0_real, 0.0_real };
         const rvec boxDiagonal = { box[XX][XX], box[YY][YY], box[ZZ][ZZ] };
         wallcycle_sub_start(wcycle, WallCycleSubCounter::NBSGridLocal);
-        nbv->putAtomsOnGrid(
-                box, 0, vzero, boxDiagonal, nullptr, { 0, mdatoms.homenr }, -1, fr->atomInfo, x.unpaddedArrayRef(), 0, nullptr);
+        nbv->putAtomsOnGrid(box,
+                            0,
+                            vzero,
+                            boxDiagonal,
+                            nullptr,
+                            { 0, mdatoms.homenr },
+                            mdatoms.homenr,
+                            -1,
+                            fr->atomInfo,
+                            x.unpaddedArrayRef(),
+                            nullptr);
         wallcycle_sub_stop(wcycle, WallCycleSubCounter::NBSGridLocal);
     }
     else
