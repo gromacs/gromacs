@@ -693,9 +693,9 @@ bool decideWhetherToUseGpuForUpdate(const bool           isDomainDecomposition,
         errorReasons.append("Compatible GPUs must have been found.");
         silenceWarningMessageWithUpdateAuto = true;
     }
-    if (!(GMX_GPU_CUDA || GMX_GPU_SYCL))
+    if (GMX_GPU_OPENCL)
     {
-        errorReasons.append("Only CUDA and SYCL builds are supported.");
+        errorReasons.append("The OpenCL GPU build does not support GPU update.");
         // Silence clang-analyzer deadcode.DeadStores warning about ignoring the previous assignments
         GMX_UNUSED_VALUE(silenceWarningMessageWithUpdateAuto);
         silenceWarningMessageWithUpdateAuto = true;
