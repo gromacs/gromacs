@@ -118,9 +118,9 @@ public:
 
     void checkH5mdRootVersionNumber()
     {
-        std::string fileVersion   = referenceH5mdIo_->getH5mdRootVersionNumber();
-        std::string versionString = std::to_string(c_h5mdMajorVersion) + "."
-                                    + std::to_string(c_h5mdMinorVersion);
+        std::string fileVersion = referenceH5mdIo_->getH5mdRootVersionNumber();
+        std::string versionString =
+                std::to_string(c_h5mdMajorVersion) + "." + std::to_string(c_h5mdMinorVersion);
         EXPECT_STREQ(fileVersion.c_str(), versionString.c_str());
     }
 
@@ -170,8 +170,8 @@ public:
         {
             RVec v(0.1, 0.22, -frame * 0.001);
             RVec x(i / divisor + 0.05 * (i % divisor) + frame * v[0],
-                        i / divisor + 0.05 * (i % divisor) + frame * v[1],
-                        i / divisor + 0.05 * (i % divisor) + frame * v[2]);
+                   i / divisor + 0.05 * (i % divisor) + frame * v[1],
+                   i / divisor + 0.05 * (i % divisor) + frame * v[2]);
             copy_rvec(x, refX_[i]);
             copy_rvec(v, refV_[i]);
         }
@@ -260,19 +260,19 @@ public:
         snew(testV, refAtomCount_);
         snew(testF, refAtomCount_);
         readNextFrameOfStandardDataBlocks(referenceH5mdIo_,
-                                               &testStep,
-                                               &testTime,
-                                               &testLambda,
-                                               testBox,
-                                               testX,
-                                               testV,
-                                               testF,
-                                               &testAbsoluteError,
-                                               &testReadLambda,
-                                               &testReadBox,
-                                               &testReadX,
-                                               &testReadV,
-                                               &testReadF);
+                                          &testStep,
+                                          &testTime,
+                                          &testLambda,
+                                          testBox,
+                                          testX,
+                                          testV,
+                                          testF,
+                                          &testAbsoluteError,
+                                          &testReadLambda,
+                                          &testReadBox,
+                                          &testReadX,
+                                          &testReadV,
+                                          &testReadF);
 
         real referenceTime   = referenceStep * 10;
         real referenceLambda = static_cast<real>(referenceStep) / referenceNumFrames;
@@ -293,8 +293,7 @@ public:
         }
         else
         {
-            EXPECT_REAL_EQ_TOL(
-                    refCompressionAbsoluteError_, testAbsoluteError, defaultRealTolerance());
+            EXPECT_REAL_EQ_TOL(refCompressionAbsoluteError_, testAbsoluteError, defaultRealTolerance());
         }
         for (int d1 = 0; d1 < DIM; d1++)
         {
@@ -375,15 +374,13 @@ public:
         for (size_t i = 0; i < refNumWaterNameElements; i++)
         {
             EXPECT_STREQ(refWaterAtomNames_[i].c_str(), testWaterAtomNames[i].c_str());
-            EXPECT_REAL_EQ_TOL(
-                    refWaterPartialCharges_[i], testWaterCharges[i], defaultRealTolerance());
+            EXPECT_REAL_EQ_TOL(refWaterPartialCharges_[i], testWaterCharges[i], defaultRealTolerance());
             EXPECT_EQ(refWaterAtomicNumbers_[i], testWaterElementNumbers[i]);
         }
         for (size_t i = 0; i < refNumLigandNameElements; i++)
         {
             EXPECT_STREQ(refLigandAtomNames_[i].c_str(), testLigandAtomNames[i].c_str());
-            EXPECT_REAL_EQ_TOL(
-                    refLigandPartialCharges_[i], testLigandCharges[i], defaultRealTolerance());
+            EXPECT_REAL_EQ_TOL(refLigandPartialCharges_[i], testLigandCharges[i], defaultRealTolerance());
         }
     }
 
@@ -406,21 +403,21 @@ private:
     }
 
 
-    TestFileManager fileManager_;
-    std::filesystem::path      referenceFilename_;
-    H5md*                 referenceH5mdIo_;
-    rvec*                      refX_;
-    rvec*                      refV_;
-    rvec*                      refF_;
-    matrix                     refBox_;
-    size_t                     refAtomCount_;
-    double                     refCompressionAbsoluteError_;
-    std::vector<std::string>   refWaterAtomNames_;
-    std::vector<real>          refWaterPartialCharges_;
-    std::vector<int>           refWaterAtomicNumbers_;
-    std::vector<std::string>   refLigandAtomNames_;
-    std::vector<real>          refLigandPartialCharges_;
-    TopologyInformation   topologyInfo_;
+    TestFileManager          fileManager_;
+    std::filesystem::path    referenceFilename_;
+    H5md*                    referenceH5mdIo_;
+    rvec*                    refX_;
+    rvec*                    refV_;
+    rvec*                    refF_;
+    matrix                   refBox_;
+    size_t                   refAtomCount_;
+    double                   refCompressionAbsoluteError_;
+    std::vector<std::string> refWaterAtomNames_;
+    std::vector<real>        refWaterPartialCharges_;
+    std::vector<int>         refWaterAtomicNumbers_;
+    std::vector<std::string> refLigandAtomNames_;
+    std::vector<real>        refLigandPartialCharges_;
+    TopologyInformation      topologyInfo_;
 };
 
 /*! \brief Tests that opening (creating a new), closing, re-opening and closing
@@ -536,18 +533,17 @@ INSTANTIATE_TEST_SUITE_P(H5mdTestWriteReadCombinations,
 } // namespace test
 
 extern template void H5md::setNumericDataSet<real>(const std::string&,
-                                                        const std::string&,
-                                                        const std::vector<real>&,
-                                                        const std::string&,
-                                                        bool);
+                                                   const std::string&,
+                                                   const std::vector<real>&,
+                                                   const std::string&,
+                                                   bool);
 extern template void H5md::setNumericDataSet<int>(const std::string&,
-                                                       const std::string&,
-                                                       const std::vector<int>&,
-                                                       const std::string&,
-                                                       bool);
+                                                  const std::string&,
+                                                  const std::vector<int>&,
+                                                  const std::string&,
+                                                  bool);
 
-extern template std::vector<real> H5md::readNumericDataSet<real>(const std::string&,
-                                                                      const std::string&);
+extern template std::vector<real> H5md::readNumericDataSet<real>(const std::string&, const std::string&);
 extern template std::vector<int> H5md::readNumericDataSet<int>(const std::string&, const std::string&);
 
 } // namespace gmx
