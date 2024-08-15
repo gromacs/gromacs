@@ -14,13 +14,13 @@
 #   SIMD: AVX2_256
 #   Parallelism nt/ntomp: 2/1 and 2/2
 
-gromacs:oneapi-2024.2-nvidia-weekly:configure:
+gromacs:oneapi-2024.2-nvidia-nightly:configure:
   extends:
    - .gromacs:base:configure
    - .use-oneapi-intel-llvm:base
    - .use-sycl
   rules:
-   - !reference [.rules:weekly-not-for-release, rules]
+   - !reference [.rules:nightly-not-for-release, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-oneapi-2024.2-cuda-12.0.1-rocm-6.1.3:latest
   variables:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
@@ -28,26 +28,26 @@ gromacs:oneapi-2024.2-nvidia-weekly:configure:
     CMAKE_EXTRA_OPTIONS: "-DSYCL_CXX_FLAGS_EXTRA=-fsycl-targets=nvptx64-nvidia-cuda -DGMX_GPU_NB_CLUSTER_SIZE=8 -DGMX_GPU_FFT_LIBRARY=VkFFT"
     COMPILER_MAJOR_VERSION: 2024
 
-gromacs:oneapi-2024.2-nvidia-weekly:build:
+gromacs:oneapi-2024.2-nvidia-nightly:build:
   extends:
     - .gromacs:base:build
     - .use-ccache
     - .use-oneapi-intel-llvm:base
   rules:
-    - !reference [.rules:weekly-not-for-release, rules]
+    - !reference [.rules:nightly-not-for-release, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-oneapi-2024.2-cuda-12.0.1-rocm-6.1.3:latest
   variables:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
   needs:
-    - job: gromacs:oneapi-2024.2-nvidia-weekly:configure
+    - job: gromacs:oneapi-2024.2-nvidia-nightly:configure
 
-gromacs:oneapi-2024.2-nvidia-weekly:test:
+gromacs:oneapi-2024.2-nvidia-nightly:test:
   extends:
     - .gromacs:base:test
     - .use-oneapi-intel-llvm:base
   rules:
     - !reference [.rules:skip-if-single-nvidia-gpu-unavailable, rules]
-    - !reference [.rules:weekly-not-for-release, rules]
+    - !reference [.rules:nightly-not-for-release, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-oneapi-2024.2-cuda-12.0.1-rocm-6.1.3:latest
   variables:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
@@ -57,15 +57,15 @@ gromacs:oneapi-2024.2-nvidia-weekly:test:
   tags:
     - $GITLAB_RUNNER_TAG_1X_NVIDIA_GPU
   needs:
-    - job: gromacs:oneapi-2024.2-nvidia-weekly:build
+    - job: gromacs:oneapi-2024.2-nvidia-nightly:build
 
-gromacs:oneapi-2024.2-nvidia-weekly:regressiontest:
+gromacs:oneapi-2024.2-nvidia-nightly:regressiontest:
   extends:
     - .gromacs:base:regressiontest
     - .use-oneapi-intel-llvm:base
   rules:
     - !reference [.rules:skip-if-single-nvidia-gpu-unavailable, rules]
-    - !reference [.rules:weekly-not-for-release, rules]
+    - !reference [.rules:nightly-not-for-release, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-oneapi-2024.2-cuda-12.0.1-rocm-6.1.3:latest
   variables:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
@@ -77,5 +77,5 @@ gromacs:oneapi-2024.2-nvidia-weekly:regressiontest:
   tags:
     - $GITLAB_RUNNER_TAG_1X_NVIDIA_GPU
   needs:
-    - job: gromacs:oneapi-2024.2-nvidia-weekly:build
+    - job: gromacs:oneapi-2024.2-nvidia-nightly:build
     - job: regressiontests:prepare

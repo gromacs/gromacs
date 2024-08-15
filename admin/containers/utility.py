@@ -179,11 +179,11 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--hipsycl",
+    "--adaptivecpp",
     type=str,
     nargs="?",
     default=None,
-    help="Select hipSYCL repository tag/commit/branch.",
+    help="Select AdaptiveCpp repository tag/commit/branch.",
 )
 
 parser.add_argument(
@@ -297,15 +297,14 @@ def image_name(configuration: argparse.Namespace) -> str:
             )
             elements.append(compiler + "-" + version)
             break
-    for gpusdk in ("cuda", "hipsycl"):
+    for gpusdk in ("cuda", "adaptivecpp"):
         version = getattr(configuration, gpusdk, None)
         if version is not None:
             elements.append(gpusdk + "-" + version)
     if configuration.intel_compute_runtime:
         elements.append("intel-compute-runtime")
     if configuration.rocm is not None:
-        if configuration.rocm != "3.5.1":
-            elements.append("rocm-" + configuration.rocm)
+        elements.append("rocm-" + configuration.rocm)
     if configuration.cp2k is not None:
         elements.append("cp2k-" + configuration.cp2k)
 

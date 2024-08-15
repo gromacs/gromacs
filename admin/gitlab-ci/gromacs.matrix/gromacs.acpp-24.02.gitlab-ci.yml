@@ -1,0 +1,160 @@
+# Test goal: build with AdaptiveCpp (ROCm and NVIDIA backends) to check SYCL code compatibility
+# Test intents (should change rarely and conservatively):
+#   OS: Ubuntu newest supported
+#   Compiler: Clang
+#   GPU: AdaptiveCpp
+#   Scope: configure, build
+# Test implementation choices (free to change as needed):
+#   OS: Ubuntu 24.04
+#   Build type: RelWithAssert
+#   Compiler: Clang 18
+#   GPU: AdaptiveCpp 24.02 + CUDA 12.6 + ROCm 6.2
+#   MPI: CUDA-aware MPICH (ROCm build); threadMPI (CUDA build)
+#   SIMD: AVX2_256
+
+gromacs:acpp-rocm-mpi:configure:
+  extends:
+    - .gromacs:base:configure
+    - .use-clang:base
+    - .use-sycl
+    - .use-mpi
+  rules:
+    - !reference [.rules:merge-and-post-merge-acceptance, rules]
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-18-cuda-12.6.0-adaptivecpp-24.02.0-rocm-6.2
+  variables:
+    CMAKE: /usr/local/cmake-3.29.3/bin/cmake
+    CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX2_256"
+    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
+    CMAKE_GPU_OPTIONS: "-DGMX_GPU=SYCL -DGMX_SYCL=ACPP -DACPP_TARGETS=hip:gfx906,gfx1034 -DGMX_GPU_FFT_LIBRARY=vkFFT"
+    # Unset COMPILER_LAUNCHER (previously set to ccache) because it conflicts with AdaptiveCpp's syclcc-launcher
+    CMAKE_EXTRA_OPTIONS: "-DCMAKE_C_COMPILER_LAUNCHER= -DCMAKE_CXX_COMPILER_LAUNCHER= -DGMX_INSTALL_LEGACY_API=ON"
+    COMPILER_MAJOR_VERSION: 18
+
+gromacs:acpp-rocm-mpi:build:
+  extends:
+    - .gromacs:base:build
+    - .before_script:default
+    # Not using ccache because it plays poorly with syclcc-launcher
+  rules:
+    - !reference [.rules:merge-and-post-merge-acceptance, rules]
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-18-cuda-12.6.0-adaptivecpp-24.02.0-rocm-6.2
+  variables:
+    CMAKE: /usr/local/cmake-3.29.3/bin/cmake
+  needs:
+    - job: gromacs:acpp-rocm-mpi:configure
+
+gromacs:acpp-rocm-mpi:test:
+  extends:
+    - .gromacs:base:test
+  rules:
+    - !reference [.rules:skip-if-dual-amd-gpus-unavailable, rules]
+    - !reference [.rules:post-merge-acceptance, rules]
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-18-cuda-12.6.0-adaptivecpp-24.02.0-rocm-6.2
+  variables:
+    CMAKE: /usr/local/cmake-3.29.3/bin/cmake
+    GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
+    GMX_ENABLE_DIRECT_GPU_COMM: 1
+    GMX_FORCE_GPU_AWARE_MPI: 1
+    UCX_TLS: "sm,self,rocm_copy"  # rocm_ipc does not work well enough
+    GPU_VENDOR: "AMD"
+    GPU_COUNT: 2
+  tags:
+    - $GITLAB_RUNNER_TAG_2X_AMD_GPU
+  needs:
+    - job: gromacs:acpp-rocm-mpi:build
+
+gromacs:acpp-rocm-mpi:regressiontest:
+  extends:
+    - .gromacs:base:regressiontest
+  rules:
+    - !reference [.rules:skip-if-dual-amd-gpus-unavailable, rules]
+    - !reference [.rules:post-merge-acceptance, rules]
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-18-cuda-12.6.0-adaptivecpp-24.02.0-rocm-6.2
+  variables:
+    CMAKE: /usr/local/cmake-3.29.3/bin/cmake
+    REGRESSIONTEST_PME_RANK_NUMBER: 0
+    REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
+    REGRESSIONTEST_OMP_RANK_NUMBER: 2
+    REGRESSIONTEST_PARALLEL: "-np"
+    GMX_ENABLE_DIRECT_GPU_COMM: 1
+    GMX_FORCE_GPU_AWARE_MPI: 1
+    UCX_TLS: "sm,self,rocm_copy"  # rocm_ipc does not work well enough
+    GPU_VENDOR: "AMD"
+    GPU_COUNT: 2
+  tags:
+    - $GITLAB_RUNNER_TAG_2X_AMD_GPU
+  needs:
+    - job: gromacs:acpp-rocm-mpi:build
+    - job: regressiontests:prepare
+
+
+gromacs:acpp-nvidia:configure:
+  extends:
+    - .gromacs:base:configure
+    - .use-clang:base
+    - .use-sycl
+  rules:
+    - !reference [.rules:nightly-not-for-release, rules]
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-18-cuda-12.6.0-adaptivecpp-24.02.0-rocm-6.2
+  variables:
+    CMAKE: /usr/local/cmake-3.29.3/bin/cmake
+    CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX2_256"
+    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
+    CMAKE_GPU_OPTIONS: "-DGMX_GPU=SYCL -DGMX_SYCL=ACPP -DACPP_TARGETS='cuda:sm_75' -DGMX_GPU_FFT_LIBRARY=VkFFT"
+    # Unset COMPILER_LAUNCHER (previously set to ccache) because it conflicts with AdaptiveCpp's syclcc-launcher
+    CMAKE_EXTRA_OPTIONS: "-DCMAKE_C_COMPILER_LAUNCHER= -DCMAKE_CXX_COMPILER_LAUNCHER="
+    COMPILER_MAJOR_VERSION: 18
+
+gromacs:acpp-nvidia:build:
+  extends:
+    - .gromacs:base:build
+    - .before_script:default
+    # Not using ccache because it plays poorly with syclcc-launcher
+  rules:
+    - !reference [.rules:nightly-not-for-release, rules]
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-18-cuda-12.6.0-adaptivecpp-24.02.0-rocm-6.2
+  variables:
+    CMAKE: /usr/local/cmake-3.29.3/bin/cmake
+  needs:
+    - job: gromacs:acpp-nvidia:configure
+
+gromacs:acpp-nvidia:test:
+  extends:
+    - .gromacs:base:test
+  rules:
+    - !reference [.rules:skip-if-single-nvidia-gpu-unavailable, rules]
+    - !reference [.rules:nightly-not-for-release, rules]
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-18-cuda-12.6.0-adaptivecpp-24.02.0-rocm-6.2
+  variables:
+    CMAKE: /usr/local/cmake-3.29.3/bin/cmake
+    GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
+    GPU_VENDOR: "NVIDIA"
+    GPU_COUNT: 1
+  tags:
+    - $GITLAB_RUNNER_TAG_1X_NVIDIA_GPU
+  needs:
+    - job: gromacs:acpp-nvidia:build
+
+gromacs:acpp-nvidia:regressiontest:
+  extends:
+    - .gromacs:base:regressiontest
+    - .rules:nightly-not-for-release
+  rules:
+    - !reference [.rules:skip-if-single-nvidia-gpu-unavailable, rules]
+    - !reference [.rules:nightly-not-for-release, rules]
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-18-cuda-12.6.0-adaptivecpp-24.02.0-rocm-6.2
+  variables:
+    CMAKE: /usr/local/cmake-3.29.3/bin/cmake
+    GPU_VENDOR: "NVIDIA"
+    GPU_COUNT: 1
+  tags:
+    - $GITLAB_RUNNER_TAG_1X_NVIDIA_GPU
+  needs:
+    - job: gromacs:acpp-nvidia:build
+    - job: regressiontests:prepare
+  artifacts:
+    paths:
+      - regressiontests
+    when: always
+    expire_in: 1 week
+

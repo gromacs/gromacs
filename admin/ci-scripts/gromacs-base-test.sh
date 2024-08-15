@@ -30,6 +30,7 @@ if grep -qF 'NVIDIA' <<< "$GPU_VENDOR"; then
 fi
 if grep -qF 'AMD' <<< "$GPU_VENDOR"; then
     clinfo -l || true;
+    rocm-smi || true;
 fi
 if grep -qF 'INTEL' <<< "$GPU_VENDOR"; then
     sycl-ls || true;

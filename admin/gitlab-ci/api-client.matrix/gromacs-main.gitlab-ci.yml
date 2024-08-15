@@ -21,11 +21,11 @@ sample_taf:tmpi:
     - .sample_taf
   rules:
     - !reference [.rules:merge-requests, rules]
-  image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-22.04-llvm-15-cuda-11.7.1-hipsycl-0.9.4-rocm-5.3.3
+  image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-22.04-gcc-9-hipsycl-23.10.0-rocm-5.7.1
   variables:
-    CMAKE: /usr/local/cmake-3.21.2/bin/cmake
+    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
   needs:
-    - job: gromacs:hipsycl-rocm:build
+    - job: gromacs:acpp-rocm:build
 
 sample_restraint:tmpi:
   extends:
