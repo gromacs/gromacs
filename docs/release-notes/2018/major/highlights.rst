@@ -21,7 +21,7 @@ There are some new features available also:
 * The AWH (Accelerated Weight Histogram) method is now supported,
   which is an adaptive biasing method used for overcoming free energy
   barriers and calculating free energies (see
-  http://dx.doi.org/10.1063/1.4890371).
+  https://doi.org/10.1063/1.4890371).
 * A new dual-list dynamic-pruning algorithm for the short-ranged
   interactions, that uses an inner and outer list to permit a longer-lived
   outer list, while doing less work overall and making runs

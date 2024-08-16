@@ -5,7 +5,7 @@ Added support for AWH biasing
 """""""""""""""""""""""""""""
 The AWH (Accelerated Weight Histogram) method is an adaptive biasing
 method used for overcoming free energy barriers and calculating
-free energies (see http://dx.doi.org/10.1063/1.4890371). Although
+free energies (see https://doi.org/10.1063/1.4890371). Although
 AWH can in general bias any system parameter, this change only
 implements biasing of reaction coordinates. The actual force
 distribution and coordinate handling is taken care of by the pull
@@ -16,7 +16,7 @@ coordinates. See the reference manual for full documentation.
 
 It includes a feature to compute the time-integrated force
 correlation, also known as the friction tensor (see
-e.g. http://dx.doi.org/10.1103/PhysRevLett.108.190602). The friction
+e.g. https://doi.org/10.1103/PhysRevLett.108.190602). The friction
 tensor defines a metric on the coordinate space and the local volume
 element of this metric is a useful measure for determining which
 regions need more or less sampling.
@@ -101,8 +101,8 @@ EW3DC for non-neutral systems
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 Added the corrections to force and energy according to
 Ballenegger, Arnold, and Cerda, J. Chem. Phys. 131, 094107 2009
-(http://dx.doi.org/10.1063/1.3216473). Hinted that people
-read http://doi.org/10.1021/ct400626b to help make good choices.
+(https://doi.org/10.1063/1.3216473). Hinted that people
+read https://doi.org/10.1021/ct400626b to help make good choices.
 Added a warning in grompp for charged systems with Ewald.
 
 Reduce rounding errors in SETTLE

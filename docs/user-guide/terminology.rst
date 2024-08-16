@@ -181,7 +181,7 @@ Further reading
    (`1996 <http://pubs.acs.org/doi/abs/10.1021/jp951968y>`_).
 #. Mor, A., Ziv, G. & Levy, Y. Simulations of proteins with inhomogeneous
    degrees of freedom: the effect of thermostats. *J. Comput. Chem.* **29**
-   (12), 1992–1998 (`2008 <http://dx.doi.org/10.1002/jcc.20951>`_).
+   (12), 1992–1998 (`2008 <https://doi.org/10.1002/jcc.20951>`_).
 #. Lingenheil, M., Denschlag, R., Reichold, R. & Tavan, P. The
    "hot-solvent/cold-solute" problem revisited. *J. Chem. Theory Comput.* **4**
    (8), 1293–1306 (`2008 <http://pubs.acs.org/doi/abs/10.1021/ct8000365>`__).
@@ -206,7 +206,7 @@ case:
 * :ref:`Temperature coupling <gmx-thermostats>` and :ref:`pressure coupling <gmx-pressure>`.
 * Round-off error (in particular in single precision), for example subtracting
   large numbers (Lippert, R. A. et al. A common, avoidable source of error in
-  molecular dynamics integrators. *J. Chem. Phys.* **126**, 046101 (`2007 <http://dx.doi.org/10.1063/1.2431176>`_).).
+  molecular dynamics integrators. *J. Chem. Phys.* **126**, 046101 (`2007 <https://doi.org/10.1063/1.2431176>`_).).
 * The choice of the integration algorithm (in |Gromacs| this is normally
   leap-frog).
 * Removal of center of mass motion: when doing this in more than one group the
