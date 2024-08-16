@@ -91,10 +91,10 @@ CLANG_DIAGNOSTIC_IGNORE("-Wmissing-noreturn")
  * this requirement can be relaxed as needed.
  */
 
-/* With CUDA, we only want to use event counting in known "good" configurations. With OpenCL
+/* With CUDA and HIP, we only want to use event counting in known "good" configurations. With OpenCL
  * and SYCL, we want it to be enabled always. So, we have a global flag in CUDA build, and
  * a constexpr in others. See #3988 */
-#if GMX_GPU_CUDA
+#if GMX_GPU_CUDA || GMX_GPU_HIP
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 extern bool g_useEventConsumptionCounting; // Defined in gpueventsynchronizer_helpers.h
 #else
