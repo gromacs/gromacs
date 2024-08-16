@@ -44,12 +44,12 @@
 
 #include "config.h"
 
+#include "gromacs/domdec/gpuhaloexchange_impl_gpu.h"
 #include "gromacs/gpu_utils/gputraits_hip.h"
 #include "gromacs/gpu_utils/typecasts_cuda_hip.h"
 #include "gromacs/gpu_utils/vectype_ops_hip.h"
 
 #include "domdec_struct.h"
-#include "gpuhaloexchange_impl_gpu.h"
 
 namespace gmx
 {
