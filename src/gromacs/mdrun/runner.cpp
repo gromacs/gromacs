@@ -1829,6 +1829,7 @@ int Mdrunner::mdrunner()
         setupNotifier.notify(inputrec->pbcType);
         setupNotifier.notify(SimulationTimeStep{ inputrec->delta_t });
         setupNotifier.notify(startingBehavior);
+        setupNotifier.notify(EnsembleTemperature{ *inputrec });
 
         /* Initiate forcerecord */
         fr                 = std::make_unique<t_forcerec>();

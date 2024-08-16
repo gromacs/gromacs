@@ -365,6 +365,8 @@ struct MDModulesNotifiers
      *                              that is used during the simulation
      * \tparam SimulationTimeStep&  Provides modules with the simulation time-step that allows
      *                              them to interconvert between step and time information
+     * \tparam EnsembleTemperature& Provides modules with the (eventual) constant ensemble
+     *                              temperature
      * \tparam t_commrec&           Provides a communicator to the modules during simulation
      *                              setup
      * \tparam MdRunInputFilename&  Allows modules to know .tpr filename during mdrun
@@ -381,6 +383,7 @@ struct MDModulesNotifiers
                            SeparatePmeRanksPermitted*,
                            const PbcType&,
                            const SimulationTimeStep&,
+                           const EnsembleTemperature&,
                            const t_commrec&,
                            const MdRunInputFilename&,
                            const EdrOutputFilename&>::type simulationSetupNotifier_;
