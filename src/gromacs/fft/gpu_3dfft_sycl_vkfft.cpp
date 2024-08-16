@@ -64,14 +64,14 @@
 
 #if VKFFT_BACKEND == 1 // CUDA
 using NativeDevice = int;
-#    if GMX_SYCL_HIPSYCL
+#    if GMX_SYCL_ACPP
 static constexpr auto sc_syclBackend = sycl::backend::cuda;
 #    elif GMX_SYCL_DPCPP
 static constexpr auto sc_syclBackend = sycl::backend::ext_oneapi_cuda;
 #    endif
 #elif VKFFT_BACKEND == 2 // HIP
 using NativeDevice                   = hipDevice_t;
-#    if GMX_SYCL_HIPSYCL
+#    if GMX_SYCL_ACPP
 static constexpr auto sc_syclBackend = sycl::backend::hip;
 #    elif GMX_SYCL_DPCPP
 #        include <sycl/ext/oneapi/backend/hip.hpp>
@@ -195,7 +195,7 @@ Gpu3dFft::ImplSyclVkfft::Impl::Impl(bool allocateGrids,
 #if GMX_SYCL_DPCPP
     VkFFTResult result = initializeVkFFT(&application_, configuration_);
     handleFftError(result, "Initializing VkFFT");
-#elif GMX_SYCL_HIPSYCL
+#elif GMX_SYCL_ACPP
     queue_.submit([&](sycl::handler& cgh) {
               cgh.hipSYCL_enqueue_custom_operation([=](sycl::interop_handle& gmx_unused h) {
                   VkFFTResult result = initializeVkFFT(&application_, configuration_);
@@ -276,7 +276,7 @@ static void launchVkFft(const DeviceBuffer<float>& realGrid,
 
 void Gpu3dFft::ImplSyclVkfft::perform3dFft(gmx_fft_direction dir, CommandEvent* /*timingEvent*/)
 {
-#if GMX_SYCL_HIPSYCL // use hipSYCL_enqueue_custom_operation
+#if GMX_SYCL_ACPP // use hipSYCL_enqueue_custom_operation
     impl_->queue_.submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
         cgh.hipSYCL_enqueue_custom_operation([=](sycl::interop_handle& h) {
             launchVkFft(impl_->realGrid_,

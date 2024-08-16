@@ -59,7 +59,7 @@ std::string getSyclCompilerVersion()
 #    else
     return formatString("%d", __SYCL_COMPILER_VERSION);
 #    endif
-#elif GMX_SYCL_HIPSYCL
+#elif GMX_SYCL_ACPP
     return hipsycl::sycl::detail::version_string();
 #else
     GMX_THROW(gmx::InternalError("Not implemented for non-SYCL build"));

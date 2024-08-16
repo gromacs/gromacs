@@ -47,7 +47,7 @@
 
 /* Macro to optimize runtime performance by not recording unnecessary events.
  *
- * It relies on the availability of HIPSYCL_EXT_CG_PROPERTY_* extension, and is no-op for
+ * It relies on the availability of ACPP_EXT_CG_PROPERTY_* extension, and is no-op for
  * other SYCL implementations. Macro can be used as follows (note the lack of comma after it):
  * `queue.submit(GMX_SYCL_DISCARD_EVENT [=](....))`.
  *
@@ -58,7 +58,7 @@
  * The use of the returned event will not necessarily cause run-time errors, but can cause
  * performance degradation (specifically, in hipSYCL the synchronization will be sub-optimal).
  */
-#if GMX_SYCL_HIPSYCL
+#if GMX_SYCL_ACPP
 namespace gmx::internal
 {
 static const sycl::property_list sc_syclDiscardEventProperty_list{

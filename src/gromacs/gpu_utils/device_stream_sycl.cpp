@@ -116,7 +116,7 @@ DeviceStream::DeviceStream(const DeviceContext& deviceContext, DeviceStreamPrior
 
 DeviceStream::~DeviceStream()
 {
-#if GMX_SYCL_HIPSYCL
+#if GMX_SYCL_ACPP
     // Prevents use-after-free errors in hipSYCL's CUDA backend during unit tests
     try
     {

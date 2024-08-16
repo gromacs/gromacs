@@ -114,7 +114,7 @@ static std::optional<std::tuple<int, int>> getHardwareVersionNvidia(const sycl::
     {
         return result;
     }
-#if (GMX_SYCL_HIPSYCL && GMX_HIPSYCL_HAVE_CUDA_TARGET) // hipSYCL uses CUDA Runtime API
+#if (GMX_SYCL_ACPP && GMX_ACPP_HAVE_CUDA_TARGET) // hipSYCL uses CUDA Runtime API
     const int             nativeDeviceId = sycl::get_native<sycl::backend::cuda>(device);
     struct cudaDeviceProp prop;
     cudaError_t           status = cudaGetDeviceProperties(&prop, nativeDeviceId);
@@ -189,7 +189,7 @@ static std::optional<std::tuple<int, int, int>> getHardwareVersionAmd(const sycl
     {
         return result;
     }
-#if (GMX_SYCL_HIPSYCL && GMX_HIPSYCL_HAVE_HIP_TARGET)
+#if (GMX_SYCL_ACPP && GMX_ACPP_HAVE_HIP_TARGET)
     // Fall back on the native device query
     const int              nativeDeviceId = sycl::get_native<sycl::backend::hip>(device);
     struct hipDeviceProp_t prop;
@@ -326,9 +326,9 @@ static DeviceStatus isDeviceCompatible(const sycl::device&           syclDevice,
 #if GMX_GPU_NB_CLUSTER_SIZE == 4
         const std::vector<int> compiledNbnxmSubGroupSizes{ 8 };
 #elif GMX_GPU_NB_CLUSTER_SIZE == 8
-#    if GMX_SYCL_HIPSYCL && !(GMX_HIPSYCL_HAVE_HIP_TARGET)
+#    if GMX_SYCL_ACPP && !(GMX_ACPP_HAVE_HIP_TARGET)
         const std::vector<int> compiledNbnxmSubGroupSizes{ 32 }; // Only NVIDIA
-#    elif GMX_SYCL_HIPSYCL && (GMX_HIPSYCL_HAVE_HIP_TARGET && !GMX_HIPSYCL_ENABLE_AMD_RDNA_SUPPORT)
+#    elif GMX_SYCL_ACPP && (GMX_ACPP_HAVE_HIP_TARGET && !GMX_ACPP_ENABLE_AMD_RDNA_SUPPORT)
         const std::vector<int> compiledNbnxmSubGroupSizes{ 64 }; // Only AMD GCN and CDNA
 #    else
         const std::vector<int> compiledNbnxmSubGroupSizes{ 32, 64 };
@@ -343,7 +343,7 @@ static DeviceStatus isDeviceCompatible(const sycl::device&           syclDevice,
                          compiledNbnxmSubGroupSizes.end(),
                          subGroupSizeSupportedByDevice))
         {
-#if GMX_SYCL_HIPSYCL && GMX_HIPSYCL_HAVE_HIP_TARGET && !GMX_HIPSYCL_ENABLE_AMD_RDNA_SUPPORT
+#if GMX_SYCL_ACPP && GMX_ACPP_HAVE_HIP_TARGET && !GMX_ACPP_ENABLE_AMD_RDNA_SUPPORT
             if (supportedSubGroupSizes.size() == 1 && supportedSubGroupSizes[0] == 32
                 && deviceVendor == DeviceVendor::Amd)
             {

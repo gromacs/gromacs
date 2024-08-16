@@ -529,12 +529,12 @@ void gmx_print_version_info(gmx::TextWriter* writer)
     writer->writeLine(formatString("SYCL compiler flags: %s", SYCL_DPCPP_COMPILER_FLAGS));
     writer->writeLine(formatString("SYCL linker flags:   %s", SYCL_DPCPP_LINKER_FLAGS));
 #endif
-#if GMX_SYCL_HIPSYCL
+#if GMX_SYCL_ACPP
     writer->writeLine("SYCL version:        " + gmx::getSyclCompilerVersion());
-    writer->writeLine(formatString("SYCL compiler:       %s", SYCL_HIPSYCL_COMPILER_LAUNCHER));
-    writer->writeLine(formatString("SYCL compiler flags: %s", SYCL_HIPSYCL_COMPILER_FLAGS));
-    writer->writeLine(formatString("SYCL GPU flags:      %s", SYCL_HIPSYCL_DEVICE_COMPILER_FLAGS));
-    writer->writeLine(formatString("SYCL targets:        %s", SYCL_HIPSYCL_TARGETS));
+    writer->writeLine(formatString("SYCL compiler:       %s", SYCL_ACPP_COMPILER_LAUNCHER));
+    writer->writeLine(formatString("SYCL compiler flags: %s", SYCL_ACPP_COMPILER_FLAGS));
+    writer->writeLine(formatString("SYCL GPU flags:      %s", SYCL_ACPP_DEVICE_COMPILER_FLAGS));
+    writer->writeLine(formatString("SYCL targets:        %s", SYCL_ACPP_TARGETS));
 #endif
 #if GMX_GPU_HIP
     writer->writeLine(formatString("HIP compiler:        %s", HIP_COMPILER_INFO));

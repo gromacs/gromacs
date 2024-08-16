@@ -62,9 +62,9 @@
 namespace gmx
 {
 
-#if GMX_HIPSYCL_HAVE_CUDA_TARGET
+#if GMX_ACPP_HAVE_CUDA_TARGET
 constexpr auto c_hipsyclBackend = sycl::backend::cuda;
-#elif GMX_HIPSYCL_HAVE_HIP_TARGET
+#elif GMX_ACPP_HAVE_HIP_TARGET
 constexpr auto c_hipsyclBackend = sycl::backend::hip;
 #endif
 
@@ -241,7 +241,7 @@ Gpu3dFft::ImplHeFfte<backend_tag>::ImplHeFfte(bool                 allocateRealG
                                              { gridOffsetsInZ_transformed[rank + 1] - 1, ny - 1, nx - 1 } };
 
         // Define 3D FFT plan
-#if GMX_SYCL_HIPSYCL
+#if GMX_SYCL_ACPP
         pmeRawStream_
                 .submit([&, &fftPlanRef = fftPlan_, &workspaceRef = workspace_](sycl::handler& cgh) {
                     cgh.hipSYCL_enqueue_custom_operation([=, &fftPlanRef, &workspaceRef](
@@ -283,7 +283,7 @@ Gpu3dFft::ImplHeFfte<backend_tag>::ImplHeFfte(bool                 allocateRealG
         };
 
         // Define 3D FFT plan
-#if GMX_SYCL_HIPSYCL
+#if GMX_SYCL_ACPP
         pmeRawStream_
                 .submit([&, &fftPlanRef = fftPlan_, &workspaceRef = workspace_](sycl::handler& cgh) {
                     cgh.hipSYCL_enqueue_custom_operation([=, &fftPlanRef, &workspaceRef](
@@ -302,7 +302,7 @@ Gpu3dFft::ImplHeFfte<backend_tag>::ImplHeFfte(bool                 allocateRealG
 #endif
     }
 
-#if !GMX_SYCL_HIPSYCL
+#if !GMX_SYCL_ACPP
     workspace_ = heffte::gpu::vector<std::complex<float>>(fftPlan_->size_workspace());
 #endif
 
@@ -358,7 +358,7 @@ void Gpu3dFft::ImplHeFfte<backend_tag>::perform3dFft(gmx_fft_direction dir, Comm
     switch (dir)
     {
         case GMX_FFT_REAL_TO_COMPLEX:
-#if GMX_SYCL_HIPSYCL
+#if GMX_SYCL_ACPP
             pmeRawStream_.submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
                 cgh.hipSYCL_enqueue_custom_operation([=](sycl::interop_handle& gmx_unused h) {
                     fftPlan_->forward(realGrid, complexGrid, workspace_.data());
@@ -369,7 +369,7 @@ void Gpu3dFft::ImplHeFfte<backend_tag>::perform3dFft(gmx_fft_direction dir, Comm
 #endif
             break;
         case GMX_FFT_COMPLEX_TO_REAL:
-#if GMX_SYCL_HIPSYCL
+#if GMX_SYCL_ACPP
             pmeRawStream_.submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
                 cgh.hipSYCL_enqueue_custom_operation([=](sycl::interop_handle& gmx_unused h) {
                     fftPlan_->backward(complexGrid, realGrid, workspace_.data());

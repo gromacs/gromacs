@@ -67,13 +67,13 @@ endif()
 if(GMX_USE_ROCTX)
     find_path (ROCTX_INCLUDE_DIR
         NAMES roctracer/roctx.h
-        HINTS ENV ROCM_PATH ENV ROCM_HOME "${HIPSYCL_SYCLCC_ROCM_PATH}" "${HIP_PACKAGE_PREFIX_DIR}"
+        HINTS ENV ROCM_PATH ENV ROCM_HOME "${ACPP_ROCM_PATH}" "${HIP_PACKAGE_PREFIX_DIR}"
         PATH_SUFFIXES include
         REQUIRED
         )
     find_library (ROCTX_LIBRARY
         NAMES libroctx64.so
-        HINTS ENV ROCM_PATH ENV ROCM_HOME "${HIPSYCL_SYCLCC_ROCM_PATH}" "${HIP_PACKAGE_PREFIX_DIR}"
+        HINTS ENV ROCM_PATH ENV ROCM_HOME "${ACPP_ROCM_PATH}" "${HIP_PACKAGE_PREFIX_DIR}"
         PATH_SUFFIXES roctracer/lib64 roctracer/lib lib64 lib
         REQUIRED
         )

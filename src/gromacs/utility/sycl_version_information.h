@@ -39,7 +39,7 @@
 namespace gmx
 {
 
-//! Returns an internal version strings of the Intel DPC++ and hipSYCL compiler.
+//! Returns an internal version strings of the Intel DPC++ and AdaptiveCpp compiler.
 std::string getSyclCompilerVersion();
 
 } // namespace gmx

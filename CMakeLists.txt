@@ -744,10 +744,10 @@ if(GMX_GPU)
             if(${_gmx_gpu_uppercase} STREQUAL "OPENCL")
                 set(_gmx_gpu_nb_cluster_size_value 8)
             elseif(GMX_GPU_SYCL)
-                if (GMX_SYCL_ACPP AND NOT GMX_HIPSYCL_HAVE_LEVELZERO_TARGET)
+                if (GMX_SYCL_ACPP AND NOT GMX_ACPP_HAVE_LEVELZERO_TARGET)
                     set(_gmx_gpu_nb_cluster_size_value 8)
                 else()
-                    # Either DPCPP or hipSYCL targeting Intel Level0
+                    # Either DPC++ or AdaptiveCpp targeting Intel Level0
                     set(_gmx_gpu_nb_cluster_size_value 4)
                 endif()
             endif()

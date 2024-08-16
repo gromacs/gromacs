@@ -46,6 +46,13 @@
 //! \brief Full warp active thread mask used in CUDA warp-level primitives.
 static constexpr unsigned int c_cudaFullWarpMask = 0xffffffff;
 
+// Prior to AdaptiveCpp 24.06, only HIPSYCL_LIBKERNEL_IS_DEVICE_PASS_HIP is defined
+// TODO: Remove once we have AdaptiveCpp 24.06 as the minimum supported version
+#if GMX_SYCL_ACPP && !defined(ACPP_LIBKERNEL_IS_DEVICE_PASS_HIP) \
+        && defined(HIPSYCL_LIBKERNEL_IS_DEVICE_PASS_HIP)
+#    define ACPP_LIBKERNEL_IS_DEVICE_PASS_HIP HIPSYCL_LIBKERNEL_IS_DEVICE_PASS_HIP
+#endif
+
 #if defined(SYCL_EXT_ONEAPI_ASSERT) && SYCL_EXT_ONEAPI_ASSERT && !defined(__AMDGCN__)
 #    define SYCL_ASSERT(condition) assert(condition)
 #else
@@ -58,7 +65,7 @@ static constexpr unsigned int c_cudaFullWarpMask = 0xffffffff;
 #    define SYCL_ASSERT(condition)
 #endif
 
-#if GMX_SYCL_HIPSYCL && HIPSYCL_LIBKERNEL_IS_DEVICE_PASS_HIP
+#if GMX_SYCL_ACPP && ACPP_LIBKERNEL_IS_DEVICE_PASS_HIP
 HIPSYCL_UNIVERSAL_TARGET
 static inline void atomicAddOptimizedAmd(float gmx_unused* ptr, const float gmx_unused delta)
 {
@@ -67,7 +74,7 @@ static inline void atomicAddOptimizedAmd(float gmx_unused* ptr, const float gmx_
     atomicAddNoRet(ptr, delta);
     CLANG_DIAGNOSTIC_RESET
 #    elif defined(__gfx90a__) // Special function for AMD MI200
-    unsafeAtomicAdd(ptr, delta); // Not checked on real hardware, see #4465
+    unsafeAtomicAdd(ptr, delta);
 #    else
     atomicAdd(ptr, delta);
 #    endif
@@ -79,7 +86,7 @@ constexpr bool compilingForHost()
 {
     // Skip compiling for CPU. Makes compiling this file ~10% faster for oneAPI/CUDA or
     // hipSYCL/CUDA. For DPC++, any non-CPU targets must be explicitly allowed in the #if below.
-#if GMX_SYCL_HIPSYCL
+#if GMX_SYCL_ACPP
     __hipsycl_if_target_host(return true;);
 #endif
     // We need to list all valid device targets here
@@ -143,9 +150,9 @@ static inline void atomicFetchAdd(T& val, const T delta)
 {
     using sycl::access::address_space;
     // Check if we need/can call the optimized atomicAdd for AMD devices, see #4465.
-    if constexpr (GMX_SYCL_HIPSYCL && std::is_same_v<T, float> && AddressSpace == address_space::global_space)
+    if constexpr (GMX_SYCL_ACPP && std::is_same_v<T, float> && AddressSpace == address_space::global_space)
     {
-#if GMX_SYCL_HIPSYCL && HIPSYCL_LIBKERNEL_IS_DEVICE_PASS_HIP
+#if GMX_SYCL_ACPP && ACPP_LIBKERNEL_IS_DEVICE_PASS_HIP
         atomicAddOptimizedAmd(&val, delta);
 #else
         atomicAddDefault<T, MemoryScope, AddressSpace>(val, delta);
@@ -174,7 +181,7 @@ static inline void atomicFetchAddLocal(T& val, const T delta)
 template<typename T, sycl::memory_scope MemoryScope = sycl::memory_scope::device>
 static inline T atomicLoad(T& val)
 {
-#if GMX_SYCL_HIPSYCL && GMX_HIPSYCL_HAVE_CUDA_TARGET
+#if GMX_SYCL_ACPP && GMX_ACPP_HAVE_CUDA_TARGET
     /* Some versions of Clang do not support atomicLoad in NVPTX backend, and die with ICE,
      * e.g. Clang 14, hipSYCL 0.9.2, CUDA 11.5, Debug:
      * fatal error: error in backend: Cannot select: 0xd870450: i32,ch = AtomicLoad<(load seq_cst (s32) from %ir.27)>.
@@ -201,7 +208,7 @@ static inline T atomicLoad(T& val)
 template<int Dim>
 static inline void subGroupBarrier(const sycl::nd_item<Dim> itemIdx)
 {
-#if GMX_SYCL_HIPSYCL
+#if GMX_SYCL_ACPP
     sycl::group_barrier(itemIdx.get_sub_group(), sycl::memory_scope::sub_group);
 #else
     itemIdx.get_sub_group().barrier();
@@ -221,7 +228,7 @@ static inline void subGroupBarrier(const sycl::nd_item<Dim> itemIdx)
  * Ref: https://gpuopen.com/learn/amd-gcn-assembly-cross-lane-operations
  */
 template<class T, int dppCtrl, int rowMask = 0xf, int bankMask = 0xf, bool boundCtrl = true>
-#    if GMX_SYCL_HIPSYCL
+#    if GMX_SYCL_ACPP
 __device__ __host__
 #    endif
         __attribute__((always_inline)) T
@@ -245,7 +252,7 @@ __device__ __host__
 }
 #endif
 
-#if GMX_SYCL_HIPSYCL && !(defined(ACPP_VERSION_MAJOR) && ACPP_VERSION_MAJOR >= 24)
+#if GMX_SYCL_ACPP && !(defined(ACPP_VERSION_MAJOR) && ACPP_VERSION_MAJOR >= 24)
 namespace sycl
 {
 /*! \brief Popcount instruction for SYCL

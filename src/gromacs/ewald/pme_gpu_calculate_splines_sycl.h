@@ -63,8 +63,8 @@ namespace
 template<typename T>
 inline void assertIsFinite(T arg);
 
-#if defined(NDEBUG) || GMX_SYCL_HIPSYCL
-// We have no sycl::isfinite in hipSYCL yet
+#if defined(NDEBUG) || GMX_SYCL_ACPP
+// We have no sycl::isfinite in AdaptiveCpp yet
 template<typename T>
 inline void assertIsFinite(T /* arg */)
 {

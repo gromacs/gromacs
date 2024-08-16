@@ -701,7 +701,7 @@ typename std::enable_if_t<numShuffleReductionSteps != 1, void> static inline red
         }
     }
 
-#else // GMX_SYCL_HIPSYCL && HIPSYCL_LIBKERNEL_IS_DEVICE_PASS_HIP
+#else // defined(__SYCL_DEVICE_ONLY__) && defined(__AMDGCN__) && (__AMDGCN_WAVEFRONT_SIZE == 64)
 
     // Thread mask to use to select first three threads (in tidxj) in each reduction "tree".
     // Two bits for two steps, three bits for three steps.
@@ -754,7 +754,7 @@ typename std::enable_if_t<numShuffleReductionSteps != 1, void> static inline red
             atomicFetchAdd(a_fShift[shift][(tidxj & threadBitMask)], fShiftBuf);
         }
     }
-#endif // GMX_SYCL_HIPSYCL && HIPSYCL_LIBKERNEL_IS_DEVICE_PASS_HIP
+#endif // defined(__SYCL_DEVICE_ONLY__) && defined(__AMDGCN__) && (__AMDGCN_WAVEFRONT_SIZE == 64)
 }
 
 /*! \brief \c reduceForceIAndFShiftShuffles specialization for single-step reduction (e.g., Intel iGPUs).
@@ -1301,7 +1301,7 @@ static auto nbnxmKernel(sycl::handler& cgh,
 
                             // Ensure distance do not become so small that r^-12 overflows
                             r2 = sycl::max(r2, c_nbnxnMinDistanceSquared);
-#if GMX_SYCL_HIPSYCL
+#if GMX_SYCL_ACPP
                             // No fast/native functions in some compilation passes
                             const float rInv = sycl::rsqrt(r2);
 #else

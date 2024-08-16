@@ -267,22 +267,18 @@
 
 /* Define if AdaptiveCpp (hipSYCL) is used for SYCL support */
 #cmakedefine01 GMX_SYCL_ACPP
-#define GMX_SYCL_HIPSYCL GMX_SYCL_ACPP
 
 /* Define if Intel oneAPI DPC++ is used for SYCL support */
 #cmakedefine01 GMX_SYCL_DPCPP
 
 // Define if AdaptiveCpp has HIP target(s)
 #cmakedefine01 GMX_ACPP_HAVE_HIP_TARGET
-#define GMX_HIPSYCL_HAVE_HIP_TARGET GMX_ACPP_HAVE_HIP_TARGET
 
 // Define if AdaptiveCpp has CUDA target(s)
 #cmakedefine01 GMX_ACPP_HAVE_CUDA_TARGET
-#define GMX_HIPSYCL_HAVE_CUDA_TARGET GMX_ACPP_HAVE_CUDA_TARGET
 
 // Define if AdaptiveCpp should have AMD RDNA support (32-wide execution)
 #cmakedefine01 GMX_ACPP_ENABLE_AMD_RDNA_SUPPORT
-#define GMX_HIPSYCL_ENABLE_AMD_RDNA_SUPPORT GMX_ACPP_ENABLE_AMD_RDNA_SUPPORT
 
 /* Use a single compilation unit when compiling the CUDA (non-bonded) kernels.  */
 #cmakedefine01 GMX_CUDA_NB_SINGLE_COMPILATION_UNIT

@@ -59,7 +59,7 @@
  * than dynamic index-based accesses to the grid size data to avoid
  * local memory operations and related large overhead.
  *
- * Drastically reduces register spills on AMD via hipSYCL, and improves performance 10x.
+ * Drastically reduces register spills on AMD via AdaptiveCpp, and improves performance 10x.
  *
  * \param[in]  realGridSizeFP     Local grid size constant
  * \param[in]  dimIndex           Dimension index (XX, YY, ZZ)

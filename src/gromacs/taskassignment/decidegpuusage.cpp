@@ -105,10 +105,10 @@ const char* const g_specifyEverythingFormatString =
 #    elif GMX_GPU_SYCL && GMX_SYCL_DPCPP
         // https://github.com/intel/llvm/blob/sycl/sycl/doc/EnvironmentVariables.md
         "ONEAPI_DEVICE_SELECTOR"
-#    elif GMX_GPU_SYCL && GMX_SYCL_HIPSYCL && GMX_HIPSYCL_HAVE_HIP_TARGET || GMX_GPU_HIP
+#    elif GMX_GPU_SYCL && GMX_SYCL_ACPP && GMX_ACPP_HAVE_HIP_TARGET || GMX_GPU_HIP
         // https://rocm.docs.amd.com/en/latest/conceptual/gpu-isolation.html
         "ROCR_VISIBLE_DEVICES"
-#    elif GMX_GPU_SYCL && GMX_SYCL_HIPSYCL && GMX_HIPSYCL_HAVE_CUDA_TARGET
+#    elif GMX_GPU_SYCL && GMX_SYCL_ACPP && GMX_ACPP_HAVE_CUDA_TARGET
         "CUDA_VISIBLE_DEVIES"
 #    else
 #        error "Unreachable branch"
