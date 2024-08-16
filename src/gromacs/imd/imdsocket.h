@@ -39,8 +39,8 @@
  *
  * \author Martin Hoefling, Carsten Kutzner <ckutzne@gwdg.de>
  *
- * For more information, see https://www-s.ks.uiuc.edu/Research/vmd/imd/ for general
- * IMD information and https://www-s.ks.uiuc.edu/Research/vmd/imd/code/imdapi.tar.gz
+ * For more information, see https://www.ks.uiuc.edu/Research/vmd/imd/ for general
+ * IMD information and https://www.ks.uiuc.edu/Research/vmd/imd/code/imdapi.tar.gz
  * for the IMD reference implementation and API.
  *
  * \inlibraryapi
