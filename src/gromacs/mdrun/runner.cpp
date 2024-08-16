@@ -1680,7 +1680,7 @@ int Mdrunner::mdrunner()
                                          ? "uses"
                                          : "does not use");
 
-    if (runScheduleWork.simulationWork.useGpuDirectCommunication && GMX_GPU_CUDA)
+    if (runScheduleWork.simulationWork.useGpuDirectCommunication && (GMX_GPU_CUDA || GMX_GPU_HIP))
     {
         // Don't enable event counting with GPU Direct comm, see #3988.
         gmx::internal::disableGpuEventConsumptionCounting();

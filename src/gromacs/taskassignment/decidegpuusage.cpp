@@ -778,8 +778,8 @@ bool decideWhetherDirectGpuCommunicationCanBeUsed(gmx::GpuAwareMpiStatus gpuAwar
                                                   const gmx::MDLogger&   mdlog)
 {
     // Decide if we have either a supported library MPI build or thread-MPI build
-    const bool isSupportedLibMpiBuild    = (GMX_GPU_CUDA || GMX_GPU_SYCL) && GMX_LIB_MPI;
-    const bool isSupportedThreadMpiBuild = GMX_GPU_CUDA && GMX_THREAD_MPI;
+    const bool isSupportedLibMpiBuild    = GMX_GPU && !GMX_GPU_OPENCL && GMX_LIB_MPI;
+    const bool isSupportedThreadMpiBuild = (GMX_GPU_CUDA || GMX_GPU_HIP) && GMX_THREAD_MPI;
     // Direct GPU communication is used by default in supported configurations.
     const bool isSupportedByBuild = isSupportedLibMpiBuild || isSupportedThreadMpiBuild;
 

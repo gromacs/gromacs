@@ -64,7 +64,7 @@ class FixedCapacityVector;
 struct gmx_domdec_t;
 struct gmx_wallcycle;
 
-#if !GMX_GPU_CUDA && !GMX_GPU_SYCL
+#if !GMX_GPU || GMX_GPU_OPENCL
 
 namespace gmx
 {
