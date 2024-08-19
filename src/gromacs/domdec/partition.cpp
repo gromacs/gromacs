@@ -455,10 +455,13 @@ static void dd_move_cellx(gmx_domdec_t* dd, const gmx_ddbox_t* ddbox, rvec cell_
     }
 }
 
-//! Sets the charge-group zones to be equal to the home zone.
+//! Sets the atom-range for the home zone to \p dd->numHomeAtoms and all other zones empty
 static void set_zones_numHomeAtoms(gmx_domdec_t* dd)
 {
-    dd->zones.setAtomRangeEnd(0, dd->numHomeAtoms, true);
+    for (int zone = 0; zone < dd->zones.numZones(); zone++)
+    {
+        dd->zones.setAtomRangeEnd(zone, dd->numHomeAtoms, true);
+    }
 }
 
 //! Restore atom groups for the charge groups.
@@ -2194,6 +2197,9 @@ static void setup_dd_communication(gmx_domdec_t* dd, matrix box, gmx_ddbox_t* dd
         }
         nzone += nzone;
     }
+
+    GMX_ASSERT(*zones.atomRange(zones.numZones() - 1).end() == nat_tot,
+               "The zone atom counts should cover the whole atom range");
 
     comm->atomRanges.setEnd(DDAtomRanges::Type::Zones, nat_tot);
 

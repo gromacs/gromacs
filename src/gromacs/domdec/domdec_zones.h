@@ -122,7 +122,10 @@ public:
     }
 
     //! Returns the atom index range end for atoms from directly neighboring domains for zone \p zone
-    int directNeighborAtomRangeEnd(int zone) const { return directNeighborAtomRangeEnd_[zone]; }
+    int directNeighborAtomRangeEnd(int zone) const
+    {
+        return atomRanges_[zone] + numAtomFromDirectNeighbors_[zone];
+    }
 
     //! Returns the j-atom index range for i-zone \p iZone
     Range<int> jAtomRange(const int iZone) const
@@ -148,14 +151,11 @@ public:
         GMX_ASSERT(atomRangeEnd >= atomRanges_[zone],
                    "atomRangeEnd should be >= than the previous end");
 
-        for (int z = zone + 1; z < num_ + 1; z++)
-        {
-            atomRanges_[z] = atomRangeEnd;
-        }
+        atomRanges_[zone + 1] = atomRangeEnd;
 
         if (zone == 0 || rangeIsFromDirectNeighbor)
         {
-            directNeighborAtomRangeEnd_[zone] = atomRangeEnd;
+            numAtomFromDirectNeighbors_[zone] = atomRangeEnd - atomRanges_[zone];
         }
     }
 
@@ -182,8 +182,8 @@ private:
     std::array<IVec, sc_maxNumZones> shifts_;
     //! The atom range boundaries for the zones
     std::array<int, sc_maxNumZones + 1> atomRanges_ = { 0 };
-    //! The atom range end for atoms from directly neighboring domains only
-    std::array<int, sc_maxNumZones> directNeighborAtomRangeEnd_ = { 0 };
+    //! The number of atoms in the zone that are communicated from direct neighbors (these come first)
+    std::array<int, sc_maxNumZones> numAtomFromDirectNeighbors_ = { 0 };
     //! Boundaries of the zones
     std::array<gmx_domdec_zone_size_t, sc_maxNumZones> sizes_;
 };
