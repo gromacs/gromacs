@@ -33,3 +33,13 @@ Added support for DSSP v.2 in ``gmx dssp``
 There is now the ability to choose between two different output modes: with polyproline helices
 search enabled (option "-polypro", default and corresponds to the output of DSSP v.4) and
 with polyproline helices search disabled (option "-nopolypro", corresponds to the output of DSSP v.2).
+
+The number of averaging blocks for ``-evisco`` is now chosen by the user
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The number of averaging blocks used when computing viscosity using Einstein formula was previously hard-coded to 4. 
+This number can now be chosen by the user via the ``-einstein_blocks`` flag of ``gmx energy``. 
+When computing viscosity from very long trajectories, it may be preferable to have several averaging blocks 
+to obtain a more accurate average and avoid the long-time diffusive behavior of the pressure integral.
+
+:issue:`5114``

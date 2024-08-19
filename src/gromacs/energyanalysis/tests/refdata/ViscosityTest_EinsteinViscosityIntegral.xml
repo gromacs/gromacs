@@ -58,71 +58,7 @@ TYPE xy
           <Real>0.000386827</Real>
           <Real>0.000270524</Real>
           <Real>0.000638843</Real>
-          <Real>0.000432065</Real>
-        </Sequence>
-        <Sequence Name="Row6">
-          <Int Name="Length">5</Int>
-          <Real>1.2</Real>
-          <Real>0.000491027</Real>
-          <Real>0.00030208</Real>
-          <Real>0.000810851</Real>
-          <Real>0.000534652</Real>
-        </Sequence>
-        <Sequence Name="Row7">
-          <Int Name="Length">5</Int>
-          <Real>1.4</Real>
-          <Real>0.000600214</Real>
-          <Real>0.000325355</Real>
-          <Real>0.000951438</Real>
-          <Real>0.000625669</Real>
-        </Sequence>
-        <Sequence Name="Row8">
-          <Int Name="Length">5</Int>
-          <Real>1.6</Real>
-          <Real>0.000713111</Real>
-          <Real>0.000355259</Real>
-          <Real>0.00103806</Real>
-          <Real>0.000702145</Real>
-        </Sequence>
-        <Sequence Name="Row9">
-          <Int Name="Length">5</Int>
-          <Real>1.8</Real>
-          <Real>0.00084181</Real>
-          <Real>0.000405959</Real>
-          <Real>0.00106653</Real>
-          <Real>0.000771431</Real>
-        </Sequence>
-        <Sequence Name="Row10">
-          <Int Name="Length">5</Int>
-          <Real>2</Real>
-          <Real>0.000977894</Real>
-          <Real>0.000471442</Real>
-          <Real>0.00107524</Real>
-          <Real>0.000841526</Real>
-        </Sequence>
-        <Sequence Name="Row11">
-          <Int Name="Length">5</Int>
-          <Real>2.2</Real>
-          <Real>0.00112092</Real>
-          <Real>0.00054531</Real>
-          <Real>0.00106461</Real>
-          <Real>0.000910279</Real>
-        </Sequence>
-        <Sequence Name="Row12">
-          <Int Name="Length">5</Int>
-          <Real>2.4</Real>
-          <Real>0.00128459</Real>
-          <Real>0.00062522</Real>
-          <Real>0.00104767</Real>
-          <Real>0.000985826</Real>
-        </Sequence>
-        <Sequence Name="Row13">
-          <Int Name="Length">5</Int>
-          <Real>2.6</Real>
-          <Real>0.00146957</Real>
-          <Real>0.000709173</Real>
-          <Real>0.00104922</Real>
-          <Real>0.00107599</Real>
+          <Real>0.000432064</Real>
         </Sequence>
       </XvgData>
     </File>

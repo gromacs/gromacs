@@ -166,10 +166,11 @@ TEST_F(EnergyTest, ExtractEnergyWithNumberInNameAndAlsoByNumber)
     runTest("ener_numberInName.edr", "1/Viscosity\n7\n");
 }
 
+/* TODO: test -einstein_blocks and -einstein_restarts */
 class ViscosityTest : public CommandLineTestBase
 {
 public:
-    void runTest()
+    void runTest(const CommandLine& einstein_args)
     {
         auto& cmdline = commandLine();
         setInputFile("-f", "ener.edr");
@@ -192,6 +193,8 @@ public:
             setOutputFile("-corr", "corr.xvg", NoTextMatch());
         }
 
+        cmdline.merge(einstein_args);
+
         ASSERT_EQ(0, gmx_energy(cmdline.argc(), cmdline.argv()));
 
         checkOutputFiles();
@@ -202,14 +205,24 @@ TEST_F(ViscosityTest, EinsteinViscosity)
 {
     auto tolerance = relativeToleranceAsFloatingPoint(1e-4, 1e-5);
     setOutputFile("-evisco", "evisco.xvg", XvgMatch().tolerance(tolerance));
-    runTest();
+    const char* const einstein_args[] = { "-einstein_restarts", "50", "-einstein_blocks", "10" };
+    runTest(CommandLine(einstein_args));
 }
 
 TEST_F(ViscosityTest, EinsteinViscosityIntegral)
 {
     auto tolerance = relativeToleranceAsFloatingPoint(1e-4, 1e-5);
     setOutputFile("-eviscoi", "eviscoi.xvg", XvgMatch().tolerance(tolerance));
-    runTest();
+    const char* const einstein_args[] = { "-einstein_restarts", "50", "-einstein_blocks", "10" };
+    runTest(CommandLine(einstein_args));
+}
+
+TEST_F(ViscosityTest, EinsteinViscosityDefaultArguments)
+{
+    auto tolerance = relativeToleranceAsFloatingPoint(1e-4, 1e-5);
+    setOutputFile("-evisco", "evisco.xvg", XvgMatch().tolerance(tolerance));
+    setOutputFile("-eviscoi", "eviscoi.xvg", XvgMatch().tolerance(tolerance));
+    runTest(CommandLine());
 }
 
 } // namespace

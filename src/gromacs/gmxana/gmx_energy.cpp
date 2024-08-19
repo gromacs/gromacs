@@ -341,6 +341,7 @@ static void einstein_visco(const char*             fn,
                            const real              volume,
                            const real              temperature,
                            const int               numRestarts,
+                           const int               numBlocks,
                            double                  dt,
                            const gmx_output_env_t* oenv)
 {
@@ -363,7 +364,14 @@ static void einstein_visco(const char*             fn,
         eneint[2][i + 1] = eneint[2][i] + 0.5 * (edat.s[5].es[i].sum + edat.s[7].es[i].sum) * fac;
     }
 
-    const int nf4 = nint / 4 + 1;
+    if (numBlocks <= 0)
+    {
+        GMX_THROW(
+                gmx::InvalidInputError("The number of averaging blocks for computing the viscosity "
+                                       "using Einstein should be positive"));
+    }
+
+    const int nintBlock = nint / numBlocks + 1;
 
     if (numRestarts <= 0)
     {
@@ -372,12 +380,12 @@ static void einstein_visco(const char*             fn,
                                        "Einstein should be positive"));
     }
 
-    const int stepSize = std::max(nf4 / numRestarts, 1);
+    const int stepSize = std::max(nintBlock / numRestarts, 1);
 
     printf("\n");
     printf("Computing shear viscosity using the Einstein relation with %d start points separated "
            "by %g ps\n",
-           gmx::divideRoundUp(nf4, stepSize),
+           gmx::divideRoundUp(nintBlock, stepSize),
            stepSize * dt);
 
 
@@ -386,7 +394,7 @@ static void einstein_visco(const char*             fn,
     FILE* fp0 = xvgropen(fni, "Shear viscosity integral", "Time (ps)", "(kg m\\S-1\\N s\\S-1\\N ps)", oenv);
     FILE* fp1 = xvgropen(
             fn, "Shear viscosity using Einstein relation", "Time (ps)", "(kg m\\S-1\\N s\\S-1\\N)", oenv);
-    for (int i = 0; i < nf4; i += stepSize)
+    for (int i = 0; i < nintBlock; i += stepSize)
     {
         std::array<double, c_numSets + 1> av = { 0.0 };
 
@@ -924,6 +932,7 @@ static void analyse_ener(gmx_bool                         bCorr,
                          const bool                       computeACViscosity,
                          const bool                       computeEinsteinViscosity,
                          const int                        einsteinRestarts,
+                         const int                        einsteinBlocks,
                          const char*                      visfn,
                          int                              nmol,
                          int64_t                          start_step,
@@ -1187,7 +1196,8 @@ static void analyse_ener(gmx_bool                         bCorr,
 
             if (computeEinsteinViscosity)
             {
-                einstein_visco(eviscofn, eviscoifn, 3, *edat, Vaver, Temp, einsteinRestarts, Dt, oenv);
+                einstein_visco(
+                        eviscofn, eviscoifn, 3, *edat, Vaver, Temp, einsteinRestarts, einsteinBlocks, Dt, oenv);
             }
 
             if (computeACViscosity)
@@ -1761,14 +1771,16 @@ int gmx_energy(int argc, char* argv[])
         "Note that frequent pressure calculation (nstcalcenergy mdp parameter) is still needed. ",
         "Option [TT]-evicso[tt] gives this shear viscosity estimate and option [TT]-eviscoi[tt] ",
         "the integral. Using one of these two options also triggers the other. ",
-        "The viscosity is computed from integrals averaged over [TT]-einstein_restarts[tt] ",
-        "starting points uniformly distributed over the first quarter of the trajectory."
+        "The viscosity is computed from integrals averaged over uniformly distributed ",
+        "[TT]-einstein_restarts[tt] starting points, which are sampled over one block out of ",
+        "[TT]-einstein_blocks[tt] of the trajectory."
     };
     static gmx_bool bSum = FALSE, bFee = FALSE, bPrAll = FALSE, bFluct = FALSE, bDriftCorr = FALSE;
     static gmx_bool bDp = FALSE, bMutot = FALSE, bOrinst = FALSE, bOvec = FALSE, bFluctProps = FALSE;
     static int      nmol = 1, nbmin = 5, nbmax = 5;
     static real     reftemp = 300.0, ezero = 0;
     static int      einsteinRestarts = 100;
+    static int      einsteinBlocks   = 4;
     t_pargs         pa[]             = {
         { "-fee", FALSE, etBOOL, { &bFee }, "Do a free energy estimate" },
         { "-fetemp",
@@ -1823,7 +1835,12 @@ int gmx_energy(int argc, char* argv[])
           FALSE,
           etINT,
           { &einsteinRestarts },
-          "Number of restarts for computing the viscosity using the Einstein relation" }
+          "Number of restarts for computing the viscosity using the Einstein relation" },
+        { "-einstein_blocks",
+          FALSE,
+          etINT,
+          { &einsteinBlocks },
+          "Number of averaging windows for computing the viscosity using the Einstein relation" }
     };
     static const char* setnm[] = { "Pres-XX", "Pres-XY",     "Pres-XZ", "Pres-YX",
                                    "Pres-YY", "Pres-YZ",     "Pres-ZX", "Pres-ZY",
@@ -1917,6 +1934,11 @@ int gmx_energy(int argc, char* argv[])
                         if (1 != scanf("%lf", &dbl))
                         {
                             gmx_fatal(FARGS, "Error reading user input");
+                        }
+                        if (dbl <= 0)
+                        {
+                            GMX_THROW(gmx::InvalidInputError(
+                                    "The box volume needs to be a positive real number."));
                         }
                         Vaver = dbl;
                     }
@@ -2222,6 +2244,7 @@ int gmx_energy(int argc, char* argv[])
                      computeACViscosity,
                      computeEinsteinViscosity,
                      einsteinRestarts,
+                     einsteinBlocks,
                      opt2fn("-vis", NFILE, fnm),
                      nmol,
                      start_step,
