@@ -61,7 +61,7 @@ namespace
 inline void gmx_simdcall decrHsimd(double* m, SimdDouble a)
 {
     // Make sure the memory pointer is aligned to half float SIMD width
-    assert(std::size_t(m) % 32 == 0);
+    assert(std::size_t(m) % (GMX_SIMD_DOUBLE_WIDTH * sizeof(double) / 2) == 0);
 
     svbool_t    pg = SVE_SIMD_DOUBLE_HALF_MASK;
     svfloat64_t v0, v1, v2, v3;
@@ -81,9 +81,12 @@ static inline void gmx_simdcall gatherLoadTranspose(const double*      base,
                                                     SimdDouble*        v2,
                                                     SimdDouble*        v3)
 {
-    assert(std::size_t(offset) % 16 == 0);
-    assert(std::size_t(base) % 64 == 0);
-    assert(align % 4 == 0);
+    // Offset list must be aligned for SIMD DINT32
+    assert(std::size_t(offset) % (GMX_SIMD_DINT32_WIDTH * sizeof(std::int32_t)) == 0);
+    // Base pointer must be aligned to the smaller of 4 elements and double SIMD width
+    assert(std::size_t(base) % (std::min(GMX_SIMD_DOUBLE_WIDTH, 4) * sizeof(double)) == 0);
+    // align parameter must also be a multiple of the above alignment requirement
+    assert(align % std::min(GMX_SIMD_DOUBLE_WIDTH, 4) == 0);
 
     svint64_t offsets;
     svbool_t  pg = svptrue_b64();
@@ -102,10 +105,10 @@ template<int align>
 static inline void gmx_simdcall
 gatherLoadBySimdIntTranspose(const double* base, SimdDInt32 offset, SimdDouble* v0, SimdDouble* v1)
 {
-    // Base pointer must be aligned to the smaller of 2 elements and float SIMD width
-    assert(std::size_t(base) % 8 == 0);
+    // Base pointer must be aligned to the smaller of 2 elements and double SIMD width
+    assert(std::size_t(base) % (std::min(GMX_SIMD_DOUBLE_WIDTH, 2) * sizeof(double)) == 0);
     // align parameter must also be a multiple of the above alignment requirement
-    assert(align % 2 == 0);
+    assert(align % std::min(GMX_SIMD_DOUBLE_WIDTH, 2) == 0);
 
     svbool_t  pg = svptrue_b64();
     svint64_t offsets;
@@ -119,9 +122,12 @@ template<int align>
 static inline void gmx_simdcall
 gatherLoadTranspose(const double* base, const std::int32_t offset[], SimdDouble* v0, SimdDouble* v1)
 {
-    assert(std::size_t(offset) % 64 == 0);
-    assert(std::size_t(base) % 8 == 0);
-    assert(align % 2 == 0);
+    // Offset list must be aligned for SIMD DINT32
+    assert(std::size_t(offset) % (GMX_SIMD_DINT32_WIDTH * sizeof(std::int32_t)) == 0);
+    // Base pointer must be aligned to the smaller of 2 elements and double SIMD width
+    assert(std::size_t(base) % (std::min(GMX_SIMD_DOUBLE_WIDTH, 2) * sizeof(double)) == 0);
+    // align parameter must also be a multiple of the above alignment requirement
+    assert(align % std::min(GMX_SIMD_DOUBLE_WIDTH, 2) == 0);
 
     SimdDInt32 offsets;
     svbool_t   pg         = SVE_SIMD_FLOAT_HALF_DOUBLE_MASK;
@@ -138,7 +144,8 @@ static inline void gmx_simdcall gatherLoadUTranspose(const double*      base,
                                                      SimdDouble*        v1,
                                                      SimdDouble*        v2)
 {
-    assert(std::size_t(offset) % 16 == 0);
+    // Offset list must be aligned for SIMD DINT32
+    assert(std::size_t(offset) % (GMX_SIMD_DINT32_WIDTH * sizeof(std::int32_t)) == 0);
 
     svint64_t offsets;
     svbool_t  pg = svptrue_b64();
@@ -159,7 +166,8 @@ static inline void gmx_simdcall transposeScatterStoreU(double*            base,
                                                        SimdDouble         v1,
                                                        SimdDouble         v2)
 {
-    assert(std::size_t(offset) % 16 == 0);
+    // Offset list must be aligned for SIMD DINT32
+    assert(std::size_t(offset) % (GMX_SIMD_DINT32_WIDTH * sizeof(std::int32_t)) == 0);
 
     svint64_t offsets;
     svbool_t  pg = svptrue_b64();
@@ -177,7 +185,8 @@ template<int align>
 static inline void gmx_simdcall
 transposeScatterIncrU(double* base, const std::int32_t offset[], SimdDouble v0, SimdDouble v1, SimdDouble v2)
 {
-    assert(std::size_t(offset) % 32 == 0);
+    // Offset list must be aligned for SIMD DINT32
+    assert(std::size_t(offset) % (GMX_SIMD_DINT32_WIDTH * sizeof(std::int32_t)) == 0);
 
     svbool_t                           pg = svptrue_b64();
     svfloat64x3_t                      v;
@@ -185,7 +194,7 @@ transposeScatterIncrU(double* base, const std::int32_t offset[], SimdDouble v0, 
     v = svcreate3_f64(v0.simdInternal_, v1.simdInternal_, v2.simdInternal_);
     svst3_f64(pg, tvec, v);
 #if GMX_SIMD_DOUBLE_WIDTH >= 3
-    pg = SVE_SIMD4_DOUBLE_MASK;
+    pg = SVE_DOUBLE3_MASK;
     for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
         svfloat64_t t1 = svld1_f64(pg, base + align * offset[i]);
@@ -208,7 +217,8 @@ template<int align>
 static inline void gmx_simdcall
 transposeScatterDecrU(double* base, const std::int32_t offset[], SimdDouble v0, SimdDouble v1, SimdDouble v2)
 {
-    assert(std::size_t(offset) % 16 == 0);
+    // Offset list must be aligned for SIMD DINT32
+    assert(std::size_t(offset) % (GMX_SIMD_DINT32_WIDTH * sizeof(std::int32_t)) == 0);
 
     svbool_t                           pg = svptrue_b64();
     svfloat64x3_t                      v;
@@ -216,7 +226,7 @@ transposeScatterDecrU(double* base, const std::int32_t offset[], SimdDouble v0, 
     v = svcreate3_f64(v0.simdInternal_, v1.simdInternal_, v2.simdInternal_);
     svst3_f64(pg, tvec, v);
 #if GMX_SIMD_DOUBLE_WIDTH >= 3
-    pg = SVE_SIMD4_DOUBLE_MASK;
+    pg = SVE_DOUBLE3_MASK;
     for (int i = 0; i < GMX_SIMD_DOUBLE_WIDTH; i++)
     {
         svfloat64_t t1 = svld1_f64(pg, base + align * offset[i]);
@@ -264,10 +274,12 @@ static inline void gmx_simdcall gatherLoadBySimdIntTranspose(const double* base,
                                                              SimdDouble*   v2,
                                                              SimdDouble*   v3)
 {
-    alignas(GMX_SIMD_ALIGNMENT) std::int32_t ioffset[GMX_SIMD_FINT32_WIDTH];
+    // Base pointer must be aligned to the smaller of 4 elements and double SIMD width
+    assert(std::size_t(base) % (std::min(GMX_SIMD_DOUBLE_WIDTH, 4) * sizeof(double)) == 0);
+    // align parameter must also be a multiple of the above alignment requirement
+    assert(align % std::min(GMX_SIMD_DOUBLE_WIDTH, 4) == 0);
 
-    assert(std::size_t(base) % 16 == 0);
-    assert(align % 4 == 0);
+    alignas(GMX_SIMD_ALIGNMENT) std::int32_t ioffset[GMX_SIMD_FINT32_WIDTH];
 
     store(ioffset, offset);
     gatherLoadTranspose<align>(base, ioffset, v0, v1, v2, v3);
@@ -288,7 +300,9 @@ gatherLoadUBySimdIntTranspose(const double* base, SimdDInt32 offset, SimdDouble*
 static inline double gmx_simdcall
 reduceIncr4ReturnSum(double* m, SimdDouble v0, SimdDouble v1, SimdDouble v2, SimdDouble v3)
 {
-    assert(std::size_t(m) % 16 == 0);
+    // Make sure the memory pointer is aligned to the smaller of 4 elements and double SIMD width
+    assert(std::size_t(m) % (std::min(GMX_SIMD_DOUBLE_WIDTH, 4) * sizeof(double)) == 0);
+
     svbool_t pg = svptrue_b64();
     double   sum[4];
     sum[0] = svadda_f64(pg, 0.0, v0.simdInternal_);
@@ -296,7 +310,7 @@ reduceIncr4ReturnSum(double* m, SimdDouble v0, SimdDouble v1, SimdDouble v2, Sim
     sum[2] = svadda_f64(pg, 0.0, v2.simdInternal_);
     sum[3] = svadda_f64(pg, 0.0, v3.simdInternal_);
 #if GMX_SIMD_DOUBLE_WIDTH >= 4
-    pg             = SVE_SIMD4_DOUBLE_MASK;
+    pg             = SVE_DOUBLE4_MASK;
     svfloat64_t _m = svld1_f64(pg, m);
     svfloat64_t _s = svld1_f64(pg, sum);
     svst1_f64(pg, m, svadd_f64_x(pg, _m, _s));
@@ -348,9 +362,9 @@ static inline void gmx_simdcall storeDualHsimd(double* m0, double* m1, SimdDoubl
 
 static inline void gmx_simdcall incrDualHsimd(double* m0, double* m1, SimdDouble a)
 {
-    // Make sure the memory pointer is aligned to half float SIMD width
-    assert(std::size_t(m0) % 32 == 0);
-    assert(std::size_t(m1) % 32 == 0);
+    // Make sure the memory pointer is aligned to half SIMD width
+    assert(std::size_t(m0) % (GMX_SIMD_DOUBLE_WIDTH * sizeof(double) / 2) == 0);
+    assert(std::size_t(m1) % (GMX_SIMD_DOUBLE_WIDTH * sizeof(double) / 2) == 0);
 
     svbool_t    pg = SVE_SIMD_DOUBLE_HALF_MASK;
     svfloat64_t v0, v2, v3;
@@ -381,7 +395,7 @@ static inline double gmx_simdcall reduceIncr4ReturnSumHsimd(double* m, SimdDoubl
     sum[3] = svadda_f64(pg, 0.0, v1.simdInternal_);
 
 #if GMX_SIMD_DOUBLE_WIDTH >= 4
-    pg             = SVE_SIMD4_DOUBLE_MASK;
+    pg             = SVE_DOUBLE4_MASK;
     svfloat64_t _m = svld1_f64(pg, m);
     svfloat64_t _s = svld1_f64(pg, sum);
     svst1_f64(pg, m, svadd_f64_x(pg, _m, _s));

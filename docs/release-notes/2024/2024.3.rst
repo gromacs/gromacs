@@ -75,6 +75,20 @@ simulations.
 
 :issue:`5087`
 
+Fix masks and alignment checks in Arm SVE SIMD
+""""""""""""""""""""""""""""""""""""""""""""""
+
+The double precision SVE implementation contained an incorrect mask
+for SVE implementations of 256 bits or more. This would lead to instantaneous
+extreme forces/crashes on the first step, so it should never have
+influenced any production simulations unnoticed. The alignment checks for
+some SVE routines have also been motified to correspond to the SIMD width,
+although this is formally not required on Arm, so it will not have caused
+any errors.
+
+:issue:`5080`
+:issue:`5120`
+
 Added an assert to ensure valid cutoff when calculating atom density
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
