@@ -35,7 +35,7 @@ set(GMX_HDF5_REQUIRED_VERSION "1.10.1")
 
 macro(gmx_manage_hdf5)
     # Find an external hdf5 library.
-    find_package(HDF5 ${GMX_HDF5_REQUIRED_VERSION})
+    find_package(HDF5 ${GMX_HDF5_REQUIRED_VERSION} COMPONENTS C)
     set(GMX_USE_HDF5 ${HDF5_FOUND} CACHE BOOL "Build GROMACS with HDF5 support (needed for handling files in H5MD format)")
     if(GMX_USE_HDF5)
         if(NOT HDF5_FOUND)
