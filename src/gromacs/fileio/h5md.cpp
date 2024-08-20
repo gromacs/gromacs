@@ -159,16 +159,16 @@ H5md::H5md(const std::filesystem::path& fileName, const char mode)
 
     if (debug)
     {
-        fprintf(debug, "Opening H5MD file %s with mode %c\n", fileName.c_str(), mode);
+        fprintf(debug, "Opening H5MD file %s with mode %c\n", fileName.string().c_str(), mode);
     }
     if (mode == 'w' || mode == 'a')
     {
         bool fileExists = gmx_fexist(fileName);
         if (!fileExists || mode == 'w')
         {
-            make_backup(fileName.c_str());
+            make_backup(fileName.string().c_str());
             hid_t createPropertyList = H5Pcreate(H5P_FILE_CREATE);
-            file_ = H5Fcreate(fileName.c_str(), H5F_ACC_TRUNC, createPropertyList, H5P_DEFAULT);
+            file_ = H5Fcreate(fileName.string().c_str(), H5F_ACC_TRUNC, createPropertyList, H5P_DEFAULT);
             if (file_ == H5I_INVALID_HID)
             {
                 throw gmx::FileIOError("Cannot create H5MD file.");
@@ -176,7 +176,7 @@ H5md::H5md(const std::filesystem::path& fileName, const char mode)
         }
         else
         {
-            file_ = H5Fopen(fileName.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
+            file_ = H5Fopen(fileName.string().c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
         }
         /* Create H5MD group. It should already be there if appending to a valid H5MD file, but it's better to be on the safe side. */
         hid_t h5mdGroup = openOrCreateGroup(file_, "h5md");
@@ -184,7 +184,7 @@ H5md::H5md(const std::filesystem::path& fileName, const char mode)
     }
     else
     {
-        file_ = H5Fopen(fileName.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
+        file_ = H5Fopen(fileName.string().c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
     }
     filemode_ = mode;
 
