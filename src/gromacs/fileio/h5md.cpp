@@ -169,7 +169,7 @@ H5md::H5md(const std::filesystem::path& fileName, const char mode)
             make_backup(fileName.c_str());
             hid_t createPropertyList = H5Pcreate(H5P_FILE_CREATE);
             file_ = H5Fcreate(fileName.c_str(), H5F_ACC_TRUNC, createPropertyList, H5P_DEFAULT);
-            if (file_ < 0)
+            if (file_ == H5I_INVALID_HID)
             {
                 throw gmx::FileIOError("Cannot create H5MD file.");
             }
@@ -192,7 +192,7 @@ H5md::H5md(const std::filesystem::path& fileName, const char mode)
 
     initGroupTimeDataBlocksFromFile("particles");
     initGroupTimeDataBlocksFromFile("observables");
-    if (file_ < 0)
+    if (file_ == H5I_INVALID_HID)
     {
         throw gmx::FileIOError("Cannot open H5MD file.");
     }
@@ -262,7 +262,7 @@ int H5md::initGroupTimeDataBlocksFromFile(const std::string& groupName)
 #if GMX_USE_HDF5
     int   numDataBlocksBefore = dataBlocks_.size();
     hid_t group               = H5Gopen(file_, groupName.c_str(), H5P_DEFAULT);
-    if (group < 0)
+    if (group == H5I_INVALID_HID)
     {
         if (debug)
         {
@@ -586,7 +586,7 @@ std::vector<std::string> H5md::readStringDataSet(const std::string& containerNam
     hid_t                    dataSet = H5Dopen(file_, fullDataSetName.c_str(), H5P_DEFAULT);
     std::vector<std::string> propertyValues;
 
-    if (dataSet < 0)
+    if (dataSet == H5I_INVALID_HID)
     {
         return propertyValues;
     }
@@ -625,7 +625,7 @@ std::vector<T> H5md::readNumericDataSet(const std::string& containerName, const 
     hid_t          dataSet = H5Dopen(file_, fullDataSetName.c_str(), H5P_DEFAULT);
     std::vector<T> propertyValues;
 
-    if (dataSet < 0)
+    if (dataSet == H5I_INVALID_HID)
     {
         return propertyValues;
     }
@@ -976,7 +976,7 @@ void H5md::addToProvenanceRecord(const std::string& commandLine,
      * if the data set is created or if it already exists (and should have data entries). */
     hsize_t numFrames          = 0;
     hid_t   commandLineDataSet = H5Dopen(provenanceGroup, "command_line", H5P_DEFAULT);
-    if (commandLineDataSet < 0)
+    if (commandLineDataSet == H5I_INVALID_HID)
     {
         commandLineDataSet = openOrCreateDataSet<1>(provenanceGroup,
                                                     "command_line",
@@ -990,7 +990,7 @@ void H5md::addToProvenanceRecord(const std::string& commandLine,
     {
 
         hid_t dataSpace = H5Dget_space(commandLineDataSet);
-        if (dataSpace < 0)
+        if (dataSpace == H5I_INVALID_HID)
         {
             throw gmx::FileIOError("The main data block of the provenance record cannot be found.");
         }

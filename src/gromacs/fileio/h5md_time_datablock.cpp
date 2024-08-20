@@ -307,7 +307,7 @@ void GmxH5mdTimeDataBlock::updateNumWrittenFrames()
 size_t GmxH5mdTimeDataBlock::getNumParticles() const
 {
     hid_t dataSpace = H5Dget_space(mainDataSet_);
-    if (dataSpace < 0)
+    if (dataSpace == H5I_INVALID_HID)
     {
         throw gmx::FileIOError(
                 "The main data block of the time dependent data set cannot be found.");

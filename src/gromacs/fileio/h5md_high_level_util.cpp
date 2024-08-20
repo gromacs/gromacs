@@ -148,7 +148,7 @@ int64_t getNumberOfAtomsOfMoleculeTypeByName(gmx::H5md* file, std::string molTyp
     std::string moleculeTypeName       = moleculeTypesGroupName + "/" + molTypeName;
     hid_t       molelculeTypeGroup     = file->getGroupId(moleculeTypeName);
 
-    if (molelculeTypeGroup < 0)
+    if (molelculeTypeGroup == H5I_INVALID_HID)
     {
         return -1;
     }
@@ -507,7 +507,7 @@ MoleculeBlockIndices getMoleculeBlockIndicesByIndex(H5md* file, size_t molBlockI
     hid_t       moleculeBlocksGroup = file->getGroupId(moleculeBlocksName);
 
     MoleculeBlockIndices molBlockIndices;
-    if (moleculeBlocksGroup < 0)
+    if (moleculeBlocksGroup == H5I_INVALID_HID)
     {
         return molBlockIndices;
     }
@@ -574,12 +574,12 @@ void setupMolecularSystemTopology(H5md*                    file,
                "The number of molecule blocks and molecule block indices do not match.");
 
     hid_t topologyGroup = file->getGroupId(s_gromacsTopologyGroupName);
-    if (topologyGroup >= 0 && abortIfPresent)
+    if (topologyGroup != H5I_INVALID_HID && abortIfPresent)
     {
         return;
     }
 
-    if (topologyGroup < 0)
+    if (topologyGroup == H5I_INVALID_HID)
     {
         topologyGroup = file->createGroup(s_gromacsTopologyGroupName);
     }
@@ -597,7 +597,7 @@ void setupMolecularSystemTopology(H5md*                    file,
         const std::string           molName         = *molType.name;
         const size_t                numMol          = molBlock.nmol;
         hid_t                       molTypeGroup    = addMoleculeType(file, molType);
-        if (molTypeGroup < 0)
+        if (molTypeGroup == H5I_INVALID_HID)
         {
             throw gmx::FileIOError("Cannot write molecule type group.");
         }
@@ -874,7 +874,7 @@ bool copyProvenanceRecords(H5md* srcFile, H5md* destFile)
 {
 #if GMX_USE_HDF5
     hid_t srcModulesGroup = srcFile->getGroupId("/modules");
-    if (srcModulesGroup < 0)
+    if (srcModulesGroup == H5I_INVALID_HID)
     {
         return false;
     }

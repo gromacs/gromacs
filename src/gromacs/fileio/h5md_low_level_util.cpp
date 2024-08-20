@@ -134,16 +134,16 @@ namespace gmx
 hid_t openOrCreateGroup(const hid_t container, const char* name)
 {
     hid_t group = H5Gopen(container, name, H5P_DEFAULT);
-    if (group < 0)
+    if (group == H5I_INVALID_HID)
     {
         hid_t linkPropertyList = H5Pcreate(H5P_LINK_CREATE); // create group creation property list
-        if (linkPropertyList < 0)
+        if (linkPropertyList == H5I_INVALID_HID)
         {
             throw gmx::FileIOError("Cannot create linkPropertyList when creating group.");
         }
         H5Pset_create_intermediate_group(linkPropertyList, 1); // set intermediate link creation
         group = H5Gcreate(container, name, linkPropertyList, H5P_DEFAULT, H5P_DEFAULT);
-        if (group < 0)
+        if (group == H5I_INVALID_HID)
         {
             throw gmx::FileIOError("Cannot create group.");
         }
@@ -188,7 +188,7 @@ hid_t openOrCreateDataSet(const hid_t                container,
 {
     hid_t dataSet = H5Dopen(container, name, H5P_DEFAULT);
 
-    if (dataSet < 0)
+    if (dataSet == H5I_INVALID_HID)
     {
         hsize_t maxDims[numDims];
         maxDims[0] = H5S_UNLIMITED;
@@ -249,7 +249,7 @@ hid_t openOrCreateDataSet(const hid_t                container,
 
         dataSet = H5Dcreate(
                 container, name, dataType, dataSpace, H5P_DEFAULT, createPropertyList, accessPropertyList);
-        if (dataSet < 0)
+        if (dataSet == H5I_INVALID_HID)
         {
             throw gmx::FileIOError("Cannot create dataSet.");
         }
@@ -346,7 +346,7 @@ void readData(const hid_t   dataSet,
                "Must start reading from frame 0 if reading the whole data set.");
 
     hid_t dataSpace = H5Dget_space(dataSet);
-    if (dataSpace < 0)
+    if (dataSpace == H5I_INVALID_HID)
     {
         throw gmx::FileIOError(
                 "The main data block of the time dependent data set cannot be found.");
@@ -469,7 +469,7 @@ void setVersionAttribute(const hid_t group, const int majorVersion, const int mi
     hid_t attribute = H5Aopen(group, name, H5P_DEFAULT);
     hid_t dataType  = H5Tcopy(H5T_NATIVE_INT32);
 
-    if (attribute < 0)
+    if (attribute == H5I_INVALID_HID)
     {
         hsize_t dataSize[1] = { 2 };
         hid_t   dataSpace   = H5Screate_simple(1, dataSize, nullptr);
@@ -487,7 +487,7 @@ bool getVersionAttribute(const hid_t group, int* majorVersion, int* minorVersion
 {
     char  name[]    = "version";
     hid_t attribute = H5Aopen(group, name, H5P_DEFAULT);
-    if (attribute < 0)
+    if (attribute == H5I_INVALID_HID)
     {
         return false;
     }
@@ -508,7 +508,7 @@ template<typename T>
 void setAttribute(const hid_t dataSet, const char* name, const T value, const hid_t dataType)
 {
     hid_t attribute = H5Aopen(dataSet, name, H5P_DEFAULT);
-    if (attribute < 0)
+    if (attribute == H5I_INVALID_HID)
     {
         hid_t dataSpace = H5Screate(H5S_SCALAR);
         attribute       = H5Acreate2(dataSet, name, dataType, dataSpace, H5P_DEFAULT, H5P_DEFAULT);
@@ -528,7 +528,7 @@ void setAttribute(const hid_t dataSet, const char* name, const char* value)
     H5Tset_cset(dataType, H5T_CSET_UTF8);
 
     hid_t attribute = H5Aopen(dataSet, name, H5P_DEFAULT);
-    if (attribute < 0)
+    if (attribute == H5I_INVALID_HID)
     {
         hid_t dataSpace = H5Screate(H5S_SCALAR);
         attribute       = H5Acreate2(dataSet, name, dataType, dataSpace, H5P_DEFAULT, H5P_DEFAULT);
@@ -544,7 +544,7 @@ template<typename T>
 bool getAttribute(const hid_t dataSet, const char* name, T* value)
 {
     hid_t attribute = H5Aopen(dataSet, name, H5P_DEFAULT);
-    if (attribute < 0)
+    if (attribute == H5I_INVALID_HID)
     {
         return false;
     }
@@ -565,7 +565,7 @@ bool getAttribute(const hid_t dataSet, const char* name, char** value)
         return false;
     }
     hid_t attribute = H5Aopen(dataSet, name, H5P_DEFAULT);
-    if (attribute < 0)
+    if (attribute == H5I_INVALID_HID)
     {
         return false;
     }
@@ -591,7 +591,7 @@ void setAttributeStringList(const hid_t dataSet, const char* name, const char va
     H5Tset_strpad(dataType, H5T_STR_NULLTERM);
     H5Tset_cset(dataType, H5T_CSET_UTF8);
     hid_t attribute = H5Aopen(dataSet, name, H5P_DEFAULT);
-    if (attribute < 0)
+    if (attribute == H5I_INVALID_HID)
     {
         hsize_t dataSize[1] = { numEntries };
         hid_t   dataSpace   = H5Screate_simple(1, dataSize, nullptr);
