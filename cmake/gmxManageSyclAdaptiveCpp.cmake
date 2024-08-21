@@ -275,18 +275,18 @@ if (GMX_ACPP_HAVE_HIP_TARGET AND GMX_GPU_FFT_ROCFFT)
         else()
             string(JSON ACPP_ROCM_PATH_VALUE GET ${ACPP_JSON_CONTENTS} "default-rocm-path")
         endif()
-        set(ACPP_ROCM_PATH ${ACPP_ROCM_PATH_VALUE} CACHE FILEPATH "The default ROCm used by AdaptiveCpp/hipSYCL")
+        set(ACPP_ROCM_PATH "${ACPP_ROCM_PATH_VALUE}" CACHE PATH "The default ROCm used by AdaptiveCpp/hipSYCL" FORCE)
     endif()
 
     if(ACPP_ROCM_PATH)
         # Teach the rocFFT find package how to find the necessary components
-        # from the ROCm distribution used by hipSYCL.
-        set(hip_DIR ${ACPP_ROCM_PATH}/hip/lib/cmake/hip)
+        # from the ROCm distribution used by AdaptiveCpp.
+        set(hip_DIR ${ACPP_ROCM_PATH}/lib/cmake/hip)
         set(AMDDeviceLibs_DIR ${ACPP_ROCM_PATH}/lib/cmake/AMDDeviceLibs)
         set(amd_comgr_DIR ${ACPP_ROCM_PATH}/lib/cmake/amd_comgr)
         set(hsa-runtime64_DIR ${ACPP_ROCM_PATH}/lib/cmake/hsa-runtime64)
-        set(ROCclr_DIR ${ACPP_ROCM_PATH}/rocclr/lib/cmake/rocclr)
-        set(rocfft_DIR ${ACPP_ROCM_PATH}/rocfft/lib/cmake/rocfft)
+        set(ROCclr_DIR ${ACPP_ROCM_PATH}/lib/cmake/rocclr)
+        set(rocfft_DIR ${ACPP_ROCM_PATH}/lib/cmake/rocfft)
     endif()
 
     # Find rocFFT, either from the ROCm used by AdaptiveCpp, or as otherwise found on the system
