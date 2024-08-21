@@ -233,6 +233,11 @@ void PmePpCommGpu::Impl::sendCoordinatesToPmeGpuAwareMpi(Float3*               s
                                                          int                   sendSize,
                                                          GpuEventSynchronizer* coordinatesReadyOnDeviceEvent)
 {
+    if (sendSize == 0)
+    {
+        return;
+    }
+
     // ensure coordinate data is available on device before we start transfer
     if (coordinatesReadyOnDeviceEvent)
     {

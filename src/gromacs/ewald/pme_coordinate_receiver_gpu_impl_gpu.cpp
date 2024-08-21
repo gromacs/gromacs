@@ -166,17 +166,22 @@ void PmeCoordinateReceiverGpu::Impl::launchReceiveCoordinatesFromPpGpuAwareMpi(D
 std::tuple<int, GpuEventSynchronizer*> PmeCoordinateReceiverGpu::Impl::receivePpCoordinateSendEvent(int pipelineStage)
 {
 #if GMX_MPI
-    int senderRank = -1; // Rank of PP task that is associated with this invocation.
-    // MPI_Waitany is not available in thread-MPI. However, the
-    // MPI_Wait here is not associated with data but is host-side
-    // scheduling code to receive a CUDA event, and will be executed
-    // in advance of the actual data transfer. Therefore we can
-    // receive in order of pipeline stage, still allowing the
-    // scheduled GPU-direct comms to initiate out-of-order in their
-    // respective streams.
-    senderRank = pipelineStage;
-    MPI_Wait(&(requests_[senderRank]), MPI_STATUS_IGNORE);
-    return std::make_tuple(senderRank, ppCommManagers_[senderRank].sync);
+    if (requests_[pipelineStage] != MPI_REQUEST_NULL)
+    {
+        // MPI_Waitany is not available in thread-MPI. However, the
+        // MPI_Wait here is not associated with data but is host-side
+        // scheduling code to receive a CUDA event, and will be executed
+        // in advance of the actual data transfer. Therefore we can
+        // receive in order of pipeline stage, still allowing the
+        // scheduled GPU-direct comms to initiate out-of-order in their
+        // respective streams.
+        MPI_Wait(&(requests_[pipelineStage]), MPI_STATUS_IGNORE);
+        return std::make_tuple(pipelineStage, ppCommManagers_[pipelineStage].sync);
+    }
+    else
+    {
+        return std::make_tuple(-1, nullptr);
+    }
 #else
     GMX_UNUSED_VALUE(pipelineStage);
     return std::make_tuple(-1, nullptr);

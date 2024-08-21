@@ -1801,13 +1801,18 @@ static int manageSyncWithPpCoordinateSenderGpu(const PmeGpu*                  pm
         GpuEventSynchronizer* event;
         std::tie(senderRank, event) =
                 pmeCoordinateReceiverGpu->receivePpCoordinateSendEvent(pipelineStage);
-        if (usePipeline)
+        // If a pipeline stage has no particles, no send event will be
+        // sent and senderRank will be < 0.
+        if (senderRank >= 0)
         {
-            event->enqueueWaitEvent(*(pmeCoordinateReceiverGpu->ppCommStream(senderRank)));
-        }
-        else
-        {
-            event->enqueueWaitEvent(pmeGpu->archSpecific->pmeStream_);
+            if (usePipeline)
+            {
+                event->enqueueWaitEvent(*(pmeCoordinateReceiverGpu->ppCommStream(senderRank)));
+            }
+            else
+            {
+                event->enqueueWaitEvent(pmeGpu->archSpecific->pmeStream_);
+            }
         }
     }
     else
@@ -1952,6 +1957,12 @@ void pme_gpu_spread(PmeGpu*                        pmeGpu,
                 wallcycle_start(wcycle, WallCycleCounter::WaitGpuPmePPRecvX);
                 int senderRank = manageSyncWithPpCoordinateSenderGpu(
                         pmeGpu, pmeCoordinateReceiverGpu, kernelParamsPtr->usePipeline != 0, i);
+                if (senderRank < 0)
+                {
+                    // A pipeline stage with no coordinates was reached
+                    wallcycle_stop(wcycle, WallCycleCounter::WaitGpuPmePPRecvX);
+                    continue;
+                }
                 wallcycle_stop(wcycle, WallCycleCounter::WaitGpuPmePPRecvX);
 
                 wallcycle_start(wcycle, WallCycleCounter::LaunchGpuPme);
