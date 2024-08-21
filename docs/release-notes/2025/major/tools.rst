@@ -42,4 +42,4 @@ This number can now be chosen by the user via the ``-einstein_blocks`` flag of `
 When computing viscosity from very long trajectories, it may be preferable to have several averaging blocks 
 to obtain a more accurate average and avoid the long-time diffusive behavior of the pressure integral.
 
-:issue:`5114``
+:issue:`5114`
