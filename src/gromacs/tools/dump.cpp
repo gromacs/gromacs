@@ -690,10 +690,11 @@ void Dump::initOptions(IOptionsContainer* options, ICommandLineOptionsModuleSett
             BooleanOption("nr").store(&bShowNumbers_).defaultValue(true).description("Show index numbers in output (leaving them out makes comparison easier, but creates a useless topology)"));
     options->addOption(
             BooleanOption("param").store(&bShowParams_).defaultValue(false).description("Show parameters for each bonded interaction (for comparing dumps, it is useful to combine this with -nonr)"));
+    options->addOption(BooleanOption("sys").store(&bSysTop_).defaultValue(false).description(
+            "List the atoms and bonded interactions for the whole system instead of for each "
+            "molecule type"));
     options->addOption(
-            BooleanOption("sys").store(&bShowParams_).defaultValue(false).description("List the atoms and bonded interactions for the whole system instead of for each molecule type"));
-    options->addOption(
-            BooleanOption("orgir").store(&bShowParams_).defaultValue(false).description("Show input parameters from tpr as they were written by the version that produced the file, instead of how the current version reads them"));
+            BooleanOption("orgir").store(&bOriginalInputrec_).defaultValue(false).description("Show input parameters from tpr as they were written by the version that produced the file, instead of how the current version reads them"));
 }
 
 void Dump::optionsFinished()
