@@ -1406,11 +1406,17 @@ static void mergeAtomBuffers(const int                                       num
     }
 
     /* Merge in the communicated buffers */
+    // We need to make a copy of the range ends to avoid (temporary) invalid range access in zones
+    std::array<int, gmx::sc_maxNumZones> atomRangeEnd;
+    for (int zone = numZones; zone < 2 * numZones; zone++)
+    {
+        atomRangeEnd[zone] = *zones->atomRange(zone).end();
+    }
     shift       = 0;
     int atomSrc = 0;
     for (int zone = 0; zone < numZones; zone++)
     {
-        int atomDest = *zones->atomRange(numZones + zone).end() + shift;
+        int atomDest = atomRangeEnd[numZones + zone] + shift;
         for (int a = 0; a < ind.nrecv[zone]; a++)
         {
             /* Copy this atom from the buffer */

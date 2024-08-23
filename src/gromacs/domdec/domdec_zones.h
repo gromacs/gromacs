@@ -118,6 +118,8 @@ public:
     //! Returns the atom index range for zone \p zone
     const Range<int> atomRange(int zone) const
     {
+        GMX_ASSERT(zone <= lastAtomRangeEndSet_, "Cannot access zones beyond the last one set");
+
         return { atomRanges_[zone], atomRanges_[zone + 1] };
     }
 
@@ -148,6 +150,9 @@ public:
      */
     void setAtomRangeEnd(const int zone, const int atomRangeEnd, const bool rangeIsFromDirectNeighbor)
     {
+        GMX_ASSERT(zone <= lastAtomRangeEndSet_ + 1,
+                   "The zone should be at most one beyond the last one that was set");
+
         GMX_ASSERT(atomRangeEnd >= atomRanges_[zone],
                    "atomRangeEnd should be >= than the previous end");
 
@@ -157,6 +162,8 @@ public:
         {
             numAtomFromDirectNeighbors_[zone] = atomRangeEnd - atomRanges_[zone];
         }
+
+        lastAtomRangeEndSet_ = zone;
     }
 
     /*! \brief Set zone dimensions for a range of zones
@@ -186,6 +193,9 @@ private:
     std::array<int, sc_maxNumZones> numAtomFromDirectNeighbors_ = { 0 };
     //! Boundaries of the zones
     std::array<gmx_domdec_zone_size_t, sc_maxNumZones> sizes_;
+
+    //! The last zone for which the end was set, used for asserting consistency of atomRanges_
+    int lastAtomRangeEndSet_ = -1;
 };
 
 } // namespace gmx
