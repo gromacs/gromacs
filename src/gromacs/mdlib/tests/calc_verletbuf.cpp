@@ -50,12 +50,17 @@
 
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/topology/topology.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 
 #include "testutils/testasserts.h"
+#include "testutils/topologyhelpers.h"
+
+#include "watersystem.h"
 
 namespace gmx
 {
@@ -238,6 +243,60 @@ TEST(EffectiveAtomDensity, LargeValuesHandledWell)
 
     const real density = computeEffectiveAtomDensity(coordinates, box, cutoff, MPI_COMM_NULL);
     EXPECT_FLOAT_EQ(density, referenceDensity);
+}
+
+/* We want to ensure that the optimized verlet buffer sizes are the same for i/j cluster sizes
+ * larger than four. This only matters for GPU runs with the optimal pairlist and cluster sizes
+ * determined at runtime to fit the current GPU architecture.
+ * It is necessary as we want to set the optimal rlist before having the information about
+ * the devices available. This test ensures that the requirement keeps being fulfilled.
+ */
+TEST(VerletBufferSize, SizeAboveFourIsEquivalent)
+{
+    gmx_mtop_t mtop;
+    addNWaterMolecules(&mtop, c_waterPositions.size());
+    mtop.finalize();
+    const matrix box    = { { 6.2, 0, 0 }, { 0, 6.2, 0 }, { 0, 0, 6.2 } };
+    const real   cutoff = 1;
+    const real density  = computeEffectiveAtomDensity(c_waterPositions, box, cutoff, MPI_COMM_NULL);
+    const real ensembleTemperature = 298.15;
+    t_inputrec inputrec;
+    inputrec.eI                            = IntegrationAlgorithm::MD;
+    inputrec.verletbuf_tol                 = 0.005;
+    inputrec.verletBufferPressureTolerance = 0.001;
+    inputrec.vdwtype                       = VanDerWaalsType::Cut;
+    inputrec.vdw_modifier                  = InteractionModifiers::PotSwitch;
+    inputrec.rvdw                          = 1.0;
+    inputrec.rvdw_switch                   = 0.9;
+    inputrec.coulombtype                   = CoulombInteractionType::PmeSwitch;
+    inputrec.coulomb_modifier              = InteractionModifiers::PotSwitch;
+    inputrec.rcoulomb                      = 1.0;
+    inputrec.rcoulomb_switch               = 0.9;
+    inputrec.nstlist                       = 10;
+    inputrec.epsilon_r                     = 0.9;
+    inputrec.delta_t                       = 1;
+    VerletbufListSetup setupFour{ 4, 4 };
+    VerletbufListSetup setupEight{ 8, 8 };
+
+    const real resultFour = calcVerletBufferSize(mtop,
+                                                 density,
+                                                 inputrec,
+                                                 inputrec.verletBufferPressureTolerance,
+                                                 inputrec.nstlist,
+                                                 inputrec.nstlist - 1,
+                                                 ensembleTemperature,
+                                                 setupFour);
+
+    const real resultEight = calcVerletBufferSize(mtop,
+                                                  density,
+                                                  inputrec,
+                                                  inputrec.verletBufferPressureTolerance,
+                                                  inputrec.nstlist,
+                                                  inputrec.nstlist - 1,
+                                                  ensembleTemperature,
+                                                  setupEight);
+
+    EXPECT_FLOAT_EQ(resultFour, resultEight);
 }
 
 } // namespace
