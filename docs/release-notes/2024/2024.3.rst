@@ -52,8 +52,6 @@ themselves were unaffacted by this issue.
 
 :issue:`5107`
 
-mdrun now computes the initial bonded distancs with periodic molecules
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 mdrun now computes the initial bonded distances with periodic molecules
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
