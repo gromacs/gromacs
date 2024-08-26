@@ -21,7 +21,8 @@ gromacs:gcc-11-cuda-11.7.1:configureMPI-NVSHMEM:
     - .use-gcc:base
     - .use-cuda
     - .use-mpi
-    - .rules:post-merge-acceptance
+  rules:
+    - !reference [.rules:post-merge-acceptance, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11-cuda-11.7.1
   variables:
     CMAKE: /usr/local/cmake-3.21.2/bin/cmake
@@ -34,7 +35,8 @@ gromacs:gcc-11-cuda-11.7.1:buildMPI-NVSHMEM:
     - .gromacs:base:build
     - .before_script:default
     - .use-ccache
-    - .rules:post-merge-acceptance
+  rules:
+    - !reference [.rules:post-merge-acceptance, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11-cuda-11.7.1
   variables:
     CMAKE: /usr/local/cmake-3.21.2/bin/cmake
@@ -46,9 +48,7 @@ gromacs:gcc-11-cuda-11.7.1:testMPI-NVSHMEM:
   extends:
     - .gromacs:base:test
   rules:
-    - if: $GITLAB_RUNNER_MAX_AVAILABLE_NVIDIA_GPUS =~ /[01]/
-      when: never
-      allow_failure: true
+    - !reference [.rules:skip-if-dual-nvidia-gpus-unavailable, rules]
     - !reference [.rules:post-merge-acceptance, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11-cuda-11.7.1
   variables:
@@ -82,9 +82,7 @@ gromacs:gcc-11-cuda-11.7.1:regressiontest-gpucommupd-MPI-NVSHMEM:
   extends:
     - .gromacs:base:regressiontest
   rules:
-    - if: $GITLAB_RUNNER_MAX_AVAILABLE_NVIDIA_GPUS =~ /[01]/
-      when: never
-      allow_failure: true
+    - !reference [.rules:skip-if-dual-nvidia-gpus-unavailable, rules]
     - !reference [.rules:post-merge-acceptance, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11-cuda-11.7.1
   variables:

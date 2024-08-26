@@ -138,7 +138,6 @@ gromacs:acpp-nvidia:test:
 gromacs:acpp-nvidia:regressiontest:
   extends:
     - .gromacs:base:regressiontest
-    - .rules:nightly-not-for-release
   rules:
     - !reference [.rules:skip-if-single-nvidia-gpu-unavailable, rules]
     - !reference [.rules:nightly-not-for-release, rules]
