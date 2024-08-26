@@ -145,12 +145,6 @@ void readData(const hid_t   dataSet,
 template<int numDims>
 void readData(const hid_t dataSet, const hsize_t frameToRead, void** buffer);
 
-/*! Set the periodic box attribute of a box group.
- * \param[in] boxGroup The ID of the box group.
- * \param[in] pbcType The periodic box type.
- */
-void setBoxGroupAttributes(const hid_t boxGroup, const PbcType pbcType);
-
 /*! Set an H5MD version number attribute, i.e. two integer values with major and minor
  * version numbers. The version can be different for the H5MD root group and module
  * groups in the file.

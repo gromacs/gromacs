@@ -442,27 +442,6 @@ void readData(const hid_t dataSet, const hsize_t frameToRead, void** buffer)
             dataSet, frameToRead, buffer, &totalNumElementsDummy, &varLengthStringMaxLengthDummy);
 }
 
-void setBoxGroupAttributes(const hid_t boxGroup, const PbcType pbcType)
-{
-    setAttribute(boxGroup, "dimension", DIM, H5T_NATIVE_INT);
-    static constexpr int c_pbcTypeStringLength                               = 9;
-    char                 boundaryAttributeString[DIM][c_pbcTypeStringLength] = { "periodic",
-                                                                 "periodic",
-                                                                 "periodic" };
-    switch (pbcType)
-    {
-        case PbcType::Xyz: break;
-        case PbcType::XY: strcpy(boundaryAttributeString[2], "none"); break;
-        default:
-            for (int i = 0; i < DIM; i++)
-            {
-                strcpy(boundaryAttributeString[i], "none");
-            }
-            break;
-    }
-    setAttributeStringList<DIM, c_pbcTypeStringLength>(boxGroup, "boundary", boundaryAttributeString);
-}
-
 void setVersionAttribute(const hid_t group, const int majorVersion, const int minorVersion)
 {
     char  name[]    = "version";
@@ -664,6 +643,8 @@ template void setAttribute<int>(hid_t, const char*, int, hid_t);
 template void setAttribute<int64_t>(hid_t, const char*, int64_t, hid_t);
 template void setAttribute<float>(hid_t, const char*, float, hid_t);
 template void setAttribute<double>(hid_t, const char*, double, hid_t);
+
+template void gmx::setAttributeStringList<3, 9>(const hid_t, const char*, const char[3][9]);
 
 template bool getAttribute<int64_t>(hid_t, const char*, int64_t*);
 

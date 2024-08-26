@@ -53,6 +53,7 @@
 #include <string>
 #include <vector>
 
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
@@ -124,15 +125,111 @@ void addAtomTypesOfAtoms(gmx::H5md* file, const t_atoms& atoms, std::vector<bool
     hsize_t chunkDims[1]   = { atomTypesAdded.size() };
     hid_t   atomTypeAtomicNumberDataSet = gmx::openOrCreateDataSet<1>(
             atomTypesGroup, "atomic_number", nullptr, dataType, chunkDims, gmx::CompressionAlgorithm::LosslessNoShuffle, 0);
-    for (int i = 0; i < atoms.nr; i++)
+    for (int atomIterator = 0;
+         atomIterator < atoms.nr
+         && !std::all_of(atomTypesAdded.begin(), atomTypesAdded.end(), [](int i) { return i; });
+         atomIterator++)
     {
-        t_atom* atom = &atoms.atom[i];
+        t_atom* atom = &atoms.atom[atomIterator];
         if (!atomTypesAdded[atom->type])
         {
             gmx::writeData<1, false>(atomTypeAtomicNumberDataSet, &atom->atomnumber, atom->type);
             atomTypesAdded[atom->type] = true;
         }
     }
+}
+
+
+void writeVmdBondData(gmx::H5md*                                file,
+                      std::vector<std::pair<int64_t, int64_t>>& systemBonds,
+                      std::vector<std::pair<int64_t, int64_t>>& selectionBonds)
+{
+    std::vector<int64_t> firstAtomsInPairs, secondAtomsInPairs;
+    if (selectionBonds.empty() || selectionBonds.size() == systemBonds.size())
+    {
+        firstAtomsInPairs.reserve(systemBonds.size());
+        secondAtomsInPairs.reserve(systemBonds.size());
+        std::transform(systemBonds.begin(),
+                       systemBonds.end(),
+                       std::back_inserter(firstAtomsInPairs),
+                       [](auto const& pair) { return pair.first; });
+        std::transform(systemBonds.begin(),
+                       systemBonds.end(),
+                       std::back_inserter(secondAtomsInPairs),
+                       [](auto const& pair) { return pair.second; });
+    }
+    else if (!selectionBonds.empty())
+    {
+        firstAtomsInPairs.reserve(selectionBonds.size());
+        secondAtomsInPairs.reserve(selectionBonds.size());
+        std::transform(selectionBonds.begin(),
+                       selectionBonds.end(),
+                       std::back_inserter(firstAtomsInPairs),
+                       [](auto const& pair) { return pair.first; });
+        std::transform(selectionBonds.begin(),
+                       selectionBonds.end(),
+                       std::back_inserter(secondAtomsInPairs),
+                       [](auto const& pair) { return pair.second; });
+    }
+    file->setNumericDataSet("/parameters/vmd_structure", "bond_from", firstAtomsInPairs, "", false);
+    file->setNumericDataSet("/parameters/vmd_structure", "bond_to", secondAtomsInPairs, "", false);
+}
+
+void writeVmdResidueData(gmx::H5md*        file,
+                         const gmx_mtop_t& topology) // FIXME
+{
+    t_atoms atoms = gmx_mtop_global_atoms(topology);
+
+    std::vector<std::string> residueNames(atoms.nres);
+    std::vector<std::string> chainIds(atoms.nres);
+    for (int64_t residueIndex = 0; residueIndex < atoms.nres; residueIndex++)
+    {
+        residueNames[residueIndex] = *(atoms.resinfo[residueIndex].name);
+        chainIds[residueIndex]     = atoms.resinfo[residueIndex].chainid;
+    }
+    file->setStringDataSet(
+            "/parameters/vmd_structure", "resname", residueNames, false, gmx::c_atomResidueStringLen);
+    file->setStringDataSet("/parameters/vmd_structure", "chain", chainIds, false, 1);
+}
+
+void writeVmdSpeciesData(gmx::H5md* file, const gmx_mtop_t& topology)
+{
+    std::vector<int64_t> atomTypeIndex(topology.ffparams.atnr);
+    for (int64_t atomTypeIterator = 0; atomTypeIterator < topology.ffparams.atnr; atomTypeIterator++)
+    {
+        atomTypeIndex[atomTypeIterator] = atomTypeIterator;
+    }
+    file->setNumericDataSet("/parameters/vmd_structure", "indexOfSpecies", atomTypeIndex, "", false);
+
+    t_atoms           atoms = gmx_mtop_global_atoms(topology);
+    std::vector<bool> atomTypesAdded(topology.ffparams.atnr);
+    std::vector<int>  atomicNumbers(topology.ffparams.atnr);
+    for (int64_t atomIterator = 0;
+         atomIterator < atoms.nr
+         && !std::all_of(atomTypesAdded.begin(), atomTypesAdded.end(), [](int i) { return i; });
+         atomIterator++)
+    {
+        t_atom* atom = &atoms.atom[atomIterator];
+        if (!atomTypesAdded[atom->type])
+        {
+            atomTypesAdded[atom->type] = true;
+            atomicNumbers[atom->type]  = atom->atomnumber;
+        }
+    }
+    file->setNumericDataSet("/parameters/vmd_structure", "atomicnumber", atomicNumbers, "", false);
+}
+
+void writeVmdAtomData(gmx::H5md* file, const gmx_mtop_t& topology)
+{
+    t_atoms              atoms = gmx_mtop_global_atoms(topology);
+    std::vector<int64_t> atomResidueIndex(atoms.nr);
+
+    for (int64_t atomNr = 0; atomNr < atoms.nr; atomNr++)
+    {
+        int residueIndex         = atoms.atom[atomNr].resind;
+        atomResidueIndex[atomNr] = residueIndex;
+    }
+    file->setNumericDataSet("/parameters/vmd_structure", "resid", atomResidueIndex, "", false);
 }
 
 
@@ -422,6 +519,31 @@ bool hasSeparateSelection(/*const gmx_mtop_t& topology,*/ gmx::ArrayRef<const in
     return separateSelection;
 }
 
+/*! Set the periodic box attribute of a box group.
+ * \param[in] boxGroup The ID of the box group.
+ * \param[in] pbcType The periodic box type.
+ */
+void setBoxGroupAttributes(const hid_t boxGroup, const PbcType pbcType)
+{
+    gmx::setAttribute(boxGroup, "dimension", DIM, H5T_NATIVE_INT);
+    static constexpr int c_pbcTypeStringLength                               = 9;
+    char                 boundaryAttributeString[DIM][c_pbcTypeStringLength] = { "periodic",
+                                                                 "periodic",
+                                                                 "periodic" };
+    switch (pbcType)
+    {
+        case PbcType::Xyz: break;
+        case PbcType::XY: strcpy(boundaryAttributeString[2], "none"); break;
+        default:
+            for (int i = 0; i < DIM; i++)
+            {
+                strcpy(boundaryAttributeString[i], "none");
+            }
+            break;
+    }
+    gmx::setAttributeStringList<DIM, c_pbcTypeStringLength>(boxGroup, "boundary", boundaryAttributeString);
+}
+
 } // namespace
 
 #endif // GMX_USE_HDF5
@@ -589,6 +711,7 @@ void setupMolecularSystemTopology(H5md*                    file,
 
     std::vector<bool>                        atomTypesAdded(topology.ffparams.atnr, false);
     std::vector<std::pair<int64_t, int64_t>> systemBonds, selectionBonds;
+
     for (size_t i = 0; i < numMolBlocks; i++)
     {
         const gmx_molblock_t&       molBlock        = topology.molblock[i];
@@ -612,35 +735,10 @@ void setupMolecularSystemTopology(H5md*                    file,
     }
     if (writeVmdStructureData)
     {
-        std::vector<int64_t> firstAtomsInPairs, secondAtomsInPairs;
-        if (selectionBonds.empty() || selectionBonds.size() == systemBonds.size())
-        {
-            firstAtomsInPairs.reserve(systemBonds.size());
-            secondAtomsInPairs.reserve(systemBonds.size());
-            std::transform(systemBonds.begin(),
-                           systemBonds.end(),
-                           std::back_inserter(firstAtomsInPairs),
-                           [](auto const& pair) { return pair.first; });
-            std::transform(systemBonds.begin(),
-                           systemBonds.end(),
-                           std::back_inserter(secondAtomsInPairs),
-                           [](auto const& pair) { return pair.second; });
-        }
-        else if (!selectionBonds.empty())
-        {
-            firstAtomsInPairs.reserve(selectionBonds.size());
-            secondAtomsInPairs.reserve(selectionBonds.size());
-            std::transform(selectionBonds.begin(),
-                           selectionBonds.end(),
-                           std::back_inserter(firstAtomsInPairs),
-                           [](auto const& pair) { return pair.first; });
-            std::transform(selectionBonds.begin(),
-                           selectionBonds.end(),
-                           std::back_inserter(secondAtomsInPairs),
-                           [](auto const& pair) { return pair.second; });
-        }
-        file->setNumericDataSet("/parameters/vmd_structure", "bond_from", firstAtomsInPairs, "", false);
-        file->setNumericDataSet("/parameters/vmd_structure", "bond_to", secondAtomsInPairs, "", false);
+        writeVmdBondData(file, systemBonds, selectionBonds);
+        writeVmdResidueData(file, topology); // FIXME
+        writeVmdAtomData(file, topology);
+        writeVmdSpeciesData(file, topology);
     }
 
 #else
@@ -710,6 +808,14 @@ void writeFrameToStandardDataBlocks(H5md*             file,
 
     if (box != nullptr)
     {
+        /* If there is not a box group we should create it. */
+        std::string boxGroupName = "/particles/" + selectionName + "/box";
+        hid_t       boxGroup     = file->getGroupId(boxGroupName);
+        if (boxGroup == H5I_INVALID_HID)
+        {
+            boxGroup = file->createGroup(boxGroupName);
+            setBoxGroupAttributes(boxGroup, PbcType::Xyz); /* FIXME: The box is always set to be periodic in all dimenstions */
+        }
         /* There is so little box data per frame that it is best to write multiple per chunk. */
         numFramesPerChunk = 20;
         wantedName        = "/particles/" + selectionName + "/box/edges";
@@ -904,6 +1010,7 @@ extern template void writeData<1, false>(hid_t, const void*, hsize_t);
 
 extern template void readData<1>(hid_t, hsize_t, void**);
 
+extern template void setAttribute<int>(hid_t, const char*, int, hid_t);
 extern template void setAttribute<int64_t>(hid_t, const char*, int64_t, hid_t);
 
 extern template bool getAttribute<int64_t>(hid_t, const char*, int64_t*);
@@ -934,6 +1041,9 @@ extern template void H5md::setNumericDataSet<std::pair<std::int64_t, std::int64_
         const std::vector<std::pair<std::int64_t, std::int64_t>>&,
         const std::string&,
         bool);
+
+extern template void setAttributeStringList<3, 9>(const hid_t, const char*, const char[3][9]);
+
 #endif
 
 } // namespace gmx
