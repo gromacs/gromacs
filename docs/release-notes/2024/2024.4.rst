@@ -82,6 +82,14 @@ Fix `gmx dump` crash when trying to output the binary Colvars state file.
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix physical validation with Pymbar version 4
+"""""""""""""""""""""""""""""""""""""""""""""
+
+Pymbar version 4 has a different API compared to version 3. Now we support
+using either of those versions and internally handle the API differences.
+
+:issue:`5130`
+
 Miscellaneous
 ^^^^^^^^^^^^^
 
