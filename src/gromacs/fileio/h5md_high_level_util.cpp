@@ -595,7 +595,7 @@ void setH5mdAuthorAndCreator(H5md* file)
 void setupMolecularSystemParticleData(H5md*                    file,
                                       const gmx_mtop_t&        topology,
                                       gmx::ArrayRef<const int> index,
-                                      std::string              selectionName)
+                                      const std::string&       selectionName)
 {
 #if GMX_USE_HDF5
     t_atoms atoms = gmx_mtop_global_atoms(topology);
@@ -767,17 +767,17 @@ void setupMolecularSystemTopology(H5md*                    file,
 #endif
 }
 
-void writeFrameToStandardDataBlocks(H5md*             file,
-                                    int64_t           step,
-                                    real              time,
-                                    real              lambda,
-                                    const rvec*       box,
-                                    const int64_t     numParticles,
-                                    const rvec*       x,
-                                    const rvec*       v,
-                                    const rvec*       f,
-                                    const double      xCompressionError,
-                                    const std::string selectionName)
+void writeFrameToStandardDataBlocks(H5md*              file,
+                                    int64_t            step,
+                                    real               time,
+                                    real               lambda,
+                                    const rvec*        box,
+                                    const int64_t      numParticles,
+                                    const rvec*        x,
+                                    const rvec*        v,
+                                    const rvec*        f,
+                                    const double       xCompressionError,
+                                    const std::string& selectionName)
 {
 #if GMX_USE_HDF5
     if (numParticles <= 0)
@@ -891,21 +891,21 @@ void writeFrameToStandardDataBlocks(H5md*             file,
 #endif
 }
 
-bool readNextFrameOfStandardDataBlocks(H5md*             file,
-                                       int64_t*          step,
-                                       real*             time,
-                                       real*             lambda,
-                                       rvec*             box,
-                                       rvec*             x,
-                                       rvec*             v,
-                                       rvec*             f,
-                                       double*           xCompressionError,
-                                       bool*             readLambda,
-                                       bool*             readBox,
-                                       bool*             readX,
-                                       bool*             readV,
-                                       bool*             readF,
-                                       const std::string selectionName)
+bool readNextFrameOfStandardDataBlocks(H5md*    file,
+                                       int64_t* step,   // NOLINT(readability-non-const-parameter)
+                                       real*    time,   // NOLINT(readability-non-const-parameter)
+                                       real*    lambda, // NOLINT(readability-non-const-parameter)
+                                       rvec*    box,    // NOLINT(readability-non-const-parameter)
+                                       rvec*    x,      // NOLINT(readability-non-const-parameter)
+                                       rvec*    v,      // NOLINT(readability-non-const-parameter)
+                                       rvec*    f,      // NOLINT(readability-non-const-parameter)
+                                       double* xCompressionError, // NOLINT(readability-non-const-parameter)
+                                       bool* readLambda, // NOLINT(readability-non-const-parameter)
+                                       bool* readBox,    // NOLINT(readability-non-const-parameter)
+                                       bool* readX,      // NOLINT(readability-non-const-parameter)
+                                       bool* readV,      // NOLINT(readability-non-const-parameter)
+                                       bool* readF,      // NOLINT(readability-non-const-parameter)
+                                       const std::string& selectionName)
 {
 #if GMX_USE_HDF5
     if (file == nullptr)

@@ -79,7 +79,7 @@ void setH5mdAuthorAndCreator(H5md* file);
 void setupMolecularSystemParticleData(H5md*                    file,
                                       const gmx_mtop_t&        topology,
                                       gmx::ArrayRef<const int> index         = {},
-                                      const std::string        selectionName = "");
+                                      const std::string&       selectionName = "");
 
 /*! \brief Get a specific GROMACS molecule block indices data structure (corresponding to a number
  * of molecule of a certain molecule type) from the H5MD GROMACS topology section in the file.
@@ -123,17 +123,17 @@ void setupMolecularSystemTopology(H5md*                    file,
  * \param[in] selectionName The name of the selection to use.
  * \throws FileIOError    If there is no file open or if errors occured during writing.
  */
-void writeFrameToStandardDataBlocks(H5md*             file,
-                                    int64_t           step,
-                                    real              time,
-                                    real              lambda,
-                                    const rvec*       box,
-                                    int64_t           numParticles,
-                                    const rvec*       x,
-                                    const rvec*       v,
-                                    const rvec*       f,
-                                    double            xCompressionError,
-                                    const std::string selectionName = "system");
+void writeFrameToStandardDataBlocks(H5md*              file,
+                                    int64_t            step,
+                                    real               time,
+                                    real               lambda,
+                                    const rvec*        box,
+                                    int64_t            numParticles,
+                                    const rvec*        x,
+                                    const rvec*        v,
+                                    const rvec*        f,
+                                    double             xCompressionError,
+                                    const std::string& selectionName = "system");
 
 /*! \brief Read the next frame of box, coordinates, velocities and forces. With next frame means
  * the lowest step/time reading from the previous read frame of that data type. If data is
@@ -158,21 +158,21 @@ void writeFrameToStandardDataBlocks(H5md*             file,
  * \returns Whether any frame was read or not.
  * \throws FileIOError If there was an error reading the next frame or if the data type of the data was unknown.
  */
-bool readNextFrameOfStandardDataBlocks(H5md*             file,
-                                       int64_t*          step,
-                                       real*             time,
-                                       real*             lambda,
-                                       rvec*             box,
-                                       rvec*             x,
-                                       rvec*             v,
-                                       rvec*             f,
-                                       double*           xCompressionError,
-                                       bool*             readLambda,
-                                       bool*             readBox,
-                                       bool*             readX,
-                                       bool*             readV,
-                                       bool*             readF,
-                                       const std::string selectionName = "system");
+bool readNextFrameOfStandardDataBlocks(H5md*              file,
+                                       int64_t*           step,
+                                       real*              time,
+                                       real*              lambda,
+                                       rvec*              box,
+                                       rvec*              x,
+                                       rvec*              v,
+                                       rvec*              f,
+                                       double*            xCompressionError,
+                                       bool*              readLambda,
+                                       bool*              readBox,
+                                       bool*              readX,
+                                       bool*              readV,
+                                       bool*              readF,
+                                       const std::string& selectionName = "system");
 
 /*! \brief Copies the provenance group (in /modules) from \p srcFile to \p destFile, if it exists in \p srcFile.
  *
