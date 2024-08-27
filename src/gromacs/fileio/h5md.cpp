@@ -66,6 +66,7 @@ CLANG_DIAGNOSTIC_IGNORE("-Wold-style-cast")
 #    include <hdf5.h>
 #else
 CLANG_DIAGNOSTIC_IGNORE("-Wmissing-noreturn")
+#    define H5I_INVALID_HID (-1)
 #endif
 
 #if GMX_USE_HDF5
