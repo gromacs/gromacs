@@ -52,6 +52,18 @@ themselves were unaffacted by this issue.
 
 :issue:`5107`
 
+Implement Lennard-Jones force-switch in free-energy kernel
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Perturbed non-bonded Lennard-Jones interactions would use plain cut-off
+with potential shift when force-switch was specified. The errors this
+causes on the potential and force are negligible with the typical Charmm
+setup. When (de)coupling a complete, dense system there is a measurable
+error in the pressure, but this is again negligible when coupling
+a single molecule.
+
+:issue:`5016`
+
 mdrun now computes the initial bonded distances with periodic molecules
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 

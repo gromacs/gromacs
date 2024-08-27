@@ -259,6 +259,45 @@ static inline RealType ewaldLennardJonesGridSubtract(const RealType c6grid,
     return (c6grid * potentialShift * oneSixth);
 }
 
+//! Generates intermediate quantities for force switch interactions
+template<class RealType>
+static inline void computeForceSwitchVariables(const RealType r,
+                                               const real     rSwitch,
+                                               RealType*      rSwitched,
+                                               RealType*      rSwitchedSquared,
+                                               RealType*      rSwitchedSquaredTimesR)
+{
+    *rSwitched        = gmx::max(r - rSwitch, RealType(0.0_real));
+    *rSwitchedSquared = *rSwitched * *rSwitched;
+
+    *rSwitchedSquaredTimesR = *rSwitchedSquared * r;
+}
+
+//! Return the force for force-switch interactions
+template<class RealType, class BoolType>
+static inline RealType forceSwitchScalarForceMod(const RealType fScalarInp,
+                                                 const RealType rSwitched,
+                                                 const RealType rSwitchedSquaredTimesR,
+                                                 const real     c2,
+                                                 const real     c3,
+                                                 const BoolType mask)
+{
+    /* The mask should select on rV < rVdw */
+    return (gmx::selectByMask(fScalarInp + (c3 * rSwitched + c2) * rSwitchedSquaredTimesR, mask));
+}
+
+//! Return the modification of the potential for force-switch interactions
+template<class RealType, class BoolType>
+static inline RealType forceSwitchPotentialMod(const RealType rSwitched,
+                                               const RealType rSwitchedSquaredTimesR,
+                                               const real     c3,
+                                               const real     c4,
+                                               const BoolType mask)
+{
+    /* The mask should select on rV < rVdw */
+    return (gmx::selectByMask((c4 * rSwitched + c3) * (rSwitchedSquaredTimesR * rSwitched), mask));
+}
+
 /* LJ Potential switch */
 template<class RealType, class BoolType>
 static inline RealType potSwitchScalarForceMod(const RealType fScalarInp,
@@ -353,7 +392,11 @@ static void nb_free_energy_kernel(const t_nblist&                               
     const real gmx_unused shLjEwald                = interactionParameters.sh_lj_ewald;
     const real            rVdw                     = interactionParameters.rvdw;
     const real            dispersionShift          = interactionParameters.dispersion_shift.cpot;
+    const real gmx_unused dispersionShift2         = interactionParameters.dispersion_shift.c2;
+    const real gmx_unused dispersionShift3         = interactionParameters.dispersion_shift.c3;
     const real            repulsionShift           = interactionParameters.repulsion_shift.cpot;
+    const real gmx_unused repulsionShift2          = interactionParameters.repulsion_shift.c2;
+    const real gmx_unused repulsionShift3          = interactionParameters.repulsion_shift.c3;
     const real            ewaldBeta                = interactionParameters.ewaldcoeff_q;
     real gmx_unused       ewaldLJCoeffSq;
     real gmx_unused       ewaldLJCoeffSixDivSix;
@@ -383,6 +426,24 @@ static void nb_free_energy_kernel(const t_nblist&                               
     {
         /* Avoid warnings from stupid compilers (looking at you, Clang!) */
         vdw_swV3 = vdw_swV4 = vdw_swV5 = vdw_swF2 = vdw_swF3 = vdw_swF4 = zero;
+    }
+
+    real gmx_unused minusDispersionShift2Div3, minusRepulsionShift2Div3;
+    real gmx_unused minusDispersionShift3Div4, minusRepulsionShift3Div4;
+    if constexpr (ljKernelType == LJKernelType::ForceSwitch)
+    {
+        constexpr real minusThird  = -1.0_real / 3.0_real;
+        constexpr real minusFourth = -1.0_real / 4.0_real;
+        minusDispersionShift2Div3  = dispersionShift2 * minusThird;
+        minusDispersionShift3Div4  = dispersionShift3 * minusFourth;
+        minusRepulsionShift2Div3   = repulsionShift2 * minusThird;
+        minusRepulsionShift3Div4   = repulsionShift3 * minusFourth;
+    }
+    else
+    {
+        /* Avoid warnings from stupid compilers */
+        minusDispersionShift2Div3 = minusRepulsionShift2Div3 = zero;
+        minusDispersionShift3Div4 = minusRepulsionShift3Div4 = zero;
     }
 
     NbkernelElecType coulombInteractionType;
@@ -910,15 +971,76 @@ static void nb_free_energy_kernel(const t_nblist&                               
                             // Note that we should limit r^-6, and thus also r^-12, and
                             // not only r^-12, as that could lead to erroneously low instead
                             // of very high foreign energies.
-                            rInv6           = gmx::min(rInv6, maxRInvSix);
-                            RealType vVdw6  = calculateVdw6(c6[i], rInv6);
-                            RealType vVdw12 = calculateVdw12(c12[i], rInv6);
+                            rInv6 = gmx::min(rInv6, maxRInvSix);
 
-                            vVdw[i] = lennardJonesPotential(
-                                    vVdw6, vVdw12, c6[i], c12[i], repulsionShift, dispersionShift, oneSixth, oneTwelfth);
-                            if constexpr (computeScalarForce)
+                            // Notes on soft-core handling of Lennard-Jones interaction:
+                            // Beutler soft-core "automatically" works, as we pass in
+                            // soft-core modified rV and the force is used for computing
+                            // dV/dlambda.
+                            // For Gapsys soft-core, we compute the soft-core effect
+                            // on plain, potential-shifted LJ. This also works for switched
+                            // forces/potentials, as long at the Gapsys soft-core range
+                            // is <= rvdw-switch.
+                            if constexpr (ljKernelType != LJKernelType::ForceSwitch)
                             {
-                                scalarForcePerDistanceVdw[i] = lennardJonesScalarForce(vVdw6, vVdw12);
+                                RealType vVdw6  = calculateVdw6(c6[i], rInv6);
+                                RealType vVdw12 = calculateVdw12(c12[i], rInv6);
+
+                                vVdw[i] = lennardJonesPotential(
+                                        vVdw6, vVdw12, c6[i], c12[i], repulsionShift, dispersionShift, oneSixth, oneTwelfth);
+                                if constexpr (computeScalarForce)
+                                {
+                                    scalarForcePerDistanceVdw[i] = lennardJonesScalarForce(vVdw6, vVdw12);
+                                }
+                            }
+                            else
+                            {
+                                // LJ force switch
+                                RealType rSwitched;
+                                RealType rSwitchedSquared;
+                                RealType rSwitchedSquaredTimesR;
+                                computeForceSwitchVariables(
+                                        rV, rVdwSwitch, &rSwitched, &rSwitchedSquared, &rSwitchedSquaredTimesR);
+
+                                vVdw[i] = -c6[i]
+                                          * (oneSixth * (rInv6 + dispersionShift)
+                                             + forceSwitchPotentialMod(rSwitched,
+                                                                       rSwitchedSquared,
+                                                                       minusDispersionShift2Div3,
+                                                                       minusDispersionShift3Div4,
+                                                                       computeVdwInteraction));
+
+                                vVdw[i] =
+                                        vVdw[i]
+                                        + c12[i]
+                                                  * (oneTwelfth * (rInv6 * rInv6 + RealType(repulsionShift))
+                                                     + forceSwitchPotentialMod(rSwitched,
+                                                                               rSwitchedSquared,
+                                                                               minusRepulsionShift2Div3,
+                                                                               minusRepulsionShift3Div4,
+                                                                               computeVdwInteraction));
+
+                                if constexpr (computeScalarForce)
+                                {
+                                    scalarForcePerDistanceVdw[i] =
+                                            -c6[i]
+                                            * forceSwitchScalarForceMod(rInv6,
+                                                                        rSwitched,
+                                                                        rSwitchedSquaredTimesR,
+                                                                        dispersionShift2,
+                                                                        dispersionShift3,
+                                                                        computeVdwInteraction);
+
+                                    scalarForcePerDistanceVdw[i] =
+                                            scalarForcePerDistanceVdw[i]
+                                            + c12[i]
+                                                      * forceSwitchScalarForceMod(rInv6 * rInv6,
+                                                                                  rSwitched,
+                                                                                  rSwitchedSquaredTimesR,
+                                                                                  repulsionShift2,
+                                                                                  repulsionShift3,
+                                                                                  computeVdwInteraction);
+                                }
                             }
 
                             if constexpr (softcoreType == KernelSoftcoreType::Gapsys)
@@ -1271,9 +1393,11 @@ static KernelFunction dispatchKernelOnLJType(const LJKernelType ljKernelType,
     switch (ljKernelType)
     {
         case LJKernelType::Cutoff:
-        // Note that we, incorrectly, use the LJ plain cut-off kernel for LJ force-switch here
-        case LJKernelType::ForceSwitch:
             return (dispatchKernelOnComputeForces<softcoreType, scLambdasOrAlphasDiffer, elecInteractionTypeIsEwald, LJKernelType::Cutoff>(
+                    computeForces, useSimd));
+            break;
+        case LJKernelType::ForceSwitch:
+            return (dispatchKernelOnComputeForces<softcoreType, scLambdasOrAlphasDiffer, elecInteractionTypeIsEwald, LJKernelType::ForceSwitch>(
                     computeForces, useSimd));
             break;
         case LJKernelType::PotentialSwitch:
