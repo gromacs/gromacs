@@ -198,6 +198,8 @@ H5md::H5md(const std::filesystem::path& fileName, const char mode)
     }
 
 #else
+    filemode_ = 0;
+    file_     = H5I_INVALID_HID;
     GMX_UNUSED_VALUE(fileName);
     GMX_UNUSED_VALUE(mode);
     throw gmx::FileIOError(
@@ -222,9 +224,8 @@ H5md::~H5md()
         H5Fclose(file_);
     }
 
-#else
-    throw gmx::FileIOError(
-            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+    /* Do not throw, if GMX_USE_HDF5 is false, in the destructor. */
+
 #endif
 }
 
@@ -247,8 +248,9 @@ void H5md::flush()
         }
     }
 
-    /* Do not throw, if GMX_USE_HDF5 is false, in the destructor. */
-
+#else
+    throw gmx::FileIOError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
 #endif
 }
 
