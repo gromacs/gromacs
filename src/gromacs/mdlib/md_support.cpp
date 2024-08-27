@@ -477,7 +477,9 @@ void compute_globals(gmx_global_stat*               gstat,
     {
         if (!bReadEkin)
         {
+            wallcycle_start(wcycle, WallCycleCounter::ComputeEKin);
             calc_ke_part(fr->haveBoxDeformation, ir->deform, x, v, box, &(ir->opts), mdatoms, ekind, nrnb, bEkinAveVel);
+            wallcycle_stop(wcycle, WallCycleCounter::ComputeEKin);
         }
     }
 
