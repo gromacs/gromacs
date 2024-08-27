@@ -84,7 +84,7 @@ gmx_manage_hdf5()
 gmx_manage_sz3()
 
 if(GMX_USE_HDF5)
-    target_include_directories(fileio INTERFACE ${HDF5_INCLUDE_DIRS})
+    target_include_directories(fileio INTERFACE SYSTEM ${HDF5_INCLUDE_DIRS})
     target_link_libraries(fileio INTERFACE ${HDF5_LIBRARIES} SZ3 hdf5sz3)
 endif()
 # Source files have the following private module dependencies.

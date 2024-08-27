@@ -408,7 +408,7 @@ int write_trxframe_indexed(t_trxstatus* status, const t_trxframe* fr, int nind, 
                     copy_rvec(fr->f[ind[i]], fout[i]);
                 }
             }
-            /* Fall through */
+            [[fallthrough]];
         case efXTC:
             if (fr->bX)
             {
