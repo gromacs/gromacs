@@ -40,6 +40,8 @@
 #ifndef GMX_FILEIO_H5MD_IO_H
 #define GMX_FILEIO_H5MD_IO_H
 
+#include "config.h" // To define GMX_USE_HDF5
+
 #include <filesystem>
 #include <string>
 #include <vector>
@@ -78,10 +80,12 @@ static std::string         s_provenanceGroupName                = "/modules/prov
  * The class contains a number of standard data blocks that are commonly used by GROMACS. */
 class H5md
 {
+#if GMX_USE_HDF5
 private:
     hid_t file_; //!< The HDF5 identifier of the file. This is the H5MD root.
     std::list<GmxH5mdTimeDataBlock> dataBlocks_; //!< A list of time dependent data blocks in the HDF5 file.
     char filemode_; //!< Whether the file is open for reading ('r'), writing ('w') or appending ('a')
+#endif
 
 public:
     /*! \brief Construct a H5md object and open a GmxHdf5 file.
