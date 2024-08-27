@@ -267,7 +267,7 @@ template<int numDims, bool writeFullDataSet>
 void writeData(const hid_t dataSet, const void* data, const hsize_t frameToWrite)
 {
     GMX_ASSERT(dataSet >= 0, "Needs a valid dataSet to write data.");
-    GMX_ASSERT(data != nullptr_t, "Needs valid data to write.");
+    GMX_ASSERT(data != nullptr, "Needs valid data to write.");
     GMX_ASSERT(!writeFullDataSet || frameToWrite == 0,
                "Must start writing from frame 0 if writing the whole data set.");
 
@@ -552,7 +552,7 @@ bool getAttribute(const hid_t dataSet, const char* name, char** value)
     /* Make room for string termination as well. */
     size_t allocationSize = H5Tget_size(dataType) + 1;
     *value                = reinterpret_cast<char*>(malloc(allocationSize));
-    memset(*value, NULL, allocationSize);
+    memset(*value, 0x00, allocationSize);
     if (H5Aread(attribute, dataType, *value) < 0)
     {
         throw gmx::FileIOError("Cannot read attribute.");

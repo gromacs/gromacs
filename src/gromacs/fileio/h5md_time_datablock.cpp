@@ -63,7 +63,7 @@ GmxH5mdTimeDataBlock::GmxH5mdTimeDataBlock(hid_t                container,
                                            hsize_t              numFramesPerChunk,
                                            hsize_t              numEntries,
                                            hsize_t              numValuesPerEntry,
-                                           hid_t                datatype,
+                                           hid_t                dataType,
                                            CompressionAlgorithm compression,
                                            double               compressionAbsoluteError)
 {
@@ -83,7 +83,7 @@ GmxH5mdTimeDataBlock::GmxH5mdTimeDataBlock(hid_t                container,
 
     hsize_t chunkDims[3];
     /* With these default settings new data sets cannot be created. Just load existing from file (if any). */
-    if (datatype == -1 && numEntries == 0)
+    if (dataType == -1 && numEntries == 0)
     {
         /* The chunk cache size must be set when opening the data set. We must first open and check the chunk size. */
         hid_t tmpDataSet = H5Dopen(group_, c_valueName, H5P_DEFAULT);
@@ -122,7 +122,7 @@ GmxH5mdTimeDataBlock::GmxH5mdTimeDataBlock(hid_t                container,
         chunkDims[2] = numValuesPerEntry;
 
         mainDataSet_ = openOrCreateDataSet<DIM>(
-                group_, c_valueName, mainUnit_.c_str(), datatype, chunkDims, compression, compressionAbsoluteError);
+                group_, c_valueName, mainUnit_.c_str(), dataType, chunkDims, compression, compressionAbsoluteError);
 
         hsize_t chunkDimsTimeStep[1] = { numFramesPerChunk };
 
@@ -211,8 +211,7 @@ bool GmxH5mdTimeDataBlock::readFrame(real* data, int64_t frame)
     }
     else
     {
-        readData<3, false>(
-                mainDataSet_, frame, dataTypeSize, reinterpret_cast<void**>(&data), &totalNumElements, &dummy);
+        readData<3, false>(mainDataSet_, frame, reinterpret_cast<void**>(&data), &totalNumElements, &dummy);
     }
 #    else
     if (dataTypeSize != 4)
@@ -283,9 +282,9 @@ void GmxH5mdTimeDataBlock::updateNumWrittenFrames()
         writingFrameIndex_ = numValidFrames;
         return;
     }
-    hid_t   datatype = H5T_NATIVE_INT64;
+    hid_t   dataType = H5T_NATIVE_INT64;
     int64_t fillValue;
-    H5Pget_fill_value(createPropertyList, datatype, &fillValue);
+    H5Pget_fill_value(createPropertyList, dataType, &fillValue);
 
     int64_t stepData = fillValue;
     while (numValidFrames > 0 && stepData == fillValue)
@@ -295,7 +294,7 @@ void GmxH5mdTimeDataBlock::updateNumWrittenFrames()
         H5Sselect_elements(dataSpace, H5S_SELECT_SET, 1, &location);
         const hsize_t memorySpaceSize = 1;
         hid_t         memSpace        = H5Screate_simple(1, &memorySpaceSize, nullptr);
-        if (H5Dread(stepDataSet_, datatype, memSpace, dataSpace, H5P_DEFAULT, &stepData) < 0)
+        if (H5Dread(stepDataSet_, dataType, memSpace, dataSpace, H5P_DEFAULT, &stepData) < 0)
         {
             throw gmx::FileIOError(
                     "Error reading step data set when determining the number of frames.");

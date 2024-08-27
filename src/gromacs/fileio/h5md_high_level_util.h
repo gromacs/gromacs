@@ -97,7 +97,6 @@ MoleculeBlockIndices getMoleculeBlockIndicesByIndex(H5md* file, size_t molBlockI
  * \param[in] file     The H5MD file manager to use.
  * \param[in] topology The molecular topology describing the system.
  * \param[in] index    The selected atoms to include. If empty, use all atoms in the topology.
- * \param[in] selectionName The name of the atom selection specified by index.
  * \param[in] abortIfPresent Do not set up the topology if it is already present in the file.
  * \param[in] writeVmdStructureData Whether to write information describing the system according
  * to VMD specifications in the H5MD group /parameters/vmd_structure/.

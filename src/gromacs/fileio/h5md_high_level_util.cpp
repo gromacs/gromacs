@@ -50,6 +50,8 @@
 #    endif
 #endif
 
+#include <cstring>
+
 #include <string>
 #include <vector>
 
@@ -73,6 +75,14 @@
 namespace
 {
 
+/*! \brief Set the charge, mass, species and id H5MD fields of particles.
+ *
+ * \param[in] file  The H5MD file manager to use.
+ * \param[in] atoms The GROMACS atoms to iterate through to add their properties
+ * \param[in] selectionIndices Indices of atoms to set their properties. All atoms
+ * are assumed if there is no selection.
+ * \param[in] selectionName The name of the selection group
+ */
 void setupSystemParticleProperties(gmx::H5md*               file,
                                    const t_atoms&           atoms,
                                    gmx::ArrayRef<const int> selectionIndices,
@@ -139,42 +149,35 @@ void addAtomTypesOfAtoms(gmx::H5md* file, const t_atoms& atoms, std::vector<bool
     }
 }
 
-
-void writeVmdBondData(gmx::H5md*                                file,
-                      std::vector<std::pair<int64_t, int64_t>>& systemBonds,
-                      std::vector<std::pair<int64_t, int64_t>>& selectionBonds)
+/*! \brief Write bond information to the "parameters/vmd_structure" group according to the
+ * VMD H5MD plugin.
+ *
+ * \param[in] file The H5MD file manager to use.
+ * \param[in] bonds The bonds to specify.
+ */
+void writeVmdBondData(gmx::H5md* file, std::vector<std::pair<int64_t, int64_t>>& bonds)
 {
     std::vector<int64_t> firstAtomsInPairs, secondAtomsInPairs;
-    if (selectionBonds.empty() || selectionBonds.size() == systemBonds.size())
-    {
-        firstAtomsInPairs.reserve(systemBonds.size());
-        secondAtomsInPairs.reserve(systemBonds.size());
-        std::transform(systemBonds.begin(),
-                       systemBonds.end(),
-                       std::back_inserter(firstAtomsInPairs),
-                       [](auto const& pair) { return pair.first; });
-        std::transform(systemBonds.begin(),
-                       systemBonds.end(),
-                       std::back_inserter(secondAtomsInPairs),
-                       [](auto const& pair) { return pair.second; });
-    }
-    else if (!selectionBonds.empty())
-    {
-        firstAtomsInPairs.reserve(selectionBonds.size());
-        secondAtomsInPairs.reserve(selectionBonds.size());
-        std::transform(selectionBonds.begin(),
-                       selectionBonds.end(),
-                       std::back_inserter(firstAtomsInPairs),
-                       [](auto const& pair) { return pair.first; });
-        std::transform(selectionBonds.begin(),
-                       selectionBonds.end(),
-                       std::back_inserter(secondAtomsInPairs),
-                       [](auto const& pair) { return pair.second; });
-    }
+
+    firstAtomsInPairs.reserve(bonds.size());
+    secondAtomsInPairs.reserve(bonds.size());
+    std::transform(bonds.begin(), bonds.end(), std::back_inserter(firstAtomsInPairs), [](auto const& pair) {
+        return pair.first;
+    });
+    std::transform(bonds.begin(), bonds.end(), std::back_inserter(secondAtomsInPairs), [](auto const& pair) {
+        return pair.second;
+    });
+
     file->setNumericDataSet("/parameters/vmd_structure", "bond_from", firstAtomsInPairs, "", false);
     file->setNumericDataSet("/parameters/vmd_structure", "bond_to", secondAtomsInPairs, "", false);
 }
 
+/*! \brief Write residue information to the "parameters/vmd_structure" group according to the
+ * VMD H5MD plugin.
+ *
+ * \param[in] file The H5MD file manager to use.
+ * \param[in] topology The GROMACS topology.
+ */
 void writeVmdResidueData(gmx::H5md*        file,
                          const gmx_mtop_t& topology) // FIXME
 {
@@ -192,6 +195,12 @@ void writeVmdResidueData(gmx::H5md*        file,
     file->setStringDataSet("/parameters/vmd_structure", "chain", chainIds, false, 1);
 }
 
+/*! \brief Write atom species (atom type) information to the "parameters/vmd_structure" group
+ * according to the VMD H5MD plugin.
+ *
+ * \param[in] file The H5MD file manager to use.
+ * \param[in] topology The GROMACS topology.
+ */
 void writeVmdSpeciesData(gmx::H5md* file, const gmx_mtop_t& topology)
 {
     std::vector<int64_t> atomTypeIndex(topology.ffparams.atnr);
@@ -219,6 +228,12 @@ void writeVmdSpeciesData(gmx::H5md* file, const gmx_mtop_t& topology)
     file->setNumericDataSet("/parameters/vmd_structure", "atomicnumber", atomicNumbers, "", false);
 }
 
+/*! \brief Write atom information to the "parameters/vmd_structure" group according to the
+ * VMD H5MD plugin.
+ *
+ * \param[in] file The H5MD file manager to use.
+ * \param[in] topology The GROMACS topology.
+ */
 void writeVmdAtomData(gmx::H5md* file, const gmx_mtop_t& topology)
 {
     t_atoms              atoms = gmx_mtop_global_atoms(topology);
@@ -503,10 +518,10 @@ bool hasSeparateSelection(/*const gmx_mtop_t& topology,*/ gmx::ArrayRef<const in
     {
         separateSelection = true;
     }
-    /* TODO: Check if the below code is necessary.
+    /* FIXME: The for loop should use int64_t. Needs changes in topology. */
+    /* TODO: Check if the below code is necessary. */
     // else
     // {
-    //     /* FIXME: Should use int64_t. Needs changes in topology. */
     //     for (int i = 0; i < topology.natoms; i++)
     //     {
     //         if (getGroupType(topology.groups, SimulationAtomGroupType::CompressedPositionOutput, i) != 0)
@@ -735,7 +750,7 @@ void setupMolecularSystemTopology(H5md*                    file,
     }
     if (writeVmdStructureData)
     {
-        writeVmdBondData(file, systemBonds, selectionBonds);
+        writeVmdBondData(file, selectionBonds.empty() ? systemBonds : selectionBonds);
         writeVmdResidueData(file, topology); // FIXME
         writeVmdAtomData(file, topology);
         writeVmdSpeciesData(file, topology);

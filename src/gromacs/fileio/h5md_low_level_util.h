@@ -77,7 +77,7 @@ void registerSz3FilterImplicitly();
  * \param[in] container The ID of the container of the data. This can be a group in the HDF5 or the HDF5 file itself.
  * \param[in] name The name of the data set.
  * \param[in] unit The unit of the data. See de Buyl et al., 2014 (https://www.sciencedirect.com/science/article/pii/S0010465514000447) for more information.
- * \param[in] datatype The HDF5 data type of the data.
+ * \param[in] dataType The HDF5 data type of the data.
  * \param[in] chunkDims The dimensions of each chunk. The size should match numDims.
  * \param[in] compression The compression algorithm to use.
  * \param[in] compressionError The required precision of lossy compression.
@@ -145,7 +145,7 @@ void readData(const hid_t   dataSet,
 template<int numDims>
 void readData(const hid_t dataSet, const hsize_t frameToRead, void** buffer);
 
-/*! Set an H5MD version number attribute, i.e. two integer values with major and minor
+/*! \brief Set an H5MD version number attribute, i.e. two integer values with major and minor
  * version numbers. The version can be different for the H5MD root group and module
  * groups in the file.
  * \param[in] group The group of which to set the version attribute.
@@ -154,7 +154,7 @@ void readData(const hid_t dataSet, const hsize_t frameToRead, void** buffer);
  */
 void setVersionAttribute(const hid_t group, const int majorVersion, const int minorVersion);
 
-/*! Get an H5MD version number attribute, i.e. two integer values with major and minor
+/*! \brief Get an H5MD version number attribute, i.e. two integer values with major and minor
  * version numbers. The version can be different for the H5MD root group and module
  * groups in the file.
  * \param[in] group The group from which to get the version attribute.
@@ -164,7 +164,7 @@ void setVersionAttribute(const hid_t group, const int majorVersion, const int mi
  */
 bool getVersionAttribute(const hid_t group, int* majorVersion, int* minorVersion);
 
-/*! Set an attribute value in a data set.
+/*! \brief Set an attribute value in a data set.
  * \tparam T The type of the data to write.
  * \param[in] dataSet The ID of the HDF5 data set.
  * \param[in] name The name of the attribute.
@@ -174,14 +174,14 @@ bool getVersionAttribute(const hid_t group, int* majorVersion, int* minorVersion
 template<typename T>
 void setAttribute(const hid_t dataSet, const char* name, const T value, const hid_t dataType);
 
-/*! Set a string attribute value in a data set.
+/*! \brief Set a string attribute value in a data set.
  * \param[in] dataSet The ID of the HDF5 data set.
  * \param[in] name The name of the attribute.
  * \param[in] value The string to set as attribute value.
  */
 void setAttribute(const hid_t dataSet, const char* name, const char* value);
 
-/*! Get an attribute value from a data set.
+/*! \brief Get an attribute value from a data set.
  * \tparam T The type of the data to read.
  * \param[in] dataSet The ID of the HDF5 data set.
  * \param[in] name The name of the attribute.
@@ -191,7 +191,7 @@ void setAttribute(const hid_t dataSet, const char* name, const char* value);
 template<typename T>
 bool getAttribute(const hid_t dataSet, const char* name, T* value);
 
-/*! Get a string attribute value from a data set.
+/*! \brief Get a string attribute value from a data set.
  * \param[in] dataSet The ID of the HDF5 data set.
  * \param[in] name The name of the attribute.
  * \param[out] value The returned string value of the attribute.
@@ -199,7 +199,7 @@ bool getAttribute(const hid_t dataSet, const char* name, T* value);
  */
 bool getAttribute(const hid_t dataSet, const char* name, char** value);
 
-/*! Set a list of attribute strings in a data set.
+/*! \brief Set a list of attribute strings in a data set.
  * \tparam numEntries The number of strings to set.
  * \tparam stringLength The length of the strings. Must be the same for all.
  * \param[in] dataSet The ID of the HDF5 data set.
@@ -209,13 +209,13 @@ bool getAttribute(const hid_t dataSet, const char* name, char** value);
 template<hid_t numEntries, size_t stringLength>
 void setAttributeStringList(const hid_t dataSet, const char* name, const char value[numEntries][stringLength]);
 
-/*! Get the SZ3 lossy compression error setting (absolute or relative) from a data set.
+/*! \brief Get the SZ3 lossy compression error setting (absolute or relative) from a data set.
  * \param[in] dataSet The ID of the HDF5 data set.
  * \returns The compression error setting of the data set or -1 if it is not SZ3 compressed or if the error is not absolute or relative.
  */
 double getDataSetSz3CompressionError(const hid_t dataSet);
 
-/*! Check if an object exists in a container
+/*! \brief Check if an object exists in a container
  * \param[in] container The ID of the HDF5 container.
  * \param[in] name The name of the HDF5 object to look for.
  */

@@ -196,6 +196,7 @@ public:
      * \param[in] containerName The name of the HDF5 group that contains the data set, e.g., "/particles/system".
      * \param[in] dataSetName The name of the property to set, e.g., "position".
      * \param[in] propertyValues A vector of numeric values.
+     * \param[im] unit A string containing the unit of the data set. May be empty.
      * \param[in] replaceExisting Whether to replace the property if it already exists.
      * \throws FileIOError If there was an error creating the data block or writing the data.
      */

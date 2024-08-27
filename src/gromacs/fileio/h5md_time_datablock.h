@@ -43,8 +43,6 @@
 #include <list>
 #include <string>
 
-/* This is currently written for use from GROMACS. If this is used in other packades,
- * the datatype real cannot be used. */
 #include "gromacs/utility/real.h"
 
 #include "h5md_low_level_util.h"
@@ -66,16 +64,16 @@ private:
     hid_t timeDataSet_; //!< The ID of the time data set.
     hid_t stepDataSet_; //!< The ID of the data set storing simulation step numbers.
 
-    /*! The name of the data block, the HDF5 group containing the data sets, e.g. "position". */
+    /*! \brief The name of the data block, the HDF5 group containing the data sets, e.g. "position". */
     std::string name_;
     std::string fullName_; //!< The full HDF5 path of the group storing the data sets.
     std::string mainUnit_; //!< The physical unit of the main (value) data.
     std::string timeUnit_; //!< The unit of the time data.
 
-    /*! The index of the next frame to write. 0 when no frames have been written. */
+    /*! \brief The index of the next frame to write. 0 when no frames have been written. */
     int64_t writingFrameIndex_;
 
-    /*! The index of the next frame to read, 0 or the frame after the previously read frame. */
+    /*! \brief The index of the next frame to read, 0 or the frame after the previously read frame. */
     int64_t readingFrameIndex_;
 
 public:
@@ -86,8 +84,9 @@ public:
      * \param[in] numFramesPerChunk Number of frames per chunk of data, relevant for compressed data.
      * \param[in] numEntries Number of data entries per frame, e.g., the number of atoms.
      * \param[in] numValuesPerEntry Number of data values per entry, e.g. 3 for 3D data.
+     * \param[in] dataType The HDF5 data type of this block.
      * \param[in] compression The compression algorithm to use.
-     * \param[in] comopressionError The absolute error for lossy compression algorithms.
+     * \param[in] compressionError The absolute error for lossy compression algorithms.
      */
     GmxH5mdTimeDataBlock(hid_t                container         = -1,
                          const std::string    name              = "",
@@ -95,11 +94,11 @@ public:
                          hsize_t              numFramesPerChunk = 1,
                          hsize_t              numEntries        = 0,
                          hsize_t              numValuesPerEntry = 1,
-                         hid_t                datatype          = -1,
+                         hid_t                dataType          = -1,
                          CompressionAlgorithm compression       = CompressionAlgorithm::None,
                          double               compressionError  = 0.001);
 
-    /* Close the data sets: main (or value), step and time. */
+    /* \brief Close the data sets: main (or value), step and time. */
     void closeAllDataSets();
 
     /* Overloaded operator to compare two objects. N.b., only compares the fullName_,

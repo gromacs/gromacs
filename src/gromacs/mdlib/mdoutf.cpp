@@ -900,10 +900,7 @@ void done_mdoutf(gmx_mdoutf_t of)
     gmx_tng_close(&of->tng);
     gmx_tng_close(&of->tng_low_prec);
 
-    if (of->h5mdIo)
-    {
-        delete of->h5mdIo;
-    }
+    delete of->h5mdIo;
 
     sfree(of);
 }
