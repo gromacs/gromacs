@@ -198,9 +198,6 @@ H5md::H5md(const std::filesystem::path& fileName, const char mode)
     }
 
 #else
-    dataBlocks_.clear();
-    filemode_ = 0;
-    file_     = -1;
     GMX_UNUSED_VALUE(fileName);
     GMX_UNUSED_VALUE(mode);
     throw gmx::FileIOError(
@@ -211,7 +208,7 @@ H5md::H5md(const std::filesystem::path& fileName, const char mode)
 H5md::~H5md()
 {
 #if GMX_USE_HDF5
-    if (file_ >= 0)
+    if (file_ != H5I_INVALID_HID)
     {
         flush();
         if (debug)
@@ -223,7 +220,6 @@ H5md::~H5md()
             dataBlock.closeAllDataSets();
         }
         H5Fclose(file_);
-        file_ = -1;
     }
 
 #else
@@ -235,7 +231,7 @@ H5md::~H5md()
 void H5md::flush()
 {
 #if GMX_USE_HDF5
-    if (file_ >= 0)
+    if (file_ != H5I_INVALID_HID)
     {
         if (debug)
         {
@@ -251,9 +247,8 @@ void H5md::flush()
         }
     }
 
-#else
-    throw gmx::FileIOError(
-            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+    /* Do not throw, if GMX_USE_HDF5 is false, in the destructor. */
+
 #endif
 }
 
