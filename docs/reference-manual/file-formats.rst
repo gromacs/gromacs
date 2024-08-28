@@ -392,6 +392,10 @@ version as an attribute), containing::
 at `VMD-h5mdplugin <https://github.com/h5md/VMD-h5mdplugin/blob/master/Documentation%20VMD%20parameters>`_.
 Some of the VMD fields may not be written by |Gromacs|.
 
+Please note, |Gromacs| stores units according to the H5MD specification. The VMD H5MD plugin
+does not handle unit conversion. This means that H5MD files created by |Gromacs| cannot
+be used directly in VMD, since the |Gromacs| output is in nm and VMD assumes Å.
+
 .. _hdb:
 
 hdb

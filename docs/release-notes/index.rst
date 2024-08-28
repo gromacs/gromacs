@@ -22,15 +22,10 @@ series, as appropriate. Around the time the 2026 release is made, the
 Where issue numbers are reported in these release notes, more details
 can be found on the `issue tracker`_ at that issue number.
 
-|Gromacs| 2025 series
----------------------
+|Gromacs| H5MD prototype
+------------------------
 
 .. todolist::
-
-Patch releases
-^^^^^^^^^^^^^^
-.. .. toctree::
-   :maxdepth: 1
 
 Major release
 ^^^^^^^^^^^^^
@@ -38,16 +33,8 @@ Major release
 .. toctree::
    :maxdepth: 1
 
-   2025/major/highlights
-   2025/major/features
-   2025/major/performance
-   2025/major/api
-   2025/major/tools
-   2025/major/bugs-fixed
-   2025/major/deprecated-functionality
-   2025/major/removed-functionality
-   2025/major/portability
-   2025/major/miscellaneous
+   h5md-prototype/major/highlights
+   h5md-prototype/major/tools
 
 |Gromacs| 2024 series
 ---------------------
@@ -80,10 +67,6 @@ Major release
    2024/major/removed-functionality
    2024/major/portability
    2024/major/miscellaneous
-
-
-Older (unmaintained) |Gromacs| series
--------------------------------------------------------
 
 |Gromacs| 2023 series
 ---------------------
@@ -119,6 +102,9 @@ Major release
    2023/major/removed-functionality
    2023/major/portability
    2023/major/miscellaneous
+
+Older (unmaintained) |Gromacs| series
+-------------------------------------------------------
 
 |Gromacs| 2022 series
 ---------------------
