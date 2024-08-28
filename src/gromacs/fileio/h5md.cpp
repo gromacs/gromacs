@@ -70,8 +70,6 @@ CLANG_DIAGNOSTIC_IGNORE("-Wold-style-cast")
 CLANG_DIAGNOSTIC_IGNORE("-Wmissing-noreturn")
 #endif
 
-// NOLINTBEGIN(readability-convert-member-functions-to-static)
-
 #if GMX_USE_HDF5
 namespace
 {
@@ -155,6 +153,8 @@ void setPluginPath()
 
 namespace gmx
 {
+
+// NOLINTBEGIN(readability-convert-member-functions-to-static)
 
 H5md::H5md(const std::filesystem::path& fileName, const char mode)
 {
@@ -1036,6 +1036,7 @@ void H5md::addToProvenanceRecord(const std::string& commandLine,
 #endif
 }
 
+// NOLINTEND(readability-convert-member-functions-to-static)
 
 extern template hid_t
 openOrCreateDataSet<1>(hid_t, const char*, const char*, hid_t, const hsize_t*, CompressionAlgorithm, double);
@@ -1094,5 +1095,3 @@ template std::vector<std::int64_t> H5md::readNumericDataSet<std::int64_t>(const 
 } // namespace gmx
 
 CLANG_DIAGNOSTIC_RESET
-
-// NOLINTEND(readability-convert-member-functions-to-static)
