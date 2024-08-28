@@ -764,7 +764,7 @@ void H5md::writeDataFrame(int64_t              step,
 #endif
 }
 
-// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static,readability-non-const-parameter)
 bool H5md::readNextFrameOfDataBlock(const std::string& dataBlockFullName, real* data, int64_t stepToRead)
 {
 #if GMX_USE_HDF5
