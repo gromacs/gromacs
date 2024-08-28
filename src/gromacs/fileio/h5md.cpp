@@ -70,6 +70,12 @@ CLANG_DIAGNOSTIC_IGNORE("-Wold-style-cast")
 CLANG_DIAGNOSTIC_IGNORE("-Wmissing-noreturn")
 #endif
 
+#ifdef __clang__
+#    if !GMX_USE_HDF5
+// NOLINTBEGIN(readability-convert-member-functions-to-static)
+#    endif
+#endif
+
 #if GMX_USE_HDF5
 namespace
 {
@@ -1092,3 +1098,9 @@ template std::vector<std::int64_t> H5md::readNumericDataSet<std::int64_t>(const 
 } // namespace gmx
 
 CLANG_DIAGNOSTIC_RESET
+
+#ifdef __clang__
+#    if !GMX_USE_HDF5
+// NOLINTEND(readability-convert-member-functions-to-static)
+#    endif
+#endif
