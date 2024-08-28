@@ -69,11 +69,7 @@ CLANG_DIAGNOSTIC_IGNORE("-Wold-style-cast")
 CLANG_DIAGNOSTIC_IGNORE("-Wmissing-noreturn")
 #endif
 
-#ifdef __clang__
-#    if !GMX_USE_HDF5
 // NOLINTBEGIN(readability-convert-member-functions-to-static)
-#    endif
-#endif
 
 #if GMX_USE_HDF5
 #    include <hdf5.h>
@@ -1072,8 +1068,4 @@ extern template void setAttributeStringList<3, 9>(const hid_t, const char*, cons
 
 CLANG_DIAGNOSTIC_RESET
 
-#ifdef __clang__
-#    if !GMX_USE_HDF5
 // NOLINTEND(readability-convert-member-functions-to-static)
-#    endif
-#endif
