@@ -154,8 +154,6 @@ void setPluginPath()
 namespace gmx
 {
 
-// NOLINTBEGIN(readability-convert-member-functions-to-static)
-
 H5md::H5md(const std::filesystem::path& fileName, const char mode)
 {
 #if GMX_USE_HDF5
@@ -231,6 +229,7 @@ H5md::~H5md()
 #endif
 }
 
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 void H5md::flush()
 {
 #if GMX_USE_HDF5
@@ -256,6 +255,7 @@ void H5md::flush()
 #endif
 }
 
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 int H5md::initGroupTimeDataBlocksFromFile(const std::string& groupName)
 {
 #if GMX_USE_HDF5
@@ -290,6 +290,7 @@ int H5md::initGroupTimeDataBlocksFromFile(const std::string& groupName)
 #endif
 }
 
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 std::string H5md::getH5mdRootVersionNumber()
 {
 #if GMX_USE_HDF5
@@ -308,6 +309,7 @@ std::string H5md::getH5mdRootVersionNumber()
 #endif
 }
 
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 void H5md::setAuthor(const std::string& authorName)
 {
 #if GMX_USE_HDF5
@@ -321,6 +323,7 @@ void H5md::setAuthor(const std::string& authorName)
 #endif
 }
 
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 std::string H5md::getAuthor()
 {
 #if GMX_USE_HDF5
@@ -337,6 +340,7 @@ std::string H5md::getAuthor()
 #endif
 }
 
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 void H5md::setCreatorProgramName(const std::string& creatorName)
 {
 #if GMX_USE_HDF5
@@ -349,6 +353,7 @@ void H5md::setCreatorProgramName(const std::string& creatorName)
 #endif
 }
 
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 std::string H5md::getCreatorProgramName()
 {
 #if GMX_USE_HDF5
@@ -365,6 +370,7 @@ std::string H5md::getCreatorProgramName()
 #endif
 }
 
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 void H5md::setCreatorProgramVersion(const std::string& version)
 {
 #if GMX_USE_HDF5
@@ -378,6 +384,7 @@ void H5md::setCreatorProgramVersion(const std::string& version)
 #endif
 }
 
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 std::string H5md::getCreatorProgramVersion()
 {
 #if GMX_USE_HDF5
@@ -394,6 +401,7 @@ std::string H5md::getCreatorProgramVersion()
 #endif
 }
 
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 hid_t H5md::getGroupId(const std::string& fullName)
 {
 #if GMX_USE_HDF5
@@ -408,6 +416,7 @@ hid_t H5md::getGroupId(const std::string& fullName)
 #endif
 }
 
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 hid_t H5md::createGroup(const std::string& fullName)
 {
 #if GMX_USE_HDF5
@@ -421,6 +430,7 @@ hid_t H5md::createGroup(const std::string& fullName)
 #endif
 }
 
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 hid_t H5md::createGroup(hid_t container, const std::string& nameInContainer)
 {
 #if GMX_USE_HDF5
@@ -436,6 +446,7 @@ hid_t H5md::createGroup(hid_t container, const std::string& nameInContainer)
 #endif
 }
 
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 void H5md::setStringDataSet(const std::string&              containerName,
                             const std::string&              dataSetName,
                             const std::vector<std::string>& propertyValues,
@@ -505,6 +516,7 @@ void H5md::setStringDataSet(const std::string&              containerName,
 #endif
 }
 
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 template<typename T>
 void H5md::setNumericDataSet(const std::string&    containerName,
                              const std::string&    dataSetName,
@@ -578,6 +590,7 @@ void H5md::setNumericDataSet(const std::string&    containerName,
 #endif
 }
 
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 std::vector<std::string> H5md::readStringDataSet(const std::string& containerName, const std::string& dataSetName)
 {
 #if GMX_USE_HDF5
@@ -616,6 +629,7 @@ std::vector<std::string> H5md::readStringDataSet(const std::string& containerNam
 #endif
 }
 
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 template<typename T>
 std::vector<T> H5md::readNumericDataSet(const std::string& containerName, const std::string& dataSetName)
 {
@@ -682,6 +696,7 @@ std::vector<T> H5md::readNumericDataSet(const std::string& containerName, const 
 #endif
 }
 
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 void H5md::writeDataFrame(int64_t              step,
                           real                 time,
                           const std::string&   dataBlockFullName,
@@ -749,6 +764,7 @@ void H5md::writeDataFrame(int64_t              step,
 #endif
 }
 
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 bool H5md::readNextFrameOfDataBlock(const std::string& dataBlockFullName, real* data, int64_t stepToRead)
 {
 #if GMX_USE_HDF5
@@ -774,6 +790,7 @@ bool H5md::readNextFrameOfDataBlock(const std::string& dataBlockFullName, real* 
 #endif
 }
 
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 double H5md::getLossyCompressionErrorOfDataBlock(const std::string& dataBlockFullName)
 {
 #if GMX_USE_HDF5
@@ -793,6 +810,7 @@ double H5md::getLossyCompressionErrorOfDataBlock(const std::string& dataBlockFul
 #endif
 }
 
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 int64_t H5md::getNumberOfFrames(const std::string& dataBlockName, const std::string& selectionName)
 {
 #if GMX_USE_HDF5
@@ -815,6 +833,7 @@ int64_t H5md::getNumberOfFrames(const std::string& dataBlockName, const std::str
 #endif
 }
 
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 int64_t H5md::getNumberOfParticles(const std::string& dataBlockName, const std::string& selectionName)
 {
 #if GMX_USE_HDF5
@@ -837,6 +856,7 @@ int64_t H5md::getNumberOfParticles(const std::string& dataBlockName, const std::
 #endif
 }
 
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 real H5md::getFirstTime(const std::string& dataBlockName, const std::string& selectionName)
 {
 #if GMX_USE_HDF5
@@ -859,6 +879,7 @@ real H5md::getFirstTime(const std::string& dataBlockName, const std::string& sel
 #endif
 }
 
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 real H5md::getFirstTimeFromAllDataBlocks()
 {
 #if GMX_USE_HDF5
@@ -882,6 +903,7 @@ real H5md::getFirstTimeFromAllDataBlocks()
 #endif
 }
 
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 std::tuple<int64_t, real> H5md::getNextStepAndTimeToRead()
 {
 #if GMX_USE_HDF5
@@ -905,6 +927,7 @@ std::tuple<int64_t, real> H5md::getNextStepAndTimeToRead()
 #endif
 }
 
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 real H5md::getFinalTime(const std::string& dataBlockName, const std::string& selectionName)
 {
 #if GMX_USE_HDF5
@@ -927,6 +950,7 @@ real H5md::getFinalTime(const std::string& dataBlockName, const std::string& sel
 #endif
 }
 
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 real H5md::getFinalTimeFromAllDataBlocks()
 {
 #if GMX_USE_HDF5
@@ -955,6 +979,7 @@ real H5md::getFinalTimeFromAllDataBlocks()
 #endif
 }
 
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 void H5md::addToProvenanceRecord(const std::string& commandLine,
                                  const std::string& programVersion,
                                  const std::string& comment)
@@ -1035,8 +1060,6 @@ void H5md::addToProvenanceRecord(const std::string& commandLine,
             "GROMACS was compiled without HDF5 support, cannot handle this file type");
 #endif
 }
-
-// NOLINTEND(readability-convert-member-functions-to-static)
 
 extern template hid_t
 openOrCreateDataSet<1>(hid_t, const char*, const char*, hid_t, const hsize_t*, CompressionAlgorithm, double);
