@@ -50,11 +50,15 @@
 
 #    include "gromacs/math/vectypes.h"
 #    include "gromacs/mdtypes/md_enums.h"
+#    include "gromacs/utility/basedefinitions.h"
 #    include "gromacs/utility/exceptions.h"
 #    include "gromacs/utility/fatalerror.h"
 #    include "gromacs/utility/gmxassert.h"
 
 #    include "h5md_low_level_util.h"
+
+// HDF5 constants use old style casts.
+CLANG_DIAGNOSTIC_IGNORE("-Wold-style-cast")
 
 namespace
 {
@@ -227,7 +231,7 @@ hid_t openOrCreateDataSet(const hid_t                container,
                 {
                     throw gmx::FileIOError("Cannot set shuffle filter.");
                 }
-                /* Fall through */
+                [[fallthrough]];
             case CompressionAlgorithm::LosslessNoShuffle:
                 if (H5Pset_deflate(createPropertyList, 1) < 0)
                 {
@@ -650,4 +654,5 @@ template bool getAttribute<int64_t>(hid_t, const char*, int64_t*);
 
 } // namespace gmx
 
+CLANG_DIAGNOSTIC_RESET
 #endif // GMX_USE_HDF5

@@ -37,8 +37,8 @@
  * \author Magnus Lundborg <lundborg.magnus@gmail.com>
  */
 
-#ifndef GMX_FILEIO_GMXH5MD_IO_H
-#define GMX_FILEIO_GMXH5MD_IO_H
+#ifndef GMX_FILEIO_GMX_H5MD_HIGH_LEVEL_UTIL_H
+#define GMX_FILEIO_GMX_H5MD_HIGH_LEVEL_UTIL_H
 
 #include <string>
 #include <vector>
@@ -183,4 +183,4 @@ bool readNextFrameOfStandardDataBlocks(H5md*              file,
 bool copyProvenanceRecords(H5md* srcFile, H5md* destFile);
 
 } // namespace gmx
-#endif // GMX_FILEIO_GMXH5MD_IO_H
+#endif // GMX_FILEIO_GMX_H5MD_HIGH_LEVEL_UTIL_H

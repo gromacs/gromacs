@@ -37,8 +37,8 @@
  * \author Magnus Lundborg <lundborg.magnus@gmail.com>
  */
 
-#ifndef GMX_FILEIO_H5MD_IO_H
-#define GMX_FILEIO_H5MD_IO_H
+#ifndef GMX_FILEIO_H5MD_H
+#define GMX_FILEIO_H5MD_H
 
 #include "config.h" // To define GMX_USE_HDF5
 
@@ -335,4 +335,4 @@ public:
 };
 
 } // namespace gmx
-#endif // GMX_FILEIO_H5MD_IO_H
+#endif // GMX_FILEIO_H5MD_H

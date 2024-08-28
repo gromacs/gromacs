@@ -37,8 +37,8 @@
  * \author Magnus Lundborg <lundborg.magnus@gmail.com>
  */
 
-#ifndef GMX_FILEIO_H5MD_UTIL_H
-#define GMX_FILEIO_H5MD_UTIL_H
+#ifndef GMX_FILEIO_GMX_H5MD_LOW_LEVEL_UTIL_H
+#define GMX_FILEIO_GMX_H5MD_LOW_LEVEL_UTIL_H
 
 #include <string>
 
@@ -223,4 +223,4 @@ bool objectExists(const hid_t container, const char* name);
 
 } // namespace gmx
 
-#endif
+#endif // GMX_FILEIO_GMX_H5MD_LOW_LEVEL_UTIL_H

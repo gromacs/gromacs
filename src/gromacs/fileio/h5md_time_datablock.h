@@ -37,8 +37,8 @@
  * \author Magnus Lundborg <lundborg.magnus@gmail.com>
  */
 
-#ifndef GMX_FILEIO_H5MD_DATABLOCK_H
-#define GMX_FILEIO_H5MD_DATABLOCK_H
+#ifndef GMX_FILEIO_H5MD_TIME_DATABLOCK_H
+#define GMX_FILEIO_H5MD_TIME_DATABLOCK_H
 
 #include <list>
 #include <string>
@@ -178,4 +178,4 @@ public:
 };
 
 } // namespace gmx
-#endif // GMX_FILEIO_H5MD_DATABLOCK_H
+#endif // GMX_FILEIO_H5MD_TIME_DATABLOCK_H

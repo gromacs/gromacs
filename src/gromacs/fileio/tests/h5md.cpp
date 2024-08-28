@@ -59,7 +59,8 @@
 #include "testutils/testfilemanager.h"
 #include "testutils/tprfilegenerator.h"
 
-#if GMX_USE_HDF5
+CLANG_DIAGNOSTIC_IGNORE("-Wold-style-cast") // HDF5 constants use old style casts.
+
 namespace gmx
 {
 namespace test
@@ -548,4 +549,4 @@ extern template std::vector<int> H5md::readNumericDataSet<int>(const std::string
 
 } // namespace gmx
 
-#endif // GMX_USE_HDF5
+CLANG_DIAGNOSTIC_RESET

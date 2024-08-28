@@ -42,17 +42,20 @@
 #include "config.h"
 
 #if GMX_USE_HDF5
-
 #    include <hdf5.h>
 
 #    include <string>
 
 #    include "gromacs/math/vectypes.h"
+#    include "gromacs/utility/basedefinitions.h"
 #    include "gromacs/utility/exceptions.h"
 
 #    include "h5md.h"
 #    include "h5md_low_level_util.h"
 #    include "h5md_time_datablock.h"
+
+// HDF5 constants use old style casts.
+CLANG_DIAGNOSTIC_IGNORE("-Wold-style-cast")
 
 namespace gmx
 {
@@ -444,4 +447,5 @@ extern template void readData<3, false>(hid_t, hsize_t, void**, size_t*, size_t*
 
 } // namespace gmx
 
+CLANG_DIAGNOSTIC_RESET
 #endif // GMX_USE_HDF5

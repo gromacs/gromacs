@@ -62,9 +62,11 @@
 #include "h5md_time_datablock.h"
 
 #if GMX_USE_HDF5
+// HDF5 constants use old style casts.
 CLANG_DIAGNOSTIC_IGNORE("-Wold-style-cast")
 #    include <hdf5.h>
 #else
+// [[noreturn]] attributes must be added in the common headers, so it's easier to silence the warning here
 CLANG_DIAGNOSTIC_IGNORE("-Wmissing-noreturn")
 #endif
 

@@ -39,16 +39,9 @@
 
 #include "gmxpre.h"
 
-#include "config.h"
+#include "h5md_high_level_util.h"
 
-// [[noreturn]] attributes must be added in the common headers, so it's easier to silence the warning here
-#ifdef __clang__
-#    if !GMX_USE_HDF5
-#        pragma clang diagnostic push
-#        pragma clang diagnostic ignored "-Wmissing-noreturn"
-// NOLINTBEGIN(readability-convert-member-functions-to-static)
-#    endif
-#endif
+#include "config.h"
 
 #include <cstring>
 
@@ -59,14 +52,28 @@
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/sysinfo.h"
 
 #include "h5md.h"
-#include "h5md_high_level_util.h"
 #include "h5md_low_level_util.h"
 #include "h5md_time_datablock.h"
+
+#if GMX_USE_HDF5
+// HDF5 constants use old style casts.
+CLANG_DIAGNOSTIC_IGNORE("-Wold-style-cast")
+#else
+// [[noreturn]] attributes must be added in the common headers, so it's easier to silence the warning here
+CLANG_DIAGNOSTIC_IGNORE("-Wmissing-noreturn")
+#endif
+
+#ifdef __clang__
+#    if !GMX_USE_HDF5
+// NOLINTBEGIN(readability-convert-member-functions-to-static)
+#    endif
+#endif
 
 #if GMX_USE_HDF5
 #    include <hdf5.h>
@@ -1063,9 +1070,10 @@ extern template void setAttributeStringList<3, 9>(const hid_t, const char*, cons
 
 } // namespace gmx
 
+CLANG_DIAGNOSTIC_RESET
+
 #ifdef __clang__
 #    if !GMX_USE_HDF5
 // NOLINTEND(readability-convert-member-functions-to-static)
-#        pragma clang diagnostic pop
 #    endif
 #endif
