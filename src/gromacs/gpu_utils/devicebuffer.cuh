@@ -348,14 +348,16 @@ using DeviceTexture = cudaTextureObject_t;
  * \param[out]  deviceTexture  Device texture object to initialize.
  * \param[in]   hostBuffer     Host buffer to get date from
  * \param[in]   numValues      Number of elements in the buffer.
- * \param[in]   deviceContext  GPU device context.
+ * \param[in]   deviceContext  Device context for memory allocation.
+ * \param[in]   deviceStream   Device stream for initialization.
  */
 template<typename ValueType>
 void initParamLookupTable(DeviceBuffer<ValueType>* deviceBuffer,
                           DeviceTexture*           deviceTexture,
                           const ValueType*         hostBuffer,
                           int                      numValues,
-                          const DeviceContext&     deviceContext)
+                          const DeviceContext&     deviceContext,
+                          const DeviceStream&      deviceStream)
 {
     if (numValues == 0)
     {
@@ -365,13 +367,8 @@ void initParamLookupTable(DeviceBuffer<ValueType>* deviceBuffer,
 
     allocateDeviceBuffer(deviceBuffer, numValues, deviceContext);
 
-    const size_t sizeInBytes = numValues * sizeof(ValueType);
-
-    cudaError_t stat = cudaMemcpy(
-            *reinterpret_cast<ValueType**>(deviceBuffer), hostBuffer, sizeInBytes, cudaMemcpyHostToDevice);
-
-    GMX_RELEASE_ASSERT(stat == cudaSuccess,
-                       ("Synchronous H2D copy failed. " + gmx::getDeviceErrorString(stat)).c_str());
+    copyToDeviceBuffer(
+            deviceBuffer, hostBuffer, 0, numValues, deviceStream, GpuApiCallBehavior::Sync, nullptr);
 
     if (!c_disableCudaTextures)
     {
@@ -382,11 +379,11 @@ void initParamLookupTable(DeviceBuffer<ValueType>* deviceBuffer,
         rd.resType                = cudaResourceTypeLinear;
         rd.res.linear.devPtr      = *deviceBuffer;
         rd.res.linear.desc        = cudaCreateChannelDesc<ValueType>();
-        rd.res.linear.sizeInBytes = sizeInBytes;
+        rd.res.linear.sizeInBytes = numValues * sizeof(ValueType);
 
         memset(&td, 0, sizeof(td));
-        td.readMode = cudaReadModeElementType;
-        stat        = cudaCreateTextureObject(deviceTexture, &rd, &td, nullptr);
+        td.readMode      = cudaReadModeElementType;
+        cudaError_t stat = cudaCreateTextureObject(deviceTexture, &rd, &td, nullptr);
         GMX_RELEASE_ASSERT(
                 stat == cudaSuccess,
                 ("Binding of the texture object failed. " + gmx::getDeviceErrorString(stat)).c_str());

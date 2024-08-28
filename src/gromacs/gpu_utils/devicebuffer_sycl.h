@@ -401,24 +401,23 @@ void clearDeviceBufferAsync(DeviceBuffer<ValueType>* buffer,
  * \param[out]  deviceBuffer   Device buffer to store data in.
  * \param[in]   hostBuffer     Host buffer to get date from.
  * \param[in]   numValues      Number of elements in the buffer.
- * \param[in]   deviceContext  GPU device context.
+ * \param[in]   deviceContext  Device context for memory allocation.
+ * \param[in]   deviceStream   Device stream for initialization.
  */
 template<typename ValueType>
 void initParamLookupTable(DeviceBuffer<ValueType>* deviceBuffer,
                           DeviceTexture* /* deviceTexture */,
                           const ValueType*     hostBuffer,
                           int                  numValues,
-                          const DeviceContext& deviceContext)
+                          const DeviceContext& deviceContext,
+                          const DeviceStream&  deviceStream)
 {
     GMX_ASSERT(hostBuffer, "Host buffer should be specified.");
     GMX_ASSERT(deviceBuffer, "Device buffer should be specified.");
 
     allocateDeviceBuffer<ValueType>(deviceBuffer, numValues, deviceContext);
-    /* Not perfect, but we call this function only on simulation initialization, so the
-     * overhead of a queue creation should be manageable. */
-    DeviceStream temporaryStream(deviceContext, DeviceStreamPriority::Normal, false);
     copyToDeviceBuffer(
-            deviceBuffer, hostBuffer, 0, numValues, temporaryStream, GpuApiCallBehavior::Sync, nullptr);
+            deviceBuffer, hostBuffer, 0, numValues, deviceStream, GpuApiCallBehavior::Sync, nullptr);
 }
 
 /*! \brief Release the underlying device allocations.

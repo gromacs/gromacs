@@ -638,13 +638,15 @@ void pme_gpu_realloc_and_copy_fract_shifts(PmeGpu* pmeGpu)
                          &kernelParamsPtr->fractShiftsTableTexture,
                          pmeGpu->common->fsh.data(),
                          newFractShiftsSize,
-                         pmeGpu->archSpecific->deviceContext_);
+                         pmeGpu->archSpecific->deviceContext_,
+                         pmeGpu->archSpecific->pmeStream_);
 
     initParamLookupTable(&kernelParamsPtr->grid.d_gridlineIndicesTable,
                          &kernelParamsPtr->gridlineIndicesTableTexture,
                          pmeGpu->common->nn.data(),
                          newFractShiftsSize,
-                         pmeGpu->archSpecific->deviceContext_);
+                         pmeGpu->archSpecific->deviceContext_,
+                         pmeGpu->archSpecific->pmeStream_);
 }
 
 void pme_gpu_free_fract_shifts(const PmeGpu* pmeGpu)

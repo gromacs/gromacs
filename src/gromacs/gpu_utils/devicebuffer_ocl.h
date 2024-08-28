@@ -340,14 +340,15 @@ using DeviceTexture = void*;
  * \param[out]  deviceBuffer   Device buffer to store data in.
  * \param[in]   hostBuffer     Host buffer to get date from.
  * \param[in]   numValues      Number of elements in the buffer.
- * \param[in]   deviceContext  GPU device context.
+ * \param[in]   deviceContext  Device context for memory allocation.
  */
 template<typename ValueType>
 void initParamLookupTable(DeviceBuffer<ValueType>* deviceBuffer,
                           DeviceTexture* /* deviceTexture */,
                           const ValueType*     hostBuffer,
                           int                  numValues,
-                          const DeviceContext& deviceContext)
+                          const DeviceContext& deviceContext,
+                          const DeviceStream& /* deviceStream */)
 {
     GMX_ASSERT(hostBuffer, "Host buffer pointer can not be null");
     const size_t bytes = numValues * sizeof(ValueType);

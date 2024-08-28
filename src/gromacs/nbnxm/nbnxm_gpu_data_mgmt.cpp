@@ -82,7 +82,8 @@ namespace gmx
 
 static inline void init_ewald_coulomb_force_table(const EwaldCorrectionTables& tables,
                                                   NBParamGpu*                  nbp,
-                                                  const DeviceContext&         deviceContext)
+                                                  const DeviceContext&         deviceContext,
+                                                  const DeviceStream&          deviceStream)
 {
     if (nbp->coulomb_tab)
     {
@@ -90,8 +91,12 @@ static inline void init_ewald_coulomb_force_table(const EwaldCorrectionTables& t
     }
 
     nbp->coulomb_tab_scale = tables.scale;
-    initParamLookupTable(
-            &nbp->coulomb_tab, &nbp->coulomb_tab_texobj, tables.tableF.data(), tables.tableF.size(), deviceContext);
+    initParamLookupTable(&nbp->coulomb_tab,
+                         &nbp->coulomb_tab_texobj,
+                         tables.tableF.data(),
+                         tables.tableF.size(),
+                         deviceContext,
+                         deviceStream);
 }
 
 static bool useTabulatedEwaldByDefault(const DeviceInformation& deviceInfo)
@@ -358,7 +363,8 @@ static inline void initNbparam(NBParamGpu*                     nbp,
                                const interaction_const_t&      ic,
                                const PairlistParams&           listParams,
                                const nbnxn_atomdata_t::Params& nbatParams,
-                               const DeviceContext&            deviceContext)
+                               const DeviceContext&            deviceContext,
+                               const DeviceStream&             localStream)
 {
     const int numTypes = nbatParams.numTypes;
 
@@ -380,7 +386,7 @@ static inline void initNbparam(NBParamGpu*                     nbp,
     if (nbp->elecType == ElecType::EwaldTab || nbp->elecType == ElecType::EwaldTabTwin)
     {
         GMX_RELEASE_ASSERT(ic.coulombEwaldTables, "Need valid Coulomb Ewald correction tables");
-        init_ewald_coulomb_force_table(*ic.coulombEwaldTables, nbp, deviceContext);
+        init_ewald_coulomb_force_table(*ic.coulombEwaldTables, nbp, deviceContext, localStream);
     }
 
     /* set up LJ parameter lookup table */
@@ -392,7 +398,8 @@ static inline void initNbparam(NBParamGpu*                     nbp,
                              &nbp->nbfp_texobj,
                              reinterpret_cast<const Float2*>(nbatParams.nbfp.data()),
                              numTypes * numTypes,
-                             deviceContext);
+                             deviceContext,
+                             localStream);
     }
 
     /* set up LJ-PME parameter lookup table */
@@ -405,7 +412,8 @@ static inline void initNbparam(NBParamGpu*                     nbp,
                              &nbp->nbfp_comb_texobj,
                              reinterpret_cast<const Float2*>(nbatParams.nbfp_comb.data()),
                              numTypes,
-                             deviceContext);
+                             deviceContext,
+                             localStream);
     }
 }
 
@@ -475,7 +483,7 @@ NbnxmGpu* gpu_init(const DeviceStreamManager& deviceStreamManager,
     const nbnxn_atomdata_t::Params& nbatParams    = nbat->params();
     const DeviceContext&            deviceContext = *nb->deviceContext_;
 
-    initNbparam(nb->nbparam, *ic, listParams, nbatParams, deviceContext);
+    initNbparam(nb->nbparam, *ic, listParams, nbatParams, deviceContext, localStream);
     initAtomdataFirst(nb->atdat, nbatParams.numTypes, deviceContext, localStream);
 
     gpu_init_platform_specific(nb);
@@ -502,7 +510,8 @@ void gpu_pme_loadbal_update_param(nonbonded_verlet_t* nbv, const interaction_con
     nbp->elecType = nbnxn_gpu_pick_ewald_kernel_type(ic, nb->deviceContext_->deviceInfo());
 
     GMX_RELEASE_ASSERT(ic.coulombEwaldTables, "Need valid Coulomb Ewald correction tables");
-    init_ewald_coulomb_force_table(*ic.coulombEwaldTables, nbp, *nb->deviceContext_);
+    init_ewald_coulomb_force_table(
+            *ic.coulombEwaldTables, nbp, *nb->deviceContext_, *nb->deviceStreams[InteractionLocality::Local]);
 }
 
 void gpu_upload_shiftvec(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom)
