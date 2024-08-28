@@ -607,7 +607,7 @@ int tMPI_Comm_split(tMPI_Comm comm, int color, int key, tMPI_Comm *newcomm)
     spl                 = comm->split;    /* we do the same for spl */
     spl->colors[myrank] = color;
     spl->keys[myrank]   = key;
-    spl->Ncol_init--;
+    spl->Ncol_init = spl->Ncol_init - 1;
 
     if (spl->Ncol_init == 0)
     {
@@ -755,7 +755,7 @@ int tMPI_Comm_split(tMPI_Comm comm, int color, int key, tMPI_Comm *newcomm)
     *newcomm = newcomm_list[myrank];
 
     /* free when we have assigned them all, so we can reuse the object*/
-    spl->Ncol_destroy--;
+    spl->Ncol_destroy = spl->Ncol_destroy - 1;
     if (spl->Ncol_destroy == 0)
     {
         free((void*)newcomm_list);

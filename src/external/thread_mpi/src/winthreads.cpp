@@ -1574,7 +1574,8 @@ int tMPI_Thread_barrier_wait(tMPI_Thread_barrier_t *barrier)
     /* Decrement the count atomically and check if it is zero.
      * This will only be true for the last thread calling us.
      */
-    if (--(barrier->count) <= 0)
+    barrier->count = barrier->count - 1;
+    if (barrier->count <= 0)
     {
         barrier->cycle = !barrier->cycle;
         barrier->count = barrier->threshold;
