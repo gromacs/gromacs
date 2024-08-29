@@ -298,6 +298,42 @@ typename EnumerationArrayType::EnumerationWrapperType keysOf(const EnumerationAr
     return EnumerationArrayType::keys();
 }
 
+/*! \brief Helper class to determine whether a template type that is
+ * an enum class has a Count field
+ *
+ * Having that field makes the enum class suitable for default use
+ * with \c EnumerationArray.
+ *
+ * This class uses SFINAE to test whether the type \c EnumToTest has a
+ * Count field. If so, the overload of \c hasCountField returning \c
+ * Yes is declared for EnumToTest. Otherwise the default returning No
+ * is declared. So for all types, hasCountField is declared and has a
+ * characteristic return type. The size of that return type is a
+ * compile-time constant that can be used to implement the \c value
+ * member. Since \c hasCountField is never called, it needs no
+ * definitions.
+ */
+template<class EnumToTest>
+class EnumClassSuitsEnumerationArray
+{
+private:
+    using Yes = int8_t;
+    using No  = int16_t;
+
+    // Selected if E::Count is a valid expression; then hasCountField
+    // has return type Yes.
+    template<class E>
+    static Yes hasCountField(decltype(E::Count)*);
+
+    // Selected by default for all types for which E::Count is not a valid expression;
+    // then hasCountField has return type No.
+    template<class E>
+    static No hasCountField(...);
+
+public:
+    static constexpr bool value = sizeof(hasCountField<EnumToTest>(nullptr)) == sizeof(Yes);
+};
+
 } // namespace gmx
 
 #endif

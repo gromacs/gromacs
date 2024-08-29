@@ -34,6 +34,7 @@
 gmx_add_unit_test(TestUtilsUnitTests testutils-test
     CPP_SOURCE_FILES
         interactivetest.cpp
+        naming.cpp
         refdata_tests.cpp
         testasserts_tests.cpp
         xvgtest_tests.cpp

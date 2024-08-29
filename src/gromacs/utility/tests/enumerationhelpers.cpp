@@ -180,6 +180,19 @@ TEST(EnumerationHelpersTest, ArrayRefOfEnumerationArrayWorks)
     // expected, but we can't test for that.
 }
 
+enum class Unsuitable
+{
+    A,
+    B
+};
+
+TEST(EnumClassSuitsEnumerationArray, Works)
+{
+    static_assert(EnumClassSuitsEnumerationArray<Foo>::value, "Foo::Count should exist");
+    static_assert(!EnumClassSuitsEnumerationArray<Unsuitable>::value,
+                  "Unsuitable::Count should not exist");
+}
+
 } // namespace
 } // namespace test
 } // namespace gmx
