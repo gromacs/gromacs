@@ -315,8 +315,13 @@ Files with the ``.h5md`` file extension can contain all kinds of data
 related to the trajectory of a simulation. For example, it might
 contain coordinates, velocities, forces and/or energies. Various :ref:`mdp`
 file options control which of these are written by :ref:`gmx mdrun`, whether data
-is written with compression, and how lossy that compression can be.
-This file can be read with :ref:`gmx dump`.
+is written with compression, and how lossy that compression can be. |Gromacs| uses
+the SZ3 H5MD plugin for lossy compression of data (currently atom coordinates),
+`SZ3/bio <https://github.com/szcompressor/SZ3/tree/bio>`_. In order to read a file
+compressed with the plugin, with other tools than |Gromacs|, the HDF5_PLUGIN_PATH
+environment variable must contain the installed libraries (GMXLDLIB).
+
+``.h5md`` files can be read with :ref:`gmx dump`.
 
 .. parsed-literal::
 
