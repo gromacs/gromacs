@@ -75,9 +75,11 @@ MdGpuGraph::Impl::Impl(const DeviceStreamManager& deviceStreamManager,
 
     if (havePPDomainDecomposition_)
     {
+#    if GMX_MPI
         MPI_Barrier(mpiComm_);
         MPI_Comm_size(mpiComm_, &ppSize_);
         MPI_Comm_rank(mpiComm_, &ppRank_);
+#    endif
     }
 
     // Avoid update for graphs involving inter-GPU transfers if running on old driver
@@ -117,6 +119,7 @@ void MdGpuGraph::Impl::enqueueEventFromAllPpRanksToRank0Stream(GpuEventSynchroni
     {
         if (ppRank_ == remotePpRank)
         {
+#    if GMX_MPI
             // send event to rank 0
             MPI_Send(&event,
                      sizeof(GpuEventSynchronizer*), //NOLINT(bugprone-sizeof-expression)
@@ -124,11 +127,13 @@ void MdGpuGraph::Impl::enqueueEventFromAllPpRanksToRank0Stream(GpuEventSynchroni
                      0,
                      0,
                      mpiComm_);
+#    endif
         }
         else if (ppRank_ == 0)
         {
             // rank 0 enqueues recieved event
             GpuEventSynchronizer* eventToEnqueue;
+#    if GMX_MPI
             MPI_Recv(&eventToEnqueue,
                      sizeof(GpuEventSynchronizer*), //NOLINT(bugprone-sizeof-expression)
                      MPI_BYTE,
@@ -136,6 +141,7 @@ void MdGpuGraph::Impl::enqueueEventFromAllPpRanksToRank0Stream(GpuEventSynchroni
                      0,
                      mpiComm_,
                      MPI_STATUS_IGNORE);
+#    endif
             eventToEnqueue->enqueueWaitEvent(stream);
         }
     }
@@ -151,8 +157,10 @@ void MdGpuGraph::Impl::enqueueRank0EventToAllPpStreams(GpuEventSynchronizer* eve
 {
     if (havePPDomainDecomposition_)
     {
+#    if GMX_MPI
         // NOLINTNEXTLINE(bugprone-sizeof-expression)
         MPI_Bcast(&event, sizeof(GpuEventSynchronizer*), MPI_BYTE, 0, mpiComm_);
+#    endif
     }
     event->enqueueWaitEvent(stream);
 }
@@ -173,12 +181,14 @@ void MdGpuGraph::Impl::disableForDomainIfAnyPpRankHasCpuForces(bool disableGraph
         // If disabled on any domain, disable on all domains
         int disableGraphAcrossAllPpRanksReductionInput = static_cast<int>(disableGraphAcrossAllPpRanks);
         int disableGraphAcrossAllPpRanksReductionOutput = 0;
+#    if GMX_MPI
         MPI_Allreduce(&disableGraphAcrossAllPpRanksReductionInput,
                       &disableGraphAcrossAllPpRanksReductionOutput,
                       1,
                       MPI_INT,
                       MPI_SUM,
                       mpiComm_);
+#    endif
         if (disableGraphAcrossAllPpRanksReductionOutput > 0)
         {
             disableGraphAcrossAllPpRanks_ = true;
@@ -211,7 +221,9 @@ void MdGpuGraph::Impl::startRecord(GpuEventSynchronizer* xReadyOnDeviceEvent)
     wallcycle_sub_start(wcycle_, WallCycleSubCounter::MdGpuGraphWaitBeforeCapture);
     if (havePPDomainDecomposition_)
     {
+#    if GMX_MPI
         MPI_Barrier(mpiComm_);
+#    endif
     }
     wallcycle_sub_stop(wcycle_, WallCycleSubCounter::MdGpuGraphWaitBeforeCapture);
 
@@ -250,7 +262,9 @@ void MdGpuGraph::Impl::startRecord(GpuEventSynchronizer* xReadyOnDeviceEvent)
         enqueueRank0EventToAllPpStreams(
                 helperEvent_.get(), deviceStreamManager_.stream(gmx::DeviceStreamType::NonBondedLocal));
         // The synchronization below should not be needed, see #4674
+#    if GMX_MPI
         MPI_Barrier(mpiComm_);
+#    endif
 
         // Fork NB non-local stream from NB local stream on each rank
         helperEvent_->markEvent(deviceStreamManager_.stream(gmx::DeviceStreamType::NonBondedLocal));
@@ -338,7 +352,9 @@ void MdGpuGraph::Impl::endRecord()
     // Sync all tasks before closing timing region, since the graph capture should be treated as a collective operation for timing purposes.
     if (havePPDomainDecomposition_)
     {
+#    if GMX_MPI
         MPI_Barrier(mpiComm_);
+#    endif
     }
     wallcycle_sub_stop(wcycle_, WallCycleSubCounter::MdGpuGraphCapture);
     wallcycle_stop(wcycle_, WallCycleCounter::MdGpuGraph);
@@ -420,7 +436,9 @@ void MdGpuGraph::Impl::createExecutableGraph(bool forceGraphReinstantiation)
     // Sync all tasks before closing timing region, since the graph instantiate or update should be treated as a collective operation for timing purposes.
     if (havePPDomainDecomposition_)
     {
+#    if GMX_MPI
         MPI_Barrier(mpiComm_);
+#    endif
     }
     wallcycle_sub_stop(wcycle_, WallCycleSubCounter::MdGpuGraphInstantiateOrUpdate);
     wallcycle_stop(wcycle_, WallCycleCounter::MdGpuGraph);
@@ -437,7 +455,9 @@ void MdGpuGraph::Impl::launchGraphMdStep(GpuEventSynchronizer* xUpdatedOnDeviceE
     wallcycle_sub_start(wcycle_, WallCycleSubCounter::MdGpuGraphWaitBeforeLaunch);
     if (havePPDomainDecomposition_)
     {
+#    if GMX_MPI
         MPI_Barrier(mpiComm_);
+#    endif
     }
     wallcycle_sub_stop(wcycle_, WallCycleSubCounter::MdGpuGraphWaitBeforeLaunch);
 

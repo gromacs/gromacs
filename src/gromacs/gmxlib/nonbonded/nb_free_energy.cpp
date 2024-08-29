@@ -110,19 +110,28 @@ constexpr real c_minDistanceSquared = 1.0e-12_real;
  */
 constexpr real c_maxRInvSix = 1.0e15_real;
 
-template<bool computeForces, class RealType>
+//! The free-energy kernel Lennard-Jones functional shape
+enum class LJKernelType
+{
+    Cutoff,          //!< Plain cut-off with or without potential shift
+    ForceSwitch,     //!< Force switch
+    PotentialSwitch, //!< Potential Switch
+    Ewald            //!< Ewald for dispersion
+};
+
+template<bool computeScalarForce, class RealType>
 static inline void
 pmeCoulombCorrectionVF(const RealType rSq, const real beta, RealType* pot, RealType gmx_unused* force)
 {
     const RealType brsq = rSq * beta * beta;
-    if constexpr (computeForces)
+    if constexpr (computeScalarForce)
     {
         *force = -brsq * beta * gmx::pmeForceCorrection(brsq);
     }
     *pot = beta * gmx::pmePotentialCorrection(brsq);
 }
 
-template<bool computeForces, class RealType, class BoolType>
+template<bool computeScalarForce, class RealType, class BoolType>
 static inline void pmeLJCorrectionVF(const RealType rInv,
                                      const RealType rSq,
                                      const real     ewaldLJCoeffSq,
@@ -157,7 +166,7 @@ static inline void pmeLJCorrectionVF(const RealType rInv,
             ewaldLJCoeffSixDivSix * (1.0_real + coeffSqRSq * (-0.75_real + 0.3_real * coeffSqRSq));
     const RealType term = gmx::blend(fullTerm, approximation, coeffSqRSq < c_coeffSqRSqSwitch);
 
-    if constexpr (computeForces)
+    if constexpr (computeScalarForce)
     {
         *force = term - expNegCoeffSqRSq * ewaldLJCoeffSixDivSix;
         *force = *force * rInvSq;
@@ -254,6 +263,45 @@ static inline RealType ewaldLennardJonesGridSubtract(const RealType c6grid,
     return (c6grid * potentialShift * oneSixth);
 }
 
+//! Generates intermediate quantities for force switch interactions
+template<class RealType>
+static inline void computeForceSwitchVariables(const RealType r,
+                                               const real     rSwitch,
+                                               RealType*      rSwitched,
+                                               RealType*      rSwitchedSquared,
+                                               RealType*      rSwitchedSquaredTimesR)
+{
+    *rSwitched        = gmx::max(r - rSwitch, RealType(0.0_real));
+    *rSwitchedSquared = *rSwitched * *rSwitched;
+
+    *rSwitchedSquaredTimesR = *rSwitchedSquared * r;
+}
+
+//! Return the force for force-switch interactions
+template<class RealType, class BoolType>
+static inline RealType forceSwitchScalarForceMod(const RealType fScalarInp,
+                                                 const RealType rSwitched,
+                                                 const RealType rSwitchedSquaredTimesR,
+                                                 const real     c2,
+                                                 const real     c3,
+                                                 const BoolType mask)
+{
+    /* The mask should select on rV < rVdw */
+    return (gmx::selectByMask(fScalarInp + (c3 * rSwitched + c2) * rSwitchedSquaredTimesR, mask));
+}
+
+//! Return the modification of the potential for force-switch interactions
+template<class RealType, class BoolType>
+static inline RealType forceSwitchPotentialMod(const RealType rSwitched,
+                                               const RealType rSwitchedSquaredTimesR,
+                                               const real     c3,
+                                               const real     c4,
+                                               const BoolType mask)
+{
+    /* The mask should select on rV < rVdw */
+    return (gmx::selectByMask((c4 * rSwitched + c3) * (rSwitchedSquaredTimesR * rSwitched), mask));
+}
+
 /* LJ Potential switch */
 template<class RealType, class BoolType>
 static inline RealType potSwitchScalarForceMod(const RealType fScalarInp,
@@ -273,9 +321,8 @@ static inline RealType potSwitchPotentialMod(const RealType potentialInp, const 
     return (gmx::selectByMask(potentialInp * sw, mask));
 }
 
-
 //! Templated free-energy non-bonded kernel
-template<typename DataTypes, KernelSoftcoreType softcoreType, bool scLambdasOrAlphasDiffer, bool vdwInteractionTypeIsEwald, bool elecInteractionTypeIsEwald, bool vdwModifierIsPotSwitch, bool computeForces>
+template<typename DataTypes, KernelSoftcoreType softcoreType, bool scLambdasOrAlphasDiffer, bool elecInteractionTypeIsEwald, LJKernelType ljKernelType, bool computeForces>
 static void nb_free_energy_kernel(const t_nblist&                                  nlist,
                                   const gmx::ArrayRefWithPadding<const gmx::RVec>& coords,
                                   const int                                        ntype,
@@ -303,6 +350,9 @@ static void nb_free_energy_kernel(const t_nblist&                               
     using RealType = typename DataTypes::RealType;
     using IntType  = typename DataTypes::IntType;
     using BoolType = typename DataTypes::BoolType;
+
+    // We need the scalar force to compute the Beutler soft-core contribution to dV/dlambda
+    constexpr bool computeScalarForce = computeForces || softcoreType == KernelSoftcoreType::Beutler;
 
     constexpr real oneTwelfth = 1.0_real / 12.0_real;
     constexpr real oneSixth   = 1.0_real / 6.0_real;
@@ -346,11 +396,15 @@ static void nb_free_energy_kernel(const t_nblist&                               
     const real gmx_unused shLjEwald                = interactionParameters.sh_lj_ewald;
     const real            rVdw                     = interactionParameters.rvdw;
     const real            dispersionShift          = interactionParameters.dispersion_shift.cpot;
+    const real gmx_unused dispersionShift2         = interactionParameters.dispersion_shift.c2;
+    const real gmx_unused dispersionShift3         = interactionParameters.dispersion_shift.c3;
     const real            repulsionShift           = interactionParameters.repulsion_shift.cpot;
+    const real gmx_unused repulsionShift2          = interactionParameters.repulsion_shift.c2;
+    const real gmx_unused repulsionShift3          = interactionParameters.repulsion_shift.c3;
     const real            ewaldBeta                = interactionParameters.ewaldcoeff_q;
     real gmx_unused       ewaldLJCoeffSq;
     real gmx_unused       ewaldLJCoeffSixDivSix;
-    if constexpr (vdwInteractionTypeIsEwald)
+    if constexpr (ljKernelType == LJKernelType::Ewald)
     {
         ewaldLJCoeffSq = interactionParameters.ewaldcoeff_lj * interactionParameters.ewaldcoeff_lj;
         ewaldLJCoeffSixDivSix = ewaldLJCoeffSq * ewaldLJCoeffSq * ewaldLJCoeffSq / six;
@@ -362,7 +416,7 @@ static void nb_free_energy_kernel(const t_nblist&                               
 
     const real      rVdwSwitch = interactionParameters.rvdw_switch;
     real gmx_unused vdw_swV3, vdw_swV4, vdw_swV5, vdw_swF2, vdw_swF3, vdw_swF4;
-    if constexpr (vdwModifierIsPotSwitch)
+    if constexpr (ljKernelType == LJKernelType::PotentialSwitch)
     {
         const real d = rVdw - rVdwSwitch;
         vdw_swV3     = -10.0_real / (d * d * d);
@@ -376,6 +430,24 @@ static void nb_free_energy_kernel(const t_nblist&                               
     {
         /* Avoid warnings from stupid compilers (looking at you, Clang!) */
         vdw_swV3 = vdw_swV4 = vdw_swV5 = vdw_swF2 = vdw_swF3 = vdw_swF4 = zero;
+    }
+
+    real gmx_unused minusDispersionShift2Div3, minusRepulsionShift2Div3;
+    real gmx_unused minusDispersionShift3Div4, minusRepulsionShift3Div4;
+    if constexpr (ljKernelType == LJKernelType::ForceSwitch)
+    {
+        constexpr real minusThird  = -1.0_real / 3.0_real;
+        constexpr real minusFourth = -1.0_real / 4.0_real;
+        minusDispersionShift2Div3  = dispersionShift2 * minusThird;
+        minusDispersionShift3Div4  = dispersionShift3 * minusFourth;
+        minusRepulsionShift2Div3   = repulsionShift2 * minusThird;
+        minusRepulsionShift3Div4   = repulsionShift3 * minusFourth;
+    }
+    else
+    {
+        /* Avoid warnings from stupid compilers */
+        minusDispersionShift2Div3 = minusRepulsionShift2Div3 = zero;
+        minusDispersionShift3Div4 = minusRepulsionShift3Div4 = zero;
     }
 
     NbkernelElecType coulombInteractionType;
@@ -394,7 +466,7 @@ static void nb_free_energy_kernel(const t_nblist&                               
     const real gmx_unused rCutoffCoul = interactionParameters.rcoulomb;
 
     real gmx_unused sh_ewald = zero;
-    if constexpr (elecInteractionTypeIsEwald || vdwInteractionTypeIsEwald)
+    if constexpr (elecInteractionTypeIsEwald || ljKernelType == LJKernelType::Ewald)
     {
         sh_ewald = interactionParameters.sh_ewald;
     }
@@ -403,16 +475,7 @@ static void nb_free_energy_kernel(const t_nblist&                               
      * reciprocal space. When we use non-switched Ewald interactions, we
      * assume the soft-coring does not significantly affect the grid contribution
      * and apply the soft-core only to the full 1/r (- shift) pair contribution.
-     *
-     * However, we cannot use this approach for switch-modified since we would then
-     * effectively end up evaluating a significantly different interaction here compared to the
-     * normal (non-free-energy) kernels, either by applying a cutoff at a different
-     * position than what the user requested, or by switching different
-     * things (1/r rather than short-range Ewald). For these settings, we just
-     * use the traditional short-range Ewald interaction in that case.
      */
-    GMX_RELEASE_ASSERT(!(vdwInteractionTypeIsEwald && vdwModifierIsPotSwitch),
-                       "Can not apply soft-core to switched Ewald potentials");
 
     const RealType            minDistanceSquared(c_minDistanceSquared);
     const RealType            maxRInvSix(c_maxRInvSix);
@@ -559,7 +622,7 @@ static void nb_free_energy_kernel(const t_nblist&                               
 
                     for (int i = 0; i < NSTATES; i++)
                     {
-                        if constexpr (vdwInteractionTypeIsEwald)
+                        if constexpr (ljKernelType == LJKernelType::Ewald)
                         {
                             preloadLjPmeC6Grid[i][j] = nbfp_grid[2 * typeIndices[i][j]];
                         }
@@ -822,32 +885,33 @@ static void nb_free_energy_kernel(const t_nblist&                               
                             if constexpr (elecInteractionTypeIsEwald)
                             {
                                 vCoul[i] = ewaldPotential(qq[i], rInvC, sh_ewald);
-                                if constexpr (computeForces)
+                                if constexpr (computeScalarForce)
                                 {
                                     scalarForcePerDistanceCoul[i] = ewaldScalarForce(qq[i], rInvC);
                                 }
 
                                 if constexpr (softcoreType == KernelSoftcoreType::Gapsys)
                                 {
-                                    ewaldQuadraticPotential<computeForces>(qq[i],
-                                                                           elecEpsilonFactor,
-                                                                           rC,
-                                                                           rCutoffCoul,
-                                                                           lambdaFactorCoul[i],
-                                                                           dLambdaFactor[i],
-                                                                           gapsysScaleLinpointCoulEff,
-                                                                           sh_ewald,
-                                                                           &scalarForcePerDistanceCoul[i],
-                                                                           &vCoul[i],
-                                                                           &dvdlCoul,
-                                                                           computeElecInteraction);
+                                    ewaldQuadraticPotential<computeScalarForce>(
+                                            qq[i],
+                                            elecEpsilonFactor,
+                                            rC,
+                                            rCutoffCoul,
+                                            lambdaFactorCoul[i],
+                                            dLambdaFactor[i],
+                                            gapsysScaleLinpointCoulEff,
+                                            sh_ewald,
+                                            &scalarForcePerDistanceCoul[i],
+                                            &vCoul[i],
+                                            &dvdlCoul,
+                                            computeElecInteraction);
                                 }
                             }
                             else
                             {
                                 vCoul[i] = reactionFieldPotential(
                                         qq[i], rInvC, rC, reactionFieldCoefficient, reactionFieldShift);
-                                if constexpr (computeForces)
+                                if constexpr (computeScalarForce)
                                 {
                                     scalarForcePerDistanceCoul[i] = reactionFieldScalarForce(
                                             qq[i], rInvC, rC, reactionFieldCoefficient, two);
@@ -855,7 +919,7 @@ static void nb_free_energy_kernel(const t_nblist&                               
 
                                 if constexpr (softcoreType == KernelSoftcoreType::Gapsys)
                                 {
-                                    reactionFieldQuadraticPotential<computeForces>(
+                                    reactionFieldQuadraticPotential<computeScalarForce>(
                                             qq[i],
                                             elecEpsilonFactor,
                                             rC,
@@ -873,7 +937,7 @@ static void nb_free_energy_kernel(const t_nblist&                               
                             }
 
                             vCoul[i] = gmx::selectByMask(vCoul[i], computeElecInteraction);
-                            if constexpr (computeForces)
+                            if constexpr (computeScalarForce)
                             {
                                 scalarForcePerDistanceCoul[i] = gmx::selectByMask(
                                         scalarForcePerDistanceCoul[i], computeElecInteraction);
@@ -885,7 +949,7 @@ static void nb_free_energy_kernel(const t_nblist&                               
                          * in the kernel), or if we are within the cutoff.
                          */
                         BoolType computeVdwInteraction;
-                        if constexpr (vdwInteractionTypeIsEwald)
+                        if constexpr (ljKernelType == LJKernelType::Ewald)
                         {
                             computeVdwInteraction =
                                     (r < rVdw && (c6[i] != zero || c12[i] != zero) && bPairIncluded);
@@ -911,15 +975,76 @@ static void nb_free_energy_kernel(const t_nblist&                               
                             // Note that we should limit r^-6, and thus also r^-12, and
                             // not only r^-12, as that could lead to erroneously low instead
                             // of very high foreign energies.
-                            rInv6           = gmx::min(rInv6, maxRInvSix);
-                            RealType vVdw6  = calculateVdw6(c6[i], rInv6);
-                            RealType vVdw12 = calculateVdw12(c12[i], rInv6);
+                            rInv6 = gmx::min(rInv6, maxRInvSix);
 
-                            vVdw[i] = lennardJonesPotential(
-                                    vVdw6, vVdw12, c6[i], c12[i], repulsionShift, dispersionShift, oneSixth, oneTwelfth);
-                            if constexpr (computeForces)
+                            // Notes on soft-core handling of Lennard-Jones interaction:
+                            // Beutler soft-core "automatically" works, as we pass in
+                            // soft-core modified rV and the force is used for computing
+                            // dV/dlambda.
+                            // For Gapsys soft-core, we compute the soft-core effect
+                            // on plain, potential-shifted LJ. This also works for switched
+                            // forces/potentials, as long at the Gapsys soft-core range
+                            // is <= rvdw-switch.
+                            if constexpr (ljKernelType != LJKernelType::ForceSwitch)
                             {
-                                scalarForcePerDistanceVdw[i] = lennardJonesScalarForce(vVdw6, vVdw12);
+                                RealType vVdw6  = calculateVdw6(c6[i], rInv6);
+                                RealType vVdw12 = calculateVdw12(c12[i], rInv6);
+
+                                vVdw[i] = lennardJonesPotential(
+                                        vVdw6, vVdw12, c6[i], c12[i], repulsionShift, dispersionShift, oneSixth, oneTwelfth);
+                                if constexpr (computeScalarForce)
+                                {
+                                    scalarForcePerDistanceVdw[i] = lennardJonesScalarForce(vVdw6, vVdw12);
+                                }
+                            }
+                            else
+                            {
+                                // LJ force switch
+                                RealType rSwitched;
+                                RealType rSwitchedSquared;
+                                RealType rSwitchedSquaredTimesR;
+                                computeForceSwitchVariables(
+                                        rV, rVdwSwitch, &rSwitched, &rSwitchedSquared, &rSwitchedSquaredTimesR);
+
+                                vVdw[i] = -c6[i]
+                                          * (oneSixth * (rInv6 + dispersionShift)
+                                             + forceSwitchPotentialMod(rSwitched,
+                                                                       rSwitchedSquared,
+                                                                       minusDispersionShift2Div3,
+                                                                       minusDispersionShift3Div4,
+                                                                       computeVdwInteraction));
+
+                                vVdw[i] =
+                                        vVdw[i]
+                                        + c12[i]
+                                                  * (oneTwelfth * (rInv6 * rInv6 + RealType(repulsionShift))
+                                                     + forceSwitchPotentialMod(rSwitched,
+                                                                               rSwitchedSquared,
+                                                                               minusRepulsionShift2Div3,
+                                                                               minusRepulsionShift3Div4,
+                                                                               computeVdwInteraction));
+
+                                if constexpr (computeScalarForce)
+                                {
+                                    scalarForcePerDistanceVdw[i] =
+                                            -c6[i]
+                                            * forceSwitchScalarForceMod(rInv6,
+                                                                        rSwitched,
+                                                                        rSwitchedSquaredTimesR,
+                                                                        dispersionShift2,
+                                                                        dispersionShift3,
+                                                                        computeVdwInteraction);
+
+                                    scalarForcePerDistanceVdw[i] =
+                                            scalarForcePerDistanceVdw[i]
+                                            + c12[i]
+                                                      * forceSwitchScalarForceMod(rInv6 * rInv6,
+                                                                                  rSwitched,
+                                                                                  rSwitchedSquaredTimesR,
+                                                                                  repulsionShift2,
+                                                                                  repulsionShift3,
+                                                                                  computeVdwInteraction);
+                                }
                             }
 
                             if constexpr (softcoreType == KernelSoftcoreType::Gapsys)
@@ -941,7 +1066,7 @@ static void nb_free_energy_kernel(const t_nblist&                               
                                         computeVdwInteraction);
                             }
 
-                            if constexpr (vdwInteractionTypeIsEwald)
+                            if constexpr (ljKernelType == LJKernelType::Ewald)
                             {
                                 /* Subtract the grid potential at the cut-off */
                                 vVdw[i] = vVdw[i]
@@ -950,7 +1075,7 @@ static void nb_free_energy_kernel(const t_nblist&                               
                                                               computeVdwInteraction);
                             }
 
-                            if constexpr (vdwModifierIsPotSwitch)
+                            if constexpr (ljKernelType == LJKernelType::PotentialSwitch)
                             {
                                 RealType d             = rV - rVdwSwitch;
                                 BoolType zeroMask      = zero < d;
@@ -960,7 +1085,7 @@ static void nb_free_energy_kernel(const t_nblist&                               
                                 const RealType sw =
                                         one + d2 * d * (vdw_swV3 + d * (vdw_swV4 + d * vdw_swV5));
 
-                                if constexpr (computeForces)
+                                if constexpr (computeScalarForce)
                                 {
                                     const RealType dsw = d2 * (vdw_swF2 + d * (vdw_swF3 + d * vdw_swF4));
                                     scalarForcePerDistanceVdw[i] = potSwitchScalarForceMod(
@@ -970,14 +1095,14 @@ static void nb_free_energy_kernel(const t_nblist&                               
                             }
 
                             vVdw[i] = gmx::selectByMask(vVdw[i], computeVdwInteraction);
-                            if constexpr (computeForces)
+                            if constexpr (computeScalarForce)
                             {
                                 scalarForcePerDistanceVdw[i] = gmx::selectByMask(
                                         scalarForcePerDistanceVdw[i], computeVdwInteraction);
                             }
                         }
 
-                        if constexpr (computeForces)
+                        if constexpr (computeScalarForce)
                         {
                             /* scalarForcePerDistanceCoul (and scalarForcePerDistanceVdw) now contain: dV/drC * rC
                              * Now we multiply by rC^-6, so it will be: dV/drC * rC^-5
@@ -1119,7 +1244,7 @@ static void nb_free_energy_kernel(const t_nblist&                               
             }
 
             const BoolType computeVdwEwaldInteraction = (bPairExcluded || r < rVdw);
-            if (vdwInteractionTypeIsEwald && gmx::anyTrue(computeVdwEwaldInteraction))
+            if (ljKernelType == LJKernelType::Ewald && gmx::anyTrue(computeVdwEwaldInteraction))
             {
                 /* See comment in the preamble. When using LJ-Ewald interactions
                  * (unless we use a switch modifier) we subtract the reciprocal-space
@@ -1232,116 +1357,105 @@ typedef void (*KernelFunction)(const t_nblist&                                  
                                gmx::ArrayRef<real>                 threadVVdw,
                                gmx::ArrayRef<real>                 threadDvdl);
 
-template<KernelSoftcoreType softcoreType, bool scLambdasOrAlphasDiffer, bool vdwInteractionTypeIsEwald, bool elecInteractionTypeIsEwald, bool vdwModifierIsPotSwitch, bool computeForces>
+template<KernelSoftcoreType softcoreType, bool scLambdasOrAlphasDiffer, bool elecInteractionTypeIsEwald, LJKernelType ljKernelType, bool computeForces>
 static KernelFunction dispatchKernelOnUseSimd(const bool useSimd)
 {
     if (useSimd)
     {
 #if GMX_SIMD_HAVE_REAL && GMX_SIMD_HAVE_INT32_ARITHMETICS && GMX_USE_SIMD_KERNELS
-        return (nb_free_energy_kernel<SimdDataTypes, softcoreType, scLambdasOrAlphasDiffer, vdwInteractionTypeIsEwald, elecInteractionTypeIsEwald, vdwModifierIsPotSwitch, computeForces>);
+        return (nb_free_energy_kernel<SimdDataTypes, softcoreType, scLambdasOrAlphasDiffer, elecInteractionTypeIsEwald, ljKernelType, computeForces>);
 #else
-        return (nb_free_energy_kernel<ScalarDataTypes, softcoreType, scLambdasOrAlphasDiffer, vdwInteractionTypeIsEwald, elecInteractionTypeIsEwald, vdwModifierIsPotSwitch, computeForces>);
+        return (nb_free_energy_kernel<ScalarDataTypes, softcoreType, scLambdasOrAlphasDiffer, elecInteractionTypeIsEwald, ljKernelType, computeForces>);
 #endif
     }
     else
     {
-        return (nb_free_energy_kernel<ScalarDataTypes, softcoreType, scLambdasOrAlphasDiffer, vdwInteractionTypeIsEwald, elecInteractionTypeIsEwald, vdwModifierIsPotSwitch, computeForces>);
+        return (nb_free_energy_kernel<ScalarDataTypes, softcoreType, scLambdasOrAlphasDiffer, elecInteractionTypeIsEwald, ljKernelType, computeForces>);
     }
 }
 
-template<KernelSoftcoreType softcoreType, bool scLambdasOrAlphasDiffer, bool vdwInteractionTypeIsEwald, bool elecInteractionTypeIsEwald, bool vdwModifierIsPotSwitch>
+template<KernelSoftcoreType softcoreType, bool scLambdasOrAlphasDiffer, bool elecInteractionTypeIsEwald, LJKernelType ljKernelType>
 static KernelFunction dispatchKernelOnComputeForces(const bool computeForces, const bool useSimd)
 {
     if (computeForces)
     {
-        return (dispatchKernelOnUseSimd<softcoreType, scLambdasOrAlphasDiffer, vdwInteractionTypeIsEwald, elecInteractionTypeIsEwald, vdwModifierIsPotSwitch, true>(
+        return (dispatchKernelOnUseSimd<softcoreType, scLambdasOrAlphasDiffer, elecInteractionTypeIsEwald, ljKernelType, true>(
                 useSimd));
     }
     else
     {
-        return (dispatchKernelOnUseSimd<softcoreType, scLambdasOrAlphasDiffer, vdwInteractionTypeIsEwald, elecInteractionTypeIsEwald, vdwModifierIsPotSwitch, false>(
+        return (dispatchKernelOnUseSimd<softcoreType, scLambdasOrAlphasDiffer, elecInteractionTypeIsEwald, ljKernelType, false>(
                 useSimd));
     }
 }
 
-template<KernelSoftcoreType softcoreType, bool scLambdasOrAlphasDiffer, bool vdwInteractionTypeIsEwald, bool elecInteractionTypeIsEwald>
-static KernelFunction dispatchKernelOnVdwModifier(const bool vdwModifierIsPotSwitch,
-                                                  const bool computeForces,
-                                                  const bool useSimd)
+template<KernelSoftcoreType softcoreType, bool scLambdasOrAlphasDiffer, bool elecInteractionTypeIsEwald>
+static KernelFunction dispatchKernelOnLJType(const LJKernelType ljKernelType,
+                                             const bool         computeForces,
+                                             const bool         useSimd)
 {
-    if (vdwModifierIsPotSwitch)
+    switch (ljKernelType)
     {
-        return (dispatchKernelOnComputeForces<softcoreType, scLambdasOrAlphasDiffer, vdwInteractionTypeIsEwald, elecInteractionTypeIsEwald, true>(
-                computeForces, useSimd));
-    }
-    else
-    {
-        return (dispatchKernelOnComputeForces<softcoreType, scLambdasOrAlphasDiffer, vdwInteractionTypeIsEwald, elecInteractionTypeIsEwald, false>(
-                computeForces, useSimd));
-    }
-}
-
-template<KernelSoftcoreType softcoreType, bool scLambdasOrAlphasDiffer, bool vdwInteractionTypeIsEwald>
-static KernelFunction dispatchKernelOnElecInteractionType(const bool elecInteractionTypeIsEwald,
-                                                          const bool vdwModifierIsPotSwitch,
-                                                          const bool computeForces,
-                                                          const bool useSimd)
-{
-    if (elecInteractionTypeIsEwald)
-    {
-        return (dispatchKernelOnVdwModifier<softcoreType, scLambdasOrAlphasDiffer, vdwInteractionTypeIsEwald, true>(
-                vdwModifierIsPotSwitch, computeForces, useSimd));
-    }
-    else
-    {
-        return (dispatchKernelOnVdwModifier<softcoreType, scLambdasOrAlphasDiffer, vdwInteractionTypeIsEwald, false>(
-                vdwModifierIsPotSwitch, computeForces, useSimd));
+        case LJKernelType::Cutoff:
+            return (dispatchKernelOnComputeForces<softcoreType, scLambdasOrAlphasDiffer, elecInteractionTypeIsEwald, LJKernelType::Cutoff>(
+                    computeForces, useSimd));
+            break;
+        case LJKernelType::ForceSwitch:
+            return (dispatchKernelOnComputeForces<softcoreType, scLambdasOrAlphasDiffer, elecInteractionTypeIsEwald, LJKernelType::ForceSwitch>(
+                    computeForces, useSimd));
+            break;
+        case LJKernelType::PotentialSwitch:
+            return (dispatchKernelOnComputeForces<softcoreType, scLambdasOrAlphasDiffer, elecInteractionTypeIsEwald, LJKernelType::PotentialSwitch>(
+                    computeForces, useSimd));
+            break;
+        case LJKernelType::Ewald:
+            return (dispatchKernelOnComputeForces<softcoreType, scLambdasOrAlphasDiffer, elecInteractionTypeIsEwald, LJKernelType::Ewald>(
+                    computeForces, useSimd));
+            break;
+        default: GMX_THROW(gmx::InternalError("Unimplemented LJ kernel type"));
     }
 }
 
 template<KernelSoftcoreType softcoreType, bool scLambdasOrAlphasDiffer>
-static KernelFunction dispatchKernelOnVdwInteractionType(const bool vdwInteractionTypeIsEwald,
-                                                         const bool elecInteractionTypeIsEwald,
-                                                         const bool vdwModifierIsPotSwitch,
-                                                         const bool computeForces,
-                                                         const bool useSimd)
+static KernelFunction dispatchKernelOnElecInteractionType(const bool elecInteractionTypeIsEwald,
+                                                          const LJKernelType ljKernelType,
+                                                          const bool         computeForces,
+                                                          const bool         useSimd)
 {
-    if (vdwInteractionTypeIsEwald)
+    if (elecInteractionTypeIsEwald)
     {
-        return (dispatchKernelOnElecInteractionType<softcoreType, scLambdasOrAlphasDiffer, true>(
-                elecInteractionTypeIsEwald, vdwModifierIsPotSwitch, computeForces, useSimd));
+        return (dispatchKernelOnLJType<softcoreType, scLambdasOrAlphasDiffer, true>(
+                ljKernelType, computeForces, useSimd));
     }
     else
     {
-        return (dispatchKernelOnElecInteractionType<softcoreType, scLambdasOrAlphasDiffer, false>(
-                elecInteractionTypeIsEwald, vdwModifierIsPotSwitch, computeForces, useSimd));
+        return (dispatchKernelOnLJType<softcoreType, scLambdasOrAlphasDiffer, false>(
+                ljKernelType, computeForces, useSimd));
     }
 }
 
 template<KernelSoftcoreType softcoreType>
 static KernelFunction dispatchKernelOnScLambdasOrAlphasDifference(const bool scLambdasOrAlphasDiffer,
-                                                                  const bool vdwInteractionTypeIsEwald,
                                                                   const bool elecInteractionTypeIsEwald,
-                                                                  const bool vdwModifierIsPotSwitch,
-                                                                  const bool computeForces,
-                                                                  const bool useSimd)
+                                                                  const LJKernelType ljKernelType,
+                                                                  const bool         computeForces,
+                                                                  const bool         useSimd)
 {
     if (scLambdasOrAlphasDiffer)
     {
-        return (dispatchKernelOnVdwInteractionType<softcoreType, true>(
-                vdwInteractionTypeIsEwald, elecInteractionTypeIsEwald, vdwModifierIsPotSwitch, computeForces, useSimd));
+        return (dispatchKernelOnElecInteractionType<softcoreType, true>(
+                elecInteractionTypeIsEwald, ljKernelType, computeForces, useSimd));
     }
     else
     {
-        return (dispatchKernelOnVdwInteractionType<softcoreType, false>(
-                vdwInteractionTypeIsEwald, elecInteractionTypeIsEwald, vdwModifierIsPotSwitch, computeForces, useSimd));
+        return (dispatchKernelOnElecInteractionType<softcoreType, false>(
+                elecInteractionTypeIsEwald, ljKernelType, computeForces, useSimd));
     }
 }
 
 static KernelFunction dispatchKernel(const bool                 scLambdasOrAlphasDiffer,
-                                     const bool                 vdwInteractionTypeIsEwald,
                                      const bool                 elecInteractionTypeIsEwald,
-                                     const bool                 vdwModifierIsPotSwitch,
+                                     const LJKernelType         ljKernelType,
                                      const bool                 computeForces,
                                      const bool                 useSimd,
                                      const interaction_const_t& interactionParameters)
@@ -1352,40 +1466,20 @@ static KernelFunction dispatchKernel(const bool                 scLambdasOrAlpha
         if (scParams.alphaCoulomb == 0 && scParams.alphaVdw == 0)
         {
             return (dispatchKernelOnScLambdasOrAlphasDifference<KernelSoftcoreType::None>(
-                    scLambdasOrAlphasDiffer,
-                    vdwInteractionTypeIsEwald,
-                    elecInteractionTypeIsEwald,
-                    vdwModifierIsPotSwitch,
-                    computeForces,
-                    useSimd));
+                    scLambdasOrAlphasDiffer, elecInteractionTypeIsEwald, ljKernelType, computeForces, useSimd));
         }
         return (dispatchKernelOnScLambdasOrAlphasDifference<KernelSoftcoreType::Beutler>(
-                scLambdasOrAlphasDiffer,
-                vdwInteractionTypeIsEwald,
-                elecInteractionTypeIsEwald,
-                vdwModifierIsPotSwitch,
-                computeForces,
-                useSimd));
+                scLambdasOrAlphasDiffer, elecInteractionTypeIsEwald, ljKernelType, computeForces, useSimd));
     }
     else // Gapsys
     {
         if (scParams.gapsysScaleLinpointCoul == 0 && scParams.gapsysScaleLinpointVdW == 0)
         {
             return (dispatchKernelOnScLambdasOrAlphasDifference<KernelSoftcoreType::None>(
-                    scLambdasOrAlphasDiffer,
-                    vdwInteractionTypeIsEwald,
-                    elecInteractionTypeIsEwald,
-                    vdwModifierIsPotSwitch,
-                    computeForces,
-                    useSimd));
+                    scLambdasOrAlphasDiffer, elecInteractionTypeIsEwald, ljKernelType, computeForces, useSimd));
         }
         return (dispatchKernelOnScLambdasOrAlphasDifference<KernelSoftcoreType::Gapsys>(
-                scLambdasOrAlphasDiffer,
-                vdwInteractionTypeIsEwald,
-                elecInteractionTypeIsEwald,
-                vdwModifierIsPotSwitch,
-                computeForces,
-                useSimd));
+                scLambdasOrAlphasDiffer, elecInteractionTypeIsEwald, ljKernelType, computeForces, useSimd));
     }
 }
 
@@ -1422,11 +1516,34 @@ void gmx_nb_free_energy_kernel(const t_nblist&                                  
                        || threadForceBuffer.size() > threadForceBuffer.unpaddedArrayRef().ssize(),
                "We need actual padding with at least one element for SIMD scatter operations");
 
-    const auto& scParams                   = *interactionParameters.softCoreParameters;
-    const bool  vdwInteractionTypeIsEwald  = (usingLJPme(interactionParameters.vdwtype));
-    const bool  elecInteractionTypeIsEwald = (usingPmeOrEwald(interactionParameters.eeltype));
-    const bool  vdwModifierIsPotSwitch =
-            (interactionParameters.vdw_modifier == InteractionModifiers::PotSwitch);
+    const auto&  scParams                   = *interactionParameters.softCoreParameters;
+    const bool   elecInteractionTypeIsEwald = (usingPmeOrEwald(interactionParameters.eeltype));
+    LJKernelType ljKernelType = LJKernelType::Cutoff; // Just to make sure it is initialized.
+    if (usingLJPme(interactionParameters.vdwtype))
+    {
+        ljKernelType = LJKernelType::Ewald;
+
+        GMX_ASSERT(interactionParameters.vdw_modifier == InteractionModifiers::PotShift
+                           || interactionParameters.vdw_modifier == InteractionModifiers::None,
+                   "No force or potential modifiers are supported with LJ-Ewald");
+    }
+    else if (interactionParameters.vdw_modifier == InteractionModifiers::PotShift
+             || interactionParameters.vdw_modifier == InteractionModifiers::None)
+    {
+        ljKernelType = LJKernelType::Cutoff;
+    }
+    else if (interactionParameters.vdw_modifier == InteractionModifiers::ForceSwitch)
+    {
+        ljKernelType = LJKernelType::ForceSwitch;
+    }
+    else if (interactionParameters.vdw_modifier == InteractionModifiers::PotSwitch)
+    {
+        ljKernelType = LJKernelType::PotentialSwitch;
+    }
+    else
+    {
+        GMX_RELEASE_ASSERT(false, "Unsupported LJ interaction type");
+    }
     const bool computeForces           = ((flags & GMX_NONBONDED_DO_FORCE) != 0);
     bool       scLambdasOrAlphasDiffer = true;
 
@@ -1445,13 +1562,8 @@ void gmx_nb_free_energy_kernel(const t_nblist&                                  
     }
 
     KernelFunction kernelFunc;
-    kernelFunc = dispatchKernel(scLambdasOrAlphasDiffer,
-                                vdwInteractionTypeIsEwald,
-                                elecInteractionTypeIsEwald,
-                                vdwModifierIsPotSwitch,
-                                computeForces,
-                                useSimd,
-                                interactionParameters);
+    kernelFunc = dispatchKernel(
+            scLambdasOrAlphasDiffer, elecInteractionTypeIsEwald, ljKernelType, computeForces, useSimd, interactionParameters);
     kernelFunc(nlist,
                coords,
                ntype,

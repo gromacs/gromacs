@@ -36,3 +36,8 @@ googletest/include/gtest/gtest-matchers.h
 to silence the warning from GCC 12 arising from the use of 
 the `_` wildcard matcher.
 
+Include order was changed in
+googletest/googlemock/CMakeLists.txt
+to always prefer bundled headers over anything available
+in system-wide direcories.
+

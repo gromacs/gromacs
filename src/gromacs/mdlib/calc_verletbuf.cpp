@@ -1125,6 +1125,8 @@ static real computeEffectiveAtomDensity(gmx::ArrayRef<const gmx::RVec> coordinat
                                         const real                     cutoff)
 {
     GMX_RELEASE_ASSERT(!coordinates.empty(), "Need coordinates to compute a density");
+    GMX_RELEASE_ASSERT(cutoff > 0,
+                       "The cutoff must be > 0 when computing the effective atom density");
 
     gmx::IVec numCells;
     gmx::RVec invCellSize;

@@ -289,6 +289,12 @@ void check_ir(const char*                    mdparin,
     {
         wi->addError("rvdw should be >= 0");
     }
+    if (ir->cutoff_scheme == CutoffScheme::Verlet && ir->rcoulomb == 0 && ir->rvdw == 0)
+    {
+        wi->addError(
+                "At least one cutoff radius (rcoulomb or rvdw) should be > 0 when using the Verlet "
+                "cutoff scheme");
+    }
     if (ir->rlist < 0 && !(ir->cutoff_scheme == CutoffScheme::Verlet && ir->verletbuf_tol > 0))
     {
         wi->addError("rlist should be >= 0");

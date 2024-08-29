@@ -802,9 +802,11 @@ static void receiveAndSend(DeviceBuffer<float> sendBuf,
                            MPI_Comm            comm)
 {
     // send data to dest rank and recv from src rank
+#if GMX_MPI
     MPI_Irecv(recvBuf, recvCount, MPI_FLOAT, src, tag, comm, recvRequest);
 
     MPI_Isend(sendBuf, sendCount, MPI_FLOAT, dest, tag, comm, sendRequest);
+#endif
 }
 
 void pmeGpuGridHaloExchange(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle)

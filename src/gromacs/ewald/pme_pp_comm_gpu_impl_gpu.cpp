@@ -91,10 +91,14 @@ void PmePpCommGpu::Impl::reinit(int size)
     int newSize = size;
     if (useNvshmem_)
     {
+#if GMX_MPI
         MPI_Allreduce(&size, &newSize, 1, MPI_INT, MPI_MAX, comm_);
+#endif
 
         int numPpRanks = 0;
+#if GMX_MPI
         MPI_Bcast(&numPpRanks, 1, MPI_INT, pmeRank_, comm_);
+#endif
         // symmetric buffer used for synchronization purpose 1 to be used to signal PME to PP rank
         // of put, and numPpRanks is intended to be used for each PP rank buffer consumption
         // completion signal to PME to allow to produce it again. this a collective call.
