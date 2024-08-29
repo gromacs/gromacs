@@ -72,7 +72,7 @@ constexpr int              c_gmxH5mdParametersGroupMinorVersion = 9;
 constexpr int              c_gmxH5mdProvenanceGroupMajorVersion = 0;
 constexpr int              c_gmxH5mdProvenanceGroupMinorVersion = 9;
 static std::string         s_gromacsTopologyGroupName           = "/parameters/gromacs_topology";
-static std::string         s_provenanceGroupName                = "/modules/provenance";
+static std::string         s_provenanceGroupName                = "/h5md/modules/provenance";
 
 
 /*! \brief The container of the H5MD data. The class is designed to read/write data according to de Buyl et al., 2014

@@ -997,12 +997,12 @@ bool readNextFrameOfStandardDataBlocks(H5md*    file,
 bool copyProvenanceRecords(H5md* srcFile, H5md* destFile)
 {
 #if GMX_USE_HDF5
-    hid_t srcModulesGroup = srcFile->getGroupId("/modules");
+    hid_t srcModulesGroup = srcFile->getGroupId("/h5md/modules");
     if (srcModulesGroup == H5I_INVALID_HID)
     {
         return false;
     }
-    hid_t destModulesGroup = destFile->createGroup("/modules");
+    hid_t destModulesGroup = destFile->createGroup("/h5md/modules");
 
     if (H5Ocopy(srcModulesGroup, "provenance", destModulesGroup, "provenance", H5P_DEFAULT, H5P_DEFAULT) < 0)
     {
