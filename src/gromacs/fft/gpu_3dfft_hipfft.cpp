@@ -45,9 +45,12 @@
 
 #include "gpu_3dfft_hipfft.h"
 
+#include <rocfft/rocfft.h>
+
 #include "gromacs/gpu_utils/device_stream.h"
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 
@@ -76,6 +79,13 @@ Gpu3dFft::ImplHipFft::ImplHipFft(bool allocateRealGrid,
                                  DeviceBuffer<float>* complexGrid) :
     Gpu3dFft::Impl::Impl(performOutOfPlaceFFT), realGrid_(reinterpret_cast<hipfftReal*>(*realGrid))
 {
+    // we need to ensure that rocfft is properly set up before using anything later
+    // see issue #5131 for some explanation
+    if (rocfft_setup() != rocfft_status_success)
+    {
+        GMX_THROW(gmx::InternalError("rocfft_setup failure"));
+    }
+
     GMX_RELEASE_ASSERT(allocateRealGrid == false, "Grids needs to be pre-allocated");
     GMX_RELEASE_ASSERT(gridSizesInXForEachRank.size() == 1 && gridSizesInYForEachRank.size() == 1,
                        "FFT decomposition not implemented with hipFFT backend");
@@ -138,6 +148,10 @@ Gpu3dFft::ImplHipFft::~ImplHipFft()
     handleHipfftError(result, "hipfftDestroy R2C failure");
     result = hipfftDestroy(planC2R_);
     handleHipfftError(result, "hipfftDestroy C2R failure");
+    // ensure that rocfft is properly torn down after we destroyed the plans
+    // see issue #5131 for more details on why we need to manually do this instead
+    // of letting HIP take care of it
+    rocfft_cleanup();
 }
 
 void Gpu3dFft::ImplHipFft::perform3dFft(gmx_fft_direction dir, CommandEvent* /*timingEvent*/)
