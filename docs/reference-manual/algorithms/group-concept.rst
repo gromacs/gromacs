@@ -75,7 +75,7 @@ center of mass group
 Compressed position output group
 
     In order to further reduce the size of the compressed trajectory
-    file (:ref:`xtc` or :ref:`tng`), it is possible to
+    file (:ref:`xtc`, :ref:`tng` or :ref:`h5md`), it is possible to
     store only a subset of all particles. All x-compression groups that
     are specified are saved, the rest are not. If no such groups are
     specified, than all atoms are saved to the compressed trajectory

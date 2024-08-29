@@ -65,6 +65,8 @@ Run Input files
 Trajectory files
 ----------------
 
+:ref:`h5md`
+    Any kind of data (compressed, portable, any precision)
 :ref:`tng`
     Any kind of data (compressed, portable, any precision)
 :ref:`trr`
@@ -299,6 +301,91 @@ Pascal format
 Note that this is the format for writing, as in the above example
 fields may be written without spaces, and therefore can not be read
 with the same format statement in C.
+
+.. _h5md:
+
+h5md
+----
+
+``.h5md`` files are written in the ``HDF5`` data format according to the
+``H5MD`` specification. More details are available in \ :ref:`196 <refBuyl2014>`
+and `H5MD format specification <https://www.nongnu.org/h5md/h5md.html>`_.
+
+Files with the ``.h5md`` file extension can contain all kinds of data
+related to the trajectory of a simulation. For example, it might
+contain coordinates, velocities, forces and/or energies. Various :ref:`mdp`
+file options control which of these are written by :ref:`gmx mdrun`, whether data
+is written with compression, and how lossy that compression can be.
+This file can be read with :ref:`gmx dump`.
+
+.. parsed-literal::
+
+   :ref:`gmx dump` -f traj.h5md
+
+or if you're not such a fast reader::
+
+   gmx dump -f traj.h5md | less
+
+You can also get a quick look in the contents of the file (number of
+frames etc.) using:
+
+.. parsed-literal::
+
+   :ref:`gmx check` -f traj.h5md
+
+Just like any other HDF5 files, the file contents can also be viewed using
+standard HDF5 tools, such as::
+
+   h5dump traj.h5md | less
+
+or::
+
+   h5dump -pH traj.h5md
+
+to print or headers and properties of the groups and data sets in the file.
+
+|Gromacs| records a history of commands used to create and/or modify the H5MD file in the
+``h5md/modules/provenance`` group. Every time the file is updated this is recorded.
+The contents are::
+
+   ``/h5md/modules/provenance/`` group with a version attribute with two integers (major
+   and minor version numbers)
+   ``/h5md/modules/provenance/command_line`` (the full command line that was used)
+   ``/h5md/modules/provenance/program_version`` (the version of the program changing the file)
+   ``/h5md/modules/provenance/command_line`` (the full command line that was used)
+   ``/h5md/modules/provenance/time`` (the time stamp in seconds according to POSIX)
+   ``/h5md/modules/provenance/comment`` (a custom comment field)
+
+Provenance records are intended to help tracking how a file was created and modified. There
+are no guarantees that the records are complete and there are also no guarantees that the
+provenance records are used by any other tools.
+
+|Gromacs| saves the system topology in the ``/parameters/gromacs_topology`` group (with
+version as an attribute), containing::
+
+   ``atom_species/`` (one entry per atom type)
+
+   ``molecule_types/[molecule_type]/`` (per molecule type, with number of atoms as an attribute)
+   ``molecule_blocks/[molecule_type]/atom_name`` (per atom in the molecule type)
+   ``molecule_blocks/[molecule_type]/atom_species`` (per atom in the molecule type)
+   ``molecule_blocks/[molecule_type]/atom_species_state_b`` (per atom in the molecule type)
+   ``molecule_blocks/[molecule_type]/residue_name`` (per atom in the molecule type)
+   ``molecule_blocks/[molecule_type]/residue_number`` (per atom in the molecule type)
+   ``molecule_blocks/[molecule_type]/chain_id`` (per atom in the molecule type)
+   ``molecule_blocks/[molecule_type]/connectivity`` (two atom indices per bond in the molecule type)
+
+   ``molecule_blocks/molecule_type`` (per molecule block in the |Gromacs| topology)
+   ``molecule_blocks/num_atoms_per_molecule`` (per molecule block in the |Gromacs| topology)
+   ``molecule_blocks/number_of_molecules`` (per molecule block in the |Gromacs| topology)
+   ``molecule_blocks/molecule_index_start`` (per molecule block in the |Gromacs| topology)
+   ``molecule_blocks/global_atom_start`` (per molecule block in the |Gromacs| topology)
+   ``molecule_blocks/global_atom_end`` (per molecule block in the |Gromacs| topology)
+   ``molecule_blocks/global_residue_start`` (per molecule block in the |Gromacs| topology)
+   ``molecule_blocks/residue_number_start`` (per molecule block in the |Gromacs| topology)
+
+|Gromacs| also stores the topology of the system according to the VMD H5MD plugin specification, available
+at `VMD-h5mdplugin <https://github.com/h5md/VMD-h5mdplugin/blob/master/Documentation%20VMD%20parameters>`_.
+Some of the VMD fields may not be written by |Gromacs|.
 
 .. _hdb:
 

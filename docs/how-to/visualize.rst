@@ -40,7 +40,7 @@ Extracting Trajectory Information
 ---------------------------------
 
 There are several techniques available for finding information in |Gromacs|
-trajectory (:ref:`trr`, :ref:`xtc`, :ref:`tng`) files.
+trajectory (:ref:`trr`, :ref:`xtc`, :ref:`tng`, :ref:`h5md`) files.
 
 * use the |Gromacs| trajectory analysis utilities
 * use :ref:`gmx traj` to write a :ref:`xvg` file and read that in an external program as above

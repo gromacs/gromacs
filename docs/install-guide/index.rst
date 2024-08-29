@@ -568,6 +568,9 @@ Other optional build components
   enable additional CMake targets for the gmxapi Python package and
   sample_restraint package from the main |Gromacs| CMake build. This supports
   additional testing and documentation generation.
+* The :ref:`h5md` file format can only be used if an installation of HDF5
+  libraries (required version at least 1.10.1) can be found when building
+  |Gromacs|.
 
 Doing a build of |Gromacs|
 --------------------------

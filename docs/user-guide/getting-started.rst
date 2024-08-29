@@ -143,8 +143,8 @@ file contains all information needed to start a simulation with
 |Gromacs|. The :ref:`gmx grompp` program processes all input files and
 generates the run input :ref:`tpr` file.
 
-Trajectory file (``.trr``, ``.tng``, or ``.xtc``)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Trajectory file (``.trr``, ``.tng``, ``.h5md``, or ``.xtc``)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Once the run input file is available, we can start the simulation. The
 program which starts the simulation is called :ref:`gmx mdrun`.
