@@ -1,7 +1,7 @@
 GROMACS 2024.3 release notes
 ----------------------------
 
-This version was released on TODO, 2024. These release notes
+This version was released on August 29th, 2024. These release notes
 document the changes that have taken place in |Gromacs| since the
 previous 2024.2 version, to fix known issues. It also incorporates all
 fixes made in version 2023.5 and earlier, which you can find described
@@ -48,7 +48,7 @@ Correct AWH metric with free-energy and Beutler soft-core
 
 The AWH metric was incorrect for free-energy dimensions when
 Beutler soft-core interactions were used. The free-energies
-themselves were unaffacted by this issue.
+themselves were unaffected by this issue.
 
 :issue:`5107`
 
@@ -92,7 +92,7 @@ The double precision SVE implementation contained an incorrect mask
 for SVE implementations of 256 bits or more. This would lead to instantaneous
 extreme forces/crashes on the first step, so it should never have
 influenced any production simulations unnoticed. The alignment checks for
-some SVE routines have also been motified to correspond to the SIMD width,
+some SVE routines have also been modified to correspond to the SIMD width,
 although this is formally not required on Arm, so it will not have caused
 any errors.
 
