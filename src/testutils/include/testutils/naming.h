@@ -292,12 +292,23 @@ std::string formatNameFromParam(const Param                                     
                                   "Enum parameter to test case must be suitable for "
                                   "EnumerationArray (ie. have a Count field)");
                 }
+        // All nvcc until 11.8.0 and until at least 12.3.1 mis-compile
+        // this if-constexpr nest by failing to short-circuit the
+        // logic. This leads them to try to instantiate
+        // EnumerationArray<Param, const char*> when Param is not an
+        // enum type, which ought to have been excluded by the
+        // conditions above. That instantiation fails, which causes a
+        // compilation failure. Other compilers are fine with this
+        // code, so we leave it as a developer convenience.
+#if !defined(__CUDACC_VER_MAJOR__) || (__CUDACC_VER_MAJOR__ > 12) \
+        || ((__CUDACC_VER_MAJOR__ == 12) && (__CUDACC_VER_MINOR__ > 3))
                 else if constexpr (!std::is_same_v<Formatter, EnumerationArray<Param, const char*>>)
                 {
                     static_assert(sc_alwaysFalse<Formatter>,
                                   "When formatter taking an enum is not a callable, it must be an "
                                   "EnumerationArray");
                 }
+#endif
                 else
                 {
                     // The type of \c param is an enumeration suitable
@@ -305,9 +316,17 @@ std::string formatNameFromParam(const Param                                     
                     // such a \c gmx::EnumerationArray.
                     return std::string{ formatter[param] };
                 }
-                // Compiler recognizes that we can't get here and so
-                // we don't need to write an unreachable return
-                // statement.
+#if !defined(__CUDACC_VER_MAJOR__) || (__CUDACC_VER_MAJOR__ > 11) \
+        || ((__CUDACC_VER_MAJOR__ == 11) && (__CUDACC_VER_MINOR__ > 4))
+        // Compiler recognizes that we can't get here and so
+        // we don't need to write an unreachable return
+        // statement.
+#else
+                // nvcc before 11.5.0 fails to recognize that the above
+                // if-constexpr nest always produced a return statement
+                // so complains unless we add this unnecessary one.
+                return std::string{};
+#endif
             },
             formatterVariant);
 }

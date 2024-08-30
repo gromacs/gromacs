@@ -69,6 +69,7 @@
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/mpitest.h"
+#include "testutils/naming.h"
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 
@@ -204,31 +205,27 @@ std::optional<std::string> reasonsTestIsInvalid(MdpFlavor       mdpFlavor,
     }
 }
 
-//! \brief Help GoogleTest name our tests
-std::string nameOfTest(const testing::TestParamInfo<DomDecSpecialCasesTestParameters>& info)
+std::string nameOfMdpFlavor(const MdpFlavor mdpFlavor)
 {
-    const auto [mdpFlavor, runtimeFlavor]                                        = info.param;
-    const auto [electrostaticsFlavor, couplingFlavor]                            = mdpFlavor;
-    const auto [nonbondedFlavor, pmeFlavor, updateFlavor, separatePmeRankFlavor] = runtimeFlavor;
-
-    std::string testName = gmx::formatString("%s_%s_coupling_nb%s_pme%s_update%s_npme%d",
-                                             enumValueToString(electrostaticsFlavor),
-                                             enumValueToString(couplingFlavor),
-                                             enumValueToString(nonbondedFlavor),
-                                             enumValueToString(pmeFlavor),
-                                             enumValueToString(updateFlavor),
-                                             static_cast<int>(separatePmeRankFlavor));
-
-    // Note that the returned names must be unique and may use only
-    // alphanumeric ASCII characters. It's not supposed to contain
-    // underscores (see the GoogleTest FAQ
-    // why-should-test-suite-names-and-test-names-not-contain-underscore),
-    // but doing so works for now, is likely to remain so, and makes
-    // such test names much more readable.
-    testName = gmx::replaceAll(testName, "-", "");
-    testName = gmx::replaceAll(testName, " ", "_");
-    return testName;
+    const auto [electrostaticsFlavor, couplingFlavor] = mdpFlavor;
+    return gmx::formatString(
+            "%s_%s_coupling", enumValueToString(electrostaticsFlavor), enumValueToString(couplingFlavor));
 }
+
+std::string nameOfRuntimeFlavor(const RuntimeFlavor runtimeFlavor)
+{
+    const auto [nonbondedFlavor, pmeFlavor, updateFlavor, separatePmeRankFlavor] = runtimeFlavor;
+    return gmx::formatString("nb%s_pme%s_update%s_npme%d",
+                             enumValueToString(nonbondedFlavor),
+                             enumValueToString(pmeFlavor),
+                             enumValueToString(updateFlavor),
+                             static_cast<int>(separatePmeRankFlavor));
+}
+
+//! Tuple of formatters to name the parameterized test cases
+const gmx::test::NameOfTestFromTuple<DomDecSpecialCasesTestParameters> sc_testNamer{
+    std::make_tuple(nameOfMdpFlavor, nameOfRuntimeFlavor)
+};
 
 //! \brief Generate the contents of the MDP file
 std::string buildMdpInputFileContent(MdpFlavor mdpFlavor)
@@ -411,6 +408,6 @@ INSTANTIATE_TEST_SUITE_P(
                                                                 SeparatePmeRankFlavor::Two))
 
                                    ),
-        nameOfTest);
+        sc_testNamer);
 
 } // namespace

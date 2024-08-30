@@ -60,9 +60,11 @@
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/loggerbuilder.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringstream.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "testutils/naming.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 
@@ -100,17 +102,17 @@ enum class PressureMatrixType
     Count
 };
 
-//! Helper for describing tests
-const char* enumValueToString(PressureMatrixType enumValue)
-{
-    // These are used in naming test reference data files, and we have
-    // hard limits on file lengths, so we must abbreviate.
-    static constexpr gmx::EnumerationArray<PressureMatrixType, const char*> names = {
-        "unif diag", "part unif diag", "diagonal", "general", "extreme"
-    };
-    return names[enumValue];
-}
-
+/*! \brief Helper array for describing tests
+ *
+ * These are used in naming test reference data files, and we have
+ * hard limits on file lengths, so we must abbreviate. */
+constexpr gmx::EnumerationArray<PressureMatrixType, const char*> sc_pressureMatrixTypeNames = {
+    "pmt_unif diag",
+    "pmt_part unif diag",
+    "pmt_diagonal",
+    "pmt_general",
+    "pmt_extreme"
+};
 
 //! Some matrices of simulation box pressure
 const EnumerationArray<PressureMatrixType, Matrix3x3> c_pressureMatrices = {
@@ -146,19 +148,14 @@ enum class BoxShape : int
     Count
 };
 
-//! Version of enumValueToString with abbreviated names
-const char* enumValueToStringForTestName(const BoxShape enumValue)
-{
-    static constexpr gmx::EnumerationArray<BoxShape, const char*> names = {
-        "cubic",
-        "rect", // abbreviates "rectilinear"
-        "rds",  // abbreviates "rhombic dodecahedron XY square"
-        "rdh",  // abbreviates "rhombic dodecahedron XY hexagon"
-        "to",   // abbreviates "truncated octahedron",
-        "other"
-    };
-    return names[enumValue];
-}
+constexpr gmx::EnumerationArray<BoxShape, const char*> sc_boxShapeNames = {
+    "shape_cubic",
+    "shape_rect", // abbreviates "rectilinear"
+    "shape_rds",  // abbreviates "rhombic dodecahedron XY square"
+    "shape_rdh",  // abbreviates "rhombic dodecahedron XY hexagon"
+    "shape_to",   // abbreviates "truncated octahedron",
+    "shape_other"
+};
 
 /*! \brief Convenience typedef of the test input parameters
  *
@@ -172,33 +169,29 @@ const char* enumValueToStringForTestName(const BoxShape enumValue)
 using ParrinelloRahmanTestParameters =
         std::tuple<PressureCouplingOptions, PressureMatrixType, BoxShape, Matrix3x3, Matrix3x3>;
 
-//! Help GoogleTest name our tests
-std::string nameOfTest(const testing::TestParamInfo<ParrinelloRahmanTestParameters>& info)
+//! Helper function for naming tests
+std::string pressureCouplingOptionsToString(const PressureCouplingOptions options)
 {
-    auto [options, matrixType, shape, box, boxVelocities] = info.param;
-    std::string testName                                  = formatString(
-            "%s_"
-            "pmt_%s_" // pmt abbreviates "pressure matrix type"
-            "shape_%s_"
-            "box_%g_"
-            "boxv_%g",
-            enumValueToString(options.epct),
-            enumValueToString(matrixType),
-            enumValueToStringForTestName(shape),
-            box(XX, XX),
-            boxVelocities(XX, XX));
-
-    // Note that the returned names must be unique and may use only
-    // alphanumeric ASCII characters. It's not supposed to contain
-    // underscores (see the GoogleTest FAQ
-    // why-should-test-suite-names-and-test-names-not-contain-underscore),
-    // but doing so works for now, is likely to remain so, and makes
-    // such test names much more readable.
-    testName = replaceAll(testName, "-", "_");
-    testName = replaceAll(testName, ".", "_");
-    testName = replaceAll(testName, " ", "_");
-    return testName;
+    return enumValueToString(options.epct);
 }
+
+//! Helper functor for naming tests
+struct Matrix3x3ToString
+{
+    std::string prefix;
+    std::string operator()(const Matrix3x3& m) const
+    {
+        return prefix + ' ' + doubleToString(m(XX, XX));
+    }
+};
+
+//! Tuple of formatters to name the parameterized test cases
+const NameOfTestFromTuple<ParrinelloRahmanTestParameters> sc_testNamer{ std::make_tuple(
+        pressureCouplingOptionsToString,
+        sc_pressureMatrixTypeNames,
+        sc_boxShapeNames,
+        Matrix3x3ToString{ "box" },
+        Matrix3x3ToString{ "boxv" }) };
 
 //! Test fixture - abbreviated ParrinelloRahman to ParrRahm for shorter refdata filenames
 using ParrRahmTest = ::testing::TestWithParam<ParrinelloRahmanTestParameters>;
@@ -458,7 +451,7 @@ INSTANTIATE_TEST_SUITE_P(Cubic,
                                  Values(BoxShape::Cubic),
                                  ValuesIn(c_boxVectors[BoxShape::Cubic]),
                                  ValuesIn(c_boxVelocities[BoxShape::Cubic])),
-                         nameOfTest);
+                         sc_testNamer);
 
 INSTANTIATE_TEST_SUITE_P(Rectilinear,
                          ParrRahmTest,
@@ -467,7 +460,7 @@ INSTANTIATE_TEST_SUITE_P(Rectilinear,
                                  Values(BoxShape::Rectilinear),
                                  ValuesIn(c_boxVectors[BoxShape::Rectilinear]),
                                  ValuesIn(c_boxVelocities[BoxShape::Rectilinear])),
-                         nameOfTest);
+                         sc_testNamer);
 
 INSTANTIATE_TEST_SUITE_P(RhombDodecXYSquare,
                          ParrRahmTest,
@@ -476,7 +469,7 @@ INSTANTIATE_TEST_SUITE_P(RhombDodecXYSquare,
                                  Values(BoxShape::RhombicDodecahedronXYSquare),
                                  ValuesIn(c_boxVectors[BoxShape::RhombicDodecahedronXYSquare]),
                                  ValuesIn(c_boxVelocities[BoxShape::RhombicDodecahedronXYSquare])),
-                         nameOfTest);
+                         sc_testNamer);
 
 INSTANTIATE_TEST_SUITE_P(RhombDodecXYHex,
                          ParrRahmTest,
@@ -485,7 +478,7 @@ INSTANTIATE_TEST_SUITE_P(RhombDodecXYHex,
                                  Values(BoxShape::RhombicDodecahedronXYHexagon),
                                  ValuesIn(c_boxVectors[BoxShape::RhombicDodecahedronXYHexagon]),
                                  ValuesIn(c_boxVelocities[BoxShape::RhombicDodecahedronXYHexagon])),
-                         nameOfTest);
+                         sc_testNamer);
 
 INSTANTIATE_TEST_SUITE_P(TruncOct,
                          ParrRahmTest,
@@ -494,7 +487,7 @@ INSTANTIATE_TEST_SUITE_P(TruncOct,
                                  Values(BoxShape::TruncatedOctahedron),
                                  ValuesIn(c_boxVectors[BoxShape::TruncatedOctahedron]),
                                  ValuesIn(c_boxVelocities[BoxShape::TruncatedOctahedron])),
-                         nameOfTest);
+                         sc_testNamer);
 
 INSTANTIATE_TEST_SUITE_P(Other,
                          ParrRahmTest,
@@ -503,7 +496,7 @@ INSTANTIATE_TEST_SUITE_P(Other,
                                  Values(BoxShape::Other),
                                  ValuesIn(c_boxVectors[BoxShape::Other]),
                                  ValuesIn(c_boxVelocities[BoxShape::Other])),
-                         nameOfTest);
+                         sc_testNamer);
 
 } // namespace
 } // namespace test

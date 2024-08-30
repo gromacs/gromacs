@@ -69,8 +69,10 @@
 #if GMX_GPU
 #    include "gromacs/gpu_utils/devicebuffer.h"
 #endif
+#include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "testutils/naming.h"
 #include "testutils/refdata.h"
 #include "testutils/test_hardware_environment.h"
 #include "testutils/testasserts.h"
@@ -300,25 +302,10 @@ TEST_F(FFTTest, Real2DLength18_15Test)
 
 using FFTTest3DParameters = std::tuple<int, int, int>;
 
-/*! \brief Help GoogleTest name our tests
- *
- * If changes are needed here, consider making matching changes in
- * makeRefDataFileName(). */
-std::string nameOfTest(const testing::TestParamInfo<FFTTest3DParameters>& info)
-{
-    std::string testName = formatString(
-            "%d_%d_%d", std::get<0>(info.param), std::get<1>(info.param), std::get<2>(info.param));
-
-    // Note that the returned names must be unique and may use only
-    // alphanumeric ASCII characters. It's not supposed to contain
-    // underscores (see the GoogleTest FAQ
-    // why-should-test-suite-names-and-test-names-not-contain-underscore),
-    // but doing so works for now, is likely to remain so, and makes
-    // such test names much more readable.
-    testName = replaceAll(testName, "-", "");
-    testName = replaceAll(testName, " ", "_");
-    return testName;
-}
+//! Tuple of formatters to name the parameterized test cases
+const test::NameOfTestFromTuple<FFTTest3DParameters> sc_testNamer{
+    std::make_tuple(intToString, intToString, intToString)
+};
 
 class ParameterizedFFTTest3D : public FFTTest3D, public ::testing::WithParamInterface<FFTTest3DParameters>
 {
@@ -627,13 +614,13 @@ INSTANTIATE_TEST_SUITE_P(ScanWorks,
                          ::testing::Combine(::testing::Range(4, 8, 1),
                                             ::testing::Range(4, 8, 1),
                                             ::testing::Range(4, 8, 1)),
-                         nameOfTest);
+                         sc_testNamer);
 */
 
 INSTANTIATE_TEST_SUITE_P(Works,
                          ParameterizedFFTTest3D,
                          ::testing::Values(FFTTest3DParameters{ 5, 6, 9 }, FFTTest3DParameters{ 5, 5, 10 }),
-                         nameOfTest);
+                         sc_testNamer);
 
 } // namespace
 } // namespace test
