@@ -157,6 +157,7 @@
 #ifndef GMX_TESTUTILS_NAMING_H
 #define GMX_TESTUTILS_NAMING_H
 
+#include <algorithm>
 #include <filesystem>
 #include <functional>
 #include <string>
