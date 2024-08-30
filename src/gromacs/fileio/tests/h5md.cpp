@@ -55,9 +55,12 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "testutils/setenv.h"
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 #include "testutils/tprfilegenerator.h"
+
+#include "buildinfo.h"
 
 CLANG_DIAGNOSTIC_IGNORE("-Wold-style-cast") // HDF5 constants use old style casts.
 
@@ -79,6 +82,9 @@ class H5mdIoTest : public ::testing::Test, public ::testing::WithParamInterface<
 public:
     H5mdIoTest()
     {
+        std::filesystem::path buildDir = std::filesystem::path(CMAKE_BINARY_DIR).append("lib");
+        gmxSetenv("HDF5_PLUGIN_PATH", buildDir.c_str(), 1);
+
         clear_mat(refBox_);
         referenceH5mdIo_   = nullptr;
         referenceFilename_ = fileManager_.getTemporaryFilePath(getFileSuffix("ref"));
