@@ -59,20 +59,34 @@ struct MoleculeBlockIndices;
 namespace gmx
 {
 
-typedef int64_t            hid_t;
+/*! \brief HDF5 ID */
+typedef int64_t hid_t;
+/*! \brief Size used in HDF5 */
 typedef unsigned long long hsize_t;
-constexpr size_t           c_atomResidueStringLen               = 20;
-constexpr size_t           c_moleculeTypeStringLen              = 256;
-constexpr size_t           c_provenanceRecordStringLen          = 512;
-constexpr int              c_maxFullNameLength                  = 512;
-constexpr int              c_h5mdMajorVersion                   = 1;
-constexpr int              c_h5mdMinorVersion                   = 1;
-constexpr int              c_gmxH5mdParametersGroupMajorVersion = 0;
-constexpr int              c_gmxH5mdParametersGroupMinorVersion = 9;
-constexpr int              c_gmxH5mdProvenanceGroupMajorVersion = 0;
-constexpr int              c_gmxH5mdProvenanceGroupMinorVersion = 9;
-static std::string         s_gromacsTopologyGroupName           = "/parameters/gromacs_topology";
-static std::string         s_provenanceGroupName                = "/h5md/modules/provenance";
+/*! \brief The maximum string length of atoms and residues. Constant-length strings can be compressed. */
+constexpr size_t c_atomResidueStringLen = 20;
+/*! \brief The maximum string length of molecule types. Constant-length strings can be compressed. */
+constexpr size_t c_moleculeTypeStringLen = 256;
+/*! \brief The maximum string length of provenance records. Constant-length strings can be compressed. */
+constexpr size_t c_provenanceRecordStringLen = 512;
+/*! \brief The maximum string length of name records. Constant-length strings can be compressed. */
+constexpr int c_maxFullNameLength = 512;
+/*! \brief The major version of the H5MD specification (1.1) */
+constexpr int c_h5mdMajorVersion = 1;
+/*! \brief The minor version of the H5MD specification (1.1) */
+constexpr int c_h5mdMinorVersion = 1;
+/*! \brief The name of the GROMACS topology group */
+static std::string s_gromacsTopologyGroupName = "/parameters/gromacs_topology";
+/*! \brief The major version of the GROMACS topology group (0.9) */
+constexpr int c_gmxH5mdGromacsTopologyGroupMajorVersion = 0;
+/*! \brief The minor version of the GROMACS topology group (0.9) */
+constexpr int c_gmxH5mdGromacsTopologyGroupMinorVersion = 9;
+/*! \brief The name of the provenance group */
+static std::string s_provenanceGroupName = "/h5md/modules/provenance";
+/*! \brief The major version of the provenance group (0.9) */
+constexpr int c_gmxH5mdProvenanceGroupMajorVersion = 0;
+/*! \brief The minor version of the provenance group (0.9) */
+constexpr int c_gmxH5mdProvenanceGroupMinorVersion = 9;
 
 
 /*! \brief The container of the H5MD data. The class is designed to read/write data according to de Buyl et al., 2014

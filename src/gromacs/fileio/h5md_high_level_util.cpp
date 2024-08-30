@@ -724,8 +724,9 @@ void setupMolecularSystemTopology(H5md*                    file,
         topologyGroup = file->createGroup(s_gromacsTopologyGroupName);
     }
 
-    setVersionAttribute(
-            topologyGroup, c_gmxH5mdParametersGroupMajorVersion, c_gmxH5mdParametersGroupMinorVersion);
+    setVersionAttribute(topologyGroup,
+                        c_gmxH5mdGromacsTopologyGroupMajorVersion,
+                        c_gmxH5mdGromacsTopologyGroupMinorVersion);
 
     std::vector<bool>                        atomTypesAdded(topology.ffparams.atnr, false);
     std::vector<std::pair<int64_t, int64_t>> systemBonds, selectionBonds;
