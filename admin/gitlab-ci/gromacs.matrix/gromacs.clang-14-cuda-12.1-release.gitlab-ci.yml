@@ -1,35 +1,35 @@
 # Test goal: old Clang as host compiler with old CUDA
 # Test intents (should change rarely and conservatively):
-#   OS: Ubuntu oldest supported
+#   OS: Ubuntu oldest supported (except where constrained by CUDA version)
 #   GPU: CUDA oldest supported
 #   HW: NVIDIA GPU
 #   Scope: configure, build, unit tests, regression tests
 # Test implementation choices (free to change as needed):
 #   OS: Ubuntu 20.04
 #   Build type: RelWithAssert
-#   Compiler: Clang 9
-#   GPU: CUDA 11.0
+#   Compiler: Clang 14
+#   GPU: CUDA 12.1
 #   MPI: thread_MPI
 #   SIMD: AVX_512
 #   FFT: FFTW3
 #   Parallelism nt/ntomp: 4/2 (unit tests)
 #   Parallelism nt/ntomp: 2/1 (regression tests)
 
-gromacs:clang-9-cuda-11.0:release:configure:
+gromacs:clang-14-cuda.12.1:release:configure:
   extends:
     - .gromacs:base:release:configure
     - .use-clang:base
     - .use-cuda
   rules:
     - !reference [.rules:nightly-only-for-release, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-9-cuda-11.0.3
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-llvm-14-cuda-12.1.0
   variables:
-    COMPILER_MAJOR_VERSION: 9
+    COMPILER_MAJOR_VERSION: 14
     RELEASE_BUILD_DIR: release-builds-clang
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX_512"
 
-gromacs:clang-9-cuda-11.0:release:build:
+gromacs:clang-14-cuda.12.1:release:build:
   extends:
     - .gromacs:base:build
     - .before_script:default
@@ -39,18 +39,18 @@ gromacs:clang-9-cuda-11.0:release:build:
     - !reference [.rules:nightly-only-for-release, rules]
   variables:
     BUILD_DIR: release-builds-clang
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-9-cuda-11.0.3
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-llvm-14-cuda-12.1.0
   needs:
-    - job: gromacs:clang-9-cuda-11.0:release:configure
+    - job: gromacs:clang-14-cuda.12.1:release:configure
 
-gromacs:clang-9-cuda-11.0:release:test:
+gromacs:clang-14-cuda.12.1:release:test:
   extends:
     - .gromacs:base:test
   rules:
     - !reference [.rules:skip-if-single-nvidia-gpu-unavailable, rules]
     - !reference [.rules:nightly-only-for-release, rules]
   stage: release-tests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-9-cuda-11.0.3
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-llvm-14-cuda-12.1.0
   variables:
     BUILD_DIR: release-builds-clang
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
@@ -60,17 +60,17 @@ gromacs:clang-9-cuda-11.0:release:test:
   tags:
     - $GITLAB_RUNNER_TAG_1X_NVIDIA_GPU
   needs:
-    - job: gromacs:clang-9-cuda-11.0:release:configure
-    - job: gromacs:clang-9-cuda-11.0:release:build
+    - job: gromacs:clang-14-cuda.12.1:release:configure
+    - job: gromacs:clang-14-cuda.12.1:release:build
 
-gromacs:clang-9-cuda-11.0:release:regressiontest:
+gromacs:clang-14-cuda.12.1:release:regressiontest:
   extends:
     - .gromacs:base:regressiontest
   rules:
     - !reference [.rules:skip-if-single-nvidia-gpu-unavailable, rules]
     - !reference [.rules:nightly-only-for-release, rules]
   stage: release-tests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-9-cuda-11.0.3
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-llvm-14-cuda-12.1.0
   variables:
     BUILD_DIR: release-builds-clang
     REGRESSIONTEST_PME_RANK_NUMBER: 0
@@ -81,6 +81,6 @@ gromacs:clang-9-cuda-11.0:release:regressiontest:
   tags:
     - $GITLAB_RUNNER_TAG_1X_NVIDIA_GPU
   needs:
-    - job: gromacs:clang-9-cuda-11.0:release:build
+    - job: gromacs:clang-14-cuda.12.1:release:build
     - job: regressiontests:package
 

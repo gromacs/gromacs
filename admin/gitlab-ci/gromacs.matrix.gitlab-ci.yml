@@ -187,8 +187,8 @@
     expire_in: 1 week
 
 include:
-  - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.clang-9-cuda-11.0-release.gitlab-ci.yml'
-  - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.clang-9.gitlab-ci.yml'
+  - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.clang-14-cuda-12.1-release.gitlab-ci.yml'
+  - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.clang-14.gitlab-ci.yml'
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.clang-17-mpi.gitlab-ci.yml'
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.clang-17-release.gitlab-ci.yml'
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.clang-18-cuda-12.6.0.gitlab-ci.yml'
