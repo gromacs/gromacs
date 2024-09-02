@@ -28,7 +28,7 @@ TEST_LABELS='QuickGpuTest'
 # Flag to mark that any
 TOOLS_FAILED=""
 
-for TOOL in memcheck ; do # racecheck synccheck initcheck; do
+for TOOL in memcheck racecheck synccheck initcheck; do
     echo "Running CUDA Compute Sanitizer in ${TOOL} mode"
     "${CTEST}" -T MemCheck \
       --overwrite MemoryCheckCommand="${COMPUTE_SANITIZER_BIN}" \
