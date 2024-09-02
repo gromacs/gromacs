@@ -729,6 +729,8 @@ static void nbnxn_atomdata_set_atomtypes(nbnxn_atomdata_t::Params* params,
     for (const Grid& grid : gridSet.grids())
     {
         /* Loop over all columns and copy and fill */
+        const int gmx_unused numThreads = gmx_omp_nthreads_get(ModuleMultiThread::Pairsearch);
+#pragma omp parallel for num_threads(numThreads) schedule(static)
         for (int i = 0; i < grid.numColumns(); i++)
         {
             const int numAtoms   = grid.paddedNumAtomsInColumn(i);
@@ -756,6 +758,8 @@ static void nbnxn_atomdata_set_ljcombparams(nbnxn_atomdata_t::Params* params,
         for (const Grid& grid : gridSet.grids())
         {
             /* Loop over all columns and copy and fill */
+            const int gmx_unused numThreads = gmx_omp_nthreads_get(ModuleMultiThread::Pairsearch);
+#pragma omp parallel for num_threads(numThreads) schedule(static)
             for (int i = 0; i < grid.numColumns(); i++)
             {
                 const int numAtoms   = grid.paddedNumAtomsInColumn(i);
@@ -798,6 +802,8 @@ static void nbnxn_atomdata_set_charges(nbnxn_atomdata_t* nbat, const GridSet& gr
     for (const Grid& grid : gridSet.grids())
     {
         /* Loop over all columns and copy and fill */
+        const int gmx_unused numThreads = gmx_omp_nthreads_get(ModuleMultiThread::Pairsearch);
+#pragma omp parallel for num_threads(numThreads) schedule(static)
         for (int cxy = 0; cxy < grid.numColumns(); cxy++)
         {
             const int atomOffset     = grid.firstAtomInColumn(cxy);
@@ -860,6 +866,8 @@ static void nbnxn_atomdata_mask_fep(nbnxn_atomdata_t* nbat, const GridSet& gridS
         const int c_offset = grid.firstAtomInColumn(0);
 
         /* Loop over all columns and copy and fill */
+        const int gmx_unused numThreads = gmx_omp_nthreads_get(ModuleMultiThread::Pairsearch);
+#pragma omp parallel for num_threads(numThreads) schedule(static)
         for (int c = 0; c < grid.numCells() * nsubc; c++)
         {
             /* Does this cluster contain perturbed particles? */
@@ -887,9 +895,15 @@ static void nbnxn_atomdata_set_energygroups(const GridSet&          gridSet,
                                             ArrayRef<const int32_t> atomInfo,
                                             EnergyGroupsPerCluster* energyGroupsPerCluster)
 {
+    const int gmx_unused numThreads = gmx_omp_nthreads_get(ModuleMultiThread::Pairsearch);
     for (const Grid& grid : gridSet.grids())
     {
+        // Find maximum allocation size for energy groups
+        energyGroupsPerCluster->resizeEnergyGroups(grid.atomIndexEnd());
+
         /* Loop over all columns and copy and fill */
+        const int gmx_unused numThreads = gmx_omp_nthreads_get(ModuleMultiThread::Pairsearch);
+#pragma omp parallel for num_threads(numThreads) schedule(static)
         for (int i = 0; i < grid.numColumns(); i++)
         {
             const int numAtoms   = grid.paddedNumAtomsInColumn(i);

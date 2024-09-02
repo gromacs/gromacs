@@ -480,11 +480,6 @@ public:
                    "The number of indices should be a multiple of the i-cluster size");
         const int numIClusters = indices.ssize() / iClusterSize_;
 
-        if (clusterOffset + numIClusters > gmx::ssize(energyGroups_))
-        {
-            energyGroups_.resize(clusterOffset + numIClusters);
-        }
-
         for (int iCluster = 0; iCluster < numIClusters; iCluster++)
         {
             // Store all energy group indices for an i-cluster in one int
@@ -500,6 +495,9 @@ public:
             energyGroups_[clusterOffset + iCluster] = comb;
         }
     }
+
+    //! Reallocate the buffer.
+    void resizeEnergyGroups(int numAtoms) { energyGroups_.resize(numAtoms / iClusterSize_); }
 
     //! Returns the energy group for atom \p atomIndexInCluster in i-cluster \p iCLuster
     int getEnergyGroup(int iCluster, int atomIndexInCluster)
