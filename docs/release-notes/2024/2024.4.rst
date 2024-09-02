@@ -19,6 +19,14 @@ Fixes where mdrun could behave incorrectly
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix dump crash with Colvars values
+""""""""""""""""""""""""""""""""""
+
+Fix `gmx dump` crash when trying to output the binary Colvars state file.
+
+
+:issue:`5034`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
