@@ -125,11 +125,14 @@ void check_ir(const char*                    mdparin,
 //! Returns the index of string \p s in \p indexGroups or exit with a verbose fatal error when not found
 int getGroupIndex(const std::string& s, gmx::ArrayRef<const IndexGroup> indexGroups);
 
+//! Do checks that are relevant when constraints are present
 void double_check(t_inputrec* ir, matrix box, bool bHasNormalConstraints, bool bHasAnyConstraints, WarningHandler* wi);
-/* Do more checks */
 
-void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, WarningHandler* wi);
-/* Do even more checks */
+//! Processes constant acceleration options
+void processConstantAcceleration(t_inputrec* ir, const gmx_mtop_t& sys);
+
+//! Do checks that can only be done when a complete topology is available
+void triple_check(const char* mdparin, const t_inputrec& ir, const gmx_mtop_t& sys, WarningHandler* wi);
 
 void get_ir(const char*     mdparin,
             const char*     mdparout,

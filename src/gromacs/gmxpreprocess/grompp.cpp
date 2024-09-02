@@ -2533,6 +2533,9 @@ int gmx_grompp(int argc, char* argv[])
     /* Init the temperature coupling state */
     init_gtc_state(&state, ir->opts.ngtc, 0, ir->opts.nhchainlength); /* need to add nnhpres here? */
 
+    /* With the atom masses available, we can process constant acceleration options */
+    processConstantAcceleration(ir, sys);
+
     /* After we are done with all checks on the state, we can add the flow profile */
     if (opts->deformInitFlow)
     {
@@ -2544,7 +2547,7 @@ int gmx_grompp(int argc, char* argv[])
         pr_symtab(debug, 0, "After index", &sys.symtab);
     }
 
-    triple_check(mdparin, ir, &sys, &wi);
+    triple_check(mdparin, *ir, sys, &wi);
     close_symtab(&sys.symtab);
     if (debug)
     {
