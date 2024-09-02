@@ -40,7 +40,7 @@ LABEL_REGEX=
 if [[ -n "$GMX_TEST_LABELS" ]] ; then
     LABEL_REGEX="--label-regex $GMX_TEST_LABELS"
 fi
-ctest -D $CTEST_RUN_MODE $LABEL_REGEX $EXTRA_FLAGS --output-on-failure | tee ctestLog.log || true
+ctest -D $CTEST_RUN_MODE $LABEL_REGEX $EXTRA_FLAGS --parallel $KUBERNETES_CPU_LIMIT --output-on-failure | tee ctestLog.log || true
 
 EXITCODE=$?
 
