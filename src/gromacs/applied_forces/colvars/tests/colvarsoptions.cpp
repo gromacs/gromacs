@@ -292,4 +292,19 @@ TEST_F(ColvarsOptionsTest, InternalsToKvtAndBack)
     deleteInputColvarsPreProcessor();
 }
 
+
+TEST_F(ColvarsOptionsTest, RetrieveEdrFilename)
+{
+    // Activate colvars
+    setFromMdpValues(ColvarsBuildInputMdpValues());
+
+    std::string refEdrFilename = "output/ener.edr";
+    colvarsOptions_.processEdrFilename(EdrOutputFilename{ refEdrFilename });
+    EXPECT_EQ("output/ener", colvarsOptions_.colvarsOutputPrefix());
+
+    refEdrFilename = "sim.part1.edr";
+    colvarsOptions_.processEdrFilename(EdrOutputFilename{ refEdrFilename });
+    EXPECT_EQ("sim.part1", colvarsOptions_.colvarsOutputPrefix());
+}
+
 } // namespace gmx

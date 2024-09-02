@@ -16,6 +16,13 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix Colvars output files always written to the working directory.
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Colvars output files are now written in the same folder as edr file.
+
+:issue:`5122`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
