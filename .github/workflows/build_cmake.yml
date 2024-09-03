@@ -35,7 +35,7 @@ jobs:
         - {
             name: "macOS 14 gcc with OpenCL", artifact: "macOS-gcc-OpenCL.7z",
             os: macos-14,
-            cc: "gcc-11", cxx: "g++-11",
+            cc: "gcc-12", cxx: "g++-12",
             gpu_var: "OpenCL",
             openmp_var: "On"
 
