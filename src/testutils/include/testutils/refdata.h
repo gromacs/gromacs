@@ -45,6 +45,7 @@
 #ifndef GMX_TESTUTILS_REFDATA_H
 #define GMX_TESTUTILS_REFDATA_H
 
+#include <filesystem>
 #include <iterator>
 #include <memory>
 #include <string>
@@ -211,6 +212,8 @@ public:
      * e.g. `.xml` and refers to a file that will be found in the
      * `refdata` subdirectory for the test case. */
     explicit TestReferenceData(std::string testNameOverride);
+    //! \copydoc TestReferenceData::TestReferenceData(std::string)
+    explicit TestReferenceData(std::filesystem::path testNameOverride);
     /*! \brief
      * Initializes the reference data in a specific mode.
      *

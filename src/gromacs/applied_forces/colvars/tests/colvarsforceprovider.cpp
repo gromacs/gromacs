@@ -234,7 +234,8 @@ TEST_F(ColvarsForceProviderTest, SimpleInputs)
 
 
     // Re-use the PreProcessorTest since the ForceProvider recalls colvars initilization and the input are identicals.
-    gmx::test::TestReferenceData    data("ColvarsPreProcessorTest_CheckValuesFourWaters.xml");
+    gmx::test::TestReferenceData data(
+            std::filesystem::path{ "ColvarsPreProcessorTest_CheckValuesFourWaters.xml" });
     gmx::test::TestReferenceChecker checker(data.rootChecker());
 
     // Check colvars & atoms values are correctly read

@@ -711,6 +711,11 @@ TestReferenceData::TestReferenceData(std::string testNameOverride) :
 {
 }
 
+TestReferenceData::TestReferenceData(std::filesystem::path testNameOverride) :
+    impl_(initReferenceDataInstance(std::move(testNameOverride)))
+{
+}
+
 TestReferenceData::TestReferenceData(ReferenceDataMode mode) :
     impl_(initReferenceDataInstanceForSelfTest(mode))
 {
