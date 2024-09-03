@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright 2013- The GROMACS Authors
+# Copyright 2024- The GROMACS Authors
 # and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
 # Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
 #
@@ -31,27 +31,15 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out https://www.gromacs.org.
 
-if (GMX_USE_TNG)
-    set(tng_sources tngio.cpp)
-endif()
-if (GMX_USE_HDF5)
-    set(h5md_test_sources h5md.cpp)
-endif()
-gmx_add_unit_test(FileIOTests fileio-test
-    CPP_SOURCE_FILES
-        checkpoint.cpp
-        confio.cpp
-        filemd5.cpp
-        filetypes.cpp
-        ${h5md_test_sources}
-        matio.cpp
-        mrcserializer.cpp
-        mrcdensitymap.cpp
-        mrcdensitymapheader.cpp
-        readinp.cpp
-        timecontrol.cpp
-        fileioxdrserializer.cpp
-        ${tng_sources}
-        xvgio.cpp
-    )
-target_link_libraries(fileio-test PRIVATE fileio legacy_api math)
+set(GMX_HDF5_REQUIRED_VERSION "1.10.1")
+
+macro(gmx_manage_hdf5)
+    # Find an external hdf5 library.
+    find_package(HDF5 ${GMX_HDF5_REQUIRED_VERSION} COMPONENTS C)
+    set(GMX_USE_HDF5 ${HDF5_FOUND} CACHE BOOL "Build GROMACS with HDF5 support (needed for handling files in H5MD format)")
+    if(GMX_USE_HDF5)
+        if(NOT HDF5_FOUND)
+            message(FATAL_ERROR "Cannot find HDF5 (minimum version required ${GMX_HDF5_REQUIRED_VERSION}). Disable HDF5 by setting the option GMX_USE_HDF5 to OFF.")
+        endif()
+    endif()
+endmacro()
