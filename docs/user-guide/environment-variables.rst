@@ -299,7 +299,7 @@ Performance and Run Control
         runtime permits this variable to be different for different ranks. Cannot be used
         in conjunction with ``mdrun -gputasks``. Has all the same requirements as ``mdrun -gputasks``.
 
-.. _HeFFTe docs: https://mkstoyanov.bitbucket.io/heffte/structheffte_1_1plan__options.html
+.. _HeFFTe docs: https://icl-utk-edu.github.io/heffte/structheffte_1_1plan__options.html
 
 ``GMX_HEFFTE_RESHAPE_ALGORITHM``
         Sets ``heffte::plan_options::reshape_algorithm`` to ``p2p`` (the default) or ``p2p_plined``, ``alltoallv``, or ``alltoall``.
