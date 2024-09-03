@@ -300,7 +300,8 @@ TEST_F(ColvarsOptionsTest, RetrieveEdrFilename)
 
     std::string refEdrFilename = "output/ener.edr";
     colvarsOptions_.processEdrFilename(EdrOutputFilename{ refEdrFilename });
-    EXPECT_EQ("output/ener", colvarsOptions_.colvarsOutputPrefix());
+    const std::string ref = std::filesystem::path("output/ener").make_preferred().string();
+    EXPECT_EQ(ref, colvarsOptions_.colvarsOutputPrefix());
 
     refEdrFilename = "sim.part1.edr";
     colvarsOptions_.processEdrFilename(EdrOutputFilename{ refEdrFilename });
