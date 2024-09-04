@@ -48,6 +48,7 @@
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/nbnxm/nbnxm_enums.h"
 #include "gromacs/nbnxm/pairlist.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/utility/fatalerror.h"
@@ -55,7 +56,10 @@
 namespace gmx
 {
 
-static constexpr int c_clSize = c_nbnxnGpuClusterSize;
+static constexpr auto refPairlistLayoutType = PairlistType::Hierarchical8x8x8;
+
+static constexpr int c_clSize = sc_gpuClusterSize(refPairlistLayoutType);
+
 
 void nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu*    nbl,
                           const nbnxn_atomdata_t*    nbat,
@@ -68,9 +72,10 @@ void nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu*    nbl,
                           real*                      Vc,
                           real*                      Vvdw)
 {
+
     real                fscal = NAN;
     real                vcoul = 0;
-    const nbnxn_excl_t* excl[c_nbnxnGpuClusterpairSplit];
+    const nbnxn_excl_t* excl[sc_gpuClusterPairSplit(refPairlistLayoutType)];
 
     if (nbl->na_ci != c_clSize)
     {
@@ -121,14 +126,15 @@ void nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu*    nbl,
         real       Vvdwtot       = 0;
 
         if (nbln.shift == c_centralShiftIndex
-            && nbl->cjPacked.list_[cjPackedBegin].cj[0] == sci * c_nbnxnGpuNumClusterPerSupercluster)
+            && nbl->cjPacked.list_[cjPackedBegin].cj[0]
+                       == sci * sc_gpuClusterPerSuperCluster(refPairlistLayoutType))
         {
             /* we have the diagonal:
              * add the charge self interaction energy term
              */
-            for (int im = 0; im < c_nbnxnGpuNumClusterPerSupercluster; im++)
+            for (int im = 0; im < sc_gpuClusterPerSuperCluster(refPairlistLayoutType); im++)
             {
-                const int ci = sci * c_nbnxnGpuNumClusterPerSupercluster + im;
+                const int ci = sci * sc_gpuClusterPerSuperCluster(refPairlistLayoutType) + im;
                 for (int ic = 0; ic < c_clSize; ic++)
                 {
                     const int ia = ci * c_clSize + ic;
@@ -149,25 +155,25 @@ void nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu*    nbl,
 
         for (int cjPacked = cjPackedBegin; (cjPacked < cjPackedEnd); cjPacked++)
         {
-            for (int splitIdx = 0; splitIdx < c_nbnxnGpuClusterpairSplit; splitIdx++)
+            for (int splitIdx = 0; splitIdx < sc_gpuClusterPairSplit(refPairlistLayoutType); splitIdx++)
             {
                 excl[splitIdx] = &nbl->excl[nbl->cjPacked.list_[cjPacked].imei[splitIdx].excl_ind];
             }
 
-            for (int jm = 0; jm < c_nbnxnGpuJgroupSize; jm++)
+            for (int jm = 0; jm < sc_gpuJgroupSize(refPairlistLayoutType); jm++)
             {
                 const int cj = nbl->cjPacked.list_[cjPacked].cj[jm];
 
-                for (int im = 0; im < c_nbnxnGpuNumClusterPerSupercluster; im++)
+                for (int im = 0; im < sc_gpuClusterPerSuperCluster(refPairlistLayoutType); im++)
                 {
                     /* We're only using the first imask,
                      * but here imei[1].imask is identical.
                      */
                     if ((nbl->cjPacked.list_[cjPacked].imei[0].imask
-                         >> (jm * c_nbnxnGpuNumClusterPerSupercluster + im))
+                         >> (jm * sc_gpuClusterPerSuperCluster(refPairlistLayoutType) + im))
                         & 1)
                     {
-                        const int ci = sci * c_nbnxnGpuNumClusterPerSupercluster + im;
+                        const int ci = sci * sc_gpuClusterPerSuperCluster(refPairlistLayoutType) + im;
 
                         bool within_rlist = false;
                         int  npair        = 0;
@@ -197,10 +203,10 @@ void nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu*    nbl,
                                 }
 
                                 constexpr int clusterPerSplit =
-                                        c_nbnxnGpuClusterSize / c_nbnxnGpuClusterpairSplit;
+                                        sc_gpuSplitJClusterSize(refPairlistLayoutType);
                                 const real int_bit = static_cast<real>(
                                         (excl[jc / clusterPerSplit]->pair[(jc & (clusterPerSplit - 1)) * c_clSize + ic]
-                                         >> (jm * c_nbnxnGpuNumClusterPerSupercluster + im))
+                                         >> (jm * sc_gpuClusterPerSuperCluster(refPairlistLayoutType) + im))
                                         & 1);
 
                                 int        js  = ja * nbat->xstride;
@@ -309,7 +315,7 @@ void nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu*    nbl,
                             /* Count in half work-units.
                              * In CUDA one work-unit is 2 warps.
                              */
-                            if ((ic + 1) % (c_clSize / c_nbnxnGpuClusterpairSplit) == 0)
+                            if ((ic + 1) % (c_clSize / sc_gpuClusterPairSplit(refPairlistLayoutType)) == 0)
                             {
                                 npair_tot += npair;
 

@@ -73,6 +73,7 @@
 #include "gromacs/utility/gmxassert.h"
 
 #include "nbnxm_cuda.h"
+#include "nbnxm_cuda_kernel_utils.cuh"
 #include "nbnxm_cuda_types.h"
 
 /***** The kernel declarations/definitions come here *****/
@@ -364,8 +365,7 @@ static inline nbnxn_cu_kfunc_ptr_t select_nbnxn_kernel(enum ElecType           e
                "The VdW type requested is not implemented in the CUDA kernels.");
 
     /* assert assumptions made by the kernels */
-    GMX_ASSERT(c_nbnxnGpuClusterSize * c_nbnxnGpuClusterSize / c_nbnxnGpuClusterpairSplit
-                       == deviceInfo->prop.warpSize,
+    GMX_ASSERT(c_clusterSize * c_clusterSize / c_clusterSplitSize == deviceInfo->prop.warpSize,
                "The CUDA kernels require the "
                "cluster_size_i*cluster_size_j/nbnxn_gpu_clusterpair_split to match the warp size "
                "of the architecture targeted.");
@@ -406,19 +406,19 @@ static inline int calc_shmem_required_nonbonded(const int               num_thre
     /* size of shmem (force-buffers/xq/atom type preloading) */
     /* NOTE: with the default kernel on sm3.0 we need shmem only for pre-loading */
     /* i-atom x+q in shared memory */
-    shmem = c_nbnxnGpuNumClusterPerSupercluster * c_clSize * sizeof(float4);
+    shmem = c_superClusterSize * c_clusterSize * sizeof(float4);
     /* cj in shared memory, for each warp separately */
-    shmem += num_threads_z * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize * sizeof(int);
+    shmem += num_threads_z * c_clusterSplitSize * c_jGroupSize * sizeof(int);
 
     if (nbp->vdwType == VdwType::CutCombGeom || nbp->vdwType == VdwType::CutCombLB)
     {
         /* i-atom LJ combination parameters in shared memory */
-        shmem += c_nbnxnGpuNumClusterPerSupercluster * c_clSize * sizeof(float2);
+        shmem += c_superClusterSize * c_clusterSize * sizeof(float2);
     }
     else
     {
         /* i-atom types in shared memory */
-        shmem += c_nbnxnGpuNumClusterPerSupercluster * c_clSize * sizeof(int);
+        shmem += c_superClusterSize * c_clusterSize * sizeof(int);
     }
     /* for reducing prunedPairListCount over all warps in the block, to be used in plist sorting */
     shmem += 1 * sizeof(int);
@@ -529,8 +529,8 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const In
 
 
     KernelLaunchConfig config;
-    config.blockSize[0] = c_clSize;
-    config.blockSize[1] = c_clSize;
+    config.blockSize[0] = c_clusterSize;
+    config.blockSize[1] = c_clusterSize;
     config.blockSize[2] = num_threads_z;
     config.gridSize[0]  = nblock;
     config.sharedMemorySize =
@@ -547,8 +547,8 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const In
                 config.blockSize[2],
                 config.gridSize[0],
                 config.gridSize[1],
-                plist->numSci * c_nbnxnGpuNumClusterPerSupercluster,
-                c_nbnxnGpuNumClusterPerSupercluster,
+                plist->numSci * c_superClusterSize,
+                c_superClusterSize,
                 plist->numAtomsPerCluster,
                 config.sharedMemorySize);
     }
@@ -589,9 +589,9 @@ static inline int calc_shmem_required_prune(const int num_threads_z)
     int shmem;
 
     /* i-atom x in shared memory */
-    shmem = c_nbnxnGpuNumClusterPerSupercluster * c_clSize * sizeof(float4);
+    shmem = c_superClusterSize * c_clusterSize * sizeof(float4);
     /* cj in shared memory, for each warp separately */
-    shmem += num_threads_z * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize * sizeof(int);
+    shmem += num_threads_z * c_clusterSplitSize * c_jGroupSize * sizeof(int);
 
     return shmem;
 }
@@ -663,8 +663,8 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
     int nblock        = calc_nb_kernel_nblock(numSciInPartMax, &nb->deviceContext_->deviceInfo());
 
     KernelLaunchConfig config;
-    config.blockSize[0]     = c_clSize;
-    config.blockSize[1]     = c_clSize;
+    config.blockSize[0]     = c_clusterSize;
+    config.blockSize[1]     = c_clusterSize;
     config.blockSize[2]     = num_threads_z;
     config.gridSize[0]      = nblock;
     config.sharedMemorySize = calc_shmem_required_prune(num_threads_z);
@@ -680,8 +680,8 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
                 config.blockSize[2],
                 config.gridSize[0],
                 config.gridSize[1],
-                numSciInPartMax * c_nbnxnGpuNumClusterPerSupercluster,
-                c_nbnxnGpuNumClusterPerSupercluster,
+                numSciInPartMax * c_superClusterSize,
+                c_superClusterSize,
                 plist->numAtomsPerCluster,
                 config.sharedMemorySize);
     }

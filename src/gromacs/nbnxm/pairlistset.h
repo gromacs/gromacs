@@ -104,7 +104,7 @@ public:
     {
         if (!gpuLists_.empty())
         {
-            return &gpuLists_[0];
+            return gpuLists_.data();
         }
         else
         {

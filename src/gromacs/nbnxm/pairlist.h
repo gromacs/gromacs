@@ -37,20 +37,14 @@
 
 #include "config.h"
 
-#include <cstddef>
-
 #include <algorithm>
 #include <iterator>
 #include <memory>
 #include <vector>
 
 #include "gromacs/gpu_utils/hostallocator.h"
-#include "gromacs/math/vectypes.h"
-#include "gromacs/mdtypes/locality.h"
-#include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/defaultinitializationallocator.h"
-#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
 
 #include "nbnxm_enums.h"
@@ -59,6 +53,8 @@ struct t_nblist;
 
 namespace gmx
 {
+//! Currently hard coded default GPU pairlist layout
+static constexpr auto sc_layoutType = PairlistType::Hierarchical8x8x8;
 
 struct NbnxmPairlistCpuWork;
 struct NbnxmPairlistGpuWork;
@@ -220,9 +216,9 @@ struct nbnxn_im_ei_t
 struct nbnxn_cj_packed_t
 {
     //! The packed j-clusters
-    int cj[c_nbnxnGpuJgroupSize];
+    int cj[sc_gpuJgroupSize(sc_layoutType)];
     //! The i-cluster mask data for 2 warps
-    nbnxn_im_ei_t imei[c_nbnxnGpuClusterpairSplit];
+    nbnxn_im_ei_t imei[sc_gpuClusterPairSplit(sc_layoutType)];
     //! Check if two instances are the same.
     bool operator==(const nbnxn_cj_packed_t& other) const
     {
@@ -244,12 +240,12 @@ public:
     //! Return the j-cluster index for \c index from the pack list
     int cj(const int index) const
     {
-        return list_[index / c_nbnxnGpuJgroupSize].cj[index & (c_nbnxnGpuJgroupSize - 1)];
+        return list_[index / sc_gpuJgroupSize(sc_layoutType)].cj[index & (sc_gpuJgroupSize(sc_layoutType) - 1)];
     }
     //! Return the i-cluster interaction mask for the first cluster in \c index
     unsigned int imask0(const int index) const
     {
-        return list_[index / c_nbnxnGpuJgroupSize].imei[0].imask;
+        return list_[index / sc_gpuJgroupSize(sc_layoutType)].imei[0].imask;
     }
     //! Return the size of the list (not the number of packed elements)
     Index size() const noexcept { return list_.size(); }
@@ -276,7 +272,7 @@ struct nbnxn_excl_t
     MSVC_DIAGNOSTIC_RESET
 
     //! Topology exclusion interaction bits per warp
-    unsigned int pair[c_nbnxnGpuExclSize];
+    unsigned int pair[sc_gpuExclSize(sc_layoutType)];
     //! Check if two instances are the same.
     bool operator==(const nbnxn_excl_t& other) const
     {

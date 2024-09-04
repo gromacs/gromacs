@@ -44,7 +44,6 @@
 #ifndef GMX_NBNXM_PAIRLISTWORK_H
 #define GMX_NBNXM_PAIRLISTWORK_H
 
-#include <memory>
 #include <vector>
 
 #include "gromacs/gpu_utils/hostallocator.h"
@@ -100,7 +99,7 @@ struct NbnxmPairlistGpuWork
 {
     struct ISuperClusterData
     {
-        ISuperClusterData();
+        ISuperClusterData(PairlistType layoutType);
 
         //! The bounding boxes, pbc shifted, for each cluster
         AlignedVector<BoundingBox> bb;
@@ -112,7 +111,7 @@ struct NbnxmPairlistGpuWork
         AlignedVector<real> xSimd;
     };
 
-    NbnxmPairlistGpuWork();
+    NbnxmPairlistGpuWork(PairlistType layoutType);
 
     //! Protect data from cache pollution between threads
     gmx_cache_protect_t cp0;

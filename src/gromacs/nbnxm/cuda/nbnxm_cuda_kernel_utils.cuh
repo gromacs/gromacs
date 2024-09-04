@@ -51,6 +51,7 @@
 #include "gromacs/gpu_utils/cuda_arch_utils.cuh"
 #include "gromacs/gpu_utils/cuda_kernel_utils.cuh"
 #include "gromacs/gpu_utils/vectype_ops.cuh"
+#include "gromacs/nbnxm/nbnxm_enums.h"
 
 #include "nbnxm_cuda_types.h"
 
@@ -62,9 +63,9 @@ namespace gmx
 
 /*! \brief Log of the i and j cluster size.
  *  change this together with c_clSize !*/
-static const int __device__ c_clSizeLog2 = 3;
+static const int __device__ c_clusterSizeLog2 = 3;
 /*! \brief Stride in the force accumulation buffer */
-static const int __device__ c_fbufStride = c_clSizeSq;
+static const int __device__ c_fbufStride = c_clusterSizeSq;
 
 /*! Convert LJ sigma,epsilon parameters to C6,C12. */
 static __forceinline__ __device__ void
@@ -444,7 +445,7 @@ reduce_force_j_generic(const float* f_buf, float3* fout, int tidxi, int tidxj, i
     if (tidxi < 3)
     {
         float f = 0.0F;
-        for (int j = tidxj * c_clSize; j < (tidxj + 1) * c_clSize; j++)
+        for (int j = tidxj * c_clusterSize; j < (tidxj + 1) * c_clusterSize; j++)
         {
             f += f_buf[c_fbufStride * tidxi + j];
         }
@@ -499,7 +500,7 @@ static __forceinline__ __device__ void reduce_force_i_generic(const float* f_buf
     if (tidxj < 3)
     {
         float f = 0.0F;
-        for (int j = tidxi; j < c_clSizeSq; j += c_clSize)
+        for (int j = tidxi; j < c_clusterSizeSq; j += c_clusterSize)
         {
             f += f_buf[tidxj * c_fbufStride + j];
         }
@@ -527,24 +528,24 @@ static __forceinline__ __device__ void reduce_force_i_pow2(volatile float* f_buf
     int   i, j;
     float f;
 
-    static_assert(c_clSize == 1 << c_clSizeLog2);
+    static_assert(c_clusterSize == 1 << c_clusterSizeLog2);
 
-    /* Reduce the initial c_clSize values for each i atom to half
-     * every step by using c_clSize * i threads.
+    /* Reduce the initial c_clusterSize values for each i atom to half
+     * every step by using c_clusterSize * i threads.
      * Can't just use i as loop variable because than nvcc refuses to unroll.
      */
-    i = c_clSize / 2;
+    i = c_clusterSize / 2;
 #    pragma unroll 5
-    for (j = c_clSizeLog2 - 1; j > 0; j--)
+    for (j = c_clusterSizeLog2 - 1; j > 0; j--)
     {
         if (tidxj < i)
         {
 
-            f_buf[tidxj * c_clSize + tidxi] += f_buf[(tidxj + i) * c_clSize + tidxi];
-            f_buf[c_fbufStride + tidxj * c_clSize + tidxi] +=
-                    f_buf[c_fbufStride + (tidxj + i) * c_clSize + tidxi];
-            f_buf[2 * c_fbufStride + tidxj * c_clSize + tidxi] +=
-                    f_buf[2 * c_fbufStride + (tidxj + i) * c_clSize + tidxi];
+            f_buf[tidxj * c_clusterSize + tidxi] += f_buf[(tidxj + i) * c_clusterSize + tidxi];
+            f_buf[c_fbufStride + tidxj * c_clusterSize + tidxi] +=
+                    f_buf[c_fbufStride + (tidxj + i) * c_clusterSize + tidxi];
+            f_buf[2 * c_fbufStride + tidxj * c_clusterSize + tidxi] +=
+                    f_buf[2 * c_fbufStride + (tidxj + i) * c_clusterSize + tidxi];
         }
         i >>= 1;
     }
@@ -553,7 +554,7 @@ static __forceinline__ __device__ void reduce_force_i_pow2(volatile float* f_buf
     if (tidxj < 3)
     {
         /* tidxj*c_fbufStride selects x, y or z */
-        f = f_buf[tidxj * c_fbufStride + tidxi] + f_buf[tidxj * c_fbufStride + i * c_clSize + tidxi];
+        f = f_buf[tidxj * c_fbufStride + tidxi] + f_buf[tidxj * c_fbufStride + i * c_clusterSize + tidxi];
 
         atomicAdd(&(fout[aidx].x) + tidxj, f);
 
@@ -570,7 +571,7 @@ static __forceinline__ __device__ void reduce_force_i_pow2(volatile float* f_buf
 static __forceinline__ __device__ void
 reduce_force_i(float* f_buf, float3* f, float* fshift_buf, bool bCalcFshift, int tidxi, int tidxj, int ai)
 {
-    if ((c_clSize & (c_clSize - 1)))
+    if ((c_clusterSize & (c_clusterSize - 1)))
     {
         reduce_force_i_generic(f_buf, f, fshift_buf, bCalcFshift, tidxi, tidxj, ai);
     }
@@ -591,17 +592,17 @@ static __forceinline__ __device__ void reduce_force_i_warp_shfl(float3          
                                                                 int                aidx,
                                                                 const unsigned int activemask)
 {
-    fin.x += __shfl_down_sync(activemask, fin.x, c_clSize);
-    fin.y += __shfl_up_sync(activemask, fin.y, c_clSize);
-    fin.z += __shfl_down_sync(activemask, fin.z, c_clSize);
+    fin.x += __shfl_down_sync(activemask, fin.x, c_clusterSize);
+    fin.y += __shfl_up_sync(activemask, fin.y, c_clusterSize);
+    fin.z += __shfl_down_sync(activemask, fin.z, c_clusterSize);
 
     if (tidxj & 1)
     {
         fin.x = fin.y;
     }
 
-    fin.x += __shfl_down_sync(activemask, fin.x, 2 * c_clSize);
-    fin.z += __shfl_up_sync(activemask, fin.z, 2 * c_clSize);
+    fin.x += __shfl_down_sync(activemask, fin.x, 2 * c_clusterSize);
+    fin.z += __shfl_up_sync(activemask, fin.z, 2 * c_clusterSize);
 
     if (tidxj & 2)
     {

@@ -123,11 +123,11 @@ HostBuffers prepareHostBuffers(int dataSize)
 
     for (auto& value : hostbuffers.h_cjPacked)
     {
-        for (int index = 0; index < c_nbnxnGpuClusterpairSplit; index++)
+        for (int index = 0; index < sc_gpuClusterPairSplit(sc_layoutType); index++)
         {
             value.imei[index].excl_ind = counter++;
         }
-        for (int index = 0; index < c_nbnxnGpuJgroupSize; index++)
+        for (int index = 0; index < sc_gpuJgroupSize(sc_layoutType); index++)
         {
             value.cj[index] = counter++;
         }
@@ -135,7 +135,7 @@ HostBuffers prepareHostBuffers(int dataSize)
 
     for (auto& value : hostbuffers.h_excl)
     {
-        for (int index = 0; index < c_nbnxnGpuExclSize; index++)
+        for (int index = 0; index < sc_gpuExclSize(sc_layoutType); index++)
         {
             value.pair[index] = counter++;
         }

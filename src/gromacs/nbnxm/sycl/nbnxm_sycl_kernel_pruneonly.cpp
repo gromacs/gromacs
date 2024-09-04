@@ -52,17 +52,17 @@
 using sycl::access::fence_space;
 using mode = sycl::access_mode;
 
-//! \brief Class name for NBNXM prune-only kernel
-template<bool haveFreshList>
-class NbnxmKernelPruneOnly;
-
 namespace gmx
 {
+
+//! \brief Class name for NBNXM prune-only kernel
+template<bool haveFreshList, PairlistType>
+class NbnxmKernelPruneOnly;
 
 /*! \brief Prune-only kernel for NBNXM.
  *
  */
-template<bool haveFreshList>
+template<bool haveFreshList, PairlistType layoutType>
 auto nbnxmKernelPruneOnly(sycl::handler& cgh,
                           const int      numSci,
                           const int      numParts,
@@ -77,10 +77,14 @@ auto nbnxmKernelPruneOnly(sycl::handler& cgh,
                           const float rlistOuterSq,
                           const float rlistInnerSq)
 {
+    constexpr int          c_clSize               = sc_gpuClusterSize(layoutType);
+    constexpr int          c_superClusterSize     = sc_gpuClusterPerSuperCluster(layoutType);
+    constexpr int          c_clusterPairSplit     = sc_gpuClusterPairSplit(layoutType);
+    constexpr unsigned int superClInteractionMask = sc_superClInteractionMask(layoutType);
+
     /* shmem buffer for i x+q pre-loading */
-    sycl::local_accessor<Float4, 1> sm_xq(
-            sycl::range<1>(c_nbnxnGpuNumClusterPerSupercluster * c_clSize), cgh);
-    auto sm_prunedPairCount = [&]() {
+    sycl::local_accessor<Float4, 1> sm_xq(sycl::range<1>(c_superClusterSize * c_clSize), cgh);
+    auto                            sm_prunedPairCount = [&]() {
         if constexpr (haveFreshList && nbnxmSortListsOnGpu())
         {
             return sycl::local_accessor<int, 1>(sycl::range<1>(1), cgh);
@@ -91,7 +95,7 @@ auto nbnxmKernelPruneOnly(sycl::handler& cgh,
         }
     }();
 
-    constexpr int warpSize = c_clSize * c_splitClSize;
+    constexpr int warpSize = sc_gpuParallelExecutionWidth(layoutType);
 
     /* Somewhat weird behavior inherited from OpenCL.
      * With clSize == 4, we use sub_group size of 16 (not enforced in OpenCL implementation, but chosen
@@ -140,13 +144,13 @@ auto nbnxmKernelPruneOnly(sycl::handler& cgh,
 
         // We may need only a subset of threads active for preloading i-atoms
         // depending on the super-cluster and cluster / thread-block size.
-        constexpr bool c_loadUsingAllXYThreads = (c_clSize == c_nbnxnGpuNumClusterPerSupercluster);
-        if (tidxz == 0 && (c_loadUsingAllXYThreads || tidxj < c_nbnxnGpuNumClusterPerSupercluster))
+        constexpr bool c_loadUsingAllXYThreads = (c_clSize == c_superClusterSize);
+        if (tidxz == 0 && (c_loadUsingAllXYThreads || tidxj < c_superClusterSize))
         {
-            for (int i = 0; i < c_nbnxnGpuNumClusterPerSupercluster; i += c_clSize)
+            for (int i = 0; i < c_superClusterSize; i += c_clSize)
             {
                 /* Pre-load i-atom x and q into shared memory */
-                const int ci = sci * c_nbnxnGpuNumClusterPerSupercluster + tidxj + i;
+                const int ci = sci * c_superClusterSize + tidxj + i;
                 const int ai = ci * c_clSize + tidxi;
 
                 /* We don't need q, but using float4 in shmem avoids bank conflicts.
@@ -189,7 +193,7 @@ auto nbnxmKernelPruneOnly(sycl::handler& cgh,
             {
                 /* Read the mask from the "warp-pruned" by rlistOuter mask array */
                 imaskFull = UNIFORM_LOAD_CLUSTER_PAIR_DATA(
-                        gm_plistIMask[jPacked * c_nbnxnGpuClusterpairSplit + widx]);
+                        gm_plistIMask[jPacked * c_clusterPairSplit + widx]);
                 /* Read the old rolling pruned mask, use as a base for new */
                 imaskNew = UNIFORM_LOAD_CLUSTER_PAIR_DATA(gm_plistCJPacked[jPacked].imei[widx].imask);
                 /* We only need to check pairs with different mask */
@@ -198,11 +202,11 @@ auto nbnxmKernelPruneOnly(sycl::handler& cgh,
 
             if (imaskCheck)
             {
-                for (int jm = 0; jm < c_nbnxnGpuJgroupSize; jm++)
+                for (int jm = 0; jm < sc_gpuJgroupSize(layoutType); jm++)
                 {
-                    if (imaskCheck & (superClInteractionMask << (jm * c_nbnxnGpuNumClusterPerSupercluster)))
+                    if (imaskCheck & (superClInteractionMask << (jm * c_superClusterSize)))
                     {
-                        unsigned mask_ji = (1U << (jm * c_nbnxnGpuNumClusterPerSupercluster));
+                        unsigned mask_ji = (1U << (jm * c_superClusterSize));
                         // SYCL-TODO: Reevaluate prefetching methods
                         const int cj = gm_plistCJPacked[jPacked].cj[jm];
                         const int aj = cj * c_clSize + tidxj;
@@ -211,7 +215,7 @@ auto nbnxmKernelPruneOnly(sycl::handler& cgh,
                         const Float4 tmp = gm_xq[aj];
                         const Float3 xj(tmp[0], tmp[1], tmp[2]);
 
-                        for (int i = 0; i < c_nbnxnGpuNumClusterPerSupercluster; i++)
+                        for (int i = 0; i < c_superClusterSize; i++)
                         {
                             if (imaskCheck & mask_ji)
                             {
@@ -245,7 +249,7 @@ auto nbnxmKernelPruneOnly(sycl::handler& cgh,
                 if constexpr (haveFreshList)
                 {
                     /* copy the list pruned to rlistOuter to a separate buffer */
-                    gm_plistIMask[jPacked * c_nbnxnGpuClusterpairSplit + widx] = imaskFull;
+                    gm_plistIMask[jPacked * sc_gpuClusterPairSplit(layoutType) + widx] = imaskFull;
                     if constexpr (nbnxmSortListsOnGpu())
                     {
                         /* add to neighbour count, to be used in bucket sci sort */
@@ -282,11 +286,11 @@ auto nbnxmKernelPruneOnly(sycl::handler& cgh,
 }
 
 //! \brief Leap Frog SYCL prune-only kernel launch code.
-template<bool haveFreshList, class... Args>
+template<bool haveFreshList, PairlistType layoutType, class... Args>
 void launchNbnxmKernelPruneOnly(const DeviceStream& deviceStream, const int numSciInPartMax, Args&&... args)
 {
-    using kernelNameType = NbnxmKernelPruneOnly<haveFreshList>;
-
+    using kernelNameType   = NbnxmKernelPruneOnly<haveFreshList, layoutType>;
+    constexpr int c_clSize = sc_gpuClusterSize(layoutType);
     /* Kernel launch config:
      * - The thread block dimensions match the size of i-clusters, j-clusters,
      *   and j-cluster concurrency, in x, y, and z, respectively.
@@ -300,18 +304,18 @@ void launchNbnxmKernelPruneOnly(const DeviceStream& deviceStream, const int numS
     sycl::queue q = deviceStream.stream();
 
     q.submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
-        auto kernel = nbnxmKernelPruneOnly<haveFreshList>(cgh, std::forward<Args>(args)...);
+        auto kernel = nbnxmKernelPruneOnly<haveFreshList, layoutType>(cgh, std::forward<Args>(args)...);
         cgh.parallel_for<kernelNameType>(range, kernel);
     });
 }
 
 //! \brief Select templated kernel and launch it.
-template<class... Args>
+template<PairlistType layoutType, class... Args>
 void chooseAndLaunchNbnxmKernelPruneOnly(bool haveFreshList, Args&&... args)
 {
     gmx::dispatchTemplatedFunction(
             [&](auto haveFreshList_) {
-                launchNbnxmKernelPruneOnly<haveFreshList_>(std::forward<Args>(args)...);
+                launchNbnxmKernelPruneOnly<haveFreshList_, layoutType>(std::forward<Args>(args)...);
             },
             haveFreshList);
 }
@@ -324,23 +328,23 @@ void launchNbnxmKernelPruneOnly(NbnxmGpu* nb, const InteractionLocality iloc, co
     const bool          haveFreshList = plist->haveFreshList;
     const DeviceStream& deviceStream  = *nb->deviceStreams[iloc];
 
-    chooseAndLaunchNbnxmKernelPruneOnly(haveFreshList,
-                                        deviceStream,
-                                        numSciInPartMax,
-                                        plist->numSci,
-                                        numParts,
-                                        adat->xq.get_pointer(),
-                                        adat->shiftVec.get_pointer(),
-                                        plist->cjPacked.get_pointer(),
-                                        (haveFreshList || !nbnxmSortListsOnGpu())
-                                                ? plist->sci.get_pointer()
-                                                : plist->sorting.sciSorted.get_pointer(),
-                                        plist->imask.get_pointer(),
-                                        plist->d_rollingPruningPart.get_pointer(),
-                                        plist->sorting.sciHistogram.get_pointer(),
-                                        plist->sorting.sciCount.get_pointer(),
-                                        nbp->rlistOuter_sq,
-                                        nbp->rlistInner_sq);
+    chooseAndLaunchNbnxmKernelPruneOnly<sc_layoutType>(
+            haveFreshList,
+            deviceStream,
+            numSciInPartMax,
+            plist->numSci,
+            numParts,
+            adat->xq.get_pointer(),
+            adat->shiftVec.get_pointer(),
+            plist->cjPacked.get_pointer(),
+            (haveFreshList || !nbnxmSortListsOnGpu()) ? plist->sci.get_pointer()
+                                                      : plist->sorting.sciSorted.get_pointer(),
+            plist->imask.get_pointer(),
+            plist->d_rollingPruningPart.get_pointer(),
+            plist->sorting.sciHistogram.get_pointer(),
+            plist->sorting.sciCount.get_pointer(),
+            nbp->rlistOuter_sq,
+            nbp->rlistInner_sq);
 }
 
 } // namespace gmx

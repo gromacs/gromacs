@@ -46,6 +46,8 @@
 
 #include "config.h"
 
+#include "gromacs/nbnxm/nbnxm_enums.h"
+
 #if GMX_GPU_CUDA
 #    include "cuda/nbnxm_cuda_types.h"
 #endif
@@ -642,7 +644,7 @@ void gpu_init_pairlist(NbnxmGpu* nb, const NbnxnPairlistGpu* h_plist, const Inte
                        bDoTime ? iTimers.pl_h2d.fetchNextEvent() : nullptr);
 
     reallocateDeviceBuffer(&d_plist->imask,
-                           h_plist->cjPacked.size() * c_nbnxnGpuClusterpairSplit,
+                           h_plist->cjPacked.size() * sc_gpuClusterPairSplit(sc_layoutType),
                            &d_plist->numIMask,
                            &d_plist->iMaskAllocationSize,
                            deviceContext);

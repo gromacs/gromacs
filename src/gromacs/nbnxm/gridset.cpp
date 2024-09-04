@@ -131,7 +131,7 @@ void GridSet::setLocalAtomOrder()
     for (int cxy = 0; cxy < grid.numColumns(); cxy++)
     {
         const int numAtoms  = grid.numAtomsInColumn(cxy);
-        int       cellIndex = grid.firstCellInColumn(cxy) * grid.geometry().numAtomsPerCell;
+        int       cellIndex = grid.firstCellInColumn(cxy) * grid.geometry().numAtomsPerCell_;
         for (int i = 0; i < numAtoms; i++)
         {
             gridSetData_.atomIndices[cellIndex] = atomIndex;
@@ -151,7 +151,7 @@ static int getGridOffset(ArrayRef<const Grid> grids, int gridIndex)
     else
     {
         const Grid& previousGrid = grids[gridIndex - 1];
-        return previousGrid.atomIndexEnd() / previousGrid.geometry().numAtomsPerCell;
+        return previousGrid.atomIndexEnd() / previousGrid.geometry().numAtomsPerCell_;
     }
 }
 

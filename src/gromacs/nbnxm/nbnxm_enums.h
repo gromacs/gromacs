@@ -140,9 +140,14 @@ enum class PairlistType : int
     Simple4x2,
     Simple4x4,
     Simple4x8,
-    HierarchicalNxN,
+    Hierarchical8x8x8,
     Count
 };
+
+static constexpr bool isGpuSpecificPairlist(const PairlistType pairlistType)
+{
+    return pairlistType == PairlistType::Hierarchical8x8x8;
+}
 
 //! \brief Kinds of electrostatic treatments in SIMD Verlet kernels
 enum class CoulombKernelType : int
@@ -154,6 +159,9 @@ enum class CoulombKernelType : int
     EwaldTwin,
     Count
 };
+
+namespace detail
+{
 
 //! The i- and j-cluster size for GPU lists, 8 atoms for CUDA, set at configure time for OpenCL and SYCL
 #if GMX_GPU_OPENCL || GMX_GPU_SYCL
@@ -186,25 +194,107 @@ static constexpr int c_nbnxnGpuClusterpairSplit = 1;
 static constexpr int c_nbnxnGpuClusterpairSplit = 2;
 #endif
 
-//! The fixed size of the exclusion mask array for a half GPU cluster pair
-static constexpr int c_nbnxnGpuExclSize =
-        c_nbnxnGpuClusterSize * c_nbnxnGpuClusterSize / c_nbnxnGpuClusterpairSplit;
+} // namespace detail
 
-//! The number of clusters in a pair-search grid cell for GPU lists
-static constexpr int c_gpuNumClusterPerCell =
-        c_gpuNumClusterPerCellZ * c_gpuNumClusterPerCellY * c_gpuNumClusterPerCellX;
+//! The NBNxM GPU i-cluster size in atoms for the given NBNxM GPU kernel layout
+static constexpr int sc_gpuClusterSize(const PairlistType pairlistType)
+{
+    // for now we return only the default type here and in the other places
+    switch (pairlistType)
+    {
+        default: return detail::c_nbnxnGpuClusterSize;
+    }
+}
 
-/*! \brief The number of clusters in a super-cluster, used for GPU
+//! The number of super clusters in the X dimension.
+static constexpr int sc_gpuNumClusterPerCellX(const PairlistType pairlistType)
+{
+    switch (pairlistType)
+    {
+        default: return detail::c_gpuNumClusterPerCellX;
+    }
+}
+
+//! The number of super clusters in the X dimension.
+static constexpr int sc_gpuNumClusterPerCellY(const PairlistType pairlistType)
+{
+    switch (pairlistType)
+    {
+        default: return detail::c_gpuNumClusterPerCellY;
+    }
+}
+
+//! The number of super clusters in the X dimension.
+static constexpr int sc_gpuNumClusterPerCellZ(const PairlistType pairlistType)
+{
+    switch (pairlistType)
+    {
+        default: return detail::c_gpuNumClusterPerCellZ;
+    }
+}
+
+//! The NBNxM GPU super cluster size according to the kernel layout.
+static constexpr int sc_gpuClusterPerSuperCluster(const PairlistType pairlistType)
+{
+    return sc_gpuNumClusterPerCellX(pairlistType) * sc_gpuNumClusterPerCellY(pairlistType)
+           * sc_gpuNumClusterPerCellZ(pairlistType);
+}
+
+//! The NBNxM GPU super cluster size according to the kernel layout.
+static constexpr int sc_gpuNumClusterPerCell(const PairlistType pairlistType)
+{
+    return sc_gpuNumClusterPerCellZ(pairlistType) * sc_gpuNumClusterPerCellY(pairlistType)
+           * sc_gpuNumClusterPerCellX(pairlistType);
+}
+
+/*! \brief The number of sub-parts used for data storage for a GPU cluster pair
  *
- * Configured via GMX_GPU_NB_NUM_CLUSTER_PER_CELL_[XYZ] CMake options.
- * Typically 8 (2*2*2), but can be 4 (1*2*2) when targeting Intel Ponte Vecchio. */
-constexpr int c_nbnxnGpuNumClusterPerSupercluster =
-        c_gpuNumClusterPerCellX * c_gpuNumClusterPerCellY * c_gpuNumClusterPerCellZ;
+ * In CUDA the number of threads in a warp is 32 and we have cluster pairs
+ * of 8*8=64 atoms, so it's convenient to store data for cluster pair halves,
+ * i.e. split in 2.
+ *
+ * On architectures with 64-wide execution however it is better to avoid splitting
+ * (e.g. AMD GCN, CDNA and later).
+ */
+static constexpr int sc_gpuClusterPairSplit(const PairlistType pairlistType)
+{
+    switch (pairlistType)
+    {
+        default: return detail::c_nbnxnGpuClusterpairSplit;
+    }
+}
+
+static constexpr bool sc_gpuIsSplitPairList(const PairlistType pairlistType)
+{
+    return sc_gpuClusterPairSplit(pairlistType) != 1;
+}
+
+/*! \brief The size of the J clusters on the GPU, after taking pair splitting into account.
+ */
+static constexpr int sc_gpuSplitJClusterSize(const PairlistType pairlistType)
+{
+    return sc_gpuClusterSize(pairlistType) / sc_gpuClusterPairSplit(pairlistType);
+}
 
 /*! \brief With GPU kernels we group cluster pairs in 4 to optimize memory usage
  * of integers containing 32 bits.
  */
-constexpr int c_nbnxnGpuJgroupSize = (32 / c_nbnxnGpuNumClusterPerSupercluster);
+constexpr int sc_gpuJgroupSize(const PairlistType pairlistType)
+{
+    return 32 / sc_gpuClusterPerSuperCluster(pairlistType);
+}
+
+//! Parallel execution width corresponding to the current kernel layout.
+static constexpr int sc_gpuParallelExecutionWidth(const PairlistType pairlistType)
+{
+    return sc_gpuClusterSize(pairlistType) * sc_gpuSplitJClusterSize(pairlistType);
+}
+
+//! The fixed size of the exclusion mask array for a half GPU cluster pair
+static constexpr int sc_gpuExclSize(const PairlistType pairlistType)
+{
+    return sc_gpuParallelExecutionWidth(pairlistType);
+}
 
 } // namespace gmx
 

@@ -38,11 +38,9 @@
 
 #include <cmath>
 
-#include "gromacs/nbnxm/nbnxm.h"
-#include "gromacs/utility/fatalerror.h"
+#include "gromacs/nbnxm/nbnxm_enums.h"
 #include "gromacs/utility/real.h"
 
-#include "pairlist.h"
 
 namespace gmx
 {
@@ -61,9 +59,9 @@ real nbnxmPairlistVolumeRadiusIncrease(const bool useGpu, const real atomDensity
     int jClusterSize;
     if (useGpu)
     {
-        iClusterSize = c_nbnxnGpuClusterSize;
+        iClusterSize = sc_gpuClusterSize(PairlistType::Hierarchical8x8x8);
         // The most common value is 4 (8 atoms split in 2 halves)
-        jClusterSize = 4;
+        jClusterSize = sc_gpuSplitJClusterSize(PairlistType::Hierarchical8x8x8);
     }
     else
     {

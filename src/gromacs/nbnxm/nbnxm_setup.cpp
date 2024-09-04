@@ -266,6 +266,7 @@ const char* nbnxmKernelTypeToName(const NbnxmKernelType kernelType)
 static NbnxmKernelSetup pick_nbnxn_kernel(const gmx::MDLogger&     mdlog,
                                           gmx_bool                 use_simd_kernels,
                                           const gmx_hw_info_t&     hardwareInfo,
+                                          const PairlistType       gpuPairlistType,
                                           const NonbondedResource& nonbondedResource,
                                           const t_inputrec&        inputrec)
 {
@@ -302,6 +303,21 @@ static NbnxmKernelSetup pick_nbnxn_kernel(const gmx::MDLogger&     mdlog,
                                  nbnxmKernelTypeToName(kernelSetup.kernelType),
                                  sc_iClusterSize(kernelSetup.kernelType),
                                  sc_jClusterSize(kernelSetup.kernelType));
+    if (nonbondedResource == NonbondedResource::Gpu || nonbondedResource == NonbondedResource::EmulateGpu)
+    {
+        const std::string gpuPairlistSplitMessage = sc_gpuIsSplitPairList(gpuPairlistType)
+                                                            ? "with split GPU pairlist"
+                                                            : "with unified GPU pairlist";
+
+        GMX_LOG(mdlog.info)
+                .asParagraph()
+                .appendTextFormatted("NBNxM GPU setup: super-cluster %dx%dx%d / cluster %d, %s",
+                                     sc_gpuNumClusterPerCellX(gpuPairlistType),
+                                     sc_gpuNumClusterPerCellY(gpuPairlistType),
+                                     sc_gpuNumClusterPerCellZ(gpuPairlistType),
+                                     sc_gpuClusterSize(gpuPairlistType),
+                                     gpuPairlistSplitMessage.c_str());
+    }
 
     if (NbnxmKernelType::Cpu4x4_PlainC == kernelSetup.kernelType
         || NbnxmKernelType::Cpu8x8x8_PlainC == kernelSetup.kernelType)
@@ -440,15 +456,19 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
         nonbondedResource = NonbondedResource::Cpu;
     }
 
+    // This will later be obtained from the device information to get the optimal layout for the
+    // device. For now we just use the one layout we have.
+    const auto gpuPairlistLayout = sc_layoutType;
+
     NbnxmKernelSetup kernelSetup = pick_nbnxn_kernel(
-            mdlog, forcerec.use_simd_kernels, hardwareInfo, nonbondedResource, inputrec);
+            mdlog, forcerec.use_simd_kernels, hardwareInfo, gpuPairlistLayout, nonbondedResource, inputrec);
 
     const bool haveMultipleDomains = havePPDomainDecomposition(commrec);
 
     bool bFEP_NonBonded = (forcerec.efep != FreeEnergyPerturbationType::No)
                           && haveFepPerturbedNBInteractions(mtop);
     PairlistParams pairlistParams(
-            kernelSetup.kernelType, bFEP_NonBonded, inputrec.rlist, haveMultipleDomains);
+            kernelSetup.kernelType, gpuPairlistLayout, bFEP_NonBonded, inputrec.rlist, haveMultipleDomains);
 
     const real effectiveAtomDensity = computeEffectiveAtomDensity(
             coordinates, box, std::max(inputrec.rcoulomb, inputrec.rvdw), commrec->mpi_comm_mygroup);

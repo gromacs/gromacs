@@ -44,7 +44,8 @@
 
 #include "pairlistparams.h"
 
-#include "gromacs/nbnxm/nbnxm.h"
+#include <optional>
+
 #include "gromacs/utility/gmxassert.h"
 
 #include "nbnxm_geometry.h"
@@ -52,10 +53,11 @@
 namespace gmx
 {
 
-PairlistParams::PairlistParams(const NbnxmKernelType kernelType,
-                               const bool            haveFep,
-                               const real            rlist,
-                               const bool            haveMultipleDomains) :
+PairlistParams::PairlistParams(const NbnxmKernelType             kernelType,
+                               const std::optional<PairlistType> gpuPairlistType,
+                               const bool                        haveFep,
+                               const real                        rlist,
+                               const bool                        haveMultipleDomains) :
     haveFep_(haveFep),
     rlistOuter(rlist),
     rlistInner(rlist),
@@ -68,7 +70,9 @@ PairlistParams::PairlistParams(const NbnxmKernelType kernelType,
 {
     if (!kernelTypeUsesSimplePairlist(kernelType))
     {
-        pairlistType = PairlistType::HierarchicalNxN;
+        GMX_RELEASE_ASSERT(gpuPairlistType.has_value(),
+                           "Need to have a valid GPU pairlist type at this point");
+        pairlistType = gpuPairlistType.value();
     }
     else
     {

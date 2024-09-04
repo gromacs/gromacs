@@ -211,7 +211,7 @@ std::unique_ptr<nonbonded_verlet_t> setupNbnxmForBenchInstance(const KernelOptio
             (options.useGpu ? PinningPolicy::PinnedIfSupported : PinningPolicy::CannotBePinned);
     const int numThreads = options.numThreads;
 
-    PairlistParams pairlistParams(options.kernelSetup.kernelType, false, options.pairlistCutoff, false);
+    PairlistParams pairlistParams(options.kernelSetup.kernelType, {}, false, options.pairlistCutoff, false);
 
     GridSet gridSet(
             PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false, numThreads, pinPolicy);

@@ -50,7 +50,7 @@
 namespace gmx
 {
 
-static int getNbnxmSubGroupSize(const DeviceInformation& deviceInfo)
+static int getNbnxmSubGroupSize(const DeviceInformation& deviceInfo, PairlistType layoutType)
 {
     if (deviceInfo.supportedSubGroupSizes.size() == 1)
     {
@@ -63,8 +63,7 @@ static int getNbnxmSubGroupSize(const DeviceInformation& deviceInfo)
             /* For Intel, choose 8 for 4x4 clusters, and 32 for 8x8 clusters.
              * The optimal one depends on the hardware, but we cannot choose c_nbnxnGpuClusterSize
              * at runtime anyway yet. */
-            case DeviceVendor::Intel:
-                return c_nbnxnGpuClusterSize * c_nbnxnGpuClusterSize / c_nbnxnGpuClusterpairSplit;
+            case DeviceVendor::Intel: return sc_gpuParallelExecutionWidth(layoutType);
             default:
                 GMX_RELEASE_ASSERT(false, "Flexible sub-groups only supported for Intel GPUs");
                 return 0;
@@ -116,7 +115,7 @@ void launchNbnxmKernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const In
 
 void launchNbnxmKernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const InteractionLocality iloc, bool doPrune)
 {
-    const int subGroupSize = getNbnxmSubGroupSize(nb->deviceContext_->deviceInfo());
+    const int subGroupSize = getNbnxmSubGroupSize(nb->deviceContext_->deviceInfo(), sc_layoutType);
     switch (subGroupSize)
     {
         // Ensure any changes are in sync with device_management_sycl.cpp, nbnxm_sycl_kernel_body.h, and the #if above

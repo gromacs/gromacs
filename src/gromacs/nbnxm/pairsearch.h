@@ -57,6 +57,7 @@
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/nbnxm/atomdata.h"
+#include "gromacs/nbnxm/nbnxm_enums.h"
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/bitmask.h"
@@ -218,7 +219,7 @@ public:
      * \param[in] doTestParticleInsertion  Whether test-particle insertion is active
      * \param[in] numDDCells               The number of domain decomposition cells per dimension, without DD nullptr should be passed
      * \param[in] zones                    The domain decomposition zone setup, without DD nullptr should be passed
-     * \param[in] pairlistType             The type of tte pair list
+     * \param[in] pairlistType             The type of the pair list
      * \param[in] haveFep                  Tells whether non-bonded interactions are perturbed
      * \param[in] maxNumThreads            The maximum number of threads used in the search
      * \param[in] pinningPolicy            Sets the pinning policy for all buffers used on the GPU

@@ -121,15 +121,17 @@ public:
         Geometry(PairlistType pairlistType);
 
         //! Is this grid simple (CPU) or hierarchical (GPU)
-        bool isSimple;
+        bool isSimple_;
         //! Number of atoms per cluster
-        int numAtomsICluster;
+        int numAtomsICluster_;
         //! Number of atoms for list j-clusters
-        int numAtomsJCluster;
+        int numAtomsJCluster_;
         //! Number of atoms per cell
-        int numAtomsPerCell;
+        int numAtomsPerCell_;
         //! 2log of na_c
-        int numAtomsICluster2Log;
+        int numAtomsICluster2Log_;
+        //! What type of pairlist is in use.
+        PairlistType pairlistType_;
     };
 
     //! The physical dimensions of a grid \internal
@@ -192,7 +194,7 @@ public:
     //! Returns the index of the first atom in the column
     int firstAtomInColumn(int columnIndex) const
     {
-        return (cellOffset_ + cxy_ind_[columnIndex]) * geometry_.numAtomsPerCell;
+        return (cellOffset_ + cxy_ind_[columnIndex]) * geometry_.numAtomsPerCell_;
     }
 
     //! Returns the number of real atoms in the column
@@ -208,16 +210,16 @@ public:
     ArrayRef<const int> cxy_ind() const { return cxy_ind_; }
 
     //! Returns the number of real atoms in the column
-    int numAtomsPerCell() const { return geometry_.numAtomsPerCell; }
+    int numAtomsPerCell() const { return geometry_.numAtomsPerCell_; }
 
     //! Returns the number of atoms in the column including padding
     int paddedNumAtomsInColumn(int columnIndex) const
     {
-        return numCellsInColumn(columnIndex) * geometry_.numAtomsPerCell;
+        return numCellsInColumn(columnIndex) * geometry_.numAtomsPerCell_;
     }
 
     //! Returns the end of the atom index range on the grid, including padding
-    int atomIndexEnd() const { return (cellOffset_ + numCellsTotal_) * geometry_.numAtomsPerCell; }
+    int atomIndexEnd() const { return (cellOffset_ + numCellsTotal_) * geometry_.numAtomsPerCell_; }
 
     //! Returns whether any atom in the cluster is perturbed
     bool clusterIsPerturbed(int clusterIndex) const { return fep_[clusterIndex] != 0U; }
@@ -250,12 +252,15 @@ public:
     ArrayRef<const int> numClustersPerCell() const { return numClusters_; }
 
     //! Returns the cluster index for an atom
-    int atomToCluster(int atomIndex) const { return (atomIndex >> geometry_.numAtomsICluster2Log); }
+    int atomToCluster(int atomIndex) const
+    {
+        return (atomIndex >> geometry_.numAtomsICluster2Log_);
+    }
 
     //! Returns the total number of clusters on the grid
     int numClusters() const
     {
-        if (geometry_.isSimple)
+        if (geometry_.isSimple_)
         {
             return numCellsTotal_;
         }

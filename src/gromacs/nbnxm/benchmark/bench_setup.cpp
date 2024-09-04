@@ -220,7 +220,7 @@ static std::unique_ptr<nonbonded_verlet_t> setupNbnxmForBenchInstance(const Nbnx
     }
     NbnxmKernelSetup kernelSetup = getKernelSetup(options);
 
-    PairlistParams pairlistParams(kernelSetup.kernelType, false, options.pairlistCutoff, false);
+    PairlistParams pairlistParams(kernelSetup.kernelType, {}, false, options.pairlistCutoff, false);
 
     GridSet gridSet(
             PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false, numThreads, pinPolicy);

@@ -107,7 +107,7 @@ diagonalPairlist(const NbnxmKernelType kernelType, const int numAtoms)
 
     gmx_omp_nthreads_init(emptyLogger, &commRec, 1, 1, 1, 1, false);
 
-    const PairlistParams pairlistParams(kernelType, false, 1, false);
+    const PairlistParams pairlistParams(kernelType, {}, false, 1, false);
 
     GridSet gridSet(
             PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false, 1, gmx::PinningPolicy::CannotBePinned);
@@ -173,7 +173,7 @@ public:
     {
         const NbnxmKernelType kernelType = GetParam();
 
-        const PairlistParams pairlistParams(kernelType, false, 1, false);
+        const PairlistParams pairlistParams(kernelType, {}, false, 1, false);
 
         iClusterSize_ = IClusterSizePerListType[pairlistParams.pairlistType];
         jClusterSize_ = JClusterSizePerListType[pairlistParams.pairlistType];

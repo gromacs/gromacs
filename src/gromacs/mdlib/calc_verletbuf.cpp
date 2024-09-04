@@ -61,6 +61,7 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/multipletimestepping.h"
 #include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/nbnxm/nbnxm_enums.h"
 #include "gromacs/nbnxm/nbnxm_geometry.h"
 #include "gromacs/nbnxm/nbnxm_simd.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -137,8 +138,19 @@ VerletbufListSetup verletbufGetListSetup(gmx::NbnxmKernelType nbnxnKernelType)
      */
     VerletbufListSetup listSetup;
 
-    listSetup.cluster_size_i = sc_iClusterSize(nbnxnKernelType);
-    listSetup.cluster_size_j = sc_jClusterSize(nbnxnKernelType);
+    if (nbnxnKernelType == gmx::NbnxmKernelType::Gpu8x8x8)
+    {
+        // Use the default GPU 8x8x8 pairlist layout here, as the results are
+        // identical for anything above a cluster size of 4. This is asserted on later
+        // in mdrunner.cpp
+        listSetup.cluster_size_i = gmx::sc_gpuClusterSize(gmx::PairlistType::Hierarchical8x8x8);
+        listSetup.cluster_size_j = gmx::sc_gpuClusterSize(gmx::PairlistType::Hierarchical8x8x8);
+    }
+    else
+    {
+        listSetup.cluster_size_i = sc_iClusterSize(nbnxnKernelType);
+        listSetup.cluster_size_j = sc_jClusterSize(nbnxnKernelType);
+    }
 
     return listSetup;
 }

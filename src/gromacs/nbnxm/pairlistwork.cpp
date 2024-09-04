@@ -53,17 +53,19 @@
 namespace gmx
 {
 
-NbnxmPairlistGpuWork::ISuperClusterData::ISuperClusterData() :
-    bb(c_gpuNumClusterPerCell),
+NbnxmPairlistGpuWork::ISuperClusterData::ISuperClusterData(const PairlistType layoutType) :
+    bb(sc_gpuNumClusterPerCell(layoutType)),
 #if NBNXN_SEARCH_BB_SIMD4
-    bbPacked(c_gpuNumClusterPerCell / c_packedBoundingBoxesDimSize * c_packedBoundingBoxesSize),
+    bbPacked(sc_gpuNumClusterPerCell(layoutType) / c_packedBoundingBoxesDimSize * c_packedBoundingBoxesSize),
 #endif
-    x(c_gpuNumClusterPerCell * c_nbnxnGpuClusterSize * DIM),
-    xSimd(c_gpuNumClusterPerCell * c_nbnxnGpuClusterSize * DIM)
+    x(sc_gpuNumClusterPerCell(layoutType) * sc_gpuClusterSize(layoutType) * DIM),
+    xSimd(sc_gpuNumClusterPerCell(layoutType) * sc_gpuClusterSize(layoutType) * DIM)
 {
 }
-NbnxmPairlistGpuWork::NbnxmPairlistGpuWork() :
-    distanceBuffer(c_gpuNumClusterPerCell), sci_sort({}, { gmx::PinningPolicy::PinnedIfSupported })
+NbnxmPairlistGpuWork::NbnxmPairlistGpuWork(const PairlistType layoutType) :
+    iSuperClusterData(layoutType),
+    distanceBuffer(sc_gpuNumClusterPerCell(layoutType)),
+    sci_sort({}, { gmx::PinningPolicy::PinnedIfSupported })
 {
 }
 

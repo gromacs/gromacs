@@ -54,6 +54,12 @@ namespace gmx
  */
 static constexpr int c_syclPruneKernelJPackedConcurrency = c_pruneKernelJPackedConcurrency;
 
+// i-cluster interaction mask for a super-cluster with all c_nbnxnGpuNumClusterPerSupercluster=8 bits set.
+static constexpr unsigned sc_superClInteractionMask(const PairlistType layoutType)
+{
+    return ((1U << sc_gpuClusterPerSuperCluster(layoutType)) - 1U);
+}
+
 /*! \endcond */
 
 /*! \brief Explicit uniform load across the warp

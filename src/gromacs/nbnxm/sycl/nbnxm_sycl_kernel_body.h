@@ -43,6 +43,7 @@
 #include "gromacs/gpu_utils/packed_float.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/mdtypes/simulation_workload.h"
+#include "gromacs/nbnxm/nbnxm_enums.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/utility/template_mp.h"
 
@@ -120,7 +121,10 @@ constexpr bool ljEwald = EnergyFunctionProperties<ElecType::Count, vdwType>().vd
  * global location. We don't specialize the kernels by vendor, so we use c_clSize == 4
  * as a proxy to detect such devices.
  */
-constexpr bool c_avoidFloatingPointAtomics = (c_clSize == 4);
+constexpr bool c_avoidFloatingPointAtomics(PairlistType layoutType)
+{
+    return (sc_gpuClusterSize(layoutType) == 4);
+}
 
 using sycl::access::fence_space;
 using mode = sycl::access_mode;
@@ -341,7 +345,8 @@ static inline float interpolateCoulombForceR(const sycl::global_ptr<const float>
  */
 static inline void reduceForceJAmdDpp(Float3 f, const int tidxi, const int aidx, sycl::global_ptr<Float3> a_f)
 {
-    static_assert(c_clSize == 8);
+    constexpr int c_clSize = sc_gpuClusterSize(sc_layoutType);
+    static_assert(c_clSize == 8 || c_clSize == 4);
 
     f[0] += amdDppUpdateShfl<float, /* row_shl:1 */ 0x101>(f[0]);
     f[1] += amdDppUpdateShfl<float, /* row_shr:1 */ 0x111>(f[1]);
@@ -380,6 +385,7 @@ static inline void reduceForceJShuffle(Float3                   f,
                                        const int                aidx,
                                        sycl::global_ptr<Float3> a_f)
 {
+    constexpr int c_clSize = sc_gpuClusterSize(sc_layoutType);
     static_assert(c_clSize == 8 || c_clSize == 4);
     sycl::sub_group sg = itemIdx.get_sub_group();
 
@@ -466,7 +472,8 @@ static inline void reduceForceJGeneric(sycl::local_ptr<float>   sm_buf,
                                        const int                aidx,
                                        sycl::global_ptr<Float3> a_f)
 {
-    static constexpr int sc_fBufferStride = c_clSizeSq;
+    constexpr int        c_clSize         = sc_gpuClusterSize(sc_layoutType);
+    static constexpr int sc_fBufferStride = c_clSize * c_clSize;
     int                  tidx             = tidxi + tidxj * c_clSize;
     sm_buf[0 * sc_fBufferStride + tidx]   = f[0];
     sm_buf[1 * sc_fBufferStride + tidx]   = f[1];
@@ -534,14 +541,16 @@ static inline void reduceForceIAndFShiftGeneric(sycl::local_ptr<float>   sm_buf,
                                                 sycl::global_ptr<Float3> a_f,
                                                 sycl::global_ptr<Float3> a_fShift)
 {
-    static constexpr int bufStride  = c_clSize * c_clSize;
-    static constexpr int clSizeLog2 = gmx::StaticLog2<c_clSize>::value;
-    const int            tidx       = tidxi + tidxj * c_clSize;
-    float                fShiftBuf  = 0.0F;
-#pragma unroll c_nbnxnGpuNumClusterPerSupercluster
-    for (int ciOffset = 0; ciOffset < c_nbnxnGpuNumClusterPerSupercluster; ciOffset++)
+    constexpr int        c_clSize           = sc_gpuClusterSize(sc_layoutType);
+    constexpr int        c_superClusterSize = sc_gpuClusterPerSuperCluster(sc_layoutType);
+    static constexpr int bufStride          = c_clSize * c_clSize;
+    static constexpr int clSizeLog2         = gmx::StaticLog2<c_clSize>::value;
+    const int            tidx               = tidxi + tidxj * c_clSize;
+    float                fShiftBuf          = 0.0F;
+#pragma unroll c_superClusterSize
+    for (int ciOffset = 0; ciOffset < c_superClusterSize; ciOffset++)
     {
-        const int aidx = (sci * c_nbnxnGpuNumClusterPerSupercluster + ciOffset) * c_clSize + tidxi;
+        const int aidx = (sci * c_superClusterSize + ciOffset) * c_clSize + tidxi;
         // Store i-forces in local memory
         sm_buf[tidx]                 = fCiBufX(ciOffset);
         sm_buf[bufStride + tidx]     = fCiBufY(ciOffset);
@@ -586,7 +595,7 @@ static inline void reduceForceIAndFShiftGeneric(sycl::local_ptr<float>   sm_buf,
            storing the reduction result above. */
         if (tidxj < 3)
         {
-            if constexpr (c_avoidFloatingPointAtomics)
+            if constexpr (c_avoidFloatingPointAtomics(sc_layoutType))
             {
                 /* Intel Xe (Gen12LP) and earlier GPUs implement floating-point atomics via
                  * a compare-and-swap (CAS) loop. It has particularly poor performance when
@@ -638,7 +647,9 @@ typename std::enable_if_t<numShuffleReductionSteps != 1, void> static inline red
         sycl::global_ptr<Float3> a_f,
         sycl::global_ptr<Float3> a_fShift)
 {
-    const sycl::sub_group sg = itemIdx.get_sub_group();
+    constexpr int         c_superClusterSize = sc_gpuClusterPerSuperCluster(sc_layoutType);
+    constexpr int         c_clSize           = sc_gpuClusterSize(sc_layoutType);
+    const sycl::sub_group sg                 = itemIdx.get_sub_group();
     static_assert(numShuffleReductionSteps == 2 || numShuffleReductionSteps == 3);
     SYCL_ASSERT(sg.get_max_local_range()[0] >= 4 * c_clSize
                 && "Subgroup too small for two-step shuffle reduction, use 1-step");
@@ -649,10 +660,10 @@ typename std::enable_if_t<numShuffleReductionSteps != 1, void> static inline red
     // Use AMD's cross-lane DPP reduction only for 64-wide exec
     // can't use static_assert because 32-wide compiler passes will trip on it
     SYCL_ASSERT(numShuffleReductionSteps == 3);
-#    pragma unroll c_nbnxnGpuNumClusterPerSupercluster
-    for (int ciOffset = 0; ciOffset < c_nbnxnGpuNumClusterPerSupercluster; ciOffset++)
+#    pragma unroll c_superClusterSize
+    for (int ciOffset = 0; ciOffset < c_superClusterSize; ciOffset++)
     {
-        const int aidx = (sci * c_nbnxnGpuNumClusterPerSupercluster + ciOffset) * c_clSize + tidxj;
+        const int aidx = (sci * c_superClusterSize + ciOffset) * c_clSize + tidxj;
         float     fx   = fCiBufX(ciOffset);
         float     fy   = fCiBufY(ciOffset);
         float     fz   = fCiBufZ(ciOffset);
@@ -707,10 +718,10 @@ typename std::enable_if_t<numShuffleReductionSteps != 1, void> static inline red
     // Two bits for two steps, three bits for three steps.
     constexpr int threadBitMask = (1U << numShuffleReductionSteps) - 1;
 
-#    pragma unroll c_nbnxnGpuNumClusterPerSupercluster
-    for (int ciOffset = 0; ciOffset < c_nbnxnGpuNumClusterPerSupercluster; ciOffset++)
+#    pragma unroll c_superClusterSize
+    for (int ciOffset = 0; ciOffset < c_superClusterSize; ciOffset++)
     {
-        const int aidx = (sci * c_nbnxnGpuNumClusterPerSupercluster + ciOffset) * c_clSize + tidxi;
+        const int aidx = (sci * c_superClusterSize + ciOffset) * c_clSize + tidxi;
         float     fx   = fCiBufX(ciOffset);
         float     fy   = fCiBufY(ciOffset);
         float     fz   = fCiBufZ(ciOffset);
@@ -784,17 +795,19 @@ typename std::enable_if_t<numShuffleReductionSteps == 1, void> static inline red
         sycl::global_ptr<Float3> a_f,
         sycl::global_ptr<Float3> a_fShift)
 {
-    const sycl::sub_group sg = itemIdx.get_sub_group();
+    constexpr int         c_superClusterSize = sc_gpuClusterPerSuperCluster(sc_layoutType);
+    constexpr int         c_clSize           = sc_gpuClusterSize(sc_layoutType);
+    const sycl::sub_group sg                 = itemIdx.get_sub_group();
     SYCL_ASSERT(sg.get_max_local_range()[0] >= 2 * c_clSize
                 && "Subgroup too small even for 1-step shuffle reduction");
     SYCL_ASSERT(sg.get_max_local_range()[0] < 4 * c_clSize
                 && "One-step shuffle reduction inefficient, use two-step version");
     float fShiftBufXY = 0.0F;
     float fShiftBufZ  = 0.0F;
-#pragma unroll c_nbnxnGpuNumClusterPerSupercluster
-    for (int ciOffset = 0; ciOffset < c_nbnxnGpuNumClusterPerSupercluster; ciOffset++)
+#pragma unroll c_superClusterSize
+    for (int ciOffset = 0; ciOffset < c_superClusterSize; ciOffset++)
     {
-        const int aidx = (sci * c_nbnxnGpuNumClusterPerSupercluster + ciOffset) * c_clSize + tidxi;
+        const int aidx = (sci * c_superClusterSize + ciOffset) * c_clSize + tidxi;
         float     fx   = fCiBufX(ciOffset);
         float     fy   = fCiBufY(ciOffset);
         float     fz   = fCiBufZ(ciOffset);
@@ -859,8 +872,8 @@ static inline void reduceForceIAndFShift(sycl::local_ptr<float>   sm_buf,
                                          sycl::global_ptr<Float3> a_fShift)
 {
     // must have power of two elements in fCiBuf
-    static_assert(gmx::isPowerOfTwo(c_nbnxnGpuNumClusterPerSupercluster));
-
+    static_assert(gmx::isPowerOfTwo(sc_gpuClusterPerSuperCluster(sc_layoutType)));
+    constexpr int c_clSize = sc_gpuClusterSize(sc_layoutType);
     if constexpr (useShuffleReduction)
     {
         constexpr int numSteps = gmx::StaticLog2<subGroupSize / c_clSize>::value;
@@ -917,6 +930,13 @@ static auto nbnxmKernel(sycl::handler& cgh,
 {
     static constexpr EnergyFunctionProperties<elecType, vdwType> props;
 
+    constexpr int          c_clSize               = sc_gpuClusterSize(sc_layoutType);
+    constexpr int          c_clSizeSq             = c_clSize * c_clSize;
+    constexpr int          c_splitClSize          = sc_gpuSplitJClusterSize(sc_layoutType);
+    constexpr int          c_superClusterSize     = sc_gpuClusterPerSuperCluster(sc_layoutType);
+    constexpr int          c_nbnxnGpuJgroupSize   = sc_gpuJgroupSize(sc_layoutType);
+    constexpr unsigned int superClInteractionMask = sc_superClInteractionMask(sc_layoutType);
+
     // The post-prune j-i cluster-pair organization is linked to how exclusion and interaction mask
     // data is stored. Currently, this is ideally suited for 32-wide subgroup size but slightly less
     // so for others, e.g. subGroupSize > prunedClusterPairSize on AMD GCN / CDNA.
@@ -934,17 +954,15 @@ static auto nbnxmKernel(sycl::handler& cgh,
     constexpr bool useShuffleReductionForceI =
             (numReductionSteps <= 3) && (c_clSize == 8 || c_clSize == 4)
             && !(numReductionSteps == 1 && c_avoidFloatingPointAtomics);
-    constexpr bool useShuffleReductionForceJ = gmx::isPowerOfTwo(c_nbnxnGpuNumClusterPerSupercluster);
+    constexpr bool useShuffleReductionForceJ = gmx::isPowerOfTwo(c_superClusterSize);
 
     // Local memory buffer for i x+q pre-loading
-    sycl::local_accessor<Float4, 1> sm_xq(
-            sycl::range<1>(c_nbnxnGpuNumClusterPerSupercluster * c_clSize), cgh);
+    sycl::local_accessor<Float4, 1> sm_xq(sycl::range<1>(c_superClusterSize * c_clSize), cgh);
 
     auto sm_atomTypeI = [&]() {
         if constexpr (!props.vdwComb)
         {
-            return sycl::local_accessor<int, 1>(
-                    sycl::range<1>(c_nbnxnGpuNumClusterPerSupercluster * c_clSize), cgh);
+            return sycl::local_accessor<int, 1>(sycl::range<1>(c_superClusterSize * c_clSize), cgh);
         }
         else
         {
@@ -955,8 +973,7 @@ static auto nbnxmKernel(sycl::handler& cgh,
     auto sm_ljCombI = [&]() {
         if constexpr (props.vdwComb)
         {
-            return sycl::local_accessor<Float2, 1>(
-                    sycl::range<1>(c_nbnxnGpuNumClusterPerSupercluster * c_clSize), cgh);
+            return sycl::local_accessor<Float2, 1>(sycl::range<1>(c_superClusterSize * c_clSize), cgh);
         }
         else
         {
@@ -976,7 +993,7 @@ static auto nbnxmKernel(sycl::handler& cgh,
     // need one element for energy reduction (or dummy for DPCPP, https://github.com/intel/llvm/issues/4969)
     constexpr bool needExtraElementForReduction = doCalcEnergies || (GMX_SYCL_DPCPP != 0);
     constexpr int  sm_reductionBufferSize       = haveAnyLocalMemoryForceReduction
-                                                          ? c_clSize * c_clSize * DIM
+                                                          ? c_clSizeSq * DIM
                                                           : (needExtraElementForReduction ? 1 : 0);
     sycl::local_accessor<float, 1> sm_reductionBuffer(sycl::range<1>(sm_reductionBufferSize), cgh);
 
@@ -1016,8 +1033,8 @@ static auto nbnxmKernel(sycl::handler& cgh,
         const unsigned imeiIdx = tidx / prunedClusterPairSize;
 
 #if defined(__SYCL_DEVICE_ONLY__) && defined(__AMDGCN__)
-        FCiFloat3 fCiBuf_[c_nbnxnGpuNumClusterPerSupercluster]; // i force buffer
-        for (int i = 0; i < c_nbnxnGpuNumClusterPerSupercluster; i++)
+        FCiFloat3 fCiBuf_[c_superClusterSize]; // i force buffer
+        for (int i = 0; i < c_superClusterSize; i++)
         {
             fCiBuf_[i] = { 0.0F, 0.0F, 0.0F };
         }
@@ -1025,12 +1042,12 @@ static auto nbnxmKernel(sycl::handler& cgh,
         auto fCiBufY = [&](auto i) -> float& { return fCiBuf_[i][YY]; };
         auto fCiBufZ = [&](auto i) -> float& { return fCiBuf_[i][ZZ]; };
 #else
-        float fCiBufX_[c_nbnxnGpuNumClusterPerSupercluster] = { 0.0F }; // i force buffer
-        float fCiBufY_[c_nbnxnGpuNumClusterPerSupercluster] = { 0.0F }; // i force buffer
-        float fCiBufZ_[c_nbnxnGpuNumClusterPerSupercluster] = { 0.0F }; // i force buffer
-        auto  fCiBufX = [&](auto i) -> float& { return fCiBufX_[i]; };
-        auto  fCiBufY = [&](auto i) -> float& { return fCiBufY_[i]; };
-        auto  fCiBufZ = [&](auto i) -> float& { return fCiBufZ_[i]; };
+        float fCiBufX_[c_superClusterSize] = { 0.0F }; // i force buffer
+        float fCiBufY_[c_superClusterSize] = { 0.0F }; // i force buffer
+        float fCiBufZ_[c_superClusterSize] = { 0.0F }; // i force buffer
+        auto  fCiBufX                      = [&](auto i) -> float& { return fCiBufX_[i]; };
+        auto  fCiBufY                      = [&](auto i) -> float& { return fCiBufY_[i]; };
+        auto  fCiBufZ                      = [&](auto i) -> float& { return fCiBufZ_[i]; };
 #endif
 
         const nbnxn_sci_t nbSci          = gm_plistSci[bidx];
@@ -1044,13 +1061,13 @@ static auto nbnxmKernel(sycl::handler& cgh,
 
         // We may need only a subset of threads active for preloading i-atoms
         // depending on the super-cluster and cluster / thread-block size.
-        constexpr bool c_loadUsingAllXYThreads = (c_clSize == c_nbnxnGpuNumClusterPerSupercluster);
-        if (c_loadUsingAllXYThreads || tidxj < c_nbnxnGpuNumClusterPerSupercluster)
+        constexpr bool c_loadUsingAllXYThreads = (c_clSize == c_superClusterSize);
+        if (c_loadUsingAllXYThreads || tidxj < c_superClusterSize)
         {
-            for (int i = 0; i < c_nbnxnGpuNumClusterPerSupercluster; i += c_clSize)
+            for (int i = 0; i < c_superClusterSize; i += c_clSize)
             {
                 /* Pre-load i-atom x and q into shared memory */
-                const int ci       = sci * c_nbnxnGpuNumClusterPerSupercluster + tidxj + i;
+                const int ci       = sci * c_superClusterSize + tidxj + i;
                 const int ai       = ci * c_clSize + tidxi;
                 const int cacheIdx = (tidxj + i) * c_clSize + tidxi;
 
@@ -1099,10 +1116,10 @@ static auto nbnxmKernel(sycl::handler& cgh,
         if constexpr (doCalcEnergies && doExclusionForces)
         {
             if (nbSci.shift == gmx::c_centralShiftIndex
-                && gm_plistCJPacked[cijPackedBegin].cj[0] == sci * c_nbnxnGpuNumClusterPerSupercluster)
+                && gm_plistCJPacked[cijPackedBegin].cj[0] == sci * c_superClusterSize)
             {
                 // we have the diagonal: add the charge and LJ self interaction energy term
-                for (int i = 0; i < c_nbnxnGpuNumClusterPerSupercluster; i++)
+                for (int i = 0; i < c_superClusterSize; i++)
                 {
                     // TODO: Are there other options?
                     if constexpr (props.elecEwald || props.elecRF || props.elecCutoff)
@@ -1112,9 +1129,8 @@ static auto nbnxmKernel(sycl::handler& cgh,
                     }
                     if constexpr (props.vdwEwald)
                     {
-                        energyVdw +=
-                                gm_nbfp[gm_atomTypes[(sci * c_nbnxnGpuNumClusterPerSupercluster + i) * c_clSize + tidxi]
-                                        * (numTypes + 1)][0];
+                        energyVdw += gm_nbfp[gm_atomTypes[(sci * c_superClusterSize + i) * c_clSize + tidxi]
+                                             * (numTypes + 1)][0];
                     }
                 }
                 /* divide the self term(s) equally over the j-threads, then multiply with the coefficients. */
@@ -1195,13 +1211,12 @@ static auto nbnxmKernel(sycl::handler& cgh,
 #pragma unroll unrollFactor
             for (int jm = 0; jm < c_nbnxnGpuJgroupSize; jm++)
             {
-                const bool maskSet =
-                        imask & (superClInteractionMask << (jm * c_nbnxnGpuNumClusterPerSupercluster));
+                const bool maskSet = imask & (superClInteractionMask << (jm * c_superClusterSize));
                 if (!maskSet)
                 {
                     continue;
                 }
-                unsigned  maskJI = (1U << (jm * c_nbnxnGpuNumClusterPerSupercluster));
+                unsigned  maskJI = (1U << (jm * c_superClusterSize));
                 const int cj     = gm_plistCJPacked[jPacked].cj[jm];
                 const int aj     = cj * c_clSize + tidxj;
 
@@ -1223,13 +1238,13 @@ static auto nbnxmKernel(sycl::handler& cgh,
 
                 Float3 fCjBuf(0.0F, 0.0F, 0.0F);
 
-#pragma unroll c_nbnxnGpuNumClusterPerSupercluster
-                for (int i = 0; i < c_nbnxnGpuNumClusterPerSupercluster; i++)
+#pragma unroll c_superClusterSize
+                for (int i = 0; i < c_superClusterSize; i++)
                 {
                     if (imask & maskJI)
                     {
                         // i cluster index
-                        const int ci = sci * c_nbnxnGpuNumClusterPerSupercluster + i;
+                        const int ci = sci * c_superClusterSize + i;
                         // all threads load an atom from i cluster ci into shmem!
                         const Float4 xqi = sm_xq[i * c_clSize + tidxi];
                         const Float3 xi(xqi[0], xqi[1], xqi[2]);
@@ -1514,6 +1529,7 @@ static void launchNbnxmKernel(const DeviceStream& deviceStream, const int numSci
      *   and j-cluster concurrency, in x, y, and z, respectively.
      * - The 1D block-grid contains as many blocks as super-clusters.
      */
+    constexpr int           c_clSize  = sc_gpuClusterSize(sc_layoutType);
     const int               numBlocks = numSci;
     const sycl::range<3>    blockSize{ 1, c_clSize, c_clSize };
     const sycl::range<3>    globalSize{ numBlocks * blockSize[0], blockSize[1], blockSize[2] };

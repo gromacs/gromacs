@@ -154,6 +154,7 @@
 #include "gromacs/modularsimulator/modularsimulator.h"
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
 #include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/nbnxm/nbnxm_enums.h"
 #include "gromacs/nbnxm/pairlist_tuning.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/output.h"
@@ -1575,6 +1576,11 @@ int Mdrunner::mdrunner()
     // when no task is assigned.
     int                deviceId   = -1;
     DeviceInformation* deviceInfo = gpuTaskAssignments.initDevice(&deviceId);
+
+    // We will later get the pairlist type from the device information here, for now we hard code it.
+    const auto pairlistType = PairlistType::Hierarchical8x8x8;
+    GMX_RELEASE_ASSERT(sc_gpuClusterSize(pairlistType) >= 4,
+                       "The verlet scheme setup relies on the GPU cluster size to be at least 4");
 
     // TODO Currently this is always built, yet DD partition code
     // checks if it is built before using it. Probably it should

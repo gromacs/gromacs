@@ -55,6 +55,7 @@ template<typename>
 class ArrayRef;
 class RangePartitioning;
 enum class NbnxmKernelType;
+enum class PairlistType;
 } // namespace gmx
 
 struct VerletbufListSetup

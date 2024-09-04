@@ -53,6 +53,7 @@
 #include "gromacs/mdtypes/forcerec.h" // only for GET_CGINFO_*
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/nbnxm/nbnxm_enums.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/utility/allocator.h"
@@ -861,7 +862,8 @@ static void nbnxn_atomdata_mask_fep(nbnxn_atomdata_t* nbat, const GridSet& gridS
 
     for (const Grid& grid : gridSet.grids())
     {
-        const int nsubc = (grid.geometry().isSimple) ? 1 : c_gpuNumClusterPerCell;
+        const auto layoutType = grid.geometry().pairlistType_;
+        const int  nsubc = (grid.geometry().isSimple_) ? 1 : sc_gpuNumClusterPerCell(layoutType);
 
         const int c_offset = grid.firstAtomInColumn(0);
 
@@ -873,7 +875,7 @@ static void nbnxn_atomdata_mask_fep(nbnxn_atomdata_t* nbat, const GridSet& gridS
             /* Does this cluster contain perturbed particles? */
             if (grid.clusterIsPerturbed(c))
             {
-                const int numAtomsPerCluster = grid.geometry().numAtomsICluster;
+                const int numAtomsPerCluster = grid.geometry().numAtomsICluster_;
                 for (int i = 0; i < numAtomsPerCluster; i++)
                 {
                     /* Is this a perturbed particle? */

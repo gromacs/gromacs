@@ -65,6 +65,7 @@
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
 #include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/nbnxm/nbnxm_enums.h"
 #include "gromacs/nbnxm/nbnxm_gpu.h"
 #include "gromacs/nbnxm/nbnxm_simd.h"
 #include "gromacs/nbnxm/pairlistparams.h"
@@ -309,7 +310,7 @@ std::unique_ptr<gmx::nonbonded_verlet_t> createNbnxmCPU(const size_t            
     gmx::NbnxmKernelSetup kernelSetup =
             createKernelSetupCPU(options.nbnxmSimd, options.useTabulatedEwaldCorr);
 
-    gmx::PairlistParams pairlistParams(kernelSetup.kernelType, false, options.pairlistCutoff, false);
+    gmx::PairlistParams pairlistParams(kernelSetup.kernelType, {}, false, options.pairlistCutoff, false);
 
     auto pairlistSets = std::make_unique<gmx::PairlistSets>(pairlistParams, false, 0);
     auto pairSearch   = std::make_unique<gmx::PairSearch>(
@@ -349,7 +350,8 @@ std::unique_ptr<gmx::nonbonded_verlet_t> createNbnxmGPU(const size_t            
 
     gmx::NbnxmKernelSetup kernelSetup = createKernelSetupGPU(options.useTabulatedEwaldCorr);
 
-    gmx::PairlistParams pairlistParams(kernelSetup.kernelType, false, options.pairlistCutoff, false);
+    gmx::PairlistParams pairlistParams(
+            kernelSetup.kernelType, gmx::PairlistType::Hierarchical8x8x8, false, options.pairlistCutoff, false);
 
 
     // nbnxn_atomdata is always initialized with 1 thread if the GPU is used
