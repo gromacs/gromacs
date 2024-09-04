@@ -83,15 +83,6 @@ except ImportError:
     )
 
 
-def shlex_join(split_command):
-    """Return a shell-escaped string from *split_command*.
-
-    Copied from Python 3.8.
-    Can be replaced with shlex.join once we don't need to support Python 3.7.
-    """
-    return " ".join(shlex.quote(arg) for arg in split_command)
-
-
 # Basic packages for all final images.
 _common_packages = [
     "build-essential",
@@ -931,12 +922,12 @@ def add_intel_llvm_compiler_build_stage(
         directory="llvm/llvm",
         build=[
             "mkdir -p /var/tmp/llvm/llvm/build",
-            shlex_join(
+            shlex.join(
                 ["python3", "/var/tmp/llvm/buildbot/configure.py", *buildbot_flags]
             ),
             "cd /var/tmp/llvm/llvm/build",
             # Must be called after the configure.py
-            shlex_join(
+            shlex.join(
                 [
                     "cmake",
                     "/var/tmp/llvm/llvm",
