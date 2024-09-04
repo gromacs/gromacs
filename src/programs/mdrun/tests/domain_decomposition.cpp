@@ -192,8 +192,9 @@ std::optional<std::string> reasonsTestIsInvalid(MdpFlavor       mdpFlavor,
     errorReasons.appendIf(numRanks > 1 && separatePmeRankFlavor == SeparatePmeRankFlavor::None
                                   && pmeFlavor == PmeFlavor::Gpu,
                           "Cannot use GPU PME offload with multiple PME+PP ranks");
-    errorReasons.appendIf(numRanks == 2 && separatePmeRankFlavor == SeparatePmeRankFlavor::Two,
-                          "Cannot use two separate PME ranks when there are only two ranks total");
+    errorReasons.appendIf(
+            numRanks < 4 && separatePmeRankFlavor == SeparatePmeRankFlavor::Two,
+            "Cannot use two separate PME ranks when there are less than four ranks total");
     errorReasons.finishContext();
     if (errorReasons.isEmpty())
     {
