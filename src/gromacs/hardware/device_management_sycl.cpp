@@ -599,6 +599,29 @@ std::vector<std::unique_ptr<DeviceInformation>> findDevices()
 
         size_t i = deviceInfos.size() - 1;
 
+        // Note SYCL_EXT_INTEL_DEVICE_INFO >= 5 is the first time a
+        // UUID query is available via
+        // sycl::ext::intel::info::device::uuid. It was available
+        // earlier under another name, but GROMACS isn't supporting
+        // such old versions of dpcpp.
+#if defined(SYCL_EXT_INTEL_DEVICE_INFO) && SYCL_EXT_INTEL_DEVICE_INFO >= 5
+        if (syclDevice.has(sycl::aspect::ext_intel_device_info_uuid))
+        {
+            // SYCL uses unsigned char (unlike CUDA, ROCM, and OpenCL) which
+            // we must convert to std::byte.
+            std::array<unsigned char, 16> uuidFromSycl =
+                    syclDevice.get_info<sycl::ext::intel::info::device::uuid>();
+            deviceInfos[i]->uuid = std::make_optional<std::array<std::byte, 16>>();
+            std::transform(uuidFromSycl.begin(),
+                           uuidFromSycl.end(),
+                           deviceInfos[i]->uuid.value().begin(),
+                           [](const unsigned char c) { return static_cast<std::byte>(c); });
+        }
+        else
+#endif
+        {
+            deviceInfos[i]->uuid = std::nullopt;
+        }
         deviceInfos[i]->id         = i;
         deviceInfos[i]->syclDevice = syclDevice;
         deviceInfos[i]->deviceVendor =

@@ -106,6 +106,69 @@ TEST(DevicesManagerTest, Serialization)
     }
 }
 
+std::string uuidToString(const std::array<std::byte, 16>& uuid)
+{
+    // Write a string in the frequently used 8-4-4-4-12 format,
+    // xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx, where every x represents 4 bits
+    std::string result;
+    result.reserve(37);
+    const auto* uuidIt = uuid.cbegin();
+    for (int i = 0; i < 4; ++i, ++uuidIt)
+    {
+        result += gmx::formatString("%2.2x", static_cast<unsigned int>(*uuidIt));
+    }
+    result.append(1, '-');
+    for (int i = 0; i < 2; ++i, ++uuidIt)
+    {
+        result += gmx::formatString("%2.2x", static_cast<unsigned int>(*uuidIt));
+    }
+    result.append(1, '-');
+    for (int i = 0; i < 2; ++i, ++uuidIt)
+    {
+        result += gmx::formatString("%2.2x", static_cast<unsigned int>(*uuidIt));
+    }
+    result.append(1, '-');
+    for (int i = 0; i < 2; ++i, ++uuidIt)
+    {
+        result += gmx::formatString("%2.2x", static_cast<unsigned int>(*uuidIt));
+    }
+    result.append(1, '-');
+    for (int i = 0; i < 6; ++i, ++uuidIt)
+    {
+        result += gmx::formatString("%2.2x", static_cast<unsigned int>(*uuidIt));
+    }
+    return result;
+}
+
+// We can't actually test UUID detection because the value returned
+// will be different on each piece of hardware. This test case is a
+// service to GROMACS developers to permit them to check manually that
+// UUID detection is working on a platform. When the UUID can be
+// detected, this test will still fail, but in doing so it will print
+// out the UUID, which can then be compared with the output of another
+// tool.
+//
+// Run it with
+// "hardware-test --gtest_also_run_disabled_tests --gtest_filter=DevicesManagerTest.DISABLED_DetectsUuid"
+// and compare the resulting strings. They should match.
+TEST(DevicesManagerTest, DISABLED_DetectsUuid)
+{
+    if (canPerformDeviceDetection(nullptr))
+    {
+        std::vector<std::unique_ptr<DeviceInformation>> deviceInfoList = findDevices();
+        for (int deviceId = 0; deviceId < static_cast<int>(deviceInfoList.size()); deviceId++)
+        {
+            SCOPED_TRACE(gmx::formatString("Testing device with ID %d", deviceId));
+            ASSERT_TRUE(deviceInfoList[deviceId].get()) << "Invalid handle to DeviceInfo";
+            const auto uuid = uuidForDevice(*deviceInfoList[deviceId].get());
+            ASSERT_TRUE(uuid.has_value());
+            SCOPED_TRACE("Device had UUID " + uuidToString(uuid.value()));
+            // Force GoogleTest to print out the messages
+            ADD_FAILURE();
+        }
+    }
+}
+
 } // namespace
 } // namespace test
 } // namespace gmx

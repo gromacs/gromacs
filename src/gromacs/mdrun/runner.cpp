@@ -1574,8 +1574,7 @@ int Mdrunner::mdrunner()
 
     // Get the device handle for the modules on this rank, nullptr
     // when no task is assigned.
-    int                deviceId   = -1;
-    DeviceInformation* deviceInfo = gpuTaskAssignments.initDevice(&deviceId);
+    DeviceInformation* deviceInfo = gpuTaskAssignments.initDevice();
 
     // We will later get the pairlist type from the device information here, for now we hard code it.
     const auto pairlistType = PairlistType::Hierarchical8x8x8;
@@ -1697,7 +1696,7 @@ int Mdrunner::mdrunner()
     {
         if (runScheduleWork.simulationWork.havePpDomainDecomposition && thisRankHasDuty(cr, DUTY_PP))
         {
-            dd_setup_dlb_resource_sharing(cr, deviceId);
+            dd_setup_dlb_resource_sharing(cr, uniqueDeviceId(*deviceInfo));
         }
         const bool useGpuTiming = decideGpuTimingsUsage();
         deviceStreamManager     = std::make_unique<DeviceStreamManager>(

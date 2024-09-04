@@ -476,11 +476,9 @@ static bool hasPmeOrNonbondedTask(const GpuTaskMapping& mapping)
     return hasTaskType<GpuTask::Pme>(mapping) || hasTaskType<GpuTask::Nonbonded>(mapping);
 }
 
-DeviceInformation* GpuTaskAssignments::initDevice(int* deviceId) const
+DeviceInformation* GpuTaskAssignments::initDevice() const
 {
-    DeviceInformation*       deviceInfo        = nullptr;
     const GpuTaskAssignment& gpuTaskAssignment = assignmentForAllRanksOnThisNode_[indexOfThisRank_];
-
     // This works because only one task of each type per rank is
     // currently permitted and if there are multiple tasks, they must
     // use the same device.
@@ -489,10 +487,9 @@ DeviceInformation* GpuTaskAssignments::initDevice(int* deviceId) const
 
     if (gpuTaskMapping != gpuTaskAssignment.end())
     {
-        *deviceId  = gpuTaskMapping->deviceId_;
-        deviceInfo = hardwareInfo_.deviceInfoList[*deviceId].get();
+        return hardwareInfo_.deviceInfoList[gpuTaskMapping->deviceId_].get();
     }
-    return deviceInfo;
+    return nullptr;
 }
 
 bool GpuTaskAssignments::thisRankHasPmeGpuTask() const

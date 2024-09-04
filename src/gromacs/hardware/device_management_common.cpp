@@ -244,3 +244,54 @@ std::vector<std::unique_ptr<DeviceInformation>> deserializeDeviceInformations(gm
     }
     return deviceInfoList;
 }
+
+namespace
+{
+
+//! Unecessarily declare the function below, to keep nvcc and clang-tidy happy simultaneously
+size_t hashCombine(size_t seed, std::byte c);
+
+/*! \brief Combine \c seed with \c c to produce a combined hash
+ *
+ * The resulting seed is suitable to pass to a future call to this function.
+ *
+ * Implementation is like that of Boost 1.33. It has been superseded
+ * in Boost, but its simplicity is enough for this use case. The
+ * hexadecimal constant is an arbitrary non-zero value, which avoids
+ * producing zero when all inputs were zero. */
+size_t hashCombine(const size_t seed, std::byte c)
+{
+    return seed ^ (std::hash<std::byte>{}(c) + 0x9e3779b9 + (seed << 6) + (seed >> 2));
+}
+
+//! Functor for hashing an array of \c N bytes
+struct HashAnArray
+{
+    template<size_t N>
+    std::size_t operator()(const std::array<std::byte, N>& a) const noexcept
+    {
+        size_t seed = 0;
+        for (const auto& c : a)
+        {
+            seed = hashCombine(seed, c);
+        }
+        return seed;
+    }
+};
+
+} // namespace
+
+size_t uniqueDeviceId(const DeviceInformation& deviceInfo)
+{
+    if (deviceInfo.uuid.has_value())
+    {
+        HashAnArray hasher;
+        return hasher(deviceInfo.uuid.value());
+    }
+    return std::hash<int>{}(deviceInfo.id);
+}
+
+std::optional<std::array<std::byte, 16>> uuidForDevice(const DeviceInformation& deviceInfo)
+{
+    return deviceInfo.uuid;
+}

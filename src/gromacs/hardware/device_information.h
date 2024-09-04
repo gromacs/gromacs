@@ -46,6 +46,8 @@
 
 #include "config.h"
 
+#include <cstddef>
+
 #include <array>
 #include <optional>
 #include <type_traits>
@@ -168,7 +170,7 @@ struct DeviceInformation
 {
     //! Device status.
     DeviceStatus status;
-    //! ID of the device.
+    //! ID of the device, ie. the index into the device order reported by the GPU runtime.
     int id;
     //! Device vendor.
     DeviceVendor deviceVendor;
@@ -205,6 +207,16 @@ struct DeviceInformation
     //! CUDA CC minor for NVIDIA devices, device code for AMD (gfx90a -> a -> 10), not set for Intel (yet)
     std::optional<int> hardwareVersionPatch;
 #endif
+    /*! \brief UUID of the device, when available
+     *
+     * If device UUIDs are not available, then multi-rank DLB may
+     * not work properly when environment variables restrict
+     * device visibility to each rank.
+     *
+     * Note that even if the device and SDK support UUID queries,
+     * compatibility or version issues mean we need a field that might
+     * not contain a value in practice. */
+    std::optional<std::array<std::byte, 16>> uuid;
 };
 
 //! Whether \ref DeviceInformation can be serialized for sending via MPI.

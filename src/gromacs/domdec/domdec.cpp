@@ -945,12 +945,12 @@ static void make_load_communicator(gmx_domdec_t* dd, int dim_ind, ivec loc)
 }
 #endif
 
-void dd_setup_dlb_resource_sharing(const t_commrec* cr, int gpu_id)
+void dd_setup_dlb_resource_sharing(const t_commrec* cr, const size_t uniqueDeviceId)
 {
 #if GMX_MPI
     gmx_domdec_t* dd = cr->dd;
 
-    if (!thisRankHasDuty(cr, DUTY_PP) || gpu_id < 0)
+    if (!thisRankHasDuty(cr, DUTY_PP))
     {
         /* Only ranks with short-ranged tasks (currently) use GPUs.
          * If we don't have GPUs assigned, there are no resources to share.
@@ -967,11 +967,6 @@ void dd_setup_dlb_resource_sharing(const t_commrec* cr, int gpu_id)
 
     const int physicalnode_id_hash = gmx_physicalnode_id_hash();
 
-    if (debug)
-    {
-        fprintf(debug, "dd_setup_dd_dlb_gpu_sharing:\n");
-        fprintf(debug, "DD PP rank %d physical node hash %d gpu_id %d\n", dd->rank, physicalnode_id_hash, gpu_id);
-    }
     /* Split the PP communicator over the physical nodes */
     /* TODO: See if we should store this (before), as it's also used for
      * for the nodecomm summation.
@@ -980,14 +975,9 @@ void dd_setup_dlb_resource_sharing(const t_commrec* cr, int gpu_id)
     // the need for per-node per-group communicators.
     MPI_Comm mpi_comm_pp_physicalnode;
     MPI_Comm_split(dd->mpi_comm_all, physicalnode_id_hash, dd->rank, &mpi_comm_pp_physicalnode);
-    MPI_Comm_split(mpi_comm_pp_physicalnode, gpu_id, dd->rank, &dd->comm->mpi_comm_gpu_shared);
+    MPI_Comm_split(mpi_comm_pp_physicalnode, static_cast<int>(uniqueDeviceId), dd->rank, &dd->comm->mpi_comm_gpu_shared);
     MPI_Comm_free(&mpi_comm_pp_physicalnode);
     MPI_Comm_size(dd->comm->mpi_comm_gpu_shared, &dd->comm->nrank_gpu_shared);
-
-    if (debug)
-    {
-        fprintf(debug, "nrank_gpu_shared %d\n", dd->comm->nrank_gpu_shared);
-    }
 
     /* Note that some ranks could share a GPU, while others don't */
 
@@ -997,7 +987,7 @@ void dd_setup_dlb_resource_sharing(const t_commrec* cr, int gpu_id)
     }
 #else
     GMX_UNUSED_VALUE(cr);
-    GMX_UNUSED_VALUE(gpu_id);
+    GMX_UNUSED_VALUE(uniqueDeviceId);
 #endif
 }
 

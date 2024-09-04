@@ -95,6 +95,8 @@ class DeviceStreamManager
 public:
     /*! \brief Constructor.
      *
+     * Activates the device described by \c deviceInfo
+     *
      * \throws InternalError  If any of the required resources could not be initialized.
      */
     DeviceStreamManager(const DeviceInformation& deviceInfo, SimulationWorkload simulationWork, bool useTiming);

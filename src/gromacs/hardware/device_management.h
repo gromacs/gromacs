@@ -50,7 +50,11 @@
 #ifndef GMX_HARDWARE_DEVICE_MANAGEMENT_H
 #define GMX_HARDWARE_DEVICE_MANAGEMENT_H
 
+#include <cstddef>
+
+#include <array>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -281,5 +285,20 @@ void serializeDeviceInformations(const std::vector<std::unique_ptr<DeviceInforma
  * \return deviceInfoList   Deserialized vector with device informations.
  */
 std::vector<std::unique_ptr<DeviceInformation>> deserializeDeviceInformations(gmx::ISerializer* serializer);
+
+/*! \brief Return an ID for the described GPU that may be unique.
+ *
+ * If a UUID is available, returns its hash.
+ *
+ * Otherwise, returns hash of the \c DeviceInformation::id field.
+ * Note that in this case, the value used on different ranks may or
+ * may not be a reliable indicator of whether the ranks share devices,
+ * depending how that id was constructed, perhaps depending on what
+ * devices were visible to different ranks.
+ */
+size_t uniqueDeviceId(const DeviceInformation& deviceInfo);
+
+//! Return the optional UUID detected for the indicated device
+std::optional<std::array<std::byte, 16>> uuidForDevice(const DeviceInformation& deviceInfo);
 
 #endif // GMX_HARDWARE_DEVICE_MANAGEMENT_H

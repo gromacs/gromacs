@@ -174,14 +174,30 @@ bool change_dd_cutoff(t_commrec*                     cr,
                       real                           cutoffRequested,
                       bool                           checkGpuDdLimitation);
 
-/*! \brief Set up communication for averaging GPU wait times over domains
+/*! \brief Set up communication between PP ranks for averaging GPU
+ * wait times over domains.
  *
  * When domains (PP MPI ranks) share a GPU, the individual GPU wait times
  * are meaningless, as it depends on the order in which tasks on the same
  * GPU finish. Therefore there wait times need to be averaged over the ranks
  * sharing the same GPU. This function sets up the communication for that.
+ *
+ * When there is no PP work on this rank or only one rank, no sharing
+ * is set up. It's the caller's responsibility to call this method on
+ * a PP rank only when that rank is using a GPU.
+ *
+ * It is not necessary that \c hashForDevice is truly the hash of a
+ * real device UUID, merely that its value will be the same on each
+ * rank when a device is shared between ranks, and otherwise
+ * different. An index into the array of devices visible to all ranks
+ * of the same node is sufficient if all such ranks see all devices.
+ * However, that index is unreliable when ranks on the same node see
+ * different subsets of the devices on the node because of different
+ * local environments. In the case where each rank sees only one
+ * device, DLB will behave as if all ranks on the node share the same
+ * device, which will not be optimal.
  */
-void dd_setup_dlb_resource_sharing(const t_commrec* cr, int gpu_id);
+void dd_setup_dlb_resource_sharing(const t_commrec* cr, size_t uniqueDeviceId);
 
 /*! \brief Cycle counter indices used internally in the domain decomposition */
 enum
