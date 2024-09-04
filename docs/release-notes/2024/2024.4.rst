@@ -40,3 +40,15 @@ Fixes that affect portability
 Miscellaneous
 ^^^^^^^^^^^^^
 
+Fix various crashes when GMX_USE_COLVARS=NONE
+"""""""""""""""""""""""""""""""""""""""""""""
+
+Colvars MDModule did not defined the Colvars custom mdp variables
+when the Colvars library was not compiled, preventing tools
+read correctly a tpr file generated with a GROMACS-Colvars version.
+Prevent also the creation of a tpr file if Colvars module is activated
+whereas GROMACS was not compiled with Colvars.
+Proper exit if a Colvars simulation is launched whereas GROMACS was not
+compiled with Colvars.
+
+:issue:`5055`

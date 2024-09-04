@@ -59,9 +59,14 @@ function(gmx_manage_colvars)
             target_link_libraries(colvars_objlib PRIVATE OpenMP::OpenMP_CXX)
         endif()
 
+        set(GMX_HAVE_COLVARS 1 CACHE INTERNAL "Is colvars found?")
+
     else()
         # Create a dummy link target so the calling code doesn't need to know
         # whether colvars support is being compiled.
         add_library(colvars INTERFACE)
+
+        set(GMX_HAVE_COLVARS 0 CACHE INTERNAL "Is colvars found?")
     endif()
+    mark_as_advanced(GMX_HAVE_COLVARS)
 endfunction()
