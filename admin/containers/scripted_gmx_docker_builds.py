@@ -150,8 +150,6 @@ _cp2k_extra_packages = [
     "nano",
     "patch",
     "pkg-config",
-    "python",
-    "python-numpy",
     "python3",
     "unzip",
     "xxd",

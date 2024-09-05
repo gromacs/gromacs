@@ -1,19 +1,20 @@
-# Test goal: GCC build with CP2K v9.1
+# Test goal: GCC build with newest supported CP2K
 # Test intents (should change rarely and conservatively):
 #   OS: Ubuntu oldest supported
 #   Compiler: GCC
 #   GPU: no
 #   Scope: configure, build, test
 # Test implementation choices (free to change as needed):
-#   OS: Ubuntu 20.04
+#   OS: Ubuntu 24.04
 #   Build type: Debug
-#   Compiler: GCC 9
+#   Compiler: GCC 14
 #   MPI: thread_MPI
 #   SIMD: AVX2_256
 #   FFT: FFTW3
 #   Parallelism nt/ntomp: 1/4
+#   CP2K: v2024.2
 
-gromacs-cp2k-9.1:gcc-9-nightly:configure:
+gromacs-cp2k-2024.2:gcc-14-nightly:configure:
   extends:
     - .use-gcc:base
   rules:
@@ -21,7 +22,7 @@ gromacs-cp2k-9.1:gcc-9-nightly:configure:
   stage: configure-build
   cache: {}
   # Dockefile generated with /admin/containers/scripted_gmx_docker_builds.py
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-cp2k-9.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cp2k-2024.2
   variables:
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
@@ -33,11 +34,14 @@ gromacs-cp2k-9.1:gcc-9-nightly:configure:
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=Debug"
     CMAKE_GPU_OPTIONS: "-DGMX_GPU=OFF"
     CTEST_RUN_MODE: "ExperimentalTest"
-    COMPILER_MAJOR_VERSION: 9
+    COMPILER_MAJOR_VERSION: 14
     CP2K_DIR: "/opt/cp2k/lib/local/ssmp"
     CP2K_LINKER_FLAGS: ""
     CMAKE_EXTRA_OPTIONS: "-DBUILD_SHARED_LIBS=OFF -DGMXAPI=OFF -DGMX_INSTALL_NBLIB_API=OFF"
   script:
+    # Generate $CP2K_LINKER_FLAGS combining LDFLAGS and LIBS from /cp2k/arch/local.ssmp
+    - CP2K_LINKER_FLAGS=`grep "LDFLAGS" ${CP2K_DIR}/../../../arch/local.ssmp | awk '{ s = ""; for (i = 4; i <= NF; i++) s = s $i " "; print s }' | tr -d "'"`
+    - CP2K_LINKER_FLAGS="${CP2K_LINKER_FLAGS}"`grep "LIBS" ${CP2K_DIR}/../../../arch/local.ssmp | awk '{ s = ""; for (i = 3; i <= NF; i++) s = s $i " "; print s }'  | tr -d "'"`
     # Call configure script (CP2K specific)
     - bash -x admin/ci-scripts/gromacs-cp2k-configure.sh
   artifacts:
@@ -47,24 +51,23 @@ gromacs-cp2k-9.1:gcc-9-nightly:configure:
     expire_in: 1 week
 
 # Build and test jobs for CP2K builds are joined because of huge build artifacts size
-gromacs-cp2k-9.1:gcc-9-nightly:build-test:
+gromacs-cp2k-2024.2:gcc-14-nightly:build-test:
   extends:
     - .use-gcc:base
     - .use-ccache
   stage: build
   rules:
     - !reference [.rules:nightly-not-for-release, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-9-cp2k-9.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cp2k-2024.2
   variables:
     KUBERNETES_CPU_LIMIT: 4
     KUBERNETES_CPU_REQUEST: 4
     KUBERNETES_MEMORY_REQUEST: 8Gi
     CMAKE_COMPILER_SCRIPT: ""
-    COMPILER_MAJOR_VERSION: 9
+    COMPILER_MAJOR_VERSION: 14
     CTEST_RUN_MODE: "ExperimentalTest"
-    GMX_FORCE_UPDATE_DEFAULT_CPU: 1
   needs:
-    - job: gromacs-cp2k-9.1:gcc-9-nightly:configure
+    - job: gromacs-cp2k-2024.2:gcc-14-nightly:configure
   script:
     # Call build script (default)
     - bash -x admin/ci-scripts/gromacs-base-build.sh
