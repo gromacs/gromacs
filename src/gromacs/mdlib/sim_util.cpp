@@ -1735,9 +1735,9 @@ void do_force(FILE*                         fplog,
     /* Communicate coordinates and sum dipole if necessary */
     if (simulationWork.havePpDomainDecomposition)
     {
+        GpuEventSynchronizer* gpuCoordinateHaloLaunched = nullptr;
         if (!stepWork.doNeighborSearch)
         {
-            GpuEventSynchronizer* gpuCoordinateHaloLaunched = nullptr;
             if (stepWork.useGpuXHalo)
             {
                 // The following must be called after local setCoordinates (which records an event
@@ -1766,28 +1766,28 @@ void do_force(FILE*                         fplog,
                 }
                 dd_move_x(cr->dd, box, x.unpaddedArrayRef(), wcycle);
             }
+        }
 
-            if (stepWork.useGpuXBufferOps)
+        if (stepWork.useGpuXBufferOps)
+        {
+            if (!stepWork.useGpuXHalo)
             {
-                if (!stepWork.useGpuXHalo)
-                {
-                    stateGpu->copyCoordinatesToGpu(x.unpaddedArrayRef(), AtomLocality::NonLocal);
-                }
-                GpuEventSynchronizer* xReadyOnDeviceEvent = stateGpu->getCoordinatesReadyOnDeviceEvent(
-                        AtomLocality::NonLocal, simulationWork, stepWork, gpuCoordinateHaloLaunched);
-                if (stepWork.useGpuXHalo && domainWork.haveCpuNonLocalForceWork)
-                {
-                    /* We already enqueued an event for Gpu Halo exchange completion into the
-                     * NonLocal stream when D2H copying the coordinates. */
-                    xReadyOnDeviceEvent = nullptr;
-                }
-                nbv->convertCoordinatesGpu(
-                        AtomLocality::NonLocal, stateGpu->getCoordinates(), xReadyOnDeviceEvent);
+                stateGpu->copyCoordinatesToGpu(x.unpaddedArrayRef(), AtomLocality::NonLocal);
             }
-            else
+            GpuEventSynchronizer* xReadyOnDeviceEvent = stateGpu->getCoordinatesReadyOnDeviceEvent(
+                    AtomLocality::NonLocal, simulationWork, stepWork, gpuCoordinateHaloLaunched);
+            if (stepWork.useGpuXHalo && domainWork.haveCpuNonLocalForceWork)
             {
-                nbv->convertCoordinates(AtomLocality::NonLocal, x.unpaddedArrayRef());
+                /* We already enqueued an event for Gpu Halo exchange completion into the
+                 * NonLocal stream when D2H copying the coordinates. */
+                xReadyOnDeviceEvent = nullptr;
             }
+            nbv->convertCoordinatesGpu(
+                    AtomLocality::NonLocal, stateGpu->getCoordinates(), xReadyOnDeviceEvent);
+        }
+        else if (!stepWork.doNeighborSearch)
+        {
+            nbv->convertCoordinates(AtomLocality::NonLocal, x.unpaddedArrayRef());
         }
 
         if (simulationWork.useGpuNonbonded)
