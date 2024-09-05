@@ -44,6 +44,8 @@
 
 #include "config.h"
 
+#include <cstdint>
+
 #include <algorithm>
 #include <memory>
 #include <string>
@@ -106,36 +108,63 @@ TEST(DevicesManagerTest, Serialization)
     }
 }
 
+template<std::size_t N>
+uint32_t uint32FromBytes(const std::array<std::byte, N>& data, const std::size_t byteOffset)
+{
+    if (byteOffset + sizeof(uint32_t) > N)
+    {
+        throw std::invalid_argument("byteOffset would read out of bounds");
+    }
+
+    // Integer to copy the bytes to
+    uint32_t result;
+
+    // Copy the bytes, assuming little-endian layout. The compiler
+    // generally elides this away.
+    std::memcpy(&result, &(data[byteOffset]), sizeof(result));
+    if (GMX_INTEGER_BIG_ENDIAN)
+    {
+        // Change the endianness to match the hardware
+        const auto* ptr = reinterpret_cast<const uint8_t*>(&result);
+        return (ptr[0] << 24) | (ptr[1] << 16) | (ptr[2] << 8) | ptr[3];
+    }
+    else
+    {
+        return result;
+    }
+}
+
 std::string uuidToString(const std::array<std::byte, 16>& uuid)
 {
     // Write a string in the frequently used 8-4-4-4-12 format,
     // xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx, where every x represents 4 bits
     std::string result;
     result.reserve(37);
-    const auto* uuidIt = uuid.cbegin();
-    for (int i = 0; i < 4; ++i, ++uuidIt)
+
+    std::size_t byteOffset = 0;
+    for (int i = 0; i < 4; ++i, byteOffset += sizeof(uint32_t))
     {
-        result += gmx::formatString("%2.2x", static_cast<unsigned int>(*uuidIt));
+        result += gmx::formatString("%2.2x", uint32FromBytes(uuid, byteOffset));
     }
     result.append(1, '-');
-    for (int i = 0; i < 2; ++i, ++uuidIt)
+    for (int i = 0; i < 2; ++i, byteOffset += sizeof(uint32_t))
     {
-        result += gmx::formatString("%2.2x", static_cast<unsigned int>(*uuidIt));
+        result += gmx::formatString("%2.2x", uint32FromBytes(uuid, byteOffset));
     }
     result.append(1, '-');
-    for (int i = 0; i < 2; ++i, ++uuidIt)
+    for (int i = 0; i < 2; ++i, byteOffset += sizeof(uint32_t))
     {
-        result += gmx::formatString("%2.2x", static_cast<unsigned int>(*uuidIt));
+        result += gmx::formatString("%2.2x", uint32FromBytes(uuid, byteOffset));
     }
     result.append(1, '-');
-    for (int i = 0; i < 2; ++i, ++uuidIt)
+    for (int i = 0; i < 2; ++i, byteOffset += sizeof(uint32_t))
     {
-        result += gmx::formatString("%2.2x", static_cast<unsigned int>(*uuidIt));
+        result += gmx::formatString("%2.2x", uint32FromBytes(uuid, byteOffset));
     }
     result.append(1, '-');
-    for (int i = 0; i < 6; ++i, ++uuidIt)
+    for (int i = 0; i < 6; ++i, byteOffset += sizeof(uint32_t))
     {
-        result += gmx::formatString("%2.2x", static_cast<unsigned int>(*uuidIt));
+        result += gmx::formatString("%2.2x", uint32FromBytes(uuid, byteOffset));
     }
     return result;
 }
