@@ -120,7 +120,7 @@ compiler_group.add_argument(
     "--oneapi",
     type=str,
     nargs="?",
-    const="2024.2.0",
+    const="2024.0.0",
     default=None,
     help="Select Intel oneAPI package version.",
 )
