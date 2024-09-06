@@ -12,19 +12,21 @@ Getting started
 Create a user account at https://gitlab.com/users/sign_in#register-pane or use
 an existing account at gitlab.com. For more information on how to use gitlab have
 a look at their extensive user documentation at https://docs.gitlab.com/ee/user/index.html.
-We follow the workflow described in https://docs.gitlab.com/ee/topics/gitlab_flow.html. 
 
-If you do not already have a |Gromacs| repository set up, use 
+If you do not already have a |Gromacs| repository set up, use
 ``git clone git@gitlab.com:gromacs/gromacs.git`` to obtain the current |Gromacs|
-repository from gitlab. Otherwise use 
-``git remote add gitlab git@gitlab.com:gromacs/gromacs.git``. 
+repository from gitlab. Otherwise use
+``git remote add gitlab git@gitlab.com:gromacs/gromacs.git``.
 
 Using gitlab, new code enters |Gromacs| by merging git development branches into
-the main branch. 
+the main branch.
 
 To automatically detect issues in new code, it is tested within continuous
 integration (CI) with a large combination of settings.
 See `gmx-codeformatting` for help meeting and testing the style guidelines.
+
+More information about change management is available on the `gitlab
+wiki <https://gitlab.com/gromacs/gromacs/-/wikis/home>`__.
 
 Setting up login credentials with gitlab
 ----------------------------------------
@@ -44,41 +46,51 @@ Creating issues
 
 The meta-level code design and discussions is organised in issues and visible at
 https://gitlab.com/gromacs/gromacs/-/issues. Please check if if your issue or a
-similar issue already exists before creating a new one.
+similar issue already exists before creating a new one. See :doc:`reportstyle`
+for more information.
 
 Note that all Redmine issues have been transferred to gitlab with the same issue
 numbers as used in gitlab. However, comments and discussion are now represented
-by gitlab user @acmnpv - the original authors are found inline at the bottom of
-the comments. 
+by gitlab user `@acmnpv <https://gitlab.com/acmnpv>`__ - the original authors are
+found inline at the bottom of the comments.
 
 Uploading code for review - creating a merge request
 ----------------------------------------------------
 
 Issues are addressed with new code via "merge requests" (MR). Find the current
-MRs at https://gitlab.com/gromacs/gromacs/-/merge_requests. 
+MRs at https://gitlab.com/gromacs/gromacs/-/merge_requests.
 There are two ways of creating a merge request - either via the gitlab graphical
-user interface or via the command line. 
+user interface or via the command line.
 
-To use the GUI, find the relevant issue or open a new one, then find the 
+To use the GUI, find the relevant issue or open a new one, then find the
 "create merge request" button to create a merge request related to that issue in gitlab.
-The default selection is to mark this a work in progress (WIP) merge-request.
-We recommend keeping this setting until you are completely satisfied with the 
+We recommend using the "Mark as draft" option until you are completely satisfied with the
 code yourself and all tests are passed.
 
-Select milestone and assignees to make tracking of the progress easier. 
+Select milestone and assignees to make tracking of the progress easier.
 Keep the requirements for merging as they are set by default.
 
-You can also use ``git push`` on the command line directly and create a merge request 
+You can also use ``git push`` on the command line directly and create a merge request
 following the link that is output on the command line.
 
 Your repository should be in sync with the |Gromacs| repository. To ensure this,
 use ``git fetch`` to obtain the newest branches, then merge the main branch
 into your branch with ``git merge main`` while on your branch.
 
+You can create MRs without having a ``Developer`` role account, but in order to
+trigger MR test pipelines you must be a project member with (at least) the ``Developer``
+role. Project membership can be requested via the Gitlab web interface. The
+``Developer`` role is granted based on acquaintance and/or knowledge about intentions
+to contribute to the project.
+
+As mentioned in :ref:`code review`, the ``Developer`` role is different to membership
+in the ``GMX Developers`` approval group. Approving and merging changes require higher privileges
+than what is required for counting as a ``Developer``.
+
 Naming branches
 ---------------
 
-Good names: documentation_UpdateDevelopersDocsTOGitLab, nbnxm_MakeNbnxmGPUIntoClass, pme_FEPPMEGPU. 
+Good names: documentation_UpdateDevelopersDocsTOGitLab, nbnxm_MakeNbnxmGPUIntoClass, pme_FEPPMEGPU.
 Bad names: branch1234, mybranch, test, etc
 
 Documentation
@@ -119,6 +131,8 @@ In general:
 
 .. Best practices and labeling policies can be proposed as changes to this document. See https://gitlab.com/gromacs/gromacs/-/issues/3949
 
+.. _code review:
+
 Code Review
 ===========
 
@@ -129,7 +143,7 @@ The reviewing workflow is the following:
 
 #. https://gitlab.com/gromacs/gromacs/-/merge_requests shows all open changes
 #. A change needs two approvals to go in, of which one approval has to come from
-   a member of either GMX Core or GMX Developers.
+   a member of either ``GMX Core`` or ``GMX Developers`` approval groups.
 #. Usually a patch goes through several cycles of voting, commenting and
    updating before it becomes merged, with votes from the developers indicating
    if they think that change hat progressed enough to be included.
@@ -142,11 +156,14 @@ opinion of the person who applies an approval before a merge. If you have
 uploaded a minor fix to someone else's patch, use your judgement in
 whether to approve yourself.
 
+Membership in the ``GMX Developers`` and ``GMX Core`` approval groups are based on long-term engagement
+in the project and does not correlate directly with a ``Developer`` role account.
+
 Guide for reviewing
 -------------------
 
 -  First and foremost, check correctness to the extent possible;
--  As portability and performance are the next most important things do check 
+-  As portability and performance are the next most important things do check
    for potential issues;
 -  Check adherence to the :ref:`coding standards <style-guidelines>`;
 -  We should try to ensure that commits that implement bugfixes (as
