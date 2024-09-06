@@ -225,13 +225,13 @@ std::string describeOneMkl()
 {
 #if GMX_GPU_FFT_ONEMKL
     std::string description = "oneMKL interface library (backends:";
-#    ifdef ONEMKL_USING_CUFFT_BACKEND
+#    ifdef ENABLE_CUFFT_BACKEND
     description += " cuFFT";
 #    endif
-#    ifdef ONEMKL_USING_MKLGPU_BACKEND
+#    ifdef ENABLE_MKLGPU_BACKEND
     description += " MKLGPU";
 #    endif
-#    ifdef ONEMKL_USING_ROCFFT_BACKEND
+#    ifdef ENABLE_ROCFFT_BACKEND
     description += " rocFFT";
 #    endif
     description += ")";

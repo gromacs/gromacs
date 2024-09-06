@@ -62,8 +62,8 @@ class DeviceContext;
 #    error This file can only be compiled with Intel DPC++ compiler
 #endif
 
-#if (!GMX_FFT_MKL)
-#    error Must use MKL library for FFT when compiling with Intel DPC++ compiler
+#if (!GMX_FFT_MKL && !GMX_GPU_FFT_ONEMKL)
+#    error Must use MKL library CPU FFT when using MKL for GPU FFT and Intel DPC++ compiler
 #endif
 
 #include <cstddef>
@@ -154,26 +154,6 @@ Gpu3dFft::ImplSyclMkl::ImplSyclMkl(bool allocateRealGrid,
 
     const auto placement = performOutOfPlaceFFT ? PLACEMENT_NOT_INPLACE : PLACEMENT_INPLACE;
 
-    auto queue_commit = [&](auto& descriptor, auto& queue) {
-#if GMX_GPU_FFT_MKL // Closed-source Intel oneMKL library.
-        descriptor.commit(queue);
-#elif GMX_GPU_FFT_ONEMKL // Open-source oneMKL interface library
-// To avoid an oneMKL issue, GROMACS is linked directly against oneMKL backends.
-// This means that the queue must be wrapped in the backend to work.
-#    if defined(ONEMKL_USING_CUFFT_BACKEND)
-        descriptor.commit(oneapi::mkl::backend_selector<oneapi::mkl::backend::cufft>(queue));
-#    elif defined(ONEMKL_USING_MKLGPU_BACKEND)
-        descriptor.commit(oneapi::mkl::backend_selector<oneapi::mkl::backend::mklgpu>(queue));
-#    elif defined(ONEMKL_USING_ROCFFT_BACKEND)
-        descriptor.commit(oneapi::mkl::backend_selector<oneapi::mkl::backend::rocfft>(queue));
-#    else
-#        error No oneMKL interface library backend selected.
-#    endif
-#else
-#    error No oneMKL implementation selected. Expected GMX_GPU_FFT_MKL or GMX_GPU_FFT_ONEMKL.
-#endif
-    };
-
     try
     {
         using oneapi::mkl::dft::config_param;
@@ -181,7 +161,7 @@ Gpu3dFft::ImplSyclMkl::ImplSyclMkl(bool allocateRealGrid,
         r2cDescriptor_.set_value(config_param::OUTPUT_STRIDES, complexGridStrides.data());
         r2cDescriptor_.set_value(config_param::CONJUGATE_EVEN_STORAGE, COMPLEX_COMPLEX_STORAGE);
         r2cDescriptor_.set_value(config_param::PLACEMENT, placement);
-        queue_commit(r2cDescriptor_, queue_);
+        r2cDescriptor_.commit(queue_);
     }
     catch (oneapi::mkl::exception& exc)
     {
@@ -196,7 +176,7 @@ Gpu3dFft::ImplSyclMkl::ImplSyclMkl(bool allocateRealGrid,
         c2rDescriptor_.set_value(config_param::OUTPUT_STRIDES, realGridStrides.data());
         c2rDescriptor_.set_value(config_param::CONJUGATE_EVEN_STORAGE, COMPLEX_COMPLEX_STORAGE);
         c2rDescriptor_.set_value(config_param::PLACEMENT, placement);
-        queue_commit(c2rDescriptor_, queue_);
+        c2rDescriptor_.commit(queue_);
     }
     catch (oneapi::mkl::exception& exc)
     {
