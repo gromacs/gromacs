@@ -191,6 +191,15 @@ struct QMInputFileName
     std::string qmInputFileName_;
 };
 
+/*! \libinternal \brief Notification for the optianal plumed input filename
+ *  provided by user as command-line argument for mdrun
+ */
+struct PlumedInputFilename
+{
+    //! The name of plumed input file, empty by default
+    std::optional<std::string> plumedFilename_{};
+};
+
 /*! \libinternal \brief Provides the constant ensemble temperature
  */
 struct EnsembleTemperature
@@ -371,6 +380,7 @@ struct MDModulesNotifiers
      *                              setup
      * \tparam MdRunInputFilename&  Allows modules to know .tpr filename during mdrun
      * \tparam EdrOutputFilename&   Allows modules to know .edr filename during mdrun
+     * \tparam PlumedInputFilename& Allows modules to know the optional .dat filename to be read by plumed
      */
     BuildMDModulesNotifier<const KeyValueTreeObject&,
                            LocalAtomSetManager*,
@@ -386,7 +396,8 @@ struct MDModulesNotifiers
                            const EnsembleTemperature&,
                            const t_commrec&,
                            const MdRunInputFilename&,
-                           const EdrOutputFilename&>::type simulationSetupNotifier_;
+                           const EdrOutputFilename&,
+                           const PlumedInputFilename&>::type simulationSetupNotifier_;
 };
 
 } // namespace gmx

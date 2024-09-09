@@ -1219,6 +1219,11 @@ int Mdrunner::mdrunner()
         setupNotifier.notify(mdRunInputFilename);
         gmx::EdrOutputFilename edrOutputFilename = { ftp2fn(efEDR, filenames.size(), filenames.data()) };
         setupNotifier.notify(edrOutputFilename);
+        // this will be uncommented in !4367
+        // const char* plumedFname = opt2fn("-plumed", filenames.size(), filenames.data());
+        // gmx::PlumedFilename plumedFilename{ plumedFname ? std::string{plumedFname} : std::nullopt
+        // };
+        // setupNotifier.notify(plumedFilename);
     }
 
     if (fplog != nullptr)
