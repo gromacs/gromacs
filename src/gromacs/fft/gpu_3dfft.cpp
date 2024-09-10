@@ -150,23 +150,7 @@ Gpu3dFft::Gpu3dFft(FftBackend           backend,
 #elif GMX_GPU_HIP
     switch (backend)
     {
-#    if GMX_GPU_FFT_HIPFFT
-        case FftBackend::Hipfft:
-            impl_ = std::make_unique<Gpu3dFft::ImplHipFft>(allocateRealGrid,
-                                                           comm,
-                                                           gridSizesInXForEachRank,
-                                                           gridSizesInYForEachRank,
-                                                           nz,
-                                                           performOutOfPlaceFFT,
-                                                           context,
-                                                           pmeStream,
-                                                           realGridSize,
-                                                           realGridSizePadded,
-                                                           complexGridSizePadded,
-                                                           realGrid,
-                                                           complexGrid);
-            break;
-#    elif GMX_GPU_FFT_VKFFT
+#    if GMX_GPU_FFT_VKFFT
         case FftBackend::HipVkfft:
             impl_ = std::make_unique<Gpu3dFft::ImplHipVkFft>(allocateRealGrid,
                                                              comm,
