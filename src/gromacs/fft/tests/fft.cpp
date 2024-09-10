@@ -490,8 +490,10 @@ TEST_P(ParameterizedFFTTest3D, RunsOnDevices)
 #    elif GMX_GPU_HIP
 #        if GMX_GPU_FFT_VKFFT
         const FftBackend backend = FftBackend::HipVkfft;
-#        else
+#        elif GMX_GPU_FFT_HIPFFT
         const FftBackend backend = FftBackend::Hipfft;
+#        else
+        const FftBackend backend = FftBackend::HipRocfft;
 #        endif
 #    elif GMX_GPU_OPENCL
 #        if GMX_GPU_FFT_VKFFT

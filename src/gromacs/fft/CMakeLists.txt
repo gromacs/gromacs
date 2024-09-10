@@ -87,6 +87,10 @@ elseif (GMX_GPU_HIP)
             gpu_3dfft_impl.cpp
             gpu_3dfft.cpp
             )
+    _gmx_add_files_to_property(HIP_SOURCES
+        # Must add these files so they can include hip_runtime.h
+        gpu_3dfft_hip_vkfft.cpp
+        )
     elseif(GMX_GPU_FFT_HIPFFT)
         gmx_add_libgromacs_sources(
             # HIP-specific sources
@@ -94,13 +98,28 @@ elseif (GMX_GPU_HIP)
             gpu_3dfft_impl.cpp
             gpu_3dfft.cpp
             )
+    _gmx_add_files_to_property(HIP_SOURCES
+        # Must add these files so they can include hip_runtime.h
+        gpu_3dfft_hipfft.cpp
+        )
+    elseif(GMX_GPU_FFT_ROCFFT)
+        gmx_add_libgromacs_sources(
+            # HIP-specific sources
+            gpu_3dfft_hip_rocfft.cpp
+            gpu_3dfft_impl.cpp
+            gpu_3dfft.cpp
+            rocfft_common_utils.cpp 
+            )
+    _gmx_add_files_to_property(HIP_SOURCES
+        # Must add these files so they can include hip_runtime.h
+        gpu_3dfft_hip_rocfft.cpp
+        rocfft_common_utils.cpp 
+        )
     endif()
     _gmx_add_files_to_property(HIP_SOURCES
         # Must add these files so they can include hip_runtime.h
         gpu_3dfft.cpp
         gpu_3dfft_impl.cpp
-        gpu_3dfft_hip_vkfft.cpp
-        gpu_3dfft_hipfft.cpp
         )
 elseif (GMX_GPU_OPENCL)
     if (GMX_GPU_FFT_VKFFT)
@@ -123,7 +142,7 @@ elseif (GMX_GPU_SYCL)
     elseif(GMX_GPU_FFT_BBFFT)
         list(APPEND _sycl_fft_sources gpu_3dfft_sycl_bbfft.cpp)
     elseif(GMX_GPU_FFT_ROCFFT)
-        list(APPEND _sycl_fft_sources gpu_3dfft_sycl_rocfft.cpp)
+        list(APPEND _sycl_fft_sources gpu_3dfft_sycl_rocfft.cpp rocfft_common_utils.cpp)
     elseif(GMX_GPU_FFT_VKFFT)
         list(APPEND _sycl_fft_sources gpu_3dfft_sycl_vkfft.cpp)
     endif()

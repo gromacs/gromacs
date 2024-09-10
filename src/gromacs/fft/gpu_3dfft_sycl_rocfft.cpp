@@ -68,6 +68,8 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 
+#include "rocfft_common_utils.h"
+
 #if !defined(__HIPSYCL__) && !defined(__ADAPTIVECPP__)
 #    error This file can only be compiled with AdaptiveCpp/hipSYCL enabled
 #endif
@@ -76,144 +78,11 @@
 #    error Only ROCM platform is supported for 3D FFT with hipSYCL
 #endif
 
-#include "rocfft.h"
-
 namespace gmx
 {
 
 namespace
 {
-
-//! Model the kinds of 3D FFT implemented
-enum class FftDirection : int
-{
-    RealToComplex,
-    ComplexToReal,
-    Count,
-};
-
-//! Strings that match enum rocfft_status_e in rocfft.h
-const std::array<const char*, rocfft_status_invalid_work_buffer + 1> c_rocfftErrorStrings = {
-    "success",
-    "failure",
-    "invalid argument value",
-    "invalid dimensions",
-    "invalid array type",
-    "invalid strides",
-    "invalid distance",
-    "invalid offset",
-    "invalid work buffer"
-};
-
-//! Helper for consistent error handling
-void handleFftError(rocfft_status result, const std::string& msg)
-{
-    if (result != rocfft_status_success)
-    {
-        if (result <= rocfft_status_invalid_work_buffer)
-        {
-            GMX_THROW(gmx::InternalError(gmx::formatString(
-                    "%s: (error code %d - %s)\n", msg.c_str(), result, c_rocfftErrorStrings[result])));
-        }
-        else
-        {
-            GMX_THROW(gmx::InternalError(gmx::formatString("%s: (error code %d)\n", msg.c_str(), result)));
-        }
-    }
-}
-
-//! Helper for consistent error handling
-void handleFftError(rocfft_status result, const std::string& direction, const std::string& msg)
-{
-    if (result != rocfft_status_success)
-    {
-        handleFftError(result, msg + " doing " + direction);
-    }
-}
-
-//! Provides RAII-style initialization of rocFFT library
-class RocfftInitializer
-{
-public:
-    RocfftInitializer()
-    {
-        rocfft_status result;
-        result = rocfft_setup();
-        handleFftError(result, "rocfft_setup failure");
-    }
-    ~RocfftInitializer()
-    {
-        // No need to handle any errors in a destructor, and
-        // anyway one cannot throw.
-        rocfft_cleanup();
-    }
-};
-
-//! All the persistent data for planning an executing a 3D FFT
-struct RocfftPlan
-{
-    //! Describes details of the data layout
-    rocfft_plan_description description = nullptr;
-    //! High level information about the plan
-    rocfft_plan plan = nullptr;
-    //! Execution details (working buffer, HIP stream to use, etc)
-    rocfft_execution_info info = nullptr;
-    //! Persistent work buffer (left unallocated if not needed)
-    void* workBuffer;
-    //! Destructor
-    ~RocfftPlan()
-    {
-        // No need to handle any errors in a destructor,
-        // and anyway one cannot throw.
-        if (plan)
-        {
-            rocfft_plan_destroy(plan);
-        }
-        if (description)
-        {
-            rocfft_plan_description_destroy(description);
-        }
-        if (info)
-        {
-            rocfft_execution_info_destroy(info);
-        }
-        if (workBuffer)
-        {
-            GMX_UNUSED_VALUE(hipFree(workBuffer));
-        }
-    }
-};
-
-//! Helper struct to reduce repetitive code setting up a 3D FFT plan
-struct PlanSetupData
-{
-    //! Format of the input array (real or hermitian)
-    rocfft_array_type arrayType;
-    //! Strides through the input array for the three dimensions
-    std::array<size_t, DIM> strides;
-    //! Total size of the input array (including padding)
-    size_t totalSize;
-};
-
-//! Compute the stride through the real 1D array
-std::array<size_t, DIM> makeRealStrides(ivec realGridSizePadded)
-{
-    return { 1, size_t(realGridSizePadded[ZZ]), size_t(realGridSizePadded[ZZ] * realGridSizePadded[YY]) };
-};
-
-//! Compute the stride through the complex 1D array
-std::array<size_t, DIM> makeComplexStrides(ivec complexGridSizePadded)
-{
-    return { 1,
-             size_t(complexGridSizePadded[ZZ]),
-             size_t(complexGridSizePadded[ZZ] * complexGridSizePadded[YY]) };
-}
-
-//! Compute total grid size
-size_t computeTotalSize(ivec gridSize)
-{
-    return size_t(gridSize[XX] * gridSize[YY] * gridSize[ZZ]);
-}
 
 /*! \brief Prepare plans for the forward and reverse transformation.
  *
@@ -229,7 +98,7 @@ RocfftPlan makePlan(const std::string&     descriptiveString,
     rocfft_plan_description description = nullptr;
     rocfft_status           result;
     result = rocfft_plan_description_create(&description);
-    handleFftError(result, descriptiveString, "rocfft_plan_description_create failure");
+    handleRocFftError(result, descriptiveString, "rocfft_plan_description_create failure");
     result = rocfft_plan_description_set_data_layout(description,
                                                      inputPlanSetupData.arrayType,
                                                      outputPlanSetupData.arrayType,
@@ -242,7 +111,7 @@ RocfftPlan makePlan(const std::string&     descriptiveString,
                                                      outputPlanSetupData.strides.size(),
                                                      outputPlanSetupData.strides.data(),
                                                      outputPlanSetupData.totalSize);
-    handleFftError(result, descriptiveString, "rocfft_plan_description_set_data_layout failure");
+    handleRocFftError(result, descriptiveString, "rocfft_plan_description_set_data_layout failure");
 
     // The plan creation depends on the identity of the GPU device, so
     // we make sure it is made in the same queue where it will be
@@ -305,23 +174,24 @@ RocfftPlan makePlan(const std::string&     descriptiveString,
         });
     }
     // Check for errors that happened while running the hipSYCL custom operation.
-    handleFftError(
+    handleRocFftError(
             resultBuffer.get_host_access()[0], descriptiveString, "rocfft_plan_create failure");
-    handleFftError(resultBuffer.get_host_access()[1],
-                   descriptiveString,
-                   "rocfft_plan_get_work_buffer_size failure");
-    handleFftError(resultBuffer.get_host_access()[2], descriptiveString, "hipMalloc failure");
+    handleRocFftError(resultBuffer.get_host_access()[1],
+                      descriptiveString,
+                      "rocfft_plan_get_work_buffer_size failure");
+    handleRocFftError(resultBuffer.get_host_access()[2], descriptiveString, "hipMalloc failure");
 
     rocfft_execution_info execution_info = nullptr;
     result                               = rocfft_execution_info_create(&execution_info);
-    handleFftError(result, descriptiveString, "rocfft_execution_info_create failure");
+    handleRocFftError(result, descriptiveString, "rocfft_execution_info_create failure");
 
     if (requiredWorkBufferSize > 0)
     {
         GMX_RELEASE_ASSERT(workBuffer != nullptr,
                            "Work buffer should have been allocated, but was not");
         result = rocfft_execution_info_set_work_buffer(execution_info, workBuffer, requiredWorkBufferSize);
-        handleFftError(result, descriptiveString, "rocfft_execution_info_set_work_buffer failure");
+        handleRocFftError(
+                result, descriptiveString, "rocfft_execution_info_set_work_buffer failure");
     }
 
     return RocfftPlan{ description, plan, execution_info, workBuffer };
