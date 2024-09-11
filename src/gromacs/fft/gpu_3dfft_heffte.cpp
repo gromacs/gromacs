@@ -46,6 +46,7 @@
 
 #include <cstdlib>
 
+#include <complex>
 #include <iostream>
 
 #include "gromacs/gpu_utils/device_context.h"
@@ -62,14 +63,65 @@
 namespace gmx
 {
 
-#if GMX_ACPP_HAVE_CUDA_TARGET
-constexpr auto c_hipsyclBackend = sycl::backend::cuda;
-#elif GMX_ACPP_HAVE_HIP_TARGET
-constexpr auto c_hipsyclBackend = sycl::backend::hip;
-#endif
-
 namespace
 {
+
+#if GMX_GPU_SYCL
+template<typename backend_tag>
+constexpr sycl::backend gmx_unused syclBackend()
+{
+    if constexpr (std::is_same_v<backend_tag, heffte::backend::cufft>)
+    {
+#    if GMX_SYCL_ACPP
+        return sycl::backend::cuda;
+#    else
+        return sycl::backend::ext_oneapi_cuda;
+#    endif
+    }
+    else if constexpr (std::is_same_v<backend_tag, heffte::backend::rocfft>)
+    {
+#    if GMX_SYCL_ACPP
+        return sycl::backend::hip;
+#    else
+        return sycl::backend::ext_oneapi_hip;
+#    endif
+    }
+    else
+    {
+        GMX_RELEASE_ASSERT(false, "Don't know how to map HeFFTe backend to SYCL backend");
+#    if GMX_SYCL_ACPP
+        return sycl::backend::ocl;
+#    else
+        return sycl::backend::opencl;
+#    endif
+    }
+}
+#endif
+
+// No definition of heffteStream for ACPP because it is not used in that case
+#if GMX_SYCL_DPCPP
+template<typename backend_tag>
+decltype(auto) heffteStream(sycl::queue& queue)
+{
+    if constexpr (std::is_same_v<backend_tag, heffte::backend::onemkl>)
+    {
+        return (queue); // oneMKL uses sycl::queue directly, return a reference
+    }
+    else // other backends need the native queue
+    {
+        return sycl::get_native<syclBackend<backend_tag>()>(queue);
+    }
+}
+#elif GMX_GPU_CUDA
+template<typename backend_tag>
+cudaStream_t heffteStream(cudaStream_t queue)
+{
+    static_assert(std::is_same_v<backend_tag, heffte::backend::cufft>,
+                  "Only heFFTe cuFFT backend supported in CUDA build");
+    return queue;
+}
+
+#endif
 
 /*! \brief Return either the boolean true/false given by \c environmentVariableName,
  * or the \c defaultValue if the environment variable is not set.
@@ -246,7 +298,7 @@ Gpu3dFft::ImplHeFfte<backend_tag>::ImplHeFfte(bool                 allocateRealG
                 .submit([&, &fftPlanRef = fftPlan_, &workspaceRef = workspace_](sycl::handler& cgh) {
                     cgh.hipSYCL_enqueue_custom_operation([=, &fftPlanRef, &workspaceRef](
                                                                  sycl::interop_handle& h) {
-                        auto stream = h.get_native_queue<c_hipsyclBackend>();
+                        auto stream = h.get_native_queue<syclBackend<backend_tag>()>();
                         fftPlanRef  = std::make_unique<heffte::fft3d_r2c<backend_tag, int>>(
                                 stream, realBox, complexBox, 0, comm, planOptions);
                         workspaceRef =
@@ -256,7 +308,7 @@ Gpu3dFft::ImplHeFfte<backend_tag>::ImplHeFfte(bool                 allocateRealG
                 .wait();
 #else
         fftPlan_ = std::make_unique<heffte::fft3d_r2c<backend_tag, int>>(
-                pmeRawStream_, realBox, complexBox, 0, comm, planOptions);
+                heffteStream<backend_tag>(pmeRawStream_), realBox, complexBox, 0, comm, planOptions);
 #endif
     }
     else
@@ -284,11 +336,13 @@ Gpu3dFft::ImplHeFfte<backend_tag>::ImplHeFfte(bool                 allocateRealG
 
         // Define 3D FFT plan
 #if GMX_SYCL_ACPP
+        // We need to use hipSYCL_enqueue_custom_operation here to handle cases when ACpp uses
+        // extra worker thread to submit tasks to the GPU. No need to do this with DPC++.
         pmeRawStream_
                 .submit([&, &fftPlanRef = fftPlan_, &workspaceRef = workspace_](sycl::handler& cgh) {
                     cgh.hipSYCL_enqueue_custom_operation([=, &fftPlanRef, &workspaceRef](
                                                                  sycl::interop_handle& h) {
-                        auto stream = h.get_native_queue<c_hipsyclBackend>();
+                        auto stream = h.get_native_queue<syclBackend<backend_tag>()>();
                         fftPlanRef  = std::make_unique<heffte::fft3d_r2c<backend_tag, int>>(
                                 stream, realBox, complexBox, 0, comm, planOptions);
                         workspaceRef =
@@ -298,7 +352,7 @@ Gpu3dFft::ImplHeFfte<backend_tag>::ImplHeFfte(bool                 allocateRealG
                 .wait();
 #else
         fftPlan_ = std::make_unique<heffte::fft3d_r2c<backend_tag, int>>(
-                pmeRawStream_, realBox, complexBox, 0, comm, planOptions);
+                heffteStream<backend_tag>(pmeRawStream_), realBox, complexBox, 0, comm, planOptions);
 #endif
     }
 
