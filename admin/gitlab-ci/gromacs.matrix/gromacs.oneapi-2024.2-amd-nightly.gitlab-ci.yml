@@ -25,7 +25,7 @@ gromacs:oneapi-2024.2-amd-nightly:configure:
   variables:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
-    CMAKE_EXTRA_OPTIONS: "-DSYCL_CXX_FLAGS_EXTRA=-fsycl-targets=amd_gpu_gfx1034 -DGMX_GPU_NB_CLUSTER_SIZE=8 -DGMX_GPU_FFT_LIBRARY=vkfft -DGMX_SYCL_ENABLE_GRAPHS=ON"
+    CMAKE_EXTRA_OPTIONS: "-DSYCL_CXX_FLAGS_EXTRA=-fsycl-targets=amd_gpu_gfx1034 -DGMX_GPU_FFT_LIBRARY=vkfft -DGMX_SYCL_ENABLE_GRAPHS=ON"
     COMPILER_MAJOR_VERSION: 2024
 
 gromacs:oneapi-2024.2-amd-nightly:build:
