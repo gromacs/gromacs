@@ -87,7 +87,7 @@ public:
      * \param[in]    mtop             Global system topology
      * \param[in]    ddBondedChecking Tells for which bonded interactions presence should be checked
      * \param[in]    localTopology    The local topology
-     * \param[in]    localState       The local state
+     * \param[in]    localState       The local state, can be nullptr
      * \param[in]    useUpdateGroups  Whether update groups are in use
      * \param[in]    observablesReducerBuilder  Handle to builder for ObservablesReducer
      */
@@ -96,7 +96,7 @@ public:
                          const gmx_mtop_t&          mtop,
                          DDBondedChecking           ddBondedChecking,
                          const gmx_localtop_t&      localTopology,
-                         const t_state&             localState,
+                         const t_state*             localState,
                          bool                       useUpdateGroups,
                          ObservablesReducerBuilder* observablesReducerBuilder);
     //! Destructor

@@ -334,7 +334,10 @@ static void printMissingInteractionsAtoms(const MDLogger&               mdlog,
     }
 
     printMissingInteractionsAtoms(mdlog, cr, top_global, top_local.idef);
-    write_dd_pdb("dd_dump_err", 0, "dump", top_global, cr, -1, as_rvec_array(x.data()), box);
+    if (!x.empty())
+    {
+        write_dd_pdb("dd_dump_err", 0, "dump", top_global, cr, -1, as_rvec_array(x.data()), box);
+    }
 
     std::string errorMessage;
 
@@ -377,7 +380,7 @@ public:
          const gmx_mtop_t&     mtop,
          DDBondedChecking      ddBondedChecking,
          const gmx_localtop_t& localTopology,
-         const t_state&        localState,
+         const t_state*        localState,
          bool                  useUpdateGroups);
     //! Objects used when reporting that interactions are missing
     //! {
@@ -389,8 +392,8 @@ public:
     const gmx_mtop_t& mtop_;
     //! Local topology
     const gmx_localtop_t& localTopology_;
-    //! Local state
-    const t_state& localState_;
+    //! Local state, optional
+    const t_state* localState_;
     //! }
 
     /*! \brief View used for computing the global number of bonded interactions.
@@ -441,7 +444,7 @@ LocalTopologyChecker::Impl::Impl(const MDLogger&        mdlog,
                                  const gmx_mtop_t&      mtop,
                                  const DDBondedChecking ddBondedChecking,
                                  const gmx_localtop_t&  localTopology,
-                                 const t_state&         localState,
+                                 const t_state*         localState,
                                  bool                   useUpdateGroups) :
     mdlog_(mdlog),
     cr_(cr),
@@ -458,7 +461,7 @@ LocalTopologyChecker::LocalTopologyChecker(const MDLogger&            mdlog,
                                            const gmx_mtop_t&          mtop,
                                            const DDBondedChecking     ddBondedChecking,
                                            const gmx_localtop_t&      localTopology,
-                                           const t_state&             localState,
+                                           const t_state*             localState,
                                            const bool                 useUpdateGroups,
                                            ObservablesReducerBuilder* observablesReducerBuilder) :
     impl_(std::make_unique<Impl>(mdlog, cr, mtop, ddBondedChecking, localTopology, localState, useUpdateGroups))
@@ -477,14 +480,15 @@ LocalTopologyChecker::LocalTopologyChecker(const MDLogger&            mdlog,
         if (numTotalBondedInteractionsFound != impl->expectedNumGlobalBondedInteractions_)
         {
             // Give error and exit
-            dd_print_missing_interactions(impl->mdlog_,
-                                          impl->cr_,
-                                          numTotalBondedInteractionsFound,
-                                          impl->expectedNumGlobalBondedInteractions_,
-                                          impl->mtop_,
-                                          impl->localTopology_,
-                                          impl->localState_.x,
-                                          impl->localState_.box); // Does not return
+            dd_print_missing_interactions(
+                    impl->mdlog_,
+                    impl->cr_,
+                    numTotalBondedInteractionsFound,
+                    impl->expectedNumGlobalBondedInteractions_,
+                    impl->mtop_,
+                    impl->localTopology_,
+                    impl->localState_ ? makeArrayRef(impl->localState_->x) : ArrayRef<RVec>(),
+                    impl->localState_ ? impl->localState_->box : nullptr); // Does not return
         }
     };
 

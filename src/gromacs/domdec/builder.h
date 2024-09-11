@@ -99,10 +99,14 @@ public:
                                bool                              canUseGpuPmeDecomposition);
     //! Destructor
     ~DomainDecompositionBuilder();
-    //! Build the resulting DD manager
+    /*! \brief Build the resulting DD manager
+     *
+     * \p localState is used for printing distances in case bonded interactions can not
+     * be assigned. Pass nullptr when multiple local states are used (e.g. during EM).
+     */
     std::unique_ptr<gmx_domdec_t> build(LocalAtomSetManager*       atomSets,
                                         const gmx_localtop_t&      localTopology,
-                                        const t_state&             localState,
+                                        const t_state*             localState,
                                         ObservablesReducerBuilder* observablesReducerBuilder);
 
 private:

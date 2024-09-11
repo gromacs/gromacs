@@ -2689,7 +2689,7 @@ public:
     //! Build the resulting DD manager
     std::unique_ptr<gmx_domdec_t> build(LocalAtomSetManager*       atomSets,
                                         const gmx_localtop_t&      localTopology,
-                                        const t_state&             localState,
+                                        const t_state*             localState,
                                         ObservablesReducerBuilder* observablesReducerBuilder);
 
     //! Objects used in constructing and configuring DD
@@ -2841,7 +2841,7 @@ DomainDecompositionBuilder::Impl::Impl(const MDLogger&                   mdlog,
 
 std::unique_ptr<gmx_domdec_t> DomainDecompositionBuilder::Impl::build(LocalAtomSetManager* atomSets,
                                                                       const gmx_localtop_t& localTopology,
-                                                                      const t_state& localState,
+                                                                      const t_state* localState,
                                                                       ObservablesReducerBuilder* observablesReducerBuilder)
 {
     auto dd = std::make_unique<gmx_domdec_t>(
@@ -2936,7 +2936,7 @@ DomainDecompositionBuilder::DomainDecompositionBuilder(const MDLogger&          
 
 std::unique_ptr<gmx_domdec_t> DomainDecompositionBuilder::build(LocalAtomSetManager*  atomSets,
                                                                 const gmx_localtop_t& localTopology,
-                                                                const t_state&        localState,
+                                                                const t_state*        localState,
                                                                 ObservablesReducerBuilder* observablesReducerBuilder)
 {
     return impl_->build(atomSets, localTopology, localState, observablesReducerBuilder);
