@@ -58,8 +58,8 @@ struct NbnxnPairlistGpu;
 struct nbnxn_atomdata_t;
 class StepWorkload;
 
-static constexpr auto sc_referncePairlistLayout = PairlistType::Hierarchical8x8x8;
-using ReferenceKernelPairlist                   = NbnxnPairlistGpu<sc_referncePairlistLayout>;
+static constexpr auto sc_warpSize32Layout = PairlistType::Hierarchical8x8x8;
+using ReferenceKernelPairlist             = NbnxnPairlistGpu<sc_warpSize32Layout>;
 
 //! Reference (slow) kernel for nb n vs n GPU type pair lists
 void nbnxn_kernel_gpu_ref(const ReferenceKernelPairlist* nbl,

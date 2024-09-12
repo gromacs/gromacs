@@ -64,7 +64,7 @@ namespace gmx
 
 /* Convenience defines */
 //! CUDA device specific pairlist layout
-static constexpr PairlistType sc_cudaSpecificLayout = PairlistType::Hierarchical8x8x8;
+static constexpr PairlistType sc_warpSize32Layout = PairlistType::Hierarchical8x8x8;
 
 /*! \brief Log of the i and j cluster size.
  *  change this together with c_clSize !*/
