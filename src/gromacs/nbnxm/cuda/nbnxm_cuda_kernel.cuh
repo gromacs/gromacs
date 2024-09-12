@@ -145,7 +145,7 @@ __launch_bounds__(THREADS_PER_BLOCK, MIN_BLOCKS_PER_MP)
         __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_cuda)
 #    endif /* CALC_ENERGIES */
 #endif     /* PRUNE_NBL */
-                (NBAtomDataGpu atdat, NBParamGpu nbparam, GpuPairlist<sc_cudaSpecificLayout> plist, bool bCalcFshift)
+                (NBAtomDataGpu atdat, NBParamGpu nbparam, GpuPairlist<sc_warpSize32Layout> plist, bool bCalcFshift)
 #ifdef FUNCTION_DECLARATION_ONLY
                         ; /* Only do function declaration, omit the function body. */
 #else
@@ -160,8 +160,8 @@ __launch_bounds__(THREADS_PER_BLOCK, MIN_BLOCKS_PER_MP)
     const nbnxn_sci_t* pl_sci = plist.sorting.sciSorted;
     const
 #    endif
-    nbnxn_cj_packed_t<sc_cudaSpecificLayout>*  pl_cjPacked = plist.cjPacked;
-    const nbnxn_excl_t<sc_cudaSpecificLayout>* excl        = plist.excl;
+    nbnxn_cj_packed_t<sc_warpSize32Layout>*  pl_cjPacked = plist.cjPacked;
+    const nbnxn_excl_t<sc_warpSize32Layout>* excl        = plist.excl;
 #    ifndef LJ_COMB
     const int* atom_types = atdat.atomTypes;
     int        ntypes     = atdat.numTypes;
