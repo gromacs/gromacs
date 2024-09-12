@@ -128,12 +128,12 @@ namespace gmx
 /*! Nonbonded kernel function pointer type */
 typedef void (*nbnxn_cu_kfunc_ptr_t)(const NBAtomDataGpu,
                                      const NBParamGpu,
-                                     const GpuPairlist<sc_cudaSpecificLayout>,
+                                     const GpuPairlist<sc_warpSize32Layout>,
                                      bool);
 
-//! CUDA specific location specific pairlist
+//! CUDA and locality specific pairlist
 using CudaPairlistByLocality =
-        gmx::EnumerationArray<InteractionLocality, std::unique_ptr<GpuPairlist<sc_cudaSpecificLayout>>>;
+        gmx::EnumerationArray<InteractionLocality, std::unique_ptr<GpuPairlist<sc_warpSize32Layout>>>;
 
 /*********************************/
 
@@ -442,8 +442,8 @@ static inline int calc_shmem_required_nonbonded(const int                       
  * Take counts prepared in combined prune and interaction kernel and use them to sort plist.
  * Note that this sorted list is not available in the combined prune and interaction kernel
  * itself, which causes a performance degredation of 1-10% for that initial call */
-static inline void gpuLaunchKernelSciSort(GpuPairlist<sc_cudaSpecificLayout>* plist,
-                                          const DeviceStream&                 deviceStream)
+static inline void gpuLaunchKernelSciSort(GpuPairlist<sc_warpSize32Layout>* plist,
+                                          const DeviceStream&               deviceStream)
 {
     performExclusiveScan(plist->sorting.nscanTemporary, plist->sorting.scanTemporary, plist, deviceStream);
 
