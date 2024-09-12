@@ -515,7 +515,7 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const MDLogger&            md
                                                    bool                       useGpuForNonbonded,
                                                    bool                       useGpuForNonbondedFE,
                                                    const DeviceStreamManager* deviceStreamManager,
-                                                   PairlistType      deviceSpecificlPairlistType,
+                                                   PairlistType      deviceSpecificPairlistType,
                                                    const gmx_mtop_t& mtop,
                                                    bool localAtomOrderMatchesNbnxmOrder,
                                                    ObservablesReducerBuilder* observablesReducerBuilder,
