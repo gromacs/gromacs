@@ -107,10 +107,10 @@ namespace gmx
  */
 template<bool haveFreshList>
 __launch_bounds__(THREADS_PER_BLOCK, MIN_BLOCKS_PER_MP) __global__
-        void nbnxn_kernel_prune_cuda(NBAtomDataGpu                      atdat,
-                                     NBParamGpu                         nbparam,
-                                     GpuPairlist<sc_cudaSpecificLayout> plist,
-                                     int                                numParts)
+        void nbnxn_kernel_prune_cuda(NBAtomDataGpu                    atdat,
+                                     NBParamGpu                       nbparam,
+                                     GpuPairlist<sc_warpSize32Layout> plist,
+                                     int                              numParts)
 #ifdef FUNCTION_DECLARATION_ONLY
                 ; /* Only do function declaration, omit the function body. */
 
@@ -118,11 +118,11 @@ __launch_bounds__(THREADS_PER_BLOCK, MIN_BLOCKS_PER_MP) __global__
 // there will be a definition provided.
 extern template __global__ void nbnxn_kernel_prune_cuda<true>(const NBAtomDataGpu,
                                                               const NBParamGpu,
-                                                              const GpuPairlist<sc_cudaSpecificLayout>,
+                                                              const GpuPairlist<sc_warpSize32Layout>,
                                                               int);
 extern template __global__ void nbnxn_kernel_prune_cuda<false>(const NBAtomDataGpu,
                                                                const NBParamGpu,
-                                                               const GpuPairlist<sc_cudaSpecificLayout>,
+                                                               const GpuPairlist<sc_warpSize32Layout>,
                                                                int);
 #else
 {
@@ -147,9 +147,9 @@ extern template __global__ void nbnxn_kernel_prune_cuda<false>(const NBAtomDataG
 
     /* convenience variables */
     const nbnxn_sci_t* pl_sci = haveFreshList ? plist.sci : plist.sorting.sciSorted;
-    nbnxn_cj_packed_t<sc_cudaSpecificLayout>* pl_cjPacked = plist.cjPacked;
-    const float4*                             xq          = atdat.xq;
-    const float3*                             shift_vec   = asFloat3(atdat.shiftVec);
+    nbnxn_cj_packed_t<sc_warpSize32Layout>* pl_cjPacked = plist.cjPacked;
+    const float4*                           xq          = atdat.xq;
+    const float3*                           shift_vec   = asFloat3(atdat.shiftVec);
 
     float rlistOuter_sq = nbparam.rlistOuter_sq;
     float rlistInner_sq = nbparam.rlistInner_sq;

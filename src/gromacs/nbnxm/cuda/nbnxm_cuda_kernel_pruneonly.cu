@@ -44,11 +44,11 @@ namespace gmx
 /* Instantiate external template functions */
 template __global__ void nbnxn_kernel_prune_cuda<false>(const NBAtomDataGpu,
                                                         const NBParamGpu,
-                                                        const GpuPairlist<sc_cudaSpecificLayout>,
+                                                        const GpuPairlist<sc_warpSize32Layout>,
                                                         int);
 template __global__ void nbnxn_kernel_prune_cuda<true>(const NBAtomDataGpu,
                                                        const NBParamGpu,
-                                                       const GpuPairlist<sc_cudaSpecificLayout>,
+                                                       const GpuPairlist<sc_warpSize32Layout>,
                                                        int);
 #endif
 

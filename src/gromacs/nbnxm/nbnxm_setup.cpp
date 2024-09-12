@@ -460,7 +460,7 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
                                                    const bool           useGpuForNonbonded,
                                                    const bool           useGpuForNonbondedFE,
                                                    const gmx::DeviceStreamManager* deviceStreamManager,
-                                                   const PairlistType deviceSpecificlPairlistType,
+                                                   const PairlistType deviceSpecificPairlistType,
                                                    const gmx_mtop_t&  mtop,
                                                    const bool localAtomOrderMatchesNbnxmOrder,
                                                    gmx::ObservablesReducerBuilder* observablesReducerBuilder,
@@ -488,7 +488,7 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
     }
 
     NbnxmKernelSetup kernelSetup = pick_nbnxn_kernel(
-            mdlog, forcerec.use_simd_kernels, hardwareInfo, deviceSpecificlPairlistType, nonbondedResource, inputrec);
+            mdlog, forcerec.use_simd_kernels, hardwareInfo, deviceSpecificPairlistType, nonbondedResource, inputrec);
 
     const bool haveMultipleDomains = havePPDomainDecomposition(dd);
 
@@ -499,7 +499,7 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
                             && (forcerec.efep != FreeEnergyPerturbationType::Expanded);
 
     PairlistParams pairlistParams(
-            kernelSetup.kernelType, deviceSpecificlPairlistType, bFEP_NonBonded, inputrec.rlist, haveMultipleDomains);
+            kernelSetup.kernelType, deviceSpecificPairlistType, bFEP_NonBonded, inputrec.rlist, haveMultipleDomains);
     pairlistParams.haveNonbondedFEGpu_ = bFepGpuNonBonded;
 
     const real effectiveAtomDensity = computeEffectiveAtomDensity(
