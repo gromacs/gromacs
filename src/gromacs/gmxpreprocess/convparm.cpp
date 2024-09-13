@@ -221,6 +221,8 @@ static int assign_param(t_functype                ftype,
         case F_RESTRANGLES:
             newparam->harmonic.rA  = old[0];
             newparam->harmonic.krA = old[1];
+            newparam->harmonic.rB  = old[2];
+            newparam->harmonic.krB = old[3];
             break;
         case F_MORSE:
             newparam->morse.b0A   = old[0];
@@ -304,6 +306,8 @@ static int assign_param(t_functype                ftype,
         case F_RESTRDIHS:
             newparam->pdihs.phiA = old[0];
             newparam->pdihs.cpA  = old[1];
+            newparam->pdihs.phiB = old[2];
+            newparam->pdihs.cpB  = old[3];
             break;
         case F_POSRES:
             newparam->posres.fcA[XX]   = old[0];
@@ -370,6 +374,7 @@ static int assign_param(t_functype                ftype,
             for (int i = 0; (i < NR_CBTDIHS); i++)
             {
                 newparam->cbtdihs.cbtcA[i] = old[i];
+                newparam->cbtdihs.cbtcB[i] = old[i + NR_CBTDIHS];
             }
             break;
         case F_FOURDIHS:

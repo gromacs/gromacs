@@ -172,7 +172,7 @@ struct MoleculeInformation
     int nrexcl = 0;
     //! Has the mol been processed.
     bool bProcessed = false;
-    //! Atoms in the moelcule.
+    //! Atoms in the molecule.
     t_atoms atoms;
     //! Molecules separated in datastructure.
     t_block mols;

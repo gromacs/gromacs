@@ -64,6 +64,30 @@ was not zero, the simulation would crash within a few steps.
 
 :issue:`5181`
 
+Fix parameter handling for coarse-grained bonded potentials
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Free-energy perturbation has never been supported for restraint angle,
+restraint dihedral, and combined bending-torsion potentials sometimes
+used in coarse-grained force fields. This led to the hypothetical
+B-state parameters being incorrectly handled in ``gmx grompp`` and
+then incorrectly serialized to/from the .tpr file.
+
+This was generally benign, even when such functional forms were in
+use. However, when other interactions were perturbed, the incorrect
+parameter handling made it look like the interactions with wrongly
+implemented parameters were intended to be perturbed.  This condition
+was sometimes achieved when using alchemical-embedding
+system-preparation workflows.
+
+Now the hypothetical B-state parameters are handled correctly, so
+FEP-based workflows can succeed. Perturbation of the above-mentioned
+interaction types is still not supported, however.
+
+:issue:`5129`
+:issue:`5144`
+:issue:`5147`
+
 Fix Colvars output files always written to the working directory.
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
