@@ -8,20 +8,20 @@ if [ "$#" -eq 0 ]; then
     echo ""
     echo "capture-cgroups.sh <output-root-path>"
     echo
-    echo "/etc/mtab, /proc/self/cgroup and files under the cgroup mount points"
-    echo "specificed in /etc/mtab will be copied to <output-root-path>"
+    echo "/proc/mounts, /proc/self/cgroup and files under the cgroup mount points"
+    echo "specificed in /proc/mounts will be copied to <output-root-path>"
     echo ""
     exit 0
 fi
 
 # cgroup1 - note that cgroups can be mounted on multiple mount/subgroup points
-cgroup1RootPaths=$(awk '/cgroup .*(cpu |cpu,cpuacct )/ {print $2}' /etc/mtab)
+cgroup1RootPaths=$(awk '/cgroup .*(cpu |cpu,cpuacct )/ {print $2}' /proc/mounts)
 cgroup1SubPaths=$(awk -F ":" '/:(cpu|cpu,cpuacct):/ {print $3}' /proc/self/cgroup)
 # Add empty subgroup
 cgroup1SubPaths+=("/")
 
 # cgroup2
-cgroup2RootPaths=$(awk '/cgroup2/ {print $2}' /etc/mtab)
+cgroup2RootPaths=$(awk '/cgroup2/ {print $2}' /proc/mounts)
 Cgroup2SubPath=$(awk -F ":" '/::/ {print $3}' /proc/self/cgroup)
 # Add empty subgroup
 cgroup2SubPaths+=("/")
@@ -29,7 +29,7 @@ cgroup2SubPaths+=("/")
 mkdir -p "$1"
 
 # common files
-filesToCopy="/etc/mtab /proc/self/cgroup /proc/self/stat "
+filesToCopy="/proc/mounts /proc/self/cgroup /proc/self/stat "
 
 # Create the directory for all cgroups1 root/sub combinations we found,
 # and copy cgroup.procs and cpu.cfs_period_us & cpu.cfs_quota_us if found in these.

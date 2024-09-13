@@ -40,6 +40,8 @@
  */
 #include "gmxpre.h"
 
+#include "config.h"
+
 #include <memory>
 #include <string>
 
@@ -80,7 +82,7 @@ class ColvarsTest : public ::testing::Test
 public:
     void addMdpOptionColvarsActive()
     {
-        mdpValueBuilder_.rootObject().addValue("colvars-active", std::string("yes"));
+        mdpValueBuilder_.rootObject().addValue("colvars-active", std::string("true"));
     }
 
     //! build an mdp options tree that sets the options for the Colvars module
@@ -112,6 +114,8 @@ protected:
     std::unique_ptr<IMDModule> ColvarsModule_;
 };
 
+#if GMX_HAVE_COLVARS
+
 TEST_F(ColvarsTest, ForceProviderLackingInputThrows)
 {
     // Prepare MDP inputs
@@ -123,6 +127,36 @@ TEST_F(ColvarsTest, ForceProviderLackingInputThrows)
     // Build the force provider with missing input data
     EXPECT_ANY_THROW(intializeForceProviders());
 }
+
+#else
+
+
+TEST_F(ColvarsTest, ForceProviderWithoutColvars)
+{
+    // Prepare MDP inputs
+    addMdpOptionColvarsActive();
+
+    // Initialize with default options
+    makeColvarsModuleWithSetOptions();
+
+    // Build the force provider without colvars
+    EXPECT_ANY_THROW(intializeForceProviders());
+}
+
+TEST_F(ColvarsTest, PreProcessingWithoutColvars)
+{
+    // Prepare MDP inputs
+    addMdpOptionColvarsActive();
+
+    // Initialize with default options
+    makeColvarsModuleWithSetOptions();
+
+    // Try to subscribe to notifications without colvars
+    MDModulesNotifiers notifiers_;
+    EXPECT_ANY_THROW(ColvarsModule_->subscribeToPreProcessingNotifications(&notifiers_));
+}
+
+#endif // GMX_HAVE_COLVARS
 
 } // namespace
 

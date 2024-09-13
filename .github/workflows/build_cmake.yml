@@ -27,13 +27,17 @@ jobs:
           }
         - {
             name: "macOS Latest Clang", artifact: "macOS.7z",
+            # In a release branch, we should fix this for the lifetime
+            # of the branch.
             os: macos-latest,
             cc: "clang", cxx: "clang++",
             gpu_var: "Off",
             openmp_var: "Off"
           }
         - {
-            name: "macOS Latest GCC 14 with OpenCL", artifact: "macOS-gcc-OpenCL.7z",
+            name: "macOS 14, latest GCC 14 with OpenCL", artifact: "macOS-gcc-OpenCL.7z",
+            # In a release branch, we should fix this for the lifetime
+            # of the branch.
             os: macos-latest,
             cc: "gcc-14", cxx: "g++-14",
             gpu_var: "OpenCL",

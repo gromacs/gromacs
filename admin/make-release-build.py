@@ -127,7 +127,7 @@ def upload_files(
     Needs to have successfully set up SSH key infrastructure before.
     """
 
-    upload_command = ["rsync", "-rlptvP"]
+    upload_command = ["rsync", "-rlvP"]
     upload_command.extend(options)
 
     upload_command.append(str(path))

@@ -1110,8 +1110,8 @@ float detectCpuLimit(const std::string& root = "")
     std::vector<std::string> cgroups2Mounts;
 
     // if /etc/mtab isn't present, std::getline will return 0.
-    std::ifstream mtabStream(root + "/etc/mtab");
-    while (!found && std::getline(mtabStream, line))
+    std::ifstream procMountsStream(root + "/proc/mounts");
+    while (!found && std::getline(procMountsStream, line))
     {
         std::istringstream       lineStream(line);
         std::vector<std::string> columns{ std::istream_iterator<std::string>(lineStream),
@@ -1121,7 +1121,9 @@ float detectCpuLimit(const std::string& root = "")
         {
             continue;
         }
-        // Column 1 is the fs type (we look for cgroup), column 1 the mount path
+        // Column 0 is the fs class (cgroups for either v1 or v2),
+        // and column2 the version (e.g. cgroups or cgroups2).
+        // For either of these, the mount path will be in coloumn 1.
         if (columns[2] == "cgroup2")
         {
             // cgroup2 uses a unified mount, so there will only be one entry

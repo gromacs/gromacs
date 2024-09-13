@@ -31,14 +31,23 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out https://www.gromacs.org.
 
-gmx_add_unit_test(ColvarsAppliedForcesUnitTest colvars_applied_forces-test
-    CPP_SOURCE_FILES
-        colvarspreprocessor.cpp
-        colvars.cpp
-        colvarsoptions.cpp
-        colvarsforceprovider.cpp
+if(GMX_USE_COLVARS STREQUAL "INTERNAL")
+    gmx_add_unit_test(ColvarsAppliedForcesUnitTest colvars_applied_forces-test
+        CPP_SOURCE_FILES
+            colvars.cpp
+            colvarsoptions.cpp
+            colvarspreprocessor.cpp
+            colvarsforceprovider.cpp
 
+            )
+else()
+    gmx_add_unit_test(ColvarsAppliedForcesUnitTest colvars_applied_forces-test
+        CPP_SOURCE_FILES
+            colvars.cpp
+            colvarsoptions.cpp
         )
+endif()
+
 target_link_libraries(colvars_applied_forces-test PRIVATE applied_forces math topology mdlib
     mdtypes)
 

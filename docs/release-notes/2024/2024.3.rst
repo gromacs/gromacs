@@ -158,8 +158,8 @@ This is now checked by ``gmx grompp``.
 
 :issue:`5095`
 
-Fix ``gmx dump`` with options ```-sys``` and ```-orgir```
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Fix ``gmx dump`` with options ``-sys`` and ``-orgir``
+"""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 These ``gmx dump`` options had no effect. This has now been fixed.
 

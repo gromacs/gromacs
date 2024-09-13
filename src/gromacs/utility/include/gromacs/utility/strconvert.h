@@ -185,6 +185,11 @@ static inline std::string doubleToString(double t)
 {
     return formatString("%g", t);
 }
+//! \copydoc intToString(int)
+static inline std::string unsignedCharToString(unsigned char t)
+{
+    return formatString("%x", t);
+}
 
 /*! \name
  * Overloads for converting a value of a given type to a string.
@@ -211,6 +216,10 @@ static inline std::string toString(float t)
 static inline std::string toString(double t)
 {
     return doubleToString(t);
+}
+static inline std::string toString(unsigned char t)
+{
+    return unsignedCharToString(t);
 }
 static inline std::string toString(std::string t)
 {
