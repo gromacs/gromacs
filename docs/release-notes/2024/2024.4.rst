@@ -52,3 +52,13 @@ Proper exit if a Colvars simulation is launched whereas GROMACS was not
 compiled with Colvars.
 
 :issue:`5055`
+
+Fix reading cgroups in some kubernetes containers
+"""""""""""""""""""""""""""""""""""""""""""""""""
+
+Modern versions of kubernetes/docker do not appear to mount /etc/mtab in
+the containers, and if we did not find cgroups we would not detect CPU
+limits set through cgroups. Fixed by reading /proc/mounts instead.
+This will only influence performance when running in (some) containers.
+
+:issue:`5148`
