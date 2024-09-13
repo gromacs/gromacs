@@ -51,6 +51,7 @@
 #include <string>
 
 #include "gromacs/math/gmxcomplex.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/classhelpers.h"
 
@@ -566,6 +567,59 @@ public:
         }
     }
     /*! \brief
+     * Generic method to check a sequence of simple values.
+     *
+     * \tparam T  Type of values to check. Should be one of those accepted
+     *      by checkValue(), or implicitly convertible to one.
+     * \param[in] seq    Reference to sequence to check.
+     * \param[in] id     Unique identifier for the sequence among its
+     *                   siblings.
+     */
+    template<typename T>
+    void checkSequence(const gmx::ArrayRef<const T> seq, const char* id)
+    {
+        TestReferenceChecker compound(checkSequenceCompound(id, seq.size()));
+
+        for (const auto& v : seq)
+        {
+            compound.checkValue(v, nullptr);
+        }
+    }
+    /*! \brief
+     * Generic method to check a sequence of custom values.
+     *
+     * \tparam T  Type of values to check. Should be one of those accepted
+     *      by the ItemChecker functor.
+     * \tparam ItemChecker Functor to check an individual value. Signature
+     *      void(TestReferenceChecker *, const T &), where T is the value
+     *      type of \p Iterator.
+     * \param[in] seq        Reference to sequence to check.
+     * \param[in] id         Unique identifier for the sequence among its
+     *                       siblings.
+     * \param[in] checkItem  Functor to check an individual item.
+     *
+     * This method creates a compound checker \c compound within which all
+     * values of the sequence are checked.  Calls \c checkItem(&compound, v)
+     * with that compound for each value \c v in the sequence.
+     * \p checkItem should use the various check methods in the passed
+     * checker to check each value.
+     *
+     * This method can be used to check a sequence made of compound types.
+     * Typically \p checkItem will create a compound within the passed
+     * checker to check different aspects of the value that was passed
+     * to it. Either NULL or a unique identifier string must be used for
+     * the id value of that compound. */
+    template<typename T, class ItemChecker>
+    void checkSequence(const gmx::ArrayRef<const T> seq, const char* id, ItemChecker checkItem)
+    {
+        TestReferenceChecker compound(checkSequenceCompound(id, seq.size()));
+
+        for (const auto& v : seq)
+        {
+            checkItem(&compound, v);
+        }
+    }
+    /*! \brief
      * Check an array of values.
      *
      * \tparam T  Type of values to check. Should be one of those accepted
@@ -582,7 +636,7 @@ public:
     template<typename T>
     void checkSequenceArray(size_t length, const T* values, const char* id)
     {
-        checkSequence(values, values + length, id);
+        checkSequence(constArrayRefFromArray(values, length), id);
     }
     /*! \brief
      * Convenience method for checking that a sequence is empty.
