@@ -449,7 +449,13 @@ AnalysisNeighborhoodSearchImpl::~AnalysisNeighborhoodSearchImpl()
     PairSearchList::const_iterator i;
     for (i = pairSearchList_.begin(); i != pairSearchList_.end(); ++i)
     {
-        GMX_RELEASE_ASSERT(i->use_count() == 1, "Dangling AnalysisNeighborhoodPairSearch reference");
+        if (i->use_count() != 1)
+        {
+            std::fprintf(stderr,
+                         "Warning: Dangling AnalysisNeighborhoodPairSearch reference. Expected "
+                         "use_count() == 1, but got use_count() == %ld.\n",
+                         i->use_count());
+        }
     }
 }
 
@@ -1245,12 +1251,19 @@ public:
     typedef std::vector<SearchImplPointer>          SearchList;
 
     Impl() : cutoff_(0), excls_(nullptr), mode_(eSearchMode_Automatic), bXY_(false) {}
+
     ~Impl()
     {
         SearchList::const_iterator i;
         for (i = searchList_.begin(); i != searchList_.end(); ++i)
         {
-            GMX_RELEASE_ASSERT(i->use_count() == 1, "Dangling AnalysisNeighborhoodSearch reference");
+            if (i->use_count() != 1)
+            {
+                std::fprintf(stderr,
+                             "Warning: Dangling AnalysisNeighborhoodSearch reference. Expected "
+                             "use_count() == 1, but got use_count() == %ld.\n",
+                             i->use_count());
+            }
         }
     }
 

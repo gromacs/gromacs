@@ -73,9 +73,10 @@ DeviceStream::~DeviceStream()
     if (isValid())
     {
         cl_int clError = clReleaseCommandQueue(stream_);
-        GMX_RELEASE_ASSERT(
-                clError == CL_SUCCESS,
-                gmx::formatString("Failed to release OpenCL stream (OpenCL error ID %d).", clError).c_str());
+        if (clError != CL_SUCCESS)
+        {
+            std::fprintf(stderr, "Failed to release OpenCL stream (OpenCL error ID %d).\n", clError);
+        }
         stream_ = nullptr;
     }
 }

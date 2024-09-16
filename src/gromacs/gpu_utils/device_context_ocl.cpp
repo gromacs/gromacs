@@ -104,9 +104,10 @@ DeviceContext::~DeviceContext()
     if (context_)
     {
         clError = clReleaseContext(context_);
-        GMX_RELEASE_ASSERT(
-                clError == CL_SUCCESS,
-                gmx::formatString("Failed to release OpenCL context (OpenCL error ID %d).", clError).c_str());
+        if (clError != CL_SUCCESS)
+        {
+            std::fprintf(stderr, "Failed to release OpenCL context (OpenCL error ID %d).\n", clError);
+        }
         context_ = nullptr;
     }
 }
