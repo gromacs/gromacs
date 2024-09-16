@@ -79,9 +79,10 @@ TEST(EnergyTermTest, AddFrameWorks)
     ASSERT_TRUE(errorEstimate.has_value());
     EXPECT_REAL_EQ(errorEstimate.value(), 0);
     term.addFrame(6, 3000, 10, 75, 7, 175);
+    // Linear fit of {(2, 255), (4, 155), (6, 175)}
     auto slope = term.slopeOfLinearFit();
     ASSERT_TRUE(slope.has_value());
-    EXPECT_REAL_EQ(slope.has_value(), 1);
+    EXPECT_REAL_EQ(slope.value(), -20);
 }
 
 } // namespace
