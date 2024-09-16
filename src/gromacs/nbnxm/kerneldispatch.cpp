@@ -78,7 +78,7 @@
 #include "pairlistset.h"
 #include "pairlistsets.h"
 #define INCLUDE_KERNELFUNCTION_TABLES
-#include "kernels_reference/kernel_ref.h"
+#include "kernels_reference/kernel_ref_4x4.h"
 #if GMX_HAVE_NBNXM_SIMD_2XMM
 #    include "kernels_simd_2xmm/kernels.h"
 #endif
@@ -260,7 +260,7 @@ static void nbnxn_kernel_cpu(const PairlistSet&             pairlistSet,
             switch (kernelSetup.kernelType)
             {
                 case NbnxmKernelType::Cpu4x4_PlainC:
-                    nbnxn_kernel_noener_ref[coulkt][vdwkt](pairlist, nbat, &ic, shiftVecPointer, &out);
+                    nbnxn_kernel_4x4_noener_ref[coulkt][vdwkt](pairlist, nbat, &ic, shiftVecPointer, &out);
                     break;
 #if GMX_HAVE_NBNXM_SIMD_2XMM
                 case NbnxmKernelType::Cpu4xN_Simd_2xNN:
@@ -294,7 +294,7 @@ static void nbnxn_kernel_cpu(const PairlistSet&             pairlistSet,
             switch (kernelSetup.kernelType)
             {
                 case NbnxmKernelType::Cpu4x4_PlainC:
-                    nbnxn_kernel_ener_ref[coulkt][vdwkt](pairlist, nbat, &ic, shiftVecPointer, &out);
+                    nbnxn_kernel_4x4_ener_ref[coulkt][vdwkt](pairlist, nbat, &ic, shiftVecPointer, &out);
                     break;
 #if GMX_HAVE_NBNXM_SIMD_2XMM
                 case NbnxmKernelType::Cpu4xN_Simd_2xNN:
@@ -332,7 +332,7 @@ static void nbnxn_kernel_cpu(const PairlistSet&             pairlistSet,
             switch (kernelSetup.kernelType)
             {
                 case NbnxmKernelType::Cpu4x4_PlainC:
-                    nbnxn_kernel_energrp_ref[coulkt][vdwkt](pairlist, nbat, &ic, shiftVecPointer, &out);
+                    nbnxn_kernel_4x4_energrp_ref[coulkt][vdwkt](pairlist, nbat, &ic, shiftVecPointer, &out);
                     break;
 #if GMX_HAVE_NBNXM_SIMD_2XMM
                 case NbnxmKernelType::Cpu4xN_Simd_2xNN:

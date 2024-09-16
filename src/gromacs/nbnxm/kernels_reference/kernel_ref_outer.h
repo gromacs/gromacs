@@ -32,15 +32,6 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 
-namespace gmx
-{
-
-#define UNROLLI 4
-#define UNROLLJ 4
-
-static_assert(UNROLLI == sc_iClusterSize(NbnxmKernelType::Cpu4x4_PlainC),
-              "UNROLLI should match the i-cluster size");
-
 /* We could use nbat->xstride and nbat->fstride, but macros might be faster */
 #define X_STRIDE 3
 #define F_STRIDE 3
@@ -58,27 +49,29 @@ static_assert(UNROLLI == sc_iClusterSize(NbnxmKernelType::Cpu4x4_PlainC),
 #define CALC_SHIFTFORCES
 
 #ifdef CALC_COUL_RF
-#    define NBK_FUNC_NAME2(ljt, feg) nbnxn_kernel##_ElecRF##ljt##feg##_ref
+#    define NBK_FUNC_NAME2(ui, uj, ljt, feg) nbnxn_kernel_##ui##x##uj##_ElecRF##ljt##feg##_ref
 #endif
 #ifdef CALC_COUL_TAB
 #    ifndef VDW_CUTOFF_CHECK
-#        define NBK_FUNC_NAME2(ljt, feg) nbnxn_kernel##_ElecQSTab##ljt##feg##_ref
+#        define NBK_FUNC_NAME2(ui, uj, ljt, feg) \
+            nbnxn_kernel_##ui##x##uj##_ElecQSTab##ljt##feg##_ref
 #    else
-#        define NBK_FUNC_NAME2(ljt, feg) nbnxn_kernel##_ElecQSTabTwinCut##ljt##feg##_ref
+#        define NBK_FUNC_NAME2(ui, uj, ljt, feg) \
+            nbnxn_kernel_##ui##x##uj##_ElecQSTabTwinCut##ljt##feg##_ref
 #    endif
 #endif
 
 #if defined LJ_CUT && !defined LJ_EWALD
-#    define NBK_FUNC_NAME(feg) NBK_FUNC_NAME2(_VdwLJ, feg)
+#    define NBK_FUNC_NAME(ui, uj, feg) NBK_FUNC_NAME2(ui, uj, _VdwLJ, feg)
 #elif defined LJ_FORCE_SWITCH
-#    define NBK_FUNC_NAME(feg) NBK_FUNC_NAME2(_VdwLJFsw, feg)
+#    define NBK_FUNC_NAME(ui, uj, feg) NBK_FUNC_NAME2(ui, uj, _VdwLJFsw, feg)
 #elif defined LJ_POT_SWITCH
-#    define NBK_FUNC_NAME(feg) NBK_FUNC_NAME2(_VdwLJPsw, feg)
+#    define NBK_FUNC_NAME(ui, uj, feg) NBK_FUNC_NAME2(ui, uj, _VdwLJPsw, feg)
 #elif defined LJ_EWALD
 #    ifdef LJ_EWALD_COMB_GEOM
-#        define NBK_FUNC_NAME(feg) NBK_FUNC_NAME2(_VdwLJEwCombGeom, feg)
+#        define NBK_FUNC_NAME(ui, uj, feg) NBK_FUNC_NAME2(ui, uj, _VdwLJEwCombGeom, feg)
 #    else
-#        define NBK_FUNC_NAME(feg) NBK_FUNC_NAME2(_VdwLJEwCombLB, feg)
+#        define NBK_FUNC_NAME(ui, uj, feg) NBK_FUNC_NAME2(ui, uj, _VdwLJEwCombLB, feg)
 #    endif
 #else
 #    error "No VdW type defined"
@@ -86,12 +79,12 @@ static_assert(UNROLLI == sc_iClusterSize(NbnxmKernelType::Cpu4x4_PlainC),
 
 void
 #ifndef CALC_ENERGIES
-        NBK_FUNC_NAME(_F) // NOLINT(misc-definitions-in-headers)
+        NBK_FUNC_NAME(UNROLLI, UNROLLJ, _F) // NOLINT(misc-definitions-in-headers)
 #else
 #    ifndef ENERGY_GROUPS
-        NBK_FUNC_NAME(_VF) // NOLINT(misc-definitions-in-headers)
+        NBK_FUNC_NAME(UNROLLI, UNROLLJ, _VF) // NOLINT(misc-definitions-in-headers)
 #    else
-        NBK_FUNC_NAME(_VgrpF) // NOLINT(misc-definitions-in-headers)
+        NBK_FUNC_NAME(UNROLLI, UNROLLJ, _VgrpF) // NOLINT(misc-definitions-in-headers)
 #    endif
 #endif
 #undef NBK_FUNC_NAME
@@ -102,6 +95,9 @@ void
          const rvec*                shift_vec,
          nbnxn_atomdata_output_t*   out)
 {
+    GMX_RELEASE_ASSERT(UNROLLI == nbl->na_ci && UNROLLJ == nbl->na_cj,
+                       "Kernel and list cluster sizes should match");
+
     /* Unpack pointers for output */
     real* f = out->f.data();
 #ifdef CALC_SHIFTFORCES
@@ -358,8 +354,3 @@ void
 #undef F_STRIDE
 #undef XI_STRIDE
 #undef FI_STRIDE
-
-#undef UNROLLI
-#undef UNROLLJ
-
-} // namespace gmx

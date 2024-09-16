@@ -33,7 +33,7 @@
  */
 #include "gmxpre.h"
 
-#include "kernel_ref.h"
+#include "kernel_ref_4x4.h"
 
 #include <cassert>
 #include <cmath>
@@ -52,6 +52,16 @@
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
+
+namespace gmx
+{
+
+#define UNROLLI 4
+#define UNROLLJ 4
+
+static_assert(UNROLLI == sc_iClusterSize(NbnxmKernelType::Cpu4x4_PlainC),
+              "Unroll size should match that of of the kernel type");
+
 
 /* Analytical reaction-field kernels */
 #define CALC_COUL_RF
@@ -121,3 +131,5 @@
 #undef LJ_EWALD
 #undef VDW_CUTOFF_CHECK
 #undef CALC_COUL_TAB
+
+} // namespace gmx
