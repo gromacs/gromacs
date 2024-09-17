@@ -2485,22 +2485,24 @@ static void set_cell_limits_dlb(const gmx::MDLogger& mdlog,
         npulse = ddPulseEnv;
     }
 
-    comm->maxpulse       = 1;
+    // We need to determine the maximum number of pulses to compute the lower limit on the cellsize
+    int maxNumPulses     = 1;
     comm->bVacDLBNoLimit = (inputrec.pbcType == PbcType::No);
     for (int d = 0; d < dd->ndim; d++)
     {
         comm->cd[d].np_dlb = std::min(npulse, dd->numCells[dd->dim[d]] - 1);
-        comm->maxpulse     = std::max(comm->maxpulse, comm->cd[d].np_dlb);
+        maxNumPulses       = std::max(maxNumPulses, comm->cd[d].np_dlb);
         if (comm->cd[d].np_dlb < dd->numCells[dd->dim[d]] - 1)
         {
             comm->bVacDLBNoLimit = FALSE;
         }
     }
 
-    /* cellsize_limit is set for LINCS in init_domain_decomposition */
+    // Set the lower limit on the cell size.
+    // Note that the cell size limit for LINCS is pre-computed and stored in DDSystemInfo.
     if (!comm->bVacDLBNoLimit)
     {
-        comm->cellsize_limit = std::max(comm->cellsize_limit, comm->systemInfo.cutoff / comm->maxpulse);
+        comm->cellsize_limit = std::max(comm->cellsize_limit, comm->systemInfo.cutoff / maxNumPulses);
     }
     comm->cellsize_limit = std::max(comm->cellsize_limit, comm->cutoff_mbody);
     /* Set the minimum cell size for each DD dimension */
