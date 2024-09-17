@@ -258,7 +258,7 @@ TEST(GpuPairlistTest, PairlistInitWorks)
     for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
     {
         testDevice->deviceContext().activate();
-        auto          pairlistType   = getDeviceOptimalGpuPairlistLayout(testDevice->deviceInfo());
+        auto          pairlistType   = getDeviceSpecificGpuPairlistLayout(testDevice->deviceInfo());
         constexpr int dataSize       = 23;
         constexpr int allocationSize = 42;
 
