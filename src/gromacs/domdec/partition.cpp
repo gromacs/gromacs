@@ -2242,14 +2242,19 @@ static void orderVector(gmx::ArrayRef<const gmx_cgsort_t> sort,
                "The sorting buffer needs to be sufficiently large");
 
     /* Order the data into the temporary buffer */
-    size_t i = 0;
-    for (const gmx_cgsort_t& entry : sort)
+    const int gmx_unused numThreads = gmx_omp_nthreads_get(ModuleMultiThread::Domdec);
+#pragma omp parallel for num_threads(numThreads) schedule(static)
+    for (int i = 0; i < gmx::ssize(sort); i++)
     {
-        sortBuffer[i++] = dataToSort[entry.ind];
+        sortBuffer[i] = dataToSort[sort[i].ind];
     }
 
     /* Copy back to the original array */
-    std::copy(sortBuffer.begin(), sortBuffer.begin() + sort.size(), dataToSort.begin());
+#pragma omp parallel for num_threads(numThreads) schedule(static)
+    for (int i = 0; i < gmx::ssize(sort); i++)
+    {
+        dataToSort[i] = sortBuffer[i];
+    }
 }
 
 /*! \brief Order data in \p dataToSort according to \p sort
