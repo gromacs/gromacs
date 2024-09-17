@@ -1201,18 +1201,20 @@ static double reorder_partsum(const t_commrec*  cr,
      * This conflicts with the spirit of domain decomposition,
      * but to fully optimize this a much more complicated algorithm is required.
      */
-    const int natoms = top_global.natoms;
-    rvec*     fmg;
-    snew(fmg, natoms);
+    const int              natoms = top_global.natoms;
+    std::vector<gmx::RVec> fmg(natoms, { 0.0_real, 0.0_real, 0.0_real });
 
     gmx::ArrayRef<const int> indicesMin = s_min->s.cg_gl;
     int                      i          = 0;
-    for (int a : indicesMin)
+    for (int globalAtomIndex : indicesMin)
     {
-        copy_rvec(fm[i], fmg[a]);
+        if (isValidGlobalAtom(globalAtomIndex))
+        {
+            fmg[globalAtomIndex] = fm[i];
+        }
         i++;
     }
-    gmx_sum(top_global.natoms * 3, fmg[0], cr);
+    gmx_sum(top_global.natoms * 3, reinterpret_cast<real*>(fmg.data()), cr);
 
     /* Now we will determine the part of the sum for the cgs in state s_b */
     gmx::ArrayRef<const int> indicesB = s_b->s.cg_gl;
@@ -1222,23 +1224,25 @@ static double reorder_partsum(const t_commrec*  cr,
     int                                gf = 0;
     gmx::ArrayRef<const unsigned char> grpnrFREEZE =
             top_global.groups.groupNumbers[SimulationAtomGroupType::Freeze];
-    for (int a : indicesB)
+    for (int globalAtomIndex : indicesB)
     {
-        if (!grpnrFREEZE.empty())
+        if (isValidGlobalAtom(globalAtomIndex))
         {
-            gf = grpnrFREEZE[i];
-        }
-        for (int m = 0; m < DIM; m++)
-        {
-            if (!opts->nFreeze[gf][m])
+            if (!grpnrFREEZE.empty())
             {
-                partsum += (fb[i][m] - fmg[a][m]) * fb[i][m];
+                gf = grpnrFREEZE[i];
+            }
+            for (int m = 0; m < DIM; m++)
+            {
+                if (!opts->nFreeze[gf][m])
+                {
+                    partsum += (fb[i][m] - fmg[globalAtomIndex][m]) * fb[i][m];
+                }
             }
         }
+
         i++;
     }
-
-    sfree(fmg);
 
     return partsum;
 }

@@ -488,7 +488,7 @@ static void restoreAtomGroups(gmx_domdec_t* dd, const t_state* state)
 }
 
 //! Sets the atom info structures.
-static void dd_set_atominfo(gmx::ArrayRef<const int> index_gl, int atomStart, int atomEnd, t_forcerec* fr)
+static void ddSetAtominfo(gmx::ArrayRef<const int> index_gl, const gmx::Range<int>& atomRange, t_forcerec* fr)
 {
     if (fr != nullptr)
     {
@@ -498,9 +498,17 @@ static void dd_set_atominfo(gmx::ArrayRef<const int> index_gl, int atomStart, in
 
         const int gmx_unused numThreads = gmx_omp_nthreads_get(ModuleMultiThread::Domdec);
 #pragma omp parallel for num_threads(numThreads) schedule(static)
-        for (int a = atomStart; a < atomEnd; a++)
+        for (int a = *atomRange.begin(); a < *atomRange.end(); a++)
         {
-            atomInfo[a] = ddGetAtomInfo(atomInfoForEachMoleculeBlock, index_gl[a]);
+            const int globalIndex = index_gl[a];
+            if (isValidGlobalAtom(globalIndex))
+            {
+                atomInfo[a] = ddGetAtomInfo(atomInfoForEachMoleculeBlock, globalIndex);
+            }
+            else
+            {
+                atomInfo[a] = gmx::sc_atomInfo_IsFillerParticle;
+            }
         }
     }
 }
@@ -541,7 +549,10 @@ static void make_dd_indices(gmx_domdec_t* dd, const int atomStart)
                 zone1 += numZones;
             }
             int globalAtomIndex = globalAtomIndices[cg];
-            ga2la.insert(globalAtomIndex, { a, zone1 });
+            if (isValidGlobalAtom(globalAtomIndex))
+            {
+                ga2la.insert(globalAtomIndex, { a, zone1 });
+            }
             a++;
         }
     }
@@ -559,8 +570,9 @@ static void check_index_consistency(const gmx_domdec_t* dd, int natoms_sys, cons
         std::vector<int> have(natoms_sys);
         for (int a = 0; a < numAtomsInZones; a++)
         {
-            int globalAtomIndex = dd->globalAtomIndices[a];
-            if (have[globalAtomIndex] > 0)
+            const int  globalAtomIndex = dd->globalAtomIndices[a];
+            const bool isValidAtom     = isValidGlobalAtom(globalAtomIndex);
+            if (isValidAtom && have[globalAtomIndex] > 0)
             {
                 fprintf(stderr,
                         "DD rank %d: global atom %d occurs twice: index %d and %d\n",
@@ -569,7 +581,7 @@ static void check_index_consistency(const gmx_domdec_t* dd, int natoms_sys, cons
                         have[globalAtomIndex],
                         a + 1);
             }
-            else
+            else if (isValidAtom)
             {
                 have[globalAtomIndex] = a + 1;
             }
@@ -619,7 +631,7 @@ static void check_index_consistency(const gmx_domdec_t* dd, int natoms_sys, cons
     }
     for (int a = 0; a < numAtomsInZones; a++)
     {
-        if (have[a] == 0)
+        if (isValidGlobalAtom(dd->globalAtomIndices[a]) && have[a] == 0)
         {
             fprintf(stderr,
                     "DD rank %d, %s: local atom %d, global %d has no global index\n",
@@ -651,7 +663,11 @@ static void clearDDStateIndices(gmx_domdec_t* dd, const bool keepLocalAtomIndice
         const int numAtomsInZones = dd->comm->atomRanges.end(DDAtomRanges::Type::Zones);
         for (int i = 0; i < numAtomsInZones; i++)
         {
-            ga2la.erase(dd->globalAtomIndices[i]);
+            const int globalAtomIndex = dd->globalAtomIndices[i];
+            if (isValidGlobalAtom(globalAtomIndex))
+            {
+                ga2la.erase(globalAtomIndex);
+            }
         }
     }
 
@@ -2214,7 +2230,7 @@ static void setup_dd_communication(gmx_domdec_t* dd, matrix box, gmx_ddbox_t* dd
         /* We don't need to update atominfo, since that was already done above.
          * So we pass NULL for the forcerec.
          */
-        dd_set_atominfo(dd->globalAtomIndices, dd->numHomeAtoms, dd->globalAtomIndices.size(), nullptr);
+        ddSetAtominfo(dd->globalAtomIndices, { dd->numHomeAtoms, int(dd->globalAtomIndices.size()) }, nullptr);
     }
 
     if (debug)
@@ -2705,7 +2721,7 @@ void dd_partition_system(FILE*                     fplog,
 
         inc_nrnb(nrnb, eNR_CGCM, comm->atomRanges.numHomeAtoms());
 
-        dd_set_atominfo(dd->globalAtomIndices, 0, dd->numHomeAtoms, fr);
+        ddSetAtominfo(dd->globalAtomIndices, { 0, dd->numHomeAtoms }, fr);
     }
     else if (state_local->ddp_count != dd->ddp_count)
     {
@@ -2737,7 +2753,7 @@ void dd_partition_system(FILE*                     fplog,
 
         inc_nrnb(nrnb, eNR_CGCM, comm->atomRanges.numHomeAtoms());
 
-        dd_set_atominfo(dd->globalAtomIndices, 0, dd->numHomeAtoms, fr);
+        ddSetAtominfo(dd->globalAtomIndices, { 0, dd->numHomeAtoms }, fr);
 
         set_ddbox(*dd, bMainState, state_local->box, true, state_local->x, &ddbox);
 

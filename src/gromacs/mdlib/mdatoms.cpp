@@ -40,6 +40,7 @@
 #include <algorithm>
 #include <memory>
 
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/functions.h"
@@ -274,6 +275,11 @@ void atoms2md(const gmx_mtop_t&  mtop,
     }
     int molb = 0;
 
+    const unsigned short numTypes   = mtop.ffparams.atnr;
+    const t_atom         fillerAtom = {
+        0, 0, 0, 0, numTypes, numTypes, ParticleType::Count, -1, 0,
+    };
+
     // In grompp, OpenMP is not initialized and nthreads_get returns 0. We want 1 thread in this case.
     const int gmx_unused nthreads = std::max(gmx_omp_nthreads_get(ModuleMultiThread::Default), 1);
 #pragma omp parallel for num_threads(nthreads) schedule(static) firstprivate(molb)
@@ -283,7 +289,6 @@ void atoms2md(const gmx_mtop_t&  mtop,
         {
             int  g, ag;
             real mA, mB, fac;
-            real c6, c12;
 
             if (index.empty())
             {
@@ -293,11 +298,14 @@ void atoms2md(const gmx_mtop_t&  mtop,
             {
                 ag = index[i];
             }
-            const t_atom& atom = mtopGetAtomParameters(mtop, ag, &molb);
+            const bool isValidAtom = isValidGlobalAtom(ag);
+
+            const t_atom& atom = (isValidAtom ? mtopGetAtomParameters(mtop, ag, &molb) : fillerAtom);
 
             if (!md->cFREEZE.empty())
             {
-                md->cFREEZE[i] = getGroupType(groups, SimulationAtomGroupType::Freeze, ag);
+                md->cFREEZE[i] =
+                        (isValidAtom ? getGroupType(groups, SimulationAtomGroupType::Freeze, ag) : 0);
             }
             if (EI_ENERGY_MINIMIZATION(inputrec.eI))
             {
@@ -388,8 +396,12 @@ void atoms2md(const gmx_mtop_t&  mtop,
             md->typeA[i]   = atom.type;
             if (bLJPME)
             {
-                c6  = mtop.ffparams.iparams[atom.type * (mtop.ffparams.atnr + 1)].lj.c6;
-                c12 = mtop.ffparams.iparams[atom.type * (mtop.ffparams.atnr + 1)].lj.c12;
+                real c6         = (isValidAtom
+                                           ? mtop.ffparams.iparams[atom.type * (mtop.ffparams.atnr + 1)].lj.c6
+                                           : 0.0_real);
+                real c12        = (isValidAtom
+                                           ? mtop.ffparams.iparams[atom.type * (mtop.ffparams.atnr + 1)].lj.c12
+                                           : 0.0_real);
                 md->sqrt_c6A[i] = std::sqrt(c6);
                 if (c6 == 0.0 || c12 == 0)
                 {
@@ -408,8 +420,14 @@ void atoms2md(const gmx_mtop_t&  mtop,
                 md->typeB[i]      = atom.typeB;
                 if (bLJPME)
                 {
-                    c6  = mtop.ffparams.iparams[atom.typeB * (mtop.ffparams.atnr + 1)].lj.c6;
-                    c12 = mtop.ffparams.iparams[atom.typeB * (mtop.ffparams.atnr + 1)].lj.c12;
+                    real c6         = (isValidAtom ? mtop.ffparams
+                                                     .iparams[atom.typeB * (mtop.ffparams.atnr + 1)]
+                                                     .lj.c6
+                                                   : 0.0_real);
+                    real c12        = (isValidAtom ? mtop.ffparams
+                                                      .iparams[atom.typeB * (mtop.ffparams.atnr + 1)]
+                                                      .lj.c12
+                                                   : 0.0_real);
                     md->sqrt_c6B[i] = std::sqrt(c6);
                     if (c6 == 0.0 || c12 == 0)
                     {
@@ -423,31 +441,65 @@ void atoms2md(const gmx_mtop_t&  mtop,
                 }
             }
             md->ptype[i] = atom.ptype;
-            if (!md->cTC.empty())
-            {
-                md->cTC[i] = groups.groupNumbers[SimulationAtomGroupType::TemperatureCoupling][ag];
-            }
-            md->cENER[i] = getGroupType(groups, SimulationAtomGroupType::EnergyOutput, ag);
-            if (!md->cACC.empty())
-            {
-                md->cACC[i] = groups.groupNumbers[SimulationAtomGroupType::Acceleration][ag];
-            }
-            if (!md->cVCM.empty())
-            {
-                md->cVCM[i] = groups.groupNumbers[SimulationAtomGroupType::MassCenterVelocityRemoval][ag];
-            }
-            if (!md->cORF.empty())
-            {
-                md->cORF[i] = getGroupType(groups, SimulationAtomGroupType::OrientationRestraintsFit, ag);
-            }
 
-            if (!md->cU1.empty())
+            if (isValidAtom)
             {
-                md->cU1[i] = groups.groupNumbers[SimulationAtomGroupType::User1][ag];
+                if (!md->cTC.empty())
+                {
+                    md->cTC[i] = groups.groupNumbers[SimulationAtomGroupType::TemperatureCoupling][ag];
+                }
+                md->cENER[i] = getGroupType(groups, SimulationAtomGroupType::EnergyOutput, ag);
+                if (!md->cACC.empty())
+                {
+                    md->cACC[i] = groups.groupNumbers[SimulationAtomGroupType::Acceleration][ag];
+                }
+                if (!md->cVCM.empty())
+                {
+                    md->cVCM[i] =
+                            groups.groupNumbers[SimulationAtomGroupType::MassCenterVelocityRemoval][ag];
+                }
+                if (!md->cORF.empty())
+                {
+                    md->cORF[i] =
+                            getGroupType(groups, SimulationAtomGroupType::OrientationRestraintsFit, ag);
+                }
+
+                if (!md->cU1.empty())
+                {
+                    md->cU1[i] = groups.groupNumbers[SimulationAtomGroupType::User1][ag];
+                }
+                if (!md->cU2.empty())
+                {
+                    md->cU2[i] = groups.groupNumbers[SimulationAtomGroupType::User2][ag];
+                }
             }
-            if (!md->cU2.empty())
+            else
             {
-                md->cU2[i] = groups.groupNumbers[SimulationAtomGroupType::User2][ag];
+                // As fillers have no mass and interactions, we can add them to group 0 without side-effects
+                if (!md->cTC.empty())
+                {
+                    md->cTC[i] = 0;
+                }
+                md->cENER[i] = 0;
+                if (!md->cACC.empty())
+                {
+                    md->cACC[i] = 0;
+                }
+                if (!md->cVCM.empty())
+                {
+                    md->cVCM[i] = 0;
+                }
+                GMX_ASSERT(md->cORF.empty(),
+                           "Combination of orientation restraints and fillers is not supported");
+
+                if (!md->cU1.empty())
+                {
+                    md->cU1[i] = -1;
+                }
+                if (!md->cU2.empty())
+                {
+                    md->cU2[i] = -1;
+                }
             }
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR

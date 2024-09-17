@@ -139,6 +139,9 @@ bool dd_check_ftype(const int ftype, const ReverseTopOptions& rtOptions)
 MolecularTopologyAtomIndices globalAtomIndexToMoltypeIndices(const gmx::ArrayRef<const MolblockIndices> molblockIndices,
                                                              const int globalAtomIndex)
 {
+    GMX_ASSERT(isValidGlobalAtom(globalAtomIndex),
+               "We should only look up real atoms (not fillers, value -1)");
+
     // Find the molblock the atom belongs to using bisection
     int start = 0;
     int end   = molblockIndices.size(); /* exclusive */

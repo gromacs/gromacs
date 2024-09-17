@@ -198,6 +198,10 @@ void write_dd_pdb(const char*       fn,
     for (int i = 0; i < natoms; i++)
     {
         int ii = dd->globalAtomIndices[i];
+        if (!isValidGlobalAtom(ii))
+        {
+            continue;
+        }
         mtopGetAtomAndResidueName(mtop, ii, &molb, &atomname, &resnr, &resname, nullptr);
         int  c;
         real b;

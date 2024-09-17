@@ -311,6 +311,10 @@ static void write_constr_pdb(const char*          fn,
                 continue;
             }
             ii = dd->globalAtomIndices[i];
+            if (!isValidGlobalAtom(ii))
+            {
+                continue;
+            }
         }
         else
         {

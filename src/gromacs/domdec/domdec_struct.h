@@ -193,6 +193,12 @@ struct gmx_domdec_t
     std::vector<std::unique_ptr<gmx::GpuHaloExchange>> gpuHaloExchange[DIM];
 };
 
+//! Return whether \p globalAtomIndex is a valid global atom (and not a filler particle)
+static inline bool isValidGlobalAtom(const int globalAtomIndex)
+{
+    return globalAtomIndex >= 0;
+};
+
 //! Are we the main node for domain decomposition
 static inline bool DDMAIN(const gmx_domdec_t& dd)
 {

@@ -666,7 +666,13 @@ static int make_bondeds_zone(const gmx_reverse_top_t&           rt,
     for (int atomIndexLocal : atomRange)
     {
         /* Get the global atom number */
-        const int  atomIndexGlobal = globalAtomIndices[atomIndexLocal];
+        const int atomIndexGlobal = globalAtomIndices[atomIndexLocal];
+
+        if (!isValidGlobalAtom(atomIndexGlobal))
+        {
+            continue;
+        }
+
         const auto aim = atomInMolblockFromGlobalAtomnr(rt.molblockIndices(), atomIndexGlobal);
 
         const AtomIndexSet atomIndexMol = { atomIndexLocal, atomIndexGlobal, aim.atomIndexInMolecule };

@@ -89,6 +89,8 @@ void check_screw_box(const matrix box);
 static inline int ddGetAtomInfo(gmx::ArrayRef<const gmx::AtomInfoWithinMoleculeBlock> atomInfoForEachMoleculeBlock,
                                 int                                                   a)
 {
+    GMX_ASSERT(isValidGlobalAtom(a), "We should only look up real atoms (not fillers, value -1)");
+
     size_t index = 0;
     while (a >= atomInfoForEachMoleculeBlock[index].indexOfLastAtomInMoleculeBlock)
     {
