@@ -406,6 +406,26 @@ public:
     int d_rollingPruningPartAllocationSize = -1;
 };
 
+/*! \brief Multiplier for energy and shift forces storage.
+ *
+ * With the HIP kernels, we store the final values in separate storage instead of doing the full
+ * reduction directly in the kernel (partially to also reduce the penalty from atomic operations).
+ *
+ * This is specific for the HIP backend for AMD devices, other backends don't need to use the
+ * multiplier so we just return 1.
+ */
+static constexpr unsigned int sc_gpuMemoryMultiplier = GMX_GPU_HIP ? 64U : 1U;
+
+/*! \brief Memory storage size for energy and shift forces storage.
+ *
+ * With the HIP kernels, we store the final values in separate storage instead of doing the full
+ * reduction directly in the kernel (partially to also reduce the penalty from atomic operations).
+ *
+ * This is specific for the HIP backend for AMD devices, other backends don't need to use the
+ * multiplier so we just return 1.
+ */
+static constexpr unsigned int sc_gpuMemorySize = GMX_GPU_HIP ? sc_gpuMemoryMultiplier + 1U : 1U;
+
 /*! \brief Set of boolean constants mimicking preprocessor macros.
  *
  * Those are currently used for SYCL and HIP.
