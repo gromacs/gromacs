@@ -519,7 +519,15 @@ void compute_globals(gmx_global_stat*               gstat,
                             observablesReducer);
                 wallcycle_stop(wcycle, WallCycleCounter::MoveE);
             }
+            if (signalCoordinator->haveInterSimulationSignalling())
+            {
+                wallcycle_start(wcycle, WallCycleCounter::InterSimulationSignalling);
+            }
             signalCoordinator->finalizeSignals();
+            if (signalCoordinator->haveInterSimulationSignalling())
+            {
+                wallcycle_stop(wcycle, WallCycleCounter::InterSimulationSignalling);
+            }
 
             if (fr->haveBoxDeformation && bTemp && !bReadEkin)
             {
