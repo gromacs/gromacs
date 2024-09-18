@@ -436,9 +436,9 @@ struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
     //! Pressure coupling
     PressureCouplingOptions pressureCouplingOptions;
     //! The COM of the posres atoms
-    rvec posres_com = { 0, 0, 0 };
+    gmx::RVec posres_com = { 0, 0, 0 };
     //! The B-state COM of the posres atoms
-    rvec posres_comB = { 0, 0, 0 };
+    gmx::RVec posres_comB = { 0, 0, 0 };
     //! Random seed for Andersen thermostat (obsolete)
     int andersen_seed = 0;
     //! Per atom pair energy drift tolerance (kJ/mol/ps/atom) for the pairlist buffer

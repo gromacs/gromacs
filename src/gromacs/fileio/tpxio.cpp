@@ -1409,8 +1409,8 @@ static void do_inputrec(gmx::ISerializer* serializer, t_inputrec* ir, int file_v
     serializer->doRvec(&ir->pressureCouplingOptions.compress[YY]);
     serializer->doRvec(&ir->pressureCouplingOptions.compress[ZZ]);
     serializer->doEnumAsInt(&ir->pressureCouplingOptions.refcoord_scaling);
-    serializer->doRvec(&ir->posres_com);
-    serializer->doRvec(&ir->posres_comB);
+    serializer->doRvec(&ir->posres_com.as_vec());
+    serializer->doRvec(&ir->posres_comB.as_vec());
 
     if (file_version < tpxv_Pre96Version79)
     {
