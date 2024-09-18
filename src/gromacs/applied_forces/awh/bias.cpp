@@ -426,6 +426,13 @@ void Bias::printInitializationToLog(FILE* fplog) const
     {
         std::string prefix = gmx::formatString("\nawh%d:", params_.biasIndex_ + 1);
 
+        fprintf(fplog, "%s grid %d", prefix.c_str(), grid_.axis()[0].numPoints());
+        for (int d = 1; d < ssize(grid_.axis()); d++)
+        {
+            fprintf(fplog, " x %d", grid_.axis()[d].numPoints());
+        }
+        fprintf(fplog, " points");
+
         fprintf(fplog,
                 "%s initial force correlation block length = %g %s"
                 "%s force correlation number of blocks = %d",
