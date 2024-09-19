@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright 2015- The GROMACS Authors
+# Copyright 2024- The GROMACS Authors
 # and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
 # Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
 #
@@ -31,44 +31,27 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out https://www.gromacs.org.
 
-# Set up the module library
-add_library(applied_forces INTERFACE)
+# If Plumed is not activated then compile just the stub implementation plumedMDModule_stub.cpp
+# In other case compile regular plumedMDModule.cpp and tests
+if(GMX_PLUMED_ACTIVE)
+    # set(PLUMED_SOURCES plumedforceprovider.cpp
+    # plumedOptions.cpp
+    # plumedMDModule.cpp
+    # )
+    # gmx_add_libgromacs_sources(
+    #     ${PLUMED_SOURCES}
+    # )
+    #setting source file properties seems not to work
+    #this should refined if a "nonRUNTIME" option is added
+    # set_source_files_properties(${PLUMED_SOURCES} PROPERTIES
+    #     COMPILE_DEFINITIONS
+    #     __PLUMED_HAS_DLOPEN)
 
-# Source files have the following private module dependencies.
-target_link_libraries(applied_forces PRIVATE
-                      #                      gmxlib
-                      #                      math
-                      #                      mdtypes
-                      #                      tng_io
-                      )
-
-# Public interface for modules, including dependencies and interfaces
-#target_include_directories(applied_forces PUBLIC
-#                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
-#target_link_libraries(applied_forces PUBLIC
-target_link_libraries(applied_forces INTERFACE
-                      legacy_api
-                      )
-
-# TODO: when fileio is an OBJECT target
-#target_link_libraries(applied_forces PUBLIC legacy_api)
-#target_link_libraries(applied_forces PRIVATE common)
-
-# Source files have the following private module dependencies.
-#target_link_libraries(applied_forces PRIVATE tng_io)
-# TODO: Explicitly link specific modules.
-#target_link_libraries(applied_forces PRIVATE legacy_modules)
-
+    # if (BUILD_TESTING)
+    #     add_subdirectory(tests)
+    # endif()
+else()
 gmx_add_libgromacs_sources(
-    electricfield.cpp
-    )
-
-add_subdirectory(awh)
-add_subdirectory(densityfitting)
-add_subdirectory(qmmm)
-add_subdirectory(colvars)
-add_subdirectory(plumed)
-
-if (BUILD_TESTING)
-    add_subdirectory(tests)
+        plumedMDModule_stub.cpp
+    )    
 endif()

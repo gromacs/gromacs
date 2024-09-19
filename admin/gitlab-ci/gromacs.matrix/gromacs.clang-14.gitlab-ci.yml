@@ -14,6 +14,7 @@
 #   Parallelism nt/ntomp: 4/2
 #   TNG: build without TNG
 #   Colvars: build without internal colvars support
+#.  PLUMED: build without PLUMED support
 
 gromacs:clang-14:configure:
   extends:
@@ -24,7 +25,7 @@ gromacs:clang-14:configure:
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-llvm-14-cuda-12.1.0
   variables:
     COMPILER_MAJOR_VERSION: 14
-    CMAKE_EXTRA_OPTIONS: -DGMX_INSTALL_LEGACY_API=ON -DGMX_USE_TNG=no -DGMX_USE_COLVARS=NONE
+    CMAKE_EXTRA_OPTIONS: -DGMX_INSTALL_LEGACY_API=ON -DGMX_USE_TNG=no -DGMX_USE_COLVARS=NONE -DGMX_USE_PLUMED=OFF
 
 gromacs:clang-14:build:
   extends:

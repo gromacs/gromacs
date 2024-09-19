@@ -446,6 +446,8 @@ target_link_libraries(libgromacs PRIVATE lmfit)
 target_link_libraries(libgromacs PRIVATE muparser::muparser)
 gmx_manage_colvars()
 target_link_libraries(libgromacs PRIVATE colvars)
+gmx_manage_plumed()
+target_link_libraries(libgromacs PRIVATE plumedgmx)
 
 # Make sure we fix "everything" found by compilers that support that
 gmx_warn_on_everything(libgromacs)
