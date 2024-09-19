@@ -108,65 +108,37 @@ TEST(DevicesManagerTest, Serialization)
     }
 }
 
-template<std::size_t N>
-uint32_t uint32FromBytes(const std::array<std::byte, N>& data, const std::size_t byteOffset)
-{
-    if (byteOffset + sizeof(uint32_t) > N)
-    {
-        throw std::invalid_argument("byteOffset would read out of bounds");
-    }
-
-    // Integer to copy the bytes to
-    uint32_t result;
-
-    // Copy the bytes, assuming little-endian layout. The compiler
-    // generally elides this away.
-    std::memcpy(&result, &(data[byteOffset]), sizeof(result));
-    if (GMX_INTEGER_BIG_ENDIAN)
-    {
-        // Change the endianness to match the hardware
-        const auto* ptr = reinterpret_cast<const uint8_t*>(&result);
-        return (ptr[0] << 24) | (ptr[1] << 16) | (ptr[2] << 8) | ptr[3];
-    }
-    else
-    {
-        return result;
-    }
-}
-
 std::string uuidToString(const std::array<std::byte, 16>& uuid)
 {
     // Write a string in the frequently used 8-4-4-4-12 format,
     // xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx, where every x represents 4 bits
-    std::string result;
-    result.reserve(37);
+    constexpr char const* digits = "0123456789ABCDEF";
+    std::string           result;
+    for (std::size_t i = 0; i < uuid.size(); ++i)
+    {
+        const std::uint8_t uuidByte = static_cast<std::uint8_t>(uuid[i]);
 
-    std::size_t byteOffset = 0;
-    for (int i = 0; i < 4; ++i, byteOffset += sizeof(uint32_t))
-    {
-        result += gmx::formatString("%2.2x", uint32FromBytes(uuid, byteOffset));
+        result.append(1, digits[(uuidByte >> 4) & 0x0F]);
+        result.append(1, digits[uuidByte & 0x0F]);
+
+        if (i == 3 || i == 5 || i == 7 || i == 9)
+        {
+            result.append(1, '-');
+        }
     }
-    result.append(1, '-');
-    for (int i = 0; i < 2; ++i, byteOffset += sizeof(uint32_t))
-    {
-        result += gmx::formatString("%2.2x", uint32FromBytes(uuid, byteOffset));
-    }
-    result.append(1, '-');
-    for (int i = 0; i < 2; ++i, byteOffset += sizeof(uint32_t))
-    {
-        result += gmx::formatString("%2.2x", uint32FromBytes(uuid, byteOffset));
-    }
-    result.append(1, '-');
-    for (int i = 0; i < 2; ++i, byteOffset += sizeof(uint32_t))
-    {
-        result += gmx::formatString("%2.2x", uint32FromBytes(uuid, byteOffset));
-    }
-    result.append(1, '-');
-    for (int i = 0; i < 6; ++i, byteOffset += sizeof(uint32_t))
-    {
-        result += gmx::formatString("%2.2x", uint32FromBytes(uuid, byteOffset));
-    }
+
     return result;
+}
+
+TEST(UuidStringTest, Works)
+{
+    std::array<std::byte, 16> id = { { std::byte{ 0 } } };
+    EXPECT_EQ("00000000-0000-0000-0000-000000000000", uuidToString(id));
+    for (size_t i = 0; i < id.size(); ++i)
+    {
+        id[i] = static_cast<std::byte>(i);
+    }
+    EXPECT_EQ("00010203-0405-0607-0809-0A0B0C0D0E0F", uuidToString(id));
 }
 
 // We can't actually test UUID detection because the value returned
