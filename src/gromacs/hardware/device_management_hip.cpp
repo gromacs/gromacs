@@ -47,6 +47,11 @@
  */
 #include "gmxpre.h"
 
+#include <algorithm>
+#include <optional>
+
+#include <hip/hip_runtime_api.h>
+
 #include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/device_stream.h"
 #include "gromacs/gpu_utils/hiputils.h"
@@ -58,6 +63,7 @@
 
 #include "device_information.h"
 #include "device_management.h"
+#include "device_management_shared_amd.h"
 
 /** Dummy kernel used for sanity checking. */
 static __global__ void dummy_kernel() {}
@@ -233,6 +239,8 @@ std::vector<std::unique_ptr<DeviceInformation>> findDevices()
         deviceInfoList[i]->id           = i;
         deviceInfoList[i]->prop         = prop;
         deviceInfoList[i]->deviceVendor = DeviceVendor::Amd;
+
+        deviceInfoList[i]->uuid = getAmdDeviceUuid(i);
 
         deviceInfoList[i]->supportedSubGroupSizes.push_back(deviceInfoList[i]->prop.warpSize);
 
