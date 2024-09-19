@@ -170,6 +170,17 @@ public:
      * Exceptions thrown by the module are caught by this method.
      */
     void runTest(const CommandLine& args);
+    /*! \brief
+     * Runs the analysis module with the given additional options.
+     *
+     * \param[in] args  Options to provide to the module.
+     *
+     * As for \c runTest(const CommandLine& args), but does not catch
+     * exceptions thrown by the module. This is useful when testing
+     * that certain inputs produce an exception exactly when they
+     * should.
+     */
+    void runTestAnticipatingException(const CommandLine& args);
 
 protected:
     /*! \brief

@@ -249,13 +249,8 @@ TEST_F(MsdModuleTest, roundingFail)
     setInputFile("-f", "msd_traj_rounding_fail.xtc");
     setInputFile("-s", "msd_coords.gro");
     setInputFile("-n", "msd.ndx");
-    CommandLine cmdline = commandLine();
-    cmdline.addOption("-sel", "0");
-
-    ICommandLineOptionsModulePointer runner(
-            TrajectoryAnalysisCommandLineRunner::createModule(createModule()));
-
-    EXPECT_THROW(CommandLineTestHelper::runModuleDirect(std::move(runner), &cmdline), gmx::ToleranceError);
+    const char* const cmdline[] = { "-sel", "0" };
+    EXPECT_THROW_GMX(runTestAnticipatingException(CommandLine(cmdline)), gmx::ToleranceError);
 }
 
 
@@ -276,11 +271,11 @@ TEST_F(MsdModuleTest, multipleGroupsWork)
 }
 
 // Disabled in release-2024 branch, to be fixed in main branch by !4263
-TEST_F(MsdModuleTest, DISABLED_trestartLessThanDt)
+TEST_F(MsdModuleTest, trestartLessThanDt)
 {
     setAllInputs("alanine_vsite_solvated");
     const char* const cmdline[] = { "-trestart", "1", "-sel", "2" };
-    runTest(CommandLine(cmdline));
+    EXPECT_THROW_GMX(runTestAnticipatingException(CommandLine(cmdline)), gmx::InconsistentInputError);
 }
 
 TEST_F(MsdModuleTest, trestartGreaterThanDt)
@@ -288,6 +283,13 @@ TEST_F(MsdModuleTest, trestartGreaterThanDt)
     setAllInputs("alanine_vsite_solvated");
     const char* const cmdline[] = { "-trestart", "10", "-sel", "2" };
     runTest(CommandLine(cmdline));
+}
+
+TEST_F(MsdModuleTest, trestartGreaterThanDtAndNotAMultipleOfDt)
+{
+    setAllInputs("alanine_vsite_solvated"); // -dt is deduced as 2 from the file
+    const char* const cmdline[] = { "-trestart", "7", "-sel", "2" };
+    EXPECT_THROW_GMX(runTestAnticipatingException(CommandLine(cmdline)), gmx::InconsistentInputError);
 }
 
 TEST_F(MsdModuleTest, molTest)
