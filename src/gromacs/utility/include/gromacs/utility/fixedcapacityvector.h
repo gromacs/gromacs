@@ -109,6 +109,15 @@ public:
     //! Standard reverse iterator
     using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
+    //! Constructor, \p count sets the initial size, 0 by default
+    FixedCapacityVector(size_type count = 0)
+    {
+        if (count > 0)
+        {
+            resize(count);
+        }
+    }
+
     //! Returns a const iterator to the beginning
     const_iterator begin() const noexcept { return data(); }
     //! Returns an iterator to the beginning
@@ -202,7 +211,7 @@ public:
         GMX_ASSERT(!empty(), "Can only delete last element when present");
         if constexpr (!std::is_trivially_destructible_v<T>)
         {
-            ~back();
+            back().~T();
         }
         size_--;
     }
@@ -223,6 +232,23 @@ public:
         size_++;
 
         return back();
+    }
+
+    //! Resizes the vector, when the new size is larger, new elements are zero initialized
+    constexpr void resize(const size_type count)
+    {
+        if (count > capacity_)
+        {
+            throw std::length_error("resize beyond capacity requested");
+        }
+        while (size_ > count)
+        {
+            pop_back();
+        }
+        while (size_ < count)
+        {
+            emplace_back();
+        }
     }
 
     //! Clears content
