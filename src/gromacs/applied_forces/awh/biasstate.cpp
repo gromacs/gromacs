@@ -838,14 +838,17 @@ namespace
  * \param[in]     numSharedUpdate    The number of biases sharing the histrogram.
  * \param[in]     biasSharing        Object for sharing bias data over multiple simulations
  * \param[in]     biasIndex          Index of this bias in the total list of biases in this
- * simulation \param[in]     localUpdateList    List of points with data.
+                                     simulation
+ * \param[in]     localUpdateList    List of points with data.
+ * \param[in,out] buffer             A buffer used for the MPI reduction
  */
 void sumHistograms(gmx::ArrayRef<PointState> pointState,
                    gmx::ArrayRef<double>     weightSumCovering,
                    int                       numSharedUpdate,
                    const BiasSharing*        biasSharing,
                    const int                 biasIndex,
-                   const std::vector<int>&   localUpdateList)
+                   gmx::ArrayRef<const int>  localUpdateList,
+                   FastVector<double>*       buffer)
 {
     /* The covering checking histograms are added before summing over simulations, so that the
        weights from different simulations are kept distinguishable. */
@@ -860,12 +863,12 @@ void sumHistograms(gmx::ArrayRef<PointState> pointState,
         GMX_ASSERT(numSharedUpdate == biasSharing->numSharingSimulations(biasIndex),
                    "Sharing within a simulation is not implemented (yet)");
 
-        /* Collect the weights and counts in linear arrays to be able to use gmx_sumd_sim. */
-        std::vector<double> weightSum;
-        std::vector<double> coordVisits;
-
-        weightSum.resize(localUpdateList.size());
-        coordVisits.resize(localUpdateList.size());
+        /* Collect the weights and counts in a single, linear buffer to be able to use gmx_sumd_sim. */
+        buffer->resize(2 * localUpdateList.size());
+        ArrayRef<double> bufferRef = *buffer;
+        ArrayRef<double> weightSum = bufferRef.subArray(0, localUpdateList.size());
+        ArrayRef<double> coordVisits =
+                bufferRef.subArray(localUpdateList.size(), localUpdateList.size());
 
         for (size_t localIndex = 0; localIndex < localUpdateList.size(); localIndex++)
         {
@@ -876,8 +879,7 @@ void sumHistograms(gmx::ArrayRef<PointState> pointState,
             ps.addLocalWeightSum();
         }
 
-        biasSharing->sumOverSharingSimulations(gmx::ArrayRef<double>(weightSum), biasIndex);
-        biasSharing->sumOverSharingSimulations(gmx::ArrayRef<double>(coordVisits), biasIndex);
+        biasSharing->sumOverSharingSimulations(bufferRef, biasIndex);
 
         /* Transfer back the result */
         for (size_t localIndex = 0; localIndex < localUpdateList.size(); localIndex++)
@@ -1184,7 +1186,13 @@ void BiasState::updateFreeEnergyAndAddSamplesToHistogram(ArrayRef<const DimParam
     resetLocalUpdateRange(grid);
 
     /* Add samples to histograms for all local points and sync simulations if needed */
-    sumHistograms(points_, weightSumCovering_, params.numSharedUpdate, biasSharing_, params.biasIndex_, *updateList);
+    sumHistograms(points_,
+                  weightSumCovering_,
+                  params.numSharedUpdate,
+                  biasSharing_,
+                  params.biasIndex_,
+                  *updateList,
+                  &biasSharingBuffer_);
 
     sumPmf(points_, params.numSharedUpdate, biasSharing_, params.biasIndex_);
 

@@ -59,6 +59,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/defaultinitializationallocator.h"
 #include "gromacs/utility/gmxassert.h"
 
 #include "coordstate.h"
@@ -573,6 +574,8 @@ private:
 
     //! Object for sharing biases over multiple simulations, can be nullptr
     const BiasSharing* biasSharing_;
+    //! Buffer for reductions over sharing simulations
+    FastVector<double> biasSharingBuffer_;
 
     /* Correlation tensor time integral, for all points, shared across all ranks (weighted based on
      * the local weight contribution). The structure is [points][correlationTensorIndex].
