@@ -469,7 +469,7 @@ static void restoreAtomGroups(gmx_domdec_t* dd, const t_state* state)
 {
     gmx::ArrayRef<const int> atomsState = state->cg_gl;
 
-    std::vector<int>& globalAtomIndices = dd->globalAtomIndices;
+    auto& globalAtomIndices = dd->globalAtomIndices;
 
     globalAtomIndices.resize(atomsState.size());
 
@@ -1612,7 +1612,7 @@ static void get_zone_pulse_groups(gmx_domdec_t*                  dd,
                                   gmx_bool                       bDistMB,
                                   gmx::ArrayRef<const gmx::RVec> coordinates,
                                   gmx::ArrayRef<const int32_t>   atomInfo,
-                                  std::vector<int>*              localAtomGroups,
+                                  gmx::FastVector<int>*          localAtomGroups,
                                   dd_comm_setup_work_t*          work)
 {
     gmx_domdec_comm_t* comm;
@@ -1631,7 +1631,7 @@ static void get_zone_pulse_groups(gmx_domdec_t*                  dd,
     bDistMB_pulse = (bDistMB && bDistBonded);
 
     /* Unpack the work data */
-    std::vector<int>&       ibuf = work->atomGroupBuffer;
+    gmx::FastVector<int>&   ibuf = work->atomGroupBuffer;
     std::vector<gmx::RVec>& vbuf = work->positionBuffer;
     nsend_z                      = 0;
     nat                          = work->nat;
@@ -2088,7 +2088,7 @@ static void setup_dd_communication(gmx_domdec_t* dd, matrix box, gmx_ddbox_t* dd
                     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
                 } // END
 
-                std::vector<int>&       atomGroups = comm->dth[0].atomGroupBuffer;
+                gmx::FastVector<int>&   atomGroups = comm->dth[0].atomGroupBuffer;
                 std::vector<gmx::RVec>& positions  = comm->dth[0].positionBuffer;
                 ind->nsend[zone]                   = comm->dth[0].nsend_zone;
                 /* Append data of threads>=1 to the communication buffers */
@@ -2281,7 +2281,7 @@ static void orderVector(gmx::ArrayRef<const gmx_cgsort_t> sort,
 template<typename T>
 static void orderVector(gmx::ArrayRef<const gmx_cgsort_t> sort,
                         gmx::ArrayRef<T>                  vectorToSort,
-                        std::vector<T>*                   workVector)
+                        gmx::FastVector<T>*               workVector)
 {
     if (gmx::Index(workVector->size()) < sort.ssize())
     {
@@ -2291,7 +2291,7 @@ static void orderVector(gmx::ArrayRef<const gmx_cgsort_t> sort,
 }
 
 //! Returns the sorting order for atoms based on the nbnxn grid order in sort
-static void dd_sort_order_nbnxn(const t_forcerec* fr, std::vector<gmx_cgsort_t>* sort)
+static void dd_sort_order_nbnxn(const t_forcerec* fr, gmx::FastVector<gmx_cgsort_t>* sort)
 {
     gmx::ArrayRef<const int> atomOrder = fr->nbv->getLocalAtomOrder();
 

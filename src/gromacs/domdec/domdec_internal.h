@@ -50,6 +50,7 @@
 #include "gromacs/mdlib/updategroupscog.h"
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/topology/block.h"
+#include "gromacs/utility/defaultinitializationallocator.h"
 #include "gromacs/utility/listoflists.h"
 
 struct t_commrec;
@@ -76,7 +77,7 @@ struct gmx_domdec_ind_t
     int nrecv[gmx::sc_maxNumIZones + 2] = {};
     //! @}
     //! The charge groups to send
-    std::vector<int> index;
+    gmx::FastVector<int> index;
     //! @{
     /* The atom range for non-in-place communication */
     int cell2at0[gmx::sc_maxNumIZones] = {};
@@ -172,24 +173,22 @@ typedef struct domdec_load
 } domdec_load_t;
 
 /*! \brief Data needed to sort an atom to the desired location in the local state */
-typedef struct gmx_cgsort
+struct gmx_cgsort_t
 {
     /**< Local atom/charge group index */
     int ind = 0;
-} gmx_cgsort_t;
+};
 
 /*! \brief Temporary buffers for sorting atoms */
-typedef struct gmx_domdec_sort
+struct gmx_domdec_sort_t
 {
     /**< Sorted array of indices */
-    std::vector<gmx_cgsort_t> sorted;
-    /**< Array of stationary atom/charge group indices */
-    std::vector<gmx_cgsort_t> stationary;
+    gmx::FastVector<gmx_cgsort_t> sorted;
     /**< Array of moved atom/charge group indices */
-    std::vector<gmx_cgsort_t> moved;
+    gmx::FastVector<gmx_cgsort_t> moved;
     /**< Integer buffer for sorting */
-    std::vector<int> intBuffer;
-} gmx_domdec_sort_t;
+    gmx::FastVector<int> intBuffer;
+};
 
 /*! \brief Manages atom ranges and order for the local state atom vectors */
 class DDAtomRanges
@@ -366,8 +365,8 @@ private:
         isInUse_ = false;
     }
 
-    std::vector<T> buffer_;          /**< The actual memory buffer */
-    bool           isInUse_ = false; /**< Flag that tells whether the buffer is in use */
+    gmx::FastVector<T> buffer_;          /**< The actual memory buffer */
+    bool               isInUse_ = false; /**< Flag that tells whether the buffer is in use */
 
     friend class DDBufferAccess<T>;
 };
@@ -406,9 +405,9 @@ public:
 struct dd_comm_setup_work_t
 {
     /**< The local atom group indices to send */
-    std::vector<int> localAtomGroupBuffer;
+    gmx::FastVector<int> localAtomGroupBuffer;
     /**< Buffer for collecting the global atom group indices to send */
-    std::vector<int> atomGroupBuffer;
+    gmx::FastVector<int> atomGroupBuffer;
     /**< Buffer for collecting the atom group positions to send */
     std::vector<gmx::RVec> positionBuffer;
     /**< The number of atoms contained in the atom groups to send */
@@ -669,7 +668,7 @@ struct gmx_domdec_comm_t // NOLINT (clang-analyzer-optin.performance.Padding)
 
     /* Communication buffers for local redistribution */
     /**< Charge group flag comm. buffers */
-    std::array<std::vector<int>, DIM * 2> cggl_flag;
+    std::array<gmx::FastVector<int>, DIM * 2> cggl_flag;
     /**< Charge group center comm. buffers */
     std::array<std::vector<gmx::RVec>, DIM * 2> cgcm_state;
 

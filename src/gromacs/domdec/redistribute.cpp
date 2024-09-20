@@ -711,7 +711,7 @@ void dd_redistribute_cg(FILE*         fplog,
             const int mc = move[cg] & DD_FLAG_NRCG;
             move[cg]     = mc;
 
-            std::vector<int>& cggl_flag = comm->cggl_flag[mc];
+            gmx::FastVector<int>& cggl_flag = comm->cggl_flag[mc];
 
             /* TODO: See if we can use push_back instead */
             if ((nat[mc] + 1) * DD_CGIBS > gmx::Index(cggl_flag.size()))

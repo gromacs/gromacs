@@ -107,7 +107,7 @@ void mdAlgorithmsSetupAtomData(const t_commrec*     cr,
     atoms2md(top_global,
              inputrec,
              numAtomIndex,
-             usingDomDec ? cr->dd->globalAtomIndices : std::vector<int>(),
+             usingDomDec ? makeArrayRef(cr->dd->globalAtomIndices) : ArrayRef<int>(),
              numHomeAtoms,
              mdAtoms);
 

@@ -258,7 +258,7 @@ void define1dHaloWith1Pulse(gmx_domdec_t* dd, std::vector<gmx_domdec_ind_t>* ind
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    std::vector<int> indexvec;
+    FastVector<int>  indexvec;
     gmx_domdec_ind_t ind;
 
     dd->ndim     = 1;
@@ -296,7 +296,7 @@ void define1dHaloWith2Pulses(gmx_domdec_t* dd, std::vector<gmx_domdec_ind_t>* in
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    std::vector<int> indexvec;
+    FastVector<int>  indexvec;
     gmx_domdec_ind_t ind;
 
     dd->ndim     = 1;
@@ -346,7 +346,7 @@ void define2dHaloWith1PulseInEachDim(gmx_domdec_t* dd, std::vector<gmx_domdec_in
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    std::vector<int> indexvec;
+    FastVector<int>  indexvec;
     gmx_domdec_ind_t ind;
 
     dd->ndim  = 2;
@@ -388,7 +388,7 @@ void define2dHaloWith2PulsesInDim1(gmx_domdec_t* dd, std::vector<gmx_domdec_ind_
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    std::vector<int> indexvec;
+    FastVector<int>  indexvec;
     gmx_domdec_ind_t ind;
 
     dd->ndim  = 2;

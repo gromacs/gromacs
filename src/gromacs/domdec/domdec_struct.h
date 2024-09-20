@@ -53,6 +53,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/idef.h"
+#include "gromacs/utility/defaultinitializationallocator.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/range.h"
 #include "gromacs/utility/real.h"
@@ -169,7 +170,7 @@ struct gmx_domdec_t
     int numHomeAtoms = 0;
 
     /* Index from the local atoms to the global atoms, covers home and received zones */
-    std::vector<int> globalAtomIndices;
+    gmx::FastVector<int> globalAtomIndices;
 
     /* Global atom number to local atom number list */
     std::unique_ptr<gmx_ga2la_t> ga2la;
