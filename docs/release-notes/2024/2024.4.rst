@@ -43,6 +43,7 @@ There can be measurable effects in systems with vacuum, gas, or with
 excessively large ``nstlist`` values. In our testing we could not detect artifacts
 apart from systems crashing, so the chance of undetected incorrect results is small.
 
+:issue:`5138`
 
 Fix Colvars output files always written to the working directory.
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
