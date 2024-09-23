@@ -14,3 +14,7 @@ When the ``-DGMX_BUILD_OWN_FFTW=ON`` option is enabled, we now compile FFTW 3.3.
 of the previous 3.3.8 version. For more details, please refer to the
 `FFTW release notes <https://www.fftw.org/release-notes.html>`_.
 
+Increased AWH parameter 'awh-nsamples-update' default value from 10 to 100
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+This is to decrease the overhead of updating the bias, in particular with multiple walkers.

@@ -1004,7 +1004,7 @@ AwhParams::AwhParams(std::vector<t_inpfile>* inp, WarningHandler* wi)
 
     printStringNoNewline(inp, "Free energy and bias update interval in number of samples");
     opt                         = "awh-nsamples-update";
-    numSamplesUpdateFreeEnergy_ = get_eint(inp, opt, 10, wi);
+    numSamplesUpdateFreeEnergy_ = get_eint(inp, opt, 100, wi);
 
     printStringNoNewline(
             inp, "When true, biases with share-group>0 are shared between multiple simulations");

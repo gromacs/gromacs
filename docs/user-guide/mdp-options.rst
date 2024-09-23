@@ -2054,7 +2054,7 @@ AWH adaptive biasing
 
 .. mdp:: awh-nsamples-update
 
-   (10)
+   (100)
    The number of coordinate samples used for each AWH update.
    The update interval in steps is :mdp:`awh-nstsample` times this value.
 
