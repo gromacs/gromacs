@@ -717,7 +717,7 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
     }
 
     /* Compute the number of list entries to prune in this pass */
-    int numSciInPart = (plist->nsci - part) / numParts;
+    int numSciInPart = (plist->nsci - part + numParts - 1) / numParts;
 
     /* Don't launch the kernel if there is no work to do. */
     if (numSciInPart <= 0)
