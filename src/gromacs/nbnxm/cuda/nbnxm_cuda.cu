@@ -638,7 +638,7 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
      * Also note that this CUDA implementation (parts tracking on device) differs from the
      * other backends (parts tracking on host, passed as kernel argument).
      */
-    int numSciInPartMax = (plist->nsci) / numParts;
+    const int numSciInPartMax = (plist->nsci + numParts - 1) / numParts;
 
     /* Don't launch the kernel if there is no work to do (not allowed with CUDA) */
     if (numSciInPartMax <= 0)
