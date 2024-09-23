@@ -339,15 +339,16 @@ static inline void initAtomdataFirst(NBAtomDataGpu*           atomdata,
     allocateDeviceBuffer(&atomdata->shiftVec, c_numShiftVectors, deviceContext);
     atomdata->shiftVecUploaded = false;
 
-    allocateDeviceBuffer(&atomdata->fShift, sc_gpuMemorySize * c_numShiftVectors, deviceContext);
-    allocateDeviceBuffer(&atomdata->eLJ, sc_gpuMemorySize, deviceContext);
-    allocateDeviceBuffer(&atomdata->eElec, sc_gpuMemorySize, deviceContext);
+    allocateDeviceBuffer(&atomdata->fShift, sc_gpuEnergyVirialNumElements * c_numShiftVectors, deviceContext);
+    allocateDeviceBuffer(&atomdata->eLJ, sc_gpuEnergyVirialNumElements, deviceContext);
+    allocateDeviceBuffer(&atomdata->eElec, sc_gpuEnergyVirialNumElements, deviceContext);
     allocateDeviceBuffer(&atomdata->dvdlLJ, 1, deviceContext);
     allocateDeviceBuffer(&atomdata->dvdlElec, 1, deviceContext);
 
-    clearDeviceBufferAsync(&atomdata->fShift, 0, sc_gpuMemorySize * c_numShiftVectors, localStream);
-    clearDeviceBufferAsync(&atomdata->eElec, 0, sc_gpuMemorySize, localStream);
-    clearDeviceBufferAsync(&atomdata->eLJ, 0, sc_gpuMemorySize, localStream);
+    clearDeviceBufferAsync(
+            &atomdata->fShift, 0, sc_gpuEnergyVirialNumElements * c_numShiftVectors, localStream);
+    clearDeviceBufferAsync(&atomdata->eElec, 0, sc_gpuEnergyVirialNumElements, localStream);
+    clearDeviceBufferAsync(&atomdata->eLJ, 0, sc_gpuEnergyVirialNumElements, localStream);
     clearDeviceBufferAsync(&atomdata->dvdlElec, 0, 1, localStream);
     clearDeviceBufferAsync(&atomdata->dvdlLJ, 0, 1, localStream);
 
@@ -1242,9 +1243,10 @@ void gpu_clear_outputs(NbnxmGpu* nb, bool computeVirial)
     // Clear shift force array and energies if the outputs were used in the current step
     if (computeVirial)
     {
-        clearDeviceBufferAsync(&adat->fShift, 0, sc_gpuMemorySize * c_numShiftVectors, localStream);
-        clearDeviceBufferAsync(&adat->eLJ, 0, sc_gpuMemorySize, localStream);
-        clearDeviceBufferAsync(&adat->eElec, 0, sc_gpuMemorySize, localStream);
+        clearDeviceBufferAsync(
+                &adat->fShift, 0, sc_gpuEnergyVirialNumElements * c_numShiftVectors, localStream);
+        clearDeviceBufferAsync(&adat->eLJ, 0, sc_gpuEnergyVirialNumElements, localStream);
+        clearDeviceBufferAsync(&adat->eElec, 0, sc_gpuEnergyVirialNumElements, localStream);
         clearDeviceBufferAsync(&adat->dvdlLJ, 0, 1, localStream);
         clearDeviceBufferAsync(&adat->dvdlElec, 0, 1, localStream);
     }
