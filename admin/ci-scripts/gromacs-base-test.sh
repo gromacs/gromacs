@@ -27,6 +27,8 @@ if grep -qF 'NVIDIA' <<< "$GPU_VENDOR"; then
             echo "    with PME decomposition"
         fi
     fi
+    # Speed up device re-initialization, especially when running multiple tests in parallel
+    export CUDA_DEVICE_MAX_CONNECTIONS=2  # default is 8
 fi
 if grep -qF 'AMD' <<< "$GPU_VENDOR"; then
     clinfo -l || true;
