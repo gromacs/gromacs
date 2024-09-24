@@ -90,6 +90,11 @@ if(GMX_GPU_SYCL)
     _gmx_add_files_to_property(SYCL_SOURCES nbnxm_gpu_data_mgmt.cpp nbnxm_gpu_buffer_ops.cpp)
 endif()
 
+if(GMX_GPU_HIP)
+    add_subdirectory(hip)
+endif()
+
+
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${NBNXM_SOURCES} PARENT_SCOPE)
 
 

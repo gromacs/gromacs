@@ -85,6 +85,3 @@ endmacro()
 
 set(GMX_HIPCC_EXTRA_FLAGS "" CACHE STRING "Extra GROMACS specific HIPCC compiler flags")
 include(gmxManageHipccConfig)
-
-option(GMX_HIP_NB_SINGLE_COMPILATION_UNIT "Whether to compile the HIP non-bonded module using a single compilation unit." OFF)
-mark_as_advanced(GMX_HIP_NB_SINGLE_COMPILATION_UNIT)

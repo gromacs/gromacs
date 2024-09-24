@@ -124,6 +124,21 @@ elseif (GMX_GPU_SYCL)
         pme_solve_sycl.cpp
         pme_spread_sycl.cpp
       )
+elseif (GMX_GPU_HIP)
+    gmx_add_libgromacs_sources(
+        pme_gpu.cpp
+        pme_gpu_hip_stubs.cpp
+        pme_gpu_program_impl_hip.cpp
+        )
+    _gmx_add_files_to_property(HIP_SOURCES
+        pme_gpu.cpp
+        pme_gpu_hip_stubs.cpp
+        pme_gpu_program.cpp
+        pme_gpu_program_impl_hip.cpp
+        pme_pp_comm_gpu_impl.cpp
+        pme_coordinate_receiver_gpu_impl.cpp
+        pme_force_sender_gpu_impl.cpp
+        )
 else()
     gmx_add_libgromacs_sources(
         # Files that implement stubs
