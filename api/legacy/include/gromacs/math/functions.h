@@ -475,7 +475,7 @@ static inline int64_t roundToInt64(double x)
 
 //! \brief Check whether \p v is an integer power of 2.
 template<typename T, typename = std::enable_if_t<std::is_integral<T>::value>>
-#if defined(__NVCC__) && !defined(__CUDACC_RELAXED_CONSTEXPR__)
+#if (defined(__NVCC__) && !defined(__CUDACC_RELAXED_CONSTEXPR__)) || defined(__HIPCC__)
 /* In CUDA 11, a constexpr function cannot be called from a function with incompatible execution
  * space, unless --expt-relaxed-constexpr flag is set */
 __host__ __device__
@@ -497,8 +497,11 @@ template<typename T>
 constexpr T divideRoundUp(T numerator, T denominator)
 {
     static_assert(std::is_integral_v<T>, "Only integer types are supported");
+    // only check this in a host context, as we don't have GMX_ASSERT for device code
+#if !(defined(__NVCC__)) && !(defined(__HIPCC__)) && !(defined(__SYCL_DEVICE_ONLY__))
     GMX_ASSERT(std::is_unsigned_v<T> || numerator >= 0, "Nominator should be non-negative");
     GMX_ASSERT(denominator > 0, "Denominator should be positive");
+#endif
     return (numerator + denominator - 1) / denominator;
 }
 

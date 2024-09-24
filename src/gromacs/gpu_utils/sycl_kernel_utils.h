@@ -215,43 +215,6 @@ static inline void subGroupBarrier(const sycl::nd_item<Dim> itemIdx)
 #endif
 }
 
-#if defined(__SYCL_DEVICE_ONLY__) && defined(__AMDGCN__)
-/* !\brief Cross-lane move operation using AMD DPP (Data-Parallel Primitives).
- *
- * Uses the __builtin_amdgcn_update_dpp intrinsic which expressed the data
- * movement but the compiler will combine these with subsequent instructions
- * if possible.
- *
- * Note that this is a generic implementation for any type T (for current use
- * it could be more simple).
- *
- * Ref: https://gpuopen.com/learn/amd-gcn-assembly-cross-lane-operations
- */
-template<class T, int dppCtrl, int rowMask = 0xf, int bankMask = 0xf, bool boundCtrl = true>
-#    if GMX_SYCL_ACPP
-__device__ __host__
-#    endif
-        __attribute__((always_inline)) T
-        amdDppUpdateShfl(const T& input)
-{
-    constexpr int c_wordCount = (sizeof(T) + sizeof(int) - 1) / sizeof(int);
-
-    struct V
-    {
-        int word[c_wordCount];
-    };
-    V wordList = __builtin_bit_cast(V, input);
-#    pragma unroll
-    for (int i = 0; i < c_wordCount; i++)
-    {
-        wordList.word[i] =
-                __builtin_amdgcn_update_dpp(0, wordList.word[i], dppCtrl, rowMask, bankMask, boundCtrl);
-    }
-
-    return __builtin_bit_cast(T, wordList);
-}
-#endif
-
 #if GMX_SYCL_ACPP && !(defined(ACPP_VERSION_MAJOR) && ACPP_VERSION_MAJOR >= 24)
 namespace sycl
 {

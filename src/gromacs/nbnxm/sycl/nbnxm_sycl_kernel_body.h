@@ -38,6 +38,7 @@
  *
  *  \ingroup module_nbnxm
  */
+#include "gromacs/gpu_utils/device_utils_hip_sycl.h"
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/gmxsycl.h"
 #include "gromacs/gpu_utils/packed_float.h"
