@@ -45,6 +45,8 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/mdlib/constr.h"
+
 #include "config.h"
 
 #include <cassert>
@@ -133,6 +135,8 @@ struct ConstraintsTestSystem
      * unique types in constraints vector.
      */
     std::vector<real> constraintsR0;
+    //! Whether the constraint system contains a set of constraints in a triangle
+    bool hasTriangle = false;
     //! Coordinates before integration step.
     std::vector<RVec> x;
     //! Coordinates after integration step, but before constraining.
@@ -290,6 +294,7 @@ const std::vector<ConstraintsTestSystem> c_constraintsTestSystemList = [] {
         constraintsTestSystem.numAtoms    = 3;
         constraintsTestSystem.masses      = { 1.0, 1.0, 1.0 };
         constraintsTestSystem.constraints = { 0, 0, 1, 2, 0, 2, 1, 1, 2 };
+        constraintsTestSystem.hasTriangle = true;
         constraintsTestSystem.constraintsR0 = { 0.1, 0.1, 0.1 };
 
         real oneTenthOverSqrtTwo = 0.1_real / std::sqrt(2.0_real);
@@ -718,6 +723,31 @@ TEST_P(ConstraintsTest, SatisfiesConstraints)
         runner->applyConstraints(&testData, pbc);
         verifier.check(testData, runner->algorithm(), pbc);
     }
+}
+
+TEST_P(ConstraintsTest, TriangleDetectionWorks)
+{
+    const ConstraintsTestSystem& constraintsTestSystem = std::get<0>(GetParam());
+    const ConstraintsTestData    testData(constraintsTestSystem.title,
+                                       constraintsTestSystem.numAtoms,
+                                       constraintsTestSystem.masses,
+                                       constraintsTestSystem.constraints,
+                                       constraintsTestSystem.constraintsR0,
+                                       true,
+                                       false,
+                                       real(0.0),
+                                       real(0.001),
+                                       constraintsTestSystem.x,
+                                       constraintsTestSystem.xPrime,
+                                       constraintsTestSystem.v,
+                                       constraintsTestSystem.shakeTolerance,
+                                       constraintsTestSystem.shakeUseSOR,
+                                       constraintsTestSystem.lincsNIter,
+                                       constraintsTestSystem.lincslincsExpansionOrder,
+                                       constraintsTestSystem.lincsWarnAngle);
+
+    EXPECT_EQ(constraintsTestSystem.hasTriangle,
+              hasTriangleConstraints(testData.mtop_, FlexibleConstraintTreatment::Include));
 }
 
 INSTANTIATE_TEST_SUITE_P(WithParameters,
