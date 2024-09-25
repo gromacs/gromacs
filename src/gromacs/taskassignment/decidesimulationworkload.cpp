@@ -140,10 +140,10 @@ SimulationWorkload createSimulationWorkload(const gmx::MDLogger& mdlog,
     }
     // x/f transform is done on GPU by default unless it is not unsupported (with MTS) or disabled (with the env. var.)
     simulationWorkload.useGpuXBufferOpsWhenAllowed =
-            (GMX_GPU_CUDA || GMX_GPU_SYCL) && useGpuForNonbonded && !inputrec.useMts
+            GMX_GPU && !GMX_GPU_OPENCL && useGpuForNonbonded && !inputrec.useMts
             && !(useReplicaExchange && !useGpuForUpdate) && !disableGpuBufferOps;
     simulationWorkload.useGpuFBufferOpsWhenAllowed =
-            (GMX_GPU_CUDA || GMX_GPU_SYCL) && useGpuForNonbonded && !inputrec.useMts
+            GMX_GPU && !GMX_GPU_OPENCL && useGpuForNonbonded && !inputrec.useMts
             && !(useReplicaExchange && !useGpuForUpdate) && !disableGpuBufferOps;
     if (featuresRequireGpuBufferOps)
     {
