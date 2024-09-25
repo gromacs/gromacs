@@ -378,35 +378,13 @@ const std::vector<ConstraintsTestSystem> c_constraintsTestSystemList = [] {
     return constraintsTestSystemList;
 }();
 
-
-/*! \brief Test fixture for constraints.
- *
- * The fixture uses following test systems:
- * 1. Two atoms, connected with one constraint (e.g. NH).
- * 2. Three atoms, connected consequently with two constraints (e.g. CH2).
- * 3. Three atoms, constrained to the fourth atom (e.g. CH3).
- * 4. Four atoms, connected by two independent constraints.
- * 5. Three atoms, connected by three constraints in a triangle
- *      (e.g. H2O with constrained H-O-H angle).
- * 6. Four atoms, connected by three consequential constraints.
- *
- * For all systems, the final lengths of the constraints are tested against the
- * reference values, the direction of each constraint is checked.
- * Test also verifies that the center of mass has not been
- * shifted by the constraints and that its velocity has not changed.
- * For some systems, the value for scaled virial tensor is checked against
- * pre-computed data.
- */
-class ConstraintsTest : public ::testing::TestWithParam<std::tuple<ConstraintsTestSystem, t_pbc>>
+//! Helper class for checking constraints against reference data
+class ConstraintsVerifier
 {
 public:
-    //! Reference data
-    TestReferenceData refData_;
-    //! Checker for reference data
-    TestReferenceChecker checker_;
+    ConstraintsVerifier() : checker_(refData_.rootChecker()) {}
 
-    ConstraintsTest() : checker_(refData_.rootChecker()) {}
-
+private:
     /*! \brief Test if the final position correspond to the reference data.
      *
      * \param[in] testData        Test data structure.
@@ -615,6 +593,71 @@ public:
         virialScaledRef.checkReal(virialScaled[ZZ][ZZ], "ZZ");
     }
 
+public:
+    //! The workflow for checking whether constraints have been satisfied
+    void check(const ConstraintsTestData& testData, const ConstraintAlgorithm algorithm, t_pbc pbc)
+    {
+        const FloatingPointTolerance positionsTolerance = absoluteTolerance(0.001F);
+        const FloatingPointTolerance velocityTolerance  = absoluteTolerance(0.02F);
+        const FloatingPointTolerance lengthTolerance = relativeToleranceAsFloatingPoint(0.1, 0.002F);
+
+        checker_.setDefaultTolerance(positionsTolerance);
+        checkFinalPositions(testData);
+        checker_.setDefaultTolerance(velocityTolerance);
+        checkFinalVelocities(testData);
+
+        checkConstrainsLength(lengthTolerance, testData, pbc);
+        checkConstrainsDirection(testData, pbc);
+        checkCOMCoordinates(positionsTolerance, testData);
+        checkCOMVelocity(velocityTolerance, testData);
+
+        float virialTrace = 0.0F;
+        for (int d = 0; d < DIM; d++)
+        {
+            virialTrace += testData.virialScaled_[d][d];
+        }
+
+        // The virial tolerance factor can be:
+        // LINCS iter=2, order=4:   0.002
+        // LINCS iter=1, order=4:   0.02
+        // SHAKE tolerance=0.0001:  0.2
+        // SHAKE tolerance=0.00002: 0.1
+        const float virialRelativeTolerance = (algorithm == ConstraintAlgorithm::Shake ? 0.1F : 0.02F);
+        FloatingPointTolerance virialTolerance =
+                absoluteTolerance(fabs(virialTrace) / 3 * virialRelativeTolerance);
+
+        checker_.setDefaultTolerance(virialTolerance);
+        checkVirialTensor(testData);
+    }
+
+private:
+    //! Reference data
+    TestReferenceData refData_;
+    //! Checker for reference data
+    TestReferenceChecker checker_;
+};
+
+/*! \brief Test fixture for constraints.
+ *
+ * The fixture uses following test systems:
+ * 1. Two atoms, connected with one constraint (e.g. NH).
+ * 2. Three atoms, connected consequently with two constraints (e.g. CH2).
+ * 3. Three atoms, constrained to the fourth atom (e.g. CH3).
+ * 4. Four atoms, connected by two independent constraints.
+ * 5. Three atoms, connected by three constraints in a triangle
+ *      (e.g. H2O with constrained H-O-H angle).
+ * 6. Four atoms, connected by three consequential constraints.
+ *
+ * For all systems, the final lengths of the constraints are tested against the
+ * reference values, the direction of each constraint is checked.
+ * Test also verifies that the center of mass has not been
+ * shifted by the constraints and that its velocity has not changed.
+ * For some systems, the value for scaled virial tensor is checked against
+ * pre-computed data.
+ */
+class ConstraintsTest : public ::testing::TestWithParam<std::tuple<ConstraintsTestSystem, t_pbc>>
+{
+public:
     //! Before any test is run, work out whether any compatible GPUs exist.
     static std::vector<std::unique_ptr<IConstraintsTestRunner>> getRunners()
     {
@@ -659,9 +702,7 @@ TEST_P(ConstraintsTest, SatisfiesConstraints)
                                  constraintsTestSystem.lincslincsExpansionOrder,
                                  constraintsTestSystem.lincsWarnAngle);
 
-    FloatingPointTolerance positionsTolerance = absoluteTolerance(0.001F);
-    FloatingPointTolerance velocityTolerance  = absoluteTolerance(0.02F);
-    FloatingPointTolerance lengthTolerance    = relativeToleranceAsFloatingPoint(0.1, 0.002F);
+    ConstraintsVerifier verifier;
 
     // Cycle through all available runners
     for (const auto& runner : getRunners())
@@ -675,35 +716,7 @@ TEST_P(ConstraintsTest, SatisfiesConstraints)
 
         // Apply constraints
         runner->applyConstraints(&testData, pbc);
-
-
-        checker_.setDefaultTolerance(positionsTolerance);
-        checkFinalPositions(testData);
-        checker_.setDefaultTolerance(velocityTolerance);
-        checkFinalVelocities(testData);
-
-        checkConstrainsLength(lengthTolerance, testData, pbc);
-        checkConstrainsDirection(testData, pbc);
-        checkCOMCoordinates(positionsTolerance, testData);
-        checkCOMVelocity(velocityTolerance, testData);
-
-        float virialTrace = 0.0F;
-        for (int d = 0; d < DIM; d++)
-        {
-            virialTrace += testData.virialScaled_[d][d];
-        }
-
-        // The virial tolerance factor can be:
-        // LINCS iter=2, order=4:   0.002
-        // LINCS iter=1, order=4:   0.02
-        // SHAKE tolerance=0.0001:  0.2
-        // SHAKE tolerance=0.00002: 0.1
-        const float virialRelativeTolerance = (runner->name().substr(0, 5) == "SHAKE" ? 0.1F : 0.02F);
-        FloatingPointTolerance virialTolerance =
-                absoluteTolerance(std::fabs(virialTrace) / 3 * virialRelativeTolerance);
-
-        checker_.setDefaultTolerance(virialTolerance);
-        checkVirialTensor(testData);
+        verifier.check(testData, runner->algorithm(), pbc);
     }
 }
 
