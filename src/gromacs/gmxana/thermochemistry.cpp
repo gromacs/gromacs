@@ -38,14 +38,30 @@
 #include <cmath>
 #include <cstdio>
 
+#include <algorithm>
+
+#include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 
-static double eigval_to_frequency(double eigval)
+double eigenvalueToFrequency(double eigval)
 {
-    double factor_gmx_to_omega2 = 1.0E21 / (gmx::c_avogadro * gmx::c_amu);
+    /*
+     * GROMACS units for the input eigenvalues are kJ/(mol*nm*nm*amu).
+     * Observe that dimensionally, this is  Energy / (Length^2 * Mass),
+     * recalling that moles are a non-dimensional scaling factor.
+     *
+     * Since the units of Energy(or Work) can also be writen as Mass * Distance^2 / Time^2,
+     * the eigenvalues also have dimensionality of 1 / Time^2.
+     *
+     * This function performs unit conversion to scale from GROMACS units to
+     * SI units, and then performs a square root to extract radial frequency (rads/sec).
+     */
+
+    double factor_gmx_to_omega2 = gmx::c_kilo / (gmx::c_avogadro * gmx::c_amu * gmx::c_nano * gmx::c_nano);
     return std::sqrt(std::max(0.0, eigval) * factor_gmx_to_omega2);
 }
 
@@ -56,7 +72,7 @@ double calcZeroPointEnergy(gmx::ArrayRef<const real> eigval, real scale_factor)
     double zpe    = 0;
     for (const auto& r : eigval)
     {
-        double omega = eigval_to_frequency(r);
+        double omega = eigenvalueToFrequency(r);
         zpe += 0.5 * factor * scale_factor * omega;
     }
     return zpe;
@@ -71,7 +87,7 @@ double calcVibrationalInternalEnergy(gmx::ArrayRef<const real> eigval, real temp
     {
         if (eigval[i] > 0)
         {
-            double omega = scale_factor * eigval_to_frequency(eigval[i]);
+            double omega = scale_factor * eigenvalueToFrequency(eigval[i]);
             double hwkT  = (hbar * omega) / (gmx::c_boltzmann * temperature);
             // Prevent overflow by checking for unreasonably large numbers.
             if (hwkT < 100)
@@ -103,7 +119,7 @@ double calcVibrationalHeatCapacity(gmx::ArrayRef<const real> eigval, real temper
     {
         if (eigval[i] > 0)
         {
-            double omega = scale_factor * eigval_to_frequency(eigval[i]);
+            double omega = scale_factor * eigenvalueToFrequency(eigval[i]);
             double hwkT  = (hbar * omega) / (gmx::c_boltzmann * temperature);
             // Prevent overflow by checking for unreasonably large numbers.
             if (hwkT < 100)
@@ -174,7 +190,7 @@ double calcQuasiHarmonicEntropy(gmx::ArrayRef<const real> eigval, real temperatu
     {
         if (eigval[i] > 0)
         {
-            double omega = scale_factor * eigval_to_frequency(eigval[i]);
+            double omega = scale_factor * eigenvalueToFrequency(eigval[i]);
             double hwkT  = (hbar * omega) / (gmx::c_boltzmann * temperature);
             double dS    = (hwkT / std::expm1(hwkT) - std::log1p(-std::exp(-hwkT)));
             S += dS;
