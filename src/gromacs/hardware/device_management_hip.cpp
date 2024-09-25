@@ -228,6 +228,10 @@ std::vector<std::unique_ptr<DeviceInformation>> findDevices()
     // We expect to start device support/sanity checks with a clean runtime error state
     gmx::ensureNoPendingDeviceError("Trying to find available HIP devices.");
 
+    const gmx::GpuAwareMpiStatus gpuAwareMpiStatus =
+            GMX_LIB_MPI ? gmx::checkMpiHipAwareSupport() : gmx::GpuAwareMpiStatus::NotSupported;
+
+
     std::vector<std::unique_ptr<DeviceInformation>> deviceInfoList(numDevices);
     for (int i = 0; i < numDevices; i++)
     {
@@ -243,6 +247,8 @@ std::vector<std::unique_ptr<DeviceInformation>> findDevices()
         deviceInfoList[i]->uuid = getAmdDeviceUuid(i);
 
         deviceInfoList[i]->supportedSubGroupSizes.push_back(deviceInfoList[i]->prop.warpSize);
+
+        deviceInfoList[i]->gpuAwareMpiStatus = gpuAwareMpiStatus;
 
         const DeviceStatus checkResult = (stat != hipSuccess) ? DeviceStatus::NonFunctional
                                                               : checkDeviceStatus(*deviceInfoList[i]);
