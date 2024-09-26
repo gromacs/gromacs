@@ -147,36 +147,25 @@ public:
 
     /*! \brief Clear all the entries in the list.
      *
+     * Note that this might uses OpenMP threading, so it should not be called from within an OpenMP region.
+     *
      * \param[in] resizeHashTable  When true the hash table is optimized based on the current number of entries stored
      */
-    void clear(const bool resizeHashTable)
-    {
-        if (usingDirect_)
-        {
-            for (Entry& entry : data_.direct)
-            {
-                entry.cell = -1;
-            }
-        }
-        else if (resizeHashTable)
-        {
-            data_.hashed.clearAndResizeHashTable();
-        }
-        else
-        {
-            data_.hashed.clear();
-        }
-    }
+    void clear(bool resizeHashTable);
 
 private:
+    //! Union for storing the global atom index to local atom information map
     union Data
     {
-        std::vector<Entry>    direct;
+        //! Direct list of local atom information of size number of global atoms
+        std::vector<Entry> direct;
+        //! A Hashed map of local atom information, indexed by global atom index
         gmx::HashedMap<Entry> hashed;
-        // constructor and destructor function in parent class
+        //! constructor and destructor function in parent class
         Data() {}
         ~Data() {}
     } data_;
+    //! Is true when we are using the direct list, false when we are using the hashed map
     const bool usingDirect_;
 };
 

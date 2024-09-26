@@ -84,3 +84,24 @@ gmx_ga2la_t::gmx_ga2la_t(int numAtomsTotal, int numAtomsLocal) :
                 gmx::HashedMap<Entry>(numAtomsLocal, gmx_omp_nthreads_get(ModuleMultiThread::Domdec));
     }
 }
+
+void gmx_ga2la_t::clear(const bool resizeHashTable)
+{
+    if (usingDirect_)
+    {
+        const int gmx_unused numThreads = gmx_omp_nthreads_get(ModuleMultiThread::Domdec);
+#pragma omp parallel for num_threads(numThreads) schedule(static)
+        for (gmx::Index i = 0; i < gmx::ssize(data_.direct); i++)
+        {
+            data_.direct[i].cell = -1;
+        }
+    }
+    else if (resizeHashTable)
+    {
+        data_.hashed.clearAndResizeHashTable();
+    }
+    else
+    {
+        data_.hashed.clear();
+    }
+}
