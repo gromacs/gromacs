@@ -155,11 +155,11 @@ private:
     void enqueueRank0EventToAllPpStreams(GpuEventSynchronizer* event, const DeviceStream& stream);
 
     //! Captured graph object
-    Graph graph_;
+    Graph graph_ = nullptr;
     //! Instantiated graph object
-    GraphInstance instance_;
-    //! Whether graph has already been created
-    bool graphCreated_ = false;
+    GraphInstance instance_ = nullptr;
+    //! Whether the recording of the graph has started
+    bool graphCaptureStarted_ = false;
     //! Whether graph is capturing in this step
     bool graphIsCapturingThisStep_ = false;
     //! Whether graph should be used this step
@@ -196,10 +196,6 @@ private:
     GpuEventSynchronizer* alternateStepPpTaskCompletionEvent_;
     //! Wall cycle timer object
     gmx_wallcycle* wcycle_;
-    //! Whether the graph object has been allocated
-    bool graphAllocated_ = false;
-    //! Whether the graph instance object has been allocated
-    bool graphInstanceAllocated_ = false;
     //! State of graph
     GraphState graphState_ = GraphState::Invalid;
     //! Whether a perormance bug workaround is needed in graph update/reinstantiation
