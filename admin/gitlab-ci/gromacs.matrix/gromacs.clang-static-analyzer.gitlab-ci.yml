@@ -34,6 +34,8 @@ gromacs:clang-static-analyzer:build:
     - !reference [.rules:merge-requests, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-tsan
   variables:
+    # The static-analyzer build is more demanding of CPU
+    KUBERNETES_CPU_LIMIT: 8
     CMAKE: /usr/local/cmake-3.18.4/bin/cmake
   needs:
     - job: gromacs:clang-static-analyzer:configure
