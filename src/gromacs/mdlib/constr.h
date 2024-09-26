@@ -332,6 +332,9 @@ void constrain_coordinates(gmx::Constraints*         constr,
                            bool                      computeVirial,
                            tensor                    constraintsVirial);
 
+/*! \brief Returns True if there is at least one triangular constraint. */
+bool hasTriangleConstraints(const gmx_mtop_t& mtop, FlexibleConstraintTreatment flexibleConstraintTreatment);
+
 } // namespace gmx
 
 #endif

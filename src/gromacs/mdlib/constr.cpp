@@ -1065,6 +1065,17 @@ static std::vector<ListOfLists<int>> makeAtomToConstraintMappings(const gmx_mtop
     return mapping;
 }
 
+bool hasTriangleConstraints(const gmx_mtop_t& mtop, const FlexibleConstraintTreatment flexibleConstraintTreatment)
+{
+    const auto atomToConstraintsPerMolType =
+            makeAtomToConstraintMappings(mtop, flexibleConstraintTreatment);
+    return std::any_of(mtop.molblock.begin(), mtop.molblock.end(), [&](const auto& molb) {
+        const gmx_moltype_t& molt   = mtop.moltype[molb.type];
+        const auto&          at2con = atomToConstraintsPerMolType[molb.type];
+        return count_triangle_constraints(molt.ilist, at2con) > 0;
+    });
+}
+
 Constraints::Constraints(const gmx_mtop_t&          mtop,
                          const t_inputrec&          ir,
                          pull_t*                    pull_work,

@@ -52,6 +52,13 @@ Colvars output files are now written in the same folder as edr file.
 
 :issue:`5122`
 
+Forbid the usage of triangle constraints with -update gpu
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Prevent using update on GPU if there are triangle constraints.
+
+:issue:`5123`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
