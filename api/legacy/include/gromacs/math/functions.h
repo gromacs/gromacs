@@ -505,6 +505,38 @@ constexpr T divideRoundUp(T numerator, T denominator)
     return (numerator + denominator - 1) / denominator;
 }
 
+/*! \brief
+ * Return \p x modulo \p period such that it is within the interval [-0.5*period, 0.5*period]
+ *
+ * A shift of +/- 'period' is applied, if needed.
+ *
+ * \param[in] x       Value to correct, should be within the interval [-1.5*period, 1.5*period]
+ * \param[in] period  The period
+ *
+ * \returns \p x modulo \p period that is within the interval [-0.5*period, 0.5*period]
+ */
+template<typename T>
+T makePeriodic(const T x, const T period)
+{
+    static_assert(std::is_floating_point_v<T>, "Only floating point types are supported");
+
+    GMX_ASSERT(x >= -1.5 * period && x <= 1.5 * period,
+               "We should have -1.5*period <= x <= 1.5*period");
+
+    constexpr T half       = 0.5;
+    const T     halfPeriod = half * period;
+
+    if (x > halfPeriod)
+    {
+        return x - period;
+    }
+    else if (x < -halfPeriod)
+    {
+        return x + period;
+    }
+    return x;
+}
+
 } // namespace gmx
 
 

@@ -113,8 +113,6 @@ void do_dih_fup(int                 i,
                 int                 t2,
                 int                 t3);
 
-/*! \brief Make a dihedral fall in the range (-pi,pi) */
-void make_dp_periodic(real* dp);
 
 /*! \brief Compute CMAP dihedral energies and forces */
 real cmap_dihs(int                 nbonds,

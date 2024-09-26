@@ -196,18 +196,6 @@ real dih_angle(const rvec   xi,
 }
 //! \endcond
 
-void make_dp_periodic(real* dp) /* 1 flop? */
-{
-    /* dp cannot be outside (-pi,pi) */
-    if (*dp >= M_PI)
-    {
-        *dp -= 2 * M_PI;
-    }
-    else if (*dp < -M_PI)
-    {
-        *dp += 2 * M_PI;
-    }
-}
 
 namespace
 {
@@ -2305,10 +2293,8 @@ real idihs(int             nbonds,
         phi0  = (L1 * pA + lambda * pB) * gmx::c_deg2Rad;
         dphi0 = (pB - pA) * gmx::c_deg2Rad;
 
-        dp = phi - phi0;
-
-        make_dp_periodic(&dp);
-
+        dp  = phi - phi0;
+        dp  = makePeriodic(dp, static_cast<real>(2 * M_PI));
         dp2 = dp * dp;
 
         vtot += 0.5 * kk * dp2;
@@ -2517,8 +2503,7 @@ real dihres(int             nbonds,
          * the potential.
          */
         dp = phi - phi0;
-        make_dp_periodic(&dp);
-
+        dp = makePeriodic(dp, static_cast<real>(2 * M_PI));
         if (dp > dphi)
         {
             ddp = dp - dphi;

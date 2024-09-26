@@ -67,36 +67,6 @@ namespace
 {
 
 /*! \brief
- * Return x so that it is periodic in [-period/2, +period/2).
- *
- * x is modified by shifting its value by a +/- a period if
- * needed. Thus, it is assumed that x is at most one period
- * away from this interval. For period = 0, x is not modified.
- *
- * \param[in] x       Pointer to the value to modify.
- * \param[in] period  The period, or 0 if not periodic.
- * \returns   Value that is within the period.
- */
-double centerPeriodicValueAroundZero(const double x, double period)
-{
-    GMX_ASSERT(period >= 0, "Periodic should not be negative");
-
-    const double halfPeriod = period * 0.5;
-
-    double valueInPeriod = x;
-
-    if (valueInPeriod >= halfPeriod)
-    {
-        valueInPeriod -= period;
-    }
-    else if (valueInPeriod < -halfPeriod)
-    {
-        valueInPeriod += period;
-    }
-    return valueInPeriod;
-}
-
-/*! \brief
  * If period>0, return x so that it is periodic in [0, period), else return x.
  *
  * Return x is shifted its value by a +/- a period, if
@@ -182,7 +152,7 @@ double getDeviationPeriodic(double x, double x0, double period)
 
     if (period > 0)
     {
-        dev = centerPeriodicValueAroundZero(dev, period);
+        dev = makePeriodic(dev, period);
     }
 
     return dev;
@@ -739,8 +709,7 @@ void BiasGrid::initPoints()
             if (axis_[d].period() > 0)
             {
                 /* Do we always want the values to be centered around 0 ? */
-                point.coordValue[d] =
-                        centerPeriodicValueAroundZero(point.coordValue[d], axis_[d].period());
+                point.coordValue[d] = makePeriodic(point.coordValue[d], axis_[d].period());
             }
 
             point.index[d] = indexWork[d];
