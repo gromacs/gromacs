@@ -102,7 +102,7 @@ public:
 
         std::copy(ev.begin(), ev.end(), std::back_inserter(eigenvalue));
 
-        for (ulong i = 0; i < ev.size(); i++)
+        for (unsigned long int i = 0; i < ev.size(); i++)
         {
             invEigenvalue[i] = (gmx::c_boltz * temperature) / ev[i];
         }
