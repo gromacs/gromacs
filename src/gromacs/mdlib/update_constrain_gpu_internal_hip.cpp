@@ -87,7 +87,7 @@ void launchScaleCoordinatesKernel(const int            numAtoms,
     kernelLaunchConfig.blockSize[2]     = 1;
     kernelLaunchConfig.sharedMemorySize = 0;
 
-    kernelLaunchConfig.gridSize[0] = (numAtoms + c_threadsPerBlock - 1) / c_threadsPerBlock;
+    kernelLaunchConfig.gridSize[0] = divideRoundUp(numAtoms, c_threadsPerBlock);
 
     const auto kernelArgs = prepareGpuKernelArguments(
             scaleCoordinatesKernel, kernelLaunchConfig, &numAtoms, asFloat3Pointer(&d_coordinates), &mu);

@@ -96,12 +96,13 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
                 if (plist->haveFreshList)
                 {
                     launchNbnxmKernelSciSort(nb, iloc);
-                    plist->haveFreshList = false;
-                    nb->didPrune[iloc]   = true; // Mark that pruning has been done
+                    plist->haveFreshList                   = false;
+                    nb->timers->interaction[iloc].didPrune = true; // Mark that pruning has been done
                 }
                 else
                 {
-                    nb->didRollingPrune[iloc] = true; // Mark that rolling pruning has been done
+                    nb->timers->interaction[iloc].didRollingPrune =
+                            true; // Mark that rolling pruning has been done
                 }
 
                 if (GMX_NATIVE_WINDOWS)

@@ -95,7 +95,7 @@ template<NumTempScaleValues numTempScaleValues, ParrinelloRahmanVelocityScaling 
 __launch_bounds__(c_threadsPerBlock) __global__
         void leapFrogKernel(const int numAtoms,
                             float3* __restrict__ gm_x,
-                            float3* __restrict__ gm_xp,
+                            float3* __restrict__ gm_x0,
                             float3* __restrict__ gm_v,
                             const float3* __restrict__ gm_f,
                             const float* __restrict__ gm_inverseMasses,
@@ -113,11 +113,7 @@ __launch_bounds__(c_threadsPerBlock) __global__
         float  im   = gm_inverseMasses[threadIndex];
         float  imdt = im * dt;
 
-        // Swapping places for xp and x so that the x will contain the updated coordinates and xp - the
-        // coordinates before update. This should be taken into account when (if) constraints are applied
-        // after the update: x and xp have to be passed to constraints in the 'wrong' order.
-        // TODO: Issue #3727
-        gm_xp[threadIndex] = x;
+        gm_x0[threadIndex] = x;
 
         if constexpr (numTempScaleValues != NumTempScaleValues::None
                       || parrinelloRahmanVelocityScaling != ParrinelloRahmanVelocityScaling::No)
@@ -149,9 +145,9 @@ __launch_bounds__(c_threadsPerBlock) __global__
             v = vp;
         }
 
-        v = v + f * imdt;
+        v += f * imdt;
 
-        x                 = x + v * dt;
+        x += v * dt;
         gm_v[threadIndex] = v;
         gm_x[threadIndex] = x;
     }
@@ -198,7 +194,7 @@ void launchLeapFrogKernel(const int                             numAtoms,
 
     KernelLaunchConfig kernelLaunchConfig;
 
-    kernelLaunchConfig.gridSize[0]      = (numAtoms + c_threadsPerBlock - 1) / c_threadsPerBlock;
+    kernelLaunchConfig.gridSize[0]      = divideRoundUp(numAtoms, c_threadsPerBlock);
     kernelLaunchConfig.blockSize[0]     = c_threadsPerBlock;
     kernelLaunchConfig.blockSize[1]     = 1;
     kernelLaunchConfig.blockSize[2]     = 1;
