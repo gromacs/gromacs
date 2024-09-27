@@ -1440,8 +1440,7 @@ static void set_lincs_matrix(Lincs* li, ArrayRef<const real> invmass, real lambd
     li->matlam = lambda;
 }
 
-//! Finds all triangles of atoms that share constraints to a central atom.
-static int count_triangle_constraints(const InteractionLists& ilist, const ListOfLists<int>& at2con)
+int count_triangle_constraints(const InteractionLists& ilist, const ListOfLists<int>& at2con)
 {
     const int ncon1    = ilist[F_CONSTR].size() / 3;
     const int ncon_tot = ncon1 + ilist[F_CONSTRNC].size() / 3;

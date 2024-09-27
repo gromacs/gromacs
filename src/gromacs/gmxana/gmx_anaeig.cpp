@@ -1249,6 +1249,23 @@ int gmx_anaeig(int argc, char* argv[])
 
     if (bEntropy)
     {
+        std::vector<real> invEigenvalue1(neig1);
+        for (i = 0; i < neig1; i++)
+        {
+            /* Converting eigenvalues from the trajectory covariance values into the expected units.
+             * GROMACS units expected for eigenvalues of the Hessian are kJ/(mol*nm*nm*amu).
+             * Refer to gmx_nmeig.cpp where Hessian is diagonalized.
+             *
+             * In gmx_anaeig.cpp, the input eigenvalues are from the covariance matrix of
+             * trajectories, such that they need to be unit-coverted for consistency.
+             *
+             * This requires establishment of an energy scale (kT), a scaling to the standard
+             * GROMACS energy units (kJ/mol), and inversion of the given eigenvalue.
+             * */
+            invEigenvalue1[i] = (gmx::c_boltz * temp) / eigval1[i];
+        }
+
+
         if (bDMA1)
         {
             gmx_fatal(FARGS,
@@ -1258,7 +1275,7 @@ int gmx_anaeig(int argc, char* argv[])
         printf("The Entropy due to the Schlitter formula is %g J/mol K\n",
                calcSchlitterEntropy(gmx::arrayRefFromArray(eigval1, neig1), temp, FALSE));
         printf("The Entropy due to the Quasiharmonic analysis is %g J/mol K\n",
-               calcQuasiHarmonicEntropy(gmx::arrayRefFromArray(eigval1, neig1), temp, FALSE, 1.0));
+               calcQuasiHarmonicEntropy(invEigenvalue1, temp, FALSE, 1.0));
     }
 
     if (bVec2)

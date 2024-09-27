@@ -130,9 +130,9 @@ nbnxn_kernel_prune_cuda<false>(const NBAtomDataGpu, const NBParamGpu, const GpuP
         plist.d_rollingPruningPart[blockIdx.x] = (part + 1) % numParts;
     }
 
-    // Kernel has been launched with max number of blocks across all passes (plist.nsci/numParts),
-    // but the last pass will require 1 less block, so extra block should return early.
-    size_t numSciInPart = (plist.numSci - part) / numParts;
+    // Kernel has been launched with max number of blocks across all passes,
+    // but some passes will require 1 less block, so extra block should return early.
+    size_t numSciInPart = (plist.numSci - part + numParts - 1) / numParts;
     if (blockIdx.x >= numSciInPart)
     {
         return;

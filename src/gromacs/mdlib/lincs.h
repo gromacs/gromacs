@@ -47,6 +47,7 @@
 #include <cstdio>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/topology/idef.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
@@ -124,6 +125,15 @@ bool constrain_lincs(bool                            computeRmsd,
                      int                             maxwarn,
                      int*                            warncount,
                      gmx_wallcycle*                  wcycle);
+
+/*! \brief Counts the number of constraint triangles, i.e. triplets of atoms connected by three constraints
+ *
+ * \param[in] ilist   The interaction list to count constraints triangles for
+ * \param[in] at2con  The atom to constraints map
+ *
+ * \returns the number of constraint triangles
+ */
+int count_triangle_constraints(const InteractionLists& ilist, const ListOfLists<int>& at2con);
 
 } // namespace gmx
 

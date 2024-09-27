@@ -16,12 +16,48 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+
+Fix missing non-bonded interactions close to cut-off with GPUs
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The GPU rolling pruning employed with the dual pair list setup used
+an incorrect list part calculation. This caused a few parlist entries
+not to be updated after the initial pruning, leading to a small number
+of missing pair interactions. Unless the pair list lifetime ``nstlist``
+was very large, these interactions were close to the cut-off and therefore
+the errors were small.
+
+Affected simulations: all GPU accelerated runs using GROMACS versions
+starting with the 2018 release with dual pair list enabled.
+This is enabled automatically with default Verlet buffering, but
+it is disabled if the Verlet buffer is manually set
+(or if the ``GMX_DISABLE_DYNAMICPRUNING`` environment variable is set).
+
+Impact: Our analysis shows that the error caused by the missing interactions
+does not have a measurable effect on either forces or energy conservation
+in most atomistic simulations with default simulation settings.
+While a manually increased ``nstlist``, hence increased (outer) pair list lifetime,
+leads to an increase in the number of missing interactions, for useful value of
+``nstlist`` the effect is still negligible.
+There can be measurable effects in systems with vacuum, gas, or with
+excessively large ``nstlist`` values. In our testing we could not detect artifacts
+apart from systems crashing, so the chance of undetected incorrect results is small.
+
+:issue:`5138`
+
 Fix Colvars output files always written to the working directory.
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 Colvars output files are now written in the same folder as edr file.
 
 :issue:`5122`
+
+Forbid the usage of triangle constraints with -update gpu
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Prevent using update on GPU if there are triangle constraints.
+
+:issue:`5123`
 
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^

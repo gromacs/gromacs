@@ -58,6 +58,7 @@
 #include "gromacs/hardware/hardwaretopology.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/listed_forces/listed_forces_gpu.h"
+#include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/update_constrain_gpu.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -746,7 +747,10 @@ bool decideWhetherToUseGpuForUpdate(const bool           isDomainDecomposition,
     errorReasons.appendIf(haveFrozenAtoms,
                           // There is a known bug with frozen atoms and GPU update, see Issue #3920.
                           "Frozen atoms not supported.");
-
+    errorReasons.appendIf(hasAnyConstraints
+                                  && hasTriangleConstraints(
+                                          mtop, flexibleConstraintTreatment(EI_DYNAMICS(inputrec.eI))),
+                          "Triangle constraints are not supported.");
     errorReasons.finishContext();
 
     if (!errorReasons.isEmpty())

@@ -54,6 +54,7 @@
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 
+
 namespace gmx
 {
 namespace test
@@ -69,7 +70,7 @@ protected:
     Entropy() : checker_(refData_.rootChecker()) {}
 
 public:
-    void runSchlitter(real temperature, gmx_bool bLinear)
+    void runSchlitter(real temperature, bool bLinear)
     {
         std::vector<double> ev = { 0.00197861,  0.000389439, 0.000316043,  0.000150392, 0.000110254,
                                    8.99659e-05, 8.06572e-05, 5.14339e-05,  4.34268e-05, 2.16063e-05,
@@ -84,7 +85,7 @@ public:
         checker_.checkReal(S, "entropy");
     }
 
-    void runQuasiHarmonic(real temperature, gmx_bool bLinear)
+    void runQuasiHarmonic(real temperature, bool bLinear)
     {
         std::vector<double> ev = { -31.403, -7.73169, -3.80315, -2.15659e-06, -1.70991e-07, 236,
                                    4609.83, 6718.07,  6966.27,  8587.85,      10736.3,      13543.7,
@@ -97,6 +98,43 @@ public:
 
         checker_.setDefaultTolerance(test::relativeToleranceAsFloatingPoint(1, 1e-7));
         checker_.checkReal(S, "entropy");
+    }
+
+
+    void runEntropyCompare(real temperature, bool bLinear)
+    {
+        std::vector<double> ev = { -31.403, -7.73169, -3.80315, -2.15659e-06, -1.70991e-07, 236,
+                                   4609.83, 6718.07,  6966.27,  8587.85,      10736.3,      13543.7,
+                                   17721.3, 22868,    35517.8,  44118.1,      75827.9,      106277,
+                                   115132,  120782,   445118,   451149,       481058,       484576 };
+        std::vector<real>   eigenvalue;
+        std::vector<real>   invEigenvalue(ev.size());
+
+        std::copy(ev.begin(), ev.end(), std::back_inserter(eigenvalue));
+
+        for (unsigned long int i = 0; i < ev.size(); i++)
+        {
+            invEigenvalue[i] = (gmx::c_boltz * temperature) / ev[i];
+        }
+
+        real S_schlitter     = calcSchlitterEntropy(eigenvalue, temperature, bLinear);
+        real S_quasiharmonic = calcQuasiHarmonicEntropy(invEigenvalue, temperature, bLinear, 1.0);
+
+        real S_diff = S_schlitter - S_quasiharmonic;
+
+        /*
+         * This test is designed to compare the results from two different entropy calculation
+         * methods, and confirm that the results from these methods are reasonably close.
+         *
+         * The ideal result would be that the values match precisely, and that the difference is zero.
+         * For the small test case used here, we can set the relative tolerance to be fairly strict.
+         *
+         * Note that for entropy calculations on an actual molecular simulation, the relative difference
+         * in the entropy calculation results may be significantly larger.
+         * */
+
+        checker_.setDefaultTolerance(test::relativeToleranceAsFloatingPoint(1, 1e-5));
+        checker_.checkReal(S_diff, "entropyDifferenceBetweenMethods");
     }
 };
 
@@ -123,6 +161,16 @@ TEST_F(Entropy, QuasiHarmonic_200_NoLinear)
 TEST_F(Entropy, QuasiHarmonic_200_Linear)
 {
     runQuasiHarmonic(200.0, TRUE);
+}
+
+TEST_F(Entropy, EntropyCompare_200_Linear)
+{
+    runEntropyCompare(200.0, TRUE);
+}
+
+TEST_F(Entropy, EntropyCompare_300_Linear)
+{
+    runEntropyCompare(300.0, TRUE);
 }
 
 } // namespace

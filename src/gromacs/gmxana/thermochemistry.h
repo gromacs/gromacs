@@ -51,6 +51,16 @@ template<typename>
 class ArrayRef;
 }
 
+/*! \brief Convert eigenvalues which are input (such as from the Hessian) into the corresponding frequencies.
+ *
+ * This routine performs a unit scaling from GROMACS units into SI units, and
+ * extracts then computes the set of corresponding harmonic frequencies.
+ *
+ * \param[in] eigval       A single eigenvalue, Units are kJ/(mol*nm*nm*amu)
+ * \return The corresponding harmonics frequency (rads/sec)
+ */
+double eigenvalueToFrequency(double eigval);
+
 /*! \brief Compute zero point energy from an array of eigenvalues.
  *
  * This routine first converts the eigenvalues from a normal mode
