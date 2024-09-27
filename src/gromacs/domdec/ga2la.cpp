@@ -46,6 +46,8 @@
 
 #include <new>
 
+#include "gromacs/mdlib/gmx_omp_nthreads.h"
+
 /*! \brief Returns whether to use a direct list only
  *
  * There are two methods implemented for finding the local atom number
@@ -78,6 +80,7 @@ gmx_ga2la_t::gmx_ga2la_t(int numAtomsTotal, int numAtomsLocal) :
     }
     else
     {
-        new (&(data_.hashed)) gmx::HashedMap<Entry>(numAtomsLocal);
+        new (&(data_.hashed))
+                gmx::HashedMap<Entry>(numAtomsLocal, gmx_omp_nthreads_get(ModuleMultiThread::Domdec));
     }
 }

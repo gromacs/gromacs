@@ -45,6 +45,7 @@
 
 #include <cstddef>
 
+#include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/updategroups.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/mtop_lookup.h"
@@ -58,7 +59,7 @@ UpdateGroupsCog::UpdateGroupsCog(const gmx_mtop_t&                           mto
                                  gmx::ArrayRef<const gmx::RangePartitioning> updateGroupingsPerMoleculeType,
                                  real                                        temperature,
                                  int                                         numHomeAtoms) :
-    globalToLocalMap_(numHomeAtoms), mtop_(mtop)
+    globalToLocalMap_(numHomeAtoms, gmx_omp_nthreads_get(ModuleMultiThread::Domdec)), mtop_(mtop)
 {
     int firstUpdateGroupInMolecule = 0;
     for (const auto& molblock : mtop.molblock)
