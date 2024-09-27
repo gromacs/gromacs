@@ -383,7 +383,7 @@ void launchSettleGpuKernel(const int                          numSettles,
     config.blockSize[0] = sc_threadsPerBlock;
     config.blockSize[1] = 1;
     config.blockSize[2] = 1;
-    config.gridSize[0]  = (numSettles + sc_threadsPerBlock - 1) / sc_threadsPerBlock;
+    config.gridSize[0]  = divideRoundUp(numSettles, sc_threadsPerBlock);
     config.gridSize[1]  = 1;
     config.gridSize[2]  = 1;
 
