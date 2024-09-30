@@ -826,7 +826,7 @@ double TestParticleInsertion::insertIntoFrame(const double           t,
 
             /* Put the inserted molecule on it's own search grid */
             fr_.nbv->putAtomsOnGrid(
-                    box, 1, xInit, xInit, nullptr, testAtomsRange_, *testAtomsRange_.end(), -1, fr_.atomInfo, x, nullptr);
+                    box, 1, xInit, xInit, nullptr, testAtomsRange_, testAtomsRange_.size(), -1, fr_.atomInfo, x, nullptr);
 
             /* TODO: Avoid updating all atoms at every bNS step */
             fr_.nbv->setAtomProperties(mdatoms_.typeA, mdatoms_.chargeA, fr_.atomInfo);

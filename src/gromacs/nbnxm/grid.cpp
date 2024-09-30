@@ -1563,6 +1563,9 @@ real generateAndFill2DGrid(Grid*                  grid,
                            const int*             move,
                            const bool             computeGridDensityRatio)
 {
+    GMX_ASSERT(numGridAtomsWithoutFillers <= atomRange.size(),
+               "The real atoms are a subset of atomRange");
+
     grid->setDimensions(
             ddZone, numGridAtomsWithoutFillers, lowerCorner, upperCorner, atomDensity, maxAtomGroupRadius);
 
