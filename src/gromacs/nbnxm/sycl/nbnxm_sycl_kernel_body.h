@@ -45,6 +45,7 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/nbnxm/nbnxm_enums.h"
+#include "gromacs/nbnxm/nbnxm_kernel_utils.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/utility/template_mp.h"
 
@@ -92,211 +93,6 @@ constexpr bool c_avoidFloatingPointAtomics(PairlistType layoutType)
 
 using sycl::access::fence_space;
 using mode = sycl::access_mode;
-
-//! \brief Convert \p sigma and \p epsilon VdW parameters to \c c6,c12 pair.
-static inline Float2 convertSigmaEpsilonToC6C12(const float sigma, const float epsilon)
-{
-    const float sigma2 = sigma * sigma;
-    const float sigma6 = sigma2 * sigma2 * sigma2;
-    const float c6     = epsilon * sigma6;
-    const float c12    = c6 * sigma6;
-
-    return { c6, c12 };
-}
-
-//! \brief Calculate force and energy for a pair of atoms, VdW force-switch flavor.
-template<bool doCalcEnergies>
-static inline void ljForceSwitch(const shift_consts_t     dispersionShift,
-                                 const shift_consts_t     repulsionShift,
-                                 const float              rVdwSwitch,
-                                 const float              c6,
-                                 const float              c12,
-                                 const float              rInv,
-                                 const float              r2,
-                                 sycl::private_ptr<float> fInvR,
-                                 sycl::private_ptr<float> eLJ)
-{
-    /* force switch constants */
-    const float dispShiftV2 = dispersionShift.c2;
-    const float dispShiftV3 = dispersionShift.c3;
-    const float repuShiftV2 = repulsionShift.c2;
-    const float repuShiftV3 = repulsionShift.c3;
-
-    const float r       = r2 * rInv;
-    const float rSwitch = sycl::fdim(r, rVdwSwitch); // max(r - rVdwSwitch, 0)
-
-    *fInvR += -c6 * (dispShiftV2 + dispShiftV3 * rSwitch) * rSwitch * rSwitch * rInv
-              + c12 * (repuShiftV2 + repuShiftV3 * rSwitch) * rSwitch * rSwitch * rInv;
-
-    if constexpr (doCalcEnergies)
-    {
-        const float dispShiftF2 = dispShiftV2 / 3.0F;
-        const float dispShiftF3 = dispShiftV3 / 4.0F;
-        const float repuShiftF2 = repuShiftV2 / 3.0F;
-        const float repuShiftF3 = repuShiftV3 / 4.0F;
-        *eLJ += c6 * (dispShiftF2 + dispShiftF3 * rSwitch) * rSwitch * rSwitch * rSwitch
-                - c12 * (repuShiftF2 + repuShiftF3 * rSwitch) * rSwitch * rSwitch * rSwitch;
-    }
-}
-
-//! \brief Fetch C6 grid contribution coefficients and return the product of these.
-template<enum VdwType vdwType>
-static inline float calculateLJEwaldC6Grid(const sycl::global_ptr<const Float2> a_nbfpComb,
-                                           const int                            typeI,
-                                           const int                            typeJ)
-{
-    if constexpr (vdwType == VdwType::EwaldGeom)
-    {
-        return a_nbfpComb[typeI][0] * a_nbfpComb[typeJ][0];
-    }
-    else
-    {
-        static_assert(vdwType == VdwType::EwaldLB);
-        /* sigma and epsilon are scaled to give 6*C6 */
-        const Float2 c6c12_i = a_nbfpComb[typeI];
-        const Float2 c6c12_j = a_nbfpComb[typeJ];
-
-        const float sigma   = c6c12_i[0] + c6c12_j[0];
-        const float epsilon = c6c12_i[1] * c6c12_j[1];
-
-        const float sigma2 = sigma * sigma;
-        return epsilon * sigma2 * sigma2 * sigma2;
-    }
-}
-
-//! Calculate LJ-PME grid force contribution with geometric or LB combination rule.
-template<bool doCalcEnergies, enum VdwType vdwType>
-static inline void ljEwaldComb(const sycl::global_ptr<const Float2> a_nbfpComb,
-                               const float                          sh_lj_ewald,
-                               const int                            typeI,
-                               const int                            typeJ,
-                               const float                          r2,
-                               const float                          r2Inv,
-                               const float                          lje_coeff2,
-                               const float                          lje_coeff6_6,
-                               const float                          int_bit,
-                               sycl::private_ptr<float>             fInvR,
-                               sycl::private_ptr<float>             eLJ)
-{
-    const float c6grid = calculateLJEwaldC6Grid<vdwType>(a_nbfpComb, typeI, typeJ);
-
-    /* Recalculate inv_r6 without exclusion mask */
-    const float inv_r6_nm = r2Inv * r2Inv * r2Inv;
-    const float cr2       = lje_coeff2 * r2;
-    const float expmcr2   = sycl::exp(-cr2);
-    const float poly      = 1.0F + cr2 + 0.5F * cr2 * cr2;
-
-    /* Subtract the grid force from the total LJ force */
-    *fInvR += c6grid * (inv_r6_nm - expmcr2 * (inv_r6_nm * poly + lje_coeff6_6)) * r2Inv;
-
-    if constexpr (doCalcEnergies)
-    {
-        /* Shift should be applied only to real LJ pairs */
-        const float sh_mask = sh_lj_ewald * int_bit;
-        *eLJ += c_oneSixth * c6grid * (inv_r6_nm * (1.0F - expmcr2 * poly) + sh_mask);
-    }
-}
-
-/*! \brief Apply potential switch. */
-template<bool doCalcEnergies>
-static inline void ljPotentialSwitch(const switch_consts_t    vdwSwitch,
-                                     const float              rVdwSwitch,
-                                     const float              rInv,
-                                     const float              r2,
-                                     sycl::private_ptr<float> fInvR,
-                                     sycl::private_ptr<float> eLJ)
-{
-    /* potential switch constants */
-    const float switchV3 = vdwSwitch.c3;
-    const float switchV4 = vdwSwitch.c4;
-    const float switchV5 = vdwSwitch.c5;
-    const float switchF2 = 3.0F * vdwSwitch.c3;
-    const float switchF3 = 4.0F * vdwSwitch.c4;
-    const float switchF4 = 5.0F * vdwSwitch.c5;
-
-    const float r       = r2 * rInv;
-    const float rSwitch = r - rVdwSwitch;
-
-    if (rSwitch > 0.0F)
-    {
-        const float sw =
-                1.0F + (switchV3 + (switchV4 + switchV5 * rSwitch) * rSwitch) * rSwitch * rSwitch * rSwitch;
-        const float dsw = (switchF2 + (switchF3 + switchF4 * rSwitch) * rSwitch) * rSwitch * rSwitch;
-
-        *fInvR = (*fInvR) * sw - rInv * (*eLJ) * dsw;
-        if constexpr (doCalcEnergies)
-        {
-            *eLJ *= sw;
-        }
-    }
-}
-
-
-/*! \brief Calculate analytical Ewald correction term. */
-static inline float pmeCorrF(const float z2)
-{
-    constexpr float FN6 = -1.7357322914161492954e-8F;
-    constexpr float FN5 = 1.4703624142580877519e-6F;
-    constexpr float FN4 = -0.000053401640219807709149F;
-    constexpr float FN3 = 0.0010054721316683106153F;
-    constexpr float FN2 = -0.019278317264888380590F;
-    constexpr float FN1 = 0.069670166153766424023F;
-    constexpr float FN0 = -0.75225204789749321333F;
-
-    constexpr float FD4 = 0.0011193462567257629232F;
-    constexpr float FD3 = 0.014866955030185295499F;
-    constexpr float FD2 = 0.11583842382862377919F;
-    constexpr float FD1 = 0.50736591960530292870F;
-    constexpr float FD0 = 1.0F;
-
-    const float z4 = z2 * z2;
-
-    float       polyFD0 = FD4 * z4 + FD2;
-    const float polyFD1 = FD3 * z4 + FD1;
-    polyFD0             = polyFD0 * z4 + FD0;
-    polyFD0             = polyFD1 * z2 + polyFD0;
-
-    polyFD0 = 1.0F / polyFD0;
-
-    float polyFN0 = FN6 * z4 + FN4;
-    float polyFN1 = FN5 * z4 + FN3;
-    polyFN0       = polyFN0 * z4 + FN2;
-    polyFN1       = polyFN1 * z4 + FN1;
-    polyFN0       = polyFN0 * z4 + FN0;
-    polyFN0       = polyFN1 * z2 + polyFN0;
-
-    return polyFN0 * polyFD0;
-}
-
-/*! \brief Linear interpolation using exactly two FMA operations.
- *
- *  Implements numeric equivalent of: (1-t)*d0 + t*d1.
- */
-template<typename T>
-static inline T lerp(T d0, T d1, T t)
-{
-    return sycl::fma(t, d1, sycl::fma(-t, d0, d0));
-}
-
-/*! \brief Interpolate Ewald coulomb force correction using the F*r table. */
-static inline float interpolateCoulombForceR(const sycl::global_ptr<const float> a_coulombTab,
-                                             const float                         coulombTabScale,
-                                             const float                         r)
-{
-    const float normalized = coulombTabScale * r;
-    const int   index      = static_cast<int>(normalized);
-#if defined(__SYCL_DEVICE_ONLY__) && defined(__AMDGCN__)
-    // TODO: up to ROCm v5.3 compiler does not do this transformation. Remove when this is no longer the case.
-    const float fraction = __builtin_amdgcn_fractf(normalized);
-#else
-    const float fraction = normalized - index;
-#endif
-
-    const float left  = a_coulombTab[index];
-    const float right = a_coulombTab[index + 1];
-
-    return lerp(left, right, fraction); // TODO: sycl::mix
-}
 
 #if defined(__SYCL_DEVICE_ONLY__) && defined(__AMDGCN__)
 /*! \brief Reduce c_clSize j-force components using AMD DPP instruction and atomically accumulate into a_f.
@@ -1113,7 +909,7 @@ static auto nbnxmKernel(sycl::handler& cgh,
                 {
                     // Correct for epsfac^2 due to adding qi^2 */
                     energyElec /= epsFac * c_clSize;
-                    energyElec *= -ewaldBeta * c_OneOverSqrtPi; /* last factor 1/sqrt(pi) */
+                    energyElec *= -ewaldBeta * c_oneOverSqrtPi; /* last factor 1/sqrt(pi) */
                 }
             } // (nbSci.shift == gmx::c_centralShiftIndex && a_plistCJPacked[cijPackedBegin].cj[0] == sci * c_nbnxnGpuNumClusterPerSupercluster)
         }     // (doCalcEnergies && doExclusionForces)

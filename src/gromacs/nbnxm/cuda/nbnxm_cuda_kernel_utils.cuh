@@ -52,6 +52,7 @@
 #include "gromacs/gpu_utils/cuda_kernel_utils.cuh"
 #include "gromacs/gpu_utils/vectype_ops.cuh"
 #include "gromacs/nbnxm/nbnxm_enums.h"
+#include "gromacs/nbnxm/nbnxm_kernel_utils.h"
 
 #include "nbnxm_cuda_types.h"
 
@@ -71,32 +72,19 @@ static const int __device__ c_fbufStride = c_clusterSizeSq;
 static __forceinline__ __device__ void
 convert_sigma_epsilon_to_c6_c12(const float sigma, const float epsilon, float* c6, float* c12)
 {
-    float sigma2, sigma6;
+    auto c6c12 = convertSigmaEpsilonToC6C12(sigma, epsilon);
 
-    sigma2 = sigma * sigma;
-    sigma6 = sigma2 * sigma2 * sigma2;
-    *c6    = epsilon * sigma6;
-    *c12   = *c6 * sigma6;
+    *c6  = c6c12.x;
+    *c12 = c6c12.y;
 }
 
 /*! Apply force switch,  force + energy version. */
 static __forceinline__ __device__ void
 calculate_force_switch_F(const NBParamGpu nbparam, float c6, float c12, float inv_r, float r2, float* F_invr)
 {
-    float r, r_switch;
-
-    /* force switch constants */
-    float disp_shift_V2 = nbparam.dispersion_shift.c2;
-    float disp_shift_V3 = nbparam.dispersion_shift.c3;
-    float repu_shift_V2 = nbparam.repulsion_shift.c2;
-    float repu_shift_V3 = nbparam.repulsion_shift.c3;
-
-    r        = r2 * inv_r;
-    r_switch = r - nbparam.rvdw_switch;
-    r_switch = r_switch >= 0.0F ? r_switch : 0.0F;
-
-    *F_invr += -c6 * (disp_shift_V2 + disp_shift_V3 * r_switch) * r_switch * r_switch * inv_r
-               + c12 * (repu_shift_V2 + repu_shift_V3 * r_switch) * r_switch * r_switch * inv_r;
+    float dummyValue = 0;
+    ljForceSwitch<false>(
+            nbparam.dispersion_shift, nbparam.repulsion_shift, nbparam.rvdw_switch, c6, c12, inv_r, r2, F_invr, &dummyValue);
 }
 
 /*! Apply force switch, force-only version. */
@@ -108,85 +96,22 @@ static __forceinline__ __device__ void calculate_force_switch_F_E(const NBParamG
                                                                   float*           F_invr,
                                                                   float*           E_lj)
 {
-    float r, r_switch;
-
-    /* force switch constants */
-    float disp_shift_V2 = nbparam.dispersion_shift.c2;
-    float disp_shift_V3 = nbparam.dispersion_shift.c3;
-    float repu_shift_V2 = nbparam.repulsion_shift.c2;
-    float repu_shift_V3 = nbparam.repulsion_shift.c3;
-
-    float disp_shift_F2 = nbparam.dispersion_shift.c2 / 3;
-    float disp_shift_F3 = nbparam.dispersion_shift.c3 / 4;
-    float repu_shift_F2 = nbparam.repulsion_shift.c2 / 3;
-    float repu_shift_F3 = nbparam.repulsion_shift.c3 / 4;
-
-    r        = r2 * inv_r;
-    r_switch = r - nbparam.rvdw_switch;
-    r_switch = r_switch >= 0.0F ? r_switch : 0.0F;
-
-    *F_invr += -c6 * (disp_shift_V2 + disp_shift_V3 * r_switch) * r_switch * r_switch * inv_r
-               + c12 * (repu_shift_V2 + repu_shift_V3 * r_switch) * r_switch * r_switch * inv_r;
-    *E_lj += c6 * (disp_shift_F2 + disp_shift_F3 * r_switch) * r_switch * r_switch * r_switch
-             - c12 * (repu_shift_F2 + repu_shift_F3 * r_switch) * r_switch * r_switch * r_switch;
+    ljForceSwitch<true>(
+            nbparam.dispersion_shift, nbparam.repulsion_shift, nbparam.rvdw_switch, c6, c12, inv_r, r2, F_invr, E_lj);
 }
 
 /*! Apply potential switch, force-only version. */
-static __forceinline__ __device__ void calculate_potential_switch_F(const NBParamGpu& nbparam,
-                                                                    float             inv_r,
-                                                                    float             r2,
-                                                                    float*            F_invr,
-                                                                    const float*      E_lj)
+static __forceinline__ __device__ void
+calculate_potential_switch_F(const NBParamGpu& nbparam, float inv_r, float r2, float* F_invr, float* E_lj)
 {
-    float r, r_switch;
-    float sw, dsw;
-
-    /* potential switch constants */
-    float switch_V3 = nbparam.vdw_switch.c3;
-    float switch_V4 = nbparam.vdw_switch.c4;
-    float switch_V5 = nbparam.vdw_switch.c5;
-    float switch_F2 = 3 * nbparam.vdw_switch.c3;
-    float switch_F3 = 4 * nbparam.vdw_switch.c4;
-    float switch_F4 = 5 * nbparam.vdw_switch.c5;
-
-    r        = r2 * inv_r;
-    r_switch = r - nbparam.rvdw_switch;
-
-    /* Unlike in the F+E kernel, conditional is faster here */
-    if (r_switch > 0.0F)
-    {
-        sw  = 1.0F + (switch_V3 + (switch_V4 + switch_V5 * r_switch) * r_switch) * r_switch * r_switch * r_switch;
-        dsw = (switch_F2 + (switch_F3 + switch_F4 * r_switch) * r_switch) * r_switch * r_switch;
-
-        *F_invr = (*F_invr) * sw - inv_r * (*E_lj) * dsw;
-    }
+    ljPotentialSwitch<false>(nbparam.vdw_switch, nbparam.rvdw_switch, inv_r, r2, F_invr, E_lj);
 }
 
 /*! Apply potential switch, force + energy version. */
 static __forceinline__ __device__ void
 calculate_potential_switch_F_E(const NBParamGpu nbparam, float inv_r, float r2, float* F_invr, float* E_lj)
 {
-    float r, r_switch;
-    float sw, dsw;
-
-    /* potential switch constants */
-    float switch_V3 = nbparam.vdw_switch.c3;
-    float switch_V4 = nbparam.vdw_switch.c4;
-    float switch_V5 = nbparam.vdw_switch.c5;
-    float switch_F2 = 3 * nbparam.vdw_switch.c3;
-    float switch_F3 = 4 * nbparam.vdw_switch.c4;
-    float switch_F4 = 5 * nbparam.vdw_switch.c5;
-
-    r        = r2 * inv_r;
-    r_switch = r - nbparam.rvdw_switch;
-    r_switch = r_switch >= 0.0F ? r_switch : 0.0F;
-
-    /* Unlike in the F-only kernel, masking is faster here */
-    sw  = 1.0F + (switch_V3 + (switch_V4 + switch_V5 * r_switch) * r_switch) * r_switch * r_switch * r_switch;
-    dsw = (switch_F2 + (switch_F3 + switch_F4 * r_switch) * r_switch) * r_switch * r_switch;
-
-    *F_invr = (*F_invr) * sw - inv_r * (*E_lj) * dsw;
-    *E_lj *= sw;
+    ljPotentialSwitch<true>(nbparam.vdw_switch, nbparam.rvdw_switch, inv_r, r2, F_invr, E_lj);
 }
 
 
@@ -352,19 +277,6 @@ static __forceinline__ __device__ float2 fetch_coulomb_force_r(const NBParamGpu 
     return d;
 }
 
-/*! Linear interpolation using exactly two FMA operations.
- *
- *  Implements numeric equivalent of: (1-t)*d0 + t*d1
- *  Note that CUDA does not have fnms, otherwise we'd use
- *  fma(t, d1, fnms(t, d0, d0)
- *  but input modifiers are designed for this and are fast.
- */
-template<typename T>
-__forceinline__ __host__ __device__ T lerp(T d0, T d1, T t)
-{
-    return fma(t, d1, fma(-t, d0, d0));
-}
-
 /*! Interpolate Ewald coulomb force correction using the F*r table.
  */
 static __forceinline__ __device__ float interpolate_coulomb_force_r(const NBParamGpu nbparam, float r)
@@ -396,45 +308,6 @@ static __forceinline__ __device__ void fetch_nbfp_c6_c12(float& c6, float& c12, 
     c12 = c6c12.y;
 }
 
-
-/*! Calculate analytical Ewald correction term. */
-static __forceinline__ __device__ float pmecorrF(float z2)
-{
-    const float FN6 = -1.7357322914161492954e-8F;
-    const float FN5 = 1.4703624142580877519e-6F;
-    const float FN4 = -0.000053401640219807709149F;
-    const float FN3 = 0.0010054721316683106153F;
-    const float FN2 = -0.019278317264888380590F;
-    const float FN1 = 0.069670166153766424023F;
-    const float FN0 = -0.75225204789749321333F;
-
-    const float FD4 = 0.0011193462567257629232F;
-    const float FD3 = 0.014866955030185295499F;
-    const float FD2 = 0.11583842382862377919F;
-    const float FD1 = 0.50736591960530292870F;
-    const float FD0 = 1.0F;
-
-    float z4;
-    float polyFN0, polyFN1, polyFD0, polyFD1;
-
-    z4 = z2 * z2;
-
-    polyFD0 = FD4 * z4 + FD2;
-    polyFD1 = FD3 * z4 + FD1;
-    polyFD0 = polyFD0 * z4 + FD0;
-    polyFD0 = polyFD1 * z2 + polyFD0;
-
-    polyFD0 = 1.0F / polyFD0;
-
-    polyFN0 = FN6 * z4 + FN4;
-    polyFN1 = FN5 * z4 + FN3;
-    polyFN0 = polyFN0 * z4 + FN2;
-    polyFN1 = polyFN1 * z4 + FN1;
-    polyFN0 = polyFN0 * z4 + FN0;
-    polyFN0 = polyFN1 * z2 + polyFN0;
-
-    return polyFN0 * polyFD0;
-}
 
 /*! Final j-force reduction; this generic implementation works with
  *  arbitrary array sizes.

@@ -639,7 +639,7 @@ __launch_bounds__(THREADS_PER_BLOCK)
 #    endif
 #    if defined   EL_EWALD_ANA
                                 F_invr += qi * qj_f
-                                          * (int_bit * inv_r2 * inv_r + pmecorrF(beta2 * r2) * beta3);
+                                          * (int_bit * inv_r2 * inv_r + pmeCorrF(beta2 * r2) * beta3);
 #    elif defined EL_EWALD_TAB
                                 F_invr += qi * qj_f
                                           * (int_bit * inv_r2

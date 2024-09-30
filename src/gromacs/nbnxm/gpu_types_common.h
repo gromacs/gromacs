@@ -120,7 +120,7 @@ static constexpr int c_exclSize = sc_gpuExclSize(sc_layoutType);
 static constexpr unsigned superClInteractionMask = ((1U << c_superClusterSize) - 1U);
 
 // 1/sqrt(pi), same value as \c M_FLOAT_1_SQRTPI in other NB kernels.
-static constexpr float c_OneOverSqrtPi = 0.564189583547756F;
+static constexpr float c_oneOverSqrtPi = 0.564189583547756F;
 
 // 1/6, same value as in other NB kernels.
 static constexpr float c_oneSixth = 0.16666667F;
