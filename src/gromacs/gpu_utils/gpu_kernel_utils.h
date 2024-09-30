@@ -98,6 +98,8 @@ static inline GMX_ALWAYS_INLINE float gmxGpuExp(const float value)
 {
 #if GMX_GPU_SYCL
     return sycl::exp(value);
+#elif GMX_GPU_CUDA
+    return exp(value);
 #else
     return __exp(value);
 #endif
