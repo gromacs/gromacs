@@ -149,7 +149,8 @@ TEST(UuidStringTest, Works)
 // out the UUID, which can then be compared with the output of another
 // tool.
 //
-// Run it with
+// Add HARDWARE_DETECTION to the call to gmx_add_unit_test(HardwareUnitTests)
+// Then build and run it with
 // "hardware-test --gtest_also_run_disabled_tests --gtest_filter=DevicesManagerTest.DISABLED_DetectsUuid"
 // and compare the resulting strings. They should match.
 TEST(DevicesManagerTest, DISABLED_DetectsUuid)

@@ -31,7 +31,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out https://www.gromacs.org.
 
-gmx_add_unit_test(HardwareUnitTests hardware-test HARDWARE_DETECTION
+gmx_add_unit_test(HardwareUnitTests hardware-test
     CPP_SOURCE_FILES
         cpuinfo.cpp
         hardwaretopology.cpp
