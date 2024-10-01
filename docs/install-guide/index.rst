@@ -1262,7 +1262,6 @@ Colvars support may be disabled with ``-DGMX_USE_COLVARS=none``.  How to use
 Colvars in a |Gromacs| simulation is described in the User Guide, as well as
 in the `Colvars documentation <https://colvars.github.io/gromacs-2024/colvars-refman-gromacs.html>`_.
 
-
 .. _installing with PLUMED:
 
 Building with PLUMED support
@@ -1278,6 +1277,28 @@ to activate PLUMED and in case it does not succeed it will output a "soft" warni
 If the user forces the option ``ON``, when PLUMED cannot be activated the configuration
 will fail with an error message.
 The User Guide contains the instructions on how to use PLUMED in a |Gromacs| simulation. 
+
+.. _installing with Neural Network potential support:
+
+Building with Neural Network potential support
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To build |Gromacs| with support for Neural Network potentials, it has to be compiled 
+with a suitable machine learning library. At the moment, only models trained in
+`Pytorch <https://pytorch.org/>`_ are supported. To be able to load them in |Gromacs|,
+it has to be built with the Pytorch C++ API or LibTorch, which can be downloaded
+from the `Pytorch website <https://pytorch.org/get-started/locally/>`_. 
+The NNP interface is enabled by default when a LibTorch installation is found in the
+``CMAKE_PREFIX_PATH``, or ``Torch_DIR`` is set to a ``TorchConfig.cmake`` or 
+``torch-config.cmake`` usually found under ``share/cmake/Torch/`` in the libtorch 
+installation directory. It may also be explicitly enabled with ``-DGMX_NNPOT=TORCH``
+or disabled with ``-DGMX_NNPOT=OFF``.
+
+In addition, |Gromacs| provides support to specify custom `Pytorch extensions
+<https://pytorch.org/tutorials/advanced/cpp_extension.html>`_ at build time that may
+be used by the NNP model. The path to the extension library may be specified via the
+``TORCH_EXTENSION_PATH`` variable. Note that CMake will search for a file called
+``libtorch_extension.so`` in the specified directory.
 
 .. _suffixes:
 

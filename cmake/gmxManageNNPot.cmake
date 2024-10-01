@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright 2015- The GROMACS Authors
+# Copyright 2024- The GROMACS Authors
 # and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
 # Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
 #
@@ -31,45 +31,38 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out https://www.gromacs.org.
 
-# Set up the module library
-add_library(applied_forces INTERFACE)
+# Add a flag to enable neural network potential support. Currently only supports libtorch.
+gmx_option_multichoice(GMX_NNPOT
+    "Enable neural network potential interface."
+    AUTO
+    AUTO TORCH OFF
+)
 
-# Source files have the following private module dependencies.
-target_link_libraries(applied_forces PRIVATE
-                      #                      gmxlib
-                      #                      math
-                      #                      mdtypes
-                      #                      tng_io
-                      )
+if(TORCH_ALREADY_SEARCHED)
+    set(FIND_TORCH_QUIETLY ON)
+endif()
 
-# Public interface for modules, including dependencies and interfaces
-#target_include_directories(applied_forces PUBLIC
-#                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
-#target_link_libraries(applied_forces PUBLIC
-target_link_libraries(applied_forces INTERFACE
-                      legacy_api
-                      )
+if(NOT GMX_NNPOT STREQUAL "OFF")
 
-# TODO: when fileio is an OBJECT target
-#target_link_libraries(applied_forces PUBLIC legacy_api)
-#target_link_libraries(applied_forces PRIVATE common)
+    find_package(Torch 2.0.0 QUIET)
+    set(TORCH_ALREADY_SEARCHED TRUE CACHE BOOL "True if a search for libtorch has already been done")
+    mark_as_advanced(TORCH_ALREADY_SEARCHED)
 
-# Source files have the following private module dependencies.
-#target_link_libraries(applied_forces PRIVATE tng_io)
-# TODO: Explicitly link specific modules.
-#target_link_libraries(applied_forces PRIVATE legacy_modules)
+    if(Torch_FOUND)
+        # TORCH_LIBRARIES contain imported target "torch" that will set all flags and include paths etc
+        list(APPEND GMX_COMMON_LIBRARIES ${TORCH_LIBRARIES})
+        if(NOT FIND_TORCH_QUIETLY)
+            message(STATUS "Found Torch: Neural network potential support enabled.")
+        endif()
 
-gmx_add_libgromacs_sources(
-    electricfield.cpp
-    )
-
-add_subdirectory(awh)
-add_subdirectory(densityfitting)
-add_subdirectory(qmmm)
-add_subdirectory(colvars)
-add_subdirectory(plumed)
-add_subdirectory(nnpot)
-
-if (BUILD_TESTING)
-    add_subdirectory(tests)
+        set(GMX_TORCH ON)
+    elseif(GMX_NNPOT STREQUAL "TORCH")
+        message(FATAL_ERROR "Torch not found. Please install libtorch and add its installation prefix"
+                            " to CMAKE_PREFIX_PATH or set Torch_DIR to a directory containing "
+                            "a TorchConfig.cmake or torch-config.cmake file.")
+    else() # "AUTO"
+        if(NOT FIND_TORCH_QUIETLY)
+            message(STATUS "Torch not found. Neural network potential support will be disabled.")
+        endif()
+    endif()
 endif()

@@ -569,6 +569,11 @@ include(gmxManageMimic)
 include(gmxManageCP2K)
 
 ########################################################################
+#Process NNPot settings
+########################################################################
+include(gmxManageNNPot)
+
+########################################################################
 #Process shared/static library settings
 ########################################################################
 include(gmxManageSharedLibraries)
