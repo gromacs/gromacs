@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Bool Name="Correct number of atoms (4water)">true</Bool>
+  <Bool Name="Plumed should be deactivated by default(4water)">false</Bool>
+  <Bool Name="Correct number of atoms (angles1)">true</Bool>
+  <Bool Name="Plumed should be deactivated by default(angles1)">false</Bool>
+  <Bool Name="Correct number of atoms (argon5832)">true</Bool>
+  <Bool Name="Plumed should be deactivated by default(argon5832)">false</Bool>
+  <Bool Name="Correct number of atoms (argon4)">true</Bool>
+  <Bool Name="Plumed should be deactivated by default(argon4)">false</Bool>
+  <Bool Name="Correct number of atoms (dipoles)">true</Bool>
+  <Bool Name="Plumed should be deactivated by default(dipoles)">false</Bool>
+  <Bool Name="Correct number of atoms (spc_and_methane)">true</Bool>
+  <Bool Name="Plumed should be deactivated by default(spc_and_methane)">false</Bool>
+</ReferenceData>

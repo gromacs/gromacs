@@ -33,36 +33,54 @@
  */
 /*! \internal \file
  * \brief
- * Declares factory structure for Plumed MDModule class
+ * Declares Plumed force provider class
  *
  * \author Daniele Rapetti <drapetti@sissa.it>
  * \ingroup module_applied_forces
  */
-#ifndef PLUMED_MDMODULE_H
-#define PLUMED_MDMODULE_H
+#ifndef GMX_APPLIED_FORCES_PLUMEDFORCEPROVIDER_H
+#define GMX_APPLIED_FORCES_PLUMEDFORCEPROVIDER_H
 
 #include <memory>
-#include <string_view>
 
+#include "gromacs/mdtypes/iforceprovider.h"
+
+namespace PLMD
+{
+class Plumed;
+}
 namespace gmx
 {
-
-class IMDModule;
-
-/*! \internal
-    \brief Information about the PLUMED module.
- *
- * Provides name and method to create a PLUMED module.
+struct PlumedOptions;
+/*! \internal \brief
+ * Implements IForceProvider for PLUMED.
  */
-struct PlumedModuleInfo
+class PlumedForceProvider final : public IForceProvider
 {
-    /*! \brief
-     * Creates a module for applying forces with PLUMED.
+public:
+    /*! \brief Initialize the PLUMED interface with the given options
+     *
+     * \param options PLUMED options
      */
-    static std::unique_ptr<IMDModule> create();
-    //! The name of the module
-    static constexpr std::string_view name_ = "plumed";
+    PlumedForceProvider(const PlumedOptions& options);
+    ~PlumedForceProvider();
+    /*! \brief Tells PLUMED to output the checkpoint data
+     *
+     * If the PLUMED API version is not greater than 3 it will do nothing.
+     */
+    void writeCheckpointData();
+    /*! \brief Calculate the forces with PLUMED
+     * \param[in] forceProviderInput input for force provider
+     * \param[out] forceProviderOutput output for force provider
+     */
+    void calculateForces(const ForceProviderInput& forceProviderInput,
+                         ForceProviderOutput*      forceProviderOutput) override;
+
+private:
+    std::unique_ptr<PLMD::Plumed> plumed_;
+    int                           plumedAPIversion_;
 };
+
 } // namespace gmx
 
-#endif
+#endif // GMX_APPLIED_FORCES_PLUMEDFORCEPROVIDER_H

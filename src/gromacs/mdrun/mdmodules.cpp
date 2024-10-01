@@ -44,6 +44,7 @@
 #include "gromacs/applied_forces/colvars/colvarsMDModule.h"
 #include "gromacs/applied_forces/densityfitting/densityfitting.h"
 #include "gromacs/applied_forces/electricfield.h"
+#include "gromacs/applied_forces/plumed/plumedMDModule.h"
 #include "gromacs/applied_forces/qmmm/qmmm.h"
 #include "gromacs/imd/imd.h"
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
@@ -76,7 +77,9 @@ public:
         imd_(createInteractiveMolecularDynamicsModule()),
         qmmm_(QMMMModuleInfo::create()),
         swapCoordinates_(createSwapCoordinatesModule()),
-        colvars_(ColvarsModuleInfo::create())
+        colvars_(ColvarsModuleInfo::create()),
+        plumed_(PlumedModuleInfo::create())
+
     {
     }
 
@@ -117,6 +120,7 @@ public:
     std::unique_ptr<IMDModule>      qmmm_;
     std::unique_ptr<IMDModule>      swapCoordinates_;
     std::unique_ptr<IMDModule>      colvars_;
+    std::unique_ptr<IMDModule>      plumed_;
 
     /*! \brief List of registered MDModules
      *
@@ -187,6 +191,7 @@ ForceProviders* MDModules::initForceProviders()
     impl_->densityFitting_->initForceProviders(impl_->forceProviders_.get());
     impl_->qmmm_->initForceProviders(impl_->forceProviders_.get());
     impl_->colvars_->initForceProviders(impl_->forceProviders_.get());
+    impl_->plumed_->initForceProviders(impl_->forceProviders_.get());
     for (auto&& module : impl_->modules_)
     {
         module->initForceProviders(impl_->forceProviders_.get());
@@ -206,6 +211,7 @@ void MDModules::subscribeToSimulationSetupNotifications()
     impl_->densityFitting_->subscribeToSimulationSetupNotifications(&impl_->notifiers_);
     impl_->qmmm_->subscribeToSimulationSetupNotifications(&impl_->notifiers_);
     impl_->colvars_->subscribeToSimulationSetupNotifications(&impl_->notifiers_);
+    impl_->plumed_->subscribeToSimulationSetupNotifications(&impl_->notifiers_);
 }
 
 void MDModules::add(std::shared_ptr<gmx::IMDModule> module)

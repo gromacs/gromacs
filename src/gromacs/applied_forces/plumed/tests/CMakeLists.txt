@@ -31,22 +31,11 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out https://www.gromacs.org.
 
-# If Plumed is not activated then compile just the stub implementation plumedMDModule_stub.cpp
-# In other case compile regular plumedMDModule.cpp and tests
-if(GMX_PLUMED_ACTIVE)
-    set(PLUMED_SOURCES plumedforceprovider.cpp
+gmx_add_unit_test(PlumedAppliedForcesUnitTests plumed_applied_forces-test
+    CPP_SOURCE_FILES
     plumedOptions.cpp
-    plumedMDModule.cpp
-    )
-    gmx_add_libgromacs_sources(
-        ${PLUMED_SOURCES}
-    )
-    
-    if (BUILD_TESTING)
-        add_subdirectory(tests)
-    endif()
-else()
-gmx_add_libgromacs_sources(
-        plumedMDModule_stub.cpp
-    )    
-endif()
+        )
+
+target_link_libraries(plumed_applied_forces-test PRIVATE applied_forces math topology mdlib
+    mdtypes)
+

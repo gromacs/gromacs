@@ -77,10 +77,8 @@ public:
             if (plumedFilename.plumedFilename_.has_value())
             {
                 GMX_THROW(InvalidInputError(
-                        "GROMACS is not compiled with the plumed interface, if you want to use "
-                        "-plumed and you are not using a WINDOWS installation,"
-                        " please reconfigure GROMACS with -DGMX_USE_PLUMED=ON before "
-                        "compiling it"));
+                        "GROMACS is not compiled with the PLUMED interface, if you want to use "
+                        "-plumed option, please reconfigure GROMACS with -DGMX_USE_PLUMED=ON."));
             }
         });
     }

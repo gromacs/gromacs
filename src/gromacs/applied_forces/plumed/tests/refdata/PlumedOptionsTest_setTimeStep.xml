@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Real Name="Setting the timestep to 1.0">1</Real>
+  <Bool Name="Plumed should be deactivated by default">false</Bool>
+</ReferenceData>

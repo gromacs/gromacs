@@ -33,36 +33,67 @@
  */
 /*! \internal \file
  * \brief
- * Declares factory structure for Plumed MDModule class
+ * Defines options for Plumed. This class handles parameters set during
+ * pre-processing time.
  *
  * \author Daniele Rapetti <drapetti@sissa.it>
  * \ingroup module_applied_forces
  */
-#ifndef PLUMED_MDMODULE_H
-#define PLUMED_MDMODULE_H
+#include "plumedOptions.h"
 
-#include <memory>
-#include <string_view>
+#include "gromacs/math/vec.h"
+#include "gromacs/mdrunutility/handlerestart.h"
+#include "gromacs/mdrunutility/mdmodulesnotifiers.h"
+#include "gromacs/topology/topology.h"
 
 namespace gmx
 {
 
-class IMDModule;
-
-/*! \internal
-    \brief Information about the PLUMED module.
- *
- * Provides name and method to create a PLUMED module.
- */
-struct PlumedModuleInfo
+void PlumedOptionProvider::setTopology(const gmx_mtop_t& mtop)
 {
-    /*! \brief
-     * Creates a module for applying forces with PLUMED.
-     */
-    static std::unique_ptr<IMDModule> create();
-    //! The name of the module
-    static constexpr std::string_view name_ = "plumed";
-};
-} // namespace gmx
+    opts_.natoms_ = mtop.natoms;
+}
 
-#endif
+void PlumedOptionProvider::setEnsembleTemperature(const EnsembleTemperature& temp)
+{
+    if (temp.constantEnsembleTemperature_)
+    {
+        opts_.ensembleTemperature_ = temp.constantEnsembleTemperature_.value();
+    }
+}
+
+void PlumedOptionProvider::setPlumedFile(const std::optional<std::string>& fname)
+{
+    if (fname.has_value())
+    {
+        opts_.active_     = true;
+        opts_.plumedFile_ = fname.value();
+    }
+}
+const PlumedOptions& PlumedOptionProvider::options() const
+{
+    return opts_;
+}
+
+void PlumedOptionProvider::setSimulationTimeStep(double timeStep)
+{
+    opts_.simulationTimeStep_ = timeStep;
+}
+
+void PlumedOptionProvider::setStartingBehavior(const StartingBehavior& behavior)
+{
+    opts_.startingBehavior_ = behavior;
+}
+
+void PlumedOptionProvider::setComm(const t_commrec& cr)
+{
+    opts_.cr_ = &cr;
+}
+
+bool PlumedOptionProvider::active() const
+{
+    return opts_.active_;
+}
+
+
+} // namespace gmx

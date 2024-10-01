@@ -1262,6 +1262,23 @@ Colvars support may be disabled with ``-DGMX_USE_COLVARS=none``.  How to use
 Colvars in a |Gromacs| simulation is described in the User Guide, as well as
 in the `Colvars documentation <https://colvars.github.io/gromacs-2024/colvars-refman-gromacs.html>`_.
 
+
+.. _installing with PLUMED:
+
+Building with PLUMED support
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+|Gromacs| bundles the interface from version 2.10 of the `PLUMED library <https://www.plumed.org/>`_
+in its source distribution. The interface is compatible with any PLUMED version. 
+The interface is enabled by default with |Gromacs|
+unless |Gromacs| is built on Windows. You can explicitly enable the 
+interface with ``-DGMX_USE_PLUMED=ON`` or deactivate it with ``-DGMX_USE_PLUMED=OFF``.
+By default the option is set to ``AUTO``, during the configuration CMake will try
+to activate PLUMED and in case it does not succeed it will output a "soft" warning.
+If the user forces the option ``ON``, when PLUMED cannot be activated the configuration
+will fail with an error message.
+The User Guide contains the instructions on how to use PLUMED in a |Gromacs| simulation. 
+
 .. _suffixes:
 
 Changing the names of |Gromacs| binaries and libraries
