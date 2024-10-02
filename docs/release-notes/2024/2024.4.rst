@@ -45,6 +45,15 @@ apart from systems crashing, so the chance of undetected incorrect results is sm
 
 :issue:`5138`
 
+Fix illegal memory access with more VCM than T-coupling groups
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When there were more center of mass motion removal groups than
+temperature coupling groups, mdrun could crash due to illegal
+memory access. This bug did not affect the simulation results.
+
+:issue:`5167`
+
 Fix Colvars output files always written to the working directory.
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 

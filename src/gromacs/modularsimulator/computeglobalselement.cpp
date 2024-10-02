@@ -93,7 +93,7 @@ ComputeGlobalsElement<algorithm>::ComputeGlobalsElement(StatePropagatorData* sta
     statePropagatorData_(statePropagatorData),
     energyData_(energyData),
     freeEnergyPerturbationData_(freeEnergyPerturbationData),
-    vcm_(global_top.groups, *inputrec),
+    vcm_(global_top.groups, *inputrec, global_top.natoms),
     signals_(signals),
     fplog_(fplog),
     mdlog_(mdlog),

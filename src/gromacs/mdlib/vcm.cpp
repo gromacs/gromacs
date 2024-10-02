@@ -59,7 +59,7 @@ const char* enumValueToString(ComRemovalAlgorithm enumValue)
     return comRemovalAlgorithmNames[enumValue];
 }
 
-t_vcm::t_vcm(const SimulationGroups& groups, const t_inputrec& ir) :
+t_vcm::t_vcm(const SimulationGroups& groups, const t_inputrec& ir, const int numAtoms) :
     integratorConservesMomentum(!EI_RANDOM(ir.eI))
 {
     mode     = (ir.nstcomm > 0) ? ir.comm_mode : ComRemovalAlgorithm::No;
@@ -96,9 +96,13 @@ t_vcm::t_vcm(const SimulationGroups& groups, const t_inputrec& ir) :
         group_ndf.resize(size);
         for (int g = 0; (g < nr); g++)
         {
-            group_ndf[g] = ir.opts.nrdf[g];
             group_name[g] =
                     *groups.groupNames[groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval][g]];
+        }
+
+        for (int i = 0; i < numAtoms; i++)
+        {
+            group_ndf[getGroupType(groups, SimulationAtomGroupType::MassCenterVelocityRemoval, i)] += 3;
         }
 
         thread_vcm.resize(gmx_omp_nthreads_get(ModuleMultiThread::Default) * stride);

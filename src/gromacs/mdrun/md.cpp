@@ -619,7 +619,7 @@ void gmx::LegacySimulator::do_md()
 
     bSumEkinhOld = FALSE;
 
-    t_vcm vcm(topGlobal_.groups, *ir);
+    t_vcm vcm(topGlobal_.groups, *ir, topGlobal_.natoms);
     reportComRemovalInfo(fpLog_, vcm);
 
     int64_t step     = ir->init_step;
