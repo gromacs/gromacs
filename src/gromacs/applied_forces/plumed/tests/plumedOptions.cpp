@@ -222,7 +222,7 @@ TEST(PlumedOptionsTest, setTopology)
     gmx::test::TestReferenceData    data{};
     gmx::test::TestReferenceChecker checker(data.rootChecker());
 
-    for (const auto fnm :
+    for (const auto* const fnm :
          { "4water", "angles1", "argon5832", "argon4", "dipoles", "spc_and_methane" })
     {
         std::string fname(fnm);
