@@ -76,6 +76,12 @@ set(ACPP_EXTRA_ARGS "-Wno-unknown-cuda-version -Wno-unknown-attributes ${SYCL_CX
 # -ffast-math for performance
 set(ACPP_EXTRA_COMPILE_OPTIONS -ffast-math)
 
+# Enable instant submission unless _ALLOW_INSTANT_SUBMISSION or _FORCE_INSTANT_SUBMISSION is already set (to 0 or 1)
+if (NOT SYCL_CXX_FLAGS_EXTRA MATCHES "_INSTANT_SUBMISSION")
+    list(APPEND ACPP_EXTRA_COMPILE_OPTIONS -DHIPSYCL_ALLOW_INSTANT_SUBMISSION=1) # ACpp 24.02 and earlier
+    list(APPEND ACPP_EXTRA_COMPILE_OPTIONS -DACPP_ALLOW_INSTANT_SUBMISSION=1) # ACpp 24.06 and newer
+endif()
+
 # We want to inline aggressively, but only Clang 13 or newer supports this flag.
 # Likely not needed on AMD, since AdaptiveCpp by default sets AMD-specific flags to force inlining, but no harm either.
 check_cxx_compiler_flag("-fgpu-inline-threshold=1" HAS_GPU_INLINE_THRESHOLD)
