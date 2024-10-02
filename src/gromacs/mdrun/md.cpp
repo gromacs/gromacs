@@ -193,28 +193,19 @@ void gmx::LegacySimulator::do_md()
     // will go away eventually.
     const t_inputrec* ir = inputRec_;
 
-    double       t, t0 = ir->init_t;
-    gmx_bool     bGStatEveryStep, bGStat, bCalcVir, bCalcEnerStep, bCalcEner;
-    gmx_bool     bNS = FALSE, bNStList, bStopCM, bFirstStep, bInitStep, bLastStep = FALSE;
+    const double t0  = ir->init_t;
+    gmx_bool     bNS = FALSE, bFirstStep, bInitStep, bLastStep = FALSE;
     gmx_bool     bDoExpanded = FALSE;
-    gmx_bool     do_ene, do_log, do_verbose;
-    gmx_bool     bMainState;
-    unsigned int force_flags;
     tensor    force_vir = { { 0 } }, shake_vir = { { 0 } }, total_vir = { { 0 } }, pres = { { 0 } };
-    int       i, m;
     rvec      mu_tot;
     Matrix3x3 pressureCouplingMu{ { 0. } }, parrinelloRahmanM{ { 0. } };
     gmx_repl_ex_t     repl_ex = nullptr;
-    gmx_global_stat_t gstat;
-    gmx_shellfc_t*    shellfc;
     gmx_bool          bSumEkinhOld, bDoReplEx, bExchanged, bNeedRepartition;
-    gmx_bool          bTrotter;
     real              dvdl_constr;
     std::vector<RVec> cbuf;
     matrix            lastbox;
     int               lamnew = 0;
     /* for FEP */
-    double    cycles;
     real      saved_conserved_quantity = 0;
     real      last_ekin                = 0;
     t_extmass MassQ;
@@ -247,13 +238,14 @@ void gmx::LegacySimulator::do_md()
     /* md-vv uses averaged full step velocities for T-control
        md-vv-avek uses averaged half step velocities for T-control (but full step ekin for P control)
        md uses averaged half step kinetic energies to determine temperature unless defined otherwise by GMX_EKIN_AVE_VEL; */
-    bTrotter = (EI_VV(ir->eI)
-                && (inputrecNptTrotter(ir) || inputrecNphTrotter(ir) || inputrecNvtTrotter(ir)));
+    const bool bTrotter =
+            (EI_VV(ir->eI)
+             && (inputrecNptTrotter(ir) || inputrecNphTrotter(ir) || inputrecNvtTrotter(ir)));
 
     const bool bRerunMD = false;
 
-    int nstglobalcomm = computeGlobalCommunicationPeriod(mdLog_, ir, cr_);
-    bGStatEveryStep   = (nstglobalcomm == 1);
+    const int  nstglobalcomm   = computeGlobalCommunicationPeriod(mdLog_, ir, cr_);
+    const bool bGStatEveryStep = (nstglobalcomm == 1);
 
     const SimulationGroups* groups = &topGlobal_.groups;
 
@@ -353,7 +345,7 @@ void gmx::LegacySimulator::do_md()
                                    simulationsShareHamiltonian,
                                    mdModulesNotifiers_);
 
-    gstat = global_stat_init(ir);
+    gmx_global_stat_t gstat = global_stat_init(ir);
 
     const auto& simulationWork     = runScheduleWork_->simulationWork;
     const bool  useGpuForPme       = simulationWork.useGpuPme;
@@ -361,12 +353,12 @@ void gmx::LegacySimulator::do_md()
     const bool  useGpuForUpdate    = simulationWork.useGpuUpdate;
 
     /* Check for polarizable models and flexible constraints */
-    shellfc = init_shell_flexcon(fpLog_,
-                                 topGlobal_,
-                                 constr_ ? constr_->numFlexibleConstraints() : 0,
-                                 ir->nstcalcenergy,
-                                 haveDDAtomOrdering(*cr_),
-                                 useGpuForPme);
+    gmx_shellfc_t* shellfc = init_shell_flexcon(fpLog_,
+                                                topGlobal_,
+                                                constr_ ? constr_->numFlexibleConstraints() : 0,
+                                                ir->nstcalcenergy,
+                                                haveDDAtomOrdering(*cr_),
+                                                useGpuForPme);
 
     {
         double io = compute_io(ir, topGlobal_.natoms, *groups, energyOutput.numEnergyTerms(), 1);
@@ -575,7 +567,7 @@ void gmx::LegacySimulator::do_md()
         {
             auto v = makeArrayRef(state_->v);
             /* Set the velocities of vsites, shells and frozen atoms to zero */
-            for (i = 0; i < md->homenr; i++)
+            for (int i = 0; i < md->homenr; i++)
             {
                 if (md->ptype[i] == ParticleType::Shell)
                 {
@@ -583,7 +575,7 @@ void gmx::LegacySimulator::do_md()
                 }
                 else if (!md->cFREEZE.empty())
                 {
-                    for (m = 0; m < DIM; m++)
+                    for (int m = 0; m < DIM; m++)
                     {
                         if (ir->opts.nFreeze[md->cFREEZE[i]][m])
                         {
@@ -615,7 +607,8 @@ void gmx::LegacySimulator::do_md()
      * this is the first step, since we might be restarting from a checkpoint,
      * and in that case we should not do any modifications to the state.
      */
-    bStopCM = (ir->comm_mode != ComRemovalAlgorithm::No && !ir->bContinuation);
+    const bool stopCenterOfMassMovementBeforeFirstStep =
+            (ir->comm_mode != ComRemovalAlgorithm::No && !ir->bContinuation);
 
     // When restarting from a checkpoint, it can be appropriate to
     // initialize ekind from quantities in the checkpoint. Otherwise,
@@ -654,10 +647,11 @@ void gmx::LegacySimulator::do_md()
      * Thus to get the kinetic energy without the COM contribution, we need
      * to call compute_globals twice.
      */
-    for (int cgloIteration = 0; cgloIteration < (bStopCM ? 2 : 1); cgloIteration++)
+    for (int cgloIteration = 0; cgloIteration < (stopCenterOfMassMovementBeforeFirstStep ? 2 : 1);
+         cgloIteration++)
     {
         unsigned int cglo_flags_iteration = cglo_flags;
-        if (bStopCM && cgloIteration == 0)
+        if (stopCenterOfMassMovementBeforeFirstStep && cgloIteration == 0)
         {
             cglo_flags_iteration |= CGLO_STOPCM;
             cglo_flags_iteration &= ~CGLO_TEMPERATURE;
@@ -738,7 +732,7 @@ void gmx::LegacySimulator::do_md()
     /* Calculate the initial half step temperature, and save the ekinh_old */
     if (startingBehavior_ == StartingBehavior::NewSimulation)
     {
-        for (i = 0; (i < ir->opts.ngtc); i++)
+        for (int i = 0; (i < ir->opts.ngtc); i++)
         {
             copy_mat(ekind_->tcstat[i].ekinh, ekind_->tcstat[i].ekinh_old);
         }
@@ -877,7 +871,7 @@ void gmx::LegacySimulator::do_md()
     while (!bLastStep)
     {
         /* Determine if this is a neighbor search step */
-        bNStList = (ir->nstlist > 0 && step % ir->nstlist == 0);
+        const bool bNStList = (ir->nstlist > 0 && step % ir->nstlist == 0);
 
         if (bPMETune && bNStList)
         {
@@ -907,8 +901,8 @@ void gmx::LegacySimulator::do_md()
 
         wallcycle_start(wallCycleCounters_, WallCycleCounter::Step);
 
-        bLastStep = (step_rel == ir->nsteps);
-        t         = t0 + step * ir->delta_t;
+        bLastStep      = (step_rel == ir->nsteps);
+        const double t = t0 + step * ir->delta_t;
 
         // TODO Refactor this, so that nstfep does not need a default value of zero
         if (ir->efep != FreeEnergyPerturbationType::No || ir->bSimTemp)
@@ -930,7 +924,7 @@ void gmx::LegacySimulator::do_md()
         }
 
         /* Stop Center of Mass motion */
-        bStopCM = (ir->comm_mode != ComRemovalAlgorithm::No && do_per_step(step, ir->nstcomm));
+        const bool bStopCM = (ir->comm_mode != ComRemovalAlgorithm::No && do_per_step(step, ir->nstcomm));
 
         /* Determine whether or not to do Neighbour Searching */
         bNS = (bFirstStep || bNStList || bExchanged || bNeedRepartition);
@@ -948,10 +942,12 @@ void gmx::LegacySimulator::do_md()
          * Note that the || bLastStep can result in non-exact continuation
          * beyond the last step. But we don't consider that to be an issue.
          */
-        do_log     = (do_per_step(step, ir->nstlog)
-                  || (bFirstStep && startingBehavior_ == StartingBehavior::NewSimulation) || bLastStep);
-        do_verbose = mdrunOptions_.verbose
-                     && (step % mdrunOptions_.verboseStepPrintInterval == 0 || bFirstStep || bLastStep);
+        const bool do_log = (do_per_step(step, ir->nstlog)
+                             || (bFirstStep && startingBehavior_ == StartingBehavior::NewSimulation)
+                             || bLastStep);
+        const bool do_verbose =
+                mdrunOptions_.verbose
+                && (step % mdrunOptions_.verboseStepPrintInterval == 0 || bFirstStep || bLastStep);
 
         // On search steps, when doing the update on the GPU, copy
         // the coordinates and velocities to the host unless they are
@@ -998,15 +994,8 @@ void gmx::LegacySimulator::do_md()
 
         if (bNS && !(bFirstStep && ir->bContinuation))
         {
-            bMainState = FALSE;
             /* Correct the new box if it is too skewed */
-            if (inputrecDynamicBox(ir))
-            {
-                if (correct_box(fpLog_, step, state_->box))
-                {
-                    bMainState = TRUE;
-                }
-            }
+            const bool bMainState = inputrecDynamicBox(ir) && correct_box(fpLog_, step, state_->box);
             // If update is offloaded, and the box was changed either
             // above or in a replica exchange on the previous step,
             // the GPU Update object should be informed
@@ -1105,42 +1094,42 @@ void gmx::LegacySimulator::do_md()
         /* Determine the energy and pressure:
          * at nstcalcenergy steps and at energy output steps (set below).
          */
-        if (EI_VV(ir->eI) && (!bInitStep))
-        {
-            bCalcEnerStep = do_per_step(step, ir->nstcalcenergy);
-            bCalcVir      = bCalcEnerStep
-                       || (ir->pressureCouplingOptions.epc != PressureCoupling::No
-                           && (do_per_step(step, ir->pressureCouplingOptions.nstpcouple)
-                               || do_per_step(step - 1, ir->pressureCouplingOptions.nstpcouple)));
-        }
-        else
-        {
-            bCalcEnerStep = do_per_step(step, ir->nstcalcenergy);
-            bCalcVir      = bCalcEnerStep
-                       || (ir->pressureCouplingOptions.epc != PressureCoupling::No
-                           && do_per_step(step, ir->pressureCouplingOptions.nstpcouple));
-        }
-        bCalcEner = bCalcEnerStep;
 
-        do_ene = (do_per_step(step, ir->nstenergy) || bLastStep);
+        const bool do_ene              = (do_per_step(step, ir->nstenergy) || bLastStep);
+        const bool needEnergyAndVirial = do_ene || do_log || bDoReplEx;
 
-        if (do_ene || do_log || bDoReplEx)
-        {
-            bCalcVir  = TRUE;
-            bCalcEner = TRUE;
-        }
+        const bool bCalcEnerStep = do_per_step(step, ir->nstcalcenergy);
+        const bool bCalcVir      = [&]() -> bool {
+            auto doPressureCoupling = [ir](int64_t s) -> bool {
+                return ir->pressureCouplingOptions.epc != PressureCoupling::No
+                       && do_per_step(s, ir->pressureCouplingOptions.nstpcouple);
+            };
+            if (EI_VV(ir->eI) && (!bInitStep))
+            {
+                return bCalcEnerStep || needEnergyAndVirial || doPressureCoupling(step)
+                       || doPressureCoupling(step - 1);
+            }
+            else
+            {
+                return bCalcEnerStep || needEnergyAndVirial || doPressureCoupling(step);
+            }
+        }();
+
+        const bool bCalcEner = bCalcEnerStep || needEnergyAndVirial;
 
         // bCalcEner is only here for when the last step is not a mulitple of nstfep
         const bool computeDHDL = ((ir->efep != FreeEnergyPerturbationType::No || ir->bSimTemp)
                                   && (do_per_step(step, nstfep) || bCalcEner));
 
         /* Do we need global communication ? */
-        bGStat = (bCalcVir || bCalcEner || bStopCM || do_per_step(step, nstglobalcomm)
-                  || (EI_VV(ir->eI) && inputrecNvtTrotter(ir) && do_per_step(step - 1, nstglobalcomm)));
+        const bool bGStat =
+                (bCalcVir || bCalcEner || bStopCM || do_per_step(step, nstglobalcomm)
+                 || (EI_VV(ir->eI) && inputrecNvtTrotter(ir) && do_per_step(step - 1, nstglobalcomm)));
 
-        force_flags = (GMX_FORCE_STATECHANGED | ((inputrecDynamicBox(ir)) ? GMX_FORCE_DYNAMICBOX : 0)
-                       | GMX_FORCE_ALLFORCES | (bCalcVir ? GMX_FORCE_VIRIAL : 0)
-                       | (bCalcEner ? GMX_FORCE_ENERGY : 0) | (computeDHDL ? GMX_FORCE_DHDL : 0));
+        unsigned int force_flags =
+                (GMX_FORCE_STATECHANGED | ((inputrecDynamicBox(ir)) ? GMX_FORCE_DYNAMICBOX : 0)
+                 | GMX_FORCE_ALLFORCES | (bCalcVir ? GMX_FORCE_VIRIAL : 0)
+                 | (bCalcEner ? GMX_FORCE_ENERGY : 0) | (computeDHDL ? GMX_FORCE_DHDL : 0));
         if (simulationWork.useMts && !do_per_step(step, ir->nstfout))
         {
             // TODO: merge this with stepWork.useOnlyMtsCombinedForceBuffer
@@ -2139,7 +2128,7 @@ void gmx::LegacySimulator::do_md()
             rescale_membed(step_rel, membed_, as_rvec_array(stateGlobal_->x.data()));
         }
 
-        cycles = wallcycle_stop(wallCycleCounters_, WallCycleCounter::Step);
+        const double cycles = wallcycle_stop(wallCycleCounters_, WallCycleCounter::Step);
         if (haveDDAtomOrdering(*cr_) && wallCycleCounters_)
         {
             dd_cycles_add(cr_->dd, cycles, ddCyclStep);
