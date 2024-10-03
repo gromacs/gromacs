@@ -44,7 +44,10 @@
 #define GMX_MDRUNUTILITY_MDMODULESNOTIFIER_H
 
 #include <functional>
+#include <optional>
 #include <vector>
+
+#include "gromacs/utility/basedefinitions.h"
 
 namespace gmx
 {
@@ -96,6 +99,8 @@ public:
     using MDModulesNotifierBase::notify;
     //! Make base class subscription available to this class
     using MDModulesNotifierBase::subscribe;
+    //! Make base class checking subscriptions available to this class
+    using MDModulesNotifierBase::haveSubscribers;
 
     /*! \brief Notifies subscribers of the event described by \c
      * callbackParameter.
@@ -118,6 +123,16 @@ public:
     void subscribe(std::function<void(const CallParameter)> callBackFunction)
     {
         callBackFunctions_.emplace_back(callBackFunction);
+    }
+
+    /*! Returns whether this notification has any subscribers
+     *
+     * \note The dummy argument is there to enable selection of the function on
+     *       template parameter type (using enable_if does not work with clang).
+     */
+    bool haveSubscribers(const std::optional<CallParameter> gmx_unused& dummy = {}) const
+    {
+        return !callBackFunctions_.empty();
     }
 
 private:
@@ -155,6 +170,12 @@ struct BuildMDModulesNotifier<>
         void notify() {}
         //! Do nothing but provide MDModulesNotifier::subscribe to derived class
         void subscribe() {}
+        //! Do nothing but provide MDModulesNotifier::haveSubscribers to derived class
+        template<class T>
+        bool haveSubscribers() const
+        {
+            return false;
+        }
     };
     /*! \brief Defines a type if no notifications are managed.
      *

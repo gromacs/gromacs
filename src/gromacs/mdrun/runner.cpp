@@ -1842,6 +1842,7 @@ int Mdrunner::mdrunner()
     if (thisRankHasDuty(cr, DUTY_PP))
     {
         setupNotifier.notify(*cr);
+        setupNotifier.notify(ms);
         setupNotifier.notify(&atomSets);
         setupNotifier.notify(mtop);
         setupNotifier.notify(inputrec->pbcType);

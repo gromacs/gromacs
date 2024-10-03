@@ -119,6 +119,7 @@
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdrunutility/freeenergy.h"
 #include "gromacs/mdrunutility/handlerestart.h"
+#include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/mdrunutility/printtime.h"
 #include "gromacs/mdtypes/awh_history.h"
@@ -286,7 +287,10 @@ void gmx::LegacySimulator::do_md()
 
     t_fcdata& fcdata = *fr_->fcdata;
 
-    bool simulationsShareState       = false;
+    // We should let all special algorithms use MDModules, so notifiers tells if we need to share
+    bool simulationsShareState =
+            (ms_ != nullptr)
+            && mdModulesNotifiers_.simulationSetupNotifier_.haveSubscribers<const gmx_multisim_t*>();
     bool simulationsShareHamiltonian = false;
     int  nstSignalComm               = nstglobalcomm;
     {
@@ -302,7 +306,8 @@ void gmx::LegacySimulator::do_md()
         // the propagation of such signals must take place between
         // simulations, not just within simulations.
         // TODO: Make algorithm initializers set these flags.
-        simulationsShareState = useReplicaExchange || usingEnsembleRestraints || awhUsesMultiSim;
+        simulationsShareState = simulationsShareState || useReplicaExchange
+                                || usingEnsembleRestraints || awhUsesMultiSim;
 
         // With AWH with bias sharing each simulation uses an non-shared, but identical, Hamiltonian
         simulationsShareHamiltonian = useReplicaExchange || usingEnsembleRestraints;

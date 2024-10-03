@@ -62,6 +62,7 @@ struct gmx_mtop_t;
 class WarningHandler;
 enum class PbcType : int;
 struct t_inputrec;
+struct gmx_multisim_t;
 
 namespace gmx
 {
@@ -378,6 +379,14 @@ struct MDModulesNotifiers
      *                              temperature
      * \tparam t_commrec&           Provides a communicator to the modules during simulation
      *                              setup
+     *
+     * \tparam gmx_multisim_t&      Shares the multisim struct with the modules
+     *                              Subscribing to this notifier will sync checkpointing
+     *                              of simulations and will cause simulations to stop,
+     *                              due to signals or exceededing maximum time, at the same step.
+     *                              This ensures that the output and checkpoints of ensemble
+     *                              simulations are consistent and that ensemble simulations
+     *                              can be continued.
      * \tparam MdRunInputFilename&  Allows modules to know .tpr filename during mdrun
      * \tparam EdrOutputFilename&   Allows modules to know .edr filename during mdrun
      * \tparam PlumedInputFilename& Allows modules to know the optional .dat filename to be read by plumed
@@ -395,6 +404,7 @@ struct MDModulesNotifiers
                            const SimulationTimeStep&,
                            const EnsembleTemperature&,
                            const t_commrec&,
+                           const gmx_multisim_t*,
                            const MdRunInputFilename&,
                            const EdrOutputFilename&,
                            const PlumedInputFilename&>::type simulationSetupNotifier_;
