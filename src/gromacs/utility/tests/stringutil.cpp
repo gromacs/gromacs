@@ -47,6 +47,7 @@
 #include "gromacs/utility/stringutil.h"
 
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <vector>
 
@@ -467,6 +468,32 @@ TEST_F(TextLineWrapperTest, WrapsCorrectlyWithExtraWhitespace)
     wrapper.settings().setKeepFinalSpaces(true);
     checkText(wrapper.wrapToString(g_wrapTextWhitespace), "WrappedAt14WithTrailingWhitespace");
 }
+
+// This doesn't work with MSVC, causes ICE. Fixed in MSVC 2022 (VS 17.5, cl.exe 19.35).
+#if !defined(_MSC_VER)
+
+TEST(CompileTimeStringJoin, Works)
+{
+    static constexpr std::string_view firstLiteral  = "Hello";
+    static constexpr std::string_view secondLiteral = " World";
+    static constexpr std::string_view thirdLiteral  = ", GROMACS";
+
+    static constexpr std::string_view combinedString =
+            gmx::CompileTimeStringJoin_v<firstLiteral, secondLiteral, thirdLiteral>;
+    static_assert(combinedString.size() == 20);
+    static_assert(combinedString == std::string_view{ "Hello World, GROMACS" });
+
+    EXPECT_EQ(std::string(combinedString), "Hello World, GROMACS");
+}
+
+#else
+TEST(DISABLED_CompileTimeStringJoin, Works)
+{
+    ADD_FAILURE() << "Compile time string join doesn't work with MSVC, causes ICE. Fixed in MSVC "
+                  << "2022 (VS 17.5, cl.exe 19.35).";
+}
+
+#endif
 
 } // namespace
 } // namespace test
