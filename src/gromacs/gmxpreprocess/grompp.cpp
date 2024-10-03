@@ -812,6 +812,16 @@ static void new_status(const char*                                 topfile,
 
         stop_cm(logger, state->numAtoms(), mass.data(), state->x.rvec_array(), state->v.rvec_array());
     }
+    else if (EI_STATE_VELOCITY(ir->eI))
+    {
+        bool velocitiesAreZero = !std::any_of(
+                state->v.begin(), state->v.end(), [](const auto& v) { return norm2(v) > 0; });
+        GMX_LOG(logger.info)
+                .asParagraph()
+                .appendTextFormatted("Taking velocities from '%s'%s",
+                                     confin,
+                                     velocitiesAreZero ? ", all velocities are zero" : "");
+    }
 }
 
 static void copy_state(const char* slog, t_trxframe* fr, bool bReadVel, t_state* state, double* use_time)
