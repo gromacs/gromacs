@@ -59,6 +59,15 @@ __forceinline__ static __host__ __device__ float3* asFloat3(gmx::RVec* in)
     return reinterpret_cast<float3*>(in);
 }
 
+//! \copydoc asFloat3(gmx::RVec* in)
+__forceinline__ static __host__ __device__ const float3* asFloat3(const gmx::RVec* in)
+{
+    static_assert(sizeof(in[0]) == sizeof(float3),
+                  "Size of the host-side data-type is different from the size of the device-side "
+                  "counterpart.");
+    return reinterpret_cast<const float3*>(in);
+}
+
 /*! \brief Cast pointer RVec buffer to a pointer to float3 buffer.
  *
  * \param[in] in The Pointer to RVec buffer to cast.
@@ -72,6 +81,8 @@ __forceinline__ static __host__ __device__ float3** asFloat3Pointer(gmx::RVec** 
                   "counterpart.");
     return reinterpret_cast<float3**>(in);
 }
+
+//! \copydoc asFloat3Pointer(gmx::RVec** in)
 static inline __host__ __device__ const float3* const* asFloat3Pointer(const gmx::RVec* const* in)
 {
     static_assert(sizeof((*in)[0]) == sizeof(float3),

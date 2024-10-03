@@ -50,8 +50,6 @@
 
 namespace gmx
 {
-namespace
-{
 
 /*! \brief Add the API information on the specific error to the error message.
  *
@@ -111,9 +109,6 @@ inline void ensureNoPendingDeviceError(const std::string& errorMessage)
     // for release-build error reporting.
     gmx_warning("%s", fullErrorMessage.c_str());
 }
-
-} // namespace
-} // namespace gmx
 
 /*! \brief  Returns true if all tasks in \p deviceStream have completed.
  *
@@ -183,8 +178,8 @@ template<typename CurrentArg, typename... RemainingArgs, size_t totalArgsCount, 
 void prepareGpuKernelArgument(KernelPtr                          kernel,
                               std::array<void*, totalArgsCount>* kernelArgsPtr,
                               size_t                             argIndex,
-                              const CurrentArg*                  argPtr,
-                              const RemainingArgs*... otherArgsPtrs)
+                              CurrentArg*                        argPtr,
+                              RemainingArgs*... otherArgsPtrs)
 {
     (*kernelArgsPtr)[argIndex] = const_cast<void*>(static_cast<const void*>(argPtr));
     prepareGpuKernelArgument(kernel, kernelArgsPtr, argIndex + 1, otherArgsPtrs...);
@@ -203,7 +198,7 @@ void prepareGpuKernelArgument(KernelPtr                          kernel,
 template<typename KernelPtr, typename... Args>
 std::array<void*, sizeof...(Args)> prepareGpuKernelArguments(KernelPtr kernel,
                                                              const KernelLaunchConfig& /*config */,
-                                                             const Args*... argsPtrs)
+                                                             Args*... argsPtrs)
 {
     std::array<void*, sizeof...(Args)> kernelArgs;
     prepareGpuKernelArgument(kernel, &kernelArgs, 0, argsPtrs...);
@@ -243,5 +238,7 @@ void launchGpuKernel(void (*kernel)(Args...),
                         + ") failed to launch: " + gmx::getDeviceErrorString(stat))
                                .c_str());
 }
+
+} // namespace gmx
 
 #endif

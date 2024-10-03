@@ -149,6 +149,8 @@ struct AmdPackedFloat3
         return *this;
     }
 
+    GMX_HOSTDEVICE_ATTRIBUTE AmdPackedFloat3(const AmdPackedFloat3& x) : xy_(x.xy_), z_(x.z_) {}
+
     //! Allow inplace addition for AmdPackedFloat3
     GMX_FUNC_ATTRIBUTE AmdPackedFloat3& operator+=(const AmdPackedFloat3& right)
     {

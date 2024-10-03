@@ -136,17 +136,17 @@ DeviceBuffer<RVec> gpu_get_f(NbnxmGpu gmx_unused* nb) GPU_FUNC_TERM_WITH_RETURN(
  * This is only used for CUDA/HIP, where the actual size is calculate based on the list.
  * For SYCL, the default value of 0 is important for the code to work correctly, this is why we have it set here.
  * */
-CUDA_FUNC_QUALIFIER
-size_t getExclusiveScanWorkingArraySize(GpuPairlist*        CUDA_FUNC_ARGUMENT(plist),
-                                        const DeviceStream& CUDA_FUNC_ARGUMENT(deviceStream))
-        CUDA_FUNC_TERM_WITH_RETURN(0);
+CUDA_HIP_FUNC_QUALIFIER
+size_t getExclusiveScanWorkingArraySize(GpuPairlist*        CUDA_HIP_FUNC_ARGUMENT(plist),
+                                        const DeviceStream& CUDA_HIP_FUNC_ARGUMENT(deviceStream))
+        CUDA_HIP_FUNC_TERM_WITH_RETURN(0);
 
 /*! \brief Perform exclusive scan to obtain input for sci sorting. */
-CUDA_FUNC_QUALIFIER
-void performExclusiveScan(size_t              CUDA_FUNC_ARGUMENT(temporaryBufferSize),
-                          char*               CUDA_FUNC_ARGUMENT(temporaryBuffer),
-                          GpuPairlist*        CUDA_FUNC_ARGUMENT(plist),
-                          const DeviceStream& CUDA_FUNC_ARGUMENT(deviceStream)) CUDA_FUNC_TERM;
+CUDA_HIP_FUNC_QUALIFIER
+void performExclusiveScan(size_t              CUDA_HIP_FUNC_ARGUMENT(temporaryBufferSize),
+                          char*               CUDA_HIP_FUNC_ARGUMENT(temporaryBuffer),
+                          GpuPairlist*        CUDA_HIP_FUNC_ARGUMENT(plist),
+                          const DeviceStream& CUDA_HIP_FUNC_ARGUMENT(deviceStream)) CUDA_HIP_FUNC_TERM;
 
 } // namespace gmx
 
