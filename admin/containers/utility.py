@@ -259,6 +259,13 @@ parser.add_argument(
     help="Add build environment for CP2K QM/MM support",
 )
 
+parser.add_argument(
+    "--hdf5",
+    action="store_true",
+    default=False,
+    help="Install an HDF5 library.",
+)
+
 # Supported Python versions for maintained branches.
 _python_versions = ["3.9.13", "3.12.5"]
 parser.add_argument(

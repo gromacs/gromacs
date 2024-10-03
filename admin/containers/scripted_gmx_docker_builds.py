@@ -1239,6 +1239,8 @@ def build_stages(args) -> typing.Iterable["hpccm.Stage"]:
         os_packages += ["lsb-release"]
     if args.adaptivecpp is not None:
         os_packages += ["libboost-fiber-dev"]
+    if args.hdf5:
+        os_packages += ["libhdf5-dev"]
     building_blocks["extra_packages"] = []
     if args.intel_compute_runtime:
         repo = {

@@ -11,7 +11,7 @@ PYTHON=${PYTHON:-$(which python3)}
 # thread and no MPI configurations.
 
 args[${#args[@]}]="--llvm 12"
-args[${#args[@]}]="--ubuntu 22.04 --gcc 12 --clfft --mpi openmpi --rocm 5.4.1"
+args[${#args[@]}]="--ubuntu 22.04 --gcc 12 --clfft --mpi openmpi --rocm 5.4.1 --hdf5"
 args[${#args[@]}]="--gcc 11 --cuda 11.7.1 --clfft --mpi openmpi --nvhpcsdk 22.7"
 args[${#args[@]}]="--ubuntu 22.04 --gcc 11 --cuda 12.3.0 --clfft --mpi openmpi --nvhpcsdk 24.1"
 args[${#args[@]}]="--gcc 9 --cuda 11.0.3 --clfft --mpi openmpi --heffte v2.2.0"
@@ -20,7 +20,7 @@ args[${#args[@]}]="--ubuntu 24.04 --gcc 11 --mpi openmpi --cp2k 9.1"
 args[${#args[@]}]="--llvm 11 --cuda 11.4.1"
 args[${#args[@]}]="--llvm 11 --tsan"
 args[${#args[@]}]="--ubuntu 22.04 --llvm 14 --cuda 12.1.0 --clfft --mpi openmpi"
-args[${#args[@]}]="--llvm 17 --mpi openmpi"
+args[${#args[@]}]="--llvm 17 --mpi openmpi --hdf5"
 args[${#args[@]}]="--oneapi 2024.0 --intel-compute-runtime --ubuntu 22.04"
 args[${#args[@]}]="--oneapi 2024.2 --ubuntu 22.04 --rocm 6.1.3 --cuda 12.0.1 --oneapi-plugin-amd --oneapi-plugin-nvidia"
 args[${#args[@]}]="--llvm --doxygen --mpi openmpi --venvs 3.7.7 3.9.13"
