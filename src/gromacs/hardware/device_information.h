@@ -138,7 +138,7 @@ static const gmx::EnumerationArray<DeviceStatus, const char*> c_deviceStateStrin
     "incompatible (AMD RDNA devices are not supported)", // Issue #4521
     // clang-format off
     // NOLINTNEXTLINE(bugprone-suspicious-missing-comma)
-    "incompatible (please recompile with GMX" "_ACPP_ENABLE_AMD_RDNA_SUPPORT)"
+    "incompatible (please recompile with GMX" "_ENABLE_AMD_RDNA_SUPPORT)"
     // clang-format on
 };
 

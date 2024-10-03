@@ -280,8 +280,8 @@
 // Define if AdaptiveCpp has CUDA target(s)
 #cmakedefine01 GMX_ACPP_HAVE_CUDA_TARGET
 
-// Define if AdaptiveCpp should have AMD RDNA support (32-wide execution)
-#cmakedefine01 GMX_ACPP_ENABLE_AMD_RDNA_SUPPORT
+// Define if AdaptiveCpp/HIP should have AMD RDNA support (32-wide execution)
+#cmakedefine01 GMX_ENABLE_AMD_RDNA_SUPPORT
 
 /* Use a single compilation unit when compiling the CUDA (non-bonded) kernels.  */
 #cmakedefine01 GMX_CUDA_NB_SINGLE_COMPILATION_UNIT

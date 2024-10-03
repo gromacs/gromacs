@@ -225,10 +225,10 @@ else()
         mark_as_advanced(GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT)
     endif()
 endif()
-option(GMX_ACPP_ENABLE_AMD_RDNA_SUPPORT
+option(GMX_ENABLE_AMD_RDNA_SUPPORT
     "Enable compiling kernels for AMD RDNA GPUs (gfx1xxx). When OFF, only CDNA and GCN are supported. Only used with AdaptiveCpp/hipSYCL."
     ${_enable_rdna_support_automatically})
-mark_as_advanced(GMX_ACPP_ENABLE_AMD_RDNA_SUPPORT)
+mark_as_advanced(GMX_ENABLE_AMD_RDNA_SUPPORT)
 
 # Find a suitable rocFFT when AdaptiveCpp is targeting AMD devices
 if (GMX_ACPP_HAVE_HIP_TARGET AND GMX_GPU_FFT_ROCFFT)
