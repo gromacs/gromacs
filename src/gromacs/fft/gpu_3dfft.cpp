@@ -51,8 +51,6 @@
 #elif GMX_GPU_HIP
 #    if GMX_GPU_FFT_VKFFT
 #        include "gpu_3dfft_hip_vkfft.h"
-#    elif GMX_GPU_FFT_HIPFFT
-#        include "gpu_3dfft_hipfft.h"
 #    else
 #        include "gpu_3dfft_hip_rocfft.h"
 #    endif
