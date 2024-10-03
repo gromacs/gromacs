@@ -32,11 +32,11 @@
 # the research papers on the package. Check out https://www.gromacs.org.
 
 
-  
 
-  
 
-  
+
+
+
 # Builds the interface to plumed and add the linkage to libPlumed
 
 gmx_option_multichoice(GMX_USE_PLUMED
@@ -52,11 +52,11 @@ function(gmx_manage_plumed)
     if(WIN32)
         if(GMX_USE_PLUMED STREQUAL "ON")
                 message(FATAL_ERROR "PLUMED is not supported on Windows. Reconfigure with -DGMX_USE_PLUMED=OFF.")
-        endif(GMX_USE_PLUMED)
+        endif()
     elseif(NOT GMX_USE_PLUMED STREQUAL "OFF")
         if(CMAKE_DL_LIBS)
             # Plumed.h  compiled in c++ mode creates a fully inlined interface
-            # So we just need to activate the directory in applied_forces 
+            # So we just need to activate the directory in applied_forces
             set(PLUMED_DIR "${CMAKE_SOURCE_DIR}/src/external/plumed")
             target_link_libraries( plumedgmx INTERFACE ${CMAKE_DL_LIBS} )
             # The plumedgmx already exists, now we set it up:
@@ -67,10 +67,10 @@ function(gmx_manage_plumed)
                 message(FATAL_ERROR "PLUMED needs dlopen or anything equivalent. Reconfigure with -DGMX_USE_PLUMED=OFF.")
             else() # "AUTO"
                 message(STATUS "PLUMED needs dlopen or anything equivalent. Disabling support.")
-            endif(GMX_USE_PLUMED)
-           
+            endif()
+
         endif()
-    
+
     endif()
 
 endfunction()
