@@ -348,6 +348,9 @@ Performance and Run Control
         force the use of tabulated Ewald non-bonded kernels,
         mutually exclusive of ``GMX_NBNXN_EWALD_ANALYTICAL``.
 
+``GMX_NBNXN_PLAINC_1X1``
+        force the use of the reference 1x1 non-SIMD CPU non-bonded kernel
+         
 ``GMX_NBNXN_SIMD_2XNN``
         force the use of 2x(N+N) SIMD CPU non-bonded kernels,
         mutually exclusive of ``GMX_NBNXN_SIMD_4XN``.

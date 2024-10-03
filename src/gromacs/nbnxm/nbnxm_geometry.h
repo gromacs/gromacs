@@ -77,6 +77,7 @@ static constexpr int sc_iClusterSize(const NbnxmKernelType kernelType)
         case NbnxmKernelType::Cpu4x4_PlainC:
         case NbnxmKernelType::Cpu4xN_Simd_4xN:
         case NbnxmKernelType::Cpu4xN_Simd_2xNN: return 4;
+        case NbnxmKernelType::Cpu1x1_PlainC: return 1;
         case NbnxmKernelType::NotSet:
         case NbnxmKernelType::Count: return 0;
         // all other cases are GPU kernels and are handled in the gpu specific method.
@@ -101,6 +102,7 @@ static constexpr int sc_jClusterSize(const NbnxmKernelType kernelType)
         case NbnxmKernelType::Cpu4xN_Simd_4xN: return 0;
         case NbnxmKernelType::Cpu4xN_Simd_2xNN: return 0;
 #endif
+        case NbnxmKernelType::Cpu1x1_PlainC: return 1;
         case NbnxmKernelType::NotSet:
         case NbnxmKernelType::Count: return 0;
         // all other cases are GPU kernels and are handled in the gpu specific method.
@@ -108,18 +110,18 @@ static constexpr int sc_jClusterSize(const NbnxmKernelType kernelType)
     }
 }
 
-/*! \brief Returns whether the pair-list corresponding to nb_kernel_type is simple */
-static constexpr bool kernelTypeUsesSimplePairlist(const NbnxmKernelType kernelType)
-{
-    return (kernelType == NbnxmKernelType::Cpu4x4_PlainC || kernelType == NbnxmKernelType::Cpu4xN_Simd_4xN
-            || kernelType == NbnxmKernelType::Cpu4xN_Simd_2xNN);
-}
-
 //! Returns whether a SIMD kernel is in use
 static constexpr bool kernelTypeIsSimd(const NbnxmKernelType kernelType)
 {
     return (kernelType == NbnxmKernelType::Cpu4xN_Simd_4xN
             || kernelType == NbnxmKernelType::Cpu4xN_Simd_2xNN);
+}
+
+/*! \brief Returns whether the pair-list corresponding to nb_kernel_type is simple */
+static constexpr bool kernelTypeUsesSimplePairlist(const NbnxmKernelType kernelType)
+{
+    return (kernelType == NbnxmKernelType::Cpu4x4_PlainC
+            || kernelType == NbnxmKernelType::Cpu1x1_PlainC || kernelTypeIsSimd(kernelType));
 }
 
 /*! \brief Returns the increase in pairlist radius when including volume of pairs beyond rlist

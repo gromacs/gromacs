@@ -692,6 +692,7 @@ static void setSelfAndNewtonExclusionsGpu(NbnxnPairlistGpu* nbl,
  * \param[in]     rbb2                The squared cut-off for putting cluster-pairs in the list based on bounding box distance only
  * \param[in,out] numDistanceChecks   The number of distance checks performed
  */
+template<NbnxmKernelType kernelType>
 static void makeClusterListSimple(const Grid&              jGrid,
                                   NbnxnPairlistCpu*        nbl,
                                   int                      icluster,
@@ -706,8 +707,8 @@ static void makeClusterListSimple(const Grid&              jGrid,
     const BoundingBox* gmx_restrict bb_ci = nbl->work->iClusterData.bb.data();
     const real* gmx_restrict        x_ci  = nbl->work->iClusterData.x.data();
 
-    constexpr int c_iClusterSize = sc_iClusterSize(NbnxmKernelType::Cpu4x4_PlainC);
-    constexpr int c_jClusterSize = sc_jClusterSize(NbnxmKernelType::Cpu4x4_PlainC);
+    constexpr int c_iClusterSize = sc_iClusterSize(kernelType);
+    constexpr int c_jClusterSize = sc_jClusterSize(kernelType);
 
     bool InRange = false;
     while (!InRange && jclusterFirst <= jclusterLast)
@@ -2107,13 +2108,17 @@ gmx_unused static void set_icell_bb(const Grid& iGrid, int ci, const RVec& shift
 }
 
 /* Copies PBC shifted i-cell atom coordinates x,y,z to working array */
-static void icell_set_x_simple(int                                 ci,
-                               const RVec&                         shift,
-                               int                                 stride,
-                               const real*                         x,
-                               NbnxmPairlistCpuWork::IClusterData* iClusterData)
+template<ClusterDistanceKernelType kernelType>
+static void icellSetXSimple(int                                 ci,
+                            const RVec&                         shift,
+                            int                                 stride,
+                            const real*                         x,
+                            NbnxmPairlistCpuWork::IClusterData* iClusterData)
 {
-    constexpr int c_iClusterSize = sc_iClusterSize(NbnxmKernelType::Cpu4x4_PlainC);
+    static_assert(kernelType == ClusterDistanceKernelType::CpuPlainC_4x4
+                  || kernelType == ClusterDistanceKernelType::CpuPlainC_1x1);
+
+    constexpr int c_iClusterSize = (kernelType == ClusterDistanceKernelType::CpuPlainC_4x4 ? 4 : 1);
 
     const int ia = ci * c_iClusterSize;
 
@@ -2146,8 +2151,13 @@ static void icell_set_x(int                             ci,
             setICellCoordinatesSimd2xMM(ci, shift, stride, x, work);
             break;
 #endif
-        case ClusterDistanceKernelType::CpuPlainC:
-            icell_set_x_simple(ci, shift, stride, x, &work->iClusterData);
+        case ClusterDistanceKernelType::CpuPlainC_4x4:
+            icellSetXSimple<ClusterDistanceKernelType::CpuPlainC_4x4>(
+                    ci, shift, stride, x, &work->iClusterData);
+            break;
+        case ClusterDistanceKernelType::CpuPlainC_1x1:
+            icellSetXSimple<ClusterDistanceKernelType::CpuPlainC_1x1>(
+                    ci, shift, stride, x, &work->iClusterData);
             break;
         default: GMX_ASSERT(false, "Unhandled case"); break;
     }
@@ -2763,8 +2773,8 @@ static void makeClusterListWrapper(NbnxnPairlistCpu* nbl,
 {
     switch (kernelType)
     {
-        case ClusterDistanceKernelType::CpuPlainC:
-            makeClusterListSimple(
+        case ClusterDistanceKernelType::CpuPlainC_4x4:
+            makeClusterListSimple<NbnxmKernelType::Cpu4x4_PlainC>(
                     jGrid, nbl, ci, firstCell, lastCell, excludeSubDiagonal, nbat->x().data(), rlist2, rbb2, numDistanceChecks);
             break;
 #if GMX_HAVE_NBNXM_SIMD_4XM
@@ -2779,6 +2789,10 @@ static void makeClusterListWrapper(NbnxnPairlistCpu* nbl,
                     jGrid, nbl, ci, firstCell, lastCell, excludeSubDiagonal, nbat->x().data(), rlist2, rbb2, numDistanceChecks);
             break;
 #endif
+        case ClusterDistanceKernelType::CpuPlainC_1x1:
+            makeClusterListSimple<NbnxmKernelType::Cpu1x1_PlainC>(
+                    jGrid, nbl, ci, firstCell, lastCell, excludeSubDiagonal, nbat->x().data(), rlist2, rbb2, numDistanceChecks);
+            break;
         default: GMX_ASSERT(false, "Unhandled kernel type");
     }
 }

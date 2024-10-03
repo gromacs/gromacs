@@ -225,7 +225,8 @@ TEST_P(CpuListDiagonalExclusionsTest, CheckMask)
     }
 }
 
-const auto testKernelTypes = ::testing::Values(NbnxmKernelType::Cpu4x4_PlainC
+const auto testKernelTypes = ::testing::Values(NbnxmKernelType::Cpu1x1_PlainC,
+                                               NbnxmKernelType::Cpu4x4_PlainC
 #if GMX_HAVE_NBNXM_SIMD_4XM
                                                ,
                                                NbnxmKernelType::Cpu4xN_Simd_4xN

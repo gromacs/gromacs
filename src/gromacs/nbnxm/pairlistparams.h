@@ -58,17 +58,17 @@ enum class NbnxmKernelType;
 
 //! Gives the i-cluster size for each pairlist type
 static constexpr gmx::EnumerationArray<PairlistType, int> IClusterSizePerListType = {
-    { 4, 4, 4, sc_gpuClusterSize(PairlistType::Hierarchical8x8x8) }
+    { 4, 4, 4, sc_gpuClusterSize(PairlistType::Hierarchical8x8x8), 1 }
 };
 
 //! Gives the j-cluster size for each pairlist type
 static constexpr gmx::EnumerationArray<PairlistType, int> JClusterSizePerListType = {
-    { 2, 4, 8, sc_gpuClusterSize(PairlistType::Hierarchical8x8x8) }
+    { 2, 4, 8, sc_gpuClusterSize(PairlistType::Hierarchical8x8x8), 1 }
 };
 
 //! True if given pairlist type is used on GPU, false if on CPU.
 static constexpr gmx::EnumerationArray<PairlistType, bool> sc_isGpuPairListType = {
-    { false, false, false, true }
+    { false, false, false, true, false }
 };
 
 /*! \internal

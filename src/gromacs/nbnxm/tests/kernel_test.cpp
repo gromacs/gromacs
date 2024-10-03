@@ -518,7 +518,11 @@ TEST_P(NbnxmKernelTest, WorksWith)
                             "support";
         }
 
-        if (options_.kernelSetup.kernelType == NbnxmKernelType::Cpu4x4_PlainC
+        const bool kernelIsPlainC =
+                (options_.kernelSetup.kernelType == NbnxmKernelType::Cpu4x4_PlainC
+                 || options_.kernelSetup.kernelType == NbnxmKernelType::Cpu1x1_PlainC);
+
+        if (kernelIsPlainC
             && (options_.coulombType == CoulombKernelType::Ewald
                 || options_.coulombType == CoulombKernelType::EwaldTwin))
         {
@@ -526,7 +530,7 @@ TEST_P(NbnxmKernelTest, WorksWith)
                     << "Analytical Ewald is not implemented for the plain-C kernel, skip this test";
         }
 
-        if (options_.kernelSetup.kernelType == NbnxmKernelType::Cpu4x4_PlainC
+        if (kernelIsPlainC
             && (parameters_.vdwKernelType == vdwktLJCUT_COMBGEOM
                 || parameters_.vdwKernelType == vdwktLJCUT_COMBLB))
         {
@@ -649,7 +653,8 @@ TEST_P(NbnxmKernelTest, WorksWith)
 INSTANTIATE_TEST_SUITE_P(Combinations,
                          NbnxmKernelTest,
                          ::testing::ConvertGenerator<KernelInputParameters::TupleT>(::testing::Combine(
-                                 ::testing::Values(NbnxmKernelType::Cpu4x4_PlainC,
+                                 ::testing::Values(NbnxmKernelType::Cpu1x1_PlainC,
+                                                   NbnxmKernelType::Cpu4x4_PlainC,
                                                    NbnxmKernelType::Cpu4xN_Simd_4xN,
                                                    NbnxmKernelType::Cpu4xN_Simd_2xNN),
                                  ::testing::Values(CoulombKernelType::ReactionField,

@@ -78,6 +78,7 @@
 #include "pairlistset.h"
 #include "pairlistsets.h"
 #define INCLUDE_KERNELFUNCTION_TABLES
+#include "kernels_reference/kernel_ref_1x1.h"
 #include "kernels_reference/kernel_ref_4x4.h"
 #if GMX_HAVE_NBNXM_SIMD_2XMM
 #    include "kernels_simd_2xmm/kernels.h"
@@ -223,7 +224,7 @@ static void nbnxn_kernel_cpu(const PairlistSet&             pairlistSet,
     const int vdwkt  = getVdwKernelType(
             kernelSetup.kernelType, nbatParams.ljCombinationRule, ic.vdwtype, ic.vdw_modifier, ic.ljpme_comb_rule);
 
-    const bool usingSimdKernel = (kernelSetup.kernelType != NbnxmKernelType::Cpu4x4_PlainC);
+    const bool usingSimdKernel = kernelTypeIsSimd(kernelSetup.kernelType);
 
     gmx::ArrayRef<const NbnxnPairlistCpu> pairlists = pairlistSet.cpuLists();
 
@@ -274,6 +275,9 @@ static void nbnxn_kernel_cpu(const PairlistSet&             pairlistSet,
                             pairlist, nbat, &ic, shiftVecPointer, &out);
                     break;
 #endif
+                case NbnxmKernelType::Cpu1x1_PlainC:
+                    nbnxn_kernel_1x1_noener_ref[coulkt][vdwkt](pairlist, nbat, &ic, shiftVecPointer, &out);
+                    break;
                 default: GMX_RELEASE_ASSERT(false, "Unsupported kernel architecture");
             }
         }
@@ -306,6 +310,9 @@ static void nbnxn_kernel_cpu(const PairlistSet&             pairlistSet,
                     gmx::nbnxmKernelEnerSimd4xm[coulkt][vdwkt](pairlist, nbat, &ic, shiftVecPointer, &out);
                     break;
 #endif
+                case NbnxmKernelType::Cpu1x1_PlainC:
+                    nbnxn_kernel_1x1_ener_ref[coulkt][vdwkt](pairlist, nbat, &ic, shiftVecPointer, &out);
+                    break;
                 default: GMX_RELEASE_ASSERT(false, "Unsupported kernel architecture");
             }
 
@@ -346,6 +353,9 @@ static void nbnxn_kernel_cpu(const PairlistSet&             pairlistSet,
                             pairlist, nbat, &ic, shiftVecPointer, &out);
                     break;
 #endif
+                case NbnxmKernelType::Cpu1x1_PlainC:
+                    nbnxn_kernel_1x1_energrp_ref[coulkt][vdwkt](pairlist, nbat, &ic, shiftVecPointer, &out);
+                    break;
                 default: GMX_RELEASE_ASSERT(false, "Unsupported kernel architecture");
             }
 
@@ -437,6 +447,7 @@ void nonbonded_verlet_t::dispatchNonbondedKernel(gmx::InteractionLocality       
         case NbnxmKernelType::Cpu4x4_PlainC:
         case NbnxmKernelType::Cpu4xN_Simd_4xN:
         case NbnxmKernelType::Cpu4xN_Simd_2xNN:
+        case NbnxmKernelType::Cpu1x1_PlainC:
             nbnxn_kernel_cpu(pairlistSet,
                              kernelSetup(),
                              nbat_.get(),

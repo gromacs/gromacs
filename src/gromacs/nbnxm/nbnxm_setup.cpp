@@ -211,6 +211,12 @@ static NbnxmKernelSetup pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused& input
         }
     }
 
+    if (getenv("GMX_NBNXN_PLAINC_1X1") != nullptr)
+    {
+        kernelSetup.kernelType         = NbnxmKernelType::Cpu1x1_PlainC;
+        kernelSetup.ewaldExclusionType = EwaldExclusionType::Table;
+    }
+
     if (kernelSetup.kernelType == NbnxmKernelType::Cpu4xN_Simd_2xNN
         || kernelSetup.kernelType == NbnxmKernelType::Cpu4xN_Simd_4xN)
     {
@@ -252,11 +258,12 @@ const char* nbnxmKernelTypeToName(const NbnxmKernelType kernelType)
     switch (kernelType)
     {
         case NbnxmKernelType::NotSet: return "not set";
-        case NbnxmKernelType::Cpu4x4_PlainC: return "plain-C";
+        case NbnxmKernelType::Cpu4x4_PlainC: return "plain-C-4x4";
         case NbnxmKernelType::Cpu4xN_Simd_4xN: return "SIMD4xM";
         case NbnxmKernelType::Cpu4xN_Simd_2xNN: return "SIMD2xMM";
         case NbnxmKernelType::Gpu8x8x8: return "GPU";
-        case NbnxmKernelType::Cpu8x8x8_PlainC: return "plain-C";
+        case NbnxmKernelType::Cpu8x8x8_PlainC: return "plain-C-GPU-layout";
+        case NbnxmKernelType::Cpu1x1_PlainC: return "plain-C-1x1";
 
         default: gmx_fatal(FARGS, "Illegal kernel type selected");
     }
@@ -320,6 +327,7 @@ static NbnxmKernelSetup pick_nbnxn_kernel(const gmx::MDLogger&     mdlog,
     }
 
     if (NbnxmKernelType::Cpu4x4_PlainC == kernelSetup.kernelType
+        || NbnxmKernelType::Cpu1x1_PlainC == kernelSetup.kernelType
         || NbnxmKernelType::Cpu8x8x8_PlainC == kernelSetup.kernelType)
     {
         GMX_LOG(mdlog.warning)
@@ -473,7 +481,11 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
     const real effectiveAtomDensity = computeEffectiveAtomDensity(
             coordinates, box, std::max(inputrec.rcoulomb, inputrec.rvdw), commrec->mpi_comm_mygroup);
 
-    setupDynamicPairlistPruning(mdlog, inputrec, mtop, effectiveAtomDensity, *forcerec.ic, &pairlistParams);
+    if (kernelSetup.kernelType != NbnxmKernelType::Cpu1x1_PlainC)
+    {
+        setupDynamicPairlistPruning(
+                mdlog, inputrec, mtop, effectiveAtomDensity, *forcerec.ic, &pairlistParams);
+    }
 
     if (EI_DYNAMICS(inputrec.eI))
     {

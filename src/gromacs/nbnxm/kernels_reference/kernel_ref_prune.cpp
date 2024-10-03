@@ -46,10 +46,11 @@ namespace gmx
 {
 
 /* Prune a single NbnxnPairlistCpu entry with distance rlistInner */
-void nbnxn_kernel_prune_ref(NbnxnPairlistCpu*       nbl,
-                            const nbnxn_atomdata_t* nbat,
-                            ArrayRef<const RVec>    shiftvec,
-                            real                    rlistInner)
+template<NbnxmKernelType kernelType>
+void nbnxmRefPruneKernel(NbnxnPairlistCpu*       nbl,
+                         const nbnxn_atomdata_t* nbat,
+                         ArrayRef<const RVec>    shiftvec,
+                         real                    rlistInner)
 {
     /* We avoid push_back() for efficiency reasons and resize after filling */
     nbl->ci.resize(nbl->ciOuter.size());
@@ -70,8 +71,8 @@ void nbnxn_kernel_prune_ref(NbnxnPairlistCpu*       nbl,
     GMX_ASSERT(c_xStride == nbat->xstride, "xStride should match nbat->xstride");
     constexpr int c_xiStride = 3;
 
-    constexpr int c_iUnroll = sc_iClusterSize(NbnxmKernelType::Cpu4x4_PlainC);
-    constexpr int c_jUnroll = sc_jClusterSize(NbnxmKernelType::Cpu4x4_PlainC);
+    constexpr int c_iUnroll = sc_iClusterSize(kernelType);
+    constexpr int c_jUnroll = sc_jClusterSize(kernelType);
 
     /* Initialize the new list as empty and add pairs that are in range */
     int       nciInner = 0;
@@ -143,5 +144,15 @@ void nbnxn_kernel_prune_ref(NbnxnPairlistCpu*       nbl,
     nbl->ci.resize(nciInner);
     nbl->cj.resize(ncjInner);
 }
+
+template void nbnxmRefPruneKernel<NbnxmKernelType::Cpu4x4_PlainC>(NbnxnPairlistCpu*       nbl,
+                                                                  const nbnxn_atomdata_t* nbat,
+                                                                  ArrayRef<const RVec>    shiftvec,
+                                                                  real rlistInner);
+
+template void nbnxmRefPruneKernel<NbnxmKernelType::Cpu1x1_PlainC>(NbnxnPairlistCpu*       nbl,
+                                                                  const nbnxn_atomdata_t* nbat,
+                                                                  ArrayRef<const RVec>    shiftvec,
+                                                                  real rlistInner);
 
 } // namespace gmx

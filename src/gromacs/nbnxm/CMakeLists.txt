@@ -59,6 +59,7 @@ file(GLOB NBNXM_SOURCES
     prunekerneldispatch.cpp
     # Reference kernel source files
     kernels_reference/kernel_gpu_ref.cpp
+    kernels_reference/kernel_ref_1x1.cpp
     kernels_reference/kernel_ref_4x4.cpp
     kernels_reference/kernel_ref_prune.cpp
     simd_energy_accumulator.cpp

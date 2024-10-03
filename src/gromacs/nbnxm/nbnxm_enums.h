@@ -114,7 +114,8 @@ enum class NbnxmKernelType : int
     Cpu4xN_Simd_4xN,  //<! SIMD 4N CPU kernels
     Cpu4xN_Simd_2xNN, //<! SIMD 2NN CPU kernels
     Gpu8x8x8,         //<! GPU kernels, will be specialized further later
-    Cpu8x8x8_PlainC,
+    Cpu8x8x8_PlainC,  //<! Reference plain C kernel for GPU pairlist layout
+    Cpu1x1_PlainC,    //<! Plain C atom-pair list
     Count
 };
 
@@ -141,6 +142,7 @@ enum class PairlistType : int
     Simple4x4,
     Simple4x8,
     Hierarchical8x8x8,
+    Simple1x1,
     Count
 };
 

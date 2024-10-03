@@ -42,13 +42,21 @@
 {
     const int cj = l_cj[cjind].cj;
 
+#if UNROLLI == 1
+    constexpr int i = 0;
+#else
     for (int i = 0; i < UNROLLI; i++)
+#endif
     {
         const int ai = ci * UNROLLI + i;
 
-        const int type_i_off = type[ai] * ntype2;
+        const int gmx_unused type_i_off = type[ai] * ntype2;
 
+#if UNROLLJ == 1
+        constexpr int j = 0;
+#else
         for (int j = 0; j < UNROLLJ; j++)
+#endif
         {
             real FrLJ6 = 0, FrLJ12 = 0, frLJ = 0;
 
@@ -109,7 +117,7 @@
 #endif
 
 #ifdef HALF_LJ
-            if (i < UNROLLI / 2)
+            if (UNROLLI > 1 && i < UNROLLI / 2)
 #endif
             {
                 const real c6  = nbfp[type_i_off + type[aj] * 2];

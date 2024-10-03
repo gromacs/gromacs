@@ -78,6 +78,7 @@ PairlistParams::PairlistParams(const NbnxmKernelType             kernelType,
     {
         switch (sc_jClusterSize(kernelType))
         {
+            case 1: pairlistType = PairlistType::Simple1x1; break;
             case 2: pairlistType = PairlistType::Simple4x2; break;
             case 4: pairlistType = PairlistType::Simple4x4; break;
             case 8: pairlistType = PairlistType::Simple4x8; break;

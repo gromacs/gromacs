@@ -736,7 +736,9 @@ void setupDynamicPairlistPruning(const MDLogger&            mdlog,
         mesg += formatListSetup(
                 "", inputrec.nstlist, inputrec.nstlist, listParams->rlistOuter, interactionCutoff);
     }
-    if (supportsDynamicPairlistGenerationInterval(inputrec))
+    // Conditionally print a comparison of the Verlet buffers(s) with the good old 1x1 pairlist
+    if (supportsDynamicPairlistGenerationInterval(inputrec)
+        && (ls.cluster_size_i > 1 || ls.cluster_size_j > 1))
     {
         const real pressureTolerance = getPressureTolerance(inputrec.verletBufferPressureTolerance);
 
