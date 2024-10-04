@@ -1475,6 +1475,7 @@ void LegacySimulator::do_cg()
         fprintf(stderr, "   F-max             = %12.5e on atom %d\n", s_min->fmax, s_min->a_fmax + 1);
         fprintf(stderr, "   F-Norm            = %12.5e\n", s_min->fnorm / sqrtNumAtoms);
         fprintf(stderr, "\n");
+        GMX_ASSERT(fpLog_, "Inconsistent file pointer value");
         /* and copy to the log file too... */
         fprintf(fpLog_, "   F-max             = %12.5e on atom %d\n", s_min->fmax, s_min->a_fmax + 1);
         fprintf(fpLog_, "   F-Norm            = %12.5e\n", s_min->fnorm / sqrtNumAtoms);

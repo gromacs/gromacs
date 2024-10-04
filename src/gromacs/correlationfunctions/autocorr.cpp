@@ -694,12 +694,12 @@ void low_do_autocorr(const char*             fn,
             }
             Ctav += sum;
             Ct2av += sum * sum;
-            if (debug)
+            if (gp)
             {
                 fprintf(gp, "%5d  %.3f\n", i, sum);
             }
         }
-        if (debug)
+        if (gp)
         {
             xvgrclose(gp);
         }

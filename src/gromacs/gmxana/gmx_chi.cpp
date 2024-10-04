@@ -575,7 +575,7 @@ static void histogramming(FILE*                    log,
             if (((Dih < edOmega)) || ((Dih == edOmega) && (has_dihedral(edOmega, dihedral)))
                 || ((Dih > edOmega) && (dihedral.atm.Cn[Dih - NONCHI + 3] != -1)))
             {
-                make_histo(log, nf, dih[j], nbin, histmp, -M_PI, M_PI);
+                make_histo(nf, dih[j], nbin, histmp, -M_PI, M_PI);
 
                 if (bSSHisto)
                 {

@@ -9,8 +9,8 @@
 #   MPI: thread_MPI
 #   Scope: configure, build
 # Test implementation choices (free to change as needed):
-#   OS: Ubuntu 20.04
-#   Compiler: Clang 11
+#   OS: Ubuntu 24.04
+#   Compiler: Clang 18
 
 gromacs:clang-static-analyzer:configure:
   extends:
@@ -18,9 +18,9 @@ gromacs:clang-static-analyzer:configure:
     - .use-clang:base
   rules:
     - !reference [.rules:merge-requests, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-tsan
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-18-tsan
   variables:
-    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
+    CMAKE: /usr/local/cmake-3.28.0/bin/cmake
     CMAKE_COMPILER_SCRIPT: "-DCMAKE_CXX_COMPILER=/usr/local/libexec/c++-analyzer -DCMAKE_C_COMPILER=gcc"
     CMAKE_EXTRA_OPTIONS: "-DGMX_CLANG_ANALYZER=ON -DGMX_OPENMP=OFF -DGMX_USE_RDTSCP=OFF -DGMX_FFT_LIBRARY=fftpack -DGMX_DEVELOPER_BUILD=ON"
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=None"
@@ -32,11 +32,11 @@ gromacs:clang-static-analyzer:build:
     - .use-ccache
   rules:
     - !reference [.rules:merge-requests, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-tsan
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-18-tsan
   variables:
     # The static-analyzer build is more demanding of CPU
     KUBERNETES_CPU_LIMIT: 8
-    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
+    CMAKE: /usr/local/cmake-3.28.0/bin/cmake
   needs:
     - job: gromacs:clang-static-analyzer:configure
 

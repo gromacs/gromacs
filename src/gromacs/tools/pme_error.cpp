@@ -950,6 +950,9 @@ static void estimate_PME_error(PmeErrorInputs*   info,
                             * self-energy error term */
     int i = 0;
 
+    // Help humans and analyzers understand that the main rank has
+    // a valid pointer
+    GMX_RELEASE_ASSERT((MAIN(cr)) == (fp_out != nullptr), "Inconsistent file pointer");
     if (MAIN(cr))
     {
         fprintf(fp_out, "\n--- PME ERROR ESTIMATE ---\n");
@@ -989,6 +992,9 @@ static void estimate_PME_error(PmeErrorInputs*   info,
         bcast_info(info, cr);
     }
 
+    // Help humans and analyzers understand that the main rank has
+    // a valid pointer
+    GMX_RELEASE_ASSERT((MAIN(cr)) == (fp_out != nullptr), "Inconsistent file pointer");
     if (MAIN(cr))
     {
         fprintf(fp_out, "Direct space error est. : %10.3e kJ/(mol*nm)\n", info->e_dir[0]);
@@ -1228,6 +1234,9 @@ int gmx_pme_error(int argc, char* argv[])
             ir.ewald_rtol = info.ewald_rtol[0];
             write_tpx_state(opt2fn("-so", NFILE, fnm), &ir, &state, mtop);
         }
+    }
+    if (fp)
+    {
         please_cite(fp, "Wang2010");
         fclose(fp);
     }

@@ -317,7 +317,7 @@ void PositionCalculationTest::checkPositions(gmx::test::TestReferenceChecker* ch
 {
     gmx::test::TestReferenceChecker compound(checker->checkCompound("Positions", name));
     compound.checkInteger(p->count(), "Count");
-    const char* type = "???";
+    const char* type;
     switch (p->m.type)
     {
         case INDEX_UNKNOWN: type = "unknown"; break;
@@ -325,6 +325,7 @@ void PositionCalculationTest::checkPositions(gmx::test::TestReferenceChecker* ch
         case INDEX_RES: type = "residues"; break;
         case INDEX_MOL: type = "molecules"; break;
         case INDEX_ALL: type = "single"; break;
+        default: type = "???"; break;
     }
     compound.checkString(type, "Type");
     compound.checkSequenceArray(p->count() + 1, p->m.mapb.index, "Block");

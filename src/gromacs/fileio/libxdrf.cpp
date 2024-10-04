@@ -273,6 +273,8 @@ static void sendints(struct DataBuffer* buffer,
         }
         num_of_bytes = bytecnt;
     }
+    // If the caller specified a sufficiently large bit count,
+    // do what they say.
     if (num_of_bits >= num_of_bytes * CHAR_BIT)
     {
         for (i = 0; i < num_of_bytes; i++)
@@ -283,11 +285,15 @@ static void sendints(struct DataBuffer* buffer,
     }
     else
     {
+        // Otherwise send each byte we found
         for (i = 0; i < num_of_bytes - 1; i++)
         {
             sendbits(buffer, CHAR_BIT, bytes[i]);
         }
-        sendbits(buffer, num_of_bits - (num_of_bytes - 1) * CHAR_BIT, bytes[i]);
+        // Then the remaining bits
+        const int numBitsRemaining = num_of_bits - (num_of_bytes - 1) * CHAR_BIT;
+        GMX_ASSERT(numBitsRemaining < CHAR_BIT, "Help clang analyzer understand");
+        sendbits(buffer, numBitsRemaining, bytes[i]);
     }
 }
 

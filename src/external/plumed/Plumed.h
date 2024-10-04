@@ -4051,11 +4051,14 @@ void plumed_retrieve_functions(plumed_plumedmain_function_holder* functions, plu
   if(path && (*path)) {
     //for the future git diff: this is diverged from the original plumed code, to workaround a warning (the original must be ANSI C compatible)
     int dlopenmode=0;
+    /* possible value of PLUMED_LOAD_NAMESPACE environment variable */
+    char *load_namespace;
     __PLUMED_FPRINTF(stderr,"+++ Loading the PLUMED kernel runtime +++\n");
     __PLUMED_FPRINTF(stderr,"+++ PLUMED_KERNEL=\"%s\" +++\n",path);
     if(debug) __PLUMED_FPRINTF(stderr,"+++ Loading with mode RTLD_NOW");
     dlopenmode=RTLD_NOW;
-    if(__PLUMED_GETENV("PLUMED_LOAD_NAMESPACE") && !__PLUMED_WRAPPER_STD strcmp(__PLUMED_GETENV("PLUMED_LOAD_NAMESPACE"),"GLOBAL")) {
+    load_namespace = __PLUMED_GETENV("PLUMED_LOAD_NAMESPACE");
+    if(load_namespace && !__PLUMED_WRAPPER_STD strcmp(load_namespace,"GLOBAL")) {
       dlopenmode=dlopenmode|RTLD_GLOBAL;
       if(debug) __PLUMED_FPRINTF(stderr,"|RTLD_GLOBAL");
     } else {
@@ -4161,6 +4164,8 @@ plumed plumed_create(void) {
   plumed p;
   /* pointer to implementation */
   plumed_implementation* pimpl;
+  /* possible value of PLUMED_LOAD_DLCLOSE environment variable */
+  char *load_dlclose;
   /* allocate space for implementation object. this is free-ed in plumed_finalize(). */
   pimpl=plumed_malloc_pimpl();
   /* store pointers in pimpl */
@@ -4171,7 +4176,8 @@ plumed plumed_create(void) {
 #endif
   /* note if handle should not be dlclosed */
   pimpl->dlclose=1;
-  if(__PLUMED_GETENV("PLUMED_LOAD_DLCLOSE") && !__PLUMED_WRAPPER_STD strcmp(__PLUMED_GETENV("PLUMED_LOAD_DLCLOSE"),"no")) pimpl->dlclose=0;
+  load_dlclose = __PLUMED_GETENV("PLUMED_LOAD_DLCLOSE");
+  if(load_dlclose && !__PLUMED_WRAPPER_STD strcmp(load_dlclose,"no")) pimpl->dlclose=0;
   /* in case of failure, return */
   /* the resulting object should be plumed_finalized, though you cannot use plumed_cmd */
   if(!pimpl->functions.create) {

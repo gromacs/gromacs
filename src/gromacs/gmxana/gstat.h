@@ -208,14 +208,13 @@ void read_ang_dih(const char*             trj_fn,
  * dih         all angles at each time frame
  */
 
-void make_histo(FILE* log, int ndata, real data[], int npoints, int histo[], real minx, real maxx);
+void make_histo(int ndata, real data[], int npoints, int histo[], real minx, real maxx);
 /*
  * Make a histogram from data. The min and max of the data array can
  * be determined (if minx == 0 and maxx == 0)
  * and the index in the histogram is computed from
  * ind = npoints/(max(data) - min(data))
  *
- * log       write error output to this file
  * ndata     number of points in data
  * data      data points
  * npoints   number of points in histogram

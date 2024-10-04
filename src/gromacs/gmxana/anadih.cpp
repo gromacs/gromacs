@@ -59,6 +59,7 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/unique_cptr.h"
@@ -579,7 +580,7 @@ void get_chi_product_traj(real**                       dih,
 
             /* make a histogram of cumulative rotamer occupancy too */
             snew(chi_prhist, nbin);
-            make_histo(nullptr, nframes, chi_prtrj, nbin, chi_prhist, 0, nbin);
+            make_histo(nframes, chi_prtrj, nbin, chi_prhist, 0, nbin);
             if (bAll)
             {
                 sprintf(hisfile, "histo-chiprod%s.xvg", dihedral.name);
@@ -763,7 +764,7 @@ static void calc_dihs(struct t_pbc* pbc, int n4, const int index[], real ang[], 
     }
 }
 
-void make_histo(FILE* log, int ndata, real data[], int npoints, int histo[], real minx, real maxx)
+void make_histo(int ndata, real data[], int npoints, int histo[], real minx, real maxx)
 {
     double dx;
     int    i, ind;
@@ -776,7 +777,6 @@ void make_histo(FILE* log, int ndata, real data[], int npoints, int histo[], rea
             minx = std::min(minx, data[i]);
             maxx = std::max(maxx, data[i]);
         }
-        fprintf(log, "Min data: %10g  Max data: %10g\n", minx, maxx);
     }
     dx = npoints / (maxx - minx);
     if (debug)
@@ -789,10 +789,6 @@ void make_histo(FILE* log, int ndata, real data[], int npoints, int histo[], rea
         if ((ind >= 0) && (ind < npoints))
         {
             histo[ind]++;
-        }
-        else
-        {
-            fprintf(log, "index = %d, data[%d] = %g\n", ind, i, data[i]);
         }
     }
 }

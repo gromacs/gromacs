@@ -525,6 +525,7 @@ static void plot_density(double*                          slDensity[],
         case 'n': ylabel = "Number density (nm\\S-3\\N)"; break;
         case 'c': ylabel = "Charge density (e nm\\S-3\\N)"; break;
         case 'e': ylabel = "Electron density (e nm\\S-3\\N)"; break;
+        default: GMX_RELEASE_ASSERT(false, "Density option case not handled");
     }
 
     den = xvgropen(afile, title, xlabel, ylabel, oenv);

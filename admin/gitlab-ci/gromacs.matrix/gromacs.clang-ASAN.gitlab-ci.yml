@@ -6,8 +6,8 @@
 #   GPU: no
 #   Scope: configure, build, unit tests, regression tests
 # Test implementation choices (free to change as needed):
-#   OS: Ubuntu 20.04
-#   Compiler: Clang 11
+#   OS: Ubuntu 24.04
+#   Compiler: Clang 18
 #   MPI: thread_MPI
 #   SIMD: AVX2_256
 #   FFT: FFTW3
@@ -19,10 +19,10 @@ gromacs:clang-ASAN:configure:
     - .use-clang:base
   rules:
     - !reference [.rules:merge-requests, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-tsan
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-18-tsan
   variables:
-    CMAKE: /usr/local/cmake-3.21.2/bin/cmake
-    COMPILER_MAJOR_VERSION: 11
+    CMAKE: /usr/local/cmake-3.28.0/bin/cmake
+    COMPILER_MAJOR_VERSION: 18
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=ASAN"
 
 gromacs:clang-ASAN:build:
@@ -32,9 +32,9 @@ gromacs:clang-ASAN:build:
     - .use-ccache
   rules:
     - !reference [.rules:merge-requests, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-tsan
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-18-tsan
   variables:
-    CMAKE: /usr/local/cmake-3.21.2/bin/cmake
+    CMAKE: /usr/local/cmake-3.28.0/bin/cmake
   needs:
     - job: gromacs:clang-ASAN:configure
 
@@ -44,11 +44,11 @@ gromacs:clang-ASAN:test:
     - .use-clang:base
   rules:
     - !reference [.rules:merge-requests, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-tsan
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-18-tsan
   variables:
     # ASAN tests are more demanding of CPU
     KUBERNETES_CPU_LIMIT: 8
-    CMAKE: /usr/local/cmake-3.21.2/bin/cmake
+    CMAKE: /usr/local/cmake-3.28.0/bin/cmake
     CTEST_RUN_MODE: "ExperimentalMemCheck"
     GMX_FORCE_UPDATE_DEFAULT_CPU: 1
   needs:
@@ -65,9 +65,9 @@ gromacs:clang-ASAN:regressiontest:
     - .use-clang:base
   rules:
     - !reference [.rules:merge-requests, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-tsan
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-18-tsan
   variables:
-    CMAKE: /usr/local/cmake-3.21.2/bin/cmake
+    CMAKE: /usr/local/cmake-3.28.0/bin/cmake
   needs:
     - job: gromacs:clang-ASAN:build
     - job: regressiontests:prepare

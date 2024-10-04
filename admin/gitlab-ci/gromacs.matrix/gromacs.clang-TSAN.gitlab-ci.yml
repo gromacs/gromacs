@@ -6,8 +6,8 @@
 #   GPU: None
 #   Scope: configure, build, unit tests, regression tests
 # Test implementation choices (free to change as needed):
-#   OS: Ubuntu 20.04
-#   Compiler: Clang 11
+#   OS: Ubuntu 24.04
+#   Compiler: Clang 18
 #   MPI: thread_MPI
 #   SIMD: AVX2_256
 #   FFT: FFTW3
@@ -19,10 +19,10 @@ gromacs:clang-TSAN:configure:
     - .use-clang:base
   rules:
     - !reference [.rules:merge-and-post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-tsan
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-18-tsan
   variables:
-    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
-    COMPILER_MAJOR_VERSION: 11
+    CMAKE: /usr/local/cmake-3.28.0/bin/cmake
+    COMPILER_MAJOR_VERSION: 18
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=TSAN"
 
 gromacs:clang-TSAN:build:
@@ -32,9 +32,9 @@ gromacs:clang-TSAN:build:
     - .use-ccache
   rules:
     - !reference [.rules:merge-and-post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-tsan
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-18-tsan
   variables:
-    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
+    CMAKE: /usr/local/cmake-3.28.0/bin/cmake
   needs:
     - job: gromacs:clang-TSAN:configure
 
@@ -43,10 +43,12 @@ gromacs:clang-TSAN:test:
     - .gromacs:base:test
   rules:
     - !reference [.rules:post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-tsan
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-18-tsan
   variables:
-    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
+    CMAKE: /usr/local/cmake-3.28.0/bin/cmake
     GMX_FORCE_UPDATE_DEFAULT_CPU: 1
+    # Avoid remaining false positives in OpenMP library, even when instrumented
+    TSAN_OPTIONS: ignore_noninstrumented_modules=1
   needs:
     - job: gromacs:clang-TSAN:build
 
@@ -55,9 +57,11 @@ gromacs:clang-TSAN:regressiontest:
     - .gromacs:base:regressiontest
   rules:
     - !reference [.rules:post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-tsan
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-18-tsan
   variables:
-    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
+    CMAKE: /usr/local/cmake-3.28.0/bin/cmake
+    # Avoid remaining false positives in OpenMP library, even when instrumented
+    TSAN_OPTIONS: ignore_noninstrumented_modules=1
   needs:
     - job: gromacs:clang-TSAN:build
     - job: regressiontests:prepare
