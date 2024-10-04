@@ -52,7 +52,7 @@
 #ifndef GMX_PBCUTIL_PBC_AIUC_CUDA_CUH
 #define GMX_PBCUTIL_PBC_AIUC_CUDA_CUH
 
-#include "gromacs/gpu_utils/vectype_ops.cuh"
+#include "gromacs/gpu_utils/vectype_ops_cuda.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc_aiuc.h"
 

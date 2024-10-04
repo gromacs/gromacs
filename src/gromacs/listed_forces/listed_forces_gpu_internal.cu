@@ -54,7 +54,7 @@
 #include "gromacs/gpu_utils/cuda_arch_utils.cuh"
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/gpu_utils/typecasts_cuda_hip.h"
-#include "gromacs/gpu_utils/vectype_ops.cuh"
+#include "gromacs/gpu_utils/vectype_ops_cuda.h"
 #include "gromacs/listed_forces/listed_forces_gpu.h"
 #include "gromacs/math/units.h"
 #include "gromacs/mdlib/force_flags.h"

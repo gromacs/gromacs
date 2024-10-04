@@ -32,18 +32,13 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 
-#ifndef VECTYPE_OPS_CUH
-#define VECTYPE_OPS_CUH
+#ifndef GMX_GPU_UTILS_VECTYPE_OPS_CUDA_BASE_MATH_H
+#define GMX_GPU_UTILS_VECTYPE_OPS_CUDA_BASE_MATH_H
 
-/**** float3 ****/
-static __forceinline__ __host__ __device__ float3 make_float3(float s)
-{
-    return make_float3(s, s, s);
-}
-static __forceinline__ __host__ __device__ float3 make_float3(float4 a)
-{
-    return make_float3(a.x, a.y, a.z);
-}
+#if !defined(__CUDACC__)
+#    error Including header specific for CUDA device code without compiling the file with the correct compiler
+#endif
+
 static __forceinline__ __host__ __device__ float3 operator-(const float3& a)
 {
     return make_float3(-a.x, -a.y, -a.z);
@@ -85,18 +80,6 @@ static __forceinline__ __host__ __device__ void operator-=(float3& a, float3 b)
     a.y -= b.y;
     a.z -= b.z;
 }
-static __forceinline__ __host__ __device__ float norm(float3 a)
-{
-    return sqrt(a.x * a.x + a.y * a.y + a.z * a.z);
-}
-static __forceinline__ __host__ __device__ float norm2(float3 a)
-{
-    return (a.x * a.x + a.y * a.y + a.z * a.z);
-}
-static __forceinline__ __host__ __device__ float dist3(float3 a, float3 b)
-{
-    return norm(b - a);
-}
 static __forceinline__ __host__ __device__ float3 operator*(float3 a, float3 b)
 {
     return make_float3(a.x * b.x, a.y * b.y, a.z * b.z);
@@ -114,23 +97,6 @@ static __forceinline__ __host__ __device__ void operator*=(float3& a, float b)
     a.x *= b;
     a.y *= b;
     a.z *= b;
-}
-static __forceinline__ __device__ void atomicAdd(float3* addr, float3 val)
-{
-    atomicAdd(&addr->x, val.x);
-    atomicAdd(&addr->y, val.y);
-    atomicAdd(&addr->z, val.z);
-}
-/****************************************************************/
-
-/**** float4 ****/
-static __forceinline__ __host__ __device__ float4 make_float4(float s)
-{
-    return make_float4(s, s, s, s);
-}
-static __forceinline__ __host__ __device__ float4 make_float4(float3 a)
-{
-    return make_float4(a.x, a.y, a.z, 0.0F);
 }
 static __forceinline__ __host__ __device__ float4 operator+(float4 a, float4 b)
 {
@@ -169,117 +135,10 @@ static __forceinline__ __host__ __device__ void operator-=(float4& a, float3 b)
     a.y -= b.y;
     a.z -= b.z;
 }
-
-static __forceinline__ __host__ __device__ float norm(float4 a)
-{
-    return sqrt(a.x * a.x + a.y * a.y + a.z * a.z + a.w * a.w);
-}
-
-static __forceinline__ __host__ __device__ float dist3(float4 a, float4 b)
-{
-    return norm(b - a);
-}
-
-/* \brief Compute the scalar product of two vectors.
- *
- * \param[in] a  First vector.
- * \param[in] b  Second vector.
- * \returns Scalar product.
- */
-static __forceinline__ __device__ float iprod(const float3 a, const float3 b)
-{
-    return a.x * b.x + a.y * b.y + a.z * b.z;
-}
-
-/* \brief Compute the vector product of two vectors.
- *
- * \param[in] a  First vector.
- * \param[in] b  Second vector.
- * \returns Vector product.
- */
-static __forceinline__ __device__ float3 cprod(const float3 a, const float3 b)
-{
-    float3 c;
-    c.x = a.y * b.z - a.z * b.y;
-    c.y = a.z * b.x - a.x * b.z;
-    c.z = a.x * b.y - a.y * b.x;
-    return c;
-}
-
-/* \brief Cosine of an angle between two vectors.
- *
- * Computes cosine using the following formula:
- *
- *                  ax*bx + ay*by + az*bz
- * cos-vec (a,b) =  ---------------------
- *                      ||a|| * ||b||
- *
- * This function also makes sure that the cosine does not leave the [-1, 1]
- * interval, which can happen due to numerical errors.
- *
- * \param[in] a  First vector.
- * \param[in] b  Second vector.
- * \returns Cosine between a and b.
- */
-static __forceinline__ __device__ float cos_angle(const float3 a, const float3 b)
-{
-    float cosval;
-
-    float ipa  = norm2(a);
-    float ipb  = norm2(b);
-    float ip   = iprod(a, b);
-    float ipab = ipa * ipb;
-    if (ipab > 0.0F)
-    {
-        cosval = ip * rsqrt(ipab);
-    }
-    else
-    {
-        cosval = 1.0F;
-    }
-    if (cosval > 1.0F)
-    {
-        return 1.0F;
-    }
-    if (cosval < -1.0F)
-    {
-        return -1.0F;
-    }
-
-    return cosval;
-}
-
-/* \brief Compute the angle between two vectors.
- *
- * Uses atan( |axb| / a.b ) formula.
- *
- * \param[in] a  First vector.
- * \param[in] b  Second vector.
- * \returns Angle between vectors in radians.
- */
-static __forceinline__ __device__ float gmx_angle(const float3 a, const float3 b)
-{
-    float3 w = cprod(a, b);
-
-    float wlen = norm(w);
-    float s    = iprod(a, b);
-
-    return atan2f(wlen, s); // requires float
-}
-
-/* \brief Atomically add components of the vector.
- *
- * Executes atomicAdd one-by-one on all components of the float3 vector.
- *
- * \param[in] a  First vector.
- * \param[in] b  Second vector.
- */
 // NOLINTNEXTLINE(google-runtime-references)
-static __forceinline__ __device__ void atomicAdd(float3& a, const float3 b)
+static __forceinline__ __device__ float gmxDeviceRSqrt(float& input)
 {
-    atomicAdd(&a.x, b.x);
-    atomicAdd(&a.y, b.y);
-    atomicAdd(&a.z, b.z);
+    return rsqrt(input);
 }
 
-#endif /* VECTYPE_OPS_CUH */
+#endif /* GMX_GPU_UTILS_VECTYPE_OPS_CUDA_BASE_MATH_H */
