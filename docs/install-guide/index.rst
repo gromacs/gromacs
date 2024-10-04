@@ -1049,6 +1049,12 @@ You can switch to rocFFT by passing ``-DGMX_GPU_FFT_LIBRARY=rocFFT`` CMake flag.
 Please note that rocFFT is not officially supported and tends not to work
 on most consumer GPUs.
 
+With AdaptiveCpp 23.10 or newer, the performance can be improved by passing
+``-DSYCL_CXX_FLAGS_EXTRA=-DHIPSYCL_ALLOW_INSTANT_SUBMISSION=1`` CMake flag
+when building |Gromacs|, especially for small systems (under 20k atoms),
+for runs with CPU tasks, or when running on multiple GPUs. There are no
+known downsides to using this flag.
+
 AMD GPUs can also be targeted via `Intel oneAPI DPC++`_; please refer to
 :ref:`a separate section <install guide exotic sycl>` for the build instructions.
 
