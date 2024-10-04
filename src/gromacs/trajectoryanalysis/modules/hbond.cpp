@@ -86,6 +86,8 @@
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/real.h"
 
+#include "isotope.h"
+
 namespace gmx
 {
 
@@ -186,33 +188,27 @@ const std::size_t c_maxHydrogensWithNitrogen = 4;
 
 const std::size_t c_maxHydrogenBonds = 2;
 
-enum class DonorType : std::size_t
-{
-    Oxygen = 0,
-    Nitrogen
-};
-
 struct t_donor
 {
-    t_donor(int atomIndex, DonorType donorType) : ai(atomIndex), dt(donorType) {}
+    t_donor(int atomIndex, std::string donorElement) : ai(atomIndex), de(std::move(donorElement)) {}
     // Donor Atom Index
     int ai;
     // Associated Hydrogen Atoms Indices
     std::vector<int> h_atoms;
-    // Donor Atom Type (O/N)
-    DonorType dt;
-    void      addHydrogen(int hi);
+    // Donor Element
+    std::string de;
+    void        addHydrogen(int hi);
 };
 
 void t_donor::addHydrogen(const int hi)
 {
-    if (this->dt == DonorType::Oxygen && h_atoms.size() > c_maxHydrogensWithOxygen)
+    if (this->de == "O" && h_atoms.size() > c_maxHydrogensWithOxygen)
     {
         GMX_THROW(InconsistentInputError("Donor " + std::to_string(this->ai) + " has more than "
                                          + std::to_string(c_maxHydrogensWithOxygen)
                                          + " covalent bonds with hydrogens!"));
     }
-    else if (this->dt == DonorType::Nitrogen && h_atoms.size() > c_maxHydrogensWithNitrogen)
+    else if (this->de == "N" && h_atoms.size() > c_maxHydrogensWithNitrogen)
     {
         GMX_THROW(InconsistentInputError("Donor " + std::to_string(this->ai) + " has more than "
                                          + std::to_string(c_maxHydrogensWithNitrogen)
@@ -228,7 +224,8 @@ struct t_info
 {
     std::vector<t_acceptor> acceptors;
     std::vector<t_donor>    donors;
-    const Selection*        selectionPtr = nullptr;
+    const Selection*        selectionPtr  = nullptr;
+    std::string             selectionType = "Selection";
     std::vector<int>        atomIndices;
 };
 
@@ -245,34 +242,41 @@ public:
 
 private:
     static bool isInSelection(int ai, const std::vector<int>& selection);
+    bool        isValidDonorElement(const std::string& element) const;
+    bool        isValidAcceptorElement(const std::string& element) const;
     /*! \brief Check partial overlapping between two parsed selections
      * and throw an error when groups are overlapping but are not equal. */
-    void               checkOverlap() const;
-    void               searchAcceptors(const TopologyInformation& top,
-                                       t_info*                    selectionTool,
-                                       const std::vector<int>*    selection) const;
-    static void        searchDonors(const TopologyInformation& top,
-                                    t_info*                    selectionTool,
-                                    const std::vector<int>*    selection);
-    static void        linkDA(t_info* selectionTool);
-    void               prepareForAnalysis(const TrajectoryAnalysisSettings& settings);
-    std::vector<HBond> prepareFrameData(const std::vector<HbondStorageFrame>& data) const;
-    std::vector<HBond> prepareFrameData(const std::vector<HBond>& data) const;
-    Selection          refSelection_, targetSelection_;
-    std::string        fnmHbondOut_ = "hbond";
-    std::string        fnmHbnumOut_;
-    std::string        fnmHbdistOut_;
-    std::string        fnmHbangOut_;
-    std::string        fnmHbdanOut_;
-    t_info             refInfo_, targetInfo_;
-    bool               isTwoDiffGroups_  = false;
-    bool               acceptN_          = true;
-    bool               perFrame_         = false;
-    bool               mergeHydrogens_   = false;
-    real               cutoff_           = 0.35;
-    const float        c_rMaxNM_         = 0.35;
-    const float        c_angleMaxDegree_ = 30;
-    HbondStorage       storage_;
+    void                       checkOverlap() const;
+    void                       searchAcceptors(const TopologyInformation& top,
+                                               t_info*                    selectionTool,
+                                               const std::vector<int>*    selection) const;
+    void                       searchDonors(const TopologyInformation& top, t_info* selectionTool, const std::vector<int>* selection);
+    void                       searchDonorsAndAcceptors();
+    static void                linkDA(t_info* selectionTool);
+    void                       prepareForAnalysis(const TrajectoryAnalysisSettings& settings);
+    std::vector<HBond>         prepareFrameData(const std::vector<HbondStorageFrame>& data) const;
+    std::vector<HBond>         prepareFrameData(const std::vector<HBond>& data) const;
+    Selection                  refSelection_, targetSelection_;
+    std::string                fnmHbondOut_ = "hbond";
+    std::string                fnmHbnumOut_;
+    std::string                fnmHbdistOut_;
+    std::string                fnmHbangOut_;
+    std::string                fnmHbdanOut_;
+    std::string                refSelectionType    = "Selection";
+    std::string                targetSelectionType = "Selection";
+    t_info                     refInfo_, targetInfo_;
+    const TopologyInformation* localTopology                    = nullptr;
+    bool                       isTwoDiffGroups_                 = false;
+    bool                       perFrame_                        = false;
+    bool                       mergeHydrogens_                  = false;
+    bool                       staticSelectionRefInitialized    = false;
+    bool                       staticSelectionTargetInitialized = false;
+    real                       nbsearchCutoff_                  = 0.35;
+    real                       hbDistCutoff_                    = 0.35;
+    real                       hbAngleCutoff_                   = 30;
+    std::vector<std::string>   donorElements                    = { "N", "O" };
+    std::vector<std::string>   acceptorElements                 = { "N", "O" };
+    HbondStorage               storage_;
 
     AnalysisData                             hbnum_;
     AnalysisData                             distances_;
@@ -306,21 +310,29 @@ void Hbond::initOptions(IOptionsContainer* options, TrajectoryAnalysisSettings* 
         "throughout the structure.[PAR]"
         "[TT]-r[tt] specifies reference selection, relative to which the search for hydrogen bonds "
         "in target selection will develop. Note that all atoms in reference and target selections "
-        "should be either absolutely identical or non-overlapping at all.[PAR]"
+        "should be either absolutely identical or non-overlapping at all. Accepts dynamic "
+        "selection.[PAR]"
         "[TT]-t[tt] specifies target selection, relative to which the search for hydrogen bonds in "
         "reference selection will develop. Note that all atoms in reference and target selections "
-        "should be either absolutely identical or non-overlapping at all.[PAR]"
+        "should be either absolutely identical or non-overlapping at all. Accepts dynamic "
+        "selection.[PAR]"
         "[TT]-m[tt] forces to merge together information in output index file about hydrogen bonds "
         "if they differ only in hydrogen indices. This also means that information about hydrogen "
         "atoms in the hydrogen bonds would not be written in output index file at all.[PAR]"
         "[TT]-pf[tt] forces to write hydrogen bonds for each frame separately instead of writing "
         "hydrogen bonds for the whole system. Each information about hydrogen bonds in new frame "
         "will be stored in its own section of the output index file.[PAR]"
-        "[TT]-an[tt] forces to accept nitrogen atoms as acceptors of hydrogen bond. If this option "
-        "is set to 'false' state, only oxygen atoms will be considered as acceptors.[PAR]"
         "[TT]-cutoff[tt] is a real value that defines distance from donor to acceptor "
-        "(and vise versa) that used in neighbor search. Minimum (and also recommended) value is "
+        "(and vice versa) that used in neighbor search. Minimum (and also recommended) value is "
         "0.35.[PAR]"
+        "[TT]-hbr[tt] Sets the cutoff that is used when calculating hydrogen bond distances. "
+        "Recommended value: 0.35. [PAR]"
+        "[TT]-hba[tt] Sets the cutoff that is used when calculating hydrogen bond angles. "
+        "Recommended value: 30. [PAR]"
+        "[TT]-de[tt] Specifies the atomic elements that will be selected from the topology to "
+        "check if a given element is a potential hydrogen bond donor. [PAR]"
+        "[TT]-ae[tt] Specifies the atomic elements that will be selected from the topology to "
+        "check if a given element is a potential hydrogen bond acceptor. [PAR]"
         "[TT]-num[tt] allows you to get a plot of the number of hydrogen bonds as a function of "
         "time at the output.[PAR]"
         "[TT]-dist[tt] allows you to get a plot of the distance distribution of all hydrogen bonds "
@@ -333,6 +345,7 @@ void Hbond::initOptions(IOptionsContainer* options, TrajectoryAnalysisSettings* 
         "Note that this is a new implementation of the hbond utility added in",
         "GROMACS 2024. If you need the old one, use [TT]gmx hbond-legacy[tt]."
     };
+
 
     options->addOption(
             FileNameOption("o")
@@ -378,23 +391,42 @@ void Hbond::initOptions(IOptionsContainer* options, TrajectoryAnalysisSettings* 
     options->addOption(
             SelectionOption("t").store(&targetSelection_).required().description("Target selection, relative to which the search for hydrogen bonds in reference selection will develop."));
     options->addOption(
-            BooleanOption("m").store(&mergeHydrogens_).defaultValue(false).description("Merge together information about hydrogen bonds if they differ only in hydrogen indices."));
+            BooleanOption("m").store(&mergeHydrogens_).description("Merge together information about hydrogen bonds if they differ only in hydrogen indices."));
     options->addOption(
-            BooleanOption("pf").store(&perFrame_).defaultValue(false).description("Write hydrogen bonds for each frame separately instead of writing hydrogen bonds for the whole system."));
-    options->addOption(BooleanOption("an").store(&acceptN_).defaultValue(true).description(
-            "Accept nitrogen atoms as acceptors of hydrogen bond."));
-    options
-            ->addOption(RealOption("cutoff").store(&cutoff_).required().defaultValue(0.35).description("Distance from donor to acceptor (and vise versa) that used in neighbor search. Must be >= 0.35."));
+            BooleanOption("pf").store(&perFrame_).description("Write hydrogen bonds for each frame separately instead of writing hydrogen bonds for the whole system."));
+    options->addOption(
+            RealOption("cutoff").store(&nbsearchCutoff_).description("Distance from donor to acceptor (and vice versa) that used in neighbor search (nm). Must be > 0."));
+    options->addOption(
+            RealOption("hbr").store(&hbDistCutoff_).description("Hydrogen bond cutoff distance, between donor and acceptor (nm). The value must not exceed the neighbor search cutoff and must be > 0."));
+    options->addOption(
+            RealOption("hba").store(&hbAngleCutoff_).description("A-D-H hydrogen bond cutoff angle (degrees). Must be > 0."));
+    options->addOption(
+            StringOption("de").storeVector(&donorElements).multiValue().description("Donor elements. Default elements: N, O."));
+    options->addOption(
+            StringOption("ae").storeVector(&acceptorElements).multiValue().description("Acceptor elements. Default elements: N, O."));
     settings->setHelpText(desc);
-
     settings->setFlag(TrajectoryAnalysisSettings::efRequireTop);
 }
 
 void Hbond::optionsFinished(TrajectoryAnalysisSettings* /* settings */)
 {
-    if (cutoff_ < static_cast<real>(0.35))
+    if (nbsearchCutoff_ <= 0)
     {
-        GMX_THROW(InconsistentInputError("Invalid cutoff value. It must be >= 0.35."));
+        GMX_THROW(InconsistentInputError("Invalid cutoff value. It must be > 0."));
+    }
+    if (hbDistCutoff_ <= 0)
+    {
+        GMX_THROW(InconsistentInputError("Invalid hbond distance cutoff value. It must be > 0."));
+    }
+    if (hbAngleCutoff_ <= 0)
+    {
+        GMX_THROW(InconsistentInputError("Invalid hbond angle cutoff value. It must be > 0."));
+    }
+    if (nbsearchCutoff_ < hbDistCutoff_)
+    {
+        GMX_THROW(
+                InconsistentInputError("Hydrogen bond cutoff distance should not exceed neighbor "
+                                       "search cutoff distance."));
     }
 }
 
@@ -403,9 +435,21 @@ bool Hbond::isInSelection(int ai, const std::vector<int>& selection)
     return std::find(selection.begin(), selection.end(), ai) != selection.end();
 }
 
+bool Hbond::isValidDonorElement(const std::string& element) const
+{
+    return std::find(donorElements.begin(), donorElements.end(), element) != donorElements.end();
+}
+
+
+bool Hbond::isValidAcceptorElement(const std::string& element) const
+{
+    return std::find(acceptorElements.begin(), acceptorElements.end(), element) != acceptorElements.end();
+}
+
+
 void Hbond::checkOverlap() const
 {
-    printf("Checking for overlap in atoms between %s (%d atoms) and %s (%d atoms)\n",
+    printf("\nChecking for overlap in atoms between %s (%d atoms) and %s (%d atoms)\n",
            refSelection_.name(),
            refSelection_.atomCount(),
            targetSelection_.name(),
@@ -435,7 +479,7 @@ void Hbond::checkOverlap() const
         }
     }
 
-    GMX_RELEASE_ASSERT(not(isIdentical and isDifferent),
+    GMX_RELEASE_ASSERT(not(isIdentical && isDifferent),
                        (std::string("Partial overlap between groups '") + refSelection_.name()
                         + "' and '" + targetSelection_.name() + "'")
                                .c_str());
@@ -447,9 +491,9 @@ void Hbond::searchAcceptors(const TopologyInformation& top,
 {
     for (auto ai = selection->begin(); ai != selection->end(); ++ai)
     {
-        std::string element         = top.atoms()->atom[static_cast<std::size_t>(*ai)].elem;
-        bool        acceptorElement = (element == "O" || (acceptN_ && element == "N"));
-        if (acceptorElement && isInSelection(*ai, *selection))
+        std::string element                = top.atoms()->atom[static_cast<std::size_t>(*ai)].elem;
+        bool        acceptorElementIsValid = isValidAcceptorElement(element);
+        if (acceptorElementIsValid && isInSelection(*ai, *selection))
         {
             selectionTool->acceptors.emplace_back(*ai);
         }
@@ -461,10 +505,10 @@ void Hbond::searchAcceptors(const TopologyInformation& top,
                   selectionTool->acceptors.end(),
                   [](t_acceptor a1, t_acceptor a2) { return a1.ai < a2.ai; });
     }
-    else
-    {
-        fprintf(stderr, "WARNING: Selection '%s' has no acceptors!\n", selectionTool->selectionPtr->name());
-    }
+    printf("%s '%s' has %lu acceptors",
+           selectionTool->selectionType.c_str(),
+           selectionTool->selectionPtr->name(),
+           selectionTool->acceptors.size());
 }
 
 void Hbond::searchDonors(const TopologyInformation& top, t_info* selectionTool, const std::vector<int>* selection)
@@ -514,7 +558,7 @@ void Hbond::searchDonors(const TopologyInformation& top, t_info* selectionTool, 
                     int         nr2      = interaction->iatoms[i + 2 - j]; // POTENTIAL DONOR
                     std::string element1 = top.atoms()->atom[static_cast<std::size_t>(nr1)].elem;
                     std::string element2 = top.atoms()->atom[static_cast<std::size_t>(nr2)].elem;
-                    if (element1 == "H" && (element2 == "O" || element2 == "N"))
+                    if (element1 == "H" && (isValidDonorElement(element2)))
                     {
                         if (isInSelection(nr1, *selection) && isInSelection(nr2, *selection))
                         {
@@ -538,28 +582,13 @@ void Hbond::searchDonors(const TopologyInformation& top, t_info* selectionTool, 
             if (memoryIndex != pi.first)
             {
                 std::string donorElement = top.atoms()->atom[static_cast<std::size_t>(pi.first)].elem;
-                if (donorElement == "O")
-                {
-                    selectionTool->donors.emplace_back(pi.first, DonorType::Oxygen);
-                }
-                else if (donorElement == "N")
-                {
-                    selectionTool->donors.emplace_back(pi.first, DonorType::Nitrogen);
-                }
-                else
-                {
-                    GMX_THROW(InconsistentInputError("The element " + donorElement + " of the donor "
-                                                     + std::to_string(pi.first) + " is unsupported!"));
-                }
+                selectionTool->donors.emplace_back(pi.first, donorElement);
                 memoryIndex = pi.first;
             }
             selectionTool->donors.back().addHydrogen(pi.second);
         }
     }
-    else
-    {
-        fprintf(stderr, "WARNING: Selection '%s' has no donors!\n", selectionTool->selectionPtr->name());
-    }
+    printf(" and %lu donors.\n", selectionTool->donors.size());
 }
 
 void Hbond::linkDA(t_info* selectionTool)
@@ -590,7 +619,7 @@ void Hbond::linkDA(t_info* selectionTool)
     else
     {
         GMX_THROW(InconsistentInputError(
-                "Selection '" + std::string(selectionTool->selectionPtr->name())
+                selectionTool->selectionType + " " + std::string(selectionTool->selectionPtr->name())
                 + "' has no donors AND has no acceptors! Nothing to be done."));
     }
 }
@@ -663,31 +692,40 @@ void Hbond::prepareForAnalysis(const TrajectoryAnalysisSettings& settings)
     }
 }
 
-void Hbond::initAnalysis(const TrajectoryAnalysisSettings& settings, const TopologyInformation& top)
+
+void Hbond::searchDonorsAndAcceptors()
 {
-    if (!refSelection_.isValid() || !targetSelection_.isValid() || refSelection_.atomCount() == 0
-        || targetSelection_.atomCount() == 0)
+    FILE* fp;
+    if (refSelection_.isDynamic())
     {
-        GMX_THROW(InvalidInputError("Invalid selection(s). Nothing to be done."));
+        refInfo_.atomIndices.clear();
+        refInfo_.acceptors.clear();
+        refInfo_.donors.clear();
+        refInfo_.atomIndices.resize(refSelection_.atomIndices().size());
+        std::copy(refSelection_.atomIndices().begin(),
+                  refSelection_.atomIndices().end(),
+                  refInfo_.atomIndices.begin());
+        if (!refSelection_.hasSortedAtomIndices())
+        {
+            std::sort(refInfo_.atomIndices.begin(), refInfo_.atomIndices.end());
+        }
     }
 
-    refInfo_.atomIndices.resize(refSelection_.atomIndices().size());
-    targetInfo_.atomIndices.resize(targetSelection_.atomIndices().size());
-    std::copy(refSelection_.atomIndices().begin(),
-              refSelection_.atomIndices().end(),
-              refInfo_.atomIndices.begin());
-    std::copy(targetSelection_.atomIndices().begin(),
-              targetSelection_.atomIndices().end(),
-              targetInfo_.atomIndices.begin());
-
-    if (!refSelection_.hasSortedAtomIndices())
+    if (targetSelection_.isDynamic())
     {
-        std::sort(refInfo_.atomIndices.begin(), refInfo_.atomIndices.end());
-    }
+        targetInfo_.atomIndices.clear();
+        targetInfo_.acceptors.clear();
+        targetInfo_.donors.clear();
+        targetInfo_.atomIndices.resize(targetSelection_.atomIndices().size());
 
-    if (!targetSelection_.hasSortedAtomIndices())
-    {
-        std::sort(targetInfo_.atomIndices.begin(), targetInfo_.atomIndices.end());
+        std::copy(targetSelection_.atomIndices().begin(),
+                  targetSelection_.atomIndices().end(),
+                  targetInfo_.atomIndices.begin());
+
+        if (!targetSelection_.hasSortedAtomIndices())
+        {
+            std::sort(targetInfo_.atomIndices.begin(), targetInfo_.atomIndices.end());
+        }
     }
 
     checkOverlap();
@@ -697,16 +735,128 @@ void Hbond::initAnalysis(const TrajectoryAnalysisSettings& settings, const Topol
         isTwoDiffGroups_ = true;
     }
 
+    if (refSelection_.isDynamic() || !staticSelectionRefInitialized)
+    {
+        searchAcceptors(*localTopology, &refInfo_, &(refInfo_.atomIndices));
+        searchDonors(*localTopology, &refInfo_, &(refInfo_.atomIndices));
+        linkDA(&refInfo_);
+    }
+    if (isTwoDiffGroups_ && (targetSelection_.isDynamic() || !staticSelectionTargetInitialized))
+    {
+        searchAcceptors(*localTopology, &targetInfo_, &(targetInfo_.atomIndices));
+        searchDonors(*localTopology, &targetInfo_, &(targetInfo_.atomIndices));
+        linkDA(&targetInfo_);
+    }
+
+    if ((!refSelection_.isDynamic() && !staticSelectionRefInitialized)
+        || (!targetSelection_.isDynamic() && !staticSelectionTargetInitialized && isTwoDiffGroups_))
+    {
+        fp = gmx_ffopen(fnmHbondOut_, "w");
+        gmx_ffclose(fp);
+    }
+
+    if (!refSelection_.isDynamic() && !staticSelectionRefInitialized)
+    {
+        fp = gmx_ffopen(fnmHbondOut_, "a");
+        fprintf(fp, "[ %s ]", refSelection_.name());
+        for (std::size_t i = 0; i < refInfo_.selectionPtr->atomIndices().size(); ++i)
+        {
+            fprintf(fp, "%c %4i", (i % 15 == 0 ? '\n' : ' '), refSelection_.atomIndices()[i] + 1);
+        }
+        fprintf(fp, "\n[ donors_hydrogens_%s ]", refSelection_.name());
+        for (const auto& donor : refInfo_.donors)
+        {
+            fprintf(fp, "\n %4i", donor.ai + 1);
+            for (std::size_t j = 0; j < donor.h_atoms.size(); ++j)
+            {
+                fprintf(fp, " %4i", donor.h_atoms[j] + 1);
+            }
+        }
+        fprintf(fp, "\n[ acceptors_%s ]", refSelection_.name());
+        for (std::size_t i = 0; i < refInfo_.acceptors.size(); ++i)
+        {
+            fprintf(fp, "%c %4i", (i % 15 == 0 ? '\n' : ' '), refInfo_.acceptors[i].ai + 1);
+        }
+        fprintf(fp, "\n");
+        gmx_ffclose(fp);
+        staticSelectionRefInitialized = true;
+    }
+    if (!targetSelection_.isDynamic() && !staticSelectionTargetInitialized && isTwoDiffGroups_)
+    {
+        fp = gmx_ffopen(fnmHbondOut_, "a");
+        fprintf(fp, "[ %s ]", targetSelection_.name());
+        for (std::size_t i = 0; i < targetInfo_.selectionPtr->atomIndices().size(); ++i)
+        {
+            fprintf(fp, "%c %4i", (i % 15 == 0 ? '\n' : ' '), targetSelection_.atomIndices()[i] + 1);
+        }
+        fprintf(fp, "\n[ donors_hydrogens_%s ]", targetSelection_.name());
+        for (const auto& donor : targetInfo_.donors)
+        {
+            fprintf(fp, "\n %4i", donor.ai + 1);
+            for (std::size_t j = 0; j < donor.h_atoms.size(); ++j)
+            {
+                fprintf(fp, " %4i", donor.h_atoms[j] + 1);
+            }
+        }
+        fprintf(fp, "\n[ acceptors_%s ]", targetSelection_.name());
+        for (std::size_t i = 0; i < targetInfo_.acceptors.size(); ++i)
+        {
+            fprintf(fp, "%c %4i", (i % 15 == 0 ? '\n' : ' '), targetInfo_.acceptors[i].ai + 1);
+        }
+        fprintf(fp, "\n");
+        gmx_ffclose(fp);
+        staticSelectionTargetInitialized = true;
+    }
+}
+
+void Hbond::initAnalysis(const TrajectoryAnalysisSettings& settings, const TopologyInformation& top)
+{
+    if (!refSelection_.isValid() || !targetSelection_.isValid())
+    {
+        GMX_THROW(InvalidInputError("Invalid selection(s). Nothing to be done."));
+    }
+
+    localTopology = &top;
+
     refInfo_.selectionPtr    = &refSelection_;
     targetInfo_.selectionPtr = &targetSelection_;
-    searchAcceptors(top, &refInfo_, &(refInfo_.atomIndices));
-    searchDonors(top, &refInfo_, &(refInfo_.atomIndices));
-    linkDA(&refInfo_);
-    if (isTwoDiffGroups_)
+
+    if (!refSelection_.isDynamic())
     {
-        searchAcceptors(top, &targetInfo_, &(targetInfo_.atomIndices));
-        searchDonors(top, &targetInfo_, &(targetInfo_.atomIndices));
-        linkDA(&targetInfo_);
+        refInfo_.atomIndices.resize(refSelection_.atomIndices().size());
+        std::copy(refSelection_.atomIndices().begin(),
+                  refSelection_.atomIndices().end(),
+                  refInfo_.atomIndices.begin());
+        if (!refSelection_.hasSortedAtomIndices())
+        {
+            std::sort(refInfo_.atomIndices.begin(), refInfo_.atomIndices.end());
+        }
+    }
+    else
+    {
+        refInfo_.selectionType = "Dynamic selection";
+    }
+
+    if (!targetSelection_.isDynamic())
+    {
+        targetInfo_.atomIndices.resize(targetSelection_.atomIndices().size());
+        std::copy(targetSelection_.atomIndices().begin(),
+                  targetSelection_.atomIndices().end(),
+                  targetInfo_.atomIndices.begin());
+
+        if (!targetSelection_.hasSortedAtomIndices())
+        {
+            std::sort(targetInfo_.atomIndices.begin(), targetInfo_.atomIndices.end());
+        }
+    }
+    else
+    {
+        targetInfo_.selectionType = "Dynamic selection";
+    }
+
+    if (!refSelection_.isDynamic() && !targetSelection_.isDynamic())
+    {
+        searchDonorsAndAcceptors();
     }
 
     prepareForAnalysis(settings);
@@ -715,6 +865,66 @@ void Hbond::initAnalysis(const TrajectoryAnalysisSettings& settings, const Topol
 
 void Hbond::analyzeFrame(int frnr, const t_trxframe& fr, t_pbc* pbc, TrajectoryAnalysisModuleData* pdata)
 {
+    if (refSelection_.isDynamic() || targetSelection_.isDynamic())
+    {
+        searchDonorsAndAcceptors();
+        FILE* fp;
+        fp = gmx_ffopen(fnmHbondOut_, "a");
+        if (refSelection_.isDynamic())
+        {
+            // Print Selection Indices
+            fprintf(fp, "[ %s_frame_%i ]", refSelection_.name(), frnr);
+            for (std::size_t i = 0; i < refSelection_.atomIndices().size(); ++i)
+            {
+                fprintf(fp, "%c %4i", (i % 15 == 0 ? '\n' : ' '), refSelection_.atomIndices()[i] + 1);
+            }
+            // Print Donors Indices
+            fprintf(fp, "\n[ donors_hydrogens_%s_frame_%i ]", refSelection_.name(), frnr);
+            for (const auto& donor : refInfo_.donors)
+            {
+                fprintf(fp, "\n %4i", donor.ai + 1);
+                for (std::size_t j = 0; j < donor.h_atoms.size(); ++j)
+                {
+                    fprintf(fp, " %4i", donor.h_atoms[j] + 1);
+                }
+            }
+            // Print Acceptors Indices
+            fprintf(fp, "\n[ acceptors_%s_frame_%i ]", refSelection_.name(), frnr);
+            for (std::size_t i = 0; i < refInfo_.acceptors.size(); ++i)
+            {
+                fprintf(fp, "%c %4i", (i % 15 == 0 ? '\n' : ' '), refInfo_.acceptors[i].ai + 1);
+            }
+            fprintf(fp, "\n");
+        }
+        if (targetSelection_.isDynamic() && isTwoDiffGroups_)
+        {
+            // Print Selection Indices
+            fprintf(fp, "[ %s_frame_%i ]", targetSelection_.name(), frnr);
+            for (std::size_t i = 0; i < targetSelection_.atomIndices().size(); ++i)
+            {
+                fprintf(fp, "%c %4i", (i % 15 == 0 ? '\n' : ' '), targetSelection_.atomIndices()[i] + 1);
+            }
+            // Print Donors Indices
+            fprintf(fp, "\n[ donors_hydrogens_%s_frame_%i ]", targetSelection_.name(), frnr);
+            for (const auto& donor : targetInfo_.donors)
+            {
+                fprintf(fp, "\n %4i", donor.ai + 1);
+                for (std::size_t j = 0; j < donor.h_atoms.size(); ++j)
+                {
+                    fprintf(fp, " %4i", donor.h_atoms[j] + 1);
+                }
+            }
+            // Print Acceptors Indices
+            fprintf(fp, "\n[ acceptors_%s_frame_%i ]", targetSelection_.name(), frnr);
+            for (std::size_t i = 0; i < targetInfo_.acceptors.size(); ++i)
+            {
+                fprintf(fp, "%c %4i", (i % 15 == 0 ? '\n' : ' '), targetInfo_.acceptors[i].ai + 1);
+            }
+            fprintf(fp, "\n");
+        }
+        gmx_ffclose(fp);
+    }
+
     AnalysisDataHandle              dhHbnum       = pdata->dataHandle(hbnum_);
     AnalysisDataHandle              dhDist        = pdata->dataHandle(distances_);
     AnalysisDataHandle              dhAng         = pdata->dataHandle(angles_);
@@ -745,7 +955,7 @@ void Hbond::analyzeFrame(int frnr, const t_trxframe& fr, t_pbc* pbc, TrajectoryA
 
     std::vector<HBond>   daMap;
     AnalysisNeighborhood nb;
-    nb.setCutoff(cutoff_);
+    nb.setCutoff(nbsearchCutoff_);
     const t_info* infoTool1 = &refInfo_;
     const t_info* infoTool2;
     if (isTwoDiffGroups_)
@@ -781,7 +991,7 @@ void Hbond::analyzeFrame(int frnr, const t_trxframe& fr, t_pbc* pbc, TrajectoryA
             t_donor    donor    = infoTool2->donors[pair.testIndex()];
             gmx::RVec  vectorDA = { 0, 0, 0 };
             pbc_dx(pbc, fr.x[acceptor.ai], fr.x[donor.ai], vectorDA.as_vec());
-            if (vectorDA.norm() > c_rMaxNM_)
+            if (vectorDA.norm() > hbDistCutoff_)
             {
                 continue;
             }
@@ -793,7 +1003,7 @@ void Hbond::analyzeFrame(int frnr, const t_trxframe& fr, t_pbc* pbc, TrajectoryA
                     float     degree   = 0;
                     pbc_dx(pbc, fr.x[hIndex], fr.x[donor.ai], vectorDH.as_vec());
                     degree = gmx_angle(vectorDA, vectorDH) * gmx::c_rad2Deg;
-                    if (degree <= c_angleMaxDegree_)
+                    if (degree <= hbAngleCutoff_)
                     {
                         if (!isTwoDiffGroups_ && (acceptor.isAlsoDonor && acceptor.ai < donor.ai)
                             && mergeHydrogens_)
@@ -963,38 +1173,8 @@ void Hbond::writeOutput()
 {
     std::vector<HbondStorageFrame> dataOut;
     FILE*                          fp;
-    fp      = gmx_ffopen(fnmHbondOut_, "w");
+    fp      = gmx_ffopen(fnmHbondOut_, "a");
     dataOut = storage_.getData();
-    for (const auto& selGroup : { refInfo_, targetInfo_ })
-    {
-        // Print Selection Indices
-        fprintf(fp, "[ %s ]", selGroup.selectionPtr->name());
-        for (std::size_t i = 0; i < selGroup.selectionPtr->atomIndices().size(); ++i)
-        {
-            fprintf(fp, "%c %4i", (i % 15 == 0 ? '\n' : ' '), selGroup.selectionPtr->atomIndices()[i] + 1);
-        }
-        // Print Donors Indices
-        fprintf(fp, "\n[ donors_hydrogens_%s ]", selGroup.selectionPtr->name());
-        for (const auto& donor : selGroup.donors)
-        {
-            fprintf(fp, "\n %4i", donor.ai + 1);
-            for (std::size_t j = 0; j < donor.h_atoms.size(); ++j)
-            {
-                fprintf(fp, " %4i", donor.h_atoms[j] + 1);
-            }
-        }
-        // Print Acceptors Indices
-        fprintf(fp, "\n[ acceptors_%s ]", selGroup.selectionPtr->name());
-        for (std::size_t i = 0; i < selGroup.acceptors.size(); ++i)
-        {
-            fprintf(fp, "%c %4i", (i % 15 == 0 ? '\n' : ' '), selGroup.acceptors[i].ai + 1);
-        }
-        fprintf(fp, "\n");
-        if (!isTwoDiffGroups_)
-        {
-            break;
-        }
-    }
     // Print Hbond Indices
     std::string selects;
     if (isTwoDiffGroups_)

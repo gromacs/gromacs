@@ -68,7 +68,8 @@ namespace test
  * Tests for gmx::analysismodules::Hbond.
  */
 
-using HbondTestParamsMerge = std::tuple<std::string, std::tuple<std::string, std::string>, std::string>;
+using HbondTestParamsMerge =
+        std::tuple<std::string, std::tuple<std::string, std::string>, std::string, float, float, std::string, std::string>;
 
 //! Test fixture for the hbond analysis module.
 class HbondModuleTest :
@@ -83,60 +84,91 @@ class HbondModuleTest :
 // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
 TEST_P(HbondModuleTest, Works)
 {
-    std::tuple<std::string, std::tuple<std::string, std::string>, std::string> params = GetParam();
-    const char* const cmdline[]     = { "hbond2" };
-    std::string       inputBasename = std::get<0>(params);
-    CommandLine       command(cmdline);
-    double            tolerance = 1e-2;
-    test::XvgMatch    matcher;
-    test::XvgMatch&   toleranceMatch =
+    std::tuple<std::string, std::tuple<std::string, std::string>, std::string, float, float, std::string, std::string> params =
+            GetParam();
+    const char* const     cmdline[]     = { "hbond" };
+    const std::string     inputBasename = std::get<0>(params);
+    CommandLine           command(cmdline);
+    const double          tolerance = 1e-2;
+    test::XvgMatch        matcher;
+    const test::XvgMatch& toleranceMatch =
             matcher.tolerance(gmx::test::relativeToleranceAsFloatingPoint(1, tolerance));
     setTrajectory((inputBasename + ".xtc").c_str());
     setTopology((inputBasename + ".tpr").c_str());
-    std::string mergeCommand = "-" + std::get<2>(params);
-    setOutputFile("-o",
-                  formatString("%s-r%s-t%s%s.ndx",
-                               inputBasename.c_str(),
-                               std::get<0>(std::get<1>(params)).c_str(),
-                               std::get<1>(std::get<1>(params)).c_str(),
-                               mergeCommand.c_str())
-                          .c_str(),
-                  ExactTextMatch());
     command.addOption("-r", std::get<0>(std::get<1>(params)));
     command.addOption("-t", std::get<1>(std::get<1>(params)));
-    setOutputFile("-num",
-                  formatString("%s-r%s-t%s%s-num.xvg",
+    const std::string mergeCommand = "-" + std::get<2>(params);
+    command.addOption(mergeCommand.c_str());
+    command.addOption("-hbr", std::get<3>(params));
+    command.addOption("-hba", std::get<4>(params));
+    if (!std::get<5>(params).empty())
+    {
+        command.addOption("-de", std::get<5>(params));
+    }
+    if (!std::get<6>(params).empty())
+    {
+        command.addOption("-ae", std::get<6>(params));
+    }
+    setOutputFile("-o",
+                  formatString("%s-r%s-t%s%s-hbr%f-hba%f-de%s-ae%s.ndx",
                                inputBasename.c_str(),
                                std::get<0>(std::get<1>(params)).c_str(),
                                std::get<1>(std::get<1>(params)).c_str(),
-                               mergeCommand.c_str())
+                               mergeCommand.c_str(),
+                               std::get<3>(params),
+                               std::get<4>(params),
+                               std::get<5>(params).c_str(),
+                               std::get<6>(params).c_str())
+                          .c_str(),
+                  ExactTextMatch());
+    setOutputFile("-num",
+                  formatString("%s-r%s-t%s%s-hbr%f-hba%f-de%s-ae%s-num.xvg",
+                               inputBasename.c_str(),
+                               std::get<0>(std::get<1>(params)).c_str(),
+                               std::get<1>(std::get<1>(params)).c_str(),
+                               mergeCommand.c_str(),
+                               std::get<3>(params),
+                               std::get<4>(params),
+                               std::get<5>(params).c_str(),
+                               std::get<6>(params).c_str())
                           .c_str(),
                   test::XvgMatch());
     setOutputFile("-dist",
-                  formatString("%s-r%s-t%s%s-dist.xvg",
+                  formatString("%s-r%s-t%s%s-hbr%f-hba%f-de%s-ae%s-dist.xvg",
                                inputBasename.c_str(),
                                std::get<0>(std::get<1>(params)).c_str(),
                                std::get<1>(std::get<1>(params)).c_str(),
-                               mergeCommand.c_str())
+                               mergeCommand.c_str(),
+                               std::get<3>(params),
+                               std::get<4>(params),
+                               std::get<5>(params).c_str(),
+                               std::get<6>(params).c_str())
                           .c_str(),
                   toleranceMatch);
     setOutputFile("-ang",
-                  formatString("%s-r%s-t%s%s-ang.xvg",
+                  formatString("%s-r%s-t%s%s-hbr%f-hba%f-de%s-ae%s-ang.xvg",
                                inputBasename.c_str(),
                                std::get<0>(std::get<1>(params)).c_str(),
                                std::get<1>(std::get<1>(params)).c_str(),
-                               mergeCommand.c_str())
+                               mergeCommand.c_str(),
+                               std::get<3>(params),
+                               std::get<4>(params),
+                               std::get<5>(params).c_str(),
+                               std::get<6>(params).c_str())
                           .c_str(),
                   toleranceMatch);
     setOutputFile("-dan",
-                  formatString("%s-r%s-t%s%s-dan.xvg",
+                  formatString("%s-r%s-t%s%s-hbr%f-hba%f-de%s-ae%s-dan.xvg",
                                inputBasename.c_str(),
                                std::get<0>(std::get<1>(params)).c_str(),
                                std::get<1>(std::get<1>(params)).c_str(),
-                               mergeCommand.c_str())
+                               mergeCommand.c_str(),
+                               std::get<3>(params),
+                               std::get<4>(params),
+                               std::get<5>(params).c_str(),
+                               std::get<6>(params).c_str())
                           .c_str(),
                   test::XvgMatch());
-    command.addOption(mergeCommand.c_str());
     setDatasetTolerance("hbdist", gmx::test::relativeToleranceAsFloatingPoint(1, tolerance));
     setDatasetTolerance("histogram_dist", gmx::test::relativeToleranceAsFloatingPoint(1, tolerance));
     setDatasetTolerance("hbang", gmx::test::relativeToleranceAsFloatingPoint(1, tolerance));
@@ -150,7 +182,11 @@ INSTANTIATE_TEST_SUITE_P(HBondTests,
                                             ::testing::Values(std::make_tuple("Protein", "Protein"),
                                                               std::make_tuple("Protein", "Water"),
                                                               std::make_tuple("Water", "Water")),
-                                            ::testing::Values("nom", "m")));
+                                            ::testing::Values("nom", "m"),
+                                            ::testing::Values(0.35, 0.125),
+                                            ::testing::Values(30, 15),
+                                            ::testing::Values("", "O"),
+                                            ::testing::Values("", "O")));
 
 
 } // namespace test

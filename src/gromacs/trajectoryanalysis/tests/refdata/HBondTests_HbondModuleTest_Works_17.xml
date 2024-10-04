@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="CommandLine">hbond -r Protein -t Protein -nom -hbr 0.35 -hba 30</String>
+  <String Name="CommandLine">hbond -r Protein -t Protein -m -hbr 0.35 -hba 30 -ae O</String>
   <OutputData Name="Data">
     <AnalysisData Name="hbang">
       <DataFrame Name="Frame0">
@@ -1944,28 +1944,26 @@
   293  294
   300  301
 [ acceptors_Protein ]
-    1    11    12    16    17    35    36    49    56    57    75    76    87    88    92
-   93   103   116   117   135   136   152   157   158   166   167   169   170   176   177
-  183   184   197   198   205   208   209   216   219   220   226   227   240   243   246
-  250   251   264   265   278   279   292   293   300   303   304
+   11    16    35    49    56    75    87    92   116   135   157   166   167   169   176
+  183   197   205   208   216   219   226   250   264   278   292   300   303   304
 [ hbonds_Protein ]
-     12     14    303
-     36     37     11
-     57     58     16
-     76     77     87
-     93     94     35
-    103    104    250
-    117    118     56
-    136    137     75
-    158    159     92
-    170    171    135
-    177    178    116
-    198    199    176
-    209    210    183
-    216    217    167
-    216    217    169
-    240    241    167
-    246    247    167
+     12    303
+     36     11
+     57     16
+     76     87
+     93     35
+    103    250
+    117     56
+    136     75
+    158     92
+    170    135
+    177    116
+    198    176
+    209    183
+    216    167
+    216    169
+    240    167
+    246    167
 ]]></String>
     </File>
     <File Name="-num">
