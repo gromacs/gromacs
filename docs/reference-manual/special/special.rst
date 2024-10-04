@@ -27,5 +27,6 @@ the use of |Gromacs| for specific scientific problems.
    density-guided-simulation
    colvars
    plumed
+   nnpot
 
 

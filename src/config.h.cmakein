@@ -485,6 +485,9 @@
 /* Define if we are building with Colvars */
 #cmakedefine01 GMX_HAVE_COLVARS
 
+/* Define if we are building with Torch */
+#cmakedefine01 GMX_TORCH
+
 /* Build using clang analyzer */
 #cmakedefine01 GMX_CLANG_ANALYZER
 

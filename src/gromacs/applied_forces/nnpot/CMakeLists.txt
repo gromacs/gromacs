@@ -33,19 +33,16 @@
 
 include(CheckLinkerFlag)
 
-# !!! to be un-commented in upcoming MR
-# gmx_add_libgromacs_sources(
-#     nnpotoptions.cpp
-#     nnpot.cpp
-#     nnpottopologypreprocessor.cpp
-# )
+gmx_add_libgromacs_sources(
+    nnpotoptions.cpp
+    nnpot.cpp
+)
 
 if (GMX_TORCH)
-    # !!! to be un-commented in upcoming MR
-    # gmx_add_libgromacs_sources(
-    #     nnpotforceprovider.cpp
-    #     torchmodel.cpp
-    # )
+    gmx_add_libgromacs_sources(
+        nnpotforceprovider.cpp
+        torchmodel.cpp
+    )
     
     # find torch and python to explicitly link against: required for some torch extensions
     find_package(Python REQUIRED COMPONENTS Interpreter Development)
@@ -79,10 +76,9 @@ if (GMX_TORCH)
 
     endif()
 else()
-    # !!! to be un-commented in upcoming MR
-    # gmx_add_libgromacs_sources(
-    #     nnpotforceprovider_stub.cpp
-    # )
+    gmx_add_libgromacs_sources(
+        nnpotforceprovider_stub.cpp
+    )
 endif()
 
 if (BUILD_TESTING)

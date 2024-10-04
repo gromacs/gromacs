@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="Mdp output">
+; Neural Network potential
+nnpot-active             = true
+nnpot-modelfile          = model.pt
+nnpot-provides_forces    = false
+nnpot-input_group        = System
+nnpot-model_input1       = 
+nnpot-model_input2       = 
+nnpot-model_input3       = 
+nnpot-model_input4       = 
+</String>
+</ReferenceData>

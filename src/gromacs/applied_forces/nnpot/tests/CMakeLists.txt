@@ -31,4 +31,11 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out https://www.gromacs.org.
 
-# stub to be populated in upcoming MRs
+gmx_add_unit_test(NNPotAppliedForcesUnitTest nnpot_applied_forces-test
+    CPP_SOURCE_FILES
+        nnpot.cpp
+        nnpotforceprovider.cpp
+        nnpotoptions.cpp
+)
+
+target_link_libraries(nnpot_applied_forces-test PRIVATE applied_forces math topology)

@@ -24,3 +24,14 @@ can now be specified using both atom types and residue types, which enables
 support for recent Amber force fields (ff19SB and later versions).
 
 :issue:`4430`
+
+Neural Network Potential support
+""""""""""""""""""""""""""""""""
+Basic support has been added to perform simulations with Neural Network Potentials (NNPs).
+These models can be trained to reproduce forces and energies at *ab initio* levels of accuracy,
+based on training data from electronic structure calculations with e.g. DFT or CCSD(T).
+Importantly, |Gromacs| does *not* include any pretrained models, so users need to train their own
+models or load pre-trained models from external sources. 
+As of now, the interface supports NNP models trained in `PyTorch <https://pytorch.org/>`_.
+For details on usage and building |Gromacs| with LibTorch support, please see
+the :ref:`NNPot section in the reference manual <nnpot>`.

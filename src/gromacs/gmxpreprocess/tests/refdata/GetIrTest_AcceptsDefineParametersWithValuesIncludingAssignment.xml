@@ -317,5 +317,8 @@ qmmm-cp2k-active         = false
 
 ; Colvars bias
 colvars-active           = false
+
+; Neural Network potential
+nnpot-active             = false
 </String>
 </ReferenceData>

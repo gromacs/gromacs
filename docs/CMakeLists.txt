@@ -223,6 +223,7 @@ if (SPHINX_FOUND)
         reference-manual/special/density-guided-simulation.rst
         reference-manual/special/colvars.rst
         reference-manual/special/plumed.rst
+        reference-manual/special/nnpot.rst
         # Analysis chapter
         reference-manual/analysis/analysis.rst
         reference-manual/analysis/using-groups.rst
