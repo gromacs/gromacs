@@ -41,7 +41,6 @@
 #include "gromacs/gpu_utils/device_utils_hip_sycl.h"
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/gmxsycl.h"
-#include "gromacs/gpu_utils/packed_float.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/nbnxm/nbnxm_enums.h"
