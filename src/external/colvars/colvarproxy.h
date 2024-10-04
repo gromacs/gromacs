@@ -13,6 +13,7 @@
 #include "colvarmodule.h"
 #include "colvartypes.h"
 #include "colvarproxy_io.h"
+#include "colvarproxy_replicas.h"
 #include "colvarproxy_system.h"
 #include "colvarproxy_tcl.h"
 #include "colvarproxy_volmaps.h"
@@ -509,38 +510,6 @@ protected:
 
   /// Lock state for OpenMP
   omp_lock_t *omp_lock_state;
-};
-
-
-/// \brief Methods for multiple-replica communication
-class colvarproxy_replicas {
-
-public:
-
-  /// Constructor
-  colvarproxy_replicas();
-
-  /// Destructor
-  virtual ~colvarproxy_replicas();
-
-  /// \brief Indicate if multi-replica support is available and active
-  virtual int replica_enabled();
-
-  /// \brief Index of this replica
-  virtual int replica_index();
-
-  /// \brief Total number of replicas
-  virtual int num_replicas();
-
-  /// \brief Synchronize replica with others
-  virtual void replica_comm_barrier();
-
-  /// \brief Receive data from other replica
-  virtual int replica_comm_recv(char* msg_data, int buf_len, int src_rep);
-
-  /// \brief Send data to other replica
-  virtual int replica_comm_send(char* msg_data, int msg_len, int dest_rep);
-
 };
 
 

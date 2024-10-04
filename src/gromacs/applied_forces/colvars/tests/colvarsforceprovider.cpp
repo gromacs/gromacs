@@ -58,6 +58,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/forcerec.h"
+#include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
@@ -202,6 +203,7 @@ TEST_F(ColvarsForceProviderTest, CanConstructOrNot)
                                                        seed_,
                                                        &atomSetManager_,
                                                        &cr_,
+                                                       nullptr,
                                                        simulationTimeStep_,
                                                        atomCoords_,
                                                        prefixOutput_,
@@ -227,6 +229,7 @@ TEST_F(ColvarsForceProviderTest, SimpleInputs)
                                        seed_,
                                        &atomSetManager_,
                                        &cr_,
+                                       nullptr,
                                        simulationTimeStep_,
                                        atomCoords_,
                                        prefixOutput_,
@@ -289,6 +292,7 @@ TEST_F(ColvarsForceProviderTest, WrongColvarsInput)
                                                         seed_,
                                                         &atomSetManager_,
                                                         &cr_,
+                                                        nullptr,
                                                         simulationTimeStep_,
                                                         atomCoords_,
                                                         prefixOutput_,
@@ -328,6 +332,7 @@ TEST_F(ColvarsForceProviderTest, CalculateForces4water)
                                        seed_,
                                        &atomSetManager_,
                                        &cr_,
+                                       nullptr,
                                        simulationTimeStep_,
                                        atomCoords_,
                                        prefixOutput_,
@@ -372,6 +377,7 @@ TEST_F(ColvarsForceProviderTest, CalculateForcesAlanine)
                                        seed_,
                                        &atomSetManager_,
                                        &cr_,
+                                       nullptr,
                                        simulationTimeStep_,
                                        atomCoords_,
                                        prefixOutput_,

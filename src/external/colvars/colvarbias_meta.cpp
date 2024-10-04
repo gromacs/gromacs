@@ -209,7 +209,7 @@ int colvarbias_meta::init_replicas_params(std::string const &conf)
 
     get_keyval(conf, "replicaID", replica_id, replica_id);
     if (!replica_id.size()) {
-      if (proxy->replica_enabled() == COLVARS_OK) {
+      if (proxy->check_replicas_enabled() == COLVARS_OK) {
         // Obtain replicaID from the communicator
         replica_id = cvm::to_str(proxy->replica_index());
         cvm::log("Setting replicaID from communication layer: replicaID = "+

@@ -48,6 +48,11 @@ else()
         )
 endif()
 
+if(GMX_LIB_MPI)
+    # THis target does not link the library directly, must add the flag again
+    target_compile_definitions(colvars_applied_forces-test PRIVATE -DCOLVARS_MPI)
+endif()
+
 target_link_libraries(colvars_applied_forces-test PRIVATE applied_forces math topology mdlib
     mdtypes)
 

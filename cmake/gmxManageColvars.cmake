@@ -40,10 +40,14 @@ mark_as_advanced(GMX_USE_COLVARS)
 
 function(gmx_manage_colvars)
     if(GMX_USE_COLVARS STREQUAL "INTERNAL")
+
         # Create an object library for the colvars sources
         set(COLVARS_DIR "${CMAKE_SOURCE_DIR}/src/external/colvars")
         file(GLOB COLVARS_SOURCES ${COLVARS_DIR}/*.cpp)
         add_library(colvars_objlib OBJECT ${COLVARS_SOURCES})
+        if(GMX_LIB_MPI)
+          target_compile_definitions(colvars_objlib PRIVATE -DCOLVARS_MPI)
+        endif()
         # Set correctly the value of __cplusplus, which MSVC doesn't do by default
         target_compile_options(colvars_objlib PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/Zc:__cplusplus>)
         # Ensure that colvars_objlib can be used in both STATIC and SHARED libraries.
@@ -53,6 +57,9 @@ function(gmx_manage_colvars)
         add_library(colvars INTERFACE)
         target_sources(colvars INTERFACE $<TARGET_OBJECTS:colvars_objlib>)
         target_include_directories(colvars SYSTEM INTERFACE $<BUILD_INTERFACE:${COLVARS_DIR}>)
+        if(GMX_LIB_MPI)
+          target_compile_definitions(colvars INTERFACE -DCOLVARS_MPI)
+        endif()
 
         if(GMX_OPENMP)
             target_compile_options(colvars_objlib PRIVATE ${OpenMP_CXX_FLAGS})

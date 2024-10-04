@@ -99,7 +99,7 @@ int colvarbias_abf::init(std::string const &conf)
   get_keyval(conf, "shared", shared_on, false);
   if (shared_on) {
     cvm::main()->cite_feature("Multiple-walker ABF implementation");
-    if ((proxy->replica_enabled() != COLVARS_OK) ||
+    if ((proxy->check_replicas_enabled() != COLVARS_OK) ||
         (proxy->num_replicas() <= 1)) {
       return cvm::error("Error: shared ABF requires more than one replica.",
                         COLVARS_INPUT_ERROR);
@@ -513,7 +513,7 @@ int colvarbias_abf::replica_share() {
 
   colvarproxy *proxy = cvm::main()->proxy;
 
-  if (proxy->replica_enabled() != COLVARS_OK) {
+  if (proxy->check_replicas_enabled() != COLVARS_OK) {
     cvm::error("Error: shared ABF: No replicas.\n");
     return COLVARS_ERROR;
   }
