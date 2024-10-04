@@ -958,19 +958,15 @@ static void read_posres(gmx_mtop_t*                              mtop,
                         const char*                              fn,
                         RefCoordScaling                          rc_scaling,
                         PbcType                                  pbcType,
-                        rvec                                     com,
-                        WarningHandler*                          wi,
-                        const gmx::MDLogger&                     logger)
+                        WarningHandler*                          wi)
 {
     gmx_bool*   hadAtom;
     rvec *      x, *v;
     dvec        sum;
-    double      totmass;
     t_topology* top;
     matrix      box, invbox;
     int         natoms, npbcdim = 0;
     int         a, nat_molb;
-    t_atom*     atom;
 
     snew(top, 1);
     read_tps_conf(fn, top, nullptr, &x, &v, box, FALSE);
@@ -992,7 +988,6 @@ static void read_posres(gmx_mtop_t*                              mtop,
 
     npbcdim = numPbcDimensions(pbcType);
     GMX_RELEASE_ASSERT(npbcdim <= DIM, "Invalid npbcdim");
-    clear_rvec(com);
     if (rc_scaling != RefCoordScaling::No)
     {
         copy_mat(box, invbox);
@@ -1006,8 +1001,7 @@ static void read_posres(gmx_mtop_t*                              mtop,
 
     /* Copy the reference coordinates to mtop */
     clear_dvec(sum);
-    totmass = 0;
-    a       = 0;
+    a = 0;
     snew(hadAtom, natoms);
     for (gmx_molblock_t& molb : mtop->molblock)
     {
@@ -1016,7 +1010,6 @@ static void read_posres(gmx_mtop_t*                              mtop,
         const InteractionsOfType* prfb = &(molinfo[molb.type].interactions[F_FBPOSRES]);
         if (pr->size() > 0 || prfb->size() > 0)
         {
-            atom = mtop->moltype[molb.type].atoms.atom;
             for (const auto& restraint : pr->interactionTypes)
             {
                 int ai = restraint.ai();
@@ -1031,15 +1024,6 @@ static void read_posres(gmx_mtop_t*                              mtop,
                               natoms);
                 }
                 hadAtom[ai] = TRUE;
-                if (rc_scaling == RefCoordScaling::Com)
-                {
-                    /* Determine the center of mass of the posres reference coordinates */
-                    for (int j = 0; j < npbcdim; j++)
-                    {
-                        sum[j] += atom[ai].m * x[a + ai][j];
-                    }
-                    totmass += atom[ai].m;
-                }
             }
             /* Same for flat-bottomed posres, but do not count an atom twice for COM */
             for (const auto& restraint : prfb->interactionTypes)
@@ -1054,15 +1038,6 @@ static void read_posres(gmx_mtop_t*                              mtop,
                               *molinfo[molb.type].name,
                               fn,
                               natoms);
-                }
-                if (rc_scaling == RefCoordScaling::Com && !hadAtom[ai])
-                {
-                    /* Determine the center of mass of the posres reference coordinates */
-                    for (int j = 0; j < npbcdim; j++)
-                    {
-                        sum[j] += atom[ai].m * x[a + ai][j];
-                    }
-                    totmass += atom[ai].m;
                 }
             }
             if (!bTopB)
@@ -1084,26 +1059,8 @@ static void read_posres(gmx_mtop_t*                              mtop,
         }
         a += nat_molb;
     }
-    if (rc_scaling == RefCoordScaling::Com)
-    {
-        if (totmass == 0)
-        {
-            gmx_fatal(FARGS, "The total mass of the position restraint atoms is 0");
-        }
-        for (int j = 0; j < npbcdim; j++)
-        {
-            com[j] = sum[j] / totmass;
-        }
-        GMX_LOG(logger.info)
-                .asParagraph()
-                .appendTextFormatted(
-                        "The center of mass of the position restraint coord's is %6.3f %6.3f %6.3f",
-                        com[XX],
-                        com[YY],
-                        com[ZZ]);
-    }
 
-    if (rc_scaling != RefCoordScaling::No)
+    if (rc_scaling == RefCoordScaling::All)
     {
         GMX_ASSERT(npbcdim <= DIM, "Only DIM dimensions can have PBC");
 
@@ -1117,34 +1074,13 @@ static void read_posres(gmx_mtop_t*                              mtop,
                 {
                     for (int j = 0; j < npbcdim; j++)
                     {
-                        if (rc_scaling == RefCoordScaling::All)
+                        /* Convert from Cartesian to crystal coordinates */
+                        xp[i][j] *= invbox[j][j];
+                        for (int k = j + 1; k < npbcdim; k++)
                         {
-                            /* Convert from Cartesian to crystal coordinates */
-                            xp[i][j] *= invbox[j][j];
-                            for (int k = j + 1; k < npbcdim; k++)
-                            {
-                                xp[i][j] += invbox[k][j] * xp[i][k];
-                            }
-                        }
-                        else if (rc_scaling == RefCoordScaling::Com)
-                        {
-                            /* Subtract the center of mass */
-                            xp[i][j] -= com[j];
+                            xp[i][j] += invbox[k][j] * xp[i][k];
                         }
                     }
-                }
-            }
-        }
-
-        if (rc_scaling == RefCoordScaling::Com)
-        {
-            /* Convert the COM from Cartesian to crystal coordinates */
-            for (int j = 0; j < npbcdim; j++)
-            {
-                com[j] *= invbox[j][j];
-                for (int k = j + 1; k < npbcdim; k++)
-                {
-                    com[j] += invbox[k][j] * com[k];
                 }
             }
         }
@@ -1155,22 +1091,138 @@ static void read_posres(gmx_mtop_t*                              mtop,
     sfree(hadAtom);
 }
 
+//! Struct containing the quantities calculated by sumComForRestraints
+struct ComSumContents
+{
+    //! Number of restrained atoms
+    size_t numAtoms = 0;
+    //! Sum of position*mass of all restrained atoms
+    gmx::DVec sumCoordinateMasses = { 0.0, 0.0, 0.0 };
+    //! Sum of the mass of all restrained mass atoms
+    double sumMass = 0.0;
+};
+
+//! Sum mass and mass*position of restrained atoms
+static ComSumContents sumComForRestraints(gmx::ArrayRef<const gmx::RVec> positionRestraintCoordinates,
+                                          const MoleculeBlockIndices&    inds,
+                                          const t_atoms&                 atoms)
+{
+    ComSumContents comSumContentsMblock;
+
+    //! TODO: revert this part to the single-COM case
+    for (size_t i = 0; i < positionRestraintCoordinates.size(); ++i)
+    {
+        const auto atom_mol_index = i % inds.numAtomsPerMolecule;
+        const auto mass           = static_cast<double>(atoms.atom[atom_mol_index].m);
+        const auto x              = positionRestraintCoordinates.at(i).toDVec();
+
+        comSumContentsMblock.sumCoordinateMasses += mass * x;
+        comSumContentsMblock.sumMass += mass;
+        comSumContentsMblock.numAtoms++;
+    }
+
+    return comSumContentsMblock;
+}
+
+//! Subtracts COM position from position restraints
+static void subComFromRestraints(const gmx::RVec& com, gmx::ArrayRef<gmx::RVec> positionRestraintCoordinates)
+{
+    for (gmx::RVec& x : positionRestraintCoordinates)
+    {
+        x -= com;
+    }
+}
+
+/*! \brief Computes the center of mass of restrained atoms and subtracts it from restrain coordinates.
+ *
+ * \p mtop contains the restraint reference coordinates which are shifted by the COM.
+ */
+static gmx::RVec calcPosresCom(gmx_mtop_t*          mtop,
+                               const bool           haveTopologyB,
+                               PbcType              pbcType,
+                               const matrix         box,
+                               const gmx::MDLogger& logger)
+{
+
+    ComSumContents comSumContentsNogroup;
+
+    for (size_t i = 0; i < mtop->molblock.size(); ++i)
+    {
+        const auto& molb  = mtop->molblock.at(i);
+        const auto& inds  = mtop->moleculeBlockIndices.at(i);
+        const auto& atoms = mtop->moltype.at(molb.type).atoms;
+
+        const auto& positionRestraintCoordinates = haveTopologyB ? molb.posres_xB : molb.posres_xA;
+
+        ComSumContents comSumContentsMblock =
+                sumComForRestraints(positionRestraintCoordinates, inds, atoms);
+
+        comSumContentsNogroup.sumCoordinateMasses += comSumContentsMblock.sumCoordinateMasses;
+        comSumContentsNogroup.sumMass += comSumContentsMblock.sumMass;
+        comSumContentsNogroup.numAtoms += comSumContentsMblock.numAtoms;
+    }
+
+    // Centre of mass of the restrained atoms
+    gmx::RVec com = { 0.0, 0.0, 0.0 };
+    if (comSumContentsNogroup.numAtoms > 0)
+    {
+        if (comSumContentsNogroup.sumMass == 0.0)
+        {
+            gmx_fatal(FARGS, "The total mass of the position restraint atoms is 0");
+        }
+        com = comSumContentsNogroup.sumCoordinateMasses.toRVec() / comSumContentsNogroup.sumMass;
+    }
+
+    GMX_LOG(logger.info)
+            .asParagraph()
+            .appendTextFormatted(
+                    "The center of mass of the position restraint coord's is %6.3f %6.3f %6.3f",
+                    com[XX],
+                    com[YY],
+                    com[ZZ]);
+
+    //! Subtract COM from posres positions
+    //  TODO: write regression test to ensure that this is consistent with previous implementation?
+    for (auto& molb : mtop->molblock)
+    {
+        auto& positionRestraintCoordinates = haveTopologyB ? molb.posres_xB : molb.posres_xA;
+
+        subComFromRestraints(com, positionRestraintCoordinates);
+    }
+
+    // Convert to crystal coordinates
+    matrix inv_box;
+    gmx::invertBoxMatrix(box, inv_box);
+
+    const int npbcdim = numPbcDimensions(pbcType);
+    GMX_RELEASE_ASSERT(npbcdim <= DIM, "Invalid npbcdim");
+
+    for (int j = 0; j < npbcdim; j++)
+    {
+        com[j] *= inv_box[j][j];
+
+        for (int k = j + 1; k < npbcdim; k++)
+        {
+            com[j] += inv_box[k][j] * com[k];
+        }
+    }
+
+    return com;
+}
+
 static void gen_posres(gmx_mtop_t*                              mtop,
                        gmx::ArrayRef<const MoleculeInformation> mi,
                        const char*                              fnA,
                        const char*                              fnB,
                        RefCoordScaling                          rc_scaling,
                        PbcType                                  pbcType,
-                       rvec                                     com,
-                       rvec                                     comB,
-                       WarningHandler*                          wi,
-                       const gmx::MDLogger&                     logger)
+                       WarningHandler*                          wi)
 {
-    read_posres(mtop, mi, FALSE, fnA, rc_scaling, pbcType, com, wi, logger);
+    read_posres(mtop, mi, FALSE, fnA, rc_scaling, pbcType, wi);
     /* It is safer to simply read the b-state posres rather than trying
      * to be smart and copy the positions.
      */
-    read_posres(mtop, mi, TRUE, fnB, rc_scaling, pbcType, comB, wi, logger);
+    read_posres(mtop, mi, TRUE, fnB, rc_scaling, pbcType, wi);
 }
 
 static void set_wall_atomtype(PreprocessingAtomTypes* at,
@@ -2326,16 +2378,7 @@ int gmx_grompp(int argc, char* argv[])
             }
             GMX_LOG(logger.info).asParagraph().appendText(message);
         }
-        gen_posres(&sys,
-                   mi,
-                   fn,
-                   fnB,
-                   ir->pressureCouplingOptions.refcoord_scaling,
-                   ir->pbcType,
-                   ir->posres_com,
-                   ir->posres_comB,
-                   &wi,
-                   logger);
+        gen_posres(&sys, mi, fn, fnB, ir->pressureCouplingOptions.refcoord_scaling, ir->pbcType, &wi);
     }
 
     /* If we are using CMAP, setup the pre-interpolation grid */
@@ -2556,6 +2599,13 @@ int gmx_grompp(int argc, char* argv[])
     if (debug)
     {
         pr_symtab(debug, 0, "After index", &sys.symtab);
+    }
+
+    //! Must be done after do_index, so we do it here before the triple check
+    if (ir->pressureCouplingOptions.refcoord_scaling == RefCoordScaling::Com)
+    {
+        ir->posres_com  = calcPosresCom(&sys, false, ir->pbcType, state.box, logger);
+        ir->posres_comB = calcPosresCom(&sys, true, ir->pbcType, state.box, logger);
     }
 
     triple_check(mdparin, *ir, sys, &wi);
