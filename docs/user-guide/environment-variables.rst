@@ -248,6 +248,13 @@ Performance and Run Control
         disable exiting upon encountering a corrupted frame in an :ref:`edr`
         file, allowing the use of all frames up until the corruption.
 
+``GMX_FILLERS_IN_LOCAL_STATE``
+        Fillers particles are needed to make the number of particles a multiple of the SIMD
+        or GPU warp/wave-front width for computing non-bonded interactions. These fillers can
+        also be added to the local state, if all algorithms support this, which avoids indexing
+        but increases the size of buffers. This environment variable can be set to 0 or 2 to
+        force this behavior off or on. Setting it to 1 turns the behavior on when supported.
+
 ``GMX_FORCE_UPDATE``
         update forces when invoking ``mdrun -rerun``.
 

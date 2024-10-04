@@ -78,6 +78,7 @@ namespace gmx
 SimulationWorkload createSimulationWorkload(const t_inputrec& inputrec,
                                             const bool        disableNonbondedCalculation,
                                             const DevelopmentFeatureFlags& devFlags,
+                                            bool       haveFillerParticlesInLocalState,
                                             bool       havePpDomainDecomposition,
                                             bool       haveSeparatePmeRank,
                                             bool       useGpuForNonbonded,
@@ -98,12 +99,13 @@ SimulationWorkload createSimulationWorkload(const t_inputrec& inputrec,
     simulationWorkload.useGpuNonbonded = useGpuForNonbonded;
     simulationWorkload.useCpuPme       = (pmeRunMode == PmeRunMode::CPU);
     simulationWorkload.useGpuPme = (pmeRunMode == PmeRunMode::GPU || pmeRunMode == PmeRunMode::Mixed);
-    simulationWorkload.useGpuPmeFft              = (pmeRunMode == PmeRunMode::GPU);
-    simulationWorkload.useGpuBonded              = useGpuForBonded;
-    simulationWorkload.useGpuUpdate              = useGpuForUpdate;
-    simulationWorkload.havePpDomainDecomposition = havePpDomainDecomposition;
-    simulationWorkload.useCpuHaloExchange        = havePpDomainDecomposition && !useGpuDirectHalo;
-    simulationWorkload.useGpuHaloExchange        = useGpuDirectHalo;
+    simulationWorkload.useGpuPmeFft                    = (pmeRunMode == PmeRunMode::GPU);
+    simulationWorkload.useGpuBonded                    = useGpuForBonded;
+    simulationWorkload.useGpuUpdate                    = useGpuForUpdate;
+    simulationWorkload.haveFillerParticlesInLocalState = haveFillerParticlesInLocalState;
+    simulationWorkload.havePpDomainDecomposition       = havePpDomainDecomposition;
+    simulationWorkload.useCpuHaloExchange = havePpDomainDecomposition && !useGpuDirectHalo;
+    simulationWorkload.useGpuHaloExchange = useGpuDirectHalo;
     if (pmeRunMode == PmeRunMode::None)
     {
         GMX_RELEASE_ASSERT(!haveSeparatePmeRank, "Can not have separate PME rank(s) without PME.");

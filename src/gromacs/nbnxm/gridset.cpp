@@ -108,11 +108,13 @@ GridSet::GridSet(const PbcType      pbcType,
                  const DomdecZones* ddZones,
                  const PairlistType pairlistType,
                  const bool         haveFep,
+                 const bool         localAtomOrderMatchesNbnxmOrder,
                  const int          numThreads,
                  PinningPolicy      pinningPolicy) :
     domainSetup_(pbcType, doTestParticleInsertion, numDDCells, ddZones),
     grids_(numGrids(domainSetup_), Grid(pairlistType, haveFep_, pinningPolicy)),
     haveFep_(haveFep),
+    localAtomOrderMatchesNbnxmOrder_(localAtomOrderMatchesNbnxmOrder),
     numRealAtomsLocal_(0),
     numRealAtomsTotal_(0),
     gridWork_(numThreads)
@@ -127,17 +129,33 @@ void GridSet::setLocalAtomOrder()
     /* Set the atom order for the home cell (index 0) */
     const Grid& grid = grids_[0];
 
-    int atomIndex = 0;
-    for (int cxy = 0; cxy < grid.numColumns(); cxy++)
+    if (localAtomOrderMatchesNbnxmOrder_)
     {
-        const int numAtoms  = grid.numAtomsInColumn(cxy);
-        int       cellIndex = grid.firstCellInColumn(cxy) * grid.geometry().numAtomsPerCell_;
-        for (int i = 0; i < numAtoms; i++)
+        const int gmx_unused numThreads = gmx_omp_nthreads_get(ModuleMultiThread::Pairsearch);
+
+        // Set the identity mapping
+        gridSetData_.cells.resize(grid.numCells() * grid.numAtomsPerCell());
+#pragma omp parallel for num_threads(numThreads) schedule(static)
+        for (int i = 0; i < grid.numCells() * grid.numAtomsPerCell(); i++)
         {
-            gridSetData_.atomIndices[cellIndex] = atomIndex;
-            gridSetData_.cells[atomIndex]       = cellIndex;
-            atomIndex++;
-            cellIndex++;
+            gridSetData_.atomIndices[i] = i;
+            gridSetData_.cells[i]       = i;
+        }
+    }
+    else
+    {
+        int atomIndex = 0;
+        for (int cxy = 0; cxy < grid.numColumns(); cxy++)
+        {
+            const int numAtoms  = grid.numAtomsInColumn(cxy);
+            int       cellIndex = grid.firstCellInColumn(cxy) * grid.geometry().numAtomsPerCell_;
+            for (int i = 0; i < numAtoms; i++)
+            {
+                gridSetData_.atomIndices[cellIndex] = atomIndex;
+                gridSetData_.cells[atomIndex]       = cellIndex;
+                atomIndex++;
+                cellIndex++;
+            }
         }
     }
 }

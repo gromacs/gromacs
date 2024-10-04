@@ -89,7 +89,7 @@ DispersionCorrection::TopologyParams::TopologyParams(const gmx_mtop_t& mtop,
 {
     const int ntp = mtop.ffparams.atnr;
 
-    std::vector<real> nbfp = makeNonBondedParameterLists(ntp, mtop.ffparams.iparams, useBuckingham);
+    std::vector<real> nbfp = makeNonBondedParameterLists(ntp, false, mtop.ffparams.iparams, useBuckingham);
 
     /* For LJ-PME, we want to correct for the difference between the
      * actual C6 values and the C6 values used by the LJ-PME based on
@@ -107,6 +107,11 @@ DispersionCorrection::TopologyParams::TopologyParams(const gmx_mtop_t& mtop,
             }
         }
     }
+    else
+    {
+        nbfp = makeNonBondedParameterLists(ntp, false, mtop.ffparams.iparams, useBuckingham);
+    }
+
 
     for (int q = 0; q < (inputrec.efep == FreeEnergyPerturbationType::No ? 1 : 2); q++)
     {

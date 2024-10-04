@@ -67,10 +67,12 @@ class SimulationWorkload;
 /*! \brief Create nonbonded parameter lists
  *
  * \param[in] numAtomTypes           The number of atom types
+ * \param[in] addFillerAtomType      Whether to add an atom type, at the end, for filler particles
  * \param[in] iparams                The LJ parameters
  * \param[in] useBuckinghamPotential Use Buckingham potential
  */
 std::vector<real> makeNonBondedParameterLists(int                            numAtomTypes,
+                                              bool                           addFillerAtomType,
                                               gmx::ArrayRef<const t_iparams> iparams,
                                               bool useBuckinghamPotential);
 

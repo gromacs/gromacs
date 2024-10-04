@@ -110,7 +110,7 @@ diagonalPairlist(const NbnxmKernelType kernelType, const int numAtoms)
     const PairlistParams pairlistParams(kernelType, {}, false, 1, false);
 
     GridSet gridSet(
-            PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false, 1, gmx::PinningPolicy::CannotBePinned);
+            PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false, false, 1, PinningPolicy::CannotBePinned);
 
     std::vector<real> nbfp{ 0.0_real, 0.0_real };
 

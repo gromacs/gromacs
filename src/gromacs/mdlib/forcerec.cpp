@@ -126,38 +126,42 @@ void ForceHelperBuffers::resize(int numAtoms)
     }
 }
 
-std::vector<real> makeNonBondedParameterLists(const int                      numAtomTypes,
+std::vector<real> makeNonBondedParameterLists(const int                      numMtopAtomTypes,
+                                              const bool                     addFillerAtomType,
                                               gmx::ArrayRef<const t_iparams> iparams,
                                               bool                           useBuckinghamPotential)
 {
+    // We add an atom type with index numMtopAtomTypes for filler particles
+    const int numMdrunAtomTypes = numMtopAtomTypes + (addFillerAtomType ? 1 : 0);
+
     std::vector<real> nbfp;
 
     if (useBuckinghamPotential)
     {
-        nbfp.resize(3 * numAtomTypes * numAtomTypes);
+        nbfp.resize(3 * numMdrunAtomTypes * numMdrunAtomTypes, 0.0_real);
         int k = 0;
-        for (int i = 0; (i < numAtomTypes); i++)
+        for (int i = 0; i < numMtopAtomTypes; i++)
         {
-            for (int j = 0; (j < numAtomTypes); j++, k++)
+            for (int j = 0; j < numMtopAtomTypes; j++, k++)
             {
-                BHAMA(nbfp, numAtomTypes, i, j) = iparams[k].bham.a;
-                BHAMB(nbfp, numAtomTypes, i, j) = iparams[k].bham.b;
+                BHAMA(nbfp, numMdrunAtomTypes, i, j) = iparams[k].bham.a;
+                BHAMB(nbfp, numMdrunAtomTypes, i, j) = iparams[k].bham.b;
                 /* nbfp now includes the 6.0 derivative prefactor */
-                BHAMC(nbfp, numAtomTypes, i, j) = iparams[k].bham.c * 6.0;
+                BHAMC(nbfp, numMdrunAtomTypes, i, j) = iparams[k].bham.c * 6.0;
             }
         }
     }
     else
     {
-        nbfp.resize(2 * numAtomTypes * numAtomTypes);
+        nbfp.resize(2 * numMdrunAtomTypes * numMdrunAtomTypes, 0.0_real);
         int k = 0;
-        for (int i = 0; (i < numAtomTypes); i++)
+        for (int i = 0; i < numMtopAtomTypes; i++)
         {
-            for (int j = 0; (j < numAtomTypes); j++, k++)
+            for (int j = 0; j < numMtopAtomTypes; j++, k++)
             {
                 /* nbfp now includes the 6.0/12.0 derivative prefactors */
-                C6(nbfp, numAtomTypes, i, j)  = iparams[k].lj.c6 * 6.0;
-                C12(nbfp, numAtomTypes, i, j) = iparams[k].lj.c12 * 12.0;
+                C6(nbfp, numMdrunAtomTypes, i, j)  = iparams[k].lj.c6 * 6.0;
+                C12(nbfp, numMdrunAtomTypes, i, j) = iparams[k].lj.c12 * 12.0;
             }
         }
     }
@@ -914,9 +918,10 @@ void init_forcerec(FILE*                            fplog,
     }
 
     GMX_ASSERT(forcerec->nbfp.empty(), "The nonbonded force parameters should not be set up yet.");
-    forcerec->ntype = mtop.ffparams.atnr;
+    // We add one atom type at the end for filler particles
+    forcerec->ntype = mtop.ffparams.atnr + 1;
     forcerec->nbfp  = makeNonBondedParameterLists(
-            mtop.ffparams.atnr, mtop.ffparams.iparams, forcerec->haveBuckingham);
+            mtop.ffparams.atnr, true, mtop.ffparams.iparams, forcerec->haveBuckingham);
     if (usingLJPme(interactionConst->vdwtype))
     {
         forcerec->ljpme_c6grid = makeLJPmeC6GridCorrectionParameters(

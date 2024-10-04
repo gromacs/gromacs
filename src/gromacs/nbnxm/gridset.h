@@ -116,6 +116,7 @@ public:
             const DomdecZones* ddZones,
             PairlistType       pairlistType,
             bool               haveFep,
+            bool               localAtomOrderMatchesNbnxmOrder,
             int                numThreads,
             PinningPolicy      pinningPolicy);
 
@@ -135,6 +136,12 @@ public:
 
     //! Returns the domain setup
     DomainSetup domainSetup() const { return domainSetup_; }
+
+    //! Returns whether the local atom order matches the NBNxM atom order
+    bool localAtomOrderMatchesNbnxmOrder() const { return localAtomOrderMatchesNbnxmOrder_; }
+
+    //! Returns the number of atoms in the local grid, including padding
+    int numGridAtomsLocal() const { return grids_[0].atomIndexEnd(); }
 
     //! Returns the total number of atoms in the grid set, including padding
     int numGridAtomsTotal() const { return grids_.back().atomIndexEnd(); }
@@ -191,6 +198,8 @@ private:
     GridSetData gridSetData_;
     //! Tells whether we have perturbed non-bonded interactions
     bool haveFep_;
+    //! Tells whether the local atom order matches the NBNxM atom order
+    bool localAtomOrderMatchesNbnxmOrder_;
     //! The periodic unit-cell
     matrix box_;
     //! The number of local real atoms, i.e. without padded atoms, local atoms: 0 to numAtomsLocal_

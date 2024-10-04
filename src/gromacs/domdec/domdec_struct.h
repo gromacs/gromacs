@@ -194,7 +194,12 @@ struct gmx_domdec_t
     std::vector<std::unique_ptr<gmx::GpuHaloExchange>> gpuHaloExchange[DIM];
 };
 
-//! Return whether \p globalAtomIndex is a valid global atom (and not a filler particle)
+/*! Return whether \p globalAtomIndex is a valid global atom (and not a filler particle)
+ *
+ * \param[in] globalAtomIndex  The index in the global topology to check
+ *
+ * \returns true when \p globalAtomIndex >= 0, false otherwise
+ */
 static inline bool isValidGlobalAtom(const int globalAtomIndex)
 {
     return globalAtomIndex >= 0;

@@ -98,6 +98,12 @@ static inline int DD_FLAG_BW(int d)
     return 1 << (16 + d * 2 + 1);
 }
 
+// Value of the move flag to indicate that the atom remains a home atom
+static constexpr int sc_moveRemainHome = -1;
+
+// Value of the move flag to indicate that the atom is a filler particle
+static constexpr int sc_moveIsFiller = -2;
+
 static void copyMovedAtomsToBufferPerAtom(gmx::ArrayRef<const int> move,
                                           int                      nvec,
                                           int                      vec,
@@ -158,6 +164,11 @@ static void clear_and_mark_ind(gmx::ArrayRef<const int> move,
              * Here we set it to -1. fill_grid will change it
              * from -1 to NSGRID_SIGNAL_MOVED_FAC*grid->ncells.
              */
+            cell_index[a] = -1;
+        }
+        else if (move[a] == sc_moveIsFiller)
+        {
+            // Signal that we should remove this atom
             cell_index[a] = -1;
         }
     }
@@ -304,14 +315,14 @@ struct MoveLimits
 static int computeMoveFlag(const gmx_domdec_t& dd, const ivec& dev)
 {
     int flag              = 0;
-    int firstMoveDimValue = -1;
+    int firstMoveDimValue = sc_moveRemainHome;
     for (int d = 0; d < dd.ndim; d++)
     {
         const int dim = dd.dim[d];
         if (dev[dim] == 1)
         {
             flag |= DD_FLAG_FW(d);
-            if (firstMoveDimValue == -1)
+            if (firstMoveDimValue == sc_moveRemainHome)
             {
                 firstMoveDimValue = d * 2;
             }
@@ -319,7 +330,7 @@ static int computeMoveFlag(const gmx_domdec_t& dd, const ivec& dev)
         else if (dev[dim] == -1)
         {
             flag |= DD_FLAG_BW(d);
-            if (firstMoveDimValue == -1)
+            if (firstMoveDimValue == sc_moveRemainHome)
             {
                 if (dd.numCells[dim] > 2)
                 {
@@ -340,12 +351,12 @@ static int computeMoveFlag(const gmx_domdec_t& dd, const ivec& dev)
  *
  * Returns in the move array where the atoms should go.
  */
-static void calc_cg_move(FILE*                  fplog,
-                         int64_t                step,
-                         gmx_domdec_t*          dd,
+static void calcAtomMove(FILE*                  fplog,
+                         const int64_t          step,
+                         const gmx_domdec_t*    dd,
                          t_state*               state,
                          const ivec             tric_dir,
-                         matrix                 tcm,
+                         const matrix           tcm,
                          const rvec             cell_x0,
                          const rvec             cell_x1,
                          const MoveLimits&      moveLimits,
@@ -357,6 +368,14 @@ static void calc_cg_move(FILE*                  fplog,
 
     for (int a : atomRange)
     {
+        if (!isValidGlobalAtom(dd->globalAtomIndices[a]))
+        {
+            // Signal filler particle, which should be ignored in redistribution
+            move[a] = sc_moveIsFiller;
+
+            continue;
+        }
+
         // TODO: Rename this center of geometry variable to cogNew
         rvec cm_new;
         copy_rvec(x[a], cm_new);
@@ -451,8 +470,10 @@ struct PbcAndFlag
     /* Constructor that purposely does not initialize anything */
     PbcAndFlag() {}
 
+    // The required PBC shift to get this group into the unit cell
     gmx::RVec pbcShift;
-    int       moveFlag;
+    // Flags that tell by how much this group should be moved (see DD_FLAG... above),
+    int moveFlag;
 };
 
 /* Determine to which domains update groups in the range \p groupBegin, \p groupEnd should go.
@@ -480,6 +501,13 @@ static void calcGroupMove(FILE*                     fplog,
 
     for (int g : groupRange)
     {
+        if (updateGroupsCog->cogIsFillerParticle(g))
+        {
+            // Signal filler particle, which should be ignored in redistribution
+            pbcAndFlags[g].moveFlag = sc_moveIsFiller;
+
+            continue;
+        }
 
         gmx::RVec& cog    = updateGroupsCog->cog(g);
         gmx::RVec  cogOld = cog;
@@ -560,16 +588,26 @@ static void applyPbcAndSetMoveFlags(const gmx::UpdateGroupsCog&         updateGr
 {
     for (int a : atomRange)
     {
-        const PbcAndFlag& pbcAndFlag = pbcAndFlags[updateGroupsCog.cogIndex(a)];
-        rvec_inc(atomCoords[a], pbcAndFlag.pbcShift);
-        if constexpr (haveBoxDeformation)
+        const int cogIndex = updateGroupsCog.cogIndex(a);
+        if (cogIndex >= 0)
         {
-            // Correct the velocity for the position change along the flow profile
-            correctVelocityForDisplacement<false>(boxDeformationRate, atomVelocities[a], pbcAndFlag.pbcShift);
+            const PbcAndFlag& pbcAndFlag = pbcAndFlags[cogIndex];
+            rvec_inc(atomCoords[a], pbcAndFlag.pbcShift);
+            // NOLINTNEXTLINE(readability-misleading-indentation) remove when clang-tidy-13 is required
+            if constexpr (haveBoxDeformation)
+            {
+                // Correct the velocity for the position change along the flow profile
+                correctVelocityForDisplacement<false>(
+                        boxDeformationRate, atomVelocities[a], pbcAndFlag.pbcShift);
+            }
+            /* Temporarily store the flag in move */
+            // NOLINTNEXTLINE(readability-misleading-indentation) remove when clang-tidy-13 is required
+            move[a] = pbcAndFlag.moveFlag;
         }
-        /* Temporarily store the flag in move */
-        // NOLINTNEXTLINE(readability-misleading-indentation) remove when clang-tidy-13 is required
-        move[a] = pbcAndFlag.moveFlag;
+        else
+        {
+            move[a] = sc_moveIsFiller;
+        }
     }
 }
 
@@ -687,7 +725,7 @@ void dd_redistribute_cg(FILE*         fplog,
             else
             {
                 /* Here we handle single atoms or charge groups */
-                calc_cg_move(fplog, step, dd, state, tric_dir, tcm, cell_x0, cell_x1, moveLimits, threadAtomRange, move);
+                calcAtomMove(fplog, step, dd, state, tric_dir, tcm, cell_x0, cell_x1, moveLimits, threadAtomRange, move);
             }
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
@@ -696,6 +734,7 @@ void dd_redistribute_cg(FILE*         fplog,
     // The counts of atoms to move, forward or backward, over the
     // possible DIM dimensions.
     int nat[DIM * 2] = { 0 };
+    int numFillers   = 0;
     for (int cg = 0; cg < dd->numHomeAtoms; cg++)
     {
         if (move[cg] >= 0)
@@ -722,12 +761,16 @@ void dd_redistribute_cg(FILE*         fplog,
             cggl_flag[nat[mc] * DD_CGIBS + 1] = flag;
             nat[mc]++;
         }
+        else if (move[cg] == sc_moveIsFiller)
+        {
+            numFillers++;
+        }
     }
 
     inc_nrnb(nrnb, eNR_CGCM, comm->atomRanges.numHomeAtoms());
     inc_nrnb(nrnb, eNR_RESETX, dd->numHomeAtoms);
 
-    *ncg_moved = 0;
+    *ncg_moved = numFillers;
     for (int i = 0; i < dd->ndim * 2; i++)
     {
         *ncg_moved += nat[i];
@@ -1000,8 +1043,9 @@ void dd_redistribute_cg(FILE*         fplog,
     if (debug)
     {
         fprintf(debug,
-                "Finished repartitioning: cgs moved out %d, new home %d\n",
-                *ncg_moved,
+                "Finished repartitioning, atoms: old fillers %d, moved out %d, new home %d\n",
+                numFillers,
+                *ncg_moved - numFillers,
                 dd->numHomeAtoms - *ncg_moved);
     }
 }

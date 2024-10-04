@@ -106,6 +106,12 @@ public:
         return cogs_[cogIndex];
     }
 
+    /*! \brief Returns whether a COG entry consists of a (single) filler particle
+     *
+     * \param[in] cogIndex  The COG requested, should be; 0 <= \p cogIndex < cogs_.size()
+     */
+    bool cogIsFillerParticle(int cogIndex) const { return numAtomsPerCog_[cogIndex] == 0; }
+
     /*! \brief Returns the COG index given an atom index
      *
      * \param[in] atomIndex  The local atom index that maps to the COG
@@ -148,7 +154,7 @@ private:
     std::vector<int> cogIndices_;
     //! \brief List of COGs
     std::vector<RVec> cogs_;
-    //! \brief List of the number of atoms for each COG
+    //! \brief List of the number of atoms for each COG, for filler particles the value is zero
     std::vector<int> numAtomsPerCog_;
     //! \brief Maps global COG index to local COG index
     HashedMap<int> globalToLocalMap_;

@@ -221,6 +221,9 @@ public:
     //! Return whether the pairlist is of simple, CPU type
     bool pairlistIsSimple() const { return !useGpu() && !emulateGpu(); }
 
+    //! Returns whether the local atom order matches the NBNxM atom order
+    bool localAtomOrderMatchesNbnxmOrder() const;
+
     /*! \brief Put the atoms on the pair search grid.
      *
      * Only atoms with indices wihtin \p atomRange in x are put on the grid.
@@ -264,6 +267,9 @@ public:
 
     //! Returns the order of the local atoms on the grid
     ArrayRef<const int> getLocalAtomOrder() const;
+
+    //! Return whether \p localAtomIndex is a valid local atom (and not a filler particle)
+    static bool isValidLocalAtom(const int localAtomIndex) { return localAtomIndex >= 0; }
 
     //! Sets the order of the local atoms to the order grid atom ordering
     void setLocalAtomOrder() const;
@@ -431,6 +437,7 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const MDLogger&            md
                                                    bool                       useGpuForNonbonded,
                                                    const DeviceStreamManager* deviceStreamManager,
                                                    const gmx_mtop_t&          mtop,
+                                                   bool localAtomOrderMatchesNbnxmOrder,
                                                    ObservablesReducerBuilder* observablesReducerBuilder,
                                                    ArrayRef<const RVec>       coordinates,
                                                    matrix                     box,

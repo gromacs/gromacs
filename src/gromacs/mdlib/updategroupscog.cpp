@@ -95,8 +95,19 @@ void UpdateGroupsCog::addCogs(gmx::ArrayRef<const int>       globalAtomIndices,
     for (gmx::Index localAtom = localAtomBegin; localAtom < globalAtomIndices.ssize(); localAtom++)
     {
         const int globalAtom = globalAtomIndices[localAtom];
-        int       moleculeIndex;
-        int       atomIndexInMolecule;
+        if (globalAtom < 0)
+        {
+            // This is a filler particle
+            cogIndices_.push_back(-1);
+            cogs_.push_back(coordinates[localAtom]);
+            // Signal filler particle with numAtoms=0
+            numAtomsPerCog_.push_back(0);
+
+            continue;
+        }
+
+        int moleculeIndex;
+        int atomIndexInMolecule;
         mtopGetMolblockIndex(mtop_, globalAtom, &moleculeBlock, &moleculeIndex, &atomIndexInMolecule);
         const auto& indicesForBlock        = indicesPerMoleculeblock_[moleculeBlock];
         int         globalUpdateGroupIndex = indicesForBlock.groupStart_

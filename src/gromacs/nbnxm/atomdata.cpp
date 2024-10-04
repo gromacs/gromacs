@@ -284,6 +284,48 @@ void copy_rvec_to_nbat_real(const int* a, int na, int na_round, const rvec* x, i
     }
 }
 
+// Copies coordinates with RVec layout to a real list with the stride \p coordinateStride
+template<int coordinateStride>
+static void copyRVecToNbatXYZReal(int numAtoms, const rvec* x, real* xnb, int a0)
+{
+    for (int a = a0; a < a0 + numAtoms; a++)
+    {
+        const int atomOffset = a * coordinateStride;
+
+        xnb[atomOffset + 0] = x[a][XX];
+        xnb[atomOffset + 1] = x[a][YY];
+        xnb[atomOffset + 2] = x[a][ZZ];
+    }
+}
+
+/*! \brief Copies coordinates with RVec layout to SIMD layout with X/Y/Z packs
+ *
+ * \tparam        packSize  The stride of the packs in \p xnb
+ * \param[in]     numAtoms  The number of atoms to copy coordinates for
+ * \param[in]     x         The coordinates to copy
+ * \param[in,out] xnb       The NBNxM coordainate buffer
+ * \param[in]     a0        The index of the first atom to copy coordinates for
+ */
+template<int packSize>
+static void copyRVecToNbatPackedReal(int numAtoms, const rvec* x, real* xnb, int a0)
+{
+    GMX_ASSERT(a0 % packSize == 0, "Start atom should be a multiple of pack size");
+    GMX_ASSERT(numAtoms % packSize == 0, "Number of atoms should be a multiple of pack size");
+
+    for (int iPack = a0; iPack < a0 + numAtoms; iPack += packSize)
+    {
+        for (int d = 0; d < DIM; d++)
+        {
+            const int offset = iPack * DIM + d * packSize;
+
+            for (int iInPack = 0; iInPack < packSize; iInPack++)
+            {
+                xnb[offset + iInPack] = x[iPack + iInPack][d];
+            }
+        }
+    }
+}
+
 /* Stores the LJ parameter data in a format convenient for different kernels */
 static void set_lj_parameter_data(nbnxn_atomdata_t::Params* params, gmx_bool bSIMD)
 {
@@ -979,12 +1021,68 @@ static Range<int> getGridRange(const GridSet& gridSet, const AtomLocality locali
     return Range<int>(gridBegin, gridEnd);
 }
 
+/* Copies coordinates in local state format to \p nbat for grid \p grid
+ *
+ * This version is for when the atom order in the local state matches the grid order,
+ * including filler particles.
+ */
+static void copyXToNbatXForGridPart(const Grid&       grid,
+                                    const Range<int>& columnRange,
+                                    const rvec*       coordinates,
+                                    nbnxn_atomdata_t* nbat)
+{
+    for (int column : columnRange)
+    {
+        const int na  = grid.paddedNumAtomsInColumn(column);
+        const int ash = grid.firstAtomInColumn(column);
+
+        switch (nbat->XFormat)
+        {
+            case nbatXYZ:
+                copyRVecToNbatXYZReal<STRIDE_XYZ>(na, coordinates, nbat->x().data(), ash);
+                break;
+            case nbatXYZQ:
+                copyRVecToNbatXYZReal<STRIDE_XYZQ>(na, coordinates, nbat->x().data(), ash);
+                break;
+            case nbatX4:
+                copyRVecToNbatPackedReal<c_packX4>(na, coordinates, nbat->x().data(), ash);
+                break;
+            case nbatX8:
+                copyRVecToNbatPackedReal<c_packX8>(na, coordinates, nbat->x().data(), ash);
+                break;
+            default: GMX_ASSERT(false, "Unhandled coordinate layout");
+        }
+    }
+}
+
+/* Copies coordinates in local state format to \p nbat for grid \p grid
+ *
+ * This version is for when the atom order in the local state does not match the grid order.
+ */
+static void copyXToNbatXForGridPartIndexed(const Grid&         grid,
+                                           const Range<int>&   columnRange,
+                                           ArrayRef<const int> atomIndices,
+                                           const rvec*         coordinates,
+                                           nbnxn_atomdata_t*   nbat)
+{
+    for (int column : columnRange)
+    {
+        const int na  = grid.numAtomsInColumn(column);
+        const int ash = grid.firstAtomInColumn(column);
+
+        copy_rvec_to_nbat_real(
+                atomIndices.data() + ash, na, na, coordinates, nbat->XFormat, nbat->x().data(), ash);
+    }
+}
+
 /* Copies (and reorders) the coordinates to nbnxn_atomdata_t */
 void nbnxn_atomdata_copy_x_to_nbat_x(const GridSet&     gridSet,
                                      const AtomLocality locality,
                                      const rvec*        coordinates,
                                      nbnxn_atomdata_t*  nbat)
 {
+    const bool atomOrderMatches = gridSet.localAtomOrderMatchesNbnxmOrder();
+
     const auto gridRange = getGridRange(gridSet, locality);
 
     const int nth = gmx_omp_nthreads_get(ModuleMultiThread::Pairsearch);
@@ -1001,18 +1099,14 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const GridSet&     gridSet,
                 const int cxy0 = (numCellsXY * th + nth - 1) / nth;
                 const int cxy1 = (numCellsXY * (th + 1) + nth - 1) / nth;
 
-                for (int cxy = cxy0; cxy < cxy1; cxy++)
+                if (atomOrderMatches)
                 {
-                    const int na  = grid.numAtomsInColumn(cxy);
-                    const int ash = grid.firstAtomInColumn(cxy);
-
-                    copy_rvec_to_nbat_real(gridSet.atomIndices().data() + ash,
-                                           na,
-                                           na,
-                                           coordinates,
-                                           nbat->XFormat,
-                                           nbat->x().data(),
-                                           ash);
+                    copyXToNbatXForGridPart(grid, { cxy0, cxy1 }, coordinates, nbat);
+                }
+                else
+                {
+                    copyXToNbatXForGridPartIndexed(
+                            grid, { cxy0, cxy1 }, gridSet.atomIndices(), coordinates, nbat);
                 }
             }
         }
@@ -1125,56 +1219,94 @@ gmx_unused static void nbnxn_atomdata_reduce_reals_simd(real gmx_unused* gmx_res
 #endif
 }
 
-/* Add part of the force array(s) from nbnxn_atomdata_t to f
- *
- * Note: Adding restrict to f makes this function 50% slower with gcc 7.3
- */
-static void nbnxn_atomdata_add_nbat_f_to_f_part(const GridSet&                 gridSet,
-                                                const nbnxn_atomdata_t&        nbat,
-                                                const nbnxn_atomdata_output_t& out,
-                                                const int                      a0,
-                                                const int                      a1,
-                                                rvec*                          f)
+// Adds forces in x,y,z layout with stride \p forceStride to an RVec array
+template<int forceStride>
+static void addNbatFXYZToFPart(const nbnxn_atomdata_output_t& out,
+                               const int                      a0,
+                               const int                      a1,
+                               const int*                     cellIndices,
+                               ArrayRef<RVec>                 forces)
 {
-    ArrayRef<const int> cell = gridSet.cells();
-    // Note: Using ArrayRef instead makes this code 25% slower with gcc 7.3
-    const real* fnb = out.f.data();
+    // Extract pointers with restrict, maybe no longer necessary for best performance
+    const real* gmx_restrict fnb = out.f.data();
+    RVec* gmx_restrict       f   = forces.data();
 
-    /* Loop over all columns and copy and fill */
-    switch (nbat.FFormat)
+    if (cellIndices == nullptr)
     {
-        case nbatXYZ:
-        case nbatXYZQ:
-            for (int a = a0; a < a1; a++)
-            {
-                int i = cell[a] * nbat.fstride;
+        for (int a = a0; a < a1; a++)
+        {
+            const int atomOffset = a * forceStride;
 
-                f[a][XX] += fnb[i];
-                f[a][YY] += fnb[i + 1];
-                f[a][ZZ] += fnb[i + 2];
-            }
-            break;
-        case nbatX4:
-            for (int a = a0; a < a1; a++)
-            {
-                int i = atom_to_x_index<c_packX4>(cell[a]);
+            f[a][XX] += fnb[atomOffset + 0];
+            f[a][YY] += fnb[atomOffset + 1];
+            f[a][ZZ] += fnb[atomOffset + 2];
+        }
+    }
+    else
+    {
+        for (int a = a0; a < a1; a++)
+        {
+            const int atomOffset = cellIndices[a] * forceStride;
 
-                f[a][XX] += fnb[i + XX * c_packX4];
-                f[a][YY] += fnb[i + YY * c_packX4];
-                f[a][ZZ] += fnb[i + ZZ * c_packX4];
-            }
-            break;
-        case nbatX8:
-            for (int a = a0; a < a1; a++)
-            {
-                int i = atom_to_x_index<c_packX8>(cell[a]);
+            f[a][XX] += fnb[atomOffset + 0];
+            f[a][YY] += fnb[atomOffset + 1];
+            f[a][ZZ] += fnb[atomOffset + 2];
+        }
+    }
+}
 
-                f[a][XX] += fnb[i + XX * c_packX8];
-                f[a][YY] += fnb[i + YY * c_packX8];
-                f[a][ZZ] += fnb[i + ZZ * c_packX8];
+/*! \brief Adds forces in SIMD packed layout to an RVec array
+ *
+ * \tparam        packSize     The stride of the packs in \p out
+ * \param[in]     out          Nbnxm thread output data containing the forces to be added
+ * \param[in]     a0           The start of the atom range to add forces for
+ * \param[in]     a1           The end of the atom range to add forces for
+ * \param[in]     cellIndices  List of NBNxM cell indices, when nullptr the identity mapping is used
+ * \param[in,out] forces       The force buffer to add into
+ */
+
+template<int packSize>
+static void addNbatFPackedToFPart(const nbnxn_atomdata_output_t& out,
+                                  const int                      a0,
+                                  const int                      a1,
+                                  const int*                     cellIndices,
+                                  ArrayRef<RVec>                 forces)
+{
+    GMX_ASSERT(cellIndices != nullptr || a0 % packSize == 0,
+               "Start atom should be a multiple of pack size");
+    GMX_ASSERT(cellIndices != nullptr || a1 % packSize == 0,
+               "End atom should be a multiple of pack size");
+
+    // Extract pointers with restrict, maybe no longer necessary for best performance
+    const real* gmx_restrict fnb = out.f.data();
+    RVec* gmx_restrict       f   = forces.data();
+
+    if (cellIndices == nullptr)
+    {
+        for (int iPack = a0; iPack < a1; iPack += packSize)
+        {
+            const int offset = iPack * DIM;
+
+            for (int iInPack = 0; iInPack < packSize; iInPack++)
+            {
+                for (int d = 0; d < DIM; d++)
+                {
+                    f[iPack + iInPack][d] += fnb[offset + d * packSize + iInPack];
+                }
             }
-            break;
-        default: gmx_incons("Unsupported nbnxn_atomdata_t format");
+        }
+    }
+    else
+    {
+        for (int a = a0; a < a1; a++)
+        {
+            const int i = atom_to_x_index<packSize>(cellIndices[a]);
+
+            for (int d = 0; d < DIM; d++)
+            {
+                f[a][d] += fnb[i + d * packSize];
+            }
+        }
     }
 }
 
@@ -1231,6 +1363,10 @@ void nbnxn_atomdata_t::reduceForcesOverThreads()
 // Return the atom range for the given locality
 static Range<int> getAtomRange(const AtomLocality locality, const GridSet& gridSet)
 {
+    const bool orderMatches = gridSet.localAtomOrderMatchesNbnxmOrder();
+    const int numLocalAtoms = orderMatches ? gridSet.numGridAtomsLocal() : gridSet.numRealAtomsLocal();
+    const int numTotalAtoms = orderMatches ? gridSet.numGridAtomsTotal() : gridSet.numRealAtomsTotal();
+
     int atomStart = 0;
     int atomEnd   = 0;
 
@@ -1238,15 +1374,15 @@ static Range<int> getAtomRange(const AtomLocality locality, const GridSet& gridS
     {
         case AtomLocality::All:
             atomStart = 0;
-            atomEnd   = gridSet.numRealAtomsTotal();
+            atomEnd   = numTotalAtoms;
             break;
         case AtomLocality::Local:
             atomStart = 0;
-            atomEnd   = gridSet.numRealAtomsLocal();
+            atomEnd   = numLocalAtoms;
             break;
         case AtomLocality::NonLocal:
-            atomStart = gridSet.numRealAtomsLocal();
-            atomEnd   = gridSet.numRealAtomsTotal();
+            atomStart = numLocalAtoms;
+            atomEnd   = numTotalAtoms;
             break;
         default: GMX_ASSERT(false, "Invalid locality specifier"); break;
     }
@@ -1255,7 +1391,7 @@ static Range<int> getAtomRange(const AtomLocality locality, const GridSet& gridS
 }
 
 /* Add the force array(s) from nbnxn_atomdata_t to f */
-void nbnxn_atomdata_t::reduceForces(const AtomLocality locality, const GridSet& gridSet, rvec* f)
+void nbnxn_atomdata_t::reduceForces(const AtomLocality locality, const GridSet& gridSet, ArrayRef<RVec> f)
 {
     const auto atomRange = getAtomRange(locality, gridSet);
 
@@ -1264,6 +1400,8 @@ void nbnxn_atomdata_t::reduceForces(const AtomLocality locality, const GridSet& 
         /* The are no atoms for this reduction, avoid some overhead */
         return;
     }
+
+    GMX_ASSERT(ssize(f) >= atomRange.size(), "The force buffer needs to be sufficiently large");
 
     int nth = gmx_omp_nthreads_get(ModuleMultiThread::Nonbonded);
 
@@ -1279,17 +1417,43 @@ void nbnxn_atomdata_t::reduceForces(const AtomLocality locality, const GridSet& 
          */
         reduceForcesOverThreads();
     }
+
+    const int* cellIndices =
+            (gridSet.localAtomOrderMatchesNbnxmOrder() ? nullptr : gridSet.cells().data());
+
 #pragma omp parallel for num_threads(nth) schedule(static)
     for (int th = 0; th < nth; th++)
     {
         try
         {
-            nbnxn_atomdata_add_nbat_f_to_f_part(gridSet,
-                                                *this,
-                                                outputBuffers_[0],
-                                                *atomRange.begin() + ((th + 0) * atomRange.size()) / nth,
-                                                *atomRange.begin() + ((th + 1) * atomRange.size()) / nth,
-                                                f);
+            // The granularity for dividing the force reduction over threads.
+            // With matching atom order, this should be at least as large as the largest cluster size.
+            const int atomSplit =
+                    (gridSet.localAtomOrderMatchesNbnxmOrder() ? (FFormat == nbatX8 ? 8 : 4) : 1);
+            GMX_ASSERT(atomRange.size() % atomSplit == 0,
+                       "atomRange should be divisible by atomSplit");
+
+            const int atomStart =
+                    *atomRange.begin() + ((th + 0) * atomRange.size() / atomSplit) / nth * atomSplit;
+            const int atomEnd =
+                    *atomRange.begin() + ((th + 1) * atomRange.size() / atomSplit) / nth * atomSplit;
+
+            switch (FFormat)
+            {
+                case nbatXYZ:
+                    addNbatFXYZToFPart<STRIDE_XYZ>(outputBuffers_[0], atomStart, atomEnd, cellIndices, f);
+                    break;
+                case nbatXYZQ:
+                    addNbatFXYZToFPart<STRIDE_XYZQ>(outputBuffers_[0], atomStart, atomEnd, cellIndices, f);
+                    break;
+                case nbatX4:
+                    addNbatFPackedToFPart<c_packX4>(outputBuffers_[0], atomStart, atomEnd, cellIndices, f);
+                    break;
+                case nbatX8:
+                    addNbatFPackedToFPart<c_packX8>(outputBuffers_[0], atomStart, atomEnd, cellIndices, f);
+                    break;
+                default: GMX_RELEASE_ASSERT(false, "Unsupported force format");
+            }
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
     }

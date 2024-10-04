@@ -72,7 +72,6 @@
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/nbnxm/atomdata.h"
-#include "gromacs/nbnxm/gridset.h"
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/nbnxm/nbnxm_simd.h"
 #include "gromacs/nbnxm/pairlistparams.h"
@@ -222,13 +221,10 @@ static std::unique_ptr<nonbonded_verlet_t> setupNbnxmForBenchInstance(const Nbnx
 
     PairlistParams pairlistParams(kernelSetup.kernelType, {}, false, options.pairlistCutoff, false);
 
-    GridSet gridSet(
-            PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false, numThreads, pinPolicy);
-
     auto pairlistSets = std::make_unique<PairlistSets>(pairlistParams, false, 0);
 
     auto pairSearch = std::make_unique<PairSearch>(
-            PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false, numThreads, pinPolicy);
+            PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false, false, numThreads, pinPolicy);
 
     auto atomData = std::make_unique<nbnxn_atomdata_t>(pinPolicy,
                                                        MDLogger(),

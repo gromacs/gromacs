@@ -185,6 +185,8 @@ public:
     bool useGpuXBufferOpsWhenAllowed = false;
     //! If F buffer operations are allowed on GPU (actual use depends on other activities that step).
     bool useGpuFBufferOpsWhenAllowed = false;
+    //! Whether filler particles are part of the local state
+    bool haveFillerParticlesInLocalState = false;
     //! If PP domain decomposition is active.
     bool havePpDomainDecomposition = false;
     //! If domain decomposition halo exchange is performed on CPU (in CPU-only runs or with staged GPU communication).

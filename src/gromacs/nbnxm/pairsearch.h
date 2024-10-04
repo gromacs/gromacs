@@ -221,6 +221,7 @@ public:
      * \param[in] zones                    The domain decomposition zone setup, without DD nullptr should be passed
      * \param[in] pairlistType             The type of the pair list
      * \param[in] haveFep                  Tells whether non-bonded interactions are perturbed
+     * \param[in] localAtomOrderMatchesNbnxmOrder  Whether the local atom order should match the NBNxM order
      * \param[in] maxNumThreads            The maximum number of threads used in the search
      * \param[in] pinningPolicy            Sets the pinning policy for all buffers used on the GPU
      */
@@ -230,6 +231,7 @@ public:
                const DomdecZones* zones,
                PairlistType       pairlistType,
                bool               haveFep,
+               bool               localAtomOrderMatchesNbnxmOrder,
                int                maxNumThreads,
                PinningPolicy      pinningPolicy);
 

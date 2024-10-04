@@ -923,6 +923,41 @@ static void finish_run(FILE*                     fplog,
     }
 }
 
+//! Returns whether the run conditions permit the local state to have filler particles
+static bool localStateHasFillerParticles(const gmx_mtop_t& mtop,
+                                         const t_inputrec& inputrec,
+                                         const t_commrec&  commrec)
+{
+    // Currently having filler particles in the local states is only supported with a single DD rank
+    // WholeMoleculeTransform does not support filler particles
+    const bool useEwaldSurfaceCorrection =
+            (usingPmeOrEwald(inputrec.coulombtype) && inputrec.epsilon_surface != 0);
+    const bool haveOrientationRestraints = (gmx_mtop_ftype_count(mtop, F_ORIRES) > 0);
+    const bool needWholeMolecules        = useEwaldSurfaceCorrection || haveOrientationRestraints;
+    const bool canHaveFillerParticlesInLocalState =
+            haveDDAtomOrdering(commrec) && commrec.nnodes == 1 && !needWholeMolecules;
+    bool haveFillerParticlesInLocalState = false;
+    if (const char* env = getenv("GMX_FILLERS_IN_LOCAL_STATE"))
+    {
+        int value;
+        if (sscanf(env, "%d", &value) == 0 || (value < 0 || value > 2))
+        {
+            GMX_THROW(gmx::InvalidInputError(
+                    "Env.var. GMX_FILLERS_IN_LOCAL_STATE should have value 0, 1 or 2"));
+        }
+        if (value == 2 && !canHaveFillerParticlesInLocalState)
+        {
+            GMX_THROW(
+                    gmx::InvalidInputError("Fillers in local state requested, but not supported"
+                                           " because DD is not used or because an algorithm"
+                                           " requires whole molecules"));
+        }
+        haveFillerParticlesInLocalState = (value != 0);
+    }
+
+    return haveFillerParticlesInLocalState;
+}
+
 int Mdrunner::mdrunner()
 {
     std::unique_ptr<t_forcerec> fr;
@@ -1657,6 +1692,8 @@ int Mdrunner::mdrunner()
     GMX_RELEASE_ASSERT(!useGpuPmeDecomposition || devFlags.enableGpuPmeDecomposition,
                        "GPU PME decomposition works only in the cases where it is supported");
 
+    const bool haveFillerParticlesInLocalState = localStateHasFillerParticles(mtop, *inputrec, *cr);
+
     MdrunScheduleWorkload runScheduleWork;
 
     // Also populates the simulation constant workload description.
@@ -1667,6 +1704,7 @@ int Mdrunner::mdrunner()
     runScheduleWork.simulationWork = createSimulationWorkload(*inputrec,
                                                               disableNonbondedCalculation,
                                                               devFlags,
+                                                              haveFillerParticlesInLocalState,
                                                               havePPDomainDecomposition(cr),
                                                               haveSeparatePmeRank,
                                                               useGpuForNonbonded,
@@ -1676,6 +1714,14 @@ int Mdrunner::mdrunner()
                                                               useGpuDirectHalo,
                                                               canUseDirectGpuComm,
                                                               useGpuPmeDecomposition);
+
+    GMX_LOG(mdlog.info)
+            .asParagraph()
+            .appendTextFormatted("Local state %s filler particles",
+                                 runScheduleWork.simulationWork.haveFillerParticlesInLocalState
+                                         ? "uses"
+                                         : "does not use");
+
 
     if (runScheduleWork.simulationWork.useGpuDirectCommunication && GMX_GPU_CUDA)
     {
@@ -1912,6 +1958,7 @@ int Mdrunner::mdrunner()
                                  runScheduleWork.simulationWork.useGpuNonbonded,
                                  deviceStreamManager.get(),
                                  mtop,
+                                 runScheduleWork.simulationWork.haveFillerParticlesInLocalState,
                                  PAR(cr) ? &observablesReducerBuilder : nullptr,
                                  isSimulationMainRank ? globalState->x : gmx::ArrayRef<const gmx::RVec>(),
                                  box,

@@ -314,7 +314,7 @@ std::unique_ptr<gmx::nonbonded_verlet_t> createNbnxmCPU(const size_t            
 
     auto pairlistSets = std::make_unique<gmx::PairlistSets>(pairlistParams, false, 0);
     auto pairSearch   = std::make_unique<gmx::PairSearch>(
-            PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false, numThreads, pinPolicy);
+            PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false, false, numThreads, pinPolicy);
 
     // Needs to be called with the number of unique ParticleTypes
     auto atomData = std::make_unique<gmx::nbnxn_atomdata_t>(pinPolicy,
@@ -376,7 +376,7 @@ std::unique_ptr<gmx::nonbonded_verlet_t> createNbnxmGPU(const size_t            
 
     auto pairlistSets = std::make_unique<gmx::PairlistSets>(pairlistParams, false, iListCount);
     auto pairSearch   = std::make_unique<gmx::PairSearch>(
-            PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false, options.numOpenMPThreads, pinPolicy);
+            PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false, false, options.numOpenMPThreads, pinPolicy);
 
     // Put everything together
     auto nbv = std::make_unique<gmx::nonbonded_verlet_t>(

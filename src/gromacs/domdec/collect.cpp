@@ -111,16 +111,23 @@ static void dd_collect_cg(gmx_domdec_t*            dd,
 
     if (DDMAIN(dd))
     {
+        int numAtomGroups = 0;
+        for (int rank = 0; rank < dd->nnodes; rank++)
+        {
+            numAtomGroups += ma->intBuffer[2 * rank];
+        }
+        // We need to resize because of the (variable) number of filler particles
+        ma->atomGroups.resize(numAtomGroups);
+
         int groupOffset = 0;
         for (int rank = 0; rank < dd->nnodes; rank++)
         {
-            auto& domainGroups = ma->domainGroups[rank];
-            int   numGroups    = ma->intBuffer[2 * rank];
-
-            domainGroups.atomGroups =
-                    gmx::constArrayRefFromArray(ma->atomGroups.data() + groupOffset, numGroups);
+            auto&     domainGroups = ma->domainGroups[rank];
+            const int numGroups    = ma->intBuffer[2 * rank];
 
             domainGroups.numAtoms = ma->intBuffer[2 * rank + 1];
+            domainGroups.atomGroups =
+                    gmx::constArrayRefFromArray(ma->atomGroups.data() + groupOffset, numGroups);
 
             groupOffset += numGroups;
         }
@@ -182,7 +189,11 @@ static void dd_collect_vec_sendrecv(gmx_domdec_t*                  dd,
         int localAtom = 0;
         for (const int& globalAtom : ma.domainGroups[rank].atomGroups)
         {
-            copy_rvec(lv[localAtom++], v[globalAtom]);
+            if (isValidGlobalAtom(globalAtom))
+            {
+                copy_rvec(lv[localAtom], v[globalAtom]);
+            }
+            localAtom++;
         }
 
         for (int rank = 0; rank < dd->nnodes; rank++)
@@ -214,7 +225,11 @@ static void dd_collect_vec_sendrecv(gmx_domdec_t*                  dd,
                 int localAtom = 0;
                 for (const int& globalAtom : domainGroups.atomGroups)
                 {
-                    copy_rvec(ma.rvecBuffer[localAtom++], v[globalAtom]);
+                    if (isValidGlobalAtom(globalAtom))
+                    {
+                        copy_rvec(ma.rvecBuffer[localAtom], v[globalAtom]);
+                    }
+                    localAtom++;
                 }
             }
         }

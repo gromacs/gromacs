@@ -97,9 +97,18 @@ PairSearch::PairSearch(const PbcType      pbcType,
                        const DomdecZones* ddZones,
                        const PairlistType pairlistType,
                        const bool         haveFep,
+                       const bool         localAtomOrderMatchesNbnxmOrder,
                        const int          maxNumThreads,
                        PinningPolicy      pinningPolicy) :
-    gridSet_(pbcType, doTestParticleInsertion, numDDCells, ddZones, pairlistType, haveFep, maxNumThreads, pinningPolicy),
+    gridSet_(pbcType,
+             doTestParticleInsertion,
+             numDDCells,
+             ddZones,
+             pairlistType,
+             haveFep,
+             localAtomOrderMatchesNbnxmOrder,
+             maxNumThreads,
+             pinningPolicy),
     work_(maxNumThreads)
 {
     cycleCounting_.recordCycles_ = (getenv("GMX_NBNXN_CYCLE") != nullptr);

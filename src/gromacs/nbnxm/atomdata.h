@@ -322,7 +322,7 @@ struct nbnxn_atomdata_t
      * \param[in]  gridSet     The grids data.
      * \param[out] totalForce  Buffer to accumulate resulting force
      */
-    void reduceForces(AtomLocality locality, const GridSet& gridSet, rvec* totalForce);
+    void reduceForces(AtomLocality locality, const GridSet& gridSet, ArrayRef<RVec> totalForce);
 
     /*! \brief Clears the force buffer.
      *

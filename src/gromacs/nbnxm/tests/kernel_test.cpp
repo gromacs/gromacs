@@ -213,13 +213,18 @@ std::unique_ptr<nonbonded_verlet_t> setupNbnxmForBenchInstance(const KernelOptio
 
     PairlistParams pairlistParams(options.kernelSetup.kernelType, {}, false, options.pairlistCutoff, false);
 
-    GridSet gridSet(
-            PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false, numThreads, pinPolicy);
-
     auto pairlistSets = std::make_unique<PairlistSets>(pairlistParams, false, 0);
 
-    auto pairSearch = std::make_unique<PairSearch>(
-            PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false, numThreads, pinPolicy);
+    const bool localAtomOrderMatchesNbnxmOrder = false;
+    auto       pairSearch                      = std::make_unique<PairSearch>(PbcType::Xyz,
+                                                   false,
+                                                   nullptr,
+                                                   nullptr,
+                                                   pairlistParams.pairlistType,
+                                                   false,
+                                                   localAtomOrderMatchesNbnxmOrder,
+                                                   numThreads,
+                                                   pinPolicy);
 
     auto atomData = std::make_unique<nbnxn_atomdata_t>(
             pinPolicy,
@@ -613,9 +618,36 @@ TEST_P(NbnxmKernelTest, WorksWith)
         nbv_->dispatchNonbondedKernel(
                 InteractionLocality::Local, ic, stepWork, enbvClearFYes, shiftVecs, vVdw, vCoulomb, nullptr);
 
+        const bool atomOrderMatches = nbv_->localAtomOrderMatchesNbnxmOrder();
+
         // Get and check the forces
-        std::vector<RVec> forces(system_.coordinates.size(), { 0.0_real, 0.0_real, 0.0_real });
-        nbv_->atomdata_add_nbat_f_to_f(AtomLocality::All, forces);
+        ArrayRef<const int> atomIndices = nbv_->getLocalAtomOrder();
+        std::vector<RVec> nbnxmForces(atomOrderMatches ? atomIndices.size() : system_.coordinates.size(),
+                                      { 0.0_real, 0.0_real, 0.0_real });
+        nbv_->atomdata_add_nbat_f_to_f(AtomLocality::All, nbnxmForces);
+
+        std::vector<RVec>    forceBuffer;
+        ArrayRef<const RVec> forces;
+        if (atomOrderMatches)
+        {
+            // Copy atoms to a buffer with local atom order
+            forceBuffer.resize(system_.coordinates.size());
+            for (gmx::Index i = 0; i < atomIndices.ssize(); i++)
+            {
+                const int a = atomIndices[i];
+                if (nonbonded_verlet_t::isValidLocalAtom(a))
+                {
+                    forceBuffer[a] = nbnxmForces[i];
+                }
+            }
+
+            forces = forceBuffer;
+        }
+        else
+        {
+            forces = nbnxmForces;
+        }
+
         forceChecker.checkSequence(forces.begin(), forces.end(), "Forces");
 
         // Check the energies, as applicable

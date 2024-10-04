@@ -108,6 +108,7 @@ TprReader::TprReader(std::string filename)
                   -1);
 
     nonbondedParameters_ = makeNonBondedParameterLists(molecularTopology.ffparams.atnr,
+                                                       false,
                                                        molecularTopology.ffparams.iparams,
                                                        forceRecord.haveBuckingham);
 

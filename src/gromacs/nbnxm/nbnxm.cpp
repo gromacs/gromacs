@@ -58,6 +58,11 @@
 namespace gmx
 {
 
+bool nonbonded_verlet_t::localAtomOrderMatchesNbnxmOrder() const
+{
+    return pairSearch_->gridSet().localAtomOrderMatchesNbnxmOrder();
+}
+
 void nonbonded_verlet_t::putAtomsOnGrid(const matrix            box,
                                         int                     gridIndex,
                                         const RVec&             lowerCorner,
@@ -181,7 +186,7 @@ void nonbonded_verlet_t::atomdata_add_nbat_f_to_f(const AtomLocality locality, A
     wallcycle_start(wcycle_, WallCycleCounter::NbXFBufOps);
     wallcycle_sub_start(wcycle_, WallCycleSubCounter::NBFBufOps);
 
-    nbat_->reduceForces(locality, pairSearch_->gridSet(), as_rvec_array(force.data()));
+    nbat_->reduceForces(locality, pairSearch_->gridSet(), force);
 
     wallcycle_sub_stop(wcycle_, WallCycleSubCounter::NBFBufOps);
     wallcycle_stop(wcycle_, WallCycleCounter::NbXFBufOps);

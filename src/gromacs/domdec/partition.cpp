@@ -2251,6 +2251,7 @@ static void setup_dd_communication(gmx_domdec_t* dd, matrix box, gmx_ddbox_t* dd
 template<typename T>
 static void orderVector(gmx::ArrayRef<const gmx_cgsort_t> sort,
                         gmx::ArrayRef<T>                  dataToSort,
+                        const T                           fillerValue,
                         gmx::ArrayRef<T>                  sortBuffer)
 {
     GMX_ASSERT(dataToSort.size() >= sort.size(), "The vector needs to be sufficiently large");
@@ -2260,14 +2261,21 @@ static void orderVector(gmx::ArrayRef<const gmx_cgsort_t> sort,
     /* Order the data into the temporary buffer */
     const int gmx_unused numThreads = gmx_omp_nthreads_get(ModuleMultiThread::Domdec);
 #pragma omp parallel for num_threads(numThreads) schedule(static)
-    for (int i = 0; i < gmx::ssize(sort); i++)
+    for (gmx::Index i = 0; i < gmx::ssize(sort); i++)
     {
-        sortBuffer[i] = dataToSort[sort[i].ind];
+        if (sort[i].ind >= 0)
+        {
+            sortBuffer[i] = dataToSort[sort[i].ind];
+        }
+        else
+        {
+            sortBuffer[i] = fillerValue;
+        }
     }
 
     /* Copy back to the original array */
 #pragma omp parallel for num_threads(numThreads) schedule(static)
-    for (int i = 0; i < gmx::ssize(sort); i++)
+    for (gmx::Index i = 0; i < gmx::ssize(sort); i++)
     {
         dataToSort[i] = sortBuffer[i];
     }
@@ -2281,73 +2289,100 @@ static void orderVector(gmx::ArrayRef<const gmx_cgsort_t> sort,
 template<typename T>
 static void orderVector(gmx::ArrayRef<const gmx_cgsort_t> sort,
                         gmx::ArrayRef<T>                  vectorToSort,
+                        const T                           fillerValue,
                         gmx::FastVector<T>*               workVector)
 {
     if (gmx::Index(workVector->size()) < sort.ssize())
     {
         workVector->resize(sort.size());
     }
-    orderVector<T>(sort, vectorToSort, *workVector);
+    orderVector<T>(sort, vectorToSort, fillerValue, *workVector);
 }
 
 //! Returns the sorting order for atoms based on the nbnxn grid order in sort
-static void dd_sort_order_nbnxn(const t_forcerec* fr, gmx::FastVector<gmx_cgsort_t>* sort)
+static void dd_sort_order_nbnxn(const gmx::nonbonded_verlet_t& nbv, gmx::FastVector<gmx_cgsort_t>* sort)
 {
-    gmx::ArrayRef<const int> atomOrder = fr->nbv->getLocalAtomOrder();
+    gmx::ArrayRef<const int> atomOrder = nbv.getLocalAtomOrder();
 
     /* Using push_back() instead of this resize results in much slower code */
     sort->resize(atomOrder.size());
     gmx::ArrayRef<gmx_cgsort_t> buffer    = *sort;
     size_t                      numSorted = 0;
-    for (int i : atomOrder)
+    if (nbv.localAtomOrderMatchesNbnxmOrder())
     {
-        if (i >= 0)
+        for (int i : atomOrder)
         {
             buffer[numSorted++].ind = i;
         }
     }
-    sort->resize(numSorted);
+    else
+    {
+        for (int i : atomOrder)
+        {
+            if (i >= 0)
+            {
+                buffer[numSorted++].ind = i;
+            }
+        }
+        sort->resize(numSorted);
+    }
 }
 
 //! Returns the sorting state for DD.
 static void dd_sort_state(gmx_domdec_t* dd, t_forcerec* fr, t_state* state)
 {
-    gmx_domdec_sort_t* sort = dd->comm->sort.get();
+    // Get the sorting data object, only stored in DD to avoid reallocation
+    gmx_domdec_sort_t& sortingData = *dd->comm->sort;
 
-    dd_sort_order_nbnxn(fr, &sort->sorted);
+    // Obtain the sorting order from/as the NBNxM gridding order, including fillers
+    dd_sort_order_nbnxn(*fr->nbv, &sortingData.sorted);
 
-    /* We alloc with the old size, since cgindex is still old */
-    DDBufferAccess<gmx::RVec> rvecBuffer(dd->comm->rvecBuffer, dd->numHomeAtoms);
+    // Get the list of old order indices for the new indexing order
+    gmx::ArrayRef<const gmx_cgsort_t> sortOrder = sortingData.sorted;
 
-    /* Set the new home atom/charge group count */
-    dd->numHomeAtoms = sort->sorted.size();
     if (debug)
     {
-        fprintf(debug, "Set the new home atom count to %d\n", dd->numHomeAtoms);
+        fprintf(debug, "The new home atom count, including filler particles, is %ld\n", gmx::ssize(sortOrder));
     }
 
-    /* Reorder the state */
-    gmx::ArrayRef<const gmx_cgsort_t> cgsort = sort->sorted;
-    GMX_RELEASE_ASSERT(cgsort.ssize() == dd->numHomeAtoms,
-                       "We should sort all the home atom groups");
+    // For sorting we need space for both the old and new states
+    const int tmpAllocHomeAtoms = std::max(dd->numHomeAtoms, int(sortOrder.size()));
 
+    state->changeNumAtoms(tmpAllocHomeAtoms);
+
+    DDBufferAccess<gmx::RVec> rvecBuffer(dd->comm->rvecBuffer, tmpAllocHomeAtoms);
+
+    /* Reorder the state */
+    const gmx::RVec fillerRVec = { 0, 0, 0 };
     if (state->hasEntry(StateEntry::X))
     {
-        orderVector(cgsort, makeArrayRef(state->x), rvecBuffer.buffer);
+        orderVector(sortOrder, makeArrayRef(state->x), fillerRVec, rvecBuffer.buffer);
     }
     if (state->hasEntry(StateEntry::V))
     {
-        orderVector(cgsort, makeArrayRef(state->v), rvecBuffer.buffer);
+        orderVector(sortOrder, makeArrayRef(state->v), fillerRVec, rvecBuffer.buffer);
     }
     if (state->hasEntry(StateEntry::Cgp))
     {
-        orderVector(cgsort, makeArrayRef(state->cg_p), rvecBuffer.buffer);
+        orderVector(sortOrder, makeArrayRef(state->cg_p), fillerRVec, rvecBuffer.buffer);
     }
+    // Now that we have sorted, we can set the actual new atom count
+    dd->numHomeAtoms = sortOrder.size();
+    state->changeNumAtoms(dd->numHomeAtoms);
 
     /* Reorder the global cg index */
-    orderVector<int>(cgsort, dd->globalAtomIndices, &sort->intBuffer);
+    if (dd->numHomeAtoms > gmx::ssize(dd->globalAtomIndices))
+    {
+        dd->globalAtomIndices.resize(dd->numHomeAtoms, -1);
+    }
+    orderVector<int>(sortOrder, dd->globalAtomIndices, -1, &sortingData.intBuffer);
+    dd->globalAtomIndices.resize(dd->numHomeAtoms, -1);
+
     /* Reorder the atom info */
-    orderVector<int>(cgsort, fr->atomInfo, &sort->intBuffer);
+    fr->atomInfo.resize(tmpAllocHomeAtoms, gmx::sc_atomInfo_IsFillerParticle);
+    orderVector<int>(sortOrder, fr->atomInfo, gmx::sc_atomInfo_IsFillerParticle, &sortingData.intBuffer);
+    dd->globalAtomIndices.resize(dd->numHomeAtoms);
+
     /* Set the home atom number */
     dd->comm->atomRanges.setEnd(DDAtomRanges::Type::Home, dd->numHomeAtoms);
 
