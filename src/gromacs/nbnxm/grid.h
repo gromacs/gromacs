@@ -87,6 +87,27 @@ struct BoundingBox1D
     float upper;
 };
 
+//! The physical dimensions of a grid \internal
+struct GridDimensions
+{
+    //! The lower corner of the (local) grid
+    RVec lowerCorner;
+    //! The upper corner of the (local) grid
+    RVec upperCorner;
+    //! The physical grid size: upperCorner - lowerCorner
+    RVec gridSize;
+    //! An estimate for the atom number density of the region targeted by the grid
+    real atomDensity;
+    //! The maximum distance an atom can be outside of a cell and outside of the grid
+    real maxAtomGroupRadius;
+    //! Size of cell along dimension x and y
+    real cellSize[DIM - 1];
+    //! 1/size of a cell along dimensions x and y
+    real invCellSize[DIM - 1];
+    //! The number of grid cells along dimensions x and y
+    int numCells[DIM - 1];
+};
+
 /*! \internal
  * \brief A pair-search grid object for one domain decomposition zone
  *
@@ -134,27 +155,6 @@ public:
         PairlistType pairlistType_;
     };
 
-    //! The physical dimensions of a grid \internal
-    struct Dimensions
-    {
-        //! The lower corner of the (local) grid
-        RVec lowerCorner;
-        //! The upper corner of the (local) grid
-        RVec upperCorner;
-        //! The physical grid size: upperCorner - lowerCorner
-        RVec gridSize;
-        //! An estimate for the atom number density of the region targeted by the grid
-        real atomDensity;
-        //! The maximum distance an atom can be outside of a cell and outside of the grid
-        real maxAtomGroupRadius;
-        //! Size of cell along dimension x and y
-        real cellSize[DIM - 1];
-        //! 1/size of a cell along dimensions x and y
-        real invCellSize[DIM - 1];
-        //! The number of grid cells along dimensions x and y
-        int numCells[DIM - 1];
-    };
-
     //! Constructs a grid given the type of pairlist
     Grid(PairlistType pairlistType, const bool& haveFep, PinningPolicy pinningPolicy);
 
@@ -162,7 +162,7 @@ public:
     const Geometry& geometry() const { return geometry_; }
 
     //! Returns the dimensions of the grid
-    const Dimensions& dimensions() const { return dimensions_; }
+    const GridDimensions& dimensions() const { return dimensions_; }
 
     //! Returns the total number of grid columns
     int numColumns() const { return dimensions_.numCells[XX] * dimensions_.numCells[YY]; }
@@ -298,16 +298,16 @@ public:
                         nbnxn_atomdata_t*       nbat);
 
     //! Determine in which grid columns atoms should go, store cells and atom counts in \p cell and \p cxy_na
-    static void calcColumnIndices(const Grid::Dimensions& gridDims,
-                                  const UpdateGroupsCog*  updateGroupsCog,
-                                  Range<int>              atomRange,
-                                  ArrayRef<const RVec>    x,
-                                  int                     dd_zone,
-                                  const int*              move,
-                                  int                     thread,
-                                  int                     nthread,
-                                  ArrayRef<int>           cell,
-                                  ArrayRef<int>           cxy_na);
+    static void calcColumnIndices(const GridDimensions&  gridDims,
+                                  const UpdateGroupsCog* updateGroupsCog,
+                                  Range<int>             atomRange,
+                                  ArrayRef<const RVec>   x,
+                                  int                    dd_zone,
+                                  const int*             move,
+                                  int                    thread,
+                                  int                    nthread,
+                                  ArrayRef<int>          cell,
+                                  ArrayRef<int>          cxy_na);
 
 private:
     /*! \brief Fill a pair search cell with atoms
@@ -343,7 +343,7 @@ private:
     //! The geometry of the grid clusters and cells
     Geometry geometry_;
     //! The physical dimensions of the grid
-    Dimensions dimensions_;
+    GridDimensions dimensions_;
 
     //! The total number of cells in this grid
     int numCellsTotal_;

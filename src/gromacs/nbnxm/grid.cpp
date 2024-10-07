@@ -732,8 +732,8 @@ static void print_bbsizes_simple(FILE* fp, const Grid& grid)
         dsvmul(1.0 / grid.numCells(), ba, ba);
     }
 
-    const Grid::Dimensions& dims = grid.dimensions();
-    real                    avgCellSizeZ =
+    const GridDimensions& dims = grid.dimensions();
+    real                  avgCellSizeZ =
             (dims.atomDensity > 0 ? grid.geometry().numAtomsICluster_
                                             / (dims.atomDensity * dims.cellSize[XX] * dims.cellSize[YY])
                                   : 0.0);
@@ -791,8 +791,8 @@ static void print_bbsizes_supersub(FILE* fp, const Grid& grid)
     }
     dsvmul(1.0 / ns, ba, ba);
 
-    const Grid::Dimensions& dims = grid.dimensions();
-    const real              avgClusterSizeZ =
+    const GridDimensions& dims = grid.dimensions();
+    const real            avgClusterSizeZ =
             (dims.atomDensity > 0 ? grid.geometry().numAtomsPerCell_
                                             / (dims.atomDensity * dims.cellSize[XX] * dims.cellSize[YY]
                                                * sc_gpuNumClusterPerCellZ(layoutType))
@@ -1257,16 +1257,16 @@ static void setCellAndAtomCount(ArrayRef<int> cell, int cellIndex, ArrayRef<int>
     cxy_na[cellIndex] += 1;
 }
 
-void Grid::calcColumnIndices(const Grid::Dimensions& gridDims,
-                             const UpdateGroupsCog*  updateGroupsCog,
-                             const Range<int>        atomRange,
-                             ArrayRef<const RVec>    x,
-                             const int               dd_zone,
-                             const int*              move,
-                             const int               thread,
-                             const int               nthread,
-                             ArrayRef<int>           cell,
-                             ArrayRef<int>           cxy_na)
+void Grid::calcColumnIndices(const GridDimensions&  gridDims,
+                             const UpdateGroupsCog* updateGroupsCog,
+                             const Range<int>       atomRange,
+                             ArrayRef<const RVec>   x,
+                             const int              dd_zone,
+                             const int*             move,
+                             const int              thread,
+                             const int              nthread,
+                             ArrayRef<int>          cell,
+                             ArrayRef<int>          cxy_na)
 {
     const int numColumns = gridDims.numCells[XX] * gridDims.numCells[YY];
 

@@ -139,7 +139,7 @@ static void resizeAndZeroBufferFlags(std::vector<gmx_bitmask_t>* flags, const in
  * assigned to (when atom groups instead of individual atoms are assigned
  * to cells), this distance returned can be larger than the input.
  */
-static real listRangeForBoundingBoxToGridCell(real rlist, const Grid::Dimensions& gridDims)
+static real listRangeForBoundingBoxToGridCell(real rlist, const GridDimensions& gridDims)
 {
     return rlist + gridDims.maxAtomGroupRadius;
 }
@@ -151,9 +151,9 @@ static real listRangeForBoundingBoxToGridCell(real rlist, const Grid::Dimensions
  * assigned to (when atom groups instead of individual atoms are assigned
  * to cells), this distance returned can be larger than the input.
  */
-static real listRangeForGridCellToGridCell(real                    rlist,
-                                           const Grid::Dimensions& iGridDims,
-                                           const Grid::Dimensions& jGridDims)
+static real listRangeForGridCellToGridCell(real                  rlist,
+                                           const GridDimensions& iGridDims,
+                                           const GridDimensions& jGridDims)
 {
     return rlist + iGridDims.maxAtomGroupRadius + jGridDims.maxAtomGroupRadius;
 }
@@ -163,7 +163,7 @@ static real listRangeForGridCellToGridCell(real                    rlist,
  */
 template<int dim>
 static void
-get_cell_range(real b0, real b1, const Grid::Dimensions& jGridDims, real d2, real rlist, int* cf, int* cl)
+get_cell_range(real b0, real b1, const GridDimensions& jGridDims, real d2, real rlist, int* cf, int* cl)
 {
     real listRangeBBToCell2 = square(listRangeForBoundingBoxToGridCell(rlist, jGridDims));
     real distanceInCells    = (b0 - jGridDims.lowerCorner[dim]) * jGridDims.invCellSize[dim];
@@ -493,8 +493,8 @@ PairlistSet::PairlistSet(const PairlistParams& pairlistParams) :
 template<PairlistType layoutType>
 static void print_nblist_statistics(FILE* fp, const NbnxnPairlistCpu& nbl, const GridSet& gridSet, const real rl)
 {
-    const Grid&             grid = gridSet.grid(0);
-    const Grid::Dimensions& dims = grid.dimensions();
+    const Grid&           grid = gridSet.grid(0);
+    const GridDimensions& dims = grid.dimensions();
 
     fprintf(fp, "nbl nci %zu ncj %d\n", nbl.ci.size(), nbl.ncjInUse);
     const int numAtomsJCluster = grid.geometry().numAtomsJCluster_;
@@ -551,8 +551,8 @@ static void print_nblist_statistics(FILE* fp, const NbnxnPairlistCpu& nbl, const
 template<PairlistType layoutType>
 static void print_nblist_statistics(FILE* fp, const NbnxnPairlistGpu& nbl, const GridSet& gridSet, const real rl)
 {
-    const Grid&             grid = gridSet.grid(0);
-    const Grid::Dimensions& dims = grid.dimensions();
+    const Grid&           grid = gridSet.grid(0);
+    const GridDimensions& dims = grid.dimensions();
 
     fprintf(fp,
             "nbl nsci %zu numPackedJClusters %td nsi %d excl4 %zu\n",
@@ -2211,7 +2211,7 @@ static void icell_set_x(int         ci,
 template<PairlistType layoutType>
 static real minimum_subgrid_size_xy(const Grid& grid)
 {
-    const Grid::Dimensions& dims = grid.dimensions();
+    const GridDimensions& dims = grid.dimensions();
 
     if (grid.geometry().isSimple_)
     {
@@ -2324,9 +2324,9 @@ static void get_nsubpair_target(const GridSet&            gridSet,
         return;
     }
 
-    RVec                    ls;
-    const int               numAtomsCluster = grid.geometry().numAtomsICluster_;
-    const Grid::Dimensions& dims            = grid.dimensions();
+    RVec                  ls;
+    const int             numAtomsCluster = grid.geometry().numAtomsICluster_;
+    const GridDimensions& dims            = grid.dimensions();
 
     ls[XX] = dims.cellSize[XX] / sc_gpuNumClusterPerCellX(layoutType);
     ls[YY] = dims.cellSize[YY] / sc_gpuNumClusterPerCellY(layoutType);
@@ -2652,11 +2652,11 @@ static bool next_ci(const Grid& grid, int nth, int ci_block, int* ci_x, int* ci_
 /* Returns the distance^2 for which we put cell pairs in the list
  * without checking atom pair distances. This is usually < rlist^2.
  */
-static float boundingbox_only_distance2(const Grid::Dimensions& iGridDims,
-                                        const Grid::Dimensions& jGridDims,
-                                        real                    rlist,
-                                        bool                    simple,
-                                        const PairlistType      layoutType)
+static float boundingbox_only_distance2(const GridDimensions& iGridDims,
+                                        const GridDimensions& jGridDims,
+                                        real                  rlist,
+                                        bool                  simple,
+                                        const PairlistType    layoutType)
 {
     /* If the distance between two sub-cell bounding boxes is less
      * than this distance, do not check the distance between
@@ -2958,8 +2958,8 @@ static void nbnxn_make_pairlist_part(const GridSet&          gridSet,
         }
     }
 
-    const Grid::Dimensions& iGridDims = iGrid.dimensions();
-    const Grid::Dimensions& jGridDims = jGrid.dimensions();
+    const GridDimensions& iGridDims = iGrid.dimensions();
+    const GridDimensions& jGridDims = jGrid.dimensions();
 
     const float rbb2 =
             boundingbox_only_distance2(iGridDims, jGridDims, nbl->rlist, c_listIsSimple, sc_layoutType);

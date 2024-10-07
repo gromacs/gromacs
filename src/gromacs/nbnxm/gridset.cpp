@@ -209,9 +209,9 @@ void GridSet::putOnGrid(const matrix            box,
     }
     else
     {
-        const Grid::Dimensions& dimsGrid0 = grids_[0].dimensions();
-        atomDensity                       = dimsGrid0.atomDensity;
-        maxAtomGroupRadius                = dimsGrid0.maxAtomGroupRadius;
+        const GridDimensions& dimsGrid0 = grids_[0].dimensions();
+        atomDensity                     = dimsGrid0.atomDensity;
+        maxAtomGroupRadius              = dimsGrid0.maxAtomGroupRadius;
 
         numRealAtomsTotal_ = std::max(numRealAtomsTotal_, *atomRange.end());
     }
