@@ -62,11 +62,13 @@ static constexpr int sc_solveMaxThreadsPerBlock = c_solveMaxWarpsPerBlock* paral
  * \tparam     gridOrdering             Specifies the dimension ordering of the complex grid.
  * \tparam     computeEnergyAndVirial   Tells if the reciprocal energy and virial should be computed.
  * \tparam     gridIndex                The index of the grid to use in the kernel.
+ * \tparam     parallelExecutionWidth   The device parallel execution size to use
+ *
  * \param[in]  kernelParams             Input PME HIP data in constant memory.
  */
 template<GridOrdering gridOrdering, bool computeEnergyAndVirial, const int gridIndex, int parallelExecutionWidth>
 LAUNCH_BOUNDS_EXACT_SINGLE(sc_solveMaxThreadsPerBlock<parallelExecutionWidth>)
-__global__ void pmeSolveKernel(const struct PmeGpuKernelParamsBase kernelParams)
+__global__ void pmeSolveKernel(const PmeGpuKernelParamsBase kernelParams)
 {
     /* This kernel supports 2 different grid dimension orderings: YZX and XYZ */
     constexpr int majorDim  = gridOrdering == GridOrdering::YZX ? YY : XX;

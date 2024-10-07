@@ -82,11 +82,22 @@ constexpr int sc_subGroupSizeZ = 1;
 /*! \brief
  * A HIP kernel which packs non-contiguous overlap data in all 8 neighboring directions
  *
- * \param[in] gm_realGrid          PME device grid
- * \param[out] gm_transferGrid*    device arrays used to pack data in 8-neighboring directions
- * \param[in] overlapSize*         halo size in 4 directions
- * \param[in] myGrid*              local domain size in X and Y dimension
- * \param[in] pmeSize              Local PME grid size
+ * \param[in] gm_realGrid               PME device grid
+ * \param[out] gm_transferGridUp        packed data in 8-neighboring directions
+ * \param[out] gm_transferGridDown      packed data in 8-neighboring directions
+ * \param[out] gm_transferGridLeft      packed data in 8-neighboring directions
+ * \param[out] gm_transferGridRight     packed data in 8-neighboring directions
+ * \param[out] gm_transferGridUpLeft    packed data in 8-neighboring directions
+ * \param[out] gm_transferGridDownLeft  packed data in 8-neighboring directions
+ * \param[out] gm_transferGridUpRight   packed data in 8-neighboring directions
+ * \param[out] gm_transferGridDownRight packed data in 8-neighboring directions
+ * \param[in] overlapSizeUp             halo size in 4 directions, up
+ * \param[in] overlapSizeDown           halo size in 4 directions, down
+ * \param[in] overlapSizeLeft           halo size in 4 directions, left
+ * \param[in] overlapSizeRight          halo size in 4 directions, right
+ * \param[in] myGridX                   local domain size in X dimension
+ * \param[in] myGridY                   local domain size in Y dimension
+ * \param[in] pmeSize                   Local PME grid size
  *
  */
 template<bool is64ExecutionWidth>
@@ -194,11 +205,22 @@ __global__ void pmeGpuPackHaloExternal(const float* __restrict__ gm_realGrid,
 /*! \brief
  * A HIP kernel which assigns data in halo region in all 8 neighboring directions
  *
- * \param[in] gm_realGrid          PME device grid
- * \param[out] gm_transferGrid*    packed data in 8-neighboring directions
- * \param[in] overlapSize*         halo size in 4 directions
- * \param[in] myGrid*              local domain size in X and Y dimension
- * \param[in] pmeSize              Local PME grid size
+ * \param[in] gm_realGrid               PME device grid
+ * \param[out] gm_transferGridUp        packed data in 8-neighboring directions
+ * \param[out] gm_transferGridDown      packed data in 8-neighboring directions
+ * \param[out] gm_transferGridLeft      packed data in 8-neighboring directions
+ * \param[out] gm_transferGridRight     packed data in 8-neighboring directions
+ * \param[out] gm_transferGridUpLeft    packed data in 8-neighboring directions
+ * \param[out] gm_transferGridDownLeft  packed data in 8-neighboring directions
+ * \param[out] gm_transferGridUpRight   packed data in 8-neighboring directions
+ * \param[out] gm_transferGridDownRight packed data in 8-neighboring directions
+ * \param[in] overlapSizeUp             halo size in 4 directions, up
+ * \param[in] overlapSizeDown           halo size in 4 directions, down
+ * \param[in] overlapSizeLeft           halo size in 4 directions, left
+ * \param[in] overlapSizeRight          halo size in 4 directions, right
+ * \param[in] myGridX                   local domain size in X dimension
+ * \param[in] myGridY                   local domain size in Y dimension
+ * \param[in] pmeSize                   Local PME grid size
  */
 template<bool is64ExecutionWidth>
 __global__ void pmeGpuUnpackHaloExternal(float* __restrict__ gm_realGrid,
@@ -305,11 +327,22 @@ __global__ void pmeGpuUnpackHaloExternal(float* __restrict__ gm_realGrid,
 /*! \brief
  * A HIP kernel which adds grid overlap data received from neighboring ranks
  *
- * \param[in] gm_realGrid          PME device grid
- * \param[out] gm_transferGrid*    packed data in 8-neighboring directions
- * \param[in] overlapSize*         halo size in 4 directions
- * \param[in] myGrid*              local domain size in X and Y dimension
- * \param[in] pmeSize              Local PME grid size
+ * \param[in] gm_realGrid               PME device grid
+ * \param[out] gm_transferGridUp        packed data in 8-neighboring directions
+ * \param[out] gm_transferGridDown      packed data in 8-neighboring directions
+ * \param[out] gm_transferGridLeft      packed data in 8-neighboring directions
+ * \param[out] gm_transferGridRight     packed data in 8-neighboring directions
+ * \param[out] gm_transferGridUpLeft    packed data in 8-neighboring directions
+ * \param[out] gm_transferGridDownLeft  packed data in 8-neighboring directions
+ * \param[out] gm_transferGridUpRight   packed data in 8-neighboring directions
+ * \param[out] gm_transferGridDownRight packed data in 8-neighboring directions
+ * \param[in] overlapSizeUp             halo size in 4 directions, up
+ * \param[in] overlapSizeDown           halo size in 4 directions, down
+ * \param[in] overlapSizeLeft           halo size in 4 directions, left
+ * \param[in] overlapSizeRight          halo size in 4 directions, right
+ * \param[in] myGridX                   local domain size in X dimension
+ * \param[in] myGridY                   local domain size in Y dimension
+ * \param[in] pmeSize                   Local PME grid size
  */
 template<bool is64ExecutionWidth>
 __global__ void pmeGpuUnpackAndAddHaloInternal(float* __restrict__ gm_realGrid,
@@ -408,9 +441,20 @@ __global__ void pmeGpuUnpackAndAddHaloInternal(float* __restrict__ gm_realGrid,
  * A HIP kernel which packs non-contiguous overlap data in all 8 neighboring directions
  *
  * \param[in] gm_realGrid          PME device grid
- * \param[out] gm_transferGrid*    packed data in 8-neighboring directions
- * \param[in] overlapSize*         halo size in 4 directions
- * \param[in] myGrid*              local domain size in X and Y dimension
+ * \param[out] gm_transferGridUp        packed data in 8-neighboring directions
+ * \param[out] gm_transferGridDown      packed data in 8-neighboring directions
+ * \param[out] gm_transferGridLeft      packed data in 8-neighboring directions
+ * \param[out] gm_transferGridRight     packed data in 8-neighboring directions
+ * \param[out] gm_transferGridUpLeft    packed data in 8-neighboring directions
+ * \param[out] gm_transferGridDownLeft  packed data in 8-neighboring directions
+ * \param[out] gm_transferGridUpRight   packed data in 8-neighboring directions
+ * \param[out] gm_transferGridDownRight packed data in 8-neighboring directions
+ * \param[in] overlapSizeUp             halo size in 4 directions, up
+ * \param[in] overlapSizeDown           halo size in 4 directions, down
+ * \param[in] overlapSizeLeft           halo size in 4 directions, left
+ * \param[in] overlapSizeRight          halo size in 4 directions, right
+ * \param[in] myGridX                   local domain size in X dimension
+ * \param[in] myGridY                   local domain size in Y dimension
  * \param[in] pmeSize              Local PME grid size
  */
 template<bool is64ExecutionWidth>
@@ -507,8 +551,8 @@ __global__ void pmeGpuPackHaloInternal(const float* __restrict__ gm_realGrid,
 /*! \brief
  * A HIP kernel which copies data from pme grid to FFT grid and back
  *
- * \param[in] gm_pmeGrid          local PME grid
- * \param[in] gm_fftGrid          local FFT grid
+ * \param[in] gm_realGrid        local PME real space grid
+ * \param[in] gm_fftGrid         local FFT grid
  * \param[in] fftNData           local FFT grid size without padding
  * \param[in] fftSize            local FFT grid padded size
  * \param[in] pmeSize            local PME grid padded size
