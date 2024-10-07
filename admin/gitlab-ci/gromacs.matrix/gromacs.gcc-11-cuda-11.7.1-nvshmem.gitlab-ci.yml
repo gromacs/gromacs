@@ -87,8 +87,11 @@ gromacs:gcc-11-cuda-11.7.1:regressiontest-gpucommupd-MPI-NVSHMEM:
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11-cuda-11.7.1
   variables:
     CMAKE: /usr/local/cmake-3.21.2/bin/cmake
-    REGRESSIONTEST_PME_RANK_NUMBER: 0
-    REGRESSIONTEST_TOTAL_RANK_NUMBER: 4
+    GMX_ENABLE_NVSHMEM: 1
+    # Test 1 PME - 1 PP rank runs in regressiontests
+    # as nvshmem support is for PME to PP force transfers
+    REGRESSIONTEST_PME_RANK_NUMBER: 1
+    REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
     REGRESSIONTEST_PARALLEL: "-np"
     GMX_ENABLE_DIRECT_GPU_COMM: 1

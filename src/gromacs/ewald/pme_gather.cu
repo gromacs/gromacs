@@ -348,7 +348,9 @@ __device__ void findPPRankAndPutForces(const int threadLocalId,
     {
         const int outputIndexLocal  = i * iterThreads + threadLocalId;
         const int outputIndexGlobal = blockIndex * blockForcesSize + outputIndexLocal;
-        haveAnyWorkFromThread += (((outputIndexGlobal < endAtoms)) && (outputIndexGlobal >= startAtoms));
+        int isValidRange = ((outputIndexGlobal < endAtoms) && (outputIndexGlobal >= startAtoms)
+                            && (threadLocalId < iterThreads));
+        haveAnyWorkFromThread |= (isValidRange << i);
     }
 
     const int haveAnyWorkInWarp = __any_sync(c_fullWarpMask, haveAnyWorkFromThread > 0);
@@ -361,29 +363,35 @@ __device__ void findPPRankAndPutForces(const int threadLocalId,
         const bool isPpRankIntraNode = (gm_forcesRemote != nullptr);
         const int  remoteOffset      = isPpRankIntraNode ? startAtoms : 0;
         float*     gm_forcesDest     = isPpRankIntraNode ? gm_forcesRemote : gm_forces;
+        int        totalAtomsThread  = 0;
 
 #    pragma unroll
         for (int i = 0; i < numIter; i++)
         {
             const int outputIndexLocal  = i * iterThreads + threadLocalId;
             const int outputIndexGlobal = blockIndex * blockForcesSize + outputIndexLocal;
-            if ((outputIndexGlobal < endAtoms) && (outputIndexGlobal >= startAtoms))
+            int       isValidRange      = 1 & (haveAnyWorkFromThread >> i);
+            if (isValidRange)
             {
                 float outputForceComponent                      = sm_forces[outputIndexLocal];
                 gm_forcesDest[outputIndexGlobal - remoteOffset] = outputForceComponent;
+                totalAtomsThread++;
             }
         }
 
         if (!isPpRankIntraNode)
         {
-            int totalAtomsWarpProcessed = haveAnyWorkFromThread;
+            int totalAtomsWarpProcessed = totalAtomsThread;
             // reduce to find total atoms processed by this block for this PP rank.
             for (int mask = warp_size / 2; mask > 0; mask /= 2)
             {
                 totalAtomsWarpProcessed += __shfl_xor_sync(c_fullWarpMask, totalAtomsWarpProcessed, mask);
             }
 
-            __threadfence();
+            // Use threadfence_block to make sure the previous update to `gm_forcesDest`
+            // is observed by all the threads in the block before nvshmemx_float_put_nbi_warp
+            // does the remote writes.
+            __threadfence_block();
 
             // start offset for source buffer.
             const int startOffsetSrc = (startAtoms > (blockIndex * blockForcesSize))
@@ -457,9 +465,7 @@ __launch_bounds__(c_gatherMaxThreadsPerBlock, c_gatherMinBlocksPerMP) __global__
 
     /* Global memory pointers */
     const float* __restrict__ gm_coefficientsA = kernelParams.atoms.d_coefficients[0];
-    const float* __restrict__ gm_coefficientsB = kernelParams.atoms.d_coefficients[1];
     const float* __restrict__ gm_gridA         = kernelParams.grid.d_realGrid[0];
-    const float* __restrict__ gm_gridB         = kernelParams.grid.d_realGrid[1];
     static_assert(sizeof(*kernelParams.atoms.d_forces) == 3 * sizeof(float));
     float* __restrict__ gm_forces = reinterpret_cast<float*>(kernelParams.atoms.d_forces);
 
@@ -647,44 +653,12 @@ __launch_bounds__(c_gatherMaxThreadsPerBlock, c_gatherMinBlocksPerMP) __global__
     constexpr int numIter         = (blockForcesSize + warp_size - 1) / warp_size;
     constexpr int iterThreads     = blockForcesSize / numIter;
 
-#if GMX_NVSHMEM
-    if (!kernelParams.isVirialStep && kernelParams.useNvshmem)
+    if constexpr (numGrids == 2)
     {
-        if (threadLocalId < iterThreads)
-        {
-            for (int rankId = 0; rankId < kernelParams.ppRanksInfoSize; rankId++)
-            {
-                const auto ppRankInfo    = kernelParams.ppRanksInfo[rankId];
-                const int  endAtomOffset = ppRankInfo.startAtomOffset + ppRankInfo.numAtoms;
+        __shared__ float3 sm_forces_numGrids2[atomsPerBlock];
+        const float* __restrict__ gm_coefficientsB = kernelParams.atoms.d_coefficients[1];
+        const float* __restrict__ gm_gridB         = kernelParams.grid.d_realGrid[1];
 
-                findPPRankAndPutForces<numIter, iterThreads, blockForcesSize>(
-                        threadLocalId,
-                        ppRankInfo.rankId,
-                        ppRankInfo.startAtomOffset * DIM,
-                        endAtomOffset * DIM,
-                        gm_forces,
-                        reinterpret_cast<float*>(sm_forces));
-            }
-        }
-    }
-    else
-#endif
-    {
-        if (threadLocalId < iterThreads)
-        {
-#pragma unroll
-            for (int i = 0; i < numIter; i++)
-            {
-                int   outputIndexLocal     = i * iterThreads + threadLocalId;
-                int   outputIndexGlobal    = blockIndex * blockForcesSize + outputIndexLocal;
-                float outputForceComponent = (reinterpret_cast<float*>(sm_forces)[outputIndexLocal]);
-                gm_forces[outputIndexGlobal] = outputForceComponent;
-            }
-        }
-    }
-
-    if (numGrids == 2)
-    {
         /* We must sync here since the same shared memory is used as above. */
         __syncthreads();
         fx                    = 0.0F;
@@ -713,14 +687,20 @@ __launch_bounds__(c_gatherMaxThreadsPerBlock, c_gatherMinBlocksPerMP) __global__
                                                                   gm_gridB);
         }
         // Reduction of partial force contributions
-        reduce_atom_forces<order, atomDataSize, blockSize>(
-                sm_forces, atomIndexLocal, splineIndex, lineIndex, kernelParams.grid.realGridSizeFP, fx, fy, fz);
+        reduce_atom_forces<order, atomDataSize, blockSize>(sm_forces_numGrids2,
+                                                           atomIndexLocal,
+                                                           splineIndex,
+                                                           lineIndex,
+                                                           kernelParams.grid.realGridSizeFP,
+                                                           fx,
+                                                           fy,
+                                                           fz);
         __syncthreads();
 
         /* Calculating the final forces with no component branching, atomsPerBlock threads */
         if (forceIndexLocal < atomsPerBlock)
         {
-            calculateAndStoreGridForces(sm_forces,
+            calculateAndStoreGridForces(sm_forces_numGrids2,
                                         forceIndexLocal,
                                         forceIndexGlobal,
                                         kernelParams.current.recipBox,
@@ -730,7 +710,40 @@ __launch_bounds__(c_gatherMaxThreadsPerBlock, c_gatherMinBlocksPerMP) __global__
 
         __syncwarp();
 
-        /* Writing or adding the final forces component-wise, single warp */
+        if (threadLocalId < iterThreads)
+        {
+            for (int i = 0; i < numIter; i++)
+            {
+                int   outputIndexLocal = i * iterThreads + threadLocalId;
+                float outputForceComponent =
+                        (reinterpret_cast<float*>(sm_forces_numGrids2)[outputIndexLocal]);
+                reinterpret_cast<float*>(sm_forces)[outputIndexLocal] += outputForceComponent;
+            }
+        }
+        __syncwarp();
+    }
+
+#if GMX_NVSHMEM
+    if (!kernelParams.isVirialStep && kernelParams.useNvshmem)
+    {
+        __syncthreads();
+        for (int rankId = 0; rankId < kernelParams.ppRanksInfoSize; rankId++)
+        {
+            const auto ppRankInfo    = kernelParams.ppRanksInfo[rankId];
+            const int  endAtomOffset = ppRankInfo.startAtomOffset + ppRankInfo.numAtoms;
+
+            findPPRankAndPutForces<numIter, iterThreads, blockForcesSize>(
+                    threadLocalId,
+                    ppRankInfo.rankId,
+                    ppRankInfo.startAtomOffset * DIM,
+                    endAtomOffset * DIM,
+                    gm_forces,
+                    reinterpret_cast<float*>(sm_forces));
+        }
+    }
+    else
+#endif
+    {
         if (threadLocalId < iterThreads)
         {
 #pragma unroll
@@ -739,7 +752,7 @@ __launch_bounds__(c_gatherMaxThreadsPerBlock, c_gatherMinBlocksPerMP) __global__
                 int   outputIndexLocal     = i * iterThreads + threadLocalId;
                 int   outputIndexGlobal    = blockIndex * blockForcesSize + outputIndexLocal;
                 float outputForceComponent = (reinterpret_cast<float*>(sm_forces)[outputIndexLocal]);
-                gm_forces[outputIndexGlobal] += outputForceComponent;
+                gm_forces[outputIndexGlobal] = outputForceComponent;
             }
         }
     }
