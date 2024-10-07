@@ -173,7 +173,6 @@ std::optional<std::string> reasonsTestIsInvalid(MdpFlavor       mdpFlavor,
                           "Cannot use GPU offload without a compatible GPU");
     errorReasons.appendIf((GMX_GPU_OPENCL || GMX_GPU_HIP) && updateFlavor == UpdateFlavor::Gpu,
                           "GPU Update not supported with OpenCL");
-    errorReasons.appendIf(GMX_GPU_HIP && pmeFlavor == PmeFlavor::Gpu, "HIP PME not implemented yet");
     errorReasons.appendIf(updateFlavor == UpdateFlavor::Gpu && pmeFlavor == PmeFlavor::Cpu
                                   && separatePmeRankFlavor != SeparatePmeRankFlavor::None,
                           "Can not use GPU update and CPU PME on a separate rank");
