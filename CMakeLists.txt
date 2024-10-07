@@ -48,6 +48,9 @@ if(POLICY CMP0146) # From CMake 3.27
     # We still use FindCUDA
     cmake_policy(SET CMP0146 OLD)
 endif()
+if(POLICY CMP0169) # From CMake 3.30
+    cmake_policy(SET CMP0169 OLD)
+endif()
 
 # CMake modules/macros are in a subdirectory to keep this file cleaner
 # This needs to be set before project() in order to pick up toolchain files

@@ -85,6 +85,14 @@ Fixes that affect portability
 Miscellaneous
 ^^^^^^^^^^^^^
 
+Work around FetchContent warnings in CMake 3.30 and newer
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+CMake 3.30 began to complain about |Gromacs| use of FetchContent, so
+now we tell such new versions to use the old policy.
+
+:issue:`5140`
+
 Fix various crashes when GMX_USE_COLVARS=NONE
 """""""""""""""""""""""""""""""""""""""""""""
 
