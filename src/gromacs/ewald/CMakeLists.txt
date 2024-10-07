@@ -50,9 +50,6 @@ gmx_add_libgromacs_sources(
     pme_spread.cpp
     # Files that implement stubs
     pme_gpu_program.cpp
-    pme_pp_comm_gpu_impl.cpp
-    pme_coordinate_receiver_gpu_impl.cpp
-    pme_force_sender_gpu_impl.cpp
     )
 if (GMX_GPU_CUDA)
     gmx_add_libgromacs_sources(
@@ -95,6 +92,45 @@ elseif (GMX_GPU_OPENCL)
         pme_gpu.cpp
         pme_gpu_internal.cpp
         pme_gpu_timings.cpp
+        # General implementation stubs
+        pme_force_sender_gpu_impl.cpp
+        pme_coordinate_receiver_gpu_impl.cpp
+        pme_pp_comm_gpu_impl.cpp
+)
+elseif (GMX_GPU_HIP)
+    gmx_add_libgromacs_sources(
+        # HIP-specific sources
+        pme_gather_hip.cpp
+        pme_gpu.cpp
+        pme_gpu_grid_hip.cpp
+        pme_gpu_internal.cpp
+        pme_gpu_program_impl_hip.cpp
+        pme_gpu_timings.cpp
+        pme_solve_hip.cpp
+        pme_spread_hip.cpp
+        pme_pp_comm_gpu_impl_gpu_hip.cpp
+        pme_force_sender_gpu_impl_gpu_hip.cpp
+        pme_pp_comm_gpu_impl_gpu.cpp
+        pme_force_sender_gpu_impl_gpu.cpp
+        pme_force_sender_gpu_impl_gpu_hip.cpp
+        pme_coordinate_receiver_gpu_impl_gpu.cpp
+        )
+    _gmx_add_files_to_property(HIP_SOURCES
+        # Must add these files so they can include device_information.h
+        pme_gather_hip.cpp
+        pme_gpu_grid_hip.cpp
+        pme_gpu_internal.cpp
+        pme_gpu_program.cpp
+        pme_gpu_program_impl_hip.cpp
+        pme_gpu_3dfft_hip.cpp
+        pme_gpu_timings.cpp
+        pme_pp_comm_gpu_impl_gpu.cpp
+        pme_pp_comm_gpu_impl_gpu_hip.cpp
+        pme_force_sender_gpu_impl_gpu.cpp
+        pme_force_sender_gpu_impl_gpu_hip.cpp
+        pme_coordinate_receiver_gpu_impl_gpu.cpp
+        pme_solve_hip.cpp
+        pme_spread_hip.cpp
         )
 elseif (GMX_GPU_SYCL)
     gmx_add_libgromacs_sources(
@@ -130,25 +166,13 @@ elseif (GMX_GPU_SYCL)
         pme_solve_sycl.cpp
         pme_spread_sycl.cpp
       )
-elseif (GMX_GPU_HIP)
-    gmx_add_libgromacs_sources(
-        pme_gpu.cpp
-        pme_gpu_hip_stubs.cpp
-        pme_gpu_program_impl_hip.cpp
-        )
-    _gmx_add_files_to_property(HIP_SOURCES
-        pme_gpu.cpp
-        pme_gpu_hip_stubs.cpp
-        pme_gpu_program.cpp
-        pme_gpu_program_impl_hip.cpp
-        pme_pp_comm_gpu_impl.cpp
-        pme_coordinate_receiver_gpu_impl.cpp
-        pme_force_sender_gpu_impl.cpp
-        )
 else()
     gmx_add_libgromacs_sources(
         # Files that implement stubs
         pme_gpu_program_impl.cpp
+        pme_force_sender_gpu_impl.cpp
+        pme_coordinate_receiver_gpu_impl.cpp
+        pme_pp_comm_gpu_impl.cpp
         )
 endif()
 

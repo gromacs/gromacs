@@ -32,8 +32,8 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 
-#ifndef GMX_GPU_UTILS_VECTYPE_OPS_GPU_SHARED_DECLARATIONS_H
-#define GMX_GPU_UTILS_VECTYPE_OPS_GPU_SHARED_DECLARATIONS_H
+#ifndef GMX_GPU_UTILS_VECTYPE_OPS_CUDA_HIP_SHARED_DECLARATIONS_H
+#define GMX_GPU_UTILS_VECTYPE_OPS_CUDA_HIP_SHARED_DECLARATIONS_H
 
 #if !defined(__CUDACC__) && !defined(__HIPCC__)
 #    error Including header specific for CUDA or HIP device code without compiling the file with the correct compiler

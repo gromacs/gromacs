@@ -63,7 +63,7 @@
 #include "pme_gpu_settings.h"
 #include "pme_gpu_staging.h"
 
-#if GMX_GPU && !GMX_GPU_HIP
+#if GMX_GPU
 struct PmeGpuSpecific;
 struct PmeGpuHaloExchange;
 #else
@@ -72,11 +72,7 @@ typedef int PmeGpuSpecific;
 typedef int PmeGpuHaloExchange;
 #endif
 
-#if GMX_GPU_CUDA
-struct PmeGpuCudaKernelParams;
-/*! \brief A typedef for including the GPU kernel arguments data by pointer */
-typedef PmeGpuCudaKernelParams PmeGpuKernelParams;
-#elif GMX_GPU_OPENCL || GMX_GPU_SYCL
+#if GMX_GPU
 struct PmeGpuKernelParamsBase;
 /*! \brief A typedef for including the GPU kernel arguments data by pointer */
 typedef PmeGpuKernelParamsBase PmeGpuKernelParams;

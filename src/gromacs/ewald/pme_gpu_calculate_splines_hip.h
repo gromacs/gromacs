@@ -35,6 +35,8 @@
 /*! \internal \file
  *  \brief Implements helper routines for PME gather and spline routines.
  *
+ *  \author Paul Bauer <pul.bauer.q@gmail.com>
+ *  \author Julio Maia <julio.maia@amd.com>
  *  \author Aleksei Iupinov <a.yupinov@gmail.com>
  */
 
@@ -42,11 +44,10 @@
 
 #include <cassert>
 
-#include "gromacs/gpu_utils/cuda_kernel_utils.cuh"
-#include "gromacs/gpu_utils/vectype_ops_cuda.h"
+#include "gromacs/gpu_utils/hip_kernel_utils.h"
+#include "gromacs/gpu_utils/vectype_ops_hip.h"
 
 #include "pme_gpu_constants.h"
-#include "pme_gpu_internal.h"
 #include "pme_gpu_types.h"
 #include "pme_grid.h"
 
@@ -98,7 +99,7 @@ static int __device__ __forceinline__ getSplineParamIndex(int paramIndexBase, in
 }
 
 /*! \internal \brief
- * An inline CUDA function for skipping the zero-charge atoms.
+ * An inline HIP function for skipping the zero-charge atoms.
  *
  * \returns                        Non-0 if atom should be processed, 0 otherwise.
  * \param[in] coefficient          The atom charge.
@@ -112,7 +113,7 @@ static bool __device__ __forceinline__ pme_gpu_check_atom_charge(const float coe
 }
 
 //! Controls if the atom and charge data is prefeched into shared memory or loaded per thread from global
-static const bool c_useAtomDataPrefetch = true;
+static constexpr bool c_useAtomDataPrefetch = false;
 
 /*! \brief Asserts if the argument is finite.
  *
@@ -153,9 +154,9 @@ template<typename T, int atomsPerBlock, int dataCountPerAtom>
 static __device__ __forceinline__ void pme_gpu_stage_atom_data(T* __restrict__ sm_destination,
                                                                const T* __restrict__ gm_source)
 {
-    const int blockIndex = blockIdx.y * gridDim.x + blockIdx.x;
+    const int blockIndex       = blockIdx.y * gridDim.x + blockIdx.x;
     const int threadLocalIndex = ((threadIdx.z * blockDim.y + threadIdx.y) * blockDim.x) + threadIdx.x;
-    const int localIndex      = threadLocalIndex;
+    const int localIndex       = threadLocalIndex;
     const int globalIndexBase = blockIndex * atomsPerBlock * dataCountPerAtom;
     const int globalIndex     = globalIndexBase + localIndex;
     if (localIndex < atomsPerBlock * dataCountPerAtom)
@@ -180,7 +181,7 @@ static __device__ __forceinline__ void pme_gpu_stage_atom_data(T* __restrict__ s
  *                                  be written to global memory. Enables calculation of dtheta if
  *                                  set.
  * \tparam     numGrids             The number of grids using the splines.
- * \param[in]  kernelParams         Input PME CUDA data in constant memory.
+ * \param[in]  kernelParams         Input PME HIP data in constant memory.
  * \param[in]  atomIndexOffset      Starting atom index for the execution block w.r.t. global memory.
  * \param[in]  atomX                Atom coordinate of atom processed by thread.
  * \param[in]  atomCharge           Atom charge/coefficient of atom processed by thread.
@@ -189,7 +190,7 @@ static __device__ __forceinline__ void pme_gpu_stage_atom_data(T* __restrict__ s
  * \param[out] sm_gridlineIndices   Atom gridline indices in the shared memory.
  */
 
-template<int order, int atomsPerBlock, int atomsPerWarp, bool writeSmDtheta, bool writeGlobal, int numGrids>
+template<int order, int atomsPerBlock, int atomsPerWarp, bool writeSmDtheta, bool writeGlobal, int numGrids, int parallelExecutionWidth>
 static __device__ __forceinline__ void calculate_splines(const PmeGpuKernelParamsBase kernelParams,
                                                          const int    atomIndexOffset,
                                                          const float3 atomX,
@@ -198,8 +199,8 @@ static __device__ __forceinline__ void calculate_splines(const PmeGpuKernelParam
                                                          float* __restrict__ sm_dtheta,
                                                          int* __restrict__ sm_gridlineIndices)
 {
-    assert(numGrids == 1 || numGrids == 2);
-    assert(numGrids == 1 || c_skipNeutralAtoms == false);
+    static_assert(numGrids == 1 || numGrids == 2);
+    static_assert(numGrids == 1 || c_skipNeutralAtoms == false);
 
     /* Global memory pointers for output */
     float* __restrict__ gm_theta         = kernelParams.atoms.d_theta;
@@ -213,7 +214,7 @@ static __device__ __forceinline__ void calculate_splines(const PmeGpuKernelParam
     const int threadLocalId =
             (threadIdx.z * (blockDim.x * blockDim.y)) + (threadIdx.y * blockDim.x) + threadIdx.x;
     /* Warp index w.r.t. block - could probably be obtained easier? */
-    const int warpIndex = threadLocalId / warp_size;
+    const int warpIndex = threadLocalId / parallelExecutionWidth;
     /* Atom index w.r.t. warp - alternating 0 1 0 1 .. */
     const int atomWarpIndex = threadIdx.z % atomsPerWarp;
     /* Atom index w.r.t. block/shared memory */
@@ -240,7 +241,6 @@ static __device__ __forceinline__ void calculate_splines(const PmeGpuKernelParam
         if (orderIndex == 0)
         {
             int   tableIndex = 0;
-            int   tInt       = 0;
             float n          = 0.;
             float t          = 0.;
             assert(atomIndexLocal < DIM * atomsPerBlock);
@@ -262,23 +262,20 @@ static __device__ __forceinline__ void calculate_splines(const PmeGpuKernelParam
                 case YY:
                     tableIndex = kernelParams.grid.tablesOffsets[YY];
                     n          = kernelParams.grid.realGridSizeFP[YY];
-                    t = /*atomX.x * kernelParams.current.recipBox[dimIndex][XX] + */ atomX.y
-                                * kernelParams.current.recipBox[dimIndex][YY]
+                    t          = atomX.y * kernelParams.current.recipBox[dimIndex][YY]
                         + atomX.z * kernelParams.current.recipBox[dimIndex][ZZ];
                     break;
 
                 case ZZ:
                     tableIndex = kernelParams.grid.tablesOffsets[ZZ];
                     n          = kernelParams.grid.realGridSizeFP[ZZ];
-                    t = /*atomX.x * kernelParams.current.recipBox[dimIndex][XX] + atomX.y * kernelParams.current.recipBox[dimIndex][YY] + */ atomX
-                                .z
-                        * kernelParams.current.recipBox[dimIndex][ZZ];
+                    t          = atomX.z * kernelParams.current.recipBox[dimIndex][ZZ];
                     break;
             }
             const float shift = c_pmeMaxUnitcellShift;
             /* Fractional coordinates along box vectors, adding a positive shift to ensure t is positive for triclinic boxes */
-            t    = (t + shift) * n;
-            tInt = static_cast<int>(t);
+            t              = (t + shift) * n;
+            const int tInt = static_cast<const int>(t);
             assert(sharedMemoryIndex < atomsPerBlock * DIM);
             sm_fractCoords[sharedMemoryIndex] = t - tInt;
             tableIndex += tInt;
@@ -293,7 +290,7 @@ static __device__ __forceinline__ void calculate_splines(const PmeGpuKernelParam
                     fetchFromParamLookupTable(kernelParams.grid.d_gridlineIndicesTable,
                                               kernelParams.gridlineIndicesTableTexture,
                                               tableIndex);
-            if (writeGlobal)
+            if constexpr (writeGlobal)
             {
                 gm_gridlineIndices[atomIndexOffset * DIM + sharedMemoryIndex] =
                         sm_gridlineIndices[sharedMemoryIndex];
@@ -306,9 +303,6 @@ static __device__ __forceinline__ void calculate_splines(const PmeGpuKernelParam
         /* With FEP (numGrids == 2), we might have 0 charge in state A, but !=0 in state B, so we always calculate splines */
         if (numGrids == 2 || chargeCheck)
         {
-            float div;
-            int o = orderIndex; // This is an index that is set once for PME_GPU_PARALLEL_SPLINE == 1
-
             const float dr = sm_fractCoords[sharedMemoryIndex];
             assert(isfinite(dr));
 
@@ -320,7 +314,7 @@ static __device__ __forceinline__ void calculate_splines(const PmeGpuKernelParam
 #pragma unroll
             for (int k = 3; k < order; k++)
             {
-                div               = 1.0F / (k - 1.0F);
+                const float div   = 1.0F / (k - 1.0F);
                 splineData[k - 1] = div * dr * splineData[k - 2];
 #pragma unroll
                 for (int l = 1; l < (k - 1); l++)
@@ -335,11 +329,11 @@ static __device__ __forceinline__ void calculate_splines(const PmeGpuKernelParam
                     getSplineParamIndexBase<order, atomsPerWarp>(warpIndex, atomWarpIndex);
             const int thetaGlobalOffsetBase = atomIndexOffset * DIM * order;
             /* only calculate dtheta if we are saving it to shared or global memory */
-            if (writeSmDtheta || writeGlobal)
+            if constexpr (writeSmDtheta || writeGlobal)
             {
                 /* Differentiation and storing the spline derivatives (dtheta) */
 #pragma unroll
-                for (o = 0; o < order; o++)
+                for (int o = 0; o < order; o++)
                 {
                     const int thetaIndex =
                             getSplineParamIndex<order, atomsPerWarp>(thetaIndexBase, dimIndex, o);
@@ -347,11 +341,11 @@ static __device__ __forceinline__ void calculate_splines(const PmeGpuKernelParam
                     const float dtheta = ((o > 0) ? splineData[o - 1] : 0.0F) - splineData[o];
                     assert(isfinite(dtheta));
                     assert(thetaIndex < order * DIM * atomsPerBlock);
-                    if (writeSmDtheta)
+                    if constexpr (writeSmDtheta)
                     {
                         sm_dtheta[thetaIndex] = dtheta;
                     }
-                    if (writeGlobal)
+                    if constexpr (writeGlobal)
                     {
                         const int thetaGlobalIndex  = thetaGlobalOffsetBase + thetaIndex;
                         gm_dtheta[thetaGlobalIndex] = dtheta;
@@ -359,7 +353,7 @@ static __device__ __forceinline__ void calculate_splines(const PmeGpuKernelParam
                 }
             }
 
-            div                   = 1.0F / (order - 1.0F);
+            const float div       = 1.0F / (order - 1.0F);
             splineData[order - 1] = div * dr * splineData[order - 2];
 #pragma unroll
             for (int k = 1; k < (order - 1); k++)
@@ -372,14 +366,14 @@ static __device__ __forceinline__ void calculate_splines(const PmeGpuKernelParam
 
             /* Storing the spline values (theta) */
 #pragma unroll
-            for (o = 0; o < order; o++)
+            for (int o = 0; o < order; o++)
             {
                 const int thetaIndex =
                         getSplineParamIndex<order, atomsPerWarp>(thetaIndexBase, dimIndex, o);
                 assert(thetaIndex < order * DIM * atomsPerBlock);
                 sm_theta[thetaIndex] = splineData[o];
                 assert(isfinite(sm_theta[thetaIndex]));
-                if (writeGlobal)
+                if constexpr (writeGlobal)
                 {
                     const int thetaGlobalIndex = thetaGlobalOffsetBase + thetaIndex;
                     gm_theta[thetaGlobalIndex] = splineData[o];

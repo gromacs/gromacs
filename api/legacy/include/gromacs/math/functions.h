@@ -494,13 +494,7 @@ __host__ __device__
  * \warning The sum of \p numerator and \p denominator should fit into \c T
  */
 template<typename T>
-#if (defined(__NVCC__) && !defined(__CUDACC_RELAXED_CONSTEXPR__)) || defined(__HIPCC__)
-/* In CUDA 11, a constexpr function cannot be called from a function with incompatible execution
- * space, unless --expt-relaxed-constexpr flag is set */
-__host__ __device__
-#endif
-        constexpr T
-        divideRoundUp(T numerator, T denominator)
+constexpr T divideRoundUp(T numerator, T denominator)
 {
     static_assert(std::is_integral_v<T>, "Only integer types are supported");
     // only check this in a host context, as we don't have GMX_ASSERT for device code

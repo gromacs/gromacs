@@ -76,10 +76,6 @@
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/stringutil.h"
 
-#if GMX_GPU_CUDA
-#    include "pme.cuh"
-#endif
-
 #include "pme_gpu_calculate_splines.h"
 #include "pme_gpu_constants.h"
 #include "pme_gpu_grid.h"
@@ -113,16 +109,9 @@ static PmeGpuKernelParamsBase* pme_gpu_get_kernel_params_base_ptr(const PmeGpu* 
  * the numbers of atoms used for determining the size of the memory
  * allocation must be divisible by this.
  */
-#if !GMX_GPU_SYCL
-constexpr int c_pmeAtomDataBlockSize = 64;
-#else
-// Use more padding to support 64-wide warps and ThreadsPerAtom::Order
-constexpr int c_pmeAtomDataBlockSize = 128;
-#endif
-
-int pme_gpu_get_atom_data_block_size()
+int pme_gpu_get_atom_data_block_size(const int parallelExecutionSize)
 {
-    return c_pmeAtomDataBlockSize;
+    return 2 * parallelExecutionSize;
 }
 
 int pme_gpu_get_atoms_per_warp(const PmeGpu* pmeGpu)
@@ -652,7 +641,7 @@ void pme_gpu_realloc_and_copy_fract_shifts(PmeGpu* pmeGpu)
 void pme_gpu_free_fract_shifts(const PmeGpu* pmeGpu)
 {
     auto* kernelParamsPtr = pmeGpu->kernelParams.get();
-#if GMX_GPU_CUDA
+#if GMX_GPU_CUDA || GMX_GPU_HIP
     destroyParamLookupTable(&kernelParamsPtr->grid.d_fractShiftsTable,
                             &kernelParamsPtr->fractShiftsTableTexture);
     destroyParamLookupTable(&kernelParamsPtr->grid.d_gridlineIndicesTable,
@@ -783,16 +772,15 @@ static void pme_gpu_init_internal(PmeGpu* pmeGpu, const DeviceContext& deviceCon
      * TODO: PME could also try to pick up nice grid sizes (with factors of 2, 3, 5, 7).
      */
 
-#if GMX_GPU_CUDA || GMX_GPU_SYCL
+#if GMX_GPU_CUDA || GMX_GPU_SYCL || GMX_GPU_HIP
     pmeGpu->kernelParams->usePipeline       = char(false);
     pmeGpu->kernelParams->pipelineAtomStart = 0;
     pmeGpu->kernelParams->pipelineAtomEnd   = 0;
 #endif
-#if GMX_GPU_CUDA
+#if GMX_GPU_CUDA || GMX_GPU_HIP
     pmeGpu->maxGridWidthX = deviceContext.deviceInfo().prop.maxGridSize[0];
 #else
-    // Use this path for any non-CUDA GPU acceleration
-    // TODO: is there no really global work size limit in OpenCL?
+    // Use this path for any other GPU acceleration
     pmeGpu->maxGridWidthX = INT32_MAX / 2;
 #endif
 
@@ -861,6 +849,27 @@ static gmx::FftBackend getFftBackend(const PmeGpu* pmeGpu)
         {
             GMX_RELEASE_ASSERT(GMX_GPU_FFT_CLFFT, "Only clFFT and VkFFT are supported with OpenCL");
             return gmx::FftBackend::Ocl;
+        }
+    }
+    else if (GMX_GPU_HIP)
+    {
+        if (!pmeGpu->settings.useDecomposition)
+        {
+            if (GMX_GPU_FFT_VKFFT)
+            {
+                return gmx::FftBackend::HipVkfft;
+            }
+            else
+            {
+                return gmx::FftBackend::HipRocfft;
+            }
+        }
+        else
+        {
+            GMX_RELEASE_ASSERT(false,
+                               "GROMACS with HIP backend is currently not compatible with Heffte "
+                               "and PME decomposition");
+            return gmx::FftBackend::Count;
         }
     }
     else if (GMX_GPU_SYCL)
@@ -1289,7 +1298,7 @@ static void pme_gpu_copy_common_data_from(const gmx_pme_t* pme)
  */
 static void pme_gpu_select_best_performing_pme_spreadgather_kernels(PmeGpu* pmeGpu)
 {
-    if (((GMX_GPU_CUDA != 0) || (GMX_GPU_SYCL != 0))
+    if (((GMX_GPU_CUDA != 0) || (GMX_GPU_SYCL != 0) || (GMX_GPU_HIP != 0))
         && pmeGpu->kernelParams->atoms.nAtoms > pmeGpu->minParticleCountToRecalculateSplines)
     {
         pmeGpu->settings.threadsPerAtom     = ThreadsPerAtom::Order;
@@ -1427,10 +1436,10 @@ void pme_gpu_reinit_atoms(PmeGpu* pmeGpu, const int nAtoms, const real* chargesA
 {
     auto* kernelParamsPtr         = pme_gpu_get_kernel_params_base_ptr(pmeGpu);
     kernelParamsPtr->atoms.nAtoms = nAtoms;
-    const int  blockSize          = pme_gpu_get_atom_data_block_size();
-    const int  nAtomsNewPadded    = gmx::divideRoundUp(nAtoms, blockSize) * blockSize;
-    const bool haveToRealloc      = (pmeGpu->nAtomsAlloc < nAtomsNewPadded);
-    pmeGpu->nAtomsAlloc           = nAtomsNewPadded;
+    const int  blockSize = pme_gpu_get_atom_data_block_size(pmeGpu->programHandle_->warpSize());
+    const int  nAtomsNewPadded = gmx::divideRoundUp(nAtoms, blockSize) * blockSize;
+    const bool haveToRealloc   = (pmeGpu->nAtomsAlloc < nAtomsNewPadded);
+    pmeGpu->nAtomsAlloc        = nAtomsNewPadded;
 
     const auto atomsPerWarp = pme_gpu_get_atoms_per_warp(pmeGpu);
     const int  nWarps       = gmx::divideRoundUp(nAtoms, atomsPerWarp);
@@ -1868,7 +1877,7 @@ void pme_gpu_spread(PmeGpu*                        pmeGpu,
     // TODO: test varying block sizes on modern arch-s as well
     // TODO: also consider using cudaFuncSetCacheConfig() for preferring shared memory on older architectures
     //(for spline data mostly)
-    GMX_ASSERT(!(c_pmeAtomDataBlockSize % atomsPerBlock),
+    GMX_ASSERT(!(pme_gpu_get_atom_data_block_size(pmeGpu->programHandle_->warpSize()) % atomsPerBlock),
                "inconsistent atom data padding vs. spreading block size");
 
     // Ensure that coordinates are ready on the device before launching spread;
@@ -2203,8 +2212,8 @@ void pme_gpu_solve(PmeGpu* pmeGpu, const int gridIndex, t_complex* h_grid, GridO
     const int warpSize  = pmeGpu->programHandle_->warpSize();
     const int blockSize = gmx::divideRoundUp(cellsPerBlock, warpSize) * warpSize;
 
-    static_assert(!GMX_GPU_CUDA || c_solveMaxWarpsPerBlock / 2 >= 4,
-                  "The CUDA solve energy kernels needs at least 4 warps. "
+    static_assert((!GMX_GPU_CUDA && !GMX_GPU_HIP) || c_solveMaxWarpsPerBlock / 2 >= 4,
+                  "The CUDA and HIP solve energy kernels needs at least 4 warps. "
                   "Here we launch at least half of the max warps.");
 
     KernelLaunchConfig config;
@@ -2440,7 +2449,7 @@ void pme_gpu_gather(PmeGpu*                       pmeGpu,
 
     const int atomsPerBlock = blockSize / threadsPerAtom;
 
-    GMX_ASSERT(!(c_pmeAtomDataBlockSize % atomsPerBlock),
+    GMX_ASSERT(!(pme_gpu_get_atom_data_block_size(pmeGpu->programHandle_->warpSize()) % atomsPerBlock),
                "inconsistent atom data padding vs. gathering block size");
 
     // launch gather only if nAtoms > 0

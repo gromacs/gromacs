@@ -152,7 +152,6 @@ bool pme_gpu_supports_build(std::string* error)
 #    endif
 #endif
     errorReasons.appendIf(!GMX_GPU, "Non-GPU build of GROMACS.");
-    errorReasons.appendIf(GMX_GPU_HIP, "HIP API not supported yet");
     errorReasons.finishContext();
     if (error != nullptr)
     {

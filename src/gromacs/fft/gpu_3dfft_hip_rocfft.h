@@ -45,6 +45,8 @@
 
 #include <memory>
 
+#include <rocfft/rocfft.h>
+
 #include "gromacs/fft/fft.h"
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/gpu_utils/gputraits.h"
@@ -59,8 +61,8 @@ class DeviceStream;
 namespace gmx
 {
 
-/*! \internal \brief A 3D FFT wrapper class for performing R2C/C2R
- * transforms using rocFFT for HIP.
+/*! \internal \brief
+ * A 3D FFT wrapper class for performing R2C/C2R transforms using hipFFT
  */
 class Gpu3dFft::ImplHipRocfft : public Gpu3dFft::Impl
 {
