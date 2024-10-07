@@ -418,13 +418,13 @@ Explicit expression:
 Energies: van der Waals interactions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Explicition definition of energies:
+Explicit definition of energies:
 
 .. math:: \begin{aligned}
           V_{LJ}(r)=\begin{cases}
           \frac{C^{(12)}}{r^{12}} - \frac{C^{(6)}}{r^6}, & \mbox{if } \mbox{ $r \geq r_{scLJ}$} 
           \\
-          \left(\frac{78C^{(12)}}{r_{scLJ}^{14}} - \frac{21C^{(6)}}{r_{scLJ}^{8}}\right)r^2 - \left(\frac{168C^{(12)}}{r_{scLJ}^{13}} - \frac{48C^{(12)}}{r_{scLJ}^{7}}\right)r
+          \left(\frac{78C^{(12)}}{r_{scLJ}^{14}} - \frac{21C^{(6)}}{r_{scLJ}^{8}}\right)r^2 - \left(\frac{168C^{(12)}}{r_{scLJ}^{13}} - \frac{48C^{(6)}}{r_{scLJ}^{7}}\right)r
           + \frac{91C^{(12)}}{r_{scLJ}^{12}} - \frac{28C^{(6)}}{r_{scLJ}^{6}}, & \mbox{if } \mbox{ $r<r_{scLJ}$}
           \end{cases}\end{aligned}
           :label: eqvdwener
@@ -450,9 +450,9 @@ For simplicity, in the expression below we use the notation :math:`r_{scLJ_A}=r_
 
 .. math:: \begin{aligned}
           \frac{\partial{H}}{\partial{\lambda}} &= V_{LJ}^B(r) - V_{LJ}^A(r) + (1-\lambda)\frac{\partial{V_{LJ}^A(r)}}{\partial{\lambda}} + \lambda\frac{\partial{V_{LJ}^B(r)}}{\partial{\lambda}} \\
-          & =  \left(\frac{78C^{(12)}_B}{r_{scB}^{14}} - \frac{21C^{(6)}_B}{r_{scB}^{8}}\right)r^2 - \left(\frac{168C^{(12)}_B}{r_{scB}^{13}} - \frac{48C^{(12)}_B}{r_{scB}^{7}}\right)r
+          & =  \left(\frac{78C^{(12)}_B}{r_{scB}^{14}} - \frac{21C^{(6)}_B}{r_{scB}^{8}}\right)r^2 - \left(\frac{168C^{(12)}_B}{r_{scB}^{13}} - \frac{48C^{(6)}_B}{r_{scB}^{7}}\right)r
           + \frac{91C^{(12)}_B}{r_{scB}^{12}} - \frac{28C^{(6)}_B}{r_{scB}^{6}} \\
-          & -  \left[\left(\frac{78C^{(12)}_A}{r_{scA}^{14}} - \frac{21C^{(6)}_A}{r_{scA}^{8}}\right)r^2 - \left(\frac{168C^{(12)}_A}{r_{scA}^{13}} - \frac{48C^{(12)}_A}{r_{scA}^{7}}\right)r
+          & -  \left[\left(\frac{78C^{(12)}_A}{r_{scA}^{14}} - \frac{21C^{(6)}_A}{r_{scA}^{8}}\right)r^2 - \left(\frac{168C^{(12)}_A}{r_{scA}^{13}} - \frac{48C^{(6)}_A}{r_{scA}^{7}}\right)r
           + \frac{91C^{(12)}_A}{r_{scA}^{12}} - \frac{28C^{(6)}_A}{r_{scA}^{6}} \right]\\
           & +  \frac{14(\lambda-1)}{\lambda}\left[\left(\frac{13C^{(12)}_A}{r_{scA}^{14}} - \frac{2C^{(6)}_A}{r_{scA}^{8}}\right)r^2
           - \left(\frac{26C^{(12)}_A}{r_{scA}^{13}} - \frac{4C^{(6)}_A}{r_{scA}^{7}}\right)r
