@@ -336,10 +336,10 @@ __global__ void pmeGpuUnpackHaloExternal(float* __restrict__ gm_realGrid,
  * \param[out] gm_transferGridDownLeft  packed data in 8-neighboring directions
  * \param[out] gm_transferGridUpRight   packed data in 8-neighboring directions
  * \param[out] gm_transferGridDownRight packed data in 8-neighboring directions
- * \param[in] overlapSizeUp             halo size in 4 directions, up
- * \param[in] overlapSizeDown           halo size in 4 directions, down
+ * \param[in] overlapSizeX              halo size in 4 directions, X
+ * \param[in] overlapSizeY              halo size in 4 directions, Y
+ * \param[in] overlapSizeUp             halo size in 4 directions, Up
  * \param[in] overlapSizeLeft           halo size in 4 directions, left
- * \param[in] overlapSizeRight          halo size in 4 directions, right
  * \param[in] myGridX                   local domain size in X dimension
  * \param[in] myGridY                   local domain size in Y dimension
  * \param[in] pmeSize                   Local PME grid size
@@ -449,10 +449,10 @@ __global__ void pmeGpuUnpackAndAddHaloInternal(float* __restrict__ gm_realGrid,
  * \param[out] gm_transferGridDownLeft  packed data in 8-neighboring directions
  * \param[out] gm_transferGridUpRight   packed data in 8-neighboring directions
  * \param[out] gm_transferGridDownRight packed data in 8-neighboring directions
+ * \param[in] overlapSizeX              halo size in 4 directions, X
+ * \param[in] overlapSizeY              halo size in 4 directions, Y
  * \param[in] overlapSizeUp             halo size in 4 directions, up
- * \param[in] overlapSizeDown           halo size in 4 directions, down
  * \param[in] overlapSizeLeft           halo size in 4 directions, left
- * \param[in] overlapSizeRight          halo size in 4 directions, right
  * \param[in] myGridX                   local domain size in X dimension
  * \param[in] myGridY                   local domain size in Y dimension
  * \param[in] pmeSize              Local PME grid size

@@ -263,7 +263,7 @@ __device__ static inline void calculateAndStoreGridForces(float3* __restrict__ s
  * \tparam     threadsPerAtom       How many threads work on each atom
  * \tparam     parallelExecutionWidth How large the wave size is.
  *
- * \param[in]  kernelParams         All the PME GPU data.
+ * param[in]  kernelParams         All the PME GPU data.
  */
 template<int order, bool wrapX, bool wrapY, int numGrids, bool readGlobal, ThreadsPerAtom threadsPerAtom, int parallelExecutionWidth>
 __launch_bounds__(sc_gatherMaxThreadsPerBlock<parallelExecutionWidth>,

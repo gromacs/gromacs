@@ -64,7 +64,7 @@ static constexpr int sc_solveMaxThreadsPerBlock = c_solveMaxWarpsPerBlock* paral
  * \tparam     gridIndex                The index of the grid to use in the kernel.
  * \tparam     parallelExecutionWidth   The device parallel execution size to use
  *
- * \param[in]  kernelParams             Input PME HIP data in constant memory.
+ * param[in]  kernelParams             Input PME HIP data in constant memory.
  */
 template<GridOrdering gridOrdering, bool computeEnergyAndVirial, const int gridIndex, int parallelExecutionWidth>
 LAUNCH_BOUNDS_EXACT_SINGLE(sc_solveMaxThreadsPerBlock<parallelExecutionWidth>)

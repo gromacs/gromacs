@@ -171,7 +171,7 @@ __device__ __forceinline__ void spreadChargeKernel(const PmeGpuKernelParamsBase 
  * \tparam     numGrids             The number of grids to use in the kernel. Can be 1 or 2.
  * \tparam     writeGlobal          A boolean which tells if the theta values and gridlines should be written to global memory.
  * \tparam     threadsPerAtom       How many threads work on each atom
- * \param[in]  kernelParams         Input PME HIP data in constant memory.
+ * param[in]  kernelParams         Input PME HIP data in constant memory.
  */
 template<int order, bool computeSplines, bool spreadCharges, bool wrapX, bool wrapY, int numGrids, bool writeGlobal, ThreadsPerAtom threadsPerAtom, int parallelExecutionWidth>
 LAUNCH_BOUNDS_EXACT_SINGLE(sc_spreadMaxThreadsPerBlock<parallelExecutionWidth>)
