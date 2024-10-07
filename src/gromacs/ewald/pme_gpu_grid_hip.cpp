@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright 2021- The GROMACS Authors
+ * Copyright 2024- The GROMACS Authors
  * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
  * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
  *
@@ -37,32 +37,50 @@
  * functions. These functions are used for PME decomposition in mixed-mode
  *
  * \author Gaurav Garg <gaugarg@nvidia.com>
+ * \author Paul Bauer <paul.bauer.q@gmail.com>
  *
  * \ingroup module_ewald
  */
 
 #include "gmxpre.h"
 
-#include "pme_gpu_grid.h"
-
 #include "config.h"
 
 #include <cstdlib>
 
 #include "gromacs/fft/parallel_3dfft.h"
-#include "gromacs/gpu_utils/cudautils.cuh"
-#include "gromacs/gpu_utils/devicebuffer.cuh"
-#include "gromacs/math/functions.h"
+#include "gromacs/gpu_utils/devicebuffer_hip.h"
+#include "gromacs/gpu_utils/hiputils.h"
+#include "gromacs/hardware/device_information.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/template_mp.h"
 
-#include "pme_gpu_internal.h"
+#include "pme_gpu_grid.h"
 #include "pme_gpu_types.h"
 #include "pme_gpu_types_host.h"
 #include "pme_gpu_types_host_impl.h"
 
+namespace
+{
+
+bool deviceHas64ParallelExecutionSize(const DeviceInformation& deviceInfo)
+{
+    return deviceInfo.supportedSubGroupSizes[0] == 64;
+}
+
+/*! \brief Sub-group size for conversion kernels
+ *
+ * Chosen to match relevant hardware widths on supported hardware.
+ */
+template<bool is64ExecutionWidth>
+constexpr int sc_subGroupSizeX = is64ExecutionWidth ? 64 : 32;
+template<bool is64ExecutionWidth>
+constexpr int sc_subGroupSizeY = is64ExecutionWidth ? 2 : 4;
+constexpr int sc_subGroupSizeZ = 1;
+
 /*! \brief
- * A CUDA kernel which packs non-contiguous overlap data in all 8 neighboring directions
+ * A HIP kernel which packs non-contiguous overlap data in all 8 neighboring directions
  *
  * \param[in] gm_realGrid          PME device grid
  * \param[out] gm_transferGrid*    device arrays used to pack data in 8-neighboring directions
@@ -71,28 +89,29 @@
  * \param[in] pmeSize              Local PME grid size
  *
  */
-static __global__ void pmeGpuPackHaloExternal(const float* __restrict__ gm_realGrid,
-                                              float* __restrict__ gm_transferGridUp,
-                                              float* __restrict__ gm_transferGridDown,
-                                              float* __restrict__ gm_transferGridLeft,
-                                              float* __restrict__ gm_transferGridRight,
-                                              float* __restrict__ gm_transferGridUpLeft,
-                                              float* __restrict__ gm_transferGridDownLeft,
-                                              float* __restrict__ gm_transferGridUpRight,
-                                              float* __restrict__ gm_transferGridDownRight,
-                                              int  overlapSizeUp,
-                                              int  overlapSizeDown,
-                                              int  overlapSizeLeft,
-                                              int  overlapSizeRight,
-                                              int  myGridX,
-                                              int  myGridY,
-                                              int3 pmeSize)
+template<bool is64ExecutionWidth>
+__global__ void pmeGpuPackHaloExternal(const float* __restrict__ gm_realGrid,
+                                       float* __restrict__ gm_transferGridUp,
+                                       float* __restrict__ gm_transferGridDown,
+                                       float* __restrict__ gm_transferGridLeft,
+                                       float* __restrict__ gm_transferGridRight,
+                                       float* __restrict__ gm_transferGridUpLeft,
+                                       float* __restrict__ gm_transferGridDownLeft,
+                                       float* __restrict__ gm_transferGridUpRight,
+                                       float* __restrict__ gm_transferGridDownRight,
+                                       int  overlapSizeUp,
+                                       int  overlapSizeDown,
+                                       int  overlapSizeLeft,
+                                       int  overlapSizeRight,
+                                       int  myGridX,
+                                       int  myGridY,
+                                       int3 pmeSize)
 {
-    int iz = threadIdx.x + blockIdx.x * blockDim.x;
-    int iy = threadIdx.y + blockIdx.y * blockDim.y;
-    int ix = threadIdx.z + blockIdx.z * blockDim.z;
+    int iz = threadIdx.x + blockIdx.x * sc_subGroupSizeX<is64ExecutionWidth>;
+    int iy = threadIdx.y + blockIdx.y * sc_subGroupSizeY<is64ExecutionWidth>;
+    int ix = threadIdx.z + blockIdx.z * sc_subGroupSizeZ;
 
-    // we might get iz greater than pmeSize.z when pmeSize.z is not multiple of
+    // we might get iz greather than pmeSize.z when pmeSize.z is not multiple of
     // threadsAlongZDim(see below), same for iy when it's not multiple of threadsAlongYDim
     if (iz >= pmeSize.z || iy >= myGridY)
     {
@@ -173,7 +192,7 @@ static __global__ void pmeGpuPackHaloExternal(const float* __restrict__ gm_realG
 }
 
 /*! \brief
- * A CUDA kernel which assigns data in halo region in all 8 neighboring directions
+ * A HIP kernel which assigns data in halo region in all 8 neighboring directions
  *
  * \param[in] gm_realGrid          PME device grid
  * \param[out] gm_transferGrid*    packed data in 8-neighboring directions
@@ -181,28 +200,29 @@ static __global__ void pmeGpuPackHaloExternal(const float* __restrict__ gm_realG
  * \param[in] myGrid*              local domain size in X and Y dimension
  * \param[in] pmeSize              Local PME grid size
  */
-static __global__ void pmeGpuUnpackHaloExternal(float* __restrict__ gm_realGrid,
-                                                const float* __restrict__ gm_transferGridUp,
-                                                const float* __restrict__ gm_transferGridDown,
-                                                const float* __restrict__ gm_transferGridLeft,
-                                                const float* __restrict__ gm_transferGridRight,
-                                                const float* __restrict__ gm_transferGridUpLeft,
-                                                const float* __restrict__ gm_transferGridDownLeft,
-                                                const float* __restrict__ gm_transferGridUpRight,
-                                                const float* __restrict__ gm_transferGridDownRight,
-                                                int  overlapSizeUp,
-                                                int  overlapSizeDown,
-                                                int  overlapSizeLeft,
-                                                int  overlapSizeRight,
-                                                int  myGridX,
-                                                int  myGridY,
-                                                int3 pmeSize)
+template<bool is64ExecutionWidth>
+__global__ void pmeGpuUnpackHaloExternal(float* __restrict__ gm_realGrid,
+                                         const float* __restrict__ gm_transferGridUp,
+                                         const float* __restrict__ gm_transferGridDown,
+                                         const float* __restrict__ gm_transferGridLeft,
+                                         const float* __restrict__ gm_transferGridRight,
+                                         const float* __restrict__ gm_transferGridUpLeft,
+                                         const float* __restrict__ gm_transferGridDownLeft,
+                                         const float* __restrict__ gm_transferGridUpRight,
+                                         const float* __restrict__ gm_transferGridDownRight,
+                                         int  overlapSizeUp,
+                                         int  overlapSizeDown,
+                                         int  overlapSizeLeft,
+                                         int  overlapSizeRight,
+                                         int  myGridX,
+                                         int  myGridY,
+                                         int3 pmeSize)
 {
-    int iz = threadIdx.x + blockIdx.x * blockDim.x;
-    int iy = threadIdx.y + blockIdx.y * blockDim.y;
-    int ix = threadIdx.z + blockIdx.z * blockDim.z;
+    int iz = threadIdx.x + blockIdx.x * sc_subGroupSizeX<is64ExecutionWidth>;
+    int iy = threadIdx.y + blockIdx.y * sc_subGroupSizeY<is64ExecutionWidth>;
+    int ix = threadIdx.z + blockIdx.z * sc_subGroupSizeZ;
 
-    // we might get iz greater than pmeSize.z when pmeSize.z is not multiple of
+    // we might get iz greather than pmeSize.z when pmeSize.z is not multiple of
     // threadsAlongZDim(see below), same for iy when it's not multiple of threadsAlongYDim
     if (iz >= pmeSize.z || iy >= myGridY)
     {
@@ -283,7 +303,7 @@ static __global__ void pmeGpuUnpackHaloExternal(float* __restrict__ gm_realGrid,
 }
 
 /*! \brief
- * A CUDA kernel which adds grid overlap data received from neighboring ranks
+ * A HIP kernel which adds grid overlap data received from neighboring ranks
  *
  * \param[in] gm_realGrid          PME device grid
  * \param[out] gm_transferGrid*    packed data in 8-neighboring directions
@@ -291,29 +311,29 @@ static __global__ void pmeGpuUnpackHaloExternal(float* __restrict__ gm_realGrid,
  * \param[in] myGrid*              local domain size in X and Y dimension
  * \param[in] pmeSize              Local PME grid size
  */
-
-static __global__ void pmeGpuUnpackAndAddHaloInternal(float* __restrict__ gm_realGrid,
-                                                      const float* __restrict__ gm_transferGridUp,
-                                                      const float* __restrict__ gm_transferGridDown,
-                                                      const float* __restrict__ gm_transferGridLeft,
-                                                      const float* __restrict__ gm_transferGridRight,
-                                                      const float* __restrict__ gm_transferGridUpLeft,
-                                                      const float* __restrict__ gm_transferGridDownLeft,
-                                                      const float* __restrict__ gm_transferGridUpRight,
-                                                      const float* __restrict__ gm_transferGridDownRight,
-                                                      int  overlapSizeX,
-                                                      int  overlapSizeY,
-                                                      int  overlapUp,
-                                                      int  overlapLeft,
-                                                      int  myGridX,
-                                                      int  myGridY,
-                                                      int3 pmeSize)
+template<bool is64ExecutionWidth>
+__global__ void pmeGpuUnpackAndAddHaloInternal(float* __restrict__ gm_realGrid,
+                                               const float* __restrict__ gm_transferGridUp,
+                                               const float* __restrict__ gm_transferGridDown,
+                                               const float* __restrict__ gm_transferGridLeft,
+                                               const float* __restrict__ gm_transferGridRight,
+                                               const float* __restrict__ gm_transferGridUpLeft,
+                                               const float* __restrict__ gm_transferGridDownLeft,
+                                               const float* __restrict__ gm_transferGridUpRight,
+                                               const float* __restrict__ gm_transferGridDownRight,
+                                               int  overlapSizeX,
+                                               int  overlapSizeY,
+                                               int  overlapUp,
+                                               int  overlapLeft,
+                                               int  myGridX,
+                                               int  myGridY,
+                                               int3 pmeSize)
 {
-    int iz = threadIdx.x + blockIdx.x * blockDim.x;
-    int iy = threadIdx.y + blockIdx.y * blockDim.y;
-    int ix = threadIdx.z + blockIdx.z * blockDim.z;
+    int iz = threadIdx.x + blockIdx.x * sc_subGroupSizeX<is64ExecutionWidth>;
+    int iy = threadIdx.y + blockIdx.y * sc_subGroupSizeY<is64ExecutionWidth>;
+    int ix = threadIdx.z + blockIdx.z * sc_subGroupSizeZ;
 
-    // we might get iz greater than pmeSize.z when pmeSize.z is not multiple of
+    // we might get iz greather than pmeSize.z when pmeSize.z is not multiple of
     // threadsAlongZDim(see below), same for iy when it's not multiple of threadsAlongYDim
     if (iz >= pmeSize.z || iy >= myGridY)
     {
@@ -385,7 +405,7 @@ static __global__ void pmeGpuUnpackAndAddHaloInternal(float* __restrict__ gm_rea
 }
 
 /*! \brief
- * A CUDA kernel which packs non-contiguous overlap data in all 8 neighboring directions
+ * A HIP kernel which packs non-contiguous overlap data in all 8 neighboring directions
  *
  * \param[in] gm_realGrid          PME device grid
  * \param[out] gm_transferGrid*    packed data in 8-neighboring directions
@@ -393,28 +413,29 @@ static __global__ void pmeGpuUnpackAndAddHaloInternal(float* __restrict__ gm_rea
  * \param[in] myGrid*              local domain size in X and Y dimension
  * \param[in] pmeSize              Local PME grid size
  */
-static __global__ void pmeGpuPackHaloInternal(const float* __restrict__ gm_realGrid,
-                                              float* __restrict__ gm_transferGridUp,
-                                              float* __restrict__ gm_transferGridDown,
-                                              float* __restrict__ gm_transferGridLeft,
-                                              float* __restrict__ gm_transferGridRight,
-                                              float* __restrict__ gm_transferGridUpLeft,
-                                              float* __restrict__ gm_transferGridDownLeft,
-                                              float* __restrict__ gm_transferGridUpRight,
-                                              float* __restrict__ gm_transferGridDownRight,
-                                              int  overlapSizeX,
-                                              int  overlapSizeY,
-                                              int  overlapUp,
-                                              int  overlapLeft,
-                                              int  myGridX,
-                                              int  myGridY,
-                                              int3 pmeSize)
+template<bool is64ExecutionWidth>
+__global__ void pmeGpuPackHaloInternal(const float* __restrict__ gm_realGrid,
+                                       float* __restrict__ gm_transferGridUp,
+                                       float* __restrict__ gm_transferGridDown,
+                                       float* __restrict__ gm_transferGridLeft,
+                                       float* __restrict__ gm_transferGridRight,
+                                       float* __restrict__ gm_transferGridUpLeft,
+                                       float* __restrict__ gm_transferGridDownLeft,
+                                       float* __restrict__ gm_transferGridUpRight,
+                                       float* __restrict__ gm_transferGridDownRight,
+                                       int  overlapSizeX,
+                                       int  overlapSizeY,
+                                       int  overlapUp,
+                                       int  overlapLeft,
+                                       int  myGridX,
+                                       int  myGridY,
+                                       int3 pmeSize)
 {
-    int iz = threadIdx.x + blockIdx.x * blockDim.x;
-    int iy = threadIdx.y + blockIdx.y * blockDim.y;
-    int ix = threadIdx.z + blockIdx.z * blockDim.z;
+    int iz = threadIdx.x + blockIdx.x * sc_subGroupSizeX<is64ExecutionWidth>;
+    int iy = threadIdx.y + blockIdx.y * sc_subGroupSizeY<is64ExecutionWidth>;
+    int ix = threadIdx.z + blockIdx.z * sc_subGroupSizeZ;
 
-    // we might get iz greater than pmeSize.z when pmeSize.z is not multiple of
+    // we might get iz greather than pmeSize.z when pmeSize.z is not multiple of
     // threadsAlongZDim(see below), same for iy when it's not multiple of threadsAlongYDim
     if (iz >= pmeSize.z || iy >= myGridY)
     {
@@ -484,7 +505,7 @@ static __global__ void pmeGpuPackHaloInternal(const float* __restrict__ gm_realG
 }
 
 /*! \brief
- * A CUDA kernel which copies data from pme grid to FFT grid and back
+ * A HIP kernel which copies data from pme grid to FFT grid and back
  *
  * \param[in] gm_pmeGrid          local PME grid
  * \param[in] gm_fftGrid          local FFT grid
@@ -494,16 +515,16 @@ static __global__ void pmeGpuPackHaloInternal(const float* __restrict__ gm_realG
  *
  * \tparam  pmeToFft               A boolean which tells if this is conversion from PME grid to FFT grid or reverse
  */
-template<bool pmeToFft>
-static __global__ void pmegrid_to_fftgrid(float* __restrict__ gm_realGrid,
-                                          float* __restrict__ gm_fftGrid,
-                                          int3 fftNData,
-                                          int3 fftSize,
-                                          int3 pmeSize)
+template<bool pmeToFft, bool is64ExecutionWidth>
+__global__ void pmegrid_to_fftgrid(float* __restrict__ gm_realGrid,
+                                   float* __restrict__ gm_fftGrid,
+                                   int3 fftNData,
+                                   int3 fftSize,
+                                   int3 pmeSize)
 {
-    int iz = threadIdx.x + blockIdx.x * blockDim.x;
-    int iy = threadIdx.y + blockIdx.y * blockDim.y;
-    int ix = threadIdx.z + blockIdx.z * blockDim.z;
+    int iz = threadIdx.x + blockIdx.x * sc_subGroupSizeX<is64ExecutionWidth>;
+    int iy = threadIdx.y + blockIdx.y * sc_subGroupSizeY<is64ExecutionWidth>;
+    int ix = threadIdx.z + blockIdx.z * sc_subGroupSizeZ;
 
     if (ix >= fftNData.x || iy >= fftNData.y || iz >= fftNData.z)
     {
@@ -524,31 +545,32 @@ static __global__ void pmegrid_to_fftgrid(float* __restrict__ gm_realGrid,
 }
 
 /*! \brief
- * Launches CUDA kernel to pack non-contiguous external halo data
+ * Launches HIP kernel to pack non-contiguous external halo data
  */
-static void packHaloDataExternal(const PmeGpu*       pmeGpu,
-                                 int                 overlapUp,
-                                 int                 overlapDown,
-                                 int                 overlapLeft,
-                                 int                 overlapRight,
-                                 int                 myGridX,
-                                 int                 myGridY,
-                                 const ivec&         pmeSize,
-                                 DeviceBuffer<float> realGrid,
-                                 DeviceBuffer<float> packedGridUp,
-                                 DeviceBuffer<float> packedGridDown,
-                                 DeviceBuffer<float> packedGridLeft,
-                                 DeviceBuffer<float> packedGridRight,
-                                 DeviceBuffer<float> packedGridUpLeft,
-                                 DeviceBuffer<float> packedGridDownLeft,
-                                 DeviceBuffer<float> packedGridUpRight,
-                                 DeviceBuffer<float> packedGridDownRight)
+template<bool is64ExecutionWidth>
+void packHaloDataExternal(const PmeGpu*       pmeGpu,
+                          int                 overlapUp,
+                          int                 overlapDown,
+                          int                 overlapLeft,
+                          int                 overlapRight,
+                          int                 myGridX,
+                          int                 myGridY,
+                          const ivec&         pmeSize,
+                          DeviceBuffer<float> realGrid,
+                          DeviceBuffer<float> packedGridUp,
+                          DeviceBuffer<float> packedGridDown,
+                          DeviceBuffer<float> packedGridLeft,
+                          DeviceBuffer<float> packedGridRight,
+                          DeviceBuffer<float> packedGridUpLeft,
+                          DeviceBuffer<float> packedGridDownLeft,
+                          DeviceBuffer<float> packedGridUpRight,
+                          DeviceBuffer<float> packedGridDownRight)
 {
     // Keeping threadsAlongZDim same as warp size for better coalescing.
     // Not keeping to higher value such as 64 to avoid high masked out
     // inactive threads as FFT grid sizes tend to be quite small
-    const int threadsAlongZDim = 32;
-    const int threadsAlongYDim = 4;
+    const int threadsAlongZDim = sc_subGroupSizeX<is64ExecutionWidth>;
+    const int threadsAlongYDim = sc_subGroupSizeY<is64ExecutionWidth>;
 
     // right grid
     KernelLaunchConfig config;
@@ -560,7 +582,7 @@ static void packHaloDataExternal(const PmeGpu*       pmeGpu,
     config.gridSize[2]      = myGridX;
     config.sharedMemorySize = 0;
 
-    auto kernelFn   = pmeGpuPackHaloExternal;
+    auto kernelFn   = pmeGpuPackHaloExternal<is64ExecutionWidth>;
     auto kernelArgs = prepareGpuKernelArguments(kernelFn,
                                                 config,
                                                 &realGrid,
@@ -589,31 +611,32 @@ static void packHaloDataExternal(const PmeGpu*       pmeGpu,
 }
 
 /*! \brief
- * Launches CUDA kernel to pack non-contiguous internal halo data
+ * Launches HIP kernel to pack non-contiguous internal halo data
  */
-static void packHaloDataInternal(const PmeGpu*       pmeGpu,
-                                 int                 overlapSizeX,
-                                 int                 overlapSizeY,
-                                 int                 overlapUp,
-                                 int                 overlapLeft,
-                                 int                 myGridX,
-                                 int                 myGridY,
-                                 const ivec&         pmeSize,
-                                 DeviceBuffer<float> realGrid,
-                                 DeviceBuffer<float> packedGridUp,
-                                 DeviceBuffer<float> packedGridDown,
-                                 DeviceBuffer<float> packedGridLeft,
-                                 DeviceBuffer<float> packedGridRight,
-                                 DeviceBuffer<float> packedGridUpLeft,
-                                 DeviceBuffer<float> packedGridDownLeft,
-                                 DeviceBuffer<float> packedGridUpRight,
-                                 DeviceBuffer<float> packedGridDownRight)
+template<bool is64ExecutionWidth>
+void packHaloDataInternal(const PmeGpu*       pmeGpu,
+                          int                 overlapSizeX,
+                          int                 overlapSizeY,
+                          int                 overlapUp,
+                          int                 overlapLeft,
+                          int                 myGridX,
+                          int                 myGridY,
+                          const ivec&         pmeSize,
+                          DeviceBuffer<float> realGrid,
+                          DeviceBuffer<float> packedGridUp,
+                          DeviceBuffer<float> packedGridDown,
+                          DeviceBuffer<float> packedGridLeft,
+                          DeviceBuffer<float> packedGridRight,
+                          DeviceBuffer<float> packedGridUpLeft,
+                          DeviceBuffer<float> packedGridDownLeft,
+                          DeviceBuffer<float> packedGridUpRight,
+                          DeviceBuffer<float> packedGridDownRight)
 {
     // Keeping threadsAlongZDim same as warp size for better coalescing,
     // Not keeping to higher value such as 64 to avoid high masked out
     // inactive threads as FFT grid sizes tend to be quite small
-    const int threadsAlongZDim = 32;
-    const int threadsAlongYDim = 4;
+    const int threadsAlongZDim = sc_subGroupSizeX<is64ExecutionWidth>;
+    const int threadsAlongYDim = sc_subGroupSizeY<is64ExecutionWidth>;
 
     // right grid
     KernelLaunchConfig config;
@@ -625,7 +648,7 @@ static void packHaloDataInternal(const PmeGpu*       pmeGpu,
     config.gridSize[2]      = myGridX;
     config.sharedMemorySize = 0;
 
-    auto kernelFn   = pmeGpuPackHaloInternal;
+    auto kernelFn   = pmeGpuPackHaloInternal<is64ExecutionWidth>;
     auto kernelArgs = prepareGpuKernelArguments(kernelFn,
                                                 config,
                                                 &realGrid,
@@ -655,31 +678,32 @@ static void packHaloDataInternal(const PmeGpu*       pmeGpu,
 
 
 /*! \brief
- * Launches CUDA kernel to unpack and reduce overlap data
+ * Launches HIP kernel to unpack and reduce overlap data
  */
-static void unpackAndAddHaloDataInternal(const PmeGpu*       pmeGpu,
-                                         int                 overlapSizeX,
-                                         int                 overlapSizeY,
-                                         int                 overlapUp,
-                                         int                 overlapLeft,
-                                         int                 myGridX,
-                                         int                 myGridY,
-                                         const ivec&         pmeSize,
-                                         DeviceBuffer<float> realGrid,
-                                         DeviceBuffer<float> packedGridUp,
-                                         DeviceBuffer<float> packedGridDown,
-                                         DeviceBuffer<float> packedGridLeft,
-                                         DeviceBuffer<float> packedGridRight,
-                                         DeviceBuffer<float> packedGridUpLeft,
-                                         DeviceBuffer<float> packedGridDownLeft,
-                                         DeviceBuffer<float> packedGridUpRight,
-                                         DeviceBuffer<float> packedGridDownRight)
+template<bool is64ExecutionWidth>
+void unpackAndAddHaloDataInternal(const PmeGpu*       pmeGpu,
+                                  int                 overlapSizeX,
+                                  int                 overlapSizeY,
+                                  int                 overlapUp,
+                                  int                 overlapLeft,
+                                  int                 myGridX,
+                                  int                 myGridY,
+                                  const ivec&         pmeSize,
+                                  DeviceBuffer<float> realGrid,
+                                  DeviceBuffer<float> packedGridUp,
+                                  DeviceBuffer<float> packedGridDown,
+                                  DeviceBuffer<float> packedGridLeft,
+                                  DeviceBuffer<float> packedGridRight,
+                                  DeviceBuffer<float> packedGridUpLeft,
+                                  DeviceBuffer<float> packedGridDownLeft,
+                                  DeviceBuffer<float> packedGridUpRight,
+                                  DeviceBuffer<float> packedGridDownRight)
 {
     // Keeping threadsAlongZDim same as warp size for better coalescing,
     // Not keeping to higher value such as 64 to avoid high masked out
     // inactive threads as FFT grid sizes tend to be quite small
-    const int threadsAlongZDim = 32;
-    const int threadsAlongYDim = 4;
+    const int threadsAlongZDim = sc_subGroupSizeX<is64ExecutionWidth>;
+    const int threadsAlongYDim = sc_subGroupSizeY<is64ExecutionWidth>;
 
     // right grid
     KernelLaunchConfig config;
@@ -691,7 +715,7 @@ static void unpackAndAddHaloDataInternal(const PmeGpu*       pmeGpu,
     config.gridSize[2]      = myGridX;
     config.sharedMemorySize = 0;
 
-    auto kernelFn = pmeGpuUnpackAndAddHaloInternal;
+    auto kernelFn = pmeGpuUnpackAndAddHaloInternal<is64ExecutionWidth>;
 
     auto kernelArgs = prepareGpuKernelArguments(kernelFn,
                                                 config,
@@ -722,31 +746,32 @@ static void unpackAndAddHaloDataInternal(const PmeGpu*       pmeGpu,
 }
 
 /*! \brief
- * Launches CUDA kernel to initialize overlap data
+ * Launches HIP kernel to initialize overlap data
  */
-static void unpackHaloDataExternal(const PmeGpu*       pmeGpu,
-                                   int                 overlapUp,
-                                   int                 overlapDown,
-                                   int                 overlapLeft,
-                                   int                 overlapRight,
-                                   int                 myGridX,
-                                   int                 myGridY,
-                                   const ivec&         pmeSize,
-                                   DeviceBuffer<float> realGrid,
-                                   DeviceBuffer<float> packedGridUp,
-                                   DeviceBuffer<float> packedGridDown,
-                                   DeviceBuffer<float> packedGridLeft,
-                                   DeviceBuffer<float> packedGridRight,
-                                   DeviceBuffer<float> packedGridUpLeft,
-                                   DeviceBuffer<float> packedGridDownLeft,
-                                   DeviceBuffer<float> packedGridUpRight,
-                                   DeviceBuffer<float> packedGridDownRight)
+template<bool is64ExecutionWidth>
+void unpackHaloDataExternal(const PmeGpu*       pmeGpu,
+                            int                 overlapUp,
+                            int                 overlapDown,
+                            int                 overlapLeft,
+                            int                 overlapRight,
+                            int                 myGridX,
+                            int                 myGridY,
+                            const ivec&         pmeSize,
+                            DeviceBuffer<float> realGrid,
+                            DeviceBuffer<float> packedGridUp,
+                            DeviceBuffer<float> packedGridDown,
+                            DeviceBuffer<float> packedGridLeft,
+                            DeviceBuffer<float> packedGridRight,
+                            DeviceBuffer<float> packedGridUpLeft,
+                            DeviceBuffer<float> packedGridDownLeft,
+                            DeviceBuffer<float> packedGridUpRight,
+                            DeviceBuffer<float> packedGridDownRight)
 {
     // Keeping threadsAlongZDim same as warp size for better coalescing,
     // Not keeping to higher value such as 64 to avoid high masked out
     // inactive threads as FFT grid sizes tend to be quite small
-    const int threadsAlongZDim = 32;
-    const int threadsAlongYDim = 4;
+    const int threadsAlongZDim = sc_subGroupSizeX<is64ExecutionWidth>;
+    const int threadsAlongYDim = sc_subGroupSizeY<is64ExecutionWidth>;
 
     // right grid
     KernelLaunchConfig config;
@@ -758,7 +783,7 @@ static void unpackHaloDataExternal(const PmeGpu*       pmeGpu,
     config.gridSize[2]      = myGridX;
     config.sharedMemorySize = 0;
 
-    auto kernelFn   = pmeGpuUnpackHaloExternal;
+    auto kernelFn   = pmeGpuUnpackHaloExternal<is64ExecutionWidth>;
     auto kernelArgs = prepareGpuKernelArguments(kernelFn,
                                                 config,
                                                 &realGrid,
@@ -790,24 +815,24 @@ static void unpackHaloDataExternal(const PmeGpu*       pmeGpu,
 /*! \brief
  * utility function to send and recv halo data from neighboring ranks
  */
-static void receiveAndSend(DeviceBuffer<float> sendBuf,
-                           int                 sendCount,
-                           int                 dest,
-                           MPI_Request*        sendRequest,
-                           DeviceBuffer<float> recvBuf,
-                           int                 recvCount,
-                           int                 src,
-                           MPI_Request*        recvRequest,
-                           int                 tag,
-                           MPI_Comm            comm)
+void receiveAndSend(DeviceBuffer<float> sendBuf,
+                    int                 sendCount,
+                    int                 dest,
+                    MPI_Request*        sendRequest,
+                    DeviceBuffer<float> recvBuf,
+                    int                 recvCount,
+                    int                 src,
+                    MPI_Request*        recvRequest,
+                    int                 tag,
+                    MPI_Comm            comm)
 {
     // send data to dest rank and recv from src rank
-#if GMX_MPI
     MPI_Irecv(recvBuf, recvCount, MPI_FLOAT, src, tag, comm, recvRequest);
 
     MPI_Isend(sendBuf, sendCount, MPI_FLOAT, dest, tag, comm, sendRequest);
-#endif
 }
+
+} // namespace
 
 void pmeGpuGridHaloExchange(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle)
 {
@@ -841,6 +866,8 @@ void pmeGpuGridHaloExchange(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle)
     int right = pmeGpu->haloExchange->ranksY[gmx::DirectionY::Right];
     int left  = pmeGpu->haloExchange->ranksY[gmx::DirectionY::Left];
 
+    const DeviceInformation& deviceInfo = pmeGpu->archSpecific->deviceContext_.deviceInfo();
+
     for (int gridIndex = 0; gridIndex < pmeGpu->common->ngrids; gridIndex++)
     {
         MPI_Request req[16];
@@ -864,25 +891,29 @@ void pmeGpuGridHaloExchange(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle)
         {
             wallcycle_start(wcycle, WallCycleCounter::LaunchGpuPme);
 
-            // launch packing kernel
-            packHaloDataExternal(
-                    pmeGpu,
-                    overlapUp,
-                    overlapDown,
-                    overlapLeft,
-                    overlapRight,
-                    myGridX,
-                    myGridY,
-                    localPmeSize,
-                    realGrid,
-                    sendGridUp,
-                    sendGridDown,
-                    pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Center][gmx::DirectionY::Left],
-                    pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Center][gmx::DirectionY::Right],
-                    pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Up][gmx::DirectionY::Left],
-                    pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Down][gmx::DirectionY::Left],
-                    pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Up][gmx::DirectionY::Right],
-                    pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Down][gmx::DirectionY::Right]);
+            gmx::dispatchTemplatedFunction(
+                    [&](auto is64ExecutionWidth_) {
+                        // launch packing kernel
+                        packHaloDataExternal<is64ExecutionWidth_>(
+                                pmeGpu,
+                                overlapUp,
+                                overlapDown,
+                                overlapLeft,
+                                overlapRight,
+                                myGridX,
+                                myGridY,
+                                localPmeSize,
+                                realGrid,
+                                sendGridUp,
+                                sendGridDown,
+                                pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Center][gmx::DirectionY::Left],
+                                pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Center][gmx::DirectionY::Right],
+                                pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Up][gmx::DirectionY::Left],
+                                pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Down][gmx::DirectionY::Left],
+                                pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Up][gmx::DirectionY::Right],
+                                pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Down][gmx::DirectionY::Right]);
+                    },
+                    deviceHas64ParallelExecutionSize(deviceInfo));
 
             wallcycle_stop(wcycle, WallCycleCounter::LaunchGpuPme);
         }
@@ -1055,25 +1086,29 @@ void pmeGpuGridHaloExchange(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle)
 
         wallcycle_start(wcycle, WallCycleCounter::LaunchGpuPme);
 
-        // reduce halo data
-        unpackAndAddHaloDataInternal(
-                pmeGpu,
-                overlapX,
-                overlapY,
-                overlapUp,
-                overlapLeft,
-                myGridX,
-                myGridY,
-                localPmeSize,
-                realGrid,
-                pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Up][gmx::DirectionY::Center],
-                pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Down][gmx::DirectionY::Center],
-                pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Center][gmx::DirectionY::Left],
-                pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Center][gmx::DirectionY::Right],
-                pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Up][gmx::DirectionY::Left],
-                pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Down][gmx::DirectionY::Left],
-                pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Up][gmx::DirectionY::Right],
-                pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Down][gmx::DirectionY::Right]);
+        gmx::dispatchTemplatedFunction(
+                [&](auto is64ExecutionWidth_) {
+                    // reduce halo data
+                    unpackAndAddHaloDataInternal<is64ExecutionWidth_>(
+                            pmeGpu,
+                            overlapX,
+                            overlapY,
+                            overlapUp,
+                            overlapLeft,
+                            myGridX,
+                            myGridY,
+                            localPmeSize,
+                            realGrid,
+                            pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Up][gmx::DirectionY::Center],
+                            pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Down][gmx::DirectionY::Center],
+                            pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Center][gmx::DirectionY::Left],
+                            pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Center][gmx::DirectionY::Right],
+                            pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Up][gmx::DirectionY::Left],
+                            pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Down][gmx::DirectionY::Left],
+                            pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Up][gmx::DirectionY::Right],
+                            pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Down][gmx::DirectionY::Right]);
+                },
+                deviceHas64ParallelExecutionSize(deviceInfo));
 
         wallcycle_stop(wcycle, WallCycleCounter::LaunchGpuPme);
     }
@@ -1114,6 +1149,8 @@ void pmeGpuGridHaloExchangeReverse(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle)
     int right = pmeGpu->haloExchange->ranksY[gmx::DirectionY::Right];
     int left  = pmeGpu->haloExchange->ranksY[gmx::DirectionY::Left];
 
+    const DeviceInformation& deviceInfo = pmeGpu->archSpecific->deviceContext_.deviceInfo();
+
     for (int gridIndex = 0; gridIndex < pmeGpu->common->ngrids; gridIndex++)
     {
         MPI_Request req[16];
@@ -1146,25 +1183,29 @@ void pmeGpuGridHaloExchangeReverse(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle)
         {
             wallcycle_start(wcycle, WallCycleCounter::LaunchGpuPme);
 
-            // launch packing kernel
-            packHaloDataInternal(
-                    pmeGpu,
-                    overlapX,
-                    overlapY,
-                    overlapUp,
-                    overlapLeft,
-                    myGridX,
-                    myGridY,
-                    localPmeSize,
-                    realGrid,
-                    sendGridUp,
-                    sendGridDown,
-                    pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Center][gmx::DirectionY::Left],
-                    pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Center][gmx::DirectionY::Right],
-                    pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Up][gmx::DirectionY::Left],
-                    pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Down][gmx::DirectionY::Left],
-                    pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Up][gmx::DirectionY::Right],
-                    pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Down][gmx::DirectionY::Right]);
+            gmx::dispatchTemplatedFunction(
+                    [&](auto is64ExecutionWidth_) {
+                        // launch packing kernel
+                        packHaloDataInternal<is64ExecutionWidth_>(
+                                pmeGpu,
+                                overlapX,
+                                overlapY,
+                                overlapUp,
+                                overlapLeft,
+                                myGridX,
+                                myGridY,
+                                localPmeSize,
+                                realGrid,
+                                sendGridUp,
+                                sendGridDown,
+                                pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Center][gmx::DirectionY::Left],
+                                pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Center][gmx::DirectionY::Right],
+                                pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Up][gmx::DirectionY::Left],
+                                pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Down][gmx::DirectionY::Left],
+                                pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Up][gmx::DirectionY::Right],
+                                pmeGpu->haloExchange->d_sendGrids[gmx::DirectionX::Down][gmx::DirectionY::Right]);
+                    },
+                    deviceHas64ParallelExecutionSize(deviceInfo));
 
             wallcycle_stop(wcycle, WallCycleCounter::LaunchGpuPme);
         }
@@ -1339,25 +1380,29 @@ void pmeGpuGridHaloExchangeReverse(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle)
         {
             wallcycle_start(wcycle, WallCycleCounter::LaunchGpuPme);
 
-            // assign halo data
-            unpackHaloDataExternal(
-                    pmeGpu,
-                    overlapUp,
-                    overlapDown,
-                    overlapLeft,
-                    overlapRight,
-                    myGridX,
-                    myGridY,
-                    localPmeSize,
-                    realGrid,
-                    recvGridUp,
-                    recvGridDown,
-                    pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Center][gmx::DirectionY::Left],
-                    pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Center][gmx::DirectionY::Right],
-                    pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Up][gmx::DirectionY::Left],
-                    pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Down][gmx::DirectionY::Left],
-                    pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Up][gmx::DirectionY::Right],
-                    pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Down][gmx::DirectionY::Right]);
+            gmx::dispatchTemplatedFunction(
+                    [&](auto is64ExecutionWidth_) {
+                        // assign halo data
+                        unpackHaloDataExternal<is64ExecutionWidth_>(
+                                pmeGpu,
+                                overlapUp,
+                                overlapDown,
+                                overlapLeft,
+                                overlapRight,
+                                myGridX,
+                                myGridY,
+                                localPmeSize,
+                                realGrid,
+                                recvGridUp,
+                                recvGridDown,
+                                pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Center][gmx::DirectionY::Left],
+                                pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Center][gmx::DirectionY::Right],
+                                pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Up][gmx::DirectionY::Left],
+                                pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Down][gmx::DirectionY::Left],
+                                pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Up][gmx::DirectionY::Right],
+                                pmeGpu->haloExchange->d_recvGrids[gmx::DirectionX::Down][gmx::DirectionY::Right]);
+                    },
+                    deviceHas64ParallelExecutionSize(deviceInfo));
 
             wallcycle_stop(wcycle, WallCycleCounter::LaunchGpuPme);
         }
@@ -1408,36 +1453,42 @@ void convertPmeGridToFftGrid(const PmeGpu* pmeGpu, float* h_fftRealGrid, gmx_par
     {
         // launch copy kernel
         // Keeping threadsAlongZDim same as warp size for better coalescing,
-        // Not keeping to higher value such as 64 to avoid high masked out
-        // inactive threads as FFT grid sizes tend to be quite small
-        const int threadsAlongZDim = 32;
+        const DeviceInformation& deviceInfo = pmeGpu->archSpecific->deviceContext_.deviceInfo();
 
-        KernelLaunchConfig config;
-        config.blockSize[0] = threadsAlongZDim;
-        config.blockSize[1] = 4;
-        config.blockSize[2] = 1;
-        config.gridSize[0]  = gmx::divideRoundUp<size_t>(localFftNData[ZZ], config.blockSize[0]);
-        config.gridSize[1]  = gmx::divideRoundUp<size_t>(localFftNData[YY], config.blockSize[1]);
-        config.gridSize[2]  = localFftNData[XX];
-        config.sharedMemorySize = 0;
+        gmx::dispatchTemplatedFunction(
+                [&](auto is64ExecutionWidth_) {
+                    const int threadsAlongZDim = sc_subGroupSizeX<is64ExecutionWidth_>;
 
-        auto kernelFn = pmegrid_to_fftgrid<pmeToFft>;
+                    KernelLaunchConfig config;
+                    config.blockSize[0] = threadsAlongZDim;
+                    config.blockSize[1] = sc_subGroupSizeY<is64ExecutionWidth_>;
+                    config.blockSize[2] = sc_subGroupSizeZ;
+                    config.gridSize[0] =
+                            (localFftNData[ZZ] + config.blockSize[0] - 1) / config.blockSize[0];
+                    config.gridSize[1] =
+                            (localFftNData[YY] + config.blockSize[1] - 1) / config.blockSize[1];
+                    config.gridSize[2]      = localFftNData[XX];
+                    config.sharedMemorySize = 0;
 
-        const auto kernelArgs =
-                prepareGpuKernelArguments(kernelFn,
-                                          config,
-                                          &pmeGpu->kernelParams->grid.d_realGrid[gridIndex],
-                                          &h_fftRealGrid,
-                                          &localFftNData,
-                                          &localFftSize,
-                                          &localPmeSize);
+                    auto kernelFn = pmegrid_to_fftgrid<pmeToFft, is64ExecutionWidth_>;
 
-        launchGpuKernel(kernelFn,
-                        config,
-                        pmeGpu->archSpecific->pmeStream_,
-                        nullptr,
-                        "Convert PME grid to FFT grid",
-                        kernelArgs);
+                    const auto kernelArgs =
+                            prepareGpuKernelArguments(kernelFn,
+                                                      config,
+                                                      &pmeGpu->kernelParams->grid.d_realGrid[gridIndex],
+                                                      &h_fftRealGrid,
+                                                      &localFftNData,
+                                                      &localFftSize,
+                                                      &localPmeSize);
+
+                    launchGpuKernel(kernelFn,
+                                    config,
+                                    pmeGpu->archSpecific->pmeStream_,
+                                    nullptr,
+                                    "Convert PME grid to FFT grid",
+                                    kernelArgs);
+                },
+                deviceHas64ParallelExecutionSize(deviceInfo));
     }
 
     if (pmeToFft)
@@ -1492,36 +1543,42 @@ void convertPmeGridToFftGrid(const PmeGpu* pmeGpu, DeviceBuffer<float>* d_fftRea
     {
         // launch copy kernel
         // keeping same as warp size for better coalescing
-        // Not keeping to higher value such as 64 to avoid high masked out
-        // inactive threads as FFT grid sizes tend to be quite small
-        const int threadsAlongZDim = 32;
+        const DeviceInformation& deviceInfo = pmeGpu->archSpecific->deviceContext_.deviceInfo();
 
-        KernelLaunchConfig config;
-        config.blockSize[0] = threadsAlongZDim;
-        config.blockSize[1] = 4;
-        config.blockSize[2] = 1;
-        config.gridSize[0]  = gmx::divideRoundUp<size_t>(localFftNData[ZZ], config.blockSize[0]);
-        config.gridSize[1]  = gmx::divideRoundUp<size_t>(localFftNData[YY], config.blockSize[1]);
-        config.gridSize[2]  = localFftNData[XX];
-        config.sharedMemorySize = 0;
+        gmx::dispatchTemplatedFunction(
+                [&](auto is64ExecutionWidth_) {
+                    const int threadsAlongZDim = sc_subGroupSizeX<is64ExecutionWidth_>;
 
-        auto kernelFn = pmegrid_to_fftgrid<pmeToFft>;
+                    KernelLaunchConfig config;
+                    config.blockSize[0] = threadsAlongZDim;
+                    config.blockSize[1] = sc_subGroupSizeY<is64ExecutionWidth_>;
+                    config.blockSize[2] = sc_subGroupSizeZ;
+                    config.gridSize[0] =
+                            (localFftNData[ZZ] + config.blockSize[0] - 1) / config.blockSize[0];
+                    config.gridSize[1] =
+                            (localFftNData[YY] + config.blockSize[1] - 1) / config.blockSize[1];
+                    config.gridSize[2]      = localFftNData[XX];
+                    config.sharedMemorySize = 0;
 
-        const auto kernelArgs =
-                prepareGpuKernelArguments(kernelFn,
-                                          config,
-                                          &pmeGpu->kernelParams->grid.d_realGrid[gridIndex],
-                                          d_fftRealGrid,
-                                          &localFftNData,
-                                          &localFftSize,
-                                          &localPmeSize);
+                    auto kernelFn = pmegrid_to_fftgrid<pmeToFft, is64ExecutionWidth_>;
 
-        launchGpuKernel(kernelFn,
-                        config,
-                        pmeGpu->archSpecific->pmeStream_,
-                        nullptr,
-                        "Convert PME grid to FFT grid",
-                        kernelArgs);
+                    const auto kernelArgs =
+                            prepareGpuKernelArguments(kernelFn,
+                                                      config,
+                                                      &pmeGpu->kernelParams->grid.d_realGrid[gridIndex],
+                                                      d_fftRealGrid,
+                                                      &localFftNData,
+                                                      &localFftSize,
+                                                      &localPmeSize);
+
+                    launchGpuKernel(kernelFn,
+                                    config,
+                                    pmeGpu->archSpecific->pmeStream_,
+                                    nullptr,
+                                    "Convert PME grid to FFT grid",
+                                    kernelArgs);
+                },
+                deviceHas64ParallelExecutionSize(deviceInfo));
     }
 }
 

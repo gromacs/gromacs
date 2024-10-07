@@ -117,8 +117,8 @@ Gpu3dFft::ImplHipVkFft::Impl::Impl(bool allocateRealGrid,
                                    ArrayRef<const int> gridSizesInXForEachRank,
                                    ArrayRef<const int> gridSizesInYForEachRank,
                                    const int /*nz*/,
-                                   bool performOutOfPlaceFFT,
-                                   const DeviceContext& /* context */,
+                                   bool                 performOutOfPlaceFFT,
+                                   const DeviceContext& context,
                                    const DeviceStream&  pmeStream,
                                    ivec                 realGridSize,
                                    ivec                 realGridSizePadded,
@@ -129,11 +129,8 @@ Gpu3dFft::ImplHipVkFft::Impl::Impl(bool allocateRealGrid,
 {
     GMX_RELEASE_ASSERT(allocateRealGrid == false, "Grids needs to be pre-allocated");
     GMX_RELEASE_ASSERT(gridSizesInXForEachRank.size() == 1 && gridSizesInYForEachRank.size() == 1,
-                       "FFT decomposition not implemented with hipFFT backend");
-    GMX_RELEASE_ASSERT(performOutOfPlaceFFT, "Only out-of-place FFT is implemented in HIP");
-    GMX_RELEASE_ASSERT(realGrid, "Bad (null) input real-space grid");
-    GMX_RELEASE_ASSERT(complexGrid, "Bad (null) input complex grid");
-
+                       "FFT decomposition not implemented with HIP VkFFT backend");
+    GMX_RELEASE_ASSERT(performOutOfPlaceFFT, "Only out-of-place FFT is implemented in HIP VkFFT");
     GMX_RELEASE_ASSERT(realGrid, "Bad (null) input real-space grid");
     GMX_RELEASE_ASSERT(complexGrid, "Bad (null) input complex grid");
 
@@ -155,7 +152,7 @@ Gpu3dFft::ImplHipVkFft::Impl::Impl(bool allocateRealGrid,
     bufferSize_ = complexGridSizePadded[XX] * complexGridSizePadded[YY] * complexGridSizePadded[ZZ]
                   * 2 * sizeof(float);
     configuration_.bufferSize      = &bufferSize_;
-    configuration_.aimThreads      = 64;
+    configuration_.aimThreads      = context.deviceInfo().supportedSubGroupSizes[0];
     configuration_.bufferStride[0] = complexGridSizePadded[ZZ];
     configuration_.bufferStride[1] = complexGridSizePadded[ZZ] * complexGridSizePadded[YY];
     configuration_.bufferStride[2] =

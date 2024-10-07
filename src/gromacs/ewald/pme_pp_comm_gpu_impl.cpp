@@ -59,8 +59,6 @@ class DeviceContext;
 class DeviceStream;
 class GpuEventSynchronizer;
 
-#if !GMX_GPU_CUDA && !GMX_GPU_SYCL
-
 namespace gmx
 {
 
@@ -148,5 +146,3 @@ DeviceBuffer<uint64_t> PmePpCommGpu::getGpuForcesSyncObj()
 
 
 } // namespace gmx
-
-#endif // !GMX_GPU_CUDA && !GMX_GPU_SYCL

@@ -96,9 +96,9 @@ void PmeCoordinateReceiverGpu::Impl::reinitCoordinateReceiver(DeviceBuffer<RVec>
         // Skip receiving x buffer pointer when the PP domain is empty (the matching call in `pmePpCommGpu->reinit(n)` is also conditional)
         if (GMX_THREAD_MPI && (ppCommManager.ppRank.numAtoms > 0))
         {
-            GMX_RELEASE_ASSERT(
-                    GMX_GPU_CUDA,
-                    "Direct PME-PP communication with threadMPI is only supported with CUDA.");
+            GMX_RELEASE_ASSERT(GMX_GPU_CUDA || GMX_GPU_HIP,
+                               "Direct PME-PP communication with threadMPI is only supported with "
+                               "CUDA or HIP.");
             // Data will be transferred directly from GPU.
             void* sendBuf = reinterpret_cast<void*>(asMpiPointer(d_x) + indStart);
             MPI_Send(&sendBuf, sizeof(void**), MPI_BYTE, ppCommManager.ppRank.rankId, 0, comm_);

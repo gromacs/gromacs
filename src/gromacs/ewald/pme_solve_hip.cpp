@@ -33,22 +33,29 @@
  */
 
 /*! \internal \file
- *  \brief Implements PME GPU Fourier grid solving in CUDA.
+ *  \brief Implements PME GPU Fourier grid solving in HIP.
  *
  *  \author Aleksei Iupinov <a.yupinov@gmail.com>
  */
 
 #include "gmxpre.h"
 
-#include <math_constants.h>
-
 #include <cassert>
 
-#include "gromacs/gpu_utils/cuda_arch_utils.cuh"
+#include <hip/hip_math_constants.h>
+
+#include "gromacs/gpu_utils/device_utils_hip_sycl.h"
+#include "gromacs/gpu_utils/gputraits.h"
+#include "gromacs/gpu_utils/hip_kernel_utils.h"
+#include "gromacs/gpu_utils/packed_float.h"
+#include "gromacs/gpu_utils/vectype_ops_hip.h"
 
 #include "pme_gpu_constants.h"
 #include "pme_gpu_internal.h"
 #include "pme_gpu_types.h"
+
+template<int parallelExecutionWidth>
+static constexpr int sc_solveMaxThreadsPerBlock = c_solveMaxWarpsPerBlock* parallelExecutionWidth;
 
 /*! \brief
  * PME complex grid solver kernel function.
@@ -56,30 +63,16 @@
  * \tparam     gridOrdering             Specifies the dimension ordering of the complex grid.
  * \tparam     computeEnergyAndVirial   Tells if the reciprocal energy and virial should be computed.
  * \tparam     gridIndex                The index of the grid to use in the kernel.
- * \param[in]  kernelParams             Input PME CUDA data in constant memory.
+ * \param[in]  kernelParams             Input PME HIP data in constant memory.
  */
-template<GridOrdering gridOrdering, bool computeEnergyAndVirial, const int gridIndex>
-__launch_bounds__(c_solveMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBUTE __global__
-        void pme_solve_kernel(const struct PmeGpuKernelParamsBase kernelParams)
+template<GridOrdering gridOrdering, bool computeEnergyAndVirial, const int gridIndex, int parallelExecutionWidth>
+LAUNCH_BOUNDS_EXACT_SINGLE(sc_solveMaxThreadsPerBlock<parallelExecutionWidth>)
+__global__ void pmeSolveKernel(const struct PmeGpuKernelParamsBase kernelParams)
 {
     /* This kernel supports 2 different grid dimension orderings: YZX and XYZ */
-    int majorDim, middleDim, minorDim;
-    switch (gridOrdering)
-    {
-        case GridOrdering::YZX:
-            majorDim  = YY;
-            middleDim = ZZ;
-            minorDim  = XX;
-            break;
-
-        case GridOrdering::XYZ:
-            majorDim  = XX;
-            middleDim = YY;
-            minorDim  = ZZ;
-            break;
-
-        default: assert(false);
-    }
+    constexpr int majorDim  = gridOrdering == GridOrdering::YZX ? YY : XX;
+    constexpr int middleDim = gridOrdering == GridOrdering::YZX ? ZZ : YY;
+    constexpr int minorDim  = gridOrdering == GridOrdering::YZX ? XX : ZZ;
 
     /* Global memory pointers */
     const float* __restrict__ gm_splineValueMajor = kernelParams.grid.d_splineModuli[gridIndex]
@@ -117,7 +110,7 @@ __launch_bounds__(c_solveMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBUT
     const int gridLineIndex     = threadLocalId / gridLineSize;
     const int gridLineCellIndex = threadLocalId - gridLineSize * gridLineIndex;
     const int gridLinesPerBlock = max(blockDim.x / gridLineSize, 1);
-    const int activeWarps       = (blockDim.x / warp_size);
+    const int activeWarps       = blockDim.x / parallelExecutionWidth;
     const int indexMinor        = blockIdx.x * blockDim.x + gridLineCellIndex;
     const int indexMiddle       = blockIdx.y * gridLinesPerBlock + gridLineIndex;
     const int indexMajor        = blockIdx.z;
@@ -161,73 +154,54 @@ __launch_bounds__(c_solveMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBUT
         /* We should skip the k-space point (0,0,0) */
         const bool notZeroPoint = (kMinor > 0) | (kMajor > 0) | (kMiddle > 0);
 
-        float mX, mY, mZ;
-        switch (gridOrdering)
-        {
-            case GridOrdering::YZX:
-                mX = mMinor;
-                mY = mMajor;
-                mZ = mMiddle;
-                break;
+        const AmdPackedFloat3 mm = (gridOrdering == GridOrdering::YZX)
+                                           ? AmdPackedFloat3(mMinor, mMajor, mMiddle)
+                                           : AmdPackedFloat3(mMajor, mMiddle, mMinor);
 
-            case GridOrdering::XYZ:
-                mX = mMajor;
-                mY = mMiddle;
-                mZ = mMinor;
-                break;
-
-            default: assert(false);
-        }
-
+        const bool isLastComponent = gridOrdering == GridOrdering::YZX
+                                             ? ((kMiddle == 0) | (kMiddle == maxkMiddle))
+                                             : ((kMinor == 0) | (kMinor == maxkMinor));
         /* 0.5 correction factor for the first and last components of a Z dimension */
-        float corner_fac = 1.0F;
-        switch (gridOrdering)
-        {
-            case GridOrdering::YZX:
-                if ((kMiddle == 0) | (kMiddle == maxkMiddle))
-                {
-                    corner_fac = 0.5F;
-                }
-                break;
+        const float corner_fac = isLastComponent ? 0.5F : 1.0F;
 
-            case GridOrdering::XYZ:
-                if ((kMinor == 0) | (kMinor == maxkMinor))
-                {
-                    corner_fac = 0.5F;
-                }
-                break;
-
-            default: assert(false);
-        }
+        // TODO: use textures for gm_splineValue
+        float vMajor  = LDG(gm_splineValueMajor + kMajor);
+        float vMiddle = LDG(gm_splineValueMiddle + kMiddle);
+        float vMinor  = LDG(gm_splineValueMinor + kMinor);
 
         if (notZeroPoint)
         {
-            const float mhxk = mX * kernelParams.current.recipBox[XX][XX];
-            const float mhyk = mX * kernelParams.current.recipBox[XX][YY]
-                               + mY * kernelParams.current.recipBox[YY][YY];
-            const float mhzk = mX * kernelParams.current.recipBox[XX][ZZ]
-                               + mY * kernelParams.current.recipBox[YY][ZZ]
-                               + mZ * kernelParams.current.recipBox[ZZ][ZZ];
+            AmdPackedFloat3 mhk, recip1, recip2, recip3;
+            recip1.x_         = kernelParams.current.recipBox[XX][XX];
+            recip1.y_         = kernelParams.current.recipBox[XX][YY];
+            recip1.z_         = kernelParams.current.recipBox[XX][ZZ];
+            recip2.x_         = 0.0f;
+            recip2.y_         = kernelParams.current.recipBox[YY][YY];
+            recip2.z_         = kernelParams.current.recipBox[YY][ZZ];
+            recip3.x_         = 0.0f;
+            recip3.y_         = 0.0f;
+            recip3.z_         = kernelParams.current.recipBox[ZZ][ZZ];
+            AmdPackedFloat3 a = mm.x() * recip1;
+            AmdPackedFloat3 b = mm.y() * recip2;
+            AmdPackedFloat3 c = mm.z() * recip3;
+            mhk               = a + b + c;
 
-            const float m2k = mhxk * mhxk + mhyk * mhyk + mhzk * mhzk;
+            const float m2k = mhk.norm2();
             assert(m2k != 0.0F);
-            // TODO: use LDG/textures for gm_splineValue
-            float denom = m2k * float(CUDART_PI_F) * kernelParams.current.boxVolume
-                          * gm_splineValueMajor[kMajor] * gm_splineValueMiddle[kMiddle]
-                          * gm_splineValueMinor[kMinor];
+
+            float denom = m2k * float(HIP_PI) * kernelParams.current.boxVolume * vMajor * vMiddle * vMinor;
             assert(isfinite(denom));
             assert(denom != 0.0F);
 
-            const float tmp1   = expf(-kernelParams.grid.ewaldFactor * m2k);
+            const float tmp1   = __expf(-kernelParams.grid.ewaldFactor * m2k);
             const float etermk = kernelParams.constants.elFactor * tmp1 / denom;
 
             float2       gridValue    = *gm_gridCell;
             const float2 oldGridValue = gridValue;
-            gridValue.x *= etermk;
-            gridValue.y *= etermk;
-            *gm_gridCell = gridValue;
+            gridValue                 = gridValue * etermk;
+            *gm_gridCell              = gridValue;
 
-            if (computeEnergyAndVirial)
+            if constexpr (computeEnergyAndVirial)
             {
                 const float tmp1k =
                         2.0F * (gridValue.x * oldGridValue.x + gridValue.y * oldGridValue.y);
@@ -238,36 +212,27 @@ __launch_bounds__(c_solveMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBUT
 
                 float ets2vf = ets2 * vfactor;
 
-                virxx = ets2vf * mhxk * mhxk - ets2;
-                virxy = ets2vf * mhxk * mhyk;
-                virxz = ets2vf * mhxk * mhzk;
-                viryy = ets2vf * mhyk * mhyk - ets2;
-                viryz = ets2vf * mhyk * mhzk;
-                virzz = ets2vf * mhzk * mhzk - ets2;
+                virxx = ets2vf * mhk.x() * mhk.x() - ets2;
+                virxy = ets2vf * mhk.x() * mhk.y();
+                virxz = ets2vf * mhk.x() * mhk.z();
+                viryy = ets2vf * mhk.y() * mhk.y() - ets2;
+                viryz = ets2vf * mhk.y() * mhk.z();
+                virzz = ets2vf * mhk.z() * mhk.z() - ets2;
             }
         }
     }
 
     /* Optional energy/virial reduction */
-    if (computeEnergyAndVirial)
+    if constexpr (computeEnergyAndVirial)
     {
-        /* A tricky shuffle reduction inspired by reduce_force_j_warp_shfl.
-         * The idea is to reduce 7 energy/virial components into a single variable (aligned by 8).
-         * We will reduce everything into virxx.
-         */
 
-        /* We can only reduce warp-wise */
-        const int          width      = warp_size;
-        const unsigned int activeMask = c_fullWarpMask;
-
-        /* Making pair sums */
-        virxx += __shfl_down_sync(activeMask, virxx, 1, width);
-        viryy += __shfl_up_sync(activeMask, viryy, 1, width);
-        virzz += __shfl_down_sync(activeMask, virzz, 1, width);
-        virxy += __shfl_up_sync(activeMask, virxy, 1, width);
-        virxz += __shfl_down_sync(activeMask, virxz, 1, width);
-        viryz += __shfl_up_sync(activeMask, viryz, 1, width);
-        energy += __shfl_down_sync(activeMask, energy, 1, width);
+        virxx += amdDppUpdateShfl<float, /* row_shl:1 */ 0x101>(virxx);
+        viryy += amdDppUpdateShfl<float, /* row_shr:1 */ 0x111>(viryy);
+        virzz += amdDppUpdateShfl<float, /* row_shl:1 */ 0x101>(virzz);
+        virxy += amdDppUpdateShfl<float, /* row_shr:1 */ 0x111>(virxy);
+        virxz += amdDppUpdateShfl<float, /* row_shl:1 */ 0x101>(virxz);
+        viryz += amdDppUpdateShfl<float, /* row_shr:1 */ 0x111>(viryz);
+        energy += amdDppUpdateShfl<float, /* row_shl:1 */ 0x101>(energy);
         if (threadLocalId & 1)
         {
             virxx = viryy; // virxx now holds virxx and viryy pair sums
@@ -275,20 +240,18 @@ __launch_bounds__(c_solveMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBUT
             virxz = viryz; // virxz now holds virxz and viryz pair sums
         }
 
-        /* Making quad sums */
-        virxx += __shfl_down_sync(activeMask, virxx, 2, width);
-        virzz += __shfl_up_sync(activeMask, virzz, 2, width);
-        virxz += __shfl_down_sync(activeMask, virxz, 2, width);
-        energy += __shfl_up_sync(activeMask, energy, 2, width);
+        virxx += amdDppUpdateShfl<float, /* row_shl:2 */ 0x102>(virxx);
+        virzz += amdDppUpdateShfl<float, /* row_shr:2 */ 0x112>(virzz);
+        virxz += amdDppUpdateShfl<float, /* row_shl:2 */ 0x102>(virxz);
+        energy += amdDppUpdateShfl<float, /* row_shr:2 */ 0x112>(energy);
         if (threadLocalId & 2)
         {
             virxx = virzz;  // virxx now holds quad sums of virxx, virxy, virzz and virxy
             virxz = energy; // virxz now holds quad sums of virxz, viryz, energy and unused paddings
         }
 
-        /* Making octet sums */
-        virxx += __shfl_down_sync(activeMask, virxx, 4, width);
-        virxz += __shfl_up_sync(activeMask, virxz, 4, width);
+        virxx += amdDppUpdateShfl<float, /* row_shl:4 */ 0x104>(virxx);
+        virxz += amdDppUpdateShfl<float, /* row_shr:4 */ 0x114>(virxz);
         if (threadLocalId & 4)
         {
             virxx = virxz; // virxx now holds all 7 components' octet sums + unused paddings
@@ -296,24 +259,25 @@ __launch_bounds__(c_solveMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBUT
 
         /* We only need to reduce virxx now */
 #pragma unroll
-        for (int delta = 8; delta < width; delta <<= 1)
+        for (int delta = 8; delta < parallelExecutionWidth; delta <<= 1)
         {
-            virxx += __shfl_down_sync(activeMask, virxx, delta, width);
+            virxx += __shfl_down(virxx, delta, parallelExecutionWidth);
         }
+
         /* Now first 7 threads of each warp have the full output contributions in virxx */
 
-        const int  componentIndex      = threadLocalId & (warp_size - 1);
+        const int  componentIndex      = threadLocalId & (parallelExecutionWidth - 1);
         const bool validComponentIndex = (componentIndex < c_virialAndEnergyCount);
         /* Reduce 7 outputs per warp in the shared memory */
-        const int stride =
+        constexpr int stride =
                 8; // this is c_virialAndEnergyCount==7 rounded up to power of 2 for convenience, hence the assert
         static_assert(c_virialAndEnergyCount == 7);
-        const int        reductionBufferSize = (c_solveMaxThreadsPerBlock / warp_size) * stride;
+        const int reductionBufferSize = sc_solveMaxThreadsPerBlock<parallelExecutionWidth> * stride;
         __shared__ float sm_virialAndEnergy[reductionBufferSize];
 
         if (validComponentIndex)
         {
-            const int warpIndex                                     = threadLocalId / warp_size;
+            const int warpIndex = threadLocalId / parallelExecutionWidth;
             sm_virialAndEnergy[warpIndex * stride + componentIndex] = virxx;
         }
         __syncthreads();
@@ -321,7 +285,7 @@ __launch_bounds__(c_solveMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBUT
         /* Reduce to the single warp size */
         const int targetIndex = threadLocalId;
 #pragma unroll
-        for (int reductionStride = reductionBufferSize >> 1; reductionStride >= warp_size;
+        for (int reductionStride = reductionBufferSize >> 1; reductionStride >= parallelExecutionWidth;
              reductionStride >>= 1)
         {
             const int sourceIndex = targetIndex + reductionStride;
@@ -338,14 +302,14 @@ __launch_bounds__(c_solveMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBUT
          *       To use fewer warps, add to the conditional:
          *       && threadLocalId < activeWarps * stride
          */
-        assert(activeWarps * stride >= warp_size);
-        if (threadLocalId < warp_size)
+        assert(activeWarps * stride >= parallelExecutionWidth);
+        if (threadLocalId < parallelExecutionWidth)
         {
             float output = sm_virialAndEnergy[threadLocalId];
 #pragma unroll
-            for (int delta = stride; delta < warp_size; delta <<= 1)
+            for (int delta = stride; delta < parallelExecutionWidth; delta <<= 1)
             {
-                output += __shfl_down_sync(activeMask, output, delta, warp_size);
+                output += __shfl_down(output, delta, parallelExecutionWidth);
             }
             /* Final output */
             if (validComponentIndex)
@@ -357,12 +321,32 @@ __launch_bounds__(c_solveMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBUT
     }
 }
 
-//! Kernel instantiations
-template __global__ void pme_solve_kernel<GridOrdering::YZX, true, 0>(const PmeGpuKernelParamsBase);
-template __global__ void pme_solve_kernel<GridOrdering::YZX, false, 0>(const PmeGpuKernelParamsBase);
-template __global__ void pme_solve_kernel<GridOrdering::XYZ, true, 0>(const PmeGpuKernelParamsBase);
-template __global__ void pme_solve_kernel<GridOrdering::XYZ, false, 0>(const PmeGpuKernelParamsBase);
-template __global__ void pme_solve_kernel<GridOrdering::YZX, true, 1>(const PmeGpuKernelParamsBase);
-template __global__ void pme_solve_kernel<GridOrdering::YZX, false, 1>(const PmeGpuKernelParamsBase);
-template __global__ void pme_solve_kernel<GridOrdering::XYZ, true, 1>(const PmeGpuKernelParamsBase);
-template __global__ void pme_solve_kernel<GridOrdering::XYZ, false, 1>(const PmeGpuKernelParamsBase);
+//! Kernel class instantiations
+/* Disable the "explicit template instantiation 'PmeSplineAndSpreadKernel<...>' will emit a vtable in every
+ * translation unit [-Wweak-template-vtables]" warning.
+ * It is only explicitly instantiated in this translation unit, so we should be safe.
+ */
+CLANG_DIAGNOSTIC_IGNORE("-Wweak-template-vtables")
+
+#define INSTANTIATE(parallelExecutionWidth)                                                       \
+    template __global__ void pmeSolveKernel<GridOrdering::XYZ, false, 0, parallelExecutionWidth>( \
+            PmeGpuKernelParamsBase kernelParams);                                                 \
+    template __global__ void pmeSolveKernel<GridOrdering::XYZ, true, 0, parallelExecutionWidth>(  \
+            PmeGpuKernelParamsBase kernelParams);                                                 \
+    template __global__ void pmeSolveKernel<GridOrdering::YZX, false, 0, parallelExecutionWidth>( \
+            PmeGpuKernelParamsBase kernelParams);                                                 \
+    template __global__ void pmeSolveKernel<GridOrdering::YZX, true, 0, parallelExecutionWidth>(  \
+            PmeGpuKernelParamsBase kernelParams);                                                 \
+    template __global__ void pmeSolveKernel<GridOrdering::XYZ, false, 1, parallelExecutionWidth>( \
+            PmeGpuKernelParamsBase kernelParams);                                                 \
+    template __global__ void pmeSolveKernel<GridOrdering::XYZ, true, 1, parallelExecutionWidth>(  \
+            PmeGpuKernelParamsBase kernelParams);                                                 \
+    template __global__ void pmeSolveKernel<GridOrdering::YZX, false, 1, parallelExecutionWidth>( \
+            PmeGpuKernelParamsBase kernelParams);                                                 \
+    template __global__ void pmeSolveKernel<GridOrdering::YZX, true, 1, parallelExecutionWidth>(  \
+            PmeGpuKernelParamsBase kernelParams);
+
+INSTANTIATE(32);
+INSTANTIATE(64);
+
+CLANG_DIAGNOSTIC_RESET
