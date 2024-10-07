@@ -208,7 +208,7 @@ __device__ static inline void sumForceComponents(float* __restrict__ fx,
             }
             const int gridIndexGlobal = ix * pny * pnz + constOffset;
             assert(gridIndexGlobal >= 0);
-            const float gridValue = fastLoad(gm_grid, gridIndexGlobal);
+            const float gridValue = amdFastLoad(gm_grid, gridIndexGlobal);
             assert(isfinite(gridValue));
             const int splineIndexX = getSplineParamIndex<order, atomsPerWarp>(splineIndexBase, XX, ithx);
             const float2 tdx       = make_float2(sm_theta[splineIndexX], sm_dtheta[splineIndexX]);
