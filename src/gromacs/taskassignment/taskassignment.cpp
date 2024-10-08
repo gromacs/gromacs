@@ -111,6 +111,7 @@ std::vector<GpuTaskAssignment> buildTaskAssignment(const GpuTasksOnRanks& gpuTas
     {
         if (gpuTasksOnRank.empty())
         {
+            ++gpuTaskAssignmentOnRank;
             continue;
         }
         gpuTaskAssignmentOnRank->reserve(gpuTasksOnRank.size());

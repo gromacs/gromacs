@@ -68,6 +68,14 @@ Prevent using update on GPU if there are triangle constraints.
 
 :issue:`5123`
 
+``gmx_mpi mdrun`` could hang when using GPUs and separate PME ranks 
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+A logic error in task assignment for ``-nb gpu -pme cpu`` and separate PME ranks
+made the (default) ``-ddorder interleave`` hang. Now it works.
+
+:issue:`4345`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
