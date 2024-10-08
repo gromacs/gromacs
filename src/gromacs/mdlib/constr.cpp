@@ -1003,6 +1003,7 @@ void Constraints::Impl::setConstraints(gmx_localtop_t*                     top,
                                        const real                          lambda,
                                        gmx::ArrayRef<const unsigned short> cFREEZE)
 {
+    wallcycle_start(wcycle, WallCycleCounter::SetConstr);
     numAtoms_              = numAtoms;
     numHomeAtoms_          = numHomeAtoms;
     masses_                = masses;
@@ -1020,7 +1021,9 @@ void Constraints::Impl::setConstraints(gmx_localtop_t*                     top,
          */
         if (ir.eConstrAlg == ConstraintAlgorithm::Lincs)
         {
+            wallcycle_sub_start(wcycle, WallCycleSubCounter::SetLincs);
             set_lincs(*idef, numAtoms_, inverseMasses_, lambda_, EI_DYNAMICS(ir.eI), cr, lincsd);
+            wallcycle_sub_stop(wcycle, WallCycleSubCounter::SetLincs);
         }
         if (ir.eConstrAlg == ConstraintAlgorithm::Shake)
         {
@@ -1041,7 +1044,9 @@ void Constraints::Impl::setConstraints(gmx_localtop_t*                     top,
 
     if (settled)
     {
+        wallcycle_sub_start(wcycle, WallCycleSubCounter::SetSettle);
         settled->setConstraints(idef->il[F_SETTLE], numHomeAtoms_, masses_, inverseMasses_);
+        wallcycle_sub_stop(wcycle, WallCycleSubCounter::SetSettle);
     }
 
     /* Make a selection of the local atoms for essential dynamics */
@@ -1049,6 +1054,7 @@ void Constraints::Impl::setConstraints(gmx_localtop_t*                     top,
     {
         dd_make_local_ed_indices(cr->dd, ed);
     }
+    wallcycle_stop(wcycle, WallCycleCounter::SetConstr);
 }
 
 void Constraints::setConstraints(gmx_localtop_t*                     top,

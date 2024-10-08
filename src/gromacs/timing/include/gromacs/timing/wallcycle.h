@@ -108,6 +108,8 @@ enum class WallCycleCounter : int
     Traj,
     Update,
     Constr,
+    SetConstr,
+    GpuSetConstr,
     ComputeEKin,
     MoveE,
     InterSimulationSignalling,
@@ -162,6 +164,10 @@ enum class WallCycleSubCounter : int
     MdGpuGraphWaitBeforeLaunch,
     MdGpuGraphLaunch,
     ConstrComm,
+    SetLincs,
+    SetSettle,
+    GpuSetLincs,
+    GpuSetSettle,
     Test,
     Count
 };
@@ -230,6 +236,8 @@ static const char* enumValuetoString(WallCycleCounter enumValue)
         "Write traj.",
         "Update",
         "Constraints",
+        "Constr. setup",
+        "GPU constr. setup",
         "Kinetic energy",
         "Comm. energies",
         "Inter-sim. signal.",
@@ -288,6 +296,10 @@ static const char* enumValuetoString(WallCycleSubCounter enumValue)
         "Graph wait pre-launch",
         "Graph launch",
         "Constraints Comm.", // constraints communication time, note that this counter will contain load imbalance
+        "LINCS setup",
+        "Settle setup",
+        "GPU LINCS setup",
+        "GPU settle setup",
         "Test subcounter"
     };
     static_assert(checkStringsLengths<22>(wallCycleSubCounterNames));
