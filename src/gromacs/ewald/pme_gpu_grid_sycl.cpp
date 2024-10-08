@@ -607,7 +607,7 @@ submit(const DeviceStream& deviceStream, size_t myGridX, size_t myGridY, sycl::u
     const sycl::nd_range<3> range{ groupRange * localSize, localSize };
 
     sycl::queue q = deviceStream.stream();
-    q.submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
+    gmx::syclSubmitWithoutEvent(q, [&](sycl::handler& cgh) {
         auto kernel = Kernel::template kernel<subGroupSize>(
                 myGridX, myGridY, pmeSize, std::forward<Args>(args)...);
         cgh.parallel_for<Kernel>(range, kernel);
@@ -1281,7 +1281,7 @@ public:
 
         sycl::queue q = deviceStream.stream();
 
-        q.submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
+        gmx::syclSubmitWithoutEvent(q, [&](sycl::handler& cgh) {
             auto kernel = convertKernel<subGroupSize>(localFftNData, std::forward<Args>(args)...);
             cgh.parallel_for<GridConverter<pmeToFft>>(range, kernel);
         });

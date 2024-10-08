@@ -1035,9 +1035,8 @@ void ListedForcesGpu::Impl::launchKernel()
 
     const sycl::nd_range<1> rangeAll(kernelLaunchConfig_.blockSize[0] * kernelLaunchConfig_.gridSize[0],
                                      kernelLaunchConfig_.blockSize[0]);
-    sycl::queue             q = deviceStream_.stream();
 
-    q.submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
+    gmx::syclSubmitWithoutEvent(deviceStream_.stream(), [&](sycl::handler& cgh) {
         auto kernel = bondedKernel<calcVir, calcEner>(cgh,
                                                       kernelParams_,
                                                       kernelBuffers_.d_iatoms,

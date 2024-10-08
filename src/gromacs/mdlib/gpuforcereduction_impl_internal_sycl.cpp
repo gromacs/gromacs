@@ -101,7 +101,7 @@ static void launchReductionKernel_(const int                   numAtoms,
     const sycl::range<1> rangeNumAtoms(numAtoms);
     sycl::queue          queue = deviceStream.stream();
 
-    queue.submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
+    gmx::syclSubmitWithoutEvent(queue, [&](sycl::handler& cgh) {
         auto kernel = reduceKernel<addRvecForce, accumulateForce>(d_nbnxmForce.get_pointer(),
                                                                   d_rvecForceToAdd.get_pointer(),
                                                                   d_forceTotal.get_pointer(),

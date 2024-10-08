@@ -221,7 +221,7 @@ class BucketSciSort;
 template<int workGroupSize>
 static void launchPrefixSumKernel(sycl::queue& q, GpuPairlistSorting* sorting)
 {
-    q.submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
+    gmx::syclSubmitWithoutEvent(q, [&](sycl::handler& cgh) {
         cgh.parallel_for<ExclusivePrefixSum>(
                 sycl::nd_range<1>{ workGroupSize, workGroupSize },
                 nbnxnKernelExclusivePrefixSum<workGroupSize, c_sciHistogramSize>(
@@ -232,7 +232,7 @@ static void launchPrefixSumKernel(sycl::queue& q, GpuPairlistSorting* sorting)
 static void launchBucketSortKernel(sycl::queue& q, GpuPairlist* plist)
 {
     const size_t size = plist->numSci;
-    q.submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
+    gmx::syclSubmitWithoutEvent(q, [&](sycl::handler& cgh) {
         cgh.parallel_for<BucketSciSort>(
                 sycl::range<1>{ size },
                 nbnxnKernelBucketSciSort(plist->sci.get_pointer(),

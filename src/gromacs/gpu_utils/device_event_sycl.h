@@ -77,7 +77,11 @@ public:
      */
     inline void mark(const DeviceStream& deviceStream)
     {
-#    if defined(ACPP_EXT_ENQUEUE_CUSTOM_OPERATION) || defined(HIPSYCL_EXT_ENQUEUE_CUSTOM_OPERATION)
+#    if defined(ACPP_EXT_ENQUEUE_CUSTOM_OPERATION)
+        // This will not launch any GPU operation, but it will mark an event which is returned
+        events_ = { deviceStream.stream().AdaptiveCpp_enqueue_custom_operation(
+                [=](sycl::interop_handle&) {}) };
+#    elif defined(HIPSYCL_EXT_ENQUEUE_CUSTOM_OPERATION) // ACpp 24.02 and earlier
         // This will not launch any GPU operation, but it will mark an event which is returned
         events_ = { deviceStream.stream().hipSYCL_enqueue_custom_operation([=](sycl::interop_handle&) {}) };
 #    elif defined(SYCL_EXT_ONEAPI_ENQUEUE_BARRIER)
@@ -102,9 +106,9 @@ public:
     {
 #    if defined(ACPP_EXT_ENQUEUE_CUSTOM_OPERATION) || defined(HIPSYCL_EXT_ENQUEUE_CUSTOM_OPERATION)
         // Submit an empty operation that depends on all the events recorded.
-        deviceStream.stream().submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
+        gmx::syclSubmitWithoutEvent(deviceStream.stream(), [&](sycl::handler& cgh) {
             cgh.depends_on(events_);
-            cgh.hipSYCL_enqueue_custom_operation([=](sycl::interop_handle&) {});
+            gmx::syclEnqueueCustomOp(cgh, [=](sycl::interop_handle&) {});
         });
 #    elif defined(SYCL_EXT_ONEAPI_ENQUEUE_BARRIER)
         // Relies on sycl_ext_oneapi_enqueue_barrier extensions

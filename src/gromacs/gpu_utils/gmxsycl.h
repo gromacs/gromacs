@@ -45,29 +45,63 @@
 
 #include <sycl/sycl.hpp>
 
-/* Macro to optimize runtime performance by not recording unnecessary events.
- *
- * It relies on the availability of ACPP_EXT_CG_PROPERTY_* extension, and is no-op for
- * other SYCL implementations. Macro can be used as follows (note the lack of comma after it):
- * `queue.submit(GMX_SYCL_DISCARD_EVENT [=](....))`.
- *
- * When this macro is added to `queue.submit`, the returned event should not be used!
- * As a consequence, patterns like `queue.submit(GMX_SYCL_DISCARD_EVENT [=](....)).wait()`
- * must be avoided. If you intend to use the returned event in any way, do not add this macro.
- *
- * The use of the returned event will not necessarily cause run-time errors, but can cause
- * performance degradation (specifically, in hipSYCL the synchronization will be sub-optimal).
- */
-#if GMX_SYCL_ACPP
-namespace gmx::internal
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/gmxassert.h"
+
+namespace gmx
 {
-static const sycl::property_list sc_syclDiscardEventProperty_list{
+#if GMX_SYCL_ACPP
+namespace internal
+{
+static const sycl::property_list sc_syclDiscardEventProperty_list
+{
+#    if defined(ACPP_EXT_COARSE_GRAINED_EVENTS) // Since ACpp 24.06
+    sycl::property::command_group::AdaptiveCpp_coarse_grained_events()
+#    else
     sycl::property::command_group::hipSYCL_coarse_grained_events()
+#    endif
 };
-}
-#    define GMX_SYCL_DISCARD_EVENT gmx::internal::sc_syclDiscardEventProperty_list,
-#else // IntelLLVM does not support command-group properties
-#    define GMX_SYCL_DISCARD_EVENT
+} // namespace internal
 #endif
+
+/*! \brief Helper function to submit a SYCL operation without returning an event.
+ *
+ * Gives some nice performance optimizations, especially on AMD and NVIDIA devices.
+ *
+ * In ACpp, it relies on the ACPP_EXT_CG_PROPERTY_* and ACPP_EXT_COARSE_GRAINED_EVENTS extensions.
+ * Falls back to the default submit otherwise.
+ *
+ * The function aims to avoid the overhead associated with creating/recording/destroying events.
+ */
+template<typename Queue, typename CommandGroupFunc>
+static inline void syclSubmitWithoutEvent(Queue&& queue, CommandGroupFunc&& cgf)
+{
+#if GMX_SYCL_ACPP
+    queue.submit(gmx::internal::sc_syclDiscardEventProperty_list, std::move(cgf));
+#else
+    queue.submit(std::move(cgf));
+#endif
+}
+
+/*! \brief Helper function to add a custom operation to the SYCL handler.
+ *
+ * In ACpp, it relies on the ACPP_EXT_ENQUEUE_CUSTOM_OPERATION extension.
+ * Should not be called when the extension is not available.
+ */
+template<typename CommandGroupFunc>
+static inline void syclEnqueueCustomOp(sycl::handler& cgh, CommandGroupFunc&& cgf)
+{
+#if defined(ACPP_EXT_ENQUEUE_CUSTOM_OPERATION)
+    cgh.AdaptiveCpp_enqueue_custom_operation(std::move(cgf));
+#elif defined(HIPSYCL_EXT_ENQUEUE_CUSTOM_OPERATION)
+    cgh.hipSYCL_enqueue_custom_operation(std::move(cgf));
+#else
+    GMX_UNUSED_VALUE(cgh);
+    GMX_UNUSED_VALUE(cgf);
+    GMX_RELEASE_ASSERT(false, "Function called with unsupported backend");
+#endif
+}
+
+} // namespace gmx
 
 #endif

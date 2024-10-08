@@ -262,9 +262,8 @@ void copyToDeviceBuffer(DeviceBuffer<ValueType>* buffer,
     }
     else
     {
-        deviceStream.stream().submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
-            cgh.memcpy(dstPtr, hostBuffer, size);
-        });
+        gmx::syclSubmitWithoutEvent(deviceStream.stream(),
+                                    [&](sycl::handler& cgh) { cgh.memcpy(dstPtr, hostBuffer, size); });
     }
 }
 
@@ -320,9 +319,8 @@ void copyFromDeviceBuffer(ValueType*               hostBuffer,
     }
     else
     {
-        deviceStream.stream().submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
-            cgh.memcpy(hostBuffer, srcPtr, size);
-        });
+        gmx::syclSubmitWithoutEvent(deviceStream.stream(),
+                                    [&](sycl::handler& cgh) { cgh.memcpy(hostBuffer, srcPtr, size); });
     }
 }
 
@@ -355,9 +353,8 @@ void copyBetweenDeviceBuffers(DeviceBuffer<ValueType>* destinationDeviceBuffer,
     }
     else
     {
-        deviceStream.stream().submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
-            cgh.memcpy(dstPtr, srcPtr, size);
-        });
+        gmx::syclSubmitWithoutEvent(deviceStream.stream(),
+                                    [&](sycl::handler& cgh) { cgh.memcpy(dstPtr, srcPtr, size); });
     }
 }
 
@@ -385,7 +382,7 @@ void clearDeviceBufferAsync(DeviceBuffer<ValueType>* buffer,
     GMX_ASSERT(checkDeviceBuffer(*buffer, startingOffset + numValues),
                "buffer too small or not initialized");
 
-    deviceStream.stream().submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
+    gmx::syclSubmitWithoutEvent(deviceStream.stream(), [&](sycl::handler& cgh) {
         cgh.memset(buffer->buffer_->ptr_ + startingOffset, 0, numValues * sizeof(ValueType));
     });
 }

@@ -303,7 +303,7 @@ void launchNbnxmKernelPruneOnly(const DeviceStream& deviceStream, const int numS
 
     sycl::queue q = deviceStream.stream();
 
-    q.submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
+    gmx::syclSubmitWithoutEvent(q, [&](sycl::handler& cgh) {
         auto kernel = nbnxmKernelPruneOnly<haveFreshList, layoutType>(cgh, std::forward<Args>(args)...);
         cgh.parallel_for<kernelNameType>(range, kernel);
     });

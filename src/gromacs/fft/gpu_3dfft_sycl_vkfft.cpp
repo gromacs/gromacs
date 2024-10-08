@@ -197,7 +197,7 @@ Gpu3dFft::ImplSyclVkfft::Impl::Impl(bool allocateGrids,
     handleFftError(result, "Initializing VkFFT");
 #elif GMX_SYCL_ACPP
     queue_.submit([&](sycl::handler& cgh) {
-              cgh.hipSYCL_enqueue_custom_operation([=](sycl::interop_handle& gmx_unused h) {
+              gmx::syclEnqueueCustomOp(cgh, [=](sycl::interop_handle& gmx_unused h) {
                   VkFFTResult result = initializeVkFFT(&application_, configuration_);
                   handleFftError(result, "Initializing VkFFT");
               });
@@ -277,8 +277,8 @@ static void launchVkFft(const DeviceBuffer<float>& realGrid,
 void Gpu3dFft::ImplSyclVkfft::perform3dFft(gmx_fft_direction dir, CommandEvent* /*timingEvent*/)
 {
 #if GMX_SYCL_ACPP // use hipSYCL_enqueue_custom_operation
-    impl_->queue_.submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
-        cgh.hipSYCL_enqueue_custom_operation([=](sycl::interop_handle& h) {
+    gmx::syclSubmitWithoutEvent(impl_->queue_, [&](sycl::handler& cgh) {
+        gmx::syclEnqueueCustomOp(cgh, [=](sycl::interop_handle& h) {
             launchVkFft(impl_->realGrid_,
                         complexGrid_,
                         h.get_native_queue<sc_syclBackend>(),
