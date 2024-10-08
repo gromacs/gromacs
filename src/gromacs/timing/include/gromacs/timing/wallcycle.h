@@ -124,6 +124,7 @@ enum class WallCycleCounter : int
 
 enum class WallCycleSubCounter : int
 {
+    DDAddCogs,
     DDRedist,
     DDGrid,
     DDSetupComm,
@@ -256,6 +257,7 @@ CLANG_DIAGNOSTIC_IGNORE("-Wunneeded-internal-declaration")
 static const char* enumValuetoString(WallCycleSubCounter enumValue)
 {
     constexpr gmx::EnumerationArray<WallCycleSubCounter, const char*> wallCycleSubCounterNames = {
+        "DD update groups",
         "DD redist.",
         "DD NS grid + sort",
         "DD setup comm.",

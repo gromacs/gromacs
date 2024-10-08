@@ -2830,8 +2830,13 @@ void dd_partition_system(FILE*                     fplog,
 
     if (comm->systemInfo.useUpdateGroups)
     {
-        comm->updateGroupsCog->addCogs(
-                gmx::arrayRefFromArray(dd->globalAtomIndices.data(), dd->numHomeAtoms), state_local->x);
+        wallcycle_sub_start(wcycle, WallCycleSubCounter::DDAddCogs);
+
+        comm->updateGroupsCog->addCogs(gmx::arrayRefFromArray(dd->globalAtomIndices.data(), dd->numHomeAtoms),
+                                       state_local->x,
+                                       fr->nbv->getLocalGridNumAtomsPerColumn());
+
+        wallcycle_sub_stop(wcycle, WallCycleSubCounter::DDAddCogs);
     }
 
     /* Check if we should sort the charge groups */
@@ -2850,16 +2855,21 @@ void dd_partition_system(FILE*                     fplog,
         ncgindex_set = dd->numHomeAtoms;
         dd_redistribute_cg(fplog, step, dd, ddbox.tric_dir, state_local, fr, nrnb, &ncg_moved);
 
+        wallcycle_sub_stop(wcycle, WallCycleSubCounter::DDRedist);
+
         GMX_RELEASE_ASSERT(bSortCG, "Sorting is required after redistribution");
 
         if (comm->systemInfo.useUpdateGroups)
         {
+            wallcycle_sub_start_nocount(wcycle, WallCycleSubCounter::DDAddCogs);
+
             comm->updateGroupsCog->addCogs(
                     gmx::arrayRefFromArray(dd->globalAtomIndices.data(), dd->numHomeAtoms),
-                    state_local->x);
-        }
+                    state_local->x,
+                    {});
 
-        wallcycle_sub_stop(wcycle, WallCycleSubCounter::DDRedist);
+            wallcycle_sub_stop(wcycle, WallCycleSubCounter::DDAddCogs);
+        }
     }
 
     RVec cell_ns_x0, cell_ns_x1;

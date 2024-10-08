@@ -47,6 +47,7 @@
 #include "gromacs/domdec/hashedmap.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/defaultinitializationallocator.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 
@@ -54,6 +55,8 @@ struct gmx_mtop_t;
 
 namespace gmx
 {
+template<typename>
+class Range;
 class RangePartitioning;
 
 /*! \libinternal
@@ -67,29 +70,30 @@ public:
      * The temperature is used for computing the maximum update group
      * radius.
      *
-     * \note \p numHomeAtoms only affects the performance up till the first
-     *       call to clear().
-     *
      * \param[in] mtop                            The global topology
      * \param[in] updateGroupingsPerMoleculeType  List of update groups for each molecule type in \p mtop
      * \param[in] temperature                     The maximum reference temperature, pass -1 when unknown or not applicable
-     * \param[in] numHomeAtoms                    Estimate of the number of home atoms per DD cell
      */
     UpdateGroupsCog(const gmx_mtop_t&                           mtop,
                     gmx::ArrayRef<const gmx::RangePartitioning> updateGroupingsPerMoleculeType,
-                    real                                        temperature,
-                    int                                         numHomeAtoms);
+                    real                                        temperature);
 
     /*! \brief Compute centers of geometry for supplied coordinates
      *
      * Coordinates are processed starting after the last index
      * processed in the previous call to \p addCogs(), unless \p clear()
      * was called last, in which case processing starts at 0.
+     * Coordinates are processed until \p globalAtomIndices.size().
      *
      * \param[in] globalAtomIndices  List of global atom indices for the atoms belonging to \p coordinates
      * \param[in] coordinates        List of coordinates to be processed, processing might not start at 0 (see above)
+     * \param[in] numAtomsPerNbnxmGridColumn  A list of the number of atoms per NBNxM grid column,
+     *                                        used for OpenMP parallelization, as update groups are
+     *                                        never split over columns; can be empty
      */
-    void addCogs(gmx::ArrayRef<const int> globalAtomIndices, gmx::ArrayRef<const gmx::RVec> coordinates);
+    void addCogs(ArrayRef<const int>  globalAtomIndices,
+                 ArrayRef<const RVec> coordinates,
+                 ArrayRef<const int>  numAtomsPerNbnxmGridColumn);
 
     /*! \brief Returns the number of centers of geometry currently stored */
     int numCogs() const { return cogs_.size(); }
@@ -137,33 +141,64 @@ public:
     real maxUpdateGroupRadius() const { return maxUpdateGroupRadius_; }
 
 private:
+    /*! \brief Like addCogs(), but performs the work for one OpenMP thread
+     *
+     * This method should be called from within an OpenMP region.
+     *
+     * \param[in] globalAtomIndices  The global atom indices
+     * \param[in] coordinates        The coordinates
+     * \param[in] cogBegin           The start of the COG range to assign for all threads
+     * \param[in] numThreads         The number of threads used
+     * \param[in] thread             The index of the calling thread
+     * \param[in] threadAtomRange    The range range of atom to process on this thread
+     *
+     * \returns the end of the COG range assigned by this thread
+     */
+    int addCogsThread(ArrayRef<const int>  globalAtomIndices,
+                      ArrayRef<const RVec> coordinates,
+                      int                  cogBegin,
+                      int                  numThreads,
+                      int                  thread,
+                      const Range<int>&    threadAtomRange);
+
     /*! \libinternal
      * \brief Helper struct for mapping atom indices to COG indices, used per molecule block in mtop
      */
     struct IndexToGroup
     {
-        //! \brief Starting index of groups for this molblock
+        //! Starting index of groups for this molblock
         int groupStart_;
-        //! \brief The number of atoms in a molecule
+        //! The number of atoms in a molecule
         int numGroupsPerMolecule_;
-        //! \brief Map atom indices to group indices for one molecule
+        //! Map atom indices to group indices for one molecule
         std::vector<int> groupIndex_;
     };
 
-    //! \brief Maps atom indices to COG indices
-    std::vector<int> cogIndices_;
-    //! \brief List of COGs
-    std::vector<RVec> cogs_;
-    //! \brief List of the number of atoms for each COG, for filler particles the value is zero
-    std::vector<int> numAtomsPerCog_;
-    //! \brief Maps global COG index to local COG index
-    HashedMap<int> globalToLocalMap_;
-    //! \brief Helper data for mapping atom indices to COG indices
+    //! Thread-local working data for building the COGs
+    struct ThreadData
+    {
+        //! The number of update groups on this thread
+        int numUpdateGroups_ = 0;
+        //! Maps global COG index to local COG index
+        HashedMap<int> globalToLocalMap_;
+    };
+
+    //! Maps atom indices to COG indices
+    FastVector<int> cogIndices_;
+    //! List of COGs
+    FastVector<RVec> cogs_;
+    //! List of the number of atoms for each COG, for filler particles the value is zero
+    FastVector<int> numAtomsPerCog_;
+    //! Helper data for mapping atom indices to COG indices
     std::vector<IndexToGroup> indicesPerMoleculeblock_;
-    //! \brief The maximum radius over all update groups
+    //! The maximum radius over all update groups
     real maxUpdateGroupRadius_;
-    //! \brief Reference to mtop this object was constructed with
+    //! Reference to mtop this object was constructed with
     const gmx_mtop_t& mtop_;
+    //! Lists for each molecule type that tell whether an atom is the first in the update group
+    std::vector<std::vector<bool>> isFirstAtomInUpdateGroup_;
+    //! Thread local data for building COGs
+    std::vector<ThreadData> threadData_;
 };
 
 } // namespace gmx

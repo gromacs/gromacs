@@ -277,6 +277,9 @@ public:
     //! Returns the index position of the atoms on the search grid
     ArrayRef<const int> getGridIndices() const;
 
+    //! Returns the number of atoms for each column of the local grid
+    ArrayRef<const int> getLocalGridNumAtomsPerColumn() const;
+
     /*! \brief Constructs the pairlist for the given locality
      *
      * When there are no non-self exclusions, \p exclusions can be empty.

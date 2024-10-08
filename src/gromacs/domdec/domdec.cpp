@@ -2165,7 +2165,6 @@ static void set_dd_limits(const gmx::MDLogger& mdlog,
                           const DDSettings&    ddSettings,
                           const DDSystemInfo&  systemInfo,
                           const DDGridSetup&   ddGridSetup,
-                          const int            numPPRanks,
                           const gmx_mtop_t&    mtop,
                           const t_inputrec&    ir,
                           const gmx_ddbox_t&   ddbox)
@@ -2192,13 +2191,8 @@ static void set_dd_limits(const gmx::MDLogger& mdlog,
 
     if (systemInfo.useUpdateGroups)
     {
-        /* Note: We would like to use dd->nnodes for the atom count estimate,
-         *       but that is not yet available here. But this anyhow only
-         *       affect performance up to the second dd_partition_system call.
-         */
-        const int homeAtomCountEstimate = mtop.natoms / numPPRanks;
-        comm->updateGroupsCog           = std::make_unique<gmx::UpdateGroupsCog>(
-                mtop, systemInfo.updateGroupingsPerMoleculeType, maxReferenceTemperature(ir), homeAtomCountEstimate);
+        comm->updateGroupsCog = std::make_unique<gmx::UpdateGroupsCog>(
+                mtop, systemInfo.updateGroupingsPerMoleculeType, maxReferenceTemperature(ir));
     }
 
     /* Set the DD setup given by ddGridSetup */
@@ -2863,7 +2857,6 @@ std::unique_ptr<gmx_domdec_t> DomainDecompositionBuilder::Impl::build(LocalAtomS
                   ddSettings_,
                   systemInfo_,
                   ddGridSetup_,
-                  ddRankSetup_.numPPRanks,
                   mtop_,
                   ir_,
                   ddbox_);

@@ -124,7 +124,7 @@ TEST(UpdateGroupsCog, ComputesCogs)
     auto updateGroupingsPerMoleculeType = std::get<std::vector<RangePartitioning>>(result);
     real temperature                    = 300;
 
-    UpdateGroupsCog updateGroupsCog(mtop, updateGroupingsPerMoleculeType, temperature, numAtoms);
+    UpdateGroupsCog updateGroupsCog(mtop, updateGroupingsPerMoleculeType, temperature);
 
     EXPECT_FLOAT_EQ(updateGroupsCog.maxUpdateGroupRadius(), 0.083887339);
 
@@ -146,7 +146,7 @@ TEST(UpdateGroupsCog, ComputesCogs)
         }
     }
 
-    updateGroupsCog.addCogs(globalAtomIndices, positions);
+    updateGroupsCog.addCogs(globalAtomIndices, positions, {});
 
     EXPECT_EQ(updateGroupsCog.numCogs(), numMolecules);
 

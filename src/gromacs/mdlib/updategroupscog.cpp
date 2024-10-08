@@ -51,15 +51,15 @@
 #include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/gmxomp.h"
 
 namespace gmx
 {
 
 UpdateGroupsCog::UpdateGroupsCog(const gmx_mtop_t&                           mtop,
                                  gmx::ArrayRef<const gmx::RangePartitioning> updateGroupingsPerMoleculeType,
-                                 real                                        temperature,
-                                 int                                         numHomeAtoms) :
-    globalToLocalMap_(numHomeAtoms, gmx_omp_nthreads_get(ModuleMultiThread::Domdec)), mtop_(mtop)
+                                 real                                        temperature) :
+    mtop_(mtop)
 {
     int firstUpdateGroupInMolecule = 0;
     for (const auto& molblock : mtop.molblock)
@@ -74,25 +74,31 @@ UpdateGroupsCog::UpdateGroupsCog(const gmx_mtop_t&                           mto
         }
 
         firstUpdateGroupInMolecule += molblock.nmol * updateGrouping.numBlocks();
+
+        std::vector<bool> isFirstAtomInUpdateGroup(mtop.moltype[molblock.type].atoms.nr, false);
+        for (int group = 0; group < updateGrouping.numBlocks(); group++)
+        {
+            isFirstAtomInUpdateGroup[*updateGrouping.block(group).begin()] = true;
+        }
+        isFirstAtomInUpdateGroup_.push_back(isFirstAtomInUpdateGroup);
     }
 
     maxUpdateGroupRadius_ = computeMaxUpdateGroupRadius(mtop, updateGroupingsPerMoleculeType, temperature);
+
+    // Note that threadData_ is not allocated here as OpenMP might not be initialized yet
 }
 
-void UpdateGroupsCog::addCogs(gmx::ArrayRef<const int>       globalAtomIndices,
-                              gmx::ArrayRef<const gmx::RVec> coordinates)
+int UpdateGroupsCog::addCogsThread(ArrayRef<const int>  globalAtomIndices,
+                                   ArrayRef<const RVec> coordinates,
+                                   const int            cogBegin,
+                                   const int            numThreads,
+                                   const int            thread,
+                                   const Range<int>&    threadAtomRange)
 {
-    const int    localAtomBegin = cogIndices_.size();
-    const size_t cogBegin       = cogs_.size();
-
-    GMX_RELEASE_ASSERT(globalAtomIndices.ssize() >= localAtomBegin,
-                       "addCogs should only be called to add COGs to the list that is already "
-                       "present (which could be empty)");
-
-    cogIndices_.reserve(globalAtomIndices.size());
-
-    int moleculeBlock = 0;
-    for (gmx::Index localAtom = localAtomBegin; localAtom < globalAtomIndices.ssize(); localAtom++)
+    // Prefetch the global update group indices, as we can OpenMP parallelize this
+    int numUpdateGroups = 0;
+    int moleculeBlock   = 0;
+    for (int localAtom : threadAtomRange)
     {
         const int globalAtom = globalAtomIndices[localAtom];
         if (globalAtom < 0)
@@ -110,33 +116,67 @@ void UpdateGroupsCog::addCogs(gmx::ArrayRef<const int>       globalAtomIndices,
         int atomIndexInMolecule;
         mtopGetMolblockIndex(mtop_, globalAtom, &moleculeBlock, &moleculeIndex, &atomIndexInMolecule);
         const auto& indicesForBlock        = indicesPerMoleculeblock_[moleculeBlock];
-        int         globalUpdateGroupIndex = indicesForBlock.groupStart_
-                                     + moleculeIndex * indicesForBlock.numGroupsPerMolecule_
-                                     + indicesForBlock.groupIndex_[atomIndexInMolecule];
+        const int   globalUpdateGroupIndex = indicesForBlock.groupStart_
+                                           + moleculeIndex * indicesForBlock.numGroupsPerMolecule_
+                                           + indicesForBlock.groupIndex_[atomIndexInMolecule];
 
-        if (const int* cogIndexPtr = globalToLocalMap_.find(globalUpdateGroupIndex))
+        // Temporarily store the global update group index in cogIndices_
+        cogIndices_[localAtom] = globalUpdateGroupIndex;
+
+        if (isFirstAtomInUpdateGroup_[moleculeBlock][atomIndexInMolecule])
         {
-            GMX_ASSERT(static_cast<size_t>(*cogIndexPtr) >= cogBegin,
+            numUpdateGroups++;
+        }
+    }
+
+    threadData_[thread].numUpdateGroups_ = numUpdateGroups;
+
+    if (numThreads > 1)
+    {
+        // OpenMP barrier so all threads can accumulate each others update group counts
+#pragma omp barrier
+    }
+
+    int localCogIndexStart = cogBegin;
+    for (int t = 0; t < thread; t++)
+    {
+        localCogIndexStart += threadData_[t].numUpdateGroups_;
+    }
+
+    auto& globalToLocalMap = threadData_[thread].globalToLocalMap_;
+
+    int localCogIndex = localCogIndexStart;
+    for (int localAtom : threadAtomRange)
+    {
+        const int globalUpdateGroupIndex = cogIndices_[localAtom];
+
+        if (const int* cogIndexPtr = globalToLocalMap.find(globalUpdateGroupIndex))
+        {
+            GMX_ASSERT(*cogIndexPtr >= cogBegin,
                        "Added atoms should not be part of previously present groups");
 
-            cogIndices_.push_back(*cogIndexPtr);
+            cogIndices_[localAtom] = *cogIndexPtr;
 
             cogs_[*cogIndexPtr] += coordinates[localAtom];
             numAtomsPerCog_[*cogIndexPtr]++;
         }
         else
         {
-            const int cogIndex = cogs_.size();
+            globalToLocalMap.insert(globalUpdateGroupIndex, localCogIndex);
+            cogIndices_[localAtom]         = localCogIndex;
+            cogs_[localCogIndex]           = coordinates[localAtom];
+            numAtomsPerCog_[localCogIndex] = 1;
 
-            globalToLocalMap_.insert(globalUpdateGroupIndex, cogIndex);
-            cogIndices_.push_back(cogIndex);
-            cogs_.push_back(coordinates[localAtom]);
-            numAtomsPerCog_.push_back(1);
+            localCogIndex++;
         }
     }
 
+    GMX_ASSERT(
+            localCogIndex - localCogIndexStart == numUpdateGroups,
+            "We should have assigned as many local COGs as there are update groups on our thread");
+
     /* Divide sum of coordinates for each COG by the number of atoms */
-    for (size_t i = cogBegin; i < cogs_.size(); i++)
+    for (int i = localCogIndexStart; i < localCogIndex; i++)
     {
         const int numAtoms = numAtomsPerCog_[i];
         if (numAtoms > 1)
@@ -144,6 +184,95 @@ void UpdateGroupsCog::addCogs(gmx::ArrayRef<const int>       globalAtomIndices,
             cogs_[i] /= numAtoms;
         }
     }
+
+    return localCogIndex;
+}
+
+void UpdateGroupsCog::addCogs(ArrayRef<const int>  globalAtomIndices,
+                              ArrayRef<const RVec> coordinates,
+                              ArrayRef<const int>  numAtomsPerNbnxmGridColumn)
+{
+    if (threadData_.empty())
+    {
+        const int numThreads = std::max(1, gmx_omp_nthreads_get(ModuleMultiThread::Domdec));
+
+        threadData_.resize(numThreads, { 0, HashedMap<int>(coordinates.size() / numThreads) });
+    }
+
+    const int localAtomBegin = cogIndices_.size();
+    const int localCogBegin  = cogs_.size();
+
+    GMX_RELEASE_ASSERT(globalAtomIndices.ssize() >= localAtomBegin,
+                       "addCogs should only be called to add COGs to the list that is already "
+                       "present (which could be empty)");
+
+    const int gmx_unused numThreads = gmx_omp_nthreads_get(ModuleMultiThread::Domdec);
+
+    cogIndices_.resize(globalAtomIndices.size());
+    // We overallocate the COG buffers with the number of atoms to avoid an extra OMP barrier
+    cogs_.resize(globalAtomIndices.size());
+    numAtomsPerCog_.resize(globalAtomIndices.size());
+
+    int numCogs = -1;
+    if (numAtomsPerNbnxmGridColumn.empty())
+    {
+        // When this list was passed as empty, we likely only have a few atoms to add,
+        // do this single-threaded. Also we don't know how we can split the work.
+        numCogs = addCogsThread(globalAtomIndices,
+                                coordinates,
+                                localCogBegin,
+                                1,
+                                0,
+                                { localAtomBegin, int(globalAtomIndices.size()) });
+    }
+    else
+    {
+        const int totalNumAtomsToAdd = globalAtomIndices.size() - localAtomBegin;
+
+        // Many atoms to process, use OpenMP threading
+#pragma omp parallel num_threads(numThreads)
+        {
+            const int numThreads = threadData_.size();
+
+            const int thread = gmx_omp_get_thread_num();
+
+            // Divide the atom range over threads by assigning whole grid columns.
+            // Grid columns can not broken up because then update groups can be broken up.
+            // We try to assign roughly equal atoms count to the threads.
+            int threadAtomBegin = 0;
+            int threadAtomEnd   = 0;
+            int numAtoms        = 0;
+            for (int numAtomsInColumn : numAtomsPerNbnxmGridColumn)
+            {
+                numAtoms += numAtomsInColumn;
+                if (numAtoms * numThreads <= totalNumAtomsToAdd * thread)
+                {
+                    threadAtomBegin = numAtoms;
+                }
+                if (numAtoms * numThreads <= totalNumAtomsToAdd * (thread + 1))
+                {
+                    threadAtomEnd = numAtoms;
+                }
+            }
+
+            int numCogsThread =
+                    addCogsThread(globalAtomIndices,
+                                  coordinates,
+                                  localCogBegin,
+                                  numThreads,
+                                  thread,
+                                  { localAtomBegin + threadAtomBegin, localAtomBegin + threadAtomEnd });
+
+            if (thread == numThreads - 1)
+            {
+                numCogs = numCogsThread;
+            }
+        }
+    }
+
+    GMX_ASSERT(numCogs >= 0, "numCogs should have been set in one of the two branches above");
+    cogs_.resize(numCogs);
+    numAtomsPerCog_.resize(numCogs);
 }
 
 void UpdateGroupsCog::clear()
@@ -151,7 +280,15 @@ void UpdateGroupsCog::clear()
     cogIndices_.clear();
     cogs_.clear();
     numAtomsPerCog_.clear();
-    globalToLocalMap_.clearAndResizeHashTable();
+
+    if (!threadData_.empty())
+    {
+#pragma omp parallel for schedule(static) num_threads(ssize(threadData_))
+        for (int thread = 0; thread < ssize(threadData_); thread++)
+        {
+            threadData_[thread].globalToLocalMap_.clearAndResizeHashTable();
+        }
+    }
 }
 
 } // namespace gmx
