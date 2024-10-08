@@ -1107,7 +1107,7 @@ void LegacySimulator::do_tpi()
     const InteractionDefinitions emptyInteractionDefinitions(emptyFFParams);
     for (auto& listedForces : fr_->listedForces)
     {
-        listedForces.setup(emptyInteractionDefinitions, 0, false);
+        listedForces.setup(emptyInteractionDefinitions, 0, false, mdatoms->cVCM);
     }
 
     double V_all     = 0;

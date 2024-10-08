@@ -148,7 +148,10 @@ static void selectInteractions(InteractionDefinitions*                   idef,
     }
 }
 
-void ListedForces::setup(const InteractionDefinitions& domainIdef, const int numAtomsForce, const bool useGpu)
+void ListedForces::setup(const InteractionDefinitions&             domainIdef,
+                         const int                                 numAtomsForce,
+                         const bool                                useGpu,
+                         const gmx::ArrayRef<const unsigned short> restraintComIndices)
 {
     if (interactionSelection_.all())
     {
@@ -182,6 +185,8 @@ void ListedForces::setup(const InteractionDefinitions& domainIdef, const int num
         forceBufferLambda_.resize(numAtomsForce * sizeof(rvec4) / sizeof(real));
         shiftForceBufferLambda_.resize(gmx::c_numShiftVectors);
     }
+
+    restraintComIndices_ = restraintComIndices;
 }
 
 namespace

@@ -76,6 +76,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/real.h"
 
@@ -154,8 +155,12 @@ public:
      * \param[in] domainIdef     Interaction definitions for all listed interactions to be computed on this domain/rank
      * \param[in] numAtomsForce  Force are, potentially, computed for atoms 0 to \p numAtomsForce
      * \param[in] useGpu         Whether a GPU is used to compute (part of) the listed interactions
+     * \param[in] restraintComIndices     Reference to COM groups indices (needed for posres calculation)
      */
-    void setup(const InteractionDefinitions& domainIdef, int numAtomsForce, bool useGpu);
+    void setup(const InteractionDefinitions&       domainIdef,
+               int                                 numAtomsForce,
+               bool                                useGpu,
+               gmx::ArrayRef<const unsigned short> restraintComIndices);
 
     /*! \brief Do all aspects of energy and force calculations for mdrun
      * on the set of listed interactions
@@ -215,6 +220,8 @@ private:
     std::vector<gmx::RVec> shiftForceBufferLambda_;
     //! Temporary array for storing foreign lambda group pair energies
     std::unique_ptr<gmx_grppairener_t> foreignEnergyGroups_;
+    //! Vector of indices needed in order to loop over the atoms in each COM group (currently just a reference to t_mdatoms.cVCM)
+    gmx::ArrayRef<const unsigned short> restraintComIndices_;
 
     GMX_DISALLOW_COPY_AND_ASSIGN(ListedForces);
 };

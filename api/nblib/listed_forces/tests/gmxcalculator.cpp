@@ -97,7 +97,7 @@ ListedGmxCalculator::ListedGmxCalculator(const ListedInteractionData& interactio
 
     gmxListedForces_ =
             std::make_unique<ListedForces>(*ffparams, 1, numThreads, interactionSelection, nullptr);
-    gmxListedForces_->setup(*idef, nP, false);
+    gmxListedForces_->setup(*idef, nP, false, mdatoms_.cVCM);
 
     wcycle = wallcycle_init(nullptr, 0, &cr);
     set_pbc(&pbc, PbcType::Xyz, box_.legacyMatrix());

@@ -140,7 +140,7 @@ void mdAlgorithmsSetupAtomData(const t_commrec*     cr,
 
     for (auto& listedForces : fr->listedForces)
     {
-        listedForces.setup(top->idef, fr->natoms_force, fr->listedForcesGpu != nullptr);
+        listedForces.setup(top->idef, fr->natoms_force, fr->listedForcesGpu != nullptr, mdatoms->cVCM);
     }
 
     if ((usingPme(fr->ic->eeltype) || usingLJPme(fr->ic->vdwtype)) && (cr->duty & DUTY_PME))
