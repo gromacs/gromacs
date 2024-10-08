@@ -110,6 +110,8 @@ inline void ensureNoPendingDeviceError(const std::string& errorMessage)
     gmx_warning("%s", fullErrorMessage.c_str());
 }
 
+} // namespace gmx
+
 /*! \brief  Returns true if all tasks in \p deviceStream have completed.
  *
  *  \param[in] deviceStream HIP stream to check.
@@ -238,7 +240,5 @@ void launchGpuKernel(void (*kernel)(Args...),
                         + ") failed to launch: " + gmx::getDeviceErrorString(stat))
                                .c_str());
 }
-
-} // namespace gmx
 
 #endif

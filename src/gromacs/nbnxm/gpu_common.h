@@ -60,6 +60,10 @@
 #    include "gromacs/gpu_utils/syclutils.h"
 #endif
 
+#if GMX_GPU_HIP
+#    include "hip/nbnxm_hip_types.h"
+#endif
+
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/simulation_workload.h"

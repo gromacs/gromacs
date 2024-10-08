@@ -46,7 +46,8 @@
 
 #include "config.h"
 
-#include "gromacs/nbnxm/nbnxm_enums.h"
+#include <memory>
+#include <type_traits>
 
 #if GMX_GPU_CUDA
 #    include "cuda/nbnxm_cuda_types.h"
@@ -56,11 +57,17 @@
 #    include "opencl/nbnxm_ocl_types.h"
 #endif
 
+#if GMX_GPU_HIP
+#    include "hip/nbnxm_hip_kernel_utils.h"
+#    include "hip/nbnxm_hip_types.h"
+#endif
+
 #if GMX_GPU_SYCL
 #    include "sycl/nbnxm_sycl_types.h"
 #endif
 
 #include "gromacs/gpu_utils/device_stream_manager.h"
+#include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/gputraits.h"
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/hardware/device_information.h"
@@ -68,10 +75,13 @@
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/nbnxm/gpu_common_utils.h"
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
+#include "gromacs/nbnxm/gpu_types_common.h"
 #include "gromacs/nbnxm/gridset.h"
+#include "gromacs/nbnxm/nbnxm_enums.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/timing/gpu_timing.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 
@@ -114,6 +124,9 @@ static bool useTabulatedEwaldByDefault(const DeviceInformation& deviceInfo)
 #if GMX_GPU_CUDA
     return (deviceInfo.prop.major == 7 && deviceInfo.prop.minor == 0)
            || (deviceInfo.prop.major == 8 && deviceInfo.prop.minor == 0);
+#elif GMX_GPU_HIP
+    GMX_UNUSED_VALUE(deviceInfo);
+    return true;
 #elif GMX_GPU_SYCL
     switch (deviceInfo.deviceVendor)
     {

@@ -115,6 +115,7 @@ bool buildSupportsListedForcesGpu(std::string* error)
     errorReasons.appendIf(GMX_DOUBLE, "Double precision build of GROMACS");
     errorReasons.appendIf(GMX_GPU_OPENCL, "OpenCL build of GROMACS");
     errorReasons.appendIf(!GMX_GPU, "CPU-only build of GROMACS");
+    errorReasons.appendIf(GMX_GPU_HIP, "HIP listed forces not implemented yet");
     errorReasons.finishContext();
     if (error != nullptr)
     {

@@ -157,7 +157,7 @@ constexpr float c_nbnxnMinDistanceSquared = 3.82e-07F; // r > 6.2e-4
 //! Whether we want to use GPU for neighbour list sorting
 constexpr bool nbnxmSortListsOnGpu()
 {
-    return (GMX_GPU_CUDA || GMX_GPU_SYCL);
+    return (GMX_GPU_CUDA || GMX_GPU_SYCL || GMX_GPU_HIP);
 }
 
 /*! \internal

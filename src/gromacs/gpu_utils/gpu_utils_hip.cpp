@@ -40,12 +40,10 @@
 
 #include "gmxpre.h"
 
-#include <cstdlib>
-
 #include <hip/hip_profile.h>
 
 #include "gromacs/gpu_utils/hiputils.h"
-#include "gromacs/hardware/device_management.h"
+#include "gromacs/hardware/device_information.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/stringutil.h"
 

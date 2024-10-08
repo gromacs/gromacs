@@ -76,11 +76,22 @@ static __forceinline__ __device__ T fetchFromParamLookupTable(const T*          
     return result;
 }
 
+/*! \brief Helper method to guide hipcc code generation for address lookup.
+ *
+ * These functions help hipcc to generate faster code for loads and atomic operations where
+ * 64-bit scalar + 32-bit vector registers are used instead of 64-bit vector saving a few
+ * instructions for computing 64-bit vector addresses.
+ *
+ * \tparam T    Raw data type
+ * \param[in]  data   Base address for data access.
+ * \param[in]  index Index to load.
+ * \returns    The data at the desired location.
+ */
 template<typename T>
-static __forceinline__ __device__ T fastLoad(T* data, const int offset)
+static __forceinline__ __device__ T amdFastLoad(const T* data, const unsigned int index)
 {
     static constexpr int size = sizeof(T);
-    return *reinterpret_cast<T*>(reinterpret_cast<const char*>(data) + (size * offset));
+    return *reinterpret_cast<const T*>(reinterpret_cast<const char*>(data) + (size * index));
 }
 
 #define LAUNCH_BOUNDS_EXACT(WORK_GROUP_SIZE, WAVES_PER_EU)                        \

@@ -32,89 +32,108 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 /*! \file
- *  \brief Define HIP implementation (stubs) for GPU data transfer for NBNXM module
+ *  \brief Define HIP implementation for GPU data transfer for NBNXM module
  *
- *  \author Paul bauer <paul.bauer.q@gmail.com>
+ *  \author Szilard Pall <pall.szilard@gmail.com>
+ *  \author Paul Bauer <paul.bauer.q@gmail.com>
+ *  \author Julio Maia <julio.maia@amd.com>
  */
 
 #include "gmxpre.h"
 
+// The compiler generates the wrong code when calling rocprim for gfx1034 devices, so we need to make sure that it doesn't try to
+// use unsupported dpp instructions. Tracked here, but not fixed even if the ticket says so: https://github.com/ROCm/rocPRIM/issues/452
+#if __gfx1034__
+#    define ROCPRIM_DISABLE_DPP
+#    define ROCPRIM_DETAIL_USE_DPP false
+#endif
+#include <rocprim/rocprim.hpp>
+
+// TODO We would like to move this down, but the way NbnxmGpu
+//      is currently declared means this has to be before gpu_types.h
+#include "nbnxm_hip_types.h"
+
+// TODO Remove this comment when the above order issue is resolved
+#include "gromacs/gpu_utils/device_context.h"
+#include "gromacs/gpu_utils/pmalloc.h"
+#include "gromacs/hardware/device_information.h"
+#include "gromacs/hardware/device_management.h"
+#include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
-#include "gromacs/utility/gmxassert.h"
+#include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/nbnxm/nbnxm_gpu_data_mgmt.h"
 
 namespace gmx
 {
 
-NbnxmGpu* gpu_init(const gmx::DeviceStreamManager& /* deviceStreamManager */,
-                   const interaction_const_t* /* ic */,
-                   const PairlistParams& /* listParams */,
-                   const nbnxn_atomdata_t* /* nbat */,
-                   /* true if both local and non-local are done on GPU */
-                   bool /* bLocalAndNonlocal */)
+/* This is a heuristically determined parameter for the Kepler
+ * and Maxwell architectures for the minimum size of ci lists by multiplying
+ * this constant with the # of multiprocessors on the current device.
+ * Since the maximum number of blocks per multiprocessor is 16, the ideal
+ * count for small systems is 32 or 48 blocks per multiprocessor. Because
+ * there is a bit of fluctuations in the generated block counts, we use
+ * a target of 44 instead of the ideal value of 48.
+ */
+static const unsigned int gpu_min_ci_balanced_factor = 44;
+
+void gpu_init_platform_specific(NbnxmGpu* /* nb */)
 {
-    return nullptr;
+    // Nothing specific in HIP
 }
 
-void gpu_init_pairlist(NbnxmGpu* /* nb */, const NbnxnPairlistGpu* /* h_nblist */, gmx::InteractionLocality /* iloc */)
+void gpu_free_platform_specific(NbnxmGpu* /* nb */)
 {
-    GMX_ASSERT(false, "Not implemented yet");
+    // Nothing specific in HIP
 }
 
-void gpu_init_atomdata(NbnxmGpu* /* nb */, const nbnxn_atomdata_t* /* nbat */)
+int gpu_min_ci_balanced(NbnxmGpu* nb)
 {
-    GMX_ASSERT(false, "Not implemented yet");
+    return nb != nullptr ? gpu_min_ci_balanced_factor * nb->deviceContext_->deviceInfo().prop.multiProcessorCount
+                         : 0;
 }
 
-void gpu_pme_loadbal_update_param(nonbonded_verlet_t* /* nbv */, const interaction_const_t& /* ic */)
+namespace
 {
-    GMX_ASSERT(false, "Not implemented yet");
+
+size_t hipRocprimWrapper(size_t              temporaryBufferSize,
+                         char*               temporaryBuffer,
+                         gmx::GpuPairlist*   plist,
+                         const DeviceStream& deviceStream)
+{
+    size_t size = temporaryBufferSize;
+
+    hipError_t stat = rocprim::exclusive_scan(temporaryBuffer,
+                                              size,
+                                              plist->sorting.sciHistogram,
+                                              plist->sorting.sciOffset,
+                                              0,
+                                              c_sciHistogramSize,
+                                              rocprim::plus<int>(),
+                                              deviceStream.stream());
+    gmx::checkDeviceError(stat, "rocprim::exclusive_scan failed");
+
+    return size;
 }
 
-void gpu_upload_shiftvec(NbnxmGpu* /* nb */, const nbnxn_atomdata_t* /* nbatom */)
+} // namespace
+
+size_t getExclusiveScanWorkingArraySize(GpuPairlist* plist, const DeviceStream& deviceStream)
 {
-    GMX_ASSERT(false, "Not implemented yet");
+    return hipRocprimWrapper(0, nullptr, plist, deviceStream);
 }
 
-void gpu_clear_outputs(NbnxmGpu* /* nb */, bool /* computeVirial */)
+void performExclusiveScan(size_t              temporaryBufferSize,
+                          char*               temporaryBuffer,
+                          GpuPairlist*        plist,
+                          const DeviceStream& deviceStream)
 {
-    GMX_ASSERT(false, "Not implemented yet");
+    std::ignore = hipRocprimWrapper(temporaryBufferSize, temporaryBuffer, plist, deviceStream);
 }
 
-void gpu_free(NbnxmGpu* /* nb */) {}
-
-struct gmx_wallclock_gpu_nbnxn_t* gpu_get_timings(NbnxmGpu* /* nb */)
-{
-    GMX_ASSERT(false, "Not implemented yet");
-    return nullptr;
-}
-
-void gpu_reset_timings(struct nonbonded_verlet_t* /* nbv */)
-{
-    GMX_ASSERT(false, "Not implemented yet");
-}
-
-int gpu_min_ci_balanced(NbnxmGpu* /* nb */)
-{
-    GMX_ASSERT(false, "Not implemented yet");
-    return -1;
-}
-
-bool gpu_is_kernel_ewald_analytical(const NbnxmGpu* /* nb */)
-{
-    GMX_ASSERT(false, "Not implemented yet");
-    return false;
-}
-
-NBAtomDataGpu* gpuGetNBAtomData(NbnxmGpu* /* nb */)
-{
-    GMX_ASSERT(false, "Not implemented yet");
-    return nullptr;
-}
-
-DeviceBuffer<gmx::RVec> gpu_get_f(NbnxmGpu* /* nb */)
-{
-    GMX_ASSERT(false, "Not implemented yet");
-    return {};
-}
+// reset our custom defines
+#if __gfx1034__
+#    undef ROCPRIM_DISABLE_DPP
+#    undef ROCPRIM_DETAIL_USE_DPP
+#endif
 
 } // namespace gmx

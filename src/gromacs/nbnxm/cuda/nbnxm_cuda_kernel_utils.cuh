@@ -64,7 +64,7 @@ namespace gmx
 
 /*! \brief Log of the i and j cluster size.
  *  change this together with c_clSize !*/
-static const int __device__ c_clusterSizeLog2 = 3;
+static const int __device__ c_clusterSizeLog2 = gmx::StaticLog2<c_clusterSize>::value;
 /*! \brief Stride in the force accumulation buffer */
 static const int __device__ c_fbufStride = c_clusterSizeSq;
 

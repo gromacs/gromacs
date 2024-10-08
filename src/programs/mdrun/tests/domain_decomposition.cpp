@@ -171,12 +171,12 @@ std::optional<std::string> reasonsTestIsInvalid(MdpFlavor       mdpFlavor,
 #if GMX_GPU
     errorReasons.appendIf(haveAnyGpuWork && !haveCompatibleDevices,
                           "Cannot use GPU offload without a compatible GPU");
-    errorReasons.appendIf(GMX_GPU_OPENCL && updateFlavor == UpdateFlavor::Gpu,
+    errorReasons.appendIf((GMX_GPU_OPENCL || GMX_GPU_HIP) && updateFlavor == UpdateFlavor::Gpu,
                           "GPU Update not supported with OpenCL");
+    errorReasons.appendIf(GMX_GPU_HIP && pmeFlavor == PmeFlavor::Gpu, "HIP PME not implemented yet");
     errorReasons.appendIf(updateFlavor == UpdateFlavor::Gpu && pmeFlavor == PmeFlavor::Cpu
                                   && separatePmeRankFlavor != SeparatePmeRankFlavor::None,
                           "Can not use GPU update and CPU PME on a separate rank");
-    errorReasons.appendIf(GMX_GPU_HIP, "HIP kernels are not implemented yet");
 #endif
     errorReasons.appendIf(haveAnyGpuWork && nonbondedFlavor == NonbondedFlavor::Cpu,
                           "Cannot offload PME or Update to GPU without offloading Nonbondeds");

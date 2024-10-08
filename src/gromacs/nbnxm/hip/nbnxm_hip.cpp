@@ -31,101 +31,124 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
-/*! \file
- *  \brief Define HIP implementation (stubs) for GPU execution for NBNXM module
+
+/*! \internal \file
+ *  \brief
+ *  Data management and kernel launch functions for nbnxm hip.
  *
- *  \author Paul Bauer <paul.bauer.q@gmail.com>
+ *  \ingroup module_nbnxm
  */
 #include "gmxpre.h"
 
-#include "gromacs/nbnxm/nbnxm_gpu.h"
-#include "gromacs/utility/gmxassert.h"
+#include "gromacs/math/functions.h"
+#include "gromacs/nbnxm/gpu_common.h"
+
+#include "nbnxm_hip_kernel.h"
+#include "nbnxm_hip_kernel_pruneonly.h"
+#include "nbnxm_hip_kernel_sci_sort.h"
+#include "nbnxm_hip_types.h"
 
 namespace gmx
 {
 
-void gpu_copy_xq_to_gpu(NbnxmGpu* /* nb */, const nbnxn_atomdata_t* /* nbdata */, gmx::AtomLocality /* aloc */)
+void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, const int numParts)
 {
-    GMX_ASSERT(false, "Not implemented yet");
+    auto* plist = nb->plist[iloc].get();
+
+    if (plist->haveFreshList)
+    {
+        GMX_ASSERT(numParts == 1, "With first pruning we expect 1 part");
+
+        /* Set rollingPruningNumParts to signal that it is not set */
+        plist->rollingPruningNumParts = 0;
+    }
+    else
+    {
+        if (plist->rollingPruningNumParts == 0)
+        {
+            plist->rollingPruningNumParts = numParts;
+        }
+        else
+        {
+            GMX_ASSERT(numParts == plist->rollingPruningNumParts,
+                       "It is not allowed to change numParts in between list "
+                       "generation steps");
+        }
+    }
+
+    /* Compute the number of list entries to prune in this pass */
+    const int numSciInPart = divideRoundUp(plist->numSci, numParts);
+
+    /* Don't launch the kernel if there is no work to do */
+    if (numSciInPart <= 0)
+    {
+        plist->haveFreshList = false;
+        return;
+    }
+
+    launchNbnxmKernelPruneOnly(nb, iloc, &numParts, numSciInPart);
+    if (plist->haveFreshList)
+    {
+        launchNbnxmKernelSciSort(nb, iloc);
+        plist->haveFreshList = false;
+        nb->didPrune[iloc]   = true; // Mark that pruning has been done
+    }
+    else
+    {
+        nb->didRollingPrune[iloc] = true; // Mark that rolling pruning has been done
+    }
+
+    if (GMX_NATIVE_WINDOWS)
+    {
+        const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
+        /* Windows: force flushing WDDM queue */
+        hipError_t stat = hipStreamQuery(deviceStream.stream());
+        checkDeviceError(stat, "hipStreamQuery failed at Windows: force flushing WDDM queue");
+    }
 }
 
-void gpu_launch_kernel(NbnxmGpu* /*    nb */,
-                       const gmx::StepWorkload& /* stepWork */,
-                       gmx::InteractionLocality /* iloc */)
+void gpu_launch_kernel(NbnxmGpu* nb, const StepWorkload& stepWork, const InteractionLocality iloc)
 {
-    GMX_ASSERT(false, "Not implemented yet");
+    const NBParamGpu* nbp   = nb->nbparam;
+    auto*             plist = nb->plist[iloc].get();
+
+    if (canSkipNonbondedWork(*nb, iloc))
+    {
+        plist->haveFreshList = false;
+        return;
+    }
+
+    if (nbp->useDynamicPruning && plist->haveFreshList)
+    {
+        // Prunes for rlistOuter and rlistInner, sets plist->haveFreshList=false
+        gpu_launch_kernel_pruneonly(nb, iloc, 1);
+    }
+
+    if (plist->numSci == 0)
+    {
+        /* Don't launch an empty local kernel */
+        return;
+    }
+
+
+    /* Whether we need to call a combined prune and interaction kernel or just an interaction
+     * kernel. doPrune being true implies we are not using dynamic pruning and are in the first
+     * call to the interaction kernel after a neighbour list step */
+    bool doPrune = (plist->haveFreshList && !nb->timers->interaction[iloc].didPrune);
+
+    launchNbnxmKernel(nb, stepWork, iloc, doPrune);
+    if (doPrune)
+    {
+        launchNbnxmKernelSciSort(nb, iloc);
+    }
+
+    if (GMX_NATIVE_WINDOWS)
+    {
+        const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
+        /* Windows: force flushing WDDM queue */
+        hipError_t stat = hipStreamQuery(deviceStream.stream());
+        checkDeviceError(stat, "hipStreamQuery failed at Windows: force flushing WDDM queue");
+    }
 }
 
-void gpu_launch_kernel_pruneonly(NbnxmGpu* /* nb */, gmx::InteractionLocality /* iloc */, int /* numParts */)
-{
-    GMX_ASSERT(false, "Not implemented yet");
-}
-
-void gpu_launch_cpyback(NbnxmGpu* /* nb */,
-                        nbnxn_atomdata_t* /* nbatom */,
-                        const gmx::StepWorkload& /* stepWork */,
-                        gmx::AtomLocality /* aloc */)
-{
-    GMX_ASSERT(false, "Not implemented yet");
-}
-
-bool gpu_try_finish_task(NbnxmGpu* /* nb */,
-                         const gmx::StepWorkload& /* stepWork */,
-                         gmx::AtomLocality /* aloc */,
-                         real* /* e_lj */,
-                         real* /* e_el */,
-                         gmx::ArrayRef<gmx::RVec> /* shiftForces */,
-                         GpuTaskCompletion /* completionKind */)
-{
-    GMX_ASSERT(false, "Not implemented yet");
-    return false;
-}
-
-float gpu_wait_finish_task(NbnxmGpu* /* nb */,
-                           const gmx::StepWorkload& /* stepWork */,
-                           gmx::AtomLocality /* aloc */,
-                           real* /* e_lj */,
-                           real* /* e_el */,
-                           gmx::ArrayRef<gmx::RVec> /* shiftForces */,
-                           gmx_wallcycle* /* wcycle */)
-{
-    GMX_ASSERT(false, "Not implemented yet");
-    return 0.0;
-}
-
-void nbnxn_gpu_init_x_to_nbat_x(const GridSet& /* gridSet */, NbnxmGpu* /* gpu_nbv */)
-{
-    GMX_ASSERT(false, "Not implemented yet");
-}
-
-void nbnxn_gpu_x_to_nbat_x(const Grid& /* grid */,
-                           NbnxmGpu* /* gpu_nbv */,
-                           DeviceBuffer<gmx::RVec> /* d_x */,
-                           GpuEventSynchronizer* /* xReadyOnDevice */,
-                           gmx::AtomLocality /* locality */,
-                           int /* gridId */,
-                           int /* numColumnsMax */,
-                           bool /* mustInsertNonLocalDependency */)
-{
-    GMX_ASSERT(false, "Not implemented yet");
-}
-
-void nbnxnInsertNonlocalGpuDependency(NbnxmGpu* /* nb */,
-                                      gmx::InteractionLocality /* interactionLocality */)
-{
-    GMX_ASSERT(false, "Not implemented yet");
-}
-
-void setupGpuShortRangeWorkLow(NbnxmGpu* /* nb */,
-                               const gmx::ListedForcesGpu* /* listedForcesGpu */,
-                               gmx::InteractionLocality /* iLocality */)
-{
-    GMX_ASSERT(false, "Not implemented yet");
-}
-
-bool haveGpuShortRangeWork(const NbnxmGpu* /* nb */, gmx::InteractionLocality /* interactionLocality */)
-{
-    GMX_ASSERT(false, "Not implemented yet");
-    return false;
-}
 } // namespace gmx

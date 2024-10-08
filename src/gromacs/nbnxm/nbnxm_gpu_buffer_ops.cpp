@@ -54,6 +54,8 @@
 #    include "gromacs/nbnxm/opencl/nbnxm_ocl_types.h"
 #elif GMX_GPU_SYCL
 #    include "gromacs/nbnxm/sycl/nbnxm_sycl_types.h"
+#elif GMX_GPU_HIP
+#    include "gromacs/nbnxm/hip/nbnxm_hip_types.h"
 #endif
 #include "gromacs/utility/exceptions.h"
 
@@ -69,8 +71,8 @@ void nbnxn_gpu_x_to_nbat_x(const Grid&           grid,
                            int                   numColumnsMax,
                            bool                  mustInsertNonLocalDependency)
 {
-    GMX_ASSERT(bool(GMX_GPU_CUDA) || bool(GMX_GPU_SYCL),
-               "NBNXM X buffer operations only supported in CUDA and SYCL");
+    GMX_ASSERT(bool(GMX_GPU_CUDA) || bool(GMX_GPU_SYCL) || bool(GMX_GPU_HIP),
+               "NBNXM X buffer operations only supported in CUDA, SYCL and HIP");
     GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
     InteractionLocality interactionLoc = atomToInteractionLocality(locality);
 

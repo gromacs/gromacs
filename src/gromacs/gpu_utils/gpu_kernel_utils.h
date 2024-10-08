@@ -51,9 +51,14 @@
 
 #if GMX_GPU_SYCL
 #    define GMX_DEVICE_ATTRIBUTE
-
+#    include "sycl_kernel_utils.h"
 #elif GMX_GPU_HIP || GMX_GPU_CUDA
 #    define GMX_DEVICE_ATTRIBUTE __device__
+#    if GMX_GPU_HIP
+#        include "hip_kernel_utils.h"
+#    else
+#        include "cuda_kernel_utils.cuh"
+#    endif
 #else
 #    error Including shared gpu kernel utilities header in unsupported build config
 #endif
@@ -100,6 +105,8 @@ static inline GMX_ALWAYS_INLINE float gmxGpuExp(const float value)
     return sycl::exp(value);
 #elif GMX_GPU_CUDA
     return exp(value);
+#elif GMX_GPU_HIP
+    return __expf(value);
 #else
     return __exp(value);
 #endif
@@ -112,6 +119,8 @@ static inline GMX_ALWAYS_INLINE float gmxGpuFma(const T valueOne, const T valueT
     return sycl::fma(valueOne, valueTwo, valueThree);
 #elif GMX_GPU_CUDA
     return fma(valueOne, valueTwo, valueThree);
+#elif GMX_GPU_HIP
+    return __fmaf_rn(valueOne, valueTwo, valueThree);
 #else
     return __fma(valueOne, valueTwo, valueThree);
 #endif

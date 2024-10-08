@@ -64,6 +64,10 @@
 #    include "gromacs/gpu_utils/gpuregiontimer_sycl.h"
 #endif
 
+#if GMX_GPU_HIP
+#    include "gromacs/gpu_utils/gpuregiontimer_hip.h"
+#endif
+
 namespace gmx
 {
 
@@ -81,6 +85,7 @@ static constexpr int c_sciHistogramSize = 8192;
  * TODO this is a reasonable default but the number has not been tuned
  */
 static constexpr int c_sciSortingThreadsPerBlock = 256;
+static constexpr int c_sciSortingItemsPerThread  = 16;
 
 /*! \brief Macro definining default for the prune kernel's jPacked processing concurrency.
  *

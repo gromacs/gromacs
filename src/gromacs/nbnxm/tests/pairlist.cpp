@@ -44,7 +44,7 @@
 
 #include "gmock/gmock.h"
 
-#if GMX_GPU && !GMX_GPU_HIP
+#if GMX_GPU
 
 #    include "gromacs/gpu_utils/device_context.h"
 #    include "gromacs/gpu_utils/device_stream.h"
