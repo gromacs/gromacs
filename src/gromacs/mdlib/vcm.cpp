@@ -89,9 +89,11 @@ t_vcm::t_vcm(const SimulationGroups& groups, const t_inputrec& ir, const int num
             group_w.resize(size);
         }
 
+        const gmx::RVec zero = { 0.0_real, 0.0_real, 0.0_real };
+
         group_name.resize(size);
-        group_p.resize(size);
-        group_v.resize(size);
+        group_p.resize(size, zero);
+        group_v.resize(size, zero);
         group_mass.resize(size);
         group_ndf.resize(size);
         for (int g = 0; (g < nr); g++)
