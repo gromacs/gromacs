@@ -404,10 +404,11 @@ __device__ static inline float3 reduceForceIAtomics(AmdPackedFloat3 input, float
 {
 
     static_assert(isPowerOfTwo(sc_gpuClusterPerSuperCluster(pairlistType)));
-    constexpr int c_clSize = sc_gpuClusterSize(pairlistType);
+    constexpr int c_clSize                 = sc_gpuClusterSize(pairlistType);
+    constexpr int c_parallelExecutionWidth = sc_gpuParallelExecutionWidth(pairlistType);
 
 #pragma unroll
-    for (int offset = warpSize >> 1; offset >= c_clSize; offset >>= 1)
+    for (int offset = c_parallelExecutionWidth >> 1; offset >= c_clSize; offset >>= 1)
     {
         input[0] += __shfl_down(input[0], offset);
         input[1] += __shfl_down(input[1], offset);
@@ -415,7 +416,7 @@ __device__ static inline float3 reduceForceIAtomics(AmdPackedFloat3 input, float
     }
 
     float3 shiftForce = make_float3(0.0F);
-    if (tidxj % (warpSize / c_clSize) == 0)
+    if (tidxj % (c_parallelExecutionWidth / c_clSize) == 0)
     {
         atomicAdd(&(result[aidx].x), input[0]);
         atomicAdd(&(result[aidx].y), input[1]);
@@ -518,8 +519,8 @@ template<PairlistType pairlistType>
 __device__ static inline void
 reduceEnergyWarpShuffle(float localLJ, float localEl, float* gm_LJ, float* gm_El, int tidx)
 {
-
     static_assert(isPowerOfTwo(sc_gpuClusterPerSuperCluster(pairlistType)));
+    constexpr int c_parallelExecutionWidth = sc_gpuParallelExecutionWidth(pairlistType);
     localLJ += amdDppUpdateShfl<float, 0xb1>(localLJ);
     localEl += amdDppUpdateShfl<float, 0xb1>(localEl);
 
@@ -546,7 +547,7 @@ reduceEnergyWarpShuffle(float localLJ, float localEl, float* gm_LJ, float* gm_El
     }
 
     /* The last thread in the subWarp writes the reduced energies */
-    if ((tidx & (warpSize - 1)) == (warpSize - 1))
+    if ((tidx & (c_parallelExecutionWidth - 1)) == (c_parallelExecutionWidth - 1))
     {
         atomicAdd(gm_LJ, localLJ);
         atomicAdd(gm_El, localEl);
@@ -567,16 +568,18 @@ __launch_bounds__(c_clSizeSq<pairlistType>* nthreadZ, minBlocksPerMp) __global__
         constexpr int c_clusterPerSuperCluster = sc_gpuClusterPerSuperCluster(pairlistType);
         constexpr int c_gpuJGroupSize          = sc_gpuJgroupSize(pairlistType);
         constexpr int c_clSize                 = sc_gpuClusterSize(pairlistType);
+        constexpr int c_parallelExecutionWidth = sc_gpuParallelExecutionWidth(pairlistType);
 
         /* thread/block/warp id-s */
-        const unsigned int tidxi = threadIdx.x;
-        const unsigned int tidxj = threadIdx.y;
-        const unsigned int tidx  = tidxj * c_clSize + tidxi;
-        const unsigned int tidxz = nthreadZ == 1 ? 0 : threadIdx.z;
-        const unsigned int widx =
-                (c_clSizeSq<pairlistType> == warpSize) ? 0 : tidx / c_subWarp<pairlistType>;
+        const unsigned int tidxi      = threadIdx.x;
+        const unsigned int tidxj      = threadIdx.y;
+        const unsigned int tidx       = tidxj * c_clSize + tidxi;
+        const unsigned int tidxz      = nthreadZ == 1 ? 0 : threadIdx.z;
+        const unsigned int widx       = (c_clSizeSq<pairlistType> == c_parallelExecutionWidth)
+                                                ? 0
+                                                : tidx / c_subWarp<pairlistType>;
         const unsigned int bidx       = blockIdx.x;
-        const unsigned int tidxInWarp = tidx & (warpSize - 1);
+        const unsigned int tidxInWarp = tidx & (c_parallelExecutionWidth - 1);
 
         using NbnxmExcl     = nbnxn_excl_t;
         using NbnxmCjPacked = nbnxn_cj_packed_t;
@@ -783,7 +786,9 @@ __launch_bounds__(c_clSizeSq<pairlistType>* nthreadZ, minBlocksPerMp) __global__
         for (int jPacked = cijPackedBegin; jPacked < cijPackedEnd; ++jPacked)
         {
             unsigned int imask = gm_plistCJPacked[jPacked].imei[widx].imask;
-            imask = (c_clSizeSq<pairlistType> == warpSize) ? __builtin_amdgcn_readfirstlane(imask) : imask;
+            imask              = (c_clSizeSq<pairlistType> == c_parallelExecutionWidth)
+                                         ? __builtin_amdgcn_readfirstlane(imask)
+                                         : imask;
             if (!doPruneNBL && !imask)
             {
                 continue;

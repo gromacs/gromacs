@@ -73,6 +73,7 @@ __launch_bounds__(c_clSizeSq<pairlistType>* threadZ, minBlocksPp) __global__
         constexpr int c_clSize                 = sc_gpuClusterSize(pairlistType);
         constexpr int c_clusterPerSuperCluster = sc_gpuClusterPerSuperCluster(pairlistType);
         constexpr int c_gpuJGroupSize          = sc_gpuJgroupSize(pairlistType);
+        constexpr int c_parallelExecutionWidth = sc_gpuParallelExecutionWidth(pairlistType);
 
         // thread/block/warp id-s
         const unsigned tidxi      = threadIdx.x;
@@ -80,7 +81,7 @@ __launch_bounds__(c_clSizeSq<pairlistType>* threadZ, minBlocksPp) __global__
         const unsigned tidxz      = threadZ == 1 ? 0 : threadIdx.z;
         const unsigned bidx       = blockIdx.x;
         const unsigned tidx       = tidxi + c_clSize * tidxj;
-        const unsigned tidxInWarp = tidx & (warpSize - 1);
+        const unsigned tidxInWarp = tidx & (c_parallelExecutionWidth - 1);
         const unsigned widx       = (tidxj * c_clSize) / c_subWarp<pairlistType>;
         // Get part for this kernel from global memory. Each block has its own copy to allow asynchronous incrementation.
         int part = plist.d_rollingPruningPart[bidx];
@@ -159,8 +160,9 @@ __launch_bounds__(c_clSizeSq<pairlistType>* threadZ, minBlocksPp) __global__
             if constexpr (haveFreshList)
             {
                 /* Read the mask from the list transferred from the CPU */
-                imaskFull = (c_clSizeSq<pairlistType> == warpSize) ? __builtin_amdgcn_readfirstlane(imask)
-                                                                   : imask;
+                imaskFull = (c_clSizeSq<pairlistType> == c_parallelExecutionWidth)
+                                    ? __builtin_amdgcn_readfirstlane(imask)
+                                    : imask;
                 /* We attempt to prune all pairs present in the original list */
                 imaskCheck = imaskFull;
                 imaskNew   = 0;
@@ -172,7 +174,7 @@ __launch_bounds__(c_clSizeSq<pairlistType>* threadZ, minBlocksPp) __global__
                 /* "Scalarize" imaskFull when possible, compiler always generates vector loads for that
                  * This means that imaskFull is now stored in a vector register, code is simpler this way
                  */
-                imaskFull = (c_clSizeSq<pairlistType> == warpSize)
+                imaskFull = (c_clSizeSq<pairlistType> == c_parallelExecutionWidth)
                                     ? __builtin_amdgcn_readfirstlane(imaskFull)
                                     : imaskFull;
                 /* Read the old rolling pruned mask, use as a base for new */
