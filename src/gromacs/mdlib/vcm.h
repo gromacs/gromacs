@@ -106,7 +106,7 @@ struct t_vcm
     //! Tell whether the integrator conserves momentum
     bool integratorConservesMomentum = false;
 
-    t_vcm(const SimulationGroups& groups, const t_inputrec& ir);
+    t_vcm(const SimulationGroups& groups, const t_inputrec& ir, int numAtoms);
     ~t_vcm();
 };
 

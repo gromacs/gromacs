@@ -45,6 +45,25 @@ apart from systems crashing, so the chance of undetected incorrect results is sm
 
 :issue:`5138`
 
+Fix illegal memory access with more VCM than T-coupling groups
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When there were more center of mass motion removal groups than
+temperature coupling groups, mdrun could crash due to illegal
+memory access. This bug did not affect the simulation results.
+
+:issue:`5167`
+
+Fix crashes when some atoms are not part of a VCM group
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Uninitialized memory was read when some atoms were not part of
+a center of mass motion removal group. Often this memory contained
+zero and everything would work as it should. But when this memory
+was not zero, the simulation would crash within a few steps.
+
+:issue:`5181`
+
 Fix Colvars output files always written to the working directory.
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -58,6 +77,14 @@ Forbid the usage of triangle constraints with -update gpu
 Prevent using update on GPU if there are triangle constraints.
 
 :issue:`5123`
+
+``gmx_mpi mdrun`` could hang when using GPUs and separate PME ranks 
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+A logic error in task assignment for ``-nb gpu -pme cpu`` and separate PME ranks
+made the (default) ``-ddorder interleave`` hang. Now it works.
+
+:issue:`4345`
 
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -73,8 +100,24 @@ Fix `gmx dump` crash when trying to output the binary Colvars state file.
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix physical validation with Pymbar version 4
+"""""""""""""""""""""""""""""""""""""""""""""
+
+Pymbar version 4 has a different API compared to version 3. Now we support
+using either of those versions and internally handle the API differences.
+
+:issue:`5130`
+
 Miscellaneous
 ^^^^^^^^^^^^^
+
+Work around FetchContent warnings in CMake 3.30 and newer
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+CMake 3.30 began to complain about |Gromacs| use of FetchContent, so
+now we tell such new versions to use the old policy.
+
+:issue:`5140`
 
 Fix various crashes when GMX_USE_COLVARS=NONE
 """""""""""""""""""""""""""""""""""""""""""""

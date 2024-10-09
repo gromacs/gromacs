@@ -42,6 +42,17 @@ from . import error as pv_error
 from . import plot
 
 
+# Pymbar v4 to v3 interface adapter
+try:
+    pymbar.BAR
+except AttributeError:
+    pymbar.BAR = pymbar.bar
+try:
+    pymbar.timeseries.statisticalInefficiency
+except AttributeError:
+    pymbar.timeseries.statisticalInefficiency = pymbar.timeseries.statistical_inefficiency
+
+
 def generate_histograms(traj1, traj2, g1, g2, bins):
 
     n1 = np.size(traj1)
@@ -654,7 +665,15 @@ def check_1d(traj1, traj2, param1, param2, kb,
 
     if verbosity > 2:
         print('Computing log of partition functions using pymbar.BAR...')
-    df, ddf = pymbar.BAR(w_f, w_r)
+    df_ddf = pymbar.BAR(w_f, w_r)
+    try:
+        # tuple in v3
+        df = df_ddf[0]
+        ddf = df_ddf[1]
+    except KeyError:
+        # dict in v4
+        df = df_ddf['Delta_f']
+        ddf = df_ddf['dDelta_f']
     if verbosity > 2:
         print('Using {:.5f} for log of partition functions as computed from BAR.'.format(df))
         print('Uncertainty in quantity is {:.5f}.'.format(ddf))
@@ -880,7 +899,15 @@ def check_2d(traj1, traj2, param1, param2, kb, pvconvert,
 
     if verbosity > 2:
         print('Computing log of partition functions using pymbar.BAR...')
-    df, ddf = pymbar.BAR(w_f, w_r)
+    df_ddf = pymbar.BAR(w_f, w_r)
+    try:
+        # tuple in v3
+        df = df_ddf[0]
+        ddf = df_ddf[1]
+    except KeyError:
+        # dict in v4
+        df = df_ddf['Delta_f']
+        ddf = df_ddf['dDelta_f']
     if verbosity > 2:
         print('Using {:.5f} for log of partition functions as computed from BAR.'.format(df))
         print('Uncertainty in quantity is {:.5f}.'.format(ddf))
