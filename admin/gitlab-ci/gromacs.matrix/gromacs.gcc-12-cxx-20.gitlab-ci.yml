@@ -1,0 +1,67 @@
+# Test goal: Simple GCC C++20 build with no GPU
+# Test intents (should change rarely and conservatively):
+#   OS: Ubuntu newest supported
+#   Compiler: GCC
+#   GPU: no
+#   Scope: configure, build, unit tests, regression tests
+# Test implementation choices (free to change as needed):
+#   OS: Ubuntu 22.04
+#   Build type: Debug
+#   Compiler: GCC 12
+#   MPI: thread_MPI
+#   SIMD: AVX2_256
+#   FFT: FFTW3
+#   Parallelism nt/ntomp: 4/2
+#   TNG: build without TNG
+#   Colvars: build without internal colvars support
+#.  PLUMED: build without PLUMED support
+
+gromacs:gcc-12:cxx-20:configure:
+  extends:
+    - .gromacs:base:configure
+    - .use-gcc:base
+  rules:
+    - !reference [.rules:merge-requests, rules]
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-12-rocm-5.4.1
+  variables:
+    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
+    CMAKE_EXTRA_OPTIONS: -DCMAKE_CXX_STANDARD=20 -DGMX_INSTALL_LEGACY_API=ON -DGMX_USE_TNG=OFF -DGMX_USE_COLVARS=NONE -DGMX_USE_PLUMED=OFF
+    COMPILER_MAJOR_VERSION: 12
+
+gromacs:gcc-12:cxx-20:build:
+  extends:
+    - .gromacs:base:build
+    - .before_script:default
+    - .use-ccache
+  rules:
+    - !reference [.rules:merge-requests, rules]
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-12-rocm-5.4.1
+  variables:
+    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
+  needs:
+    - job: gromacs:gcc-12:cxx-20:configure
+
+gromacs:gcc-12:cxx-20:test:
+  extends:
+    - .gromacs:base:test
+  rules:
+    - !reference [.rules:merge-requests, rules]
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-12-rocm-5.4.1
+  variables:
+    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
+    GMX_FORCE_UPDATE_DEFAULT_CPU: 1
+  needs:
+    - job: gromacs:gcc-12:cxx-20:build
+
+gromacs:gcc-12:cxx-20:regressiontest:
+  extends:
+    - .gromacs:base:regressiontest
+  rules:
+    - !reference [.rules:merge-requests, rules]
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-12-rocm-5.4.1
+  variables:
+    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
+  needs:
+    - job: gromacs:gcc-12:cxx-20:build
+    - job: regressiontests:prepare
+
