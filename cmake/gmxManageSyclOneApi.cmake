@@ -166,6 +166,32 @@ if("${SYCL_CXX_FLAGS_EXTRA}" MATCHES "fsycl-targets=.*(nvptx64|amdgcn|amd_gpu|nv
     endif()
 endif()
 
+# The API is experimental and unstable, so we don't build it by default
+option(GMX_SYCL_ENABLE_GRAPHS "Enable support for SYCL Graphs (experimental oneAPI feature)")
+mark_as_advanced(GMX_SYCL_ENABLE_GRAPHS)
+
+if(GMX_SYCL_ENABLE_GRAPHS)
+    if(GMX_INTEL_LLVM AND GMX_INTEL_LLVM_VERSION LESS_EQUAL 20240002)
+        message(FATAL_ERROR "SYCL Graph support in oneAPI 2024.0.2 is advertised but not sufficient")
+    endif()
+    set(CMAKE_REQUIRED_FLAGS "${SYCL_TOOLCHAIN_CXX_FLAGS}")
+    check_cxx_symbol_exists(SYCL_EXT_ONEAPI_GRAPH "sycl/sycl.hpp" HAVE_SYCL_EXT_ONEAPI_GRAPH)
+    # Check if we have an aspect denoting partial support for graphs.
+    # It is a temporary measure introduced in the open-source IntelLLVM around oneAPI 2024.3
+    # to denote LevelZero devices supporting all graph features except for update,
+    # with the intention to remove it in the future.
+    check_cxx_source_compiles("#include <sycl/sycl.hpp>\n int main(){ auto a = sycl::aspect::ext_oneapi_limited_graph; }"
+        HAVE_SYCL_ASPECT_EXT_ONEAPI_LIMITED_GRAPH)
+    unset(CMAKE_REQUIRED_FLAGS)
+    if(HAVE_SYCL_EXT_ONEAPI_GRAPH)
+        set(GMX_HAVE_GPU_GRAPH_SUPPORT ON)
+    else()
+        message(FATAL_ERROR "SYCL Graph support requested, but SYCL_EXT_ONEAPI_GRAPH extension is not available")
+    endif()
+else()
+    set(GMX_HAVE_GPU_GRAPH_SUPPORT OFF)
+endif()
+
 if(GMX_GPU_FFT_VKFFT)
     include(gmxManageVkFft)
     set(_sycl_has_valid_fft TRUE)

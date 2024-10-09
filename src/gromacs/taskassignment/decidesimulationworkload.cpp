@@ -134,11 +134,16 @@ SimulationWorkload createSimulationWorkload(const t_inputrec& inputrec,
         GMX_ASSERT(simulationWorkload.useGpuNonbonded,
                    "Can only offload X/F buffer ops if nonbonded computation is also offloaded");
     }
+    // SYCL Graph API only captures work submitted to the SYCL queue.
+    // Disallow use of native FFT libraries until ext_codeplay_enqueue_native_command is used.
+    constexpr bool haveSyclWithGraphIncompatibleGpuFftLibrary =
+            GMX_GPU_SYCL && !(GMX_GPU_FFT_BBFFT || GMX_GPU_FFT_MKL || GMX_GPU_FFT_ONEMKL);
     simulationWorkload.useMdGpuGraph =
             devFlags.enableCudaGraphs && useGpuForUpdate
             && (simulationWorkload.haveSeparatePmeRank ? simulationWorkload.useGpuPmePpCommunication : true)
             && (havePpDomainDecomposition ? simulationWorkload.useGpuHaloExchange : true)
-            && (havePpDomainDecomposition ? (GMX_THREAD_MPI > 0) : true);
+            && (havePpDomainDecomposition ? (GMX_THREAD_MPI > 0) : true)
+            && !(haveSyclWithGraphIncompatibleGpuFftLibrary && simulationWorkload.useGpuPmeFft);
 
     simulationWorkload.useNvshmem = devFlags.enableNvshmem && simulationWorkload.useGpuPmePpCommunication;
     return simulationWorkload;

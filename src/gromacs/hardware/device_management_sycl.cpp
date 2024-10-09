@@ -679,6 +679,17 @@ std::vector<std::unique_ptr<DeviceInformation>> findDevices()
                 deviceInfos[i]->hardwareVersionPatch = std::get<2>(*hwVersion);
             }
         }
+
+#if GMX_HAVE_GPU_GRAPH_SUPPORT && defined(SYCL_EXT_ONEAPI_GRAPH) && SYCL_EXT_ONEAPI_GRAPH
+        deviceInfos[i]->supportsSyclGraph = syclDevice.has(sycl::aspect::ext_oneapi_graph);
+#    if HAVE_SYCL_ASPECT_EXT_ONEAPI_LIMITED_GRAPH
+        // For now, we're ok with devices not supporting graph update
+        deviceInfos[i]->supportsSyclGraph = deviceInfos[i]->supportsSyclGraph
+                                            || syclDevice.has(sycl::aspect::ext_oneapi_limited_graph);
+#    endif
+#else
+        deviceInfos[i]->supportsSyclGraph = false;
+#endif
     }
 #if GMX_SYCL_DPCPP
     // Now, filter by the backend if we did not disable compatibility check

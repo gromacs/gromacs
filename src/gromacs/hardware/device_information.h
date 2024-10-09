@@ -206,6 +206,8 @@ struct DeviceInformation
     std::optional<int> hardwareVersionMinor;
     //! CUDA CC minor for NVIDIA devices, device code for AMD (gfx90a -> a -> 10), not set for Intel (yet)
     std::optional<int> hardwareVersionPatch;
+    //! Does the device support SYCL Graph
+    bool supportsSyclGraph;
 #endif
     /*! \brief UUID of the device, when available
      *

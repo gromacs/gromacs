@@ -259,8 +259,11 @@
 /* Define if CUDA GPU acceleration is compiled */
 #cmakedefine01 GMX_GPU_CUDA
 
-/* Define if CUDA Graphs support is available */
+/* Define if CUDA Graphs or SYCL Graph support is available */
 #cmakedefine01 GMX_HAVE_GPU_GRAPH_SUPPORT
+
+/* Define if sycl::aspect::ext_oneapi_limited_graph exists */
+#cmakedefine01 HAVE_SYCL_ASPECT_EXT_ONEAPI_LIMITED_GRAPH
 
 /* Define if OpenCL GPU acceleration is compiled */
 #cmakedefine01 GMX_GPU_OPENCL

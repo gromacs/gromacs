@@ -135,6 +135,13 @@ n device
 #if GMX_GPU_CUDA
     using Graph         = cudaGraph_t;
     using GraphInstance = cudaGraphExec_t;
+#elif GMX_GPU_SYCL && GMX_HAVE_GPU_GRAPH_SUPPORT && defined(SYCL_EXT_ONEAPI_GRAPH) && SYCL_EXT_ONEAPI_GRAPH
+    using Graph =
+            std::unique_ptr<sycl::ext::oneapi::experimental::command_graph<sycl::ext::oneapi::experimental::graph_state::modifiable>>;
+    using GraphInstance =
+            std::unique_ptr<sycl::ext::oneapi::experimental::command_graph<sycl::ext::oneapi::experimental::graph_state::executable>>;
+#elif GMX_HAVE_GPU_GRAPH_SUPPORT
+#    error "Configuration error: GPU Graphs enabled but not supported"
 #else
     using Graph         = void*;
     using GraphInstance = void*;
@@ -198,7 +205,7 @@ private:
     gmx_wallcycle* wcycle_;
     //! State of graph
     GraphState graphState_ = GraphState::Invalid;
-    //! Whether a perormance bug workaround is needed in graph update/reinstantiation
+    //! Whether a performance bug workaround is needed in graph update/reinstantiation
     bool needOldDriverTransferWorkaround_ = false;
 };
 

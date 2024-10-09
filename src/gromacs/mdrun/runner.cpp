@@ -263,9 +263,20 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
             {
                 errorReason = "the CUDA version in use is below the minimum requirement (11.1)";
             }
+            else if (GMX_GPU_SYCL)
+            {
+                if (GMX_SYCL_DPCPP)
+                {
+                    errorReason = "GROMACS is built without GMX_SYCL_ENABLE_GRAPHS";
+                }
+                else
+                {
+                    errorReason = "SYCL Graph extension is only supported in oneAPI DPC++";
+                }
+            }
             else
             {
-                errorReason = "GROMACS is built without CUDA";
+                errorReason = "CUDA or SYCL build is required";
             }
             GMX_LOG(mdlog.warning)
                     .asParagraph()
