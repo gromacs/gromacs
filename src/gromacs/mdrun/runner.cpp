@@ -952,7 +952,7 @@ static bool localStateHasFillerParticles(const gmx_mtop_t& mtop,
                                            " because DD is not used or because an algorithm"
                                            " requires whole molecules"));
         }
-        haveFillerParticlesInLocalState = (value != 0);
+        haveFillerParticlesInLocalState = canHaveFillerParticlesInLocalState && (value != 0);
     }
 
     return haveFillerParticlesInLocalState;
