@@ -283,8 +283,8 @@ void UpdateGroupsCog::clear()
 
     if (!threadData_.empty())
     {
-#pragma omp parallel for schedule(static) num_threads(ssize(threadData_))
-        for (int thread = 0; thread < ssize(threadData_); thread++)
+#pragma omp parallel for schedule(static) num_threads(gmx::ssize(threadData_))
+        for (int thread = 0; thread < gmx::ssize(threadData_); thread++)
         {
             threadData_[thread].globalToLocalMap_.clearAndResizeHashTable();
         }
