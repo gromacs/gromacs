@@ -108,6 +108,14 @@ using either of those versions and internally handle the API differences.
 
 :issue:`5130`
 
+Fix compatibility with VkFFT 1.3.5
+""""""""""""""""""""""""""""""""""
+
+Fix crash on |Gromacs| shutdown when external VkFFT 1.3.5
+is used.
+
+:issue:`5184`
+
 Miscellaneous
 ^^^^^^^^^^^^^
 

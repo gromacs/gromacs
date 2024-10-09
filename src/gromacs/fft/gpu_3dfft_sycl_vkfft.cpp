@@ -272,6 +272,8 @@ static void launchVkFft(const DeviceBuffer<float>& realGrid,
         result = VkFFTAppend(application, 1, launchParams);
         handleFftError(result, "VkFFT: Complex to real");
     }
+    // It was a pointer to a stack variable; don't leak it
+    application->configuration.stream = nullptr;
 }
 
 void Gpu3dFft::ImplSyclVkfft::perform3dFft(gmx_fft_direction dir, CommandEvent* /*timingEvent*/)
