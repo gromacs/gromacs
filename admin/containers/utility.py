@@ -40,7 +40,7 @@ CI pipeline jobs.
 Example::
 
     $ python3 -m utility --llvm --doxygen
-    gromacs/ci-ubuntu-20.04-llvm-9-docs
+    gromacs/ci-ubuntu-24.04-llvm-14-docs
 
 See Also:
     :file:`buildall.sh`

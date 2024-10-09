@@ -7,10 +7,10 @@ prepare-release-version:
   rules:
     - !reference [.rules:nightly-only-for-release, rules]
   cache: {}
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-9-docs
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-19-docs
   stage: configure-build
   variables:
-    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
+    CMAKE: /usr/local/cmake-3.28.0/bin/cmake
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
     KUBERNETES_MEMORY_REQUEST: 2Gi
@@ -27,7 +27,7 @@ regressiontests:prepare:
   rules:
     - !reference [.rules:merge-and-post-merge-acceptance, rules]
   cache: {}
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-9-docs
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-19-docs
   stage: configure-build
   variables:
     KUBERNETES_CPU_LIMIT: 1
@@ -70,7 +70,7 @@ regressiontests:package:
   cache: {}
   # Docker image uploaded to dockerhub by user eriklindahl
   # TODO: Get DockerFile for admin/dockerfiles
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-9-docs
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-19-docs
   stage: release-package
   variables:
     KUBERNETES_CPU_LIMIT: 1
@@ -144,7 +144,7 @@ archive:configure:release:
     - .use-ccache
     - .before_script:default
     - .docs:build
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-9-docs
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-19-docs
   variables:
     KUBERNETES_CPU_LIMIT: 4
     KUBERNETES_CPU_REQUEST: 2
@@ -211,7 +211,7 @@ archive:package:
     BUILD_DIR: build-package
 
 checksum-verify:
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-9-docs
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-19-docs
   stage: release-verify
   rules:
     - !reference [.rules:nightly-only-for-release, rules]
@@ -251,7 +251,7 @@ checksum-verify:
     - prepare-release-version
 
 version-verify:
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-9-docs
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-19-docs
   stage: release-verify
   rules:
     - !reference [.rules:nightly-only-for-release, rules]

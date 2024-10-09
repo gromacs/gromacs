@@ -49,7 +49,6 @@ from optparse import OptionParser
 
 
 class CopyrightState(object):
-
     """Information about an existing (or non-existing) copyright header."""
 
     def __init__(self, has_copyright, is_correct, is_newstyle, first_year):
@@ -60,7 +59,6 @@ class CopyrightState(object):
 
 
 class CopyrightChecker(object):
-
     """Logic for analyzing existing copyright headers and generating new ones."""
 
     _header = ["", "This file is part of the GROMACS molecular simulation package.", ""]
@@ -210,7 +208,6 @@ the research papers on the package. Check out https://www.gromacs.org.
 
 
 class Reporter(object):
-
     """Wrapper for reporting issues in a file."""
 
     def __init__(self, reportfile, filename):
@@ -222,7 +219,6 @@ class Reporter(object):
 
 
 class CommentHandlerC(object):
-
     """Handler for extracting and creating C-style comments."""
 
     def extract_first_comment_block(self, content_lines):
@@ -247,7 +243,6 @@ class CommentHandlerC(object):
 
 
 class CommentHandlerSimple(object):
-
     """Handler for extracting and creating sh-style comments.
 
     Also other comments of the same type, but with a different comment

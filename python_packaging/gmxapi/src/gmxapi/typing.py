@@ -82,11 +82,9 @@ _Op = TypeVar("_Op", bound=gmxapi.abc.OperationImplementation)
 class Future(Generic[ResultTypeVar]):
     """Generic result data."""
 
-    def dtype(self) -> Type[ResultTypeVar]:
-        ...
+    def dtype(self) -> Type[ResultTypeVar]: ...
 
-    def result(self) -> ResultTypeVar:
-        ...
+    def result(self) -> ResultTypeVar: ...
 
 
 class OperationReference(gmxapi.abc.OperationReference, Generic[_Op]):

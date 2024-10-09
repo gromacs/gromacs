@@ -128,13 +128,13 @@ const pybind11::exception<Exception>& export_exceptions(pybind11::module& m)
             // an exception gets overlooked.
             std::string message = "Generic gmxapi exception caught: ";
             message += e.what();
-            baseException(message.c_str());
+            py::set_error(baseException, message.c_str());
         }
         catch (const std::exception& e)
         {
             std::string message = "Please report GROMACS bug. Unhandled C++ exception: ";
             message += e.what();
-            unknownException(message.c_str());
+            py::set_error(unknownException, message.c_str());
         }
     });
 

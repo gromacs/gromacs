@@ -146,9 +146,9 @@ python-format:
     - !reference [.rules:merge-requests, rules]
   cache: {}
   stage: pre-build
-  image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-llvm-9-docs
+  image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-24.04-llvm-19-docs
   variables:
-    COMPILER_MAJOR_VERSION: 9
+    COMPILER_MAJOR_VERSION: 19
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
     KUBERNETES_MEMORY_REQUEST: 2Gi
@@ -173,7 +173,7 @@ copyright-check:
     - !reference [.rules:merge-requests, rules]
   cache: {}
   stage: pre-build
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.4.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-19-docs
   variables:
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
@@ -243,6 +243,8 @@ linkchecker:
   rules:
     - !reference [.rules:nightly-not-for-release, rules]
   dependencies:
+    - webpage:build
+  needs:
     - webpage:build
   variables:
     KUBERNETES_CPU_LIMIT: 1

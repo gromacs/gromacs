@@ -1113,10 +1113,24 @@ def add_documentation_dependencies(
     """Add appropriate layers according to doxygen input arguments."""
     if input_args.doxygen is None:
         return
+    # In recent python, it's a warning to install via pip into the
+    # system environment, so we use pipx (as recommended).
+    output_stages["main"] += hpccm.building_blocks.packages(ospackages=["pipx"])
     # Always clone the same version of linkchecker (latest release at June 1, 2021)
-    output_stages["main"] += hpccm.building_blocks.pip(
-        pip="pip3",
-        packages=["git+https://github.com/linkchecker/linkchecker.git@v10.0.1"],
+    output_stages["main"] += hpccm.primitives.shell(
+        commands=[
+            # Default linkchecker detects when it is run as root and
+            # unilaterally de-elevates privileges, which means it
+            # can't search its own installation path for files it
+            # needs. Since we are using an ephemeral container, it's
+            # fine to run as root, so we use a version of 10.0.1
+            # hacked to avoid the call to drop_privileges().
+            "pipx install git+https://github.com/mabraham/linkchecker.git@avoid-drop-privileges"
+        ]
+    )
+    # Add the path to which pipx installs binaries to the PATH
+    output_stages["main"] += hpccm.primitives.environment(
+        variables={"PATH": "${PATH}:/root/.local/bin"}
     )
     output_stages["main"] += hpccm.primitives.shell(
         commands=[

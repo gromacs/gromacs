@@ -64,7 +64,6 @@ from gmxtree import DocType
 
 @functools.total_ordering
 class EdgeType(object):
-
     """Enumeration type for edge types in include dependency graphs."""
 
     # Mapping to string representation for the internal integer values
@@ -118,7 +117,6 @@ EdgeType.undocumented = EdgeType(8)
 
 
 class Edge(object):
-
     """Graph edge between two Node objects in 'dot' graph.
 
     Signifies an include dependency between the two nodes, and manages types
@@ -168,7 +166,6 @@ class Edge(object):
 
 
 class Node(object):
-
     """Node in 'dot' graph."""
 
     def __init__(self, nodename, label, style=None, properties=None, is_file=False):
@@ -242,7 +239,6 @@ class Node(object):
 
 
 class Graph(object):
-
     """Graph for 'dot'."""
 
     def __init__(self, nodes, edges):
@@ -323,7 +319,6 @@ class Graph(object):
 
 
 class GraphBuilder(object):
-
     """Builder for Graph objects from gmxtree.GromacsTree representation."""
 
     def __init__(self, tree):
