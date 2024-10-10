@@ -266,6 +266,13 @@ parser.add_argument(
     help="Install an HDF5 library.",
 )
 
+parser.add_argument(
+    "--plumed",
+    action="store_true",
+    default=False,
+    help="Install PLUMED library.",
+)
+
 # Supported Python versions for maintained branches.
 _python_versions = ["3.9.13", "3.12.5"]
 parser.add_argument(

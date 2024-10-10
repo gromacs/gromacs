@@ -443,13 +443,13 @@ def get_ucx(args, compiler, gdrcopy):
             configure_opts = []
             if args.rocm is not None:
                 configure_opts.append("--with-rocm=/opt/rocm")
-            if args.cuda is not None:
-                configure_opts.append("--with-cuda=/usr/local/cuda")
+            use_cuda = args.cuda is not None
             # Version last updated August 15, 2024
             return hpccm.building_blocks.ucx(
                 toolchain=toolchain,
                 gdrcopy=use_gdrcopy,
                 version="1.17.0",
+                cuda=use_cuda,
                 configure_opts=configure_opts,
             )
         else:
@@ -590,6 +590,18 @@ def get_heffte(args):
             recursive=True,
             commit=args.heffte,
             directory="heffte",
+        )
+    else:
+        return None
+
+
+def get_plumed(args):
+    if args.plumed is not None:
+        return hpccm.building_blocks.generic_autotools(
+            url="https://github.com/plumed/plumed2/releases/download/v2.9.2/plumed-src-2.9.2.tgz",
+            prefix="/usr/local",
+            runtime_environment={"PLUMED_KERNEL": "/usr/local/lib/libplumedKernel.so"},
+            directory="plumed-2.9.2",
         )
     else:
         return None
@@ -1302,6 +1314,8 @@ def build_stages(args) -> typing.Iterable["hpccm.Stage"]:
     building_blocks["clfft"] = get_clfft(args)
 
     building_blocks["heffte"] = get_heffte(args)
+
+    building_blocks["plumed"] = get_plumed(args)
 
     building_blocks["nvhpcsdk"] = get_nvhpcsdk(args)
     if building_blocks["nvhpcsdk"] is not None:

@@ -40,6 +40,7 @@ set(CMAKE_HIP_STANDARD_REQUIRED ON)
 
 # We need to set the gpu targets to a dummy value before looking up the ROCM library to avoid the "feature" to autodetect
 # this, which is broken if building on a machine without devices. The value here is ignored later on.
+set(AMDGPU_TARGETS "gfx90a")
 set(CMAKE_HIP_ARCHITECTURES "gfx90a")
 
 # Using the required version directly doesn't work due to the way the versioning is implemented in HIP
