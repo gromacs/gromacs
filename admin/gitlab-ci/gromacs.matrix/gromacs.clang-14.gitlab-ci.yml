@@ -46,6 +46,7 @@ gromacs:clang-14:test:
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-llvm-14-cuda-12.1.0
   variables:
     GMX_FORCE_UPDATE_DEFAULT_CPU: 1
+    GMX_FILLERS_IN_LOCAL_STATE: 1
   needs:
     - job: gromacs:clang-14:build
 
@@ -55,6 +56,8 @@ gromacs:clang-14:regressiontest:
   rules:
     - !reference [.rules:merge-requests, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-llvm-14-cuda-12.1.0
+  variables:
+    GMX_FILLERS_IN_LOCAL_STATE: 1
   needs:
     - job: gromacs:clang-14:build
     - job: regressiontests:prepare
