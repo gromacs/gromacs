@@ -2832,9 +2832,10 @@ void dd_partition_system(FILE*                     fplog,
     {
         wallcycle_sub_start(wcycle, WallCycleSubCounter::DDAddCogs);
 
-        comm->updateGroupsCog->addCogs(gmx::arrayRefFromArray(dd->globalAtomIndices.data(), dd->numHomeAtoms),
-                                       state_local->x,
-                                       fr->nbv->getLocalGridNumAtomsPerColumn());
+        comm->updateGroupsCog->addCogs(
+                gmx::arrayRefFromArray(dd->globalAtomIndices.data(), dd->numHomeAtoms),
+                state_local->x,
+                bRedist ? fr->nbv->getLocalGridNumAtomsPerColumn() : gmx::ArrayRef<const int>());
 
         wallcycle_sub_stop(wcycle, WallCycleSubCounter::DDAddCogs);
     }

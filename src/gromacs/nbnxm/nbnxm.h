@@ -277,7 +277,11 @@ public:
     //! Returns the index position of the atoms on the search grid
     ArrayRef<const int> getGridIndices() const;
 
-    //! Returns the number of atoms for each column of the local grid
+    /*! \brief Returns the number of atoms for each column of the local grid
+     *
+     * When fillers are not part of the local state, returns the number of real atoms.
+     * When fillers are part of the local state, returns number of atoms plus fillers.
+     */
     ArrayRef<const int> getLocalGridNumAtomsPerColumn() const;
 
     /*! \brief Constructs the pairlist for the given locality

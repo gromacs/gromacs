@@ -175,7 +175,7 @@ ArrayRef<const int> nonbonded_verlet_t::getGridIndices() const
 
 ArrayRef<const int> nonbonded_verlet_t::getLocalGridNumAtomsPerColumn() const
 {
-    return pairSearch_->gridSet().grid(0).cxy_na();
+    return pairSearch_->gridSet().getLocalGridNumAtomsPerColumn();
 }
 
 void nonbonded_verlet_t::atomdata_add_nbat_f_to_f(const AtomLocality locality, ArrayRef<RVec> force)

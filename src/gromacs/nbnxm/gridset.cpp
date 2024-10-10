@@ -288,4 +288,25 @@ void GridSet::putOnGrid(const matrix            box,
     setNumColumnsMax(maxNumColumns);
 }
 
+ArrayRef<const int> GridSet::getLocalGridNumAtomsPerColumn() const
+{
+    const Grid& grid = grids_[0];
+
+    if (localAtomOrderMatchesNbnxmOrder_)
+    {
+        localGridNumAtomsPerColumn_.resize(grid.numColumns());
+
+        for (int column = 0; column < grid.numColumns(); column++)
+        {
+            localGridNumAtomsPerColumn_[column] = grid.numCellsInColumn(column) * grid.numAtomsPerCell();
+        }
+
+        return localGridNumAtomsPerColumn_;
+    }
+    else
+    {
+        return grid.cxy_na();
+    }
+}
+
 } // namespace gmx

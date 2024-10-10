@@ -188,6 +188,9 @@ public:
     //! Sets the maximum number of columns across all grids
     void setNumColumnsMax(int numColumnsMax) { numColumnsMax_ = numColumnsMax; }
 
+    //! Returns the number of atoms for each column of the local grid
+    ArrayRef<const int> getLocalGridNumAtomsPerColumn() const;
+
 private:
     /* Data members */
     //! The domain setup
@@ -210,6 +213,9 @@ private:
     std::vector<GridWork> gridWork_;
     //! Maximum number of columns across all grids
     int numColumnsMax_;
+
+    //! Buffer for returning the number of grid atoms per column
+    mutable std::vector<int> localGridNumAtomsPerColumn_;
 };
 
 } // namespace gmx

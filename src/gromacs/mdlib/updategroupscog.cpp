@@ -104,10 +104,7 @@ int UpdateGroupsCog::addCogsThread(ArrayRef<const int>  globalAtomIndices,
         if (globalAtom < 0)
         {
             // This is a filler particle
-            cogIndices_.push_back(-1);
-            cogs_.push_back(coordinates[localAtom]);
-            // Signal filler particle with numAtoms=0
-            numAtomsPerCog_.push_back(0);
+            cogIndices_[localAtom] = -1;
 
             continue;
         }
@@ -149,6 +146,11 @@ int UpdateGroupsCog::addCogsThread(ArrayRef<const int>  globalAtomIndices,
     for (int localAtom : threadAtomRange)
     {
         const int globalUpdateGroupIndex = cogIndices_[localAtom];
+
+        if (globalUpdateGroupIndex < 0)
+        {
+            continue;
+        }
 
         if (const int* cogIndexPtr = globalToLocalMap.find(globalUpdateGroupIndex))
         {
