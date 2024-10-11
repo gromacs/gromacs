@@ -617,7 +617,9 @@ static void checkPotentialEnergyValidity(int64_t step, const gmx_enerdata_t& ene
  * \param[in,out] forceWithVirialMtsLevel1  Force and virial for MTS level1 forces, can be nullptr
  * \param[in,out] enerd            Energy buffer
  * \param[in,out] ed               Essential dynamics pointer
- * \param[in]     didNeighborSearch Tells if we did neighbor searching this step, used for ED sampling
+ * \param[in]     didNeighborSearch  Tells if we did neighbor searching this step,
+ *                                   used for ED sampling
+ * \param[in]     wcycle           The wallcycle structure
  *
  * \todo Remove didNeighborSearch, which is used incorrectly.
  * \todo Convert all other algorithms called here to ForceProviders.

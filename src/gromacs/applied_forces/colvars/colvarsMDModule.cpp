@@ -263,7 +263,7 @@ public:
                     colvarsOptions_.colvarsAtomCoords(),
                     colvarsOptions_.colvarsOutputPrefix(),
                     colvarsState_);
-            forceProviders->addForceProvider(colvarsForceProvider_.get());
+            forceProviders->addForceProvider(colvarsForceProvider_.get(), "Colvars");
         }
     }
 

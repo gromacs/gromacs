@@ -187,11 +187,11 @@ IMDOutputProvider* MDModules::outputProvider()
     return impl_.get();
 }
 
-ForceProviders* MDModules::initForceProviders()
+ForceProviders* MDModules::initForceProviders(gmx_wallcycle* wallCycle)
 {
     GMX_RELEASE_ASSERT(impl_->forceProviders_ == nullptr,
                        "Force providers initialized multiple times");
-    impl_->forceProviders_ = std::make_unique<ForceProviders>();
+    impl_->forceProviders_ = std::make_unique<ForceProviders>(wallCycle);
     impl_->field_->initForceProviders(impl_->forceProviders_.get());
     impl_->densityFitting_->initForceProviders(impl_->forceProviders_.get());
     impl_->qmmm_->initForceProviders(impl_->forceProviders_.get());

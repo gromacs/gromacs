@@ -154,6 +154,23 @@ std::unique_ptr<gmx_wallcycle> wallcycle_init(FILE* fplog, int resetstep, const 
 CLANG_DIAGNOSTIC_RESET
 #endif
 
+std::optional<WallCycleCounter> gmx_wallcycle::registerCycleCounter(const std::string& name)
+{
+    constexpr size_t c_numForceProviderCounters =
+            static_cast<size_t>(WallCycleCounter::ForceProvider4)
+            - static_cast<size_t>(WallCycleCounter::ForceProvider0) + 1;
+
+    if (forceProviderNames.size() >= c_numForceProviderCounters)
+    {
+        return {};
+    }
+
+    forceProviderNames.emplace_back(name);
+
+    return static_cast<WallCycleCounter>(static_cast<size_t>(WallCycleCounter::ForceProvider0)
+                                         + forceProviderNames.size() - 1);
+}
+
 void gmx_wallcycle::checkStart(WallCycleCounter ewc)
 {
     // NOLINTNEXTLINE(readability-misleading-indentation)
@@ -754,14 +771,21 @@ void wallcycle_print(FILE*                            fplog,
         {
             /* Print timing information when it is for a PP or PP+PME
                node */
-            print_cycles(fplog,
-                         c2t_pp,
-                         enumValuetoString(*key),
-                         npp,
-                         nth_pp,
-                         wc->wcc[*key].n,
-                         cyc_sum[static_cast<int>(*key)],
-                         tot);
+            const char* name = enumValuetoString(*key);
+            // For active ForceProvider counters we need to look up the counter name
+            if (*key >= WallCycleCounter::ForceProvider0 && *key <= WallCycleCounter::ForceProvider4
+                && wc->wcc[*key].n > 0)
+            {
+                const int index =
+                        static_cast<int>(*key) - static_cast<int>(WallCycleCounter::ForceProvider0);
+                GMX_ASSERT(index < gmx::ssize(wc->forceProviderNames), "index should be in range");
+                if (index < gmx::ssize(wc->forceProviderNames))
+                {
+                    name = wc->forceProviderNames[index].c_str();
+                }
+            }
+            print_cycles(
+                    fplog, c2t_pp, name, npp, nth_pp, wc->wcc[*key].n, cyc_sum[static_cast<int>(*key)], tot);
             tot_for_pp += cyc_sum[static_cast<int>(*key)];
         }
     }

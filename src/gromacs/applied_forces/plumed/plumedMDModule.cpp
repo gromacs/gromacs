@@ -131,7 +131,7 @@ public:
         if (options_.active())
         {
             plumedForceProvider_ = std::make_unique<PlumedForceProvider>(options_.options());
-            forceProviders->addForceProvider(plumedForceProvider_.get());
+            forceProviders->addForceProvider(plumedForceProvider_.get(), "Plumed");
         }
     }
 

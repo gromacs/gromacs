@@ -187,7 +187,7 @@ public:
 
         nnpotForceProvider_ = std::make_unique<NNPotForceProvider>(nnpotOptions_.parameters(),
                                                                    nnpotOptions_.logger());
-        forceProviders->addForceProvider(nnpotForceProvider_.get());
+        forceProviders->addForceProvider(nnpotForceProvider_.get(), "NN potential");
     }
 
     //! From IMDModule

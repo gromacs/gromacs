@@ -376,7 +376,7 @@ public:
                 qmmmSimulationParameters_.localMMAtomSet(),
                 qmmmSimulationParameters_.periodicBoundaryConditionType(),
                 qmmmSimulationParameters_.logger());
-        forceProviders->addForceProvider(forceProvider_.get());
+        forceProviders->addForceProvider(forceProvider_.get(), "QMMM");
     }
 
     //! QMMM Module should not use OutputProvider as it will be removed in the future

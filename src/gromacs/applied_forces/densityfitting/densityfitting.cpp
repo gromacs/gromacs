@@ -375,7 +375,7 @@ public:
                     densityFittingSimulationParameters_.periodicBoundaryConditionType(),
                     densityFittingSimulationParameters_.simulationTimeStep(),
                     densityFittingState_);
-            forceProviders->addForceProvider(forceProvider_.get());
+            forceProviders->addForceProvider(forceProvider_.get(), "Density fitting");
         }
     }
 

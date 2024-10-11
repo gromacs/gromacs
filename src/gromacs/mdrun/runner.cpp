@@ -1909,7 +1909,7 @@ int Mdrunner::mdrunner()
 
         /* Initiate forcerecord */
         fr                 = std::make_unique<t_forcerec>();
-        fr->forceProviders = mdModules_->initForceProviders();
+        fr->forceProviders = mdModules_->initForceProviders(wcycle.get());
         init_forcerec(fplog,
                       mdlog,
                       runScheduleWork.simulationWork,

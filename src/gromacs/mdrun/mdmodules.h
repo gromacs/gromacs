@@ -44,7 +44,7 @@
 
 #include <memory>
 
-
+struct gmx_wallcycle;
 struct t_inputrec;
 
 namespace gmx
@@ -140,8 +140,12 @@ public:
     IMDOutputProvider* outputProvider();
     /*! \brief
      * Returns an object for computing forces from the modules.
+     *
+     * \param[in] wallCycle  Pointer to a wall cycle object, can be nullptr, in which case
+     *                       no cycle counting will be performed for force providers.
+     * \returns an object for computing forces from the modules.
      */
-    ForceProviders* initForceProviders();
+    ForceProviders* initForceProviders(gmx_wallcycle* wallCycle);
 
     /*! \brief Subscribe MDModules to simulation setup notifications.
      *
