@@ -346,7 +346,7 @@ def get_rocm_repository(args) -> "hpccm.building_blocks.base":
     return hpccm.building_blocks.packages(
         apt_keys=["http://repo.radeon.com/rocm/rocm.gpg.key"],
         apt_repositories=[
-            f"deb [arch=amd64] http://repo.radeon.com/rocm/apt/{args.rocm}/ {dist_string} main"
+            f"deb [arch=amd64 signed-by=/usr/share/keyrings/rocm.gpg.gpg] http://repo.radeon.com/rocm/apt/{args.rocm}/ {dist_string} main"
         ],
     )
 
@@ -519,23 +519,16 @@ def get_mpi(args, compiler, ucx):
 
 
 def get_oneapi_plugins(args):
-    # To get this token, register at https://developer.codeplay.com/ and generate new API token on the "Setting" page.
-    # Then place the toke in this environment variable when building the container.
-    token = os.getenv("CODEPLAY_API_TOKEN")
     blocks = []
 
     def _add_plugin(variant):
         if args.oneapi is None:
             raise RuntimeError("Cannot install oneAPI plugins without oneAPI.")
-        if token is None:
-            raise RuntimeError(
-                "Need CODEPLAY_API_TOKEN env. variable to install oneAPI plugins"
-            )
         backend_version = {"nvidia": args.cuda, "amd": args.rocm}[variant]
         if backend_version.count(".") == 2:
             backend_version = ".".join(backend_version.split(".")[:2])  # 12.0.1 -> 12.0
         oneapi_version = args.oneapi
-        url = f"https://developer.codeplay.com/api/v1/products/download?product=oneapi&version={oneapi_version}&variant={variant}&filters[]=linux&filters[]={backend_version}&aat={token}"
+        url = f"https://developer.codeplay.com/api/v1/products/download?product=oneapi&version={oneapi_version}&variant={variant}&filters[]=linux&filters[]={backend_version}"
         outfile = f"/tmp/oneapi_plugin_{variant}.sh"
         blocks.append(
             hpccm.primitives.shell(
@@ -828,9 +821,11 @@ def add_oneapi_compiler_build_stage(
     )
     oneapi_stage += hpccm.building_blocks.packages(
         apt_keys=[
-            "https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS-2023.PUB"
+            "https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB"
         ],
-        apt_repositories=["deb https://apt.repos.intel.com/oneapi all main"],
+        apt_repositories=[
+            "deb [signed-by=/usr/share/keyrings/GPG-PUB-KEY-INTEL-SW-PRODUCTS.gpg arch=amd64] https://apt.repos.intel.com/oneapi all main"
+        ],
         # Add minimal packages (not the whole HPC toolkit!)
         ospackages=[
             f"intel-oneapi-dpcpp-cpp-{version}",
@@ -1270,12 +1265,12 @@ def build_stages(args) -> typing.Iterable["hpccm.Stage"]:
     building_blocks["extra_packages"] = []
     if args.intel_compute_runtime:
         repo = {
-            "24.04": "deb [arch=amd64] https://repositories.intel.com/graphics/ubuntu noble arc",
-            "22.04": "deb [arch=amd64] https://repositories.intel.com/graphics/ubuntu jammy arc",
-            "20.04": "deb [arch=amd64] https://repositories.intel.com/graphics/ubuntu focal main",
+            "24.04": "deb [signed-by=/usr/share/keyrings/intel-graphics.gpg arch=amd64] https://repositories.intel.com/graphics/ubuntu noble arc",
+            "22.04": "deb [signed-by=/usr/share/keyrings/intel-graphics.gpg arch=amd64] https://repositories.intel.com/gpu/ubuntu jammy client",
+            "20.04": "deb [signed-by=/usr/share/keyrings/intel-graphics.gpg arch=amd64] https://repositories.intel.com/graphics/ubuntu focal main",
         }
         building_blocks["extra_packages"] += hpccm.building_blocks.packages(
-            apt_keys=["https://repositories.intel.com/graphics/intel-graphics.key"],
+            apt_keys=["https://repositories.intel.com/gpu/intel-graphics.key"],
             apt_repositories=[repo[args.ubuntu]],
         )
         os_packages += _intel_compute_runtime_extra_packages

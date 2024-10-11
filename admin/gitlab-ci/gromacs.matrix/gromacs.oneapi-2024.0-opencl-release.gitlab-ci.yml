@@ -21,9 +21,9 @@ gromacs:oneapi-2024.0-opencl:release:configure:
    - .use-opencl
   rules:
    - !reference [.rules:nightly-only-for-release, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-oneapi-2024.0-intel-compute-runtime
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-oneapi-2024.0-intel-compute-runtime-2
   variables:
-    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
+    CMAKE: /usr/local/cmake-3.30.3/bin/cmake
     COMPILER_MAJOR_VERSION: 2024
     RELEASE_BUILD_DIR: release-builds-oneapi
 
@@ -37,10 +37,10 @@ gromacs:oneapi-2024.0-opencl:release:build:
     - !reference [.rules:nightly-only-for-release, rules]
   stage: release-build
   variables:
-    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
+    CMAKE: /usr/local/cmake-3.30.3/bin/cmake
     BUILD_DIR: release-builds-oneapi
     COMPILER_MAJOR_VERSION: 2024
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-oneapi-2024.0-intel-compute-runtime
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-oneapi-2024.0-intel-compute-runtime-2
   needs:
     - job: gromacs:oneapi-2024.0-opencl:release:configure
 
@@ -51,9 +51,9 @@ gromacs:oneapi-2024.0-opencl:release:test:
   rules:
     - !reference [.rules:nightly-only-for-release, rules]
   stage: release-tests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-oneapi-2024.0-intel-compute-runtime
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-oneapi-2024.0-intel-compute-runtime-2
   variables:
-    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
+    CMAKE: /usr/local/cmake-3.30.3/bin/cmake
     BUILD_DIR: release-builds-oneapi
   needs:
     - job: gromacs:oneapi-2024.0-opencl:release:configure
@@ -66,9 +66,9 @@ gromacs:oneapi-2024.0-opencl:release:regressiontest:
   rules:
     - !reference [.rules:nightly-only-for-release, rules]
   stage: release-tests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-oneapi-2024.0-intel-compute-runtime
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-oneapi-2024.0-intel-compute-runtime-2
   variables:
-    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
+    CMAKE: /usr/local/cmake-3.30.3/bin/cmake
     BUILD_DIR: release-builds-oneapi
     REGRESSIONTEST_PME_RANK_NUMBER: 0
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
