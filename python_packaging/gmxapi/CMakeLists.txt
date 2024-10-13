@@ -79,7 +79,7 @@ if (POLICY CMP0139) #3.24
 endif ()
 
 find_package(Python3 3.7 COMPONENTS Interpreter Development)
-find_package(pybind11 2.6 QUIET CONFIG)
+find_package(pybind11 2.12 QUIET CONFIG)
 # If we are not running through setup.py, we may need to look for the pybind11 headers.
 if (NOT pybind11_FOUND)
     execute_process(
@@ -91,7 +91,7 @@ if (NOT pybind11_FOUND)
     list(APPEND CMAKE_PREFIX_PATH "${_tmp_dir}")
     # The following should only run once, and if it runs more often than that, we would want to
     # know about it. So we don't use `QUIET` here.
-    find_package(pybind11 2.6 CONFIG)
+    find_package(pybind11 2.12 CONFIG)
 endif ()
 if (NOT pybind11_FOUND)
     message(FATAL_ERROR "Python package build dependencies not found with interpreter ${Python3_EXECUTABLE}. "

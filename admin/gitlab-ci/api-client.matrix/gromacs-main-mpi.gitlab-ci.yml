@@ -14,38 +14,38 @@
 #   GROMACS branch: merge request target branch
 #   gmxapi Python package: according to merge request target branch
 #   sample code: according to merge request target branch
-#   compiler: clang-17
+#   compiler: clang-19
 
 sample_taf:openmpi-double:
   extends:
     - .sample_taf
   rules:
     - !reference [.rules:merge-requests, rules]
-  image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-llvm-17
+  image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-24.04-llvm-19
   variables:
     KUBERNETES_CPU_LIMIT: 2
     KUBERNETES_CPU_REQUEST: 2
     KUBERNETES_MEMORY_LIMIT: 2Gi
     KUBERNETES_MEMORY_REQUEST: 2Gi
-    CMAKE: "/usr/local/cmake-3.18.4/bin/cmake"
+    CMAKE: "/usr/local/cmake-3.30.3/bin/cmake"
     GMX_SUFFIX: "_mpi_d"
     GMX_DOUBLE: "ON"
   needs:
-    - job: gromacs:clang-17-mpi:build
+    - job: gromacs:clang-19-mpi:build
 
 sample_restraint:openmpi-double:
   extends:
     - .sample_restraint:clang
   rules:
     - !reference [.rules:merge-requests, rules]
-  image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-llvm-17
+  image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-24.04-llvm-19
   variables:
-    COMPILER_MAJOR_VERSION: 17
+    COMPILER_MAJOR_VERSION: 19
     KUBERNETES_CPU_LIMIT: 4
     KUBERNETES_CPU_REQUEST: 4
     GMX_SUFFIX: "_mpi_d"
     GMX_DOUBLE: "ON"
-    VENVPATH: "/root/venv/py3.10"
+    VENVPATH: "/root/venv/py3.12"
   needs:
-    - job: gromacs:clang-17-mpi:build
+    - job: gromacs:clang-19-mpi:build
       artifacts: true

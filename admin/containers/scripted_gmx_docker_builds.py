@@ -985,7 +985,7 @@ def prepare_venv(version: packaging.version.Version) -> typing.Sequence[str]:
             'numpy>1.7' \
             'packaging' \
             'pip>=10.1' \
-            'pybind11>2.6' \
+            'pybind11>=2.12' \
             'Pygments>=2.2.0' \
             'pytest>=4.6' \
             'python-gitlab' \

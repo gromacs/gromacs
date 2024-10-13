@@ -188,10 +188,28 @@ INSTANTIATE_TYPED_TEST_SUITE_P(My, FooTest, MyTypes);
 #define GTEST_NAME_GENERATOR_(TestSuiteName) \
   gtest_type_params_##TestSuiteName##_NameGenerator
 
-#define TYPED_TEST_SUITE(CaseName, Types, ...)                          \
+// In standard GoogleTest, TYPED_TEST_SUITE(CaseName, Types, ...) is a
+// non-standard variadic macro that is commonly accepted by C++
+// compilers because it is standard in C. C++20 formally recognizes
+// it. Unfortunately clang-19 warns about this, seemingly wrongly
+// (https://github.com/llvm/llvm-project/issues/76375) and the only
+// available suppression (-Wno-c++20-extensions) would also hide
+// potentially useful warnings. Since GROMACS doesn't ever pass the
+// optional third parameter (to customize the per-type naming of test
+// cases), we use two macros with different names and no variadicity
+// and hope that is good enough until either clang or googletest
+// improves.
+#define TYPED_TEST_SUITE(CaseName, Types)                               \
   typedef ::testing::internal::GenerateTypeList<Types>::type            \
       GTEST_TYPE_PARAMS_(CaseName);                                     \
-  typedef ::testing::internal::NameGeneratorSelector<__VA_ARGS__>::type \
+  typedef ::testing::internal::NameGeneratorSelector<testing::internal::DefaultNameGenerator>::type \
+  GTEST_NAME_GENERATOR_(CaseName)
+
+// Varied by GROMACS. See comment above TYPED_TEST_SUITE.
+#define TYPED_TEST_SUITE_WITH_NAME(CaseName, Types, Name)               \
+  typedef ::testing::internal::GenerateTypeList<Types>::type            \
+      GTEST_TYPE_PARAMS_(CaseName);                                     \
+  typedef ::testing::internal::NameGeneratorSelector<Name>::type        \
   GTEST_NAME_GENERATOR_(CaseName)
 
 #define TYPED_TEST(CaseName, TestName)                                        \
@@ -303,7 +321,8 @@ INSTANTIATE_TYPED_TEST_SUITE_P(My, FooTest, MyTypes);
   REGISTER_TYPED_TEST_SUITE_P
 #endif  // GTEST_REMOVE_LEGACY_TEST_CASEAPI_
 
-#define INSTANTIATE_TYPED_TEST_SUITE_P(Prefix, SuiteName, Types, ...)     \
+// Varied by GROMACS. See comment above TYPED_TEST_SUITE.
+#define INSTANTIATE_TYPED_TEST_SUITE_P(Prefix, SuiteName, Types)          \
   static_assert(sizeof(GTEST_STRINGIFY_(Prefix)) > 1,                     \
                 "test-suit-prefix must not be empty");                    \
   static bool gtest_##Prefix##_##SuiteName GTEST_ATTRIBUTE_UNUSED_ =      \
@@ -317,7 +336,25 @@ INSTANTIATE_TYPED_TEST_SUITE_P(My, FooTest, MyTypes);
                    GTEST_REGISTERED_TEST_NAMES_(SuiteName),               \
                    ::testing::internal::GenerateNames<                    \
                        ::testing::internal::NameGeneratorSelector<        \
-                           __VA_ARGS__>::type,                            \
+                           testing::internal::DefaultNameGenerator>::type,\
+                       ::testing::internal::GenerateTypeList<Types>::type>())
+
+// Varied by GROMACS. See comment above TYPED_TEST_SUITE.
+#define INSTANTIATE_TYPED_TEST_SUITE_WITH_NAME_P(Prefix, SuiteName, Types, Name) \
+  static_assert(sizeof(GTEST_STRINGIFY_(Prefix)) > 1,                     \
+                "test-suit-prefix must not be empty");                    \
+  static bool gtest_##Prefix##_##SuiteName GTEST_ATTRIBUTE_UNUSED_ =      \
+      ::testing::internal::TypeParameterizedTestSuite<                    \
+          SuiteName, GTEST_SUITE_NAMESPACE_(SuiteName)::gtest_AllTests_,  \
+          ::testing::internal::GenerateTypeList<Types>::type>::           \
+          Register(GTEST_STRINGIFY_(Prefix),                              \
+                   ::testing::internal::CodeLocation(__FILE__, __LINE__), \
+                   &GTEST_TYPED_TEST_SUITE_P_STATE_(SuiteName),           \
+                   GTEST_STRINGIFY_(SuiteName),                           \
+                   GTEST_REGISTERED_TEST_NAMES_(SuiteName),               \
+                   ::testing::internal::GenerateNames<                    \
+                       ::testing::internal::NameGeneratorSelector<        \
+                           Name>::type,                                   \
                        ::testing::internal::GenerateTypeList<Types>::type>())
 
 // Legacy API is deprecated but still available

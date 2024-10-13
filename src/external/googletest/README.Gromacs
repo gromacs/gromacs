@@ -41,3 +41,7 @@ googletest/googlemock/CMakeLists.txt
 to always prefer bundled headers over anything available
 in system-wide direcories.
 
+TYPED_TEST_SUITE_WITH_NAME was added in order to work around a
+limitation of clang-19, since GROMACS so far does not use the
+three-argument variant of TYPED_TEST_SUITE. Likewise
+INSTANTIATE_TYPED_TEST_SUITE_P. See comments inline for details.

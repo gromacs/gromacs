@@ -7,25 +7,25 @@
 #   Features: double precision FP
 #   Scope: configure, build, unit tests, regression tests
 # Test implementation choices (free to change as needed):
-#   OS: Ubuntu 20.04
+#   OS: Ubuntu 24.04
 #   Build type: RelWithAssert
-#   Compiler: Clang 17
+#   Compiler: Clang 19
 #   MPI: OpenMPI 3.1
 #   SIMD: AVX_512
 #   FFT: FFTW3
 #   Parallelism np/ntomp: 4/2
 
-gromacs:clang-17:release:configure:
+gromacs:clang-19:release:configure:
   extends:
     - .gromacs:base:release:configure
     - .use-clang:base
     - .use-mpi
   rules:
     - !reference [.rules:nightly-only-for-release, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-17
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-19
   variables:
-    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
-    COMPILER_MAJOR_VERSION: 17
+    CMAKE: /usr/local/cmake-3.30.3/bin/cmake
+    COMPILER_MAJOR_VERSION: 19
     RELEASE_BUILD_DIR: release-builds-clang
     CMAKE_PRECISION_OPTIONS: "-DGMX_DOUBLE=ON"
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
@@ -35,7 +35,7 @@ gromacs:clang-17:release:configure:
     - regressiontests:package
     - prepare-release-version
 
-gromacs:clang-17:release:build:
+gromacs:clang-19:release:build:
   extends:
     - .gromacs:base:build
     - .before_script:default
@@ -44,39 +44,39 @@ gromacs:clang-17:release:build:
   rules:
     - !reference [.rules:nightly-only-for-release, rules]
   variables:
-    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
+    CMAKE: /usr/local/cmake-3.30.3/bin/cmake
     BUILD_DIR: release-builds-clang
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-17
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-19
   needs:
-    - job: gromacs:clang-17:release:configure
+    - job: gromacs:clang-19:release:configure
 
-gromacs:clang-17:release:test:
+gromacs:clang-19:release:test:
   extends:
     - .gromacs:base:test
   stage: release-tests
   rules:
     - !reference [.rules:nightly-only-for-release, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-17
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-19
   variables:
-    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
+    CMAKE: /usr/local/cmake-3.30.3/bin/cmake
     BUILD_DIR: release-builds-clang
   needs:
-    - job: gromacs:clang-17:release:configure
-    - job: gromacs:clang-17:release:build
+    - job: gromacs:clang-19:release:configure
+    - job: gromacs:clang-19:release:build
 
-gromacs:clang-17:release:regressiontest:
+gromacs:clang-19:release:regressiontest:
   extends:
     - .gromacs:base:regressiontest
   stage: release-tests
   rules:
     - !reference [.rules:nightly-only-for-release, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-17
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-19
   variables:
-    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
+    CMAKE: /usr/local/cmake-3.30.3/bin/cmake
     BUILD_DIR: release-builds-clang
     REGRESSIONTEST_DOUBLE: "-double"
     REGRESSIONTEST_PARALLEL: "-np"
   needs:
-    - job: gromacs:clang-17:release:build
+    - job: gromacs:clang-19:release:build
     - job: regressiontests:package
 
