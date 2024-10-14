@@ -434,7 +434,7 @@ void TrajectoryFrameWriter::prepareAndWriteFrame(const int framenumber, const t_
     }
     else
     {
-        write_trxframe(file_.outputFile(), const_cast<t_trxframe*>(&input), nullptr);
+        write_trxframe(file_.outputFile(), &input, nullptr);
     }
 }
 

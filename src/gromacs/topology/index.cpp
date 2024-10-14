@@ -849,7 +849,7 @@ int find_group(const char* s, gmx::ArrayRef<const IndexGroup> indexGroups)
     return findGroupTemplated(s, indexGroups);
 }
 
-int find_group(const char* s, int ngrps, char** grpname)
+int find_group(const char* s, int ngrps, const char* const* grpname)
 {
     return findGroupTemplated(s, gmx::constArrayRefFromArray<const char*>(grpname, ngrps));
 }

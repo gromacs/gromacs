@@ -268,7 +268,7 @@ static const char* enumValueToString(DeprecatedDirectives d)
     return directiveNames[d];
 }
 
-Directive str2dir(char* dstr)
+Directive str2dir(const char* dstr)
 {
     static const gmx::StringToEnumValueConverter<Directive, enumValueToString, gmx::StringCompareType::CaseAndDashInsensitive> s_converter;
 

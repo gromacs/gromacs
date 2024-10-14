@@ -235,7 +235,7 @@ static void check_rtp(gmx::ArrayRef<const PreprocessResidue> rtpDBEntry,
     }
 }
 
-static std::optional<BondedTypes> get_bt(char* header)
+static std::optional<BondedTypes> get_bt(const char* header)
 {
     gmx::StringToEnumValueConverter<BondedTypes, enumValueToString> converter;
     return converter.valueFrom(header);

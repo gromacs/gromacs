@@ -78,7 +78,7 @@ static gmx_bool* bPhobics(int nres, char* resnm[])
     return bb;
 }
 
-static void wheel(const char* fn, int nres, char* resnm[], int r0, real rot0, char* title)
+static void wheel(const char* fn, int nres, char* resnm[], int r0, real rot0, const char* title)
 {
     const real fontsize  = 16;
     const real gray      = 0.9;
@@ -155,7 +155,7 @@ static void wheel(const char* fn, int nres, char* resnm[], int r0, real rot0, ch
     ps_close(&out);
 }
 
-static void wheel2(const char* fn, int nres, char* resnm[], real rot0, char* title)
+static void wheel2(const char* fn, int nres, char* resnm[], real rot0, const char* title)
 {
     const real fontsize  = 14;
     const real gray      = 0.9;

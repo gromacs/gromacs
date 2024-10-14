@@ -236,7 +236,7 @@ bool gmx_ana_indexgrps_find(gmx_ana_index_t* dest, std::string* destName, gmx_an
     {
         names[i] = src->names[i].c_str();
     }
-    int n = find_group(const_cast<char*>(name), src->g.size(), const_cast<char**>(names));
+    int n = find_group(name, src->g.size(), names);
     sfree(names);
     if (n < 0)
     {

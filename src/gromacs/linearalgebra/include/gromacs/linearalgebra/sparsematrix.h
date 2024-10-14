@@ -166,7 +166,7 @@ void gmx_sparsematrix_compress(gmx_sparsematrix_t* A);
  *
  * Calculate y = A * x for a sparse matrix A.
  */
-void gmx_sparsematrix_vector_multiply(gmx_sparsematrix_t* A, real* x, real* y);
+void gmx_sparsematrix_vector_multiply(gmx_sparsematrix_t* A, const real* x, real* y);
 
 
 #endif

@@ -85,7 +85,7 @@ bool trxio_should_print_count(const gmx_output_env_t* oenv, t_trxstatus* status)
 int write_trxframe_indexed(t_trxstatus* status, const t_trxframe* fr, int nind, const int* ind, gmx_conect gc);
 /* Write an indexed frame to a TRX file, see write_trxframe. gc may be NULL */
 
-int write_trxframe(t_trxstatus* status, struct t_trxframe* fr, gmx_conect gc);
+int write_trxframe(t_trxstatus* status, const t_trxframe* fr, gmx_conect gc);
 /* Write a frame to a TRX file.
  * Only entries for which the gmx_boolean is TRUE will be written,
  * except for step, time, lambda and/or box, which may not be
@@ -149,7 +149,7 @@ t_trxstatus* trjtools_gmx_prepare_tng_writing(const std::filesystem::path& filen
  * gmx_tng_trajectory_t are encapsulated, so client trajectory-writing
  * code with a t_trxstatus can't just call the TNG writing
  * function. */
-void write_tng_frame(t_trxstatus* status, struct t_trxframe* fr);
+void write_tng_frame(t_trxstatus* status, const t_trxframe* fr);
 
 void close_trx(t_trxstatus* status);
 /* Close trajectory file as opened with read_first_x, read_first_frame

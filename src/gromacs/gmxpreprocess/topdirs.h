@@ -93,7 +93,7 @@ struct DirStack
 
 int ifunc_index(Directive d, int type);
 
-Directive str2dir(char* dstr);
+Directive str2dir(const char* dstr);
 
 void DS_Init(DirStack** DS);
 

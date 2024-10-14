@@ -331,7 +331,7 @@ static void norm_and_scale_vectors(int nframes, real c1[], real scale)
 }
 
 /*! \brief Debugging */
-static void dump_tmp(char* s, int n, real c[])
+static void dump_tmp(const char* s, int n, real c[])
 {
     FILE* fp;
     int   i;

@@ -242,7 +242,7 @@ void gmx_sparsematrix_compress(gmx_sparsematrix_t* A)
 }
 
 
-void gmx_sparsematrix_vector_multiply(gmx_sparsematrix_t* A, real* x, real* y)
+void gmx_sparsematrix_vector_multiply(gmx_sparsematrix_t* A, const real* x, real* y)
 {
     real                      s, v, xi;
     int                       i, j, k;

@@ -524,12 +524,12 @@ t_trxstatus* trjtools_gmx_prepare_tng_writing(const std::filesystem::path& filen
     return out;
 }
 
-void write_tng_frame(t_trxstatus* status, t_trxframe* frame)
+void write_tng_frame(t_trxstatus* status, const t_trxframe* frame)
 {
     gmx_write_tng_from_trxframe(status->tng, frame, -1);
 }
 
-int write_trxframe(t_trxstatus* status, t_trxframe* fr, gmx_conect gc)
+int write_trxframe(t_trxstatus* status, const t_trxframe* fr, gmx_conect gc)
 {
     char title[STRLEN];
     title[0] = '\0';

@@ -141,6 +141,6 @@ int find_group(const char* s, gmx::ArrayRef<const IndexGroup> indexGroups);
  * \param[in] grpname The names of the groups
  * \return the group number or -1 if not found.
  */
-int find_group(const char* s, int ngrps, char** grpname);
+int find_group(const char* s, int ngrps, const char* const* grpname);
 
 #endif

@@ -1832,7 +1832,7 @@ static std::vector<real> parse_n_real(const std::string& str, int* n, WarningHan
 
 static void do_fep_params(t_inputrec*                ir,
                           gmx::ArrayRef<std::string> fep_lambda,
-                          char                       weights[STRLEN],
+                          const char                 weights[STRLEN],
                           WarningHandler*            wi)
 {
 
@@ -2065,7 +2065,11 @@ static void convertRvecs(WarningHandler* wi, gmx::ArrayRef<const std::string> in
     }
 }
 
-static void do_wall_params(t_inputrec* ir, char* wall_atomtype, char* wall_density, t_gromppopts* opts, WarningHandler* wi)
+static void do_wall_params(t_inputrec*     ir,
+                           const char*     wall_atomtype,
+                           const char*     wall_density,
+                           t_gromppopts*   opts,
+                           WarningHandler* wi)
 {
     opts->wall_atomtype[0] = nullptr;
     opts->wall_atomtype[1] = nullptr;

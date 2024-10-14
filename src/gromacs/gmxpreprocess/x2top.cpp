@@ -89,7 +89,7 @@
 
 struct gmx_output_env_t;
 
-static bool is_bond(int nnm, t_nm2type nmt[], char* ai, char* aj, real blen)
+static bool is_bond(int nnm, t_nm2type nmt[], const char* ai, const char* aj, real blen)
 {
     int i, j;
 
