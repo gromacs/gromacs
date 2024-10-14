@@ -145,6 +145,7 @@ public:
 private:
     gmx::AbstractOptionStorage* createStorage(const gmx::OptionManagerContainer& /*managers*/) const override
     {
+        //NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
         return new MockOptionStorage(*this);
     }
 };

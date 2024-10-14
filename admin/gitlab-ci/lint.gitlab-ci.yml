@@ -6,10 +6,10 @@ clang-tidy:configure-mr:
     - .use-clang:base
   rules:
     - !reference [.rules:merge-requests, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.4.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-llvm-18-cuda-12.1.0
   variables:
-    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
-    COMPILER_MAJOR_VERSION: 11
+    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
+    COMPILER_MAJOR_VERSION: 18
     BUILD_DIR: build-clang-tidy
     CMAKE_EXTRA_OPTIONS: -DCLANG_TIDY=clang-tidy-$COMPILER_MAJOR_VERSION -DGMX_CLANG_TIDY=ON -DGMX_COMPILER_WARNINGS=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
@@ -19,10 +19,10 @@ clang-tidy:configure-schedule:
     - .use-clang:base
   rules:
     - !reference [.rules:post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.4.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-llvm-18-cuda-12.1.0
   variables:
-    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
-    COMPILER_MAJOR_VERSION: 11
+    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
+    COMPILER_MAJOR_VERSION: 18
     BUILD_DIR: build-clang-tidy
     CMAKE_EXTRA_OPTIONS: -DCLANG_TIDY=clang-tidy-$COMPILER_MAJOR_VERSION -DGMX_CLANG_TIDY=ON -DGMX_COMPILER_WARNINGS=ON
 
@@ -33,10 +33,10 @@ clang-tidy:configure-schedule-cuda:
     - .use-cuda
   rules:
     - !reference [.rules:post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.4.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-llvm-18-cuda-12.1.0
   variables:
     CMAKE: cmake
-    COMPILER_MAJOR_VERSION: 11
+    COMPILER_MAJOR_VERSION: 18
     BUILD_DIR: build-clang-tidy
     CMAKE_EXTRA_OPTIONS: -DCLANG_TIDY=clang-tidy-$COMPILER_MAJOR_VERSION -DGMX_CLANG_TIDY=ON -DGMX_COMPILER_WARNINGS=ON -DGMX_CLANG_CUDA=ON
 
@@ -47,11 +47,11 @@ clang-tidy:build:
   stage: source-check
   rules:
     - !reference [.rules:post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.4.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-llvm-18-cuda-12.1.0
   needs:
     - job: clang-tidy:configure-schedule
   variables:
-    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
+    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     BUILD_DIR: build-clang-tidy
 
 clang-tidy:build-cuda:
@@ -61,12 +61,21 @@ clang-tidy:build-cuda:
   stage: source-check
   rules:
     - !reference [.rules:post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.4.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-llvm-18-cuda-12.1.0
   needs:
     - job: clang-tidy:configure-schedule-cuda
   variables:
-    CMAKE: cmake
+    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     BUILD_DIR: build-clang-tidy
+  script:
+    # Don't use the standard build script because clang-18 can't compile
+    # several of our source files. Since we don't need the clang-tidy+cuda
+    # build to link, we omit those files and also don't link any executables
+    - set -e
+    - cd $BUILD_DIR
+    - $CMAKE --build . --target libgromacs -- -j$KUBERNETES_CPU_LIMIT
+    # Remove object files to minimize artifact size
+    - find . -mindepth 1 -name '*.o' ! -type l -printf '%p\n' -delete 2>&1 > remove-build-objects.log
 
 clang-tidy:test:
   extends:
@@ -75,12 +84,12 @@ clang-tidy:test:
     - !reference [.rules:merge-requests, rules]
   allow_failure: true
   stage: source-check
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.4.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-llvm-18-cuda-12.1.0
   needs:
     - job: clang-tidy:configure-mr
   variables:
-    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
-    COMPILER_MAJOR_VERSION: 11
+    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
+    COMPILER_MAJOR_VERSION: 18
     BUILD_DIR: build-clang-tidy
     KUBERNETES_CPU_LIMIT: 4
     KUBERNETES_CPU_REQUEST: 2

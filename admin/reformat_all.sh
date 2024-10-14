@@ -85,7 +85,7 @@ case "$action" in
         ;;
     clang-format)
         if [ -z "$CLANG_FORMAT" ] ; then
-            CLANG_FORMAT=clang-format-7
+            CLANG_FORMAT=clang-format-11
         fi
         if ! which "$CLANG_FORMAT" 1>/dev/null ; then
             echo "clang-format not found. Specify one with CLANG_FORMAT"

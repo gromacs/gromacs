@@ -47,7 +47,12 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/enumerationhelpers.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/strconvert.h"
+
+#include "testutils/testasserts.h"
 
 namespace gmx
 {
@@ -67,9 +72,9 @@ enum class Flavor : int
 //! Formatter for Flavor
 EnumerationArray<Flavor, const char*> sc_flavorName = { "A", "B", "C" };
 //! Format function for Flavor
-std::string enumValueToString(const Flavor f)
+std::string enumValueToString(const Flavor flavor)
 {
-    return std::string("Flavor_") + sc_flavorName[f];
+    return std::string("Flavor_") + sc_flavorName[flavor];
 }
 
 //! Format functor
@@ -77,77 +82,90 @@ class FormatFunctorForInt
 {
 public:
     //! The call operator
-    std::string operator()(const int v) { return intToString(v); }
+    std::string operator()(const int value) { return intToString(value); }
 };
 
 TEST(NameOfTestFromTupleTest, WorksWithEmptyTuple)
 {
     using TestParameters = std::tuple<>;
-    NameOfTestFromTuple<TestParameters> namer{ std::make_tuple() };
+    const NameOfTestFromTuple<TestParameters> namer{ std::make_tuple() };
     EXPECT_EQ("", namer(testing::TestParamInfo<TestParameters>(std::make_tuple(), 0)));
 }
 
 TEST(NameOfTestFromTupleTest, WorksWithFormatFunction)
 {
     using TestParameters = std::tuple<int>;
-    NameOfTestFromTuple<TestParameters> namer{ std::make_tuple(intToString) };
+    const NameOfTestFromTuple<TestParameters> namer{ std::make_tuple(intToString) };
     EXPECT_EQ("3", namer(testing::TestParamInfo<TestParameters>(std::make_tuple(3), 0)));
 }
 
 TEST(NameOfTestFromTupleTest, WorksWithFormatFunctionOfEnumVariable)
 {
     using TestParameters = std::tuple<Flavor>;
-    NameOfTestFromTuple<TestParameters> namer{ std::make_tuple(enumValueToString) };
+    const NameOfTestFromTuple<TestParameters> namer{ std::make_tuple(enumValueToString) };
     EXPECT_EQ("Flavor_A", namer(testing::TestParamInfo<TestParameters>(std::make_tuple(Flavor::A), 0)));
 }
 
 TEST(NameOfTestFromTupleTest, RejectsNullptrFormatFunction)
 {
     using TestParameters = std::tuple<int>;
-    NameOfTestFromTuple<TestParameters> namer{ std::make_tuple(nullptr) };
+    const NameOfTestFromTuple<TestParameters> namer{ std::make_tuple(nullptr) };
     EXPECT_THROW_GMX(namer(testing::TestParamInfo<TestParameters>(std::make_tuple(3), 0)), APIError);
 }
 
 TEST(NameOfTestFromTupleTest, WorksWithFormatLambda)
 {
     using TestParameters = std::tuple<int>;
-    NameOfTestFromTuple<TestParameters> namer{ std::make_tuple([](int /* a */) { return "foo"; }) };
+    // At least gcc-12 warns about a possible uninitialized value in the
+    // destructor of std::function, but this seems to be overzealous.
+    GCC_DIAGNOSTIC_IGNORE("-Wmaybe-uninitialized")
+    const NameOfTestFromTuple<TestParameters> namer{ std::make_tuple(
+            [](int /* a */) { return "foo"; }) };
+    GCC_DIAGNOSTIC_RESET
     EXPECT_EQ("foo", namer(testing::TestParamInfo<TestParameters>(std::make_tuple(3), 0)));
 }
 
 TEST(NameOfTestFromTupleTest, WorksWithUseStringFormat)
 {
     using TestParameters = std::tuple<std::string>;
-    NameOfTestFromTuple<TestParameters> namer{ std::make_tuple(useString) };
+    const NameOfTestFromTuple<TestParameters> namer{ std::make_tuple(useString) };
     EXPECT_EQ("foo_bar", namer(testing::TestParamInfo<TestParameters>(std::make_tuple("foo/bar"), 0)));
 }
 
 TEST(NameOfTestFromTupleTest, WorksWithPrefixFormatter)
 {
     using TestParameters = std::tuple<double>;
-    NameOfTestFromTuple<TestParameters> namer{ std::make_tuple(
+    // At least gcc-12 warns about a possible uninitialized value in the
+    // destructor of std::function, but this seems to be overzealous.
+    GCC_DIAGNOSTIC_IGNORE("-Wmaybe-uninitialized")
+    const NameOfTestFromTuple<TestParameters> namer{ std::make_tuple(
             PrefixFormatter<double, toString>{ "pi_" }) };
+    GCC_DIAGNOSTIC_RESET
     EXPECT_EQ("pi_3_14", namer(testing::TestParamInfo<TestParameters>(std::make_tuple(3.14), 0)));
 }
 
 TEST(NameOfTestFromTupleTest, WorksWithFormatFunctor)
 {
     using TestParameters = std::tuple<int>;
-    NameOfTestFromTuple<TestParameters> namer{ std::make_tuple(FormatFunctorForInt{}) };
+    // At least gcc-12 warns about a possible uninitialized value in the
+    // destructor of std::function, but this seems to be overzealous.
+    GCC_DIAGNOSTIC_IGNORE("-Wmaybe-uninitialized")
+    const NameOfTestFromTuple<TestParameters> namer{ std::make_tuple(FormatFunctorForInt{}) };
+    GCC_DIAGNOSTIC_RESET
     EXPECT_EQ("4", namer(testing::TestParamInfo<TestParameters>(std::make_tuple(4), 0)));
 }
 
 TEST(NameOfTestFromTupleTest, WorksWithFormatFromEnumerationArray)
 {
     using TestParameters = std::tuple<Flavor>;
-    NameOfTestFromTuple<TestParameters> namer{ std::make_tuple(sc_flavorName) };
+    const NameOfTestFromTuple<TestParameters> namer{ std::make_tuple(sc_flavorName) };
     EXPECT_EQ("B", namer(testing::TestParamInfo<TestParameters>(std::make_tuple(Flavor::B), 0)));
 }
 
 TEST(NameOfTestFromTupleTest, WorksWithMixtureOfFormatters)
 {
     using TestParameters = std::tuple<Flavor, int, double, int>;
-    NameOfTestFromTuple<TestParameters> namer{ std::make_tuple(
+    const NameOfTestFromTuple<TestParameters> namer{ std::make_tuple(
             sc_flavorName, intToString, doubleToString, FormatFunctorForInt{}) };
     EXPECT_EQ("B_2_3_2_9",
               namer(testing::TestParamInfo<TestParameters>(std::make_tuple(Flavor::B, 2, 3.2, 9), 0)));
@@ -156,14 +174,14 @@ TEST(NameOfTestFromTupleTest, WorksWithMixtureOfFormatters)
 TEST(RefDataFilenameMakerTest, WorksWithFormatFunction)
 {
     using TestParameters = std::tuple<int>;
-    RefDataFilenameMaker<TestParameters> maker{ std::make_tuple(intToString) };
+    const RefDataFilenameMaker<TestParameters> maker{ std::make_tuple(intToString) };
     EXPECT_EQ("RefDataFilenameMakerTest_3.xml", maker(std::make_tuple(3)));
 }
 
 TEST(RefDataFilenameMakerTest, WorksWithMixtureOfFormatters)
 {
     using TestParameters = std::tuple<Flavor, int, double, int>;
-    RefDataFilenameMaker<TestParameters> maker{ std::make_tuple(
+    const RefDataFilenameMaker<TestParameters> maker{ std::make_tuple(
             sc_flavorName, intToString, doubleToString, FormatFunctorForInt{}) };
     EXPECT_EQ("RefDataFilenameMakerTest_B_2_3_2_9.xml", maker(std::make_tuple(Flavor::B, 2, 3.2, 9)));
 }
@@ -171,7 +189,7 @@ TEST(RefDataFilenameMakerTest, WorksWithMixtureOfFormatters)
 TEST(RefDataFilenameMakerTest, WorksWithToEmpty)
 {
     using TestParameters = std::tuple<int>;
-    RefDataFilenameMaker<TestParameters> maker{ std::make_tuple(toEmptyString<int>) };
+    const RefDataFilenameMaker<TestParameters> maker{ std::make_tuple(toEmptyString<int>) };
     EXPECT_EQ("RefDataFilenameMakerTest.xml", maker(std::make_tuple(3)));
 }
 

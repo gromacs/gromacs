@@ -142,8 +142,6 @@ TEST_P(CheckpointCoordinatesSanityChecks, WithinTolerances)
     const auto mdpFieldValues =
             prepareMdpFieldValues(simulationName, integrator, temperatureCoupling, pressureCoupling);
     runner_.useTopGroAndNdxFromDatabase(simulationName);
-    // Set file names
-    const auto trrFileName = fileManager_.getTemporaryFilePath(".trr");
 
     SCOPED_TRACE(formatString(
             "Checking the sanity of the checkpointed coordinates using system '%s' "

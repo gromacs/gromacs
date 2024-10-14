@@ -371,13 +371,17 @@ std::string mapNameFormattersToParameters(const ParametersTuple params,
         // constexpr, even though it can't be declared that way
         // because it is actually a std::integral_constant<size_t, N>
         // for some N from the sequence.
-        const auto param                        = std::get<i>(params);
-        using Param                             = std::decay_t<decltype(param)>;
+        const auto param = std::get<i>(params);
+        using Param      = std::decay_t<decltype(param)>;
+        // At least gcc-12 warns about a possible uninitialized value in the
+        // destructor of std::function, but this seems to be overzealous.
+        GCC_DIAGNOSTIC_IGNORE("-Wmaybe-uninitialized")
         using FormatterVariant                  = typename FormatterVariant<Param>::Variant;
         const FormatterVariant formatterVariant = std::get<i>(formatters);
         // Call a helper function to actually apply \c
         // formatterVariant to \c param.
         const std::string result = formatNameFromParam(param, formatterVariant);
+        GCC_DIAGNOSTIC_RESET
         if (!result.empty())
         {
             testNameComponents.push_back(result);

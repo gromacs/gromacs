@@ -1,21 +1,21 @@
 # Test goal: CUDA GPU communications with OpenMPI,NVSHMEM
 # Test intents (should use as recent as possible dependencies):
-#   OS: Ubuntu oldest supported
-#   GPU: CUDA newest supported with its newest supported gcc
+#   OS: Ubuntu oldest supported on NGC with the chosen CUDA
+#   GPU: NVHPC SDK newest supported with its newest supported CUDA and gcc
 #   HW: dual NVIDIA GPU (CC 7.0 or newer required)
 #   MPI: OpenMPI
-#   Features: GPU direct communications (manual) + update (regression tests with dual GPU)
+#   Features: NVSHMEM, GPU direct communications (manual) + update (regression tests with dual GPU)
 #   Scope: configure, build, regression tests
 # Test implementation choices (free to change as needed):
-#   OS: Ubuntu 20.04
+#   OS: Ubuntu 22.04
 #   Build type: RelWithDebInfo
-#   Compiler: GCC 11.1
-#   GPU: CUDA 11.7.1
+#   Compiler: GCC 13.1
+#   GPU: NVHPC SDK 24.7, CUDA 12.5.1
 #   SIMD: SSE 4.1
 #   FFT: FFTW3
 #   Parallelism np/ntomp: 4/1 (regression tests with dual GPU)
 
-gromacs:gcc-11-cuda-11.7.1:configureMPI-NVSHMEM:
+gromacs:gcc-13-cuda-12.5.1:configureMPI-NVSHMEM:
   extends:
     - .gromacs:base:configure
     - .use-gcc:base
@@ -23,36 +23,38 @@ gromacs:gcc-11-cuda-11.7.1:configureMPI-NVSHMEM:
     - .use-mpi
   rules:
     - !reference [.rules:post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11-cuda-11.7.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-13-cuda-12.5.1
   variables:
-    CMAKE: /usr/local/cmake-3.21.2/bin/cmake
+    CMAKE: /usr/local/cmake-3.29.3/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=SSE4.1"
-    CMAKE_EXTRA_OPTIONS: "-DGMX_NVSHMEM=ON -DNVSHMEM_ROOT=/opt/nvidia/hpc_sdk/Linux_x86_64/2022/comm_libs/nvshmem"
-    COMPILER_MAJOR_VERSION: 11
+    CMAKE_EXTRA_OPTIONS: "-DGMX_NVSHMEM=ON -DNVSHMEM_ROOT=/opt/nvidia/hpc_sdk/Linux_x86_64/2024/comm_libs/nvshmem"
+    COMPILER_MAJOR_VERSION: 13
 
-gromacs:gcc-11-cuda-11.7.1:buildMPI-NVSHMEM:
+gromacs:gcc-13-cuda-12.5.1:buildMPI-NVSHMEM:
   extends:
     - .gromacs:base:build
     - .before_script:default
     - .use-ccache
   rules:
     - !reference [.rules:post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11-cuda-11.7.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-13-cuda-12.5.1
   variables:
-    CMAKE: /usr/local/cmake-3.21.2/bin/cmake
-    CMAKE_EXTRA_OPTIONS: "-DGMX_NVSHMEM=ON -DNVSHMEM_ROOT=/opt/nvidia/hpc_sdk/Linux_x86_64/2022/comm_libs/nvshmem"
+    CMAKE: /usr/local/cmake-3.29.3/bin/cmake
+    CMAKE_EXTRA_OPTIONS: "-DGMX_NVSHMEM=ON -DNVSHMEM_ROOT=/opt/nvidia/hpc_sdk/Linux_x86_64/2024/comm_libs/nvshmem"
+    # Workaround because the CMake support for NVSHMEM needs improvement:
+    LD_LIBRARY_FLAGS: /opt/nvidia/hpc_sdk/Linux_x86_64/2024/comm_libs/nvshmem
   needs:
-    - job: gromacs:gcc-11-cuda-11.7.1:configureMPI-NVSHMEM
+    - job: gromacs:gcc-13-cuda-12.5.1:configureMPI-NVSHMEM
 
-gromacs:gcc-11-cuda-11.7.1:testMPI-NVSHMEM:
+gromacs:gcc-13-cuda-12.5.1:testMPI-NVSHMEM:
   extends:
     - .gromacs:base:test
   rules:
     - !reference [.rules:skip-if-dual-nvidia-gpus-unavailable, rules]
     - !reference [.rules:post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11-cuda-11.7.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-13-cuda-12.5.1
   variables:
-    CMAKE: /usr/local/cmake-3.21.2/bin/cmake
+    CMAKE: /usr/local/cmake-3.29.3/bin/cmake
     GMX_ENABLE_DIRECT_GPU_COMM: 1
     GMX_ENABLE_NVSHMEM: 1
     # Disable CUDA VMM usage of NVSHMEM until all the comm on the
@@ -74,9 +76,9 @@ gromacs:gcc-11-cuda-11.7.1:testMPI-NVSHMEM:
   tags:
     - $GITLAB_RUNNER_TAG_2X_NVIDIA_GPU
   needs:
-    - job: gromacs:gcc-11-cuda-11.7.1:buildMPI-NVSHMEM
+    - job: gromacs:gcc-13-cuda-12.5.1:buildMPI-NVSHMEM
 
-gromacs:gcc-11-cuda-11.7.1:regressiontest-gpucommupd-MPI-NVSHMEM:
+gromacs:gcc-13-cuda-12.5.1:regressiontest-gpucommupd-MPI-NVSHMEM:
   # Test parallelism np/ntomp: 4/1
   # Test parallelism GPU: direct communications, update
   extends:
@@ -84,9 +86,9 @@ gromacs:gcc-11-cuda-11.7.1:regressiontest-gpucommupd-MPI-NVSHMEM:
   rules:
     - !reference [.rules:skip-if-dual-nvidia-gpus-unavailable, rules]
     - !reference [.rules:post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-gcc-11-cuda-11.7.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-13-cuda-12.5.1
   variables:
-    CMAKE: /usr/local/cmake-3.21.2/bin/cmake
+    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     GMX_ENABLE_NVSHMEM: 1
     # Test 1 PME - 1 PP rank runs in regressiontests
     # as nvshmem support is for PME to PP force transfers
@@ -105,7 +107,7 @@ gromacs:gcc-11-cuda-11.7.1:regressiontest-gpucommupd-MPI-NVSHMEM:
   tags:
     - $GITLAB_RUNNER_TAG_2X_NVIDIA_GPU
   needs:
-    - job: gromacs:gcc-11-cuda-11.7.1:buildMPI-NVSHMEM
+    - job: gromacs:gcc-13-cuda-12.5.1:buildMPI-NVSHMEM
     - job: regressiontests:prepare
   artifacts:
     paths:

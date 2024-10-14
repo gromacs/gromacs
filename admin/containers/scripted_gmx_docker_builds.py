@@ -573,12 +573,11 @@ def get_heffte(args):
         return hpccm.building_blocks.generic_cmake(
             cmake_opts=[
                 "-D CMAKE_BUILD_TYPE=Release",
-                "-D CUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda",
                 "-D Heffte_ENABLE_CUDA=ON",
                 "-D Heffte_ENABLE_FFTW=OFF",
                 "-D BUILD_SHARED_LIBS=ON",
             ],
-            repository="https://bitbucket.org/icl/heffte.git",
+            repository="https://github.com/icl-utk-edu/heffte",
             prefix="/usr/local",
             recursive=True,
             commit=args.heffte,

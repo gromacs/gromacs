@@ -60,8 +60,6 @@
 
 #include "toputils.h"
 
-using gmx::test::TestFileManager;
-
 namespace gmx
 {
 namespace test

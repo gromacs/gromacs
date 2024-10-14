@@ -58,7 +58,7 @@ void PlumedOptionProvider::setEnsembleTemperature(const EnsembleTemperature& tem
 {
     if (temp.constantEnsembleTemperature_)
     {
-        opts_.ensembleTemperature_ = temp.constantEnsembleTemperature_.value();
+        opts_.ensembleTemperature_ = temp.constantEnsembleTemperature_;
     }
 }
 

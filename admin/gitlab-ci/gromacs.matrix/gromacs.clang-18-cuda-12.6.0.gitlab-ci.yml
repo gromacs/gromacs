@@ -7,7 +7,7 @@
 # Test implementation choices (free to change as needed):
 #   OS: Ubuntu 24.04
 #   Build type: RelWithDebInfo
-#   Compiler: Clang 17
+#   Compiler: Clang 18
 #   MPI: thread_MPI
 #   GPU: Clang CUDA 12.6.0,
 #   SIMD: AVX2_256, no kernels

@@ -49,6 +49,7 @@
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/gpu_utils/gputraits.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 
 // Portable definition of cache line size
 #ifdef __cpp_lib_hardware_interference_size
@@ -66,7 +67,12 @@ namespace gmx
 
 typedef struct CacheLineAlignedFlag
 {
+    // gcc warns about such uses in header files in case they
+    // could make a public ABI dependent on the compilation flags.
+    // This is an internal header, so we silence gcc.
+    GCC_DIAGNOSTIC_IGNORE("-Winterference-size")
     alignas(hardware_destructive_interference_size) bool flag;
+    GCC_DIAGNOSTIC_RESET
 } CacheLineAlignedFlag;
 
 /*! \internal

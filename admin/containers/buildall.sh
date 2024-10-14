@@ -11,12 +11,12 @@ PYTHON=${PYTHON:-$(which python3)}
 # thread and no MPI configurations.
 
 args[${#args[@]}]="--ubuntu 22.04 --gcc 12 --clfft --mpi openmpi --rocm 5.4.1 --hdf5"
-args[${#args[@]}]="--gcc 11 --cuda 11.7.1 --clfft --mpi openmpi --nvhpcsdk 22.7"
+args[${#args[@]}]="--ubuntu 22.04 --gcc 13 --cuda 12.5.1 --clfft --mpi openmpi --nvhpcsdk 24.7"
 args[${#args[@]}]="--ubuntu 22.04 --gcc 11 --cuda 12.3.0 --clfft --mpi openmpi --nvhpcsdk 24.1"
-args[${#args[@]}]="--gcc 9 --cuda 11.0.3 --clfft --mpi openmpi --heffte v2.2.0"
+args[${#args[@]}]="--ubuntu 22.04 --gcc 12 --cuda 12.1.0 --clfft --mpi openmpi --heffte v2.4.0"
 args[${#args[@]}]="--ubuntu 24.04 --gcc 14 --mpi openmpi --cp2k 2024.2"
 args[${#args[@]}]="--ubuntu 24.04 --gcc 11 --mpi openmpi --cp2k 9.1"
-args[${#args[@]}]="--llvm 11 --cuda 11.4.1"
+args[${#args[@]}]="--ubuntu 22.04 --llvm 18 --cuda 12.1.0"
 args[${#args[@]}]="--ubuntu 24.04 --llvm 18 --tsan"
 args[${#args[@]}]="--ubuntu 22.04 --llvm 14 --cuda 12.1.0 --clfft --mpi openmpi"
 args[${#args[@]}]="--ubuntu 24.04 --llvm 19 --mpi openmpi --hdf5"

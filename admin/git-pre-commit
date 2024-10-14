@@ -37,7 +37,7 @@
 # checks copyright headers.
 #
 # It needs to be copied as .git/hooks/pre-commit and configured with
-#   git config hooks.clangformatpath /path/to/clang-format-7
+#   git config hooks.clangformatpath /path/to/clang-format-11
 #   git config hooks.clangformatmode check
 #   git config hooks.copyrightmode update
 #

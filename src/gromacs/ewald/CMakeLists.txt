@@ -57,9 +57,6 @@ gmx_add_libgromacs_sources(
 if (GMX_GPU_CUDA)
     gmx_add_libgromacs_sources(
         # CUDA-specific sources
-        pme_gather.cu
-        pme_solve.cu
-        pme_spread.cu
         pme_gpu_program_impl.cu
         pme_pp_comm_gpu_impl_gpu.cpp
         pme_pp_comm_gpu_impl_gpu.cu
@@ -72,6 +69,15 @@ if (GMX_GPU_CUDA)
         pme_gpu_internal.cpp
         pme_gpu_timings.cpp
         )
+    # Clang-18 seems to emit bad ptx for these files, so we omit it from
+    # the CI build that does clang-tidy analysis of a CUDA build.
+    if (NOT GMX_CLANG_TIDY)
+        gmx_add_libgromacs_sources(
+            pme_gather.cu
+            pme_solve.cu
+            pme_spread.cu
+        )
+    endif()
     _gmx_add_files_to_property(CUDA_SOURCES
         # Must add these files so they can include device_information.h
         pme_gpu_internal.cpp

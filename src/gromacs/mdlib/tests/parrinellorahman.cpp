@@ -47,15 +47,13 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/math/matrix.h"
-#include "gromacs/math/multidimarray.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/coupling.h"
-#include "gromacs/mdspan/extents.h"
-#include "gromacs/mdspan/layouts.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/boxutilities.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/loggerbuilder.h"
@@ -76,16 +74,16 @@ namespace
 {
 
 //! GoogleTest expectations about whether matrices are diagonal or not
-void isAlmostDiagonalMatrix(const char* name, const Matrix3x3& m)
+void isAlmostDiagonalMatrix(const char* name, const Matrix3x3& matrix)
 {
     SCOPED_TRACE(formatString("Testing that %s is almost diagonal", name));
-    FloatingPointTolerance tolerance = absoluteTolerance(2e-5);
-    EXPECT_REAL_EQ_TOL(0, m(XX, YY), tolerance);
-    EXPECT_REAL_EQ_TOL(0, m(XX, ZZ), tolerance);
-    EXPECT_REAL_EQ_TOL(0, m(YY, XX), tolerance);
-    EXPECT_REAL_EQ_TOL(0, m(YY, ZZ), tolerance);
-    EXPECT_REAL_EQ_TOL(0, m(ZZ, XX), tolerance);
-    EXPECT_REAL_EQ_TOL(0, m(ZZ, YY), tolerance);
+    const FloatingPointTolerance tolerance = absoluteTolerance(2e-5);
+    EXPECT_REAL_EQ_TOL(0, matrix(XX, YY), tolerance);
+    EXPECT_REAL_EQ_TOL(0, matrix(XX, ZZ), tolerance);
+    EXPECT_REAL_EQ_TOL(0, matrix(YY, XX), tolerance);
+    EXPECT_REAL_EQ_TOL(0, matrix(YY, ZZ), tolerance);
+    EXPECT_REAL_EQ_TOL(0, matrix(ZZ, XX), tolerance);
+    EXPECT_REAL_EQ_TOL(0, matrix(ZZ, YY), tolerance);
 }
 
 /*! \brief Some kinds of matrices of simulation box pressure
@@ -179,12 +177,15 @@ std::string pressureCouplingOptionsToString(const PressureCouplingOptions option
 struct Matrix3x3ToString
 {
     std::string prefix;
-    std::string operator()(const Matrix3x3& m) const
+    std::string operator()(const Matrix3x3& matrix) const
     {
-        return prefix + ' ' + doubleToString(m(XX, XX));
+        return prefix + ' ' + doubleToString(matrix(XX, XX));
     }
 };
 
+// At least gcc-12 warns about a possible uninitialized value in the
+// destructor of std::function, but this seems to be overzealous.
+GCC_DIAGNOSTIC_IGNORE("-Wmaybe-uninitialized")
 //! Tuple of formatters to name the parameterized test cases
 const NameOfTestFromTuple<ParrinelloRahmanTestParameters> sc_testNamer{ std::make_tuple(
         pressureCouplingOptionsToString,
@@ -192,6 +193,7 @@ const NameOfTestFromTuple<ParrinelloRahmanTestParameters> sc_testNamer{ std::mak
         sc_boxShapeNames,
         Matrix3x3ToString{ "box" },
         Matrix3x3ToString{ "boxv" }) };
+GCC_DIAGNOSTIC_RESET
 
 //! Test fixture - abbreviated ParrinelloRahman to ParrRahm for shorter refdata filenames
 using ParrRahmTest = ::testing::TestWithParam<ParrinelloRahmanTestParameters>;
@@ -232,8 +234,8 @@ TEST_P(ParrRahmTest, Works)
     StringOutputStream logStream;
     LoggerBuilder      builder;
     builder.addTargetStream(MDLogger::LogLevel::Warning, &logStream);
-    LoggerOwner     logOwner = builder.build();
-    const MDLogger& mdlog    = logOwner.logger();
+    const LoggerOwner logOwner = builder.build();
+    const MDLogger&   mdlog    = logOwner.logger();
 
     // Call the Parrinello-Rahman pressure-coupling function to produce
     // new values in legacyBoxVelocity, M, and mu
@@ -255,9 +257,9 @@ TEST_P(ParrRahmTest, Works)
     // properly.
     {
         SCOPED_TRACE("Check the diagonal values of mu are equal");
-        const uint64_t         singleUlpDiff = 10;
-        const uint64_t         doubleUlpDiff = boxShape == BoxShape::Other ? 10 : 5;
-        FloatingPointTolerance tolerance(0, 0, 0, 0, singleUlpDiff, doubleUlpDiff, false);
+        const uint64_t               singleUlpDiff = 10;
+        const uint64_t               doubleUlpDiff = boxShape == BoxShape::Other ? 10 : 5;
+        const FloatingPointTolerance tolerance(0, 0, 0, 0, singleUlpDiff, doubleUlpDiff, false);
         EXPECT_REAL_EQ_TOL(mu(XX, XX), mu(YY, YY), tolerance);
         EXPECT_REAL_EQ_TOL(mu(XX, XX), mu(ZZ, ZZ), tolerance);
         SCOPED_TRACE("Check the diagonal values of M are equal");
@@ -421,12 +423,12 @@ const EnumerationArray<BoxShape, std::vector<Matrix3x3>> c_boxVelocities = {
 //! Sets of pressure-coupling MDP options to use in tests
 const std::vector<PressureCouplingOptions> c_options = []() {
     PressureCouplingOptions options;
-    options.epc               = PressureCoupling::ParrinelloRahman;
-    options.tau_p             = 1.;
-    Matrix3x3 compressibility = diagonalMatrix<real, 3, 3>(4.5e-5);
+    options.epc                     = PressureCoupling::ParrinelloRahman;
+    options.tau_p                   = 1.;
+    const Matrix3x3 compressibility = diagonalMatrix<real, 3, 3>(4.5e-5);
     fillLegacyMatrix(compressibility, options.compress);
 
-    Matrix3x3 referencePressure = identityMatrix<real, 3, 3>();
+    const Matrix3x3 referencePressure = identityMatrix<real, 3, 3>();
     fillLegacyMatrix(referencePressure, options.ref_p);
 
     std::vector<PressureCouplingOptions> optionsVector;
