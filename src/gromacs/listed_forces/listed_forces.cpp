@@ -151,7 +151,8 @@ static void selectInteractions(InteractionDefinitions*                   idef,
 void ListedForces::setup(const InteractionDefinitions&             domainIdef,
                          const int                                 numAtomsForce,
                          const bool                                useGpu,
-                         const gmx::ArrayRef<const unsigned short> restraintComIndices)
+                         const gmx::ArrayRef<const unsigned short> restraintComIndices,
+                         const int                                 numComGroups)
 {
     if (interactionSelection_.all())
     {
@@ -187,6 +188,12 @@ void ListedForces::setup(const InteractionDefinitions&             domainIdef,
     }
 
     restraintComIndices_ = restraintComIndices;
+
+    if (centersOfMassScaledBuffer_.empty())
+    {
+        centersOfMassScaledBuffer_.resize(numComGroups, { 0.0, 0.0, 0.0 });
+        centersOfMassBScaledBuffer_.resize(numComGroups, { 0.0, 0.0, 0.0 });
+    }
 }
 
 namespace
@@ -706,12 +713,30 @@ void ListedForces::calculate(struct gmx_wallcycle*                     wcycle,
 
         if (!idef.il[F_POSRES].empty())
         {
-            posres_wrapper(nrnb, idef, &pbc_full, x, enerd, lambda, fr, &forceOutputs->forceWithVirial());
+            posres_wrapper(nrnb,
+                           idef,
+                           &pbc_full,
+                           x,
+                           enerd,
+                           lambda,
+                           fr,
+                           restraintComIndices_,
+                           centersOfMassScaledBuffer_,
+                           centersOfMassBScaledBuffer_,
+                           &forceOutputs->forceWithVirial());
         }
 
         if (!idef.il[F_FBPOSRES].empty())
         {
-            fbposres_wrapper(nrnb, idef, &pbc_full, x, enerd, fr, &forceOutputs->forceWithVirial());
+            fbposres_wrapper(nrnb,
+                             idef,
+                             &pbc_full,
+                             x,
+                             enerd,
+                             fr,
+                             restraintComIndices_,
+                             centersOfMassScaledBuffer_,
+                             &forceOutputs->forceWithVirial());
         }
 
         /* Do pre force calculation stuff which might require communication */
@@ -769,7 +794,16 @@ void ListedForces::calculate(struct gmx_wallcycle*                     wcycle,
         gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, real> dvdl = { 0 };
         if (!idef.il[F_POSRES].empty())
         {
-            posres_wrapper_lambda(wcycle, idef, &pbc_full, x, enerd, lambda, fr);
+            posres_wrapper_lambda(wcycle,
+                                  idef,
+                                  &pbc_full,
+                                  x,
+                                  enerd,
+                                  lambda,
+                                  fr,
+                                  restraintComIndices_,
+                                  centersOfMassScaledBuffer_,
+                                  centersOfMassBScaledBuffer_);
         }
         if (idef.ilsort != ilsortNO_FE)
         {

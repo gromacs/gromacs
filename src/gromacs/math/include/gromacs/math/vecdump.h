@@ -37,6 +37,7 @@
 #include <cstdio>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 
 void pr_ivec(FILE* fp, int indent, const char* title, const int vec[], int n, gmx_bool bShowNumbers);
@@ -46,5 +47,8 @@ void pr_rvec(FILE* fp, int indent, const char* title, const real vec[], int n, g
 void pr_fvec(FILE* fp, int indent, const char* title, const float vec[], int n, gmx_bool bShowNumbers);
 void pr_dvec(FILE* fp, int indent, const char* title, const double vec[], int n, gmx_bool bShowNumbers);
 void pr_rvecs(FILE* fp, int indent, const char* title, const rvec vec[], int n);
+
+//! New interface receiving an ArrayRef as input
+void prRVecs(FILE* fp, int indent, const char* title, gmx::ArrayRef<const gmx::RVec> vec);
 
 #endif

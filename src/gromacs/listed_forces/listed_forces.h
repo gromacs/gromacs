@@ -156,11 +156,13 @@ public:
      * \param[in] numAtomsForce  Force are, potentially, computed for atoms 0 to \p numAtomsForce
      * \param[in] useGpu         Whether a GPU is used to compute (part of) the listed interactions
      * \param[in] restraintComIndices     Reference to COM groups indices (needed for posres calculation)
+     * \param[in] numComGroups   The number of groups for center of mass motion removal, used for position restraints
      */
     void setup(const InteractionDefinitions&       domainIdef,
                int                                 numAtomsForce,
                bool                                useGpu,
-               gmx::ArrayRef<const unsigned short> restraintComIndices);
+               gmx::ArrayRef<const unsigned short> restraintComIndices,
+               int                                 numComGroups);
 
     /*! \brief Do all aspects of energy and force calculations for mdrun
      * on the set of listed interactions
@@ -222,6 +224,10 @@ private:
     std::unique_ptr<gmx_grppairener_t> foreignEnergyGroups_;
     //! Vector of indices needed in order to loop over the atoms in each COM group (currently just a reference to t_mdatoms.cVCM)
     gmx::ArrayRef<const unsigned short> restraintComIndices_;
+    //! Buffer for computing scaled centers of mass for position restraints
+    std::vector<gmx::RVec> centersOfMassScaledBuffer_;
+    //! Buffer for computing scaled centers of mass for topology B for position restraints
+    std::vector<gmx::RVec> centersOfMassBScaledBuffer_;
 
     GMX_DISALLOW_COPY_AND_ASSIGN(ListedForces);
 };

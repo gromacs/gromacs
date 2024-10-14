@@ -1094,8 +1094,21 @@ static void read_posres(gmx_mtop_t*                              mtop,
 //! Struct containing the quantities calculated by sumComForRestraints
 struct ComSumContents
 {
+    //! Return the COM or returns zero when the sum of masses is zero
+    gmx::RVec com() const
+    {
+        if (sumMass > 0)
+        {
+            return sumCoordinateMasses.toRVec() / sumMass;
+        }
+        else
+        {
+            return { 0.0_real, 0.0_real, 0.0_real };
+        }
+    }
+
     //! Number of restrained atoms
-    size_t numAtoms = 0;
+    int numAtoms = 0;
     //! Sum of position*mass of all restrained atoms
     gmx::DVec sumCoordinateMasses = { 0.0, 0.0, 0.0 };
     //! Sum of the mass of all restrained mass atoms
@@ -1103,33 +1116,47 @@ struct ComSumContents
 };
 
 //! Sum mass and mass*position of restrained atoms
-static ComSumContents sumComForRestraints(gmx::ArrayRef<const gmx::RVec> positionRestraintCoordinates,
-                                          const MoleculeBlockIndices&    inds,
-                                          const t_atoms&                 atoms)
+static std::vector<ComSumContents> sumComForRestraints(gmx::ArrayRef<const gmx::RVec> positionRestraintCoordinates,
+                                                       const MoleculeBlockIndices&        inds,
+                                                       gmx::ArrayRef<const unsigned char> groupInds,
+                                                       const int                          numGroups,
+                                                       const t_atoms&                     atoms)
 {
-    ComSumContents comSumContentsMblock;
+    std::vector<ComSumContents> comSumContentsVector(numGroups + 1);
 
-    //! TODO: revert this part to the single-COM case
-    for (size_t i = 0; i < positionRestraintCoordinates.size(); ++i)
+    for (gmx::Index i = 0; i < gmx::ssize(positionRestraintCoordinates); ++i)
     {
-        const auto atom_mol_index = i % inds.numAtomsPerMolecule;
-        const auto mass           = static_cast<double>(atoms.atom[atom_mol_index].m);
-        const auto x              = positionRestraintCoordinates.at(i).toDVec();
+        const auto atomInMolIndex = i % inds.numAtomsPerMolecule;
+        const auto mass           = static_cast<double>(atoms.atom[atomInMolIndex].m);
+        const auto x              = positionRestraintCoordinates[i].toDVec();
 
-        comSumContentsMblock.sumCoordinateMasses += mass * x;
-        comSumContentsMblock.sumMass += mass;
-        comSumContentsMblock.numAtoms++;
+        const auto globalIndex = inds.globalAtomStart + i;
+        const auto groupIndex  = groupInds.empty() ? 0 : groupInds[globalIndex];
+
+        comSumContentsVector[groupIndex].sumCoordinateMasses += mass * x;
+        comSumContentsVector[groupIndex].sumMass += mass;
+        comSumContentsVector[groupIndex].numAtoms++;
     }
 
-    return comSumContentsMblock;
+    return comSumContentsVector;
 }
 
 //! Subtracts COM position from position restraints
-static void subComFromRestraints(const gmx::RVec& com, gmx::ArrayRef<gmx::RVec> positionRestraintCoordinates)
+static void subComFromRestraints(gmx::ArrayRef<const gmx::RVec>     comPerGroup,
+                                 const MoleculeBlockIndices&        inds,
+                                 gmx::ArrayRef<const unsigned char> groupInds,
+                                 gmx::ArrayRef<gmx::RVec>           positionRestraintCoordinates)
 {
-    for (gmx::RVec& x : positionRestraintCoordinates)
+    for (gmx::Index i = 0; i < gmx::ssize(positionRestraintCoordinates); ++i)
     {
-        x -= com;
+        const auto         globalIndex = inds.globalAtomStart + i;
+        const unsigned int groupIndex  = groupInds.empty() ? 0 : groupInds[globalIndex];
+
+        if (groupIndex < comPerGroup.size())
+        {
+            const auto& com = comPerGroup[groupIndex];
+            positionRestraintCoordinates[i] -= com;
+        }
     }
 }
 
@@ -1137,57 +1164,85 @@ static void subComFromRestraints(const gmx::RVec& com, gmx::ArrayRef<gmx::RVec> 
  *
  * \p mtop contains the restraint reference coordinates which are shifted by the COM.
  */
-static gmx::RVec calcPosresCom(gmx_mtop_t*          mtop,
-                               const bool           haveTopologyB,
-                               PbcType              pbcType,
-                               const matrix         box,
-                               const gmx::MDLogger& logger)
+static std::vector<gmx::RVec> calcPosresCom(gmx_mtop_t*          mtop,
+                                            const bool           haveTopologyB,
+                                            PbcType              pbcType,
+                                            const matrix         box,
+                                            const gmx::MDLogger& logger)
 {
 
-    ComSumContents comSumContentsNogroup;
+    constexpr auto groupType = SimulationAtomGroupType::MassCenterVelocityRemoval;
+    const auto&    groupInds = mtop->groups.groupNumbers[groupType];
 
-    for (size_t i = 0; i < mtop->molblock.size(); ++i)
+    //! Number of specified groups for independent COM scaling.
+    const int numGroups = mtop->groups.groups[groupType].size();
+
+    std::vector<ComSumContents> comSumContentsVector(numGroups + 1);
+
+    for (int i = 0; i < gmx::ssize(mtop->molblock); ++i)
     {
-        const auto& molb  = mtop->molblock.at(i);
-        const auto& inds  = mtop->moleculeBlockIndices.at(i);
-        const auto& atoms = mtop->moltype.at(molb.type).atoms;
+        const auto& molb  = mtop->molblock[i];
+        const auto& inds  = mtop->moleculeBlockIndices[i];
+        const auto& atoms = mtop->moltype[molb.type].atoms;
 
         const auto& positionRestraintCoordinates = haveTopologyB ? molb.posres_xB : molb.posres_xA;
 
-        ComSumContents comSumContentsMblock =
-                sumComForRestraints(positionRestraintCoordinates, inds, atoms);
+        std::vector<ComSumContents> comSumContentsMblock =
+                sumComForRestraints(positionRestraintCoordinates, inds, groupInds, numGroups, atoms);
 
-        comSumContentsNogroup.sumCoordinateMasses += comSumContentsMblock.sumCoordinateMasses;
-        comSumContentsNogroup.sumMass += comSumContentsMblock.sumMass;
-        comSumContentsNogroup.numAtoms += comSumContentsMblock.numAtoms;
-    }
-
-    // Centre of mass of the restrained atoms
-    gmx::RVec com = { 0.0, 0.0, 0.0 };
-    if (comSumContentsNogroup.numAtoms > 0)
-    {
-        if (comSumContentsNogroup.sumMass == 0.0)
+        for (int j = 0; j < numGroups + 1; j++)
         {
-            gmx_fatal(FARGS, "The total mass of the position restraint atoms is 0");
+            comSumContentsVector[j].sumCoordinateMasses += comSumContentsMblock[j].sumCoordinateMasses;
+            comSumContentsVector[j].sumMass += comSumContentsMblock[j].sumMass;
+            comSumContentsVector[j].numAtoms += comSumContentsMblock[j].numAtoms;
         }
-        com = comSumContentsNogroup.sumCoordinateMasses.toRVec() / comSumContentsNogroup.sumMass;
     }
 
-    GMX_LOG(logger.info)
-            .asParagraph()
-            .appendTextFormatted(
-                    "The center of mass of the position restraint coord's is %6.3f %6.3f %6.3f",
-                    com[XX],
-                    com[YY],
-                    com[ZZ]);
+    // Centre of mass of the restrained atoms per each COM velocty removal group + remaining ones
+    std::vector<gmx::RVec> comPerGroup;
+    comPerGroup.reserve(numGroups + 1);
+
+    for (int i = 0; i < numGroups; ++i)
+    {
+        comPerGroup.push_back(comSumContentsVector[i].com());
+    }
+
+    const auto numAtomsNoGroup = comSumContentsVector[numGroups].numAtoms;
+    if (numAtomsNoGroup > 0)
+    {
+        comPerGroup.push_back(comSumContentsVector[numGroups].com());
+    }
 
     //! Subtract COM from posres positions
     //  TODO: write regression test to ensure that this is consistent with previous implementation?
-    for (auto& molb : mtop->molblock)
+    for (int i = 0; i < gmx::ssize(mtop->molblock); ++i)
     {
+        auto&       molb = mtop->molblock[i];
+        const auto& inds = mtop->moleculeBlockIndices[i];
+
         auto& positionRestraintCoordinates = haveTopologyB ? molb.posres_xB : molb.posres_xA;
 
-        subComFromRestraints(com, positionRestraintCoordinates);
+        subComFromRestraints(comPerGroup, inds, groupInds, positionRestraintCoordinates);
+    }
+
+    for (int i = 0; i < gmx::ssize(comPerGroup); i++)
+    {
+        char groupName[STRLEN];
+
+        if (i < numGroups)
+        {
+            const auto globalGroupIndex = mtop->groups.groups[groupType].at(i);
+            snprintf(groupName, STRLEN, "%s:", *mtop->groups.groupNames[globalGroupIndex]);
+        }
+        else
+        {
+            snprintf(groupName, STRLEN, "rest or system (%d):", numAtomsNoGroup);
+        }
+
+        const auto& com = comPerGroup.at(i);
+
+        GMX_LOG(logger.info)
+                .appendTextFormatted("  %-12s\t%6.3f %6.3f %6.3f", groupName, com[XX], com[YY], com[ZZ]);
     }
 
     // Convert to crystal coordinates
@@ -1197,17 +1252,22 @@ static gmx::RVec calcPosresCom(gmx_mtop_t*          mtop,
     const int npbcdim = numPbcDimensions(pbcType);
     GMX_RELEASE_ASSERT(npbcdim <= DIM, "Invalid npbcdim");
 
-    for (int j = 0; j < npbcdim; j++)
+    for (size_t i = 0; i < comPerGroup.size(); ++i)
     {
-        com[j] *= inv_box[j][j];
+        auto& com = comPerGroup.at(i);
 
-        for (int k = j + 1; k < npbcdim; k++)
+        for (int j = 0; j < npbcdim; j++)
         {
-            com[j] += inv_box[k][j] * com[k];
+            com[j] *= inv_box[j][j];
+
+            for (int k = j + 1; k < npbcdim; k++)
+            {
+                com[j] += inv_box[k][j] * com[k];
+            }
         }
     }
 
-    return com;
+    return comPerGroup;
 }
 
 static void gen_posres(gmx_mtop_t*                              mtop,
@@ -2602,10 +2662,11 @@ int gmx_grompp(int argc, char* argv[])
     }
 
     //! Must be done after do_index, so we do it here before the triple check
-    if (ir->pressureCouplingOptions.refcoord_scaling == RefCoordScaling::Com)
+    if ((gmx_mtop_ftype_count(sys, F_POSRES) != 0 || gmx_mtop_ftype_count(sys, F_FBPOSRES) != 0)
+        && ir->pressureCouplingOptions.refcoord_scaling == RefCoordScaling::Com)
     {
-        ir->posres_com  = calcPosresCom(&sys, false, ir->pbcType, state.box, logger);
-        ir->posres_comB = calcPosresCom(&sys, true, ir->pbcType, state.box, logger);
+        ir->posresCom  = calcPosresCom(&sys, false, ir->pbcType, state.box, logger);
+        ir->posresComB = calcPosresCom(&sys, true, ir->pbcType, state.box, logger);
     }
 
     triple_check(mdparin, *ir, sys, &wi);

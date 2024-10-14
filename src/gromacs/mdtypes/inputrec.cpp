@@ -966,16 +966,8 @@ void pr_inputrec(FILE* fp, int indent, const char* title, const t_inputrec* ir, 
         // Refcoord-scaling is also needed for other algorithms that affect the box
         PS("refcoord-scaling", enumValueToString(ir->pressureCouplingOptions.refcoord_scaling));
 
-        if (bMDPformat)
-        {
-            fprintf(fp, "posres-com  = %g %g %g\n", ir->posres_com[XX], ir->posres_com[YY], ir->posres_com[ZZ]);
-            fprintf(fp, "posres-comB = %g %g %g\n", ir->posres_comB[XX], ir->posres_comB[YY], ir->posres_comB[ZZ]);
-        }
-        else
-        {
-            pr_rvec(fp, indent, "posres-com", ir->posres_com, DIM, TRUE);
-            pr_rvec(fp, indent, "posres-comB", ir->posres_comB, DIM, TRUE);
-        }
+        prRVecs(fp, indent, "posres-com", ir->posresCom);
+        prRVecs(fp, indent, "posres-comB", ir->posresComB);
 
         /* QMMM */
         PS("QMMM", EBOOL(ir->bQMMM));
@@ -1521,8 +1513,12 @@ void cmp_inputrec(FILE* fp, const t_inputrec* ir1, const t_inputrec* ir2, real f
             "refcoord_scaling",
             ir1->pressureCouplingOptions.refcoord_scaling,
             ir2->pressureCouplingOptions.refcoord_scaling);
-    cmp_rvec(fp, "inputrec->posres_com", -1, ir1->posres_com, ir2->posres_com, ftol, abstol);
-    cmp_rvec(fp, "inputrec->posres_comB", -1, ir1->posres_comB, ir2->posres_comB, ftol, abstol);
+    cmp_int(fp, "inputrec->numPosresCom", -1, gmx::ssize(ir1->posresCom), gmx::ssize(ir2->posresCom));
+    if (!ir1->posresCom.empty() && gmx::ssize(ir1->posresCom) == gmx::ssize(ir2->posresCom))
+    {
+        cmpRVecs(fp, "inputrec->posresCom", ir1->posresCom, ir2->posresCom, false, ftol, abstol);
+        cmpRVecs(fp, "inputrec->posresComB", ir1->posresComB, ir2->posresComB, false, ftol, abstol);
+    }
     cmp_real(fp, "inputrec->verletbuf_tol", -1, ir1->verletbuf_tol, ir2->verletbuf_tol, ftol, abstol);
     cmp_real(fp,
              "inputrec->verlet-buffer-pressure-tolerance",

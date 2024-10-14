@@ -190,3 +190,8 @@ void pr_rvecs(FILE* fp, int indent, const char* title, const rvec vec[], int n)
         }
     }
 }
+
+void prRVecs(FILE* fp, int indent, const char* title, gmx::ArrayRef<const gmx::RVec> vec)
+{
+    pr_rvecs(fp, indent, title, as_rvec_array(vec.data()), vec.size());
+}

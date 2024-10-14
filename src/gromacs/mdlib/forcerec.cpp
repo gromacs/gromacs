@@ -794,9 +794,9 @@ void init_forcerec(FILE*                            fplog,
         }
     }
 
-    forcerec->rc_scaling  = inputrec.pressureCouplingOptions.refcoord_scaling;
-    forcerec->posres_com  = inputrec.posres_com;
-    forcerec->posres_comB = inputrec.posres_comB;
+    forcerec->rc_scaling = inputrec.pressureCouplingOptions.refcoord_scaling;
+    forcerec->posresCom  = inputrec.posresCom;
+    forcerec->posresComB = inputrec.posresComB;
 
     forcerec->haveBoxDeformation = ir_haveBoxDeformation(inputrec);
 

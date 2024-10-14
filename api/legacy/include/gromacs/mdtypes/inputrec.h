@@ -435,10 +435,10 @@ struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
     bool bPrintNHChains = false;
     //! Pressure coupling
     PressureCouplingOptions pressureCouplingOptions;
-    //! The COM of the posres atoms
-    gmx::RVec posres_com = { 0, 0, 0 };
-    //! The B-state COM of the posres atoms
-    gmx::RVec posres_comB = { 0, 0, 0 };
+    //! The vector of COMs of the posres atoms
+    std::vector<gmx::RVec> posresCom;
+    //! The vector of COMs of the B-state posres atoms
+    std::vector<gmx::RVec> posresComB;
     //! Random seed for Andersen thermostat (obsolete)
     int andersen_seed = 0;
     //! Per atom pair energy drift tolerance (kJ/mol/ps/atom) for the pairlist buffer

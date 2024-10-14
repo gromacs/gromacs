@@ -40,10 +40,25 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+template<typename T>
+class ArrayRef;
+} // namespace gmx
+
 void cmp_rvec(FILE* fp, const char* s, int index, const rvec i1, const rvec i2, real ftol, real abstol);
 
 void cmp_ivec(FILE* fp, const char* s, int index, const ivec i1, const ivec i2);
 
 void cmp_rvecs(FILE* fp, const char* title, int n, const rvec x1[], const rvec x2[], gmx_bool bRMSD, real ftol, real abstol);
+
+//! New interface receiving an ArrayRef as input
+void cmpRVecs(FILE*                          fp,
+              const char*                    title,
+              gmx::ArrayRef<const gmx::RVec> x1,
+              gmx::ArrayRef<const gmx::RVec> x2,
+              bool                           bRMSD,
+              real                           ftol,
+              real                           abstol);
 
 #endif

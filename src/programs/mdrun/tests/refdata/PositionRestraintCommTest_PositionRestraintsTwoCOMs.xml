@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Simulation Name="OctaneSandwich">
+    <Energy Name="Position Rest.">
+      <Real Name="Time 0.000000 Step 0 in frame 0">8.1844318916679975e-27</Real>
+      <Real Name="Time 0.020000 Step 10 in frame 1">64.723105570319646</Real>
+    </Energy>
+  </Simulation>
+</ReferenceData>

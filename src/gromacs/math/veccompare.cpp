@@ -39,8 +39,10 @@
 #include <cstdio>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/compare.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 
 void cmp_rvec(FILE* fp, const char* s, int index, const rvec i1, const rvec i2, real ftol, real abstol)
@@ -154,4 +156,16 @@ void cmp_rvecs(FILE* fp, const char* title, int n, const rvec x1[], const rvec x
     {
         cmp_rvecs_rmstol(fp, title, n, x1, x2, ftol, abstol);
     }
+}
+
+void cmpRVecs(FILE*                          fp,
+              const char*                    title,
+              gmx::ArrayRef<const gmx::RVec> x1,
+              gmx::ArrayRef<const gmx::RVec> x2,
+              bool                           bRMSD,
+              real                           ftol,
+              real                           abstol)
+{
+    GMX_ASSERT(x1.size() == x2.size(), "Cannot compare two arrays of different sizes");
+    cmp_rvecs(fp, title, x1.size(), as_rvec_array(x1.data()), as_rvec_array(x2.data()), bRMSD, ftol, abstol);
 }

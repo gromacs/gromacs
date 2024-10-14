@@ -142,10 +142,10 @@ struct t_forcerec
     //! Tells whether atoms inside a molecule can be in different periodic images,
     //  i.e. whether we need to take into account PBC when computing distances inside molecules.
     //  This determines whether PBC must be considered for e.g. bonded interactions.
-    bool            bMolPBC     = false;
-    RefCoordScaling rc_scaling  = RefCoordScaling::No;
-    gmx::RVec       posres_com  = { 0, 0, 0 };
-    gmx::RVec       posres_comB = { 0, 0, 0 };
+    bool                   bMolPBC    = false;
+    RefCoordScaling        rc_scaling = RefCoordScaling::No;
+    std::vector<gmx::RVec> posresCom;
+    std::vector<gmx::RVec> posresComB;
 
     // Tells whether the box is continuosly deformed
     bool haveBoxDeformation = false;

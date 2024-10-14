@@ -196,6 +196,7 @@ enum tpxv
     tpxv_MassRepartitioning,          /**< Add mass repartitioning */
     tpxv_AwhTargetMetricScaling,      /**< Add AWH friction optimized target distribution */
     tpxv_VerletBufferPressureTol,     /**< Add Verlet buffer pressure tolerance */
+    tpxv_RefScaleMultipleCOMs,        /**< Add multiple COM groups for refcoord-scale */
     tpxv_Count                        /**< the total number of tpxv versions */
 };
 
@@ -1409,8 +1410,24 @@ static void do_inputrec(gmx::ISerializer* serializer, t_inputrec* ir, int file_v
     serializer->doRvec(&ir->pressureCouplingOptions.compress[YY]);
     serializer->doRvec(&ir->pressureCouplingOptions.compress[ZZ]);
     serializer->doEnumAsInt(&ir->pressureCouplingOptions.refcoord_scaling);
-    serializer->doRvec(&ir->posres_com.as_vec());
-    serializer->doRvec(&ir->posres_comB.as_vec());
+
+    auto numPosresComGroups = static_cast<int>(ir->posresCom.size());
+    if (file_version >= tpxv_RefScaleMultipleCOMs)
+    {
+        serializer->doInt(&numPosresComGroups);
+    }
+    else
+    {
+        numPosresComGroups = 1;
+    }
+
+    if (serializer->reading())
+    {
+        ir->posresCom.resize(numPosresComGroups);
+        ir->posresComB.resize(numPosresComGroups);
+    }
+    serializer->doRvecArray(as_rvec_array(ir->posresCom.data()), numPosresComGroups);
+    serializer->doRvecArray(as_rvec_array(ir->posresComB.data()), numPosresComGroups);
 
     if (file_version < tpxv_Pre96Version79)
     {
@@ -3230,6 +3247,17 @@ static void do_tpx_finalize(TpxFileHeader* tpx, t_inputrec* ir, t_state* state, 
                 ir->eDisre = !mtop->moltype[0].ilist[F_DISRES].empty()
                                      ? DistanceRestraintRefinement::Simple
                                      : DistanceRestraintRefinement::None;
+            }
+
+            if (tpx->fileVersion < tpxv_RefScaleMultipleCOMs
+                && ((gmx_mtop_ftype_count(*mtop, F_POSRES) == 0 && gmx_mtop_ftype_count(*mtop, F_FBPOSRES) == 0)
+                    || ir->pressureCouplingOptions.refcoord_scaling != RefCoordScaling::Com))
+            {
+                // We do not have position restraints or we do not have COM ref-coord scaling
+                // (and with ref-coord scaling option All no COMs are used),
+                // so we do not need the position restraint COMs
+                ir->posresCom.clear();
+                ir->posresComB.clear();
             }
         }
     }

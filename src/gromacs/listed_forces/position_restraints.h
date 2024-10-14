@@ -64,33 +64,41 @@ class ForceWithVirial;
 }
 
 /*! \brief Helper function that wraps calls to posres */
-void posres_wrapper(t_nrnb*                       nrnb,
-                    const InteractionDefinitions& idef,
-                    const struct t_pbc*           pbc,
-                    const rvec*                   x,
-                    gmx_enerdata_t*               enerd,
-                    gmx::ArrayRef<const real>     lambda,
-                    const t_forcerec*             fr,
-                    gmx::ForceWithVirial*         forceWithVirial);
+void posres_wrapper(t_nrnb*                                   nrnb,
+                    const InteractionDefinitions&             idef,
+                    const struct t_pbc*                       pbc,
+                    const rvec*                               x,
+                    gmx_enerdata_t*                           enerd,
+                    gmx::ArrayRef<const real>                 lambda,
+                    const t_forcerec*                         fr,
+                    const gmx::ArrayRef<const unsigned short> refScaleComIndices,
+                    gmx::ArrayRef<gmx::RVec>                  centersOfMassScaledBuffer,
+                    gmx::ArrayRef<gmx::RVec>                  centersOfMassBScaledBuffer,
+                    gmx::ForceWithVirial*                     forceWithVirial);
 
 /*! \brief Helper function that wraps calls to posres for free-energy
     pertubation */
-void posres_wrapper_lambda(struct gmx_wallcycle*         wcycle,
-                           const InteractionDefinitions& idef,
-                           const struct t_pbc*           pbc,
-                           const rvec                    x[],
-                           gmx_enerdata_t*               enerd,
-                           gmx::ArrayRef<const real>     lambda,
-                           const t_forcerec*             fr);
+void posres_wrapper_lambda(struct gmx_wallcycle*                     wcycle,
+                           const InteractionDefinitions&             idef,
+                           const struct t_pbc*                       pbc,
+                           const rvec                                x[],
+                           gmx_enerdata_t*                           enerd,
+                           gmx::ArrayRef<const real>                 lambda,
+                           const t_forcerec*                         fr,
+                           const gmx::ArrayRef<const unsigned short> refScaleComIndices,
+                           gmx::ArrayRef<gmx::RVec>                  centersOfMassScaledBuffer,
+                           gmx::ArrayRef<gmx::RVec>                  centersOfMassBScaledBuffer);
 
 /*! \brief Helper function that wraps calls to fbposres for
     free-energy perturbation */
-void fbposres_wrapper(t_nrnb*                       nrnb,
-                      const InteractionDefinitions& idef,
-                      const struct t_pbc*           pbc,
-                      const rvec*                   x,
-                      gmx_enerdata_t*               enerd,
-                      const t_forcerec*             fr,
-                      gmx::ForceWithVirial*         forceWithVirial);
+void fbposres_wrapper(t_nrnb*                                   nrnb,
+                      const InteractionDefinitions&             idef,
+                      const struct t_pbc*                       pbc,
+                      const rvec*                               x,
+                      gmx_enerdata_t*                           enerd,
+                      const t_forcerec*                         fr,
+                      const gmx::ArrayRef<const unsigned short> refScaleComIndices,
+                      gmx::ArrayRef<gmx::RVec>                  centersOfMassScaledBuffer,
+                      gmx::ForceWithVirial*                     forceWithVirial);
 
 #endif

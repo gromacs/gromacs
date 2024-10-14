@@ -138,9 +138,14 @@ void mdAlgorithmsSetupAtomData(const t_commrec*     cr,
         make_local_shells(cr, *mdatoms, shellfc);
     }
 
+    // TODO: warning/error if posresCom and posresComB do not have the same size
     for (auto& listedForces : fr->listedForces)
     {
-        listedForces.setup(top->idef, fr->natoms_force, fr->listedForcesGpu != nullptr, mdatoms->cVCM);
+        listedForces.setup(top->idef,
+                           fr->natoms_force,
+                           fr->listedForcesGpu != nullptr,
+                           mdatoms->cVCM,
+                           fr->posresCom.size());
     }
 
     if ((usingPme(fr->ic->eeltype) || usingLJPme(fr->ic->vdwtype)) && (cr->duty & DUTY_PME))

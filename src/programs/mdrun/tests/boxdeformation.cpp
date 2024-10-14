@@ -169,6 +169,58 @@ TEST_F(BoxDeformationTest, EnergiesWithinTolerances)
     }
 }
 
+class PositionRestraintCommTest : public MdrunTestFixture
+{
+};
+
+// Check that restraints with multiple reference COMs work and give the correct energy
+TEST_F(PositionRestraintCommTest, PositionRestraintsTwoCOMs)
+{
+    // We use a high shear speed of 2.5 nm/ps.
+    // With this the difference with not scaling with two COMS after 10 steps is 7 on 65,
+    // which we can detect within the tolerances set.
+    std::string theMdpFile =
+            "comm-mode        = linear\n"
+            "comm-grps        = Chain0 Chain1\n"
+            "refcoord-scaling = com\n"
+            "continuation     = yes\n"
+            "coulombtype      = reaction-field\n"
+            "nstenergy        = 10\n"
+            "rcoulomb         = 0.9\n"
+            "rvdw             = 0.9\n"
+            "dt               = 0.002\n"
+            "nsteps           = 10\n"
+            "tcoupl           = v-rescale\n"
+            "tc-grps          = system\n"
+            "ref-t            = 298\n"
+            "tau-t            = 0.5\n"
+            "deform           = 0 0 0 0 2.5 0\n"
+            "deform-init-flow = yes\n";
+
+    const auto& simulationName = "OctaneSandwich";
+
+    // Prepare the .tpr file
+    {
+        CommandLine caller;
+        runner_.useTopGroAndNdxFromDatabase(simulationName);
+        runner_.useStringAsMdpFile(theMdpFile);
+        // Allow warning for not all atoms being in COM groups
+        caller.addOption("-maxwarn", 1);
+        EXPECT_EQ(0, runner_.callGrompp(caller));
+    }
+    // Do mdrun
+    {
+        CommandLine mdrunCaller;
+        ASSERT_EQ(0, runner_.callMdrun(mdrunCaller));
+        auto relativeTolerance = relativeToleranceAsFloatingPoint(1, GMX_DOUBLE ? 1e-2 : 5e-2);
+        EnergyTermsToCompare energyTermsToCompare{ { { interaction_function[F_POSRES].longname,
+                                                       relativeTolerance } } };
+        TestReferenceData    refData;
+        auto checker = refData.rootChecker().checkCompound("Simulation", simulationName);
+        checkEnergiesAgainstReferenceData(runner_.edrFileName_, energyTermsToCompare, &checker);
+    }
+}
+
 } // namespace
 } // namespace test
 } // namespace gmx
