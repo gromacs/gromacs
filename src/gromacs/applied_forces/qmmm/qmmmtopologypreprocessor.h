@@ -131,7 +131,7 @@ public:
     //! \brief Returns view of the whole Link Frontier for the processed topology
     ArrayRef<const LinkFrontier> linkFrontier() const;
 
-private:
+protected:
     //! Retruns true if globalAtomIndex belongs to QM region
     bool isQMAtom(Index globalAtomIndex);
 
@@ -185,6 +185,7 @@ private:
     //! \brief Removes charge from all virtual sites which are consists of only QM atoms
     void modifyQMMMVirtualSites(gmx_mtop_t* mtop);
 
+private:
     //! Vector indicating which molblocks have QM atoms
     std::vector<bool> bQMBlock_;
     /*! \brief Global indices of QM atoms;
