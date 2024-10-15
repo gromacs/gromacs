@@ -189,10 +189,11 @@ void ListedForces::setup(const InteractionDefinitions&             domainIdef,
 
     restraintComIndices_ = restraintComIndices;
 
+    // When refCoordScaling!=com we allocate a buffer so we can avoid conditionals in the kernel
     if (centersOfMassScaledBuffer_.empty())
     {
-        centersOfMassScaledBuffer_.resize(numComGroups, { 0.0, 0.0, 0.0 });
-        centersOfMassBScaledBuffer_.resize(numComGroups, { 0.0, 0.0, 0.0 });
+        centersOfMassScaledBuffer_.resize(std::max(numComGroups, 1), { 0.0, 0.0, 0.0 });
+        centersOfMassBScaledBuffer_.resize(std::max(numComGroups, 1), { 0.0, 0.0, 0.0 });
     }
 }
 
@@ -715,7 +716,7 @@ void ListedForces::calculate(struct gmx_wallcycle*                     wcycle,
         {
             posres_wrapper(nrnb,
                            idef,
-                           &pbc_full,
+                           pbc_full,
                            x,
                            enerd,
                            lambda,
@@ -730,7 +731,7 @@ void ListedForces::calculate(struct gmx_wallcycle*                     wcycle,
         {
             fbposres_wrapper(nrnb,
                              idef,
-                             &pbc_full,
+                             pbc_full,
                              x,
                              enerd,
                              fr,
@@ -794,16 +795,8 @@ void ListedForces::calculate(struct gmx_wallcycle*                     wcycle,
         gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, real> dvdl = { 0 };
         if (!idef.il[F_POSRES].empty())
         {
-            posres_wrapper_lambda(wcycle,
-                                  idef,
-                                  &pbc_full,
-                                  x,
-                                  enerd,
-                                  lambda,
-                                  fr,
-                                  restraintComIndices_,
-                                  centersOfMassScaledBuffer_,
-                                  centersOfMassBScaledBuffer_);
+            posres_wrapper_lambda(
+                    wcycle, idef, pbc_full, x, enerd, lambda, fr, restraintComIndices_, centersOfMassScaledBuffer_, centersOfMassBScaledBuffer_);
         }
         if (idef.ilsort != ilsortNO_FE)
         {

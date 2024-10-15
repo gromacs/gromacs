@@ -174,7 +174,7 @@ TEST_P(PositionRestraintsTest, BasicPosResNoFreeEnergy)
     std::vector<RVec> centersOfMassBScaledBuffer = { { 0.0, 0.0, 0.0 } };
     posres_wrapper(&nrnb_,
                    idef_,
-                   &pbc_,
+                   pbc_,
                    as_rvec_array(x_.data()),
                    &enerd_,
                    c_emptyLambdas,
