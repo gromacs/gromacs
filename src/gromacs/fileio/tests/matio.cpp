@@ -77,7 +77,7 @@ std::string generateStdReferenceFile(gmx::ArrayRef<const t_mapping> refMaps)
 {
 
     const std::string format       = "%c%c  %20s  %10g  %10g  %10g\n";
-    std::string       fileContents = formatString("%ld\n", refMaps.ssize());
+    std::string       fileContents = formatString("%td\n", refMaps.ssize());
     for (const auto& map : refMaps)
     {
         fileContents.append(formatString(format.c_str(),

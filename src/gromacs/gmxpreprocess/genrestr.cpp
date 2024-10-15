@@ -209,6 +209,7 @@ int gmx_genrestr(int argc, char* argv[])
     {
         if (!haveTopology || !atoms.pdbinfo)
         {
+            GMX_RELEASE_ASSERT(xfn.has_value(), "Input file must be valid");
             gmx_fatal(FARGS,
                       "No B-factors in input file %s, use a pdb file next time.",
                       xfn.value().string().c_str());

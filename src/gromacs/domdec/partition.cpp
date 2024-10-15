@@ -2342,7 +2342,7 @@ static void dd_sort_state(gmx_domdec_t* dd, t_forcerec* fr, t_state* state)
 
     if (debug)
     {
-        fprintf(debug, "The new home atom count, including filler particles, is %ld\n", gmx::ssize(sortOrder));
+        fprintf(debug, "The new home atom count, including filler particles, is %td\n", gmx::ssize(sortOrder));
     }
 
     // For sorting we need space for both the old and new states

@@ -887,9 +887,9 @@ static void throwIfNonEmptyAndOnlyWhitespace(const std::string& s, const char* i
     if (!s.empty() && std::all_of(s.cbegin(), s.cend(), [](const char& c) { return std::isspace(c); }))
     {
         std::string message("String '" + s + "' with ");
-        message += (id != nullptr) ? "null " : "";
+        message += (id == nullptr) ? "null " : "";
         message += "ID ";
-        message += (id != nullptr) ? "" : id;
+        message += (id == nullptr) ? "" : id;
         message +=
                 " cannot be handled. We must refuse to write a refdata String"
                 "field for a non-empty string that contains only whitespace, "

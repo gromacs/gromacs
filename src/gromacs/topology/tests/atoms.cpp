@@ -243,12 +243,12 @@ void SimulationParticleTest::runTest(const SimulationParticle& particle)
 
 TEST_P(SimulationParticleTest, CanCreate)
 {
-    const auto params          = GetParam();
-    const auto mass            = std::get<0>(params);
-    const auto charge          = std::get<1>(params);
-    const auto typeValue       = std::get<2>(params);
-    const auto useTwoStateName = std::get<3>(params);
-    const auto table           = builder()->build();
+    const auto& params          = GetParam();
+    const auto  mass            = std::get<0>(params);
+    const auto  charge          = std::get<1>(params);
+    const auto  typeValue       = std::get<2>(params);
+    const auto  useTwoStateName = std::get<3>(params);
+    const auto  table           = builder()->build();
 
     ParticleTypeName typeName = useTwoStateName ? ParticleTypeName(table.at(1), table.at(2))
                                                 : ParticleTypeName(table.at(1));
@@ -260,11 +260,11 @@ TEST_P(SimulationParticleTest, CanCreate)
 
 TEST_P(SimulationParticleTest, CanSerialize)
 {
-    const auto params          = GetParam();
-    const auto mass            = std::get<0>(params);
-    const auto charge          = std::get<1>(params);
-    const auto typeValue       = std::get<2>(params);
-    const auto useTwoStateName = std::get<3>(params);
+    const auto& params          = GetParam();
+    const auto  mass            = std::get<0>(params);
+    const auto  charge          = std::get<1>(params);
+    const auto  typeValue       = std::get<2>(params);
+    const auto  useTwoStateName = std::get<3>(params);
 
     const auto         table    = builder()->build();
     ParticleTypeName   typeName = useTwoStateName ? ParticleTypeName(table.at(1), table.at(2))

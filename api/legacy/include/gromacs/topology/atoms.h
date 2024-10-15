@@ -203,7 +203,7 @@ public:
     std::string particleTypeNameB() const
     {
         GMX_ASSERT(haveParticleTypeName(), "Can not access uninitialized element");
-        const auto entry =
+        const auto& entry =
                 haveBStateForAll() ? particleTypeName_.storage_[1] : particleTypeName_.storage_[0];
         GMX_ASSERT(entry.has_value(), "Can not access uninitialized element");
         return *entry.value();

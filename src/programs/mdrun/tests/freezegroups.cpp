@@ -107,7 +107,7 @@ public:
 
         for (auto frameIdx = decltype(trajectorySize){ 0 }; frameIdx < trajectorySize; frameIdx++)
         {
-            SCOPED_TRACE(formatString("Checking frame %lu", frameIdx + 1));
+            SCOPED_TRACE(formatString("Checking frame %zu", frameIdx + 1));
             if (frameIdx > 0)
             {
                 checkFullyFrozenPositions(fullyFrozenPositions[frameIdx],

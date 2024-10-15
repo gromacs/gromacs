@@ -291,6 +291,7 @@ static void read_ter_db_file(const std::filesystem::path&        fn,
             if (!btkw.has_value())
             {
                 /* this is a hack: add/rename/delete atoms */
+                GMX_RELEASE_ASSERT(rtkw.has_value(), "Need valid ReplaceType");
                 /* make space for hacks */
                 block->hack.emplace_back();
                 MoleculePatch* hack = &block->hack.back();

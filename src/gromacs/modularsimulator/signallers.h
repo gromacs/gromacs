@@ -498,7 +498,7 @@ std::vector<SignallerCallback> SignallerBuilder<Signaller>::buildCallbackVector(
     // Allow clients to register their callbacks
     for (auto& client : signallerClients_)
     {
-        if (auto callback = getSignallerCallback(client, std::forward<Args>(args)...)) // don't register nullptr
+        if (auto callback = getSignallerCallback(client, args...)) // don't register nullptr
         {
             callbacks.emplace_back(std::move(*callback));
         }

@@ -96,7 +96,8 @@ TEST_P(ScatteringModule, DirectMode)
     setTrajectory(inputFilename.c_str());
     setOutputFile(
             "-o",
-            formatString("%s-direct-%s.xvg", inputBasename.c_str(), std::get<1>(params).c_str()).c_str(),
+            formatString("%s-direct-%s.xvg", inputBasename.string().c_str(), std::get<1>(params).c_str())
+                    .c_str(),
             toler);
     command.addOption("-sel", "Protein");
     command.addOption("-scattering-type", std::get<1>(params));
@@ -120,7 +121,8 @@ TEST_P(ScatteringModule, MCMode)
     setTopology(inputFilename.c_str());
     setTrajectory(inputFilename.c_str());
     setOutputFile("-o",
-                  formatString("%s-mc-%s.xvg", inputBasename.c_str(), std::get<1>(params).c_str()).c_str(),
+                  formatString("%s-mc-%s.xvg", inputBasename.string().c_str(), std::get<1>(params).c_str())
+                          .c_str(),
                   toler);
     command.addOption("-sel", "Protein");
     command.addOption("-scattering-type", std::get<1>(params));

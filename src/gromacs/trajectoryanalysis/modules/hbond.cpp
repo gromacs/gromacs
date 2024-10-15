@@ -505,7 +505,7 @@ void Hbond::searchAcceptors(const TopologyInformation& top,
                   selectionTool->acceptors.end(),
                   [](t_acceptor a1, t_acceptor a2) { return a1.ai < a2.ai; });
     }
-    printf("%s '%s' has %lu acceptors",
+    printf("%s '%s' has %zu acceptors",
            selectionTool->selectionType.c_str(),
            selectionTool->selectionPtr->name(),
            selectionTool->acceptors.size());
@@ -588,7 +588,7 @@ void Hbond::searchDonors(const TopologyInformation& top, t_info* selectionTool, 
             selectionTool->donors.back().addHydrogen(pi.second);
         }
     }
-    printf(" and %lu donors.\n", selectionTool->donors.size());
+    printf(" and %zu donors.\n", selectionTool->donors.size());
 }
 
 void Hbond::linkDA(t_info* selectionTool)
