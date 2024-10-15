@@ -48,6 +48,7 @@
 #include <cstdint>
 
 #include <memory>
+#include <string>
 
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
