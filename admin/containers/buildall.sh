@@ -12,7 +12,6 @@ PYTHON=${PYTHON:-$(which python3)}
 
 args[${#args[@]}]="--ubuntu 22.04 --gcc 12 --clfft --mpi openmpi --rocm 5.4.1 --hdf5"
 args[${#args[@]}]="--ubuntu 22.04 --gcc 13 --cuda 12.5.1 --clfft --mpi openmpi --nvhpcsdk 24.7"
-args[${#args[@]}]="--ubuntu 22.04 --gcc 11 --cuda 12.3.0 --clfft --mpi openmpi --nvhpcsdk 24.1"
 args[${#args[@]}]="--ubuntu 22.04 --gcc 12 --cuda 12.1.0 --clfft --mpi openmpi --heffte v2.4.0"
 args[${#args[@]}]="--ubuntu 24.04 --gcc 14 --mpi openmpi --cp2k 2024.2"
 args[${#args[@]}]="--ubuntu 24.04 --gcc 11 --mpi openmpi --cp2k 9.1"
