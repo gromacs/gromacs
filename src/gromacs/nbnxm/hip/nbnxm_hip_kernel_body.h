@@ -36,6 +36,8 @@
  *  \brief
  *  NBNXM HIP kernels
  *
+ *  \author Paul Bauer <paul.bauer.q@gmail.com>
+ *
  *  \ingroup module_nbnxm
  */
 #ifndef GMX_NBNXM_HIP_NBNXM_HIP_KERNEL_BODY_H

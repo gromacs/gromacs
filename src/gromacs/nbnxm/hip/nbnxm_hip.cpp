@@ -36,6 +36,8 @@
  *  \brief
  *  Data management and kernel launch functions for nbnxm hip.
  *
+ *  \author Paul Bauer <paul.bauer.q@gmail.com>
+ *
  *  \ingroup module_nbnxm
  */
 #include "gmxpre.h"

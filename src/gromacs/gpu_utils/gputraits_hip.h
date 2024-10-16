@@ -38,7 +38,6 @@
  *  \brief Declares the HIP type traits.
  *
  *  \author Paul Bauer <paul.bauer.q@gmail.com>
- *  \author Julio Maia <julio.maia@amd.com>
  *
  * \inlibraryapi
  * \ingroup module_gpu_utils

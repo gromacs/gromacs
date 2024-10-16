@@ -35,7 +35,6 @@
  *  \brief Implements a DeviceEvent class for HIP.
  *
  *  \author Paul Bauer <paul.bauer.q@gmail.com>
- *  \author Julio Maia <julio.maia@amd.com>
  *  \inlibraryapi
  */
 #ifndef GMX_GPU_UTILS_DEVICE_EVENT_HIP_H

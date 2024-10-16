@@ -36,6 +36,8 @@
  *  \brief
  *  NBNXM HIP prune only kernels
  *
+ *  \author Paul Bauer <paul.bauer.q@gmail.com>
+ *
  *  \ingroup module_nbnxm
  */
 #include "gmxpre.h"

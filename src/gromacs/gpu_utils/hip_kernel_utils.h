@@ -39,7 +39,6 @@
  *
  *  \author Szilard Pall <pall.szilard@gmail.com>
  *  \author Paul Bauer <paul.bauer.q@gmail.com>
- *  \author Julio Maia <julio.maia@amd.com>
  */
 
 #include <hip/hip_runtime.h>

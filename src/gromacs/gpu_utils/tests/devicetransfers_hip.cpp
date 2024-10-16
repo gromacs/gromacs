@@ -37,7 +37,6 @@
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \author Paul Bauer <paul.bauer.q@gmail.com>
- * \author Julio Maia <julio.maia@amd.com>
  */
 #include "gmxpre.h"
 

@@ -40,7 +40,6 @@
  *  TODO: the intent is for DeviceBuffer to become a class.
  *
  *  \author Paul Bauer <paul.bauer.q@gmail.com>
- *  \author Julio Maia <julio.maia@amd.com>
  *
  *  \inlibraryapi
  */

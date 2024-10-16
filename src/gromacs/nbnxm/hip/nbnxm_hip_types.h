@@ -38,7 +38,6 @@
  *
  *  \author Szilárd Páll <pall.szilard@gmail.com>
  *  \author Paul Bauer <paul.bauer.q@gmail.com>
- *  \author Julio Maia <julio.maia@amd.com>
  *  \ingroup module_nbnxm
  */
 

@@ -35,7 +35,6 @@
  *  \brief Define functions for host-side memory handling when using AMD with HIP devices.
  *
  *  \author Paul Bauerl <paul.bauer.q@gmail.com>
- *  \author Julio Maia <julio.maia@amd.com>
  */
 
 #include "gmxpre.h"

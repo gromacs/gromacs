@@ -36,7 +36,6 @@
  *  \brief
  *  HIP bucket sci sort kernel.
  *
- *  \author Julio Maia <julio.maia@amd.com>
  *  \author Paul Bauer <paul.bauer.q@gmail.com>
  *  \ingroup module_nbnxm
  */
