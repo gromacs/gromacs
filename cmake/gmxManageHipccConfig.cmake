@@ -150,6 +150,10 @@ gmx_hip_check_single_flag("-fdenormal-fp-math=ieee")
 gmx_hip_check_single_flag("-fcuda-flush-denormals-to-zero")
 gmx_hip_check_single_flag("-fno-slp-vectorize")
 gmx_hip_check_single_flag("-Wno-unused-command-line-argument")
+# currently ROCm 6.2.x spams warnings about missing occupancy targets during the
+# compilation of the GPU kernels. We silence this warning here to prevent builds 
+# failing because of that.
+gmx_hip_check_single_flag("-Wno-pass-failed")
 
 # User may have supplied the optimization flags on the command line, only available for backwards compat with AMD port.
 # In general we want to control those flags based on the GROMACS build type, but won't stop users supplying different
