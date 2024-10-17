@@ -110,6 +110,15 @@ made the (default) ``-ddorder interleave`` hang. Now it works.
 
 :issue:`4345`
 
+Dynamic load balancing was ineffective when special forces were present
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The timing for DLB included the calculation of special forces, e.g. pull code
+and rotation. As these require communication, imbalance might not have been
+measured. Now special forces are excluded from the timings.
+
+:issue:`5188`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 

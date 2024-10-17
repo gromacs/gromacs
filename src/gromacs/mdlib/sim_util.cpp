@@ -2139,27 +2139,33 @@ void do_force(FILE*                               fplog,
         }
     }
 
-    computeSpecialForces(fplog,
-                         cr,
-                         inputrec,
-                         awh,
-                         enforcedRotation,
-                         imdSession,
-                         pull_work,
-                         step,
-                         t,
-                         wcycle,
-                         fr->forceProviders,
-                         box,
-                         x.unpaddedArrayRef(),
-                         mdatoms,
-                         lambda,
-                         stepWork,
-                         &forceOutMtsLevel0.forceWithVirial(),
-                         forceOutMtsLevel1 ? &forceOutMtsLevel1->forceWithVirial() : nullptr,
-                         enerd,
-                         ed,
-                         stepWork.doNeighborSearch);
+    if (domainWork.haveSpecialForces)
+    {
+        // Communication often happens for special forces, so we should close the balancing region here
+        ddBalanceRegionHandler.closeAfterForceComputationCpu();
+
+        computeSpecialForces(fplog,
+                             cr,
+                             inputrec,
+                             awh,
+                             enforcedRotation,
+                             imdSession,
+                             pull_work,
+                             step,
+                             t,
+                             wcycle,
+                             fr->forceProviders,
+                             box,
+                             x.unpaddedArrayRef(),
+                             mdatoms,
+                             lambda,
+                             stepWork,
+                             &forceOutMtsLevel0.forceWithVirial(),
+                             forceOutMtsLevel1 ? &forceOutMtsLevel1->forceWithVirial() : nullptr,
+                             enerd,
+                             ed,
+                             stepWork.doNeighborSearch);
+    }
 
     if (simulationWork.havePpDomainDecomposition && stepWork.computeForces && stepWork.useGpuFHalo
         && domainWork.haveCpuLocalForceWork)
@@ -2271,6 +2277,7 @@ void do_force(FILE*                               fplog,
          * We will now communicate the non-local forces.
          * If we use a GPU this will overlap with GPU work, so in that case
          * we do not close the DD force balancing region here.
+         * With special forces we closed this region already before computing the special forces.
          */
         ddBalanceRegionHandler.closeAfterForceComputationCpu();
 
