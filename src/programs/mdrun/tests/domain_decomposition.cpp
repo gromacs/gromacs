@@ -195,10 +195,6 @@ std::optional<std::string> reasonsTestIsInvalid(MdpFlavor       mdpFlavor,
     errorReasons.appendIf(
             numRanks < 4 && separatePmeRankFlavor == SeparatePmeRankFlavor::Two,
             "Cannot use two separate PME ranks when there are less than four ranks total");
-    // See https://gitlab.com/gromacs/gromacs/-/issues/5166
-    errorReasons.appendIf((getenv("GMX_ENABLE_DIRECT_GPU_COMM") != nullptr)
-                                  && (getenv("GMX_ENABLE_NVSHMEM") != nullptr),
-                          "Test fails when running NVSHMEM");
     errorReasons.finishContext();
     if (errorReasons.isEmpty())
     {

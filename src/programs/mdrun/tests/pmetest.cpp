@@ -276,11 +276,6 @@ MessageStringCollector PmeTest::getSkipMessagesIfNecessary(const CommandLine& co
         messages.appendIf(!pme_gpu_supports_build(&errorMessage), errorMessage);
         // A check on whether the .tpr is supported for PME on GPUs is
         // not needed, because it is supported by design.
-
-        // See https://gitlab.com/gromacs/gromacs/-/issues/5166
-        messages.appendIf((getenv("GMX_ENABLE_DIRECT_GPU_COMM") != nullptr)
-                                  && (getenv("GMX_ENABLE_NVSHMEM") != nullptr),
-                          "Test fails when running NVSHMEM");
     }
     return messages;
 }
