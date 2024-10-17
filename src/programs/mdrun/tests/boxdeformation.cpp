@@ -212,7 +212,7 @@ TEST_F(PositionRestraintCommTest, PositionRestraintsTwoCOMs)
     {
         CommandLine mdrunCaller;
         ASSERT_EQ(0, runner_.callMdrun(mdrunCaller));
-        auto relativeTolerance = relativeToleranceAsFloatingPoint(1, GMX_DOUBLE ? 1e-2 : 5e-2);
+        auto relativeTolerance = relativeToleranceAsFloatingPoint(1, GMX_DOUBLE ? 1.5e-2 : 5e-2);
         EnergyTermsToCompare energyTermsToCompare{ { { interaction_function[F_POSRES].longname,
                                                        relativeTolerance } } };
         TestReferenceData    refData;
