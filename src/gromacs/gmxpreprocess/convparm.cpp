@@ -213,11 +213,6 @@ static int assign_param(t_functype                ftype,
         case F_ANGLES:
         case F_HARMONIC:
         case F_IDIHS:
-            newparam->harmonic.rA  = old[0];
-            newparam->harmonic.krA = old[1];
-            newparam->harmonic.rB  = old[2];
-            newparam->harmonic.krB = old[3];
-            break;
         case F_RESTRANGLES:
             newparam->harmonic.rA  = old[0];
             newparam->harmonic.krA = old[1];
