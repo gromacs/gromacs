@@ -151,7 +151,6 @@ static void calc_ke_part_normal(const matrix                   deform,
         ekind->systemMomenta->momentumHalfStep.clear();
     }
 
-    // NOLINTNEXTLINE(readability-misleading-indentation)
     const int nthread = gmx_omp_nthreads_get(ModuleMultiThread::Update);
 
 #pragma omp parallel for num_threads(nthread) schedule(static)
@@ -186,7 +185,6 @@ static void calc_ke_part_normal(const matrix                   deform,
             systemMomentumWork->clear();
         }
 
-        // NOLINTNEXTLINE(readability-misleading-indentation)
         gt = 0;
         for (n = start_t; n < end_t; n++)
         {
@@ -210,7 +208,6 @@ static void calc_ke_part_normal(const matrix                   deform,
                 }
             }
 
-            // NOLINTNEXTLINE(readability-misleading-indentation)
             for (d = 0; (d < DIM); d++)
             {
                 for (m = 0; (m < DIM); m++)

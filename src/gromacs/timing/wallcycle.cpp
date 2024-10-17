@@ -129,7 +129,6 @@ std::unique_ptr<gmx_wallcycle> wallcycle_init(FILE* fplog, int resetstep, const 
         wc->wcc_all.resize(sc_numWallCycleCountersSquared);
     }
 
-    // NOLINTNEXTLINE(readability-misleading-indentation)
     if constexpr (sc_enableWallcycleDebug)
     {
         wc->isMainRank = (cr == nullptr) || MAIN(cr);
@@ -173,7 +172,6 @@ std::optional<WallCycleCounter> gmx_wallcycle::registerCycleCounter(const std::s
 
 void gmx_wallcycle::checkStart(WallCycleCounter ewc)
 {
-    // NOLINTNEXTLINE(readability-misleading-indentation)
     if constexpr (sc_enableWallcycleDebug)
     {
         // NOLINTNEXTLINE(misc-redundant-expression)
@@ -194,7 +192,6 @@ void gmx_wallcycle::checkStart(WallCycleCounter ewc)
 
 void gmx_wallcycle::checkStop(WallCycleCounter ewc)
 {
-    // NOLINTNEXTLINE(readability-misleading-indentation)
     if constexpr (sc_enableWallcycleDebug)
     {
         if (sc_debugPrintDepth && (!sc_onlyMainDebugPrints || isMainRank))
@@ -230,7 +227,6 @@ void wallcycle_get(gmx_wallcycle* wc, WallCycleCounter ewc, int* n, double* c)
 
 void wallcycle_sub_get(gmx_wallcycle* wc, WallCycleSubCounter ewcs, int* n, double* c)
 {
-    // NOLINTNEXTLINE(readability-misleading-indentation)
     if constexpr (sc_useCycleSubcounters)
     {
         if (wc != nullptr)
@@ -264,7 +260,6 @@ void wallcycle_reset_all(gmx_wallcycle* wc)
         }
     }
 
-    // NOLINTNEXTLINE(readability-misleading-indentation)
     if constexpr (sc_useCycleSubcounters)
     {
         for (auto& counter : wc->wcsc)
@@ -353,7 +348,6 @@ void wallcycle_scale_by_num_threads(gmx_wallcycle* wc, bool isPmeRank, int nthre
             }
         }
     }
-    // NOLINTNEXTLINE(readability-misleading-indentation)
     if constexpr (sc_useCycleSubcounters)
     {
         if (!isPmeRank)
@@ -443,7 +437,6 @@ WallcycleCounts wallcycle_sum(const t_commrec* cr, gmx_wallcycle* wc)
 #endif
         cyclesMain[key] = static_cast<double>(wcc[key].c);
     }
-    // NOLINTNEXTLINE(readability-misleading-indentation)
     if constexpr (sc_useCycleSubcounters)
     {
         for (auto key : keysOf(wc->wcsc))
@@ -467,7 +460,6 @@ WallcycleCounts wallcycle_sum(const t_commrec* cr, gmx_wallcycle* wc)
         double haveInvalidCount = (wc->haveInvalidCount ? 1 : 0);
         // TODO Use MPI_Reduce
         MPI_Allreduce(cyclesMainOnNode.data(), bufMain.data(), bufMain.size(), MPI_DOUBLE, MPI_MAX, cr->mpi_comm_mysim);
-        // NOLINTNEXTLINE(readability-misleading-indentation)
         if constexpr (sc_useCycleSubcounters)
         {
             MPI_Allreduce(cyclesSubOnNode.data(), bufSub.data(), bufSub.size(), MPI_DOUBLE, MPI_MAX, cr->mpi_comm_mysim);
@@ -478,7 +470,6 @@ WallcycleCounts wallcycle_sum(const t_commrec* cr, gmx_wallcycle* wc)
             wcc[key].n = gmx::roundToInt(bufMain[key]);
         }
         wc->haveInvalidCount = (haveInvalidCount > 0);
-        // NOLINTNEXTLINE(readability-misleading-indentation)
         if constexpr (sc_useCycleSubcounters)
         {
             for (auto key : keysOf(wc->wcsc))
@@ -489,7 +480,6 @@ WallcycleCounts wallcycle_sum(const t_commrec* cr, gmx_wallcycle* wc)
 
         // TODO Use MPI_Reduce
         MPI_Allreduce(cyclesMain.data(), cycles_sum.data(), cyclesMain.size(), MPI_DOUBLE, MPI_SUM, cr->mpi_comm_mysim);
-        // NOLINTNEXTLINE(readability-misleading-indentation)
         if constexpr (sc_useCycleSubcounters)
         {
             MPI_Allreduce(cyclesSub.data(),
@@ -529,7 +519,6 @@ WallcycleCounts wallcycle_sum(const t_commrec* cr, gmx_wallcycle* wc)
         {
             cycles_sum[static_cast<int>(key)] = cyclesMain[key];
         }
-        // NOLINTNEXTLINE(readability-misleading-indentation)
         if constexpr (sc_useCycleSubcounters)
         {
             for (auto key : keysOf(cyclesSub))
@@ -858,7 +847,6 @@ void wallcycle_print(FILE*                            fplog,
         }
     }
 
-    // NOLINTNEXTLINE(readability-misleading-indentation)
     if constexpr (sc_useCycleSubcounters)
     {
         fprintf(fplog, " Breakdown of PP / PME activities\n");

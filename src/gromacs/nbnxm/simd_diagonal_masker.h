@@ -82,7 +82,6 @@ generateDiagonalMasks(const nbnxn_atomdata_t::SimdMasks& simdMasks)
         diagonalMaskVV[0][i] = (zero < diagonalJMinusI);
         diagonalJMinusI      = diagonalJMinusI - iIndexIncrement;
     }
-    // NOLINTNEXTLINE(readability-misleading-indentation) remove when clang-tidy-13 is required
     if constexpr (clusterRatio != KernelLayoutClusterRatio::JSizeEqualsISize)
     {
         if (clusterRatio == KernelLayoutClusterRatio::JSizeIsHalfISize)
@@ -96,7 +95,6 @@ generateDiagonalMasks(const nbnxn_atomdata_t::SimdMasks& simdMasks)
             diagonalJMinusI      = diagonalJMinusI - iIndexIncrement;
         }
     }
-    // NOLINTNEXTLINE(readability-misleading-indentation) remove when clang-tidy-13 is required
     return diagonalMaskVV;
 }
 

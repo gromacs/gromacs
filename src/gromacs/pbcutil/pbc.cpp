@@ -1441,7 +1441,6 @@ static void putAtomsInBoxTemplated(PbcType                  pbcType,
         GMX_ASSERT(v.size() == x.size(), "Need velocities for box deformation");
     }
 
-    // NOLINTNEXTLINE(readability-misleading-indentation)
     int npbcdim;
 
     if (pbcType == PbcType::Screw)

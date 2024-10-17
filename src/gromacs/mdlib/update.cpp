@@ -409,7 +409,6 @@ updateMDLeapfrogSimple(int                                 start,
             {
                 v[a][d] = vNew;
             }
-            // NOLINTNEXTLINE(readability-misleading-indentation) remove when clang-tidy-13 is required
             xprime[a][d] = x[a][d] + vNew * dt;
         }
     }
@@ -528,13 +527,11 @@ updateMDLeapfrogSimpleSimd(int                               start,
             v1 = gmx::fma(f1 * invMass1, timestep, lambdaSystem * v1);
             v2 = gmx::fma(f2 * invMass2, timestep, lambdaSystem * v2);
         }
-        // NOLINTNEXTLINE(readability-misleading-indentation) remove when clang-tidy-13 is required
         if constexpr (storeUpdatedVelocities == StoreUpdatedVelocities::Yes)
         {
             simdStoreRvecs(v, a, v0, v1, v2);
         }
 
-        // NOLINTNEXTLINE(readability-misleading-indentation) remove when clang-tidy-13 is required
         UpdateSimdReal x0, x1, x2;
         simdLoadRvecs(x, a, &x0, &x1, &x2);
 

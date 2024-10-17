@@ -593,7 +593,6 @@ static void applyPbcAndSetMoveFlags(const gmx::UpdateGroupsCog&         updateGr
         {
             const PbcAndFlag& pbcAndFlag = pbcAndFlags[cogIndex];
             rvec_inc(atomCoords[a], pbcAndFlag.pbcShift);
-            // NOLINTNEXTLINE(readability-misleading-indentation) remove when clang-tidy-13 is required
             if constexpr (haveBoxDeformation)
             {
                 // Correct the velocity for the position change along the flow profile
@@ -601,7 +600,6 @@ static void applyPbcAndSetMoveFlags(const gmx::UpdateGroupsCog&         updateGr
                         boxDeformationRate, atomVelocities[a], pbcAndFlag.pbcShift);
             }
             /* Temporarily store the flag in move */
-            // NOLINTNEXTLINE(readability-misleading-indentation) remove when clang-tidy-13 is required
             move[a] = pbcAndFlag.moveFlag;
         }
         else

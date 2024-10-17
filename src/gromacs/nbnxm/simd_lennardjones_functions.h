@@ -97,13 +97,11 @@ inline void rInvSixAndRInvTwelve(const std::array<SimdReal, inputSize>&    rInvS
 {
     rInvSixV = genArr<nR>([&](int i) { return rInvSquaredV[i] * rInvSquaredV[i] * rInvSquaredV[i]; });
 
-    // NOLINTNEXTLINE(readability-misleading-indentation) remove when clang-tidy-13 is required
     if constexpr (maskInteractions)
     {
         rInvSixV = genArr<nR>([&](int i) { return selectByMask(rInvSixV[i], interactV[i]); });
     }
 
-    // NOLINTNEXTLINE(readability-misleading-indentation) remove when clang-tidy-13 is required
     rInvTwelveV = genArr<nR>([&](int i) { return rInvSixV[i] * rInvSixV[i]; });
 }
 
@@ -133,7 +131,6 @@ inline void lennardJonesInteractionsSigmaEpsilon(const std::array<SimdReal, inpu
         sigmaInvR6V = genArr<nR>([&](int i) { return selectByMask(sigmaInvR6V[i], interactV[i]); });
     }
 
-    // NOLINTNEXTLINE(readability-misleading-indentation) remove when clang-tidy-13 is required
     if constexpr (haveCutoffCheck)
     {
         sigmaInvR6V =

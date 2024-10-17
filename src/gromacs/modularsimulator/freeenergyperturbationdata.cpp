@@ -207,7 +207,7 @@ void FreeEnergyPerturbationData::Element::doCheckpointData(CheckpointData<operat
                 externalFepStateSetting_ = FepStateSetting();
             }
         }
-        if (externalFepStateSetting_.has_value()) // NOLINT(readability-misleading-indentation)
+        if (externalFepStateSetting_.has_value())
         {
             checkpointData->scalar("Requested new FEP state", &externalFepStateSetting_->newFepState);
             checkpointData->scalar("Step at which new FEP state is applied",

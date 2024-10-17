@@ -895,19 +895,19 @@ static PropagatorConnection getConnection(Propagator<integrationStage> gmx_unuse
             return propagator->velocityScalingCallback();
         };
     }
-    if constexpr (hasStartVelocityScaling<integrationStage>()) // NOLINT(readability-misleading-indentation)
+    if constexpr (hasStartVelocityScaling<integrationStage>())
     {
         propagatorConnection.getViewOnStartVelocityScaling = [propagator]() {
             return propagator->viewOnStartVelocityScaling();
         };
     }
-    if constexpr (hasEndVelocityScaling<integrationStage>()) // NOLINT(readability-misleading-indentation)
+    if constexpr (hasEndVelocityScaling<integrationStage>())
     {
         propagatorConnection.getViewOnEndVelocityScaling = [propagator]() {
             return propagator->viewOnEndVelocityScaling();
         };
     }
-    if constexpr (hasPositionScaling<integrationStage>()) // NOLINT(readability-misleading-indentation)
+    if constexpr (hasPositionScaling<integrationStage>())
     {
         propagatorConnection.setNumPositionScalingVariables = [propagator](int num) {
             propagator->setNumPositionScalingVariables(num);
@@ -919,7 +919,7 @@ static PropagatorConnection getConnection(Propagator<integrationStage> gmx_unuse
             return propagator->positionScalingCallback();
         };
     }
-    if constexpr (hasParrinelloRahmanScaling<integrationStage>()) // NOLINT(readability-misleading-indentation)
+    if constexpr (hasParrinelloRahmanScaling<integrationStage>())
     {
         propagatorConnection.getViewOnPRScalingMatrix = [propagator]() {
             return propagator->viewOnPRScalingMatrix();
@@ -929,7 +929,7 @@ static PropagatorConnection getConnection(Propagator<integrationStage> gmx_unuse
         };
     }
 
-    return propagatorConnection; // NOLINT(readability-misleading-indentation)
+    return propagatorConnection;
 }
 
 // doxygen is confused by the two definitions

@@ -191,17 +191,14 @@ inline double calcSingleSquaredDistance(const RVec c1, const RVec c2)
     {
         result += (firstCoords[XX] - secondCoords[XX]) * (firstCoords[XX] - secondCoords[XX]);
     }
-    // NOLINTNEXTLINE(readability-misleading-indentation) remove when clang-tidy-13 is required
     if constexpr (y)
     {
         result += (firstCoords[YY] - secondCoords[YY]) * (firstCoords[YY] - secondCoords[YY]);
     }
-    // NOLINTNEXTLINE(readability-misleading-indentation) remove when clang-tidy-13 is required
     if constexpr (z)
     {
         result += (firstCoords[ZZ] - secondCoords[ZZ]) * (firstCoords[ZZ] - secondCoords[ZZ]);
     }
-    // NOLINTNEXTLINE(readability-misleading-indentation) remove when clang-tidy-13 is required
     return result;
 }
 
