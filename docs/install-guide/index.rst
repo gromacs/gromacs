@@ -119,7 +119,7 @@ You should strive to use the most recent version of your
 compiler. Since we require full C++17 support the minimum
 compiler versions supported by the |Gromacs| team are
 
-* GNU (gcc/libstdc++) 9
+* GNU (gcc/libstdc++) |GMX_GCC_MINIMUM_REQUIRED_VERSION|
 * LLVM (clang/libc++) 7
 * Microsoft (MSVC) 2019
 

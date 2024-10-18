@@ -49,8 +49,8 @@ macro(gmx_test_compiler_problems)
     # cmake feature detection is currently inconsistent: gitlab.kitware.com/cmake/cmake/issues/18869
     # We might want to switch to using feature test macros some time.
     if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-        if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9)
-            set(cxx_required_version "GCC version 9")
+        if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS ${GMX_GCC_MINIMUM_REQUIRED_VERSION})
+            set(cxx_required_version "GCC version ${GMX_GCC_MINIMUM_REQUIRED_VERSION}")
         endif()
     elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
         if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 19.15)

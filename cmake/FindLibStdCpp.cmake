@@ -127,9 +127,9 @@ if (TRY_TO_FIND_GPLUSPLUS)
         # Cache this, so future configurations won't have to run g++ again.
         set(GMX_GPLUSPLUS_VERSION ${GMX_GPLUSPLUS_VERSION} CACHE STRING "Version of g++ from which libstdc++ is obtained")
     endif()
-    if (${GMX_GPLUSPLUS_VERSION} VERSION_LESS 9)
+    if (${GMX_GPLUSPLUS_VERSION} VERSION_LESS ${GMX_GCC_MINIMUM_REQUIRED_VERSION})
         message(WARNING "Found g++ at ${GMX_GPLUSPLUS_PATH}. Its version is ${GMX_GPLUSPLUS_VERSION}. "
-            "GROMACS encourages at least version 9. "
+            "GROMACS encourages at least version ${GMX_GCC_MINIMUM_REQUIRED_VERSION}. "
             "If you see problems, please specify a different g++ using GMX_GPLUSPLUS_PATH, PATH or CMAKE_PREFIX_PATH.")
     endif()
 

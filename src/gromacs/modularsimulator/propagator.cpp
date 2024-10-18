@@ -878,11 +878,9 @@ PropagatorCallback Propagator<integrationStage>::prScalingCallback()
 }
 
 template<IntegrationStage integrationStage>
-static PropagatorConnection getConnection(Propagator<integrationStage> gmx_unused* propagator,
-                                          const PropagatorTag&                     propagatorTag)
+static PropagatorConnection getConnection(Propagator<integrationStage>* propagator,
+                                          const PropagatorTag&          propagatorTag)
 {
-    // gmx_unused is needed because gcc-9 can't see that propagator is
-    // used for all IntegrationState options.
     PropagatorConnection propagatorConnection{ propagatorTag };
 
     if constexpr (hasStartVelocityScaling<integrationStage>() || hasEndVelocityScaling<integrationStage>())
