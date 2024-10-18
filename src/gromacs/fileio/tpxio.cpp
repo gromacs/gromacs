@@ -196,8 +196,9 @@ enum tpxv
     tpxv_MassRepartitioning,          /**< Add mass repartitioning */
     tpxv_AwhTargetMetricScaling,      /**< Add AWH friction optimized target distribution */
     tpxv_VerletBufferPressureTol,     /**< Add Verlet buffer pressure tolerance */
-    tpxv_RefScaleMultipleCOMs,        /**< Add multiple COM groups for refcoord-scale */
-    tpxv_Count                        /**< the total number of tpxv versions */
+    tpxv_HandleMartiniBondedBStateParametersProperly, /**< Handle restraint angles, restraint dihedrals, and combined bending-torsion parameters properly */
+    tpxv_RefScaleMultipleCOMs, /**< Add multiple COM groups for refcoord-scale */
+    tpxv_Count                 /**< the total number of tpxv versions */
 };
 
 /*! \brief Version number of the file format written to run input
@@ -1918,6 +1919,19 @@ static void do_iparams(gmx::ISerializer* serializer, t_functype ftype, t_iparams
         case F_RESTRANGLES:
             serializer->doReal(&iparams->harmonic.rA);
             serializer->doReal(&iparams->harmonic.krA);
+            if (file_version < tpxv_HandleMartiniBondedBStateParametersProperly && serializer->reading())
+            {
+                // Makes old tpr files work, because it's very likely
+                // that FEP on such interactions was never intended
+                // because such FEP is not implemented.
+                iparams->harmonic.rB  = iparams->harmonic.rA;
+                iparams->harmonic.krB = iparams->harmonic.krA;
+            }
+            else
+            {
+                serializer->doReal(&iparams->harmonic.rB);
+                serializer->doReal(&iparams->harmonic.krB);
+            }
             break;
         case F_LINEAR_ANGLES:
             serializer->doReal(&iparams->linangle.klinA);
@@ -2072,6 +2086,19 @@ static void do_iparams(gmx::ISerializer* serializer, t_functype ftype, t_iparams
         case F_RESTRDIHS:
             serializer->doReal(&iparams->pdihs.phiA);
             serializer->doReal(&iparams->pdihs.cpA);
+            if (file_version < tpxv_HandleMartiniBondedBStateParametersProperly && serializer->reading())
+            {
+                // Makes old tpr files work, because it's very likely
+                // that FEP on such interactions was never intended
+                // because such FEP is not implemented.
+                iparams->pdihs.phiB = iparams->pdihs.phiA;
+                iparams->pdihs.cpB  = iparams->pdihs.cpA;
+            }
+            else
+            {
+                serializer->doReal(&iparams->pdihs.phiB);
+                serializer->doReal(&iparams->pdihs.cpB);
+            }
             break;
         case F_DISRES:
             serializer->doInt(&iparams->disres.label);
@@ -2123,7 +2150,22 @@ static void do_iparams(gmx::ISerializer* serializer, t_functype ftype, t_iparams
             serializer->doReal(&iparams->fbposres.r);
             serializer->doReal(&iparams->fbposres.k);
             break;
-        case F_CBTDIHS: serializer->doRealArray(iparams->cbtdihs.cbtcA, NR_CBTDIHS); break;
+        case F_CBTDIHS:
+            serializer->doRealArray(iparams->cbtdihs.cbtcA, NR_CBTDIHS);
+            if (file_version < tpxv_HandleMartiniBondedBStateParametersProperly && serializer->reading())
+            {
+                // Makes old tpr files work, because it's very likely
+                // that FEP on such interactions was never intended
+                // because such FEP is not implemented.
+                std::copy(std::begin(iparams->cbtdihs.cbtcA),
+                          std::end(iparams->cbtdihs.cbtcA),
+                          std::begin(iparams->cbtdihs.cbtcB));
+            }
+            else
+            {
+                serializer->doRealArray(iparams->cbtdihs.cbtcB, NR_CBTDIHS);
+            }
+            break;
         case F_RBDIHS:
             // Fall-through intended
         case F_FOURDIHS:

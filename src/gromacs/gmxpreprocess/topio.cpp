@@ -1047,7 +1047,7 @@ static char** read_topol(const char*                                 infile,
                                             "Excluding %d bonded neighbours molecule type '%s'",
                                             mi0->nrexcl,
                                             *mi0->name);
-                            sum_q(&mi0->atoms, nrcopies, &qt, &qBt);
+
                             if (!mi0->bProcessed)
                             {
                                 generate_excl(mi0->nrexcl, mi0->atoms.nr, mi0->interactions, &(mi0->excls));
@@ -1069,6 +1069,10 @@ static char** read_topol(const char*                                 infile,
                                 stupid_fill_block(&mi0->mols, mi0->atoms.nr, TRUE);
                                 mi0->bProcessed = TRUE;
                             }
+
+                            // After, potentially, applying decoupling we can accumulate the charge sum
+                            sum_q(&mi0->atoms, nrcopies, &qt, &qBt);
+
                             break;
                         }
                         default:

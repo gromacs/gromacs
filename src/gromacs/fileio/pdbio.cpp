@@ -586,6 +586,9 @@ void get_pdb_atomnumber(const t_atoms* atoms, AtomProperties* aps)
         if ((anm[0] != ' ') && ((len <= 2) || !std::isdigit(anm[2])))
         {
             anm_copy[2] = nc;
+            // if anm[0] is not a space character, by PDB convention assume two-letter atom name as they
+            // start in column 13. convert to lower case to ensure correct matching in the database
+            anm_copy[1] = std::tolower(anm_copy[1]);
             if (aps->setAtomProperty(epropElement, "???", anm_copy, &eval))
             {
                 atomnumber    = gmx::roundToInt(eval);

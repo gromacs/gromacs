@@ -230,7 +230,7 @@ INSTANTIATE_TEST_SUITE_P(
                 FreeEnergyReferenceTestParams{ "coulandvdwtogether", MaxNumWarnings(1), { F_DVDL } },
                 FreeEnergyReferenceTestParams{ "coulandvdwtogether-net-charge", MaxNumWarnings(2), { F_DVDL } },
                 FreeEnergyReferenceTestParams{ "coulandvdwtogether-decouple-counter-charge",
-                                               MaxNumWarnings(1),
+                                               MaxNumWarnings(2),
                                                { F_DVDL } },
                 FreeEnergyReferenceTestParams{ "expanded", MaxNumWarnings(1), { F_DVDL_COUL, F_DVDL_VDW } },
                 // Tolerated warnings: No default bonded interaction types for perturbed atoms (10x)

@@ -64,6 +64,30 @@ was not zero, the simulation would crash within a few steps.
 
 :issue:`5181`
 
+Fix parameter handling for coarse-grained bonded potentials
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Free-energy perturbation has never been supported for restraint angle,
+restraint dihedral, and combined bending-torsion potentials sometimes
+used in coarse-grained force fields. This led to the hypothetical
+B-state parameters being incorrectly handled in ``gmx grompp`` and
+then incorrectly serialized to/from the .tpr file.
+
+This was generally benign, even when such functional forms were in
+use. However, when other interactions were perturbed, the incorrect
+parameter handling made it look like the interactions with wrongly
+implemented parameters were intended to be perturbed.  This condition
+was sometimes achieved when using alchemical-embedding
+system-preparation workflows.
+
+Now the hypothetical B-state parameters are handled correctly, so
+FEP-based workflows can succeed. Perturbation of the above-mentioned
+interaction types is still not supported, however.
+
+:issue:`5129`
+:issue:`5144`
+:issue:`5147`
+
 Fix Colvars output files always written to the working directory.
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -86,16 +110,43 @@ made the (default) ``-ddorder interleave`` hang. Now it works.
 
 :issue:`4345`
 
+Dynamic load balancing was ineffective when special forces were present
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The timing for DLB included the calculation of special forces, e.g. pull code
+and rotation. As these require communication, imbalance might not have been
+measured. Now special forces are excluded from the timings.
+
+:issue:`5188`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
+
+grompp checked incorrect B-state charges with free-energy decoupling
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When the `couple-moltype` options was used, `gmx grompp` would check the
+A-state charges instead of the B-state charges. This would lead to incorrect
+or no warnings when B-state of the system had non-zero net charge.
+
+:issue:`5200`
 
 Fix dump crash with Colvars values
 """"""""""""""""""""""""""""""""""
 
 Fix `gmx dump` crash when trying to output the binary Colvars state file.
 
-
 :issue:`5034`
+
+Fix element and atom number deduction in during preprocessing
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Two-letter atom names like BR or CL were not correctly handled in the preprocessing
+during  `gmx editconf`, `gmx pdb2gmx` and `gmx grompp`, leading to incorrect element
+and  atom number assignment. This could lead to incorrect element names in output files
+and possibly incorrect behaviour in QMMM simulations.
+
+:issue:`5182`
 
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -106,7 +157,15 @@ Fix physical validation with Pymbar version 4
 Pymbar version 4 has a different API compared to version 3. Now we support
 using either of those versions and internally handle the API differences.
 
-:issue:`5130`
+:issue:`5130` 
+
+Fix compatibility with VkFFT 1.3.5
+""""""""""""""""""""""""""""""""""
+
+Fix crash on |Gromacs| shutdown when external VkFFT 1.3.5
+is used.
+
+:issue:`5184`
 
 Miscellaneous
 ^^^^^^^^^^^^^
