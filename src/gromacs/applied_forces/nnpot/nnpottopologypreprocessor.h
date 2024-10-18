@@ -33,61 +33,53 @@
  */
 /*! \internal \file
  * \brief
- * Declares an abstract wrapper class for a neural network model to predict energies/forces.
+ * NNPotTopologyPrepocessor class responsible for
+ * all modificatios of the topology during input pre-processing.
+ * Inherits from QMMMTopologyPreprocessor.
  *
  * \author Lukas Müllender <lukas.muellender@gmail.com>
  * \ingroup module_applied_forces
  */
-#ifndef GMX_APPLIED_FORCES_NNPOTMODEL_H
-#define GMX_APPLIED_FORCES_NNPOTMODEL_H
+#ifndef GROMACS_APPLIED_FORCES_NNPOT_NNPOTTOPOLGYPREPROCESSOR_H
+#define GROMACS_APPLIED_FORCES_NNPOT_NNPOTTOPOLGYPREPROCESSOR_H
 
-#include "gromacs/math/vectypes.h"
+#include "gromacs/applied_forces/qmmm/qmmmtopologypreprocessor.h"
 #include "gromacs/utility/arrayref.h"
 
-struct t_commrec;
-struct gmx_enerdata_t;
-enum class PbcType;
+struct gmx_mtop_t;
 
 namespace gmx
 {
 
-/*! \brief NNPot Module
+/*! \brief
+ * Class responsible for all modifications of the topology during input pre-processing.
  *
- * Abstract class for a neural network potential model.
- * Inherit from this class to implement a specific neural network backend/framework.
- * Refer to torchmodel.h for an example implementation.
+ * Inherits from QMMMTopologyPreprocessor and performs the following modifications
+ * for a scheme analoguous to mechanical embedding in QMMM:
+ * 1) Split molecules containing NNP input atoms from other molecules in blocks
+ * 2) Exclude non-bonded interactions between NNP atoms.
+ * 3) Build vector with atomic numbers of all atoms.
+ * 4) Make F_CONNBOND between atoms within NNP region.
+ * 5) Remove angles and settles containing 2 or more NNP atoms.
+ * 6) Remove dihedrals containing 3 or more NNP atoms.
  */
-class INNPotModel
+class NNPotTopologyPreprocessor : public QMMMTopologyPreprocessor
 {
 public:
-    //! Initialize the neural network model
-    virtual void initModel() = 0;
-
-    /*! \brief Prepare inputs for NN model.
+    /*! \brief Constructor for NNPotTopologyPreprocessor from its parameters
      *
-     * Currently supported inputs:
-     *   - atom positions (std::vector<RVec>): atomic positions
-     *   - atom numbers (std::vector<int>): atomic numbers
-     *   - box (matrix): simulation box vectors
-     *   - pbc type (PbcType): boolean flags for periodic boundary conditions in x, y, z
+     * \param[in] inputIndices Array with global indices of NN input atoms
      */
-    //! \{
-    virtual void prepareAtomPositions(std::vector<RVec>&) = 0;
-    virtual void prepareAtomNumbers(std::vector<int>&)    = 0;
-    virtual void prepareBox(matrix&)                      = 0;
-    virtual void preparePbcType(PbcType&)                 = 0;
-    //! \}
+    NNPotTopologyPreprocessor(ArrayRef<const Index> inputIndices);
 
-    //! call inference on NN model
-    virtual void evaluateModel() = 0;
-
-    //! retrieve NN model outputs
-    virtual void getOutputs(std::vector<int>&, gmx_enerdata_t&, const ArrayRef<RVec>&, bool) = 0;
-
-    //! set communication record for possible communication of input/output data between ranks
-    virtual void setCommRec(const t_commrec*) = 0;
+    /*! \brief Process mtop topology and builds topInfo_
+     * containing information about topology modifications.
+     *
+     * \param[in,out] mtop Topology that needs to be modified
+     */
+    void preprocess(gmx_mtop_t* mtop);
 };
 
 } // namespace gmx
 
-#endif // GMX_APPLIED_FORCES_NNPOTMODEL_H
+#endif

@@ -142,7 +142,7 @@ public:
     void setLocalMMAtomSet(const LocalAtomSet&);
 
     //! modify topology of the system during preprocessing
-    void modifyTopology(gmx_mtop_t*) const;
+    void modifyTopology(gmx_mtop_t*);
 
     //! set topology of the system during simulation setup
     void setTopology(const gmx_mtop_t&);
@@ -165,8 +165,6 @@ public:
 
     void            setLogger(const MDLogger&);
     void            setWarninp(WarningHandler*);
-    void            appendLog(const std::string&);
-    void            appendWarning(const std::string&);
     const MDLogger* logger();
 
 private:

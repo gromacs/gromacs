@@ -63,6 +63,7 @@
 #include "gromacs/utility/stringutil.h"
 
 #include "nnpotoptions.h"
+#include "nnpottopologypreprocessor.h"
 
 namespace gmx
 {
@@ -160,12 +161,6 @@ void NNPotOptions::setInputGroupIndices(const IndexGroupsAndNames& indexGroupsAn
         return;
     }
 
-    // the following check will be removed in an upcoming MR
-    if (!equalCaseInsensitive(params_.inputGroup_, "system"))
-    {
-        GMX_THROW(InconsistentInputError("Only 'System' input group is supported. Got " + params_.inputGroup_));
-    }
-
     // Create input index
     params_.inpIndices_ = indexGroupsAndNames.indices(params_.inputGroup_);
 
@@ -175,6 +170,34 @@ void NNPotOptions::setInputGroupIndices(const IndexGroupsAndNames& indexGroupsAn
         GMX_THROW(InconsistentInputError(
                 formatString("Group %s defining NN potential input atoms should not be empty.",
                              params_.inputGroup_.c_str())));
+    }
+
+    // Create temporary index for the whole System
+    auto systemIndices = indexGroupsAndNames.indices("System");
+
+    // Sort inpIndices_ and sysIndices_
+    std::sort(params_.inpIndices_.begin(), params_.inpIndices_.end());
+    std::sort(systemIndices.begin(), systemIndices.end());
+
+    // Create MM index
+    params_.mmIndices_.reserve(systemIndices.size());
+
+    // Position in inpIndices_
+    size_t j = 0;
+    // Write to mmIndices_ only the atoms which do not belong to NNP input region
+    for (size_t i = 0; i < systemIndices.size(); i++)
+    {
+        if (systemIndices[i] != params_.inpIndices_[j])
+        {
+            params_.mmIndices_.push_back(systemIndices[i]);
+        }
+        else
+        {
+            if (j < params_.inpIndices_.size() - 1)
+            {
+                j++;
+            }
+        }
     }
 }
 
@@ -188,7 +211,7 @@ void NNPotOptions::setLocalMMAtomSet(const LocalAtomSet& localMMAtomSet)
     params_.mmAtoms_ = std::make_unique<LocalAtomSet>(localMMAtomSet);
 }
 
-void NNPotOptions::modifyTopology(gmx_mtop_t* top) const
+void NNPotOptions::modifyTopology(gmx_mtop_t* top)
 {
     // Exit if module is not active
     if (!params_.active_)
@@ -196,10 +219,71 @@ void NNPotOptions::modifyTopology(gmx_mtop_t* top) const
         return;
     }
 
-    // casting parameter to void to surpress ocmpiler warnings
-    (void)top;
+    // subclassing the qmmm topology preprocessor as it has virtually the exact functionality we need
+    //! \todo separate this from QMMM module as its reused in multiple places now
+    NNPotTopologyPreprocessor topPrep(params_.inpIndices_);
+    topPrep.preprocess(top);
 
-    // The body of this function will be populated in an upcoming MR
+    // Get info about modifications
+    QMMMTopologyInfo topInfo = topPrep.topInfo();
+
+    // Check that logger and warning handler are valid
+    GMX_ASSERT(logger_, "Logger not set.");
+    GMX_ASSERT(wi_, "WarningHandler not set.");
+
+    // Inform the user about performed modifications, issue warning if necessary
+    GMX_LOG(logger_->info)
+            .appendText("Neural network potential Interface is active, topology was modified!");
+
+    GMX_LOG(logger_->info)
+            .appendTextFormatted("Number of NN input atoms: %d\nNumber of regular atoms: %d",
+                                 topInfo.numQMAtoms,
+                                 topInfo.numMMAtoms);
+
+    if (topInfo.numBondsRemoved > 0)
+    {
+        GMX_LOG(logger_->info).appendTextFormatted("Bonds removed: %d", topInfo.numBondsRemoved);
+    }
+
+    if (topInfo.numAnglesRemoved > 0)
+    {
+        GMX_LOG(logger_->info).appendTextFormatted("Angles removed: %d", topInfo.numAnglesRemoved);
+    }
+
+    if (topInfo.numDihedralsRemoved > 0)
+    {
+        GMX_LOG(logger_->info).appendTextFormatted("Dihedrals removed: %d", topInfo.numDihedralsRemoved);
+    }
+
+    if (topInfo.numSettleRemoved > 0)
+    {
+        GMX_LOG(logger_->info).appendTextFormatted("Settles removed: %d", topInfo.numSettleRemoved);
+    }
+
+    if (topInfo.numConnBondsAdded > 0)
+    {
+        GMX_LOG(logger_->info).appendTextFormatted("Connection-only (type 5) bonds added: %d", topInfo.numConnBondsAdded);
+    }
+
+    // Warn in case of broken covalent bonds between NNP input atoms and MM atoms
+    if (topInfo.numLinkBonds > 0)
+    {
+        wi_->addWarning(formatString(
+                "%d broken bonds found between NN input atoms and MM atoms."
+                " This is can lead to unexpected behavior and is discouraged as of now."
+                " Set the -maxwarn option if you want to proceed anyway.",
+                topInfo.numLinkBonds));
+    }
+
+    // If there are many constrained bonds in NNP input region then we should also warn the user
+    if (topInfo.numConstrainedBondsInQMSubsystem > 2)
+    {
+        wi_->addWarning(
+                "Your neural network potential subsystem has a lot of constrained bonds. "
+                "They probably have been generated automatically. "
+                "That could produce artifacts in the simulation. "
+                "Consider constraints = none in the mdp file.");
+    }
 }
 
 void NNPotOptions::writeParamsToKvt(KeyValueTreeObjectBuilder treeBuilder)
@@ -304,22 +388,6 @@ void NNPotOptions::setWarninp(WarningHandler* wi)
     wi_ = wi;
 }
 
-void NNPotOptions::appendLog(const std::string& msg)
-{
-    if (logger_)
-    {
-        GMX_LOG(logger_->info).asParagraph().appendText(msg);
-    }
-}
-
-void NNPotOptions::appendWarning(const std::string& msg)
-{
-    if (wi_)
-    {
-        wi_->addWarning(msg);
-    }
-}
-
 void NNPotOptions::checkNNPotModel()
 {
 #if GMX_TORCH
@@ -396,8 +464,9 @@ void NNPotOptions::checkNNPotModel()
     // check if first input is atom_positions
     if ((params_.modelInput_[0] != "atom_positions") && !(params_.providesForces_))
     {
-        appendWarning("Gradients will be computed with respect to first input to NN model "
-                      + params_.modelInput_[0] + " instead of atom positions. Is this intended?");
+        GMX_ASSERT(wi_, "WarningHandler not set.");
+        wi_->addWarning("Gradients will be computed with respect to first input to NN model "
+                        + params_.modelInput_[0] + " instead of atom positions. Is this intended?");
     }
 
 #endif // GMX_TORCH

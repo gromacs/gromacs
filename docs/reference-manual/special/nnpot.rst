@@ -14,6 +14,27 @@ learning model (e.g. PyTorchs AutoGrad engine), w.r.t. the inputs.
 Currently, only models trained in `PyTorch <https://pytorch.org/>`_,
 exported using its TorchScript functionality, are supported.
 
+Hybrid NNP/MM Simulations
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The NNPot interface also supports hybrid NNP/MM simulations, where only a small
+subsystem is modeled with the neural network potential, and the rest of the system
+is modeled using regular force fields. The embedding scheme used is analoguous
+to the additive mechanical embedding scheme in QMMM simulations, where the total
+energy of the system is expressed as :math:`E_{tot} = E_{NNP} + E_{MM} + E_{NNP-MM}`,
+where :math:`E_{NNP}` describes the energy predicted by the model for the NNP subsystem,
+:math:`E_{MM}` describes all other interactions calculated using the classical MM
+force field. The coupling term :math:`E_{NNP-MM}` term includes non-bonded electrostatic
+and LJ interactions between the atoms in the NNP and MM regions, calculated as usual
+in GROMACS. Bonded interactions are also described on the MM level, removing terms
+consisting of bonds containing 2 NNP atoms, angles and settles containing 2 or 3 NNP atoms,
+and dihedrals containing 3 or 4 NNP atoms. Broken chemical bonds between NNP and MM atoms
+are currently *not* capped with a link atom, as is usual in QMMM simulations.
+This might lead to unusual local chemical environments the model is not familiar with,
+leading to unexpected behaviour. NNP/MM simulations with NNP subsystems that cut through
+chemical bonds are therefore discouraged as of now. All necessary modifications
+to the system topology are performed automatically during :ref:`gmx grompp` preprocessing.
+
 Software Prerequisites
 ^^^^^^^^^^^^^^^^^^^^^^
 

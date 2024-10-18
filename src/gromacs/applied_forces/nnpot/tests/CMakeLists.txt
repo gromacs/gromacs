@@ -36,6 +36,7 @@ gmx_add_unit_test(NNPotAppliedForcesUnitTest nnpot_applied_forces-test
         nnpot.cpp
         nnpotforceprovider.cpp
         nnpotoptions.cpp
+        nnpottopologypreprocessor.cpp
 )
 
 target_link_libraries(nnpot_applied_forces-test PRIVATE applied_forces math topology)

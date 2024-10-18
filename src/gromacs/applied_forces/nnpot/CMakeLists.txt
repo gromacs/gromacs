@@ -36,6 +36,7 @@ include(CheckLinkerFlag)
 gmx_add_libgromacs_sources(
     nnpotoptions.cpp
     nnpot.cpp
+    nnpottopologypreprocessor.cpp
 )
 
 if (GMX_TORCH)
