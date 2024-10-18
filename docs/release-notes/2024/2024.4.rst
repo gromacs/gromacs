@@ -138,6 +138,16 @@ Fix `gmx dump` crash when trying to output the binary Colvars state file.
 
 :issue:`5034`
 
+Fix element and atom number deduction in during preprocessing
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Two-letter atom names like BR or CL were not correctly handled in the preprocessing
+during  `gmx editconf`, `gmx pdb2gmx` and `gmx grompp`, leading to incorrect element
+and  atom number assignment. This could lead to incorrect element names in output files
+and possibly incorrect behaviour in QMMM simulations.
+
+:issue:`5182`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
