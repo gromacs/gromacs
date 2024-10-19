@@ -287,6 +287,10 @@ def get_llvm_packages(args) -> typing.Iterable[str]:
         packages = [
             f"libomp-{args.llvm}-dev",
             f"libomp5-{args.llvm}",
+            f"libc++-{args.llvm}-dev",
+            f"libc++1-{args.llvm}",
+            f"libc++abi-{args.llvm}-dev",
+            f"libc++abi1-{args.llvm}",
             "clang-format-" + str(args.llvm),
             "clang-tidy-" + str(args.llvm),
         ]
