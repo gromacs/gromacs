@@ -299,8 +299,6 @@ __launch_bounds__(THREADS_PER_BLOCK)
     // NOLINTNEXTLINE(readability-redundant-declaration)
     extern __shared__ char sm_dynamicShmem[];
     char*                  sm_nextSlotPtr = sm_dynamicShmem;
-    static_assert(sizeof(char) == 1,
-                  "The shared memory offset calculation assumes that char is 1 byte");
 
     /* shmem buffer for i x+q pre-loading */
     float4* xqib = reinterpret_cast<float4*>(sm_nextSlotPtr);

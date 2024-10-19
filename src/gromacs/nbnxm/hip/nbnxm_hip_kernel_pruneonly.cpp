@@ -114,10 +114,7 @@ __launch_bounds__(c_clSizeSq<pairlistType>* threadZ, minBlocksPp) __global__
         /* shmem buffer for i x+q pre-loading */
         extern __shared__ char sm_dynamicSharedMemory[];
         char*                  sm_nextSlotPtr = sm_dynamicSharedMemory;
-        static_assert(
-                sizeof(char) == 1,
-                "The shared memory offset currently only works for cases where char is 1 byte");
-        float4* sm_xqBufferPtr = reinterpret_cast<float4*>(sm_nextSlotPtr);
+        float4*                sm_xqBufferPtr = reinterpret_cast<float4*>(sm_nextSlotPtr);
         sm_nextSlotPtr += incrementSharedMemorySlotPtr<pairlistType, float4>();
 
         const float4* xq = atdat.xq;

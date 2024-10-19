@@ -627,11 +627,6 @@ __launch_bounds__(c_clSizeSq<pairlistType>* nthreadZ, minBlocksPerMp) __global__
         // supports the regular syntax in the amd llvm compiler
         extern __shared__ char sm_reductionBuffer[];
         char*                  sm_nextSlotPtr = sm_reductionBuffer;
-        // this only works as long as char on our platform is 1 byte long
-        // Other platforms will need fixes for it.
-        static_assert(sizeof(char) == 1,
-                      "The shared memory offset calculation assumes that char is 1 byte");
-
 
         // We rely on the flat shared memory space here, and abuse undefined behavior of changing
         // the data type based on what we expect on the specific offset
