@@ -152,11 +152,11 @@ archive:configure:release:
   script:
     - rm -rf gromacs*tar.gz
     - cd $BUILD_DIR
-    - cmake --build . --target gmx -- -j4 2>&1 | tee buildLogFile.log
-    - cmake --build . --target man -- -j4 2>&1 | tee manBuildLogFile.log
-    - cmake --build . --target completion -- -j4 2>&1 | tee completionBuildLogFile.log
-    - cmake --build . --target install-guide -- -j4 2>&1 | tee installGuideBuildLogFile.log
-    - cmake --build . --target package_source -- -j4 2>&1 | tee packageBuildLogFile.log
+    - $CMAKE --build . --target gmx -- -j4 2>&1 | tee buildLogFile.log
+    - $CMAKE --build . --target man -- -j4 2>&1 | tee manBuildLogFile.log
+    - $CMAKE --build . --target completion -- -j4 2>&1 | tee completionBuildLogFile.log
+    - $CMAKE --build . --target install-guide -- -j4 2>&1 | tee installGuideBuildLogFile.log
+    - $CMAKE --build . --target package_source -- -j4 2>&1 | tee packageBuildLogFile.log
     - awk '/warning/,/warning.*generated|^$/' buildLogFile.log manBuildLogFile.log
       completionBuildLogFile.log installGuideBuildLogFile.log
       packageBuildLogFile.log | grep -v "CMake" | tee buildErrors.log || true

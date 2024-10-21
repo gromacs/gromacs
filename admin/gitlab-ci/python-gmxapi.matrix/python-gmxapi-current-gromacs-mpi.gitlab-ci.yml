@@ -18,6 +18,7 @@
   image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-24.04-llvm-19
   stage: test
   variables:
+    CMAKE: /usr/local/cmake-3.30.3/bin/cmake
     COMPILER_MAJOR_VERSION: 19
     KUBERNETES_CPU_LIMIT: 4
     KUBERNETES_CPU_REQUEST: 4

@@ -41,12 +41,9 @@ if(NOT GMX_GPU_SYCL OR GMX_SYCL_ACPP OR NOT GMX_SYCL_DPCPP)
 endif()
 
 if(WIN32)
-    if(CMAKE_VERSION VERSION_LESS "3.23.0")
-        message(FATAL_ERROR "SYCL with DPC++ on Windows requires cmake 3.23 or later.")
-    endif()
     if(NOT BUILD_SHARED_LIBS)
         message(FATAL_ERROR "SYCL with DPC++ on Windows doesn't work with static libraries. Set BUILD_SHARED_LIBS=on.")
-        # Tested up to 3.23.1 and icx 2022.1. Problem is order of exe link argument order. Works if gromacs.lib
+        # Tested up to cmake 3.23.1 and icx 2022.1. Problem is order of exe link argument order. Works if gromacs.lib
         # and -fsycl both appear before -link. Not possible to change order from cmake script. cmake fix is WIP.
     endif()
 endif()

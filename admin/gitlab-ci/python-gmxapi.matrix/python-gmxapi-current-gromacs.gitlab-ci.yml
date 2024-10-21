@@ -18,6 +18,7 @@
   image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-22.04-llvm-14-cuda-12.1.0
   stage: test
   variables:
+    CMAKE: /usr/local/cmake-3.30.3/bin/cmake
     COMPILER_MAJOR_VERSION: 14
     KUBERNETES_CPU_LIMIT: 2
     KUBERNETES_CPU_REQUEST: 2

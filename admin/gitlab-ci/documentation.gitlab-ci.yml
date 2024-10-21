@@ -23,6 +23,7 @@
   stage: configure-build
   cache: {}
   variables:
+    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
     KUBERNETES_MEMORY_REQUEST: 2Gi
@@ -60,7 +61,7 @@
     # without additional hinting. Once CMakeCache.txt exists, the later stages
     # should work fine without reactivating the venv.
     - source /root/venv/py3.9/bin/activate
-    - cmake ..
+    - $CMAKE ..
       -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
       $CMAKE_COMPILER_SCRIPT
       $CMAKE_EXTRA_OPTIONS
@@ -94,6 +95,7 @@
   stage: release-configure
   cache: {}
   variables:
+    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
     KUBERNETES_MEMORY_REQUEST: 2Gi
@@ -162,7 +164,7 @@
       fi
     - cd $RELEASE_BUILD_DIR
     - source /root/venv/py3.9/bin/activate
-    - cmake ../$RELEASE_SOURCE/
+    - $CMAKE ../$RELEASE_SOURCE/
       -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
       $CMAKE_COMPILER_SCRIPT
       $CMAKE_EXTRA_OPTIONS
@@ -201,9 +203,11 @@ docs:configure:
 .docs:build:
   # TODO (#3480) this should be organized more like the current documentation.py script
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-19-docs
+  variables:
+    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
   script:
     - cd $BUILD_DIR
-    - cmake --build . --target gmx -- -j8
+    - $CMAKE --build . --target gmx -- -j8
     - cd ..
   artifacts:
     name: docs-artifacts-$CI_COMMIT_REF_SLUG
@@ -242,13 +246,14 @@ docs:build:
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-19-docs
   cache: {}
   variables:
+    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     KUBERNETES_CPU_LIMIT: 4
     KUBERNETES_CPU_REQUEST: 2
     KUBERNETES_MEMORY_REQUEST: 4Gi
   script:
     - cd $BUILD_DIR
     - |
-      cmake --build . --target sphinx-programs \
+      $CMAKE --build . --target sphinx-programs \
       -- -j4 2>setupErrors.log | tee docs/setup.log || true
     - |
       if [ ! -f setupErrors.log -o -s setupErrors.log ] ; then
@@ -256,11 +261,11 @@ docs:build:
         [ -f setupErrors.log ] && cat setupErrors.log
         exit 1
       fi
-    - cmake --build . --target doxygen-all -- -j4 2>&1 | tee docs/doxygen-all.log
-    - cmake --build . --target manual -- -j4 2>&1 | tee docs/manual/all-output.log
+    - $CMAKE --build . --target doxygen-all -- -j4 2>&1 | tee docs/doxygen-all.log
+    - $CMAKE --build . --target manual -- -j4 2>&1 | tee docs/manual/all-output.log
       | grep -i "warning" | grep -v "TeX" | grep -v "Package" || true
-    - cmake --build . --target webpage-sphinx -- -j4 2>&1 | tee webpage-sphinx.log || true
-    - cmake --build . --target webpage -- -j4 > webpage.log 2>&1 || true
+    - $CMAKE --build . --target webpage-sphinx -- -j4 2>&1 | tee webpage-sphinx.log || true
+    - $CMAKE --build . --target webpage -- -j4 > webpage.log 2>&1 || true
     - grep "WARNING:" docs/manual/all-output.log > pythonErrors.log || true
     - grep -i "error" docs/sphinx-*.log > sphinxDiagnostics.log || true
     - grep -i "warning" docs/sphinx-*.log >> sphinxDiagnostics.log || true

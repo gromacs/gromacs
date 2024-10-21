@@ -15,3 +15,10 @@ SYCL backend. Either cuFFT or rocFFT can now be used with
 Intel DPC++ and Codeplay's plugins for NVIDIA and AMD GPUs.
 
 :issue:`4744`
+
+Update of required CMake version
+""""""""""""""""""""""""""""""""
+
+Updated required CMake version to 3.28
+
+:issue:`5014`

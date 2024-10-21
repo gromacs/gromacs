@@ -977,7 +977,7 @@ def prepare_venv(version: packaging.version.Version) -> typing.Sequence[str]:
             'black' \
             'breathe' \
             'build' \
-            'cmake>=3.18.4' \
+            'cmake>=3.28' \
             'flake8>=3.7.7' \
             'furo' \
             'gcovr>=4.2' \

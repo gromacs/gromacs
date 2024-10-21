@@ -34,7 +34,8 @@
 # This CMakeLists.txt is not intended to be used directly, but either through
 # setup.py or as an inclusion of the full GROMACS project.
 # See https://manual.gromacs.org/current/gmxapi/userguide/install.html for more.
-cmake_minimum_required(VERSION 3.18.4)
+cmake_minimum_required(VERSION 3.28)
+cmake_policy(VERSION 3.28)
 
 # Note that this is the gmxapi._gmxapi Python bindings package version,
 # not the C++ API version. It is not essential that it match the pure Python
@@ -65,18 +66,6 @@ if(CMAKE_CXX_STANDARD LESS 17)
     message(FATAL_ERROR "C++17 or newer is required")
 endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-# Only interpret if() arguments as variables or keywords when unquoted.
-cmake_policy(SET CMP0054 NEW)
-# honor the language standard settings for try_compile()
-cmake_policy(SET CMP0067 NEW)
-if(POLICY CMP0074) #3.12
-    # Allow gmxapi_ROOT hint.
-    cmake_policy(SET CMP0074 NEW)
-endif()
-if (POLICY CMP0139) #3.24
-    cmake_policy(SET CMP0139 NEW)
-endif ()
 
 find_package(Python3 3.7 COMPONENTS Interpreter Development)
 find_package(pybind11 2.12 QUIET CONFIG)
@@ -354,22 +343,13 @@ else()
     else()
         # Building as part of GROMACS build tree.
         if (_mpi4py_mpicxx AND MPI_CXX_COMPILER AND NOT _mpi4py_compiler_warned)
-            if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.19")
-                file(REAL_PATH ${_mpi4py_mpicxx} _mpi4py_mpicxx)
-                file(REAL_PATH ${MPI_CXX_COMPILER} MPI_CXX_COMPILER)
-            endif ()
+            file(REAL_PATH ${_mpi4py_mpicxx} _mpi4py_mpicxx)
+            file(REAL_PATH ${MPI_CXX_COMPILER} MPI_CXX_COMPILER)
 
             set(_warning "mpi4py reports building with ${_mpi4py_mpicxx}, but MPI_CXX_COMPILER=${MPI_CXX_COMPILER}")
-            if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.24")
-                if (NOT ("${_mpi4py_mpicxx}" PATH_EQUAL "${MPI_CXX_COMPILER}"))
-                    message(WARNING "${_warning}")
-                    set(_mpi4py_compiler_warned TRUE CACHE BOOL "Suppress warning on subsequent runs.")
-                endif ()
-            else()
-                if (NOT ("${_mpi4py_mpicxx}" STREQUAL "${MPI_CXX_COMPILER}"))
-                    message(WARNING "${_warning}")
-                    set(_mpi4py_compiler_warned TRUE CACHE BOOL "Suppress warning on subsequent runs.")
-                endif ()
+            if (NOT ("${_mpi4py_mpicxx}" PATH_EQUAL "${MPI_CXX_COMPILER}"))
+                message(WARNING "${_warning}")
+                set(_mpi4py_compiler_warned TRUE CACHE BOOL "Suppress warning on subsequent runs.")
             endif ()
             unset(_warning)
         endif ()

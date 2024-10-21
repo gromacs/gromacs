@@ -24,6 +24,7 @@ gromacs-cp2k-2024.2:gcc-14-nightly:configure:
   # Dockefile generated with /admin/containers/scripted_gmx_docker_builds.py
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cp2k-2024.2
   variables:
+    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
     KUBERNETES_MEMORY_REQUEST: 2Gi
@@ -60,6 +61,7 @@ gromacs-cp2k-2024.2:gcc-14-nightly:build-test:
     - !reference [.rules:nightly-not-for-release, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-14-cp2k-2024.2
   variables:
+    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     KUBERNETES_CPU_LIMIT: 4
     KUBERNETES_CPU_REQUEST: 4
     KUBERNETES_MEMORY_REQUEST: 8Gi

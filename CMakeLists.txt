@@ -31,19 +31,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out https://www.gromacs.org.
 
-cmake_minimum_required(VERSION 3.18.4)
-
-cmake_policy(SET CMP0022 NEW)
-cmake_policy(SET CMP0048 NEW) # As of CMake 3.22, default is still "OLD"
-cmake_policy(SET CMP0068 NEW) # From CMake 3.9
-cmake_policy(SET CMP0074 NEW) # From CMake 3.12
-if(POLICY CMP0131) # From CMake 3.24
-    cmake_policy(SET CMP0131 NEW)
-endif()
-if(POLICY CMP0135) # From CMake 3.24
-    # We don't care about DOWNLOAD_EXTRACT_TIMESTAMP; prefer the new behavior
-    cmake_policy(SET CMP0135 NEW)
-endif()
+cmake_minimum_required(VERSION 3.28)
 
 # CMake modules/macros are in a subdirectory to keep this file cleaner
 # This needs to be set before project() in order to pick up toolchain files

@@ -31,7 +31,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out https://www.gromacs.org.
 
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.28)
 project(AdaptiveCppTest)
 find_package(adaptivecpp QUIET)
 if(NOT adaptivecpp_FOUND)

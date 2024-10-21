@@ -24,6 +24,8 @@ gromacs:clang-14:cxx-20:configure:
     - !reference [.rules:merge-requests, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-llvm-14-cuda-12.1.0
   variables:
+    CMAKE: /usr/local/cmake-3.29.3/bin/cmake
+    CMAKE_EXTRA_OPTIONS: -DCMAKE_CXX_STANDARD=20 -DGMX_INSTALL_LEGACY_API=ON -DGMX_USE_TNG=OFF -DGMX_USE_COLVARS=NONE -DGMX_USE_PLUMED=OFF
     CMAKE_EXTRA_OPTIONS: "-DCMAKE_CXX_FLAGS='-stdlib=libc++' -DCMAKE_CXX_STANDARD=20 -DGMX_INSTALL_LEGACY_API=ON -DGMX_USE_TNG=OFF -DGMX_USE_COLVARS=NONE -DGMX_USE_PLUMED=OFF"
     COMPILER_MAJOR_VERSION: 14
 
@@ -35,6 +37,8 @@ gromacs:clang-14:cxx-20:build:
   rules:
     - !reference [.rules:merge-requests, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-llvm-14-cuda-12.1.0
+  variables:
+    CMAKE: /usr/local/cmake-3.29.3/bin/cmake
   needs:
     - job: gromacs:clang-14:cxx-20:configure
 
@@ -45,6 +49,7 @@ gromacs:clang-14:cxx-20:test:
     - !reference [.rules:merge-requests, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-llvm-14-cuda-12.1.0
   variables:
+    CMAKE: /usr/local/cmake-3.29.3/bin/cmake
     GMX_FORCE_UPDATE_DEFAULT_CPU: 1
   needs:
     - job: gromacs:clang-14:cxx-20:build
@@ -55,6 +60,8 @@ gromacs:clang-14:cxx-20:regressiontest:
   rules:
     - !reference [.rules:merge-requests, rules]
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-llvm-14-cuda-12.1.0
+  variables:
+    CMAKE: /usr/local/cmake-3.29.3/bin/cmake
   needs:
     - job: gromacs:clang-14:cxx-20:build
     - job: regressiontests:prepare

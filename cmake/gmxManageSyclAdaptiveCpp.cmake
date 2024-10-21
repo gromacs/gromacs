@@ -268,19 +268,7 @@ if (GMX_ACPP_HAVE_HIP_TARGET AND GMX_GPU_FFT_ROCFFT)
     endif()
     if (ACPP_JSON AND NOT ACPP_ROCM_PATH)
         file(READ "${ACPP_JSON}" ACPP_JSON_CONTENTS)
-        if (CMAKE_VERSION VERSION_LESS 3.19)
-            # We want the value encoded by the line
-            # "default-rocm-path" : "/opt/rocm",
-            # so we use regular expressions to remove everything before
-            # and after the relevant quotation marks.
-            #
-            # Remove this when GROMACS requires CMake 3.19 or higher, as the
-            # proper JSON parsing below is more robust.
-            string(REGEX REPLACE ".*\"default-rocm-path\" *: * \"" "" ACPP_ROCM_PATH_VALUE ${ACPP_JSON_CONTENTS})
-            string(REGEX REPLACE "\",.*" "" ACPP_ROCM_PATH_VALUE ${ACPP_ROCM_PATH_VALUE})
-        else()
-            string(JSON ACPP_ROCM_PATH_VALUE GET ${ACPP_JSON_CONTENTS} "default-rocm-path")
-        endif()
+        string(JSON ACPP_ROCM_PATH_VALUE GET ${ACPP_JSON_CONTENTS} "default-rocm-path")
         set(ACPP_ROCM_PATH "${ACPP_ROCM_PATH_VALUE}" CACHE PATH "The default ROCm used by AdaptiveCpp/hipSYCL" FORCE)
     endif()
 

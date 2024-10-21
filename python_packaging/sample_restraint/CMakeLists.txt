@@ -1,4 +1,5 @@
-cmake_minimum_required(VERSION 3.18.4)
+cmake_minimum_required(VERSION 3.28)
+cmake_policy(VERSION 3.28)
 # If you are using this repository as a template, you should probably change the
 # project name and adopt your own versioning scheme.
 project(sample_restraint)
@@ -18,9 +19,6 @@ if(CMAKE_CXX_STANDARD LESS 17)
   message(FATAL_ERROR "C++17 or newer is required")
 endif()
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
-
-# Allow gmxapi_ROOT hint (available with CMake 3.12).
-cmake_policy(SET CMP0074 NEW)
 
 # CMake modules are in a subdirectory to keep this file cleaner
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)

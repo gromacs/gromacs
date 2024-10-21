@@ -38,9 +38,8 @@ endif()
 ######################################
 # Output compiler and CFLAGS used
 ######################################
-include(GetCompilerInfo.cmake)
-get_compiler_info(C BUILD_C_COMPILER)
-get_compiler_info(CXX BUILD_CXX_COMPILER)
+set(C_BUILD_COMPILER "${CMAKE_C_COMPILER} ${CMAKE_C_COMPILER_ID} ${CMAKE_C_COMPILER_VERSION}")
+set(CXX_BUILD_COMPILER "${CMAKE_CXX_COMPILER} ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
 if(GMX_GPU_CUDA)
     get_cuda_compiler_info(CUDA_COMPILER_INFO CUDA_DEVICE_COMPILER_FLAGS CUDA_HOST_COMPILER_FLAGS)
 endif()
