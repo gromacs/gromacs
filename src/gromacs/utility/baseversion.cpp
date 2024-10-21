@@ -84,7 +84,7 @@ const char* getGpuImplementationString()
         }
         else if (GMX_GPU_HIP)
         {
-            return "HIP (not implemented yet}";
+            return "HIP";
         }
         else if (GMX_GPU_SYCL)
         {

@@ -237,6 +237,9 @@ AMD GPUs (GFX9, CDNA 1/2, and RDNA1/2/3). Using other devices supported by
 these compilers is possible, but not recommended. Notably, SSCP/generic mode
 of AdaptiveCpp_ is not supported.
 
+Starting with |Gromacs| 2025, AMD-HIP_ support has been added for running the main
+non-bonded kernels on AMD devices.
+
 It is not possible to configure several GPU backends in the same build
 of |Gromacs|.
 
@@ -516,6 +519,7 @@ and performance improvements. VkFFT can be used with OpenCL and SYCL backends:
   the default on macOS and when building with Visual Studio. On other platforms
   it is not extensively tested, but it likely outperforms ClFFT and can be enabled
   during cmake configuration.
+* For AMD-HIP_, VkFFT is the default FFT backend, as it supports both consumer and data center hardware.
 
 To enable VkFFT support, use the following CMake option:
 
@@ -1098,6 +1102,48 @@ The following flags can be passed to CMake in order to tune |Gromacs|:
      on GPUs with 64-wide execution like AMD GCN and CDNA family.
      This option is automatically enabled in all builds that target GCN or CDNA GPUs (but not RDNA).
 
+
+.. _AMD-HIP:
+
+AMD HIP GPU acceleration
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+HIP is the AMD interoperability layer for the `ROCm`_ toolkit used to target AMD devices.
+
+In |Gromacs| 2025 there is only limited support for using HIP as the device backend for AMD devices,
+with only NBNxM kernels offload being available.
+
+Build instructions
+""""""""""""""""""""""""""""""
+
+In order to use HIP as the device backend, you need to have the `ROCm`_ toolkit installed, including
+the `rocPrim`_ libraries. The minimum version required by |Gromacs| is ROCm 5.2, but we recommend a
+recent version to take advantage of library improvements.
+
+You can then configure the build like this
+
+::
+
+   cmake .. -DCMAKE_HIP_COMPILER=${ROCM_PATH}/bin/amdclang++ \
+            -DCMAKE_PREFIX_PATH=${ROCM_PATH} \
+            -DGMX_GPU=HIP
+
+By default |Gromacs| will generate code for a range of different CDNA devices. In case you want to
+narrow the scope of the code generation, or want to target RDNA or GCN devices, you can specify the
+architectures using this flag
+
+``-DGMX_HIP_TARGET_ARCH=gfxXYZ,gfxABCD``
+
+When detecting a 64-wide execution architecture and no 32-wide versions, |Gromacs| will automatically
+configure with
+
+``-DGMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT=ON``
+
+to improve performance on those devices. In case any 32-wide architectures are present, the maximum
+execution width will be restricted to be 32-wide, even on devices that support 64-wide execution.
+
+When |Gromacs| is built with explicit 64-wide execution (and conflicting support for 32-wide devices),
+any 32-wide devices detected will be not be used.
 
 Static linking
 ~~~~~~~~~~~~~~

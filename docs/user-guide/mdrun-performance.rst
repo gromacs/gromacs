@@ -1129,8 +1129,8 @@ this problem and thus reduce the calculation time.
 
 .. _gmx-gpu-pme:
 
-GPU accelerated calculation of PME
-..................................
+GPU accelerated calculation of PME (not for AMD HIP)
+....................................................
 
 .. todo:: again, extend this and add some actual useful information concerning performance etc...
 
@@ -1389,7 +1389,7 @@ Currently supported hardware architectures are:
 - Intel iGPUs.
 
 Make sure that you have the latest drivers installed. For AMD GPUs,
-the compute-oriented `ROCm <https://rocm.docs.amd.com/en/latest/>`_ stack is recommended;
+the compute-oriented `ROCm`_ stack is recommended;
 alternatively, the AMDGPU-PRO stack is also compatible; using the outdated
 and unsupported ``fglrx`` proprietary driver and runtime is not recommended (but
 for certain older hardware that may be the only way to obtain support).
@@ -1457,6 +1457,15 @@ Please keep in mind the following environment variables that might be useful:
 
 In addition to ``-gpu_id`` option, backend-specific environment variables, like ``SYCL_DEVICE_FILTER``
 or ``ROCR_VISIBLE_DEVICES``, could be used to select GPUs.
+
+Running HIP version of mdrun
+----------------------------
+
+Currently only limited offload capabilities are implemented for AMD HIP support. Please ensure you have a recent
+version of the ROCm toolkit and check the :ref:`AMD HIP installation guide <AMD-HIP>`.
+
+If you are using CDNA hardware, please ensure that your |Gromacs| build has been configured to use 64-wide
+execution on the device.
 
 Performance checklist
 ---------------------

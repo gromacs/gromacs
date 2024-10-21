@@ -249,6 +249,8 @@ rst_epilog += """
 .. _Intel oneAPI DPC++: https://www.intel.com/content/www/us/en/developer/tools/oneapi/dpc-compiler.html
 .. _hipSYCL: https://github.com/AdaptiveCpp/AdaptiveCpp
 .. _AdaptiveCpp: https://github.com/AdaptiveCpp/AdaptiveCpp
+.. _ROCm: https://rocm.docs.amd.com/en/latest/index.html
+.. _rocPrim: https://rocm.docs.amd.com/projects/rocPRIM/en/latest/index.html
 .. _OpenMPI: http://www.open-mpi.org
 .. _MPICH: http://www.mpich.org
 .. _OpenMP: http://en.wikipedia.org/wiki/OpenMP
