@@ -1252,16 +1252,36 @@ void PrintFreeEnergyInfoToFile(FILE*               outfile,
             }
             if (expand->elamstats == LambdaWeightCalculation::Minvar)
             {
-                fprintf(outfile,
-                        " %10.5f %10.5f %10.5f %10.5f",
-                        dfhist->sum_weights[ifep],
-                        dfhist->sum_dg[ifep],
-                        dg,
-                        dv);
+                /*! don't print out dG or error in dG for the last state, since
+                 * delta is defined as between state i to i+1
+                 */
+                if (ifep == nlim - 1)
+                {
+                    fprintf(outfile,
+                            " %10.5f %10.5f                      ",
+                            dfhist->sum_weights[ifep],
+                            dfhist->sum_dg[ifep]);
+                }
+                else
+                {
+                    fprintf(outfile,
+                            " %10.5f %10.5f %10.5f %10.5f",
+                            dfhist->sum_weights[ifep],
+                            dfhist->sum_dg[ifep],
+                            dg,
+                            dv);
+                }
             }
             else
             {
-                fprintf(outfile, " %10.5f %10.5f", dfhist->sum_weights[ifep], dw);
+                if (ifep == nlim - 1)
+                {
+                    fprintf(outfile, " %10.5f           ", dfhist->sum_weights[ifep]);
+                }
+                else
+                {
+                    fprintf(outfile, " %10.5f %10.5f", dfhist->sum_weights[ifep], dw);
+                }
             }
             if (ifep == fep_state)
             {
