@@ -39,8 +39,7 @@
  *  \author Mark Abraham <mark.j.abraham@gmail.com>
  *  \ingroup module_fft
  *
- *  In DPC++, we use Intel oneMKL to perform the FFT. Currently, we only support binary version
- *  of oneMKL, see #4744.
+ *  In DPC++, we use Intel oneMKL to perform the FFT.
  */
 
 #include "gmxpre.h"
@@ -72,7 +71,12 @@ class DeviceContext;
 
 #if GMX_GPU_FFT_MKL
 // Using closed-source MKL.
-#    include <oneapi/mkl/dfti.hpp>
+#    include <mkl_version.h>
+#    if INTEL_MKL_VERSION < 20250000
+#        include <oneapi/mkl/dfti.hpp>
+#    else
+#        include <oneapi/mkl/dft.hpp>
+#    endif
 #    define PLACEMENT_INPLACE DFTI_INPLACE
 #    define PLACEMENT_NOT_INPLACE DFTI_NOT_INPLACE
 #    define COMPLEX_COMPLEX_STORAGE DFTI_COMPLEX_COMPLEX
@@ -83,6 +87,7 @@ class DeviceContext;
 #    define PLACEMENT_NOT_INPLACE oneapi::mkl::dft::config_value::NOT_INPLACE
 #    define COMPLEX_COMPLEX_STORAGE oneapi::mkl::dft::config_value::COMPLEX_COMPLEX
 #endif // GMX_GPU_FFT_MKL
+
 
 #include <oneapi/mkl/exceptions.hpp>
 
@@ -154,6 +159,7 @@ Gpu3dFft::ImplSyclMkl::ImplSyclMkl(bool allocateRealGrid,
 
     const auto placement = performOutOfPlaceFFT ? PLACEMENT_NOT_INPLACE : PLACEMENT_INPLACE;
 
+#if defined(INTEL_MKL_VERSION) && (INTEL_MKL_VERSION < 20240001) // Intel oneMKL < 2024.1
     try
     {
         using oneapi::mkl::dft::config_param;
@@ -183,6 +189,26 @@ Gpu3dFft::ImplSyclMkl::ImplSyclMkl(bool allocateRealGrid,
         GMX_THROW(InternalError(
                 formatString("MKL failure while configuring C2R descriptor: %s", exc.what())));
     }
+#else // Open-source oneMKL or Intel oneMKL >= 2024.1
+    // Unify the two descriptors once we get rid of (IN|OUT)PUT_STRIDES API above
+    for (auto* descriptor : { &r2cDescriptor_, &c2rDescriptor_ })
+    {
+        try
+        {
+            using oneapi::mkl::dft::config_param;
+            descriptor->set_value(config_param::FWD_STRIDES, realGridStrides.data());
+            descriptor->set_value(config_param::BWD_STRIDES, complexGridStrides.data());
+            descriptor->set_value(config_param::CONJUGATE_EVEN_STORAGE, COMPLEX_COMPLEX_STORAGE);
+            descriptor->set_value(config_param::PLACEMENT, placement);
+            descriptor->commit(queue_);
+        }
+        catch (oneapi::mkl::exception& exc)
+        {
+            GMX_THROW(InternalError(
+                    formatString("MKL failure while configuring FFT descriptor: %s", exc.what())));
+        }
+    }
+#endif
 }
 
 Gpu3dFft::ImplSyclMkl::~ImplSyclMkl()

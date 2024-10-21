@@ -40,7 +40,7 @@ function(gmx_manage_onemkl)
     if (oneMKL_FIND_QUIETLY_AFTER_FIRST_RUN)
         set(oneMKL_FIND_QUIETLY TRUE)
     endif()
-    find_package(oneMKL REQUIRED)
+    find_package(oneMKL REQUIRED 0.5)
     set(oneMKL_FIND_QUIETLY_AFTER_FIRST_RUN TRUE CACHE INTERNAL "Be quiet during future attempts to find oneMKL")
 
     set(BACKEND_COUNT 0)
