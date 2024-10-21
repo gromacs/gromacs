@@ -92,13 +92,11 @@ else()
     list(APPEND _CUDA_CLANG_GENCODE_FLAGS "61;")
     list(APPEND _CUDA_CLANG_GENCODE_FLAGS "70;")
     list(APPEND _CUDA_CLANG_GENCODE_FLAGS "75;")
-    if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 14.0) # Clang 13 and earlier fail to recognize the flags below
-        if(NOT CUDAToolkit_VERSION VERSION_LESS 11.0)
-            list(APPEND _CUDA_CLANG_GENCODE_FLAGS "80;")
-        endif()
-        if(NOT CUDAToolkit_VERSION VERSION_LESS 11.1)
-            list(APPEND _CUDA_CLANG_GENCODE_FLAGS "86;")
-        endif()
+    if(NOT CUDAToolkit_VERSION VERSION_LESS 11.0)
+        list(APPEND _CUDA_CLANG_GENCODE_FLAGS "80;")
+    endif()
+    if(NOT CUDAToolkit_VERSION VERSION_LESS 11.1)
+        list(APPEND _CUDA_CLANG_GENCODE_FLAGS "86;")
     endif()
     if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 16.0) # Clang 15 and earlier fail to recognize the flags below
         if(NOT CUDAToolkit_VERSION VERSION_LESS 11.4)
@@ -119,10 +117,6 @@ endif()
 
 # default flags
 list(APPEND _CUDA_CLANG_FLAGS "-ffast-math" "-fcuda-flush-denormals-to-zero")
-if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 11.0)
-    # Workaround for clang 9-10 (Bug 45533).
-    list(APPEND _CUDA_CLANG_FLAGS "-fno-openmp")
-endif()
 # CUDA toolkit
 list(APPEND _CUDA_CLANG_FLAGS "--cuda-path=${CUDAToolkit_TARGET_DIR}")
 

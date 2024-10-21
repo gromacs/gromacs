@@ -82,7 +82,7 @@ if (NOT SYCL_CXX_FLAGS_EXTRA MATCHES "_INSTANT_SUBMISSION")
     list(APPEND ACPP_EXTRA_COMPILE_OPTIONS -DACPP_ALLOW_INSTANT_SUBMISSION=1) # ACpp 24.06 and newer
 endif()
 
-# We want to inline aggressively, but only Clang 13 or newer supports this flag.
+# We want to inline aggressively where the compiler supports this flag.
 # Likely not needed on AMD, since AdaptiveCpp by default sets AMD-specific flags to force inlining, but no harm either.
 check_cxx_compiler_flag("-fgpu-inline-threshold=1" HAS_GPU_INLINE_THRESHOLD)
 if(${HAS_GPU_INLINE_THRESHOLD})
@@ -203,7 +203,7 @@ if(NOT GMX_ACPP_HAVE_CUDA_TARGET AND NOT GMX_ACPP_HAVE_HIP_TARGET)
     message(WARNING "AdaptiveCpp/hipSYCL has no GPU targets set! Please, specify target hardware with -DHIPSYCL_TARGETS CMake option")
 endif()
 if(GMX_ACPP_HAVE_CUDA_TARGET AND GMX_ACPP_HAVE_HIP_TARGET)
-    message(FATAL_ERROR "AdaptiveCpp/hipSYCL cannot have both CUDA and HIP targets active! This would require explicit multipass mode which both decreases performance on NVIDIA devices and has been removed in clang 12. Compile only for either CUDA or HIP targets.")
+    message(FATAL_ERROR "AdaptiveCpp/hipSYCL cannot have both CUDA and HIP targets active! This would require explicit multipass mode which both decreases performance on NVIDIA devices and is no longer supported in clang. Compile only for either CUDA or HIP targets.")
 endif()
 unset(_rerun_acpp_try_compile_tests)
 

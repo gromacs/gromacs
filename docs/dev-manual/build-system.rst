@@ -408,11 +408,11 @@ Variables affecting the ``all`` target
 
 .. cmake:: GMX_CLANG_TIDY
 
-  `clang-tidy <https://releases.llvm.org/11.0.0/tools/clang/tools/extra/docs/clang-tidy/index.html>`_
+  `clang-tidy <https://releases.llvm.org/18.0.0/tools/clang/tools/extra/docs/clang-tidy/index.html>`_
   is used for static code analysis and (some) automated fixing of issues detected. clang-tidy is easy to install.
   It is contained in
-  the llvm binary `package <http://releases.llvm.org/download.html#11.0.0>`_. Only
-  version 11.0.* is supported. Others might miss tests or give false positives.
+  the llvm binary `package <http://releases.llvm.org/download.html#18.0.0>`_. Only
+  version 18.0.* is supported. Others might miss tests or give false positives.
   It is run automatically in GitLab CI for each commit. Many checks have fixes which can automatically be
   applied. To run it, the build has to be configured with
   ``cmake -DGMX_CLANG_TIDY=ON -DCMAKE_BUILD_TYPE=Debug``.

@@ -120,7 +120,7 @@ compiler. Since we require full C++17 support the minimum
 compiler versions supported by the |Gromacs| team are
 
 * GNU (gcc/libstdc++) |GMX_GCC_MINIMUM_REQUIRED_VERSION|
-* LLVM (clang/libc++) 7
+* LLVM (clang/libc++) |GMX_CLANG_MINIMUM_REQUIRED_VERSION|
 * Microsoft (MSVC) 2019
 
 Other compilers may work (Cray, Pathscale, older clang) but do
@@ -148,7 +148,7 @@ these will be honored. For configuration of other compilers, read on.
 
 On Linux, the clang compilers typically use for their C++ library
 the libstdc++ which comes with g++. For |Gromacs|, we require
-the compiler to support libstc++ version 7.1 or higher. To select a
+the compiler to support libstc++ version |GMX_GCC_MINIMUM_REQUIRED_VERSION| or higher. To select a
 particular libstdc++ library for a compiler whose default standard
 library does not work, provide the path to g++ with
 ``-DGMX_GPLUSPLUS_PATH=/path/to/g++``. Note that if you then build
