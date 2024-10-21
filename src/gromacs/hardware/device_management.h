@@ -286,17 +286,17 @@ void serializeDeviceInformations(const std::vector<std::unique_ptr<DeviceInforma
  */
 std::vector<std::unique_ptr<DeviceInformation>> deserializeDeviceInformations(gmx::ISerializer* serializer);
 
-/*! \brief Return an ID for the described GPU that may be unique.
+/*! \brief Return an ID (non-negative integer) for the described GPU that may be unique.
  *
  * If a UUID is available, returns its hash.
+ * Otherwise, returns \c DeviceInformation::id field.
  *
- * Otherwise, returns hash of the \c DeviceInformation::id field.
- * Note that in this case, the value used on different ranks may or
+ * Note that the value used on different ranks may or
  * may not be a reliable indicator of whether the ranks share devices,
  * depending how that id was constructed, perhaps depending on what
  * devices were visible to different ranks.
  */
-size_t uniqueDeviceId(const DeviceInformation& deviceInfo);
+int uniqueDeviceId(const DeviceInformation& deviceInfo);
 
 //! Return the optional UUID detected for the indicated device
 std::optional<std::array<std::byte, 16>> uuidForDevice(const DeviceInformation& deviceInfo);

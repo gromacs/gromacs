@@ -46,6 +46,7 @@
  */
 #include "gmxpre.h"
 
+#include <climits>
 #include <cstdlib>
 #include <cstring>
 
@@ -248,7 +249,7 @@ std::vector<std::unique_ptr<DeviceInformation>> deserializeDeviceInformations(gm
 namespace
 {
 
-//! Unecessarily declare the function below, to keep nvcc and clang-tidy happy simultaneously
+//! Unnecessarily declare the function below, to keep nvcc and clang-tidy happy simultaneously
 size_t hashCombine(size_t seed, std::byte c);
 
 /*! \brief Combine \c seed with \c c to produce a combined hash
@@ -281,14 +282,20 @@ struct HashAnArray
 
 } // namespace
 
-size_t uniqueDeviceId(const DeviceInformation& deviceInfo)
+int uniqueDeviceId(const DeviceInformation& deviceInfo)
 {
     if (deviceInfo.uuid.has_value())
     {
+        /* We're hashing 128 bit UUID to a 64-bit value and then take the last 31 bits.
+         * This increases the risk of collision, but a positive int is required for MPI_Comm_split,
+         * which is what this function is used for. */
         HashAnArray hasher;
-        return hasher(deviceInfo.uuid.value());
+        size_t      hash64 = hasher(deviceInfo.uuid.value());
+        size_t      mask   = 0x7f'ff'ff'ff; // 31 least significant bits
+        static_assert(sizeof(int) * CHAR_BIT >= 32, "We assume int is at least 32 bits");
+        return static_cast<int>(hash64 & mask); // get a non-negative integer
     }
-    return std::hash<int>{}(deviceInfo.id);
+    return deviceInfo.id;
 }
 
 std::optional<std::array<std::byte, 16>> uuidForDevice(const DeviceInformation& deviceInfo)

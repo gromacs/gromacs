@@ -49,6 +49,7 @@
 #include <algorithm>
 #include <array>
 #include <filesystem>
+#include <limits>
 #include <memory>
 #include <string>
 
@@ -945,9 +946,11 @@ static void make_load_communicator(gmx_domdec_t* dd, int dim_ind, ivec loc)
 }
 #endif
 
-void dd_setup_dlb_resource_sharing(const t_commrec* cr, const size_t uniqueDeviceId)
+void dd_setup_dlb_resource_sharing(const t_commrec* cr, const int uniqueDeviceId)
 {
 #if GMX_MPI
+    GMX_ASSERT(cr != nullptr, "commrec should be valid");
+    GMX_ASSERT(uniqueDeviceId >= 0, "Device ID should be non-negative");
     gmx_domdec_t* dd = cr->dd;
 
     if (!thisRankHasDuty(cr, DUTY_PP))
@@ -975,7 +978,7 @@ void dd_setup_dlb_resource_sharing(const t_commrec* cr, const size_t uniqueDevic
     // the need for per-node per-group communicators.
     MPI_Comm mpi_comm_pp_physicalnode;
     MPI_Comm_split(dd->mpi_comm_all, physicalnode_id_hash, dd->rank, &mpi_comm_pp_physicalnode);
-    MPI_Comm_split(mpi_comm_pp_physicalnode, static_cast<int>(uniqueDeviceId), dd->rank, &dd->comm->mpi_comm_gpu_shared);
+    MPI_Comm_split(mpi_comm_pp_physicalnode, uniqueDeviceId, dd->rank, &dd->comm->mpi_comm_gpu_shared);
     MPI_Comm_free(&mpi_comm_pp_physicalnode);
     MPI_Comm_size(dd->comm->mpi_comm_gpu_shared, &dd->comm->nrank_gpu_shared);
 

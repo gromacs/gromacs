@@ -186,8 +186,8 @@ bool change_dd_cutoff(t_commrec*                     cr,
  * is set up. It's the caller's responsibility to call this method on
  * a PP rank only when that rank is using a GPU.
  *
- * It is not necessary that \c hashForDevice is truly the hash of a
- * real device UUID, merely that its value will be the same on each
+ * It is not necessary that \c uniqueDeviceId is globally unique, merely
+ * that its value will be the same on each
  * rank when a device is shared between ranks, and otherwise
  * different. An index into the array of devices visible to all ranks
  * of the same node is sufficient if all such ranks see all devices.
@@ -197,7 +197,7 @@ bool change_dd_cutoff(t_commrec*                     cr,
  * device, DLB will behave as if all ranks on the node share the same
  * device, which will not be optimal.
  */
-void dd_setup_dlb_resource_sharing(const t_commrec* cr, size_t uniqueDeviceId);
+void dd_setup_dlb_resource_sharing(const t_commrec* cr, int uniqueDeviceId);
 
 /*! \brief Cycle counter indices used internally in the domain decomposition */
 enum
