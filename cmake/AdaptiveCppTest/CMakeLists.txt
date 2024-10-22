@@ -32,6 +32,8 @@
 # the research papers on the package. Check out https://www.gromacs.org.
 
 cmake_minimum_required(VERSION 3.28)
+cmake_policy(VERSION 3.28)
+
 project(AdaptiveCppTest)
 find_package(adaptivecpp QUIET)
 if(NOT adaptivecpp_FOUND)
