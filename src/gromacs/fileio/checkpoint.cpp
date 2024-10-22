@@ -323,7 +323,8 @@ static const char* enumValueToString(StatePullEntry enumValue)
 enum class StateFepEntry : int
 {
     IsEquilibrated,
-    NumAtLambda,
+    NumAtLambdaStats,
+    NumAtLambdaEquil,
     WangLandauHistogram,
     WangLandauDelta,
     SumWeights,
@@ -344,7 +345,8 @@ static const char* enumValueToString(StateFepEntry enumValue)
 {
     static constexpr gmx::EnumerationArray<StateFepEntry, const char*> stateFepEntryNames = {
         "bEquilibrated",
-        "N_at_state",
+        "Number at State Stats",
+        "Number at State Equil",
         "Wang-Landau Histogram",
         "Wang-Landau Delta",
         "Weights",
@@ -1935,8 +1937,13 @@ static int do_cpt_df_hist(XDR* xd, int fflags, int nlambda, df_history_t** dfhis
                 case StateFepEntry::IsEquilibrated:
                     ret = do_cpte_bool(xd, *i, fflags, &dfhist->bEquil, list);
                     break;
-                case StateFepEntry::NumAtLambda:
-                    ret = do_cpte_ints(xd, *i, fflags, nlambda, &dfhist->n_at_lam, list);
+                case StateFepEntry::NumAtLambdaStats:
+                    ret = do_cpte_ints(
+                            xd, *i, fflags, nlambda, &dfhist->numSamplesAtLambdaForStatistics, list);
+                    break;
+                case StateFepEntry::NumAtLambdaEquil:
+                    ret = do_cpte_ints(
+                            xd, *i, fflags, nlambda, &dfhist->numSamplesAtLambdaForEquilibration, list);
                     break;
                 case StateFepEntry::WangLandauHistogram:
                     ret = do_cpte_reals(xd, *i, fflags, nlambda, &dfhist->wl_histo, list);
@@ -2406,7 +2413,8 @@ void write_checkpoint_data(t_fileio*                         fp,
     {
         headerContents.flags_dfh =
                 (enumValueToBitMask(StateFepEntry::IsEquilibrated)
-                 | enumValueToBitMask(StateFepEntry::NumAtLambda)
+                 | enumValueToBitMask(StateFepEntry::NumAtLambdaStats)
+                 | enumValueToBitMask(StateFepEntry::NumAtLambdaEquil)
                  | enumValueToBitMask(StateFepEntry::SumWeights) | enumValueToBitMask(StateFepEntry::SumDG)
                  | enumValueToBitMask(StateFepEntry::Tij) | enumValueToBitMask(StateFepEntry::TijEmp));
         if (EWL(elamstats))

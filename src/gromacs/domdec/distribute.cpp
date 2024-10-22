@@ -190,7 +190,8 @@ void dd_distribute_dfhist(gmx_domdec_t* dd, df_history_t* dfhist)
     if (dfhist->nlambda > 0)
     {
         int nlam = dfhist->nlambda;
-        dd_bcast(dd, sizeof(int) * nlam, dfhist->n_at_lam);
+        dd_bcast(dd, sizeof(int) * nlam, dfhist->numSamplesAtLambdaForStatistics);
+        dd_bcast(dd, sizeof(int) * nlam, dfhist->numSamplesAtLambdaForEquilibration);
         dd_bcast(dd, sizeof(real) * nlam, dfhist->wl_histo);
         dd_bcast(dd, sizeof(real) * nlam, dfhist->sum_weights);
         dd_bcast(dd, sizeof(real) * nlam, dfhist->sum_dg);

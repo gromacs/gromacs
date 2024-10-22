@@ -123,9 +123,11 @@ struct gmx_inputrec_strings
             orirefitgrp[STRLEN], egptable[STRLEN], egpexcl[STRLEN], wall_atomtype[STRLEN],
             wall_density[STRLEN], deform[STRLEN], QMMM[STRLEN], imd_grp[STRLEN];
     gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, std::string> fep_lambda;
-    char                                                                   lambda_weights[STRLEN];
-    std::vector<std::string>                                               pullGroupNames;
-    std::vector<std::string>                                               rotateGroupNames;
+    char                                                                   lambdaWeights[STRLEN];
+    char                                                                   lambdaCounts[STRLEN];
+    char                     wlHistogramCounts[STRLEN];
+    std::vector<std::string> pullGroupNames;
+    std::vector<std::string> rotateGroupNames;
     char anneal[STRLEN], anneal_npoints[STRLEN], anneal_time[STRLEN], anneal_temp[STRLEN];
 };
 
@@ -1832,11 +1834,13 @@ static std::vector<real> parse_n_real(const std::string& str, int* n, WarningHan
 
 static void do_fep_params(t_inputrec*                ir,
                           gmx::ArrayRef<std::string> fep_lambda,
-                          const char                 weights[STRLEN],
+                          const char                 lambdaWeights[STRLEN],
+                          const char                 lambdaCounts[STRLEN],
+                          const char                 wlHistogramCounts[STRLEN],
                           WarningHandler*            wi)
 {
 
-    int         i, j, max_n_lambda, nweights;
+    int         i, j, max_n_lambda;
     t_lambda*   fep    = ir->fepvals.get();
     t_expanded* expand = ir->expandedvals.get();
     gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, std::vector<real>> count_fep_lambdas;
@@ -1964,19 +1968,67 @@ static void do_fep_params(t_inputrec*                ir,
     }
 
 
-    /* now read in the weights */
-    expand->init_lambda_weights = parse_n_real(weights, &nweights, wi);
-    if (nweights == 0)
+    int nWeights;
+    /* now read in any initial weights the user is providing via the mdp*/
+    expand->initLambdaWeights = parse_n_real(lambdaWeights, &nWeights, wi);
+    if (nWeights == 0)
     {
-        expand->init_lambda_weights.resize(fep->n_lambda); /* initialize to zero */
+        expand->initLambdaWeights.resize(fep->n_lambda, 0); /* initialize to zero */
     }
-    else if (nweights != fep->n_lambda)
+    else if (nWeights != fep->n_lambda)
     {
         gmx_fatal(FARGS,
                   "Number of weights (%d) is not equal to number of lambda values (%d)",
-                  nweights,
+                  nWeights,
                   fep->n_lambda);
     }
+
+    /* now read in the lambda counts */
+    int nCounts;
+    expand->initLambdaCounts = parse_n_real(lambdaCounts, &nCounts, wi);
+    if (nCounts == 0)
+    {
+        expand->initLambdaCounts.resize(fep->n_lambda, 0);
+    }
+    else if (nCounts != fep->n_lambda)
+    {
+        gmx_fatal(FARGS,
+                  "Number of counts at each lambda state (%d) is not equal to number of lambda "
+                  "values (%d)",
+                  nCounts,
+                  fep->n_lambda);
+    }
+
+    /* Since there is no parsing for ints implemented here, we read in reals, but check that
+       when we cast to integers, we don't change the value. */
+    for (int i = 0; i < fep->n_lambda; i++)
+    {
+        if (!gmx_within_tol(static_cast<real>(std::lround(expand->initLambdaCounts[i])),
+                            expand->initLambdaCounts[i],
+                            GMX_REAL_EPS))
+        {
+            gmx_fatal(FARGS,
+                      "init-lambda-counts entry (%d) is not an integer, instead is (%g)",
+                      i,
+                      expand->initLambdaCounts[i]);
+        }
+    }
+
+    /* now read in the histogram counts */
+    expand->initWlHistogramCounts = parse_n_real(wlHistogramCounts, &nCounts, wi);
+    if (nCounts == 0)
+    {
+        expand->initWlHistogramCounts.resize(fep->n_lambda, 0); /* initialize to zero */
+    }
+    else if (nCounts != fep->n_lambda)
+    {
+        gmx_fatal(FARGS,
+                  "Number of counts in Wang-Landa equilibration histogram (%d) is not equal to "
+                  "number of lambda values (%d)",
+                  nCounts,
+                  fep->n_lambda);
+    }
+
     if ((expand->nstexpanded < 0) && (ir->efep != FreeEnergyPerturbationType::No))
     {
         expand->nstexpanded = fep->nstdhdl;
@@ -2633,7 +2685,9 @@ void get_ir(const char*     mdparin,
     inputrecStrings->fep_lambda[FreeEnergyPerturbationCouplingType::Temperature] =
             setStringEntry(&inp, "temperature-lambdas", "");
     fep->lambda_neighbors = get_eint(&inp, "calc-lambda-neighbors", 1, wi);
-    setStringEntry(&inp, "init-lambda-weights", inputrecStrings->lambda_weights, nullptr);
+    setStringEntry(&inp, "init-lambda-weights", inputrecStrings->lambdaWeights, nullptr);
+    setStringEntry(&inp, "init-lambda-counts", inputrecStrings->lambdaCounts, nullptr);
+    setStringEntry(&inp, "init-wl-histogram-counts", inputrecStrings->wlHistogramCounts, nullptr);
     fep->edHdLPrintEnergy        = getEnum<FreeEnergyPrintEnergy>(&inp, "dhdl-print-energy", wi);
     fep->softcoreFunction        = getEnum<SoftcoreType>(&inp, "sc-function", wi);
     fep->sc_alpha                = get_ereal(&inp, "sc-alpha", 0.0, wi);
@@ -2997,7 +3051,12 @@ void get_ir(const char*     mdparin,
         {
             ir->bExpanded = TRUE;
         }
-        do_fep_params(ir, inputrecStrings->fep_lambda, inputrecStrings->lambda_weights, wi);
+        do_fep_params(ir,
+                      inputrecStrings->fep_lambda,
+                      inputrecStrings->lambdaWeights,
+                      inputrecStrings->lambdaCounts,
+                      inputrecStrings->wlHistogramCounts,
+                      wi);
         if (ir->bSimTemp) /* done after fep params */
         {
             do_simtemp_params(ir);

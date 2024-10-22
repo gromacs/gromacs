@@ -3057,6 +3057,43 @@ Expanded Ensemble calculations
    weights can be any floating point number. Units are kT. Its length
    must match the lambda vector lengths.
 
+.. mdp:: init-wl-histogram-counts
+
+   The initial counts used for the Wang-Landau histogram of visiting
+   expanded ensemble states. The flatness of this histogram is used to
+   decide whether to decrement the histogram-building incrementor.
+   This option is only generally useful if continuing a shorter
+   simulation from a previous one, as the smaller the incrementor
+   gets, the longer it takes for the histogram to become flat, often
+   longer than a short simulation takes, requiring the histogram
+   population to be carried over from the previous simulation. The
+   default is a vector of zeros. The format is similar to the lambda
+   vector settings in :mdp:`fep-lambdas`. The value can be a floating
+   point number or an integer, as some methods increment multiple
+   histogram bins at the same time with fractional weights. Its length
+   must match the lambda vector lengths.
+
+.. mdp:: init-lambda-counts
+
+   The initial counts used for the number of times each expanded
+   ensemble state is visited states. Several algorithms set by
+   :mdp:`lmc-weights-equil` use various functions of the number of
+   visits to each state states to decide whether to switch to
+   different phases of weight determination. These include
+   :mdp-value:`number-all-lambda` which requires the mumber of times
+   each lambda state is visited to be equal to or greater than this
+   number, :mdp-value:`number-samples`, which requires the total
+   number of visits to all lambda states to be greater than or equal
+   to this, and :mdp-value:`count-ratio`, which requires the number of
+   states visited at each state to be within a given ratio of equal
+   visitation. This option is only generally useful if continuing a
+   shorter simulation from a previous one, as most methods will reach
+   the triggering conditions with relatively low number of samples collected. The
+   default is a vector of zeros. The format is similar to the lambda
+   vector settings in :mdp:`fep-lambdas`.  Unlike
+   :mdp:`init-wl-histogram`, the value can only be an integer. Its
+   length must match the lambda vector lengths.
+
 .. mdp:: lmc-weights-equil
 
    .. mdp-value:: no

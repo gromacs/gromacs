@@ -356,6 +356,7 @@ set(exename "mdrun-fep-test")
 gmx_add_gtest_executable(${exename}
         CPP_SOURCE_FILES
         # files with code for tests
+        expandedensemble.cpp
         freeenergy.cpp
         # pseudo-library for code for mdrun
         $<TARGET_OBJECTS:mdrun_objlib>

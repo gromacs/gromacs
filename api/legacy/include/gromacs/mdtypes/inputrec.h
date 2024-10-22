@@ -226,12 +226,32 @@ struct t_expanded
     real init_wl_delta = 0;
     //! Use one over t convergence for Wang-Landau when the delta get sufficiently small
     bool bWLoneovert = false;
-    //! Did we initialize the weights? TODO: REMOVE FOR 5.0, no longer needed with new logic
-    bool bInit_weights = false;
     //! To override the main temperature, or define it if it's not defined
     real mc_temp = 0;
-    //! User-specified initial weights to start with
-    std::vector<real> init_lambda_weights;
+    //! User-specified initial lambda-dependent weights to start with
+    std::vector<real> initLambdaWeights;
+    /*! \brief User-specified initial visitation counts at each lambda state.
+     *
+     * This is used for a few different algorithms for equilibration detection (i.e. when to stop
+     * incrementing weights anymore). If a series of short runs is performed, then
+     * if the values from the previous simulation are not carried over into the next
+     * simulation via entering them in the mdp, the equilibration checks might never
+     * be triggered. These are integers, though we define a vector of reals because
+     * there is currently no good way to read a vector of ints in the mdp; we instead
+     * check that integers are entered after reading. */
+    std::vector<real> initLambdaCounts;
+    /*! \brief User-specified initial Wang-Landau histogram counts.
+     *
+     * This is the histogram (wl_histo) that is monitored for deciding when the sampling is
+     * sufficiently flat in lambda space, and that therefore the Wang-Landau incrementor
+     * (wl_delta) used to increment the weights for each state should be decreased.
+     * If standard Wang-Landau incremeting is done, it is an array of integers, but if using
+     * the Gibbs transition probability, it will be non-integer, so we define it as real.
+     * The reason to reinitialize wl_histo between short runs using the mdp is that as
+     * wl_delta gets smaller, the time taken to flatten wl_histo gets longer, so it will get
+     * gradually longer than the simulation time, and one has to then has to accumulate
+     * wl_histo each iteration, so wl_delta never decreases. */
+    std::vector<real> initWlHistogramCounts;
 };
 
 struct t_rotgrp

@@ -207,15 +207,16 @@ public:
  */
 struct df_history_t
 {
-    int nlambda; //!< total number of lambda states - for history
+    int nlambda; //!< total number of lambda states - useful to history as the number of lambdas determines the size of arrays.
 
-    bool  bEquil;   //!< Have we reached equilibration
-    int*  n_at_lam; //!< number of points observed at each lambda
-    real* wl_histo; //!< histogram for WL flatness determination
-    real  wl_delta; //!< current wang-landau delta
+    bool  bEquil; //!< Have we reached equilibration yet, where the weights stop updating?
+    int*  numSamplesAtLambdaForStatistics; //!< The number of points observed at each lambda up to the current time, in this simulation, for calculating statistics
+    int*  numSamplesAtLambdaForEquilibration; //!< The number of points observed at each lambda up to the current time, over a set of simulations, for determining equilibration
+    real* wl_histo; //!< The histogram for WL flatness determination.  Can be preserved between simulations winth input options.
+    real  wl_delta; //!< The current wang-landau delta, used to increment each state when visited.
 
-    real* sum_weights; //!< weights of the states
-    real* sum_dg; //!< free energies of the states -- not actually used for weighting, but informational
+    real* sum_weights; //!< Sum of weights of each state over all states.
+    real* sum_dg; //!< Sum of the free energies of the states -- not actually used for weighting, but informational
     real* sum_minvar;   //!< corrections to weights for minimum variance
     real* sum_variance; //!< variances of the states
 
@@ -224,8 +225,8 @@ struct df_history_t
     real** accum_p2; //!< accumulated squared bennett weights for n+1
     real** accum_m2; //!< accumulated squared bennett weights for n-1
 
-    real** Tij;           //!< transition matrix
-    real** Tij_empirical; //!< Empirical transition matrix
+    real** Tij;           //!< Transition matrix, estimated from probabilities of transitions.
+    real** Tij_empirical; //!< Empirical transition matrix, estimated from only counts of transitions.
 
     /*! \brief Allows to read and write checkpoint within modular simulator
      *

@@ -198,6 +198,7 @@ enum tpxv
     tpxv_VerletBufferPressureTol,     /**< Add Verlet buffer pressure tolerance */
     tpxv_HandleMartiniBondedBStateParametersProperly, /**< Handle restraint angles, restraint dihedrals, and combined bending-torsion parameters properly */
     tpxv_RefScaleMultipleCOMs, /**< Add multiple COM groups for refcoord-scale */
+    tpxv_InputHistogramCounts, /**< Provide input histogram counts for current expanded ensemble state */
     tpxv_Count                 /**< the total number of tpxv versions */
 };
 
@@ -465,9 +466,13 @@ static void do_expandedvals(gmx::ISerializer* serializer, t_expanded* expand, t_
     {
         if (n_lambda > 0)
         {
-            expand->init_lambda_weights.resize(n_lambda);
-            serializer->doRealArray(expand->init_lambda_weights.data(), n_lambda);
-            serializer->doBool(&expand->bInit_weights);
+            expand->initLambdaWeights.resize(n_lambda);
+            serializer->doRealArray(expand->initLambdaWeights.data(), n_lambda);
+            if (file_version < tpxv_InputHistogramCounts)
+            {
+                bool dummy;
+                serializer->doBool(&dummy); // read the former bInit_weights value
+            }
         }
 
         serializer->doInt(&expand->nstexpanded);
@@ -492,6 +497,24 @@ static void do_expandedvals(gmx::ISerializer* serializer, t_expanded* expand, t_
         serializer->doInt(&expand->equil_n_at_lam);
         serializer->doReal(&expand->equil_wl_delta);
         serializer->doReal(&expand->equil_ratio);
+    }
+    if (file_version >= tpxv_InputHistogramCounts)
+    {
+        if (n_lambda > 0)
+        {
+            expand->initLambdaCounts.resize(n_lambda);
+            serializer->doRealArray(expand->initLambdaCounts.data(), n_lambda);
+            expand->initWlHistogramCounts.resize(n_lambda);
+            serializer->doRealArray(expand->initWlHistogramCounts.data(), n_lambda);
+        }
+    }
+    else
+    {
+        if (n_lambda > 0)
+        {
+            expand->initLambdaCounts.resize(n_lambda, 0);
+            expand->initWlHistogramCounts.resize(n_lambda, 0);
+        }
     }
 }
 

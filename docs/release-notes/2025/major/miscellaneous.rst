@@ -18,3 +18,15 @@ Increased AWH parameter 'awh-nsamples-update' default value from 10 to 100
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 This is to decrease the overhead of updating the bias, in particular with multiple walkers.
+
+Support for continuing expanded ensemble equilibration across simulation parts
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The mdp options `init-lambda-counts` and `init-wl-histogram-counts`
+can now initialize the number of counts at each sampled lambda state
+and the Wang-Landau histograms used to determine simulation
+equilibration. These are most useful when running short simulation
+parts, so that the information about how the system is equilibrating
+can be carried over between simulations.  Otherwise, chains of short
+simulation parts would never converge when using expanded-ensemble methods.
+The information is now also carried over through the checkpoint file.

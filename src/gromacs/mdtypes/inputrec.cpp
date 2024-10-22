@@ -551,8 +551,9 @@ static void pr_expandedvals(FILE* fp, int indent, const t_expanded* expand, int 
     PS("wl-oneovert", EBOOL(expand->bWLoneovert));
 
     pr_indent(fp, indent);
-    pr_rvec(fp, indent, "init-lambda-weights", expand->init_lambda_weights.data(), n_lambda, TRUE);
-    PS("init-weights", EBOOL(expand->bInit_weights));
+    pr_rvec(fp, indent, "init-lambda-weights", expand->initLambdaWeights.data(), n_lambda, TRUE);
+    pr_rvec(fp, indent, "init-lambda-counts", expand->initLambdaCounts.data(), n_lambda, TRUE);
+    pr_rvec(fp, indent, "init-wl-histogram-counts", expand->initWlHistogramCounts.data(), n_lambda, TRUE);
 }
 
 static void pr_fepvals(FILE* fp, int indent, const t_lambda* fep, gmx_bool bMDPformat)
@@ -1313,20 +1314,38 @@ static void cmp_expandedvals(FILE*             fp,
 {
     int i;
 
-    cmp_bool(fp, "inputrec->fepvals->bInit_weights", -1, expand1->bInit_weights, expand2->bInit_weights);
     cmp_bool(fp, "inputrec->fepvals->bWLoneovert", -1, expand1->bWLoneovert, expand2->bWLoneovert);
 
     for (i = 0; i < n_lambda; i++)
     {
         cmp_real(fp,
-                 "inputrec->expandedvals->init_lambda_weights",
+                 "inputrec->expandedvals->initLambdaWeights",
                  -1,
-                 expand1->init_lambda_weights[i],
-                 expand2->init_lambda_weights[i],
+                 expand1->initLambdaWeights[i],
+                 expand2->initLambdaWeights[i],
                  ftol,
                  abstol);
     }
 
+    for (i = 0; i < n_lambda; i++)
+    {
+        cmp_int(fp,
+                "inputrec->expandedvals->initLambdaCounts",
+                -1,
+                expand1->initLambdaCounts[i],
+                expand2->initLambdaCounts[i]);
+    }
+
+    for (i = 0; i < n_lambda; i++)
+    {
+        cmp_real(fp,
+                 "inputrec->expandedvals->initWlHistogramCounts",
+                 -1,
+                 expand1->initWlHistogramCounts[i],
+                 expand2->initWlHistogramCounts[i],
+                 ftol,
+                 abstol);
+    }
     cmpEnum(fp, "inputrec->expandedvals->lambda-stats", expand1->elamstats, expand2->elamstats);
     cmpEnum(fp, "inputrec->expandedvals->lambda-mc-move", expand1->elmcmove, expand2->elmcmove);
     cmp_int(fp, "inputrec->expandedvals->lmc-repeats", -1, expand1->lmc_repeats, expand2->lmc_repeats);

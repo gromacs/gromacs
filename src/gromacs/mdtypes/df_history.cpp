@@ -53,7 +53,8 @@ void init_df_history(df_history_t* dfhist, int nlambda)
         snew(dfhist->sum_dg, dfhist->nlambda);
         snew(dfhist->sum_minvar, dfhist->nlambda);
         snew(dfhist->sum_variance, dfhist->nlambda);
-        snew(dfhist->n_at_lam, dfhist->nlambda);
+        snew(dfhist->numSamplesAtLambdaForStatistics, dfhist->nlambda);
+        snew(dfhist->numSamplesAtLambdaForEquilibration, dfhist->nlambda);
         snew(dfhist->wl_histo, dfhist->nlambda);
 
         /* allocate transition matrices here */
@@ -91,12 +92,14 @@ void copy_df_history(df_history_t* df_dest, df_history_t* df_source)
 
     for (i = 0; i < df_dest->nlambda; i++)
     {
-        df_dest->sum_weights[i]  = df_source->sum_weights[i];
-        df_dest->sum_dg[i]       = df_source->sum_dg[i];
-        df_dest->sum_minvar[i]   = df_source->sum_minvar[i];
-        df_dest->sum_variance[i] = df_source->sum_variance[i];
-        df_dest->n_at_lam[i]     = df_source->n_at_lam[i];
-        df_dest->wl_histo[i]     = df_source->wl_histo[i];
+        df_dest->sum_weights[i]                     = df_source->sum_weights[i];
+        df_dest->sum_dg[i]                          = df_source->sum_dg[i];
+        df_dest->sum_minvar[i]                      = df_source->sum_minvar[i];
+        df_dest->sum_variance[i]                    = df_source->sum_variance[i];
+        df_dest->numSamplesAtLambdaForStatistics[i] = df_source->numSamplesAtLambdaForStatistics[i];
+        df_dest->numSamplesAtLambdaForEquilibration[i] =
+                df_source->numSamplesAtLambdaForEquilibration[i];
+        df_dest->wl_histo[i] = df_source->wl_histo[i];
     }
 
     for (i = 0; i < df_dest->nlambda; i++)
@@ -119,7 +122,8 @@ void done_df_history(df_history_t* dfhist)
 
     if (dfhist->nlambda > 0)
     {
-        sfree(dfhist->n_at_lam);
+        sfree(dfhist->numSamplesAtLambdaForStatistics);
+        sfree(dfhist->numSamplesAtLambdaForEquilibration);
         sfree(dfhist->wl_histo);
         sfree(dfhist->sum_weights);
         sfree(dfhist->sum_dg);
