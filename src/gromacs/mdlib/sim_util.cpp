@@ -1305,6 +1305,17 @@ static void doPairSearch(const t_commrec*             cr,
     const SimulationWorkload& simulationWork = runScheduleWork.simulationWork;
     const StepWorkload&       stepWork       = runScheduleWork.stepWork;
 
+    if (simulationWork.useGpuPmePpCommunication)
+    {
+        const int numAtoms = dd_numHomeAtoms(*cr->dd);
+        changePinningPolicy(&cr->dd->pmeForceReceiveBuffer, gmx::PinningPolicy::PinnedIfSupported);
+        cr->dd->pmeForceReceiveBuffer.resize(numAtoms);
+        // pmePpCommGpu->reinit needs to be called before stateGpu->reinit for NVSHMEM.
+        // The order of the reinitialization needs to match that of the order on the PME rank
+        // since these calls do communication and otherwise can deadlock.
+        fr->pmePpCommGpu->reinit(numAtoms);
+    }
+
     if (needStateGpu(simulationWork))
     {
         // TODO refactor this to do_md, after partitioning.
@@ -1420,19 +1431,13 @@ static void doPairSearch(const t_commrec*             cr,
 
     if (simulationWork.useGpuFBufferOpsWhenAllowed)
     {
-        // with MPI, direct GPU communication, and separate PME ranks we need
-        // gmx_pme_send_coordinates() to be called before we can set up force reduction
-        bool delaySetupLocalGpuForceReduction = GMX_MPI && simulationWork.useGpuPmePpCommunication;
-        if (!delaySetupLocalGpuForceReduction)
-        {
-            setupLocalGpuForceReduction(runScheduleWork,
-                                        nbv,
-                                        stateGpu,
-                                        fr->gpuForceReduction[AtomLocality::Local].get(),
-                                        fr->pmePpCommGpu.get(),
-                                        fr->pmedata,
-                                        cr->dd);
-        }
+        setupLocalGpuForceReduction(runScheduleWork,
+                                    nbv,
+                                    stateGpu,
+                                    fr->gpuForceReduction[AtomLocality::Local].get(),
+                                    fr->pmePpCommGpu.get(),
+                                    fr->pmedata,
+                                    cr->dd);
 
         if (simulationWork.havePpDomainDecomposition)
         {
@@ -1624,8 +1629,6 @@ void do_force(FILE*                         fplog,
             stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
         }
 
-        const bool reinitGpuPmePpComms =
-                simulationWork.useGpuPmePpCommunication && stepWork.doNeighborSearch;
         gmx_pme_send_coordinates(fr,
                                  cr,
                                  box,
@@ -1635,29 +1638,11 @@ void do_force(FILE*                         fplog,
                                  (stepWork.computeVirial || stepWork.computeEnergy),
                                  step,
                                  simulationWork.useGpuPmePpCommunication,
-                                 reinitGpuPmePpComms,
                                  pmeSendCoordinatesFromGpu,
                                  stepWork.useGpuPmeFReduction,
                                  pmeSendCoordinatesFromGpu ? localXReadyOnDevice : nullptr,
                                  simulationWork.useMdGpuGraph,
                                  wcycle);
-    }
-
-    if (simulationWork.useGpuFBufferOpsWhenAllowed && stepWork.doNeighborSearch)
-    {
-        // with MPI, direct GPU communication, and separate PME ranks we need
-        // gmx_pme_send_coordinates() to be called before we can set up force reduction
-        bool doSetupLocalGpuForceReduction = GMX_MPI && simulationWork.useGpuPmePpCommunication;
-        if (doSetupLocalGpuForceReduction)
-        {
-            setupLocalGpuForceReduction(runScheduleWork,
-                                        fr->nbv.get(),
-                                        stateGpu,
-                                        fr->gpuForceReduction[AtomLocality::Local].get(),
-                                        fr->pmePpCommGpu.get(),
-                                        fr->pmedata,
-                                        cr->dd);
-        }
     }
 
     if (stepWork.haveGpuPmeOnThisRank)
