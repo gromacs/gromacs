@@ -680,6 +680,9 @@ std::vector<std::unique_ptr<DeviceInformation>> findDevices()
             }
         }
 
+        deviceInfos[i]->maxWorkGroupSize =
+                syclDevice.get_info<sycl::info::device::max_work_group_size>();
+
 #if GMX_HAVE_GPU_GRAPH_SUPPORT && defined(SYCL_EXT_ONEAPI_GRAPH) && SYCL_EXT_ONEAPI_GRAPH
         deviceInfos[i]->supportsSyclGraph = syclDevice.has(sycl::aspect::ext_oneapi_graph);
 #    if HAVE_SYCL_ASPECT_EXT_ONEAPI_LIMITED_GRAPH

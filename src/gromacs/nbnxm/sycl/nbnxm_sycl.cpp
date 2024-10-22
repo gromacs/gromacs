@@ -50,7 +50,7 @@
 namespace gmx
 {
 
-static void launchSciSortOnGpu(GpuPairlist* plist, const DeviceStream& deviceStream);
+static void launchSciSortOnGpu(GpuPairlist* plist, const int maxWorkGroupSize, const DeviceStream& deviceStream);
 
 void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, const int numParts)
 {
@@ -95,7 +95,8 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
     launchNbnxmKernelPruneOnly(nb, iloc, numParts, numSciInPartMax);
     if (plist->haveFreshList && nbnxmSortListsOnGpu())
     {
-        launchSciSortOnGpu(plist, *nb->deviceStreams[iloc]);
+        const auto& deviceInfo = nb->deviceContext_->deviceInfo();
+        launchSciSortOnGpu(plist, deviceInfo.maxWorkGroupSize, *nb->deviceStreams[iloc]);
     }
 
     if (plist->haveFreshList)
@@ -141,7 +142,8 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const In
     launchNbnxmKernel(nb, stepWork, iloc, doPrune);
     if (doPrune && nbnxmSortListsOnGpu())
     {
-        launchSciSortOnGpu(plist, *nb->deviceStreams[iloc]);
+        const auto& deviceInfo = nb->deviceContext_->deviceInfo();
+        launchSciSortOnGpu(plist, deviceInfo.maxWorkGroupSize, *nb->deviceStreams[iloc]);
     }
 }
 
@@ -173,6 +175,7 @@ static auto nbnxnKernelExclusivePrefixSum(const int* __restrict__ gm_input, int*
     };
 }
 //! SYCL kernel name
+template<int>
 class ExclusivePrefixSum;
 
 /*! \brief SYCL bucket sci sort kernel.
@@ -222,7 +225,7 @@ template<int workGroupSize>
 static void launchPrefixSumKernel(sycl::queue& q, GpuPairlistSorting* sorting)
 {
     gmx::syclSubmitWithoutEvent(q, [&](sycl::handler& cgh) {
-        cgh.parallel_for<ExclusivePrefixSum>(
+        cgh.parallel_for<ExclusivePrefixSum<workGroupSize>>(
                 sycl::nd_range<1>{ workGroupSize, workGroupSize },
                 nbnxnKernelExclusivePrefixSum<workGroupSize, c_sciHistogramSize>(
                         sorting->sciHistogram.get_pointer(), sorting->sciOffset.get_pointer()));
@@ -241,17 +244,29 @@ static void launchBucketSortKernel(sycl::queue& q, GpuPairlist* plist)
                                          plist->sorting.sciSorted.get_pointer()));
     });
 }
-static void launchSciSortOnGpu(GpuPairlist* plist, const DeviceStream& deviceStream)
+static void launchSciSortOnGpu(GpuPairlist* plist, const int maxWorkGroupSize, const DeviceStream& deviceStream)
 {
     sycl::queue q = deviceStream.stream();
 
     /* We are launching a single work-group, and it should be, in principle, as large as possible.
      * E.g., on PVC1100, wgSizeScan=1024 is ~1.2 times faster than wgSizeScan=512, and on
-     * MI250X ~1.7 times faster. But Intel iGPUs only handle 512.
-     * It should be autodetected, but for now we just use the universally supported value.
-     * The kernel takes 10-100µs and is run rarely, so it is of minor concern. */
-    constexpr int wgSizeScan = 512;
-    launchPrefixSumKernel<wgSizeScan>(q, &plist->sorting);
+     * MI250X ~1.7 times faster. But some Intel iGPUs only handle 256. */
+    if (maxWorkGroupSize >= 1024)
+    {
+        launchPrefixSumKernel<1024>(q, &plist->sorting);
+    }
+    else if (maxWorkGroupSize >= 512)
+    {
+        launchPrefixSumKernel<512>(q, &plist->sorting);
+    }
+    else if (maxWorkGroupSize >= 256)
+    {
+        launchPrefixSumKernel<256>(q, &plist->sorting);
+    }
+    else
+    {
+        launchPrefixSumKernel<128>(q, &plist->sorting);
+    }
     launchBucketSortKernel(q, plist);
 }
 

@@ -208,6 +208,8 @@ struct DeviceInformation
     std::optional<int> hardwareVersionPatch;
     //! Does the device support SYCL Graph
     bool supportsSyclGraph;
+    //! Max. work-group shape supported by the device
+    int maxWorkGroupSize;
 #endif
     /*! \brief UUID of the device, when available
      *
