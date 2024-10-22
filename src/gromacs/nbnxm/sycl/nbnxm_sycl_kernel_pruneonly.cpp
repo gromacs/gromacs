@@ -44,6 +44,7 @@
 
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/gmxsycl.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/utility/template_mp.h"
 
 #include "nbnxm_sycl_kernel_utils.h"
@@ -125,9 +126,9 @@ auto nbnxmKernelPruneOnly(sycl::handler& cgh,
             gm_rollingPruningPart[bidx] = (part + 1) % numParts;
         }
 
-        // Kernel has been launched with max number of blocks across all passes (plist.nsci/numParts),
-        // but the last pass will require 1 less block, so extra block should return early.
-        const int numSciInPart = (numSci - part) / numParts;
+        // Kernel has been launched with max number of blocks across all passes,
+        // but some passes will require 1 less block, so extra block should return early.
+        const int numSciInPart = gmx::divideRoundUp(numSci - part, numParts);
         if (bidx >= numSciInPart)
         {
             return; // Since the whole block is exiting, it is fine w.r.t. group_barrier

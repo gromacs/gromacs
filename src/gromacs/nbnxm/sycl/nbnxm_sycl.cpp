@@ -40,6 +40,7 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/math/functions.h"
 #include "gromacs/nbnxm/gpu_common.h"
 #include "gromacs/utility/exceptions.h"
 
@@ -83,7 +84,7 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
      */
 
     /* Compute the max number of list entries to prune in this pass */
-    const int numSciInPartMax = (plist->numSci) / numParts;
+    const int numSciInPartMax = gmx::divideRoundUp(plist->numSci, numParts);
 
     /* Don't launch the kernel if there is no work to do */
     if (numSciInPartMax <= 0)
