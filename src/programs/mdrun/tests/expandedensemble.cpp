@@ -377,7 +377,7 @@ TEST_F(ExpandedEnsembleTest, ContinuationPreservesExpandedEnsembleState)
         mdrunCaller.addOption("-cpi", runner_.cptOutputFileName_);
         mdrunCaller.addOption("-noappend");
         mdrunCaller.addOption("-nsteps", numStepsInSecondPart);
-        runner_.logFileName_ = fileManager_.getTemporaryFilePath(".part0002.log");
+        runner_.logFileName_ = fileManager_.getTemporaryFilePath(".part0002.log").string();
         ASSERT_EQ(0, runner_.callMdrun(mdrunCaller));
     }
 
