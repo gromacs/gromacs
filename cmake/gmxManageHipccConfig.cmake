@@ -48,12 +48,16 @@
 #
 # As this code is not yet tested on Windows, it always accepts the
 # flags in that case.
+#
+# To avoid triggering device autodetection on systems that have no
+# device present, we always add one architecture to the compilation
+# arguments.
 function(gmx_add_hipcc_flag_if_supported _output_variable_name_to_append_to _flags_cache_variable_name)
     # If the check has already been run, do not re-run it
     if (NOT DEFINED ${_flags_cache_variable_name} AND NOT WIN32)
         message(STATUS "Checking if hipcc accepts flags ${ARGN}")
         execute_process(
-                COMMAND ${HIP_HIPCC_EXECUTABLE} ${ARGN} -Werror --genco "${CMAKE_SOURCE_DIR}/cmake/TestHIP.cpp"
+                COMMAND ${HIP_HIPCC_EXECUTABLE} ${ARGN} --offload-arch=gfx90a -Werror --genco "${CMAKE_SOURCE_DIR}/cmake/TestHIP.cpp"
             RESULT_VARIABLE _hip_success
             OUTPUT_QUIET
             ERROR_QUIET
@@ -100,6 +104,7 @@ function(gmx_check_hip_architectures _target_architectures)
     endif()
     set(GMX_HIP_HIPCC_FLAGS ${GMX_HIP_HIPCC_FLAGS} PARENT_SCOPE)
     set(CMAKE_HIP_ARCHITECTURES ${_all_accepted_architectures} PARENT_SCOPE)
+    set(AMDGPU_TARGETS ${_all_accepted_architectures} PARENT_SCOPE)
 endfunction()
 
 # iterate over user supplied and GROMACS default list of optimization flags
