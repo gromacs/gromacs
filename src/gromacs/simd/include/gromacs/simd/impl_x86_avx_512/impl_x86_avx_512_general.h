@@ -49,20 +49,20 @@ static inline void simdPrefetch(const void* m)
  *
  *  \param m  Mask suitable for use with AVX-512 instructions
  *
- *  \return Short integer representation of mask
+ *  \return Unsigned short integer representation of mask
  */
-static inline short avx512Mask2Int(__mmask16 m)
+static inline unsigned short avx512Mask2Int(__mmask16 m)
 {
-    return static_cast<short>(m);
+    return static_cast<unsigned short>(m);
 }
 
 /*! \brief Return AVX-512 mask from integer
  *
- *  \param i  Short integer
+ *  \param i  Unsigned short integer
  *
  *  \return Mask suitable for use with AVX-512 instructions.
  */
-static inline __mmask16 avx512Int2Mask(short i)
+static inline __mmask16 avx512Int2Mask(unsigned short i)
 {
     return static_cast<__mmask16>(i);
 }
