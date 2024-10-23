@@ -1490,16 +1490,16 @@ std::string getCoolQuote()
         { "To dissimulate is to feign not to have what one has. To simulate is to feign to have "
           "what one hasn't.",
           "Jean Baudrillard" },
-        { "Install our Free Energy Patents app! There is energy all around us; and it's free! "
-          "Free energy is everywhere, and all around you, just waiting to be extracted! Over "
-          "100+ free energy patents!",
+        { "Install our Free Energy Patents app! There is energy all around us; and it's free! Free "
+          "energy is everywhere, and all around you, just waiting to be extracted! Over 100+ free "
+          "energy patents!",
           "Mind and Miracle Productions on Twitter, spamming a FEP thread" },
-        { "\"A slow sort of country!\" said the Queen. \"Now, HERE, you see, it "
-          "takes all the running YOU can do, to keep in the same place. If you want "
-          "to get somewhere else, you must run at least twice as fast as that!\"",
+        { "\"A slow sort of country!\" said the Queen. \"Now, HERE, you see, it takes all the "
+          "running YOU can do, to keep in the same place. If you want to get somewhere else, you "
+          "must run at least twice as fast as that!\"",
           "Lewis Carroll" },
-        { "More than 10000000 total errors detected.  I'm not reporting any more. "
-          "Final error counts will be inaccurate.  Go fix your program!",
+        { "More than 10000000 total errors detected.  I'm not reporting any more. Final error "
+          "counts will be inaccurate.  Go fix your program!",
           "Valgrind while memory debugging mdrun" },
         { "If we are going to have SYCL, can we have a hammer as well?", "Joe Jordan" },
         { "We can make it into a friend class. But I don't like having friends.", "Joe Jordan" },
@@ -1582,12 +1582,11 @@ std::string getCoolQuote()
         { "Roses are read // Violets are blue // Unexpected '}' on line 32", "Anonymous" },
         { "We cannot wait for Nature's good graces - to take them from her is our goal",
           "Ivan Michurin" },
-        { "By three methods we may learn wisdom: First, by reflection, which is noblest; "
-          "Second, by imitation, which is easiest; "
-          "and third by experience, which is the bitterest.",
+        { "By three methods we may learn wisdom: First, by reflection, which is noblest; Second, "
+          "by imitation, which is easiest; and third by experience, which is the bitterest.",
           "Confucius" },
-        { "There are three types of people: Those who see, those who see when they are shown, "
-          "and those who do not see.",
+        { "There are three types of people: Those who see, those who see when they are shown, and "
+          "those who do not see.",
           "Leonardo da Vinci" },
         { "Hey, it's me - Pandora. Welcome to my new unboxing video!", "Anonymous" },
         { "It is an unfortunate fact that when you raise the question of the reliability of many "
@@ -1599,17 +1598,17 @@ std::string getCoolQuote()
           "Albert Einstein (letter to Wolfgang Pauli)" },
         { "You should call it 'entropy'. No one knows what entropy really is, so in a debate you "
           "will always have the advantage.",
-          "John von Neumann to Claude Shannon, "
-          "on why he should borrow the term for information theory" },
+          "John von Neumann to Claude Shannon, on why he should borrow the term for information "
+          "theory" },
         { "We must have perseverance and above all confidence in ourselves. We must believe that "
           "we are gifted for something and that this thing must be attained.",
           "Marie Curie" },
         { "Courage is like - it's a habitus, a habit, a virtue: you get it by courageous acts. "
           "It's like you learn to swim by swimming. You learn courage by couraging.",
           "Marie Daly" },
-        { "We will always have STEM with us. Some things will drop out of the public eye and "
-          "will go away, but there will always be science, engineering, and technology. And there "
-          "will always, always be mathematics.",
+        { "We will always have STEM with us. Some things will drop out of the public eye and will "
+          "go away, but there will always be science, engineering, and technology. And there will "
+          "always, always be mathematics.",
           "Katherine Johnson" },
         { "If you want to change the future, start living as if you're already there.",
           "Lynn Conway" },
@@ -1635,44 +1634,37 @@ std::string getCoolQuote()
           "August Strindberg" },
         { "The historical meaning of QM/MM: Quanto Mangi, Mamma Mia!",
           "Attilio Vittorio Vargiu, at BioExcel 2022 Summer School in Sardinia" },
-        { "I wanted to have a real language where programmers could write real programs, "
-          "and see whether they would find the idea of data abstraction at all useful.",
+        { "I wanted to have a real language where programmers could write real programs, and see "
+          "whether they would find the idea of data abstraction at all useful.",
           "Barbara Liskov" },
-        { "I never thought about breaking barriers, I was just interested in what I was doing "
-          "and kept going.",
+        { "I never thought about breaking barriers, I was just interested in what I was doing and "
+          "kept going.",
           "Barbara Liskov" },
-        { "My husband was on the Internet everyday when I got the Turing award, and one day "
-          "he saw a quote by someone who said 'Why did she get the award? Everyone already knows "
-          "this!'",
+        { "My husband was on the Internet everyday when I got the Turing award, and one day he saw "
+          "a quote by someone who said 'Why did she get the award? Everyone already knows this!'",
           "Barbara Liskov" },
         { "When I got my first job as a programmer there were quite a number of women doing "
-          "programming "
-          "because there was no computer science education and people were hired from many "
-          "different "
-          "fields if it seemed like they could do the work. It was better then, probably, in terms "
-          "of "
-          "proportions, not necessarily in women being paid as much as men and so forth, but "
-          "definitely, "
-          "there were women around.",
+          "programming because there was no computer science education and people were hired from "
+          "many different fields if it seemed like they could do the work. It was better then, "
+          "probably, in terms of proportions, not necessarily in women being paid as much as men "
+          "and so forth, but definitely, there were women around.",
           "Barbara Liskov" },
         { "Prior to 1965 there were none, and after 1965 there was a nun.",
           "Sister Mary Kenneth Keller regarding women with PhDs in computer science" },
         { "We're having an information explosion, among others, and it's certainly obvious that "
           "information is of no use unless it's available.",
           "Sister Mary Kenneth Keller" },
-        { "For the first time we can now mechanically simulate the cognitive process. We can "
-          "make studies in artificial intelligence. Beyond that, this mechanism can be used to "
-          "assist "
+        { "For the first time we can now mechanically simulate the cognitive process. We can make "
+          "studies in artificial intelligence. Beyond that, this mechanism can be used to assist "
           "humans in learning. As we are going to have more mature students in greater numbers as "
-          "time "
-          "goes on, this type of teaching will probably be increasingly important.",
+          "time goes on, this type of teaching will probably be increasingly important.",
           "Sister Mary Kenneth Keller" },
-        { "Why would I pay GitHub $100/year for an AI to tell me what code to write when men "
-          "do it for free?",
+        { "Why would I pay GitHub $100/year for an AI to tell me what code to write when men do it "
+          "for free?",
           "Safia Abdalla" },
-        { "So can we think of the canonical ensemble sort of like if you ran the same "
-          "season of temptation island over and over again and took statistics about how many "
-          "times each person hooks up with each other person?",
+        { "So can we think of the canonical ensemble sort of like if you ran the same season of "
+          "temptation island over and over again and took statistics about how many times each "
+          "person hooks up with each other person?",
           "Teddy Press" },
         { "The biggest lie in science is 'data and code available upon request'", "Michael Eisen" },
         { "What do you want out of life?", "Jack Kerouac, On The Road" },
@@ -1680,15 +1672,15 @@ std::string getCoolQuote()
         { "It's hard to ignore 12 orders of magnitude", "John Urbanic" },
         { "Success is going from one failure to another without loss of enthusiasm",
           "Winston Churchill" },
-        { "Apologies to the astrophysics student I met at a party years ago. When you told me "
-          "how many hours a day you used 4chan and how much you love it, I gave you a funny "
-          "look and walked away. Now, a decade later, I realize you were talking about Fortran.",
+        { "Apologies to the astrophysics student I met at a party years ago. When you told me how "
+          "many hours a day you used 4chan and how much you love it, I gave you a funny look and "
+          "walked away. Now, a decade later, I realize you were talking about Fortran.",
           "Anonymous" },
         { "The only place success comes before work is in the dictionary", "Vince Lombardi" },
         { "They call me 007: 0 pull requests reviewed, 0 features completed, 7 bugs created.",
           "Anonymous" },
-        { "Optimist: The glass is 1/2 full. Pessimist: The glass is 1/2 empty. "
-          "Excel: The glass is January 2nd.",
+        { "Optimist: The glass is 1/2 full. Pessimist: The glass is 1/2 empty. Excel: The glass is "
+          "January 2nd.",
           "John Feminella" },
         { "FORTRAN. Input: reason, output: pleasure", "ORDA, FORTRAN board game" },
         { "gmx fellowship-writing -g grant_name -s protein_structure_involved -o output -m "
