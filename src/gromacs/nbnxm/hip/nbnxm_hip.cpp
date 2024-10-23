@@ -48,6 +48,7 @@
 #include "nbnxm_hip_kernel.h"
 #include "nbnxm_hip_kernel_pruneonly.h"
 #include "nbnxm_hip_kernel_sci_sort.h"
+#include "nbnxm_hip_kernel_sum.h"
 #include "nbnxm_hip_types.h"
 
 namespace gmx
@@ -151,6 +152,11 @@ void gpu_launch_kernel(NbnxmGpu* nb, const StepWorkload& stepWork, const Interac
                 if (doPrune)
                 {
                     launchNbnxmKernelSciSort(nb, iloc);
+                }
+
+                if constexpr (sc_useEnergyVirialSeparateDeviceReduction)
+                {
+                    launchNbnxmKernelSumUp(nb, stepWork, iloc);
                 }
 
                 if (GMX_NATIVE_WINDOWS)

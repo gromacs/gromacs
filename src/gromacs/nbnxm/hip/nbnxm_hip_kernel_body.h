@@ -471,9 +471,12 @@ __device__ static inline void reduceForceI(AmdPackedFloat3* input,
 
         if constexpr (calculateShift)
         {
+            int shiftOffset =
+                    c_numShiftVectors
+                    * (1 + blockIdx.x & (sc_energyVirialNumElementsSeparateDeviceReduction - 1));
             if (tidxi < 3)
             {
-                amdFastAtomicAddForce(fShift, shiftBase, tidxi, shiftForceBuffer);
+                amdFastAtomicAddForce(fShift, shiftBase + shiftOffset, tidxi, shiftForceBuffer);
             }
         }
     }
@@ -489,6 +492,9 @@ __device__ static inline void reduceForceI(AmdPackedFloat3* input,
 
         if constexpr (calculateShift)
         {
+            int shiftOffset =
+                    c_numShiftVectors
+                    * (1 + blockIdx.x & (sc_energyVirialNumElementsSeparateDeviceReduction - 1));
             shiftForceBuffer.x += amdDppUpdateShfl<float, 0xb1>(shiftForceBuffer.x);
             shiftForceBuffer.y += amdDppUpdateShfl<float, 0xb1>(shiftForceBuffer.y);
             shiftForceBuffer.z += amdDppUpdateShfl<float, 0xb1>(shiftForceBuffer.z);
@@ -503,9 +509,9 @@ __device__ static inline void reduceForceI(AmdPackedFloat3* input,
             if (tidx == (c_clSize - 1) || tidx == (c_subWarp<pairlistType> + c_clSize - 1))
             {
 
-                atomicAdd(&(fShift[shiftBase].x), shiftForceBuffer.x);
-                atomicAdd(&(fShift[shiftBase].y), shiftForceBuffer.y);
-                atomicAdd(&(fShift[shiftBase].z), shiftForceBuffer.z);
+                atomicAdd(&(fShift[shiftBase + shiftOffset].x), shiftForceBuffer.x);
+                atomicAdd(&(fShift[shiftBase + shiftOffset].y), shiftForceBuffer.y);
+                atomicAdd(&(fShift[shiftBase + shiftOffset].z), shiftForceBuffer.z);
             }
         }
     }
@@ -595,6 +601,9 @@ __launch_bounds__(c_clSizeSq<pairlistType>* nthreadZ, minBlocksPerMp) __global__
         const int bidx       = blockIdx.x;
         const int tidxInWarp = tidx & (c_parallelExecutionWidth - 1);
 
+        const unsigned int energyIndexBase =
+                1 + (bidx & (sc_energyVirialNumElementsSeparateDeviceReduction - 1));
+
         using NbnxmExcl     = nbnxn_excl_t<pairlistType>;
         using NbnxmCjPacked = nbnxn_cj_packed_t<pairlistType>;
 
@@ -602,8 +611,8 @@ __launch_bounds__(c_clSizeSq<pairlistType>* nthreadZ, minBlocksPerMp) __global__
         float3*                     gm_f             = asFloat3(atdat.f);
         float3*                     gm_shiftVec      = asFloat3(atdat.shiftVec);
         float3*                     gm_fShift        = asFloat3(atdat.fShift);
-        float*                      gm_energyElec    = atdat.eElec;
-        float*                      gm_energyVdw     = atdat.eLJ;
+        float*                      gm_energyElec    = atdat.eElec + energyIndexBase;
+        float*                      gm_energyVdw     = atdat.eLJ + energyIndexBase;
         NbnxmCjPacked*              gm_plistCJPacked = plist.cjPacked;
         AmdFastBuffer<const nbnxn_sci_t> gm_plistSci{ doPruneNBL ? plist.sci : plist.sorting.sciSorted };
         int* gm_plistSciHistogram = plist.sorting.sciHistogram;
@@ -1104,6 +1113,7 @@ __launch_bounds__(c_clSizeSq<pairlistType>* nthreadZ, minBlocksPerMp) __global__
         assert(false);
     }
 }
+
 //! \brief NBNXM kernel launch code.
 template<PairlistType pairlistType, bool hasLargeRegisterPool, bool doPrune, bool doCalcEnergies, ElecType elecType, VdwType vdwType, class... Args>
 static void launchNbnxmKernel(const DeviceStream&      deviceStream,
