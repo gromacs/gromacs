@@ -100,30 +100,6 @@ static constexpr int c_pruneKernelJPackedConcurrency = GMX_NBNXN_PRUNE_KERNEL_JP
 /* Convenience constants */
 /*! \cond */
 /* Convenience defines */
-/*! \brief cluster size = number of atoms per cluster. */
-static constexpr int c_clusterSize = sc_gpuClusterSize(sc_layoutType);
-
-/*! \brief how the clusters are split */
-static constexpr int c_clusterSplitSize = sc_gpuClusterPairSplit(sc_layoutType);
-
-/*! \brief super cluster size */
-static constexpr int c_superClusterSize = sc_gpuClusterPerSuperCluster(sc_layoutType);
-
-/*! \brief How many J groups are used together */
-static constexpr int c_jGroupSize = sc_gpuJgroupSize(sc_layoutType);
-
-/*! \brief Square of cluster size. */
-static const int c_clusterSizeSq = c_clusterSize * c_clusterSize;
-
-/*! \brief j-cluster size after split (4 in the current implementation). */
-static const int c_splitClSize = sc_gpuSplitJClusterSize(sc_layoutType);
-
-/*! \brief Size of exclusion list */
-static constexpr int c_exclSize = sc_gpuExclSize(sc_layoutType);
-
-// i-cluster interaction mask for a super-cluster with all c_nbnxnGpuNumClusterPerSupercluster=8 bits set.
-static constexpr unsigned superClInteractionMask = ((1U << c_superClusterSize) - 1U);
-
 // 1/sqrt(pi), same value as \c M_FLOAT_1_SQRTPI in other NB kernels.
 static constexpr float c_oneOverSqrtPi = 0.564189583547756F;
 

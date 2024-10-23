@@ -77,10 +77,11 @@ __launch_bounds__(c_clSizeSq<pairlistType>* threadZ, minBlocksPp) __global__
     // we only want to actually compile the kernel for archs that have matching execution widths
     if constexpr (sc_gpuParallelExecutionWidth(pairlistType) == warpSize)
     {
-        constexpr int c_clSize                 = sc_gpuClusterSize(pairlistType);
-        constexpr int c_clusterPerSuperCluster = sc_gpuClusterPerSuperCluster(pairlistType);
-        constexpr int c_gpuJGroupSize          = sc_gpuJgroupSize(pairlistType);
-        constexpr int c_parallelExecutionWidth = sc_gpuParallelExecutionWidth(pairlistType);
+        constexpr int  c_clSize                 = sc_gpuClusterSize(pairlistType);
+        constexpr int  c_clusterPerSuperCluster = sc_gpuClusterPerSuperCluster(pairlistType);
+        constexpr int  c_gpuJGroupSize          = sc_gpuJgroupSize(pairlistType);
+        constexpr int  c_parallelExecutionWidth = sc_gpuParallelExecutionWidth(pairlistType);
+        const unsigned superClInteractionMask   = ((1U << c_clusterPerSuperCluster) - 1U);
 
         // thread/block/warp id-s
         const int tidxi      = threadIdx.x;
