@@ -77,6 +77,12 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(GMX_CLANG_MINIMUM_REQUIRED_VERSION 14)
 set(GMX_GCC_MINIMUM_REQUIRED_VERSION 11)
+set(GMX_CUDA_MINIMUM_REQUIRED_VERSION 12.1)
+set(GMX_CUDA_MINIMUM_REQUIRED_COMPUTE_CAPABILITY 5.0)
+
+# We start supporting HIP from version 5.2
+set(REQUIRED_HIP_VERSION 5.2)
+
 
 include(gmxManageCcache)
 
@@ -695,13 +701,6 @@ include(gmxManagePlumed)
 # for SIMD math operations.
 include(gmxManageSimd)
 gmx_manage_simd()
-
-# The earliest version of the CUDA toolkit that supports c++17 is 11.0
-set(REQUIRED_CUDA_VERSION 11.0)
-set(REQUIRED_CUDA_COMPUTE_CAPABILITY 3.5)
-
-# We start supporting HIP from version 5.2
-set(REQUIRED_HIP_VERSION 5.2)
 
 if(GMX_GPU)
 

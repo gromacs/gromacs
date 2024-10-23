@@ -193,9 +193,9 @@ GPU support
 ~~~~~~~~~~~
 
 |Gromacs| has excellent support for NVIDIA GPUs supported via CUDA.
-On Linux, NVIDIA CUDA_ toolkit with minimum version |REQUIRED_CUDA_VERSION|
+On Linux, NVIDIA CUDA_ toolkit with minimum version |GMX_CUDA_MINIMUM_REQUIRED_VERSION|
 is required, and the latest version is strongly encouraged. NVIDIA GPUs with at
-least NVIDIA compute capability |REQUIRED_CUDA_COMPUTE_CAPABILITY| are
+least NVIDIA compute capability |GMX_CUDA_MINIMUM_REQUIRED_COMPUTE_CAPABILITY| are
 required. You are strongly recommended to
 get the latest CUDA version and driver that supports your hardware, but
 beware of possible performance regressions in newer CUDA versions on

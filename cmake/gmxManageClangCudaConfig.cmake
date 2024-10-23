@@ -48,20 +48,21 @@ if (GMX_CUDA_TARGET_COMPUTE)
     message(WARNING "Values passed in GMX_CUDA_TARGET_COMPUTE will be ignored; clang will by default include PTX in the binary.")
 endif()
 
-# At the time of writing, the latest released versions are Clang 17 and CUDA 12.2.
-# Clang <14 support only CUDA 7.0-10.1; Clang 14-15 support CUDA 7.0-11.5;
-# Clang 16 supports CUDA SDK 7.0-11.8; Clang 17 supports CUDA SDK 12.1;
-# GROMACS requires CUDA 11.0, so no need to check for earlier versions
+# Clang 17 supports CUDA SDK 12.1, which GROMACS requires,
+# so no need to check for earlier versions. Clang 18 supports
+# up to 12.3 and clang 19 supports up to 12.5
 set(_cuda_version_warning "")
-if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 14.0)
+if ((CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.1) AND (CUDAToolkit_VERSION VERSION_LESS_EQUAL 12.5))
+    # supported
+elseif ((CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 18.1) AND (CUDAToolkit_VERSION VERSION_LESS_EQUAL 12.3))
+    # supported
+elseif ((CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 17.0) AND (CUDAToolkit_VERSION VERSION_LESS_EQUAL 12.1))
+    # supported
+elseif (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 17.0)
     set(_cuda_version_warning "officially incompatible")
-elseif ((CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 17.0) OR (CUDAToolkit_VERSION VERSION_GREATER 12.1))
-    # We don't know the future; so far Clang, 17 state that CUDA 7.0-12.1 are supported.
+else (CUDAToolkit_VERSION VERSION_GREATER 12.5)
+    # We don't know the future; so far Clang 19 states that CUDA 7.0-12.5 are supported.
     set(_cuda_version_warning "possibly incompatible")
-elseif ((CMAKE_CXX_COMPILER_VERSION VERSION_LESS 16.0) AND (CUDAToolkit_VERSION VERSION_GREATER 11.5))
-    set(_cuda_version_warning "officially incompatible (but likely working)")
-elseif ((CMAKE_CXX_COMPILER_VERSION VERSION_LESS 17.0) AND (CUDAToolkit_VERSION VERSION_GREATER 11.8))
-    set(_cuda_version_warning "officially incompatible (but likely working)")
 endif()
 if(NOT CUDA_CLANG_WARNING_DISPLAYED STREQUAL _cuda_version_warning)
     message(NOTICE "Using ${_cuda_version_warning} version of CUDA ${CUDAToolkit_VERSION} "
@@ -82,32 +83,18 @@ if (GMX_CUDA_TARGET_SM)
         list(APPEND _CUDA_CLANG_GENCODE_FLAGS "${_target};")
     endforeach()
 else()
-    if(CUDAToolkit_VERSION VERSION_LESS 12.0)
-        list(APPEND _CUDA_CLANG_GENCODE_FLAGS "35;")
-        list(APPEND _CUDA_CLANG_GENCODE_FLAGS "37;")
-    endif()
     list(APPEND _CUDA_CLANG_GENCODE_FLAGS "50;")
     list(APPEND _CUDA_CLANG_GENCODE_FLAGS "52;")
     list(APPEND _CUDA_CLANG_GENCODE_FLAGS "60;")
     list(APPEND _CUDA_CLANG_GENCODE_FLAGS "61;")
     list(APPEND _CUDA_CLANG_GENCODE_FLAGS "70;")
     list(APPEND _CUDA_CLANG_GENCODE_FLAGS "75;")
-    if(NOT CUDAToolkit_VERSION VERSION_LESS 11.0)
-        list(APPEND _CUDA_CLANG_GENCODE_FLAGS "80;")
-    endif()
-    if(NOT CUDAToolkit_VERSION VERSION_LESS 11.1)
-        list(APPEND _CUDA_CLANG_GENCODE_FLAGS "86;")
-    endif()
+    list(APPEND _CUDA_CLANG_GENCODE_FLAGS "80;")
+    list(APPEND _CUDA_CLANG_GENCODE_FLAGS "86;")
     if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 16.0) # Clang 15 and earlier fail to recognize the flags below
-        if(NOT CUDAToolkit_VERSION VERSION_LESS 11.4)
-            list(APPEND _CUDA_CLANG_GENCODE_FLAGS "87;")
-        endif()
-        if(NOT CUDAToolkit_VERSION VERSION_LESS 11.8)
-            list(APPEND _CUDA_CLANG_GENCODE_FLAGS "89;")
-        endif()
-        if(NOT CUDAToolkit_VERSION VERSION_LESS 12.0)
-            list(APPEND _CUDA_CLANG_GENCODE_FLAGS "90;")
-        endif()
+        list(APPEND _CUDA_CLANG_GENCODE_FLAGS "87;")
+        list(APPEND _CUDA_CLANG_GENCODE_FLAGS "89;")
+        list(APPEND _CUDA_CLANG_GENCODE_FLAGS "90;")
     endif()
 endif()
 if (GMX_CUDA_TARGET_SM)
