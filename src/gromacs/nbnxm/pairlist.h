@@ -53,8 +53,6 @@ class t_nblist;
 
 namespace gmx
 {
-//! Currently hard coded default GPU pairlist layout
-static constexpr auto sc_layoutType = PairlistType::Hierarchical8x8x8;
 
 struct NbnxmPairlistCpuWork;
 struct NbnxmPairlistGpuWork;
