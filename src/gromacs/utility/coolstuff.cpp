@@ -1701,6 +1701,9 @@ std::string getCoolQuote()
         { "You are wrong!", "NOFX" },
         { "The final page is written in the books of history", "Bad Religion" },
         { "Would you give it all up to live again?", "Bad Religion" },
+        { "I can switch from GROMACS version 5.1 to 2016 in the middle of the paper, of course, "
+          "Newton's equations of motion did not change between them.",
+          "Davide Mercadante" }
 
     };
 
