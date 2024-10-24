@@ -148,6 +148,15 @@ and possibly incorrect behaviour in QMMM simulations.
 
 :issue:`5182`
 
+Fix hang observed with NVSHMEM enabled PME-PP force transfers
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+A hang in PME-PP force transfers during NVSHMEM runs was resolved, occurring in certain
+conditions. It should also be noted that the NVSHMEM enabled PME-PP force transfers
+does not support charge perturbation.
+
+:issue:`5136`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

@@ -2455,6 +2455,8 @@ void pme_gpu_gather(PmeGpu*               pmeGpu,
         kernelParamsPtr->isVirialStep = computeVirial;
         if (!computeVirial && pmeGpu->useNvshmem)
         {
+            GMX_RELEASE_ASSERT(pmeGpu->common->ngrids != 2,
+                               "NVSHMEM enabled PME Gather kernel does not support numGrids == 2");
             kernelParamsPtr->forcesReadyNvshmemFlagsCounter++;
         }
 #else

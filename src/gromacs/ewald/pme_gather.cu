@@ -348,7 +348,10 @@ __device__ void findPPRankAndPutForces(const int threadLocalId,
     {
         const int outputIndexLocal  = i * iterThreads + threadLocalId;
         const int outputIndexGlobal = blockIndex * blockForcesSize + outputIndexLocal;
-        haveAnyWorkFromThread += (((outputIndexGlobal < endAtoms)) && (outputIndexGlobal >= startAtoms));
+
+        int isValidRange = ((outputIndexGlobal < endAtoms) && (outputIndexGlobal >= startAtoms)
+                            && (threadLocalId < iterThreads));
+        haveAnyWorkFromThread |= (isValidRange << i);
     }
 
     const int haveAnyWorkInWarp = __any_sync(c_fullWarpMask, haveAnyWorkFromThread > 0);
@@ -361,29 +364,35 @@ __device__ void findPPRankAndPutForces(const int threadLocalId,
         const bool isPpRankIntraNode = (gm_forcesRemote != nullptr);
         const int  remoteOffset      = isPpRankIntraNode ? startAtoms : 0;
         float*     gm_forcesDest     = isPpRankIntraNode ? gm_forcesRemote : gm_forces;
+        int        totalAtomsThread  = 0;
 
 #    pragma unroll
         for (int i = 0; i < numIter; i++)
         {
             const int outputIndexLocal  = i * iterThreads + threadLocalId;
             const int outputIndexGlobal = blockIndex * blockForcesSize + outputIndexLocal;
-            if ((outputIndexGlobal < endAtoms) && (outputIndexGlobal >= startAtoms))
+            int       isValidRange      = 1 & (haveAnyWorkFromThread >> i);
+            if (isValidRange)
             {
                 float outputForceComponent                      = sm_forces[outputIndexLocal];
                 gm_forcesDest[outputIndexGlobal - remoteOffset] = outputForceComponent;
+                totalAtomsThread++;
             }
         }
 
         if (!isPpRankIntraNode)
         {
-            int totalAtomsWarpProcessed = haveAnyWorkFromThread;
+            int totalAtomsWarpProcessed = totalAtomsThread;
             // reduce to find total atoms processed by this block for this PP rank.
             for (int mask = warp_size / 2; mask > 0; mask /= 2)
             {
                 totalAtomsWarpProcessed += __shfl_xor_sync(c_fullWarpMask, totalAtomsWarpProcessed, mask);
             }
 
-            __threadfence();
+            // Use threadfence_block to make sure the previous update to `gm_forcesDest`
+            // is observed by all the threads in the block before nvshmemx_float_put_nbi_warp
+            // does the remote writes.
+            __threadfence_block();
 
             // start offset for source buffer.
             const int startOffsetSrc = (startAtoms > (blockIndex * blockForcesSize))
@@ -650,21 +659,19 @@ __launch_bounds__(c_gatherMaxThreadsPerBlock, c_gatherMinBlocksPerMP) __global__
 #if GMX_NVSHMEM
     if (!kernelParams.isVirialStep && kernelParams.useNvshmem)
     {
-        if (threadLocalId < iterThreads)
+        __syncthreads();
+        for (int rankId = 0; rankId < kernelParams.ppRanksInfoSize; rankId++)
         {
-            for (int rankId = 0; rankId < kernelParams.ppRanksInfoSize; rankId++)
-            {
-                const auto ppRankInfo    = kernelParams.ppRanksInfo[rankId];
-                const int  endAtomOffset = ppRankInfo.startAtomOffset + ppRankInfo.numAtoms;
+            const auto ppRankInfo    = kernelParams.ppRanksInfo[rankId];
+            const int  endAtomOffset = ppRankInfo.startAtomOffset + ppRankInfo.numAtoms;
 
-                findPPRankAndPutForces<numIter, iterThreads, blockForcesSize>(
-                        threadLocalId,
-                        ppRankInfo.rankId,
-                        ppRankInfo.startAtomOffset * DIM,
-                        endAtomOffset * DIM,
-                        gm_forces,
-                        reinterpret_cast<float*>(sm_forces));
-            }
+            findPPRankAndPutForces<numIter, iterThreads, blockForcesSize>(
+                    threadLocalId,
+                    ppRankInfo.rankId,
+                    ppRankInfo.startAtomOffset * DIM,
+                    endAtomOffset * DIM,
+                    gm_forces,
+                    reinterpret_cast<float*>(sm_forces));
         }
     }
     else
