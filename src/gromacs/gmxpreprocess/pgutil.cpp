@@ -98,22 +98,22 @@ static void atom_not_found(int         fatal_errno,
     }
 }
 
-int search_atom(const char*              type,
-                int                      start,
-                const t_atoms*           atoms,
-                const char*              bondtype,
-                bool                     bAllowMissing,
-                gmx::ArrayRef<const int> cyclicBondsIndex)
+std::optional<int> search_atom(const char*              atomName,
+                               int                      start,
+                               const t_atoms*           atoms,
+                               const char*              bondtype,
+                               bool                     bAllowMissing,
+                               gmx::ArrayRef<const int> cyclicBondsIndex)
 {
     int                                i, resind = -1;
     bool                               bPrevious, bNext, bOverring;
-    int                                natoms = atoms->nr;
-    t_atom*                            at     = atoms->atom;
-    char** const*                      anm    = atoms->atomname;
+    int                                natoms             = atoms->nr;
+    t_atom*                            at                 = atoms->atom;
+    char** const*                      atomNameSearchPool = atoms->atomname;
     gmx::ArrayRef<const int>::iterator cyclicBondsIterator;
 
-    bPrevious = (strchr(type, '-') != nullptr);
-    bNext     = (strchr(type, '+') != nullptr);
+    bPrevious = (strchr(atomName, '-') != nullptr);
+    bNext     = (strchr(atomName, '+') != nullptr);
 
     if (!bPrevious)
     {
@@ -121,7 +121,7 @@ int search_atom(const char*              type,
         if (bNext)
         {
             /* The next residue */
-            type++;
+            atomName++;
             bOverring = !cyclicBondsIndex.empty()
                         && (cyclicBondsIterator =
                                     std::find(cyclicBondsIndex.begin(), cyclicBondsIndex.end(), resind))
@@ -129,7 +129,7 @@ int search_atom(const char*              type,
             if (bOverring && ((cyclicBondsIterator - cyclicBondsIndex.begin()) & 1))
             {
                 resind = *(--cyclicBondsIterator);
-                return search_res_atom(type, resind, atoms, bondtype, false);
+                return search_res_atom(atomName, resind, atoms, bondtype, false);
             }
             else
             {
@@ -146,20 +146,20 @@ int search_atom(const char*              type,
 
         for (i = start; (i < natoms) && (bNext || (at[i].resind == resind)); i++)
         {
-            if (anm[i] && gmx_strcasecmp(type, *(anm[i])) == 0)
+            if (atomNameSearchPool[i] && gmx_strcasecmp(atomName, *(atomNameSearchPool[i])) == 0)
             {
                 return i;
             }
         }
         if (!(bNext && at[start].resind == at[natoms - 1].resind))
         {
-            atom_not_found(FARGS, type, at[start].resind, *atoms->resinfo[resind].name, bondtype, bAllowMissing);
+            atom_not_found(FARGS, atomName, at[start].resind, *atoms->resinfo[resind].name, bondtype, bAllowMissing);
         }
     }
     else
     {
         /* The previous residue */
-        type++;
+        atomName++;
         resind    = at[start].resind;
         bOverring = !cyclicBondsIndex.empty()
                     && (cyclicBondsIterator =
@@ -169,7 +169,7 @@ int search_atom(const char*              type,
         if (bOverring && !((cyclicBondsIterator - cyclicBondsIndex.begin()) & 1))
         {
             resind = *(++cyclicBondsIterator);
-            return search_res_atom(type, resind, atoms, bondtype, false);
+            return search_res_atom(atomName, resind, atoms, bondtype, false);
         }
         else
         {
@@ -185,30 +185,32 @@ int search_atom(const char*              type,
         }
         for (i = start - 1; (i >= 0) && (at[i].resind == resind); i--)
         {
-            if (gmx_strcasecmp(type, *(anm[i])) == 0)
+            if (gmx_strcasecmp(atomName, *(atomNameSearchPool[i])) == 0)
             {
                 return i;
             }
         }
         if (start > 0)
         {
-            atom_not_found(FARGS, type, at[start].resind, *atoms->resinfo[resind].name, bondtype, bAllowMissing);
+            atom_not_found(FARGS, atomName, at[start].resind, *atoms->resinfo[resind].name, bondtype, bAllowMissing);
         }
     }
-    return -1;
+    return std::nullopt;
 }
 
-int search_res_atom(const char* type, int resind, const t_atoms* atoms, const char* bondtype, bool bAllowMissing)
+std::optional<int> search_res_atom(const char*    atomName,
+                                   int            resind,
+                                   const t_atoms* atoms,
+                                   const char*    bondtype,
+                                   bool           bAllowMissing)
 {
-    int i;
-
-    for (i = 0; (i < atoms->nr); i++)
+    for (int i = 0; (i < atoms->nr); i++)
     {
         if (atoms->atom[i].resind == resind)
         {
-            return search_atom(type, i, atoms, bondtype, bAllowMissing, gmx::ArrayRef<const int>());
+            return search_atom(atomName, i, atoms, bondtype, bAllowMissing, gmx::ArrayRef<const int>());
         }
     }
 
-    return -1;
+    return std::nullopt;
 }

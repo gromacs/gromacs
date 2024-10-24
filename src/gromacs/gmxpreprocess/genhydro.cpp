@@ -73,12 +73,12 @@ static void copy_atom(const t_atoms* atoms1, int a1, t_atoms* atoms2, int a2, t_
     atoms2->atomname[a2] = put_symtab(symtab, *atoms1->atomname[a1]);
 }
 
-static int pdbasearch_atom(const char*              name,
-                           int                      resind,
-                           const t_atoms*           pdba,
-                           const char*              searchtype,
-                           bool                     bAllowMissing,
-                           gmx::ArrayRef<const int> cyclicBondsIndex)
+static std::optional<int> pdbasearch_atom(const char*              name,
+                                          int                      resind,
+                                          const t_atoms*           pdba,
+                                          const char*              searchtype,
+                                          bool                     bAllowMissing,
+                                          gmx::ArrayRef<const int> cyclicBondsIndex)
 {
     int i;
 
@@ -324,15 +324,11 @@ static int check_atoms_present(const t_atoms*                            pdba,
                 {
                     /* we're adding */
                     /* check if the atom is already present */
-                    int k = pdbasearch_atom(patch->nname.c_str(), rnr, pdba, "check", TRUE, cyclicBondsIndex);
-                    if (k != -1)
+                    patch->bAlreadyPresent =
+                            pdbasearch_atom(patch->nname.c_str(), rnr, pdba, "check", TRUE, cyclicBondsIndex)
+                                    .has_value();
+                    if (!patch->bAlreadyPresent)
                     {
-                        /* We found the added atom. */
-                        patch->bAlreadyPresent = true;
-                    }
-                    else
-                    {
-                        patch->bAlreadyPresent = false;
                         /* count how many atoms we'll add */
                         nadd++;
                     }
@@ -385,13 +381,13 @@ static void calc_all_pos(const t_atoms*                            pdba,
                 bool bFoundAll = true;
                 for (int m = 0; (m < patch->nctl && bFoundAll); m++)
                 {
-                    int ia = pdbasearch_atom(patch->a[m].c_str(),
-                                             rnr,
-                                             pdba,
-                                             bCheckMissing ? "atom" : "check",
-                                             !bCheckMissing,
-                                             cyclicBondsIndex);
-                    if (ia < 0)
+                    const std::optional<int> ia = pdbasearch_atom(patch->a[m].c_str(),
+                                                                  rnr,
+                                                                  pdba,
+                                                                  bCheckMissing ? "atom" : "check",
+                                                                  !bCheckMissing,
+                                                                  cyclicBondsIndex);
+                    if (!ia.has_value())
                     {
                         /* not found in original atoms, might still be in
                          * the patch Instructions (patches) */
@@ -418,7 +414,7 @@ static void calc_all_pos(const t_atoms*                            pdba,
                     }
                     else
                     {
-                        copy_rvec(x[ia], xa[m]);
+                        copy_rvec(x[ia.value()], xa[m]);
                     }
                 }
                 if (bFoundAll)

@@ -759,18 +759,20 @@ static void do_ssbonds(InteractionsOfType*                ps,
 {
     for (const auto& bond : ssbonds)
     {
-        int ri = bond.firstResidue;
-        int rj = bond.secondResidue;
-        int ai = search_res_atom(bond.firstAtom.c_str(), ri, atoms, "special bond", bAllowMissing);
-        int aj = search_res_atom(bond.secondAtom.c_str(), rj, atoms, "special bond", bAllowMissing);
-        if ((ai == -1) || (aj == -1))
+        const int                ri = bond.firstResidue;
+        const int                rj = bond.secondResidue;
+        const std::optional<int> ai =
+                search_res_atom(bond.firstAtom.c_str(), ri, atoms, "special bond", bAllowMissing);
+        const std::optional<int> aj =
+                search_res_atom(bond.secondAtom.c_str(), rj, atoms, "special bond", bAllowMissing);
+        if (!ai.has_value() || !aj.has_value())
         {
             gmx_fatal(FARGS,
                       "Trying to make impossible special bond (%s-%s)!",
                       bond.firstAtom.c_str(),
                       bond.secondAtom.c_str());
         }
-        add_param(ps, ai, aj, {}, nullptr);
+        add_param(ps, ai.value(), aj.value(), {}, nullptr);
     }
 }
 
@@ -809,27 +811,32 @@ static void at2bonds(InteractionsOfType*                  psb,
              * for missing atoms in bonds, as the hydrogens and terminal atoms
              * have not been added yet.
              */
-            int ai = search_atom(patch.ai().c_str(), i, atoms, ptr, TRUE, cyclicBondsIndex);
-            int aj = search_atom(patch.aj().c_str(), i, atoms, ptr, TRUE, cyclicBondsIndex);
-            if (ai != -1 && aj != -1)
+            const std::optional<int> ai =
+                    search_atom(patch.ai().c_str(), i, atoms, ptr, TRUE, cyclicBondsIndex);
+            const std::optional<int> aj =
+                    search_atom(patch.aj().c_str(), i, atoms, ptr, TRUE, cyclicBondsIndex);
+            if (ai.has_value() && aj.has_value())
             {
-                real dist2 = distance2(x[ai], x[aj]);
+                real dist2 = distance2(x[ai.value()], x[aj.value()]);
                 if (dist2 > long_bond_dist2)
-
                 {
                     GMX_LOG(logger.warning)
                             .asParagraph()
-                            .appendTextFormatted(
-                                    "Long Bond (%d-%d = %g nm)", ai + 1, aj + 1, std::sqrt(dist2));
+                            .appendTextFormatted("Long Bond (%d-%d = %g nm)",
+                                                 ai.value() + 1,
+                                                 aj.value() + 1,
+                                                 std::sqrt(dist2));
                 }
                 else if (dist2 < short_bond_dist2)
                 {
                     GMX_LOG(logger.warning)
                             .asParagraph()
-                            .appendTextFormatted(
-                                    "Short Bond (%d-%d = %g nm)", ai + 1, aj + 1, std::sqrt(dist2));
+                            .appendTextFormatted("Short Bond (%d-%d = %g nm)",
+                                                 ai.value() + 1,
+                                                 aj.value() + 1,
+                                                 std::sqrt(dist2));
                 }
-                add_param(psb, ai, aj, {}, patch.s.c_str());
+                add_param(psb, ai.value(), aj.value(), {}, patch.s.c_str());
             }
         }
         /* add bonds from list of hacks (each added atom gets a bond) */
@@ -1459,16 +1466,15 @@ static void gen_cmap(InteractionsOfType*                    psb,
                         break;
                     }
                 }
-
-                cmap_atomid[k] = search_atom(pname, i, atoms, ptr, TRUE, cyclicBondsIndex);
-                bAddCMAP       = bAddCMAP && (cmap_atomid[k] != -1);
+                const std::optional<int> atomIndex =
+                        search_atom(pname, i, atoms, ptr, TRUE, cyclicBondsIndex);
+                bAddCMAP = bAddCMAP && atomIndex.has_value();
                 if (!bAddCMAP)
                 {
-                    /* This break is necessary, because cmap_atomid[k]
-                     * == -1 cannot be safely used as an index
-                     * into the atom array. */
+                    // Break because this CMAP interaction does not match
                     break;
                 }
+                cmap_atomid[k]         = atomIndex.value();
                 int this_residue_index = atoms->atom[cmap_atomid[k]].resind;
                 if (0 == k)
                 {

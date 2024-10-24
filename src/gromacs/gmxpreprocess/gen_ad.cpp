@@ -365,12 +365,12 @@ static std::vector<InteractionOfType> get_impropers(t_atoms*                    
                 std::vector<int> ai;
                 for (int k = 0; (k < 4) && !bStop; k++)
                 {
-                    const int entry = search_atom(
+                    const std::optional<int> entry = search_atom(
                             bondeds.a[k].c_str(), start, atoms, "improper", bAllowMissing, cyclicBondsIndex);
 
-                    if (entry != -1)
+                    if (entry.has_value())
                     {
-                        ai.emplace_back(entry);
+                        ai.emplace_back(entry.value());
                     }
                     else
                     {
@@ -466,21 +466,19 @@ static void gen_excls(t_atoms*                             atoms,
 
             for (const auto& bondeds : hbexcl->b)
             {
-                const char* anm = bondeds.a[0].c_str();
-                int i1 = search_atom(anm, astart, atoms, "exclusion", bAllowMissing, cyclicBondsIndex);
-                anm    = bondeds.a[1].c_str();
-                int i2 = search_atom(anm, astart, atoms, "exclusion", bAllowMissing, cyclicBondsIndex);
-                if (i1 != -1 && i2 != -1)
+                std::optional<int> i1 = search_atom(
+                        bondeds.a[0].c_str(), astart, atoms, "exclusion", bAllowMissing, cyclicBondsIndex);
+                std::optional<int> i2 = search_atom(
+                        bondeds.a[1].c_str(), astart, atoms, "exclusion", bAllowMissing, cyclicBondsIndex);
+                if (i1.has_value() && i2.has_value())
                 {
-                    if (i1 > i2)
+                    if (i1.value() > i2.value())
                     {
-                        int itmp = i1;
-                        i1       = i2;
-                        i2       = itmp;
+                        std::swap(i1, i2);
                     }
-                    srenew(excls[i1].e, excls[i1].nr + 1);
-                    excls[i1].e[excls[i1].nr] = i2;
-                    excls[i1].nr++;
+                    srenew(excls[i1.value()].e, excls[i1.value()].nr + 1);
+                    excls[i1.value()].e[excls[i1.value()].nr] = i2.value();
+                    excls[i1.value()].nr++;
                 }
             }
 
@@ -665,14 +663,14 @@ void gen_pad(t_atoms*                               atoms,
                                 {
                                     if (anm[1] == bondeds.aj())
                                     {
-                                        bool bFound = false;
+                                        bool foundMatch = false;
                                         for (int m = 0; m < 3; m += 2)
                                         {
-                                            bFound = (bFound
-                                                      || ((anm[m] == bondeds.ai())
-                                                          && (anm[2 - m] == bondeds.ak())));
+                                            foundMatch = (foundMatch
+                                                          || ((anm[m] == bondeds.ai())
+                                                              && (anm[2 - m] == bondeds.ak())));
                                         }
-                                        if (bFound)
+                                        if (foundMatch)
                                         {
                                             name = bondeds.s;
                                             /* Mark that we found a match for this entry */
@@ -715,16 +713,16 @@ void gen_pad(t_atoms*                               atoms,
                                                 &globalPatches[res].rb[BondedTypes::ProperDihedrals];
                                         for (auto& bondeds : hbdih->b)
                                         {
-                                            bool bFound = false;
+                                            bool foundMatch = false;
                                             for (int m = 0; m < 2; m++)
                                             {
-                                                bFound = (bFound
-                                                          || ((anm[3 * m] == bondeds.ai())
-                                                              && (anm[1 + m] == bondeds.aj())
-                                                              && (anm[2 - m] == bondeds.ak())
-                                                              && (anm[3 - 3 * m] == bondeds.al())));
+                                                foundMatch = (foundMatch
+                                                              || ((anm[3 * m] == bondeds.ai())
+                                                                  && (anm[1 + m] == bondeds.aj())
+                                                                  && (anm[2 - m] == bondeds.ak())
+                                                                  && (anm[3 - 3 * m] == bondeds.al())));
                                             }
-                                            if (bFound)
+                                            if (foundMatch)
                                             {
                                                 name = bondeds.s;
                                                 /* Mark that we found a match for this entry */
@@ -795,9 +793,9 @@ void gen_pad(t_atoms*                               atoms,
                 }
                 /* Hm - entry not used, let's see if we can find all atoms */
                 std::vector<int>                   atomNumbers;
-                bool                               bFound = true;
+                bool                               foundMatch = true;
                 gmx::ArrayRef<const int>::iterator cyclicBondsIterator;
-                for (int k = 0; k < 3 && bFound; k++)
+                for (int k = 0; k < 3 && foundMatch; k++)
                 {
                     const char* p   = bondeds.a[k].c_str();
                     int         res = i;
@@ -823,11 +821,15 @@ void gen_pad(t_atoms*                               atoms,
                             res = *(--cyclicBondsIterator);
                         }
                     }
-                    atomNumbers.emplace_back(search_res_atom(p, res, atoms, "angle", TRUE));
-                    bFound = (atomNumbers.back() != -1);
+                    const std::optional<int> atomIndex = search_res_atom(p, res, atoms, "angle", TRUE);
+                    foundMatch                         = atomIndex.has_value();
+                    if (foundMatch)
+                    {
+                        atomNumbers.emplace_back(atomIndex.value());
+                    }
                 }
 
-                if (bFound)
+                if (foundMatch)
                 {
                     bondeds.match = true;
                     /* Incrementing nang means we save this angle */
@@ -846,9 +848,9 @@ void gen_pad(t_atoms*                               atoms,
                 }
                 /* Hm - entry not used, let's see if we can find all atoms */
                 std::vector<int>                   atomNumbers;
-                bool                               bFound = true;
+                bool                               foundMatch = true;
                 gmx::ArrayRef<const int>::iterator cyclicBondsIterator;
-                for (int k = 0; k < 4 && bFound; k++)
+                for (int k = 0; k < 4 && foundMatch; k++)
                 {
                     const char* p   = bondeds.a[k].c_str();
                     int         res = i;
@@ -876,11 +878,15 @@ void gen_pad(t_atoms*                               atoms,
                             res = *(--cyclicBondsIterator);
                         }
                     }
-                    atomNumbers.emplace_back(search_res_atom(p, res, atoms, "dihedral", TRUE));
-                    bFound = (atomNumbers.back() != -1);
+                    const std::optional<int> atomIndex = search_res_atom(p, res, atoms, "dihedral", TRUE);
+                    foundMatch                         = atomIndex.has_value();
+                    if (foundMatch)
+                    {
+                        atomNumbers.emplace_back(atomIndex.value());
+                    }
                 }
 
-                if (bFound)
+                if (foundMatch)
                 {
                     bondeds.match = true;
                     /* Incrementing ndih means we save this dihedral */

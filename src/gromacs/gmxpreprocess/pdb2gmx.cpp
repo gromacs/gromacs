@@ -1451,9 +1451,9 @@ bool checkChainCyclicity(t_atoms*                               pdba,
     {
         return false;
     }
-    int         ai = -1, aj = -1;
-    char*       rtpname = *(pdba->resinfo[start_ter].rtp);
-    std::string newName = search_resrename(rr, rtpname, false, false, false);
+    std::optional<int> ai, aj;
+    char*              rtpname = *(pdba->resinfo[start_ter].rtp);
+    std::string        newName = search_resrename(rr, rtpname, false, false, false);
     if (newName.empty())
     {
         newName = rtpname;
@@ -1461,6 +1461,7 @@ bool checkChainCyclicity(t_atoms*                               pdba,
     auto        res = getDatabaseEntry(newName, rtpFFDB);
     const char *name_ai, *name_aj;
 
+    bool bothFound = false;
     for (const auto& patch : res->rb[BondedTypes::Bonds].b)
     { /* Search backward bond for n/5' terminus */
         name_ai = patch.ai().c_str();
@@ -1475,13 +1476,14 @@ bool checkChainCyclicity(t_atoms*                               pdba,
             aj = search_res_atom(++name_aj, end_ter, pdba, "check", TRUE);
             ai = search_res_atom(name_ai, start_ter, pdba, "check", TRUE);
         }
-        if (ai >= 0 && aj >= 0)
+        if (ai.has_value() and aj.has_value())
         {
+            bothFound = true;
             break; /* Found */
         }
     }
 
-    if (!(ai >= 0 && aj >= 0))
+    if (!bothFound)
     {
         rtpname = *(pdba->resinfo[end_ter].rtp);
         newName = search_resrename(rr, rtpname, false, false, false);
@@ -1506,16 +1508,17 @@ bool checkChainCyclicity(t_atoms*                               pdba,
                 ai = search_res_atom(name_ai, end_ter, pdba, "check", TRUE);
                 aj = search_res_atom(++name_aj, start_ter, pdba, "check", TRUE);
             }
-            if (ai >= 0 && aj >= 0)
+            if (ai.has_value() and aj.has_value())
             {
+                bothFound = true;
                 break;
             }
         }
     }
 
-    if (ai >= 0 && aj >= 0)
+    if (bothFound)
     {
-        real dist = distance2(pdbx[ai], pdbx[aj]);
+        real dist = distance2(pdbx[ai.value()], pdbx[aj.value()]);
         /* it is better to read bond length from ffbonded.itp */
         return (dist < gmx::square(long_bond_dist_) && dist > gmx::square(short_bond_dist_));
     }
