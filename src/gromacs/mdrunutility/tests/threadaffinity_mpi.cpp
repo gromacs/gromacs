@@ -61,7 +61,7 @@ public:
     //! Function to require even ranks with at least four ranks
     static bool conditionSatisfied(const int numRanks)
     {
-        return (numRanks > 2) && (numRanks % 2 == 0);
+        return (numRanks >= 4) && (numRanks % 2 == 0);
     }
     //! Text to echo when skipping a test that does not satisfy the requirement
     inline static const char* s_skipReason = "an even rank count of at least four is required";
