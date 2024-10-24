@@ -252,6 +252,9 @@ if (hipsycl_FOUND)
     set(ACPP_TARGETS "${HIPSYCL_TARGETS}")
 endif()
 
+string(REPLACE ";" " " ACPP_EXTRA_COMPILE_OPTIONS_STR "${ACPP_EXTRA_COMPILE_OPTIONS}")
+string(STRIP "${ACPP_EXTRA_COMPILE_OPTIONS_STR}" ACPP_EXTRA_COMPILE_OPTIONS_STR)
+
 # Mark AdaptiveCpp-related CMake options as "advanced"
 get_cmake_property(_VARS VARIABLES)
 foreach (_VARNAME ${_VARS})
