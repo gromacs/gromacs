@@ -209,3 +209,32 @@ limits set through cgroups. Fixed by reading /proc/mounts instead.
 This will only influence performance when running in (some) containers.
 
 :issue:`5148`
+
+Collected fixes in the Colvars library
+""""""""""""""""""""""""""""""""""""""
+
+Several bugs, both recent and long-standing, have recently been fixed in the
+Colvars library: in the list below, the links corresponds to issues or pull
+request in the `Colvars repository <https://github.com/Colvars/colvars>`_.
+
+* Fixed undefined behavior when getting the current working directory from
+  ``std::filesystem``, which could have affected multiple-walkers
+  metadynamics runs (`Colvars PR 728
+  <https://github.com/Colvars/colvars/pull/728>`_).
+* Fixed the gradients and the metric functions of collective variables of
+  ``distanceDir`` type (`Colvars PR 724
+  <https://github.com/Colvars/colvars/pull/724>`_).
+* Fixed the definition of an ``orientation`` type collective variable in a
+  rotated frame of reference (`Colvars PR 715
+  <https://github.com/Colvars/colvars/pull/715>`_).
+* Implemented the contribution of fitting to the forces applied onto of
+  variables with vector values defined in a rotated fram (`Colvars PR 713
+  <https://github.com/Colvars/colvars/pull/713>`_).
+* Fixed a crash in certain metadynamics simulations without using
+  interpolating grids (`Colvars PR 706
+  <https://github.com/Colvars/colvars/pull/706>`_).
+* More consistent behavior when defining multiple biases and running with
+  more than one thread per task (`Colvars PR 694
+  <https://github.com/Colvars/colvars/pull/694>`_).
+* Prevented the creation of spurious output files for runtime histograms
+  (`Colvars PR 675 <https://github.com/Colvars/colvars/pull/675>`_).

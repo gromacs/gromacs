@@ -986,15 +986,16 @@ int colvarmodule::calc_biases()
     }
   }
 
-  bool biases_need_io = false;
+  bool biases_need_main_thread = false;
   for (bi = biases_active()->begin(); bi != biases_active()->end(); bi++) {
-    if (((*bi)->replica_share_freq() > 0) && (step_absolute() % (*bi)->replica_share_freq() == 0)) {
-      biases_need_io = true;
+    if ((*bi)->replica_share_freq() > 0) {
+      // Biases that share data with replicas need read/write access to I/O or MPI
+      biases_need_main_thread = true;
     }
   }
 
   // If SMP support is available, split up the work (unless biases need to use main thread's memory)
-  if (proxy->check_smp_enabled() == COLVARS_OK && !biases_need_io) {
+  if (proxy->check_smp_enabled() == COLVARS_OK && !biases_need_main_thread) {
 
     if (use_scripted_forces && !scripting_after_biases) {
       // calculate biases and scripted forces in parallel

@@ -11,24 +11,6 @@
 #include <iomanip>
 #include <algorithm>
 
-// Define function to get the absolute path of a replica file
-#if defined(_WIN32) && !defined(__CYGWIN__)
-#include <direct.h>
-#define GETCWD(BUF, SIZE) ::_getcwd(BUF, SIZE)
-#define PATHSEP "\\"
-#else
-#include <unistd.h>
-#define GETCWD(BUF, SIZE) ::getcwd(BUF, SIZE)
-#define PATHSEP "/"
-#endif
-
-#ifdef __cpp_lib_filesystem
-// When std::filesystem is available, use it
-#include <filesystem>
-#undef GETCWD
-#define GETCWD(BUF, SIZE) (std::filesystem::current_path().string().c_str())
-#endif
-
 #include "colvarmodule.h"
 #include "colvarproxy.h"
 #include "colvar.h"
@@ -451,8 +433,11 @@ int colvarbias_meta::update()
   error_code |= update_grid_params();
   // add new biasing energy/forces
   error_code |= update_bias();
-  // update grid content to reflect new bias
-  error_code |= update_grid_data();
+
+  if (use_grids) {
+    // update grid content to reflect new bias
+    error_code |= update_grid_data();
+  }
 
   if (comm != single_replica &&
       (cvm::step_absolute() % replica_update_freq) == 0) {
@@ -670,11 +655,20 @@ int colvarbias_meta::calc_energy(std::vector<colvarvalue> const *values)
     replicas[ir]->bias_energy = 0.0;
   }
 
-  std::vector<int> const curr_bin = values ?
-    hills_energy->get_colvars_index(*values) :
-    hills_energy->get_colvars_index();
+  bool index_ok = false;
+  std::vector<int> curr_bin;
 
-  if (hills_energy->index_ok(curr_bin)) {
+  if (use_grids) {
+
+    curr_bin = values ?
+      hills_energy->get_colvars_index(*values) :
+      hills_energy->get_colvars_index();
+
+    index_ok = hills_energy->index_ok(curr_bin);
+
+  }
+
+  if ( index_ok ) {
     // index is within the grid: get the energy from there
     for (ir = 0; ir < replicas.size(); ir++) {
 
@@ -723,11 +717,20 @@ int colvarbias_meta::calc_forces(std::vector<colvarvalue> const *values)
     }
   }
 
-  std::vector<int> const curr_bin = values ?
-    hills_energy->get_colvars_index(*values) :
-    hills_energy->get_colvars_index();
+  bool index_ok = false;
+  std::vector<int> curr_bin;
 
-  if (hills_energy->index_ok(curr_bin)) {
+  if (use_grids) {
+
+    curr_bin = values ?
+      hills_energy->get_colvars_index(*values) :
+      hills_energy->get_colvars_index();
+
+    index_ok = hills_energy->index_ok(curr_bin);
+
+  }
+
+  if ( index_ok ) {
     for (ir = 0; ir < replicas.size(); ir++) {
       cvm::real const *f = &(replicas[ir]->hills_energy_gradients->value(curr_bin));
       for (ic = 0; ic < num_variables(); ic++) {
@@ -1718,29 +1721,17 @@ int colvarbias_meta::setup_output()
 
   if (comm == multiple_replicas) {
 
-    // TODO: one may want to specify the path manually for intricated filesystems?
-    char *pwd = new char[3001];
-    if (GETCWD(pwd, 3000) == nullptr) {
-      if (pwd != nullptr) { //
-        delete[] pwd;
-      }
-      return cvm::error("Error: cannot get the path of the current working directory.\n",
-                        COLVARS_BUG_ERROR);
-    }
-
+    auto const pwd = cvm::main()->proxy->get_current_work_dir();
     replica_list_file =
-      (std::string(pwd)+std::string(PATHSEP)+
-       this->name+"."+replica_id+".files.txt");
+        cvm::main()->proxy->join_paths(pwd, this->name + "." + replica_id + ".files.txt");
     // replica_hills_file and replica_state_file are those written
     // by the current replica; within the mirror biases, they are
     // those by another replica
-    replica_hills_file =
-      (std::string(pwd)+std::string(PATHSEP)+
-       cvm::output_prefix()+".colvars."+this->name+"."+replica_id+".hills");
-    replica_state_file =
-      (std::string(pwd)+std::string(PATHSEP)+
-       cvm::output_prefix()+".colvars."+this->name+"."+replica_id+".state");
-    delete[] pwd;
+    replica_hills_file = cvm::main()->proxy->join_paths(
+        pwd, cvm::output_prefix() + ".colvars." + this->name + "." + replica_id + ".hills");
+
+    replica_state_file = cvm::main()->proxy->join_paths(
+        pwd, cvm::output_prefix() + ".colvars." + this->name + "." + replica_id + ".state");
 
     // now register this replica
 
