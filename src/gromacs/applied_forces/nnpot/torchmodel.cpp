@@ -96,9 +96,10 @@ void TorchModel::prepareAtomPositions(std::vector<RVec>& positions)
 {
     int N = positions.size();
 
-    auto options = torch::TensorOptions().dtype(torch::kFloat32).requires_grad(true);
+    auto options = torch::TensorOptions().dtype(torchRealType).requires_grad(true);
     // preferrable to use from_blob here because it doesn't allocate new memory
     torch::Tensor posTensor = torch::from_blob(positions.data()->as_vec(), { N, DIM }, options);
+    posTensor               = posTensor.to(torch::kFloat32);
 
     // important to set requires_grad to true again after moving to GPU
     // otherwise, the tensor is a leaf node of the computation graph anymore
@@ -119,8 +120,9 @@ void TorchModel::prepareAtomNumbers(std::vector<int>& atomTypes)
 
 void TorchModel::prepareBox(matrix& box)
 {
-    torch::Tensor boxTensor = torch::from_blob(box, { DIM, DIM });
-    boxTensor               = boxTensor.to(*device_);
+    torch::Tensor boxTensor =
+            torch::from_blob(box, { DIM, DIM }, torch::TensorOptions().dtype(torchRealType));
+    boxTensor = boxTensor.to(torch::kFloat32).to(*device_);
     inputs_.push_back(boxTensor);
 }
 
@@ -213,20 +215,20 @@ void TorchModel::getOutputs(std::vector<int>&     indices,
             forceTensor = -1. * inputs_[0].toTensor().grad().to(torch::kCPU);
         }
         // accumulate energy
-        energyTensor = energyTensor.to(torch::kCPU);
-        enerd.term[F_EPOT] += energyTensor.item<float>();
+        energyTensor = energyTensor.to(torchRealType).to(torch::kCPU);
+        enerd.term[F_EPOT] += energyTensor.item<real>();
 
-        forceTensor = forceTensor.to(torch::kCPU);
+        forceTensor = forceTensor.to(torchRealType).to(torch::kCPU);
     }
 
     // distribute forces
     if (havePPDomainDecomposition(cr_))
     {
-        gmx_sum(3 * N, static_cast<float*>(forceTensor.data_ptr()), cr_);
+        gmx_sum(3 * N, static_cast<real*>(forceTensor.data_ptr()), cr_);
     }
 
     // accumulate forces only on local atoms
-    auto forceAccessor = forceTensor.accessor<float, 2>();
+    auto forceAccessor = forceTensor.accessor<real, 2>();
     for (int m = 0; m < DIM; ++m)
     {
         for (int i = 0; i < N; ++i)

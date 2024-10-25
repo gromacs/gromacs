@@ -59,6 +59,12 @@
 namespace gmx
 {
 
+/*! \brief Define the torch datatype according to GMX_DOUBLE.
+ *
+ * Important for converting data types, as model inference is always done in float32.
+ */
+static constexpr auto torchRealType = GMX_DOUBLE ? torch::kFloat64 : torch::kFloat32;
+
 class MDLogger;
 
 /*! \brief
