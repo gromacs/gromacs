@@ -2843,18 +2843,15 @@ void dd_partition_system(FILE*                     fplog,
     /* Check if we should sort the charge groups */
     const bool bSortCG = (bMainState || bRedist);
 
-    /* When repartitioning we mark atom groups that will move to neighboring
-     * DD cells, but we do not move them right away for performance reasons.
-     * Thus we need to keep track of how many charge groups will move for
-     * obtaining correct local charge group / atom counts.
-     */
-    int ncg_moved = 0;
     if (bRedist)
     {
         wallcycle_sub_start(wcycle, WallCycleSubCounter::DDRedist);
 
+        /* When repartitioning we mark atom groups that will move to neighboring
+         * DD cells, but we do not move them right away for performance reasons.
+         */
         ncgindex_set = dd->numHomeAtoms;
-        dd_redistribute_cg(fplog, step, dd, ddbox.tric_dir, state_local, fr, nrnb, &ncg_moved);
+        dd_redistribute_cg(fplog, step, dd, ddbox.tric_dir, state_local, fr, nrnb);
 
         wallcycle_sub_stop(wcycle, WallCycleSubCounter::DDRedist);
 
@@ -2912,9 +2909,7 @@ void dd_partition_system(FILE*                     fplog,
         {
             homeZoneVolume *= dd->zones.sizes(0).x1[dim] - dd->zones.sizes(0).x0[dim];
         }
-        // The home atom list still contains moved atoms, compute the new atom count
-        const int  newNumHomeAtoms = dd->numHomeAtoms - ncg_moved;
-        const real atomDensity     = newNumHomeAtoms / homeZoneVolume;
+        const real atomDensity = comm->numHomeAtomsWithoutFillers / homeZoneVolume;
 
         fr->nbv->putAtomsOnGrid(state_local->box,
                                 0,
@@ -2922,7 +2917,7 @@ void dd_partition_system(FILE*                     fplog,
                                 dd->zones.sizes(0).bb_x1,
                                 comm->updateGroupsCog.get(),
                                 { 0, dd->numHomeAtoms },
-                                newNumHomeAtoms,
+                                comm->numHomeAtomsWithoutFillers,
                                 atomDensity,
                                 fr->atomInfo,
                                 state_local->x,

@@ -238,20 +238,21 @@ public:
      * but have not been removed yet. This count is given by \p numAtomsMoved.
      * When \p move[i] < 0 particle i has migrated and will not be put on the grid.
      *
-     * \param[in] box           Box used for periodic distance calculations
-     * \param[in] gridIndex     The index of the grid to spread to, always 0 except with test
-     * particle insertion
-     * \param[in] lowerCorner   Atom groups to be gridded should have coordinates >= this corner
-     * \param[in] upperCorner   Atom groups to be gridded should have coordinates <= this corner
-     * \param[in] updateGroupsCog  Centers of geometry for update groups,
-     *                             pass nullptr when not using update groups
-     * \param[in] atomRange     Range of atoms to grid, can include atoms moved to other domains
-     * \param[in] numGridAtoms  The number of atoms in \p atomRange excluding moved atoms
-     * \param[in] atomDensity   An estimate of the atom density, used for performance optimization,
-     *                          only used with \p gridIndex = 0
-     * \param[in] atomInfo      Atom information flags
-     * \param[in] x             Coordinates for atoms to grid
-     * \param[in] move          Move flags for atoms, pass nullptr without DD
+     * \param[in]     box          Box used for periodic distance calculations
+     * \param[in]     gridIndex    The index of the grid to spread to, always 0 except with test
+     *                             particle insertion
+     * \param[in]     lowerCorner  Atom groups to be gridded should have coordinates >= this corner
+     * \param[in]     upperCorner  Atom groups to be gridded should have coordinates <= this corner
+     * \param[in]     updateGroupsCog  Centers of geometry for update groups,
+     *                                 pass nullptr when not using update groups
+     * \param[in]     atomRange    Range of atoms to grid
+     * \param[in]     numAtomsWithoutFillers  The number of atoms that are not filler particles
+                                              and will not be moved to another domain by DD
+     * \param[in]     atomDensity  An estimate of the atom density, used for peformance optimization,
+     *                             only used with \p gridIndex = 0
+     * \param[in]     atomInfo     Atom information flags
+     * \param[in]     x            Coordinates for atoms to grid
+     * \param[in]     move         Move flags for atoms, pass nullptr without DD
      */
     void putAtomsOnGrid(const matrix            box,
                         int                     gridIndex,
@@ -259,7 +260,7 @@ public:
                         const RVec&             upperCorner,
                         const UpdateGroupsCog*  updateGroupsCog,
                         Range<int>              atomRange,
-                        int                     numGridAtoms,
+                        int                     numAtomsWithoutFillers,
                         real                    atomDensity,
                         ArrayRef<const int32_t> atomInfo,
                         ArrayRef<const RVec>    x,

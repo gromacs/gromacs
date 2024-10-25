@@ -160,8 +160,15 @@ static int getMaxNumCells(const Grid::Geometry& geometry, const int numAtoms, co
     }
 }
 
+//! Returns whether \p ddZone is the home zone
+static bool isHomeZone(const int ddZone)
+{
+    return ddZone == 0;
+}
+
 void Grid::setDimensions(const int   ddZone,
-                         const int   numAtoms,
+                         const int   numAtomsTotal,
+                         const int   numAtomsWithoutFillers,
                          const RVec& lowerCorner,
                          const RVec& upperCorner,
                          real*       atomDensity,
@@ -196,15 +203,15 @@ void Grid::setDimensions(const int   ddZone,
 
     /* For the home zone we compute the density when not set (=-1) or when =0 */
     GMX_ASSERT(atomDensity, "atomDensity cannot be nullptr");
-    if (ddZone == 0 && *atomDensity <= 0)
+    if (isHomeZone(ddZone) && *atomDensity <= 0)
     {
-        *atomDensity = gridAtomDensity(numAtoms, gridBoundingBoxSize);
+        *atomDensity = gridAtomDensity(numAtomsWithoutFillers, gridBoundingBoxSize);
     }
 
     dimensions_.atomDensity        = *atomDensity;
     dimensions_.maxAtomGroupRadius = maxAtomGroupRadius;
 
-    if (numAtoms > geometry_.numAtomsPerCell_)
+    if (numAtomsWithoutFillers > 0)
     {
         GMX_ASSERT(*atomDensity > 0, "With one or more atoms, the density should be positive");
 
@@ -247,7 +254,7 @@ void Grid::setDimensions(const int   ddZone,
     cxy_ind_.resize(numColumns() + 2);
 
     /* Worst case scenario of 1 atom in each last cell */
-    const int maxNumCells = getMaxNumCells(geometry_, numAtoms, numColumns());
+    const int maxNumCells = getMaxNumCells(geometry_, numAtomsTotal, numColumns());
 
     if (!geometry_.isSimple_)
     {
@@ -1271,7 +1278,7 @@ void Grid::calcColumnIndices(const GridDimensions&  gridDims,
     const int numColumns = gridDims.numCells[XX] * gridDims.numCells[YY];
 
     /* We add one extra cell for particles which moved during DD */
-    for (int i = 0; i < numColumns; i++)
+    for (int i = 0; i < numColumns + 1; i++)
     {
         cxy_na[i] = 0;
     }
@@ -1386,7 +1393,6 @@ void Grid::setCellIndices(int                  ddZone,
                           GridSetData*         gridSetData,
                           ArrayRef<GridWork>   gridWork,
                           const Range<int>     atomRange,
-                          const int            numGridAtomsWithoutFillers,
                           ArrayRef<const int>  atomInfo,
                           ArrayRef<const RVec> x,
                           nbnxn_atomdata_t*    nbat)
@@ -1432,8 +1438,16 @@ void Grid::setCellIndices(int                  ddZone,
     numCellsTotal_     = cxy_ind_[numColumns()] - cxy_ind_[0];
     numCellsColumnMax_ = ncz_max;
 
-    /* Resize grid and atom data which depend on the number of cells */
-    const int numAtomsMoved = atomRange.size() - numGridAtomsWithoutFillers;
+    /* Resize grid and atom data which depend on the number of cells.
+     * Note that only the home zone (temporarily) contains moved atoms. The halo zones are
+     * set up after moving atoms between home zones and removing them from the local grid.
+     */
+    int numAtomsMoved = 0;
+    if (isHomeZone(ddZone))
+    {
+        // Note that atomRange can include filler particles, but an overestimate is fine
+        numAtomsMoved = (cxy_ind_[numColumns() + 1] - cxy_ind_[numColumns()]) * numAtomsPerCell;
+    }
     resizeForNumberOfCells(atomIndexEnd(), numAtomsMoved, ddZone, gridSetData, nbat);
 
     if (debug)
@@ -1485,7 +1499,7 @@ void Grid::setCellIndices(int                  ddZone,
         atomIndices[firstAtomInColumn(cxy) + cxy_na_[cxy]++] = i;
     }
 
-    if (ddZone == 0)
+    if (isHomeZone(ddZone))
     {
         /* Set the cell indices for the moved particles */
         int n0 = numCellsTotal_ * numAtomsPerCell;
@@ -1557,7 +1571,7 @@ real generateAndFill2DGrid(Grid*                  grid,
                            const rvec             upperCorner,
                            const UpdateGroupsCog* updateGroupsCog,
                            const Range<int>       atomRange,
-                           const int              numGridAtomsWithoutFillers,
+                           const int              numAtomsWithoutFillers,
                            real*                  atomDensity,
                            const real             maxAtomGroupRadius,
                            ArrayRef<const RVec>   x,
@@ -1565,11 +1579,11 @@ real generateAndFill2DGrid(Grid*                  grid,
                            const int*             move,
                            const bool             computeGridDensityRatio)
 {
-    GMX_ASSERT(numGridAtomsWithoutFillers <= atomRange.size(),
+    GMX_ASSERT(numAtomsWithoutFillers <= atomRange.end(),
                "The real atoms are a subset of atomRange");
 
     grid->setDimensions(
-            ddZone, numGridAtomsWithoutFillers, lowerCorner, upperCorner, atomDensity, maxAtomGroupRadius);
+            ddZone, atomRange.size(), numAtomsWithoutFillers, lowerCorner, upperCorner, atomDensity, maxAtomGroupRadius);
 
     for (GridWork& work : gridWork)
     {
@@ -1617,7 +1631,8 @@ real generateAndFill2DGrid(Grid*                  grid,
             sumAtomsInColumnSquared += square(numAtomsInColumn);
         }
         // The effective density divided by the uniform density
-        gridDensityRatio = sumAtomsInColumnSquared * grid->numColumns() / square(real(atomRange.size()));
+        gridDensityRatio = sumAtomsInColumnSquared * grid->numColumns()
+                           / gmx::square(real(numAtomsWithoutFillers));
         if (debug)
         {
             fprintf(debug, "ns grid effective density ratio %f\n", gridDensityRatio);

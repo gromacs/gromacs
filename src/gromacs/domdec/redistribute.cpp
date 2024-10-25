@@ -624,8 +624,7 @@ void dd_redistribute_cg(FILE*         fplog,
                         ivec          tric_dir,
                         t_state*      state,
                         t_forcerec*   fr,
-                        t_nrnb*       nrnb,
-                        int*          ncg_moved)
+                        t_nrnb*       nrnb)
 {
     gmx_domdec_comm_t* comm = dd->comm.get();
 
@@ -732,7 +731,6 @@ void dd_redistribute_cg(FILE*         fplog,
     // The counts of atoms to move, forward or backward, over the
     // possible DIM dimensions.
     int nat[DIM * 2] = { 0 };
-    int numFillers   = 0;
     for (int cg = 0; cg < dd->numHomeAtoms; cg++)
     {
         if (move[cg] >= 0)
@@ -758,21 +756,13 @@ void dd_redistribute_cg(FILE*         fplog,
             cggl_flag[nat[mc] * DD_CGIBS]     = dd->globalAtomIndices[cg];
             cggl_flag[nat[mc] * DD_CGIBS + 1] = flag;
             nat[mc]++;
-        }
-        else if (move[cg] == sc_moveIsFiller)
-        {
-            numFillers++;
+
+            comm->numHomeAtomsWithoutFillers -= 1;
         }
     }
 
     inc_nrnb(nrnb, eNR_CGCM, comm->atomRanges.numHomeAtoms());
     inc_nrnb(nrnb, eNR_RESETX, dd->numHomeAtoms);
-
-    *ncg_moved = numFillers;
-    for (int i = 0; i < dd->ndim * 2; i++)
-    {
-        *ncg_moved += nat[i];
-    }
 
     int nvec = 1;
     if (bV)
@@ -994,6 +984,8 @@ void dd_redistribute_cg(FILE*         fplog,
                     copy_rvec(rvecPtr[buf_pos++], cg_p[home_pos_at]);
                 }
                 home_pos_at++;
+
+                comm->numHomeAtomsWithoutFillers++;
             }
             else
             {
@@ -1041,9 +1033,7 @@ void dd_redistribute_cg(FILE*         fplog,
     if (debug)
     {
         fprintf(debug,
-                "Finished repartitioning, atoms: old fillers %d, moved out %d, new home %d\n",
-                numFillers,
-                *ncg_moved - numFillers,
-                dd->numHomeAtoms - *ncg_moved);
+                "Finished repartitioning, new atoms count without fillers: %d\n",
+                comm->numHomeAtomsWithoutFillers);
     }
 }

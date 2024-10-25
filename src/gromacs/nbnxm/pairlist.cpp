@@ -4063,7 +4063,7 @@ void PairlistSets::construct(const InteractionLocality iLocality,
      * when using DD, but the equality check can catch more issues.
      */
     GMX_RELEASE_ASSERT(
-            exclusions.empty() || (!ddZones && exclusions.ssize() == gridSet.numRealAtomsTotal())
+            exclusions.empty() || !ddZones
                     || (ddZones
                         && exclusions.ssize() == *ddZones->atomRange(ddZones->numIZones() - 1).end()),
             "exclusions should either be empty or the number of lists should match the number of "

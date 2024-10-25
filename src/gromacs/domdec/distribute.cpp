@@ -542,7 +542,8 @@ static void distributeAtomGroups(const gmx::MDLogger& mdlog,
     }
     dd_scatter(dd, 2 * sizeof(int), ibuf, buf2);
 
-    dd->numHomeAtoms = buf2[0];
+    dd->numHomeAtoms                     = buf2[0];
+    dd->comm->numHomeAtomsWithoutFillers = buf2[0];
     dd->comm->atomRanges.setEnd(DDAtomRanges::Type::Home, buf2[1]);
     dd->globalAtomIndices.resize(dd->numHomeAtoms);
 

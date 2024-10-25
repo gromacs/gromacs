@@ -179,7 +179,7 @@ void GridSet::putOnGrid(const matrix            box,
                         const rvec              upperCorner,
                         const UpdateGroupsCog*  updateGroupsCog,
                         const Range<int>        atomRange,
-                        const int               numGridAtoms,
+                        const int               numAtomsWithoutFillers,
                         real                    atomDensity,
                         ArrayRef<const int32_t> atomInfo,
                         ArrayRef<const RVec>    x,
@@ -194,11 +194,11 @@ void GridSet::putOnGrid(const matrix            box,
     {
         copy_mat(box, box_);
 
-        numRealAtomsLocal_ = numGridAtoms;
+        numRealAtomsLocal_ = numAtomsWithoutFillers;
         /* We assume that nbnxn_put_on_grid is called first
          * for the local atoms (gridIndex=0).
          */
-        numRealAtomsTotal_ = numGridAtoms;
+        numRealAtomsTotal_ = numAtomsWithoutFillers;
 
         maxAtomGroupRadius = (updateGroupsCog ? updateGroupsCog->maxUpdateGroupRadius() : 0);
 
@@ -213,7 +213,7 @@ void GridSet::putOnGrid(const matrix            box,
         atomDensity                     = dimsGrid0.atomDensity;
         maxAtomGroupRadius              = dimsGrid0.maxAtomGroupRadius;
 
-        numRealAtomsTotal_ = std::max(numRealAtomsTotal_, *atomRange.end());
+        numRealAtomsTotal_ = std::max(numRealAtomsTotal_, numAtomsWithoutFillers);
     }
 
     /* We always use the home zone (grid[0]) for setting the cell size,
@@ -259,7 +259,7 @@ void GridSet::putOnGrid(const matrix            box,
                                                  upperCorner,
                                                  updateGroupsCog,
                                                  atomRange,
-                                                 numGridAtoms,
+                                                 numAtomsWithoutFillers,
                                                  &atomDensity,
                                                  maxAtomGroupRadius,
                                                  x,
@@ -271,8 +271,7 @@ void GridSet::putOnGrid(const matrix            box,
     }
 
     /* Copy the already computed cell indices to the grid and sort, when needed */
-    grid.setCellIndices(
-            ddZone, cellOffset, &gridSetData_, gridWork_, atomRange, numGridAtoms, atomInfo, x, nbat);
+    grid.setCellIndices(ddZone, cellOffset, &gridSetData_, gridWork_, atomRange, atomInfo, x, nbat);
 
     if (gridIndex == gmx::ssize(grids_) - 1)
     {

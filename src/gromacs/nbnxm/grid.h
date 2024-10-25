@@ -273,14 +273,16 @@ public:
     /*! \brief Sets the grid dimensions
      *
      * \param[in] ddZone           The domain decomposition zone index
-     * \param[in] numAtoms         The number of atoms to put onto this grid
+     * \param[in] numAtomsTotal    The total number of atoms to put onto this grid
+     * \param[in] numAtomsWithoutFillers  The number of atoms that are not filler particles
      * \param[in] lowerCorner      The minimum Cartesian coordinates of the grid
      * \param[in] upperCorner      The maximum Cartesian coordinates of the grid
      * \param[in,out] atomDensity  The atom density, will be computed when <= 0
      * \param[in] maxAtomGroupRadius  The maximum radius of atom groups
      */
     void setDimensions(int         ddZone,
-                       int         numAtoms,
+                       int         numAtomsTotal,
+                       int         numAtomsWithoutFillers,
                        const RVec& lowerCorner,
                        const RVec& upperCorner,
                        real*       atomDensity,
@@ -292,7 +294,6 @@ public:
                         GridSetData*            gridSetData,
                         ArrayRef<GridWork>      gridWork,
                         Range<int>              atomRange,
-                        int                     numGridAtomsWithoutFillers,
                         ArrayRef<const int32_t> atomInfo,
                         ArrayRef<const RVec>    x,
                         nbnxn_atomdata_t*       nbat);
@@ -405,7 +406,8 @@ private:
  * \param[in] upperCorner   The maximum Cartesian coordinates of the grid
  * \param[in] updateGroupsCog  The center of geometry of update groups, can be nullptr
  * \param[in] atomRange     The range of atoms to put on this grid, may include moved atoms
- * \param[in] numGridAtomsWithoutFillers  The number of non-filler atoms to put on this grid
+ * \param[in] numGridAtomsWithoutFillers  The number of atoms that are not filler particles
+ *                                        and have not moved by to another domain by DD
  * \param[in,out] atomDensity  The atom density, will be computed when <= 0
  * \param[in] maxAtomGroupRadius  The maximum radius of atom groups
  * \param[in] x             The coordinates of the atoms

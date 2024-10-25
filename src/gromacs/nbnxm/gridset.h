@@ -127,7 +127,7 @@ public:
                    const rvec              upperCorner,
                    const UpdateGroupsCog*  updateGroupsCog,
                    Range<int>              atomRange,
-                   int                     numGridAtoms,
+                   int                     numAtomsWithoutFillers,
                    real                    atomDensity,
                    ArrayRef<const int32_t> atomInfo,
                    ArrayRef<const RVec>    x,

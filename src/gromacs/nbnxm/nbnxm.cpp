@@ -69,7 +69,7 @@ void nonbonded_verlet_t::putAtomsOnGrid(const matrix            box,
                                         const RVec&             upperCorner,
                                         const UpdateGroupsCog*  updateGroupsCog,
                                         Range<int>              atomRange,
-                                        int                     numGridAtoms,
+                                        int                     numAtomsWithoutFillers,
                                         real                    atomDensity,
                                         ArrayRef<const int32_t> atomInfo,
                                         ArrayRef<const RVec>    x,
@@ -81,7 +81,7 @@ void nonbonded_verlet_t::putAtomsOnGrid(const matrix            box,
                            upperCorner,
                            updateGroupsCog,
                            atomRange,
-                           numGridAtoms,
+                           numAtomsWithoutFillers,
                            atomDensity,
                            atomInfo,
                            x,
@@ -103,7 +103,7 @@ void nbnxn_put_on_grid_nonlocal(nonbonded_verlet_t*     nbv,
                             zones.sizes(zone).bb_x1,
                             nullptr,
                             zones.atomRange(zone),
-                            zones.atomRange(zone).size(),
+                            *zones.atomRange(zone).end(),
                             -1,
                             atomInfo,
                             x,
@@ -200,16 +200,38 @@ void nonbonded_verlet_t::atomdata_add_nbat_f_to_f(const AtomLocality locality, A
 int nonbonded_verlet_t::getNumAtoms(const AtomLocality locality) const
 {
     int numAtoms = 0;
-    switch (locality)
+
+    const GridSet& gridSet = pairSearch_->gridSet();
+
+    if (gridSet.localAtomOrderMatchesNbnxmOrder())
     {
-        case AtomLocality::All: numAtoms = pairSearch_->gridSet().numRealAtomsTotal(); break;
-        case AtomLocality::Local: numAtoms = pairSearch_->gridSet().numRealAtomsLocal(); break;
-        case AtomLocality::NonLocal:
-            numAtoms = pairSearch_->gridSet().numRealAtomsTotal()
-                       - pairSearch_->gridSet().numRealAtomsLocal();
-            break;
-        case AtomLocality::Count: GMX_ASSERT(false, "Count is invalid locality specifier"); break;
+        switch (locality)
+        {
+            case AtomLocality::All: numAtoms = gridSet.numGridAtomsTotal(); break;
+            case AtomLocality::Local: numAtoms = gridSet.numGridAtomsLocal(); break;
+            case AtomLocality::NonLocal:
+                numAtoms = gridSet.numGridAtomsTotal() - gridSet.numGridAtomsLocal();
+                break;
+            case AtomLocality::Count:
+                GMX_ASSERT(false, "Count is invalid locality specifier");
+                break;
+        }
     }
+    else
+    {
+        switch (locality)
+        {
+            case AtomLocality::All: numAtoms = gridSet.numRealAtomsTotal(); break;
+            case AtomLocality::Local: numAtoms = gridSet.numRealAtomsLocal(); break;
+            case AtomLocality::NonLocal:
+                numAtoms = gridSet.numRealAtomsTotal() - gridSet.numRealAtomsLocal();
+                break;
+            case AtomLocality::Count:
+                GMX_ASSERT(false, "Count is invalid locality specifier");
+                break;
+        }
+    }
+
     return numAtoms;
 }
 

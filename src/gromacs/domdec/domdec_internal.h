@@ -649,6 +649,9 @@ struct gmx_domdec_comm_t // NOLINT (clang-analyzer-optin.performance.Padding)
     /** The atom ranges in the local state */
     DDAtomRanges atomRanges;
 
+    /** The number of home atoms without filler particles */
+    int numHomeAtomsWithoutFillers;
+
     /** Array for signalling if atoms have moved to another domain */
     std::vector<int> movedBuffer;
 
