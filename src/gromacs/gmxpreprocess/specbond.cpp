@@ -41,6 +41,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <string>
 
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/gmxpreprocess/pdb2top.h"
@@ -62,6 +63,13 @@ struct SpecialBond
     std::string firstAtomName, secondAtomName;
     std::string newFirstResidue, newSecondResidue;
     real        length;
+    /* Vector used to read custom improper dihedral defintion
+     * from specbond.dat. Each entry will a string which has
+     * the format [residue]-[atom name] (e.g. B-SG). The letter
+     * can be A or B, corresponding to residue A or B in
+     * the specbond.dat file.
+     */
+    std::vector<std::string> customImproper;
 };
 
 static bool yesno()
@@ -81,20 +89,31 @@ std::vector<SpecialBond> generateSpecialBonds()
     const char* sbfile = "specbond.dat";
 
     std::vector<SpecialBond> specialBonds;
-    char                     r1buf[32], r2buf[32], a1buf[32], a2buf[32], nr1buf[32], nr2buf[32];
-    double                   length;
-    int                      nb1, nb2;
-    char**                   lines;
+    char r1buf[32], r2buf[32], a1buf[32], a2buf[32], nr1buf[32], nr2buf[32], ibuf[32], jbuf[32],
+            kbuf[32], lbuf[32];
+    double length;
+    int    nb1, nb2;
+    char** lines;
 
     int nlines = get_lines(sbfile, &lines);
     for (int i = 0; (i < nlines); i++)
     {
-        if (sscanf(lines[i], "%s%s%d%s%s%d%lf%s%s", r1buf, a1buf, &nb1, r2buf, a2buf, &nb2, &length, nr1buf, nr2buf)
-            != 9)
-        {
-            fprintf(stderr, "Invalid line '%s' in %s\n", lines[i], sbfile);
-        }
-        else
+        int line_entries = sscanf(lines[i],
+                                  "%s%s%d%s%s%d%lf%s%s%s%s%s%s",
+                                  r1buf,
+                                  a1buf,
+                                  &nb1,
+                                  r2buf,
+                                  a2buf,
+                                  &nb2,
+                                  &length,
+                                  nr1buf,
+                                  nr2buf,
+                                  ibuf,
+                                  jbuf,
+                                  kbuf,
+                                  lbuf);
+        if (line_entries == 9)
         {
             SpecialBond newBond;
 
@@ -105,7 +124,35 @@ std::vector<SpecialBond> generateSpecialBonds()
             newBond.firstAtomName    = a1buf;
             newBond.secondAtomName   = a2buf;
             newBond.length           = length;
+            newBond.customImproper   = {};
             specialBonds.push_back(newBond);
+        }
+        /* execute if specbond.dat includes a custom improper dihedral */
+        else if (line_entries == 13)
+        {
+            SpecialBond newBond;
+
+            newBond.firstResidue     = r1buf;
+            newBond.secondResidue    = r2buf;
+            newBond.newFirstResidue  = nr1buf;
+            newBond.newSecondResidue = nr2buf;
+            newBond.firstAtomName    = a1buf;
+            newBond.secondAtomName   = a2buf;
+            newBond.length           = length;
+            /* The four elements of the below vector are strings
+             * with the format "[specbond residue]-[atom name]"
+             * (i.e. B-SG). The letter is either A or B and
+             * corresponds to resA or resB in specbond.dat
+             */
+            newBond.customImproper.push_back(ibuf);
+            newBond.customImproper.push_back(jbuf);
+            newBond.customImproper.push_back(kbuf);
+            newBond.customImproper.push_back(lbuf);
+            specialBonds.push_back(newBond);
+        }
+        else
+        {
+            fprintf(stderr, "Invalid line '%s' in %s\n", lines[i], sbfile);
         }
         sfree(lines[i]);
     }
@@ -306,6 +353,30 @@ makeDisulfideBonds(t_atoms* pdba, t_symtab* symtab, rvec x[], bool bInteractive,
                         newBond.secondResidue = specialBondResIdxs[j];
                         newBond.firstAtom     = *pdba->atomname[ai];
                         newBond.secondAtom    = *pdba->atomname[aj];
+                        /* Look through special bonds to find matching improper dihedral */
+                        for (const auto& spec : specialBonds)
+                        {
+                            /* Match atoms in specbond to those in newBond and add custom improper if it exits */
+                            if (newBond.firstAtom == spec.firstAtomName && newBond.secondAtom == spec.secondAtomName
+                                && !spec.customImproper.empty())
+                            {
+                                newBond.customImproper = spec.customImproper;
+                            }
+                            /* The assignment of newBond.firstAtom etc in lines 358-361 are based on the order of the
+                             * structure file. If resB in specbond.dat appears first in the structure file, it is then
+                             * assigned to newBond.firstResidue. If a custom improper is defined in the specbond, want
+                             * resA to be the firstAtom and firstResidue to be consistent with the labels of the custom
+                             * improper. If the described case happends, swap atoms and residues.
+                             */
+                            else if (newBond.firstAtom == spec.secondAtomName
+                                     && newBond.secondAtom == spec.firstAtomName
+                                     && !spec.customImproper.empty())
+                            {
+                                std::swap(newBond.firstAtom, newBond.secondAtom);
+                                std::swap(newBond.firstResidue, newBond.secondResidue);
+                                newBond.customImproper = spec.customImproper;
+                            }
+                        }
                         bonds.push_back(newBond);
                         /* rename residues */
                         if (bSwap)

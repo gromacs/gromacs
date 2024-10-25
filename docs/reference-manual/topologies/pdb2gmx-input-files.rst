@@ -88,8 +88,8 @@ way:
 
     [ GLY ]  ; mandatory
 
-     [ atoms ]  ; mandatory 
-    ; name  type  charge  chargegroup 
+     [ atoms ]  ; mandatory
+    ; name  type  charge  chargegroup
          N     N  -0.280     0
          H     H   0.280     0
         CA   CH2   0.000     1
@@ -560,11 +560,13 @@ chains.
 The first line of ``specbond.dat`` indicates the number of
 entries that are in the file. If you add a new entry, be sure to
 increment this number. The remaining lines in the file provide the
-specifications for creating bonds. The format of the lines is as
-follows:
+specifications for creating bonds. For these bonds, you can also
+optionally specify a custom improper dihedral associated with the
+new bond. The format of the lines, with optional entries in [], is
+as follows:
 
 ``resA atomA nbondsA resB atomB nbondsB length newresA
-newresB``
+newresB [atomI atomJ atomK atomL]``
 
 The columns indicate:
 
@@ -596,3 +598,13 @@ The columns indicate:
    linkage.
 
 #. ``newresB`` The new name of residue B, likewise.
+
+#. ``atomI`` Custom improper dihedral atom i of i-j-k-l. Has format
+    [specbond residue]-[atom name] (e.g. B-SG). The letter is either
+    A or B corresponding to resA or resB, respectively.
+
+#. ``atomJ`` Custom improper dihedral atom j of i-j-k-l.
+
+#. ``atomK`` Custom improper dihedral atom k of i-j-k-l.
+
+#. ``atomL`` Custom improper dihedral atom l of i-j-k-l.

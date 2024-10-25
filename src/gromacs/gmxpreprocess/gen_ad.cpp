@@ -348,12 +348,14 @@ static std::vector<InteractionOfType> clean_dih(gmx::ArrayRef<const InteractionO
 static std::vector<InteractionOfType> get_impropers(t_atoms*                             atoms,
                                                     gmx::ArrayRef<MoleculePatchDatabase> globalPatches,
                                                     bool                     bAllowMissing,
-                                                    gmx::ArrayRef<const int> cyclicBondsIndex)
+                                                    gmx::ArrayRef<const int> cyclicBondsIndex,
+                                                    gmx::ArrayRef<const DisulfideBond> ssbonds)
 {
     std::vector<InteractionOfType> improper;
 
     /* Add all the impropers from the residue database to the list. */
-    int start = 0;
+    int  start = 0;
+    bool stopSearch;
     if (!globalPatches.empty())
     {
         for (int i = 0; (i < atoms->nres); i++)
@@ -361,9 +363,9 @@ static std::vector<InteractionOfType> get_impropers(t_atoms*                    
             BondedInteractionList* impropers = &globalPatches[i].rb[BondedTypes::ImproperDihedrals];
             for (const auto& bondeds : impropers->b)
             {
-                bool             bStop = false;
+                stopSearch = false;
                 std::vector<int> ai;
-                for (int k = 0; (k < 4) && !bStop; k++)
+                for (int k = 0; (k < 4) && !stopSearch; k++)
                 {
                     const std::optional<int> entry = search_atom(
                             bondeds.a[k].c_str(), start, atoms, "improper", bAllowMissing, cyclicBondsIndex);
@@ -374,10 +376,10 @@ static std::vector<InteractionOfType> get_impropers(t_atoms*                    
                     }
                     else
                     {
-                        bStop = true;
+                        stopSearch = true;
                     }
                 }
-                if (!bStop)
+                if (!stopSearch)
                 {
                     /* Not broken out */
                     improper.emplace_back(ai, gmx::ArrayRef<const real>{}, bondeds.s);
@@ -390,6 +392,53 @@ static std::vector<InteractionOfType> get_impropers(t_atoms*                    
         }
     }
 
+    /* Search through ssbonds and do atom search based on residue number
+     * which is determined by the number in front of the atom type in the
+     * specbond.dat improper dihedral definition
+     */
+    for (const auto& bond : ssbonds)
+    {
+        stopSearch = false;
+        if (!bond.customImproper.empty())
+        {
+            std::vector<int> ai;
+            for (int k = 0; (k < 4) && !stopSearch; k++)
+            {
+                const char* atom = bond.customImproper[k].c_str();
+                int         specResNum;
+                if (atom[0] == 'A')
+                {
+                    specResNum = bond.firstResidue;
+                }
+                else if (atom[0] == 'B')
+                {
+                    specResNum = bond.secondResidue;
+                }
+                else
+                {
+                    gmx_fatal(FARGS,
+                              "Format of custom improper dihedral atom %s in specbond.dat is "
+                              "incorrect.",
+                              atom);
+                }
+                const std::optional<int> entry =
+                        search_res_atom(atom + 2, specResNum, atoms, "improper", TRUE);
+
+                if (entry.has_value())
+                {
+                    ai.emplace_back(entry.value());
+                }
+                else
+                {
+                    stopSearch = true;
+                }
+            }
+            if (!stopSearch)
+            {
+                improper.emplace_back(ai, gmx::ArrayRef<const real>{}, "", true);
+            }
+        }
+    }
     return improper;
 }
 
@@ -571,26 +620,14 @@ static void clean_excls(t_nextnb* nnb, int nrexcl, t_excls excls[])
     }
 }
 
-/*! \brief
- * Generate pairs, angles and dihedrals from .rtp settings
- *
- * \param[in,out] atoms            Global information about atoms in topology.
- * \param[in]     rtpFFDB          Residue type database from force field.
- * \param[in,out] plist            Information about listed interactions.
- * \param[in,out] excls            Pair interaction exclusions.
- * \param[in,out] globalPatches    Information about possible residue modifications.
- * \param[in]     bAllowMissing    True if missing interaction information is allowed.
- *                                 AKA allow cartoon physics
- * \param[in]     cyclicBondsIndex Information about bonds creating cyclic molecules.
- *                                 Empty if no such bonds exist.
- */
 void gen_pad(t_atoms*                               atoms,
              gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
              gmx::ArrayRef<InteractionsOfType>      plist,
              t_excls                                excls[],
              gmx::ArrayRef<MoleculePatchDatabase>   globalPatches,
              bool                                   bAllowMissing,
-             gmx::ArrayRef<const int>               cyclicBondsIndex)
+             gmx::ArrayRef<const int>               cyclicBondsIndex,
+             gmx::ArrayRef<const DisulfideBond>     ssbonds)
 {
     t_nextnb nnb;
     init_nnb(&nnb, atoms->nr, 4);
@@ -923,7 +960,7 @@ void gen_pad(t_atoms*                               atoms,
     }
 
     /* Get the impropers from the database */
-    improper = get_impropers(atoms, globalPatches, bAllowMissing, cyclicBondsIndex);
+    improper = get_impropers(atoms, globalPatches, bAllowMissing, cyclicBondsIndex, ssbonds);
 
     /* Sort the impropers */
     sort_id(improper);

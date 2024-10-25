@@ -143,8 +143,9 @@ struct pull_t;
 /* TODO The implementation details should move to their own source file. */
 InteractionOfType::InteractionOfType(gmx::ArrayRef<const int>  atoms,
                                      gmx::ArrayRef<const real> params,
-                                     const std::string&        name) :
-    atoms_(atoms.begin(), atoms.end()), interactionTypeName_(name)
+                                     const std::string&        name,
+                                     bool                      special) :
+    atoms_(atoms.begin(), atoms.end()), interactionTypeName_(name), specbond_(special)
 {
     GMX_RELEASE_ASSERT(
             params.size() <= forceParam_.size(),
@@ -229,7 +230,11 @@ void InteractionOfType::sortAngleAtomIds()
 
 void InteractionOfType::sortDihedralAtomIds()
 {
-    if (al() < ai())
+    /* Don't sort improper dihedrals specified from specbond.dat
+     * to allow for impropers between chains and between nonlocal
+     * atoms
+     */
+    if (!specbond_ && al() < ai())
     {
         std::swap(atoms_[0], atoms_[3]);
         std::swap(atoms_[1], atoms_[2]);

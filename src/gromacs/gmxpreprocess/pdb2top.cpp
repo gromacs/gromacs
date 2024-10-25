@@ -1623,7 +1623,7 @@ void pdb2top(FILE*                                  top_file,
             .asParagraph()
             .appendTextFormatted("Generating angles, dihedrals and pairs...");
     snew(excls, atoms->nr);
-    gen_pad(atoms, usedPpResidues, plist, excls, globalPatches, bAllowMissing, cyclicBondsIndex);
+    gen_pad(atoms, usedPpResidues, plist, excls, globalPatches, bAllowMissing, cyclicBondsIndex, ssbonds);
 
     /* Make CMAP */
     if (bCmap)

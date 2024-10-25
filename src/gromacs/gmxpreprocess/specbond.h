@@ -48,6 +48,13 @@ struct DisulfideBond
 {
     int         firstResidue = -1, secondResidue = -1;
     std::string firstAtom, secondAtom;
+    /* Vector used to read custom improper dihedral defintion
+     * from specbond.dat. Each entry will a string which has
+     * the format [residue]-[atom name] (e.g. B-SG). The letter
+     * can be A or B, corresponding to residue A or B in
+     * the specbond.dat file.
+     */
+    std::vector<std::string> customImproper;
 };
 
 std::vector<DisulfideBond>

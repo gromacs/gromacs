@@ -35,11 +35,14 @@
 #ifndef GMX_GMXPREPROCESS_GEN_AD_H
 #define GMX_GMXPREPROCESS_GEN_AD_H
 
+#include "specbond.h"
+
 struct t_atoms;
 struct t_excls;
 struct MoleculePatchDatabase;
 struct InteractionsOfType;
 struct PreprocessResidue;
+struct DisulfideBond;
 
 namespace gmx
 {
@@ -47,12 +50,29 @@ template<typename>
 class ArrayRef;
 }
 
+/*! \brief
+ * Generate pairs, angles and dihedrals from .rtp settings
+ *
+ * \param[in,out] atoms            Global information about atoms in topology.
+ * \param[in]     rtpFFDB          Residue type database from force field.
+ * \param[in,out] plist            Information about listed interactions.
+ * \param[in,out] excls            Pair interaction exclusions.
+ * \param[in,out] globalPatches    Information about possible residue modifications.
+ * \param[in]     bAllowMissing    True if missing interaction information is allowed.
+ *                                 AKA allow cartoon physics
+ * \param[in]     cyclicBondsIndex Information about bonds creating cyclic molecules.
+ *                                 Empty if no such bonds exist.
+ * \param[in]     ssbonds          Information regarding special bonds and custom
+ *                                 improper dihedrals from specbond. Empty if no such
+ *                                 bonds exist.
+ */
 void gen_pad(t_atoms*                               atoms,
              gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
              gmx::ArrayRef<InteractionsOfType>      plist,
              t_excls                                excls[],
              gmx::ArrayRef<MoleculePatchDatabase>   globalPatches,
              bool                                   bAllowMissing,
-             gmx::ArrayRef<const int>               circ_bonds);
+             gmx::ArrayRef<const int>               cyclicBondsIndex,
+             gmx::ArrayRef<const DisulfideBond>     ssbonds);
 
 #endif

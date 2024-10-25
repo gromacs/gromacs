@@ -61,7 +61,8 @@ public:
     //! Constructor that initializes vectors.
     InteractionOfType(gmx::ArrayRef<const int>  atoms,
                       gmx::ArrayRef<const real> params,
-                      const std::string&        name = "");
+                      const std::string&        name    = "",
+                      bool                      special = false);
     /*!@{*/
     //! Access the individual elements set for the parameter.
     const int& ai() const;
@@ -122,6 +123,8 @@ private:
     std::array<real, MAXFORCEPARAM> forceParam_;
     //! Used with forcefields whose .rtp files name the interaction types (e.g. GROMOS), rather than look them up from the atom names.
     std::string interactionTypeName_;
+    //! boolean used to identify if dihedral was defined in the specbond.dat file
+    bool specbond_;
 };
 
 /*! \libinternal \brief
