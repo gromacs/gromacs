@@ -48,7 +48,13 @@
 
 #if GMX_GPU_FFT_MKL
 // Use Intel closed-source oneMKL directly.
-#    include <oneapi/mkl/dfti.hpp>
+//
+#    include <mkl_version.h>
+#    if INTEL_MKL_VERSION < 20250000
+#        include <oneapi/mkl/dfti.hpp>
+#    else
+#        include <oneapi/mkl/dft.hpp>
+#    endif
 #elif GMX_GPU_FFT_ONEMKL
 // Use oneMKL interface library
 #    include <oneapi/mkl/dft.hpp>

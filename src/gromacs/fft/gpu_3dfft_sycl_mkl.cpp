@@ -48,6 +48,8 @@
 
 #include "config.h"
 
+#include <vector>
+
 #include "gromacs/gpu_utils/device_stream.h"
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/devicebuffer_sycl.h"
@@ -72,11 +74,9 @@ class DeviceContext;
 #if GMX_GPU_FFT_MKL
 // Using closed-source MKL.
 #    include <mkl_version.h>
-#    if INTEL_MKL_VERSION < 20250000
-#        include <oneapi/mkl/dfti.hpp>
-#    else
-#        include <oneapi/mkl/dft.hpp>
-#    endif
+#endif
+#if GMX_GPU_FFT_MKL && INTEL_MKL_VERSION < 20250000
+#    include <oneapi/mkl/dfti.hpp>
 #    define PLACEMENT_INPLACE DFTI_INPLACE
 #    define PLACEMENT_NOT_INPLACE DFTI_NOT_INPLACE
 #    define COMPLEX_COMPLEX_STORAGE DFTI_COMPLEX_COMPLEX
@@ -147,15 +147,14 @@ Gpu3dFft::ImplSyclMkl::ImplSyclMkl(bool allocateRealGrid,
     // With LP64 on Windows MKL_LONG is 32-bit. Therefore we need to use int64_t and not MKL_LONG.
 
     // MKL expects row-major
-    const std::array<int64_t, 4> realGridStrides = {
+    const std::vector<int64_t> realGridStrides = {
         0, static_cast<int64_t>(realGridSizePadded[YY] * realGridSizePadded[ZZ]), realGridSizePadded[ZZ], 1
     };
-    const std::array<int64_t, 4> complexGridStrides = {
-        0,
-        static_cast<int64_t>(complexGridSizePadded[YY] * complexGridSizePadded[ZZ]),
-        complexGridSizePadded[ZZ],
-        1
-    };
+    const std::vector<int64_t> complexGridStrides = { 0,
+                                                      static_cast<int64_t>(complexGridSizePadded[YY]
+                                                                           * complexGridSizePadded[ZZ]),
+                                                      complexGridSizePadded[ZZ],
+                                                      1 };
 
     const auto placement = performOutOfPlaceFFT ? PLACEMENT_NOT_INPLACE : PLACEMENT_INPLACE;
 
@@ -196,9 +195,15 @@ Gpu3dFft::ImplSyclMkl::ImplSyclMkl(bool allocateRealGrid,
         try
         {
             using oneapi::mkl::dft::config_param;
+#    if INTEL_MKL_VERSION >= 20250000
+            descriptor->set_value(config_param::FWD_STRIDES, realGridStrides);
+            descriptor->set_value(config_param::BWD_STRIDES, complexGridStrides);
+            // config_param::CONJUGATE_EVEN_STORAGE is deprecated, it's complex-complex by default
+#    else
             descriptor->set_value(config_param::FWD_STRIDES, realGridStrides.data());
             descriptor->set_value(config_param::BWD_STRIDES, complexGridStrides.data());
             descriptor->set_value(config_param::CONJUGATE_EVEN_STORAGE, COMPLEX_COMPLEX_STORAGE);
+#    endif
             descriptor->set_value(config_param::PLACEMENT, placement);
             descriptor->commit(queue_);
         }
