@@ -219,7 +219,7 @@ static void divide_bondeds_over_threads(bonded_threading_t*           bt,
     size_t fTypeGpuIndex = 0;
     for (int fType = 0; fType < F_NRE; fType++)
     {
-        if (!ftype_is_bonded_potential(fType))
+        if (!ftypeIsListedPotential(fType))
         {
             continue;
         }
@@ -312,7 +312,7 @@ static void divide_bondeds_over_threads(bonded_threading_t*           bt,
         fprintf(debug, "Division of bondeds over threads:\n");
         for (f = 0; f < F_NRE; f++)
         {
-            if (ftype_is_bonded_potential(f) && !idef.il[f].empty())
+            if (ftypeIsListedPotential(f) && !idef.il[f].empty())
             {
                 int t;
 
@@ -357,7 +357,7 @@ static void calc_bonded_reduction_mask(int                            natoms,
 
     for (int ftype = 0; ftype < F_NRE; ftype++)
     {
-        if (ftype_is_bonded_potential(ftype))
+        if (ftypeIsListedPotential(ftype))
         {
             int nb = idef.il[ftype].size();
             if (nb > 0)

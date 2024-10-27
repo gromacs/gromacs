@@ -139,6 +139,9 @@ public:
         }
     }
 
+    //! Returns the force buffer
+    gmx::ArrayRef<RVec> force() { return force_; }
+
     /*! \brief Adds a virial contribution
      *
      * \note Can be called with \p computeVirial=false.

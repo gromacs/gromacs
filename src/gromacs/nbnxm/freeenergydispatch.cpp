@@ -311,8 +311,8 @@ void dispatchFreeEnergyKernel(gmx::ArrayRef<const std::unique_ptr<t_nblist>>   n
             }
 
             foreignGroupPairEnergies->clear();
-            threadedForeignEnergyBuffer->reduce(
-                    nullptr, nullptr, foreignGroupPairEnergies, dvdl_nb, stepWorkForeignEnergies, 0);
+            threadedForeignEnergyBuffer->reduceEnergiesAndDvdl(
+                    nullptr, foreignGroupPairEnergies, dvdl_nb, stepWorkForeignEnergies, 0);
 
             std::array<real, F_NRE> foreign_term = { 0 };
             sum_epot(*foreignGroupPairEnergies, foreign_term.data());

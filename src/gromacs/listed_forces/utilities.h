@@ -45,13 +45,23 @@
 
 #include "gromacs/topology/ifunc.h"
 
+/*! \brief Return whether this is a listed interaction that actually
+ * calculates a potential (not e.g. a connection).
+ *
+ * \todo This function could go away when idef is not a big bucket of
+ * everything. */
+static inline bool ftypeIsListedPotential(int ftype)
+{
+    return ((interaction_function[ftype].flags & IF_BOND) != 0U) && ftype != F_CONNBONDS;
+}
+
 /*! \brief Return whether this is an interaction that actually
  * calculates a potential and works on multiple atoms (not e.g. a
  * connection or a position restraint).
  *
  * \todo This function could go away when idef is not a big bucket of
  * everything. */
-static bool ftype_is_bonded_potential(int ftype)
+static inline bool ftype_is_bonded_potential(int ftype)
 {
     return ((interaction_function[ftype].flags & IF_BOND) != 0U)
            && !(ftype == F_CONNBONDS || ftype == F_POSRES || ftype == F_FBPOSRES);

@@ -54,7 +54,6 @@
 
 #include <gtest/gtest.h>
 
-#include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/listed_forces/listed_forces.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
@@ -103,7 +102,6 @@ protected:
     t_pbc   pbc_;
     PbcType pbcType_;
 
-    t_nrnb                           nrnb_;
     t_forcerec                       fr_;
     InteractionDefinitions           idef_;
     gmx_enerdata_t                   enerd_;
@@ -172,21 +170,46 @@ TEST_P(PositionRestraintsTest, BasicPosResNoFreeEnergy)
     setValues(positions, referencePositions, forceConstants);
     std::vector<RVec> centersOfMassScaledBuffer  = { { 0.0, 0.0, 0.0 } };
     std::vector<RVec> centersOfMassBScaledBuffer = { { 0.0, 0.0, 0.0 } };
-    posres_wrapper(&nrnb_,
-                   idef_,
-                   pbc_,
-                   as_rvec_array(x_.data()),
-                   &enerd_,
-                   c_emptyLambdas,
-                   &fr_,
-                   {},
-                   centersOfMassScaledBuffer,
-                   centersOfMassBScaledBuffer,
-                   forceWithVirial_.get());
+    // We cannot store C-style array rvec4 in an std::vector, so we use real and reinterpret
+    std::vector<real> forcesStorage(positions.size() * 4);
+    ArrayRef<rvec4>   forces =
+            arrayRefFromArray(reinterpret_cast<rvec4*>(forcesStorage.data()), positions.size());
+    for (auto& f : forces)
+    {
+        for (int d = 0; d < 4; d++)
+        {
+            f[d] = 0;
+        }
+    }
+    real dvdl   = 0;
+    RVec virial = { 0.0_real, 0.0_real, 0.0_real };
+
+    const real v = posres_wrapper(idef_.il[F_POSRES].iatoms,
+                                  idef_.iparams_posres,
+                                  pbc_,
+                                  as_rvec_array(x_.data()),
+                                  c_emptyLambdas,
+                                  &fr_,
+                                  {},
+                                  centersOfMassScaledBuffer,
+                                  centersOfMassBScaledBuffer,
+                                  forces,
+                                  &virial,
+                                  &dvdl);
+    // Copy from 4-component vector buffer to forceWithVirial
+    for (Index i = 0; i < gmx::ssize(forces); i++)
+    {
+        for (int d = 0; d < DIM; d++)
+        {
+            forceWithVirial_->force_[i][d] = forces[i][d];
+        }
+    }
+    forceWithVirial_->addVirialContribution(virial);
+
     checker_.checkSequence(
             std::begin(forceWithVirial_->force_), std::end(forceWithVirial_->force_), "Forces");
     checker_.checkSequenceArray(3, forceWithVirial_->getVirial(), "Virial contribution");
-    checker_.checkReal(enerd_.term[F_POSRES], "Potential energy");
+    checker_.checkReal(v, "Potential energy");
 }
 
 //! PBC values for testing

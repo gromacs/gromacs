@@ -52,7 +52,6 @@
 #include <filesystem>
 #include <vector>
 
-#include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/enerdata.h"
@@ -191,7 +190,8 @@ real fbposres(int                                       nbonds,
               const t_iatom                             forceatoms[],
               const t_iparams                           forceparams[],
               const rvec                                x[],
-              gmx::ForceWithVirial*                     forceWithVirial,
+              rvec4*                                    forces,
+              gmx::RVec*                                virial,
               const t_pbc&                              pbc,
               RefCoordScaling                           refcoord_scaling,
               PbcType                                   pbcType,
@@ -208,6 +208,7 @@ real fbposres(int                                       nbonds,
 
     const int npbcdim = numPbcDimensions(pbcType);
 
+#pragma omp single
     if (refcoord_scaling == RefCoordScaling::Com)
     {
         for (gmx::Index comGroup = 0; comGroup < gmx::ssize(centersOfMass); ++comGroup)
@@ -223,9 +224,7 @@ real fbposres(int                                       nbonds,
         }
     }
 
-    rvec* f      = as_rvec_array(forceWithVirial->force_.data());
-    real  vtot   = 0.0;
-    rvec  virial = { 0 };
+    real vtot = 0.0;
     for (int i = 0; (i < nbonds);)
     {
         const int        type = forceatoms[i++];
@@ -318,13 +317,11 @@ real fbposres(int                                       nbonds,
 
         for (int m = 0; (m < DIM); m++)
         {
-            f[ai][m] += fm[m];
+            forces[ai][m] += fm[m];
             /* Here we correct for the pbc_dx which included rdist */
-            virial[m] -= 0.5 * (dx[m] + rdist[m]) * fm[m];
+            (*virial)[m] -= 0.5 * (dx[m] + rdist[m]) * fm[m];
         }
     }
-
-    forceWithVirial->addVirialContribution(virial);
 
     return vtot;
 }
@@ -339,12 +336,12 @@ real posres(int                                       nbonds,
             const t_iatom                             forceatoms[],
             const t_iparams                           forceparams[],
             const rvec                                x[],
-            gmx::ForceWithVirial*                     forceWithVirial,
+            rvec4*                                    forces,
+            gmx::RVec*                                virial,
             const struct t_pbc&                       pbc,
             real                                      lambda,
             real*                                     dvdlambda,
             RefCoordScaling                           refcoord_scaling,
-            PbcType                                   pbcType,
             const gmx::ArrayRef<const gmx::RVec>      centersOfMassA,
             const gmx::ArrayRef<const gmx::RVec>      centersOfMassB,
             const gmx::ArrayRef<const unsigned short> refScaleComIndices,
@@ -354,8 +351,9 @@ real posres(int                                       nbonds,
     real kk, fm;
     rvec rdist, dpdl, dx;
 
-    const int npbcdim = numPbcDimensions(pbcType);
+    const int npbcdim = numPbcDimensions(pbc.pbcType);
 
+#pragma omp single
     if (refcoord_scaling == RefCoordScaling::Com)
     {
         for (gmx::Index comGroup = 0; comGroup < gmx::ssize(centersOfMassA); ++comGroup)
@@ -375,15 +373,12 @@ real posres(int                                       nbonds,
 
     const real L1 = 1.0 - lambda;
 
-    rvec* f;
     if (computeForce)
     {
-        GMX_ASSERT(forceWithVirial != nullptr, "When forces are requested we need a force object");
-        f = as_rvec_array(forceWithVirial->force_.data());
+        GMX_ASSERT(nbonds == 0 || forces != nullptr,
+                   "When forces are requested we need a force object");
     }
     real vtot = 0.0;
-    /* Use intermediate virial buffer to reduce reduction rounding errors */
-    rvec virial = { 0 };
     for (int i = 0; (i < nbonds);)
     {
         const int        type = forceatoms[i++];
@@ -419,15 +414,10 @@ real posres(int                                       nbonds,
             /* Here we correct for the pbc_dx which included rdist */
             if (computeForce)
             {
-                f[ai][m] += fm;
-                virial[m] -= 0.5 * (dx[m] + rdist[m]) * fm;
+                forces[ai][m] += fm;
+                (*virial)[m] -= 0.5 * (dx[m] + rdist[m]) * fm;
             }
         }
-    }
-
-    if (computeForce)
-    {
-        forceWithVirial->addVirialContribution(virial);
     }
 
     return vtot;
@@ -435,42 +425,34 @@ real posres(int                                       nbonds,
 
 } // namespace
 
-void posres_wrapper(t_nrnb*                                   nrnb,
-                    const InteractionDefinitions&             idef,
+real posres_wrapper(gmx::ArrayRef<const int>                  iatoms,
+                    gmx::ArrayRef<const t_iparams>            iparamsPosres,
                     const t_pbc&                              pbc,
                     const rvec*                               x,
-                    gmx_enerdata_t*                           enerd,
                     gmx::ArrayRef<const real>                 lambda,
                     const t_forcerec*                         fr,
                     const gmx::ArrayRef<const unsigned short> refScaleComIndices,
                     gmx::ArrayRef<gmx::RVec>                  centersOfMassScaledBuffer,
                     gmx::ArrayRef<gmx::RVec>                  centersOfMassBScaledBuffer,
-                    gmx::ForceWithVirial*                     forceWithVirial)
+                    gmx::ArrayRef<rvec4>                      forces,
+                    gmx::RVec*                                virial,
+                    real*                                     dvdl)
 {
-    real v, dvdl;
-
-    dvdl = 0;
-    v    = posres<true>(idef.il[F_POSRES].size(),
-                     idef.il[F_POSRES].iatoms.data(),
-                     idef.iparams_posres.data(),
-                     x,
-                     forceWithVirial,
-                     pbc,
-                     lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Restraint)],
-                     &dvdl,
-                     fr->rc_scaling,
-                     fr->pbcType,
-                     fr->posresCom,
-                     fr->posresComB,
-                     refScaleComIndices,
-                     centersOfMassScaledBuffer,
-                     centersOfMassBScaledBuffer);
-    enerd->term[F_POSRES] += v;
-    /* If just the force constant changes, the FEP term is linear,
-     * but if k changes, it is not.
-     */
-    enerd->dvdl_nonlin[FreeEnergyPerturbationCouplingType::Restraint] += dvdl;
-    inc_nrnb(nrnb, eNR_POSRES, gmx::exactDiv(idef.il[F_POSRES].size(), 2));
+    return posres<true>(iatoms.size(),
+                        iatoms.data(),
+                        iparamsPosres.data(),
+                        x,
+                        forces.data(),
+                        virial,
+                        pbc,
+                        lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Restraint)],
+                        dvdl,
+                        fr->rc_scaling,
+                        fr->posresCom,
+                        fr->posresComB,
+                        refScaleComIndices,
+                        centersOfMassScaledBuffer,
+                        centersOfMassBScaledBuffer);
 }
 
 void posres_wrapper_lambda(struct gmx_wallcycle*                     wcycle,
@@ -500,11 +482,11 @@ void posres_wrapper_lambda(struct gmx_wallcycle*                     wcycle,
                                      idef.iparams_posres.data(),
                                      x,
                                      nullptr,
+                                     nullptr,
                                      pbc,
                                      lambda_dum,
                                      &dvdl,
                                      fr->rc_scaling,
-                                     fr->pbcType,
                                      fr->posresCom,
                                      fr->posresComB,
                                      refScaleComIndices,
@@ -517,29 +499,26 @@ void posres_wrapper_lambda(struct gmx_wallcycle*                     wcycle,
 
 /*! \brief Helper function that wraps calls to fbposres for
     free-energy perturbation */
-void fbposres_wrapper(t_nrnb*                                   nrnb,
-                      const InteractionDefinitions&             idef,
+real fbposres_wrapper(gmx::ArrayRef<const int>                  iatoms,
+                      gmx::ArrayRef<const t_iparams>            iparamsFBPosres,
                       const t_pbc&                              pbc,
                       const rvec*                               x,
-                      gmx_enerdata_t*                           enerd,
                       const t_forcerec*                         fr,
                       const gmx::ArrayRef<const unsigned short> refScaleComIndices,
                       gmx::ArrayRef<gmx::RVec>                  centersOfMassScaledBuffer,
-                      gmx::ForceWithVirial*                     forceWithVirial)
+                      gmx::ArrayRef<rvec4>                      forces,
+                      gmx::RVec*                                virial)
 {
-    real v;
-
-    v = fbposres(idef.il[F_FBPOSRES].size(),
-                 idef.il[F_FBPOSRES].iatoms.data(),
-                 idef.iparams_fbposres.data(),
-                 x,
-                 forceWithVirial,
-                 pbc,
-                 fr->rc_scaling,
-                 fr->pbcType,
-                 fr->posresCom,
-                 refScaleComIndices,
-                 centersOfMassScaledBuffer);
-    enerd->term[F_FBPOSRES] += v;
-    inc_nrnb(nrnb, eNR_FBPOSRES, gmx::exactDiv(idef.il[F_FBPOSRES].size(), 2));
+    return fbposres(iatoms.size(),
+                    iatoms.data(),
+                    iparamsFBPosres.data(),
+                    x,
+                    forces.data(),
+                    virial,
+                    pbc,
+                    fr->rc_scaling,
+                    fr->pbcType,
+                    fr->posresCom,
+                    refScaleComIndices,
+                    centersOfMassScaledBuffer);
 }
