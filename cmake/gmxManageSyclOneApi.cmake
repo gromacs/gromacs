@@ -68,7 +68,7 @@ set(SAMPLE_SYCL_SOURCE
 set(SYCL_CXX_FLAGS "-fsycl")
 gmx_check_source_compiles_with_flags(
     "${SAMPLE_SYCL_SOURCE}"
-    "${SYCL_TOOLCHAIN_CXX_FLAGS} ${SYCL_CXX_FLAGS}"
+    "${SYCL_CXX_FLAGS}"
     "CXX"
     SYCL_CXX_FLAGS_RESULT
 )
@@ -77,23 +77,26 @@ if (SYCL_CXX_FLAGS_RESULT)
         message(STATUS "Checking for flags to enable SYCL - ${SYCL_TOOLCHAIN_CXX_FLAGS} ${SYCL_CXX_FLAGS}")
     endif()
     set(CHECK_SYCL_CXX_FLAGS_QUIETLY 1 CACHE INTERNAL "Keep quiet on future calls to detect SYCL flags" FORCE)
-    set(SYCL_TOOLCHAIN_CXX_FLAGS "${SYCL_TOOLCHAIN_CXX_FLAGS} ${SYCL_CXX_FLAGS}")
-    set(SYCL_TOOLCHAIN_LINKER_FLAGS "${SYCL_TOOLCHAIN_LINKER_FLAGS} ${SYCL_CXX_FLAGS}")
+    set(SYCL_TOOLCHAIN_CXX_FLAGS ${SYCL_CXX_FLAGS})
+    set(SYCL_TOOLCHAIN_LINKER_FLAGS ${SYCL_CXX_FLAGS})
 else()
     message(FATAL_ERROR "Cannot compile a SYCL program with ${SYCL_TOOLCHAIN_CXX_FLAGS} ${SYCL_CXX_FLAGS}. Try a different compiler or disable SYCL.")
 endif()
+
+list(APPEND SYCL_TOOLCHAIN_CXX_FLAGS ${SYCL_CXX_FLAGS_EXTRA})
+list(APPEND SYCL_TOOLCHAIN_LINKER_FLAGS ${SYCL_CXX_FLAGS_EXTRA})
 
 # Add kernel-splitting flag if available, both for compiling and linking
 set(SYCL_DEVICE_CODE_SPLIT_CXX_FLAGS "-fsycl-device-code-split=per_kernel")
 gmx_check_source_compiles_with_flags(
     "${SAMPLE_SYCL_SOURCE}"
-    "${SYCL_TOOLCHAIN_CXX_FLAGS} ${SYCL_DEVICE_CODE_SPLIT_CXX_FLAGS}"
+    "${SYCL_TOOLCHAIN_CXX_FLAGS};${SYCL_DEVICE_CODE_SPLIT_CXX_FLAGS}"
     "CXX"
     SYCL_DEVICE_CODE_SPLIT_CXX_FLAGS_RESULT
 )
 if (SYCL_DEVICE_CODE_SPLIT_CXX_FLAGS_RESULT)
-    set(SYCL_TOOLCHAIN_CXX_FLAGS "${SYCL_TOOLCHAIN_CXX_FLAGS} ${SYCL_DEVICE_CODE_SPLIT_CXX_FLAGS}")
-    set(SYCL_TOOLCHAIN_LINKER_FLAGS "${SYCL_TOOLCHAIN_LINKER_FLAGS} ${SYCL_DEVICE_CODE_SPLIT_CXX_FLAGS}")
+    list(APPEND SYCL_TOOLCHAIN_CXX_FLAGS ${SYCL_DEVICE_CODE_SPLIT_CXX_FLAGS})
+    list(APPEND SYCL_TOOLCHAIN_LINKER_FLAGS ${SYCL_DEVICE_CODE_SPLIT_CXX_FLAGS})
 else()
     message(WARNING "Cannot compile SYCL with per-kernel device-code splitting. Simulations will work, but the first step will be much slower than it needs to be. Try a different compiler.")
 endif()
@@ -107,7 +110,7 @@ gmx_find_flag_for_source(
     SYCL_FAST_MATH_CXX_FLAGS
     "-ffast-math" "/clang:-ffast-math")
 if (SYCL_FAST_MATH_CXX_FLAGS_RESULT)
-    set(SYCL_TOOLCHAIN_CXX_FLAGS "${SYCL_TOOLCHAIN_CXX_FLAGS} ${SYCL_FAST_MATH_CXX_FLAGS}")
+    list(APPEND SYCL_TOOLCHAIN_CXX_FLAGS ${SYCL_FAST_MATH_CXX_FLAGS})
 endif()
 
 # We compile PME kernels for all possible sub-group sizes, so the warning is useless.
@@ -118,7 +121,7 @@ gmx_check_compiler_flag(
     HAVE_W_NO_INCORRECT_SUB_GROUP_SIZE_RESULT
 )
 if (HAVE_W_NO_INCORRECT_SUB_GROUP_SIZE_RESULT)
-    set(SYCL_TOOLCHAIN_CXX_FLAGS "${SYCL_TOOLCHAIN_CXX_FLAGS} -Wno-incorrect-sub-group-size")
+    list(APPEND SYCL_TOOLCHAIN_CXX_FLAGS "-Wno-incorrect-sub-group-size")
 endif()
 
 # Force small GRF size on PVC, see #5105
@@ -128,24 +131,24 @@ gmx_check_compiler_flag(
     HAVE_TARGET_REGISTER_ALLOC_MODE_FLAG
 )
 if (HAVE_TARGET_REGISTER_ALLOC_MODE_FLAG)
-    set(SYCL_TOOLCHAIN_LINKER_FLAGS "${SYCL_TOOLCHAIN_LINKER_FLAGS} -ftarget-register-alloc-mode=pvc:small")
+    list(APPEND SYCL_TOOLCHAIN_LINKER_FLAGS "-ftarget-register-alloc-mode=pvc:small")
 endif()
 
 if("${SYCL_CXX_FLAGS_EXTRA}" MATCHES "fsycl-targets=.*(nvptx64|amdgcn|amd_gpu|nvidia_gpu)")
     # When compiling for NVIDIA/AMD, Intel LLVM produces tons of harmless warnings, ignore them
-    set(SYCL_WARNINGS_CXX_FLAGS "-Wno-linker-warnings -Wno-override-module -Wno-sycl-target")
+    set(SYCL_WARNINGS_CXX_FLAGS "-Wno-linker-warnings;-Wno-override-module;-Wno-sycl-target")
     gmx_check_source_compiles_with_flags(
         "${SAMPLE_SYCL_SOURCE}"
-        "${SYCL_TOOLCHAIN_CXX_FLAGS} ${SYCL_WARNINGS_CXX_FLAGS}"
+        "${SYCL_TOOLCHAIN_CXX_FLAGS};${SYCL_WARNINGS_CXX_FLAGS}"
         "CXX"
         SYCL_WARNINGS_CXX_FLAGS_RESULT
     )
     if (SYCL_WARNINGS_CXX_FLAGS_RESULT)
-        set(SYCL_TOOLCHAIN_CXX_FLAGS "${SYCL_TOOLCHAIN_CXX_FLAGS} ${SYCL_WARNINGS_CXX_FLAGS}")
-        set(SYCL_TOOLCHAIN_LINKER_FLAGS "${SYCL_TOOLCHAIN_LINKER_FLAGS} ${SYCL_WARNINGS_CXX_FLAGS}")
+        list(APPEND SYCL_TOOLCHAIN_CXX_FLAGS ${SYCL_WARNINGS_CXX_FLAGS})
+        list(APPEND SYCL_TOOLCHAIN_LINKER_FLAGS ${SYCL_WARNINGS_CXX_FLAGS})
     endif()
 
-    # Set GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT when targetting only devices with 64-wide execution
+    # Set GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT when targeting only devices with 64-wide execution
     set(_have_subgroup_not_64 OFF)
     set(_have_subgroup_64 OFF)
     if ("${SYCL_CXX_FLAGS_EXTRA}" MATCHES "gfx1[0-9][0-9][0-9]|nvptx64|nvidia_gpu|spir64")
@@ -239,12 +242,6 @@ if(GMX_GPU_FFT_BBFFT)
     endif()
     set(_sycl_has_valid_fft TRUE)
 endif()
-
-# convert the space-separated strings to lists
-separate_arguments(SYCL_TOOLCHAIN_CXX_FLAGS)
-list(APPEND SYCL_TOOLCHAIN_CXX_FLAGS ${SYCL_CXX_FLAGS_EXTRA})
-separate_arguments(SYCL_TOOLCHAIN_LINKER_FLAGS)
-list(APPEND SYCL_TOOLCHAIN_LINKER_FLAGS ${SYCL_CXX_FLAGS_EXTRA})
 
 # We disable warnings about functions deprecated in SYCL2020, because
 # sometimes there is no widely-supported alternative.
