@@ -100,7 +100,7 @@ static void traceSubRangeEnd();
 
 #if GMX_USE_NVTX
 
-#    include "nvToolsExt.h"
+#    include <nvtx3/nvToolsExt.h>
 
 //! List of colors for main ranges
 static constexpr uint32_t c_rangeColors[] = { 0xff00ff00, 0xff0000ff, 0xffffff00, 0xffff00ff,

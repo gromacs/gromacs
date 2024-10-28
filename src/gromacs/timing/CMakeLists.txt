@@ -59,7 +59,7 @@ target_link_libraries(timing INTERFACE
 # sufficient for most use-cases and this is a dev-feature anyway).
 if(GMX_USE_NVTX)
     find_package(CUDAToolkit ${GMX_CUDA_MINIMUM_REQUIRED_VERSION} REQUIRED)
-    target_link_libraries(timing INTERFACE CUDA::nvToolsExt)
+    target_link_libraries(timing INTERFACE CUDA::nvtx3)
     # As of CUDA 11.8, there are a lot of old-style casts in nvToolsExt.h
     gmx_target_interface_warning_suppression(timing "-Wno-old-style-cast" HAS_WARNING_NO_OLD_STYLE_CAST)
 endif()
