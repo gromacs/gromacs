@@ -7,19 +7,30 @@
 // If you wish to distribute your changes, please submit them to the
 // Colvars repository at GitHub.
 
-// Using access() to check if a file exists (until we can assume C++14/17)
+
 #if defined(_WIN32) && !defined(__CYGWIN__)
+
+// Using access() to check if a file exists (until we can assume C++14/17)
 #include <direct.h>
+
+#if defined(__has_include)
+# if __has_include(<filesystem>)
+#  include <filesystem> // MSVC only defines __cpp_lib_filesystem after include
+# endif
+#endif
+
 #else
+
 #include <unistd.h>
+
+#ifdef __cpp_lib_filesystem
+#include <filesystem>
+#endif
+
 #endif
 
 #if defined(_WIN32)
 #include <io.h>
-#endif
-
-#ifdef __cpp_lib_filesystem
-#include <filesystem>
 #endif
 
 #include <cerrno>
