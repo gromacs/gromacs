@@ -39,33 +39,33 @@
 #    error "Neither __HIPSYCL__ nor __ADAPTIVECPP__ macro not defined. Please check your AdaptiveCpp/hipSYCL installation."
 #endif
 
-/* Next, we optionally check three backends.
- * If CHECK_CUDA_TARGET is defined:
- *  - If we are not compiling for CUDA (because we did not specify CUDA devices among targets),
- *  this test compilation will fail.
- *  - If we are compiling for CUDA, the compilation will proceed.
- * Same for HIP, LevelZero (SPIR-V) and SSCP (generic).
- *
- * This allows us to compile this test file with different -DCHECK_x_TARGET flags to see which
- * backends we are compiling for and report it to CMake.
- * */
+/* Next, we check four compile paths and issue a warning is each one is triggered.
+ * These warnings can later be checked in the compiler logs */
 
-// AdaptiveCpp 23.10.0 only defines __HIPSYCL_ENABLE_x_TARGET__
-#if defined(CHECK_CUDA_TARGET) && !defined(__HIPSYCL_ENABLE_CUDA_TARGET__)
-#    error "CUDA target not enabled";
+int main()
+{
+    sycl::queue q;
+    // Empty kernel to probe compiler definitions in multipass mode
+    q.parallel_for<class K>(sycl::range<1>{ 16 }, [=](sycl::id<1> itemIdx) {
+#if defined(__SYCL_DEVICE_ONLY__) && defined(__NVPTX__)
+#    warning GMX_SYCL_TEST_HAVE_CUDA_TARGET
 #endif
-
-#if defined(CHECK_HIP_TARGET) && !defined(__HIPSYCL_ENABLE_HIP_TARGET__)
-#    error "HIP target not enabled";
+#if defined(__SYCL_DEVICE_ONLY__) && defined(__AMDGCN__)
+#    warning GMX_SYCL_TEST_HAVE_HIP_TARGET
+#    if __AMDGCN_WAVEFRONT_SIZE == 64
+#        warning GMX_SYCL_TEST_HAVE_HIP_WAVE64_TARGET
+#    elif __AMDGCN_WAVEFRONT_SIZE == 32
+#        warning GMX_SYCL_TEST_HAVE_HIP_WAVE32_TARGET
+#    endif
 #endif
-
-#if defined(CHECK_LEVELZERO_TARGET) && !defined(__HIPSYCL_ENABLE_SPIRV_TARGET__)
-#    error "LevelZero (SPIR-V) target not enabled"
+#if defined(__SYCL_DEVICE_ONLY__) && (defined(__SPIR__) || defined(__SPIRV__))
+#    warning GMX_SYCL_TEST_HAVE_SPIRV_TARGET
 #endif
+    });
+    return 0;
+}
 
-#if defined(CHECK_GENERIC_TARGET) && !defined(__HIPSYCL_ENABLE_LLVM_SSCP_TARGET__)
-#    error "Generic (SSCP) target not enabled"
+// Test SSCP/generic/single-pass compiler by checking ACpp-specific macro
+#if defined(__HIPSYCL_ENABLE_LLVM_SSCP_TARGET__) || defined(__ACPP_ENABLE_LLVM_SSCP_TARGET__)
+#    warning GMX_SYCL_TEST_HAVE_GENERIC_TARGET
 #endif
-
-
-int main() {}

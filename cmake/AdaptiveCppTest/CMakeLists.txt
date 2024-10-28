@@ -40,20 +40,12 @@ if(NOT adaptivecpp_FOUND)
     find_package(hipsycl REQUIRED)
 endif()
 
-# By default, this project will fail compilation if it can't use AdaptiveCpp/hipSYCL compiler.
-# By defining CHECK_x_TARGET we can also make it fail if the specified backend is not among the compilation targets.
+# This project will fail compilation if it can't use AdaptiveCpp compiler,
+# and will emit a warning for each of the known compilation targets:
+# - "GMX_ACPP_TEST_HAVE_CUDA_TARGET" for CUDA
+# - "GMX_ACPP_TEST_HAVE_HIP_TARGET" for HIP
+# - "GMX_ACPP_TEST_HAVE_LEVELZERO_TARGET" for deprecated LevelZero
+# - "GMX_ACPP_TEST_HAVE_GENERIC_TARGET" for generic/SSCP
 
-if (CHECK_CUDA_TARGET)
-    add_compile_definitions(CHECK_CUDA_TARGET)
-endif()
-if (CHECK_HIP_TARGET)
-    add_compile_definitions(CHECK_HIP_TARGET)
-endif()
-if (CHECK_LEVELZERO_TARGET)
-    add_compile_definitions(CHECK_LEVELZERO_TARGET)
-endif()
-if (CHECK_GENERIC_TARGET)
-    add_compile_definitions(CHECK_GENERIC_TARGET)
-endif()
 add_executable(AdaptiveCppTest main.cpp)
 add_sycl_to_target(TARGET AdaptiveCppTest SOURCES main.cpp)
