@@ -75,6 +75,14 @@ endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# Do not scan for C++ modules in C++20 mode (at least until we start using them).
+# This simplifies configuration and reduces build time.
+if(CMAKE_CXX_STANDARD GREATER_EQUAL 20)
+    if(NOT DEFINED CMAKE_CXX_SCAN_FOR_MODULES)
+        set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
+    endif()
+endif()
+
 set(GMX_CLANG_MINIMUM_REQUIRED_VERSION 14)
 set(GMX_GCC_MINIMUM_REQUIRED_VERSION 11)
 set(GMX_CUDA_MINIMUM_REQUIRED_VERSION 12.1)
