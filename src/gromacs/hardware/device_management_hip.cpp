@@ -50,6 +50,7 @@
 
 #include <algorithm>
 #include <optional>
+#include <vector>
 
 #include <hip/hip_runtime_api.h>
 
@@ -68,6 +69,12 @@
 
 /** Dummy kernel used for sanity checking. */
 static __global__ void dummy_kernel() {}
+
+//! List of known architectures with large register pool
+static const std::vector<std::string> archsWithLargeRegisterPool = { "gfx90a",
+                                                                     "gfx940",
+                                                                     "gfx941",
+                                                                     "gfx942" };
 
 void warnWhenDeviceNotTargeted(const gmx::MDLogger& mdlog, const DeviceInformation& deviceInfo)
 {
@@ -117,6 +124,15 @@ static DeviceStatus checkDevicePairlistCompatible(const DeviceInformation device
     }
 }
 
+
+static bool determineIfDeviceHasLargeRegisterPool(std::string deviceArch)
+{
+    auto device = gmx::splitAndTrimDelimitedString(deviceArch, ':')[0];
+    return std::find_if(archsWithLargeRegisterPool.begin(),
+                        archsWithLargeRegisterPool.end(),
+                        [&](const auto& arch) { return gmx::equalCaseInsensitive(arch, device); })
+           != archsWithLargeRegisterPool.end();
+}
 
 /*! \brief Runs GPU compatibility and sanity checks on the indicated device.
  *
@@ -274,6 +290,9 @@ std::vector<std::unique_ptr<DeviceInformation>> findDevices()
 
         deviceInfoList[i]->gpuAwareMpiStatus = gpuAwareMpiStatus;
 
+        deviceInfoList[i]->deviceHasLargeRegisterPool =
+                determineIfDeviceHasLargeRegisterPool(deviceInfoList[i]->prop.gcnArchName);
+
         const DeviceStatus checkResult = (stat != hipSuccess) ? DeviceStatus::NonFunctional
                                                               : checkDeviceStatus(*deviceInfoList[i]);
 
@@ -359,10 +378,11 @@ std::string getDeviceInformationString(const DeviceInformation& deviceInfo)
     }
     else
     {
-        return gmx::formatString("#%d: AMD %s, gcn: %s, ECC: %3s, stat: %s",
+        return gmx::formatString("#%d: AMD %s, gcn: %s, largeRegisterPool: %3s, ECC: %3s, stat: %s",
                                  deviceInfo.id,
                                  deviceInfo.prop.name,
                                  deviceInfo.prop.gcnArchName,
+                                 deviceInfo.deviceHasLargeRegisterPool ? "yes" : " no",
                                  deviceInfo.prop.ECCEnabled ? "yes" : " no",
                                  c_deviceStateString[deviceInfo.status]);
     }

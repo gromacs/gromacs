@@ -54,7 +54,7 @@
 namespace gmx
 {
 
-template<bool isMultiGpuBoard, bool doPruneNBL, bool doCalcEnergies>
+template<bool hasLargeRegisterPool, bool doPruneNBL, bool doCalcEnergies>
 void launchNbnxmKernelHelper(NbnxmGpu* nb, const StepWorkload& stepWork, InteractionLocality iloc);
 
 // clang-format off
@@ -71,13 +71,14 @@ extern template void launchNbnxmKernelHelper<true, true, false>(NbnxmGpu* nb, co
 
 void launchNbnxmKernel(NbnxmGpu* nb, const StepWorkload& stepWork, const InteractionLocality iloc, bool doPrune)
 {
-    const bool isMultiGpuBoard = targetHasLargeRegisterPool(nb->deviceContext_->deviceInfo());
-    const bool doCalcEnergies  = stepWork.computeEnergy;
+    const bool hasLargeRegisterPool = targetHasLargeRegisterPool(nb->deviceContext_->deviceInfo());
+    const bool doCalcEnergies       = stepWork.computeEnergy;
     dispatchTemplatedFunction(
-            [&](auto multiGpuBoard_, auto doCalcEnergies_, auto doPruneNBL_) {
-                launchNbnxmKernelHelper<multiGpuBoard_, doPruneNBL_, doCalcEnergies_>(nb, stepWork, iloc);
+            [&](auto hasLargeRegisterPool_, auto doCalcEnergies_, auto doPruneNBL_) {
+                launchNbnxmKernelHelper<hasLargeRegisterPool_, doPruneNBL_, doCalcEnergies_>(
+                        nb, stepWork, iloc);
             },
-            isMultiGpuBoard,
+            hasLargeRegisterPool,
             doCalcEnergies,
             doPrune);
 }

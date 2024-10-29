@@ -297,7 +297,7 @@ static std::string getPruneKernelName()
 }
 
 //! \brief Leap Frog HIP prune-only kernel launch code.
-template<PairlistType pairlistType, bool haveFreshList, bool isMultiGpuBoard, class... Args>
+template<PairlistType pairlistType, bool haveFreshList, bool hasLargeRegisterPool, class... Args>
 void launchNbnxmKernelPruneOnly(const DeviceInformation& deviceInfo,
                                 const DeviceStream&      deviceStream,
                                 const int                numSciInPart,
@@ -320,7 +320,7 @@ void launchNbnxmKernelPruneOnly(const DeviceInformation& deviceInfo,
     config.gridSize[0]  = numberOfKernelBlocksSanityCheck(numSciInPart, deviceInfo);
     config.sharedMemorySize = requiredSharedMemorySize<true, numThreadZ, VdwType::Count, pairlistType>();
 
-    constexpr int minBlocksPp = isMultiGpuBoard ? 8 : 1;
+    constexpr int minBlocksPp = hasLargeRegisterPool ? 8 : 1;
     auto        kernel = nbnxmKernelPruneOnly<pairlistType, haveFreshList, numThreadZ, minBlocksPp>;
     std::string kernelName = getPruneKernelName<haveFreshList, pairlistType>();
 
@@ -341,8 +341,8 @@ void chooseAndLaunchNbnxmKernelPruneOnly(bool                     haveFreshList,
 
 
     gmx::dispatchTemplatedFunction(
-            [&](auto haveFreshList_, auto isMultiGpuBoard_) {
-                launchNbnxmKernelPruneOnly<pairlistType, haveFreshList_, isMultiGpuBoard_>(
+            [&](auto haveFreshList_, auto hasLargeRegisterPool_) {
+                launchNbnxmKernelPruneOnly<pairlistType, haveFreshList_, hasLargeRegisterPool_>(
                         deviceInfo, deviceStream, numSciInPart, args...);
             },
             haveFreshList,

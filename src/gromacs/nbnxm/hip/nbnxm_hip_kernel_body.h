@@ -1083,7 +1083,7 @@ __launch_bounds__(c_clSizeSq<pairlistType>* nthreadZ, minBlocksPerMp) __global__
     }
 }
 //! \brief NBNXM kernel launch code.
-template<PairlistType pairlistType, bool isMultiGpuBoard, bool doPrune, bool doCalcEnergies, ElecType elecType, VdwType vdwType, class... Args>
+template<PairlistType pairlistType, bool hasLargeRegisterPool, bool doPrune, bool doCalcEnergies, ElecType elecType, VdwType vdwType, class... Args>
 static void launchNbnxmKernel(const DeviceStream&      deviceStream,
                               const int                numSci,
                               const DeviceInformation& deviceInfo,
@@ -1105,7 +1105,7 @@ static void launchNbnxmKernel(const DeviceStream&      deviceStream,
     config.blockSize[2] = numThreadZ;
     config.sharedMemorySize =
             requiredSharedMemorySize<isPruneKernel, numThreadZ, vdwType, pairlistType>();
-    constexpr int minBlocksPerMp = isMultiGpuBoard ? 1 : doCalcEnergies ? 6 : 8;
+    constexpr int minBlocksPerMp = hasLargeRegisterPool ? 1 : doCalcEnergies ? 6 : 8;
 
     auto kernel =
             nbnxmKernel<doPrune, doCalcEnergies, elecType, vdwType, numThreadZ, minBlocksPerMp, pairlistType>;
@@ -1118,7 +1118,7 @@ static void launchNbnxmKernel(const DeviceStream&      deviceStream,
 }
 
 //! \brief Select templated kernel and launch it.
-template<PairlistType pairlistType, bool isMultiGpuBoard, bool doPruneNBL, bool doCalcEnergies, class... Args>
+template<PairlistType pairlistType, bool hasLargeRegisterPool, bool doPruneNBL, bool doCalcEnergies, class... Args>
 void chooseAndLaunchNbnxmKernel(ElecType                 elecType,
                                 VdwType                  vdwType,
                                 const DeviceStream&      deviceStream,
@@ -1128,14 +1128,14 @@ void chooseAndLaunchNbnxmKernel(ElecType                 elecType,
 {
     dispatchTemplatedFunction(
             [&](auto elecType_, auto vdwType_) {
-                return launchNbnxmKernel<pairlistType, isMultiGpuBoard, doPruneNBL, doCalcEnergies, elecType_, vdwType_>(
+                return launchNbnxmKernel<pairlistType, hasLargeRegisterPool, doPruneNBL, doCalcEnergies, elecType_, vdwType_>(
                         deviceStream, numSci, deviceInfo, args...);
             },
             elecType,
             vdwType);
 }
 
-template<bool isMultiGpuBoard, bool doPruneNBL, bool doCalcEnergies>
+template<bool hasLargeRegisterPool, bool doPruneNBL, bool doCalcEnergies>
 void launchNbnxmKernelHelper(NbnxmGpu* nb, const StepWorkload& stepWork, const InteractionLocality iloc)
 {
     NBAtomDataGpu*           adat         = nb->atdat;
@@ -1148,7 +1148,7 @@ void launchNbnxmKernelHelper(NbnxmGpu* nb, const StepWorkload& stepWork, const I
     GMX_ASSERT(doPruneNBL == (plist->haveFreshList && !nb->didPrune[iloc]), "Wrong template called");
     GMX_ASSERT(doCalcEnergies == stepWork.computeEnergy, "Wrong template called");
 
-    chooseAndLaunchNbnxmKernel<sc_layoutType, isMultiGpuBoard, doPruneNBL, doCalcEnergies>(
+    chooseAndLaunchNbnxmKernel<sc_layoutType, hasLargeRegisterPool, doPruneNBL, doCalcEnergies>(
             nbp->elecType, nbp->vdwType, deviceStream, plist->numSci, deviceInfo, adat, nbp, plist, &stepWork.computeVirial);
 }
 

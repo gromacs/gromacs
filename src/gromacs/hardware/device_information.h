@@ -188,6 +188,8 @@ struct DeviceInformation
 #elif GMX_GPU_HIP
     //! HIP device properties.
     hipDeviceProp_t prop;
+    //! Manual checking device generation for large register pool
+    bool deviceHasLargeRegisterPool;
 #elif GMX_GPU_OPENCL
     cl_platform_id oclPlatformId;       //!< OpenCL Platform ID.
     cl_device_id   oclDeviceId;         //!< OpenCL Device ID.

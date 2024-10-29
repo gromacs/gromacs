@@ -162,7 +162,7 @@ constexpr size_t requiredSharedMemorySize()
 //! Find out if the target device has a large enough register pool (MI2xx and later)
 inline bool targetHasLargeRegisterPool(const DeviceInformation& deviceInfo)
 {
-    return deviceInfo.prop.regsPerBlock > 256;
+    return deviceInfo.deviceHasLargeRegisterPool;
 }
 
 } // namespace gmx
