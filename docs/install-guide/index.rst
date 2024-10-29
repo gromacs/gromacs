@@ -975,7 +975,9 @@ SYCL GPU acceleration for Intel GPUs
 """"""""""""""""""""""""""""""""""""
 
 You should install the recent `Intel oneAPI DPC++`_ compiler toolkit.
-For |Gromacs| 2024, version 2023.2 is recommended, and 2023.0 is the earliest supported.
+For |Gromacs| 2024, oneAPI version 2023.2 or 2024.0 are tested regularly and are
+recommended, although later versions might work and can offer better performance.
+The earliest supported version is oneAPI 2023.0.
 Using open-source `Intel LLVM <https://github.com/intel/llvm>`_ is possible,
 but not extensively tested. We also recommend installing the most recent
 `Neo driver <https://github.com/intel/compute-runtime/releases>`_.
