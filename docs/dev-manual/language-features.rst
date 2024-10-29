@@ -8,8 +8,8 @@ Portability considerations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Most |Gromacs| files compile as C++17, but some files remain that compile as C99.
-C++ has a lot of features, but to keep the source code maintainable and easy to read, 
-we will avoid using some of them in |Gromacs| code. The basic principle is to keep things 
+C++ has a lot of features, but to keep the source code maintainable and easy to read,
+we will avoid using some of them in |Gromacs| code. The basic principle is to keep things
 as simple as possible.
 
 * MSVC supports only a subset of C99 and work-arounds are required in those cases.
@@ -59,7 +59,7 @@ a release.
     importing just those symbols. See also |linkref2|.
 
 * Use STL, but do not use iostreams outside of the unit tests. iostreams can have
-  a negative impact on performance compared to other forms 
+  a negative impact on performance compared to other forms
   of string streams, depending on the use case. Also, they don't always
   play well with using C ``stdio`` routines at the same time, which
   are used extensively in the current code. However, since Google tests
@@ -85,7 +85,7 @@ a release.
   no default constructor and are hard to construct.
   Prefer other constructs when the logic requires an explanation of the
   reason why no regular value for T exists, e.g.,  do not use ``optional<T>``
-  for error handling. 
+  for error handling.
   ``optional<T>`` "models an object, not a pointer, even though operator*() and
   operator->() are defined" (|linkoptionalcppref|). No dynamic memory allocation
   ever takes place and forward declaration of objects stored in ``optional<T>``
@@ -133,7 +133,7 @@ a release.
 * Use proper enums for variable whose type can only contain one of a
   limited set of values. C++ is much better than C in catching errors
   in such code. Ideally, all enums should be typed enums, please
-  see |linkref8|. 
+  see |linkref8|.
 * When writing a new class, think whether it will be necessary to make
   copies of that class. If not, declare the copy constructor and the
   assignment operator as private and don't define them, making any
@@ -172,6 +172,13 @@ a release.
   simulation setup tools, and analysis tools have different needs, and
   the trade-off point between correctness vs reviewer time vs
   developer time vs compile time vs run time will differ.
+* Be restrictive when using ``auto`` to define variables. It is fine to
+  use ``auto`` if the variable type is immediately apparent, or completely
+  unnecessary, to a future reader of the code. In some case it may be necessary
+  to use ``auto``, e.g., together with generic templates. It is recommended to
+  use ``auto`` with lengthy types, such as iterators or lambdas, where
+  specifying the type explicitly would reduce readability. If in doubt, avoid
+  using ``auto``.
 
 
 .. |linkref1| replace:: `c++ guidelines <http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines>`__
@@ -259,5 +266,5 @@ Preprocessor considerations
   the result looks clearer than without indenting.
 * Please strongly consider a comment repeating the preprocessor condition at the end
   of the region, if a lengthy region is necessary and benefits from
-  that. For long regions this greatly helps in understanding 
+  that. For long regions this greatly helps in understanding
   and debugging the code.
