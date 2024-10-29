@@ -711,3 +711,5 @@ std::string getDeviceInformationString(const DeviceInformation& deviceInfo)
                                  c_deviceStateString[deviceInfo.status]);
     }
 }
+
+void doubleCheckGpuAwareMpiWillWork(const DeviceInformation& /* deviceInfo */) {}

@@ -73,3 +73,5 @@ std::optional<std::array<std::byte, 16>> getAmdDeviceUuid(int deviceId)
 
     return uuid;
 }
+
+void doubleCheckGpuAwareMpiWillWork(const DeviceInformation& /* deviceInfo */) {}

@@ -1726,6 +1726,15 @@ int Mdrunner::mdrunner()
                                                               canUseDirectGpuComm,
                                                               useGpuPmeDecomposition);
 
+    if (GMX_LIB_MPI && deviceInfo
+        && (runScheduleWork.simulationWork.useGpuDirectCommunication
+            || runScheduleWork.simulationWork.useGpuPmeDecomposition
+            || runScheduleWork.simulationWork.useGpuPmePpCommunication
+            || runScheduleWork.simulationWork.useGpuHaloExchange))
+    {
+        doubleCheckGpuAwareMpiWillWork(*deviceInfo);
+    }
+
     GMX_LOG(mdlog.info)
             .asParagraph()
             .appendTextFormatted("Local state %s filler particles",

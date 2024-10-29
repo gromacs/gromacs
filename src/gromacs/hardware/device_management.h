@@ -301,4 +301,9 @@ int uniqueDeviceId(const DeviceInformation& deviceInfo);
 //! Return the optional UUID detected for the indicated device
 std::optional<std::array<std::byte, 16>> uuidForDevice(const DeviceInformation& deviceInfo);
 
+/*! Run a possible check that GPU-aware MPI will work on \c deviceInfo
+ *
+ * \throw InvalidInputError if the user's choices would lead to a crash */
+void doubleCheckGpuAwareMpiWillWork(const DeviceInformation& deviceInfo);
+
 #endif // GMX_HARDWARE_DEVICE_MANAGEMENT_H

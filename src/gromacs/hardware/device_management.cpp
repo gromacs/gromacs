@@ -69,3 +69,5 @@ bool isDeviceDetectionFunctional(std::string* /* errorMessage */)
 {
     return false;
 }
+
+void doubleCheckGpuAwareMpiWillWork(const DeviceInformation& /* deviceInfo */) {}
