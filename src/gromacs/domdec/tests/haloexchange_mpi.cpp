@@ -157,8 +157,8 @@ void gpuHalo(gmx_domdec_t* dd, matrix box, HostVector<RVec>* h_x, int numAtomsTo
     {
         for (int pulse = 0; pulse < dd->comm->cd[d].numPulses(); pulse++)
         {
-            gpuHaloExchange[d].push_back(
-                    GpuHaloExchange(dd, d, MPI_COMM_WORLD, deviceContext, pulse, nullptr));
+            gpuHaloExchange[d].push_back(GpuHaloExchange(
+                    dd, d, MPI_COMM_WORLD, MPI_COMM_WORLD, deviceContext, pulse, false, nullptr));
         }
     }
 

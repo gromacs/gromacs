@@ -2179,10 +2179,9 @@ int Mdrunner::mdrunner()
         }
     }
 
-    std::unique_ptr<gmxNvshmemHandle> nvshmemHandlePtr;
     if (runScheduleWork.simulationWork.useNvshmem)
     {
-        nvshmemHandlePtr = std::make_unique<gmxNvshmemHandle>(cr->mpiDefaultCommunicator);
+        cr->initNvshmem(mdlog);
     }
 
     /* Set thread affinity after gmx_pme_init(), otherwise with cuFFTMp the NVSHMEM helper thread
@@ -2391,7 +2390,11 @@ int Mdrunner::mdrunner()
                 GMX_RELEASE_ASSERT(deviceStreamManager != nullptr,
                                    "GPU device stream manager should be initialized to use GPU.");
                 stateGpu = std::make_unique<gmx::StatePropagatorDataGpu>(
-                        *deviceStreamManager, transferKind, pme_gpu_get_block_size(fr->pmedata), wcycle.get());
+                        *deviceStreamManager,
+                        transferKind,
+                        pme_gpu_get_block_size(fr->pmedata),
+                        runScheduleWork.simulationWork.useNvshmem,
+                        wcycle.get());
                 fr->stateGpu = stateGpu.get();
             }
 
@@ -2496,6 +2499,10 @@ int Mdrunner::mdrunner()
         // Pinned buffers are associated with contexts in CUDA.
         // As soon as we destroy GPU contexts after mdrunner() exits, these lines should go.
         cr->destroyDD();
+        if (runScheduleWork.simulationWork.useNvshmem)
+        {
+            cr->destroyNvshmem();
+        }
         mdAtoms.reset(nullptr);
         globalState.reset(nullptr);
         localStateInstance.reset(nullptr);

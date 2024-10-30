@@ -101,7 +101,8 @@ void reallocateDeviceBuffer(DeviceBuffer<ValueType>* buffer,
     if (symmetricAlloc)
     {
 #if GMX_NVSHMEM
-        GMX_RELEASE_ASSERT((nvshmemx_init_status() == NVSHMEM_STATUS_IS_INITIALIZED),
+        GMX_RELEASE_ASSERT((nvshmemx_init_status() == NVSHMEM_STATUS_IS_INITIALIZED)
+                                   || (nvshmemx_init_status() == NVSHMEM_STATUS_FULL_MPG),
                            "NVSHMEM is not initialized.");
 #else
         GMX_RELEASE_ASSERT(0, "Symmetric allocation works with NVSHMEM builds.");

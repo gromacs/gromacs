@@ -1320,7 +1320,9 @@ static void doPairSearch(const t_commrec*             cr,
     {
         // TODO refactor this to do_md, after partitioning.
         stateGpu->reinit(mdatoms.homenr,
-                         getLocalAtomCount(cr->dd, mdatoms, simulationWork.havePpDomainDecomposition));
+                         getLocalAtomCount(cr->dd, mdatoms, simulationWork.havePpDomainDecomposition),
+                         *cr,
+                         -1);
     }
 
     if (simulationWork.haveGpuPmeOnPpRank())
@@ -1527,6 +1529,30 @@ void do_force(FILE*                         fplog,
 
     const StepWorkload& stepWork = runScheduleWork.stepWork;
 
+    const bool pmeSendCoordinatesFromGpu =
+            simulationWork.useGpuPmePpCommunication && !stepWork.doNeighborSearch;
+
+    if (stepWork.computePmeOnSeparateRank && stepWork.doNeighborSearch)
+    {
+        // We call the gmx_pme_send_coordinates early for reinit case
+        // in order for nvshmem collective calls in StatePropagatorDataGpu::Impl::reinit
+        // to be in sync with PME-PP
+        gmx_pme_send_coordinates(fr,
+                                 cr,
+                                 box,
+                                 x.unpaddedArrayRef(),
+                                 lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)],
+                                 lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Vdw)],
+                                 (stepWork.computeVirial || stepWork.computeEnergy),
+                                 step,
+                                 simulationWork.useGpuPmePpCommunication,
+                                 pmeSendCoordinatesFromGpu,
+                                 stepWork.useGpuPmeFReduction,
+                                 nullptr,
+                                 simulationWork.useMdGpuGraph,
+                                 wcycle);
+    }
+
     if (stepWork.doNeighborSearch)
     {
         doPairSearch(cr, inputrec, mdModulesNotifiers, step, nrnb, wcycle, *top, box, x, v, *mdatoms, fr, runScheduleWork);
@@ -1538,8 +1564,6 @@ void do_force(FILE*                         fplog,
         ddBalanceRegionHandler.openBeforeForceComputationCpu(DdAllowBalanceRegionReopen::yes);
     }
 
-    const bool pmeSendCoordinatesFromGpu =
-            simulationWork.useGpuPmePpCommunication && !stepWork.doNeighborSearch;
     auto* localXReadyOnDevice = (stepWork.haveGpuPmeOnThisRank || stepWork.useGpuXBufferOps
                                  || simulationWork.useGpuUpdate || pmeSendCoordinatesFromGpu)
                                         ? stateGpu->getCoordinatesReadyOnDeviceEvent(
@@ -1619,10 +1643,10 @@ void do_force(FILE*                         fplog,
         }
     }
 
-    if (stepWork.computePmeOnSeparateRank)
+    if (stepWork.computePmeOnSeparateRank && !stepWork.doNeighborSearch)
     {
         /* Send particle coordinates to the pme nodes */
-        if (!pmeSendCoordinatesFromGpu && !stepWork.doNeighborSearch && simulationWork.useGpuUpdate)
+        if (!pmeSendCoordinatesFromGpu && simulationWork.useGpuUpdate)
         {
             GMX_ASSERT(haveCopiedXFromGpu,
                        "a wait should only be triggered if copy has been scheduled");

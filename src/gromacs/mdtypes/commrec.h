@@ -40,8 +40,10 @@
 
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/logger.h"
 
 struct gmx_domdec_t;
+class gmxNvshmemHandle;
 
 #define DUTY_PP (1U << 0U)
 #define DUTY_PME (1U << 1U)
@@ -82,6 +84,14 @@ struct t_commrec
     //! Destroys the dd object
     void destroyDD();
 
+    //! Destroys the NVSHMEM handle \p nvshmemHandleUniquePtr
+    void destroyNvshmem();
+
+    //! Initialization the NVSHMEM handle \p nvshmemHandleUniquePtr
+    void initNvshmem(const gmx::MDLogger& mdlog);
+
+    //! Whether to use NVSHMEM
+    bool useNvshmem = false;
     /* The nodeids in one sim are numbered sequentially from 0.
      * All communication within some simulation should happen
      * in mpi_comm_mysim, or its subset mpi_comm_mygroup.
@@ -117,9 +127,15 @@ private:
     //! Storage for the domain decomposition data
     std::unique_ptr<gmx_domdec_t> ddUniquePtr_;
 
+    //! NVSHMEM  comms related storage.
+    std::unique_ptr<gmxNvshmemHandle> nvshmemHandleUniquePtr_;
+
 public:
     //! C-pointer to ddUniquePtr (should be replaced by a getter)
     gmx_domdec_t* dd = nullptr;
+
+    //! C-pointer to nvshmemHandleUniquePtr_
+    gmxNvshmemHandle* nvshmemHandlePtr = nullptr;
 
     /* The duties of this node, see the DUTY_ defines above.
      * This should be read through thisRankHasDuty() or getThisRankDuties().

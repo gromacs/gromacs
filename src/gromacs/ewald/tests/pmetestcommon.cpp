@@ -214,7 +214,7 @@ std::unique_ptr<StatePropagatorDataGpu> makeStatePropagatorDataGpu(const gmx_pme
     // TODO: Special constructor for PME-only rank / PME-tests is used here. There should be a mechanism to
     //       restrict one from using other constructor here.
     return std::make_unique<StatePropagatorDataGpu>(
-            deviceStream, *deviceContext, GpuApiCallBehavior::Sync, pme_gpu_get_block_size(&pme), nullptr);
+            deviceStream, *deviceContext, GpuApiCallBehavior::Sync, pme_gpu_get_block_size(&pme), false, nullptr);
 }
 
 //! PME initialization with atom data
@@ -227,6 +227,7 @@ void pmeInitAtoms(gmx_pme_t*               pme,
     const Index atomCount = coordinates.size();
     GMX_RELEASE_ASSERT(atomCount == gmx::ssize(charges), "Mismatch in atom data");
     PmeAtomComm* atc = nullptr;
+    t_commrec    dummyCommrec;
 
     switch (mode)
     {
@@ -245,7 +246,7 @@ void pmeInitAtoms(gmx_pme_t*               pme,
             atc->setNumAtoms(atomCount);
             gmx_pme_reinit_atoms(pme, atomCount, charges, {});
 
-            stateGpu->reinit(atomCount, atomCount);
+            stateGpu->reinit(atomCount, atomCount, dummyCommrec, 0);
             stateGpu->copyCoordinatesToGpu(arrayRefFromArray(coordinates.data(), coordinates.size()),
                                            gmx::AtomLocality::Local);
             pme_gpu_set_kernelparam_coordinates(pme->gpu, stateGpu->getCoordinates());

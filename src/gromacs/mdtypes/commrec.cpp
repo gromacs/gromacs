@@ -40,6 +40,7 @@
 #include <utility>
 
 #include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/gpu_utils/nvshmem_utils.h"
 #include "gromacs/utility/gmxmpi.h"
 
 t_commrec::t_commrec() = default;
@@ -74,4 +75,16 @@ void t_commrec::destroyDD()
 {
     ddUniquePtr_.reset(nullptr);
     dd = nullptr;
+}
+
+void t_commrec::initNvshmem(const gmx::MDLogger& mdlog)
+{
+    nvshmemHandleUniquePtr_ = std::make_unique<gmxNvshmemHandle>(mdlog, mpiDefaultCommunicator);
+    nvshmemHandlePtr        = nvshmemHandleUniquePtr_.get();
+    useNvshmem              = true;
+}
+
+void t_commrec::destroyNvshmem()
+{
+    nvshmemHandleUniquePtr_.reset(nullptr);
 }

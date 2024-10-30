@@ -27,6 +27,13 @@ if grep -qF 'NVIDIA' <<< "$GPU_VENDOR"; then
             echo "    with PME decomposition"
         fi
     fi
+    if [[ "$GMX_ENABLE_NVSHMEM" != "" ]] && [[ "$GPU_COUNT" -eq "2" ]]
+    then
+        # In CI with dual GPUs NVSHMEM cannot support more than 2 MPI processes/GPU
+        # which happens in multi sim tests so we disable them
+        echo "Disabling MdrunMultiSim tests as with GMX_ENABLE_NVSHMEM it does not work on dual GPU setup without MPS"
+        EXTRA_FLAGS="--exclude-regex MdrunMultiSim "
+    fi
     # Speed up device re-initialization, especially when running multiple tests in parallel
     export CUDA_DEVICE_MAX_CONNECTIONS=2  # default is 8
 fi

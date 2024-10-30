@@ -70,6 +70,34 @@ enum class HaloType
     Forces,
 };
 
+/*! \internal \brief Struct encapsulating data for NVSHMEM Enabled GPU Halo Exchange */
+struct nvshmemHaloExchangeOps
+{
+    //! offset of remote PP rank coord buffer used for nvshmem_put
+    int putAtomOffsetInReceiverRankXBuf_ = 0;
+    //! signal object used for notifying rank which will produce/put the halo coordinates
+    // about readiness of the coordinates buffer.
+    DeviceBuffer<uint64_t> d_signalSenderRankX_ = nullptr;
+    //! signal object used for notifying rank which will consume the halo forces
+    // about completion of the puts.
+    DeviceBuffer<uint64_t> d_signalReceiverRankF_ = nullptr;
+    //! Forces communication signal counter,  used to synchronize with the send-to(put)
+    // and recv-from ranks for the current timestep. Typically the value for the
+    // signal counter is the timestep value and is same for all the pulse/dim in same
+    // timestep.
+    uint64_t signalReceiverRankFCounter_ = 0;
+    //! signal object used for notifying rank which will consume the halo coordinates
+    // about completion of the puts.
+    DeviceBuffer<uint64_t> d_signalReceiverRankX_ = nullptr;
+    //! Coordinates communication signal counter, used to synchronize with the send-to(put)
+    // and recv-from ranks for the current timestep. Typically the value for the
+    // signal counter is the timestep value and is same for all the pulse/dim in same
+    // timestep.
+    uint64_t signalReceiverRankXCounter_ = 0;
+    //! offset from which signal object for the given pulse/dim should be used.
+    int signalObjOffset_ = 0;
+};
+
 /*! \internal \brief Class with interfaces and data for GPU Halo Exchange */
 class GpuHaloExchange::Impl
 {
@@ -80,24 +108,35 @@ public:
      * \param [inout] dd                       domdec structure
      * \param [in]    dimIndex                 the dimension index for this instance
      * \param [in]    mpi_comm_mysim           communicator used for simulation
+     * \param [in]    mpi_comm_mysim_world     communicator used for simulation with PP + PME.
      * \param [in]    deviceContext            GPU device context
      * \param [in]    pulse                    the communication pulse for this instance
+     * \param [in]    useNvshmem               use NVSHMEM for communication
      * \param [in]    wcycle                   The wallclock counter
      */
     Impl(gmx_domdec_t*        dd,
          int                  dimIndex,
          MPI_Comm             mpi_comm_mysim,
+         MPI_Comm             mpi_comm_mysim_world,
          const DeviceContext& deviceContext,
          int                  pulse,
+         bool                 useNvshmem,
          gmx_wallcycle*       wcycle);
     ~Impl();
 
     /*! \brief
      * (Re-) Initialization for GPU halo exchange
      * \param [in] d_coordinatesBuffer  pointer to coordinates buffer in GPU memory
-     * \param [in] d_forcesBuffer   pointer to forces buffer in GPU memory
+     * \param [in] d_forcesBuffer       pointer to forces buffer in GPU memory
      */
     void reinitHalo(DeviceBuffer<Float3> d_coordinatesBuffer, DeviceBuffer<Float3> d_forcesBuffer);
+
+    /*! \brief
+     * (Re-) Initialization for NVSHMEM Signal objects
+     * \param [in] cr  Communication structure ref.
+     * \param [in] signalObjOffset  offset of the signal object corresponding to given pulse/dim.
+     */
+    void reinitNvshmemSignal(const t_commrec& cr, int signalObjOffset);
 
     /*! \brief
      * GPU halo exchange of coordinates buffer
@@ -118,6 +157,10 @@ public:
      *  \returns  The event to synchronize the stream that consumes forces on device.
      */
     GpuEventSynchronizer* getForcesReadyOnDeviceEvent();
+
+    /*! \brief Destructor for symmetric d_recvBuf used by NVSHMEM.
+     */
+    void destroyGpuHaloExchangeNvshmemBuf();
 
 private:
     /*! \brief Data transfer wrapper for GPU halo exchange
@@ -260,6 +303,8 @@ private:
     std::unique_ptr<GpuEventSynchronizer> haloFDataTransferLaunched_;
     //! MPI communicator used for simulation
     MPI_Comm mpi_comm_mysim_;
+    //! MPI communicator involving PP + PME.
+    MPI_Comm mpi_comm_mysim_world_;
     //! GPU context object
     const DeviceContext& deviceContext_;
     //! Device stream for this halo exchange
@@ -280,6 +325,11 @@ private:
     gmx_wallcycle* wcycle_ = nullptr;
     //! The atom offset for receive (x) or send (f) for dimension index and pulse corresponding to this halo exchange instance
     int atomOffset_ = 0;
+    //! whether nvshmem should be used.
+    bool useNvshmem_ = false;
+    // Contains all the objects and metadata required for NVSHMEM enabled
+    // PP Halo exchange.
+    nvshmemHaloExchangeOps nvshmemHaloExchange_;
     //! Event triggered when coordinate halo has been launched
     GpuEventSynchronizer coordinateHaloLaunched_;
     //! flag on whether the recieve for this halo exchange is performed in-place

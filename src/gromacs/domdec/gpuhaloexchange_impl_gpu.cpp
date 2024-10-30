@@ -47,12 +47,18 @@
 
 #include "config.h"
 
+#if GMX_NVSHMEM
+#    include <nvshmem.h>
+#    include <nvshmemx.h>
+#endif
+
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/gpuhaloexchange.h"
 #include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/gpueventsynchronizer.h"
+#include "gromacs/gpu_utils/nvshmem_utils.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/gmxmpi.h"
@@ -112,10 +118,58 @@ void GpuHaloExchange::Impl::reinitHalo(DeviceBuffer<Float3> d_coordinatesBuffer,
     if (newSize > maxPackedBufferSize_)
     {
         reallocateDeviceBuffer(&d_indexMap_, newSize, &indexMapSize_, &indexMapSizeAlloc_, deviceContext_);
+
+        if (useNvshmem_ && (maxPackedBufferSize_ > 0) && (newSize > sendBufSizeAlloc_))
+        {
+            GMX_RELEASE_ASSERT(d_sendBuf_ != nullptr,
+                               "Halo exchange requires d_sendBuf_ buffer to be valid");
+#if GMX_NVSHMEM
+            // unregister only when previous d_sendBuf_ was registered previously
+            // via nvshmemx_buffer_register
+            GMX_RELEASE_ASSERT(nvshmemx_buffer_unregister(d_sendBuf_) == 0,
+                               "NVSHMEM d_sendBuf_ Buffer unregistration failed");
+#endif
+        }
         reallocateDeviceBuffer(&d_sendBuf_, newSize, &sendBufSize_, &sendBufSizeAlloc_, deviceContext_);
-        reallocateDeviceBuffer(&d_recvBuf_, newSize, &recvBufSize_, &recvBufSizeAlloc_, deviceContext_);
-        maxPackedBufferSize_ = newSize;
+
+        if (useNvshmem_ && (maxPackedBufferSize_ < sendBufSizeAlloc_))
+        {
+            // As d_sendBuf_ is a source buffer in the PP Halo exchange nvshmem_put
+            // we do not need to do a symmetric allocation for it, registering it via
+            // nvshmemx_buffer_register is sufficient.
+#if GMX_NVSHMEM
+            std::size_t bufLen = sendBufSizeAlloc_ * sizeof(float3);
+            GMX_RELEASE_ASSERT(nvshmemx_buffer_register(d_sendBuf_, bufLen) == 0,
+                               "NVSHMEM d_sendBuf_ Buffer registration failed");
+#endif
+        }
+        // number of values/elems is same for indexMapSizeAlloc_/sendBufSizeAlloc_ so we can use either.
+        maxPackedBufferSize_ = sendBufSizeAlloc_;
     }
+
+    int recvBufNewSize = newSize;
+    if (useNvshmem_)
+    {
+        MPI_Allreduce(&newSize, &recvBufNewSize, 1, MPI_INT, MPI_MAX, mpi_comm_mysim_world_);
+#if GMX_MPI
+        // remote PE atomOffset to nvshmem put halo coordinates
+        MPI_Sendrecv(&atomOffset_,
+                     sizeof(int),
+                     MPI_BYTE,
+                     recvRankX_,
+                     0,
+                     &nvshmemHaloExchange_.putAtomOffsetInReceiverRankXBuf_,
+                     sizeof(int),
+                     MPI_BYTE,
+                     sendRankX_,
+                     0,
+                     mpi_comm_mysim_,
+                     MPI_STATUS_IGNORE);
+#endif
+    }
+
+    reallocateDeviceBuffer(
+            &d_recvBuf_, recvBufNewSize, &recvBufSize_, &recvBufSizeAlloc_, deviceContext_, useNvshmem_);
 
     xSendSize_ = newSize;
 #if GMX_MPI
@@ -198,6 +252,26 @@ void GpuHaloExchange::Impl::reinitHalo(DeviceBuffer<Float3> d_coordinatesBuffer,
 
     wallcycle_sub_stop(wcycle_, WallCycleSubCounter::DDGpu);
     wallcycle_stop(wcycle_, WallCycleCounter::Domdec);
+}
+
+void GpuHaloExchange::Impl::reinitNvshmemSignal(const t_commrec& cr, int signalObjOffset)
+{
+    if (useNvshmem_)
+    {
+        GMX_RELEASE_ASSERT(cr.nvshmemHandlePtr->d_ppHaloExSyncBase_ != nullptr,
+                           "NVSHMEM Coordinate Halo exchange requires valid signal buffer");
+        nvshmemHaloExchange_.signalObjOffset_     = signalObjOffset;
+        nvshmemHaloExchange_.d_signalSenderRankX_ = cr.nvshmemHandlePtr->d_ppHaloExSyncBase_;
+        // As only CUDA DeviceBuffer<> supports pointer updates from host side
+        // we guard these pointer update code by GMX_GPU_CUDA
+#if GMX_GPU_CUDA
+        int totalPulsesAndDims = cr.nvshmemHandlePtr->ppHaloExPerSyncBufSize_;
+        nvshmemHaloExchange_.d_signalReceiverRankX_ =
+                cr.nvshmemHandlePtr->d_ppHaloExSyncBase_ + totalPulsesAndDims;
+        nvshmemHaloExchange_.d_signalReceiverRankF_ =
+                cr.nvshmemHandlePtr->d_ppHaloExSyncBase_ + 2 * totalPulsesAndDims;
+#endif
+    }
 }
 
 void GpuHaloExchange::Impl::enqueueWaitRemoteCoordinatesReadyEvent(GpuEventSynchronizer* coordinatesReadyOnDeviceEvent)
@@ -557,8 +631,10 @@ GpuEventSynchronizer* GpuHaloExchange::Impl::getForcesReadyOnDeviceEvent()
 GpuHaloExchange::Impl::Impl(gmx_domdec_t*        dd,
                             int                  dimIndex,
                             MPI_Comm             mpi_comm_mysim,
+                            MPI_Comm             mpi_comm_mysim_world,
                             const DeviceContext& deviceContext,
                             int                  pulse,
+                            bool                 useNvshmem,
                             gmx_wallcycle*       wcycle) :
     dd_(dd),
     sendRankX_(dd->neighbor[dimIndex][1]),
@@ -569,11 +645,13 @@ GpuHaloExchange::Impl::Impl(gmx_domdec_t*        dd,
     haloXDataTransferLaunched_(GMX_THREAD_MPI ? new GpuEventSynchronizer() : nullptr),
     haloFDataTransferLaunched_(GMX_THREAD_MPI ? new GpuEventSynchronizer() : nullptr),
     mpi_comm_mysim_(mpi_comm_mysim),
+    mpi_comm_mysim_world_(mpi_comm_mysim_world),
     deviceContext_(deviceContext),
     haloStream_(new DeviceStream(deviceContext, DeviceStreamPriority::High, false)),
     dimIndex_(dimIndex),
     pulse_(pulse),
-    wcycle_(wcycle)
+    wcycle_(wcycle),
+    useNvshmem_(useNvshmem)
 {
     if (usePBC_ && dd->unitCellInfo.haveScrewPBC)
     {
@@ -587,19 +665,47 @@ GpuHaloExchange::Impl::Impl(gmx_domdec_t*        dd,
 
 GpuHaloExchange::Impl::~Impl()
 {
+    if (useNvshmem_)
+    {
+#if GMX_NVSHMEM
+        // As d_sendBuf_ is a source buffer in the PP Halo exchange nvshmem_put
+        // we had registered it via nvshmemx_buffer_register, such registered buffer
+        // need to be first unregistered via nvshmemx_buffer_unregister before freeing.
+        if (d_sendBuf_)
+        {
+            GMX_RELEASE_ASSERT(nvshmemx_buffer_unregister(d_sendBuf_) == 0,
+                               "NVSHMEM d_sendBuf_ Buffer unregistration failed");
+        }
+#endif
+    }
+    else
+    {
+        // For the NVSHMEM path the freeing of d_recvBuf_
+        // happens in destroyGpuHaloExchangeNvshmemBuf() due to it
+        // been a collective call calling it at this point is not appropriate
+        freeDeviceBuffer(&d_recvBuf_);
+    }
+
     freeDeviceBuffer(&d_indexMap_);
     freeDeviceBuffer(&d_sendBuf_);
-    freeDeviceBuffer(&d_recvBuf_);
     freeDeviceBuffer(&d_fShift_);
+}
+
+void GpuHaloExchange::Impl::destroyGpuHaloExchangeNvshmemBuf()
+{
+    // freeing the NVSHMEM symmetric buffer
+    freeDeviceBuffer(&d_recvBuf_);
 }
 
 GpuHaloExchange::GpuHaloExchange(gmx_domdec_t*        dd,
                                  int                  dimIndex,
                                  MPI_Comm             mpi_comm_mysim,
+                                 MPI_Comm             mpi_comm_mysim_world_,
                                  const DeviceContext& deviceContext,
                                  int                  pulse,
+                                 bool                 useNvshmem,
                                  gmx_wallcycle*       wcycle) :
-    impl_(new Impl(dd, dimIndex, mpi_comm_mysim, deviceContext, pulse, wcycle))
+    impl_(new Impl(dd, dimIndex, mpi_comm_mysim, mpi_comm_mysim_world_, deviceContext, pulse, useNvshmem, wcycle))
 {
 }
 
@@ -616,6 +722,16 @@ GpuHaloExchange::~GpuHaloExchange() = default;
 void GpuHaloExchange::reinitHalo(DeviceBuffer<RVec> d_coordinatesBuffer, DeviceBuffer<RVec> d_forcesBuffer)
 {
     impl_->reinitHalo(d_coordinatesBuffer, d_forcesBuffer);
+}
+
+void GpuHaloExchange::reinitNvshmemSignal(const t_commrec& cr, int signalObjOffset)
+{
+    impl_->reinitNvshmemSignal(cr, signalObjOffset);
+}
+
+void GpuHaloExchange::destroyGpuHaloExchangeNvshmemBuf()
+{
+    impl_->destroyGpuHaloExchangeNvshmemBuf();
 }
 
 GpuEventSynchronizer* GpuHaloExchange::communicateHaloCoordinates(const matrix          box,

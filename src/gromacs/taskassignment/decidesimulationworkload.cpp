@@ -145,7 +145,7 @@ SimulationWorkload createSimulationWorkload(const t_inputrec& inputrec,
             && (havePpDomainDecomposition ? (GMX_THREAD_MPI > 0) : true)
             && !(haveSyclWithGraphIncompatibleGpuFftLibrary && simulationWorkload.useGpuPmeFft);
 
-    simulationWorkload.useNvshmem = devFlags.enableNvshmem && simulationWorkload.useGpuPmePpCommunication;
+    simulationWorkload.useNvshmem = devFlags.enableNvshmem && simulationWorkload.useGpuDirectCommunication;
     return simulationWorkload;
 }
 

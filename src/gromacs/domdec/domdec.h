@@ -282,6 +282,10 @@ void reinitGpuHaloExchange(const t_commrec&        cr,
                            DeviceBuffer<gmx::RVec> d_coordinatesBuffer,
                            DeviceBuffer<gmx::RVec> d_forcesBuffer);
 
+/*! \brief Destructor for symmetric d_recvBuf used by NVSHMEM.
+ * \param [in] cr                The commrec object
+ */
+void destroyGpuHaloExchangeNvshmemBuf(const t_commrec& cr);
 
 /*! \brief GPU halo exchange of coordinates buffer.
  * \param [in] cr                The commrec object

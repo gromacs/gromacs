@@ -49,7 +49,10 @@
 #ifndef GMX_NVSHMEM_UTILS_H_
 #define GMX_NVSHMEM_UTILS_H_
 
+#include "gromacs/gpu_utils/device_stream_manager.h"
+#include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/logger.h"
 
 class gmxNvshmemHandle
 {
@@ -58,9 +61,29 @@ private:
     MPI_Comm nvshmem_mpi_comm_;
 
 public:
-    gmxNvshmemHandle(MPI_Comm comm);
+    gmxNvshmemHandle(const gmx::MDLogger& mdlog, MPI_Comm comm);
 
     ~gmxNvshmemHandle();
+
+    //! Number of signal buffers types used for PP Halo exchange
+    static const int numOfPpHaloExSyncBufs = 3;
+    //! Size for the each of the 3 signal buffers used for PP Halo exchange
+    int ppHaloExPerSyncBufSize_ = 0;
+    //! Allocation size for the signal buffers used for PP Halo exchange
+    int ppHaloExSyncBufSize_ = -1;
+    //! Allocation capacity for the signal buffers used for PP Halo exchange
+    int ppHaloExSyncBufCapacity_ = -1;
+
+    DeviceBuffer<uint64_t> d_ppHaloExSyncBase_;
+
+    /*! \brief Handles NVSHEM signal buffer initialization
+     *
+     * Allocates and initializes the signal buffers used in NVSHMEM enabled
+     * PP Halo exchange.
+     */
+    void allocateAndInitSignalBufs(int                  totalDimsAndPulses,
+                                   const DeviceContext& deviceContext_,
+                                   const DeviceStream*  localStream);
 };
 
 #endif

@@ -38,6 +38,12 @@
  * This object stores and manages positions, velocities and forces for
  * all particles in the system on the GPU.
  *
+ * For NVSHMEM path it handles the symmetric allocation for coordinates
+ * and signal buffers involved in PP GPU Halo Exchange. It also serves
+ * as a symmetric allocation point for PME rank for the d_recvBuf
+ * involved in the PP GPU Halo Exchange for the sake of keeping
+ * symmetric allocation happy.
+ *
  * \todo Add cycle counters.
  * \todo Add synchronization points.
  *
@@ -55,6 +61,7 @@
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/classhelpers.h"
@@ -65,6 +72,7 @@ class DeviceContext;
 class DeviceStream;
 class GpuEventSynchronizer;
 struct gmx_wallcycle;
+struct t_commrec;
 
 namespace gmx
 {
@@ -106,11 +114,13 @@ public:
      *  \param[in] deviceStreamManager         Object that owns the DeviceContext and DeviceStreams.
      *  \param[in] transferKind                H2D/D2H transfer call behavior (synchronous or not).
      *  \param[in] allocationBlockSizeDivisor  Deterines padding size for coordinates buffer.
+     *  \param[in] useNvshmem                  Whether to use NVSHMEM for comm
      *  \param[in] wcycle                      Wall cycle counter data.
      */
     StatePropagatorDataGpu(const DeviceStreamManager& deviceStreamManager,
                            GpuApiCallBehavior         transferKind,
                            int                        allocationBlockSizeDivisor,
+                           bool                       useNvshmem,
                            gmx_wallcycle*             wcycle);
 
     /*! \brief Constructor to use in PME-only rank and in tests.
@@ -127,12 +137,14 @@ public:
      *  \param[in] deviceContext   Device context, nullptr allowed for non-OpenCL builds.
      *  \param[in] transferKind    H2D/D2H transfer call behavior (synchronous or not).
      *  \param[in] allocationBlockSizeDivisor Determines padding size for coordinates buffer.
+     *  \param[in] useNvshmem      Whether to use NVSHMEM for comm
      *  \param[in] wcycle          Wall cycle counter data.
      */
     StatePropagatorDataGpu(const DeviceStream*  pmeStream,
                            const DeviceContext& deviceContext,
                            GpuApiCallBehavior   transferKind,
                            int                  allocationBlockSizeDivisor,
+                           bool                 useNvshmem,
                            gmx_wallcycle*       wcycle);
 
     //! Move constructor
@@ -158,8 +170,10 @@ public:
      *
      *  \param[in] numAtomsLocal  Number of atoms in local domain.
      *  \param[in] numAtomsAll    Total number of atoms to handle.
+     *  \param[in] cr             Communication structure pointer
+     *  \param[in] peerRank       Peer PP rank used to communicate with PME.
      */
-    void reinit(int numAtomsLocal, int numAtomsAll);
+    void reinit(int numAtomsLocal, int numAtomsAll, const t_commrec& cr, int peerRank);
 
     /*! \brief Returns the range of atoms to be copied based on the copy type (all, local or non-local).
      *

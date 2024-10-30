@@ -73,6 +73,7 @@
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gpu_utils/device_stream_manager.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
+#include "gromacs/gpu_utils/nvshmem_utils.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
@@ -3069,7 +3070,7 @@ void constructGpuHaloExchange(const t_commrec&                cr,
         for (int pulse = cr.dd->gpuHaloExchange[d].size(); pulse < cr.dd->comm->cd[d].numPulses(); pulse++)
         {
             cr.dd->gpuHaloExchange[d].push_back(std::make_unique<gmx::GpuHaloExchange>(
-                    cr.dd, d, cr.mpi_comm_mygroup, deviceStreamManager.context(), pulse, wcycle));
+                    cr.dd, d, cr.mpi_comm_mygroup, cr.mpi_comm_mysim, deviceStreamManager.context(), pulse, cr.useNvshmem, wcycle));
         }
     }
 }
@@ -3078,11 +3079,27 @@ void reinitGpuHaloExchange(const t_commrec&              cr,
                            const DeviceBuffer<gmx::RVec> d_coordinatesBuffer,
                            const DeviceBuffer<gmx::RVec> d_forcesBuffer)
 {
+    int numDimsAndPulses = 0;
     for (int d = 0; d < cr.dd->ndim; d++)
     {
         for (int pulse = 0; pulse < cr.dd->comm->cd[d].numPulses(); pulse++)
         {
             cr.dd->gpuHaloExchange[d][pulse]->reinitHalo(d_coordinatesBuffer, d_forcesBuffer);
+            cr.dd->gpuHaloExchange[d][pulse]->reinitNvshmemSignal(cr, numDimsAndPulses++);
+        }
+    }
+}
+
+void destroyGpuHaloExchangeNvshmemBuf(const t_commrec& cr)
+{
+    if (cr.nvshmemHandlePtr != nullptr)
+    {
+        for (int d = 0; d < cr.dd->ndim; d++)
+        {
+            for (int pulse = 0; pulse < cr.dd->comm->cd[d].numPulses(); pulse++)
+            {
+                cr.dd->gpuHaloExchange[d][pulse]->destroyGpuHaloExchangeNvshmemBuf();
+            }
         }
     }
 }
@@ -3092,6 +3109,7 @@ GpuEventSynchronizer* communicateGpuHaloCoordinates(const t_commrec&      cr,
                                                     GpuEventSynchronizer* dependencyEvent)
 {
     GpuEventSynchronizer* eventPtr = dependencyEvent;
+
     for (int d = 0; d < cr.dd->ndim; d++)
     {
         for (int pulse = 0; pulse < cr.dd->comm->cd[d].numPulses(); pulse++)

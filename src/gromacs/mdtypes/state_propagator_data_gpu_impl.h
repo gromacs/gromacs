@@ -51,6 +51,7 @@
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/gpueventsynchronizer.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/state_propagator_data_gpu.h"
 #include "gromacs/utility/enumerationhelpers.h"
 
@@ -58,6 +59,19 @@ struct gmx_wallcycle;
 
 namespace gmx
 {
+
+/*! \internal \brief Struct of comm data for NVSHMEM Enabled PP Halo Exchange */
+struct NvshmemPpCommData
+{
+    //! device buffer for receiving packed data
+    std::vector<DeviceBuffer<Float3>> d_recvBuf_;
+    //! keeps track of number of dimensions and pulses in each dimension.
+    std::vector<int> numDimsAndPulses_;
+    //! Allocation size for the recvBuf
+    std::vector<int> d_recvBufSize_;
+    //! Allocation capacity for the recvBuf
+    std::vector<int> d_recvBufCapacity_;
+};
 
 class StatePropagatorDataGpu::Impl
 {
@@ -84,11 +98,13 @@ public:
      *  \param[in] deviceStreamManager         Object that owns the DeviceContext and DeviceStreams.
      *  \param[in] transferKind                H2D/D2H transfer call behavior (synchronous or not).
      *  \param[in] allocationBlockSizeDivisor  Determines the padding size for coordinates buffer.
+     *  \param[in] useNvshmem                  Whether to use NVSHMEM for comm
      *  \param[in] wcycle                      Wall cycle counter data.
      */
     Impl(const DeviceStreamManager& deviceStreamManager,
          GpuApiCallBehavior         transferKind,
          int                        allocationBlockSizeDivisor,
+         bool                       useNvshmem,
          gmx_wallcycle*             wcycle);
 
     /*! \brief Constructor to use in PME-only rank and in tests.
@@ -105,12 +121,14 @@ public:
      *  \param[in] deviceContext   Device context.
      *  \param[in] transferKind    H2D/D2H transfer call behavior (synchronous or not).
      *  \param[in] allocationBlockSizeDivisor  Determines the padding size for coordinates buffer.
+     *  \param[in] useNvshmem      Whether to use NVSHMEM for comm
      *  \param[in] wcycle          Wall cycle counter data.
      */
     Impl(const DeviceStream*  pmeStream,
          const DeviceContext& deviceContext,
          GpuApiCallBehavior   transferKind,
          int                  allocationBlockSizeDivisor,
+         bool                 useNvshmem,
          gmx_wallcycle*       wcycle);
 
     ~Impl();
@@ -132,8 +150,10 @@ public:
      *
      *  \param[in] numAtomsLocal  Number of atoms in local domain.
      *  \param[in] numAtomsAll    Total number of atoms to handle.
+     *  \param[in] cr             Communication structure pointer
+     *  \param[in] peerRank       Peer PP rank used to communicate with PME.
      */
-    void reinit(int numAtomsLocal, int numAtomsAll);
+    void reinit(int numAtomsLocal, int numAtomsAll, const t_commrec& cr, int peerRank);
 
     /*! \brief Returns the range of atoms to be copied based on the copy type (all, local or non-local).
      *
@@ -419,6 +439,9 @@ private:
     DeviceBuffer<RVec> d_x_;
     //! Number of particles saved in the positions buffer
     int d_xSize_ = -1;
+    //! Max Number of particles saved in the positions buffer
+    // used only for extra total buf size
+    int d_xMaxSize_ = -1;
     //! Allocation size for the positions buffer
     int d_xCapacity_ = -1;
 
@@ -438,6 +461,13 @@ private:
 
     //! \brief Pointer to wallcycle structure.
     gmx_wallcycle* wcycle_;
+    //! Whether to use NVSHMEM for data communication
+    bool useNvshmem_ = false;
+    //! whether it is a PME rank
+    bool isPmeRank = false;
+    //! Struct of NVSHMEM enabled buffer allocation and signaling objs
+    std::unique_ptr<NvshmemPpCommData> nvshmemPpCommData_;
+
 
     /*! \brief Performs the copy of data from host to device buffer.
      *

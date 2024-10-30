@@ -2180,6 +2180,14 @@ void gmx::LegacySimulator::do_md()
         gmx_pme_send_finish(cr_);
     }
 
+    // This is to free PP ranks gpuhaloexchange symmetric buffer `d_recvBuf_`
+    // as calling its destruction happens very late causing hang as this is a collective
+    // call, the PME side free of the same buffer happens quite early.
+    if (PAR(cr_) && simulationWork.useNvshmem)
+    {
+        destroyGpuHaloExchangeNvshmemBuf(*cr_);
+    }
+
     if (MAIN(cr_))
     {
         if (ir->nstcalcenergy > 0)

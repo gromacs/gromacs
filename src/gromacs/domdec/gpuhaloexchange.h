@@ -52,6 +52,7 @@
 
 struct gmx_domdec_t;
 struct gmx_wallcycle;
+struct t_commrec;
 class DeviceContext;
 class DeviceStream;
 class GpuEventSynchronizer;
@@ -86,15 +87,19 @@ public:
      * \param [inout] dd                       domdec structure
      * \param [in]    dimIndex                 the dimension index for this instance
      * \param [in]    mpi_comm_mysim           communicator used for simulation
+     * \param [in]    mpi_comm_mysim_world     communicator used for simulation with PP + PME.
      * \param [in]    deviceContext            GPU device context
      * \param [in]    pulse                    the communication pulse for this instance
+     * \param [in]    useNvshmem               use NVSHMEM for communication
      * \param [in]    wcycle                   The wallclock counter
      */
     GpuHaloExchange(gmx_domdec_t*        dd,
                     int                  dimIndex,
                     MPI_Comm             mpi_comm_mysim,
+                    MPI_Comm             mpi_comm_mysim_world,
                     const DeviceContext& deviceContext,
                     int                  pulse,
+                    bool                 useNvshmem,
                     gmx_wallcycle*       wcycle);
     ~GpuHaloExchange();
     GpuHaloExchange(GpuHaloExchange&& source) noexcept;
@@ -108,6 +113,12 @@ public:
      */
     void reinitHalo(DeviceBuffer<RVec> d_coordinateBuffer, DeviceBuffer<RVec> d_forcesBuffer);
 
+    /*! \brief
+     * (Re-) Initialization for NVSHMEM Signal objects
+     * \param [in] cr  Communication structure ref.
+     * \param [in] signalObjOffset  offset of the signal object corresponding to given pulse/dim.
+     */
+    void reinitNvshmemSignal(const t_commrec& cr, int signalObjOffset);
 
     /*! \brief GPU halo exchange of coordinates buffer.
      *
@@ -131,6 +142,10 @@ public:
      *  \returns  The event to synchronize the stream that consumes forces on device.
      */
     GpuEventSynchronizer* getForcesReadyOnDeviceEvent();
+
+    /*! \brief Destructor for symmetric d_recvBuf used by NVSHMEM.
+     */
+    void destroyGpuHaloExchangeNvshmemBuf();
 
 private:
     class Impl;

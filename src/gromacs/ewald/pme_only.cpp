@@ -241,6 +241,7 @@ static gmx_pme_t* gmx_pmeonly_switch(std::vector<gmx_pme_t*>* pmedata,
  * \param[out] ewaldcoeff_lj          Ewald cut-off parameter for Lennard-Jones, if received.
  * \param[in]  useGpuForPme           Flag on whether PME is on GPU.
  * \param[in]  stateGpu               GPU state propagator object.
+ * \param[in]  cr                     The commrec object.
  * \param[in]  runMode                PME run mode.
  *
  * \retval pmerecvqxX                 All parameters were set, chargeA and chargeB can be NULL.
@@ -263,6 +264,7 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
                                       real*                        ewaldcoeff_lj,
                                       bool                         useGpuForPme,
                                       gmx::StatePropagatorDataGpu* stateGpu,
+                                      const t_commrec&             cr,
                                       PmeRunMode gmx_unused        runMode)
 {
     int status = -1;
@@ -437,7 +439,7 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
                 gmx_pme_reinit_atoms(pme, nat, pme_pp->chargeA, pme_pp->chargeB);
                 if (useGpuForPme)
                 {
-                    stateGpu->reinit(nat, nat);
+                    stateGpu->reinit(nat, nat, cr, pme_pp->peerRankId);
                     pme_gpu_set_device_x(pme, stateGpu->getCoordinates());
                 }
                 if (pme_pp->useGpuDirectComm)
@@ -530,6 +532,7 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
     GMX_UNUSED_VALUE(ewaldcoeff_lj);
     GMX_UNUSED_VALUE(useGpuForPme);
     GMX_UNUSED_VALUE(stateGpu);
+    GMX_UNUSED_VALUE(cr);
 
     status = pmerecvqxX;
 #endif
@@ -710,6 +713,7 @@ int gmx_pmeonly(struct gmx_pme_t**              pmeFromRunnerPtr,
                 deviceStreamManager->context(),
                 GpuApiCallBehavior::Async,
                 pme_gpu_get_block_size(pmeFromRunner),
+                useNvshmem,
                 wcycle);
     }
 
@@ -741,6 +745,7 @@ int gmx_pmeonly(struct gmx_pme_t**              pmeFromRunnerPtr,
                                              &ewaldcoeff_lj,
                                              useGpuForPme,
                                              stateGpu.get(),
+                                             *cr,
                                              runMode);
 
             if (ret == pmerecvqxSWITCHGRID)
