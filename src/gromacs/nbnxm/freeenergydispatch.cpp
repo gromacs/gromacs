@@ -77,13 +77,13 @@ void setReductionMaskFromFepPairlist(const t_nblist& gmx_restrict       nlist,
     gmx::ArrayRef<const int> iinr = nlist.iinr;
     gmx::ArrayRef<const int> jjnr = nlist.jjnr;
 
-    for (int i : iinr)
+    for (int i = 0; i < nlist.nri; i++)
     {
-        threadForceBuffer->addAtomToMask(i);
+        threadForceBuffer->addAtomToMask(iinr[i]);
     }
-    for (int j : jjnr)
+    for (int j = 0; j < nlist.nrj; j++)
     {
-        threadForceBuffer->addAtomToMask(j);
+        threadForceBuffer->addAtomToMask(jjnr[j]);
     }
 }
 

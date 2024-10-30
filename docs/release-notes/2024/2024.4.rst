@@ -119,6 +119,16 @@ measured. Now special forces are excluded from the timings.
 
 :issue:`5188`
 
+Fix incorrect memory access with perturbed non-bonded and OpenMP
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Old, invalid indices could be flagged for reduction of force buffers
+over OpenMP threads for perturbed non-bonded interactions. This could
+never lead to incorrect results or crashes. But performance might
+be improved now.
+
+:issue:`5220`
+       
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
