@@ -248,3 +248,15 @@ request in the `Colvars repository <https://github.com/Colvars/colvars>`_.
   <https://github.com/Colvars/colvars/pull/694>`_).
 * Prevented the creation of spurious output files for runtime histograms
   (`Colvars PR 675 <https://github.com/Colvars/colvars/pull/675>`_).
+
+Enable NVCC flags checks for Windows
+""""""""""""""""""""""""""""""""""""
+
+When building GROMACS for Windows with CUDA support, the checks for testing
+compatible compute architectures were disabled. Hence, GROMACS 
+was trying to compile for all of them which can induced failed builds when 
+CUDA is not compatible anymore with old compute architectures.
+
+:issue:`5152`
+
+
