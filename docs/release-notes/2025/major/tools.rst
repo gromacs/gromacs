@@ -8,7 +8,7 @@ Improvements to |Gromacs| tools
    a space between the colon and number!
 
 ``gmx grompp`` now checks dihedral coefficients sum
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 The sum of dihedral parameters of type 3 (i.e Ryckaert-Bellemans or Fourier
 dihedrals) is now checked during preprocessing. In free energy simulations,
@@ -43,8 +43,9 @@ When computing viscosity from very long trajectories, it may be preferable to ha
 to obtain a more accurate average and avoid the long-time diffusive behavior of the pressure integral.
 
 :issue:`5114`
+
 New features in ``gmx hbond``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+"""""""""""""""""""""""""""""
 
 A set of additional functionality has been added: dynamic selections are now
 available (as well as detailed output for them in an atomic index file); added
@@ -52,3 +53,9 @@ the ability to customize the geometric criterion for hydrogen bond formation
 using custom distances and angles (via "-hbr" and "-hba" flags respectively);
 added the ability to add any atomic elements as donors or acceptors of hydrogen
 bonds (via "-de" and "-ea" flags respectively).
+
+Improve reading performance of large .gro files
+"""""""""""""""""""""""""""""""""""""""""""""""
+
+``gmx grompp`` is now up to 30% faster when reading system coordinates
+from a large :ref:`gro` file.
