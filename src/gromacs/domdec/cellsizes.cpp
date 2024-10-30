@@ -183,21 +183,22 @@ real grid_jump_limit(const gmx_domdec_comm_t* comm, real cutoff, int dim_ind)
  * comm->cellsize_min, for bonded and initial non-bonded cut-offs,
  * and, possibly, a longer cut-off limit set for PME load balancing.
  */
-static real cellsize_min_dlb(gmx_domdec_comm_t* comm, int dim_ind, int dim)
+static real cellsize_min_dlb(const gmx_domdec_comm_t& comm, int dim_ind, int dim)
 {
-    real cellsize_min = comm->cellsize_min[dim];
+    real cellsize_min = comm.cellsize_min[dim];
 
-    if (!comm->bVacDLBNoLimit)
+    if (!comm.bVacDLBNoLimit)
     {
         /* The cut-off might have changed, e.g. by PME load balacning,
          * from the value used to set comm->cellsize_min, so check it.
          */
-        cellsize_min = std::max(cellsize_min, comm->systemInfo.cutoff / comm->cd[dim_ind].np_dlb);
+        cellsize_min = std::max(cellsize_min, comm.systemInfo.cutoff / comm.maxNumPulsesDlb[dim_ind]);
 
-        if (comm->bPMELoadBalDLBLimits)
+        if (comm.bPMELoadBalDLBLimits)
         {
             /* Check for the cut-off limit set by the PME load balancing */
-            cellsize_min = std::max(cellsize_min, comm->PMELoadBal_max_cutoff / comm->cd[dim_ind].np_dlb);
+            cellsize_min =
+                    std::max(cellsize_min, comm.PMELoadBal_max_cutoff / comm.maxNumPulsesDlb[dim_ind]);
         }
     }
 
@@ -631,7 +632,7 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t*      dd,
         }
     }
 
-    real cellsize_limit_f = cellsize_min_dlb(comm, d, dim) / ddbox->box_size[dim];
+    real cellsize_limit_f = cellsize_min_dlb(*dd->comm, d, dim) / ddbox->box_size[dim];
     cellsize_limit_f *= DD_CELL_MARGIN;
     real dist_min_f_hard = grid_jump_limit(comm, comm->systemInfo.cutoff, d) / ddbox->box_size[dim];
     real dist_min_f      = dist_min_f_hard * DD_CELL_MARGIN;

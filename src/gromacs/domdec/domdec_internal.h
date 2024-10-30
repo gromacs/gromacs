@@ -51,6 +51,7 @@
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/utility/defaultinitializationallocator.h"
+#include "gromacs/utility/fixedcapacityvector.h"
 #include "gromacs/utility/listoflists.h"
 
 struct t_commrec;
@@ -91,8 +92,6 @@ struct gmx_domdec_comm_dim_t
     /* Returns the number of grid pulses (the number of domains in the halo along this dimension) */
     int numPulses() const { return ind.size(); }
 
-    /**< For dlb, for use with edlbAUTO          */
-    int np_dlb = 0;
     /**< The indices to communicate, size np     */
     std::vector<gmx_domdec_ind_t> ind;
     /**< Can we receive data in place?            */
@@ -582,6 +581,8 @@ struct gmx_domdec_comm_t // NOLINT (clang-analyzer-optin.performance.Padding)
     gmx_bool bCheckWhetherToTurnDlbOn = false;
     /* The first DD count since we are running without DLB */
     int ddPartioningCountFirstDlbOff = 0;
+    //! The maximum number of communication pulses allowed along the DD dimensions with DLB
+    gmx::FixedCapacityVector<int, DIM> maxNumPulsesDlb;
 
     /* Cell sizes for static load balancing, first index cartesian */
     std::array<std::vector<real>, DIM> slb_frac;

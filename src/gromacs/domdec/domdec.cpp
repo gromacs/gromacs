@@ -2279,14 +2279,14 @@ static void writeSettings(gmx::TextWriter*   log,
                           real               dlb_scale,
                           const gmx_ddbox_t* ddbox)
 {
-    gmx_domdec_comm_t* comm = dd->comm.get();
+    const gmx_domdec_comm_t* comm = dd->comm.get();
 
     if (bDynLoadBal)
     {
         log->writeString("The maximum number of communication pulses is:");
         for (int d = 0; d < dd->ndim; d++)
         {
-            log->writeStringFormatted(" %c %d", dim2char(dd->dim[d]), comm->cd[d].np_dlb);
+            log->writeStringFormatted(" %c %d", dim2char(dd->dim[d]), comm->maxNumPulsesDlb[d]);
         }
         log->ensureLineBreak();
         log->writeLineFormatted("The minimum size for domain decomposition cells is %.3f nm",
@@ -2488,9 +2488,9 @@ static void set_cell_limits_dlb(const gmx::MDLogger& mdlog,
     comm->bVacDLBNoLimit = (inputrec.pbcType == PbcType::No);
     for (int d = 0; d < dd->ndim; d++)
     {
-        comm->cd[d].np_dlb = std::min(npulse, dd->numCells[dd->dim[d]] - 1);
-        maxNumPulses       = std::max(maxNumPulses, comm->cd[d].np_dlb);
-        if (comm->cd[d].np_dlb < dd->numCells[dd->dim[d]] - 1)
+        comm->maxNumPulsesDlb.push_back(std::min(npulse, dd->numCells[dd->dim[d]] - 1));
+        maxNumPulses = std::max(maxNumPulses, comm->maxNumPulsesDlb[d]);
+        if (comm->maxNumPulsesDlb[d] < dd->numCells[dd->dim[d]] - 1)
         {
             comm->bVacDLBNoLimit = FALSE;
         }
@@ -2506,13 +2506,14 @@ static void set_cell_limits_dlb(const gmx::MDLogger& mdlog,
     /* Set the minimum cell size for each DD dimension */
     for (int d = 0; d < dd->ndim; d++)
     {
-        if (comm->bVacDLBNoLimit || comm->cd[d].np_dlb * comm->cellsize_limit >= comm->systemInfo.cutoff)
+        if (comm->bVacDLBNoLimit
+            || comm->maxNumPulsesDlb[d] * comm->cellsize_limit >= comm->systemInfo.cutoff)
         {
             comm->cellsize_min_dlb[dd->dim[d]] = comm->cellsize_limit;
         }
         else
         {
-            comm->cellsize_min_dlb[dd->dim[d]] = comm->systemInfo.cutoff / comm->cd[d].np_dlb;
+            comm->cellsize_min_dlb[dd->dim[d]] = comm->systemInfo.cutoff / comm->maxNumPulsesDlb[d];
         }
     }
     if (comm->cutoff_mbody <= 0)
@@ -2989,9 +2990,9 @@ static gmx_bool test_dd_cutoff(const t_commrec*               cr,
         const int np = getNumCommunicationPulsesForDim(
                 ddbox, dim, dd->numCells[dim], dd->unitCellInfo.ddBoxIsDynamic, cutoffRequested);
 
-        if (!isDlbDisabled(dd->comm->dlbState) && (dim < ddbox.npbcdim) && (dd->comm->cd[d].np_dlb > 0))
+        if (!isDlbDisabled(dd->comm->dlbState) && dim < ddbox.npbcdim && dd->comm->maxNumPulsesDlb[d] > 0)
         {
-            if (np > dd->comm->cd[d].np_dlb)
+            if (np > dd->comm->maxNumPulsesDlb[d])
             {
                 return FALSE;
             }
@@ -3002,7 +3003,7 @@ static gmx_bool test_dd_cutoff(const t_commrec*               cr,
              */
             real cellSizeAlongDim =
                     (dd->comm->cell_x1[dim] - dd->comm->cell_x0[dim]) * ddbox.skew_fac[dim];
-            if (cellSizeAlongDim * dd->comm->cd[d].np_dlb < cutoffRequested)
+            if (cellSizeAlongDim * dd->comm->maxNumPulsesDlb[d] < cutoffRequested)
             {
                 LocallyLimited = 1;
             }

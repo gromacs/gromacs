@@ -77,7 +77,7 @@ void set_dlb_limits(gmx_domdec_t* dd)
     for (int d = 0; d < dd->ndim; d++)
     {
         /* Set the number of pulses to the value for DLB */
-        dd->comm->cd[d].ind.resize(dd->comm->cd[d].np_dlb);
+        dd->comm->cd[d].ind.resize(dd->comm->maxNumPulsesDlb[d]);
 
         dd->comm->cellsize_min[dd->dim[d]] = dd->comm->cellsize_min_dlb[dd->dim[d]];
     }
