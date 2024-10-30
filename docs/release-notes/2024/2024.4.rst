@@ -141,6 +141,16 @@ or no warnings when B-state of the system had non-zero net charge.
 
 :issue:`5200`
 
+grompp, and mdrun, could exit with large mass differences
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When masses of atoms differed more than a factor 327, both ``gmx grompp``
+and ``gmx mdrun`` could exit with an assertion failure about an infinite
+enery drift estimate.
+
+:issue:`5222`
+
+
 Fix dump crash with Colvars values
 """"""""""""""""""""""""""""""""""
 
