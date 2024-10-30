@@ -45,6 +45,15 @@ apart from systems crashing, so the chance of undetected incorrect results is sm
 
 :issue:`5138`
 
+Add effect of perturbed masses to foreign Hamiltonian differences
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The effect of perturbed masses was missing from the foreign Hamiltonian
+differences. This meant that effects of perturbed masses were ignored
+by ``gmx bar``. Note that perturbed masses did contribute to dH/dlambda.
+
+:issue:`5195`
+
 Fix illegal memory access with more VCM than T-coupling groups
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
