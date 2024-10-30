@@ -590,7 +590,7 @@ static std::vector<sycl::device> partitionDevices(const std::vector<sycl::device
 std::vector<std::unique_ptr<DeviceInformation>> findDevices()
 {
     std::vector<std::unique_ptr<DeviceInformation>> deviceInfos(0);
-    const std::vector<sycl::device> allDevices = sycl::device::get_devices(sycl::info::device_type::gpu);
+    std::vector<sycl::device> allDevices = sycl::device::get_devices(sycl::info::device_type::gpu);
     const std::vector<sycl::device> devices = partitionDevices(std::move(allDevices));
     deviceInfos.reserve(devices.size());
     for (const auto& syclDevice : devices)

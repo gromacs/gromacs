@@ -939,28 +939,17 @@ static auto nbnxmKernel(sycl::handler& cgh,
             constexpr int unrollFactor = [=]() {
                 if constexpr (!doCalcEnergies && !doPruneNBL)
                 {
-                    if constexpr (props.elecCutoff || props.elecRF
-                                  || (props.elecEwald && !props.vdwFSwitch && !props.vdwPSwitch
-                                      && (props.vdwCombLB || __SYCL_CUDA_ARCH__ == 800)))
-                    {
-                        return 4;
-                    }
-                    else
-                    {
-                        return 2;
-                    }
+                    return (props.elecCutoff || props.elecRF
+                            || (props.elecEwald && !props.vdwFSwitch && !props.vdwPSwitch
+                                && (props.vdwCombLB || __SYCL_CUDA_ARCH__ == 800)))
+                                                         ? 4
+                                                         : 2;
                 }
                 else
                 {
-                    if constexpr (props.elecCutoff
-                                  || (props.elecRF && !props.vdwFSwitch && !props.vdwPSwitch))
-                    {
-                        return 2;
-                    }
-                    else
-                    {
-                        return 1;
-                    }
+                    return (props.elecCutoff || (props.elecRF && !props.vdwFSwitch && !props.vdwPSwitch))
+                                                         ? 2
+                                                         : 1;
                 }
             }();
 #else

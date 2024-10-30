@@ -156,7 +156,8 @@ Gpu3dFft::ImplSyclVkfft::Impl::Impl(bool allocateGrids,
     GMX_RELEASE_ASSERT(allocateGrids == false, "Grids needs to be pre-allocated");
     GMX_RELEASE_ASSERT(gridSizesInXForEachRank.size() == 1 && gridSizesInYForEachRank.size() == 1,
                        "FFT decomposition not implemented with the SYCL VkFFT backend");
-    GMX_RELEASE_ASSERT(performOutOfPlaceFFT, "Only out-of-place FFT is implemented in hipSYCL");
+    GMX_RELEASE_ASSERT(performOutOfPlaceFFT,
+                       "Only out-of-place FFT is implemented in the SYCL VkFFT backend");
     GMX_RELEASE_ASSERT(realGrid, "Bad (null) input real-space grid");
     GMX_RELEASE_ASSERT(complexGrid, "Bad (null) input complex grid");
 

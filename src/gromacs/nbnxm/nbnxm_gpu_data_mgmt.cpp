@@ -484,8 +484,6 @@ NbnxmGpu* gpu_init(const DeviceStreamManager& deviceStreamManager,
                        "Local non-bonded stream should be initialized to use GPU for non-bonded.");
     const DeviceStream& localStream = deviceStreamManager.stream(DeviceStreamType::NonBondedLocal);
     nb->deviceStreams[InteractionLocality::Local] = &localStream;
-    // In general, it's not strictly necessary to use 2 streams for SYCL, since they are
-    // out-of-order. But for the time being, it will be less disruptive to keep them.
     if (nb->bUseTwoStreams)
     {
         GMX_RELEASE_ASSERT(deviceStreamManager.streamIsValid(DeviceStreamType::NonBondedNonLocal),

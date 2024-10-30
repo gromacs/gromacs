@@ -78,9 +78,6 @@ function(gmx_manage_vkfft BACKEND_NAME)
         list(APPEND GMX_PUBLIC_LIBRARIES CUDA::cuda_driver) # Workaround for #4902, #4922
         set(GMX_PUBLIC_LIBRARIES ${GMX_PUBLIC_LIBRARIES} PARENT_SCOPE)
         if (GMX_SYCL_DPCPP)
-            if(NOT DEFINED ENV{GITLAB_CI}) # Don't warn in CI builds
-                message(WARNING "The use of VkFFT with CUDA backend is experimental and not intended for production use")
-            endif()
             target_link_libraries(VkFFT INTERFACE CUDA::cudart) # Needed only with DPC++
         endif()
     elseif(BACKEND_NAME STREQUAL "HIP")
