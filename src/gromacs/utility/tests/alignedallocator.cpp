@@ -86,11 +86,30 @@ TYPED_TEST(AllocatorTest, StatelessAllocatorUsesNoMemory)
     EXPECT_EQ(sizeof(std::vector<value_type>), sizeof(std::vector<value_type, TypeParam>));
 }
 
+TYPED_TEST(AllocatorTest, Comparison)
+{
+    {
+        SCOPED_TRACE("Allocators with identical policy objects compare equal");
+        EXPECT_EQ(TypeParam{}, TypeParam{});
+    }
+}
+
 TEST(AllocatorUntypedTest, Comparison)
 {
-    // Should always be true for the same policy, indpendent of value_type
-    EXPECT_EQ(AlignedAllocator<float>{}, AlignedAllocator<double>{});
-    EXPECT_EQ(PageAlignedAllocator<float>{}, PageAlignedAllocator<double>{});
+    {
+        SCOPED_TRACE(
+                "Allocators with identical policy types compare equal independently of the type of "
+                "object allocated");
+        EXPECT_EQ(AlignedAllocator<float>{}, AlignedAllocator<double>{});
+        EXPECT_EQ(PageAlignedAllocator<float>{}, PageAlignedAllocator<double>{});
+    }
+    {
+        SCOPED_TRACE(
+                "Allocators with different policy types do not compare equal regardless of type of "
+                "object allocated");
+        EXPECT_NE(AlignedAllocator<float>{}, PageAlignedAllocator<float>{});
+        EXPECT_NE(AlignedAllocator<float>{}, PageAlignedAllocator<double>{});
+    }
 }
 
 } // namespace test

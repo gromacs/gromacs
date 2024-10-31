@@ -330,9 +330,16 @@ TYPED_TEST(HostAllocatorTestNoMem, Swap)
 TYPED_TEST(HostAllocatorTestNoMem, Comparison)
 {
     using AllocatorType = typename TestFixture::VectorType::allocator_type;
-    EXPECT_EQ(AllocatorType{}, AllocatorType{});
-    // Should be false for different pinning policy
-    EXPECT_NE(AllocatorType{}, AllocatorType{ PinningPolicy::PinnedIfSupported });
+    {
+        SCOPED_TRACE("Allocators with identical policy objects compare equal");
+        EXPECT_EQ(AllocatorType{}, AllocatorType{});
+    }
+    {
+        SCOPED_TRACE("Allocators with different policy objects may or may not compare equal");
+        EXPECT_NE(AllocatorType{}, AllocatorType{ PinningPolicy::PinnedIfSupported });
+        EXPECT_EQ(AllocatorType{ PinningPolicy::PinnedIfSupported },
+                  AllocatorType{ PinningPolicy::PinnedIfSupported });
+    }
 }
 
 #if GMX_GPU_CUDA || GMX_GPU_SYCL || GMX_GPU_HIP
@@ -411,8 +418,19 @@ TYPED_TEST(HostAllocatorTest, StatefulAllocatorUsesMemory)
 
 TEST(HostAllocatorUntypedTest, Comparison)
 {
-    // Should always be true for the same policy, indpendent of value_type
-    EXPECT_EQ(HostAllocator<float>{}, HostAllocator<double>{});
+    {
+        SCOPED_TRACE(
+                "Allocators with identical policy types compare equal independently of the type of "
+                "object allocated");
+        EXPECT_EQ(HostAllocator<float>{}, HostAllocator<double>{});
+    }
+    {
+        SCOPED_TRACE(
+                "Allocators with different policy types do not compare equal regardless of type of "
+                "object allocated");
+        EXPECT_NE(HostAllocator<float>{}, PageAlignedAllocator<float>{});
+        EXPECT_NE(HostAllocator<float>{}, PageAlignedAllocator<double>{});
+    }
 }
 
 //! Declare allocator types to test.

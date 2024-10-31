@@ -143,33 +143,45 @@ public:
      * \param n  number of objects previously passed to allocate()
      */
     void deallocate(value_type* p, std::size_t gmx_unused n) { AllocationPolicy::free(p); }
+    //! Defer to the allocation policy
+    using is_always_equal = typename AllocationPolicy::is_always_equal;
+};
 
-    /*! \brief Return true if two allocators are identical
-     *
-     * This is a member function of the left-hand-side allocator.
-     * Always true for stateless policies. Has to be defined in the policy for stateful policies.
-     * FUTURE: Can be removed with C++17 (is_always_equal)
-     *
-     * \todo Use std::is_empty_v when CUDA 11 is a requirement.
-     */
-    template<class T2, class A = AllocationPolicy, typename = std::enable_if_t<std::is_empty<A>::value>>
-    bool operator==(const Allocator<T2, AllocationPolicy>& /*unused*/) const
+/*! \brief Return true if two allocators are identical
+ *
+ * True if they have identical policies that are defined to be always
+ * equal (which is generally true for a stateless policy). An
+ * allocation policy with state should typically define
+ * is_always_equal to std::false_type and provide a correct equality
+ * operator. */
+template<class T1, class Policy1, class T2, class Policy2>
+bool operator==(const Allocator<T1, Policy1>& a, const Allocator<T2, Policy2>& b)
+{
+    if constexpr (!std::is_same_v<Policy1, Policy2>)
+    {
+        return false;
+    }
+    else if constexpr (Policy1::is_always_equal::value)
     {
         return true;
     }
-
-    /*! \brief Return true if two allocators are different
-     *
-     * \param rhs Other allocator.
-     *
-     * This is a member function of the left-hand-side allocator.
-     */
-    template<class T2>
-    bool operator!=(const Allocator<T2, AllocationPolicy>& rhs) const
+    else
     {
-        return !(*this == rhs);
+        const Policy1& ap = a;
+        const Policy2& bp = b;
+        // Note that an allocator policy that defines is_always_equal
+        // as std::true_type does not need to implement this
+        // comparison operation.
+        return ap == bp;
     }
-};
+}
+
+//! Return true if two allocators are different
+template<class T1, class Policy1, class T2, class Policy2>
+bool operator!=(const Allocator<T1, Policy1>& a, const Allocator<T2, Policy2>& b)
+{
+    return !(a == b);
+}
 
 } // namespace gmx
 

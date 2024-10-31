@@ -86,6 +86,8 @@ public:
      *        pointers obtained the system malloc().
      */
     static void free(void* p);
+    //! Stateless allocation policies are always equal
+    using is_always_equal = std::true_type;
 };
 
 /*! \brief Aligned memory allocator.
@@ -145,6 +147,8 @@ public:
      *        pointers obtained the system malloc().
      */
     static void free(void* p);
+    //! Stateless allocation policies are always equal
+    using is_always_equal = std::true_type;
 };
 
 /*! \brief PageAligned memory allocator.

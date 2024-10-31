@@ -213,6 +213,16 @@ public:
             return {};
         }
     }
+    //! This allocation policy has state and might not compare equal
+    using is_always_equal = std::false_type;
+    /*! \brief Return true if two HostAllocationPolicies compare equal
+     *
+     * This is a member function of the left-hand-side policy in
+     * an equality comparison. */
+    bool operator==(const HostAllocationPolicy& b) const
+    {
+        return this->pinningPolicy() == b.pinningPolicy();
+    }
 
 private:
     //! Pinning policy
@@ -220,16 +230,6 @@ private:
     //! Whether to propagate the allocator during copy construction by a container.
     bool propagateDuringContainerCopyConstruction_;
 };
-
-/*! \brief Return true if two allocators are identical
- *
- * True if pinning policy is the same.
- */
-template<class T1, class T2>
-bool operator==(const Allocator<T1, HostAllocationPolicy>& a, const Allocator<T2, HostAllocationPolicy>& b)
-{
-    return a.pinningPolicy() == b.pinningPolicy();
-}
 
 /*! \brief Helper function for changing the pinning policy of a pinnable vector.
  *
