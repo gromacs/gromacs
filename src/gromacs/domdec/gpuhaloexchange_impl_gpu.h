@@ -54,6 +54,10 @@
 
 #include "domdec_internal.h"
 
+#if GMX_NVSHMEM
+#    include <cuda/barrier>
+#endif
+
 #if GMX_GPU_SYCL
 #    include "gromacs/gpu_utils/gputraits_sycl.h"
 #endif
@@ -94,8 +98,18 @@ struct nvshmemHaloExchangeOps
     // signal counter is the timestep value and is same for all the pulse/dim in same
     // timestep.
     uint64_t signalReceiverRankXCounter_ = 0;
+    //! value to initialize the arrive-wait barrier, this is grid size of X kernel.
+    uint32_t arriveWaitBarrierVal_ = 0;
+    //! Grid size of X kernel.
+    uint32_t gridDimX_ = 0;
+#if GMX_NVSHMEM
+    //! device scoped arrive-wait barrier to sync threadblocks for signalling writes
+    cuda::barrier<cuda::thread_scope_device>* d_arriveWaitBarrier_ = nullptr;
+#endif
     //! offset from which signal object for the given pulse/dim should be used.
     int signalObjOffset_ = 0;
+    //! Thread block size for NVSHMEM based X and F kernels.
+    const static int c_nvshmemThreadsPerBlock = 256 * 4;
 };
 
 /*! \internal \brief Class with interfaces and data for GPU Halo Exchange */
@@ -246,6 +260,10 @@ private:
      * \param [in] coordinatesReadyOnDeviceEvent event recorded when coordinates/forces are ready to device.
      */
     void enqueueWaitRemoteCoordinatesReadyEvent(GpuEventSynchronizer* coordinatesReadyOnDeviceEvent);
+
+    //! NVSHMEM-specific function for setting the grid size and
+    // initialize the arrive wait barrier for X kernel.
+    void reinitXGridSizeAndDevBarrier();
 
     //! Domain decomposition object
     gmx_domdec_t* dd_ = nullptr;

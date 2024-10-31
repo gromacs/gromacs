@@ -57,7 +57,6 @@ if(GMX_NVSHMEM)
     add_library(nvshmem_device_lib STATIC IMPORTED GLOBAL)
     set_target_properties(nvshmem_device_lib PROPERTIES IMPORTED_LOCATION ${NVSHMEM_DEVICE_LIBS})
     target_include_directories(nvshmem_device_lib INTERFACE $<BUILD_INTERFACE:${NVSHMEM_INCLUDE}>)
-    target_include_directories(nvshmem_device_lib INTERFACE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
     set_target_properties(nvshmem_device_lib PROPERTIES IMPORTED_LINK_INTERFACE_LANGUAGES CUDA)
 
     # Since NVSHMEM 3.06, minium device support is Volta (SM 70+) so
