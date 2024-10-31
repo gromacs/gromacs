@@ -50,6 +50,7 @@ gmx_add_unit_test(UtilityUnitTests utility-test
         path.cpp
         physicalnodecommunicator.cpp
         range.cpp
+        scope_guard.cpp
         strconvert.cpp
         stringtoenumvalueconverter.cpp
         stringutil.cpp
