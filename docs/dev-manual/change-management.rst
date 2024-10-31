@@ -36,21 +36,21 @@ You will need a public ssh key::
     ssh-keygen -t rsa -C "your.email@address.com"
     cat ~/.ssh/id_rsa.pub
 
-Copy the output of the last command, got to gitlab.com, find you user in the
-right top corner and select settings.
+Copy the output of the last command, go to gitlab.com, click your user symbol in
+the right top corner of the panel to the left, and select Preferences.
 
-Chose SSH keys in the menu on the left and past your key in the text field.
+Choose SSH keys in the menu on the left and paste your key in the text field.
 
 Creating issues
 ---------------
 
 The meta-level code design and discussions is organised in issues and visible at
-https://gitlab.com/gromacs/gromacs/-/issues. Please check if if your issue or a
-similar issue already exists before creating a new one. See :doc:`reportstyle`
+https://gitlab.com/gromacs/gromacs/-/issues. Please check if your issue, or a
+similar issue, already exists before creating a new one. See :doc:`reportstyle`
 for more information.
 
-Note that all Redmine issues have been transferred to gitlab with the same issue
-numbers as used in gitlab. However, comments and discussion are now represented
+Note that all Redmine issues have been transferred to gitlab retaining the original
+issue number from Redmine. However, comments and discussion are now represented
 by gitlab user `@acmnpv <https://gitlab.com/acmnpv>`__ - the original authors are
 found inline at the bottom of the comments.
 
@@ -90,8 +90,15 @@ than what is required for counting as a ``Developer``.
 Naming branches
 ---------------
 
-Good names: documentation_UpdateDevelopersDocsTOGitLab, nbnxm_MakeNbnxmGPUIntoClass, pme_FEPPMEGPU.
+Good names: documentation_UpdateDevelopersDocsTOGitLab, nbnxm_MakeNbnxmGPUIntoClass, pme_FEPPMEGPU,
+1234-ml-fix-issue.
+
 Bad names: branch1234, mybranch, test, etc
+
+N.b., prefixing the branch with an issue number (such as 1234-ml-fix-issue above), followed by a
+hyphen, automatically links the branch to the issue. Milestones and labels are copied and the
+issue will be closed when the MR is merged, see `the Gitlab documentation
+<https://docs.gitlab.com/ee/user/project/repository/branches/#prefix-branch-names-with-issue-numbers>`__.
 
 Documentation
 -------------
@@ -146,7 +153,7 @@ The reviewing workflow is the following:
    a member of either ``GMX Core`` or ``GMX Developers`` approval groups.
 #. Usually a patch goes through several cycles of voting, commenting and
    updating before it becomes merged, with votes from the developers indicating
-   if they think that change hat progressed enough to be included.
+   if they think that the change has progressed enough to be included.
 #. A change is submitted for merging and post-submit testing
    by clicking "Merge".
 
@@ -163,7 +170,7 @@ Guide for reviewing
 -------------------
 
 -  First and foremost, check correctness to the extent possible;
--  As portability and performance are the next most important things do check
+-  As portability and performance are the next most important things, do check
    for potential issues;
 -  Check adherence to the :ref:`coding standards <style-guidelines>`;
 -  We should try to ensure that commits that implement bugfixes (as
@@ -174,13 +181,13 @@ Guide for reviewing
 
    -  if present in the `issue tracker`_, it has to contain a valid reference to the
       issue;
-   -  if it's a **major bug**, there has to be a bug report filed in the
+   -  if it is a **major bug**, there has to be a bug report filed in the
       `issue tracker`_  (with urgent or
       immediate priority) and referenced appropriately.
 
 -  If the commit is a **feature/task** implementation:
 
-   -  if it's present in the `issue tracker`_ it
+   -  if it is present in the `issue tracker`_ it
       has to contain a valid reference to the issue;
    -  If no current issue is currently present and the change
       would benefit of one for future explanation on why it was

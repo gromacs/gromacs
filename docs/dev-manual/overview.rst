@@ -293,7 +293,7 @@ The Doxygen documentation is made of a few different parts.  Use the list
 below as a guideline on where to look for a particular kind of content.
 Since the documentation has been written over a long period of time and the
 approach has evolved, not all the documentation yet follows these guidelines,
-but this is where we are aiming at.
+but this is what we are aiming at.
 
 documentation pages
   These contain mainly overview content, from general-level introduction down

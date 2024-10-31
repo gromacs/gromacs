@@ -1,7 +1,7 @@
 Using Doxygen
 =============
 
-This page documents how Doxygen is set up in the |Gromacs| source tree,
+This section documents how Doxygen is set up in the |Gromacs| source tree,
 as well as guidelines for adding new Doxygen comments.  Examples are included,
 as well as tips and tricks for avoiding Doxygen warnings.  The guidelines focus
 on C++ code and other new code that follows the new module layout.
@@ -63,7 +63,7 @@ module.
 Building the documentation
 --------------------------
 
-If you want to see up-to-date documentation, you can download artifacts from 
+If you want to see up-to-date documentation, you can download artifacts from
 the ``webpage`` job of the latest scheduled pipeline for a corresponding branch
 (https://gitlab.com/gromacs/gromacs/-/pipelines?page=1&scope=all&source=schedule).
 CI also runs Doxygen for all changes pushed to GitLab for
@@ -548,7 +548,7 @@ of ``\addtogroup`` to add multiple functions into a module group without repeate
    */
   int gmx_function(int value);
 
-  /* Any . in the brief description should be escaped as \. */
+  /* Any . in the brief description, except at the end, should be escaped as \. */
   /** Brief description for this function. */
   int gmx_simple_function();
 

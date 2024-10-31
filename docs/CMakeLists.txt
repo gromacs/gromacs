@@ -322,7 +322,7 @@ if (SPHINX_FOUND)
         reference-manual/analysis/plots/rama.pdf
         reference-manual/analysis/plots/rdfO-O.pdf
         reference-manual/analysis/plots/rdf.pdf
-        reference-manual/analysis/plots/sgangle.pdf 
+        reference-manual/analysis/plots/sgangle.pdf
         )
     set(SPHINX_SOURCE_FILES
         index.rst
@@ -594,16 +594,6 @@ if (SPHINX_FOUND)
         COMMENT "Configuring Sphinx configuration file")
     gmx_add_sphinx_input_file(${SPHINX_CONFIG_FILE})
     gmx_add_sphinx_source_files(FILES ${SPHINX_SOURCE_FILES})
-    if (EXISTS ${RELENG_PATH}/docs/FileList.cmake)
-        include(${RELENG_PATH}/docs/FileList.cmake)
-        gmx_add_sphinx_source_files(
-            FROM ${RELENG_PATH}/docs TO dev-manual/releng PREFIX releng/docs/
-            FILES ${RELENG_SPHINX_FILES})
-    else()
-        gmx_add_sphinx_source_files(FILES
-            dev-manual/releng/index.rst
-            )
-    endif()
 
     gmx_add_sphinx_source_files(
             FILES
@@ -620,8 +610,8 @@ if (SPHINX_FOUND)
     else()
         gmx_add_sphinx_source_files(
             FROM ${CMAKE_CURRENT_SOURCE_DIR}/gmxapi/userguide-stub
-            TO gmxapi/userguide/ 
-            FILES pythonreference.rst 
+            TO gmxapi/userguide/
+            FILES pythonreference.rst
             )
     endif ()
 

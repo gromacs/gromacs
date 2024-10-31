@@ -57,7 +57,7 @@ leave most settings to default values with the exception of the ones
 explicitly tested in order to be sensitive to changes in the default
 values. The test set will be enlarged as we discover interesting test
 systems and corner cases. Under double precision, some additional
-tests are ran, and some other tests are ran using a lower tolerance.
+tests are run, and some other tests are run using a lower tolerance.
 
 
 Integrator convergence

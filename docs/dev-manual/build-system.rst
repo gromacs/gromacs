@@ -333,7 +333,7 @@ Variables affecting compilation/linking
 
 .. cmake:: GMX_THREAD_MPI
 
-   Enable thread-MPI support for inter-node parallelism. Defaults to ``ON``.
+   Enable thread-MPI support for intra-node parallelism. Defaults to ``ON``.
 
 .. cmake:: GMX_USE_RDTSCP
 

@@ -88,7 +88,7 @@ GitLab CI job parameters, but note the following |Gromacs|-specific conventions.
         e.g. ``!reference [.rules:<something>, rules]``. Each such reference
         can be used as an individual rule in the list.
         To reduce errors and unexpected behavior, restrict usage of these controls
-        to regular job definitions (don't use in "hidden" or parent jobs).
+        to regular job definitions (do not use in "hidden" or parent jobs).
         Note that *rules* is not compatible with the older *only* and *except*
         parameters. We have standardized on the (newer) *rules* mechanism.
 
@@ -248,7 +248,7 @@ Other important variable keys are as follows.
         Read-only environment variable used to control behaviour of script uploading
         artifact files to the ftp and web servers. Set to false to actually upload
         files. This is usually done through the pipeline submission script, but can
-        be done manual as well through the web interface.                                   
+        be done manual as well through the web interface.
 
     GROMACS_MAJOR_VERSION
         Read-only environment variable for CI scripts to check the
@@ -291,7 +291,7 @@ Other important variable keys are as follows.
 Setting variables
 """""""""""""""""
 
-Variables for individual piplelines are set in the gitlab interface under 
+Variables for individual piplelines are set in the gitlab interface under
 ``CI/CD``; ``Pipelines``. Then chose in the top right corner ``Run Piplelines``.
 Under ``Run for``, the desired branch may be selected, and variables may be set
 in the fields below.

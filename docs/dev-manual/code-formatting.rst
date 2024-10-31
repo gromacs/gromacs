@@ -13,8 +13,7 @@ since |Gromacs| 2020.
 It automatically applies the guidelines in :doc:`formatting` and in
 :doc:`includestyle`.
 Additionally, other Python scripts are used for a few other automatic
-formatting/checking tasks.  The overview tools page contains a list of these
-tools: :ref:`dev-formatting-tools`.
+formatting/checking tasks.
 This page provides more details for clang-format, clang-tidy and copyright scripts.
 
 Our CI uses these same scripts (in particular, ``clang-format.sh``,
