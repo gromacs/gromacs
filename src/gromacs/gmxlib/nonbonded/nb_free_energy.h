@@ -41,7 +41,7 @@
 
 struct t_forcerec;
 struct t_nrnb;
-struct t_nblist;
+class t_nblist;
 struct interaction_const_t;
 namespace gmx
 {

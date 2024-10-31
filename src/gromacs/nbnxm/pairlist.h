@@ -49,7 +49,7 @@
 
 #include "nbnxm_enums.h"
 
-struct t_nblist;
+class t_nblist;
 
 namespace gmx
 {

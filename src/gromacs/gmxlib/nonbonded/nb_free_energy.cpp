@@ -362,13 +362,8 @@ static void nb_free_energy_kernel(const t_nblist&                               
     constexpr real two        = 2.0_real;
     constexpr real six        = 6.0_real;
 
-    // Extract pair list data
-    const int                nri    = nlist.nri;
-    gmx::ArrayRef<const int> iinr   = nlist.iinr;
-    gmx::ArrayRef<const int> jindex = nlist.jindex;
-    gmx::ArrayRef<const int> jjnr   = nlist.jjnr;
-    gmx::ArrayRef<const int> shift  = nlist.shift;
-    gmx::ArrayRef<const int> gid    = nlist.gid;
+    // Extract i-list data
+    gmx::ArrayRef<const t_nblist::IEntry> iList = nlist.iList();
 
     const real lambdaCoul = lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)];
     const real lambdaVdw  = lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Vdw)];
@@ -520,7 +515,7 @@ static void nb_free_energy_kernel(const t_nblist&                               
     real* gmx_restrict       forceRealPtr;
     if constexpr (computeForces)
     {
-        GMX_ASSERT(nri == 0 || !threadForceBuffer.empty(), "need a valid threadForceBuffer");
+        GMX_ASSERT(iList.empty() || !threadForceBuffer.empty(), "need a valid threadForceBuffer");
 
         forceRealPtr = threadForceBuffer.paddedArrayRef().data()[0];
 
@@ -533,17 +528,18 @@ static void nb_free_energy_kernel(const t_nblist&                               
     // Used with reaction-field only
     BoolType haveExcludedPairsBeyondCutoff = false;
 
-    for (int n = 0; n < nri; n++)
+    for (gmx::Index n = 0; n < iList.ssize(); n++)
     {
         bool havePairsWithinCutoff = false;
 
-        const int  is   = shift[n];
-        const real shX  = shiftvec[is][XX];
-        const real shY  = shiftvec[is][YY];
-        const real shZ  = shiftvec[is][ZZ];
-        const int  nj0  = jindex[n];
-        const int  nj1  = jindex[n + 1];
-        const int  ii   = iinr[n];
+        const int  is  = iList[n].shiftIndex;
+        const real shX = shiftvec[is][XX];
+        const real shY = shiftvec[is][YY];
+        const real shZ = shiftvec[is][ZZ];
+
+        gmx::ArrayRef<const t_nblist::JEntry> jList = nlist.jList(n);
+
+        const int  ii   = iList[n].atom;
         const int  ii3  = 3 * ii;
         const real ix   = shX + x[ii3 + 0];
         const real iy   = shY + x[ii3 + 1];
@@ -568,11 +564,11 @@ static void nb_free_energy_kernel(const t_nblist&                               
         for (int i = 0; i < DataTypes::simdRealWidth; i++)
         {
             preloadIi[i] = ii;
-            preloadIs[i] = shift[n];
+            preloadIs[i] = iList[n].shiftIndex;
         }
         IntType ii_s = gmx::load<IntType>(preloadIi);
 
-        for (int k = nj0; k < nj1; k += DataTypes::simdRealWidth)
+        for (gmx::Index k = 0; k < jList.ssize(); k += DataTypes::simdRealWidth)
         {
             RealType r, rInv;
 
@@ -608,12 +604,12 @@ static void nb_free_energy_kernel(const t_nblist&                               
 #endif
             for (int j = 0; j < DataTypes::simdRealWidth; j++)
             {
-                if (k + j < nj1)
+                if (k + j < jList.ssize())
                 {
                     preloadPairIsValid[j] = true;
                     /* Check if this pair on the exclusions list.*/
-                    preloadPairIncluded[j]  = (nlist.excl_fep.empty() || nlist.excl_fep[k + j]);
-                    const int jnr           = jjnr[k + j];
+                    preloadPairIncluded[j]  = jList[k + j].interacts;
+                    const int jnr           = jList[k + j].atom;
                     preloadJnr[j]           = jnr;
                     typeIndices[STATE_A][j] = ntiA + typeA[jnr];
                     typeIndices[STATE_B][j] = ntiB + typeB[jnr];
@@ -699,7 +695,9 @@ static void nb_free_energy_kernel(const t_nblist&                               
                 }
                 else
                 {
-                    preloadJnr[j]                     = jjnr[k];
+                    // duplicate the data for the first atom
+                    const int atom                    = jList[k].atom;
+                    preloadJnr[j]                     = atom;
                     preloadPairIsValid[j]             = false;
                     preloadPairIncluded[j]            = false;
                     preloadAlphaVdwEff[j]             = 0;
@@ -707,8 +705,8 @@ static void nb_free_energy_kernel(const t_nblist&                               
                     preloadGapsysScaleLinpointVdW[j]  = 0;
                     preloadGapsysScaleLinpointCoul[j] = 0;
 
-                    typeIndices[STATE_A][j] = ntiA + typeA[jjnr[k]];
-                    typeIndices[STATE_B][j] = ntiB + typeB[jjnr[k]];
+                    typeIndices[STATE_A][j] = ntiA + typeA[atom];
+                    typeIndices[STATE_B][j] = ntiB + typeB[atom];
                     for (int i = 0; i < NSTATES; i++)
                     {
                         preloadLjPmeC6Grid[i][j]     = 0;
@@ -1305,7 +1303,7 @@ static void nb_free_energy_kernel(const t_nblist&                               
             }
             if (doPotential)
             {
-                int ggid = gid[n];
+                int ggid = iList[n].energyGroupPair;
                 threadVCoul[ggid] += gmx::reduce(vCoulTot);
                 threadVVdw[ggid] += gmx::reduce(vVdwTot);
             }
@@ -1326,7 +1324,8 @@ static void nb_free_energy_kernel(const t_nblist&                               
      * 150 flops per inner iteration
      * TODO: Update the number of flops and/or use different counts for different code paths.
      */
-    atomicNrnbIncrement(nrnb, eNR_NBKERNEL_FREE_ENERGY, nlist.nri * 12 + nlist.jindex[nri] * 150);
+    atomicNrnbIncrement(
+            nrnb, eNR_NBKERNEL_FREE_ENERGY, nlist.iList().ssize() * 12 + nlist.flatJList().ssize() * 150);
 
     if (coulombInteractionType == NbkernelElecType::ReactionField
         && gmx::anyTrue(haveExcludedPairsBeyondCutoff))

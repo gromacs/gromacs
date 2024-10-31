@@ -88,16 +88,16 @@ void setReductionMaskFromFepPairlist(const t_nblist& gmx_restrict       nlist,
                                      gmx::ThreadForceBuffer<gmx::RVec>* threadForceBuffer)
 {
     // Extract pair list data
-    gmx::ArrayRef<const int> iinr = nlist.iinr;
-    gmx::ArrayRef<const int> jjnr = nlist.jjnr;
+    gmx::ArrayRef<const t_nblist::IEntry> iList = nlist.iList();
+    gmx::ArrayRef<const t_nblist::JEntry> jList = nlist.flatJList();
 
-    for (int i : iinr)
+    for (const t_nblist::IEntry& i : iList)
     {
-        threadForceBuffer->addAtomToMask(i);
+        threadForceBuffer->addAtomToMask(i.atom);
     }
-    for (int j : jjnr)
+    for (const t_nblist::JEntry& j : jList)
     {
-        threadForceBuffer->addAtomToMask(j);
+        threadForceBuffer->addAtomToMask(j.atom);
     }
 }
 
@@ -359,7 +359,7 @@ void FreeEnergyDispatch::dispatchFreeEnergyKernels(const PairlistSets& pairlistS
         const gmx::InteractionLocality iLocality = static_cast<gmx::InteractionLocality>(i);
         const auto fepPairlists                  = pairlistSets.pairlistSet(iLocality).fepLists();
         /* When the first list is empty, all are empty and there is nothing to do */
-        if (fepPairlists[0]->nrj > 0)
+        if (!fepPairlists[0]->flatJList().empty())
         {
             dispatchFreeEnergyKernel(fepPairlists,
                                      coords,

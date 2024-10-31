@@ -59,8 +59,8 @@
 
 #include "pairlist.h"
 
+class t_nblist;
 struct t_nrnb;
-struct t_nblist;
 
 namespace gmx
 {

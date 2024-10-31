@@ -54,7 +54,6 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdatom.h"
-#include "gromacs/mdtypes/nblist.h"
 #include "gromacs/tables/forcetable.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/topology/topology_enums.h"

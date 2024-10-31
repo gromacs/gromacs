@@ -1195,28 +1195,23 @@ static KernelLayoutClusterRatio layoutClusterRatio(const Grid::Geometry& geometr
     }
 }
 
-/* Add a new i-entry to the FEP list and copy the i-properties */
-static inline void fep_list_new_nri_copy(t_nblist* nlist)
+/*! \brief Add a new entry to the i-list as a copy of the last entry
+ *
+ * If the last i-entry has no j-entries, it will be replaced instead
+ * of creating a new entry.
+ */
+static inline void fep_list_new_nri_copy(t_nblist* nlist, int energyGroupPair = -1)
 {
-    /* Add a new i-entry */
-    nlist->nri++;
+    GMX_ASSERT(!nlist->iList().empty(), "Can not copy an entry with an empty list");
 
-    assert(nlist->nri < nlist->maxnri);
+    t_nblist::IEntry iEntry = nlist->iList().back();
 
-    /* Duplicate the last i-entry, except for jindex, which continues */
-    nlist->iinr[nlist->nri]   = nlist->iinr[nlist->nri - 1];
-    nlist->shift[nlist->nri]  = nlist->shift[nlist->nri - 1];
-    nlist->gid[nlist->nri]    = nlist->gid[nlist->nri - 1];
-    nlist->jindex[nlist->nri] = nlist->nrj;
-}
-
-/* Rellocate FEP list for size nl->maxnri, TODO: replace by C++ */
-static void reallocate_nblist(t_nblist* nl)
-{
-    nl->iinr.resize(nl->maxnri);
-    nl->gid.resize(nl->maxnri);
-    nl->shift.resize(nl->maxnri);
-    nl->jindex.resize(nl->maxnri + 1);
+    if (energyGroupPair >= 0)
+    {
+        // Copy the energy group pair index from the previous i-entry
+        iEntry.energyGroupPair = energyGroupPair;
+    }
+    nlist->addIEntry(iEntry, 0);
 }
 
 /* For load balancing of the free-energy lists over threads, we set
@@ -1290,17 +1285,6 @@ static void make_fep_list(ArrayRef<const int>     atomIndices,
     const int cj_ind_start = currentCi.cj_ind_start;
     const int cj_ind_end   = currentCi.cj_ind_end;
 
-    /* In worst case we have alternating energy groups
-     * and create #atom-pair lists, which means we need the size
-     * of a cluster pair (na_ci*na_cj) times the number of cj's.
-     */
-    const int nri_max = nbl->na_ci * nbl->na_cj * (cj_ind_end - cj_ind_start);
-    if (nlist->nri + nri_max > nlist->maxnri)
-    {
-        nlist->maxnri = over_alloc_large(nlist->nri + nri_max);
-        reallocate_nblist(nlist);
-    }
-
     const int c_iClusterSize = jGrid.geometry().numAtomsICluster_;
     const int c_jClusterSize = jGrid.geometry().numAtomsJCluster_;
 
@@ -1309,7 +1293,8 @@ static void make_fep_list(ArrayRef<const int>     atomIndices,
     const int numEnergyGroups = nbatParams.numEnergyGroups;
 
     /* TODO: Consider adding a check in grompp and changing this to an assert */
-    constexpr int numBitsInEnergyGroupIdsForAtomsInJCluster = sizeof(*nlist->gid.data()) * CHAR_BIT;
+    constexpr int numBitsInEnergyGroupIdsForAtomsInJCluster =
+            sizeof(t_nblist::IEntry::energyGroupPair) * CHAR_BIT;
     if (numEnergyGroups * c_jClusterSize > numBitsInEnergyGroupIdsForAtomsInJCluster)
     {
         gmx_fatal(FARGS,
@@ -1332,23 +1317,14 @@ static void make_fep_list(ArrayRef<const int>     atomIndices,
         {
             const RVec xiShifted = getCoordinate(*nbat, ind_i) + shift;
 
-            int nri                = nlist->nri;
-            nlist->jindex[nri + 1] = nlist->jindex[nri];
-            nlist->iinr[nri]       = ai;
-            /* The actual energy group pair index is set later */
-            nlist->gid[nri]   = 0;
-            nlist->shift[nri] = currentCi.shift & NBNXN_CI_SHIFT;
+            const int maxNumJ = (cj_ind_end - cj_ind_start) * nbl->na_cj;
+
+            // Note that the actual energy group pair index is set later
+            nlist->addIEntry({ ai, currentCi.shift & NBNXN_CI_SHIFT, 0 }, maxNumJ);
 
             bool bFEP_i = iGrid.atomIsPerturbed(ci - iGrid.cellOffset(), i);
 
             bFEP_i_all = bFEP_i_all && bFEP_i;
-
-            if (nlist->nrj + (cj_ind_end - cj_ind_start) * nbl->na_cj > nlist->maxnrj)
-            {
-                nlist->maxnrj = over_alloc_small(nlist->nrj + (cj_ind_end - cj_ind_start) * nbl->na_cj);
-                nlist->jjnr.resize(nlist->maxnrj);
-                nlist->excl_fep.resize(nlist->maxnrj);
-            }
 
             int gid_i = 0;
             if (numEnergyGroups > 1)
@@ -1415,32 +1391,23 @@ static void make_fep_list(ArrayRef<const int>     atomIndices,
                                     }
                                     const int gid = GID(gid_i, gid_j, numEnergyGroups);
 
-                                    if (nlist->nrj > nlist->jindex[nri] && nlist->gid[nri] != gid)
+                                    const int lastIIndex = nlist->iList().ssize() - 1;
+                                    if (nlist->iList()[lastIIndex].energyGroupPair != gid)
                                     {
                                         /* Energy group pair changed: new list */
-                                        fep_list_new_nri_copy(nlist);
-                                        nri = nlist->nri;
+                                        fep_list_new_nri_copy(nlist, gid);
                                     }
-                                    nlist->gid[nri] = gid;
                                 }
 
-                                if (nlist->nrj - nlist->jindex[nri] >= max_nrj_fep)
+                                if (nlist->jList(nlist->iList().ssize() - 1).ssize() >= max_nrj_fep)
                                 {
                                     fep_list_new_nri_copy(nlist);
-                                    nri = nlist->nri;
                                 }
 
                                 /* Add it to the FEP list */
-                                nlist->jjnr[nlist->nrj] = aj;
-                                const int pairIsIncluded =
-                                        ((nbl->cj.excl(cj_ind) >> (i * nbl->na_cj + j)) & 1);
-                                nlist->excl_fep[nlist->nrj] = pairIsIncluded;
-                                nlist->nrj++;
-                                /* Count excluded pairs within rlist */
-                                if (pairIsIncluded == 0)
-                                {
-                                    nlist->numExclusionsWithinRlist++;
-                                }
+                                const bool pairIsIncluded =
+                                        ((nbl->cj.excl(cj_ind) >> (i * nbl->na_cj + j)) & 1) == 1;
+                                nlist->addJEntry({ aj, pairIsIncluded });
 
                                 /* Exclude it from the normal list.
                                  * Note that the charge has been set to zero,
@@ -1454,12 +1421,7 @@ static void make_fep_list(ArrayRef<const int>     atomIndices,
                 }
             }
 
-            if (nlist->nrj > nlist->jindex[nri])
-            {
-                /* Actually add this new, non-empty, list */
-                nlist->nri++;
-                nlist->jindex[nlist->nri] = nlist->nrj;
-            }
+            nlist->popIEntryWhenEmpty();
         }
     }
 
@@ -1528,13 +1490,6 @@ static void make_fep_list(ArrayRef<const int>     atomIndices,
      * So for each of the na_sc i-atoms, we need max one FEP list
      * for each max_nrj_fep j-atoms.
      */
-    const int nri_max = nbl->na_sc * nbl->na_cj
-                        * (1 + (numJClusterGroups * sc_gpuJgroupSize(layoutType)) / max_nrj_fep);
-    if (nlist->nri + nri_max > nlist->maxnri)
-    {
-        nlist->maxnri = over_alloc_large(nlist->nri + nri_max);
-        reallocate_nblist(nlist);
-    }
 
     /* Loop over the atoms in the i super-cluster */
     for (int c = 0; c < sc_gpuNumClusterPerCell(layoutType); c++)
@@ -1547,12 +1502,10 @@ static void make_fep_list(ArrayRef<const int>     atomIndices,
             const int ai    = atomIndices[ind_i];
             if (ai >= 0)
             {
-                int nri                = nlist->nri;
-                nlist->jindex[nri + 1] = nlist->jindex[nri];
-                nlist->iinr[nri]       = ai;
-                /* With GPUs, energy groups are not supported */
-                nlist->gid[nri]   = 0;
-                nlist->shift[nri] = currentSci.shift & NBNXN_CI_SHIFT;
+                const int nrjMax = numJClusterGroups * sc_gpuJgroupSize(layoutType) * nbl->na_cj;
+
+                // With GPUs, energy groups are not supported
+                nlist->addIEntry({ ai, currentSci.shift & NBNXN_CI_SHIFT, 0 }, nrjMax);
 
                 const bool bFEP_i = iGrid.atomIsPerturbed(
                         c_abs - iGrid.cellOffset() * sc_gpuNumClusterPerCell(layoutType), i);
@@ -1560,15 +1513,6 @@ static void make_fep_list(ArrayRef<const int>     atomIndices,
                 real xi = nbat->x()[ind_i * nbat->xstride + XX] + shx;
                 real yi = nbat->x()[ind_i * nbat->xstride + YY] + shy;
                 real zi = nbat->x()[ind_i * nbat->xstride + ZZ] + shz;
-
-                const int nrjMax =
-                        nlist->nrj + numJClusterGroups * sc_gpuJgroupSize(layoutType) * nbl->na_cj;
-                if (nrjMax > nlist->maxnrj)
-                {
-                    nlist->maxnrj = over_alloc_small(nrjMax);
-                    nlist->jjnr.resize(nlist->maxnrj);
-                    nlist->excl_fep.resize(nlist->maxnrj);
-                }
 
                 for (int cjPacked_ind = cjPackedBegin; cjPacked_ind < cjPackedEnd; cjPacked_ind++)
                 {
@@ -1619,22 +1563,14 @@ static void make_fep_list(ArrayRef<const int>     atomIndices,
                                      */
                                     if (dx * dx + dy * dy + dz * dz < rlist_fep2)
                                     {
-                                        if (nlist->nrj - nlist->jindex[nri] >= max_nrj_fep)
+                                        if (nlist->jList(nlist->iList().ssize() - 1).ssize() >= max_nrj_fep)
                                         {
                                             fep_list_new_nri_copy(nlist);
-                                            nri = nlist->nri;
                                         }
 
                                         /* Add it to the FEP list */
-                                        nlist->jjnr[nlist->nrj] = aj;
-                                        const int pairIsIncluded =
-                                                (excl.pair[excl_pair] & excl_bit) ? 1 : 0;
-                                        nlist->excl_fep[nlist->nrj] = pairIsIncluded;
-                                        nlist->nrj++;
-                                        if (pairIsIncluded == 0)
-                                        {
-                                            nlist->numExclusionsWithinRlist++;
-                                        }
+                                        const bool pairIsIncluded = (excl.pair[excl_pair] & excl_bit) != 0;
+                                        nlist->addJEntry({ aj, pairIsIncluded });
                                     }
 
                                     /* Exclude it from the normal list.
@@ -1656,12 +1592,7 @@ static void make_fep_list(ArrayRef<const int>     atomIndices,
                     }
                 }
 
-                if (nlist->nrj > nlist->jindex[nri])
-                {
-                    /* Actually add this new, non-empty, list */
-                    nlist->nri++;
-                    nlist->jindex[nlist->nri] = nlist->nrj;
-                }
+                nlist->popIEntryWhenEmpty();
             }
         }
     }
@@ -2024,20 +1955,6 @@ static void clear_pairlist(NbnxnPairlistGpu* nbl)
     nbl->cjPacked.list_.clear();
     nbl->excl.resize(1);
     nbl->nci_tot = 0;
-}
-
-/* Clears an atom-atom-style pair list */
-static void clear_pairlist_fep(t_nblist* nl)
-{
-    nl->nri = 0;
-    nl->nrj = 0;
-    if (nl->jindex.empty())
-    {
-        nl->jindex.resize(1);
-    }
-    nl->jindex[0] = 0;
-
-    nl->numExclusionsWithinRlist = 0;
 }
 
 /* Sets a simple list i-cell bounding box, including PBC shift */
@@ -2528,81 +2445,64 @@ static void balance_fep_lists(ArrayRef<std::unique_ptr<t_nblist>> fepLists, Arra
         return;
     }
 
-    /* Count the total i-lists and pairs */
-    int nri_tot = 0;
+    /* Count the total number of pairs */
     int nrj_tot = 0;
     for (const auto& list : fepLists)
     {
-        nri_tot += list->nri;
-        nrj_tot += list->nrj;
+        nrj_tot += list->flatJList().size();
     }
 
-    const int nrj_target = divideRoundUp(nrj_tot, numLists);
+    const int nrjTarget = divideRoundUp(nrj_tot, numLists);
 
     GMX_ASSERT(gmx_omp_nthreads_get(ModuleMultiThread::Nonbonded) == numLists,
                "We should have as many work objects as FEP lists");
 
-#pragma omp parallel for schedule(static) num_threads(numLists)
-    for (int th = 0; th < numLists; th++)
-    {
-        try
-        {
-            t_nblist* nbl = work[th].nbl_fep.get();
-
-            /* Note that here we allocate for the total size, instead of
-             * a per-thread esimate (which is hard to obtain).
-             */
-            if (nri_tot > nbl->maxnri)
-            {
-                nbl->maxnri = over_alloc_large(nri_tot);
-                reallocate_nblist(nbl);
-            }
-            if (nri_tot > nbl->maxnri || nrj_tot > nbl->maxnrj)
-            {
-                nbl->maxnrj = over_alloc_small(nrj_tot);
-                nbl->jjnr.resize(nbl->maxnrj);
-                nbl->excl_fep.resize(nbl->maxnrj);
-            }
-
-            clear_pairlist_fep(nbl);
-        }
-        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
-    }
-
     /* Loop over the source lists and assign and copy i-entries */
-    int       th_dest = 0;
-    t_nblist* nbld    = work[th_dest].nbl_fep.get();
-    for (int th = 0; th < numLists; th++)
+#pragma omp parallel num_threads(numLists)
     {
-        const t_nblist* nbls = fepLists[th].get();
+        const int thread = gmx_omp_get_thread_num();
 
-        for (int i = 0; i < nbls->nri; i++)
+        t_nblist& dest = *work[thread].nbl_fep;
+
+        dest.clear();
+
+        /* Loop over all source lists and divide them equally over the target
+         * lists. Each thread only assigns when the target list index matches
+         * the thread index.
+         */
+        int destThread = 0;
+        int nrjCurrent = 0;
+        for (int srcThread = 0; srcThread < numLists; srcThread++)
         {
-            /* The number of pairs in this i-entry */
-            const int nrj = nbls->jindex[i + 1] - nbls->jindex[i];
+            const t_nblist& src = *fepLists[srcThread];
 
-            /* Decide if list th_dest is too large and we should procede
-             * to the next destination list.
-             */
-            if (th_dest + 1 < numLists && nbld->nrj > 0
-                && nbld->nrj + nrj - nrj_target > nrj_target - nbld->nrj)
+            for (gmx::Index i = 0; i < src.iList().ssize(); i++)
             {
-                th_dest++;
-                nbld = work[th_dest].nbl_fep.get();
-            }
+                /* The number of pairs in this i-entry */
+                const int nrj = src.jList(i).size();
 
-            nbld->iinr[nbld->nri]  = nbls->iinr[i];
-            nbld->gid[nbld->nri]   = nbls->gid[i];
-            nbld->shift[nbld->nri] = nbls->shift[i];
+                /* Decide if list th_dest is too large and we should procede
+                 * to the next destination list.
+                 */
+                if (destThread + 1 < numLists && nrjCurrent > 0
+                    && nrjCurrent + nrj - nrjTarget > nrjTarget - nrjCurrent)
+                {
+                    destThread++;
+                    nrjCurrent = 0;
+                }
 
-            for (int j = nbls->jindex[i]; j < nbls->jindex[i + 1]; j++)
-            {
-                nbld->jjnr[nbld->nrj]     = nbls->jjnr[j];
-                nbld->excl_fep[nbld->nrj] = nbls->excl_fep[j];
-                nbld->nrj++;
+                if (destThread == thread)
+                {
+                    dest.addIEntry(src.iList()[i], nrj);
+
+                    for (const t_nblist::JEntry& jEntry : src.jList(i))
+                    {
+                        dest.addJEntry(jEntry);
+                    }
+                }
+
+                nrjCurrent += nrj;
             }
-            nbld->nri++;
-            nbld->jindex[nbld->nri] = nbld->nrj;
         }
     }
 
@@ -2613,7 +2513,11 @@ static void balance_fep_lists(ArrayRef<std::unique_ptr<t_nblist>> fepLists, Arra
 
         if (debug)
         {
-            fprintf(debug, "nbl_fep[%d] nri %4d nrj %4d\n", th, fepLists[th]->nri, fepLists[th]->nrj);
+            fprintf(debug,
+                    "nbl_fep[%d] nri %4d nrj %4d\n",
+                    th,
+                    int(fepLists[th]->iList().ssize()),
+                    int(fepLists[th]->flatJList().ssize()));
         }
     }
 }
@@ -3388,7 +3292,7 @@ static void nbnxn_make_pairlist_part(const GridSet&          gridSet,
 
         if (haveFep)
         {
-            fprintf(debug, "nbl FEP list pairs: %d\n", nbl_fep->nrj);
+            fprintf(debug, "nbl FEP list pairs: %d\n", int(nbl_fep->flatJList().ssize()));
         }
     }
 }
@@ -3773,7 +3677,7 @@ void PairlistSet::constructPairlists(InteractionLocality      locality,
 
         if (params_.haveFep_)
         {
-            clear_pairlist_fep(fepLists_[th].get());
+            fepLists_[th]->clear();
         }
     }
 
@@ -3980,7 +3884,7 @@ void PairlistSet::constructPairlists(InteractionLocality      locality,
         numPerturbedExclusionsWithinRlist_ = 0;
         for (const auto& fepList : fepLists_)
         {
-            numPerturbedExclusionsWithinRlist_ += fepList->numExclusionsWithinRlist;
+            numPerturbedExclusionsWithinRlist_ += fepList->numExclusionsWithinRlist();
         }
 
         /* Balance the free-energy lists over all the threads */

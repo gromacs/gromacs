@@ -62,7 +62,6 @@
 #include "gromacs/mdlib/updategroupscog.h"
 #include "gromacs/mdtypes/atominfo.h"
 #include "gromacs/mdtypes/forcerec.h"
-#include "gromacs/mdtypes/nblist.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/arrayref.h"

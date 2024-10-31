@@ -351,25 +351,21 @@ struct AtomData
     // perturbation pattern: {no-pert, vdw- and coul-pert, coul-pert, vdw-pert}
 
     // neighbourhood information
-    std::vector<int> iAtoms  = { 0 };
-    std::vector<int> jAtoms  = { 0, 1, 2, 3 };
-    std::vector<int> jIndex  = { 0, 4 };
-    std::vector<int> shift   = { 0 };
-    std::vector<int> gid     = { 0 };
-    std::vector<int> exclFep = { 0, 1, 1, 1 };
+    std::vector<int>  iAtoms  = { 0 };
+    std::vector<int>  jAtoms  = { 0, 1, 2, 3 };
+    std::vector<int>  shift   = { 0 };
+    std::vector<int>  gid     = { 0 };
+    std::vector<bool> exclFep = { false, true, true, true };
 
     // construct t_nblist
     t_nblist getNbList()
     {
         t_nblist nbl;
-        nbl.nri      = 1;
-        nbl.nrj      = 4;
-        nbl.iinr     = iAtoms;
-        nbl.jindex   = jIndex;
-        nbl.jjnr     = jAtoms;
-        nbl.shift    = shift;
-        nbl.gid      = gid;
-        nbl.excl_fep = exclFep;
+        nbl.addIEntry({ iAtoms[0], shift[0], gid[0] }, jAtoms.size());
+        for (size_t j = 0; j < jAtoms.size(); j++)
+        {
+            nbl.addJEntry({ jAtoms[j], exclFep[j] });
+        }
         return nbl;
     }
 };
