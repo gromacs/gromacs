@@ -137,7 +137,9 @@ std::vector<std::string>::const_iterator findEnumValue(const std::vector<std::st
     }
     if (match == allowedValues.end())
     {
-        GMX_THROW(gmx::InvalidInputError("Invalid value: " + value));
+        const std::string allowedValuesJoined = gmx::joinStrings(allowedValues, ", ");
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString(
+                "Invalid value: %s. Allowed values: %s.", value.c_str(), allowedValuesJoined.c_str())));
     }
     return match;
 }
