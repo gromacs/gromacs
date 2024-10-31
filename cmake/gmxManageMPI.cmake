@@ -166,3 +166,20 @@ if (NOT MPIEXEC_EXECUTABLE)
     set(MPIEXEC_MAX_NUMPROCS "2" CACHE STRING "Maximum number of processors available to run MPI applications.")
     mark_as_advanced(MPIEXEC MPIEXEC_NUMPROC_FLAG MPIEXEC_PREFLAGS MPIEXEC_POSTFLAGS MPIEXEC_MAX_NUMPROCS)
 endif ()
+
+# MPI library headers tend to be written to compile in either C or
+# C++ mode, so both use C-style casts directly and in preprocessor
+# defines that then get expanded in GROMACS code. To avoid hiding
+# important warnings in the noise, we suppress warnings about
+# old-style casts in such builds, relying on other build
+# configurations to encourage us to avoid adding C-style casts to
+# the code.
+if (TARGET MPI::MPI_CXX)
+    gmx_target_interface_warning_suppression(MPI::MPI_CXX "-Wno-old-style-cast" HAS_WARNING_NO_OLD_STYLE_CAST)
+    # These next four are similar and only needed by colvars, but
+    # can't yet be moved there.
+    gmx_target_interface_warning_suppression(MPI::MPI_CXX "-Wno-cast-qual" HAS_WARNING_NO_CAST_QUAL)
+    gmx_target_interface_warning_suppression(MPI::MPI_CXX "-Wno-suggest-override" HAS_WARNING_NO_SUGGEST_OVERRIDE)
+    gmx_target_interface_warning_suppression(MPI::MPI_CXX "-Wno-suggest-destructor-override" HAS_WARNING_NO_SUGGEST_DESTRUCTOR_OVERRIDE)
+    gmx_target_interface_warning_suppression(MPI::MPI_CXX "-Wno-zero-as-null-pointer-constant" HAS_WARNING_NO_ZERO_AS_NULL_POINTER_CONSTANT)
+endif()

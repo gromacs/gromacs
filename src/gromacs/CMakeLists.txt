@@ -233,6 +233,10 @@ if(GMX_GPU_FFT_ONEMKL)
     target_link_libraries(libgromacs PRIVATE MKL::onemkl)
 endif()
 
+if (TARGET MPI::MPI_CXX)
+    target_link_libraries(libgromacs PRIVATE MPI::MPI_CXX)
+endif ()
+
 target_link_libraries(libgromacs PRIVATE $<BUILD_INTERFACE:common>)
 # As long as the libgromacs target has source files that reference headers from
 # modules that don't provide CMake targets, libgromacs needs to use `src/`
