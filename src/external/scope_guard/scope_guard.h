@@ -116,7 +116,14 @@ namespace sg
       scope_guard& operator=(const scope_guard&) = delete;
       scope_guard& operator=(scope_guard&&) = delete;
 
+    // The nvc++ compiler seems to have an issue with the friend statement and private
+    // constructor. So we remove the restriction here to make sure the specific code
+    // can be compiled with it.
+#if defined(__NVCOMPILER)
+    public:
+#else
     private:
+#endif
       explicit scope_guard(Callback&& callback)
       noexcept(std::is_nothrow_constructible<Callback, Callback&&>::value); /*
                                                       meant for friends only */
