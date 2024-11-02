@@ -48,7 +48,29 @@
 #include "gromacs/gpu_utils/device_stream.h"
 #include "gromacs/hardware/device_information.h"
 
-static sycl::property_list makeQueuePropertyList(bool enableProfiling, DeviceStreamPriority priority)
+//! Return a SYCL property list for an in-order queue, plus other supplied property values
+template<typename... PropertyT>
+static sycl::property_list makeQueuePropertyList(PropertyT... properties)
+{
+    return sycl::property_list{ sycl::property::queue::in_order(), properties... };
+}
+
+//! Return a SYCL property list for a queue with the requested properties
+template<typename... PropertyT>
+static sycl::property_list makeQueuePropertyList(const bool enableProfiling, PropertyT... properties)
+{
+    if (enableProfiling)
+    {
+        return makeQueuePropertyList(sycl::property::queue::enable_profiling(), properties...);
+    }
+    else
+    {
+        return makeQueuePropertyList(properties...);
+    }
+}
+
+//! Return a SYCL property list for a queue with the requested properties, where supported
+static sycl::property_list makeQueuePropertyList(const bool enableProfiling, const DeviceStreamPriority priority)
 {
 #ifdef HIPSYCL_EXT_QUEUE_PRIORITY // Use AdaptiveCpp/hipSYCL extension
     // For simplicity, we assume 0 to be the default priority (guaranteed for CUDA, verified for HIP)
@@ -56,48 +78,30 @@ static sycl::property_list makeQueuePropertyList(bool enableProfiling, DeviceStr
     // In both CUDA and HIP, lower value means higher priority, and values are automatically clamped
     // to the valid range, so we just choose a large negative value here.
     const int highPrioValue = -999;
-#    define PRIORITY_ATTRIBUTE_HIGH \
-        sycl::property::queue::hipSYCL_priority { highPrioValue }
-#    define PRIORITY_ATTRIBUTE_DEFAULT \
-        sycl::property::queue::hipSYCL_priority { defaultPrioValue }
+    if (priority == DeviceStreamPriority::High)
+    {
+        return makeQueuePropertyList(enableProfiling,
+                                     sycl::property::queue::hipSYCL_priority{ highPrioValue });
+    }
+    else
+    {
+        return makeQueuePropertyList(enableProfiling,
+                                     sycl::property::queue::hipSYCL_priority{ defaultPrioValue });
+    }
 #elif defined(SYCL_EXT_ONEAPI_QUEUE_PRIORITY) // Use oneAPI DPC++ extension
-#    define PRIORITY_ATTRIBUTE_HIGH \
-        sycl::ext::oneapi::property::queue::priority_high {}
-#    define PRIORITY_ATTRIBUTE_DEFAULT \
-        sycl::ext::oneapi::property::queue::priority_normal {}
-#else // No way to specify the priority
-#    define PRIORITY_ATTRIBUTE_HIGH
-#    define PRIORITY_ATTRIBUTE_DEFAULT
+    if (priority == DeviceStreamPriority::High)
+    {
+        return makeQueuePropertyList(enableProfiling, sycl::ext::oneapi::property::queue::priority_high{});
+    }
+    else
+    {
+        return makeQueuePropertyList(enableProfiling,
+                                     sycl::ext::oneapi::property::queue::priority_normal{});
+    }
+#else                                         // No way to specify the priority
+    GMX_UNUSED_VALUE(priority);
+    return makeQueuePropertyList(enableProfiling);
 #endif
-
-    if (enableProfiling)
-    {
-        if (priority == DeviceStreamPriority::High)
-        {
-            return { sycl::property::queue::in_order(),
-                     sycl::property::queue::enable_profiling(),
-                     PRIORITY_ATTRIBUTE_HIGH };
-        }
-        else
-        {
-            return { sycl::property::queue::in_order(),
-                     sycl::property::queue::enable_profiling(),
-                     PRIORITY_ATTRIBUTE_DEFAULT };
-        }
-    }
-    else // !enableProfiling
-    {
-        if (priority == DeviceStreamPriority::High)
-        {
-            return { sycl::property::queue::in_order(), PRIORITY_ATTRIBUTE_HIGH };
-        }
-        else
-        {
-            return { sycl::property::queue::in_order(), PRIORITY_ATTRIBUTE_DEFAULT };
-        }
-    }
-#undef PRIORITY_ATTRIBUTE_HIGH
-#undef PRIORITY_ATTRIBUTE_DEFAULT
 }
 
 DeviceStream::DeviceStream(const DeviceContext& deviceContext, DeviceStreamPriority priority, const bool useTiming)
