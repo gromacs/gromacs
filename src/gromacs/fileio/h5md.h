@@ -43,13 +43,18 @@
 #include "config.h" // To define GMX_USE_HDF5
 
 #include <filesystem>
+#include <optional>
+#include <string>
 
 enum class PbcType : int;
 
 namespace gmx
 {
 
+// \brief ID for HDF5 files, groups, sets, etc., returned by the library.
 typedef int64_t hid_t;
+// \brief Status return values from some HDF5 library functions.
+typedef int herr_t;
 
 enum class H5mdFileMode : char
 {
@@ -85,6 +90,47 @@ public:
     H5md& operator=(const H5md&) = delete;
     H5md(H5md&&)                 = delete;
     H5md& operator=(H5md&&) = delete;
+
+    /*! \brief Write all unwritten data to the file.
+     * \param[in] throwExceptionUponError Whether to throw an exception if an error occurs.
+     * Assumes a valid file_ identifier.
+     * \throws FileIOError If there were errors during flushing (and throwExceptionUponError is true).
+     */
+    void flush(bool throwExceptionUponError = true);
+
+    /*! \brief Set the author name attribute in the H5MD file
+     * \param[in] authorName The author name.
+     * \throws FileIOError If the author name attribute could not be set.
+     */
+    void setAuthor(const std::string& authorName);
+
+    /*! \brief Get the author name attribute from the H5MD file
+     * \returns the author name if the attribute was set.
+     */
+    std::optional<std::string> author();
+
+    /*! \brief Set the name of the creating program as an attribute in the H5MD file.
+     * \param[in] creatorName The creator name, i.e. the name of the program that created the file.
+     * \throws FileIOError If the creator name attribute could not be set.
+     */
+    void setCreatorProgramName(const std::string& creatorName);
+
+    /*! \brief Get the name of the creating program attribute from the H5MD file.
+     * \returns The creator name, i.e. the name of the program that created the file,
+     * if the attribute was set.
+     */
+    std::optional<std::string> creatorProgramName();
+
+    /*! \brief Set the version of the creating program as an attribute in the H5MD file.
+     * \param[in] version The version.
+     * \throws FileIOError If the version attribute could not be set.
+     */
+    void setCreatorProgramVersion(const std::string& version);
+
+    /*! \brief Get the version of the creating program attribute from the H5MD file.
+     * \returns the version if the attribute was set.
+     */
+    std::optional<std::string> creatorProgramVersion();
 };
 
 } // namespace gmx
