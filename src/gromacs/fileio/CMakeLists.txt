@@ -80,7 +80,8 @@ target_link_libraries(fileio INTERFACE
                       utility
                       )
 
-gmx_manage_hdf5()
+# not enabled for current release
+# gmx_manage_hdf5()
 
 if(GMX_USE_HDF5)
     target_include_directories(fileio SYSTEM INTERFACE ${HDF5_INCLUDE_DIRS})
