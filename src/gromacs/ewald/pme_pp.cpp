@@ -114,6 +114,7 @@ static void gmx_pme_send_coeffs_coords(t_forcerec*                    fr,
                                        int                            maxshift_y,
                                        int64_t                        step,
                                        bool                           useGpuPmePpComms,
+                                       bool                           reinitGpuPmePpComms,
                                        bool                           sendCoordinatesFromGpu,
                                        bool                           receiveForcesToGpu,
                                        bool                           useMdGpuGraph,
@@ -268,6 +269,13 @@ static void gmx_pme_send_coeffs_coords(t_forcerec*                    fr,
         }
         if (flags & PP_PME_COORD)
         {
+            if (reinitGpuPmePpComms)
+            {
+                changePinningPolicy(&cr->dd->pmeForceReceiveBuffer, gmx::PinningPolicy::PinnedIfSupported);
+                cr->dd->pmeForceReceiveBuffer.resize(n);
+                fr->pmePpCommGpu->reinit(n);
+            }
+
             if (useGpuPmePpComms && (fr != nullptr))
             {
                 if (sendCoordinatesFromGpu)
@@ -304,6 +312,7 @@ static void gmx_pme_send_coeffs_coords(t_forcerec*                    fr,
     GMX_UNUSED_VALUE(sigmaA);
     GMX_UNUSED_VALUE(sigmaB);
     GMX_UNUSED_VALUE(x);
+    GMX_UNUSED_VALUE(reinitGpuPmePpComms);
     GMX_UNUSED_VALUE(sendCoordinatesFromGpu);
     GMX_UNUSED_VALUE(coordinatesReadyOnDeviceEvent);
 #endif
@@ -367,6 +376,7 @@ void gmx_pme_send_parameters(const t_commrec*           cr,
                                false,
                                false,
                                false,
+                               false,
                                nullptr);
 }
 
@@ -379,6 +389,7 @@ void gmx_pme_send_coordinates(t_forcerec*                    fr,
                               bool                           computeEnergyAndVirial,
                               int64_t                        step,
                               bool                           useGpuPmePpComms,
+                              bool                           receiveCoordinateAddressFromPme,
                               bool                           sendCoordinatesFromGpu,
                               bool                           receiveForcesToGpu,
                               GpuEventSynchronizer*          coordinatesReadyOnDeviceEvent,
@@ -409,6 +420,7 @@ void gmx_pme_send_coordinates(t_forcerec*                    fr,
                                0,
                                step,
                                useGpuPmePpComms,
+                               receiveCoordinateAddressFromPme,
                                sendCoordinatesFromGpu,
                                receiveForcesToGpu,
                                useMdGpuGraph,
@@ -421,8 +433,28 @@ void gmx_pme_send_finish(const t_commrec* cr)
 {
     unsigned int flags = PP_PME_FINISH;
 
-    gmx_pme_send_coeffs_coords(
-            nullptr, cr, flags, {}, {}, {}, {}, {}, {}, nullptr, gmx::ArrayRef<gmx::RVec>(), 0, 0, 0, 0, -1, false, false, false, false, nullptr);
+    gmx_pme_send_coeffs_coords(nullptr,
+                               cr,
+                               flags,
+                               {},
+                               {},
+                               {},
+                               {},
+                               {},
+                               {},
+                               nullptr,
+                               gmx::ArrayRef<gmx::RVec>(),
+                               0,
+                               0,
+                               0,
+                               0,
+                               -1,
+                               false,
+                               false,
+                               false,
+                               false,
+                               false,
+                               nullptr);
 }
 
 void gmx_pme_send_switchgrid(const t_commrec* cr, ivec grid_size, real ewaldcoeff_q, real ewaldcoeff_lj)
