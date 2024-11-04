@@ -322,7 +322,8 @@ static DeviceStatus isDeviceCompatible(const sycl::device&      syclDevice,
         }
 
         const std::vector<int> compiledNbnxmSubGroupSizes{ 8, 32, 64 };
-        const auto subGroupSizeSupportedByDevice = [&supportedSubGroupSizes](const int sgSize) -> bool {
+        const auto subGroupSizeSupportedByDevice = [&supportedSubGroupSizes](const int sgSize) -> bool
+        {
             return std::find(supportedSubGroupSizes.begin(), supportedSubGroupSizes.end(), sgSize)
                    != supportedSubGroupSizes.end();
         };
