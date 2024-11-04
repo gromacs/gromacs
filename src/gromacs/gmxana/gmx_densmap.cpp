@@ -147,10 +147,10 @@ int gmx_densmap(int argc, char* argv[])
     gmx_output_env_t* oenv;
     const char*       label[] = { "x (nm)", "y (nm)", "z (nm)" };
     t_filenm          fnm[]   = { { efTRX, "-f", nullptr, ffREAD },
-                       { efTPS, nullptr, nullptr, ffOPTRD },
-                       { efNDX, nullptr, nullptr, ffOPTRD },
-                       { efDAT, "-od", "densmap", ffOPTWR },
-                       { efXPM, "-o", "densmap", ffWRITE } };
+                                  { efTPS, nullptr, nullptr, ffOPTRD },
+                                  { efNDX, nullptr, nullptr, ffOPTRD },
+                                  { efDAT, "-od", "densmap", ffOPTWR },
+                                  { efXPM, "-o", "densmap", ffWRITE } };
 #define NFILE asize(fnm)
     int npargs;
 

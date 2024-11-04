@@ -944,8 +944,8 @@ static void compute_offsets(fft5d_plan plan, int xs[], int xl[], int xc[], int N
     /*    int direction = plan->direction;
         int fftorder = plan->fftorder;*/
 
-    int  o = 0;
-    int  pos[3], i;
+    int o = 0;
+    int pos[3], i;
     int *pM = plan->pM, *pK = plan->pK, *oM = plan->oM, *oK = plan->oK, *C = plan->C, *rC = plan->rC;
 
     NG[0] = plan->NG;
@@ -1288,8 +1288,8 @@ void fft5d_execute(fft5d_plan plan, int thread, fft5d_time times)
 #else
                 wallcycle_stop(times, WallCycleCounter::PmeFftComm);
 #endif
-            }       /*main*/
-        }           /* bPrallelDim */
+            } /*main*/
+        } /* bPrallelDim */
 #pragma omp barrier /*both needed for parallel and non-parallel dimension (either have to wait on data from AlltoAll or from last FFT*/
 
         /* ---------- END SPLIT + TRANSPOSE------------ */

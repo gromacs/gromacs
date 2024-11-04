@@ -1053,8 +1053,7 @@ void gmx::LegacySimulator::do_md()
 
         if (MAIN(cr_) && do_log)
         {
-            gmx::EnergyOutput::printHeader(
-                    fpLog_, step, t); /* can we improve the information printed here? */
+            gmx::EnergyOutput::printHeader(fpLog_, step, t); /* can we improve the information printed here? */
         }
 
         if (ir->efep != FreeEnergyPerturbationType::No)
@@ -1104,8 +1103,10 @@ void gmx::LegacySimulator::do_md()
         const bool needEnergyAndVirial = do_ene || do_log || bDoReplEx;
 
         const bool bCalcEnerStep = do_per_step(step, ir->nstcalcenergy);
-        const bool bCalcVir      = [&]() -> bool {
-            auto doPressureCoupling = [ir](int64_t s) -> bool {
+        const bool bCalcVir      = [&]() -> bool
+        {
+            auto doPressureCoupling = [ir](int64_t s) -> bool
+            {
                 return ir->pressureCouplingOptions.epc != PressureCoupling::No
                        && do_per_step(s, ir->pressureCouplingOptions.nstpcouple);
             };
@@ -1794,7 +1795,7 @@ void gmx::LegacySimulator::do_md()
                 // bGStat becomes true, so we can't get into a
                 // situation where e.g. checkpointing can't be
                 // signalled.
-                bool                doIntraSimSignal = true;
+                bool doIntraSimSignal = true;
                 SimulationSignaller signaller(&signals, cr_, ms_, doInterSimSignal, doIntraSimSignal);
 
                 compute_globals(gstat,

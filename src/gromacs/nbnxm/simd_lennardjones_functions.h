@@ -107,7 +107,7 @@ inline void rInvSixAndRInvTwelve(const std::array<SimdReal, inputSize>&    rInvS
 
 //! Returns F*r and optionally the potential for LJ with (un)shifted potential with sigma/epsilon
 template<int nR, bool maskInteractions, bool haveCutoffCheck, bool calculateEnergies, std::size_t inputSize, std::size_t interactSize, std::size_t vljvSize>
-inline void lennardJonesInteractionsSigmaEpsilon(const std::array<SimdReal, inputSize>&    rInvV,
+inline void lennardJonesInteractionsSigmaEpsilon(const std::array<SimdReal, inputSize>& rInvV,
                                                  const std::array<SimdBool, interactSize>& interactV,
                                                  const SimdBool* const           withinCutoffV,
                                                  const std::array<SimdReal, nR>& sigmaV,
@@ -150,14 +150,13 @@ inline void lennardJonesInteractionsSigmaEpsilon(const std::array<SimdReal, inpu
         /* We need C6 and C12 to calculate the LJ potential shift */
         const auto sigma2V = genArr<nR>([&](int i) { return sigmaV[i] * sigmaV[i]; });
         const auto sigma6V = genArr<nR>([&](int i) { return sigma2V[i] * sigma2V[i] * sigma2V[i]; });
-        const auto c6V     = genArr<nR>([&](int i) { return epsilonV[i] * sigma6V[i]; });
-        const auto c12V    = genArr<nR>([&](int i) { return c6V[i] * sigma6V[i]; });
+        const auto c6V  = genArr<nR>([&](int i) { return epsilonV[i] * sigma6V[i]; });
+        const auto c12V = genArr<nR>([&](int i) { return c6V[i] * sigma6V[i]; });
 
         /* Calculate the LJ energies, with constant potential shift */
         vLJV = genArr<nR>([&](int i) { return sixth * fma(c6V[i], dispersionShift, frLJ6V[i]); });
-        vLJV = genArr<nR>([&](int i) {
-            return fms(twelfth, fma(c12V[i], repulsionShift, frLJ12V[i]), vLJV[i]);
-        });
+        vLJV = genArr<nR>([&](int i)
+                          { return fms(twelfth, fma(c12V[i], repulsionShift, frLJ12V[i]), vLJV[i]); });
     }
     else
     {
@@ -255,9 +254,9 @@ public:
         frLJV   = genArr<nR>([&](int i) { return frLJ12V[i] - frLJ6V[i]; });
 
         vLJV = genArr<nR>([&](int i) { return sixth * fma(c6V[i], dispersionShift_, frLJ6V[i]); });
-        vLJV = genArr<nR>([&](int i) {
-            return fms(twelfth, fma(c12V[i], repulsionShift_, frLJ12V[i]), vLJV[i]);
-        });
+        vLJV = genArr<nR>(
+                [&](int i)
+                { return fms(twelfth, fma(c12V[i], repulsionShift_, frLJ12V[i]), vLJV[i]); });
 
         GMX_UNUSED_VALUE(rSquaredV);
         GMX_UNUSED_VALUE(rInvV);
@@ -373,49 +372,57 @@ public:
         computeForceSwitchVariables<nR>(
                 rSquaredV, rInvV, rSwitch_, rSwitchedV, rSwitchedSquaredV, rSwitchedSquaredTimesRV);
 
-        frLJV = genArr<nR>([&](int i) {
-            return c6V[i]
-                   * addLJForceSwitch(rInvSixV[i],
-                                      rSwitchedV[i],
-                                      rSwitchedSquaredTimesRV[i],
-                                      dispersionShiftC2_,
-                                      dispersionShiftC3_);
-        });
-
-        frLJV = genArr<nR>([&](int i) {
-            return c12V[i]
-                           * addLJForceSwitch(rInvTwelveV[i],
+        frLJV = genArr<nR>(
+                [&](int i)
+                {
+                    return c6V[i]
+                           * addLJForceSwitch(rInvSixV[i],
                                               rSwitchedV[i],
                                               rSwitchedSquaredTimesRV[i],
-                                              repulsionShiftC2_,
-                                              repulsionShiftC3_)
-                   - frLJV[i];
-        });
+                                              dispersionShiftC2_,
+                                              dispersionShiftC3_);
+                });
+
+        frLJV = genArr<nR>(
+                [&](int i)
+                {
+                    return c12V[i]
+                                   * addLJForceSwitch(rInvTwelveV[i],
+                                                      rSwitchedV[i],
+                                                      rSwitchedSquaredTimesRV[i],
+                                                      repulsionShiftC2_,
+                                                      repulsionShiftC3_)
+                           - frLJV[i];
+                });
 
         if constexpr (calculateEnergies)
         {
-            vLJV = genArr<nR>([&](int i) {
-                return c6V[i]
-                       * fma(sixth,
-                             rInvSixV[i],
-                             ljForceSwitchPotential(rSwitchedV[i],
-                                                    rSwitchedSquaredV[i],
-                                                    potentialParams_[2],
-                                                    potentialParams_[0],
-                                                    potentialParams_[1]));
-            });
-
-            vLJV = genArr<nR>([&](int i) {
-                return c12V[i]
-                               * fma(twelfth,
-                                     rInvSixV[i] * rInvSixV[i],
+            vLJV = genArr<nR>(
+                    [&](int i)
+                    {
+                        return c6V[i]
+                               * fma(sixth,
+                                     rInvSixV[i],
                                      ljForceSwitchPotential(rSwitchedV[i],
                                                             rSwitchedSquaredV[i],
-                                                            potentialParams_[5],
-                                                            potentialParams_[3],
-                                                            potentialParams_[4]))
-                       - vLJV[i];
-            });
+                                                            potentialParams_[2],
+                                                            potentialParams_[0],
+                                                            potentialParams_[1]));
+                    });
+
+            vLJV = genArr<nR>(
+                    [&](int i)
+                    {
+                        return c12V[i]
+                                       * fma(twelfth,
+                                             rInvSixV[i] * rInvSixV[i],
+                                             ljForceSwitchPotential(rSwitchedV[i],
+                                                                    rSwitchedSquaredV[i],
+                                                                    potentialParams_[5],
+                                                                    potentialParams_[3],
+                                                                    potentialParams_[4]))
+                               - vLJV[i];
+                    });
         }
         else
         {
@@ -521,18 +528,23 @@ public:
         std::array<SimdReal, nR> rSwitchedSquaredV;
         computePotentialSwitchVariables<nR>(rSquaredV, rInvV, rSwitch_, rSwitchedV, rSwitchedSquaredV);
 
-        const auto switchV  = genArr<nR>([&](int i) {
-            return potentialSwitchFunction(rSwitchedV[i], rSwitchedSquaredV[i], c3_, c4_, c5_);
-        });
-        const auto dSwitchV = genArr<nR>([&](int i) {
-            return potentialSwitchFunctionDerivative(
-                    rSwitchedV[i], rSwitchedSquaredV[i], c3times3_, c4times4_, c5times5_);
-        });
+        const auto switchV = genArr<nR>(
+                [&](int i) {
+                    return potentialSwitchFunction(rSwitchedV[i], rSwitchedSquaredV[i], c3_, c4_, c5_);
+                });
+        const auto dSwitchV = genArr<nR>(
+                [&](int i)
+                {
+                    return potentialSwitchFunctionDerivative(
+                            rSwitchedV[i], rSwitchedSquaredV[i], c3times3_, c4times4_, c5times5_);
+                });
 
-        frLJV = genArr<nR>([&](int i) {
-            SimdReal r = rSquaredV[i] * rInvV[i];
-            return fnma(dSwitchV[i] * vLJTmpV[i], r, switchV[i] * frLJV[i]);
-        });
+        frLJV = genArr<nR>(
+                [&](int i)
+                {
+                    SimdReal r = rSquaredV[i] * rInvV[i];
+                    return fnma(dSwitchV[i] * vLJTmpV[i], r, switchV[i] * frLJV[i]);
+                });
 
         if constexpr (calculateEnergies)
         {
@@ -595,20 +607,26 @@ inline void addLennardJonesEwaldCorrections(const std::array<SimdReal, inputSize
             genArr<nR>([&](int i) { return exp<MathOptimization::Unsafe>(-rSquaredMaskedV[i]); });
 
     /* 1 + cr2 + 1/2*cr2^2 */
-    const auto polyV = genArr<nR>([&](int i) {
-        return fma(fma(ljEwaldParams[1], rSquaredMaskedV[i], ljEwaldParams[0]),
-                   rSquaredMaskedV[i],
-                   ljEwaldParams[0]);
-    });
+    const auto polyV = genArr<nR>(
+            [&](int i)
+            {
+                return fma(fma(ljEwaldParams[1], rSquaredMaskedV[i], ljEwaldParams[0]),
+                           rSquaredMaskedV[i],
+                           ljEwaldParams[0]);
+            });
 
     /* We calculate LJ F*r = (6*C6)*(r^-6 - F_mesh/6), we use:
      * r^-6*cexp*(1 + cr2 + cr2^2/2 + cr2^3/6) = cexp*(r^-6*poly + c^6/6)
      */
-    frLJV = genArr<nR>([&](int i) {
-        return fma(c6GridV[i],
-                   fnma(expRSquaredMaskedV[i], fma(rInvSixV[i], polyV[i], ljEwaldParams[3]), rInvSixV[i]),
-                   frLJV[i]);
-    });
+    frLJV = genArr<nR>(
+            [&](int i)
+            {
+                return fma(c6GridV[i],
+                           fnma(expRSquaredMaskedV[i],
+                                fma(rInvSixV[i], polyV[i], ljEwaldParams[3]),
+                                rInvSixV[i]),
+                           frLJV[i]);
+            });
 
     if constexpr (calculateEnergies)
     {
@@ -623,13 +641,15 @@ inline void addLennardJonesEwaldCorrections(const std::array<SimdReal, inputSize
             shiftMaskedV = genArr<nR>([&](int gmx_unused i) { return ljEwaldParams[4]; });
         }
 
-        vLJV = genArr<nR>([&](int i) {
-            return fma(sixth * c6GridV[i],
-                       fma(rInvSixV[i],
-                           fnma(expRSquaredMaskedV[i], polyV[i], ljEwaldParams[0]),
-                           shiftMaskedV[i]),
-                       vLJV[i]);
-        });
+        vLJV = genArr<nR>(
+                [&](int i)
+                {
+                    return fma(sixth * c6GridV[i],
+                               fma(rInvSixV[i],
+                                   fnma(expRSquaredMaskedV[i], polyV[i], ljEwaldParams[0]),
+                                   shiftMaskedV[i]),
+                               vLJV[i]);
+                });
     }
     else
     {

@@ -341,9 +341,10 @@ static void read_vsite_database(const std::filesystem::path&           ddbname,
                     case DDB_HISH:
                     {
                         const auto found = std::find_if(
-                                vsitetoplist->begin(), vsitetoplist->end(), [&dirstr](const auto& entry) {
-                                    return gmx::equalCaseInsensitive(dirstr, entry.resname);
-                                });
+                                vsitetoplist->begin(),
+                                vsitetoplist->end(),
+                                [&dirstr](const auto& entry)
+                                { return gmx::equalCaseInsensitive(dirstr, entry.resname); });
                         /* Allocate a new topology entry if this is a new residue */
                         if (found == vsitetoplist->end())
                         {
@@ -392,10 +393,12 @@ static int nitrogen_is_planar(gmx::ArrayRef<const VirtualSiteConfiguration> vsit
      * and -1 if not found.
      */
     int        res;
-    const auto found =
-            std::find_if(vsiteconflist.begin(), vsiteconflist.end(), [&atomtype](const auto& entry) {
-                return (gmx::equalCaseInsensitive(entry.atomtype, atomtype) && entry.nHydrogens == 2);
-            });
+    const auto found = std::find_if(vsiteconflist.begin(),
+                                    vsiteconflist.end(),
+                                    [&atomtype](const auto& entry) {
+                                        return (gmx::equalCaseInsensitive(entry.atomtype, atomtype)
+                                                && entry.nHydrogens == 2);
+                                    });
     if (found != vsiteconflist.end())
     {
         res = static_cast<int>(found->isplanar);
@@ -413,11 +416,14 @@ static std::string get_dummymass_name(gmx::ArrayRef<const VirtualSiteConfigurati
                                       const std::string&                            nextheavy)
 {
     /* Return the dummy mass name if found, or NULL if not set in ddb database */
-    const auto found = std::find_if(
-            vsiteconflist.begin(), vsiteconflist.end(), [&atom, &nextheavy](const auto& entry) {
-                return (gmx::equalCaseInsensitive(atom, entry.atomtype)
-                        && gmx::equalCaseInsensitive(nextheavy, entry.nextHeavyType));
-            });
+    const auto found =
+            std::find_if(vsiteconflist.begin(),
+                         vsiteconflist.end(),
+                         [&atom, &nextheavy](const auto& entry)
+                         {
+                             return (gmx::equalCaseInsensitive(atom, entry.atomtype)
+                                     && gmx::equalCaseInsensitive(nextheavy, entry.nextHeavyType));
+                         });
     if (found != vsiteconflist.end())
     {
         return found->dummyMass;
@@ -434,19 +440,22 @@ static real get_ddb_bond(gmx::ArrayRef<const VirtualSiteTopology> vsitetop,
                          const std::string&                       atom1,
                          const std::string&                       atom2)
 {
-    const auto found = std::find_if(vsitetop.begin(), vsitetop.end(), [&res](const auto& entry) {
-        return gmx::equalCaseInsensitive(res, entry.resname);
-    });
+    const auto found = std::find_if(vsitetop.begin(),
+                                    vsitetop.end(),
+                                    [&res](const auto& entry)
+                                    { return gmx::equalCaseInsensitive(res, entry.resname); });
 
     if (found == vsitetop.end())
     {
         gmx_fatal(FARGS, "No vsite information for residue %s found in vsite database.\n", res.c_str());
     }
-    const auto foundBond =
-            std::find_if(found->bond.begin(), found->bond.end(), [&atom1, &atom2](const auto& entry) {
-                return ((atom1 == entry.atom1 && atom2 == entry.atom2)
-                        || (atom1 == entry.atom2 && atom2 == entry.atom1));
-            });
+    const auto foundBond = std::find_if(found->bond.begin(),
+                                        found->bond.end(),
+                                        [&atom1, &atom2](const auto& entry)
+                                        {
+                                            return ((atom1 == entry.atom1 && atom2 == entry.atom2)
+                                                    || (atom1 == entry.atom2 && atom2 == entry.atom1));
+                                        });
     if (foundBond == found->bond.end())
     {
         gmx_fatal(FARGS,
@@ -466,16 +475,20 @@ static real get_ddb_angle(gmx::ArrayRef<const VirtualSiteTopology> vsitetop,
                           const std::string&                       atom2,
                           const std::string&                       atom3)
 {
-    const auto found = std::find_if(vsitetop.begin(), vsitetop.end(), [&res](const auto& entry) {
-        return gmx::equalCaseInsensitive(res, entry.resname);
-    });
+    const auto found = std::find_if(vsitetop.begin(),
+                                    vsitetop.end(),
+                                    [&res](const auto& entry)
+                                    { return gmx::equalCaseInsensitive(res, entry.resname); });
 
     if (found == vsitetop.end())
     {
         gmx_fatal(FARGS, "No vsite information for residue %s found in vsite database.\n", res.c_str());
     }
     const auto foundAngle = std::find_if(
-            found->angle.begin(), found->angle.end(), [&atom1, &atom2, &atom3](const auto& entry) {
+            found->angle.begin(),
+            found->angle.end(),
+            [&atom1, &atom2, &atom3](const auto& entry)
+            {
                 return ((atom1 == entry.atom1 && atom2 == entry.atom2 && atom3 == entry.atom3)
                         || (atom1 == entry.atom3 && atom2 == entry.atom2 && atom3 == entry.atom1)
                         || (atom1 == entry.atom2 && atom2 == entry.atom1 && atom3 == entry.atom3)
@@ -754,15 +767,15 @@ static void add_vsites(gmx::ArrayRef<InteractionsOfType> plist,
                               "can't use add_vsites for interaction function %s",
                               interaction_function[vsite_type[Hatoms[i]]].name);
             } /* switch ftype */
-        }     /* else */
-    }         /* for i */
+        } /* else */
+    } /* for i */
 }
 
 #define ANGLE_6RING (gmx::c_deg2Rad * 120)
 
 /* cosine rule: a^2 = b^2 + c^2 - 2 b c cos(alpha) */
 /* get a^2 when a, b and alpha are given: */
-#define cosrule(b, c, alpha) (gmx::square(b) + gmx::square(c) - 2 * (b) * (c)*std::cos(alpha))
+#define cosrule(b, c, alpha) (gmx::square(b) + gmx::square(c) - 2 * (b) * (c) * std::cos(alpha))
 /* get cos(alpha) when a, b and c are given: */
 #define acosrule(a, b, c) ((gmx::square(b) + gmx::square(c) - gmx::square(a)) / (2 * (b) * (c)))
 
@@ -1956,7 +1969,7 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
                     break;
                 default: gmx_fatal(FARGS, "DEATH HORROR in do_vsites (%s:%d)", __FILE__, __LINE__);
             } /* switch whatres */
-              /* skip back to beginning of residue */
+            /* skip back to beginning of residue */
             while (i > 0 && at->atom[i - 1].resind == resind)
             {
                 i--;

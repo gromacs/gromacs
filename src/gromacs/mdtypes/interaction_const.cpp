@@ -150,7 +150,7 @@ static void initVdwEwaldParameters(FILE* fp, const t_inputrec& ir, interaction_c
 
     if (ic->vdw_modifier == InteractionModifiers::PotShift)
     {
-        real crc2       = gmx::square(ic->ewaldcoeff_lj * ic->rvdw);
+        real crc2 = gmx::square(ic->ewaldcoeff_lj * ic->rvdw);
         ic->sh_lj_ewald = (std::exp(-crc2) * (1 + crc2 + 0.5 * crc2 * crc2) - 1) / gmx::power6(ic->rvdw);
     }
     else

@@ -111,32 +111,34 @@ const pybind11::exception<Exception>& export_exceptions(pybind11::module& m)
             )delimeter";
 
     // Catch unexpected/unbound exceptions from libgromacs or libgmxapi.
-    py::register_exception_translator([](std::exception_ptr p) {
-        try
-        {
-            if (p)
+    py::register_exception_translator(
+            [](std::exception_ptr p)
             {
-                std::rethrow_exception(p);
-            }
-        }
-        catch (const gmxapi::Exception& e)
-        {
-            // Nothing should be throwing the base exception and all gmxapi
-            // exceptions should be mapped in this module. Differences
-            // between GROMACS version and Python package version could leave
-            // some exceptions unmapped, but we should add an alert in case
-            // an exception gets overlooked.
-            std::string message = "Generic gmxapi exception caught: ";
-            message += e.what();
-            py::set_error(baseException, message.c_str());
-        }
-        catch (const std::exception& e)
-        {
-            std::string message = "Please report GROMACS bug. Unhandled C++ exception: ";
-            message += e.what();
-            py::set_error(unknownException, message.c_str());
-        }
-    });
+                try
+                {
+                    if (p)
+                    {
+                        std::rethrow_exception(p);
+                    }
+                }
+                catch (const gmxapi::Exception& e)
+                {
+                    // Nothing should be throwing the base exception and all gmxapi
+                    // exceptions should be mapped in this module. Differences
+                    // between GROMACS version and Python package version could leave
+                    // some exceptions unmapped, but we should add an alert in case
+                    // an exception gets overlooked.
+                    std::string message = "Generic gmxapi exception caught: ";
+                    message += e.what();
+                    py::set_error(baseException, message.c_str());
+                }
+                catch (const std::exception& e)
+                {
+                    std::string message = "Please report GROMACS bug. Unhandled C++ exception: ";
+                    message += e.what();
+                    py::set_error(unknownException, message.c_str());
+                }
+            });
 
     {
         auto exception = py::register_exception<FeatureNotAvailable>(

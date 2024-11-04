@@ -335,7 +335,8 @@ static DeviceStatus isDeviceCompatible(const sycl::device&           syclDevice,
 #    endif
 #endif
 
-        const auto subGroupSizeSupportedByDevice = [&supportedSubGroupSizes](const int sgSize) -> bool {
+        const auto subGroupSizeSupportedByDevice = [&supportedSubGroupSizes](const int sgSize) -> bool
+        {
             return std::find(supportedSubGroupSizes.begin(), supportedSubGroupSizes.end(), sgSize)
                    != supportedSubGroupSizes.end();
         };
@@ -403,11 +404,15 @@ static bool isDeviceFunctional(const sycl::device& syclDevice, std::string* erro
             sycl::malloc_device<int>(numThreads, queue), [=](int* ptr) { sycl::free(ptr, queue); }
         };
         int* d_buffer = buffer.get();
-        queue.submit([&](sycl::handler& cgh) {
-                 sycl::range<1> range{ numThreads };
-                 cgh.parallel_for<DummyKernel>(
-                         range, [=](sycl::id<1> threadId) { d_buffer[threadId] = threadId.get(0); });
-             }).wait_and_throw();
+        queue.submit(
+                     [&](sycl::handler& cgh)
+                     {
+                         sycl::range<1> range{ numThreads };
+                         cgh.parallel_for<DummyKernel>(range,
+                                                       [=](sycl::id<1> threadId)
+                                                       { d_buffer[threadId] = threadId.get(0); });
+                     })
+                .wait_and_throw();
 
         std::vector<int> h_buffer(numThreads);
         queue.copy<int>(d_buffer, h_buffer.data(), numThreads).wait_and_throw();
@@ -512,10 +517,10 @@ static std::optional<sycl::backend> chooseBestBackend(const std::vector<std::uni
     if (countDevicesByBackend.size() > 1)
     {
         // Find backend with most devices
-        const auto backendWithMostDevices = std::max_element(
-                countDevicesByBackend.cbegin(),
-                countDevicesByBackend.cend(),
-                [](const auto& kv1, const auto& kv2) { return kv1.second < kv2.second; });
+        const auto backendWithMostDevices = std::max_element(countDevicesByBackend.cbegin(),
+                                                             countDevicesByBackend.cend(),
+                                                             [](const auto& kv1, const auto& kv2)
+                                                             { return kv1.second < kv2.second; });
         // Count devices provided by OpenCL. Will be zero if no OpenCL devices found.
         const int devicesInOpenCL = countDevicesByBackend[sycl::backend::opencl];
         if (devicesInOpenCL == backendWithMostDevices->second)

@@ -352,9 +352,9 @@ double BiasState::scaleTargetByMetric(double targetMetricScalingLimit)
 
         /* Points may have a very low correlation tensor from not being sampled enough.
          * This sets a lower limit on the scaling based on the amount of samples */
-        const double weightSumTot     = points_[pointIndex].weightSumTot();
+        const double weightSumTot = points_[pointIndex].weightSumTot();
         double pointLowerScalingLimit = weightSumTot > 1 ? averageVolume / weightSumTot : averageVolume;
-        pointLowerScalingLimit        = std::max(lowerScalingLimit, pointLowerScalingLimit);
+        pointLowerScalingLimit = std::max(lowerScalingLimit, pointLowerScalingLimit);
 
         /* If there is no correlation tensor volume from this point use the average
          * volume. This will result in no friction tensor scaling for the target
@@ -489,11 +489,11 @@ int BiasState::warnForHistogramAnomalies(const BiasGrid& grid, int biasIndex, do
             std::string pointValueString = gridPointValueString(grid, m);
             std::string warningMessage   = gmx::formatString(
                     "\nawh%d warning: "
-                    "at t = %g ps the obtained coordinate distribution at coordinate value %s "
-                    "is less than a fraction %g of the reference distribution at that point. "
-                    "If you are not certain about your settings you might want to increase your "
-                    "pull force constant or "
-                    "modify your sampling region.\n",
+                      "at t = %g ps the obtained coordinate distribution at coordinate value %s "
+                      "is less than a fraction %g of the reference distribution at that point. "
+                      "If you are not certain about your settings you might want to increase your "
+                      "pull force constant or "
+                      "modify your sampling region.\n",
                     biasIndex + 1,
                     t,
                     pointValueString.c_str(),
@@ -1837,8 +1837,8 @@ static void readUserPmfAndTargetDistribution(ArrayRef<const DimParams> dimParams
     correctFormatMessage = wrapper.wrapToString(correctFormatMessage);
 
     gmx::MultiDimArray<std::vector<double>, gmx::dynamicExtents2D> data = readXvgData(filenameModified);
-    const int                                                      numColumns = data.extent(0);
-    const int                                                      numRows    = data.extent(1);
+    const int numColumns = data.extent(0);
+    const int numRows    = data.extent(1);
 
     /* Check basic data properties here. BiasGrid takes care of more complicated things. */
 

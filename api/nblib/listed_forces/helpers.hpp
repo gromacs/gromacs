@@ -163,7 +163,8 @@ inline std::vector<ListedInteractionData> splitListedWork(const ListedInteractio
 {
     std::vector<ListedInteractionData> workDivision(nSplits);
 
-    auto splitOneElement = [totalRange, nSplits, &workDivision](const auto& inputElement) {
+    auto splitOneElement = [totalRange, nSplits, &workDivision](const auto& inputElement)
+    {
         // the index of inputElement in the ListedInteractionsTuple
         constexpr int elementIndex =
                 FindIndex<std::decay_t<decltype(inputElement)>, ListedInteractionData>{};

@@ -83,10 +83,10 @@ class IExceptionInfo
 {
 public:
     virtual ~IExceptionInfo();
-    IExceptionInfo()                          = default;
-    IExceptionInfo(const IExceptionInfo&)     = default;
-    IExceptionInfo(IExceptionInfo&&) noexcept = default;
-    IExceptionInfo& operator=(const IExceptionInfo&) = default;
+    IExceptionInfo()                                     = default;
+    IExceptionInfo(const IExceptionInfo&)                = default;
+    IExceptionInfo(IExceptionInfo&&) noexcept            = default;
+    IExceptionInfo& operator=(const IExceptionInfo&)     = default;
     IExceptionInfo& operator=(IExceptionInfo&&) noexcept = default;
 };
 
@@ -252,10 +252,10 @@ public:
     // about missing noexcept otherwise.
     ~GromacsException() noexcept override {}
 
-    GromacsException()                            = default;
-    GromacsException(const GromacsException&)     = default;
-    GromacsException(GromacsException&&) noexcept = default;
-    GromacsException& operator=(const GromacsException&) = default;
+    GromacsException()                                       = default;
+    GromacsException(const GromacsException&)                = default;
+    GromacsException(GromacsException&&) noexcept            = default;
+    GromacsException& operator=(const GromacsException&)     = default;
     GromacsException& operator=(GromacsException&&) noexcept = default;
 
     /*! \brief
@@ -740,8 +740,11 @@ int processExceptionAtExit(const std::exception& ex);
    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
    \endcode
  */
-#define GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR \
-    catch (const std::exception& ex) { ::gmx::processExceptionAsFatalError(ex); }
+#define GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR  \
+    catch (const std::exception& ex)             \
+    {                                            \
+        ::gmx::processExceptionAsFatalError(ex); \
+    }
 
 //! \}
 

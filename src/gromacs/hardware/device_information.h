@@ -199,7 +199,7 @@ struct DeviceInformation
     int            compute_units;       //!< Number of compute units.
     int            adress_bits;         //!< Number of address bits the device is capable of.
     size_t         maxWorkItemSizes[3]; //!< Workgroup size limits (CL_DEVICE_MAX_WORK_ITEM_SIZES).
-    size_t         maxWorkGroupSize;    //!< Workgroup total size limit (CL_DEVICE_MAX_WORK_GROUP_SIZE).
+    size_t maxWorkGroupSize; //!< Workgroup total size limit (CL_DEVICE_MAX_WORK_GROUP_SIZE).
 #elif GMX_GPU_SYCL
     sycl::device syclDevice;
     //! CUDA CC major for NVIDIA devices, generation code for AMD (gfx90a -> 9), architecture code for Intel (Gen9 -> 9, Xe -> 12)

@@ -160,18 +160,18 @@ public:
 TEST_F(GetIrTest, HandlesDifferentKindsOfMdpLines)
 {
     const char*    inputMdpFile[] = { "; File to run my simulation",
-                                   "title = simulation",
-                                   "define = -DBOOLVAR -DVAR=VALUE",
-                                   ";",
-                                   "xtc_grps = System ; was Protein",
-                                   "include = -I/home/me/stuff",
-                                   "",
-                                   "tau-t = 0.1 0.3",
-                                   "ref-t = ;290 290",
-                                   "tinit = 0.3",
-                                   "init_step = 0",
-                                   "nstcomm = 100",
-                                   "integrator = steep" };
+                                      "title = simulation",
+                                      "define = -DBOOLVAR -DVAR=VALUE",
+                                      ";",
+                                      "xtc_grps = System ; was Protein",
+                                      "include = -I/home/me/stuff",
+                                      "",
+                                      "tau-t = 0.1 0.3",
+                                      "ref-t = ;290 290",
+                                      "tinit = 0.3",
+                                      "init_step = 0",
+                                      "nstcomm = 100",
+                                      "integrator = steep" };
     WarningHandler wi{ false, 0 };
     runTest(joinStrings(inputMdpFile, "\n"));
 }

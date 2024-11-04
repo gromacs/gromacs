@@ -85,7 +85,7 @@ static inline bool useLjCombRule(const enum VdwType vdwType)
  * \param [in]    aloc      Atom locality flag.
  */
 GPU_FUNC_QUALIFIER
-void gpu_copy_xq_to_gpu(NbnxmGpu gmx_unused*          nb,
+void gpu_copy_xq_to_gpu(NbnxmGpu gmx_unused*                      nb,
                         const struct nbnxn_atomdata_t gmx_unused* nbdata,
                         AtomLocality gmx_unused                   aloc) GPU_FUNC_TERM;
 
@@ -100,7 +100,7 @@ void gpu_copy_xq_to_gpu(NbnxmGpu gmx_unused*          nb,
  *
  */
 GPU_FUNC_QUALIFIER
-void gpu_launch_kernel(NbnxmGpu gmx_unused* nb,
+void gpu_launch_kernel(NbnxmGpu gmx_unused*           nb,
                        const StepWorkload gmx_unused& stepWork,
                        InteractionLocality gmx_unused iloc) GPU_FUNC_TERM;
 
@@ -149,8 +149,8 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu gmx_unused*           nb,
  * (and energies/shift forces if required).
  */
 GPU_FUNC_QUALIFIER
-void gpu_launch_cpyback(NbnxmGpu gmx_unused* nb,
-                        nbnxn_atomdata_t gmx_unused* nbatom,
+void gpu_launch_cpyback(NbnxmGpu gmx_unused*           nb,
+                        nbnxn_atomdata_t gmx_unused*   nbatom,
                         const StepWorkload gmx_unused& stepWork,
                         AtomLocality gmx_unused        aloc) GPU_FUNC_TERM;
 
@@ -191,12 +191,12 @@ void gpu_launch_cpyback(NbnxmGpu gmx_unused* nb,
  * \returns                   True if the nonbonded tasks associated with \p aloc locality have completed
  */
 GPU_FUNC_QUALIFIER
-bool gpu_try_finish_task(NbnxmGpu gmx_unused* nb,
+bool gpu_try_finish_task(NbnxmGpu gmx_unused*           nb,
                          const StepWorkload gmx_unused& stepWork,
                          AtomLocality gmx_unused        aloc,
-                         real gmx_unused* e_lj,
-                         real gmx_unused*             e_el,
-                         ArrayRef<RVec> gmx_unused    shiftForces,
+                         real gmx_unused*               e_lj,
+                         real gmx_unused*               e_el,
+                         ArrayRef<RVec> gmx_unused      shiftForces,
                          GpuTaskCompletion gmx_unused completionKind) GPU_FUNC_TERM_WITH_RETURN(false);
 
 /*! \brief  Completes the nonbonded GPU task blocking until GPU tasks and data
@@ -214,13 +214,13 @@ bool gpu_try_finish_task(NbnxmGpu gmx_unused* nb,
  * \param[out] shiftForces Shift forces buffer to accumulate into
  * \param[out] wcycle         Pointer to wallcycle data structure               */
 GPU_FUNC_QUALIFIER
-float gpu_wait_finish_task(NbnxmGpu gmx_unused* nb,
+float gpu_wait_finish_task(NbnxmGpu gmx_unused*           nb,
                            const StepWorkload gmx_unused& stepWork,
                            AtomLocality gmx_unused        aloc,
-                           real gmx_unused* e_lj,
-                           real gmx_unused*          e_el,
-                           ArrayRef<RVec> gmx_unused shiftForces,
-                           gmx_wallcycle gmx_unused* wcycle) GPU_FUNC_TERM_WITH_RETURN(0.0);
+                           real gmx_unused*               e_lj,
+                           real gmx_unused*               e_el,
+                           ArrayRef<RVec> gmx_unused      shiftForces,
+                           gmx_wallcycle gmx_unused*      wcycle) GPU_FUNC_TERM_WITH_RETURN(0.0);
 
 /*! \brief Initialization for X buffer operations on GPU.
  * Called on the NS step and performs (re-)allocations and memory copies. !*/
@@ -241,9 +241,9 @@ void nbnxn_gpu_init_x_to_nbat_x(const GridSet gmx_unused& gridSet, NbnxmGpu gmx_
  * streams should be added. Typically, true if and only if that is the last grid in gridset.
  */
 GPU_FUNC_QUALIFIER
-void nbnxn_gpu_x_to_nbat_x(const Grid gmx_unused& grid,
-                           NbnxmGpu gmx_unused*          gpu_nbv,
-                           DeviceBuffer<RVec> gmx_unused d_x,
+void nbnxn_gpu_x_to_nbat_x(const Grid gmx_unused&           grid,
+                           NbnxmGpu gmx_unused*             gpu_nbv,
+                           DeviceBuffer<RVec> gmx_unused    d_x,
                            GpuEventSynchronizer gmx_unused* xReadyOnDevice,
                            AtomLocality gmx_unused          locality,
                            int gmx_unused                   gridId,
@@ -261,7 +261,7 @@ void nbnxn_gpu_x_to_nbat_x(const Grid gmx_unused& grid,
  * \param[in] interactionLocality  Local or NonLocal sync point
  */
 GPU_FUNC_QUALIFIER
-void nbnxnInsertNonlocalGpuDependency(NbnxmGpu gmx_unused*           nb,
+void nbnxnInsertNonlocalGpuDependency(NbnxmGpu gmx_unused* nb,
                                       InteractionLocality gmx_unused interactionLocality) GPU_FUNC_TERM;
 
 /*! \brief Set up internal flags that indicate what type of short-range work there is.
@@ -277,7 +277,7 @@ void nbnxnInsertNonlocalGpuDependency(NbnxmGpu gmx_unused*           nb,
  * \param[in]     iLocality        Interaction locality identifier
  */
 GPU_FUNC_QUALIFIER
-void setupGpuShortRangeWorkLow(NbnxmGpu gmx_unused*  nb,
+void setupGpuShortRangeWorkLow(NbnxmGpu gmx_unused*              nb,
                                const ListedForcesGpu gmx_unused* listedForcesGpu,
                                InteractionLocality gmx_unused    iLocality) GPU_FUNC_TERM;
 

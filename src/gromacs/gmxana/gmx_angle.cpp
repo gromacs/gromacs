@@ -141,28 +141,28 @@ int gmx_g_angle(int argc, char* argv[])
     t_pargs            pa[]     = {
         { "-type", FALSE, etENUM, { opt }, "Type of angle to analyse" },
         { "-all",
-          FALSE,
-          etBOOL,
-          { &bALL },
-          "Plot all angles separately in the averages file, in the order of appearance in the "
-          "index file." },
+                         FALSE,
+                         etBOOL,
+                         { &bALL },
+                         "Plot all angles separately in the averages file, in the order of appearance in the "
+                                        "index file." },
         { "-binwidth",
-          FALSE,
-          etREAL,
-          { &binwidth },
-          "binwidth (degrees) for calculating the distribution" },
+                         FALSE,
+                         etREAL,
+                         { &binwidth },
+                         "binwidth (degrees) for calculating the distribution" },
         { "-periodic", FALSE, etBOOL, { &bPBC }, "Print dihedral angles modulo 360 degrees" },
         { "-chandler",
-          FALSE,
-          etBOOL,
-          { &bChandler },
-          "Use Chandler correlation function (N[trans] = 1, N[gauche] = 0) rather than cosine "
-          "correlation function. Trans is defined as phi < -60 or phi > 60." },
+                         FALSE,
+                         etBOOL,
+                         { &bChandler },
+                         "Use Chandler correlation function (N[trans] = 1, N[gauche] = 0) rather than cosine "
+                                        "correlation function. Trans is defined as phi < -60 or phi > 60." },
         { "-avercorr",
-          FALSE,
-          etBOOL,
-          { &bAverCorr },
-          "Average the correlation functions for the individual angles/dihedrals" }
+                         FALSE,
+                         etBOOL,
+                         { &bAverCorr },
+                         "Average the correlation functions for the individual angles/dihedrals" }
     };
     static const char* bugs[] = {
         "Counting transitions only works for dihedrals with multiplicity 3"

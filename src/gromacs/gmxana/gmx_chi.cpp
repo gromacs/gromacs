@@ -146,7 +146,7 @@ static gmx_bool bAllowed(real phi, real psi)
                                  "0000000000000000000000000000000000000000000000000000000000000" };
     int                x, y;
 
-#define INDEX(ppp) (((static_cast<int>(360 + (ppp)*gmx::c_rad2Deg)) % 360) / 6)
+#define INDEX(ppp) (((static_cast<int>(360 + (ppp) * gmx::c_rad2Deg)) % 360) / 6)
     x = INDEX(phi);
     y = INDEX(psi);
 #undef INDEX
@@ -487,10 +487,10 @@ static void histogramming(FILE*                    log,
 #    pragma warning(disable : 4838)
 #endif
     t_karplus kkkphi[]  = { { "J_NHa1", 6.51, -1.76, 1.6, -M_PI / 3, 0.0, 0.0 },
-                           { "J_NHa2", 6.51, -1.76, 1.6, M_PI / 3, 0.0, 0.0 },
-                           { "J_HaC'", 4.0, 1.1, 0.1, 0.0, 0.0, 0.0 },
-                           { "J_NHCb", 4.7, -1.5, -0.2, M_PI / 3, 0.0, 0.0 },
-                           { "J_Ci-1Hai", 4.5, -1.3, -1.2, 2 * M_PI / 3, 0.0, 0.0 } };
+                            { "J_NHa2", 6.51, -1.76, 1.6, M_PI / 3, 0.0, 0.0 },
+                            { "J_HaC'", 4.0, 1.1, 0.1, 0.0, 0.0, 0.0 },
+                            { "J_NHCb", 4.7, -1.5, -0.2, M_PI / 3, 0.0, 0.0 },
+                            { "J_Ci-1Hai", 4.5, -1.3, -1.2, 2 * M_PI / 3, 0.0, 0.0 } };
     t_karplus kkkpsi[]  = { { "J_HaN", -0.88, -0.61, -0.27, M_PI / 3, 0.0, 0.0 } };
     t_karplus kkkchi1[] = { { "JHaHb2", 9.5, -1.6, 1.8, -M_PI / 3, 0, 0.0 },
                             { "JHaHb3", 9.5, -1.6, 1.8, 0, 0, 0.0 } };
@@ -1350,74 +1350,74 @@ int gmx_chi(int argc, char* argv[])
     static const char* maxchistr[] = { nullptr, "0", "1", "2", "3", "4", "5", "6", nullptr };
     static gmx_bool    bRama = FALSE, bShift = FALSE, bViol = FALSE, bRamOmega = FALSE;
     static gmx_bool bNormHisto = TRUE, bChiProduct = FALSE, bHChi = FALSE, bRAD = FALSE, bPBC = TRUE;
-    static real     core_frac = 0.5;
-    t_pargs         pa[]      = {
+    static real core_frac = 0.5;
+    t_pargs     pa[]      = {
         { "-r0", FALSE, etINT, { &r0 }, "starting residue" },
         { "-rN", FALSE, etINT, { &rN }, "last residue" },
         { "-phi", FALSE, etBOOL, { &bPhi }, "Output for [GRK]phi[grk] dihedral angles" },
         { "-psi", FALSE, etBOOL, { &bPsi }, "Output for [GRK]psi[grk] dihedral angles" },
         { "-omega",
-          FALSE,
-          etBOOL,
-          { &bOmega },
-          "Output for [GRK]omega[grk] dihedrals (peptide bonds)" },
+                   FALSE,
+                   etBOOL,
+                   { &bOmega },
+                   "Output for [GRK]omega[grk] dihedrals (peptide bonds)" },
         { "-rama",
-          FALSE,
-          etBOOL,
-          { &bRama },
-          "Generate [GRK]phi[grk]/[GRK]psi[grk] and "
-          "[GRK]chi[grk][SUB]1[sub]/[GRK]chi[grk][SUB]2[sub] Ramachandran plots" },
+                   FALSE,
+                   etBOOL,
+                   { &bRama },
+                   "Generate [GRK]phi[grk]/[GRK]psi[grk] and "
+                            "[GRK]chi[grk][SUB]1[sub]/[GRK]chi[grk][SUB]2[sub] Ramachandran plots" },
         { "-viol",
-          FALSE,
-          etBOOL,
-          { &bViol },
-          "Write a file that gives 0 or 1 for violated Ramachandran angles" },
+                   FALSE,
+                   etBOOL,
+                   { &bViol },
+                   "Write a file that gives 0 or 1 for violated Ramachandran angles" },
         { "-periodic", FALSE, etBOOL, { &bPBC }, "Print dihedral angles modulo 360 degrees" },
         { "-all", FALSE, etBOOL, { &bAll }, "Output separate files for every dihedral." },
         { "-rad",
-          FALSE,
-          etBOOL,
-          { &bRAD },
-          "in angle vs time files, use radians rather than degrees." },
+                   FALSE,
+                   etBOOL,
+                   { &bRAD },
+                   "in angle vs time files, use radians rather than degrees." },
         { "-shift",
-          FALSE,
-          etBOOL,
-          { &bShift },
-          "Compute chemical shifts from [GRK]phi[grk]/[GRK]psi[grk] angles" },
+                   FALSE,
+                   etBOOL,
+                   { &bShift },
+                   "Compute chemical shifts from [GRK]phi[grk]/[GRK]psi[grk] angles" },
         { "-binwidth", FALSE, etINT, { &ndeg }, "bin width for histograms (degrees)" },
         { "-core_rotamer",
-          FALSE,
-          etREAL,
-          { &core_frac },
-          "only the central [TT]-core_rotamer[tt]\\*(360/multiplicity) belongs to each rotamer "
-          "(the rest is assigned to rotamer 0)" },
+                   FALSE,
+                   etREAL,
+                   { &core_frac },
+                   "only the central [TT]-core_rotamer[tt]\\*(360/multiplicity) belongs to each rotamer "
+                            "(the rest is assigned to rotamer 0)" },
         { "-maxchi", FALSE, etENUM, { maxchistr }, "calculate first ndih [GRK]chi[grk] dihedrals" },
         { "-normhisto", FALSE, etBOOL, { &bNormHisto }, "Normalize histograms" },
         { "-ramomega",
-          FALSE,
-          etBOOL,
-          { &bRamOmega },
-          "compute average omega as a function of [GRK]phi[grk]/[GRK]psi[grk] and plot it in an "
-          "[REF].xpm[ref] plot" },
+                   FALSE,
+                   etBOOL,
+                   { &bRamOmega },
+                   "compute average omega as a function of [GRK]phi[grk]/[GRK]psi[grk] and plot it in an "
+                            "[REF].xpm[ref] plot" },
         { "-bfact",
-          FALSE,
-          etREAL,
-          { &bfac_init },
-          "B-factor value for [REF].pdb[ref] file for atoms with no calculated dihedral order "
-          "parameter" },
+                   FALSE,
+                   etREAL,
+                   { &bfac_init },
+                   "B-factor value for [REF].pdb[ref] file for atoms with no calculated dihedral order "
+                            "parameter" },
         { "-chi_prod",
-          FALSE,
-          etBOOL,
-          { &bChiProduct },
-          "compute a single cumulative rotamer for each residue" },
+                   FALSE,
+                   etBOOL,
+                   { &bChiProduct },
+                   "compute a single cumulative rotamer for each residue" },
         { "-HChi", FALSE, etBOOL, { &bHChi }, "Include dihedrals to sidechain hydrogens" },
         { "-bmax",
-          FALSE,
-          etREAL,
-          { &bfac_max },
-          "Maximum B-factor on any of the atoms that make up a dihedral, for the dihedral angle to "
-          "be considered in the statistics. Applies to database work where a number of X-Ray "
-          "structures is analyzed. [TT]-bmax[tt] <= 0 means no limit." }
+                   FALSE,
+                   etREAL,
+                   { &bfac_max },
+                   "Maximum B-factor on any of the atoms that make up a dihedral, for the dihedral angle to "
+                            "be considered in the statistics. Applies to database work where a number of X-Ray "
+                            "structures is analyzed. [TT]-bmax[tt] <= 0 means no limit." }
     };
 
     FILE*             log;

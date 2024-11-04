@@ -694,20 +694,21 @@ void dd_redistribute_cg(FILE*         fplog,
         {
             const int thread = gmx_omp_get_thread_num();
 
-            const int             numHomeAtoms    = comm->atomRanges.numHomeAtoms();
+            const int numHomeAtoms = comm->atomRanges.numHomeAtoms();
             const gmx::Range<int> threadAtomRange = getThreadLocalRange(numHomeAtoms, nthread, thread);
 
             if (comm->systemInfo.useUpdateGroups)
             {
-                const auto&           updateGroupsCog = *comm->updateGroupsCog;
-                const int             numGroups       = updateGroupsCog.numCogs();
+                const auto& updateGroupsCog = *comm->updateGroupsCog;
+                const int   numGroups       = updateGroupsCog.numCogs();
                 const gmx::Range<int> threadGroupRange = getThreadLocalRange(numGroups, nthread, thread);
                 calcGroupMove(
                         fplog, step, dd, state, tric_dir, tcm, cell_x0, cell_x1, moveLimits, threadGroupRange, pbcAndFlags);
                 /* We need a barrier as atoms below can be in a COG of a different thread */
 #pragma omp barrier
                 gmx::dispatchTemplatedFunction(
-                        [&](auto haveBoxDeformation) {
+                        [&](auto haveBoxDeformation)
+                        {
                             applyPbcAndSetMoveFlags<haveBoxDeformation>(updateGroupsCog,
                                                                         pbcAndFlags,
                                                                         comm->systemInfo.boxDeformationRate,

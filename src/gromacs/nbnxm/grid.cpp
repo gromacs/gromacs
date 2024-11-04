@@ -786,9 +786,9 @@ static void print_bbsizes_supersub(FILE* fp, const Grid& grid)
 #else
         for (int s = 0; s < grid.numClustersPerCell()[c]; s++)
         {
-            const int index = c * sc_gpuNumClusterPerCell(layoutType) + s;
+            const int                         index = c * sc_gpuNumClusterPerCell(layoutType) + s;
             const ArrayRef<const BoundingBox> iboundingBoxes = grid.iBoundingBoxes();
-            const auto& bb = iboundingBoxes[index];
+            const auto&                       bb             = iboundingBoxes[index];
             ba[XX] += bb.upper.x - bb.lower.x;
             ba[YY] += bb.upper.y - bb.lower.y;
             ba[ZZ] += bb.upper.z - bb.lower.z;

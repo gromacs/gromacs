@@ -270,8 +270,8 @@ static __forceinline__ __device__ float2 fetch_coulomb_force_r(const NBParamGpu 
     d.x = LDG(&nbparam.coulomb_tab[index]);
     d.y = LDG(&nbparam.coulomb_tab[index + 1]);
 #    else
-    d.x   = tex1Dfetch<float>(nbparam.coulomb_tab_texobj, index);
-    d.y   = tex1Dfetch<float>(nbparam.coulomb_tab_texobj, index + 1);
+    d.x = tex1Dfetch<float>(nbparam.coulomb_tab_texobj, index);
+    d.y = tex1Dfetch<float>(nbparam.coulomb_tab_texobj, index + 1);
 #    endif // DISABLE_CUDA_TEXTURES
 
     return d;

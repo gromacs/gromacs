@@ -125,10 +125,12 @@ TEST(ScopeGuardTest, ScopeGuardCanFreePointers)
     int*          ptr   = new int{ value };
 
     {
-        auto guard = sg::make_scope_guard([&ptr]() {
-            delete ptr;
-            ptr = nullptr;
-        });
+        auto guard = sg::make_scope_guard(
+                [&ptr]()
+                {
+                    delete ptr;
+                    ptr = nullptr;
+                });
 
         EXPECT_EQ(*ptr, value);
     }

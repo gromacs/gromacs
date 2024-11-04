@@ -83,8 +83,8 @@ public:
     {
         read_tpx_state(infile, irInstance_.get(), state_.get(), mtop_.get());
     }
-    ~TprContents()                             = default;
-    TprContents(TprContents&& source) noexcept = default;
+    ~TprContents()                                 = default;
+    TprContents(TprContents&& source) noexcept     = default;
     TprContents& operator=(TprContents&&) noexcept = default;
 
     /*!

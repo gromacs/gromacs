@@ -70,7 +70,8 @@ static auto reduceKernel(const Float3* __restrict__ gm_nbnxmForce,
                          const int* __restrict__ gm_cell,
                          const int atomStart)
 {
-    return [=](sycl::id<1> itemIdx) {
+    return [=](sycl::id<1> itemIdx)
+    {
         // Set to nbnxnm force, then perhaps accumulate further to it
         Float3 temp = gm_nbnxmForce[gm_cell[itemIdx]];
 
@@ -101,14 +102,17 @@ static void launchReductionKernel_(const int                   numAtoms,
     const sycl::range<1> rangeNumAtoms(numAtoms);
     sycl::queue          queue = deviceStream.stream();
 
-    gmx::syclSubmitWithoutEvent(queue, [&](sycl::handler& cgh) {
-        auto kernel = reduceKernel<addRvecForce, accumulateForce>(d_nbnxmForce.get_pointer(),
-                                                                  d_rvecForceToAdd.get_pointer(),
-                                                                  d_forceTotal.get_pointer(),
-                                                                  d_cell.get_pointer(),
-                                                                  atomStart);
-        cgh.parallel_for<ReduceKernel<addRvecForce, accumulateForce>>(rangeNumAtoms, kernel);
-    });
+    gmx::syclSubmitWithoutEvent(
+            queue,
+            [&](sycl::handler& cgh)
+            {
+                auto kernel = reduceKernel<addRvecForce, accumulateForce>(d_nbnxmForce.get_pointer(),
+                                                                          d_rvecForceToAdd.get_pointer(),
+                                                                          d_forceTotal.get_pointer(),
+                                                                          d_cell.get_pointer(),
+                                                                          atomStart);
+                cgh.parallel_for<ReduceKernel<addRvecForce, accumulateForce>>(rangeNumAtoms, kernel);
+            });
 }
 
 /*! \brief Select templated Force reduction kernel and launch it. */
@@ -127,7 +131,8 @@ void launchForceReductionKernel(int                    numAtoms,
     GMX_UNUSED_VALUE(d_forcesReadyNvshmemFlags);
     GMX_UNUSED_VALUE(forcesReadyNvshmemFlagsCounter);
     dispatchTemplatedFunction(
-            [&](auto addRvecForce_, auto accumulateForce_) {
+            [&](auto addRvecForce_, auto accumulateForce_)
+            {
                 return launchReductionKernel_<addRvecForce_, accumulateForce_>(
                         numAtoms, atomStart, d_nbnxmForceToAdd, d_rvecForceToAdd, d_baseForce, d_cell, deviceStream);
             },

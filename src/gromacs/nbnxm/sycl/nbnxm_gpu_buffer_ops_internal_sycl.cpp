@@ -72,7 +72,8 @@ static auto nbnxmKernelTransformXToXq(Float4* __restrict__ gm_xq,
                                       int numAtomsPerCell,
                                       int columnsOffset)
 {
-    return [=](sycl::id<2> itemIdx) {
+    return [=](sycl::id<2> itemIdx)
+    {
         // Map cell-level parallelism to y component of block index.
         const int cxy = itemIdx.get(1) + columnsOffset;
 
@@ -108,17 +109,20 @@ void launchNbnxmKernelTransformXToXq(const Grid&          grid,
     const sycl::range<2> globalSize{ numAtomsMax, numColumns };
     sycl::queue          q = deviceStream.stream();
 
-    gmx::syclSubmitWithoutEvent(q, [&](sycl::handler& cgh) {
-        auto kernel = nbnxmKernelTransformXToXq(nb->atdat->xq.get_pointer(),
-                                                d_x.get_pointer(),
-                                                nb->atomIndices.get_pointer(),
-                                                nb->cxy_na.get_pointer(),
-                                                nb->cxy_ind.get_pointer(),
-                                                grid.cellOffset(),
-                                                grid.numAtomsPerCell(),
-                                                numColumnsMax * gridId);
-        cgh.parallel_for<NbnxmKernelTransformXToXqName>(globalSize, kernel);
-    });
+    gmx::syclSubmitWithoutEvent(q,
+                                [&](sycl::handler& cgh)
+                                {
+                                    auto kernel =
+                                            nbnxmKernelTransformXToXq(nb->atdat->xq.get_pointer(),
+                                                                      d_x.get_pointer(),
+                                                                      nb->atomIndices.get_pointer(),
+                                                                      nb->cxy_na.get_pointer(),
+                                                                      nb->cxy_ind.get_pointer(),
+                                                                      grid.cellOffset(),
+                                                                      grid.numAtomsPerCell(),
+                                                                      numColumnsMax * gridId);
+                                    cgh.parallel_for<NbnxmKernelTransformXToXqName>(globalSize, kernel);
+                                });
 }
 
 } // namespace gmx

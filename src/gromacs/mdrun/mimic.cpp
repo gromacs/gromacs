@@ -205,9 +205,9 @@ void gmx::LegacySimulator::do_mimic()
     {
         gmx_fatal(FARGS, "Multiple simulations not supported by MiMiC.");
     }
-    if (std::any_of(ir->opts.annealing, ir->opts.annealing + ir->opts.ngtc, [](SimulatedAnnealing i) {
-            return i != SimulatedAnnealing::No;
-        }))
+    if (std::any_of(ir->opts.annealing,
+                    ir->opts.annealing + ir->opts.ngtc,
+                    [](SimulatedAnnealing i) { return i != SimulatedAnnealing::No; }))
     {
         gmx_fatal(FARGS, "Simulated annealing not supported by MiMiC.");
     }

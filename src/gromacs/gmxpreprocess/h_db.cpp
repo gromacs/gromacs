@@ -194,14 +194,15 @@ static void read_h_db_file(const std::filesystem::path& hfn, std::vector<Molecul
         /* Sort the list for searching later */
         std::sort(globalPatches->begin(),
                   globalPatches->end(),
-                  [](const MoleculePatchDatabase& a1, const MoleculePatchDatabase& a2) {
-                      return std::lexicographical_compare(a1.name.begin(),
-                                                          a1.name.end(),
-                                                          a2.name.begin(),
-                                                          a2.name.end(),
-                                                          [](const char& c1, const char& c2) {
-                                                              return std::toupper(c1) < std::toupper(c2);
-                                                          });
+                  [](const MoleculePatchDatabase& a1, const MoleculePatchDatabase& a2)
+                  {
+                      return std::lexicographical_compare(
+                              a1.name.begin(),
+                              a1.name.end(),
+                              a2.name.begin(),
+                              a2.name.end(),
+                              [](const char& c1, const char& c2)
+                              { return std::toupper(c1) < std::toupper(c2); });
                   });
     }
 }
@@ -224,7 +225,8 @@ int read_h_db(const std::filesystem::path& ffdir, std::vector<MoleculePatchDatab
 gmx::ArrayRef<const MoleculePatchDatabase>::iterator
 search_h_db(gmx::ArrayRef<const MoleculePatchDatabase> globalPatches, const char* key)
 {
-    return std::find_if(globalPatches.begin(), globalPatches.end(), [&key](const MoleculePatchDatabase& a) {
-        return gmx::equalCaseInsensitive(key, a.name);
-    });
+    return std::find_if(globalPatches.begin(),
+                        globalPatches.end(),
+                        [&key](const MoleculePatchDatabase& a)
+                        { return gmx::equalCaseInsensitive(key, a.name); });
 }

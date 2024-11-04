@@ -1432,8 +1432,8 @@ void pme_gpu_reinit_atoms(PmeGpu* pmeGpu, const int nAtoms, const real* chargesA
     const bool haveToRealloc      = (pmeGpu->nAtomsAlloc < nAtomsNewPadded);
     pmeGpu->nAtomsAlloc           = nAtomsNewPadded;
 
-    const auto atomsPerWarp                 = pme_gpu_get_atoms_per_warp(pmeGpu);
-    const int  nWarps                       = gmx::divideRoundUp(nAtoms, atomsPerWarp);
+    const auto atomsPerWarp = pme_gpu_get_atoms_per_warp(pmeGpu);
+    const int  nWarps       = gmx::divideRoundUp(nAtoms, atomsPerWarp);
     pmeGpu->archSpecific->splineCountActive = DIM * nWarps * atomsPerWarp * pmeGpu->common->pme_order;
 
     if (pmeGpu->useNvshmem)
@@ -1796,10 +1796,10 @@ static auto selectSpreadKernelPtr(const PmeGpu*  pmeGpu,
  *
  * \return Rank of remote sender associated with this stage
  */
-static int manageSyncWithPpCoordinateSenderGpu(const PmeGpu*                  pmeGpu,
+static int manageSyncWithPpCoordinateSenderGpu(const PmeGpu* pmeGpu,
                                                gmx::PmeCoordinateReceiverGpu* pmeCoordinateReceiverGpu,
-                                               bool                           usePipeline   = false,
-                                               int                            pipelineStage = 0)
+                                               bool usePipeline   = false,
+                                               int  pipelineStage = 0)
 {
     int senderRank;
     if (GMX_THREAD_MPI)

@@ -766,7 +766,8 @@ struct CompileTimeStringJoin
     {
         constexpr std::size_t              bufferLength = (std::size(inputStrings) + ... + 0);
         std::array<char, bufferLength + 1> internalStorage{};
-        auto append = [i = 0, &internalStorage](auto const& string) mutable {
+        auto append = [i = 0, &internalStorage](auto const& string) mutable
+        {
             for (auto charPos : string)
             {
                 internalStorage[i++] = charPos;

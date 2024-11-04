@@ -367,11 +367,11 @@ public:
      */
     static ISimulatorElement* getElementPointerImpl(LegacySimulatorData* legacySimulatorData,
                                                     ModularSimulatorAlgorithmBuilderHelper* builderHelper,
-                                                    StatePropagatorData*        statePropagatorData,
-                                                    EnergyData*                 energyData,
+                                                    StatePropagatorData* statePropagatorData,
+                                                    EnergyData*          energyData,
                                                     FreeEnergyPerturbationData* freeEnergyPerturbationData,
                                                     GlobalCommunicationHelper* globalCommunicationHelper,
-                                                    ObservablesReducer*        observablesReducer);
+                                                    ObservablesReducer* observablesReducer);
 
 private:
     //! Pointer to the associated StatePropagatorData

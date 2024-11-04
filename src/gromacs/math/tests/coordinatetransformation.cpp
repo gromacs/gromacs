@@ -73,10 +73,10 @@ protected:
     RVec              identityScale_       = { 1, 1, 1 };
     RVec              identityTranslation_ = { 0, 0, 0 };
     std::vector<RVec> testVectors_         = { { 0, 0, 0 },
-                                       { 1, 0, 0 },
-                                       { 0, -1, -1 },
-                                       { 1e10, 1e1, 1e-2 },
-                                       { 3, -6, 2.5 } };
+                                               { 1, 0, 0 },
+                                               { 0, -1, -1 },
+                                               { 1e10, 1e1, 1e-2 },
+                                               { 3, -6, 2.5 } };
 };
 
 class AffineTransformationTest : public ::testing::Test

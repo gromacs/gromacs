@@ -114,8 +114,8 @@ static void flagInteractionsForType(const int              ftype,
             const int moleculeIndex = (a0 - atomRange.begin()) / numAtomsPerMolecule;
             const int atomOffset = (a0 - atomRange.begin()) - moleculeIndex * numAtomsPerMolecule;
             const int globalAtomStartInMolecule = atomRange.begin() + moleculeIndex * numAtomsPerMolecule;
-            int       j_mol                     = ril.index[atomOffset];
-            bool found                          = false;
+            int  j_mol = ril.index[atomOffset];
+            bool found = false;
             while (j_mol < ril.index[atomOffset + 1] && !found)
             {
                 const int j       = moleculeIndex * nril_mol + j_mol;
@@ -468,13 +468,15 @@ LocalTopologyChecker::LocalTopologyChecker(const MDLogger&            mdlog,
 {
     Impl*                                          impl = impl_.get();
     ObservablesReducerBuilder::CallbackFromBuilder callbackFromBuilder =
-            [impl](ObservablesReducerBuilder::CallbackToRequireReduction c, gmx::ArrayRef<double> v) {
-                impl->callbackToRequireReduction_ = std::move(c);
-                impl->reductionBuffer_            = v;
-            };
+            [impl](ObservablesReducerBuilder::CallbackToRequireReduction c, gmx::ArrayRef<double> v)
+    {
+        impl->callbackToRequireReduction_ = std::move(c);
+        impl->reductionBuffer_            = v;
+    };
 
     // Make the callback that runs afer reduction.
-    ObservablesReducerBuilder::CallbackAfterReduction callbackAfterReduction = [impl](gmx::Step /*step*/) {
+    ObservablesReducerBuilder::CallbackAfterReduction callbackAfterReduction = [impl](gmx::Step /*step*/)
+    {
         // Get the total after reduction
         int numTotalBondedInteractionsFound = impl->reductionBuffer_[0];
         if (numTotalBondedInteractionsFound != impl->expectedNumGlobalBondedInteractions_)

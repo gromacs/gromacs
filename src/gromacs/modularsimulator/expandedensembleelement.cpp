@@ -148,7 +148,7 @@ void ExpandedEnsembleElement::saveCheckpointState(std::optional<WriteCheckpointD
 }
 
 void ExpandedEnsembleElement::restoreCheckpointState(std::optional<ReadCheckpointData> checkpointData,
-                                                     const t_commrec*                  cr)
+                                                     const t_commrec* cr)
 {
     if (MAIN(cr))
     {
@@ -178,13 +178,13 @@ std::optional<SignallerCallback> ExpandedEnsembleElement::registerLoggingCallbac
     }
 }
 
-ExpandedEnsembleElement::ExpandedEnsembleElement(bool                              isMainRank,
-                                                 Step                              initialStep,
-                                                 int                               frequency,
-                                                 const EnergyData*                 energyData,
+ExpandedEnsembleElement::ExpandedEnsembleElement(bool              isMainRank,
+                                                 Step              initialStep,
+                                                 int               frequency,
+                                                 const EnergyData* energyData,
                                                  const FreeEnergyPerturbationData* freeEnergyPerturbationData,
-                                                 FILE*                             fplog,
-                                                 const t_inputrec*                 inputrec) :
+                                                 FILE*             fplog,
+                                                 const t_inputrec* inputrec) :
     fepStateSetting_(freeEnergyPerturbationData->enableExternalFepStateSetting()),
     isMainRank_(isMainRank),
     initialStep_(initialStep),
@@ -205,10 +205,10 @@ ExpandedEnsembleElement::~ExpandedEnsembleElement() = default;
 ISimulatorElement* ExpandedEnsembleElement::getElementPointerImpl(
         LegacySimulatorData*                    legacySimulatorData,
         ModularSimulatorAlgorithmBuilderHelper* builderHelper,
-        StatePropagatorData gmx_unused* statePropagatorData,
-        EnergyData*                     energyData,
-        FreeEnergyPerturbationData*     freeEnergyPerturbationData,
-        GlobalCommunicationHelper gmx_unused* globalCommunicationHelper,
+        StatePropagatorData gmx_unused*         statePropagatorData,
+        EnergyData*                             energyData,
+        FreeEnergyPerturbationData*             freeEnergyPerturbationData,
+        GlobalCommunicationHelper gmx_unused*   globalCommunicationHelper,
         ObservablesReducer* /*observablesReducer*/)
 {
     return builderHelper->storeElement(std::make_unique<ExpandedEnsembleElement>(

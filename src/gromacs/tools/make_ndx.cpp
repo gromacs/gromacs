@@ -1438,16 +1438,16 @@ int gmx_make_ndx(int argc, char* argv[])
     static gmx_bool bVerbose   = FALSE;
     static gmx_bool bDuplicate = FALSE;
     t_pargs         pa[]       = { { "-natoms",
-                       FALSE,
-                       etINT,
-                       { &natoms },
-                       "set number of atoms (default: read from coordinate or index file)" },
-                     { "-twin",
-                       FALSE,
-                       etBOOL,
-                       { &bDuplicate },
-                       "Duplicate all index groups with an offset of -natoms" },
-                     { "-verbose", FALSE, etBOOL, { &bVerbose }, "HIDDENVerbose output" } };
+                                     FALSE,
+                                     etINT,
+                                     { &natoms },
+                                     "set number of atoms (default: read from coordinate or index file)" },
+                                   { "-twin",
+                                     FALSE,
+                                     etBOOL,
+                                     { &bDuplicate },
+                                     "Duplicate all index groups with an offset of -natoms" },
+                                   { "-verbose", FALSE, etBOOL, { &bVerbose }, "HIDDENVerbose output" } };
 #define NPA asize(pa)
 
     gmx_output_env_t* oenv;
@@ -1459,8 +1459,8 @@ int gmx_make_ndx(int argc, char* argv[])
     PbcType           pbcType;
     matrix            box;
     t_filenm          fnm[] = { { efSTX, "-f", nullptr, ffOPTRD },
-                       { efNDX, "-n", nullptr, ffOPTRDMULT },
-                       { efNDX, "-o", nullptr, ffWRITE } };
+                                { efNDX, "-n", nullptr, ffOPTRDMULT },
+                                { efNDX, "-o", nullptr, ffWRITE } };
 #define NFILE asize(fnm)
 
     if (!parse_common_args(&argc, argv, 0, NFILE, fnm, NPA, pa, asize(desc), desc, 0, nullptr, &oenv))

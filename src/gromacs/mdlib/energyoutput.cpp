@@ -160,7 +160,7 @@ EnergyOutput::EnergyOutput(ener_file*                fp_ene,
 {
     const char*        ener_nm[F_NRE];
     static const char* pres_nm[]  = { "Pres-XX", "Pres-XY", "Pres-XZ", "Pres-YX", "Pres-YY",
-                                     "Pres-YZ", "Pres-ZX", "Pres-ZY", "Pres-ZZ" };
+                                      "Pres-YZ", "Pres-ZX", "Pres-ZY", "Pres-ZZ" };
     static const char* surft_nm[] = { "#Surf*SurfTen" };
     static const char* mu_nm[]    = { "Mu-X", "Mu-Y", "Mu-Z" };
     static const char* vcos_nm[]  = { "2CosZ*Vel-X" };
@@ -1227,8 +1227,8 @@ void EnergyOutput::printStepToEnergyFile(ener_file* fp_ene,
             fr.block[b].sub[0].type = XdrDataType::Float;
             fr.block[b].sub[0].fval = block[b];
 #else
-            fr.block[b].sub[0].type  = XdrDataType::Double;
-            fr.block[b].sub[0].dval  = block[b];
+            fr.block[b].sub[0].type = XdrDataType::Double;
+            fr.block[b].sub[0].dval = block[b];
 #endif
         }
 

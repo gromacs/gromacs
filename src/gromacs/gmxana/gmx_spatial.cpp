@@ -54,8 +54,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
-static const double bohr =
-        0.529177249; /* conversion factor to compensate for VMD plugin conversion... */
+static const double bohr = 0.529177249; /* conversion factor to compensate for VMD plugin conversion... */
 
 int gmx_spatial(int argc, char* argv[])
 {

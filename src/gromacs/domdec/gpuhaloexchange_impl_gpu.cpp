@@ -778,7 +778,7 @@ void GpuHaloExchange::destroyGpuHaloExchangeNvshmemBuf()
     impl_->destroyGpuHaloExchangeNvshmemBuf();
 }
 
-GpuEventSynchronizer* GpuHaloExchange::communicateHaloCoordinates(const matrix          box,
+GpuEventSynchronizer* GpuHaloExchange::communicateHaloCoordinates(const matrix box,
                                                                   GpuEventSynchronizer* dependencyEvent)
 {
     return impl_->communicateHaloCoordinates(box, dependencyEvent);

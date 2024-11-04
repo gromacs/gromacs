@@ -125,9 +125,8 @@ static bool anyDimUsesProvider(const AwhBiasParams&            awhBiasParams,
 {
     return std::any_of(awhBiasParams.dimParams().begin(),
                        awhBiasParams.dimParams().end(),
-                       [&awhCoordProvider](const auto& awhDimParam) {
-                           return awhDimParam.coordinateProvider() == awhCoordProvider;
-                       });
+                       [&awhCoordProvider](const auto& awhDimParam)
+                       { return awhDimParam.coordinateProvider() == awhCoordProvider; });
 }
 
 /*! \brief Checks whether any dimension uses the given coordinate provider type.
@@ -140,9 +139,8 @@ static bool anyDimUsesProvider(const AwhParams& awhParams, const AwhCoordinatePr
 {
     return std::any_of(awhParams.awhBiasParams().begin(),
                        awhParams.awhBiasParams().end(),
-                       [&awhCoordProvider](const auto& awhBiasParam) {
-                           return anyDimUsesProvider(awhBiasParam, awhCoordProvider);
-                       });
+                       [&awhCoordProvider](const auto& awhBiasParam)
+                       { return anyDimUsesProvider(awhBiasParam, awhCoordProvider); });
 }
 
 /*! \brief Checks whether any bias scales the target distribution based on the AWH friction metric.
@@ -569,10 +567,10 @@ void Awh::writeToEnergyFrame(int64_t step, t_enxframe* frame)
 
 bool Awh::hasFepLambdaDimension() const
 {
-    return std::any_of(
-            std::begin(biasCoupledToSystem_),
-            std::end(biasCoupledToSystem_),
-            [](const auto& coupledBias) { return coupledBias.bias_.hasFepLambdaDimension(); });
+    return std::any_of(std::begin(biasCoupledToSystem_),
+                       std::end(biasCoupledToSystem_),
+                       [](const auto& coupledBias)
+                       { return coupledBias.bias_.hasFepLambdaDimension(); });
 }
 
 bool Awh::needForeignEnergyDifferences(const int64_t step) const
@@ -590,9 +588,12 @@ bool Awh::needForeignEnergyDifferences(const int64_t step) const
     /* Check whether the bias(es) that has/have a FEP lambda dimension should sample coordinates
      * this step. Since the biases may have different sampleCoordStep it is necessary to check
      * this combination. */
-    return std::any_of(biasCoupledToSystem_.begin(), biasCoupledToSystem_.end(), [step](const auto& biasCts) {
-        return biasCts.bias_.hasFepLambdaDimension() && biasCts.bias_.isSampleCoordStep(step);
-    });
+    return std::any_of(biasCoupledToSystem_.begin(),
+                       biasCoupledToSystem_.end(),
+                       [step](const auto& biasCts) {
+                           return biasCts.bias_.hasFepLambdaDimension()
+                                  && biasCts.bias_.isSampleCoordStep(step);
+                       });
 }
 
 std::unique_ptr<Awh> prepareAwhModule(FILE*                 fplog,

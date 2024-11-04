@@ -238,18 +238,19 @@ static int n_hydro(gmx::ArrayRef<const int> a, char*** atomname)
 static bool dihedralIsOnSameBondAsImproper(const InteractionOfType&               dihedral,
                                            gmx::ArrayRef<const InteractionOfType> improperDihedrals)
 {
-    return std::any_of(improperDihedrals.begin(), improperDihedrals.end(), [&dihedral](const auto& improper) {
-        return is_dihedral_on_same_bond(dihedral, improper);
-    });
+    return std::any_of(improperDihedrals.begin(),
+                       improperDihedrals.end(),
+                       [&dihedral](const auto& improper)
+                       { return is_dihedral_on_same_bond(dihedral, improper); });
 }
 
 /* Clean up the dihedrals (both generated and read from the .rtp
  * file). */
 static std::vector<InteractionOfType> clean_dih(gmx::ArrayRef<const InteractionOfType> originalDihedrals,
                                                 gmx::ArrayRef<const InteractionOfType> improperDihedrals,
-                                                t_atoms*                               atoms,
-                                                bool bKeepAllGeneratedDihedrals,
-                                                bool bRemoveDihedralIfWithImproper)
+                                                t_atoms* atoms,
+                                                bool     bKeepAllGeneratedDihedrals,
+                                                bool     bRemoveDihedralIfWithImproper)
 {
     std::vector<InteractionOfType> newDihedrals;
 
@@ -298,18 +299,23 @@ static std::vector<InteractionOfType> clean_dih(gmx::ArrayRef<const InteractionO
         // either is not on the same bond, or another diehdral that was also
         // explicitly set in the RTP.
         const auto beginSameBondIt = dihedralIt++;
-        dihedralIt = std::find_if(dihedralIt, originalDihedrals.end(), [&beginSameBondIt](const auto& dih) {
-            return !is_dihedral_on_same_bond(*beginSameBondIt, dih) || was_dihedral_set_in_rtp(dih);
-        });
+        dihedralIt                 = std::find_if(dihedralIt,
+                                  originalDihedrals.end(),
+                                  [&beginSameBondIt](const auto& dih) {
+                                      return !is_dihedral_on_same_bond(*beginSameBondIt, dih)
+                                             || was_dihedral_set_in_rtp(dih);
+                                  });
 
         // [beginSameBondIt,dihedralIt[ now specifies a range of dihedrals with the same central bond.
         // Find the element (dihedral) with the smallest number of hydrogens in this range.
         // Since the range is non-empty (it includes at least the element beginSameBondIt points
         // to), there will be a valid match.
-        const auto bestMatchIt =
-                std::min_element(beginSameBondIt, dihedralIt, [atoms](const auto& d1, const auto& d2) {
-                    return n_hydro(d1.atoms(), atoms->atomname) < n_hydro(d2.atoms(), atoms->atomname);
-                });
+        const auto bestMatchIt = std::min_element(beginSameBondIt,
+                                                  dihedralIt,
+                                                  [atoms](const auto& d1, const auto& d2) {
+                                                      return n_hydro(d1.atoms(), atoms->atomname)
+                                                             < n_hydro(d2.atoms(), atoms->atomname);
+                                                  });
 
         // If the original candidate (beginSameBondIt) dihedral was not explicitly set in the RTP,
         // we just add the dihedral that is the best match in the sense of fewest hydrogens in
@@ -345,7 +351,7 @@ static std::vector<InteractionOfType> clean_dih(gmx::ArrayRef<const InteractionO
     return newDihedrals;
 }
 
-static std::vector<InteractionOfType> get_impropers(t_atoms*                             atoms,
+static std::vector<InteractionOfType> get_impropers(t_atoms* atoms,
                                                     gmx::ArrayRef<MoleculePatchDatabase> globalPatches,
                                                     bool                     bAllowMissing,
                                                     gmx::ArrayRef<const int> cyclicBondsIndex,
@@ -859,7 +865,7 @@ void gen_pad(t_atoms*                               atoms,
                         }
                     }
                     const std::optional<int> atomIndex = search_res_atom(p, res, atoms, "angle", TRUE);
-                    foundMatch                         = atomIndex.has_value();
+                    foundMatch = atomIndex.has_value();
                     if (foundMatch)
                     {
                         atomNumbers.emplace_back(atomIndex.value());
@@ -916,7 +922,7 @@ void gen_pad(t_atoms*                               atoms,
                         }
                     }
                     const std::optional<int> atomIndex = search_res_atom(p, res, atoms, "dihedral", TRUE);
-                    foundMatch                         = atomIndex.has_value();
+                    foundMatch = atomIndex.has_value();
                     if (foundMatch)
                     {
                         atomNumbers.emplace_back(atomIndex.value());

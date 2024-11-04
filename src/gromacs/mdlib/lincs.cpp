@@ -1408,7 +1408,8 @@ static void set_lincs_matrix(Lincs* li, ArrayRef<const real> invmass, real lambd
 
     /* Construct the coupling coefficient matrix blmf */
     int ntriangle = 0, ncc_triangle = 0, nCrossTaskTriangles = 0;
-#pragma omp parallel for reduction(+: ntriangle, ncc_triangle, nCrossTaskTriangles) num_threads(li->ntask) schedule(static)
+#pragma omp parallel for reduction(+ : ntriangle, ncc_triangle, nCrossTaskTriangles) \
+        num_threads(li->ntask) schedule(static)
     for (int th = 0; th < li->ntask; th++)
     {
         try
@@ -1638,13 +1639,15 @@ Lincs* init_lincs(FILE*                            fplog,
     if (observablesReducerBuilder)
     {
         ObservablesReducerBuilder::CallbackFromBuilder callbackFromBuilder =
-                [li](ObservablesReducerBuilder::CallbackToRequireReduction c, gmx::ArrayRef<double> v) {
-                    li->callbackToRequireReduction = std::move(c);
-                    li->rmsdReductionBuffer        = v;
-                };
+                [li](ObservablesReducerBuilder::CallbackToRequireReduction c, gmx::ArrayRef<double> v)
+        {
+            li->callbackToRequireReduction = std::move(c);
+            li->rmsdReductionBuffer        = v;
+        };
 
         // Make the callback that runs afer reduction.
-        ObservablesReducerBuilder::CallbackAfterReduction callbackAfterReduction = [li](gmx::Step /*step*/) {
+        ObservablesReducerBuilder::CallbackAfterReduction callbackAfterReduction = [li](gmx::Step /*step*/)
+        {
             if (li->rmsdReductionBuffer[0] > 0)
             {
                 li->constraintRmsDeviation =

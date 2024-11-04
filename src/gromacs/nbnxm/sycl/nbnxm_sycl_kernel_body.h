@@ -718,7 +718,8 @@ static auto nbnxmKernel(sycl::handler& cgh,
     // Local memory buffer for i x+q pre-loading
     sycl::local_accessor<Float4, 1> sm_xq(sycl::range<1>(c_superClusterSize * c_clSize), cgh);
 
-    auto sm_atomTypeI = [&]() {
+    auto sm_atomTypeI = [&]()
+    {
         if constexpr (!props.vdwComb)
         {
             return sycl::local_accessor<int, 1>(sycl::range<1>(c_superClusterSize * c_clSize), cgh);
@@ -729,7 +730,8 @@ static auto nbnxmKernel(sycl::handler& cgh,
         }
     }();
 
-    auto sm_ljCombI = [&]() {
+    auto sm_ljCombI = [&]()
+    {
         if constexpr (props.vdwComb)
         {
             return sycl::local_accessor<Float2, 1>(sycl::range<1>(c_superClusterSize * c_clSize), cgh);
@@ -756,7 +758,8 @@ static auto nbnxmKernel(sycl::handler& cgh,
                                                           : (needExtraElementForReduction ? 1 : 0);
     sycl::local_accessor<float, 1> sm_reductionBuffer(sycl::range<1>(sm_reductionBufferSize), cgh);
 
-    auto sm_prunedPairCount = [&]() {
+    auto sm_prunedPairCount = [&]()
+    {
         if constexpr (doPruneNBL && nbnxmSortListsOnGpu())
         {
             return sycl::local_accessor<int, 1>(sycl::range<1>(1), cgh);
@@ -911,7 +914,7 @@ static auto nbnxmKernel(sycl::handler& cgh,
                     energyElec *= -ewaldBeta * c_oneOverSqrtPi; /* last factor 1/sqrt(pi) */
                 }
             } // (nbSci.shift == gmx::c_centralShiftIndex && a_plistCJPacked[cijPackedBegin].cj[0] == sci * c_nbnxnGpuNumClusterPerSupercluster)
-        }     // (doCalcEnergies && doExclusionForces)
+        } // (doCalcEnergies && doExclusionForces)
 
         // Only needed if (doExclusionForces)
         // Note that we use & instead of && for performance (benchmarked in 2017)
@@ -936,20 +939,21 @@ static auto nbnxmKernel(sycl::handler& cgh,
                     c_nbnxnGpuJgroupSize; // Unrolling has been verified to improve performance on AMD
 #elif defined(__SYCL_CUDA_ARCH__) && __SYCL_CUDA_ARCH__ >= 800
             // Unrolling parameters follow CUDA implementation for Ampere and later.
-            constexpr int unrollFactor = [=]() {
+            constexpr int unrollFactor = [=]()
+            {
                 if constexpr (!doCalcEnergies && !doPruneNBL)
                 {
                     return (props.elecCutoff || props.elecRF
                             || (props.elecEwald && !props.vdwFSwitch && !props.vdwPSwitch
                                 && (props.vdwCombLB || __SYCL_CUDA_ARCH__ == 800)))
-                                                         ? 4
-                                                         : 2;
+                                   ? 4
+                                   : 2;
                 }
                 else
                 {
                     return (props.elecCutoff || (props.elecRF && !props.vdwFSwitch && !props.vdwPSwitch))
-                                                         ? 2
-                                                         : 1;
+                                   ? 2
+                                   : 1;
                 }
             }();
 #else
@@ -1056,7 +1060,7 @@ static auto nbnxmKernel(sycl::handler& cgh,
                                         c6c12 = convertSigmaEpsilonToC6C12(sigma, epsilon);
                                     }
                                 } // props.vdwCombGeom
-                            }     // !props.vdwComb
+                            } // !props.vdwComb
 
                             // c6 and c12 are unused and garbage iff props.vdwCombLB && !doCalcEnergies
                             const float c6  = c6c12[0];
@@ -1203,7 +1207,7 @@ static auto nbnxmKernel(sycl::handler& cgh,
                             fCiBufZ(i) += forceIJ[2];
 #endif
                         } // (r2 < rCoulombSq) && notExcluded
-                    }     // (imask & maskJI)
+                    } // (imask & maskJI)
                     /* shift the mask bit by 1 */
                     maskJI += maskJI;
                 } // for (int i = 0; i < c_nbnxnGpuNumClusterPerSupercluster; i++)
@@ -1285,11 +1289,14 @@ static void launchNbnxmKernel(const DeviceStream& deviceStream, const int numSci
 
     sycl::queue q = deviceStream.stream();
 
-    gmx::syclSubmitWithoutEvent(q, [&](sycl::handler& cgh) {
-        auto kernel = nbnxmKernel<subGroupSize, doPruneNBL, doCalcEnergies, elecType, vdwType>(
-                cgh, std::forward<Args>(args)...);
-        cgh.parallel_for<kernelNameType>(range, kernel);
-    });
+    gmx::syclSubmitWithoutEvent(
+            q,
+            [&](sycl::handler& cgh)
+            {
+                auto kernel = nbnxmKernel<subGroupSize, doPruneNBL, doCalcEnergies, elecType, vdwType>(
+                        cgh, std::forward<Args>(args)...);
+                cgh.parallel_for<kernelNameType>(range, kernel);
+            });
 }
 
 //! \brief Select templated kernel and launch it.
@@ -1297,7 +1304,8 @@ template<int subGroupSize, bool doPruneNBL, bool doCalcEnergies, class... Args>
 void chooseAndLaunchNbnxmKernel(enum ElecType elecType, enum VdwType vdwType, Args&&... args)
 {
     gmx::dispatchTemplatedFunction(
-            [&](auto elecType_, auto vdwType_) {
+            [&](auto elecType_, auto vdwType_)
+            {
                 return launchNbnxmKernel<subGroupSize, doPruneNBL, doCalcEnergies, elecType_, vdwType_>(
                         std::forward<Args>(args)...);
             },

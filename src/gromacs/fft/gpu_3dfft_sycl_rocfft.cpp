@@ -136,42 +136,49 @@ RocfftPlan makePlan(const std::string&     descriptiveString,
                 sycl::make_async_writeback_view(&workBuffer, sycl::range(1), queue);
         sycl::buffer<size_t, 1> requiredWorkBufferSizeView =
                 sycl::make_async_writeback_view(&requiredWorkBufferSize, sycl::range(1), queue);
-        queue.submit([&](sycl::handler& cgh) {
-            // Make the necessary accessors
-            auto a_plan       = planView.get_access(cgh, sycl::read_write, sycl::no_init);
-            auto a_workBuffer = workBufferView.get_access(cgh, sycl::write_only, sycl::no_init);
-            auto a_requiredWorkBufferSize =
-                    requiredWorkBufferSizeView.get_access(cgh, sycl::read_write, sycl::no_init);
-            auto a_result = resultBuffer.get_access(cgh, sycl::write_only, sycl::no_init);
-            cgh.hipSYCL_enqueue_custom_operation([=](sycl::interop_handle& /*h*/) {
-                const int numBatches = 1;
-                // Unlike some other FFT APIs, in rocFFT the
-                // dimension of an FFT is the (vectorial) size
-                // of the problem (ie. rocfftRealGridSize), not
-                // the size of the input vector (which varies
-                // according to whether the input format is real
-                // or hermitian respectively for forward or
-                // reverse transforms).
-                a_result[0] = rocfft_plan_create(&a_plan[0],
-                                                 rocfft_placement_notinplace,
-                                                 transformType,
-                                                 rocfft_precision_single,
-                                                 rocfftRealGridSize.size(),
-                                                 rocfftRealGridSize.data(),
-                                                 numBatches,
-                                                 description);
-                a_result[1] = rocfft_plan_get_work_buffer_size(a_plan[0], &a_requiredWorkBufferSize[0]);
-                if (a_requiredWorkBufferSize[0] > 0)
+        queue.submit(
+                [&](sycl::handler& cgh)
                 {
-                    hipError_t err = hipMalloc(&a_workBuffer[0], a_requiredWorkBufferSize[0]);
-                    a_result[2] = (err == hipSuccess) ? rocfft_status_success : rocfft_status_failure;
-                }
-                else
-                {
-                    a_result[2] = rocfft_status_success;
-                }
-            });
-        });
+                    // Make the necessary accessors
+                    auto a_plan = planView.get_access(cgh, sycl::read_write, sycl::no_init);
+                    auto a_workBuffer = workBufferView.get_access(cgh, sycl::write_only, sycl::no_init);
+                    auto a_requiredWorkBufferSize =
+                            requiredWorkBufferSizeView.get_access(cgh, sycl::read_write, sycl::no_init);
+                    auto a_result = resultBuffer.get_access(cgh, sycl::write_only, sycl::no_init);
+                    cgh.hipSYCL_enqueue_custom_operation(
+                            [=](sycl::interop_handle& /*h*/)
+                            {
+                                const int numBatches = 1;
+                                // Unlike some other FFT APIs, in rocFFT the
+                                // dimension of an FFT is the (vectorial) size
+                                // of the problem (ie. rocfftRealGridSize), not
+                                // the size of the input vector (which varies
+                                // according to whether the input format is real
+                                // or hermitian respectively for forward or
+                                // reverse transforms).
+                                a_result[0] = rocfft_plan_create(&a_plan[0],
+                                                                 rocfft_placement_notinplace,
+                                                                 transformType,
+                                                                 rocfft_precision_single,
+                                                                 rocfftRealGridSize.size(),
+                                                                 rocfftRealGridSize.data(),
+                                                                 numBatches,
+                                                                 description);
+                                a_result[1] = rocfft_plan_get_work_buffer_size(
+                                        a_plan[0], &a_requiredWorkBufferSize[0]);
+                                if (a_requiredWorkBufferSize[0] > 0)
+                                {
+                                    hipError_t err =
+                                            hipMalloc(&a_workBuffer[0], a_requiredWorkBufferSize[0]);
+                                    a_result[2] = (err == hipSuccess) ? rocfft_status_success
+                                                                      : rocfft_status_failure;
+                                }
+                                else
+                                {
+                                    a_result[2] = rocfft_status_success;
+                                }
+                            });
+                });
     }
     // Check for errors that happened while running the hipSYCL custom operation.
     handleRocFftError(
@@ -316,18 +323,20 @@ void Gpu3dFft::ImplSyclRocfft::perform3dFft(gmx_fft_direction dir, CommandEvent*
     impl_->queue_.submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
         // Use a hipSYCL custom operation to access the native buffers
         // needed to call rocFFT
-        cgh.hipSYCL_enqueue_custom_operation([=](sycl::interop_handle& gmx_unused h) {
-            void*       d_inputGrid  = reinterpret_cast<void*>(*inputGrid);
-            void*       d_outputGrid = reinterpret_cast<void*>(*outputGrid);
-            hipStream_t stream       = h.get_native_queue<sycl::backend::hip>();
-            rocfft_execution_info_set_stream(impl_->plans_[direction].info, stream);
-            // Don't check results generated asynchronously,
-            // because we don't know what to do with them
-            rocfft_execute(impl_->plans_[direction].plan,
-                           &d_inputGrid,
-                           &d_outputGrid,
-                           impl_->plans_[direction].info);
-        });
+        cgh.hipSYCL_enqueue_custom_operation(
+                [=](sycl::interop_handle& gmx_unused h)
+                {
+                    void*       d_inputGrid  = reinterpret_cast<void*>(*inputGrid);
+                    void*       d_outputGrid = reinterpret_cast<void*>(*outputGrid);
+                    hipStream_t stream       = h.get_native_queue<sycl::backend::hip>();
+                    rocfft_execution_info_set_stream(impl_->plans_[direction].info, stream);
+                    // Don't check results generated asynchronously,
+                    // because we don't know what to do with them
+                    rocfft_execute(impl_->plans_[direction].plan,
+                                   &d_inputGrid,
+                                   &d_outputGrid,
+                                   impl_->plans_[direction].info);
+                });
     });
 }
 

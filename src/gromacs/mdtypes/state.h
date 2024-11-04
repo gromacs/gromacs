@@ -209,11 +209,11 @@ struct df_history_t
 {
     int nlambda; //!< total number of lambda states - useful to history as the number of lambdas determines the size of arrays.
 
-    bool  bEquil; //!< Have we reached equilibration yet, where the weights stop updating?
-    int*  numSamplesAtLambdaForStatistics; //!< The number of points observed at each lambda up to the current time, in this simulation, for calculating statistics
-    int*  numSamplesAtLambdaForEquilibration; //!< The number of points observed at each lambda up to the current time, over a set of simulations, for determining equilibration
+    bool bEquil; //!< Have we reached equilibration yet, where the weights stop updating?
+    int* numSamplesAtLambdaForStatistics; //!< The number of points observed at each lambda up to the current time, in this simulation, for calculating statistics
+    int* numSamplesAtLambdaForEquilibration; //!< The number of points observed at each lambda up to the current time, over a set of simulations, for determining equilibration
     real* wl_histo; //!< The histogram for WL flatness determination.  Can be preserved between simulations winth input options.
-    real  wl_delta; //!< The current wang-landau delta, used to increment each state when visited.
+    real wl_delta;  //!< The current wang-landau delta, used to increment each state when visited.
 
     real* sum_weights; //!< Sum of weights of each state over all states.
     real* sum_dg; //!< Sum of the free energies of the states -- not actually used for weighting, but informational
@@ -281,7 +281,7 @@ public:
     int nhchainlength; //!< The NH-chain length for temperature coupling and MTTK barostat
     int fep_state;     //!< indicates which of the alchemical states we are in
     gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, real> lambda; //!< Free-energy lambda vector
-    matrix                                                          box; //!< Matrix of box vectors
+    matrix box; //!< Matrix of box vectors
     //! Relative box vectors characteristic of the box shape, used to to preserve that box shape
     matrix              box_rel;
     matrix              boxv;           //!< Box velocities for Parrinello-Rahman P-coupling
@@ -323,7 +323,7 @@ struct t_extmass
 {
     std::vector<double> Qinv; /* inverse mass of thermostat -- computed from inputs, but a good place to store */
     std::vector<double> QPinv; /* inverse mass of thermostat for barostat -- computed from inputs, but a good place to store */
-    double              Winv; /* Pressure mass inverse -- computed, not input, but a good place to store. Need to make a matrix later */
+    double Winv; /* Pressure mass inverse -- computed, not input, but a good place to store. Need to make a matrix later */
 };
 
 #endif // DOXYGEN

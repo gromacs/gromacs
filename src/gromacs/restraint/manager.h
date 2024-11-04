@@ -86,9 +86,9 @@ public:
      * \brief Client code can access the shared resource by copying or moving a handle.
      * \{
      */
-    RestraintManager(const RestraintManager& /* unused */) = default;
-    RestraintManager& operator=(const RestraintManager& /* unused */) = default;
-    RestraintManager(RestraintManager&&) noexcept                     = default;
+    RestraintManager(const RestraintManager& /* unused */)                = default;
+    RestraintManager& operator=(const RestraintManager& /* unused */)     = default;
+    RestraintManager(RestraintManager&&) noexcept                         = default;
     RestraintManager& operator=(RestraintManager&& /* unused */) noexcept = default;
     /*! \} */
 

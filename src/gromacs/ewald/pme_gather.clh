@@ -161,7 +161,7 @@ inline void reduce_atom_forces(__local float* __restrict__ sm_forces,
     // First 3 warps can now process 1 dimension each
     if (dimIndex < DIM)
     {
-        const int      sourceIndex             = lineIndex % warp_size;
+        const int sourceIndex = lineIndex % warp_size;
         __local float* sm_forceReductionPacked = sm_forceReduction + dimIndex * smemPerDim + sourceIndex;
 #    pragma unroll
         for (int redStride = minStride >> 1; redStride > 1; redStride >>= 1)
@@ -198,17 +198,17 @@ inline void reduce_atom_forces(__local float* __restrict__ sm_forces,
  * \param[in] sm_splineParams     Shared memory array of spline parameters.
  * \param[in] gm_grid             Global memory array of the grid to use.
  */
-inline void sumForceComponents(float*        fx,
-                               float*        fy,
-                               float*        fz,
-                               const int     ixBase,
-                               const int     nx,
-                               const int     pny,
-                               const int     pnz,
-                               const int     constOffset,
-                               const int     splineIndexBase,
-                               const float2  tdy,
-                               const float2  tdz,
+inline void sumForceComponents(float*       fx,
+                               float*       fy,
+                               float*       fz,
+                               const int    ixBase,
+                               const int    nx,
+                               const int    pny,
+                               const int    pnz,
+                               const int    constOffset,
+                               const int    splineIndexBase,
+                               const float2 tdy,
+                               const float2 tdz,
                                __local const float2* __restrict__ sm_splineParams,
                                __global const float* __restrict__ gm_grid)
 {
@@ -284,16 +284,16 @@ inline void calculateAndStoreGridForces(__local float* __restrict__ sm_forces,
  * \param[in]     gm_gridlineIndices   Atom gridline indices (ivec)
  * \param[in,out] gm_forces            Atom forces (rvec)
  */
-__attribute__((reqd_work_group_size(order, order, atomsPerBlock)))
-__kernel void CUSTOMIZED_KERNEL_NAME(pme_gather_kernel)(const struct PmeOpenCLKernelParams kernelParams,
-                                                        __global const float* __restrict__ gm_coefficientsA,
-                                                        __global const float* __restrict__ gm_coefficientsB,
-                                                        __global const float* __restrict__ gm_gridA,
-                                                        __global const float* __restrict__ gm_gridB,
-                                                        __global const float* __restrict__ gm_theta,
-                                                        __global const float* __restrict__ gm_dtheta,
-                                                        __global const int* __restrict__ gm_gridlineIndices,
-                                                        __global float* __restrict__ gm_forces)
+__attribute__((reqd_work_group_size(order, order, atomsPerBlock))) __kernel void
+CUSTOMIZED_KERNEL_NAME(pme_gather_kernel)(const struct PmeOpenCLKernelParams kernelParams,
+                                          __global const float* __restrict__ gm_coefficientsA,
+                                          __global const float* __restrict__ gm_coefficientsB,
+                                          __global const float* __restrict__ gm_gridA,
+                                          __global const float* __restrict__ gm_gridB,
+                                          __global const float* __restrict__ gm_theta,
+                                          __global const float* __restrict__ gm_dtheta,
+                                          __global const int* __restrict__ gm_gridlineIndices,
+                                          __global float* __restrict__ gm_forces)
 {
     assert(numGrids == 1 || numGrids == 2);
 
@@ -429,7 +429,7 @@ __kernel void CUSTOMIZED_KERNEL_NAME(pme_gather_kernel)(const struct PmeOpenCLKe
 #pragma unroll
         for (int i = 0; i < numIter; i++)
         {
-            const int outputIndexLocal  = i * iterThreads + threadLocalId;
+            const int outputIndexLocal = i * iterThreads + threadLocalId;
             const int outputIndexGlobal = (int)get_group_id(XX) * blockForcesSize + outputIndexLocal;
             const float outputForceComponent = sm_forces[outputIndexLocal];
             gm_forces[outputIndexGlobal]     = outputForceComponent;

@@ -169,7 +169,8 @@ template<int workGroupSize, int nElements>
 static auto nbnxnKernelExclusivePrefixSum(const int* __restrict__ gm_input, int* __restrict__ gm_output)
 {
     static_assert(nElements % workGroupSize == 0, "This simple scan kernel does not handle padding");
-    return [=](sycl::nd_item<1> itemIdx) {
+    return [=](sycl::nd_item<1> itemIdx)
+    {
         const sycl::group<1> workGroup = itemIdx.get_group();
         sycl::joint_exclusive_scan(
                 workGroup, gm_input, gm_input + nElements, gm_output, 0, sycl::plus<int>{});
@@ -200,7 +201,8 @@ static auto nbnxnKernelBucketSciSort(const nbnxn_sci_t* __restrict__ gm_sci,
                                      int* __restrict__ gm_sciOffset,
                                      nbnxn_sci_t* __restrict__ gm_sciSorted)
 {
-    return [=](sycl::id<1> itemIdx) {
+    return [=](sycl::id<1> itemIdx)
+    {
         using sycl::memory_order, sycl::memory_scope, sycl::access::address_space;
 
         const int         idx      = itemIdx[0];
@@ -225,25 +227,31 @@ class BucketSciSort;
 template<int workGroupSize>
 static void launchPrefixSumKernel(sycl::queue& q, GpuPairlistSorting* sorting)
 {
-    gmx::syclSubmitWithoutEvent(q, [&](sycl::handler& cgh) {
-        cgh.parallel_for<ExclusivePrefixSum<workGroupSize>>(
-                sycl::nd_range<1>{ workGroupSize, workGroupSize },
-                nbnxnKernelExclusivePrefixSum<workGroupSize, c_sciHistogramSize>(
-                        sorting->sciHistogram.get_pointer(), sorting->sciOffset.get_pointer()));
-    });
+    gmx::syclSubmitWithoutEvent(
+            q,
+            [&](sycl::handler& cgh)
+            {
+                cgh.parallel_for<ExclusivePrefixSum<workGroupSize>>(
+                        sycl::nd_range<1>{ workGroupSize, workGroupSize },
+                        nbnxnKernelExclusivePrefixSum<workGroupSize, c_sciHistogramSize>(
+                                sorting->sciHistogram.get_pointer(), sorting->sciOffset.get_pointer()));
+            });
 }
 
 static void launchBucketSortKernel(sycl::queue& q, GpuPairlist* plist)
 {
     const size_t size = plist->numSci;
-    gmx::syclSubmitWithoutEvent(q, [&](sycl::handler& cgh) {
-        cgh.parallel_for<BucketSciSort>(
-                sycl::range<1>{ size },
-                nbnxnKernelBucketSciSort(plist->sci.get_pointer(),
-                                         plist->sorting.sciCount.get_pointer(),
-                                         plist->sorting.sciOffset.get_pointer(),
-                                         plist->sorting.sciSorted.get_pointer()));
-    });
+    gmx::syclSubmitWithoutEvent(
+            q,
+            [&](sycl::handler& cgh)
+            {
+                cgh.parallel_for<BucketSciSort>(
+                        sycl::range<1>{ size },
+                        nbnxnKernelBucketSciSort(plist->sci.get_pointer(),
+                                                 plist->sorting.sciCount.get_pointer(),
+                                                 plist->sorting.sciOffset.get_pointer(),
+                                                 plist->sorting.sciSorted.get_pointer()));
+            });
 }
 static void launchSciSortOnGpu(GpuPairlist* plist, const int maxWorkGroupSize, const DeviceStream& deviceStream)
 {

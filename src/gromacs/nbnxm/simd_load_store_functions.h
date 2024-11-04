@@ -155,7 +155,7 @@ loadSimdPairInteractionMasks(const int excl, SimdBitMask* filterBitMasksV)
 #    else
         std::int32_t i;
 #    endif
-        real         r;
+        real r;
     } conv;
 
     conv.i = excl;
@@ -202,7 +202,7 @@ loadSimdPairInteractionMasks(const int excl, SimdBitMask* filterBitMasksV)
 #    else
         std::int32_t i;
 #    endif
-        real         r;
+        real r;
     } conv;
 
     conv.i = excl;

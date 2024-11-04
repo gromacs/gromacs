@@ -251,21 +251,18 @@ public:
         }
 
         // Writing internal parameters during pre-processing
-        const auto writeInternalParametersFunction = [this](KeyValueTreeObjectBuilder treeBuilder) {
-            qmmmOptions_.writeInternalParametersToKvt(treeBuilder);
-        };
+        const auto writeInternalParametersFunction = [this](KeyValueTreeObjectBuilder treeBuilder)
+        { qmmmOptions_.writeInternalParametersToKvt(treeBuilder); };
         notifier->preProcessingNotifier_.subscribe(writeInternalParametersFunction);
 
         // Setting atom group indices
-        const auto setQMMMGroupIndicesFunction = [this](const IndexGroupsAndNames& indexGroupsAndNames) {
-            qmmmOptions_.setQMMMGroupIndices(indexGroupsAndNames);
-        };
+        const auto setQMMMGroupIndicesFunction = [this](const IndexGroupsAndNames& indexGroupsAndNames)
+        { qmmmOptions_.setQMMMGroupIndices(indexGroupsAndNames); };
         notifier->preProcessingNotifier_.subscribe(setQMMMGroupIndicesFunction);
 
         // Set Logger during pre-processing
-        const auto setLoggerFunction = [this](const MDLogger& logger) {
-            qmmmOptions_.setLogger(logger);
-        };
+        const auto setLoggerFunction = [this](const MDLogger& logger)
+        { qmmmOptions_.setLogger(logger); };
         notifier->preProcessingNotifier_.subscribe(setLoggerFunction);
 
         // Set warning output during pre-processing
@@ -273,21 +270,18 @@ public:
         notifier->preProcessingNotifier_.subscribe(setWarninpFunction);
 
         // Notification of the Coordinates, box and pbc during pre-processing
-        const auto processCoordinatesFunction = [this](const CoordinatesAndBoxPreprocessed& coord) {
-            qmmmOptions_.processCoordinates(coord);
-        };
+        const auto processCoordinatesFunction = [this](const CoordinatesAndBoxPreprocessed& coord)
+        { qmmmOptions_.processCoordinates(coord); };
         notifier->preProcessingNotifier_.subscribe(processCoordinatesFunction);
 
         // Modification of the topology during pre-processing
-        const auto modifyQMMMTopologyFunction = [this](gmx_mtop_t* mtop) {
-            qmmmOptions_.modifyQMMMTopology(mtop);
-        };
+        const auto modifyQMMMTopologyFunction = [this](gmx_mtop_t* mtop)
+        { qmmmOptions_.modifyQMMMTopology(mtop); };
         notifier->preProcessingNotifier_.subscribe(modifyQMMMTopologyFunction);
 
         // Notification of the QM input file provided via -qmi option of grompp
-        const auto setQMExternalInputFileNameFunction = [this](const QMInputFileName& qmInputFileName) {
-            qmmmOptions_.setQMExternalInputFile(qmInputFileName);
-        };
+        const auto setQMExternalInputFileNameFunction = [this](const QMInputFileName& qmInputFileName)
+        { qmmmOptions_.setQMExternalInputFile(qmInputFileName); };
         notifier->preProcessingNotifier_.subscribe(setQMExternalInputFileNameFunction);
     }
 
@@ -312,19 +306,18 @@ public:
         }
 
         // Reading internal parameters during simulation setup
-        const auto readInternalParametersFunction = [this](const KeyValueTreeObject& tree) {
-            qmmmOptions_.readInternalParametersFromKvt(tree);
-        };
+        const auto readInternalParametersFunction = [this](const KeyValueTreeObject& tree)
+        { qmmmOptions_.readInternalParametersFromKvt(tree); };
         notifier->simulationSetupNotifier_.subscribe(readInternalParametersFunction);
 
         // Process tpr filename
-        const auto setTprFileNameFunction = [this](const MdRunInputFilename& tprName) {
-            qmmmOptions_.processTprFilename(tprName);
-        };
+        const auto setTprFileNameFunction = [this](const MdRunInputFilename& tprName)
+        { qmmmOptions_.processTprFilename(tprName); };
         notifier->simulationSetupNotifier_.subscribe(setTprFileNameFunction);
 
         // constructing local atom sets during simulation setup
-        const auto setLocalAtomSetFunction = [this](LocalAtomSetManager* localAtomSetManager) {
+        const auto setLocalAtomSetFunction = [this](LocalAtomSetManager* localAtomSetManager)
+        {
             LocalAtomSet atomSet1 = localAtomSetManager->add(qmmmOptions_.parameters().qmIndices_);
             this->qmmmSimulationParameters_.setLocalQMAtomSet(atomSet1);
             LocalAtomSet atomSet2 = localAtomSetManager->add(qmmmOptions_.parameters().mmIndices_);
@@ -333,25 +326,23 @@ public:
         notifier->simulationSetupNotifier_.subscribe(setLocalAtomSetFunction);
 
         // Reading PBC parameters during simulation setup
-        const auto setPeriodicBoundaryContionsFunction = [this](const PbcType& pbc) {
-            this->qmmmSimulationParameters_.setPeriodicBoundaryConditionType(pbc);
-        };
+        const auto setPeriodicBoundaryContionsFunction = [this](const PbcType& pbc)
+        { this->qmmmSimulationParameters_.setPeriodicBoundaryConditionType(pbc); };
         notifier->simulationSetupNotifier_.subscribe(setPeriodicBoundaryContionsFunction);
 
         // Saving MDLogger during simulation setup
-        const auto setLoggerFunction = [this](const MDLogger& logger) {
-            this->qmmmSimulationParameters_.setLogger(logger);
-        };
+        const auto setLoggerFunction = [this](const MDLogger& logger)
+        { this->qmmmSimulationParameters_.setLogger(logger); };
         notifier->simulationSetupNotifier_.subscribe(setLoggerFunction);
 
         // Adding output to energy file
-        const auto requestEnergyOutput = [](MDModulesEnergyOutputToQMMMRequestChecker* energyOutputRequest) {
-            energyOutputRequest->energyOutputToQMMM_ = true;
-        };
+        const auto requestEnergyOutput = [](MDModulesEnergyOutputToQMMMRequestChecker* energyOutputRequest)
+        { energyOutputRequest->energyOutputToQMMM_ = true; };
         notifier->simulationSetupNotifier_.subscribe(requestEnergyOutput);
 
         // Request to disable PME-only ranks, which are not compatible with CP2K
-        const auto requestPmeRanks = [](SeparatePmeRanksPermitted* pmeRanksPermitted) {
+        const auto requestPmeRanks = [](SeparatePmeRanksPermitted* pmeRanksPermitted)
+        {
             pmeRanksPermitted->disablePmeRanks(
                     "Separate PME-only ranks are not compatible with QMMM MdModule");
         };

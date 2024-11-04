@@ -392,7 +392,7 @@ void MdGpuGraph::Impl::createExecutableGraph(bool forceGraphReinstantiation)
             cudaGraphNode_t           hErrorNode_out;
             cudaGraphExecUpdateResult updateResult_out;
             cudaError_t stat = cudaGraphExecUpdate(instance_, graph_, &hErrorNode_out, &updateResult_out);
-            bool        additionalCheck = true; // dummy
+            bool additionalCheck = true; // dummy
 #    endif
             if ((stat == cudaErrorGraphExecUpdateFailure)
                 && (havePPDomainDecomposition_ || haveSeparatePmeRank_) && additionalCheck)

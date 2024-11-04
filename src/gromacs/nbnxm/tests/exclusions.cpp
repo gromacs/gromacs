@@ -128,8 +128,8 @@ diagonalPairlist(const NbnxmKernelType kernelType, const int numAtoms)
     std::vector<gmx::RVec> coords(numAtoms, { 1.0_real, 1.0_real, 1.0_real });
 
     matrix box         = { { 3.0_real, 0.0_real, 0.0_real },
-                   { 0.0_real, 3.0_real, 0.0_real },
-                   { 0.0_real, 0.0_real, 3.0_real } };
+                           { 0.0_real, 3.0_real, 0.0_real },
+                           { 0.0_real, 0.0_real, 3.0_real } };
     rvec   lowerCorner = { 0.0_real, 0.0_real, 0.0_real };
     rvec   upperCorner = { 3.0_real, 3.0_real, 3.0_real };
 

@@ -176,9 +176,8 @@ ISimulatorElement* PullElement::getElementPointerImpl(LegacySimulatorData* legac
             legacySimulatorData->mdAtoms_));
     // Printing output is scheduled after the step
     builderHelper->registerPostStepScheduling(
-            [pullElement](Step step, Time time, const RegisterRunFunction& registerRunFunction) {
-                pullElement->schedulePostStep(step, time, registerRunFunction);
-            });
+            [pullElement](Step step, Time time, const RegisterRunFunction& registerRunFunction)
+            { pullElement->schedulePostStep(step, time, registerRunFunction); });
     return pullElement;
 }
 

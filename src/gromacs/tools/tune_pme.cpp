@@ -1681,8 +1681,8 @@ static void do_the_tests(FILE*  fp,                    /* General tune_pme outpu
                     break;
                 }
             } /* end of repeats loop */
-        }     /* end of -npme loop */
-    }         /* end of tpr file loop */
+        } /* end of -npme loop */
+    } /* end of tpr file loop */
 
     if (bResetProblem)
     {

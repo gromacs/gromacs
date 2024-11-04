@@ -248,10 +248,10 @@ void PmeAtomComm::setNumAtoms(const int numAtoms)
 static void pme_dd_sendrecv(PmeAtomComm gmx_unused* atc,
                             gmx_bool gmx_unused     bBackward,
                             int gmx_unused          shift,
-                            void gmx_unused* buf_s,
-                            int gmx_unused   nbyte_s,
-                            void gmx_unused* buf_r,
-                            int gmx_unused   nbyte_r)
+                            void gmx_unused*        buf_s,
+                            int gmx_unused          nbyte_s,
+                            void gmx_unused*        buf_r,
+                            int gmx_unused          nbyte_r)
 {
 #if GMX_MPI
     int        dest, src;

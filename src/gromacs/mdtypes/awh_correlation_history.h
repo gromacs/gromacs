@@ -66,7 +66,7 @@ struct CorrelationBlockDataHistory
     double sumOverBlocksBlockWeightBlockWeightX; /**< Sum over all blocks in the simulation of block weight times blockSumWeightX over the whole simulation. */
     double sumOverBlocksBlockWeightBlockWeightY; /**< Sum over all blocks in the simulation of block weight times blockSumWeightY over the whole simulation. */
     double blockLength; /**< The length of each block used for block averaging. */
-    int    previousBlockIndex; /**< The last block index data was added to (needed only for block length in terms of time). */
+    int previousBlockIndex; /**< The last block index data was added to (needed only for block length in terms of time). */
     double correlationIntegral; /**< The time integral of the correlation function of x and y, corr(x(0), y(t)). */
 };
 

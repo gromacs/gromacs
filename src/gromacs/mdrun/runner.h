@@ -134,7 +134,7 @@ public:
      *
      * \{
      */
-    Mdrunner(const Mdrunner&) = delete;
+    Mdrunner(const Mdrunner&)            = delete;
     Mdrunner& operator=(const Mdrunner&) = delete;
     /* \} */
 
@@ -379,8 +379,8 @@ public:
                              compat::not_null<SimulationContext*> context);
 
     //! \cond
-    MdrunnerBuilder()                       = delete;
-    MdrunnerBuilder(const MdrunnerBuilder&) = delete;
+    MdrunnerBuilder()                                  = delete;
+    MdrunnerBuilder(const MdrunnerBuilder&)            = delete;
     MdrunnerBuilder& operator=(const MdrunnerBuilder&) = delete;
     //! \endcond
 

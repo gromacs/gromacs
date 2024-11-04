@@ -128,9 +128,10 @@ void writeVectorAsColumns(gmx::TextWriter*                writer,
     writer->writeLine(formatCentered(outputWidth, header.c_str()));
 
     const std::size_t maxWidth =
-            std::accumulate(v.begin(), v.end(), std::size_t{ 0 }, [](const auto a, const auto& s) {
-                return std::max(a, s.length());
-            });
+            std::accumulate(v.begin(),
+                            v.end(),
+                            std::size_t{ 0 },
+                            [](const auto a, const auto& s) { return std::max(a, s.length()); });
 
     const int columns     = outputWidth / (maxWidth + 1);
     const int columnWidth = outputWidth / columns;

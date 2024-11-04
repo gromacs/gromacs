@@ -95,7 +95,8 @@ namespace
 {
 
 // Define the set of PBCs to run the test for
-const std::vector<t_pbc> c_pbcs = [] {
+const std::vector<t_pbc> c_pbcs = []
+{
     std::vector<t_pbc> pbcs;
     t_pbc              pbc;
 
@@ -168,7 +169,8 @@ void PrintTo(const ConstraintsTestSystem& constraintsTestSystem, std::ostream* o
     *os << constraintsTestSystem.title << " - " << constraintsTestSystem.numAtoms << " atoms";
 }
 
-const std::vector<ConstraintsTestSystem> c_constraintsTestSystemList = [] {
+const std::vector<ConstraintsTestSystem> c_constraintsTestSystemList = []
+{
     std::vector<ConstraintsTestSystem> constraintsTestSystemList;
     {
         ConstraintsTestSystem constraintsTestSystem;

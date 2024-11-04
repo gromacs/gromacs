@@ -264,17 +264,17 @@ GpuTaskAssignmentsBuilder::GpuTaskAssignmentsBuilder() = default;
 
 GpuTaskAssignments GpuTaskAssignmentsBuilder::build(const gmx::ArrayRef<const int> availableDevices,
                                                     const gmx::ArrayRef<const int> userGpuTaskAssignment,
-                                                    const gmx_hw_info_t&           hardwareInfo,
-                                                    MPI_Comm                       gromacsWorldComm,
+                                                    const gmx_hw_info_t& hardwareInfo,
+                                                    MPI_Comm             gromacsWorldComm,
                                                     const PhysicalNodeCommunicator& physicalNodeComm,
-                                                    const TaskTarget                nonbondedTarget,
-                                                    const TaskTarget                pmeTarget,
-                                                    const TaskTarget                bondedTarget,
-                                                    const TaskTarget                updateTarget,
-                                                    const bool useGpuForNonbonded,
-                                                    const bool useGpuForPme,
-                                                    bool       rankHasPpTask,
-                                                    bool       rankHasPmeTask)
+                                                    const TaskTarget nonbondedTarget,
+                                                    const TaskTarget pmeTarget,
+                                                    const TaskTarget bondedTarget,
+                                                    const TaskTarget updateTarget,
+                                                    const bool       useGpuForNonbonded,
+                                                    const bool       useGpuForPme,
+                                                    bool             rankHasPpTask,
+                                                    bool             rankHasPmeTask)
 {
     size_t               numRanksOnThisNode = physicalNodeComm.size_;
     std::vector<GpuTask> gpuTasksOnThisRank = findGpuTasksOnThisRank(!availableDevices.empty(),
@@ -289,7 +289,7 @@ GpuTaskAssignments GpuTaskAssignmentsBuilder::build(const gmx::ArrayRef<const in
     /* Communicate among ranks on this node to find each task that can
      * be executed on a GPU, on each rank. */
     auto gpuTasksOnRanksOfThisNode = findAllGpuTasksOnThisNode(gpuTasksOnThisRank, physicalNodeComm);
-    size_t numGpuTasksOnThisNode   = countGpuTasksOnThisNode(gpuTasksOnRanksOfThisNode);
+    size_t numGpuTasksOnThisNode = countGpuTasksOnThisNode(gpuTasksOnRanksOfThisNode);
 
     std::exception_ptr             exceptionPtr;
     std::vector<GpuTaskAssignment> taskAssignmentOnRanksOfThisNode;

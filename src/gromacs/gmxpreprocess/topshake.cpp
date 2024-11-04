@@ -198,10 +198,10 @@ void make_shake(gmx::ArrayRef<InteractionsOfType> plist, t_atoms* atoms, int nsh
                                 }
                             }
                         } /* if IF_ATYPE */
-                    }     /* for ftype_A */
-                }         /* if IF_BTYPE */
-            }             /* for ftype */
-        }                 /* if shake angles */
+                    } /* for ftype_A */
+                } /* if IF_BTYPE */
+            } /* for ftype */
+        } /* if shake angles */
 
         /* Add all the bonds with hydrogens to the shake list
          * and remove them from the bond list

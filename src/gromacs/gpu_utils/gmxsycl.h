@@ -53,8 +53,7 @@ namespace gmx
 #if GMX_SYCL_ACPP
 namespace internal
 {
-static const sycl::property_list sc_syclDiscardEventProperty_list
-{
+static const sycl::property_list sc_syclDiscardEventProperty_list{
 #    if defined(ACPP_EXT_COARSE_GRAINED_EVENTS) // Since ACpp 24.06
     sycl::property::command_group::AdaptiveCpp_coarse_grained_events()
 #    else

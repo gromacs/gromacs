@@ -137,9 +137,10 @@ void EnergyData::Element::scheduleTask(Step step, Time time, const RegisterRunFu
             (freeEnergyCalculationStep_ == step) && do_per_step(step, freeEnergyCalculationPeriod_);
     if (isEnergyCalculationStep || writeEnergy)
     {
-        registerRunFunction([this, step, time, isEnergyCalculationStep, isFreeEnergyCalculationStep]() {
-            energyData_->doStep(step, time, isEnergyCalculationStep, isFreeEnergyCalculationStep);
-        });
+        registerRunFunction(
+                [this, step, time, isEnergyCalculationStep, isFreeEnergyCalculationStep]() {
+                    energyData_->doStep(step, time, isEnergyCalculationStep, isFreeEnergyCalculationStep);
+                });
     }
     else
     {
@@ -206,9 +207,8 @@ std::optional<ITrajectoryWriterCallback> EnergyData::Element::registerTrajectory
 {
     if (event == TrajectoryEvent::EnergyWritingStep && isMainRank_)
     {
-        return [this](gmx_mdoutf* mdoutf, Step step, Time time, bool writeTrajectory, bool writeLog) {
-            energyData_->write(mdoutf, step, time, writeTrajectory, writeLog);
-        };
+        return [this](gmx_mdoutf* mdoutf, Step step, Time time, bool writeTrajectory, bool writeLog)
+        { energyData_->write(mdoutf, step, time, writeTrajectory, writeLog); };
     }
     return std::nullopt;
 }
@@ -548,12 +548,12 @@ EnergyData::Element::Element(EnergyData* energyData, bool isMainRank, int freeEn
 }
 
 ISimulatorElement* EnergyData::Element::getElementPointerImpl(
-        LegacySimulatorData gmx_unused*        legacySimulatorData,
+        LegacySimulatorData gmx_unused*                    legacySimulatorData,
         ModularSimulatorAlgorithmBuilderHelper gmx_unused* builderHelper,
-        StatePropagatorData gmx_unused* statePropagatorData,
-        EnergyData*                     energyData,
-        FreeEnergyPerturbationData gmx_unused* freeEnergyPerturbationData,
-        GlobalCommunicationHelper gmx_unused* globalCommunicationHelper,
+        StatePropagatorData gmx_unused*                    statePropagatorData,
+        EnergyData*                                        energyData,
+        FreeEnergyPerturbationData gmx_unused*             freeEnergyPerturbationData,
+        GlobalCommunicationHelper gmx_unused*              globalCommunicationHelper,
         ObservablesReducer* /*observablesReducer*/)
 {
     return energyData->element();

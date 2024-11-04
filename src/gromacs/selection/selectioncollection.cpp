@@ -937,10 +937,10 @@ void SelectionCollection::evaluateFinal(int nframes)
 std::optional<Selection> SelectionCollection::selection(std::string_view selName) const
 {
     const auto& selections = impl_->sc_.sel;
-    if (const auto foundIter = std::find_if(
-                selections.cbegin(),
-                selections.cend(),
-                [selName](const auto& selection) { return selection->name() == selName; });
+    if (const auto foundIter = std::find_if(selections.cbegin(),
+                                            selections.cend(),
+                                            [selName](const auto& selection)
+                                            { return selection->name() == selName; });
         foundIter != selections.end())
     {
         return Selection(foundIter->get());

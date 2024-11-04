@@ -301,8 +301,8 @@ auto pmeGatherKernel(sycl::handler& cgh,
     static_assert(numGrids == 1 || numGrids == 2);
 
     constexpr int threadsPerAtomValue = (threadsPerAtom == ThreadsPerAtom::Order) ? order : order * order;
-    constexpr int atomDataSize        = threadsPerAtomValue;
-    constexpr int atomsPerBlock       = (c_gatherMaxWarpsPerBlock * subGroupSize) / atomDataSize;
+    constexpr int atomDataSize  = threadsPerAtomValue;
+    constexpr int atomsPerBlock = (c_gatherMaxWarpsPerBlock * subGroupSize) / atomDataSize;
     // Number of atoms processed by a single warp in spread and gather
     static_assert(subGroupSize >= atomDataSize);
     constexpr int atomsPerWarp        = subGroupSize / atomDataSize;
@@ -323,7 +323,8 @@ auto pmeGatherKernel(sycl::handler& cgh,
     // Reduction of partial force contributions
     sycl::local_accessor<Float3, 1> sm_forces(sycl::range<1>(atomsPerBlock), cgh);
 
-    auto sm_fractCoords = [&]() {
+    auto sm_fractCoords = [&]()
+    {
         if constexpr (!readGlobal)
         {
             return sycl::local_accessor<float, 1>(sycl::range<1>(atomsPerBlock * DIM), cgh);
@@ -644,31 +645,35 @@ void PmeGatherKernel<order, wrapX, wrapY, numGrids, readGlobal, threadsPerAtom, 
 
     sycl::queue q = deviceStream.stream();
 
-    gmx::syclSubmitWithoutEvent(q, [&](sycl::handler& cgh) {
-        auto kernel = pmeGatherKernel<order, wrapX, wrapY, numGrids, readGlobal, threadsPerAtom, subGroupSize>(
-                cgh,
-                atomParams_->nAtoms,
-                gridParams_->d_realGrid[0].get_pointer(),
-                gridParams_->d_realGrid[1].get_pointer(),
-                atomParams_->d_coefficients[0].get_pointer(),
-                atomParams_->d_coefficients[1].get_pointer(),
-                atomParams_->d_coordinates.get_pointer(),
-                atomParams_->d_forces.get_pointer(),
-                atomParams_->d_theta.get_pointer(),
-                atomParams_->d_dtheta.get_pointer(),
-                atomParams_->d_gridlineIndices.get_pointer(),
-                gridParams_->d_fractShiftsTable.get_pointer(),
-                gridParams_->d_gridlineIndicesTable.get_pointer(),
-                gridParams_->tablesOffsets,
-                gridParams_->realGridSize,
-                gridParams_->realGridSizeFP,
-                gridParams_->realGridSizePadded,
-                dynamicParams_->recipBox[0],
-                dynamicParams_->recipBox[1],
-                dynamicParams_->recipBox[2],
-                dynamicParams_->scale);
-        cgh.parallel_for<kernelNameType>(range, kernel);
-    });
+    gmx::syclSubmitWithoutEvent(
+            q,
+            [&](sycl::handler& cgh)
+            {
+                auto kernel =
+                        pmeGatherKernel<order, wrapX, wrapY, numGrids, readGlobal, threadsPerAtom, subGroupSize>(
+                                cgh,
+                                atomParams_->nAtoms,
+                                gridParams_->d_realGrid[0].get_pointer(),
+                                gridParams_->d_realGrid[1].get_pointer(),
+                                atomParams_->d_coefficients[0].get_pointer(),
+                                atomParams_->d_coefficients[1].get_pointer(),
+                                atomParams_->d_coordinates.get_pointer(),
+                                atomParams_->d_forces.get_pointer(),
+                                atomParams_->d_theta.get_pointer(),
+                                atomParams_->d_dtheta.get_pointer(),
+                                atomParams_->d_gridlineIndices.get_pointer(),
+                                gridParams_->d_fractShiftsTable.get_pointer(),
+                                gridParams_->d_gridlineIndicesTable.get_pointer(),
+                                gridParams_->tablesOffsets,
+                                gridParams_->realGridSize,
+                                gridParams_->realGridSizeFP,
+                                gridParams_->realGridSizePadded,
+                                dynamicParams_->recipBox[0],
+                                dynamicParams_->recipBox[1],
+                                dynamicParams_->recipBox[2],
+                                dynamicParams_->scale);
+                cgh.parallel_for<kernelNameType>(range, kernel);
+            });
 
     // Delete set args, so we don't forget to set them before the next launch.
     reset();

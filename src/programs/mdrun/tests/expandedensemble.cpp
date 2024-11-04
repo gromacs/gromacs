@@ -110,7 +110,7 @@ public:
                                              double             lastValue,
                                              const int          expectedNumMatches)
     {
-        std::regex           incrementorRegex("Wang-Landau incrementor is: *(.*)");
+        std::regex incrementorRegex("Wang-Landau incrementor is: *(.*)");
         std::sregex_iterator logBegin(logFileContents.begin(), logFileContents.end(), incrementorRegex);
         std::sregex_iterator logEnd;
         int                  numMatches = 0;

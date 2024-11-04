@@ -811,31 +811,31 @@ int gmx_check(int argc, char* argv[])
     char*             lastener = nullptr;
     t_pargs           pa[]     = {
         { "-vdwfac",
-          FALSE,
-          etREAL,
-          { &vdw_fac },
-          "Fraction of sum of VdW radii used as warning cutoff" },
+                        FALSE,
+                        etREAL,
+                        { &vdw_fac },
+                        "Fraction of sum of VdW radii used as warning cutoff" },
         { "-bonlo", FALSE, etREAL, { &bon_lo }, "Min. fract. of sum of VdW radii for bonded atoms" },
         { "-bonhi", FALSE, etREAL, { &bon_hi }, "Max. fract. of sum of VdW radii for bonded atoms" },
         { "-rmsd", FALSE, etBOOL, { &bRMSD }, "Print RMSD for x, v and f" },
         { "-tol",
-          FALSE,
-          etREAL,
-          { &ftol },
-          "Relative tolerance for comparing real values defined as "
-          "[MATH]2*(a-b)/([MAG]a[mag]+[MAG]b[mag])[math]" },
+                        FALSE,
+                        etREAL,
+                        { &ftol },
+                        "Relative tolerance for comparing real values defined as "
+                                      "[MATH]2*(a-b)/([MAG]a[mag]+[MAG]b[mag])[math]" },
         { "-abstol",
-          FALSE,
-          etREAL,
-          { &abstol },
-          "Absolute tolerance, useful when sums are close to zero." },
+                        FALSE,
+                        etREAL,
+                        { &abstol },
+                        "Absolute tolerance, useful when sums are close to zero." },
         { "-ab", FALSE, etBOOL, { &bCompAB }, "Compare the A and B topology from one file" },
         { "-lastener",
-          FALSE,
-          etSTR,
-          { &lastener },
-          "Last energy term to compare (if not given all are tested). It makes sense to go up "
-          "until the Pressure." }
+                        FALSE,
+                        etSTR,
+                        { &lastener },
+                        "Last energy term to compare (if not given all are tested). It makes sense to go up "
+                                      "until the Pressure." }
     };
 
     if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))

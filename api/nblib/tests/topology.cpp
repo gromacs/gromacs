@@ -110,8 +110,8 @@ TEST(NBlibTest, TopologyHasMasses)
     WaterTopologyBuilder waters;
     Topology             watersTopology = waters.buildTopology(2);
 
-    const Mass              refOwMass = waters.water().at("Ow").mass();
-    const Mass              refHwMass = waters.water().at("H").mass();
+    const Mass refOwMass = waters.water().at("Ow").mass();
+    const Mass refHwMass = waters.water().at("H").mass();
     const std::vector<Mass> ref = { refOwMass, refHwMass, refHwMass, refOwMass, refHwMass, refHwMass };
     const std::vector<Mass> test = expandQuantity(watersTopology, &ParticleType::mass);
     EXPECT_EQ(ref, test);

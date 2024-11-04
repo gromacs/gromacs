@@ -151,10 +151,13 @@ TEST_F(XvgioTest, readXvgRealWorks)
     const int                                            numRows    = 3;
     const int                                            numColumns = 2;
     MultiDimArray<std::vector<double>, dynamicExtents2D> xvgRefData(numRows, numColumns);
-    std::generate(begin(xvgRefData), end(xvgRefData), [n = 0.0]() mutable {
-        n += 1.1;
-        return n;
-    });
+    std::generate(begin(xvgRefData),
+                  end(xvgRefData),
+                  [n = 0.0]() mutable
+                  {
+                      n += 1.1;
+                      return n;
+                  });
     compareValues(xvgRefData.asConstView(), xvgTestData.asConstView());
 }
 

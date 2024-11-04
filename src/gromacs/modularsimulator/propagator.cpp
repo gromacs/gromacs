@@ -185,7 +185,7 @@ void Propagator<IntegrationStage::PositionsOnly>::run()
 {
     wallcycle_start(wcycle_, WallCycleCounter::Update);
 
-    auto*       xp = as_rvec_array(statePropagatorData_->positionsView().paddedArrayRef().data());
+    auto* xp = as_rvec_array(statePropagatorData_->positionsView().paddedArrayRef().data());
     const auto* x = as_rvec_array(statePropagatorData_->constPositionsView().paddedArrayRef().data());
     const auto* v = as_rvec_array(statePropagatorData_->constVelocitiesView().paddedArrayRef().data());
 
@@ -342,7 +342,7 @@ void Propagator<IntegrationStage::LeapFrog>::run()
 {
     wallcycle_start(wcycle_, WallCycleCounter::Update);
 
-    auto*       xp = as_rvec_array(statePropagatorData_->positionsView().paddedArrayRef().data());
+    auto* xp = as_rvec_array(statePropagatorData_->positionsView().paddedArrayRef().data());
     const auto* x = as_rvec_array(statePropagatorData_->constPositionsView().paddedArrayRef().data());
     auto*       v = as_rvec_array(statePropagatorData_->velocitiesView().paddedArrayRef().data());
     const auto* f = as_rvec_array(statePropagatorData_->constForcesView().force().data());
@@ -362,7 +362,8 @@ void Propagator<IntegrationStage::LeapFrog>::run()
     const int nth    = gmx_omp_nthreads_get(ModuleMultiThread::Update);
     const int homenr = mdAtoms_->mdatoms()->homenr;
 
-#pragma omp parallel for num_threads(nth) schedule(static) default(none) shared(x, xp, v, f, invMassPerDim) \
+#pragma omp parallel for num_threads(nth) schedule(static) default(none) \
+        shared(x, xp, v, f, invMassPerDim)                               \
         firstprivate(nth, homenr, lambdaStart, lambdaEnd, treatPRScalingMatrixAsDiagonal, diagonalOfPRScalingMatrix)
     for (int th = 0; th < nth; th++)
     {
@@ -425,7 +426,7 @@ void Propagator<IntegrationStage::VelocityVerletPositionsAndVelocities>::run()
 {
     wallcycle_start(wcycle_, WallCycleCounter::Update);
 
-    auto*       xp = as_rvec_array(statePropagatorData_->positionsView().paddedArrayRef().data());
+    auto* xp = as_rvec_array(statePropagatorData_->positionsView().paddedArrayRef().data());
     const auto* x = as_rvec_array(statePropagatorData_->constPositionsView().paddedArrayRef().data());
     auto*       v = as_rvec_array(statePropagatorData_->velocitiesView().paddedArrayRef().data());
     const auto* f = as_rvec_array(statePropagatorData_->constForcesView().force().data());
@@ -445,7 +446,8 @@ void Propagator<IntegrationStage::VelocityVerletPositionsAndVelocities>::run()
     const int nth    = gmx_omp_nthreads_get(ModuleMultiThread::Update);
     const int homenr = mdAtoms_->mdatoms()->homenr;
 
-#pragma omp parallel for num_threads(nth) schedule(static) default(none) shared(x, xp, v, f, invMassPerDim) \
+#pragma omp parallel for num_threads(nth) schedule(static) default(none) \
+        shared(x, xp, v, f, invMassPerDim)                               \
         firstprivate(nth, homenr, lambdaStart, lambdaEnd, treatPRScalingMatrixAsDiagonal, diagonalOfPRScalingMatrix)
     for (int th = 0; th < nth; th++)
     {
@@ -596,21 +598,25 @@ void Propagator<integrationStage>::scheduleTask(Step                       step,
         // is implemented we handle it here to avoid enlarging the decision tree below.
         if (doSinglePositionScaling_)
         {
-            registerRunFunction([this]() {
-                run<NumVelocityScalingValues::None,
-                    ParrinelloRahmanVelocityScaling::No,
-                    NumVelocityScalingValues::None,
-                    NumPositionScalingValues::Single>();
-            });
+            registerRunFunction(
+                    [this]()
+                    {
+                        run<NumVelocityScalingValues::None,
+                            ParrinelloRahmanVelocityScaling::No,
+                            NumVelocityScalingValues::None,
+                            NumPositionScalingValues::Single>();
+                    });
         }
         else if (doGroupPositionScaling_)
         {
-            registerRunFunction([this]() {
-                run<NumVelocityScalingValues::None,
-                    ParrinelloRahmanVelocityScaling::No,
-                    NumVelocityScalingValues::None,
-                    NumPositionScalingValues::Multiple>();
-            });
+            registerRunFunction(
+                    [this]()
+                    {
+                        run<NumVelocityScalingValues::None,
+                            ParrinelloRahmanVelocityScaling::No,
+                            NumVelocityScalingValues::None,
+                            NumPositionScalingValues::Multiple>();
+                    });
         }
     }
 
@@ -622,42 +628,50 @@ void Propagator<integrationStage>::scheduleTask(Step                       step,
         {
             if (doSingleEndVelocityScaling_)
             {
-                registerRunFunction([this]() {
-                    run<NumVelocityScalingValues::Single,
-                        ParrinelloRahmanVelocityScaling::Anisotropic,
-                        NumVelocityScalingValues::Single,
-                        NumPositionScalingValues::None>();
-                });
+                registerRunFunction(
+                        [this]()
+                        {
+                            run<NumVelocityScalingValues::Single,
+                                ParrinelloRahmanVelocityScaling::Anisotropic,
+                                NumVelocityScalingValues::Single,
+                                NumPositionScalingValues::None>();
+                        });
             }
             else
             {
-                registerRunFunction([this]() {
-                    run<NumVelocityScalingValues::Single,
-                        ParrinelloRahmanVelocityScaling::Anisotropic,
-                        NumVelocityScalingValues::None,
-                        NumPositionScalingValues::None>();
-                });
+                registerRunFunction(
+                        [this]()
+                        {
+                            run<NumVelocityScalingValues::Single,
+                                ParrinelloRahmanVelocityScaling::Anisotropic,
+                                NumVelocityScalingValues::None,
+                                NumPositionScalingValues::None>();
+                        });
             }
         }
         else
         {
             if (doSingleEndVelocityScaling_)
             {
-                registerRunFunction([this]() {
-                    run<NumVelocityScalingValues::Single,
-                        ParrinelloRahmanVelocityScaling::No,
-                        NumVelocityScalingValues::Single,
-                        NumPositionScalingValues::None>();
-                });
+                registerRunFunction(
+                        [this]()
+                        {
+                            run<NumVelocityScalingValues::Single,
+                                ParrinelloRahmanVelocityScaling::No,
+                                NumVelocityScalingValues::Single,
+                                NumPositionScalingValues::None>();
+                        });
             }
             else
             {
-                registerRunFunction([this]() {
-                    run<NumVelocityScalingValues::Single,
-                        ParrinelloRahmanVelocityScaling::No,
-                        NumVelocityScalingValues::None,
-                        NumPositionScalingValues::None>();
-                });
+                registerRunFunction(
+                        [this]()
+                        {
+                            run<NumVelocityScalingValues::Single,
+                                ParrinelloRahmanVelocityScaling::No,
+                                NumVelocityScalingValues::None,
+                                NumPositionScalingValues::None>();
+                        });
             }
         }
     }
@@ -667,42 +681,50 @@ void Propagator<integrationStage>::scheduleTask(Step                       step,
         {
             if (doGroupEndVelocityScaling_)
             {
-                registerRunFunction([this]() {
-                    run<NumVelocityScalingValues::Multiple,
-                        ParrinelloRahmanVelocityScaling::Anisotropic,
-                        NumVelocityScalingValues::Multiple,
-                        NumPositionScalingValues::None>();
-                });
+                registerRunFunction(
+                        [this]()
+                        {
+                            run<NumVelocityScalingValues::Multiple,
+                                ParrinelloRahmanVelocityScaling::Anisotropic,
+                                NumVelocityScalingValues::Multiple,
+                                NumPositionScalingValues::None>();
+                        });
             }
             else
             {
-                registerRunFunction([this]() {
-                    run<NumVelocityScalingValues::Multiple,
-                        ParrinelloRahmanVelocityScaling::Anisotropic,
-                        NumVelocityScalingValues::None,
-                        NumPositionScalingValues::None>();
-                });
+                registerRunFunction(
+                        [this]()
+                        {
+                            run<NumVelocityScalingValues::Multiple,
+                                ParrinelloRahmanVelocityScaling::Anisotropic,
+                                NumVelocityScalingValues::None,
+                                NumPositionScalingValues::None>();
+                        });
             }
         }
         else
         {
             if (doGroupEndVelocityScaling_)
             {
-                registerRunFunction([this]() {
-                    run<NumVelocityScalingValues::Multiple,
-                        ParrinelloRahmanVelocityScaling::No,
-                        NumVelocityScalingValues::Multiple,
-                        NumPositionScalingValues::None>();
-                });
+                registerRunFunction(
+                        [this]()
+                        {
+                            run<NumVelocityScalingValues::Multiple,
+                                ParrinelloRahmanVelocityScaling::No,
+                                NumVelocityScalingValues::Multiple,
+                                NumPositionScalingValues::None>();
+                        });
             }
             else
             {
-                registerRunFunction([this]() {
-                    run<NumVelocityScalingValues::Multiple,
-                        ParrinelloRahmanVelocityScaling::No,
-                        NumVelocityScalingValues::None,
-                        NumPositionScalingValues::None>();
-                });
+                registerRunFunction(
+                        [this]()
+                        {
+                            run<NumVelocityScalingValues::Multiple,
+                                ParrinelloRahmanVelocityScaling::No,
+                                NumVelocityScalingValues::None,
+                                NumPositionScalingValues::None>();
+                        });
             }
         }
     }
@@ -710,21 +732,25 @@ void Propagator<integrationStage>::scheduleTask(Step                       step,
     {
         if (doParrinelloRahmanThisStep)
         {
-            registerRunFunction([this]() {
-                run<NumVelocityScalingValues::None,
-                    ParrinelloRahmanVelocityScaling::Anisotropic,
-                    NumVelocityScalingValues::None,
-                    NumPositionScalingValues::None>();
-            });
+            registerRunFunction(
+                    [this]()
+                    {
+                        run<NumVelocityScalingValues::None,
+                            ParrinelloRahmanVelocityScaling::Anisotropic,
+                            NumVelocityScalingValues::None,
+                            NumPositionScalingValues::None>();
+                    });
         }
         else
         {
-            registerRunFunction([this]() {
-                run<NumVelocityScalingValues::None,
-                    ParrinelloRahmanVelocityScaling::No,
-                    NumVelocityScalingValues::None,
-                    NumPositionScalingValues::None>();
-            });
+            registerRunFunction(
+                    [this]()
+                    {
+                        run<NumVelocityScalingValues::None,
+                            ParrinelloRahmanVelocityScaling::No,
+                            NumVelocityScalingValues::None,
+                            NumPositionScalingValues::None>();
+                    });
         }
     }
 }
@@ -886,45 +912,36 @@ static PropagatorConnection getConnection(Propagator<integrationStage>* propagat
     if constexpr (hasStartVelocityScaling<integrationStage>() || hasEndVelocityScaling<integrationStage>())
     {
         propagatorConnection.setNumVelocityScalingVariables =
-                [propagator](int num, ScaleVelocities scaleVelocities) {
-                    propagator->setNumVelocityScalingVariables(num, scaleVelocities);
-                };
-        propagatorConnection.getVelocityScalingCallback = [propagator]() {
-            return propagator->velocityScalingCallback();
-        };
+                [propagator](int num, ScaleVelocities scaleVelocities)
+        { propagator->setNumVelocityScalingVariables(num, scaleVelocities); };
+        propagatorConnection.getVelocityScalingCallback = [propagator]()
+        { return propagator->velocityScalingCallback(); };
     }
     if constexpr (hasStartVelocityScaling<integrationStage>())
     {
-        propagatorConnection.getViewOnStartVelocityScaling = [propagator]() {
-            return propagator->viewOnStartVelocityScaling();
-        };
+        propagatorConnection.getViewOnStartVelocityScaling = [propagator]()
+        { return propagator->viewOnStartVelocityScaling(); };
     }
     if constexpr (hasEndVelocityScaling<integrationStage>())
     {
-        propagatorConnection.getViewOnEndVelocityScaling = [propagator]() {
-            return propagator->viewOnEndVelocityScaling();
-        };
+        propagatorConnection.getViewOnEndVelocityScaling = [propagator]()
+        { return propagator->viewOnEndVelocityScaling(); };
     }
     if constexpr (hasPositionScaling<integrationStage>())
     {
-        propagatorConnection.setNumPositionScalingVariables = [propagator](int num) {
-            propagator->setNumPositionScalingVariables(num);
-        };
-        propagatorConnection.getViewOnPositionScaling = [propagator]() {
-            return propagator->viewOnPositionScaling();
-        };
-        propagatorConnection.getPositionScalingCallback = [propagator]() {
-            return propagator->positionScalingCallback();
-        };
+        propagatorConnection.setNumPositionScalingVariables = [propagator](int num)
+        { propagator->setNumPositionScalingVariables(num); };
+        propagatorConnection.getViewOnPositionScaling = [propagator]()
+        { return propagator->viewOnPositionScaling(); };
+        propagatorConnection.getPositionScalingCallback = [propagator]()
+        { return propagator->positionScalingCallback(); };
     }
     if constexpr (hasParrinelloRahmanScaling<integrationStage>())
     {
-        propagatorConnection.getViewOnPRScalingMatrix = [propagator]() {
-            return propagator->viewOnPRScalingMatrix();
-        };
-        propagatorConnection.getPRScalingCallback = [propagator]() {
-            return propagator->prScalingCallback();
-        };
+        propagatorConnection.getViewOnPRScalingMatrix = [propagator]()
+        { return propagator->viewOnPRScalingMatrix(); };
+        propagatorConnection.getPRScalingCallback = [propagator]()
+        { return propagator->prScalingCallback(); };
     }
 
     return propagatorConnection;
@@ -937,9 +954,9 @@ ISimulatorElement* Propagator<integrationStage>::getElementPointerImpl(
         LegacySimulatorData*                    legacySimulatorData,
         ModularSimulatorAlgorithmBuilderHelper* builderHelper,
         StatePropagatorData*                    statePropagatorData,
-        EnergyData gmx_unused*     energyData,
-        FreeEnergyPerturbationData gmx_unused* freeEnergyPerturbationData,
-        GlobalCommunicationHelper gmx_unused* globalCommunicationHelper,
+        EnergyData gmx_unused*                  energyData,
+        FreeEnergyPerturbationData gmx_unused*  freeEnergyPerturbationData,
+        GlobalCommunicationHelper gmx_unused*   globalCommunicationHelper,
         ObservablesReducer* /* observablesReducer */,
         const PropagatorTag& propagatorTag,
         TimeStep             timestep)

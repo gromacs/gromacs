@@ -424,7 +424,7 @@ static void calc_potential(const char*             fn,
             if (bSpherical)
             {
                 (*slPotential)[n][i] = ELC * (*slPotential)[n][i] * -1.0E9 / (EPS0 * i * (*slWidth));
-                (*slField)[n][i]     = ELC * (*slField)[n][i] * 1E18 / (EPS0 * i * (*slWidth));
+                (*slField)[n][i] = ELC * (*slField)[n][i] * 1E18 / (EPS0 * i * (*slWidth));
             }
             else
             {

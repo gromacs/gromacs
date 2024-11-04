@@ -116,9 +116,10 @@ DensitySimilarityInnerProduct::DensitySimilarityInnerProduct(density referenceDe
     const auto numVoxels = gradient_.asConstView().mapping().required_span_size();
     /* the gradient for the inner product measure of fit is constant and does not
      * depend on the compared density, so it is pre-computed here */
-    std::transform(begin(referenceDensity_), end(referenceDensity_), begin(gradient_), [numVoxels](float x) {
-        return x / numVoxels;
-    });
+    std::transform(begin(referenceDensity_),
+                   end(referenceDensity_),
+                   begin(gradient_),
+                   [numVoxels](float x) { return x / numVoxels; });
 }
 
 real DensitySimilarityInnerProduct::similarity(density comparedDensity)
@@ -447,9 +448,10 @@ DensitySimilarityMeasure& DensitySimilarityMeasure::operator=(DensitySimilarityM
 void normalizeSumPositiveValuesToUnity(ArrayRef<float> data)
 {
     const double sumDataLargerZero =
-            std::accumulate(std::begin(data), std::end(data), 0., [](double sum, float value) {
-                return value > 0 ? sum + value : sum;
-            });
+            std::accumulate(std::begin(data),
+                            std::end(data),
+                            0.,
+                            [](double sum, float value) { return value > 0 ? sum + value : sum; });
 
     // leave the data untouched if there are no values larger than zero
     if (sumDataLargerZero == 0.)
@@ -457,9 +459,10 @@ void normalizeSumPositiveValuesToUnity(ArrayRef<float> data)
         return;
     }
 
-    std::transform(std::begin(data), std::end(data), std::begin(data), [sumDataLargerZero](float& datum) {
-        return datum / sumDataLargerZero;
-    });
+    std::transform(std::begin(data),
+                   std::end(data),
+                   std::begin(data),
+                   [sumDataLargerZero](float& datum) { return datum / sumDataLargerZero; });
 }
 
 } // namespace gmx

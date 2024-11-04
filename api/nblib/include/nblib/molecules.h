@@ -120,7 +120,7 @@ class Molecule final
     template<class InteractionType>
     struct InteractionTypeData
     {
-        using type           = InteractionType;
+        using type = InteractionType;
         using IdentifierType = Repeat<TypeList<ParticleName, ResidueName>, NCenter<InteractionType>{}>;
 
         std::vector<InteractionType>                    interactionTypes_;

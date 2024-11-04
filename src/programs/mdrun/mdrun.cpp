@@ -242,9 +242,9 @@ int gmx_mdrun(MPI_Comm communicator, const gmx_hw_info_t& hwinfo, int argc, char
     // wrapper binary.
     SimulationContext simulationContext(communicator, multiSimDirectoryNames);
 
-    StartingBehavior startingBehavior        = StartingBehavior::NewSimulation;
-    LogFilePtr       logFileGuard            = nullptr;
-    gmx_multisim_t*  ms                      = simulationContext.multiSimulation_.get();
+    StartingBehavior startingBehavior = StartingBehavior::NewSimulation;
+    LogFilePtr       logFileGuard     = nullptr;
+    gmx_multisim_t*  ms               = simulationContext.multiSimulation_.get();
     std::tie(startingBehavior, logFileGuard) = handleRestart(findIsSimulationMainRank(ms, communicator),
                                                              communicator,
                                                              ms,

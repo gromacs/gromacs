@@ -445,13 +445,13 @@ struct EnergyFunctionProperties {
             (elecType == ElecType::EwaldAnaTwin || elecType == ElecType::EwaldTabTwin); ///< Use twin cut-off.
     static constexpr bool elecEwald = (elecEwaldAna || elecEwaldTab);  ///< EL_EWALD_ANY
     static constexpr bool vdwCombLB = (vdwType == VdwType::CutCombLB); ///< LJ_COMB && !LJ_COMB_GEOM
-    static constexpr bool vdwCombGeom      = (vdwType == VdwType::CutCombGeom); ///< LJ_COMB_GEOM
-    static constexpr bool vdwComb          = (vdwCombLB || vdwCombGeom);        ///< LJ_COMB
+    static constexpr bool vdwCombGeom = (vdwType == VdwType::CutCombGeom);    ///< LJ_COMB_GEOM
+    static constexpr bool vdwComb     = (vdwCombLB || vdwCombGeom);           ///< LJ_COMB
     static constexpr bool vdwEwaldCombGeom = (vdwType == VdwType::EwaldGeom); ///< LJ_EWALD_COMB_GEOM
-    static constexpr bool vdwEwaldCombLB   = (vdwType == VdwType::EwaldLB);   ///< LJ_EWALD_COMB_LB
-    static constexpr bool vdwEwald         = (vdwEwaldCombGeom || vdwEwaldCombLB); ///< LJ_EWALD
-    static constexpr bool vdwFSwitch       = (vdwType == VdwType::FSwitch); ///< LJ_FORCE_SWITCH
-    static constexpr bool vdwPSwitch       = (vdwType == VdwType::PSwitch); ///< LJ_POT_SWITCH
+    static constexpr bool vdwEwaldCombLB = (vdwType == VdwType::EwaldLB);     ///< LJ_EWALD_COMB_LB
+    static constexpr bool vdwEwald       = (vdwEwaldCombGeom || vdwEwaldCombLB); ///< LJ_EWALD
+    static constexpr bool vdwFSwitch     = (vdwType == VdwType::FSwitch); ///< LJ_FORCE_SWITCH
+    static constexpr bool vdwPSwitch     = (vdwType == VdwType::PSwitch); ///< LJ_POT_SWITCH
 };
 
 //! \brief Templated constants to shorten kernel function declaration.

@@ -476,7 +476,7 @@ void posres_wrapper_lambda(struct gmx_wallcycle*                     wcycle,
         const real lambda_dum =
                 (i == 0 ? lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Restraint)]
                         : enerd->foreignLambdaTerms.foreignLambdas(
-                                FreeEnergyPerturbationCouplingType::Restraint)[i - 1]);
+                                  FreeEnergyPerturbationCouplingType::Restraint)[i - 1]);
         const real v = posres<false>(idef.il[F_POSRES].size(),
                                      idef.il[F_POSRES].iatoms.data(),
                                      idef.iparams_posres.data(),

@@ -64,9 +64,9 @@ std::optional<std::array<std::byte, 16>> getAmdDeviceUuid(int deviceId)
     std::memcpy(uuid.value().begin(), hipUuid.bytes, 16);
     // Check the last 6 bytes for sanity, if they are all 0,
     // revert to the fallback handling
-    if (std::all_of(uuid.value().begin() + 10, uuid.value().end(), [](const std::byte c) {
-            return c == static_cast<std::byte>(0);
-        }))
+    if (std::all_of(uuid.value().begin() + 10,
+                    uuid.value().end(),
+                    [](const std::byte c) { return c == static_cast<std::byte>(0); }))
     {
         uuid = std::nullopt;
     }

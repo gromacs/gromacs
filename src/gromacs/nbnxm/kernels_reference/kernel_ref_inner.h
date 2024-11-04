@@ -199,7 +199,7 @@
 #    if GMX_DOUBLE
                     const real expmcr2 = exp(-cr2);
 #    else
-                    const real expmcr2    = expf(-cr2);
+                    const real expmcr2 = expf(-cr2);
 #    endif
                     const real poly = 1 + cr2 + 0.5 * cr2 * cr2;
 

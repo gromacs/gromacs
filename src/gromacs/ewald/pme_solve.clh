@@ -62,11 +62,11 @@
  * true)
  * \param[in,out] gm_grid              Fourier grid to transform.
  */
-__attribute__((work_group_size_hint(c_solveMaxWorkGroupSize, 1, 1)))
-__kernel void CUSTOMIZED_KERNEL_NAME(pme_solve_kernel)(const struct PmeOpenCLKernelParams kernelParams,
-                                                       __global const float* __restrict__ gm_splineModuli,
-                                                       __global float* __restrict__ gm_virialAndEnergy,
-                                                       __global float2* __restrict__ gm_grid)
+__attribute__((work_group_size_hint(c_solveMaxWorkGroupSize, 1, 1))) __kernel void
+CUSTOMIZED_KERNEL_NAME(pme_solve_kernel)(const struct PmeOpenCLKernelParams kernelParams,
+                                         __global const float* __restrict__ gm_splineModuli,
+                                         __global float* __restrict__ gm_virialAndEnergy,
+                                         __global float2* __restrict__ gm_grid)
 {
     /* This kernel supports 2 different grid dimension orderings: YZX and XYZ */
     int majorDim  = 0;

@@ -283,7 +283,7 @@ public:
      *
      * \{
      */
-    RestraintMDModuleImpl(RestraintMDModuleImpl&&) noexcept = default;
+    RestraintMDModuleImpl(RestraintMDModuleImpl&&) noexcept            = default;
     RestraintMDModuleImpl& operator=(RestraintMDModuleImpl&&) noexcept = default;
     /*! \} */
 

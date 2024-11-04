@@ -176,8 +176,8 @@ std::vector<std::string> unconstrainedSystemsToTest_g = { "argon12",
 std::vector<std::string> minimizersToTest_g           = { "steep", "cg", "l-bfgs" };
 
 std::vector<std::string> constrainedSystemsToTest_g        = { "tip3p5",
-                                                        "glycine_vacuo",
-                                                        "alanine_vsite_vacuo" };
+                                                               "glycine_vacuo",
+                                                               "alanine_vsite_vacuo" };
 std::vector<std::string> minimizersToTestWithConstraints_g = { "steep", "cg" };
 //! \}
 

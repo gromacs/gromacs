@@ -159,13 +159,15 @@ ExclusionChecker::ExclusionChecker(const t_commrec*                cr,
 
     Impl*                                               impl = impl_.get();
     gmx::ObservablesReducerBuilder::CallbackFromBuilder callbackFromBuilder =
-            [impl](gmx::ObservablesReducerBuilder::CallbackToRequireReduction c, gmx::ArrayRef<double> v) {
-                impl->callbackToRequireReduction_ = std::move(c);
-                impl->reductionBuffer_            = v;
-            };
+            [impl](gmx::ObservablesReducerBuilder::CallbackToRequireReduction c, gmx::ArrayRef<double> v)
+    {
+        impl->callbackToRequireReduction_ = std::move(c);
+        impl->reductionBuffer_            = v;
+    };
 
     // Make the callback that runs afer reduction.
-    gmx::ObservablesReducerBuilder::CallbackAfterReduction callbackAfterReduction = [impl](gmx::Step /*step*/) {
+    gmx::ObservablesReducerBuilder::CallbackAfterReduction callbackAfterReduction = [impl](gmx::Step /*step*/)
+    {
         // Pass the total after reduction to the check
         impl->check(impl->reductionBuffer_[0]);
     };

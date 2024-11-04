@@ -313,7 +313,7 @@ public:
 
     TrajectoryAnalysisModuleDataPointer startFrames(const AnalysisDataParallelOptions& opt,
                                                     const SelectionCollection& selections) override;
-    void                                analyzeFrame(int frnr, const t_trxframe& fr, t_pbc* pbc, TrajectoryAnalysisModuleData* pdata) override;
+    void analyzeFrame(int frnr, const t_trxframe& fr, t_pbc* pbc, TrajectoryAnalysisModuleData* pdata) override;
 
     void finishAnalysis(int nframes) override;
     void writeOutput() override;

@@ -60,8 +60,8 @@ void calc_mu(int                            start,
     end = start + homenr;
 
     mu_x = mu_y = mu_z = 0.0;
-#pragma omp parallel for reduction(+: mu_x, mu_y, mu_z) schedule(static) \
-    num_threads(gmx_omp_nthreads_get(ModuleMultiThread::Default))
+#pragma omp parallel for reduction(+ : mu_x, mu_y, mu_z) schedule(static) \
+        num_threads(gmx_omp_nthreads_get(ModuleMultiThread::Default))
     for (int i = start; i < end; i++)
     {
         // Trivial OpenMP region that cannot throw
@@ -81,7 +81,7 @@ void calc_mu(int                            start,
     if (havePerturbedCharges)
     {
         mu_x = mu_y = mu_z = 0.0;
-#pragma omp parallel for reduction(+: mu_x, mu_y, mu_z) schedule(static) \
+#pragma omp parallel for reduction(+ : mu_x, mu_y, mu_z) schedule(static) \
         num_threads(gmx_omp_nthreads_get(ModuleMultiThread::Default))
         for (int i = start; i < end; i++)
         {

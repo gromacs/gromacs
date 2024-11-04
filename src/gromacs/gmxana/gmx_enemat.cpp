@@ -148,17 +148,17 @@ int gmx_enemat(int argc, char* argv[])
     static gmx_bool bLJSR = TRUE, bLJ14 = FALSE, bBhamSR = FALSE, bFree = TRUE;
     t_pargs         pa[] = {
         { "-sum",
-          FALSE,
-          etBOOL,
-          { &bSum },
-          "Sum the energy terms selected rather than display them all" },
+                  FALSE,
+                  etBOOL,
+                  { &bSum },
+                  "Sum the energy terms selected rather than display them all" },
         { "-skip", FALSE, etINT, { &skip }, "Skip number of frames between data points" },
         { "-mean",
-          FALSE,
-          etBOOL,
-          { &bMeanEmtx },
-          "with [TT]-groups[tt] extracts matrix of mean energies instead of "
-          "matrix for each timestep" },
+                  FALSE,
+                  etBOOL,
+                  { &bMeanEmtx },
+                  "with [TT]-groups[tt] extracts matrix of mean energies instead of "
+                          "matrix for each timestep" },
         { "-nlevels", FALSE, etINT, { &nlevels }, "number of levels for matrix colors" },
         { "-max", FALSE, etREAL, { &cutmax }, "max value for energies" },
         { "-min", FALSE, etREAL, { &cutmin }, "min value for energies" },
@@ -169,10 +169,10 @@ int gmx_enemat(int argc, char* argv[])
         { "-bhamsr", FALSE, etBOOL, { &bBhamSR }, "extract Buckingham SR energies" },
         { "-free", FALSE, etBOOL, { &bFree }, "calculate free energy" },
         { "-temp",
-          FALSE,
-          etREAL,
-          { &reftemp },
-          "reference temperature for free energy calculation" }
+                  FALSE,
+                  etREAL,
+                  { &reftemp },
+                  "reference temperature for free energy calculation" }
     };
     /* We will define egSP more energy-groups:
        egTotal (total energy) */

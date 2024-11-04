@@ -350,10 +350,10 @@ static const nbnxn_cu_kfunc_ptr_t nb_kfunc_ener_prune_ptr[c_numElecTypes][c_numV
 };
 
 /*! Return a pointer to the kernel version to be executed at the current step. */
-static inline nbnxn_cu_kfunc_ptr_t select_nbnxn_kernel(enum ElecType           elecType,
-                                                       enum VdwType            vdwType,
-                                                       bool                    bDoEne,
-                                                       bool                    bDoPrune,
+static inline nbnxn_cu_kfunc_ptr_t select_nbnxn_kernel(enum ElecType elecType,
+                                                       enum VdwType  vdwType,
+                                                       bool          bDoEne,
+                                                       bool          bDoPrune,
                                                        const DeviceInformation gmx_unused* deviceInfo)
 {
     const int elecTypeIdx = static_cast<int>(elecType);
@@ -395,7 +395,7 @@ static inline nbnxn_cu_kfunc_ptr_t select_nbnxn_kernel(enum ElecType           e
 }
 
 /*! \brief Calculates the amount of shared memory required by the nonbonded kernel in use. */
-static inline int calc_shmem_required_nonbonded(const int               num_threads_z,
+static inline int calc_shmem_required_nonbonded(const int                           num_threads_z,
                                                 const DeviceInformation gmx_unused* deviceInfo,
                                                 const NBParamGpu*                   nbp)
 {

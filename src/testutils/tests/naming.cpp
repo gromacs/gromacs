@@ -119,8 +119,8 @@ TEST(NameOfTestFromTupleTest, WorksWithFormatLambda)
     // At least gcc-12 warns about a possible uninitialized value in the
     // destructor of std::function, but this seems to be overzealous.
     GCC_DIAGNOSTIC_IGNORE("-Wmaybe-uninitialized")
-    const NameOfTestFromTuple<TestParameters> namer{ std::make_tuple(
-            [](int /* a */) { return "foo"; }) };
+    const NameOfTestFromTuple<TestParameters> namer{ std::make_tuple([](int /* a */)
+                                                                     { return "foo"; }) };
     GCC_DIAGNOSTIC_RESET
     EXPECT_EQ("foo", namer(testing::TestParamInfo<TestParameters>(std::make_tuple(3), 0)));
 }

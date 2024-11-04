@@ -73,14 +73,18 @@ public:
     void subscribeToSimulationSetupNotifications(MDModulesNotifiers* notifier) override
     {
         // Access the plumed filename this is used to activate the plumed module
-        notifier->simulationSetupNotifier_.subscribe([](const PlumedInputFilename& plumedFilename) {
-            if (plumedFilename.plumedFilename_.has_value())
-            {
-                GMX_THROW(InvalidInputError(
-                        "GROMACS is not compiled with the PLUMED interface, if you want to use "
-                        "-plumed option, please reconfigure GROMACS with -DGMX_USE_PLUMED=ON."));
-            }
-        });
+        notifier->simulationSetupNotifier_.subscribe(
+                [](const PlumedInputFilename& plumedFilename)
+                {
+                    if (plumedFilename.plumedFilename_.has_value())
+                    {
+                        GMX_THROW(
+                                InvalidInputError("GROMACS is not compiled with the PLUMED "
+                                                  "interface, if you want to use "
+                                                  "-plumed option, please reconfigure GROMACS with "
+                                                  "-DGMX_USE_PLUMED=ON."));
+                    }
+                });
     }
 
     IMdpOptionProvider* mdpOptionProvider() override { return nullptr; }

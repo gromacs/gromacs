@@ -75,7 +75,7 @@ struct AtomDistribution
     AtomDistribution(const ivec numCells, int numAtomGroups, int numAtoms);
 
     std::vector<DomainAtomGroups> domainGroups; /**< Group and atom division over ranks/domains */
-    std::vector<int>              atomGroups; /**< The atom group division of the whole system, pointed into by counts[].atomGroups */
+    std::vector<int> atomGroups; /**< The atom group division of the whole system, pointed into by counts[].atomGroups */
 
     /* Temporary buffers, stored permanently here to avoid reallocation */
     std::array<std::vector<real>, DIM> cellSizesBuffer; /**< Cell boundaries, sizes: num_cells_in_dim + 1 */

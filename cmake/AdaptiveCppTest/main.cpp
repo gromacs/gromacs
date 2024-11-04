@@ -46,7 +46,8 @@ int main()
 {
     sycl::queue q;
     // Empty kernel to probe compiler definitions in multipass mode
-    q.parallel_for<class K>(sycl::range<1>{ 16 }, [=](sycl::id<1> itemIdx) {
+    q.parallel_for<class K>(sycl::range<1>{ 16 },
+                            [=](sycl::id<1> itemIdx) {
 #if defined(__SYCL_DEVICE_ONLY__) && defined(__NVPTX__)
 #    warning GMX_SYCL_TEST_HAVE_CUDA_TARGET
 #endif
@@ -61,7 +62,7 @@ int main()
 #if defined(__SYCL_DEVICE_ONLY__) && (defined(__SPIR__) || defined(__SPIRV__))
 #    warning GMX_SYCL_TEST_HAVE_SPIRV_TARGET
 #endif
-    });
+                            });
     return 0;
 }
 

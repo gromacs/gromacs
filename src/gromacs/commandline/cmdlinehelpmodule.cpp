@@ -149,7 +149,7 @@ public:
                               const CommandLineModuleGroupList& groups);
 
     std::unique_ptr<IHelpExport> createExporter(const std::string& format, IFileOutputRedirector* redirector);
-    void                         exportHelp(IHelpExport* exporter);
+    void exportHelp(IHelpExport* exporter);
 
     RootHelpTopic                     rootTopic_;
     const IProgramContext&            programContext_;

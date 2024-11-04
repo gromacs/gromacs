@@ -419,7 +419,7 @@ class ModularSimulatorAlgorithmBuilder final
 {
 public:
     //! Constructor
-    ModularSimulatorAlgorithmBuilder(compat::not_null<LegacySimulatorData*>    legacySimulatorData,
+    ModularSimulatorAlgorithmBuilder(compat::not_null<LegacySimulatorData*> legacySimulatorData,
                                      std::unique_ptr<ReadCheckpointDataHolder> checkpointDataHolder);
     //! Build algorithm
     ModularSimulatorAlgorithm build();

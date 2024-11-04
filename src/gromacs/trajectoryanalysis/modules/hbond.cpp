@@ -246,11 +246,11 @@ private:
     bool        isValidAcceptorElement(const std::string& element) const;
     /*! \brief Check partial overlapping between two parsed selections
      * and throw an error when groups are overlapping but are not equal. */
-    void                       checkOverlap() const;
-    void                       searchAcceptors(const TopologyInformation& top,
-                                               t_info*                    selectionTool,
-                                               const std::vector<int>*    selection) const;
-    void                       searchDonors(const TopologyInformation& top, t_info* selectionTool, const std::vector<int>* selection);
+    void checkOverlap() const;
+    void searchAcceptors(const TopologyInformation& top,
+                         t_info*                    selectionTool,
+                         const std::vector<int>*    selection) const;
+    void searchDonors(const TopologyInformation& top, t_info* selectionTool, const std::vector<int>* selection);
     void                       searchDonorsAndAcceptors();
     static void                linkDA(t_info* selectionTool);
     void                       prepareForAnalysis(const TrajectoryAnalysisSettings& settings);
@@ -571,9 +571,10 @@ void Hbond::searchDonors(const TopologyInformation& top, t_info* selectionTool, 
     }
     if (!dhUnsorted.empty())
     {
-        std::sort(dhUnsorted.begin(), dhUnsorted.end(), [](std::pair<int, int> d1, std::pair<int, int> d2) {
-            return d1.first < d2.first || (d1.first == d2.first && d1.second < d2.second);
-        });
+        std::sort(dhUnsorted.begin(),
+                  dhUnsorted.end(),
+                  [](std::pair<int, int> d1, std::pair<int, int> d2)
+                  { return d1.first < d2.first || (d1.first == d2.first && d1.second < d2.second); });
 
         int memoryIndex = dhUnsorted.begin()->first - 1;
 

@@ -227,7 +227,7 @@ __launch_bounds__(c_clSizeSq<pairlistType>* threadZ, minBlocksPp) __global__
                             mask_ji += mask_ji;
                         } // (int i = 0; i < c_clusterPerSuperCluster; i++)
                     } // (imaskCheck & (superClInteractionMask << (jm * c_clusterPerSuperCluster)))
-                }     // for (int jm = 0; jm < c_gpuJGroupSize; jm++)
+                } // for (int jm = 0; jm < c_gpuJGroupSize; jm++)
 
                 if constexpr (haveFreshList)
                 {
@@ -341,7 +341,8 @@ void chooseAndLaunchNbnxmKernelPruneOnly(bool                     haveFreshList,
 
 
     gmx::dispatchTemplatedFunction(
-            [&](auto haveFreshList_, auto hasLargeRegisterPool_) {
+            [&](auto haveFreshList_, auto hasLargeRegisterPool_)
+            {
                 launchNbnxmKernelPruneOnly<pairlistType, haveFreshList_, hasLargeRegisterPool_>(
                         deviceInfo, deviceStream, numSciInPart, args...);
             },

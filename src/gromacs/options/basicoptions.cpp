@@ -120,7 +120,7 @@ void expandVector(size_t length, std::vector<ValueType>* values)
  * \ingroup module_options
  */
 std::vector<std::string>::const_iterator findEnumValue(const std::vector<std::string>& allowedValues,
-                                                       const std::string&              value)
+                                                       const std::string& value)
 {
     std::vector<std::string>::const_iterator i;
     std::vector<std::string>::const_iterator match = allowedValues.end();
@@ -610,9 +610,10 @@ Any EnumOptionStorage::normalizeValue(const int& value) const
 
 void EnumOptionStorage::initConverter(ConverterType* converter)
 {
-    converter->addConverter<std::string>([this](const std::string& value) {
-        return static_cast<int>(findEnumValue(this->allowed_, value) - this->allowed_.begin());
-    });
+    converter->addConverter<std::string>(
+            [this](const std::string& value) {
+                return static_cast<int>(findEnumValue(this->allowed_, value) - this->allowed_.begin());
+            });
 }
 
 /********************************************************************

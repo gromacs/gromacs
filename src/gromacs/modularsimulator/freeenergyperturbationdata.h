@@ -193,7 +193,7 @@ public:
     void elementSetup() override;
 
     //! No teardown needed
-    void elementTeardown() override{};
+    void elementTeardown() override {};
 
     //! ICheckpointHelperClient write checkpoint implementation
     void saveCheckpointState(std::optional<WriteCheckpointData> checkpointData, const t_commrec* cr) override;
@@ -218,8 +218,8 @@ public:
      */
     static ISimulatorElement* getElementPointerImpl(LegacySimulatorData* legacySimulatorData,
                                                     ModularSimulatorAlgorithmBuilderHelper* builderHelper,
-                                                    StatePropagatorData*        statePropagatorData,
-                                                    EnergyData*                 energyData,
+                                                    StatePropagatorData* statePropagatorData,
+                                                    EnergyData*          energyData,
                                                     FreeEnergyPerturbationData* freeEnergyPerturbationData,
                                                     GlobalCommunicationHelper* globalCommunicationHelper);
 

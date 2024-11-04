@@ -228,9 +228,8 @@ void ComputeGlobalsElement<algorithm>::scheduleTask(Step                       s
         auto signaller = std::make_shared<SimulationSignaller>(
                 signals_, cr_, nullptr, doInterSimSignal, doIntraSimSignal);
 
-        registerRunFunction([this, step, flags, signaller = std::move(signaller)]() {
-            compute(step, flags, signaller.get(), true);
-        });
+        registerRunFunction([this, step, flags, signaller = std::move(signaller)]()
+                            { compute(step, flags, signaller.get(), true); });
     }
     else if (algorithm == ComputeGlobalsAlgorithm::VelocityVerlet)
     {
@@ -256,8 +255,8 @@ void ComputeGlobalsElement<algorithm>::scheduleTask(Step                       s
                         | (doTemperature ? CGLO_TEMPERATURE : 0) | CGLO_PRESSURE | CGLO_CONSTRAINT
                         | (needComReduction ? CGLO_STOPCM : 0) | CGLO_SCALEEKIN;
 
-            registerRunFunction(
-                    [this, step, flags]() { compute(step, flags, nullSignaller_.get(), false); });
+            registerRunFunction([this, step, flags]()
+                                { compute(step, flags, nullSignaller_.get(), false); });
         }
         else
         {
@@ -284,9 +283,8 @@ void ComputeGlobalsElement<algorithm>::scheduleTask(Step                       s
             auto signaller = std::make_shared<SimulationSignaller>(
                     signals_, cr_, nullptr, doInterSimSignal, doIntraSimSignal);
 
-            registerRunFunction([this, step, flags, signaller = std::move(signaller)]() {
-                compute(step, flags, signaller.get(), true);
-            });
+            registerRunFunction([this, step, flags, signaller = std::move(signaller)]()
+                                { compute(step, flags, signaller.get(), true); });
         }
     }
 }
@@ -373,13 +371,12 @@ namespace
 SchedulingFunction registerPostStepSchedulingFunction(ObservablesReducer* observablesReducer)
 {
     SchedulingFunction postStepSchedulingFunction =
-            [observablesReducer](
-                    Step /*step*/, Time /*time*/, const RegisterRunFunction& registerRunFunction) {
-                SimulatorRunFunction completeObservablesReducerStep = [&observablesReducer]() {
-                    observablesReducer->markAsReadyToReduce();
-                };
-                registerRunFunction(completeObservablesReducerStep);
-            };
+            [observablesReducer](Step /*step*/, Time /*time*/, const RegisterRunFunction& registerRunFunction)
+    {
+        SimulatorRunFunction completeObservablesReducerStep = [&observablesReducer]()
+        { observablesReducer->markAsReadyToReduce(); };
+        registerRunFunction(completeObservablesReducerStep);
+    };
     return postStepSchedulingFunction;
 }
 

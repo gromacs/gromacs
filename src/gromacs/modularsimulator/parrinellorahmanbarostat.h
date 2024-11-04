@@ -132,11 +132,11 @@ public:
                           ModularSimulatorAlgorithmBuilderHelper* builderHelper,
                           StatePropagatorData*                    statePropagatorData,
                           EnergyData*                             energyData,
-                          FreeEnergyPerturbationData gmx_unused* freeEnergyPerturbationData,
-                          GlobalCommunicationHelper gmx_unused* globalCommunicationHelper,
-                          ObservablesReducer*                   observablesReducer,
-                          Offset                                offset,
-                          const PropagatorTag&                  propagatorTag);
+                          FreeEnergyPerturbationData gmx_unused*  freeEnergyPerturbationData,
+                          GlobalCommunicationHelper gmx_unused*   globalCommunicationHelper,
+                          ObservablesReducer*                     observablesReducer,
+                          Offset                                  offset,
+                          const PropagatorTag&                    propagatorTag);
 
 private:
     //! The frequency at which the barostat is applied

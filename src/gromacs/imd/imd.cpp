@@ -1017,7 +1017,7 @@ void ImdSession::Impl::readCommand()
                 issueFatalError("Terminating connection");
                 break;
         } /* end switch */
-    }     /* end while  */
+    } /* end while  */
 }
 
 

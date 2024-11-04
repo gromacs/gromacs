@@ -552,7 +552,7 @@ static std::vector<bondedtable_t> make_bonded_tables(FILE*                      
                 // before the file type extension, and avoids table 13
                 // being recognized and used for table 1.
                 std::string patternToFind = gmx::formatString("_%s%d.%s", tabext, i, ftp2ext(efXVG));
-                bool        madeTable     = false;
+                bool madeTable = false;
                 for (gmx::Index j = 0; j < tabbfnm.ssize() && !madeTable; ++j)
                 {
                     if (gmx::endsWith(tabbfnm[j], patternToFind))

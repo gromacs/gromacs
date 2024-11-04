@@ -108,7 +108,7 @@ struct pull_group_work_t
     const t_pull_group params_;  /**< The pull group parameters */
     const int          epgrppbc; /**< The type of pbc for this pull group, see enum above */
     const int maxNumThreads_; /**< The maximum number of threads to use for operations on x and f */
-    bool      needToCalcCom; /**< Do we need to calculate the COM? (Not for group 0 or if only used as cylinder group) */
+    bool needToCalcCom; /**< Do we need to calculate the COM? (Not for group 0 or if only used as cylinder group) */
     std::vector<real> globalWeights; /**< Weights per atom set by the user and/or mass/friction coefficients, if empty all weights are equal */
 
     /* Data modified only at init or at domain decomposition */

@@ -159,9 +159,9 @@ const EnergyOutputTestParameters parametersSets[] = {
  */
 class EnergyOutputTest : public ::testing::TestWithParam<EnergyOutputTestParameters>
 {
-    static constexpr int                                      numTempCouplingGroups_ = 3;
+    static constexpr int numTempCouplingGroups_ = 3;
     static constexpr std::array<real, numTempCouplingGroups_> tcgInit_{ 0.0_real, 0.0_real, 0.0_real };
-    static constexpr real                                     cosAccel_ = 1.0;
+    static constexpr real cosAccel_ = 1.0;
 
 public:
     //! File manager

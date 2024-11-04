@@ -231,10 +231,10 @@ int gmx_rotmat(int argc, char* argv[])
         { "-ref", FALSE, etENUM, { reffit }, "Determine the optimal reference structure" },
         { "-skip", FALSE, etINT, { &skip }, "Use every nr-th frame for [TT]-ref[tt]" },
         { "-fitxy",
-          FALSE,
-          etBOOL,
-          { &bFitXY },
-          "Fit the x/y rotation before determining the rotation" },
+                  FALSE,
+                  etBOOL,
+                  { &bFitXY },
+                  "Fit the x/y rotation before determining the rotation" },
         { "-mw", FALSE, etBOOL, { &bMW }, "Use mass weighted fitting" }
     };
     FILE*                      out;

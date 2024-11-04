@@ -139,7 +139,7 @@ static DeviceDetectionResult detectAllDeviceInformation(const PhysicalNodeCommun
     // Read-only access is enforced with providing those ranks with a
     // handle to a const object, so usage is also free of races.
     GMX_UNUSED_VALUE(physicalNodeComm);
-    isMainRankOfPhysicalNode           = true;
+    isMainRankOfPhysicalNode = true;
 #endif
 
     /* The SYCL and OpenCL support requires us to run detection on all

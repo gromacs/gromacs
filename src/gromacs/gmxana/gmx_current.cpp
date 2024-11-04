@@ -821,40 +821,40 @@ int gmx_current(int argc, char* argv[])
     static real     evit    = 5.0;
     t_pargs         pa[]    = {
         { "-sh",
-          FALSE,
-          etINT,
-          { &nshift },
-          "Shift of the frames for averaging the correlation functions and the mean-square "
-          "displacement." },
+                     FALSE,
+                     etINT,
+                     { &nshift },
+                     "Shift of the frames for averaging the correlation functions and the mean-square "
+                                "displacement." },
         { "-nojump", FALSE, etBOOL, { &bNoJump }, "Removes jumps of atoms across the box." },
         { "-eps",
-          FALSE,
-          etREAL,
-          { &eps_rf },
-          "Dielectric constant of the surrounding medium. The value zero corresponds to "
-          "infinity (tin-foil boundary conditions)." },
+                     FALSE,
+                     etREAL,
+                     { &eps_rf },
+                     "Dielectric constant of the surrounding medium. The value zero corresponds to "
+                                "infinity (tin-foil boundary conditions)." },
         { "-bfit",
-          FALSE,
-          etREAL,
-          { &bfit },
-          "Begin of the fit of the straight line to the MSD of the translational fraction "
-          "of the dipole moment." },
+                     FALSE,
+                     etREAL,
+                     { &bfit },
+                     "Begin of the fit of the straight line to the MSD of the translational fraction "
+                                "of the dipole moment." },
         { "-efit",
-          FALSE,
-          etREAL,
-          { &efit },
-          "End of the fit of the straight line to the MSD of the translational fraction of "
-          "the dipole moment." },
+                     FALSE,
+                     etREAL,
+                     { &efit },
+                     "End of the fit of the straight line to the MSD of the translational fraction of "
+                                "the dipole moment." },
         { "-bvit",
-          FALSE,
-          etREAL,
-          { &bvit },
-          "Begin of the fit of the current autocorrelation function to a*t^b." },
+                     FALSE,
+                     etREAL,
+                     { &bvit },
+                     "Begin of the fit of the current autocorrelation function to a*t^b." },
         { "-evit",
-          FALSE,
-          etREAL,
-          { &evit },
-          "End of the fit of the current autocorrelation function to a*t^b." },
+                     FALSE,
+                     etREAL,
+                     { &evit },
+                     "End of the fit of the current autocorrelation function to a*t^b." },
         { "-temp", FALSE, etREAL, { &temp }, "Temperature for calculating epsilon." }
     };
 
@@ -883,14 +883,14 @@ int gmx_current(int argc, char* argv[])
     FILE*             fmjdsp = nullptr;
     FILE*             fcur   = nullptr;
     t_filenm          fnm[]  = { { efTPS, nullptr, nullptr, ffREAD }, /* this is for the topology */
-                       { efNDX, nullptr, nullptr, ffOPTRD },
-                       { efTRX, "-f", nullptr, ffREAD }, /* and this for the trajectory */
-                       { efXVG, "-o", "current", ffWRITE },
-                       { efXVG, "-caf", "caf", ffOPTWR },
-                       { efXVG, "-dsp", "dsp", ffWRITE },
-                       { efXVG, "-md", "md", ffWRITE },
-                       { efXVG, "-mj", "mj", ffWRITE },
-                       { efXVG, "-mc", "mc", ffOPTWR } };
+                                 { efNDX, nullptr, nullptr, ffOPTRD },
+                                 { efTRX, "-f", nullptr, ffREAD }, /* and this for the trajectory */
+                                 { efXVG, "-o", "current", ffWRITE },
+                                 { efXVG, "-caf", "caf", ffOPTWR },
+                                 { efXVG, "-dsp", "dsp", ffWRITE },
+                                 { efXVG, "-md", "md", ffWRITE },
+                                 { efXVG, "-mj", "mj", ffWRITE },
+                                 { efXVG, "-mc", "mc", ffOPTWR } };
 
 #define NFILE asize(fnm)
 

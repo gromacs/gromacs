@@ -94,7 +94,8 @@ auto leapFrogKernel(Float3* __restrict__ gm_x,
                     const unsigned short* __restrict__ gm_tempScaleGroups /* used iff numTempScaleValues == Multiple */,
                     Float3 prVelocityScalingMatrixDiagonal)
 {
-    return [=](sycl::id<1> itemIdx) {
+    return [=](sycl::id<1> itemIdx)
+    {
         const Float3 x    = gm_x[itemIdx];
         const Float3 v    = gm_v[itemIdx];
         const Float3 f    = gm_f[itemIdx];
@@ -103,7 +104,8 @@ auto leapFrogKernel(Float3* __restrict__ gm_x,
 
         gm_x0[itemIdx] = x;
 
-        const float lambda = [=]() {
+        const float lambda = [=]()
+        {
             if constexpr (numTempScaleValues == NumTempScaleValues::None)
             {
                 return 1.0F;
@@ -119,7 +121,8 @@ auto leapFrogKernel(Float3* __restrict__ gm_x,
             }
         }();
 
-        const Float3 prVelocityDelta = [=]() {
+        const Float3 prVelocityDelta = [=]()
+        {
             if constexpr (parrinelloRahmanVelocityScaling == ParrinelloRahmanVelocityScaling::Diagonal)
             {
                 return Float3{ prVelocityScalingMatrixDiagonal[0] * v[0],
@@ -154,11 +157,14 @@ static void launchLeapFrogKernel(const DeviceStream& deviceStream, int numAtoms,
 
     const sycl::range<1> rangeAllAtoms(numAtoms);
 
-    gmx::syclSubmitWithoutEvent(deviceStream.stream(), [&](sycl::handler& cgh) {
-        auto kernel = leapFrogKernel<numTempScaleValues, parrinelloRahmanVelocityScaling>(
-                std::forward<Args>(args)...);
-        cgh.parallel_for<kernelNameType>(rangeAllAtoms, kernel);
-    });
+    gmx::syclSubmitWithoutEvent(
+            deviceStream.stream(),
+            [&](sycl::handler& cgh)
+            {
+                auto kernel = leapFrogKernel<numTempScaleValues, parrinelloRahmanVelocityScaling>(
+                        std::forward<Args>(args)...);
+                cgh.parallel_for<kernelNameType>(rangeAllAtoms, kernel);
+            });
 }
 
 //! Convert \p doTemperatureScaling and \p numTempScaleValues to \ref NumTempScaleValues.
@@ -184,7 +190,7 @@ static NumTempScaleValues getTempScalingType(bool doTemperatureScaling, int numT
 
 /*! \brief Select templated kernel and launch it. */
 template<class... Args>
-static inline void launchLeapFrogKernel(NumTempScaleValues              tempScalingType,
+static inline void launchLeapFrogKernel(NumTempScaleValues tempScalingType,
                                         ParrinelloRahmanVelocityScaling parrinelloRahmanVelocityScaling,
                                         Args&&... args)
 {

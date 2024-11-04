@@ -169,7 +169,7 @@ namespace detail
 #if GMX_GPU_OPENCL || GMX_GPU_SYCL
 constexpr int c_nbnxnGpuClusterSize = GMX_GPU_NB_CLUSTER_SIZE;
 #else
-constexpr int        c_nbnxnGpuClusterSize      = 8;
+constexpr int c_nbnxnGpuClusterSize = 8;
 #endif
 
 /*! \brief The number of clusters along a direction in a pair-search grid cell for GPU lists

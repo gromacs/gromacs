@@ -553,9 +553,10 @@ static void renumber_moltypes(gmx_mtop_t* sys, std::vector<MoleculeInformation>*
     std::vector<int> order;
     for (gmx_molblock_t& molblock : sys->molblock)
     {
-        const auto found = std::find_if(order.begin(), order.end(), [&molblock](const auto& entry) {
-            return molblock.type == entry;
-        });
+        const auto found =
+                std::find_if(order.begin(),
+                             order.end(),
+                             [&molblock](const auto& entry) { return molblock.type == entry; });
         if (found == order.end())
         {
             /* This type did not occur yet, add it */
@@ -2193,27 +2194,27 @@ int gmx_grompp(int argc, char* argv[])
         { "-v", FALSE, etBOOL, { &bVerbose }, "Be loud and noisy" },
         { "-time", FALSE, etREAL, { &fr_time }, "Take frame at or first after this time." },
         { "-rmvsbds",
-          FALSE,
-          etBOOL,
-          { &bRmVSBds },
-          "Remove constant bonded interactions with virtual sites" },
+              FALSE,
+              etBOOL,
+              { &bRmVSBds },
+              "Remove constant bonded interactions with virtual sites" },
         { "-maxwarn",
-          FALSE,
-          etINT,
-          { &maxwarn },
-          "Number of allowed warnings during input processing. Not for normal use and may "
-          "generate unstable systems" },
+              FALSE,
+              etINT,
+              { &maxwarn },
+              "Number of allowed warnings during input processing. Not for normal use and may "
+                  "generate unstable systems" },
         { "-zero",
-          FALSE,
-          etBOOL,
-          { &bZero },
-          "Set parameters for bonded interactions without defaults to zero instead of "
-          "generating an error" },
+              FALSE,
+              etBOOL,
+              { &bZero },
+              "Set parameters for bonded interactions without defaults to zero instead of "
+                  "generating an error" },
         { "-renum",
-          FALSE,
-          etBOOL,
-          { &bRenum },
-          "Renumber atomtypes and minimize number of atomtypes" }
+              FALSE,
+              etBOOL,
+              { &bRenum },
+              "Renumber atomtypes and minimize number of atomtypes" }
     };
 
     /* Parse the command line */

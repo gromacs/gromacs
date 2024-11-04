@@ -252,8 +252,8 @@ static inline void gmx_simdcall expandScalarsToTriplets(SimdDouble  scalar,
 {
     assert(GMX_SIMD_DOUBLE_WIDTH <= 16);
     uint64_t   ind[48] = { 0,  0,  0,  1,  1,  1,  2,  2,  2,  3,  3,  3,  4,  4,  4,  5,
-                         5,  5,  6,  6,  6,  7,  7,  7,  8,  8,  8,  9,  9,  9,  10, 10,
-                         10, 11, 11, 11, 12, 12, 12, 13, 13, 13, 14, 14, 14, 15, 15, 15 };
+                           5,  5,  6,  6,  6,  7,  7,  7,  8,  8,  8,  9,  9,  9,  10, 10,
+                           10, 11, 11, 11, 12, 12, 12, 13, 13, 13, 14, 14, 14, 15, 15, 15 };
     svbool_t   pg;
     svuint64_t idx;
 

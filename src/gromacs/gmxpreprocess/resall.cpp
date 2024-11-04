@@ -477,10 +477,10 @@ void readResidueDatabase(const std::filesystem::path&    rrdb,
             gmx_fatal(FARGS, "No atoms found in .rtp file in residue %s\n", res->resname.c_str());
         }
 
-        auto found = std::find_if(
-                rtpDBEntry->begin(), rtpDBEntry->end() - 1, [&res](const PreprocessResidue& entry) {
-                    return gmx::equalCaseInsensitive(entry.resname, res->resname);
-                });
+        auto found = std::find_if(rtpDBEntry->begin(),
+                                  rtpDBEntry->end() - 1,
+                                  [&res](const PreprocessResidue& entry)
+                                  { return gmx::equalCaseInsensitive(entry.resname, res->resname); });
 
         if (found != rtpDBEntry->end() - 1)
         {
@@ -519,14 +519,17 @@ void readResidueDatabase(const std::filesystem::path&    rrdb,
     }
     gmx_ffclose(in);
 
-    std::sort(rtpDBEntry->begin(), rtpDBEntry->end(), [](const PreprocessResidue& a, const PreprocessResidue& b) {
-        return std::lexicographical_compare(
-                a.resname.begin(),
-                a.resname.end(),
-                b.resname.begin(),
-                b.resname.end(),
-                [](const char& c1, const char& c2) { return std::toupper(c1) < std::toupper(c2); });
-    });
+    std::sort(rtpDBEntry->begin(),
+              rtpDBEntry->end(),
+              [](const PreprocessResidue& a, const PreprocessResidue& b)
+              {
+                  return std::lexicographical_compare(a.resname.begin(),
+                                                      a.resname.end(),
+                                                      b.resname.begin(),
+                                                      b.resname.end(),
+                                                      [](const char& c1, const char& c2)
+                                                      { return std::toupper(c1) < std::toupper(c2); });
+              });
 
     check_rtp(*rtpDBEntry, rrdb, logger);
 }
@@ -638,10 +641,10 @@ std::string searchResidueDatabase(const std::string&                     key,
 gmx::ArrayRef<const PreprocessResidue>::const_iterator
 getDatabaseEntry(const std::string& rtpname, gmx::ArrayRef<const PreprocessResidue> rtpDBEntry)
 {
-    auto found = std::find_if(
-            rtpDBEntry.begin(), rtpDBEntry.end(), [&rtpname](const PreprocessResidue& entry) {
-                return gmx::equalCaseInsensitive(rtpname, entry.resname);
-            });
+    auto found = std::find_if(rtpDBEntry.begin(),
+                              rtpDBEntry.end(),
+                              [&rtpname](const PreprocessResidue& entry)
+                              { return gmx::equalCaseInsensitive(rtpname, entry.resname); });
     if (found == rtpDBEntry.end())
     {
         /* This should never happen, since searchResidueDatabase should have been called

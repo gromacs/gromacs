@@ -515,7 +515,8 @@ TEST(RVecTest, UsableInConstexpr)
     // Check that we can use gmx::RVec as constexpr and common operations work
     constexpr std::array<RVec, 2> a{ RVec{ 0, 1, 2 }, RVec{ -1, -2, -3.3 } };
     static_assert(a[0][0] == 0);
-    constexpr RVec b = [](RVec v) {
+    constexpr RVec b = [](RVec v)
+    {
         v *= 2;
         return v;
     }(a[0]);

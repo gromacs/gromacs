@@ -598,7 +598,7 @@ int AnalysisDataSimpleHistogramModule::flags() const
 }
 
 
-bool AnalysisDataSimpleHistogramModule::parallelDataStarted(AbstractAnalysisData*              data,
+bool AnalysisDataSimpleHistogramModule::parallelDataStarted(AbstractAnalysisData* data,
                                                             const AnalysisDataParallelOptions& options)
 {
     addModule(impl_->averager_);

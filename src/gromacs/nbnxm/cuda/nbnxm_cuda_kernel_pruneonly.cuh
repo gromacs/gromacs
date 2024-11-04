@@ -148,10 +148,10 @@ nbnxn_kernel_prune_cuda<false>(const NBAtomDataGpu, const NBParamGpu, const GpuP
     float rlistInner_sq = nbparam.rlistInner_sq;
 
     /* thread/block/warp id-s */
-    unsigned int tidxi      = threadIdx.x;
-    unsigned int tidxj      = threadIdx.y;
+    unsigned int tidxi = threadIdx.x;
+    unsigned int tidxj = threadIdx.y;
 #    if NTHREAD_Z == 1
-    unsigned int tidxz      = 0;
+    unsigned int tidxz = 0;
 #    else
     unsigned int tidxz = threadIdx.z;
 #    endif

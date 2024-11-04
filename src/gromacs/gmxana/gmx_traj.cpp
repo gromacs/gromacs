@@ -647,10 +647,10 @@ int gmx_traj(int argc, char* argv[])
         { "-com", FALSE, etBOOL, { &bCom }, "Plot data for the com of each group" },
         { "-pbc", FALSE, etBOOL, { &bPBC }, "Make molecules whole for COM" },
         { "-mol",
-          FALSE,
-          etBOOL,
-          { &bMol },
-          "Index contains molecule numbers instead of atom numbers" },
+                  FALSE,
+                  etBOOL,
+                  { &bMol },
+                  "Index contains molecule numbers instead of atom numbers" },
         { "-nojump", FALSE, etBOOL, { &bNoJump }, "Remove jumps of atoms across the box" },
         { "-x", FALSE, etBOOL, { &bX }, "Plot X-component" },
         { "-y", FALSE, etBOOL, { &bY }, "Plot Y-component" },
@@ -660,15 +660,15 @@ int gmx_traj(int argc, char* argv[])
         { "-fp", FALSE, etBOOL, { &bFP }, "Full precision output" },
         { "-bin", FALSE, etREAL, { &binwidth }, "Binwidth for velocity histogram (nm/ps)" },
         { "-ctime",
-          FALSE,
-          etREAL,
-          { &ctime },
-          "Use frame at this time for x in [TT]-cv[tt] and [TT]-cf[tt] instead of the average x" },
+                  FALSE,
+                  etREAL,
+                  { &ctime },
+                  "Use frame at this time for x in [TT]-cv[tt] and [TT]-cf[tt] instead of the average x" },
         { "-scale",
-          FALSE,
-          etREAL,
-          { &scale },
-          "Scale factor for [REF].pdb[ref] output, 0 is autoscale" }
+                  FALSE,
+                  etREAL,
+                  { &scale },
+                  "Scale factor for [REF].pdb[ref] output, 0 is autoscale" }
     };
     FILE *       outx = nullptr, *outv = nullptr, *outf = nullptr, *outb = nullptr, *outt = nullptr;
     FILE *       outekt = nullptr, *outekr = nullptr;

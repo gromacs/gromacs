@@ -199,7 +199,7 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu*    nbl,
     constexpr bool useEnergyGroups   = (energyOutput == EnergyOutput::GroupPairs);
 
     /* Unpack pointers for output */
-    real* f                 = out->f.data();
+    real*            f      = out->f.data();
     real gmx_unused* fshift = out->fshift.data();
 
     const SimdReal zero_S(0.0);
@@ -219,7 +219,7 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu*    nbl,
         ljc = nbatParams.lj_comb.data();
     }
     const real gmx_unused* gmx_restrict nbfp_ptr;
-    const int gmx_unused* gmx_restrict type;
+    const int gmx_unused* gmx_restrict  type;
     if constexpr (ljCombinationRule == LJCombinationRule::None)
     {
         /* No combination rule used */
@@ -438,18 +438,24 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu*    nbl,
         }
 
         /* Declare and clear i atom forces */
-        auto forceIXV = genArr<nR>([&](int gmx_unused i) {
-            SimdReal tmp = setZero();
-            return tmp;
-        });
-        auto forceIYV = genArr<nR>([&](int gmx_unused i) {
-            SimdReal tmp = setZero();
-            return tmp;
-        });
-        auto forceIZV = genArr<nR>([&](int gmx_unused i) {
-            SimdReal tmp = setZero();
-            return tmp;
-        });
+        auto forceIXV = genArr<nR>(
+                [&](int gmx_unused i)
+                {
+                    SimdReal tmp = setZero();
+                    return tmp;
+                });
+        auto forceIYV = genArr<nR>(
+                [&](int gmx_unused i)
+                {
+                    SimdReal tmp = setZero();
+                    return tmp;
+                });
+        auto forceIZV = genArr<nR>(
+                [&](int gmx_unused i)
+                {
+                    SimdReal tmp = setZero();
+                    return tmp;
+                });
 
 
         int cjind = cjind0;

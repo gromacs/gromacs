@@ -607,11 +607,13 @@ submit(const DeviceStream& deviceStream, size_t myGridX, size_t myGridY, sycl::u
     const sycl::nd_range<3> range{ groupRange * localSize, localSize };
 
     sycl::queue q = deviceStream.stream();
-    gmx::syclSubmitWithoutEvent(q, [&](sycl::handler& cgh) {
-        auto kernel = Kernel::template kernel<subGroupSize>(
-                myGridX, myGridY, pmeSize, std::forward<Args>(args)...);
-        cgh.parallel_for<Kernel>(range, kernel);
-    });
+    gmx::syclSubmitWithoutEvent(q,
+                                [&](sycl::handler& cgh)
+                                {
+                                    auto kernel = Kernel::template kernel<subGroupSize>(
+                                            myGridX, myGridY, pmeSize, std::forward<Args>(args)...);
+                                    cgh.parallel_for<Kernel>(range, kernel);
+                                });
 }
 
 #if GMX_MPI
@@ -1281,10 +1283,13 @@ public:
 
         sycl::queue q = deviceStream.stream();
 
-        gmx::syclSubmitWithoutEvent(q, [&](sycl::handler& cgh) {
-            auto kernel = convertKernel<subGroupSize>(localFftNData, std::forward<Args>(args)...);
-            cgh.parallel_for<GridConverter<pmeToFft>>(range, kernel);
-        });
+        gmx::syclSubmitWithoutEvent(q,
+                                    [&](sycl::handler& cgh)
+                                    {
+                                        auto kernel = convertKernel<subGroupSize>(
+                                                localFftNData, std::forward<Args>(args)...);
+                                        cgh.parallel_for<GridConverter<pmeToFft>>(range, kernel);
+                                    });
     }
 };
 
@@ -1298,11 +1303,11 @@ void convertPmeGridToFftGrid(const PmeGpu* pmeGpu, float* h_fftRealGrid, gmx_par
                                         localFftNDataAsIvec[YY],
                                         localFftNDataAsIvec[ZZ] };
     const sycl::uint3 localFftSize  = { localFftSizeAsIvec[XX],
-                                       localFftSizeAsIvec[YY],
-                                       localFftSizeAsIvec[ZZ] };
+                                        localFftSizeAsIvec[YY],
+                                        localFftSizeAsIvec[ZZ] };
     const sycl::uint3 localPmeSize  = { pmeGpu->kernelParams->grid.realGridSizePadded[XX],
-                                       pmeGpu->kernelParams->grid.realGridSizePadded[YY],
-                                       pmeGpu->kernelParams->grid.realGridSizePadded[ZZ] };
+                                        pmeGpu->kernelParams->grid.realGridSizePadded[YY],
+                                        pmeGpu->kernelParams->grid.realGridSizePadded[ZZ] };
 
     // this is true in case of slab decomposition
     if (localPmeSize[ZZ] == localFftSize[ZZ] && localPmeSize[YY] == localFftSize[YY])

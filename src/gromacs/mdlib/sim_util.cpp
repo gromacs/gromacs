@@ -1564,7 +1564,7 @@ void do_force(FILE*                         fplog,
     auto* localXReadyOnDevice = (stepWork.haveGpuPmeOnThisRank || stepWork.useGpuXBufferOps
                                  || simulationWork.useGpuUpdate || pmeSendCoordinatesFromGpu)
                                         ? stateGpu->getCoordinatesReadyOnDeviceEvent(
-                                                AtomLocality::Local, simulationWork, stepWork)
+                                                  AtomLocality::Local, simulationWork, stepWork)
                                         : nullptr;
 
     if (stepWork.clearGpuFBufferEarly)

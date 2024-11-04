@@ -75,7 +75,8 @@ auto makeSolveKernel(sycl::handler& cgh,
     const int reductionBufferSize = c_solveMaxWarpsPerBlock * stride;
 
     // Help compiler eliminate local buffer when it is unused.
-    auto sm_virialAndEnergy = [&]() {
+    auto sm_virialAndEnergy = [&]()
+    {
         if constexpr (computeEnergyAndVirial)
         {
             return sycl::local_accessor<float, 1>(sycl::range<1>(reductionBufferSize), cgh);
@@ -442,15 +443,18 @@ void PmeSolveKernel<gridOrdering, computeEnergyAndVirial, gridIndex, subGroupSiz
 
     sycl::queue q = deviceStream.stream();
 
-    gmx::syclSubmitWithoutEvent(q, [&](sycl::handler& cgh) {
-        auto kernel = makeSolveKernel<gridOrdering, computeEnergyAndVirial, subGroupSize>(
-                cgh,
-                gridParams_->d_splineModuli[gridIndex].get_pointer(),
-                solveKernelParams_,
-                constParams_->d_virialAndEnergy[gridIndex].get_pointer(),
-                gridParams_->d_fftComplexGrid[gridIndex].get_pointer());
-        cgh.parallel_for<KernelNameType>(range, kernel);
-    });
+    gmx::syclSubmitWithoutEvent(
+            q,
+            [&](sycl::handler& cgh)
+            {
+                auto kernel = makeSolveKernel<gridOrdering, computeEnergyAndVirial, subGroupSize>(
+                        cgh,
+                        gridParams_->d_splineModuli[gridIndex].get_pointer(),
+                        solveKernelParams_,
+                        constParams_->d_virialAndEnergy[gridIndex].get_pointer(),
+                        gridParams_->d_fftComplexGrid[gridIndex].get_pointer());
+                cgh.parallel_for<KernelNameType>(range, kernel);
+            });
 
     // Delete set args, so we don't forget to set them before the next launch.
     reset();

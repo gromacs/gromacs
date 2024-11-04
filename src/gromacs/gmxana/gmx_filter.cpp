@@ -94,10 +94,10 @@ int gmx_filter(int argc, char* argv[])
     static gmx_bool bNoJump = TRUE, bFit = FALSE, bLowAll = FALSE;
     t_pargs         pa[] = {
         { "-nf",
-          FALSE,
-          etINT,
-          { &nf },
-          "Sets the filter length as well as the output interval for low-pass filtering" },
+                  FALSE,
+                  etINT,
+                  { &nf },
+                  "Sets the filter length as well as the output interval for low-pass filtering" },
         { "-all", FALSE, etBOOL, { &bLowAll }, "Write all low-pass filtered frames" },
         { "-nojump", FALSE, etBOOL, { &bNoJump }, "Remove jumps of atoms across the box" },
         { "-fit", FALSE, etBOOL, { &bFit }, "Fit all frames to a reference structure" }

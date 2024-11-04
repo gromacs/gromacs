@@ -136,10 +136,10 @@ static gmx_bool bDebug = FALSE;
 #define HB_NR (1 << 2)
 static constexpr int sc_maxNumHydrogens = 4;
 
-#define ISHB(h) ((h)&2)
-#define ISDIST(h) ((h)&1)
-#define ISDON(h) ((h)&c_donorMask)
-#define ISINGRP(h) ((h)&c_inGroupMask)
+#define ISHB(h) ((h) & 2)
+#define ISDIST(h) ((h) & 1)
+#define ISDON(h) ((h) & c_donorMask)
+#define ISINGRP(h) ((h) & c_inGroupMask)
 
 struct HydrogenCellType
 {
@@ -2813,7 +2813,7 @@ int gmx_hbond(int argc, char* argv[])
      * instead of forking anew at every frame. */
 
 #pragma omp parallel firstprivate(i, h, dist, ang) private( \
-        j, xi, yi, zi, xj, yj, zj, ogrp, ai, aj, xjj, yjj, zjj, ihb, resdist, k, bTric, bEdge_xjj, bEdge_yjj) default(shared)
+                j, xi, yi, zi, xj, yj, zj, ogrp, ai, aj, xjj, yjj, zjj, ihb, resdist, k, bTric, bEdge_xjj, bEdge_yjj) default(shared)
     { /* Start of parallel region */
         const int threadNr = (bOMP) ? gmx_omp_get_thread_num() : 0;
 
@@ -2996,12 +2996,12 @@ int gmx_hbond(int argc, char* argv[])
                                                         }
                                                     }
                                                 } /* for aj  */
-                                            }     /* for xjj */
-                                        }         /* for yjj */
-                                    }             /* for zjj */
-                                }                 /* for ai  */
-                            }                     /* for grp */
-                        }                         /* for xi,yi,zi */
+                                            } /* for xjj */
+                                        } /* for yjj */
+                                    } /* for zjj */
+                                } /* for ai  */
+                            } /* for grp */
+                        } /* for xi,yi,zi */
                     }
                 }
                 GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR

@@ -298,9 +298,9 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow& work)
          */
 
         // Set input TPR name
-        if (std::any_of(mdArgs_.cbegin(), mdArgs_.cend(), [](const std::string& arg) {
-                return arg == "-s";
-            }))
+        if (std::any_of(mdArgs_.cbegin(),
+                        mdArgs_.cend(),
+                        [](const std::string& arg) { return arg == "-s"; }))
         {
             throw UsageError("gmxapi must control the simulation input, but caller provided '-s'.");
         }
@@ -308,23 +308,23 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow& work)
         mdArgs_.emplace_back(filename);
 
         // Set checkpoint file name(s) (if not already set by user).
-        if (std::none_of(mdArgs_.cbegin(), mdArgs_.cend(), [](const std::string& arg) {
-                return arg == "-cpi";
-            }))
+        if (std::none_of(mdArgs_.cbegin(),
+                         mdArgs_.cend(),
+                         [](const std::string& arg) { return arg == "-cpi"; }))
         {
             mdArgs_.emplace_back("-cpi");
             mdArgs_.emplace_back("state.cpt");
         }
-        if (std::none_of(mdArgs_.cbegin(), mdArgs_.cend(), [](const std::string& arg) {
-                return arg == "-cpo";
-            }))
+        if (std::none_of(mdArgs_.cbegin(),
+                         mdArgs_.cend(),
+                         [](const std::string& arg) { return arg == "-cpo"; }))
         {
             mdArgs_.emplace_back("-cpo");
             mdArgs_.emplace_back("state.cpt");
         }
-        if (std::none_of(mdArgs_.cbegin(), mdArgs_.cend(), [](const std::string& arg) {
-                return arg == "-o";
-            }))
+        if (std::none_of(mdArgs_.cbegin(),
+                         mdArgs_.cend(),
+                         [](const std::string& arg) { return arg == "-o"; }))
         {
             mdArgs_.emplace_back("-o");
             mdArgs_.emplace_back("traj.trr");

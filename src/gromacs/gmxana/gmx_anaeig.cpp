@@ -1098,27 +1098,27 @@ int gmx_anaeig(int argc, char* argv[])
         { "-last", FALSE, etINT, { &last }, "Last eigenvector for analysis (-1 is till the last)" },
         { "-skip", FALSE, etINT, { &skip }, "Only analyse every nr-th frame" },
         { "-max",
-          FALSE,
-          etREAL,
-          { &max },
-          "Maximum for projection of the eigenvector on the average structure, "
-          "max=0 gives the extremes" },
+                  FALSE,
+                  etREAL,
+                  { &max },
+                  "Maximum for projection of the eigenvector on the average structure, "
+                          "max=0 gives the extremes" },
         { "-nframes", FALSE, etINT, { &nextr }, "Number of frames for the extremes output" },
         { "-split", FALSE, etBOOL, { &bSplit }, "Split eigenvector projections where time is zero" },
         { "-entropy",
-          FALSE,
-          etBOOL,
-          { &bEntropy },
-          "Compute entropy according to the Quasiharmonic formula or Schlitter's method." },
+                  FALSE,
+                  etBOOL,
+                  { &bEntropy },
+                  "Compute entropy according to the Quasiharmonic formula or Schlitter's method." },
         { "-temp", FALSE, etREAL, { &temp }, "Temperature for entropy calculations" },
         { "-nevskip",
-          FALSE,
-          etINT,
-          { &nskip },
-          "Number of eigenvalues to skip when computing the entropy due to the quasi harmonic "
-          "approximation. When you do a rotational and/or translational fit prior to the "
-          "covariance analysis, you get 3 or 6 eigenvalues that are very close to zero, and which "
-          "should not be taken into account when computing the entropy." }
+                  FALSE,
+                  etINT,
+                  { &nskip },
+                  "Number of eigenvalues to skip when computing the entropy due to the quasi harmonic "
+                          "approximation. When you do a rotational and/or translational fit prior to the "
+                          "covariance analysis, you get 3 or 6 eigenvalues that are very close to zero, and which "
+                          "should not be taken into account when computing the entropy." }
     };
 #define NPA asize(pa)
 

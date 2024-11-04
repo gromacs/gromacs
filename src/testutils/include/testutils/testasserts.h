@@ -504,7 +504,7 @@ FloatingPointTolerance relativeToleranceAsPrecisionDependentFloatingPoint(double
  *
  * \related FloatingPointTolerance
  */
-static inline FloatingPointTolerance relativeToleranceAsPrecisionDependentUlp(double   magnitude,
+static inline FloatingPointTolerance relativeToleranceAsPrecisionDependentUlp(double magnitude,
                                                                               uint64_t singleUlpDiff,
                                                                               uint64_t doubleUlpDiff)
 {

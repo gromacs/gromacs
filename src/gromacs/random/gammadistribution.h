@@ -234,7 +234,7 @@ public:
     template<class Rng>
     result_type operator()(Rng& g, const param_type& param)
     {
-        result_type                          alpha = param.alpha();
+        result_type alpha = param.alpha();
         UniformRealDistribution<result_type> uniformDist(std::numeric_limits<result_type>::min(), 1);
 
         if (alpha == result_type(1))

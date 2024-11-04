@@ -92,26 +92,26 @@ public:
 
     //! Returns the force
     template<int nR>
-    inline std::array<SimdReal, nR> force(const std::array<SimdReal, nR>& rSquaredV,
+    inline std::array<SimdReal, nR> force(const std::array<SimdReal, nR>&            rSquaredV,
                                           const std::array<SimdReal, nR> gmx_unused& dummyRInvV,
                                           const std::array<SimdReal, nR>&            rInvExclV,
                                           const std::array<SimdBool, nR> gmx_unused& withinCutoffV)
     {
-        return genArr<nR>(
-                [&](int i) { return fma(rSquaredV[i], minusTwoTimesRFCoeff_, rInvExclV[i]); });
+        return genArr<nR>([&](int i)
+                          { return fma(rSquaredV[i], minusTwoTimesRFCoeff_, rInvExclV[i]); });
     }
 
     //! Computes forces and energies without 1/r term for reaction-field
     template<int nR, std::size_t energySize>
-    inline void forceAndCorrectionEnergy(const std::array<SimdReal, nR>& rSquaredV,
+    inline void forceAndCorrectionEnergy(const std::array<SimdReal, nR>&            rSquaredV,
                                          const std::array<SimdReal, nR> gmx_unused& dummyRInvV,
                                          const std::array<SimdReal, nR>&            rInvExclV,
                                          const std::array<SimdBool, nR> gmx_unused& withinCutoffV,
                                          std::array<SimdReal, nR>&                  forceV,
                                          std::array<SimdReal, energySize>& correctionEnergyV)
     {
-        forceV = genArr<nR>(
-                [&](int i) { return fma(rSquaredV[i], minusTwoTimesRFCoeff_, rInvExclV[i]); });
+        forceV = genArr<nR>([&](int i)
+                            { return fma(rSquaredV[i], minusTwoTimesRFCoeff_, rInvExclV[i]); });
 
         const SimdReal factor = SimdReal(0.5_real) * minusTwoTimesRFCoeff_;
         correctionEnergyV = genArr<nR>([&](int i) { return fma(rSquaredV[i], factor, rfOffset_); });
@@ -142,7 +142,7 @@ public:
     inline real selfEnergy() const { return selfEnergy_; }
 
     template<int nR>
-    inline std::array<SimdReal, nR> force(const std::array<SimdReal, nR>& rSquaredV,
+    inline std::array<SimdReal, nR> force(const std::array<SimdReal, nR>&            rSquaredV,
                                           const std::array<SimdReal, nR> gmx_unused& dummyRInvV,
                                           const std::array<SimdReal, nR>&            rInvExclV,
                                           const std::array<SimdBool, nR>&            withinCutoffV)
@@ -208,9 +208,9 @@ public:
 
     //! Returns the force
     template<int nR>
-    inline std::array<SimdReal, nR> force(const std::array<SimdReal, nR>& rSquaredV,
-                                          const std::array<SimdReal, nR>& rInvV,
-                                          const std::array<SimdReal, nR>& rInvExclV,
+    inline std::array<SimdReal, nR> force(const std::array<SimdReal, nR>&            rSquaredV,
+                                          const std::array<SimdReal, nR>&            rInvV,
+                                          const std::array<SimdReal, nR>&            rInvExclV,
                                           const std::array<SimdBool, nR> gmx_unused& withinCutoffV)
     {
         /* We use separate registers for r for tabulated Ewald and LJ to keep the code simpler */
@@ -255,9 +255,8 @@ public:
             }
             coulombTable1V = genArr<nR>([&](int i) { return coulombTable1V[i] - coulombTable0V[i]; });
         }
-        const auto forceCorrectionV = genArr<nR>([&](int i) {
-            return fma(rScaledFractionV[i], coulombTable1V[i], coulombTable0V[i]);
-        });
+        const auto forceCorrectionV = genArr<nR>(
+                [&](int i) { return fma(rScaledFractionV[i], coulombTable1V[i], coulombTable0V[i]); });
 
         const auto forceV =
                 genArr<nR>([&](int i) { return fnma(forceCorrectionV[i], rV[i], rInvExclV[i]); });
@@ -267,9 +266,9 @@ public:
 
     //! Computes the Coulomb force and the Ewald reciprocal pot correction energy
     template<int nR, std::size_t energySize>
-    inline void forceAndCorrectionEnergy(const std::array<SimdReal, nR>& rSquaredV,
-                                         const std::array<SimdReal, nR>& rInvV,
-                                         const std::array<SimdReal, nR>& rInvExclV,
+    inline void forceAndCorrectionEnergy(const std::array<SimdReal, nR>&            rSquaredV,
+                                         const std::array<SimdReal, nR>&            rInvV,
+                                         const std::array<SimdReal, nR>&            rInvExclV,
                                          const std::array<SimdBool, nR> gmx_unused& withinCutoffV,
                                          std::array<SimdReal, nR>&                  forceV,
                                          std::array<SimdReal, energySize>& correctionEnergyV)
@@ -324,17 +323,18 @@ public:
             }
             coulombTable1V = genArr<nR>([&](int i) { return coulombTable1V[i] - coulombTable0V[i]; });
         }
-        const auto forceCorrectionV = genArr<nR>([&](int i) {
-            return fma(rScaledFractionV[i], coulombTable1V[i], coulombTable0V[i]);
-        });
+        const auto forceCorrectionV = genArr<nR>(
+                [&](int i) { return fma(rScaledFractionV[i], coulombTable1V[i], coulombTable0V[i]); });
 
         forceV = genArr<nR>([&](int i) { return fnma(forceCorrectionV[i], rV[i], rInvExclV[i]); });
 
-        correctionEnergyV = genArr<nR>([&](int i) {
-            return fma((minusHalfTableSpacing_ * rScaledFractionV[i]),
-                       (coulombTable0V[i] + forceCorrectionV[i]),
-                       coulombTablePotV[i]);
-        });
+        correctionEnergyV = genArr<nR>(
+                [&](int i)
+                {
+                    return fma((minusHalfTableSpacing_ * rScaledFractionV[i]),
+                               (coulombTable0V[i] + forceCorrectionV[i]),
+                               coulombTablePotV[i]);
+                });
     }
 
 private:

@@ -387,8 +387,7 @@ static gmx_bool UpdateWeights(int           nlim,
 
     if (EWL(expand->elamstats))
     {
-        if (expand->elamstats
-            == LambdaWeightCalculation::WL) /* Using standard Wang-Landau for weight updates */
+        if (expand->elamstats == LambdaWeightCalculation::WL) /* Using standard Wang-Landau for weight updates */
         {
             dfhist->sum_weights[fep_state] -= dfhist->wl_delta;
             dfhist->wl_histo[fep_state] += 1.0;
@@ -1115,7 +1114,8 @@ static int ChooseNewLambda(int               nlim,
                     tprob = std::exp(de);
                 }
                 propose[fep_state] = 0;
-                propose[lamtrial]  = 1.0; /* note that this overwrites the above line if fep_state = ntrial, which only occurs at the ends */
+                propose[lamtrial] =
+                        1.0; /* note that this overwrites the above line if fep_state = ntrial, which only occurs at the ends */
                 accept[fep_state] =
                         1.0; /* doesn't actually matter, never proposed unless fep_state = ntrial, in which case it's 1.0 anyway */
                 accept[lamtrial] = tprob;
@@ -1532,8 +1532,7 @@ int expandedEnsembleUpdateLambdaState(FILE*                 log,
         }
         if (bSwitchtoOneOverT)
         {
-            dfhist->wl_delta =
-                    oneovert; /* now we reduce by this each time, instead of only at flatness */
+            dfhist->wl_delta = oneovert; /* now we reduce by this each time, instead of only at flatness */
         }
         else
         {

@@ -69,14 +69,14 @@ class GpuPairlist;
 GPU_FUNC_QUALIFIER
 NbnxmGpu* gpu_init(const DeviceStreamManager gmx_unused& deviceStreamManager,
                    const interaction_const_t gmx_unused* ic,
-                   const PairlistParams gmx_unused& listParams,
-                   const nbnxn_atomdata_t gmx_unused* nbat,
+                   const PairlistParams gmx_unused&      listParams,
+                   const nbnxn_atomdata_t gmx_unused*    nbat,
                    /* true if both local and non-local are done on GPU */
                    bool gmx_unused bLocalAndNonlocal) GPU_FUNC_TERM_WITH_RETURN(nullptr);
 
 /** Initializes pair-list data for GPU, called at every pair search step. */
 GPU_FUNC_QUALIFIER
-void gpu_init_pairlist(NbnxmGpu gmx_unused*          nb,
+void gpu_init_pairlist(NbnxmGpu gmx_unused*                      nb,
                        const struct NbnxnPairlistGpu gmx_unused* h_nblist,
                        InteractionLocality gmx_unused            iloc) GPU_FUNC_TERM;
 
@@ -143,9 +143,9 @@ size_t getExclusiveScanWorkingArraySize(GpuPairlist*        CUDA_HIP_FUNC_ARGUME
 
 /*! \brief Perform exclusive scan to obtain input for sci sorting. */
 CUDA_HIP_FUNC_QUALIFIER
-void performExclusiveScan(size_t              CUDA_HIP_FUNC_ARGUMENT(temporaryBufferSize),
-                          char*               CUDA_HIP_FUNC_ARGUMENT(temporaryBuffer),
-                          GpuPairlist*        CUDA_HIP_FUNC_ARGUMENT(plist),
+void performExclusiveScan(size_t       CUDA_HIP_FUNC_ARGUMENT(temporaryBufferSize),
+                          char*        CUDA_HIP_FUNC_ARGUMENT(temporaryBuffer),
+                          GpuPairlist* CUDA_HIP_FUNC_ARGUMENT(plist),
                           const DeviceStream& CUDA_HIP_FUNC_ARGUMENT(deviceStream)) CUDA_HIP_FUNC_TERM;
 
 } // namespace gmx

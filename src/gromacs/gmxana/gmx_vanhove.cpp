@@ -110,27 +110,27 @@ int gmx_vanhove(int argc, char* argv[])
     static real sbin = 0, rmax = 2, rbin = 0.01, mmax = 0, rint = 0;
     t_pargs     pa[] = {
         { "-sqrt",
-          FALSE,
-          etREAL,
-          { &sbin },
-          "Use [SQRT]t[sqrt] on the matrix axis which binspacing # in [SQRT]ps[sqrt]" },
+              FALSE,
+              etREAL,
+              { &sbin },
+              "Use [SQRT]t[sqrt] on the matrix axis which binspacing # in [SQRT]ps[sqrt]" },
         { "-fm", FALSE, etINT, { &fmmax }, "Number of frames in the matrix, 0 is plot all" },
         { "-rmax", FALSE, etREAL, { &rmax }, "Maximum r in the matrix (nm)" },
         { "-rbin", FALSE, etREAL, { &rbin }, "Binwidth in the matrix and for [TT]-or[tt] (nm)" },
         { "-mmax",
-          FALSE,
-          etREAL,
-          { &mmax },
-          "Maximum density in the matrix, 0 is calculate (1/nm)" },
+              FALSE,
+              etREAL,
+              { &mmax },
+              "Maximum density in the matrix, 0 is calculate (1/nm)" },
         { "-nlevels", FALSE, etINT, { &nlev }, "Number of levels in the matrix" },
         { "-nr", FALSE, etINT, { &nr }, "Number of curves for the [TT]-or[tt] output" },
         { "-fr", FALSE, etINT, { &fshift }, "Frame spacing for the [TT]-or[tt] output" },
         { "-rt", FALSE, etREAL, { &rint }, "Integration limit for the [TT]-ot[tt] output (nm)" },
         { "-ft",
-          FALSE,
-          etINT,
-          { &ftmax },
-          "Number of frames in the [TT]-ot[tt] output, 0 is plot all" }
+              FALSE,
+              etINT,
+              { &ftmax },
+              "Number of frames in the [TT]-ot[tt] output, 0 is plot all" }
     };
 #define NPA asize(pa)
 

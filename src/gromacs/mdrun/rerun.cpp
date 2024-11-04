@@ -168,7 +168,7 @@ static void prepareRerunState(const t_trxframe&          rerunFrame,
                               bool                       constructVsites,
                               const VirtualSitesHandler* vsite)
 {
-    auto x      = makeArrayRef(globalState->x);
+    auto x = makeArrayRef(globalState->x);
     auto rerunX = arrayRefFromArray(reinterpret_cast<gmx::RVec*>(rerunFrame.x), globalState->numAtoms());
     std::copy(rerunX.begin(), rerunX.end(), x.begin());
     copy_mat(rerunFrame.box, globalState->box);
@@ -255,9 +255,9 @@ void gmx::LegacySimulator::do_rerun()
     {
         gmx_fatal(FARGS, "Multiple simulations not supported by rerun.");
     }
-    if (std::any_of(ir->opts.annealing, ir->opts.annealing + ir->opts.ngtc, [](SimulatedAnnealing i) {
-            return i != SimulatedAnnealing::No;
-        }))
+    if (std::any_of(ir->opts.annealing,
+                    ir->opts.annealing + ir->opts.ngtc,
+                    [](SimulatedAnnealing i) { return i != SimulatedAnnealing::No; }))
     {
         gmx_fatal(FARGS, "Simulated annealing not supported by rerun.");
     }

@@ -285,13 +285,13 @@ int gmx_mk_angndx(int argc, char* argv[])
     static gmx_bool    bH    = TRUE;
     static real        hq    = -1;
     t_pargs            pa[]  = { { "-type", FALSE, etENUM, { opt }, "Type of angle" },
-                     { "-hyd", FALSE, etBOOL, { &bH }, "Include angles with atoms with mass < 1.5" },
-                     { "-hq",
-                       FALSE,
-                       etREAL,
-                       { &hq },
-                       "Ignore angles with atoms with mass < 1.5 and magnitude of their charge "
-                       "less than this value" } };
+                                 { "-hyd", FALSE, etBOOL, { &bH }, "Include angles with atoms with mass < 1.5" },
+                                 { "-hq",
+                                   FALSE,
+                                   etREAL,
+                                   { &hq },
+                                   "Ignore angles with atoms with mass < 1.5 and magnitude of their charge "
+                                               "less than this value" } };
 
     gmx_output_env_t* oenv;
     FILE*             out;

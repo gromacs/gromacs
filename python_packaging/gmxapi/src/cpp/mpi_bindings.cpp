@@ -91,7 +91,8 @@ void export_mpi_bindings(pybind11::module& m, const pybind11::exception<Exceptio
     }
     m.def(
             "mpi_report",
-            [](py::object py_comm) {
+            [](py::object py_comm)
+            {
                 MPI_Comm* comm = get_mpi_comm(py_comm);
                 return mpi_report(*comm);
             },

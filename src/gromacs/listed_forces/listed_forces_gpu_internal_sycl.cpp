@@ -901,7 +901,8 @@ auto bondedKernel(sycl::handler&                   cgh,
 
     const PbcAiuc pbcAiuc = kernelParams.pbcAiuc;
 
-    return [=](sycl::nd_item<1> itemIdx) {
+    return [=](sycl::nd_item<1> itemIdx)
+    {
         sycl::global_ptr<const t_iparams> gm_forceParams = gm_forceParams_;
         sycl::global_ptr<const Float4>    gm_xq          = gm_xq_;
         sycl::global_ptr<Float3>          gm_f           = gm_f_;
@@ -1036,17 +1037,20 @@ void ListedForcesGpu::Impl::launchKernel()
     const sycl::nd_range<1> rangeAll(kernelLaunchConfig_.blockSize[0] * kernelLaunchConfig_.gridSize[0],
                                      kernelLaunchConfig_.blockSize[0]);
 
-    gmx::syclSubmitWithoutEvent(deviceStream_.stream(), [&](sycl::handler& cgh) {
-        auto kernel = bondedKernel<calcVir, calcEner>(cgh,
-                                                      kernelParams_,
-                                                      kernelBuffers_.d_iatoms,
-                                                      kernelBuffers_.d_vTot.get_pointer(),
-                                                      kernelBuffers_.d_forceParams.get_pointer(),
-                                                      d_xq_.get_pointer(),
-                                                      d_f_.get_pointer(),
-                                                      d_fShift_.get_pointer());
-        cgh.parallel_for<kernelNameType>(rangeAll, kernel);
-    });
+    gmx::syclSubmitWithoutEvent(deviceStream_.stream(),
+                                [&](sycl::handler& cgh)
+                                {
+                                    auto kernel = bondedKernel<calcVir, calcEner>(
+                                            cgh,
+                                            kernelParams_,
+                                            kernelBuffers_.d_iatoms,
+                                            kernelBuffers_.d_vTot.get_pointer(),
+                                            kernelBuffers_.d_forceParams.get_pointer(),
+                                            d_xq_.get_pointer(),
+                                            d_f_.get_pointer(),
+                                            d_fShift_.get_pointer());
+                                    cgh.parallel_for<kernelNameType>(rangeAll, kernel);
+                                });
 
     wallcycle_sub_stop(wcycle_, WallCycleSubCounter::LaunchGpuBonded);
     wallcycle_stop(wcycle_, WallCycleCounter::LaunchGpuPp);

@@ -268,7 +268,7 @@ __device__ __forceinline__ void sumForceComponents(float* __restrict__ fx,
     for (int ithy = ithyMin; ithy < ithyMax; ithy++)
     {
         const int splineIndexY = getSplineParamIndex<order, atomsPerWarp>(splineIndexBase, YY, ithy);
-        const float2 tdy       = make_float2(sm_theta[splineIndexY], sm_dtheta[splineIndexY]);
+        const float2 tdy = make_float2(sm_theta[splineIndexY], sm_dtheta[splineIndexY]);
 
         int iy = sm_gridlineIndices[atomIndexLocal * DIM + YY] + ithy;
         if (wrapY & (iy >= ny))
@@ -290,9 +290,9 @@ __device__ __forceinline__ void sumForceComponents(float* __restrict__ fx,
             const float gridValue = gm_grid[gridIndexGlobal];
             assert(isfinite(gridValue));
             const int splineIndexX = getSplineParamIndex<order, atomsPerWarp>(splineIndexBase, XX, ithx);
-            const float2 tdx       = make_float2(sm_theta[splineIndexX], sm_dtheta[splineIndexX]);
-            const float  fxy1      = sm_theta[splineIndexZ] * gridValue;
-            const float  fz1       = sm_dtheta[splineIndexZ] * gridValue;
+            const float2 tdx  = make_float2(sm_theta[splineIndexX], sm_dtheta[splineIndexX]);
+            const float  fxy1 = sm_theta[splineIndexZ] * gridValue;
+            const float  fz1  = sm_dtheta[splineIndexZ] * gridValue;
             *fx += tdx.y * tdy.x * fxy1;
             *fy += tdx.x * tdy.y * fxy1;
             *fz += tdx.x * tdy.x * fz1;
@@ -481,8 +481,8 @@ __launch_bounds__(c_gatherMaxThreadsPerBlock, c_gatherMinBlocksPerMP) __global__
 
     /* Number of data components and threads for a single atom */
     const int threadsPerAtomValue = (threadsPerAtom == ThreadsPerAtom::Order) ? order : order * order;
-    const int atomDataSize        = threadsPerAtomValue;
-    const int atomsPerBlock       = c_gatherMaxThreadsPerBlock / atomDataSize;
+    const int atomDataSize  = threadsPerAtomValue;
+    const int atomsPerBlock = c_gatherMaxThreadsPerBlock / atomDataSize;
     // Number of atoms processed by a single warp in spread and gather
     const int atomsPerWarp = warp_size / atomDataSize;
 
@@ -596,7 +596,7 @@ __launch_bounds__(c_gatherMaxThreadsPerBlock, c_gatherMinBlocksPerMP) __global__
     const int warpIndex     = atomIndexLocal / atomsPerWarp;
 
     const int splineIndexBase = getSplineParamIndexBase<order, atomsPerWarp>(warpIndex, atomWarpIndex);
-    const int splineIndexZ    = getSplineParamIndex<order, atomsPerWarp>(splineIndexBase, ZZ, ithz);
+    const int splineIndexZ = getSplineParamIndex<order, atomsPerWarp>(splineIndexBase, ZZ, ithz);
 
     int       iz     = sm_gridlineIndices[atomIndexLocal * DIM + ZZ] + ithz;
     const int ixBase = sm_gridlineIndices[atomIndexLocal * DIM + XX];
@@ -749,8 +749,8 @@ __launch_bounds__(c_gatherMaxThreadsPerBlock, c_gatherMinBlocksPerMP) __global__
 #pragma unroll
             for (int i = 0; i < numIter; i++)
             {
-                int   outputIndexLocal     = i * iterThreads + threadLocalId;
-                int   outputIndexGlobal    = blockIndex * blockForcesSize + outputIndexLocal;
+                int outputIndexLocal  = i * iterThreads + threadLocalId;
+                int outputIndexGlobal = blockIndex * blockForcesSize + outputIndexLocal;
                 float outputForceComponent = (reinterpret_cast<float*>(sm_forces)[outputIndexLocal]);
                 gm_forces[outputIndexGlobal] = outputForceComponent;
             }

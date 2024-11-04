@@ -276,8 +276,7 @@ private:
         }
     }
 
-    void handleMismatchingTypes(const KeyValueTreeValue& /* value1 */,
-                                const KeyValueTreeValue& /* value2 */)
+    void handleMismatchingTypes(const KeyValueTreeValue& /* value1 */, const KeyValueTreeValue& /* value2 */)
     {
         writer_->writeString(currentPath_.toString());
         writer_->writeString(" type mismatch");

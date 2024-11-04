@@ -108,9 +108,9 @@ int gmx_rotacf(int argc, char* argv[])
     t_topology*   top;
     PbcType       pbcType;
     t_filenm      fnm[] = { { efTRX, "-f", nullptr, ffREAD },
-                       { efTPR, nullptr, nullptr, ffREAD },
-                       { efNDX, nullptr, nullptr, ffREAD },
-                       { efXVG, "-o", "rotacf", ffWRITE } };
+                            { efTPR, nullptr, nullptr, ffREAD },
+                            { efNDX, nullptr, nullptr, ffREAD },
+                            { efXVG, "-o", "rotacf", ffWRITE } };
 #define NFILE asize(fnm)
     int      npargs;
     t_pargs* ppa;

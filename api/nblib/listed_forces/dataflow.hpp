@@ -123,12 +123,12 @@ template<class Buffer,
          class ShiftForce,
          class Pbc,
          std::enable_if_t<Contains<TwoCenterType, SupportedTwoCenterTypes>{}>* = nullptr>
-inline NBLIB_ALWAYS_INLINE auto dispatchInteraction(InteractionIndex<TwoCenterType>    index,
+inline NBLIB_ALWAYS_INLINE auto dispatchInteraction(InteractionIndex<TwoCenterType> index,
                                                     gmx::ArrayRef<const TwoCenterType> bondInstances,
-                                                    gmx::ArrayRef<const BasicVector>   x,
-                                                    Buffer*                            forces,
-                                                    gmx::ArrayRef<ShiftForce>          shiftForces,
-                                                    const Pbc&                         pbc)
+                                                    gmx::ArrayRef<const BasicVector> x,
+                                                    Buffer*                          forces,
+                                                    gmx::ArrayRef<ShiftForce>        shiftForces,
+                                                    const Pbc&                       pbc)
 {
     KernelEnergy<BasicVectorValueType_t<BasicVector>> energy;
 
@@ -515,7 +515,7 @@ inline NBLIB_ALWAYS_INLINE auto dispatchInteraction(InteractionIndex<FiveCenterT
                                                     gmx::ArrayRef<const BasicVector>    x,
                                                     Buffer*                             forces,
                                                     [[maybe_unused]] gmx::ArrayRef<ShiftForce> shiftForces,
-                                                    const Pbc&                                 pbc)
+                                                    const Pbc& pbc)
 {
     KernelEnergy<BasicVectorValueType_t<BasicVector>> energy;
 
@@ -609,7 +609,8 @@ auto reduceListedForces(const ListedInteractionData& interactions,
     energies.fill(0);
 
     // calculate one bond type
-    auto computeForceType = [forces, x, shiftForces, &energies, &pbc](const auto& interactionElement) {
+    auto computeForceType = [forces, x, shiftForces, &energies, &pbc](const auto& interactionElement)
+    {
         using InteractionType = typename std::decay_t<decltype(interactionElement)>::type;
 
         gmx::ArrayRef<const InteractionIndex<InteractionType>> indices(interactionElement.indices);

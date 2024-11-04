@@ -132,11 +132,11 @@ pmeCoulombCorrectionVF(const RealType rSq, const real beta, RealType* pot, RealT
 }
 
 template<bool computeScalarForce, class RealType, class BoolType>
-static inline void pmeLJCorrectionVF(const RealType rInv,
-                                     const RealType rSq,
-                                     const real     ewaldLJCoeffSq,
-                                     const real     ewaldLJCoeffSixDivSix,
-                                     RealType*      pot,
+static inline void pmeLJCorrectionVF(const RealType       rInv,
+                                     const RealType       rSq,
+                                     const real           ewaldLJCoeffSq,
+                                     const real           ewaldLJCoeffSixDivSix,
+                                     RealType*            pot,
                                      RealType gmx_unused* force,
                                      const BoolType       mask,
                                      const BoolType       bIiEqJnr)
@@ -338,10 +338,10 @@ static void nb_free_energy_kernel(const t_nblist&                               
                                   gmx::ArrayRef<const real>            lambda,
                                   t_nrnb* gmx_restrict                 nrnb,
                                   gmx::ArrayRefWithPadding<gmx::RVec>  threadForceBuffer,
-                                  rvec gmx_unused*    threadForceShiftBuffer,
-                                  gmx::ArrayRef<real> threadVCoul,
-                                  gmx::ArrayRef<real> threadVVdw,
-                                  gmx::ArrayRef<real> threadDvdl)
+                                  rvec gmx_unused*                     threadForceShiftBuffer,
+                                  gmx::ArrayRef<real>                  threadVCoul,
+                                  gmx::ArrayRef<real>                  threadVVdw,
+                                  gmx::ArrayRef<real>                  threadDvdl)
 {
 #define STATE_A 0
 #define STATE_B 1
@@ -1111,7 +1111,7 @@ static void nb_free_energy_kernel(const t_nblist&                               
                             scalarForcePerDistanceVdw[i]  = scalarForcePerDistanceVdw[i] * rPInvV;
                         }
                     } // end of block requiring nonZeroState
-                }     // end for (int i = 0; i < NSTATES; i++)
+                } // end for (int i = 0; i < NSTATES; i++)
 
                 /* Assemble A and B states. */
                 BoolType assembleStates = (bPairIncluded && withinCutoffMask);

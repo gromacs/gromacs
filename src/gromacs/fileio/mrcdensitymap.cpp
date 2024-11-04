@@ -191,7 +191,7 @@ MrcDensityMapOfFloatFromFileReader::Impl::Impl(const std::filesystem::path& file
     if (!mrcHeaderIsSane(reader_->header()))
     {
         serializer_ = std::make_unique<InMemoryDeserializer>(buffer_, false, EndianSwapBehavior::Swap);
-        reader_     = std::make_unique<MrcDensityMapOfFloatReader>(serializer_.get());
+        reader_ = std::make_unique<MrcDensityMapOfFloatReader>(serializer_.get());
         if (!mrcHeaderIsSane(reader_->header()))
         {
             GMX_THROW(FileIOError(gmx::formatString(

@@ -89,7 +89,8 @@ void PeriodicActionsTest::doMdrun(const PeriodicOutputParameters& output)
 
     // This lambda writes all mdp options in `source` into `target`, overwriting options already
     // present in `target`. It also filters out non-mdp option entries in the source maps
-    auto overWriteMdpMapValues = [](const MdpFieldValues& source, MdpFieldValues& target) {
+    auto overWriteMdpMapValues = [](const MdpFieldValues& source, MdpFieldValues& target)
+    {
         for (auto const& [key, value] : source)
         {
             if (key == "simulationName" || key == "maxGromppWarningsTolerated" || key == "description")

@@ -225,7 +225,7 @@ void NonbondedBenchmark::initOptions(IOptionsContainer* options, ICommandLineOpt
 void NonbondedBenchmark::optionsFinished()
 {
     // We compute the Ewald coefficient here to avoid a dependency of the Nbnxm on the Ewald module
-    const real ewald_rtol          = 1e-5;
+    const real ewald_rtol = 1e-5;
     benchmarkOptions_.ewaldcoeff_q = calc_ewaldcoeff_q(benchmarkOptions_.pairlistCutoff, ewald_rtol);
 }
 

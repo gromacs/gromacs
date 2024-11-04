@@ -355,7 +355,7 @@ void PreprocessingAtomTypes::renumberTypes(gmx::ArrayRef<InteractionsOfType> pli
         int mi = typelist[i];
         for (int j = 0; (j < nat); j++)
         {
-            int                      mj              = typelist[j];
+            int mj = typelist[j];
             const InteractionOfType& interactionType = plist[ftype].interactionTypes[ntype * mi + mj];
             nbsnew.emplace_back(interactionType.atoms(),
                                 interactionType.forceParam(),

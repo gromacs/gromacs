@@ -124,10 +124,10 @@ void runTest(const DeviceContext& deviceContext, ArrayRef<T> input, ArrayRef<T> 
 struct MoveOnly
 {
     MoveOnly(real x = 0) : x_(x) {}
-    MoveOnly(const MoveOnly&) = delete;
-    MoveOnly(MoveOnly&&)      = default;
+    MoveOnly(const MoveOnly&)            = delete;
+    MoveOnly(MoveOnly&&)                 = default;
     MoveOnly& operator=(const MoveOnly&) = delete;
-    MoveOnly& operator=(MoveOnly&&) = default;
+    MoveOnly& operator=(MoveOnly&&)      = default;
     bool      operator==(const MoveOnly& o) const { return x_ == o.x_; }
     real      operator*=(int scaleFactor) { return x_ *= scaleFactor; }
     real      x_;

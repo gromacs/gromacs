@@ -126,8 +126,8 @@ RVec DensityFittingForce::Impl::evaluateForce(const GaussianSpreadKernelParamete
                                 latticeSpreadRange_[ZZ] - closestLatticePoint[ZZ]);
 
     const DVec differenceVectorScale  = { 1. / (square(sigma_[XX])),
-                                         1. / (square(sigma_[YY])),
-                                         1. / (square(sigma_[ZZ])) };
+                                          1. / (square(sigma_[YY])),
+                                          1. / (square(sigma_[ZZ])) };
     const DVec differenceVectorOffset = scaleByVector(
             spreadRange.begin().toDVec() - localParameters.coordinate_.toDVec(), differenceVectorScale);
 

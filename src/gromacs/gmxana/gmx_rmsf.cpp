@@ -241,11 +241,11 @@ int gmx_rmsf(int argc, char* argv[])
         { "-res", FALSE, etBOOL, { &bRes }, "Calculate averages for each residue" },
         { "-aniso", FALSE, etBOOL, { &bAniso }, "Compute anisotropic temperature factors" },
         { "-fit",
-          FALSE,
-          etBOOL,
-          { &bFit },
-          "Do a least squares superposition before computing RMSF. Without this you must "
-          "make sure that the reference structure and the trajectory match." }
+                  FALSE,
+                  etBOOL,
+                  { &bFit },
+                  "Do a least squares superposition before computing RMSF. Without this you must "
+                          "make sure that the reference structure and the trajectory match." }
     };
     int  natom;
     int  i, m;

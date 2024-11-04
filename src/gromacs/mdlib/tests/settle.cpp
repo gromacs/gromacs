@@ -364,7 +364,7 @@ TEST_P(SettleTest, SatisfiesConstraints)
         // SETTLE produces constrained coordinates consistent with
         // sensible sampling needs to be tested at a much higher level.
         // TODO: Re-evaluate the tolerances.
-        real                   dOH       = testData->dOH_;
+        real dOH = testData->dOH_;
         FloatingPointTolerance tolerance = relativeToleranceAsPrecisionDependentUlp(dOH * dOH, 80, 380);
         FloatingPointTolerance toleranceVirial = absoluteTolerance(0.000001);
 

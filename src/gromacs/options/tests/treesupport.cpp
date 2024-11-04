@@ -361,9 +361,10 @@ private:
 
     static std::string formatBuffer(const std::vector<char>& buffer)
     {
-        return gmx::formatAndJoin(buffer, " ", [](char c) {
-            return gmx::formatString("%02x", static_cast<unsigned char>(c));
-        });
+        return gmx::formatAndJoin(
+                buffer,
+                " ",
+                [](char c) { return gmx::formatString("%02x", static_cast<unsigned char>(c)); });
     }
 };
 

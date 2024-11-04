@@ -607,9 +607,9 @@ static int ddcoord2simnodeid(const t_commrec* cr, int x, int y, int z)
     return nodeid;
 }
 
-static int dd_simnode2pmenode(const DDRankSetup&        ddRankSetup,
-                              const CartesianRankSetup& cartSetup,
-                              gmx::ArrayRef<const int>  pmeRanks,
+static int dd_simnode2pmenode(const DDRankSetup&          ddRankSetup,
+                              const CartesianRankSetup&   cartSetup,
+                              gmx::ArrayRef<const int>    pmeRanks,
                               const t_commrec gmx_unused* cr,
                               const int                   sim_nodeid)
 {
@@ -1086,8 +1086,8 @@ static void setup_neighbor_relations(gmx_domdec_t* dd)
     }
 }
 
-static void make_pp_communicator(const gmx::MDLogger& mdlog,
-                                 gmx_domdec_t*        dd,
+static void make_pp_communicator(const gmx::MDLogger&  mdlog,
+                                 gmx_domdec_t*         dd,
                                  t_commrec gmx_unused* cr,
                                  bool gmx_unused       reorder)
 {
@@ -1778,8 +1778,8 @@ UnitCellInfo::UnitCellInfo(const t_inputrec& ir) :
 }
 
 /* Returns whether molecules are always whole, i.e. not broken by PBC */
-static bool moleculesAreAlwaysWhole(const gmx_mtop_t&                           mtop,
-                                    const bool                                  useUpdateGroups,
+static bool moleculesAreAlwaysWhole(const gmx_mtop_t& mtop,
+                                    const bool        useUpdateGroups,
                                     gmx::ArrayRef<const gmx::RangePartitioning> updateGroupingsPerMoleculeType)
 {
     if (useUpdateGroups)
@@ -2730,23 +2730,23 @@ public:
     //! }
 };
 
-DomainDecompositionBuilder::Impl::Impl(const MDLogger&                   mdlog,
-                                       t_commrec*                        cr,
-                                       const DomdecOptions&              options,
-                                       const MdrunOptions&               mdrunOptions,
-                                       const gmx_mtop_t&                 mtop,
-                                       const t_inputrec&                 ir,
-                                       const MDModulesNotifiers&         notifiers,
-                                       const matrix                      box,
+DomainDecompositionBuilder::Impl::Impl(const MDLogger&           mdlog,
+                                       t_commrec*                cr,
+                                       const DomdecOptions&      options,
+                                       const MdrunOptions&       mdrunOptions,
+                                       const gmx_mtop_t&         mtop,
+                                       const t_inputrec&         ir,
+                                       const MDModulesNotifiers& notifiers,
+                                       const matrix              box,
                                        ArrayRef<const RangePartitioning> updateGroupingPerMoleculeType,
-                                       const bool                        useUpdateGroups,
-                                       const real                        maxUpdateGroupRadius,
-                                       ArrayRef<const RVec>              xGlobal,
-                                       bool                              useGpuForNonbonded,
-                                       bool                              useGpuForPme,
-                                       bool                              useGpuForUpdate,
-                                       bool                              useGpuDirectHalo,
-                                       bool canUseGpuPmeDecomposition) :
+                                       const bool           useUpdateGroups,
+                                       const real           maxUpdateGroupRadius,
+                                       ArrayRef<const RVec> xGlobal,
+                                       bool                 useGpuForNonbonded,
+                                       bool                 useGpuForPme,
+                                       bool                 useGpuForUpdate,
+                                       bool                 useGpuDirectHalo,
+                                       bool                 canUseGpuPmeDecomposition) :
     mdlog_(mdlog), cr_(cr), options_(options), mtop_(mtop), ir_(ir), notifiers_(notifiers)
 {
     GMX_LOG(mdlog_.info).appendTextFormatted("\nInitializing Domain Decomposition on %d ranks", cr_->sizeOfDefaultCommunicator);

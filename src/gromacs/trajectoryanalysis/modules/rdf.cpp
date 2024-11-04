@@ -137,7 +137,7 @@ public:
 
     TrajectoryAnalysisModuleDataPointer startFrames(const AnalysisDataParallelOptions& opt,
                                                     const SelectionCollection& selections) override;
-    void                                analyzeFrame(int frnr, const t_trxframe& fr, t_pbc* pbc, TrajectoryAnalysisModuleData* pdata) override;
+    void analyzeFrame(int frnr, const t_trxframe& fr, t_pbc* pbc, TrajectoryAnalysisModuleData* pdata) override;
 
     void finishAnalysis(int nframes) override;
     void writeOutput() override;
@@ -549,7 +549,7 @@ void Rdf::analyzeFrame(int frnr, const t_trxframe& fr, t_pbc* pbc, TrajectoryAna
             {
                 std::fill(surfaceDist2.begin(), surfaceDist2.end(), std::numeric_limits<real>::max());
                 AnalysisNeighborhoodPairSearch pairSearch = nbsearch.startPairSearch(sel[g].position(i));
-                AnalysisNeighborhoodPair       pair;
+                AnalysisNeighborhoodPair pair;
                 while (pairSearch.findNextPair(&pair))
                 {
                     const real r2    = pair.distance2();

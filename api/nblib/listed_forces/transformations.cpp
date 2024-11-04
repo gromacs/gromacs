@@ -52,7 +52,8 @@ namespace nblib
 
 void sortInteractions(ListedInteractionData& interactions)
 {
-    auto sortOneElement = [](auto& interactionElement) {
+    auto sortOneElement = [](auto& interactionElement)
+    {
         using InteractionContainerType = std::decay_t<decltype(interactionElement)>;
         using InteractionType          = typename InteractionContainerType::type;
 

@@ -232,12 +232,12 @@ extern void compute_structure_factor(structure_factor_t* sft,
             }
         }
     } /* end loop on i */
-      /*
-       *  compute the square modulus of the structure factor, averaging on the surface
-       *  kx*kx + ky*ky + kz*kz = krr*krr
-       *  note that this is correct only for a (on the macroscopic scale)
-       *  isotropic system.
-       */
+    /*
+     *  compute the square modulus of the structure factor, averaging on the surface
+     *  kx*kx + ky*ky + kz*kz = krr*krr
+     *  note that this is correct only for a (on the macroscopic scale)
+     *  isotropic system.
+     */
     for (i = 0; i < maxkx; i++)
     {
         kx = i * k_factor[XX];

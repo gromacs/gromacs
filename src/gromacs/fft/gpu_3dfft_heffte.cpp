@@ -295,16 +295,19 @@ Gpu3dFft::ImplHeFfte<backend_tag>::ImplHeFfte(bool                 allocateRealG
         // Define 3D FFT plan
 #if GMX_SYCL_ACPP
         pmeRawStream_
-                .submit([&, &fftPlanRef = fftPlan_, &workspaceRef = workspace_](sycl::handler& cgh) {
-                    cgh.hipSYCL_enqueue_custom_operation([=, &fftPlanRef, &workspaceRef](
-                                                                 sycl::interop_handle& h) {
-                        auto stream = h.get_native_queue<syclBackend<backend_tag>()>();
-                        fftPlanRef  = std::make_unique<heffte::fft3d_r2c<backend_tag, int>>(
-                                stream, realBox, complexBox, 0, comm, planOptions);
-                        workspaceRef =
-                                heffte::gpu::vector<std::complex<float>>(fftPlanRef->size_workspace());
-                    });
-                })
+                .submit(
+                        [&, &fftPlanRef = fftPlan_, &workspaceRef = workspace_](sycl::handler& cgh)
+                        {
+                            cgh.hipSYCL_enqueue_custom_operation(
+                                    [=, &fftPlanRef, &workspaceRef](sycl::interop_handle& h)
+                                    {
+                                        auto stream = h.get_native_queue<syclBackend<backend_tag>()>();
+                                        fftPlanRef = std::make_unique<heffte::fft3d_r2c<backend_tag, int>>(
+                                                stream, realBox, complexBox, 0, comm, planOptions);
+                                        workspaceRef = heffte::gpu::vector<std::complex<float>>(
+                                                fftPlanRef->size_workspace());
+                                    });
+                        })
                 .wait();
 #else
         fftPlan_ = std::make_unique<heffte::fft3d_r2c<backend_tag, int>>(
@@ -339,16 +342,19 @@ Gpu3dFft::ImplHeFfte<backend_tag>::ImplHeFfte(bool                 allocateRealG
         // We need to use hipSYCL_enqueue_custom_operation here to handle cases when ACpp uses
         // extra worker thread to submit tasks to the GPU. No need to do this with DPC++.
         pmeRawStream_
-                .submit([&, &fftPlanRef = fftPlan_, &workspaceRef = workspace_](sycl::handler& cgh) {
-                    cgh.hipSYCL_enqueue_custom_operation([=, &fftPlanRef, &workspaceRef](
-                                                                 sycl::interop_handle& h) {
-                        auto stream = h.get_native_queue<syclBackend<backend_tag>()>();
-                        fftPlanRef  = std::make_unique<heffte::fft3d_r2c<backend_tag, int>>(
-                                stream, realBox, complexBox, 0, comm, planOptions);
-                        workspaceRef =
-                                heffte::gpu::vector<std::complex<float>>(fftPlanRef->size_workspace());
-                    });
-                })
+                .submit(
+                        [&, &fftPlanRef = fftPlan_, &workspaceRef = workspace_](sycl::handler& cgh)
+                        {
+                            cgh.hipSYCL_enqueue_custom_operation(
+                                    [=, &fftPlanRef, &workspaceRef](sycl::interop_handle& h)
+                                    {
+                                        auto stream = h.get_native_queue<syclBackend<backend_tag>()>();
+                                        fftPlanRef = std::make_unique<heffte::fft3d_r2c<backend_tag, int>>(
+                                                stream, realBox, complexBox, 0, comm, planOptions);
+                                        workspaceRef = heffte::gpu::vector<std::complex<float>>(
+                                                fftPlanRef->size_workspace());
+                                    });
+                        })
                 .wait();
 #else
         fftPlan_ = std::make_unique<heffte::fft3d_r2c<backend_tag, int>>(
@@ -370,8 +376,8 @@ Gpu3dFft::ImplHeFfte<backend_tag>::ImplHeFfte(bool                 allocateRealG
 #elif GMX_GPU_SYCL
     allocateDeviceBuffer(&localRealGrid_, fftPlan_->size_inbox(), context);
     allocateDeviceBuffer(&localComplexGrid_, fftPlan_->size_outbox() * 2, context);
-    *realGrid                     = localRealGrid_;
-    *complexGrid                  = localComplexGrid_;
+    *realGrid    = localRealGrid_;
+    *complexGrid = localComplexGrid_;
 #else
 #    error "HeFFTe build only supports CUDA and SYCL"
 #endif
@@ -414,9 +420,9 @@ void Gpu3dFft::ImplHeFfte<backend_tag>::perform3dFft(gmx_fft_direction dir, Comm
         case GMX_FFT_REAL_TO_COMPLEX:
 #if GMX_SYCL_ACPP
             pmeRawStream_.submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
-                cgh.hipSYCL_enqueue_custom_operation([=](sycl::interop_handle& gmx_unused h) {
-                    fftPlan_->forward(realGrid, complexGrid, workspace_.data());
-                });
+                cgh.hipSYCL_enqueue_custom_operation(
+                        [=](sycl::interop_handle& gmx_unused h)
+                        { fftPlan_->forward(realGrid, complexGrid, workspace_.data()); });
             });
 #else
             fftPlan_->forward(realGrid, complexGrid, workspace_.data());
@@ -425,9 +431,9 @@ void Gpu3dFft::ImplHeFfte<backend_tag>::perform3dFft(gmx_fft_direction dir, Comm
         case GMX_FFT_COMPLEX_TO_REAL:
 #if GMX_SYCL_ACPP
             pmeRawStream_.submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
-                cgh.hipSYCL_enqueue_custom_operation([=](sycl::interop_handle& gmx_unused h) {
-                    fftPlan_->backward(complexGrid, realGrid, workspace_.data());
-                });
+                cgh.hipSYCL_enqueue_custom_operation(
+                        [=](sycl::interop_handle& gmx_unused h)
+                        { fftPlan_->backward(complexGrid, realGrid, workspace_.data()); });
             });
 #else
             fftPlan_->backward(complexGrid, realGrid, workspace_.data());

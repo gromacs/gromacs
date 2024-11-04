@@ -61,63 +61,63 @@ typedef unsigned long long gmx_cycles_t;
 #elif ((defined __aarch64__) \
        && (defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__)))
 /* 64-bit ARM cycle counters with GCC inline assembly */
-typedef unsigned long long     gmx_cycles_t;
+typedef unsigned long long gmx_cycles_t;
 
 #elif defined(__ARM_ARCH_7A__) && defined(__GNUC__)
 /* Armv7A can provide 64-bit cycles by returning two registers */
-typedef unsigned long long     gmx_cycles_t;
+typedef unsigned long long gmx_cycles_t;
 
 #elif defined(_MSC_VER)
 #    include <windows.h>
-typedef __int64              gmx_cycles_t;
+typedef __int64 gmx_cycles_t;
 
 #elif (defined(__hpux) || defined(__HP_cc)) && defined(__ia64)
 /* HP compiler on ia64 */
 #    include <machine/sys/inline.h>
-typedef unsigned long      gmx_cycles_t;
+typedef unsigned long gmx_cycles_t;
 
 #elif (defined(__INTEL_COMPILER) || defined(__ECC)) && defined(__ia64__)
 /* Intel compiler on ia64 */
 #    include <ia64intrin.h>
-typedef unsigned long          gmx_cycles_t;
+typedef unsigned long gmx_cycles_t;
 
 #elif defined(__GNUC__) && defined(__ia64__)
 /* ia64 with GCC inline assembly */
-typedef unsigned long          gmx_cycles_t;
+typedef unsigned long gmx_cycles_t;
 
 #elif ((defined(__hppa__) || defined(__hppa)) && defined(__GNUC__))
 /* HP PA-RISC, inline asm with gcc */
-typedef unsigned long          gmx_cycles_t;
+typedef unsigned long gmx_cycles_t;
 
 #elif ((defined(__hppa__) || defined(__hppa)) && defined(__hpux))
 /* HP PA-RISC, instruction when using HP compiler */
 #    include <machine/inline.h>
-typedef unsigned long      gmx_cycles_t;
+typedef unsigned long gmx_cycles_t;
 
 #elif defined(__GNUC__) && defined(__s390__)
 /* S390, taken from FFTW who got it from James Treacy */
-typedef unsigned long long     gmx_cycles_t;
+typedef unsigned long long gmx_cycles_t;
 
 #elif defined(__GNUC__) && defined(__alpha__)
 /* gcc inline assembly on alpha CPUs */
-typedef unsigned long          gmx_cycles_t;
+typedef unsigned long gmx_cycles_t;
 
 #elif defined(__GNUC__) && defined(__sparc_v9__)
 /* gcc inline assembly on sparc v9 */
-typedef unsigned long          gmx_cycles_t;
+typedef unsigned long gmx_cycles_t;
 
 #elif defined(__DECC) && defined(__alpha)
 /* Digital GEM C compiler on alpha */
 #    include <c_asm.h>
-typedef unsigned long        gmx_cycles_t;
+typedef unsigned long gmx_cycles_t;
 
 #elif (defined(__sgi) && defined(CLOCK_SGI_CYCLE))
 /* Irix compilers on SGI hardware. Get nanoseconds from struct timespec */
-typedef unsigned long long   gmx_cycles_t;
+typedef unsigned long long gmx_cycles_t;
 
 #elif (defined(__SVR4) && defined(__SUNPRO_CC))
 /* Solaris high-resolution timers */
-typedef hrtime_t           gmx_cycles_t;
+typedef hrtime_t gmx_cycles_t;
 
 #elif defined(__xlC__) && defined(_AIX)
 /* AIX compilers */
@@ -128,11 +128,11 @@ typedef unsigned long long gmx_cycles_t;
 #elif ((defined(__GNUC__) || defined(__IBM_GCC_ASM) || defined(__IBM_STDCPP_ASM)) \
        && (defined(__powerpc__) || defined(__ppc__)))
 /* PowerPC using gcc inline assembly (also works on xlc>=7.0 with -qasm=gcc) */
-typedef unsigned long long     gmx_cycles_t;
+typedef unsigned long long gmx_cycles_t;
 
 #elif (defined(__MWERKS__) && (defined(MAC) || defined(macintosh)))
 /* Metrowerks on macintosh */
-typedef unsigned long long     gmx_cycles_t;
+typedef unsigned long long gmx_cycles_t;
 
 #elif defined(__sun) && defined(__sparcv9)
 
@@ -153,7 +153,7 @@ typedef unsigned long long gmx_cycles_t;
  *  you run the calibration routine you can also multiply it with a factor to
  *  translate the cycle data to seconds.
  */
-typedef long                 gmx_cycles_t;
+typedef long gmx_cycles_t;
 
 #endif
 

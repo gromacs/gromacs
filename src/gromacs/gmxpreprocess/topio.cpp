@@ -303,7 +303,8 @@ void checkRBDihedralSum(const gmx_mtop_t& mtop, const t_inputrec& ir, WarningHan
     // originally defined. We can however go through the molecule types and print one instance of
     // the offending dihedral.
 
-    auto generateMessage = [](int numDihedrals, const std::string& note, const std::string& involvedAtoms) {
+    auto generateMessage = [](int numDihedrals, const std::string& note, const std::string& involvedAtoms)
+    {
         return gmx::formatString(
                 "%d dihedrals with function type 3 (Ryckaert-Bellemans or Fourier) have "
                 "coefficients %s"
@@ -735,7 +736,7 @@ static char** read_topol(const char*                                 infile,
                                  * by making a "molecule" of the size of the system.
                                  */
                                 *intermolecular_interactions = std::make_unique<MoleculeInformation>();
-                                mi0                          = intermolecular_interactions->get();
+                                mi0 = intermolecular_interactions->get();
                                 mi0->initMolInfo();
                                 make_atoms_sys(*molblock, *molinfo, &mi0->atoms);
                             }

@@ -249,10 +249,10 @@ static inline void setICellCoordinatesSimd(int                   ci,
 }
 #endif // GMX_SIMD && GMX_USE_SIMD_KERNELS
 
-void setICellCoordinatesSimd4xM(int gmx_unused ci,
-                                const RVec gmx_unused& shift,
-                                int gmx_unused         stride,
-                                const real gmx_unused* x,
+void setICellCoordinatesSimd4xM(int gmx_unused                   ci,
+                                const RVec gmx_unused&           shift,
+                                int gmx_unused                   stride,
+                                const real gmx_unused*           x,
                                 NbnxmPairlistCpuWork gmx_unused* work)
 {
 #if GMX_HAVE_NBNXM_SIMD_4XM
@@ -262,10 +262,10 @@ void setICellCoordinatesSimd4xM(int gmx_unused ci,
 #endif
 }
 
-void setICellCoordinatesSimd2xMM(int gmx_unused ci,
-                                 const RVec gmx_unused& shift,
-                                 int gmx_unused         stride,
-                                 const real gmx_unused* x,
+void setICellCoordinatesSimd2xMM(int gmx_unused                   ci,
+                                 const RVec gmx_unused&           shift,
+                                 int gmx_unused                   stride,
+                                 const real gmx_unused*           x,
                                  NbnxmPairlistCpuWork gmx_unused* work)
 {
 #if GMX_HAVE_NBNXM_SIMD_2XMM
@@ -501,16 +501,16 @@ static inline void makeClusterListSimd(const Grid&              jGrid,
 
 #endif // GMX_SIMD && GMX_USE_SIMD_KERNELS
 
-void makeClusterListSimd4xM(const Grid gmx_unused& jGrid,
-                            NbnxnPairlistCpu gmx_unused* nbl,
-                            int gmx_unused               icluster,
-                            int gmx_unused               firstCell,
-                            int gmx_unused               lastCell,
-                            bool gmx_unused              excludeSubDiagonal,
+void makeClusterListSimd4xM(const Grid gmx_unused&              jGrid,
+                            NbnxnPairlistCpu gmx_unused*        nbl,
+                            int gmx_unused                      icluster,
+                            int gmx_unused                      firstCell,
+                            int gmx_unused                      lastCell,
+                            bool gmx_unused                     excludeSubDiagonal,
                             const real gmx_unused* gmx_restrict x_j,
                             real gmx_unused                     rlist2,
                             float gmx_unused                    rbb2,
-                            int gmx_unused* gmx_restrict numDistanceChecks)
+                            int gmx_unused* gmx_restrict        numDistanceChecks)
 {
 #if GMX_HAVE_NBNXM_SIMD_4XM
     makeClusterListSimd<ClusterDistanceKernelType::CpuSimd_4xM>(
@@ -520,16 +520,16 @@ void makeClusterListSimd4xM(const Grid gmx_unused& jGrid,
 #endif
 }
 
-void makeClusterListSimd2xMM(const Grid gmx_unused& jGrid,
-                             NbnxnPairlistCpu gmx_unused* nbl,
-                             int gmx_unused               icluster,
-                             int gmx_unused               firstCell,
-                             int gmx_unused               lastCell,
-                             bool gmx_unused              excludeSubDiagonal,
+void makeClusterListSimd2xMM(const Grid gmx_unused&              jGrid,
+                             NbnxnPairlistCpu gmx_unused*        nbl,
+                             int gmx_unused                      icluster,
+                             int gmx_unused                      firstCell,
+                             int gmx_unused                      lastCell,
+                             bool gmx_unused                     excludeSubDiagonal,
                              const real gmx_unused* gmx_restrict x_j,
                              real gmx_unused                     rlist2,
                              float gmx_unused                    rbb2,
-                             int gmx_unused* gmx_restrict numDistanceChecks)
+                             int gmx_unused* gmx_restrict        numDistanceChecks)
 {
 #if GMX_HAVE_NBNXM_SIMD_2XMM
     makeClusterListSimd<ClusterDistanceKernelType::CpuSimd_2xMM>(

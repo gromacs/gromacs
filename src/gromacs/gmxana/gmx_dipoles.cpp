@@ -827,11 +827,11 @@ static void do_dip(const t_topology*       top,
                    const gmx_output_env_t* oenv)
 {
     std::array<std::string, 4> leg_mtot = { "M\\sx \\N", "M\\sy \\N", "M\\sz \\N", "|M\\stot \\N|" };
-    std::array<std::string, 3> leg_eps  = { "epsilon", "G\\sk", "g\\sk" };
+    std::array<std::string, 3> leg_eps     = { "epsilon", "G\\sk", "g\\sk" };
     std::array<std::string, 4> leg_aver    = { "< |M|\\S2\\N >",
-                                            "< |M| >\\S2\\N",
-                                            "< |M|\\S2\\N > - < |M| >\\S2\\N",
-                                            "< |M| >\\S2\\N / < |M|\\S2\\N >" };
+                                               "< |M| >\\S2\\N",
+                                               "< |M|\\S2\\N > - < |M| >\\S2\\N",
+                                               "< |M| >\\S2\\N / < |M|\\S2\\N >" };
     std::array<std::string, 5> leg_cosaver = { "\\f{4}<|cos\\f{12}q\\f{4}\\sij\\N|>",
                                                "RMSD cos",
                                                "\\f{4}<|cos\\f{12}q\\f{4}\\siX\\N|>",
@@ -1628,75 +1628,75 @@ int gmx_dipoles(int argc, char* argv[])
         { "-mu", FALSE, etREAL, { &mu_aver }, "dipole of a single molecule (in Debye)" },
         { "-mumax", FALSE, etREAL, { &mu_max }, "max dipole in Debye (for histogram)" },
         { "-epsilonRF",
-          FALSE,
-          etREAL,
-          { &epsilonRF },
-          "[GRK]epsilon[grk] of the reaction field used during the simulation, needed for "
-          "dielectric constant calculation. WARNING: 0.0 means infinity (default)" },
+                    FALSE,
+                    etREAL,
+                    { &epsilonRF },
+                    "[GRK]epsilon[grk] of the reaction field used during the simulation, needed for "
+                              "dielectric constant calculation. WARNING: 0.0 means infinity (default)" },
         { "-skip",
-          FALSE,
-          etINT,
-          { &skip },
-          "Skip steps in the output (but not in the computations)" },
+                    FALSE,
+                    etINT,
+                    { &skip },
+                    "Skip steps in the output (but not in the computations)" },
         { "-temp",
-          FALSE,
-          etREAL,
-          { &temp },
-          "Average temperature of the simulation (needed for dielectric constant calculation)" },
+                    FALSE,
+                    etREAL,
+                    { &temp },
+                    "Average temperature of the simulation (needed for dielectric constant calculation)" },
         { "-corr", FALSE, etENUM, { corrtype }, "Correlation function to calculate" },
         { "-pairs",
-          FALSE,
-          etBOOL,
-          { &bPairs },
-          "Calculate [MAG][COS][GRK]theta[grk][cos][mag] between all pairs of molecules. May be "
-          "slow" },
+                    FALSE,
+                    etBOOL,
+                    { &bPairs },
+                    "Calculate [MAG][COS][GRK]theta[grk][cos][mag] between all pairs of molecules. May be "
+                              "slow" },
         { "-quad", FALSE, etBOOL, { &bQuad }, "Take quadrupole into account" },
         { "-ncos",
-          FALSE,
-          etINT,
-          { &ncos },
-          "Must be 1 or 2. Determines whether the [CHEVRON][COS][GRK]theta[grk][cos][chevron] is "
-          "computed between all molecules in one group, or between molecules in two different "
-          "groups. This turns on the [TT]-g[tt] flag." },
+                    FALSE,
+                    etINT,
+                    { &ncos },
+                    "Must be 1 or 2. Determines whether the [CHEVRON][COS][GRK]theta[grk][cos][chevron] is "
+                              "computed between all molecules in one group, or between molecules in two different "
+                              "groups. This turns on the [TT]-g[tt] flag." },
         { "-axis",
-          FALSE,
-          etSTR,
-          { &axtitle },
-          "Take the normal on the computational box in direction X, Y or Z." },
+                    FALSE,
+                    etSTR,
+                    { &axtitle },
+                    "Take the normal on the computational box in direction X, Y or Z." },
         { "-sl", FALSE, etINT, { &nslices }, "Divide the box into this number of slices." },
         { "-gkratom",
-          FALSE,
-          etINT,
-          { &nFA },
-          "Use the n-th atom of a molecule (starting from 1) to calculate the distance between "
-          "molecules rather than the center of charge (when 0) in the calculation of distance "
-          "dependent Kirkwood factors" },
+                    FALSE,
+                    etINT,
+                    { &nFA },
+                    "Use the n-th atom of a molecule (starting from 1) to calculate the distance between "
+                              "molecules rather than the center of charge (when 0) in the calculation of distance "
+                              "dependent Kirkwood factors" },
         { "-gkratom2",
-          FALSE,
-          etINT,
-          { &nFB },
-          "Same as previous option in case ncos = 2, i.e. dipole interaction between two groups of "
-          "molecules" },
+                    FALSE,
+                    etINT,
+                    { &nFB },
+                    "Same as previous option in case ncos = 2, i.e. dipole interaction between two groups of "
+                              "molecules" },
         { "-rcmax",
-          FALSE,
-          etREAL,
-          { &rcmax },
-          "Maximum distance to use in the dipole orientation distribution (with ncos == 2). If "
-          "zero, a criterion based on the box length will be used." },
+                    FALSE,
+                    etREAL,
+                    { &rcmax },
+                    "Maximum distance to use in the dipole orientation distribution (with ncos == 2). If "
+                              "zero, a criterion based on the box length will be used." },
         { "-phi",
-          FALSE,
-          etBOOL,
-          { &bPhi },
-          "Plot the 'torsion angle' defined as the rotation of the two dipole vectors around the "
-          "distance vector between the two molecules in the [REF].xpm[ref] file from the "
-          "[TT]-cmap[tt] option. By default the cosine of the angle between the dipoles is "
-          "plotted." },
+                    FALSE,
+                    etBOOL,
+                    { &bPhi },
+                    "Plot the 'torsion angle' defined as the rotation of the two dipole vectors around the "
+                              "distance vector between the two molecules in the [REF].xpm[ref] file from the "
+                              "[TT]-cmap[tt] option. By default the cosine of the angle between the dipoles is "
+                              "plotted." },
         { "-nlevels", FALSE, etINT, { &nlevels }, "Number of colors in the cmap output" },
         { "-ndegrees",
-          FALSE,
-          etINT,
-          { &ndegrees },
-          "Number of divisions on the [IT]y[it]-axis in the cmap output (for 180 degrees)" }
+                    FALSE,
+                    etINT,
+                    { &ndegrees },
+                    "Number of divisions on the [IT]y[it]-axis in the cmap output (for 180 degrees)" }
     };
     int*     gnx;
     int      nFF[2];

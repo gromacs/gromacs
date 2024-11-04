@@ -276,7 +276,7 @@ std::string getDeviceCompatibilityDescription(gmx::ArrayRef<const std::unique_pt
  * \param[in] serializer      Serializing object.
  */
 void serializeDeviceInformations(const std::vector<std::unique_ptr<DeviceInformation>>& deviceInfoList,
-                                 gmx::ISerializer*                                      serializer);
+                                 gmx::ISerializer* serializer);
 
 /*! \brief Deserialization of information on devices after MPI broadcasting.
  *

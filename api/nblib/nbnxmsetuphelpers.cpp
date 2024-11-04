@@ -88,7 +88,8 @@ namespace nblib
 
 int32_t findNumEnergyGroups(gmx::ArrayRef<int32_t> particleInteractionFlags)
 {
-    auto groupId = [](int code1, int code2) {
+    auto groupId = [](int code1, int code2)
+    {
         return (code1 & gmx::sc_atomInfo_EnergyGroupIdMask) < (code2 & gmx::sc_atomInfo_EnergyGroupIdMask);
     };
 
@@ -293,9 +294,9 @@ interaction_const_t createInteractionConst(const NBKernelOptions& options)
     return interactionConst;
 }
 
-std::unique_ptr<gmx::nonbonded_verlet_t> createNbnxmCPU(const size_t              numParticleTypes,
-                                                        const NBKernelOptions&    options,
-                                                        int                       numEnergyGroups,
+std::unique_ptr<gmx::nonbonded_verlet_t> createNbnxmCPU(const size_t           numParticleTypes,
+                                                        const NBKernelOptions& options,
+                                                        int                    numEnergyGroups,
                                                         gmx::ArrayRef<const real> nonbondedParameters)
 {
     if (nonbondedParameters.size() != numParticleTypes * numParticleTypes * 2)
@@ -334,8 +335,8 @@ std::unique_ptr<gmx::nonbonded_verlet_t> createNbnxmCPU(const size_t            
     return nbv;
 }
 
-std::unique_ptr<gmx::nonbonded_verlet_t> createNbnxmGPU(const size_t             numParticleTypes,
-                                                        const NBKernelOptions&   options,
+std::unique_ptr<gmx::nonbonded_verlet_t> createNbnxmGPU(const size_t           numParticleTypes,
+                                                        const NBKernelOptions& options,
                                                         const std::vector<real>& nonbondedParameters,
                                                         const interaction_const_t& interactionConst,
                                                         const gmx::DeviceStreamManager& deviceStreamManager)

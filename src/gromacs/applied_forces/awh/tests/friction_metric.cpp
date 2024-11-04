@@ -107,9 +107,9 @@ public:
         forces_(std::begin(g_forces), std::end(g_forces))
     {
         /* Set up a basic Correlation Grid. */
-        constexpr double                    blockLengthInit = 0;
+        constexpr double blockLengthInit = 0;
         CorrelationGrid::BlockLengthMeasure blockLengthMeasure = CorrelationGrid::BlockLengthMeasure::Time;
-        numDim_                                                = GetParam();
+        numDim_ = GetParam();
         GMX_RELEASE_ASSERT(numDim_ < 4, "Too high dimensionality.");
         numPoints_ = std::pow(g_numPointsPerDim, numDim_);
 

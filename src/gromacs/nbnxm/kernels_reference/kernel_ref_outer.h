@@ -207,7 +207,7 @@ void
         real Vvdw_ci = 0;
         real Vc_ci   = 0;
 #    else
-        int        egp_sh_i[UNROLLI];
+        int egp_sh_i[UNROLLI];
         for (int i = 0; i < UNROLLI; i++)
         {
             egp_sh_i[i] = nbatParams.energyGroupsPerCluster->getEnergyGroup(ci, i) * nbatParams.numEnergyGroups;

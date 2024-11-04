@@ -86,10 +86,10 @@ public:
 
     ~H5md();
 
-    H5md(const H5md&) = delete;
+    H5md(const H5md&)            = delete;
     H5md& operator=(const H5md&) = delete;
     H5md(H5md&&)                 = delete;
-    H5md& operator=(H5md&&) = delete;
+    H5md& operator=(H5md&&)      = delete;
 
     /*! \brief Write all unwritten data to the file.
      * \param[in] throwExceptionUponError Whether to throw an exception if an error occurs.

@@ -145,7 +145,7 @@ public:
      */
     struct Package
     {
-        int               id;    //!<  id of this package in hardware topology/system
+        int id;                  //!<  id of this package in hardware topology/system
         std::vector<Core> cores; //!< Cores in this package with processing units on which we can run.
     };
 
@@ -169,10 +169,10 @@ public:
      */
     struct Numa
     {
-        std::vector<NumaNode>           nodes;       //!< Information about each numa node
-        float                           baseLatency; //!< Scale factor for relative latencies
+        std::vector<NumaNode> nodes;                     //!< Information about each numa node
+        float                 baseLatency;               //!< Scale factor for relative latencies
         std::vector<std::vector<float>> relativeLatency; //!< 2D matrix of relative latencies between nodes
-        float                           maxRelativeLatency; //!< Largest relative latency
+        float maxRelativeLatency;                        //!< Largest relative latency
     };
 
     /*! \libinternal \brief Information about a single PCI device.

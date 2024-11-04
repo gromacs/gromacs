@@ -77,9 +77,9 @@ class TprReadHandle
 public:
     explicit TprReadHandle(std::shared_ptr<TprContents> tprFile);
     explicit TprReadHandle(TprContents&& tprFile);
-    TprReadHandle(const TprReadHandle&) = default;
-    TprReadHandle& operator=(const TprReadHandle&) = default;
-    TprReadHandle(TprReadHandle&&) noexcept        = default;
+    TprReadHandle(const TprReadHandle&)                = default;
+    TprReadHandle& operator=(const TprReadHandle&)     = default;
+    TprReadHandle(TprReadHandle&&) noexcept            = default;
     TprReadHandle& operator=(TprReadHandle&&) noexcept = default;
     ~TprReadHandle();
 

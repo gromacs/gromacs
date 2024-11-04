@@ -625,7 +625,7 @@ static inline SimdDouble gmx_simdcall trunc(SimdDouble x)
     return cvtI2R(cvttR2I(x));
 }
 
-static inline void gmx_simdcall cvtF2DD(SimdFloat gmx_unused f,
+static inline void gmx_simdcall cvtF2DD(SimdFloat gmx_unused   f,
                                         SimdDouble gmx_unused* d0,
                                         SimdDouble gmx_unused* d1)
 {

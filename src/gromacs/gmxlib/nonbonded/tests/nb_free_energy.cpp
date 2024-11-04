@@ -260,7 +260,7 @@ public:
                       InteractionModifiers   vdwMod)
     {
         icHelper_.initInteractionConst(coulType, vdwType, vdwMod);
-        nbfp_        = makeNonBondedParameterLists(idef.atnr, false, idef.iparams, false);
+        nbfp_ = makeNonBondedParameterLists(idef.atnr, false, idef.iparams, false);
         ljPmeC6Grid_ = makeLJPmeC6GridCorrectionParameters(idef.atnr, idef.iparams, LongRangeVdW::Geom);
     }
 

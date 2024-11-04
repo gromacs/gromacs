@@ -320,10 +320,11 @@ StartingBehaviorHandler chooseStartingBehavior(const AppendingBehavior appending
     {
         // See whether appending can be done.
 
-        size_t numFilesMissing = std::count_if(
-                std::begin(outputFiles), std::end(outputFiles), [nfile, fnm](const auto& outputFile) {
-                    return !exist_output_file(outputFile.filename, nfile, fnm);
-                });
+        size_t numFilesMissing =
+                std::count_if(std::begin(outputFiles),
+                              std::end(outputFiles),
+                              [nfile, fnm](const auto& outputFile)
+                              { return !exist_output_file(outputFile.filename, nfile, fnm); });
         if (numFilesMissing != 0)
         {
             // Appending is not possible, because not all previous

@@ -292,8 +292,8 @@ bool simdCheck(const CpuInfo& cpuInfo, gmx::SimdType wanted, FILE* log, bool war
         // in that scenario.
         logMsg  = wrapper.wrapToString(formatString(
                 "Likely fastest SIMD instructions supported by all nodes: %s\n"
-                "SIMD instructions selected at compile time:              %s\n"
-                "For Intel CPUs with only 1x AVX-512 FMA unit, AVX2 is a little faster.",
+                 "SIMD instructions selected at compile time:              %s\n"
+                 "For Intel CPUs with only 1x AVX-512 FMA unit, AVX2 is a little faster.",
                 simdString(wanted).c_str(),
                 simdString(compiled).c_str()));
         warnMsg = wrapper.wrapToString(
@@ -327,8 +327,8 @@ bool simdCheck(const CpuInfo& cpuInfo, gmx::SimdType wanted, FILE* log, bool war
     {
         logMsg  = wrapper.wrapToString(formatString(
                 "Likely fastest SIMD instructions supported by all nodes: %s\n"
-                "SIMD instructions selected at compile time:              %s\n"
-                "AMD's early FMA4 AVX extensions do not work on modern CPUs; program might crash.",
+                 "SIMD instructions selected at compile time:              %s\n"
+                 "AMD's early FMA4 AVX extensions do not work on modern CPUs; program might crash.",
                 simdString(wanted).c_str(),
                 simdString(compiled).c_str()));
         warnMsg = logMsg;
@@ -351,10 +351,10 @@ bool simdCheck(const CpuInfo& cpuInfo, gmx::SimdType wanted, FILE* log, bool war
     {
         logMsg  = wrapper.wrapToString(formatString(
                 "Longest SVE length supported by all nodes in run: %d\n"
-                "SVE length selected at compile time:               %ld\n"
-                "This program was compiled for different hardware than you are running on, "
-                "which will lead to incorrect behavior.\n"
-                "Aborting",
+                 "SVE length selected at compile time:               %ld\n"
+                 "This program was compiled for different hardware than you are running on, "
+                 "which will lead to incorrect behavior.\n"
+                 "Aborting",
                 GMX_SIMD_ARM_SVE_LENGTH_VALUE,
                 svcntb() * 8));
         warnMsg = wrapper.wrapToString(

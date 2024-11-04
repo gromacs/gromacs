@@ -120,14 +120,14 @@ real ewaldCoeff(real ewald_rtol, real pairlistCutoff);
 interaction_const_t createInteractionConst(const NBKernelOptions& options);
 
 //! Create nonbonded_verlet_t object
-std::unique_ptr<gmx::nonbonded_verlet_t> createNbnxmCPU(size_t                    numParticleTypes,
-                                                        const NBKernelOptions&    options,
-                                                        int                       numEnergyGroups,
+std::unique_ptr<gmx::nonbonded_verlet_t> createNbnxmCPU(size_t                 numParticleTypes,
+                                                        const NBKernelOptions& options,
+                                                        int                    numEnergyGroups,
                                                         gmx::ArrayRef<const real> nonbondedParameters);
 
 //! Create nonbonded_verlet_gpu object
-std::unique_ptr<gmx::nonbonded_verlet_t> createNbnxmGPU(size_t                   numParticleTypes,
-                                                        const NBKernelOptions&   options,
+std::unique_ptr<gmx::nonbonded_verlet_t> createNbnxmGPU(size_t                 numParticleTypes,
+                                                        const NBKernelOptions& options,
                                                         const std::vector<real>& nonbondedParameters,
                                                         const interaction_const_t& interactionConst,
                                                         const gmx::DeviceStreamManager& deviceStreamManager);

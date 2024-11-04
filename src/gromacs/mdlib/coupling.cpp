@@ -1551,8 +1551,8 @@ void trotter_update(const t_inputrec*                   ir,
     {
         return;
     }
-    dtc  = ir->nsttcouple * ir->delta_t; /* This is OK for NPT, because nsttcouple == nstpcouple is enforcesd */
-    opts = &(ir->opts);                  /* just for ease of referencing */
+    dtc = ir->nsttcouple * ir->delta_t; /* This is OK for NPT, because nsttcouple == nstpcouple is enforcesd */
+    opts = &(ir->opts);                 /* just for ease of referencing */
     ngtc = opts->ngtc;
     assert(ngtc > 0);
     snew(scalefac, opts->ngtc);

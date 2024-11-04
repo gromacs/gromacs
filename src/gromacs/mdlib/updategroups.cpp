@@ -753,9 +753,9 @@ static real computeMaxUpdateGroupRadius(const gmx_moltype_t&           moltype,
     return maxRadius;
 }
 
-real computeMaxUpdateGroupRadius(const gmx_mtop_t&                      mtop,
+real computeMaxUpdateGroupRadius(const gmx_mtop_t& mtop,
                                  gmx::ArrayRef<const RangePartitioning> updateGroupingsPerMoleculeType,
-                                 real                                   temperature)
+                                 real temperature)
 {
     if (updateGroupingsPerMoleculeType.empty())
     {
@@ -793,9 +793,10 @@ ArrayRef<const RangePartitioning> UpdateGroups::updateGroupingPerMoleculeType() 
 bool systemHasConstraintsOrVsites(const gmx_mtop_t& mtop)
 {
     IListRange ilistRange(mtop);
-    return std::any_of(ilistRange.begin(), ilistRange.end(), [](const auto& ilists) {
-        return !extractILists(ilists.list(), IF_CONSTRAINT | IF_VSITE).empty();
-    });
+    return std::any_of(ilistRange.begin(),
+                       ilistRange.end(),
+                       [](const auto& ilists)
+                       { return !extractILists(ilists.list(), IF_CONSTRAINT | IF_VSITE).empty(); });
 }
 
 UpdateGroups makeUpdateGroups(const gmx::MDLogger&             mdlog,

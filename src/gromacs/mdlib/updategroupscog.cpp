@@ -56,9 +56,9 @@
 namespace gmx
 {
 
-UpdateGroupsCog::UpdateGroupsCog(const gmx_mtop_t&                           mtop,
+UpdateGroupsCog::UpdateGroupsCog(const gmx_mtop_t& mtop,
                                  gmx::ArrayRef<const gmx::RangePartitioning> updateGroupingsPerMoleculeType,
-                                 real                                        temperature) :
+                                 real temperature) :
     mtop_(mtop)
 {
     int firstUpdateGroupInMolecule = 0;

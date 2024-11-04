@@ -3457,10 +3457,10 @@ int gmx_bar(int argc, char* argv[])
         { "-nbmax", FALSE, etINT, { &nbmax }, "Maximum number of blocks for error estimation" },
         { "-nbin", FALSE, etINT, { &nbin }, "Number of bins for histogram output" },
         { "-extp",
-          FALSE,
-          etBOOL,
-          { &use_dhdl },
-          "Whether to linearly extrapolate dH/dl values to use as energies" }
+                  FALSE,
+                  etBOOL,
+                  { &use_dhdl },
+                  "Whether to linearly extrapolate dH/dl values to use as energies" }
     };
 
     t_filenm fnm[] = { { efXVG, "-f", "dhdl", ffOPTRDMULT },

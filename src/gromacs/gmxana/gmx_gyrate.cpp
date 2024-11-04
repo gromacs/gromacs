@@ -182,8 +182,8 @@ static void calc_gyro_z(rvec x[], matrix box, int gnx, const int index[], t_atom
             inertia[j][i] /= tm[j];
         }
         sdet = std::sqrt(gmx::square(inertia[j][0] - inertia[j][1]) + 4 * gmx::square(inertia[j][2]));
-        e1   = std::sqrt(0.5 * (inertia[j][0] + inertia[j][1] + sdet));
-        e2   = std::sqrt(0.5 * (inertia[j][0] + inertia[j][1] - sdet));
+        e1 = std::sqrt(0.5 * (inertia[j][0] + inertia[j][1] + sdet));
+        e2 = std::sqrt(0.5 * (inertia[j][0] + inertia[j][1] - sdet));
         fprintf(out, " %5.3f %5.3f", e1, e2);
     }
     fprintf(out, "\n");
@@ -210,25 +210,25 @@ int gmx_gyrate(int argc, char* argv[])
     t_pargs         pa[] = {
         { "-nmol", FALSE, etINT, { &nmol }, "The number of molecules to analyze" },
         { "-q",
-          FALSE,
-          etBOOL,
-          { &bQ },
-          "Use absolute value of the charge of an atom as weighting factor instead of mass" },
+                  FALSE,
+                  etBOOL,
+                  { &bQ },
+                  "Use absolute value of the charge of an atom as weighting factor instead of mass" },
         { "-p",
-          FALSE,
-          etBOOL,
-          { &bRot },
-          "Calculate the radii of gyration about the principal axes." },
+                  FALSE,
+                  etBOOL,
+                  { &bRot },
+                  "Calculate the radii of gyration about the principal axes." },
         { "-moi",
-          FALSE,
-          etBOOL,
-          { &bMOI },
-          "Calculate the moments of inertia (defined by the principal axes)." },
+                  FALSE,
+                  etBOOL,
+                  { &bMOI },
+                  "Calculate the moments of inertia (defined by the principal axes)." },
         { "-nz",
-          FALSE,
-          etINT,
-          { &nz },
-          "Calculate the 2D radii of gyration of this number of slices along the z-axis" },
+                  FALSE,
+                  etINT,
+                  { &nz },
+                  "Calculate the 2D radii of gyration of this number of slices along the z-axis" },
     };
     FILE*                      out;
     t_trxstatus*               status;

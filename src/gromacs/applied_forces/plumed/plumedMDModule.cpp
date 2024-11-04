@@ -88,34 +88,36 @@ public:
         // TODO: add a check for threadmpi (see #5104, https://gitlab.com/gromacs/gromacs/-/merge_requests/4367#note_2102475958, the manual and the force provider for the details)
 
         // Access the plumed filename this is used to activate the plumed module
-        notifier->simulationSetupNotifier_.subscribe([this](const PlumedInputFilename& plumedFilename) {
-            this->options_.setPlumedFile(plumedFilename.plumedFilename_);
-        });
+        notifier->simulationSetupNotifier_.subscribe(
+                [this](const PlumedInputFilename& plumedFilename)
+                { this->options_.setPlumedFile(plumedFilename.plumedFilename_); });
         // Access the temperature if it is constant during the simulation
-        notifier->simulationSetupNotifier_.subscribe([this](const EnsembleTemperature& ensembleT) {
-            this->options_.setEnsembleTemperature(ensembleT);
-        });
+        notifier->simulationSetupNotifier_.subscribe(
+                [this](const EnsembleTemperature& ensembleT)
+                { this->options_.setEnsembleTemperature(ensembleT); });
         // Access of the topology
-        notifier->simulationSetupNotifier_.subscribe(
-                [this](const gmx_mtop_t& mtop) { this->options_.setTopology(mtop); });
+        notifier->simulationSetupNotifier_.subscribe([this](const gmx_mtop_t& mtop)
+                                                     { this->options_.setTopology(mtop); });
         // Retrieve the Communication Record during simulations setup
-        notifier->simulationSetupNotifier_.subscribe(
-                [this](const t_commrec& cr) { this->options_.setComm(cr); });
+        notifier->simulationSetupNotifier_.subscribe([this](const t_commrec& cr)
+                                                     { this->options_.setComm(cr); });
         // setting the simulation time step
-        notifier->simulationSetupNotifier_.subscribe([this](const SimulationTimeStep& simulationTimeStep) {
-            this->options_.setSimulationTimeStep(simulationTimeStep.delta_t);
-        });
+        notifier->simulationSetupNotifier_.subscribe(
+                [this](const SimulationTimeStep& simulationTimeStep)
+                { this->options_.setSimulationTimeStep(simulationTimeStep.delta_t); });
         // Retrieve the starting behavior
-        notifier->simulationSetupNotifier_.subscribe([this](const StartingBehavior& startingBehavior) {
-            this->options_.setStartingBehavior(startingBehavior);
-        });
+        notifier->simulationSetupNotifier_.subscribe(
+                [this](const StartingBehavior& startingBehavior)
+                { this->options_.setStartingBehavior(startingBehavior); });
         //  writing checkpoint data
-        notifier->checkpointingNotifier_.subscribe([this](MDModulesWriteCheckpointData /*checkpointData*/) {
-            if (options_.active())
-            {
-                plumedForceProvider_->writeCheckpointData();
-            }
-        });
+        notifier->checkpointingNotifier_.subscribe(
+                [this](MDModulesWriteCheckpointData /*checkpointData*/)
+                {
+                    if (options_.active())
+                    {
+                        plumedForceProvider_->writeCheckpointData();
+                    }
+                });
     }
 
     //! From IMDModule

@@ -253,16 +253,16 @@ public:
      */
     static ISimulatorElement* getElementPointerImpl(LegacySimulatorData* legacySimulatorData,
                                                     ModularSimulatorAlgorithmBuilderHelper* builderHelper,
-                                                    StatePropagatorData*        statePropagatorData,
-                                                    EnergyData*                 energyData,
+                                                    StatePropagatorData* statePropagatorData,
+                                                    EnergyData*          energyData,
                                                     FreeEnergyPerturbationData* freeEnergyPerturbationData,
                                                     GlobalCommunicationHelper* globalCommunicationHelper,
-                                                    ObservablesReducer*        observablesReducer,
-                                                    NhcUsage                   nhcUsage,
-                                                    Offset                     offset,
-                                                    UseFullStepKE              useFullStepKE,
-                                                    ScheduleOnInitStep         scheduleOnInitStep,
-                                                    const PropagatorTag&       propagatorTag);
+                                                    ObservablesReducer*  observablesReducer,
+                                                    NhcUsage             nhcUsage,
+                                                    Offset               offset,
+                                                    UseFullStepKE        useFullStepKE,
+                                                    ScheduleOnInitStep   scheduleOnInitStep,
+                                                    const PropagatorTag& propagatorTag);
 
 private:
     //! Propagate the NHC degrees of freedom

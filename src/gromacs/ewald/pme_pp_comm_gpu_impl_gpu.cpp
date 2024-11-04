@@ -233,8 +233,8 @@ void PmePpCommGpu::Impl::receiveForceFromPme(Float3* recvPtr, int recvSize, bool
 }
 
 // NOLINTNEXTLINE readability-convert-member-functions-to-static
-void PmePpCommGpu::Impl::sendCoordinatesToPmeGpuAwareMpi(Float3*               sendPtr,
-                                                         int                   sendSize,
+void PmePpCommGpu::Impl::sendCoordinatesToPmeGpuAwareMpi(Float3* sendPtr,
+                                                         int     sendSize,
                                                          GpuEventSynchronizer* coordinatesReadyOnDeviceEvent)
 {
     if (sendSize == 0)

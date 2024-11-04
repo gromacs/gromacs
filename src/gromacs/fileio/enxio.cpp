@@ -107,7 +107,7 @@ static void enxsubblock_init(t_enxsubblock* sb)
 #if GMX_DOUBLE
     sb->type = XdrDataType::Double;
 #else
-    sb->type                = XdrDataType::Float;
+    sb->type = XdrDataType::Float;
 #endif
     sb->fval       = nullptr;
     sb->dval       = nullptr;

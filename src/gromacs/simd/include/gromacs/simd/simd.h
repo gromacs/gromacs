@@ -288,7 +288,7 @@ struct alignas(GMX_SIMD_DOUBLE_WIDTH * sizeof(double)) AlignedArray<double, N> :
 #    if GMX_DOUBLE
 typedef SimdDouble SimdReal;
 #    else
-typedef SimdFloat  SimdReal;
+typedef SimdFloat SimdReal;
 #    endif
 
 
@@ -312,7 +312,7 @@ typedef SimdFloat  SimdReal;
 #    if GMX_DOUBLE
 typedef SimdDBool SimdBool;
 #    else
-typedef SimdFBool  SimdBool;
+typedef SimdFBool SimdBool;
 #    endif
 
 
@@ -371,7 +371,7 @@ typedef SimdFIBool SimdIBool;
 #    if GMX_DOUBLE
 const int c_simdBestPairAlignment = c_simdBestPairAlignmentDouble;
 #    else
-const int          c_simdBestPairAlignment = c_simdBestPairAlignmentFloat;
+const int c_simdBestPairAlignment = c_simdBestPairAlignmentFloat;
 #    endif
 
 #endif // GMX_SIMD_HAVE_REAL

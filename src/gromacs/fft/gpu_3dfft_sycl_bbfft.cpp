@@ -101,10 +101,10 @@ Gpu3dFft::ImplSyclBbfft::ImplSyclBbfft(bool allocateRealGrid,
                "Complex grid buffer is too small for the declared padded size");
 
     std::array<size_t, bbfft::max_tensor_dim> shape   = { 1,
-                                                        static_cast<size_t>(realGridSize[ZZ]),
-                                                        static_cast<size_t>(realGridSize[YY]),
-                                                        static_cast<size_t>(realGridSize[XX]),
-                                                        1 };
+                                                          static_cast<size_t>(realGridSize[ZZ]),
+                                                          static_cast<size_t>(realGridSize[YY]),
+                                                          static_cast<size_t>(realGridSize[XX]),
+                                                          1 };
     std::array<size_t, bbfft::max_tensor_dim> rstride = {
         1,
         1,

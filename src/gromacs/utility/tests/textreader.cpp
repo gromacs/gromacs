@@ -187,7 +187,8 @@ INSTANTIATE_TEST_SUITE_P(
                                               "   # not expected",
                                       } },
                 TextReaderTestParams{ g_inputs,
-                                      [](TextReader& r) {
+                                      [](TextReader& r)
+                                      {
                                           r.setTrimTrailingWhiteSpace(true);
                                           r.setTrimLeadingWhiteSpace(true);
                                       },
@@ -226,13 +227,15 @@ INSTANTIATE_TEST_SUITE_P(
                                               "   ",
                                       } },
                 TextReaderTestParams{ g_inputs,
-                                      [](TextReader& r) {
+                                      [](TextReader& r)
+                                      {
                                           r.setTrimTrailingComment(true, '#');
                                           r.setTrimTrailingComment(false, 0);
                                       },
                                       g_unchangedOutputs },
                 TextReaderTestParams{ g_inputs,
-                                      [](TextReader& r) {
+                                      [](TextReader& r)
+                                      {
                                           r.setTrimTrailingComment(true, '#');
                                           r.setTrimTrailingWhiteSpace(true);
                                       },

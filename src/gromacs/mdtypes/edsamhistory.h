@@ -59,10 +59,10 @@ typedef struct edsamhistory_t
     int      nED;      // No. of ED/Flooding data sets, if <1 no ED
     int*     nref;     // No. of atoms in i'th reference structure
     int*     nav;      // Same for average structure
-    rvec**   old_sref; // Positions of the reference atoms at the last time step (with correct PBC representation)
-    rvec**   old_sref_p; // Pointer to these positions
-    rvec**   old_sav;    // Same for the average positions
-    rvec**   old_sav_p;  // Pointer to these positions
+    rvec** old_sref; // Positions of the reference atoms at the last time step (with correct PBC representation)
+    rvec** old_sref_p; // Pointer to these positions
+    rvec** old_sav;    // Same for the average positions
+    rvec** old_sav_p;  // Pointer to these positions
 } edsamhistory_t;
 
 #endif

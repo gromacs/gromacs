@@ -127,17 +127,21 @@ void FirstOrderPressureCoupling::scheduleTask(Step step, Time /*unused*/, const 
     {
         if (pressureCouplingType_ == PressureCoupling::Berendsen)
         {
-            registerRunFunction([this, step]() {
-                calculateScalingMatrix<PressureCoupling::Berendsen>(step);
-                scaleBoxAndCoordinates<PressureCoupling::Berendsen>();
-            });
+            registerRunFunction(
+                    [this, step]()
+                    {
+                        calculateScalingMatrix<PressureCoupling::Berendsen>(step);
+                        scaleBoxAndCoordinates<PressureCoupling::Berendsen>();
+                    });
         }
         else if (pressureCouplingType_ == PressureCoupling::CRescale)
         {
-            registerRunFunction([this, step]() {
-                calculateScalingMatrix<PressureCoupling::CRescale>(step);
-                scaleBoxAndCoordinates<PressureCoupling::CRescale>();
-            });
+            registerRunFunction(
+                    [this, step]()
+                    {
+                        calculateScalingMatrix<PressureCoupling::CRescale>(step);
+                        scaleBoxAndCoordinates<PressureCoupling::CRescale>();
+                    });
         }
     }
 }
@@ -190,7 +194,7 @@ void FirstOrderPressureCoupling::doCheckpointData(CheckpointData<operation>* che
 }
 
 void FirstOrderPressureCoupling::saveCheckpointState(std::optional<WriteCheckpointData> checkpointData,
-                                                     const t_commrec*                   cr)
+                                                     const t_commrec* cr)
 {
     if (MAIN(cr))
     {
@@ -199,7 +203,7 @@ void FirstOrderPressureCoupling::saveCheckpointState(std::optional<WriteCheckpoi
 }
 
 void FirstOrderPressureCoupling::restoreCheckpointState(std::optional<ReadCheckpointData> checkpointData,
-                                                        const t_commrec*                  cr)
+                                                        const t_commrec* cr)
 {
     if (MAIN(cr))
     {
@@ -246,8 +250,8 @@ FirstOrderPressureCoupling::FirstOrderPressureCoupling(int                  coup
     nrnb_(nrnb),
     identifier_("FirstOrderPressureCoupling-" + std::string(enumValueToString(pressureCouplingType_)))
 {
-    energyData->addConservedEnergyContribution(
-            [this](Step step, Time /*unused*/) { return conservedEnergyContribution(step); });
+    energyData->addConservedEnergyContribution([this](Step step, Time /*unused*/)
+                                               { return conservedEnergyContribution(step); });
 }
 
 ISimulatorElement* FirstOrderPressureCoupling::getElementPointerImpl(
@@ -255,8 +259,8 @@ ISimulatorElement* FirstOrderPressureCoupling::getElementPointerImpl(
         ModularSimulatorAlgorithmBuilderHelper* builderHelper,
         StatePropagatorData*                    statePropagatorData,
         EnergyData*                             energyData,
-        FreeEnergyPerturbationData gmx_unused* freeEnergyPerturbationData,
-        GlobalCommunicationHelper gmx_unused* globalCommunicationHelper,
+        FreeEnergyPerturbationData gmx_unused*  freeEnergyPerturbationData,
+        GlobalCommunicationHelper gmx_unused*   globalCommunicationHelper,
         ObservablesReducer* /*observablesReducer*/,
         int                               offset,
         ReportPreviousStepConservedEnergy reportPreviousStepConservedEnergy)

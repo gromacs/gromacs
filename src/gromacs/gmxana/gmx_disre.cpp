@@ -442,9 +442,9 @@ static void dump_stats(FILE*                          log,
     dump_viol(log, dd.nres, drs, FALSE);
 
     fprintf(log, "+++ Sorted by linear averaged violations: +++\n");
-    std::sort(drs, drs + dd.nres, [](const t_dr_stats& a, const t_dr_stats& b) {
-        return a.viol > b.viol;
-    }); // Reverse sort
+    std::sort(drs,
+              drs + dd.nres,
+              [](const t_dr_stats& a, const t_dr_stats& b) { return a.viol > b.viol; }); // Reverse sort
     dump_viol(log, dd.nres, drs, TRUE);
 
     dump_dump(log, dd.nres, drs);
@@ -733,22 +733,22 @@ int gmx_disre(int argc, char* argv[])
     static gmx_bool bThird  = TRUE;
     t_pargs         pa[]    = {
         { "-ntop",
-          FALSE,
-          etINT,
-          { &ntoppar },
-          "Number of large violations that are stored in the log file every step" },
+                     FALSE,
+                     etINT,
+                     { &ntoppar },
+                     "Number of large violations that are stored in the log file every step" },
         { "-maxdr",
-          FALSE,
-          etREAL,
-          { &max_dr },
-          "Maximum distance violation in matrix output. If less than or equal to 0 the "
-          "maximum will be determined by the data." },
+                     FALSE,
+                     etREAL,
+                     { &max_dr },
+                     "Maximum distance violation in matrix output. If less than or equal to 0 the "
+                                "maximum will be determined by the data." },
         { "-nlevels", FALSE, etINT, { &nlevels }, "Number of levels in the matrix output" },
         { "-third",
-          FALSE,
-          etBOOL,
-          { &bThird },
-          "Use inverse third power averaging or linear for matrix output" }
+                     FALSE,
+                     etBOOL,
+                     { &bThird },
+                     "Use inverse third power averaging or linear for matrix output" }
     };
 
     FILE *       out = nullptr, *aver = nullptr, *numv = nullptr, *maxxv = nullptr, *xvg = nullptr;

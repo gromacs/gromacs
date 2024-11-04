@@ -218,9 +218,8 @@ ObservablesReducer ObservablesReducerBuilder::build()
     const int           totalSizeRequired = std::accumulate(impl_->subscriptions_.begin(),
                                                   impl_->subscriptions_.end(),
                                                   0.0,
-                                                  [](int subtotal, const auto& subscription) {
-                                                      return subtotal + subscription.sizeRequired;
-                                                  });
+                                                  [](int subtotal, const auto& subscription)
+                                                  { return subtotal + subscription.sizeRequired; });
     std::vector<double> communicationBuffer(totalSizeRequired);
     // Set up a view of the communication buffer that we can use after
     // ownership has been transferred to the impl object.
@@ -254,9 +253,8 @@ ObservablesReducer ObservablesReducerBuilder::build()
         // Construct the callback that will hereafter be owned by the
         // subscriber.
         CallbackToRequireReduction callbackToRequireReduction =
-                [impl, indexToCallbackAfterReduction](ReductionRequirement requirement) {
-                    return impl->requireReduction(indexToCallbackAfterReduction, requirement);
-                };
+                [impl, indexToCallbackAfterReduction](ReductionRequirement requirement)
+        { return impl->requireReduction(indexToCallbackAfterReduction, requirement); };
         subscription.callbackFromBuilder(std::move(callbackToRequireReduction),
                                          bufferView.subArray(start, subscription.sizeRequired));
         start += subscription.sizeRequired;

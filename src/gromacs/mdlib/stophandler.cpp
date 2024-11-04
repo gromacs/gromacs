@@ -192,17 +192,17 @@ std::unique_ptr<StopHandler> StopHandlerBuilder::getStopHandlerMD(compat::not_nu
         // Would require replacement such as fu2::function or cxx_function.
         auto stopConditionSignal = std::make_shared<StopConditionSignal>(
                 nstList, makeBinaryReproducibleSimulation, nstSignalComm);
-        registerStopCondition(
-                [stopConditionSignal, fplog]() { return stopConditionSignal->getSignal(fplog); });
+        registerStopCondition([stopConditionSignal, fplog]()
+                              { return stopConditionSignal->getSignal(fplog); });
     }
 
     if (isMain && maximumHoursToRun > 0)
     {
         auto stopConditionTime =
                 std::make_shared<StopConditionTime>(nstList, maximumHoursToRun, nstSignalComm);
-        registerStopCondition([stopConditionTime, &bNS, &step, fplog, walltime_accounting]() {
-            return stopConditionTime->getSignal(bNS, step, fplog, walltime_accounting);
-        });
+        registerStopCondition(
+                [stopConditionTime, &bNS, &step, fplog, walltime_accounting]()
+                { return stopConditionTime->getSignal(bNS, step, fplog, walltime_accounting); });
     }
 
     return std::make_unique<StopHandler>(

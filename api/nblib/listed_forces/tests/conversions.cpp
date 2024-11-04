@@ -213,7 +213,8 @@ ListedInteractionData combineTestInput(std::tuple<Ts...> testInput)
     ListedInteractionData interactionData;
     // transfer all elements of testInput into the returned ListedInteractionData
     // use a lambda + for_each_tuple
-    auto copyParamsOneType = [&interactionData](const auto& typeInput) {
+    auto copyParamsOneType = [&interactionData](const auto& typeInput)
+    {
         for (size_t i = 0; i < typeInput.interactionData.parameters.size(); i++)
         {
             auto interactionParams = typeInput.interactionData.parameters[i];
@@ -238,7 +239,8 @@ TEST(NBlibTest, GmxToNblibConversionAllTypes)
 
     ListedInteractionData convertedData = convertToNblibInteractions(*idef);
 
-    auto compareParamsAndIndices = [&convertedData](auto& original) {
+    auto compareParamsAndIndices = [&convertedData](auto& original)
+    {
         if (!original.parameters.empty())
         {
             using InteractionType = typename std::decay_t<decltype(original)>::type;

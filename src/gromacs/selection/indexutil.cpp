@@ -75,10 +75,10 @@ IndexGroupsAndNames::IndexGroupsAndNames(gmx::ArrayRef<const IndexGroup> indexGr
 
 bool IndexGroupsAndNames::containsGroupName(const std::string& groupName) const
 {
-    return std::any_of(
-            std::begin(indexGroups_), std::end(indexGroups_), [&groupName](const IndexGroup& indexGroup) {
-                return equalCaseInsensitive(groupName, indexGroup.name);
-            });
+    return std::any_of(std::begin(indexGroups_),
+                       std::end(indexGroups_),
+                       [&groupName](const IndexGroup& indexGroup)
+                       { return equalCaseInsensitive(groupName, indexGroup.name); });
 }
 
 std::vector<Index> IndexGroupsAndNames::indices(const std::string& groupName) const
@@ -95,10 +95,11 @@ std::vector<Index> IndexGroupsAndNames::indices(const std::string& groupName) co
                           "names, in which case you must supply an index file to the '-n' option\n"
                           "of grompp."));
     }
-    const auto groupNamePosition = std::find_if(
-            std::begin(indexGroups_), std::end(indexGroups_), [&groupName](const IndexGroup& indexGroup) {
-                return equalCaseInsensitive(groupName, indexGroup.name);
-            });
+    const auto groupNamePosition =
+            std::find_if(std::begin(indexGroups_),
+                         std::end(indexGroups_),
+                         [&groupName](const IndexGroup& indexGroup)
+                         { return equalCaseInsensitive(groupName, indexGroup.name); });
     const auto         groupIndex = std::distance(std::begin(indexGroups_), groupNamePosition);
     std::vector<Index> groupIndices(indexGroups_[groupIndex].particleIndices.begin(),
                                     indexGroups_[groupIndex].particleIndices.end());

@@ -165,7 +165,8 @@ void ListedGmxCalculator::compute(gmx::ArrayRef<const gmx::RVec>     x,
                                 nullptr,
                                 stepWork);
 
-    auto transferEnergy = [&energies, this](auto& interactionElement) {
+    auto transferEnergy = [&energies, this](auto& interactionElement)
+    {
         using InteractionType = typename std::decay_t<decltype(interactionElement)>::type;
         if constexpr (ListedTypeIsImplemented<InteractionType>{})
         {

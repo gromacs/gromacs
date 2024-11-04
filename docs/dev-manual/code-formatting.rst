@@ -25,15 +25,15 @@ the code stays invariant under such formatting.
 Setting up clang-format
 -----------------------
 
-|Gromacs| formatting is enforced with clang-format 11.0.1.
+|Gromacs| formatting is enforced with clang-format 18.0.1.
 :command:`clang-format` is one of the core *clang* tools.
 It may be included in a *clang* or *llvm* package from your favorite packaging
 system or you may find a standalone *clang-format* package,
-but you should confirm that the provided command is version 11.0.0 or 11.0.1.
+but you should confirm that the provided command is version 18.0.0 or 18.0.1.
 Example::
 
     $ clang-format --version
-    clang-format version 11.0.0
+    clang-format version 18.0.0
 
 If you use a different version of clang-format,
 you will likely get different formatting results than
@@ -42,12 +42,12 @@ and the commits that you push will fail the automated tests.
 
 .. note::
 
-    Refer to `LLVM <http://releases.llvm.org/download.html#11.0.0>`__ for
+    Refer to `LLVM <http://releases.llvm.org/download.html#18.0.0>`__ for
     source and binary downloads.
     If downloading sources, note that you will need to download both the
     *LLVM source code* and the *Clang source code*.
     As per the clang
-    `INSTALL.txt <https://github.com/llvm/llvm-project/blob/release/11.x/clang/INSTALL.txt>`__,
+    `INSTALL.txt <https://github.com/llvm/llvm-project/blob/release/18.x/clang/INSTALL.txt>`__,
     place the expanded clang source into a :file:`tools/clang` subdirectory within
     the expanded llvm archive, then run CMake against the llvm source directory.
 
@@ -73,7 +73,7 @@ clang-format discovers which formatting rules to apply from the
 which will be automatically updated (if necessary) when you :command:`git pull`
 from the |Gromacs| repository.
 For more about the tool and the :file:`.clang-format` configuration file,
-visit https://releases.llvm.org/11.0.1/tools/clang/docs/ClangFormat.html
+visit https://releases.llvm.org/18.0.1/tools/clang/docs/ClangFormat.html
 
 What is automatically formatted?
 --------------------------------
@@ -229,9 +229,9 @@ between the disk and the index) to make it easy to revert the changes.
 This can be overridden by adding a ``-f``/``--force`` option.
 
 Since the behaviour of clang-format can change between versions even when using the same options,
-only clang-format from Clang 11 will give correct results. The path to the correct ``clang-format``
+only clang-format from Clang 18 will give correct results. The path to the correct ``clang-format``
 binary can be specified via ``CLANG_FORMAT`` environment variable or by running
-``git config hooks.clangformatpath /path/to/clang-format-11`` in the repository root.
+``git config hooks.clangformatpath /path/to/clang-format-18`` in the repository root.
 
 ``clang-tidy.sh``
 ^^^^^^^^^^^^^^^^^

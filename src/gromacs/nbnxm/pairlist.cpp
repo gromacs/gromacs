@@ -2662,7 +2662,7 @@ static int getBufferFlagShift(int numAtomsPerCluster)
     return bufferFlagShift;
 }
 
-static void makeClusterListWrapper(NbnxnPairlistCpu* nbl,
+static void makeClusterListWrapper(NbnxnPairlistCpu*               nbl,
                                    const Grid gmx_unused&          iGrid,
                                    const int                       ci,
                                    const Grid&                     jGrid,
@@ -2775,8 +2775,8 @@ static void setBufferFlags(const NbnxnPairlistCpu& nbl,
 static void setBufferFlags(const NbnxnPairlistGpu gmx_unused& nbl,
                            int gmx_unused                     ncj_old_j,
                            int gmx_unused                     gridj_flag_shift,
-                           gmx_bitmask_t gmx_unused* gridj_flag,
-                           int gmx_unused            th)
+                           gmx_bitmask_t gmx_unused*          gridj_flag,
+                           int gmx_unused                     th)
 {
     GMX_ASSERT(false, "This function should never be called");
 }

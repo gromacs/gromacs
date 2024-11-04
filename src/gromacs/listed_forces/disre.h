@@ -122,10 +122,10 @@ real ta_disres(int                       nfa,
                real                      lambda,
                real*                     dvdlambda,
                gmx::ArrayRef<const real> charge,
-               t_fcdata gmx_unused* fcd,
-               t_disresdata*        disresdata,
-               t_oriresdata gmx_unused* oriresdata,
-               int*                     global_atom_index);
+               t_fcdata gmx_unused*      fcd,
+               t_disresdata*             disresdata,
+               t_oriresdata gmx_unused*  oriresdata,
+               int*                      global_atom_index);
 
 //! Copies the new time averages that have been calculated in calc_disres_R_6.
 void update_disres_history(const t_disresdata& disresdata, history_t* hist);

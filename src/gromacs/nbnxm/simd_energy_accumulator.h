@@ -138,8 +138,8 @@ public:
 #if GMX_SIMD
     //! Does nothing
     template<int nRCoulomb, int nRVdw, KernelLayout kernelLayout, int iClusterSize, std::size_t cSize, std::size_t vdwSize>
-    inline void addEnergies(const int gmx_unused              jCluster,
-                            const std::array<SimdReal, cSize> gmx_unused& coulombEnergy,
+    inline void addEnergies(const int gmx_unused                            jCluster,
+                            const std::array<SimdReal, cSize> gmx_unused&   coulombEnergy,
                             const std::array<SimdReal, vdwSize> gmx_unused& vdwEnergy)
     {
     }
@@ -285,9 +285,9 @@ public:
         energyGroupsICluster_ = energyGroups_[iCluster];
         for (int iAtom = 0; iAtom < iClusterSize; iAtom++)
         {
-            const int iAtomIndex        = (energyGroupsICluster_ >> (iAtom * iShift_)) & iMask_;
+            const int iAtomIndex = (energyGroupsICluster_ >> (iAtom * iShift_)) & iMask_;
             coulombBinIAtomPtrs_[iAtom] = coulombEnergyGroupPairBins_.data() + iAtomIndex * iStride_;
-            vdwBinIAtomPtrs_[iAtom]     = vdwEnergyGroupPairBins_.data() + iAtomIndex * iStride_;
+            vdwBinIAtomPtrs_[iAtom] = vdwEnergyGroupPairBins_.data() + iAtomIndex * iStride_;
         }
     }
 

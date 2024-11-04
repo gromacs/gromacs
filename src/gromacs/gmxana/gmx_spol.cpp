@@ -383,7 +383,7 @@ int gmx_spol(int argc, char* argv[])
         fprintf(stderr, "Average radial component of the polarization: %f (D)\n", sdinp);
     }
 
-    fp   = xvgropen(opt2fn("-o", NFILE, fnm), "Cumulative solvent distribution", "r (nm)", "molecules", oenv);
+    fp = xvgropen(opt2fn("-o", NFILE, fnm), "Cumulative solvent distribution", "r (nm)", "molecules", oenv);
     nmol = 0;
     for (i = 0; i <= nbin; i++)
     {

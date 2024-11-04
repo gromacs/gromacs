@@ -164,7 +164,10 @@ void initTestOptions(IOptionsContainer* options);
     class name : public ::gmx::test::TestOptionsProvider /*NOLINT(misc-macro-parentheses,bugprone-macro-parentheses)*/ \
     {                                                                                                                  \
     public:                                                                                                            \
-        name() { ::gmx::test::registerTestOptions(#name, this); }                                                      \
+        name()                                                                                                         \
+        {                                                                                                              \
+            ::gmx::test::registerTestOptions(#name, this);                                                             \
+        }                                                                                                              \
         void initOptions(::gmx::IOptionsContainer*(options)) override;                                                 \
     };                                                                                                                 \
                                                                                                                        \

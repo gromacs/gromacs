@@ -173,7 +173,7 @@ TYPED_TEST(ArrayRefTest, ConstructFromArrayRefWorks)
 
     std::iota(a.begin(), a.end(), 0);
     ArrayRef<std::remove_const_t<typename TestFixture::ValueType>> ref(a.data(), a.data() + a.size());
-    typename TestFixture::ArrayRefType                             arrayRef(ref);
+    typename TestFixture::ArrayRefType arrayRef(ref);
     this->runReadOnlyTests(a.data(), 3, arrayRef);
 }
 

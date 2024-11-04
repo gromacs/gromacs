@@ -160,7 +160,12 @@ public:
                  const MDLogger&            logger,
                  gmx_output_env_t*          outputEnv,
                  ObservablesReducerBuilder* observablesReducerBuilder) :
-        fplog_{ fplog }, commRec_{ commRec }, multisimCommRec_{ multisimCommRec }, logger_{ logger }, outputEnv_{ outputEnv }, observablesReducerBuilder_{ observablesReducerBuilder }
+        fplog_{ fplog },
+        commRec_{ commRec },
+        multisimCommRec_{ multisimCommRec },
+        logger_{ logger },
+        outputEnv_{ outputEnv },
+        observablesReducerBuilder_{ observablesReducerBuilder }
     {
     }
 

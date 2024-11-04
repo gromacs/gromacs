@@ -123,15 +123,15 @@ int gmx_saltbr(int argc, char* argv[])
     static gmx_bool bSep     = FALSE;
     static real     truncate = 1000.0;
     t_pargs         pa[]     = { { "-t",
-                       FALSE,
-                       etREAL,
-                       { &truncate },
-                       "Groups that are never closer than this distance are not plotted" },
-                     { "-sep",
-                       FALSE,
-                       etBOOL,
-                       { &bSep },
-                       "Use separate files for each interaction (may be MANY)" } };
+                                   FALSE,
+                                   etREAL,
+                                   { &truncate },
+                                   "Groups that are never closer than this distance are not plotted" },
+                                 { "-sep",
+                                   FALSE,
+                                   etBOOL,
+                                   { &bSep },
+                                   "Use separate files for each interaction (may be MANY)" } };
     t_filenm        fnm[]    = {
         { efTRX, "-f", nullptr, ffREAD },
         { efTPR, nullptr, nullptr, ffREAD },

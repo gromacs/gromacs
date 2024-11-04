@@ -1659,7 +1659,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
 
                             if (pme->nodeid == 0)
                             {
-                                real      ntot = pme->nkx * pme->nky * pme->nkz;
+                                real ntot = pme->nkx * pme->nky * pme->nkz;
                                 const int npme = static_cast<int>(ntot * std::log(ntot) / std::log(2.0));
                                 inc_nrnb(nrnb, eNR_FFT, 2 * npme);
                             }
@@ -1710,8 +1710,8 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
 
                 bFirst = false;
             } /* for (grid_index = 8; grid_index >= 2; --grid_index) */
-        }     /* for (fep_state = 0; fep_state < fep_states_lj; ++fep_state) */
-    }         /* if (pme->doLJ && pme->ljpme_combination_rule == LongRangeVdW::LB) */
+        } /* for (fep_state = 0; fep_state < fep_states_lj; ++fep_state) */
+    } /* if (pme->doLJ && pme->ljpme_combination_rule == LongRangeVdW::LB) */
 
     if (stepWork.computeForces && pme->nnodes > 1)
     {

@@ -401,9 +401,9 @@ void ThreadedForceBuffer<ForceBufferElementType>::reduceTemplated(ForceBufferTyp
 
 template<typename ForceBufferElementType>
 void ThreadedForceBuffer<ForceBufferElementType>::reduce(gmx::ForceWithShiftForces* forceWithShiftForces,
-                                                         real*                      ener,
-                                                         gmx_grppairener_t*         grpp,
-                                                         gmx::ArrayRef<real>        dvdl,
+                                                         real*                    ener,
+                                                         gmx_grppairener_t*       grpp,
+                                                         gmx::ArrayRef<real>      dvdl,
                                                          const gmx::StepWorkload& stepWork,
                                                          const int reductionBeginIndex)
 {

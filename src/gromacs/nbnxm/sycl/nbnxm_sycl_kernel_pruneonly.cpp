@@ -85,7 +85,8 @@ auto nbnxmKernelPruneOnly(sycl::handler& cgh,
 
     /* shmem buffer for i x+q pre-loading */
     sycl::local_accessor<Float4, 1> sm_xq(sycl::range<1>(c_superClusterSize * c_clSize), cgh);
-    auto                            sm_prunedPairCount = [&]() {
+    auto                            sm_prunedPairCount = [&]()
+    {
         if constexpr (haveFreshList && nbnxmSortListsOnGpu())
         {
             return sycl::local_accessor<int, 1>(sycl::range<1>(1), cgh);
@@ -304,10 +305,13 @@ void launchNbnxmKernelPruneOnly(const DeviceStream& deviceStream, const int numS
 
     sycl::queue q = deviceStream.stream();
 
-    gmx::syclSubmitWithoutEvent(q, [&](sycl::handler& cgh) {
-        auto kernel = nbnxmKernelPruneOnly<haveFreshList, layoutType>(cgh, std::forward<Args>(args)...);
-        cgh.parallel_for<kernelNameType>(range, kernel);
-    });
+    gmx::syclSubmitWithoutEvent(q,
+                                [&](sycl::handler& cgh)
+                                {
+                                    auto kernel = nbnxmKernelPruneOnly<haveFreshList, layoutType>(
+                                            cgh, std::forward<Args>(args)...);
+                                    cgh.parallel_for<kernelNameType>(range, kernel);
+                                });
 }
 
 //! \brief Select templated kernel and launch it.
@@ -315,9 +319,8 @@ template<PairlistType layoutType, class... Args>
 void chooseAndLaunchNbnxmKernelPruneOnly(bool haveFreshList, Args&&... args)
 {
     gmx::dispatchTemplatedFunction(
-            [&](auto haveFreshList_) {
-                launchNbnxmKernelPruneOnly<haveFreshList_, layoutType>(std::forward<Args>(args)...);
-            },
+            [&](auto haveFreshList_)
+            { launchNbnxmKernelPruneOnly<haveFreshList_, layoutType>(std::forward<Args>(args)...); },
             haveFreshList);
 }
 

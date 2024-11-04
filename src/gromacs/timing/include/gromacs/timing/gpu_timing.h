@@ -84,11 +84,11 @@ struct gmx_wallclock_gpu_nbnxn_t
                                                    force+energy, force+pruning, and force+energy+pruning */
     gmx_kernel_timing_data_t pruneTime; /**< table containing the timings of the 1st pass prune-only kernels */
     gmx_kernel_timing_data_t dynamicPruneTime; /**< table containing the timings of dynamic prune-only kernels */
-    double                   nb_h2d_t; /**< host to device transfer time in nb calculation  */
-    double                   nb_d2h_t; /**< device to host transfer time in nb calculation */
-    int                      nb_c;     /**< total call count of the nonbonded gpu operations */
-    double                   pl_h2d_t; /**< pair search step host to device transfer time */
-    int                      pl_h2d_c; /**< pair search step  host to device transfer call count */
+    double nb_h2d_t; /**< host to device transfer time in nb calculation  */
+    double nb_d2h_t; /**< device to host transfer time in nb calculation */
+    int    nb_c;     /**< total call count of the nonbonded gpu operations */
+    double pl_h2d_t; /**< pair search step host to device transfer time */
+    int    pl_h2d_c; /**< pair search step  host to device transfer call count */
 };
 
 #endif

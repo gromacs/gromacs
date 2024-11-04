@@ -84,8 +84,8 @@ namespace
  * results identical to an earlier version. The results of this earlier version
  * have been verified manually to ensure physical correctness.
  */
-using MaxNumWarnings                = int;
-using ListOfInteractionsToTest      = std::vector<int>;
+using MaxNumWarnings           = int;
+using ListOfInteractionsToTest = std::vector<int>;
 using FreeEnergyReferenceTestParams = std::tuple<std::string, MaxNumWarnings, ListOfInteractionsToTest>;
 class FreeEnergyReferenceTest :
     public MdrunTestFixture,
@@ -131,8 +131,8 @@ TEST_P(FreeEnergyReferenceTest, WithinTolerances)
     const auto defaultEnergyTolerance = relativeToleranceAsFloatingPoint(100.0, GMX_DOUBLE ? 5e-6 : 5e-5);
     // Some simulations are significantly longer, so they need a larger tolerance
     const auto longEnergyTolerance = relativeToleranceAsFloatingPoint(100.0, GMX_DOUBLE ? 3e-5 : 2e-4);
-    const bool isLongSimulation    = (simulationName == "expanded");
-    const auto energyTolerance = isLongSimulation ? longEnergyTolerance : defaultEnergyTolerance;
+    const bool isLongSimulation = (simulationName == "expanded");
+    const auto energyTolerance  = isLongSimulation ? longEnergyTolerance : defaultEnergyTolerance;
 
     EnergyTermsToCompare energyTermsToCompare{ { interaction_function[F_EPOT].longname, energyTolerance } };
     for (const auto& interaction : interactionsList)

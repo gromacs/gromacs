@@ -90,7 +90,7 @@ enum class PmeSplineDataType
 {
     Values,      // theta
     Derivatives, // dtheta
-};               // TODO move this into new and shiny pme.h (pme-types.h?)
+}; // TODO move this into new and shiny pme.h (pme-types.h?)
 
 //! PME grid dimension ordering (from major to minor)
 enum class GridOrdering

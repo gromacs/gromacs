@@ -664,20 +664,20 @@ real calc_orires_dev(const gmx_multisim_t* ms,
     /* Approx. 120*nfa/3 flops */
 }
 
-real orires(int             nfa,
-            const t_iatom   forceatoms[],
-            const t_iparams ip[],
-            const rvec      x[],
-            rvec4           f[],
-            rvec            fshift[],
-            const t_pbc*    pbc,
-            real gmx_unused lambda,
+real orires(int              nfa,
+            const t_iatom    forceatoms[],
+            const t_iparams  ip[],
+            const rvec       x[],
+            rvec4            f[],
+            rvec             fshift[],
+            const t_pbc*     pbc,
+            real gmx_unused  lambda,
             real gmx_unused* dvdlambda,
             gmx::ArrayRef<const real> /*charge*/,
-            t_fcdata gmx_unused* fcd,
+            t_fcdata gmx_unused*     fcd,
             t_disresdata gmx_unused* disresdata,
             t_oriresdata*            oriresdata,
-            int gmx_unused* global_atom_index)
+            int gmx_unused*          global_atom_index)
 {
     int      ex, power, ki = gmx::c_centralShiftIndex;
     real     r2, invr, invr2, fc, smooth_fc, dev, devins, pfac;

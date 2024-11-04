@@ -316,9 +316,9 @@ void checkForUnknownOptionsInKeyValueTree(const KeyValueTreeObject& tree, const 
     helper.processOptionSection(options.rootSection());
     if (helper.hasUnknownPaths())
     {
-        std::string paths(formatAndJoin(helper.unknownPaths(), "\n  ", [](const KeyValueTreePath& path) {
-            return path.toString();
-        }));
+        std::string paths(formatAndJoin(helper.unknownPaths(),
+                                        "\n  ",
+                                        [](const KeyValueTreePath& path) { return path.toString(); }));
         std::string message("Unknown input values:\n  " + paths);
         GMX_THROW(InvalidInputError(message));
     }

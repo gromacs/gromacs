@@ -294,16 +294,16 @@ int gmx_h2order(int argc, char* argv[])
     static int         nslices                = 0; /* nr of slices defined       */
     // The struct that will hold the parsed user input
     t_pargs     pa[]   = { { "-d",
-                       FALSE,
-                       etENUM,
-                       { axisOption },
-                       "Take the normal on the membrane in direction X, Y or Z." },
-                     { "-sl",
-                       FALSE,
-                       etINT,
-                       { &nslices },
-                       "Calculate order parameter as function of boxlength, dividing the box"
-                       " in this number of slices." } };
+                             FALSE,
+                             etENUM,
+                             { axisOption },
+                             "Take the normal on the membrane in direction X, Y or Z." },
+                           { "-sl",
+                             FALSE,
+                             etINT,
+                             { &nslices },
+                             "Calculate order parameter as function of boxlength, dividing the box"
+                                   " in this number of slices." } };
     const char* bugs[] = {
         "The program assigns whole water molecules to a slice, based on the first "
         "atom of three in the index file group. It assumes an order O,H,H. "

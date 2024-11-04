@@ -171,7 +171,7 @@ struct pme_load_balancing_t
     gmx_bool bTriggerOnDLB; /**< trigger balancing only on DD DLB */
     gmx_bool bBalance;      /**< are we in the balancing phase, i.e. trying different setups? */
     int      nstage;        /**< the current maximum number of stages */
-    bool     startupTimeDelayElapsed; /**< Has the c_startupTimeDelay elapsed indicating that the balancing can start. */
+    bool startupTimeDelayElapsed; /**< Has the c_startupTimeDelay elapsed indicating that the balancing can start. */
 
     real                     cut_spacing;        /**< the minimum cutoff / PME grid spacing ratio */
     real                     rcut_vdw;           /**< Vdw cutoff (does not change) */

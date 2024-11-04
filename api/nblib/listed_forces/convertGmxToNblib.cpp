@@ -298,7 +298,8 @@ ListedInteractionData convertToNblibInteractions(const InteractionDefinitions& i
 {
     ListedInteractionData interactions;
 
-    auto transferParamsAndIndices = [&interactionDefinitions](auto& interactionElement) {
+    auto transferParamsAndIndices = [&interactionDefinitions](auto& interactionElement)
+    {
         using InteractionType = typename std::decay_t<decltype(interactionElement)>::type;
 
         if constexpr (Contains<InteractionType, GmxToNblibMapping>{})

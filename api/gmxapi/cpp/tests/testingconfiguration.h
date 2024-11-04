@@ -130,49 +130,49 @@ public:
 
         if (!runner_.fullPrecisionTrajectoryFileName_.empty())
         {
-            EXPECT_TRUE(std::none_of(mdArgs.cbegin(), mdArgs.cend(), [](const std::string& arg) {
-                return arg == "-o";
-            }));
+            EXPECT_TRUE(std::none_of(mdArgs.cbegin(),
+                                     mdArgs.cend(),
+                                     [](const std::string& arg) { return arg == "-o"; }));
             mdArgs.emplace_back("-o");
             mdArgs.emplace_back(runner_.fullPrecisionTrajectoryFileName_);
         }
         if (!runner_.reducedPrecisionTrajectoryFileName_.empty())
         {
-            EXPECT_TRUE(std::none_of(mdArgs.cbegin(), mdArgs.cend(), [](const std::string& arg) {
-                return arg == "-x";
-            }));
+            EXPECT_TRUE(std::none_of(mdArgs.cbegin(),
+                                     mdArgs.cend(),
+                                     [](const std::string& arg) { return arg == "-x"; }));
             mdArgs.emplace_back("-x");
             mdArgs.emplace_back(runner_.reducedPrecisionTrajectoryFileName_);
         }
         if (!runner_.groOutputFileName_.empty())
         {
-            EXPECT_TRUE(std::none_of(mdArgs.cbegin(), mdArgs.cend(), [](const std::string& arg) {
-                return arg == "-c";
-            }));
+            EXPECT_TRUE(std::none_of(mdArgs.cbegin(),
+                                     mdArgs.cend(),
+                                     [](const std::string& arg) { return arg == "-c"; }));
             mdArgs.emplace_back("-c");
             mdArgs.emplace_back(runner_.groOutputFileName_);
         }
         if (!runner_.logFileName_.empty())
         {
-            EXPECT_TRUE(std::none_of(mdArgs.cbegin(), mdArgs.cend(), [](const std::string& arg) {
-                return arg == "-g";
-            }));
+            EXPECT_TRUE(std::none_of(mdArgs.cbegin(),
+                                     mdArgs.cend(),
+                                     [](const std::string& arg) { return arg == "-g"; }));
             mdArgs.emplace_back("-g");
             mdArgs.emplace_back(runner_.logFileName_);
         }
         if (!runner_.edrFileName_.empty())
         {
-            EXPECT_TRUE(std::none_of(mdArgs.cbegin(), mdArgs.cend(), [](const std::string& arg) {
-                return arg == "-e";
-            }));
+            EXPECT_TRUE(std::none_of(mdArgs.cbegin(),
+                                     mdArgs.cend(),
+                                     [](const std::string& arg) { return arg == "-e"; }));
             mdArgs.emplace_back("-e");
             mdArgs.emplace_back(runner_.edrFileName_);
         }
         if (!runner_.cptOutputFileName_.empty())
         {
-            EXPECT_TRUE(std::none_of(mdArgs.cbegin(), mdArgs.cend(), [](const std::string& arg) {
-                return arg == "-cpo";
-            }));
+            EXPECT_TRUE(std::none_of(mdArgs.cbegin(),
+                                     mdArgs.cend(),
+                                     [](const std::string& arg) { return arg == "-cpo"; }));
             mdArgs.emplace_back("-cpo");
             mdArgs.emplace_back(runner_.cptOutputFileName_);
         }

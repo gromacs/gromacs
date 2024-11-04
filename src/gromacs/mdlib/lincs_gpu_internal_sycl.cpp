@@ -130,11 +130,12 @@ auto lincsKernel(sycl::handler& cgh,
      * sm_threadVirial: six floats per thread.
      * So, without virials we need max(1*3, 2) floats, and with virials we need max(1*3, 2, 6) floats.
      */
-    static constexpr int           smBufferElementsPerThread = computeVirial ? 6 : 3;
+    static constexpr int smBufferElementsPerThread = computeVirial ? 6 : 3;
     sycl::local_accessor<float, 1> sm_buffer{ sycl::range<1>(c_threadsPerBlock * smBufferElementsPerThread),
                                               cgh };
 
-    return [=](sycl::nd_item<1> itemIdx) {
+    return [=](sycl::nd_item<1> itemIdx)
+    {
         const int threadIndex   = itemIdx.get_global_linear_id();
         const int threadInBlock = itemIdx.get_local_linear_id(); // Work-item index in work-group
 
@@ -455,11 +456,14 @@ static void launchLincsKernel(const DeviceStream& deviceStream, const int numCon
 
     const sycl::nd_range<1> rangeAllLincs(numConstraintsThreads, c_threadsPerBlock);
 
-    gmx::syclSubmitWithoutEvent(deviceStream.stream(), [&](sycl::handler& cgh) {
-        auto kernel = lincsKernel<updateVelocities, computeVirial, haveCoupledConstraints>(
-                cgh, numConstraintsThreads, std::forward<Args>(args)...);
-        cgh.parallel_for<kernelNameType>(rangeAllLincs, kernel);
-    });
+    gmx::syclSubmitWithoutEvent(
+            deviceStream.stream(),
+            [&](sycl::handler& cgh)
+            {
+                auto kernel = lincsKernel<updateVelocities, computeVirial, haveCoupledConstraints>(
+                        cgh, numConstraintsThreads, std::forward<Args>(args)...);
+                cgh.parallel_for<kernelNameType>(rangeAllLincs, kernel);
+            });
 }
 
 /*! \brief Select templated kernel and launch it. */
@@ -468,7 +472,8 @@ static inline void
 launchLincsKernel(bool updateVelocities, bool computeVirial, bool haveCoupledConstraints, Args&&... args)
 {
     dispatchTemplatedFunction(
-            [&](auto updateVelocities_, auto computeVirial_, auto haveCoupledConstraints_) {
+            [&](auto updateVelocities_, auto computeVirial_, auto haveCoupledConstraints_)
+            {
                 return launchLincsKernel<updateVelocities_, computeVirial_, haveCoupledConstraints_>(
                         std::forward<Args>(args)...);
             },

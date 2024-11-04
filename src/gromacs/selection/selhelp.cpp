@@ -703,7 +703,7 @@ void KeywordsHelpTopic::printKeywordList(const HelpWriterContext& context, e_sel
         const bool                 bIsModifier = (method.flags & SMETH_MODIFIER) != 0;
         if (method.type == type && bModifiers == bIsModifier)
         {
-            const bool bHasHelp       = (method.help.nlhelp > 0 && method.help.help != nullptr);
+            const bool bHasHelp = (method.help.nlhelp > 0 && method.help.help != nullptr);
             const bool bPrintHelpMark = bHasHelp && context.outputFormat() == eHelpOutputFormat_Console;
             file.writeString(formatString("   %c ", bPrintHelpMark ? '+' : ' '));
             if (method.help.syntax != nullptr)

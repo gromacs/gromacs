@@ -66,7 +66,8 @@ static auto packSendBufKernel(Float3* __restrict__ gm_dataPacked,
                               int    mapSize,
                               Float3 coordinateShift)
 {
-    return [=](sycl::id<1> itemIdx) {
+    return [=](sycl::id<1> itemIdx)
+    {
         const int threadIndex = itemIdx;
         if (threadIndex < mapSize)
         {
@@ -96,7 +97,8 @@ static auto unpackRecvBufKernel(Float3* __restrict__ gm_data,
                                 const int* __restrict__ gm_map,
                                 int mapSize)
 {
-    return [=](sycl::id<1> itemIdx) {
+    return [=](sycl::id<1> itemIdx)
+    {
         const int threadIndex = itemIdx;
         if (threadIndex < mapSize)
         {
@@ -120,10 +122,12 @@ static void launchPackSendBufKernel(const DeviceStream& deviceStream, int xSendS
 
     const sycl::range<1> range(xSendSize);
 
-    gmx::syclSubmitWithoutEvent(deviceStream.stream(), [&](sycl::handler& cgh) {
-        auto kernel = packSendBufKernel<usePbc>(std::forward<Args>(args)...);
-        cgh.parallel_for<kernelNameType>(range, kernel);
-    });
+    gmx::syclSubmitWithoutEvent(deviceStream.stream(),
+                                [&](sycl::handler& cgh)
+                                {
+                                    auto kernel = packSendBufKernel<usePbc>(std::forward<Args>(args)...);
+                                    cgh.parallel_for<kernelNameType>(range, kernel);
+                                });
 }
 
 template<bool accumulateForces, class... Args>
@@ -133,10 +137,13 @@ static void launchUnpackRecvBufKernel(const DeviceStream& deviceStream, int fRec
 
     const sycl::range<1> range(fRecvSize);
 
-    gmx::syclSubmitWithoutEvent(deviceStream.stream(), [&](sycl::handler& cgh) {
-        auto kernel = unpackRecvBufKernel<accumulateForces>(std::forward<Args>(args)...);
-        cgh.parallel_for<kernelNameType>(range, kernel);
-    });
+    gmx::syclSubmitWithoutEvent(
+            deviceStream.stream(),
+            [&](sycl::handler& cgh)
+            {
+                auto kernel = unpackRecvBufKernel<accumulateForces>(std::forward<Args>(args)...);
+                cgh.parallel_for<kernelNameType>(range, kernel);
+            });
 }
 
 void GpuHaloExchange::Impl::launchPackXKernel(const matrix box)

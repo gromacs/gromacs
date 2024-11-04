@@ -554,17 +554,17 @@ void mdoutf_write_checkpoint(gmx_mdoutf_t                    of,
                      of->mainRanksComm);
 }
 
-void mdoutf_write_to_trajectory_files(FILE*                           fplog,
-                                      const t_commrec*                cr,
-                                      gmx_mdoutf_t                    of,
-                                      int                             mdof_flags,
-                                      int                             natoms,
-                                      int64_t                         step,
-                                      double                          t,
-                                      t_state*                        state_local,
-                                      t_state*                        state_global,
-                                      ObservablesHistory*             observablesHistory,
-                                      gmx::ArrayRef<const gmx::RVec>  f_local,
+void mdoutf_write_to_trajectory_files(FILE*                          fplog,
+                                      const t_commrec*               cr,
+                                      gmx_mdoutf_t                   of,
+                                      int                            mdof_flags,
+                                      int                            natoms,
+                                      int64_t                        step,
+                                      double                         t,
+                                      t_state*                       state_local,
+                                      t_state*                       state_global,
+                                      ObservablesHistory*            observablesHistory,
+                                      gmx::ArrayRef<const gmx::RVec> f_local,
                                       gmx::WriteCheckpointDataHolder* modularSimulatorCheckpointData)
 {
     const rvec* f_global;
@@ -601,8 +601,8 @@ void mdoutf_write_to_trajectory_files(FILE*                           fplog,
         f_global = of->f_global;
         if (mdof_flags & MDOF_F)
         {
-            auto globalFRef = MAIN(cr) ? gmx::arrayRefFromArray(
-                                      reinterpret_cast<gmx::RVec*>(of->f_global), of->natoms_global)
+            auto globalFRef = MAIN(cr) ? gmx::arrayRefFromArray(reinterpret_cast<gmx::RVec*>(of->f_global),
+                                                                of->natoms_global)
                                        : gmx::ArrayRef<gmx::RVec>();
             dd_collect_vec(cr->dd,
                            state_local->ddp_count,

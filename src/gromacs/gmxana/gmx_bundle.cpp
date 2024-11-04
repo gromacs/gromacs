@@ -229,11 +229,11 @@ int gmx_bundle(int argc, char* argv[])
     static int      n    = 0;
     static gmx_bool bZ   = FALSE;
     t_pargs         pa[] = { { "-na", FALSE, etINT, { &n }, "Number of axes" },
-                     { "-z",
-                       FALSE,
-                       etBOOL,
-                       { &bZ },
-                       "Use the [IT]z[it]-axis as reference instead of the average axis" } };
+                             { "-z",
+                               FALSE,
+                               etBOOL,
+                               { &bZ },
+                               "Use the [IT]z[it]-axis as reference instead of the average axis" } };
     FILE *          flen, *fdist, *fz, *ftilt, *ftiltr, *ftiltl;
     FILE *          fkink = nullptr, *fkinkr = nullptr, *fkinkl = nullptr;
     t_trxstatus*    status;

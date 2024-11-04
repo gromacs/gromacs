@@ -632,7 +632,8 @@ __launch_bounds__(c_clSizeSq<pairlistType>* nthreadZ, minBlocksPerMp) __global__
         // the data type based on what we expect on the specific offset
         float4* sm_xqBufferPtr = reinterpret_cast<float4*>(sm_nextSlotPtr);
         sm_nextSlotPtr += incrementSharedMemorySlotPtr<pairlistType, float4>();
-        auto sm_atomTypeI = [&]() {
+        auto sm_atomTypeI = [&]()
+        {
             int* temp = nullptr;
             if constexpr (!props.vdwComb)
             {
@@ -642,7 +643,8 @@ __launch_bounds__(c_clSizeSq<pairlistType>* nthreadZ, minBlocksPerMp) __global__
             return temp;
         }();
 
-        auto sm_ljCombI = [&]() {
+        auto sm_ljCombI = [&]()
+        {
             float2* temp = nullptr;
             if constexpr (props.vdwComb)
             {
@@ -774,7 +776,7 @@ __launch_bounds__(c_clSizeSq<pairlistType>* nthreadZ, minBlocksPerMp) __global__
                     energyElec *= -ewaldBeta * c_oneOverSqrtPi; /* last factor 1/sqrt(pi) */
                 }
             } // (nbSci.shift == c_centralShiftIndex && a_plistCJPacked[cijPackedBegin].cj[0] == sci * c_nbnxnGpuNumClusterPerSupercluster)
-        }     // (doCalcEnergies && doExclusionForces)
+        } // (doCalcEnergies && doExclusionForces)
 
         // Only needed if (doExclusionForces)
         const bool nonSelfInteraction = !(nbSci.shift == c_centralShiftIndex & tidxj <= tidxi);
@@ -894,7 +896,7 @@ __launch_bounds__(c_clSizeSq<pairlistType>* nthreadZ, minBlocksPerMp) __global__
                                         c6c12 = convertSigmaEpsilonToC6C12(sigma, epsilon);
                                     }
                                 } // props.vdwCombGeom
-                            }     // !props.vdwComb
+                            } // !props.vdwComb
 
                             // c6 and c12 are unused and garbage iff props.vdwCombLB && !doCalcEnergies
                             const float c6  = c6c12.x;
@@ -1028,7 +1030,7 @@ __launch_bounds__(c_clSizeSq<pairlistType>* nthreadZ, minBlocksPerMp) __global__
                             /* accumulate i forces in registers */
                             fCiBuffer[i] -= forceIJ;
                         } // (r2 < rCoulombSq) && notExcluded
-                    }     // (imask & maskJI)
+                    } // (imask & maskJI)
                     /* shift the mask bit by 1 */
                     maskJI += maskJI;
                 } // for (int i = 0; i < c_clusterPerSuperCluster; i++)
@@ -1127,7 +1129,8 @@ void chooseAndLaunchNbnxmKernel(ElecType                 elecType,
                                 Args*... args)
 {
     dispatchTemplatedFunction(
-            [&](auto elecType_, auto vdwType_) {
+            [&](auto elecType_, auto vdwType_)
+            {
                 return launchNbnxmKernel<pairlistType, hasLargeRegisterPool, doPruneNBL, doCalcEnergies, elecType_, vdwType_>(
                         deviceStream, numSci, deviceInfo, args...);
             },

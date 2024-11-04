@@ -113,10 +113,10 @@ public:
          * such that we can measure the effects of different parameters.
          */
         constexpr AwhCoordinateProviderType coordinateProvider = AwhCoordinateProviderType::FreeEnergyLambda;
-        constexpr int                       coordIndex = 0;
-        constexpr double                    origin     = 0;
-        constexpr double                    end        = c_numLambdaStates - 1;
-        constexpr double                    period     = 0;
+        constexpr int    coordIndex = 0;
+        constexpr double origin     = 0;
+        constexpr double end        = c_numLambdaStates - 1;
+        constexpr double period     = 0;
         // Correction for removal of GaussianGeometryFactor/2 in histogram size
         constexpr double diffusion = 1e-4 / (0.12927243028700 * 2);
         const auto       awhDimBuffer =
@@ -237,12 +237,12 @@ INSTANTIATE_TEST_SUITE_P(WithParameters,
 TEST(BiasFepLambdaStateTest, DetectsCovering)
 {
     constexpr AwhCoordinateProviderType coordinateProvider = AwhCoordinateProviderType::FreeEnergyLambda;
-    constexpr int                       coordIndex         = 0;
-    constexpr double                    origin             = 0;
-    constexpr double                    end                = c_numLambdaStates - 1;
-    constexpr double                    period             = 0;
-    constexpr double                    diffusion          = 1e-4 / (0.12927243028700 * 2);
-    auto                                awhDimBuffer =
+    constexpr int    coordIndex = 0;
+    constexpr double origin     = 0;
+    constexpr double end        = c_numLambdaStates - 1;
+    constexpr double period     = 0;
+    constexpr double diffusion  = 1e-4 / (0.12927243028700 * 2);
+    auto             awhDimBuffer =
             awhDimParamSerialized(coordinateProvider, coordIndex, origin, end, period, diffusion);
     auto                    awhDimArrayRef = gmx::arrayRefFromArray(&awhDimBuffer, 1);
     const AwhTestParameters params(getAwhTestParameters(AwhHistogramGrowthType::ExponentialLinear,
@@ -317,12 +317,12 @@ TEST(BiasFepLambdaStateTest, DetectsCovering)
 TEST(BiasFepLambdaStateTest, DetectsLargeNegativeForeignEnergy)
 {
     constexpr AwhCoordinateProviderType coordinateProvider = AwhCoordinateProviderType::FreeEnergyLambda;
-    constexpr int                       coordIndex         = 0;
-    constexpr double                    origin             = 0;
-    constexpr double                    end                = c_numLambdaStates - 1;
-    constexpr double                    period             = 0;
-    constexpr double                    diffusion          = 1e-4 / (0.12927243028700 * 2);
-    auto                                awhDimBuffer =
+    constexpr int    coordIndex = 0;
+    constexpr double origin     = 0;
+    constexpr double end        = c_numLambdaStates - 1;
+    constexpr double period     = 0;
+    constexpr double diffusion  = 1e-4 / (0.12927243028700 * 2);
+    auto             awhDimBuffer =
             awhDimParamSerialized(coordinateProvider, coordIndex, origin, end, period, diffusion);
     auto                    awhDimArrayRef = gmx::arrayRefFromArray(&awhDimBuffer, 1);
     const AwhTestParameters params(getAwhTestParameters(AwhHistogramGrowthType::ExponentialLinear,

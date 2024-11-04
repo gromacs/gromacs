@@ -180,9 +180,9 @@ static void print_ter_db(const char*                                ff,
     {
         fprintf(out, "[ %s ]\n", modification.name.c_str());
 
-        if (std::any_of(modification.hack.begin(), modification.hack.end(), [](const auto& mod) {
-                return mod.type() == MoleculePatchType::Replace;
-            }))
+        if (std::any_of(modification.hack.begin(),
+                        modification.hack.end(),
+                        [](const auto& mod) { return mod.type() == MoleculePatchType::Replace; }))
         {
             fprintf(out, "[ %s ]\n", enumValueToString(ReplaceType::Repl));
             for (const auto& hack : modification.hack)
@@ -194,9 +194,9 @@ static void print_ter_db(const char*                                ff,
                 }
             }
         }
-        if (std::any_of(modification.hack.begin(), modification.hack.end(), [](const auto& mod) {
-                return mod.type() == MoleculePatchType::Add;
-            }))
+        if (std::any_of(modification.hack.begin(),
+                        modification.hack.end(),
+                        [](const auto& mod) { return mod.type() == MoleculePatchType::Add; }))
         {
             fprintf(out, "[ %s ]\n", enumValueToString(ReplaceType::Add));
             for (const auto& hack : modification.hack)
@@ -208,9 +208,9 @@ static void print_ter_db(const char*                                ff,
                 }
             }
         }
-        if (std::any_of(modification.hack.begin(), modification.hack.end(), [](const auto& mod) {
-                return mod.type() == MoleculePatchType::Delete;
-            }))
+        if (std::any_of(modification.hack.begin(),
+                        modification.hack.end(),
+                        [](const auto& mod) { return mod.type() == MoleculePatchType::Delete; }))
         {
             fprintf(out, "[ %s ]\n", enumValueToString(ReplaceType::Del));
             for (const auto& hack : modification.hack)
@@ -498,9 +498,10 @@ std::vector<MoleculePatchDatabase*> filter_ter(gmx::ArrayRef<MoleculePatchDataba
                 /* Check that we haven't already added a residue-specific version
                  * of this terminus.
                  */
-                auto found = std::find_if(list.begin(), list.end(), [&s](const MoleculePatchDatabase* b) {
-                    return strstr(b->name.c_str(), s) != nullptr;
-                });
+                auto found = std::find_if(list.begin(),
+                                          list.end(),
+                                          [&s](const MoleculePatchDatabase* b)
+                                          { return strstr(b->name.c_str(), s) != nullptr; });
                 if (found == list.end())
                 {
                     list.push_back(&*it);

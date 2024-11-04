@@ -166,7 +166,7 @@ TEST_F(ListedExampleData, ComputeHarmonicBondEnergies)
     gmx::ArrayRef<const InteractionIndex<HarmonicBondType>> indices =
             pickType<HarmonicBondType>(interactions).indices;
     gmx::ArrayRef<const HarmonicBondType> bonds = pickType<HarmonicBondType>(interactions).parameters;
-    real                                  energy = computeForces(indices, bonds, x, &forces, *pbc);
+    real energy = computeForces(indices, bonds, x, &forces, *pbc);
 
     RefDataChecker vector3DTest(1e-4);
     vector3DTest.testReal(energy, "Bond energy");

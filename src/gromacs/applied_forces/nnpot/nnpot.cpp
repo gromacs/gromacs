@@ -88,25 +88,21 @@ public:
             return;
         }
 
-        const auto setInputGroupIndicesFunction = [this](const IndexGroupsAndNames& indexGroupsAndNames) {
-            nnpotOptions_.setInputGroupIndices(indexGroupsAndNames);
-        };
+        const auto setInputGroupIndicesFunction = [this](const IndexGroupsAndNames& indexGroupsAndNames)
+        { nnpotOptions_.setInputGroupIndices(indexGroupsAndNames); };
         notifier->preProcessingNotifier_.subscribe(setInputGroupIndicesFunction);
 
-        const auto modifyTopologyFunction = [this](gmx_mtop_t* top) {
-            nnpotOptions_.modifyTopology(top);
-        };
+        const auto modifyTopologyFunction = [this](gmx_mtop_t* top)
+        { nnpotOptions_.modifyTopology(top); };
         notifier->preProcessingNotifier_.subscribe(modifyTopologyFunction);
 
-        const auto writeParamsToKvtFunction = [this](KeyValueTreeObjectBuilder kvt) {
-            nnpotOptions_.writeParamsToKvt(kvt);
-        };
+        const auto writeParamsToKvtFunction = [this](KeyValueTreeObjectBuilder kvt)
+        { nnpotOptions_.writeParamsToKvt(kvt); };
         notifier->preProcessingNotifier_.subscribe(writeParamsToKvtFunction);
 
         // Set Logger during pre-processing
-        const auto setLoggerFunction = [this](const MDLogger& logger) {
-            nnpotOptions_.setLogger(logger);
-        };
+        const auto setLoggerFunction = [this](const MDLogger& logger)
+        { nnpotOptions_.setLogger(logger); };
         notifier->preProcessingNotifier_.subscribe(setLoggerFunction);
 
         // Set warning output during pre-processing
@@ -139,13 +135,13 @@ public:
             return;
         }
 
-        const auto setTopologyFunction = [this](const gmx_mtop_t& top) {
-            nnpotOptions_.setTopology(top);
-        };
+        const auto setTopologyFunction = [this](const gmx_mtop_t& top)
+        { nnpotOptions_.setTopology(top); };
         notifier->simulationSetupNotifier_.subscribe(setTopologyFunction);
 
         // constructing local atom sets during simulation setup
-        const auto setLocalAtomSetFunction = [this](LocalAtomSetManager* localAtomSetManager) {
+        const auto setLocalAtomSetFunction = [this](LocalAtomSetManager* localAtomSetManager)
+        {
             LocalAtomSet atomSet1 = localAtomSetManager->add(nnpotOptions_.parameters().inpIndices_);
             nnpotOptions_.setLocalInputAtomSet(atomSet1);
             LocalAtomSet atomSet2 = localAtomSetManager->add(nnpotOptions_.parameters().mmIndices_);
@@ -153,18 +149,16 @@ public:
         };
         notifier->simulationSetupNotifier_.subscribe(setLocalAtomSetFunction);
 
-        const auto readParamsFromKvtFunction = [this](const KeyValueTreeObject& kvt) {
-            nnpotOptions_.readParamsFromKvt(kvt);
-        };
+        const auto readParamsFromKvtFunction = [this](const KeyValueTreeObject& kvt)
+        { nnpotOptions_.readParamsFromKvt(kvt); };
         notifier->simulationSetupNotifier_.subscribe(readParamsFromKvtFunction);
 
         const auto setPBCTypeFunction = [this](const PbcType& pbc) { nnpotOptions_.setPbcType(pbc); };
         notifier->simulationSetupNotifier_.subscribe(setPBCTypeFunction);
 
         // Set Logger during simulation setup
-        const auto setLoggerFunction = [this](const MDLogger& logger) {
-            nnpotOptions_.setLogger(logger);
-        };
+        const auto setLoggerFunction = [this](const MDLogger& logger)
+        { nnpotOptions_.setLogger(logger); };
         notifier->simulationSetupNotifier_.subscribe(setLoggerFunction);
 
         // set communication record during simulation setup
@@ -172,9 +166,8 @@ public:
         notifier->simulationSetupNotifier_.subscribe(setCommRecFunction);
 
         // subscribe to DD notification to trigger atom number and index gathering
-        const auto notifyDDFunction = [this](const MDModulesAtomsRedistributedSignal& /*signal*/) {
-            nnpotForceProvider_->gatherAtomNumbersIndices();
-        };
+        const auto notifyDDFunction = [this](const MDModulesAtomsRedistributedSignal& /*signal*/)
+        { nnpotForceProvider_->gatherAtomNumbersIndices(); };
         notifier->simulationSetupNotifier_.subscribe(notifyDDFunction);
     }
 

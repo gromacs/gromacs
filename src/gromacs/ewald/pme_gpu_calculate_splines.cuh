@@ -151,9 +151,9 @@ template<typename T, int atomsPerBlock, int dataCountPerAtom>
 static __device__ __forceinline__ void pme_gpu_stage_atom_data(T* __restrict__ sm_destination,
                                                                const T* __restrict__ gm_source)
 {
-    const int blockIndex       = blockIdx.y * gridDim.x + blockIdx.x;
+    const int blockIndex = blockIdx.y * gridDim.x + blockIdx.x;
     const int threadLocalIndex = ((threadIdx.z * blockDim.y + threadIdx.y) * blockDim.x) + threadIdx.x;
-    const int localIndex       = threadLocalIndex;
+    const int localIndex      = threadLocalIndex;
     const int globalIndexBase = blockIndex * atomsPerBlock * dataCountPerAtom;
     const int globalIndex     = globalIndexBase + localIndex;
     if (localIndex < atomsPerBlock * dataCountPerAtom)
@@ -268,7 +268,7 @@ static __device__ __forceinline__ void calculate_splines(const PmeGpuCudaKernelP
                 case ZZ:
                     tableIndex = kernelParams.grid.tablesOffsets[ZZ];
                     n          = kernelParams.grid.realGridSizeFP[ZZ];
-                    t          = /*atomX.x * kernelParams.current.recipBox[dimIndex][XX] + atomX.y * kernelParams.current.recipBox[dimIndex][YY] + */ atomX
+                    t = /*atomX.x * kernelParams.current.recipBox[dimIndex][XX] + atomX.y * kernelParams.current.recipBox[dimIndex][YY] + */ atomX
                                 .z
                         * kernelParams.current.recipBox[dimIndex][ZZ];
                     break;

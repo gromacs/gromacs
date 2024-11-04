@@ -447,9 +447,9 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const MDLogger&            md
                                                    const gmx_mtop_t&          mtop,
                                                    bool localAtomOrderMatchesNbnxmOrder,
                                                    ObservablesReducerBuilder* observablesReducerBuilder,
-                                                   ArrayRef<const RVec>       coordinates,
-                                                   matrix                     box,
-                                                   gmx_wallcycle*             wcycle);
+                                                   ArrayRef<const RVec> coordinates,
+                                                   matrix               box,
+                                                   gmx_wallcycle*       wcycle);
 
 /*! \brief As nbnxn_put_on_grid, but for the non-local atoms
  *

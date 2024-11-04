@@ -74,7 +74,8 @@ void launchNbnxmKernel(NbnxmGpu* nb, const StepWorkload& stepWork, const Interac
     const bool hasLargeRegisterPool = targetHasLargeRegisterPool(nb->deviceContext_->deviceInfo());
     const bool doCalcEnergies       = stepWork.computeEnergy;
     dispatchTemplatedFunction(
-            [&](auto hasLargeRegisterPool_, auto doCalcEnergies_, auto doPruneNBL_) {
+            [&](auto hasLargeRegisterPool_, auto doCalcEnergies_, auto doPruneNBL_)
+            {
                 launchNbnxmKernelHelper<hasLargeRegisterPool_, doPruneNBL_, doCalcEnergies_>(
                         nb, stepWork, iloc);
             },

@@ -143,14 +143,14 @@ template void ddSendrecv(const gmx_domdec_t*, int, int, gmx::ArrayRef<gmx::RVec>
 
 void dd_sendrecv2_rvec(const struct gmx_domdec_t gmx_unused* dd,
                        int gmx_unused                        ddimind,
-                       rvec gmx_unused* buf_s_fw,
-                       int gmx_unused   n_s_fw,
-                       rvec gmx_unused* buf_r_fw,
-                       int gmx_unused   n_r_fw,
-                       rvec gmx_unused* buf_s_bw,
-                       int gmx_unused   n_s_bw,
-                       rvec gmx_unused* buf_r_bw,
-                       int gmx_unused   n_r_bw)
+                       rvec gmx_unused*                      buf_s_fw,
+                       int gmx_unused                        n_s_fw,
+                       rvec gmx_unused*                      buf_r_fw,
+                       int gmx_unused                        n_r_fw,
+                       rvec gmx_unused*                      buf_s_bw,
+                       int gmx_unused                        n_s_bw,
+                       rvec gmx_unused*                      buf_r_bw,
+                       int gmx_unused                        n_r_bw)
 {
 #if GMX_MPI
     MPI_Request req[4];
@@ -258,8 +258,8 @@ void dd_scatter(const gmx_domdec_t gmx_unused* dd, int gmx_unused nbytes, const 
 
 void dd_gather(const gmx_domdec_t gmx_unused* dd,
                int gmx_unused                 nbytes,
-               const void gmx_unused* src,
-               void gmx_unused* dest)
+               const void gmx_unused*         src,
+               void gmx_unused*               dest)
 {
 #if GMX_MPI
     if (dd->nnodes > 1)

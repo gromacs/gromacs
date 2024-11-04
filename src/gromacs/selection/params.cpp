@@ -140,7 +140,7 @@ static void convert_value(SelectionParserValue* value, e_selvalue_t type, Except
             try
             {
                 SelectionTreeElementPointer expr = _gmx_sel_init_position(value->expr_, nullptr, scanner);
-                *value                           = SelectionParserValue::createExpr(expr);
+                *value = SelectionParserValue::createExpr(expr);
             }
             catch (UserInputError& ex)
             {

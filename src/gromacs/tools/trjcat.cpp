@@ -513,9 +513,9 @@ int gmx_trjcat(int argc, char* argv[])
     gmx_off_t         fpos;
     gmx_output_env_t* oenv;
     t_filenm          fnm[] = { { efTRX, "-f", nullptr, ffRDMULT },
-                       { efTRO, "-o", nullptr, ffWRMULT },
-                       { efNDX, "-n", "index", ffOPTRD },
-                       { efXVG, "-demux", "remd", ffOPTRD } };
+                                { efTRO, "-o", nullptr, ffWRMULT },
+                                { efNDX, "-n", "index", ffOPTRD },
+                                { efXVG, "-demux", "remd", ffOPTRD } };
 
 #define NFILE asize(fnm)
 

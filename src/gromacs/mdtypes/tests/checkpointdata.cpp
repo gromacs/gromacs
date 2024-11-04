@@ -375,12 +375,10 @@ public:
         for (const auto& inputValue : TestValues::testValueGenerator<T>())
         {
             std::string key = "value" + std::to_string(writeFunctions_.size());
-            writeFunctions_.emplace_back([key, inputValue](WriteCheckpointData* checkpointData) {
-                writeInput(key, inputValue, checkpointData);
-            });
-            testFunctions_.emplace_back([key, inputValue](ReadCheckpointData* checkpointData) {
-                testOutput(key, inputValue, checkpointData);
-            });
+            writeFunctions_.emplace_back([key, inputValue](WriteCheckpointData* checkpointData)
+                                         { writeInput(key, inputValue, checkpointData); });
+            testFunctions_.emplace_back([key, inputValue](ReadCheckpointData* checkpointData)
+                                        { testOutput(key, inputValue, checkpointData); });
         }
     }
 

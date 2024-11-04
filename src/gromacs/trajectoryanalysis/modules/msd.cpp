@@ -261,7 +261,8 @@ void removePbcJumps(ArrayRef<RVec> currentCoords, ArrayRef<const RVec> previousC
     // we'd have a clash where the per-mol PBC removal moves an atom that gets put back into
     // it's original position by the second transformation. Therefore, this second transformation
     // is applied *after* per molecule coordinates have been consolidated into COMs.
-    auto pbcRemover = [pbc](RVec in, RVec prev) {
+    auto pbcRemover = [pbc](RVec in, RVec prev)
+    {
         rvec dx;
         pbc_dx(pbc, in, prev, dx);
         return prev + dx;
@@ -350,9 +351,8 @@ ArrayRef<const RVec> MsdCoordinateManager::buildCoordinates(const Selection& sel
                        current_.end(),
                        molecules_.begin(),
                        current_.begin(),
-                       [](const RVec& position, const MoleculeData& molecule) -> RVec {
-                           return position / molecule.mass;
-                       });
+                       [](const RVec& position, const MoleculeData& molecule) -> RVec
+                       { return position / molecule.mass; });
     }
 
     if (containsPreviousFrame_)
@@ -775,7 +775,7 @@ void Msd::finishAnalysis(int gmx_unused nframes)
     static constexpr double c_defaultStartFitIndexFraction = 0.1;
     static constexpr double c_defaultEndFitIndexFraction   = 0.9;
     beginFitIndex_ = calculateFitIndex(beginFit_, c_defaultStartFitIndexFraction, taus_.size(), *dt_);
-    endFitIndex_   = calculateFitIndex(endFit_, c_defaultEndFitIndexFraction, taus_.size(), *dt_);
+    endFitIndex_ = calculateFitIndex(endFit_, c_defaultEndFitIndexFraction, taus_.size(), *dt_);
     const int numTausForFit = 1 + endFitIndex_ - beginFitIndex_;
 
     // These aren't used, except for correlationCoefficient, which is used to estimate error if

@@ -110,14 +110,14 @@ std::vector<char> awhDimParamSerialized(AwhCoordinateProviderType inputCoordinat
  * \param[in] eTargetType Target distribution type.
  * \param[in] scaleTargetByMetric Whether to scale the target distribution based on the friction metric.
  */
-static std::vector<char> awhBiasParamSerialized(AwhHistogramGrowthType            eawhgrowth,
-                                                double                            beta,
-                                                double                            inputErrorScaling,
+static std::vector<char> awhBiasParamSerialized(AwhHistogramGrowthType eawhgrowth,
+                                                double                 beta,
+                                                double                 inputErrorScaling,
                                                 ArrayRef<const std::vector<char>> dimensionParameterBuffers,
-                                                int                               shareGroup,
-                                                bool                              inputUserData,
-                                                AwhTargetType                     eTargetType,
-                                                bool scaleTargetByMetric)
+                                                int           shareGroup,
+                                                bool          inputUserData,
+                                                AwhTargetType eTargetType,
+                                                bool          scaleTargetByMetric)
 {
     int                    ndim                     = dimensionParameterBuffers.size();
     double                 targetBetaScaling        = 0;
@@ -167,16 +167,16 @@ static std::vector<char> awhBiasParamSerialized(AwhHistogramGrowthType          
  * \param[in] eTargetType Target distribution type.
  * \param[in] scaleTargetByMetric Whether to scale the target distribution based on the friction metric.
  */
-static std::vector<char> awhParamSerialized(AwhHistogramGrowthType            eawhgrowth,
-                                            AwhPotentialType                  eawhpotential,
-                                            double                            beta,
-                                            double                            inputErrorScaling,
-                                            int64_t                           inputSeed,
+static std::vector<char> awhParamSerialized(AwhHistogramGrowthType eawhgrowth,
+                                            AwhPotentialType       eawhpotential,
+                                            double                 beta,
+                                            double                 inputErrorScaling,
+                                            int64_t                inputSeed,
                                             ArrayRef<const std::vector<char>> dimensionParameterBuffers,
-                                            int                               biasShareGroup,
-                                            bool                              inputUserData,
-                                            AwhTargetType                     eTargetType,
-                                            bool                              scaleTargetByMetric)
+                                            int           biasShareGroup,
+                                            bool          inputUserData,
+                                            AwhTargetType eTargetType,
+                                            bool          scaleTargetByMetric)
 {
     int              numBias                    = 1;
     int64_t          seed                       = inputSeed;

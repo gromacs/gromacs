@@ -69,8 +69,8 @@ public:
     // Disable copy, move, and assignment. They all can be allowed, but not needed yet.
     DeviceEvent& operator=(const DeviceEvent&) = delete;
     DeviceEvent(const DeviceEvent&)            = delete;
-    DeviceEvent& operator=(DeviceEvent&&) = delete;
-    DeviceEvent(DeviceEvent&&)            = delete;
+    DeviceEvent& operator=(DeviceEvent&&)      = delete;
+    DeviceEvent(DeviceEvent&&)                 = delete;
 
     /*! \brief Marks the synchronization point in the \p deviceStream.
      * Should be called first and then followed by wait() or enqueueWait().
@@ -106,10 +106,12 @@ public:
     {
 #    if defined(ACPP_EXT_ENQUEUE_CUSTOM_OPERATION) || defined(HIPSYCL_EXT_ENQUEUE_CUSTOM_OPERATION)
         // Submit an empty operation that depends on all the events recorded.
-        gmx::syclSubmitWithoutEvent(deviceStream.stream(), [&](sycl::handler& cgh) {
-            cgh.depends_on(events_);
-            gmx::syclEnqueueCustomOp(cgh, [=](sycl::interop_handle&) {});
-        });
+        gmx::syclSubmitWithoutEvent(deviceStream.stream(),
+                                    [&](sycl::handler& cgh)
+                                    {
+                                        cgh.depends_on(events_);
+                                        gmx::syclEnqueueCustomOp(cgh, [=](sycl::interop_handle&) {});
+                                    });
 #    elif defined(SYCL_EXT_ONEAPI_ENQUEUE_BARRIER)
         // Relies on sycl_ext_oneapi_enqueue_barrier extensions
         deviceStream.stream().ext_oneapi_submit_barrier(events_);
@@ -122,11 +124,15 @@ public:
     //! Checks the completion of the underlying event.
     inline bool isReady()
     {
-        bool allReady = std::all_of(events_.begin(), events_.end(), [](sycl::event& event) {
-            auto info       = event.get_info<sycl::info::event::command_execution_status>();
-            bool isComplete = (info == sycl::info::event_command_status::complete);
-            return isComplete;
-        });
+        bool allReady = std::all_of(
+                events_.begin(),
+                events_.end(),
+                [](sycl::event& event)
+                {
+                    auto info       = event.get_info<sycl::info::event::command_execution_status>();
+                    bool isComplete = (info == sycl::info::event_command_status::complete);
+                    return isComplete;
+                });
         return allReady;
     }
 

@@ -525,7 +525,7 @@ static void dd_cell_sizes_dlb_root_enforce_limits(gmx_domdec_t*      dd,
                 {
                     /* rowCoordinator->cellFrac[i] = rowCoordinator->boundMin[i]; */
                     nrange[1] = i; /* only store violation location. There could be a LimLo violation following with an higher index */
-                    bLastHi   = FALSE;
+                    bLastHi = FALSE;
                 }
                 else if (bLimHi && !bLastHi)
                 {

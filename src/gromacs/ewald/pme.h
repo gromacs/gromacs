@@ -425,11 +425,11 @@ GPU_FUNC_QUALIFIER void pme_gpu_prepare_computation(gmx_pme_t*     GPU_FUNC_ARGU
  *                                           direct GPU PME-PP communication is active
  * \param[in] useMdGpuGraph                  Whether MD GPU Graph is in use.
  */
-GPU_FUNC_QUALIFIER void pme_gpu_launch_spread(gmx_pme_t*            GPU_FUNC_ARGUMENT(pme),
+GPU_FUNC_QUALIFIER void pme_gpu_launch_spread(gmx_pme_t* GPU_FUNC_ARGUMENT(pme),
                                               GpuEventSynchronizer* GPU_FUNC_ARGUMENT(xReadyOnDevice),
-                                              gmx_wallcycle*        GPU_FUNC_ARGUMENT(wcycle),
-                                              real                  GPU_FUNC_ARGUMENT(lambdaQ),
-                                              bool GPU_FUNC_ARGUMENT(useGpuDirectComm),
+                                              gmx_wallcycle* GPU_FUNC_ARGUMENT(wcycle),
+                                              real           GPU_FUNC_ARGUMENT(lambdaQ),
+                                              bool           GPU_FUNC_ARGUMENT(useGpuDirectComm),
                                               gmx::PmeCoordinateReceiverGpu* GPU_FUNC_ARGUMENT(pmeCoordinateReceiverGpu),
                                               bool GPU_FUNC_ARGUMENT(useMdGpuGraph)) GPU_FUNC_TERM;
 
@@ -441,8 +441,8 @@ GPU_FUNC_QUALIFIER void pme_gpu_launch_spread(gmx_pme_t*            GPU_FUNC_ARG
  * \param[in] stepWork          The required work for this simulation step
  */
 GPU_FUNC_QUALIFIER void
-pme_gpu_launch_complex_transforms(gmx_pme_t*               GPU_FUNC_ARGUMENT(pme),
-                                  gmx_wallcycle*           GPU_FUNC_ARGUMENT(wcycle),
+pme_gpu_launch_complex_transforms(gmx_pme_t*     GPU_FUNC_ARGUMENT(pme),
+                                  gmx_wallcycle* GPU_FUNC_ARGUMENT(wcycle),
                                   const gmx::StepWorkload& GPU_FUNC_ARGUMENT(stepWork)) GPU_FUNC_TERM;
 
 /*! \brief
@@ -478,12 +478,12 @@ GPU_FUNC_QUALIFIER void pme_gpu_launch_gather(gmx_pme_t*     GPU_FUNC_ARGUMENT(p
  *                             than waited for
  * \returns                    True if the PME GPU tasks have completed
  */
-GPU_FUNC_QUALIFIER bool pme_gpu_try_finish_task(gmx_pme_t*               GPU_FUNC_ARGUMENT(pme),
+GPU_FUNC_QUALIFIER bool pme_gpu_try_finish_task(gmx_pme_t* GPU_FUNC_ARGUMENT(pme),
                                                 const gmx::StepWorkload& GPU_FUNC_ARGUMENT(stepWork),
-                                                gmx_wallcycle*           GPU_FUNC_ARGUMENT(wcycle),
+                                                gmx_wallcycle* GPU_FUNC_ARGUMENT(wcycle),
                                                 gmx::ForceWithVirial* GPU_FUNC_ARGUMENT(forceWithVirial),
-                                                gmx_enerdata_t*       GPU_FUNC_ARGUMENT(enerd),
-                                                real                  GPU_FUNC_ARGUMENT(lambdaQ),
+                                                gmx_enerdata_t*   GPU_FUNC_ARGUMENT(enerd),
+                                                real              GPU_FUNC_ARGUMENT(lambdaQ),
                                                 GpuTaskCompletion GPU_FUNC_ARGUMENT(completionKind))
         GPU_FUNC_TERM_WITH_RETURN(false);
 
@@ -498,11 +498,11 @@ GPU_FUNC_QUALIFIER bool pme_gpu_try_finish_task(gmx_pme_t*               GPU_FUN
  * \param[out] enerd           The output energies
  * \param[in]  lambdaQ         The Coulomb lambda to use when calculating the results.
  */
-GPU_FUNC_QUALIFIER void pme_gpu_wait_and_reduce(gmx_pme_t*               GPU_FUNC_ARGUMENT(pme),
+GPU_FUNC_QUALIFIER void pme_gpu_wait_and_reduce(gmx_pme_t* GPU_FUNC_ARGUMENT(pme),
                                                 const gmx::StepWorkload& GPU_FUNC_ARGUMENT(stepWork),
-                                                gmx_wallcycle*           GPU_FUNC_ARGUMENT(wcycle),
+                                                gmx_wallcycle* GPU_FUNC_ARGUMENT(wcycle),
                                                 gmx::ForceWithVirial* GPU_FUNC_ARGUMENT(forceWithVirial),
-                                                gmx_enerdata_t*       GPU_FUNC_ARGUMENT(enerd),
+                                                gmx_enerdata_t* GPU_FUNC_ARGUMENT(enerd),
                                                 real GPU_FUNC_ARGUMENT(lambdaQ)) GPU_FUNC_TERM;
 
 /*! \brief
@@ -527,7 +527,7 @@ GPU_FUNC_QUALIFIER void pme_gpu_reinit_computation(const gmx_pme_t* GPU_FUNC_ARG
  * \param[in] pme            The PME data structure.
  * \param[in] d_x            The pointer to the positions buffer to be set
  */
-GPU_FUNC_QUALIFIER void pme_gpu_set_device_x(const gmx_pme_t*        GPU_FUNC_ARGUMENT(pme),
+GPU_FUNC_QUALIFIER void pme_gpu_set_device_x(const gmx_pme_t* GPU_FUNC_ARGUMENT(pme),
                                              DeviceBuffer<gmx::RVec> GPU_FUNC_ARGUMENT(d_x)) GPU_FUNC_TERM;
 
 /*! \brief Get pointer to device copy of force data.

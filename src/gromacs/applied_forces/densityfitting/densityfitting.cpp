@@ -260,22 +260,19 @@ public:
         }
 
         // Setting the atom group indices from index group string
-        const auto setFitGroupIndicesFunction = [this](const IndexGroupsAndNames& indexGroupsAndNames) {
-            densityFittingOptions_.setFitGroupIndices(indexGroupsAndNames);
-        };
+        const auto setFitGroupIndicesFunction = [this](const IndexGroupsAndNames& indexGroupsAndNames)
+        { densityFittingOptions_.setFitGroupIndices(indexGroupsAndNames); };
         notifiers->preProcessingNotifier_.subscribe(setFitGroupIndicesFunction);
 
         // Writing internal parameters during pre-processing
-        const auto writeInternalParametersFunction = [this](KeyValueTreeObjectBuilder treeBuilder) {
-            densityFittingOptions_.writeInternalParametersToKvt(treeBuilder);
-        };
+        const auto writeInternalParametersFunction = [this](KeyValueTreeObjectBuilder treeBuilder)
+        { densityFittingOptions_.writeInternalParametersToKvt(treeBuilder); };
         notifiers->preProcessingNotifier_.subscribe(writeInternalParametersFunction);
 
         // Checking for consistency with all .mdp options
         const auto checkEnergyCaluclationFrequencyFunction =
-                [this](EnergyCalculationFrequencyErrors* energyCalculationFrequencyErrors) {
-                    densityFittingOptions_.checkEnergyCaluclationFrequency(energyCalculationFrequencyErrors);
-                };
+                [this](EnergyCalculationFrequencyErrors* energyCalculationFrequencyErrors)
+        { densityFittingOptions_.checkEnergyCaluclationFrequency(energyCalculationFrequencyErrors); };
         notifiers->preProcessingNotifier_.subscribe(checkEnergyCaluclationFrequencyFunction);
     }
 
@@ -302,21 +299,18 @@ public:
         }
 
         // Reading internal parameters during simulation setup
-        const auto readInternalParametersFunction = [this](const KeyValueTreeObject& tree) {
-            densityFittingOptions_.readInternalParametersFromKvt(tree);
-        };
+        const auto readInternalParametersFunction = [this](const KeyValueTreeObject& tree)
+        { densityFittingOptions_.readInternalParametersFromKvt(tree); };
         notifiers->simulationSetupNotifier_.subscribe(readInternalParametersFunction);
 
         // constructing local atom sets during simulation setup
-        const auto setLocalAtomSetFunction = [this](LocalAtomSetManager* localAtomSetManager) {
-            this->constructLocalAtomSet(localAtomSetManager);
-        };
+        const auto setLocalAtomSetFunction = [this](LocalAtomSetManager* localAtomSetManager)
+        { this->constructLocalAtomSet(localAtomSetManager); };
         notifiers->simulationSetupNotifier_.subscribe(setLocalAtomSetFunction);
 
         // constructing local atom sets during simulation setup
-        const auto setPeriodicBoundaryContionsFunction = [this](const PbcType& pbc) {
-            this->densityFittingSimulationParameters_.setPeriodicBoundaryConditionType(pbc);
-        };
+        const auto setPeriodicBoundaryContionsFunction = [this](const PbcType& pbc)
+        { this->densityFittingSimulationParameters_.setPeriodicBoundaryConditionType(pbc); };
         notifiers->simulationSetupNotifier_.subscribe(setPeriodicBoundaryContionsFunction);
 
         // setting the simulation time step
@@ -327,26 +321,26 @@ public:
 
         // adding output to energy file
         const auto requestEnergyOutput =
-                [this](MDModulesEnergyOutputToDensityFittingRequestChecker* energyOutputRequest) {
-                    this->setEnergyOutputRequest(energyOutputRequest);
-                };
+                [this](MDModulesEnergyOutputToDensityFittingRequestChecker* energyOutputRequest)
+        { this->setEnergyOutputRequest(energyOutputRequest); };
         notifiers->simulationSetupNotifier_.subscribe(requestEnergyOutput);
 
         // writing checkpoint data
-        const auto checkpointDataWriting = [this](MDModulesWriteCheckpointData checkpointData) {
-            forceProvider_->writeCheckpointData(checkpointData, DensityFittingModuleInfo::name_);
-        };
+        const auto checkpointDataWriting = [this](MDModulesWriteCheckpointData checkpointData)
+        { forceProvider_->writeCheckpointData(checkpointData, DensityFittingModuleInfo::name_); };
         notifiers->checkpointingNotifier_.subscribe(checkpointDataWriting);
 
         // reading checkpoint data
-        const auto checkpointDataReading = [this](MDModulesCheckpointReadingDataOnMain checkpointData) {
+        const auto checkpointDataReading = [this](MDModulesCheckpointReadingDataOnMain checkpointData)
+        {
             densityFittingState_.readState(checkpointData.checkpointedData_,
                                            DensityFittingModuleInfo::name_);
         };
         notifiers->checkpointingNotifier_.subscribe(checkpointDataReading);
 
         // broadcasting checkpoint data
-        const auto checkpointDataBroadcast = [this](MDModulesCheckpointReadingBroadcast checkpointData) {
+        const auto checkpointDataBroadcast = [this](MDModulesCheckpointReadingBroadcast checkpointData)
+        {
             densityFittingState_.broadcastState(checkpointData.communicator_, checkpointData.isParallelRun_);
         };
         notifiers->checkpointingNotifier_.subscribe(checkpointDataBroadcast);

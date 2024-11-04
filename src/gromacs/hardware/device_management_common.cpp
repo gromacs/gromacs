@@ -219,7 +219,7 @@ std::string getDeviceCompatibilityDescription(const gmx::ArrayRef<const std::uni
 }
 
 void serializeDeviceInformations(const std::vector<std::unique_ptr<DeviceInformation>>& deviceInfoList,
-                                 gmx::ISerializer*                                      serializer)
+                                 gmx::ISerializer* serializer)
 {
     GMX_RELEASE_ASSERT(c_canSerializeDeviceInformation,
                        "DeviceInformation for OpenCL/SYCL can not be serialized");

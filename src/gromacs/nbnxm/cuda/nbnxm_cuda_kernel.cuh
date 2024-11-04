@@ -168,7 +168,7 @@ __launch_bounds__(THREADS_PER_BLOCK)
 #    ifdef PRUNE_NBL
     /* we can't use the sorted plist in this call as we need to use this kernel to perform counts
      * which will be used in the sorting */
-    const nbnxn_sci_t*  pl_sci      = plist.sci;
+    const nbnxn_sci_t* pl_sci = plist.sci;
 #    else
     /* the sorted list has been generated using data from a previous call to this kernel */
     const nbnxn_sci_t* pl_sci = plist.sorting.sciSorted;
@@ -177,77 +177,77 @@ __launch_bounds__(THREADS_PER_BLOCK)
     nbnxn_cj_packed_t*  pl_cjPacked = plist.cjPacked;
     const nbnxn_excl_t* excl        = plist.excl;
 #    ifndef LJ_COMB
-    const int*          atom_types  = atdat.atomTypes;
-    int                 ntypes      = atdat.numTypes;
+    const int* atom_types = atdat.atomTypes;
+    int        ntypes     = atdat.numTypes;
 #    else
     const float2* lj_comb = atdat.ljComb;
     float2        ljcp_i, ljcp_j;
 #    endif
-    const float4*       xq          = atdat.xq;
-    float3*             f           = asFloat3(atdat.f);
-    const float3*       shift_vec   = asFloat3(atdat.shiftVec);
-    float               rcoulomb_sq = nbparam.rcoulomb_sq;
+    const float4* xq          = atdat.xq;
+    float3*       f           = asFloat3(atdat.f);
+    const float3* shift_vec   = asFloat3(atdat.shiftVec);
+    float         rcoulomb_sq = nbparam.rcoulomb_sq;
 #    ifdef VDW_CUTOFF_CHECK
-    float               rvdw_sq     = nbparam.rvdw_sq;
-    float               vdw_in_range;
+    float rvdw_sq = nbparam.rvdw_sq;
+    float vdw_in_range;
 #    endif
 #    ifdef LJ_EWALD
-    float               lje_coeff2, lje_coeff6_6;
+    float lje_coeff2, lje_coeff6_6;
 #    endif
 #    ifdef EL_RF
-    float               two_k_rf    = nbparam.two_k_rf;
+    float two_k_rf = nbparam.two_k_rf;
 #    endif
 #    ifdef EL_EWALD_ANA
-    float               beta2       = nbparam.ewald_beta * nbparam.ewald_beta;
-    float               beta3       = nbparam.ewald_beta * nbparam.ewald_beta * nbparam.ewald_beta;
+    float beta2 = nbparam.ewald_beta * nbparam.ewald_beta;
+    float beta3 = nbparam.ewald_beta * nbparam.ewald_beta * nbparam.ewald_beta;
 #    endif
 #    ifdef PRUNE_NBL
-    float               rlist_sq    = nbparam.rlistOuter_sq;
+    float rlist_sq = nbparam.rlistOuter_sq;
 #    endif
 
 #    ifdef CALC_ENERGIES
 #        ifdef EL_EWALD_ANY
-    float               beta        = nbparam.ewald_beta;
-    float               ewald_shift = nbparam.sh_ewald;
+    float beta        = nbparam.ewald_beta;
+    float ewald_shift = nbparam.sh_ewald;
 #        else
-    float                reactionFieldShift = nbparam.c_rf;
+    float reactionFieldShift = nbparam.c_rf;
 #        endif /* EL_EWALD_ANY */
-    float*              e_lj        = atdat.eLJ;
-    float*              e_el        = atdat.eElec;
+    float* e_lj = atdat.eLJ;
+    float* e_el = atdat.eElec;
 #    endif     /* CALC_ENERGIES */
 
     /* thread/block/warp id-s */
-    unsigned int tidxi      = threadIdx.x;
-    unsigned int tidxj      = threadIdx.y;
-    unsigned int tidx       = threadIdx.y * blockDim.x + threadIdx.x;
+    unsigned int tidxi = threadIdx.x;
+    unsigned int tidxj = threadIdx.y;
+    unsigned int tidx  = threadIdx.y * blockDim.x + threadIdx.x;
 #    if NTHREAD_Z == 1
-    unsigned int tidxz      = 0;
+    unsigned int tidxz = 0;
 #    else
-    unsigned int  tidxz = threadIdx.z;
+    unsigned int tidxz = threadIdx.z;
 #    endif
-    unsigned int bidx       = blockIdx.x;
-    unsigned int widx       = tidx / warp_size; /* warp index */
+    unsigned int bidx = blockIdx.x;
+    unsigned int widx = tidx / warp_size; /* warp index */
 #    ifdef PRUNE_NBL
     unsigned int tidxInWarp = tidx & (warp_size - 1);
 #    endif
-    int          sci, ci, cj, ai, aj, cijPackedBegin, cijPackedEnd;
+    int sci, ci, cj, ai, aj, cijPackedBegin, cijPackedEnd;
 #    ifndef LJ_COMB
-    int          typei, typej;
+    int typei, typej;
 #    endif
-    int          i, jm, jPacked, wexcl_idx;
-    float        qi, qj_f, r2, inv_r, inv_r2;
+    int   i, jm, jPacked, wexcl_idx;
+    float qi, qj_f, r2, inv_r, inv_r2;
 #    if !defined LJ_COMB_LB || defined CALC_ENERGIES
-    float        inv_r6, c6, c12;
+    float inv_r6, c6, c12;
 #    endif
 #    ifdef LJ_COMB_LB
-    float        sigma, epsilon;
+    float sigma, epsilon;
 #    endif
-    float        int_bit, F_invr;
+    float int_bit, F_invr;
 #    ifdef CALC_ENERGIES
-    float        E_lj, E_el;
+    float E_lj, E_el;
 #    endif
 #    if defined CALC_ENERGIES || defined LJ_POT_SWITCH
-    float        E_lj_p;
+    float E_lj_p;
 #    endif
     unsigned int wexcl, imask, mask_ji;
     float4       xqbuf;
@@ -378,8 +378,8 @@ __launch_bounds__(THREADS_PER_BLOCK)
 
 
 #    ifdef CALC_ENERGIES
-    E_lj         = 0.0F;
-    E_el         = 0.0F;
+    E_lj = 0.0F;
+    E_el = 0.0F;
 
 #        ifdef EXCLUSION_FORCES /* Ewald or RF */
     if (nb_sci.shift == gmx::c_centralShiftIndex && pl_cjPacked[cijPackedBegin].cj[0] == sci * c_superClusterSize)
@@ -518,10 +518,10 @@ __launch_bounds__(THREADS_PER_BLOCK)
                                 typei = atib[i * c_clusterSize + tidxi];
                                 fetch_nbfp_c6_c12(c6, c12, nbparam, ntypes * typei + typej);
 #    else
-                                ljcp_i       = ljcpib[i * c_clusterSize + tidxi];
+                                ljcp_i = ljcpib[i * c_clusterSize + tidxi];
 #        ifdef LJ_COMB_GEOM
-                                c6           = ljcp_i.x * ljcp_j.x;
-                                c12          = ljcp_i.y * ljcp_j.y;
+                                c6  = ljcp_i.x * ljcp_j.x;
+                                c12 = ljcp_i.y * ljcp_j.y;
 #        else
                                 /* LJ 2^(1/6)*sigma and 12*epsilon */
                                 sigma   = ljcp_i.x + ljcp_j.x;
@@ -635,7 +635,7 @@ __launch_bounds__(THREADS_PER_BLOCK)
 #    ifdef EL_RF
                                 F_invr += qi * qj_f * (int_bit * inv_r2 * inv_r - two_k_rf);
 #    endif
-#    if defined   EL_EWALD_ANA
+#    if defined EL_EWALD_ANA
                                 F_invr += qi * qj_f
                                           * (int_bit * inv_r2 * inv_r + pmeCorrF(beta2 * r2) * beta3);
 #    elif defined EL_EWALD_TAB

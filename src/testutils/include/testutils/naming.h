@@ -266,7 +266,8 @@ std::string formatNameFromParam(const Param                                     
     // Use std::visit to use the \c formatterVariant on \c param to
     // obtain a string.
     return std::visit(
-            [&](auto&& formatter) {
+            [&](auto&& formatter)
+            {
                 using Formatter = std::decay_t<decltype(formatter)>;
                 // If this is a function-like thing taking \c param, call it.
                 if constexpr (std::is_invocable_v<Formatter, Param>)
@@ -366,27 +367,29 @@ std::string mapNameFormattersToParameters(const ParametersTuple params,
     // \c formatters to apply an element of the latter to the
     // corresponding element of the former to produce a chunk of the
     // test name.
-    ForSequence(std::make_index_sequence<sizeOfParametersTuple>{}, [&](auto i) {
-        // Here we are in fact using the local variable `i` as
-        // constexpr, even though it can't be declared that way
-        // because it is actually a std::integral_constant<size_t, N>
-        // for some N from the sequence.
-        const auto param = std::get<i>(params);
-        using Param      = std::decay_t<decltype(param)>;
-        // At least gcc-12 warns about a possible uninitialized value in the
-        // destructor of std::function, but this seems to be overzealous.
-        GCC_DIAGNOSTIC_IGNORE("-Wmaybe-uninitialized")
-        using FormatterVariant                  = typename FormatterVariant<Param>::Variant;
-        const FormatterVariant formatterVariant = std::get<i>(formatters);
-        // Call a helper function to actually apply \c
-        // formatterVariant to \c param.
-        const std::string result = formatNameFromParam(param, formatterVariant);
-        GCC_DIAGNOSTIC_RESET
-        if (!result.empty())
-        {
-            testNameComponents.push_back(result);
-        }
-    });
+    ForSequence(std::make_index_sequence<sizeOfParametersTuple>{},
+                [&](auto i)
+                {
+                    // Here we are in fact using the local variable `i` as
+                    // constexpr, even though it can't be declared that way
+                    // because it is actually a std::integral_constant<size_t, N>
+                    // for some N from the sequence.
+                    const auto param = std::get<i>(params);
+                    using Param      = std::decay_t<decltype(param)>;
+                    // At least gcc-12 warns about a possible uninitialized value in the
+                    // destructor of std::function, but this seems to be overzealous.
+                    GCC_DIAGNOSTIC_IGNORE("-Wmaybe-uninitialized")
+                    using FormatterVariant = typename FormatterVariant<Param>::Variant;
+                    const FormatterVariant formatterVariant = std::get<i>(formatters);
+                    // Call a helper function to actually apply \c
+                    // formatterVariant to \c param.
+                    const std::string result = formatNameFromParam(param, formatterVariant);
+                    GCC_DIAGNOSTIC_RESET
+                    if (!result.empty())
+                    {
+                        testNameComponents.push_back(result);
+                    }
+                });
     std::string testName = joinStrings(testNameComponents, "_");
     // Note that the returned name must be unique and may use only
     // alphanumeric ASCII characters. It's not supposed to contain
@@ -478,8 +481,8 @@ public:
         // gmx::TestFileManager::getTestSpecificFilename() does it, but
         // there's no requirement that they match.
         const ::testing::TestInfo* testInfo = ::testing::UnitTest::GetInstance()->current_test_info();
-        std::string                testSuiteName(testInfo->test_suite_name());
-        std::string                testName(testInfo->name());
+        std::string testSuiteName(testInfo->test_suite_name());
+        std::string testName(testInfo->name());
         // If the test fixture body was created with TEST_P then there is
         // a further user-provided name that should contribute to the
         // reference data name. If present, it precedes "/".

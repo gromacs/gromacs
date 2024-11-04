@@ -189,8 +189,8 @@ public:
      */
     const matrix& getVirial() const { return virial_; }
 
-    const ArrayRef<RVec> force_;         //!< Force accumulation buffer reference
-    const bool           computeVirial_; //!< True when algorithms are required to provide their virial contribution (for the current force evaluation)
+    const ArrayRef<RVec> force_; //!< Force accumulation buffer reference
+    const bool computeVirial_; //!< True when algorithms are required to provide their virial contribution (for the current force evaluation)
 private:
     matrix virial_; //!< Virial accumulation buffer
 };

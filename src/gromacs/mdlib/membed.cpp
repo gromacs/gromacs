@@ -1123,9 +1123,10 @@ gmx_membed_t* init_membed(FILE*          fplog,
         fprintf(stderr, "\nSelect a group to embed in the membrane:\n");
         get_index(&atoms, opt2fn_null("-mn", nfile, fnm), 1, &(ins_at->nr), &(ins_at->index), &ins);
 
-        auto found = std::find_if(gnames.begin(), gnames.end(), [&ins](const auto& name) {
-            return gmx::equalCaseInsensitive(ins, name);
-        });
+        auto found = std::find_if(gnames.begin(),
+                                  gnames.end(),
+                                  [&ins](const auto& name)
+                                  { return gmx::equalCaseInsensitive(ins, name); });
 
         if (found == gnames.end())
         {

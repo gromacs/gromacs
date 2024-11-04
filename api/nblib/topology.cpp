@@ -127,7 +127,8 @@ ListedInteractionData TopologyBuilder::createInteractionData(const ParticleSeque
     // for (int i = 0; i < interactionData.size(); ++i)
     //     create(get<i>(interactionData));
 
-    auto create = [this, &particleSequencer](auto& interactionDataElement) {
+    auto create = [this, &particleSequencer](auto& interactionDataElement)
+    {
         using InteractionType = typename std::decay_t<decltype(interactionDataElement)>::type;
 
         // first compression stage: each bond per molecule listed once,
@@ -159,7 +160,8 @@ ListedInteractionData TopologyBuilder::createInteractionData(const ParticleSeque
                        end(coordinateIndices),
                        begin(expansionArray),
                        begin(interactionDataElement.indices),
-                       [](auto coordinateIndex, auto interactionIndex) {
+                       [](auto coordinateIndex, auto interactionIndex)
+                       {
                            std::array<int, coordinateIndex.size() + 1> ret{ 0 };
                            for (int i = 0; i < int(coordinateIndex.size()); ++i)
                            {
@@ -224,9 +226,8 @@ Topology TopologyBuilder::buildTopology()
     }
 
     topology_.particleTypeIdOfAllParticles_ =
-            extractParticleTypeQuantity<int>([&nameToId](const auto& data, [[maybe_unused]] auto& map) {
-                return nameToId[data.particleTypeName_];
-            });
+            extractParticleTypeQuantity<int>([&nameToId](const auto& data, [[maybe_unused]] auto& map)
+                                             { return nameToId[data.particleTypeName_]; });
 
     ParticleSequencer particleSequencer;
     particleSequencer.build(molecules_);

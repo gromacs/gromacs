@@ -76,8 +76,10 @@ static int testBoolDoubleOrNot(int k)
 TEST(TemplateMPTest, DispatchTemplatedFunctionEnum)
 {
     int five           = 5;
-    int two1plus2plus5 = dispatchTemplatedFunction(
-            [=](auto p1, auto p2) { return testEnumTwoIPlusJPlusK<p1, p2>(five); }, Options::Op1, Options::Op2);
+    int two1plus2plus5 = dispatchTemplatedFunction([=](auto p1, auto p2)
+                                                   { return testEnumTwoIPlusJPlusK<p1, p2>(five); },
+                                                   Options::Op1,
+                                                   Options::Op2);
     EXPECT_EQ(two1plus2plus5, 9);
 }
 

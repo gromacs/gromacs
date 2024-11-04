@@ -60,14 +60,14 @@
 namespace gmx
 {
 template<ConstraintVariable variable>
-ConstraintsElement<variable>::ConstraintsElement(Constraints*                constr,
-                                                 StatePropagatorData*        statePropagatorData,
-                                                 EnergyData*                 energyData,
+ConstraintsElement<variable>::ConstraintsElement(Constraints*         constr,
+                                                 StatePropagatorData* statePropagatorData,
+                                                 EnergyData*          energyData,
                                                  FreeEnergyPerturbationData* freeEnergyPerturbationData,
-                                                 bool                        isMain,
-                                                 FILE*                       fplog,
-                                                 const t_inputrec*           inputrec,
-                                                 const t_mdatoms*            mdAtoms) :
+                                                 bool              isMain,
+                                                 FILE*             fplog,
+                                                 const t_inputrec* inputrec,
+                                                 const t_mdatoms*  mdAtoms) :
     nextVirialCalculationStep_(-1),
     nextEnergyWritingStep_(-1),
     nextLogWritingStep_(-1),
@@ -93,7 +93,7 @@ void ConstraintsElement<variable>::elementSetup()
         const real lambdaBonded =
                 freeEnergyPerturbationData_
                         ? freeEnergyPerturbationData_->constLambdaView()[static_cast<int>(
-                                FreeEnergyPerturbationCouplingType::Bonded)]
+                                  FreeEnergyPerturbationCouplingType::Bonded)]
                         : 0;
         // Constrain the initial coordinates and velocities
         do_constrain_first(fplog_,
@@ -128,9 +128,8 @@ void ConstraintsElement<variable>::scheduleTask(Step                       step,
     bool writeEnergy     = (step == nextEnergyWritingStep_);
 
     // register constraining
-    registerRunFunction([this, step, calculateVirial, writeLog, writeEnergy]() {
-        apply(step, calculateVirial, writeLog, writeEnergy);
-    });
+    registerRunFunction([this, step, calculateVirial, writeLog, writeEnergy]()
+                        { apply(step, calculateVirial, writeLog, writeEnergy); });
 }
 
 template<ConstraintVariable variable>
@@ -236,7 +235,7 @@ ISimulatorElement* ConstraintsElement<variable>::getElementPointerImpl(
         StatePropagatorData*                    statePropagatorData,
         EnergyData*                             energyData,
         FreeEnergyPerturbationData*             freeEnergyPerturbationData,
-        GlobalCommunicationHelper gmx_unused* globalCommunicationHelper,
+        GlobalCommunicationHelper gmx_unused*   globalCommunicationHelper,
         ObservablesReducer* /*observablesReducer*/)
 {
     return builderHelper->storeElement(std::make_unique<ConstraintsElement<variable>>(

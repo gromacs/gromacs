@@ -119,9 +119,9 @@ clang-format:
     - !reference [.rules:merge-requests, rules]
   cache: {}
   stage: pre-build
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.4.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-llvm-18-cuda-12.1.0
   variables:
-    COMPILER_MAJOR_VERSION: 11
+    COMPILER_MAJOR_VERSION: 18
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
     KUBERNETES_MEMORY_REQUEST: 2Gi

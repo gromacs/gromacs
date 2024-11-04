@@ -490,7 +490,8 @@ StatePropagatorData::Element::registerTrajectoryWriterCallback(TrajectoryEvent e
 {
     if (event == TrajectoryEvent::StateWritingStep)
     {
-        return [this](gmx_mdoutf* outf, Step step, Time time, bool writeTrajectory, bool gmx_unused writeLog) {
+        return [this](gmx_mdoutf* outf, Step step, Time time, bool writeTrajectory, bool gmx_unused writeLog)
+        {
             if (writeTrajectory)
             {
                 write(outf, step, time);
@@ -620,7 +621,7 @@ void StatePropagatorData::doCheckpointData(CheckpointData<operation>* checkpoint
 }
 
 void StatePropagatorData::Element::saveCheckpointState(std::optional<WriteCheckpointData> checkpointData,
-                                                       const t_commrec*                   cr)
+                                                       const t_commrec* cr)
 {
     if (haveDDAtomOrdering(*cr))
     {
@@ -679,7 +680,7 @@ static void updateGlobalState(t_state*                      globalState,
 }
 
 void StatePropagatorData::Element::restoreCheckpointState(std::optional<ReadCheckpointData> checkpointData,
-                                                          const t_commrec*                  cr)
+                                                          const t_commrec* cr)
 {
     if (MAIN(cr))
     {
@@ -776,7 +777,8 @@ void StatePropagatorData::Element::trajectoryWriterTeardown(gmx_mdoutf* gmx_unus
 
 std::optional<SignallerCallback> StatePropagatorData::Element::registerLastStepCallback()
 {
-    return [this](Step step, Time /*time*/) {
+    return [this](Step step, Time /*time*/)
+    {
         lastStep_               = step;
         isRegularSimulationEnd_ = (step == lastPlannedStep_);
     };
@@ -821,12 +823,12 @@ void StatePropagatorData::Element::setFreeEnergyPerturbationData(FreeEnergyPertu
 }
 
 ISimulatorElement* StatePropagatorData::Element::getElementPointerImpl(
-        LegacySimulatorData gmx_unused*        legacySimulatorData,
+        LegacySimulatorData gmx_unused*                    legacySimulatorData,
         ModularSimulatorAlgorithmBuilderHelper gmx_unused* builderHelper,
         StatePropagatorData*                               statePropagatorData,
-        EnergyData gmx_unused*      energyData,
-        FreeEnergyPerturbationData* freeEnergyPerturbationData,
-        GlobalCommunicationHelper gmx_unused* globalCommunicationHelper,
+        EnergyData gmx_unused*                             energyData,
+        FreeEnergyPerturbationData*                        freeEnergyPerturbationData,
+        GlobalCommunicationHelper gmx_unused*              globalCommunicationHelper,
         ObservablesReducer* /*observablesReducer*/)
 {
     statePropagatorData->element()->setFreeEnergyPerturbationData(freeEnergyPerturbationData);

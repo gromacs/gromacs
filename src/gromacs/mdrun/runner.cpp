@@ -727,7 +727,7 @@ static bool gpuAccelerationOfNonbondedIsUseful(const MDLogger&   mdlog,
         gpuIsUseful = false;
         warning     = gmx::formatString(
                 "Multiple time stepping is only supported with GPUs when MTS is only applied to %s "
-                "forces.",
+                    "forces.",
                 mtsForceGroupNames[MtsForceGroups::LongrangeNonbonded].c_str());
     }
 

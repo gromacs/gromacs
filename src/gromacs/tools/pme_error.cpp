@@ -428,7 +428,7 @@ static void calc_recipbox(matrix box, matrix recipbox)
 static real estimate_reciprocal(PmeErrorInputs* info,
                                 rvec            x[], /* array of particles */
                                 const real      q[], /* array of charges */
-                                int  nr, /* number of charges = size of the charge array */
+                                int nr, /* number of charges = size of the charge array */
                                 FILE gmx_unused* fp_out,
                                 gmx_bool         bVerbose,
                                 int  seed,     /* The seed for the random number generator */

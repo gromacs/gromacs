@@ -121,15 +121,14 @@ void MttkData::build(LegacySimulatorData*                    legacySimulatorData
                      mttkPropagatorConnection));
     auto* ptrToDataObject = builderHelper->simulationData<MttkData>(MttkData::dataID()).value();
 
-    energyData->addConservedEnergyContribution([ptrToDataObject](Step /*unused*/, Time time) {
-        return ptrToDataObject->temperatureCouplingIntegral(time);
-    });
-    energyData->setParrinelloRahmanBoxVelocities(
-            [ptrToDataObject]() { return ptrToDataObject->boxVelocity_; });
+    energyData->addConservedEnergyContribution(
+            [ptrToDataObject](Step /*unused*/, Time time)
+            { return ptrToDataObject->temperatureCouplingIntegral(time); });
+    energyData->setParrinelloRahmanBoxVelocities([ptrToDataObject]()
+                                                 { return ptrToDataObject->boxVelocity_; });
     builderHelper->registerReferenceTemperatureUpdate(
-            [ptrToDataObject](ArrayRef<const real> temperatures, ReferenceTemperatureChangeAlgorithm algorithm) {
-                ptrToDataObject->updateReferenceTemperature(temperatures[0], algorithm);
-            });
+            [ptrToDataObject](ArrayRef<const real> temperatures, ReferenceTemperatureChangeAlgorithm algorithm)
+            { ptrToDataObject->updateReferenceTemperature(temperatures[0], algorithm); });
 }
 
 std::string MttkData::dataID()
@@ -355,32 +354,38 @@ void MttkPropagatorConnection::build(ModularSimulatorAlgorithmBuilderHelper* bui
                            .value();
 
     builderHelper->registerTemperaturePressureControl(
-            [object, propagatorTagPrePosition, positionOffset](const PropagatorConnection& connection) {
+            [object, propagatorTagPrePosition, positionOffset](const PropagatorConnection& connection)
+            {
                 object->connectWithPropagatorPositionPreStepScaling(
                         connection, propagatorTagPrePosition, positionOffset);
             });
     builderHelper->registerTemperaturePressureControl(
-            [object, propagatorTagPostPosition, positionOffset](const PropagatorConnection& connection) {
+            [object, propagatorTagPostPosition, positionOffset](const PropagatorConnection& connection)
+            {
                 object->connectWithPropagatorPositionPostStepScaling(
                         connection, propagatorTagPostPosition, positionOffset);
             });
     builderHelper->registerTemperaturePressureControl(
-            [object, propagatorTagPreVelocity1, velocityOffset1](const PropagatorConnection& connection) {
+            [object, propagatorTagPreVelocity1, velocityOffset1](const PropagatorConnection& connection)
+            {
                 object->connectWithPropagatorVelocityPreStepScaling(
                         connection, propagatorTagPreVelocity1, velocityOffset1);
             });
     builderHelper->registerTemperaturePressureControl(
-            [object, propagatorTagPostVelocity1, velocityOffset1](const PropagatorConnection& connection) {
+            [object, propagatorTagPostVelocity1, velocityOffset1](const PropagatorConnection& connection)
+            {
                 object->connectWithPropagatorVelocityPostStepScaling(
                         connection, propagatorTagPostVelocity1, velocityOffset1);
             });
     builderHelper->registerTemperaturePressureControl(
-            [object, propagatorTagPreVelocity2, velocityOffset2](const PropagatorConnection& connection) {
+            [object, propagatorTagPreVelocity2, velocityOffset2](const PropagatorConnection& connection)
+            {
                 object->connectWithPropagatorVelocityPreStepScaling(
                         connection, propagatorTagPreVelocity2, velocityOffset2);
             });
     builderHelper->registerTemperaturePressureControl(
-            [object, propagatorTagPostVelocity2, velocityOffset2](const PropagatorConnection& connection) {
+            [object, propagatorTagPostVelocity2, velocityOffset2](const PropagatorConnection& connection)
+            {
                 object->connectWithPropagatorVelocityPostStepScaling(
                         connection, propagatorTagPostVelocity2, velocityOffset2);
             });
@@ -587,14 +592,14 @@ void MttkElement::scheduleTask(Step step, Time /*unused*/, const RegisterRunFunc
 ISimulatorElement* MttkElement::getElementPointerImpl(
         LegacySimulatorData*                    legacySimulatorData,
         ModularSimulatorAlgorithmBuilderHelper* builderHelper,
-        StatePropagatorData gmx_unused* statePropagatorData,
-        EnergyData*                     energyData,
-        FreeEnergyPerturbationData gmx_unused* freeEnergyPerturbationData,
-        GlobalCommunicationHelper gmx_unused* globalCommunicationHelper,
-        ObservablesReducer gmx_unused*         observablesReducer,
-        Offset                                 offset,
-        ScheduleOnInitStep                     scheduleOnInitStep,
-        const MttkPropagatorConnectionDetails& mttkPropagatorConnectionDetails)
+        StatePropagatorData gmx_unused*         statePropagatorData,
+        EnergyData*                             energyData,
+        FreeEnergyPerturbationData gmx_unused*  freeEnergyPerturbationData,
+        GlobalCommunicationHelper gmx_unused*   globalCommunicationHelper,
+        ObservablesReducer gmx_unused*          observablesReducer,
+        Offset                                  offset,
+        ScheduleOnInitStep                      scheduleOnInitStep,
+        const MttkPropagatorConnectionDetails&  mttkPropagatorConnectionDetails)
 {
     // Data is now owned by the caller of this method, who will handle lifetime (see ModularSimulatorAlgorithm)
     if (!builderHelper->simulationData<MttkData>(MttkData::dataID()))
@@ -662,10 +667,10 @@ ISimulatorElement* MttkBoxScaling::getElementPointerImpl(
         ModularSimulatorAlgorithmBuilderHelper* builderHelper,
         StatePropagatorData*                    statePropagatorData,
         EnergyData*                             energyData,
-        FreeEnergyPerturbationData gmx_unused* freeEnergyPerturbationData,
-        GlobalCommunicationHelper gmx_unused* globalCommunicationHelper,
-        ObservablesReducer gmx_unused*         observablesReducer,
-        const MttkPropagatorConnectionDetails& mttkPropagatorConnectionDetails)
+        FreeEnergyPerturbationData gmx_unused*  freeEnergyPerturbationData,
+        GlobalCommunicationHelper gmx_unused*   globalCommunicationHelper,
+        ObservablesReducer gmx_unused*          observablesReducer,
+        const MttkPropagatorConnectionDetails&  mttkPropagatorConnectionDetails)
 {
     // Data is now owned by the caller of this method, who will handle lifetime (see ModularSimulatorAlgorithm)
     if (!builderHelper->simulationData<MttkData>(MttkData::dataID()))

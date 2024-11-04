@@ -1769,9 +1769,8 @@ static bool default_nb_params(int                               ftype,
         auto foundParameter =
                 std::find_if(bt[ftype].interactionTypes.begin(),
                              bt[ftype].interactionTypes.end(),
-                             [&paramAtoms, &at, &bB](const auto& param) {
-                                 return findIfAllNBAtomsMatch(param.atoms(), paramAtoms, at, bB);
-                             });
+                             [&paramAtoms, &at, &bB](const auto& param)
+                             { return findIfAllNBAtomsMatch(param.atoms(), paramAtoms, at, bB); });
         if (foundParameter != bt[ftype].interactionTypes.end())
         {
             bFound = true;
@@ -1842,7 +1841,8 @@ static bool default_cmap_params(gmx::ArrayRef<InteractionsOfType> bondtype,
         auto matchResTypeOrAny = [=](const std::string& cmapResType, const std::string& cmapTypeResType) {
             return cmapTypeResType.empty() || cmapTypeResType == "*" || cmapResType == cmapTypeResType;
         };
-        auto matchAtomAndResTypes = [=](const int& cmapAtomType, const int& cmapTypeAtomType) {
+        auto matchAtomAndResTypes = [=](const int& cmapAtomType, const int& cmapTypeAtomType)
+        {
             return (atypes->bondAtomTypeFromAtomType(at->atom[cmapAtomType].type)
                     == bondtype[F_CMAP].cmapAtomTypes[cmapTypeAtomType])
                    && matchResTypeOrAny(*at->resinfo[at->atom[cmapAtomType].resind].name,
@@ -1889,7 +1889,8 @@ static int findNumberOfDihedralAtomMatches(const InteractionOfType&       bondTy
     if (std::equal(bondTypeAtomTypes.begin(),
                    bondTypeAtomTypes.end(),
                    atomTypes.begin(),
-                   [&numExactMatches](int bondTypeAtomType, int atomType) {
+                   [&numExactMatches](int bondTypeAtomType, int atomType)
+                   {
                        if (bondTypeAtomType == atomType)
                        {
                            // Found an exact atom type match
@@ -1953,9 +1954,8 @@ defaultInteractionsOfType(int                               ftype,
              */
             bool bSame = true;
             // Advance iterator (like std::advance) without incrementing past end (UB)
-            const auto safeAdvance = [](auto& it, auto n, auto end) {
-                it = end - it > n ? it + n : end;
-            };
+            const auto safeAdvance = [](auto& it, auto n, auto end)
+            { it = end - it > n ? it + n : end; };
             /* Continue from current iterator position */
             auto       nextPos = prevPos;
             const auto endIter = bondType[ftype].interactionTypes.end();
@@ -1979,9 +1979,8 @@ defaultInteractionsOfType(int                               ftype,
         auto found = std::find_if(
                 bondType[ftype].interactionTypes.begin(),
                 bondType[ftype].interactionTypes.end(),
-                [&atomTypes](const auto& param) {
-                    return std::equal(param.atoms().begin(), param.atoms().end(), atomTypes.begin());
-                });
+                [&atomTypes](const auto& param)
+                { return std::equal(param.atoms().begin(), param.atoms().end(), atomTypes.begin()); });
         if (found != bondType[ftype].interactionTypes.end())
         {
             nparam_found = 1;
@@ -2129,14 +2128,18 @@ void push_bond(Directive                         d,
 
     // Look up the A-state atom types for this interaction
     std::vector<int> atomTypes(atomIndices.size());
-    std::transform(atomIndices.begin(), atomIndices.end(), atomTypes.begin(), [at, atypes](const int atomIndex) {
-        return atypes->bondAtomTypeFromAtomType(at->atom[atomIndex].type).value();
-    });
+    std::transform(atomIndices.begin(),
+                   atomIndices.end(),
+                   atomTypes.begin(),
+                   [at, atypes](const int atomIndex)
+                   { return atypes->bondAtomTypeFromAtomType(at->atom[atomIndex].type).value(); });
     // Look up the B-state atom types for this interaction
     std::vector<int> atomTypesB(atomIndices.size());
-    std::transform(atomIndices.begin(), atomIndices.end(), atomTypesB.begin(), [at, atypes](const int atomIndex) {
-        return atypes->bondAtomTypeFromAtomType(at->atom[atomIndex].typeB).value();
-    });
+    std::transform(atomIndices.begin(),
+                   atomIndices.end(),
+                   atomTypesB.begin(),
+                   [at, atypes](const int atomIndex)
+                   { return atypes->bondAtomTypeFromAtomType(at->atom[atomIndex].typeB).value(); });
 
     /* default force parameters  */
     /* need to have an empty but initialized param array for some reason */

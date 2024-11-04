@@ -107,11 +107,11 @@ void gmx_simdcall decr3Hsimd(float gmx_unused*    m,
 }
 
 template<int align>
-void gmx_simdcall gatherLoadTransposeHsimd(const float gmx_unused* base0,
+void gmx_simdcall gatherLoadTransposeHsimd(const float gmx_unused*       base0,
                                            const float gmx_unused*       base1,
                                            const std::int32_t gmx_unused offset[],
-                                           SimdFloat gmx_unused* v0,
-                                           SimdFloat gmx_unused* v1)
+                                           SimdFloat gmx_unused*         v0,
+                                           SimdFloat gmx_unused*         v1)
 {
     static_assert(((void)align, 0), "Hsimd function used without Hsimd support");
 }
@@ -173,11 +173,11 @@ void gmx_simdcall decr3Hsimd(double gmx_unused*    m,
 }
 
 template<int align>
-void gmx_simdcall gatherLoadTransposeHsimd(const double gmx_unused* base0,
+void gmx_simdcall gatherLoadTransposeHsimd(const double gmx_unused*      base0,
                                            const double gmx_unused*      base1,
                                            const std::int32_t gmx_unused offset[],
-                                           SimdDouble gmx_unused* v0,
-                                           SimdDouble gmx_unused* v1)
+                                           SimdDouble gmx_unused*        v0,
+                                           SimdDouble gmx_unused*        v1)
 {
     static_assert(((void)align, 0), "Hsimd function used without Hsimd support");
 }

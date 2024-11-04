@@ -319,8 +319,7 @@ void LincsGpu::set(const InteractionDefinitions& idef, int numAtoms, const Array
     // in the constraints array due to the GPU block borders. This number can be adjusted to improve
     // memory access pattern. Mass factors are saved in a similar data structure.
     const int prevMaxCoupledConstraints = maxCoupledConstraints_;
-#pragma omp parallel for num_threads(numOmpThreads) schedule(static) reduction(max \
-                                                                               : maxCoupledConstraints_)
+#pragma omp parallel for num_threads(numOmpThreads) schedule(static) reduction(max : maxCoupledConstraints_)
     for (int c = 0; c < numConstraints; c++)
     {
         int a1 = iatoms[stride * c + 1];

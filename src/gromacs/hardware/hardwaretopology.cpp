@@ -289,7 +289,7 @@ std::vector<const hwloc_obj*> getHwLocDescendantsByType(const hwloc_topology*  t
  */
 bool parseHwLocPackagesCoresProcessingUnits(hwloc_topology_t topo, HardwareTopology::Machine* machine)
 {
-    const hwloc_obj*              root          = hwloc_get_root_obj(topo);
+    const hwloc_obj* root = hwloc_get_root_obj(topo);
     std::vector<const hwloc_obj*> hwlocPackages = getHwLocDescendantsByType(topo, root, HWLOC_OBJ_PACKAGE);
 
     std::size_t puCount = hwloc_get_nbobjs_by_type(topo, HWLOC_OBJ_PU);
@@ -510,7 +510,7 @@ bool parseHwLocNuma(hwloc_topology_t topo, HardwareTopology::Machine* machine)
         machine->numa.maxRelativeLatency = maxLatency / minLatency;
 
 #    else  // GMX_HWLOC_API_VERSION_IS_2XX == false, hwloc api is 1.x.x
-        const int                       depth = hwloc_get_type_depth(topo, HWLOC_OBJ_NUMANODE);
+        const int depth = hwloc_get_type_depth(topo, HWLOC_OBJ_NUMANODE);
         const struct hwloc_distances_s* dist = hwloc_get_whole_distance_matrix_by_depth(topo, depth);
         if (dist != nullptr && dist->nbobjs == hwlocNumaNodes.size())
         {
@@ -591,7 +591,7 @@ bool parseHwLocNuma(hwloc_topology_t topo, HardwareTopology::Machine* machine)
  */
 bool parseHwLocDevices(hwloc_topology_t topo, HardwareTopology::Machine* machine)
 {
-    const hwloc_obj*              root = hwloc_get_root_obj(topo);
+    const hwloc_obj* root = hwloc_get_root_obj(topo);
     std::vector<const hwloc_obj*> pcidevs = getHwLocDescendantsByType(topo, root, HWLOC_OBJ_PCI_DEVICE);
 
     for (const auto& p : pcidevs)

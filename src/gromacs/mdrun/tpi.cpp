@@ -326,9 +326,12 @@ namespace
 //! Returns whether there are electrostatic contributions to the insertion energy
 bool haveElectrostatics(const t_mdatoms& mdatoms, const Range<int>& testAtomsRange)
 {
-    return std::any_of(testAtomsRange.begin(), testAtomsRange.end(), [mdatoms](int i) {
-        return mdatoms.chargeA[i] != 0 || (!mdatoms.chargeB.empty() && mdatoms.chargeB[i] != 0);
-    });
+    return std::any_of(testAtomsRange.begin(),
+                       testAtomsRange.end(),
+                       [mdatoms](int i) {
+                           return mdatoms.chargeA[i] != 0
+                                  || (!mdatoms.chargeB.empty() && mdatoms.chargeB[i] != 0);
+                       });
 }
 
 } // namespace
@@ -488,7 +491,7 @@ std::pair<double, double> TestParticleInsertion::performSingleInsertion(const do
                                                                         t_state*    stateGlobal,
                                                                         MdrunScheduleWorkload* runScheduleWork,
                                                                         gmx_wallcycle* wallCycleCounters,
-                                                                        t_nrnb*        nrnb)
+                                                                        t_nrnb* nrnb)
 {
     /* Add random displacement uniformly distributed in a sphere
      * of radius rtpi. We don't need to do this is we generate

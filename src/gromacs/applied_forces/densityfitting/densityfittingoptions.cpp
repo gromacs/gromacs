@@ -145,7 +145,8 @@ void DensityFittingOptions::initMdpTransform(IKeyValueTreeTransformRules* rules)
     densityfittingMdpTransformFromString<bool>(rules, &fromStdString<bool>, c_adaptiveForceScalingTag_);
     densityfittingMdpTransformFromString<real>(
             rules, &fromStdString<real>, c_adaptiveForceScalingTimeConstantTag_);
-    const auto& stringRVecToStringRVecWithCheck = [](const std::string& str) {
+    const auto& stringRVecToStringRVecWithCheck = [](const std::string& str)
+    {
         return stringIdentityTransformWithArrayCheck<real, 3>(
                 str,
                 "Reading three real values as vector while parsing the .mdp input failed in "
@@ -154,7 +155,8 @@ void DensityFittingOptions::initMdpTransform(IKeyValueTreeTransformRules* rules)
     densityfittingMdpTransformFromString<std::string>(
             rules, stringRVecToStringRVecWithCheck, c_translationTag_);
 
-    const auto& stringMatrixToStringMatrixWithCheck = [](const std::string& str) {
+    const auto& stringMatrixToStringMatrixWithCheck = [](const std::string& str)
+    {
         return stringIdentityTransformWithArrayCheck<real, 9>(
                 str,
                 "Reading nine real values as vector while parsing the .mdp input failed in "

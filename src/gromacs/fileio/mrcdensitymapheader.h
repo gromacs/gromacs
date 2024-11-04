@@ -102,8 +102,8 @@ struct MrcDataStatistics
  */
 struct MrcDensitySkewData
 {
-    bool                        valid_ = false; //!< True if skew matrix is stored.
-    std::array<float, DIM* DIM> matrix_ = {}; //!< Skew matrix for crystallographic unit cell in Ångström
+    bool valid_ = false;                       //!< True if skew matrix is stored.
+    std::array<float, DIM * DIM> matrix_ = {}; //!< Skew matrix for crystallographic unit cell in Ångström
     std::array<float, DIM> translation_ = {}; //!< Translation of crystallographic unit cell in Ångström
 };
 

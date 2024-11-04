@@ -242,17 +242,16 @@ void NoseHooverChainsData::build(NhcUsage                                nhcUsag
                     ->simulationData<NoseHooverChainsData>(NoseHooverChainsData::dataID(nhcUsage))
                     .value();
     builderHelper->registerReferenceTemperatureUpdate(
-            [nhcDataPtr](ArrayRef<const real> temperatures, ReferenceTemperatureChangeAlgorithm algorithm) {
-                nhcDataPtr->updateReferenceTemperature(temperatures, algorithm);
-            });
+            [nhcDataPtr](ArrayRef<const real> temperatures, ReferenceTemperatureChangeAlgorithm algorithm)
+            { nhcDataPtr->updateReferenceTemperature(temperatures, algorithm); });
 
     const auto* ptrToDataObject =
             builderHelper
                     ->simulationData<NoseHooverChainsData>(NoseHooverChainsData::dataID(nhcUsage))
                     .value();
-    energyData->addConservedEnergyContribution([ptrToDataObject](Step /*unused*/, Time time) {
-        return ptrToDataObject->temperatureCouplingIntegral(time);
-    });
+    energyData->addConservedEnergyContribution(
+            [ptrToDataObject](Step /*unused*/, Time time)
+            { return ptrToDataObject->temperatureCouplingIntegral(time); });
 }
 
 NoseHooverChainsData::~NoseHooverChainsData() = default;
@@ -273,9 +272,9 @@ inline int NoseHooverChainsData::numTemperatureGroups() const
 
 inline bool NoseHooverChainsData::isAtFullCouplingTimeStep() const
 {
-    return std::all_of(noseHooverGroups_.begin(), noseHooverGroups_.end(), [](const auto& group) {
-        return group.isAtFullCouplingTimeStep();
-    });
+    return std::all_of(noseHooverGroups_.begin(),
+                       noseHooverGroups_.end(),
+                       [](const auto& group) { return group.isAtFullCouplingTimeStep(); });
 }
 
 void NoseHooverGroup::calculateIntegral()
@@ -318,9 +317,9 @@ double NoseHooverChainsData::temperatureCouplingIntegral(Time gmx_used_in_debug 
                             }),
                "NoseHooverChainsData conserved energy time mismatch.");
     double result = 0;
-    std::for_each(noseHooverGroups_.begin(), noseHooverGroups_.end(), [&result](const auto& group) {
-        result += group.integral();
-    });
+    std::for_each(noseHooverGroups_.begin(),
+                  noseHooverGroups_.end(),
+                  [&result](const auto& group) { result += group.integral(); });
     return result;
 }
 
@@ -710,16 +709,16 @@ void NoseHooverChainsElement::connectWithPropagator(const PropagatorConnection& 
 ISimulatorElement* NoseHooverChainsElement::getElementPointerImpl(
         LegacySimulatorData*                    legacySimulatorData,
         ModularSimulatorAlgorithmBuilderHelper* builderHelper,
-        StatePropagatorData gmx_unused* statePropagatorData,
-        EnergyData*                     energyData,
-        FreeEnergyPerturbationData gmx_unused* freeEnergyPerturbationData,
-        GlobalCommunicationHelper gmx_unused*  globalCommunicationHelper,
-        ObservablesReducer*                    observablesReducer,
-        NhcUsage                               nhcUsage,
-        Offset                                 offset,
-        UseFullStepKE                          useFullStepKE,
-        ScheduleOnInitStep                     scheduleOnInitStep,
-        const MttkPropagatorConnectionDetails& mttkPropagatorConnectionDetails)
+        StatePropagatorData gmx_unused*         statePropagatorData,
+        EnergyData*                             energyData,
+        FreeEnergyPerturbationData gmx_unused*  freeEnergyPerturbationData,
+        GlobalCommunicationHelper gmx_unused*   globalCommunicationHelper,
+        ObservablesReducer*                     observablesReducer,
+        NhcUsage                                nhcUsage,
+        Offset                                  offset,
+        UseFullStepKE                           useFullStepKE,
+        ScheduleOnInitStep                      scheduleOnInitStep,
+        const MttkPropagatorConnectionDetails&  mttkPropagatorConnectionDetails)
 {
     GMX_RELEASE_ASSERT(nhcUsage == NhcUsage::Barostat, "System NHC element needs a propagator tag.");
     if (!builderHelper->simulationData<MttkData>(MttkData::dataID()))
@@ -743,16 +742,16 @@ ISimulatorElement* NoseHooverChainsElement::getElementPointerImpl(
 ISimulatorElement* NoseHooverChainsElement::getElementPointerImpl(
         LegacySimulatorData*                    legacySimulatorData,
         ModularSimulatorAlgorithmBuilderHelper* builderHelper,
-        StatePropagatorData gmx_unused* statePropagatorData,
-        EnergyData*                     energyData,
-        FreeEnergyPerturbationData gmx_unused* freeEnergyPerturbationData,
-        GlobalCommunicationHelper gmx_unused* globalCommunicationHelper,
-        ObservablesReducer gmx_unused* observablesReducer,
-        NhcUsage                       nhcUsage,
-        Offset                         offset,
-        UseFullStepKE                  useFullStepKE,
-        ScheduleOnInitStep             scheduleOnInitStep,
-        const PropagatorTag&           propagatorTag)
+        StatePropagatorData gmx_unused*         statePropagatorData,
+        EnergyData*                             energyData,
+        FreeEnergyPerturbationData gmx_unused*  freeEnergyPerturbationData,
+        GlobalCommunicationHelper gmx_unused*   globalCommunicationHelper,
+        ObservablesReducer gmx_unused*          observablesReducer,
+        NhcUsage                                nhcUsage,
+        Offset                                  offset,
+        UseFullStepKE                           useFullStepKE,
+        ScheduleOnInitStep                      scheduleOnInitStep,
+        const PropagatorTag&                    propagatorTag)
 {
     if (!builderHelper->simulationData<NoseHooverChainsData>(NoseHooverChainsData::dataID(nhcUsage)))
     {
@@ -786,9 +785,8 @@ ISimulatorElement* NoseHooverChainsElement::getElementPointerImpl(
         auto* thermostat = static_cast<NoseHooverChainsElement*>(element);
         // Capturing pointer is safe because caller handles lifetime
         builderHelper->registerTemperaturePressureControl(
-                [thermostat, propagatorTag](const PropagatorConnection& connection) {
-                    thermostat->connectWithPropagator(connection, propagatorTag);
-                });
+                [thermostat, propagatorTag](const PropagatorConnection& connection)
+                { thermostat->connectWithPropagator(connection, propagatorTag); });
     }
     else
     {

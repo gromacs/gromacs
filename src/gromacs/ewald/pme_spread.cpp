@@ -215,52 +215,53 @@ static void make_thread_local_ind(const PmeAtomComm* atc, int thread, splinedata
 /* Macro to force loop unrolling by fixing order.
  * This gives a significant performance gain.
  */
-#define CALC_SPLINE(order)                                                                               \
-    {                                                                                                    \
-        for (int j = 0; (j < DIM); j++)                                                                  \
-        {                                                                                                \
-            real dr, div;                                                                                \
-            real data[PME_ORDER_MAX];                                                                    \
-                                                                                                         \
-            dr = xptr[j];                                                                                \
-                                                                                                         \
-            /* dr is relative offset from lower cell limit */                                            \
-            data[(order)-1] = 0;                                                                         \
-            data[1]         = dr;                                                                        \
-            data[0]         = 1 - dr;                                                                    \
-                                                                                                         \
-            for (int k = 3; (k < (order)); k++)                                                          \
-            {                                                                                            \
-                div         = 1.0 / (k - 1.0);                                                           \
-                data[k - 1] = div * dr * data[k - 2];                                                    \
-                for (int l = 1; (l < (k - 1)); l++)                                                      \
-                {                                                                                        \
-                    data[k - l - 1] =                                                                    \
-                            div * ((dr + l) * data[k - l - 2] + (k - l - dr) * data[k - l - 1]);         \
-                }                                                                                        \
-                data[0] = div * (1 - dr) * data[0];                                                      \
-            }                                                                                            \
-            /* differentiate */                                                                          \
-            dtheta[j][i * (order) + 0] = -data[0];                                                       \
-            for (int k = 1; (k < (order)); k++)                                                          \
-            {                                                                                            \
-                dtheta[j][i * (order) + k] = data[k - 1] - data[k];                                      \
-            }                                                                                            \
-                                                                                                         \
-            div             = 1.0 / ((order)-1);                                                         \
-            data[(order)-1] = div * dr * data[(order)-2];                                                \
-            for (int l = 1; (l < ((order)-1)); l++)                                                      \
-            {                                                                                            \
-                data[(order)-l - 1] =                                                                    \
-                        div * ((dr + l) * data[(order)-l - 2] + ((order)-l - dr) * data[(order)-l - 1]); \
-            }                                                                                            \
-            data[0] = div * (1 - dr) * data[0];                                                          \
-                                                                                                         \
-            for (int k = 0; k < (order); k++)                                                            \
-            {                                                                                            \
-                theta[j][i * (order) + k] = data[k];                                                     \
-            }                                                                                            \
-        }                                                                                                \
+#define CALC_SPLINE(order)                                                                       \
+    {                                                                                            \
+        for (int j = 0; (j < DIM); j++)                                                          \
+        {                                                                                        \
+            real dr, div;                                                                        \
+            real data[PME_ORDER_MAX];                                                            \
+                                                                                                 \
+            dr = xptr[j];                                                                        \
+                                                                                                 \
+            /* dr is relative offset from lower cell limit */                                    \
+            data[(order) - 1] = 0;                                                               \
+            data[1]           = dr;                                                              \
+            data[0]           = 1 - dr;                                                          \
+                                                                                                 \
+            for (int k = 3; (k < (order)); k++)                                                  \
+            {                                                                                    \
+                div         = 1.0 / (k - 1.0);                                                   \
+                data[k - 1] = div * dr * data[k - 2];                                            \
+                for (int l = 1; (l < (k - 1)); l++)                                              \
+                {                                                                                \
+                    data[k - l - 1] =                                                            \
+                            div * ((dr + l) * data[k - l - 2] + (k - l - dr) * data[k - l - 1]); \
+                }                                                                                \
+                data[0] = div * (1 - dr) * data[0];                                              \
+            }                                                                                    \
+            /* differentiate */                                                                  \
+            dtheta[j][i * (order) + 0] = -data[0];                                               \
+            for (int k = 1; (k < (order)); k++)                                                  \
+            {                                                                                    \
+                dtheta[j][i * (order) + k] = data[k - 1] - data[k];                              \
+            }                                                                                    \
+                                                                                                 \
+            div               = 1.0 / ((order) - 1);                                             \
+            data[(order) - 1] = div * dr * data[(order) - 2];                                    \
+            for (int l = 1; (l < ((order) - 1)); l++)                                            \
+            {                                                                                    \
+                data[(order) - l - 1] = div                                                      \
+                                        * ((dr + l) * data[(order) - l - 2]                      \
+                                           + ((order) - l - dr) * data[(order) - l - 1]);        \
+            }                                                                                    \
+            data[0] = div * (1 - dr) * data[0];                                                  \
+                                                                                                 \
+            for (int k = 0; k < (order); k++)                                                    \
+            {                                                                                    \
+                theta[j][i * (order) + k] = data[k];                                             \
+            }                                                                                    \
+        }                                                                                        \
     }
 
 static void make_bsplines(gmx::ArrayRef<real*> theta,
@@ -320,9 +321,9 @@ static void make_bsplines(gmx::ArrayRef<real*> theta,
     }
 
 
-static void spread_coefficients_bsplines_thread(pmegrid_t*            pmegrid,
-                                                const PmeAtomComm*    atc,
-                                                splinedata_t*         spline,
+static void spread_coefficients_bsplines_thread(pmegrid_t*                        pmegrid,
+                                                const PmeAtomComm*                atc,
+                                                splinedata_t*                     spline,
                                                 const pme_spline_work gmx_unused& work)
 {
 

@@ -718,8 +718,8 @@ AwhDimParams::AwhDimParams(std::vector<t_inpfile>* inp, const std::string& prefi
         const double diffusion_default = 1e-5;
         auto         message           = formatString(
                 "%s not explicitly set by user. You can choose to use a default "
-                "value (%g nm^2/ps or rad^2/ps) but this may very well be "
-                "non-optimal for your system!",
+                                  "value (%g nm^2/ps or rad^2/ps) but this may very well be "
+                                  "non-optimal for your system!",
                 opt.c_str(),
                 diffusion_default);
         wi->addNote(message);
@@ -1429,9 +1429,12 @@ void checkAwhParams(const AwhParams& awhParams, const t_inputrec& ir, WarningHan
         checkBiasParams(awhBiasParams[k], prefixawh, ir, wi);
         /* Check if there is a FEP lambda dimension. */
         const auto dimParams = awhBiasParams[k].dimParams();
-        haveFepLambdaDim = std::any_of(dimParams.begin(), dimParams.end(), [](const auto& dimParam) {
-            return dimParam.coordinateProvider() == AwhCoordinateProviderType::FreeEnergyLambda;
-        });
+        haveFepLambdaDim     = std::any_of(dimParams.begin(),
+                                       dimParams.end(),
+                                       [](const auto& dimParam) {
+                                           return dimParam.coordinateProvider()
+                                                  == AwhCoordinateProviderType::FreeEnergyLambda;
+                                       });
     }
 
     if (haveFepLambdaDim)

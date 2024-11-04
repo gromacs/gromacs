@@ -64,7 +64,7 @@ struct t_pull_group
     std::vector<int>  ind;     /**< The global atoms numbers */
     std::vector<real> weight;  /**< Weights (use all 1 when weight==NULL) */
     int               pbcatom; /**< The reference atom for pbc (global number) */
-    int               pbcatom_input; /**< The reference atom for pbc (global number) as specified in the input parameters */
+    int pbcatom_input; /**< The reference atom for pbc (global number) as specified in the input parameters */
 };
 
 /*! Maximum number of pull groups that can be used in a pull coordinate */

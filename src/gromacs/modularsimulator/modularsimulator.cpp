@@ -371,7 +371,8 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
                                          bool                             doMembed,
                                          bool                             useGpuForUpdate)
 {
-    auto conditionalAssert = [exitOnFailure](bool condition, const char* message) {
+    auto conditionalAssert = [exitOnFailure](bool condition, const char* message)
+    {
         if (exitOnFailure)
         {
             GMX_RELEASE_ASSERT(condition, message);

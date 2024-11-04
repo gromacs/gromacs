@@ -174,7 +174,7 @@ public:
      * \param[in] ptr Pointer to data to be accessed by this span
      * \param[in] dynamic_extents Array the size of dynamic extents.
      */
-    constexpr basic_mdspan(pointer                                                    ptr,
+    constexpr basic_mdspan(pointer ptr,
                            const std::array<ptrdiff_t, extents_type::rank_dynamic()>& dynamic_extents) :
         acc_(accessor_type()), map_(extents_type(dynamic_extents)), ptr_(ptr)
     {

@@ -108,9 +108,10 @@ static void sort_molecule(t_atoms** atoms_solvt, t_atoms** newatoms, std::vector
         {
             /* see if this was a molecule type we haven't had yet: */
             auto matchingMolType = std::find_if(
-                    molTypes.begin(), molTypes.end(), [atoms, i](const MoleculeType& molecule) {
-                        return molecule.name == *atoms->resinfo[atoms->atom[i].resind].name;
-                    });
+                    molTypes.begin(),
+                    molTypes.end(),
+                    [atoms, i](const MoleculeType& molecule)
+                    { return molecule.name == *atoms->resinfo[atoms->atom[i].resind].name; });
             if (matchingMolType == molTypes.end())
             {
                 int numAtomsInMolType = 0;
@@ -952,19 +953,19 @@ int gmx_solvate(int argc, char* argv[])
         { "-box", FALSE, etRVEC, { new_box }, "Box size (in nm)" },
         { "-radius", FALSE, etREAL, { &defaultDistance }, "Default van der Waals distance" },
         { "-scale",
-          FALSE,
-          etREAL,
-          { &scaleFactor },
-          "Scale factor to multiply Van der Waals radii from the database in "
-          "share/gromacs/top/vdwradii.dat. The default value of 0.57 yields density close to 1000 "
-          "g/l for proteins in water." },
+                    FALSE,
+                    etREAL,
+                    { &scaleFactor },
+                    "Scale factor to multiply Van der Waals radii from the database in "
+                              "share/gromacs/top/vdwradii.dat. The default value of 0.57 yields density close to 1000 "
+                              "g/l for proteins in water." },
         { "-shell", FALSE, etREAL, { &r_shell }, "Thickness of optional water layer around solute" },
         { "-maxsol",
-          FALSE,
-          etINT,
-          { &max_sol },
-          "Maximum number of solvent molecules to add if they fit in the box. If zero (default) "
-          "this is ignored" },
+                    FALSE,
+                    etINT,
+                    { &max_sol },
+                    "Maximum number of solvent molecules to add if they fit in the box. If zero (default) "
+                              "this is ignored" },
         { "-vel", FALSE, etBOOL, { &bReadV }, "Keep velocities from input solute and solvent" },
     };
 

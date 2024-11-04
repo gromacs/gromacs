@@ -167,12 +167,15 @@ std::vector<SpecialBond> generateSpecialBonds()
 
 static bool is_special(gmx::ArrayRef<const SpecialBond> sb, const char* res, const char* atom)
 {
-    return std::any_of(sb.begin(), sb.end(), [res, atom](const auto& bond) {
-        return (((strncmp(bond.firstResidue.c_str(), res, 3) == 0)
-                 && (gmx::equalCaseInsensitive(bond.firstAtomName, atom)))
-                || ((strncmp(bond.secondResidue.c_str(), res, 3) == 0)
-                    && (gmx::equalCaseInsensitive(bond.secondAtomName, atom))));
-    });
+    return std::any_of(sb.begin(),
+                       sb.end(),
+                       [res, atom](const auto& bond)
+                       {
+                           return (((strncmp(bond.firstResidue.c_str(), res, 3) == 0)
+                                    && (gmx::equalCaseInsensitive(bond.firstAtomName, atom)))
+                                   || ((strncmp(bond.secondResidue.c_str(), res, 3) == 0)
+                                       && (gmx::equalCaseInsensitive(bond.secondAtomName, atom))));
+                       });
 }
 
 static bool is_bond(gmx::ArrayRef<const SpecialBond> sb, t_atoms* pdba, int a1, int a2, real d, int* index_sb, bool* bSwap)

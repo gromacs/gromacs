@@ -157,11 +157,11 @@ int gmx_covar(int argc, char* argv[])
     t_pargs         pa[] = {
         { "-fit", FALSE, etBOOL, { &bFit }, "Fit to a reference structure" },
         { "-ref",
-          FALSE,
-          etBOOL,
-          { &bRef },
-          "Use the deviation from the conformation in the structure file instead of from the "
-          "average" },
+                  FALSE,
+                  etBOOL,
+                  { &bRef },
+                  "Use the deviation from the conformation in the structure file instead of from the "
+                          "average" },
         { "-mwa", FALSE, etBOOL, { &bM }, "Mass-weighted covariance analysis" },
         { "-last", FALSE, etINT, { &end }, "Last eigenvector to write away (-1 is till the last)" },
         { "-pbc", FALSE, etBOOL, { &bPBC }, "Apply corrections for periodic boundary conditions" }

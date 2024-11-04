@@ -254,8 +254,8 @@ public:
                  method,
                  gridOrdering,
                  computeEnergyAndVirial,
-                 contextIndex)                                = parameters_;
-        Matrix3x3                           box               = c_inputBoxes.at(boxName);
+                 contextIndex) = parameters_;
+        Matrix3x3 box          = c_inputBoxes.at(boxName);
         const SparseComplexGridValuesInput& nonZeroGridValues = c_inputGridValues.at(gridValuesName);
 
         /* Storing the input where it's needed, running the test */
@@ -275,10 +275,10 @@ public:
             default: GMX_THROW(InternalError("Unknown PME solver"));
         }
 
-        const auto                    pmeTestHardwareContextsAll = getPmeTestHardwareContexts();
+        const auto pmeTestHardwareContextsAll = getPmeTestHardwareContexts();
         const PmeTestHardwareContext& pmeTestHardwareContext = pmeTestHardwareContextsAll[contextIndex];
-        const CodePath                codePath               = pmeTestHardwareContext.codePath();
-        MessageStringCollector        messages = getSkipMessagesIfNecessary(inputRec, codePath);
+        const CodePath         codePath = pmeTestHardwareContext.codePath();
+        MessageStringCollector messages = getSkipMessagesIfNecessary(inputRec, codePath);
         messages.appendIf(!pmeTestHardwareContext.gpuId().has_value() && gridOrdering == GridOrdering::XYZ,
                           "CPU PME solve does not implement XYZ grid ordering");
         if (!messages.isEmpty())

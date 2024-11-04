@@ -1589,7 +1589,7 @@ static inline SimdFloat gmx_simdcall cvtD2F(SimdDouble gmx_unused d)
  * \param[out] d0 Double-precision SIMD variable, first half of values from f.
  * \param[out] d1 Double-precision SIMD variable, second half of values from f.
  */
-static inline void gmx_simdcall cvtF2DD(SimdFloat gmx_unused f,
+static inline void gmx_simdcall cvtF2DD(SimdFloat gmx_unused   f,
                                         SimdDouble gmx_unused* d0,
                                         SimdDouble gmx_unused* d1)
 {

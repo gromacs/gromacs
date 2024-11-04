@@ -182,8 +182,8 @@ namespace
 TestReferenceDataImplPointer initReferenceDataInstance(std::optional<std::filesystem::path> testNameOverride)
 {
     GMX_RELEASE_ASSERT(!g_referenceData, "Test cannot create multiple TestReferenceData instances");
-    g_referenceData.reset(new internal::TestReferenceDataImpl(
-            referenceDataMode(), false, std::move(testNameOverride)));
+    g_referenceData = std::make_shared<internal::TestReferenceDataImpl>(
+            referenceDataMode(), false, std::move(testNameOverride));
     return g_referenceData;
 }
 
@@ -197,7 +197,7 @@ TestReferenceDataImplPointer initReferenceDataInstanceForSelfTest(ReferenceDataM
         g_referenceData->onTestEnd(true);
         g_referenceData.reset();
     }
-    g_referenceData.reset(new internal::TestReferenceDataImpl(mode, true, std::nullopt));
+    g_referenceData = std::make_shared<internal::TestReferenceDataImpl>(mode, true, std::nullopt);
     return g_referenceData;
 }
 
@@ -303,8 +303,8 @@ void initReferenceData(IOptionsContainer* options)
 namespace internal
 {
 
-TestReferenceDataImpl::TestReferenceDataImpl(ReferenceDataMode                    mode,
-                                             bool                                 bSelfTestMode,
+TestReferenceDataImpl::TestReferenceDataImpl(ReferenceDataMode mode,
+                                             bool              bSelfTestMode,
                                              std::optional<std::filesystem::path> testNameOverride) :
     updateMismatchingEntries_(false), bSelfTestMode_(bSelfTestMode), bInUse_(false)
 {

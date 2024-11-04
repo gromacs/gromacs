@@ -149,7 +149,7 @@ static double simd_cycle_factor(gmx_bool bUseSIMD)
         gmx_incons("gmx_cycle_factor() compiled without SIMD called with bUseSIMD=TRUE");
     }
     /* No SIMD, no speedup */
-    speedup                        = 1.0;
+    speedup = 1.0;
 #endif
 
     /* Return speed compared to the reference (Haswell).
@@ -169,7 +169,7 @@ void count_bonded_distances(const gmx_mtop_t& mtop, const t_inputrec& ir, double
 #if GMX_SIMD_HAVE_REAL
     gmx_bool bSimdBondeds = TRUE;
 #else
-    gmx_bool   bSimdBondeds        = FALSE;
+    gmx_bool bSimdBondeds = FALSE;
 #endif
 
     bExcl = (ir.cutoff_scheme == CutoffScheme::Group && inputrecExclForces(&ir)

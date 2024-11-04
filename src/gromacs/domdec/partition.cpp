@@ -1371,16 +1371,16 @@ void set_dd_dlb_max_cutoff(t_commrec* cr, real cutoff)
  * \param[in]     atomInfoForEachMoleculeBlock  List of atom information for molecule blocks
  * \param[in,out] atomInfo  List of home + halo atom information
  */
-static void mergeAtomBuffers(const int                                       numZones,
-                             gmx_domdec_comm_dim_t*                          cd,
-                             const int                                       pulse,
-                             gmx::DomdecZones*                               zones,
-                             gmx::ArrayRef<int>                              index_gl,
-                             const int*                                      recv_i,
-                             gmx::ArrayRef<gmx::RVec>                        x,
-                             gmx::ArrayRef<const gmx::RVec>                  recv_vr,
+static void mergeAtomBuffers(const int                      numZones,
+                             gmx_domdec_comm_dim_t*         cd,
+                             const int                      pulse,
+                             gmx::DomdecZones*              zones,
+                             gmx::ArrayRef<int>             index_gl,
+                             const int*                     recv_i,
+                             gmx::ArrayRef<gmx::RVec>       x,
+                             gmx::ArrayRef<const gmx::RVec> recv_vr,
                              gmx::ArrayRef<gmx::AtomInfoWithinMoleculeBlock> atomInfoForEachMoleculeBlock,
-                             gmx::ArrayRef<int32_t>                          atomInfo)
+                             gmx::ArrayRef<int32_t> atomInfo)
 {
     GMX_ASSERT(zones->numZones() >= 2 * numZones, "zones should contain at least 2*numZones zones");
 
@@ -1467,9 +1467,9 @@ static void make_cell2at_index(gmx_domdec_comm_dim_t* cd, int nzone, int atomGro
 //! Returns whether a link is missing.
 static bool missing_link(const gmx::ListOfLists<int>& link, const int globalAtomIndex, const gmx_ga2la_t& ga2la)
 {
-    return std::any_of(link[globalAtomIndex].begin(), link[globalAtomIndex].end(), [&](const int a) {
-        return ga2la.findHome(a) == nullptr;
-    });
+    return std::any_of(link[globalAtomIndex].begin(),
+                       link[globalAtomIndex].end(),
+                       [&](const int a) { return ga2la.findHome(a) == nullptr; });
 }
 
 //! Domain corners for communication, a maximum of 4 i-zones see a j domain

@@ -129,9 +129,10 @@ const char* res2bb_notermini(const std::string& name, gmx::ArrayRef<const RtpRen
     /* NOTE: This function returns the main building block name,
      *       it does not take terminal renaming into account.
      */
-    auto found = std::find_if(rr.begin(), rr.end(), [&name](const auto& rename) {
-        return gmx::equalCaseInsensitive(name, rename.gmx);
-    });
+    auto found = std::find_if(rr.begin(),
+                              rr.end(),
+                              [&name](const auto& rename)
+                              { return gmx::equalCaseInsensitive(name, rename.gmx); });
     return found != rr.end() ? found->main.c_str() : name.c_str();
 }
 
@@ -365,10 +366,13 @@ void read_rtprename(const char* fname, FILE* fp, std::vector<RtpRename>* rtprena
 
 std::string search_resrename(gmx::ArrayRef<const RtpRename> rr, const char* name, bool bStart, bool bEnd, bool bCompareFFRTPname)
 {
-    auto found = std::find_if(rr.begin(), rr.end(), [&name, &bCompareFFRTPname](const auto& rename) {
-        return ((!bCompareFFRTPname && (name == rename.gmx))
-                || (bCompareFFRTPname && (name == rename.main)));
-    });
+    auto found = std::find_if(rr.begin(),
+                              rr.end(),
+                              [&name, &bCompareFFRTPname](const auto& rename)
+                              {
+                                  return ((!bCompareFFRTPname && (name == rename.gmx))
+                                          || (bCompareFFRTPname && (name == rename.main)));
+                              });
 
     std::string newName;
     /* If found in the database, rename this residue's rtp building block,
@@ -2310,7 +2314,7 @@ int pdb2gmx::run()
         init_t_atoms(chains[i].pdba, pdb_ch[si].natom, true);
         for (j = 0; j < chains[i].pdba->nr; j++)
         {
-            chains[i].pdba->atom[j]     = pdba_all.atom[pdb_ch[si].start + j];
+            chains[i].pdba->atom[j] = pdba_all.atom[pdb_ch[si].start + j];
             chains[i].pdba->atomname[j] = put_symtab(&symtab, *pdba_all.atomname[pdb_ch[si].start + j]);
             chains[i].pdba->pdbinfo[j] = pdba_all.pdbinfo[pdb_ch[si].start + j];
             chains[i].x.emplace_back(pdbx[pdb_ch[si].start + j]);

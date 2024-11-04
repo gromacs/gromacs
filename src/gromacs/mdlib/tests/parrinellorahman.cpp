@@ -421,7 +421,8 @@ const EnumerationArray<BoxShape, std::vector<Matrix3x3>> c_boxVelocities = {
 };
 
 //! Sets of pressure-coupling MDP options to use in tests
-const std::vector<PressureCouplingOptions> c_options = []() {
+const std::vector<PressureCouplingOptions> c_options = []()
+{
     PressureCouplingOptions options;
     options.epc                     = PressureCoupling::ParrinelloRahman;
     options.tau_p                   = 1.;

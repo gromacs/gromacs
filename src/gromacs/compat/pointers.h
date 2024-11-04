@@ -130,8 +130,8 @@ public:
 
     //! Default constructors and assignment.
     //! \{
-    not_null(not_null&& other) noexcept = default;
-    not_null(const not_null& other)     = default;
+    not_null(not_null&& other) noexcept        = default;
+    not_null(const not_null& other)            = default;
     not_null& operator=(const not_null& other) = default;
     //! \}
 
@@ -149,19 +149,19 @@ public:
 
     //! Deleted to prevent compilation when someone attempts to assign a null pointer constant.
     //! \{
-    not_null(std::nullptr_t) = delete;
+    not_null(std::nullptr_t)            = delete;
     not_null& operator=(std::nullptr_t) = delete;
     //! \}
 
     //! Deleted unwanted operators because pointers only point to single objects.
     //! \{
-    not_null& operator++()                     = delete;
-    not_null& operator--()                     = delete;
-    not_null  operator++(int)                  = delete;
-    not_null  operator--(int)                  = delete;
-    not_null& operator+=(std::ptrdiff_t)       = delete;
-    not_null& operator-=(std::ptrdiff_t)       = delete;
-    void      operator[](std::ptrdiff_t) const = delete;
+    not_null& operator++()                = delete;
+    not_null& operator--()                = delete;
+    not_null  operator++(int)             = delete;
+    not_null  operator--(int)             = delete;
+    not_null& operator+=(std::ptrdiff_t)  = delete;
+    not_null& operator-=(std::ptrdiff_t)  = delete;
+    void operator[](std::ptrdiff_t) const = delete;
     //! \}
 
 private:

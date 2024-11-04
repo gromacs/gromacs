@@ -110,7 +110,7 @@ void Bias::doSkippedUpdatesForAllPoints()
     }
 }
 
-gmx::ArrayRef<const double> Bias::calcForceAndUpdateBias(const awh_dvec         coordValue,
+gmx::ArrayRef<const double> Bias::calcForceAndUpdateBias(const awh_dvec coordValue,
                                                          ArrayRef<const double> neighborLambdaEnergies,
                                                          ArrayRef<const double> neighborLambdaDhdl,
                                                          double*                awhPotential,

@@ -165,7 +165,7 @@ PmeSafePointer pmeInitWrapper(const t_inputrec*    inputRec,
 PmeSafePointer pmeInitEmpty(const t_inputrec* inputRec);
 
 //! Make a GPU state-propagator manager
-std::unique_ptr<StatePropagatorDataGpu> makeStatePropagatorDataGpu(const gmx_pme_t&     pme,
+std::unique_ptr<StatePropagatorDataGpu> makeStatePropagatorDataGpu(const gmx_pme_t& pme,
                                                                    const DeviceContext* deviceContext,
                                                                    const DeviceStream* deviceStream);
 //! PME initialization with atom data and system box

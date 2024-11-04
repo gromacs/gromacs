@@ -338,7 +338,7 @@ static bool check_params(FILE*                                  fp,
             bOk = false;
         }
     } /* End of parameter loop */
-      /* Check parameters of existing methods */
+    /* Check parameters of existing methods */
     gmx::SelectionParserSymbolIterator symbol =
             symtab.beginIterator(gmx::SelectionParserSymbol::MethodSymbol);
     while (symbol != symtab.endIterator())

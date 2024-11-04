@@ -78,9 +78,9 @@ public:
     {
     }
 
-    SimulationInputHandleImpl(const SimulationInputHandleImpl&) = default;
-    SimulationInputHandleImpl& operator=(const SimulationInputHandleImpl&) = default;
-    SimulationInputHandleImpl(SimulationInputHandleImpl&&) noexcept        = default;
+    SimulationInputHandleImpl(const SimulationInputHandleImpl&)                = default;
+    SimulationInputHandleImpl& operator=(const SimulationInputHandleImpl&)     = default;
+    SimulationInputHandleImpl(SimulationInputHandleImpl&&) noexcept            = default;
     SimulationInputHandleImpl& operator=(SimulationInputHandleImpl&&) noexcept = default;
 
     [[nodiscard]] SimulationInput* simulationInput() const { return simulationInput_.get(); }
@@ -192,7 +192,7 @@ SimulationInputHandle makeSimulationInput(const LegacyMdrunOptions& options)
     // filenames until a communications context is known.
     const auto* const tprFilename = ftp2fn(efTPR, options.filenames.size(), options.filenames.data());
     const auto* const cpiFilename = opt2fn("-cpi", options.filenames.size(), options.filenames.data());
-    auto              simulationInput = std::make_unique<SimulationInput>(tprFilename, cpiFilename);
+    auto simulationInput = std::make_unique<SimulationInput>(tprFilename, cpiFilename);
     auto impl = std::make_unique<detail::SimulationInputHandleImpl>(std::move(simulationInput));
 
     return SimulationInputHandle(std::move(impl));

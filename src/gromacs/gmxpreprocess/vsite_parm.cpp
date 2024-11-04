@@ -594,11 +594,11 @@ static bool calc_vsite3out_param(PreprocessingAtomTypes*                     aty
         aN = std::max(vsite->ak(), vsite->al()) + 1;
 
         /* get all bondlengths and angles: */
-        bMM    = get_bond_length(bonds, vsite->ak(), vsite->al());
-        bCM    = bjk;
-        bCN    = get_bond_length(bonds, vsite->aj(), aN);
-        bNH    = get_bond_length(bonds, aN, vsite->ai());
-        aCNH   = get_angle(angles, vsite->aj(), aN, vsite->ai());
+        bMM  = get_bond_length(bonds, vsite->ak(), vsite->al());
+        bCM  = bjk;
+        bCN  = get_bond_length(bonds, vsite->aj(), aN);
+        bNH  = get_bond_length(bonds, aN, vsite->ai());
+        aCNH = get_angle(angles, vsite->aj(), aN, vsite->ai());
         bError = bError || (bMM == NOTSET) || (bCN == NOTSET) || (bNH == NOTSET) || (aCNH == NOTSET);
 
         /* calculate */
@@ -674,9 +674,9 @@ static bool calc_vsite4fd_param(InteractionOfType*                          vsit
 
     if (!bError)
     {
-        pk     = bjk * std::sin(aijk);
-        pl     = bjl * std::sin(aijl);
-        pm     = bjm * std::sin(aijm);
+        pk = bjk * std::sin(aijk);
+        pl = bjl * std::sin(aijl);
+        pm = bjm * std::sin(aijm);
         cosakl = (std::cos(akjl) - std::cos(aijk) * std::cos(aijl)) / (std::sin(aijk) * std::sin(aijl));
         cosakm = (std::cos(akjm) - std::cos(aijk) * std::cos(aijm)) / (std::sin(aijk) * std::sin(aijm));
         if (cosakl < -1 || cosakl > 1 || cosakm < -1 || cosakm > 1)

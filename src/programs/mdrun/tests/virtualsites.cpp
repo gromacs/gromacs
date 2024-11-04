@@ -180,9 +180,9 @@ public:
         SCOPED_TRACE("Checking virtual site reference implementation.");
         // Randomly generated real atom positions and velocities
         std::vector<RVec> startPositions     = { { 2.641321, 2.076298, 2.138602 },
-                                             { 3.776765, 3.154901, 1.556379 },
-                                             { 2.376669, 1.166706, 2.457044 },
-                                             { 3.242320, 2.142465, 2.023578 } };
+                                                 { 3.776765, 3.154901, 1.556379 },
+                                                 { 2.376669, 1.166706, 2.457044 },
+                                                 { 3.242320, 2.142465, 2.023578 } };
         std::vector<RVec> halfStepVelocities = { { 0.154667, 0.319010, 0.458749 },
                                                  { -0.010590, -0.191858, -0.096820 },
                                                  { -0.008609, 0.004656, 0.448852 },

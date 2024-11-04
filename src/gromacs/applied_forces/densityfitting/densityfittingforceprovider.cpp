@@ -204,7 +204,7 @@ private:
 
 DensityFittingForceProvider::Impl::~Impl() = default;
 
-DensityFittingForceProvider::Impl::Impl(const DensityFittingParameters&             parameters,
+DensityFittingForceProvider::Impl::Impl(const DensityFittingParameters& parameters,
                                         basic_mdspan<const float, dynamicExtents3D> referenceDensity,
                                         const TranslateAndScale& transformationToDensityLattice,
                                         const LocalAtomSet&      localAtomSet,
@@ -350,14 +350,13 @@ void DensityFittingForceProvider::Impl::calculateForces(const ForceProviderInput
             measure_.gradient(gaussTransform_.constView());
     // calculate forces
     forces_.resize(localAtomSet_.numAtomsLocal());
-    std::transform(
-            std::begin(transformedCoordinates_),
-            std::end(transformedCoordinates_),
-            std::begin(amplitudes),
-            std::begin(forces_),
-            [&densityDerivative, this](const RVec r, real amplitude) {
-                return densityFittingForce_.evaluateForce({ r, amplitude }, densityDerivative);
-            });
+    std::transform(std::begin(transformedCoordinates_),
+                   std::end(transformedCoordinates_),
+                   std::begin(amplitudes),
+                   std::begin(forces_),
+                   [&densityDerivative, this](const RVec r, real amplitude) {
+                       return densityFittingForce_.evaluateForce({ r, amplitude }, densityDerivative);
+                   });
 
     // correct forces for coordinate transformations with chain rule
     // F = -k d U(transform(x)) / d x =
@@ -377,7 +376,7 @@ void DensityFittingForceProvider::Impl::calculateForces(const ForceProviderInput
     }
 
     // multiply with the current force constant
-    auto       densityForceIterator = forces_.cbegin();
+    auto densityForceIterator = forces_.cbegin();
     const real effectiveForceConstant = state_.adaptiveForceConstantScale_ * parameters_.calculationIntervalInSteps_
                                         * parameters_.forceConstant_;
     for (const auto localAtomIndex : localAtomSet_.localIndex())
@@ -448,7 +447,7 @@ void DensityFittingForceProvider::calculateForces(const ForceProviderInput& forc
 }
 
 void DensityFittingForceProvider::writeCheckpointData(MDModulesWriteCheckpointData checkpointWriting,
-                                                      const std::string&           moduleName)
+                                                      const std::string& moduleName)
 {
     impl_->stateToCheckpoint().writeState(checkpointWriting.builder_, moduleName);
 }

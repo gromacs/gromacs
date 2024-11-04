@@ -193,11 +193,11 @@ int gmx_sorient(int argc, char* argv[])
         { "-cbin", FALSE, etREAL, { &binwidth }, "Binwidth for the cosine" },
         { "-rbin", FALSE, etREAL, { &rbinw }, "Binwidth for r (nm)" },
         { "-pbc",
-          FALSE,
-          etBOOL,
-          { &bPBC },
-          "Check PBC for the center of mass calculation. Only necessary when your reference group "
-          "consists of several molecules." }
+                    FALSE,
+                    etBOOL,
+                    { &bPBC },
+                    "Check PBC for the center of mass calculation. Only necessary when your reference group "
+                              "consists of several molecules." }
     };
 
     t_filenm fnm[] = { { efTRX, nullptr, nullptr, ffREAD },  { efTPS, nullptr, nullptr, ffREAD },

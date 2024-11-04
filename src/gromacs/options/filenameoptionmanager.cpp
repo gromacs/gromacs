@@ -266,7 +266,7 @@ std::string FileNameOptionManager::completeDefaultFileName(const std::string&   
     {
         return std::string();
     }
-    const bool        bInput     = option.isInputFile() || option.isInputOutputFile();
+    const bool bInput = option.isInputFile() || option.isInputOutputFile();
     const std::string realPrefix = !impl_->defaultFileName_.empty() ? impl_->defaultFileName_ : prefix;
     if (bInput && !impl_->bInputCheckingDisabled_)
     {

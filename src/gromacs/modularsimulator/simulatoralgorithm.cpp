@@ -348,9 +348,8 @@ void ModularSimulatorAlgorithm::populateTaskQueue()
      * Elements can hence register lambdas capturing their `this` pointers without expecting
      * life time issues, as the task queue and the elements are in the same scope.
      */
-    auto registerRunFunction = [this](SimulatorRunFunction function) {
-        taskQueue_.emplace_back(std::move(function));
-    };
+    auto registerRunFunction = [this](SimulatorRunFunction function)
+    { taskQueue_.emplace_back(std::move(function)); };
 
     Time startTime = inputRec_->init_t;
     Time timeStep  = inputRec_->delta_t;
@@ -490,9 +489,8 @@ ModularSimulatorAlgorithmBuilder::ModularSimulatorAlgorithmBuilder(
     auto* statePropagatorDataPtr = statePropagatorData_.get();
     referenceTemperatureManager->registerUpdateCallback(
             [statePropagatorDataPtr](ArrayRef<const real>                temperatures,
-                                     ReferenceTemperatureChangeAlgorithm algorithm) {
-                statePropagatorDataPtr->updateReferenceTemperature(temperatures, algorithm);
-            });
+                                     ReferenceTemperatureChangeAlgorithm algorithm)
+            { statePropagatorDataPtr->updateReferenceTemperature(temperatures, algorithm); });
 }
 
 ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::build()
@@ -669,7 +667,8 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::build()
          * a signaller list which is inverse to the build order (and hence equal to
          * the intended call order).
          */
-        auto addSignaller = [this, &algorithm](auto signaller) {
+        auto addSignaller = [this, &algorithm](auto signaller)
+        {
             registerWithInfrastructureAndSignallers(signaller.get());
             algorithm.signallerList_.emplace(algorithm.signallerList_.begin(), std::move(signaller));
         };
@@ -742,9 +741,9 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::build()
 bool ModularSimulatorAlgorithmBuilder::elementExists(const ISimulatorElement* element) const
 {
     // Check whether element exists in element list
-    if (std::any_of(elements_.begin(), elements_.end(), [element](auto& existingElement) {
-            return element == existingElement.get();
-        }))
+    if (std::any_of(elements_.begin(),
+                    elements_.end(),
+                    [element](auto& existingElement) { return element == existingElement.get(); }))
     {
         return true;
     }
@@ -839,9 +838,8 @@ ReferenceTemperatureCallback ModularSimulatorAlgorithmBuilderHelper::changeRefer
     auto* referenceTemperatureManager =
             simulationData<ReferenceTemperatureManager>("ReferenceTemperatureManager").value();
     return [referenceTemperatureManager](ArrayRef<const real>                temperatures,
-                                         ReferenceTemperatureChangeAlgorithm algorithm) {
-        referenceTemperatureManager->setReferenceTemperature(temperatures, algorithm);
-    };
+                                         ReferenceTemperatureChangeAlgorithm algorithm)
+    { referenceTemperatureManager->setReferenceTemperature(temperatures, algorithm); };
 }
 
 } // namespace gmx

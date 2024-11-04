@@ -61,10 +61,10 @@ class SimulationRunner;
 
 typedef std::tuple<std::string, std::string> SimulationOptionTuple;
 
-void runGrompp(SimulationRunner*                         runner,
+void runGrompp(SimulationRunner* runner,
                const std::vector<SimulationOptionTuple>& options = std::vector<SimulationOptionTuple>());
 
-void runMdrun(SimulationRunner*                         runner,
+void runMdrun(SimulationRunner* runner,
               const std::vector<SimulationOptionTuple>& options = std::vector<SimulationOptionTuple>());
 
 void compareEnergies(const std::string&          edr1Name,

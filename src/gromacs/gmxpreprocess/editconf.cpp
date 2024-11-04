@@ -658,7 +658,7 @@ int gmx_editconf(int argc, char* argv[])
         "For complex molecules, the periodicity removal routine may break down, ",
         "in that case you can use [gmx-trjconv]."
     };
-    static real     dist = 0.0;
+    static real dist = 0.0;
     static gmx_bool bNDEF = FALSE, bRMPBC = FALSE, bCenter = FALSE, bReadVDW = FALSE, bCONECT = FALSE;
     static gmx_bool peratom = FALSE, bLegend = FALSE, bOrient = FALSE, bMead = FALSE,
                     bGrasp = FALSE, bSig56 = FALSE;
@@ -674,69 +674,69 @@ int gmx_editconf(int argc, char* argv[])
     t_pargs     pa[]           = {
         { "-ndef", FALSE, etBOOL, { &bNDEF }, "Choose output from default index groups" },
         { "-visbox",
-          FALSE,
-          etRVEC,
-          { visbox },
-          "HIDDENVisualize a grid of boxes, -1 visualizes the 14 box images" },
+                        FALSE,
+                        etRVEC,
+                        { visbox },
+                        "HIDDENVisualize a grid of boxes, -1 visualizes the 14 box images" },
         { "-bt", FALSE, etENUM, { btype }, "Box type for [TT]-box[tt] and [TT]-d[tt]" },
         { "-box", FALSE, etRVEC, { newbox }, "Box vector lengths (a,b,c)" },
         { "-angles", FALSE, etRVEC, { newang }, "Angles between the box vectors (bc,ac,ab)" },
         { "-d", FALSE, etREAL, { &dist }, "Distance between the solute and the box" },
         { "-c",
-          FALSE,
-          etBOOL,
-          { &bCenter },
-          "Center molecule in box (implied by [TT]-box[tt] and [TT]-d[tt])" },
+                        FALSE,
+                        etBOOL,
+                        { &bCenter },
+                        "Center molecule in box (implied by [TT]-box[tt] and [TT]-d[tt])" },
         { "-center", FALSE, etRVEC, { center }, "Shift the geometrical center to (x,y,z)" },
         { "-aligncenter", FALSE, etRVEC, { aligncenter }, "Center of rotation for alignment" },
         { "-align", FALSE, etRVEC, { targetvec }, "Align to target vector" },
         { "-translate", FALSE, etRVEC, { translation }, "Translation" },
         { "-rotate",
-          FALSE,
-          etRVEC,
-          { rotangles },
-          "Rotation around the X, Y and Z axes in degrees" },
+                        FALSE,
+                        etRVEC,
+                        { rotangles },
+                        "Rotation around the X, Y and Z axes in degrees" },
         { "-princ", FALSE, etBOOL, { &bOrient }, "Orient molecule(s) along their principal axes" },
         { "-scale", FALSE, etRVEC, { scale }, "Scaling factor" },
         { "-density",
-          FALSE,
-          etREAL,
-          { &rho },
-          "Density (g/L) of the output box achieved by scaling" },
+                        FALSE,
+                        etREAL,
+                        { &rho },
+                        "Density (g/L) of the output box achieved by scaling" },
         { "-pbc", FALSE, etBOOL, { &bRMPBC }, "Remove the periodicity (make molecule whole again)" },
         { "-resnr", FALSE, etINT, { &resnr_start }, " Renumber residues starting from resnr" },
         { "-grasp",
-          FALSE,
-          etBOOL,
-          { &bGrasp },
-          "Store the charge of the atom in the B-factor field and the radius of the atom in the "
-          "occupancy field" },
+                        FALSE,
+                        etBOOL,
+                        { &bGrasp },
+                        "Store the charge of the atom in the B-factor field and the radius of the atom in the "
+                                      "occupancy field" },
         { "-rvdw",
-          FALSE,
-          etREAL,
-          { &rvdw },
-          "Default Van der Waals radius (in nm) if one can not be found in the database or if no "
-          "parameters are present in the topology file" },
+                        FALSE,
+                        etREAL,
+                        { &rvdw },
+                        "Default Van der Waals radius (in nm) if one can not be found in the database or if no "
+                                      "parameters are present in the topology file" },
         { "-sig56",
-          FALSE,
-          etBOOL,
-          { &bSig56 },
-          "Use rmin/2 (minimum in the Van der Waals potential) rather than [GRK]sigma[grk]/2 " },
+                        FALSE,
+                        etBOOL,
+                        { &bSig56 },
+                        "Use rmin/2 (minimum in the Van der Waals potential) rather than [GRK]sigma[grk]/2 " },
         { "-vdwread",
-          FALSE,
-          etBOOL,
-          { &bReadVDW },
-          "Read the Van der Waals radii from the file [TT]vdwradii.dat[tt] rather than computing "
-          "the radii based on the force field" },
+                        FALSE,
+                        etBOOL,
+                        { &bReadVDW },
+                        "Read the Van der Waals radii from the file [TT]vdwradii.dat[tt] rather than computing "
+                                      "the radii based on the force field" },
         { "-atom", FALSE, etBOOL, { &peratom }, "Force B-factor attachment per atom" },
         { "-legend", FALSE, etBOOL, { &bLegend }, "Make B-factor legend" },
         { "-label", FALSE, etSTR, { &label }, "Add chain label for all residues" },
         { "-conect",
-          FALSE,
-          etBOOL,
-          { &bCONECT },
-          "Add CONECT records to a [REF].pdb[ref] file when written. Can only be done when a "
-          "topology (tpr file) is present" }
+                        FALSE,
+                        etBOOL,
+                        { &bCONECT },
+                        "Add CONECT records to a [REF].pdb[ref] file when written. Can only be done when a "
+                                      "topology (tpr file) is present" }
     };
 #define NPA asize(pa)
 
@@ -760,10 +760,10 @@ int gmx_editconf(int argc, char* argv[])
     gmx_conect        conect;
     gmx_output_env_t* oenv;
     t_filenm          fnm[] = { { efSTX, "-f", nullptr, ffREAD },
-                       { efNDX, "-n", nullptr, ffOPTRD },
-                       { efSTO, nullptr, nullptr, ffOPTWR },
-                       { efPQR, "-mead", "mead", ffOPTWR },
-                       { efDAT, "-bf", "bfact", ffOPTRD } };
+                                { efNDX, "-n", nullptr, ffOPTRD },
+                                { efSTO, nullptr, nullptr, ffOPTWR },
+                                { efPQR, "-mead", "mead", ffOPTWR },
+                                { efDAT, "-bf", "bfact", ffOPTRD } };
 #define NFILE asize(fnm)
 
     if (!parse_common_args(

@@ -102,18 +102,18 @@ class VelocityScalingTemperatureCoupling final :
 {
 public:
     //! Constructor
-    VelocityScalingTemperatureCoupling(int                               nstcouple,
-                                       int                               offset,
-                                       UseFullStepKE                     useFullStepKE,
+    VelocityScalingTemperatureCoupling(int           nstcouple,
+                                       int           offset,
+                                       UseFullStepKE useFullStepKE,
                                        ReportPreviousStepConservedEnergy reportPreviousConservedEnergy,
-                                       int64_t                           seed,
-                                       int                               numTemperatureGroups,
-                                       double                            couplingTimeStep,
-                                       const real*                       referenceTemperature,
-                                       const real*                       couplingTime,
-                                       const real*                       numDegreesOfFreedom,
-                                       EnergyData*                       energyData,
-                                       TemperatureCoupling               couplingType);
+                                       int64_t             seed,
+                                       int                 numTemperatureGroups,
+                                       double              couplingTimeStep,
+                                       const real*         referenceTemperature,
+                                       const real*         couplingTime,
+                                       const real*         numDegreesOfFreedom,
+                                       EnergyData*         energyData,
+                                       TemperatureCoupling couplingType);
 
     /*! \brief Register run function for step / time
      *

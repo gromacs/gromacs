@@ -519,7 +519,7 @@ std::vector<ApicInfo> detectX86ApicInfo(bool gmx_unused haveX2Apic)
     sched_setaffinity(0, sizeof(cpu_set_t), &saveCpuSet);
 #elif GMX_NATIVE_WINDOWS
     unsigned int eax, ebx, ecx, edx;
-    SYSTEM_INFO sysinfo;
+    SYSTEM_INFO  sysinfo;
     GetSystemInfo(&sysinfo);
 
     // calling SetThreadAffinityMask returns the current affinity mask if it succeeds,
@@ -807,9 +807,11 @@ CpuInfo::Vendor detectProcCpuInfoVendor(const std::map<std::string, std::string>
 
                 // If the entire name we are testing (s2) matches the first part of
                 // the string after the colon in /proc/cpuinfo (s1) we found our vendor
-                if (std::equal(s2.begin(), s2.end(), s1.begin(), [](const char& x, const char& y) -> bool {
-                        return tolower(x) == tolower(y);
-                    }))
+                if (std::equal(s2.begin(),
+                               s2.end(),
+                               s1.begin(),
+                               [](const char& x, const char& y) -> bool
+                               { return tolower(x) == tolower(y); }))
                 {
                     return t.second;
                 }

@@ -1234,7 +1234,7 @@ static inline void gmx_simdcall sincos(SimdFloat x, SimdFloat* sinval, SimdFloat
     m2 = m2 && m3;
     m  = m1 || m2;
     // where mask is FALSE, swap sign.
-    csign   = csign * blend(SimdFloat(-1.0f), one, m);
+    csign = csign * blend(SimdFloat(-1.0f), one, m);
 #        endif
     x  = fma(y, argred0, x);
     x  = fma(y, argred1, x);
@@ -1335,22 +1335,22 @@ static inline SimdFloat gmx_simdcall tan(SimdFloat x)
     SimdFloat       w, q;
     SimdFBool       m1, m2, m3;
 
-    w     = abs(x);
-    z     = fma(w, two_over_pi, half);
-    y     = trunc(z);
-    q     = z * quarter;
-    q     = q - trunc(q);
-    m1    = quarter <= q;
-    m2    = q < half;
-    m3    = threequarter <= q;
-    m1    = m1 && m2;
-    m     = m1 || m3;
-    w     = fma(y, argred0, w);
-    w     = fma(y, argred1, w);
-    w     = fma(y, argred2, w);
-    w     = fma(y, argred3, w);
-    w     = blend(w, -w, m);
-    x     = w * copysign(SimdFloat(1.0), x);
+    w  = abs(x);
+    z  = fma(w, two_over_pi, half);
+    y  = trunc(z);
+    q  = z * quarter;
+    q  = q - trunc(q);
+    m1 = quarter <= q;
+    m2 = q < half;
+    m3 = threequarter <= q;
+    m1 = m1 && m2;
+    m  = m1 || m3;
+    w  = fma(y, argred0, w);
+    w  = fma(y, argred1, w);
+    w  = fma(y, argred2, w);
+    w  = fma(y, argred3, w);
+    w  = blend(w, -w, m);
+    x  = w * copysign(SimdFloat(1.0), x);
 #        endif
     x2 = x * x;
     p  = fma(CT6, x2, CT5);
@@ -2832,7 +2832,7 @@ static inline void gmx_simdcall sincos(SimdDouble x, SimdDouble* sinval, SimdDou
     m2   = m2 && m3;
     mask = m1 || m2;
     // where mask is FALSE, swap sign.
-    csign   = csign * blend(SimdDouble(-1.0), one, mask);
+    csign = csign * blend(SimdDouble(-1.0), one, mask);
 #        endif
     x  = fma(y, argred0, x);
     x  = fma(y, argred1, x);
@@ -2966,8 +2966,8 @@ static inline SimdDouble gmx_simdcall tan(SimdDouble x)
     w  = fma(y, argred2, w);
     w  = fma(y, argred3, w);
 
-    w     = blend(w, -w, m);
-    x     = w * copysign(SimdDouble(1.0), x);
+    w = blend(w, -w, m);
+    x = w * copysign(SimdDouble(1.0), x);
 #        endif
     x2 = x * x;
     p  = fma(CT15, x2, CT14);
@@ -4259,7 +4259,7 @@ static inline void gmx_simdcall sinCosSingleAccuracy(SimdDouble x, SimdDouble* s
     m2   = m2 && m3;
     mask = m1 || m2;
     // where mask is FALSE, swap sign.
-    csign   = csign * blend(SimdDouble(-1.0), one, mask);
+    csign = csign * blend(SimdDouble(-1.0), one, mask);
 #        endif
     x  = fnma(y, argred0, x);
     x  = fnma(y, argred1, x);

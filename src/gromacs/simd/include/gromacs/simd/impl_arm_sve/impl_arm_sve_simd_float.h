@@ -385,7 +385,7 @@ static inline SimdFloat gmx_simdcall frexp(SimdFloat value, SimdFInt32* exponent
     const svint32_t exponentMask = svdup_n_s32(0x7F800000);
     const svint32_t mantissaMask = svdup_n_s32(0x807FFFFF);
     const svint32_t exponentBias = svdup_n_s32(126); // add 1 to make our definition identical to frexp()
-    const svfloat32_t half       = svdup_n_f32(0.5f);
+    const svfloat32_t half = svdup_n_f32(0.5f);
     svint32_t         iExponent;
 
     iExponent = svand_s32_x(pg, svreinterpret_s32_f32(value.simdInternal_), exponentMask);

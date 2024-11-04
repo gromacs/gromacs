@@ -169,7 +169,8 @@ TEST_F(TreeValueTransformTest, ObjectFromString)
 
     gmx::KeyValueTreeTransformer transform;
     transform.rules()->addRule().from<std::string>("/a").toObject("/foo").transformWith(
-            [](gmx::KeyValueTreeObjectBuilder* builder, const std::string& value) {
+            [](gmx::KeyValueTreeObjectBuilder* builder, const std::string& value)
+            {
                 std::vector<std::string> values = gmx::splitString(value);
                 builder->addValue<int>("a", gmx::fromString<int>(values[0]));
                 builder->addValue<int>("b", gmx::fromString<int>(values[1]));
@@ -189,7 +190,8 @@ TEST_F(TreeValueTransformTest, ObjectFromMultipleStrings)
     transform.rules()->addRule().from<std::string>("/a").to<int>("/foo/a").transformWith(
             &gmx::fromStdString<int>);
     transform.rules()->addRule().from<std::string>("/b").toObject("/foo").transformWith(
-            [](gmx::KeyValueTreeObjectBuilder* builder, const std::string& value) {
+            [](gmx::KeyValueTreeObjectBuilder* builder, const std::string& value)
+            {
                 std::vector<std::string> values = gmx::splitString(value);
                 builder->addValue<int>("b", gmx::fromString<int>(values[0]));
                 builder->addValue<int>("c", gmx::fromString<int>(values[1]));

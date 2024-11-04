@@ -204,9 +204,9 @@ private:
 };
 
 Update::Update(const t_inputrec& inputRecord, const gmx_ekindata_t& ekind, BoxDeformation* boxDeformation) :
-    impl_(new Impl(inputRecord, ekind, boxDeformation)){};
+    impl_(new Impl(inputRecord, ekind, boxDeformation)) {};
 
-Update::~Update(){};
+Update::~Update() {};
 
 const std::vector<bool>& Update::getAndersenRandomizeGroup() const
 {
@@ -760,7 +760,8 @@ static void do_update_md(int                                  start,
                                                                                        : zero;
 
         dispatchTemplatedFunction(
-                [=](auto stepAccelerationType) {
+                [=](auto stepAccelerationType)
+                {
                     return updateMDLeapfrogGeneral<stepAccelerationType>(start,
                                                                          nrend,
                                                                          doNoseHoover,
@@ -811,7 +812,8 @@ static void do_update_md(int                                  start,
             };
 
             dispatchTemplatedFunction(
-                    [=](auto numTempScaleValues, auto parrinelloRahmanVelocityScaling) {
+                    [=](auto numTempScaleValues, auto parrinelloRahmanVelocityScaling)
+                    {
                         return updateMDLeapfrogSimple<StoreUpdatedVelocities::Yes, numTempScaleValues, parrinelloRahmanVelocityScaling>(
                                 start, nrend, dt, dtPressureCouple, invMassPerDim, tcstat, cTC, diagM, x, xprime, v, f);
                     },
@@ -841,7 +843,8 @@ static void do_update_md(int                                  start,
             else
             {
                 dispatchTemplatedFunction(
-                        [=](auto numTempScaleValues) {
+                        [=](auto numTempScaleValues)
+                        {
                             /* Note that modern compilers are pretty good at vectorizing
                              * updateMDLeapfrogSimple(). But the SIMD version will still
                              * be faster because invMass lowers the cache pressure
@@ -1034,8 +1037,7 @@ gmx_stochd_t::gmx_stochd_t(const t_inputrec& inputRecord)
         for (int gt = 0; gt < ngtc; gt++)
         {
             real reft = std::max<real>(0, opts->ref_t[gt]);
-            if ((opts->tau_t[gt] > 0)
-                && (reft > 0)) /* tau_t or ref_t = 0 means that no randomization is done */
+            if ((opts->tau_t[gt] > 0) && (reft > 0)) /* tau_t or ref_t = 0 means that no randomization is done */
             {
                 randomize_group[gt] = true;
                 boltzfac[gt]        = gmx::c_boltz * opts->ref_t[gt];

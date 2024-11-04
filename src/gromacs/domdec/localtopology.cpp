@@ -110,10 +110,10 @@ static AtomInMolblock atomInMolblockFromGlobalAtomnr(ArrayRef<const MolblockIndi
     // Find the molecule block whose range of global atom indices
     // includes globalAtomIndex, by being the first for which
     // globalAtomIndex is not greater than its end.
-    auto molblockIt = std::partition_point(
-            molblockIndices.begin(),
-            molblockIndices.end(),
-            [globalAtomIndex](const MolblockIndices& mbi) { return mbi.a_end <= globalAtomIndex; });
+    auto molblockIt = std::partition_point(molblockIndices.begin(),
+                                           molblockIndices.end(),
+                                           [globalAtomIndex](const MolblockIndices& mbi)
+                                           { return mbi.a_end <= globalAtomIndex; });
 
     AtomInMolblock aim;
 
@@ -404,14 +404,14 @@ static void combine_idef(InteractionDefinitions* dest, gmx::ArrayRef<const threa
  * which this domain is responsible.
  */
 template<bool haveSingleDomain>
-static inline int assignInteractionsForAtom(const AtomIndexSet&     atomIndexSet,
-                                            const reverse_ilist_t&  reverseIlist,
-                                            const gmx_ga2la_t&      ga2la,
-                                            const gmx::DomdecZones& zones,
-                                            const bool gmx_unused   checkDistanceMultiBody,
-                                            const ivec gmx_unused   rcheck,
-                                            const bool gmx_unused   checkDistanceTwoBody,
-                                            const real gmx_unused   cutoffSquared,
+static inline int assignInteractionsForAtom(const AtomIndexSet&             atomIndexSet,
+                                            const reverse_ilist_t&          reverseIlist,
+                                            const gmx_ga2la_t&              ga2la,
+                                            const gmx::DomdecZones&         zones,
+                                            const bool gmx_unused           checkDistanceMultiBody,
+                                            const ivec gmx_unused           rcheck,
+                                            const bool gmx_unused           checkDistanceTwoBody,
+                                            const real gmx_unused           cutoffSquared,
                                             const t_pbc gmx_unused*         pbc_null,
                                             ArrayRef<const RVec> gmx_unused coordinates,
                                             InteractionDefinitions*         idef,
@@ -675,7 +675,7 @@ static int make_bondeds_zone(const gmx_reverse_top_t&           rt,
         const auto aim = atomInMolblockFromGlobalAtomnr(rt.molblockIndices(), atomIndexGlobal);
 
         const AtomIndexSet atomIndexMol = { atomIndexLocal, atomIndexGlobal, aim.atomIndexInMolecule };
-        const auto&        ilistMol     = rt.interactionListForMoleculeType(aim.moleculeType);
+        const auto& ilistMol = rt.interactionListForMoleculeType(aim.moleculeType);
         numBondedInteractions += assignInteractionsForAtom<haveSingleDomain>(atomIndexMol,
                                                                              ilistMol,
                                                                              ga2la,

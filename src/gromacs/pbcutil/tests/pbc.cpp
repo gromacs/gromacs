@@ -102,14 +102,14 @@ TEST(PbcTest, CalcShiftsWorks)
 TEST(PbcTest, PutAtomsInCubicBoxAlreadyInBox)
 {
     // Testing cubic box with edge length 3.5 nm
-    const real                   smallValue = returnSmallValue(3.5);
+    const real smallValue = returnSmallValue(3.5);
     const FloatingPointTolerance scTolerance = relativeToleranceAsFloatingPoint(3.5, relativeTolerance);
-    const matrix                 box         = { { 3.5, 0, 0 }, { 0, 3.5, 0 }, { 0, 0, 3.5 } };
-    const real                   coordCloseToEdge = 3.5 - smallValue;
-    std::vector<gmx::RVec>       pointsPrePbc{ { 1.0, 2.0, 3.0 },
+    const matrix           box              = { { 3.5, 0, 0 }, { 0, 3.5, 0 }, { 0, 0, 3.5 } };
+    const real             coordCloseToEdge = 3.5 - smallValue;
+    std::vector<gmx::RVec> pointsPrePbc{ { 1.0, 2.0, 3.0 },
                                          { smallValue, 1.0, 1.0 },
                                          { coordCloseToEdge, coordCloseToEdge, coordCloseToEdge } };
-    std::vector<gmx::RVec>       pointsPostPbc(pointsPrePbc);
+    std::vector<gmx::RVec> pointsPostPbc(pointsPrePbc);
     put_atoms_in_box(PbcType::Xyz, box, pointsPrePbc);
     for (std::size_t i = 0; i < pointsPrePbc.size(); ++i)
     {
@@ -123,16 +123,16 @@ TEST(PbcTest, PutAtomsInCubicBoxAlreadyInBox)
 TEST(PbcTest, PutAtomsInCubicBoxFromOutsideBox)
 {
     // Testing cubic box with edge length 3.5 nm
-    const real                   smallValue = returnSmallValue(3.5);
+    const real smallValue = returnSmallValue(3.5);
     const FloatingPointTolerance scTolerance = relativeToleranceAsFloatingPoint(3.5, relativeTolerance);
-    const matrix                 box         = { { 3.5, 0, 0 }, { 0, 3.5, 0 }, { 0, 0, 3.5 } };
-    const real                   outsideCloseToEdge = 3.5 + smallValue;
-    const real                   insideCloseToEdge  = 3.5 - smallValue;
-    std::vector<gmx::RVec>       pointsPrePbc{ { -0.5, 1.0, 4.5 },
+    const matrix           box                = { { 3.5, 0, 0 }, { 0, 3.5, 0 }, { 0, 0, 3.5 } };
+    const real             outsideCloseToEdge = 3.5 + smallValue;
+    const real             insideCloseToEdge  = 3.5 - smallValue;
+    std::vector<gmx::RVec> pointsPrePbc{ { -0.5, 1.0, 4.5 },
                                          { 10000.0, 20000.0, -40000.0 },
                                          { -smallValue, 1.0, 1.0 },
                                          { outsideCloseToEdge, outsideCloseToEdge, outsideCloseToEdge } };
-    std::vector<gmx::RVec>       pointsPostPbc{ { 3.0, 1.0, 1.0 },
+    std::vector<gmx::RVec> pointsPostPbc{ { 3.0, 1.0, 1.0 },
                                           { 0.5, 1.0, 1.5 },
                                           { insideCloseToEdge, 1.0, 1.0 },
                                           { smallValue, smallValue, smallValue } };
@@ -149,8 +149,8 @@ TEST(PbcTest, PutAtomsInCubicBoxFromOutsideBox)
 //! Testing if a point ouside a triclinic box is mapped to its periodic image inside the box
 TEST(PbcTest, PutAtomsInTriclinicBoxFromOutsideBox)
 {
-    std::vector<gmx::RVec>       pointOutside{ { -1.0, 1.0, 4.0 } };
-    const matrix                 box         = { { 3.5, 0, 0 }, { 0, 3.5, 0 }, { 1.5, 0, 3.5 } };
+    std::vector<gmx::RVec> pointOutside{ { -1.0, 1.0, 4.0 } };
+    const matrix           box = { { 3.5, 0, 0 }, { 0, 3.5, 0 }, { 1.5, 0, 3.5 } };
     const FloatingPointTolerance scTolerance = relativeToleranceAsFloatingPoint(3.5, relativeTolerance);
     put_atoms_in_box(PbcType::Xyz, box, pointOutside);
     EXPECT_REAL_EQ_TOL(pointOutside[0][0], 1.0, scTolerance);

@@ -128,7 +128,7 @@ static bool nbnxn_simd_supported(const MDLogger& mdlog, const t_inputrec& inputr
 }
 
 /*! \brief Returns the most suitable CPU kernel type and Ewald handling */
-static NbnxmKernelSetup pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused& inputrec,
+static NbnxmKernelSetup pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused&    inputrec,
                                               const gmx_hw_info_t gmx_unused& hardwareInfo)
 {
     NbnxmKernelSetup kernelSetup;
@@ -239,7 +239,10 @@ static NbnxmKernelSetup pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused& input
             kernelSetup.ewaldExclusionType = EwaldExclusionType::Analytical;
         }
         MSVC_DIAGNOSTIC_RESET
-        else { kernelSetup.ewaldExclusionType = EwaldExclusionType::Table; }
+        else
+        {
+            kernelSetup.ewaldExclusionType = EwaldExclusionType::Table;
+        }
         if (getenv("GMX_NBNXN_EWALD_TABLE") != nullptr)
         {
             kernelSetup.ewaldExclusionType = EwaldExclusionType::Table;
@@ -439,7 +442,7 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
                                                    const gmx_hw_info_t& hardwareInfo,
                                                    const bool           useGpuForNonbonded,
                                                    const gmx::DeviceStreamManager* deviceStreamManager,
-                                                   const gmx_mtop_t&               mtop,
+                                                   const gmx_mtop_t& mtop,
                                                    const bool localAtomOrderMatchesNbnxmOrder,
                                                    gmx::ObservablesReducerBuilder* observablesReducerBuilder,
                                                    gmx::ArrayRef<const gmx::RVec> coordinates,

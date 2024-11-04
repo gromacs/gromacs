@@ -655,7 +655,8 @@ void SecondaryStructures::analyseTopology(const TopologyInformation& top,
     }
     if (clearStructure)
     {
-        auto isCorrupted = [](const ResInfo& Res) -> bool {
+        auto isCorrupted = [](const ResInfo& Res) -> bool
+        {
             return !Res.hasIndex(BackboneAtomTypes::AtomCA) || !Res.hasIndex(BackboneAtomTypes::AtomC)
                    || !Res.hasIndex(BackboneAtomTypes::AtomO) || !Res.hasIndex(BackboneAtomTypes::AtomN)
                    || !Res.hasIndex(BackboneAtomTypes::AtomH);

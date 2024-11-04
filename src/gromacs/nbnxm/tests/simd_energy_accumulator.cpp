@@ -97,7 +97,7 @@ void testEnergyAccumulator()
 
     constexpr int                     c_numAtoms        = 16;
     const std::array<int, c_numAtoms> energyGroups      = { 4, 2, 3, 3, 0, 1, 4, 1,
-                                                       1, 0, 3, 2, 3, 2, 4, 1 };
+                                                            1, 0, 3, 2, 3, 2, 4, 1 };
     constexpr int                     c_numEnergyGroups = (useEnergyGroups ? 5 : 1);
 
     EnergyAccumulator<useEnergyGroups, true> energyAccumulator =

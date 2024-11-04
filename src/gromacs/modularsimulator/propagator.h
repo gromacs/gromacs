@@ -187,13 +187,13 @@ public:
      */
     static ISimulatorElement* getElementPointerImpl(LegacySimulatorData* legacySimulatorData,
                                                     ModularSimulatorAlgorithmBuilderHelper* builderHelper,
-                                                    StatePropagatorData*        statePropagatorData,
-                                                    EnergyData*                 energyData,
+                                                    StatePropagatorData* statePropagatorData,
+                                                    EnergyData*          energyData,
                                                     FreeEnergyPerturbationData* freeEnergyPerturbationData,
                                                     GlobalCommunicationHelper* globalCommunicationHelper,
-                                                    ObservablesReducer*        observablesReducer,
-                                                    const PropagatorTag&       propagatorTag,
-                                                    TimeStep                   timestep);
+                                                    ObservablesReducer*  observablesReducer,
+                                                    const PropagatorTag& propagatorTag,
+                                                    TimeStep             timestep);
 
     /*! \brief Factory method implementation
      *
@@ -212,12 +212,12 @@ public:
      */
     static ISimulatorElement* getElementPointerImpl(LegacySimulatorData* legacySimulatorData,
                                                     ModularSimulatorAlgorithmBuilderHelper* builderHelper,
-                                                    StatePropagatorData*        statePropagatorData,
-                                                    EnergyData*                 energyData,
+                                                    StatePropagatorData* statePropagatorData,
+                                                    EnergyData*          energyData,
                                                     FreeEnergyPerturbationData* freeEnergyPerturbationData,
                                                     GlobalCommunicationHelper* globalCommunicationHelper,
-                                                    ObservablesReducer*        observablesReducer,
-                                                    const PropagatorTag&       propagatorTag);
+                                                    ObservablesReducer*  observablesReducer,
+                                                    const PropagatorTag& propagatorTag);
 
 private:
     //! The actual propagation

@@ -82,7 +82,7 @@ inline void spread_charges(const float                  atomCharge,
 {
     // Number of atoms processed by a single warp in spread and gather
     const int threadsPerAtomValue = (threadsPerAtom == ThreadsPerAtom::Order) ? order : order * order;
-    const int atomsPerWarp        = subGroupSize / threadsPerAtomValue;
+    const int atomsPerWarp = subGroupSize / threadsPerAtomValue;
 
     const int nx  = realGridSize[XX];
     const int ny  = realGridSize[YY];
@@ -113,7 +113,7 @@ inline void spread_charges(const float                  atomCharge,
 
         const int splineIndexBase = getSplineParamIndexBase<order, atomsPerWarp>(warpIndex, atomWarpIndex);
         const int splineIndexZ = getSplineParamIndex<order, atomsPerWarp>(splineIndexBase, ZZ, ithz);
-        const float thetaZ     = sm_theta[splineIndexZ];
+        const float thetaZ = sm_theta[splineIndexZ];
 
         /* loop not used if order*order threads per atom */
         const int ithyMin = (threadsPerAtom == ThreadsPerAtom::Order) ? 0 : itemIdx.get_local_id(YY);
@@ -209,7 +209,8 @@ auto pmeSplineAndSpreadKernel(sycl::handler& cgh,
     sycl::local_accessor<float, 1> sm_coefficients(sycl::range<1>(atomsPerBlock), cgh);
     // Spline values
     sycl::local_accessor<float, 1> sm_theta(sycl::range<1>(atomsPerBlock * DIM * order), cgh);
-    auto                           sm_fractCoords = [&]() {
+    auto                           sm_fractCoords = [&]()
+    {
         if constexpr (computeSplines)
         {
             return sycl::local_accessor<float, 1>(sycl::range<1>(atomsPerBlock * DIM), cgh);
@@ -381,31 +382,34 @@ void PmeSplineAndSpreadKernel<order, computeSplines, spreadCharges, wrapX, wrapY
 
     sycl::queue q = deviceStream.stream();
 
-    gmx::syclSubmitWithoutEvent(q, [&](sycl::handler& cgh) {
-        auto kernel =
-                pmeSplineAndSpreadKernel<order, computeSplines, spreadCharges, wrapX, wrapY, numGrids, writeGlobal, threadsPerAtom, subGroupSize>(
-                        cgh,
-                        atomParams_->nAtoms,
-                        gridParams_->d_realGrid[0].get_pointer(),
-                        gridParams_->d_realGrid[1].get_pointer(),
-                        atomParams_->d_theta.get_pointer(),
-                        atomParams_->d_dtheta.get_pointer(),
-                        atomParams_->d_gridlineIndices.get_pointer(),
-                        gridParams_->d_fractShiftsTable.get_pointer(),
-                        gridParams_->d_gridlineIndicesTable.get_pointer(),
-                        atomParams_->d_coefficients[0].get_pointer(),
-                        atomParams_->d_coefficients[1].get_pointer(),
-                        atomParams_->d_coordinates.get_pointer(),
-                        gridParams_->tablesOffsets,
-                        gridParams_->realGridSize,
-                        gridParams_->realGridSizeFP,
-                        gridParams_->realGridSizePadded,
-                        dynamicParams_->recipBox[0],
-                        dynamicParams_->recipBox[1],
-                        dynamicParams_->recipBox[2],
-                        pipeliningParams_);
-        cgh.parallel_for<kernelNameType>(range, kernel);
-    });
+    gmx::syclSubmitWithoutEvent(
+            q,
+            [&](sycl::handler& cgh)
+            {
+                auto kernel =
+                        pmeSplineAndSpreadKernel<order, computeSplines, spreadCharges, wrapX, wrapY, numGrids, writeGlobal, threadsPerAtom, subGroupSize>(
+                                cgh,
+                                atomParams_->nAtoms,
+                                gridParams_->d_realGrid[0].get_pointer(),
+                                gridParams_->d_realGrid[1].get_pointer(),
+                                atomParams_->d_theta.get_pointer(),
+                                atomParams_->d_dtheta.get_pointer(),
+                                atomParams_->d_gridlineIndices.get_pointer(),
+                                gridParams_->d_fractShiftsTable.get_pointer(),
+                                gridParams_->d_gridlineIndicesTable.get_pointer(),
+                                atomParams_->d_coefficients[0].get_pointer(),
+                                atomParams_->d_coefficients[1].get_pointer(),
+                                atomParams_->d_coordinates.get_pointer(),
+                                gridParams_->tablesOffsets,
+                                gridParams_->realGridSize,
+                                gridParams_->realGridSizeFP,
+                                gridParams_->realGridSizePadded,
+                                dynamicParams_->recipBox[0],
+                                dynamicParams_->recipBox[1],
+                                dynamicParams_->recipBox[2],
+                                pipeliningParams_);
+                cgh.parallel_for<kernelNameType>(range, kernel);
+            });
 
     // Delete set args, so we don't forget to set them before the next launch.
     reset();

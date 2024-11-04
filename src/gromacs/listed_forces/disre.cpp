@@ -424,10 +424,10 @@ real ta_disres(int              nfa,
                real gmx_unused  lambda,
                real gmx_unused* dvdlambda,
                gmx::ArrayRef<const real> /*charge*/,
-               t_fcdata gmx_unused* fcd,
-               t_disresdata*        disresdata,
+               t_fcdata gmx_unused*     fcd,
+               t_disresdata*            disresdata,
                t_oriresdata gmx_unused* oriresdata,
-               int gmx_unused* global_atom_index)
+               int gmx_unused*          global_atom_index)
 {
     const real seven_three = 7.0 / 3.0;
 
@@ -478,9 +478,9 @@ real ta_disres(int              nfa,
         if (ip[type].disres.type != 2)
         {
             bConservative = (dr_weighting == DistanceRestraintWeighting::Conservative) && (npair > 1);
-            bMixed        = dr_bMixed;
-            Rt            = gmx::invsixthroot(Rt_6[res]);
-            Rtav          = gmx::invsixthroot(Rtav_6[res]);
+            bMixed = dr_bMixed;
+            Rt     = gmx::invsixthroot(Rt_6[res]);
+            Rtav   = gmx::invsixthroot(Rtav_6[res]);
         }
         else
         {

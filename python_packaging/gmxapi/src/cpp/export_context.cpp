@@ -253,7 +253,8 @@ void export_context(pybind11::module& m, const pybind11::exception<Exception>& b
             "Assign parameters in MDArgs from Python dict.");
     mdargs.def(
             "get_args",
-            [](const MDArgs& self) {
+            [](const MDArgs& self)
+            {
                 auto args = py::list(self.size());
                 for (int i = 0; i < self.size(); ++i)
                 {
