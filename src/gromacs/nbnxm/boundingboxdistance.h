@@ -186,10 +186,7 @@ clusterBoundingBoxDistance2_xxxx_simd4_inner(const float*                       
 }
 
 //! 4-wide SIMD code for nsi bb distances for bb format xxxxyyyyzzzz
-gmx_unused static void clusterBoundingBoxDistance2_xxxx_simd4(const float* bb_j,
-                                                              const int    nsi,
-                                                              const float* bb_i,
-                                                              float*       d2)
+static void clusterBoundingBoxDistance2_xxxx_simd4(const float* bb_j, const int nsi, const float* bb_i, float* d2)
 {
     constexpr int stride = c_packedBoundingBoxesDimSize;
 
@@ -208,6 +205,15 @@ gmx_unused static void clusterBoundingBoxDistance2_xxxx_simd4(const float* bb_j,
     {
         clusterBoundingBoxDistance2_xxxx_simd4_inner<stride>(bb_i, jLowerCorner, jUpperCorner, d2);
     }
+}
+
+#else
+static void clusterBoundingBoxDistance2_xxxx_simd4(const float* bb_j, const int nsi, const float* bb_i, float* d2)
+{
+    GMX_UNUSED_VALUE(bb_j);
+    GMX_UNUSED_VALUE(nsi);
+    GMX_UNUSED_VALUE(bb_i);
+    GMX_UNUSED_VALUE(d2);
 }
 
 #endif /* NBNXN_SEARCH_BB_SIMD4 */
