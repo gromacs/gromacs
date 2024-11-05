@@ -211,7 +211,10 @@ gmx_unused static void clusterBoundingBoxDistance2_xxxx_simd4(const float* bb_j,
 }
 
 #else
-static void clusterBoundingBoxDistance2_xxxx_simd4(const float* bb_j, const int nsi, const float* bb_i, float* d2)
+gmx_unused static void clusterBoundingBoxDistance2_xxxx_simd4(const float* bb_j,
+                                                              const int    nsi,
+                                                              const float* bb_i,
+                                                              float*       d2)
 {
     GMX_UNUSED_VALUE(bb_j);
     GMX_UNUSED_VALUE(nsi);
