@@ -303,7 +303,10 @@ public:
     {
         GMX_ASSERT(mass != 0, "Mass can not be zero here as we store 1/mass");
 
-        invMass_ = 1 / (mass * invMassScale_) + 0.5_real;
+        const real scaledInvMassToConvert = 1 / (mass * invMassScale_);
+        // Small invMasses are not relevant, but we should avoid 0
+        invMass_ = std::max(static_cast<int16_t>(scaledInvMassToConvert + 0.5_real),
+                            static_cast<int16_t>(1));
         type_    = type;
         charge_  = charge / chargeScale_ + std::copysign(0.5_real, charge);
     }
@@ -320,14 +323,11 @@ public:
 
         if (invMass < constraintInvMass())
         {
-            constraintInvMass_ = invMass / invMassScale_ + 0.5_real;
+            const real scaledInvMassToConvert = invMass / invMassScale_;
+            // Small invMasses are not relevant, but we should avoid 0
+            constraintInvMass_ = std::max(static_cast<int16_t>(scaledInvMassToConvert + 0.5_real),
+                                          static_cast<int16_t>(1));
             constraintLength_  = length / constraintLengthScale_ + 0.5_real;
-
-            // We need to avoid division by zero for extremely high constraint masses
-            if (constraintInvMass_ == 0)
-            {
-                constraintInvMass_ = 1;
-            }
         }
     }
 

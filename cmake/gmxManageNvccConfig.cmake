@@ -84,15 +84,11 @@ endif()
 # We would like to be helpful and reject the host compiler with a
 # clear error message at configure time, rather than let nvcc
 # later reject the host compiler as not supported when the first
-# CUDA source file is built. We've implemented that for current
-# nvcc running on Unix-like systems, but e.g. changes to nvcc
-# will further affect the limited portability of this checking
-# code. Set the CMake variable GMX_NVCC_WORKS on if you want to
-# bypass this check.
-if((_cuda_nvcc_executable_or_flags_changed OR CUDA_HOST_COMPILER_CHANGED OR NOT GMX_NVCC_WORKS) AND NOT WIN32)
-    message(STATUS "Check for working NVCC/C++ compiler combination with nvcc '${CUDAToolkit_NVCC_EXECUTABLE}'")
-
-    execute_process(COMMAND ${CUDAToolkit_NVCC_EXECUTABLE} --compiler-bindir=${CMAKE_CUDA_HOST_COMPILER} -c ${CUDA_NVCC_FLAGS} ${CUDA_NVCC_FLAGS_${_build_type}} ${CMAKE_SOURCE_DIR}/cmake/TestCUDA.cu
+# CUDA source file is built. Set the CMake variable GMX_NVCC_WORKS
+# on if you want to bypass this check.
+if((_cuda_nvcc_executable_or_flags_changed OR CUDA_HOST_COMPILER_CHANGED OR NOT GMX_NVCC_WORKS))
+    message(STATUS "Check for working NVCC/C++ compiler combination with nvcc '${CUDA_NVCC_EXECUTABLE}'")
+    execute_process(COMMAND ${CUDA_NVCC_EXECUTABLE} --compiler-bindir=${CUDA_HOST_COMPILER} -c ${CUDA_NVCC_FLAGS} ${CUDA_NVCC_FLAGS_${_build_type}} ${CMAKE_SOURCE_DIR}/cmake/TestCUDA.cu
         RESULT_VARIABLE _cuda_test_res
         OUTPUT_VARIABLE _cuda_test_out
         ERROR_VARIABLE  _cuda_test_err
@@ -124,12 +120,9 @@ endif() # GMX_CHECK_NVCC
 # Note that a space-separated string of flags, or a flag-value pair
 # separated by spaces will not work. Use the single-argument forms
 # accepted by nvcc, like "--arg=value".
-#
-# As this code is not yet tested on Windows, it always accepts the
-# flags in that case.
 function(gmx_add_nvcc_flag_if_supported _output_variable_name_to_append_to _flags_cache_variable_name)
     # If the check has already been run, do not re-run it
-    if (NOT ${_flags_cache_variable_name} AND NOT WIN32)
+    if (NOT ${_flags_cache_variable_name})
         message(STATUS "Checking if nvcc accepts flags ${ARGN}")
         execute_process(
             COMMAND ${CUDAToolkit_NVCC_EXECUTABLE} ${ARGN} -ccbin ${CMAKE_CUDA_HOST_COMPILER} "${CMAKE_SOURCE_DIR}/cmake/TestCUDA.cu"
@@ -161,7 +154,7 @@ function(gmx_add_nvcc_flag_if_supported _output_variable_name_to_append_to _flag
         set(${_flags_cache_variable_name} ${_cache_variable_value} CACHE INTERNAL "Whether NVCC supports flag(s) ${ARGN}")
     endif()
     # Append the flags to the output variable if they have been tested to work
-    if (${_flags_cache_variable_name} OR WIN32)
+    if (${_flags_cache_variable_name})
         list(APPEND ${_output_variable_name_to_append_to} ${ARGN})
         set(${_output_variable_name_to_append_to} ${${_output_variable_name_to_append_to}} PARENT_SCOPE)
     endif()
@@ -177,14 +170,14 @@ if (GMX_CUDA_TARGET_SM OR GMX_CUDA_TARGET_COMPUTE)
     set(_target_sm_list ${GMX_CUDA_TARGET_SM})
     foreach(_target ${_target_sm_list})
         gmx_add_nvcc_flag_if_supported(GMX_CUDA_NVCC_GENCODE_FLAGS NVCC_HAS_GENCODE_COMPUTE_AND_SM_${_target} "--generate-code=arch=compute_${_target},code=sm_${_target}")
-        if (NOT NVCC_HAS_GENCODE_COMPUTE_AND_SM_${_target} AND NOT WIN32)
+        if (NOT NVCC_HAS_GENCODE_COMPUTE_AND_SM_${_target})
             message(FATAL_ERROR "Your choice of ${_target} in GMX_CUDA_TARGET_SM was not accepted by nvcc, please choose a target that it accepts")
         endif()
     endforeach()
     set(_target_compute_list ${GMX_CUDA_TARGET_COMPUTE})
     foreach(_target ${_target_compute_list})
         gmx_add_nvcc_flag_if_supported(GMX_CUDA_NVCC_GENCODE_FLAGS NVCC_HAS_GENCODE_COMPUTE_${_target} --generate-code=arch=compute_${_target},code=compute_${_target})
-        if (NOT NVCC_HAS_GENCODE_COMPUTE_${_target} AND NOT WIN32)
+        if (NOT NVCC_HAS_GENCODE_COMPUTE_${_target})
             message(FATAL_ERROR "Your choice of ${_target} in GMX_CUDA_TARGET_COMPUTE was not accepted by nvcc, please choose a target that it accepts")
         endif()
     endforeach()
