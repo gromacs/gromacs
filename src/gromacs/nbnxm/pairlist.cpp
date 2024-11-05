@@ -826,13 +826,17 @@ static void make_cluster_list_supersub(const Grid&       iGrid,
                                        const float       rbb2,
                                        int*              numDistanceChecks)
 {
-    NbnxmPairlistGpuWork& work = *nbl->work;
-
-#if NBNXN_BBXXXX
-    const float* pbb_ci = work.iSuperClusterData.bbPacked.data();
-#else
-    const BoundingBox* bb_ci = work.iSuperClusterData.bb.data();
-#endif
+    NbnxmPairlistGpuWork& work   = *nbl->work;
+    const float*          pbb_ci = nullptr;
+    const BoundingBox*    bb_ci  = nullptr;
+    if constexpr (sc_nbnxmBbXxxx(layoutType))
+    {
+        pbb_ci = work.iSuperClusterData.bbPacked.data();
+    }
+    else
+    {
+        bb_ci = work.iSuperClusterData.bb.data();
+    }
 
     GMX_ASSERT(sc_gpuClusterSize(layoutType) == iGrid.geometry().numAtomsICluster_,
                "Inconsistent data layout");
@@ -864,13 +868,14 @@ static void make_cluster_list_supersub(const Grid&       iGrid,
         int ci1 = (excludeSubDiagonal && sci == scj) ? subc + 1 : iGrid.numClustersPerCell()[sci];
 
 
-#if NBNXN_BBXXXX
-        /* Determine all ci1 bb distances in one call with SIMD4 */
-        const int offset = packedBoundingBoxesIndex(cj) + (cj & (c_packedBoundingBoxesDimSize - 1));
-        clusterBoundingBoxDistance2_xxxx_simd4(
-                jGrid.packedBoundingBoxes().data() + offset, ci1, pbb_ci, d2l);
-        *numDistanceChecks += sc_gpuClusterSize(layoutType) * 2;
-#endif
+        if constexpr (sc_nbnxmBbXxxx(layoutType))
+        {
+            /* Determine all ci1 bb distances in one call with SIMD4 */
+            const int offset = packedBoundingBoxesIndex(cj) + (cj & (c_packedBoundingBoxesDimSize - 1));
+            clusterBoundingBoxDistance2_xxxx_simd4(
+                    jGrid.packedBoundingBoxes().data() + offset, ci1, pbb_ci, d2l);
+            *numDistanceChecks += sc_gpuClusterSize(layoutType) * 2;
+        }
 
         int          npair = 0;
         unsigned int imask = 0;
@@ -882,11 +887,12 @@ static void make_cluster_list_supersub(const Grid&       iGrid,
                 break;
             }
 
-#if !NBNXN_BBXXXX
-            /* Determine the bb distance between ci and cj */
-            d2l[ci] = clusterBoundingBoxDistance2(bb_ci[ci], jGrid.jBoundingBoxes()[cj]);
-            *numDistanceChecks += 2;
-#endif
+            if constexpr (!sc_nbnxmBbXxxx(layoutType))
+            {
+                /* Determine the bb distance between ci and cj */
+                d2l[ci] = clusterBoundingBoxDistance2(bb_ci[ci], jGrid.jBoundingBoxes()[cj]);
+                *numDistanceChecks += 2;
+            }
             float d2 = d2l[ci];
 
 #if PRUNE_LIST_CPU_ALL
@@ -1975,7 +1981,6 @@ static inline void set_icell_bb(const Grid& iGrid, int ci, const RVec& shift, Nb
     set_icell_bb_simple(iGrid.iBoundingBoxes(), ci, shift, &work->iClusterData.bb[0]);
 }
 
-#if NBNXN_BBXXXX
 /* Sets a super-cell and sub cell bounding boxes, including PBC shift */
 template<PairlistType layoutType>
 static void set_icell_bbxxxx_supersub(ArrayRef<const float> bb, int ci, const RVec& shift, float* bb_ci)
@@ -1998,7 +2003,6 @@ static void set_icell_bbxxxx_supersub(ArrayRef<const float> bb, int ci, const RV
         }
     }
 }
-#endif
 
 /* Sets a super-cell and sub cell bounding boxes, including PBC shift */
 template<PairlistType layoutType>
@@ -2015,13 +2019,16 @@ set_icell_bb_supersub(ArrayRef<const BoundingBox> bb, int ci, const RVec& shift,
 template<PairlistType layoutType>
 gmx_unused static void set_icell_bb(const Grid& iGrid, int ci, const RVec& shift, NbnxmPairlistGpuWork* work)
 {
-#if NBNXN_BBXXXX
-    set_icell_bbxxxx_supersub<layoutType>(
-            iGrid.packedBoundingBoxes(), ci, shift, work->iSuperClusterData.bbPacked.data());
-#else
-    set_icell_bb_supersub<layoutType>(
-            iGrid.iBoundingBoxes(), ci, shift, work->iSuperClusterData.bb.data());
-#endif
+    if constexpr (sc_nbnxmBbXxxx(layoutType))
+    {
+        set_icell_bbxxxx_supersub<layoutType>(
+                iGrid.packedBoundingBoxes(), ci, shift, work->iSuperClusterData.bbPacked.data());
+    }
+    else
+    {
+        set_icell_bb_supersub<layoutType>(
+                iGrid.iBoundingBoxes(), ci, shift, work->iSuperClusterData.bb.data());
+    }
 }
 
 /* Copies PBC shifted i-cell atom coordinates x,y,z to working array */
@@ -2902,20 +2909,23 @@ static void nbnxn_make_pairlist_part(const GridSet&          gridSet,
         }
     }
     ArrayRef<const BoundingBox> bb_i;
-#if NBNXN_BBXXXX
-    ArrayRef<const float> pbb_i;
-    if (c_listIsSimple)
+    ArrayRef<const float>       pbb_i;
+    if (sc_nbnxmBbXxxx(pairlistType))
     {
-        bb_i = iGrid.iBoundingBoxes();
+        if (c_listIsSimple)
+        {
+            bb_i = iGrid.iBoundingBoxes();
+        }
+        else
+        {
+            pbb_i = iGrid.packedBoundingBoxes();
+        }
     }
     else
     {
-        pbb_i = iGrid.packedBoundingBoxes();
+        /* We use the normal bounding box format for both grid types */
+        bb_i = iGrid.iBoundingBoxes();
     }
-#else
-    /* We use the normal bounding box format for both grid types */
-    bb_i = iGrid.iBoundingBoxes();
-#endif
     ArrayRef<const BoundingBox1D> bbcz_i  = iGrid.zBoundingBoxes();
     ArrayRef<const int>           flags_i = iGrid.clusterFlags();
     ArrayRef<const BoundingBox1D> bbcz_j  = jGrid.zBoundingBoxes();
