@@ -185,6 +185,7 @@ bool BooleanOptionInfo::defaultValue() const
 
 AbstractOptionStorage* BooleanOption::createStorage(const OptionManagerContainer& /*managers*/) const
 {
+    // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
     return new BooleanOptionStorage(*this);
 }
 
@@ -223,6 +224,7 @@ IntegerOptionInfo::IntegerOptionInfo(IntegerOptionStorage* option) : OptionInfo(
 
 AbstractOptionStorage* IntegerOption::createStorage(const OptionManagerContainer& /*managers*/) const
 {
+    // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
     return new IntegerOptionStorage(*this);
 }
 
@@ -253,6 +255,7 @@ Int64OptionInfo::Int64OptionInfo(Int64OptionStorage* option) : OptionInfo(option
 
 AbstractOptionStorage* Int64Option::createStorage(const OptionManagerContainer& /*managers*/) const
 {
+    // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
     return new Int64OptionStorage(*this);
 }
 
@@ -342,6 +345,7 @@ void DoubleOptionInfo::setScaleFactor(double factor)
 
 AbstractOptionStorage* DoubleOption::createStorage(const OptionManagerContainer& /*managers*/) const
 {
+    // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
     return new DoubleOptionStorage(*this);
 }
 
@@ -431,6 +435,7 @@ void FloatOptionInfo::setScaleFactor(double factor)
 
 AbstractOptionStorage* FloatOption::createStorage(const OptionManagerContainer& /*managers*/) const
 {
+    // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
     return new FloatOptionStorage(*this);
 }
 
@@ -535,6 +540,7 @@ const std::vector<std::string>& StringOptionInfo::allowedValues() const
 
 AbstractOptionStorage* StringOption::createStorage(const OptionManagerContainer& /*managers*/) const
 {
+    // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
     return new StringOptionStorage(*this);
 }
 
@@ -647,6 +653,7 @@ AbstractOptionStorage* createEnumOptionStorage(const AbstractOption& option,
                                                int                   defaultValueIfSet,
                                                std::unique_ptr<IOptionValueStore<int>> store)
 {
+    // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
     return new EnumOptionStorage(
             option, enumValues, count, defaultValue, defaultValueIfSet, std::move(store));
 }

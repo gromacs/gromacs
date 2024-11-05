@@ -112,7 +112,7 @@ TextOutputStream& TestFileOutputRedirector::standardOutput()
 {
     if (!impl_->stdoutStream_)
     {
-        impl_->stdoutStream_.reset(new StringOutputStream);
+        impl_->stdoutStream_ = std::make_shared<StringOutputStream>();
         impl_->fileList_.emplace_back("<stdout>", impl_->stdoutStream_);
     }
     return *impl_->stdoutStream_;
@@ -120,7 +120,7 @@ TextOutputStream& TestFileOutputRedirector::standardOutput()
 
 TextOutputStreamPointer TestFileOutputRedirector::openTextOutputFile(const std::filesystem::path& filename)
 {
-    Impl::StringStreamPointer stream(new StringOutputStream);
+    auto stream = std::make_shared<StringOutputStream>();
     impl_->fileList_.emplace_back(filename.string(), stream);
     return stream;
 }
