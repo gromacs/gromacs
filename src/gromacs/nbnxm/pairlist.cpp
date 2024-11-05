@@ -1983,7 +1983,7 @@ static inline void set_icell_bb(const Grid& iGrid, int ci, const RVec& shift, Nb
 
 /* Sets a super-cell and sub cell bounding boxes, including PBC shift */
 template<PairlistType layoutType>
-static void set_icell_bbxxxx_supersub(ArrayRef<const float> bb, int ci, const RVec& shift, float* bb_ci)
+gmx_unused static void set_icell_bbxxxx_supersub(ArrayRef<const float> bb, int ci, const RVec& shift, float* bb_ci)
 {
     const int     cellBBStride = packedBoundingBoxesIndex(sc_gpuNumClusterPerCell(layoutType));
     constexpr int pbbStride    = c_packedBoundingBoxesDimSize;
