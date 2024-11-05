@@ -25,7 +25,7 @@ field.
 
 **Note:** if you construct your own topologies, we encourage you to
 upload them to our topology archive at our `webpage`_! Just imagine how thankful
-you’d have been if your topology had been available there before you
+you would have been if your topology had been available there before you
 started. The same goes for new force fields or modified versions of the
 standard force fields - contribute them to the force field archive!
 

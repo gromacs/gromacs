@@ -18,7 +18,7 @@ polarizable models like the Shell-Water models \ :ref:`45 <refMaaren2001a>`.
            +--------------+----------+
            | shell        | S        |
            +--------------+----------+
-           | virtual side | V (or D) |
+           | virtual site | V (or D) |
            +--------------+----------+
 
 

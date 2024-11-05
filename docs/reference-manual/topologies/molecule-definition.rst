@@ -130,7 +130,3 @@ Extra exclusions within a molecule can be added manually in a
 atom index, followed by one or more atom indices. All non-bonded
 interactions between the first atom and the other atoms will be
 excluded.
-
-When all non-bonded interactions within or between groups of atoms need
-to be excluded, is it more convenient and much more efficient to use
-energy monitor group exclusions (see sec. :ref:`groupconcept`).

@@ -283,11 +283,10 @@ contribution to the derivative of the free energy is:
           :label: eqnfepsoftcorederivative
 
 The original GROMOS Lennard-Jones soft-core
-function\ :ref:`100 <refBeutler94>` uses :math:`p=2`, but :math:`p=1` gives a smoother
+function :ref:`100 <refBeutler94>` uses :math:`p=2`, but :math:`p=1` gives a smoother
 :math:`\partial H/\partial{\lambda}` curve. Another issue that should be
 considered is the soft-core effect of hydrogens without Lennard-Jones
-interaction. Their soft-core :math:`\sigma` is set with
-``sc_sigma`` in the :ref:`mdp` file. These
+interaction. Their soft-core :math:`\sigma` is set with :mdp:`sc_sigma`. These
 hydrogens produce peaks in :math:`\partial H/\partial{\lambda}` at
 :math:`{\lambda}` is 0 and/or 1 for :math:`p=1` and close to 0 and/or 1
 with :math:`p=2`. Lowering ``sc_sigma``
@@ -296,38 +295,36 @@ with hydrogens relative to the other interactions in the soft-core
 state.
 
 When soft-core potentials are selected (by setting
-``sc_alpha >0``), and the Coulomb and Lennard-Jones
+:mdp-value:`sc_alpha >0`), and the Coulomb and Lennard-Jones
 potentials are turned on or off sequentially, then the Coulombic
 interaction is turned off linearly, rather than using soft-core
 interactions, which should be less statistically noisy in most cases.
-This behavior can be overwritten by using the :ref:`mdp` option
-``sc-coul`` to ``yes``. Note that the
-``sc-coul`` is only taken into account when lambda states
-are used, not with ``couple-lambda0``  /
-``couple-lambda1``, and you can still turn off soft-core
-interactions by setting ``sc-alpha=0``. Additionally, the
+This behavior can be overwritten by setting :mdp-value:`sc-coul=yes`. Note that
+:mdp:`sc-coul` is only taken into account when lambda states
+are used, and you can still turn off soft-core
+interactions by setting :mdp-value:`sc-alpha=0`. Additionally, the
 soft-core interaction potential is only applied when either the A or B
 state has zero interaction potential. If both A and B states have
 nonzero interaction potential, default linear scaling described above is
 used. When both Coulombic and Lennard-Jones interactions are turned off
 simultaneously, a soft-core potential is used, and a hydrogen is being
-introduced or deleted, the sigma is set to ``sc-sigma-min``,
-which itself defaults to ``sc-sigma-default``.
+introduced or deleted, the sigma is set to :mdp:`sc-sigma-min`,
+which itself defaults to :mdp:`sc-sigma-default`.
 
 
 Soft-core interactions: Gapsys *et al.*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In this section we describe the functional form and parameters for 
-the soft-cored non-bonded interactions using the formalism by Gapsys *et al.*\ :ref:`183 <refGapsys2012>`.
+the soft-cored non-bonded interactions using the formalism by Gapsys *et al.* :ref:`183 <refGapsys2012>`.
 
 The Gapsys *et al.* soft-core is formulated to act on the level of van der Waals and electrostatic forces:
 the non-bonded interactions are linearized at a point defined as, :math:`r_{scLJ}` or :math:`r_{scQ}`, respectively.
 The linearization point depends on the state of the system as controlled by the :math:`\lambda` parameter and 
-two parameters :math:`\alpha_Q` (set with ``sc-gapsys-scale-linpoint-q``) and :math:`\alpha_{LJ}` (set with ``sc-gapsys-scale-linpoint-lj``).
+two parameters :math:`\alpha_Q` (set with :mdp:`sc-gapsys-scale-linpoint-q`) and :math:`\alpha_{LJ}` (set with :mdp:`sc-gapsys-scale-linpoint-lj`).
 The dependence on :math:`\lambda` guarantees that the end-states are properly represented by their hard-core potentials.
 :numref:`Fig. %s <fig-gapsyssc>` illustrates the behaviour of the linearization point, forces and integrated potential energies with respect
-to the parameters :math:`\alpha_Q` and :math:`\alpha_{LJ}`. The optimal choices of the parameter values have been systematically explored in :ref:`183 <refGapsys2012>`. These recommended values are set by default when ``sc-function=gapsys`` is selected: ``sc-gapsys-scale-linpoint-q=0.3`` and ``sc-gapsys-scale-linpoint-lj=0.85``.
+to the parameters :math:`\alpha_Q` and :math:`\alpha_{LJ}`. The optimal choices of the parameter values have been systematically explored in :ref:`183 <refGapsys2012>`. These recommended values are set by default when :mdp:`sc-function=gapsys` is selected: :mdp-value:`sc-gapsys-scale-linpoint-q=0.3` and :mdp-value:`sc-gapsys-scale-linpoint-lj=0.85`.
 
 .. _fig-gapsyssc:
 
@@ -374,7 +371,7 @@ where the switching point between the soft and hard-core Lennard-Jones forces
 :math:`r_{scLJ} = \alpha_{LJ}(\frac{26}{7}\sigma^6\lambda)^{\frac{1}{6}}` for state A, and
 :math:`r_{scLJ} = \alpha_{LJ}(\frac{26}{7}\sigma^6(1-\lambda))^{\frac{1}{6}}` for state B.
 In analogy to the Beutler *et al.* soft core version, :math:`\sigma` is the radius of the interaction, which is :math:`(C_{12}/C_6)^{1/6}`
-or an input parameter (set with ``sc-sigma-LJ-gapsys``) when C6 or C12 is zero. The default value for this parameter is ``sc-sigma-LJ-gapsys=0.3``.
+or an input parameter (set with :mdp:`sc-sigma-LJ-gapsys`) when C6 or C12 is zero. The default value for this parameter is :mdp-value:`sc-sigma-LJ-gapsys=0.3`.
 
 Explicit expression:
 

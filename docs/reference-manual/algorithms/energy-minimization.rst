@@ -6,7 +6,9 @@ Energy Minimization
 Energy minimization in |Gromacs| can be done using steepest descent,
 conjugate gradients, or l-bfgs (limited-memory
 Broyden-Fletcher-Goldfarb-Shanno quasi-Newtonian minimizer...we prefer
-the abbreviation). EM is just an option of the :ref:`mdrun <gmx mdrun>` program.
+the abbreviation). Whether to use EM, and which algorithm to use,
+is specified via the :mdp:`integrator` setting of the
+:ref:`mdrun <gmx mdrun>` program.
 
 Steepest Descent
 ~~~~~~~~~~~~~~~~
