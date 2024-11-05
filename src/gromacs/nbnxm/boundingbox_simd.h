@@ -112,6 +112,17 @@ static constexpr bool sc_nbnxmBbXxxx(const PairlistType gmx_unused pairlistType)
     return false;
 }
 
+//! The number of bounding boxes in a pack, also the size of a pack along one dimension
+static constexpr int c_packedBoundingBoxesDimSize = 1;
+
+//! Total number of corners (floats) in a pack of bounding boxes
+static constexpr int c_packedBoundingBoxesSize = 1;
+
+static constexpr int packedBoundingBoxesIndex(int gmx_unused clusterIndex)
+{
+    return 0;
+}
+
 #    endif /* NBNXN_SEARCH_BB_SIMD4 */
 
 #endif // !DOXYGEN
