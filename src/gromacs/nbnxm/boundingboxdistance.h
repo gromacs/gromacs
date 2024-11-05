@@ -186,7 +186,10 @@ clusterBoundingBoxDistance2_xxxx_simd4_inner(const float*                       
 }
 
 //! 4-wide SIMD code for nsi bb distances for bb format xxxxyyyyzzzz
-static void clusterBoundingBoxDistance2_xxxx_simd4(const float* bb_j, const int nsi, const float* bb_i, float* d2)
+gmx_unused static void clusterBoundingBoxDistance2_xxxx_simd4(const float* bb_j,
+                                                              const int    nsi,
+                                                              const float* bb_i,
+                                                              float*       d2)
 {
     constexpr int stride = c_packedBoundingBoxesDimSize;
 
