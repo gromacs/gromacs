@@ -49,6 +49,8 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/simd/simd.h"
 
+#include "nbnxm_enums.h"
+
 namespace gmx
 {
 
@@ -83,9 +85,10 @@ static constexpr int c_numBoundingBoxBounds1D = 2;
  * The packed bounding box coordinate stride is always set to 4 if the number of cells is >=4.
  * With AVX we could use 8, but that turns out not to be faster.
  */
-#        define NBNXN_BBXXXX                                                                                           \
-            (GMX_GPU_NB_NUM_CLUSTER_PER_CELL_X * GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Y * GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Z \
-             >= 4)
+static constexpr bool sc_nbnxmBbXxxx(const PairlistType pairlistType)
+{
+    return gmx::sc_gpuNumClusterPerCell(pairlistType) >= 4;
+}
 
 //! The number of bounding boxes in a pack, also the size of a pack along one dimension
 static constexpr int c_packedBoundingBoxesDimSize = GMX_SIMD4_WIDTH;
@@ -103,7 +106,11 @@ static constexpr int packedBoundingBoxesIndex(int clusterIndex)
 #    else /* NBNXN_SEARCH_BB_SIMD4 */
 
 #        define NBNXN_SEARCH_SIMD4_FLOAT_X_BB 0
-#        define NBNXN_BBXXXX 0
+
+static constexpr bool sc_nbnxmBbXxxx(const PairlistType gmx_unused pairlistType)
+{
+    return false;
+}
 
 #    endif /* NBNXN_SEARCH_BB_SIMD4 */
 

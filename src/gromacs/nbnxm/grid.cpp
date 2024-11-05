@@ -184,11 +184,15 @@ void Grid::resizeBoundingBoxesAndFlags(const int maxNumCells)
     }
     else
     {
-#if NBNXN_BBXXXX
-        pbb_.resize(packedBoundingBoxesIndex(maxNumCells * sc_gpuNumClusterPerCell(geometry_.pairlistType_)));
-#else
-        bb_.resize(maxNumCells * sc_gpuNumClusterPerCell(geometry_.pairlistType_));
-#endif
+        if (gmx::sc_nbnxmBbXxxx(geometry_.pairlistType_))
+        {
+            pbb_.resize(packedBoundingBoxesIndex(
+                    maxNumCells * sc_gpuNumClusterPerCell(geometry_.pairlistType_)));
+        }
+        else
+        {
+            bb_.resize(maxNumCells * sc_gpuNumClusterPerCell(geometry_.pairlistType_));
+        }
     }
 
     if (geometry_.numAtomsJCluster_ == geometry_.numAtomsICluster_)
@@ -610,8 +614,6 @@ gmx_unused static void calcBoundingBoxHalves(const int numAtoms, const real* x, 
 #endif
 }
 
-#if NBNXN_BBXXXX
-
 /*! \brief Computes the bounding box for na coordinates in order xyz, bb order xxxxyyyyzzzz */
 static void calc_bounding_box_xxxx(int na, int stride, const real* x, float* bb)
 {
@@ -642,8 +644,6 @@ static void calc_bounding_box_xxxx(int na, int stride, const real* x, float* bb)
     bb[5 * c_packedBoundingBoxesDimSize] = R2F_U(zh);
 }
 
-#endif /* NBNXN_BBXXXX */
-
 #if NBNXN_SEARCH_SIMD4_FLOAT_X_BB
 
 /*! \brief Computes the bounding box for na coordinates in order xyz?, bb order xyz0 */
@@ -669,8 +669,6 @@ static void calc_bounding_box_simd4(int na, const float* x, BoundingBox* bb)
     store4(bb->upper.ptr(), bb_1_S);
 }
 
-#    if NBNXN_BBXXXX
-
 /*! \brief Computes the bounding box for na coordinates in order xyz?, bb order xxxxyyyyzzzz */
 static void calc_bounding_box_xxxx_simd4(int na, const float* x, real* bb)
 {
@@ -685,8 +683,6 @@ static void calc_bounding_box_xxxx_simd4(int na, const float* x, real* bb)
     bb[4 * c_packedBoundingBoxesDimSize] = bbWorkAligned.upper.y;
     bb[5 * c_packedBoundingBoxesDimSize] = bbWorkAligned.upper.z;
 }
-
-#    endif /* NBNXN_BBXXXX */
 
 #endif /* NBNXN_SEARCH_SIMD4_FLOAT_X_BB */
 
@@ -774,32 +770,35 @@ static void print_bbsizes_supersub(FILE* fp, const Grid& grid)
     const auto layoutType = grid.geometry().pairlistType_;
     for (int c = 0; c < grid.numCells(); c++)
     {
-#if NBNXN_BBXXXX
-        for (int s = 0; s < grid.numClustersPerCell()[c]; s += c_packedBoundingBoxesDimSize)
+        if (sc_nbnxmBbXxxx(layoutType))
         {
-            int cs_w = (c * sc_gpuNumClusterPerCell(layoutType) + s) / c_packedBoundingBoxesDimSize;
-            auto boundingBoxes = grid.packedBoundingBoxes().subArray(
-                    cs_w * c_packedBoundingBoxesSize, c_packedBoundingBoxesSize);
-            for (int i = 0; i < c_packedBoundingBoxesDimSize; i++)
+            for (int s = 0; s < grid.numClustersPerCell()[c]; s += c_packedBoundingBoxesDimSize)
             {
-                for (int d = 0; d < DIM; d++)
+                int cs_w = (c * sc_gpuNumClusterPerCell(layoutType) + s) / c_packedBoundingBoxesDimSize;
+                auto boundingBoxes = grid.packedBoundingBoxes().subArray(
+                        cs_w * c_packedBoundingBoxesSize, c_packedBoundingBoxesSize);
+                for (int i = 0; i < c_packedBoundingBoxesDimSize; i++)
                 {
-                    ba[d] += boundingBoxes[(DIM + d) * c_packedBoundingBoxesDimSize + i]
-                             - boundingBoxes[(0 + d) * c_packedBoundingBoxesDimSize + i];
+                    for (int d = 0; d < DIM; d++)
+                    {
+                        ba[d] += boundingBoxes[(DIM + d) * c_packedBoundingBoxesDimSize + i]
+                                 - boundingBoxes[(0 + d) * c_packedBoundingBoxesDimSize + i];
+                    }
                 }
             }
         }
-#else
-        for (int s = 0; s < grid.numClustersPerCell()[c]; s++)
+        else
         {
-            const int                         index = c * sc_gpuNumClusterPerCell(layoutType) + s;
-            const ArrayRef<const BoundingBox> iboundingBoxes = grid.iBoundingBoxes();
-            const auto&                       bb             = iboundingBoxes[index];
-            ba[XX] += bb.upper.x - bb.lower.x;
-            ba[YY] += bb.upper.y - bb.lower.y;
-            ba[ZZ] += bb.upper.z - bb.lower.z;
+            for (int s = 0; s < grid.numClustersPerCell()[c]; s++)
+            {
+                const int index = c * sc_gpuNumClusterPerCell(layoutType) + s;
+                const ArrayRef<const BoundingBox> iboundingBoxes = grid.iBoundingBoxes();
+                const auto&                       bb             = iboundingBoxes[index];
+                ba[XX] += bb.upper.x - bb.lower.x;
+                ba[YY] += bb.upper.y - bb.lower.y;
+                ba[ZZ] += bb.upper.z - bb.lower.z;
+            }
         }
-#endif
         ns += grid.numClustersPerCell()[c];
     }
     dsvmul(1.0 / ns, ba, ba);
@@ -993,8 +992,7 @@ void Grid::fillCell(GridSetData*            gridSetData,
         calcBoundingBoxXPacked<c_packX8>(
                 numAtoms, nbat->x().data() + atom_to_x_index<c_packX8>(atomStart), bb_ptr);
     }
-#if NBNXN_BBXXXX
-    else if (!geometry_.isSimple_)
+    else if (sc_nbnxmBbXxxx(geometry_.pairlistType_) && !geometry_.isSimple_)
     {
         /* Store the bounding boxes in a format convenient
          * for SIMD4 calculations: xxxxyyyyzzzz...
@@ -1004,13 +1002,13 @@ void Grid::fillCell(GridSetData*            gridSetData,
         float*    pbb_ptr      = pbb_.data() + packedBoundingBoxesIndex(clusterIndex)
                          + (clusterIndex & (c_packedBoundingBoxesDimSize - 1));
 
-#    if NBNXN_SEARCH_SIMD4_FLOAT_X_BB
+#if NBNXN_SEARCH_SIMD4_FLOAT_X_BB
         if (nbat->XFormat == nbatXYZQ)
         {
             calc_bounding_box_xxxx_simd4(numAtoms, nbat->x().data() + atomStart * nbat->xstride, pbb_ptr);
         }
         else
-#    endif
+#endif
         {
             calc_bounding_box_xxxx(
                     numAtoms, nbat->xstride, nbat->x().data() + atomStart * nbat->xstride, pbb_ptr);
@@ -1028,7 +1026,6 @@ void Grid::fillCell(GridSetData*            gridSetData,
                     pbb_ptr[5 * c_packedBoundingBoxesDimSize]);
         }
     }
-#endif
     else
     {
         /* Store the bounding boxes as xyz.xyz. */
