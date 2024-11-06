@@ -72,7 +72,6 @@ struct gmx_edsam;
 struct gmx_enfrot;
 struct gmx_multisim_t;
 class history_t;
-struct MDModulesNotifiers;
 
 namespace gmx
 {

@@ -54,9 +54,9 @@ one has :math:`N_{df} \approx 2\, N_{atoms}` and thus for :math:`c` = 2
 one should choose :math:`\epsilon` as :math:`1/\sqrt{N_{atoms}}`.
 However there is one problem when using pressure coupling. The density
 at higher temperatures will decrease, leading to higher energy
-\ :ref:`62 <refSeibert2005a>`, which should be taken into account. The |Gromacs| website
-features a so-called ``REMD calculator``, that lets you type in the
-temperature range and the number of atoms, and based on that proposes a
+\ :ref:`62 <refSeibert2005a>`, which should be taken into account. Using a
+so-called `REMD calculator <https://virtualchemistry.org/remd-temperature-generator/>`_,
+you can type in the temperature range and the number of atoms. The tool then proposes a
 set of temperatures.
 
 An extension to the REMD for the isobaric-isothermal ensemble was
@@ -109,7 +109,8 @@ sampling replica exchange, as for some permutations, more than one round
 of swaps must take place. In some cases, this extra communication cost
 might affect the efficiency.
 
-All replica exchange variants are options of the :ref:`mdrun <gmx mdrun>` program. It will
+All replica exchange variants are set using :ref:`mdp` options and performed using the
+:ref:`mdrun <gmx mdrun>` program. It will
 only work when MPI is installed, due to the inherent parallelism in the
 algorithm. For efficiency each replica can run on a separate rank. See
 the manual page of :ref:`mdrun <gmx mdrun>` on how to use these multinode features.

@@ -7,6 +7,15 @@ Portability
    Also, please use the syntax :issue:`number` to reference issues on GitLab, without
    a space between the colon and number!
 
+Added support to compile |Gromacs| using AMD HIP as GPU backend
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+It is now possible to use AMD HIP directly as the GPU backend to run
+simulations on AMD devices. For now only the NBNxM kernels are can
+be offloaded to the device using this backend.
+
+:issue:`4947`
+
 Added support for the oneMKL interface library for GPU FFTs
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 

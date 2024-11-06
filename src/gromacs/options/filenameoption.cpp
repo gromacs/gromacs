@@ -508,6 +508,7 @@ ArrayRef<const int> FileNameOptionInfo::fileTypes() const
 
 AbstractOptionStorage* FileNameOption::createStorage(const OptionManagerContainer& managers) const
 {
+    // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
     return new FileNameOptionStorage(*this, managers.get<FileNameOptionManager>());
 }
 

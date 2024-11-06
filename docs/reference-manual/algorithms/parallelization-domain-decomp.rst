@@ -92,8 +92,8 @@ So we need a dynamic load balancing algorithm where the volume of each
 domain decomposition cell can be adjusted *independently*. To achieve
 this, the 2- or 3-D domain decomposition grids need to be staggered.
 :numref:`Fig. %s <fig-ddtric>` shows the most general case in 2-D. Due to the
-staggering, one might require two distance checks for deciding if a
-charge group needs to be communicated: a non-bonded distance and a
+staggering, one might require two distance checks for deciding if an
+update group needs to be communicated: a non-bonded distance and a
 bonded distance check.
 
 .. _fig-ddtric:
@@ -230,7 +230,7 @@ ranges and their default values is given in :numref:`Table %s <table-ddranges>`
 In most cases the defaults of :ref:`mdrun <gmx mdrun>` should not cause the simulation to
 stop with an error message of missing interactions. The range for the
 bonded interactions is determined from the distance between bonded
-charge-groups in the starting configuration, with 10% added for
+update groups in the starting configuration, with 10% added for
 headroom. For the constraints, the value of :math:`r_{\mathrm{con}}` is
 determined by taking the maximum distance that (``lincs_order + 1``) bonds
 can cover when they all connect at angles of 120 degrees. The actual
@@ -250,10 +250,10 @@ dodecahedra this is a factor of :math:`\sqrt{3/2}` shorter along
 :math:`x` and :math:`y`.
 
 When :math:`r_{\mathrm{mb}} > r_c`, :ref:`mdrun <gmx mdrun>` employs a smart algorithm to
-reduce the communication. Simply communicating all charge groups within
+reduce the communication. Simply communicating all update groups within
 :math:`r_{\mathrm{mb}}` would increase the amount of communication
-enormously. Therefore only charge-groups that are connected by bonded
-interactions to charge groups which are not locally present are
+enormously. Therefore only update groups that are connected by bonded
+interactions to update groups which are not locally present are
 communicated. This leads to little extra communication, but also to a
 slightly increased cost for the domain decomposition setup. In some
 cases, *e.g.* coarse-grained simulations with a very short cut-off, one

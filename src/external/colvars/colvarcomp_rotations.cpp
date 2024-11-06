@@ -145,11 +145,14 @@ void colvar::orientation::apply_force(colvarvalue const &force)
   if (!atoms->noforce) {
     rot_deriv_impl->prepare_derivative(rotation_derivative_dldq::use_dq);
     cvm::vector1d<cvm::rvector> dq0_2;
+    auto ag_force = atoms->get_group_force_object();
     for (size_t ia = 0; ia < atoms->size(); ia++) {
       rot_deriv_impl->calc_derivative_wrt_group2(ia, nullptr, &dq0_2);
-      for (size_t i = 0; i < 4; i++) {
-        (*atoms)[ia].apply_force(FQ[i] * dq0_2[i]);
-      }
+      const auto f_ia = FQ[0] * dq0_2[0] +
+                        FQ[1] * dq0_2[1] +
+                        FQ[2] * dq0_2[2] +
+                        FQ[3] * dq0_2[3];
+      ag_force.add_atom_force(ia, f_ia);
     }
   }
 }

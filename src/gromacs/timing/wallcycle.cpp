@@ -865,6 +865,16 @@ void wallcycle_print(FILE*                            fplog,
         fprintf(fplog, "%s\n", hline);
     }
 
+    if (npme > 0)
+    {
+        fprintf(fplog,
+                " Note that the cycle count and %% columns are weighted by the number of ranks,\n"
+                " while walltimes are not. Hence, with separate PME ranks, the fraction of each\n"
+                " activity's walltime does not correspond to the cycle %%.\n"
+                "%s\n",
+                hline);
+    }
+
     /* print GPU timing summary */
     double tot_gpu = 0.0;
     if (gpu_pme_t)

@@ -221,7 +221,7 @@ auto pmeSplineAndSpreadKernel(sycl::handler& cgh,
         }
     }();
 
-    return [=](sycl::nd_item<3> itemIdx) [[intel::reqd_sub_group_size(subGroupSize)]]
+    return [=](sycl::nd_item<3> itemIdx) [[sycl::reqd_sub_group_size(subGroupSize)]]
     {
         if constexpr (skipKernelCompilation<subGroupSize>())
         {

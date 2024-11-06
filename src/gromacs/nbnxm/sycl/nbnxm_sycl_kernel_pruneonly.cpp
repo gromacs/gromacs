@@ -111,7 +111,7 @@ auto nbnxmKernelPruneOnly(sycl::handler& cgh,
     /* Requirements:
      * Work group (block) must have range (c_clSize, c_clSize, ...) (for itemIdx calculation, easy
      * to change). */
-    return [=](sycl::nd_item<3> itemIdx) [[intel::reqd_sub_group_size(requiredSubGroupSize)]]
+    return [=](sycl::nd_item<3> itemIdx) [[sycl::reqd_sub_group_size(requiredSubGroupSize)]]
     {
         // thread/block/warp id-s
         const unsigned tidxi = itemIdx.get_local_id(2);

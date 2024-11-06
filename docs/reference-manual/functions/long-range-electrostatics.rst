@@ -49,7 +49,7 @@ is therefore not realistic for use in large systems.
 Using Ewald
 ^^^^^^^^^^^
 
-Don’t use Ewald unless you are absolutely sure this is what you want -
+Do not use Ewald unless you are absolutely sure this is what you want -
 for almost all cases the PME method below will perform much better. If
 you still want to employ classical Ewald summation enter this in your
 :ref:`mdp` file, if the side of your box is about :math:`3`  nm:

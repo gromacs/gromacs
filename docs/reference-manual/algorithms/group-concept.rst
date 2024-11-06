@@ -20,7 +20,6 @@ temperature-coupling group
     groups below.
 
 freeze group
-
     Atoms that belong to a freeze group are kept stationary in the
     dynamics. This is useful during equilibration, *e.g.* to avoid badly
     placed solvent molecules giving unreasonable kicks to protein atoms,
@@ -41,7 +40,6 @@ freeze group
     with constant pressure.
 
 accelerate group
-
     On each atom in an “accelerate group” an acceleration
     :math:`\mathbf{a}^g` is imposed. This is equivalent to
     a mass-weighted external force. This feature makes it possible to
@@ -49,7 +47,6 @@ accelerate group
     for example, transport properties.
 
 energy-monitor group
-
     Mutual interactions between all energy-monitor groups are compiled
     during the simulation. This is done separately for Lennard-Jones and
     Coulomb terms. In principle up to 256 groups could be defined, but
@@ -64,7 +61,6 @@ energy-monitor group
     required.
 
 center of mass group
-
     In |Gromacs|, the center of mass (COM) motion can be removed, for
     either the complete system or for groups of atoms. The latter is
     useful, *e.g.* for systems where there is limited friction (*e.g.*
@@ -73,7 +69,6 @@ center of mass group
     mass motion removal.
 
 Compressed position output group
-
     In order to further reduce the size of the compressed trajectory
     file (:ref:`xtc` or :ref:`tng`), it is possible to
     store only a subset of all particles. All x-compression groups that

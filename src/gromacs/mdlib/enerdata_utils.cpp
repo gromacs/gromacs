@@ -323,7 +323,7 @@ void accumulatePotentialEnergies(gmx_enerdata_t* enerd, gmx::ArrayRef<const real
 void ForeignLambdaTerms::accumulateKinetic(int listIndex, double energy, double dhdl)
 {
     energies_[listIndex] += energy;
-    dhdl_[listIndex][FreeEnergyPerturbationCouplingType::Temperature] += dhdl;
+    dhdl_[listIndex][FreeEnergyPerturbationCouplingType::Mass] += dhdl;
 }
 
 void ForeignLambdaTerms::finalizeKineticContributions(gmx::ArrayRef<const real> energyTerms,
@@ -336,10 +336,7 @@ void ForeignLambdaTerms::finalizeKineticContributions(gmx::ArrayRef<const real> 
 
     // Treat current lambda, the deltaH contribution is 0 as delta-lambda=0 for the current lambda
     accumulateKinetic(0, 0.0, energyTerms[F_DVDL_CONSTR]);
-    if (!fepvals.separate_dvdl[FreeEnergyPerturbationCouplingType::Mass])
-    {
-        accumulateKinetic(0, 0.0, energyTerms[F_DKDL]);
-    }
+    accumulateKinetic(0, 0.0, dhdlMass);
 
     for (int i = 0; i < fepvals.n_lambda; i++)
     {
@@ -356,11 +353,10 @@ void ForeignLambdaTerms::finalizeKineticContributions(gmx::ArrayRef<const real> 
         const double dlam = fepvals.all_lambda[lambdaIndex][i] - lambda[static_cast<int>(lambdaIndex)];
         accumulateKinetic(1 + i, dlam * energyTerms[F_DVDL_CONSTR], energyTerms[F_DVDL_CONSTR]);
 
-        if (!fepvals.separate_dvdl[FreeEnergyPerturbationCouplingType::Mass])
         {
             const double dlam = fepvals.all_lambda[FreeEnergyPerturbationCouplingType::Mass][i]
                                 - lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Mass)];
-            accumulateKinetic(1 + i, dlam * energyTerms[F_DKDL], energyTerms[F_DKDL]);
+            accumulateKinetic(1 + i, dlam * dhdlMass, dhdlMass);
         }
     }
 }

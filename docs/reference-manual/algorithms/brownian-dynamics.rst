@@ -11,9 +11,9 @@ negligible. The equation is
 
 where :math:`\gamma_i` is the friction coefficient
 :math:`[\mbox{amu/ps}]` and
-:math:`{\stackrel{\circ}{\mathbf{r}}}_i\!\!(t)` is a noise
+:math:`{\stackrel{\circ}{\mathbf{r}}}_i(t)` is a noise
 process with
-:math:`\langle {\stackrel{\circ}{r}}_i\!\!(t) {\stackrel{\circ}{r}}_j\!\!(t+s) \rangle = 2 \delta(s) \delta_{ij} k_B T / \gamma_i`.
+:math:`\langle {\stackrel{\circ}{r}}_i(t) {\stackrel{\circ}{r}}_j(t+s) \rangle = 2 \delta(s) \delta_{ij} k_B T / \gamma_i`.
 In |Gromacs| the equations are integrated with a simple, explicit scheme
 
 .. math:: \mathbf{r}_i(t+\Delta t) = \mathbf{r}_i(t) +
@@ -28,7 +28,9 @@ or as :math:`\gamma_i = m_i\,\gamma_i`, where the friction constants
 :math:`\gamma_i` can be different for different groups of atoms. Because
 the system is assumed to be over-damped, large timesteps can be used.
 LINCS should be used for the constraints since SHAKE will not converge
-for large atomic displacements. BD is an option of the :ref:`mdrun <gmx mdrun>` program.
+for large atomic displacements. BD can be activated by using
+:mdp-value:`integrator=bd` and the simulations are run using the
+:ref:`mdrun <gmx mdrun>` program.
 
 In BD there are no velocities, so there is also no kinetic energy. Still
 :ref:`gmx mdrun` will report a kinetic energy and temperature based on

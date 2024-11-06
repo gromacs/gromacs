@@ -137,6 +137,8 @@ vector :math:`{\bf c}`, then with :math:`{\bf b}` and finally with
 ensure that we can find the 14 nearest triclinic images within a linear
 combination that does not involve multiples of box vectors.
 
+.. _gmx-md-pair-lists-generation:
+
 Pair lists generation
 ^^^^^^^^^^^^^^^^^^^^^
 
@@ -154,7 +156,7 @@ list contains particles :math:`i`, a displacement vector for particle
 particular image of particle :math:`i`. The list is updated every
 ``nstlist`` steps.
 
-To make the pair list, all atom pairs that are within the pair list
+To make the pair list, all atom pairs that are within the pair-list
 cut-off distance need to be found and stored in a list. Note that
 such a list generally does not store all neighbors for each atom,
 since each atom pair should appear only once in the list. This
@@ -177,17 +179,17 @@ a particle pair is within the cut-off distance at that particular time
 step. This ensures that as particles move between pair search steps,
 forces between nearly all particles within the cut-off distance are
 calculated. We say *nearly* all particles, because |Gromacs| uses a fixed
-pair list update frequency for efficiency. A particle-pair, whose
+pair-list update frequency for efficiency. A particle-pair, whose
 distance was outside the cut-off, could possibly move enough during this
 fixed number of steps that its distance is now within the cut-off. This
 small chance results in a small energy drift, and the size of the chance
 depends on the temperature. When temperature coupling is used, the
 buffer size can be determined automatically, given a certain tolerance
-on the energy drift. The default tolerance is 0.005 kJ/mol/ns per
+on the energy drift. The default tolerance is 0.005 kJ/mol/ps per
 particle, but in practice the energy drift is usually an order of
 magnitude smaller. Note that in single precision for normal atomistic
-simulations constraints cause a drift somewhere around 0.0001 kJ/mol/ns
-per particle, so it doesn't make sense to go much lower than that.
+simulations constraints cause a drift somewhere around 0.0001 kJ/mol/ps
+per particle, so it does not make sense to go much lower than that.
 
 The pair list is implemented in a very efficient fashion
 based on clusters of particles. The simplest example is a cluster size
@@ -219,7 +221,7 @@ significantly reduce the number of cluster pairs in the interaction
 kernel. This procedure is applied automatically, unless the user set the
 pair-list buffer size manually.
 
-Energy drift and pair-list buffering
+Energy drift and pair list buffering
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 For a canonical (NVT) ensemble, the average energy error caused by
@@ -236,7 +238,7 @@ t^2 k_B T(1/m_1+1/m_2)`. Note that in practice particles usually
 interact with (bump into) other particles over time :math:`t` and
 therefore the real displacement distribution is much narrower. Given a
 non-bonded interaction cut-off distance of :math:`r_c` and a pair-list
-cut-off :math:`r_\ell=r_c+r_b` for :math:`r_b` the Verlet buffer size,
+cut-off :math:`r_\ell=r_c+r_b` for the Verlet buffer size :math:`r_b`,
 we can then write the average energy error after time :math:`t` for all
 missing pair interactions between a single :math:`i` particle of type 1
 surrounded by all :math:`j` particles that are of type 2 with number
@@ -328,7 +330,7 @@ small compared to both :math:`r_c` and :math:`r_\ell`, thus the
 approximations in the equations above are good, since the Gaussian
 distribution decays rapidly. The energy error needs to be averaged over
 all particle pair types and weighted with the particle counts. In
-|Gromacs| we don’t allow cancellation of error between pair types, so we
+|Gromacs| we do not allow cancellation of error between pair types, so we
 average the absolute values. To obtain the average energy error per unit
 time, it needs to be divided by the neighbor-list life time
 :math:`t = ({\tt nstlist} - 1)\times{\tt dt}`. The function can not be
@@ -376,13 +378,13 @@ they are connected to.
 
 There is one important implementation detail that reduces the energy
 errors caused by the finite Verlet buffer list size. The derivation
-above assumes a particle pair-list. However, the |Gromacs| implementation
-uses a cluster pair-list for efficiency. The pair list consists of pairs
+above assumes a particle pair list. However, the |Gromacs| implementation
+uses a cluster pair list for efficiency. The pair list consists of pairs
 of clusters of 4 particles in most cases, also called a
 :math:`4 \times 4` list, but the list can also be :math:`4 \times 8`
 (GPU CUDA kernels and AVX 256-bit single precision kernels) or
 :math:`4 \times 2` (SSE double-precision kernels). This means that the
-pair-list is effectively much larger than the corresponding
+pair list is effectively much larger than the corresponding
 :math:`1 \times 1` list. Thus slightly beyond the pair-list cut-off
 there will still be a large fraction of particle pairs present in the
 list. This fraction can be determined in a simulation and accurately
@@ -418,7 +420,7 @@ buffer sizes the drift of the total energy is much smaller than the pair
 energy error tolerance, due to cancellation of errors. For larger buffer
 size, the error estimate is a factor of 6 higher than drift of the total
 energy, or alternatively the buffer estimate is 0.024 nm too large. This
-is because the protons don’t move freely over 18 fs, but rather vibrate.
+is because the protons do not move freely over 18 fs, but rather vibrate.
 
 The only approximation that can lead to an underestimate of the buffer
 size is that of homogeneous atom density. This would be particularly
@@ -451,7 +453,7 @@ Pressure deviations due to cut-off artifacts
 The pressure can be affected more than the energy by missing interactions
 close to the cut-off, as the force generally has a discontinuity at
 the cut-off. For Lennard-Jones forces this leads to a consistent increase
-in pressure as the age of the pair-list increases because all missing dispersion
+in pressure as the age of the pair list increases because all missing dispersion
 interactions have the same sign. The electrostatic forces are much larger
 at the cut-off, but here the errors tend to cancel out due to (local)
 electroneutrality. We have not observed errors larger than 0.1 bar due
@@ -478,7 +480,7 @@ can be provided. This uses the estimation formulas described above and puts
 an upper bound on the error of the pressure averaged over the lifetime of
 the pair list. The default value for this tolerance is 0.5 bar. For liquid
 water this corresponds to a maximum relative devatiation of the density of
-$2 \cdot 10^{-5}$.
+:math:`2 \cdot 10^{-5}`.
 
 Simple search
 ^^^^^^^^^^^^^
@@ -636,7 +638,7 @@ The leap-frog integrator
    other’s backs.
 
 The default MD integrator in |Gromacs| is the so-called *leap-frog*
-algorithm \ :ref:`22 <refHockney74>` for the integration of the
+algorithm :ref:`22 <refHockney74>` for the integration of the
 equations of motion. When extremely accurate integration with
 temperature and/or pressure coupling is required, the velocity Verlet
 integrators are also present and may be preferable (see
@@ -653,14 +655,14 @@ determined by the positions at time :math:`t` using these relations:
           :label: eqnleapfrogv
 
 The algorithm is visualized in :numref:`Fig. %s <fig-leapfrog>`. It
-produces trajectories that are identical to the Verlet \ :ref:`23 <refVerlet67>`
+produces trajectories that are identical to the Verlet :ref:`23 <refVerlet67>`
 algorithm, whose position-update relation is
 
 .. math:: \mathbf{r}(t+{{\Delta t}})~=~2\mathbf{r}(t) - \mathbf{r}(t-{{\Delta t}}) + \frac{1}{m}\mathbf{F}(t){{\Delta t}}^2+O({{\Delta t}}^4)
           :label: eqnleapfrogp
 
 The algorithm is of third order in :math:`\mathbf{r}` and
-is time-reversible. See ref. \ :ref:`24 <refBerendsen86b>` for the
+is time-reversible. See ref. :ref:`24 <refBerendsen86b>` for the
 merits of this algorithm and comparison with other time integration
 algorithms.
 
@@ -673,7 +675,7 @@ constraints, all of which are described below.
 The velocity Verlet integrator
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The velocity Verlet algorithm\ :ref:`25 <refSwope82>` is also implemented in
+The velocity Verlet algorithm :ref:`25 <refSwope82>` is also implemented in
 |Gromacs|, though it is not yet fully integrated with all sets of options.
 In velocity Verlet, positions :math:`\mathbf{r}` and
 velocities :math:`\mathbf{v}` at time :math:`t` are used
@@ -909,10 +911,10 @@ While direct use of molecular dynamics gives rise to the NVE (constant
 number, constant volume, constant energy ensemble), most quantities that
 we wish to calculate are actually from a constant temperature (NVT)
 ensemble, also called the canonical ensemble. |Gromacs| can use the
-*weak-coupling* scheme of Berendsen \ :ref:`26 <refBerendsen84>`, stochastic
-randomization through the Andersen thermostat \ :ref:`27 <refAndersen80>`, the
-extended ensemble Nosé-Hoover scheme \ :ref:`28 <refNose84>`, :ref:`29 <refHoover85>`, or a
-velocity-rescaling scheme \ :ref:`30 <refBussi2007a>` to
+*weak-coupling* scheme of Berendsen :ref:`26 <refBerendsen84>`, stochastic
+randomization through the Andersen thermostat :ref:`27 <refAndersen80>`, the
+extended ensemble Nosé-Hoover scheme :ref:`28 <refNose84>`, :ref:`29 <refHoover85>`, or a
+velocity-rescaling scheme :ref:`30 <refBussi2007a>` to
 simulate constant temperature, with advantages of each of the schemes
 laid out below.
 
@@ -948,7 +950,7 @@ Berendsen temperature coupling
 
 The Berendsen algorithm mimics weak coupling with first-order kinetics
 to an external heat bath with given temperature :math:`T_0`. See
-ref. \ :ref:`31 <refBerendsen91>` for a comparison with the Nosé-Hoover scheme. The
+ref. :ref:`31 <refBerendsen91>` for a comparison with the Nosé-Hoover scheme. The
 effect of this algorithm is that a deviation of the system temperature
 from :math:`T_0` is slowly corrected according to:
 
@@ -971,7 +973,7 @@ averages will not be affected significantly, except for the distribution
 of the kinetic energy itself. However, fluctuation properties, such as
 the heat capacity, will be affected. A similar thermostat which does
 produce a correct ensemble is the velocity rescaling
-thermostat \ :ref:`30 <refBussi2007a>` described below, so while the
+thermostat :ref:`30 <refBussi2007a>` described below, so while the
 Berendsen thermostat is supported for historical reasons, including
 the ability to reproduce old simulations, we strongly recommend
 against using it for new simulations.
@@ -1016,7 +1018,7 @@ total energy to obtain the conserved energy quantity.
 Velocity-rescaling temperature coupling
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The velocity-rescaling thermostat \ :ref:`30 <refBussi2007a>`
+The velocity-rescaling thermostat :ref:`30 <refBussi2007a>`
 is essentially a Berendsen thermostat (see above) with an additional
 stochastic term that ensures a correct kinetic energy distribution by
 modifying it according to
@@ -1036,7 +1038,7 @@ Andersen thermostat
 
 One simple way to maintain a thermostatted ensemble is to take an
 :math:`NVE` integrator and periodically re-select the velocities of the
-particles from a Maxwell-Boltzmann distribution \ :ref:`27 <refAndersen80>`. This
+particles from a Maxwell-Boltzmann distribution :ref:`27 <refAndersen80>`. This
 can either be done by randomizing all the velocities simultaneously
 (massive collision) every :math:`\tau_T/{{\Delta t}}` steps
 (``andersen-massive``), or by randomizing every particle
@@ -1059,7 +1061,7 @@ motions. However, it can slow down the kinetics of system by randomizing
 correlated motions of the system, including slowing sampling when
 :math:`\tau_T` is at moderate levels (less than 10 ps). This algorithm
 should therefore generally not be used when examining kinetics or
-transport properties of the system \ :ref:`32 <refBasconi2013>`.
+transport properties of the system :ref:`32 <refBasconi2013>`.
 
 Nosé-Hoover temperature coupling
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1072,7 +1074,7 @@ weak-coupling scheme.
 
 To enable canonical ensemble simulations, |Gromacs| also supports the
 extended-ensemble approach first proposed by Nosé :ref:`28 <refNose84>` and later
-modified by Hoover \ :ref:`29 <refHoover85>`. The system Hamiltonian is extended by
+modified by Hoover :ref:`29 <refHoover85>`. The system Hamiltonian is extended by
 introducing a thermal reservoir and a friction term in the equations of
 motion. The friction force is proportional to the product of each
 particle’s velocity and a friction parameter, :math:`\xi`. This friction
@@ -1081,7 +1083,7 @@ own momentum (:math:`p_{\xi}`) and equation of motion; the time
 derivative is calculated from the difference between the current kinetic
 energy and the reference temperature.
 
-In this formulation, the particles´ equations of motion in
+In this formulation, the particles' equations of motion in
 the global :ref:`MD scheme <gmx-md-scheme>` are replaced by:
 
 .. math:: \frac {{\mbox{d}}^2\mathbf{r}_i}{{\mbox{d}}t^2} = \frac{\mathbf{F}_i}{m_i} - 
@@ -1099,7 +1101,7 @@ number of degrees of freedom and :math:`k` is Boltzmann’s
 constant (see chapter :ref:`defunits`). The strength of the
 coupling is determined by the constant :math:`Q` (usually called the
 *mass parameter* of the reservoir) in combination with the reference
-temperature.  [1]_
+temperature. [1]_
 
 The conserved quantity for the Nosé-Hoover equations of motion is not
 the total energy, but rather
@@ -1114,7 +1116,7 @@ reference temperature (and some implementations even include the number
 of degrees of freedom in your system when defining :math:`Q`). To
 maintain the coupling strength, one would have to change :math:`Q` in
 proportion to the change in reference temperature. For this reason, we
-prefer to let the |Gromacs| user work instead with the period
+prefer to let the |Gromacs| user work with the period
 :math:`\tau_T` of the oscillations of kinetic energy between the system
 and the reservoir instead. It is directly related to :math:`Q` and
 :math:`T_0` via:
@@ -1127,7 +1129,7 @@ coupling strength (similar to the weak-coupling relaxation), and in
 addition :math:`\tau_T` is independent of system size and reference
 temperature.
 
-It is however important to keep the difference between the weak-coupling
+It is, however, important to keep the difference between the weak-coupling
 scheme and the Nosé-Hoover algorithm in mind: Using weak coupling you
 get a strongly damped *exponential relaxation*, while the Nosé-Hoover
 approach produces an *oscillatory relaxation*. The actual time it takes
@@ -1147,10 +1149,10 @@ infinite chain of thermostats, the dynamics are guaranteed to be
 ergodic. Using just a few chains can greatly improve the ergodicity, but
 recent research has shown that the system will still be nonergodic, and
 it is still not entirely clear what the practical effect of
-this \ :ref:`33 <refCooke2008>`. Currently, the default number of chains is 10, but
+this is :ref:`33 <refCooke2008>`. Currently, the default number of chains is 10, but
 this can be controlled by the user. In the case of chains, the equations
 are modified in the following way to include a chain of thermostatting
-particles \ :ref:`34 <refMartyna1992>`:
+particles :ref:`34 <refMartyna1992>`:
 
 .. math::  \begin{aligned}
            \frac {{\mbox{d}}^2\mathbf{r}_i}{{\mbox{d}}t^2} &~=~& \frac{\mathbf{F}_i}{m_i} - \frac{p_{{\xi}_1}}{Q_1} \frac{{\mbox{d}}\mathbf{r}_i}{{\mbox{d}}t} \nonumber \\
@@ -1172,7 +1174,7 @@ space and are generally not important for analysis of simulations, but
 by setting an :ref:`mdp` option the values of all the positions and velocities
 of all Nosé-Hoover particles in the chain are written to the :ref:`edr` file.
 Leap-frog simulations currently can only have Nosé-Hoover chain lengths
-of 1, but this will likely be updated in later version.
+of 1, but this will likely be updated in a later version.
 
 As described in the integrator section, for temperature coupling, the
 temperature that the algorithm attempts to match to the reference
@@ -1184,7 +1186,7 @@ energy.
 We can examine the Trotter decomposition again to better understand the
 differences between these constant-temperature integrators. In the case
 of Nosé-Hoover dynamics (for simplicity, using a chain with :math:`N=1`,
-with more details in Ref. \ :ref:`35 <refMartyna1996>`), we split the Liouville
+with more details in Ref. :ref:`35 <refMartyna1996>`), we split the Liouville
 operator as
 
 .. math:: iL = iL_1 + iL_2 + iL_{\mathrm{NHC}},
@@ -1231,7 +1233,7 @@ integrator can be seen as starting with
           :label: eqnNHleapfrog
 
 and then using some algebra tricks to solve for some quantities are
-required before they are actually calculated \ :ref:`36 <refHolian95>`.
+required before they are actually calculated :ref:`36 <refHolian95>`.
 
 Group temperature coupling
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1250,7 +1252,7 @@ temperature differences between protein and water may actually be an
 artifact of the way temperature is calculated when there are finite
 timesteps, and very large differences in temperature are likely a sign
 of something else seriously going wrong with the system, and should be
-investigated carefully \ :ref:`37 <refEastwood2010>`.
+investigated carefully :ref:`37 <refEastwood2010>`.
 
 One special case should be mentioned: it is possible to
 temperature-couple only part of the system, leaving other parts without
@@ -1263,19 +1265,19 @@ is that if constraints on the water are used, then only the water
 degrees of freedom should be thermostatted, not protein degrees of
 freedom, as the higher frequency modes in the protein can cause larger
 deviations from the *true* temperature, the temperature obtained with
-small timesteps \ :ref:`37 <refEastwood2010>`.
+small timesteps :ref:`37 <refEastwood2010>`.
 
 Pressure coupling
 ~~~~~~~~~~~~~~~~~
 
 In the same spirit as the temperature coupling, the system can also be
 coupled to a *pressure bath.* |Gromacs| supports both the Berendsen
-algorithm \ :ref:`26 <refBerendsen84>` that scales coordinates and box
+algorithm :ref:`26 <refBerendsen84>` that scales coordinates and box
 vectors every step (we strongly recommend not to use it), a new
 stochastic cell rescaling algorithm, the extended-ensemble Parrinello-Rahman
-approach \ :ref:`38 <refParrinello81>`, :ref:`39 <refNose83>`, and for the
+approach :ref:`38 <refParrinello81>`, :ref:`39 <refNose83>`, and for the
 velocity Verlet variants, the Martyna-Tuckerman-Tobias-Klein (MTTK)
-implementation of pressure control \ :ref:`35 <refMartyna1996>`.
+implementation of pressure control :ref:`35 <refMartyna1996>`.
 Parrinello-Rahman and Berendsen can be combined with any of the
 temperature coupling methods above. MTTK can only be used with
 Nosé-Hoover temperature control. From version 5.1 onwards, it can only used
@@ -1413,14 +1415,14 @@ can be obtained:
 Here :math:`\gamma` is the external surface tension and :math:`P_{xx}`,
 :math:`P_{yy}`, and :math:`P_{zz}` the components of the internal pressure.
 
-More detailed explanations can be found in the original reference \ :ref:`184 <refBernetti2020>`.
+More detailed explanations can be found in the original reference :ref:`184 <refBernetti2020>`.
 
 
 Parrinello-Rahman pressure coupling
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 |Gromacs| also supports constant-pressure simulations using the
-Parrinello-Rahman approach \ :ref:`38 <refParrinello81>`,
+Parrinello-Rahman approach :ref:`38 <refParrinello81>`,
 :ref:`39 <refNose83>`, which is similar to the Nosé-Hoover temperature
 coupling, and in theory gives the true NPT ensemble. With the
 Parrinello-Rahman barostat, the box vectors as represented by the matrix
@@ -1564,13 +1566,13 @@ mod any integration errors, the true NPT ensemble.
 
 The full equations, combining both pressure coupling and temperature
 coupling, are taken from Martyna *et al.*  :ref:`35 <refMartyna1996>` and
-Tuckerman \ :ref:`41 <refTuckerman2006>` and are referred to here as MTTK
+Tuckerman :ref:`41 <refTuckerman2006>` and are referred to here as MTTK
 equations (Martyna-Tuckerman-Tobias-Klein). We introduce for convenience
 :math:`\epsilon = (1/3)\ln (V/V_0)`, where :math:`V_0` is a reference
 volume. The momentum of :math:`\epsilon` is
 :math:`{v_{\epsilon}}= p_{\epsilon}/W =
 \dot{\epsilon} = \dot{V}/3V`, and define :math:`\alpha = 1 + 3/N_{dof}`
-(see Ref \ :ref:`41 <refTuckerman2006>`)
+(see Ref :ref:`41 <refTuckerman2006>`)
 
 The isobaric equations are
 
@@ -1589,7 +1591,7 @@ where
           :label: eqnMTTKisobaric2
 
 The terms including :math:`\alpha` are required to make phase space
-incompressible \ :ref:`41 <refTuckerman2006>`. The :math:`\epsilon`
+incompressible :ref:`41 <refTuckerman2006>`. The :math:`\epsilon`
 acceleration term can be rewritten as
 
 .. math:: \begin{aligned}
@@ -1648,7 +1650,7 @@ The conserved quantity is now
           :label: eqnMTTKthermandbarconserved
 
 Returning to the Trotter decomposition formalism, for pressure control
-and temperature control \ :ref:`35 <refMartyna1996>` we get:
+and temperature control :ref:`35 <refMartyna1996>` we get:
 
 .. math:: \begin{aligned}
           iL = iL_1 + iL_2 + iL_{\epsilon,1} + iL_{\epsilon,2} + iL_{\mathrm{NHC-baro}} + iL_{\mathrm{NHC}}\end{aligned}
@@ -1714,7 +1716,7 @@ decomposition as
 With constraints, the equations become significantly more complicated,
 in that each of these equations need to be solved iteratively for the
 constraint forces. Before |Gromacs| 5.1, these iterative constraints were
-solved as described in \ :ref:`42 <refYu2010>`. From |Gromacs| 5.1 onward,
+solved as described in :ref:`42 <refYu2010>`. From |Gromacs| 5.1 onward,
 MTTK with constraints has been removed because of numerical stability
 issues with the iterations.
 
@@ -1729,7 +1731,7 @@ steps every :math:`n` steps instead of every steps. These new
 integrators will diverge if the coupling time step is too large, as the
 auxiliary variable integrations will not converge. However, in most
 cases, long coupling times are more appropriate, as they disturb the
-dynamics less \ :ref:`35 <refMartyna1996>`.
+dynamics less :ref:`35 <refMartyna1996>`.
 
 Standard velocity Verlet with Nosé-Hoover temperature control has a
 Trotter expansion
@@ -1818,7 +1820,7 @@ particles, which must be defined as a *freeze group*. This is
 implemented using a *freeze factor* :math:`\mathbf{f}_g`,
 which is a vector, and differs for each freeze group (see
 sec. :ref:`groupconcept`). This vector contains only zero (freeze) or one
-(don’t freeze). When we take this freeze factor and the external
+(do not freeze). When we take this freeze factor and the external
 acceleration :math:`\mathbf{a}_h` into account the update
 algorithm for the velocities becomes
 
@@ -1851,7 +1853,9 @@ highest frequencies are not of interest, 10 or 20 samples per ps may
 suffice. Be aware of the distortion of high-frequency motions by the
 *stroboscopic effect*, called *aliasing*: higher frequencies are
 mirrored with respect to the sampling frequency and appear as lower
-frequencies.
+frequencies. When the simulated system is very large and/or the simulation
+times very long, it is often sufficient to write in intervals ranging from 10 ps
+to 1 ns, depending on what the trajectory will be used for.
 
 |Gromacs| can also write reduced-precision coordinates for a subset of the
 simulation system to a special compressed trajectory file format. All

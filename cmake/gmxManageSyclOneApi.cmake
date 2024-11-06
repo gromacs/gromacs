@@ -54,8 +54,7 @@ if(CMAKE_CXX_COMPILER MATCHES "dpcpp$")
     message(FATAL_ERROR "Intel's \"dpcpp\" compiler is not supported; please use \"icpx\" for SYCL builds")
 endif()
 
-# Find the flags to enable (or re-enable) SYCL with Intel extensions. In case we turned it off above,
-# it's important that we check the combination of both flags, to make sure the second one re-enables SYCL.
+# Find the flags to enable SYCL with Intel compiler.
 if(NOT CHECK_SYCL_CXX_FLAGS_QUIETLY)
     message(STATUS "Checking for flags to enable SYCL")
 endif()
@@ -74,13 +73,69 @@ gmx_check_source_compiles_with_flags(
 )
 if (SYCL_CXX_FLAGS_RESULT)
     if(NOT CHECK_SYCL_CXX_FLAGS_QUIETLY)
-        message(STATUS "Checking for flags to enable SYCL - ${SYCL_TOOLCHAIN_CXX_FLAGS} ${SYCL_CXX_FLAGS}")
+        message(STATUS "Checking for flags to enable SYCL - ${SYCL_CXX_FLAGS}")
     endif()
     set(CHECK_SYCL_CXX_FLAGS_QUIETLY 1 CACHE INTERNAL "Keep quiet on future calls to detect SYCL flags" FORCE)
     set(SYCL_TOOLCHAIN_CXX_FLAGS ${SYCL_CXX_FLAGS})
     set(SYCL_TOOLCHAIN_LINKER_FLAGS ${SYCL_CXX_FLAGS})
 else()
-    message(FATAL_ERROR "Cannot compile a SYCL program with ${SYCL_TOOLCHAIN_CXX_FLAGS} ${SYCL_CXX_FLAGS}. Try a different compiler or disable SYCL.")
+    message(FATAL_ERROR "Cannot compile a SYCL program with ${SYCL_CXX_FLAGS}. Try a different compiler or disable SYCL.")
+endif()
+
+# Try compiling an empty kernel to sniff out the enabled targets
+set(SAMPLE_SYCL_KERNEL_PROBE_SOURCE
+"#include <sycl/sycl.hpp>
+int main()
+{
+    sycl::queue q;
+    q.parallel_for<class K>(sycl::range<1>{ 16 }, [=](sycl::id<1> itemIdx) {
+#if defined(__SYCL_DEVICE_ONLY__) && defined(__NVPTX__)
+#    warning GMX_DPCPP_TEST_HAVE_CUDA_TARGET
+#endif
+#if defined(__SYCL_DEVICE_ONLY__) && defined(__AMDGCN__)
+#    warning GMX_DPCPP_TEST_HAVE_HIP_TARGET
+#    if __AMDGCN_WAVEFRONT_SIZE == 64
+#        warning GMX_DPCPP_TEST_HAVE_HIP_WAVE64_TARGET
+#    elif __AMDGCN_WAVEFRONT_SIZE == 32
+#        warning GMX_DPCPP_TEST_HAVE_HIP_WAVE32_TARGET
+#    endif
+#endif
+#if defined(__SYCL_DEVICE_ONLY__) && (defined(__SPIR__) || defined(__SPIRV__))
+#    warning GMX_DPCPP_TEST_HAVE_INTEL_TARGET
+#endif
+    });
+    return 0;
+}"
+)
+set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
+try_compile(
+    SYCL_KERNEL_COMPILATION_WORKS
+    SOURCES_TYPE NORMAL
+    SOURCE_FROM_VAR "sample_sycl_kernel_probe.cpp" SAMPLE_SYCL_KERNEL_PROBE_SOURCE
+    COMPILE_DEFINITIONS "${SYCL_TOOLCHAIN_CXX_FLAGS};${SYCL_CXX_FLAGS_EXTRA}"
+    OUTPUT_VARIABLE SYCL_KERNEL_COMPILATION_LOG
+)
+unset(CMAKE_TRY_COMPILE_TARGET_TYPE)
+if (SYCL_KERNEL_COMPILATION_WORKS)
+    foreach (target IN ITEMS CUDA HIP HIP_WAVE32 HIP_WAVE64 INTEL)
+        if(SYCL_KERNEL_COMPILATION_LOG MATCHES "GMX_DPCPP_TEST_HAVE_${target}_TARGET")
+            set(GMX_DPCPP_HAVE_${target}_TARGET ON CACHE INTERNAL "")
+        else()
+            set(GMX_DPCPP_HAVE_${target}_TARGET OFF CACHE INTERNAL "")
+        endif()
+        message(STATUS "oneAPI DPC++ has ${target} target enabled: ${GMX_DPCPP_HAVE_${target}_TARGET}")
+    endforeach()
+    list(APPEND SYCL_TOOLCHAIN_CXX_FLAGS ${SYCL_CXX_FLAGS_EXTRA})
+    list(APPEND SYCL_TOOLCHAIN_LINKER_FLAGS ${SYCL_CXX_FLAGS_EXTRA})
+else()
+    message(FATAL_ERROR "Cannot compile sample SYCL kernel code:\n${SYCL_KERNEL_COMPILATION_LOG}")
+endif()
+
+if(NOT GMX_DPCPP_HAVE_CUDA_TARGET AND NOT GMX_DPCPP_HAVE_HIP_TARGET AND NOT GMX_DPCPP_HAVE_INTEL_TARGET)
+    message(WARNING "SYCL oneAPI has no known GPU targets enabled!")
+endif()
+if(GMX_DPCPP_HAVE_HIP_TARGET AND NOT GMX_DPCPP_HAVE_HIP_WAVE32_TARGET AND NOT GMX_DPCPP_HAVE_HIP_WAVE64_TARGET)
+    message(FATAL_ERROR "SYCL oneAPI detected the use of HIP target, but cannot determine wave size")
 endif()
 
 list(APPEND SYCL_TOOLCHAIN_CXX_FLAGS ${SYCL_CXX_FLAGS_EXTRA})
@@ -134,7 +189,7 @@ if (HAVE_TARGET_REGISTER_ALLOC_MODE_FLAG)
     list(APPEND SYCL_TOOLCHAIN_LINKER_FLAGS "-ftarget-register-alloc-mode=pvc:small")
 endif()
 
-if("${SYCL_CXX_FLAGS_EXTRA}" MATCHES "fsycl-targets=.*(nvptx64|amdgcn|amd_gpu|nvidia_gpu)")
+if(GMX_DPCPP_HAVE_CUDA_TARGET OR GMX_DPCPP_HAVE_HIP_TARGET)
     # When compiling for NVIDIA/AMD, Intel LLVM produces tons of harmless warnings, ignore them
     set(SYCL_WARNINGS_CXX_FLAGS "-Wno-linker-warnings;-Wno-override-module;-Wno-sycl-target")
     gmx_check_source_compiles_with_flags(
@@ -151,11 +206,11 @@ if("${SYCL_CXX_FLAGS_EXTRA}" MATCHES "fsycl-targets=.*(nvptx64|amdgcn|amd_gpu|nv
     # Set GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT when targeting only devices with 64-wide execution
     set(_have_subgroup_not_64 OFF)
     set(_have_subgroup_64 OFF)
-    if ("${SYCL_CXX_FLAGS_EXTRA}" MATCHES "gfx1[0-9][0-9][0-9]|nvptx64|nvidia_gpu|spir64")
+    if (GMX_DPCPP_HAVE_CUDA_TARGET OR GMX_DPCPP_HAVE_INTEL_TARGET OR GMX_DPCPP_HAVE_HIP_WAVE32_TARGET)
         set(_have_subgroup_not_64 ON) # We have AMD RDNA, NVIDIA, or Intel target(s)
     endif()
     # We assume that any GCN2-5 architecture (gfx7/8) and CDNA1-3 (gfx9 series) up until the time of writing of this conditional is 64-wide
-    if ("${SYCL_CXX_FLAGS_EXTRA}" MATCHES "gfx[7-8][0-9][0-9]|gfx9[0-4][0-9ac]")
+    if (GMX_DPCPP_HAVE_HIP_WAVE64_TARGET)
         set(_have_subgroup_64 ON) # We have AMD GCN/CDNA target(s)
     endif()
     if (_have_subgroup_64 AND NOT _have_subgroup_not_64)

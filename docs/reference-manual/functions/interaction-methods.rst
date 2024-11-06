@@ -36,30 +36,8 @@ parameters are reduced by a factor of two, but in that case also the
 dispersion (r\ :math:`^{-6}`) and the Coulomb interaction are scaled.
 |Gromacs| can use either of these methods.
 
-Charge Groups
-~~~~~~~~~~~~~
-
-In principle, the force calculation in MD is an :math:`O(N^2)` problem.
-Therefore, we apply a cut-off for non-bonded force (NBF) calculations;
-only the particles within a certain distance of each other are
-interacting. This reduces the cost to :math:`O(N)` (typically
-:math:`100N` to :math:`200N`) of the NBF. It also introduces an error,
-which is, in most cases, acceptable, except when applying the cut-off
-implies the creation of charges, in which case you should consider using
-the lattice sum methods provided by |Gromacs|.
-
-Consider a water molecule interacting with another atom. If we would
-apply a plain cut-off on an atom-atom basis we might include the
-atom-oxygen interaction (with a charge of :math:`-0.82`) without the
-compensating charge of the protons, and as a result, induce a large
-dipole moment over the system. Therefore, we have to keep groups of
-atoms with total charge 0 together. These groups are called *charge
-groups*. Note that with a proper treatment of long-range electrostatics
-(e.g. particle-mesh Ewald (sec. :ref:`pme`), keeping charge groups
-together is not required.
-
-Treatment of Cut-offs in the group scheme
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Treatment of Cut-offs
+~~~~~~~~~~~~~~~~~~~~~
 
 |Gromacs| is quite flexible in treating cut-offs, which implies there can
 be quite a number of parameters to set. These parameters are set in the
@@ -72,13 +50,9 @@ type selectors (termed vdwtype and coulombtype) and two parameters, for
 a total of six non-bonded interaction parameters. See the User Guide for
 a complete description of these parameters.
 
-In the group cut-off scheme, all of the interaction functions in
-:numref:`Table %s <tab-funcparm>` require that neighbor searching be done with a
-radius at least as large as the :math:`r_c` specified for the functional
-form, because of the use of charge groups. The extra radius is typically
-of the order of 0.25 nm (roughly the largest distance between two atoms
-in a charge group plus the distance a charge group can diffuse within
-neighbor list updates).
+:numref:`Table %s <tab-funcparm>` lists the parameters for the available
+functional forms and cut-off modifications. See :ref:`gmx-md-pair-lists-generation`
+for more details about pair-list generation regarding cut-offs.
 
 .. |CPCOP| replace:: :math:`r_c`, :math:`{\varepsilon}_{r}`
 .. |CRFP|  replace:: :math:`r_c`, :math:`{\varepsilon}_{rf}`

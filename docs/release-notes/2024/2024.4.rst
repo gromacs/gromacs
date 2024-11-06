@@ -1,10 +1,10 @@
 GROMACS 2024.4 release notes
 ----------------------------
 
-This version was released on TODO, 2024. These release notes
+This version was released on October 31st, 2024. These release notes
 document the changes that have taken place in |Gromacs| since the
 previous 2024.3 version, to fix known issues. It also incorporates all
-fixes made in version 2023.6 and earlier, which you can find described
+fixes made in version 2023.5 and earlier, which you can find described
 in the :ref:`release-notes`.
 
 .. Note to developers!
@@ -27,7 +27,7 @@ of missing pair interactions. Unless the pair list lifetime ``nstlist``
 was very large, these interactions were close to the cut-off and therefore
 the errors were small.
 
-Affected simulations: all GPU accelerated runs using GROMACS versions
+Affected simulations: all GPU accelerated runs using |Gromacs| versions
 starting with the 2018 release with dual pair list enabled.
 This is enabled automatically with default Verlet buffering, but
 it is disabled if the Verlet buffer is manually set
@@ -44,6 +44,15 @@ excessively large ``nstlist`` values. In our testing we could not detect artifac
 apart from systems crashing, so the chance of undetected incorrect results is small.
 
 :issue:`5138`
+
+Add effect of perturbed masses to foreign Hamiltonian differences
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The effect of perturbed masses was missing from the foreign Hamiltonian
+differences. This meant that effects of perturbed masses were ignored
+by ``gmx bar``. Note that perturbed masses did contribute to dH/dlambda.
+
+:issue:`5195`
 
 Fix illegal memory access with more VCM than T-coupling groups
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -119,22 +128,42 @@ measured. Now special forces are excluded from the timings.
 
 :issue:`5188`
 
+Fix incorrect memory access with perturbed non-bonded and OpenMP
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Old, invalid indices could be flagged for reduction of force buffers
+over OpenMP threads for perturbed non-bonded interactions. This could
+never lead to incorrect results or crashes. But performance might
+be improved now.
+
+:issue:`5220`
+       
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 grompp checked incorrect B-state charges with free-energy decoupling
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-When the `couple-moltype` options was used, `gmx grompp` would check the
+When the :mdp:`couple-moltype` options was used, ``gmx grompp`` would check the
 A-state charges instead of the B-state charges. This would lead to incorrect
 or no warnings when B-state of the system had non-zero net charge.
 
 :issue:`5200`
 
+grompp, and mdrun, could exit with large mass differences
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When masses of atoms differed more than a factor 327, both ``gmx grompp``
+and ``gmx mdrun`` could exit with an assertion failure about an infinite
+enery drift estimate.
+
+:issue:`5222`
+
+
 Fix dump crash with Colvars values
 """"""""""""""""""""""""""""""""""
 
-Fix `gmx dump` crash when trying to output the binary Colvars state file.
+Fix ``gmx dump`` crash when trying to output the binary Colvars state file.
 
 :issue:`5034`
 
@@ -142,11 +171,20 @@ Fix element and atom number deduction in during preprocessing
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 Two-letter atom names like BR or CL were not correctly handled in the preprocessing
-during  `gmx editconf`, `gmx pdb2gmx` and `gmx grompp`, leading to incorrect element
+during  ``gmx editconf``, ``gmx pdb2gmx`` and ``gmx grompp``, leading to incorrect element
 and  atom number assignment. This could lead to incorrect element names in output files
 and possibly incorrect behaviour in QMMM simulations.
 
 :issue:`5182`
+
+Fix hang observed with NVSHMEM enabled PME-PP force transfers
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+A hang in PME-PP force transfers during NVSHMEM runs was resolved, occurring in certain
+conditions. It should also be noted that the NVSHMEM enabled PME-PP force transfers
+does not support charge perturbation.
+
+:issue:`5136`
 
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -183,10 +221,10 @@ Fix various crashes when GMX_USE_COLVARS=NONE
 
 Colvars MDModule did not defined the Colvars custom mdp variables
 when the Colvars library was not compiled, preventing tools
-read correctly a tpr file generated with a GROMACS-Colvars version.
+read correctly a tpr file generated with a |Gromacs|-Colvars version.
 Prevent also the creation of a tpr file if Colvars module is activated
-whereas GROMACS was not compiled with Colvars.
-Proper exit if a Colvars simulation is launched whereas GROMACS was not
+whereas |Gromacs| was not compiled with Colvars.
+Proper exit if a Colvars simulation is launched whereas |Gromacs| was not
 compiled with Colvars.
 
 :issue:`5055`
@@ -200,3 +238,44 @@ limits set through cgroups. Fixed by reading /proc/mounts instead.
 This will only influence performance when running in (some) containers.
 
 :issue:`5148`
+
+Collected fixes in the Colvars library
+""""""""""""""""""""""""""""""""""""""
+
+Several bugs, both recent and long-standing, have recently been fixed in the
+Colvars library: in the list below, the links corresponds to issues or pull
+request in the `Colvars repository <https://github.com/Colvars/colvars>`_.
+
+* Fixed undefined behavior when getting the current working directory from
+  ``std::filesystem``, which could have affected multiple-walkers
+  metadynamics runs (`Colvars PR 728
+  <https://github.com/Colvars/colvars/pull/728>`_).
+* Fixed the gradients and the metric functions of collective variables of
+  ``distanceDir`` type (`Colvars PR 724
+  <https://github.com/Colvars/colvars/pull/724>`_).
+* Fixed the definition of an ``orientation`` type collective variable in a
+  rotated frame of reference (`Colvars PR 715
+  <https://github.com/Colvars/colvars/pull/715>`_).
+* Implemented the contribution of fitting to the forces applied onto of
+  variables with vector values defined in a rotated fram (`Colvars PR 713
+  <https://github.com/Colvars/colvars/pull/713>`_).
+* Fixed a crash in certain metadynamics simulations without using
+  interpolating grids (`Colvars PR 706
+  <https://github.com/Colvars/colvars/pull/706>`_).
+* More consistent behavior when defining multiple biases and running with
+  more than one thread per task (`Colvars PR 694
+  <https://github.com/Colvars/colvars/pull/694>`_).
+* Prevented the creation of spurious output files for runtime histograms
+  (`Colvars PR 675 <https://github.com/Colvars/colvars/pull/675>`_).
+
+Enable NVCC flags checks for Windows
+""""""""""""""""""""""""""""""""""""
+
+When building GROMACS for Windows with CUDA support, the checks for testing
+compatible compute architectures were disabled. Hence, GROMACS 
+was trying to compile for all of them which can induced failed builds when 
+CUDA is not compatible anymore with old compute architectures.
+
+:issue:`5152`
+
+
