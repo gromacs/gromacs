@@ -397,7 +397,7 @@ void MdGpuGraph::Impl::createExecutableGraph(bool forceGraphReinstantiation)
             if ((stat == cudaErrorGraphExecUpdateFailure)
                 && (havePPDomainDecomposition_ || haveSeparatePmeRank_) && additionalCheck)
             {
-                // This unnsuccessful update is due to multithreaded graph capture resulting in a
+                // This unsuccessful update is due to multithreaded graph capture resulting in a
                 // different ordering, which in a minority of cases CUDA wrongly interprets as being
                 // a different graph topology. Reset the error and re-instantiate in this case.
                 stat = cudaSuccess;

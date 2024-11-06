@@ -845,7 +845,7 @@ void ListedForces::calculate(struct gmx_wallcycle*                     wcycle,
         /* Do pre force calculation stuff which might require communication */
         if (fcdata->orires)
         {
-            GMX_ASSERT(!xWholeMolecules.empty(), "Need whole molecules for orienation restraints");
+            GMX_ASSERT(!xWholeMolecules.empty(), "Need whole molecules for orientation restraints");
             enerd->term[F_ORIRESDEV] = calc_orires_dev(ms,
                                                        idef.il[F_ORIRES].size(),
                                                        idef.il[F_ORIRES].iatoms.data(),

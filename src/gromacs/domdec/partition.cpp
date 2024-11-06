@@ -512,7 +512,7 @@ static void ddSetAtominfo(gmx::ArrayRef<const int> index_gl, const gmx::Range<in
     }
 }
 
-//! Makes the mappings between global and local atom indices during DD repartioning.
+//! Makes the mappings between global and local atom indices during DD repartitioning.
 static void make_dd_indices(gmx_domdec_t* dd, const int atomStart)
 {
     const gmx::DomdecZones&  zones             = dd->zones;
@@ -2591,7 +2591,7 @@ void dd_partition_system(FILE*                     fplog,
     }
     else
     {
-        /* Should we do dynamic load balacing this step?
+        /* Should we do dynamic load balancing this step?
          * Since it requires (possibly expensive) global communication,
          * we might want to do DLB less frequently.
          */

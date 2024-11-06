@@ -34,7 +34,7 @@
 
 /*! \internal \file
  * \brief
- * Test for continous box deformation
+ * Test for continuous box deformation
  *
  * Testing that one actually obtains the correct stress for a given
  * box deformation rate requires an extreme amount of sampling.

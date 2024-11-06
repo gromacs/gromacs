@@ -361,7 +361,7 @@ PairlistSets::PairlistSets(const PairlistParams& pairlistParams,
     }
 }
 
-/*! \brief Gets and returns the minimum i-list count for balacing based on the GPU used or env.var. when set */
+/*! \brief Gets and returns the minimum i-list count for balancing based on the GPU used or env.var. when set */
 static int getMinimumIlistCountForGpuBalancing(NbnxmGpu* nbnxmGpu)
 {
     if (const char* env = getenv("GMX_NB_MIN_CI"))

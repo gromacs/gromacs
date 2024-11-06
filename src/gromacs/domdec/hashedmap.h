@@ -142,7 +142,6 @@ private:
      * \param[in] value        The value for the entry
      * \throws InvalidInputError from a debug build when attempting to insert a duplicate key with \p allowAssign=true
      */
-    // cppcheck-suppress unusedPrivateFunction
     template<bool allowAssign>
     void insert_assign(int key, const T& value)
     {

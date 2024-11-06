@@ -390,7 +390,7 @@ Using oneMKL Interface Library
 The oneMKL interface library enables the SYCL backend for |Gromacs| with cuFFT, rocFFT,
 or closed-source oneMKL using Intel DPC++ and Codeplay's plugins for NVIDIA and AMD GPUs.
 To use, Intel DPC++ must be installed (>= 2023.2.0), along with Codeplay's plugins for NVIDIA
-and AMD GPUs as required, and CUDA and/or ROCm as required. The enviroment should be initialized
+and AMD GPUs as required, and CUDA and/or ROCm as required. The environment should be initialized
 as with the MKL instructions above.
 
 To use the oneMKL interface library, download, build and install oneMKL as directed in the

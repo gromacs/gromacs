@@ -524,7 +524,7 @@ static void comparePdbinfo(FILE*            fp,
     cmp_str(fp, "atomnm", pdb, pdb1.atomnm, pdb2.atomnm);
     cmp_real(fp, "occup", pdb, pdb1.occup, pdb2.occup, relativeTolerance, absoluteTolerance);
     cmp_real(fp, "bfac", pdb, pdb1.bfac, pdb2.bfac, relativeTolerance, absoluteTolerance);
-    cmp_bool(fp, "bAnistropic", pdb, pdb1.bAnisotropic, pdb2.bAnisotropic);
+    cmp_bool(fp, "bAnisotropic", pdb, pdb1.bAnisotropic, pdb2.bAnisotropic);
     for (int i = 0; i < 6; i++)
     {
         std::string buf = gmx::formatString("uij[%d]", i);

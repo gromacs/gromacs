@@ -58,7 +58,7 @@
  * to true to avoid overflows when calculating r^-6.
  *
  * Note that only plain or potential-shifted LJ interactions are supported with
- * Lorentz-Berthelot combination rules. For switched LJ interations choose no
+ * Lorentz-Berthelot combination rules. For switched LJ interactions choose no
  * combination rule.
  *
  * \author Berk Hess <hess@kth.se>

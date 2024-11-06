@@ -287,7 +287,7 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
         }
     }
 
-    // Flag use to enable GPU-aware MPI depenendent features such PME GPU decomposition
+    // Flag use to enable GPU-aware MPI dependent features such PME GPU decomposition
     // GPU-aware MPI is marked available if it has been detected by GROMACS or detection fails but
     // user wants to force its use
     devFlags.canUseGpuAwareMpi = false;
@@ -1341,7 +1341,7 @@ int Mdrunner::mdrunner()
     if (doRerun && (EI_ENERGY_MINIMIZATION(inputrec->eI) || IntegrationAlgorithm::NM == inputrec->eI))
     {
         gmx_fatal(FARGS,
-                  "The .mdp file specified an energy mininization or normal mode algorithm, and "
+                  "The .mdp file specified an energy minimization or normal mode algorithm, and "
                   "these are not compatible with mdrun -rerun");
     }
 

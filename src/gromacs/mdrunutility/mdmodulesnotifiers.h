@@ -80,7 +80,7 @@ enum class StartingBehavior;
 
 /*! \libinternal \brief Notification that atoms may have been redistributed
  *
- * This notification is emitted at the end of the DD (re)partioning
+ * This notification is emitted at the end of the DD (re)partitioning
  * or without DD right after atoms have put into the box.
  * The local atom sets are updated for the new atom order when this signal is emitted.
  * The coordinates of atoms can be shifted by periodic vectors

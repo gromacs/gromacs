@@ -1223,7 +1223,7 @@ static inline void fep_list_new_nri_copy(t_nblist* nlist, int energyGroupPair = 
  */
 const int max_nrj_fep = 40;
 
-/* Extract perturbed interations to a separate free-energy pairlist \p nlist.
+/* Extract perturbed interactions to a separate free-energy pairlist \p nlist.
  *
  * Perturbed excluded pairs are put in the list and computed up to distance of
  * sqrt(rlist_fep2). Any perturbed excluded pairs beyond that distance will

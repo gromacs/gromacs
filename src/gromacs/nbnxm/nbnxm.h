@@ -248,7 +248,7 @@ public:
      * \param[in]     atomRange    Range of atoms to grid
      * \param[in]     numAtomsWithoutFillers  The number of atoms that are not filler particles
                                               and will not be moved to another domain by DD
-     * \param[in]     atomDensity  An estimate of the atom density, used for peformance optimization,
+     * \param[in]     atomDensity  An estimate of the atom density, used for performance optimization,
      *                             only used with \p gridIndex = 0
      * \param[in]     atomInfo     Atom information flags
      * \param[in]     x            Coordinates for atoms to grid

@@ -1842,7 +1842,7 @@ pull-coord2-vec, pull-coord2-k, and so on.
       cylinder is selected around the axis going through the COM of
       the second group with direction :mdp:`pull-coord1-vec` with
       radius :mdp:`pull-cylinder-r`. Weights of the atoms decrease
-      continously to zero as the radial distance goes from 0 to
+      continuously to zero as the radial distance goes from 0 to
       :mdp:`pull-cylinder-r` (mass weighting is also used). The radial
       dependence gives rise to radial forces on both pull groups.
       Note that the radius should be smaller than half the box size.

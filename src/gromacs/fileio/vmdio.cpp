@@ -332,7 +332,7 @@ static int load_vmd_library(const std::filesystem::path& fn, gmx_vmdplugin_t* vm
     {
         /* FIXME: Undefined which plugin is chosen if more than one plugin
            can read a certain file ending. Requires some additional command
-           line option or enviroment variable to specify which plugin should
+           line option or environment variable to specify which plugin should
            be picked.
          */
         ret |= load_sharedlibrary_plugins(globbuf.gl_pathv[i], vmdplugin);

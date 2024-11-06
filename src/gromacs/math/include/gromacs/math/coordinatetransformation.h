@@ -140,7 +140,7 @@ private:
 /*! \libinternal
  * \brief Affine transformation of three-dimensional coordinates.
  *
- * Perfoms in-place coordinate transformations.
+ * Performs in-place coordinate transformations.
  *
  * Coordinates are first multiplied by a matrix, then translated.
  */

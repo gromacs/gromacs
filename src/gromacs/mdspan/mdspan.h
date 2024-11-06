@@ -100,8 +100,8 @@ namespace gmx
 
 /*! \libinternal \brief Multidimensional array indexing and memory access with flexible mapping and access model.
  *
- * \tparam ElementType Type of elemnt to be viewed
- * \tparam Extents The dimensions of the multidimenisonal array to view.
+ * \tparam ElementType Type of element to be viewed
+ * \tparam Extents The dimensions of the multidimensional array to view.
  * \tparam LayoutPolicy Describes is the memory layout of the multidimensional array; right by default.
  * \tparam AccessorPolicy Describes memory access model.
  */
@@ -115,7 +115,7 @@ public:
     using layout_type = LayoutPolicy;
     //! Expose type used to define the memory access model of the data.
     using accessor_type = AccessorPolicy;
-    //! Expose type used to map multidimensional indices to one-dimensioal indices.
+    //! Expose type used to map multidimensional indices to one-dimensional indices.
     using mapping_type = typename layout_type::template mapping<extents_type>;
     //! Exposes the type of stored element.
     using element_type = typename accessor_type::element_type;
@@ -181,7 +181,7 @@ public:
     }
     /*! \brief Construct from pointer and mapping.
      * \param[in] ptr Pointer to data to be accessed by this span
-     * \param[in] m Mapping from multidimenisonal indices to one-dimensional offset.
+     * \param[in] m Mapping from multidimensional indices to one-dimensional offset.
      */
     constexpr basic_mdspan(pointer ptr, const mapping_type& m) noexcept :
         acc_(accessor_type()), map_(m), ptr_(ptr)
@@ -189,7 +189,7 @@ public:
     }
     /*! \brief Construct with pointer, mapping and accessor.
      * \param[in] ptr Pointer to data to be accessed by this span
-     * \param[in] m Mapping from multidimenisonal indices to one-dimensional offset.
+     * \param[in] m Mapping from multidimensional indices to one-dimensional offset.
      * \param[in] a Accessor implementing memory access model.
      */
     constexpr basic_mdspan(pointer ptr, const mapping_type& m, const accessor_type& a) noexcept :
@@ -261,7 +261,7 @@ public:
      *       operator with a strided layout
      * \note Enabled only when rank() > 1
      *
-     * \tparam IndexType integral tyoe for the index that enables indexing
+     * \tparam IndexType integral type for the index that enables indexing
      *                   with, e.g., int or size_t
      * \param[in] index  one-dimensional index of the slice to be indexed
      *
@@ -324,7 +324,7 @@ public:
 private:
     //! The memory access model
     accessor_type acc_;
-    //! The transformation from multidimenisonal index to memory offset.
+    //! The transformation from multidimensional index to memory offset.
     mapping_type map_;
     //! Memory location handle
     pointer ptr_;

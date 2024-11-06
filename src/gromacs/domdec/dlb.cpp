@@ -135,7 +135,7 @@ gmx_bool dd_dlb_get_should_check_whether_to_turn_dlb_on(gmx_domdec_t* dd)
         return TRUE;
     }
     /* We check whether we should use DLB every c_checkTurnDlbOnInterval
-     * partitionings (we do not do this every partioning, so that we
+     * partitionings (we do not do this every partitioning, so that we
      * avoid excessive communication). */
     return dd->comm->n_load_have % c_checkTurnDlbOnInterval == c_checkTurnDlbOnInterval - 1;
 }

@@ -1341,7 +1341,7 @@ void setStateDependentAwhParams(AwhParams*           awhParams,
                                 const gmx_mtop_t&    mtop,
                                 WarningHandler*      wi)
 {
-    /* The temperature is not really state depenendent but is not known
+    /* The temperature is not really state dependent but is not known
      * when read_awhParams is called (in get ir).
      * It is known first after do_index has been called in grompp.cpp.
      */

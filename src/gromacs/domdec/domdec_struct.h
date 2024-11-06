@@ -178,7 +178,7 @@ struct gmx_domdec_t
     /* Communication stuff */
     std::unique_ptr<gmx_domdec_comm_t> comm;
 
-    /* The partioning count, to keep track of the state */
+    /* The partitioning count, to keep track of the state */
     int64_t ddp_count = 0;
 
     /* The managed atom sets that are updated in domain decomposition */

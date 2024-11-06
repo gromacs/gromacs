@@ -70,9 +70,9 @@ struct pme_load_balancing_t;
 /*! \brief Return whether PME load balancing is active */
 bool pme_loadbal_is_active(const pme_load_balancing_t* pme_lb);
 
-/*! \brief Initialize the PP-PME load balacing data and infrastructure
+/*! \brief Initialize the PP-PME load balancing data and infrastructure
  *
- * Initialize the PP-PME load balacing data and infrastructure.
+ * Initialize the PP-PME load balancing data and infrastructure.
  * The actual load balancing might start right away, later or never.
  * The PME grid in pmedata is reused for smaller grids to lower the memory
  * usage.

@@ -48,7 +48,7 @@ a release.
   * Use anonymous namespaces in source files to describe symbols that should
     not have external linkage (see |linkref12|).
   * Use the ``internal`` namespace in header files to denote implementation
-    details that cannot be dependend upon, because anonymous namespaces
+    details that cannot be depended upon, because anonymous namespaces
     cannot be used (see |linkref11|).
   * Otherwise, avoid nested namespaces unless needing to expose a group of
     related free functions in a module header.

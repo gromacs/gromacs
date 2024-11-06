@@ -2478,7 +2478,7 @@ void do_force(FILE*                         fplog,
             // - CPU f H2D should be as soon as all CPU-side forces are done
             // - wait for force reduction does not need to block host (at least not here, it's sufficient to wait
             //   before the next CPU task that consumes the forces: vsite spread or update)
-            // - copy is not perfomed if GPU force halo exchange is active, because it would overwrite the result
+            // - copy is not performed if GPU force halo exchange is active, because it would overwrite the result
             //   of the halo exchange. In that case the copy is instead performed above, before the exchange.
             //   These should be unified.
             if (domainWork.haveLocalForceContribInCpuBuffer && !stepWork.useGpuFHalo)

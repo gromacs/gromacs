@@ -60,7 +60,7 @@ namespace gmx
  * information is available when the event occurs. Modules \c
  * subscribe() by providing a callback function that accepts a single
  * parameter of such an event type. The code that handles that event
- * has the responsibilty to call \c notify() afterwards. The
+ * has the responsibility to call \c notify() afterwards. The
  * subscribed modules then receive the callback with the requested
  * event type as an argument.
  *

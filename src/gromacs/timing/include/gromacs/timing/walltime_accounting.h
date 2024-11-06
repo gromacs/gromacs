@@ -54,7 +54,7 @@ void walltime_accounting_destroy(gmx_walltime_accounting_t walltime_accounting);
 void walltime_accounting_start_time(gmx_walltime_accounting_t walltime_accounting);
 
 /*! \brief
- * Reset time stamps, e.g. at counter re-initalization time
+ * Reset time stamps, e.g. at counter re-initialization time
  */
 void walltime_accounting_reset_time(gmx_walltime_accounting_t walltime_accounting, int64_t step);
 
