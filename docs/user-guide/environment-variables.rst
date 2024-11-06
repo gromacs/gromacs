@@ -365,7 +365,7 @@ Performance and Run Control
 ``GMX_NBNXN_SIMD_4XN``
         force the use of 4xN SIMD CPU non-bonded kernels,
         mutually exclusive of ``GMX_NBNXN_SIMD_2XNN``.
-	
+
 ``GMX_NO_CART_REORDER``
         used in initializing domain decomposition communicators. Rank reordering
         is default, but can be switched off with this environment variable.

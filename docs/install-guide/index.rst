@@ -470,7 +470,7 @@ updating the LD_LIBRARY_PATH environment variable as follows:
 ::
 
     export LD_LIBRARY_PATH=<path to compatible NVSHMEM folder>/lib:$LD_LIBRARY_PATH
-	  
+
 It is advisable to refer to the `NVSHMEM FAQ page
 <https://docs.nvidia.com/hpc-sdk/nvshmem/api/faq.html#general-faqs>`_ for
 any issues faced at runtime.

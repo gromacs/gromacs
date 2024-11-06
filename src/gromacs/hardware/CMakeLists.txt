@@ -54,7 +54,7 @@ elseif(GMX_GPU_CUDA)
         # Must add these files so they can include device_information.h
         device_management_common.cpp
         detecthardware.cpp
-	    )
+        )
 elseif(GMX_GPU_HIP)
     gmx_add_libgromacs_sources(
         device_management_hip.cpp
@@ -66,7 +66,7 @@ elseif(GMX_GPU_HIP)
         device_management_hip.cpp
         device_management_shared_amd.cpp
         detecthardware.cpp
-	    )
+        )
 elseif(GMX_GPU_SYCL)
     gmx_add_libgromacs_sources(
         device_management_sycl.cpp

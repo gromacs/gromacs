@@ -67,10 +67,10 @@ if(GMX_GPU)
            )
    endif()
    if(GMX_GPU_HIP)
-	  gmx_add_libgromacs_sources(
-		   state_propagator_data_gpu_impl.cpp
-		   )
-	endif()
+       gmx_add_libgromacs_sources(
+           state_propagator_data_gpu_impl.cpp
+         )
+    endif()
 else()
     gmx_add_libgromacs_sources(
       state_propagator_data_gpu_impl.cpp

@@ -40,4 +40,4 @@ that the time step chosen is too large. The formula for the kinetic
 energy term reported is:
 
 .. math:: \frac{1}{2} \sum_i \frac{\gamma_i \Delta x_i^2}{2 \, \Delta t}
-	  :label: eqnbrowniandynekin
+      :label: eqnbrowniandynekin

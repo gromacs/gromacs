@@ -111,8 +111,8 @@ vector (in the nonbonded kernels), and then just use a sum over the
 different shift vectors outside the kernels. We have also used
 
 .. math:: \begin{aligned}
-          \mathbf{F}_i&~=~&\sum_{j=1}^N~\mathbf{F}_{ij}					\\
-          \mathbf{F}_j&~=~&\sum_{i=1}^N~\mathbf{F}_{ji}\end{aligned}
+          \mathbf{F}_i&~=~&\sum_{j=1}^N~\mathbf{F}_{ij} \\
+          \mathbf{F}_j&~=~&\sum_{i=1}^N~\mathbf{F}_{ji} \end{aligned}
           :label: eqnvirialtotalforce
 
 which is the total force on :math:`i` with respect to :math:`j`.
@@ -177,18 +177,18 @@ Since the covalent bond force gives a contribution to the virial, we
 have:
 
 .. math:: \begin{aligned}
-          b	&~=~&	\|\mathbf{r}_{ij}^n\|					\\
-          V_b	&~=~&	\frac{1}{2} k_b(b-b_0)^2				\\
-          \mathbf{F}_i	&~=~&	-\nabla V_b					\\
-          	&~=~&	k_b(b-b_0)\frac{\mathbf{r}_{ij}^n}{b}			\\
-          \mathbf{F}_j	&~=~&	-\mathbf{F}_i\end{aligned}
+          b            &~=~& \|\mathbf{r}_{ij}^n\|                  \\
+          V_b          &~=~& \frac{1}{2} k_b(b-b_0)^2               \\
+          \mathbf{F}_i &~=~& -\nabla V_b                            \\
+                       &~=~& k_b(b-b_0)\frac{\mathbf{r}_{ij}^n}{b}  \\
+          \mathbf{F}_j &~=~& -\mathbf{F}_i\end{aligned}
           :label: eqncovbondvirial
 
 The virial contribution from the bonds then is:
 
 .. math:: \begin{aligned}
-          \Xi_b	&~=~&	-\frac{1}{2}(\mathbf{r}_i^n\otimes\mathbf{F}_i~+~\mathbf{r}_j\otimes\mathbf{F}_j)	\\
-          &~=~&	-\frac{1}{2}\mathbf{r}_{ij}^n\otimes\mathbf{F}_i\end{aligned}
+          \Xi_b &~=~& -\frac{1}{2}(\mathbf{r}_i^n\otimes\mathbf{F}_i~+~\mathbf{r}_j\otimes\mathbf{F}_j) \\
+                &~=~& -\frac{1}{2}\mathbf{r}_{ij}^n\otimes\mathbf{F}_i\end{aligned}
           :label: eqncovbondvirialcontri
 
 Virial from SHAKE
@@ -201,7 +201,7 @@ can be calculated afterward (when using *leap-frog*) by:
 
 .. math:: \begin{aligned}
           \Delta\mathbf{r}_i&~=~&{\mathbf{r}_i}(t+{\Delta t})-
-          [\mathbf{r}_i(t)+{\bf v}_i(t-\frac{{\Delta t}}{2}){\Delta t}+\frac{\mathbf{F}_i}{m_i}{\Delta t}^2]	\\
+          [\mathbf{r}_i(t)+{\bf v}_i(t-\frac{{\Delta t}}{2}){\Delta t}+\frac{\mathbf{F}_i}{m_i}{\Delta t}^2]    \\
           {\bf G}_i&~=~&\frac{m_i{\Delta}{\mathbf{r}_i}}{{\Delta t}^2i}\end{aligned}
           :label: eqnshakevirial
 
