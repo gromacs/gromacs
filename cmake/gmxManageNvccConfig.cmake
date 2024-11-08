@@ -185,8 +185,8 @@ else()
     # TODO: Note that this SM arch populating code can be replaced with `CUDA_ARCHITECTURES=all` once we upgrade cmake to >= 3.23
 
     # Set the CUDA GPU architectures to compile for:
-    # - with CUDA >=11.0        CC 8.0 is supported
-    #     => compile sm_35, sm_37, sm_50, sm_52, sm_60, sm_61, sm_70, sm_75, sm_80 SASS, and compute_35, compute_80 PTX
+    # - with CUDA >=12.0        CC 9.0 is supported
+    #     => compile sm_50 ... sm_90 SASS, and compute_90 PTX
 
     # First add flags that trigger SASS (binary) code generation for physical arch
     gmx_add_nvcc_flag_if_supported(GMX_CUDA_NVCC_GENCODE_FLAGS NVCC_HAS_GENCODE_COMPUTE_AND_SM_50 --generate-code=arch=compute_50,code=sm_50)
@@ -200,8 +200,8 @@ else()
     gmx_add_nvcc_flag_if_supported(GMX_CUDA_NVCC_GENCODE_FLAGS NVCC_HAS_GENCODE_COMPUTE_AND_SM_89 --generate-code=arch=compute_89,code=sm_89)
     gmx_add_nvcc_flag_if_supported(GMX_CUDA_NVCC_GENCODE_FLAGS NVCC_HAS_GENCODE_COMPUTE_AND_SM_90 --generate-code=arch=compute_90,code=sm_90)
 
-    # Requesting sm or compute 35, 37, or 50 triggers deprecation messages with
-    # nvcc 11.0, which we need to suppress for use in CI
+    # Requesting sm or compute 50 triggers deprecation messages with
+    # nvcc 12.0, which we need to suppress for use in CI
     gmx_add_nvcc_flag_if_supported(GMX_CUDA_NVCC_FLAGS NVCC_HAS_WARNING_NO_DEPRECATED_GPU_TARGETS -Wno-deprecated-gpu-targets)
 
     # Next add flags that trigger PTX code generation for the
@@ -209,7 +209,7 @@ else()
     # as well as an older one suitable for JIT-ing to any rare intermediate arch
     # (like that of Jetson / Drive PX devices)
     gmx_add_nvcc_flag_if_supported(GMX_CUDA_NVCC_GENCODE_FLAGS NVCC_HAS_GENCODE_COMPUTE_53 --generate-code=arch=compute_53,code=sm_53)
-    gmx_add_nvcc_flag_if_supported(GMX_CUDA_NVCC_GENCODE_FLAGS NVCC_HAS_GENCODE_COMPUTE_80 --generate-code=arch=compute_80,code=sm_80)
+    gmx_add_nvcc_flag_if_supported(GMX_CUDA_NVCC_GENCODE_FLAGS NVCC_HAS_GENCODE_COMPUTE_90 --generate-code=arch=compute_90,code=sm_90)
 endif()
 
 if (GMX_CUDA_TARGET_SM)

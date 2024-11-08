@@ -192,7 +192,7 @@ public:
     template<typename EnumType>
     void doEnumAsInt(EnumType* enumValue)
     {
-        static_assert(std::is_same<std::underlying_type_t<EnumType>, int>::value,
+        static_assert(std::is_same_v<std::underlying_type_t<EnumType>, int>,
                       "Only enums with underlying type int are supported.");
         auto castedValue = static_cast<int>(*enumValue);
         doInt(&castedValue);

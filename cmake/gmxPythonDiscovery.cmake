@@ -59,7 +59,7 @@ if(NOT Python3_FIND_VIRTUALENV)
     # we want to preferentially discover user-space software.
     set(Python3_FIND_VIRTUALENV FIRST)
 endif()
-find_package(Python3 3.7 COMPONENTS Interpreter Development)
+find_package(Python3 3.9 COMPONENTS Interpreter Development)
 if (GMX_PYTHON_PACKAGE AND (NOT Python3_FOUND OR NOT Python3_Development_FOUND))
     message(FATAL_ERROR "Could not locate Python development requirements. \
             Provide appropriate CMake hints or set GMX_PYTHON_PACKAGE=OFF")
@@ -67,8 +67,8 @@ endif ()
 
 # Provide hints for other Python detection that may occur later.
 #
-# Other components, such as pybind and googletest, may expect the
-# PYTHON_EXECUTABLE variable from pre-3.12 FindPythonInterp.cmake.
+# Other components, such as pybind, googletest, and our python_packaging
+# expect the PYTHON_EXECUTABLE variable from pre-3.12 FindPythonInterp.cmake.
 if (Python3_Interpreter_FOUND)
     set(PYTHON_EXECUTABLE ${Python3_EXECUTABLE} CACHE FILEPATH "Location hint for Python interpreter.")
 endif ()
@@ -76,7 +76,3 @@ endif ()
 # may call find_package(PythonInterp) later on.
 set(Python3_FIND_QUIETLY ON)
 set(PythonInterp_FIND_QUIETLY ON)
-# Older versions of FindPythonLibs and FindPythonInterp might not search for
-# Python newer than 3.7 by default. (as of CMake 3.9)
-# Note that this hint is not used by the newer FindPython module we rely on above.
-set(Python_ADDITIONAL_VERSIONS 3.8 3.9 3.10)

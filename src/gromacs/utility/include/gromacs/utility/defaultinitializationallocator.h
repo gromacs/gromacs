@@ -69,11 +69,9 @@ public:
     using A::A;
 
     /*! \brief Constructs an object and default initializes
-     *
-     * \todo Use std::is_nothrow_default_constructible_v when CUDA 11 is a requirement.
      */
     template<typename U>
-    void construct(U* ptr) noexcept(std::is_nothrow_default_constructible<U>::value)
+    void construct(U* ptr) noexcept(std::is_nothrow_default_constructible_v<U>)
     {
         ::new (static_cast<void*>(ptr)) U;
     }

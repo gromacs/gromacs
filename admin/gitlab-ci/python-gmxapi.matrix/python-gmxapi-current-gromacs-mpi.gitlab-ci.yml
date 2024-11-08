@@ -43,7 +43,7 @@
     - job: gromacs:clang-19-mpi:build
       artifacts: true
 
-gmxapi:clang-19-mpi:py-3.7:
+gmxapi:clang-19-mpi:py-3.9:
   extends:
     - .gmxapi:clang-19-mpi
   rules:

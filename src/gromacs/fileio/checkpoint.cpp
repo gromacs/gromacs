@@ -470,7 +470,7 @@ static int do_cpt_u_chars(XDR* xd, const char* desc, int n, unsigned char* i, FI
 template<typename EnumType>
 static int do_cpt_enum_as_int(XDR* xd, const char* desc, EnumType* enumValue, FILE* list)
 {
-    static_assert(std::is_same<std::underlying_type_t<EnumType>, int>::value,
+    static_assert(std::is_same_v<std::underlying_type_t<EnumType>, int>,
                   "Only enums with underlying type int are supported.");
     auto castedValue = static_cast<int>(*enumValue);
     if (xdr_int(xd, &castedValue) == 0)

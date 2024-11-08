@@ -1709,13 +1709,16 @@ much everywhere, it is important that we tell you where we really know
 it works because we have tested it.
 Every commit in our git source code repository
 is currently tested with a range of configuration options on x86 with
-gcc versions including 9 and 12,
-clang versions including 9 and 15,
-CUDA versions 11.0 and 11.7,
-hipSYCL 0.9.4 with ROCm 5.3,
+gcc versions 11-14,
+clang versions including 14, 18, and 19,
+CUDA versions 12.1, 12.5.1, and 12.6,
+nvcxx version 24.7
+HIP version 5.7.1 and 6.2.2
+AdaptiveCPP 23.10 and 24.02 with ROCm 5.7.1 and 6.2 (respectively),
 and
-a version of oneAPI containing Intel's clang-based compiler.
-For this testing, we use Ubuntu 20.04 operating system.
+oneAPI version 2024.0 and 2024.2 (including CUDA 12.0.1 and ROCm 6.1.3 backends) .
+
+For this testing, we use Ubuntu 22.04 and 24.04 operating systems.
 Other compiler, library, and OS versions are tested less frequently.
 For details, you can have a look at the
 `continuous integration server used by the GitLab project <https://gitlab.com/gromacs/gromacs/>`_,

@@ -680,14 +680,14 @@ void ModularSimulatorAlgorithmBuilder::add(Args&&... args)
 
 //! Returns a pointer casted to type Base if the Element is derived from Base
 template<typename Base, typename Element>
-static std::enable_if_t<std::is_base_of<Base, Element>::value, Base*> castOrNull(Element* element)
+static std::enable_if_t<std::is_base_of_v<Base, Element>, Base*> castOrNull(Element* element)
 {
     return static_cast<Base*>(element);
 }
 
 //! Returns a nullptr of type Base if Element is not derived from Base
 template<typename Base, typename Element>
-static std::enable_if_t<!std::is_base_of<Base, Element>::value, Base*> castOrNull(Element gmx_unused* element)
+static std::enable_if_t<!std::is_base_of_v<Base, Element>, Base*> castOrNull(Element gmx_unused* element)
 {
     return nullptr;
 }
