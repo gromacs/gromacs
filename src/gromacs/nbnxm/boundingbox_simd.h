@@ -44,6 +44,8 @@
 #ifndef GMX_NBNXM_BOUNDINGBOX_SIMD_H
 #define GMX_NBNXM_BOUNDINGBOX_SIMD_H
 
+#include "config.h"
+
 #include "gromacs/math/vec.h"
 #include "gromacs/simd/simd.h"
 
@@ -76,12 +78,14 @@ static constexpr int c_numBoundingBoxBounds1D = 2;
 #            define NBNXN_SEARCH_SIMD4_FLOAT_X_BB 0
 #        endif
 
-/* Store bounding boxes corners as quadruplets: xxxxyyyyzzzz
+/* Whether we store bounding boxes corners as quadruplets: xxxxyyyyzzzz
  *
- * The packed bounding box coordinate stride is always set to 4.
+ * The packed bounding box coordinate stride is always set to 4 if the number of cells is >=4.
  * With AVX we could use 8, but that turns out not to be faster.
  */
-#        define NBNXN_BBXXXX 1
+#        define NBNXN_BBXXXX                                                                                           \
+            (GMX_GPU_NB_NUM_CLUSTER_PER_CELL_X * GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Y * GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Z \
+             >= 4)
 
 //! The number of bounding boxes in a pack, also the size of a pack along one dimension
 static constexpr int c_packedBoundingBoxesDimSize = GMX_SIMD4_WIDTH;
