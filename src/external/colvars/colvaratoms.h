@@ -194,7 +194,7 @@ public:
 
   int add_atom_numbers(std::string const &numbers_conf);
   int add_atoms_of_group(atom_group const * ag);
-  int add_index_group(std::string const &index_group_name);
+  int add_index_group(std::string const &index_group_name, bool silent = false);
   int add_atom_numbers_range(std::string const &range_conf);
   int add_atom_name_residue_range(std::string const &psf_segid,
                                   std::string const &range_conf);

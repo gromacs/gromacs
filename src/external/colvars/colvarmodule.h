@@ -84,11 +84,9 @@ private:
   int version_int = 0;
 
   /// Patch version number (non-zero in patch releases of other packages)
-  int patch_version_int = 4;
+  int patch_version_int = 0;
 
 public:
-
-  friend class colvarproxy;
 
   /// Use a 64-bit integer to store the step number
   typedef long long step_number;
@@ -204,8 +202,6 @@ public:
   // allow these classes to access protected data
   class atom;
   class atom_group;
-  friend class atom;
-  friend class atom_group;
   typedef std::vector<atom>::iterator       atom_iter;
   typedef std::vector<atom>::const_iterator atom_const_iter;
 
@@ -760,17 +756,6 @@ public:
 
   /// Clear the index groups loaded so far
   int reset_index_groups();
-
-  /// \brief Select atom IDs from a file (usually PDB) \param filename name of
-  /// the file \param atoms array into which atoms read from "filename" will be
-  /// appended \param pdb_field (optional) if the file is a PDB and this
-  /// string is non-empty, select atoms for which this field is non-zero
-  /// \param pdb_field_value (optional) if non-zero, select only atoms whose
-  /// pdb_field equals this
-  static int load_atoms(char const *filename,
-                        atom_group &atoms,
-                        std::string const &pdb_field,
-                        double pdb_field_value = 0.0);
 
   /// \brief Load coordinates for a group of atoms from a file (PDB or XYZ);
   /// if "pos" is already allocated, the number of its elements must match the

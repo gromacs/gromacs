@@ -27,7 +27,10 @@ colvarbias_restraint::colvarbias_restraint(char const *key)
 
 int colvarbias_restraint::init(std::string const &conf)
 {
-  colvarbias::init(conf);
+  int err = colvarbias::init(conf);
+  if (err != COLVARS_OK) {
+    return err;
+  }
   enable(f_cvb_apply_force);
 
   colvarbias_ti::init(conf);
@@ -1309,7 +1312,10 @@ int colvarbias_restraint_histogram::init(std::string const &conf)
 {
   int error_code = COLVARS_OK;
 
-  colvarbias::init(conf);
+  int err = colvarbias::init(conf);
+  if (err != COLVARS_OK) {
+    return err;
+  }
   enable(f_cvb_apply_force);
 
   cvm::main()->cite_feature("histogramRestraint colvar bias implementation");

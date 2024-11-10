@@ -26,7 +26,10 @@ colvarbias_histogram::colvarbias_histogram(char const *key)
 
 int colvarbias_histogram::init(std::string const &conf)
 {
-  colvarbias::init(conf);
+  int err = colvarbias::init(conf);
+  if (err != COLVARS_OK) {
+    return err;
+  }
   cvm::main()->cite_feature("Histogram colvar bias implementation");
 
   enable(f_cvb_scalar_variables);
@@ -128,22 +131,6 @@ int colvarbias_histogram::update()
   // assign a valid bin size
   bin.assign(num_variables(), 0);
 
-  if (out_name.size() == 0) {
-    // At the first timestep, we need to assign out_name since
-    // output_prefix is unset during the constructor
-    if (cvm::step_relative() == 0) {
-      out_name = cvm::output_prefix() + "." + this->name + ".dat";
-      cvm::log("Histogram " + this->name + " will be written to file \"" + out_name + "\"\n");
-    }
-  }
-
-  if (out_name_dx.size() == 0) {
-    if (cvm::step_relative() == 0) {
-      out_name_dx = cvm::output_prefix() + "." + this->name + ".dx";
-      cvm::log("Histogram " + this->name + " will be written to file \"" + out_name_dx + "\"\n");
-    }
-  }
-
   if (colvar_array_size == 0) {
     // update indices for scalar values
     size_t i;
@@ -183,6 +170,16 @@ int colvarbias_histogram::write_output_files()
   }
 
   int error_code = COLVARS_OK;
+
+  // Set default filenames, if none have been provided
+  if (!cvm::output_prefix().empty()) {
+    if (out_name.empty()) {
+      out_name = cvm::output_prefix() + "." + this->name + ".dat";
+    }
+    if (out_name_dx.empty()) {
+      out_name_dx = cvm::output_prefix() + "." + this->name + ".dx";
+    }
+  }
 
   if (out_name.size() && out_name != "none") {
     cvm::log("Writing the histogram file \""+out_name+"\".\n");

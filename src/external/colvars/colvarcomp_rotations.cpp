@@ -22,13 +22,12 @@ public:
 };
 
 
-colvar::orientation::orientation(std::string const &conf)
-  : cvc()
+colvar::orientation::orientation()
 {
   set_function_type("orientation");
+  rot_deriv_impl = std::unique_ptr<rotation_derivative_impl_>(new rotation_derivative_impl_(this));
   disable(f_cvc_explicit_gradient);
   x.type(colvarvalue::type_quaternion);
-  colvar::orientation::init(conf);
 }
 
 
@@ -40,6 +39,9 @@ int colvar::orientation::init(std::string const &conf)
   int error_code = cvc::init(conf);
 
   atoms = parse_group(conf, "atoms");
+  if (!atoms || atoms->size() == 0) {
+    return error_code | COLVARS_INPUT_ERROR;
+  }
   ref_pos.reserve(atoms->size());
 
   if (get_keyval(conf, "refPositions", ref_pos, ref_pos)) {
@@ -66,16 +68,17 @@ int colvar::orientation::init(std::string const &conf)
       }
 
       ref_pos.resize(atoms->size());
-      cvm::load_coords(file_name.c_str(), &ref_pos, atoms,
+      error_code |= cvm::load_coords(file_name.c_str(), &ref_pos, atoms,
                        file_col, file_col_value);
     }
   }
+
+  if (error_code != COLVARS_OK) return error_code;
 
   if (!ref_pos.size()) {
     return cvm::error("Error: must define a set of "
                       "reference coordinates.\n", COLVARS_INPUT_ERROR);
   }
-
 
   cvm::rvector ref_cog(0.0, 0.0, 0.0);
   size_t i;
@@ -94,23 +97,12 @@ int colvar::orientation::init(std::string const &conf)
 
   get_keyval(conf, "closestToQuaternion", ref_quat, cvm::quaternion(1.0, 0.0, 0.0, 0.0));
 
-  rot_deriv_impl = std::unique_ptr<rotation_derivative_impl_>(new rotation_derivative_impl_(this));
-
   // If the debug gradients feature is active, debug the rotation gradients
   // (note that this won't be active for the orientation CVC itself, because
   // colvardeps prevents the flag's activation)
   rot.b_debug_gradients = is_enabled(f_cvc_debug_gradient);
 
   return error_code;
-}
-
-
-colvar::orientation::orientation()
-  : cvc()
-{
-  set_function_type("orientation");
-  disable(f_cvc_explicit_gradient);
-  x.type(colvarvalue::type_quaternion);
 }
 
 
@@ -179,20 +171,15 @@ colvarvalue colvar::orientation::dist2_rgrad(colvarvalue const &x1,
 }
 
 
+void colvar::orientation::wrap(colvarvalue & /* x_unwrapped */) const {}
 
-colvar::orientation_angle::orientation_angle(std::string const &conf)
-  : orientation()
+
+
+colvar::orientation_angle::orientation_angle()
 {
   set_function_type("orientationAngle");
   init_as_angle();
   enable(f_cvc_explicit_gradient);
-  orientation_angle::init(conf);
-}
-
-
-int colvar::orientation_angle::init(std::string const &conf)
-{
-  return orientation::init(conf);
 }
 
 
@@ -229,31 +216,40 @@ void colvar::orientation_angle::calc_gradients()
 
 void colvar::orientation_angle::apply_force(colvarvalue const &force)
 {
-  cvm::real const &fw = force.real_value;
-  if (!atoms->noforce) {
-    atoms->apply_colvar_force(fw);
-  }
+  cvc::apply_force(force);
 }
 
 
-simple_scalar_dist_functions(orientation_angle)
+cvm::real colvar::orientation_angle::dist2(colvarvalue const &x1, colvarvalue const &x2) const
+{
+  return cvc::dist2(x1, x2);
+}
+
+
+colvarvalue colvar::orientation_angle::dist2_lgrad(colvarvalue const &x1,
+                                                   colvarvalue const &x2) const
+{
+  return cvc::dist2_lgrad(x1, x2);
+}
+
+
+colvarvalue colvar::orientation_angle::dist2_rgrad(colvarvalue const &x1,
+                                                   colvarvalue const &x2) const
+{
+  return cvc::dist2_rgrad(x1, x2);
+}
+
+
+void colvar::orientation_angle::wrap(colvarvalue & /* x_unwrapped */) const {}
 
 
 
-colvar::orientation_proj::orientation_proj(std::string const &conf)
-  : orientation()
+colvar::orientation_proj::orientation_proj()
 {
   set_function_type("orientationProj");
   enable(f_cvc_explicit_gradient);
   x.type(colvarvalue::type_scalar);
   init_scalar_boundaries(0.0, 1.0);
-  orientation_proj::init(conf);
-}
-
-
-int colvar::orientation_proj::init(std::string const &conf)
-{
-  return orientation::init(conf);
 }
 
 
@@ -278,36 +274,19 @@ void colvar::orientation_proj::calc_gradients()
 }
 
 
-void colvar::orientation_proj::apply_force(colvarvalue const &force)
-{
-  cvm::real const &fw = force.real_value;
 
-  if (!atoms->noforce) {
-    atoms->apply_colvar_force(fw);
-  }
-}
-
-
-simple_scalar_dist_functions(orientation_proj)
-
-
-
-colvar::tilt::tilt(std::string const &conf)
-  : orientation()
+colvar::tilt::tilt()
 {
   set_function_type("tilt");
   x.type(colvarvalue::type_scalar);
   enable(f_cvc_explicit_gradient);
   init_scalar_boundaries(-1.0, 1.0);
-  tilt::init(conf);
 }
 
 
 int colvar::tilt::init(std::string const &conf)
 {
-  int error_code = COLVARS_OK;
-
-  error_code |= orientation::init(conf);
+  int error_code = orientation_proj::init(conf);
 
   get_keyval(conf, "axis", axis, cvm::rvector(0.0, 0.0, 1.0));
   if (axis.norm2() != 1.0) {
@@ -346,55 +325,12 @@ void colvar::tilt::calc_gradients()
 }
 
 
-void colvar::tilt::apply_force(colvarvalue const &force)
-{
-  cvm::real const &fw = force.real_value;
 
-  if (!atoms->noforce) {
-    atoms->apply_colvar_force(fw);
-  }
-}
-
-
-simple_scalar_dist_functions(tilt)
-
-
-
-colvar::spin_angle::spin_angle(std::string const &conf)
-  : orientation()
+colvar::spin_angle::spin_angle()
 {
   set_function_type("spinAngle");
   init_as_periodic_angle();
-  enable(f_cvc_periodic);
   enable(f_cvc_explicit_gradient);
-  spin_angle::init(conf);
-}
-
-
-int colvar::spin_angle::init(std::string const &conf)
-{
-  int error_code = COLVARS_OK;
-
-  error_code |= orientation::init(conf);
-
-  get_keyval(conf, "axis", axis, cvm::rvector(0.0, 0.0, 1.0));
-  if (axis.norm2() != 1.0) {
-    axis /= axis.norm();
-    cvm::log("Normalizing rotation axis to "+cvm::to_str(axis)+".\n");
-  }
-
-  return error_code;
-}
-
-
-colvar::spin_angle::spin_angle()
-  : orientation()
-{
-  set_function_type("spinAngle");
-  period = 360.0;
-  enable(f_cvc_periodic);
-  enable(f_cvc_explicit_gradient);
-  x.type(colvarvalue::type_scalar);
 }
 
 
@@ -406,7 +342,7 @@ void colvar::spin_angle::calc_value()
   rot.calc_optimal_rotation(ref_pos, shifted_pos);
 
   x.real_value = rot.spin_angle(axis);
-  this->wrap(x);
+  wrap(x);
 }
 
 
@@ -426,83 +362,12 @@ void colvar::spin_angle::calc_gradients()
 }
 
 
-void colvar::spin_angle::apply_force(colvarvalue const &force)
-{
-  cvm::real const &fw = force.real_value;
-
-  if (!atoms->noforce) {
-    atoms->apply_colvar_force(fw);
-  }
-}
-
-
-cvm::real colvar::spin_angle::dist2(colvarvalue const &x1,
-                                    colvarvalue const &x2) const
-{
-  cvm::real diff = x1.real_value - x2.real_value;
-  diff = (diff < -180.0 ? diff + 360.0 : (diff > 180.0 ? diff - 360.0 : diff));
-  return diff * diff;
-}
-
-
-colvarvalue colvar::spin_angle::dist2_lgrad(colvarvalue const &x1,
-                                            colvarvalue const &x2) const
-{
-  cvm::real diff = x1.real_value - x2.real_value;
-  diff = (diff < -180.0 ? diff + 360.0 : (diff > 180.0 ? diff - 360.0 : diff));
-  return 2.0 * diff;
-}
-
-
-colvarvalue colvar::spin_angle::dist2_rgrad(colvarvalue const &x1,
-                                            colvarvalue const &x2) const
-{
-  cvm::real diff = x1.real_value - x2.real_value;
-  diff = (diff < -180.0 ? diff + 360.0 : (diff > 180.0 ? diff - 360.0 : diff));
-  return (-2.0) * diff;
-}
-
-
-void colvar::spin_angle::wrap(colvarvalue &x_unwrapped) const
-{
-  if ((x_unwrapped.real_value - wrap_center) >= 180.0) {
-    x_unwrapped.real_value -= 360.0;
-    return;
-  }
-
-  if ((x_unwrapped.real_value - wrap_center) < -180.0) {
-    x_unwrapped.real_value += 360.0;
-    return;
-  }
-
-  return;
-}
-
-
-colvar::euler_phi::euler_phi(std::string const &conf)
-  : orientation()
-{
-  set_function_type("eulerPhi");
-  init_as_periodic_angle();
-  enable(f_cvc_explicit_gradient);
-  euler_phi::init(conf);
-}
-
 
 colvar::euler_phi::euler_phi()
-  : orientation()
 {
   set_function_type("eulerPhi");
   init_as_periodic_angle();
   enable(f_cvc_explicit_gradient);
-}
-
-
-int colvar::euler_phi::init(std::string const &conf)
-{
-  int error_code = COLVARS_OK;
-  error_code |= orientation::init(conf);
-  return error_code;
 }
 
 
@@ -546,82 +411,12 @@ void colvar::euler_phi::calc_gradients()
 }
 
 
-void colvar::euler_phi::apply_force(colvarvalue const &force)
-{
-  cvm::real const &fw = force.real_value;
-  if (!atoms->noforce) {
-    atoms->apply_colvar_force(fw);
-  }
-}
-
-
-cvm::real colvar::euler_phi::dist2(colvarvalue const &x1,
-                                  colvarvalue const &x2) const
-{
-  cvm::real diff = x1.real_value - x2.real_value;
-  diff = (diff < -180.0 ? diff + 360.0 : (diff > 180.0 ? diff - 360.0 : diff));
-  return diff * diff;
-}
-
-
-colvarvalue colvar::euler_phi::dist2_lgrad(colvarvalue const &x1,
-                                          colvarvalue const &x2) const
-{
-  cvm::real diff = x1.real_value - x2.real_value;
-  diff = (diff < -180.0 ? diff + 360.0 : (diff > 180.0 ? diff - 360.0 : diff));
-  return 2.0 * diff;
-}
-
-
-colvarvalue colvar::euler_phi::dist2_rgrad(colvarvalue const &x1,
-                                          colvarvalue const &x2) const
-{
-  cvm::real diff = x1.real_value - x2.real_value;
-  diff = (diff < -180.0 ? diff + 360.0 : (diff > 180.0 ? diff - 360.0 : diff));
-  return (-2.0) * diff;
-}
-
-
-void colvar::euler_phi::wrap(colvarvalue &x_unwrapped) const
-{
-  if ((x_unwrapped.real_value - wrap_center) >= 180.0) {
-    x_unwrapped.real_value -= 360.0;
-    return;
-  }
-
-  if ((x_unwrapped.real_value - wrap_center) < -180.0) {
-    x_unwrapped.real_value += 360.0;
-    return;
-  }
-
-  return;
-}
-
-
-colvar::euler_psi::euler_psi(std::string const &conf)
-  : orientation()
-{
-  set_function_type("eulerPsi");
-  init_as_periodic_angle();
-  enable(f_cvc_explicit_gradient);
-  euler_psi::init(conf);
-}
-
 
 colvar::euler_psi::euler_psi()
-  : orientation()
 {
   set_function_type("eulerPsi");
   init_as_periodic_angle();
   enable(f_cvc_explicit_gradient);
-}
-
-
-int colvar::euler_psi::init(std::string const &conf)
-{
-  int error_code = COLVARS_OK;
-  error_code |= orientation::init(conf);
-  return error_code;
 }
 
 
@@ -665,82 +460,12 @@ void colvar::euler_psi::calc_gradients()
 }
 
 
-void colvar::euler_psi::apply_force(colvarvalue const &force)
-{
-  cvm::real const &fw = force.real_value;
-  if (!atoms->noforce) {
-    atoms->apply_colvar_force(fw);
-  }
-}
-
-
-cvm::real colvar::euler_psi::dist2(colvarvalue const &x1,
-                                  colvarvalue const &x2) const
-{
-  cvm::real diff = x1.real_value - x2.real_value;
-  diff = (diff < -180.0 ? diff + 360.0 : (diff > 180.0 ? diff - 360.0 : diff));
-  return diff * diff;
-}
-
-
-colvarvalue colvar::euler_psi::dist2_lgrad(colvarvalue const &x1,
-                                          colvarvalue const &x2) const
-{
-  cvm::real diff = x1.real_value - x2.real_value;
-  diff = (diff < -180.0 ? diff + 360.0 : (diff > 180.0 ? diff - 360.0 : diff));
-  return 2.0 * diff;
-}
-
-
-colvarvalue colvar::euler_psi::dist2_rgrad(colvarvalue const &x1,
-                                          colvarvalue const &x2) const
-{
-  cvm::real diff = x1.real_value - x2.real_value;
-  diff = (diff < -180.0 ? diff + 360.0 : (diff > 180.0 ? diff - 360.0 : diff));
-  return (-2.0) * diff;
-}
-
-
-void colvar::euler_psi::wrap(colvarvalue &x_unwrapped) const
-{
-  if ((x_unwrapped.real_value - wrap_center) >= 180.0) {
-    x_unwrapped.real_value -= 360.0;
-    return;
-  }
-
-  if ((x_unwrapped.real_value - wrap_center) < -180.0) {
-    x_unwrapped.real_value += 360.0;
-    return;
-  }
-
-  return;
-}
-
-
-colvar::euler_theta::euler_theta(std::string const &conf)
-  : orientation()
-{
-  set_function_type("eulerTheta");
-  init_as_angle();
-  enable(f_cvc_explicit_gradient);
-  euler_theta::init(conf);
-}
-
 
 colvar::euler_theta::euler_theta()
-  : orientation()
 {
   set_function_type("eulerTheta");
   init_as_angle();
   enable(f_cvc_explicit_gradient);
-}
-
-
-int colvar::euler_theta::init(std::string const &conf)
-{
-  int error_code = COLVARS_OK;
-  error_code |= orientation::init(conf);
-  return error_code;
 }
 
 
@@ -779,37 +504,4 @@ void colvar::euler_theta::calc_gradients()
                         (dxdq2 * dq0_2[2]) +
                         (dxdq3 * dq0_2[3]);
   }
-}
-
-
-void colvar::euler_theta::apply_force(colvarvalue const &force)
-{
-  cvm::real const &fw = force.real_value;
-  if (!atoms->noforce) {
-    atoms->apply_colvar_force(fw);
-  }
-}
-
-
-cvm::real colvar::euler_theta::dist2(colvarvalue const &x1,
-                                     colvarvalue const &x2) const
-{
-  // theta angle is not periodic
-  return cvc::dist2(x1, x2);
-}
-
-
-colvarvalue colvar::euler_theta::dist2_lgrad(colvarvalue const &x1,
-                                             colvarvalue const &x2) const
-{
-  // theta angle is not periodic
-  return cvc::dist2_lgrad(x1, x2);
-}
-
-
-colvarvalue colvar::euler_theta::dist2_rgrad(colvarvalue const &x1,
-                                             colvarvalue const &x2) const
-{
-  // theta angle is not periodic
-  return cvc::dist2_rgrad(x1, x2);
 }

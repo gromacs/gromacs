@@ -344,6 +344,45 @@
     "  url = {https://doi.org/10.1021/ct500320c}\n"
     "}\n";
 
+  paper_count_[std::string("Invernizzi2020")] = 0;
+  paper_url_[std::string("Invernizzi2020")] = "https://pubs.acs.org/doi/10.1021/acs.jpclett.0c00497";
+  paper_bibtex_[std::string("Invernizzi2020")] =
+    "\n"
+    "@article{Invernizzi2020,\n"
+    "	title = {Rethinking {Metadynamics}: {From} {Bias} {Potentials} to {Probability} {Distributions}},\n"
+    "	volume = {11},\n"
+    "	issn = {1948-7185, 1948-7185},\n"
+    "	shorttitle = {Rethinking {Metadynamics}},\n"
+    "	url = {https://pubs.acs.org/doi/10.1021/acs.jpclett.0c00497},\n"
+    "	doi = {10.1021/acs.jpclett.0c00497},\n"
+    "	number = {7},\n"
+    "	urldate = {2020-09-30},\n"
+    "	journal = {J. Phys. Chem. Lett.},\n"
+    "	author = {Invernizzi, Michele and Parrinello, Michele},\n"
+    "	month = apr,\n"
+    "	year = {2020},\n"
+    "	pages = {2731--2736},\n"
+    "}\n";
+
+  paper_count_[std::string("Invernizzi2022")] = 0;
+  paper_url_[std::string("Invernizzi2022")] = "https://doi.org/10.1021/acs.jctc.2c00152";
+  paper_bibtex_[std::string("Invernizzi2022")] =
+    "\n"
+    "@article{Invernizzi2022,\n"
+    "	title = {Exploration vs {Convergence} {Speed} in {Adaptive}-{Bias} {Enhanced} {Sampling}},\n"
+    "	volume = {18},\n"
+    "	issn = {1549-9618},\n"
+    "	url = {https://doi.org/10.1021/acs.jctc.2c00152},\n"
+    "	doi = {10.1021/acs.jctc.2c00152},\n"
+    "	number = {6},\n"
+    "	urldate = {2024-07-02},\n"
+    "	journal = {J. Chem. Theory Comput.},\n"
+    "	author = {Invernizzi, Michele and Parrinello, Michele},\n"
+    "	month = jun,\n"
+    "	year = {2022},\n"
+    "	pages = {3988--3996},\n"
+    "}\n";
+
   paper_count_[std::string("n/a")] = 0;
   paper_url_[std::string("n/a")] = "";
   paper_bibtex_[std::string("n/a")] = "";
@@ -441,14 +480,14 @@
   feature_count_[std::string("orientationAngle colvar component (derived from orientation)")] = 0;
   feature_paper_map_[std::string("orientationAngle colvar component (derived from orientation)")] = "Fiorin2013";
 
-  feature_count_[std::string("orientationProj colvar component (derived from orientation)")] = 0;
-  feature_paper_map_[std::string("orientationProj colvar component (derived from orientation)")] = "Fiorin2013";
+  feature_count_[std::string("orientationProj colvar component (derived from orientationAngle)")] = 0;
+  feature_paper_map_[std::string("orientationProj colvar component (derived from orientationAngle)")] = "Fiorin2013";
 
-  feature_count_[std::string("spinAngle colvar component (derived from orientation)")] = 0;
-  feature_paper_map_[std::string("spinAngle colvar component (derived from orientation)")] = "Fiorin2013";
+  feature_count_[std::string("spinAngle colvar component (derived from tilt)")] = 0;
+  feature_paper_map_[std::string("spinAngle colvar component (derived from tilt)")] = "Fiorin2013";
 
-  feature_count_[std::string("tilt colvar component (derived from orientation)")] = 0;
-  feature_paper_map_[std::string("tilt colvar component (derived from orientation)")] = "Fiorin2013";
+  feature_count_[std::string("tilt colvar component (derived from orientationProj)")] = 0;
+  feature_paper_map_[std::string("tilt colvar component (derived from orientationProj)")] = "Fiorin2013";
 
   feature_count_[std::string("alpha colvar component")] = 0;
   feature_paper_map_[std::string("alpha colvar component")] = "Fiorin2013";
@@ -498,14 +537,14 @@
   feature_count_[std::string("polarPhi colvar component")] = 0;
   feature_paper_map_[std::string("polarPhi colvar component")] = "Fu2017";
 
-  feature_count_[std::string("eulerPhi colvar component (derived from orientation)")] = 0;
-  feature_paper_map_[std::string("eulerPhi colvar component (derived from orientation)")] = "Fu2017";
+  feature_count_[std::string("eulerPhi colvar component (derived from orientation_angle)")] = 0;
+  feature_paper_map_[std::string("eulerPhi colvar component (derived from orientation_angle)")] = "Fu2017";
 
-  feature_count_[std::string("eulerTheta colvar component (derived from orientation)")] = 0;
-  feature_paper_map_[std::string("eulerTheta colvar component (derived from orientation)")] = "Fu2017";
+  feature_count_[std::string("eulerTheta colvar component (derived from orientation_angle)")] = 0;
+  feature_paper_map_[std::string("eulerTheta colvar component (derived from orientation_angle)")] = "Fu2017";
 
-  feature_count_[std::string("eulerPsi colvar component (derived from orientation)")] = 0;
-  feature_paper_map_[std::string("eulerPsi colvar component (derived from orientation)")] = "Fu2017";
+  feature_count_[std::string("eulerPsi colvar component (derived from orientation_angle)")] = 0;
+  feature_paper_map_[std::string("eulerPsi colvar component (derived from orientation_angle)")] = "Fu2017";
 
   feature_count_[std::string("dipoleAngle colvar component")] = 0;
   feature_paper_map_[std::string("dipoleAngle colvar component")] = "Garate2019";
@@ -555,6 +594,12 @@
   feature_count_[std::string("ALB colvar bias implementation")] = 0;
   feature_paper_map_[std::string("ALB colvar bias implementation")] = "White2014";
 
+  feature_count_[std::string("OPES")] = 0;
+  feature_paper_map_[std::string("OPES")] = "Invernizzi2020";
+
+  feature_count_[std::string("OPES explore or adaptive kernels")] = 0;
+  feature_paper_map_[std::string("OPES explore or adaptive kernels")] = "Invernizzi2022";
+
   feature_count_[std::string("Colvars-GROMACS interface")] = 0;
   feature_paper_map_[std::string("Colvars-GROMACS interface")] = "n/a";
 
@@ -587,3 +632,6 @@
 
   feature_count_[std::string("Scripted functions (Tcl)")] = 0;
   feature_paper_map_[std::string("Scripted functions (Tcl)")] = "n/a";
+
+  feature_count_[std::string("ABMD bias")] = 0;
+  feature_paper_map_[std::string("ABMD bias")] = "n/a";

@@ -134,17 +134,27 @@ struct ArithmeticPathImpl: public ArithmeticPathCV::ArithmeticPathBase<cvm::real
     }
 };
 
-colvar::aspath::aspath(std::string const &conf): CartesianBasedPath(conf) {
-    function_type = "aspath";
-    cvm::log(std::string("Total number of frames: ") + cvm::to_str(total_reference_frames) + std::string("\n"));
+colvar::aspath::aspath()
+{
+    set_function_type("aspath");
     x.type(colvarvalue::type_scalar);
+}
+
+
+int colvar::aspath::init(std::string const &conf)
+{
+    int error_code = CartesianBasedPath::init(conf);
+    if (error_code != COLVARS_OK) return error_code;
+    cvm::log(std::string("Total number of frames: ") + cvm::to_str(total_reference_frames) + std::string("\n"));
     cvm::real p_lambda;
     get_keyval(conf, "lambda", p_lambda, -1.0);
     const size_t num_atoms = atoms->size();
     std::vector<cvm::real> p_weights(num_atoms, std::sqrt(1.0 / num_atoms));
     // ArithmeticPathCV::ArithmeticPathBase<cvm::atom_pos, cvm::real, ArithmeticPathCV::path_sz::S>::initialize(num_atoms, total_reference_frames, p_lambda, reference_frames[0], p_weights);
+    if (impl_) impl_.reset();
     impl_ = std::unique_ptr<ArithmeticPathImpl>(new ArithmeticPathImpl(num_atoms, total_reference_frames, p_lambda, p_weights));
     cvm::log(std::string("Lambda is ") + cvm::to_str(impl_->get_lambda()) + std::string("\n"));
+    return error_code;
 }
 
 colvar::aspath::~aspath() {}
@@ -180,16 +190,26 @@ void colvar::aspath::apply_force(colvarvalue const &force) {
     }
 }
 
-colvar::azpath::azpath(std::string const &conf): CartesianBasedPath(conf) {
-    function_type = "azpath";
+colvar::azpath::azpath()
+{
+    set_function_type("azpath");
+    x.type(colvarvalue::type_scalar);
+}
+
+int colvar::azpath::init(std::string const &conf)
+{
+    int error_code = CartesianBasedPath::init(conf);
+    if (error_code != COLVARS_OK) return error_code;
     cvm::log(std::string("Total number of frames: ") + cvm::to_str(total_reference_frames) + std::string("\n"));
     x.type(colvarvalue::type_scalar);
     cvm::real p_lambda;
     get_keyval(conf, "lambda", p_lambda, -1.0);
     const size_t num_atoms = atoms->size();
     std::vector<cvm::real> p_weights(num_atoms, std::sqrt(1.0 / num_atoms));
+    if (impl_) impl_.reset();
     impl_ = std::unique_ptr<ArithmeticPathImpl>(new ArithmeticPathImpl(num_atoms, total_reference_frames, p_lambda, p_weights));
     cvm::log(std::string("Lambda is ") + cvm::to_str(impl_->get_lambda()) + std::string("\n"));
+    return error_code;
 }
 
 colvar::azpath::~azpath() {}
@@ -225,15 +245,23 @@ void colvar::azpath::apply_force(colvarvalue const &force) {
     }
 }
 
-colvar::aspathCV::aspathCV(std::string const &conf): CVBasedPath(conf) {
+colvar::aspathCV::aspathCV()
+{
     set_function_type("aspathCV");
+    x.type(colvarvalue::type_scalar);
+}
+
+int colvar::aspathCV::init(std::string const &conf)
+{
+    int error_code = CVBasedPath::init(conf);
+    if (error_code != COLVARS_OK) return error_code;
     cvm::log(std::string("Total number of frames: ") + cvm::to_str(total_reference_frames) + std::string("\n"));
     std::vector<cvm::real> p_weights(cv.size(), 1.0);
     get_keyval(conf, "weights", p_weights, std::vector<cvm::real>(cv.size(), 1.0));
-    x.type(colvarvalue::type_scalar);
     use_explicit_gradients = true;
     cvm::real p_lambda;
     get_keyval(conf, "lambda", p_lambda, -1.0);
+    if (impl_) impl_.reset();
     impl_ = std::unique_ptr<ArithmeticPathImpl>(new ArithmeticPathImpl(cv.size(), total_reference_frames, p_lambda, p_weights));
     cvm::log(std::string("Lambda is ") + cvm::to_str(impl_->get_lambda()) + std::string("\n"));
     for (size_t i_cv = 0; i_cv < cv.size(); ++i_cv) {
@@ -242,6 +270,7 @@ colvar::aspathCV::aspathCV(std::string const &conf): CVBasedPath(conf) {
         }
         cvm::log(std::string("The weight of CV ") + cvm::to_str(i_cv) + std::string(" is ") + cvm::to_str(p_weights[i_cv]) + std::string("\n"));
     }
+    return error_code;
 }
 
 colvar::aspathCV::~aspathCV() {}
@@ -321,15 +350,23 @@ void colvar::aspathCV::apply_force(colvarvalue const &force) {
     }
 }
 
-colvar::azpathCV::azpathCV(std::string const &conf): CVBasedPath(conf) {
+colvar::azpathCV::azpathCV()
+{
     set_function_type("azpathCV");
+    x.type(colvarvalue::type_scalar);
+}
+
+int colvar::azpathCV::init(std::string const &conf)
+{
+    int error_code = CVBasedPath::init(conf);
+    if (error_code != COLVARS_OK) return error_code;
     cvm::log(std::string("Total number of frames: ") + cvm::to_str(total_reference_frames) + std::string("\n"));
     std::vector<cvm::real> p_weights(cv.size(), 1.0);
     get_keyval(conf, "weights", p_weights, std::vector<cvm::real>(cv.size(), 1.0));
-    x.type(colvarvalue::type_scalar);
     use_explicit_gradients = true;
     cvm::real p_lambda;
     get_keyval(conf, "lambda", p_lambda, -1.0);
+    if (impl_) impl_.reset();
     impl_ = std::unique_ptr<ArithmeticPathImpl>(new ArithmeticPathImpl(cv.size(), total_reference_frames, p_lambda, p_weights));
     cvm::log(std::string("Lambda is ") + cvm::to_str(impl_->get_lambda()) + std::string("\n"));
     for (size_t i_cv = 0; i_cv < cv.size(); ++i_cv) {
@@ -338,6 +375,7 @@ colvar::azpathCV::azpathCV(std::string const &conf): CVBasedPath(conf) {
         }
         cvm::log(std::string("The weight of CV ") + cvm::to_str(i_cv) + std::string(" is ") + cvm::to_str(p_weights[i_cv]) + std::string("\n"));
     }
+    return error_code;
 }
 
 void colvar::azpathCV::calc_value() {

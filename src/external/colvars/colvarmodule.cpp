@@ -18,11 +18,13 @@
 #include "colvar.h"
 #include "colvarbias.h"
 #include "colvarbias_abf.h"
+#include "colvarbias_abmd.h"
 #include "colvarbias_alb.h"
 #include "colvarbias_histogram.h"
 #include "colvarbias_histogram_reweight_amd.h"
 #include "colvarbias_meta.h"
 #include "colvarbias_restraint.h"
+#include "colvarbias_opes.h"
 #include "colvarscript.h"
 #include "colvaratoms.h"
 #include "colvarcomp.h"
@@ -108,22 +110,47 @@ colvarmodule::colvarmodule(colvarproxy *proxy_in)
            "  https://doi.org/10.1080/00268976.2013.813594\n"
            "as well as all other papers listed below for individual features used.\n");
 
-  if (proxy->check_smp_enabled() == COLVARS_NOT_IMPLEMENTED) {
-    cvm::log("SMP parallelism is not available in this build.\n");
-  } else {
-    if (proxy->check_smp_enabled() == COLVARS_OK) {
-      cvm::log("SMP parallelism is enabled (num threads = " + to_str(proxy->smp_num_threads()) + ").\n");
-    } else {
-      cvm::log("SMP parallelism is available in this build but not enabled.\n");
-    }
-  }
-
 #if (__cplusplus >= 201103L)
   cvm::log("This version was built with the C++11 standard or higher.\n");
 #else
   cvm::log("This version was built without the C++11 standard: some features are disabled.\n"
     "Please see the following link for details:\n"
     "  https://colvars.github.io/README-c++11.html\n");
+#endif
+
+  cvm::log("Summary of compile-time features available in this build:\n");
+
+  if (proxy->check_smp_enabled() == COLVARS_NOT_IMPLEMENTED) {
+    cvm::log("  - SMP parallelism: not available\n");
+  } else {
+    if (proxy->check_smp_enabled() == COLVARS_OK) {
+      cvm::log("  - SMP parallelism: enabled (num. threads = " + to_str(proxy->smp_num_threads()) + ")\n");
+    } else {
+      cvm::log("  - SMP parallelism: available, but not enabled\n");
+    }
+  }
+
+  if (proxy->check_replicas_enabled() == COLVARS_NOT_IMPLEMENTED) {
+    cvm::log("  - Multiple replicas: not available\n");
+  } else {
+    if (proxy->check_replicas_enabled() == COLVARS_OK) {
+      cvm::log("  - Multiple replicas: enabled (replica number " +
+               to_str(proxy->replica_index() + 1) + " of " + to_str(proxy->num_replicas()) + ")\n");
+    } else {
+      cvm::log("  - Multiple replicas: available, but not (yet) enabled\n");
+    }
+  }
+
+#if defined(LEPTON)
+  cvm::log("  - Lepton custom functions: available\n");
+#else
+  cvm::log("  - Lepton custom functions: not available\n");
+#endif
+
+#if defined(COLVARS_TCL)
+  cvm::log("  - Tcl interpreter: available\n");
+#else
+  cvm::log("  - Tcl interpreter: not available\n");
 #endif
 
   // set initial default values
@@ -547,6 +574,9 @@ int colvarmodule::parse_biases(std::string const &conf)
   /// initialize ABF instances
   parse_biases_type<colvarbias_abf>(conf, "abf");
 
+  /// initialize ABMD instances
+  parse_biases_type<colvarbias_abmd>(conf, "abmd");
+
   /// initialize adaptive linear biases
   parse_biases_type<colvarbias_alb>(conf, "ALB");
 
@@ -570,6 +600,9 @@ int colvarmodule::parse_biases(std::string const &conf)
 
   /// initialize reweightaMD instances
   parse_biases_type<colvarbias_reweightaMD>(conf, "reweightaMD");
+
+  /// initialize OPES instances
+  parse_biases_type<colvarbias_opes>(conf, "opes_metad");
 
   if (use_scripted_forces) {
     cvm::log(cvm::line_marker);
@@ -2133,15 +2166,6 @@ int colvarmodule::reset_index_groups()
 }
 
 
-int cvm::load_atoms(char const *file_name,
-                    cvm::atom_group &atoms,
-                    std::string const &pdb_field,
-                    double pdb_field_value)
-{
-  return proxy->load_atoms(file_name, atoms, pdb_field, pdb_field_value);
-}
-
-
 int cvm::load_coords(char const *file_name,
                      std::vector<cvm::rvector> *pos,
                      cvm::atom_group *atoms,
@@ -2156,7 +2180,7 @@ int cvm::load_coords(char const *file_name,
 
   atoms->create_sorted_ids();
 
-  std::vector<cvm::rvector> sorted_pos(atoms->size(), cvm::rvector(0.0));
+  std::vector<cvm::atom_pos> sorted_pos(atoms->size(), cvm::rvector(0.0));
 
   // Differentiate between PDB and XYZ files
   if (colvarparse::to_lower_cppstr(ext) == std::string(".xyz")) {
@@ -2168,10 +2192,11 @@ int cvm::load_coords(char const *file_name,
     error_code |= cvm::main()->load_coords_xyz(file_name, &sorted_pos, atoms);
   } else {
     // Otherwise, call proxy function for PDB
-    error_code |= proxy->load_coords(file_name,
-                                     sorted_pos, atoms->sorted_ids(),
-                                     pdb_field, pdb_field_value);
+    error_code |= proxy->load_coords_pdb(file_name, sorted_pos, atoms->sorted_ids(), pdb_field,
+                                         pdb_field_value);
   }
+
+  if (error_code != COLVARS_OK) return error_code;
 
   std::vector<int> const &map = atoms->sorted_ids_map();
   for (size_t i = 0; i < atoms->size(); i++) {
@@ -2188,7 +2213,7 @@ int cvm::load_coords_xyz(char const *filename,
                          bool keep_open)
 {
   std::istream &xyz_is = proxy->input_stream(filename, "XYZ file");
-  unsigned int natoms;
+  size_t natoms;
   char symbol[256];
   std::string line;
   cvm::real x = 0.0, y = 0.0, z = 0.0;
@@ -2212,12 +2237,19 @@ int cvm::load_coords_xyz(char const *filename,
     cvm::getline(xyz_is, line);
     xyz_is.width(255);
   } else {
+    proxy->close_input_stream(filename);
     return cvm::error(error_msg, COLVARS_INPUT_ERROR);
+  }
+
+  if (pos->size() > natoms) {
+    proxy->close_input_stream(filename);
+    return cvm::error("File \"" + std::string(filename) + "\" contains fewer atoms (" + cvm::to_str(natoms)
+      + ") than expected (" + cvm::to_str(pos->size()) + ").", COLVARS_INPUT_ERROR);
   }
 
   std::vector<atom_pos>::iterator pos_i = pos->begin();
   size_t xyz_natoms = 0;
-  if (pos->size() != natoms) { // Use specified indices
+  if (pos->size() < natoms) { // Use specified indices
     int next = 0; // indices are zero-based
     if (!atoms) {
       // In the other branch of this test, reading all positions from the file,
@@ -2225,6 +2257,13 @@ int cvm::load_coords_xyz(char const *filename,
       return cvm::error("Trying to read partial positions with invalid atom group pointer",
                         COLVARS_BUG_ERROR);
     }
+
+    if (static_cast<unsigned int>(atoms->sorted_ids().back()) > natoms) {
+      proxy->close_input_stream(filename);
+      return cvm::error("File \"" + std::string(filename) + "\" contains fewer atoms (" + cvm::to_str(natoms)
+        + ") than expected (" + cvm::to_str(atoms->sorted_ids().back()) + ").", COLVARS_INPUT_ERROR);
+    }
+
     std::vector<int>::const_iterator index = atoms->sorted_ids().begin();
 
     for ( ; pos_i != pos->end() ; pos_i++, index++) {
@@ -2241,6 +2280,7 @@ int cvm::load_coords_xyz(char const *filename,
         (*pos_i)[2] = proxy->angstrom_to_internal(z);
         xyz_natoms++;
       } else {
+        proxy->close_input_stream(filename);
         return cvm::error(error_msg, COLVARS_INPUT_ERROR);
       }
     }
@@ -2256,12 +2296,14 @@ int cvm::load_coords_xyz(char const *filename,
         (*pos_i)[2] = proxy->angstrom_to_internal(z);
         xyz_natoms++;
       } else {
+        proxy->close_input_stream(filename);
         return cvm::error(error_msg, COLVARS_INPUT_ERROR);
       }
     }
   }
 
   if (xyz_natoms != pos->size()) {
+    proxy->close_input_stream(filename);
     return cvm::error("Error: The number of positions read from file \""+
                       std::string(filename)+"\" does not match the number of "+
                       "positions required: "+cvm::to_str(xyz_natoms)+" vs. "+
