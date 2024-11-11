@@ -1516,13 +1516,7 @@ Energy group exclusions
 
 .. mdp:: energygrp-excl
 
-   Pairs of energy groups for which all non-bonded interactions are
-   excluded. An example: if you have two energy groups ``Protein`` and
-   ``SOL``, specifying ``energygrp-excl = Protein Protein SOL SOL``
-   would give only the non-bonded interactions between the protein and
-   the solvent. This is especially useful for speeding up energy
-   calculations with ``mdrun -rerun`` and for excluding interactions
-   within frozen groups.
+   Exclusion between pairs of energy groups are currently not supported.
 
 
 Walls
@@ -3170,11 +3164,10 @@ Non-equilibrium MD
 
    Groups that are to be frozen (*i.e.* their X, Y, and/or Z position
    will not be updated; *e.g.* ``Lipid SOL``). :mdp:`freezedim`
-   specifies for which dimension(s) the freezing applies. To avoid
-   spurious contributions to the virial and pressure due to large
-   forces between completely frozen atoms you need to use energy group
-   exclusions, this also saves computing time. Note that coordinates
-   of frozen atoms are not scaled by pressure-coupling algorithms.
+   specifies for which dimension(s) the freezing applies. Note that
+   the virial and pressure are usually not meaningful when frozen atoms
+   are present. Note that coordinates of frozen atoms are not scaled by
+   pressure-coupling algorithms.
 
 .. mdp:: freezedim
 
