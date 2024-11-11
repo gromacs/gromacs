@@ -65,14 +65,14 @@ template<int parallelExecutionWidth>
 constexpr int sc_spreadHipMaxWarpsPerBlock = (parallelExecutionWidth == 64) ? 8 : 4;
 
 template<int parallelExecutionWidth>
-static constexpr int                                          sc_spreadMaxThreadsPerBlock =
-        sc_spreadHipMaxWarpsPerBlock<parallelExecutionWidth>* parallelExecutionWidth;
+static constexpr int sc_spreadMaxThreadsPerBlock =
+        sc_spreadHipMaxWarpsPerBlock<parallelExecutionWidth> * parallelExecutionWidth;
 
 template<int parallelExecutionWidth>
-static constexpr int sc_solveMaxThreadsPerBlock = c_solveMaxWarpsPerBlock* parallelExecutionWidth;
+static constexpr int sc_solveMaxThreadsPerBlock = c_solveMaxWarpsPerBlock * parallelExecutionWidth;
 
 template<int parallelExecutionWidth>
-static constexpr int sc_gatherMaxThreadsPerBlock = c_gatherMaxWarpsPerBlock* parallelExecutionWidth;
+static constexpr int sc_gatherMaxThreadsPerBlock = c_gatherMaxWarpsPerBlock * parallelExecutionWidth;
 
 static int deviceParallelExecutionSize(const DeviceInformation& deviceInfo)
 {
