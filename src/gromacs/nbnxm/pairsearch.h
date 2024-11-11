@@ -188,8 +188,8 @@ public:
                    const rvec              upperCorner,
                    const UpdateGroupsCog*  updateGroupsCog,
                    Range<int>              atomRange,
-                   int                     numGridAtoms,
-                   real                    atomDensity,
+                   const int               numAtomsWithoutFillers,
+                   const real              atomDensity,
                    ArrayRef<const int32_t> atomInfo,
                    ArrayRef<const RVec>    x,
                    const int*              move,
@@ -203,7 +203,7 @@ public:
                            upperCorner,
                            updateGroupsCog,
                            atomRange,
-                           numGridAtoms,
+                           numAtomsWithoutFillers,
                            atomDensity,
                            atomInfo,
                            x,
@@ -212,6 +212,14 @@ public:
 
         cycleCounting_.stop(enbsCCgrid);
     }
+
+    void setNonLocalGrid(int                                 gridIndex,
+                         int                                 zone,
+                         const GridDimensions&               gridDimensions,
+                         ArrayRef<const std::pair<int, int>> columns,
+                         ArrayRef<const int32_t>             atomInfo,
+                         ArrayRef<const RVec>                x,
+                         nbnxn_atomdata_t*                   nbat);
 
     /*! \brief Constructor
      *

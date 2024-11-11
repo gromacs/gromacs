@@ -3628,6 +3628,24 @@ static Range<int> getJZoneRange(const gmx::DomdecZones*   ddZones,
     }
 }
 
+// Returns the list of grids corresponding to the DD zone range
+static ArrayRef<const Grid> getGridList(ArrayRef<const Grid> grids, const Range<int>& ddZoneRange)
+{
+    int gridIndexStart = 0;
+    while (grids[gridIndexStart].ddZone() < *ddZoneRange.begin())
+    {
+        gridIndexStart++;
+    }
+
+    int gridIndexEnd = gridIndexStart + 1;
+    while (gridIndexEnd < gmx::ssize(grids) && grids[gridIndexEnd].ddZone() < *ddZoneRange.end())
+    {
+        gridIndexEnd++;
+    }
+
+    return grids.subArray(gridIndexStart, gridIndexEnd - gridIndexStart);
+}
+
 //! Prepares CPU lists produced by the search for dynamic pruning
 static void prepareListsForDynamicPruning(ArrayRef<NbnxnPairlistCpu> lists);
 
@@ -3685,21 +3703,27 @@ void PairlistSet::constructPairlists(InteractionLocality      locality,
     GMX_ASSERT(locality == InteractionLocality::Local || ddZones != nullptr,
                "Nonlocal interaction locality with null ddZones.");
 
-    const auto iZoneRange = getIZoneRange(gridSet.domainSetup(), locality);
+    const auto iGridList = getGridList(gridSet.grids(), getIZoneRange(gridSet.domainSetup(), locality));
 
-    for (const int iZone : iZoneRange)
+    for (const Grid& iGrid : iGridList)
     {
-        const Grid& iGrid = gridSet.grid(iZone);
-
-        const auto jZoneRange = getJZoneRange(ddZones, locality, iZone);
-
-        for (int jZone : jZoneRange)
+        if (iGrid.dimensions().numCells[XX] == 0)
         {
-            const Grid& jGrid = gridSet.grid(jZone);
+            // We can and have to skip empty i-lists
+            continue;
+        }
+
+        const int iZone = iGrid.ddZone();
+
+        const auto jGridList = getGridList(gridSet.grids(), getJZoneRange(ddZones, locality, iZone));
+
+        for (const Grid& jGrid : jGridList)
+        {
+            const int jZone = jGrid.ddZone();
 
             if (debug)
             {
-                fprintf(debug, "ns search grid %d vs %d\n", iZone, jZone);
+                fprintf(debug, "ns search grid zone %d vs %d\n", iZone, jZone);
             }
 
             if (searchCycleCounting)

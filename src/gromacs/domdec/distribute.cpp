@@ -423,8 +423,7 @@ static std::vector<std::vector<int>> getAtomGroupDistribution(const gmx::MDLogge
     matrix triclinicCorrectionMatrix;
     make_tric_corr_matrix(dd->unitCellInfo.npbcdim, box, triclinicCorrectionMatrix);
 
-    ivec       npulse;
-    const auto cellBoundaries = set_dd_cell_sizes_slb(dd, &ddbox, setcellsizeslbMAIN, npulse);
+    const auto cellBoundaries = set_dd_cell_sizes_slb(dd, &ddbox, setcellsizeslbMAIN);
 
     std::vector<std::vector<int>> indices(dd->nnodes);
 

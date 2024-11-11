@@ -63,6 +63,12 @@ static inline int xyzToShiftIndex(int x, int y, int z)
 }
 
 //! Convert grid coordinates to shift index
+static inline int ivecToShiftIndex(const gmx::IVec& iv)
+{
+    return (xyzToShiftIndex(iv[XX], iv[YY], iv[ZZ]));
+}
+
+//! Convert grid coordinates to shift index
 static inline int ivecToShiftIndex(ivec iv)
 {
     return (xyzToShiftIndex((iv)[XX], (iv)[YY], (iv)[ZZ]));

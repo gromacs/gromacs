@@ -107,6 +107,7 @@ public:
     std::unique_ptr<gmx_domdec_t> build(LocalAtomSetManager*       atomSets,
                                         const gmx_localtop_t&      localTopology,
                                         const t_state*             localState,
+                                        bool                       haveFillerParticlesInLocalState,
                                         ObservablesReducerBuilder* observablesReducerBuilder);
 
 private:

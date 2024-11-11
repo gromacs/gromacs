@@ -210,8 +210,9 @@ static real cellsize_min_dlb(const gmx_domdec_comm_t& comm, int dim_ind, int dim
  * setmode determine if and where the boundaries are stored, use enum above.
  * Returns the number communication pulses in npulse.
  */
-gmx::ArrayRef<const std::vector<real>>
-set_dd_cell_sizes_slb(gmx_domdec_t* dd, const gmx_ddbox_t* ddbox, int setmode, ivec npulse)
+gmx::ArrayRef<const std::vector<real>> set_dd_cell_sizes_slb(gmx_domdec_t*      dd,
+                                                             const gmx_ddbox_t* ddbox,
+                                                             const int          setmode)
 {
     gmx_domdec_comm_t* comm = dd->comm.get();
 
@@ -225,7 +226,7 @@ set_dd_cell_sizes_slb(gmx_domdec_t* dd, const gmx_ddbox_t* ddbox, int setmode, i
     for (int d = 0; d < DIM; d++)
     {
         cellsize_min[d] = ddbox->box_size[d] * ddbox->skew_fac[d];
-        npulse[d]       = 1;
+        int numPulses   = 1;
         if (dd->numCells[d] == 1 || comm->slb_frac[d].empty())
         {
             /* Uniform grid */
@@ -245,9 +246,9 @@ set_dd_cell_sizes_slb(gmx_domdec_t* dd, const gmx_ddbox_t* ddbox, int setmode, i
                 default: break;
             }
             real cellsize = cell_dx * ddbox->skew_fac[d];
-            while (cellsize * npulse[d] < comm->systemInfo.cutoff)
+            while (cellsize * numPulses < comm->systemInfo.cutoff)
             {
-                npulse[d]++;
+                numPulses++;
             }
             cellsize_min[d] = cellsize;
         }
@@ -275,9 +276,9 @@ set_dd_cell_sizes_slb(gmx_domdec_t* dd, const gmx_ddbox_t* ddbox, int setmode, i
                 real cell_dx  = ddbox->box_size[d] * comm->slb_frac[d][j];
                 cell_x[j + 1] = cell_x[j] + cell_dx;
                 real cellsize = cell_dx * ddbox->skew_fac[d];
-                while (cellsize * npulse[d] < comm->systemInfo.cutoff && npulse[d] < dd->numCells[d] - 1)
+                while (cellsize * numPulses < comm->systemInfo.cutoff && numPulses < dd->numCells[d] - 1)
                 {
-                    npulse[d]++;
+                    numPulses++;
                 }
                 cellsize_min[d] = std::min(cellsize_min[d], cellsize);
             }
@@ -291,7 +292,7 @@ set_dd_cell_sizes_slb(gmx_domdec_t* dd, const gmx_ddbox_t* ddbox, int setmode, i
          * some of its own home charge groups back over the periodic boundary.
          * Double charge groups cause trouble with the global indices.
          */
-        if (d < ddbox->npbcdim && dd->numCells[d] > 1 && npulse[d] >= dd->numCells[d])
+        if (d < ddbox->npbcdim && dd->numCells[d] > 1 && numPulses >= dd->numCells[d])
         {
             char error_string[STRLEN];
 
@@ -316,6 +317,8 @@ set_dd_cell_sizes_slb(gmx_domdec_t* dd, const gmx_ddbox_t* ddbox, int setmode, i
                 gmx_fatal(FARGS, "%s", error_string);
             }
         }
+
+        dd->numPulses[d] = numPulses;
     }
 
     if (!isDlbOn(comm->dlbState))
@@ -915,28 +918,31 @@ void set_dd_cell_sizes(gmx_domdec_t*      dd,
     }
     else
     {
-        ivec numPulses;
-        set_dd_cell_sizes_slb(dd, ddbox, setcellsizeslbLOCAL, numPulses);
+        set_dd_cell_sizes_slb(dd, ddbox, setcellsizeslbLOCAL);
 
-        /* Check if the change in cell size requires a different number
-         * of communication pulses and if so change the number.
-         */
-        for (int d = 0; d < dd->ndim; d++)
+        // With the new (direct) haloExchange, dd->numPulses is read during setup()
+        if (dd->haloExchange == nullptr)
         {
-            gmx_domdec_comm_dim_t& cd           = comm->cd[d];
-            int                    numPulsesDim = numPulses[dd->dim[d]];
-            if (cd.numPulses() != numPulsesDim)
+            /* Check if the change in cell size requires a different number
+             * of communication pulses and if so change the number.
+             */
+            for (int d = 0; d < dd->ndim; d++)
             {
-                if (debug)
+                gmx_domdec_comm_dim_t& cd           = comm->cd[d];
+                int                    numPulsesDim = dd->numPulses[dd->dim[d]];
+                if (cd.numPulses() != numPulsesDim)
                 {
-                    fprintf(debug,
-                            "Changing the number of halo communication pulses along dim %c from %d "
-                            "to %d\n",
-                            dim2char(dd->dim[d]),
-                            cd.numPulses(),
-                            numPulsesDim);
+                    if (debug)
+                    {
+                        fprintf(debug,
+                                "Changing the number of halo communication pulses along dim %c "
+                                "from %d to %d\n",
+                                dim2char(dd->dim[d]),
+                                cd.numPulses(),
+                                numPulsesDim);
+                    }
+                    cd.ind.resize(numPulsesDim);
                 }
-                cd.ind.resize(numPulsesDim);
             }
         }
     }

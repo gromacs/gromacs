@@ -118,6 +118,7 @@
 #include "domdec_internal.h"
 #include "domdec_vsite.h"
 #include "dump.h"
+#include "haloexchange.h"
 #include "redistribute.h"
 #include "utility.h"
 
@@ -2243,7 +2244,15 @@ static void setup_dd_communication(gmx_domdec_t* dd, matrix box, gmx_ddbox_t* dd
     }
 }
 
+//! Returns whether \p localAtomIndex is a valid local atom index, i.e. >= 0
+static inline bool isValidLocalAtom(const int localAtomIndex)
+{
+    return localAtomIndex >= 0;
+}
+
 /*! \brief Order data in \p dataToSort according to \p sort
+ *
+ * Uses \p fillerValue for filler particles
  *
  * Note: both buffers should have at least \p sort.size() elements.
  */
@@ -2262,7 +2271,7 @@ static void orderVector(gmx::ArrayRef<const gmx_cgsort_t> sort,
 #pragma omp parallel for num_threads(numThreads) schedule(static)
     for (gmx::Index i = 0; i < gmx::ssize(sort); i++)
     {
-        if (sort[i].ind >= 0)
+        if (isValidLocalAtom(sort[i].ind))
         {
             sortBuffer[i] = dataToSort[sort[i].ind];
         }
@@ -2282,13 +2291,54 @@ static void orderVector(gmx::ArrayRef<const gmx_cgsort_t> sort,
 
 /*! \brief Order data in \p dataToSort according to \p sort
  *
+ * For filler particles the value for the last real atom is used
+ *
+ * Note: both buffers should have at least \p sort.size() elements.
+ */
+template<typename T>
+static void orderVector(gmx::ArrayRef<const gmx_cgsort_t> sort,
+                        gmx::ArrayRef<T>                  dataToSort,
+                        gmx::ArrayRef<T>                  sortBuffer)
+{
+    GMX_ASSERT(dataToSort.size() >= sort.size(), "The vector needs to be sufficiently large");
+    GMX_ASSERT(sortBuffer.size() >= sort.size(),
+               "The sorting buffer needs to be sufficiently large");
+
+    /* Order the data into the temporary buffer */
+    gmx::Index lastRealAtomEntry = -1;
+    gmx::Index i                 = 0;
+    for (const gmx_cgsort_t& entry : sort)
+    {
+        if (isValidLocalAtom(entry.ind))
+        {
+            lastRealAtomEntry = i;
+
+            sortBuffer[i++] = dataToSort[entry.ind];
+        }
+        else
+        {
+            GMX_ASSERT(isValidLocalAtom(lastRealAtomEntry),
+                       "We can not start with a filler particle");
+
+            sortBuffer[i++] = sortBuffer[lastRealAtomEntry];
+        }
+    }
+
+    /* Copy back to the original array */
+    std::copy(sortBuffer.begin(), sortBuffer.begin() + sort.size(), dataToSort.begin());
+}
+
+/*! \brief Order data in \p dataToSort according to \p sort
+ *
+ * Uses \p fillerValue for filler particles
+ *
  * Note: \p vectorToSort should have at least \p sort.size() elements,
  *       \p workVector is resized when it is too small.
  */
 template<typename T>
 static void orderVector(gmx::ArrayRef<const gmx_cgsort_t> sort,
                         gmx::ArrayRef<T>                  vectorToSort,
-                        const T                           fillerValue,
+                        const T&                          fillerValue,
                         gmx::FastVector<T>*               workVector)
 {
     if (gmx::Index(workVector->size()) < sort.ssize())
@@ -2318,7 +2368,7 @@ static void dd_sort_order_nbnxn(const gmx::nonbonded_verlet_t& nbv, gmx::FastVec
     {
         for (int i : atomOrder)
         {
-            if (i >= 0)
+            if (isValidLocalAtom(i))
             {
                 buffer[numSorted++].ind = i;
             }
@@ -2352,18 +2402,19 @@ static void dd_sort_state(gmx_domdec_t* dd, t_forcerec* fr, t_state* state)
     DDBufferAccess<gmx::RVec> rvecBuffer(dd->comm->rvecBuffer, tmpAllocHomeAtoms);
 
     /* Reorder the state */
-    const gmx::RVec fillerRVec = { 0, 0, 0 };
+    const gmx::RVec zeroRVec = { 0, 0, 0 };
     if (state->hasEntry(StateEntry::X))
     {
-        orderVector(sortOrder, makeArrayRef(state->x), fillerRVec, rvecBuffer.buffer);
+        // For filler particles we copy the coordinates of the last real atom
+        orderVector(sortOrder, makeArrayRef(state->x), rvecBuffer.buffer);
     }
     if (state->hasEntry(StateEntry::V))
     {
-        orderVector(sortOrder, makeArrayRef(state->v), fillerRVec, rvecBuffer.buffer);
+        orderVector(sortOrder, makeArrayRef(state->v), zeroRVec, rvecBuffer.buffer);
     }
     if (state->hasEntry(StateEntry::Cgp))
     {
-        orderVector(sortOrder, makeArrayRef(state->cg_p), fillerRVec, rvecBuffer.buffer);
+        orderVector(sortOrder, makeArrayRef(state->cg_p), zeroRVec, rvecBuffer.buffer);
     }
     // Now that we have sorted, we can set the actual new atom count
     dd->numHomeAtoms = sortOrder.size();
@@ -2958,12 +3009,22 @@ void dd_partition_system(FILE*                     fplog,
 
     wallcycle_sub_start(wcycle, WallCycleSubCounter::DDSetupComm);
 
-    /* Set the induces for the home atoms */
+    /* Set the indices for the home atoms */
     set_zones_numHomeAtoms(dd);
     make_dd_indices(dd, ncgindex_set);
 
-    /* Setup up the communication and communicate the coordinates */
-    setup_dd_communication(dd, state_local->box, &ddbox, fr, state_local);
+    if (dd->nnodes > 1)
+    {
+        /* Setup up the halo communication and communicate the coordinates */
+        if (fr->nbv->localAtomOrderMatchesNbnxmOrder())
+        {
+            dd->haloExchange->setup(dd, state_local, ddbox, fr, bBoxChanged || bDoDLB);
+        }
+        else
+        {
+            setup_dd_communication(dd, state_local->box, &ddbox, fr, state_local);
+        }
+    }
 
     /* Set the indices for the halo atoms */
     make_dd_indices(dd, dd->numHomeAtoms);

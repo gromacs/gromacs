@@ -71,6 +71,7 @@ struct ReverseTopOptions;
 
 namespace gmx
 {
+class HaloExchange;
 template<typename T>
 class HashedMap;
 class LocalAtomSetManager;
@@ -177,6 +178,12 @@ struct gmx_domdec_t
 
     /* Communication stuff */
     std::unique_ptr<gmx_domdec_comm_t> comm;
+
+    //! The number of communication pulses along the Cartesian dimension
+    gmx::IVec numPulses = { 0, 0, 0 };
+
+    /* The halo communication setup */
+    std::unique_ptr<gmx::HaloExchange> haloExchange;
 
     /* The partitioning count, to keep track of the state */
     int64_t ddp_count = 0;

@@ -56,6 +56,7 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/gpuhaloexchange.h"
+#include "gromacs/domdec/haloexchange.h"
 #include "gromacs/domdec/partition.h"
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/ewald/pme.h"
@@ -1385,7 +1386,11 @@ static void doPairSearch(const t_commrec*             cr,
     else
     {
         wallcycle_sub_start(wcycle, WallCycleSubCounter::NBSGridNonLocal);
-        nbnxn_put_on_grid_nonlocal(nbv, getDomdecZones(*cr->dd), fr->atomInfo, x.unpaddedArrayRef());
+        if (!nbv->localAtomOrderMatchesNbnxmOrder())
+        {
+            nbnxn_put_on_grid_nonlocal(nbv, getDomdecZones(*cr->dd), fr->atomInfo, x.unpaddedArrayRef());
+        }
+        nbv->convertCoordinates(AtomLocality::NonLocal, x.unpaddedArrayRef());
         wallcycle_sub_stop(wcycle, WallCycleSubCounter::NBSGridNonLocal);
     }
 
@@ -1803,7 +1808,17 @@ void do_force(FILE*                         fplog,
                         stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
                     }
                 }
-                dd_move_x(cr->dd, box, x.unpaddedArrayRef(), wcycle);
+
+                if (cr->dd->haloExchange)
+                {
+                    wallcycle_start(wcycle, WallCycleCounter::MoveX);
+                    cr->dd->haloExchange->moveX(box, x.unpaddedArrayRef());
+                    wallcycle_stop(wcycle, WallCycleCounter::MoveX);
+                }
+                else
+                {
+                    dd_move_x(cr->dd, box, x.unpaddedArrayRef(), wcycle);
+                }
             }
         }
 

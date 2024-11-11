@@ -937,16 +937,19 @@ static void finish_run(FILE*                     fplog,
 //! Returns whether the run conditions permit the local state to have filler particles
 static bool localStateHasFillerParticles(const gmx_mtop_t& mtop,
                                          const t_inputrec& inputrec,
-                                         const t_commrec&  commrec)
+                                         const bool        useDomainDecomposition,
+                                         const bool        haveSinglePPRank,
+                                         const bool        useGpuDirectHalo)
 {
-    // Currently having filler particles in the local states is only supported with a single DD rank
-    // WholeMoleculeTransform does not support filler particles
+    // Having filler particles in the local states is supported with DD atom ordering.
+    // WholeMoleculeTransform and GPU-direct does not support filler particles.
     const bool useEwaldSurfaceCorrection =
             (usingPmeOrEwald(inputrec.coulombtype) && inputrec.epsilon_surface != 0);
     const bool haveOrientationRestraints = (gmx_mtop_ftype_count(mtop, F_ORIRES) > 0);
     const bool needWholeMolecules        = useEwaldSurfaceCorrection || haveOrientationRestraints;
     const bool canHaveFillerParticlesInLocalState =
-            haveDDAtomOrdering(commrec) && commrec.nnodes == 1 && !needWholeMolecules;
+            useDomainDecomposition
+            && ((haveSinglePPRank && !needWholeMolecules) || (!haveSinglePPRank && !useGpuDirectHalo));
     bool haveFillerParticlesInLocalState = false;
     if (const char* env = getenv("GMX_FILLERS_IN_LOCAL_STATE"))
     {
@@ -960,8 +963,9 @@ static bool localStateHasFillerParticles(const gmx_mtop_t& mtop,
         {
             GMX_THROW(
                     gmx::InvalidInputError("Fillers in local state requested, but not supported"
-                                           " because DD is not used or because an algorithm"
-                                           " requires whole molecules"));
+                                           " because DD is not used or because GPU-direct comm."
+                                           " does not support it or because an algorithm requires"
+                                           " whole molecules"));
         }
         haveFillerParticlesInLocalState = canHaveFillerParticlesInLocalState && (value != 0);
     }
@@ -1560,6 +1564,25 @@ int Mdrunner::mdrunner()
                                                         mdlog);
     }
 
+    const bool haveFillerParticlesInLocalState = localStateHasFillerParticles(
+            mtop,
+            *inputrec,
+            useDomainDecomposition,
+            cr->sizeOfDefaultCommunicator == 1
+                    || cr->sizeOfDefaultCommunicator - domdecOptions.numPmeRanks == 1,
+            useGpuDirectHalo);
+
+    if (haveFillerParticlesInLocalState && useDomainDecomposition
+        && cr->sizeOfDefaultCommunicator - domdecOptions.numPmeRanks > 1
+        && domdecOptions.dlbOption != gmx::DlbOption::no)
+    {
+        GMX_LOG(mdlog.info)
+                .asParagraph()
+                .appendText(
+                        "Turning off DLB, as the is not (yet) supported with direct halo exchange");
+        domdecOptions.dlbOption = gmx::DlbOption::no;
+    }
+
     // This builder is necessary while we have multi-part construction
     // of DD. Before DD is constructed, we use the existence of
     // the builder object to indicate that further construction of DD
@@ -1661,6 +1684,7 @@ int Mdrunner::mdrunner()
         cr->setDD(ddBuilder->build(&atomSets,
                                    localTopology,
                                    EI_ENERGY_MINIMIZATION(inputrec->eI) ? nullptr : localState,
+                                   haveFillerParticlesInLocalState,
                                    &observablesReducerBuilder));
         // The builder's job is done, so destruct it
         ddBuilder.reset(nullptr);
@@ -1703,8 +1727,6 @@ int Mdrunner::mdrunner()
     GMX_RELEASE_ASSERT(!useGpuPmeDecomposition || devFlags.enableGpuPmeDecomposition,
                        "GPU PME decomposition works only in the cases where it is supported");
 
-    const bool haveFillerParticlesInLocalState = localStateHasFillerParticles(mtop, *inputrec, *cr);
-
     MdrunScheduleWorkload runScheduleWork;
 
     // Also populates the simulation constant workload description.
@@ -1741,7 +1763,6 @@ int Mdrunner::mdrunner()
                                  runScheduleWork.simulationWork.haveFillerParticlesInLocalState
                                          ? "uses"
                                          : "does not use");
-
 
     if (runScheduleWork.simulationWork.useGpuDirectCommunication && GMX_GPU_CUDA)
     {

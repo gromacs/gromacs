@@ -73,12 +73,13 @@ real grid_jump_limit(const gmx_domdec_comm_t* comm, real cutoff, int dim_ind);
 
 /*! \brief Sets up an initial, non-staggered grid geometry, possibly using static load balancing
  *
- * The number of communication pulses per dimension is returned in numPulses.
+ * The number of communication pulses per dimension is set in dd->numPulses.
  * When setmode==setcellsizeslbMAIN, the cell boundaries per dimension are
  * returned, otherwise an empty arrayref is returned.
  */
-gmx::ArrayRef<const std::vector<real>>
-set_dd_cell_sizes_slb(gmx_domdec_t* dd, const gmx_ddbox_t* ddbox, int setmode, ivec numPulses);
+gmx::ArrayRef<const std::vector<real>> set_dd_cell_sizes_slb(gmx_domdec_t*      dd,
+                                                             const gmx_ddbox_t* ddbox,
+                                                             int                setmode);
 
 /*! \brief General cell size adjustment, possibly applying dynamic load balancing */
 void set_dd_cell_sizes(gmx_domdec_t*      dd,

@@ -156,10 +156,13 @@ public:
     };
 
     //! Constructs a grid given the type of pairlist
-    Grid(PairlistType pairlistType, const bool& haveFep, PinningPolicy pinningPolicy);
+    Grid(PairlistType pairlistType, int ddZone, const bool& haveFep, PinningPolicy pinningPolicy);
 
     //! Returns the geometry of the grid cells
     const Geometry& geometry() const { return geometry_; }
+
+    //! Returns the zone this grid belong to
+    int ddZone() const { return ddZone_; }
 
     //! Returns the dimensions of the grid
     const GridDimensions& dimensions() const { return dimensions_; }
@@ -242,7 +245,7 @@ public:
     //! Returns the packed bounding boxes for all clusters on the grid, empty with a CPU list
     ArrayRef<const float> packedBoundingBoxes() const { return pbb_; }
 
-    //! Returns the bounding boxes along z for all cells on the grid
+    //! Returns the bounding boxes along z for all i-cells on the grid
     ArrayRef<const BoundingBox1D> zBoundingBoxes() const { return bbcz_; }
 
     //! Returns the flags for all clusters on the grid
@@ -269,6 +272,9 @@ public:
             return numClustersTotal_;
         }
     }
+
+    //! Resizes the bouding box and FEP flag lists for at most \p maxNumCells
+    void resizeBoundingBoxesAndFlags(const int maxNumCells);
 
     /*! \brief Sets the grid dimensions
      *
@@ -298,6 +304,27 @@ public:
                         ArrayRef<const RVec>    x,
                         nbnxn_atomdata_t*       nbat);
 
+    /*! \brief Sets a non-local grid using data communicated from a different domain
+     *
+     * \param[in] ddZone      The domain decomposition zone this grid belongs to
+     * \param[in] dimensions  The dimensions of the grid
+     * \param[in] columns     A list of column indices and number of cells for a column,
+     *                        the list should be ordered on column index
+     * \param[in] cellOffset  The offset of this grid in the list of cells over all grids
+     * \param[in] atomInfo    A list of information for all local and non-local atoms
+     * \param[in] x           The coordinates for all local and non-local atoms
+     * \param[in,out] gridSetData  The data shared over all grids
+     * \param[in,out] nbat    The NBNxM atom data, used here for storing the atom coordinates
+     */
+    void setNonLocalGrid(int                                 ddZone,
+                         const GridDimensions&               dimensions,
+                         ArrayRef<const std::pair<int, int>> columns,
+                         int                                 cellOffset,
+                         ArrayRef<const int32_t>             atomInfo,
+                         ArrayRef<const RVec>                x,
+                         GridSetData*                        gridSetData,
+                         nbnxn_atomdata_t*                   nbat);
+
     //! Determine in which grid columns atoms should go, store cells and atom counts in \p cell and \p cxy_na
     static void calcColumnIndices(const GridDimensions&  gridDims,
                                   const UpdateGroupsCog* updateGroupsCog,
@@ -313,7 +340,7 @@ public:
 private:
     /*! \brief Fill a pair search cell with atoms
      *
-     * Potentially sorts atoms and sets the interaction flags.
+     * Optionally sorts atoms and sets the interaction flags.
      */
     void fillCell(GridSetData*            gridSetData,
                   nbnxn_atomdata_t*       nbat,
@@ -340,9 +367,14 @@ private:
                                 Range<int>              columnRange,
                                 ArrayRef<int>           sort_work);
 
-    /* Data members */
+    // Data members
+
     //! The geometry of the grid clusters and cells
     Geometry geometry_;
+
+    // The DD zone the grid belong to
+    int ddZone_;
+
     //! The physical dimensions of the grid
     GridDimensions dimensions_;
 
@@ -368,11 +400,11 @@ private:
      * \todo Needs a useful name. */
     HostVector<int> cxy_ind_;
 
-    //! The number of cluster for each cell
+    //! The number of clusters for each column
     std::vector<int> numClusters_;
 
     /* Bounding boxes */
-    //! Bounding boxes in z for the cells
+    //! Bounding boxes in z for the i-cells
     std::vector<BoundingBox1D> bbcz_;
     //! 3D bounding boxes for the sub cells
     std::vector<BoundingBox, AlignedAllocator<BoundingBox>> bb_;

@@ -138,6 +138,8 @@ class GpuEventSynchronizer;
 namespace gmx
 {
 class FreeEnergyDispatch;
+class Grid;
+struct GridDimensions;
 struct NbnxmGpu;
 struct nbnxn_atomdata_t;
 class PairSearch;
@@ -411,6 +413,15 @@ public:
 
     //! Returns a pointer to the NbnxmGpu object, can return nullptr
     NbnxmGpu* gpuNbv() { return gpuNbv_; }
+
+    const Grid& localGrid() const;
+
+    void setNonLocalGrid(int                                 gridIndex,
+                         int                                 ddZone,
+                         const GridDimensions&               gridDimensions,
+                         ArrayRef<const std::pair<int, int>> columns,
+                         ArrayRef<const int32_t>             atomInfo,
+                         ArrayRef<const RVec>                x);
 
 private:
     //! All data related to the pair lists

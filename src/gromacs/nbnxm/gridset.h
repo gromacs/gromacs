@@ -134,6 +134,38 @@ public:
                    const int*              move,
                    nbnxn_atomdata_t*       nbat);
 
+    void setNonLocalGrid(const int                           gridIndex,
+                         const int                           ddZone,
+                         const GridDimensions&               gridDimensions,
+                         ArrayRef<const std::pair<int, int>> columns,
+                         ArrayRef<const int32_t>             atomInfo,
+                         ArrayRef<const RVec>                x,
+                         nbnxn_atomdata_t*                   nbat)
+    {
+        GMX_RELEASE_ASSERT(gridIndex > 0, "The zone should be non-local");
+
+        GMX_RELEASE_ASSERT(gridIndex == 1 || gridIndex == numGridsInUse_,
+                           "Non-local grids need to be set in order");
+
+        // Here we only increase the size, not decrease to avoid the overhead of pinning
+        numGridsInUse_ = gridIndex + 1;
+
+        if (numGridsInUse_ > gmx::ssize(grids_))
+        {
+            // We, temporarily, set the DD zone to -1, will be set in setNonLocalGrid()
+            grids_.emplace_back(pairlistType_, -1, haveFep_, pinningPolicy_);
+        }
+
+        const Grid& previousGrid = grids_[gridIndex - 1];
+
+        const int cellOffset = previousGrid.cellOffset() + previousGrid.numCells();
+
+        grids_[gridIndex].setNonLocalGrid(
+                ddZone, gridDimensions, columns, cellOffset, atomInfo, x, &gridSetData_, nbat);
+
+        numRealAtomsTotal_ = -1;
+    }
+
     //! Returns the domain setup
     DomainSetup domainSetup() const { return domainSetup_; }
 
@@ -144,13 +176,19 @@ public:
     int numGridAtomsLocal() const { return grids_[0].atomIndexEnd(); }
 
     //! Returns the total number of atoms in the grid set, including padding
-    int numGridAtomsTotal() const { return grids_.back().atomIndexEnd(); }
+    int numGridAtomsTotal() const { return grids_[numGridsInUse_ - 1].atomIndexEnd(); }
 
     //! Returns the number of local real atoms, i.e. without padded atoms
     int numRealAtomsLocal() const { return numRealAtomsLocal_; }
 
     //! Returns the number of total real atoms, i.e. without padded atoms
-    int numRealAtomsTotal() const { return numRealAtomsTotal_; }
+    int numRealAtomsTotal() const
+    {
+        GMX_ASSERT(numRealAtomsTotal_ >= 0,
+                   "Total real atoms only available without fillers in the local atom list");
+
+        return numRealAtomsTotal_;
+    }
 
     //! Returns the atom order on the grid for the local atoms
     ArrayRef<const int> getLocalAtomorder() const
@@ -165,10 +203,13 @@ public:
     void setLocalAtomOrder();
 
     //! Return a single grid
-    const Grid& grid(size_t idx) const { return grids_[idx]; }
+    const Grid& grid(int gridIndex) const { return grids_[gridIndex]; }
 
     //! Returns the list of grids
-    ArrayRef<const Grid> grids() const { return grids_; }
+    ArrayRef<const Grid> grids() const
+    {
+        return constArrayRefFromArray(grids_.data(), numGridsInUse_);
+    }
 
     //! Returns the grid atom indices covering all grids
     ArrayRef<const int> cells() const { return gridSetData_.cells; }
@@ -195,14 +236,20 @@ private:
     /* Data members */
     //! The domain setup
     DomainSetup domainSetup_;
-    //! The search grids
+    //! The search grids, at least one grid per zone, can be multiple for some zones
     std::vector<Grid> grids_;
+    //! The number of grids in use
+    int numGridsInUse_;
     //! The cell and atom index data which runs over all grids
     GridSetData gridSetData_;
+    //! The type of pairlist that will be used with this grid set
+    PairlistType pairlistType_;
     //! Tells whether we have perturbed non-bonded interactions
     bool haveFep_;
     //! Tells whether the local atom order matches the NBNxM atom order
     bool localAtomOrderMatchesNbnxmOrder_;
+    //! The pinning policy for Grid data that might be accessed on GPUs
+    PinningPolicy pinningPolicy_;
     //! The periodic unit-cell
     matrix box_;
     //! The number of local real atoms, i.e. without padded atoms, local atoms: 0 to numAtomsLocal_

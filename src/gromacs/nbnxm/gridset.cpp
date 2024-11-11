@@ -112,16 +112,24 @@ GridSet::GridSet(const PbcType      pbcType,
                  const int          numThreads,
                  PinningPolicy      pinningPolicy) :
     domainSetup_(pbcType, doTestParticleInsertion, numDDCells, ddZones),
-    grids_(numGrids(domainSetup_), Grid(pairlistType, haveFep_, pinningPolicy)),
+    pairlistType_(pairlistType),
     haveFep_(haveFep),
     localAtomOrderMatchesNbnxmOrder_(localAtomOrderMatchesNbnxmOrder),
-    numRealAtomsLocal_(0),
-    numRealAtomsTotal_(0),
+    pinningPolicy_(pinningPolicy),
     gridWork_(numThreads)
 {
     clear_mat(box_);
     changePinningPolicy(&gridSetData_.cells, pinningPolicy);
     changePinningPolicy(&gridSetData_.atomIndices, pinningPolicy);
+
+    grids_.reserve(numGrids(domainSetup_));
+    for (int i = 0; i < numGrids(domainSetup_); i++)
+    {
+        grids_.emplace_back(pairlistType, i, haveFep_, pinningPolicy);
+    }
+
+    // For normal MD we add non-local grids during (re)partitioning, so only count the local grid here
+    numGridsInUse_ = (doTestParticleInsertion ? numGrids(domainSetup_) : 1);
 }
 
 void GridSet::setLocalAtomOrder()
@@ -186,6 +194,15 @@ void GridSet::putOnGrid(const matrix            box,
                         const int*              move,
                         nbnxn_atomdata_t*       nbat)
 {
+    GMX_RELEASE_ASSERT(
+            !localAtomOrderMatchesNbnxmOrder_ || gridIndex == 0 || domainSetup_.doTestParticleInsertion_,
+            "Without NBNxM order or TPI, this function should only be called for gridIndex==0");
+
+    GMX_RELEASE_ASSERT(domainSetup_.doTestParticleInsertion_ || gridIndex == 0 || gridIndex == numGridsInUse_,
+                       "Non-local grids need to be set in order");
+
+    numGridsInUse_ = gridIndex + 1;
+
     Grid&     grid               = grids_[gridIndex];
     const int cellOffset         = getGridOffset(grids_, gridIndex);
     real      maxAtomGroupRadius = NAN;
@@ -194,17 +211,17 @@ void GridSet::putOnGrid(const matrix            box,
     {
         copy_mat(box, box_);
 
+        maxAtomGroupRadius = (updateGroupsCog ? updateGroupsCog->maxUpdateGroupRadius() : 0);
+
         numRealAtomsLocal_ = numAtomsWithoutFillers;
         /* We assume that nbnxn_put_on_grid is called first
          * for the local atoms (gridIndex=0).
          */
         numRealAtomsTotal_ = numAtomsWithoutFillers;
 
-        maxAtomGroupRadius = (updateGroupsCog ? updateGroupsCog->maxUpdateGroupRadius() : 0);
-
         if (debug)
         {
-            fprintf(debug, "natoms_local = %5d atom_density = %5.1f\n", numRealAtomsLocal_, atomDensity);
+            fprintf(debug, "num atoms %d, atom_density = %5.1f\n", atomRange.size(), atomDensity);
         }
     }
     else
@@ -273,7 +290,7 @@ void GridSet::putOnGrid(const matrix            box,
     /* Copy the already computed cell indices to the grid and sort, when needed */
     grid.setCellIndices(ddZone, cellOffset, &gridSetData_, gridWork_, atomRange, atomInfo, x, nbat);
 
-    if (gridIndex == gmx::ssize(grids_) - 1)
+    if (gridIndex == numGridsInUse_ - 1)
     {
         /* We are done setting up all grids, we can resize the force buffers */
         nbat->resizeForceBuffers();
