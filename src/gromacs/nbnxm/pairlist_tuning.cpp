@@ -425,7 +425,7 @@ void increaseNstlist(FILE*             fp,
  * to be 2, which is indirectly asserted when the GPU pruning is dispatched
  * during the force evaluation.
  */
-static constexpr int c_nbnxnGpuRollingListPruningInterval = 2;
+static constexpr int c_nbnxnGpuRollingListPruningInterval = GMX_GPU_HIP ? 1 : 2;
 
 /*! \brief The minimum nstlist for dynamic pair list pruning on CPUs.
  *
@@ -438,7 +438,7 @@ static const int c_nbnxnCpuDynamicListPruningMinLifetime = 5;
  * In most cases going lower than 4 will lead to a too high pruning cost.
  * This value should be a multiple of \p c_nbnxnGpuRollingListPruningInterval
  */
-static constexpr int c_nbnxnGpuDynamicListPruningMinLifetime = 4;
+static constexpr int c_nbnxnGpuDynamicListPruningMinLifetime = GMX_GPU_HIP ? 2 : 4;
 
 //! Struct with references for most parameters for calling calcVerletBufferSize()
 struct CalcVerletBufferParameters
