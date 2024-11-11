@@ -168,8 +168,7 @@ std::vector<bool> flagCellsForBondcomm(const gmx_domdec_t&           dd,
     const auto& bondedLinks = *dd.comm->bondedLinks;
 
     // Note: numAtomsPerCell should match what is used in DomainCommBackward::selectHaloAtoms()
-    const auto& gridGeometry = nbv.localGrid().geometry();
-    const int numAtomsPerCell = std::max(gridGeometry.numAtomsICluster_, gridGeometry.numAtomsJCluster_);
+    const int numAtomsPerCell = nbv.localGrid().geometry().numAtomsPerCell_;
 
     ArrayRef<const int> atomOrder = nbv.getLocalAtomOrder();
 
