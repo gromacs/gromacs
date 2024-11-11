@@ -319,7 +319,7 @@ void ListedForcesGpu::Impl::updateInteractionListsAndDeviceBuffers(ArrayRef<cons
         fTypesCounter++;
     }
 
-    int fTypeRangeEnd               = kernelParams_.fTypeRangeEnd[numFTypesOnGpu - 1];
+    int fTypeRangeEnd = kernelParams_.fTypeRangeEnd[numFTypesOnGpu - 1];
     kernelLaunchConfig_.gridSize[0] = (fTypeRangeEnd + c_threadsBondedPerBlock) / c_threadsBondedPerBlock;
 
     d_xq_     = d_xqPtr;
