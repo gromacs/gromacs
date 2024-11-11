@@ -51,7 +51,7 @@
 #include "pme_grid.h"
 
 template<int parallelExecutionWidth>
-static constexpr int sc_gatherMaxThreadsPerBlock = c_gatherMaxWarpsPerBlock* parallelExecutionWidth;
+static constexpr int sc_gatherMaxThreadsPerBlock = c_gatherMaxWarpsPerBlock * parallelExecutionWidth;
 
 template<int parallelExecutionWidth>
 static constexpr int sc_gatherMinBlocksPerMP =
@@ -189,7 +189,7 @@ __device__ static inline void sumForceComponents(float* __restrict__ fx,
     for (int ithy = ithyMin; ithy < ithyMax; ithy++)
     {
         const int splineIndexY = getSplineParamIndex<order, atomsPerWarp>(splineIndexBase, YY, ithy);
-        const float2 tdy       = make_float2(sm_theta[splineIndexY], sm_dtheta[splineIndexY]);
+        const float2 tdy = make_float2(sm_theta[splineIndexY], sm_dtheta[splineIndexY]);
 
         int iy = sm_gridlineIndices[atomIndexLocal * DIM + YY] + ithy;
         if (wrapY & (iy >= ny))
@@ -211,9 +211,9 @@ __device__ static inline void sumForceComponents(float* __restrict__ fx,
             const float gridValue = amdFastLoad(gm_grid, gridIndexGlobal);
             assert(isfinite(gridValue));
             const int splineIndexX = getSplineParamIndex<order, atomsPerWarp>(splineIndexBase, XX, ithx);
-            const float2 tdx       = make_float2(sm_theta[splineIndexX], sm_dtheta[splineIndexX]);
-            const float  fxy1      = tdz.x * gridValue;
-            const float  fz1       = tdz.y * gridValue;
+            const float2 tdx  = make_float2(sm_theta[splineIndexX], sm_dtheta[splineIndexX]);
+            const float  fxy1 = tdz.x * gridValue;
+            const float  fz1  = tdz.y * gridValue;
             *fx += tdx.y * tdy.x * fxy1;
             *fy += tdx.x * tdy.y * fxy1;
             *fz += tdx.x * tdy.x * fz1;
@@ -292,7 +292,7 @@ __launch_bounds__(sc_gatherMaxThreadsPerBlock<parallelExecutionWidth>,
 
     /* Number of data components and threads for a single atom */
     const int threadsPerAtomValue = (threadsPerAtom == ThreadsPerAtom::Order) ? order : order * order;
-    const int atomDataSize        = threadsPerAtomValue;
+    const int atomDataSize  = threadsPerAtomValue;
     const int atomsPerBlock = sc_gatherMaxThreadsPerBlock<parallelExecutionWidth> / atomDataSize;
     // Number of atoms processed by a single warp in spread and gather
     const int atomsPerWarp = parallelExecutionWidth / atomDataSize;
@@ -527,8 +527,8 @@ __launch_bounds__(sc_gatherMaxThreadsPerBlock<parallelExecutionWidth>,
 #pragma unroll
             for (int i = 0; i < numIter; i++)
             {
-                int   outputIndexLocal     = i * iterThreads + threadLocalId;
-                int   outputIndexGlobal    = blockIndex * blockForcesSize + outputIndexLocal;
+                int outputIndexLocal  = i * iterThreads + threadLocalId;
+                int outputIndexGlobal = blockIndex * blockForcesSize + outputIndexLocal;
                 float outputForceComponent = (reinterpret_cast<float*>(sm_forces)[outputIndexLocal]);
                 gm_forces[outputIndexGlobal] += outputForceComponent;
             }

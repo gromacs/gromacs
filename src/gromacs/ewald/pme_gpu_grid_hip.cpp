@@ -936,7 +936,8 @@ void pmeGpuGridHaloExchange(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle)
             wallcycle_start(wcycle, WallCycleCounter::LaunchGpuPme);
 
             gmx::dispatchTemplatedFunction(
-                    [&](auto is64ExecutionWidth_) {
+                    [&](auto is64ExecutionWidth_)
+                    {
                         // launch packing kernel
                         packHaloDataExternal<is64ExecutionWidth_>(
                                 pmeGpu,
@@ -1131,7 +1132,8 @@ void pmeGpuGridHaloExchange(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle)
         wallcycle_start(wcycle, WallCycleCounter::LaunchGpuPme);
 
         gmx::dispatchTemplatedFunction(
-                [&](auto is64ExecutionWidth_) {
+                [&](auto is64ExecutionWidth_)
+                {
                     // reduce halo data
                     unpackAndAddHaloDataInternal<is64ExecutionWidth_>(
                             pmeGpu,
@@ -1228,7 +1230,8 @@ void pmeGpuGridHaloExchangeReverse(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle)
             wallcycle_start(wcycle, WallCycleCounter::LaunchGpuPme);
 
             gmx::dispatchTemplatedFunction(
-                    [&](auto is64ExecutionWidth_) {
+                    [&](auto is64ExecutionWidth_)
+                    {
                         // launch packing kernel
                         packHaloDataInternal<is64ExecutionWidth_>(
                                 pmeGpu,
@@ -1425,7 +1428,8 @@ void pmeGpuGridHaloExchangeReverse(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle)
             wallcycle_start(wcycle, WallCycleCounter::LaunchGpuPme);
 
             gmx::dispatchTemplatedFunction(
-                    [&](auto is64ExecutionWidth_) {
+                    [&](auto is64ExecutionWidth_)
+                    {
                         // assign halo data
                         unpackHaloDataExternal<is64ExecutionWidth_>(
                                 pmeGpu,
@@ -1500,7 +1504,8 @@ void convertPmeGridToFftGrid(const PmeGpu* pmeGpu, float* h_fftRealGrid, gmx_par
         const DeviceInformation& deviceInfo = pmeGpu->archSpecific->deviceContext_.deviceInfo();
 
         gmx::dispatchTemplatedFunction(
-                [&](auto is64ExecutionWidth_) {
+                [&](auto is64ExecutionWidth_)
+                {
                     const int threadsAlongZDim = sc_subGroupSizeX<is64ExecutionWidth_>;
 
                     KernelLaunchConfig config;
@@ -1590,7 +1595,8 @@ void convertPmeGridToFftGrid(const PmeGpu* pmeGpu, DeviceBuffer<float>* d_fftRea
         const DeviceInformation& deviceInfo = pmeGpu->archSpecific->deviceContext_.deviceInfo();
 
         gmx::dispatchTemplatedFunction(
-                [&](auto is64ExecutionWidth_) {
+                [&](auto is64ExecutionWidth_)
+                {
                     const int threadsAlongZDim = sc_subGroupSizeX<is64ExecutionWidth_>;
 
                     KernelLaunchConfig config;

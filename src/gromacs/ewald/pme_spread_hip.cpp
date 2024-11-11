@@ -54,8 +54,8 @@ template<int parallelExecutionWidth>
 static constexpr int sc_spreadHipMaxWarpsPerBlock = (parallelExecutionWidth == 64) ? 8 : 4;
 
 template<int parallelExecutionWidth>
-static constexpr int                                          sc_spreadMaxThreadsPerBlock =
-        sc_spreadHipMaxWarpsPerBlock<parallelExecutionWidth>* parallelExecutionWidth;
+static constexpr int sc_spreadMaxThreadsPerBlock =
+        sc_spreadHipMaxWarpsPerBlock<parallelExecutionWidth> * parallelExecutionWidth;
 
 /*! \brief
  * Charge spreading onto the grid.
@@ -84,7 +84,7 @@ __device__ __forceinline__ void spreadChargeKernel(const PmeGpuKernelParamsBase 
 
     // Number of atoms processed by a single warp in spread and gather
     constexpr int threadsPerAtomValue = (threadsPerAtom == ThreadsPerAtom::Order) ? order : order * order;
-    constexpr int atomsPerWarp        = parallelExecutionWidth / threadsPerAtomValue;
+    constexpr int atomsPerWarp = parallelExecutionWidth / threadsPerAtomValue;
 
     const int nx  = kernelParams.grid.realGridSize[XX];
     const int ny  = kernelParams.grid.realGridSize[YY];
@@ -116,7 +116,7 @@ __device__ __forceinline__ void spreadChargeKernel(const PmeGpuKernelParamsBase 
 
         const int splineIndexBase = getSplineParamIndexBase<order, atomsPerWarp>(warpIndex, atomWarpIndex);
         const int splineIndexZ = getSplineParamIndex<order, atomsPerWarp>(splineIndexBase, ZZ, ithz);
-        const float thetaZ     = sm_theta[splineIndexZ];
+        const float thetaZ = sm_theta[splineIndexZ];
 
         /* loop not used if order*order threads per atom */
         const int ithyMin = (threadsPerAtom == ThreadsPerAtom::Order) ? 0 : threadIdx.y;

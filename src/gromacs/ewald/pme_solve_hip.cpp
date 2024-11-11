@@ -54,7 +54,7 @@
 #include "pme_gpu_types.h"
 
 template<int parallelExecutionWidth>
-static constexpr int sc_solveMaxThreadsPerBlock = c_solveMaxWarpsPerBlock* parallelExecutionWidth;
+static constexpr int sc_solveMaxThreadsPerBlock = c_solveMaxWarpsPerBlock * parallelExecutionWidth;
 
 /*! \brief
  * PME complex grid solver kernel function.
