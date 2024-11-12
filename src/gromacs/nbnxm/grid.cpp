@@ -1659,14 +1659,6 @@ void Grid::setNonLocalGrid(const int                           ddZone,
                            GridSetData*                        gridSetData,
                            nbnxn_atomdata_t*                   nbat)
 {
-    // There is a bug with DD+GPU+fillers in local state, likely somewhere in the grid code
-    GMX_RELEASE_ASSERT(geometry_.isSimple_
-                               || GMX_GPU_NB_NUM_CLUSTER_PER_CELL_X * GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Y
-                                                  * GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Z
-                                          == 8,
-                       "Domain decomposition with GPU and filler particles in the local state "
-                       "currently only works with 8 clusters per cell");
-
     ddZone_ = ddZone;
 
     dimensions_ = dimensions;
@@ -1777,16 +1769,16 @@ void Grid::setNonLocalGrid(const int                           ddZone,
         }
         else
         {
-            numClustersInCell = divideRoundUp(atomEnd - atomOffsetCell,
-                                              sc_gpuNumClusterPerCell(geometry_.pairlistType_));
+            const int numAtomsPerCluster = geometry_.numAtomsICluster_;
+
+            numClustersInCell = divideRoundUp(atomEnd - atomOffsetCell, numAtomsPerCluster);
 
             bbcz_[cell].lower = x[atomOffsetCell][ZZ];
             bbcz_[cell].upper = x[atomOffsetCell][ZZ];
             for (int c = 0; c < numClustersInCell; c++)
             {
-                const int atomClusterStart = atomOffsetCell + c * geometry_.numAtomsICluster_;
-                const int atomClusterEnd =
-                        std::min(atomClusterStart + geometry_.numAtomsICluster_, atomEnd);
+                const int atomClusterStart = atomOffsetCell + c * numAtomsPerCluster;
+                const int atomClusterEnd = std::min(atomClusterStart + numAtomsPerCluster, atomEnd);
                 fillCell(gridSetData, nbat, atomClusterStart, atomClusterEnd, atomInfo, x);
 
 #if GMX_DOUBLE
