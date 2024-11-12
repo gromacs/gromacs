@@ -1314,7 +1314,7 @@ enabled by default when building |Gromacs|.  This behavior may also be
 enabled explicitly with ``-DGMX_USE_COLVARS=internal``.  Alternatively,
 Colvars support may be disabled with ``-DGMX_USE_COLVARS=none``.  How to use
 Colvars in a |Gromacs| simulation is described in the User Guide, as well as
-in the `Colvars documentation <https://colvars.github.io/gromacs-2024/colvars-refman-gromacs.html>`_.
+in the `Colvars documentation <https://colvars.github.io/gromacs-2025/colvars-refman-gromacs.html>`_.
 
 .. _installing with PLUMED:
 
