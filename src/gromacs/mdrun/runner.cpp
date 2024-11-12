@@ -224,7 +224,6 @@ namespace gmx
  * the GPU communication flags are set to false in non-tMPI and non-CUDA builds.
  *
  * \param[in]  mdlog                Logger object.
- * \param[in]  useGpuForNonbonded   True if the nonbonded task is offloaded in this run.
  * \param[in]  pmeRunMode   Run mode indicating what resource is PME executed on.
  * \param[in]  numRanksPerSimulation   The number of ranks in each simulation.
  * \param[in]  numPmeRanksPerSimulation   The number of PME ranks in each simulation, can be -1
@@ -232,16 +231,12 @@ namespace gmx
  * \returns                         The object populated with development feature flags.
  */
 static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& mdlog,
-                                                         const bool           useGpuForNonbonded,
                                                          const PmeRunMode     pmeRunMode,
                                                          const int            numRanksPerSimulation,
                                                          const int numPmeRanksPerSimulation,
                                                          gmx::GpuAwareMpiStatus gpuAwareMpiStatus)
 {
     DevelopmentFeatureFlags devFlags;
-
-    devFlags.enableGpuBufferOps = (GMX_GPU_CUDA || GMX_GPU_SYCL) && useGpuForNonbonded
-                                  && (getenv("GMX_USE_GPU_BUFFER_OPS") != nullptr);
 
     if (getenv("GMX_CUDA_GRAPH") != nullptr)
     {
@@ -394,15 +389,6 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
                             "Direct use of NVSHMEM will be disabled. "
                             "NVSHMEM may still be used indirectly if cuFFTMp is enabled. ");
         }
-    }
-
-    if (devFlags.enableGpuBufferOps)
-    {
-        GMX_LOG(mdlog.warning)
-                .asParagraph()
-                .appendTextFormatted(
-                        "This run uses the 'GPU buffer ops' feature, enabled by the "
-                        "GMX_USE_GPU_BUFFER_OPS environment variable.");
     }
 
     // PME decomposition is supported only with CUDA or SYCL and also
@@ -1189,12 +1175,8 @@ int Mdrunner::mdrunner()
     // will work. It likely would not work in cases where ranks
     // have heterogeneous device types or vendors unless the MPI
     // library supported that.
-    const DevelopmentFeatureFlags devFlags = manageDevelopmentFeatures(mdlog,
-                                                                       useGpuForNonbonded,
-                                                                       pmeRunMode,
-                                                                       cr->sizeOfDefaultCommunicator,
-                                                                       domdecOptions.numPmeRanks,
-                                                                       hwinfo_->minGpuAwareMpiStatus);
+    const DevelopmentFeatureFlags devFlags = manageDevelopmentFeatures(
+            mdlog, pmeRunMode, cr->sizeOfDefaultCommunicator, domdecOptions.numPmeRanks, hwinfo_->minGpuAwareMpiStatus);
 
     const bool useModularSimulator = checkUseModularSimulator(false,
                                                               inputrec.get(),
@@ -1734,7 +1716,8 @@ int Mdrunner::mdrunner()
     // so this boolean is sufficient on all ranks to determine whether separate PME ranks are used,
     // but this will no longer be the case if cr->duty is changed for !usingPme(fr->ic->eeltype).
     const bool haveSeparatePmeRank = (!thisRankHasDuty(cr, DUTY_PP) || !thisRankHasDuty(cr, DUTY_PME));
-    runScheduleWork.simulationWork = createSimulationWorkload(*inputrec,
+    runScheduleWork.simulationWork = createSimulationWorkload(mdlog,
+                                                              *inputrec,
                                                               disableNonbondedCalculation,
                                                               devFlags,
                                                               haveFillerParticlesInLocalState,

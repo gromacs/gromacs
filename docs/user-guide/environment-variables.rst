@@ -297,6 +297,10 @@ Performance and Run Control
         performance when scaling over many GPUs. Note: this feature still lacks
         substantial testing.
 
+``GMX_GPU_DISABLE_BUFFER_OPS``
+        Disable coordinate/force transformation to be done on the GPU and execute these
+        tasks on the CPU instead.
+
 ``GMX_GPU_PME_PP_COMMS``
         Removed, use GMX_ENABLE_DIRECT_GPU_COMM instead.
 

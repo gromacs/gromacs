@@ -78,9 +78,6 @@ enum class EmulateGpuNonbonded : bool
  */
 struct DevelopmentFeatureFlags
 {
-    //! True if the Buffer ops development feature is enabled
-    // TODO: when the trigger of the buffer ops offload is fully automated this should go away
-    bool enableGpuBufferOps = false;
     //! True if the GPU-aware MPI can be used for GPU direct communication feature
     bool canUseGpuAwareMpi = false;
     //! True if GPU PME-decomposition is enabled

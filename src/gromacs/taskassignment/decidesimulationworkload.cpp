@@ -68,6 +68,7 @@
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/logger.h"
 
 struct gmx_edsam;
 struct pull_t;
@@ -75,8 +76,9 @@ struct pull_t;
 namespace gmx
 {
 
-SimulationWorkload createSimulationWorkload(const t_inputrec& inputrec,
-                                            const bool        disableNonbondedCalculation,
+SimulationWorkload createSimulationWorkload(const gmx::MDLogger& mdlog,
+                                            const t_inputrec&    inputrec,
+                                            const bool           disableNonbondedCalculation,
                                             const DevelopmentFeatureFlags& devFlags,
                                             bool       haveFillerParticlesInLocalState,
                                             bool       havePpDomainDecomposition,
@@ -125,14 +127,26 @@ SimulationWorkload createSimulationWorkload(const t_inputrec& inputrec,
     simulationWorkload.haveEwaldSurfaceContribution = haveEwaldSurfaceContribution(inputrec);
     simulationWorkload.useMts                       = inputrec.useMts;
     const bool featuresRequireGpuBufferOps = useGpuForUpdate || simulationWorkload.useGpuDirectCommunication;
-    simulationWorkload.useGpuXBufferOpsWhenAllowed =
-            (devFlags.enableGpuBufferOps || featuresRequireGpuBufferOps) && !inputrec.useMts;
-    simulationWorkload.useGpuFBufferOpsWhenAllowed =
-            (devFlags.enableGpuBufferOps || featuresRequireGpuBufferOps) && !inputrec.useMts;
-    if (simulationWorkload.useGpuXBufferOpsWhenAllowed || simulationWorkload.useGpuFBufferOpsWhenAllowed)
+
+    const bool disableGpuBufferOps = (getenv("GMX_GPU_DISABLE_BUFFER_OPS") != nullptr);
+    if (disableGpuBufferOps)
     {
-        GMX_ASSERT(simulationWorkload.useGpuNonbonded,
-                   "Can only offload X/F buffer ops if nonbonded computation is also offloaded");
+        GMX_LOG(mdlog.warning)
+                .asParagraph()
+                .appendTextFormatted(
+                        "The 'GPU buffer ops' disabled by the "
+                        "GMX_GPU_DISABLE_BUFFER_OPS environment variable.");
+    }
+    // x/f transform is done on GPU by default unless it is not unsupported (with MTS) or disabled (with the env. var.)
+    simulationWorkload.useGpuXBufferOpsWhenAllowed = (GMX_GPU_CUDA || GMX_GPU_SYCL) && useGpuForNonbonded
+                                                     && !inputrec.useMts && !disableGpuBufferOps;
+    simulationWorkload.useGpuFBufferOpsWhenAllowed = (GMX_GPU_CUDA || GMX_GPU_SYCL) && useGpuForNonbonded
+                                                     && !inputrec.useMts && !disableGpuBufferOps;
+    if (featuresRequireGpuBufferOps)
+    {
+        GMX_RELEASE_ASSERT(simulationWorkload.useGpuXBufferOpsWhenAllowed
+                                   && simulationWorkload.useGpuFBufferOpsWhenAllowed,
+                           "Offload features enabled require X/F buffer ops");
     }
     // SYCL Graph API only captures work submitted to the SYCL queue.
     // Disallow use of native FFT libraries until ext_codeplay_enqueue_native_command is used.
