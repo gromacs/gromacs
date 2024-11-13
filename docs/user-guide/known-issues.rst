@@ -14,17 +14,6 @@ We recommend using CUDA 11.4 or newer.
 
 :issue:`4037`
 
-The deform option is not suitable for flow
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-The deform option currently scales the coordinates, but for flow the deformation
-should only be driven by changing periodic vectors. In addition the velocities
-of particles need to be corrected when they are displaced by periodic vectors.
-Therefore the deform option is currently only suitable for slowly deforming
-systems.
-
-:issue:`4607`
-
 SYCL build unstable when using oneAPI with LevelZero backend
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -34,10 +23,11 @@ using the LevelZero backend.
 In many cases, it works fine, and if it fails, it does so explicitly
 (either crash or hang), so it should be fine to experiment with.
 
-For most cases, we recommend using OpenCL backend (the default) when
+For most cases, we recommend using the OpenCL backend (the default) when
 running SYCL build of |Gromacs| on Intel GPUs.
 
 :issue:`4219`
+
 :issue:`4354`
 
 Unable to build with CUDA 11.5-11.6 and GCC 11 on Ubuntu 22.04

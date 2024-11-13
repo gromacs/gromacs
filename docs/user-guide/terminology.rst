@@ -7,7 +7,7 @@ Pressure
 --------
 
 The pressure in molecular dynamics can be computed from the kinetic energy and
-the virial. 
+the virial.
 
 Fluctuation
 ^^^^^^^^^^^
@@ -52,9 +52,9 @@ The existence of PBC means that any atom that leaves a simulation box by, say,
 the right-hand face, then enters the simulation box by the left-hand face. In
 the example of a large protein, if you look at the face of the simulation box
 that is opposite to the one from which the protein is protruding, then a hole
-in the solvent will be visible. The reason that the molecule(s) move from where
-they were initially located within the box is (for the vast majority of
-simulations) they are free to diffuse around. And so they do. They are not held
+in the solvent will be visible. The reason why the molecule(s) move from where
+they were initially located within the box is that they are (for the vast majority
+of simulations) free to diffuse around. And so they do. They are not held
 in a magic location of the box. The box is not centered around anything while
 performing the simulation. Molecules are not made whole as a matter of course.
 Moreover, any periodic cell shape can be expressed as a parallelepiped (a.k.a.
@@ -79,7 +79,7 @@ analysis can be tricky. Multiple invocations can be necessary. You may need to
 create custom index groups (e.g. to keep your ligand with your protein)
 Following the steps below in order (omitting those not required) should help
 get a pleasant result. You will need to consult ``gmx trjconv -h`` to find out
-the details for each step. That's deliberate -- there is no magic "do what I
+the details for each step. That is deliberate -- there is no magic "do what I
 want" recipe. You have to decide what you want, first. :-)
 
 #. First make your molecules whole if you want them whole.
@@ -88,11 +88,11 @@ want" recipe. You have to decide what you want, first. :-)
    use as the reference, and then use ``-pbc nojump`` with that first
    frame as reference.
 #. Center your system using some criterion. Doing so shifts the system, so
-   don't use ``-pbc nojump`` after this step.
+   do not use ``-pbc nojump`` after this step.
 #. Perhaps put everything in some box with the other ``-pbc`` or ``-ur``
    options.
 #. Fit the resulting trajectory to some (other) reference structure (if
-   desired), and don't use any PBC related option afterwards.
+   desired), and do not use any PBC related option afterwards.
 
 With point three, the issue is that :ref:`gmx trjconv` removes the jumps from
 the first frame using the reference structure provided with -s. If the reference
@@ -111,22 +111,22 @@ First, we need to establish what we mean by temperature. In simulations, the
 energy of the system using the equipartition theorem. In other words, the
 temperature is computed from the system's total kinetic energy.
 
-So, what's the goal of a thermostat? Actually, it turns out the goal is not to
+So, what is the goal of a thermostat? Actually, it turns out the goal is not to
 keep the temperature constant, as that would mean fixing the total kinetic
-energy, which would be silly and not the aim of NVT or NPT. Rather, it's to
+energy, which would be silly and not the aim of NVT or NPT. Rather, it is to
 ensure that the average temperature of a system be correct.
 
 To see why this is the case, imagine a glass of water sitting in a room.
 Suppose you can look very closely at a few molecules in some small region of
 the glass, and measure their kinetic energies. You would not expect the kinetic
 energy of this small number of particles to remain precisely constant; rather,
-you'd expect fluctuations in the kinetic energy due to the small number of
+you would expect fluctuations in the kinetic energy due to the small number of
 particles. As you average over larger and larger numbers of particles, the
 fluctuations in the average get smaller and smaller, so finally by the time you
 look at the whole glass, you say it has "constant temperature".
 
 Molecular dynamics simulations are often fairly small compared to a glass of
-water, so we have bigger fluctuations. So it's really more appropriate here to
+water, so we have bigger fluctuations. So it is really more appropriate here to
 think of the role of a thermostat as ensuring that we have
 
 (a) the correct average temperature, and
@@ -221,9 +221,9 @@ cases, it makes sense to calculate an average structure (as a step on the way
 to calculating root-mean-squared fluctuations (RMSF), for example, one needs
 the average position of all of the atoms).
 
-However, it's important to remember that an average structure isn't necessarily
+However, it is important to remember that an average structure is not necessarily
 meaningful. By way of analogy, suppose I alternate holding a ball in my left
-hand, then in my right hand. What's the average position of the ball? Halfway
+hand, then in my right hand. What is the average position of the ball? Halfway
 in between -- even though I always have it either in my left hand or my right
 hand. Similarly, for structures, averages will tend to be meaningless anytime
 there are separate metastable conformational states. This can happen on a
@@ -232,7 +232,7 @@ components of the secondary structure.
 
 Thus, if you derive an average structure from a molecular dynamics simulation,
 and find artifacts like unphysical bond lengths, weird structures, etc., this
-doesn't necessarily mean something is wrong. It just shows the above: an
+does not necessarily mean something is wrong. It just shows the above: an
 average structure from a simulation is not necessarily a physically meaningful
 structure.
 
@@ -245,7 +245,7 @@ Blowing up
 simulation failure. In brief, it describes a failure typically due to an
 unacceptably large force that ends up resulting in a failure of the integrator.
 
-To give a bit more background, it's important to remember that molecular
+To give a bit more background, it is important to remember that molecular
 dynamics numerically integrates Newton's equations of motion by taking small,
 discrete timesteps, and using these timesteps to determine new velocities and
 positions from velocities, positions, and forces at the previous timestep. If
@@ -256,29 +256,25 @@ timestep, and thus goes shooting across the system in an uncontrolled way in
 the next timestep, overshooting its preferred location or landing on top of
 another atom or something similar. This then results in even larger forces the
 next timestep, more uncontrolled motions, and so on. Ultimately, this will
-cause the simulation package to crash in some way, since it can't cope with
+cause the simulation package to crash in some way, since it cannot cope with
 such situations. In simulations with constraints, the first symptom of this
 will usually be some LINCS or SHAKE warning or error -- not because the
-constraints are the source of the problem, but just because they're the first
-thing to crash. Similarly, in simulations with domain decomposition, you may
-see messages about particles being more than a cell length out of the domain
-decomposition cell of their charge group, which are symptomatic of your
-underlying problem, and not the domain decomposition algorithm itself. Likewise
-for warnings about tabulated or 1-4 interactions being outside the distance
-supported by the table. This can happen on one computer system while another
-resulted in a stable simulation because of the impossibility of numerical
-reproducibility of these calculations on different computer systems.
+constraints are the source of the problem, but just because they are the first
+thing to crash. Likewise for warnings about tabulated or 1-4 interactions being
+outside the distance supported by the table. This can happen on one computer
+system while another resulted in a stable simulation because of the impossibility
+of numerical reproducibility of these calculations on different computer systems.
 
 Possible causes include:
 
-* you didn't minimize well enough,
+* you did not minimize well enough,
 * you have a bad starting structure, perhaps with steric clashes,
 * you are using too large a timestep (particularly given your choice of
   constraints),
 * you are doing particle insertion in free energy calculations without using
   soft core,
 * you are using inappropriate pressure coupling (e.g. when you are not in
-  equilibrium, Berendsen can be best while relaxing the volume, but you will
+  equilibrium, Berendsen can be good while relaxing the volume, but you will
   need to switch to a more accurate pressure-coupling algorithm later),
 * you are using inappropriate temperature coupling, perhaps on inappropriate
   groups, or
@@ -291,10 +287,10 @@ Possible causes include:
 Because blowing up is due, typically, to forces that are too large for a
 particular timestep size, there are a couple of basic solutions:
 
-* make sure the forces don't get that large, or
+* make sure the forces do not get that large, or
 * use a smaller timestep.
 
-Better system preparation is a way to make sure that forces don't get large, if
+Better system preparation is a way to make sure that forces do not get large, if
 the problems are occurring near the beginning of a simulation.
 
 .. _system-diagnosis:
@@ -319,16 +315,16 @@ when addressing such a scenario:
    * If you have a protein-ligand system, try simulating the protein alone in
      the desired solvent. If it is stable, simulate the ligand in vacuo to see
      if its topology gives stable configurations, energies, etc.
-   * Remove the use of fancy algorithms, particularly if you haven't
-     equilibrated thoroughly first
+   * Remove the use of fancy algorithms, particularly if you have not
+     equilibrated thoroughly first.
 
 #. Monitor various components of the system's energy using :ref:`gmx energy`.
    If an intramolecular term is spiking, that may indicate improper bonded
    parameters, for example.
-#. Make sure you haven't been ignoring error messages (missing atoms when
+#. Make sure you have not been ignoring error messages (missing atoms when
    running :ref:`gmx pdb2gmx`, mismatching names when running :ref:`gmx grompp`,
    etc.) or using work-arounds (like using ``gmx grompp -maxwarn`` when you
-   shouldn't be) to make sure your topology is intact and being interpreted
+   should not be) to make sure your topology is intact and being interpreted
    correctly.
 #. Make sure you are using appropriate settings in your :ref:`mdp` file for the
    force field you have chosen and the type of system you have. Particularly
@@ -358,10 +354,10 @@ the case of a protein-ligand complex) in the following way.
 
 Other sources of possible problems are in the biomolecule topology itself.
 
-#. Did you use ``-missing`` when running :ref:`gmx pdb2gmx`? If so, don't.
+#. Did you use ``-missing`` when running :ref:`gmx pdb2gmx`? If so, do not.
    Reconstruct missing coordinates rather than ignoring them.
 #. Did you override long/short bond warnings by changing the lengths? If so,
-   don't. You probably have missing atoms or some terrible input geometry.
+   do not. You probably have missing atoms or some terrible input geometry.
 
 .. _gmx-md:
 
@@ -374,7 +370,7 @@ The |Gromacs| :ref:`Reference Manual <md>` provides a good general introduction 
 as well as specific material for use with |Gromacs|. The first few chapters are mandatory reading
 for anybody wishing to use |Gromacs| and not waste time.
 
-* Introduction to molecular modeling (`slides`_, `video`_)] - theoretical framework, modeling levels,
+* Introduction to molecular modeling (`slides`_, `video`_) - theoretical framework, modeling levels,
   limitations and possibilities, systems and methods (Erik Lindahl).
 
 Books
@@ -415,7 +411,7 @@ Force field
 
 Force fields are sets of potential functions and parametrized interactions that can be used to study
 physical systems. A general introduction to their history, function and use is beyond the scope of this
-guide, and the user is asked to consult either the relevant literature or 
+guide, and the user is asked to consult either the relevant literature or
 try to start at the relevant `Wikipedia page`_.
 
 .. _Wikipedia page: https://en.wikipedia.org/wiki/Force_field_(chemistry)

@@ -36,7 +36,7 @@ scale with the number of atoms/groups/residues *N* or the simulation length *T* 
 NlogN, or |Nsquared| (or maybe worse!) and the same for *T*, depending on the type of activity.
 If it takes a long time, have a think about what you are doing, and the underlying algorithm
 (see the `Reference manual`_, man page, or use the -h flag for the utility), and
-see if there's something sensible you can do that has better scaling properties.
+see if there is something sensible you can do that has better scaling properties.
 
 .. _Reference manual: `gmx-manual-parent-dir`_
 .. |Nsquared| replace:: N\ :sup:`2`
@@ -138,7 +138,7 @@ is almost always inappropriate.  The ``-missing`` option should only be used to
 generate specialized topologies for amino acid-like molecules to take
 advantage of :ref:`rtp` entries.  If you find yourself using ``-missing``
 in order to generate a topology for a protein or nucleic acid,
-don't; the topology produced is likely physically unrealistic.
+do not; the topology produced is likely physically unrealistic.
 
 Atom X in residue YYY not found in rtp entry
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -278,8 +278,8 @@ Nevertheless, it is a standard practice to actually add counter-ions to make the
 Incorrect number of parameters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Look at the :ref:`topology <top>` file for the system. You've not given enough parameters for one of the
-bonded definitions.  Sometimes this also occurs if you've mangled the :ref:`Include File Mechanism <gmx-topo-include>`
+Look at the :ref:`topology <top>` file for the system. You have not given enough parameters for one of the
+bonded definitions.  Sometimes this also occurs if you have mangled the :ref:`Include File Mechanism <gmx-topo-include>`
 or the topology file format (see: `reference manual`_ Chapter 5) when you edited the file.
 
 Number of coordinates in coordinate file does not match topology
@@ -307,7 +307,7 @@ Fatal error: No such moleculetype XXX
 Each type of molecule in your ``[ molecules ]`` section of your :ref:`top` file must have a
 corresponding ``[ moleculetype ]`` section defined previously, either in the :ref:`top` file or
 an :ref:`included <gmx-topo-include>` :ref:`itp` file. See the `reference manual`_ section 5.6.1
-for the syntax description. Your :ref:`top` file doesn't have such a definition for the
+for the syntax description. Your :ref:`top` file does not have such a definition for the
 indicated molecule. Check the contents of the relevant files, how you have named your
 molecules, and how you have tried to refer to them later. Pay attention to the status
 of ``#ifdef`` and / or ``#include`` statements.
@@ -318,7 +318,7 @@ T-Coupling group XXX has fewer than 10% of the atoms
 It is possible to specify separate :ref:`thermostats <gmx-thermostats>` (temperature coupling groups)
 for every molecule type within a simulation. This is a particularly bad practice employed by
 many new users to molecular dynamics simulations.  Doing so is a bad idea, as you can
-introduce errors and artifacts that are hard to predict. In some cases it is best to have all
+introduce errors and artifacts that are hard to predict. In many cases it is best to have all
 molecules within a single group, using the default ``System`` group. If separate coupling groups are required to avoid
 the ``hot-solvent, cold-solute`` problem, then ensure that they are of ``sufficient size`` and
 combine molecule types that appear together within the simulation. For example, for
@@ -356,12 +356,6 @@ the previous ``[moleculetype]`` has ended. Consult the examples in chapter 5 of 
 for information on the required ordering of the different ``[sections]``. Pay attention to
 the contents of any files you have :ref:`included <gmx-topo-include>` with ``#include`` directives.
 
-This error can also arise if you are using a water model that is not enabled for use with your
-chosen :ref:`force field <gmx-force-field>` by default. For example, if you are attempting to use
-the SPC water model with an :ref:`AMBER force field <gmx-amber-ff>`, you will see this error.
-The reason is that, in ``spc.itp``, there is no ``#ifdef`` statement defining atom types for any
-of the :ref:`AMBER force fields <gmx-amber-ff>`. You can either add this section yourself, or use a different water model.
-
 XXX non-matching atom names
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -377,29 +371,7 @@ In a few cases, the error is harmless. Perhaps you are using a
 In this case, allowing :ref:`grompp <gmx grompp>` to re-assign names is harmless.
 For just about any other situation, when this error comes up, **it should not be ignored**.
 Just because the ``-maxwarn`` option is available does not mean you should use it in the blind
-hope of your simulation working. It will undoubtedly :ref:`blow up <blowing-up>`.
-
-The sum of the two largest charge group radii (X) is larger than rlist - rvdw/rcoulomb
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-This error warns that some combination of settings will result in poor energy conservation at the
-longest cutoff, which occurs when charge groups move in or out of pair list range.
-The error can have two sources:
-
-* Your charge groups encompass too many atoms. Most charge groups should be less than 4 atoms or less.
-* Your :ref:`mdp` settings are incompatible with the chosen algorithms. For switch or shift functions,
-  rlist must be larger than the longest cutoff (``rvdw`` or ``rcoulomb``) to provide buffer space for charge
-  groups that move beyond the neighbor searching radius. If set incorrectly, you may miss
-  interactions, contributing to poor energy conservation.
-
-A similar error ("The sum of the two largest charge group radii (X) is
-larger than rlist") can arise under two following circumstances:
-
-* The charge groups are inappropriately large or rlist is set too low.
-* Molecules are broken across periodic boundaries, which is not a problem in a periodic system.
-  In this case, the sum of the two largest charge groups will correspond to a value of twice
-  the box vector along which the molecule is broken.
-
+hope of your simulation working. It will almost certainly :ref:`blow up <blowing-up>`.
 
 Invalid line in coordinate file for atom X
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -407,6 +379,15 @@ Invalid line in coordinate file for atom X
 This error arises if the format of the :ref:`gro` file is broken in some way. The
 most common explanation is that the second line in the :ref:`gro` file specifies an incorrect
 number of atoms, causing :ref:`grompp <gmx grompp>` to continue searching for atoms but finding box vectors.
+
+An input file contains a line longer than 4095 characters
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This error is usually due to a problem with line endings, which are different in DOS/Windows and
+Unix/Linux/Mac. This can be addressed using separate tools, such as
+`dos2unix <https://dos2unix.sourceforge.io/>`_ or in most text editors. Reading directly from network
+file systems, such as `Samba <https://www.samba.org/>`_, may cause the same problems. In that case
+it is recommended to copy the files to a local file system and try again.
 
 Errors in :ref:`mdrun <gmx mdrun>`
 ----------------------------------
@@ -446,7 +427,7 @@ several :ref:`pdb` files) after a series of warnings about the constraint algori
 (e.g. LINCS, SETTLE or SHAKE) are written to the :ref:`log` file. These algorithms often
 used to constrain bond lengths and/or angles. When a system is :ref:`blowing up <blowing-up>`
 (i.e. exploding due to diverging forces), the constraints are usually the first thing to
-fail. This doesn't necessarily mean you need to troubleshoot the constraint algorithm.
+fail. This does not necessarily mean you need to troubleshoot the constraint algorithm.
 Usually it is a sign of something more fundamentally wrong (physically unrealistic) with
 your system. See also the advice here about :ref:`diagnosing unstable systems <system-diagnosis>`.
 
@@ -465,7 +446,7 @@ There can be a number of reasons for the large velocities in your system. If it 
 at the beginning of the simulation, your system might be not equilibrated well enough
 (e.g. it contains some bad contacts). Try a(nother) round of energy minimization to
 fix this. Otherwise you might have a very high temperature, and/or a timestep that is too
-large. Experiment with these parameters until the error stops occurring. If this doesn't help,
+large. Experiment with these parameters until the error stops occurring. If this does not help,
 check the validity of the parameters in your :ref:`topology <top>`!
 
 Simulation running but no output
@@ -483,12 +464,12 @@ written to the output files. There are a number of reasons why this may occur:
   magnitude.
 * You might have all ``nst*`` parameters (see your :ref:`mdp` file) set to 0, this will suppress most output.
 * Your disk might be full. Eventually this will lead to :ref:`mdrun <gmx mdrun>` crashing, but
-  since output is buffered, it might take a while for mdrun to realize it can't write.
+  since output is buffered, it might take a while for mdrun to realize it cannot write.
 
 Can not do Conjugate Gradients with constraints
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This means you can't do energy minimization with the conjugate gradient
+This means you cannot do energy minimization with the conjugate gradient
 algorithm if your topology has constraints defined. Please check the
 `reference manual`_.
 
@@ -498,7 +479,7 @@ Pressure scaling more than 1%
 This error tends to be generated when the simulation box begins to oscillate (due to large
 pressures and / or small coupling constants), the system starts to resonate
 and :ref:`then crashes <blowing-up>`.
-This can mean that the system isn't equilibrated sufficiently before using pressure coupling.
+This can mean that the system is not equilibrated sufficiently before using pressure coupling.
 Therefore, better / more equilibration may fix the issue.
 
 It is recommended to observe the system trajectory prior and during the crash. This may
@@ -508,8 +489,7 @@ In some cases, if the system has been equilibrated sufficiently, this error can 
 coupling constant, :mdp:`tau-p`, is too small (particularly when using the Berendsen weak coupling method).
 Increasing that value will slow down the response to pressure changes and may stop the resonance from occurring.
 You are also more likely to see this error if you use Parrinello-Rahman pressure coupling
-on a system that is not yet equilibrated - start with the much more forgiving
-Berendsen method first, then switch to other algorithms.
+on a system that is not yet equilibrated - use the C-rescale method instead.
 
 This error can also appear when using a timestep that is too large, e.g. 5 fs,
 in the absence of constraints and / or virtual sites.
@@ -543,7 +523,7 @@ There is no domain decomposition for n ranks that is compatible with the given b
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This means you tried to run a parallel calculation, and when :ref:`mdrun <gmx mdrun>` tried to
-partition your simulation cell into chunks, it couldn't. The minimum
+partition your simulation cell into chunks, it could not. The minimum
 cell size is controlled by the size of the largest charge group or bonded interaction and the
 largest of ``rvdw``, ``rlist`` and ``rcoulomb``, some other effects of bond constraints,
 and a safety margin. Thus it is not possible to run a small simulation with large numbers
@@ -551,7 +531,7 @@ of processors. So, if :ref:`grompp <gmx grompp>` warned you about a large charge
 attention and reconsider its size. :ref:`mdrun <gmx mdrun>` prints a breakdown of how it
 computed this minimum size in the :ref:`log` file, so you can perhaps find a cause there.
 
-If you didn't think you were running a parallel calculation, be aware that from 4.5, |Gromacs|
+If you did not think you were running a parallel calculation, be aware that from 4.5, |Gromacs|
 uses thread-based parallelism by default. To prevent this, give :ref:`mdrun <gmx mdrun>`
 the ``-ntmpi 1`` command line option. Otherwise, you might be using an MPI-enabled |Gromacs| and
 not be aware of the fact.

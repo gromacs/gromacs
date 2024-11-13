@@ -74,7 +74,7 @@ by the GMXLIB environment variable, and any directory indicated by a ``-I`` flag
 include :mdp:`run parameter <include>` in the :ref:`mdp` file. It either finds this file or reports
 a warning. (Note that when you supply a directory name, you should use Unix-style forward
 slashes '/', not Windows-style backslashes '\' for separators.) When found, it then uses the contents
-exactly as if you had cut and pasted the included file into the main file yourself. Note that you shouldn't
+exactly as if you had cut and pasted the included file into the main file yourself. Note that you should not
 go and do this copy-and-paste yourself, since the main purposes of the include file mechanism are to re-use
 previous work, make future changes easier, and prevent typos.
 
@@ -122,8 +122,7 @@ Molecular Dynamics parameter file (``.mdp``)
 The Molecular Dynamics Parameter (:ref:`mdp`) file contains all information
 about the Molecular Dynamics simulation itself e.g. time-step, number
 of steps, temperature, pressure etc. The easiest way of handling such
-a file is by adapting a sample :ref:`mdp` file. A :ref:`sample mdp file <mdp>`
-is available.
+a file is by adapting a `sample mdp file <mdp>` file.
 
 Index file (``.ndx``)
 ^^^^^^^^^^^^^^^^^^^^^
@@ -156,7 +155,8 @@ checkpoint file (:ref:`cpt` file).
 
 Tutorial material
 -----------------
-There are several third-party `tutorials`_ available that cover aspects of using |Gromacs|.
+There are several `tutorials`_ available that cover aspects of using |Gromacs|. There
+are also `third-party-tutorials`_.
 Further information can also be found in the :doc:`How to <../how-to/index>` section.
 
 Background reading
