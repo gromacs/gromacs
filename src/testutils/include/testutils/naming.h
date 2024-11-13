@@ -393,6 +393,8 @@ std::string mapNameFormattersToParameters(const ParametersTuple params,
     testName = replaceAll(testName, ".", "_");
     testName = replaceAll(testName, " ", "_");
     testName = replaceAll(testName, "/", "_");
+    testName = replaceAll(testName, "(", "_");
+    testName = replaceAll(testName, ")", "_");
     return testName;
 }
 
