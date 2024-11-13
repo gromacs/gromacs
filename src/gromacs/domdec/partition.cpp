@@ -3135,7 +3135,9 @@ void dd_partition_system(FILE*                     fplog,
                         nat_f_novirsum);
 
     /* Update atom data for mdatoms and several algorithms */
+    wallcycle_sub_stop(wcycle, WallCycleSubCounter::DDTopOther);
     mdAlgorithmsSetupAtomData(cr, inputrec, top_global, top_local, fr, f, mdAtoms, constr, vsite, nullptr);
+    wallcycle_sub_start_nocount(wcycle, WallCycleSubCounter::DDTopOther);
 
     auto* mdatoms = mdAtoms->mdatoms();
     if (!thisRankHasDuty(cr, DUTY_PME))
