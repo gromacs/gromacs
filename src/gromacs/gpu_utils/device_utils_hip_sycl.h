@@ -63,7 +63,7 @@
 #        define GMX_HOST_ATTRIBUTE
 #        define GMX_DEVICE_ATTRIBUTE
 #        define GMX_HOSTDEVICE_ATTRIBUTE GMX_HOST_ATTRIBUTE GMX_DEVICE_ATTRIBUTE
-#        if defined(SYCL_EXT_ONEAPI_ASSERT) && SYCL_EXT_ONEAPI_ASSERT
+#        if defined(SYCL_EXT_ONEAPI_ASSERT) && SYCL_EXT_ONEAPI_ASSERT && !defined(NDEBUG)
 #            define PACKED_FLOAT_ASSERT(condition) assert(condition)
 #        else
 #            define PACKED_FLOAT_ASSERT(condition)
@@ -73,7 +73,11 @@
 #        define GMX_HOST_ATTRIBUTE __host__
 #        define GMX_DEVICE_ATTRIBUTE __device__
 #        define GMX_HOSTDEVICE_ATTRIBUTE GMX_HOST_ATTRIBUTE GMX_DEVICE_ATTRIBUTE
-#        define PACKED_FLOAT_ASSERT(condition) assert(condition)
+#        if !defined(NDEBUG)
+#            define PACKED_FLOAT_ASSERT(condition) assert(condition)
+#        else
+#            define PACKED_FLOAT_ASSERT(condition)
+#        endif
 #        include "gputraits_hip.h"
 #    else
 #        error Including packed_float implementation header in unsupported build config
