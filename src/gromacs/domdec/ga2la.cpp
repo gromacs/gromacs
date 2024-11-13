@@ -71,37 +71,37 @@ static bool directListIsFaster(int numAtomsTotal, int numAtomsLocal)
             || numAtomsTotal <= numAtomsLocal * c_memoryRatioHashedVersusDirect);
 }
 
-gmx_ga2la_t::gmx_ga2la_t(int numAtomsTotal, int numAtomsLocal) :
-    usingDirect_(directListIsFaster(numAtomsTotal, numAtomsLocal))
+gmx_ga2la_t::gmx_ga2la_t(int numAtomsTotal, int numAtomsLocal)
 {
-    if (usingDirect_)
+    if (directListIsFaster(numAtomsTotal, numAtomsLocal))
     {
-        new (&(data_.direct)) std::vector<Entry>(numAtomsTotal, { -1, -1 });
+        data_ = std::vector<Entry>(numAtomsTotal, { -1, -1 });
     }
     else
     {
-        new (&(data_.hashed))
-                gmx::HashedMap<Entry>(numAtomsLocal, gmx_omp_nthreads_get(ModuleMultiThread::Domdec));
+        data_ = gmx::HashedMap<Entry>(numAtomsLocal);
     }
 }
 
 void gmx_ga2la_t::clear(const bool resizeHashTable)
 {
-    if (usingDirect_)
+    if (usingDirect())
     {
+        auto& directList = std::get<DirectList>(data_);
+
         const int gmx_unused numThreads = gmx_omp_nthreads_get(ModuleMultiThread::Domdec);
 #pragma omp parallel for num_threads(numThreads) schedule(static)
-        for (gmx::Index i = 0; i < gmx::ssize(data_.direct); i++)
+        for (gmx::Index i = 0; i < gmx::ssize(directList); i++)
         {
-            data_.direct[i].cell = -1;
+            directList[i].cell = -1;
         }
     }
     else if (resizeHashTable)
     {
-        data_.hashed.clearAndResizeHashTable();
+        std::get<HashedList>(data_).clearAndResizeHashTable();
     }
     else
     {
-        data_.hashed.clear();
+        std::get<HashedList>(data_).clear();
     }
 }
