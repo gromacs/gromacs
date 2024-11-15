@@ -1525,8 +1525,12 @@ int Mdrunner::mdrunner()
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
 
-    const bool canUseDirectGpuComm = decideWhetherDirectGpuCommunicationCanBeUsed(
-            devFlags, inputrec->useMts, (inputrec->eSwapCoords != SwapType::No), mdlog);
+    const bool canUseDirectGpuComm =
+            decideWhetherDirectGpuCommunicationCanBeUsed(devFlags,
+                                                         inputrec->useMts,
+                                                         replExParams.exchangeInterval > 0,
+                                                         (inputrec->eSwapCoords != SwapType::No),
+                                                         mdlog);
 
     bool useGpuDirectHalo = false;
 
@@ -1718,6 +1722,7 @@ int Mdrunner::mdrunner()
     const bool haveSeparatePmeRank = (!thisRankHasDuty(cr, DUTY_PP) || !thisRankHasDuty(cr, DUTY_PME));
     runScheduleWork.simulationWork = createSimulationWorkload(mdlog,
                                                               *inputrec,
+                                                              replExParams.exchangeInterval > 0,
                                                               disableNonbondedCalculation,
                                                               devFlags,
                                                               haveFillerParticlesInLocalState,

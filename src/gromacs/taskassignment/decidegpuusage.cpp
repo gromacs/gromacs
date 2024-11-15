@@ -773,6 +773,7 @@ bool decideWhetherToUseGpuForUpdate(const bool           isDomainDecomposition,
 
 bool decideWhetherDirectGpuCommunicationCanBeUsed(const DevelopmentFeatureFlags& devFlags,
                                                   bool                           haveMts,
+                                                  bool                           useReplicaExchange,
                                                   bool                           haveSwapCoords,
                                                   const gmx::MDLogger&           mdlog)
 {
@@ -801,6 +802,7 @@ bool decideWhetherDirectGpuCommunicationCanBeUsed(const DevelopmentFeatureFlags&
     gmx::MessageStringCollector errorReasons;
     errorReasons.startContext("GPU direct communication can not be activated because:");
     errorReasons.appendIf(haveMts, "MTS is not supported.");
+    errorReasons.appendIf(useReplicaExchange, "Replica exchange is not supported.");
     errorReasons.appendIf(haveSwapCoords, "Swap-coords is not supported.");
     errorReasons.finishContext();
 

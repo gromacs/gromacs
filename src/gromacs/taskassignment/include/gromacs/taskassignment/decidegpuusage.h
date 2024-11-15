@@ -313,6 +313,7 @@ bool decideWhetherToUseGpuForUpdate(bool                 isDomainDecomposition,
  *
  * \param[in]  devFlags                     GPU development / experimental feature flags.
  * \param[in]  haveMts                      Whether the simulation uses multiple time stepping
+ * \param[in]  useReplicaExchange           Whether replica exchange is used
  * \param[in]  haveSwapCoords               Whether the swap-coords functionality is active
  * \param[in]  mdlog                        MD logger.
  *
@@ -320,6 +321,7 @@ bool decideWhetherToUseGpuForUpdate(bool                 isDomainDecomposition,
  */
 bool decideWhetherDirectGpuCommunicationCanBeUsed(const DevelopmentFeatureFlags& devFlags,
                                                   bool                           haveMts,
+                                                  bool                           useReplicaExchange,
                                                   bool                           haveSwapCoords,
                                                   const gmx::MDLogger&           mdlog);
 
