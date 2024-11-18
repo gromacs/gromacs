@@ -19,6 +19,14 @@ Fixes where mdrun could behave incorrectly
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Handle trajectory reading error in gmx tcaf
+"""""""""""""""""""""""""""""""""""""""""""
+
+``gmx tcaf`` now fails with informative error message when failing to read a trajectory.
+
+:issue:`5238`
+
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

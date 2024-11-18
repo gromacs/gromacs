@@ -421,7 +421,14 @@ int gmx_tcaf(int argc, char* argv[])
         sysmass += top.atoms.atom[i].m;
     }
 
-    read_first_frame(oenv, &status, ftp2fn(efTRN, NFILE, fnm), &fr, TRX_NEED_X | TRX_NEED_V);
+    bool ok = read_first_frame(oenv, &status, ftp2fn(efTRN, NFILE, fnm), &fr, TRX_NEED_X | TRX_NEED_V);
+    if (!ok)
+    {
+        gmx_fatal(FARGS,
+                  "Could not read first frame of the trajectory. Note that both coordinates and "
+                  "velocities are mandatory for TCAF computation, and might be missing from this "
+                  "trajectory file.\n");
+    }
     t0 = fr.time;
 
     n_alloc = 0;
