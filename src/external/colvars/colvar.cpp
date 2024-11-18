@@ -21,6 +21,7 @@
 #include "colvarbias.h"
 #include "colvars_memstream.h"
 
+#include "colvarcomp_torchann.h"
 
 std::map<std::string, std::function<colvar::cvc *()>> colvar::global_cvc_map =
     std::map<std::string, std::function<colvar::cvc *()>>();
@@ -501,8 +502,6 @@ int colvar::init_grid_parameters(std::string const &conf)
 {
   int error_code = COLVARS_OK;
 
-  colvarmodule *cv = cvm::main();
-
   cvm::real default_width = width;
 
   if (!key_already_set("width")) {
@@ -528,33 +527,67 @@ int colvar::init_grid_parameters(std::string const &conf)
 
   if (is_enabled(f_cv_scalar)) {
 
-    if (is_enabled(f_cv_single_cvc)) {
-      // Get the default boundaries from the component
+    // Record the CVC's intrinsic boundaries, and set them as default values for the user's choice
+    colvarvalue cvc_lower_boundary, cvc_upper_boundary;
+
+    if (is_enabled(f_cv_single_cvc)) { // Get the intrinsic boundaries of the CVC
+
       if (cvcs[0]->is_enabled(f_cvc_lower_boundary)) {
         enable(f_cv_lower_boundary);
         enable(f_cv_hard_lower_boundary);
-        lower_boundary =
+        lower_boundary = cvc_lower_boundary =
           *(reinterpret_cast<colvarvalue const *>(cvcs[0]->get_param_ptr("lowerBoundary")));
       }
+
       if (cvcs[0]->is_enabled(f_cvc_upper_boundary)) {
         enable(f_cv_upper_boundary);
         enable(f_cv_hard_upper_boundary);
-        upper_boundary =
-          *(reinterpret_cast<colvarvalue const *>(cvcs[0]->get_param_ptr("upperBoundary")));
+        upper_boundary = cvc_upper_boundary =
+            *(reinterpret_cast<colvarvalue const *>(cvcs[0]->get_param_ptr("upperBoundary")));
       }
     }
 
     if (get_keyval(conf, "lowerBoundary", lower_boundary, lower_boundary)) {
       enable(f_cv_lower_boundary);
-      // Because this is the user's choice, we cannot assume it is a true
-      // physical boundary
-      disable(f_cv_hard_lower_boundary);
+      if (is_enabled(f_cv_single_cvc) && is_enabled(f_cv_hard_lower_boundary)) {
+        if (cvm::sqrt(dist2(lower_boundary, cvc_lower_boundary))/width > colvar_boundaries_tol)  {
+          // The user choice is different from the CVC's default
+          disable(f_cv_hard_lower_boundary);
+        }
+      }
     }
 
     if (get_keyval(conf, "upperBoundary", upper_boundary, upper_boundary)) {
       enable(f_cv_upper_boundary);
-      disable(f_cv_hard_upper_boundary);
+      if (is_enabled(f_cv_single_cvc) && is_enabled(f_cv_hard_upper_boundary)) {
+        if (cvm::sqrt(dist2(upper_boundary, cvc_upper_boundary))/width > colvar_boundaries_tol)  {
+          disable(f_cv_hard_upper_boundary);
+        }
+      }
     }
+
+    get_keyval_feature(this, conf, "hardLowerBoundary", f_cv_hard_lower_boundary,
+                       is_enabled(f_cv_hard_lower_boundary));
+
+    get_keyval_feature(this, conf, "hardUpperBoundary", f_cv_hard_upper_boundary,
+                       is_enabled(f_cv_hard_upper_boundary));
+
+    get_keyval(conf, "expandBoundaries", expand_boundaries, expand_boundaries);
+
+    error_code |= parse_legacy_wall_params(conf);
+    error_code |= check_grid_parameters();
+  }
+
+  return error_code;
+}
+
+
+int colvar::parse_legacy_wall_params(std::string const &conf)
+{
+  int error_code = COLVARS_OK;
+  colvarmodule *cv = cvm::main();
+
+  if (is_enabled(f_cv_scalar)) {
 
     // Parse legacy wall options and set up a harmonicWalls bias if needed
     cvm::real lower_wall_k = 0.0, upper_wall_k = 0.0;
@@ -609,13 +642,14 @@ harmonicWalls {\n\
     }
   }
 
-  get_keyval_feature(this, conf, "hardLowerBoundary", f_cv_hard_lower_boundary,
-                     is_enabled(f_cv_hard_lower_boundary));
+  return error_code;
+}
 
-  get_keyval_feature(this, conf, "hardUpperBoundary", f_cv_hard_upper_boundary,
-                     is_enabled(f_cv_hard_upper_boundary));
 
-  // consistency checks for boundaries and walls
+int colvar::check_grid_parameters()
+{
+  int error_code = COLVARS_OK;
+
   if (is_enabled(f_cv_lower_boundary) && is_enabled(f_cv_upper_boundary)) {
     if (lower_boundary >= upper_boundary) {
       error_code |= cvm::error("Error: the upper boundary, "+
@@ -626,7 +660,6 @@ harmonicWalls {\n\
     }
   }
 
-  get_keyval(conf, "expandBoundaries", expand_boundaries, expand_boundaries);
   if (expand_boundaries && periodic_boundaries()) {
     error_code |= cvm::error("Error: trying to expand boundaries that already "
                              "cover a whole period of a periodic colvar.\n",
@@ -889,6 +922,8 @@ void colvar::define_component_types()
 #endif
 
   add_component_type<neuralNetwork>("neural network CV for other CVs", "neuralNetwork");
+
+  add_component_type<torchANN>("CV defined by PyTorch artifical neural network models", "torchANN");
 
   if (proxy->check_volmaps_available() == COLVARS_OK) {
     add_component_type<map_total>("total value of atomic map", "mapTotal");
@@ -2186,12 +2221,10 @@ int colvar::set_cvc_param(std::string const &param_name, void const *new_value)
 bool colvar::periodic_boundaries(colvarvalue const &lb, colvarvalue const &ub) const
 {
   if (period > 0.0) {
-    if ( ((cvm::sqrt(this->dist2(lb, ub))) / this->width)
-         < 1.0E-10 ) {
+    if (((cvm::sqrt(this->dist2(lb, ub))) / this->width) < colvar_boundaries_tol) {
       return true;
     }
   }
-
   return false;
 }
 

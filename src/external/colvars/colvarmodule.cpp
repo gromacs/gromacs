@@ -110,15 +110,14 @@ colvarmodule::colvarmodule(colvarproxy *proxy_in)
            "  https://doi.org/10.1080/00268976.2013.813594\n"
            "as well as all other papers listed below for individual features used.\n");
 
-#if (__cplusplus >= 201103L)
-  cvm::log("This version was built with the C++11 standard or higher.\n");
-#else
-  cvm::log("This version was built without the C++11 standard: some features are disabled.\n"
-    "Please see the following link for details:\n"
-    "  https://colvars.github.io/README-c++11.html\n");
-#endif
-
   cvm::log("Summary of compile-time features available in this build:\n");
+
+  std::string cxx_lang_msg("  - C++ language version: " + cvm::to_str(__cplusplus));
+#if defined(_WIN32) && !defined(__CYGWIN__)
+  cxx_lang_msg += std::string(" (warning: may not be accurate for this build)");
+#endif
+  cxx_lang_msg += std::string("\n");
+  cvm::log(cxx_lang_msg);
 
   if (proxy->check_smp_enabled() == COLVARS_NOT_IMPLEMENTED) {
     cvm::log("  - SMP parallelism: not available\n");

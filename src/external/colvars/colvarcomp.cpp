@@ -533,8 +533,10 @@ void colvar::cvc::calc_Jacobian_derivative()
 
 void colvar::cvc::calc_fit_gradients()
 {
-  for (size_t ig = 0; ig < atom_groups.size(); ig++) {
-    atom_groups[ig]->calc_fit_gradients();
+  if (is_enabled(f_cvc_explicit_gradient)) {
+    for (size_t ig = 0; ig < atom_groups.size(); ig++) {
+      atom_groups[ig]->calc_fit_gradients();
+    }
   }
 }
 
