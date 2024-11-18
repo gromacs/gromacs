@@ -2,8 +2,13 @@
 set -e
 CMAKE=${CMAKE:-$(which cmake)}
 cd $BUILD_DIR
-$CMAKE --build . -- -j$KUBERNETES_CPU_LIMIT 2>&1 | tee buildLogFile.log
-$CMAKE --build . --target tests -- -j$KUBERNETES_CPU_LIMIT 2>&1 | tee testBuildLogFile.log
+
+# If there is a parameter, use that value, else default to $KUBERNETES_CPU_LIMIT
+BUILD_PARALLELISM=${1:-$KUBERNETES_CPU_LIMIT}
+BUILD_TEST_PARALLELISM=${2:-$KUBERNETES_CPU_LIMIT}
+
+$CMAKE --build . -- -j$BUILD_PARALLELISM 2>&1 | tee buildLogFile.log
+$CMAKE --build . --target tests -- -j$BUILD_TEST_PARALLELISM 2>&1 | tee testBuildLogFile.log
 
 # Find compiler warnings
 awk '/warning/,/warning.*generated|^$/' buildLogFile.log testBuildLogFile.log \
