@@ -228,7 +228,13 @@ set(LIBRARY_VERSION ${LIBRARY_SOVERSION_MAJOR}.${LIBRARY_SOVERSION_MINOR}.0)
 #####################################################################
 # General version management based on manually set numbers
 
-set(GMX_VERSION "${GMX_VERSION_MAJOR}.${GMX_VERSION_PATCH}")
+# If we have a suffix defined (e.g. -beta, -rc), then we don't want to add
+# the minor version to the major version.
+if("${GMX_VERSION_SUFFIX}" STREQUAL "")
+    set(GMX_VERSION "${GMX_VERSION_MAJOR}.${GMX_VERSION_PATCH}")
+else()
+    set(GMX_VERSION "${GMX_VERSION_MAJOR}")
+endif()
 
 # Set REGRESSIONTEST_VERSION before further modification to version info.
 set(REGRESSIONTEST_VERSION "${GMX_VERSION}${GMX_VERSION_SUFFIX}")
