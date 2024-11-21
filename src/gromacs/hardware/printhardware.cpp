@@ -150,7 +150,7 @@ static std::string detected_hardware_string(const gmx_hw_info_t* hwinfo, bool bF
         s += gmx::formatString(" %d cores,", hwinfo->ncore_tot);
     }
     s += gmx::formatString(" %d processing units", hwinfo->nProcessingUnits_tot);
-    if (canPerformDeviceDetection(nullptr))
+    if (std::string deviceDetectionErrors; canPerformDeviceDetection(&deviceDetectionErrors))
     {
         s += gmx::formatString(", %d compatible GPU%s",
                                hwinfo->ngpu_compatible_tot,
@@ -160,7 +160,7 @@ static std::string detected_hardware_string(const gmx_hw_info_t* hwinfo, bool bF
     {
         if (isDeviceDetectionEnabled())
         {
-            s += gmx::formatString(" (GPU detection failed)");
+            s += gmx::formatString(" (GPU detection failed: %s)", deviceDetectionErrors.c_str());
         }
         else
         {
