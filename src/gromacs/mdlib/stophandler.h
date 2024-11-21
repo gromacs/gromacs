@@ -135,7 +135,7 @@ public:
      * @param signal Non-null pointer to a signal used for reading and writing of signals
      * @param simulationShareState Whether this signal needs to be shared across multiple simulations
      * @param stopConditions Vector of callback functions setting the signal
-     * @param neverUpdateNeighborList Whether simulation keeps same neighbor list forever
+     * @param nstList        The pairlist update interval in steps, 0 is never update
      *
      * Note: As the StopHandler does not work without this signal, it keeps a non-const reference
      * to it as a member variable.
@@ -143,7 +143,7 @@ public:
     StopHandler(compat::not_null<SimulationSignal*>      signal,
                 bool                                     simulationShareState,
                 std::vector<std::function<StopSignal()>> stopConditions,
-                bool                                     neverUpdateNeighborList);
+                int                                      nstList);
 
     /*! \brief Decides whether a stop signal shall be sent
      *
@@ -170,6 +170,12 @@ public:
         }
     }
 
+    //! Return whether the step is a multiple of \p nstList or \p nstList==0
+    static bool isSuitableStopStep(const int64_t step, const int nstList)
+    {
+        return nstList == 0 || step % nstList == 0;
+    }
+
     /*! \brief Decides whether the simulation shall be stopped after the current step
      *
      * The simulation is stopped after the current step if
@@ -177,17 +183,17 @@ public:
      *   * the signal for stop at the next neighbor-searching step was received, and
      *     the current step is a neighbor-searching step.
      */
-    bool stoppingAfterCurrentStep(bool bNS) const
+    bool stoppingAfterCurrentStep(const int64_t step) const
     {
         return convertToStopSignal(signal_.set) == StopSignal::stopImmediately
                || (convertToStopSignal(signal_.set) == StopSignal::stopAtNextNSStep
-                   && (bNS || neverUpdateNeighborlist_));
+                   && isSuitableStopStep(step, nstList_));
     }
 
 private:
     SimulationSignal&                              signal_;
     const std::vector<std::function<StopSignal()>> stopConditions_;
-    const bool                                     neverUpdateNeighborlist_;
+    const int                                      nstList_;
 };
 
 /*! \libinternal
@@ -234,7 +240,7 @@ public:
      * Stop signal is set if run time is greater than 99% of maximal run time. Signal will
      * trigger stopping of the simulation at the next neighbor-searching step.
      */
-    StopSignal getSignal(bool bNS, int64_t step, FILE* fplog, gmx_walltime_accounting* walltime_accounting);
+    StopSignal getSignal(int64_t step, FILE* fplog, gmx_walltime_accounting* walltime_accounting);
 
 private:
     bool signalSent_;
@@ -242,7 +248,6 @@ private:
     const real maximumHoursToRun_;
     const int  nstList_;
     const int  nstSignalComm_;
-    const bool neverUpdateNeighborlist_;
 };
 
 /*! \libinternal
@@ -290,16 +295,14 @@ public:
      * pointer or reference remain valid for the lifetime of the returned StopHandler.
      */
     std::unique_ptr<StopHandler> getStopHandlerMD(compat::not_null<SimulationSignal*> signal,
-                                                  bool            simulationShareState,
-                                                  bool            isMain,
-                                                  int             nstList,
-                                                  bool            makeBinaryReproducibleSimulation,
-                                                  int             nstSignalComm,
-                                                  real            maximumHoursToRun,
-                                                  bool            neverUpdateNeighborList,
-                                                  FILE*           fplog,
-                                                  const int64_t&  step,
-                                                  const gmx_bool& bNS,
+                                                  bool           simulationShareState,
+                                                  bool           isMain,
+                                                  int            nstList,
+                                                  bool           makeBinaryReproducibleSimulation,
+                                                  int            nstSignalComm,
+                                                  real           maximumHoursToRun,
+                                                  FILE*          fplog,
+                                                  const int64_t& step,
                                                   gmx_walltime_accounting* walltime_accounting);
 
 private:

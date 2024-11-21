@@ -56,10 +56,8 @@ namespace gmx
 StopHandler::StopHandler(compat::not_null<SimulationSignal*>      signal,
                          bool                                     simulationShareState,
                          std::vector<std::function<StopSignal()>> stopConditions,
-                         bool                                     neverUpdateNeighborList) :
-    signal_(*signal),
-    stopConditions_(std::move(stopConditions)),
-    neverUpdateNeighborlist_(neverUpdateNeighborList)
+                         int                                      nstList) :
+    signal_(*signal), stopConditions_(std::move(stopConditions)), nstList_(nstList)
 {
     if (simulationShareState)
     {
@@ -125,22 +123,18 @@ StopSignal StopConditionSignal::getSignal(FILE* fplog)
 }
 
 StopConditionTime::StopConditionTime(int nstList, real maximumHoursToRun, int nstSignalComm) :
-    signalSent_(false),
-    maximumHoursToRun_(maximumHoursToRun),
-    nstList_(nstList),
-    nstSignalComm_(nstSignalComm),
-    neverUpdateNeighborlist_(nstList <= 0)
+    signalSent_(false), maximumHoursToRun_(maximumHoursToRun), nstList_(nstList), nstSignalComm_(nstSignalComm)
 {
 }
 
-StopSignal StopConditionTime::getSignal(bool bNS, int64_t step, FILE* fplog, gmx_walltime_accounting_t walltime_accounting)
+StopSignal StopConditionTime::getSignal(int64_t step, FILE* fplog, gmx_walltime_accounting_t walltime_accounting)
 {
     if (signalSent_)
     {
         // We only want to send it once, but might be called again before run is terminated
         return StopSignal::noSignal;
     }
-    if ((bNS || neverUpdateNeighborlist_)
+    if (StopHandler::isSuitableStopStep(step, nstList_)
         && walltime_accounting_get_time_since_start(walltime_accounting)
                    > maximumHoursToRun_ * 60.0 * 60.0 * 0.99)
     {
@@ -178,12 +172,10 @@ std::unique_ptr<StopHandler> StopHandlerBuilder::getStopHandlerMD(compat::not_nu
                                                                   bool isMain,
                                                                   int  nstList,
                                                                   bool makeBinaryReproducibleSimulation,
-                                                                  int   nstSignalComm,
-                                                                  real  maximumHoursToRun,
-                                                                  bool  neverUpdateNeighborList,
-                                                                  FILE* fplog,
-                                                                  const int64_t&  step,
-                                                                  const gmx_bool& bNS,
+                                                                  int            nstSignalComm,
+                                                                  real           maximumHoursToRun,
+                                                                  FILE*          fplog,
+                                                                  const int64_t& step,
                                                                   gmx_walltime_accounting_t walltime_accounting)
 {
     if (!GMX_THREAD_MPI || isMain)
@@ -201,12 +193,11 @@ std::unique_ptr<StopHandler> StopHandlerBuilder::getStopHandlerMD(compat::not_nu
         auto stopConditionTime =
                 std::make_shared<StopConditionTime>(nstList, maximumHoursToRun, nstSignalComm);
         registerStopCondition(
-                [stopConditionTime, &bNS, &step, fplog, walltime_accounting]()
-                { return stopConditionTime->getSignal(bNS, step, fplog, walltime_accounting); });
+                [stopConditionTime, &step, fplog, walltime_accounting]()
+                { return stopConditionTime->getSignal(step, fplog, walltime_accounting); });
     }
 
-    return std::make_unique<StopHandler>(
-            signal, simulationShareState, stopConditions_, neverUpdateNeighborList);
+    return std::make_unique<StopHandler>(signal, simulationShareState, stopConditions_, nstList);
 }
 
 } // namespace gmx

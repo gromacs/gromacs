@@ -822,10 +822,8 @@ void gmx::LegacySimulator::do_md()
             mdrunOptions_.reproducible,
             nstSignalComm,
             mdrunOptions_.maximumHoursToRun,
-            ir->nstlist == 0,
             fpLog_,
             step,
-            bNS,
             wallTimeAccounting_);
 
     real checkpointPeriod = mdrunOptions_.checkpointOptions.period;
@@ -939,7 +937,7 @@ void gmx::LegacySimulator::do_md()
          * nstpcouple steps, we have computed the half-step kinetic energy
          * of the previous step and can always output energies at the last step.
          */
-        bLastStep = bLastStep || stopHandler->stoppingAfterCurrentStep(bNS);
+        bLastStep = bLastStep || stopHandler->stoppingAfterCurrentStep(step);
 
         /* do_log triggers energy and virial calculation. Because this leads
          * to different code paths, forces can be different. Thus for exact

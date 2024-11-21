@@ -168,7 +168,7 @@ private:
      * eliminated by rewriting the stop and reset handler to fit the
      * modular simulator approach.
      */
-    void preStep(Step step, Time time, bool isNeighborSearchingStep);
+    void preStep(Step step, Time time);
 
     /*! \brief A function called after every step
      *
@@ -279,8 +279,6 @@ private:
 
     // TODO: This is a hack for stop handler - needs to go once StopHandler
     //       is adapted to the modular simulator
-    //! Whether this is a neighbor-searching step
-    bool stophandlerIsNSStep_ = false;
     //! The current step
     Step stophandlerCurrentStep_ = -1;
 

@@ -269,9 +269,9 @@ void ModularSimulatorAlgorithm::simulatorTeardown()
     walltime_accounting_set_nsteps_done(wallTimeAccounting_, step_ - inputRec_->init_step);
 }
 
-void ModularSimulatorAlgorithm::preStep(Step step, Time gmx_unused time, bool isNeighborSearchingStep)
+void ModularSimulatorAlgorithm::preStep(Step step, Time gmx_unused time)
 {
-    if (stopHandler_->stoppingAfterCurrentStep(isNeighborSearchingStep) && step != signalHelper_->lastStep_)
+    if (stopHandler_->stoppingAfterCurrentStep(step) && step != signalHelper_->lastStep_)
     {
         /*
          * Stop handler wants to stop after the current step, which was
@@ -291,7 +291,6 @@ void ModularSimulatorAlgorithm::preStep(Step step, Time gmx_unused time, bool is
     // and accept the step as input. Eventually, we want to do that, but currently this would
     // require introducing NeighborSearchSignaller in the legacy do_md or a lot of code
     // duplication.
-    stophandlerIsNSStep_    = isNeighborSearchingStep;
     stophandlerCurrentStep_ = step;
     stopHandler_->setSignal();
 
@@ -377,12 +376,11 @@ void ModularSimulatorAlgorithm::populateTaskQueue()
 
     do
     {
-        // local variables for lambda capturing
-        const int  step     = step_;
-        const bool isNSStep = step == signalHelper_->nextNSStep_;
+        // local variable for lambda capturing
+        const int step = step_;
 
         // register pre-step (task queue is local, so no problem with `this`)
-        registerRunFunction([this, step, time, isNSStep]() { preStep(step, time, isNSStep); });
+        registerRunFunction([this, step, time]() { preStep(step, time); });
         // register pre step functions
         for (const auto& schedulingFunction : preStepScheduling_)
         {
@@ -541,10 +539,8 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::build()
             legacySimulatorData_->mdrunOptions_.reproducible,
             globalCommunicationHelper_.nstglobalcomm(),
             legacySimulatorData_->mdrunOptions_.maximumHoursToRun,
-            legacySimulatorData_->inputRec_->nstlist == 0,
             legacySimulatorData_->fpLog_,
             algorithm.stophandlerCurrentStep_,
-            algorithm.stophandlerIsNSStep_,
             legacySimulatorData_->wallTimeAccounting_);
 
     // Build reset handler

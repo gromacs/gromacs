@@ -429,10 +429,8 @@ void gmx::LegacySimulator::do_mimic()
             mdrunOptions_.reproducible,
             nstglobalcomm,
             mdrunOptions_.maximumHoursToRun,
-            ir->nstlist == 0,
             fpLog_,
             step,
-            bNS,
             wallTimeAccounting_);
 
     // we don't do counter resetting in rerun - finish will always be valid

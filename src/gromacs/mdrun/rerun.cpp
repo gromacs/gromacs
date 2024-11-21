@@ -512,14 +512,12 @@ void gmx::LegacySimulator::do_rerun()
             compat::not_null<SimulationSignal*>(&signals[eglsSTOPCOND]),
             false,
             MAIN(cr_),
-            ir->nstlist,
+            1, // rerun constructs the pairlist for each frame
             mdrunOptions_.reproducible,
             nstglobalcomm,
             mdrunOptions_.maximumHoursToRun,
-            ir->nstlist == 0,
             fpLog_,
             step,
-            bNS,
             wallTimeAccounting_);
 
     // we don't do counter resetting in rerun - finish will always be valid
@@ -578,7 +576,7 @@ void gmx::LegacySimulator::do_rerun()
             prepareRerunState(rerun_fr, stateGlobal_, constructVsites, virtualSites_);
         }
 
-        isLastStep = isLastStep || stopHandler->stoppingAfterCurrentStep(bNS);
+        isLastStep = isLastStep || stopHandler->stoppingAfterCurrentStep(step);
 
         if (haveDDAtomOrdering(*cr_))
         {
