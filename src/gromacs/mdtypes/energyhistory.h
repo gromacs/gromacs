@@ -47,6 +47,8 @@
 #ifndef GMX_MDLIB_ENERGYHISTORY_H
 #define GMX_MDLIB_ENERGYHISTORY_H
 
+#include <cstdint>
+
 #include <memory>
 #include <vector>
 
