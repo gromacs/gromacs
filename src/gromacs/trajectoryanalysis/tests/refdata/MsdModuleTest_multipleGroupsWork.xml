@@ -4,14 +4,19 @@
   <String Name="CommandLine">-trestart 2 -sel 1;2</String>
   <OutputFiles Name="Files">
     <File Name="-o">
-      <XvgLegend Name="DiffusionCoefficient"></XvgLegend>
+      <XvgLegend Name="DiffusionCoefficient">
+        <String>   Protein</String>
+        <Real>0.0005734</Real>
+        <Real>1.27</Real>
+        <String>     Water</String>
+        <Real>5.4502</Real>
+        <Real>0.27</Real>
+      </XvgLegend>
       <XvgLegend Name="Legend">
         <String>title "Mean Squared Displacement"</String>
         <String>xaxis  label "tau (ps)"</String>
         <String>yaxis  label "MSD (nm\\S2\\N)"</String>
         <String>TYPE xy</String>
-        <String>s0 legend "D[   Protein] = 0.0005734 (+/- 1.2675) (1e-5 cm^2/s)"</String>
-        <String>s1 legend "D[     Water] = 5.4502 (+/- 0.2739) (1e-5 cm^2/s)"</String>
       </XvgLegend>
       <XvgData Name="Data">
         <Sequence Name="Row0">

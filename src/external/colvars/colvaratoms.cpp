@@ -286,7 +286,7 @@ int cvm::atom_group::init_dependencies() {
   // Initialize feature_states for each instance
   // default as unavailable, not enabled
   feature_states.reserve(f_ag_ntot);
-  for (i = 0; i < colvardeps::f_ag_ntot; i++) {
+  for (i = feature_states.size(); i < colvardeps::f_ag_ntot; i++) {
     feature_states.push_back(feature_state(false, false));
   }
 
@@ -532,8 +532,8 @@ int cvm::atom_group::parse(std::string const &group_conf)
         cvm::error("Error: atomsColValue, if provided, must be non-zero.\n", COLVARS_INPUT_ERROR);
       }
 
-      // NOTE: calls to add_atom() and/or add_atom_id() are in the proxy-implemented function
-      error_code |= cvm::load_atoms(atoms_file_name.c_str(), *this, atoms_col, atoms_col_value);
+      error_code |= cvm::main()->proxy->load_atoms_pdb(atoms_file_name.c_str(), *this, atoms_col,
+                                                       atoms_col_value);
     }
   }
 
@@ -673,7 +673,7 @@ int cvm::atom_group::add_atom_numbers(std::string const &numbers_conf)
 }
 
 
-int cvm::atom_group::add_index_group(std::string const &index_group_name)
+int cvm::atom_group::add_index_group(std::string const &index_group_name, bool silent)
 {
   std::vector<std::string> const &index_group_names =
     cvm::main()->index_group_names;
@@ -687,7 +687,10 @@ int cvm::atom_group::add_index_group(std::string const &index_group_name)
   }
 
   if (i_group >= index_group_names.size()) {
-    return cvm::error("Error: could not find index group "+
+    if (silent)
+      return COLVARS_INPUT_ERROR;
+    else
+      return cvm::error("Error: could not find index group "+
                       index_group_name+" among those already provided.\n",
                       COLVARS_INPUT_ERROR);
   }
@@ -1055,6 +1058,14 @@ void cvm::atom_group::calc_apply_roto_translation()
     }
   }
 
+  if (is_enabled(f_ag_fit_gradients) && !b_dummy) {
+    // Save the unrotated frame for fit gradients
+    pos_unrotated.resize(size());
+    for (size_t i = 0; i < size(); ++i) {
+      pos_unrotated[i] = atoms[i].pos;
+    }
+  }
+
   if (is_enabled(f_ag_rotate)) {
     // rotate the group (around the center of geometry if f_ag_center is
     // enabled, around the origin otherwise)
@@ -1250,17 +1261,13 @@ void cvm::atom_group::calc_fit_forces_impl(
   cvm::vector1d<cvm::rvector> dq0_1(4);
   // loop 1: iterate over the current atom group
   for (size_t i = 0; i < size(); i++) {
-    cvm::atom_pos pos_orig;
     if (B_ag_center) {
       atom_grad += accessor_main(i);
-      if (B_ag_rotate) pos_orig = rot_inv * (atoms[i].pos - ref_pos_cog);
-    } else {
-      if (B_ag_rotate) pos_orig = rot_inv * atoms[i].pos;
     }
     if (B_ag_rotate) {
       // calculate \partial(R(q) \vec{x}_i)/\partial q) \cdot \partial\xi/\partial\vec{x}_i
       cvm::quaternion const dxdq =
-        rot.q.position_derivative_inner(pos_orig, accessor_main(i));
+        rot.q.position_derivative_inner(pos_unrotated[i], accessor_main(i));
       sum_dxdq[0] += dxdq[0];
       sum_dxdq[1] += dxdq[1];
       sum_dxdq[2] += dxdq[2];
@@ -1279,7 +1286,7 @@ void cvm::atom_group::calc_fit_forces_impl(
       fitting_force_grad += atom_grad;
     }
     if (B_ag_rotate) {
-      rot_deriv->calc_derivative_wrt_group1(j, nullptr, &dq0_1);
+      rot_deriv->calc_derivative_wrt_group1<false, true, false>(j, nullptr, &dq0_1);
       // multiply by {\partial q}/\partial\vec{x}_j and add it to the fit gradients
       fitting_force_grad += sum_dxdq[0] * dq0_1[0] +
                             sum_dxdq[1] * dq0_1[1] +
@@ -1296,7 +1303,7 @@ void cvm::atom_group::calc_fit_forces_impl(
 template <typename main_force_accessor_T, typename fitting_force_accessor_T>
 void cvm::atom_group::calc_fit_forces(
   main_force_accessor_T accessor_main,
-    fitting_force_accessor_T accessor_fitting) const {
+  fitting_force_accessor_T accessor_fitting) const {
   if (is_enabled(f_ag_center) && is_enabled(f_ag_rotate))
     calc_fit_forces_impl<true, true, main_force_accessor_T, fitting_force_accessor_T>(accessor_main, accessor_fitting);
   if (is_enabled(f_ag_center) && !is_enabled(f_ag_rotate))
@@ -1533,7 +1540,7 @@ void cvm::atom_group::group_force_object::apply_force_with_fitting_group() {
   // computed. For a vector component, we can only know the forces on the fitting
   // group, but checking this flag can mimic results that the users expect (if
   // "enableFitGradients no" then there is no force on the fitting group).
-  if (m_ag->is_enabled(f_ag_fit_gradients)) {
+  if (!m_ag->b_dummy && m_ag->is_enabled(f_ag_fit_gradients)) {
     auto accessor_main = [this](size_t i){return m_ag->group_forces[i];};
     auto accessor_fitting = [this](size_t j, const cvm::rvector& fitting_force){
       (*(m_group_for_fit))[j].apply_force(fitting_force);

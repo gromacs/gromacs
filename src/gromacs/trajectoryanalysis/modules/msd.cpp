@@ -163,7 +163,7 @@ std::vector<real> MsdData::averageMsds() const
             msdSums.push_back(0.0);
             continue;
         }
-        msdSums.push_back(std::accumulate(msdValues.begin(), msdValues.end(), 0.0, std::plus<>())
+        msdSums.push_back(std::accumulate(msdValues.begin(), msdValues.end(), 0.0, std::plus<double>())
                           / msdValues.size());
     }
     return msdSums;
@@ -171,22 +171,18 @@ std::vector<real> MsdData::averageMsds() const
 
 /*! \brief Calculates 1,2, or 3D distance for two vectors.
  *
- * \todo Remove NOLINTs once clang-tidy is updated to v11, it should be able to handle constexpr.
- *
  * \tparam x If true, calculate x dimension of displacement
  * \tparam y If true, calculate y dimension of displacement
  * \tparam z If true, calculate z dimension of displacement
- * \param[in] c1 First point
- * \param[in] c2 Second point
+ * \param[in] firstCoords First point
+ * \param[in] secondCoords Second point
  * \return Euclidian distance for the given dimension.
  */
 template<bool x, bool y, bool z>
-inline double calcSingleSquaredDistance(const RVec c1, const RVec c2)
+inline double calcSingleSquaredDistance(const DVec& firstCoords, const DVec& secondCoords)
 {
     static_assert(x || y || z, "zero-dimensional MSD selected");
-    const DVec firstCoords  = c1.toDVec();
-    const DVec secondCoords = c2.toDVec();
-    double     result       = 0;
+    double result = 0;
     if constexpr (x)
     {
         result += (firstCoords[XX] - secondCoords[XX]) * (firstCoords[XX] - secondCoords[XX]);
@@ -215,7 +211,7 @@ inline double calcSingleSquaredDistance(const RVec c1, const RVec c2)
  * \return Per-particle averaged distance
  */
 template<bool x, bool y, bool z>
-double calcAverageDisplacement(ArrayRef<const RVec> c1, ArrayRef<const RVec> c2)
+double calcAverageDisplacement(ArrayRef<const DVec> c1, ArrayRef<const DVec> c2)
 {
     double result = 0;
     for (size_t i = 0; i < c1.size(); i++)
@@ -249,7 +245,7 @@ enum class TwoDimDiffType : int
 /*! \brief Removes jumps across periodic boundaries for currentFrame, based on the positions in
  * previousFrame. Updates currentCoords in place.
  */
-void removePbcJumps(ArrayRef<RVec> currentCoords, ArrayRef<const RVec> previousCoords, t_pbc* pbc)
+void removePbcJumps(ArrayRef<DVec> currentCoords, ArrayRef<const DVec> previousCoords, t_pbc* pbc)
 {
     // There are two types of "pbc removal" in gmx msd. The first happens in the trajectoryanalysis
     // framework, which makes molecules whole across periodic boundaries and is done
@@ -261,10 +257,10 @@ void removePbcJumps(ArrayRef<RVec> currentCoords, ArrayRef<const RVec> previousC
     // we'd have a clash where the per-mol PBC removal moves an atom that gets put back into
     // it's original position by the second transformation. Therefore, this second transformation
     // is applied *after* per molecule coordinates have been consolidated into COMs.
-    auto pbcRemover = [pbc](RVec in, RVec prev)
+    auto pbcRemover = [pbc](DVec in, DVec prev)
     {
-        rvec dx;
-        pbc_dx(pbc, in, prev, dx);
+        dvec dx;
+        pbc_dx_d(pbc, in, prev, dx);
         return prev + dx;
     };
     std::transform(
@@ -312,13 +308,13 @@ public:
      * \param[in] pbc                   Information about periodicity.
      * \returns                         The current frames coordinates in proper format.
      */
-    ArrayRef<const RVec> buildCoordinates(const Selection& sel, t_pbc* pbc);
+    ArrayRef<const DVec> buildCoordinates(const Selection& sel, t_pbc* pbc);
 
 private:
     //! The current coordinates.
-    std::vector<RVec> current_;
+    std::vector<DVec> current_;
     //! The previous frame's coordinates.
-    std::vector<RVec> previous_;
+    std::vector<DVec> previous_;
     //! Molecule data.
     ArrayRef<const MoleculeData> molecules_;
     //! Mapping of atom indices to molecle indices;
@@ -327,31 +323,38 @@ private:
     bool containsPreviousFrame_ = false;
 };
 
-ArrayRef<const RVec> MsdCoordinateManager::buildCoordinates(const Selection& sel, t_pbc* pbc)
+ArrayRef<const DVec> MsdCoordinateManager::buildCoordinates(const Selection& sel, t_pbc* pbc)
 {
 
     if (molecules_.empty())
     {
-        std::copy(sel.coordinates().begin(), sel.coordinates().end(), current_.begin());
+        std::transform(sel.coordinates().begin(),
+                       sel.coordinates().end(),
+                       current_.begin(),
+                       [](const RVec& position) -> DVec
+                       { return DVec(position[0], position[1], position[2]); });
     }
     else
     {
         // Prepare for molecule COM calculation, then sum up all positions per molecule.
 
-        std::fill(current_.begin(), current_.end(), RVec(0, 0, 0));
-        gmx::ArrayRef<const real> masses = sel.masses();
+        std::fill(current_.begin(), current_.end(), DVec(0, 0, 0));
+        const gmx::ArrayRef<const real> masses = sel.masses();
         for (int i = 0; i < sel.posCount(); i++)
         {
             const int moleculeIndex = moleculeIndexMapping_[i];
             // accumulate ri * mi, and do division at the end to minimize number of divisions.
-            current_[moleculeIndex] += RVec(sel.position(i).x()) * masses[i];
+            const SelectionPosition positionRef = sel.position(i);
+            const auto&             selPosition = positionRef.x();
+            current_[moleculeIndex] +=
+                    DVec(selPosition[0], selPosition[1], selPosition[2]) * double(masses[i]);
         }
         // Divide accumulated mass * positions to get COM.
         std::transform(current_.begin(),
                        current_.end(),
                        molecules_.begin(),
                        current_.begin(),
-                       [](const RVec& position, const MoleculeData& molecule) -> RVec
+                       [](const DVec& position, const MoleculeData& molecule) -> DVec
                        { return position / molecule.mass; });
     }
 
@@ -385,8 +388,9 @@ struct MsdGroupData
     //! Selection associated with this group.
     const Selection& sel;
 
-    //! Stored coordinates, indexed by frame then atom number.
-    std::vector<std::vector<RVec>> frames;
+    //! Pairs of (frame number, coordinate) saved for distance calculations.
+    std::vector<std::pair<int, std::vector<DVec>>> frames;
+
 
     //! MSD result accumulator
     MsdData msds;
@@ -435,7 +439,7 @@ private:
     //! Diffusion coefficient conversion factor
     double diffusionCoefficientDimensionFactor_ = c_3DdiffusionDimensionFactor;
     //! Method used to calculate MSD - changes based on dimensonality.
-    std::function<double(ArrayRef<const RVec>, ArrayRef<const RVec>)> calcMsd_ =
+    std::function<double(ArrayRef<const DVec>, ArrayRef<const DVec>)> calcMsd_ =
             calcAverageDisplacement<true, true, true>;
 
     //! Picoseconds between restarts
@@ -651,27 +655,10 @@ void Msd::initAnalysis(const TrajectoryAnalysisSettings& settings, const Topolog
     }
 }
 
-//! Helper function to round \c frame.time to nearest integer and check that it is lossless
-static real roundedFrameTime(const t_trxframe& frame)
-{
-    constexpr real relTolerance = 0.1;
-    const real     roundedTime  = std::round(frame.time);
-    if (std::fabs(roundedTime - frame.time) > relTolerance * std::fabs(roundedTime + frame.time))
-    {
-        GMX_THROW(gmx::ToleranceError(gmx::formatString(
-                "Frame %" PRId64
-                " has non-integral time %f. 'gmx msd' uses time discretization internally and "
-                "cannot work if the time (usually measured in ps) is not integral. You can use "
-                "'gmx convert-trj -dt 1' to subsample your trajectory before the analysis.",
-                frame.step,
-                frame.time)));
-    }
-    return roundedTime;
-}
 
 void Msd::initAfterFirstFrame(const TrajectoryAnalysisSettings gmx_unused& settings, const t_trxframe& fr)
 {
-    t0_ = roundedFrameTime(fr);
+    t0_ = fr.time;
 }
 
 void Msd::analyzeFrame(int gmx_unused                frameNumber,
@@ -679,24 +666,39 @@ void Msd::analyzeFrame(int gmx_unused                frameNumber,
                        t_pbc*                        pbc,
                        TrajectoryAnalysisModuleData* pdata)
 {
-    const real time = roundedFrameTime(frame);
+    const real time = frame.time;
     // Need to populate dt on frame 2;
     if (!dt_.has_value() && !times_.empty())
     {
         dt_ = time - times_[0];
+        if (*dt_ < 0.001)
+        {
+            GMX_THROW(
+                    InconsistentInputError("Time step is too small for accurate MSD calculations, "
+                                           "must be at least 1 fs."));
+        }
+        if (trestart_ < 0.001)
+        {
+            GMX_THROW(InconsistentInputError("trestart_ must be at least one fs"));
+        }
+        // dt and trestart checks require rounding math, but femtosecond representations with
+        // picosecond time units are not precise enough for this.
+        const int dtFsRounded       = gmx::roundToInt(*dt_ * 1000);
+        const int trestartFsRounded = gmx::roundToInt(trestart_ * 1000);
+
         // Place conditions so they are only checked once
-        if (*dt_ > trestart_)
+        if (dtFsRounded > trestartFsRounded)
         {
             std::string errorMessage = "-dt cannot be larger than -trestart (default 10 ps).";
             GMX_THROW(InconsistentInputError(errorMessage));
         }
-        if (!bRmod(trestart_, 0, *dt_))
+        if (!bRmod(trestartFsRounded, 0, dtFsRounded))
         {
             std::string errorMessage =
                     "-trestart (default 10 ps) must be divisible by -dt for useful results.";
             GMX_THROW(InconsistentInputError(errorMessage));
         }
-        if (*dt_ == trestart_)
+        if (dtFsRounded == trestartFsRounded)
         {
             //\n included below to avoid conflict with other output
             fprintf(stderr,
@@ -720,11 +722,12 @@ void Msd::analyzeFrame(int gmx_unused                frameNumber,
         //NOLINTNEXTLINE(readability-static-accessed-through-instance)
         const Selection& sel = pdata->parallelSelection(msdData.sel);
 
-        ArrayRef<const RVec> coords = msdData.coordinateManager_.buildCoordinates(sel, pbc);
+        ArrayRef<const DVec> coords = msdData.coordinateManager_.buildCoordinates(sel, pbc);
 
         // For each preceding frame, calculate tau and do comparison.
         for (size_t i = firstValidFrame_; i < msdData.frames.size(); i++)
         {
+            auto& [referenceFrameNumber, referenceFrame] = msdData.frames[i];
 
             const double tau = time - (t0_ + trestart_ * i);
             if (tau > maxTau_)
@@ -732,26 +735,29 @@ void Msd::analyzeFrame(int gmx_unused                frameNumber,
                 // The (now empty) entry is no longer needed, so over time the outer vector will
                 // grow with extraneous empty elements persisting, but the alternative would require
                 // some more complicated remapping of tau to frame index.
-                msdData.frames[i].clear();
+                referenceFrame.clear();
                 firstValidFrame_ = i + 1;
                 continue;
             }
-            int64_t tauIndex = gmx::roundToInt64(tau / *dt_);
-            msdData.msds[tauIndex].push_back(calcMsd_(coords, msdData.frames[i]));
+            const size_t tauIndex = frameNumber - referenceFrameNumber;
+
+            msdData.msds[tauIndex].push_back(calcMsd_(coords, referenceFrame));
 
             for (size_t molInd = 0; molInd < molecules_.size(); molInd++)
             {
                 molecules_[molInd].msdData[tauIndex].push_back(
                         calcMsd_(arrayRefFromArray(&coords[molInd], 1),
-                                 arrayRefFromArray(&msdData.frames[i][molInd], 1)));
+                                 arrayRefFromArray(&referenceFrame[molInd], 1)));
             }
         }
 
 
         // We only store the frame for the future if it's a restart per -trestart.
-        if (bRmod(time, t0_, trestart_))
+
+        if (bRmod_fd(time, t0_, trestart_, false))
         {
-            msdData.frames.emplace_back(coords.begin(), coords.end());
+            msdData.frames.emplace_back(
+                    std::make_pair(frameNumber, std::vector(coords.begin(), coords.end())));
         }
     }
 }
@@ -792,6 +798,7 @@ void Msd::finishAnalysis(int gmx_unused nframes)
             const int secondaryStartIndex = beginFitIndex_ + halfNumTaus;
             // Split the fit in 2, and compare the results of each fit;
             real a = 0.0, a2 = 0.0;
+
             lsq_y_ax_b_xdouble(halfNumTaus,
                                &taus_[beginFitIndex_],
                                &msdData.msdSums[beginFitIndex_],
@@ -846,16 +853,16 @@ void Msd::writeOutput()
     msdPlotModule->setYFormat(10, 6, 'g');
     for (const auto& group : groupData_)
     {
-        const real D = group.diffusionCoefficient;
+        const double D = group.diffusionCoefficient;
         if (D > 0.01 && D < 1e4)
         {
             msdPlotModule->appendLegend(formatString(
-                    "D[%10s] = %.4f (+/- %.4f) (1e-5 cm^2/s)", group.sel.name(), D, group.sigma));
+                    "D[%10s] = %.4f (+/- %.2f) (1e-5 cm^2/s)", group.sel.name(), D, group.sigma));
         }
         else
         {
             msdPlotModule->appendLegend(formatString(
-                    "D[%10s] = %.4g (+/- %.4f) (1e-5 cm^2/s)", group.sel.name(), D, group.sigma));
+                    "D[%10s] = %.4g (+/- %.2f) (1e-5 cm^2/s)", group.sel.name(), D, group.sigma));
         }
     }
     msdPlotData_.addModule(msdPlotModule);

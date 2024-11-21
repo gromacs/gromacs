@@ -264,6 +264,22 @@ void nonbonded_verlet_t::atomdata_init_copy_x_to_nbat_x_gpu() const
     nbnxn_gpu_init_x_to_nbat_x(pairSearch_->gridSet(), gpuNbv_);
 }
 
+const Grid& nonbonded_verlet_t::localGrid() const
+{
+    return pairSearch_->gridSet().grid(0);
+}
+
+void nonbonded_verlet_t::setNonLocalGrid(const int                           gridIndex,
+                                         const int                           ddZone,
+                                         const GridDimensions&               gridDimensions,
+                                         ArrayRef<const std::pair<int, int>> columns,
+                                         ArrayRef<const int32_t>             atomInfo,
+                                         ArrayRef<const RVec>                x)
+{
+    pairSearch_->setNonLocalGrid(gridIndex, ddZone, gridDimensions, columns, atomInfo, x, nbat_.get());
+}
+
+
 bool buildSupportsNonbondedOnGpu(std::string* error)
 {
     MessageStringCollector errorReasons;

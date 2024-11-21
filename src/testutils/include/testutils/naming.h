@@ -318,17 +318,9 @@ std::string formatNameFromParam(const Param                                     
                     // such a \c gmx::EnumerationArray.
                     return std::string{ formatter[param] };
                 }
-#if !defined(__CUDACC_VER_MAJOR__) || (__CUDACC_VER_MAJOR__ > 11) \
-        || ((__CUDACC_VER_MAJOR__ == 11) && (__CUDACC_VER_MINOR__ > 4))
-        // Compiler recognizes that we can't get here and so
-        // we don't need to write an unreachable return
-        // statement.
-#else
-                // nvcc before 11.5.0 fails to recognize that the above
-                // if-constexpr nest always produced a return statement
-                // so complains unless we add this unnecessary one.
-                return std::string{};
-#endif
+                // Compiler recognizes that we can't get here and so
+                // we don't need to write an unreachable return
+                // statement.
             },
             formatterVariant);
 }
@@ -401,6 +393,8 @@ std::string mapNameFormattersToParameters(const ParametersTuple params,
     testName = replaceAll(testName, ".", "_");
     testName = replaceAll(testName, " ", "_");
     testName = replaceAll(testName, "/", "_");
+    testName = replaceAll(testName, "(", "_");
+    testName = replaceAll(testName, ")", "_");
     return testName;
 }
 

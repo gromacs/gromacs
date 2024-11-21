@@ -40,7 +40,7 @@ find_program(VMD_EXECUTABLE NAMES vmd PATH_SUFFIXES bin
     DOC "VMD command")
 
 #set search path in increasing priority:
-# default path, vmd binary path, enviroment variable
+# default path, vmd binary path, environment variable
 set(VMD_PATHS "/usr/local/lib/vmd/plugins/*/molfile/")
 if(VMD_EXECUTABLE)
     file(STRINGS "${VMD_EXECUTABLE}" VMDDIR REGEX "^defaultvmddir=.*$")

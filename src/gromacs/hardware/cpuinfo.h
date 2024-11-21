@@ -72,7 +72,7 @@ public:
         None,                //!< No cpu information whatsoever. Sorry.
         Name,                //!< Only vendor and/or brand is set
         Features,            //!< Some features are set
-        LogicalProcessorInfo //!< Everything includling logical processor information
+        LogicalProcessorInfo //!< Everything including logical processor information
     };
 
     /*! \brief Processor/system vendors */

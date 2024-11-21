@@ -617,8 +617,8 @@ example ``urea.itp`` follows:
 ::
 
     [ moleculetype ]
-    ; molname	nrexcl
-    URE		3
+    ; molname   nrexcl
+    URE     3
 
     [ atoms ]
        1  C  1  URE      C      1     0.880229  12.01000   ; amber C  type
@@ -626,9 +626,9 @@ example ``urea.itp`` follows:
        8  H  1  URE    H22      8     0.395055   1.00800   ; amber H  type
 
     [ bonds ]
-        1	2
+        1   2
     ...
-        6	8
+        6   8
     [ dihedrals ]
     ;   ai    aj    ak    al funct  definition
          2     1     3     4   9

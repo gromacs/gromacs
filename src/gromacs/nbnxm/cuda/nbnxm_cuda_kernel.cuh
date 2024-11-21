@@ -99,19 +99,15 @@ namespace gmx
  * NTHREAD_Z controls the number of j-clusters processed concurrently on NTHREAD_Z
  * warp-pairs per block.
  *
- * - On CC 3.0-3.5, and >=5.0 NTHREAD_Z == 1, translating to 64 th/block with 16
+ * - On CC >=5.0 NTHREAD_Z == 1, translating to 64 th/block with 16
  * blocks/multiproc, is the fastest even though this setup gives low occupancy
  * (except on 6.0).
  * NTHREAD_Z > 1 results in excessive register spilling unless the minimum blocks
  * per multiprocessor is reduced proportionally to get the original number of max
  * threads in flight (and slightly lower performance).
- * - On CC 3.7 there are enough registers to double the number of threads; using
- * NTHREADS_Z == 2 is fastest with 16 blocks (TODO: test with RF and other kernels
- * with low-register use).
  *
  * Note that the current kernel implementation only supports NTHREAD_Z > 1 with
- * shuffle-based reduction, hence CC >= 3.0.
- *
+ * shuffle-based reduction, hence CC >= 5.0.
  *
  * NOTEs on Volta / CUDA 9 extensions:
  *
@@ -121,31 +117,21 @@ namespace gmx
  *   are warp-synchronous. Therefore, we don't need ballot to compute the
  *   active masks as these are all full-warp masks.
  *
- */
-
-/* Kernel launch bounds for different compute capabilities. The value of NTHREAD_Z
+ *
+ * Kernel launch bounds for different compute capabilities. The value of NTHREAD_Z
  * determines the number of threads per block and it is chosen such that
  * 16 blocks/multiprocessor can be kept in flight.
- * - CC 3.0,3.5, and >=5.0: NTHREAD_Z=1, (64, 16) bounds
- * - CC 3.7:                NTHREAD_Z=2, (128, 16) bounds
+ * - CC >=5.0: NTHREAD_Z=1, (64, 16) bounds
  *
  * Note: convenience macros, need to be undef-ed at the end of the file.
  */
-#if GMX_PTX_ARCH == 370
-#    define NTHREAD_Z (2)
-#    define MIN_BLOCKS_PER_MP (16)
-#else
-#    define NTHREAD_Z (1)
-#    define MIN_BLOCKS_PER_MP (16)
-#endif /* GMX_PTX_ARCH == 370 */
+#define NTHREAD_Z (1)
+#define MIN_BLOCKS_PER_MP (16)
 #define THREADS_PER_BLOCK (c_clusterSize * c_clusterSize * NTHREAD_Z)
 
-#if GMX_PTX_ARCH >= 350
 /**@}*/
+
 __launch_bounds__(THREADS_PER_BLOCK, MIN_BLOCKS_PER_MP)
-#else
-__launch_bounds__(THREADS_PER_BLOCK)
-#endif /* GMX_PTX_ARCH >= 350 */
 #ifdef PRUNE_NBL
 #    ifdef CALC_ENERGIES
         __global__ void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _VF_prune_cuda)

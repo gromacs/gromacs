@@ -219,7 +219,7 @@ void gmx::LegacySimulator::do_md()
     bool bInteractiveMDstep = false;
 
     SimulationSignals signals;
-    // Most global communnication stages don't propagate mdrun
+    // Most global communication stages don't propagate mdrun
     // signals, and will use this object to achieve that.
     SimulationSignaller nullSignaller(nullptr, nullptr, nullptr, false, false);
 
@@ -1123,7 +1123,7 @@ void gmx::LegacySimulator::do_md()
 
         const bool bCalcEner = bCalcEnerStep || needEnergyAndVirial;
 
-        // bCalcEner is only here for when the last step is not a mulitple of nstfep
+        // bCalcEner is only here for when the last step is not a multiple of nstfep
         const bool computeDHDL = ((ir->efep != FreeEnergyPerturbationType::No || ir->bSimTemp)
                                   && (do_per_step(step, nstfep) || bCalcEner));
 

@@ -67,7 +67,7 @@ struct gmx_domdec_constraints_t
     std::vector<int> molb_con_offset; /**< Offset in the constraint array for each molblock */
     std::vector<int> molb_ncon_mol; /**< The number of constraints per molecule for each molblock */
 
-    int ncon; /**< The fully local and conneced constraints */
+    int ncon; /**< The fully local and connected constraints */
     /* The global constraint number, only required for clearing gc_req */
     std::vector<int> con_gl;     /**< Global constraint indices for local constraints */
     std::vector<int> con_nlocat; /**< Number of local atoms (2/1/0) for each constraint */

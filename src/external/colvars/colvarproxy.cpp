@@ -121,29 +121,6 @@ size_t colvarproxy_atoms::get_num_active_atoms() const
 }
 
 
-int colvarproxy_atoms::load_atoms(char const * /* filename */,
-                                  cvm::atom_group & /* atoms */,
-                                  std::string const & /* pdb_field */,
-                                  double)
-{
-  return cvm::error("Error: loading atom identifiers from a file "
-                    "is currently not implemented.\n",
-                    COLVARS_NOT_IMPLEMENTED);
-}
-
-
-int colvarproxy_atoms::load_coords(char const * /* filename */,
-                                   std::vector<cvm::atom_pos> & /* pos */,
-                                   std::vector<int> const & /* sorted_ids */,
-                                   std::string const & /* pdb_field */,
-                                   double)
-{
-  return cvm::error("Error: loading atomic coordinates from a file "
-                    "is currently not implemented.\n",
-                    COLVARS_NOT_IMPLEMENTED);
-}
-
-
 void colvarproxy_atoms::compute_rms_atoms_applied_force()
 {
   atoms_rms_applied_force_ =
@@ -552,6 +529,31 @@ int colvarproxy::parse_module_config()
     config_queue->pop_front();
   }
   return error_code;
+}
+
+
+int colvarproxy::load_atoms_pdb(char const * /* filename */,
+                                cvm::atom_group & /* atoms */,
+                                std::string const & /* pdb_field */,
+                                double /* pdb_field_value */)
+{
+  return cvm::error(
+      "Error: loading atom indices from a PDB file is currently not implemented in " +
+          engine_name() + ".\n",
+      COLVARS_NOT_IMPLEMENTED);
+}
+
+
+int colvarproxy::load_coords_pdb(char const * /* filename */,
+                                 std::vector<cvm::atom_pos> & /* pos */,
+                                 std::vector<int> const & /* sorted_ids */,
+                                 std::string const & /* pdb_field */,
+                                 double /* pdb_field_value */)
+{
+  return cvm::error(
+      "Error: loading atomic coordinates from a PDB file is currently not implemented in " +
+          engine_name() + ".\n",
+      COLVARS_NOT_IMPLEMENTED);
 }
 
 

@@ -221,12 +221,6 @@ Performance and Run Control
         maximum percentage box scaling permitted per domain-decomposition
         load-balancing step (default 10)
 
-``GMX_DO_GALACTIC_DYNAMICS``
-        planetary simulations are made possible (just for fun) by setting
-        this environment variable, which allows setting :mdp:`epsilon-r` to -1 in the :ref:`mdp`
-        file. Normally, :mdp:`epsilon-r` must be greater than zero to prevent a fatal error.
-        See webpage_ for example input files for a planetary simulation.
-
 ``GMX_EMULATE_GPU``
         emulate GPU runs by using algorithmically equivalent CPU reference code instead of
         GPU-accelerated functions. As the CPU code is slow, it is intended to be used only for debugging purposes.
@@ -261,7 +255,7 @@ Performance and Run Control
 ``GMX_FORCE_GPU_AWARE_MPI``
         Override the result of build- and runtime GPU-aware MPI detection and force the use of
         direct GPU MPI communication. Aimed at cases where the user knows that the MPI library is
-        GPU-aware, but |Gromacs| is not able to detect this. Note that only CUDA and SYCL builds 
+        GPU-aware, but |Gromacs| is not able to detect this. Note that only CUDA and SYCL builds
         support such functionality.
 
 ``GMX_FORCE_UPDATE_DEFAULT_CPU``
@@ -296,6 +290,10 @@ Performance and Run Control
         using multiple PME ranks with GPU offload, which is expected to improve
         performance when scaling over many GPUs. Note: this feature still lacks
         substantial testing.
+
+``GMX_GPU_DISABLE_BUFFER_OPS``
+        Disable coordinate/force transformation to be done on the GPU and execute these
+        tasks on the CPU instead.
 
 ``GMX_GPU_PME_PP_COMMS``
         Removed, use GMX_ENABLE_DIRECT_GPU_COMM instead.
@@ -356,16 +354,17 @@ Performance and Run Control
         mutually exclusive of ``GMX_NBNXN_EWALD_ANALYTICAL``.
 
 ``GMX_NBNXN_PLAINC_1X1``
-        force the use of the reference 1x1 non-SIMD CPU non-bonded kernel
-         
+        force the use of the reference 1x1 non-SIMD CPU non-bonded kernel,
+        mutually exclusive of ``GMX_NBNXN_SIMD_2XNN`` and ``GMX_NBNXN_SIMD_4XN``.
+
 ``GMX_NBNXN_SIMD_2XNN``
         force the use of 2x(N+N) SIMD CPU non-bonded kernels,
-        mutually exclusive of ``GMX_NBNXN_SIMD_4XN``.
+        mutually exclusive of ``GMX_NBNXN_PLAINC_1X1`` and ``GMX_NBNXN_SIMD_4XN``.
 
 ``GMX_NBNXN_SIMD_4XN``
         force the use of 4xN SIMD CPU non-bonded kernels,
-        mutually exclusive of ``GMX_NBNXN_SIMD_2XNN``.
-	
+        mutually exclusive of ``GMX_NBNXN_PLAINC_1X1`` and ``GMX_NBNXN_SIMD_2XNN``.
+
 ``GMX_NO_CART_REORDER``
         used in initializing domain decomposition communicators. Rank reordering
         is default, but can be switched off with this environment variable.
@@ -433,7 +432,7 @@ Performance and Run Control
         sets the maximum tolerated error in the pressure in bar for the
         automated tuning of the Verlet pair-list buffering. Can only be used
         with system where this tolerance has not been set using the mdp parameter.
-        
+
 ``GMX_VERLET_BUFFER_RES``
         resolution of buffer size in Verlet cutoff scheme.  The default value is
         0.001, but can be overridden with this environment variable.
@@ -481,7 +480,6 @@ compilation of OpenCL kernels, but they are also used in device selection.
         testing on platforms where this behavior is not default.
 
 ``GMX_OCL_DUMP_INTERM_FILES``
-
         If defined, intermediate language code corresponding to the
         OpenCL build process is saved to file. Caching has to be
         turned off in order for this option to take effect.

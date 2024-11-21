@@ -36,8 +36,9 @@ simulations. Some stages are optional for some kinds of simulations.
    - the force field, which describes how the particles within the
      system interact with each other. Select one that is appropriate
      for the system being studied and the property or phenomena of
-     interest. This is a very important and non-trivial step! Consider
-     now how you will analyze your simulation data to make your
+     interest. This is a very important and non-trivial step!
+
+   - how you will analyze your simulation data to make your
      observations.
 
 3. Obtain or generate the initial coordinate file for each molecule to
@@ -87,9 +88,8 @@ simulations. Some stages are optional for some kinds of simulations.
    parameters that are consistent with how force field was
    derived. You may need to simulate at NVT with position restraints
    on your solvent and/or solute to get the temperature almost right,
-   then relax to NPT to fix the density (which should be done with
-   Berendsen until after the density is stabilized, before a further
-   switch to a barostat that produces the correct ensemble), then move
+   then relax to NPT to fix the density (with the recommendation to use the
+   c-rescale barostat), then move
    further (if needed) to reach your production simulation ensemble
    (e.g. NVT, NVE). If you have problems here with the system :ref:`blowing
    up <blowing-up>`,

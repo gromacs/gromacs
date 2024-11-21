@@ -338,7 +338,7 @@ private:
     int type_ = 0;
     // Charge of the atom divided by chargeScale_
     int16_t charge_ = 0;
-    // Inverse mass divided by invMassScale_ of heaviest atom this atom is conneced to by a constraint
+    // Inverse mass divided by invMassScale_ of heaviest atom this atom is connected to by a constraint
     int16_t constraintInvMass_ = std::numeric_limits<int16_t>::max();
     // Constraint length divided by constraintLengthScale_ to the heaviest atom connected by a constraint
     int16_t constraintLength_ = 0;

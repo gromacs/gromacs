@@ -15,10 +15,14 @@ authors:
     family-names: Abraham
   - given-names: Andrey
     family-names: Alekseenko
+  - given-names: Brian
+    family-names: Andrews
   - given-names: Vladimir
     family-names: Basov
-  - given-names: Cathrine
-    family-names: Bergh
+  - given-names: Paul
+    family-names: Bauer
+  - given-names: Hugh
+    family-names: Bird
   - given-names: Eliane
     family-names: Briand
   - given-names: Ania
@@ -39,10 +43,12 @@ authors:
     family-names: Irrgang
   - given-names: Farzaneh
     family-names: Jalalypour
-  - given-names: Joe
-    family-names: Jordan
+  - given-names: Petter
+    family-names: Johansson
   - given-names: Carsten
     family-names: Kutzner
+  - given-names: Grzegorz
+    family-names: Łazarski
   - given-names: Justin A.
     family-names: Lemkul
   - given-names: Magnus
@@ -50,31 +56,39 @@ authors:
   - given-names: Pascal
     family-names: Merz
   - given-names: Vedran
-    family-names: Miletic
+    family-names: Miletić
   - given-names: Dmitry
     family-names: Morozov
+  - given-names: Lukas
+    family-names: Müllender
   - given-names: Julien
     family-names: Nabet
-  - given-names: Szilard
-    family-names: Pall
+  - given-names: Szilárd
+    family-names: Páll
   - given-names: Andrea
     family-names: Pasquadibisceglie
   - given-names: Michele
     family-names: Pellegrino
+  - given-names: Nicola
+    family-names: Piasentin
+  - given-names: Daniele
+    family-names: Rapetti
+  - given-names: Muhammad Umair
+    family-names: Sadiq
   - given-names: Hubert
     family-names: Santuz
   - given-names: Roland
     family-names: Schulz
+  - given-names: Michael
+    family-names: Shirts
   - given-names: Tatiana
     family-names: Shugaeva
   - given-names: Alexey
     family-names: Shvetsov
-  - given-names: Philip
-    family-names: Turner
   - given-names: Alessandra
     family-names: Villa
   - given-names: Sebastian
-    family-names: Wingbermuehle
+    family-names: Wingbermühle
   - given-names: Berk
     family-names: Hess
   - given-names: Erik

@@ -249,8 +249,8 @@ TEST(NBlibTest, GmxToNblibConversionAllTypes)
             // compare parameters
             // comparing the two cosine angles with lower tolerance as this test introduces
             // numerical errors via the x != arccos(cos(x)) comparison
-            if constexpr (std::is_same<InteractionType, G96Angle>::value
-                          || std::is_same<InteractionType, RestrictedAngle>::value)
+            if constexpr (std::is_same_v<InteractionType, G96Angle>
+                          || std::is_same_v<InteractionType, RestrictedAngle>)
             {
                 // There is only one interaction parameter checked per loop through the parameter
                 // list, so it is correct to only check the first element in the parameters list

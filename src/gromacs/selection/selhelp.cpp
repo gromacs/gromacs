@@ -143,7 +143,7 @@ const char* const CmdLineHelpText::text[]  = {
     "have been provided.",
     "As a special case, [TT]-sf[tt] provided on its own, without preceding",
     "selection arguments, assigns the selections to all (yet unset) required",
-    "selections (i.e., those that would be promted interactively if no",
+    "selections (i.e., those that would be prompted interactively if no",
     "selections are provided on the command line).[PAR]",
 
     "To use groups from a traditional index file, use argument [TT]-n[tt]",

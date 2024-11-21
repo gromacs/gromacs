@@ -663,6 +663,8 @@ colvarvalue colvarvalue::dist2_grad(colvarvalue const &x2) const
 {
   colvarvalue::check_types(*this, x2);
 
+  // Compute derivative with respect to (*this)
+
   switch (this->value_type) {
   case colvarvalue::type_scalar:
     return 2.0 * (this->real_value - x2.real_value);

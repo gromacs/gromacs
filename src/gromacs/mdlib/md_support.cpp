@@ -465,7 +465,7 @@ void compute_globals(gmx_global_stat*               gstat,
     bEkinAveVel = (ir->eI == IntegrationAlgorithm::VV
                    || (ir->eI == IntegrationAlgorithm::VVAK && bPres) || bReadEkin);
 
-    /* in initalization, it sums the shake virial in vv, and to
+    /* in initialization, it sums the shake virial in vv, and to
        sums ekinh_old in leapfrog (or if we are calculating ekinh_old) for other reasons */
 
     /* ########## Kinetic energy  ############## */

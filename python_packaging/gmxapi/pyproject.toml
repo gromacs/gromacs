@@ -8,7 +8,7 @@ version = "0.4.1"
 description = "gmxapi Python interface for GROMACS."
 readme = "README.rst"
 license = { text = "GNU LESSER GENERAL PUBLIC LICENSE" }
-requires-python = ">=3.7"
+requires-python = ">=3.9"
 classifiers = [
     "License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)"
 ]
@@ -36,7 +36,7 @@ documentation = "https://manual.gromacs.org/current/gmxapi/index.html"
 # This provides some backward compatibility if set. Avoids surprises if default values change.
 minimum-version = "0.4"
 
-cmake.minimum-version = "3.18.4"
+cmake.minimum-version = "3.28.0"
 cmake.build-type = "Release"
 
 # Include and exclude patterns, in gitignore syntax. Include overrides exclude.

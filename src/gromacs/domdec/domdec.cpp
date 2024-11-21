@@ -133,6 +133,7 @@
 #include "domdec_setup.h"
 #include "domdec_specatomcomm.h"
 #include "domdec_vsite.h"
+#include "haloexchange.h"
 #include "redistribute.h"
 #include "utility.h"
 
@@ -167,8 +168,7 @@ static void ddindex2xyz(const ivec nc, int ind, ivec xyz)
     xyz[ZZ] = ind % nc[ZZ];
 }
 
-//! Returns the MPI rank for the PP domain corresponding to \p coord
-static int ddRankFromDDCoord(const gmx_domdec_t& dd, const gmx::IVec& coord)
+int ddRankFromDDCoord(const gmx_domdec_t& dd, const gmx::IVec& coord)
 {
     int rank = -1;
 
@@ -361,10 +361,8 @@ void dd_move_x(gmx_domdec_t* dd, const matrix box, gmx::ArrayRef<gmx::RVec> x, g
     wallcycle_stop(wcycle, WallCycleCounter::MoveX);
 }
 
-void dd_move_f(gmx_domdec_t* dd, gmx::ForceWithShiftForces* forceWithShiftForces, gmx_wallcycle* wcycle)
+static void dd_move_f_aggregating(gmx_domdec_t* dd, gmx::ForceWithShiftForces* forceWithShiftForces)
 {
-    wallcycle_start(wcycle, WallCycleCounter::MoveF);
-
     gmx::ArrayRef<gmx::RVec> f      = forceWithShiftForces->force();
     gmx::ArrayRef<gmx::RVec> fshift = forceWithShiftForces->shiftForces();
 
@@ -466,6 +464,21 @@ void dd_move_f(gmx_domdec_t* dd, gmx::ForceWithShiftForces* forceWithShiftForces
         }
         nzone /= 2;
     }
+}
+
+void dd_move_f(gmx_domdec_t* dd, gmx::ForceWithShiftForces* forceWithShiftForces, gmx_wallcycle* wcycle)
+{
+    wallcycle_start(wcycle, WallCycleCounter::MoveF);
+
+    if (dd->haloExchange)
+    {
+        dd->haloExchange->moveF(forceWithShiftForces->force(), forceWithShiftForces->shiftForces());
+    }
+    else
+    {
+        dd_move_f_aggregating(dd, forceWithShiftForces);
+    }
+
     wallcycle_stop(wcycle, WallCycleCounter::MoveF);
 }
 
@@ -2309,12 +2322,11 @@ static void writeSettings(gmx::TextWriter*   log,
     }
     else
     {
-        ivec np;
-        set_dd_cell_sizes_slb(dd, ddbox, setcellsizeslbPULSE_ONLY, np);
+        set_dd_cell_sizes_slb(dd, ddbox, setcellsizeslbPULSE_ONLY);
         log->writeString("The initial number of communication pulses is:");
         for (int d = 0; d < dd->ndim; d++)
         {
-            log->writeStringFormatted(" %c %d", dim2char(dd->dim[d]), np[dd->dim[d]]);
+            log->writeStringFormatted(" %c %d", dim2char(dd->dim[d]), dd->numPulses[dd->dim[d]]);
         }
         log->ensureLineBreak();
         log->writeString("The initial domain decomposition cell size is:");
@@ -2691,6 +2703,7 @@ public:
     std::unique_ptr<gmx_domdec_t> build(LocalAtomSetManager*       atomSets,
                                         const gmx_localtop_t&      localTopology,
                                         const t_state*             localState,
+                                        bool                       haveFillerParticlesInLocalState,
                                         ObservablesReducerBuilder* observablesReducerBuilder);
 
     //! Objects used in constructing and configuring DD
@@ -2840,10 +2853,12 @@ DomainDecompositionBuilder::Impl::Impl(const MDLogger&           mdlog,
             mdlog_, ddSettings_, options_.rankOrder, ddRankSetup_, cr_, ddCellIndex_, &pmeRanks_);
 }
 
-std::unique_ptr<gmx_domdec_t> DomainDecompositionBuilder::Impl::build(LocalAtomSetManager* atomSets,
-                                                                      const gmx_localtop_t& localTopology,
-                                                                      const t_state* localState,
-                                                                      ObservablesReducerBuilder* observablesReducerBuilder)
+std::unique_ptr<gmx_domdec_t>
+DomainDecompositionBuilder::Impl::build(LocalAtomSetManager*       atomSets,
+                                        const gmx_localtop_t&      localTopology,
+                                        const t_state*             localState,
+                                        const bool                 haveFillerParticlesInLocalState,
+                                        ObservablesReducerBuilder* observablesReducerBuilder)
 {
     auto dd = std::make_unique<gmx_domdec_t>(
             ir_, arrayRefFromArray(ddGridSetup_.ddDimensions, ddGridSetup_.numDDDimensions));
@@ -2873,6 +2888,12 @@ std::unique_ptr<gmx_domdec_t> DomainDecompositionBuilder::Impl::build(LocalAtomS
         set_ddgrid_parameters(mdlog_, dd.get(), options_.dlbScaling, mtop_, ir_, &ddbox_);
 
         setup_neighbor_relations(dd.get());
+
+        // Use of direct halo exchange is coupled to having filler particles in the local state
+        if (dd->nnodes > 1 && haveFillerParticlesInLocalState)
+        {
+            dd->haloExchange = std::make_unique<gmx::HaloExchange>(ir_.pbcType);
+        }
     }
 
     /* Set overallocation to avoid frequent reallocation of arrays */
@@ -2937,9 +2958,11 @@ DomainDecompositionBuilder::DomainDecompositionBuilder(const MDLogger&          
 std::unique_ptr<gmx_domdec_t> DomainDecompositionBuilder::build(LocalAtomSetManager*  atomSets,
                                                                 const gmx_localtop_t& localTopology,
                                                                 const t_state*        localState,
+                                                                const bool haveFillerParticlesInLocalState,
                                                                 ObservablesReducerBuilder* observablesReducerBuilder)
 {
-    return impl_->build(atomSets, localTopology, localState, observablesReducerBuilder);
+    return impl_->build(
+            atomSets, localTopology, localState, haveFillerParticlesInLocalState, observablesReducerBuilder);
 }
 
 DomainDecompositionBuilder::~DomainDecompositionBuilder() = default;

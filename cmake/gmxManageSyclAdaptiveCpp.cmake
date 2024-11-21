@@ -244,7 +244,7 @@ if (GMX_ACPP_HAVE_HIP_TARGET AND GMX_GPU_FFT_ROCFFT)
     set(_sycl_has_valid_fft TRUE)
 endif()
 
-# Set new veriables for use in buildinfo.h.cmakein
+# Set new variables for use in buildinfo.h.cmakein
 if (hipsycl_FOUND)
     set(ACPP_COMPILER_LAUNCHER "${HIPSYCL_SYCLCC_LAUNCHER}")
     set(ACPP_EXTRA_ARGS "${HIPSYCL_SYCLCC_EXTRA_ARGS}")

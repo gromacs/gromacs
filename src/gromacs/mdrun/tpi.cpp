@@ -605,21 +605,6 @@ std::pair<double, double> TestParticleInsertion::performSingleInsertion(const do
     std::feclearexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
     std::feupdateenv(&floatingPointEnvironment);
 
-    if (fr_.dispersionCorrection)
-    {
-        /* Calculate long range corrections to pressure and energy */
-        const DispersionCorrection::Correction correction =
-                fr_.dispersionCorrection->calculate(stateGlobal->box, 0);
-        /* figure out how to rearrange the next 4 lines MRS 8/4/2009 */
-        enerd_.term[F_DISPCORR] = correction.energy;
-        enerd_.term[F_EPOT] += correction.energy;
-        enerd_.term[F_PRES] += correction.pressure;
-        enerd_.term[F_DVDL] += correction.dvdl;
-    }
-    else
-    {
-        enerd_.term[F_DISPCORR] = 0;
-    }
     if (usingRF(fr_.ic->eeltype))
     {
         enerd_.term[F_EPOT] += rfExclusionEnergy_;

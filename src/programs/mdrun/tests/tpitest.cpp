@@ -69,7 +69,7 @@ namespace
 /*! \brief A basic TPI runner.
  * The only input parameter used currently: input system random seed (ld-seed).
  */
-class TpiTest : public MdrunTestFixture, public ::testing::WithParamInterface<int>
+class TpiTest : public MdrunTestFixture, public ::testing::WithParamInterface<std::tuple<bool, int>>
 {
 public:
     //! Runs the test with the given inputs
@@ -116,7 +116,9 @@ void TpiTest::runTest()
 
 TEST_P(TpiTest, ReproducesOutput)
 {
-    const int randomSeed = GetParam();
+    auto       params      = GetParam();
+    const bool useDispCorr = std::get<0>(params);
+    const int  randomSeed  = std::get<1>(params);
 
     const int         nsteps          = 200;
     const std::string mdpFileContents = formatString(R"(
@@ -135,6 +137,7 @@ TEST_P(TpiTest, ReproducesOutput)
         vdw-type                 = cut-off
         vdw-modifier             = none
         rvdw                     = 0.9
+        dispcorr                 = %s
         Tcoupl                   = no
         tc-grps                  = System
         tau_t                    = 0.5
@@ -142,13 +145,18 @@ TEST_P(TpiTest, ReproducesOutput)
         nsteps                   = %d
     )",
                                                      randomSeed,
+                                                     useDispCorr ? "EnerPres" : "no",
                                                      nsteps);
 
     runner_.useStringAsMdpFile(mdpFileContents);
     runTest();
 }
 
-INSTANTIATE_TEST_SUITE_P(Simple, TpiTest, ::testing::Values(1993, 2994));
+INSTANTIATE_TEST_SUITE_P(Simple,
+                         TpiTest,
+                         ::testing::Values(std::make_tuple(false, 1993),
+                                           std::make_tuple(false, 2994),
+                                           std::make_tuple(true, 1993)));
 
 } // namespace
 } // namespace test

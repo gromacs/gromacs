@@ -221,7 +221,7 @@ public:
     constexpr reference emplace_back(Args&&... args)
     {
         GMX_ASSERT(size() < capacity_, "Cannot add more elements than the capacity");
-        if constexpr (std::is_move_assignable<T>::value)
+        if constexpr (std::is_move_assignable_v<T>)
         {
             data_[size_] = std::move(T(args...));
         }

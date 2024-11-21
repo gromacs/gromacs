@@ -128,7 +128,7 @@ template<class T>
 std::shared_ptr<gmxapi::MDModule> PyRestraint<T>::getModule()
 {
     auto module =
-            std::make_shared<typename std::enable_if<std::is_base_of<gmxapi::MDModule, T>::value, T>::type>();
+            std::make_shared<typename std::enable_if<std::is_base_of_v<gmxapi::MDModule, T>, T>::type>();
     return module;
 }
 

@@ -359,7 +359,7 @@ enum class ParrinelloRahmanVelocityScaling
  * aligned (and padded) memory, possibly with some hints for the compilers.
  */
 template<StoreUpdatedVelocities storeUpdatedVelocities, NumTempScaleValues numTempScaleValues, ParrinelloRahmanVelocityScaling parrinelloRahmanVelocityScaling, typename VelocityType>
-static std::enable_if_t<std::is_same<VelocityType, rvec>::value || std::is_same<VelocityType, const rvec>::value, void>
+static std::enable_if_t<std::is_same_v<VelocityType, rvec> || std::is_same_v<VelocityType, const rvec>, void>
 updateMDLeapfrogSimple(int                                 start,
                        int                                 nrend,
                        real                                dt,
@@ -488,7 +488,7 @@ static inline void simdStoreRvecs(rvec* r, int index, UpdateSimdReal r0, UpdateS
  * \param[in]    f                      Forces
  */
 template<StoreUpdatedVelocities storeUpdatedVelocities, NumTempScaleValues numTempScaleValues, typename VelocityType>
-static std::enable_if_t<std::is_same<VelocityType, rvec>::value || std::is_same<VelocityType, const rvec>::value, void>
+static std::enable_if_t<std::is_same_v<VelocityType, rvec> || std::is_same_v<VelocityType, const rvec>, void>
 updateMDLeapfrogSimpleSimd(int                               start,
                            int                               nrend,
                            real                              dt,

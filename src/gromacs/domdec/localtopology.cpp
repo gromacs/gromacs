@@ -993,10 +993,17 @@ int dd_make_local_top(const gmx_domdec_t&          dd,
         for (int d = 0; d < DIM; d++)
         {
             rcheck[d] = FALSE;
-            /* Only need to check for dimensions where the part of the box
+            /* With single atom communication:
+             * Only need to check for dimensions where the part of the box
              * that is not communicated is smaller than the cut-off.
+             *
+             * With communication of whole NBNxM cells:
+             * We can communicate atoms that are significantly beyond the DD cut-off,
+             * therefore we need to always check distances for assigning bonded interactions.
+             * TODO: Check if we can avoid distance checks in some cases.
              */
-            if (d < npbcdim && dd.numCells[d] > 1 && (dd.numCells[d] - npulse[d]) * cellsize_min[d] < 2 * rc)
+            if (d < npbcdim && dd.numCells[d] > 1
+                && ((dd.numCells[d] - npulse[d]) * cellsize_min[d] < 2 * rc || dd.haloExchange != nullptr))
             {
                 if (dd.numCells[d] == 2)
                 {

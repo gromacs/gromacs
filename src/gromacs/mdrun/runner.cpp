@@ -224,7 +224,6 @@ namespace gmx
  * the GPU communication flags are set to false in non-tMPI and non-CUDA builds.
  *
  * \param[in]  mdlog                Logger object.
- * \param[in]  useGpuForNonbonded   True if the nonbonded task is offloaded in this run.
  * \param[in]  pmeRunMode   Run mode indicating what resource is PME executed on.
  * \param[in]  numRanksPerSimulation   The number of ranks in each simulation.
  * \param[in]  numPmeRanksPerSimulation   The number of PME ranks in each simulation, can be -1
@@ -232,16 +231,12 @@ namespace gmx
  * \returns                         The object populated with development feature flags.
  */
 static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& mdlog,
-                                                         const bool           useGpuForNonbonded,
                                                          const PmeRunMode     pmeRunMode,
                                                          const int            numRanksPerSimulation,
                                                          const int numPmeRanksPerSimulation,
                                                          gmx::GpuAwareMpiStatus gpuAwareMpiStatus)
 {
     DevelopmentFeatureFlags devFlags;
-
-    devFlags.enableGpuBufferOps = (GMX_GPU_CUDA || GMX_GPU_SYCL) && useGpuForNonbonded
-                                  && (getenv("GMX_USE_GPU_BUFFER_OPS") != nullptr);
 
     if (getenv("GMX_CUDA_GRAPH") != nullptr)
     {
@@ -287,7 +282,7 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
         }
     }
 
-    // Flag use to enable GPU-aware MPI depenendent features such PME GPU decomposition
+    // Flag use to enable GPU-aware MPI dependent features such PME GPU decomposition
     // GPU-aware MPI is marked available if it has been detected by GROMACS or detection fails but
     // user wants to force its use
     devFlags.canUseGpuAwareMpi = false;
@@ -394,15 +389,6 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
                             "Direct use of NVSHMEM will be disabled. "
                             "NVSHMEM may still be used indirectly if cuFFTMp is enabled. ");
         }
-    }
-
-    if (devFlags.enableGpuBufferOps)
-    {
-        GMX_LOG(mdlog.warning)
-                .asParagraph()
-                .appendTextFormatted(
-                        "This run uses the 'GPU buffer ops' feature, enabled by the "
-                        "GMX_USE_GPU_BUFFER_OPS environment variable.");
     }
 
     // PME decomposition is supported only with CUDA or SYCL and also
@@ -937,16 +923,19 @@ static void finish_run(FILE*                     fplog,
 //! Returns whether the run conditions permit the local state to have filler particles
 static bool localStateHasFillerParticles(const gmx_mtop_t& mtop,
                                          const t_inputrec& inputrec,
-                                         const t_commrec&  commrec)
+                                         const bool        useDomainDecomposition,
+                                         const bool        haveSinglePPRank,
+                                         const bool        useGpuDirectHalo)
 {
-    // Currently having filler particles in the local states is only supported with a single DD rank
-    // WholeMoleculeTransform does not support filler particles
+    // Having filler particles in the local states is supported with DD atom ordering.
+    // WholeMoleculeTransform and GPU-direct does not support filler particles.
     const bool useEwaldSurfaceCorrection =
             (usingPmeOrEwald(inputrec.coulombtype) && inputrec.epsilon_surface != 0);
     const bool haveOrientationRestraints = (gmx_mtop_ftype_count(mtop, F_ORIRES) > 0);
     const bool needWholeMolecules        = useEwaldSurfaceCorrection || haveOrientationRestraints;
     const bool canHaveFillerParticlesInLocalState =
-            haveDDAtomOrdering(commrec) && commrec.nnodes == 1 && !needWholeMolecules;
+            useDomainDecomposition
+            && ((haveSinglePPRank && !needWholeMolecules) || (!haveSinglePPRank && !useGpuDirectHalo));
     bool haveFillerParticlesInLocalState = false;
     if (const char* env = getenv("GMX_FILLERS_IN_LOCAL_STATE"))
     {
@@ -960,8 +949,9 @@ static bool localStateHasFillerParticles(const gmx_mtop_t& mtop,
         {
             GMX_THROW(
                     gmx::InvalidInputError("Fillers in local state requested, but not supported"
-                                           " because DD is not used or because an algorithm"
-                                           " requires whole molecules"));
+                                           " because DD is not used or because GPU-direct comm."
+                                           " does not support it or because an algorithm requires"
+                                           " whole molecules"));
         }
         haveFillerParticlesInLocalState = canHaveFillerParticlesInLocalState && (value != 0);
     }
@@ -1185,12 +1175,8 @@ int Mdrunner::mdrunner()
     // will work. It likely would not work in cases where ranks
     // have heterogeneous device types or vendors unless the MPI
     // library supported that.
-    const DevelopmentFeatureFlags devFlags = manageDevelopmentFeatures(mdlog,
-                                                                       useGpuForNonbonded,
-                                                                       pmeRunMode,
-                                                                       cr->sizeOfDefaultCommunicator,
-                                                                       domdecOptions.numPmeRanks,
-                                                                       hwinfo_->minGpuAwareMpiStatus);
+    const DevelopmentFeatureFlags devFlags = manageDevelopmentFeatures(
+            mdlog, pmeRunMode, cr->sizeOfDefaultCommunicator, domdecOptions.numPmeRanks, hwinfo_->minGpuAwareMpiStatus);
 
     const bool useModularSimulator = checkUseModularSimulator(false,
                                                               inputrec.get(),
@@ -1341,7 +1327,7 @@ int Mdrunner::mdrunner()
     if (doRerun && (EI_ENERGY_MINIMIZATION(inputrec->eI) || IntegrationAlgorithm::NM == inputrec->eI))
     {
         gmx_fatal(FARGS,
-                  "The .mdp file specified an energy mininization or normal mode algorithm, and "
+                  "The .mdp file specified an energy minimization or normal mode algorithm, and "
                   "these are not compatible with mdrun -rerun");
     }
 
@@ -1539,8 +1525,12 @@ int Mdrunner::mdrunner()
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
 
-    const bool canUseDirectGpuComm = decideWhetherDirectGpuCommunicationCanBeUsed(
-            devFlags, inputrec->useMts, (inputrec->eSwapCoords != SwapType::No), mdlog);
+    const bool canUseDirectGpuComm =
+            decideWhetherDirectGpuCommunicationCanBeUsed(devFlags,
+                                                         inputrec->useMts,
+                                                         replExParams.exchangeInterval > 0,
+                                                         (inputrec->eSwapCoords != SwapType::No),
+                                                         mdlog);
 
     bool useGpuDirectHalo = false;
 
@@ -1558,6 +1548,25 @@ int Mdrunner::mdrunner()
                                                         doRerun,
                                                         EI_ENERGY_MINIMIZATION(inputrec->eI),
                                                         mdlog);
+    }
+
+    const bool haveFillerParticlesInLocalState = localStateHasFillerParticles(
+            mtop,
+            *inputrec,
+            useDomainDecomposition,
+            cr->sizeOfDefaultCommunicator == 1
+                    || cr->sizeOfDefaultCommunicator - domdecOptions.numPmeRanks == 1,
+            useGpuDirectHalo);
+
+    if (haveFillerParticlesInLocalState && useDomainDecomposition
+        && cr->sizeOfDefaultCommunicator - domdecOptions.numPmeRanks > 1
+        && domdecOptions.dlbOption != gmx::DlbOption::no)
+    {
+        GMX_LOG(mdlog.info)
+                .asParagraph()
+                .appendText(
+                        "Turning off DLB, as the is not (yet) supported with direct halo exchange");
+        domdecOptions.dlbOption = gmx::DlbOption::no;
     }
 
     // This builder is necessary while we have multi-part construction
@@ -1661,6 +1670,7 @@ int Mdrunner::mdrunner()
         cr->setDD(ddBuilder->build(&atomSets,
                                    localTopology,
                                    EI_ENERGY_MINIMIZATION(inputrec->eI) ? nullptr : localState,
+                                   haveFillerParticlesInLocalState,
                                    &observablesReducerBuilder));
         // The builder's job is done, so destruct it
         ddBuilder.reset(nullptr);
@@ -1703,8 +1713,6 @@ int Mdrunner::mdrunner()
     GMX_RELEASE_ASSERT(!useGpuPmeDecomposition || devFlags.enableGpuPmeDecomposition,
                        "GPU PME decomposition works only in the cases where it is supported");
 
-    const bool haveFillerParticlesInLocalState = localStateHasFillerParticles(mtop, *inputrec, *cr);
-
     MdrunScheduleWorkload runScheduleWork;
 
     // Also populates the simulation constant workload description.
@@ -1712,7 +1720,9 @@ int Mdrunner::mdrunner()
     // so this boolean is sufficient on all ranks to determine whether separate PME ranks are used,
     // but this will no longer be the case if cr->duty is changed for !usingPme(fr->ic->eeltype).
     const bool haveSeparatePmeRank = (!thisRankHasDuty(cr, DUTY_PP) || !thisRankHasDuty(cr, DUTY_PME));
-    runScheduleWork.simulationWork = createSimulationWorkload(*inputrec,
+    runScheduleWork.simulationWork = createSimulationWorkload(mdlog,
+                                                              *inputrec,
+                                                              replExParams.exchangeInterval > 0,
                                                               disableNonbondedCalculation,
                                                               devFlags,
                                                               haveFillerParticlesInLocalState,
@@ -1741,7 +1751,6 @@ int Mdrunner::mdrunner()
                                  runScheduleWork.simulationWork.haveFillerParticlesInLocalState
                                          ? "uses"
                                          : "does not use");
-
 
     if (runScheduleWork.simulationWork.useGpuDirectCommunication && GMX_GPU_CUDA)
     {

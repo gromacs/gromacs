@@ -382,22 +382,14 @@ void MdGpuGraph::Impl::createExecutableGraph(bool forceGraphReinstantiation)
         bool updateSuccessful = true;
         if (useGraphUpdate)
         {
-#    if CUDART_VERSION >= 12000
             cudaGraphExecUpdateResultInfo updateResultInfo_out;
             cudaError_t stat = cudaGraphExecUpdate(instance_, graph_, &updateResultInfo_out);
             bool        additionalCheck =
                     (updateResultInfo_out.result == cudaGraphExecUpdateErrorTopologyChanged);
-#    else
-            // Use old API, which doesn't provide as detailed error information
-            cudaGraphNode_t           hErrorNode_out;
-            cudaGraphExecUpdateResult updateResult_out;
-            cudaError_t stat = cudaGraphExecUpdate(instance_, graph_, &hErrorNode_out, &updateResult_out);
-            bool additionalCheck = true; // dummy
-#    endif
             if ((stat == cudaErrorGraphExecUpdateFailure)
                 && (havePPDomainDecomposition_ || haveSeparatePmeRank_) && additionalCheck)
             {
-                // This unnsuccessful update is due to multithreaded graph capture resulting in a
+                // This unsuccessful update is due to multithreaded graph capture resulting in a
                 // different ordering, which in a minority of cases CUDA wrongly interprets as being
                 // a different graph topology. Reset the error and re-instantiate in this case.
                 stat = cudaSuccess;
@@ -414,16 +406,8 @@ void MdGpuGraph::Impl::createExecutableGraph(bool forceGraphReinstantiation)
                 CU_RET_ERR(stat, "cudaGraphExecDestroy in MD graph definition finalization failed.");
             }
             // Instantiate using existing CUDA stream priorities for relative node priorities within graph
-            cudaError_t stat = cudaGraphInstantiate(&instance_,
-                                                    graph_,
-#    if CUDART_VERSION >= 12000
-                                                    cudaGraphInstantiateFlagUseNodePriority
-#    else
-                                                    nullptr,
-                                                    nullptr,
-                                                    0
-#    endif
-            );
+            cudaError_t stat =
+                    cudaGraphInstantiate(&instance_, graph_, cudaGraphInstantiateFlagUseNodePriority);
             CU_RET_ERR(stat, "cudaGraphInstantiate in MD graph definition finalization failed.");
         }
     }

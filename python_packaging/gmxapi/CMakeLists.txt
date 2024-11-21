@@ -67,7 +67,7 @@ if(CMAKE_CXX_STANDARD LESS 17)
 endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(Python3 3.7 COMPONENTS Interpreter Development)
+find_package(Python3 3.9 COMPONENTS Interpreter Development)
 find_package(pybind11 2.12 QUIET CONFIG)
 # If we are not running through setup.py, we may need to look for the pybind11 headers.
 if (NOT pybind11_FOUND)

@@ -21,11 +21,10 @@
 #include "colvarbias.h"
 #include "colvars_memstream.h"
 
+#include "colvarcomp_torchann.h"
 
-
-std::map<std::string, std::function<colvar::cvc *(const std::string &conf)>>
-    colvar::global_cvc_map =
-        std::map<std::string, std::function<colvar::cvc *(const std::string &conf)>>();
+std::map<std::string, std::function<colvar::cvc *()>> colvar::global_cvc_map =
+    std::map<std::string, std::function<colvar::cvc *()>>();
 
 std::map<std::string, std::string> colvar::global_cvc_desc_map =
     std::map<std::string, std::string>();
@@ -37,6 +36,7 @@ colvar::colvar()
   after_restart = false;
   kinetic_energy = 0.0;
   potential_energy = 0.0;
+  period = 0.0;
 
 #ifdef LEPTON
   dev_null = 0.0;
@@ -96,6 +96,12 @@ int colvar::init(std::string const &conf)
   if (error_code != COLVARS_OK) {
     return cvm::get_error();
   }
+#else
+  if (key_lookup(conf, "customFunction")) {
+    return cvm::error(
+        "Error: customFunction keyword is used, but the Lepton library is not available.\n",
+        COLVARS_NOT_IMPLEMENTED);
+  }
 #endif
 
   // Setup colvar as scripted function of components
@@ -139,7 +145,14 @@ int colvar::init(std::string const &conf)
 
     // Sort array of cvcs based on their names
     // Note: default CVC names are in input order for same type of CVC
-    std::sort(cvcs.begin(), cvcs.end(), colvar::compare_cvc);
+    std::sort(cvcs.begin(), cvcs.end(),
+              [](std::shared_ptr<colvar::cvc> const &cvc1,
+                 std::shared_ptr<colvar::cvc> const &cvc2) -> bool {
+                if (cvc1 && cvc2) {
+                  return cvc1->name < cvc2->name;
+                }
+                return false;
+              });
 
     if(cvcs.size() > 1) {
       cvm::log("Sorted list of components for this scripted colvar:\n");
@@ -194,9 +207,9 @@ int colvar::init(std::string const &conf)
 
         if ((cvcs[i])->sup_np < 0) {
           cvm::log("Warning: you chose a negative exponent in the combination; "
-                    "if you apply forces, the simulation may become unstable "
-                    "when the component \""+
-                    (cvcs[i])->function_type+"\" approaches zero.\n");
+                   "if you apply forces, the simulation may become unstable "
+                   "when the component \""+
+                   (cvcs[i])->function_type()+"\" approaches zero.\n");
         }
       }
     }
@@ -303,7 +316,7 @@ int colvar::init(std::string const &conf)
   error_code |= init_grid_parameters(conf);
 
   // Detect if we have a single component that is an alchemical lambda
-  if (is_enabled(f_cv_single_cvc) && cvcs[0]->function_type == "alchLambda") {
+  if (is_enabled(f_cv_single_cvc) && cvcs[0]->function_type() == "alchLambda") {
     enable(f_cv_external);
   }
 
@@ -489,8 +502,6 @@ int colvar::init_grid_parameters(std::string const &conf)
 {
   int error_code = COLVARS_OK;
 
-  colvarmodule *cv = cvm::main();
-
   cvm::real default_width = width;
 
   if (!key_already_set("width")) {
@@ -516,33 +527,67 @@ int colvar::init_grid_parameters(std::string const &conf)
 
   if (is_enabled(f_cv_scalar)) {
 
-    if (is_enabled(f_cv_single_cvc)) {
-      // Get the default boundaries from the component
+    // Record the CVC's intrinsic boundaries, and set them as default values for the user's choice
+    colvarvalue cvc_lower_boundary, cvc_upper_boundary;
+
+    if (is_enabled(f_cv_single_cvc)) { // Get the intrinsic boundaries of the CVC
+
       if (cvcs[0]->is_enabled(f_cvc_lower_boundary)) {
         enable(f_cv_lower_boundary);
         enable(f_cv_hard_lower_boundary);
-        lower_boundary =
+        lower_boundary = cvc_lower_boundary =
           *(reinterpret_cast<colvarvalue const *>(cvcs[0]->get_param_ptr("lowerBoundary")));
       }
+
       if (cvcs[0]->is_enabled(f_cvc_upper_boundary)) {
         enable(f_cv_upper_boundary);
         enable(f_cv_hard_upper_boundary);
-        upper_boundary =
-          *(reinterpret_cast<colvarvalue const *>(cvcs[0]->get_param_ptr("upperBoundary")));
+        upper_boundary = cvc_upper_boundary =
+            *(reinterpret_cast<colvarvalue const *>(cvcs[0]->get_param_ptr("upperBoundary")));
       }
     }
 
     if (get_keyval(conf, "lowerBoundary", lower_boundary, lower_boundary)) {
       enable(f_cv_lower_boundary);
-      // Because this is the user's choice, we cannot assume it is a true
-      // physical boundary
-      disable(f_cv_hard_lower_boundary);
+      if (is_enabled(f_cv_single_cvc) && is_enabled(f_cv_hard_lower_boundary)) {
+        if (cvm::sqrt(dist2(lower_boundary, cvc_lower_boundary))/width > colvar_boundaries_tol)  {
+          // The user choice is different from the CVC's default
+          disable(f_cv_hard_lower_boundary);
+        }
+      }
     }
 
     if (get_keyval(conf, "upperBoundary", upper_boundary, upper_boundary)) {
       enable(f_cv_upper_boundary);
-      disable(f_cv_hard_upper_boundary);
+      if (is_enabled(f_cv_single_cvc) && is_enabled(f_cv_hard_upper_boundary)) {
+        if (cvm::sqrt(dist2(upper_boundary, cvc_upper_boundary))/width > colvar_boundaries_tol)  {
+          disable(f_cv_hard_upper_boundary);
+        }
+      }
     }
+
+    get_keyval_feature(this, conf, "hardLowerBoundary", f_cv_hard_lower_boundary,
+                       is_enabled(f_cv_hard_lower_boundary));
+
+    get_keyval_feature(this, conf, "hardUpperBoundary", f_cv_hard_upper_boundary,
+                       is_enabled(f_cv_hard_upper_boundary));
+
+    get_keyval(conf, "expandBoundaries", expand_boundaries, expand_boundaries);
+
+    error_code |= parse_legacy_wall_params(conf);
+    error_code |= check_grid_parameters();
+  }
+
+  return error_code;
+}
+
+
+int colvar::parse_legacy_wall_params(std::string const &conf)
+{
+  int error_code = COLVARS_OK;
+  colvarmodule *cv = cvm::main();
+
+  if (is_enabled(f_cv_scalar)) {
 
     // Parse legacy wall options and set up a harmonicWalls bias if needed
     cvm::real lower_wall_k = 0.0, upper_wall_k = 0.0;
@@ -597,13 +642,14 @@ harmonicWalls {\n\
     }
   }
 
-  get_keyval_feature(this, conf, "hardLowerBoundary", f_cv_hard_lower_boundary,
-                     is_enabled(f_cv_hard_lower_boundary));
+  return error_code;
+}
 
-  get_keyval_feature(this, conf, "hardUpperBoundary", f_cv_hard_upper_boundary,
-                     is_enabled(f_cv_hard_upper_boundary));
 
-  // consistency checks for boundaries and walls
+int colvar::check_grid_parameters()
+{
+  int error_code = COLVARS_OK;
+
   if (is_enabled(f_cv_lower_boundary) && is_enabled(f_cv_upper_boundary)) {
     if (lower_boundary >= upper_boundary) {
       error_code |= cvm::error("Error: the upper boundary, "+
@@ -614,7 +660,6 @@ harmonicWalls {\n\
     }
   }
 
-  get_keyval(conf, "expandBoundaries", expand_boundaries, expand_boundaries);
   if (expand_boundaries && periodic_boundaries()) {
     error_code |= cvm::error("Error: trying to expand boundaries that already "
                              "cover a whole period of a periodic colvar.\n",
@@ -755,8 +800,8 @@ template <typename def_class_name>
 void colvar::add_component_type(char const *def_description, char const *def_config_key)
 {
   if (global_cvc_map.count(def_config_key) == 0) {
-    global_cvc_map[def_config_key] = [](const std::string &cvc_conf) {
-      return new def_class_name(cvc_conf);
+    global_cvc_map[def_config_key] = []() {
+      return new def_class_name();
     };
     global_cvc_desc_map[def_config_key] = std::string(def_description);
   }
@@ -767,48 +812,39 @@ int colvar::init_components_type(const std::string& conf, const char* def_config
   size_t def_count = 0;
   std::string def_conf = "";
   size_t pos = 0;
+  int error_code = COLVARS_OK;
   while ( this->key_lookup(conf,
                            def_config_key,
                            &def_conf,
                            &pos) ) {
-    if (!def_conf.size()) continue;
+
     cvm::log("Initializing "
              "a new \""+std::string(def_config_key)+"\" component"+
              (cvm::debug() ? ", with configuration:\n"+def_conf
               : ".\n"));
-    cvc *cvcp = global_cvc_map[def_config_key](def_conf);
-    cvm::increase_depth();
-    if (cvcp) {
-      int error_code = cvcp->init_code;
-      cvcs.push_back(cvcp);
-      error_code |= cvcp->set_function_type(def_config_key);
-      if (error_code == COLVARS_OK) {
-        error_code |= cvcp->check_keywords(def_conf, def_config_key);
-      }
-      if (error_code != COLVARS_OK) {
-        cvm::decrease_depth();
-        return cvm::error("Error: in setting up component \"" + std::string(def_config_key) +
-                              "\".\n",
-                          COLVARS_INPUT_ERROR);
-      }
-    } else {
-      cvm::decrease_depth();
-      return cvm::error("Error: in allocating component \"" + std::string(def_config_key) + "\".\n",
+    cvc *cvcp = global_cvc_map[def_config_key]();
+    if (!cvcp) {
+      return cvm::error("Error: in creating object of type \"" + std::string(def_config_key) +
+                            "\".\n",
                         COLVARS_MEMORY_ERROR);
     }
+    cvcs.push_back(std::shared_ptr<colvar::cvc>(cvcp));
 
-    if ((cvcp->period != 0.0) || (cvcp->wrap_center != 0.0)) {
-      if (!cvcp->is_enabled(f_cvc_periodic)) {
-        cvm::decrease_depth();
-        return cvm::error("Error: invalid use of period and/or "
-                          "wrapAround in a \"" +
-                              std::string(def_config_key) + "\" component.\n" +
-                              "Period: " + cvm::to_str(cvcp->period) +
-                              " wrapAround: " + cvm::to_str(cvcp->wrap_center),
-                          COLVARS_INPUT_ERROR);
-      }
+    cvm::increase_depth();
+    int error_code_this = cvcp->init(def_conf);
+    if (error_code_this == COLVARS_OK) {
+      // Checking for invalid keywords only if the parsing was successful, otherwise any
+      // early-returns due to errors would raise false positives
+      error_code_this |= cvcp->check_keywords(def_conf, def_config_key);
+    }
+    cvm::decrease_depth();
+    if (error_code_this != COLVARS_OK) {
+      error_code |=
+          cvm::error("Error: in setting up component \"" + std::string(def_config_key) + "\".\n",
+                     COLVARS_INPUT_ERROR);
     }
 
+    // Set default name if it doesn't have one
     if ( ! cvcs.back()->name.size()) {
       std::ostringstream s;
       s << def_config_key << std::setfill('0') << std::setw(4) << ++def_count;
@@ -822,15 +858,13 @@ int colvar::init_components_type(const std::string& conf, const char* def_config
                (cvm::debug() ? ", named \"" + cvcs.back()->name + "\"" : "") + ".\n");
     }
 
-    cvm::decrease_depth();
-
     def_conf = "";
     if (cvm::debug()) {
       cvm::log("Parsed " + cvm::to_str(cvcs.size()) + " components at this time.\n");
     }
   }
 
-  return COLVARS_OK;
+  return error_code;
 }
 
 
@@ -856,12 +890,8 @@ void colvar::define_component_types()
   add_component_type<dipole_angle>("dipole angle", "dipoleAngle");
   add_component_type<dihedral>("dihedral", "dihedral");
   add_component_type<h_bond>("hydrogen bond", "hBond");
-
-  if (proxy->check_atom_name_selections_available() == COLVARS_OK) {
-    add_component_type<alpha_angles>("alpha helix", "alpha");
-    add_component_type<dihedPC>("dihedral principal component", "dihedralPC");
-  }
-
+  add_component_type<alpha_angles>("alpha helix", "alpha");
+  add_component_type<dihedPC>("dihedral principal component", "dihedralPC");
   add_component_type<orientation>("orientation", "orientation");
   add_component_type<orientation_angle>("orientation angle", "orientationAngle");
   add_component_type<orientation_proj>("orientation projection", "orientationProj");
@@ -892,6 +922,8 @@ void colvar::define_component_types()
 #endif
 
   add_component_type<neuralNetwork>("neural network CV for other CVs", "neuralNetwork");
+
+  add_component_type<torchANN>("CV defined by PyTorch artifical neural network models", "torchANN");
 
   if (proxy->check_volmaps_available() == COLVARS_OK) {
     add_component_type<map_total>("total value of atomic map", "mapTotal");
@@ -944,7 +976,7 @@ int colvar::init_components(std::string const &conf)
   if (error_code == COLVARS_OK) {
     // Store list of children cvcs for dependency checking purposes
     for (i = 0; i < cvcs.size(); i++) {
-      add_child(cvcs[i]);
+      add_child(cvcs[i].get());
     }
     // By default all CVCs are active at the start
     n_active_cvcs = cvcs.size();
@@ -1221,7 +1253,7 @@ int colvar::init_dependencies() {
 
   // Initialize feature_states for each instance
   feature_states.reserve(f_cv_ntot);
-  for (i = 0; i < f_cv_ntot; i++) {
+  for (i = feature_states.size(); i < f_cv_ntot; i++) {
     feature_states.push_back(feature_state(true, false));
     // Most features are available, so we set them so
     // and list exceptions below
@@ -1284,14 +1316,10 @@ colvar::~colvar()
   // for dependency purposes
   remove_all_children();
 
-  for (std::vector<cvc *>::reverse_iterator ci = cvcs.rbegin();
-      ci != cvcs.rend();
-      ++ci) {
-    // clear all children of this cvc (i.e. its atom groups)
-    // because the cvc base class destructor can't do it early enough
-    // and we don't want to have each cvc derived class do it separately
+  for (auto ci = cvcs.rbegin(); ci != cvcs.rend(); ++ci) {
+    // Clear all children of this cvc (i.e. its atom groups), because the cvc base class destructor
+    // can't do it early enough and we don't want to have each cvc derived class do it separately
     (*ci)->remove_all_children();
-    delete *ci;
   }
   cvcs.clear();
 
@@ -1513,6 +1541,7 @@ int colvar::collect_cvc_values()
               cvm::to_str(x, cvm::cv_width, cvm::cv_prec)+".\n");
 
   if (after_restart) {
+    x_old = x_restart;
     if (cvm::proxy->simulation_running()) {
       cvm::real const jump2 = dist2(x, x_restart) / (width*width);
       if (jump2 > 0.25) {
@@ -1707,12 +1736,13 @@ int colvar::calc_colvar_properties()
     // Do the same if no simulation is running (eg. VMD postprocessing)
     if ((cvm::step_relative() == 0 && !after_restart) || x_ext.type() == colvarvalue::type_notset || !cvm::proxy->simulation_running()) {
       x_ext = x;
+      cvm::log("Initializing extended coordinate to colvar value.\n");
       if (is_enabled(f_cv_reflecting_lower_boundary) && x_ext < lower_boundary) {
-        cvm::log("Warning: initializing extended coordinate to reflective lower boundary, as colvar value is below.");
+        cvm::log("Warning: initializing extended coordinate to reflective lower boundary, as colvar value is below.\n");
         x_ext = lower_boundary;
       }
       if (is_enabled(f_cv_reflecting_upper_boundary) && x_ext > upper_boundary) {
-        cvm::log("Warning: initializing extended coordinate to reflective upper boundary, as colvar value is above.");
+        cvm::log("Warning: initializing extended coordinate to reflective upper boundary, as colvar value is above.\n");
         x_ext = upper_boundary;
       }
 
@@ -1722,8 +1752,18 @@ int colvar::calc_colvar_properties()
     // Special case of a repeated timestep (eg. multiple NAMD "run" statements)
     // revert values of the extended coordinate and velocity prior to latest integration
     if (cvm::proxy->simulation_running() && cvm::step_relative() == prev_timestep) {
-      x_ext = prev_x_ext;
-      v_ext = prev_v_ext;
+      // Detect jumps due to discrete changes in coordinates (eg. in replica exchange schemes)
+      cvm::real const jump2 = dist2(x, x_old) / (width*width);
+      if (jump2 > 0.25) {
+        cvm::log("Detected discrete jump in colvar value from "
+            + cvm::to_str(x_old) + " to " + cvm::to_str(x) + ".\n");
+        cvm::log("Reinitializing extended coordinate to colvar value.\n");
+        x_ext = x;
+      } else {
+        cvm::log("Reinitializing extended coordinate to last value.\n");
+        x_ext = prev_x_ext;
+        v_ext = prev_v_ext;
+      }
     }
     // report the restraint center as "value"
     // These position and velocities come from integration at the _previous timestep_ in update_forces_energy()
@@ -1939,9 +1979,8 @@ int colvar::end_of_step()
   if (cvm::debug())
     cvm::log("End of step for colvar \""+this->name+"\".\n");
 
-  if (is_enabled(f_cv_fdiff_velocity)) {
-    x_old = x;
-  }
+  // Used for fdiff_velocity and for detecting jumps for extended Lagrangian colvars
+  x_old = x;
 
   if (is_enabled(f_cv_subtract_applied_force)) {
     f_old = f;
@@ -2182,12 +2221,10 @@ int colvar::set_cvc_param(std::string const &param_name, void const *new_value)
 bool colvar::periodic_boundaries(colvarvalue const &lb, colvarvalue const &ub) const
 {
   if (period > 0.0) {
-    if ( ((cvm::sqrt(this->dist2(lb, ub))) / this->width)
-         < 1.0E-10 ) {
+    if (((cvm::sqrt(this->dist2(lb, ub))) / this->width) < colvar_boundaries_tol) {
       return true;
     }
   }
-
   return false;
 }
 

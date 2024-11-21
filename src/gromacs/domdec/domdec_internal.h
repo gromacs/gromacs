@@ -47,6 +47,7 @@
 #include "gromacs/domdec/dlbtiming.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/updategroupscog.h"
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/topology/block.h"
@@ -451,7 +452,7 @@ struct DDSystemInfo
     //! Whether to increase the multi-body cut-off beyond the minimum required
     bool increaseMultiBodyCutoff = false;
 
-    //! Whether we have continous box deformation
+    //! Whether we have continuous box deformation
     bool haveBoxDeformation;
     //! The box deformation rate in units of 1/ps
     matrix boxDeformationRate;
@@ -459,7 +460,7 @@ struct DDSystemInfo
 
 /*! \brief Settings that affect the behavior of the domain decomposition
  *
- * These settings depend on options chosen by the user, set by enviroment
+ * These settings depend on options chosen by the user, set by environment
  * variables, as well as hardware support. The initial DLB state also
  * depends on the integrator.
  *
@@ -730,7 +731,7 @@ struct gmx_domdec_comm_t // NOLINT (clang-analyzer-optin.performance.Padding)
     double sum_nat[static_cast<int>(DDAtomRanges::Type::Number)] = {};
 
     /* Statistics for calls and times */
-    /**< The number of partioning calls */
+    /**< The number of partitioning calls */
     int ndecomp = 0;
     /**< The number of load recordings */
     int nload = 0;

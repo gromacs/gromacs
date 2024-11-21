@@ -29,8 +29,8 @@ We define the *lowercase* subscripts :math:`i`, :math:`j`, :math:`k` and
 *position vector* of particle :math:`i`, and using this notation:
 
 .. math:: \begin{aligned}
-          \mathbf{r}_{ij}	=	\mathbf{r}_j-\mathbf{r}_i\\
-          r_{ij}=	| \mathbf{r}_{ij} | \end{aligned}
+          \mathbf{r}_{ij} = \mathbf{r}_j-\mathbf{r}_i \\
+          r_{ij}          = | \mathbf{r}_{ij} |       \end{aligned}
           :label: eqnnotation
 
 The force on particle :math:`i` is denoted by
@@ -151,7 +151,7 @@ the factor :math:`f` in expressions that evaluate :math:`\Phi` and
 :math:`\mathbf{E}`:
 
 .. math:: \begin{aligned}
-          \Phi(\mathbf{r}) = f \sum_j \frac{q_j}{| \mathbf{r}-\mathbf{r}_j | } 	\\
+          \Phi(\mathbf{r}) = f \sum_j \frac{q_j}{| \mathbf{r}-\mathbf{r}_j | } \\
           \mathbf{E}(\mathbf{r}) = f \sum_j q_j \frac{(\mathbf{r}-\mathbf{r}_j)}{| \mathbf{r}-\mathbf{r}_j| ^3}\end{aligned}
           :label: eqnelecfacinclude
 

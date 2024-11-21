@@ -474,7 +474,7 @@ static inline int64_t roundToInt64(double x)
 }
 
 //! \brief Check whether \p v is an integer power of 2.
-template<typename T, typename = std::enable_if_t<std::is_integral<T>::value>>
+template<typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
 #if (defined(__NVCC__) && !defined(__CUDACC_RELAXED_CONSTEXPR__)) || defined(__HIPCC__)
 /* In CUDA 11, a constexpr function cannot be called from a function with incompatible execution
  * space, unless --expt-relaxed-constexpr flag is set */

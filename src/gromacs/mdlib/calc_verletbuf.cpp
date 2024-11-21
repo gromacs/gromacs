@@ -1075,7 +1075,7 @@ static pot_derivatives_t getElecDerivatives(const t_inputrec& ir)
 
 /* Returns the variance of the atomic displacement over timePeriod.
  *
- * Note: When not using BD with a non-mass dependendent friction coefficient,
+ * Note: When not using BD with a non-mass dependent friction coefficient,
  *       the return value still needs to be divided by the particle mass.
  */
 static real displacementVariance(const t_inputrec& ir, real temperature, real timePeriod)

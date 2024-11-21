@@ -14,6 +14,7 @@
 #include <list>
 #include <iosfwd>
 #include <map>
+#include <memory>
 
 #include "colvarmodule.h"
 #include "colvarvalue.h"
@@ -261,6 +262,12 @@ public:
 
   /// Init defaults for grid options
   int init_grid_parameters(std::string const &conf);
+
+  /// Consistency check for the grid paramaters
+  int check_grid_parameters();
+
+  /// Read legacy wall keyword (these are biases now)
+  int parse_legacy_wall_params(std::string const &conf);
 
   /// Init extended Lagrangian parameters
   int init_extended_Lagrangian(std::string const &conf);
@@ -617,7 +624,6 @@ public:
   class dihedPC;
   class alch_lambda;
   class alch_Flambda;
-  class componentDisabled;
   class CartesianBasedPath;
   class aspath;
   class azpath;
@@ -633,6 +639,7 @@ public:
   class euler_psi;
   class euler_theta;
   class neuralNetwork;
+  class torchANN;
   class customColvar;
 
   // non-scalar components
@@ -645,8 +652,7 @@ public:
   class map_total;
 
   /// A global mapping of cvc names to the cvc constructors
-  static const std::map<std::string, std::function<colvar::cvc *(const std::string &subcv_conf)>> &
-  get_global_cvc_map()
+  static const std::map<std::string, std::function<colvar::cvc *()>> &get_global_cvc_map()
   {
     return global_cvc_map;
   }
@@ -656,8 +662,8 @@ public:
 
 protected:
 
-  /// \brief Array of \link colvar::cvc \endlink objects
-  std::vector<cvc *> cvcs;
+  /// Array of components objects
+  std::vector<std::shared_ptr<colvar::cvc>> cvcs;
 
   /// \brief Flags to enable or disable cvcs at next colvar evaluation
   std::vector<bool> cvc_flags;
@@ -689,8 +695,7 @@ protected:
 #endif
 
   /// A global mapping of cvc names to the cvc constructors
-  static std::map<std::string, std::function<colvar::cvc *(const std::string &conf)>>
-      global_cvc_map;
+  static std::map<std::string, std::function<colvar::cvc *()>> global_cvc_map;
 
   /// A global mapping of cvc names to the corresponding descriptions
   static std::map<std::string, std::string> global_cvc_desc_map;
@@ -778,6 +783,12 @@ inline void colvar::reset_bias_force() {
   fb.reset();
   fb_actual.type(value());
   fb_actual.reset();
+}
+
+
+namespace {
+  // Tolerance parameter to decide when two boundaries coincide
+  constexpr cvm::real colvar_boundaries_tol = 1.0e-10;
 }
 
 #endif

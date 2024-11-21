@@ -93,7 +93,7 @@ macro(gmx_test_compiler_problems)
 
     if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "XL")
         check_cxx_source_compiles(
-"// Test in-class array initalizers used with constructor initializer lists
+"// Test in-class array initializers used with constructor initializer lists
 struct TestStruct
 {
     float a[3][3] = {{0}}; // in-class initializer

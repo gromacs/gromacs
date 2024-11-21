@@ -59,12 +59,16 @@ namespace gmx
 template<typename T>
 class ArrayRef;
 struct DevelopmentFeatureFlags;
+class MDLogger;
+
 
 /*! \brief
  * Build datastructure that contains decisions whether to run different workload
  * task on GPUs.
  *
+ * \param[in] mdlog                Logger object.
  * \param[in] inputrec           The input record
+ * \param[in] useReplicaExchange Whether we are using replica exchange
  * \param[in] disableNonbondedCalculation  Disable calculation of nonbonded forces
  * \param[in] devFlags           The development feature flags
  * \param[in] haveFillerParticlesInLocalState Whether filler particles are part of the local state.
@@ -82,8 +86,10 @@ struct DevelopmentFeatureFlags;
  *
  * \returns Simulation lifetime constant workload description.
  */
-SimulationWorkload createSimulationWorkload(const t_inputrec& inputrec,
-                                            bool              disableNonbondedCalculation,
+SimulationWorkload createSimulationWorkload(const gmx::MDLogger& mdlog,
+                                            const t_inputrec&    inputrec,
+                                            bool                 useReplicaExchange,
+                                            bool                 disableNonbondedCalculation,
                                             const DevelopmentFeatureFlags& devFlags,
                                             bool       haveFillerParticlesInLocalState,
                                             bool       havePpDomainDecomposition,

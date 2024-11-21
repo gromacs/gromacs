@@ -1,6 +1,6 @@
 Useful mdrun features
 =======================
-This section discusses features in :ref:`gmx mdrun` that don't fit well
+This section discusses features in :ref:`gmx mdrun` that do not fit well
 elsewhere.
 
 .. _single-point energy:
@@ -81,7 +81,7 @@ for ``x`` a multiple of ``n`` will use ``x/n`` ranks per simulation.
 
 To launch a multi-simulation, the ``-multidir`` option is used.
 For the input and output files of a multi-simulation a set of ``n`` subdirectories is required,
-one for each simulation. 
+one for each simulation.
 Place all the relevant input files in those directories (e.g. named
 ``topol.tpr``), and launch a multi-simualtion with
 ``mpirun -np x gmx_mpi mdrun -s topol -multidir <names-of-directories>``.
@@ -126,13 +126,13 @@ input files. The random seed for replica exchange is set with
 neighbor searching is performed. See the Reference Manual for more
 details on how replica exchange functions in |Gromacs|.
 
-Multi-simulation performance considerations 
+Multi-simulation performance considerations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The frequency of communication across a multi-simulation can have an impact
 on performance. This is highly algorithm dependent, but in general it is
-recommended to set up a multi-simulation to do inter-simulation communication 
-as infrequently as possible but as frequently as necessary. 
+recommended to set up a multi-simulation to do inter-simulation communication
+as infrequently as possible but as frequently as necessary.
 However, even when members of multi-simulation do not communicate frequently (or at all),
 and therefore the associated performance overhead is small or even negligible,
 load imbalance can still have a significant impact on performance and resource utilization.
@@ -143,7 +143,7 @@ any of them can proceed to step ``N+1``. Hence, the slowest member of the
 multi-simulation will determine the performance of the entire ensemble.
 This load imbalance will not only limit performance but will also leave resources
 idle; e.g. if one of the simulations in an ``n``-way multi-simulation runs at half
-the performance than the rest, the resources assigned to the ``n-1``
+the performance of the rest, the resources assigned to the ``n-1``
 faster running simulations will be left idle for approximately half of the
 wall-time of the entire multi-simulation job.
 The source of this imbalance can range from inherent workload imbalance across

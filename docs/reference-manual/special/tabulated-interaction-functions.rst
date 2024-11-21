@@ -20,8 +20,8 @@ where the table spacing :math:`h` and fraction :math:`\epsilon` are
 given by:
 
 .. math::  \begin{aligned}
-           h	&=&	x_{i+1} - x_i	\\
-           \epsilon&=&	(x - x_i)/h\end{aligned}
+           h        &=& x_{i+1} - x_i   \\
+           \epsilon &=& (x - x_i)/h     \end{aligned}
            :label: eqntablespaceing
 
 so that :math:`0 \le \epsilon < 1`. From this, we can calculate the

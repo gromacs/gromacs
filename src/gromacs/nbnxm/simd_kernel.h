@@ -73,7 +73,7 @@
  * and only certain combinations of \p ljCombinationRule and \p vdwModifier are used.
  *
  * Which kernel layouts are instantiated depends on the extent of SIMD support of
- * the architecture and on which layouts are assumed to produce the best peformance.
+ * the architecture and on which layouts are assumed to produce the best performance.
  * Currently we have two kernel layouts:
  * - 4xM: this stores one j-cluster of width M in a SIMD register of width M and
  *        uses 4 registers for each i-atom variable, one for each i-atom.

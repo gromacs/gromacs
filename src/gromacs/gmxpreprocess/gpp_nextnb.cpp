@@ -283,7 +283,7 @@ static bool atom_is_present_in_nnb(const t_nextnb* nnb, int atom, int highest_or
 static void do_gen(int       nrbonds, /* total number of bonds in s	*/
                    sortable* s,       /* bidirectional list of bonds    */
                    t_nextnb* nnb)     /* the tmp storage for excl     */
-/* Assume excl is initalised and s[] contains all bonds bidirectional */
+/* Assume excl is initialised and s[] contains all bonds bidirectional */
 {
     int i, j, k, n, nb;
 

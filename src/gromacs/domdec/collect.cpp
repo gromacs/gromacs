@@ -118,6 +118,7 @@ static void dd_collect_cg(gmx_domdec_t*            dd,
         }
         // We need to resize because of the (variable) number of filler particles
         ma->atomGroups.resize(numAtomGroups);
+        ma->rvecBuffer.resize(numAtomGroups);
 
         int groupOffset = 0;
         for (int rank = 0; rank < dd->nnodes; rank++)
@@ -265,7 +266,11 @@ static void dd_collect_vec_gatherv(gmx_domdec_t*                  dd,
             const auto& domainGroups = ma.domainGroups[rank];
             for (const int& globalAtom : domainGroups.atomGroups)
             {
-                copy_rvec(ma.rvecBuffer[bufferAtom++], v[globalAtom]);
+                if (isValidGlobalAtom(globalAtom))
+                {
+                    copy_rvec(ma.rvecBuffer[bufferAtom], v[globalAtom]);
+                }
+                bufferAtom++;
             }
         }
     }

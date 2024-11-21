@@ -468,7 +468,7 @@ static gmx_bool UpdateWeights(int           nlim,
 
         /* accumulate running averages of thermodynamic averages for Bennett Acceptance Ratio-based
          * estimates of the free energy .
-         * Rather than peforming self-consistent estimation of the free energies at each step,
+         * Rather than performing self-consistent estimation of the free energies at each step,
          * we keep track of an array of possible different free energies (cnvals),
          * and we self-consistently choose the best one. The one that leads to a free energy estimate
          * that is closest to itself is the best estimate of the free energy.  It is essentially a

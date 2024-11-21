@@ -1003,7 +1003,6 @@ void Constraints::Impl::setConstraints(gmx_localtop_t*                     top,
                                        const real                          lambda,
                                        gmx::ArrayRef<const unsigned short> cFREEZE)
 {
-    wallcycle_start(wcycle, WallCycleCounter::SetConstr);
     numAtoms_              = numAtoms;
     numHomeAtoms_          = numHomeAtoms;
     masses_                = masses;
@@ -1054,7 +1053,6 @@ void Constraints::Impl::setConstraints(gmx_localtop_t*                     top,
     {
         dd_make_local_ed_indices(cr->dd, ed);
     }
-    wallcycle_stop(wcycle, WallCycleCounter::SetConstr);
 }
 
 void Constraints::setConstraints(gmx_localtop_t*                     top,

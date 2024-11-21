@@ -29,9 +29,9 @@ improper dihedral potential as well.
                           {\lambda}k_b^B\right] \left[b - {(1-{\lambda})}b_0^A - {\lambda}b_0^B\right]^2  \\
           {\frac{\partial V_b}{\partial {\lambda}}}&=&{\frac{1}{2}}(k_b^B-k_b^A)
                           \left[b - {(1-{\lambda})}b_0^A + {\lambda}b_0^B\right]^2 + 
-          		\nonumber\\
+                \nonumber\\
                   & & \phantom{{\frac{1}{2}}}(b_0^A-b_0^B) \left[b - {(1-{\lambda})}b_0^A -{\lambda}b_0^B\right]
-          		\left[{(1-{\lambda})}k_b^A + {\lambda}k_b^B \right]\end{aligned}
+                \left[{(1-{\lambda})}k_b^A + {\lambda}k_b^B \right]\end{aligned}
           :label: eqnfepharmpot
 
 GROMOS-96 bonds and angles
@@ -49,15 +49,15 @@ For the proper dihedrals, the equations are somewhat more complicated:
 .. math:: \begin{aligned}
           V_d     &=&\left[{(1-{\lambda})}k_d^A + {\lambda}k_d^B \right]
                   \left( 1+ \cos\left[n_{\phi} \phi - 
-          		    {(1-{\lambda})}\phi_s^A - {\lambda}\phi_s^B
-          		    \right]\right)\\
+                    {(1-{\lambda})}\phi_s^A - {\lambda}\phi_s^B
+                    \right]\right)\\
           {\frac{\partial V_d}{\partial {\lambda}}}&=&(k_d^B-k_d^A) 
                    \left( 1+ \cos
-          		 \left[
-          		    n_{\phi} \phi- {(1-{\lambda})}\phi_s^A - {\lambda}\phi_s^B
-          		 \right]
-          	 \right) +
-          	 \nonumber\\
+                 \left[
+                    n_{\phi} \phi- {(1-{\lambda})}\phi_s^A - {\lambda}\phi_s^B
+                 \right]
+             \right) +
+             \nonumber\\
                   &&(\phi_s^B - \phi_s^A) \left[{(1-{\lambda})}k_d^A - {\lambda}k_d^B\right] 
                   \sin\left[  n_{\phi}\phi - {(1-{\lambda})}\phi_s^A - {\lambda}\phi_s^B \right]\end{aligned}
           :label: eqnfeppropdihedral
@@ -269,17 +269,17 @@ contribution to the derivative of the free energy is:
 .. math:: \begin{aligned}
           {\frac{\partial V_{sc}(r)}{\partial {\lambda}}} & = &
            V^B(r_B) -V^A(r_A)  + 
-          	{(1-{\lambda})}\frac{\partial V^A(r_A)}{\partial r_A}
-          		   \frac{\partial r_A}{\partial {\lambda}} + 
-          	{\lambda}\frac{\partial V^B(r_B)}{\partial r_B}
-          		   \frac{\partial r_B}{\partial {\lambda}}
+            {(1-{\lambda})}\frac{\partial V^A(r_A)}{\partial r_A}
+                   \frac{\partial r_A}{\partial {\lambda}} + 
+            {\lambda}\frac{\partial V^B(r_B)}{\partial r_B}
+                   \frac{\partial r_B}{\partial {\lambda}}
           \nonumber\\
           &=&
            V^B(r_B) -V^A(r_A)  + \nonumber \\
            & &
            \frac{p \alpha}{6}
                  \left[ {\lambda}F^B(r_B) r^{-5}_B \sigma_B^6 {(1-{\lambda})}^{p-1} -
-          	       {(1-{\lambda})}F^A(r_A) r^{-5}_A \sigma_A^6 {\lambda}^{p-1} \right]\end{aligned}
+                   {(1-{\lambda})}F^A(r_A) r^{-5}_A \sigma_A^6 {\lambda}^{p-1} \right]\end{aligned}
           :label: eqnfepsoftcorederivative
 
 The original GROMOS Lennard-Jones soft-core

@@ -96,6 +96,9 @@ template<typename, size_t>
 class FixedCapacityVector;
 } // namespace gmx
 
+//! Returns the MPI rank for the PP domain corresponding to \p coord
+int ddRankFromDDCoord(const gmx_domdec_t& dd, const gmx::IVec& coord);
+
 /*! \brief Returns the global topology atom number belonging to local atom index i.
  *
  * This function is intended for writing ASCII output

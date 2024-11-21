@@ -325,7 +325,7 @@ void put_atoms_in_box(PbcType pbcType, const matrix box, gmx::ArrayRef<gmx::RVec
  *
  * \param[in]     pbcType    The pbc type
  * \param[in]     box        The simulation box
- * \param[in]     haveBoxDeformation  Whether the box is being continously deformed
+ * \param[in]     haveBoxDeformation  Whether the box is being continuously deformed
  * \param[in]     boxDeformation      The deformation speed of the box components in units of nm/ps
  * \param[in,out] x          The coordinates of the atoms
  * \param[in,out] v          The velocities of the atoms
@@ -366,7 +366,7 @@ void put_atoms_in_compact_unitcell(PbcType pbcType, int ecenter, const matrix bo
  *
  * \param[in]     fplog     Log file
  * \param[in]     pbcType   The PBC type
- * \param[in]     correctVelocitiesForBoxDeformation  Whether to correct the velocities for continous box deformation
+ * \param[in]     correctVelocitiesForBoxDeformation  Whether to correct the velocities for continuous box deformation
  * \param[in]     boxDeformation  The box deformation velocity
  * \param[in]     box       The simulation box
  * \param[in]     mtop      System topology definition

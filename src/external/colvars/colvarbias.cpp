@@ -167,6 +167,10 @@ int colvarbias::init_dependencies() {
 
     init_feature(f_cvb_get_total_force, "obtain_total_force", f_type_dynamic);
     require_feature_children(f_cvb_get_total_force, f_cv_total_force);
+    // Depending on back-end, we may not obtain total force at step 0
+    if (!cvm::main()->proxy->total_forces_same_step()) {
+      exclude_feature_self(f_cvb_get_total_force, f_cvb_step_zero_data);
+    }
 
     init_feature(f_cvb_output_acc_work, "output_accumulated_work", f_type_user);
     require_feature_self(f_cvb_output_acc_work, f_cvb_apply_force);
@@ -193,6 +197,8 @@ int colvarbias::init_dependencies() {
     init_feature(f_cvb_scale_biasing_force, "scale_biasing_force", f_type_user);
     require_feature_children(f_cvb_scale_biasing_force, f_cv_grid);
 
+    init_feature(f_cvb_extended, "Bias on extended-Lagrangian variables", f_type_static);
+
     // check that everything is initialized
     for (i = 0; i < colvardeps::f_cvb_ntot; i++) {
       if (is_not_set(i)) {
@@ -203,7 +209,7 @@ int colvarbias::init_dependencies() {
 
   // Initialize feature_states for each instance
   feature_states.reserve(f_cvb_ntot);
-  for (i = 0; i < f_cvb_ntot; i++) {
+  for (i = feature_states.size(); i < f_cvb_ntot; i++) {
     feature_states.push_back(feature_state(true, false));
     // Most features are available, so we set them so
     // and list exceptions below
@@ -437,14 +443,22 @@ int colvarbias::bin_num()
   cvm::error("Error: bin_num() not implemented.\n");
   return COLVARS_NOT_IMPLEMENTED;
 }
+
 int colvarbias::current_bin()
 {
   cvm::error("Error: current_bin() not implemented.\n");
   return COLVARS_NOT_IMPLEMENTED;
 }
+
 int colvarbias::bin_count(int /* bin_index */)
 {
   cvm::error("Error: bin_count() not implemented.\n");
+  return COLVARS_NOT_IMPLEMENTED;
+}
+
+int colvarbias::local_sample_count(int /* radius */)
+{
+  cvm::error("Error: local_sample_count() not implemented.\n");
   return COLVARS_NOT_IMPLEMENTED;
 }
 
@@ -463,8 +477,8 @@ size_t colvarbias::replica_share_freq() const
 std::string const colvarbias::get_state_params() const
 {
   std::ostringstream os;
-  os << "step " << cvm::step_absolute() << "\n"
-     << "name " << this->name << "\n";
+  os << "    step " << cvm::step_absolute() << "\n"
+     << "    name " << this->name << "\n";
   return os.str();
 }
 
@@ -690,7 +704,7 @@ int colvarbias::read_state_string(char const *buffer)
 
 
 std::ostream &colvarbias::write_state_data_key(std::ostream &os, std::string const &key,
-                                               bool header)
+                                               bool header) const
 {
   os << (header ? "\n" : "") << key << (header ? "\n" : " ");
   return os;
@@ -698,7 +712,7 @@ std::ostream &colvarbias::write_state_data_key(std::ostream &os, std::string con
 
 
 cvm::memory_stream &colvarbias::write_state_data_key(cvm::memory_stream &os, std::string const &key,
-                                                     bool /* header */)
+                                                     bool /* header */) const
 {
   os << std::string(key);
   return os;
@@ -766,28 +780,11 @@ colvarbias_ti::colvarbias_ti(char const *key)
     // Samples at step zero can not be collected
     feature_states[f_cvb_step_zero_data].available = false;
   }
-  ti_avg_forces = NULL;
-  ti_count = NULL;
 }
 
 
 colvarbias_ti::~colvarbias_ti()
 {
-  colvarbias_ti::clear_state_data();
-}
-
-
-int colvarbias_ti::clear_state_data()
-{
-  if (ti_avg_forces != NULL) {
-    delete ti_avg_forces;
-    ti_avg_forces = NULL;
-  }
-  if (ti_count != NULL) {
-    delete ti_count;
-    ti_count = NULL;
-  }
-  return COLVARS_OK;
 }
 
 
@@ -845,7 +842,7 @@ int colvarbias_ti::init(std::string const &conf)
 int colvarbias_ti::init_grids()
 {
   if (is_enabled(f_cvb_calc_ti_samples)) {
-    if (ti_avg_forces == NULL) {
+    if (!ti_avg_forces) {
       ti_bin.resize(num_variables());
       ti_system_forces.resize(num_variables());
       for (size_t icv = 0; icv < num_variables(); icv++) {
@@ -853,8 +850,8 @@ int colvarbias_ti::init_grids()
         ti_system_forces[icv].is_derivative();
         ti_system_forces[icv].reset();
       }
-      ti_avg_forces = new colvar_grid_gradient(colvars);
-      ti_count = new colvar_grid_count(colvars);
+      ti_avg_forces.reset(new colvar_grid_gradient(colvars));
+      ti_count.reset(new colvar_grid_count(colvars));
       ti_avg_forces->samples = ti_count;
       ti_count->has_parent_data = true;
     }

@@ -138,6 +138,8 @@ class GpuEventSynchronizer;
 namespace gmx
 {
 class FreeEnergyDispatch;
+class Grid;
+struct GridDimensions;
 struct NbnxmGpu;
 struct nbnxn_atomdata_t;
 class PairSearch;
@@ -248,7 +250,7 @@ public:
      * \param[in]     atomRange    Range of atoms to grid
      * \param[in]     numAtomsWithoutFillers  The number of atoms that are not filler particles
                                               and will not be moved to another domain by DD
-     * \param[in]     atomDensity  An estimate of the atom density, used for peformance optimization,
+     * \param[in]     atomDensity  An estimate of the atom density, used for performance optimization,
      *                             only used with \p gridIndex = 0
      * \param[in]     atomInfo     Atom information flags
      * \param[in]     x            Coordinates for atoms to grid
@@ -411,6 +413,15 @@ public:
 
     //! Returns a pointer to the NbnxmGpu object, can return nullptr
     NbnxmGpu* gpuNbv() { return gpuNbv_; }
+
+    const Grid& localGrid() const;
+
+    void setNonLocalGrid(int                                 gridIndex,
+                         int                                 ddZone,
+                         const GridDimensions&               gridDimensions,
+                         ArrayRef<const std::pair<int, int>> columns,
+                         ArrayRef<const int32_t>             atomInfo,
+                         ArrayRef<const RVec>                x);
 
 private:
     //! All data related to the pair lists

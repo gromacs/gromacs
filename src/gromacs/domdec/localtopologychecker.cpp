@@ -415,7 +415,7 @@ public:
 /*! \brief Compute the total bonded interaction count
  *
  * \param[in] mtop              The global system topology
- * \param[in] ddBondedChecking  Which interations to check
+ * \param[in] ddBondedChecking  Which interactions to check
  * \param[in] useUpdateGroups   Whether update groups are in use
  *
  * When using domain decomposition without update groups,

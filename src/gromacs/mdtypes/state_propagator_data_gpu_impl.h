@@ -208,7 +208,12 @@ public:
                                                            GpuEventSynchronizer* gpuCoordinateHaloLaunched = nullptr);
 
     /*! \brief Wait until coordinates are available on the device. */
-    void waitCoordinatesUpdatedOnDevice() { xUpdatedOnDeviceEvent_->waitForEvent(); }
+    void waitCoordinatesUpdatedOnDevice()
+    {
+        wallcycle_start(wcycle_, WallCycleCounter::WaitGpuStatePropagatorData);
+        xUpdatedOnDeviceEvent_->waitForEvent();
+        wallcycle_stop(wcycle_, WallCycleCounter::WaitGpuStatePropagatorData);
+    }
 
     /*! \brief Blocking wait until coordinates are copied to the device.
      *

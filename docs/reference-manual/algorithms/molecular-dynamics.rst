@@ -479,7 +479,7 @@ on the error in the average pressure due to missing Lennard-Jones interactions
 can be provided. This uses the estimation formulas described above and puts
 an upper bound on the error of the pressure averaged over the lifetime of
 the pair list. The default value for this tolerance is 0.5 bar. For liquid
-water this corresponds to a maximum relative devatiation of the density of
+water this corresponds to a maximum relative deviation of the density of
 :math:`2 \cdot 10^{-5}`.
 
 Simple search

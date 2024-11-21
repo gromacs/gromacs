@@ -66,12 +66,12 @@ Run control
       corresponding points in the same trajectory, the trajectories
       are analytically, but not binary, identical to the
       :mdp-value:`integrator=md` leap-frog integrator. The kinetic
-      energy, which is determined from the whole step velocities and
+      energy is determined from the whole step velocities and
       is therefore slightly too high. The advantage of this integrator
       is more accurate, reversible Nose-Hoover and Parrinello-Rahman
       coupling integration based on Trotter expansion, as well as
       (slightly too small) full step velocity output. This all comes
-      at the cost off extra computation, especially with constraints
+      at the cost of extra computation, especially with constraints
       and extra communication in parallel. Note that for nearly all
       production simulations the :mdp-value:`integrator=md` integrator
       is accurate enough.
@@ -106,8 +106,8 @@ Run control
 
    .. mdp-value:: bd
 
-      An Euler integrator for Brownian or position Langevin dynamics,
-      the velocity is the force divided by a friction coefficient
+      An Euler integrator for Brownian or position Langevin dynamics.
+      The velocity is the force divided by a friction coefficient
       (:mdp:`bd-fric`) plus random thermal noise (:mdp:`ref-t`). When
       :mdp:`bd-fric` is 0, the friction coefficient for each particle
       is calculated as mass/ :mdp:`tau-t`, as for the integrator
@@ -278,8 +278,8 @@ Run control
       warning is generated. If there is more than one atom bound an error is
       generated. If the mass of the bound atom would become lower than mMin
       an error is generated. For typical atomistic systems only the masses
-      of hydrogens are scaled. With h-bonds constrained a factor of 3 will
-      usually enable a time step of 4 fs.
+      of hydrogens are scaled. With :mdp-value:`constraints=h-bonds`, a factor
+      of 3 will usually enable a time step of 4 fs.
 
 .. mdp:: comm-mode
 
@@ -307,7 +307,7 @@ Run control
 .. mdp:: nstcomm
 
    (100) [steps]
-   frequency for center of mass motion removal
+   interval for center of mass motion removal
 
 .. mdp:: comm-grps
 
@@ -352,7 +352,7 @@ Energy minimization
 .. mdp:: nstcgsteep
 
    (1000) [steps]
-   frequency of performing 1 steepest descent step while doing
+   interval of performing 1 steepest descent step while doing
    conjugate gradient energy minimization.
 
 .. mdp:: nbfgscorr
@@ -408,23 +408,23 @@ Output control
 
    (0) [steps]
    number of steps that elapse between writing coordinates to the output
-   trajectory file (:ref:`trr`), the last coordinates are always written
-   unless 0, which means coordinates are not written into the trajectory
-   file.
+   trajectory file (:ref:`trr`), the first and last coordinates are always
+   written unless 0, which means coordinates are not written into the
+   trajectory file.
 
 .. mdp:: nstvout
 
    (0) [steps]
    number of steps that elapse between writing velocities to the output
-   trajectory file (:ref:`trr`), the last velocities are always written
-   unless 0, which means velocities are not written into the trajectory
-   file.
+   trajectory file (:ref:`trr`), the first and last velocities are always
+   written unless 0, which means velocities are not written into the
+   trajectory file.
 
 .. mdp:: nstfout
 
    (0) [steps]
    number of steps that elapse between writing forces to the output
-   trajectory file (:ref:`trr`), the last forces are always written,
+   trajectory file (:ref:`trr`), the first and last forces are always written,
    unless 0, which means forces are not written into the trajectory
    file.
 
@@ -432,7 +432,7 @@ Output control
 
    (1000) [steps]
    number of steps that elapse between writing energies to the log
-   file, the last energies are always written.
+   file, the first and last energies are always written.
 
 .. mdp:: nstcalcenergy
 
@@ -446,19 +446,20 @@ Output control
 .. mdp:: nstenergy
 
    (1000) [steps]
-   number of steps that elapse between writing energies to energy file,
-   the last energies are always written, should be a multiple of
-   :mdp:`nstcalcenergy`. Note that the exact sums and fluctuations
-   over all MD steps modulo :mdp:`nstcalcenergy` are stored in the
-   energy file, so :ref:`gmx energy` can report exact energy averages
+   number of steps that elapse between writing energies to the energy
+   file (:ref:`edr`), the first and last energies are always written,
+   should be a multiple of :mdp:`nstcalcenergy`. Note that the exact sums
+   and fluctuations over all MD steps modulo :mdp:`nstcalcenergy` are stored
+   in the energy file, so :ref:`gmx energy` can report exact energy averages
    and fluctuations also when :mdp:`nstenergy` > 1
 
 .. mdp:: nstxout-compressed
 
    (0) [steps]
    number of steps that elapse between writing position coordinates
-   using lossy compression (:ref:`xtc` file), 0 for not writing
-   compressed coordinates output.
+   using lossy compression (:ref:`xtc` file), the first and last coordinates
+   are always written, unless 0, which means that there is no compressed
+   coordinates output.
 
 .. mdp:: compressed-x-precision
 
@@ -500,7 +501,7 @@ Neighbor searching
 
    .. mdp-value:: >0
 
-      Frequency to update the neighbor list. When dynamics and
+      Interval between steps that update the neighbor list. When dynamics and
       :mdp:`verlet-buffer-tolerance` set, :mdp:`nstlist` is actually
       a minimum value and :ref:`gmx mdrun` might increase it, unless
       it is set to 1. With parallel simulations and/or non-bonded
@@ -654,7 +655,7 @@ Electrostatics
    .. mdp-value:: P3M-AD
 
       Particle-Particle Particle-Mesh algorithm with analytical
-      derivative for for long range electrostatic interactions. The
+      derivative for for long-range electrostatic interactions. The
       method and code is identical to SPME, except that the influence
       function is optimized for the grid. This gives a slight increase
       in accuracy.
@@ -797,8 +798,8 @@ Van der Waals
    .. mdp-value:: User
 
       Currently unsupported.
-      See user for :mdp:`coulombtype`. The function value at zero is
-      not important. When you want to use LJ correction, make sure
+      See :mdp-value:`coulombtype=User` for instructions. The function value at zero
+      is not important. When you want to use LJ correction, make sure
       that :mdp:`rvdw` corresponds to the cut-off in the user-defined
       function. When :mdp:`coulombtype` is not set to User the values
       for the ``f`` and ``-f'`` columns are ignored.
@@ -849,15 +850,15 @@ Van der Waals
 
    .. mdp-value:: no
 
-      don't apply any correction
+      do not apply any correction
 
    .. mdp-value:: EnerPres
 
-      apply long range dispersion corrections for Energy and Pressure
+      apply long-range dispersion corrections for Energy and Pressure
 
    .. mdp-value:: Ener
 
-      apply long range dispersion corrections for Energy only
+      apply long-range dispersion corrections for Energy only
 
 
 Tables
@@ -983,9 +984,9 @@ Ewald
    3D. The default value of zero means it is turned off. Turn it on by
    setting it to the value of the relative permittivity of the
    imaginary surface around your infinite system. Be careful - you
-   shouldn't use this if you have free mobile charges in your
-   system. This value does not affect the slab 3DC variant of the long
-   range corrections.
+   should not use this if you have free mobile charges in your
+   system. This value does not affect the slab 3DC variant of the
+   long-range corrections.
 
 
 Temperature coupling
@@ -1057,7 +1058,7 @@ Temperature coupling
       at each timestep. Reference temperature and coupling groups are
       selected as above. :mdp:`tau-t` is the average time between
       randomization of each molecule. Inhibits particle dynamics
-      somewhat, but little or no ergodicity issues. Currently only
+      somewhat, but has little or no ergodicity issues. Currently only
       implemented with velocity Verlet, and not implemented with
       constraints.
 
@@ -1067,7 +1068,7 @@ Temperature coupling
       infrequent timesteps. Reference temperature and coupling groups are
       selected as above. :mdp:`tau-t` is the time between
       randomization of all molecules. Inhibits particle dynamics
-      somewhat, but little or no ergodicity issues. Currently only
+      somewhat, but has little or no ergodicity issues. Currently only
       implemented with velocity Verlet.
 
    .. mdp-value:: v-rescale
@@ -1084,7 +1085,7 @@ Temperature coupling
 .. mdp:: nsttcouple
 
    (-1)
-   The frequency for coupling the temperature. The default value of -1
+   The interval between steps that couple the temperature. The default value of -1
    sets :mdp:`nsttcouple` equal to 100, or fewer steps if required
    for accurate integration (5 steps per tau for first order coupling,
    20 steps per tau for second order coupling). Note that the default
@@ -1166,7 +1167,7 @@ Pressure coupling
       you can get very large oscillations if you are starting from a
       different pressure. For simulations where the exact fluctations
       of the NPT ensemble are important, or if the pressure coupling
-      time is very short it may not be appropriate, as the previous
+      time is very short, it may not be appropriate, as the previous
       time step pressure is used in some steps of the |Gromacs|
       implementation for the current time step pressure.
 
@@ -1183,7 +1184,7 @@ Pressure coupling
       ensemble temperature for the system.
       It only supports isotropic scaling, and only works without constraints.
       MTTK coupling is deprecated.
-      
+
 .. mdp:: pcoupltype
 
    Specifies the kind of isotropy of the pressure coupling used. Each
@@ -1230,7 +1231,7 @@ Pressure coupling
 .. mdp:: nstpcouple
 
    (-1)
-   The frequency for coupling the pressure. The default value of -1
+   The interval between steps that couple the pressure. The default value of -1
    sets :mdp:`nstpcouple` equal to 100, or fewer steps if required
    for accurate integration (5 steps per tau for first order coupling,
    20 steps per tau for second order coupling). Note that the default
@@ -1563,13 +1564,13 @@ Walls
 
       direct LJ potential with the ``z`` distance from the wall
 
-.. mdp:: table
+   .. mdp-value:: table
 
-   user defined potentials indexed with the ``z`` distance from the
-   wall, the tables are read analogously to the
-   :mdp:`energygrp-table` option, where the first name is for a
-   "normal" energy group and the second name is ``wall0`` or
-   ``wall1``, only the dispersion and repulsion columns are used
+      user-defined potentials indexed with the ``z`` distance from the
+      wall, the tables are read analogously to the
+      :mdp:`energygrp-table` option, where the first name is for a
+      "normal" energy group and the second name is ``wall0`` or
+      ``wall1``, only the dispersion and repulsion columns are used
 
 .. mdp:: wall-r-linpot
 
@@ -1639,7 +1640,8 @@ pull-coord2-vec, pull-coord2-k, and so on.
 
    .. mdp-value:: yes
 
-      print the COM of all groups for all pull coordinates
+      print the COM of all groups for all pull coordinates to the ``pullx.xvg``
+      file.
 
 .. mdp:: pull-print-ref-value
 
@@ -1649,7 +1651,8 @@ pull-coord2-vec, pull-coord2-k, and so on.
 
    .. mdp-value:: yes
 
-      print the reference value for each pull coordinate
+      print the reference value for each pull coordinate to the ``pullx.xvg``
+      file.
 
 .. mdp:: pull-print-components
 
@@ -1660,19 +1663,19 @@ pull-coord2-vec, pull-coord2-k, and so on.
    .. mdp-value:: yes
 
       print the distance and Cartesian components selected in
-      :mdp:`pull-coord1-dim`
+      :mdp:`pull-coord1-dim` to the ``pullx.xvg`` file.
 
 .. mdp:: pull-nstxout
 
    (50)
-   frequency for writing out the COMs of all the pull group (0 is
-   never)
+   interval for writing out the COMs of all the pull groups (0 is
+   never) to the ``pullx.xvg`` file.
 
 .. mdp:: pull-nstfout
 
    (50)
-   frequency for writing out the force of all the pulled group
-   (0 is never)
+   interval for writing out the force of all the pulled groups
+   (0 is never) to the ``pullf.xvg`` file.
 
 .. mdp:: pull-pbc-ref-prev-step-com
 
@@ -1687,7 +1690,8 @@ pull-coord2-vec, pull-coord2-k, and so on.
       of periodic boundary conditions. The reference is initialized
       using the reference atom (:mdp:`pull-group1-pbcatom`), which should
       be located centrally in the group. Using the COM from the
-      previous step can be useful if one or more pull groups are large.
+      previous step can be useful if one or more pull groups are large or
+      very flexible.
 
 .. mdp:: pull-xout-average
 
@@ -1736,8 +1740,8 @@ pull-coord2-vec, pull-coord2-k, and so on.
 .. mdp:: pull-group1-weights
 
    Optional relative weights which are multiplied with the masses of
-   the atoms to give the total weight for the COM. The number should
-   be 0, meaning all 1, or the number of atoms in the pull group.
+   the atoms to give the total weight for the COM. The number of weights
+   should be 0, meaning all 1, or the number of atoms in the pull group.
 
 .. mdp:: pull-group1-pbcatom
 
@@ -1798,7 +1802,7 @@ pull-coord2-vec, pull-coord2-k, and so on.
 .. mdp:: pull-coord1-potential-provider
 
       The name of the external module that provides the potential for
-      the case where :mdp:`pull-coord1-type` is external-potential.
+      the case where :mdp-value:`pull-coord1-type=external-potential`.
 
 .. mdp:: pull-coord1-geometry
 
@@ -1842,7 +1846,7 @@ pull-coord2-vec, pull-coord2-k, and so on.
       cylinder is selected around the axis going through the COM of
       the second group with direction :mdp:`pull-coord1-vec` with
       radius :mdp:`pull-cylinder-r`. Weights of the atoms decrease
-      continously to zero as the radial distance goes from 0 to
+      continuously to zero as the radial distance goes from 0 to
       :mdp:`pull-cylinder-r` (mass weighting is also used). The radial
       dependence gives rise to radial forces on both pull groups.
       Note that the radius should be smaller than half the box size.
@@ -1889,7 +1893,7 @@ pull-coord2-vec, pull-coord2-k, and so on.
    Time can also be used a variable, becoming 't'.
    Note that angular coordinates use units of radians in the expression.
    The mathematical expression are evaluated using muParser.
-   Only relevant if :mdp:`pull-coord1-geometry` is set to :mdp-value:`transformation`.
+   Only relevant if :mdp-value:`pull-coord1-geometry=transformation`.
 
 .. mdp:: pull-coord1-dx
 
@@ -1898,13 +1902,13 @@ pull-coord2-vec, pull-coord2-k, and so on.
    with respect to other pull coordinates.
    The current implementation uses a simple first order finite difference method to perform derivation so that
    f'(x) = (f(x+dx)-f(x))/dx
-   Only relevant if :mdp:`pull-coord1-geometry` is set to :mdp-value:`transformation`.
+   Only relevant if :mdp-value:`pull-coord1-geometry=transformation`.
 
 .. mdp:: pull-coord1-groups
 
    The group indices on which this pull coordinate will operate.
    The number of group indices required is geometry dependent.
-   The first index can be 0, in which case an
+   The first index is the reference group and can be 0, in which case an
    absolute reference of :mdp:`pull-coord1-origin` is used. With an
    absolute reference the system is no longer translation invariant
    and one should think about what to do with the center of mass
@@ -1988,10 +1992,11 @@ AWH adaptive biasing
 
       Adaptively bias a reaction coordinate using the AWH method and estimate
       the corresponding PMF. This requires a constant ensemble temperature
-      to be available. The PMF and other AWH data are written to energy file
-      at an interval set by :mdp:`awh-nstout` and can be extracted with
-      the ``gmx awh`` tool. The AWH coordinate can be
-      multidimensional and is defined by mapping each dimension to a pull coordinate index.
+      to be available. The PMF and other AWH data are written to the energy file
+      (:ref:`edr`) at an interval set by :mdp:`awh-nstout` and can be extracted
+      with the ``gmx awh`` tool. The AWH coordinate can be multidimensional and
+      is defined by mapping each dimension to a pull coordinate index (and/or up to
+      one alchemical free lambda state dimension :mdp:`free-energy`).
       This is only allowed if :mdp-value:`pull-coord1-type=external-potential` and
       :mdp:`pull-coord1-potential-provider` = ``awh`` for the concerned pull coordinate
       indices. Pull geometry 'direction-periodic' and transformation
@@ -2005,15 +2010,16 @@ AWH adaptive biasing
       set of harmonic umbrella potentials (see :mdp-value:`awh-potential=umbrella` below). This results
       in a smooth potential function and force. The resolution of the potential is set
       by the force constant of each umbrella, see :mdp:`awh1-dim1-force-constant`. This option is not
-      compatible with using the free energy lambda state as an AWH reaction coordinate.
+      compatible with using the free energy lambda state as an AWH reaction coordinate dimension.
 
    .. mdp-value:: umbrella
 
-      The potential bias is applied by controlling the position of an harmonic potential
+      The potential bias is applied by controlling the position of a harmonic potential
       using Monte-Carlo sampling.  The force constant is set with
       :mdp:`awh1-dim1-force-constant`. The umbrella location
       is sampled using Monte-Carlo every :mdp:`awh-nstsample` steps.
-      This is option is required when using the free energy lambda state as an AWH reaction coordinate.
+      This is option is required when using the free energy lambda state as an AWH
+      reaction coordinate dimension.
       Apart from that, this option is mainly for comparison
       and testing purposes as there are no advantages to using an umbrella.
 
@@ -2082,22 +2088,23 @@ AWH adaptive biasing
 
 .. mdp:: awh1-growth
 
-   .. mdp-value:: exp-linear
-
    Each bias keeps a reference weight histogram for the coordinate samples.
    Its size sets the magnitude of the bias function and free energy estimate updates
    (few samples corresponds to large updates and vice versa).
    Thus, its growth rate sets the maximum convergence rate.
-   By default, there is an initial stage in which the histogram grows close to exponentially (but slower than the sampling rate).
-   In the final stage that follows, the growth rate is linear and equal to the sampling rate (set by :mdp:`awh-nstsample`).
-   The initial stage is typically necessary for efficient convergence when starting a new simulation where
-   high free energy barriers have not yet been flattened by the bias.
+
+   .. mdp-value:: exp-linear
+
+      By default, there is an initial stage in which the histogram grows close to exponentially (but slower than the sampling rate).
+      In the final stage that follows, the growth rate is linear and equal to the sampling rate (set by :mdp:`awh-nstsample`).
+      The initial stage is typically necessary for efficient convergence when starting a new simulation where
+      high free energy barriers have not yet been flattened by the bias.
 
    .. mdp-value:: linear
 
-   As :mdp-value:`awh1-growth=exp-linear` but skip the initial stage. This may be useful if there is *a priori*
-   knowledge (see :mdp:`awh1-error-init`) which eliminates the need for an initial stage. This is also
-   the setting compatible with :mdp-value:`awh1-target=local-boltzmann`.
+      As :mdp-value:`awh1-growth=exp-linear` but skip the initial stage. This may be useful if there is *a priori*
+      knowledge (see :mdp:`awh1-error-init`) which eliminates the need for an initial stage. This is also
+      the setting compatible with :mdp-value:`awh1-target=local-boltzmann`.
 
 .. mdp:: awh1-growth-factor
 
@@ -2109,7 +2116,7 @@ AWH adaptive biasing
 
    .. mdp-value:: no
 
-      Do not equilibrate histogram.
+      Do not equilibrate the histogram.
 
    .. mdp-value:: yes
 
@@ -2197,6 +2204,9 @@ AWH adaptive biasing
       ``-multidir``.
       Sharing may increase convergence initially, although the starting configurations
       can be critical, especially when sharing between many biases.
+      N.b., multiple walkers sharing a degenerate reaction coordinate may have
+      problems overlapping their sampling, possibly making it difficult to cover
+      the sampling interval.
 
 .. mdp:: awh1-target-metric-scaling
 
@@ -2209,7 +2219,7 @@ AWH adaptive biasing
       Scale the target distribution based on the AWH friction metric. Regions with
       high friction (long autocorrelation times) will be sampled more. The diffusion metric
       is the inverse of the friction metric. This scaling can be used with any
-      :mdp:`awh1-target` type and is applied after user provided target distribution
+      :mdp:`awh1-target` type and is applied after user-provided target distribution
       modifications (:mdp:`awh1-user-data`), if any. If :mdp-value:`awh1-growth=exp-linear`,
       the target distribution scaling starts after leaving the initial phase.
 
@@ -2237,10 +2247,11 @@ AWH adaptive biasing
 
    .. mdp-value:: fep-lambda
 
-      The free energy lambda state is the reaction coordinate for this dimension.
+      The free energy :mdp:`free-energy` lambda state is the reaction coordinate
+      for this dimension.
       The lambda states to use are specified by :mdp:`fep-lambdas`, :mdp:`vdw-lambdas`,
       :mdp:`coul-lambdas` etc. This is not compatible with delta-lambda. It also requires
-      calc-lambda-neighbors to be -1. With multiple time-stepping, AWH should
+      :mdp-value:`calc-lambda-neighbors=-1`. With multiple time-stepping, AWH should
       be in the slow level. This option requires :mdp-value:`awh-potential=umbrella`.
 
 .. mdp:: awh1-dim1-coord-index
@@ -2391,13 +2402,14 @@ that can be used to achieve such a rotation.
 .. mdp:: rot-nstrout
 
    (100)
-   Output frequency (in steps) for the angle of the rotation group, as well as for the torque
+   Output interval (in steps) for the angle of the rotation group, as well as for the torque
    and the rotation potential energy.
 
 .. mdp:: rot-nstsout
 
    (1000)
-   Output frequency for per-slab data of the flexible axis potentials, i.e. angles, torques and slab centers.
+   Output interval (in steps) for per-slab data of the flexible axis potentials, i.e. angles,
+   torques and slab centers.
 
 
 NMR refinement
@@ -2526,10 +2538,10 @@ Free energy calculations
       Interpolate between topology A (lambda=0) to topology B
       (lambda=1) and write the derivative of the Hamiltonian with
       respect to lambda (as specified with :mdp:`dhdl-derivatives`),
-      or the Hamiltonian differences with respect to other lambda
-      values (as specified with foreign lambda) to the energy file
-      and/or to ``dhdl.xvg``, where they can be processed by, for
-      example :ref:`gmx bar`. The potentials, bond-lengths and angles
+      or the Hamiltonian differences with respect to other "foreign"
+      lambda values (as specified with :mdp:`calc-lambda-neighbors`)
+      to the energy file and/or to ``dhdl.xvg``, where they can be processed
+      by, for example :ref:`gmx bar`. The potentials, bond-lengths and angles
       are interpolated linearly as described in the manual. When
       :mdp:`sc-alpha` is larger than zero, soft-core potentials are
       used for the LJ and Coulomb interactions.
@@ -2562,11 +2574,11 @@ Free energy calculations
 
    (-1)
    starting value for the lambda state (integer). Specifies which
-   columm of the lambda vector (:mdp:`coul-lambdas`,
+   column of the lambda vector (:mdp:`coul-lambdas`,
    :mdp:`vdw-lambdas`, :mdp:`bonded-lambdas`,
    :mdp:`restraint-lambdas`, :mdp:`mass-lambdas`,
    :mdp:`temperature-lambdas`, :mdp:`fep-lambdas`) should be
-   used. This is a zero-based index: :mdp:`init-lambda-state` 0 means
+   used. This is a zero-based index: :mdp-value:`init-lambda-state=0` means
    the first column, and so on.
 
 .. mdp:: fep-lambdas
@@ -2579,8 +2591,7 @@ Free energy calculations
    between different lambda values can then be determined with
    :ref:`gmx bar`. :mdp:`fep-lambdas` is different from the
    other -lambdas keywords because all components of the lambda vector
-   that are not specified will use :mdp:`fep-lambdas` (including
-   :mdp:`restraint-lambdas` and therefore the pull code restraints).
+   that are not specified will use :mdp:`fep-lambdas`.
 
 .. mdp:: coul-lambdas
 
@@ -2649,7 +2660,8 @@ Free energy calculations
    (1)
    Controls the number of lambda values for which Delta H values will
    be calculated and written out, if :mdp:`init-lambda-state` has
-   been set. A positive value will limit the number of lambda points
+   been set. These lambda values are referred to as "foreign" lambdas.
+   A positive value will limit the number of lambda points
    calculated to only the nth neighbors of :mdp:`init-lambda-state`:
    for example, if :mdp:`init-lambda-state` is 5 and this parameter
    has a value of 2, energies for lambda points 3-7 will be calculated
@@ -2690,9 +2702,8 @@ Free energy calculations
    transformation to the Coulombic interaction of a molecule. Default
    is no, as it is generally more efficient to turn off the Coulombic
    interactions linearly before turning off the van der Waals
-   interactions. Note that it is only taken into account when lambda
-   states are used, not with :mdp:`couple-lambda0` /
-   :mdp:`couple-lambda1`, and you can still turn off soft-core
+   interactions. Note that it is only taken into account when there are
+   multiple lambda components, and you can still turn off soft-core
    interactions by setting :mdp:`sc-alpha` to 0.
    Used only with `sc-function=beutler`
 
@@ -2724,7 +2735,7 @@ Free energy calculations
 
    (0.3) [nm/e^2]
    For `sc-function=gapsys` the alphaQ parameter
-   with the unit of [nm/e^2] and default value of 0.3. It controls
+   with a default value of 0.3. It controls
    the softness of the Coulombic interactions. Setting it to 0 will
    result in the standard hard-core Coulombic interactions.
    Used only with `sc-function=gapsys`
@@ -2762,7 +2773,7 @@ Free energy calculations
 
    .. mdp-value:: q
 
-      the Van der Waals interactions are turned at lambda=0; soft-core
+      the Van der Waals interactions are turned off at lambda=0; soft-core
       interactions will be required to avoid singularities
 
    .. mdp-value:: none
@@ -2797,7 +2808,7 @@ Free energy calculations
 .. mdp:: nstdhdl
 
    (100)
-   the frequency for writing dH/dlambda and possibly Delta H to
+   the interval for writing dH/dlambda and possibly Delta H to
    dhdl.xvg, 0 means no ouput, should be a multiple of
    :mdp:`nstcalcenergy`.
 
@@ -2809,8 +2820,8 @@ Free energy calculations
    respect to lambda at each :mdp:`nstdhdl` step are written
    out. These values are needed for interpolation of linear energy
    differences with :ref:`gmx bar` (although the same can also be
-   achieved with the right foreign lambda setting, that may not be as
-   flexible), or with thermodynamic integration
+   achieved with the right :mdp:`calc-lambda-neighbors` setting,
+   that may not be as flexible), or with thermodynamic integration
 
 .. mdp:: dhdl-print-energy
 
@@ -2832,7 +2843,7 @@ Free energy calculations
    .. mdp-value:: yes
 
       The free energy values that are calculated (as specified with
-      the foreign lambda and :mdp:`dhdl-derivatives` settings) are
+      :mdp:`calc-lambda-neighbors` and :mdp:`dhdl-derivatives` settings) are
       written out to a separate file, with the default name
       ``dhdl.xvg``. This file can be used directly with :ref:`gmx
       bar`.
@@ -2848,13 +2859,13 @@ Free energy calculations
 
    (0)
    If nonzero, specifies the size of the histogram into which the
-   Delta H values (specified with foreign lambda) and the derivative
-   dH/dl values are binned, and written to ener.edr. This can be used
-   to save disk space while calculating free energy differences. One
+   Delta H values (specified with :mdp:`calc-lambda-neighbors`) and the
+   derivative dH/dl values are binned, and written to ener.edr. This can be
+   used to save disk space while calculating free energy differences. One
    histogram gets written for each foreign lambda and two for the
    dH/dl, at every :mdp:`nstenergy` step. Be aware that incorrect
    histogram settings (too small size or too wide bins) can introduce
-   errors. Do not use histograms unless you're certain you need it.
+   errors. Do not use histograms unless you are certain you need it.
 
 .. mdp:: dh-hist-spacing
 
@@ -2862,7 +2873,7 @@ Free energy calculations
    Specifies the bin width of the histograms, in energy units. Used in
    conjunction with :mdp:`dh-hist-size`. This size limits the
    accuracy with which free energies can be calculated. Do not use
-   histograms unless you're certain you need it.
+   histograms unless you are certain you need it.
 
 
 Expanded Ensemble calculations
@@ -3027,7 +3038,7 @@ Expanded Ensemble calculations
 .. mdp:: nst-transition-matrix
 
    (-1)
-   Frequency of outputting the expanded ensemble transition matrix. A
+   Interval of outputting the expanded ensemble transition matrix. A
    negative number means it will only be printed at the end of the
    simulation.
 
@@ -3334,7 +3345,7 @@ Electrophysiology" simulation setups. (See the `reference manual`_ for details).
 
    (1) The swap attempt frequency, i.e. every how many time steps the ion counts
    per compartment are determined and exchanges made if necessary.
-   Normally it is not necessary to check at every time step.
+   Normally, it is not necessary to check at every time step.
    For typical Computational Electrophysiology setups, a value of about 100 is
    sufficient and yields a negligible performance impact.
 
@@ -3346,7 +3357,7 @@ Electrophysiology" simulation setups. (See the `reference manual`_ for details).
 
 .. mdp:: split-group1
 
-   Channel #1 defines the position of the other compartment boundary.
+   Defines the position of the other compartment boundary.
 
 .. mdp:: massw-split0
 
@@ -3362,7 +3373,7 @@ Electrophysiology" simulation setups. (See the `reference manual`_ for details).
 
 .. mdp:: massw-split1
 
-   (no) As above, but for split-group #1.
+   (no) As above, but for :mdp:`split-group1`.
 
 .. mdp:: solvent-group
 
@@ -3543,29 +3554,29 @@ electron-microscopy experiments. (See the `reference manual`_ for details)
 
 .. mdp:: density-guided-simulation-shift-vector
 
-   (0,0,0) [nm] Add this vector to all atoms in the 
+   (0,0,0) [nm] Add this vector to all atoms in the
    density-guided-simulation-group before calculating forces and energies for
-   density-guided-simulations. Affects only the density-guided-simulation forces
+   density-guided simulations. Affects only the density-guided simulation forces
    and energies. Corresponds to a shift of the input density in the opposite
    direction by (-1) * density-guided-simulation-shift-vector.
 
 .. mdp:: density-guided-simulation-transformation-matrix
 
-   (1,0,0,0,1,0,0,0,1) Multiply all atoms with this matrix in the 
+   (1,0,0,0,1,0,0,0,1) Multiply all atoms with this matrix in the
    density-guided-simulation-group before calculating forces and energies for
-   density-guided-simulations. Affects only the density-guided-simulation forces
+   density-guided simulations. Affects only the density-guided simulation forces
    and energies. Corresponds to a transformation of the input density by the
    inverse of this matrix. The matrix is given in row-major order.
    This option allows, e.g., rotation of the density-guided atom group around the
    z-axis by :math:`\theta` degrees by using the following input:
    :math:`(\cos \theta , -\sin \theta , 0 , \sin \theta , \cos \theta , 0 , 0 , 0 , 1)` .
 
-QM/MM simulations with CP2K Interface 
+QM/MM simulations with CP2K Interface
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 These options enable and control the calculation and application of additional
 QM/MM forces that are computed by the CP2K package if it is linked into |Gromacs|.
-For further details about QM/MM interface implementation follow :ref:`qmmm`. 
+For further details about QM/MM interface implementation follow :ref:`qmmm`.
 
 .. mdp:: qmmm-cp2k-active
 
@@ -3602,8 +3613,8 @@ For further details about QM/MM interface implementation follow :ref:`qmmm`.
 
 .. mdp:: qmmm-cp2k-qmfilenames
 
-   () Names of the CP2K files that will be generated during the simulation. 
-   When using the default, empty, value the name of the simulation input file will be used 
+   () Names of the CP2K files that will be generated during the simulation.
+   When using the default, empty, value the name of the simulation input file will be used
    with an additional ``_cp2k`` suffix.
 
 .. _mdp-colvars:
@@ -3612,7 +3623,7 @@ Collective variables (Colvars) module
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 These options enable and control the features provided by the collective
-variables (Colvars) module (`link <https://colvars.github.io/>`_), a software
+variables (`Colvars <https://colvars.github.io/>`_) module, a software
 library for enhanced sampling methods in molecular simulations.  The Colvars
 module is described in ref. \ :ref:`195 <refFiorin13>` as well as other
 references that are reported in the log file when the corresponding features
@@ -3629,8 +3640,8 @@ For further details about Colvars interface implementation follow :ref:`colvars`
 
    Name of the Colvars configuration file, using options
    specific to Colvars that are documented at:
-   `https://colvars.github.io/gromacs-2024/colvars-refman-gromacs.html
-   <https://colvars.github.io/gromacs-2024/colvars-refman-gromacs.html>`_.
+   `https://colvars.github.io/gromacs-2025/colvars-refman-gromacs.html
+   <https://colvars.github.io/gromacs-2025/colvars-refman-gromacs.html>`_.
    The file name can be either an absolute path, or a path relative to the
    working directory when :ref:`gmx grompp` is called.
 
@@ -3669,8 +3680,8 @@ Removed features
 
 These features have been removed from |Gromacs|, but so that old
 :ref:`mdp` and :ref:`tpr` files cannot be mistakenly misused, we still
-parse this option. :ref:`gmx grompp` and :ref:`gmx mdrun` will issue a
-fatal error if this is set.
+parse these options. :ref:`gmx grompp` and :ref:`gmx mdrun` will issue a
+fatal error if they are set.
 
 .. mdp:: adress
 

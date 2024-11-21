@@ -269,7 +269,8 @@ rst_epilog += """
 .. _PyMOL: http://www.pymol.org
 .. _webpage: http://www.gromacs.org
 .. _ftp site: ftp://ftp.gromacs.org/gromacs/
-.. _tutorials: http://www.mdtutorials.com/gmx/
+.. _third-party-tutorials: http://www.mdtutorials.com/gmx/
+.. _tutorials: https://tutorials.gromacs.org/
 .. _issue tracker: https://gitlab.com/gromacs/gromacs/-/issues/
 .. _gitlab: https://gitlab.com/gromacs/gromacs/
 .. _download: ../download.html

@@ -4,13 +4,16 @@
   <String Name="CommandLine">-trestart 10 -sel 2</String>
   <OutputFiles Name="Files">
     <File Name="-o">
-      <XvgLegend Name="DiffusionCoefficient"></XvgLegend>
+      <XvgLegend Name="DiffusionCoefficient">
+        <String>     Water</String>
+        <Real>5.3526</Real>
+        <Real>0.05</Real>
+      </XvgLegend>
       <XvgLegend Name="Legend">
         <String>title "Mean Squared Displacement"</String>
         <String>xaxis  label "tau (ps)"</String>
         <String>yaxis  label "MSD (nm\\S2\\N)"</String>
         <String>TYPE xy</String>
-        <String>s0 legend "D[     Water] = 5.3526 (+/- 0.0465) (1e-5 cm^2/s)"</String>
       </XvgLegend>
       <XvgData Name="Data">
         <Sequence Name="Row0">

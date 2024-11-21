@@ -860,7 +860,7 @@ bool read_next_frame(const gmx_output_env_t* oenv, t_trxstatus* status, t_trxfra
         {
             case efTRR: bRet = gmx_next_frame(status, fr); break;
             case efCPT:
-                /* Checkpoint files can not contain mulitple frames */
+                /* Checkpoint files can not contain multiple frames */
                 break;
             case efG96:
             {

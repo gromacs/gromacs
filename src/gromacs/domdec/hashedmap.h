@@ -52,7 +52,6 @@
 #include <utility>
 #include <vector>
 
-#include "gromacs/compat/utility.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 
@@ -142,7 +141,6 @@ private:
      * \param[in] value        The value for the entry
      * \throws InvalidInputError from a debug build when attempting to insert a duplicate key with \p allowAssign=true
      */
-    // cppcheck-suppress unusedPrivateFunction
     template<bool allowAssign>
     void insert_assign(int key, const T& value)
     {
@@ -262,12 +260,10 @@ public:
 
     /*! \brief Returns a pointer to the value for the given key or nullptr when not present
      *
-     * \todo Use std::as_const when CUDA 11 is a requirement.
-     *
      * \param[in] key  The key
      * \return a pointer to value for the given key or nullptr when not present
      */
-    T* find(int key) { return const_cast<T*>(gmx::compat::as_const(*this).find(key)); }
+    T* find(int key) { return const_cast<T*>(std::as_const(*this).find(key)); }
 
     /*! \brief Returns a pointer to the value for the given key or nullptr when not present
      *

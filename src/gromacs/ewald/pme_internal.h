@@ -136,9 +136,9 @@ struct pme_grid_comm_t
 /*! \brief Data structure for grid overlap communication in a single dimension */
 struct pme_overlap_t
 {
-    MPI_Comm                     mpi_comm;  //!< MPI communcator
+    MPI_Comm                     mpi_comm;  //!< MPI communicator
     int                          nnodes;    //!< Number of ranks
-    int                          nodeid;    //!< Unique rank identifcator
+    int                          nodeid;    //!< Unique rank identification
     std::vector<int>             s2g0;      //!< The local interpolation grid start
     std::vector<int>             s2g1;      //!< The local interpolation grid end
     int                          send_size; //!< Send buffer width, used with OpenMP

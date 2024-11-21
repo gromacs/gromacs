@@ -56,6 +56,7 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/gpuhaloexchange.h"
+#include "gromacs/domdec/haloexchange.h"
 #include "gromacs/domdec/partition.h"
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/ewald/pme.h"
@@ -998,11 +999,13 @@ static void launchGpuEndOfStepTasks(nonbonded_verlet_t*          nbv,
  *
  * \param simulationWork Simulation workload flags.
  * \param stepWork Step workload flags.
+ * \param domainWork Domain workload flags.
  * \param pmeSendCoordinatesFromGpu Whether peer-to-peer communication is used for PME coordinates.
  * \return
  */
-static int getExpectedLocalXReadyOnDeviceConsumptionCount(gmx_used_in_debug const SimulationWorkload& simulationWork,
-                                                          const StepWorkload& stepWork,
+static int getExpectedLocalXReadyOnDeviceConsumptionCount(const SimulationWorkload& simulationWork,
+                                                          const StepWorkload&       stepWork,
+                                                          const DomainLifetimeWorkload& domainWork,
                                                           bool pmeSendCoordinatesFromGpu)
 {
     int result = 0;
@@ -1039,6 +1042,17 @@ static int getExpectedLocalXReadyOnDeviceConsumptionCount(gmx_used_in_debug cons
     {
         // Event is consumed by force clearing which waits for the update to complete
         result++;
+    }
+    if (simulationWork.useGpuUpdate && domainWork.haveCpuLocalForceWork)
+    {
+        // Event is consumed when waiting for it on the CPU prior to CPU force buffer clearing.
+        // The actual data dependency does not involve coordinates, but we use this event
+        // as an "end-of-step" mark.
+        if (!(stepWork.doNeighborSearch || simulationWork.useCpuHaloExchange
+              || (stepWork.computePmeOnSeparateRank && !pmeSendCoordinatesFromGpu)))
+        {
+            result++;
+        }
     }
     return result;
 }
@@ -1372,7 +1386,11 @@ static void doPairSearch(const t_commrec*             cr,
     else
     {
         wallcycle_sub_start(wcycle, WallCycleSubCounter::NBSGridNonLocal);
-        nbnxn_put_on_grid_nonlocal(nbv, getDomdecZones(*cr->dd), fr->atomInfo, x.unpaddedArrayRef());
+        if (!nbv->localAtomOrderMatchesNbnxmOrder())
+        {
+            nbnxn_put_on_grid_nonlocal(nbv, getDomdecZones(*cr->dd), fr->atomInfo, x.unpaddedArrayRef());
+        }
+        nbv->convertCoordinates(AtomLocality::NonLocal, x.unpaddedArrayRef());
         wallcycle_sub_stop(wcycle, WallCycleSubCounter::NBSGridNonLocal);
     }
 
@@ -1622,7 +1640,7 @@ void do_force(FILE*                         fplog,
         GMX_ASSERT(stateGpu != nullptr, "stateGpu should not be null");
         const int expectedLocalXReadyOnDeviceConsumptionCount =
                 getExpectedLocalXReadyOnDeviceConsumptionCount(
-                        simulationWork, stepWork, pmeSendCoordinatesFromGpu);
+                        simulationWork, stepWork, domainWork, pmeSendCoordinatesFromGpu);
 
         // We need to copy coordinates when:
         // 1. Update is not offloaded
@@ -1790,7 +1808,17 @@ void do_force(FILE*                         fplog,
                         stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
                     }
                 }
-                dd_move_x(cr->dd, box, x.unpaddedArrayRef(), wcycle);
+
+                if (cr->dd->haloExchange)
+                {
+                    wallcycle_start(wcycle, WallCycleCounter::MoveX);
+                    cr->dd->haloExchange->moveX(box, x.unpaddedArrayRef());
+                    wallcycle_stop(wcycle, WallCycleCounter::MoveX);
+                }
+                else
+                {
+                    dd_move_x(cr->dd, box, x.unpaddedArrayRef(), wcycle);
+                }
             }
         }
 
@@ -1868,6 +1896,61 @@ void do_force(FILE*                         fplog,
         xWholeMolecules = fr->wholeMoleculeTransform->wholeMoleculeCoordinates(x.unpaddedArrayRef(), box);
     }
 
+    // The CPU force buffer force clearing needs to happen after the previous step
+    // force reduction has already completed. To minimize the cross-step dependencies
+    // we wait on the coordinates to be updated on the device which is sufficient but
+    // a later event than what we strictly need to synchronize with.
+    if (simulationWork.useGpuUpdate && domainWork.haveCpuLocalForceWork)
+    {
+        const bool coordinatesAlreadyUpdatedOnDevice =
+                stepWork.doNeighborSearch || simulationWork.useCpuHaloExchange
+                || (stepWork.computePmeOnSeparateRank && !pmeSendCoordinatesFromGpu);
+        if (!coordinatesAlreadyUpdatedOnDevice)
+        {
+            stateGpu->waitCoordinatesUpdatedOnDevice();
+        }
+    }
+
+    /* Start the force cycle counter.
+     * Note that a different counter is used for dynamic load balancing.
+     */
+    wallcycle_start(wcycle, WallCycleCounter::Force);
+
+    /* Set up and clear force outputs:
+     * forceOutMtsLevel0:  everything except what is in the other two outputs
+     * forceOutMtsLevel1:  PME-mesh and listed-forces group 1
+     * forceOutNonbonded: non-bonded forces
+     * Without multiple time stepping all point to the same object.
+     * With multiple time-stepping the use is different for MTS fast (level0 only) and slow steps.
+     */
+    ForceOutputs forceOutMtsLevel0 = setupForceOutputs(
+            &fr->forceHelperBuffers[0], force, domainWork, stepWork, simulationWork.havePpDomainDecomposition, wcycle);
+
+    // Force output for MTS combined forces, only set at level1 MTS steps
+    std::optional<ForceOutputs> forceOutMts =
+            (simulationWork.useMts && stepWork.computeSlowForces)
+                    ? std::optional(setupForceOutputs(&fr->forceHelperBuffers[1],
+                                                      forceView->forceMtsCombinedWithPadding(),
+                                                      domainWork,
+                                                      stepWork,
+                                                      simulationWork.havePpDomainDecomposition,
+                                                      wcycle))
+                    : std::nullopt;
+
+    ForceOutputs* forceOutMtsLevel1 =
+            simulationWork.useMts ? (stepWork.computeSlowForces ? &forceOutMts.value() : nullptr)
+                                  : &forceOutMtsLevel0;
+
+    const bool nonbondedAtMtsLevel1 = runScheduleWork.simulationWork.computeNonbondedAtMtsLevel1;
+
+    ForceOutputs* forceOutNonbonded = nonbondedAtMtsLevel1 ? forceOutMtsLevel1 : &forceOutMtsLevel0;
+
+    if (inputrec.bPull && pull_have_constraint(*pull_work))
+    {
+        clear_pull_forces(pull_work);
+    }
+    wallcycle_stop(wcycle, WallCycleCounter::Force);
+
     // For the rest of the CPU tasks that depend on GPU-update produced coordinates,
     // this wait ensures that the D2H transfer is complete.
     if (simulationWork.useGpuUpdate && !stepWork.doNeighborSearch)
@@ -1923,53 +2006,6 @@ void do_force(FILE*                         fplog,
         do_rotation(cr, enforcedRotation, box, x.unpaddedConstArrayRef(), t, step, stepWork.doNeighborSearch);
         wallcycle_stop(wcycle, WallCycleCounter::Rot);
     }
-
-    /* Start the force cycle counter.
-     * Note that a different counter is used for dynamic load balancing.
-     */
-    wallcycle_start(wcycle, WallCycleCounter::Force);
-
-    /* Set up and clear force outputs:
-     * forceOutMtsLevel0:  everything except what is in the other two outputs
-     * forceOutMtsLevel1:  PME-mesh and listed-forces group 1
-     * forceOutNonbonded: non-bonded forces
-     * Without multiple time stepping all point to the same object.
-     * With multiple time-stepping the use is different for MTS fast (level0 only) and slow steps.
-     *
-     * Note that CPU force buffer clearing needs to happen after the completion of the
-     * previous step's CPU force H2D transfer (prior to force reduction).
-     * In the current code this is ensured by the earlier waitCoordinatesReadyOnHost()
-     * which is sufficient, but it is suboptimal as it prevents overlap of the force clearing
-     * with independent GPU work (integration/constraints, x D2H copy).
-     */
-    ForceOutputs forceOutMtsLevel0 = setupForceOutputs(
-            &fr->forceHelperBuffers[0], force, domainWork, stepWork, simulationWork.havePpDomainDecomposition, wcycle);
-
-    // Force output for MTS combined forces, only set at level1 MTS steps
-    std::optional<ForceOutputs> forceOutMts =
-            (simulationWork.useMts && stepWork.computeSlowForces)
-                    ? std::optional(setupForceOutputs(&fr->forceHelperBuffers[1],
-                                                      forceView->forceMtsCombinedWithPadding(),
-                                                      domainWork,
-                                                      stepWork,
-                                                      simulationWork.havePpDomainDecomposition,
-                                                      wcycle))
-                    : std::nullopt;
-
-    ForceOutputs* forceOutMtsLevel1 =
-            simulationWork.useMts ? (stepWork.computeSlowForces ? &forceOutMts.value() : nullptr)
-                                  : &forceOutMtsLevel0;
-
-    const bool nonbondedAtMtsLevel1 = runScheduleWork.simulationWork.computeNonbondedAtMtsLevel1;
-
-    ForceOutputs* forceOutNonbonded = nonbondedAtMtsLevel1 ? forceOutMtsLevel1 : &forceOutMtsLevel0;
-
-    if (inputrec.bPull && pull_have_constraint(*pull_work))
-    {
-        clear_pull_forces(pull_work);
-    }
-
-    wallcycle_stop(wcycle, WallCycleCounter::Force);
 
     /* We calculate the non-bonded forces, when done on the CPU, here.
      * We do this before calling do_force_lowlevel, because in that
@@ -2478,7 +2514,7 @@ void do_force(FILE*                         fplog,
             // - CPU f H2D should be as soon as all CPU-side forces are done
             // - wait for force reduction does not need to block host (at least not here, it's sufficient to wait
             //   before the next CPU task that consumes the forces: vsite spread or update)
-            // - copy is not perfomed if GPU force halo exchange is active, because it would overwrite the result
+            // - copy is not performed if GPU force halo exchange is active, because it would overwrite the result
             //   of the halo exchange. In that case the copy is instead performed above, before the exchange.
             //   These should be unified.
             if (domainWork.haveLocalForceContribInCpuBuffer && !stepWork.useGpuFHalo)

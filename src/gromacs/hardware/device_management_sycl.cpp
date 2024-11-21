@@ -766,7 +766,7 @@ void doubleCheckGpuAwareMpiWillWork(const DeviceInformation& deviceInfo)
 #if GMX_SYCL_DPCPP
     if (gmx::usingIntelMpi())
     {
-        if (deviceInfo.syclDevice.get_platform().get_backend() != sycl::backend::ext_oneapi_level_zero)
+        if (deviceInfo.syclDevice.get_platform().get_backend() == sycl::backend::opencl)
         {
             // Trying to use a device from e.g. an OpenCL backend
             // leads to weird crashes when addresses are used out of
@@ -775,7 +775,7 @@ void doubleCheckGpuAwareMpiWillWork(const DeviceInformation& deviceInfo)
             // treat Intel MPI as GPU aware.
             GMX_THROW(
                     gmx::InvalidInputError("Intel MPI can only implement GPU-aware operations on "
-                                           "devices using the LevelZero backend"));
+                                           "Intel devices using the LevelZero backend"));
         }
     }
 #else

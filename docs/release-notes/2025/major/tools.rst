@@ -59,3 +59,11 @@ Improve reading performance of large .gro files
 
 ``gmx grompp`` is now up to 30% faster when reading system coordinates
 from a large :ref:`gro` file.
+
+Smaller sampling windows in gmx msd
+"""""""""""""""""""""""""""""""""""
+
+Trajectories that save frames at higher than average frequencies can now be analyzed at more frequent sampling windows
+using ``-trestart`` < 1.0 picosecond, down to 1 femtosecond. 
+
+:issue:`4694`

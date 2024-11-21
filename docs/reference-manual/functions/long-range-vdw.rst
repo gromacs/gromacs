@@ -116,9 +116,9 @@ We can again integrate the long-range contribution to the virial
 assuming :math:`g(r)` is 1 beyond :math:`r_1`:
 
 .. math:: \begin{aligned}
-          \Xi_{lr}&=&	{\frac{1}{2}}N \rho \left(
-              \int_{r_1}^{r_c}  4 \pi r^2 (\Xi -\Xi_c)  \,{{\rm d}r}+ \int_{r_c}^{\infty} 4 \pi r^2 3\,C_6\,{r_{ij}}^{-6}\,  {{\rm d}r}\right)	\nonumber\\
-                  &=&     {\frac{1}{2}}N \rho \left(
+          \Xi_{lr}&=& {\frac{1}{2}}N \rho \left(
+              \int_{r_1}^{r_c}  4 \pi r^2 (\Xi -\Xi_c)  \,{{\rm d}r}+ \int_{r_c}^{\infty} 4 \pi r^2 3\,C_6\,{r_{ij}}^{-6}\,  {{\rm d}r}\right)  \nonumber\\
+                  &=& {\frac{1}{2}}N \rho \left(
               \int_{r_1}^{r_c} 4 \pi r^2 (\Xi -\Xi_c) \, {{\rm d}r}+ 4 \pi C_6 \, r_c^{-3} \right)\end{aligned}
           :label: eqnlrljvirialcontrib
 

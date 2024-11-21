@@ -139,6 +139,10 @@ static int assign_param(t_functype                ftype,
 
     if (all_param_zero)
     {
+        // Note that F_VSITES1 and F_CONNBONDS use no parameters so
+        // have all parameters zero at this point, but elsewhere we
+        // rely on the fact that the parameter set is assigned even
+        // though it is all zero.
         if (IS_ANGLE(ftype) || IS_RESTRAINT_TYPE(ftype) || ftype == F_IDIHS || ftype == F_PDIHS
             || ftype == F_PIDIHS || ftype == F_RBDIHS || ftype == F_FOURDIHS)
         {
@@ -540,6 +544,13 @@ static void enter_function(const InteractionsOfType* p,
     }
 }
 
+bool shouldConvertInteractionType(int ftype)
+{
+    const unsigned long flags = interaction_function[ftype].flags;
+    return ((ftype != F_LJ) && (ftype != F_BHAM)
+            && ((flags & IF_BOND) != 0u || (flags & IF_VSITE) != 0u || (flags & IF_CONSTRAINT) != 0u));
+}
+
 void convertInteractionsOfType(int                                      atnr,
                                gmx::ArrayRef<const InteractionsOfType>  nbtypes,
                                gmx::ArrayRef<const MoleculeInformation> mi,
@@ -550,7 +561,6 @@ void convertInteractionsOfType(int                                      atnr,
                                gmx_mtop_t*                              mtop)
 {
     int             i;
-    unsigned long   flags;
     gmx_ffparams_t* ffp;
     gmx_moltype_t*  molt;
 
@@ -573,9 +583,7 @@ void convertInteractionsOfType(int                                      atnr,
 
             gmx::ArrayRef<const InteractionsOfType> interactions = mi[mt].interactions;
 
-            flags = interaction_function[i].flags;
-            if ((i != F_LJ) && (i != F_BHAM)
-                && ((flags & IF_BOND) || (flags & IF_VSITE) || (flags & IF_CONSTRAINT)))
+            if (shouldConvertInteractionType(i))
             {
                 enter_function(&(interactions[i]),
                                static_cast<t_functype>(i),
@@ -603,7 +611,7 @@ void convertInteractionsOfType(int                                      atnr,
 
             if (!interactions[i].interactionTypes.empty())
             {
-                flags = interaction_function[i].flags;
+                const unsigned long flags = interaction_function[i].flags;
                 /* For intermolecular interactions we (currently)
                  * only support potentials.
                  * Constraints and virtual sites would be possible,

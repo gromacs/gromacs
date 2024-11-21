@@ -114,4 +114,15 @@ PairSearch::PairSearch(const PbcType      pbcType,
     cycleCounting_.recordCycles_ = (getenv("GMX_NBNXN_CYCLE") != nullptr);
 }
 
+void PairSearch::setNonLocalGrid(const int                           gridIndex,
+                                 const int                           ddZone,
+                                 const GridDimensions&               gridDimensions,
+                                 ArrayRef<const std::pair<int, int>> columns,
+                                 ArrayRef<const int32_t>             atomInfo,
+                                 ArrayRef<const RVec>                x,
+                                 nbnxn_atomdata_t*                   nbat)
+{
+    gridSet_.setNonLocalGrid(gridIndex, ddZone, gridDimensions, columns, atomInfo, x, nbat);
+}
+
 } // namespace gmx

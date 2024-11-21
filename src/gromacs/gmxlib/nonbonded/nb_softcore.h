@@ -194,7 +194,7 @@ static inline void ewaldQuadraticPotential(const RealType       qq,
     }
 }
 
-/* cutoff LJ with quadratic appximation of lj-potential */
+/* cutoff LJ with quadratic approximation of lj-potential */
 template<bool computeForces, class RealType, class BoolType>
 static inline void lennardJonesQuadraticPotential(const RealType       c6,
                                                   const RealType       c12,

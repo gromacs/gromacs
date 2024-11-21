@@ -1543,11 +1543,8 @@ void check_ir(const char*                    mdparin,
         CHECK(usingFullElectrostatics(ir->coulombtype));
     }
 
-    if (getenv("GMX_DO_GALACTIC_DYNAMICS") == nullptr)
-    {
-        sprintf(err_buf, "epsilon-r must be >= 0 instead of %g\n", ir->epsilon_r);
-        CHECK(ir->epsilon_r < 0);
-    }
+    sprintf(err_buf, "epsilon-r must be >= 0 instead of %g\n", ir->epsilon_r);
+    CHECK(ir->epsilon_r < 0);
 
     if (usingRF(ir->coulombtype))
     {

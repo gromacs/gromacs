@@ -656,7 +656,17 @@ static void new_status(const char*                                 topfile,
     sys->natoms = 0;
     for (const gmx_molblock_t& molb : molblock)
     {
-        if (!sys->molblock.empty() && molb.type == sys->molblock.back().type)
+        if (EI_TPI(ir->eI) && &molb == &molblock.back())
+        {
+            // TPI and last block: this is the molecule to insert; do not merge this block
+            if (molb.nmol != 1)
+            {
+                gmx_fatal(FARGS,
+                          "With TPI the last molecule block should contain exactly 1 molecule");
+            }
+            sys->molblock.push_back(molb);
+        }
+        else if (!sys->molblock.empty() && molb.type == sys->molblock.back().type)
         {
             /* Merge consecutive blocks with the same molecule type */
             sys->molblock.back().nmol += molb.nmol;

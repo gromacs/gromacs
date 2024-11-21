@@ -30,9 +30,8 @@ void colvarproxy_replicas::set_replicas_mpi_communicator(replicas_mpi_comm_t com
   if (comm != MPI_COMM_NULL) {
     MPI_Comm_rank(comm, &replicas_mpi_rank);
     MPI_Comm_size(comm, &replicas_mpi_num);
-    cvm::log("Initializing multiple replicas: this is replica index " +
-             cvm::to_str(replica_index()) + " (" + cvm::to_str(num_replicas()) +
-             " replicas total).\n");
+    cvm::log("Enabling multiple replicas: this is replica number " +
+             cvm::to_str(replica_index() + 1) + " of " + cvm::to_str(num_replicas()) + ".\n");
   }
 #endif
 }

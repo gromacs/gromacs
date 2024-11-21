@@ -265,10 +265,7 @@ elseif(GMX_SIMD_ACTIVE STREQUAL "IBM_VSX")
                                 SIMD_IBM_VSX_C_FLAGS SIMD_IBM_VSX_CXX_FLAGS)
 
     # Usually we check also for the C compiler here, but a C compiler
-    # is not required for SIMD support on this platform. cmake through
-    # at least version 3.7 cannot pass this check with the C compiler
-    # in the latest xlc 13.1.5, but the C++ compiler has different
-    # behaviour and is OK. See Issue #2102.
+    # is not required for SIMD support.
     if(NOT SIMD_IBM_VSX_CXX_SUPPORTED)
         gmx_give_fatal_error_when_simd_support_not_found("IBM VSX" "disable SIMD support (slower)" "${SUGGEST_BINUTILS_UPDATE}")
     endif()

@@ -78,9 +78,6 @@ enum class EmulateGpuNonbonded : bool
  */
 struct DevelopmentFeatureFlags
 {
-    //! True if the Buffer ops development feature is enabled
-    // TODO: when the trigger of the buffer ops offload is fully automated this should go away
-    bool enableGpuBufferOps = false;
     //! True if the GPU-aware MPI can be used for GPU direct communication feature
     bool canUseGpuAwareMpi = false;
     //! True if GPU PME-decomposition is enabled
@@ -111,7 +108,7 @@ class MDAtoms;
  * \param[in] buildSupportsNonbondedOnGpu  Whether GROMACS was built with GPU support.
  * \param[in] nonbondedOnGpuIsUseful       Whether computing nonbonded interactions on a GPU is
  *                                         useful for this calculation.
- * \param[in] binaryReproducibilityRequested  Whether binary reprocibility was requested
+ * \param[in] binaryReproducibilityRequested  Whether binary reproducibility was requested
  * \param[in] numRanksPerSimulation        The number of ranks in each simulation.
  *
  * \returns    Whether the simulation will run nonbonded tasks on GPUs.
@@ -179,7 +176,7 @@ bool decideWhetherToUseGpusForPmeWithThreadMpi(bool                    useGpuFor
  * \param[in]  emulateGpuNonbonded         Whether we will emulate GPU calculation of nonbonded interactions.
  * \param[in]  buildSupportsNonbondedOnGpu Whether GROMACS was build with GPU support.
  * \param[in]  nonbondedOnGpuIsUseful      Whether computing nonbonded interactions on a GPU is useful for this calculation.
- * \param[in] binaryReproducibilityRequested  Whether binary reprocibility was requested
+ * \param[in] binaryReproducibilityRequested  Whether binary reproducibility was requested
  * \param[in]  gpusWereDetected            Whether compatible GPUs were detected on any node.
  *
  * \returns    Whether the simulation will run nonbonded and PME tasks, respectively, on GPUs.
@@ -316,6 +313,7 @@ bool decideWhetherToUseGpuForUpdate(bool                 isDomainDecomposition,
  *
  * \param[in]  devFlags                     GPU development / experimental feature flags.
  * \param[in]  haveMts                      Whether the simulation uses multiple time stepping
+ * \param[in]  useReplicaExchange           Whether replica exchange is used
  * \param[in]  haveSwapCoords               Whether the swap-coords functionality is active
  * \param[in]  mdlog                        MD logger.
  *
@@ -323,6 +321,7 @@ bool decideWhetherToUseGpuForUpdate(bool                 isDomainDecomposition,
  */
 bool decideWhetherDirectGpuCommunicationCanBeUsed(const DevelopmentFeatureFlags& devFlags,
                                                   bool                           haveMts,
+                                                  bool                           useReplicaExchange,
                                                   bool                           haveSwapCoords,
                                                   const gmx::MDLogger&           mdlog);
 

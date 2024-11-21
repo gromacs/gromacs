@@ -245,8 +245,6 @@ std::unique_ptr<nonbonded_verlet_t> setupNbnxmForBenchInstance(const KernelOptio
     const rvec lowerCorner = { 0, 0, 0 };
     const rvec upperCorner = { system.box[XX][XX], system.box[YY][YY], system.box[ZZ][ZZ] };
 
-    const real atomDensity = system.coordinates.size() / det(system.box);
-
     nbv->putAtomsOnGrid(system.box,
                         0,
                         lowerCorner,
@@ -254,7 +252,7 @@ std::unique_ptr<nonbonded_verlet_t> setupNbnxmForBenchInstance(const KernelOptio
                         nullptr,
                         { 0, int(system.coordinates.size()) },
                         system.coordinates.size(),
-                        atomDensity,
+                        system.coordinates.size() / det(system.box),
                         system.atomInfo,
                         system.coordinates,
                         nullptr);
