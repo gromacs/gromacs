@@ -30,5 +30,14 @@ Handle trajectory reading error in gmx tcaf
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix linking error on Windows with Intel oneAPI
+""""""""""""""""""""""""""""""""""""""""""""""
+
+Fix ``LINK : fatal error LNK1181: cannot open input file ‘m.lib’``
+error encountered when using ``icx`` compiler on Windows by using
+dynamically-detected name for the ``m`` library.
+
+:issue:`5240`
+
 Miscellaneous
 ^^^^^^^^^^^^^
