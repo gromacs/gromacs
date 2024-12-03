@@ -57,10 +57,17 @@ set(GMX_GPU_HIP ON)
 
 find_package(rocprim REQUIRED CONFIG HINTS ${HIP_PACKAGE_PREFIX_DIR})
 
+set(ROCFFTMP_MINIMUM_VERSION 1.0.31 CACHE INTERNAL "Minimum version that suports distributed FFT with rocfft")
+
 if(GMX_GPU_FFT_VKFFT)
     include(gmxManageVkFft)
 elseif(GMX_GPU_FFT_ROCFFT OR GMX_USE_Heffte)
     find_package(rocfft REQUIRED CONFIG HINTS ${HIP_PACKAGE_PREFIX_DIR})
+    if (GMX_USE_ROCFFTMP)
+	    if (${rocfft_VERSION} VERSION_LESS ${ROCFFTMP_MINIMUM_VERSION})
+            message(FATAL_ERROR "The found rocfft version is less then the required version ${ROCFFTMP_MINIMUM_VERSION} for distributed FFT support")
+        endif()
+    endif()
 else()
     message(FATAL_ERROR "The configured GPU FFT library ${GMX_GPU_FFT_LIBRARY} can not be used together with the HIP backend") 
 endif()

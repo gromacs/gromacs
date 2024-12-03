@@ -45,6 +45,7 @@
 #include <rocfft/rocfft.h>
 
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/vectypes.h"
 
 namespace gmx

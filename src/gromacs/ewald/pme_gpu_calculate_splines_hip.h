@@ -296,7 +296,7 @@ static __device__ __forceinline__ void calculate_splines(const PmeGpuKernelParam
             const float shift = c_pmeMaxUnitcellShift;
             /* Fractional coordinates along box vectors, adding a positive shift to ensure t is positive for triclinic boxes */
             t    = (t + shift) * n;
-            tInt = static_cast<const int>(t);
+            tInt = static_cast<int>(t);
             GMX_DEVICE_ASSERT(sharedMemoryIndex < atomsPerBlock * DIM);
             sm_fractCoords[sharedMemoryIndex] = t - tInt;
             tableIndex += tInt;
@@ -305,12 +305,10 @@ static __device__ __forceinline__ void calculate_splines(const PmeGpuKernelParam
 
             // TODO have shared table for both parameters to share the fetch, as index is always same?
             // TODO compare texture/LDG performance
-            sm_fractCoords[sharedMemoryIndex] += fetchFromParamLookupTable(
-                    kernelParams.grid.d_fractShiftsTable, kernelParams.fractShiftsTableTexture, tableIndex);
+            sm_fractCoords[sharedMemoryIndex] +=
+                    fetchFromParamLookupTable(kernelParams.grid.d_fractShiftsTable, tableIndex);
             sm_gridlineIndices[sharedMemoryIndex] =
-                    fetchFromParamLookupTable(kernelParams.grid.d_gridlineIndicesTable,
-                                              kernelParams.gridlineIndicesTableTexture,
-                                              tableIndex);
+                    fetchFromParamLookupTable(kernelParams.grid.d_gridlineIndicesTable, tableIndex);
             if constexpr (writeGlobal)
             {
                 gm_gridlineIndices[atomIndexOffset * DIM + sharedMemoryIndex] =

@@ -45,6 +45,7 @@
 #include <climits>
 
 #include "gromacs/gpu_utils/hip_kernel_utils.h"
+#include "gromacs/gpu_utils/hip_sycl_kernel_utils.h"
 #include "gromacs/gpu_utils/typecasts_cuda_hip.h"
 
 #include "pme_gpu_calculate_splines_hip.h"
@@ -226,10 +227,17 @@ __device__ __forceinline__ void spread_charges(const PmeGpuKernelParams kernelPa
         // min/max chains in parallel, so the dependency-chain length is
         // log2(parallelExecutionWidth) shuffle+op steps total, instead of
         // 6 * log2(parallelExecutionWidth) for six sequential warp reductions.
-        // The instruction count is identical; this just exposes the ILP to
-        // the compiler. We avoid rocprim::warp_reduce because its hard
-        // VirtualWaveSize <= physical-wave-size static_assert prevents the
-        // wave64 kernel from compiling on RDNA targets in this multi-arch TU.
+        // This exposes the ILP to the compiler. We avoid rocprim::warp_reduce
+        // because its hard VirtualWaveSize <= physical-wave-size static_assert
+        // prevents the wave64 kernel from compiling on RDNA targets in this
+        // multi-arch TU.
+        //
+        // We tried several DPP-based variants on top of this (xor 1 / xor 2
+        // via quad_perm; a full DPP path using row_shr + row_bcast on CDNA
+        // and row_xmask on RDNA with a final readlane broadcast) but the
+        // measured benefit on PME spread wasn't large enough to justify the
+        // extra ~150 lines and the wave32/wave64 code divergence. The plain
+        // __shfl_xor loop is what survived.
 #pragma unroll
         for (int offset = parallelExecutionWidth / 2; offset > 0; offset /= 2)
         {

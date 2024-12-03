@@ -81,6 +81,11 @@
 #    include "gpu_3dfft_cufftmp.h"
 #endif
 
+#if GMX_USE_ROCFFTMP
+#    include "gpu_3dfft_hip_rocfftmp.h"
+#endif
+
+
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
@@ -180,6 +185,23 @@ Gpu3dFft::Gpu3dFft(FftBackend           backend,
                                                               realGrid,
                                                               complexGrid);
             break;
+#        if GMX_USE_ROCFFTMP
+        case FftBackend::HipRocfftMp:
+            impl_ = std::make_unique<Gpu3dFft::ImplHipRocfftMp>(allocateRealGrid,
+                                                                comm,
+                                                                gridSizesInXForEachRank,
+                                                                gridSizesInYForEachRank,
+                                                                nz,
+                                                                performOutOfPlaceFFT,
+                                                                context,
+                                                                pmeStream,
+                                                                realGridSize,
+                                                                realGridSizePadded,
+                                                                complexGridSizePadded,
+                                                                realGrid,
+                                                                complexGrid);
+            break;
+#        endif
 #    endif
         default:
             GMX_RELEASE_ASSERT(backend == FftBackend::HeFFTe_HIP,

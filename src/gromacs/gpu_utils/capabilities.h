@@ -75,10 +75,11 @@ struct GpuConfigurationCapabilities
     //! Whether this configuration supports PME solve kernels with less than 4 warps
     static constexpr bool PmeSolveNeedsAtLeastFourWarps = GMX_GPU && !GMX_GPU_OPENCL;
     //! Whether this configuration supports running FFT kernels on the device
-    static constexpr bool Fft = GMX_GPU
-                                && (GMX_GPU_FFT_MKL || GMX_GPU_FFT_ROCFFT || GMX_GPU_FFT_HIPFFT
-                                    || GMX_GPU_FFT_BBFFT || GMX_GPU_FFT_ONEMATH || GMX_GPU_FFT_VKFFT
-                                    || GMX_GPU_FFT_CUFFT || GMX_GPU_FFT_CLFFT);
+    static constexpr bool Fft =
+            GMX_GPU
+            && ((GMX_GPU_FFT_MKL != 0) || (GMX_GPU_FFT_ROCFFT != 0) || (GMX_GPU_FFT_BBFFT != 0)
+                || (GMX_GPU_FFT_ONEMATH != 0) || (GMX_GPU_FFT_VKFFT != 0)
+                || (GMX_GPU_FFT_CUFFT != 0) || (GMX_GPU_FFT_CLFFT != 0));
     //! Whether this configuration supports running bonded kernels on the device
     static constexpr bool Bonded = GMX_GPU && !GMX_GPU_OPENCL;
     //! Whether this configuration supports running update+LINCS+SETTLE kernels on the device
@@ -101,8 +102,8 @@ struct GpuConfigurationCapabilities
     //! Whether this configuration supports running gpu pme decomposition
     static constexpr bool PmeDecomposition = (GMX_GPU_CUDA && (GMX_USE_Heffte || GMX_USE_cuFFTMp))
                                              || (GMX_GPU_SYCL && GMX_USE_Heffte)
-                                             || (GMX_GPU_HIP && GMX_USE_Heffte);
-    static constexpr bool TwoDPmeDecomposition = PmeDecomposition && GMX_GPU_CUDA;
+                                             || (GMX_GPU_HIP && (GMX_USE_ROCFFTMP || GMX_USE_Heffte));
+    static constexpr bool TwoDPmeDecomposition = PmeDecomposition && (GMX_GPU_CUDA || GMX_GPU_HIP);
 };
 CLANG_DIAGNOSTIC_RESET
 
