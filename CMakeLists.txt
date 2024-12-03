@@ -307,6 +307,12 @@ option(GMX_USE_HEFFTE "Use HeFFTe for distributed GPU FFT support with an MPI li
 
 option(GMX_USE_CUFFTMP "Use cuFFTMp for distributed FFT support. Used with CUDA backend." OFF)
 
+gmx_dependent_option(
+    GMX_USE_ROCFFTMP
+    "Use rocfft and hipfft with support for distributed FFT. Only for HIP backend"
+    OFF
+    "GMX_GPU STREQUAL HIP;GMX_MPI")
+
 # Here the default GPU FFT library is set up depending
 # on the build configuration. Other choices are
 # available, these are just the defaults.
@@ -778,6 +784,18 @@ if(GMX_USE_CUFFTMP)
     endif()
     find_package(cuFFTMp REQUIRED CUDA)
     set(GMX_USE_cuFFTMp ${cuFFTMp_FOUND})
+endif()
+
+if(GMX_USE_ROCFFTMP)
+     if(NOT GMX_GPU_HIP)
+         message(FATAL_ERROR "Distributed rocfft requires a HIP build")
+     endif()
+     if(NOT GMX_GPU_FFT_ROCFFT)
+	 message(FATAL_ERROR "Distributed rocfft needs rocfft as FFT backend")
+     endif()
+     if (NOT GMX_LIB_MPI)
+	 message(FATAL_ERROR "Distributed rocfft requires a library MPI build")
+     endif()
 endif()
 
 # Set NVSHMEM host and device libs

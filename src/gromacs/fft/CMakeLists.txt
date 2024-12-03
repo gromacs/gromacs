@@ -102,6 +102,14 @@ elseif (GMX_GPU_HIP)
         gpu_3dfft_hip_rocfft.cpp
         rocfft_common_utils.cpp 
         )
+	if (GMX_USE_ROCFFTMP)
+	    gmx_add_libgromacs_sources(
+                 gpu_3dfft_hip_rocfftmp.cpp
+		 )
+	    _gmx_add_files_to_property(HIP_SOURCES
+	         gpu_3dfft_hip_rocfftmp.cpp
+		 )
+        endif()
     endif()
     _gmx_add_files_to_property(HIP_SOURCES
         # Must add these files so they can include hip_runtime.h

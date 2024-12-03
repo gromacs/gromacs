@@ -580,7 +580,7 @@ __global__ void pmegrid_to_fftgrid(float* __restrict__ gm_realGrid,
     int fftidx   = ix * fftSize.y * fftSize.z + iy * fftSize.z + iz;
     int pmeIndex = ix * pmeSize.y * pmeSize.z + iy * pmeSize.z + iz;
 
-    if (pmeToFft)
+    if constexpr (pmeToFft)
     {
         gm_fftGrid[fftidx] = gm_realGrid[pmeIndex];
     }

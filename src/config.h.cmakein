@@ -76,8 +76,6 @@
 #cmakedefine01 GMX_GPU_FFT_ONEMATH
 /* Use rocFFT library for FFT on GPUs */
 #cmakedefine01 GMX_GPU_FFT_ROCFFT
-/* Use hipFFT library for FFT on GPUs */
-#cmakedefine01 GMX_GPU_FFT_HIPFFT
 /* Use double-batched FFT library (BBFFT) for FFT on GPUs */
 #cmakedefine01 GMX_GPU_FFT_BBFFT
 
@@ -304,6 +302,9 @@
 
 /* Define if cuFFTMp library found */
 #cmakedefine01 GMX_USE_cuFFTMp
+
+/* Define if distributed ROCFFT is available */
+#cmakedefine01 GMX_USE_ROCFFTMP
 
 /* Define constants for build types (starting at 1 to make sure undefined values don't match) */
 #define CMAKE_BUILD_TYPE_DEBUG 1

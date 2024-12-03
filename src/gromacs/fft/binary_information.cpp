@@ -166,10 +166,6 @@ std::string gpuFftDescription()
         {
             return std::string("rocFFT ") + rocfft_VERSION;
         }
-        else if (GMX_GPU_FFT_HIPFFT)
-        {
-            return std::string("hipFFT ") + hipfft_VERSION;
-        }
         else if (GMX_GPU_FFT_BBFFT)
         {
             return std::string("Double-Batched FFT Library ") + bbfft_VERSION;
@@ -201,10 +197,6 @@ std::string multiGpuFftDescription()
             // distinction does not matter here.
             return gmx::formatString("HeFFTe %s with cuFFT backend", Heffte_VERSION);
         }
-        else if (GMX_GPU_HIP && GMX_GPU_FFT_HIPFFT)
-        {
-            return gmx::formatString("HeFFTe %s with hipFFT backend", Heffte_VERSION);
-        }
         else if (GMX_GPU_SYCL && GMX_GPU_FFT_MKL)
         {
             return gmx::formatString("HeFFTe %s with oneMKL backend", Heffte_VERSION);
@@ -221,6 +213,10 @@ std::string multiGpuFftDescription()
     else if (GMX_USE_cuFFTMp)
     {
         return "cuFFTMp";
+    }
+    else if (GMX_USE_ROCFFTMP)
+    {
+        return "rocfftMp";
     }
     else
     {

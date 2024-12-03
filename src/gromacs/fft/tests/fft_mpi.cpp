@@ -51,7 +51,9 @@
 
 #include "gromacs/fft/fft.h"
 #include "gromacs/fft/gpu_3dfft.h"
+#include "gromacs/gpu_utils/capabilities.h"
 #include "gromacs/gpu_utils/clfftinitializer.h"
+#include "gromacs/gpu_utils/hostallocator.h"
 #if GMX_GPU
 #    include "gromacs/gpu_utils/devicebuffer.h"
 #endif
@@ -89,6 +91,7 @@ static GpuAwareMpiStatus getGpuAwareMpiStatusForFftBackend(const FftBackend fftB
         case FftBackend::HeFFTe_CUDA:
         case FftBackend::HeFFTe_Sycl_cuFFT: return checkMpiCudaAwareSupport();
         case FftBackend::HeFFTe_HIP:
+        case FftBackend::HipRocfftMp:
         case FftBackend::HeFFTe_Sycl_Rocfft: return checkMpiHipAwareSupport();
         case FftBackend::HeFFTe_Sycl_OneMkl: return checkMpiZEAwareSupport();
         default: return GpuAwareMpiStatus::NotSupported;
@@ -138,6 +141,11 @@ public:
         if (deviceList.empty())
         {
             GTEST_SKIP() << "No compatible GPUs detected";
+        }
+
+        if (!GpuConfigurationCapabilities::PmeDecomposition)
+        {
+            GTEST_SKIP() << "Backend does not support decomposition";
         }
 
         int rank;
@@ -285,9 +293,13 @@ std::vector<FftBackend> const           inputBackends{
 #    if GMX_GPU_HIP
     FftBackend::HeFFTe_HIP,
 #    endif
-#endif
-#if GMX_USE_cuFFTMp
+#elif GMX_USE_cuFFTMp
     FftBackend::CuFFTMp,
+#elif GMX_USE_ROCFFTMP
+    FftBackend::HipRocfftMp,
+#else
+    // Dummy entry so that tests are properly instantiated in all cases
+    FftBackend::Count,
 #endif
 };
 
