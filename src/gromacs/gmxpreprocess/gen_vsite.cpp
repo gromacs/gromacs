@@ -959,11 +959,9 @@ static int gen_vsites_trp(PreprocessingAtomTypes*                  atype,
                           char***                                  newatomname[],
                           int*                                     o2n[],
                           int*                                     newvsite_type[],
-                          int*                                     newcgnr[],
                           t_symtab*                                symtab,
                           int*                                     nadd,
                           gmx::ArrayRef<const gmx::RVec>           x,
-                          int*                                     cgnr[],
                           t_atoms*                                 at,
                           int*                                     vsite_type[],
                           gmx::ArrayRef<InteractionsOfType>        plist,
@@ -1160,7 +1158,6 @@ static int gen_vsites_trp(PreprocessingAtomTypes*                  atype,
     srenew(*newatom, at->nr + *nadd);
     srenew(*newatomname, at->nr + *nadd);
     srenew(*newvsite_type, at->nr + *nadd);
-    srenew(*newcgnr, at->nr + *nadd);
     for (j = 0; j < NMASS; j++)
     {
         (*newatomname)[at->nr + *nadd - 1 - j] = nullptr;
@@ -1202,12 +1199,6 @@ static int gen_vsites_trp(PreprocessingAtomTypes*                  atype,
         (*newatom)[atM[j]].elem[0]                         = 'M';
         (*newatom)[atM[j]].elem[1]                         = '\0';
         (*newvsite_type)[atM[j]]                           = NOTSET;
-        (*newcgnr)[atM[j]]                                 = (*cgnr)[i0];
-    }
-    /* renumber cgnr: */
-    for (i = i0; i < at->nr; i++)
-    {
-        (*cgnr)[i]++;
     }
 
     /* constraints between CB, M1 and M2 */
@@ -1254,11 +1245,9 @@ static int gen_vsites_tyr(PreprocessingAtomTypes*                  atype,
                           char***                                  newatomname[],
                           int*                                     o2n[],
                           int*                                     newvsite_type[],
-                          int*                                     newcgnr[],
                           t_symtab*                                symtab,
                           int*                                     nadd,
                           gmx::ArrayRef<const gmx::RVec>           x,
-                          int*                                     cgnr[],
                           t_atoms*                                 at,
                           int*                                     vsite_type[],
                           gmx::ArrayRef<InteractionsOfType>        plist,
@@ -1380,7 +1369,6 @@ static int gen_vsites_tyr(PreprocessingAtomTypes*                  atype,
     srenew(*newatom, at->nr + *nadd);
     srenew(*newatomname, at->nr + *nadd);
     srenew(*newvsite_type, at->nr + *nadd);
-    srenew(*newcgnr, at->nr + *nadd);
     (*newatomname)[at->nr + *nadd - 1] = nullptr;
 
     /* Calc the dummy mass initial position */
@@ -1398,12 +1386,6 @@ static int gen_vsites_tyr(PreprocessingAtomTypes*                  atype,
     (*newatom)[atM].elem[0]                      = 'M';
     (*newatom)[atM].elem[1]                      = '\0';
     (*newvsite_type)[atM]                        = NOTSET;
-    (*newcgnr)[atM]                              = (*cgnr)[i0];
-    /* renumber cgnr: */
-    for (i = i0; i < at->nr; i++)
-    {
-        (*cgnr)[i]++;
-    }
 
     (*vsite_type)[ats[atHH]] = F_VSITE2;
     nvsite++;
@@ -1682,7 +1664,6 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
                std::vector<gmx::RVec>*                x,
                gmx::ArrayRef<InteractionsOfType>      plist,
                int*                                   vsite_type[],
-               int*                                   cgnr[],
                real                                   mHmult,
                bool                                   bVsiteAromatics,
                const std::filesystem::path&           ffdir)
@@ -1696,7 +1677,7 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
     matrix  tmpmat;
     real    mHtot, mtot, fact, fact2;
     rvec    rpar, rperp, temp;
-    int *   o2n, *newvsite_type, *newcgnr, ats[MAXATOMSPERRESIDUE];
+    int *   o2n, *newvsite_type, ats[MAXATOMSPERRESIDUE];
     t_atom* newatom;
     char*** newatomname;
     int     cmplength;
@@ -1813,7 +1794,6 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
     snew(newatom, at->nr);
     snew(newatomname, at->nr);
     snew(newvsite_type, at->nr);
-    snew(newcgnr, at->nr);
     /* make index array to tell where the atoms go to when masses are inserted */
     snew(o2n, at->nr);
     for (int i = 0; i < at->nr; i++)
@@ -1920,11 +1900,9 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
                                              &newatomname,
                                              &o2n,
                                              &newvsite_type,
-                                             &newcgnr,
                                              symtab,
                                              &nadd,
                                              *x,
-                                             cgnr,
                                              at,
                                              vsite_type,
                                              plist,
@@ -1944,11 +1922,9 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
                                              &newatomname,
                                              &o2n,
                                              &newvsite_type,
-                                             &newcgnr,
                                              symtab,
                                              &nadd,
                                              *x,
-                                             cgnr,
                                              at,
                                              vsite_type,
                                              plist,
@@ -2161,7 +2137,6 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
                     srenew(newatom, at->nr + nadd);
                     srenew(newatomname, at->nr + nadd);
                     srenew(newvsite_type, at->nr + nadd);
-                    srenew(newcgnr, at->nr + nadd);
 
                     for (int j = 0; j < NMASS; j++)
                     {
@@ -2226,7 +2201,6 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
                         newatom[ni0 + j].elem[0]                       = 'M';
                         newatom[ni0 + j].elem[1]                       = '\0';
                         newvsite_type[ni0 + j]                         = NOTSET;
-                        newcgnr[ni0 + j]                               = (*cgnr)[i0];
                     }
                     /* add constraints between dummy masses and to heavies[0] */
                     /* 'add_shift' says which atoms won't be renumbered afterwards */
@@ -2302,13 +2276,12 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
         for (int i = 0; i < at->nr; i++)
         {
             fprintf(debug,
-                    "%4d %4d %4s %4d %4s %6d %-10s\n",
+                    "%4d %4d %4s %4d %4s %-10s\n",
                     i + 1,
                     o2n[i] + 1,
                     at->atomname[i] ? *(at->atomname[i]) : "(NULL)",
                     at->resinfo[at->atom[i].resind].nr,
                     at->resinfo[at->atom[i].resind].name ? *(at->resinfo[at->atom[i].resind].name) : "(NULL)",
-                    (*cgnr)[i],
                     ((*vsite_type)[i] == NOTSET) ? "NOTSET" : interaction_function[(*vsite_type)[i]].name);
         }
         fprintf(debug, "new atoms to be inserted:\n");
@@ -2317,11 +2290,10 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
             if (newatomname[i])
             {
                 fprintf(debug,
-                        "%4d %4s %4d %6d %-10s\n",
+                        "%4d %4s %4d %-10s\n",
                         i + 1,
                         newatomname[i] ? *(newatomname[i]) : "(NULL)",
                         newatom[i].resind,
-                        newcgnr[i],
                         (newvsite_type[i] == NOTSET) ? "NOTSET"
                                                      : interaction_function[newvsite_type[i]].name);
             }
@@ -2334,20 +2306,17 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
         newatomname[o2n[i]]   = at->atomname[i];
         newatom[o2n[i]]       = at->atom[i];
         newvsite_type[o2n[i]] = (*vsite_type)[i];
-        newcgnr[o2n[i]]       = (*cgnr)[i];
         copy_rvec((*x)[i], newx[o2n[i]]);
     }
     /* throw away old atoms */
     sfree(at->atom);
     sfree(at->atomname);
     sfree(*vsite_type);
-    sfree(*cgnr);
     /* put in the new ones */
     at->nr += nadd;
     at->atom     = newatom;
     at->atomname = newatomname;
     *vsite_type  = newvsite_type;
-    *cgnr        = newcgnr;
     *x           = newx;
     if (at->nr > add_shift)
     {
@@ -2364,12 +2333,11 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
         for (int i = 0; i < at->nr; i++)
         {
             fprintf(debug,
-                    "%4d %4s %4d %4s %6d %-10s\n",
+                    "%4d %4s %4d %4s %-10s\n",
                     i + 1,
                     at->atomname[i] ? *(at->atomname[i]) : "(NULL)",
                     at->resinfo[at->atom[i].resind].nr,
                     at->resinfo[at->atom[i].resind].name ? *(at->resinfo[at->atom[i].resind].name) : "(NULL)",
-                    (*cgnr)[i],
                     ((*vsite_type)[i] == NOTSET) ? "NOTSET" : interaction_function[(*vsite_type)[i]].name);
         }
     }

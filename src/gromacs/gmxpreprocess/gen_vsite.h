@@ -62,7 +62,6 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
                std::vector<gmx::RVec>*                x,
                gmx::ArrayRef<InteractionsOfType>      plist,
                int*                                   dummy_type[],
-               int*                                   cgnr[],
                real                                   mHmult,
                bool                                   bVSiteAromatics,
                const std::filesystem::path&           ffdir);

@@ -31,266 +31,266 @@ Protein             3
 ;   nr       type  resnr residue  atom   cgnr     charge       mass  typeB    chargeB      massB
 ; residue  50 LYS rtp LYSH q +2.0
      1       MNH3     50    LYS    MN1      1          0    8.51335
-     2       MNH3     50    LYS    MN2      1          0    8.51335
-     3   opls_287     50    LYS      N      1       -0.3          0
-     4   opls_290     50    LYS     H1      1       0.33          0
-     5   opls_290     50    LYS     H2      1       0.33          0
-     6   opls_290     50    LYS     H3      1       0.33          0
-     7  opls_293B     50    LYS     CA      1       0.25     13.019
-     8   opls_140     50    LYS     HA      1       0.06          0
-     9   opls_136     50    LYS     CB      2      -0.12     14.027
-    10   opls_140     50    LYS    HB1      2       0.06          0
-    11   opls_140     50    LYS    HB2      2       0.06          0
-    12   opls_136     50    LYS     CG      3      -0.12     14.027
-    13   opls_140     50    LYS    HG1      3       0.06          0
-    14   opls_140     50    LYS    HG2      3       0.06          0
-    15   opls_136     50    LYS     CD      4      -0.12     14.027
-    16   opls_140     50    LYS    HD1      4       0.06          0
-    17   opls_140     50    LYS    HD2      4       0.06          0
-    18   opls_292     50    LYS     CE      5       0.19     14.027
-    19   opls_140     50    LYS    HE1      5       0.06          0
-    20   opls_140     50    LYS    HE2      5       0.06          0
-    21       MNH3     50    LYS   MNZ1      6          0    8.51535
-    22       MNH3     50    LYS   MNZ2      6          0    8.51535
-    23   opls_287     50    LYS     NZ      6       -0.3          0
-    24   opls_290     50    LYS    HZ1      6       0.33          0
-    25   opls_290     50    LYS    HZ2      6       0.33          0
-    26   opls_290     50    LYS    HZ3      6       0.33          0
-    27   opls_235     50    LYS      C      7        0.5     12.011
-    28   opls_236     50    LYS      O      7       -0.5    15.9994   ; qtot 2
+     2       MNH3     50    LYS    MN2      2          0    8.51335
+     3   opls_287     50    LYS      N      3       -0.3          0
+     4   opls_290     50    LYS     H1      4       0.33          0
+     5   opls_290     50    LYS     H2      5       0.33          0
+     6   opls_290     50    LYS     H3      6       0.33          0
+     7  opls_293B     50    LYS     CA      7       0.25     13.019
+     8   opls_140     50    LYS     HA      8       0.06          0
+     9   opls_136     50    LYS     CB      9      -0.12     14.027
+    10   opls_140     50    LYS    HB1     10       0.06          0
+    11   opls_140     50    LYS    HB2     11       0.06          0
+    12   opls_136     50    LYS     CG     12      -0.12     14.027
+    13   opls_140     50    LYS    HG1     13       0.06          0
+    14   opls_140     50    LYS    HG2     14       0.06          0
+    15   opls_136     50    LYS     CD     15      -0.12     14.027
+    16   opls_140     50    LYS    HD1     16       0.06          0
+    17   opls_140     50    LYS    HD2     17       0.06          0
+    18   opls_292     50    LYS     CE     18       0.19     14.027
+    19   opls_140     50    LYS    HE1     19       0.06          0
+    20   opls_140     50    LYS    HE2     20       0.06          0
+    21       MNH3     50    LYS   MNZ1     21          0    8.51535
+    22       MNH3     50    LYS   MNZ2     22          0    8.51535
+    23   opls_287     50    LYS     NZ     23       -0.3          0
+    24   opls_290     50    LYS    HZ1     24       0.33          0
+    25   opls_290     50    LYS    HZ2     25       0.33          0
+    26   opls_290     50    LYS    HZ3     26       0.33          0
+    27   opls_235     50    LYS      C     27        0.5     12.011
+    28   opls_236     50    LYS      O     28       -0.5    15.9994   ; qtot 2
 ; residue  51 SER rtp SER  q  0.0
-    29   opls_238     51    SER      N      8       -0.5    15.0147
-    30   opls_241     51    SER      H      8        0.3          0
-    31  opls_224B     51    SER     CA      8       0.14     13.019
-    32   opls_140     51    SER     HA      8       0.06          0
-    33   opls_157     51    SER     CB      9      0.145     14.027
-    34   opls_140     51    SER    HB1      9       0.06          0
-    35   opls_140     51    SER    HB2      9       0.06          0
-    36   opls_154     51    SER     OG     10     -0.683    15.9994
-    37   opls_155     51    SER     HG     10      0.418      1.008
-    38   opls_235     51    SER      C     11        0.5     12.011
-    39   opls_236     51    SER      O     11       -0.5    15.9994   ; qtot 2
+    29   opls_238     51    SER      N     29       -0.5    15.0147
+    30   opls_241     51    SER      H     30        0.3          0
+    31  opls_224B     51    SER     CA     31       0.14     13.019
+    32   opls_140     51    SER     HA     32       0.06          0
+    33   opls_157     51    SER     CB     33      0.145     14.027
+    34   opls_140     51    SER    HB1     34       0.06          0
+    35   opls_140     51    SER    HB2     35       0.06          0
+    36   opls_154     51    SER     OG     36     -0.683    15.9994
+    37   opls_155     51    SER     HG     37      0.418      1.008
+    38   opls_235     51    SER      C     38        0.5     12.011
+    39   opls_236     51    SER      O     39       -0.5    15.9994   ; qtot 2
 ; residue  52 GLY rtp GLY  q  0.0
-    40   opls_238     52    GLY      N     12       -0.5    15.0147
-    41   opls_241     52    GLY      H     12        0.3          0
-    42  opls_223B     52    GLY     CA     12       0.08     14.027
-    43   opls_140     52    GLY    HA1     12       0.06          0
-    44   opls_140     52    GLY    HA2     12       0.06          0
-    45   opls_235     52    GLY      C     13        0.5     12.011
-    46   opls_236     52    GLY      O     13       -0.5    15.9994   ; qtot 2
+    40   opls_238     52    GLY      N     40       -0.5    15.0147
+    41   opls_241     52    GLY      H     41        0.3          0
+    42  opls_223B     52    GLY     CA     42       0.08     14.027
+    43   opls_140     52    GLY    HA1     43       0.06          0
+    44   opls_140     52    GLY    HA2     44       0.06          0
+    45   opls_235     52    GLY      C     45        0.5     12.011
+    46   opls_236     52    GLY      O     46       -0.5    15.9994   ; qtot 2
 ; residue  53 TYR rtp TYR  q  0.0
-    47   opls_238     53    TYR      N     14       -0.5    15.0147
-    48   opls_241     53    TYR      H     14        0.3          0
-    49  opls_224B     53    TYR     CA     14       0.14     13.019
-    50   opls_140     53    TYR     HA     14       0.06          0
-    51   opls_149     53    TYR     CB     15     -0.005     14.027
-    52   opls_140     53    TYR    HB1     15       0.06          0
-    53   opls_140     53    TYR    HB2     15       0.06          0
-    54   opls_145     53    TYR     CG     15     -0.115     12.011
-    55   opls_145     53    TYR    CD1     16     -0.115     13.019
-    56   opls_146     53    TYR    HD1     16      0.115          0
-    57   opls_145     53    TYR    CD2     17     -0.115     13.019
-    58   opls_146     53    TYR    HD2     17      0.115          0
-    59   opls_145     53    TYR    CE1     18     -0.115     13.019
-    60   opls_146     53    TYR    HE1     18      0.115          0
-    61   opls_145     53    TYR    CE2     19     -0.115     13.019
-    62   opls_146     53    TYR    HE2     19      0.115          0
-    63   opls_166     53    TYR     CZ     20       0.15     12.011
-    64   opls_167     53    TYR     OH     20     -0.585    15.9994
-    65   opls_168     53    TYR     HH     20      0.435      1.008
-    66   opls_235     53    TYR      C     21        0.5     12.011
-    67   opls_236     53    TYR      O     21       -0.5    15.9994   ; qtot 2
+    47   opls_238     53    TYR      N     47       -0.5    15.0147
+    48   opls_241     53    TYR      H     48        0.3          0
+    49  opls_224B     53    TYR     CA     49       0.14     13.019
+    50   opls_140     53    TYR     HA     50       0.06          0
+    51   opls_149     53    TYR     CB     51     -0.005     14.027
+    52   opls_140     53    TYR    HB1     52       0.06          0
+    53   opls_140     53    TYR    HB2     53       0.06          0
+    54   opls_145     53    TYR     CG     54     -0.115     12.011
+    55   opls_145     53    TYR    CD1     55     -0.115     13.019
+    56   opls_146     53    TYR    HD1     56      0.115          0
+    57   opls_145     53    TYR    CD2     57     -0.115     13.019
+    58   opls_146     53    TYR    HD2     58      0.115          0
+    59   opls_145     53    TYR    CE1     59     -0.115     13.019
+    60   opls_146     53    TYR    HE1     60      0.115          0
+    61   opls_145     53    TYR    CE2     61     -0.115     13.019
+    62   opls_146     53    TYR    HE2     62      0.115          0
+    63   opls_166     53    TYR     CZ     63       0.15     12.011
+    64   opls_167     53    TYR     OH     64     -0.585    15.9994
+    65   opls_168     53    TYR     HH     65      0.435      1.008
+    66   opls_235     53    TYR      C     66        0.5     12.011
+    67   opls_236     53    TYR      O     67       -0.5    15.9994   ; qtot 2
 ; residue  54 ASP rtp ASP  q -1.0
-    68   opls_238     54    ASP      N     22       -0.5    15.0147
-    69   opls_241     54    ASP      H     22        0.3          0
-    70  opls_224B     54    ASP     CA     22       0.14     13.019
-    71   opls_140     54    ASP     HA     22       0.06          0
-    72   opls_274     54    ASP     CB     23      -0.22     14.027
-    73   opls_140     54    ASP    HB1     23       0.06          0
-    74   opls_140     54    ASP    HB2     23       0.06          0
-    75   opls_271     54    ASP     CG     24        0.7     12.011
-    76   opls_272     54    ASP    OD1     24       -0.8    15.9994
-    77   opls_272     54    ASP    OD2     24       -0.8    15.9994
-    78   opls_235     54    ASP      C     25        0.5     12.011
-    79   opls_236     54    ASP      O     25       -0.5    15.9994   ; qtot 1
+    68   opls_238     54    ASP      N     68       -0.5    15.0147
+    69   opls_241     54    ASP      H     69        0.3          0
+    70  opls_224B     54    ASP     CA     70       0.14     13.019
+    71   opls_140     54    ASP     HA     71       0.06          0
+    72   opls_274     54    ASP     CB     72      -0.22     14.027
+    73   opls_140     54    ASP    HB1     73       0.06          0
+    74   opls_140     54    ASP    HB2     74       0.06          0
+    75   opls_271     54    ASP     CG     75        0.7     12.011
+    76   opls_272     54    ASP    OD1     76       -0.8    15.9994
+    77   opls_272     54    ASP    OD2     77       -0.8    15.9994
+    78   opls_235     54    ASP      C     78        0.5     12.011
+    79   opls_236     54    ASP      O     79       -0.5    15.9994   ; qtot 1
 ; residue  55 ALA rtp ALA  q  0.0
-    80   opls_238     55    ALA      N     26       -0.5    15.0147
-    81   opls_241     55    ALA      H     26        0.3          0
-    82  opls_224B     55    ALA     CA     26       0.14     13.019
-    83   opls_140     55    ALA     HA     26       0.06          0
-    84      MCH3B     55    ALA   MCB1     27          0     7.5175
-    85      MCH3B     55    ALA   MCB2     27          0     7.5175
-    86   opls_135     55    ALA     CB     27      -0.18          0
-    87   opls_140     55    ALA    HB1     27       0.06          0
-    88   opls_140     55    ALA    HB2     27       0.06          0
-    89   opls_140     55    ALA    HB3     27       0.06          0
-    90   opls_235     55    ALA      C     28        0.5     12.011
-    91   opls_236     55    ALA      O     28       -0.5    15.9994   ; qtot 1
+    80   opls_238     55    ALA      N     80       -0.5    15.0147
+    81   opls_241     55    ALA      H     81        0.3          0
+    82  opls_224B     55    ALA     CA     82       0.14     13.019
+    83   opls_140     55    ALA     HA     83       0.06          0
+    84      MCH3B     55    ALA   MCB1     84          0     7.5175
+    85      MCH3B     55    ALA   MCB2     85          0     7.5175
+    86   opls_135     55    ALA     CB     86      -0.18          0
+    87   opls_140     55    ALA    HB1     87       0.06          0
+    88   opls_140     55    ALA    HB2     88       0.06          0
+    89   opls_140     55    ALA    HB3     89       0.06          0
+    90   opls_235     55    ALA      C     90        0.5     12.011
+    91   opls_236     55    ALA      O     91       -0.5    15.9994   ; qtot 1
 ; residue  56 PRO rtp PRO  q  0.0
-    92   opls_239     56    PRO      N     29      -0.14    14.0067
-    93   opls_246     56    PRO     CA     29       0.01     13.019
-    94   opls_140     56    PRO     HA     29       0.06          0
-    95   opls_136     56    PRO     CB     30      -0.12     14.027
-    96   opls_140     56    PRO    HB1     30       0.06          0
-    97   opls_140     56    PRO    HB2     30       0.06          0
-    98   opls_136     56    PRO     CG     31      -0.12     14.027
-    99   opls_140     56    PRO    HG1     31       0.06          0
-   100   opls_140     56    PRO    HG2     31       0.06          0
-   101   opls_245     56    PRO     CD     32      -0.05     14.027
-   102   opls_140     56    PRO    HD1     32       0.06          0
-   103   opls_140     56    PRO    HD2     32       0.06          0
-   104   opls_235     56    PRO      C     33        0.5     12.011
-   105   opls_236     56    PRO      O     33       -0.5    15.9994   ; qtot 1
+    92   opls_239     56    PRO      N     92      -0.14    14.0067
+    93   opls_246     56    PRO     CA     93       0.01     13.019
+    94   opls_140     56    PRO     HA     94       0.06          0
+    95   opls_136     56    PRO     CB     95      -0.12     14.027
+    96   opls_140     56    PRO    HB1     96       0.06          0
+    97   opls_140     56    PRO    HB2     97       0.06          0
+    98   opls_136     56    PRO     CG     98      -0.12     14.027
+    99   opls_140     56    PRO    HG1     99       0.06          0
+   100   opls_140     56    PRO    HG2    100       0.06          0
+   101   opls_245     56    PRO     CD    101      -0.05     14.027
+   102   opls_140     56    PRO    HD1    102       0.06          0
+   103   opls_140     56    PRO    HD2    103       0.06          0
+   104   opls_235     56    PRO      C    104        0.5     12.011
+   105   opls_236     56    PRO      O    105       -0.5    15.9994   ; qtot 1
 ; residue  57 PHE rtp PHE  q  0.0
-   106   opls_238     57    PHE      N     34       -0.5    15.0147
-   107   opls_241     57    PHE      H     34        0.3          0
-   108  opls_224B     57    PHE     CA     34       0.14     13.019
-   109   opls_140     57    PHE     HA     34       0.06          0
-   110   opls_149     57    PHE     CB     35     -0.005     14.027
-   111   opls_140     57    PHE    HB1     35       0.06          0
-   112   opls_140     57    PHE    HB2     35       0.06          0
-   113   opls_145     57    PHE     CG     35     -0.115     12.011
-   114   opls_145     57    PHE    CD1     36     -0.115     13.019
-   115   opls_146     57    PHE    HD1     36      0.115          0
-   116   opls_145     57    PHE    CD2     37     -0.115     13.019
-   117   opls_146     57    PHE    HD2     37      0.115          0
-   118   opls_145     57    PHE    CE1     38     -0.115     13.019
-   119   opls_146     57    PHE    HE1     38      0.115          0
-   120   opls_145     57    PHE    CE2     39     -0.115     13.019
-   121   opls_146     57    PHE    HE2     39      0.115          0
-   122   opls_145     57    PHE     CZ     40     -0.115     13.019
-   123   opls_146     57    PHE     HZ     40      0.115          0
-   124   opls_235     57    PHE      C     41        0.5     12.011
-   125   opls_236     57    PHE      O     41       -0.5    15.9994   ; qtot 1
+   106   opls_238     57    PHE      N    106       -0.5    15.0147
+   107   opls_241     57    PHE      H    107        0.3          0
+   108  opls_224B     57    PHE     CA    108       0.14     13.019
+   109   opls_140     57    PHE     HA    109       0.06          0
+   110   opls_149     57    PHE     CB    110     -0.005     14.027
+   111   opls_140     57    PHE    HB1    111       0.06          0
+   112   opls_140     57    PHE    HB2    112       0.06          0
+   113   opls_145     57    PHE     CG    113     -0.115     12.011
+   114   opls_145     57    PHE    CD1    114     -0.115     13.019
+   115   opls_146     57    PHE    HD1    115      0.115          0
+   116   opls_145     57    PHE    CD2    116     -0.115     13.019
+   117   opls_146     57    PHE    HD2    117      0.115          0
+   118   opls_145     57    PHE    CE1    118     -0.115     13.019
+   119   opls_146     57    PHE    HE1    119      0.115          0
+   120   opls_145     57    PHE    CE2    120     -0.115     13.019
+   121   opls_146     57    PHE    HE2    121      0.115          0
+   122   opls_145     57    PHE     CZ    122     -0.115     13.019
+   123   opls_146     57    PHE     HZ    123      0.115          0
+   124   opls_235     57    PHE      C    124        0.5     12.011
+   125   opls_236     57    PHE      O    125       -0.5    15.9994   ; qtot 1
 ; residue  58 THR rtp THR  q  0.0
-   126   opls_238     58    THR      N     42       -0.5    15.0147
-   127   opls_241     58    THR      H     42        0.3          0
-   128  opls_224B     58    THR     CA     42       0.14     13.019
-   129   opls_140     58    THR     HA     42       0.06          0
-   130   opls_158     58    THR     CB     43      0.205     13.019
-   131   opls_140     58    THR     HB     43       0.06          0
-   132   opls_154     58    THR    OG1     43     -0.683    15.9994
-   133   opls_155     58    THR    HG1     43      0.418      1.008
-   134      MCH3B     58    THR   MCG1     44          0     7.5175
-   135      MCH3B     58    THR   MCG2     44          0     7.5175
-   136   opls_135     58    THR    CG2     44      -0.18          0
-   137   opls_140     58    THR   HG21     44       0.06          0
-   138   opls_140     58    THR   HG22     44       0.06          0
-   139   opls_140     58    THR   HG23     44       0.06          0
-   140   opls_235     58    THR      C     45        0.5     12.011
-   141   opls_236     58    THR      O     45       -0.5    15.9994   ; qtot 1
+   126   opls_238     58    THR      N    126       -0.5    15.0147
+   127   opls_241     58    THR      H    127        0.3          0
+   128  opls_224B     58    THR     CA    128       0.14     13.019
+   129   opls_140     58    THR     HA    129       0.06          0
+   130   opls_158     58    THR     CB    130      0.205     13.019
+   131   opls_140     58    THR     HB    131       0.06          0
+   132   opls_154     58    THR    OG1    132     -0.683    15.9994
+   133   opls_155     58    THR    HG1    133      0.418      1.008
+   134      MCH3B     58    THR   MCG1    134          0     7.5175
+   135      MCH3B     58    THR   MCG2    135          0     7.5175
+   136   opls_135     58    THR    CG2    136      -0.18          0
+   137   opls_140     58    THR   HG21    137       0.06          0
+   138   opls_140     58    THR   HG22    138       0.06          0
+   139   opls_140     58    THR   HG23    139       0.06          0
+   140   opls_235     58    THR      C    140        0.5     12.011
+   141   opls_236     58    THR      O    141       -0.5    15.9994   ; qtot 1
 ; residue  59 ILE rtp ILE  q  0.0
-   142   opls_238     59    ILE      N     46       -0.5    15.0147
-   143   opls_241     59    ILE      H     46        0.3          0
-   144  opls_224B     59    ILE     CA     46       0.14     13.019
-   145   opls_140     59    ILE     HA     46       0.06          0
-   146   opls_137     59    ILE     CB     47      -0.06     13.019
-   147   opls_140     59    ILE     HB     47       0.06          0
-   148   opls_136     59    ILE    CG1     48      -0.12     14.027
-   149   opls_140     59    ILE   HG11     48       0.06          0
-   150   opls_140     59    ILE   HG12     48       0.06          0
-   151      MCH3B     59    ILE   MCG1     49          0     7.5175
-   152      MCH3B     59    ILE   MCG2     49          0     7.5175
-   153   opls_135     59    ILE    CG2     49      -0.18          0
-   154   opls_140     59    ILE   HG21     49       0.06          0
-   155   opls_140     59    ILE   HG22     49       0.06          0
-   156   opls_140     59    ILE   HG23     49       0.06          0
-   157      MCH3B     59    ILE   MCD1     50          0     7.5175
-   158      MCH3B     59    ILE   MCD2     50          0     7.5175
-   159   opls_135     59    ILE     CD     50      -0.18          0
-   160   opls_140     59    ILE    HD1     50       0.06          0
-   161   opls_140     59    ILE    HD2     50       0.06          0
-   162   opls_140     59    ILE    HD3     50       0.06          0
-   163   opls_235     59    ILE      C     51        0.5     12.011
-   164   opls_236     59    ILE      O     51       -0.5    15.9994   ; qtot 1
+   142   opls_238     59    ILE      N    142       -0.5    15.0147
+   143   opls_241     59    ILE      H    143        0.3          0
+   144  opls_224B     59    ILE     CA    144       0.14     13.019
+   145   opls_140     59    ILE     HA    145       0.06          0
+   146   opls_137     59    ILE     CB    146      -0.06     13.019
+   147   opls_140     59    ILE     HB    147       0.06          0
+   148   opls_136     59    ILE    CG1    148      -0.12     14.027
+   149   opls_140     59    ILE   HG11    149       0.06          0
+   150   opls_140     59    ILE   HG12    150       0.06          0
+   151      MCH3B     59    ILE   MCG1    151          0     7.5175
+   152      MCH3B     59    ILE   MCG2    152          0     7.5175
+   153   opls_135     59    ILE    CG2    153      -0.18          0
+   154   opls_140     59    ILE   HG21    154       0.06          0
+   155   opls_140     59    ILE   HG22    155       0.06          0
+   156   opls_140     59    ILE   HG23    156       0.06          0
+   157      MCH3B     59    ILE   MCD1    157          0     7.5175
+   158      MCH3B     59    ILE   MCD2    158          0     7.5175
+   159   opls_135     59    ILE     CD    159      -0.18          0
+   160   opls_140     59    ILE    HD1    160       0.06          0
+   161   opls_140     59    ILE    HD2    161       0.06          0
+   162   opls_140     59    ILE    HD3    162       0.06          0
+   163   opls_235     59    ILE      C    163        0.5     12.011
+   164   opls_236     59    ILE      O    164       -0.5    15.9994   ; qtot 1
 ; residue  60 HIS rtp HISE q  0.0
-   165   opls_238     60    HIS      N     52       -0.5    15.0147
-   166   opls_241     60    HIS      H     52        0.3          0
-   167  opls_224B     60    HIS     CA     52       0.14     13.019
-   168   opls_140     60    HIS     HA     52       0.06          0
-   169   opls_505     60    HIS     CB     53     -0.005     14.027
-   170   opls_140     60    HIS    HB1     53       0.06          0
-   171   opls_140     60    HIS    HB2     53       0.06          0
-   172   opls_507     60    HIS     CG     54     -0.015     12.011
-   173   opls_511     60    HIS    ND1     54      -0.49    14.0067
-   174   opls_508     60    HIS    CD2     55      0.015     13.019
-   175   opls_146     60    HIS    HD2     55      0.115          0
-   176   opls_506     60    HIS    CE1     56      0.295     13.019
-   177   opls_146     60    HIS    HE1     56      0.115          0
-   178   opls_503     60    HIS    NE2     57      -0.57    15.0147
-   179   opls_504     60    HIS    HE2     57       0.42          0
-   180   opls_235     60    HIS      C     58        0.5     12.011
-   181   opls_236     60    HIS      O     58       -0.5    15.9994   ; qtot 1
+   165   opls_238     60    HIS      N    165       -0.5    15.0147
+   166   opls_241     60    HIS      H    166        0.3          0
+   167  opls_224B     60    HIS     CA    167       0.14     13.019
+   168   opls_140     60    HIS     HA    168       0.06          0
+   169   opls_505     60    HIS     CB    169     -0.005     14.027
+   170   opls_140     60    HIS    HB1    170       0.06          0
+   171   opls_140     60    HIS    HB2    171       0.06          0
+   172   opls_507     60    HIS     CG    172     -0.015     12.011
+   173   opls_511     60    HIS    ND1    173      -0.49    14.0067
+   174   opls_508     60    HIS    CD2    174      0.015     13.019
+   175   opls_146     60    HIS    HD2    175      0.115          0
+   176   opls_506     60    HIS    CE1    176      0.295     13.019
+   177   opls_146     60    HIS    HE1    177      0.115          0
+   178   opls_503     60    HIS    NE2    178      -0.57    15.0147
+   179   opls_504     60    HIS    HE2    179       0.42          0
+   180   opls_235     60    HIS      C    180        0.5     12.011
+   181   opls_236     60    HIS      O    181       -0.5    15.9994   ; qtot 1
 ; residue  61 VAL rtp VAL  q  0.0
-   182   opls_238     61    VAL      N     59       -0.5    15.0147
-   183   opls_241     61    VAL      H     59        0.3          0
-   184  opls_224B     61    VAL     CA     59       0.14     13.019
-   185   opls_140     61    VAL     HA     59       0.06          0
-   186   opls_137     61    VAL     CB     60      -0.06     13.019
-   187   opls_140     61    VAL     HB     60       0.06          0
-   188      MCH3B     61    VAL   MCG1     61          0     7.5175
-   189      MCH3B     61    VAL   MCG2     61          0     7.5175
-   190   opls_135     61    VAL    CG1     61      -0.18          0
-   191   opls_140     61    VAL   HG11     61       0.06          0
-   192   opls_140     61    VAL   HG12     61       0.06          0
-   193   opls_140     61    VAL   HG13     61       0.06          0
-   194      MCH3B     61    VAL   MCG1     62          0     7.5175
-   195      MCH3B     61    VAL   MCG2     62          0     7.5175
-   196   opls_135     61    VAL    CG2     62      -0.18          0
-   197   opls_140     61    VAL   HG21     62       0.06          0
-   198   opls_140     61    VAL   HG22     62       0.06          0
-   199   opls_140     61    VAL   HG23     62       0.06          0
-   200   opls_235     61    VAL      C     63        0.5     12.011
-   201   opls_236     61    VAL      O     63       -0.5    15.9994   ; qtot 1
+   182   opls_238     61    VAL      N    182       -0.5    15.0147
+   183   opls_241     61    VAL      H    183        0.3          0
+   184  opls_224B     61    VAL     CA    184       0.14     13.019
+   185   opls_140     61    VAL     HA    185       0.06          0
+   186   opls_137     61    VAL     CB    186      -0.06     13.019
+   187   opls_140     61    VAL     HB    187       0.06          0
+   188      MCH3B     61    VAL   MCG1    188          0     7.5175
+   189      MCH3B     61    VAL   MCG2    189          0     7.5175
+   190   opls_135     61    VAL    CG1    190      -0.18          0
+   191   opls_140     61    VAL   HG11    191       0.06          0
+   192   opls_140     61    VAL   HG12    192       0.06          0
+   193   opls_140     61    VAL   HG13    193       0.06          0
+   194      MCH3B     61    VAL   MCG1    194          0     7.5175
+   195      MCH3B     61    VAL   MCG2    195          0     7.5175
+   196   opls_135     61    VAL    CG2    196      -0.18          0
+   197   opls_140     61    VAL   HG21    197       0.06          0
+   198   opls_140     61    VAL   HG22    198       0.06          0
+   199   opls_140     61    VAL   HG23    199       0.06          0
+   200   opls_235     61    VAL      C    200        0.5     12.011
+   201   opls_236     61    VAL      O    201       -0.5    15.9994   ; qtot 1
 ; residue  62 CYS rtp CYSH q  0.0
-   202   opls_238     62    CYS      N     64       -0.5    15.0147
-   203   opls_241     62    CYS      H     64        0.3          0
-   204  opls_224B     62    CYS     CA     64       0.14     13.019
-   205   opls_140     62    CYS     HA     64       0.06          0
-   206   opls_206     62    CYS     CB     65       0.06     14.027
-   207   opls_140     62    CYS    HB1     65       0.06          0
-   208   opls_140     62    CYS    HB2     65       0.06          0
-   209   opls_200     62    CYS     SG     66     -0.335      32.06
-   210   opls_204     62    CYS     HG     66      0.155      1.008
-   211   opls_235     62    CYS      C     67        0.5     12.011
-   212   opls_236     62    CYS      O     67       -0.5    15.9994   ; qtot 1
+   202   opls_238     62    CYS      N    202       -0.5    15.0147
+   203   opls_241     62    CYS      H    203        0.3          0
+   204  opls_224B     62    CYS     CA    204       0.14     13.019
+   205   opls_140     62    CYS     HA    205       0.06          0
+   206   opls_206     62    CYS     CB    206       0.06     14.027
+   207   opls_140     62    CYS    HB1    207       0.06          0
+   208   opls_140     62    CYS    HB2    208       0.06          0
+   209   opls_200     62    CYS     SG    209     -0.335      32.06
+   210   opls_204     62    CYS     HG    210      0.155      1.008
+   211   opls_235     62    CYS      C    211        0.5     12.011
+   212   opls_236     62    CYS      O    212       -0.5    15.9994   ; qtot 1
 ; residue  63 GLY rtp GLY  q  0.0
-   213   opls_238     63    GLY      N     68       -0.5    15.0147
-   214   opls_241     63    GLY      H     68        0.3          0
-   215  opls_223B     63    GLY     CA     68       0.08     14.027
-   216   opls_140     63    GLY    HA1     68       0.06          0
-   217   opls_140     63    GLY    HA2     68       0.06          0
-   218   opls_235     63    GLY      C     69        0.5     12.011
-   219   opls_236     63    GLY      O     69       -0.5    15.9994   ; qtot 1
+   213   opls_238     63    GLY      N    213       -0.5    15.0147
+   214   opls_241     63    GLY      H    214        0.3          0
+   215  opls_223B     63    GLY     CA    215       0.08     14.027
+   216   opls_140     63    GLY    HA1    216       0.06          0
+   217   opls_140     63    GLY    HA2    217       0.06          0
+   218   opls_235     63    GLY      C    218        0.5     12.011
+   219   opls_236     63    GLY      O    219       -0.5    15.9994   ; qtot 1
 ; residue  64 ALA rtp ALA  q  0.0
-   220   opls_238     64    ALA      N     70       -0.5    15.0147
-   221   opls_241     64    ALA      H     70        0.3          0
-   222  opls_224B     64    ALA     CA     70       0.14     13.019
-   223   opls_140     64    ALA     HA     70       0.06          0
-   224      MCH3B     64    ALA   MCB1     71          0     7.5175
-   225      MCH3B     64    ALA   MCB2     71          0     7.5175
-   226   opls_135     64    ALA     CB     71      -0.18          0
-   227   opls_140     64    ALA    HB1     71       0.06          0
-   228   opls_140     64    ALA    HB2     71       0.06          0
-   229   opls_140     64    ALA    HB3     71       0.06          0
-   230   opls_235     64    ALA      C     72        0.5     12.011
-   231   opls_236     64    ALA      O     72       -0.5    15.9994   ; qtot 1
+   220   opls_238     64    ALA      N    220       -0.5    15.0147
+   221   opls_241     64    ALA      H    221        0.3          0
+   222  opls_224B     64    ALA     CA    222       0.14     13.019
+   223   opls_140     64    ALA     HA    223       0.06          0
+   224      MCH3B     64    ALA   MCB1    224          0     7.5175
+   225      MCH3B     64    ALA   MCB2    225          0     7.5175
+   226   opls_135     64    ALA     CB    226      -0.18          0
+   227   opls_140     64    ALA    HB1    227       0.06          0
+   228   opls_140     64    ALA    HB2    228       0.06          0
+   229   opls_140     64    ALA    HB3    229       0.06          0
+   230   opls_235     64    ALA      C    230        0.5     12.011
+   231   opls_236     64    ALA      O    231       -0.5    15.9994   ; qtot 1
 ; residue  65 PRO rtp PRO  q -1.0
-   232   opls_239     65    PRO      N     73      -0.14    14.0067
-   233   opls_285     65    PRO     CA     73      -0.09     13.019
-   234   opls_140     65    PRO     HA     73       0.06          0
-   235   opls_136     65    PRO     CB     74      -0.12     14.027
-   236   opls_140     65    PRO    HB1     74       0.06          0
-   237   opls_140     65    PRO    HB2     74       0.06          0
-   238   opls_136     65    PRO     CG     75      -0.12     14.027
-   239   opls_140     65    PRO    HG1     75       0.06          0
-   240   opls_140     65    PRO    HG2     75       0.06          0
-   241   opls_245     65    PRO     CD     76      -0.05     14.027
-   242   opls_140     65    PRO    HD1     76       0.06          0
-   243   opls_140     65    PRO    HD2     76       0.06          0
-   244   opls_271     65    PRO      C     77        0.7     12.011
-   245   opls_272     65    PRO     O1     77       -0.8    15.9994
-   246   opls_272     65    PRO     O2     77       -0.8    15.9994   ; qtot 0
+   232   opls_239     65    PRO      N    232      -0.14    14.0067
+   233   opls_285     65    PRO     CA    233      -0.09     13.019
+   234   opls_140     65    PRO     HA    234       0.06          0
+   235   opls_136     65    PRO     CB    235      -0.12     14.027
+   236   opls_140     65    PRO    HB1    236       0.06          0
+   237   opls_140     65    PRO    HB2    237       0.06          0
+   238   opls_136     65    PRO     CG    238      -0.12     14.027
+   239   opls_140     65    PRO    HG1    239       0.06          0
+   240   opls_140     65    PRO    HG2    240       0.06          0
+   241   opls_245     65    PRO     CD    241      -0.05     14.027
+   242   opls_140     65    PRO    HD1    242       0.06          0
+   243   opls_140     65    PRO    HD2    243       0.06          0
+   244   opls_271     65    PRO      C    244        0.7     12.011
+   245   opls_272     65    PRO     O1    245       -0.8    15.9994
+   246   opls_272     65    PRO     O2    246       -0.8    15.9994   ; qtot 0
 
 [ bonds ]
 ;  ai    aj funct            c0            c1            c2            c3

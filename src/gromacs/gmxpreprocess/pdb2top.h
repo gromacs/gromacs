@@ -146,7 +146,6 @@ void write_top(FILE*                                   out,
                gmx::ArrayRef<const InteractionsOfType> plist,
                t_excls                                 excls[],
                PreprocessingAtomTypes*                 atype,
-               int*                                    cgnr,
                int                                     nrexcl);
 /* NOTE: nrexcl is not the size of *excl! */
 
@@ -169,7 +168,6 @@ void pdb2top(FILE*                                  top_file,
              real                                   long_bond_dist,
              real                                   short_bond_dist,
              bool                                   bDeuterate,
-             bool                                   bChargeGroups,
              bool                                   bCmap,
              bool                                   bRenumRes,
              bool                                   bRTPresname,

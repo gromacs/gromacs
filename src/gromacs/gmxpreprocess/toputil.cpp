@@ -256,7 +256,7 @@ static double get_residue_charge(const t_atoms* atoms, int at)
     return q;
 }
 
-void print_atoms(FILE* out, PreprocessingAtomTypes* atype, t_atoms* at, int* cgnr, bool bRTPresname)
+void print_atoms(FILE* out, PreprocessingAtomTypes* atype, t_atoms* at, bool bRTPresname)
 {
     int         i, ri;
     int         tpA, tpB;
@@ -324,7 +324,7 @@ void print_atoms(FILE* out, PreprocessingAtomTypes* atype, t_atoms* at, int* cgn
                     bRTPresname ? *(at->resinfo[at->atom[i].resind].rtp)
                                 : *(at->resinfo[at->atom[i].resind].name),
                     *(at->atomname[i]),
-                    cgnr[i],
+                    i + 1, // legacy charge group number
                     at->atom[i].q,
                     at->atom[i].m);
             if (PERTURBED(at->atom[i]))

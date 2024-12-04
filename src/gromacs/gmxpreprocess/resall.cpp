@@ -119,11 +119,10 @@ static void print_resatoms(FILE* out, const PreprocessingAtomTypes& atype, const
             gmx_fatal(FARGS, "Incorrect atomtype (%d)", tp);
         }
         fprintf(out,
-                "%6s  %6s  %8.3f  %6d\n",
+                "%6s  %6s  %8.3f\n",
                 *(rtpDBEntry.atomname[j]),
                 tpnm->c_str(),
-                rtpDBEntry.atom[j].q,
-                rtpDBEntry.cgnr[j]);
+                rtpDBEntry.atom[j].q);
     }
 }
 
@@ -136,7 +135,6 @@ static bool read_atoms(FILE* in, char* line, PreprocessResidue* r0, t_symtab* ta
     /* Read Atoms */
     r0->atom.clear();
     r0->atomname.clear();
-    r0->cgnr.clear();
     while (get_a_line(in, line, STRLEN) && (strchr(line, '[') == nullptr))
     {
         if (sscanf(line, "%s%s%lf%d", buf, buf1, &q, &cg) != 4)
@@ -146,8 +144,7 @@ static bool read_atoms(FILE* in, char* line, PreprocessResidue* r0, t_symtab* ta
         r0->atomname.push_back(put_symtab(tab, buf));
         r0->atom.emplace_back();
         r0->atom.back().q = q;
-        r0->cgnr.push_back(cg);
-        auto j = atype->atomTypeFromName(buf1);
+        auto j            = atype->atomTypeFromName(buf1);
         if (!j.has_value())
         {
             gmx_fatal(FARGS,

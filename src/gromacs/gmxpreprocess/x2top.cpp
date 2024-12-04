@@ -592,7 +592,6 @@ int gmx_x2top(int argc, char* argv[])
                   plist,
                   excls,
                   &atypes,
-                  cgnr,
                   rtp_header_settings.nrexcl);
         print_top_mols(fp, mymol.name.c_str(), ffdir, nullptr, {}, gmx::arrayRefFromArray(&mymol, 1));
 

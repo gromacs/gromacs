@@ -247,11 +247,6 @@ void copyPreprocessResidues(const PreprocessResidue& s, PreprocessResidue* d, t_
     {
         d->atomname.push_back(put_symtab(symtab, *a));
     }
-    d->cgnr.clear();
-    for (const auto& c : s.cgnr)
-    {
-        d->cgnr.push_back(c);
-    }
     for (auto i : gmx::EnumerationWrapper<BondedTypes>{})
     {
         d->rb[i].type = s.rb[i].type;

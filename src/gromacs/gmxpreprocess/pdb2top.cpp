@@ -458,12 +458,11 @@ void choose_watermodel(const char*                  wmsel,
 }
 
 static int name2type(t_atoms*                               at,
-                     int**                                  cgnr,
                      gmx::ArrayRef<const PreprocessResidue> usedPpResidues,
                      const ResidueTypeMap&                  residueTypeMap,
                      const gmx::MDLogger&                   logger)
 {
-    int    i, j, prevresind, i0, prevcg, cg, curcg;
+    int    i, j, prevresind, i0;
     char*  name;
     bool   bNterm;
     double qt;
@@ -474,10 +473,7 @@ static int name2type(t_atoms*                               at,
     int resind = -1;
     bNterm     = false;
     i0         = 0;
-    snew(*cgnr, at->nr);
-    qt    = 0;
-    curcg = 0;
-    cg    = -1;
+    qt         = 0;
 
     for (i = 0; (i < at->nr); i++)
     {
@@ -496,32 +492,20 @@ static int name2type(t_atoms*                               at,
         if (at->atom[i].m == 0)
         {
             qt               = 0;
-            prevcg           = cg;
             name             = *(at->atomname[i]);
             j                = search_jtype(usedPpResidues[resind], name, bNterm);
             at->atom[i].type = usedPpResidues[resind].atom[j].type;
             at->atom[i].q    = usedPpResidues[resind].atom[j].q;
             at->atom[i].m    = usedPpResidues[resind].atom[j].m;
-            cg               = usedPpResidues[resind].cgnr[j];
-            /* A charge group number -1 signals a separate charge group
-             * for this atom.
-             */
-            if ((cg == -1) || (cg != prevcg) || (resind != prevresind))
-            {
-                curcg++;
-            }
         }
         else
         {
-            cg = -1;
             if (is_int(qt))
             {
                 qt = 0;
-                curcg++;
             }
             qt += at->atom[i].q;
         }
-        (*cgnr)[i]        = curcg;
         at->atom[i].typeB = at->atom[i].type;
         at->atom[i].qB    = at->atom[i].q;
         at->atom[i].mB    = at->atom[i].m;
@@ -702,17 +686,16 @@ void write_top(FILE*                                   out,
                gmx::ArrayRef<const InteractionsOfType> plist,
                t_excls                                 excls[],
                PreprocessingAtomTypes*                 atype,
-               int*                                    cgnr,
                int                                     nrexcl)
 /* NOTE: nrexcl is not the size of *excl! */
 {
-    if (at && atype && cgnr)
+    if (at && atype)
     {
         fprintf(out, "[ %s ]\n", enumValueToString(Directive::d_moleculetype));
         fprintf(out, "; %-15s %5s\n", "Name", "nrexcl");
         fprintf(out, "%-15s %5d\n\n", molname ? molname : "Protein", nrexcl);
 
-        print_atoms(out, atype, at, cgnr, bRTPresname);
+        print_atoms(out, atype, at, bRTPresname);
         print_bondeds(
                 out, at->nr, Directive::d_bonds, F_BONDS, bts[static_cast<int>(BondedTypes::Bonds)], plist);
         print_bondeds(out, at->nr, Directive::d_constraints, F_CONSTR, 0, plist);
@@ -988,15 +971,6 @@ static void add_atom_to_restp(PreprocessResidue*   usedPpResidues,
         usedPpResidues->atomname.insert(usedPpResidues->atomname.begin() + at_start + 1 + k,
                                         put_symtab(symtab, buf.c_str()));
         usedPpResidues->atom.insert(usedPpResidues->atom.begin() + at_start + 1 + k, patch->atom.back());
-        if (patch->cgnr != NOTSET)
-        {
-            usedPpResidues->cgnr.insert(usedPpResidues->cgnr.begin() + at_start + 1 + k, patch->cgnr);
-        }
-        else
-        {
-            usedPpResidues->cgnr.insert(usedPpResidues->cgnr.begin() + at_start + 1 + k,
-                                        usedPpResidues->cgnr[at_start]);
-        }
     }
 }
 
@@ -1159,7 +1133,6 @@ void get_hackblocks_rtp(std::vector<MoleculePatchDatabase>*    globalPatches,
                         { /* we're deleting */
                             posres->atom.erase(posres->atom.begin() + l);
                             posres->atomname.erase(posres->atomname.begin() + l);
-                            posres->cgnr.erase(posres->cgnr.begin() + l);
                             break;
                         }
                         case MoleculePatchType::Replace:
@@ -1167,10 +1140,6 @@ void get_hackblocks_rtp(std::vector<MoleculePatchDatabase>*    globalPatches,
                             /* we're replacing */
                             posres->atom[l]     = patch->atom.back();
                             posres->atomname[l] = put_symtab(symtab, patch->nname.c_str());
-                            if (patch->cgnr != NOTSET)
-                            {
-                                posres->cgnr[l] = patch->cgnr;
-                            }
                             break;
                         }
                     }
@@ -1525,17 +1494,6 @@ static void gen_cmap(InteractionsOfType*                    psb,
     /* Start the next residue */
 }
 
-static void scrub_charge_groups(int* cgnr, int natoms)
-{
-    int i;
-
-    for (i = 0; i < natoms; i++)
-    {
-        cgnr[i] = i + 1;
-    }
-}
-
-
 void pdb2top(FILE*                                  top_file,
              const std::filesystem::path&           posre_fn,
              const char*                            molname,
@@ -1555,7 +1513,6 @@ void pdb2top(FILE*                                  top_file,
              real                                   long_bond_dist,
              real                                   short_bond_dist,
              bool                                   bDeuterate,
-             bool                                   bChargeGroups,
              bool                                   bCmap,
              bool                                   bRenumRes,
              bool                                   bRTPresname,
@@ -1564,7 +1521,6 @@ void pdb2top(FILE*                                  top_file,
 {
     std::array<InteractionsOfType, F_NRE>   plist;
     t_excls*                                excls;
-    int*                                    cgnr;
     int*                                    vsite_type;
     int                                     i, nmissat;
     gmx::EnumerationArray<BondedTypes, int> bts;
@@ -1577,7 +1533,7 @@ void pdb2top(FILE*                                  top_file,
     /* specbonds: disulphide bonds & heme-his */
     do_ssbonds(&(plist[F_BONDS]), atoms, ssbonds, bAllowMissing);
 
-    nmissat = name2type(atoms, &cgnr, usedPpResidues, residueTypeMap, logger);
+    nmissat = name2type(atoms, usedPpResidues, residueTypeMap, logger);
     if (nmissat)
     {
         if (bAllowMissing)
@@ -1616,7 +1572,7 @@ void pdb2top(FILE*                                  top_file,
         }
         /* determine which atoms will be vsites and add dummy masses
            also renumber atom numbers in plist[0..F_NRE]! */
-        do_vsites(rtpFFDB, atype, atoms, tab, x, plist, &vsite_type, &cgnr, mHmult, bVsiteAromatics, ffdir);
+        do_vsites(rtpFFDB, atype, atoms, tab, x, plist, &vsite_type, mHmult, bVsiteAromatics, ffdir);
     }
 
     /* Make Angles and Dihedrals */
@@ -1664,11 +1620,6 @@ void pdb2top(FILE*                                  top_file,
 
     print_sums(atoms, FALSE, logger);
 
-    if (!bChargeGroups)
-    {
-        scrub_charge_groups(cgnr, atoms->nr);
-    }
-
     if (bRenumRes)
     {
         for (i = 0; i < atoms->nres; i++)
@@ -1697,13 +1648,11 @@ void pdb2top(FILE*                                  top_file,
                   plist,
                   excls,
                   atype,
-                  cgnr,
                   usedPpResidues[0].nrexcl);
     }
 
 
     /* we should clean up hb and restp here, but that is a *L*O*T* of work! */
-    sfree(cgnr);
     for (i = 0; i < atoms->nr; i++)
     {
         sfree(excls[i].e);

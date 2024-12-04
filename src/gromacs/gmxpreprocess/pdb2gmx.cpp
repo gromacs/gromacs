@@ -1652,7 +1652,6 @@ private:
     bool bRemoveH_;
     bool bDeuterate_;
     bool bVerbose_;
-    bool bChargeGroups_;
     bool bCmap_;
     bool bRenumRes_;
     bool bRTPresname_;
@@ -1885,10 +1884,6 @@ void pdb2gmx::initOptions(IOptionsContainer* options, ICommandLineOptionsModuleS
             "Make hydrogen atoms heavy"));
     options->addOption(
             BooleanOption("deuterate").store(&bDeuterate_).defaultValue(false).description("Change the mass of hydrogens to 2 amu"));
-    options->addOption(BooleanOption("chargegrp")
-                               .store(&bChargeGroups_)
-                               .defaultValue(true)
-                               .description("Use charge groups in the [REF].rtp[ref] file"));
     options->addOption(BooleanOption("cmap").store(&bCmap_).defaultValue(true).description(
             "Use cmap torsions (if enabled in the [REF].rtp[ref] file)"));
     options->addOption(BooleanOption("renum")
@@ -2795,7 +2790,6 @@ int pdb2gmx::run()
                 long_bond_dist_,
                 short_bond_dist_,
                 bDeuterate_,
-                bChargeGroups_,
                 bCmap_,
                 bRenumRes_,
                 bRTPresname_,
