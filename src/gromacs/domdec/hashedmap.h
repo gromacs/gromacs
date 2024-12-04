@@ -124,6 +124,8 @@ public:
     HashedMap(int numElementsEstimate, int numOpenmpThreadsForClearing = 1) :
         numOpenmpThreadsForClearing_(numOpenmpThreadsForClearing)
     {
+        GMX_RELEASE_ASSERT(numOpenmpThreadsForClearing_ >= 1, "Need at least one thread");
+
         resize(numElementsEstimate);
     }
 
