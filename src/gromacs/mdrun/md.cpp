@@ -194,8 +194,8 @@ void gmx::LegacySimulator::do_md()
     // will go away eventually.
     const t_inputrec* ir = inputRec_;
 
-    const double t0  = ir->init_t;
-    gmx_bool     bNS = FALSE, bFirstStep, bInitStep, bLastStep = FALSE;
+    const double t0 = ir->init_t;
+    gmx_bool     bFirstStep, bInitStep, bLastStep = FALSE;
     gmx_bool     bDoExpanded = FALSE;
     tensor    force_vir = { { 0 } }, shake_vir = { { 0 } }, total_vir = { { 0 } }, pres = { { 0 } };
     rvec      mu_tot;
@@ -930,7 +930,7 @@ void gmx::LegacySimulator::do_md()
         const bool bStopCM = (ir->comm_mode != ComRemovalAlgorithm::No && do_per_step(step, ir->nstcomm));
 
         /* Determine whether or not to do Neighbour Searching */
-        bNS = (bFirstStep || bNStList || bExchanged || bNeedRepartition);
+        const bool bNS = (bFirstStep || bNStList || bExchanged || bNeedRepartition);
 
         /* Note that the stopHandler will cause termination at nstglobalcomm
          * steps. Since this concides with nstcalcenergy, nsttcouple and/or
