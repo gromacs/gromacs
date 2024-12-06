@@ -1278,7 +1278,6 @@ ArrayRef<const std::vector<int>> Constraints::atom2settle_moltype() const
 void do_constrain_first(FILE*                     fplog,
                         gmx::Constraints*         constr,
                         const t_inputrec*         ir,
-                        int                       numAtoms,
                         int                       numHomeAtoms,
                         ArrayRefWithPadding<RVec> x,
                         ArrayRefWithPadding<RVec> v,
@@ -1290,7 +1289,7 @@ void do_constrain_first(FILE*                     fplog,
     real    dt = ir->delta_t;
     real    dvdl_dum;
 
-    PaddedVector<RVec> savex(numAtoms);
+    PaddedVector<RVec> savex(x.size());
 
     start = 0;
     end   = numHomeAtoms;

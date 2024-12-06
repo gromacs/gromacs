@@ -15,7 +15,15 @@ in the :ref:`release-notes`.
 
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   
+
+Fix crash with modular simulator, md integrator, DD and constraints
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The combination of modular simulator, md integrator, domain decomposition
+and constraints caused illegal memory access and could crash before step 0.
+
+:issue:`5236`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
