@@ -1758,23 +1758,6 @@ int Mdrunner::mdrunner()
         gmx::internal::disableGpuEventConsumptionCounting();
     }
 
-    if (isSimulationMainRank && GMX_GPU_SYCL)
-    {
-        const SimulationWorkload& simWorkload    = runScheduleWork.simulationWork;
-        bool                      haveAnyGpuWork = simWorkload.useGpuPme || simWorkload.useGpuBonded
-                              || simWorkload.useGpuNonbonded || simWorkload.useGpuUpdate;
-        if (haveAnyGpuWork)
-        {
-            GMX_LOG(mdlog.info)
-                    .asParagraph()
-                    .appendText(
-                            "\nNOTE: SYCL GPU support in GROMACS, and the compilers, libraries,\n"
-                            "and drivers that it depends on are fairly new.\n"
-                            "Please, pay extra attention to the correctness of your results,\n"
-                            "and update to the latest GROMACS patch version if warranted.");
-        }
-    }
-
     const bool printHostName = (cr->nnodes > 1);
     gpuTaskAssignments.reportGpuUsage(mdlog, printHostName, pmeRunMode, runScheduleWork.simulationWork);
 
