@@ -597,7 +597,6 @@ void gmx::LegacySimulator::do_md()
             do_constrain_first(fpLog_,
                                constr_,
                                *ir,
-                               md->nr,
                                md->homenr,
                                state_->x.arrayRefWithPadding(),
                                state_->v.arrayRefWithPadding(),
