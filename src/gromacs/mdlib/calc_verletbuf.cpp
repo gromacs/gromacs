@@ -199,12 +199,9 @@ static void get_vsite_masses(const gmx_moltype_t&  moltype,
                 GMX_ASSERT(maxj <= 5, "This code expect at most 5 atoms in a vsite");
                 for (int j = 1; j < maxj; j++)
                 {
-                    const int aj = ilist.iatoms[i + 1 + j];
-                    cam[j]       = getMass(moltype.atoms, aj, setMassesToOne);
-                    if (cam[j] == 0)
-                    {
-                        cam[j] = vsite_m[aj];
-                    }
+                    const int  aj   = ilist.iatoms[i + 1 + j];
+                    const real mass = getMass(moltype.atoms, aj, setMassesToOne);
+                    cam[j]          = (mass == 0) ? vsite_m[aj] : mass;
                     /* A vsite should be constructed from normal atoms or
                      * vsites of lower complexity, which we have processed
                      * in a previous iteration.

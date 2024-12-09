@@ -47,5 +47,13 @@ dynamically-detected name for the ``m`` library.
 
 :issue:`5240`
 
+Work around the interal compiler error in Visual Studio 2022
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Visual Studio 2022 will fail when compiling ``calc_verletbuf.cpp``.
+This is a bug in the compiler, but we introduce a workaround for it.
+
+:issue:`5252`
+
 Miscellaneous
 ^^^^^^^^^^^^^
