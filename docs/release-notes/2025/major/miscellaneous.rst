@@ -30,3 +30,9 @@ parts, so that the information about how the system is equilibrating
 can be carried over between simulations.  Otherwise, chains of short
 simulation parts would never converge when using expanded-ensemble methods.
 The information is now also carried over through the checkpoint file.
+
+CTest can now run tests in parallel
+"""""""""""""""""""""""""""""""""""
+
+Properly express the resource requirements of test binaries and
+their dependencies so that ``ctest --parallel`` can be used safely.
