@@ -55,7 +55,12 @@ gmxapi_staging_path = "@GMXAPI_PYTHON_STAGING_DIR@"
 if gmxapi_staging_path and os.path.isdir(gmxapi_staging_path):
     sys.path.append(gmxapi_staging_path)
 
-import gmxapi
+try:
+    import gmxapi
+except ImportError:
+    gmxapi_version_string = "N/A"
+else:
+    gmxapi_version_string = gmxapi.__version__
 
 gmx_admin_scripts_path = "@GMX_ADMIN_DIR@"
 gmx_containers_path = "@GMX_ADMIN_DIR@/containers"
@@ -277,7 +282,7 @@ rst_epilog += """
 .. |thisyear| replace:: {thisyear_string}
 """.format(
     gmx_version_string=gmx_version_string,
-    gmxapi_version_string=gmxapi.__version__,
+    gmxapi_version_string=gmxapi_version_string,
     regressiontest_version=regressiontest_version,
     thisyear_string=thisyear_string,
 )
