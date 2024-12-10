@@ -38,6 +38,7 @@
 
 #include <array>
 #include <string>
+#include <string_view>
 #include <type_traits>
 
 #include "gromacs/gpu_utils/device_stream.h"
@@ -75,11 +76,11 @@ inline std::string getDeviceErrorString(const cudaError_t deviceError)
  *
  *  \throws InternalError if deviceError is not a success.
  */
-inline void checkDeviceError(const cudaError_t deviceError, const std::string& errorMessage)
+inline void checkDeviceError(const cudaError_t deviceError, const std::string_view errorMessage)
 {
     if (deviceError != cudaSuccess)
     {
-        GMX_THROW(gmx::InternalError(errorMessage + " " + getDeviceErrorString(deviceError)));
+        GMX_THROW(gmx::InternalError(std::string{ errorMessage } + " " + getDeviceErrorString(deviceError)));
     }
 }
 
@@ -91,7 +92,7 @@ inline void checkDeviceError(const cudaError_t deviceError, const std::string& e
  *
  * \param[in]  errorMessage  Undecorated error message.
  */
-inline void ensureNoPendingDeviceError(const std::string& errorMessage)
+inline void ensureNoPendingDeviceError(const std::string_view errorMessage)
 {
     // Ensure there is no pending error that would otherwise affect
     // the behaviour of future error handling.
@@ -105,7 +106,8 @@ inline void ensureNoPendingDeviceError(const std::string& errorMessage)
     // what is appropriate to do about it, so assert only for debug
     // builds.
     const std::string fullErrorMessage =
-            errorMessage + " An unhandled error from a previous CUDA operation was detected. "
+            std::string{ errorMessage }
+            + " An unhandled error from a previous CUDA operation was detected. "
             + gmx::getDeviceErrorString(deviceError);
     GMX_ASSERT(deviceError == cudaSuccess, fullErrorMessage.c_str());
     // TODO When we evolve a better logging framework, use that

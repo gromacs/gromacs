@@ -254,7 +254,7 @@ void setupGpuDevicePeerAccess(gmx::ArrayRef<const int> gpuIdsToUse, const gmx::M
 
 void checkPendingDeviceErrorBetweenSteps()
 {
-    std::string errorPrefix =
-            "An unhandled error from a CUDA operation during the current MD step was detected:";
-    gmx::checkDeviceError(cudaGetLastError(), errorPrefix);
+    gmx::checkDeviceError(
+            cudaGetLastError(),
+            "An unhandled error from a CUDA operation during the current MD step was detected:");
 }
