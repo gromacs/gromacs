@@ -1725,10 +1725,11 @@ void Grid::setNonLocalGrid(const int                           ddZone,
 
     // Set the bounding boxes and the interaction flags for all cells in the grid
     numClusters_.resize(numCellsTotal_);
-    numClustersTotal_ = 0;
+    // Prepare a non-member OpenMP reduction variable
+    int numClustersTotal = 0;
 
     const int gmx_unused numThreads = gmx_omp_nthreads_get(ModuleMultiThread::Pairsearch);
-#pragma omp parallel for num_threads(numThreads) reduction(+ : numClustersTotal_) schedule(static)
+#pragma omp parallel for num_threads(numThreads) reduction(+ : numClustersTotal) schedule(static)
     for (int cell = 0; cell < numCellsTotal_; cell++)
     {
         const int atomOffsetCell = (cellOffset_ + cell) * numAtomsPerCell;
@@ -1798,8 +1799,12 @@ void Grid::setNonLocalGrid(const int                           ddZone,
         }
 
         numClusters_[cell] = numClustersInCell;
-        numClustersTotal_ += numClustersInCell;
+        numClustersTotal += numClustersInCell;
     }
+
+    // Store the reduced value in the member variable. The separate reduction
+    // variable will not be needed when GROMACS requires OpenMP 5.1.
+    numClustersTotal_ = numClustersTotal;
 
     if (geometry_.isSimple_ && geometry_.numAtomsJCluster_ == 2 * numAtomsPerCell)
     {
