@@ -65,9 +65,7 @@ void allocateDeviceBuffer(DeviceBuffer<ValueType>* buffer, size_t numValues, con
 {
     GMX_ASSERT(buffer, "needs a buffer pointer");
     hipError_t stat = hipMalloc(buffer, numValues * sizeof(ValueType));
-    GMX_RELEASE_ASSERT(
-            stat == hipSuccess,
-            ("Allocation of the device buffer failed. " + gmx::getDeviceErrorString(stat)).c_str());
+    gmx::checkDeviceError(stat, "Allocation of the device buffer failed.");
 }
 
 /*! \brief
@@ -85,9 +83,7 @@ void freeDeviceBuffer(DeviceBuffer* buffer)
     if (*buffer)
     {
         hipError_t stat = hipFree(*buffer);
-        GMX_RELEASE_ASSERT(
-                stat == hipSuccess,
-                ("Freeing of the device buffer failed. " + gmx::getDeviceErrorString(stat)).c_str());
+        gmx::checkDeviceError(stat, "Freeing of the device buffer failed.");
     }
 }
 
@@ -128,9 +124,7 @@ void copyToDeviceBuffer(DeviceBuffer<ValueType>* buffer,
                                   bytes,
                                   hipMemcpyHostToDevice,
                                   deviceStream.stream());
-            GMX_RELEASE_ASSERT(
-                    stat == hipSuccess,
-                    ("Asynchronous H2D copy failed. " + gmx::getDeviceErrorString(stat)).c_str());
+            gmx::checkDeviceError(stat, "Asynchronous H2D copy failed.");
             break;
 
         case GpuApiCallBehavior::Sync:
@@ -138,9 +132,7 @@ void copyToDeviceBuffer(DeviceBuffer<ValueType>* buffer,
                              hostBuffer,
                              bytes,
                              hipMemcpyHostToDevice);
-            GMX_RELEASE_ASSERT(
-                    stat == hipSuccess,
-                    ("Synchronous H2D copy failed. " + gmx::getDeviceErrorString(stat)).c_str());
+            gmx::checkDeviceError(stat, "Synchronous H2D copy failed.");
             break;
 
         default: throw;
@@ -186,9 +178,7 @@ void copyFromDeviceBuffer(ValueType*               hostBuffer,
                                   bytes,
                                   hipMemcpyDeviceToHost,
                                   deviceStream.stream());
-            GMX_RELEASE_ASSERT(
-                    stat == hipSuccess,
-                    ("Asynchronous D2H copy failed. " + gmx::getDeviceErrorString(stat)).c_str());
+            gmx::checkDeviceError(stat, "Asynchronous D2H copy failed.");
             break;
 
         case GpuApiCallBehavior::Sync:
@@ -196,9 +186,7 @@ void copyFromDeviceBuffer(ValueType*               hostBuffer,
                              *reinterpret_cast<ValueType**>(buffer) + startingOffset,
                              bytes,
                              hipMemcpyDeviceToHost);
-            GMX_RELEASE_ASSERT(
-                    stat == hipSuccess,
-                    ("Synchronous D2H copy failed. " + gmx::getDeviceErrorString(stat)).c_str());
+            gmx::checkDeviceError(stat, "Synchronous D2H copy failed.");
             break;
 
         default: throw;
@@ -240,16 +228,12 @@ void copyBetweenDeviceBuffers(DeviceBuffer<ValueType>* destinationDeviceBuffer,
                                   bytes,
                                   hipMemcpyDeviceToDevice,
                                   deviceStream.stream());
-            GMX_RELEASE_ASSERT(
-                    stat == hipSuccess,
-                    ("Asynchronous D2D copy failed. " + gmx::getDeviceErrorString(stat)).c_str());
+            gmx::checkDeviceError(stat, "Asynchronous D2D copy failed.");
             break;
 
         case GpuApiCallBehavior::Sync:
             stat = hipMemcpy(*destinationDeviceBuffer, *sourceDeviceBuffer, bytes, hipMemcpyDeviceToDevice);
-            GMX_RELEASE_ASSERT(
-                    stat == hipSuccess,
-                    ("Synchronous D2D copy failed. " + gmx::getDeviceErrorString(stat)).c_str());
+            gmx::checkDeviceError(stat, "Synchronous D2D copy failed.");
             break;
 
         default: throw;
@@ -282,8 +266,7 @@ void clearDeviceBufferAsync(DeviceBuffer<ValueType>* buffer,
     hipError_t stat = hipMemsetAsync(
             *reinterpret_cast<ValueType**>(buffer) + startingOffset, pattern, bytes, deviceStream.stream());
 
-    GMX_RELEASE_ASSERT(stat == hipSuccess,
-                       ("Couldn't clear the device buffer. " + gmx::getDeviceErrorString(stat)).c_str());
+    gmx::checkDeviceError(stat, "Couldn't clear the device buffer.");
 }
 
 /*! \brief Check the validity of the device buffer.
