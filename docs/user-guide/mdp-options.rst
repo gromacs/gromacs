@@ -624,7 +624,12 @@ Electrostatics
 
       Plain cut-off with pair list radius :mdp:`rlist` and
       Coulomb cut-off :mdp:`rcoulomb`, where :mdp:`rlist` >=
-      :mdp:`rcoulomb`.
+      :mdp:`rcoulomb`. Note that with the (default) setting of
+      :mdp:`coulomb-modifier` =Potential-shift not only the potentials
+      between interacting pairs are shifted to be zero at the cut-off,
+      but the same shift is also applied to excluded pairs. This
+      does not lead to forces between excluded pairs, but does add
+      a constant offset to the total Coulomb potential.
 
    .. mdp-value:: Ewald
 
