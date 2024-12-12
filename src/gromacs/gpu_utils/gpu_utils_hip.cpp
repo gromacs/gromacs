@@ -198,7 +198,7 @@ void setupGpuDevicePeerAccess(gmx::ArrayRef<const int> gpuIdsToUse, const gmx::M
 
 void checkPendingDeviceErrorBetweenSteps()
 {
-    std::string errorPrefix =
-            "An unhandled error from a HIP operation during the current MD step was detected:";
-    gmx::checkDeviceError(hipGetLastError(), errorPrefix);
+    gmx::checkDeviceError(
+            hipGetLastError(),
+            "An unhandled error from a HIP operation during the current MD step was detected:");
 }

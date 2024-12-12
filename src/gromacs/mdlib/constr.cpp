@@ -1300,14 +1300,13 @@ ArrayRef<const std::vector<int>> Constraints::atom2settle_moltype() const
 void do_constrain_first(FILE*                     fplog,
                         gmx::Constraints*         constr,
                         const t_inputrec&         ir,
-                        const int                 numAtoms,
-                        const int                 numHomeAtoms,
+                        int                       numHomeAtoms,
                         ArrayRefWithPadding<RVec> x,
                         ArrayRefWithPadding<RVec> v,
                         const matrix              box,
                         const real                lambda)
 {
-    PaddedVector<RVec> savex(numAtoms);
+    PaddedVector<RVec> savex(x.size());
 
     const int start = 0;
     const int end   = numHomeAtoms;

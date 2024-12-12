@@ -534,8 +534,8 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "XL")
 endif()
 
 include(CheckLibraryExists)
-find_library(HAVE_LIBM m)
-mark_as_advanced(HAVE_LIBM)
+find_library(LIBM_LIBRARY m)
+mark_as_advanced(LIBM_LIBRARY)
 check_library_exists(rt clock_gettime "" HAVE_CLOCK_GETTIME)
 check_library_exists(m feenableexcept "" HAVE_FEENABLEEXCEPT)
 check_library_exists(m fedisableexcept "" HAVE_FEDISABLEEXCEPT)
@@ -914,8 +914,8 @@ if(HAVE_TIME_H AND HAVE_UNISTD_H AND HAVE_CLOCK_GETTIME)
 endif()
 
 # Math and thread libraries must often come after all others when linking...
-if (HAVE_LIBM)
-    list(APPEND GMX_PUBLIC_LIBRARIES m)
+if (LIBM_LIBRARY)
+    list(APPEND GMX_PUBLIC_LIBRARIES ${LIBM_LIBRARY})
 endif()
 
 option(GMX_NACL "Configure for Native Client builds" OFF)

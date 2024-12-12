@@ -25,9 +25,13 @@ Intel DPC++ and Codeplay's plugins for NVIDIA and AMD GPUs.
 
 :issue:`4744`
 
-Update of required CMake version
-""""""""""""""""""""""""""""""""
+Update of required build tool versions
+""""""""""""""""""""""""""""""""""""""
 
-Updated required CMake version to 3.28
+Updated minimal required versions:
+
+ - CMake 3.28,
+ - Compilers: GCC 11, Clang 14 (using Clang 18 for code formatting),
+ - GPU toolkits: CUDA 12.1, oneAPI 2024.0, AdaptiveCpp 23.10, ROCm 5.2.
 
 :issue:`5014`

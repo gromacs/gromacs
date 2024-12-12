@@ -87,9 +87,9 @@ if (${FFTW}_FOUND)
   #The user could specify trash in ${FFTW}_LIBRARY, so test if we can link it
   include(CheckLibraryExists)
   include(gmxOptionUtilities)
-  if (HAVE_LIBM)
+  if (LIBM_LIBRARY)
     #adding MATH_LIBRARIES here to allow static libs, this does not harm us as we are anyway using it
-    set(CMAKE_REQUIRED_LIBRARIES m)
+    set(CMAKE_REQUIRED_LIBRARIES ${LIBM_LIBRARY})
   endif ()
   gmx_check_if_changed(FFTW_LIBRARY_CHANGED ${FFTW}_LIBRARIES)
   if (FFTW_LIBRARY_CHANGED)

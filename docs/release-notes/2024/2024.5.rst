@@ -15,12 +15,45 @@ in the :ref:`release-notes`.
 
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   
+
+Fix crash with modular simulator, md integrator, DD and constraints
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The combination of modular simulator, md integrator, domain decomposition
+and constraints caused illegal memory access and could crash before step 0.
+
+:issue:`5236`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Handle trajectory reading error in gmx tcaf
+"""""""""""""""""""""""""""""""""""""""""""
+
+``gmx tcaf`` now fails with informative error message when failing to read a trajectory.
+
+:issue:`5238`
+
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Fix linking error on Windows with Intel oneAPI
+""""""""""""""""""""""""""""""""""""""""""""""
+
+Fix ``LINK : fatal error LNK1181: cannot open input file ‘m.lib’``
+error encountered when using ``icx`` compiler on Windows by using
+dynamically-detected name for the ``m`` library.
+
+:issue:`5240`
+
+Work around the interal compiler error in Visual Studio 2022
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Visual Studio 2022 will fail when compiling ``calc_verletbuf.cpp``.
+This is a bug in the compiler, but we introduce a workaround for it.
+
+:issue:`5252`
 
 Miscellaneous
 ^^^^^^^^^^^^^

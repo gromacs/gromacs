@@ -45,9 +45,11 @@
 
 #include <functional>
 #include <optional>
+#include <type_traits>
 #include <vector>
 
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/gmxassert.h"
 
 namespace gmx
 {
@@ -99,8 +101,6 @@ public:
     using MDModulesNotifierBase::notify;
     //! Make base class subscription available to this class
     using MDModulesNotifierBase::subscribe;
-    //! Make base class checking subscriptions available to this class
-    using MDModulesNotifierBase::haveSubscribers;
 
     /*! \brief Notifies subscribers of the event described by \c
      * callbackParameter.
@@ -125,14 +125,23 @@ public:
         callBackFunctions_.emplace_back(callBackFunction);
     }
 
-    /*! Returns whether this notification has any subscribers
+    /*! \brief Returns whether this notification has any subscribers
      *
-     * \note The dummy argument is there to enable selection of the function on
-     *       template parameter type (using enable_if does not work with clang).
+     * This function is templated on \p CallParameter to enable to call the correct
+     * \p haveSubscribers() by explicitly adding this template parameter at the call point.
      */
-    bool haveSubscribers(const std::optional<CallParameter> gmx_unused& dummy = {}) const
+    template<typename T>
+    bool haveSubscribers() const
     {
-        return !callBackFunctions_.empty();
+        // This trick is needed to relay the call to the class with the correct template parameter
+        if constexpr (std::is_same_v<T, CallParameter>)
+        {
+            return !callBackFunctions_.empty();
+        }
+        else
+        {
+            return MDModulesNotifierBase::template haveSubscribers<T>();
+        }
     }
 
 private:
@@ -167,15 +176,10 @@ struct BuildMDModulesNotifier<>
     {
     public:
         //! Do nothing but provide MDModulesNotifier::notify to derived class
-        void notify() {}
+        void notify() { GMX_RELEASE_ASSERT(false, "This method should never be called"); }
+
         //! Do nothing but provide MDModulesNotifier::subscribe to derived class
-        void subscribe() {}
-        //! Do nothing but provide MDModulesNotifier::haveSubscribers to derived class
-        template<class T>
-        bool haveSubscribers() const
-        {
-            return false;
-        }
+        void subscribe() { GMX_RELEASE_ASSERT(false, "This method should never be called"); }
     };
     /*! \brief Defines a type if no notifications are managed.
      *

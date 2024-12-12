@@ -99,7 +99,6 @@ void ConstraintsElement<variable>::elementSetup()
         do_constrain_first(fplog_,
                            constr_,
                            *inputrec_,
-                           statePropagatorData_->totalNumAtoms(),
                            statePropagatorData_->localNumAtoms(),
                            statePropagatorData_->positionsView(),
                            statePropagatorData_->velocitiesView(),
