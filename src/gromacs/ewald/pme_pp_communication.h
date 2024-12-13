@@ -122,6 +122,8 @@ struct gmx_pme_comm_n_box_t
     real ewaldcoeff_lj;
     //@}
 };
+static_assert(std::is_trivially_copyable_v<gmx_pme_comm_n_box_t>,
+              "Must be trivially copyable to be sent over MPI");
 
 /*! \internal
  * \brief Helper struct for PP-PME communication of virial and energy.
@@ -143,5 +145,7 @@ struct gmx_pme_comm_vir_ene_t
     float         cycles;    /**< Counter of CPU cycles used */
     StopCondition stop_cond; /**< Flag used in responding to an external signal to terminate */
 };
+static_assert(std::is_trivially_copyable_v<gmx_pme_comm_vir_ene_t>,
+              "Must be trivially copyable to be sent over MPI");
 
 #endif
