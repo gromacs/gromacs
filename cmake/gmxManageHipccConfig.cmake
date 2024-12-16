@@ -160,6 +160,19 @@ gmx_hip_check_single_flag("-Wno-unused-command-line-argument")
 # failing because of that.
 gmx_hip_check_single_flag("-Wno-pass-failed")
 
+option(GMX_ENABLE_AMD_HIP_SAVE_TEMPS "Enable saving generated ISA to analyse compiler behaviour" FALSE)
+mark_as_advanced(GMX_ENABLE_AMD_HIP_SAVE_TEMPS)
+option(GMX_ENABLE_AMD_HIP_KERNEL_ANALYSIS "Enable generation of kernel analysis data" FALSE)
+mark_as_advanced(GMX_ENABLE_AMD_HIP_KERNEL_ANALYSIS)
+
+if (GMX_ENABLE_AMD_HIP_SAVE_TEMPS)
+    gmx_hip_check_single_flag("--save-temps")
+endif()
+
+if (GMX_ENABLE_AMD_HIP_KERNEL_ANALYSIS)
+    gmx_hip_check_single_flag("-Rpass-analysis=kernel-resource-usage")
+endif()
+
 # User may have supplied the optimization flags on the command line, only available for backwards compat with AMD port.
 # In general we want to control those flags based on the GROMACS build type, but won't stop users supplying different
 # options if they think they know better.
