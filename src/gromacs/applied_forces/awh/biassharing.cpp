@@ -190,7 +190,7 @@ BiasSharing::BiasSharing(const AwhParams& awhParams, const t_commrec& commRecord
     }
 
 #if GMX_MPI
-    if (commRecord.nnodes > 1)
+    if (commRecord.sizeOfMyGroupCommunicator > 1)
     {
         numSharingSimulations_.resize(awhParams.numBias());
         MPI_Bcast(
@@ -257,7 +257,7 @@ void sumOverSimulations(ArrayRef<T>      data,
     {
         MPI_Allreduce(MPI_IN_PLACE, data.data(), data.size(), mpiType<T>(), MPI_SUM, multiSimComm);
     }
-    if (broadcastWithinSimulation && commRecord.nnodes > 1)
+    if (broadcastWithinSimulation && commRecord.sizeOfMyGroupCommunicator > 1)
     {
         gmx_bcast(data.size() * sizeof(T), data.data(), commRecord.mpi_comm_mygroup);
     }
