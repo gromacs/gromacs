@@ -119,6 +119,9 @@ std::multiset<int> getGlobalShareIndices(ArrayRef<const int> localShareIndices, 
 BiasSharing::BiasSharing(const AwhParams& awhParams, const t_commrec& commRecord, MPI_Comm simulationMainComm) :
     commRecord_(commRecord)
 {
+    // Both main and non-main PP ranks need this lookup to be valid
+    multiSimCommPerBias_.resize(awhParams.numBias(), MPI_COMM_NULL);
+
     if (MAIN(&commRecord))
     {
         std::vector<int> localShareIndices;
@@ -151,7 +154,6 @@ BiasSharing::BiasSharing(const AwhParams& awhParams, const t_commrec& commRecord
 
         numSharingSimulations_.resize(awhParams.numBias(), 1);
         sharingSimulationIndices_.resize(awhParams.numBias(), 0);
-        multiSimCommPerBias_.resize(awhParams.numBias(), MPI_COMM_NULL);
 
         for (int shareIndex : globalShareIndices)
         {
