@@ -63,6 +63,7 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/multipletimestepping.h"
 #include "gromacs/mdtypes/state.h"
+#include "gromacs/nbnxm/nbnxm_enums.h"
 #include "gromacs/nbnxm/pairlistparams.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/topology.h"
@@ -721,10 +722,16 @@ void setupDynamicPairlistPruning(const MDLogger&            mdlog,
     const real interactionCutoff = std::max(interactionConst.rcoulomb, interactionConst.rvdw);
     if (listParams->useDynamicPruning)
     {
-        mesg += formatString("Using a dual %dx%d pair-list setup updated with dynamic%s pruning:\n",
-                             ls.cluster_size_i,
-                             ls.cluster_size_j,
-                             listParams->numRollingPruningParts > 1 ? ", rolling" : "");
+        /* Even though we are treating the GPU clusters internally such that i and j cluster sizes are equal,
+         * we compute on the actual device appropriate layout by possibly splitting the j clusters such
+         * that they fit into one parallel execution width lane. We want to report this layout to the users
+         * in the log file, so we apply the same splitting here in case of a GPU list.
+         */
+        mesg += formatString(
+                "Using a dual %dx%d pair-list setup updated with dynamic%s pruning:\n",
+                ls.cluster_size_i,
+                ls.cluster_size_j / (useGpuList ? gmx::sc_gpuClusterPairSplit(listParams->pairlistType) : 1),
+                listParams->numRollingPruningParts > 1 ? ", rolling" : "");
         mesg += formatListSetup(
                 "outer", inputrec.nstlist, inputrec.nstlist, listParams->rlistOuter, interactionCutoff);
         mesg += formatListSetup(

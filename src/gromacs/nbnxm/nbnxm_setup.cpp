@@ -66,6 +66,7 @@
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
 #include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/nbnxm/nbnxm_enums.h"
 #include "gromacs/nbnxm/pairlist_tuning.h"
 #include "gromacs/nbnxm/pairlistparams.h"
 #include "gromacs/simd/simd.h"
@@ -307,26 +308,28 @@ static NbnxmKernelSetup pick_nbnxn_kernel(const gmx::MDLogger&     mdlog,
         }
     }
 
+    const int iClusterSize = (nonbondedResource == NonbondedResource::Cpu)
+                                     ? sc_iClusterSize(kernelSetup.kernelType)
+                                     : sc_gpuClusterSize(gpuPairlistType);
+    const int jClusterSize = (nonbondedResource == NonbondedResource::Cpu)
+                                     ? sc_jClusterSize(kernelSetup.kernelType)
+                                     : sc_gpuSplitJClusterSize(gpuPairlistType);
+
     GMX_LOG(mdlog.info)
             .asParagraph()
             .appendTextFormatted("Using %s %dx%d nonbonded short-range kernels",
                                  nbnxmKernelTypeToName(kernelSetup.kernelType),
-                                 sc_iClusterSize(kernelSetup.kernelType),
-                                 sc_jClusterSize(kernelSetup.kernelType));
+                                 iClusterSize,
+                                 jClusterSize);
+
     if (nonbondedResource == NonbondedResource::Gpu || nonbondedResource == NonbondedResource::EmulateGpu)
     {
-        const std::string gpuPairlistSplitMessage = sc_gpuIsSplitPairList(gpuPairlistType)
-                                                            ? "with split GPU pairlist"
-                                                            : "with unified GPU pairlist";
-
         GMX_LOG(mdlog.info)
                 .asParagraph()
-                .appendTextFormatted("NBNxM GPU setup: super-cluster %dx%dx%d / cluster %d, %s",
+                .appendTextFormatted("NBNxM GPU setup: super-cluster %dx%dx%d",
                                      sc_gpuNumClusterPerCellX(gpuPairlistType),
                                      sc_gpuNumClusterPerCellY(gpuPairlistType),
-                                     sc_gpuNumClusterPerCellZ(gpuPairlistType),
-                                     sc_gpuClusterSize(gpuPairlistType),
-                                     gpuPairlistSplitMessage.c_str());
+                                     sc_gpuNumClusterPerCellZ(gpuPairlistType));
     }
 
     if (NbnxmKernelType::Cpu4x4_PlainC == kernelSetup.kernelType

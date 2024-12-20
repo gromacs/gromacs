@@ -266,7 +266,7 @@ static constexpr int sc_gpuClusterPairSplit(const PairlistType pairlistType)
     }
 }
 
-static constexpr bool sc_gpuIsSplitPairList(const PairlistType pairlistType)
+static constexpr bool sc_gpuPairlistHasSplitJCluster(const PairlistType pairlistType)
 {
     return sc_gpuClusterPairSplit(pairlistType) != 1;
 }

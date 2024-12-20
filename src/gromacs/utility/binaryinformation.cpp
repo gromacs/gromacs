@@ -437,7 +437,8 @@ void gmx_print_version_info(gmx::TextWriter* writer)
 #endif
     writer->writeLine(formatString("GPU support:         %s", getGpuImplementationString()));
 #if GMX_GPU
-    std::string infoStr = (GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT) ? " (cluster-pair splitting off)" : "";
+    std::string infoStr = (GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT) ? " (cluster-pair splitting off)"
+                                                                  : " (cluster-pair splitting on)";
     writer->writeLine(formatString("NBNxM GPU setup:     super-cluster %dx%dx%d / cluster %d%s",
                                    GMX_GPU_NB_NUM_CLUSTER_PER_CELL_X,
                                    GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Y,
