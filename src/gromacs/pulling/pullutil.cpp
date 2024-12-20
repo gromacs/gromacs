@@ -273,7 +273,7 @@ static void make_cyl_refgrps(const t_commrec*     cr,
                     wwmass += mass * weight * weight;
                     dvec mdw;
                     dsvmul(mass * dweight_r, radialLocation, mdw);
-                    copy_dvec(mdw, pdyna.mdw[indexInSet]);
+                    pdyna.mdw[indexInSet] = mdw;
                     /* Currently we only have the axial component of the
                      * offset from the cylinder COM up to an unkown offset.
                      * We add this offset after the reduction needed
@@ -1200,7 +1200,7 @@ void initPullComFromPrevStep(const t_commrec*     cr,
                     pgrp->x[m] = localSums[0][m] * pgrp->mwscale;
                     pgrp->x[m] += comm->pbcAtomBuffer[g][m];
                 }
-                copy_dvec(pgrp->x, pgrp->x_prev_step);
+                pgrp->x_prev_step = pgrp->x;
             }
         }
     }

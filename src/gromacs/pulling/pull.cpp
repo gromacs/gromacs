@@ -129,11 +129,6 @@ static int groupPbcFromParams(const t_pull_group& params, bool setPbcRefToPrevSt
     }
 }
 
-/* NOTE: The params initialization currently copies pointers.
- *       So the lifetime of the source, currently always inputrec,
- *       should not end before that of this object.
- *       This will be fixed when the pointers are replacted by std::vector.
- */
 pull_group_work_t::pull_group_work_t(const t_pull_group& params,
                                      gmx::LocalAtomSet   atomSet,
                                      bool                bSetPbcRefToPrevStepCOM,
@@ -141,15 +136,9 @@ pull_group_work_t::pull_group_work_t(const t_pull_group& params,
     params_(params),
     epgrppbc(groupPbcFromParams(params, bSetPbcRefToPrevStepCOM)),
     maxNumThreads_(maxNumThreads),
-    needToCalcCom(false),
-    atomSet_(atomSet),
-    mwscale(0),
-    wscale(0),
-    invtm(0)
+    atomSet_(atomSet)
 {
-    clear_dvec(x);
-    clear_dvec(xp);
-};
+}
 
 static bool pull_coordinate_is_directional(const t_pull_coord& pcrd)
 {
@@ -1855,7 +1844,7 @@ void dd_make_local_pull_groups(const t_commrec* cr, struct pull_t* pull)
                                "date prev. COM "
                                "to bcast here as well as to e.g. checkpointing");
 
-                    gmx_bcast(sizeof(dvec), group.x_prev_step, cr->mpi_comm_mygroup);
+                    gmx_bcast(sizeof(group.x_prev_step), group.x_prev_step, cr->mpi_comm_mygroup);
                 }
             }
         }

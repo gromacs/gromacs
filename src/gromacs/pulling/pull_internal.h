@@ -104,29 +104,47 @@ struct pull_group_work_t
         return atomSet_.numAtomsLocal() <= c_pullMaxNumLocalAtomsSingleThreaded ? 1 : maxNumThreads_;
     }
 
-    /* Data only modified at initialization */
-    const t_pull_group params_;  /**< The pull group parameters */
-    const int          epgrppbc; /**< The type of pbc for this pull group, see enum above */
-    const int maxNumThreads_; /**< The maximum number of threads to use for operations on x and f */
-    bool needToCalcCom; /**< Do we need to calculate the COM? (Not for group 0 or if only used as cylinder group) */
-    std::vector<real> globalWeights; /**< Weights per atom set by the user and/or mass/friction coefficients, if empty all weights are equal */
+    /* Data that is set at initialization and never modified */
+    //! The pull group parameters
+    const t_pull_group params_;
+    //! The type of pbc for this pull group, see enum above
+    const int epgrppbc;
+    //! The maximum number of threads to use for operations on x and f
+    const int maxNumThreads_;
+    //! Whether we need to calculate the COM? (Not for group 0 or if only used as cylinder group)
+    bool needToCalcCom = false;
+    //! Weights per atom set by the user and/or mass/friction coefficients, if empty all weights are equal
+    std::vector<real> globalWeights;
 
     /* Data modified only at init or at domain decomposition */
-    gmx::LocalAtomSet                  atomSet_;     /**< Global to local atom set mapper */
-    std::vector<real>                  localWeights; /**< Weights for the local atoms */
-    std::unique_ptr<gmx::LocalAtomSet> pbcAtomSet;   /**< Keeps index of the pbc reference atom.
-                                                          The stored LocalAtomSet consists of exactly   one atom when pbc reference atom is required.
-                                                          When no pbc refence atom is used, this   pointer   shall be null. */
+    //! Global to local atom set mapper
+    gmx::LocalAtomSet atomSet_;
+    //! Weights for the local atoms
+    std::vector<real> localWeights;
+    /*! \brief Keeps index of the pbc reference atom.
+     *
+     * The stored LocalAtomSet consists of exactly one atom when pbc reference atom is required.
+     * When no pbc refence atom is used, this pointer shall be nulltpr.
+     */
+    std::unique_ptr<gmx::LocalAtomSet> pbcAtomSet;
 
     /* Data, potentially, changed at every pull call */
-    real mwscale; /**< mass*weight scaling factor 1/sum w m */
-    real wscale;  /**< scaling factor for the weights: sum w m/sum w w m */
-    real invtm;   /**< inverse total mass of the group: 1/wscale sum w m */
-    std::vector<gmx::BasicVector<double>> mdw; /**< mass*gradient(weight) for atoms */
-    std::vector<double>                   dv;  /**< distance to the other group(s) along vec */
-    dvec                                  x;   /**< COM before update */
-    dvec                                  xp;  /**< COM after update before constraining */
-    dvec                                  x_prev_step; /**< center of mass of the previous step */
+    //! mass*weight scaling factor 1/sum w m
+    real mwscale = 0;
+    //! Scaling factor for the weights: sum w m/sum w w m
+    real wscale = 0;
+    //! Inverse total mass of the group: 1/wscale sum w
+    real invtm = 0;
+    //! mass*gradient(weight) for atoms
+    std::vector<gmx::DVec> mdw;
+    //! Distance(s) to the other group(s) along vec
+    std::vector<double> dv;
+    //! COM before update
+    gmx::DVec x = { 0.0, 0.0, 0.0 };
+    //! COM after update before constraining
+    gmx::DVec xp = { 0.0, 0.0, 0.0 };
+    //! COM of the previous step
+    gmx::DVec x_prev_step = { 0.0, 0.0, 0.0 };
 };
 
 /* Struct describing the instantaneous spatial layout of a pull coordinate */
