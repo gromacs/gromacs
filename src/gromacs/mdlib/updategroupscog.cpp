@@ -194,11 +194,15 @@ void UpdateGroupsCog::addCogs(ArrayRef<const int>  globalAtomIndices,
                               ArrayRef<const RVec> coordinates,
                               ArrayRef<const int>  numAtomsPerNbnxmGridColumn)
 {
+    const int numThreads = std::max(1, gmx_omp_nthreads_get(ModuleMultiThread::Domdec));
     if (threadData_.empty())
     {
-        const int numThreads = std::max(1, gmx_omp_nthreads_get(ModuleMultiThread::Domdec));
-
         threadData_.resize(numThreads, { 0, HashedMap<int>(coordinates.size() / numThreads) });
+    }
+    else
+    {
+        GMX_RELEASE_ASSERT(gmx::ssize(threadData_) == numThreads,
+                           "The number of threads should not change");
     }
 
     const int localAtomBegin = cogIndices_.size();
@@ -207,8 +211,6 @@ void UpdateGroupsCog::addCogs(ArrayRef<const int>  globalAtomIndices,
     GMX_RELEASE_ASSERT(globalAtomIndices.ssize() >= localAtomBegin,
                        "addCogs should only be called to add COGs to the list that is already "
                        "present (which could be empty)");
-
-    const int gmx_unused numThreads = gmx_omp_nthreads_get(ModuleMultiThread::Domdec);
 
     cogIndices_.resize(globalAtomIndices.size());
     // We overallocate the COG buffers with the number of atoms to avoid an extra OMP barrier
@@ -234,8 +236,6 @@ void UpdateGroupsCog::addCogs(ArrayRef<const int>  globalAtomIndices,
         // Many atoms to process, use OpenMP threading
 #pragma omp parallel num_threads(numThreads)
         {
-            const int numThreads = threadData_.size();
-
             const int thread = gmx_omp_get_thread_num();
 
             // Divide the atom range over threads by assigning whole grid columns.
