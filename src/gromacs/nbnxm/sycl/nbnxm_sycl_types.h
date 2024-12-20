@@ -110,7 +110,7 @@ struct NbnxmGpu
     /*! \brief Dummy timers. */
     GpuTimers* timers = nullptr;
     /*! \brief Dummy timing data. */
-    gmx_wallclock_gpu_nbnxn_t* timings = nullptr;
+    std::unique_ptr<gmx_wallclock_gpu_nbnxn_t> timings;
 
     //! true when a pair-list transfer has been done at this step
     EnumerationArray<InteractionLocality, bool> didPairlistH2D = { { false } };

@@ -461,13 +461,13 @@ NbnxmGpu* gpu_init(const DeviceStreamManager& deviceStreamManager,
     nb->bUseTwoStreams = bLocalAndNonlocal;
 
     nb->timers = new GpuTimers();
-    snew(nb->timings, 1);
 
     nb->bDoTime = decideGpuTimingsUsage();
 
     if (nb->bDoTime)
     {
-        init_timings(nb->timings);
+        nb->timings = std::make_unique<gmx_wallclock_gpu_nbnxn_t>();
+        init_timings(nb->timings.get());
     }
 
     /* init nbst */
@@ -810,7 +810,7 @@ void gpu_clear_outputs(NbnxmGpu* nb, bool computeVirial)
 //! This function is documented in the header file
 gmx_wallclock_gpu_nbnxn_t* gpu_get_timings(NbnxmGpu* nb)
 {
-    return (nb != nullptr && nb->bDoTime) ? nb->timings : nullptr;
+    return (nb != nullptr && nb->bDoTime) ? nb->timings.get() : nullptr;
 }
 
 //! This function is documented in the header file
@@ -818,7 +818,7 @@ void gpu_reset_timings(nonbonded_verlet_t* nbv)
 {
     if (nbv->gpuNbv() && nbv->gpuNbv()->bDoTime)
     {
-        init_timings(nbv->gpuNbv()->timings);
+        init_timings(nbv->gpuNbv()->timings.get());
     }
 }
 
@@ -1207,7 +1207,6 @@ void gpu_free(NbnxmGpu* nb)
     gpu_free_platform_specific(nb);
 
     delete nb->timers;
-    sfree(nb->timings);
 
     NBAtomDataGpu* atdat   = nb->atdat;
     NBParamGpu*    nbparam = nb->nbparam;

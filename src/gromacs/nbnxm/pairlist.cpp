@@ -79,7 +79,6 @@
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/range.h"
-#include "gromacs/utility/smalloc.h"
 
 #include "boundingbox.h"
 #include "boundingbox_simd.h"

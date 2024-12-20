@@ -225,7 +225,7 @@ struct NbnxmGpu
     //! OpenCL event-based timers.
     GpuTimers* timers = nullptr;
     //! Timing data. TODO: deprecate this and query timers for accumulated data instead
-    gmx_wallclock_gpu_nbnxn_t* timings = nullptr;
+    std::unique_ptr<gmx_wallclock_gpu_nbnxn_t> timings;
 };
 
 } // namespace gmx

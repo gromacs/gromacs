@@ -67,7 +67,6 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
-#include "gromacs/utility/smalloc.h"
 
 #include "nbnxm_ocl_types.h"
 

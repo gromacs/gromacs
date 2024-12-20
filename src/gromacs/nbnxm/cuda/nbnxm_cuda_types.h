@@ -133,7 +133,7 @@ struct NbnxmGpu
     /*! \brief CUDA event-based timers. */
     GpuTimers* timers = nullptr;
     /*! \brief Timing data. TODO: deprecate this and query timers for accumulated data instead */
-    gmx_wallclock_gpu_nbnxn_t* timings = nullptr;
+    std::unique_ptr<gmx_wallclock_gpu_nbnxn_t> timings;
 };
 
 } // namespace gmx

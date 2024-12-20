@@ -74,7 +74,6 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/real.h"
-#include "gromacs/utility/smalloc.h"
 
 #include "nbnxm_cuda.h"
 /* Required to stop gcc emitting multiple definition warnings as cuda_fp16.h, which is included by

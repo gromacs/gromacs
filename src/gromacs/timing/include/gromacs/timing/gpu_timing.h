@@ -47,8 +47,8 @@
 /*! \internal \brief GPU kernel time and call count. */
 struct gmx_kernel_timing_data_t
 {
-    double t; /**< Accumulated lapsed time */
-    int    c; /**< Number of calls corresponding to the elapsed time */
+    double t = 0; /**< Accumulated lapsed time */
+    int    c = 0; /**< Number of calls corresponding to the elapsed time */
 };
 
 /*! \internal \brief
