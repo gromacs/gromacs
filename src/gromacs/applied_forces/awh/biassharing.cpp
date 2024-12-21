@@ -122,6 +122,9 @@ std::multiset<int> getGlobalShareIndices(ArrayRef<const int> localShareIndices, 
 BiasSharing::BiasSharing(const AwhParams& awhParams, const t_commrec& commRecord, MPI_Comm simulationMainComm) :
     commRecord_(commRecord)
 {
+    // Both main and non-main PP ranks need this lookup to be valid
+    multiSimCommPerBias_.resize(awhParams.numBias(), MPI_COMM_NULL);
+
     if (MAIN(&commRecord))
     {
         std::vector<int> localShareIndices;
@@ -154,7 +157,6 @@ BiasSharing::BiasSharing(const AwhParams& awhParams, const t_commrec& commRecord
 
         numSharingSimulations_.resize(awhParams.numBias(), 1);
         sharingSimulationIndices_.resize(awhParams.numBias(), 0);
-        multiSimCommPerBias_.resize(awhParams.numBias(), MPI_COMM_NULL);
 
         for (int shareIndex : globalShareIndices)
         {
@@ -193,7 +195,7 @@ BiasSharing::BiasSharing(const AwhParams& awhParams, const t_commrec& commRecord
     }
 
 #if GMX_MPI
-    if (commRecord.nnodes > 1)
+    if (commRecord.sizeOfMyGroupCommunicator > 1)
     {
         numSharingSimulations_.resize(awhParams.numBias());
         MPI_Bcast(
@@ -260,7 +262,7 @@ void sumOverSimulations(ArrayRef<T>      data,
     {
         MPI_Allreduce(MPI_IN_PLACE, data.data(), data.size(), mpiType<T>(), MPI_SUM, multiSimComm);
     }
-    if (broadcastWithinSimulation && commRecord.nnodes > 1)
+    if (broadcastWithinSimulation && commRecord.sizeOfMyGroupCommunicator > 1)
     {
         gmx_bcast(data.size() * sizeof(T), data.data(), commRecord.mpi_comm_mygroup);
     }

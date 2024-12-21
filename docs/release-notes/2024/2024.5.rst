@@ -16,6 +16,12 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix crashes with AWH and multi-sim bias sharing
+"""""""""""""""""""""""""""""""""""""""""""""""
+
+``gmx mdrun`` multi-sim AWH with bias sharing might have crashed with
+either 1 PP rank and 1 PME rank, or multiple PP ranks.
+
 Fix crash with modular simulator, md integrator, DD and constraints
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
