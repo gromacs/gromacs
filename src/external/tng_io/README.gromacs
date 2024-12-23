@@ -1,2 +1,4 @@
+Made cmake_minimum_required set to same version as toplevel and inherited from it.
+
 When updating the bundled version TNG, consider also updating the
 required version, specified in cmake/gmxManageTNG.cmake.

@@ -45,8 +45,9 @@ endif()
 # Language "C" is required for find_package(Threads).
 
 # Project version:
-
-cmake_minimum_required(VERSION 3.5)
+if(NOT DEFINED CMAKE_MINIMUM_REQUIRED_VERSION)
+  cmake_minimum_required(VERSION 3.28)
+endif()
 cmake_policy(SET CMP0048 NEW)
 project(gtest VERSION ${GOOGLETEST_VERSION} LANGUAGES CXX C)
 

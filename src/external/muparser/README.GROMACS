@@ -2,6 +2,8 @@ Changes by GROMACS to muparser files
 ====================================
 Used from https://github.com/beltoforion/muparser/releases/tag/v2.3.4.
 
+Made cmake_minimum_required set to same version as toplevel and inherited from it.
+
 ENABLE_SAMPLES is set off
 
 ENABLE_OPENMP gets its value from GMX_OPENMP

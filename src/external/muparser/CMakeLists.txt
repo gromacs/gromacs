@@ -1,5 +1,7 @@
 # CMake based on work from @xantares
-cmake_minimum_required (VERSION 3.16.3)
+if(NOT DEFINED CMAKE_MINIMUM_REQUIRED_VERSION)
+  cmake_minimum_required (VERSION 3.28)
+endif()
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 

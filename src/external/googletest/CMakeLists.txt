@@ -1,7 +1,9 @@
 # Note: CMake support is community-based. The maintainers do not use CMake
 # internally.
 
-cmake_minimum_required(VERSION 3.5)
+if(NOT DEFINED CMAKE_MINIMUM_REQUIRED_VERSION)
+  cmake_minimum_required(VERSION 3.28)
+endif()
 
 if (POLICY CMP0048)
   cmake_policy(SET CMP0048 NEW)
