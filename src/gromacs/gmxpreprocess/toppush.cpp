@@ -2282,12 +2282,14 @@ void push_bond(Directive                         d,
         if ((nread != 0) && (nread != EOF) && (nread != NRFP(ftype)) && !(ftype == F_LJC14_Q && nread == 1))
         {
             auto message = gmx::formatString(
-                    "Incorrect number of parameters - found %d, expected %d "
-                    "or %d for %s (after the function type).",
+                    "Incorrect number of parameters in interaction - found %d, expected %d or %d "
+                    "for %s (after the function type). The interaction was\n"
+                    "'%s'.",
                     nread,
                     NRFPA(ftype),
                     NRFP(ftype),
-                    interaction_function[ftype].longname);
+                    interaction_function[ftype].longname,
+                    line);
             warning_error_and_exit(wi, message, FARGS);
         }
 
@@ -2329,7 +2331,11 @@ void push_bond(Directive                         d,
         {
             /* Issue an error, do not use defaults */
             auto message = gmx::formatString(
-                    "Not enough parameters, there should be at least %d (or 0 for defaults)", NRFPA(ftype));
+                    "Not enough parameters in interaction, there should be at least %d (or 0 for "
+                    "defaults). The interaction was\n"
+                    "'%s'.",
+                    NRFPA(ftype),
+                    line);
             wi->addError(message);
         }
 
@@ -2354,13 +2360,19 @@ void push_bond(Directive                         d,
                     if (bZero)
                     {
                         fprintf(stderr,
-                                "NOTE: No default %s types, using zeroes\n",
-                                interaction_function[ftype].longname);
+                                "NOTE: No default %s types for interaction, using zeroes. The "
+                                "interaction was\n"
+                                "'%s'.",
+                                interaction_function[ftype].longname,
+                                line);
                     }
                     else
                     {
-                        auto message = gmx::formatString("No default %s types",
-                                                         interaction_function[ftype].longname);
+                        auto message = gmx::formatString(
+                                "No default %s types for interaction\n"
+                                "'%s'.",
+                                interaction_function[ftype].longname,
+                                line);
                         wi->addError(message);
                     }
                 }
@@ -2389,9 +2401,11 @@ void push_bond(Directive                         d,
                 if (bPert)
                 {
                     auto message = gmx::formatString(
-                            "No default %s types for perturbed atoms, "
-                            "using normal values",
-                            interaction_function[ftype].longname);
+                            "No default %s types for perturbed atoms in interaction, using normal "
+                            "values. The interaction was\n"
+                            "'%s'.",
+                            interaction_function[ftype].longname,
+                            line);
                     wi->addWarning(message);
                 }
             }
