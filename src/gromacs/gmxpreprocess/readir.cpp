@@ -3540,8 +3540,18 @@ static void calc_nrdf(const gmx_mtop_t* mtop, t_inputrec* ir, gmx::ArrayRef<cons
             {
                 if (getGroupType(groups, SimulationAtomGroupType::TemperatureCoupling, ai) == i)
                 {
-                    na_vcm[getGroupType(groups, SimulationAtomGroupType::MassCenterVelocityRemoval, ai)]++;
-                    na_tot++;
+                    // Check whether atom ai is fully frozen, if so don't count it for DOFs
+                    const int freezeGroup = getGroupType(groups, SimulationAtomGroupType::Freeze, ai);
+                    int       numFrozenDims = 0;
+                    for (int d = 0; d < DIM; d++)
+                    {
+                        numFrozenDims += opts->nFreeze[freezeGroup][d];
+                    }
+                    if (numFrozenDims < DIM)
+                    {
+                        na_vcm[getGroupType(groups, SimulationAtomGroupType::MassCenterVelocityRemoval, ai)]++;
+                        na_tot++;
+                    }
                 }
             }
             /* Correct for VCM removal according to the fraction of each VCM
@@ -3553,7 +3563,7 @@ static void calc_nrdf(const gmx_mtop_t* mtop, t_inputrec* ir, gmx::ArrayRef<cons
                  j < gmx::ssize(groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval]) + 1;
                  j++)
             {
-                if (nrdf_vcm[j] > nrdf_vcm_sub[j])
+                if (na_vcm[j] > 0 && nrdf_vcm[j] > nrdf_vcm_sub[j])
                 {
                     nrdf_tc[i] += nrdf_uc * (static_cast<double>(na_vcm[j]) / static_cast<double>(na_tot))
                                   * (nrdf_vcm[j] - nrdf_vcm_sub[j]) / nrdf_vcm[j];

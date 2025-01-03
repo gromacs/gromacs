@@ -22,6 +22,18 @@ Fix crashes with AWH and multi-sim bias sharing
 ``gmx mdrun`` multi-sim AWH with bias sharing might have crashed with
 either 1 PP rank and 1 PME rank, or multiple PP ranks.
 
+Fix issue with fully frozen atoms in T-coupling groups with non-frozen atoms
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+``gmx grompp`` would, incorrectly, subtract 3 degrees of freedom for each
+fully frozen atom that was part of a temperature coupling group that also
+contained non-frozen atoms. This led to too high temperatures being reported
+and too low real temperatures when temperature coupling is used. Note that
+you can not detect the latter issue by looking at the temperature in the
+output, as this would match the temperature of the bath.
+
+:issue:`5261`
+
 Fix crash with modular simulator, md integrator, DD and constraints
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
