@@ -222,6 +222,11 @@ if(GMX_DPCPP_HAVE_CUDA_TARGET OR GMX_DPCPP_HAVE_HIP_TARGET)
             ON)
         mark_as_advanced(GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT)
     endif()
+    # Following flag enables extra optimization for AMD GPUs. More details available at
+    # https://developer.codeplay.com/products/oneapi/amd/2025.0.0/guides/performance/common-optimizations#amdgpu-unsafe-atomics
+    if(GMX_DPCPP_HAVE_HIP_TARGET)
+        list(APPEND SYCL_TOOLCHAIN_CXX_FLAGS "-mllvm=--amdgpu-oclc-unsafe-fp-atomics=true")
+    endif()
 endif()
 
 # The API is experimental and unstable, so we don't build it by default
