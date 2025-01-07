@@ -1077,10 +1077,19 @@ static char** read_topol(const char*                                 infile,
                             break;
                         }
                         default:
-                            GMX_LOG(logger.warning)
-                                    .asParagraph()
-                                    .appendTextFormatted("case: %d", static_cast<int>(d));
-                            gmx_incons("unknown directive");
+                            if (d == Directive::d_intermolecular_interactions)
+                            {
+                                gmx_fatal(FARGS,
+                                          "Expected a directive after directive '%s', not a line "
+                                          "with: '%s'",
+                                          enumValueToString(d),
+                                          line);
+                            }
+                            else
+                            {
+                                GMX_RELEASE_ASSERT(
+                                        false, "Unhandled combination of a line after a directive");
+                            }
                     }
                 }
             }
