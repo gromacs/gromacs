@@ -649,27 +649,12 @@ static void check_index_consistency(const gmx_domdec_t* dd, int natoms_sys, cons
 }
 
 //! Clear all DD global state indices
-static void clearDDStateIndices(gmx_domdec_t* dd, const bool keepLocalAtomIndices)
+static void clearDDStateIndices(gmx_domdec_t* dd)
 {
     gmx_ga2la_t& ga2la = *dd->ga2la;
 
-    if (!keepLocalAtomIndices)
-    {
-        /* Clear the whole list without the overhead of searching */
-        ga2la.clear(true);
-    }
-    else
-    {
-        const int numAtomsInZones = dd->comm->atomRanges.end(DDAtomRanges::Type::Zones);
-        for (int i = 0; i < numAtomsInZones; i++)
-        {
-            const int globalAtomIndex = dd->globalAtomIndices[i];
-            if (isValidGlobalAtom(globalAtomIndex))
-            {
-                ga2la.erase(globalAtomIndex);
-            }
-        }
-    }
+    /* Clear the whole list without the overhead of searching */
+    ga2la.clear(true);
 
     dd_clear_local_vsite_indices(dd);
 
@@ -2788,11 +2773,12 @@ void dd_partition_system(FILE*                     fplog,
         comm->n_load_have++;
     }
 
+    // Clear the state indices
+    clearDDStateIndices(dd);
+
     bool bRedist = false;
     if (bMainState)
     {
-        /* Clear the old state */
-        clearDDStateIndices(dd, false);
         ncgindex_set = 0;
 
         auto xGlobal = positionsFromStatePointer(state_global);
@@ -2828,9 +2814,6 @@ void dd_partition_system(FILE*                     fplog,
                       state_local->ddp_count);
         }
 
-        /* Clear the old state */
-        clearDDStateIndices(dd, false);
-
         /* Restore the atom group indices from state_local */
         restoreAtomGroups(dd, state_local);
         make_dd_indices(dd, 0);
@@ -2848,8 +2831,6 @@ void dd_partition_system(FILE*                     fplog,
     {
         /* We have the full state, only redistribute the cgs */
 
-        /* Clear the non-home indices */
-        clearDDStateIndices(dd, true);
         ncgindex_set = 0;
 
         /* To avoid global communication, we do not recompute the extent
