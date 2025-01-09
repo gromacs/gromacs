@@ -30,6 +30,12 @@ was broken in recent releases. Now it should work again.
 
 :issue:`5285`
 
+Avoid launch bounds PTX error for new NVIDIA RTX Blackwell GPUs
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Fix compatibility issue preventing using |Gromacs| 2024 on
+new NVIDIA GPUs.
+
 Miscellaneous
 ^^^^^^^^^^^^^
 

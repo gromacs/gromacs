@@ -207,6 +207,8 @@ else()
         gmx_add_nvcc_flag_if_supported(GMX_CUDA_NVCC_GENCODE_FLAGS NVCC_HAS_GENCODE_COMPUTE_AND_SM_86 --generate-code=arch=compute_86,code=sm_86)
         gmx_add_nvcc_flag_if_supported(GMX_CUDA_NVCC_GENCODE_FLAGS NVCC_HAS_GENCODE_COMPUTE_AND_SM_89 --generate-code=arch=compute_89,code=sm_89)
         gmx_add_nvcc_flag_if_supported(GMX_CUDA_NVCC_GENCODE_FLAGS NVCC_HAS_GENCODE_COMPUTE_AND_SM_90 --generate-code=arch=compute_90,code=sm_90)
+        gmx_add_nvcc_flag_if_supported(GMX_CUDA_NVCC_GENCODE_FLAGS NVCC_HAS_GENCODE_COMPUTE_AND_SM_100 --generate-code=arch=compute_100,code=sm_100)
+        gmx_add_nvcc_flag_if_supported(GMX_CUDA_NVCC_GENCODE_FLAGS NVCC_HAS_GENCODE_COMPUTE_AND_SM_120 --generate-code=arch=compute_120,code=sm_120)
     endif()
     # Requesting sm or compute 35, 37, or 50 triggers deprecation messages with
     # nvcc 11.0, which we need to suppress for use in CI
