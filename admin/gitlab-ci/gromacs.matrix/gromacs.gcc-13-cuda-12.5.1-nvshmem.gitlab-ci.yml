@@ -55,7 +55,6 @@ gromacs:gcc-13-cuda-12.5.1:testMPI-NVSHMEM:
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-13-cuda-12.5.1
   variables:
     CMAKE: /usr/local/cmake-3.29.3/bin/cmake
-    GMX_ENABLE_DIRECT_GPU_COMM: 1
     GMX_ENABLE_NVSHMEM: 1
     # if NVSHMEM uses NCCL it requires more than 4 GB of GPU RAM as min memory,
     # in CI we've GPUs like T400 which have 4 GB RAM so we disable NVSHMEM's
@@ -88,7 +87,6 @@ gromacs:gcc-13-cuda-12.5.1:regressiontest-gpucommupd-MPI-NVSHMEM:
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
     REGRESSIONTEST_PARALLEL: "-np"
-    GMX_ENABLE_DIRECT_GPU_COMM: 1
     GMX_TEST_REQUIRED_NUMBER_OF_DEVICES: 2
     # if NVSHMEM uses NCCL it requires more than 4 GB of GPU RAM as min memory,
     # in CI we've GPUs like T400 which have 4 GB RAM so we disable NVSHMEM's
@@ -124,7 +122,6 @@ gromacs:gcc-13-cuda-12.5.1:regressiontest-gpucommupd-RF-MPI-NVSHMEM:
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
     REGRESSIONTEST_PARALLEL: "-np"
-    GMX_ENABLE_DIRECT_GPU_COMM: 1
     GMX_TEST_REQUIRED_NUMBER_OF_DEVICES: 2
     # if NVSHMEM uses NCCL it requires more than 4 GB of GPU RAM as min memory,
     # in CI we've GPUs like T400 which have 4 GB RAM so we disable NVSHMEM's

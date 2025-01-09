@@ -227,14 +227,14 @@ namespace gmx
  * \param[in]  pmeRunMode   Run mode indicating what resource is PME executed on.
  * \param[in]  numRanksPerSimulation   The number of ranks in each simulation.
  * \param[in]  numPmeRanksPerSimulation   The number of PME ranks in each simulation, can be -1
- * \param[in]  gpuAwareMpiStatus  Minimum level of GPU-aware MPI support across all ranks
+ * \param[in]  canUseGpuAwareMpi   Whether GPU-aware MPI can be used.
  * \returns                         The object populated with development feature flags.
  */
 static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& mdlog,
                                                          const PmeRunMode     pmeRunMode,
                                                          const int            numRanksPerSimulation,
-                                                         const int numPmeRanksPerSimulation,
-                                                         gmx::GpuAwareMpiStatus gpuAwareMpiStatus)
+                                                         const int  numPmeRanksPerSimulation,
+                                                         const bool canUseGpuAwareMpi)
 {
     DevelopmentFeatureFlags devFlags;
 
@@ -282,90 +282,6 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
         }
     }
 
-    // Flag use to enable GPU-aware MPI dependent features such PME GPU decomposition
-    // GPU-aware MPI is marked available if it has been detected by GROMACS or detection fails but
-    // user wants to force its use
-    devFlags.canUseGpuAwareMpi = false;
-
-    // Direct GPU comm path is being used with GPU-aware MPI
-    // make sure underlying MPI implementation is GPU-aware
-
-    if (GMX_LIB_MPI && (GMX_GPU_CUDA || GMX_GPU_SYCL))
-    {
-        // Allow overriding the detection for GPU-aware MPI
-        if (getenv("GMX_FORCE_CUDA_AWARE_MPI") != nullptr)
-        {
-            GMX_LOG(mdlog.warning)
-                    .asParagraph()
-                    .appendText(
-                            "GMX_FORCE_CUDA_AWARE_MPI environment variable is inactive. "
-                            "Please use GMX_FORCE_GPU_AWARE_MPI instead.");
-        }
-
-        devFlags.canUseGpuAwareMpi = (gpuAwareMpiStatus == gmx::GpuAwareMpiStatus::Supported
-                                      || gpuAwareMpiStatus == gmx::GpuAwareMpiStatus::Forced);
-        if (getenv("GMX_ENABLE_DIRECT_GPU_COMM") != nullptr)
-        {
-            if (gpuAwareMpiStatus == gmx::GpuAwareMpiStatus::Forced)
-            {
-                // GPU-aware support not detected in MPI library but, user has forced its use
-                GMX_LOG(mdlog.warning)
-                        .asParagraph()
-                        .appendText(
-                                "This run has forced use of 'GPU-aware MPI'. "
-                                "However, GROMACS cannot determine if underlying MPI is GPU-aware. "
-                                "Check the GROMACS install guide for recommendations for GPU-aware "
-                                "support. If you observe failures at runtime, try unsetting the "
-                                "GMX_FORCE_GPU_AWARE_MPI environment variable.");
-            }
-
-            if (devFlags.canUseGpuAwareMpi)
-            {
-                GMX_LOG(mdlog.warning)
-                        .asParagraph()
-                        .appendText(
-                                "GMX_ENABLE_DIRECT_GPU_COMM environment variable detected, "
-                                "enabling direct GPU communication using GPU-aware MPI.");
-            }
-            else
-            {
-                GMX_LOG(mdlog.warning)
-                        .asParagraph()
-                        .appendText(
-                                "GPU-aware MPI was not detected, will not use direct GPU "
-                                "communication. Check the GROMACS install guide for "
-                                "recommendations "
-                                "for GPU-aware support. If you are certain about GPU-aware support "
-                                "in your MPI library, you can force its use by setting the "
-                                "GMX_FORCE_GPU_AWARE_MPI environment variable.");
-            }
-        }
-        else if (gpuAwareMpiStatus == gmx::GpuAwareMpiStatus::Supported)
-        {
-            // GPU-aware MPI was detected, let the user know that using it may improve performance
-            GMX_LOG(mdlog.warning)
-                    .asParagraph()
-                    .appendText(
-                            "GPU-aware MPI detected, but by default GROMACS will not "
-                            "make use the direct GPU communication capabilities of MPI. "
-                            "For improved performance try enabling the feature by setting "
-                            "the GMX_ENABLE_DIRECT_GPU_COMM environment variable.");
-        }
-    }
-    else
-    {
-        if (getenv("GMX_FORCE_GPU_AWARE_MPI") != nullptr)
-        {
-            // Cannot force use of GPU-aware MPI in this build configuration
-            GMX_LOG(mdlog.info)
-                    .asParagraph()
-                    .appendText(
-                            "A CUDA or SYCL build with an external MPI library is required in "
-                            "order to benefit from GMX_FORCE_GPU_AWARE_MPI. That environment "
-                            "variable is being ignored because such a build is not in use.");
-        }
-    }
-
     if (getenv("GMX_ENABLE_NVSHMEM") != nullptr)
     {
         if (GMX_LIB_MPI && GMX_NVSHMEM)
@@ -398,7 +314,7 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
             && ((numRanksPerSimulation > 1 && numPmeRanksPerSimulation == 0)
                 || numPmeRanksPerSimulation > 1);
     const bool pmeGpuDecompositionSupported =
-            (devFlags.canUseGpuAwareMpi && (GMX_GPU_CUDA || GMX_GPU_SYCL)
+            (canUseGpuAwareMpi && (GMX_GPU_CUDA || GMX_GPU_SYCL)
              && ((pmeRunMode == PmeRunMode::GPU && (GMX_USE_Heffte || GMX_USE_cuFFTMp))
                  || pmeRunMode == PmeRunMode::Mixed));
 
@@ -1168,16 +1084,6 @@ int Mdrunner::mdrunner()
 
     const PmeRunMode pmeRunMode = determinePmeRunMode(useGpuForPme, pmeFftTarget, *inputrec);
 
-    // Initialize development feature flags that enabled by environment variable
-    // and report those features that are enabled.
-    // We are using the minimal supported level of GPU-aware MPI
-    // support as an approximation of whether such communication
-    // will work. It likely would not work in cases where ranks
-    // have heterogeneous device types or vendors unless the MPI
-    // library supported that.
-    const DevelopmentFeatureFlags devFlags = manageDevelopmentFeatures(
-            mdlog, pmeRunMode, cr->sizeOfDefaultCommunicator, domdecOptions.numPmeRanks, hwinfo_->minGpuAwareMpiStatus);
-
     const bool useModularSimulator = checkUseModularSimulator(false,
                                                               inputrec.get(),
                                                               doRerun,
@@ -1525,12 +1431,22 @@ int Mdrunner::mdrunner()
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
 
+    // We are using the minimal supported level of GPU-aware MPI
+    // support as an approximation of whether such communication
+    // will work. It likely would not work in cases where ranks
+    // have heterogeneous device types or vendors unless the MPI
+    // library supported that.
     const bool canUseDirectGpuComm =
-            decideWhetherDirectGpuCommunicationCanBeUsed(devFlags,
+            decideWhetherDirectGpuCommunicationCanBeUsed(hwinfo_->minGpuAwareMpiStatus,
                                                          inputrec->useMts,
                                                          replExParams.exchangeInterval > 0,
                                                          (inputrec->eSwapCoords != SwapType::No),
                                                          mdlog);
+
+    // Initialize development feature flags that enabled by environment variable
+    // and report those features that are enabled.
+    const DevelopmentFeatureFlags devFlags = manageDevelopmentFeatures(
+            mdlog, pmeRunMode, cr->sizeOfDefaultCommunicator, domdecOptions.numPmeRanks, canUseDirectGpuComm);
 
     bool useGpuDirectHalo = false;
 

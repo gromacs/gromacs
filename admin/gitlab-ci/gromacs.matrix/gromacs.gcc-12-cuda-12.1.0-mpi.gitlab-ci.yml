@@ -53,7 +53,6 @@ gromacs:gcc-12-cuda-12.1.0:testMPI:
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-12-cuda-12.1.0
   variables:
     CMAKE: /usr/local/cmake-3.29.8/bin/cmake
-    GMX_ENABLE_DIRECT_GPU_COMM: 1
     GMX_GPU_PME_DECOMPOSITION: 1
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
     GPU_VENDOR: "NVIDIA"

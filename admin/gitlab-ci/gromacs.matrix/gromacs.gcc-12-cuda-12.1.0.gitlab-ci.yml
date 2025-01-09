@@ -58,6 +58,7 @@ gromacs:gcc-12-cuda-12.1.0:test:
   variables:
     CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
+    GMX_DISABLE_DIRECT_GPU_COMM: 1
     GPU_VENDOR: "NVIDIA"
     GPU_COUNT: 1
   tags:
@@ -75,6 +76,7 @@ gromacs:gcc-12-cuda-12.1.0:test-gpucommupd:
   variables:
     CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
+    GMX_DISABLE_DIRECT_GPU_COMM: 1
     GPU_VENDOR: "NVIDIA"
     GPU_COUNT: 1
   tags:
@@ -93,6 +95,7 @@ gromacs:gcc-12-cuda-12.1.0:test-gpucommupd-cuda-sanitizer:
     CMAKE: /usr/local/cmake-3.29.8/bin/cmake # We need newer CMake for Compute Sanitizer support
     GPU_VENDOR: "NVIDIA"
     GPU_COUNT: 1
+    GMX_DISABLE_DIRECT_GPU_COMM: 1
   script:
     - bash -x admin/ci-scripts/gromacs-base-cuda-sanitizer-test.sh
   tags:
@@ -114,6 +117,7 @@ gromacs:gcc-12-cuda-12.1.0:regressiontest:
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
     GPU_VENDOR: "NVIDIA"
     GPU_COUNT: 1
+    GMX_DISABLE_DIRECT_GPU_COMM: 1
   tags:
     - $GITLAB_RUNNER_TAG_1X_NVIDIA_GPU
   needs:
@@ -132,7 +136,6 @@ gromacs:gcc-12-cuda-12.1.0:regressiontest-gpucommupd-tMPI:
     REGRESSIONTEST_PME_RANK_NUMBER: 0
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 4
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
-    GMX_ENABLE_DIRECT_GPU_COMM: 1
     GPU_VENDOR: "NVIDIA"
     GPU_COUNT: 2
   tags:
@@ -160,6 +163,7 @@ gromacs:gcc-12-cuda-12.1.0:regressiontest-upd-tMPI:
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
     GPU_VENDOR: "NVIDIA"
     GPU_COUNT: 2
+    GMX_DISABLE_DIRECT_GPU_COMM: 1
   tags:
     - $GITLAB_RUNNER_TAG_2X_NVIDIA_GPU
   needs:

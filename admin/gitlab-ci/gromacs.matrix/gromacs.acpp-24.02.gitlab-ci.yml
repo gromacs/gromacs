@@ -53,7 +53,6 @@ gromacs:acpp-rocm-mpi:test:
   variables:
     CMAKE: /usr/local/cmake-3.29.3/bin/cmake
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
-    GMX_ENABLE_DIRECT_GPU_COMM: 1
     GMX_FORCE_GPU_AWARE_MPI: 1
     UCX_TLS: "sm,self,rocm_copy"  # rocm_ipc does not work well enough
     GPU_VENDOR: "AMD"
@@ -76,7 +75,6 @@ gromacs:acpp-rocm-mpi:regressiontest:
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
     REGRESSIONTEST_OMP_RANK_NUMBER: 2
     REGRESSIONTEST_PARALLEL: "-np"
-    GMX_ENABLE_DIRECT_GPU_COMM: 1
     GMX_FORCE_GPU_AWARE_MPI: 1
     UCX_TLS: "sm,self,rocm_copy"  # rocm_ipc does not work well enough
     GPU_VENDOR: "AMD"

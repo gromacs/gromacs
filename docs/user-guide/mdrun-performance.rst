@@ -1276,6 +1276,11 @@ One overview over the possible task assignments is given below:
 
   Experimental support for CUDA-graphs scheduling has been added, which supports most GPU-resident runs that do not require CPU force computation.
 
+|Gromacs| version 2025:
+
+  Direct GPU communication is now enabled by default on supported setups. The feature can be disabled
+  using the ``GMX_DISABLE_DIRECT_GPU_COMM`` environment variable.
+
 
 Performance considerations for GPU tasks
 ........................................

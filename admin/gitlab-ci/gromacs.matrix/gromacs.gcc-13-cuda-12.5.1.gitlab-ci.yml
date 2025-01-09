@@ -52,7 +52,6 @@ gromacs:gcc-13-cuda-12.5.1:testMPI:
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-13-cuda-12.5.1
   variables:
     CMAKE: /usr/local/cmake-3.29.3/bin/cmake
-    GMX_ENABLE_DIRECT_GPU_COMM: 1
     GMX_GPU_PME_DECOMPOSITION: 1
     # Flag that cuFFTMp should be disabled when running on incompatible devices
     GMX_CI_DISABLE_CUFFTMP_DECOMPOSITION_ON_INCOMPATIBLE_DEVICES: 1
@@ -88,8 +87,7 @@ gromacs:gcc-13-cuda-12.5.1:regressiontest-gpucommupd-MPI:
     REGRESSIONTEST_PME_RANK_NUMBER: 0
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 4
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
-    REGRESSIONTEST_PARALLEL: "-np"
-    GMX_ENABLE_DIRECT_GPU_COMM: 1
+    REGRESSIONTEST_PARALLEL: "-np"  
     GPU_VENDOR: "NVIDIA"
     GPU_COUNT: 2
   tags:

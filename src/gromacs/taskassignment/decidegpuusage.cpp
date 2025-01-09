@@ -80,6 +80,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/message_string_collector.h"
+#include "gromacs/utility/mpiinfo.h"
 #include "gromacs/utility/stringutil.h"
 
 
@@ -771,36 +772,114 @@ bool decideWhetherToUseGpuForUpdate(const bool           isDomainDecomposition,
             || (updateTarget == TaskTarget::Auto && !forceCpuUpdateDefault));
 }
 
-bool decideWhetherDirectGpuCommunicationCanBeUsed(const DevelopmentFeatureFlags& devFlags,
-                                                  bool                           haveMts,
-                                                  bool                           useReplicaExchange,
-                                                  bool                           haveSwapCoords,
-                                                  const gmx::MDLogger&           mdlog)
+bool decideWhetherDirectGpuCommunicationCanBeUsed(gmx::GpuAwareMpiStatus gpuAwareMpiStatus,
+                                                  bool                   haveMts,
+                                                  bool                   useReplicaExchange,
+                                                  bool                   haveSwapCoords,
+                                                  const gmx::MDLogger&   mdlog)
 {
-    const bool buildSupportsDirectGpuComm = (GMX_GPU_CUDA || GMX_GPU_SYCL) && GMX_MPI;
-    if (!buildSupportsDirectGpuComm)
+    // Decide if we have either a supported library MPI build or thread-MPI build
+    const bool isSupportedLibMpiBuild    = (GMX_GPU_CUDA || GMX_GPU_SYCL) && GMX_LIB_MPI;
+    const bool isSupportedThreadMpiBuild = GMX_GPU_CUDA && GMX_THREAD_MPI;
+    // Direct GPU communication is used by default in supported configurations.
+    const bool isSupportedByBuild = isSupportedLibMpiBuild || isSupportedThreadMpiBuild;
+
+    // If the build does not support using the feature, no point in continuing down any further.
+    if (!isSupportedByBuild)
     {
         return false;
     }
 
-    // Direct GPU communication is presently turned off due to insufficient testing
-    const bool enableDirectGpuComm = (getenv("GMX_ENABLE_DIRECT_GPU_COMM") != nullptr)
-                                     || (getenv("GMX_GPU_DD_COMMS") != nullptr)
-                                     || (getenv("GMX_GPU_PME_PP_COMMS") != nullptr);
-
-    if (GMX_THREAD_MPI && GMX_GPU_SYCL && enableDirectGpuComm)
+    // We disable the GPU direct communication if the user requests it
+    const bool isDisabledByUser = getenv("GMX_DISABLE_DIRECT_GPU_COMM") != nullptr;
+    if (isDisabledByUser)
     {
         GMX_LOG(mdlog.warning)
                 .asParagraph()
-                .appendTextFormatted(
-                        "GMX_ENABLE_DIRECT_GPU_COMM environment variable detected, "
-                        "but SYCL does not support direct communications with threadMPI.");
+                .appendText("GPU-direct communication has been disabled by user request.");
+        return false;
+    }
+
+    // Direct GPU comm path is being used with GPU-aware MPI
+    // make sure underlying MPI implementation is GPU-aware
+    // A compatible THREAD MPI build (checked above) is always GPU-aware.
+    bool isSupportedInMpiLibrary = isSupportedThreadMpiBuild;
+
+    if (isSupportedLibMpiBuild)
+    {
+        // Allow overriding the detection for GPU-aware MPI
+        if (getenv("GMX_FORCE_CUDA_AWARE_MPI") != nullptr)
+        {
+            GMX_LOG(mdlog.warning)
+                    .asParagraph()
+                    .appendText(
+                            "GMX_FORCE_CUDA_AWARE_MPI environment variable is inactive. "
+                            "Please use GMX_FORCE_GPU_AWARE_MPI instead.");
+        }
+
+        isSupportedInMpiLibrary = (gpuAwareMpiStatus == gmx::GpuAwareMpiStatus::Supported
+                                   || gpuAwareMpiStatus == gmx::GpuAwareMpiStatus::Forced);
+
+        if (gpuAwareMpiStatus == gmx::GpuAwareMpiStatus::Forced)
+        {
+            // GPU-aware support not detected in MPI library but, user has forced its use
+            GMX_LOG(mdlog.warning)
+                    .asParagraph()
+                    .appendText(
+                            "This run has forced use of 'GPU-aware MPI'. "
+                            "However, GROMACS cannot determine if underlying MPI is GPU-aware. "
+                            "Check the GROMACS install guide for recommendations for GPU-aware "
+                            "support. If you observe failures at runtime, try unsetting the "
+                            "GMX_FORCE_GPU_AWARE_MPI environment variable.");
+        }
+
+        if (isSupportedInMpiLibrary)
+        {
+            GMX_LOG(mdlog.info)
+                    .asParagraph()
+                    .appendText(
+                            "GPU-aware MPI detected, enabling direct GPU communication. "
+                            "If GROMACS crashes at the beginning of the run, try fixing "
+                            "your MPI installation, or set the GMX_DISABLE_DIRECT_GPU_COMM "
+                            "environment variable as a workaround.");
+        }
+        else
+        {
+            GMX_LOG(mdlog.warning)
+                    .asParagraph()
+                    .appendText(
+                            "GPU-aware MPI was not detected, will not use direct GPU "
+                            "communication. Check the GROMACS install guide for "
+                            "recommendations "
+                            "for GPU-aware support. If you are certain about GPU-aware support "
+                            "in your MPI library, you can force its use by setting the "
+                            "GMX_FORCE_GPU_AWARE_MPI environment variable.");
+        }
+    }
+    else
+    {
+        if (getenv("GMX_FORCE_GPU_AWARE_MPI") != nullptr)
+        {
+            // Cannot force use of GPU-aware MPI in this build configuration
+            GMX_LOG(mdlog.info)
+                    .asParagraph()
+                    .appendText(
+                            "A CUDA or SYCL build with an external MPI library is required in "
+                            "order to benefit from GMX_FORCE_GPU_AWARE_MPI. That environment "
+                            "variable is being ignored because such a build is not in use.");
+        }
+    }
+
+    // No point in checking if run is compatible if MPI library is not.
+    if (!isSupportedInMpiLibrary)
+    {
+        return false;
     }
 
     // Now check those flags that may cause, from the user perspective, an unexpected
     // fallback to CPU halo, and report accordingly
     gmx::MessageStringCollector errorReasons;
-    errorReasons.startContext("GPU direct communication can not be activated because:");
+    errorReasons.startContext("Direct GPU communication cannot be activated because:");
     errorReasons.appendIf(haveMts, "MTS is not supported.");
     errorReasons.appendIf(useReplicaExchange, "Replica exchange is not supported.");
     errorReasons.appendIf(haveSwapCoords, "Swap-coords is not supported.");
@@ -811,19 +890,7 @@ bool decideWhetherDirectGpuCommunicationCanBeUsed(const DevelopmentFeatureFlags&
         GMX_LOG(mdlog.warning).asParagraph().appendText(errorReasons.toString());
     }
 
-    bool runUsesCompatibleFeatures = errorReasons.isEmpty();
-
-    bool runAndGpuSupportDirectGpuComm = (runUsesCompatibleFeatures && enableDirectGpuComm);
-
-    // Thread-MPI case on by default, can be disabled with env var.
-    bool canUseDirectGpuCommWithThreadMpi =
-            (runAndGpuSupportDirectGpuComm && GMX_THREAD_MPI && !GMX_GPU_SYCL);
-    // GPU-aware MPI case off by default, can be enabled with dev flag
-    // Note: GMX_DISABLE_DIRECT_GPU_COMM already taken into account in devFlags.enableDirectGpuCommWithMpi
-    bool canUseDirectGpuCommWithMpi = (runAndGpuSupportDirectGpuComm && GMX_LIB_MPI
-                                       && devFlags.canUseGpuAwareMpi && enableDirectGpuComm);
-
-    return canUseDirectGpuCommWithThreadMpi || canUseDirectGpuCommWithMpi;
+    return errorReasons.isEmpty();
 }
 
 bool decideWhetherToUseGpuForHalo(bool                 havePPDomainDecomposition,

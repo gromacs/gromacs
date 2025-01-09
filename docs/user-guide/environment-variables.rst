@@ -225,11 +225,9 @@ Performance and Run Control
         emulate GPU runs by using algorithmically equivalent CPU reference code instead of
         GPU-accelerated functions. As the CPU code is slow, it is intended to be used only for debugging purposes.
 
-``GMX_ENABLE_DIRECT_GPU_COMM``
-        Enable direct GPU communication in multi-rank parallel runs.
-        Note that domain decomposition with GPU-aware MPI does not support
-        multiple pulses along the second and third decomposition dimension,
-        so for very small systems the feature will be disabled internally.
+``GMX_DISABLE_DIRECT_GPU_COMM``
+        Disables the direct GPU communication in multi-rank parallel runs
+        even when build and simulation setup support it.
 
 ``GMX_ENABLE_STAGED_GPU_TO_CPU_PMEPP_COMM``
         Use a staged implementation of GPU communications for PME force
@@ -262,7 +260,7 @@ Performance and Run Control
         Force update to run on the CPU by default, makes the ``mdrun -update auto`` behave as ``-update cpu``.
 
 ``GMX_GPU_DD_COMMS``
-        Removed, use GMX_ENABLE_DIRECT_GPU_COMM instead.
+        Removed.
 
 ``GMX_GPU_DISABLE_COMPATIBILITY_CHECK``
         Disables the hardware compatibility check in OpenCL and SYCL. Useful for developers
@@ -296,7 +294,7 @@ Performance and Run Control
         tasks on the CPU instead.
 
 ``GMX_GPU_PME_PP_COMMS``
-        Removed, use GMX_ENABLE_DIRECT_GPU_COMM instead.
+        Removed.
 
 ``GMX_GPUTASKS``
         set in the same way as ``mdrun -gputasks``, ``GMX_GPUTASKS`` allows the mapping

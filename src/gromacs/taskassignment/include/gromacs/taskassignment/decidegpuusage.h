@@ -52,6 +52,7 @@ enum class PmeRunMode;
 namespace gmx
 {
 
+enum class GpuAwareMpiStatus : int;
 class MDLogger;
 
 //! Record where a compute task is targetted.
@@ -78,8 +79,6 @@ enum class EmulateGpuNonbonded : bool
  */
 struct DevelopmentFeatureFlags
 {
-    //! True if the GPU-aware MPI can be used for GPU direct communication feature
-    bool canUseGpuAwareMpi = false;
     //! True if GPU PME-decomposition is enabled
     bool enableGpuPmeDecomposition = false;
     //! True if CUDA Graphs are enabled
@@ -311,7 +310,7 @@ bool decideWhetherToUseGpuForUpdate(bool                 isDomainDecomposition,
  * The final decision whether the run will use direct communication for either of the features
  * which rely on it is made during task assignment / simulationWorkload initialization.
  *
- * \param[in]  devFlags                     GPU development / experimental feature flags.
+ * \param[in]  mpiStatus                    Information about GPU-aware availability
  * \param[in]  haveMts                      Whether the simulation uses multiple time stepping
  * \param[in]  useReplicaExchange           Whether replica exchange is used
  * \param[in]  haveSwapCoords               Whether the swap-coords functionality is active
@@ -319,11 +318,11 @@ bool decideWhetherToUseGpuForUpdate(bool                 isDomainDecomposition,
  *
  * \returns    Whether the MPI-parallel runs can use direct GPU communication.
  */
-bool decideWhetherDirectGpuCommunicationCanBeUsed(const DevelopmentFeatureFlags& devFlags,
-                                                  bool                           haveMts,
-                                                  bool                           useReplicaExchange,
-                                                  bool                           haveSwapCoords,
-                                                  const gmx::MDLogger&           mdlog);
+bool decideWhetherDirectGpuCommunicationCanBeUsed(gmx::GpuAwareMpiStatus mpiStatus,
+                                                  bool                   haveMts,
+                                                  bool                   useReplicaExchange,
+                                                  bool                   haveSwapCoords,
+                                                  const gmx::MDLogger&   mdlog);
 
 /*! \brief Decide whether to use GPU for halo exchange.
  *
