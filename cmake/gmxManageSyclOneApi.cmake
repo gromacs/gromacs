@@ -224,8 +224,18 @@ if(GMX_DPCPP_HAVE_CUDA_TARGET OR GMX_DPCPP_HAVE_HIP_TARGET)
     endif()
     # Following flag enables extra optimization for AMD GPUs. More details available at
     # https://developer.codeplay.com/products/oneapi/amd/2025.0.0/guides/performance/common-optimizations#amdgpu-unsafe-atomics
-    if(GMX_DPCPP_HAVE_HIP_TARGET)
-        list(APPEND SYCL_TOOLCHAIN_CXX_FLAGS "-mllvm=--amdgpu-oclc-unsafe-fp-atomics=true")
+    if (GMX_DPCPP_HAVE_HIP_TARGET)
+        set(OCLC_UNSAFE_FP_ATOMICS_FLAG "-mllvm=--amdgpu-oclc-unsafe-fp-atomics=true")
+        list(JOIN SYCL_TOOLCHAIN_CXX_FLAGS " " SYCL_TOOLCHAIN_CXX_FLAGS_STR)
+        gmx_check_source_compiles_with_flags(
+            "${SAMPLE_SYCL_KERNEL_PROBE_SOURCE}"  # To check -mllvm= flags, we need to trigger the kernel pass
+            "${SYCL_TOOLCHAIN_CXX_FLAGS_STR} ${OCLC_UNSAFE_FP_ATOMICS_FLAG}"
+            "CXX"
+            OCLC_UNSAFE_FP_ATOMICS_FLAG_RESULT
+        )
+        if (OCLC_UNSAFE_FP_ATOMICS_FLAG_RESULT)
+            list(APPEND SYCL_TOOLCHAIN_CXX_FLAGS "${OCLC_UNSAFE_FP_ATOMICS_FLAG}")
+        endif()
     endif()
 endif()
 
