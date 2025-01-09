@@ -389,7 +389,7 @@ Using oneMKL Interface Library
 
 The oneMKL interface library enables the SYCL backend for |Gromacs| with cuFFT, rocFFT,
 or closed-source oneMKL using Intel DPC++ and Codeplay's plugins for NVIDIA and AMD GPUs.
-To use, Intel DPC++ must be installed (>= 2023.2.0), along with Codeplay's plugins for NVIDIA
+To use, Intel DPC++ must be installed along with Codeplay's plugins for NVIDIA
 and AMD GPUs as required, and CUDA and/or ROCm as required. The environment should be initialized
 as with the MKL instructions above.
 
@@ -406,9 +406,8 @@ Using double-batched FFT library
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Generally MKL will provide better performance on Intel GPUs, however
-this alternative open-source library from Intel
-(https://github.com/intel/double-batched-fft-library) is useful for
-very large FFT sizes in |Gromacs|.
+this `alternative open-source library from Intel <https://github.com/intel/double-batched-fft-library>`_
+is useful for very large FFT sizes in |Gromacs|.
 
 ::
 
@@ -971,13 +970,13 @@ There is also experimental support for:
 
 In table form:
 
-==========  ======================  ========================================================================================================
-GPU vendor  AdaptiveCpp_ (hipSYCL)  `Intel oneAPI DPC++`_
-==========  ======================  ========================================================================================================
-Intel       not supported           supported
-AMD         supported               experimental (requires `Codeplay plugin <https://developer.codeplay.com/products/oneapi/amd/home/>`_)
-NVIDIA      experimental            experimental (requires `Codeplay plugin <https://developer.codeplay.com/products/oneapi/nvidia/home/>`__)
-==========  ======================  ========================================================================================================
+==========  =============  =========================================================================================================
+GPU vendor  AdaptiveCpp_   `Intel oneAPI DPC++`_
+==========  =============  =========================================================================================================
+Intel       not supported  supported
+AMD         supported      experimental (requires `Codeplay plugin <https://developer.codeplay.com/products/oneapi/amd/home/>`_)
+NVIDIA      experimental   experimental (requires `Codeplay plugin <https://developer.codeplay.com/products/oneapi/nvidia/home/>`__)
+==========  =============  =========================================================================================================
 
 Here, "experimental support" means that the combination has received limited testing and is expected to work
 (with possible limitations), but is not recommended for production use.
@@ -999,9 +998,7 @@ SYCL GPU acceleration for Intel GPUs
 """"""""""""""""""""""""""""""""""""
 
 You should install the recent `Intel oneAPI DPC++`_ compiler toolkit.
-For |Gromacs| 2024, oneAPI version 2023.2 or 2024.0 are tested regularly and are
-recommended, although later versions might work and can offer better performance.
-The earliest supported version is oneAPI 2023.0.
+For |Gromacs| 2025, version 2025.0 is recommended, and 2024.0 is the earliest supported.
 Using open-source `Intel LLVM <https://github.com/intel/llvm>`_ is possible,
 but not extensively tested. We also recommend installing the most recent
 `Neo driver <https://github.com/intel/compute-runtime/releases>`_.
@@ -1032,8 +1029,8 @@ You might also consider using :ref:`double-batched FFT library <bbfft installati
 SYCL GPU acceleration for AMD GPUs
 """"""""""""""""""""""""""""""""""
 
-Using `AdaptiveCpp 23.10.0 <https://github.com/AdaptiveCpp/AdaptiveCpp/releases/tag/v23.10.0>`_
-and ROCm 5.3-5.7 is recommended. The earliest supported version is hipSYCL 0.9.4.
+Using `AdaptiveCpp 24.02.0 <https://github.com/AdaptiveCpp/AdaptiveCpp/releases/tag/v24.02.0>`_
+and ROCm 5.7-6.2 is recommended. The earliest supported version is AdaptiveCpp 23.10.
 
 We strongly recommend using the clang compiler bundled
 with ROCm for building both AdaptiveCpp and |Gromacs|. Mainline Clang releases can also work.
@@ -1048,27 +1045,22 @@ is set correctly, e.g. to ``/opt/rocm`` in the case of default installation):
             -DCMAKE_CXX_COMPILER=${ROCM_PATH}/llvm/bin/clang++ \
             -DLLVM_DIR=${ROCM_PATH}/llvm/lib/cmake/llvm/
 
-If ROCm 5.0 or earlier is used, AdaptiveCpp might require
-`additional build flags <https://github.com/AdaptiveCpp/AdaptiveCpp/blob/v0.9.4/doc/install-rocm.md>`_.
-Using hipSYCL 0.9.4 with ROCm 5.7+ / Clang 17+ might also require
-`extra workarounds <https://github.com/AdaptiveCpp/AdaptiveCpp/wiki/Build-instructions-for-old-versions#hipsycl-094>`_.
-
 After compiling and installing AdaptiveCpp, the following settings can be used for
-building |Gromacs| itself (set ``HIPSYCL_TARGETS`` to the target hardware):
+building |Gromacs| itself (set ``ACPP_TARGETS`` to the target hardware):
 
 ::
 
    cmake .. -DCMAKE_C_COMPILER=${ROCM_PATH}/llvm/bin/clang \
             -DCMAKE_CXX_COMPILER=${ROCM_PATH}/llvm/bin/clang++ \
-            -DGMX_GPU=SYCL -DGMX_SYCL=ACPP -DHIPSYCL_TARGETS='hip:gfxXYZ'
+            -DGMX_GPU=SYCL -DGMX_SYCL=ACPP -DACPP_TARGETS='hip:gfxXYZ'
 
 Multiple target architectures can be specified, e.g.,
-``-DHIPSYCL_TARGETS='hip:gfx908,gfx90a'``. Having both RDNA (``gfx1xyz``)
+``-DACPP_TARGETS='hip:gfx908,gfx90a'``. Having both RDNA (``gfx1xyz``)
 and GCN/CDNA (``gfx9xx``) devices in the same build is possible but will incur
 a minor performance penalty compared to building for GCN/CDNA devices only.
 If you have multiple AMD GPUs of different generations in the same system
 (e.g., integrated APU and a discrete GPU) the ROCm runtime requires code to be available
-for each device at runtime, so you need to specify every device in ``HIPSYCL_TARGETS``
+for each device at runtime, so you need to specify every device in ``ACPP_TARGETS``
 when compiling to avoid ROCm crashes at initialization.
 
 By default, `VkFFT <https://github.com/DTolm/VkFFT>`_  is used to perform FFT on GPU.
@@ -1716,7 +1708,7 @@ nvcxx version 24.7
 HIP version 5.7.1 and 6.2.2
 AdaptiveCPP 23.10 and 24.02 with ROCm 5.7.1 and 6.2 (respectively),
 and
-oneAPI version 2024.0 and 2024.2 (including CUDA 12.0.1 and ROCm 6.1.3 backends) .
+oneAPI version 2024.0 and 2024.2 (including CUDA 12.0.1 and ROCm 6.1.3 backends).
 
 For this testing, we use Ubuntu 22.04 and 24.04 operating systems.
 Other compiler, library, and OS versions are tested less frequently.

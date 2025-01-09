@@ -24,43 +24,37 @@ AMD and NVIDIA GPUs can also be used with Intel oneAPI BaseKit and Codeplay oneA
 For most users, we recommend using :ref:`CUDA <CUDA GPU acceleration>` for NVIDIA GPUs and
 :ref:`AdaptiveCpp <SYCL GPU acceleration AMD>` for AMD GPUs instead.
 
-With some versions of oneAPI, you might receive "The compiler you are using does not support OpenMP parallelism"
-error from CMake. In this case, please add the following options to your CMake command:
-
-- For oneAPI 2024.x: ``-DCMAKE_C_FLAGS="-isystem /opt/intel/oneapi/compiler/latest/opt/compiler/include"  -DCMAKE_CXX_FLAGS="-isystem /opt/intel/oneapi/compiler/latest/opt/compiler/include"``
-- For oneAPI 2023.x: ``-DCMAKE_C_FLAGS="-isystem /opt/intel/oneapi/compiler/latest/linux/compiler/include"  -DCMAKE_CXX_FLAGS="-isystem /opt/intel/oneapi/compiler/latest/linux/compiler/include"``
-
 AMD GPUs
 """"""""
 
-After installing Intel oneAPI toolkit 2023.0 or newer, a compatible ROCm version,
+After installing Intel oneAPI toolkit 2024.0 or newer, a compatible ROCm version,
 and the `Codeplay plugin <https://developer.codeplay.com/products/oneapi/amd/home/>`_,
-set up the environment by running ``source /opt/intel/oneapi/setvars.sh --include-intel-llvm``
+set up the environment by running ``source /opt/intel/oneapi/setvars.sh``
 or loading an appropriate :command:`module load` on an HPC system.
 
 Then, configure |Gromacs| using the following command (replace ``gfxXYZ`` with the target architecture):
 
 ::
 
-   cmake .. -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ \
+   cmake .. -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icpx \
             -DGMX_GPU=SYCL -DGMX_SYCL=DPCPP \
             -DGMX_GPU_NB_CLUSTER_SIZE=8 -DGMX_GPU_FFT_LIBRARY=vkfft \
-            -DSYCL_CXX_FLAGS_EXTRA='-fsycl-targets=amdgcn-amd-amdhsa;-Xsycl-target-backend;--offload-arch=gfxXYZ'
+            -DSYCL_CXX_FLAGS_EXTRA='-fsycl-targets=amd_gpu_gfxXYZ'
 
 
 NVIDIA GPUs
 """""""""""
 
-After installing Intel oneAPI toolkit 2023.0 or newer, a compatible CUDA version,
+After installing Intel oneAPI toolkit 2024.0 or newer, a compatible CUDA version,
 and the `Codeplay plugin <https://developer.codeplay.com/products/oneapi/nvidia/home/>`__,
-set up the environment by running ``source /opt/intel/oneapi/setvars.sh --include-intel-llvm``
+set up the environment by running ``source /opt/intel/oneapi/setvars.sh``
 or loading an appropriate :command:`module load` on an HPC system.
 
  Then, configure |Gromacs| using the following command:
 
 ::
 
-   cmake .. -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ \
+   cmake .. -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icpx \
             -DGMX_GPU=SYCL -DGMX_SYCL=DPCPP \
             -DGMX_GPU_NB_CLUSTER_SIZE=8 -DGMX_GPU_FFT_LIBRARY=vkfft \
             -DSYCL_CXX_FLAGS_EXTRA=-fsycl-targets=nvptx64-nvidia-cuda
@@ -74,9 +68,8 @@ Possible values are given in the `DPC++ user manual <https://intel.github.io/llv
 
 .. _install guide exotic adaptivecpp:
 
-SYCL GPU acceleration for NVIDIA GPUs using AdaptiveCpp (hipSYCL)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
+SYCL GPU acceleration for NVIDIA GPUs using AdaptiveCpp
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 For most users, we recommend using :ref:`CUDA <CUDA GPU acceleration>` for NVIDIA GPUs.
 
@@ -88,7 +81,7 @@ instead of ``sm_XY``):
 ::
 
    cmake .. -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ \
-            -DGMX_GPU=SYCL -DGMX_SYCL=ACPP -DHIPSYCL_TARGETS='cuda:sm_XY'
+            -DGMX_GPU=SYCL -DGMX_SYCL=ACPP -DACPP_TARGETS='cuda:sm_XY'
 
 .. _install guide static linking:
 
