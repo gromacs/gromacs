@@ -40,16 +40,14 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
-
-#if GMX_TORCH
-#    include "gromacs/applied_forces/nnpot/torchmodel.h"
-#endif
+#include "nnpotoptions.h"
 
 #include "gromacs/domdec/localatomset.h"
 #include "gromacs/domdec/localatomsetmanager.h"
 #include "gromacs/fileio/warninp.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/enerdata.h"
+#include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/optionsection.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -62,8 +60,11 @@
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
 
-#include "nnpotoptions.h"
 #include "nnpottopologypreprocessor.h"
+
+#if GMX_TORCH
+#    include "gromacs/applied_forces/nnpot/torchmodel.h"
+#endif
 
 namespace gmx
 {
@@ -294,9 +295,6 @@ void NNPotOptions::writeParamsToKvt(KeyValueTreeObjectBuilder treeBuilder)
         return;
     }
 
-    // check that the model and model inputs are valid
-    checkNNPotModel();
-
     // Write input atom indices
     auto GroupIndexAdder =
             treeBuilder.addUniformArray<std::int64_t>(c_nnpotModuleName + "-" + c_inputGroupTag_);
@@ -311,6 +309,9 @@ void NNPotOptions::writeParamsToKvt(KeyValueTreeObjectBuilder treeBuilder)
     {
         GroupIndexAdder.addValue(indexValue);
     }
+
+    // check that the model and model inputs are valid
+    checkNNPotModel();
 }
 
 void NNPotOptions::readParamsFromKvt(const KeyValueTreeObject& tree)
@@ -388,6 +389,9 @@ void NNPotOptions::setWarninp(WarningHandler* wi)
     wi_ = wi;
 }
 
+#if !GMX_TORCH
+[[noreturn]]
+#endif
 void NNPotOptions::checkNNPotModel()
 {
 #if GMX_TORCH
@@ -455,20 +459,43 @@ void NNPotOptions::checkNNPotModel()
         GMX_THROW(InconsistentInputError("No inputs to NN model provided."));
     }
 
+    GMX_ASSERT(wi_, "WarningHandler not set.");
     try
     {
+        // might throw a runtime error if the model is not compatible with the dummy input
         model->evaluateModel();
+
+        // prepare dummy output
+        std::vector<int>  indices(1, 0);
+        gmx_enerdata_t    enerd(1, nullptr);
+        std::vector<RVec> forcesVec(1, RVec({ 0.0, 0.0, 0.0 }));
+        ArrayRef<RVec>    forces(forcesVec);
+        model->getOutputs(indices, enerd, forces, params_.providesForces_);
     }
-    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
+    catch (const GromacsException& e)
+    {
+        // rethrow exceptions issued by our code
+        throw;
+    }
+    catch (const std::exception& e)
+    {
+        // we only issue a warning here instead of throwing an error, as a torch runtime error might
+        // simply be due to mismatched dummy input shapes
+        wi_->addWarning("There was an error while checking NN model with a dummy input: " + std::string(e.what()) + "\n"
+                        "I can't verify that the model works correctly. This might lead to errors during mdrun.");
+    }
 
     // check if first input is atom_positions
     if ((params_.modelInput_[0] != "atom_positions") && !(params_.providesForces_))
     {
-        GMX_ASSERT(wi_, "WarningHandler not set.");
         wi_->addWarning("Gradients will be computed with respect to first input to NN model "
                         + params_.modelInput_[0] + " instead of atom positions. Is this intended?");
     }
 
+#else
+    GMX_THROW(InternalError(
+            "Libtorch/NN backend is not linked into GROMACS, NNPot simulation is not possible."
+            " Please, reconfigure GROMACS with -DGMX_TORCH=ON\n"));
 #endif // GMX_TORCH
 }
 

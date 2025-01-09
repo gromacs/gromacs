@@ -42,6 +42,8 @@
 #ifndef GMX_APPLIED_FORCES_NNPOTOPTIONS_H
 #define GMX_APPLIED_FORCES_NNPOTOPTIONS_H
 
+#include "config.h"
+
 #include <string>
 
 #include "gromacs/math/vectypes.h"
@@ -168,8 +170,12 @@ public:
     const MDLogger* logger();
 
 private:
-    //! Make sure that model and model inputs are compatible
-    void checkNNPotModel();
+//! Make sure that model and model inputs are compatible
+#if !GMX_TORCH
+    [[noreturn]] static
+#endif
+            void
+            checkNNPotModel();
 
     /*! \brief Following Tags denotes names of parameters from .mdp file
      * \note Changing this strings will break .tpr backwards compability

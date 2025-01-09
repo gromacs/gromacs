@@ -46,6 +46,7 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/domdec/localatomset.h"
+#include "gromacs/fileio/warninp.h"
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/treesupport.h"
@@ -108,6 +109,7 @@ public:
         mdpValueBuilder.rootObject().addValue(
                 c_nnpotModuleName + "-modelfile",
                 gmx::test::TestFileManager::getInputFilePath("model.pt").string());
+        mdpValueBuilder.rootObject().addValue(c_nnpotModuleName + "-provides_forces", std::string("true"));
         mdpValueBuilder.rootObject().addValue(c_nnpotModuleName + "-model_input1",
                                               std::string("atom_positions"));
         mdpValueBuilder.rootObject().addValue(c_nnpotModuleName + "-model_input2",
@@ -209,9 +211,11 @@ TEST_F(NNPotOptionsTest, InternalsToKvtAndBack)
     const IndexGroupsAndNames indexGroupAndNames = indexGroupsAndNamesGeneric();
     nnpotOptions_.setInputGroupIndices(indexGroupAndNames);
 
-    // Set dummy logger
+    // Set dummy logger and warning handler
     MDLogger logger;
     nnpotOptions_.setLogger(logger);
+    WarningHandler warninp(true, 0);
+    nnpotOptions_.setWarninp(&warninp);
 
     // Copy internal parameters
     const NNPotParameters& params           = nnpotOptions_.parameters();
@@ -219,15 +223,22 @@ TEST_F(NNPotOptionsTest, InternalsToKvtAndBack)
     auto                   mmIndicesBefore  = params.mmIndices_;
 
     KeyValueTreeBuilder builder;
-    nnpotOptions_.writeParamsToKvt(builder.rootObject());
-    const auto inputTree = builder.build();
+    if (GMX_TORCH)
+    {
+        EXPECT_NO_THROW(nnpotOptions_.writeParamsToKvt(builder.rootObject()));
+        const auto inputTree = builder.build();
 
-    nnpotOptions_.readParamsFromKvt(inputTree);
+        EXPECT_NO_THROW(nnpotOptions_.readParamsFromKvt(inputTree));
 
-    // Check Internal parameters taken back from KVT
-    const NNPotParameters& params2 = nnpotOptions_.parameters();
-    EXPECT_EQ(inpIndicesBefore, params2.inpIndices_);
-    EXPECT_EQ(mmIndicesBefore, params2.mmIndices_);
+        // Check Internal parameters taken back from KVT
+        const NNPotParameters& params2 = nnpotOptions_.parameters();
+        EXPECT_EQ(inpIndicesBefore, params2.inpIndices_);
+        EXPECT_EQ(mmIndicesBefore, params2.mmIndices_);
+    }
+    else
+    {
+        EXPECT_ANY_THROW(nnpotOptions_.writeParamsToKvt(builder.rootObject()));
+    }
 }
 
 } // namespace test
