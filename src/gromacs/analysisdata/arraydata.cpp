@@ -58,9 +58,8 @@ namespace gmx
 {
 
 AbstractAnalysisArrayData::AbstractAnalysisArrayData() :
-    rowCount_(0), pointSetInfo_(0, 0, 0, 0), xstep_(1.0), bUniformX_(true), bReady_(false)
+    rowCount_(0), pointSetInfo_(0, 0, 0, 0), xstart_(0.0), xstep_(1.0), bUniformX_(true), bReady_(false)
 {
-    xvalue_.push_back(0);
 }
 
 AbstractAnalysisArrayData::~AbstractAnalysisArrayData() {}
@@ -103,7 +102,7 @@ void AbstractAnalysisArrayData::setRowCount(int rowCount)
     {
         for (int i = rowCount_; i < rowCount; ++i)
         {
-            xvalue_[i] = xvalue_[0] + i * xstep_;
+            xvalue_[i] = xstart_ + i * xstep_;
         }
     }
     rowCount_ = rowCount;
@@ -127,7 +126,7 @@ void AbstractAnalysisArrayData::allocateValues()
 void AbstractAnalysisArrayData::setXAxis(real start, real step)
 {
     GMX_RELEASE_ASSERT(!bReady_, "X axis cannot be set after data is finished");
-    xvalue_[0] = start;
+    xstart_    = start;
     xstep_     = step;
     bUniformX_ = true;
     for (int i = 0; i < rowCount_; ++i)
@@ -149,6 +148,7 @@ void AbstractAnalysisArrayData::setXAxisValue(int row, real value)
         xvalue_.resize(row + 1);
     }
     bUniformX_   = false;
+    xstart_      = 0.0;
     xstep_       = 0.0;
     xvalue_[row] = value;
 }
@@ -185,6 +185,7 @@ void AbstractAnalysisArrayData::copyContents(const AbstractAnalysisArrayData* sr
     dest->setColumnCount(src->columnCount());
     dest->setRowCount(src->rowCount());
     dest->allocateValues();
+    dest->xstart_    = src->xstart_;
     dest->xstep_     = src->xstep_;
     dest->bUniformX_ = src->bUniformX_;
     std::copy(src->xvalue_.begin(), src->xvalue_.end(), dest->xvalue_.begin());

@@ -63,6 +63,12 @@ namespace gmx
  * Public accessor methods in this class do not throw, but assert if data is
  * accessed before it is available.
  *
+ * The x axis defaults to one with uniform spacing between values,
+ * which caters to a typical case of e.g. a time series equally spaced
+ * in time across a series of trajectory frames. However, non-uniform
+ * cases are supported via setXAxisValue(), which can be useful when
+ * handling other kinds of data.
+ *
  * \todo
  * Add support for multiple data sets.
  *
@@ -85,9 +91,7 @@ public:
     int rowCount() const { return rowCount_; }
     //! Returns true if values have been allocated.
     bool isAllocated() const { return !value_.empty(); }
-    //! Returns the x value of the first frame.
-    real xstart() const { return xvalue_[0]; }
-    //! Returns the step between frame x values.
+    //! Returns the step between frame x values when the x axis is uniform.
     real xstep() const
     {
         GMX_ASSERT(bUniformX_, "Accessing x step for non-uniform data");
@@ -133,6 +137,10 @@ protected:
      *
      * Cannot be called after allocateValues().
      *
+     * Cannot be called after setXAxisValues() made a non-uniform X
+     * axis unless \c ncols equals the largest such X-axis value
+     * previously set.
+     *
      * Does not throw.
      */
     void setRowCount(int rowCount);
@@ -149,6 +157,8 @@ protected:
     /*! \brief
      * Sets the values reported as x values for frames.
      *
+     * Afterwards, the X axis is uniform.
+     *
      * \param[in] start  x value for the first frame.
      * \param[in] step   Step between x values of successive frames.
      *
@@ -161,8 +171,16 @@ protected:
     /*! \brief
      * Sets a single value reported as x value for frames.
      *
+     * Afterwards, the X axis is non-uniform. Can be used to adjust
+     * the values of an X axis created with setXAxis().
+     *
+     * The row count is never changed, and might need to be managed
+     * explicitly with setRowCount() if needed.
+     *
      * \param[in] row    Row/frame for which to set the value.
      * \param[in] value  x value for the frame specified by \p row.
+     *
+     * When the row count is already set, \c row must be in range.
      *
      * Must not be called after valuesReady().
      *
@@ -204,13 +222,21 @@ private:
     AnalysisDataFrameRef tryGetDataFrameInternal(int index) const override;
     bool                 requestStorageInternal(int nframes) override;
 
-    int                            rowCount_;
-    AnalysisDataPointSetInfo       pointSetInfo_;
+    //! The number of rows
+    int                      rowCount_;
+    AnalysisDataPointSetInfo pointSetInfo_;
+    //! The values of the columns of data
     std::vector<AnalysisDataValue> value_;
-    std::vector<real>              xvalue_;
-    real                           xstep_;
-    bool                           bUniformX_;
-    bool                           bReady_;
+    //! The values of the X axis
+    std::vector<real> xvalue_;
+    //! Starting value for a uniform X axis
+    real xstart_;
+    //! Interval between x values for a uniform X axis
+    real xstep_;
+    //! Whether the X axis is uniform
+    bool bUniformX_;
+    //! Whether the data set is ready, ie. valuesReady() has been called
+    bool bReady_;
 
     // Copy and assign disallowed by base.
 };
