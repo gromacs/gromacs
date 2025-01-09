@@ -529,18 +529,30 @@ reduceEnergyWarpShuffle(float localLJ, float localEl, float* gm_LJ, float* gm_El
     localLJ += amdDppUpdateShfl<float, 0x4e>(localLJ);
     localEl += amdDppUpdateShfl<float, 0x4e>(localEl);
 
+    // DPP: row_shr:4
     localLJ += amdDppUpdateShfl<float, 0x114>(localLJ);
     localEl += amdDppUpdateShfl<float, 0x114>(localEl);
 
+    // DPP: row_shr:8
     localLJ += amdDppUpdateShfl<float, 0x118>(localLJ);
     localEl += amdDppUpdateShfl<float, 0x118>(localEl);
-    if constexpr (sc_gpuParallelExecutionWidth(pairlistType) == 64)
+
+    // only CDNA (wave64) devices support broadcasts
+    // so we can only use those dpp instructions on devices
+    // with wave64 (aka CDNA)
+    if constexpr (warpSize == 64)
     {
+        // DPP: row_bcast15 (Broadcast thread 15 of each row to next row)
         localLJ += amdDppUpdateShfl<float, 0x142>(localLJ);
         localEl += amdDppUpdateShfl<float, 0x142>(localEl);
 
-        localLJ += amdDppUpdateShfl<float, 0x143>(localLJ);
-        localEl += amdDppUpdateShfl<float, 0x143>(localEl);
+        if constexpr (sc_gpuParallelExecutionWidth(pairlistType) == 64)
+        {
+
+            // DPP: row_bcast31 (Broadcast thread 31 to rows 2 and 3)
+            localLJ += amdDppUpdateShfl<float, 0x143>(localLJ);
+            localEl += amdDppUpdateShfl<float, 0x143>(localEl);
+        }
     }
     else
     {
