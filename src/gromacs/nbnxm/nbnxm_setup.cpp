@@ -53,6 +53,7 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/gpu_utils/hostallocator.h"
+#include "gromacs/hardware/architecture.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/calc_verletbuf.h"
@@ -332,9 +333,12 @@ static NbnxmKernelSetup pick_nbnxn_kernel(const gmx::MDLogger&     mdlog,
                                      sc_gpuNumClusterPerCellZ(gpuPairlistType));
     }
 
-    if (NbnxmKernelType::Cpu4x4_PlainC == kernelSetup.kernelType
-        || NbnxmKernelType::Cpu1x1_PlainC == kernelSetup.kernelType
-        || NbnxmKernelType::Cpu8x8x8_PlainC == kernelSetup.kernelType)
+    // Warn when using non-SIMD CPU kernels on architectures with (fast) SIMD support
+    const bool haveSimdSupportForArch =
+            (c_architecture == Architecture::X86 || c_architecture == Architecture::Arm
+             || c_architecture == Architecture::PowerPC);
+    if (kernelTypeUsesSimplePairlist(kernelSetup.kernelType)
+        && !kernelTypeIsSimd(kernelSetup.kernelType) && haveSimdSupportForArch)
     {
         GMX_LOG(mdlog.warning)
                 .asParagraph()
