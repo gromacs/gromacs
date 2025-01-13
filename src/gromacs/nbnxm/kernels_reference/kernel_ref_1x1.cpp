@@ -59,6 +59,11 @@ namespace gmx
 #define UNROLLI 1
 #define UNROLLJ 1
 
+// Help the compiler to vectorize the j-loop.
+// This likely only works with clang, as we use a clang pragma to indicate safety.
+// Note that to increase the loop length, exclusions will be checked for all pairs.
+#define VECTORIZE_JLOOP GMX_ENABLE_NBNXM_CPU_VECTORIZATION
+
 static_assert(UNROLLI == sc_iClusterSize(NbnxmKernelType::Cpu1x1_PlainC),
               "Unroll size should match that of of the kernel type");
 

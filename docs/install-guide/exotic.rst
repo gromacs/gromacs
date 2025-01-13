@@ -126,3 +126,14 @@ so it is strongly recommended that you build |Gromacs| with
 ``-DGMX_HWLOC=on`` and ensure that the ``CMAKE_PREFIX_PATH`` includes
 the path where the hwloc headers and libraries can be found. At least
 version 1.11.8 of hwloc is recommended.
+
+RISC-V with VEC unit
+~~~~~~~~~~~~~~~~~~~~
+
+GROMACS runs on RISC-V. The non-bonded kernel can be ran on the VEC vector unit,
+when available. To enable this, add ``-DENABLE_NBNXM_CPU_VECTORIZATION=on`` to
+the ``CMAKE_CXX_FLAGS``. A clang compiler is required with version >=19.
+If you want to check which loops have been vectorized, add
+``-Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize``
+to the ``CMAKE_CXX_FLAGS``. When calling ``gmx mdrun``, set the
+``GMX_NBNXN_PLAINC_1X1`` environment variable to choose the correct kernel.

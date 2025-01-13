@@ -59,6 +59,9 @@ namespace gmx
 #define UNROLLI 4
 #define UNROLLJ 4
 
+// No vectorization of the j-loop possible for the 4x4 kernel
+#define VECTORIZE_JLOOP 0
+
 static_assert(UNROLLI == sc_iClusterSize(NbnxmKernelType::Cpu4x4_PlainC),
               "Unroll size should match that of of the kernel type");
 

@@ -497,6 +497,9 @@
 /* Use Interactive Molecular Dynamics */
 #cmakedefine01 GMX_IMD
 
+/* Enable vectorization of the 1x1 non-SIMD non-bonded kernel */
+#cmakedefine01 GMX_ENABLE_NBNXM_CPU_VECTORIZATION
+
 /*! \endcond */
 
 #endif
