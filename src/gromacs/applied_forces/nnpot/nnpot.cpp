@@ -156,6 +156,11 @@ public:
         const auto setPBCTypeFunction = [this](const PbcType& pbc) { nnpotOptions_.setPbcType(pbc); };
         notifier->simulationSetupNotifier_.subscribe(setPBCTypeFunction);
 
+        // Add NN output to energy file
+        const auto requestEnergyOutput = [](MDModulesEnergyOutputToNNPotRequestChecker* energyOutputRequest)
+        { energyOutputRequest->energyOutputToNNPot_ = true; };
+        notifier->simulationSetupNotifier_.subscribe(requestEnergyOutput);
+
         // Set Logger during simulation setup
         const auto setLoggerFunction = [this](const MDLogger& logger)
         { nnpotOptions_.setLogger(logger); };

@@ -214,9 +214,9 @@ void TorchModel::getOutputs(std::vector<int>&     indices,
             energyTensor.backward();
             forceTensor = -1. * inputs_[0].toTensor().grad().to(torch::kCPU);
         }
-        // accumulate energy
-        energyTensor = energyTensor.to(torchRealType).to(torch::kCPU);
-        enerd.term[F_EPOT] += energyTensor.item<real>();
+        // set energy
+        energyTensor         = energyTensor.to(torchRealType).to(torch::kCPU);
+        enerd.term[F_ENNPOT] = energyTensor.item<real>();
 
         forceTensor = forceTensor.to(torchRealType).to(torch::kCPU);
     }
