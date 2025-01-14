@@ -154,7 +154,7 @@ SimulationWorkload createSimulationWorkload(const gmx::MDLogger& mdlog,
     // SYCL Graph API only captures work submitted to the SYCL queue.
     // Disallow use of native FFT libraries until ext_codeplay_enqueue_native_command is used.
     constexpr bool haveSyclWithGraphIncompatibleGpuFftLibrary =
-            GMX_GPU_SYCL && !(GMX_GPU_FFT_BBFFT || GMX_GPU_FFT_MKL || GMX_GPU_FFT_ONEMKL);
+            GMX_GPU_SYCL && !(GMX_GPU_FFT_BBFFT || GMX_GPU_FFT_MKL || GMX_GPU_FFT_ONEMATH);
     simulationWorkload.useMdGpuGraph =
             devFlags.enableCudaGraphs && useGpuForUpdate
             && (simulationWorkload.haveSeparatePmeRank ? simulationWorkload.useGpuPmePpCommunication : true)

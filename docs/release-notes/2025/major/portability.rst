@@ -16,8 +16,8 @@ be offloaded to the device using this backend.
 
 :issue:`4947`
 
-Added support for the oneMKL interface library for GPU FFTs
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Added support for the oneMath interface library for GPU FFTs
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 This enables cross-vendor support for GPU FFTs to the |Gromacs|
 SYCL backend. Either cuFFT or rocFFT can now be used with

@@ -63,7 +63,7 @@ class DeviceContext;
 #    error This file can only be compiled with Intel DPC++ compiler
 #endif
 
-#if (!GMX_FFT_MKL && !GMX_GPU_FFT_ONEMKL)
+#if (!GMX_FFT_MKL && !GMX_GPU_FFT_ONEMATH)
 #    error Must use MKL library CPU FFT when using MKL for GPU FFT and Intel DPC++ compiler
 #endif
 
@@ -72,24 +72,30 @@ class DeviceContext;
 #pragma clang diagnostic ignored "-Wundefined-func-template"
 
 #if GMX_GPU_FFT_MKL
-// Using closed-source MKL.
 #    include <mkl_version.h>
-#endif
-#if GMX_GPU_FFT_MKL && INTEL_MKL_VERSION < 20250000
-#    include <oneapi/mkl/dfti.hpp>
-#    define PLACEMENT_INPLACE DFTI_INPLACE
-#    define PLACEMENT_NOT_INPLACE DFTI_NOT_INPLACE
-#    define COMPLEX_COMPLEX_STORAGE DFTI_COMPLEX_COMPLEX
-#else
-// Using oneMKL interface library. (GMX_GPU_FFT_ONEMKL)
-#    include <oneapi/mkl/dft.hpp>
-#    define PLACEMENT_INPLACE oneapi::mkl::dft::config_value::INPLACE
-#    define PLACEMENT_NOT_INPLACE oneapi::mkl::dft::config_value::NOT_INPLACE
-#    define COMPLEX_COMPLEX_STORAGE oneapi::mkl::dft::config_value::COMPLEX_COMPLEX
+#    if INTEL_MKL_VERSION < 20250000
+#        include <oneapi/mkl/dfti.hpp>
+#        define PLACEMENT_INPLACE DFTI_INPLACE
+#        define PLACEMENT_NOT_INPLACE DFTI_NOT_INPLACE
+#        define COMPLEX_COMPLEX_STORAGE DFTI_COMPLEX_COMPLEX
+#    else
+#        include <oneapi/mkl/dft.hpp>
+#        define PLACEMENT_INPLACE mkl_dft::config_value::INPLACE
+#        define PLACEMENT_NOT_INPLACE mkl_dft::config_value::NOT_INPLACE
+#        define COMPLEX_COMPLEX_STORAGE mkl_dft::config_value::COMPLEX_COMPLEX
+#    endif
+#    include <oneapi/mkl/exceptions.hpp>
+using mkl_exception = oneapi::mkl::exception;
+#elif GMX_GPU_FFT_ONEMATH
+// Using oneMath interface library. (GMX_GPU_FFT_ONEMATH)
+#    include <oneapi/math/dft.hpp>
+#    include <oneapi/math/exceptions.hpp>
+#    define PLACEMENT_INPLACE mkl_dft::config_value::INPLACE
+#    define PLACEMENT_NOT_INPLACE mkl_dft::config_value::NOT_INPLACE
+#    define COMPLEX_COMPLEX_STORAGE mkl_dft::config_value::COMPLEX_COMPLEX
+using mkl_exception = oneapi::math::exception;
 #endif // GMX_GPU_FFT_MKL
 
-
-#include <oneapi/mkl/exceptions.hpp>
 
 namespace gmx
 {
@@ -103,7 +109,7 @@ Gpu3dFft::ImplSyclMkl::Descriptor Gpu3dFft::ImplSyclMkl::initDescriptor(const iv
                                                             realGridSize[ZZ] };
         return { realGridDimensions };
     }
-    catch (oneapi::mkl::exception& exc)
+    catch (mkl_exception& exc)
     {
         GMX_THROW(InternalError(formatString("MKL failure while constructing descriptor: %s", exc.what())));
     }
@@ -161,14 +167,14 @@ Gpu3dFft::ImplSyclMkl::ImplSyclMkl(bool allocateRealGrid,
 #if defined(INTEL_MKL_VERSION) && (INTEL_MKL_VERSION < 20240001) // Intel oneMKL < 2024.1
     try
     {
-        using oneapi::mkl::dft::config_param;
+        using mkl_dft::config_param;
         r2cDescriptor_.set_value(config_param::INPUT_STRIDES, realGridStrides.data());
         r2cDescriptor_.set_value(config_param::OUTPUT_STRIDES, complexGridStrides.data());
         r2cDescriptor_.set_value(config_param::CONJUGATE_EVEN_STORAGE, COMPLEX_COMPLEX_STORAGE);
         r2cDescriptor_.set_value(config_param::PLACEMENT, placement);
         r2cDescriptor_.commit(queue_);
     }
-    catch (oneapi::mkl::exception& exc)
+    catch (mkl_exception& exc)
     {
         GMX_THROW(InternalError(
                 formatString("MKL failure while configuring R2C descriptor: %s", exc.what())));
@@ -176,26 +182,26 @@ Gpu3dFft::ImplSyclMkl::ImplSyclMkl(bool allocateRealGrid,
 
     try
     {
-        using oneapi::mkl::dft::config_param;
+        using mkl_dft::config_param;
         c2rDescriptor_.set_value(config_param::INPUT_STRIDES, complexGridStrides.data());
         c2rDescriptor_.set_value(config_param::OUTPUT_STRIDES, realGridStrides.data());
         c2rDescriptor_.set_value(config_param::CONJUGATE_EVEN_STORAGE, COMPLEX_COMPLEX_STORAGE);
         c2rDescriptor_.set_value(config_param::PLACEMENT, placement);
         c2rDescriptor_.commit(queue_);
     }
-    catch (oneapi::mkl::exception& exc)
+    catch (mkl_exception& exc)
     {
         GMX_THROW(InternalError(
                 formatString("MKL failure while configuring C2R descriptor: %s", exc.what())));
     }
-#else // Open-source oneMKL or Intel oneMKL >= 2024.1
+#else // Open-source oneMath or Intel oneMKL >= 2024.1
     // Unify the two descriptors once we get rid of (IN|OUT)PUT_STRIDES API above
     for (auto* descriptor : { &r2cDescriptor_, &c2rDescriptor_ })
     {
         try
         {
-            using oneapi::mkl::dft::config_param;
-#    if INTEL_MKL_VERSION >= 20250000
+            using mkl_dft::config_param;
+#    if GMX_GPU_FFT_MKL && INTEL_MKL_VERSION >= 20250000
             descriptor->set_value(config_param::FWD_STRIDES, realGridStrides);
             descriptor->set_value(config_param::BWD_STRIDES, complexGridStrides);
             // config_param::CONJUGATE_EVEN_STORAGE is deprecated, it's complex-complex by default
@@ -207,7 +213,7 @@ Gpu3dFft::ImplSyclMkl::ImplSyclMkl(bool allocateRealGrid,
             descriptor->set_value(config_param::PLACEMENT, placement);
             descriptor->commit(queue_);
         }
-        catch (oneapi::mkl::exception& exc)
+        catch (mkl_exception& exc)
         {
             GMX_THROW(InternalError(
                     formatString("MKL failure while configuring FFT descriptor: %s", exc.what())));
@@ -229,10 +235,9 @@ void Gpu3dFft::ImplSyclMkl::perform3dFft(gmx_fft_direction dir, CommandEvent* /*
         case GMX_FFT_REAL_TO_COMPLEX:
             try
             {
-                oneapi::mkl::dft::compute_forward<Descriptor, float, float>(
-                        r2cDescriptor_, realGrid_, complexGrid);
+                mkl_dft::compute_forward<Descriptor, float, float>(r2cDescriptor_, realGrid_, complexGrid);
             }
-            catch (oneapi::mkl::exception& exc)
+            catch (mkl_exception& exc)
             {
                 GMX_THROW(InternalError(
                         formatString("MKL failure while executing R2C transform: %s", exc.what())));
@@ -241,10 +246,9 @@ void Gpu3dFft::ImplSyclMkl::perform3dFft(gmx_fft_direction dir, CommandEvent* /*
         case GMX_FFT_COMPLEX_TO_REAL:
             try
             {
-                oneapi::mkl::dft::compute_backward<Descriptor, float, float>(
-                        c2rDescriptor_, complexGrid, realGrid_);
+                mkl_dft::compute_backward<Descriptor, float, float>(c2rDescriptor_, complexGrid, realGrid_);
             }
-            catch (oneapi::mkl::exception& exc)
+            catch (mkl_exception& exc)
             {
                 GMX_THROW(InternalError(
                         formatString("MKL failure while executing C2R transform: %s", exc.what())));

@@ -284,9 +284,9 @@ int main() {
     set(_sycl_has_valid_fft TRUE)
 endif()
 
-if(GMX_GPU_FFT_ONEMKL)
-    include(gmxManageOneMKL)
-    gmx_manage_onemkl()
+if(GMX_GPU_FFT_ONEMATH)
+    include(gmxManageOneMath)
+    gmx_manage_onemath()
     set(_sycl_has_valid_fft TRUE)
 endif()
 

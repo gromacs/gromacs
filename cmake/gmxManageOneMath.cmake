@@ -33,44 +33,44 @@
 # 
 # Copyright 2024- Codeplay Software Ltd.
 
-# Manage OneMKL, GPU FFT library used with SYCL.
+# Manage OneMath, GPU FFT library used with SYCL.
 
-function(gmx_manage_onemkl)
+function(gmx_manage_onemath)
     # Find quietly the second time.
-    if (oneMKL_FIND_QUIETLY_AFTER_FIRST_RUN)
-        set(oneMKL_FIND_QUIETLY TRUE)
+    if (oneMath_FIND_QUIETLY_AFTER_FIRST_RUN)
+        set(oneMath_FIND_QUIETLY TRUE)
     endif()
-    find_package(oneMKL REQUIRED 0.5)
-    set(oneMKL_FIND_QUIETLY_AFTER_FIRST_RUN TRUE CACHE INTERNAL "Be quiet during future attempts to find oneMKL")
+    find_package(oneMath REQUIRED 0.6)
+    set(oneMath_FIND_QUIETLY_AFTER_FIRST_RUN TRUE CACHE INTERNAL "Be quiet during future attempts to find oneMath")
 
     set(BACKEND_COUNT 0)
     if(GMX_DPCPP_HAVE_CUDA_TARGET)
-        if(NOT TARGET MKL::onemkl_dft_cufft)
-            message(WARNING "GROMACS SYCL is targetting NVIDIA GPU, but oneMKL interface library was not built with the cuFFT backend.")
+        if(NOT TARGET ONEMATH::onemath_dft_cufft)
+            message(WARNING "GROMACS SYCL is targetting NVIDIA GPU, but oneMath interface library was not built with the cuFFT backend.")
         else()
             MATH(EXPR BACKEND_COUNT "${BACKEND_COUNT}+1")
         endif()
     endif()
     if(GMX_DPCPP_HAVE_HIP_TARGET)
-        if(NOT TARGET MKL::onemkl_dft_rocfft)
-            message(WARNING "GROMACS SYCL is targetting AMD GPU, but oneMKL interface library was not built with the rocFFT backend.")
+        if(NOT TARGET ONEMATH::onemath_dft_rocfft)
+            message(WARNING "GROMACS SYCL is targetting AMD GPU, but oneMath interface library was not built with the rocFFT backend.")
         else()
             MATH(EXPR BACKEND_COUNT "${BACKEND_COUNT}+1")
         endif()
     endif()
     if(GMX_DPCPP_HAVE_INTEL_TARGET)
-        if(NOT TARGET MKL::onemkl_dft_mklgpu)
-            message(WARNING "GROMACS SYCL is targetting Intel GPU, but oneMKL interface library was not built with the MKLGPU backend.")
+        if(NOT TARGET ONEMATH::onemath_dft_mklgpu)
+            message(WARNING "GROMACS SYCL is targetting Intel GPU, but oneMath interface library was not built with the MKLGPU backend.")
         else()
             MATH(EXPR BACKEND_COUNT "${BACKEND_COUNT}+1")
         endif()
     endif()
 
     if(${BACKEND_COUNT} EQUAL 0)
-        message(FATAL_ERROR "oneMKL interface library was not compatible with -fsycl-targets")
+        message(FATAL_ERROR "oneMath interface library was not compatible with -fsycl-targets")
     endif()
 
     if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "2024.2" AND CMAKE_CXX_COMPILER_ID MATCHES "IntelLLVM")
-      message(WARNING "DPC++ version ${CMAKE_CXX_COMPILER_VERSION} < 2024.2 may cause segfault at end of GROMACS run") 
+        message(WARNING "DPC++ version ${CMAKE_CXX_COMPILER_VERSION} < 2024.2 may cause segfault at end of GROMACS run")
     endif()
 endfunction()

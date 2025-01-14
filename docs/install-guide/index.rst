@@ -384,21 +384,22 @@ e.g., through ``source /opt/intel/oneapi/setvars.sh`` or
 or manually setting environment variable ``MKLROOT=/full/path/to/mkl``.
 Then run CMake with setting ``-DGMX_FFT_LIBRARY=mkl`` and/or ``-DGMX_GPU_FFT_LIBRARY=mkl``.
 
-Using oneMKL Interface Library
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Using oneMath Interface Library
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The oneMKL interface library enables the SYCL backend for |Gromacs| with cuFFT, rocFFT,
-or closed-source oneMKL using Intel DPC++ and Codeplay's plugins for NVIDIA and AMD GPUs.
+The oneMath interface library (earlier called oneMKL interface library, not to be confused
+with Intel oneMKL) enables the SYCL backend for |Gromacs| with cuFFT, rocFFT,
+or closed-source oneMath using Intel DPC++ and Codeplay's plugins for NVIDIA and AMD GPUs.
 To use, Intel DPC++ must be installed along with Codeplay's plugins for NVIDIA
 and AMD GPUs as required, and CUDA and/or ROCm as required. The environment should be initialized
 as with the MKL instructions above.
 
-To use the oneMKL interface library, download, build and install oneMKL as directed in the
-`oneMKL documentation <https://oneapi-src.github.io/oneMKL/building_the_project.html#building-for-onemkl>`_,
+To use the oneMath interface library, download, build and install oneMath as directed in the
+`oneMath documentation <https://uxlfoundation.github.io/oneMath/building_the_project_with_dpcpp.html>`_,
 making sure that
-`suitable DFT backends <https://github.com/oneapi-src/oneMKL/blob/develop/CMakeLists.txt#supported-configurations>`_
+`suitable DFT backends <https://github.com/uxlfoundation/oneMath#supported-configurations>`_
 are enabled.
-Then, when building |Gromacs|, set ``-DGMX_GPU_FFT_LIBRARY=ONEMKL``.
+Then, when building |Gromacs|, set ``-DGMX_GPU_FFT_LIBRARY=ONEMATH``.
 
 .. _bbfft installation:
 
