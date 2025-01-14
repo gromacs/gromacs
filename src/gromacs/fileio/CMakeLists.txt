@@ -82,6 +82,7 @@ target_link_libraries(fileio INTERFACE
 
 # not enabled for current release
 # gmx_manage_hdf5()
+set(GMX_USE_HDF5 OFF CACHE BOOL "Build GROMACS with HDF5 support (needed for handling files in H5MD format)" FORCE)
 
 if(GMX_USE_HDF5)
     target_include_directories(fileio SYSTEM INTERFACE ${HDF5_INCLUDE_DIRS})
