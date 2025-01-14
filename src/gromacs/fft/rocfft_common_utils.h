@@ -74,8 +74,6 @@ public:
 //! All the persistent data for planning an executing a 3D FFT
 struct RocfftPlan
 {
-    //! Describes details of the data layout
-    rocfft_plan_description description = nullptr;
     //! High level information about the plan
     rocfft_plan plan = nullptr;
     //! Execution details (working buffer, HIP stream to use, etc)
@@ -84,6 +82,21 @@ struct RocfftPlan
     void* workBuffer = nullptr;
     //! Destructor
     ~RocfftPlan();
+    //! Default constructor
+    RocfftPlan() = default;
+    //! Full constructor
+    RocfftPlan(rocfft_plan inPlan, rocfft_execution_info inInfo, void* inWorkBuffer) :
+        plan(inPlan), info(inInfo), workBuffer(inWorkBuffer)
+    {
+    }
+    //! Move construct is allowed
+    RocfftPlan(RocfftPlan&& other) = default;
+    //! Move assign is allowed
+    RocfftPlan& operator=(RocfftPlan&& other) = default;
+    //! Copy construct is not allowed
+    RocfftPlan(const RocfftPlan& other) = delete;
+    //! Copy assign is not allowed
+    RocfftPlan& operator=(const RocfftPlan& other) = delete;
 };
 
 //! Helper struct to reduce repetitive code setting up a 3D FFT plan

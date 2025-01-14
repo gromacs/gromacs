@@ -143,18 +143,17 @@ RocfftPlan::~RocfftPlan()
     if (plan)
     {
         rocfft_plan_destroy(plan);
-    }
-    if (description)
-    {
-        rocfft_plan_description_destroy(description);
+        plan = nullptr;
     }
     if (info)
     {
         rocfft_execution_info_destroy(info);
+        info = nullptr;
     }
     if (workBuffer)
     {
         GMX_UNUSED_VALUE(hipFree(workBuffer));
+        workBuffer = nullptr;
     }
 }
 
