@@ -603,6 +603,21 @@ def get_plumed(args):
         return None
 
 
+def get_libtorch(args):
+    if args.libtorch is not None:
+        lt_version = args.libtorch
+        return hpccm.primitives.shell(
+            commands=[
+                "mkdir -p /var/tmp",
+                f"wget -q -nc --no-check-certificate -O /var/tmp/libtorch.zip https://download.pytorch.org/libtorch/cu121/libtorch-cxx11-abi-shared-with-deps-{lt_version}%2Bcu121.zip",
+                "unzip -q /var/tmp/libtorch.zip -d /usr/local/libtorch",
+                "rm -f /var/tmp/libtorch.zip",
+            ]
+        )
+    else:
+        return None
+
+
 def get_nvhpcsdk(args):
     if args.nvhpcsdk is not None:
         return hpccm.building_blocks.nvhpc(
@@ -1265,6 +1280,8 @@ def build_stages(args) -> typing.Iterable["hpccm.Stage"]:
         os_packages += ["libboost-fiber-dev"]
     if args.hdf5:
         os_packages += ["libhdf5-dev"]
+    if args.libtorch is not None:
+        os_packages += ["unzip"]
     building_blocks["extra_packages"] = []
     if args.intel_compute_runtime:
         repo = {
@@ -1315,6 +1332,8 @@ def build_stages(args) -> typing.Iterable["hpccm.Stage"]:
 
     building_blocks["plumed"] = get_plumed(args)
 
+    building_blocks["libtorch"] = get_libtorch(args)
+
     building_blocks["nvhpcsdk"] = get_nvhpcsdk(args)
     if building_blocks["nvhpcsdk"] is not None:
         nvshmem_lib_path = (
@@ -1330,7 +1349,7 @@ def build_stages(args) -> typing.Iterable["hpccm.Stage"]:
 
     # Add Python environments to MPI images, only, so we don't have to worry
     # about whether to install mpi4py.
-    if args.mpi is not None and len(args.venvs) > 0:
+    if (args.mpi is not None) and len(args.venvs) > 0:
         add_python_stages(base="build_base", input_args=args, output_stages=stages)
 
     cmake_stages = get_cmake_stages(input_args=args, base="build_base")
@@ -1347,7 +1366,9 @@ def build_stages(args) -> typing.Iterable["hpccm.Stage"]:
             stages["main"] += bb
 
     # We always add Python3 and Pip
-    stages["main"] += hpccm.building_blocks.python(python3=True, python2=False)
+    stages["main"] += hpccm.building_blocks.python(
+        python3=True, python2=False, devel=False if args.libtorch is None else True
+    )
 
     # Add documentation requirements (doxygen and sphinx + misc).
     if args.doxygen is not None:
