@@ -1332,9 +1332,15 @@ Building with Neural Network potential support
 To build |Gromacs| with support for Neural Network potentials, it has to be compiled 
 with a suitable machine learning library. At the moment, only models trained in
 `Pytorch <https://pytorch.org/>`_ are supported. To be able to load them in |Gromacs|,
-it has to be built with the Pytorch C++ API or LibTorch, which can be downloaded
+it has to be built with the Pytorch C++ API or Libtorch, which can be downloaded
 from the `Pytorch website <https://pytorch.org/get-started/locally/>`_. 
-The NNP interface is enabled by default when a LibTorch installation is found in the
+The website offers versions including pre-CXX11 and CXX11 ABI versions on Linux.
+You must use the same ABI version as you use when building the rest of
+GROMACS, which does not support or test the pre-CXX11 ABI.
+So get (or build) the CXX11 ABI version of Libtorch.
+For the same reason, it is also not possible to use the Libtorch version that ships
+with a conda installation of Pytorch, because it is built with the pre-CXX11 ABI by default.
+The NNP interface is enabled by default when a Libtorch installation is found in the
 ``CMAKE_PREFIX_PATH``, or ``Torch_DIR`` is set to a ``TorchConfig.cmake`` or 
 ``torch-config.cmake`` usually found under ``share/cmake/Torch/`` in the libtorch 
 installation directory. It may also be explicitly enabled with ``-DGMX_NNPOT=TORCH``

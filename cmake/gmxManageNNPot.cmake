@@ -55,6 +55,12 @@ if(NOT GMX_NNPOT STREQUAL "OFF")
             message(STATUS "Found Torch: Neural network potential support enabled.")
         endif()
 
+        # Check if the Torch version uses the correct ABI
+        if (${TORCH_CXX_FLAGS} MATCHES "-D_GLIBCXX_USE_CXX11_ABI=0")
+            message(FATAL_ERROR "Torch was compiled with the pre-cxx11 ABI. Please use a libtorch version "
+                                "compiled with the cxx11 ABI, which is required for building GROMACS.")
+        endif()
+
         set(GMX_TORCH ON)
     elseif(GMX_NNPOT STREQUAL "TORCH")
         message(FATAL_ERROR "Torch not found. Please install libtorch and add its installation prefix"
