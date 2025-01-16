@@ -23,7 +23,7 @@ gromacs:gcc-11-hip-622:configure:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX2_256"
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
-    CMAKE_EXTRA_OPTIONS: "-DGMX_HIP_TARGET_ARCH=gfx1034"
+    CMAKE_EXTRA_OPTIONS: "-DGMX_HIP_TARGET_ARCH=gfx1034 -DGMX_USE_PLUMED=ON"
     COMPILER_MAJOR_VERSION: 11
 
 gromacs:gcc-11-hip-622:build:
@@ -49,6 +49,9 @@ gromacs:gcc-11-hip-622:test:
   variables:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
+    GMX_TEST_PLUMED_KERNEL_IS_AVAILABLE: "YES"
+    # TODO: this PLUMED_KERNEL is needed because there is a possible configuration mishap in scripted_gmx_docker_builds.py (in particular: runtime_environment={"PLUMED_KERNEL": "/usr/local/lib/libplumedKernel.so"},)
+    PLUMED_KERNEL: "/usr/local/lib/libplumedKernel.so"
     GPU_VENDOR: "AMD"
     GPU_COUNT: 1         
   tags:
@@ -68,6 +71,9 @@ gromacs:gcc-11-hip-622:regressiontest:
     REGRESSIONTEST_PME_RANK_NUMBER: 0
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
+    GMX_TEST_PLUMED_KERNEL_IS_AVAILABLE: "YES"
+    # TODO: this PLUMED_KERNEL is needed because there is a possible configuration mishap in scripted_gmx_docker_builds.py (see above)
+    PLUMED_KERNEL: "/usr/local/lib/libplumedKernel.so"
   tags:
     - $GITLAB_RUNNER_TAG_1X_AMD_GPU
   needs:
@@ -134,6 +140,9 @@ gromacs:gcc-11-hip-622-nightly:regressiontest:
     REGRESSIONTEST_PME_RANK_NUMBER: 1
     GPU_VENDOR: "AMD"
     GPU_COUNT: 2
+    GMX_TEST_PLUMED_KERNEL_IS_AVAILABLE: "YES"
+    # TODO: this PLUMED_KERNEL is needed because there is a possible configuration mishap in scripted_gmx_docker_builds.py (see above)
+    PLUMED_KERNEL: "/usr/local/lib/libplumedKernel.so"
   tags:
     - amd-gpu-gfx906
   allow_failure: true   # allow job failure w/o failing pipeline, since no redundant hardware

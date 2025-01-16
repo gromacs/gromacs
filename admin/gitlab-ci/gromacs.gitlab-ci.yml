@@ -36,6 +36,7 @@ simple-build:
     CMAKE_GPU_OPTIONS: "-DGMX_GPU=OFF"
     CMAKE_GMXAPI_OPTIONS: "-DGMX_PYTHON_PACKAGE=OFF"
     COMPILER_MAJOR_VERSION: 19
+    CMAKE_EXTRA_OPTIONS: "-DGMX_USE_PLUMED=OFF"
     BUILD_DIR: simple-build
   script:
     - bash -x admin/ci-scripts/gromacs-base-configure.sh
