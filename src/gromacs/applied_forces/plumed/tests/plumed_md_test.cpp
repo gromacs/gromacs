@@ -284,7 +284,6 @@ TEST_P(PlumedRun, PlumedDoes)
         ASSERT_EQ(0, runner_.callGrompp(caller));
     }
     // Do mdrun
-    auto traj = baseTrajectoryFileName.string();
     {
         CommandLine mdrunCaller;
 
@@ -299,12 +298,9 @@ TEST_P(PlumedRun, PlumedDoes)
 
         ASSERT_EQ(0, runner_.callMdrun(mdrunCaller));
     }
-    auto plumedtraj = runner_.fullPrecisionTrajectoryFileName_;
 
-    TrajectoryFrameReader reader(baseTrajectoryFileName.string());
-    TrajectoryFrameReader readerPlumed(plumedTrajectoryFileName.string());
-
-
+    TrajectoryFrameReader  reader(baseTrajectoryFileName.string());
+    TrajectoryFrameReader  readerPlumed(plumedTrajectoryFileName.string());
     FloatingPointTolerance tol = defaultRealTolerance();
 
     do
