@@ -49,6 +49,7 @@
 #include "gromacs/domdec/localatomsetmanager.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/gmxpreprocess/grompp.h"
+#include "gromacs/hardware/device_information.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
@@ -61,6 +62,8 @@
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
+#include "testutils/setenv.h"
+#include "testutils/test_hardware_environment.h"
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 
@@ -130,6 +133,31 @@ public:
         params_.pbcType_            = std::make_unique<PbcType>(pbcType_);
     }
 
+    void testCalculateForces(gmx::test::TestReferenceData& testData)
+    {
+        gmx::test::TestReferenceChecker checker(testData.rootChecker());
+
+        std::unique_ptr<NNPotForceProvider> nnpotForceProvider;
+        EXPECT_NO_THROW(nnpotForceProvider = std::make_unique<NNPotForceProvider>(params_, &logger_));
+        EXPECT_NO_THROW(nnpotForceProvider->gatherAtomNumbersIndices());
+
+        // Prepare input for force provider
+        ForceProviderInput fInput(x_, params_.numAtoms_, {}, {}, 0.0, 0, box_, cr_);
+
+        // Prepare output for force provider
+        std::vector<RVec>   forces(params_.numAtoms_, RVec{ 0, 0, 0 });
+        ForceWithVirial     forceWithVirial(forces, true);
+        gmx_enerdata_t      enerdDummy(1, nullptr);
+        ForceProviderOutput forceProviderOutput(&forceWithVirial, &enerdDummy);
+
+        EXPECT_NO_THROW(nnpotForceProvider->calculateForces(fInput, &forceProviderOutput));
+
+        checker.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(100000.0, 5e-5));
+        checker.checkReal(enerdDummy.term[F_ENNPOT], "Energy");
+        checker.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(100.0, 5e-5));
+        checker.checkSequence(forces.begin(), forces.end(), "Forces");
+    }
+
 protected:
     NNPotParameters               params_;
     MDLogger                      logger_;
@@ -152,11 +180,30 @@ TEST_F(NNPotForceProviderTest, CanConstruct)
     // GMX_TORCH is defined by set_source_files_properties() in CMakeLists.txt
     if (GMX_TORCH)
     {
-        EXPECT_NO_THROW(NNPotForceProvider nnpotForceProvider(params_, &logger_));
+        {
+            SCOPED_TRACE("Check construction on CPU");
+            EXPECT_NO_THROW(NNPotForceProvider nnpotForceProvider(params_, &logger_));
+        }
 
-        // Test with invalid model file name
-        params_.modelFileName_ = "model";
-        EXPECT_THROW_GMX(NNPotForceProvider nnpotForceProvider(params_, &logger_), FileIOError);
+        {
+            SCOPED_TRACE("Check construction with invalid model file name");
+            params_.modelFileName_ = "model";
+            EXPECT_THROW_GMX(NNPotForceProvider nnpotForceProvider(params_, &logger_), FileIOError);
+            params_.modelFileName_ = gmx::test::TestFileManager::getInputFilePath("model.pt").string();
+        }
+
+        for (const auto& device : getTestHardwareEnvironment()->getTestDeviceList())
+        {
+            const DeviceInformation deviceInfo = device->deviceInfo();
+            if (deviceInfo.deviceVendor == DeviceVendor::Nvidia)
+            {
+                SCOPED_TRACE("Check construction on default NVIDIA GPU");
+                gmxSetenv("GMX_NN_DEVICE", "cuda", 1);
+                EXPECT_NO_THROW(NNPotForceProvider nnpotForceProvider(params_, &logger_));
+                gmxUnsetenv("GMX_NN_DEVICE");
+                break; // Only test one GPU until we have a better way to hande device selection
+            }
+        }
     }
     else
     {
@@ -166,34 +213,35 @@ TEST_F(NNPotForceProviderTest, CanConstruct)
 
 #if GMX_TORCH
 /*! Test if the NNPotForceProvider can calculate forces.
- * This implicitly tests the NNPotModel as well as well as the input gathering functions as well.
+ * This implicitly tests the NNPotModel as well as the input gathering functions.
  */
 TEST_F(NNPotForceProviderTest, CanCalculateForces)
 {
-    gmx::test::TestReferenceData    data;
-    gmx::test::TestReferenceChecker checker(data.rootChecker());
+    gmx::test::TestReferenceData data;
 
     readDataFromFile("spc2", "");
     setParametersTopology();
 
-    NNPotForceProvider nnpotForceProvider(params_, &logger_);
-    EXPECT_NO_THROW(nnpotForceProvider.gatherAtomNumbersIndices());
-
-    // Prepare input for force provider
-    ForceProviderInput fInput(x_, params_.numAtoms_, {}, {}, 0.0, 0, box_, cr_);
-
-    // Prepare output for force provider
-    std::vector<RVec>   forces(params_.numAtoms_, RVec{ 0, 0, 0 });
-    ForceWithVirial     forceWithVirial(forces, true);
-    gmx_enerdata_t      enerdDummy(1, nullptr);
-    ForceProviderOutput forceProviderOutput(&forceWithVirial, &enerdDummy);
-
-    EXPECT_NO_THROW(nnpotForceProvider.calculateForces(fInput, &forceProviderOutput));
-
-    checker.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(100000.0, 5e-5));
-    checker.checkReal(enerdDummy.term[F_ENNPOT], "Energy");
-    checker.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(100.0, 5e-5));
-    checker.checkSequence(forces.begin(), forces.end(), "Forces");
+    {
+        SCOPED_TRACE("Check calculate forces on CPU");
+        testCalculateForces(data);
+    }
+    if (!getTestHardwareEnvironment()->hasCompatibleDevices())
+    {
+        return;
+    }
+    for (const auto& device : getTestHardwareEnvironment()->getTestDeviceList())
+    {
+        const DeviceInformation deviceInfo = device->deviceInfo();
+        if (deviceInfo.deviceVendor == DeviceVendor::Nvidia)
+        {
+            SCOPED_TRACE("Check calculate forces on default NVIDIA GPU");
+            gmxSetenv("GMX_NN_DEVICE", "cuda", 1);
+            testCalculateForces(data);
+            gmxUnsetenv("GMX_NN_DEVICE");
+            break; // Only test one GPU until we have a better way to hande device selection
+        }
+    }
 
     done_atom(&params_.atoms_);
 }

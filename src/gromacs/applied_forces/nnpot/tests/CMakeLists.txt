@@ -34,13 +34,21 @@
 set(testname NNPotAppliedForcesUnitTest)
 set(exename nnpot_applied_forces-test)
 
-gmx_add_gtest_executable(${exename}
+gmx_add_unit_test(${testname} ${exename}
+    HARDWARE_DETECTION
     CPP_SOURCE_FILES
         nnpot.cpp
-        nnpotforceprovider.cpp
         nnpotoptions.cpp
         nnpottopologypreprocessor.cpp
+    GPU_CPP_SOURCE_FILES
+        nnpotforceprovider.cpp
 )
-gmx_register_gtest_test(${testname} ${exename} QUICK_GPU_TEST)
 
-target_link_libraries(${exename} PRIVATE applied_forces math topology)
+target_link_libraries(
+    ${exename} PRIVATE
+        applied_forces
+        math
+        topology
+        gpu_utils
+        testutils
+)
