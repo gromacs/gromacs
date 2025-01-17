@@ -53,21 +53,21 @@ with ``nnpot-active`` set to ``true``, are:
 -  ``nnpot-modelfile``: Specifies a path to a TorchScript-compiled model, either absolute
    or relative to the simulation directory. If not provided, the interface will look for
    a file named ``model.pt`` in the current working directory.
--  ``nnpot-provides_forces``: Boolean option, specifying whether the model
-   outputs forces in addition to the potential energy. This can be useful for cases
-   in which the forces can be more efficiently computed than via backpropagation.
-   Defaults to ``false``.
--  ``nnpot-input_group``: Specifies an [index group] defining the input atoms for
+-  ``nnpot-input-group``: Specifies an [index group] defining the input atoms for
    the NNP subsystem. Defaults to ``System``, which performs a pure NNP simulation.
--  ``nnpot-model_input[1-4]``: These options can be used to specify the inputs
-   for the model. Supported options are ``atom_positions``, a vector containing the input
-   atom positions; ``atom_numbers``, a vector containing atomic numbers; ``box``, the unit
+-  ``nnpot-model-input[1-4]``: These options can be used to specify the inputs
+   for the model. Supported options are ``atom-positions``, a vector containing the input
+   atom positions; ``atom-numbers``, a vector containing atomic numbers; ``box``, the unit
    vectors of the simulation box; ``pbc``, a boolean vector specifying PBC type. 
 
 The inputs are passed to the model in order of their occurence in the mdp file. Note
 that there are no default values for the model input, so not specifying the model
-input will lead to errors. Also note that for now, if the model does not provide its
-own forces, they are calculated by the interface as gradients w.r.t. the *first* input tensor. \
+input will lead to errors. The model is expected to return a tensor containing the energy
+of the system and, optionally, a tensor containing the forces on the input atoms.
+This option can be useful for cases in which the forces can be computed by the model
+by some technique that is more efficient than via backpropagation. If the model does not
+provide its own forces, they are calculated by the interface as gradients
+w.r.t. the *first* input tensor. \
 You can specify the device on which you wish to run model inference using the
 environment variable ``GMX_NN_DEVICE``. For now, only ``cpu`` and ``cuda`` are supported.
 For ``cuda``, a CUDA-aware LibTorch installation should be installed, and the corresponding

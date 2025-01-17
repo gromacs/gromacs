@@ -5,11 +5,10 @@
 ; Neural Network potential
 nnpot-active             = true
 nnpot-modelfile          = model.pt
-nnpot-provides_forces    = false
-nnpot-input_group        = System
-nnpot-model_input1       = 
-nnpot-model_input2       = 
-nnpot-model_input3       = 
-nnpot-model_input4       = 
+nnpot-input-group        = System
+nnpot-model-input1       = 
+nnpot-model-input2       = 
+nnpot-model-input3       = 
+nnpot-model-input4       = 
 </String>
 </ReferenceData>

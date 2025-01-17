@@ -109,13 +109,12 @@ public:
         mdpValueBuilder.rootObject().addValue(
                 c_nnpotModuleName + "-modelfile",
                 gmx::test::TestFileManager::getInputFilePath("model.pt").string());
-        mdpValueBuilder.rootObject().addValue(c_nnpotModuleName + "-provides_forces", std::string("true"));
-        mdpValueBuilder.rootObject().addValue(c_nnpotModuleName + "-model_input1",
-                                              std::string("atom_positions"));
-        mdpValueBuilder.rootObject().addValue(c_nnpotModuleName + "-model_input2",
-                                              std::string("atom_numbers"));
-        mdpValueBuilder.rootObject().addValue(c_nnpotModuleName + "-model_input3", std::string("box"));
-        mdpValueBuilder.rootObject().addValue(c_nnpotModuleName + "-model_input4", std::string("pbc"));
+        mdpValueBuilder.rootObject().addValue(c_nnpotModuleName + "-model-input1",
+                                              std::string("atom-positions"));
+        mdpValueBuilder.rootObject().addValue(c_nnpotModuleName + "-model-input2",
+                                              std::string("atom-numbers"));
+        mdpValueBuilder.rootObject().addValue(c_nnpotModuleName + "-model-input3", std::string("box"));
+        mdpValueBuilder.rootObject().addValue(c_nnpotModuleName + "-model-input4", std::string("pbc"));
         return mdpValueBuilder.build();
     }
 
@@ -142,7 +141,6 @@ TEST_F(NNPotOptionsTest, DefaultParameters)
 
     checker.checkBoolean(defaultParams.active_, "active");
     checker.checkString(defaultParams.modelFileName_, "modelFileName");
-    checker.checkBoolean(defaultParams.providesForces_, "providesForces");
     checker.checkString(defaultParams.inputGroup_, "inputGroup");
     checker.checkString(defaultParams.modelInput_[0], "modelInput1");
     checker.checkString(defaultParams.modelInput_[1], "modelInput2");
@@ -160,7 +158,6 @@ TEST_F(NNPotOptionsTest, OptionSetsActive)
 TEST_F(NNPotOptionsTest, OutputNoDefaultValuesWhenInactive)
 {
     // Transform module data into a flat key-value tree for output.
-
     StringOutputStream        stream;
     KeyValueTreeBuilder       builder;
     KeyValueTreeObjectBuilder builderObject = builder.rootObject();

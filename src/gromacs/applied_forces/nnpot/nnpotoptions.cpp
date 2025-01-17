@@ -98,7 +98,6 @@ void NNPotOptions::initMdpTransform(IKeyValueTreeTransformRules* rules)
     const auto& stringIdentityTransform = [](std::string s) { return s; };
     NNPotMdpTransformFromString<bool>(rules, &fromStdString<bool>, c_activeTag_);
     NNPotMdpTransformFromString<std::string>(rules, stringIdentityTransform, c_modelFileNameTag_);
-    NNPotMdpTransformFromString<bool>(rules, &fromStdString<bool>, c_providesForcesTag_);
     NNPotMdpTransformFromString<std::string>(rules, stringIdentityTransform, c_inputGroupTag_);
     NNPotMdpTransformFromString<std::string>(rules, stringIdentityTransform, c_modelInput1Tag_);
     NNPotMdpTransformFromString<std::string>(rules, stringIdentityTransform, c_modelInput2Tag_);
@@ -111,7 +110,6 @@ void NNPotOptions::initMdpOptions(IOptionsContainerWithSections* options)
     auto section = options->addSection(OptionSection(c_nnpotModuleName.c_str()));
     section.addOption(BooleanOption(c_activeTag_.c_str()).store(&params_.active_));
     section.addOption(StringOption(c_modelFileNameTag_.c_str()).store(&params_.modelFileName_));
-    section.addOption(BooleanOption(c_providesForcesTag_.c_str()).store(&params_.providesForces_));
     section.addOption(StringOption(c_inputGroupTag_.c_str()).store(&params_.inputGroup_));
     section.addOption(StringOption(c_modelInput1Tag_.c_str()).store(&params_.modelInput_[0]));
     section.addOption(StringOption(c_modelInput2Tag_.c_str()).store(&params_.modelInput_[1]));
@@ -131,7 +129,6 @@ void NNPotOptions::buildMdpOutput(KeyValueTreeObjectBuilder* builder) const
     if (params_.active_)
     {
         builder->addValue<std::string>(c_nnpotModuleName + "-" + c_modelFileNameTag_, params_.modelFileName_);
-        builder->addValue<bool>(c_nnpotModuleName + "-" + c_providesForcesTag_, params_.providesForces_);
         builder->addValue<std::string>(c_nnpotModuleName + "-" + c_inputGroupTag_, params_.inputGroup_);
         builder->addValue<std::string>(c_nnpotModuleName + "-" + c_modelInput1Tag_,
                                        params_.modelInput_[0]);
@@ -428,12 +425,12 @@ void NNPotOptions::checkNNPotModel()
         {
             continue;
         }
-        else if (input == "atom_positions")
+        else if (input == "atom-positions")
         {
             inputsFound++;
             model->prepareAtomPositions(positions);
         }
-        else if (input == "atom_numbers")
+        else if (input == "atom-numbers")
         {
             inputsFound++;
             model->prepareAtomNumbers(atomNumbers);
@@ -459,18 +456,37 @@ void NNPotOptions::checkNNPotModel()
         GMX_THROW(InconsistentInputError("No inputs to NN model provided."));
     }
 
+    // Check that logger and warning handler are valid
+    GMX_ASSERT(logger_, "Logger not set.");
     GMX_ASSERT(wi_, "WarningHandler not set.");
+    bool modelOutputsForces = false;
     try
     {
         // might throw a runtime error if the model is not compatible with the dummy input
         model->evaluateModel();
+
+        // check if model outputs forces after forward pass
+        modelOutputsForces = model->outputsForces();
 
         // prepare dummy output
         std::vector<int>  indices(1, 0);
         gmx_enerdata_t    enerd(1, nullptr);
         std::vector<RVec> forcesVec(1, RVec({ 0.0, 0.0, 0.0 }));
         ArrayRef<RVec>    forces(forcesVec);
-        model->getOutputs(indices, enerd, forces, params_.providesForces_);
+        model->getOutputs(indices, enerd, forces);
+
+        // log wheter model outputs forces or we need to compute them
+        if (modelOutputsForces)
+        {
+            GMX_LOG(logger_->info).appendText("Will use forces from NNP model.");
+        }
+        else
+        {
+            GMX_LOG(logger_->info)
+                    .appendText(
+                            "NNP model does not output forces. They will be computed as gradients "
+                            "of the energy w.r.t. the first input tensor (atom positions).");
+        }
     }
     catch (const GromacsException& e)
     {
@@ -486,7 +502,7 @@ void NNPotOptions::checkNNPotModel()
     }
 
     // check if first input is atom_positions
-    if ((params_.modelInput_[0] != "atom_positions") && !(params_.providesForces_))
+    if ((params_.modelInput_[0] != "atom_positions") && !modelOutputsForces)
     {
         wi_->addWarning("Gradients will be computed with respect to first input to NN model "
                         + params_.modelInput_[0] + " instead of atom positions. Is this intended?");

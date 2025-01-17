@@ -82,10 +82,13 @@ public:
     virtual void evaluateModel() = 0;
 
     //! retrieve NN model outputs
-    virtual void getOutputs(std::vector<int>&, gmx_enerdata_t&, const ArrayRef<RVec>&, bool) = 0;
+    virtual void getOutputs(std::vector<int>&, gmx_enerdata_t&, const ArrayRef<RVec>&) = 0;
 
     //! set communication record for possible communication of input/output data between ranks
     virtual void setCommRec(const t_commrec*) = 0;
+
+    //! helper function to check if model outputs forces
+    virtual bool outputsForces() const = 0;
 };
 
 } // namespace gmx

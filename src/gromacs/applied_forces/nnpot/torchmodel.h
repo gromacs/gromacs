@@ -97,13 +97,13 @@ public:
     void evaluateModel() override;
 
     //! Retrieve NN model outputs
-    void getOutputs(std::vector<int>&     indices,
-                    gmx_enerdata_t&       enerd,
-                    const ArrayRef<RVec>& forces,
-                    bool                  provideForces) override;
+    void getOutputs(std::vector<int>& indices, gmx_enerdata_t& enerd, const ArrayRef<RVec>& forces) override;
 
     //! Set communication record for possible communication of input/output data between ranks
     void setCommRec(const t_commrec* cr) override;
+
+    //! helper function to check if model outputs forces
+    bool outputsForces() const override;
 
     //! determine which device to use depending on GMX_NN_DEVICE environment variable
     void setDevice();
@@ -116,8 +116,6 @@ private:
     bool isInit_ = false;
     //! flag to check if model output is ready
     bool outputReady_ = false;
-    //! flag to check if model outputs forces
-    bool outputsForces_ = false;
 
     //! pointer to the communication record
     const t_commrec* cr_ = nullptr;

@@ -119,13 +119,12 @@ public:
 
     void setParametersTopology()
     {
-        params_.active_         = true;
-        params_.modelFileName_  = gmx::test::TestFileManager::getInputFilePath("model.pt").string();
-        params_.atoms_          = gmx_mtop_global_atoms(mtop_);
-        params_.numAtoms_       = params_.atoms_.nr;
-        params_.cr_             = &cr_;
-        params_.modelInput_     = { "atom_positions", "atom_numbers", "box", "pbc" };
-        params_.providesForces_ = true;
+        params_.active_        = true;
+        params_.modelFileName_ = gmx::test::TestFileManager::getInputFilePath("model.pt").string();
+        params_.atoms_         = gmx_mtop_global_atoms(mtop_);
+        params_.numAtoms_      = params_.atoms_.nr;
+        params_.cr_            = &cr_;
+        params_.modelInput_    = { "atom-positions", "atom-numbers", "box", "pbc" };
 
         std::vector<gmx::Index> inpIndices = { 0, 1, 2, 3, 4, 5 };
         LocalAtomSet            set = atomSetManager_.add(ArrayRef<const gmx::Index>(inpIndices));
