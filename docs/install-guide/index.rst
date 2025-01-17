@@ -192,57 +192,102 @@ generally built into your compiler and detected automatically.
 GPU support
 ~~~~~~~~~~~
 
-|Gromacs| has excellent support for NVIDIA GPUs supported via CUDA.
-On Linux, NVIDIA CUDA_ toolkit with minimum version |GMX_CUDA_MINIMUM_REQUIRED_VERSION|
-is required, and the latest version is strongly encouraged. NVIDIA GPUs with at
-least NVIDIA compute capability |GMX_CUDA_MINIMUM_REQUIRED_COMPUTE_CAPABILITY| are
-required. You are strongly recommended to
-get the latest CUDA version and driver that supports your hardware, but
-beware of possible performance regressions in newer CUDA versions on
-older hardware.
-While some CUDA compilers (nvcc) might not
-officially support recent versions of gcc as the back-end compiler, we
-still recommend that you at least use a gcc version recent enough to
-get the best SIMD support for your CPU, since |Gromacs| always runs some
-code on the CPU. It is most reliable to use the same C++ compiler
-version for |Gromacs| code as used as the host compiler for nvcc.
+|Gromacs| supports a variety of GPU acceleration options.
+For end-users, here are the recommended options based on your hardware:
 
-To make it possible to use other accelerators, |Gromacs| also includes
-OpenCL_ support as a portable GPU backend. The minimum OpenCL version required is
-|REQUIRED_OPENCL_MIN_VERSION| and only 64-bit implementations are supported.
-The current OpenCL implementation is recommended for
-use with GCN-based AMD GPUs, and on Linux we recommend the ROCm runtime.
-Intel integrated GPUs are supported with the Neo drivers.
-OpenCL is also supported with NVIDIA GPUs, but using
-the latest NVIDIA driver (which includes the NVIDIA OpenCL runtime) is
-recommended. Also note that there are performance limitations (inherent
-to the NVIDIA OpenCL runtime).
-It is not possible to support both Intel and other vendors' GPUs with OpenCL.
-A 64-bit implementation of OpenCL is required and therefore OpenCL is only
-supported on 64-bit platforms.
+* AMD GPUs: SYCL (with AdaptiveCpp)
+* Apple M-series: OpenCL
+* Intel GPUs: SYCL (with Intel oneAPI DPC++)
+* NVIDIA GPUs: CUDA
 
-Please note that OpenCL backend does not support the following GPUs:
+CUDA
+""""
 
-* NVIDIA Volta (CC 7.0, e.g., Tesla V100 or GTX 1630) or newer,
-* AMD RDNA1/2/3 (Navi 1/2X,3X, e.g., RX 5500 or RX6900).
+CUDA is the recommended backend for NVIDIA GPUs.
 
-Since |Gromacs| 2021, SYCL_ support has been added.
-Since |Gromacs| 2023 the SYCL_ backend has matured to have
-near feature parity with the CUDA backend as well as broad platform support
-in both aspects more versatile than the OpenCL_ backend
-(notable exception is the Apple Silicon GPU which is only supported in OpenCL).
-The current SYCL implementation can be compiled either with `Intel oneAPI DPC++`_
-compiler for Intel GPUs, or with AdaptiveCpp_ compiler and ROCm runtime for
-AMD GPUs (GFX9, CDNA 1/2, and RDNA1/2/3). Using other devices supported by
-these compilers is possible, but not recommended. Notably, SSCP/generic mode
-of AdaptiveCpp_ is not supported.
+Supported hardware:
 
-Starting with |Gromacs| 2025, AMD-HIP_ support has been added for running the main
-non-bonded kernels on AMD devices.
+* NVIDIA GPUs (all supported by the CUDA toolkit)
 
-It is not possible to configure several GPU backends in the same build
-of |Gromacs|.
+Requirements:
 
+* CUDA toolkit version |GMX_CUDA_MINIMUM_REQUIRED_VERSION| or newer
+* GPU with compute capability |GMX_CUDA_MINIMUM_REQUIRED_COMPUTE_CAPABILITY| or higher
+
+Best practices:
+
+* Use the latest CUDA version and NVIDIA driver compatible with your hardware
+* Match your gcc version with nvcc's host compiler (prefer the latest gcc/clang version supported by nvcc)
+
+More information can be found in the `CUDA GPU acceleration`_ section.
+
+OpenCL
+""""""
+
+OpenCL is deprecated, but is currently the only backend supporting Apple M-series GPUs.
+
+Supported hardware:
+
+* AMD GCN-based GPUs (RDNA-series GPUs, such as RX 5500 or RX 6900, are not supported)
+* Apple M-series GPUs
+* Intel GPUs (special compilation options required; Intel DataCenter GPU Max are not supported)
+* NVIDIA GPUs (only prior to Volta architecture; newer GPUs, such as V100 or GTX 10xx-series, are not supported)
+
+Requirements:
+
+* The minimum OpenCL version |REQUIRED_OPENCL_MIN_VERSION|.
+
+More information can be found in the `OpenCL GPU acceleration`_ section.
+
+SYCL
+""""
+
+SYCL is the recommended backend for Intel and AMD GPUs.
+For Intel GPUs, we recommend using the Intel oneAPI DPC++ compiler,
+while for AMD GPUs we recommend using AdaptiveCpp compiler with ROCm runtime.
+
+Supported hardware:
+
+* AMD GPUs: GFX9 (Vega, Raven), CDNA-series, RDNA-series GPUs (using either oneAPI or AdaptiveCpp)
+* Intel GPUs: All current integrated/discrete GPUs (using oneAPI)
+* NVIDIA GPUs: All GPUs (using either oneAPI or AdaptiveCpp)
+
+Requirements:
+
+* oneAPI DPC++ compiler: 2024.0 or newer (Codeplay plugin required for NVIDIA/AMD Support), or
+* AdaptiveCpp: 23.10 or newer.
+
+Limitations:
+
+* Intel GPUs and SSCP/generic compilation flow not supported with AdaptiveCpp.
+* ROCm or CUDA toolkits are required for AMD and NVIDIA GPUs respectively.
+
+More information can be found in the `SYCL GPU acceleration Intel`_ and `SYCL GPU acceleration AMD`_ sections.
+
+HIP
+"""
+
+Supported hardware:
+
+* AMD GPUs: GFX9, CDNA 1/2, RDNA 1/2/3 GPUs
+
+Requirements:
+
+* ROCm runtime 5.2 or newer
+
+Limitations:
+
+* Available from |Gromacs| 2025
+* |Gromacs| 2025 supports only main non-bonded kernels
+
+More information can be found in the `AMD-HIP`_ section.
+
+Important Notes
+"""""""""""""""
+
+* Only one GPU backend can be configured per build
+* CPU code always runs alongside GPU acceleration
+* Choose latest drivers while watching for performance regressions on older hardware
 
 .. _mpi-support:
 
@@ -896,6 +941,7 @@ virtual architecture code is always embedded for all requested architectures
 Note that this is mainly a developer-oriented feature but its performance is
 generally close to that of code compiled with nvcc.
 
+.. _OpenCL GPU acceleration:
 
 OpenCL GPU acceleration
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -994,6 +1040,8 @@ can be used in the same way as Intel oneAPI DPC++.
 Note: SYCL_ support in |Gromacs| and the underlying compilers and runtimes
 are less mature than either OpenCL or CUDA. Please, pay extra attention
 to simulation correctness when you are using it.
+
+.. _SYCL GPU acceleration Intel:
 
 SYCL GPU acceleration for Intel GPUs
 """"""""""""""""""""""""""""""""""""
