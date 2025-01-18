@@ -501,8 +501,8 @@ void NNPotOptions::checkNNPotModel()
                         "I can't verify that the model works correctly. This might lead to errors during mdrun.");
     }
 
-    // check if first input is atom_positions
-    if ((params_.modelInput_[0] != "atom_positions") && !modelOutputsForces)
+    // check if first input is atom-positions
+    if ((params_.modelInput_[0] != "atom-positions") && !modelOutputsForces)
     {
         wi_->addWarning("Gradients will be computed with respect to first input to NN model "
                         + params_.modelInput_[0] + " instead of atom positions. Is this intended?");

@@ -187,8 +187,8 @@ private:
     /*! \brief User defined input to NN model.
      *
      *  Possible values:
-     * - "atom_positions" vector of atom positions
-     * - "atom_numbers" vector of atom types
+     * - "atom-positions" vector of atom positions
+     * - "atom-numbers" vector of atom types
      * - "box" unit vectors of simulation box
      * - "pbc" boolean vector indicating periodic boundary conditions
      */
