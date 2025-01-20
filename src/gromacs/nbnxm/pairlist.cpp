@@ -2909,23 +2909,7 @@ static void nbnxn_make_pairlist_part(const GridSet&          gridSet,
         }
     }
     ArrayRef<const BoundingBox> bb_i;
-    ArrayRef<const float>       pbb_i;
-    if (sc_nbnxmBbXxxx(pairlistType))
-    {
-        if (c_listIsSimple)
-        {
-            bb_i = iGrid.iBoundingBoxes();
-        }
-        else
-        {
-            pbb_i = iGrid.packedBoundingBoxes();
-        }
-    }
-    else
-    {
-        /* We use the normal bounding box format for both grid types */
-        bb_i = iGrid.iBoundingBoxes();
-    }
+    ArrayRef<const BoundingBox> bb_i = iGrid.iBoundingBoxes();
     ArrayRef<const BoundingBox1D> bbcz_i  = iGrid.zBoundingBoxes();
     ArrayRef<const int>           flags_i = iGrid.clusterFlags();
     ArrayRef<const BoundingBox1D> bbcz_j  = jGrid.zBoundingBoxes();
