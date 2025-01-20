@@ -185,12 +185,15 @@ clusterBoundingBoxDistance2_xxxx_simd4_inner(const float*                       
     store4(distancesSquared + boundingBoxStart, d2t);
 }
 
+#endif /* NBNXN_SEARCH_BB_SIMD4 */
+
 //! 4-wide SIMD code for nsi bb distances for bb format xxxxyyyyzzzz
 gmx_unused static void clusterBoundingBoxDistance2_xxxx_simd4(const float* bb_j,
                                                               const int    nsi,
                                                               const float* bb_i,
                                                               float*       d2)
 {
+    static_assert(NBNXN_SEARCH_BB_SIMD4);
     constexpr int stride = c_packedBoundingBoxesDimSize;
 
     const std::array<Simd4Float, DIM> jLowerCorner = { Simd4Float(bb_j[0 * stride]),
@@ -209,20 +212,6 @@ gmx_unused static void clusterBoundingBoxDistance2_xxxx_simd4(const float* bb_j,
         clusterBoundingBoxDistance2_xxxx_simd4_inner<stride>(bb_i, jLowerCorner, jUpperCorner, d2);
     }
 }
-
-#else
-gmx_unused static void clusterBoundingBoxDistance2_xxxx_simd4(const float* bb_j,
-                                                              const int    nsi,
-                                                              const float* bb_i,
-                                                              float*       d2)
-{
-    GMX_UNUSED_VALUE(bb_j);
-    GMX_UNUSED_VALUE(nsi);
-    GMX_UNUSED_VALUE(bb_i);
-    GMX_UNUSED_VALUE(d2);
-}
-
-#endif /* NBNXN_SEARCH_BB_SIMD4 */
 
 } // namespace gmx
 
