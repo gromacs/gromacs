@@ -185,8 +185,6 @@ clusterBoundingBoxDistance2_xxxx_simd4_inner(const float*                       
     store4(distancesSquared + boundingBoxStart, d2t);
 }
 
-#endif /* NBNXN_SEARCH_BB_SIMD4 */
-
 //! 4-wide SIMD code for nsi bb distances for bb format xxxxyyyyzzzz
 gmx_unused static void clusterBoundingBoxDistance2_xxxx_simd4(const float* bb_j,
                                                               const int    nsi,
@@ -212,6 +210,20 @@ gmx_unused static void clusterBoundingBoxDistance2_xxxx_simd4(const float* bb_j,
         clusterBoundingBoxDistance2_xxxx_simd4_inner<stride>(bb_i, jLowerCorner, jUpperCorner, d2);
     }
 }
+
+#else
+
+//! 4-wide SIMD code for nsi bb distances for bb format xxxxyyyyzzzz
+gmx_unused static void clusterBoundingBoxDistance2_xxxx_simd4(const float* /* bb_j */,
+                                                              const int /* nsi */,
+                                                              const float* /* bb_i */,
+                                                              float* /* d2 */)
+{
+    static_assert(!NBNXN_SEARCH_BB_SIMD4);
+}
+
+#endif /* NBNXN_SEARCH_BB_SIMD4 */
+
 
 } // namespace gmx
 
