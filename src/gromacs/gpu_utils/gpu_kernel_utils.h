@@ -49,6 +49,10 @@
 
 #include "gputraits.h"
 
+#if GMX_GPU_SYCL || GMX_GPU_HIP
+#    include "hip_sycl_kernel_utils.h"
+#endif
+
 #if GMX_GPU_SYCL
 #    define GMX_DEVICE_ATTRIBUTE
 #    include "sycl_kernel_utils.h"

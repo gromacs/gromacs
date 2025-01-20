@@ -41,6 +41,7 @@
  *  This file contains the following shared methods: *
  *  * Cross lane move operations for AMD targets.
  *  * Packed float implementation
+ *  * Optimized memory access on AMD devices
  *
  *  TODO add more shared methods to this file
  *
@@ -252,6 +253,84 @@ GMX_FUNC_ATTRIBUTE static AmdPackedFloat3 operator*(const float& s, const AmdPac
 {
     return { v.xy() * s, v.z() * s };
 }
+
+//! Convert type of pointer to char while preserving const-ness.
+template<typename TPtr>
+using CharPtr = std::conditional_t<std::is_const_v<std::remove_pointer_t<TPtr>>, const char*, char*>;
+
+/*! \brief Helper method to calculate offsets to memory locations on AMD hardware.
+ *
+ * Uses builtin_assume to work around the compiler generating extra instructions for
+ * negative offsets.
+ */
+template<typename ValueType, typename IndexType, std::enable_if_t<std::is_integral<IndexType>::value, bool> = true>
+static inline GMX_DEVICE_ATTRIBUTE GMX_ALWAYS_INLINE_ATTRIBUTE IndexType calculateOffset(IndexType index)
+{
+    __builtin_assume(index >= 0);
+    return index * static_cast<IndexType>(sizeof(ValueType));
+}
+
+/*!\brief Return address relative to \c buffer and offset by \c idx.
+ *
+ * This method helps hipcc (as late as of rocm 6.2.2, hipcc 6.2.41134-65d174c3e and likely later)
+ * to generate faster code for loads where 64-bit scalar + 32-bit vector registers are used instead
+ * of 64-bit vector versions, saving a few instructions for computing 64-bit vector addresses.
+ */
+template<typename PointerType, typename IndexType, std::enable_if_t<std::is_integral<IndexType>::value, bool> = true>
+static inline GMX_DEVICE_ATTRIBUTE GMX_ALWAYS_INLINE_ATTRIBUTE PointerType indexedAddress(PointerType address,
+                                                                                          IndexType idx)
+{
+    return reinterpret_cast<PointerType>(reinterpret_cast<CharPtr<decltype(address)>>(address)
+                                         + calculateOffset<std::remove_pointer_t<PointerType>>(idx));
+}
+
+/*!\brief Helper method to generate faster atomic operations.
+ *
+ * This method helps hipcc (as late as of rocm 6.2.2, hipcc 6.2.41134-65d174c3e and likely later)
+ * to generate faster code for atomic operations involving 64bit scalar and 32bit vector registers.
+ *
+ * Normally, SYCL functions don't need any attributes, but they treat calling native device-only
+ * functions (specifically, atomicAdd) slightly differently, which is why we have to add __device__
+ * attribute when building with ACpp (to prevent it from adding `__host__`. Furthermore, in DPC++,
+ * we don't have the necessary headers included, so we cannot easily call atomicAdd directly, which
+ * is why we fall back to using sycl::atomic_ref.
+ */
+template<typename IndexType, std::enable_if_t<std::is_integral<IndexType>::value, bool> = true>
+static inline
+#    if GMX_GPU_HIP || GMX_SYCL_ACPP
+        __device__
+#    endif
+                GMX_ALWAYS_INLINE_ATTRIBUTE void
+                amdFastAtomicAddForce(float3* buffer, IndexType idx, IndexType component, float value)
+{
+    float3* indexedBuffer = indexedAddress(buffer, idx);
+    float*  ptr           = indexedAddress(reinterpret_cast<float*>(indexedBuffer), component);
+#    if GMX_GPU_HIP || GMX_SYCL_ACPP
+    atomicAdd(ptr, value);
+#    else
+    using sycl::memory_order, sycl::memory_scope, sycl::access::address_space;
+    sycl::atomic_ref<float, memory_order::relaxed, memory_scope::device, address_space::global_space> ref(
+            *ptr);
+    ref.fetch_add(value);
+#    endif
+}
+
+/*! \brief AMD specific helper class to improve data access. */
+template<typename ValueType>
+class AmdFastBuffer
+{
+private:
+    const ValueType* buffer;
+
+public:
+    GMX_DEVICE_ATTRIBUTE AmdFastBuffer(const ValueType* buffer) : buffer(buffer) {}
+    template<typename IndexType, std::enable_if_t<std::is_integral<IndexType>::value, bool> = true>
+    inline GMX_DEVICE_ATTRIBUTE GMX_ALWAYS_INLINE_ATTRIBUTE const ValueType& operator[](IndexType idx) const
+    {
+        return *indexedAddress(buffer, idx);
+    }
+};
+
 
 #    undef GMX_HOST_ATTRIBUTE
 #    undef GMX_DEVICE_ATTRIBUTE
