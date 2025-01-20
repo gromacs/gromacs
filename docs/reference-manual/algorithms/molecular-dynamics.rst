@@ -171,8 +171,8 @@ of atoms over the steps where a fixed pair list is retained.
 |Gromacs| uses a buffered pair list by default. It also
 uses clusters of particles, but these are not static as in the old charge group
 scheme. Rather, the clusters are defined spatially and consist of 4 or 8
-particles, which is convenient for stream computing, using e.g. SSE, AVX
-or CUDA on GPUs. At neighbor search steps, a pair list is created with a
+particles, which is convenient for streaming-style computing on parallel
+hardware in CPUs and GPUs. At neighbor search steps, a pair list is created with a
 Verlet buffer, i.e. the pair-list cut-off is larger than the interaction
 cut-off. In the non-bonded kernels, interactions are only computed when
 a particle pair is within the cut-off distance at that particular time
@@ -214,8 +214,8 @@ time of this pair list. Such pairs can be pruned out by applying a
 cluster-pair kernel that only determines which clusters are in range.
 Because of the way the non-bonded data is regularized in |Gromacs|, this
 kernel is an order of magnitude faster than the search and the
-interaction kernel. On the GPU this pruning is overlapped with the
-integration on the CPU, so it is free in most cases. Therefore we can
+interaction kernel. On the GPU this pruning can be overlapped with the
+integration on the CPU, so it is free in some cases. Therefore we can
 prune every 4-10 integration steps with little overhead and
 significantly reduce the number of cluster pairs in the interaction
 kernel. This procedure is applied automatically, unless the user set the
@@ -480,7 +480,7 @@ can be provided. This uses the estimation formulas described above and puts
 an upper bound on the error of the pressure averaged over the lifetime of
 the pair list. The default value for this tolerance is 0.5 bar. For liquid
 water this corresponds to a maximum relative deviation of the density of
-:math:`2 \cdot 10^{-5}`.
+:math:`2 \times 10^{-5}`.
 
 Simple search
 ^^^^^^^^^^^^^
@@ -1336,7 +1336,7 @@ from the total energy to obtain the conserved energy quantity:
 where :math:`\delta_{ij}` is the Kronecker delta and :math:`{\bf \Xi}`
 is the virial. Note that the factor 2 originates from the factor
 :math:`\frac{1}{2}` in the virial definition
-(:eq:`eqn. %s <eqnXi>`).
+:eq:`eqn. %s <eqnXi>`.
 
 In |Gromacs|, the Berendsen scaling can also be done isotropically, which
 means that instead of :math:`\mathbf{P}` a diagonal matrix
@@ -1850,7 +1850,12 @@ the system, and Shannon’s sampling theorem states that two samples per
 period of the highest frequency in a band-limited signal contain all
 available information. But that still gives very long files! So, if the
 highest frequencies are not of interest, 10 or 20 samples per ps may
-suffice. Be aware of the distortion of high-frequency motions by the
+suffice. Also, it can be awkward to down-sample long trajectories
+because of numerical difficulties in evaluating the difference in time
+between frames when that difference is close to the precision of
+the float-point data type used.
+
+Be aware of the distortion of high-frequency motions by the
 *stroboscopic effect*, called *aliasing*: higher frequencies are
 mirrored with respect to the sampling frequency and appear as lower
 frequencies. When the simulated system is very large and/or the simulation
