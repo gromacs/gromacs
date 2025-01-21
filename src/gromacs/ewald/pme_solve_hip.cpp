@@ -44,9 +44,9 @@
 
 #include <hip/hip_math_constants.h>
 
-#include "gromacs/gpu_utils/device_utils_hip_sycl.h"
 #include "gromacs/gpu_utils/gputraits.h"
 #include "gromacs/gpu_utils/hip_kernel_utils.h"
+#include "gromacs/gpu_utils/hip_sycl_kernel_utils.h"
 #include "gromacs/gpu_utils/vectype_ops_hip.h"
 
 #include "pme_gpu_constants.h"
