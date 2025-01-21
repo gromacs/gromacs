@@ -41,8 +41,8 @@
 
 #include <cassert>
 
-#include "gromacs/gpu_utils/device_utils_hip_sycl.h"
 #include "gromacs/gpu_utils/hip_kernel_utils.h"
+#include "gromacs/gpu_utils/hip_sycl_kernel_utils.h"
 #include "gromacs/gpu_utils/typecasts_cuda_hip.h"
 #include "gromacs/math/functions.h"
 
@@ -208,7 +208,7 @@ __device__ static inline void sumForceComponents(float* __restrict__ fx,
             }
             const int gridIndexGlobal = ix * pny * pnz + constOffset;
             assert(gridIndexGlobal >= 0);
-            const float gridValue = amdFastLoad(gm_grid, gridIndexGlobal);
+            const float gridValue = *indexedAddress(gm_grid, gridIndexGlobal);
             assert(isfinite(gridValue));
             const int splineIndexX = getSplineParamIndex<order, atomsPerWarp>(splineIndexBase, XX, ithx);
             const float2 tdx  = make_float2(sm_theta[splineIndexX], sm_dtheta[splineIndexX]);
