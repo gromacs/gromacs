@@ -265,7 +265,7 @@ set(REGRESSIONTEST_MD5SUM "7098c9e520c3ba3654a7bb5cc4e8adf5" CACHE INTERNAL "MD5
 # If you are distributing a patch to GROMACS, then this change would
 # be great as part of your patch. Otherwise for personal use, you can
 # also just set a CMake cache variable.
-set(GMX_VERSION_STRING_OF_FORK "" CACHE INTERNAL
+set(GMX_VERSION_STRING_OF_FORK "2026-HIP-ENABLEMENT" CACHE INTERNAL
     "Version string for forks of GROMACS to set to describe themselves")
 mark_as_advanced(GMX_VERSION_STRING_OF_FORK)
 if (GMX_VERSION_STRING_OF_FORK)
