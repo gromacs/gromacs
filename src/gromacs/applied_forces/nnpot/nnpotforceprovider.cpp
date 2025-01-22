@@ -103,12 +103,12 @@ void NNPotForceProvider::calculateForces(const ForceProviderInput& fInput, Force
         {
             continue;
         }
-        else if (input == "atom_positions")
+        else if (input == "atom-positions")
         {
             gatherAtomPositions(fInput.x_);
             model_->prepareAtomPositions(positions_);
         }
-        else if (input == "atom_numbers")
+        else if (input == "atom-numbers")
         {
             model_->prepareAtomNumbers(atomNumbers_);
         }
@@ -132,8 +132,7 @@ void NNPotForceProvider::calculateForces(const ForceProviderInput& fInput, Force
 
     model_->evaluateModel();
 
-    model_->getOutputs(
-            idxLookup_, fOutput->enerd_, fOutput->forceWithVirial_.force_, params_.providesForces_);
+    model_->getOutputs(idxLookup_, fOutput->enerd_, fOutput->forceWithVirial_.force_);
 }
 
 void NNPotForceProvider::gatherAtomNumbersIndices()

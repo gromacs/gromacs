@@ -208,6 +208,7 @@ const t_interaction_function interaction_function[F_NRE] = {
     def_nofc("COM_PULL", "COM Pull En."),
     def_nofc("DENSITYFIT", "Dens. fitting"),
     def_nofc("EQM", "Quantum En."),
+    def_nofc("ENNPOT", "NN Potential"),
     def_nofc("EPOT", "Potential"),
     def_nofc("EKIN", "Kinetic En."),
     def_nofc("ETOT", "Total Energy"),

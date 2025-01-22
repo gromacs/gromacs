@@ -128,8 +128,6 @@ if (SYCL_KERNEL_COMPILATION_WORKS)
         endif()
     endforeach()
     set(GMX_DPCPP_TARGET_STATUS_REPORTED TRUE CACHE INTERNAL "")
-    list(APPEND SYCL_TOOLCHAIN_CXX_FLAGS ${SYCL_CXX_FLAGS_EXTRA})
-    list(APPEND SYCL_TOOLCHAIN_LINKER_FLAGS ${SYCL_CXX_FLAGS_EXTRA})
 else()
     message(FATAL_ERROR "Cannot compile sample SYCL kernel code:\n${SYCL_KERNEL_COMPILATION_LOG}")
 endif()
@@ -146,9 +144,10 @@ list(APPEND SYCL_TOOLCHAIN_LINKER_FLAGS ${SYCL_CXX_FLAGS_EXTRA})
 
 # Add kernel-splitting flag if available, both for compiling and linking
 set(SYCL_DEVICE_CODE_SPLIT_CXX_FLAGS "-fsycl-device-code-split=per_kernel")
+list(JOIN SYCL_TOOLCHAIN_CXX_FLAGS " " SYCL_TOOLCHAIN_CXX_FLAGS_STR)
 gmx_check_source_compiles_with_flags(
     "${SAMPLE_SYCL_SOURCE}"
-    "${SYCL_TOOLCHAIN_CXX_FLAGS};${SYCL_DEVICE_CODE_SPLIT_CXX_FLAGS}"
+    "${SYCL_TOOLCHAIN_CXX_FLAGS_STR} ${SYCL_DEVICE_CODE_SPLIT_CXX_FLAGS}"
     "CXX"
     SYCL_DEVICE_CODE_SPLIT_CXX_FLAGS_RESULT
 )
@@ -195,9 +194,11 @@ endif()
 if(GMX_DPCPP_HAVE_CUDA_TARGET OR GMX_DPCPP_HAVE_HIP_TARGET)
     # When compiling for NVIDIA/AMD, Intel LLVM produces tons of harmless warnings, ignore them
     set(SYCL_WARNINGS_CXX_FLAGS "-Wno-linker-warnings;-Wno-override-module;-Wno-sycl-target")
+    list(JOIN SYCL_TOOLCHAIN_CXX_FLAGS " " SYCL_TOOLCHAIN_CXX_FLAGS_STR)
+    list(JOIN SYCL_WARNINGS_CXX_FLAGS " " SYCL_WARNINGS_CXX_FLAGS_STR)
     gmx_check_source_compiles_with_flags(
         "${SAMPLE_SYCL_SOURCE}"
-        "${SYCL_TOOLCHAIN_CXX_FLAGS};${SYCL_WARNINGS_CXX_FLAGS}"
+        "${SYCL_TOOLCHAIN_CXX_FLAGS_STR} ${SYCL_WARNINGS_CXX_FLAGS_STR}"
         "CXX"
         SYCL_WARNINGS_CXX_FLAGS_RESULT
     )
@@ -247,7 +248,7 @@ if(GMX_SYCL_ENABLE_GRAPHS)
     if(GMX_INTEL_LLVM AND GMX_INTEL_LLVM_VERSION LESS_EQUAL 20240002)
         message(FATAL_ERROR "SYCL Graph support in oneAPI 2024.0.2 is advertised but not sufficient")
     endif()
-    set(CMAKE_REQUIRED_FLAGS "${SYCL_TOOLCHAIN_CXX_FLAGS}")
+    list(JOIN SYCL_TOOLCHAIN_CXX_FLAGS " " CMAKE_REQUIRED_FLAGS)
     check_cxx_symbol_exists(SYCL_EXT_ONEAPI_GRAPH "sycl/sycl.hpp" HAVE_SYCL_EXT_ONEAPI_GRAPH)
     # Check if we have an aspect denoting partial support for graphs.
     # It is a temporary measure introduced in the open-source IntelLLVM around oneAPI 2024.3
@@ -278,7 +279,7 @@ if(GMX_GPU_FFT_MKL)
     mark_as_advanced(mkl_sycl_PATH)
     list(APPEND GMX_EXTRA_LIBRARIES "${mkl_sycl_PATH};OpenCL")
 
-    set(CMAKE_REQUIRED_FLAGS "${SYCL_TOOLCHAIN_CXX_FLAGS}")
+    list(JOIN SYCL_TOOLCHAIN_CXX_FLAGS " " CMAKE_REQUIRED_FLAGS)
     set(CMAKE_REQUIRED_LIBRARIES "${GMX_EXTRA_LIBRARIES};${FFT_LIBRARIES}")
     check_cxx_source_compiles("
 #include <oneapi/mkl/dfti.hpp>
@@ -298,9 +299,9 @@ int main() {
     set(_sycl_has_valid_fft TRUE)
 endif()
 
-if(GMX_GPU_FFT_ONEMKL)
-    include(gmxManageOneMKL)
-    gmx_manage_onemkl()
+if(GMX_GPU_FFT_ONEMATH)
+    include(gmxManageOneMath)
+    gmx_manage_onemath()
     set(_sycl_has_valid_fft TRUE)
 endif()
 

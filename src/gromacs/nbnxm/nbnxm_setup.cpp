@@ -53,6 +53,7 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/gpu_utils/hostallocator.h"
+#include "gromacs/hardware/architecture.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/calc_verletbuf.h"
@@ -66,6 +67,7 @@
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
 #include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/nbnxm/nbnxm_enums.h"
 #include "gromacs/nbnxm/pairlist_tuning.h"
 #include "gromacs/nbnxm/pairlistparams.h"
 #include "gromacs/simd/simd.h"
@@ -307,31 +309,36 @@ static NbnxmKernelSetup pick_nbnxn_kernel(const gmx::MDLogger&     mdlog,
         }
     }
 
+    const int iClusterSize = (nonbondedResource == NonbondedResource::Cpu)
+                                     ? sc_iClusterSize(kernelSetup.kernelType)
+                                     : sc_gpuClusterSize(gpuPairlistType);
+    const int jClusterSize = (nonbondedResource == NonbondedResource::Cpu)
+                                     ? sc_jClusterSize(kernelSetup.kernelType)
+                                     : sc_gpuSplitJClusterSize(gpuPairlistType);
+
     GMX_LOG(mdlog.info)
             .asParagraph()
             .appendTextFormatted("Using %s %dx%d nonbonded short-range kernels",
                                  nbnxmKernelTypeToName(kernelSetup.kernelType),
-                                 sc_iClusterSize(kernelSetup.kernelType),
-                                 sc_jClusterSize(kernelSetup.kernelType));
+                                 iClusterSize,
+                                 jClusterSize);
+
     if (nonbondedResource == NonbondedResource::Gpu || nonbondedResource == NonbondedResource::EmulateGpu)
     {
-        const std::string gpuPairlistSplitMessage = sc_gpuIsSplitPairList(gpuPairlistType)
-                                                            ? "with split GPU pairlist"
-                                                            : "with unified GPU pairlist";
-
         GMX_LOG(mdlog.info)
                 .asParagraph()
-                .appendTextFormatted("NBNxM GPU setup: super-cluster %dx%dx%d / cluster %d, %s",
+                .appendTextFormatted("NBNxM GPU setup: super-cluster %dx%dx%d",
                                      sc_gpuNumClusterPerCellX(gpuPairlistType),
                                      sc_gpuNumClusterPerCellY(gpuPairlistType),
-                                     sc_gpuNumClusterPerCellZ(gpuPairlistType),
-                                     sc_gpuClusterSize(gpuPairlistType),
-                                     gpuPairlistSplitMessage.c_str());
+                                     sc_gpuNumClusterPerCellZ(gpuPairlistType));
     }
 
-    if (NbnxmKernelType::Cpu4x4_PlainC == kernelSetup.kernelType
-        || NbnxmKernelType::Cpu1x1_PlainC == kernelSetup.kernelType
-        || NbnxmKernelType::Cpu8x8x8_PlainC == kernelSetup.kernelType)
+    // Warn when using non-SIMD CPU kernels on architectures with (fast) SIMD support
+    const bool haveSimdSupportForArch =
+            (c_architecture == Architecture::X86 || c_architecture == Architecture::Arm
+             || c_architecture == Architecture::PowerPC);
+    if (kernelTypeUsesSimplePairlist(kernelSetup.kernelType)
+        && !kernelTypeIsSimd(kernelSetup.kernelType) && haveSimdSupportForArch)
     {
         GMX_LOG(mdlog.warning)
                 .asParagraph()

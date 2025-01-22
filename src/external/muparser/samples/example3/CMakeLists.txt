@@ -1,4 +1,6 @@
-cmake_minimum_required(VERSION 3.2)
+if(NOT DEFINED CMAKE_MINIMUM_REQUIRED_VERSION)
+  cmake_minimum_required(VERSION 3.28)
+endif()
 project(muparser-example3)
 
 # find muparser target already installed

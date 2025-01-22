@@ -31,12 +31,24 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out https://www.gromacs.org.
 
-gmx_add_unit_test(NNPotAppliedForcesUnitTest nnpot_applied_forces-test
+set(testname NNPotAppliedForcesUnitTest)
+set(exename nnpot_applied_forces-test)
+
+gmx_add_unit_test(${testname} ${exename}
+    HARDWARE_DETECTION
     CPP_SOURCE_FILES
         nnpot.cpp
-        nnpotforceprovider.cpp
         nnpotoptions.cpp
         nnpottopologypreprocessor.cpp
+    GPU_CPP_SOURCE_FILES
+        nnpotforceprovider.cpp
 )
 
-target_link_libraries(nnpot_applied_forces-test PRIVATE applied_forces math topology)
+target_link_libraries(
+    ${exename} PRIVATE
+        applied_forces
+        math
+        topology
+        gpu_utils
+        testutils
+)

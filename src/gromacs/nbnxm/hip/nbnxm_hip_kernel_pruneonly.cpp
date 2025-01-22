@@ -47,8 +47,8 @@
 #include <type_traits>
 
 #include "gromacs/gpu_utils/device_context.h"
-#include "gromacs/gpu_utils/device_utils_hip_sycl.h"
 #include "gromacs/gpu_utils/devicebuffer_hip.h"
+#include "gromacs/gpu_utils/gpu_kernel_utils.h"
 #include "gromacs/gpu_utils/hiputils.h"
 #include "gromacs/nbnxm/gpu_types_common.h"
 #include "gromacs/nbnxm/nbnxm_enums.h"
@@ -78,13 +78,13 @@ __launch_bounds__(c_clSizeSq<pairlistType>* threadZ, minBlocksPp) __global__
         constexpr int c_parallelExecutionWidth = sc_gpuParallelExecutionWidth(pairlistType);
 
         // thread/block/warp id-s
-        const unsigned tidxi      = threadIdx.x;
-        const unsigned tidxj      = threadIdx.y;
-        const unsigned tidxz      = threadZ == 1 ? 0 : threadIdx.z;
-        const unsigned bidx       = blockIdx.x;
-        const unsigned tidx       = tidxi + c_clSize * tidxj;
-        const unsigned tidxInWarp = tidx & (c_parallelExecutionWidth - 1);
-        const unsigned widx       = (tidxj * c_clSize) / c_subWarp<pairlistType>;
+        const int tidxi      = threadIdx.x;
+        const int tidxj      = threadIdx.y;
+        const int tidxz      = threadZ == 1 ? 0 : threadIdx.z;
+        const int bidx       = blockIdx.x;
+        const int tidx       = tidxi + c_clSize * tidxj;
+        const int tidxInWarp = tidx & (c_parallelExecutionWidth - 1);
+        const int widx       = (tidxj * c_clSize) / c_subWarp<pairlistType>;
         // Get part for this kernel from global memory. Each block has its own copy to allow asynchronous incrementation.
         int part = plist.d_rollingPruningPart[bidx];
         __syncthreads();
@@ -97,7 +97,7 @@ __launch_bounds__(c_clSizeSq<pairlistType>* threadZ, minBlocksPp) __global__
 
         // Kernel has been launched with max number of blocks across all passes (plist.nsci/numParts),
         // but the last pass will require 1 less block, so extra block should return early.
-        size_t numSciInPart = divideRoundUp((plist.numSci - part), numParts);
+        int numSciInPart = divideRoundUp((plist.numSci - part), numParts);
         if (bidx >= numSciInPart)
         {
             return;
@@ -117,7 +117,7 @@ __launch_bounds__(c_clSizeSq<pairlistType>* threadZ, minBlocksPp) __global__
         float4*                sm_xqBufferPtr = reinterpret_cast<float4*>(sm_nextSlotPtr);
         sm_nextSlotPtr += incrementSharedMemorySlotPtr<pairlistType, float4>();
 
-        const float4* xq = atdat.xq;
+        AmdFastBuffer<const float4> xq{ atdat.xq };
 
         // my i super-cluster's index = sciOffset + current bidx * numParts + part
         const nbnxn_sci_t nbSci          = plistSci[bidx * numParts + part];
@@ -153,8 +153,8 @@ __launch_bounds__(c_clSizeSq<pairlistType>* threadZ, minBlocksPp) __global__
         int prunedPairCount = 0;
         for (int jPacked = cijPackedBegin + tidxz; jPacked < cijPackedEnd; jPacked += threadZ)
         {
-            unsigned           imaskFull, imaskCheck, imaskNew;
-            const unsigned int imask = gm_plistCJPacked[jPacked].imei[widx].imask;
+            int       imaskFull, imaskCheck, imaskNew;
+            const int imask = gm_plistCJPacked[jPacked].imei[widx].imask;
 
             if constexpr (haveFreshList)
             {
@@ -189,7 +189,7 @@ __launch_bounds__(c_clSizeSq<pairlistType>* threadZ, minBlocksPp) __global__
                 {
                     if (imaskCheck & (superClInteractionMask << (jm * c_clusterPerSuperCluster)))
                     {
-                        unsigned  mask_ji = (1U << (jm * c_clusterPerSuperCluster));
+                        int       mask_ji = (1U << (jm * c_clusterPerSuperCluster));
                         const int cj      = gm_plistCJPacked[jPacked].cj[jm];
                         const int aj      = cj * c_clSize + tidxj;
 
@@ -253,7 +253,7 @@ __launch_bounds__(c_clSizeSq<pairlistType>* threadZ, minBlocksPp) __global__
                     sm_prunedPairCount[tidxz] = prunedPairCount;
                     __syncthreads();
 
-                    for (unsigned int indexThreadZ = 1; indexThreadZ < threadZ; indexThreadZ++)
+                    for (int indexThreadZ = 1; indexThreadZ < threadZ; indexThreadZ++)
                     {
                         prunedPairCount += sm_prunedPairCount[indexThreadZ];
                     }

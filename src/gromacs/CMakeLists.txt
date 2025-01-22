@@ -229,8 +229,8 @@ if(GMX_GPU_FFT_ROCFFT)
     target_link_libraries(libgromacs PRIVATE roc::rocfft)
 endif()
 
-if(GMX_GPU_FFT_ONEMKL)
-    target_link_libraries(libgromacs PRIVATE MKL::onemkl)
+if(GMX_GPU_FFT_ONEMATH)
+    target_link_libraries(libgromacs PRIVATE ONEMATH::onemath)
 endif()
 
 if (TARGET MPI::MPI_CXX)

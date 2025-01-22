@@ -192,57 +192,102 @@ generally built into your compiler and detected automatically.
 GPU support
 ~~~~~~~~~~~
 
-|Gromacs| has excellent support for NVIDIA GPUs supported via CUDA.
-On Linux, NVIDIA CUDA_ toolkit with minimum version |GMX_CUDA_MINIMUM_REQUIRED_VERSION|
-is required, and the latest version is strongly encouraged. NVIDIA GPUs with at
-least NVIDIA compute capability |GMX_CUDA_MINIMUM_REQUIRED_COMPUTE_CAPABILITY| are
-required. You are strongly recommended to
-get the latest CUDA version and driver that supports your hardware, but
-beware of possible performance regressions in newer CUDA versions on
-older hardware.
-While some CUDA compilers (nvcc) might not
-officially support recent versions of gcc as the back-end compiler, we
-still recommend that you at least use a gcc version recent enough to
-get the best SIMD support for your CPU, since |Gromacs| always runs some
-code on the CPU. It is most reliable to use the same C++ compiler
-version for |Gromacs| code as used as the host compiler for nvcc.
+|Gromacs| supports a variety of GPU acceleration options.
+For end-users, here are the recommended options based on your hardware:
 
-To make it possible to use other accelerators, |Gromacs| also includes
-OpenCL_ support as a portable GPU backend. The minimum OpenCL version required is
-|REQUIRED_OPENCL_MIN_VERSION| and only 64-bit implementations are supported.
-The current OpenCL implementation is recommended for
-use with GCN-based AMD GPUs, and on Linux we recommend the ROCm runtime.
-Intel integrated GPUs are supported with the Neo drivers.
-OpenCL is also supported with NVIDIA GPUs, but using
-the latest NVIDIA driver (which includes the NVIDIA OpenCL runtime) is
-recommended. Also note that there are performance limitations (inherent
-to the NVIDIA OpenCL runtime).
-It is not possible to support both Intel and other vendors' GPUs with OpenCL.
-A 64-bit implementation of OpenCL is required and therefore OpenCL is only
-supported on 64-bit platforms.
+* AMD GPUs: SYCL (with AdaptiveCpp)
+* Apple M-series: OpenCL
+* Intel GPUs: SYCL (with Intel oneAPI DPC++)
+* NVIDIA GPUs: CUDA
 
-Please note that OpenCL backend does not support the following GPUs:
+CUDA
+""""
 
-* NVIDIA Volta (CC 7.0, e.g., Tesla V100 or GTX 1630) or newer,
-* AMD RDNA1/2/3 (Navi 1/2X,3X, e.g., RX 5500 or RX6900).
+CUDA is the recommended backend for NVIDIA GPUs.
 
-Since |Gromacs| 2021, SYCL_ support has been added.
-Since |Gromacs| 2023 the SYCL_ backend has matured to have
-near feature parity with the CUDA backend as well as broad platform support
-in both aspects more versatile than the OpenCL_ backend
-(notable exception is the Apple Silicon GPU which is only supported in OpenCL).
-The current SYCL implementation can be compiled either with `Intel oneAPI DPC++`_
-compiler for Intel GPUs, or with AdaptiveCpp_ compiler and ROCm runtime for
-AMD GPUs (GFX9, CDNA 1/2, and RDNA1/2/3). Using other devices supported by
-these compilers is possible, but not recommended. Notably, SSCP/generic mode
-of AdaptiveCpp_ is not supported.
+Supported hardware:
 
-Starting with |Gromacs| 2025, AMD-HIP_ support has been added for running the main
-non-bonded kernels on AMD devices.
+* NVIDIA GPUs (all supported by the CUDA toolkit)
 
-It is not possible to configure several GPU backends in the same build
-of |Gromacs|.
+Requirements:
 
+* CUDA toolkit version |GMX_CUDA_MINIMUM_REQUIRED_VERSION| or newer
+* GPU with compute capability |GMX_CUDA_MINIMUM_REQUIRED_COMPUTE_CAPABILITY| or higher
+
+Best practices:
+
+* Use the latest CUDA version and NVIDIA driver compatible with your hardware
+* Match your gcc version with nvcc's host compiler (prefer the latest gcc/clang version supported by nvcc)
+
+More information can be found in the `CUDA GPU acceleration`_ section.
+
+OpenCL
+""""""
+
+OpenCL is deprecated, but is currently the only backend supporting Apple M-series GPUs.
+
+Supported hardware:
+
+* AMD GCN-based GPUs (RDNA-series GPUs, such as RX 5500 or RX 6900, are not supported)
+* Apple M-series GPUs
+* Intel GPUs (special compilation options required; Intel DataCenter GPU Max are not supported)
+* NVIDIA GPUs (only prior to Volta architecture; newer GPUs, such as V100 or GTX 10xx-series, are not supported)
+
+Requirements:
+
+* The minimum OpenCL version |REQUIRED_OPENCL_MIN_VERSION|.
+
+More information can be found in the `OpenCL GPU acceleration`_ section.
+
+SYCL
+""""
+
+SYCL is the recommended backend for Intel and AMD GPUs.
+For Intel GPUs, we recommend using the Intel oneAPI DPC++ compiler,
+while for AMD GPUs we recommend using AdaptiveCpp compiler with ROCm runtime.
+
+Supported hardware:
+
+* AMD GPUs: GFX9 (Vega, Raven), CDNA-series, RDNA-series GPUs (using either oneAPI or AdaptiveCpp)
+* Intel GPUs: All current integrated/discrete GPUs (using oneAPI)
+* NVIDIA GPUs: All GPUs (using either oneAPI or AdaptiveCpp)
+
+Requirements:
+
+* oneAPI DPC++ compiler: 2024.0 or newer (Codeplay plugin required for NVIDIA/AMD Support), or
+* AdaptiveCpp: 23.10 or newer.
+
+Limitations:
+
+* Intel GPUs and SSCP/generic compilation flow not supported with AdaptiveCpp.
+* ROCm or CUDA toolkits are required for AMD and NVIDIA GPUs respectively.
+
+More information can be found in the `SYCL GPU acceleration Intel`_ and `SYCL GPU acceleration AMD`_ sections.
+
+HIP
+"""
+
+Supported hardware:
+
+* AMD GPUs: GFX9, CDNA 1/2, RDNA 1/2/3 GPUs
+
+Requirements:
+
+* ROCm runtime 5.2 or newer
+
+Limitations:
+
+* Available from |Gromacs| 2025
+* |Gromacs| 2025 supports only main non-bonded kernels
+
+More information can be found in the `AMD-HIP`_ section.
+
+Important Notes
+"""""""""""""""
+
+* Only one GPU backend can be configured per build
+* CPU code always runs alongside GPU acceleration
+* Choose latest drivers while watching for performance regressions on older hardware
 
 .. _mpi-support:
 
@@ -384,21 +429,22 @@ e.g., through ``source /opt/intel/oneapi/setvars.sh`` or
 or manually setting environment variable ``MKLROOT=/full/path/to/mkl``.
 Then run CMake with setting ``-DGMX_FFT_LIBRARY=mkl`` and/or ``-DGMX_GPU_FFT_LIBRARY=mkl``.
 
-Using oneMKL Interface Library
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Using oneMath Interface Library
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The oneMKL interface library enables the SYCL backend for |Gromacs| with cuFFT, rocFFT,
-or closed-source oneMKL using Intel DPC++ and Codeplay's plugins for NVIDIA and AMD GPUs.
-To use, Intel DPC++ must be installed (>= 2023.2.0), along with Codeplay's plugins for NVIDIA
+The oneMath interface library (earlier called oneMKL interface library, not to be confused
+with Intel oneMKL) enables the SYCL backend for |Gromacs| with cuFFT, rocFFT,
+or closed-source oneMath using Intel DPC++ and Codeplay's plugins for NVIDIA and AMD GPUs.
+To use, Intel DPC++ must be installed along with Codeplay's plugins for NVIDIA
 and AMD GPUs as required, and CUDA and/or ROCm as required. The environment should be initialized
 as with the MKL instructions above.
 
-To use the oneMKL interface library, download, build and install oneMKL as directed in the
-`oneMKL documentation <https://oneapi-src.github.io/oneMKL/building_the_project.html#building-for-onemkl>`_,
+To use the oneMath interface library, download, build and install oneMath as directed in the
+`oneMath documentation <https://uxlfoundation.github.io/oneMath/building_the_project_with_dpcpp.html>`_,
 making sure that
-`suitable DFT backends <https://github.com/oneapi-src/oneMKL/blob/develop/CMakeLists.txt#supported-configurations>`_
+`suitable DFT backends <https://github.com/uxlfoundation/oneMath#supported-configurations>`_
 are enabled.
-Then, when building |Gromacs|, set ``-DGMX_GPU_FFT_LIBRARY=ONEMKL``.
+Then, when building |Gromacs|, set ``-DGMX_GPU_FFT_LIBRARY=ONEMATH``.
 
 .. _bbfft installation:
 
@@ -406,9 +452,8 @@ Using double-batched FFT library
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Generally MKL will provide better performance on Intel GPUs, however
-this alternative open-source library from Intel
-(https://github.com/intel/double-batched-fft-library) is useful for
-very large FFT sizes in |Gromacs|.
+this `alternative open-source library from Intel <https://github.com/intel/double-batched-fft-library>`_
+is useful for very large FFT sizes in |Gromacs|.
 
 ::
 
@@ -896,6 +941,7 @@ virtual architecture code is always embedded for all requested architectures
 Note that this is mainly a developer-oriented feature but its performance is
 generally close to that of code compiled with nvcc.
 
+.. _OpenCL GPU acceleration:
 
 OpenCL GPU acceleration
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -971,13 +1017,13 @@ There is also experimental support for:
 
 In table form:
 
-==========  ======================  ========================================================================================================
-GPU vendor  AdaptiveCpp_ (hipSYCL)  `Intel oneAPI DPC++`_
-==========  ======================  ========================================================================================================
-Intel       not supported           supported
-AMD         supported               experimental (requires `Codeplay plugin <https://developer.codeplay.com/products/oneapi/amd/home/>`_)
-NVIDIA      experimental            experimental (requires `Codeplay plugin <https://developer.codeplay.com/products/oneapi/nvidia/home/>`__)
-==========  ======================  ========================================================================================================
+==========  =============  =========================================================================================================
+GPU vendor  AdaptiveCpp_   `Intel oneAPI DPC++`_
+==========  =============  =========================================================================================================
+Intel       not supported  supported
+AMD         supported      experimental (requires `Codeplay plugin <https://developer.codeplay.com/products/oneapi/amd/home/>`_)
+NVIDIA      experimental   experimental (requires `Codeplay plugin <https://developer.codeplay.com/products/oneapi/nvidia/home/>`__)
+==========  =============  =========================================================================================================
 
 Here, "experimental support" means that the combination has received limited testing and is expected to work
 (with possible limitations), but is not recommended for production use.
@@ -995,13 +1041,13 @@ Note: SYCL_ support in |Gromacs| and the underlying compilers and runtimes
 are less mature than either OpenCL or CUDA. Please, pay extra attention
 to simulation correctness when you are using it.
 
+.. _SYCL GPU acceleration Intel:
+
 SYCL GPU acceleration for Intel GPUs
 """"""""""""""""""""""""""""""""""""
 
 You should install the recent `Intel oneAPI DPC++`_ compiler toolkit.
-For |Gromacs| 2024, oneAPI version 2023.2 or 2024.0 are tested regularly and are
-recommended, although later versions might work and can offer better performance.
-The earliest supported version is oneAPI 2023.0.
+For |Gromacs| 2025, version 2025.0 is recommended, and 2024.0 is the earliest supported.
 Using open-source `Intel LLVM <https://github.com/intel/llvm>`_ is possible,
 but not extensively tested. We also recommend installing the most recent
 `Neo driver <https://github.com/intel/compute-runtime/releases>`_.
@@ -1032,8 +1078,8 @@ You might also consider using :ref:`double-batched FFT library <bbfft installati
 SYCL GPU acceleration for AMD GPUs
 """"""""""""""""""""""""""""""""""
 
-Using `AdaptiveCpp 23.10.0 <https://github.com/AdaptiveCpp/AdaptiveCpp/releases/tag/v23.10.0>`_
-and ROCm 5.3-5.7 is recommended. The earliest supported version is hipSYCL 0.9.4.
+Using `AdaptiveCpp 24.02.0 <https://github.com/AdaptiveCpp/AdaptiveCpp/releases/tag/v24.02.0>`_
+and ROCm 5.7-6.2 is recommended. The earliest supported version is AdaptiveCpp 23.10.
 
 We strongly recommend using the clang compiler bundled
 with ROCm for building both AdaptiveCpp and |Gromacs|. Mainline Clang releases can also work.
@@ -1048,27 +1094,22 @@ is set correctly, e.g. to ``/opt/rocm`` in the case of default installation):
             -DCMAKE_CXX_COMPILER=${ROCM_PATH}/llvm/bin/clang++ \
             -DLLVM_DIR=${ROCM_PATH}/llvm/lib/cmake/llvm/
 
-If ROCm 5.0 or earlier is used, AdaptiveCpp might require
-`additional build flags <https://github.com/AdaptiveCpp/AdaptiveCpp/blob/v0.9.4/doc/install-rocm.md>`_.
-Using hipSYCL 0.9.4 with ROCm 5.7+ / Clang 17+ might also require
-`extra workarounds <https://github.com/AdaptiveCpp/AdaptiveCpp/wiki/Build-instructions-for-old-versions#hipsycl-094>`_.
-
 After compiling and installing AdaptiveCpp, the following settings can be used for
-building |Gromacs| itself (set ``HIPSYCL_TARGETS`` to the target hardware):
+building |Gromacs| itself (set ``ACPP_TARGETS`` to the target hardware):
 
 ::
 
    cmake .. -DCMAKE_C_COMPILER=${ROCM_PATH}/llvm/bin/clang \
             -DCMAKE_CXX_COMPILER=${ROCM_PATH}/llvm/bin/clang++ \
-            -DGMX_GPU=SYCL -DGMX_SYCL=ACPP -DHIPSYCL_TARGETS='hip:gfxXYZ'
+            -DGMX_GPU=SYCL -DGMX_SYCL=ACPP -DACPP_TARGETS='hip:gfxXYZ'
 
 Multiple target architectures can be specified, e.g.,
-``-DHIPSYCL_TARGETS='hip:gfx908,gfx90a'``. Having both RDNA (``gfx1xyz``)
+``-DACPP_TARGETS='hip:gfx908,gfx90a'``. Having both RDNA (``gfx1xyz``)
 and GCN/CDNA (``gfx9xx``) devices in the same build is possible but will incur
 a minor performance penalty compared to building for GCN/CDNA devices only.
 If you have multiple AMD GPUs of different generations in the same system
 (e.g., integrated APU and a discrete GPU) the ROCm runtime requires code to be available
-for each device at runtime, so you need to specify every device in ``HIPSYCL_TARGETS``
+for each device at runtime, so you need to specify every device in ``ACPP_TARGETS``
 when compiling to avoid ROCm crashes at initialization.
 
 By default, `VkFFT <https://github.com/DTolm/VkFFT>`_  is used to perform FFT on GPU.
@@ -1340,9 +1381,15 @@ Building with Neural Network potential support
 To build |Gromacs| with support for Neural Network potentials, it has to be compiled 
 with a suitable machine learning library. At the moment, only models trained in
 `Pytorch <https://pytorch.org/>`_ are supported. To be able to load them in |Gromacs|,
-it has to be built with the Pytorch C++ API or LibTorch, which can be downloaded
+it has to be built with the Pytorch C++ API or Libtorch, which can be downloaded
 from the `Pytorch website <https://pytorch.org/get-started/locally/>`_. 
-The NNP interface is enabled by default when a LibTorch installation is found in the
+The website offers versions including pre-CXX11 and CXX11 ABI versions on Linux.
+You must use the same ABI version as you use when building the rest of
+GROMACS, which does not support or test the pre-CXX11 ABI.
+So get (or build) the CXX11 ABI version of Libtorch.
+For the same reason, it is also not possible to use the Libtorch version that ships
+with a conda installation of Pytorch, because it is built with the pre-CXX11 ABI by default.
+The NNP interface is enabled by default when a Libtorch installation is found in the
 ``CMAKE_PREFIX_PATH``, or ``Torch_DIR`` is set to a ``TorchConfig.cmake`` or 
 ``torch-config.cmake`` usually found under ``share/cmake/Torch/`` in the libtorch 
 installation directory. It may also be explicitly enabled with ``-DGMX_NNPOT=TORCH``
@@ -1716,7 +1763,7 @@ nvcxx version 24.7
 HIP version 5.7.1 and 6.2.2
 AdaptiveCPP 23.10 and 24.02 with ROCm 5.7.1 and 6.2 (respectively),
 and
-oneAPI version 2024.0 and 2024.2 (including CUDA 12.0.1 and ROCm 6.1.3 backends) .
+oneAPI version 2024.0 and 2024.2 (including CUDA 12.0.1 and ROCm 6.1.3 backends).
 
 For this testing, we use Ubuntu 22.04 and 24.04 operating systems.
 Other compiler, library, and OS versions are tested less frequently.

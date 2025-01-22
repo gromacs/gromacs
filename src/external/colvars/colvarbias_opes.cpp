@@ -395,15 +395,15 @@ cvm::real colvarbias_opes::getProbAndDerivatives(
         std::vector<cvm::real> omp_deriv(der_prob.size(), 0);
         std::vector<cvm::real> tmp_dist(num_variables());
         #pragma omp for reduction(+:prob) nowait
-        for (size_t k = 0; k < m_kernels.size(); ++k) {
+        for (int k = 0; k < static_cast<int>(m_kernels.size()); ++k) {
           prob += evaluateKernel(m_kernels[k], cv, omp_deriv, tmp_dist);
         }
         #pragma omp critical
-        for (size_t i = 0; i < num_variables(); ++i) {
+        for (int i = 0; i < static_cast<int>(num_variables()); ++i) {
           der_prob[i]+=omp_deriv[i];
         }
         #pragma omp single
-        for (size_t i = 0; i < num_variables(); ++i) {
+        for (int i = 0; i < static_cast<int>(num_variables()); ++i) {
           dist[i] = tmp_dist[i];
         }
       }
@@ -448,16 +448,16 @@ cvm::real colvarbias_opes::getProbAndDerivatives(
         std::vector<cvm::real> omp_deriv(der_prob.size(), 0);
         std::vector<cvm::real> tmp_dist(num_variables());
         #pragma omp for reduction(+:prob) nowait
-        for (size_t nk = 0; nk < m_nlist_index.size(); ++nk) {
+        for (int nk = 0; nk < static_cast<int>(m_nlist_index.size()); ++nk) {
           const size_t k = m_nlist_index[nk];
           prob += evaluateKernel(m_kernels[k], cv, omp_deriv, tmp_dist);
         }
         #pragma omp critical
-        for (size_t i = 0; i < num_variables(); ++i) {
+        for (int i = 0; i < static_cast<int>(num_variables()); ++i) {
           der_prob[i]+=omp_deriv[i];
         }
         #pragma omp single
-        for (size_t i = 0; i < num_variables(); ++i) {
+        for (int i = 0; i < static_cast<int>(num_variables()); ++i) {
           dist[i] = tmp_dist[i];
         }
       }
@@ -947,8 +947,8 @@ int colvarbias_opes::update_opes() {
           #pragma omp parallel num_threads(m_num_threads)
           {
             #pragma omp for reduction(+:sum_uprob) nowait
-            for (size_t k = 0; k < m_kernels.size(); ++k) {
-              for (size_t kk = 0; kk < m_kernels.size(); ++kk) {
+            for (int k = 0; k < static_cast<int>(m_kernels.size()); ++k) {
+              for (int kk = 0; kk < static_cast<int>(m_kernels.size()); ++kk) {
                 sum_uprob += evaluateKernel(m_kernels[kk], m_kernels[k].m_center);
               }
             }
@@ -992,8 +992,8 @@ int colvarbias_opes::update_opes() {
             #pragma omp parallel num_threads(m_num_threads)
             {
               #pragma omp for reduction(+:delta_sum_uprob) nowait
-              for (size_t i = 0; i < m_kernels.size(); ++i) {
-                for (size_t d = 0; d < m_delta_kernels.size(); ++d) {
+              for (int i = 0; i < static_cast<int>(m_kernels.size()); ++i) {
+                for (int d = 0; d < static_cast<int>(m_delta_kernels.size()); ++d) {
                   const int sign = m_delta_kernels[d].m_height < 0 ? -1 : 1;
                   delta_sum_uprob += evaluateKernel(m_delta_kernels[d], m_kernels[i].m_center) + sign * evaluateKernel(m_kernels[i], m_delta_kernels[d].m_center);
                 }
@@ -1034,9 +1034,9 @@ int colvarbias_opes::update_opes() {
             #pragma omp parallel num_threads(m_num_threads)
             {
               #pragma omp for reduction(+:delta_sum_uprob) nowait
-              for (size_t i = 0; i < m_nlist_index.size(); ++i) {
+              for (int i = 0; i < static_cast<int>(m_nlist_index.size()); ++i) {
                 const size_t k = m_nlist_index[i];
-                for (size_t d = 0; d < m_delta_kernels.size(); ++d) {
+                for (int d = 0; d < static_cast<int>(m_delta_kernels.size()); ++d) {
                   const double sign = m_delta_kernels[d].m_height < 0 ? -1 : 1;
                   delta_sum_uprob += evaluateKernel(m_delta_kernels[d], m_kernels[k].m_center) + sign * evaluateKernel(m_kernels[k], m_delta_kernels[d].m_center);
                 }
@@ -1080,8 +1080,8 @@ int colvarbias_opes::update_opes() {
           #pragma omp parallel num_threads(m_num_threads)
           {
             #pragma omp for reduction(+:delta_sum_uprob)
-            for (size_t d = 0; d < m_delta_kernels.size(); ++d) {
-              for (size_t dd = 0; dd < m_delta_kernels.size(); ++dd) {
+            for (int d = 0; d < static_cast<int>(m_delta_kernels.size()); ++d) {
+              for (int dd = 0; dd < static_cast<int>(m_delta_kernels.size()); ++dd) {
                 const int sign = m_delta_kernels[d].m_height < 0 ? -1 : 1;
                 delta_sum_uprob -= sign * evaluateKernel(m_delta_kernels[dd], m_delta_kernels[d].m_center);
               }
@@ -1540,13 +1540,13 @@ size_t colvarbias_opes::getMergeableKernel(const std::vector<cvm::real>& giver_c
 #if defined(_OPENMP)
       #pragma omp parallel num_threads(m_num_threads)
       {
-        size_t min_k_omp = min_k;
+        int min_k_omp = min_k;
         cvm::real min_norm2_omp = m_compression_threshold2;
         #pragma omp for nowait
-        for (size_t k = 0; k < m_kernels.size(); ++k) {
-          if (k == giver_k) continue;
+        for (int k = 0; k < static_cast<int>(m_kernels.size()); ++k) {
+          if (k == static_cast<int>(giver_k)) continue;
           double norm2 = 0;
-          for (size_t i = 0; i < num_variables(); ++i) {
+          for (int i = 0; i < static_cast<int>(num_variables()); ++i) {
             norm2 += variables(i)->dist2( giver_center[i], m_kernels[k].m_center[i]) / (m_kernels[k].m_sigma[i] * m_kernels[k].m_sigma[i]);
             if (norm2 >= min_norm2_omp) break;
           }
@@ -1620,11 +1620,11 @@ size_t colvarbias_opes::getMergeableKernel(const std::vector<cvm::real>& giver_c
         size_t min_k_omp = min_k;
         cvm::real min_norm2_omp = m_compression_threshold2;
         #pragma omp for nowait
-        for (size_t nk = 0; nk < m_nlist_index.size(); ++nk) {
+        for (int nk = 0; nk < static_cast<int>(m_nlist_index.size()); ++nk) {
           const size_t k = m_nlist_index[nk];
           if (k == giver_k) continue;
           double norm2 = 0;
-          for (size_t i = 0; i < num_variables(); ++i) {
+          for (int i = 0; i < static_cast<int>(num_variables()); ++i) {
             norm2 += variables(i)->dist2(giver_center[i], m_kernels[k].m_center[i]) / (m_kernels[k].m_sigma[i] * m_kernels[k].m_sigma[i]);
             if (norm2 >= min_norm2_omp) break;
           }
@@ -1915,13 +1915,13 @@ void colvarbias_opes::updateNlist(const std::vector<cvm::real>& center) {
     {
       std::vector<size_t> private_nlist_index;
       #pragma omp for nowait
-      for (size_t k = 0; k < m_kernels.size(); ++k) {
+      for (int k = 0; k < static_cast<int>(m_kernels.size()); ++k) {
         cvm::real norm2_k = 0;
-        for (size_t i = 0; i < num_variables(); ++i) {
+        for (int i = 0; i < static_cast<int>(num_variables()); ++i) {
           norm2_k += variables(i)->dist2(m_nlist_center[i], m_kernels[k].m_center[i]) / (m_kernels[k].m_sigma[i] * m_kernels[k].m_sigma[i]);
         }
         if (norm2_k <= m_nlist_param[0] * m_cutoff2) {
-          private_nlist_index.push_back(k);
+          private_nlist_index.push_back(static_cast<size_t>(k));
         }
       }
       #pragma omp critical

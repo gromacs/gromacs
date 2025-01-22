@@ -265,8 +265,13 @@ void
         }
 #endif /* CALC_ENERGIES */
 
+        // Without loop vectorization we first loop over all pairs with exclusions and then loop
+        // over the remaining pairs without exclusion without checking for exclusions
         int cjind = cjind0;
-        while (cjind < cjind1 && nbl->cj.excl(cjind) != 0xffff)
+#if VECTORIZE_JLOOP && defined __clang__
+#    pragma clang loop vectorize(assume_safety)
+#endif
+        for (; cjind < cjind1 && (VECTORIZE_JLOOP || nbl->cj.excl(cjind) != 0xffff); cjind++)
         {
 #define CHECK_EXCLS
             if (half_LJ)
@@ -288,30 +293,32 @@ void
 #include "kernel_ref_inner.h"
             }
 #undef CHECK_EXCLS
-            cjind++;
         }
 
+#if !VECTORIZE_JLOOP
+        // Second part of the j-loop, does not check for exclusions
         for (; (cjind < cjind1); cjind++)
         {
             if (half_LJ)
             {
-#define CALC_COULOMB
-#define HALF_LJ
-#include "kernel_ref_inner.h"
-#undef HALF_LJ
-#undef CALC_COULOMB
+#    define CALC_COULOMB
+#    define HALF_LJ
+#    include "kernel_ref_inner.h"
+#    undef HALF_LJ
+#    undef CALC_COULOMB
             }
             else if (do_coul)
             {
-#define CALC_COULOMB
-#include "kernel_ref_inner.h"
-#undef CALC_COULOMB
+#    define CALC_COULOMB
+#    include "kernel_ref_inner.h"
+#    undef CALC_COULOMB
             }
             else
             {
-#include "kernel_ref_inner.h"
+#    include "kernel_ref_inner.h"
             }
         }
+#endif // !VECTORIZE_JLOOP
 
         /* Add accumulated i-forces to the force array */
         for (int i = 0; i < UNROLLI; i++)

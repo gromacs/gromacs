@@ -946,7 +946,6 @@ static void nbnxn_atomdata_set_energygroups(const GridSet&          gridSet,
         energyGroupsPerCluster->resizeEnergyGroups(grid.atomIndexEnd());
 
         /* Loop over all columns and copy and fill */
-        const int gmx_unused numThreads = gmx_omp_nthreads_get(ModuleMultiThread::Pairsearch);
 #pragma omp parallel for num_threads(numThreads) schedule(static)
         for (int i = 0; i < grid.numColumns(); i++)
         {

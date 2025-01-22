@@ -118,7 +118,7 @@ public:
     ArrayRefWithPadding(U&& o)
     {
         auto constArrayRefWithPadding = o.constArrayRefWithPadding();
-        this->swap(constArrayRefWithPadding);
+        *this                         = std::move(constArrayRefWithPadding);
     }
     //! Copy assignment operator
     ArrayRefWithPadding& operator=(ArrayRefWithPadding const& o)

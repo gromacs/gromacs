@@ -2943,7 +2943,11 @@ static void nbnxn_make_pairlist_part(const GridSet&          gridSet,
     int ci_y = 0;
     while (next_ci(iGrid, nth, ci_block, &ci_x, &ci_y, &ci_b, &ci))
     {
-        if (c_listIsSimple && flags_i[ci] == 0)
+        /* Skip i-clusters that do not interact.
+         * With perturbed atoms, we can not skip clusters, as we check the exclusion
+         * count of perturbed interactions, including those with zero coefficients.
+         */
+        if (c_listIsSimple && !haveFep && flags_i[ci] == 0)
         {
             continue;
         }

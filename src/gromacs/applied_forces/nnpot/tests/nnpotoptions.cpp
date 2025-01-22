@@ -46,6 +46,7 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/domdec/localatomset.h"
+#include "gromacs/fileio/warninp.h"
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/treesupport.h"
@@ -108,12 +109,12 @@ public:
         mdpValueBuilder.rootObject().addValue(
                 c_nnpotModuleName + "-modelfile",
                 gmx::test::TestFileManager::getInputFilePath("model.pt").string());
-        mdpValueBuilder.rootObject().addValue(c_nnpotModuleName + "-model_input1",
-                                              std::string("atom_positions"));
-        mdpValueBuilder.rootObject().addValue(c_nnpotModuleName + "-model_input2",
-                                              std::string("atom_numbers"));
-        mdpValueBuilder.rootObject().addValue(c_nnpotModuleName + "-model_input3", std::string("box"));
-        mdpValueBuilder.rootObject().addValue(c_nnpotModuleName + "-model_input4", std::string("pbc"));
+        mdpValueBuilder.rootObject().addValue(c_nnpotModuleName + "-model-input1",
+                                              std::string("atom-positions"));
+        mdpValueBuilder.rootObject().addValue(c_nnpotModuleName + "-model-input2",
+                                              std::string("atom-numbers"));
+        mdpValueBuilder.rootObject().addValue(c_nnpotModuleName + "-model-input3", std::string("box"));
+        mdpValueBuilder.rootObject().addValue(c_nnpotModuleName + "-model-input4", std::string("pbc"));
         return mdpValueBuilder.build();
     }
 
@@ -140,7 +141,6 @@ TEST_F(NNPotOptionsTest, DefaultParameters)
 
     checker.checkBoolean(defaultParams.active_, "active");
     checker.checkString(defaultParams.modelFileName_, "modelFileName");
-    checker.checkBoolean(defaultParams.providesForces_, "providesForces");
     checker.checkString(defaultParams.inputGroup_, "inputGroup");
     checker.checkString(defaultParams.modelInput_[0], "modelInput1");
     checker.checkString(defaultParams.modelInput_[1], "modelInput2");
@@ -158,7 +158,6 @@ TEST_F(NNPotOptionsTest, OptionSetsActive)
 TEST_F(NNPotOptionsTest, OutputNoDefaultValuesWhenInactive)
 {
     // Transform module data into a flat key-value tree for output.
-
     StringOutputStream        stream;
     KeyValueTreeBuilder       builder;
     KeyValueTreeObjectBuilder builderObject = builder.rootObject();
@@ -209,9 +208,11 @@ TEST_F(NNPotOptionsTest, InternalsToKvtAndBack)
     const IndexGroupsAndNames indexGroupAndNames = indexGroupsAndNamesGeneric();
     nnpotOptions_.setInputGroupIndices(indexGroupAndNames);
 
-    // Set dummy logger
+    // Set dummy logger and warning handler
     MDLogger logger;
     nnpotOptions_.setLogger(logger);
+    WarningHandler warninp(true, 0);
+    nnpotOptions_.setWarninp(&warninp);
 
     // Copy internal parameters
     const NNPotParameters& params           = nnpotOptions_.parameters();
@@ -219,15 +220,22 @@ TEST_F(NNPotOptionsTest, InternalsToKvtAndBack)
     auto                   mmIndicesBefore  = params.mmIndices_;
 
     KeyValueTreeBuilder builder;
-    nnpotOptions_.writeParamsToKvt(builder.rootObject());
-    const auto inputTree = builder.build();
+    if (GMX_TORCH)
+    {
+        EXPECT_NO_THROW(nnpotOptions_.writeParamsToKvt(builder.rootObject()));
+        const auto inputTree = builder.build();
 
-    nnpotOptions_.readParamsFromKvt(inputTree);
+        EXPECT_NO_THROW(nnpotOptions_.readParamsFromKvt(inputTree));
 
-    // Check Internal parameters taken back from KVT
-    const NNPotParameters& params2 = nnpotOptions_.parameters();
-    EXPECT_EQ(inpIndicesBefore, params2.inpIndices_);
-    EXPECT_EQ(mmIndicesBefore, params2.mmIndices_);
+        // Check Internal parameters taken back from KVT
+        const NNPotParameters& params2 = nnpotOptions_.parameters();
+        EXPECT_EQ(inpIndicesBefore, params2.inpIndices_);
+        EXPECT_EQ(mmIndicesBefore, params2.mmIndices_);
+    }
+    else
+    {
+        EXPECT_ANY_THROW(nnpotOptions_.writeParamsToKvt(builder.rootObject()));
+    }
 }
 
 } // namespace test

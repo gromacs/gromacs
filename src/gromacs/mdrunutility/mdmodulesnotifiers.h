@@ -115,8 +115,18 @@ struct MDModulesEnergyOutputToDensityFittingRequestChecker
  */
 struct MDModulesEnergyOutputToQMMMRequestChecker
 {
-    //! Trigger output to density fitting energy field
+    //! Trigger output to QMMM energy field
     bool energyOutputToQMMM_ = false;
+};
+
+/*! \libinternal \brief Check if NNPot module outputs energy to a specific field.
+ *
+ * Ensures that energy is output for NNPot module.
+ */
+struct MDModulesEnergyOutputToNNPotRequestChecker
+{
+    //! Trigger output to NNPot energy field
+    bool energyOutputToNNPot_ = false;
 };
 
 /*! \libinternal
@@ -368,6 +378,9 @@ struct MDModulesNotifiers
      * \tparam MDModulesEnergyOutputToQMMMRequestChecker*
      *                              Enables QMMM module to report if it wants to write its energy
      *                              output to the "Quantum En." field in the energy files
+     * \tparam MDModulesEnergyOutputToNNPotRequestChecker*
+     *                              Enables NNPot module to report if it wants to write its energy
+     *                              output to the "NN Potential" field in the energy files
      * \tparam SeparatePmeRanksPermitted*
      *                              Enables modules to report if they want to disable dedicated
      *                              PME ranks
@@ -399,6 +412,7 @@ struct MDModulesNotifiers
                            const MDModulesAtomsRedistributedSignal,
                            MDModulesEnergyOutputToDensityFittingRequestChecker*,
                            MDModulesEnergyOutputToQMMMRequestChecker*,
+                           MDModulesEnergyOutputToNNPotRequestChecker*,
                            SeparatePmeRanksPermitted*,
                            const PbcType&,
                            const SimulationTimeStep&,

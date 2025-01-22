@@ -158,7 +158,7 @@ public:
 
     /*! \brief Clear all the entries in the list.
      *
-     * Note that this might uses OpenMP threading, so it should not be called from within an OpenMP region.
+     * Note that this might use OpenMP threading, so it should not be called from within an OpenMP region.
      *
      * \param[in] resizeHashTable  When true the hash table is optimized based on the current number of entries stored
      */

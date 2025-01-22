@@ -42,6 +42,8 @@
 #ifndef GMX_APPLIED_FORCES_NNPOTOPTIONS_H
 #define GMX_APPLIED_FORCES_NNPOTOPTIONS_H
 
+#include "config.h"
+
 #include <string>
 
 #include "gromacs/math/vectypes.h"
@@ -77,9 +79,6 @@ struct NNPotParameters
 
     //! stores file name of NNPot model
     std::string modelFileName_ = "model.pt";
-
-    //! indicates whether NNPot provides forces
-    bool providesForces_ = false;
 
     //! stores atom group name for neural network input (default whole System)
     std::string inputGroup_ = "System";
@@ -168,32 +167,35 @@ public:
     const MDLogger* logger();
 
 private:
-    //! Make sure that model and model inputs are compatible
-    void checkNNPotModel();
+//! Make sure that model and model inputs are compatible
+#if !GMX_TORCH
+    [[noreturn]] static
+#endif
+            void
+            checkNNPotModel();
 
     /*! \brief Following Tags denotes names of parameters from .mdp file
      * \note Changing this strings will break .tpr backwards compability
      */
     //! \{
-    const std::string c_activeTag_         = "active";
-    const std::string c_modelFileNameTag_  = "modelfile";
-    const std::string c_providesForcesTag_ = "provides_forces";
-    const std::string c_inputGroupTag_     = "input_group";
+    const std::string c_activeTag_        = "active";
+    const std::string c_modelFileNameTag_ = "modelfile";
+    const std::string c_inputGroupTag_    = "input-group";
     //! complement to input_group, needed to write to tpr
-    const std::string c_mmGroupTag_ = "mm_group";
+    const std::string c_mmGroupTag_ = "mm-group";
 
     /*! \brief User defined input to NN model.
      *
      *  Possible values:
-     * - "atom_positions" vector of atom positions
-     * - "atom_numbers" vector of atom types
+     * - "atom-positions" vector of atom positions
+     * - "atom-numbers" vector of atom types
      * - "box" unit vectors of simulation box
      * - "pbc" boolean vector indicating periodic boundary conditions
      */
-    const std::string c_modelInput1Tag_ = "model_input1";
-    const std::string c_modelInput2Tag_ = "model_input2";
-    const std::string c_modelInput3Tag_ = "model_input3";
-    const std::string c_modelInput4Tag_ = "model_input4";
+    const std::string c_modelInput1Tag_ = "model-input1";
+    const std::string c_modelInput2Tag_ = "model-input2";
+    const std::string c_modelInput3Tag_ = "model-input3";
+    const std::string c_modelInput4Tag_ = "model-input4";
     //! \}
 
     //! NNPot parameters

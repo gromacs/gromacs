@@ -132,6 +132,9 @@ RocfftPlan makePlan(const std::string&     descriptiveString,
     result                               = rocfft_execution_info_create(&execution_info);
     handleRocFftError(result, descriptiveString, "rocfft_execution_info_create failure");
 
+    result = rocfft_plan_description_destroy(description);
+    handleRocFftError(result, descriptiveString, "rocfft_plan_description_destroy failure");
+
     if (requiredWorkBufferSize > 0)
     {
         GMX_RELEASE_ASSERT(workBuffer != nullptr,
@@ -141,7 +144,7 @@ RocfftPlan makePlan(const std::string&     descriptiveString,
                 result, descriptiveString, "rocfft_execution_info_set_work_buffer failure");
     }
 
-    return RocfftPlan{ description, plan, execution_info, workBuffer };
+    return RocfftPlan{ plan, execution_info, workBuffer };
 }
 
 } // namespace

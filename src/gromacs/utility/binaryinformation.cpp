@@ -57,8 +57,8 @@
 #    include <mkl.h>
 #endif
 
-#if GMX_GPU_FFT_ONEMKL
-#    include <oneapi/mkl/dft.hpp>
+#if GMX_GPU_FFT_ONEMATH
+#    include <oneapi/math/dft.hpp>
 #endif
 
 #if HAVE_EXTRAE
@@ -222,23 +222,26 @@ std::string describeMkl()
 #endif
 }
 
-std::string describeOneMkl()
+std::string describeOneMath()
 {
-#if GMX_GPU_FFT_ONEMKL
-    std::string description = "oneMKL interface library (backends:";
-#    ifdef ENABLE_CUFFT_BACKEND
+#if GMX_GPU_FFT_ONEMATH
+    std::string description = "oneMath interface library (backends:";
+#    ifdef ONEMATH_ENABLE_CUFFT_BACKEND
     description += " cuFFT";
 #    endif
-#    ifdef ENABLE_MKLGPU_BACKEND
+#    ifdef ONEMATH_ENABLE_MKLGPU_BACKEND
     description += " MKLGPU";
 #    endif
-#    ifdef ENABLE_ROCFFT_BACKEND
+#    ifdef ONEMATH_ENABLE_ROCFFT_BACKEND
     description += " rocFFT";
+#    endif
+#    ifdef ONEMATH_ENABLE_PORTFFT_BACKEND
+    description += " portFFT";
 #    endif
     description += ")";
     return description;
 #else
-    GMX_RELEASE_ASSERT(false, "describeOneMkl called in a build without oneMKL");
+    GMX_RELEASE_ASSERT(false, "describeOneMath called in a build without oneMath");
     return "";
 #endif
 }
@@ -289,9 +292,9 @@ std::string getGpuFftDescriptionString()
         {
             return describeMkl();
         }
-        else if (GMX_GPU_FFT_ONEMKL)
+        else if (GMX_GPU_FFT_ONEMATH)
         {
-            return describeOneMkl();
+            return describeOneMath();
         }
         else if (GMX_GPU_FFT_ROCFFT)
         {
@@ -437,7 +440,8 @@ void gmx_print_version_info(gmx::TextWriter* writer)
 #endif
     writer->writeLine(formatString("GPU support:         %s", getGpuImplementationString()));
 #if GMX_GPU
-    std::string infoStr = (GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT) ? " (cluster-pair splitting off)" : "";
+    std::string infoStr = (GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT) ? " (cluster-pair splitting off)"
+                                                                  : " (cluster-pair splitting on)";
     writer->writeLine(formatString("NBNxM GPU setup:     super-cluster %dx%dx%d / cluster %d%s",
                                    GMX_GPU_NB_NUM_CLUSTER_PER_CELL_X,
                                    GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Y,

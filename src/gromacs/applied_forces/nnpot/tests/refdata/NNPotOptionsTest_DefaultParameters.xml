@@ -3,7 +3,6 @@
 <ReferenceData>
   <Bool Name="active">false</Bool>
   <String Name="modelFileName">model.pt</String>
-  <Bool Name="providesForces">false</Bool>
   <String Name="inputGroup">System</String>
   <String Name="modelInput1"></String>
   <String Name="modelInput2"></String>

@@ -48,18 +48,19 @@
 
 #if GMX_GPU_FFT_MKL
 // Use Intel closed-source oneMKL directly.
-//
 #    include <mkl_version.h>
 #    if INTEL_MKL_VERSION < 20250000
 #        include <oneapi/mkl/dfti.hpp>
 #    else
 #        include <oneapi/mkl/dft.hpp>
 #    endif
-#elif GMX_GPU_FFT_ONEMKL
-// Use oneMKL interface library
-#    include <oneapi/mkl/dft.hpp>
+namespace mkl_dft = oneapi::mkl::dft;
+#elif GMX_GPU_FFT_ONEMATH
+// Use oneMath interface library
+#    include <oneapi/math/dft.hpp>
+namespace mkl_dft = oneapi::math::dft;
 #else
-#    error Expected GMX_GPU_FFT_ONEMKL or GMX_GPU_FFT_MKL
+#    error Expected GMX_GPU_FFT_ONEMATH or GMX_GPU_FFT_MKL
 #endif
 
 #include "gromacs/fft/fft.h"
@@ -105,8 +106,7 @@ public:
 
 private:
     // Shorthand for the FFT descriptor (a.k.a. plan) type
-    using Descriptor =
-            oneapi::mkl::dft::descriptor<oneapi::mkl::dft::precision::SINGLE, oneapi::mkl::dft::domain::REAL>;
+    using Descriptor = mkl_dft::descriptor<mkl_dft::precision::SINGLE, mkl_dft::domain::REAL>;
 
     float*      realGrid_;
     sycl::queue queue_;

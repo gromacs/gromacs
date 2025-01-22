@@ -13,28 +13,37 @@ type: software
 authors:
   - given-names: Mark
     family-names: Abraham
+    orcid: "https://orcid.org/0000-0001-6363-2521"
   - given-names: Andrey
     family-names: Alekseenko
+    orcid: "https://orcid.org/0000-0003-4906-7241"
   - given-names: Brian
     family-names: Andrews
+    orcid: "https://orcid.org/0000-0003-4469-3147"
   - given-names: Vladimir
     family-names: Basov
+    orcid: "https://orcid.org/0009-0008-3889-3891"
   - given-names: Paul
     family-names: Bauer
+    orcid: "https://orcid.org/0000-0002-2268-0065"
   - given-names: Hugh
     family-names: Bird
   - given-names: Eliane
     family-names: Briand
+    orcid: "https://orcid.org/0000-0002-5875-6682"
   - given-names: Ania
     family-names: Brown
   - given-names: Mahesh
     family-names: Doijade
   - given-names: Giacomo
     family-names: Fiorin
+    orcid: "https://orcid.org/0000-0002-8793-8645"
   - given-names: Stefan
     family-names: Fleischmann
+    orcid: "https://orcid.org/0000-0002-2122-536X"
   - given-names: Sergey
     family-names: Gorelov
+    orcid: "https://orcid.org/0009-0007-1431-0068"
   - given-names: Gilles
     family-names: Gouaillardet
   - given-names: Alan
@@ -43,56 +52,84 @@ authors:
     family-names: Irrgang
   - given-names: Farzaneh
     family-names: Jalalypour
+    orcid: "https://orcid.org/0000-0001-5092-1914"
   - given-names: Petter
     family-names: Johansson
+    orcid: "https://orcid.org/0000-0001-9160-2549"
   - given-names: Carsten
     family-names: Kutzner
+    orcid: "https://orcid.org/0000-0002-8719-0307"
   - given-names: Grzegorz
     family-names: Łazarski
+    orcid: "https://orcid.org/0000-0002-5595-371X"
   - given-names: Justin A.
     family-names: Lemkul
+    orcid: "https://orcid.org/0000-0001-6661-8653"
   - given-names: Magnus
     family-names: Lundborg
+    orcid: "https://orcid.org/0000-0002-0873-7854"
   - given-names: Pascal
     family-names: Merz
+    orcid: "https://orcid.org/0000-0002-7045-8725"
   - given-names: Vedran
     family-names: Miletić
+    orcid: "https://orcid.org/0000-0003-3981-8806"
   - given-names: Dmitry
     family-names: Morozov
+    orcid: "https://orcid.org/0000-0001-9524-948X"
   - given-names: Lukas
     family-names: Müllender
+    orcid: "https://orcid.org/0009-0008-4978-624X"
   - given-names: Julien
     family-names: Nabet
   - given-names: Szilárd
     family-names: Páll
+    orcid: "https://orcid.org/0000-0003-0603-5514"
   - given-names: Andrea
     family-names: Pasquadibisceglie
+    orcid: "https://orcid.org/0000-0002-1630-6982"
   - given-names: Michele
     family-names: Pellegrino
+    orcid: "https://orcid.org/0000-0002-2603-8440"
   - given-names: Nicola
     family-names: Piasentin
+    orcid: "https://orcid.org/0000-0003-2760-4640"
   - given-names: Daniele
     family-names: Rapetti
+    orcid: "https://orcid.org/0000-0002-7193-5220"
   - given-names: Muhammad Umair
     family-names: Sadiq
+    orcid: "https://orcid.org/0000-0001-5713-1149"
   - given-names: Hubert
     family-names: Santuz
+    orcid: "https://orcid.org/0000-0001-6149-9480"
   - given-names: Roland
     family-names: Schulz
+    orcid: "https://orcid.org/0000-0003-1603-2413"
   - given-names: Michael
     family-names: Shirts
+    orcid: "https://orcid.org/0000-0003-3249-1097"
   - given-names: Tatiana
     family-names: Shugaeva
+    orcid: "https://orcid.org/0009-0001-8147-0762"
   - given-names: Alexey
     family-names: Shvetsov
+    orcid: "https://orcid.org/0000-0003-1140-5751"
+  - given-names: Philip
+    family-names: Turner
+    orcid: "https://orcid.org/0009-0004-7127-0777"
   - given-names: Alessandra
     family-names: Villa
+    orcid: "https://orcid.org/0000-0002-9573-0326"
   - given-names: Sebastian
     family-names: Wingbermühle
+    orcid: "https://orcid.org/0000-0001-5949-148X"
   - given-names: Berk
     family-names: Hess
+    orcid: "https://orcid.org/0000-0002-7498-7763"
   - given-names: Erik
     family-names: Lindahl
+    orcid: "https://orcid.org/0000-0002-2734-2794"
 identifiers:
   - type: doi
     value: 10.5281/zenodo.14016590

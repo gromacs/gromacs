@@ -818,6 +818,7 @@ int colvar::init_components_type(const std::string& conf, const char* def_config
                            &def_conf,
                            &pos) ) {
 
+    cvm::increase_depth();
     cvm::log("Initializing "
              "a new \""+std::string(def_config_key)+"\" component"+
              (cvm::debug() ? ", with configuration:\n"+def_conf
@@ -830,7 +831,6 @@ int colvar::init_components_type(const std::string& conf, const char* def_config
     }
     cvcs.push_back(std::shared_ptr<colvar::cvc>(cvcp));
 
-    cvm::increase_depth();
     int error_code_this = cvcp->init(def_conf);
     if (error_code_this == COLVARS_OK) {
       // Checking for invalid keywords only if the parsing was successful, otherwise any

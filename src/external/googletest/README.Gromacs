@@ -17,6 +17,8 @@ No files were omitted or changed, with a few exceptions listed below.
 
 This README.Gromacs file is new, of course.
 
+Made cmake_minimum_required set to same version as toplevel and inherited from it.
+
 Conditional compilation based on __clang_analyzer__ is used to work
 around reports from the clang static analyzer in
 googletest/include/gtest/gtest.h,

@@ -39,3 +39,19 @@ gmx_add_unit_test(PlumedAppliedForcesUnitTests plumed_applied_forces-test
 target_link_libraries(plumed_applied_forces-test PRIVATE applied_forces math topology mdlib
     mdtypes)
 
+set(testname "PlumedMDTests")
+set(exename "plumed_md-test")
+
+gmx_add_gtest_executable(${exename} #MPI
+    CPP_SOURCE_FILES
+        # files with code for tests
+        plumed_md_test.cpp
+        plumedTestUtils.cpp
+        # pseudo-library for code for mdrun
+        $<TARGET_OBJECTS:mdrun_objlib>
+        )
+
+
+target_link_libraries(${exename} PRIVATE mdrun_test_infrastructure ${CMAKE_DL_LIBS})
+
+gmx_register_gtest_test(${testname} ${exename} INTEGRATION_TEST IGNORE_LEAKS QUICK_GPU_TEST)

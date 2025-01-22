@@ -89,6 +89,14 @@ if(${HAS_GPU_INLINE_THRESHOLD})
     list(APPEND ACPP_EXTRA_COMPILE_OPTIONS -fgpu-inline-threshold=99999)
 endif()
 
+# We cannot use local_accessor::get_multi_ptr with ACpp (https://github.com/AdaptiveCpp/AdaptiveCpp/issues/1230),
+# but `get_pointer` is already marked deprecated since ACpp 24.06
+check_cxx_compiler_flag("-Wno-deprecated-declarations" CXXFLAGS_NO_DEPRECATED_DECLARATIONS)
+if(${CXXFLAGS_NO_DEPRECATED_DECLARATIONS})
+    list(APPEND ACPP_EXTRA_COMPILE_OPTIONS -Wno-deprecated-declarations)
+endif()
+
+
 # Backward-compatibility with hipSYCL 0.9.4
 if (DEFINED HIPSYCL_TARGETS AND NOT DEFINED ACPP_TARGETS)
     set(ACPP_TARGETS "${HIPSYCL_TARGETS}")

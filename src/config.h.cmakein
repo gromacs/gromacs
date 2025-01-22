@@ -72,8 +72,8 @@
 #cmakedefine01 GMX_GPU_FFT_VKFFT
 /* Use MKL library for FFT on GPUs */
 #cmakedefine01 GMX_GPU_FFT_MKL
-/* Use oneMKL interface library for FFT on GPUs */
-#cmakedefine01 GMX_GPU_FFT_ONEMKL
+/* Use oneMath interface library for FFT on GPUs */
+#cmakedefine01 GMX_GPU_FFT_ONEMATH
 /* Use rocFFT library for FFT on GPUs */
 #cmakedefine01 GMX_GPU_FFT_ROCFFT
 /* Use hipFFT library for FFT on GPUs */
@@ -496,6 +496,9 @@
 
 /* Use Interactive Molecular Dynamics */
 #cmakedefine01 GMX_IMD
+
+/* Enable vectorization of the 1x1 non-SIMD non-bonded kernel */
+#cmakedefine01 GMX_ENABLE_NBNXM_CPU_VECTORIZATION
 
 /*! \endcond */
 

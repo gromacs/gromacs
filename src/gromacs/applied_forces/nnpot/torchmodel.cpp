@@ -159,18 +159,12 @@ void TorchModel::evaluateModel()
         // run model
         c10::IValue out = model_.forward(inputs_);
         outputs_ = out.isTuple() ? out.toTuple() : c10::ivalue::Tuple::create({ out.toTensor() });
-
-        // check if model outputs forces
-        outputsForces_ = outputs_->elements().size() > 1;
     }
 
     outputReady_ = true;
 }
 
-void TorchModel::getOutputs(std::vector<int>&     indices,
-                            gmx_enerdata_t&       enerd,
-                            const ArrayRef<RVec>& forces,
-                            bool                  provideForces)
+void TorchModel::getOutputs(std::vector<int>& indices, gmx_enerdata_t& enerd, const ArrayRef<RVec>& forces)
 {
     if (!isInit_)
     {
@@ -180,15 +174,9 @@ void TorchModel::getOutputs(std::vector<int>&     indices,
     {
         GMX_THROW(InternalError("Model outputs not ready before getOutputs() was called."));
     }
-    if (provideForces && !outputsForces_)
-    {
-        GMX_THROW(InconsistentInputError(
-                "Model does not provide forces, but forces were requested."));
-    }
-    else if (!provideForces && outputsForces_)
-    {
-        GMX_THROW(InconsistentInputError("Model provides forces, but forces were not requested."));
-    }
+
+    // check if model outputs forces after the forward pass
+    const bool modelOutputsForces = outputsForces();
 
     // for now: only evaluate gradient on main rank
     torch::Tensor energyTensor;
@@ -200,8 +188,9 @@ void TorchModel::getOutputs(std::vector<int>&     indices,
         // get energy
         energyTensor = outputs_->elements()[0].toTensor();
 
-        // get forces
-        if (provideForces)
+        // if the model outputs forces, retrieve them
+        // otherwise, we calculate them from the energy
+        if (modelOutputsForces)
         {
             forceTensor = outputs_->elements()[1].toTensor();
         }
@@ -214,9 +203,9 @@ void TorchModel::getOutputs(std::vector<int>&     indices,
             energyTensor.backward();
             forceTensor = -1. * inputs_[0].toTensor().grad().to(torch::kCPU);
         }
-        // accumulate energy
-        energyTensor = energyTensor.to(torchRealType).to(torch::kCPU);
-        enerd.term[F_EPOT] += energyTensor.item<real>();
+        // set energy
+        energyTensor         = energyTensor.to(torchRealType).to(torch::kCPU);
+        enerd.term[F_ENNPOT] = energyTensor.item<real>();
 
         forceTensor = forceTensor.to(torchRealType).to(torch::kCPU);
     }
@@ -249,6 +238,15 @@ void TorchModel::getOutputs(std::vector<int>&     indices,
 void TorchModel::setCommRec(const t_commrec* cr)
 {
     cr_ = cr;
+}
+
+bool TorchModel::outputsForces() const
+{
+    if (!outputReady_)
+    {
+        GMX_THROW(InternalError("Model outputs not ready before modelOutputsForces() was called."));
+    }
+    return outputs_->elements().size() > 1;
 }
 
 void TorchModel::setDevice()

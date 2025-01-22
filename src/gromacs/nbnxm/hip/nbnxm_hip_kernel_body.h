@@ -47,7 +47,6 @@
 #include <type_traits>
 #include <utility>
 
-#include "gromacs/gpu_utils/device_utils_hip_sycl.h"
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/gpu_kernel_utils.h"
 #include "gromacs/gpu_utils/typecasts_cuda_hip.h"
@@ -117,9 +116,9 @@ static const std::string getKernelName()
 }
 
 
-__device__ static inline float2 fetchNbfpC6C12(const float2* nbfpComb, unsigned int type)
+__device__ static inline float2 fetchNbfpC6C12(const float2* nbfpComb, int type)
 {
-    return amdFastLoad(nbfpComb, type);
+    return *indexedAddress(nbfpComb, type);
 }
 
 
@@ -173,16 +172,16 @@ __device__ static inline float calculateLJEwaldC6Grid(const Float2* nbfpComb, co
 
     if constexpr (vdwType == VdwType::EwaldGeom)
     {
-        const float c6_i = amdFastLoad(nbfpComb, typeI).x;
-        const float c6_j = amdFastLoad(nbfpComb, typeJ).x;
+        const float c6_i = indexedAddress(nbfpComb, typeI)->x;
+        const float c6_j = indexedAddress(nbfpComb, typeJ)->x;
         return c6_i * c6_j;
     }
     else
     {
         static_assert(vdwType == VdwType::EwaldLB);
         /* sigma and epsilon are scaled to give 6*C6 */
-        const Float2 c6c12_i = amdFastLoad(nbfpComb, typeI);
-        const Float2 c6c12_j = amdFastLoad(nbfpComb, typeJ);
+        const Float2 c6c12_i = *indexedAddress(nbfpComb, typeI);
+        const Float2 c6c12_j = *indexedAddress(nbfpComb, typeJ);
 
         const float sigma   = c6c12_i.x + c6c12_j.x;
         const float epsilon = c6c12_i.y * c6c12_j.y;
@@ -301,9 +300,9 @@ __device__ static inline float pmeCorrF(const float z2)
  *  Depending on what is supported, it fetches parameters either
  *  using direct load, texture objects, or texrefs.
  */
-__device__ static inline float2 fetchCoulombForceR(const float* coulombTable, unsigned int index)
+__device__ static inline float2 fetchCoulombForceR(const float* coulombTable, int index)
 {
-    return { amdFastLoad(coulombTable, index), amdFastLoad(coulombTable, index + 1) };
+    return { *indexedAddress(coulombTable, index), *indexedAddress(coulombTable, index + 1) };
 }
 
 /*! \brief Interpolate Ewald coulomb force correction using the F*r table. */
@@ -311,8 +310,8 @@ __device__ static inline float interpolateCoulombForceR(const float* coulombTabl
                                                         const float  coulombTabScale,
                                                         const float  r)
 {
-    const float        normalized = coulombTabScale * r;
-    const unsigned int index      = static_cast<unsigned int>(normalized);
+    const float normalized = coulombTabScale * r;
+    const int   index      = static_cast<int>(normalized);
     // TODO: current ROCm (latest 6.0.2) compiler does not do this transformation. Remove when this is no longer the case.
     const float fraction = __builtin_amdgcn_fractf(normalized);
 
@@ -330,7 +329,7 @@ __device__ static inline float interpolateCoulombForceR(const float* coulombTabl
  * We don't disable it only for the tabulated kernel as the analytical is the default anyway.
  */
 template<PairlistType pairlistType>
-__device__ static inline float reduceForceJWarpShuffle(AmdPackedFloat3 f, const unsigned int tidxi)
+__device__ static inline float reduceForceJWarpShuffle(AmdPackedFloat3 f, const int tidxi)
 {
     static_assert(isPowerOfTwo(sc_gpuClusterPerSuperCluster(pairlistType)));
     static_assert(sc_gpuClusterSize(pairlistType) == 8);
@@ -361,9 +360,7 @@ __device__ static inline float reduceForceJWarpShuffle(AmdPackedFloat3 f, const 
  * Uses AMD DPP instructions to avoid use of atomic operations.
  */
 template<PairlistType pairlistType>
-__device__ static inline float reduceForceIWarpShuffle(AmdPackedFloat3    f,
-                                                       const unsigned int tidxi,
-                                                       const unsigned int tidxj)
+__device__ static inline float reduceForceIWarpShuffle(AmdPackedFloat3 f, const int tidxi, const int tidxj)
 {
     static_assert(isPowerOfTwo(sc_gpuClusterPerSuperCluster(pairlistType)));
     static_assert(sc_gpuClusterSize(pairlistType) == 8);
@@ -402,7 +399,8 @@ __device__ static inline float reduceForceIWarpShuffle(AmdPackedFloat3    f,
  * Uses atomic operations instead of shuffles.
  */
 template<PairlistType pairlistType, bool calculateShift>
-__device__ static inline float3 reduceForceIAtomics(AmdPackedFloat3 input, float3* result, int tidxj, int aidx)
+__device__ static inline float3
+reduceForceIAtomics(AmdPackedFloat3 input, float3* result, const int tidxj, const int aidx)
 {
 
     static_assert(isPowerOfTwo(sc_gpuClusterPerSuperCluster(pairlistType)));
@@ -441,14 +439,14 @@ __device__ static inline float3 reduceForceIAtomics(AmdPackedFloat3 input, float
  * shift forces are using DPP shuffles for non CDNA architectures.
  */
 template<bool calculateShift, PairlistType pairlistType>
-__device__ static inline void reduceForceI(AmdPackedFloat3*   input,
-                                           float3*            result,
-                                           const unsigned int tidxi,
-                                           const unsigned int tidxj,
-                                           const unsigned int tidx,
-                                           const unsigned int sci,
-                                           float3*            fShift,
-                                           unsigned int       shiftBase)
+__device__ static inline void reduceForceI(AmdPackedFloat3* input,
+                                           float3*          result,
+                                           const int        tidxi,
+                                           const int        tidxj,
+                                           const int        tidx,
+                                           const int        sci,
+                                           float3*          fShift,
+                                           const int        shiftBase)
 {
     constexpr int c_clusterPerSuperCluster = sc_gpuClusterPerSuperCluster(pairlistType);
     constexpr int c_clSize                 = sc_gpuClusterSize(pairlistType);
@@ -467,7 +465,7 @@ __device__ static inline void reduceForceI(AmdPackedFloat3*   input,
             for (int i = 0; i < c_clusterPerSuperCluster; i++)
             {
                 const int ai = (sci * c_clusterPerSuperCluster + i) * c_clSize + tidxj;
-                atomic_add_force(result, ai, tidxi, fci[i]);
+                amdFastAtomicAddForce(result, ai, tidxi, fci[i]);
             }
         }
 
@@ -475,7 +473,7 @@ __device__ static inline void reduceForceI(AmdPackedFloat3*   input,
         {
             if (tidxi < 3)
             {
-                atomic_add_force(fShift, shiftBase, tidxi, shiftForceBuffer);
+                amdFastAtomicAddForce(fShift, shiftBase, tidxi, shiftForceBuffer);
             }
         }
     }
@@ -529,18 +527,30 @@ reduceEnergyWarpShuffle(float localLJ, float localEl, float* gm_LJ, float* gm_El
     localLJ += amdDppUpdateShfl<float, 0x4e>(localLJ);
     localEl += amdDppUpdateShfl<float, 0x4e>(localEl);
 
+    // DPP: row_shr:4
     localLJ += amdDppUpdateShfl<float, 0x114>(localLJ);
     localEl += amdDppUpdateShfl<float, 0x114>(localEl);
 
+    // DPP: row_shr:8
     localLJ += amdDppUpdateShfl<float, 0x118>(localLJ);
     localEl += amdDppUpdateShfl<float, 0x118>(localEl);
-    if constexpr (sc_gpuParallelExecutionWidth(pairlistType) == 64)
+
+    // only CDNA (wave64) devices support broadcasts
+    // so we can only use those dpp instructions on devices
+    // with wave64 (aka CDNA)
+    if constexpr (warpSize == 64)
     {
+        // DPP: row_bcast15 (Broadcast thread 15 of each row to next row)
         localLJ += amdDppUpdateShfl<float, 0x142>(localLJ);
         localEl += amdDppUpdateShfl<float, 0x142>(localEl);
 
-        localLJ += amdDppUpdateShfl<float, 0x143>(localLJ);
-        localEl += amdDppUpdateShfl<float, 0x143>(localEl);
+        if constexpr (sc_gpuParallelExecutionWidth(pairlistType) == 64)
+        {
+
+            // DPP: row_bcast31 (Broadcast thread 31 to rows 2 and 3)
+            localLJ += amdDppUpdateShfl<float, 0x143>(localLJ);
+            localEl += amdDppUpdateShfl<float, 0x143>(localEl);
+        }
     }
     else
     {
@@ -573,37 +583,37 @@ __launch_bounds__(c_clSizeSq<pairlistType>* nthreadZ, minBlocksPerMp) __global__
         constexpr int c_parallelExecutionWidth = sc_gpuParallelExecutionWidth(pairlistType);
 
         /* thread/block/warp id-s */
-        const unsigned int tidxi      = threadIdx.x;
-        const unsigned int tidxj      = threadIdx.y;
-        const unsigned int tidx       = tidxj * c_clSize + tidxi;
-        const unsigned int tidxz      = nthreadZ == 1 ? 0 : threadIdx.z;
-        const unsigned int widx       = (c_clSizeSq<pairlistType> == c_parallelExecutionWidth)
-                                                ? 0
-                                                : tidx / c_subWarp<pairlistType>;
-        const unsigned int bidx       = blockIdx.x;
-        const unsigned int tidxInWarp = tidx & (c_parallelExecutionWidth - 1);
+        const int tidxi      = threadIdx.x;
+        const int tidxj      = threadIdx.y;
+        const int tidx       = tidxj * c_clSize + tidxi;
+        const int tidxz      = nthreadZ == 1 ? 0 : threadIdx.z;
+        const int widx       = (c_clSizeSq<pairlistType> == c_parallelExecutionWidth)
+                                       ? 0
+                                       : tidx / c_subWarp<pairlistType>;
+        const int bidx       = blockIdx.x;
+        const int tidxInWarp = tidx & (c_parallelExecutionWidth - 1);
 
         using NbnxmExcl     = nbnxn_excl_t;
         using NbnxmCjPacked = nbnxn_cj_packed_t;
 
-        const float4*      gm_xq                = atdat.xq;
-        float3*            gm_f                 = asFloat3(atdat.f);
-        float3*            gm_shiftVec          = asFloat3(atdat.shiftVec);
-        float3*            gm_fShift            = asFloat3(atdat.fShift);
-        float*             gm_energyElec        = atdat.eElec;
-        float*             gm_energyVdw         = atdat.eLJ;
-        NbnxmCjPacked*     gm_plistCJPacked     = plist.cjPacked;
-        const nbnxn_sci_t* gm_plistSci          = doPruneNBL ? plist.sci : plist.sorting.sciSorted;
-        int*               gm_plistSciHistogram = plist.sorting.sciHistogram;
-        int*               gm_sciCount          = plist.sorting.sciCount;
+        AmdFastBuffer<const float4> gm_xq{ atdat.xq };
+        float3*                     gm_f             = asFloat3(atdat.f);
+        float3*                     gm_shiftVec      = asFloat3(atdat.shiftVec);
+        float3*                     gm_fShift        = asFloat3(atdat.fShift);
+        float*                      gm_energyElec    = atdat.eElec;
+        float*                      gm_energyVdw     = atdat.eLJ;
+        NbnxmCjPacked*              gm_plistCJPacked = plist.cjPacked;
+        AmdFastBuffer<const nbnxn_sci_t> gm_plistSci{ doPruneNBL ? plist.sci : plist.sorting.sciSorted };
+        int* gm_plistSciHistogram = plist.sorting.sciHistogram;
+        int* gm_sciCount          = plist.sorting.sciCount;
 
 
-        const NbnxmExcl* gm_plistExcl  = plist.excl;
-        const Float2*    gm_ljComb     = atdat.ljComb;        /* used iff ljComb<vdwType> */
-        const int*       gm_atomTypes  = atdat.atomTypes;     /* used iff !ljComb<vdwType> */
-        const Float2*    gm_nbfp       = nbparam.nbfp;        /* used iff !ljComb<vdwType> */
-        const Float2*    gm_nbfpComb   = nbparam.nbfp_comb;   /* used iff ljEwald<vdwType> */
-        const float*     gm_coulombTab = nbparam.coulomb_tab; /* used iff elecEwaldTab<elecType> */
+        AmdFastBuffer<const NbnxmExcl> gm_plistExcl{ plist.excl };
+        AmdFastBuffer<const Float2>    gm_ljComb{ atdat.ljComb }; /* used iff ljComb<vdwType> */
+        AmdFastBuffer<const int> gm_atomTypes{ atdat.atomTypes }; /* used iff !ljComb<vdwType> */
+        const Float2*            gm_nbfp     = nbparam.nbfp;      /* used iff !ljComb<vdwType> */
+        const Float2*            gm_nbfpComb = nbparam.nbfp_comb; /* used iff ljEwald<vdwType> */
+        const float* gm_coulombTab = nbparam.coulomb_tab; /* used iff elecEwaldTab<elecType> */
 
         const int             numTypes        = atdat.numTypes;
         const float           rCoulombSq      = nbparam.rcoulomb_sq;
@@ -674,8 +684,8 @@ __launch_bounds__(c_clSizeSq<pairlistType>* nthreadZ, minBlocksPerMp) __global__
         const int         cijPackedBegin = nbSci.cjPackedBegin;
         const int         cijPackedEnd   = nbSci.cjPackedEnd;
 
-        /*! i-cluster interaction mask for a super-cluster with all c_nbnxnGpuNumClusterPerSupercluster=8 bits set */
-        const unsigned superClInteractionMask = ((1U << c_clusterPerSuperCluster) - 1U);
+        /*! i-cluster interaction mask for a super-cluster with all c_clusterPerSuperCluster bits set */
+        constexpr int superClInteractionMask = ((1U << c_clusterPerSuperCluster) - 1U);
 
         // Only needed if props.elecEwaldAna
         const float beta2 = ewaldBeta * ewaldBeta;
@@ -784,17 +794,17 @@ __launch_bounds__(c_clSizeSq<pairlistType>* nthreadZ, minBlocksPerMp) __global__
         // loop over the j clusters = seen by any of the atoms in the current super-cluster
         for (int jPacked = cijPackedBegin; jPacked < cijPackedEnd; ++jPacked)
         {
-            unsigned int imask = gm_plistCJPacked[jPacked].imei[widx].imask;
-            imask              = (c_clSizeSq<pairlistType> == c_parallelExecutionWidth)
-                                         ? __builtin_amdgcn_readfirstlane(imask)
-                                         : imask;
+            int imask = gm_plistCJPacked[jPacked].imei[widx].imask;
+            imask     = (c_clSizeSq<pairlistType> == c_parallelExecutionWidth)
+                                ? __builtin_amdgcn_readfirstlane(imask)
+                                : imask;
             if (!doPruneNBL && !imask)
             {
                 continue;
             }
             const int wexclIdx = gm_plistCJPacked[jPacked].imei[widx].excl_ind;
 
-            const unsigned int wexcl = gm_plistExcl[wexclIdx].pair[tidx & (c_subWarp<pairlistType> - 1)];
+            const int wexcl = gm_plistExcl[wexclIdx].pair[tidx & (c_subWarp<pairlistType> - 1)];
 #pragma unroll c_gpuJGroupSize
             for (int jm = 0; jm < c_gpuJGroupSize; jm++)
             {
@@ -803,7 +813,7 @@ __launch_bounds__(c_clSizeSq<pairlistType>* nthreadZ, minBlocksPerMp) __global__
                 {
                     continue;
                 }
-                unsigned  maskJI = (1U << (jm * c_clusterPerSuperCluster));
+                int       maskJI = (1U << (jm * c_clusterPerSuperCluster));
                 const int cj     = gm_plistCJPacked[jPacked].cj[jm];
                 const int aj     = cj * c_clSize + tidxj;
 
@@ -1038,7 +1048,7 @@ __launch_bounds__(c_clSizeSq<pairlistType>* nthreadZ, minBlocksPerMp) __global__
                 const float reducedForceJ = reduceForceJWarpShuffle<pairlistType>(fCjBuf, tidxi);
                 if (tidxi < 3)
                 {
-                    atomic_add_force(gm_f, aj, tidxi, reducedForceJ);
+                    amdFastAtomicAddForce(gm_f, aj, tidxi, reducedForceJ);
                 }
             } // for (int jm = 0; jm < c_gpuJGroupSize; jm++)
             if constexpr (doPruneNBL)

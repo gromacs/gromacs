@@ -50,7 +50,6 @@ gromacs:gcc-13-cuda-12.5.1:test-cudagraph:
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-13-cuda-12.5.1
   variables:
     CMAKE: /usr/local/cmake-3.29.3/bin/cmake
-    GMX_ENABLE_DIRECT_GPU_COMM: 1
     GMX_CUDA_GRAPH: 1
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
     GPU_VENDOR: "NVIDIA"
@@ -76,6 +75,7 @@ gromacs:gcc-13-cuda-12.5.1:regressiontest-cudagraph:
     GMX_CUDA_GRAPH: 1
     GPU_VENDOR: "NVIDIA"
     GPU_COUNT: 1
+    GMX_DISABLE_DIRECT_GPU_COMM: 1
   tags:
     - $GITLAB_RUNNER_TAG_1X_NVIDIA_GPU
   needs:
@@ -102,7 +102,6 @@ gromacs:gcc-13-cuda-12.5.1:regressiontest-cudagraph-gpucomm:
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
     GMX_CUDA_GRAPH: 1
-    GMX_ENABLE_DIRECT_GPU_COMM: 1
     GPU_VENDOR: "NVIDIA"
     GPU_COUNT: 2
   tags:

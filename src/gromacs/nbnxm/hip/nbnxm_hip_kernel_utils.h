@@ -66,15 +66,6 @@
 namespace gmx
 {
 
-static __forceinline__ __device__ void
-atomic_add_force(float3* buffer, unsigned int idx, unsigned int component, float value)
-{
-    atomicAdd(reinterpret_cast<float*>(reinterpret_cast<char*>(buffer)
-                                       + (idx * static_cast<unsigned int>(sizeof(float3))
-                                          + component * static_cast<unsigned int>(sizeof(float)))),
-              value);
-}
-
 template<PairlistType pairlistType>
 __device__ constexpr int c_subWarp = sc_gpuParallelExecutionWidth(pairlistType);
 

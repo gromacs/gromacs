@@ -273,6 +273,15 @@ parser.add_argument(
     help="Install PLUMED library.",
 )
 
+parser.add_argument(
+    "--libtorch",
+    type=str,
+    nargs="?",
+    const="2.4.0",
+    default=None,
+    help="Add build environment for LibTorch support",
+)
+
 # Supported Python versions for maintained branches.
 _python_versions = ["3.9.13", "3.12.5"]
 parser.add_argument(
