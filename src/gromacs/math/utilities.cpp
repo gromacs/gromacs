@@ -89,7 +89,7 @@ bool check_int_multiply_for_overflow(int64_t a, int64_t b, int64_t* result)
 
 int gmx_feenableexcept()
 {
-    // While the function is present on RISC-V, actually calling it fails for now
+    // RISC-V architecture does not support trapping FPEs and the linker loudly warns about using the function
 #if HAVE_FEENABLEEXCEPT && !defined(__riscv)
 #    if defined(__powerpc__) || defined(__ppc__) || defined(__PPC__)
     feclearexcept(c_FPexceptions);
@@ -122,7 +122,7 @@ int gmx_feenableexcept()
 
 int gmx_fedisableexcept()
 {
-    // While the function is present on RISC-V, actually calling it fails for now
+    // RISC-V architecture does not support trapping FPEs and the linker loudly warns about using the function
 #if HAVE_FEDISABLEEXCEPT && !defined(__riscv)
     return fedisableexcept(c_FPexceptions);
 #elif (defined(__i386__) || defined(__x86_64__)) && defined(__APPLE__)
@@ -153,6 +153,8 @@ bool gmxShouldEnableFPExceptions()
     return false; // Buggy compiler
 #elif GMX_GPU_SYCL
     return false; // avoid spurious FPE during SYCL JIT
+#elif defined(__riscv)
+    return false; // RISC-V does not support trapping FPEs
 #else
     return true;
 #endif
