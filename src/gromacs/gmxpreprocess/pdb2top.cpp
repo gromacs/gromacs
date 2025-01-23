@@ -1521,7 +1521,6 @@ void pdb2top(FILE*                                  top_file,
 {
     std::array<InteractionsOfType, F_NRE>   plist;
     t_excls*                                excls;
-    int*                                    vsite_type;
     int                                     i, nmissat;
     gmx::EnumerationArray<BondedTypes, int> bts;
 
@@ -1555,11 +1554,7 @@ void pdb2top(FILE*                                  top_file,
     /* Cleanup bonds (sort and rm doubles) */
     clean_bonds(&(plist[F_BONDS]), logger);
 
-    snew(vsite_type, atoms->nr);
-    for (i = 0; i < atoms->nr; i++)
-    {
-        vsite_type[i] = NOTSET;
-    }
+    std::vector<VsiteTypeAndSign> vsiteTypeAndSign(atoms->nr);
     if (bVsites)
     {
         if (bVsiteAromatics)
@@ -1572,7 +1567,7 @@ void pdb2top(FILE*                                  top_file,
         }
         /* determine which atoms will be vsites and add dummy masses
            also renumber atom numbers in plist[0..F_NRE]! */
-        do_vsites(rtpFFDB, atype, atoms, tab, x, plist, &vsite_type, mHmult, bVsiteAromatics, ffdir);
+        do_vsites(rtpFFDB, atype, atoms, tab, x, plist, &vsiteTypeAndSign, mHmult, bVsiteAromatics, ffdir);
     }
 
     /* Make Angles and Dihedrals */
@@ -1597,9 +1592,8 @@ void pdb2top(FILE*                                  top_file,
     /* set mass of all remaining hydrogen atoms */
     if (mHmult != 1.0)
     {
-        do_h_mass(&(plist[F_BONDS]), vsite_type, atoms, mHmult, bDeuterate);
+        do_h_mass(plist[F_BONDS], vsiteTypeAndSign, atoms, mHmult, bDeuterate);
     }
-    sfree(vsite_type);
 
     /* Cleanup bonds (sort and rm doubles) */
     /* clean_bonds(&(plist[F_BONDS]));*/
