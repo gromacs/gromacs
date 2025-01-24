@@ -1703,7 +1703,9 @@ std::string getCoolQuote()
         { "Would you give it all up to live again?", "Bad Religion" },
         { "I can switch from GROMACS version 5.1 to 2016 in the middle of the paper, of course, "
           "Newton's equations of motion did not change between them.",
-          "Davide Mercadante" }
+          "Davide Mercadante" },
+        { "First rule of atomics: Thou shalt not make generalized statements about atomics!",
+          "Noah Wolfe, on discussing GPU atomic operations" }
 
     };
 
