@@ -1459,7 +1459,7 @@ Please keep in mind the following environment variables that might be useful:
 
   - ``SYCL_CACHE_PERSISTENT=1``: enables caching of GPU kernels, reducing :ref:`gmx mdrun` startup time.
 
-In addition to ``-gpu_id`` option, backend-specific environment variables, like ``SYCL_DEVICE_FILTER``
+In addition to ``-gpu_id`` option, backend-specific environment variables, like ``ONEAPI_DEVICE_SELECTOR``
 or ``ROCR_VISIBLE_DEVICES``, could be used to select GPUs.
 
 Running HIP version of mdrun
