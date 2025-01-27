@@ -295,16 +295,16 @@ static inline GMX_DEVICE_ATTRIBUTE GMX_ALWAYS_INLINE_ATTRIBUTE PointerType index
  * we don't have the necessary headers included, so we cannot easily call atomicAdd directly, which
  * is why we fall back to using sycl::atomic_ref.
  */
-template<typename IndexType, std::enable_if_t<std::is_integral<IndexType>::value, bool> = true>
+template<typename BufferType, typename IndexType, std::enable_if_t<std::is_integral<IndexType>::value, bool> = true>
 static inline
 #    if GMX_GPU_HIP || GMX_SYCL_ACPP
         __device__
 #    endif
                 GMX_ALWAYS_INLINE_ATTRIBUTE void
-                amdFastAtomicAddForce(float3* buffer, IndexType idx, IndexType component, float value)
+                amdFastAtomicAddForce(BufferType* buffer, IndexType idx, IndexType component, float value)
 {
-    float3* indexedBuffer = indexedAddress(buffer, idx);
-    float*  ptr           = indexedAddress(reinterpret_cast<float*>(indexedBuffer), component);
+    BufferType* indexedBuffer = indexedAddress(buffer, idx);
+    float*      ptr           = indexedAddress(reinterpret_cast<float*>(indexedBuffer), component);
 #    if GMX_GPU_HIP || GMX_SYCL_ACPP
     atomicAdd(ptr, value);
 #    else
