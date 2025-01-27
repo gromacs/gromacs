@@ -1627,6 +1627,10 @@ real generateAndFill2DGrid(Grid*                  grid,
 
     if (computeGridDensityRatio)
     {
+        GMX_RELEASE_ASSERT(
+                numAtomsWithoutFillers > 0,
+                "Number of atoms should be > 0 when density ratio computing is requested");
+
         // Compute the effective density ratio on the current grid
         int64_t sumAtomsInColumnSquared = 0;
         for (int i = 0; i < grid->numColumns(); i++)
