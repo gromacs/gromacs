@@ -572,15 +572,31 @@ reduceEnergyWarpShuffle(float localLJ, float localEl, float* gm_LJ, float* gm_El
     }
 }
 
+//! Helper method to calculate launch bounds
+static constexpr int minBlocksPerMp(const bool hasLargeRegisterPool, const bool doCalcEnergies)
+{
+    return hasLargeRegisterPool ? 1 : doCalcEnergies ? 6 : 8;
+}
+
+#if defined(__gfx90a__) || defined(__gfx940__) || defined(__gfx941__) || defined(__gfx942__)
+constexpr bool c_deviceLargeRegisterPool = true;
+#else
+constexpr bool c_deviceLargeRegisterPool = false;
+#endif
+
 /*! \brief Main kernel for NBNXM.
  *
  */
-template<bool doPruneNBL, bool doCalcEnergies, enum ElecType elecType, enum VdwType vdwType, int nthreadZ, int minBlocksPerMp, PairlistType pairlistType>
-__launch_bounds__(c_clSizeSq<pairlistType>* nthreadZ, minBlocksPerMp) __global__
+template<bool hasLargeRegisterPool, bool doPruneNBL, bool doCalcEnergies, enum ElecType elecType, enum VdwType vdwType, int nthreadZ, PairlistType pairlistType>
+__launch_bounds__(c_clSizeSq<pairlistType>* nthreadZ,
+                  minBlocksPerMp(hasLargeRegisterPool, doCalcEnergies)) __global__
         static void nbnxmKernel(NBAtomDataGpu atdat, NBParamGpu nbparam, GpuPairlist<pairlistType> plist, bool doCalcShift)
 {
     // We only want to compile kernels that match the execution architecture
-    if constexpr (sc_gpuParallelExecutionWidth(pairlistType) == warpSize)
+    constexpr bool c_matchingExecutionWidth = sc_gpuParallelExecutionWidth(pairlistType) == warpSize;
+    constexpr bool c_deviceRegisterPoolMatch = hasLargeRegisterPool == c_deviceLargeRegisterPool;
+    constexpr bool c_doGenerateKernel = c_deviceRegisterPoolMatch && c_matchingExecutionWidth;
+    if constexpr (c_doGenerateKernel)
     {
 
         static constexpr EnergyFunctionProperties<elecType, vdwType> props;
@@ -1137,10 +1153,9 @@ static void launchNbnxmKernel(const DeviceStream&      deviceStream,
     config.blockSize[2] = numThreadZ;
     config.sharedMemorySize =
             requiredSharedMemorySize<isPruneKernel, numThreadZ, vdwType, pairlistType>();
-    constexpr int minBlocksPerMp = hasLargeRegisterPool ? 1 : doCalcEnergies ? 6 : 8;
 
     auto kernel =
-            nbnxmKernel<doPrune, doCalcEnergies, elecType, vdwType, numThreadZ, minBlocksPerMp, pairlistType>;
+            nbnxmKernel<hasLargeRegisterPool, doPrune, doCalcEnergies, elecType, vdwType, numThreadZ, pairlistType>;
     auto kernelName = getKernelName<elecType, vdwType, doPrune, doCalcEnergies, pairlistType>();
 
     const auto kernelArgs = prepareGpuKernelArguments(kernel, config, args...);
