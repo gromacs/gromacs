@@ -70,255 +70,264 @@ template<GridOrdering gridOrdering, bool computeEnergyAndVirial, const int gridI
 LAUNCH_BOUNDS_EXACT_SINGLE(sc_solveMaxThreadsPerBlock<parallelExecutionWidth>)
 __global__ void pmeSolveKernel(const PmeGpuKernelParamsBase kernelParams)
 {
-    /* This kernel supports 2 different grid dimension orderings: YZX and XYZ */
-    constexpr int majorDim  = gridOrdering == GridOrdering::YZX ? YY : XX;
-    constexpr int middleDim = gridOrdering == GridOrdering::YZX ? ZZ : YY;
-    constexpr int minorDim  = gridOrdering == GridOrdering::YZX ? XX : ZZ;
-
-    /* Global memory pointers */
-    const float* __restrict__ gm_splineValueMajor = kernelParams.grid.d_splineModuli[gridIndex]
-                                                    + kernelParams.grid.splineValuesOffset[majorDim];
-    const float* __restrict__ gm_splineValueMiddle = kernelParams.grid.d_splineModuli[gridIndex]
-                                                     + kernelParams.grid.splineValuesOffset[middleDim];
-    const float* __restrict__ gm_splineValueMinor = kernelParams.grid.d_splineModuli[gridIndex]
-                                                    + kernelParams.grid.splineValuesOffset[minorDim];
-    float* __restrict__ gm_virialAndEnergy = kernelParams.constants.d_virialAndEnergy[gridIndex];
-    float2* __restrict__ gm_grid =
-            reinterpret_cast<float2*>(kernelParams.grid.d_fftComplexGrid[gridIndex]);
-
-    /* Various grid sizes and indices */
-    const int localOffsetMinor  = kernelParams.grid.kOffsets[minorDim];
-    const int localOffsetMiddle = kernelParams.grid.kOffsets[middleDim];
-    const int localOffsetMajor  = kernelParams.grid.kOffsets[majorDim];
-    const int localSizeMinor    = kernelParams.grid.localComplexGridSizePadded[minorDim];
-    const int localSizeMiddle   = kernelParams.grid.localComplexGridSizePadded[middleDim];
-    const int localCountMiddle  = kernelParams.grid.localComplexGridSize[middleDim];
-    const int localCountMinor   = kernelParams.grid.localComplexGridSize[minorDim];
-    const int nMajor            = kernelParams.grid.realGridSize[majorDim];
-    const int nMiddle           = kernelParams.grid.realGridSize[middleDim];
-    const int nMinor            = kernelParams.grid.realGridSize[minorDim];
-    const int maxkMajor         = (nMajor + 1) / 2;  // X or Y
-    const int maxkMiddle        = (nMiddle + 1) / 2; // Y OR Z => only check for !YZX
-    const int maxkMinor         = (nMinor + 1) / 2;  // Z or X => only check for YZX
-
-    /* Each thread works on one cell of the Fourier space complex 3D grid (gm_grid).
-     * Each block handles up to c_solveMaxThreadsPerBlock cells -
-     * depending on the grid contiguous dimension size,
-     * that can range from a part of a single gridline to several complete gridlines.
-     */
-    const int threadLocalId     = threadIdx.x;
-    const int gridLineSize      = localCountMinor;
-    const int gridLineIndex     = threadLocalId / gridLineSize;
-    const int gridLineCellIndex = threadLocalId - gridLineSize * gridLineIndex;
-    const int gridLinesPerBlock = max(blockDim.x / gridLineSize, 1);
-    const int activeWarps       = blockDim.x / parallelExecutionWidth;
-    const int indexMinor        = blockIdx.x * blockDim.x + gridLineCellIndex;
-    const int indexMiddle       = blockIdx.y * gridLinesPerBlock + gridLineIndex;
-    const int indexMajor        = blockIdx.z;
-
-    /* Optional outputs */
-    float energy = 0.0F;
-    float virxx  = 0.0F;
-    float virxy  = 0.0F;
-    float virxz  = 0.0F;
-    float viryy  = 0.0F;
-    float viryz  = 0.0F;
-    float virzz  = 0.0F;
-
-    assert(indexMajor < kernelParams.grid.localComplexGridSize[majorDim]);
-    if ((indexMiddle < localCountMiddle) & (indexMinor < localCountMinor)
-        & (gridLineIndex < gridLinesPerBlock))
+    // only compile for matching architecture
+    if constexpr (parallelExecutionWidth == warpSize)
     {
-        /* The offset should be equal to the global thread index for coalesced access */
-        const int gridThreadIndex =
-                (indexMajor * localSizeMiddle + indexMiddle) * localSizeMinor + indexMinor;
-        float2* __restrict__ gm_gridCell = gm_grid + gridThreadIndex;
+        /* This kernel supports 2 different grid dimension orderings: YZX and XYZ */
+        constexpr int majorDim  = gridOrdering == GridOrdering::YZX ? YY : XX;
+        constexpr int middleDim = gridOrdering == GridOrdering::YZX ? ZZ : YY;
+        constexpr int minorDim  = gridOrdering == GridOrdering::YZX ? XX : ZZ;
 
-        const int kMajor = indexMajor + localOffsetMajor;
-        /* Checking either X in XYZ, or Y in YZX cases */
-        const float mMajor = (kMajor < maxkMajor) ? kMajor : (kMajor - nMajor);
+        /* Global memory pointers */
+        const float* __restrict__ gm_splineValueMajor = kernelParams.grid.d_splineModuli[gridIndex]
+                                                        + kernelParams.grid.splineValuesOffset[majorDim];
+        const float* __restrict__ gm_splineValueMiddle = kernelParams.grid.d_splineModuli[gridIndex]
+                                                         + kernelParams.grid.splineValuesOffset[middleDim];
+        const float* __restrict__ gm_splineValueMinor = kernelParams.grid.d_splineModuli[gridIndex]
+                                                        + kernelParams.grid.splineValuesOffset[minorDim];
+        float* __restrict__ gm_virialAndEnergy = kernelParams.constants.d_virialAndEnergy[gridIndex];
+        float2* __restrict__ gm_grid =
+                reinterpret_cast<float2*>(kernelParams.grid.d_fftComplexGrid[gridIndex]);
 
-        const int kMiddle = indexMiddle + localOffsetMiddle;
-        float     mMiddle = kMiddle;
-        /* Checking Y in XYZ case */
-        if (gridOrdering == GridOrdering::XYZ)
+        /* Various grid sizes and indices */
+        const int localOffsetMinor  = kernelParams.grid.kOffsets[minorDim];
+        const int localOffsetMiddle = kernelParams.grid.kOffsets[middleDim];
+        const int localOffsetMajor  = kernelParams.grid.kOffsets[majorDim];
+        const int localSizeMinor    = kernelParams.grid.localComplexGridSizePadded[minorDim];
+        const int localSizeMiddle   = kernelParams.grid.localComplexGridSizePadded[middleDim];
+        const int localCountMiddle  = kernelParams.grid.localComplexGridSize[middleDim];
+        const int localCountMinor   = kernelParams.grid.localComplexGridSize[minorDim];
+        const int nMajor            = kernelParams.grid.realGridSize[majorDim];
+        const int nMiddle           = kernelParams.grid.realGridSize[middleDim];
+        const int nMinor            = kernelParams.grid.realGridSize[minorDim];
+        const int maxkMajor         = (nMajor + 1) / 2;  // X or Y
+        const int maxkMiddle        = (nMiddle + 1) / 2; // Y OR Z => only check for !YZX
+        const int maxkMinor         = (nMinor + 1) / 2;  // Z or X => only check for YZX
+
+        /* Each thread works on one cell of the Fourier space complex 3D grid (gm_grid).
+         * Each block handles up to c_solveMaxThreadsPerBlock cells -
+         * depending on the grid contiguous dimension size,
+         * that can range from a part of a single gridline to several complete gridlines.
+         */
+        const int threadLocalId     = threadIdx.x;
+        const int gridLineSize      = localCountMinor;
+        const int gridLineIndex     = threadLocalId / gridLineSize;
+        const int gridLineCellIndex = threadLocalId - gridLineSize * gridLineIndex;
+        const int gridLinesPerBlock = max(blockDim.x / gridLineSize, 1);
+        const int activeWarps       = blockDim.x / parallelExecutionWidth;
+        const int indexMinor        = blockIdx.x * blockDim.x + gridLineCellIndex;
+        const int indexMiddle       = blockIdx.y * gridLinesPerBlock + gridLineIndex;
+        const int indexMajor        = blockIdx.z;
+
+        /* Optional outputs */
+        float energy = 0.0F;
+        float virxx  = 0.0F;
+        float virxy  = 0.0F;
+        float virxz  = 0.0F;
+        float viryy  = 0.0F;
+        float viryz  = 0.0F;
+        float virzz  = 0.0F;
+
+        assert(indexMajor < kernelParams.grid.localComplexGridSize[majorDim]);
+        if ((indexMiddle < localCountMiddle) & (indexMinor < localCountMinor)
+            & (gridLineIndex < gridLinesPerBlock))
         {
-            mMiddle = (kMiddle < maxkMiddle) ? kMiddle : (kMiddle - nMiddle);
-        }
-        const int kMinor = localOffsetMinor + indexMinor;
-        float     mMinor = kMinor;
-        /* Checking X in YZX case */
-        if (gridOrdering == GridOrdering::YZX)
-        {
-            mMinor = (kMinor < maxkMinor) ? kMinor : (kMinor - nMinor);
-        }
-        /* We should skip the k-space point (0,0,0) */
-        const bool notZeroPoint = (kMinor > 0) | (kMajor > 0) | (kMiddle > 0);
+            /* The offset should be equal to the global thread index for coalesced access */
+            const int gridThreadIndex =
+                    (indexMajor * localSizeMiddle + indexMiddle) * localSizeMinor + indexMinor;
+            float2* __restrict__ gm_gridCell = gm_grid + gridThreadIndex;
 
-        const AmdPackedFloat3 mm = (gridOrdering == GridOrdering::YZX)
-                                           ? AmdPackedFloat3(mMinor, mMajor, mMiddle)
-                                           : AmdPackedFloat3(mMajor, mMiddle, mMinor);
+            const int kMajor = indexMajor + localOffsetMajor;
+            /* Checking either X in XYZ, or Y in YZX cases */
+            const float mMajor = (kMajor < maxkMajor) ? kMajor : (kMajor - nMajor);
 
-        const bool isLastComponent = gridOrdering == GridOrdering::YZX
-                                             ? ((kMiddle == 0) | (kMiddle == maxkMiddle))
-                                             : ((kMinor == 0) | (kMinor == maxkMinor));
-        /* 0.5 correction factor for the first and last components of a Z dimension */
-        const float corner_fac = isLastComponent ? 0.5F : 1.0F;
-
-        // TODO: use textures for gm_splineValue
-        float vMajor  = LDG(gm_splineValueMajor + kMajor);
-        float vMiddle = LDG(gm_splineValueMiddle + kMiddle);
-        float vMinor  = LDG(gm_splineValueMinor + kMinor);
-
-        if (notZeroPoint)
-        {
-            AmdPackedFloat3 mhk, recip1, recip2, recip3;
-            recip1.x_         = kernelParams.current.recipBox[XX][XX];
-            recip1.y_         = kernelParams.current.recipBox[XX][YY];
-            recip1.z_         = kernelParams.current.recipBox[XX][ZZ];
-            recip2.x_         = 0.0f;
-            recip2.y_         = kernelParams.current.recipBox[YY][YY];
-            recip2.z_         = kernelParams.current.recipBox[YY][ZZ];
-            recip3.x_         = 0.0f;
-            recip3.y_         = 0.0f;
-            recip3.z_         = kernelParams.current.recipBox[ZZ][ZZ];
-            AmdPackedFloat3 a = mm.x() * recip1;
-            AmdPackedFloat3 b = mm.y() * recip2;
-            AmdPackedFloat3 c = mm.z() * recip3;
-            mhk               = a + b + c;
-
-            const float m2k = mhk.norm2();
-            assert(m2k != 0.0F);
-
-            float denom = m2k * float(HIP_PI) * kernelParams.current.boxVolume * vMajor * vMiddle * vMinor;
-            assert(isfinite(denom));
-            assert(denom != 0.0F);
-
-            const float tmp1   = __expf(-kernelParams.grid.ewaldFactor * m2k);
-            const float etermk = kernelParams.constants.elFactor * tmp1 / denom;
-
-            float2       gridValue    = *gm_gridCell;
-            const float2 oldGridValue = gridValue;
-            gridValue                 = gridValue * etermk;
-            *gm_gridCell              = gridValue;
-
-            if constexpr (computeEnergyAndVirial)
+            const int kMiddle = indexMiddle + localOffsetMiddle;
+            float     mMiddle = kMiddle;
+            /* Checking Y in XYZ case */
+            if (gridOrdering == GridOrdering::XYZ)
             {
-                const float tmp1k =
-                        2.0F * (gridValue.x * oldGridValue.x + gridValue.y * oldGridValue.y);
+                mMiddle = (kMiddle < maxkMiddle) ? kMiddle : (kMiddle - nMiddle);
+            }
+            const int kMinor = localOffsetMinor + indexMinor;
+            float     mMinor = kMinor;
+            /* Checking X in YZX case */
+            if (gridOrdering == GridOrdering::YZX)
+            {
+                mMinor = (kMinor < maxkMinor) ? kMinor : (kMinor - nMinor);
+            }
+            /* We should skip the k-space point (0,0,0) */
+            const bool notZeroPoint = (kMinor > 0) | (kMajor > 0) | (kMiddle > 0);
 
-                float vfactor = (kernelParams.grid.ewaldFactor + 1.0F / m2k) * 2.0F;
-                float ets2    = corner_fac * tmp1k;
-                energy        = ets2;
+            const AmdPackedFloat3 mm = (gridOrdering == GridOrdering::YZX)
+                                               ? AmdPackedFloat3(mMinor, mMajor, mMiddle)
+                                               : AmdPackedFloat3(mMajor, mMiddle, mMinor);
 
-                float ets2vf = ets2 * vfactor;
+            const bool isLastComponent = gridOrdering == GridOrdering::YZX
+                                                 ? ((kMiddle == 0) | (kMiddle == maxkMiddle))
+                                                 : ((kMinor == 0) | (kMinor == maxkMinor));
+            /* 0.5 correction factor for the first and last components of a Z dimension */
+            const float corner_fac = isLastComponent ? 0.5F : 1.0F;
 
-                virxx = ets2vf * mhk.x() * mhk.x() - ets2;
-                virxy = ets2vf * mhk.x() * mhk.y();
-                virxz = ets2vf * mhk.x() * mhk.z();
-                viryy = ets2vf * mhk.y() * mhk.y() - ets2;
-                viryz = ets2vf * mhk.y() * mhk.z();
-                virzz = ets2vf * mhk.z() * mhk.z() - ets2;
+            // TODO: use textures for gm_splineValue
+            float vMajor  = LDG(gm_splineValueMajor + kMajor);
+            float vMiddle = LDG(gm_splineValueMiddle + kMiddle);
+            float vMinor  = LDG(gm_splineValueMinor + kMinor);
+
+            if (notZeroPoint)
+            {
+                AmdPackedFloat3 mhk, recip1, recip2, recip3;
+                recip1.x_         = kernelParams.current.recipBox[XX][XX];
+                recip1.y_         = kernelParams.current.recipBox[XX][YY];
+                recip1.z_         = kernelParams.current.recipBox[XX][ZZ];
+                recip2.x_         = 0.0f;
+                recip2.y_         = kernelParams.current.recipBox[YY][YY];
+                recip2.z_         = kernelParams.current.recipBox[YY][ZZ];
+                recip3.x_         = 0.0f;
+                recip3.y_         = 0.0f;
+                recip3.z_         = kernelParams.current.recipBox[ZZ][ZZ];
+                AmdPackedFloat3 a = mm.x() * recip1;
+                AmdPackedFloat3 b = mm.y() * recip2;
+                AmdPackedFloat3 c = mm.z() * recip3;
+                mhk               = a + b + c;
+
+                const float m2k = mhk.norm2();
+                assert(m2k != 0.0F);
+
+                float denom = m2k * float(HIP_PI) * kernelParams.current.boxVolume * vMajor
+                              * vMiddle * vMinor;
+                assert(isfinite(denom));
+                assert(denom != 0.0F);
+
+                const float tmp1   = __expf(-kernelParams.grid.ewaldFactor * m2k);
+                const float etermk = kernelParams.constants.elFactor * tmp1 / denom;
+
+                float2       gridValue    = *gm_gridCell;
+                const float2 oldGridValue = gridValue;
+                gridValue                 = gridValue * etermk;
+                *gm_gridCell              = gridValue;
+
+                if constexpr (computeEnergyAndVirial)
+                {
+                    const float tmp1k =
+                            2.0F * (gridValue.x * oldGridValue.x + gridValue.y * oldGridValue.y);
+
+                    float vfactor = (kernelParams.grid.ewaldFactor + 1.0F / m2k) * 2.0F;
+                    float ets2    = corner_fac * tmp1k;
+                    energy        = ets2;
+
+                    float ets2vf = ets2 * vfactor;
+
+                    virxx = ets2vf * mhk.x() * mhk.x() - ets2;
+                    virxy = ets2vf * mhk.x() * mhk.y();
+                    virxz = ets2vf * mhk.x() * mhk.z();
+                    viryy = ets2vf * mhk.y() * mhk.y() - ets2;
+                    viryz = ets2vf * mhk.y() * mhk.z();
+                    virzz = ets2vf * mhk.z() * mhk.z() - ets2;
+                }
+            }
+        }
+
+        /* Optional energy/virial reduction */
+        if constexpr (computeEnergyAndVirial)
+        {
+
+            virxx += amdDppUpdateShfl<float, /* row_shl:1 */ 0x101>(virxx);
+            viryy += amdDppUpdateShfl<float, /* row_shr:1 */ 0x111>(viryy);
+            virzz += amdDppUpdateShfl<float, /* row_shl:1 */ 0x101>(virzz);
+            virxy += amdDppUpdateShfl<float, /* row_shr:1 */ 0x111>(virxy);
+            virxz += amdDppUpdateShfl<float, /* row_shl:1 */ 0x101>(virxz);
+            viryz += amdDppUpdateShfl<float, /* row_shr:1 */ 0x111>(viryz);
+            energy += amdDppUpdateShfl<float, /* row_shl:1 */ 0x101>(energy);
+            if (threadLocalId & 1)
+            {
+                virxx = viryy; // virxx now holds virxx and viryy pair sums
+                virzz = virxy; // virzz now holds virzz and virxy pair sums
+                virxz = viryz; // virxz now holds virxz and viryz pair sums
+            }
+
+            virxx += amdDppUpdateShfl<float, /* row_shl:2 */ 0x102>(virxx);
+            virzz += amdDppUpdateShfl<float, /* row_shr:2 */ 0x112>(virzz);
+            virxz += amdDppUpdateShfl<float, /* row_shl:2 */ 0x102>(virxz);
+            energy += amdDppUpdateShfl<float, /* row_shr:2 */ 0x112>(energy);
+            if (threadLocalId & 2)
+            {
+                virxx = virzz; // virxx now holds quad sums of virxx, virxy, virzz and virxy
+                virxz = energy; // virxz now holds quad sums of virxz, viryz, energy and unused paddings
+            }
+
+            virxx += amdDppUpdateShfl<float, /* row_shl:4 */ 0x104>(virxx);
+            virxz += amdDppUpdateShfl<float, /* row_shr:4 */ 0x114>(virxz);
+            if (threadLocalId & 4)
+            {
+                virxx = virxz; // virxx now holds all 7 components' octet sums + unused paddings
+            }
+
+            /* We only need to reduce virxx now */
+#pragma unroll
+            for (int delta = 8; delta < parallelExecutionWidth; delta <<= 1)
+            {
+                virxx += __shfl_down(virxx, delta, parallelExecutionWidth);
+            }
+
+            /* Now first 7 threads of each warp have the full output contributions in virxx */
+
+            const int  componentIndex      = threadLocalId & (parallelExecutionWidth - 1);
+            const bool validComponentIndex = (componentIndex < c_virialAndEnergyCount);
+            /* Reduce 7 outputs per warp in the shared memory */
+            constexpr int stride =
+                    8; // this is c_virialAndEnergyCount==7 rounded up to power of 2 for convenience, hence the assert
+            static_assert(c_virialAndEnergyCount == 7);
+            const int reductionBufferSize = sc_solveMaxThreadsPerBlock<parallelExecutionWidth> * stride;
+            __shared__ float sm_virialAndEnergy[reductionBufferSize];
+
+            if (validComponentIndex)
+            {
+                const int warpIndex = threadLocalId / parallelExecutionWidth;
+                sm_virialAndEnergy[warpIndex * stride + componentIndex] = virxx;
+            }
+            __syncthreads();
+
+            /* Reduce to the single warp size */
+            const int targetIndex = threadLocalId;
+#pragma unroll
+            for (int reductionStride = reductionBufferSize >> 1; reductionStride >= parallelExecutionWidth;
+                 reductionStride >>= 1)
+            {
+                const int sourceIndex = targetIndex + reductionStride;
+                if ((targetIndex < reductionStride) & (sourceIndex < activeWarps * stride))
+                {
+                    // TODO: the second conditional is only needed on first iteration, actually - see if compiler eliminates it!
+                    sm_virialAndEnergy[targetIndex] += sm_virialAndEnergy[sourceIndex];
+                }
+                __syncthreads();
+            }
+
+            /* Now use shuffle again */
+            /* NOTE: This reduction assumes there are at least 4 warps (asserted).
+             *       To use fewer warps, add to the conditional:
+             *       && threadLocalId < activeWarps * stride
+             */
+            assert(activeWarps * stride >= parallelExecutionWidth);
+            if (threadLocalId < parallelExecutionWidth)
+            {
+                float output = sm_virialAndEnergy[threadLocalId];
+#pragma unroll
+                for (int delta = stride; delta < parallelExecutionWidth; delta <<= 1)
+                {
+                    output += __shfl_down(output, delta, parallelExecutionWidth);
+                }
+                /* Final output */
+                if (validComponentIndex)
+                {
+                    assert(isfinite(output));
+                    atomicAdd(gm_virialAndEnergy + componentIndex, output);
+                }
             }
         }
     }
-
-    /* Optional energy/virial reduction */
-    if constexpr (computeEnergyAndVirial)
+    else
     {
-
-        virxx += amdDppUpdateShfl<float, /* row_shl:1 */ 0x101>(virxx);
-        viryy += amdDppUpdateShfl<float, /* row_shr:1 */ 0x111>(viryy);
-        virzz += amdDppUpdateShfl<float, /* row_shl:1 */ 0x101>(virzz);
-        virxy += amdDppUpdateShfl<float, /* row_shr:1 */ 0x111>(virxy);
-        virxz += amdDppUpdateShfl<float, /* row_shl:1 */ 0x101>(virxz);
-        viryz += amdDppUpdateShfl<float, /* row_shr:1 */ 0x111>(viryz);
-        energy += amdDppUpdateShfl<float, /* row_shl:1 */ 0x101>(energy);
-        if (threadLocalId & 1)
-        {
-            virxx = viryy; // virxx now holds virxx and viryy pair sums
-            virzz = virxy; // virzz now holds virzz and virxy pair sums
-            virxz = viryz; // virxz now holds virxz and viryz pair sums
-        }
-
-        virxx += amdDppUpdateShfl<float, /* row_shl:2 */ 0x102>(virxx);
-        virzz += amdDppUpdateShfl<float, /* row_shr:2 */ 0x112>(virzz);
-        virxz += amdDppUpdateShfl<float, /* row_shl:2 */ 0x102>(virxz);
-        energy += amdDppUpdateShfl<float, /* row_shr:2 */ 0x112>(energy);
-        if (threadLocalId & 2)
-        {
-            virxx = virzz;  // virxx now holds quad sums of virxx, virxy, virzz and virxy
-            virxz = energy; // virxz now holds quad sums of virxz, viryz, energy and unused paddings
-        }
-
-        virxx += amdDppUpdateShfl<float, /* row_shl:4 */ 0x104>(virxx);
-        virxz += amdDppUpdateShfl<float, /* row_shr:4 */ 0x114>(virxz);
-        if (threadLocalId & 4)
-        {
-            virxx = virxz; // virxx now holds all 7 components' octet sums + unused paddings
-        }
-
-        /* We only need to reduce virxx now */
-#pragma unroll
-        for (int delta = 8; delta < parallelExecutionWidth; delta <<= 1)
-        {
-            virxx += __shfl_down(virxx, delta, parallelExecutionWidth);
-        }
-
-        /* Now first 7 threads of each warp have the full output contributions in virxx */
-
-        const int  componentIndex      = threadLocalId & (parallelExecutionWidth - 1);
-        const bool validComponentIndex = (componentIndex < c_virialAndEnergyCount);
-        /* Reduce 7 outputs per warp in the shared memory */
-        constexpr int stride =
-                8; // this is c_virialAndEnergyCount==7 rounded up to power of 2 for convenience, hence the assert
-        static_assert(c_virialAndEnergyCount == 7);
-        const int reductionBufferSize = sc_solveMaxThreadsPerBlock<parallelExecutionWidth> * stride;
-        __shared__ float sm_virialAndEnergy[reductionBufferSize];
-
-        if (validComponentIndex)
-        {
-            const int warpIndex = threadLocalId / parallelExecutionWidth;
-            sm_virialAndEnergy[warpIndex * stride + componentIndex] = virxx;
-        }
-        __syncthreads();
-
-        /* Reduce to the single warp size */
-        const int targetIndex = threadLocalId;
-#pragma unroll
-        for (int reductionStride = reductionBufferSize >> 1; reductionStride >= parallelExecutionWidth;
-             reductionStride >>= 1)
-        {
-            const int sourceIndex = targetIndex + reductionStride;
-            if ((targetIndex < reductionStride) & (sourceIndex < activeWarps * stride))
-            {
-                // TODO: the second conditional is only needed on first iteration, actually - see if compiler eliminates it!
-                sm_virialAndEnergy[targetIndex] += sm_virialAndEnergy[sourceIndex];
-            }
-            __syncthreads();
-        }
-
-        /* Now use shuffle again */
-        /* NOTE: This reduction assumes there are at least 4 warps (asserted).
-         *       To use fewer warps, add to the conditional:
-         *       && threadLocalId < activeWarps * stride
-         */
-        assert(activeWarps * stride >= parallelExecutionWidth);
-        if (threadLocalId < parallelExecutionWidth)
-        {
-            float output = sm_virialAndEnergy[threadLocalId];
-#pragma unroll
-            for (int delta = stride; delta < parallelExecutionWidth; delta <<= 1)
-            {
-                output += __shfl_down(output, delta, parallelExecutionWidth);
-            }
-            /* Final output */
-            if (validComponentIndex)
-            {
-                assert(isfinite(output));
-                atomicAdd(gm_virialAndEnergy + componentIndex, output);
-            }
-        }
+        GMX_UNUSED_VALUE(kernelParams);
     }
 }
 
