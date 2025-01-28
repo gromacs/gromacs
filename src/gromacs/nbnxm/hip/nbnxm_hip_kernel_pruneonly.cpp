@@ -59,6 +59,15 @@
 
 namespace gmx
 {
+//! Helper method to calculate launch bounds
+template<bool hasLargeRegisterPool>
+constexpr int minBlocksPp = hasLargeRegisterPool ? 8 : 1;
+
+#if defined(__gfx90a__) || defined(__gfx940__) || defined(__gfx941__) || defined(__gfx942__)
+constexpr bool c_deviceLargeRegisterPool = true;
+#else
+constexpr bool c_deviceLargeRegisterPool = false;
+#endif
 
 /*! \brief Prune-only kernel for NBNXM.
  *
@@ -67,15 +76,18 @@ namespace gmx
  * flavor specific and need to be passed in.
  *
  */
-template<PairlistType pairlistType, bool haveFreshList, int threadZ, int minBlocksPp>
-__launch_bounds__(c_clSizeSq<pairlistType>* threadZ, minBlocksPp) __global__
+template<PairlistType pairlistType, bool hasLargeRegisterPool, bool haveFreshList, int threadZ>
+__launch_bounds__(c_clSizeSq<pairlistType>* threadZ, minBlocksPp<hasLargeRegisterPool>) __global__
         static void nbnxmKernelPruneOnly(NBAtomDataGpu             atdat,
                                          NBParamGpu                nbparam,
                                          GpuPairlist<pairlistType> plist,
                                          int                       numParts)
 {
     // we only want to actually compile the kernel for archs that have matching execution widths
-    if constexpr (sc_gpuParallelExecutionWidth(pairlistType) == warpSize)
+    constexpr bool c_matchingExecutionWidth = sc_gpuParallelExecutionWidth(pairlistType) == warpSize;
+    constexpr bool c_deviceRegisterPoolMatch = hasLargeRegisterPool == c_deviceLargeRegisterPool;
+    constexpr bool c_doGenerateKernel = c_deviceRegisterPoolMatch && c_matchingExecutionWidth;
+    if constexpr (c_doGenerateKernel)
     {
         constexpr int  c_clSize                 = sc_gpuClusterSize(pairlistType);
         constexpr int  c_clusterPerSuperCluster = sc_gpuClusterPerSuperCluster(pairlistType);
@@ -334,8 +346,8 @@ void launchNbnxmKernelPruneOnly(const DeviceInformation& deviceInfo,
     config.gridSize[0]  = numberOfKernelBlocksSanityCheck(numSciInPart, deviceInfo);
     config.sharedMemorySize = requiredSharedMemorySize<true, numThreadZ, VdwType::Count, pairlistType>();
 
-    constexpr int minBlocksPp = hasLargeRegisterPool ? 8 : 1;
-    auto        kernel = nbnxmKernelPruneOnly<pairlistType, haveFreshList, numThreadZ, minBlocksPp>;
+
+    auto kernel = nbnxmKernelPruneOnly<pairlistType, hasLargeRegisterPool, haveFreshList, numThreadZ>;
     std::string kernelName = getPruneKernelName<haveFreshList, pairlistType>();
 
     const auto kernelArgs = prepareGpuKernelArguments(kernel, config, args...);

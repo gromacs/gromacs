@@ -96,7 +96,7 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
                 if (plist->haveFreshList)
                 {
                     launchNbnxmKernelSciSort(nb, iloc);
-                    plist->haveFreshList                   = false;
+                    plist->haveFreshList = false;
                     nb->timers->interaction[iloc].didPrune = true; // Mark that pruning has been done
                 }
                 else
