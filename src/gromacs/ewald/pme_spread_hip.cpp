@@ -177,120 +177,100 @@ template<int order, bool computeSplines, bool spreadCharges, bool wrapX, bool wr
 LAUNCH_BOUNDS_EXACT_SINGLE(sc_spreadMaxThreadsPerBlock<parallelExecutionWidth>)
 __global__ void pmeSplineAndSpreadKernel(const PmeGpuKernelParamsBase kernelParams)
 {
-    constexpr int threadsPerAtomValue = (threadsPerAtom == ThreadsPerAtom::Order) ? order : order * order;
-    constexpr int atomsPerBlock = sc_spreadMaxThreadsPerBlock<parallelExecutionWidth> / threadsPerAtomValue;
-    // Number of atoms processed by a single warp in spread and gather
-    constexpr int atomsPerWarp = parallelExecutionWidth / threadsPerAtomValue;
-    // Gridline indices, ivec
-    __shared__ int sm_gridlineIndices[atomsPerBlock * DIM];
-    // Charges
-    __shared__ float sm_coefficients[atomsPerBlock];
-    // Spline values
-    __shared__ float sm_theta[atomsPerBlock * DIM * order];
-    float            dtheta;
-
-    float3 atomX;
-    float  atomCharge;
-
-    const int blockIndex      = blockIdx.y * gridDim.x + blockIdx.x;
-    const int atomIndexOffset = blockIndex * atomsPerBlock + kernelParams.pipelineAtomStart;
-
-    /* Thread index w.r.t. block */
-    const int threadLocalId =
-            (threadIdx.z * (blockDim.x * blockDim.y)) + (threadIdx.y * blockDim.x) + threadIdx.x;
-    /* Warp index w.r.t. block - could probably be obtained easier? */
-    const int warpIndex = threadLocalId / parallelExecutionWidth;
-
-    /* Atom index w.r.t. warp */
-    const int atomWarpIndex = threadIdx.z % atomsPerWarp;
-    /* Atom index w.r.t. block/shared memory */
-    const int atomIndexLocal = warpIndex * atomsPerWarp + atomWarpIndex;
-    /* Atom index w.r.t. global memory */
-    const int atomIndexGlobal = atomIndexOffset + atomIndexLocal;
-
-    /* Early return for fully empty blocks at the end
-     * (should only happen for billions of input atoms)
-     */
-    if (atomIndexOffset >= kernelParams.atoms.nAtoms)
+    // only compile kernel for matching architecture
+    if constexpr (parallelExecutionWidth == warpSize)
     {
-        return;
-    }
-    /* Charges, required for both spline and spread */
-    if constexpr (c_useAtomDataPrefetch)
-    {
-        pme_gpu_stage_atom_data<float, atomsPerBlock, 1>(
-                sm_coefficients, &kernelParams.atoms.d_coefficients[0][kernelParams.pipelineAtomStart]);
-        __syncthreads();
-        atomCharge = sm_coefficients[atomIndexLocal];
-    }
-    else
-    {
-        atomCharge = kernelParams.atoms.d_coefficients[0][atomIndexGlobal];
-    }
+        constexpr int threadsPerAtomValue =
+                (threadsPerAtom == ThreadsPerAtom::Order) ? order : order * order;
+        constexpr int atomsPerBlock =
+                sc_spreadMaxThreadsPerBlock<parallelExecutionWidth> / threadsPerAtomValue;
+        // Number of atoms processed by a single warp in spread and gather
+        constexpr int atomsPerWarp = parallelExecutionWidth / threadsPerAtomValue;
+        // Gridline indices, ivec
+        __shared__ int sm_gridlineIndices[atomsPerBlock * DIM];
+        // Charges
+        __shared__ float sm_coefficients[atomsPerBlock];
+        // Spline values
+        __shared__ float sm_theta[atomsPerBlock * DIM * order];
+        float            dtheta;
 
-    if (computeSplines)
-    {
-        const float3* __restrict__ gm_coordinates = asFloat3(kernelParams.atoms.d_coordinates);
-        if constexpr (c_useAtomDataPrefetch)
-        {
-            // Coordinates
-            __shared__ float3 sm_coordinates[atomsPerBlock];
+        float3 atomX;
+        float  atomCharge;
 
-            /* Staging coordinates */
-            pme_gpu_stage_atom_data<float3, atomsPerBlock, 1>(
-                    sm_coordinates, &gm_coordinates[kernelParams.pipelineAtomStart]);
-            __syncthreads();
-            atomX = sm_coordinates[atomIndexLocal];
-        }
-        else
-        {
-            atomX = gm_coordinates[atomIndexGlobal];
-        }
-        calculate_splines<order, atomsPerBlock, atomsPerWarp, false, writeGlobal, numGrids, parallelExecutionWidth>(
-                kernelParams, atomIndexOffset, atomX, atomCharge, sm_theta, &dtheta, sm_gridlineIndices);
-        __builtin_amdgcn_wave_barrier();
-    }
-    else
-    {
-        /* Staging the data for spread
-         * (the data is assumed to be in GPU global memory with proper layout already,
-         * as in after running the spline kernel)
+        const int blockIndex      = blockIdx.y * gridDim.x + blockIdx.x;
+        const int atomIndexOffset = blockIndex * atomsPerBlock + kernelParams.pipelineAtomStart;
+
+        /* Thread index w.r.t. block */
+        const int threadLocalId =
+                (threadIdx.z * (blockDim.x * blockDim.y)) + (threadIdx.y * blockDim.x) + threadIdx.x;
+        /* Warp index w.r.t. block - could probably be obtained easier? */
+        const int warpIndex = threadLocalId / parallelExecutionWidth;
+
+        /* Atom index w.r.t. warp */
+        const int atomWarpIndex = threadIdx.z % atomsPerWarp;
+        /* Atom index w.r.t. block/shared memory */
+        const int atomIndexLocal = warpIndex * atomsPerWarp + atomWarpIndex;
+        /* Atom index w.r.t. global memory */
+        const int atomIndexGlobal = atomIndexOffset + atomIndexLocal;
+
+        /* Early return for fully empty blocks at the end
+         * (should only happen for billions of input atoms)
          */
-        /* Spline data - only thetas (dthetas will only be needed in gather) */
-        pme_gpu_stage_atom_data<float, atomsPerBlock, DIM * order>(sm_theta, kernelParams.atoms.d_theta);
-        /* Gridline indices */
-        pme_gpu_stage_atom_data<int, atomsPerBlock, DIM>(sm_gridlineIndices,
-                                                         kernelParams.atoms.d_gridlineIndices);
-
-        __syncthreads();
-    }
-
-    /* Spreading */
-    if constexpr (spreadCharges)
-    {
-        const bool runSpreadChargeKernel =
-                atomIndexGlobal < kernelParams.atoms.nAtoms
-                && (!kernelParams.usePipeline || (atomIndexGlobal < kernelParams.pipelineAtomEnd));
-        if (runSpreadChargeKernel)
+        if (atomIndexOffset >= kernelParams.atoms.nAtoms)
         {
-            spreadChargeKernel<order, wrapX, wrapY, 0, threadsPerAtom, parallelExecutionWidth>(
-                    kernelParams, &atomCharge, sm_gridlineIndices, sm_theta);
+            return;
         }
-    }
-    if (numGrids == 2)
-    {
-        __syncthreads();
+        /* Charges, required for both spline and spread */
         if constexpr (c_useAtomDataPrefetch)
         {
-            pme_gpu_stage_atom_data<float, atomsPerBlock, 1>(sm_coefficients,
-                                                             kernelParams.atoms.d_coefficients[1]);
+            pme_gpu_stage_atom_data<float, atomsPerBlock, 1>(
+                    sm_coefficients, &kernelParams.atoms.d_coefficients[0][kernelParams.pipelineAtomStart]);
             __syncthreads();
             atomCharge = sm_coefficients[atomIndexLocal];
         }
         else
         {
-            atomCharge = kernelParams.atoms.d_coefficients[1][atomIndexGlobal];
+            atomCharge = kernelParams.atoms.d_coefficients[0][atomIndexGlobal];
         }
+
+        if (computeSplines)
+        {
+            const float3* __restrict__ gm_coordinates = asFloat3(kernelParams.atoms.d_coordinates);
+            if constexpr (c_useAtomDataPrefetch)
+            {
+                // Coordinates
+                __shared__ float3 sm_coordinates[atomsPerBlock];
+
+                /* Staging coordinates */
+                pme_gpu_stage_atom_data<float3, atomsPerBlock, 1>(
+                        sm_coordinates, &gm_coordinates[kernelParams.pipelineAtomStart]);
+                __syncthreads();
+                atomX = sm_coordinates[atomIndexLocal];
+            }
+            else
+            {
+                atomX = gm_coordinates[atomIndexGlobal];
+            }
+            calculate_splines<order, atomsPerBlock, atomsPerWarp, false, writeGlobal, numGrids, parallelExecutionWidth>(
+                    kernelParams, atomIndexOffset, atomX, atomCharge, sm_theta, &dtheta, sm_gridlineIndices);
+            __builtin_amdgcn_wave_barrier();
+        }
+        else
+        {
+            /* Staging the data for spread
+             * (the data is assumed to be in GPU global memory with proper layout already,
+             * as in after running the spline kernel)
+             */
+            /* Spline data - only thetas (dthetas will only be needed in gather) */
+            pme_gpu_stage_atom_data<float, atomsPerBlock, DIM * order>(sm_theta, kernelParams.atoms.d_theta);
+            /* Gridline indices */
+            pme_gpu_stage_atom_data<int, atomsPerBlock, DIM>(sm_gridlineIndices,
+                                                             kernelParams.atoms.d_gridlineIndices);
+
+            __syncthreads();
+        }
+
+        /* Spreading */
         if constexpr (spreadCharges)
         {
             const bool runSpreadChargeKernel =
@@ -298,10 +278,40 @@ __global__ void pmeSplineAndSpreadKernel(const PmeGpuKernelParamsBase kernelPara
                     && (!kernelParams.usePipeline || (atomIndexGlobal < kernelParams.pipelineAtomEnd));
             if (runSpreadChargeKernel)
             {
-                spreadChargeKernel<order, wrapX, wrapY, 1, threadsPerAtom, parallelExecutionWidth>(
+                spreadChargeKernel<order, wrapX, wrapY, 0, threadsPerAtom, parallelExecutionWidth>(
                         kernelParams, &atomCharge, sm_gridlineIndices, sm_theta);
             }
         }
+        if (numGrids == 2)
+        {
+            __syncthreads();
+            if constexpr (c_useAtomDataPrefetch)
+            {
+                pme_gpu_stage_atom_data<float, atomsPerBlock, 1>(
+                        sm_coefficients, kernelParams.atoms.d_coefficients[1]);
+                __syncthreads();
+                atomCharge = sm_coefficients[atomIndexLocal];
+            }
+            else
+            {
+                atomCharge = kernelParams.atoms.d_coefficients[1][atomIndexGlobal];
+            }
+            if constexpr (spreadCharges)
+            {
+                const bool runSpreadChargeKernel =
+                        atomIndexGlobal < kernelParams.atoms.nAtoms
+                        && (!kernelParams.usePipeline || (atomIndexGlobal < kernelParams.pipelineAtomEnd));
+                if (runSpreadChargeKernel)
+                {
+                    spreadChargeKernel<order, wrapX, wrapY, 1, threadsPerAtom, parallelExecutionWidth>(
+                            kernelParams, &atomCharge, sm_gridlineIndices, sm_theta);
+                }
+            }
+        }
+    }
+    else
+    {
+        GMX_UNUSED_VALUE(kernelParams);
     }
 }
 
