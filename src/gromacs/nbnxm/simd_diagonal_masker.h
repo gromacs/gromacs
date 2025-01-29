@@ -61,9 +61,9 @@ class DiagonalMasker;
 
 //! Returns the diagonal filter masks
 template<int nR, KernelLayout kernelLayout>
-inline std::array<std::array<SimdBool, nR>,
-                  kernelLayoutClusterRatio<kernelLayout>() == KernelLayoutClusterRatio::JSizeEqualsISize ? 1 : 2>
-generateDiagonalMasks(const nbnxn_atomdata_t::SimdMasks& simdMasks)
+gmx_inline std::array<std::array<SimdBool, nR>,
+                      kernelLayoutClusterRatio<kernelLayout>() == KernelLayoutClusterRatio::JSizeEqualsISize ? 1 : 2>
+           generateDiagonalMasks(const nbnxn_atomdata_t::SimdMasks& simdMasks)
 {
     constexpr KernelLayoutClusterRatio clusterRatio = kernelLayoutClusterRatio<kernelLayout>();
 
@@ -109,7 +109,9 @@ public:
     }
 
     //! Sets (sub-)diagonal entries in \p boolV to false when the cluster pair in on the diagonal
-    inline void maskArray(const int iClusterIndex, const int jClusterIndex, std::array<SimdBool, nR>& boolV) const
+    gmx_inline void maskArray(const int                 iClusterIndex,
+                              const int                 jClusterIndex,
+                              std::array<SimdBool, nR>& boolV) const
     {
         if (jClusterIndex == iClusterIndex)
         {
@@ -133,7 +135,9 @@ public:
     }
 
     //! Sets (sub-)diagonal entries in \p boolV to false when the cluster pair in on the diagonal
-    inline void maskArray(const int iClusterIndex, const int jClusterIndex, std::array<SimdBool, nR>& boolV) const
+    gmx_inline void maskArray(const int                 iClusterIndex,
+                              const int                 jClusterIndex,
+                              std::array<SimdBool, nR>& boolV) const
     {
         if (jClusterIndex * 2 == iClusterIndex)
         {
@@ -164,7 +168,9 @@ public:
     }
 
     //! Sets (sub-)diagonal entries in \p boolV to false when the cluster pair in on the diagonal
-    inline void maskArray(const int iClusterIndex, const int jClusterIndex, std::array<SimdBool, nR>& boolV) const
+    gmx_inline void maskArray(const int                 iClusterIndex,
+                              const int                 jClusterIndex,
+                              std::array<SimdBool, nR>& boolV) const
     {
         if (jClusterIndex == iClusterIndex * 2)
         {

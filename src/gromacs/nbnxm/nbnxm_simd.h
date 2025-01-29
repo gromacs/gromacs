@@ -160,7 +160,7 @@ static constexpr bool c_useTableFormatFDV0 = false;
  * \param[in] f  The function
  */
 template<int N, class F>
-std::array<gmx::SimdReal, N> genArr(F f)
+static gmx_inline std::array<gmx::SimdReal, N> genArr(F f)
 {
     static_assert(N <= 2 || N == 4);
 
@@ -192,7 +192,7 @@ std::array<gmx::SimdReal, N> genArr(F f)
  * \param[in] f  The function
  */
 template<int N, class F>
-std::array<gmx::SimdBool, N> genBoolArr(F f)
+static gmx_inline std::array<gmx::SimdBool, N> genBoolArr(F f)
 {
     static_assert(N <= 2 || N == 4);
 
@@ -220,7 +220,7 @@ std::array<gmx::SimdBool, N> genBoolArr(F f)
  * \tparam a  The elements to sum over
  */
 template<size_t N>
-gmx::SimdReal sumArray(const std::array<gmx::SimdReal, N>& a)
+static gmx_inline gmx::SimdReal sumArray(const std::array<gmx::SimdReal, N>& a)
 {
     static_assert(N == 2 || N == 4);
 

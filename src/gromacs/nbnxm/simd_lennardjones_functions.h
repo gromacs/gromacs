@@ -90,10 +90,10 @@ class LennardJonesCalculator;
 
 //! Computes r^-6 and r^-12, masked when requested
 template<int nR, bool maskInteractions, std::size_t inputSize, std::size_t interactSize>
-inline void rInvSixAndRInvTwelve(const std::array<SimdReal, inputSize>&    rInvSquaredV,
-                                 const std::array<SimdBool, interactSize>& interactV,
-                                 std::array<SimdReal, nR>&                 rInvSixV,
-                                 std::array<SimdReal, nR>&                 rInvTwelveV)
+gmx_inline void rInvSixAndRInvTwelve(const std::array<SimdReal, inputSize>&    rInvSquaredV,
+                                     const std::array<SimdBool, interactSize>& interactV,
+                                     std::array<SimdReal, nR>&                 rInvSixV,
+                                     std::array<SimdReal, nR>&                 rInvTwelveV)
 {
     rInvSixV = genArr<nR>([&](int i) { return rInvSquaredV[i] * rInvSquaredV[i] * rInvSquaredV[i]; });
 
@@ -107,17 +107,17 @@ inline void rInvSixAndRInvTwelve(const std::array<SimdReal, inputSize>&    rInvS
 
 //! Returns F*r and optionally the potential for LJ with (un)shifted potential with sigma/epsilon
 template<int nR, bool maskInteractions, bool haveCutoffCheck, bool calculateEnergies, std::size_t inputSize, std::size_t interactSize, std::size_t vljvSize>
-inline void lennardJonesInteractionsSigmaEpsilon(const std::array<SimdReal, inputSize>& rInvV,
-                                                 const std::array<SimdBool, interactSize>& interactV,
-                                                 const SimdBool* const           withinCutoffV,
-                                                 const std::array<SimdReal, nR>& sigmaV,
-                                                 const std::array<SimdReal, nR>& epsilonV,
-                                                 const SimdReal                  dispersionShift,
-                                                 const SimdReal                  repulsionShift,
-                                                 const SimdReal                  sixth,
-                                                 const SimdReal                  twelfth,
-                                                 std::array<SimdReal, nR>&       frLJV,
-                                                 std::array<SimdReal, vljvSize>& vLJV)
+gmx_inline void lennardJonesInteractionsSigmaEpsilon(const std::array<SimdReal, inputSize>& rInvV,
+                                                     const std::array<SimdBool, interactSize>& interactV,
+                                                     const SimdBool* const           withinCutoffV,
+                                                     const std::array<SimdReal, nR>& sigmaV,
+                                                     const std::array<SimdReal, nR>& epsilonV,
+                                                     const SimdReal            dispersionShift,
+                                                     const SimdReal            repulsionShift,
+                                                     const SimdReal            sixth,
+                                                     const SimdReal            twelfth,
+                                                     std::array<SimdReal, nR>& frLJV,
+                                                     std::array<SimdReal, vljvSize>& vLJV)
 {
     static_assert(inputSize >= nR);
     static_assert(!calculateEnergies || vljvSize == nR);
@@ -176,16 +176,16 @@ public:
 
     //! Computes F*r for LJ with (un)shifted potential with C6/C12 parameters
     template<int nR, bool maskInteractions, std::size_t inputSize, std::size_t interactSize, std::size_t vljvSize>
-    inline void forceC6C12(const std::array<SimdReal, inputSize>&    rSquaredV,
-                           const std::array<SimdReal, inputSize>&    rInvV,
-                           const std::array<SimdReal, inputSize>&    rInvSquaredV,
-                           const std::array<SimdBool, interactSize>& interactV,
-                           const std::array<SimdReal, nR>&           c6V,
-                           const std::array<SimdReal, nR>&           c12V,
-                           SimdReal                                  sixth,
-                           SimdReal                                  twelfth,
-                           std::array<SimdReal, nR>&                 frLJV,
-                           std::array<SimdReal, vljvSize>&           vLJV)
+    gmx_inline void forceC6C12(const std::array<SimdReal, inputSize>&    rSquaredV,
+                               const std::array<SimdReal, inputSize>&    rInvV,
+                               const std::array<SimdReal, inputSize>&    rInvSquaredV,
+                               const std::array<SimdBool, interactSize>& interactV,
+                               const std::array<SimdReal, nR>&           c6V,
+                               const std::array<SimdReal, nR>&           c12V,
+                               SimdReal                                  sixth,
+                               SimdReal                                  twelfth,
+                               std::array<SimdReal, nR>&                 frLJV,
+                               std::array<SimdReal, vljvSize>&           vLJV)
     {
         std::array<SimdReal, nR> rInvSixV;
         std::array<SimdReal, nR> rInvTwelveV;
@@ -202,15 +202,15 @@ public:
     }
 
     template<int nR, bool maskInteractions, bool haveCutoffCheck, std::size_t inputSize, std::size_t interactSize, std::size_t vljvSize>
-    inline void forceSigmaEpsilon(const std::array<SimdReal, inputSize>&    rInvV,
-                                  const std::array<SimdBool, interactSize>& interactV,
-                                  SimdBool*                                 withinCutoffV,
-                                  const std::array<SimdReal, nR>&           sigmaV,
-                                  const std::array<SimdReal, nR>&           epsilonV,
-                                  SimdReal                                  sixth,
-                                  SimdReal                                  twelfth,
-                                  std::array<SimdReal, nR>&                 frLJV,
-                                  std::array<SimdReal, vljvSize>&           vLJV)
+    gmx_inline void forceSigmaEpsilon(const std::array<SimdReal, inputSize>&    rInvV,
+                                      const std::array<SimdBool, interactSize>& interactV,
+                                      SimdBool*                                 withinCutoffV,
+                                      const std::array<SimdReal, nR>&           sigmaV,
+                                      const std::array<SimdReal, nR>&           epsilonV,
+                                      SimdReal                                  sixth,
+                                      SimdReal                                  twelfth,
+                                      std::array<SimdReal, nR>&                 frLJV,
+                                      std::array<SimdReal, vljvSize>&           vLJV)
     {
         const SimdReal dummy = setZero();
 
@@ -231,16 +231,16 @@ public:
 
     //! Computes F*r and the potential for LJ with (un)shifted potential with C6/C12 parameters
     template<int nR, bool maskInteractions, std::size_t inputSize, std::size_t interactSize, std::size_t vljvSize>
-    inline void forceC6C12(const std::array<SimdReal, inputSize>&    rSquaredV,
-                           const std::array<SimdReal, inputSize>&    rInvV,
-                           const std::array<SimdReal, inputSize>&    rInvSquaredV,
-                           const std::array<SimdBool, interactSize>& interactV,
-                           const std::array<SimdReal, nR>&           c6V,
-                           const std::array<SimdReal, nR>&           c12V,
-                           SimdReal                                  sixth,
-                           SimdReal                                  twelfth,
-                           std::array<SimdReal, nR>&                 frLJV,
-                           std::array<SimdReal, vljvSize>&           vLJV)
+    gmx_inline void forceC6C12(const std::array<SimdReal, inputSize>&    rSquaredV,
+                               const std::array<SimdReal, inputSize>&    rInvV,
+                               const std::array<SimdReal, inputSize>&    rInvSquaredV,
+                               const std::array<SimdBool, interactSize>& interactV,
+                               const std::array<SimdReal, nR>&           c6V,
+                               const std::array<SimdReal, nR>&           c12V,
+                               SimdReal                                  sixth,
+                               SimdReal                                  twelfth,
+                               std::array<SimdReal, nR>&                 frLJV,
+                               std::array<SimdReal, vljvSize>&           vLJV)
     {
         static_assert(inputSize >= nR);
         static_assert(vljvSize == nR);
@@ -263,15 +263,15 @@ public:
     }
 
     template<int nR, bool maskInteractions, bool haveCutoffCheck, std::size_t inputSize, std::size_t interactSize, std::size_t vljvSize>
-    inline void forceSigmaEpsilon(const std::array<SimdReal, inputSize>&    rInvV,
-                                  const std::array<SimdBool, interactSize>& interactV,
-                                  SimdBool*                                 withinCutoffV,
-                                  const std::array<SimdReal, nR>&           sigmaV,
-                                  const std::array<SimdReal, nR>&           epsilonV,
-                                  SimdReal                                  sixth,
-                                  SimdReal                                  twelfth,
-                                  std::array<SimdReal, nR>&                 frLJV,
-                                  std::array<SimdReal, vljvSize>&           vLJV)
+    gmx_inline void forceSigmaEpsilon(const std::array<SimdReal, inputSize>&    rInvV,
+                                      const std::array<SimdBool, interactSize>& interactV,
+                                      SimdBool*                                 withinCutoffV,
+                                      const std::array<SimdReal, nR>&           sigmaV,
+                                      const std::array<SimdReal, nR>&           epsilonV,
+                                      SimdReal                                  sixth,
+                                      SimdReal                                  twelfth,
+                                      std::array<SimdReal, nR>&                 frLJV,
+                                      std::array<SimdReal, vljvSize>&           vLJV)
     {
         lennardJonesInteractionsSigmaEpsilon<nR, maskInteractions, haveCutoffCheck, true>(
                 rInvV, interactV, withinCutoffV, sigmaV, epsilonV, dispersionShift_, repulsionShift_, sixth, twelfth, frLJV, vLJV);
@@ -284,12 +284,12 @@ private:
 
 //! Computes (r - r_switch), (r - r_switch)^2 and (r - r_switch)^2 * r
 template<int nR, std::size_t inputSize>
-inline void computeForceSwitchVariables(const std::array<SimdReal, inputSize>& rSquaredV,
-                                        const std::array<SimdReal, inputSize>& rInvV,
-                                        SimdReal                               rSwitch,
-                                        std::array<SimdReal, nR>&              rSwitchedV,
-                                        std::array<SimdReal, nR>&              rSwitchedSquaredV,
-                                        std::array<SimdReal, nR>& rSwitchedSquaredTimesRV)
+gmx_inline void computeForceSwitchVariables(const std::array<SimdReal, inputSize>& rSquaredV,
+                                            const std::array<SimdReal, inputSize>& rInvV,
+                                            SimdReal                               rSwitch,
+                                            std::array<SimdReal, nR>&              rSwitchedV,
+                                            std::array<SimdReal, nR>& rSwitchedSquaredV,
+                                            std::array<SimdReal, nR>& rSwitchedSquaredTimesRV)
 {
     static_assert(inputSize >= nR);
 
@@ -301,21 +301,21 @@ inline void computeForceSwitchVariables(const std::array<SimdReal, inputSize>& r
 }
 
 //! Adds the force switch term to \p force
-inline SimdReal addLJForceSwitch(SimdReal force,
-                                 SimdReal rSwitched,
-                                 SimdReal rSwitchedSquaredTimesR,
-                                 SimdReal c2,
-                                 SimdReal c3)
+gmx_inline SimdReal addLJForceSwitch(SimdReal force,
+                                     SimdReal rSwitched,
+                                     SimdReal rSwitchedSquaredTimesR,
+                                     SimdReal c2,
+                                     SimdReal c3)
 {
     return fma(fma(c3, rSwitched, c2), rSwitchedSquaredTimesR, force);
 }
 
 //! Returns the LJ force switch function for the potential
-inline SimdReal ljForceSwitchPotential(SimdReal rSwitched,
-                                       SimdReal rSwitchedSquaredTimesR,
-                                       SimdReal c0,
-                                       SimdReal c3,
-                                       SimdReal c4)
+gmx_inline SimdReal ljForceSwitchPotential(SimdReal rSwitched,
+                                           SimdReal rSwitchedSquaredTimesR,
+                                           SimdReal c0,
+                                           SimdReal c3,
+                                           SimdReal c4)
 {
     return fma(fma(c4, rSwitched, c3), rSwitchedSquaredTimesR * rSwitched, c0);
 }
@@ -348,16 +348,16 @@ public:
 
     //! Computes F*r and optionally the potential for LJ with force switch and C6/C12 parameters
     template<int nR, bool maskInteractions, std::size_t inputSize, std::size_t interactSize, std::size_t vljvSize>
-    inline void forceC6C12(const std::array<SimdReal, inputSize>&    rSquaredV,
-                           const std::array<SimdReal, inputSize>&    rInvV,
-                           const std::array<SimdReal, inputSize>&    rInvSquaredV,
-                           const std::array<SimdBool, interactSize>& interactV,
-                           const std::array<SimdReal, nR>&           c6V,
-                           const std::array<SimdReal, nR>&           c12V,
-                           SimdReal                                  sixth,
-                           SimdReal                                  twelfth,
-                           std::array<SimdReal, nR>&                 frLJV,
-                           std::array<SimdReal, vljvSize>&           vLJV)
+    gmx_inline void forceC6C12(const std::array<SimdReal, inputSize>&    rSquaredV,
+                               const std::array<SimdReal, inputSize>&    rInvV,
+                               const std::array<SimdReal, inputSize>&    rInvSquaredV,
+                               const std::array<SimdBool, interactSize>& interactV,
+                               const std::array<SimdReal, nR>&           c6V,
+                               const std::array<SimdReal, nR>&           c12V,
+                               SimdReal                                  sixth,
+                               SimdReal                                  twelfth,
+                               std::array<SimdReal, nR>&                 frLJV,
+                               std::array<SimdReal, vljvSize>&           vLJV)
     {
         static_assert(inputSize >= nR);
         static_assert(!calculateEnergies || vljvSize == nR);
@@ -454,11 +454,11 @@ private:
 
 //! Computes (r - r_switch) and (r - r_switch)^2
 template<int nR, std::size_t inputSize>
-inline void computePotentialSwitchVariables(const std::array<SimdReal, inputSize>& rSquaredV,
-                                            const std::array<SimdReal, inputSize>& rInvV,
-                                            SimdReal                               rSwitch,
-                                            std::array<SimdReal, nR>&              rSwitchedV,
-                                            std::array<SimdReal, nR>& rSwitchedSquaredV)
+gmx_inline void computePotentialSwitchVariables(const std::array<SimdReal, inputSize>& rSquaredV,
+                                                const std::array<SimdReal, inputSize>& rInvV,
+                                                SimdReal                               rSwitch,
+                                                std::array<SimdReal, nR>&              rSwitchedV,
+                                                std::array<SimdReal, nR>& rSwitchedSquaredV)
 {
     static_assert(inputSize >= nR);
 
@@ -468,13 +468,14 @@ inline void computePotentialSwitchVariables(const std::array<SimdReal, inputSize
 }
 
 //! Returns the potential switch function
-inline SimdReal potentialSwitchFunction(SimdReal rsw, SimdReal rsw2, SimdReal c3, SimdReal c4, SimdReal c5)
+gmx_inline SimdReal potentialSwitchFunction(SimdReal rsw, SimdReal rsw2, SimdReal c3, SimdReal c4, SimdReal c5)
 {
     return fma(fma(fma(c5, rsw, c4), rsw, c3), rsw2 * rsw, SimdReal(1.0_real));
 }
 
 //! Returns the derivative of the potential switch function
-inline SimdReal potentialSwitchFunctionDerivative(SimdReal rsw, SimdReal rsw2, SimdReal c2, SimdReal c3, SimdReal c4)
+gmx_inline SimdReal
+potentialSwitchFunctionDerivative(SimdReal rsw, SimdReal rsw2, SimdReal c2, SimdReal c3, SimdReal c4)
 {
     return fma(fma(c4, rsw, c3), rsw, c2) * rsw2;
 }
@@ -497,16 +498,16 @@ public:
 
     //! Computes F*r and optionally the potential for LJ with potential switch and C6/C12 parameters
     template<int nR, bool maskInteractions, std::size_t inputSize, std::size_t interactSize, std::size_t vljvSize>
-    inline void forceC6C12(const std::array<SimdReal, inputSize>&    rSquaredV,
-                           const std::array<SimdReal, inputSize>&    rInvV,
-                           const std::array<SimdReal, inputSize>&    rInvSquaredV,
-                           const std::array<SimdBool, interactSize>& interactV,
-                           const std::array<SimdReal, nR>&           c6V,
-                           const std::array<SimdReal, nR>&           c12V,
-                           SimdReal                                  sixth,
-                           SimdReal                                  twelfth,
-                           std::array<SimdReal, nR>&                 frLJV,
-                           std::array<SimdReal, vljvSize>&           vLJV)
+    gmx_inline void forceC6C12(const std::array<SimdReal, inputSize>&    rSquaredV,
+                               const std::array<SimdReal, inputSize>&    rInvV,
+                               const std::array<SimdReal, inputSize>&    rInvSquaredV,
+                               const std::array<SimdBool, interactSize>& interactV,
+                               const std::array<SimdReal, nR>&           c6V,
+                               const std::array<SimdReal, nR>&           c12V,
+                               SimdReal                                  sixth,
+                               SimdReal                                  twelfth,
+                               std::array<SimdReal, nR>&                 frLJV,
+                               std::array<SimdReal, vljvSize>&           vLJV)
     {
         static_assert(inputSize >= nR);
         static_assert(!calculateEnergies || vljvSize == nR);
@@ -576,15 +577,15 @@ private:
 
 //! Adds the Ewald long-range correction for r^-6
 template<int nR, bool maskInteractions, bool calculateEnergies, std::size_t inputSize, std::size_t interactSize, std::size_t ljepSize, std::size_t vljvSize>
-inline void addLennardJonesEwaldCorrections(const std::array<SimdReal, inputSize>&    rSquaredV,
-                                            const std::array<SimdReal, inputSize>&    rInvSquaredV,
-                                            const std::array<SimdBool, interactSize>& interactV,
-                                            const SimdBool*                           withinCutoffV,
-                                            const std::array<SimdReal, nR>&           c6GridV,
-                                            const std::array<SimdReal, ljepSize>&     ljEwaldParams,
-                                            SimdReal                                  sixth,
-                                            std::array<SimdReal, nR>&                 frLJV,
-                                            std::array<SimdReal, vljvSize>&           vLJV)
+gmx_inline void addLennardJonesEwaldCorrections(const std::array<SimdReal, inputSize>& rSquaredV,
+                                                const std::array<SimdReal, inputSize>& rInvSquaredV,
+                                                const std::array<SimdBool, interactSize>& interactV,
+                                                const SimdBool*                       withinCutoffV,
+                                                const std::array<SimdReal, nR>&       c6GridV,
+                                                const std::array<SimdReal, ljepSize>& ljEwaldParams,
+                                                SimdReal                              sixth,
+                                                std::array<SimdReal, nR>&             frLJV,
+                                                std::array<SimdReal, vljvSize>&       vLJV)
 {
     static_assert(inputSize >= nR);
     static_assert(ljepSize == 5);

@@ -115,6 +115,23 @@ Index ssize(const T& t)
 #    endif
 #endif
 
+/*! \def gmx_inline
+ *  \brief Function attribute to hint inlining.
+ *
+ * Since C++ does not have a standard way to ensure a function is inlined
+ * we use compiler-specific attributes (or combinations of attributes) to
+ * to make sure that the various compilers will most likely inline functions
+ * we intend to be inlined.
+ */
+#if defined(__GNUC__) && !defined(__clang__)
+#    define gmx_inline __attribute__((__gnu_inline__, __always_inline__)) inline
+#elif defined(__clang__)
+#    define gmx_inline __attribute__((always_inline)) inline
+#else
+#    define gmx_inline inline
+#endif
+
+
 /*! \brief Attribute to explicitly indicate that a parameter or
  * locally scoped variable is used just in debug mode.
  *

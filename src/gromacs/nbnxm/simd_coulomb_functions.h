@@ -92,10 +92,10 @@ public:
 
     //! Returns the force
     template<int nR>
-    inline std::array<SimdReal, nR> force(const std::array<SimdReal, nR>&            rSquaredV,
-                                          const std::array<SimdReal, nR> gmx_unused& dummyRInvV,
-                                          const std::array<SimdReal, nR>&            rInvExclV,
-                                          const std::array<SimdBool, nR> gmx_unused& withinCutoffV)
+    gmx_inline std::array<SimdReal, nR> force(const std::array<SimdReal, nR>&            rSquaredV,
+                                              const std::array<SimdReal, nR> gmx_unused& dummyRInvV,
+                                              const std::array<SimdReal, nR>&            rInvExclV,
+                                              const std::array<SimdBool, nR> gmx_unused& withinCutoffV)
     {
         return genArr<nR>([&](int i)
                           { return fma(rSquaredV[i], minusTwoTimesRFCoeff_, rInvExclV[i]); });
@@ -103,12 +103,12 @@ public:
 
     //! Computes forces and energies without 1/r term for reaction-field
     template<int nR, std::size_t energySize>
-    inline void forceAndCorrectionEnergy(const std::array<SimdReal, nR>&            rSquaredV,
-                                         const std::array<SimdReal, nR> gmx_unused& dummyRInvV,
-                                         const std::array<SimdReal, nR>&            rInvExclV,
-                                         const std::array<SimdBool, nR> gmx_unused& withinCutoffV,
-                                         std::array<SimdReal, nR>&                  forceV,
-                                         std::array<SimdReal, energySize>& correctionEnergyV)
+    gmx_inline void forceAndCorrectionEnergy(const std::array<SimdReal, nR>&            rSquaredV,
+                                             const std::array<SimdReal, nR> gmx_unused& dummyRInvV,
+                                             const std::array<SimdReal, nR>&            rInvExclV,
+                                             const std::array<SimdBool, nR> gmx_unused& withinCutoffV,
+                                             std::array<SimdReal, nR>&         forceV,
+                                             std::array<SimdReal, energySize>& correctionEnergyV)
     {
         forceV = genArr<nR>([&](int i)
                             { return fma(rSquaredV[i], minusTwoTimesRFCoeff_, rInvExclV[i]); });
@@ -142,10 +142,10 @@ public:
     inline real selfEnergy() const { return selfEnergy_; }
 
     template<int nR>
-    inline std::array<SimdReal, nR> force(const std::array<SimdReal, nR>&            rSquaredV,
-                                          const std::array<SimdReal, nR> gmx_unused& dummyRInvV,
-                                          const std::array<SimdReal, nR>&            rInvExclV,
-                                          const std::array<SimdBool, nR>&            withinCutoffV)
+    gmx_inline std::array<SimdReal, nR> force(const std::array<SimdReal, nR>&            rSquaredV,
+                                              const std::array<SimdReal, nR> gmx_unused& dummyRInvV,
+                                              const std::array<SimdReal, nR>&            rInvExclV,
+                                              const std::array<SimdBool, nR>& withinCutoffV)
     {
         const auto brsqV = genArr<nR>(
                 [&](int i) { return betaSquared_ * selectByMask(rSquaredV[i], withinCutoffV[i]); });
@@ -157,12 +157,12 @@ public:
 
     //! Computes the Coulomb force and the correction energy for the Ewald reciprocal part
     template<int nR, std::size_t energySize>
-    inline void forceAndCorrectionEnergy(const std::array<SimdReal, nR>&   rSquaredV,
-                                         const std::array<SimdReal, nR>&   rInvV,
-                                         const std::array<SimdReal, nR>&   rInvExclV,
-                                         const std::array<SimdBool, nR>&   withinCutoffV,
-                                         std::array<SimdReal, nR>&         forceV,
-                                         std::array<SimdReal, energySize>& correctionEnergyV)
+    gmx_inline void forceAndCorrectionEnergy(const std::array<SimdReal, nR>&   rSquaredV,
+                                             const std::array<SimdReal, nR>&   rInvV,
+                                             const std::array<SimdReal, nR>&   rInvExclV,
+                                             const std::array<SimdBool, nR>&   withinCutoffV,
+                                             std::array<SimdReal, nR>&         forceV,
+                                             std::array<SimdReal, energySize>& correctionEnergyV)
     {
         const auto brsqV = genArr<nR>(
                 [&](int i) { return betaSquared_ * selectByMask(rSquaredV[i], withinCutoffV[i]); });
@@ -208,10 +208,10 @@ public:
 
     //! Returns the force
     template<int nR>
-    inline std::array<SimdReal, nR> force(const std::array<SimdReal, nR>&            rSquaredV,
-                                          const std::array<SimdReal, nR>&            rInvV,
-                                          const std::array<SimdReal, nR>&            rInvExclV,
-                                          const std::array<SimdBool, nR> gmx_unused& withinCutoffV)
+    gmx_inline std::array<SimdReal, nR> force(const std::array<SimdReal, nR>& rSquaredV,
+                                              const std::array<SimdReal, nR>& rInvV,
+                                              const std::array<SimdReal, nR>& rInvExclV,
+                                              const std::array<SimdBool, nR> gmx_unused& withinCutoffV)
     {
         /* We use separate registers for r for tabulated Ewald and LJ to keep the code simpler */
         const auto rV = genArr<nR>([&](int i) { return rSquaredV[i] * rInvV[i]; });
@@ -266,12 +266,12 @@ public:
 
     //! Computes the Coulomb force and the Ewald reciprocal pot correction energy
     template<int nR, std::size_t energySize>
-    inline void forceAndCorrectionEnergy(const std::array<SimdReal, nR>&            rSquaredV,
-                                         const std::array<SimdReal, nR>&            rInvV,
-                                         const std::array<SimdReal, nR>&            rInvExclV,
-                                         const std::array<SimdBool, nR> gmx_unused& withinCutoffV,
-                                         std::array<SimdReal, nR>&                  forceV,
-                                         std::array<SimdReal, energySize>& correctionEnergyV)
+    gmx_inline void forceAndCorrectionEnergy(const std::array<SimdReal, nR>& rSquaredV,
+                                             const std::array<SimdReal, nR>& rInvV,
+                                             const std::array<SimdReal, nR>& rInvExclV,
+                                             const std::array<SimdBool, nR> gmx_unused& withinCutoffV,
+                                             std::array<SimdReal, nR>&         forceV,
+                                             std::array<SimdReal, energySize>& correctionEnergyV)
     {
         /* We use separate registers for r for tabulated Ewald and LJ to keep the code simpler */
         const auto rV = genArr<nR>([&](int i) { return rSquaredV[i] * rInvV[i]; });
