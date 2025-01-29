@@ -44,6 +44,7 @@
 
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/gmxsycl.h"
+#include "gromacs/gpu_utils/hip_sycl_kernel_utils.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/utility/template_mp.h"
 
@@ -183,10 +184,12 @@ auto nbnxmKernelPruneOnly(sycl::handler& cgh,
         {
             unsigned imaskFull, imaskCheck, imaskNew;
 
+            nbnxn_cj_packed_t* plistCJPacked = indexedAddress(gm_plistCJPacked, jPacked);
+
             if constexpr (haveFreshList)
             {
                 /* Read the mask from the list transferred from the CPU */
-                imaskFull = UNIFORM_LOAD_CLUSTER_PAIR_DATA(gm_plistCJPacked[jPacked].imei[widx].imask);
+                imaskFull = UNIFORM_LOAD_CLUSTER_PAIR_DATA(plistCJPacked->imei[widx].imask);
                 /* We attempt to prune all pairs present in the original list */
                 imaskCheck = imaskFull;
                 imaskNew   = 0;
@@ -195,9 +198,9 @@ auto nbnxmKernelPruneOnly(sycl::handler& cgh,
             {
                 /* Read the mask from the "warp-pruned" by rlistOuter mask array */
                 imaskFull = UNIFORM_LOAD_CLUSTER_PAIR_DATA(
-                        gm_plistIMask[jPacked * c_clusterPairSplit + widx]);
+                        *indexedAddress(gm_plistIMask, jPacked * c_clusterPairSplit + widx));
                 /* Read the old rolling pruned mask, use as a base for new */
-                imaskNew = UNIFORM_LOAD_CLUSTER_PAIR_DATA(gm_plistCJPacked[jPacked].imei[widx].imask);
+                imaskNew = UNIFORM_LOAD_CLUSTER_PAIR_DATA(plistCJPacked->imei[widx].imask);
                 /* We only need to check pairs with different mask */
                 imaskCheck = (imaskNew ^ imaskFull);
             }
@@ -210,11 +213,11 @@ auto nbnxmKernelPruneOnly(sycl::handler& cgh,
                     {
                         unsigned mask_ji = (1U << (jm * c_superClusterSize));
                         // SYCL-TODO: Reevaluate prefetching methods
-                        const int cj = gm_plistCJPacked[jPacked].cj[jm];
+                        const int cj = *indexedAddress(plistCJPacked->cj, jm);
                         const int aj = cj * c_clSize + tidxj;
 
                         /* load j atom data */
-                        const Float4 tmp = gm_xq[aj];
+                        const Float4 tmp = *indexedAddress(gm_xq, aj);
                         const Float3 xj(tmp[0], tmp[1], tmp[2]);
 
                         for (int i = 0; i < c_superClusterSize; i++)
@@ -259,7 +262,7 @@ auto nbnxmKernelPruneOnly(sycl::handler& cgh,
                     }
                 }
                 /* update the imask with only the pairs up to rlistInner */
-                gm_plistCJPacked[jPacked].imei[widx].imask = imaskNew;
+                plistCJPacked->imei[widx].imask = imaskNew;
             } // (imaskCheck)
         } // for (int jPacked = cijPackedBegin + tidxz; jPacked < cijPackedEnd; jPacked += c_syclPruneKernelJPackedConcurrency)
 

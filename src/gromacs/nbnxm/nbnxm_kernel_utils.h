@@ -237,16 +237,20 @@ static inline GMX_ALWAYS_INLINE float interpolateCoulombForceR(const float* a_co
     const float normalized = coulombTabScale * r;
     const int   index      = static_cast<int>(normalized);
 #if (defined(__SYCL_DEVICE_ONLY__) && defined(__AMDGCN__)) || GMX_GPU_HIP
-    // TODO: up to ROCm v5.3 compiler does not do this transformation. Remove when this is no longer the case.
+    // TODO: ROCm compiler at least up to 6.0 does not do this transformation. Remove when this is no longer the case.
     const float fraction = __builtin_amdgcn_fractf(normalized);
+    // TODO: On AMD, we want to issue a single GLOBAL_LOAD_DWORDX2 which the optimizer
+    // does not always recognize with two consecutive loads (despite the lack of alignment
+    // requirement on GCN/CDNA/RDNA).
+    const float left  = *indexedAddress(a_coulombTab, index);
+    const float right = *indexedAddress(a_coulombTab, index + 1);
 #else
     const float fraction = normalized - index;
+    const float left     = a_coulombTab[index];
+    const float right    = a_coulombTab[index + 1];
 #endif
 
-    const float left  = a_coulombTab[index];
-    const float right = a_coulombTab[index + 1];
-
-    return lerp(left, right, fraction); // TODO: sycl::mix
+    return lerp(left, right, fraction);
 }
 
 } // namespace gmx
