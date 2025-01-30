@@ -42,6 +42,7 @@
 #ifndef GMX_TASKASSIGNMENT_DECIDEGPUUSAGE_H
 #define GMX_TASKASSIGNMENT_DECIDEGPUUSAGE_H
 
+#include <string>
 #include <vector>
 
 struct gmx_hw_info_t;
@@ -90,6 +91,9 @@ struct DevelopmentFeatureFlags
 
 class MDAtoms;
 
+
+bool canUseGpusForNonbonded(const t_inputrec& ir, const bool doRerun, std::string* error);
+
 /*! \brief Decide whether this thread-MPI simulation will run
  * nonbonded tasks on GPUs.
  *
@@ -104,9 +108,8 @@ class MDAtoms;
  * \param[in] userGpuTaskAssignment        The user-specified assignment of GPU tasks to device IDs.
  * \param[in] emulateGpuNonbonded          Whether we will emulate GPU calculation of nonbonded
  *                                         interactions.
- * \param[in] buildSupportsNonbondedOnGpu  Whether GROMACS was built with GPU support.
- * \param[in] nonbondedOnGpuIsUseful       Whether computing nonbonded interactions on a GPU is
- *                                         useful for this calculation.
+ * \param[in] canUseNonbondedOnGpu         Whether GROMACS was built with GPU support and simulation
+ *                                         parameters are compatible.
  * \param[in] binaryReproducibilityRequested  Whether binary reproducibility was requested
  * \param[in] numRanksPerSimulation        The number of ranks in each simulation.
  *
@@ -118,8 +121,7 @@ bool decideWhetherToUseGpusForNonbondedWithThreadMpi(TaskTarget              non
                                                      bool                    haveAvailableDevices,
                                                      const std::vector<int>& userGpuTaskAssignment,
                                                      EmulateGpuNonbonded     emulateGpuNonbonded,
-                                                     bool buildSupportsNonbondedOnGpu,
-                                                     bool nonbondedOnGpuIsUseful,
+                                                     bool                    canUseNonbondedOnGpu,
                                                      bool binaryReproducibilityRequested,
                                                      int  numRanksPerSimulation);
 
@@ -170,13 +172,14 @@ bool decideWhetherToUseGpusForPmeWithThreadMpi(bool                    useGpuFor
  * decision is made in this routine, along with many more
  * consistency checks.
  *
- * \param[in]  nonbondedTarget             The user's choice for mdrun -nb for where to assign short-ranged nonbonded interaction tasks.
- * \param[in]  userGpuTaskAssignment       The user-specified assignment of GPU tasks to device IDs.
- * \param[in]  emulateGpuNonbonded         Whether we will emulate GPU calculation of nonbonded interactions.
- * \param[in]  buildSupportsNonbondedOnGpu Whether GROMACS was build with GPU support.
- * \param[in]  nonbondedOnGpuIsUseful      Whether computing nonbonded interactions on a GPU is useful for this calculation.
- * \param[in] binaryReproducibilityRequested  Whether binary reproducibility was requested
- * \param[in]  gpusWereDetected            Whether compatible GPUs were detected on any node.
+ * \param[in]  nonbondedTarget         The user's choice for mdrun -nb for where to assign
+ *                                     short-ranged nonbonded interaction tasks.
+ * \param[in]  userGpuTaskAssignment   The user-specified assignment of GPU tasks to device IDs.
+ * \param[in]  emulateGpuNonbonded     Whether we will emulate GPU calculation of nonbonded interactions.
+ * \param[in]  canUseNonbondedOnGpu    Whether GROMACS was build with GPU support and simulation
+ *                                     parameters are compatible.
+ * \param[in]  binaryReproducibilityRequested  Whether binary reproducibility was requested
+ * \param[in]  gpusWereDetected        Whether compatible GPUs were detected on any node.
  *
  * \returns    Whether the simulation will run nonbonded and PME tasks, respectively, on GPUs.
  *
@@ -185,8 +188,7 @@ bool decideWhetherToUseGpusForPmeWithThreadMpi(bool                    useGpuFor
 bool decideWhetherToUseGpusForNonbonded(TaskTarget              nonbondedTarget,
                                         const std::vector<int>& userGpuTaskAssignment,
                                         EmulateGpuNonbonded     emulateGpuNonbonded,
-                                        bool                    buildSupportsNonbondedOnGpu,
-                                        bool                    nonbondedOnGpuIsUseful,
+                                        bool                    canUseNonbondedOnGpu,
                                         bool                    binaryReproducibilityRequested,
                                         bool                    gpusWereDetected);
 

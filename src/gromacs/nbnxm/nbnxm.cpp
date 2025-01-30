@@ -279,22 +279,6 @@ void nonbonded_verlet_t::setNonLocalGrid(const int                           gri
     pairSearch_->setNonLocalGrid(gridIndex, ddZone, gridDimensions, columns, atomInfo, x, nbat_.get());
 }
 
-
-bool buildSupportsNonbondedOnGpu(std::string* error)
-{
-    MessageStringCollector errorReasons;
-    // Before changing the prefix string, make sure that it is not searched for in regression tests.
-    errorReasons.startContext("Nonbonded interactions on GPUs are not supported in:");
-    errorReasons.appendIf(GMX_DOUBLE, "Double precision build of GROMACS");
-    errorReasons.appendIf(!GMX_GPU, "Non-GPU build of GROMACS.");
-    errorReasons.finishContext();
-    if (error != nullptr)
-    {
-        *error = errorReasons.toString();
-    }
-    return errorReasons.isEmpty();
-}
-
 } // namespace gmx
 
 /*! \endcond */

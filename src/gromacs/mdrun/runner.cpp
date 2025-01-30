@@ -591,62 +591,6 @@ static void override_nsteps_cmdline(const gmx::MDLogger& mdlog, int64_t nsteps_c
 namespace gmx
 {
 
-/*! \brief Return whether GPU acceleration of nonbondeds is supported with the given settings.
- *
- * If not, and if a warning may be issued, logs a warning about
- * falling back to CPU code. With thread-MPI, only the first
- * call to this function should have \c issueWarning true. */
-static bool gpuAccelerationOfNonbondedIsUseful(const MDLogger&   mdlog,
-                                               const t_inputrec& ir,
-                                               const bool        issueWarning,
-                                               const bool        doRerun)
-{
-    bool        gpuIsUseful = true;
-    std::string warning;
-
-    if (ir.opts.ngener - ir.nwall > 1)
-    {
-        /* The GPU code does not support more than one energy group.
-         * If the user requested GPUs explicitly, a fatal error is given later.
-         */
-        gpuIsUseful = false;
-        if (!doRerun)
-        {
-            warning =
-                    "Multiple energy groups is not implemented for GPUs, falling back to the CPU. "
-                    "For better performance, run on the GPU without energy groups and then do "
-                    "gmx mdrun -rerun option on the trajectory with an energy group .tpr file.";
-        }
-    }
-
-    /* There are resource handling issues in the GPU code paths with MTS on anything else than only
-     * PME. Also those code paths need more testing.
-     */
-    MtsLevel mtsLevelOnlyPme;
-    mtsLevelOnlyPme.forceGroups.set(static_cast<int>(MtsForceGroups::LongrangeNonbonded));
-    if (ir.useMts && !(ir.mtsLevels.size() == 2 && ir.mtsLevels[1].forceGroups == mtsLevelOnlyPme.forceGroups))
-    {
-        gpuIsUseful = false;
-        warning     = gmx::formatString(
-                "Multiple time stepping is only supported with GPUs when MTS is only applied to %s "
-                    "forces.",
-                mtsForceGroupNames[MtsForceGroups::LongrangeNonbonded].c_str());
-    }
-
-    if (EI_TPI(ir.eI))
-    {
-        gpuIsUseful = false;
-        warning     = "TPI is not implemented for GPUs.";
-    }
-
-    if (!gpuIsUseful && issueWarning)
-    {
-        GMX_LOG(mdlog.warning).asParagraph().appendText(warning);
-    }
-
-    return gpuIsUseful;
-}
-
 //! Initializes the logger for mdrun.
 static gmx::LoggerOwner buildLogger(FILE* fplog, const bool isSimulationMainRank)
 {
@@ -979,16 +923,23 @@ int Mdrunner::mdrunner()
             // If the user specified the number of ranks, then we must
             // respect that, but in default mode, we need to allow for
             // the number of GPUs to choose the number of ranks.
-            auto canUseGpuForNonbonded = buildSupportsNonbondedOnGpu(nullptr);
-            useGpuForNonbonded         = decideWhetherToUseGpusForNonbondedWithThreadMpi(
-                    nonbondedTarget,
-                    numAvailableDevices > 0,
-                    userGpuTaskAssignment,
-                    emulateGpuNonbonded,
-                    canUseGpuForNonbonded,
-                    gpuAccelerationOfNonbondedIsUseful(mdlog, *inputrec, GMX_THREAD_MPI, doRerun),
-                    mdrunOptions.reproducible,
-                    hw_opt.nthreads_tmpi);
+            std::string gpuNonbondedNotSupportedReason;
+            bool        canUseGpuForNonbonded =
+                    canUseGpusForNonbonded(*inputrec, doRerun, &gpuNonbondedNotSupportedReason);
+            if (GMX_GPU && !canUseGpuForNonbonded)
+            {
+                GMX_RELEASE_ASSERT(!gpuNonbondedNotSupportedReason.empty(),
+                                   "A reason should have been given");
+                GMX_LOG(mdlog.warning).asParagraph().appendText(gpuNonbondedNotSupportedReason);
+            }
+            useGpuForNonbonded =
+                    decideWhetherToUseGpusForNonbondedWithThreadMpi(nonbondedTarget,
+                                                                    numAvailableDevices > 0,
+                                                                    userGpuTaskAssignment,
+                                                                    emulateGpuNonbonded,
+                                                                    canUseGpuForNonbonded,
+                                                                    mdrunOptions.reproducible,
+                                                                    hw_opt.nthreads_tmpi);
             useGpuForPme = decideWhetherToUseGpusForPmeWithThreadMpi(useGpuForNonbonded,
                                                                      pmeTarget,
                                                                      pmeFftTarget,
@@ -1060,16 +1011,22 @@ int Mdrunner::mdrunner()
         // different nodes, which is the user's responsibility to
         // handle. If unsuitable, we will notice that during task
         // assignment.
-        auto canUseGpuForNonbonded = buildSupportsNonbondedOnGpu(nullptr);
-        useGpuForNonbonded         = decideWhetherToUseGpusForNonbonded(
-                nonbondedTarget,
-                userGpuTaskAssignment,
-                emulateGpuNonbonded,
-                canUseGpuForNonbonded,
-                gpuAccelerationOfNonbondedIsUseful(mdlog, *inputrec, !GMX_THREAD_MPI, doRerun),
-                mdrunOptions.reproducible,
-                gpusWereDetected);
-        useGpuForPme    = decideWhetherToUseGpusForPme(useGpuForNonbonded,
+        std::string gpuNonbondedNotSupportedReason;
+        bool        canUseGpuForNonbonded =
+                canUseGpusForNonbonded(*inputrec, doRerun, &gpuNonbondedNotSupportedReason);
+        if (GMX_GPU && !GMX_THREAD_MPI && !canUseGpuForNonbonded) // We already warned for threadMPI earlier
+        {
+            GMX_RELEASE_ASSERT(!gpuNonbondedNotSupportedReason.empty(),
+                               "A reason should have been given");
+            GMX_LOG(mdlog.warning).asParagraph().appendText(gpuNonbondedNotSupportedReason);
+        }
+        useGpuForNonbonded = decideWhetherToUseGpusForNonbonded(nonbondedTarget,
+                                                                userGpuTaskAssignment,
+                                                                emulateGpuNonbonded,
+                                                                canUseGpuForNonbonded,
+                                                                mdrunOptions.reproducible,
+                                                                gpusWereDetected);
+        useGpuForPme       = decideWhetherToUseGpusForPme(useGpuForNonbonded,
                                                     pmeTarget,
                                                     pmeFftTarget,
                                                     userGpuTaskAssignment,
@@ -1077,7 +1034,7 @@ int Mdrunner::mdrunner()
                                                     cr->sizeOfDefaultCommunicator,
                                                     domdecOptions.numPmeRanks,
                                                     gpusWereDetected);
-        useGpuForBonded = decideWhetherToUseGpusForBonded(
+        useGpuForBonded    = decideWhetherToUseGpusForBonded(
                 useGpuForNonbonded, useGpuForPme, bondedTarget, *inputrec, mtop, domdecOptions.numPmeRanks, gpusWereDetected);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR

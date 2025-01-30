@@ -65,6 +65,7 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
+#include "gromacs/mdtypes/multipletimestepping.h"
 #include "gromacs/mdtypes/pull_params.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/taskassignment/taskassignment.h"
@@ -134,14 +135,13 @@ bool decideWhetherToUseGpusForNonbondedWithThreadMpi(const TaskTarget        non
                                                      const bool              haveAvailableDevices,
                                                      const std::vector<int>& userGpuTaskAssignment,
                                                      const EmulateGpuNonbonded emulateGpuNonbonded,
-                                                     const bool buildSupportsNonbondedOnGpu,
-                                                     const bool nonbondedOnGpuIsUseful,
+                                                     const bool                canUseNonbondedOnGpu,
                                                      const bool binaryReproducibilityRequested,
                                                      const int  numRanksPerSimulation)
 {
     // First, exclude all cases where we can't run NB on GPUs.
     if (nonbondedTarget == TaskTarget::Cpu || emulateGpuNonbonded == EmulateGpuNonbonded::Yes
-        || !nonbondedOnGpuIsUseful || binaryReproducibilityRequested || !buildSupportsNonbondedOnGpu)
+        || binaryReproducibilityRequested || !canUseNonbondedOnGpu)
     {
         // If the user required NB on GPUs, we issue an error later.
         return false;
@@ -177,6 +177,45 @@ static bool decideWhetherToUseGpusForPmeFft(const TaskTarget pmeFftTarget)
     const bool useCpuFft = (pmeFftTarget == TaskTarget::Cpu)
                            || (pmeFftTarget == TaskTarget::Auto && c_gpuBuildSyclWithoutGpuFft);
     return !useCpuFft;
+}
+
+bool canUseGpusForNonbonded(const t_inputrec& ir, const bool doRerun, std::string* error)
+{
+    MessageStringCollector errorReasons;
+    // Before changing the prefix string, make sure that it is not searched for in regression tests.
+    errorReasons.startContext("Nonbonded interactions on GPUs are not supported:");
+    errorReasons.appendIf(!GMX_GPU, "Non-GPU build of GROMACS.");
+    if (ir.opts.ngener - ir.nwall > 1)
+    {
+        std::string errorMessage = "Multiple energy groups is not implemented for GPUs.";
+        if (!doRerun)
+        {
+            // Add advice
+            errorMessage +=
+                    " For better performance, run on the GPU without energy groups and then do gmx "
+                    "mdrun -rerun option on the trajectory with an energy group .tpr file.";
+        }
+        errorReasons.append(errorMessage);
+    }
+    {
+        MtsLevel mtsLevelOnlyPme;
+        mtsLevelOnlyPme.forceGroups.set(static_cast<int>(MtsForceGroups::LongrangeNonbonded));
+        if (ir.useMts
+            && !(ir.mtsLevels.size() == 2 && ir.mtsLevels[1].forceGroups == mtsLevelOnlyPme.forceGroups))
+        {
+            errorReasons.append(gmx::formatString(
+                    "Multiple time stepping is only supported with GPUs when MTS is only applied "
+                    "to %s forces.",
+                    mtsForceGroupNames[MtsForceGroups::LongrangeNonbonded].c_str()));
+        }
+    }
+    errorReasons.appendIf(EI_TPI(ir.eI), "TPI is not implemented for GPUs.");
+    errorReasons.finishContext();
+    if (error != nullptr)
+    {
+        *error = errorReasons.toString();
+    }
+    return errorReasons.isEmpty();
 }
 
 static bool canUseGpusForPme(const bool        useGpuForNonbonded,
@@ -323,8 +362,7 @@ bool decideWhetherToUseGpusForPmeWithThreadMpi(const bool              useGpuFor
 bool decideWhetherToUseGpusForNonbonded(const TaskTarget          nonbondedTarget,
                                         const std::vector<int>&   userGpuTaskAssignment,
                                         const EmulateGpuNonbonded emulateGpuNonbonded,
-                                        const bool                buildSupportsNonbondedOnGpu,
-                                        const bool                nonbondedOnGpuIsUseful,
+                                        const bool                canUseNonbondedOnGpu,
                                         const bool                binaryReproducibilityRequested,
                                         const bool                gpusWereDetected)
 {
@@ -340,7 +378,7 @@ bool decideWhetherToUseGpusForNonbonded(const TaskTarget          nonbondedTarge
         return false;
     }
 
-    if (!buildSupportsNonbondedOnGpu && nonbondedTarget == TaskTarget::Gpu)
+    if (!GMX_GPU && nonbondedTarget == TaskTarget::Gpu)
     {
         GMX_THROW(InconsistentInputError(
                 "Nonbonded interactions on the GPU were requested with -nb gpu, "
@@ -370,7 +408,7 @@ bool decideWhetherToUseGpusForNonbonded(const TaskTarget          nonbondedTarge
         return false;
     }
 
-    if (!nonbondedOnGpuIsUseful)
+    if (!canUseNonbondedOnGpu)
     {
         if (nonbondedTarget == TaskTarget::Gpu)
         {
@@ -417,7 +455,7 @@ bool decideWhetherToUseGpusForNonbonded(const TaskTarget          nonbondedTarge
 
     // If we get here, then the user permitted GPUs, which we should
     // use for nonbonded interactions.
-    return buildSupportsNonbondedOnGpu && gpusWereDetected;
+    return gpusWereDetected;
 }
 
 bool decideWhetherToUseGpusForPme(const bool              useGpuForNonbonded,
