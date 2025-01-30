@@ -241,9 +241,25 @@ static inline GMX_ALWAYS_INLINE float interpolateCoulombForceR(const float* a_co
     const float fraction = __builtin_amdgcn_fractf(normalized);
     // TODO: On AMD, we want to issue a single GLOBAL_LOAD_DWORDX2 which the optimizer
     // does not always recognize with two consecutive loads (despite the lack of alignment
-    // requirement on GCN/CDNA/RDNA).
+    // requirement on GCN/CDNA/RDNA). Hence we manually force a 64-bit load using a custom
+    // type because the native float2 type has alignment requirements that are too strict.
+#    if defined(__SYCL_DEVICE_ONLY__)
+    // This improves SYCL kernel performance on gfx90a by up to 10% (in particular for more complex
+    // kernels like Ewald&LJ force switch). Remove this when no longer the case.
+    struct myFloat2
+    {
+        float x, y;
+    };
+    static_assert(alignof(myFloat2) == alignof(decltype(*a_coulombTab)),
+                  "Custom type for codegen optimization should have same alignment as plain float");
+    const myFloat2 lr   = *(reinterpret_cast<const myFloat2*>(indexedAddress(a_coulombTab, index)));
+    const float    left = lr.x;
+    const float    right = lr.y;
+#    else
+    // non-SYCL default
     const float left  = *indexedAddress(a_coulombTab, index);
     const float right = *indexedAddress(a_coulombTab, index + 1);
+#    endif
 #else
     const float fraction = normalized - index;
     const float left     = a_coulombTab[index];
