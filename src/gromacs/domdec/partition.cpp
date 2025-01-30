@@ -513,8 +513,11 @@ static void ddSetAtominfo(gmx::ArrayRef<const int> index_gl, const gmx::Range<in
     }
 }
 
-//! Makes the mappings between global and local atom indices during DD repartitioning.
-static void make_dd_indices(gmx_domdec_t* dd, const int atomStart)
+/*! \brief Makes the mappings between global and local atom indices during DD repartitioning.
+ *
+ * \returns the home atom count without filler particles
+ */
+static int make_dd_indices(gmx_domdec_t* dd, const int atomStart)
 {
     const gmx::DomdecZones&  zones             = dd->zones;
     const int                numZones          = zones.numZones();
@@ -523,6 +526,8 @@ static void make_dd_indices(gmx_domdec_t* dd, const int atomStart)
     gmx_ga2la_t& ga2la = *dd->ga2la;
 
     GMX_ASSERT(*zones.atomRange(0).end() == dd->numHomeAtoms, "zones should be up to date");
+
+    int numHomeAtomsWithoutFillers = 0;
 
     /* Make the local to global and global to local atom index */
     int a = atomStart;
@@ -555,7 +560,14 @@ static void make_dd_indices(gmx_domdec_t* dd, const int atomStart)
             }
             a++;
         }
+
+        if (zone == 0)
+        {
+            numHomeAtomsWithoutFillers = a;
+        }
     }
+
+    return numHomeAtomsWithoutFillers;
 }
 
 //! Checks whether global and local atom indices are consistent.
@@ -2833,8 +2845,8 @@ void dd_partition_system(FILE*                     fplog,
 
         /* Restore the atom group indices from state_local */
         restoreAtomGroups(dd, state_local);
-        make_dd_indices(dd, 0);
-        ncgindex_set = dd->numHomeAtoms;
+        comm->numHomeAtomsWithoutFillers = make_dd_indices(dd, 0);
+        ncgindex_set                     = dd->numHomeAtoms;
 
         inc_nrnb(nrnb, eNR_CGCM, comm->atomRanges.numHomeAtoms());
 
