@@ -122,8 +122,12 @@ Index ssize(const T& t)
  * we use compiler-specific attributes (or combinations of attributes) to
  * to make sure that the various compilers will most likely inline functions
  * we intend to be inlined.
+ *
+ * \note g++-13 uses an extreme amount of memory with RelWithAssert builds.
+ * To avoid this we only enable the GNUC attributes when NDEBUG is defined,
+ * which is anyhow the only case where performance is critical.
  */
-#if defined(__GNUC__) && !defined(__clang__)
+#if defined(__GNUC__) && !defined(__clang__) && defined NDEBUG
 #    define gmx_inline __attribute__((__gnu_inline__, __always_inline__)) inline
 #elif defined(__clang__)
 #    define gmx_inline __attribute__((always_inline)) inline
