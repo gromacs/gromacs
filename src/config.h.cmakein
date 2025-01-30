@@ -262,6 +262,9 @@
 /* Define if CUDA Graphs or SYCL Graph support is available */
 #cmakedefine01 GMX_HAVE_GPU_GRAPH_SUPPORT
 
+/* Define if sycl::ext::oneapi::experimental::submit and cgh.ext_codeplay_enqueue_native_command should be used */
+#cmakedefine01 GMX_SYCL_ENABLE_EXPERIMENTAL_SUBMIT_API
+
 /* Define if sycl::aspect::ext_oneapi_limited_graph exists */
 #cmakedefine01 HAVE_SYCL_ASPECT_EXT_ONEAPI_LIMITED_GRAPH
 

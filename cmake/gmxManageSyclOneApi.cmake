@@ -251,6 +251,15 @@ else()
     set(GMX_HAVE_GPU_GRAPH_SUPPORT OFF)
 endif()
 
+# The API is experimental and unstable, so we don't build it by default
+option(GMX_SYCL_ENABLE_EXPERIMENTAL_SUBMIT_API "Enable support for SYCL experimental submission API (experimental oneAPI feature)")
+mark_as_advanced(GMX_SYCL_ENABLE_EXPERIMENTAL_SUBMIT_API)
+if(GMX_SYCL_ENABLE_EXPERIMENTAL_SUBMIT_API)
+    if(GMX_INTEL_LLVM AND GMX_INTEL_LLVM_VERSION LESS_EQUAL 20250001)
+        message(FATAL_ERROR "SYCL submit support in oneAPI 2025.0 is broken, and earlier versions do not support the API; set GMX_SYCL_ENABLE_EXPERIMENTAL_SUBMIT_API=OFF")
+    endif()
+endif()
+
 if(GMX_GPU_FFT_VKFFT)
     include(gmxManageVkFft)
     set(_sycl_has_valid_fft TRUE)

@@ -68,6 +68,8 @@ static const sycl::property_list sc_syclDiscardEventProperty_list{
  * Gives some nice performance optimizations, especially on AMD and NVIDIA devices.
  *
  * In ACpp, it relies on the ACPP_EXT_CG_PROPERTY_* and ACPP_EXT_COARSE_GRAINED_EVENTS extensions.
+ *
+ * In DPC++, it relies (when explicitly enabled) on SYCL_EXT_ONEAPI_ENQUEUE_FUNCTIONS
  * Falls back to the default submit otherwise.
  *
  * The function aims to avoid the overhead associated with creating/recording/destroying events.
@@ -77,6 +79,8 @@ static inline void syclSubmitWithoutEvent(Queue&& queue, CommandGroupFunc&& cgf)
 {
 #if GMX_SYCL_ACPP
     queue.submit(gmx::internal::sc_syclDiscardEventProperty_list, std::move(cgf));
+#elif defined(SYCL_EXT_ONEAPI_ENQUEUE_FUNCTIONS) && GMX_SYCL_ENABLE_EXPERIMENTAL_SUBMIT_API
+    sycl::ext::oneapi::experimental::submit(queue, std::move(cgf));
 #else
     queue.submit(std::move(cgf));
 #endif
@@ -94,6 +98,8 @@ static inline void syclEnqueueCustomOp(sycl::handler& cgh, CommandGroupFunc&& cg
     cgh.AdaptiveCpp_enqueue_custom_operation(std::move(cgf));
 #elif defined(HIPSYCL_EXT_ENQUEUE_CUSTOM_OPERATION)
     cgh.hipSYCL_enqueue_custom_operation(std::move(cgf));
+#elif defined(SYCL_EXT_ONEAPI_ENQUEUE_NATIVE_COMMAND) && GMX_SYCL_ENABLE_EXPERIMENTAL_SUBMIT_API
+    cgh.ext_codeplay_enqueue_native_command([=](sycl::interop_handle h) { cgf(h); });
 #else
     GMX_UNUSED_VALUE(cgh);
     GMX_UNUSED_VALUE(cgf);
