@@ -196,7 +196,7 @@ else()
         # stop and set the hash if we have a hit, otherwise loop and count
         # how far ahead is the local repo
         if(COUNT GREATER 1)
-            LIST(GET HASH_AND_REVNAMES 0 GMX_VERSION_CENTRAL_BASE_HASH)
+            list(GET HASH_AND_REVNAMES 0 GMX_VERSION_CENTRAL_BASE_HASH)
             break()
         endif()
         math(EXPR AHEAD ${AHEAD}+1)

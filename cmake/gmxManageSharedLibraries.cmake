@@ -40,17 +40,17 @@
 # already been set)
 if((APPLE OR CYGWIN OR ${CMAKE_SYSTEM_NAME} MATCHES "Linux|.*BSD|GNU"))
     # Maybe Solaris should be here? Patch this if you know!
-    SET(SHARED_LIBS_DEFAULT ON)
+    set(SHARED_LIBS_DEFAULT ON)
 elseif(WIN32)
     # Support for shared libs on native Windows is a bit new. Its
     # default might change later if/when we sort things out. Also,
     # Cray should go here. What variable value can detect it?
-    SET(SHARED_LIBS_DEFAULT OFF)
+    set(SHARED_LIBS_DEFAULT OFF)
 else()
     if (NOT DEFINED BUILD_SHARED_LIBS)
         message(STATUS "Defaulting to building static libraries")
     endif()
-    SET(SHARED_LIBS_DEFAULT OFF)
+    set(SHARED_LIBS_DEFAULT OFF)
 endif()
 
 if (GMX_PREFER_STATIC_LIBS)
@@ -92,7 +92,7 @@ if (UNIX AND GMX_PREFER_STATIC_LIBS)
     endif()
     # On Linux .a is the static library suffix, on Mac OS X .lib can also
     # be used, so we'll add both to the preference list.
-    SET(CMAKE_FIND_LIBRARY_SUFFIXES ".lib;.a" ${CMAKE_FIND_LIBRARY_SUFFIXES})
+    set(CMAKE_FIND_LIBRARY_SUFFIXES ".lib;.a" ${CMAKE_FIND_LIBRARY_SUFFIXES})
 endif()
 
 # ==========
@@ -117,7 +117,7 @@ function(gmx_manage_prefer_static_libs_flags build_type)
     endforeach()
 endfunction()
 
-IF( WIN32)
+if( WIN32)
   if (NOT BUILD_SHARED_LIBS)
       if(NOT GMX_PREFER_STATIC_LIBS)
           message(WARNING "Shared system libraries requested, and static GROMACS libraries requested.")
@@ -137,15 +137,15 @@ IF( WIN32)
       # set(PKG_CFLAGS "$PKG_CFLAGS -DUSE_VISIBILITY -DTMPI_USE_VISIBILITY")
   endif()
 
-  IF (GMX_PREFER_STATIC_LIBS)
+  if(GMX_PREFER_STATIC_LIBS)
       foreach(build_type "" ${build_types_with_explicit_flags})
           gmx_manage_prefer_static_libs_flags("${build_type}")
       endforeach()
-  ENDIF()
-  IF( CMAKE_C_COMPILER_ID STREQUAL "Intel" )
+  endif()
+  if( CMAKE_C_COMPILER_ID STREQUAL "Intel" )
     if(BUILD_SHARED_LIBS) #not sure why incremental building with shared libs doesn't work
-        STRING(REPLACE "/INCREMENTAL:YES" "" CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS})
+        string(REPLACE "/INCREMENTAL:YES" "" CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS})
         set(CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS} PARENT_SCOPE)
     endif()
-  ENDIF()
-ENDIF()
+  endif()
+endif()

@@ -80,7 +80,7 @@ function(gmx_add_hipcc_flag_if_supported _output_variable_name_to_append_to _fla
 endfunction()
 
 function(gmx_hip_check_single_flag _single_flag)
-    STRING(REGEX REPLACE "=" "_" _flag_name_sanitized HIPCC_SUPPORTS_FLAG_${_single_flag})
+    string(REGEX REPLACE "=" "_" _flag_name_sanitized HIPCC_SUPPORTS_FLAG_${_single_flag})
     gmx_add_hipcc_flag_if_supported(GMX_HIP_HIPCC_FLAGS ${_flag_name_sanitized} ${_single_flag})
     if (NOT ${_flag_name_sanitized})
         message(STATUS "The version of the HIPCC compiler does not support ${_single_flag}")

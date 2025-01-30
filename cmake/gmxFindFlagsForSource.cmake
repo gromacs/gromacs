@@ -80,7 +80,7 @@ endfunction()
 # gmx_check_source_compiles_with_flags() fails to build source code that needs,
 # the flag, this function sets SUGGEST_BINUTILS_UPDATE in the parent scope to
 # suggest that the calling code tell the user about this issue if needed.
-FUNCTION(GMX_FIND_FLAG_FOR_SOURCE RESULT_VARIABLE SOURCE LANGUAGE TOOLCHAIN_FLAGS_VARIABLE NEW_FLAGS_VARIABLE)
+function(GMX_FIND_FLAG_FOR_SOURCE RESULT_VARIABLE SOURCE LANGUAGE TOOLCHAIN_FLAGS_VARIABLE NEW_FLAGS_VARIABLE)
     # Insert a blank element last in the list (ie. try without any flags too)
     # This must come last, since some compilers (Intel) might try to emulate
     # emulate AVX instructions with SSE4.1 otherwise.
@@ -100,7 +100,7 @@ FUNCTION(GMX_FIND_FLAG_FOR_SOURCE RESULT_VARIABLE SOURCE LANGUAGE TOOLCHAIN_FLAG
         endif()
 
         if(${FLAG_ACCEPTED_VARIABLE})
-            IF(DEFINED ${COMPILE_WORKS_VARIABLE})
+            if(DEFINED ${COMPILE_WORKS_VARIABLE})
                 # This is a subsequent call to CMake, don't spam the status line
                 set(RUN_QUIETLY TRUE)
             endif()
@@ -127,7 +127,7 @@ FUNCTION(GMX_FIND_FLAG_FOR_SOURCE RESULT_VARIABLE SOURCE LANGUAGE TOOLCHAIN_FLAG
     endforeach()
     # If no flag has been found, then leaving ${RESULT_VARIABLE} unset
     # will be interpreted by CMake as false.
-ENDFUNCTION()
+endfunction()
 
 # Helper routine to find a flag (from a list) that will compile a specific source (in both C and C++).
 # C_RESULT_VARIABLE             Names a variable that will be set true if a way

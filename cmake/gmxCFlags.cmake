@@ -36,25 +36,25 @@ include(CheckCXXCompilerFlag)
 
 # Test C flags FLAGS, and set VARIABLE to true if the work. Also add the
 # flags to CFLAGSVAR.
-MACRO(GMX_TEST_CFLAG VARIABLE FLAGS CFLAGSVAR)
-    IF(NOT DEFINED ${VARIABLE})
+macro(GMX_TEST_CFLAG VARIABLE FLAGS CFLAGSVAR)
+    if(NOT DEFINED ${VARIABLE})
         CHECK_C_COMPILER_FLAG("${FLAGS}" ${VARIABLE})
-    ENDIF()
-    IF (${VARIABLE})
+    endif()
+    if(${VARIABLE})
         list(APPEND ${CFLAGSVAR} "${FLAGS}")
-    ENDIF ()
-ENDMACRO(GMX_TEST_CFLAG VARIABLE FLAGS CFLAGSVAR)
+    endif()
+endmacro(GMX_TEST_CFLAG VARIABLE FLAGS CFLAGSVAR)
 
 # Test C++ flags FLAGS, and set VARIABLE to true if the work. Also add the
 # flags to CXXFLAGSVAR.
-MACRO(GMX_TEST_CXXFLAG VARIABLE FLAGS CXXFLAGSVAR)
-    IF(NOT DEFINED ${VARIABLE})
+macro(GMX_TEST_CXXFLAG VARIABLE FLAGS CXXFLAGSVAR)
+    if(NOT DEFINED ${VARIABLE})
         CHECK_CXX_COMPILER_FLAG("${FLAGS}" ${VARIABLE})
-    ENDIF()
-    IF (${VARIABLE})
+    endif()
+    if(${VARIABLE})
         list(APPEND ${CXXFLAGSVAR} "${FLAGS}")
-    ENDIF ()
-ENDMACRO(GMX_TEST_CXXFLAG VARIABLE FLAGS CXXFLAGSVAR)
+    endif()
+endmacro(GMX_TEST_CXXFLAG VARIABLE FLAGS CXXFLAGSVAR)
 
 # Prepare some local variables so CUDA and non-CUDA code in targets
 # works the same way.

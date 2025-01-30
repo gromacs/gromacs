@@ -44,10 +44,10 @@
 #
 #  VARIABLE will be set to true if all of the functions link fine.
 
-MACRO(test_sched_affinity VARIABLE)
+macro(test_sched_affinity VARIABLE)
 
   if(NOT DEFINED sched_affinity_compile)
-    MESSAGE(STATUS "Checking for sched.h GNU affinity API")
+    message(STATUS "Checking for sched.h GNU affinity API")
 
     check_c_source_compiles(
       "#ifndef _GNU_SOURCE
@@ -74,4 +74,4 @@ int main(void) {
   else()
     set(${VARIABLE} 0 CACHE INTERNAL "Result of test for sched.h GNU affinity API" FORCE)
   endif()
-ENDMACRO(test_sched_affinity VARIABLE)
+endmacro(test_sched_affinity VARIABLE)

@@ -31,10 +31,10 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out https://www.gromacs.org.
 
-SET(CMAKE_C_COMPILER  "@CMAKE_C_COMPILER@" CACHE FILEPATH "C compiler used for GROMACS.")
-SET(CMAKE_CXX_COMPILER "@CMAKE_CXX_COMPILER@" CACHE FILEPATH "CXX compiler used for GROMACS.")
-SET(CMAKE_LINKER "@CMAKE_LINKER@" CACHE FILEPATH "Linker used for GROMACS.")
-SET(GMX_CMAKE_VERSION "@CMAKE_VERSION@" "Version of CMake used to build these CMake config files.")
+set(CMAKE_C_COMPILER  "@CMAKE_C_COMPILER@" CACHE FILEPATH "C compiler used for GROMACS.")
+set(CMAKE_CXX_COMPILER "@CMAKE_CXX_COMPILER@" CACHE FILEPATH "CXX compiler used for GROMACS.")
+set(CMAKE_LINKER "@CMAKE_LINKER@" CACHE FILEPATH "Linker used for GROMACS.")
+set(GMX_CMAKE_VERSION "@CMAKE_VERSION@" "Version of CMake used to build these CMake config files.")
 @_gmx_mpi_config@
 @_gmx_osx_config@
 @_gmx_cuda_config@

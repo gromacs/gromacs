@@ -120,7 +120,7 @@ else()
 endif ()
 
 # Turns on thread_mpi core threading functions.
-MACRO(TMPI_ENABLE_CORE INCDIR)
+macro(TMPI_ENABLE_CORE INCDIR)
     TMPI_TEST_ATOMICS(${INCDIR})
 
 # affinity checks
@@ -156,13 +156,13 @@ MACRO(TMPI_ENABLE_CORE INCDIR)
     check_cxx_symbol_exists(sysconf    unistd.h HAVE_SYSCONF)
 # this runs on windows
 #   check_include_files(windows.h               HAVE_WINDOWS_H)
-ENDMACRO(TMPI_ENABLE_CORE)
+endmacro(TMPI_ENABLE_CORE)
 
 # enable C++ library build.
 set(TMPI_CXX_LIB 1)
 
 # Turns on thread_mpi MPI functions.
-MACRO(TMPI_ENABLE)
+macro(TMPI_ENABLE)
     if(NOT DEFINED TMPI_ATOMICS)
         message(WARNING "Atomic operations not found for this CPU+compiler combination. Thread support will be unbearably slow: disable threads. Atomic operations should work on all but the most obscure CPU+compiler combinations; if your system is not obscure -- like, for example, x86 with gcc --  please contact the developers.")
     endif()
@@ -204,10 +204,10 @@ MACRO(TMPI_ENABLE)
     else ()
         set(TMPI_WARNINGS 0)
     endif ()
-ENDMACRO(TMPI_ENABLE)
+endmacro(TMPI_ENABLE)
 
 
-MACRO(TMPI_GET_SOURCE_LIST SRC_VARIABLE SRC_ROOT)
+macro(TMPI_GET_SOURCE_LIST SRC_VARIABLE SRC_ROOT)
     set(${SRC_VARIABLE}
         ${SRC_ROOT}/errhandler.cpp
         ${SRC_ROOT}/tmpi_malloc.cpp
@@ -234,5 +234,5 @@ MACRO(TMPI_GET_SOURCE_LIST SRC_VARIABLE SRC_ROOT)
              ${SRC_ROOT}/type.cpp          ${SRC_ROOT}/scan.cpp
              ${SRC_ROOT}/numa_malloc.cpp   ${SRC_ROOT}/once.cpp)
     endif()
-ENDMACRO(TMPI_GET_SOURCE_LIST)
+endmacro(TMPI_GET_SOURCE_LIST)
 

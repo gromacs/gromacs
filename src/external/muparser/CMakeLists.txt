@@ -41,7 +41,7 @@ elseif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-long-long -pedantic")
 endif()
 
-FILE(GLOB_RECURSE MUPARSER_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp") #all .cpp
+file(GLOB_RECURSE MUPARSER_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp") #all .cpp
 # The test file produces warnings with MSVC and was recommended for exclusion, see
 # https://github.com/beltoforion/muparser/issues/142#issuecomment-2093561006
 list(REMOVE_ITEM MUPARSER_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/muParserTest.cpp")
@@ -102,7 +102,7 @@ install(TARGETS muparser
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT RuntimeLibraries
 )
 
-FILE(GLOB_RECURSE MUPARSER_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/include/*.h") #all .h
+file(GLOB_RECURSE MUPARSER_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/include/*.h") #all .h
 install(FILES
     ${MUPARSER_HEADERS}
     DESTINATION include

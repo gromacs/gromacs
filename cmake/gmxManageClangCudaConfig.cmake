@@ -39,8 +39,8 @@ function (gmx_test_clang_cuda_support)
     # NOTE: we'd ideally like to use a compile check here, but the link-stage
     # fails as the clang invocation generated seems to not handle well some
     # (GPU code) in the object file generated during compilation.
-    # SET(CMAKE_REQUIRED_FLAGS ${FLAGS})
-    # SET(CMAKE_REQUIRED_LIBRARIES ${LIBS})
+    # set(CMAKE_REQUIRED_FLAGS ${FLAGS})
+    # set(CMAKE_REQUIRED_LIBRARIES ${LIBS})
     # CHECK_CXX_SOURCE_COMPILES("int main() { int c; cudaGetDeviceCount(&c); return 0; }" _CLANG_CUDA_COMPILES)
 endfunction ()
 

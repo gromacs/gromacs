@@ -192,7 +192,7 @@ if(BUILD_TESTING AND (NOT DEFINED GMX_BUILD_UNITTESTS OR GMX_BUILD_UNITTESTS))
                 if ("$ENV{CI_PROJECT_NAME}" STREQUAL "gromacs")
                     # We are running in a GitLab CI environment for a gromacs repository.
                     # See also admin/gitlab-ci/api-client.matrix.gitlab-ci.yml
-                    FILE(COPY
+                    file(COPY
                          $ENV{CI_PROJECT_DIR}/src/external/googletest
                          DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/external/
                          )

@@ -117,20 +117,20 @@ endif ()
 # TODO(#4093): Update tests with respect to required (compatible) OpenMPI versions.
 if (GMX_LIB_MPI AND OPENMPI_VERSION)
     if (OPENMPI_VERSION VERSION_LESS "1.4.1")
-        MESSAGE(WARNING
+        message(WARNING
                 "CMake found OpenMPI version ${OPENMPI_VERSION} on your system. "
                 "There are known problems with GROMACS and OpenMPI version < 1.4.1. "
                 "Please consider updating your OpenMPI if your MPI wrapper compilers "
                 "are using the above OpenMPI version.")
     endif ()
     if (OPENMPI_VERSION VERSION_EQUAL "1.8.6")
-        MESSAGE(WARNING
+        message(WARNING
                 "CMake found OpenMPI version ${OPENMPI_VERSION} on your system. "
                 "This OpenMPI version is known to leak memory with GROMACS,"
                 "please update to a more recent version. ")
     endif ()
     if (NOT MPI_FIND_QUIETLY)
-        MESSAGE(STATUS "GROMACS library will use OpenMPI ${OPENMPI_VERSION}")
+        message(STATUS "GROMACS library will use OpenMPI ${OPENMPI_VERSION}")
     endif ()
 endif ()
 
@@ -139,14 +139,14 @@ endif ()
 if (GMX_LIB_MPI AND MVAPICH2_VERSION)
     if (MVAPICH2_VERSION VERSION_LESS "1.5")
         # This test works correctly even with 1.5a1
-        MESSAGE(WARNING
+        message(WARNING
                 "CMake found MVAPICH2 version ${MVAPICH2_VERSION} on your system. "
                 "There are known problems with GROMACS and MVAPICH2 version < 1.5. "
                 "Please consider updating your MVAPICH2 if your MPI wrapper compilers "
                 "are using the above MVAPICH2 version.")
     endif ()
     if (NOT MPI_FIND_QUIETLY)
-        MESSAGE(STATUS "GROMACS library will use MVAPICH2 ${MVAPICH2_VERSION}")
+        message(STATUS "GROMACS library will use MVAPICH2 ${MVAPICH2_VERSION}")
     endif ()
 endif ()
 
