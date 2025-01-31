@@ -1,3 +1,4 @@
+
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
@@ -32,22 +33,24 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 
-/*! \brief Definitions of low-level utility functions for working with H5MD HDF5 files.
+/*! \brief Definitions of utility functions for working with H5MD attributes.
  *
  * \author Magnus Lundborg <lundborg.magnus@gmail.com>
+ * \author Petter Johansson <pettjoha@kth.se>
  */
 
 #include "gmxpre.h"
 
-#include "h5md_low_level_util.h"
+#include "h5md_attribute.h"
 
 #include <hdf5.h>
 
+#include <cstring>
+
 #include "gromacs/utility/basedefinitions.h"
-#include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/unique_cptr.h"
 
+#include "h5md_error.h"
 #include "h5md_guard.h"
 
 // HDF5 constants use old style casts.
@@ -55,52 +58,6 @@ CLANG_DIAGNOSTIC_IGNORE("-Wold-style-cast")
 
 namespace gmx
 {
-
-void printHdf5ErrorsDebug()
-{
-    if (debug)
-    {
-        H5Eprint2(H5E_DEFAULT, debug);
-    }
-#ifndef NDEBUG
-    H5Eprint2(H5E_DEFAULT, nullptr);
-#endif
-}
-
-void throwUponH5mdError(const bool errorExists, const std::string& message)
-{
-    if (errorExists)
-    {
-        gmx::printHdf5ErrorsDebug();
-        throw gmx::FileIOError(message.c_str());
-    }
-}
-
-hid_t createGroup(const hid_t container, const char* name)
-{
-    // create group creation property list
-    const auto [propertyList, listGuard] = makeH5mdPropertyListGuard(H5Pcreate(H5P_LINK_CREATE));
-    throwUponH5mdError(propertyList == H5I_INVALID_HID,
-                       "Cannot create propertyList when creating group.");
-
-    // Set the option to create intermediate groups if they are missing.
-    H5Pset_create_intermediate_group(propertyList, 1);
-
-    hid_t group = H5Gcreate(container, name, propertyList, H5P_DEFAULT, H5P_DEFAULT);
-    throwUponH5mdError(group == H5I_INVALID_HID, "Cannot create group.");
-
-    return group;
-}
-
-hid_t openOrCreateGroup(const hid_t container, const char* name)
-{
-    hid_t groupId = H5Gopen(container, name, H5P_DEFAULT);
-    if (groupId == H5I_INVALID_HID)
-    {
-        groupId = createGroup(container, name);
-    }
-    return groupId;
-}
 
 void setAttribute(const hid_t container, const char* name, const char* value)
 {

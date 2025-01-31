@@ -48,14 +48,14 @@
 #include <string>
 
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/unique_cptr.h"
 
 #if GMX_USE_HDF5
 #    include <hdf5.h>
 
+#    include "h5md_attribute.h"
+#    include "h5md_error.h"
+#    include "h5md_group.h"
 #    include "h5md_guard.h"
-#    include "h5md_low_level_util.h"
 CLANG_DIAGNOSTIC_IGNORE("-Wold-style-cast")
 #else
 CLANG_DIAGNOSTIC_IGNORE("-Wmissing-noreturn")
