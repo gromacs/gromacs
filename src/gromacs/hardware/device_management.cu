@@ -85,7 +85,7 @@ void warnWhenDeviceNotTargeted(const gmx::MDLogger& mdlog, const DeviceInformati
                     "WARNING: The %s binary does not include support for the CUDA architecture of "
                     "the GPU ID #%d (compute capability %d.%d) detected during detection. "
                     "By default, GROMACS supports all architectures of compute "
-                    "capability >= 3.5, so your GPU "
+                    "capability >= 5.0, so your GPU "
                     "might be rare, or some architectures were disabled in the build. "
                     "Consult the install guide for how to use the GMX_CUDA_TARGET_SM and "
                     "GMX_CUDA_TARGET_COMPUTE CMake variables to add this architecture.",
@@ -121,7 +121,7 @@ static DeviceStatus checkDeviceStatus(const DeviceInformation& deviceInfo)
     cudaError_t cu_err;
 
     // Is the generation of the device supported?
-    if (deviceInfo.prop.major < 3)
+    if (deviceInfo.prop.major < 5)
     {
         return DeviceStatus::Incompatible;
     }
