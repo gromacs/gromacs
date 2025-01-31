@@ -42,6 +42,10 @@
 
 #include "config.h" // To define GMX_USE_HDF5
 
+#if GMX_USE_HDF5
+#    include <hdf5.h>
+#endif
+
 #include <filesystem>
 #include <optional>
 #include <string>
@@ -51,10 +55,14 @@ enum class PbcType : int;
 namespace gmx
 {
 
-// \brief ID for HDF5 files, groups, sets, etc., returned by the library.
-typedef int64_t hid_t;
-// \brief Status return values from some HDF5 library functions.
-typedef int herr_t;
+#if !GMX_USE_HDF5
+// Backup typedefs to be used when we are not compiling with the HDF5 library enabled.
+// These are needed to ensure that the externally exposed interface from the module
+// is available.
+// TODO: These can be removed once the module implementation is fully separated
+// from the exposed interface.
+using hid_t = int64_t;
+#endif
 
 enum class H5mdFileMode : char
 {
@@ -90,6 +98,11 @@ public:
     H5md& operator=(const H5md&) = delete;
     H5md(H5md&&)                 = delete;
     H5md& operator=(H5md&&)      = delete;
+
+    /*! \brief Return the HDF5 identifier of the file.
+     *  \returns The file id.
+     */
+    hid_t fileid() const;
 
     /*! \brief Write all unwritten data to the file.
      * \param[in] throwExceptionUponError Whether to throw an exception if an error occurs.

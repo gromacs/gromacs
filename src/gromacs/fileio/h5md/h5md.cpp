@@ -110,6 +110,17 @@ H5md::~H5md()
 }
 
 // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+hid_t H5md::fileid() const
+{
+#if GMX_USE_HDF5
+    return file_;
+#else
+    throw gmx::NotImplementedError(
+            "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
+}
+
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 void H5md::flush(bool throwExceptionUponError)
 {
 #if GMX_USE_HDF5
