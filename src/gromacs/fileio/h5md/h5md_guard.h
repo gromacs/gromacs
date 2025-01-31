@@ -42,17 +42,13 @@
 
 #include "gmxpre.h"
 
-#include "config.h"
+#include <hdf5.h>
 
 #include <utility>
 
 #include "external/scope_guard/scope_guard.h"
 
 #include "h5md.h"
-
-#if GMX_USE_HDF5
-
-#    include <hdf5.h>
 
 namespace gmx
 {
@@ -98,7 +94,7 @@ using H5mdGuard = sg::detail::scope_guard<H5mdCloser>;
  *    auto [object, guard] = makeH5mdGuard(openOrCreateGroup(<...>), H5Gclose);
  *
  *  \param[in] object Object to guard.
- *  \param[in] unboundDeleter
+ *  \param[in] unboundCloser Callback function used to close the guarded object
  *  \returns Pair of the (object, guard), where object is the id and guard
  *  is the scope guard which closes the object once it exits scope.
  */
@@ -154,5 +150,4 @@ std::pair<hid_t, H5mdGuard> makeH5mdTypeGuard(hid_t object);
 
 } // namespace gmx
 
-#endif // GMX_USE_HDF5
 #endif // GMX_FILEIO_H5MD_GUARD_H

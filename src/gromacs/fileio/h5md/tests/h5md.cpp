@@ -40,20 +40,15 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
+#include "gromacs/fileio/h5md/h5md.h"
 
-#if GMX_USE_HDF5
-#    include <optional>
-#    include <string>
+#include <optional>
+#include <string>
 
-#    include <gtest/gtest.h>
+#include <gtest/gtest.h>
 
-#    include "gromacs/fileio/h5md.h"
-#    include "gromacs/utility/exceptions.h"
-#    include "gromacs/utility/smalloc.h"
-
-#    include "testutils/testasserts.h"
-#    include "testutils/testfilemanager.h"
+#include "testutils/testasserts.h"
+#include "testutils/testfilemanager.h"
 
 namespace gmx
 {
@@ -133,5 +128,3 @@ TEST(H5mdIoTest, CanWriteAndReadH5mdFileMetaData)
 } // namespace
 } // namespace test
 } // namespace gmx
-
-#endif // GMX_USE_HDF5

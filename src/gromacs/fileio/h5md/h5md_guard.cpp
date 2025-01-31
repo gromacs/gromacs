@@ -41,10 +41,6 @@
 
 #include "h5md_guard.h"
 
-#include "config.h"
-
-#if GMX_USE_HDF5
-
 namespace gmx
 {
 
@@ -84,5 +80,3 @@ std::pair<hid_t, H5mdGuard> makeH5mdTypeGuard(const hid_t object)
 }
 
 } // namespace gmx
-
-#endif // GMX_USE_HDF5

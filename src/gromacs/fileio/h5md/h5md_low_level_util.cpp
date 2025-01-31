@@ -39,18 +39,16 @@
 
 #include "gmxpre.h"
 
-#include "config.h"
+#include "h5md_low_level_util.h"
 
-#if GMX_USE_HDF5
-#    include <hdf5.h>
+#include <hdf5.h>
 
-#    include "gromacs/utility/basedefinitions.h"
-#    include "gromacs/utility/exceptions.h"
-#    include "gromacs/utility/fatalerror.h"
-#    include "gromacs/utility/unique_cptr.h"
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/unique_cptr.h"
 
-#    include "h5md_guard.h"
-#    include "h5md_low_level_util.h"
+#include "h5md_guard.h"
 
 // HDF5 constants use old style casts.
 CLANG_DIAGNOSTIC_IGNORE("-Wold-style-cast")
@@ -64,9 +62,9 @@ void printHdf5ErrorsDebug()
     {
         H5Eprint2(H5E_DEFAULT, debug);
     }
-#    ifndef NDEBUG
+#ifndef NDEBUG
     H5Eprint2(H5E_DEFAULT, nullptr);
-#    endif
+#endif
 }
 
 void throwUponH5mdError(const bool errorExists, const std::string& message)
@@ -145,4 +143,3 @@ std::optional<std::string> getAttribute(const hid_t container, const char* name)
 } // namespace gmx
 
 CLANG_DIAGNOSTIC_RESET
-#endif // GMX_USE_HDF5

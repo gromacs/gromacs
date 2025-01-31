@@ -37,11 +37,13 @@
  * \author Magnus Lundborg <lundborg.magnus@gmail.com>
  */
 
-#ifndef GMX_FILEIO_GMX_H5MD_LOW_LEVEL_UTIL_H
-#define GMX_FILEIO_GMX_H5MD_LOW_LEVEL_UTIL_H
+#ifndef GMX_FILEIO_H5MD_LOW_LEVEL_UTIL_H
+#define GMX_FILEIO_H5MD_LOW_LEVEL_UTIL_H
 
 #include <optional>
 #include <string>
+
+#include "h5md.h"
 
 namespace gmx
 {
@@ -102,4 +104,4 @@ std::optional<std::string> getAttribute(const hid_t container, const char* name)
 
 } // namespace gmx
 
-#endif // GMX_FILEIO_GMX_H5MD_LOW_LEVEL_UTIL_H
+#endif // GMX_FILEIO_H5MD_LOW_LEVEL_UTIL_H

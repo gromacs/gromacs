@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright 2013- The GROMACS Authors
+# Copyright 2025- The GROMACS Authors
 # and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
 # Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
 #
@@ -31,23 +31,10 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out https://www.gromacs.org.
 
-if (GMX_USE_TNG)
-    set(tng_sources tngio.cpp)
+if (GMX_USE_HDF5)
+    gmx_add_unit_test(H5mdTests h5md-test
+        CPP_SOURCE_FILES
+            h5md.cpp
+        )
+    target_link_libraries(h5md-test PRIVATE h5md)
 endif()
-gmx_add_unit_test(FileIOTests fileio-test
-    CPP_SOURCE_FILES
-        checkpoint.cpp
-        confio.cpp
-        filemd5.cpp
-        filetypes.cpp
-        matio.cpp
-        mrcserializer.cpp
-        mrcdensitymap.cpp
-        mrcdensitymapheader.cpp
-        readinp.cpp
-        timecontrol.cpp
-        fileioxdrserializer.cpp
-        ${tng_sources}
-        xvgio.cpp
-    )
-target_link_libraries(fileio-test PRIVATE fileio legacy_api math)

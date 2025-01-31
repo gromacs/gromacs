@@ -51,11 +51,11 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/unique_cptr.h"
 
-#include "h5md_guard.h"
-#include "h5md_low_level_util.h"
-
 #if GMX_USE_HDF5
 #    include <hdf5.h>
+
+#    include "h5md_guard.h"
+#    include "h5md_low_level_util.h"
 CLANG_DIAGNOSTIC_IGNORE("-Wold-style-cast")
 #else
 CLANG_DIAGNOSTIC_IGNORE("-Wmissing-noreturn")

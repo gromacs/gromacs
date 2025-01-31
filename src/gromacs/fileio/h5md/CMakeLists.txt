@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright 2013- The GROMACS Authors
+# Copyright 2025- The GROMACS Authors
 # and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
 # Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
 #
@@ -31,23 +31,39 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out https://www.gromacs.org.
 
-if (GMX_USE_TNG)
-    set(tng_sources tngio.cpp)
+# Set up the module library
+add_library(h5md OBJECT)
+
+gmx_manage_hdf5()
+
+if(GMX_USE_HDF5)
+    target_sources(h5md PRIVATE
+        h5md.cpp
+        h5md_guard.cpp
+        h5md_low_level_util.cpp)
+
+    target_include_directories(h5md SYSTEM PUBLIC ${HDF5_INCLUDE_DIRS})
+    target_link_libraries(h5md PUBLIC ${HDF5_LIBRARIES})
+else()
+    # We do not need to compile H5md implementation files if we aren't building with it
+    target_sources(h5md PRIVATE h5md.cpp)
 endif()
-gmx_add_unit_test(FileIOTests fileio-test
-    CPP_SOURCE_FILES
-        checkpoint.cpp
-        confio.cpp
-        filemd5.cpp
-        filetypes.cpp
-        matio.cpp
-        mrcserializer.cpp
-        mrcdensitymap.cpp
-        mrcdensitymapheader.cpp
-        readinp.cpp
-        timecontrol.cpp
-        fileioxdrserializer.cpp
-        ${tng_sources}
-        xvgio.cpp
-    )
-target_link_libraries(fileio-test PRIVATE fileio legacy_api math)
+
+target_link_libraries(h5md PRIVATE
+    common
+    legacy_api
+    legacy_modules
+    math
+    utility)
+
+if (BUILD_SHARED_LIBS)
+    set_target_properties(h5md PROPERTIES POSITION_INDEPENDENT_CODE ON)
+endif()
+
+# Set required compile flags
+gmx_target_compile_options(h5md)
+target_compile_definitions(h5md PRIVATE HAVE_CONFIG_H)
+
+if (BUILD_TESTING)
+     add_subdirectory(tests)
+endif()

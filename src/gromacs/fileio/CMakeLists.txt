@@ -35,6 +35,8 @@
 add_library(fileio INTERFACE)
 file(GLOB FILEIO_SOURCES *.cpp)
 
+add_subdirectory(h5md)
+
 if(GMX_USE_PLUGINS)
     add_library(vmddlopen OBJECT ${CMAKE_SOURCE_DIR}/src/external/vmd_molfile/vmddlopen.cpp)
     gmx_target_compile_options(vmddlopen)
@@ -65,6 +67,7 @@ gmx_target_interface_warning_suppression(fileio "-Wno-cast-function-type-strict"
 #                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 #target_link_libraries(fileio PUBLIC
 target_link_libraries(fileio INTERFACE
+                      h5md
                       legacy_api
                       math
                       )
@@ -80,12 +83,6 @@ target_link_libraries(fileio INTERFACE
                       utility
                       )
 
-gmx_manage_hdf5()
-
-if(GMX_USE_HDF5)
-    target_include_directories(fileio SYSTEM INTERFACE ${HDF5_INCLUDE_DIRS})
-    target_link_libraries(fileio INTERFACE ${HDF5_LIBRARIES})
-endif()
 # Source files have the following private module dependencies.
 #target_link_libraries(fileio PRIVATE tng_io)
 # TODO: Explicitly link specific modules.
