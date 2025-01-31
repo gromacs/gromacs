@@ -51,7 +51,7 @@ gromacs:oneapi-2024.2-amd-nightly:test:
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-oneapi-2024.2-cuda-12.0.1-rocm-6.1.3:latest
   variables:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
-    ONEAPI_DEVICE_SELECTOR: "ext_oneapi_hip:gpu"
+    ONEAPI_DEVICE_SELECTOR: "hip:gpu"
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
     GPU_VENDOR: "AMD"
     GPU_COUNT: 1
@@ -70,7 +70,7 @@ gromacs:oneapi-2024.2-amd-nightly:regressiontest:
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-oneapi-2024.2-cuda-12.0.1-rocm-6.1.3:latest
   variables:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
-    ONEAPI_DEVICE_SELECTOR: "ext_oneapi_hip:gpu"
+    ONEAPI_DEVICE_SELECTOR: "hip:gpu"
     # Default not working, see #2980
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
