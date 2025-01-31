@@ -36,5 +36,11 @@ if (GMX_USE_HDF5)
         CPP_SOURCE_FILES
             h5md.cpp
         )
-    target_link_libraries(h5md-test PRIVATE h5md)
+else()
+    gmx_add_unit_test(H5mdTests h5md-test
+        CPP_SOURCE_FILES
+            h5md_disabled.cpp
+        )
 endif()
+
+target_link_libraries(h5md-test PRIVATE h5md)
