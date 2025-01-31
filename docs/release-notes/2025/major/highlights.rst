@@ -1,7 +1,7 @@
 Highlights
 ^^^^^^^^^^
 
-|Gromacs| 2025 was released on INSERT DATE HERE. Patch releases may
+|Gromacs| 2025.0 was released on INSERT DATE HERE. Patch releases may
 have been made since then, please use the updated versions!  Here are
 some highlights of what you can expect, along with more detail in the
 links below!
@@ -12,7 +12,23 @@ several new features are available for running simulations. We are extremely
 interested in your feedback on how well the new release works on your
 simulations and hardware. The new features are:
 
-*
+* A feature-limited version of `PLUMED <https://www.plumed.org/>`_ can be used,
+  on a non-Windows build of |Gromacs|, without needing to apply a patch.
+
+* Basic support for running simulations with Neural Network Potential (NNP) models
+  trained in `PyTorch <https://pytorch.org/>`_.
+
+* Extended OpenMP parallelization of pair search and domain decomposition can improve the performance, especially relevant with fast GPUs.
+
+* Added support for using AMD HIP as GPU backend. This is currently limited to the
+  NBNxM (nonbonded interactions within cut-off) kernels.
+
+* Support for continuing expanded ensemble equilibration across simulations by
+  enabling initialization of `init-lambda-counts` and `init-wl-histogram-counts`
+  through mdp options.
+
+* GPU-direct communication is now used by default when the MPI library 
+  supports it.
 
 .. Note to developers!
    Please use """"""" to underline the individual entries for fixed issues in the subfolders,

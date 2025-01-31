@@ -280,6 +280,12 @@ Limitations:
 * Available from |Gromacs| 2025
 * |Gromacs| 2025 supports only main non-bonded kernels
 
+Experimental branch:
+* Experimental feature branch supporting all compute kernels: `HIP feature branch <https://gitlab.com/gromacs/gromacs/-/tree/4947-hip-feature-enablement>`_
+* Supported by AMD and aimed to get merged in the next major release
+* Updated together with 2025 releases to be based on latest fixes
+* For support, `contact acmnpv here <mailto:paul.bauer.q@gmail.com>`_
+
 More information can be found in the `AMD-HIP`_ section.
 
 Important Notes

@@ -248,7 +248,7 @@ void GridSet::putOnGrid(const matrix            box,
      * based on the newly computed density.
      */
     const real c_gridDensityRatioThreshold = 1.5_real;
-    const bool optimizeDensity             = (ddZone == 0 && !atomRange.empty());
+    const bool optimizeDensity             = (ddZone == 0 && numAtomsWithoutFillers > 0);
     real       gridDensityRatio            = 0;
     int        iteration                   = 0;
 

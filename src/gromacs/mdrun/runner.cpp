@@ -1343,7 +1343,12 @@ int Mdrunner::mdrunner()
     // inter-domain communication distances.
     auto         updateGroupingsPerMoleculeTypeResult = makeUpdateGroupingsPerMoleculeType(mtop);
     UpdateGroups updateGroups;
-    if (std::holds_alternative<std::string>(updateGroupingsPerMoleculeTypeResult))
+    if (EI_ENERGY_MINIMIZATION(inputrec->eI))
+    {
+        // There is an issue with update groups at DD partitioning when restoring and old state
+        // after rejecting an energy minimization step
+    }
+    else if (std::holds_alternative<std::string>(updateGroupingsPerMoleculeTypeResult))
     {
         GMX_LOG(mdlog.warning)
                 .asParagraph()

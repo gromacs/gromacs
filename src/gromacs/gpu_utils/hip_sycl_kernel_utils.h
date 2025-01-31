@@ -49,42 +49,73 @@
  *  \author Paul Bauer <paul.bauer.q@gmail.com>
  */
 
-// We only want to use the methods in this header when we are actually compiling device code
-#if (defined(__SYCL_DEVICE_ONLY__) && defined(__AMDGCN__)) || defined(__HIPCC__)
+#include "config.h"
 
-#    include "config.h"
-
-#    include "gromacs/math/functions.h"
+#include <type_traits>
 
 // As this header is used both in SYCL and HIP builds, we define the __host__ __device__ attributes
 // based on the build type. We also can only use assertions here if they are actually usable
-#    define GMX_ALWAYS_INLINE_ATTRIBUTE __attribute__((always_inline))
-
-#    if GMX_GPU_SYCL
-#        define GMX_HOST_ATTRIBUTE
-#        define GMX_DEVICE_ATTRIBUTE
-#        define GMX_HOSTDEVICE_ATTRIBUTE GMX_HOST_ATTRIBUTE GMX_DEVICE_ATTRIBUTE
-#        if defined(SYCL_EXT_ONEAPI_ASSERT) && SYCL_EXT_ONEAPI_ASSERT && !defined(NDEBUG)
-#            define PACKED_FLOAT_ASSERT(condition) assert(condition)
-#        else
-#            define PACKED_FLOAT_ASSERT(condition)
-#        endif
-#        include "gputraits_sycl.h"
-#    elif GMX_GPU_HIP
-#        define GMX_HOST_ATTRIBUTE __host__
-#        define GMX_DEVICE_ATTRIBUTE __device__
-#        define GMX_HOSTDEVICE_ATTRIBUTE GMX_HOST_ATTRIBUTE GMX_DEVICE_ATTRIBUTE
-#        if !defined(NDEBUG)
-#            define PACKED_FLOAT_ASSERT(condition) assert(condition)
-#        else
-#            define PACKED_FLOAT_ASSERT(condition)
-#        endif
-#        include "gputraits_hip.h"
+#if GMX_GPU_SYCL
+#    define GMX_HOST_ATTRIBUTE
+#    define GMX_DEVICE_ATTRIBUTE
+#    define GMX_HOSTDEVICE_ATTRIBUTE GMX_HOST_ATTRIBUTE GMX_DEVICE_ATTRIBUTE
+#    if defined(SYCL_EXT_ONEAPI_ASSERT) && SYCL_EXT_ONEAPI_ASSERT && !defined(NDEBUG)
+#        define PACKED_FLOAT_ASSERT(condition) assert(condition)
 #    else
-#        error Including packed_float implementation header in unsupported build config
+#        define PACKED_FLOAT_ASSERT(condition)
 #    endif
+#    include "gputraits_sycl.h"
+#elif GMX_GPU_HIP
+#    define GMX_HOST_ATTRIBUTE __host__
+#    define GMX_DEVICE_ATTRIBUTE __device__
+#    define GMX_HOSTDEVICE_ATTRIBUTE GMX_HOST_ATTRIBUTE GMX_DEVICE_ATTRIBUTE
+#    if !defined(NDEBUG)
+#        define PACKED_FLOAT_ASSERT(condition) assert(condition)
+#    else
+#        define PACKED_FLOAT_ASSERT(condition)
+#    endif
+#    include "gputraits_hip.h"
+#else
+#    error Including hip_sycl_kernel_utils.h header in unsupported build config
+#endif
 
-#    define GMX_FUNC_ATTRIBUTE GMX_HOSTDEVICE_ATTRIBUTE GMX_ALWAYS_INLINE_ATTRIBUTE
+#define GMX_ALWAYS_INLINE_ATTRIBUTE __attribute__((always_inline))
+#define GMX_FUNC_ATTRIBUTE GMX_HOSTDEVICE_ATTRIBUTE GMX_ALWAYS_INLINE_ATTRIBUTE
+
+//! Convert type of pointer to char while preserving const-ness.
+template<typename TPtr>
+using CharPtr = std::conditional_t<std::is_const_v<std::remove_pointer_t<TPtr>>, const char*, char*>;
+
+/*! \brief Helper method to calculate offsets to memory locations on AMD hardware.
+ *
+ * Uses builtin_assume to work around the compiler generating extra instructions for
+ * negative offsets.
+ */
+template<typename ValueType, typename IndexType, std::enable_if_t<std::is_integral<IndexType>::value, bool> = true>
+static inline GMX_DEVICE_ATTRIBUTE GMX_ALWAYS_INLINE_ATTRIBUTE IndexType calculateOffset(IndexType index)
+{
+    __builtin_assume(index >= 0);
+    return index * static_cast<IndexType>(sizeof(ValueType));
+}
+
+/*!\brief Return address relative to \c buffer and offset by \c idx.
+ *
+ * This method helps hipcc (as late as of rocm 6.2.2, hipcc 6.2.41134-65d174c3e and likely later)
+ * to generate faster code for loads where 64-bit scalar + 32-bit vector registers are used instead
+ * of 64-bit vector versions, saving a few instructions for computing 64-bit vector addresses.
+ */
+template<typename PointerType, typename IndexType, std::enable_if_t<std::is_integral<IndexType>::value, bool> = true>
+static inline GMX_DEVICE_ATTRIBUTE GMX_ALWAYS_INLINE_ATTRIBUTE PointerType indexedAddress(PointerType address,
+                                                                                          IndexType idx)
+{
+    return reinterpret_cast<PointerType>(reinterpret_cast<CharPtr<decltype(address)>>(address)
+                                         + calculateOffset<std::remove_pointer_t<PointerType>>(idx));
+}
+
+// We only want to use the methods in this header when we are actually compiling device code
+#if (defined(__SYCL_DEVICE_ONLY__) && defined(__AMDGCN__)) || defined(__HIPCC__)
+
+#    include "gromacs/math/functions.h"
 
 /* !\brief Cross-lane move operation using AMD DPP (Data-Parallel Primitives).
  *
@@ -254,36 +285,6 @@ GMX_FUNC_ATTRIBUTE static AmdPackedFloat3 operator*(const float& s, const AmdPac
     return { v.xy() * s, v.z() * s };
 }
 
-//! Convert type of pointer to char while preserving const-ness.
-template<typename TPtr>
-using CharPtr = std::conditional_t<std::is_const_v<std::remove_pointer_t<TPtr>>, const char*, char*>;
-
-/*! \brief Helper method to calculate offsets to memory locations on AMD hardware.
- *
- * Uses builtin_assume to work around the compiler generating extra instructions for
- * negative offsets.
- */
-template<typename ValueType, typename IndexType, std::enable_if_t<std::is_integral<IndexType>::value, bool> = true>
-static inline GMX_DEVICE_ATTRIBUTE GMX_ALWAYS_INLINE_ATTRIBUTE IndexType calculateOffset(IndexType index)
-{
-    __builtin_assume(index >= 0);
-    return index * static_cast<IndexType>(sizeof(ValueType));
-}
-
-/*!\brief Return address relative to \c buffer and offset by \c idx.
- *
- * This method helps hipcc (as late as of rocm 6.2.2, hipcc 6.2.41134-65d174c3e and likely later)
- * to generate faster code for loads where 64-bit scalar + 32-bit vector registers are used instead
- * of 64-bit vector versions, saving a few instructions for computing 64-bit vector addresses.
- */
-template<typename PointerType, typename IndexType, std::enable_if_t<std::is_integral<IndexType>::value, bool> = true>
-static inline GMX_DEVICE_ATTRIBUTE GMX_ALWAYS_INLINE_ATTRIBUTE PointerType indexedAddress(PointerType address,
-                                                                                          IndexType idx)
-{
-    return reinterpret_cast<PointerType>(reinterpret_cast<CharPtr<decltype(address)>>(address)
-                                         + calculateOffset<std::remove_pointer_t<PointerType>>(idx));
-}
-
 /*!\brief Helper method to generate faster atomic operations.
  *
  * This method helps hipcc (as late as of rocm 6.2.2, hipcc 6.2.41134-65d174c3e and likely later)
@@ -295,25 +296,16 @@ static inline GMX_DEVICE_ATTRIBUTE GMX_ALWAYS_INLINE_ATTRIBUTE PointerType index
  * we don't have the necessary headers included, so we cannot easily call atomicAdd directly, which
  * is why we fall back to using sycl::atomic_ref.
  */
-template<typename IndexType, std::enable_if_t<std::is_integral<IndexType>::value, bool> = true>
-static inline
-#    if GMX_GPU_HIP || GMX_SYCL_ACPP
-        __device__
-#    endif
-                GMX_ALWAYS_INLINE_ATTRIBUTE void
-                amdFastAtomicAddForce(float3* buffer, IndexType idx, IndexType component, float value)
+#    if GMX_GPU_HIP
+template<typename BufferType, typename IndexType, std::enable_if_t<std::is_integral<IndexType>::value, bool> = true>
+static inline __device__ GMX_ALWAYS_INLINE_ATTRIBUTE void
+amdFastAtomicAddForce(BufferType* buffer, IndexType idx, IndexType component, float value)
 {
-    float3* indexedBuffer = indexedAddress(buffer, idx);
-    float*  ptr           = indexedAddress(reinterpret_cast<float*>(indexedBuffer), component);
-#    if GMX_GPU_HIP || GMX_SYCL_ACPP
+    BufferType* indexedBuffer = indexedAddress(buffer, idx);
+    float*      ptr           = indexedAddress(reinterpret_cast<float*>(indexedBuffer), component);
     atomicAdd(ptr, value);
-#    else
-    using sycl::memory_order, sycl::memory_scope, sycl::access::address_space;
-    sycl::atomic_ref<float, memory_order::relaxed, memory_scope::device, address_space::global_space> ref(
-            *ptr);
-    ref.fetch_add(value);
-#    endif
 }
+#    endif
 
 /*! \brief AMD specific helper class to improve data access. */
 template<typename ValueType>
@@ -331,13 +323,12 @@ public:
     }
 };
 
-
-#    undef GMX_HOST_ATTRIBUTE
-#    undef GMX_DEVICE_ATTRIBUTE
-#    undef GMX_HOSTDEVICE_ATTRIBUTE
-#    undef GMX_ALWAYS_INLINE_ATTRIBUTE
-#    undef GMX_FUNC_ATTRIBUTE
-
 #endif /* Device code only */
+
+#undef GMX_HOST_ATTRIBUTE
+#undef GMX_DEVICE_ATTRIBUTE
+#undef GMX_HOSTDEVICE_ATTRIBUTE
+#undef GMX_ALWAYS_INLINE_ATTRIBUTE
+#undef GMX_FUNC_ATTRIBUTE
 
 #endif /* GMX_GPU_UTILS_WAVE_MOVE_DPP_H */

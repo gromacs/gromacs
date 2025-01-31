@@ -131,7 +131,7 @@ static const gmx::EnumerationArray<DeviceStatus, const char*> c_deviceStateStrin
     "incompatible (please recompile with correct GMX" "_GPU_NB_CLUSTER_SIZE of 4)",
     // clang-format on
     "incompatible (please use CUDA build for NVIDIA Volta GPUs or newer)",
-    "not recommended (please use SYCL_DEVICE_FILTER to limit visibility to a single backend)",
+    "not recommended (please use ONEAPI_DEVICE_SELECTOR to limit visibility to a single backend)",
     "non-functional",
     "unavailable",
     "not in set of targeted devices",

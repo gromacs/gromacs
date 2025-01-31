@@ -127,7 +127,8 @@ static inline void reduceForceJAmdDpp(Float3 f, const int tidxi, const int aidx,
 
     if (tidxi < 3)
     {
-        atomicFetchAdd(a_f[aidx][tidxi], f[0]);
+        float* ptr = indexedAddress(reinterpret_cast<float*>(a_f.get()), 3 * aidx + tidxi);
+        atomicFetchAdd(*ptr, f[0]);
     }
 }
 #endif
@@ -453,7 +454,8 @@ typename std::enable_if_t<numShuffleReductionSteps != 1, void> static inline red
         // Threads 0,1,2 increment X, Y, Z for their sub-groups
         if (tidxi < 3)
         {
-            atomicFetchAdd(a_f[aidx][(tidxi)], fx);
+            float* ptr = indexedAddress(reinterpret_cast<float*>(a_f.get()), 3 * aidx + tidxi);
+            atomicFetchAdd(*ptr, fx);
 
             if (calcFShift)
             {
@@ -466,7 +468,8 @@ typename std::enable_if_t<numShuffleReductionSteps != 1, void> static inline red
     {
         if ((tidxi) < 3)
         {
-            atomicFetchAdd(a_fShift[shift][(tidxi)], fShiftBuf);
+            float* ptr = indexedAddress(reinterpret_cast<float*>(a_fShift.get()), 3 * shift + tidxi);
+            atomicFetchAdd(*ptr, fShiftBuf);
         }
     }
 
@@ -922,16 +925,17 @@ static auto nbnxmKernel(sycl::handler& cgh,
         // loop over the j clusters = seen by any of the atoms in the current super-cluster
         for (int jPacked = cijPackedBegin; jPacked < cijPackedEnd; jPacked += 1)
         {
-            unsigned imask = UNIFORM_LOAD_CLUSTER_PAIR_DATA(gm_plistCJPacked[jPacked].imei[imeiIdx].imask);
+            nbnxn_cj_packed_t* plistCJPacked = indexedAddress(gm_plistCJPacked, jPacked);
+            unsigned imask = UNIFORM_LOAD_CLUSTER_PAIR_DATA(plistCJPacked->imei[imeiIdx].imask);
             if (!doPruneNBL && !imask)
             {
                 continue;
             }
-            const int wexclIdx =
-                    UNIFORM_LOAD_CLUSTER_PAIR_DATA(gm_plistCJPacked[jPacked].imei[imeiIdx].excl_ind);
+            const int wexclIdx = UNIFORM_LOAD_CLUSTER_PAIR_DATA(plistCJPacked->imei[imeiIdx].excl_ind);
 
             static_assert(gmx::isPowerOfTwo(prunedClusterPairSize));
-            const unsigned wexcl = gm_plistExcl[wexclIdx].pair[tidx & (prunedClusterPairSize - 1)];
+            const unsigned wexcl =
+                    (*indexedAddress(gm_plistExcl, wexclIdx)).pair[tidx & (prunedClusterPairSize - 1)];
             // Unrolling has been verified to improve performance on AMD and Nvidia
 #if defined(__AMDGCN__)
             constexpr int unrollFactor =
@@ -968,11 +972,11 @@ static auto nbnxmKernel(sycl::handler& cgh,
                     continue;
                 }
                 unsigned  maskJI = (1U << (jm * c_superClusterSize));
-                const int cj     = gm_plistCJPacked[jPacked].cj[jm];
+                const int cj     = *indexedAddress(gm_plistCJPacked[jPacked].cj, jm);
                 const int aj     = cj * c_clSize + tidxj;
 
                 // load j atom data
-                const Float4 xqj = gm_xq[aj];
+                const Float4 xqj = *indexedAddress(gm_xq, aj);
 
                 const Float3 xj(xqj[0], xqj[1], xqj[2]);
                 const float  qj = xqj[3];
@@ -980,11 +984,11 @@ static auto nbnxmKernel(sycl::handler& cgh,
                 Float2       ljCombJ;   // Only needed if (props.vdwComb)
                 if constexpr (props.vdwComb)
                 {
-                    ljCombJ = gm_ljComb[aj];
+                    ljCombJ = *indexedAddress(gm_ljComb, aj);
                 }
                 else
                 {
-                    atomTypeJ = gm_atomTypes[aj];
+                    atomTypeJ = *indexedAddress(gm_atomTypes, aj);
                 }
 
                 Float3 fCjBuf(0.0F, 0.0F, 0.0F);
@@ -1039,7 +1043,7 @@ static auto nbnxmKernel(sycl::handler& cgh,
                             {
                                 /* LJ 6*C6 and 12*C12 */
                                 atomTypeI = sm_atomTypeI[i * c_clSize + tidxi];
-                                c6c12     = gm_nbfp[numTypes * atomTypeI + atomTypeJ];
+                                c6c12 = *indexedAddress(gm_nbfp, numTypes * atomTypeI + atomTypeJ);
                             }
                             else
                             {
@@ -1218,7 +1222,7 @@ static auto nbnxmKernel(sycl::handler& cgh,
             {
                 /* Update the imask with the new one which does not contain the
                  * out of range clusters anymore. */
-                gm_plistCJPacked[jPacked].imei[imeiIdx].imask = imask;
+                plistCJPacked->imei[imeiIdx].imask = imask;
                 if constexpr (nbnxmSortListsOnGpu())
                 {
                     prunedPairCount += sycl::popcount(imask);

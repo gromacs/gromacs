@@ -391,7 +391,8 @@ if (SPHINX_FOUND)
         release-notes/2024/2024.3.rst
         release-notes/2024/2024.4.rst
         release-notes/2024/2024.5.rst
-        release-notes/2024/major/highlights.rst
+        release-notes/2024/2024.6.rst
+	release-notes/2024/major/highlights.rst
         release-notes/2024/major/features.rst
         release-notes/2024/major/performance.rst
         release-notes/2024/major/tools.rst

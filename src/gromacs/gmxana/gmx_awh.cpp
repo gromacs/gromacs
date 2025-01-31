@@ -529,8 +529,6 @@ int gmx_awh(int argc, char* argv[])
                                    "The bias index, if more than one, is appended to the file, as well as",
                                    "the time of the frame. By default only the PMF is printed.",
                                    "With [TT]-more[tt] the bias, target and coordinate distributions",
-                                   "are also printed.",
-                                   "With [TT]-more[tt] the bias, target and coordinate distributions",
                                    "are also printed, as well as the metric sqrt(det(friction_tensor))",
                                    "normalized such that the average is 1.",
                                    "Option [TT]-fric[tt] prints all components of the friction tensor",
