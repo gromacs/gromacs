@@ -8,7 +8,7 @@
 #   OS: Ubuntu 24.04
 #   Build type: RelWithAssert
 #   Compiler: Clang 18
-#   GPU: AdaptiveCpp 24.02 + CUDA 12.6 + ROCm 6.2
+#   GPU: AdaptiveCpp 24.10 + CUDA 12.6.3 + ROCm 6.3.1
 #   MPI: CUDA-aware MPICH (ROCm build); threadMPI (CUDA build)
 #   SIMD: AVX2_256
 
@@ -20,14 +20,15 @@ gromacs:acpp-rocm-mpi:configure:
     - .use-mpi
   rules:
     - !reference [.rules:merge-and-post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-18-cuda-12.6.0-adaptivecpp-24.02.0-rocm-6.2
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-18-cuda-12.6.3-adaptivecpp-24.10.0-rocm-6.3.1
   variables:
-    CMAKE: /usr/local/cmake-3.29.3/bin/cmake
+    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX2_256"
-    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
+    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=Release"
     CMAKE_GPU_OPTIONS: "-DGMX_GPU=SYCL -DGMX_SYCL=ACPP -DACPP_TARGETS=hip:gfx906,gfx1034 -DGMX_GPU_FFT_LIBRARY=vkFFT"
     # Unset COMPILER_LAUNCHER (previously set to ccache) because it conflicts with AdaptiveCpp's syclcc-launcher
-    CMAKE_EXTRA_OPTIONS: "-DCMAKE_C_COMPILER_LAUNCHER= -DCMAKE_CXX_COMPILER_LAUNCHER= -DGMX_INSTALL_LEGACY_API=ON"
+    # Set "force instant submission" to catch cases when a high-overhead submission mechanism is used
+    CMAKE_EXTRA_OPTIONS: "-DCMAKE_C_COMPILER_LAUNCHER= -DCMAKE_CXX_COMPILER_LAUNCHER= -DGMX_INSTALL_LEGACY_API=ON -DCMAKE_CXX_FLAGS=-DACPP_FORCE_INSTANT_SUBMISSION=1"
     COMPILER_MAJOR_VERSION: 18
 
 gromacs:acpp-rocm-mpi:build:
@@ -37,9 +38,9 @@ gromacs:acpp-rocm-mpi:build:
     # Not using ccache because it plays poorly with syclcc-launcher
   rules:
     - !reference [.rules:merge-and-post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-18-cuda-12.6.0-adaptivecpp-24.02.0-rocm-6.2
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-18-cuda-12.6.3-adaptivecpp-24.10.0-rocm-6.3.1
   variables:
-    CMAKE: /usr/local/cmake-3.29.3/bin/cmake
+    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
   needs:
     - job: gromacs:acpp-rocm-mpi:configure
 
@@ -49,9 +50,9 @@ gromacs:acpp-rocm-mpi:test:
   rules:
     - !reference [.rules:skip-if-dual-amd-gpus-unavailable, rules]
     - !reference [.rules:post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-18-cuda-12.6.0-adaptivecpp-24.02.0-rocm-6.2
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-18-cuda-12.6.3-adaptivecpp-24.10.0-rocm-6.3.1
   variables:
-    CMAKE: /usr/local/cmake-3.29.3/bin/cmake
+    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
     GMX_FORCE_GPU_AWARE_MPI: 1
     UCX_TLS: "sm,self,rocm_copy"  # rocm_ipc does not work well enough
@@ -68,9 +69,9 @@ gromacs:acpp-rocm-mpi:regressiontest:
   rules:
     - !reference [.rules:skip-if-dual-amd-gpus-unavailable, rules]
     - !reference [.rules:post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-18-cuda-12.6.0-adaptivecpp-24.02.0-rocm-6.2
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-18-cuda-12.6.3-adaptivecpp-24.10.0-rocm-6.3.1
   variables:
-    CMAKE: /usr/local/cmake-3.29.3/bin/cmake
+    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     REGRESSIONTEST_PME_RANK_NUMBER: 0
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
     REGRESSIONTEST_OMP_RANK_NUMBER: 2
@@ -93,9 +94,9 @@ gromacs:acpp-nvidia:configure:
     - .use-sycl
   rules:
     - !reference [.rules:nightly-not-for-release, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-18-cuda-12.6.0-adaptivecpp-24.02.0-rocm-6.2
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-18-cuda-12.6.3-adaptivecpp-24.10.0-rocm-6.3.1
   variables:
-    CMAKE: /usr/local/cmake-3.29.3/bin/cmake
+    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX2_256"
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
     CMAKE_GPU_OPTIONS: "-DGMX_GPU=SYCL -DGMX_SYCL=ACPP -DACPP_TARGETS='cuda:sm_75' -DGMX_GPU_FFT_LIBRARY=VkFFT"
@@ -110,9 +111,9 @@ gromacs:acpp-nvidia:build:
     # Not using ccache because it plays poorly with syclcc-launcher
   rules:
     - !reference [.rules:nightly-not-for-release, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-18-cuda-12.6.0-adaptivecpp-24.02.0-rocm-6.2
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-18-cuda-12.6.3-adaptivecpp-24.10.0-rocm-6.3.1
   variables:
-    CMAKE: /usr/local/cmake-3.29.3/bin/cmake
+    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
   needs:
     - job: gromacs:acpp-nvidia:configure
 
@@ -122,9 +123,9 @@ gromacs:acpp-nvidia:test:
   rules:
     - !reference [.rules:skip-if-single-nvidia-gpu-unavailable, rules]
     - !reference [.rules:nightly-not-for-release, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-18-cuda-12.6.0-adaptivecpp-24.02.0-rocm-6.2
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-18-cuda-12.6.3-adaptivecpp-24.10.0-rocm-6.3.1
   variables:
-    CMAKE: /usr/local/cmake-3.29.3/bin/cmake
+    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
     GPU_VENDOR: "NVIDIA"
     GPU_COUNT: 1
@@ -139,9 +140,9 @@ gromacs:acpp-nvidia:regressiontest:
   rules:
     - !reference [.rules:skip-if-single-nvidia-gpu-unavailable, rules]
     - !reference [.rules:nightly-not-for-release, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-18-cuda-12.6.0-adaptivecpp-24.02.0-rocm-6.2
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-18-cuda-12.6.3-adaptivecpp-24.10.0-rocm-6.3.1
   variables:
-    CMAKE: /usr/local/cmake-3.29.3/bin/cmake
+    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     GPU_VENDOR: "NVIDIA"
     GPU_COUNT: 1
   tags:

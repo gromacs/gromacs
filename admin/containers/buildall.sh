@@ -22,7 +22,7 @@ args[${#args[@]}]="--ubuntu 24.04 --llvm 19 --mpi openmpi --hdf5"
 args[${#args[@]}]="--oneapi 2024.0 --intel-compute-runtime --ubuntu 22.04"
 args[${#args[@]}]="--oneapi 2024.2 --ubuntu 22.04 --rocm 6.1.3 --cuda 12.0.1 --oneapi-plugin-amd --oneapi-plugin-nvidia"
 args[${#args[@]}]="--ubuntu 24.04 --llvm 19 --doxygen --mpi openmpi --venvs 3.9.13 3.12.5"
-args[${#args[@]}]="--ubuntu 24.04 --llvm 18 --cuda 12.6.0 --adaptivecpp 24.02.0 --rocm 6.2 --mpi mpich"
+args[${#args[@]}]="--ubuntu 24.04 --llvm 18 --cuda 12.6.3 --adaptivecpp 24.10.0 --rocm 6.3.1 --mpi mpich"
 args[${#args[@]}]="--ubuntu 22.04 --adaptivecpp 23.10.0 --rocm 5.7.1"
 args[${#args[@]}]="--ubuntu 24.04 --rocm 6.2.2 --mpi --plumed"
 
