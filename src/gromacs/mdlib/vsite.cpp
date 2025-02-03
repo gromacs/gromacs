@@ -939,8 +939,6 @@ static void construct_vsites_thread(ArrayRef<RVec>                  x,
     CLANG_DIAGNOSTIC_RESET
 
     const PbcMode pbcMode = getPbcMode(pbc_null);
-    /* We need another pbc pointer, as with charge groups we switch per vsite */
-    const t_pbc* pbc_null2 = pbc_null;
 
     for (int ftype = c_ftypeVsiteStart; ftype < c_ftypeVsiteEnd; ftype++)
     {
@@ -979,25 +977,13 @@ static void construct_vsites_thread(ArrayRef<RVec>                  x,
                         break;
                     case F_VSITE2:
                         aj = ia[3];
-                        constr_vsite2<calculatePosition, calculateVelocity>(x[ai],
-                                                                            x[aj],
-                                                                            x[avsite],
-                                                                            a1,
-                                                                            pbc_null2,
-                                                                            getVOrNull(ai),
-                                                                            getVOrNull(aj),
-                                                                            getVOrNull(avsite));
+                        constr_vsite2<calculatePosition, calculateVelocity>(
+                                x[ai], x[aj], x[avsite], a1, pbc_null, getVOrNull(ai), getVOrNull(aj), getVOrNull(avsite));
                         break;
                     case F_VSITE2FD:
                         aj = ia[3];
-                        constr_vsite2FD<calculatePosition, calculateVelocity>(x[ai],
-                                                                              x[aj],
-                                                                              x[avsite],
-                                                                              a1,
-                                                                              pbc_null2,
-                                                                              getVOrNull(ai),
-                                                                              getVOrNull(aj),
-                                                                              getVOrNull(avsite));
+                        constr_vsite2FD<calculatePosition, calculateVelocity>(
+                                x[ai], x[aj], x[avsite], a1, pbc_null, getVOrNull(ai), getVOrNull(aj), getVOrNull(avsite));
                         break;
                     case F_VSITE3:
                         aj = ia[3];
@@ -1009,7 +995,7 @@ static void construct_vsites_thread(ArrayRef<RVec>                  x,
                                                                             x[avsite],
                                                                             a1,
                                                                             b1,
-                                                                            pbc_null2,
+                                                                            pbc_null,
                                                                             getVOrNull(ai),
                                                                             getVOrNull(aj),
                                                                             getVOrNull(ak),
@@ -1025,7 +1011,7 @@ static void construct_vsites_thread(ArrayRef<RVec>                  x,
                                                                               x[avsite],
                                                                               a1,
                                                                               b1,
-                                                                              pbc_null2,
+                                                                              pbc_null,
                                                                               getVOrNull(ai),
                                                                               getVOrNull(aj),
                                                                               getVOrNull(ak),
@@ -1041,7 +1027,7 @@ static void construct_vsites_thread(ArrayRef<RVec>                  x,
                                                                                x[avsite],
                                                                                a1,
                                                                                b1,
-                                                                               pbc_null2,
+                                                                               pbc_null,
                                                                                getVOrNull(ai),
                                                                                getVOrNull(aj),
                                                                                getVOrNull(ak),
@@ -1059,7 +1045,7 @@ static void construct_vsites_thread(ArrayRef<RVec>                  x,
                                                                                a1,
                                                                                b1,
                                                                                c1,
-                                                                               pbc_null2,
+                                                                               pbc_null,
                                                                                getVOrNull(ai),
                                                                                getVOrNull(aj),
                                                                                getVOrNull(ak),
@@ -1079,7 +1065,7 @@ static void construct_vsites_thread(ArrayRef<RVec>                  x,
                                                                               a1,
                                                                               b1,
                                                                               c1,
-                                                                              pbc_null2,
+                                                                              pbc_null,
                                                                               getVOrNull(ai),
                                                                               getVOrNull(aj),
                                                                               getVOrNull(ak),
@@ -1100,7 +1086,7 @@ static void construct_vsites_thread(ArrayRef<RVec>                  x,
                                                                                a1,
                                                                                b1,
                                                                                c1,
-                                                                               pbc_null2,
+                                                                               pbc_null,
                                                                                getVOrNull(ai),
                                                                                getVOrNull(aj),
                                                                                getVOrNull(ak),
@@ -1108,7 +1094,7 @@ static void construct_vsites_thread(ArrayRef<RVec>                  x,
                                                                                getVOrNull(avsite));
                         break;
                     case F_VSITEN:
-                        inc = constr_vsiten<calculatePosition, calculateVelocity>(ia, ip, x, pbc_null2, v);
+                        inc = constr_vsiten<calculatePosition, calculateVelocity>(ia, ip, x, pbc_null, v);
                         break;
                     default:
                         gmx_fatal(FARGS, "No such vsite type %d in %s, line %d", ftype, __FILE__, __LINE__);
@@ -2139,11 +2125,6 @@ static void spreadForceForThread(ArrayRef<const RVec>            x,
                                  ArrayRef<const InteractionList> ilist,
                                  const t_pbc*                    pbc_null)
 {
-    const PbcMode pbcMode = getPbcMode(pbc_null);
-    /* We need another pbc pointer, as with charge groups we switch per vsite */
-    const t_pbc*             pbc_null2 = pbc_null;
-    gmx::ArrayRef<const int> vsite_pbc;
-
     /* this loop goes backwards to be able to build *
      * higher type vsites from lower types         */
     for (int ftype = c_ftypeVsiteEnd - 1; ftype >= c_ftypeVsiteStart; ftype--)
@@ -2160,11 +2141,6 @@ static void spreadForceForThread(ArrayRef<const RVec>            x,
 
             const t_iatom* ia = ilist[ftype].iatoms.data();
 
-            if (pbcMode == PbcMode::all)
-            {
-                pbc_null2 = pbc_null;
-            }
-
             for (int i = 0; i < nr;)
             {
                 int tp = ia[0];
@@ -2177,40 +2153,40 @@ static void spreadForceForThread(ArrayRef<const RVec>            x,
                 {
                     case F_VSITE1: spread_vsite1(ia, f); break;
                     case F_VSITE2:
-                        spread_vsite2<virialHandling>(ia, a1, x, f, fshift, pbc_null2);
+                        spread_vsite2<virialHandling>(ia, a1, x, f, fshift, pbc_null);
                         break;
                     case F_VSITE2FD:
-                        spread_vsite2FD<virialHandling>(ia, a1, x, f, fshift, dxdf, pbc_null2);
+                        spread_vsite2FD<virialHandling>(ia, a1, x, f, fshift, dxdf, pbc_null);
                         break;
                     case F_VSITE3:
                         b1 = ip[tp].vsite.b;
-                        spread_vsite3<virialHandling>(ia, a1, b1, x, f, fshift, pbc_null2);
+                        spread_vsite3<virialHandling>(ia, a1, b1, x, f, fshift, pbc_null);
                         break;
                     case F_VSITE3FD:
                         b1 = ip[tp].vsite.b;
-                        spread_vsite3FD<virialHandling>(ia, a1, b1, x, f, fshift, dxdf, pbc_null2);
+                        spread_vsite3FD<virialHandling>(ia, a1, b1, x, f, fshift, dxdf, pbc_null);
                         break;
                     case F_VSITE3FAD:
                         b1 = ip[tp].vsite.b;
-                        spread_vsite3FAD<virialHandling>(ia, a1, b1, x, f, fshift, dxdf, pbc_null2);
+                        spread_vsite3FAD<virialHandling>(ia, a1, b1, x, f, fshift, dxdf, pbc_null);
                         break;
                     case F_VSITE3OUT:
                         b1 = ip[tp].vsite.b;
                         c1 = ip[tp].vsite.c;
-                        spread_vsite3OUT<virialHandling>(ia, a1, b1, c1, x, f, fshift, dxdf, pbc_null2);
+                        spread_vsite3OUT<virialHandling>(ia, a1, b1, c1, x, f, fshift, dxdf, pbc_null);
                         break;
                     case F_VSITE4FD:
                         b1 = ip[tp].vsite.b;
                         c1 = ip[tp].vsite.c;
-                        spread_vsite4FD<virialHandling>(ia, a1, b1, c1, x, f, fshift, dxdf, pbc_null2);
+                        spread_vsite4FD<virialHandling>(ia, a1, b1, c1, x, f, fshift, dxdf, pbc_null);
                         break;
                     case F_VSITE4FDN:
                         b1 = ip[tp].vsite.b;
                         c1 = ip[tp].vsite.c;
-                        spread_vsite4FDN<virialHandling>(ia, a1, b1, c1, x, f, fshift, dxdf, pbc_null2);
+                        spread_vsite4FDN<virialHandling>(ia, a1, b1, c1, x, f, fshift, dxdf, pbc_null);
                         break;
                     case F_VSITEN:
-                        inc = spread_vsiten<virialHandling>(ia, ip, x, f, fshift, pbc_null2);
+                        inc = spread_vsiten<virialHandling>(ia, ip, x, f, fshift, pbc_null);
                         break;
                     default:
                         gmx_fatal(FARGS, "No such vsite type %d in %s, line %d", ftype, __FILE__, __LINE__);
