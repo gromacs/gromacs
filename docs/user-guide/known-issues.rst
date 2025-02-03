@@ -23,7 +23,7 @@ Expanded ensemble does not checkpoint correctly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In the legacy simulator, because of shortcomings in the
-implementation, successful expanded-ensemble MC steps that occured on
+implementation, successful expanded-ensemble MC steps that occurred on
 checkpoint steps were not recorded in the checkpoint. If that
 checkpoint was used for a restart, then it would not necessarily
 behave correctly and reproducibly afterwards. So checkpointing of
@@ -64,3 +64,10 @@ Building with AdaptiveCpp 24.02 also prevents the problem from arising.
 
 :issue:`4965`
 
+NbnxmTest crash with oneAPI 2024.1
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+When building with oneAPI 2024.1, the ``NbnxmTest`` test can segfault in
+some cases. Using oneAPI 2024.2 or newer should resolve the issue.
+
+:issue:`5247`
