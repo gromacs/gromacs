@@ -580,10 +580,10 @@ static void pme_load_balance(pme_load_balancing_t*          pme_lb,
     double       cycles_fast;
     char         buf[STRLEN], sbuf[22];
 
-    if (PAR(cr))
+    if (cr->dd && cr->dd->nnodes > 1)
     {
         gmx_sumd(1, &cycles, cr);
-        cycles /= cr->nnodes;
+        cycles /= cr->dd->nnodes;
     }
 
     set = &pme_lb->setup[pme_lb->cur];
