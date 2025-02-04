@@ -9,49 +9,49 @@
 #   Build type: RelWithDebInfo
 #   Compiler: Clang 18
 #   MPI: thread_MPI
-#   GPU: Clang CUDA 12.6.0,
+#   GPU: Clang CUDA 12.6.3
 #   SIMD: AVX2_256, no kernels
 #   FFT: FFTW3
 #   Parallelism nt/ntomp: 4/2 (unit tests)
 #   Parallelism nt/ntomp: 2/1 (regression tests)
 
-gromacs:clang-18-cuda-12.6.0:configure:
+gromacs:clang-18-cuda-12.6.3:configure:
   extends:
     - .gromacs:base:configure
     - .use-clang:base
     - .use-cuda
   rules:
     - !reference [.rules:post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-18-cuda-12.6.0-adaptivecpp-24.02.0-rocm-6.2
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-18-cuda-12.6.3-adaptivecpp-24.10.0-rocm-6.3.1
   variables:
-    CMAKE: /usr/local/cmake-3.29.3/bin/cmake
+    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_USE_SIMD_KERNELS=off"
     CMAKE_EXTRA_OPTIONS: "-DGMX_CLANG_CUDA=ON"
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
     COMPILER_MAJOR_VERSION: 18
 
-gromacs:clang-18-cuda-12.6.0:build:
+gromacs:clang-18-cuda-12.6.3:build:
   extends:
     - .gromacs:base:build
     - .use-clang:base
     - .use-ccache
   rules:
     - !reference [.rules:post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-18-cuda-12.6.0-adaptivecpp-24.02.0-rocm-6.2
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-18-cuda-12.6.3-adaptivecpp-24.10.0-rocm-6.3.1
   variables:
-    CMAKE: /usr/local/cmake-3.29.3/bin/cmake
+    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
   needs:
-    - job: gromacs:clang-18-cuda-12.6.0:configure
+    - job: gromacs:clang-18-cuda-12.6.3:configure
 
-gromacs:clang-18-cuda-12.6.0:test:
+gromacs:clang-18-cuda-12.6.3:test:
   extends:
     - .gromacs:base:test
   rules:
     - !reference [.rules:skip-if-single-nvidia-gpu-unavailable, rules]
     - !reference [.rules:post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-18-cuda-12.6.0-adaptivecpp-24.02.0-rocm-6.2
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-18-cuda-12.6.3-adaptivecpp-24.10.0-rocm-6.3.1
   variables:
-    CMAKE: /usr/local/cmake-3.29.3/bin/cmake
+    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
     GMX_FORCE_UPDATE_DEFAULT_CPU: 1
     GPU_VENDOR: "NVIDIA"
@@ -59,17 +59,17 @@ gromacs:clang-18-cuda-12.6.0:test:
   tags:
     - $GITLAB_RUNNER_TAG_1X_NVIDIA_GPU
   needs:
-    - job: gromacs:clang-18-cuda-12.6.0:build
+    - job: gromacs:clang-18-cuda-12.6.3:build
 
-gromacs:clang-18-cuda-12.6.0:regressiontest:
+gromacs:clang-18-cuda-12.6.3:regressiontest:
   extends:
     - .gromacs:base:regressiontest
   rules:
     - !reference [.rules:skip-if-single-nvidia-gpu-unavailable, rules]
     - !reference [.rules:post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-18-cuda-12.6.0-adaptivecpp-24.02.0-rocm-6.2
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-18-cuda-12.6.3-adaptivecpp-24.10.0-rocm-6.3.1
   variables:
-    CMAKE: /usr/local/cmake-3.29.3/bin/cmake
+    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     REGRESSIONTEST_PME_RANK_NUMBER: 0
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
@@ -78,5 +78,5 @@ gromacs:clang-18-cuda-12.6.0:regressiontest:
   tags:
     - $GITLAB_RUNNER_TAG_1X_NVIDIA_GPU
   needs:
-    - job: gromacs:clang-18-cuda-12.6.0:build
+    - job: gromacs:clang-18-cuda-12.6.3:build
     - job: regressiontests:prepare

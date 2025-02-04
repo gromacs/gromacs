@@ -114,26 +114,17 @@ try : plumed_(std::make_unique<PLMD::Plumed>())
         }
     }
 
-    if (PAR(options.cr_))
+    if (havePPDomainDecomposition(options.cr_))
     {
-        if (haveDDAtomOrdering(*options.cr_))
-        {
-            plumed_->cmd("setMPIComm", &options.cr_->dd->mpi_comm_all);
-        }
+        plumed_->cmd("setMPIComm", &options.cr_->mpi_comm_mygroup);
     }
+
     plumed_->cmd("setNatoms", options.natoms_);
     plumed_->cmd("setMDEngine", "gromacs");
     plumed_->cmd("setLogFile", "PLUMED.OUT");
 
     plumed_->cmd("setTimestep", &options.simulationTimeStep_);
     plumed_->cmd("init", nullptr);
-
-    if (haveDDAtomOrdering(*options.cr_))
-    {
-        int nat_home = dd_numHomeAtoms(*options.cr_->dd);
-        plumed_->cmd("setAtomsNlocal", &nat_home);
-        plumed_->cmd("setAtomsGatindex", options.cr_->dd->globalAtomIndices.data());
-    }
 }
 catch (const std::exception& ex)
 {

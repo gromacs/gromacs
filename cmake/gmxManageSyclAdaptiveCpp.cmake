@@ -134,7 +134,7 @@ if (NOT DEFINED GMX_ACPP_COMPILATION_WORKS OR _rerun_acpp_try_compile_tests)
     message(STATUS "Checking for valid AdaptiveCpp/hipSYCL compiler")
     try_compile(GMX_ACPP_COMPILATION_WORKS "${CMAKE_BINARY_DIR}/CMakeTmpAdaptiveCppTest" "${CMAKE_SOURCE_DIR}/cmake/AdaptiveCppTest/" "AdaptiveCppTest"
         OUTPUT_VARIABLE _ACPP_COMPILATION_OUTPUT
-        CMAKE_FLAGS ${_ALL_ACPP_CMAKE_FLAGS})
+        CMAKE_FLAGS ${_ALL_ACPP_CMAKE_FLAGS} -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE})
     file(REMOVE_RECURSE "${CMAKE_BINARY_DIR}/CMakeTmpAdaptiveCppTest")
     if(GMX_ACPP_COMPILATION_WORKS)
         message(STATUS "Checking for valid AdaptiveCpp/hipSYCL compiler - Success")

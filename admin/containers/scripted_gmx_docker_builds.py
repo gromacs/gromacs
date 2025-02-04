@@ -650,7 +650,10 @@ def get_adaptivecpp(args):
             "-DCMAKE_CXX_COMPILER=clang++-{}".format(args.llvm),
             "-DLLVM_DIR=/usr/lib/llvm-{}/cmake/".format(args.llvm),
         ]
-        if int(args.llvm) >= 18:  # and args.adaptivecpp <= 24.06:
+        acpp_major, acpp_minor, _ = map(int, args.adaptivecpp.split("."))
+        if int(args.llvm) >= 18 and (
+            acpp_major < 24 or acpp_major == 24 and acpp_minor <= 6
+        ):
             preconfigure.append(
                 "ln -s /usr/lib/llvm-{0}/lib/libLLVM-{0}.so /usr/lib/llvm-{0}/lib/libLLVM.so".format(
                     args.llvm

@@ -124,10 +124,10 @@ Index ssize(const T& t)
  * we intend to be inlined.
  *
  * \note g++-13 uses an extreme amount of memory with RelWithAssert builds.
- * To avoid this we only enable the GNUC attributes when NDEBUG is defined,
- * which is anyhow the only case where performance is critical.
+ * To avoid this we fall back to plain inline attribute when NDEBUG is not defined with gcc 13,
+ * since the performance is not critical in this case (not "Release" build).
  */
-#if defined(__GNUC__) && !defined(__clang__) && defined NDEBUG
+#if defined(__GNUC__) && !defined(__clang__) && (__GNUC__ != 13 || defined(NDEBUG))
 #    define gmx_inline __attribute__((__gnu_inline__, __always_inline__)) inline
 #elif defined(__clang__)
 #    define gmx_inline __attribute__((always_inline)) inline
