@@ -30,18 +30,11 @@ TOOLS_FAILED=""
 
 for TOOL in memcheck racecheck synccheck initcheck; do
     echo "Running CUDA Compute Sanitizer in ${TOOL} mode"
-    EXTRA_FLAGS=""
-    if [[ ${TOOL} == "initcheck" ]]; then
-      # We get warnings from the Pack kernel in DomDecMpiTests with CUDA 11.0, which is harmless:
-      # we read uninitialized data, but we don't use it.
-      EXTRA_FLAGS="--exclude-regex DomDecMpiTests"
-    fi
     "${CTEST}" -T MemCheck \
       --overwrite MemoryCheckCommand="${COMPUTE_SANITIZER_BIN}" \
       --overwrite MemoryCheckCommandOptions="--tool=${TOOL} ${COMPUTE_SANITIZER_FLAGS}" \
       --overwrite MemoryCheckType=CudaSanitizer \
       --label-regex "${TEST_LABELS}" \
-      ${EXTRA_FLAGS} \
       | tee ctestLog.log || TOOLS_FAILED="${TOOL},${TOOLS_FAILED}"
 done
 
