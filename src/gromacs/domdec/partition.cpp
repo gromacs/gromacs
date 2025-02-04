@@ -2894,10 +2894,18 @@ void dd_partition_system(FILE*                     fplog,
     {
         wallcycle_sub_start(wcycle, WallCycleSubCounter::DDAddCogs);
 
-        comm->updateGroupsCog->addCogs(
-                gmx::arrayRefFromArray(dd->globalAtomIndices.data(), dd->numHomeAtoms),
-                state_local->x,
-                bRedist ? fr->nbv->getLocalGridNumAtomsPerColumn() : gmx::ArrayRef<const int>());
+        // We can run addCogs() thread parallel by distributing NBNxM grid columns over threads.
+        // This can only be done when are both redistributing this step and we have the correct
+        // atom count per column from the old state. This is available when atoms were put on
+        // the NBNxM grid at the last re-partitioning.
+        gmx::ArrayRef<const int> localGridNumAtomsPerColumn;
+        if (bRedist && comm->putAtomsOnGridAtLastPartitioning)
+        {
+            localGridNumAtomsPerColumn = fr->nbv->getLocalGridNumAtomsPerColumn();
+        }
+        comm->updateGroupsCog->addCogs(gmx::arrayRefFromArray(dd->globalAtomIndices.data(), dd->numHomeAtoms),
+                                       state_local->x,
+                                       localGridNumAtomsPerColumn);
 
         wallcycle_sub_stop(wcycle, WallCycleSubCounter::DDAddCogs);
     }
@@ -3225,6 +3233,7 @@ void dd_partition_system(FILE*                     fplog,
          */
         comm->main_cg_ddp_count = (bSortCG ? 0 : dd->ddp_count);
     }
+    comm->putAtomsOnGridAtLastPartitioning = bRedist;
 
     if (comm->ddSettings.DD_debug > 0)
     {

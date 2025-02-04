@@ -648,6 +648,9 @@ struct gmx_domdec_comm_t // NOLINT (clang-analyzer-optin.performance.Padding)
      */
     int64_t main_cg_ddp_count = 0;
 
+    /** Whether we put atoms on the NBNxM grid at the last partitioning */
+    bool putAtomsOnGridAtLastPartitioning = false;
+
     /** The atom ranges in the local state */
     DDAtomRanges atomRanges;
 
