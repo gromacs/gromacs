@@ -22,6 +22,14 @@ Fixes for ``gmx`` tools
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix CUDA PTX generation for new architectures
+"""""""""""""""""""""""""""""""""""""""""""""
+
+The functionality to JIT-compile GPU kernels for new architectures
+was broken in recent releases. Now it should work again.
+
+:issue:`5285`
+
 Miscellaneous
 ^^^^^^^^^^^^^
 

@@ -189,7 +189,7 @@ if (GMX_CUDA_TARGET_SM OR GMX_CUDA_TARGET_COMPUTE)
 else()
     # Set the CUDA GPU architectures to compile for:
     # - with CUDA >=11.0        CC 8.0 is supported
-    #     => compile sm_35, sm_37, sm_50, sm_52, sm_60, sm_61, sm_70, sm_75, sm_80 SASS, and compute_35, compute_80 PTX
+    #     => compile sm_35, sm_37, sm_50, sm_52, sm_60, sm_61, sm_70, sm_75, sm_80 SASS, and compute_53, compute_80 PTX
 
     # First add flags that trigger SASS (binary) code generation for physical arch
     gmx_add_nvcc_flag_if_supported(GMX_CUDA_NVCC_GENCODE_FLAGS NVCC_HAS_GENCODE_COMPUTE_AND_SM_35 --generate-code=arch=compute_35,code=sm_35)
@@ -216,8 +216,8 @@ else()
     # newest supported virtual arch that's useful to JIT to future architectures
     # as well as an older one suitable for JIT-ing to any rare intermediate arch
     # (like that of Jetson / Drive PX devices)
-    gmx_add_nvcc_flag_if_supported(GMX_CUDA_NVCC_GENCODE_FLAGS NVCC_HAS_GENCODE_COMPUTE_53 --generate-code=arch=compute_53,code=sm_53)
-    gmx_add_nvcc_flag_if_supported(GMX_CUDA_NVCC_GENCODE_FLAGS NVCC_HAS_GENCODE_COMPUTE_80 --generate-code=arch=compute_80,code=sm_80)
+    gmx_add_nvcc_flag_if_supported(GMX_CUDA_NVCC_GENCODE_FLAGS NVCC_HAS_GENCODE_COMPUTE_53 --generate-code=arch=compute_53,code=compute_53)
+    gmx_add_nvcc_flag_if_supported(GMX_CUDA_NVCC_GENCODE_FLAGS NVCC_HAS_GENCODE_COMPUTE_80 --generate-code=arch=compute_80,code=compute_80)
 endif()
 
 if (GMX_CUDA_TARGET_SM)
