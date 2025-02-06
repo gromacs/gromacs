@@ -44,26 +44,55 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 
-namespace gmx
+namespace
 {
-
-std::string getSyclCompilerVersion()
+std::string getVersion()
 {
 #if GMX_SYCL_DPCPP
 #    ifdef __LIBSYCL_MAJOR_VERSION
-    return formatString("%d (libsycl %d.%d.%d)",
-                        __SYCL_COMPILER_VERSION,
-                        __LIBSYCL_MAJOR_VERSION,
-                        __LIBSYCL_MINOR_VERSION,
-                        __LIBSYCL_PATCH_VERSION);
+    return gmx::formatString("%d (libsycl %d.%d.%d)",
+                             __SYCL_COMPILER_VERSION,
+                             __LIBSYCL_MAJOR_VERSION,
+                             __LIBSYCL_MINOR_VERSION,
+                             __LIBSYCL_PATCH_VERSION);
 #    else
-    return formatString("%d", __SYCL_COMPILER_VERSION);
+    return gmx::formatString("%d", __SYCL_COMPILER_VERSION);
 #    endif
 #elif GMX_SYCL_ACPP
     return hipsycl::sycl::detail::version_string();
 #else
     GMX_THROW(gmx::InternalError("Not implemented for non-SYCL build"));
 #endif
+}
+
+std::vector<std::string> getOptionalFeatures()
+{
+    std::vector<std::string> optionalFeatures;
+#if GMX_SYCL_ENABLE_EXPERIMENTAL_SUBMIT_API
+    optionalFeatures.push_back("experimental_submit_api");
+#endif
+#if GMX_HAVE_GPU_GRAPH_SUPPORT
+    optionalFeatures.push_back("graphs");
+#endif
+    return optionalFeatures;
+}
+} // namespace
+
+namespace gmx
+{
+
+std::string getSyclCompilerVersion()
+{
+    std::string                    versionStr       = getVersion();
+    const std::vector<std::string> optionalFeatures = getOptionalFeatures();
+    if (optionalFeatures.empty())
+    {
+        return versionStr;
+    }
+    else
+    {
+        return versionStr + " with " + joinStrings(optionalFeatures, ",");
+    }
 }
 
 } // namespace gmx
