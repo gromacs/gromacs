@@ -60,9 +60,9 @@
 #    define GMX_DEVICE_ATTRIBUTE
 #    define GMX_HOSTDEVICE_ATTRIBUTE GMX_HOST_ATTRIBUTE GMX_DEVICE_ATTRIBUTE
 #    if defined(SYCL_EXT_ONEAPI_ASSERT) && SYCL_EXT_ONEAPI_ASSERT && !defined(NDEBUG)
-#        define PACKED_FLOAT_ASSERT(condition) assert(condition)
+#        define GMX_DEVICE_ASSERT(condition) assert(condition)
 #    else
-#        define PACKED_FLOAT_ASSERT(condition)
+#        define GMX_DEVICE_ASSERT(condition)
 #    endif
 #    include "gputraits_sycl.h"
 #elif GMX_GPU_HIP
@@ -70,9 +70,9 @@
 #    define GMX_DEVICE_ATTRIBUTE __device__
 #    define GMX_HOSTDEVICE_ATTRIBUTE GMX_HOST_ATTRIBUTE GMX_DEVICE_ATTRIBUTE
 #    if !defined(NDEBUG)
-#        define PACKED_FLOAT_ASSERT(condition) assert(condition)
+#        define GMX_DEVICE_ASSERT(condition) assert(condition)
 #    else
-#        define PACKED_FLOAT_ASSERT(condition)
+#        define GMX_DEVICE_ASSERT(condition)
 #    endif
 #    include "gputraits_hip.h"
 #else
@@ -199,7 +199,7 @@ struct AmdPackedFloat3
         {
             case 0: return xy_.x;
             case 1: return xy_.y;
-            default: PACKED_FLOAT_ASSERT(i == 2); return z_;
+            default: GMX_DEVICE_ASSERT(i == 2); return z_;
         }
     }
     template<typename Index>
@@ -209,7 +209,7 @@ struct AmdPackedFloat3
         {
             case 0: return x_;
             case 1: return y_;
-            default: PACKED_FLOAT_ASSERT(i == 2); return z_;
+            default: GMX_DEVICE_ASSERT(i == 2); return z_;
         }
     }
 

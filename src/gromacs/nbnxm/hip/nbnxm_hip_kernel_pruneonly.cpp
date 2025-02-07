@@ -293,7 +293,7 @@ __launch_bounds__(c_clSizeSq<pairlistType>* threadZ, minBlocksPp<hasLargeRegiste
         GMX_UNUSED_VALUE(nbparam);
         GMX_UNUSED_VALUE(plist);
         GMX_UNUSED_VALUE(numParts);
-        assert(false);
+        GMX_DEVICE_ASSERT(false);
     }
 }
 

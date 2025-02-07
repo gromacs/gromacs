@@ -128,7 +128,7 @@ __global__ void pmeSolveKernel(const PmeGpuKernelParamsBase kernelParams)
         float viryz  = 0.0F;
         float virzz  = 0.0F;
 
-        assert(indexMajor < kernelParams.grid.localComplexGridSize[majorDim]);
+        GMX_DEVICE_ASSERT(indexMajor < kernelParams.grid.localComplexGridSize[majorDim]);
         if ((indexMiddle < localCountMiddle) & (indexMinor < localCountMinor)
             & (gridLineIndex < gridLinesPerBlock))
         {
@@ -191,12 +191,12 @@ __global__ void pmeSolveKernel(const PmeGpuKernelParamsBase kernelParams)
                 mhk               = a + b + c;
 
                 const float m2k = mhk.norm2();
-                assert(m2k != 0.0F);
+                GMX_DEVICE_ASSERT(m2k != 0.0F);
 
                 float denom = m2k * float(HIP_PI) * kernelParams.current.boxVolume * vMajor
                               * vMiddle * vMinor;
-                assert(isfinite(denom));
-                assert(denom != 0.0F);
+                GMX_DEVICE_ASSERT(isfinite(denom));
+                GMX_DEVICE_ASSERT(denom != 0.0F);
 
                 const float tmp1   = __expf(-kernelParams.grid.ewaldFactor * m2k);
                 const float etermk = kernelParams.constants.elFactor * tmp1 / denom;
@@ -307,7 +307,7 @@ __global__ void pmeSolveKernel(const PmeGpuKernelParamsBase kernelParams)
              *       To use fewer warps, add to the conditional:
              *       && threadLocalId < activeWarps * stride
              */
-            assert(activeWarps * stride >= parallelExecutionWidth);
+            GMX_DEVICE_ASSERT(activeWarps * stride >= parallelExecutionWidth);
             if (threadLocalId < parallelExecutionWidth)
             {
                 float output = sm_virialAndEnergy[threadLocalId];
@@ -319,7 +319,7 @@ __global__ void pmeSolveKernel(const PmeGpuKernelParamsBase kernelParams)
                 /* Final output */
                 if (validComponentIndex)
                 {
-                    assert(isfinite(output));
+                    GMX_DEVICE_ASSERT(isfinite(output));
                     atomicAdd(gm_virialAndEnergy + componentIndex, output);
                 }
             }

@@ -66,7 +66,7 @@ __device__ static inline float readGridSize(const float* realGridSizeFP, const i
     {
         case XX: return realGridSizeFP[XX];
         case YY: return realGridSizeFP[YY];
-        default: assert(dimIndex == ZZ); return realGridSizeFP[ZZ];
+        default: GMX_DEVICE_ASSERT(dimIndex == ZZ); return realGridSizeFP[ZZ];
     }
 }
 
@@ -207,9 +207,9 @@ __device__ static inline void sumForceComponents(float* __restrict__ fx,
                 ix -= nx;
             }
             const int gridIndexGlobal = ix * pny * pnz + constOffset;
-            assert(gridIndexGlobal >= 0);
+            GMX_DEVICE_ASSERT(gridIndexGlobal >= 0);
             const float gridValue = *indexedAddress(gm_grid, gridIndexGlobal);
-            assert(isfinite(gridValue));
+            GMX_DEVICE_ASSERT(isfinite(gridValue));
             const int splineIndexX = getSplineParamIndex<order, atomsPerWarp>(splineIndexBase, XX, ithx);
             const float2 tdx  = make_float2(sm_theta[splineIndexX], sm_dtheta[splineIndexX]);
             const float  fxy1 = tdz.x * gridValue;
@@ -302,7 +302,7 @@ __launch_bounds__(sc_gatherMaxThreadsPerBlock<parallelExecutionWidth>,
         const int atomsPerWarp = parallelExecutionWidth / atomDataSize;
 
         const int blockSize = atomsPerBlock * atomDataSize;
-        assert(blockSize == blockDim.x * blockDim.y * blockDim.z);
+        GMX_DEVICE_ASSERT(blockSize == blockDim.x * blockDim.y * blockDim.z);
 
         /* These are the atom indices - for the shared and global memory */
         const int atomIndexLocal  = threadIdx.z;
@@ -345,7 +345,7 @@ __launch_bounds__(sc_gatherMaxThreadsPerBlock<parallelExecutionWidth>,
             {
                 sm_gridlineIndices[localGridlineIndicesIndex] =
                         gm_gridlineIndices[globalGridlineIndicesIndex];
-                assert(sm_gridlineIndices[localGridlineIndicesIndex] >= 0);
+                GMX_DEVICE_ASSERT(sm_gridlineIndices[localGridlineIndicesIndex] >= 0);
             }
             /* The loop needed for order threads per atom to make sure we load all data values, as each thread must load multiple values
                with order*order threads per atom, it is only required for each thread to load one data value */
@@ -363,8 +363,8 @@ __launch_bounds__(sc_gatherMaxThreadsPerBlock<parallelExecutionWidth>,
                 {
                     sm_theta[localSplineParamsIndex]  = gm_theta[globalSplineParamsIndex];
                     sm_dtheta[localSplineParamsIndex] = gm_dtheta[globalSplineParamsIndex];
-                    assert(isfinite(sm_theta[localSplineParamsIndex]));
-                    assert(isfinite(sm_dtheta[localSplineParamsIndex]));
+                    GMX_DEVICE_ASSERT(isfinite(sm_theta[localSplineParamsIndex]));
+                    GMX_DEVICE_ASSERT(isfinite(sm_dtheta[localSplineParamsIndex]));
                 }
             }
             __syncthreads();
@@ -463,7 +463,7 @@ __launch_bounds__(sc_gatherMaxThreadsPerBlock<parallelExecutionWidth>,
                     sm_forces, forceIndexLocal, forceIndexGlobal, kernelParams.current.recipBox, scale, gm_coefficientsA);
         }
         __builtin_amdgcn_wave_barrier();
-        assert(atomsPerBlock <= parallelExecutionWidth);
+        GMX_DEVICE_ASSERT(atomsPerBlock <= parallelExecutionWidth);
 
         /* Writing or adding the final forces component-wise, single warp */
         const int blockForcesSize = atomsPerBlock * DIM;

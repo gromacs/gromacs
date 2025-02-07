@@ -44,6 +44,7 @@
  */
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/gputraits.h"
+#include "gromacs/gpu_utils/hip_sycl_kernel_utils.h"
 #include "gromacs/gpu_utils/hiputils.h"
 #include "gromacs/gpu_utils/typecasts_cuda_hip.h"
 #include "gromacs/gpu_utils/vectype_ops_hip.h"
@@ -111,7 +112,7 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__ void lincsKernel(LincsGpuKern
 
     // numConstraintsThreads should be a integer multiple of blockSize (numConstraintsThreads = numBlocks*blockSize).
     // This is to ensure proper synchronizations and reduction. All array are padded to the required size.
-    assert(threadIndex < numConstraintsThreads);
+    GMX_DEVICE_ASSERT(threadIndex < numConstraintsThreads);
 
     // Vectors connecting constrained atoms before algorithm was applied.
     // Needed to construct constrain matrix A
