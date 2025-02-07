@@ -32,8 +32,19 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 
-#ifndef GMX_GMXLIB_NONBONDED_NB_FREE_ENERGY_H
-#define GMX_GMXLIB_NONBONDED_NB_FREE_ENERGY_H
+/*! \file
+ * \internal
+ *
+ * \brief Declares and defines the AtomPairlist class.
+ *
+ * This class in currently only used for perturbed interactions.
+ *
+ * \author Berk Hess <hess@kth.se>
+ * \ingroup module_nbnxm
+ */
+
+#ifndef GMX_NBNXM_FREEENERGYKERNEL_H
+#define GMX_NBNXM_FREEENERGYKERNEL_H
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -41,7 +52,6 @@
 
 struct t_forcerec;
 struct t_nrnb;
-class t_nblist;
 struct interaction_const_t;
 namespace gmx
 {
@@ -49,15 +59,37 @@ template<typename>
 class ArrayRef;
 template<typename>
 class ArrayRefWithPadding;
-} // namespace gmx
+class AtomPairlist;
+class StepWorkload;
 
 /*! \brief The non-bonded free-energy kernel
  *
- * Note that this uses a regular atom pair, not cluster pair, list.
+ * \param[in] nlist      A plain atom pair list containing only perturbed interactions
+ * \param[in] coords     The list of local and non-local coordinates
+ * \param[in] useSimd    Whether to use the SIMD intrinsics kernel
+ * \param[in] ntype      The number of non-bonded atom types
+ * \param[in] ic         The non-bonded interactions constants
+ * \param[in] shiftvec   The periodic shift vectors
+ * \param[in] nbfp       The matrix of LJ parameters between atom types
+ * \param[in] nbfp_grid  The matrix of LJ parameters for PME grid corrections
+ * \param[in] chargeA    List of charges per atom for state A
+ * \param[in] chargeB    List of charges per atom for state B
+ * \param[in] typeA      List of LJ atom types per atom for state A
+ * \param[in] typeB      List of LJ atom types per atom for state B
+ * \param[in] computeForeignLambda  When true, only compute energies and dV/dlambda, igore \p stepWork
+ * \param[in] stepWork   Tells what to compute, ignored and can be nullptr when
+ *                       \p computeForeignLambda=true
+ * \param[in] lambda     List of free-energy lambdas for different components
+ * \param[in,out] nrnb   Flop counters to add to
+ * \param[in,out] threadForceBuffer  Thread-local force buffer to accumulate into
+ * \param[in,out] threadForceShiftBuffer  Thread-local shift force buffer to accumulate into
+ * \param[in,out] threadVc  Thread-local Coulomb energy group pair buffer to accumulate into
+ * \param[in,out] threadVv  Thread-local VdW energy group pair buffer to accumulate into
+ * \param[in,out] threadDvdl  Thread-local dV/dlambda component buffer to accumulate into
  *
  * \throws InvalidInputError when an excluded pair is beyond the rcoulomb with reaction-field.
  */
-void gmx_nb_free_energy_kernel(const t_nblist&                                  nlist,
+void gmx_nb_free_energy_kernel(const AtomPairlist&                              nlist,
                                const gmx::ArrayRefWithPadding<const gmx::RVec>& coords,
                                bool                                             useSimd,
                                int                                              ntype,
@@ -69,13 +101,16 @@ void gmx_nb_free_energy_kernel(const t_nblist&                                  
                                gmx::ArrayRef<const real>                        chargeB,
                                gmx::ArrayRef<const int>                         typeA,
                                gmx::ArrayRef<const int>                         typeB,
-                               int                                              flags,
-                               gmx::ArrayRef<const real>                        lambda,
-                               t_nrnb* gmx_restrict                             nrnb,
-                               gmx::ArrayRefWithPadding<gmx::RVec>              threadForceBuffer,
-                               rvec*               threadForceShiftBuffer,
-                               gmx::ArrayRef<real> threadVc,
-                               gmx::ArrayRef<real> threadVv,
-                               gmx::ArrayRef<real> threadDvdl);
+                               bool                                computeForeignLambda,
+                               const StepWorkload*                 stepWork,
+                               gmx::ArrayRef<const real>           lambda,
+                               t_nrnb* gmx_restrict                nrnb,
+                               gmx::ArrayRefWithPadding<gmx::RVec> threadForceBuffer,
+                               rvec*                               threadForceShiftBuffer,
+                               gmx::ArrayRef<real>                 threadVc,
+                               gmx::ArrayRef<real>                 threadVv,
+                               gmx::ArrayRef<real>                 threadDvdl);
+
+} // namespace gmx
 
 #endif

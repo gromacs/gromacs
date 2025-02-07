@@ -48,7 +48,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/gmxlib/nonbonded/nb_free_energy.h"
+#include "gromacs/nbnxm/freeenergykernel.h"
 
 #include "config.h"
 
@@ -64,7 +64,6 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/ewald/ewald_utils.h"
-#include "gromacs/gmxlib/nonbonded/nonbonded.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/arrayrefwithpadding.h"
 #include "gromacs/math/paddedvector.h"
@@ -79,7 +78,8 @@
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdatom.h"
-#include "gromacs/mdtypes/nblist.h"
+#include "gromacs/mdtypes/simulation_workload.h"
+#include "gromacs/nbnxm/atompairlist.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/tables/forcetable.h"
@@ -188,13 +188,12 @@ public:
      */
     void getInteractionConst(const t_lambda& fepVals, interaction_const_t* ic)
     {
-        ic->softCoreParameters = std::unique_ptr<interaction_const_t::SoftCoreParameters>(
-                new interaction_const_t::SoftCoreParameters(fepVals));
+        ic->softCoreParameters = std::make_unique<interaction_const_t::SoftCoreParameters>(fepVals);
 
-        ic->coulombEwaldTables  = std::unique_ptr<EwaldCorrectionTables>(new EwaldCorrectionTables);
+        ic->coulombEwaldTables  = std::make_unique<EwaldCorrectionTables>();
         *ic->coulombEwaldTables = coulombTables_;
 
-        ic->vdwEwaldTables  = std::unique_ptr<EwaldCorrectionTables>(new EwaldCorrectionTables);
+        ic->vdwEwaldTables  = std::make_unique<EwaldCorrectionTables>();
         *ic->vdwEwaldTables = vdwTables_;
 
         // set coulomb and vdw types
@@ -357,10 +356,10 @@ struct AtomData
     std::vector<int>  gid     = { 0 };
     std::vector<bool> exclFep = { false, true, true, true };
 
-    // construct t_nblist
-    t_nblist getNbList()
+    // construct AtomPairlist
+    AtomPairlist getNbList()
     {
-        t_nblist nbl;
+        AtomPairlist nbl;
         nbl.addIEntry({ iAtoms[0], shift[0], gid[0] }, jAtoms.size());
         for (size_t j = 0; j < jAtoms.size(); j++)
         {
@@ -454,8 +453,8 @@ protected:
         t_forcerec fr;
         input_.frHelper.getForcerec(&fr);
 
-        // t_nblist
-        t_nblist nbl = input_.atoms.getNbList();
+        // AtomPairlist
+        AtomPairlist nbl = input_.atoms.getNbList();
 
         // output buffers
         OutputQuantities output;
@@ -465,10 +464,10 @@ protected:
         std::vector<real> lambdas(numFepCouplingTerms, lambda_);
 
         // fep kernel data
-        int doNBFlags = 0;
-        doNBFlags |= GMX_NONBONDED_DO_FORCE;
-        doNBFlags |= GMX_NONBONDED_DO_SHIFTFORCE;
-        doNBFlags |= GMX_NONBONDED_DO_POTENTIAL;
+        StepWorkload stepWork;
+        stepWork.computeForces = true;
+        stepWork.computeVirial = true;
+        stepWork.computeEnergy = true;
 
         // force buffers
         bool                      unusedBool = true; // this bool has no effect in the kernel
@@ -490,7 +489,8 @@ protected:
                                   input_.atoms.chargeB,
                                   input_.atoms.typeA,
                                   input_.atoms.typeB,
-                                  doNBFlags,
+                                  false,
+                                  &stepWork,
                                   lambdas,
                                   &nrnb,
                                   output.f.arrayRefWithPadding(),

@@ -60,7 +60,6 @@
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/mdtypes/nblist.h"
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
 #include "gromacs/nbnxm/grid.h"
@@ -80,6 +79,7 @@
 #include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/range.h"
 
+#include "atompairlist.h"
 #include "boundingbox.h"
 #include "boundingbox_simd.h"
 #include "boundingboxdistance.h"
@@ -481,7 +481,7 @@ PairlistSet::PairlistSet(const PairlistParams& pairlistParams) :
                  * main thread (but all contained list memory thread local)
                  * impacts performance.
                  */
-                fepLists_[i] = std::make_unique<t_nblist>();
+                fepLists_[i] = std::make_unique<AtomPairlist>();
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
         }
@@ -1199,11 +1199,11 @@ static KernelLayoutClusterRatio layoutClusterRatio(const Grid::Geometry& geometr
  * If the last i-entry has no j-entries, it will be replaced instead
  * of creating a new entry.
  */
-static inline void fep_list_new_nri_copy(t_nblist* nlist, int energyGroupPair = -1)
+static inline void fep_list_new_nri_copy(AtomPairlist* nlist, int energyGroupPair = -1)
 {
     GMX_ASSERT(!nlist->iList().empty(), "Can not copy an entry with an empty list");
 
-    t_nblist::IEntry iEntry = nlist->iList().back();
+    AtomPairlist::IEntry iEntry = nlist->iList().back();
 
     if (energyGroupPair >= 0)
     {
@@ -1266,7 +1266,7 @@ static void make_fep_list(ArrayRef<const int>     atomIndices,
                           const real gmx_unused   rlist_fep2,
                           const Grid&             iGrid,
                           const Grid&             jGrid,
-                          t_nblist*               nlist)
+                          AtomPairlist*           nlist)
 {
     const KernelLayoutClusterRatio jGridClusterRatio = layoutClusterRatio(jGrid.geometry());
 
@@ -1293,7 +1293,7 @@ static void make_fep_list(ArrayRef<const int>     atomIndices,
 
     /* TODO: Consider adding a check in grompp and changing this to an assert */
     constexpr int numBitsInEnergyGroupIdsForAtomsInJCluster =
-            sizeof(t_nblist::IEntry::energyGroupPair) * CHAR_BIT;
+            sizeof(AtomPairlist::IEntry::energyGroupPair) * CHAR_BIT;
     if (numEnergyGroups * c_jClusterSize > numBitsInEnergyGroupIdsForAtomsInJCluster)
     {
         gmx_fatal(FARGS,
@@ -1465,7 +1465,7 @@ static void make_fep_list(ArrayRef<const int>     atomIndices,
                           real                    rlist_fep2,
                           const Grid&             iGrid,
                           const Grid&             jGrid,
-                          t_nblist*               nlist)
+                          AtomPairlist*           nlist)
 {
     // Exclude pairs from the current (ie. last) i-super-cluster entry
     // in the list
@@ -2434,7 +2434,7 @@ static void combine_nblists(ArrayRef<const NbnxnPairlistGpu> nbls, NbnxnPairlist
     }
 }
 
-static void balance_fep_lists(ArrayRef<std::unique_ptr<t_nblist>> fepLists, ArrayRef<PairsearchWork> work)
+static void balance_fep_lists(ArrayRef<std::unique_ptr<AtomPairlist>> fepLists, ArrayRef<PairsearchWork> work)
 {
     const int numLists = fepLists.ssize();
 
@@ -2461,7 +2461,7 @@ static void balance_fep_lists(ArrayRef<std::unique_ptr<t_nblist>> fepLists, Arra
     {
         const int thread = gmx_omp_get_thread_num();
 
-        t_nblist& dest = *work[thread].nbl_fep;
+        AtomPairlist& dest = *work[thread].nbl_fep;
 
         dest.clear();
 
@@ -2473,7 +2473,7 @@ static void balance_fep_lists(ArrayRef<std::unique_ptr<t_nblist>> fepLists, Arra
         int nrjCurrent = 0;
         for (int srcThread = 0; srcThread < numLists; srcThread++)
         {
-            const t_nblist& src = *fepLists[srcThread];
+            const AtomPairlist& src = *fepLists[srcThread];
 
             for (gmx::Index i = 0; i < src.iList().ssize(); i++)
             {
@@ -2494,7 +2494,7 @@ static void balance_fep_lists(ArrayRef<std::unique_ptr<t_nblist>> fepLists, Arra
                 {
                     dest.addIEntry(src.iList()[i], nrj);
 
-                    for (const t_nblist::JEntry& jEntry : src.jList(i))
+                    for (const AtomPairlist::JEntry& jEntry : src.jList(i))
                     {
                         dest.addJEntry(jEntry);
                     }
@@ -2798,7 +2798,7 @@ static void nbnxn_make_pairlist_part(const GridSet&          gridSet,
                                      int                     th,
                                      int                     nth,
                                      T*                      nbl,
-                                     t_nblist*               nbl_fep)
+                                     AtomPairlist*           nbl_fep)
 {
     constexpr bool c_listIsSimple = std::is_same_v<T, NbnxnPairlistCpu>;
 
@@ -3766,7 +3766,7 @@ void PairlistSet::constructPairlists(InteractionLocality      locality,
 
                     work.cycleCounter.start();
 
-                    t_nblist* fepListPtr = (fepLists_.empty() ? nullptr : fepLists_[th].get());
+                    AtomPairlist* fepListPtr = (fepLists_.empty() ? nullptr : fepLists_[th].get());
 
                     /* Divide the i cells equally over the pairlists */
                     if (isCpuType_)

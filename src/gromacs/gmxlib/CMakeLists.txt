@@ -33,13 +33,11 @@
 
 add_library(gmxlib INTERFACE)
 
-add_subdirectory(nonbonded)
-
 # The nonbonded directory contains subdirectories that are only
 # conditionally built, so we cannot use a GLOB_RECURSE here.
 file(GLOB GMXLIB_SOURCES *.cpp)
 
-set(GMXLIB_SOURCES ${GMXLIB_SOURCES} ${NONBONDED_SOURCES} PARENT_SCOPE)
+set(GMXLIB_SOURCES ${GMXLIB_SOURCES} PARENT_SCOPE)
 
 # TODO(#3288): Explicitly link specific modules for source dependencies when gmxlib is an OBJECT target.
 # Source files have the following private module dependencies.
@@ -60,7 +58,3 @@ target_link_libraries(gmxlib INTERFACE
                       pbcutil
                       utility
                       )
-
-if(BUILD_TESTING)
-    add_subdirectory(nonbonded/tests)
-endif()

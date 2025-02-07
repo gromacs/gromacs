@@ -47,3 +47,21 @@ gmx_add_unit_test(NbnxmGpuTests nbnxm-gpu-test
         pairlist.cpp
         )
 target_link_libraries(nbnxm-gpu-test PRIVATE nbnxm gpu_utils timing)
+
+gmx_add_unit_test(GmxlibTests nonbonded-fep-test
+    CPP_SOURCE_FILES
+        freeenergykernel.cpp
+    )
+target_link_libraries(
+    nonbonded-fep-test PRIVATE
+    ewald
+    gmxlib
+    math
+    mdlib
+    mdtypes
+    pbcutil
+    tables
+    testutils
+    topology
+    utility
+)

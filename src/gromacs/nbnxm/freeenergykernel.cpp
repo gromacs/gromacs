@@ -33,7 +33,7 @@
  */
 #include "gmxpre.h"
 
-#include "nb_free_energy.h"
+#include "freeenergykernel.h"
 
 #include "config.h"
 
@@ -45,7 +45,6 @@
 #include <set>
 #include <vector>
 
-#include "gromacs/gmxlib/nonbonded/nonbonded.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/arrayrefwithpadding.h"
 #include "gromacs/math/functions.h"
@@ -55,7 +54,7 @@
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdatom.h"
-#include "gromacs/mdtypes/nblist.h"
+#include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/simd_math.h"
@@ -64,7 +63,11 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 
-#include "nb_softcore.h"
+#include "atompairlist.h"
+#include "softcore_functions.h"
+
+namespace gmx
+{
 
 //! Scalar (non-SIMD) data types.
 struct ScalarDataTypes
@@ -323,7 +326,7 @@ static inline RealType potSwitchPotentialMod(const RealType potentialInp, const 
 
 //! Templated free-energy non-bonded kernel
 template<typename DataTypes, KernelSoftcoreType softcoreType, bool scLambdasOrAlphasDiffer, bool elecInteractionTypeIsEwald, LJKernelType ljKernelType, bool computeForces>
-static void nb_free_energy_kernel(const t_nblist&                                  nlist,
+static void nb_free_energy_kernel(const AtomPairlist&                              nlist,
                                   const gmx::ArrayRefWithPadding<const gmx::RVec>& coords,
                                   const int                                        ntype,
                                   const interaction_const_t&           interactionParameters,
@@ -334,7 +337,8 @@ static void nb_free_energy_kernel(const t_nblist&                               
                                   gmx::ArrayRef<const real>            chargeB,
                                   gmx::ArrayRef<const int>             typeA,
                                   gmx::ArrayRef<const int>             typeB,
-                                  int                                  flags,
+                                  const bool                           computeForeignLambda,
+                                  const StepWorkload*                  stepWork,
                                   gmx::ArrayRef<const real>            lambda,
                                   t_nrnb* gmx_restrict                 nrnb,
                                   gmx::ArrayRefWithPadding<gmx::RVec>  threadForceBuffer,
@@ -363,7 +367,7 @@ static void nb_free_energy_kernel(const t_nblist&                               
     constexpr real six        = 6.0_real;
 
     // Extract i-list data
-    gmx::ArrayRef<const t_nblist::IEntry> iList = nlist.iList();
+    gmx::ArrayRef<const AtomPairlist::IEntry> iList = nlist.iList();
 
     const real lambdaCoul = lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)];
     const real lambdaVdw  = lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Vdw)];
@@ -380,8 +384,8 @@ static void nb_free_energy_kernel(const t_nblist&                               
     const real gmx_unused gapsysScaleLinpointVdW  = scParams.gapsysScaleLinpointVdW;
     const real gmx_unused gapsysSigma6VdW         = scParams.gapsysSigma6VdW;
 
-    const bool gmx_unused doShiftForces = ((flags & GMX_NONBONDED_DO_SHIFTFORCE) != 0);
-    const bool            doPotential   = ((flags & GMX_NONBONDED_DO_POTENTIAL) != 0);
+    const bool gmx_unused doShiftForces = !computeForeignLambda && stepWork->computeVirial;
+    const bool            doPotential   = computeForeignLambda || stepWork->computeEnergy;
 
     // Extract data from interaction_const_t
     const real            elecEpsilonFactor        = interactionParameters.epsfac;
@@ -537,7 +541,7 @@ static void nb_free_energy_kernel(const t_nblist&                               
         const real shY = shiftvec[is][YY];
         const real shZ = shiftvec[is][ZZ];
 
-        gmx::ArrayRef<const t_nblist::JEntry> jList = nlist.jList(n);
+        gmx::ArrayRef<const AtomPairlist::JEntry> jList = nlist.jList(n);
 
         const int  ii   = iList[n].atom;
         const int  ii3  = 3 * ii;
@@ -1336,7 +1340,7 @@ static void nb_free_energy_kernel(const t_nblist&                               
     }
 }
 
-typedef void (*KernelFunction)(const t_nblist&                                  nlist,
+typedef void (*KernelFunction)(const AtomPairlist&                              nlist,
                                const gmx::ArrayRefWithPadding<const gmx::RVec>& coords,
                                const int                                        ntype,
                                const interaction_const_t&          interactionParameters,
@@ -1347,7 +1351,8 @@ typedef void (*KernelFunction)(const t_nblist&                                  
                                gmx::ArrayRef<const real>           chargeB,
                                gmx::ArrayRef<const int>            typeA,
                                gmx::ArrayRef<const int>            typeB,
-                               int                                 flags,
+                               const bool                          computeForeignLambda,
+                               const StepWorkload*                 stepWork,
                                gmx::ArrayRef<const real>           lambda,
                                t_nrnb* gmx_restrict                nrnb,
                                gmx::ArrayRefWithPadding<gmx::RVec> threadForceBuffer,
@@ -1483,7 +1488,7 @@ static KernelFunction dispatchKernel(const bool                 scLambdasOrAlpha
 }
 
 
-void gmx_nb_free_energy_kernel(const t_nblist&                                  nlist,
+void gmx_nb_free_energy_kernel(const AtomPairlist&                              nlist,
                                const gmx::ArrayRefWithPadding<const gmx::RVec>& coords,
                                const bool                                       useSimd,
                                const int                                        ntype,
@@ -1495,7 +1500,8 @@ void gmx_nb_free_energy_kernel(const t_nblist&                                  
                                gmx::ArrayRef<const real>           chargeB,
                                gmx::ArrayRef<const int>            typeA,
                                gmx::ArrayRef<const int>            typeB,
-                               int                                 flags,
+                               const bool                          computeForeignLambda,
+                               const StepWorkload*                 stepWork,
                                gmx::ArrayRef<const real>           lambda,
                                t_nrnb*                             nrnb,
                                gmx::ArrayRefWithPadding<gmx::RVec> threadForceBuffer,
@@ -1543,7 +1549,7 @@ void gmx_nb_free_energy_kernel(const t_nblist&                                  
     {
         GMX_RELEASE_ASSERT(false, "Unsupported LJ interaction type");
     }
-    const bool computeForces           = ((flags & GMX_NONBONDED_DO_FORCE) != 0);
+    const bool computeForces           = !computeForeignLambda && stepWork->computeForces;
     bool       scLambdasOrAlphasDiffer = true;
 
     if (scParams.alphaCoulomb == 0 && scParams.alphaVdw == 0)
@@ -1574,7 +1580,8 @@ void gmx_nb_free_energy_kernel(const t_nblist&                                  
                chargeB,
                typeA,
                typeB,
-               flags,
+               computeForeignLambda,
+               stepWork,
                lambda,
                nrnb,
                threadForceBuffer,
@@ -1583,3 +1590,5 @@ void gmx_nb_free_energy_kernel(const t_nblist&                                  
                threadVVdw,
                threadDvdl);
 }
+
+} // namespace gmx

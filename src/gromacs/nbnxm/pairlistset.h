@@ -59,11 +59,11 @@
 
 #include "pairlist.h"
 
-class t_nblist;
 struct t_nrnb;
 
 namespace gmx
 {
+class AtomPairlist;
 struct SearchCycleCounting;
 struct nbnxn_atomdata_t;
 struct PairlistParams;
@@ -113,7 +113,7 @@ public:
     }
 
     //! Returns the lists of free-energy pairlists, empty when nonbonded interactions are not perturbed
-    ArrayRef<const std::unique_ptr<t_nblist>> fepLists() const { return fepLists_; }
+    ArrayRef<const std::unique_ptr<AtomPairlist>> fepLists() const { return fepLists_; }
 
     //! Returns the number of perturbed excluded pairs that are within distance rlist
     int numPerturbedExclusionsWithinRlist() const { return numPerturbedExclusionsWithinRlist_; }
@@ -132,7 +132,7 @@ private:
     //! Tells whether the lists is of CPU type, otherwise GPU type
     gmx_bool isCpuType_;
     //! Lists for perturbed interactions in simple atom-atom layout
-    std::vector<std::unique_ptr<t_nblist>> fepLists_;
+    std::vector<std::unique_ptr<AtomPairlist>> fepLists_;
     //! The number of excluded perturbed interaction within rlist
     int numPerturbedExclusionsWithinRlist_ = 0;
 

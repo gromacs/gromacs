@@ -42,6 +42,7 @@ file(GLOB NBNXM_SOURCES
     atomdata.cpp
     exclusionchecker.cpp
     freeenergydispatch.cpp
+    freeenergykernel.cpp
     grid.cpp
     gridset.cpp
     kernel_common.cpp

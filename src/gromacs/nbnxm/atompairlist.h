@@ -32,21 +32,22 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 
-/*! \libinternal \file
+/*! \internal
+ * \ingroup __module_nbnxm
  *
  * \brief
- * Declares atom pair list class t_nblist
+ * Declares atom pair list class AtomPairlist
  *
  * \author Berk Hess
- * \inlibraryapi
- * \ingroup module_mdtypes
  */
 
-#ifndef GMX_MDTYPES_NBLIST_H
-#define GMX_MDTYPES_NBLIST_H
+#ifndef GMX_NBNXM_ATOMPAIRLIST_H
+#define GMX_NBNXM_ATOMPAIRLIST_H
 
 #include <vector>
 
+namespace gmx
+{
 
 /*! \brief A plain atom pair list, used only for perturbed non-bonded interactions
  *
@@ -57,7 +58,7 @@
  * \p popIEntryWhenEmpty() after potentially adding j-atoms, to remove empty
  * i-entries.
  */
-class t_nblist
+class AtomPairlist
 {
 public:
     //! An i-entry
@@ -172,4 +173,6 @@ private:
     int numExclusionsWithinRlist_ = 0;
 };
 
-#endif /* GMX_MDTYPES_NBLIST_H */
+} // namespace gmx
+
+#endif /* GMX_NBNXM_ATOMPAIRLIST_H */

@@ -31,8 +31,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
-#ifndef GMX_GMXLIB_NONBONDED_SOFTCORE_H
-#define GMX_GMXLIB_NONBONDED_SOFTCORE_H
+#ifndef GMX_NBNXM_SOFTCORE_FUNCTIONS_H
+#define GMX_NBNXM_SOFTCORE_FUNCTIONS_H
 
 #include "config.h"
 

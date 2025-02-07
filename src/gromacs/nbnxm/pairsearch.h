@@ -71,6 +71,7 @@ enum class PbcType : int;
 
 namespace gmx
 {
+class AtomPairlist;
 class DomdecZones;
 struct PairsearchWork;
 enum class PairlistType;
@@ -168,7 +169,7 @@ struct PairsearchWork
 
 
     //! Temporary FEP list for load balancing
-    std::unique_ptr<t_nblist> nbl_fep;
+    std::unique_ptr<AtomPairlist> nbl_fep;
 
     //! Counter for thread-local cycles
     nbnxn_cycle_t cycleCounter;

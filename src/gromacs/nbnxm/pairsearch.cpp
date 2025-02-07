@@ -46,8 +46,7 @@
 
 #include <cstdlib>
 
-#include "gromacs/mdtypes/nblist.h"
-
+#include "atompairlist.h"
 #include "pairlist.h"
 
 enum class PbcType : int;
@@ -83,7 +82,7 @@ void SearchCycleCounting::printCycles(FILE* fp, ArrayRef<const PairsearchWork> w
 #ifndef DOXYGEN
 
 PairsearchWork::PairsearchWork() :
-    cp0({ { 0 } }), ndistc(0), nbl_fep(std::make_unique<t_nblist>()), cp1({ { 0 } })
+    cp0({ { 0 } }), ndistc(0), nbl_fep(std::make_unique<AtomPairlist>()), cp1({ { 0 } })
 {
 }
 
