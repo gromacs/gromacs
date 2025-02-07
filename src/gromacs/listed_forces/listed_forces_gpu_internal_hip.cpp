@@ -51,6 +51,7 @@
 
 #include "hip/hip_math_constants.h"
 
+#include "gromacs/gpu_utils/hip_sycl_kernel_utils.h"
 #include "gromacs/gpu_utils/hiputils.h"
 #include "gromacs/gpu_utils/typecasts_cuda_hip.h"
 #include "gromacs/gpu_utils/vectype_ops_hip.h"
@@ -871,7 +872,7 @@ __launch_bounds__(c_threadsBondedPerBlock) __global__ void bonded_kernel_gpu(
         //! Interaction list atoms (on GPU)
         const FTypeArray<t_iatom*> d_iatoms)
 {
-    assert(blockDim.y == 1 && blockDim.z == 1);
+    GMX_DEVICE_ASSERT(blockDim.y == 1 && blockDim.z == 1);
     const int tid          = blockIdx.x * blockDim.x + threadIdx.x;
     float     vtot_loc     = 0.0F;
     float     vtotVdw_loc  = 0.0F;

@@ -1126,7 +1126,7 @@ __launch_bounds__(c_clSizeSq<pairlistType>* nthreadZ,
         GMX_UNUSED_VALUE(nbparam);
         GMX_UNUSED_VALUE(plist);
         GMX_UNUSED_VALUE(doCalcShift);
-        assert(false);
+        GMX_DEVICE_ASSERT(false);
     }
 }
 

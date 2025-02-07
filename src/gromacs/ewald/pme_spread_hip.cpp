@@ -132,7 +132,7 @@ __device__ __forceinline__ void spreadChargeKernel(const PmeGpuKernelParamsBase 
             const int splineIndexY = getSplineParamIndex<order, atomsPerWarp>(splineIndexBase, YY, ithy);
             float       thetaY = sm_theta[splineIndexY];
             const float Val    = thetaZ * thetaY * (*atomCharge);
-            assert(isfinite(Val));
+            GMX_DEVICE_ASSERT(isfinite(Val));
             const int offset = iy * pnz + iz;
 
 #pragma unroll
@@ -147,8 +147,8 @@ __device__ __forceinline__ void spreadChargeKernel(const PmeGpuKernelParamsBase 
                 const int splineIndexX =
                         getSplineParamIndex<order, atomsPerWarp>(splineIndexBase, XX, ithx);
                 const float thetaX = sm_theta[splineIndexX];
-                assert(isfinite(thetaX));
-                assert(isfinite(gm_grid[gridIndexGlobal]));
+                GMX_DEVICE_ASSERT(isfinite(thetaX));
+                GMX_DEVICE_ASSERT(isfinite(gm_grid[gridIndexGlobal]));
                 atomicAdd(gm_grid + gridIndexGlobal, thetaX * Val);
             }
         }
