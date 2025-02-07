@@ -71,10 +71,7 @@
 static __global__ void dummy_kernel() {}
 
 //! List of known architectures with large register pool
-static const std::vector<std::string> archsWithLargeRegisterPool = { "gfx90a",
-                                                                     "gfx940",
-                                                                     "gfx941",
-                                                                     "gfx942" };
+static const std::vector<std::string> archsWithLargeRegisterPool = { "gfx90a" };
 
 void warnWhenDeviceNotTargeted(const gmx::MDLogger& mdlog, const DeviceInformation& deviceInfo)
 {
