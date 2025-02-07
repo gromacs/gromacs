@@ -578,7 +578,7 @@ static constexpr int minBlocksPerMp(const bool hasLargeRegisterPool, const bool 
     return hasLargeRegisterPool ? 1 : doCalcEnergies ? 6 : 8;
 }
 
-#if defined(__gfx90a__) || defined(__gfx940__) || defined(__gfx941__) || defined(__gfx942__)
+#if defined(__gfx90a__)
 constexpr bool c_deviceLargeRegisterPool = true;
 #else
 constexpr bool c_deviceLargeRegisterPool = false;
