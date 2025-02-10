@@ -89,8 +89,8 @@ if (GMX_LIB_MPI)
                 "MPI_CXX_COMPILER to the MPI compiler wrapper (often called mpicxx or mpic++), "
                 "set CMAKE_CXX_COMPILER to a default-MPI-enabled compiler, "
                 "or set the variables reported missing for MPI_CXX above.")
-    elseif (MPI_CXX_VERSION VERSION_LESS 2.0)
-        message(FATAL_ERROR "MPI version 2.0 or higher is required. Please update your MPI library.")
+    elseif (MPI_CXX_VERSION VERSION_LESS 3.0)
+        message(FATAL_ERROR "MPI version 3.0 or higher is required. Please update your MPI library.")
     endif ()
     #TODO(#3672, #3776): These should be acquired through the MPI::MPI_CXX target.
     include_directories(SYSTEM ${MPI_CXX_INCLUDE_PATH})
@@ -116,13 +116,6 @@ endif ()
 # Test for and warn about unsuitable OpenMPI versions.
 # TODO(#4093): Update tests with respect to required (compatible) OpenMPI versions.
 if (GMX_LIB_MPI AND OPENMPI_VERSION)
-    if (OPENMPI_VERSION VERSION_LESS "1.4.1")
-        message(WARNING
-                "CMake found OpenMPI version ${OPENMPI_VERSION} on your system. "
-                "There are known problems with GROMACS and OpenMPI version < 1.4.1. "
-                "Please consider updating your OpenMPI if your MPI wrapper compilers "
-                "are using the above OpenMPI version.")
-    endif ()
     if (OPENMPI_VERSION VERSION_EQUAL "1.8.6")
         message(WARNING
                 "CMake found OpenMPI version ${OPENMPI_VERSION} on your system. "

@@ -306,7 +306,7 @@ in order to enable this.
 
 If you wish to run in parallel on multiple machines across a network,
 you will need to have an MPI library installed that supports the MPI
-2.0 standard. That's true for any MPI library version released since
+3.0 standard. That's true for any MPI library version released since
 about 2009, but the |Gromacs| team recommends the latest version (for
 best performance) of either your vendor's library, OpenMPI_ or MPICH_.
 
