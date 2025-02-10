@@ -229,6 +229,10 @@ Performance and Run Control
         Disables the direct GPU communication in multi-rank parallel runs
         even when build and simulation setup support it.
 
+``GMX_ENABLE_NVSHMEM``
+        Enables GPU kernel-initiated communication using NVSHMEM in multi-rank parallel runs
+        when build and simulation setup support it.
+
 ``GMX_ENABLE_STAGED_GPU_TO_CPU_PMEPP_COMM``
         Use a staged implementation of GPU communications for PME force
         transfers from the PME GPU to the CPU memory of a PP rank for

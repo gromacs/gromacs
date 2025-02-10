@@ -30,6 +30,9 @@ simulations and hardware. The new features are:
 * GPU-direct communication is now used by default when the MPI library 
   supports it.
 
+* Enhanced PP halo exchange using GPU kernel-initiated communication implemented using NVSHMEM, improving
+  performance when scaling to multiple NVIDIA GPUs.
+
 .. Note to developers!
    Please use """"""" to underline the individual entries for fixed issues in the subfolders,
    otherwise the formatting on the webpage is messed up.
