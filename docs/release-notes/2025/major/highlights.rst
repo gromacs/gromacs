@@ -1,7 +1,7 @@
 Highlights
 ^^^^^^^^^^
 
-|Gromacs| 2025.0 was released on INSERT DATE HERE. Patch releases may
+|Gromacs| 2025.0 was released on February 11th, 2025. Patch releases may
 have been made since then, please use the updated versions!  Here are
 some highlights of what you can expect, along with more detail in the
 links below!
