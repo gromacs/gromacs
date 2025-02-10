@@ -71,3 +71,22 @@ When building with oneAPI 2024.1, the ``NbnxmTest`` test can segfault in
 some cases. Using oneAPI 2024.2 or newer should resolve the issue.
 
 :issue:`5247`
+
+Separate PME ranks with thread-MPI and CUDA do not work with small systems
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Running |Gromacs| 2024.x and 2025.0 with thread-MPI and CUDA and a separate PME rank gives
+incorrect energies after step zero and fails after some steps with fatal error.
+
+With 2024, the issue is only triggered with direct GPU communication is explicitly enabled
+(``GMX_ENABLE_DIRECT_GPU_COMM``).
+With 2025, the direct GPU communication is enabled by default.
+
+As a workaround, build |Gromacs| with library ("real") MPI.
+
+You can also continue using thread-MPI, but disable direct GPU communication:
+
+- for |Gromacs| 2025.0, set the environment variable ``GMX_DISABLE_DIRECT_GPU_COMM=1``,
+- for |Gromacs| 2024 series; don't set ``GMX_ENABLE_DIRECT_GPU_COMM``.
+
+:issue:`5283`
