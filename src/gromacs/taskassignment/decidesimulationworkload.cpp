@@ -114,8 +114,10 @@ SimulationWorkload createSimulationWorkload(const gmx::MDLogger& mdlog,
         GMX_RELEASE_ASSERT(!haveSeparatePmeRank, "Can not have separate PME rank(s) without PME.");
     }
     simulationWorkload.haveSeparatePmeRank = haveSeparatePmeRank;
+    // There is a know issue for PME-PP GPU direct communication with thread-MPI,
+    // so we disable this combination here explicitly. See #5283
     simulationWorkload.useGpuPmePpCommunication =
-            haveSeparatePmeRank && canUseDirectGpuComm
+            haveSeparatePmeRank && (canUseDirectGpuComm && !GMX_THREAD_MPI)
             && (pmeRunMode == PmeRunMode::GPU || pmeRunMode == PmeRunMode::Mixed);
     simulationWorkload.useCpuPmePpCommunication =
             haveSeparatePmeRank && !simulationWorkload.useGpuPmePpCommunication;

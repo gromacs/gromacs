@@ -80,13 +80,13 @@ incorrect energies after step zero and fails after some steps with fatal error.
 
 With 2024, the issue is only triggered with direct GPU communication is explicitly enabled
 (``GMX_ENABLE_DIRECT_GPU_COMM``).
-With 2025, the direct GPU communication is enabled by default.
+In 2025, the direct GPU communication has been disabled for thread-MPI builds of |Gromacs|
+to avoid this issue. Once it has been fixed, direct GPU communication will be made default
+for both MPI and thread-MPI builds.
 
 As a workaround, build |Gromacs| with library ("real") MPI.
 
-You can also continue using thread-MPI, but disable direct GPU communication:
-
-- for |Gromacs| 2025.0, set the environment variable ``GMX_DISABLE_DIRECT_GPU_COMM=1``,
-- for |Gromacs| 2024 series; don't set ``GMX_ENABLE_DIRECT_GPU_COMM``.
+You can also continue using thread-MPI, but disable direct GPU communication for the
+|Gromacs| 2024 series by not setting ``GMX_ENABLE_DIRECT_GPU_COMM``.
 
 :issue:`5283`
