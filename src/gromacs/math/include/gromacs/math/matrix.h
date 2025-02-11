@@ -259,6 +259,23 @@ BasicMatrix3x3<ElementType> operator*(const ElementType s, const BasicMatrix3x3<
     return m * s;
 }
 
+//! Return the product of multiplying the 3x3 matrix \c m  by vector \c v
+template<typename ElementType>
+gmx::BasicVector<ElementType> operator*(const gmx::BasicMatrix3x3<ElementType>& m,
+                                        const gmx::BasicVector<ElementType>&    v)
+{
+    gmx::BasicVector<ElementType> result = { 0., 0., 0. };
+    for (int i = 0; i < DIM; ++i)
+    {
+        for (int j = 0; j < DIM; ++j)
+        {
+            result[i] += m(i, j) * v[j];
+        }
+    }
+    return result;
+}
+
+
 //! Return a vector that is the diagonal of the 3x3 matrix \c m
 template<typename ElementType>
 BasicVector<ElementType> diagonal(const BasicMatrix3x3<ElementType>& m)
