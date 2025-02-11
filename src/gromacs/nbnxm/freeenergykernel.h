@@ -89,27 +89,27 @@ class StepWorkload;
  *
  * \throws InvalidInputError when an excluded pair is beyond the rcoulomb with reaction-field.
  */
-void gmx_nb_free_energy_kernel(const AtomPairlist&                              nlist,
-                               const gmx::ArrayRefWithPadding<const gmx::RVec>& coords,
-                               bool                                             useSimd,
-                               int                                              ntype,
-                               const interaction_const_t&                       ic,
-                               gmx::ArrayRef<const gmx::RVec>                   shiftvec,
-                               gmx::ArrayRef<const real>                        nbfp,
-                               gmx::ArrayRef<const real>                        nbfp_grid,
-                               gmx::ArrayRef<const real>                        chargeA,
-                               gmx::ArrayRef<const real>                        chargeB,
-                               gmx::ArrayRef<const int>                         typeA,
-                               gmx::ArrayRef<const int>                         typeB,
-                               bool                                computeForeignLambda,
-                               const StepWorkload*                 stepWork,
-                               gmx::ArrayRef<const real>           lambda,
-                               t_nrnb* gmx_restrict                nrnb,
-                               gmx::ArrayRefWithPadding<gmx::RVec> threadForceBuffer,
-                               rvec*                               threadForceShiftBuffer,
-                               gmx::ArrayRef<real>                 threadVc,
-                               gmx::ArrayRef<real>                 threadVv,
-                               gmx::ArrayRef<real>                 threadDvdl);
+void gmx_nb_free_energy_kernel(const AtomPairlist&                    nlist,
+                               const ArrayRefWithPadding<const RVec>& coords,
+                               bool                                   useSimd,
+                               int                                    ntype,
+                               const interaction_const_t&             ic,
+                               ArrayRef<const RVec>                   shiftvec,
+                               ArrayRef<const real>                   nbfp,
+                               ArrayRef<const real>                   nbfp_grid,
+                               ArrayRef<const real>                   chargeA,
+                               ArrayRef<const real>                   chargeB,
+                               ArrayRef<const int>                    typeA,
+                               ArrayRef<const int>                    typeB,
+                               bool                                   computeForeignLambda,
+                               const StepWorkload*                    stepWork,
+                               ArrayRef<const real>                   lambda,
+                               t_nrnb* gmx_restrict                   nrnb,
+                               ArrayRefWithPadding<RVec>              threadForceBuffer,
+                               rvec*                                  threadForceShiftBuffer,
+                               ArrayRef<real>                         threadVc,
+                               ArrayRef<real>                         threadVv,
+                               ArrayRef<real>                         threadDvdl);
 
 } // namespace gmx
 
