@@ -210,8 +210,8 @@ else()
     # newest supported virtual arch that's useful to JIT to future architectures
     # as well as an older one suitable for JIT-ing to any rare intermediate arch
     # (like that of Jetson / Drive PX devices)
-    gmx_add_nvcc_flag_if_supported(GMX_CUDA_NVCC_GENCODE_FLAGS NVCC_HAS_GENCODE_COMPUTE_53 --generate-code=arch=compute_53,code=sm_53)
-    gmx_add_nvcc_flag_if_supported(GMX_CUDA_NVCC_GENCODE_FLAGS NVCC_HAS_GENCODE_COMPUTE_90 --generate-code=arch=compute_90,code=sm_90)
+    gmx_add_nvcc_flag_if_supported(GMX_CUDA_NVCC_GENCODE_FLAGS NVCC_HAS_GENCODE_COMPUTE_53 --generate-code=arch=compute_53,code=compute_53)
+    gmx_add_nvcc_flag_if_supported(GMX_CUDA_NVCC_GENCODE_FLAGS NVCC_HAS_GENCODE_COMPUTE_90 --generate-code=arch=compute_90,code=compute_90)
 endif()
 
 if (GMX_CUDA_TARGET_SM)

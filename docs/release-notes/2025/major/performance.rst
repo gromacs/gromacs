@@ -31,3 +31,15 @@ GPU buffer operations enabled by default
 
 This is generally faster on modern GPUs, but, for very small systems, this can worsen performance by a few percent.
 In this case, the old behavior can be restored by setting ``GMX_GPU_DISABLE_BUFFER_OPS=1`` environment variable.
+
+NVSHMEM enabled PP Halo Exchange of Forces and Coordinates
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Introduced pack/unpack kernels fused with data transfers enabled via NVSHMEM for particle-particle (PP) halo exchange,
+optimizing performance for all simulation input types. This feature enhances scalability
+by leveraging NVSHMEM's low-overhead, asynchronous communication capabilities and is supported on NVIDIA Volta and newer
+architectures. Using this functionality requires NVSHMEM to be enabled at build-time (``-DGMX_NVSHMEM=ON``) as well as explicitly
+requested at runtime with the ``GMX_ENABLE_NVSHMEM=1`` environment variable. It should be noted that this is an early implementation,
+and performance improvements for this feature are planned for a future release.
+
+:issue:`5103`

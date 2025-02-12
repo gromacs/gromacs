@@ -355,6 +355,23 @@ at runtime (although such cases still lack substantial
 testing, so we urge the user to carefully check correctness of results
 against those using default build options, and report any issues).
 
+NVSHMEM Support for GPU kernel-initiated communication
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In simulations using multiple GPUs, `NVSHMEM <https://developer.nvidia.com/nvshmem>`_ provides
+a programming interface that allows GPU-initiated direct communication between distinct GPU memory spaces.
+This approach leverages NVSHMEM's global address space, often resulting in higher bandwidth and lower latency
+communication.
+
+Support for this feature in |Gromacs| is currently enabled by building with NVSHMEM support (``GMX_NVSHMEM=ON``) and
+specifying the NVSHMEM root directory (``NVSHMEM_ROOT=<Path-to-NVSHMEM-Lib-Root-dir>``). This setup targets NVIDIA
+GPUs and utilizes the NVSHMEM library for efficient inter-GPU data transfers. It should be noted that the NVSHMEM build
+is not compatible with cuFFTMp, an issue that may be resolved in a future release.
+
+This is an experimental feature. The current implementation performs well for small system sizes (up to 300,000 particles).
+Performance improvements are planned for future releases, where we expect the NVSHMEM-based implementation to be faster across
+all input sizes compared to MPI.
+
 CMake
 ^^^^^
 
@@ -1736,9 +1753,13 @@ quadrant clustering mode).
 NVIDIA Grace
 ^^^^^^^^^^^^
 
-Summary: For best performance on Grace, run with GNU >= 13.1 
-and choose the ``-DCMAKE_CXX_FLAGS=-mcpu=neoverse-v2 
--DCMAKE_C_FLAGS=-mcpu=neoverse-v2 -DGMX_SIMD=ARM_NEON_ASIMD`` CMake options.
+For best performance on Grace, use GCC >= 13.1 or LLVM >= 17, and set the 
+``-DCMAKE_CXX_FLAGS=-mcpu=neoverse-v2 -DCMAKE_C_FLAGS=-mcpu=neoverse-v2``
+flags when configuring |Gromacs|.
+
+With short-range non-bonded interactions calculations on the CPU (``-nb cpu`` or
+when building without GPU support), performance can be improved by also setting
+the ``-DGMX_SIMD=ARM_NEON_ASIMD`` CMake option.
 
 At minimum any compiler being used for Grace should implement
 neoverse-v2, such as GNU >= 12.3 and LLVM >= 16. There is a significant 
@@ -1746,13 +1767,14 @@ improvement in Arm performance between gcc-13 and gcc-12 so
 GNU >= 13.1 is strongly recommended. The ``-mcpu=neoverse-v2`` flag 
 ensures that the compiler is not defaulting to the older Armv8-A target.
 
-On both GNU and LLVM, the |Gromacs| version implemented with ``NEON SIMD`` 
-instructions significantly outperforms the SVE version. This can be selected 
-by setting ``GMX_SIMD=ARM_NEON_ASIMD`` at compilation.
+On both GNU and LLVM, the |Gromacs| CPU version of the short-range non
+bonded interactions implemented with ``NEON SIMD`` instructions 
+significantly outperforms the SVE version. This can be selected by setting 
+``GMX_SIMD=ARM_NEON_ASIMD`` at compilation. There can be a small performance
+benefit to using SVE for CPU work outside this kernel, therefore when the
+short-range non bonded interactions run on the GPU it is recommended to stay 
+with ``GMX_SIMD=ARM_SVE`` which is the default option when available.
 
-These Grace specific config optimisations are most important when running in 
-CPU only mode, where much of the run time is spent in code which is sensitive to 
-SIMD performance.
 
 Tested platforms
 ----------------
