@@ -64,7 +64,7 @@ endif()
 
 # The GROMACS convention is that these are the version number of the next
 # release that is going to be made from this branch.
-project(Gromacs VERSION 2025.0)
+project(Gromacs VERSION 2025.1)
 
 if(NOT CMAKE_CXX_STANDARD)
     set(CMAKE_CXX_STANDARD 17)
