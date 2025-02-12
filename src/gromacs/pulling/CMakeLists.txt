@@ -76,15 +76,6 @@ if (GMX_OPENMP)
     target_link_libraries(pulling PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
-# TODO: when pulling is an OBJECT target
-#target_link_libraries(pulling PUBLIC legacy_api)
-#target_link_libraries(pulling PRIVATE common)
-
-# Source files have the following private module dependencies.
-#target_link_libraries(pulling PRIVATE NOTHING)
-# TODO: Explicitly link specific modules.
-#target_link_libraries(pulling PRIVATE legacy_modules)
-
 if (BUILD_TESTING)
     add_subdirectory(tests)
 endif()
