@@ -54,7 +54,6 @@ target_link_libraries(pulling PRIVATE
                       legacy_modules
         math
         utility
-        muparser
         linearalgebra
         timing
         topology
@@ -62,7 +61,7 @@ target_link_libraries(pulling PRIVATE
 )
 
 # pulling needs muparser defines 
-target_link_libraries(pulling INTERFACE muparser::muparser)
+target_link_libraries(pulling PUBLIC muparser::muparser)
 
 # Public interface for modules, including dependencies and interfaces
 target_include_directories(pulling PUBLIC

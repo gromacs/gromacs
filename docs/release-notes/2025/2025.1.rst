@@ -22,5 +22,13 @@ Fixes for ``gmx`` tools
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Improve handling of external muParser
+"""""""""""""""""""""""""""""""""""""
+
+When building with ``-DGMX_USE_MUPARSER=EXTERNAL``, |Gromacs| 2025.0 suffered linking
+or "missing header" problems. This should now be fixed.
+
+:issue:`5290`
+
 Miscellaneous
 ^^^^^^^^^^^^^
