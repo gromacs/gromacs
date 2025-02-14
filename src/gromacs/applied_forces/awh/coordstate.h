@@ -91,7 +91,6 @@ public:
      * \param[in] step                Step number, needed for the random number generator.
      * \param[in] seed                Random seed.
      * \param[in] indexSeed           Second random seed, should be the bias Index.
-     * \returns the index of the sampled point.
      */
     void sampleUmbrellaGridpoint(const BiasGrid&             grid,
                                  int                         gridpointIndex,

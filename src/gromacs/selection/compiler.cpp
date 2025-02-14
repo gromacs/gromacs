@@ -1713,7 +1713,6 @@ static void make_static(const SelectionTreeElementPointer& sel)
  * \param[in]     data Evaluation data.
  * \param[in,out] sel Selection to process.
  * \param[in]     g   The evaluation group.
- * \returns       0 on success, a non-zero error code on error.
  */
 static void process_const(gmx_sel_evaluate_t* data, const SelectionTreeElementPointer& sel, gmx_ana_index_t* g)
 {
@@ -1766,7 +1765,6 @@ static void store_param_val(const SelectionTreeElementPointer& sel)
  * \param[in,out] sel Selection element to process.
  * \param[in]     top Topology structure.
  * \param[in]     isize Size of the evaluation group for the element.
- * \returns       0 on success, a non-zero error code on return.
  *
  * Calls sel_initfunc() (and possibly sel_outinitfunc()) to initialize the
  * method.
@@ -1845,7 +1843,6 @@ static void init_method(const SelectionTreeElementPointer& sel, const gmx_mtop_t
  * \param[in,out] sel Boolean selection element whose children should be
  *   processed.
  * \param[in]     g   The evaluation group.
- * \returns       0 on success, a non-zero error code on error.
  *
  * reorder_item_static_children() should have been called.
  */
@@ -2029,7 +2026,6 @@ static void evaluate_boolean_minmax_grps(const SelectionTreeElementPointer& sel,
  * \param[in]     data Evaluation data.
  * \param[in,out] sel  Selection currently being evaluated.
  * \param[in]     g    Group for which \p sel should be evaluated.
- * \returns       0 on success, a non-zero error code on error.
  *
  * This function is used as the replacement for the
  * gmx::SelectionTreeElement::evaluate function pointer.

@@ -120,7 +120,9 @@ t_cluster_ndx cluster_index(FILE* fplog, const char* ndx);
  * \param[in] outf         Name of file to write to
  * \param[in] indexGroups  The index groups to write
  * \param[in] duplicate    Whether to write a duplicate of the groups after the normal groups, with
- * indices offset by \p numAtoms \param[in] numAtoms     The offset used with \p duplicate == true
+ *                         indices offset by \p numAtoms
+ * \param[in] numAtoms     The offset used with \p duplicate == true
+ *
  */
 void write_index(const char* outf, gmx::ArrayRef<const IndexGroup> indexGroups, bool duplicate, int numAtoms);
 

@@ -114,7 +114,6 @@ static void init_kwint(const gmx_mtop_t* top, int npar, gmx_ana_selparam_t* para
  * \param[in] npar  Not used (should be 2).
  * \param[in] param Method parameters (should point to \ref smparams_keyword_real).
  * \param[in] data  Should point to \ref t_methoddata_kwreal.
- * \returns   0 (the initialization always succeeds).
  */
 static void init_kwreal(const gmx_mtop_t* top, int npar, gmx_ana_selparam_t* param, void* data);
 /*! \brief
@@ -354,7 +353,6 @@ gmx_ana_selmethod_t sm_keyword_str = {
  * \param[in] npar  Not used.
  * \param[in] param Not used.
  * \param[in] data  Should point to \ref t_methoddata_kweval.
- * \returns   0 on success, a non-zero error code on return.
  *
  * Calls the initialization method of the wrapped keyword.
  */
@@ -365,7 +363,6 @@ static void init_kweval(const gmx_mtop_t* top, int npar, gmx_ana_selparam_t* par
  * \param[in]     top   Not used.
  * \param[in,out] out   Pointer to output data structure.
  * \param[in,out] data  Should point to \c t_methoddata_kweval.
- * \returns       0 for success.
  */
 static void init_output_kweval(const gmx_mtop_t* top, gmx_ana_selvalue_t* out, void* data);
 /** Frees the data allocated for keyword evaluation in an arbitrary group. */

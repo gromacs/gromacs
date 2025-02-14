@@ -415,7 +415,6 @@ SelectionEvaluator::SelectionEvaluator() {}
  * \param[in,out] coll  The selection collection to evaluate.
  * \param[in] fr  Frame for which the evaluation should be carried out.
  * \param[in] pbc PBC data, or NULL if no PBC should be used.
- * \returns   0 on successful evaluation, a non-zero error code on error.
  *
  * This functions sets the global variables for topology, frame and PBC,
  * clears some information in the selection to initialize the evaluation
@@ -491,7 +490,6 @@ void SelectionEvaluator::evaluateFinal(SelectionCollection* coll, int nframes)
  * \param[in] data Data for the current frame.
  * \param[in] sel  Selection element being evaluated.
  * \param[in] g    Group for which \p sel should be evaluated.
- * \returns   0 on success, a non-zero error code on error.
  *
  * Evaluates each child of \p sel in \p g.
  */
@@ -548,7 +546,6 @@ void _gmx_sel_evaluate_static(gmx_sel_evaluate_t* /* data */,
  * \param[in] data Data for the current frame.
  * \param[in] sel  Selection element being evaluated.
  * \param[in] g    Group for which \p sel should be evaluated.
- * \returns   0 on success, a non-zero error code on error.
  *
  * Evaluates the child element (there should be exactly one) in \p g.
  * The compiler has taken care that the child actually stores the evaluated
@@ -573,7 +570,6 @@ void _gmx_sel_evaluate_subexpr_simple(gmx_sel_evaluate_t*                     da
  * \param[in] data Data for the current frame.
  * \param[in] sel  Selection element being evaluated.
  * \param[in] g    Group for which \p sel should be evaluated.
- * \returns   0 on success, a non-zero error code on error.
  *
  * If this is the first call for this frame, evaluates the child element
  * there should be exactly one in \p g.
@@ -608,7 +604,6 @@ void _gmx_sel_evaluate_subexpr_staticeval(gmx_sel_evaluate_t*                   
  * \param[in]  data  Data for the current frame.
  * \param[in]  sel   Selection element being evaluated.
  * \param[in]  g     Group for which \p sel should be evaluated.
- * \returns    0 on success, a non-zero error code on error.
  *
  * Finds the part of \p g for which the subexpression
  * has not yet been evaluated by comparing \p g to \p sel->u.cgrp.
@@ -726,7 +721,6 @@ void _gmx_sel_evaluate_subexpr(gmx_sel_evaluate_t*                     data,
  * \param[in] data Data for the current frame.
  * \param[in] sel Selection element being evaluated.
  * \param[in] g   Group for which \p sel should be evaluated.
- * \returns   0 for success.
  *
  * Sets the value pointers of the child and its child to point to the same
  * memory as the value pointer of this element to avoid copying, and then
@@ -761,7 +755,6 @@ void _gmx_sel_evaluate_subexprref_simple(gmx_sel_evaluate_t*                    
  * \param[in] data Data for the current frame.
  * \param[in] sel Selection element being evaluated.
  * \param[in] g   Group for which \p sel should be evaluated.
- * \returns   0 on success, a non-zero error code on error.
  *
  * If the value type is \ref POS_VALUE, the value of the child is simply
  * copied to set the value of \p sel (the child subexpression should
@@ -889,7 +882,6 @@ void _gmx_sel_evaluate_subexprref(gmx_sel_evaluate_t*                     data,
  * \param[in] data Data for the current frame.
  * \param[in] sel Selection element being evaluated.
  * \param[in] g   Group for which \p sel should be evaluated.
- * \returns   0 on success, a non-zero error code on error.
  *
  * Evaluates each child of a \ref SEL_EXPRESSION element.
  * The value of \p sel is not touched.
@@ -924,7 +916,6 @@ void _gmx_sel_evaluate_method_params(gmx_sel_evaluate_t*                     dat
  * \param[in] data Data for the current frame.
  * \param[in] sel Selection element being evaluated.
  * \param[in] g   Group for which \p sel should be evaluated.
- * \returns   0 on success, a non-zero error code on error.
  *
  * Evaluates all child selections (using _gmx_sel_evaluate_method_params())
  * to evaluate any parameter values.
@@ -974,7 +965,6 @@ void _gmx_sel_evaluate_method(gmx_sel_evaluate_t*                     data,
  * \param[in] data Data for the current frame.
  * \param[in] sel Selection element being evaluated.
  * \param[in] g   Group for which \p sel should be evaluated.
- * \returns   0 on success, a non-zero error code on error.
  *
  * Evaluates all child selections (using _gmx_sel_evaluate_method_params())
  * to evaluate any parameter values.
@@ -1012,7 +1002,6 @@ void _gmx_sel_evaluate_modifier(gmx_sel_evaluate_t*                     data,
  * \param[in] data Data for the current frame.
  * \param[in] sel Selection element being evaluated.
  * \param[in] g   Group for which \p sel should be evaluated.
- * \returns   0 on success, a non-zero error code on error.
  *
  * Evaluates the child element (there should be only one) in the group
  * \p g, and then sets the value of \p sel to the complement of the
@@ -1034,7 +1023,6 @@ void _gmx_sel_evaluate_not(gmx_sel_evaluate_t*                     data,
  * \param[in] data Data for the current frame.
  * \param[in] sel Selection element being evaluated.
  * \param[in] g   Group for which \p sel should be evaluated.
- * \returns   0 on success, a non-zero error code on error.
  *
  * Short-circuiting evaluation of logical AND expressions.
  *
@@ -1085,7 +1073,6 @@ void _gmx_sel_evaluate_and(gmx_sel_evaluate_t*                     data,
  * \param[in] data Data for the current frame.
  * \param[in] sel Selection element being evaluated.
  * \param[in] g   Group for which \p sel should be evaluated.
- * \returns   0 on success, a non-zero error code on error.
  *
  * Short-circuiting evaluation of logical OR expressions.
  *
@@ -1149,7 +1136,6 @@ void _gmx_sel_evaluate_or(gmx_sel_evaluate_t*                     data,
  * \param[in] data Data for the current frame.
  * \param[in] sel  Selection element being evaluated.
  * \param[in] g    Group for which \p sel should be evaluated.
- * \returns   0 on success, a non-zero error code on error.
  */
 void _gmx_sel_evaluate_arithmetic(gmx_sel_evaluate_t*                     data,
                                   const gmx::SelectionTreeElementPointer& sel,

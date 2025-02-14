@@ -905,7 +905,6 @@ static void parse_values_bool(const std::string&              name,
  * \param[in] values List of values.
  * \param     param  Parameter to parse.
  * \param[in] scanner Scanner data structure.
- * \returns   true if the values were parsed successfully, false otherwise.
  */
 static void parse_values_enum(const SelectionParserValueList& values, gmx_ana_selparam_t* param, void* scanner)
 {

@@ -60,8 +60,6 @@ static constexpr unsigned sc_superClInteractionMask(const PairlistType layoutTyp
     return ((1U << sc_gpuClusterPerSuperCluster(layoutType)) - 1U);
 }
 
-/*! \endcond */
-
 /*! \brief Explicit uniform load across the warp
  *
  *  Uses the readfirstlane intrinsic to ensure that uniform loads use

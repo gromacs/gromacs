@@ -123,7 +123,6 @@ static void* init_data_same(int npar, gmx_ana_selparam_t* param);
  * \param   param Initialized method parameters (should point to a copy of
  *      ::smparams_same_int or ::smparams_same_str).
  * \param   data  Pointer to \ref t_methoddata_same to initialize.
- * \returns 0 on success, -1 on failure.
  */
 static void init_same(const gmx_mtop_t* top, int npar, gmx_ana_selparam_t* param, void* data);
 /** Frees the data allocated for the \p same selection method. */

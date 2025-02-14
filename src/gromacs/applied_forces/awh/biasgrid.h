@@ -276,8 +276,6 @@ private:
     std::vector<GridAxis>  axis_;  /**< Axes, one for each dimension. */
 };
 
-/*! \endcond */
-
 /*! \brief Convert a multidimensional grid point index to a linear one.
  *
  * \param[in] grid        The grid.

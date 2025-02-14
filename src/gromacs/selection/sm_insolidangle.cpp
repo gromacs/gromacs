@@ -256,7 +256,6 @@ static void* init_data_insolidangle(int npar, gmx_ana_selparam_t* param);
  * \param   npar Not used.
  * \param   param Not used.
  * \param   data Pointer to \ref t_methoddata_insolidangle to initialize.
- * \returns 0 on success, -1 on failure.
  *
  * Converts t_methoddata_insolidangle::angcut to radians and allocates
  * and allocates memory for the bins used during the evaluation.

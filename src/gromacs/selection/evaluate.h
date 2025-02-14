@@ -103,7 +103,6 @@ void _gmx_sel_evaluate_method_params(gmx_sel_evaluate_t*                     dat
  * \param[in] sel Selection element being evaluated.
  * \param[in] g   Group for which \p sel should be evaluated
  *   (not used, can be NULL).
- * \returns   0 on success, a non-zero error code on error.
  *
  * Evaluates the first child element in the group defined by \p sel->u.cgrp.
  * If \p sel->u.cgrp is empty, nothing is done.
@@ -122,7 +121,6 @@ void _gmx_sel_evaluate_root(gmx_sel_evaluate_t*                     data,
  * \param[in] data Data for the current frame.
  * \param[in] sel Selection element being evaluated.
  * \param[in] g   Group for which \p sel should be evaluated.
- * \returns   0 for success.
  *
  * Sets the value of \p sel to the intersection of \p g and \p sel->u.cgrp.
  *

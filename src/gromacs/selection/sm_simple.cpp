@@ -91,9 +91,7 @@ static void evaluate_resindex(const gmx::SelMethodEvalContext& context,
  * \param     npar Not used.
  * \param     param Not used.
  * \param     data Not used.
- * \returns   0 if molecule info is present in the topology, -1 otherwise.
- *
- * If molecule information is not found, also prints an error message.
+ * \throws    If molecule information is not found, throw \c InconsistentInputError.
  */
 static void check_molecules(const gmx_mtop_t* top, int npar, gmx_ana_selparam_t* param, void* data);
 /** Evaluates the \p molindex selection keyword. */
@@ -161,9 +159,8 @@ static void evaluate_charge(const gmx::SelMethodEvalContext& context,
  * \param     npar Not used.
  * \param     param Not used.
  * \param     data Not used.
- * \returns   0 if PDB info is present in the topology, -1 otherwise.
  *
- * If PDB info is not found, also prints an error message.
+ * \throws InconsistentInputError if PDB info is not found
  */
 static void check_pdbinfo(const gmx_mtop_t* top, int npar, gmx_ana_selparam_t* param, void* data);
 /** Evaluates the \p altloc selection keyword. */

@@ -91,7 +91,6 @@ static void* init_data_permute(int npar, gmx_ana_selparam_t* param);
  * \param[in] npar  Not used (should be 2).
  * \param[in] param Method parameters (should point to \ref smparams_permute).
  * \param[in] data  Should point to a \p t_methoddata_permute.
- * \returns   0 if the input permutation is valid, -1 on error.
  */
 static void init_permute(const gmx_mtop_t* top, int npar, gmx_ana_selparam_t* param, void* data);
 /*! \brief

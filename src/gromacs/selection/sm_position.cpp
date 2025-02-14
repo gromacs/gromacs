@@ -88,7 +88,6 @@ static void set_poscoll_pos(gmx::PositionCalculationCollection* pcc, void* data)
  * \param[in] npar  Not used.
  * \param[in] param Not used.
  * \param[in,out] data  Should point to \c t_methoddata_pos.
- * \returns       0 on success, a non-zero error code on error.
  *
  * The \c t_methoddata_pos::type field should have been initialized
  * externally using _gmx_selelem_set_kwpos_type().
@@ -101,7 +100,6 @@ static void init_kwpos(const gmx_mtop_t* top, int npar, gmx_ana_selparam_t* para
  * \param[in]     npar  Not used.
  * \param[in]     param Not used.
  * \param[in,out] data  Should point to \c t_methoddata_pos.
- * \returns       0 on success, a non-zero error code on error.
  */
 static void init_cog(const gmx_mtop_t* top, int npar, gmx_ana_selparam_t* param, void* data);
 /*! \brief
@@ -111,7 +109,6 @@ static void init_cog(const gmx_mtop_t* top, int npar, gmx_ana_selparam_t* param,
  * \param[in]     npar  Not used.
  * \param[in]     param Not used.
  * \param[in,out] data  Should point to \c t_methoddata_pos.
- * \returns       0 on success, a non-zero error code on error.
  */
 static void init_com(const gmx_mtop_t* top, int npar, gmx_ana_selparam_t* param, void* data);
 /*! \brief
@@ -120,7 +117,6 @@ static void init_com(const gmx_mtop_t* top, int npar, gmx_ana_selparam_t* param,
  * \param[in]     top   Topology data structure.
  * \param[in,out] out   Pointer to output data structure.
  * \param[in,out] data  Should point to \c t_methoddata_pos.
- * \returns       0 for success.
  */
 static void init_output_pos(const gmx_mtop_t* top, gmx_ana_selvalue_t* out, void* data);
 /** Frees the data allocated for position evaluation selection methods. */

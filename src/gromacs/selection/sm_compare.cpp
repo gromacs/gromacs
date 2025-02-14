@@ -127,7 +127,6 @@ static void* init_data_compare(int npar, gmx_ana_selparam_t* param);
  * \param[in] npar  Not used (should be 5).
  * \param[in] param Method parameters (should point to \ref smparams_compare).
  * \param[in] data  Should point to a \c t_methoddata_compare.
- * \returns   0 if the input data is valid, -1 on error.
  */
 static void init_compare(const gmx_mtop_t* top, int npar, gmx_ana_selparam_t* param, void* data);
 /** Frees the memory allocated for comparison expression evaluation. */
@@ -366,7 +365,6 @@ static void convert_int_real(int n, t_compare_value* val)
  * \param[in]     cmpt   Comparison operator type.
  * \param[in]     bRight true if \p val appears on the right hand size of
  *   \p cmpt.
- * \returns       0 on success, EINVAL on error.
  *
  * The values are rounded such that the same comparison operator can be used.
  */
