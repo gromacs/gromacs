@@ -216,7 +216,7 @@ TEST_F(NNPotOptionsTest, InternalsToKvtAndBack)
 
     // Copy internal parameters
     const NNPotParameters& params           = nnpotOptions_.parameters();
-    auto                   inpIndicesBefore = params.inpIndices_;
+    auto                   nnpIndicesBefore = params.nnpIndices_;
     auto                   mmIndicesBefore  = params.mmIndices_;
 
     KeyValueTreeBuilder builder;
@@ -229,7 +229,7 @@ TEST_F(NNPotOptionsTest, InternalsToKvtAndBack)
 
         // Check Internal parameters taken back from KVT
         const NNPotParameters& params2 = nnpotOptions_.parameters();
-        EXPECT_EQ(inpIndicesBefore, params2.inpIndices_);
+        EXPECT_EQ(nnpIndicesBefore, params2.nnpIndices_);
         EXPECT_EQ(mmIndicesBefore, params2.mmIndices_);
     }
     else

@@ -83,9 +83,9 @@ struct NNPotParameters
     //! stores atom group name for neural network input (default whole System)
     std::string inputGroup_ = "System";
     //! Indices of the atoms that are part of the NN input region (default whole System)
-    std::vector<Index> inpIndices_;
+    std::vector<Index> nnpIndices_;
     //! Local set of atoms that are part of the NN input region
-    std::unique_ptr<LocalAtomSet> inpAtoms_;
+    std::unique_ptr<LocalAtomSet> nnpAtoms_;
 
     //! Indices of the atoms that are part of the MM region (default no MM atoms)
     std::vector<Index> mmIndices_;

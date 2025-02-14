@@ -126,9 +126,9 @@ public:
         params_.cr_            = &cr_;
         params_.modelInput_    = { "atom-positions", "atom-numbers", "box", "pbc" };
 
-        std::vector<gmx::Index> inpIndices = { 0, 1, 2, 3, 4, 5 };
-        LocalAtomSet            set = atomSetManager_.add(ArrayRef<const gmx::Index>(inpIndices));
-        params_.inpAtoms_           = std::make_unique<LocalAtomSet>(set);
+        std::vector<gmx::Index> nnpIndices = { 0, 1, 2, 3, 4, 5 };
+        LocalAtomSet            set = atomSetManager_.add(ArrayRef<const gmx::Index>(nnpIndices));
+        params_.nnpAtoms_           = std::make_unique<LocalAtomSet>(set);
         params_.pbcType_            = std::make_unique<PbcType>(pbcType_);
     }
 

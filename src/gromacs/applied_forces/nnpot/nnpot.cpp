@@ -142,7 +142,7 @@ public:
         // constructing local atom sets during simulation setup
         const auto setLocalAtomSetFunction = [this](LocalAtomSetManager* localAtomSetManager)
         {
-            LocalAtomSet atomSet1 = localAtomSetManager->add(nnpotOptions_.parameters().inpIndices_);
+            LocalAtomSet atomSet1 = localAtomSetManager->add(nnpotOptions_.parameters().nnpIndices_);
             nnpotOptions_.setLocalInputAtomSet(atomSet1);
             LocalAtomSet atomSet2 = localAtomSetManager->add(nnpotOptions_.parameters().mmIndices_);
             nnpotOptions_.setLocalMMAtomSet(atomSet2);

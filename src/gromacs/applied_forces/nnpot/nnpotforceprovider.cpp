@@ -147,10 +147,10 @@ void NNPotForceProvider::gatherAtomNumbersIndices()
     atomNumbers_.assign(params_.numAtoms_, 0);
 
     int lIdx, gIdx;
-    for (size_t i = 0; i < params_.inpAtoms_->numAtomsLocal(); i++)
+    for (size_t i = 0; i < params_.nnpAtoms_->numAtomsLocal(); i++)
     {
-        lIdx = params_.inpAtoms_->localIndex()[i];
-        gIdx = params_.inpAtoms_->globalIndex()[params_.inpAtoms_->collectiveIndex()[i]];
+        lIdx = params_.nnpAtoms_->localIndex()[i];
+        gIdx = params_.nnpAtoms_->globalIndex()[params_.nnpAtoms_->collectiveIndex()[i]];
         // TODO: make sure that atom number indexing is correct
         atomNumbers_[gIdx] = params_.atoms_.atom[gIdx].atomnumber;
         idxLookup_[gIdx]   = lIdx;

@@ -160,10 +160,10 @@ void NNPotOptions::setInputGroupIndices(const IndexGroupsAndNames& indexGroupsAn
     }
 
     // Create input index
-    params_.inpIndices_ = indexGroupsAndNames.indices(params_.inputGroup_);
+    params_.nnpIndices_ = indexGroupsAndNames.indices(params_.inputGroup_);
 
     // Check that group is not empty
-    if (params_.inpIndices_.empty())
+    if (params_.nnpIndices_.empty())
     {
         GMX_THROW(InconsistentInputError(
                 formatString("Group %s defining NN potential input atoms should not be empty.",
@@ -173,25 +173,25 @@ void NNPotOptions::setInputGroupIndices(const IndexGroupsAndNames& indexGroupsAn
     // Create temporary index for the whole System
     auto systemIndices = indexGroupsAndNames.indices("System");
 
-    // Sort inpIndices_ and sysIndices_
-    std::sort(params_.inpIndices_.begin(), params_.inpIndices_.end());
+    // Sort nnpIndices_ and sysIndices_
+    std::sort(params_.nnpIndices_.begin(), params_.nnpIndices_.end());
     std::sort(systemIndices.begin(), systemIndices.end());
 
     // Create MM index
     params_.mmIndices_.reserve(systemIndices.size());
 
-    // Position in inpIndices_
+    // Position in nnpIndices_
     size_t j = 0;
     // Write to mmIndices_ only the atoms which do not belong to NNP input region
     for (size_t i = 0; i < systemIndices.size(); i++)
     {
-        if (systemIndices[i] != params_.inpIndices_[j])
+        if (systemIndices[i] != params_.nnpIndices_[j])
         {
             params_.mmIndices_.push_back(systemIndices[i]);
         }
         else
         {
-            if (j < params_.inpIndices_.size() - 1)
+            if (j < params_.nnpIndices_.size() - 1)
             {
                 j++;
             }
@@ -201,7 +201,7 @@ void NNPotOptions::setInputGroupIndices(const IndexGroupsAndNames& indexGroupsAn
 
 void NNPotOptions::setLocalInputAtomSet(const LocalAtomSet& localInputAtomSet)
 {
-    params_.inpAtoms_ = std::make_unique<LocalAtomSet>(localInputAtomSet);
+    params_.nnpAtoms_ = std::make_unique<LocalAtomSet>(localInputAtomSet);
 }
 
 void NNPotOptions::setLocalMMAtomSet(const LocalAtomSet& localMMAtomSet)
@@ -219,7 +219,7 @@ void NNPotOptions::modifyTopology(gmx_mtop_t* top)
 
     // subclassing the qmmm topology preprocessor as it has virtually the exact functionality we need
     //! \todo separate this from QMMM module as its reused in multiple places now
-    NNPotTopologyPreprocessor topPrep(params_.inpIndices_);
+    NNPotTopologyPreprocessor topPrep(params_.nnpIndices_);
     topPrep.preprocess(top);
 
     // Get info about modifications
@@ -295,7 +295,7 @@ void NNPotOptions::writeParamsToKvt(KeyValueTreeObjectBuilder treeBuilder)
     // Write input atom indices
     auto GroupIndexAdder =
             treeBuilder.addUniformArray<std::int64_t>(c_nnpotModuleName + "-" + c_inputGroupTag_);
-    for (const auto& indexValue : params_.inpIndices_)
+    for (const auto& indexValue : params_.nnpIndices_)
     {
         GroupIndexAdder.addValue(indexValue);
     }
@@ -328,10 +328,10 @@ void NNPotOptions::readParamsFromKvt(const KeyValueTreeObject& tree)
                 "This could be caused by incompatible or corrupted tpr input file."));
     }
     auto kvtIndexArray = tree[key].asArray().values();
-    params_.inpIndices_.resize(kvtIndexArray.size());
+    params_.nnpIndices_.resize(kvtIndexArray.size());
     std::transform(std::begin(kvtIndexArray),
                    std::end(kvtIndexArray),
-                   std::begin(params_.inpIndices_),
+                   std::begin(params_.nnpIndices_),
                    [](const KeyValueTreeValue& val) { return val.cast<std::int64_t>(); });
 
     // Try to read MM atoms index
