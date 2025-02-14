@@ -42,6 +42,10 @@
  * \ingroup module_awh
  */
 
+/*!
+ * \defgroup module_applied_forces Module Applied Forces
+ * \brief A brief description for Module Applied Forces
+ */
 #include "gmxpre.h"
 
 #include "awh.h"

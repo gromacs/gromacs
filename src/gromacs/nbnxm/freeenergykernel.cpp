@@ -31,6 +31,10 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
+/*!
+ * \defgroup module_gmxlib_nonbonded Module Gmxlib Nonbonded
+ * \brief A brief description for Module Gmxlib Nonbonded
+ */
 #include "gmxpre.h"
 
 #include "freeenergykernel.h"

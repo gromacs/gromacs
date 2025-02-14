@@ -31,7 +31,10 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
-
+/*!
+ * \defgroup module_mdlib Module MdLib
+ * \brief A brief description for Module MdLib
+ */
 #include "gmxpre.h"
 
 #include "md_support.h"

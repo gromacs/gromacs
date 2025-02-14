@@ -31,6 +31,10 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
+/*!
+ * \defgroup module_compat Module Compat
+ * \brief AA brief description for Module Compat
+ */
 #include "gmxpre.h"
 
 #include "gromacs/compat/mp11.h"

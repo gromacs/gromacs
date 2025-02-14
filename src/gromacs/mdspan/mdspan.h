@@ -75,6 +75,7 @@
  * Questions? Contact Christian R. Trott (crtrott@sandia.gov)
  */
 /*! \libinternal \file
+ *
  * \brief Declares gmx::mdspan
  *
  * \author Christian Trott <crtrott@sandia.gov>
@@ -84,6 +85,11 @@
  * \author Christian Blau <cblau@gwdg.de>
  * \inlibraryapi
  * \ingroup mdspan
+ */
+
+/*!
+ * \defgroup module_mdtypes Module MDTypes
+ * \brief A brief description for Module MDTypes
  */
 #ifndef MDSPAN_MDSPAN_H
 #define MDSPAN_MDSPAN_H

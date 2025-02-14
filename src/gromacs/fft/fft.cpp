@@ -31,6 +31,11 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
+/*!
+ * \defgroup module_fft Module FFT
+ * \brief A brief description for Module FFT
+ */
+
 #include "gmxpre.h"
 
 #include "fft.h"

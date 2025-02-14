@@ -83,6 +83,11 @@
    1999-05-03 lpd Original version.
  */
 
+/*!
+ * \defgroup module_fileio Module FileIO
+ * \brief A brief description for Module FileIO
+ */
+
 #ifndef GMX_md5_INCLUDED
 #define GMX_md5_INCLUDED
 

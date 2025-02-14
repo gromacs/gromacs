@@ -31,6 +31,10 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
+/*!
+ * \defgroup module_preprocessing Module Preprocessing
+ * \brief A brief description for Module Preprocessing
+ */
 #include "gmxpre.h"
 
 #include "gpp_atomtype.h"

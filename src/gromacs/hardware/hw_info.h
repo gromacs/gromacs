@@ -31,6 +31,10 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
+/*!
+ * \defgroup module_hardware Module Hardware
+ * \brief A brief description for Module Hardware
+ */
 #ifndef GMX_HARDWARE_HWINFO_H
 #define GMX_HARDWARE_HWINFO_H
 

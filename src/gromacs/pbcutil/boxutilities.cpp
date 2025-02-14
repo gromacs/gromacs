@@ -37,6 +37,10 @@
  *
  * Utility functions for handling boxes.
  */
+/*!
+ * \defgroup module_pbcutil Module PBCUutil
+ * \brief A brief description for Module PBCUutil
+ */
 #include "gmxpre.h"
 
 #include "gromacs/pbcutil/boxutilities.h"

@@ -53,7 +53,7 @@
  * After that ThreadedForceBuffer.reduce() is called for thread-parallel reduction.
  *
  * \author Berk Hess <hess@kth.se>
- * \ingroup mdtypes
+ * \ingroup module_mdtypes
  */
 #ifndef GMX_MDTYPES_THREADED_FORCE_BUFFER_H
 #define GMX_MDTYPES_THREADED_FORCE_BUFFER_H
