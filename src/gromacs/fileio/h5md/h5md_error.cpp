@@ -74,6 +74,11 @@ void throwUponH5mdError(const bool errorExists, const std::string& message)
     }
 }
 
+void throwUponInvalidHid(const hid_t id, const std::string& message)
+{
+    throwUponH5mdError(id == H5I_INVALID_HID, message);
+}
+
 } // namespace gmx
 
 CLANG_DIAGNOSTIC_RESET

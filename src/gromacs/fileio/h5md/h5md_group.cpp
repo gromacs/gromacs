@@ -57,14 +57,13 @@ hid_t createGroup(const hid_t container, const char* name)
 {
     // create group creation property list
     const auto [propertyList, listGuard] = makeH5mdPropertyListGuard(H5Pcreate(H5P_LINK_CREATE));
-    throwUponH5mdError(propertyList == H5I_INVALID_HID,
-                       "Cannot create propertyList when creating group.");
+    throwUponInvalidHid(propertyList, "Cannot create propertyList when creating group.");
 
     // Set the option to create intermediate groups if they are missing.
     H5Pset_create_intermediate_group(propertyList, 1);
 
     hid_t group = H5Gcreate(container, name, propertyList, H5P_DEFAULT, H5P_DEFAULT);
-    throwUponH5mdError(group == H5I_INVALID_HID, "Cannot create group.");
+    throwUponInvalidHid(group, "Cannot create group.");
 
     return group;
 }

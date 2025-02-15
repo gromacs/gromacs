@@ -82,7 +82,7 @@ H5md::H5md(const std::filesystem::path& fileName, const H5mdFileMode mode)
             break;
         default: throw NotImplementedError("Appending to H5MD is not implemented yet.");
     }
-    gmx::throwUponH5mdError(file_ == H5I_INVALID_HID, "Cannot open H5MD file.");
+    gmx::throwUponInvalidHid(file_, "Cannot open H5MD file.");
 
     filemode_ = mode;
 

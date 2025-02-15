@@ -41,6 +41,8 @@
 #ifndef GMX_FILEIO_H5MD_ERROR_H
 #define GMX_FILEIO_H5MD_ERROR_H
 
+#include <hdf5.h>
+
 #include <string>
 
 namespace gmx
@@ -61,6 +63,13 @@ void printHdf5ErrorsDebug();
  * \param[in] message The message to throw.
  */
 void throwUponH5mdError(const bool errorExists, const std::string& message);
+
+/*! \brief Throw a gmx::FileIOError if the HDF5 ID is invalid (= H5I_INVALID_HID).
+ *
+ * \param[in] id The id to check.
+ * \param[in] message The message to throw.
+ */
+void throwUponInvalidHid(const hid_t id, const std::string& message);
 
 } // namespace gmx
 
