@@ -35,6 +35,7 @@ if (GMX_USE_HDF5)
     gmx_add_unit_test(H5mdTests h5md-test
         CPP_SOURCE_FILES
             h5md.cpp
+            h5md_guard.cpp
         )
 else()
     gmx_add_unit_test(H5mdTests h5md-test
