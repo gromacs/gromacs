@@ -1254,7 +1254,7 @@ std::string getCoolQuote()
         { "I am rarely happier than when spending an entire day programming my computer to perform "
           "automatically a task that it would otherwise take me a good ten seconds to do by hand.",
           "Douglas Adams" },
-        { "#define QUESTION ((bb),| !(bb))", "William Shakespeare" },
+        { "#define QUESTION ((bb) || !(bb))", "William Shakespeare" },
         { "I didn't know what MD was. I think I've managed to catch up.", "Berk Hess" },
         { "Teemu [Murtola] keeps beating our code, but that's fine because he's always right.",
           "Berk Hess" },
