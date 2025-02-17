@@ -16,6 +16,11 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Running domain decomposition with 9 or more ranks could cause mdrun to exit
+with an assertion failure.
+
+:issue:`5289`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 

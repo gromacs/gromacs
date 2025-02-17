@@ -80,8 +80,9 @@ gmx_ga2la_t::gmx_ga2la_t(int numAtomsTotal, int numAtomsLocal) :
     }
     else
     {
-        new (&(data_.hashed))
-                gmx::HashedMap<Entry>(numAtomsLocal, gmx_omp_nthreads_get(ModuleMultiThread::Domdec));
+        // We would like to be able to use more than 1 thread for clearing the hashed map,
+        // but the gmx_omp_nthreads might not be initialized at this point. See #5289
+        new (&(data_.hashed)) gmx::HashedMap<Entry>(numAtomsLocal);
     }
 }
 
