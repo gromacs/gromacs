@@ -68,6 +68,10 @@ mark_as_advanced(GMX_USE_SIMD_KERNELS)
 # pulling is using the muparser target as well, so detect it early
 gmx_manage_muparser()
 
+# The following functions and macros called here sets up the "module_x_active" variable before
+# including the directories with their own modules
+gmx_manage_plumed()
+
 # Add these contents first because linking their tests can take a lot
 # of time, so we want lots of parallel work still available after
 # linking starts.
@@ -450,7 +454,6 @@ target_link_libraries(libgromacs PRIVATE lmfit)
 target_link_libraries(libgromacs PRIVATE muparser::muparser)
 gmx_manage_colvars()
 target_link_libraries(libgromacs PRIVATE colvars)
-gmx_manage_plumed()
 target_link_libraries(libgromacs PRIVATE plumedgmx)
 
 # Make sure we fix "everything" found by compilers that support that
