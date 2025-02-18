@@ -2545,14 +2545,14 @@ Free energy calculations
       :mdp:`sc-alpha` is larger than zero, soft-core potentials are
       used for the LJ and Coulomb interactions.
 
-.. mdp:: expanded
+   .. mdp-value:: expanded
 
-   Turns on expanded ensemble simulation, where the alchemical state
-   becomes a dynamic variable, allowing jumping between different
-   Hamiltonians. See the expanded ensemble options for controlling how
-   expanded ensemble simulations are performed. The different
-   Hamiltonians used in expanded ensemble simulations are defined by
-   the other free energy options.
+      Turns on expanded ensemble simulation, where the alchemical state
+      becomes a dynamic variable, allowing jumping between different
+      Hamiltonians. See the expanded ensemble options for controlling how
+      expanded ensemble simulations are performed. The different
+      Hamiltonians used in expanded ensemble simulations are defined by
+      the other free energy options.
 
 .. mdp:: init-lambda
 
