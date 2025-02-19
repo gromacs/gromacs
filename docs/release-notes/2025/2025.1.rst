@@ -21,6 +21,15 @@ with an assertion failure.
 
 :issue:`5289`
 
+Fix force correction for affine transformations in density fitting module
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The force calculation was not correctly updated when doing the transformation.
+Only simulations with non-identity ``density-guided-simulation-transformation-matrix``
+were affected.
+
+:issue:`5298`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 

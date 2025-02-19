@@ -369,7 +369,7 @@ void DensityFittingForceProvider::Impl::calculateForces(const ForceProviderInput
     if (affineTransformation_)
     {
         const Matrix3x3 gradient = affineTransformation_->gradient();
-        for (RVec currentForce : forces_)
+        for (RVec& currentForce : forces_)
         {
             matrixVectorMultiply(gradient, &currentForce);
         }
