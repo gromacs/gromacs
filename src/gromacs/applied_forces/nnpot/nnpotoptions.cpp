@@ -511,7 +511,7 @@ void NNPotOptions::checkNNPotModel()
 #else
     GMX_THROW(InternalError(
             "Libtorch/NN backend is not linked into GROMACS, NNPot simulation is not possible."
-            " Please, reconfigure GROMACS with -DGMX_TORCH=ON\n"));
+            " Please, reconfigure GROMACS with -DGMX_NNPOT=TORCH\n"));
 #endif // GMX_TORCH
 }
 
