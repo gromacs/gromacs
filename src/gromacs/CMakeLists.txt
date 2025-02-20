@@ -234,7 +234,11 @@ if(GMX_GPU_FFT_ONEMATH)
 endif()
 
 if (TARGET MPI::MPI_CXX)
-    target_link_libraries(libgromacs PRIVATE MPI::MPI_CXX)
+    target_link_libraries(libgromacs PRIVATE
+        $<$<LINK_LANGUAGE:CXX>:MPI::MPI_CXX>
+        $<$<LINK_LANGUAGE:CUDA>:MPI::MPI_CXX>
+        $<$<LINK_LANGUAGE:HIP>:MPI::MPI_CXX>
+        )
 endif ()
 
 target_link_libraries(libgromacs PRIVATE $<BUILD_INTERFACE:common>)

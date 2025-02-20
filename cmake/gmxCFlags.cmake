@@ -105,20 +105,6 @@ function(gmx_target_compile_options TARGET)
             $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CONFIG:${build_type}>>:${GMXC_CXXFLAGS_${build_type}}>
             )
     endforeach()
-    # TODO: Restrict the scope of MPI dependence.
-    # Targets that actually need MPI headers and build tool flags should
-    # manage their own `target_link_libraries` locally. Such a change is beyond
-    # the scope of the bug fix for #4678.
-    if (GMX_LIB_MPI AND TARGET ${TARGET})
-        target_link_libraries(
-            ${TARGET} PRIVATE
-            $<$<LINK_LANGUAGE:CXX>:MPI::MPI_CXX>
-            # We don't know whether we have sought the MPI::C component at all, or at least
-            # by the time we process these lines.
-            $<$<AND:$<TARGET_EXISTS:MPI::MPI_C>,$<LINK_LANGUAGE:C>>:MPI::MPI_C>
-            $<$<LINK_LANGUAGE:CUDA>:MPI::MPI_CXX>
-        )
-    endif ()
     # Add the release-configuration compiler options to build
     # configurations that derive from it.
     foreach(build_type RELWITHDEBINFO RELWITHASSERT MINSIZEREL PROFILE)
