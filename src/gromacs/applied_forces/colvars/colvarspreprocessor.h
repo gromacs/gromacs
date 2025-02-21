@@ -82,7 +82,7 @@ public:
     ColvarsPreProcessor(const std::string&   colvarsConfigString,
                         t_atoms              atoms,
                         PbcType              pbcType,
-                        const MDLogger*      logger,
+                        const MDLogger&      logger,
                         real                 ensembleTemperature,
                         int                  seed,
                         const matrix         box,

@@ -61,7 +61,7 @@
 namespace gmx
 {
 
-NNPotForceProvider::NNPotForceProvider(const NNPotParameters& nnpotParameters, const MDLogger* logger) :
+NNPotForceProvider::NNPotForceProvider(const NNPotParameters& nnpotParameters, const MDLogger& logger) :
     params_(nnpotParameters),
     positions_(params_.numAtoms_, RVec({ 0.0, 0.0, 0.0 })),
     atomNumbers_(params_.numAtoms_, -1),

@@ -164,7 +164,7 @@ public:
 
     void            setLogger(const MDLogger&);
     void            setWarninp(WarningHandler*);
-    const MDLogger* logger();
+    const MDLogger& logger() const;
 
 private:
 //! Make sure that model and model inputs are compatible
@@ -201,7 +201,11 @@ private:
     //! NNPot parameters
     NNPotParameters params_;
 
-    //! Logger instance
+    /*! \brief MDLogger during mdrun
+     *
+     * This is a pointer only because we need an "optional reference"
+     * to a const MDLogger before the notification always provides the
+     * actual reference. */
     const MDLogger* logger_ = nullptr;
 
     //! Instance of warning bookkeeper

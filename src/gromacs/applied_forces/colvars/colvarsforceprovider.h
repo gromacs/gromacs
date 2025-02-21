@@ -192,7 +192,7 @@ public:
     ColvarsForceProvider(const std::string&                        colvarsConfigString,
                          t_atoms                                   atoms,
                          PbcType                                   pbcType,
-                         const MDLogger*                           logger,
+                         const MDLogger&                           logger,
                          const std::map<std::string, std::string>& inputStrings,
                          real                                      ensembleTemperature,
                          int                                       seed,

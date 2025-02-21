@@ -69,6 +69,9 @@ public:
 
     /*! \brief Requests to be notified during preprocessing.
      *
+     * \param[in] notifiers allows the module to subscribe to notifications from MdModules.
+     *
+     *
      * NNPot module subscribes to the following notifications:
      *   - the atom groups and their names specified in the index file (to specify NN input)
      *     by taking a const IndexGroupsAndNames& as parameter
@@ -81,7 +84,7 @@ public:
      *   - access the WarningHandler to output warnings
      *     by taking a WarningHandler* as parameter
      */
-    void subscribeToPreProcessingNotifications(MDModulesNotifiers* notifier) override
+    void subscribeToPreProcessingNotifications(MDModulesNotifiers* notifiers) override
     {
         if (!nnpotOptions_.isActive())
         {
@@ -90,27 +93,30 @@ public:
 
         const auto setInputGroupIndicesFunction = [this](const IndexGroupsAndNames& indexGroupsAndNames)
         { nnpotOptions_.setInputGroupIndices(indexGroupsAndNames); };
-        notifier->preProcessingNotifier_.subscribe(setInputGroupIndicesFunction);
+        notifiers->preProcessingNotifier_.subscribe(setInputGroupIndicesFunction);
 
         const auto modifyTopologyFunction = [this](gmx_mtop_t* top)
         { nnpotOptions_.modifyTopology(top); };
-        notifier->preProcessingNotifier_.subscribe(modifyTopologyFunction);
+        notifiers->preProcessingNotifier_.subscribe(modifyTopologyFunction);
 
         const auto writeParamsToKvtFunction = [this](KeyValueTreeObjectBuilder kvt)
         { nnpotOptions_.writeParamsToKvt(kvt); };
-        notifier->preProcessingNotifier_.subscribe(writeParamsToKvtFunction);
+        notifiers->preProcessingNotifier_.subscribe(writeParamsToKvtFunction);
 
         // Set Logger during pre-processing
         const auto setLoggerFunction = [this](const MDLogger& logger)
         { nnpotOptions_.setLogger(logger); };
-        notifier->preProcessingNotifier_.subscribe(setLoggerFunction);
+        notifiers->preProcessingNotifier_.subscribe(setLoggerFunction);
 
         // Set warning output during pre-processing
         const auto setWarninpFunction = [this](WarningHandler* wi) { nnpotOptions_.setWarninp(wi); };
-        notifier->preProcessingNotifier_.subscribe(setWarninpFunction);
+        notifiers->preProcessingNotifier_.subscribe(setWarninpFunction);
     }
 
     /*! \brief Requests to be notified during simulation setup.
+     *
+     * \param[in] notifiers allows the module to subscribe to notifications from MdModules.
+     *
      *
      * NNPot module subscribes to the following notifications:
      *   - the topology of the system
@@ -128,7 +134,7 @@ public:
      *   - notify when atoms are redistributed
      *     by taking a const MDModulesAtomsRedistributedSignal as parameter
      */
-    void subscribeToSimulationSetupNotifications(MDModulesNotifiers* notifier) override
+    void subscribeToSimulationSetupNotifications(MDModulesNotifiers* notifiers) override
     {
         if (!nnpotOptions_.isActive())
         {
@@ -137,7 +143,7 @@ public:
 
         const auto setTopologyFunction = [this](const gmx_mtop_t& top)
         { nnpotOptions_.setTopology(top); };
-        notifier->simulationSetupNotifier_.subscribe(setTopologyFunction);
+        notifiers->simulationSetupNotifier_.subscribe(setTopologyFunction);
 
         // constructing local atom sets during simulation setup
         const auto setLocalAtomSetFunction = [this](LocalAtomSetManager* localAtomSetManager)
@@ -147,33 +153,33 @@ public:
             LocalAtomSet atomSet2 = localAtomSetManager->add(nnpotOptions_.parameters().mmIndices_);
             nnpotOptions_.setLocalMMAtomSet(atomSet2);
         };
-        notifier->simulationSetupNotifier_.subscribe(setLocalAtomSetFunction);
+        notifiers->simulationSetupNotifier_.subscribe(setLocalAtomSetFunction);
 
         const auto readParamsFromKvtFunction = [this](const KeyValueTreeObject& kvt)
         { nnpotOptions_.readParamsFromKvt(kvt); };
-        notifier->simulationSetupNotifier_.subscribe(readParamsFromKvtFunction);
+        notifiers->simulationSetupNotifier_.subscribe(readParamsFromKvtFunction);
 
         const auto setPBCTypeFunction = [this](const PbcType& pbc) { nnpotOptions_.setPbcType(pbc); };
-        notifier->simulationSetupNotifier_.subscribe(setPBCTypeFunction);
+        notifiers->simulationSetupNotifier_.subscribe(setPBCTypeFunction);
 
         // Add NN output to energy file
         const auto requestEnergyOutput = [](MDModulesEnergyOutputToNNPotRequestChecker* energyOutputRequest)
         { energyOutputRequest->energyOutputToNNPot_ = true; };
-        notifier->simulationSetupNotifier_.subscribe(requestEnergyOutput);
+        notifiers->simulationSetupNotifier_.subscribe(requestEnergyOutput);
 
         // Set Logger during simulation setup
         const auto setLoggerFunction = [this](const MDLogger& logger)
         { nnpotOptions_.setLogger(logger); };
-        notifier->simulationSetupNotifier_.subscribe(setLoggerFunction);
+        notifiers->simulationSetupNotifier_.subscribe(setLoggerFunction);
 
         // set communication record during simulation setup
         const auto setCommRecFunction = [this](const t_commrec& cr) { nnpotOptions_.setCommRec(cr); };
-        notifier->simulationSetupNotifier_.subscribe(setCommRecFunction);
+        notifiers->simulationSetupNotifier_.subscribe(setCommRecFunction);
 
         // subscribe to DD notification to trigger atom number and index gathering
         const auto notifyDDFunction = [this](const MDModulesAtomsRedistributedSignal& /*signal*/)
         { nnpotForceProvider_->gatherAtomNumbersIndices(); };
-        notifier->simulationSetupNotifier_.subscribe(notifyDDFunction);
+        notifiers->simulationSetupNotifier_.subscribe(notifyDDFunction);
     }
 
     void initForceProviders(ForceProviders* forceProviders) override

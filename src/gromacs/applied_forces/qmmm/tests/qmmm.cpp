@@ -63,6 +63,7 @@
 #include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/keyvaluetreetransform.h"
+#include "gromacs/utility/logger.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringcompare.h"
@@ -106,12 +107,19 @@ public:
         assignOptionsFromKeyValueTree(&QMMMModuleOptions, transformedMdpValues.object(), nullptr);
     }
 
-    void initializeForceProviders() { QMMMModule_->initForceProviders(&QMMMForces_); }
+    void initializeForceProviders()
+    {
+        MDModulesNotifiers notifiers;
+        QMMMModule_->subscribeToSimulationSetupNotifications(&notifiers);
+        notifiers.simulationSetupNotifier_.notify(logger_);
+        QMMMModule_->initForceProviders(&QMMMForces_);
+    }
 
 protected:
     KeyValueTreeBuilder        mdpValueBuilder_;
     ForceProviders             QMMMForces_;
     std::unique_ptr<IMDModule> QMMMModule_;
+    MDLogger                   logger_;
 };
 
 TEST_F(QMMMTest, ForceProviderLackingInputThrows)

@@ -150,6 +150,12 @@ bool ColvarsOptions::isActive() const
     return active_;
 }
 
+//! Get the logger instance
+const MDLogger& ColvarsOptions::logger() const
+{
+    GMX_RELEASE_ASSERT(logger_, "Logger not set for ColvarsOptions.");
+    return *logger_;
+}
 
 #if GMX_HAVE_COLVARS
 
@@ -168,7 +174,7 @@ void ColvarsOptions::writeInternalParametersToKvt(KeyValueTreeObjectBuilder tree
 
 
     ColvarsPreProcessor colvarsPreProcess(
-            colvarsConfigString_, gmxAtoms_, pbc_, logger_, ensembleTemperature_, colvarsSeed_, box_, x_);
+            colvarsConfigString_, gmxAtoms_, pbc_, logger(), ensembleTemperature_, colvarsSeed_, box_, x_);
     //! Vector with colvars atoms coordinates
     colvarsAtomCoords_ = colvarsPreProcess.getColvarsCoords();
 

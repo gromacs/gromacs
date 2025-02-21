@@ -62,7 +62,7 @@ class MDLogger;
 class NNPotForceProvider final : public IForceProvider
 {
 public:
-    NNPotForceProvider(const NNPotParameters&, const MDLogger* logger);
+    NNPotForceProvider(const NNPotParameters&, const MDLogger& logger);
 
     //! Destroy force provider for NNPot
     ~NNPotForceProvider();
@@ -100,8 +100,12 @@ private:
     //! local copy of simulation box
     matrix box_;
 
-    //! logger
-    const MDLogger* logger_;
+    /*! \brief MDLogger during mdrun
+     *
+     * This is a pointer only because we need an "optional reference"
+     * to a const MDLogger before the notification always provides the
+     * actual reference. */
+    const MDLogger& logger_;
 
     //! stores communication record
     const t_commrec* cr_;

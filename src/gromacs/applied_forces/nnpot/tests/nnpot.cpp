@@ -44,6 +44,7 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/iforceprovider.h"
 #include "gromacs/mdtypes/imdmodule.h"
@@ -53,6 +54,7 @@
 #include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/keyvaluetreetransform.h"
+#include "gromacs/utility/logger.h"
 #include "gromacs/utility/stringcompare.h"
 
 #include "testutils/testasserts.h"
@@ -94,12 +96,19 @@ public:
         assignOptionsFromKeyValueTree(&NNPotModuleOptions, transformedMdpValues.object(), nullptr);
     }
 
-    void initializeForceProviders() { NNPotModule_->initForceProviders(&NNPotForces_); }
+    void initializeForceProviders()
+    {
+        MDModulesNotifiers notifiers;
+        NNPotModule_->subscribeToSimulationSetupNotifications(&notifiers);
+        notifiers.simulationSetupNotifier_.notify(logger_);
+        NNPotModule_->initForceProviders(&NNPotForces_);
+    }
 
 protected:
     KeyValueTreeBuilder        mdpValueBuilder_;
     ForceProviders             NNPotForces_;
     std::unique_ptr<IMDModule> NNPotModule_;
+    MDLogger                   logger_;
 };
 
 TEST_F(NNPotTest, ForceProviderLackingInputThrows)

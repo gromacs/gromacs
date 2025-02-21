@@ -276,6 +276,8 @@ TEST_F(ColvarsOptionsTest, InternalsToKvtAndBack)
 
     // Write parameters to the KVT
     KeyValueTreeBuilder builder;
+    MDLogger            logger;
+    colvarsOptions_.setLogger(logger);
     colvarsOptions_.writeInternalParametersToKvt(builder.rootObject());
     const auto inputTree = builder.build();
 

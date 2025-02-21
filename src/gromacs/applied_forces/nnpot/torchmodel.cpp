@@ -62,7 +62,7 @@ static std::string recordToString(std::tuple<at::DataPtr, size_t> data)
     return std::string(static_cast<char*>(std::get<0>(data).get()), std::get<1>(data));
 }
 
-TorchModel::TorchModel(const std::string& fileName, const MDLogger* logger) : logger_(logger)
+TorchModel::TorchModel(const std::string& fileName, const MDLogger& logger) : logger_(logger)
 {
     setDevice();
 
@@ -274,7 +274,7 @@ void TorchModel::setDevice()
             GMX_THROW(InternalError(
                     "Environment variable GMX_NN_DEVICE was set to an invalid value."));
         }
-        GMX_LOG(logger_->info)
+        GMX_LOG(logger_.info)
                 .asParagraph()
                 .appendText(
                         "GMX_NN_DEVICE environment variable found."
@@ -285,7 +285,7 @@ void TorchModel::setDevice()
     {
         // todo: default to gpu if available
         device_ = std::make_shared<torch::Device>(torch::kCPU);
-        GMX_LOG(logger_->info)
+        GMX_LOG(logger_.info)
                 .asParagraph()
                 .appendText(
                         "No GMX_NN_DEVICE environment variable found."
@@ -315,11 +315,11 @@ void TorchModel::loadModelExtensions(std::string& ext_libs)
             if (!ext_lib)
             {
                 std::cerr << dlerror() << std::endl;
-                GMX_LOG(logger_->warning).appendText("Could not load pytorch extension at " + lib);
+                GMX_LOG(logger_.warning).appendText("Could not load pytorch extension at " + lib);
             }
             else
             {
-                GMX_LOG(logger_->info).appendText("Loaded PyTorch extension library at " + lib);
+                GMX_LOG(logger_.info).appendText("Loaded PyTorch extension library at " + lib);
             }
         }
     }

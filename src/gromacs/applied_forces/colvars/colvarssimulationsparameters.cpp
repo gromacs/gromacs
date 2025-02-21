@@ -131,13 +131,10 @@ void ColvarsSimulationsParameters::setLogger(const MDLogger& logger)
 }
 
 
-const MDLogger* ColvarsSimulationsParameters::logger() const
+const MDLogger& ColvarsSimulationsParameters::logger() const
 {
-    if (logger_ == nullptr)
-    {
-        GMX_THROW(InternalError("Logger not set for Colvars simulation."));
-    }
-    return logger_;
+    GMX_RELEASE_ASSERT(logger_, "Logger not set for ColvarsSimulationsParameters.");
+    return *logger_;
 }
 
 } // namespace gmx

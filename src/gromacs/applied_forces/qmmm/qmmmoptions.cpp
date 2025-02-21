@@ -214,6 +214,12 @@ void QMMMOptions::setLogger(const MDLogger& logger)
     logger_ = &logger;
 }
 
+const MDLogger& QMMMOptions::logger() const
+{
+    GMX_RELEASE_ASSERT(logger_, "Logger not set for QMMMOptions.");
+    return *logger_;
+}
+
 void QMMMOptions::setWarninp(WarningHandler* wi)
 {
     // Exit if QMMM module is not active
@@ -227,10 +233,7 @@ void QMMMOptions::setWarninp(WarningHandler* wi)
 
 void QMMMOptions::appendLog(const std::string& msg)
 {
-    if (logger_)
-    {
-        GMX_LOG(logger_->info).asParagraph().appendText(msg);
-    }
+    GMX_LOG(logger().info).asParagraph().appendText(msg);
 }
 
 void QMMMOptions::appendWarning(const std::string& msg)

@@ -76,9 +76,9 @@ class TorchModel : public INNPotModel
 public:
     /*! \brief Constructor for TorchModel.
      * \param[in] filename path to the TorchScript model file
-     * \param[in] logger pointer to the MDLogger
+     * \param[in] logger handle to MDLogger
      */
-    TorchModel(const std::string& filename, const MDLogger* logger);
+    TorchModel(const std::string& filename, const MDLogger& logger);
 
     ~TorchModel();
 
@@ -119,8 +119,8 @@ private:
 
     //! pointer to the communication record
     const t_commrec* cr_ = nullptr;
-    //! pointer to the MDLogger
-    const MDLogger* logger_ = nullptr;
+    //! MDLogger during mdrun
+    const MDLogger& logger_;
 
     //! TorchScript model
     std::shared_ptr<torch::Device> device_;

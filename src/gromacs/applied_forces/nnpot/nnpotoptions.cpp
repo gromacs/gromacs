@@ -225,42 +225,42 @@ void NNPotOptions::modifyTopology(gmx_mtop_t* top)
     // Get info about modifications
     QMMMTopologyInfo topInfo = topPrep.topInfo();
 
+    const MDLogger& theLogger = logger();
     // Check that logger and warning handler are valid
-    GMX_ASSERT(logger_, "Logger not set.");
     GMX_ASSERT(wi_, "WarningHandler not set.");
 
     // Inform the user about performed modifications, issue warning if necessary
-    GMX_LOG(logger_->info)
+    GMX_LOG(theLogger.info)
             .appendText("Neural network potential Interface is active, topology was modified!");
 
-    GMX_LOG(logger_->info)
+    GMX_LOG(theLogger.info)
             .appendTextFormatted("Number of NN input atoms: %d\nNumber of regular atoms: %d",
                                  topInfo.numQMAtoms,
                                  topInfo.numMMAtoms);
 
     if (topInfo.numBondsRemoved > 0)
     {
-        GMX_LOG(logger_->info).appendTextFormatted("Bonds removed: %d", topInfo.numBondsRemoved);
+        GMX_LOG(theLogger.info).appendTextFormatted("Bonds removed: %d", topInfo.numBondsRemoved);
     }
 
     if (topInfo.numAnglesRemoved > 0)
     {
-        GMX_LOG(logger_->info).appendTextFormatted("Angles removed: %d", topInfo.numAnglesRemoved);
+        GMX_LOG(theLogger.info).appendTextFormatted("Angles removed: %d", topInfo.numAnglesRemoved);
     }
 
     if (topInfo.numDihedralsRemoved > 0)
     {
-        GMX_LOG(logger_->info).appendTextFormatted("Dihedrals removed: %d", topInfo.numDihedralsRemoved);
+        GMX_LOG(theLogger.info).appendTextFormatted("Dihedrals removed: %d", topInfo.numDihedralsRemoved);
     }
 
     if (topInfo.numSettleRemoved > 0)
     {
-        GMX_LOG(logger_->info).appendTextFormatted("Settles removed: %d", topInfo.numSettleRemoved);
+        GMX_LOG(theLogger.info).appendTextFormatted("Settles removed: %d", topInfo.numSettleRemoved);
     }
 
     if (topInfo.numConnBondsAdded > 0)
     {
-        GMX_LOG(logger_->info).appendTextFormatted("Connection-only (type 5) bonds added: %d", topInfo.numConnBondsAdded);
+        GMX_LOG(theLogger.info).appendTextFormatted("Connection-only (type 5) bonds added: %d", topInfo.numConnBondsAdded);
     }
 
     // Warn in case of broken covalent bonds between NNP input atoms and MM atoms
@@ -376,9 +376,10 @@ void NNPotOptions::setCommRec(const t_commrec& cr)
     params_.cr_ = &cr;
 }
 
-const MDLogger* NNPotOptions::logger()
+const MDLogger& NNPotOptions::logger() const
 {
-    return logger_;
+    GMX_RELEASE_ASSERT(logger_, "Logger not set for NNPotOptions.");
+    return *logger_;
 }
 
 void NNPotOptions::setWarninp(WarningHandler* wi)
@@ -402,7 +403,7 @@ void NNPotOptions::checkNNPotModel()
     }
     else if (modelPath.extension() == ".pt")
     {
-        model = std::make_unique<TorchModel>(params_.modelFileName_, logger_);
+        model = std::make_unique<TorchModel>(params_.modelFileName_, logger());
     }
     else
     {
@@ -456,8 +457,8 @@ void NNPotOptions::checkNNPotModel()
         GMX_THROW(InconsistentInputError("No inputs to NN model provided."));
     }
 
-    // Check that logger and warning handler are valid
-    GMX_ASSERT(logger_, "Logger not set.");
+    const auto& theLogger = logger();
+    // Check that warning handler is valid
     GMX_ASSERT(wi_, "WarningHandler not set.");
     bool modelOutputsForces = false;
     try
@@ -478,11 +479,11 @@ void NNPotOptions::checkNNPotModel()
         // log wheter model outputs forces or we need to compute them
         if (modelOutputsForces)
         {
-            GMX_LOG(logger_->info).appendText("Will use forces from NNP model.");
+            GMX_LOG(theLogger.info).appendText("Will use forces from NNP model.");
         }
         else
         {
-            GMX_LOG(logger_->info)
+            GMX_LOG(theLogger.info)
                     .appendText(
                             "NNP model does not output forces. They will be computed as gradients "
                             "of the energy w.r.t. the first input tensor (atom positions).");

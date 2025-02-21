@@ -90,7 +90,7 @@ public:
 
     /*! \brief Requests to be notified during pre-processing.
      *
-     * \param[in] notifier allows the module to subscribe to notifications from MdModules.
+     * \param[in] notifiers allows the module to subscribe to notifications from MdModules.
      *
      * The Colvars MDModule subscribes to these notifications:
      *   - storing its internal parameters in a tpr file by writing to a
@@ -101,7 +101,7 @@ public:
      *   - Access warning for for grompp warnings output
      *   - Coordinates, PBC and box for setting up the proxy
      */
-    void subscribeToPreProcessingNotifications(MDModulesNotifiers* notifier) override
+    void subscribeToPreProcessingNotifications(MDModulesNotifiers* notifiers) override
     {
 
         if (!colvarsOptions_.isActive())
@@ -112,31 +112,34 @@ public:
         // Writing internal parameters during pre-processing
         const auto writeInternalParametersFunction = [this](KeyValueTreeObjectBuilder treeBuilder)
         { colvarsOptions_.writeInternalParametersToKvt(treeBuilder); };
-        notifier->preProcessingNotifier_.subscribe(writeInternalParametersFunction);
+        notifiers->preProcessingNotifier_.subscribe(writeInternalParametersFunction);
 
         // Access of the topology during pre-processing
         const auto processTopologyFunction = [this](gmx_mtop_t* mtop)
         { colvarsOptions_.processTopology(mtop); };
-        notifier->preProcessingNotifier_.subscribe(processTopologyFunction);
+        notifiers->preProcessingNotifier_.subscribe(processTopologyFunction);
 
         // Set Logger during pre-processing
         const auto setLoggerFunction = [this](const MDLogger& logger)
         { colvarsOptions_.setLogger(logger); };
-        notifier->preProcessingNotifier_.subscribe(setLoggerFunction);
+        notifiers->preProcessingNotifier_.subscribe(setLoggerFunction);
 
         //  Notification of the Coordinates, box and pbc during pre-processing
         const auto processCoordinatesFunction = [this](const CoordinatesAndBoxPreprocessed& coord)
         { colvarsOptions_.processCoordinates(coord); };
-        notifier->preProcessingNotifier_.subscribe(processCoordinatesFunction);
+        notifiers->preProcessingNotifier_.subscribe(processCoordinatesFunction);
 
         //  Notification for the temperature
         const auto processTemperatureFunction = [this](const EnsembleTemperature& temp)
         { colvarsOptions_.processTemperature(temp); };
-        notifier->preProcessingNotifier_.subscribe(processTemperatureFunction);
+        notifiers->preProcessingNotifier_.subscribe(processTemperatureFunction);
     }
 
 
     /*! \brief Request to be notified.
+     *
+     * \param[in] notifiers allows the module to subscribe to notifications from MdModules.
+     *
      * The Colvars MDModule subscribes to these notifications:
      *   - the LocalAtomSetManager sets in the simulation parameter setup
      *     by taking a LocalAtomSetManager * as parameter
@@ -152,7 +155,7 @@ public:
      *   - the .edr filename
      *     to provide a user-defined output prefix for Colvars output files
      */
-    void subscribeToSimulationSetupNotifications(MDModulesNotifiers* notifier) override
+    void subscribeToSimulationSetupNotifications(MDModulesNotifiers* notifiers) override
     {
         if (!colvarsOptions_.isActive())
         {
@@ -162,60 +165,60 @@ public:
         // Reading internal parameters during simulation setup
         const auto readInternalParametersFunction = [this](const KeyValueTreeObject& tree)
         { colvarsOptions_.readInternalParametersFromKvt(tree); };
-        notifier->simulationSetupNotifier_.subscribe(readInternalParametersFunction);
+        notifiers->simulationSetupNotifier_.subscribe(readInternalParametersFunction);
         // Retrieve the LocalAtomSetManager during simulation setup
         const auto setLocalAtomManagerFunction = [this](LocalAtomSetManager* localAtomSetManager)
         { this->ColvarsSimulationsParameters_.setLocalAtomSetManager(localAtomSetManager); };
-        notifier->simulationSetupNotifier_.subscribe(setLocalAtomManagerFunction);
+        notifiers->simulationSetupNotifier_.subscribe(setLocalAtomManagerFunction);
 
         // constructing PBC during simulation setup
         const auto setPeriodicBoundaryContionsFunction = [this](const PbcType& pbc)
         { this->ColvarsSimulationsParameters_.setPeriodicBoundaryConditionType(pbc); };
-        notifier->simulationSetupNotifier_.subscribe(setPeriodicBoundaryContionsFunction);
+        notifiers->simulationSetupNotifier_.subscribe(setPeriodicBoundaryContionsFunction);
 
         // Retrieve the topology during simulation setup
         const auto setTopologyFunction = [this](const gmx_mtop_t& mtop)
         { this->ColvarsSimulationsParameters_.setTopology(mtop); };
-        notifier->simulationSetupNotifier_.subscribe(setTopologyFunction);
+        notifiers->simulationSetupNotifier_.subscribe(setTopologyFunction);
 
         // Retrieve the Communication Record during simulations setup
         const auto setCommFunction = [this](const t_commrec& cr)
         { this->ColvarsSimulationsParameters_.setComm(cr); };
-        notifier->simulationSetupNotifier_.subscribe(setCommFunction);
+        notifiers->simulationSetupNotifier_.subscribe(setCommFunction);
 
         // Retrieve the Multisim Record during simulations setup
         const auto setMultisimFunction = [this](const gmx_multisim_t* ms)
         { this->ColvarsSimulationsParameters_.setMultisim(ms); };
-        notifier->simulationSetupNotifier_.subscribe(setMultisimFunction);
+        notifiers->simulationSetupNotifier_.subscribe(setMultisimFunction);
 
         // setting the simulation time step
         const auto setSimulationTimeStepFunction = [this](const SimulationTimeStep& simulationTimeStep)
         { this->ColvarsSimulationsParameters_.setSimulationTimeStep(simulationTimeStep.delta_t); };
-        notifier->simulationSetupNotifier_.subscribe(setSimulationTimeStepFunction);
+        notifiers->simulationSetupNotifier_.subscribe(setSimulationTimeStepFunction);
         // Saving MDLogger during simulation setup
         const auto setLoggerFunction = [this](const MDLogger& logger)
         { this->ColvarsSimulationsParameters_.setLogger(logger); };
-        notifier->simulationSetupNotifier_.subscribe(setLoggerFunction);
+        notifiers->simulationSetupNotifier_.subscribe(setLoggerFunction);
 
         const auto setEdrFileNameFunction = [this](const EdrOutputFilename& filename)
         { colvarsOptions_.processEdrFilename(filename); };
-        notifier->simulationSetupNotifier_.subscribe(setEdrFileNameFunction);
+        notifiers->simulationSetupNotifier_.subscribe(setEdrFileNameFunction);
 
         // writing checkpoint data
         const auto checkpointDataWriting = [this](MDModulesWriteCheckpointData checkpointData)
         { colvarsForceProvider_->writeCheckpointData(checkpointData, ColvarsModuleInfo::name_); };
-        notifier->checkpointingNotifier_.subscribe(checkpointDataWriting);
+        notifiers->checkpointingNotifier_.subscribe(checkpointDataWriting);
 
         // reading checkpoint data
         const auto checkpointDataReading = [this](MDModulesCheckpointReadingDataOnMain checkpointData)
         { colvarsState_.readState(checkpointData.checkpointedData_, ColvarsModuleInfo::name_); };
-        notifier->checkpointingNotifier_.subscribe(checkpointDataReading);
+        notifiers->checkpointingNotifier_.subscribe(checkpointDataReading);
 
         // Handle the atoms redistributed signal
         const auto handleAtomsRedistributedSignal =
                 [this](const MDModulesAtomsRedistributedSignal& atomsRedistributedSignal)
         { colvarsForceProvider_->processAtomsRedistributedSignal(atomsRedistributedSignal); };
-        notifier->simulationSetupNotifier_.subscribe(handleAtomsRedistributedSignal);
+        notifiers->simulationSetupNotifier_.subscribe(handleAtomsRedistributedSignal);
     }
 
     //! From IMDModule

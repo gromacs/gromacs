@@ -137,7 +137,7 @@ public:
         gmx::test::TestReferenceChecker checker(testData.rootChecker());
 
         std::unique_ptr<NNPotForceProvider> nnpotForceProvider;
-        EXPECT_NO_THROW(nnpotForceProvider = std::make_unique<NNPotForceProvider>(params_, &logger_));
+        EXPECT_NO_THROW(nnpotForceProvider = std::make_unique<NNPotForceProvider>(params_, logger_));
         EXPECT_NO_THROW(nnpotForceProvider->gatherAtomNumbersIndices());
 
         // Prepare input for force provider
@@ -181,13 +181,13 @@ TEST_F(NNPotForceProviderTest, CanConstruct)
     {
         {
             SCOPED_TRACE("Check construction on CPU");
-            EXPECT_NO_THROW(NNPotForceProvider nnpotForceProvider(params_, &logger_));
+            EXPECT_NO_THROW(NNPotForceProvider nnpotForceProvider(params_, logger_));
         }
 
         {
             SCOPED_TRACE("Check construction with invalid model file name");
             params_.modelFileName_ = "model";
-            EXPECT_THROW_GMX(NNPotForceProvider nnpotForceProvider(params_, &logger_), FileIOError);
+            EXPECT_THROW_GMX(NNPotForceProvider nnpotForceProvider(params_, logger_), FileIOError);
             params_.modelFileName_ = gmx::test::TestFileManager::getInputFilePath("model.pt").string();
         }
 
@@ -198,7 +198,7 @@ TEST_F(NNPotForceProviderTest, CanConstruct)
             {
                 SCOPED_TRACE("Check construction on default NVIDIA GPU");
                 gmxSetenv("GMX_NN_DEVICE", "cuda", 1);
-                EXPECT_NO_THROW(NNPotForceProvider nnpotForceProvider(params_, &logger_));
+                EXPECT_NO_THROW(NNPotForceProvider nnpotForceProvider(params_, logger_));
                 gmxUnsetenv("GMX_NN_DEVICE");
                 break; // Only test one GPU until we have a better way to hande device selection
             }
@@ -206,7 +206,7 @@ TEST_F(NNPotForceProviderTest, CanConstruct)
     }
     else
     {
-        EXPECT_ANY_THROW(NNPotForceProvider nnpotForceProvider(params_, &logger_));
+        EXPECT_ANY_THROW(NNPotForceProvider nnpotForceProvider(params_, logger_));
     }
 }
 

@@ -132,6 +132,9 @@ public:
     //! Set the MDLogger instance
     void setLogger(const MDLogger& logger);
 
+    //! Get the logger instance
+    const MDLogger& logger() const;
+
     //! Set the warninp instance
     void setWarninp(WarningHandler* wi);
 
@@ -177,7 +180,11 @@ private:
     const std::string c_qmTransTag_     = "qmtrans";
     //! \}
 
-    //! Logger instance
+    /*! \brief MDLogger during preprocessing
+     *
+     * This is a pointer only because we need an "optional reference"
+     * to a const MDLogger before the notification always provides the
+     * actual reference. */
     const MDLogger* logger_ = nullptr;
 
     //! Instance of warning bookkeeper
