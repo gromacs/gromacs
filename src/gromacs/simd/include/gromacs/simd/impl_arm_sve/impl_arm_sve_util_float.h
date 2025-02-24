@@ -77,9 +77,9 @@ gatherLoadBySimdIntTranspose(const float* base, SimdFInt32 offset, SimdFloat* v0
     {
         svbool_t    pg    = svptrue_b32();
         svfloat32_t t0    = svreinterpret_f32_u64(svld1_gather_s64index_u64(
-                svunpklo_b(pg), (uint64_t*)base, svunpklo_s64(offset.simdInternal_)));
+                svunpklo_b(pg), reinterpret_cast<const uint64_t*>(base), svunpklo_s64(offset.simdInternal_)));
         svfloat32_t t1    = svreinterpret_f32_u64(svld1_gather_s64index_u64(
-                svunpkhi_b(pg), (uint64_t*)base, svunpkhi_s64(offset.simdInternal_)));
+                svunpkhi_b(pg), reinterpret_cast<const uint64_t*>(base), svunpkhi_s64(offset.simdInternal_)));
         v0->simdInternal_ = svuzp1(t0, t1);
         v1->simdInternal_ = svuzp2(t0, t1);
     }
@@ -87,12 +87,12 @@ gatherLoadBySimdIntTranspose(const float* base, SimdFInt32 offset, SimdFloat* v0
     {
         svbool_t    pg      = svptrue_b32();
         svint32_t   offsets = svmul_n_s32_x(pg, offset.simdInternal_, align / 2);
-        svfloat32_t t0      = svreinterpret_f32_u64(
-                svld1_gather_s64index_u64(svunpklo_b(pg), (uint64_t*)base, svunpklo_s64(offsets)));
-        svfloat32_t t1 = svreinterpret_f32_u64(
-                svld1_gather_s64index_u64(svunpkhi_b(pg), (uint64_t*)base, svunpkhi_s64(offsets)));
-        v0->simdInternal_ = svuzp1(t0, t1);
-        v1->simdInternal_ = svuzp2(t0, t1);
+        svfloat32_t t0      = svreinterpret_f32_u64(svld1_gather_s64index_u64(
+                svunpklo_b(pg), reinterpret_cast<const uint64_t*>(base), svunpklo_s64(offsets)));
+        svfloat32_t t1      = svreinterpret_f32_u64(svld1_gather_s64index_u64(
+                svunpkhi_b(pg), reinterpret_cast<const uint64_t*>(base), svunpkhi_s64(offsets)));
+        v0->simdInternal_   = svuzp1(t0, t1);
+        v1->simdInternal_   = svuzp2(t0, t1);
     }
 }
 
@@ -391,14 +391,18 @@ static inline void gmx_simdcall gatherLoadTransposeHsimd(const float*       base
     svfloat32_t _v0, _v1;
     if (2 == align)
     {
-        _v0 = svreinterpret_f32_f64(svld1_gather_s64index_f64(SVE_DOUBLE_MASK, (double*)base0, offsets));
-        _v1 = svreinterpret_f32_f64(svld1_gather_s64index_f64(SVE_DOUBLE_MASK, (double*)base1, offsets));
+        _v0 = svreinterpret_f32_f64(svld1_gather_s64index_f64(
+                SVE_DOUBLE_MASK, reinterpret_cast<const double*>(base0), offsets));
+        _v1 = svreinterpret_f32_f64(svld1_gather_s64index_f64(
+                SVE_DOUBLE_MASK, reinterpret_cast<const double*>(base1), offsets));
     }
     else
     {
         offsets = svmul_n_s64_x(svptrue_b64(), offsets, align * 4);
-        _v0 = svreinterpret_f32_f64(svld1_gather_s64offset_f64(SVE_DOUBLE_MASK, (double*)base0, offsets));
-        _v1 = svreinterpret_f32_f64(svld1_gather_s64offset_f64(SVE_DOUBLE_MASK, (double*)base1, offsets));
+        _v0     = svreinterpret_f32_f64(svld1_gather_s64offset_f64(
+                SVE_DOUBLE_MASK, reinterpret_cast<const double*>(base0), offsets));
+        _v1     = svreinterpret_f32_f64(svld1_gather_s64offset_f64(
+                SVE_DOUBLE_MASK, reinterpret_cast<const double*>(base1), offsets));
     }
     v0->simdInternal_ = svuzp1(_v0, _v1);
     v1->simdInternal_ = svuzp2(_v0, _v1);

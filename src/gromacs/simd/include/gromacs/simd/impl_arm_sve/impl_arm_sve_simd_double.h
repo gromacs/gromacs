@@ -543,7 +543,7 @@ static inline SimdDIBool gmx_simdcall operator==(SimdDInt32 a, SimdDInt32 b)
 static inline SimdDIBool gmx_simdcall testBits(SimdDInt32 a)
 {
     svbool_t pg = svptrue_b64();
-    return { svcmpne_n_s64(pg, a.simdInternal_, (int64_t)0) };
+    return { svcmpne_n_s64(pg, a.simdInternal_, static_cast<int64_t>(0)) };
 }
 
 static inline SimdDIBool gmx_simdcall operator<(SimdDInt32 a, SimdDInt32 b)

@@ -53,8 +53,9 @@ static inline void simdPrefetch(void* m)
 
 #define SVE_DOUBLE_MASK svptrue_b64()
 #define SVE_DINT32_MASK svptrue_b64()
-#define SVE_SIMD_FLOAT_HALF_DOUBLE_MASK svwhilelt_b32(0, (int32_t)GMX_SIMD_DINT32_WIDTH)
-#define SVE_SIMD_DOUBLE_HALF_MASK svwhilelt_b64(0, (int32_t)GMX_SIMD_DOUBLE_WIDTH / 2)
+#define SVE_SIMD_FLOAT_HALF_DOUBLE_MASK \
+    svwhilelt_b32(0, static_cast<int32_t>(GMX_SIMD_DINT32_WIDTH))
+#define SVE_SIMD_DOUBLE_HALF_MASK svwhilelt_b64(0, static_cast<int32_t>(GMX_SIMD_DOUBLE_WIDTH) / 2)
 #define SVE_FLOAT_HALF_MASK svwhilelt_b32(0, GMX_SIMD_FLOAT_WIDTH / 2)
 #define SVE_FINT32_HALF_MASK svwhilelt_b32(0, GMX_SIMD_FLOAT_WIDTH / 2)
 #define SVE_FLOAT4_MASK svptrue_pat_b32(SV_VL4)

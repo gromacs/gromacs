@@ -63,7 +63,7 @@ NNPotForceProvider::NNPotForceProvider(const NNPotParameters& nnpotParameters, c
 {
     GMX_THROW(InternalError(
             "Libtorch/NN backend is not linked into GROMACS, NNPot simulation is not possible."
-            " Please, reconfigure GROMACS with -DGMX_TORCH=ON\n"));
+            " Please, reconfigure GROMACS with -DGMX_NNPOT=TORCH\n"));
 }
 
 NNPotForceProvider::~NNPotForceProvider() {}
@@ -72,7 +72,7 @@ void NNPotForceProvider::calculateForces(const ForceProviderInput& /*fInput*/, F
 {
     GMX_THROW(InternalError(
             "Libtorch/NN backend is not linked into GROMACS, NNPot simulation is not possible."
-            " Please, reconfigure GROMACS with -DGMX_TORCH=ON\n"));
+            " Please, reconfigure GROMACS with -DGMX_NNPOT=TORCH\n"));
 }
 
 // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
@@ -80,7 +80,7 @@ void NNPotForceProvider::gatherAtomNumbersIndices()
 {
     GMX_THROW(InternalError(
             "Libtorch/NN backend is not linked into GROMACS, NNPot simulation is not possible."
-            " Please, reconfigure GROMACS with -DGMX_TORCH=ON\n"));
+            " Please, reconfigure GROMACS with -DGMX_NNPOT=TORCH\n"));
 }
 
 CLANG_DIAGNOSTIC_RESET

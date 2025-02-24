@@ -25,15 +25,15 @@ the code stays invariant under such formatting.
 Setting up clang-format
 -----------------------
 
-|Gromacs| formatting is enforced with clang-format 18.0.1.
+|Gromacs| formatting is enforced with clang-format 18.1.8.
 :command:`clang-format` is one of the core *clang* tools.
 It may be included in a *clang* or *llvm* package from your favorite packaging
 system or you may find a standalone *clang-format* package,
-but you should confirm that the provided command is version 18.0.0 or 18.0.1.
+but you should confirm that the provided command is correct (other 18.1.x versions might be okay too).
 Example::
 
     $ clang-format --version
-    clang-format version 18.0.0
+    clang-format version 18.1.8
 
 If you use a different version of clang-format,
 you will likely get different formatting results than
@@ -42,7 +42,7 @@ and the commits that you push will fail the automated tests.
 
 .. note::
 
-    Refer to `LLVM <http://releases.llvm.org/download.html#18.0.0>`__ for
+    Refer to `LLVM <http://releases.llvm.org/download.html#18.1.8>`__ for
     source and binary downloads.
     If downloading sources, note that you will need to download both the
     *LLVM source code* and the *Clang source code*.
@@ -73,7 +73,7 @@ clang-format discovers which formatting rules to apply from the
 which will be automatically updated (if necessary) when you :command:`git pull`
 from the |Gromacs| repository.
 For more about the tool and the :file:`.clang-format` configuration file,
-visit https://releases.llvm.org/18.0.1/tools/clang/docs/ClangFormat.html
+visit https://releases.llvm.org/18.1.8/tools/clang/docs/ClangFormat.html
 
 What is automatically formatted?
 --------------------------------
@@ -106,7 +106,7 @@ Example::
 
     $ clang-tidy --version
       LLVM (http://llvm.org/):
-        LLVM version 18.1.3
+        LLVM version 18.1.8
 
 If you use a different version of clang-tidy,
 you will likely get different checking results than
@@ -115,7 +115,7 @@ and the commits that you push will fail the automated tests.
 
 .. note::
 
-    Refer to `LLVM <https://releases.llvm.org/download.html#18.1.0>`__ for
+    Refer to `LLVM <https://releases.llvm.org/download.html#18.1.8>`__ for
     source and binary downloads.
     If downloading sources, note that you will need to download both the
     *LLVM source code* and the *Clang source code*.
@@ -139,7 +139,7 @@ clang-tidy discovers which formatting rules to apply from the
 which will be automatically updated (if necessary) when you :command:`git pull`
 from the |Gromacs| repository.
 For more about the tool and the :file:`.clang-tidy` configuration file,
-visit https://releases.llvm.org/18.1.1/tools/clang/tools/extra/docs/clang-tidy/index.html.
+visit https://releases.llvm.org/18.1.8/tools/clang/tools/extra/docs/clang-tidy/index.html.
 
 Tools
 -----

@@ -67,7 +67,11 @@
 #    error Including shared gpu kernel utilities header in unsupported build config
 #endif
 
-#define GMX_ALWAYS_INLINE GMX_DEVICE_ATTRIBUTE __attribute__((always_inline))
+#ifdef _MSC_VER
+#    define GMX_ALWAYS_INLINE GMX_DEVICE_ATTRIBUTE __forceinline
+#else
+#    define GMX_ALWAYS_INLINE GMX_DEVICE_ATTRIBUTE __attribute__((always_inline))
+#endif
 
 class Float2Wrapper
 {

@@ -141,9 +141,9 @@ public:
     const std::string mdpTranslationSetWrongValues_ =
             formatString("density-guided-simulation-shift-vector = 0.1 -0.2\n");
     //! A 45 degree rotation around the y axis expressed as matrix transformation
-    const std::string mdpTransformationMatrix1degAroundY_ = formatString(
-            "density-guided-simulation-transformation-matrix = 0.9998477 0.0000000 0.0174524 "
-            "0.0000000 1.0000000 0.0000000 -0.0174524 0.0000000 0.9998477 \n");
+    const std::string mdpTransformationMatrix45degAroundY_ = formatString(
+            "density-guided-simulation-transformation-matrix = 0.7071068 0.0000000 0.7071068 "
+            "0.0000000 1.0000000 0.0000000 -0.7071068 0.0000000 0.7071068 \n");
     //! The identity matrix as transformation matrix
     const std::string mdpTransformationMatrixIdentity_ = formatString(
             "density-guided-simulation-transformation-matrix = 1 0 0 "
@@ -209,7 +209,7 @@ TEST_F(DensityFittingTest, EnergyMinimizationEnergyTranslationParametersOff)
 TEST_F(DensityFittingTest, EnergyMinimizationEnergyCorrectInnerProductTranslationAndTransformationMatrix)
 {
     runner_.useStringAsMdpFile(mdpEminDensfitYesUnsetValues + mdpTranslationSet_
-                               + mdpTransformationMatrix1degAroundY_);
+                               + mdpTransformationMatrix45degAroundY_);
 
     runner_.nsteps_ = 4;
     ASSERT_EQ(0, runner_.callGrompp());

@@ -16,11 +16,33 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Running domain decomposition with 9 or more ranks could cause mdrun to exit
+with an assertion failure.
+
+:issue:`5289`
+
+Fix force correction for affine transformations in density fitting module
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The force calculation was not correctly updated when doing the transformation.
+Only simulations with non-identity ``density-guided-simulation-transformation-matrix``
+were affected.
+
+:issue:`5298`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Improve handling of external muParser
+"""""""""""""""""""""""""""""""""""""
+
+When building with ``-DGMX_USE_MUPARSER=EXTERNAL``, |Gromacs| 2025.0 suffered linking
+or "missing header" problems. This should now be fixed.
+
+:issue:`5290`
 
 Miscellaneous
 ^^^^^^^^^^^^^
