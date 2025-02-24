@@ -178,6 +178,26 @@ ReferenceDataMode referenceDataMode()
 namespace
 {
 
+class ReferenceDataTestEventListener : public ::testing::EmptyTestEventListener
+{
+public:
+    void OnTestEnd(const ::testing::TestInfo& test_info) override
+    {
+        if (g_referenceData)
+        {
+            GMX_RELEASE_ASSERT(g_referenceData.use_count() == 1,
+                               "Test leaked TestRefeferenceData objects");
+            g_referenceData->onTestEnd(test_info.result()->Passed());
+            g_referenceData.reset();
+        }
+    }
+
+    void OnTestProgramEnd(const ::testing::UnitTest& /*unused*/) override
+    {
+        // Could be used e.g. to free internal buffers allocated by an XML parsing library
+    }
+};
+
 //! Returns a reference to the global reference data object.
 TestReferenceDataImplPointer initReferenceDataInstance(std::optional<std::filesystem::path> testNameOverride)
 {
@@ -200,26 +220,6 @@ TestReferenceDataImplPointer initReferenceDataInstanceForSelfTest(ReferenceDataM
     g_referenceData = std::make_shared<internal::TestReferenceDataImpl>(mode, true, std::nullopt);
     return g_referenceData;
 }
-
-class ReferenceDataTestEventListener : public ::testing::EmptyTestEventListener
-{
-public:
-    void OnTestEnd(const ::testing::TestInfo& test_info) override
-    {
-        if (g_referenceData)
-        {
-            GMX_RELEASE_ASSERT(g_referenceData.use_count() == 1,
-                               "Test leaked TestRefeferenceData objects");
-            g_referenceData->onTestEnd(test_info.result()->Passed());
-            g_referenceData.reset();
-        }
-    }
-
-    void OnTestProgramEnd(const ::testing::UnitTest& /*unused*/) override
-    {
-        // Could be used e.g. to free internal buffers allocated by an XML parsing library
-    }
-};
 
 //! Formats a path to a reference data entry with a non-null id.
 std::string formatEntryPath(const std::string& prefix, const std::string& id)
