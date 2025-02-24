@@ -54,7 +54,7 @@ if (GMX_TORCH)
     check_linker_flag(CXX "-Wl,--no-as-needed" LINKER_SUPPORTS_NO_AS_NEEDED)
     if(LINKER_SUPPORTS_NO_AS_NEEDED)
         # the link interface should ideally be declared as PRIVATE here, but it can't be used until applied_forces is turned into a proper OBJECT module
-        target_link_libraries(applied_forces INTERFACE -Wl,--no-as-needed ${Python_LIBRARIES} ${Torch_LIBRARIES})
+        target_link_libraries(applied_forces INTERFACE -Wl,--no-as-needed ${Python_LIBRARIES})
     elseif(NOT FIND_TORCH_QUIETLY)
         message(WARNING "Linker does not support --no-as-needed flag. This may cause torch extension libraries to not be loaded corerctly.")
     endif()
