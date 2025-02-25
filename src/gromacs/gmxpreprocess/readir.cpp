@@ -4641,9 +4641,9 @@ void processConstantAcceleration(t_inputrec* ir, const gmx_mtop_t& sys)
             {
                 const char* dim[DIM] = { "X", "Y", "Z" };
                 fprintf(stderr,
-                        "Net Acceleration in %s direction, will %s be corrected\n",
+                        "Net Acceleration in %s direction, %s be corrected\n",
                         dim[d],
-                        haveComVelocityRemoval ? "" : "not");
+                        haveComVelocityRemoval ? "will" : "will not");
                 // With COM velocity removal, correct the group accelerations such that the system COM is not accelerated
                 if (haveComVelocityRemoval && d < ndof_com(ir))
                 {
