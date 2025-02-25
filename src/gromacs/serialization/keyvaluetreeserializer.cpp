@@ -33,7 +33,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/utility/keyvaluetreeserializer.h"
+#include "gromacs/serialization/keyvaluetreeserializer.h"
 
 #include <cstdint>
 
@@ -44,8 +44,8 @@
 #include <utility>
 #include <vector>
 
+#include "gromacs/serialization/iserializer.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/iserializer.h"
 #include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 

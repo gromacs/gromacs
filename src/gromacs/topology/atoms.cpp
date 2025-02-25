@@ -44,6 +44,7 @@
 #include <string>
 #include <type_traits>
 
+#include "gromacs/serialization/iserializer.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology_enums.h"
@@ -54,7 +55,6 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/iserializer.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"

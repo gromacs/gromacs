@@ -37,18 +37,18 @@
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inlibraryapi
- * \ingroup module_utility
+ * \ingroup module_serialization
  */
-#ifndef GMX_UTILITY_INMEMORYSERIALIZER_H
-#define GMX_UTILITY_INMEMORYSERIALIZER_H
+#ifndef GMX_SERIALIZATION_INMEMORYSERIALIZER_H
+#define GMX_SERIALIZATION_INMEMORYSERIALIZER_H
 
 #include <cstddef>
 
 #include <memory>
 #include <vector>
 
+#include "gromacs/serialization/iserializer.h"
 #include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/iserializer.h"
 
 namespace gmx
 {

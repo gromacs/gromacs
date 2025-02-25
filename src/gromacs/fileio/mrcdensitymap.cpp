@@ -56,11 +56,11 @@
 #include "gromacs/math/coordinatetransformation.h"
 #include "gromacs/mdspan/extents.h"
 #include "gromacs/mdspan/layouts.h"
+#include "gromacs/serialization/inmemoryserializer.h"
+#include "gromacs/serialization/iserializer.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/utility/inmemoryserializer.h"
-#include "gromacs/utility/iserializer.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "mrcserializer.h"

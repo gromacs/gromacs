@@ -80,6 +80,7 @@ target_link_libraries(fileio INTERFACE
 # fileio interfaces convey transitive dependence on these modules.
 #target_link_libraries(fileio PUBLIC
 target_link_libraries(fileio INTERFACE
+                      serialization
                       utility
                       )
 

@@ -42,4 +42,7 @@ gmx_add_unit_test(AwhTest awh-test
         friction_metric.cpp
         )
 # Todo: link awh target when it exists
-target_link_libraries(awh-test PRIVATE math)
+target_link_libraries(awh-test PRIVATE
+                      math
+                      serialization
+                      )

@@ -54,8 +54,8 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/hardware/device_information.h"
+#include "gromacs/serialization/inmemoryserializer.h"
 #include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/inmemoryserializer.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace gmx

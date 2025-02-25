@@ -56,7 +56,6 @@
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
 #include "gromacs/utility/basedefinitions.h"
-#include "gromacs/utility/iserializer.h"
 #include "gromacs/utility/real.h"
 
 #include "replicaexchange.h"

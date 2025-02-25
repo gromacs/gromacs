@@ -50,10 +50,10 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/serialization/inmemoryserializer.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/inmemoryserializer.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textreader.h"

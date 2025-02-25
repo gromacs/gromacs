@@ -42,8 +42,8 @@
 
 #include "checkpointdata.h"
 
-#include "gromacs/utility/iserializer.h"
-#include "gromacs/utility/keyvaluetreeserializer.h"
+#include "gromacs/serialization/iserializer.h"
+#include "gromacs/serialization/keyvaluetreeserializer.h"
 #include "gromacs/utility/textwriter.h"
 
 namespace gmx

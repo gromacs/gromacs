@@ -37,10 +37,10 @@
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inlibraryapi
- * \ingroup module_utility
+ * \ingroup module_serialization
  */
-#ifndef GMX_UTILITY_KEYVALUETREESERIALIZER_H
-#define GMX_UTILITY_KEYVALUETREESERIALIZER_H
+#ifndef GMX_SERIALIZATION_KEYVALUETREESERIALIZER_H
+#define GMX_SERIALIZATION_KEYVALUETREESERIALIZER_H
 
 namespace gmx
 {
@@ -52,13 +52,13 @@ class ISerializer;
 /*! \brief
  * Serializes a KeyValueTreeObject with given serializer.
  *
- * \ingroup module_utility
+ * \ingroup module_serialization
  */
 void serializeKeyValueTree(const KeyValueTreeObject& root, ISerializer* serializer);
 /*! \brief
  * Deserializes a KeyValueTreeObject from a given serializer.
  *
- * \ingroup module_utility
+ * \ingroup module_serialization
  */
 KeyValueTreeObject deserializeKeyValueTree(ISerializer* serializer);
 //! \endcond

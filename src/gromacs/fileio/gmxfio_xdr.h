@@ -41,8 +41,8 @@
 
 #include "gromacs/fileio/xdrf.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/serialization/iserializer.h"
 #include "gromacs/utility/basedefinitions.h"
-#include "gromacs/utility/iserializer.h"
 #include "gromacs/utility/real.h"
 
 struct t_fileio;

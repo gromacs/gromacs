@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright 2019- The GROMACS Authors
+# Copyright 2010- The GROMACS Authors
 # and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
 # Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
 #
@@ -31,17 +31,30 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out https://www.gromacs.org.
 
-gmx_add_unit_test(TopologyTest topology-test
-    CPP_SOURCE_FILES
-        atoms.cpp
-        exclusionblocks.cpp
-        idef.cpp
-        index.cpp
-        mtop.cpp
-        symtab.cpp
-        topsort.cpp
-        )
-target_link_libraries(topology-test PRIVATE
-                      topology
-                      serialization
+add_library(serialization INTERFACE)
+
+file(GLOB SERIALIZATION_SOURCES
+    inmemoryserializer.cpp
+    keyvaluetreeserializer.cpp
+    )
+set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${SERIALIZATION_SOURCES} PARENT_SCOPE)
+
+# Public interface for modules, including dependencies and interfaces
+#target_include_directories(serialization PUBLIC
+target_include_directories(serialization INTERFACE
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+#target_link_libraries(serialization PUBLIC
+target_link_libraries(serialization INTERFACE
+                      legacy_api
+                      math
+                      utility
                       )
+# TODO(#3288): when serialization is an OBJECT target, explicitly link source dependencies.
+# Source files have the following private module dependencies.
+#target_link_libraries(serialization PRIVATE common)
+# TODO(#3288): Explicitly link specific modules as legacy_modules is removed.
+#target_link_libraries(serialization PRIVATE legacy_modules)
+
+if (BUILD_TESTING)
+    add_subdirectory(tests)
+endif ()

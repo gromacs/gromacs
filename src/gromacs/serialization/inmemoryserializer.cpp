@@ -36,11 +36,11 @@
  * Defines gmx::ISerializer implementation for in-memory serialization.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
- * \ingroup module_utility
+ * \ingroup module_serialization
  */
 #include "gmxpre.h"
 
-#include "gromacs/utility/inmemoryserializer.h"
+#include "gromacs/serialization/inmemoryserializer.h"
 
 #include "config.h"
 
@@ -54,8 +54,8 @@
 #include <utility>
 #include <vector>
 
+#include "gromacs/serialization/iserializer.h"
 #include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/iserializer.h"
 #include "gromacs/utility/real.h"
 
 namespace gmx

@@ -51,8 +51,8 @@
 #include <vector>
 
 #include "gromacs/fileio/mrcdensitymapheader.h"
-#include "gromacs/utility/inmemoryserializer.h"
-#include "gromacs/utility/iserializer.h"
+#include "gromacs/serialization/inmemoryserializer.h"
+#include "gromacs/serialization/iserializer.h"
 
 namespace gmx
 {

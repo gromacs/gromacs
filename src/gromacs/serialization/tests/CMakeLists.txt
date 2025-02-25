@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright 2019- The GROMACS Authors
+# Copyright 2012- The GROMACS Authors
 # and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
 # Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
 #
@@ -31,17 +31,11 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out https://www.gromacs.org.
 
-gmx_add_unit_test(TopologyTest topology-test
+gmx_add_unit_test(SerializationUnitTests serialization-test
     CPP_SOURCE_FILES
-        atoms.cpp
-        exclusionblocks.cpp
-        idef.cpp
-        index.cpp
-        mtop.cpp
-        symtab.cpp
-        topsort.cpp
+        inmemoryserializer.cpp
+        keyvaluetreeserializer.cpp
         )
-target_link_libraries(topology-test PRIVATE
-                      topology
-                      serialization
-                      )
+# TODO: Remove `legacy_modules` once specific modules are explicitly linked.
+target_link_libraries(serialization-test PRIVATE legacy_modules)
+target_link_libraries(serialization-test PRIVATE serialization)

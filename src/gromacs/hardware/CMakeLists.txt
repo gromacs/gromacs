@@ -97,7 +97,10 @@ target_link_libraries(hardware INTERFACE
                       legacy_api
                       )
 # The interface conveys transitive dependence on other module(s)
-target_link_libraries(hardware INTERFACE utility)
+target_link_libraries(hardware INTERFACE
+                      serialization
+                      utility
+                      )
 
 # TODO: when hardware is an OBJECT target
 #target_link_libraries(hardware PUBLIC legacy_api)

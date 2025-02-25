@@ -54,9 +54,9 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/gmxfio_xdr.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/serialization/inmemoryserializer.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/inmemoryserializer.h"
 #include "gromacs/utility/real.h"
 
 #include "testutils/testfilemanager.h"

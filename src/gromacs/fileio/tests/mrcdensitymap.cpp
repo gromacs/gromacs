@@ -55,9 +55,9 @@
 #include "gromacs/math/multidimarray.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdspan/extensions.h"
+#include "gromacs/serialization/inmemoryserializer.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/inmemoryserializer.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"

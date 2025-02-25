@@ -36,12 +36,12 @@
  * Tests for gmx::InMemorySerializer and InMemoryDeserializer.
  *
  * \author Christian Blau <blau@kth.se>
- * \ingroup module_utility
+ * \ingroup module_serialization
  */
 
 #include "gmxpre.h"
 
-#include "gromacs/utility/inmemoryserializer.h"
+#include "gromacs/serialization/inmemoryserializer.h"
 
 #include <cstdint>
 
@@ -52,8 +52,8 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "gromacs/serialization/iserializer.h"
 #include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/iserializer.h"
 #include "gromacs/utility/real.h"
 
 namespace gmx

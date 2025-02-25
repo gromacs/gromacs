@@ -51,8 +51,8 @@
 #include "gromacs/applied_forces/awh/correlationgrid.h"
 #include "gromacs/applied_forces/awh/pointstate.h"
 #include "gromacs/mdtypes/awh_params.h"
+#include "gromacs/serialization/inmemoryserializer.h"
 #include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/inmemoryserializer.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/refdata.h"

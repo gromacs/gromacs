@@ -59,7 +59,6 @@
 #include <vector>
 
 #include "gromacs/utility/basedefinitions.h"
-#include "gromacs/utility/iserializer.h"
 
 struct DeviceInformation;
 enum class DeviceVendor : int;
@@ -69,6 +68,7 @@ namespace gmx
 enum class GpuAwareMpiStatus : int;
 template<typename>
 class ArrayRef;
+class ISerializer;
 class MDLogger;
 } // namespace gmx
 

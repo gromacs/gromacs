@@ -40,28 +40,26 @@
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inlibraryapi
- * \ingroup module_utility
+ * \ingroup module_serialization
  */
-#ifndef GMX_UTILITY_ISERIALIZER_H
-#define GMX_UTILITY_ISERIALIZER_H
+/*! \defgroup module_serialization Serialization Utilities (serialization)
+ * \ingroup group_utilitymodules
+ * \brief
+ * Provides low-level utilities for serialization
+ *
+ * These can be used when doing file or network I/O to flatten and
+ * unflatten rich data structures.
+ */
+#ifndef GMX_SERIALIZATION_ISERIALIZER_H
+#define GMX_SERIALIZATION_ISERIALIZER_H
 
 #include <cstddef>
 
 #include <string>
 
+#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
-#include "gromacs/utility/smalloc.h"
-
-/*! \libinternal
- * \brief Duplicate definitions of those in vectypes.h
- *
- * This lets the utility module be independent of the math module,
- * without which it is hard to build a proper layered library.  The
- * duplicates must remain matching, but if ever only one is changed
- * then the compiler will complain about it. */
-typedef real rvec[3];
-typedef int  ivec[3];
 
 namespace gmx
 {

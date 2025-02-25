@@ -99,6 +99,7 @@ add_subdirectory(options)
 add_subdirectory(pbcutil)
 add_subdirectory(random)
 add_subdirectory(restraint)
+add_subdirectory(serialization)
 add_subdirectory(tables)
 add_subdirectory(taskassignment)
 add_subdirectory(timing)
@@ -432,6 +433,7 @@ target_link_libraries(libgromacs PRIVATE
                       $<BUILD_INTERFACE:random>
                       $<BUILD_INTERFACE:restraint>
                       $<BUILD_INTERFACE:selection>
+                      $<BUILD_INTERFACE:serialization>
                       $<BUILD_INTERFACE:simd>
                       $<BUILD_INTERFACE:statistics>
                       $<BUILD_INTERFACE:swap>

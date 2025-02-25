@@ -33,7 +33,7 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/utility/keyvaluetreeserializer.h"
+#include "gromacs/serialization/keyvaluetreeserializer.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -43,10 +43,10 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/serialization/inmemoryserializer.h"
+#include "gromacs/serialization/iserializer.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/inmemoryserializer.h"
-#include "gromacs/utility/iserializer.h"
 #include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/real.h"
