@@ -67,19 +67,24 @@ constexpr EnumerationArray<IntegrationStage, const char*> integrationStepNames =
 };
 } // namespace
 
-//! Update velocities
+/*! \brief Update velocities
+ *
+ * To maximize the ability of the compiler to optimize, all the arrays
+ * of RVec should be annotated with gmx_restrict, so the compiler knows
+ * there is no aliasing, and for the same reason we do not use
+ * ArrayRef<RVec> for them. */
 template<NumVelocityScalingValues        numStartVelocityScalingValues,
          ParrinelloRahmanVelocityScaling parrinelloRahmanVelocityScaling,
          NumVelocityScalingValues        numEndVelocityScalingValues>
-static void inline updateVelocities(int                        a,
-                                    real                       dt,
-                                    real                       lambdaStart,
-                                    real                       lambdaEnd,
-                                    const ArrayRef<const RVec> invMassPerDim,
-                                    rvec* gmx_restrict         v,
-                                    const rvec* gmx_restrict   f,
-                                    const RVec&                diagPR,
-                                    const Matrix3x3&           matrixPR)
+static void inline updateVelocities(int                      a,
+                                    real                     dt,
+                                    real                     lambdaStart,
+                                    real                     lambdaEnd,
+                                    const RVec* gmx_restrict invMassPerDim,
+                                    RVec* gmx_restrict       v,
+                                    const RVec* gmx_restrict f,
+                                    const RVec&              diagPR,
+                                    const Matrix3x3&         matrixPR)
 {
     RVec parrinelloRahmanScaledVelocity;
     if (parrinelloRahmanVelocityScaling == ParrinelloRahmanVelocityScaling::Anisotropic)
@@ -122,12 +127,17 @@ static void inline updateVelocities(int                        a,
     }
 }
 
-//! Update positions
+/*! \brief Update positions
+ *
+ * To maximize the ability of the compiler to optimize, all the arrays
+ * of RVec should be annotated with gmx_restrict, so the compiler knows
+ * there is no aliasing, and for the same reason we do not use
+ * ArrayRef<RVec> for them. */
 static void inline updatePositions(int                      a,
                                    real                     dt,
-                                   const rvec* gmx_restrict x,
-                                   rvec* gmx_restrict       xprime,
-                                   const rvec* gmx_restrict v)
+                                   const RVec* gmx_restrict x,
+                                   RVec* gmx_restrict       xprime,
+                                   const RVec* gmx_restrict v)
 {
     for (int d = 0; d < DIM; d++)
     {
@@ -135,9 +145,14 @@ static void inline updatePositions(int                      a,
     }
 }
 
-//! Scale velocities
+/*! \brief Scale velocities
+ *
+ * To maximize the ability of the compiler to optimize, all the arrays
+ * of RVec should be annotated with gmx_restrict, so the compiler knows
+ * there is no aliasing, and for the same reason we do not use
+ * ArrayRef<RVec> for them. */
 template<NumVelocityScalingValues numStartVelocityScalingValues>
-static void inline scaleVelocities(int a, real lambda, rvec* gmx_restrict v)
+static void inline scaleVelocities(int a, real lambda, RVec* gmx_restrict v)
 {
     if (numStartVelocityScalingValues != NumVelocityScalingValues::None)
     {
@@ -148,9 +163,14 @@ static void inline scaleVelocities(int a, real lambda, rvec* gmx_restrict v)
     }
 }
 
-//! Scale positions
+/*! \brief Scale positions
+ *
+ * To maximize the ability of the compiler to optimize, all the arrays
+ * of RVec should be annotated with gmx_restrict, so the compiler knows
+ * there is no aliasing, and for the same reason we do not use
+ * ArrayRef<RVec> for them. */
 template<NumPositionScalingValues numPositionScalingValues>
-static void inline scalePositions(int a, real lambda, rvec* gmx_restrict x)
+static void inline scalePositions(int a, real lambda, RVec* gmx_restrict x)
 {
     if (numPositionScalingValues != NumPositionScalingValues::None)
     {
@@ -185,9 +205,9 @@ void Propagator<IntegrationStage::PositionsOnly>::run()
 {
     wallcycle_start(wcycle_, WallCycleCounter::Update);
 
-    auto* xp = as_rvec_array(statePropagatorData_->positionsView().paddedArrayRef().data());
-    const auto* x = as_rvec_array(statePropagatorData_->constPositionsView().paddedArrayRef().data());
-    const auto* v = as_rvec_array(statePropagatorData_->constVelocitiesView().paddedArrayRef().data());
+    RVec*       xp = statePropagatorData_->positionsView().paddedArrayRef().data();
+    const RVec* x  = statePropagatorData_->constPositionsView().paddedArrayRef().data();
+    const RVec* v  = statePropagatorData_->constVelocitiesView().paddedArrayRef().data();
 
     int nth    = gmx_omp_nthreads_get(ModuleMultiThread::Update);
     int homenr = mdAtoms_->mdatoms()->homenr;
@@ -220,7 +240,7 @@ void Propagator<IntegrationStage::ScalePositions>::run()
 {
     wallcycle_start(wcycle_, WallCycleCounter::Update);
 
-    auto* x = as_rvec_array(statePropagatorData_->positionsView().paddedArrayRef().data());
+    RVec* x = statePropagatorData_->positionsView().paddedArrayRef().data();
 
     const real lambda =
             (numPositionScalingValues == NumPositionScalingValues::Single) ? positionScaling_[0] : 1.0;
@@ -262,8 +282,8 @@ void Propagator<IntegrationStage::VelocitiesOnly>::run()
 {
     wallcycle_start(wcycle_, WallCycleCounter::Update);
 
-    auto*       v = as_rvec_array(statePropagatorData_->velocitiesView().paddedArrayRef().data());
-    const auto* f = as_rvec_array(statePropagatorData_->constForcesView().force().data());
+    RVec*                      v = statePropagatorData_->velocitiesView().paddedArrayRef().data();
+    const RVec*                f = statePropagatorData_->constForcesView().force().data();
     const ArrayRef<const RVec> invMassPerDim = mdAtoms_->mdatoms()->invMassPerDim;
 
     const real lambdaStart = (numStartVelocityScalingValues == NumVelocityScalingValues::Single)
@@ -302,7 +322,7 @@ void Propagator<IntegrationStage::VelocitiesOnly>::run()
                             numEndVelocityScalingValues == NumVelocityScalingValues::Multiple
                                     ? endVelocityScaling_[mdAtoms_->mdatoms()->cTC[a]]
                                     : lambdaEnd,
-                            invMassPerDim,
+                            invMassPerDim.data(),
                             v,
                             f,
                             diagonalOfPRScalingMatrix,
@@ -319,7 +339,7 @@ void Propagator<IntegrationStage::VelocitiesOnly>::run()
                             numEndVelocityScalingValues == NumVelocityScalingValues::Multiple
                                     ? endVelocityScaling_[mdAtoms_->mdatoms()->cTC[a]]
                                     : lambdaEnd,
-                            invMassPerDim,
+                            invMassPerDim.data(),
                             v,
                             f,
                             diagonalOfPRScalingMatrix,
@@ -342,10 +362,10 @@ void Propagator<IntegrationStage::LeapFrog>::run()
 {
     wallcycle_start(wcycle_, WallCycleCounter::Update);
 
-    auto* xp = as_rvec_array(statePropagatorData_->positionsView().paddedArrayRef().data());
-    const auto* x = as_rvec_array(statePropagatorData_->constPositionsView().paddedArrayRef().data());
-    auto*       v = as_rvec_array(statePropagatorData_->velocitiesView().paddedArrayRef().data());
-    const auto* f = as_rvec_array(statePropagatorData_->constForcesView().force().data());
+    RVec*       xp = statePropagatorData_->positionsView().paddedArrayRef().data();
+    const RVec* x  = statePropagatorData_->constPositionsView().paddedArrayRef().data();
+    RVec*       v  = statePropagatorData_->velocitiesView().paddedArrayRef().data();
+    const RVec* f  = statePropagatorData_->constForcesView().force().data();
     const ArrayRef<const RVec> invMassPerDim = mdAtoms_->mdatoms()->invMassPerDim;
 
     const real lambdaStart = (numStartVelocityScalingValues == NumVelocityScalingValues::Single)
@@ -385,7 +405,7 @@ void Propagator<IntegrationStage::LeapFrog>::run()
                             numEndVelocityScalingValues == NumVelocityScalingValues::Multiple
                                     ? endVelocityScaling_[mdAtoms_->mdatoms()->cTC[a]]
                                     : lambdaEnd,
-                            invMassPerDim,
+                            invMassPerDim.data(),
                             v,
                             f,
                             diagonalOfPRScalingMatrix,
@@ -402,7 +422,7 @@ void Propagator<IntegrationStage::LeapFrog>::run()
                             numEndVelocityScalingValues == NumVelocityScalingValues::Multiple
                                     ? endVelocityScaling_[mdAtoms_->mdatoms()->cTC[a]]
                                     : lambdaEnd,
-                            invMassPerDim,
+                            invMassPerDim.data(),
                             v,
                             f,
                             diagonalOfPRScalingMatrix,
@@ -426,10 +446,10 @@ void Propagator<IntegrationStage::VelocityVerletPositionsAndVelocities>::run()
 {
     wallcycle_start(wcycle_, WallCycleCounter::Update);
 
-    auto* xp = as_rvec_array(statePropagatorData_->positionsView().paddedArrayRef().data());
-    const auto* x = as_rvec_array(statePropagatorData_->constPositionsView().paddedArrayRef().data());
-    auto*       v = as_rvec_array(statePropagatorData_->velocitiesView().paddedArrayRef().data());
-    const auto* f = as_rvec_array(statePropagatorData_->constForcesView().force().data());
+    RVec*       xp = statePropagatorData_->positionsView().paddedArrayRef().data();
+    const RVec* x  = statePropagatorData_->constPositionsView().paddedArrayRef().data();
+    RVec*       v  = statePropagatorData_->velocitiesView().paddedArrayRef().data();
+    const RVec* f  = statePropagatorData_->constForcesView().force().data();
     const ArrayRef<const RVec> invMassPerDim = mdAtoms_->mdatoms()->invMassPerDim;
 
     const real lambdaStart = (numStartVelocityScalingValues == NumVelocityScalingValues::Single)
@@ -469,7 +489,7 @@ void Propagator<IntegrationStage::VelocityVerletPositionsAndVelocities>::run()
                             numEndVelocityScalingValues == NumVelocityScalingValues::Multiple
                                     ? endVelocityScaling_[mdAtoms_->mdatoms()->cTC[a]]
                                     : lambdaEnd,
-                            invMassPerDim,
+                            invMassPerDim.data(),
                             v,
                             f,
                             diagonalOfPRScalingMatrix,
@@ -486,7 +506,7 @@ void Propagator<IntegrationStage::VelocityVerletPositionsAndVelocities>::run()
                             numEndVelocityScalingValues == NumVelocityScalingValues::Multiple
                                     ? endVelocityScaling_[mdAtoms_->mdatoms()->cTC[a]]
                                     : lambdaEnd,
-                            invMassPerDim,
+                            invMassPerDim.data(),
                             v,
                             f,
                             diagonalOfPRScalingMatrix,
@@ -514,7 +534,7 @@ void Propagator<IntegrationStage::ScaleVelocities>::run()
     }
     wallcycle_start(wcycle_, WallCycleCounter::Update);
 
-    auto* v = as_rvec_array(statePropagatorData_->velocitiesView().paddedArrayRef().data());
+    RVec* v = statePropagatorData_->velocitiesView().paddedArrayRef().data();
 
     const real lambdaStart = (numStartVelocityScalingValues == NumVelocityScalingValues::Single)
                                      ? startVelocityScaling_[0]

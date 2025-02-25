@@ -293,13 +293,13 @@ static void print_converged(FILE*             fp,
 }
 
 //! Compute the norm and max of the force array in parallel
-static void get_f_norm_max(const t_commrec*               cr,
-                           const t_grpopts*               opts,
-                           t_mdatoms*                     mdatoms,
-                           gmx::ArrayRef<const gmx::RVec> f,
-                           real*                          fnorm,
-                           real*                          fmax,
-                           int*                           a_fmax)
+static void get_f_norm_max(const t_commrec*         cr,
+                           const t_grpopts*         opts,
+                           t_mdatoms*               mdatoms,
+                           const RVec* gmx_restrict f,
+                           real*                    fnorm,
+                           real*                    fmax,
+                           int*                     a_fmax)
 {
     double fnorm2, *sum;
     real   fmax2, fam;
@@ -393,7 +393,7 @@ static void get_f_norm_max(const t_commrec*               cr,
 //! Compute the norm of the force
 static void get_state_f_norm_max(const t_commrec* cr, const t_grpopts* opts, t_mdatoms* mdatoms, em_state_t* ems)
 {
-    get_f_norm_max(cr, opts, mdatoms, ems->f.view().force(), &ems->fnorm, &ems->fmax, &ems->a_fmax);
+    get_f_norm_max(cr, opts, mdatoms, ems->f.view().force().data(), &ems->fnorm, &ems->fmax, &ems->a_fmax);
 }
 
 //! Initialize the energy minimization
@@ -706,9 +706,13 @@ static bool do_em_step(const t_commrec*                          cr,
     nthreads = gmx_omp_nthreads_get(ModuleMultiThread::Update);
 #pragma omp parallel num_threads(nthreads)
     {
-        const rvec* x1 = s1->x.rvec_array();
-        rvec*       x2 = s2->x.rvec_array();
-        const rvec* f  = as_rvec_array(force.unpaddedArrayRef().data());
+        /* To maximize the ability of the compiler to optimize, all
+         * the arrays of RVec should be annotated with gmx_restrict,
+         * so the compiler knows there is no aliasing, and for the
+         * same reason we do not use ArrayRef<RVec> for them. */
+        const rvec* gmx_restrict x1 = s1->x.rvec_array();
+        rvec* gmx_restrict       x2 = s2->x.rvec_array();
+        const rvec* gmx_restrict f  = as_rvec_array(force.unpaddedArrayRef().data());
 
         int gf = 0;
 #pragma omp for schedule(static) nowait
@@ -1494,11 +1498,16 @@ void LegacySimulator::do_cg()
          * simply the negative gradient.
          */
 
-        /* Calculate the new direction in p, and the gradient in this direction, gpa */
-        gmx::ArrayRef<gmx::RVec>       pm  = s_min->s.cg_p;
-        gmx::ArrayRef<const gmx::RVec> sfm = s_min->f.view().force();
-        double                         gpa = 0;
-        int                            gf  = 0;
+        /* Calculate the new direction in p, and the gradient in this direction, gpa
+         *
+         * To maximize the ability of the compiler to optimize, all
+         * the arrays of RVec should be annotated with gmx_restrict,
+         * so the compiler knows there is no aliasing, and for the
+         * same reason we do not use ArrayRef<RVec> for them. */
+        RVec* gmx_restrict       pm  = s_min->s.cg_p.data();
+        const RVec* gmx_restrict sfm = s_min->f.view().force().data();
+        double                   gpa = 0;
+        int                      gf  = 0;
         for (int i = 0; i < mdatoms->homenr; i++)
         {
             if (!mdatoms->cFREEZE.empty())
@@ -1637,10 +1646,15 @@ void LegacySimulator::do_cg()
         energyEvaluator.run(s_c, mu_tot, vir, pres, -1, FALSE, step);
         observablesReducer.markAsReadyToReduce();
 
-        /* Calc derivative along line */
-        const rvec*                    pc  = s_c->s.cg_p.rvec_array();
-        gmx::ArrayRef<const gmx::RVec> sfc = s_c->f.view().force();
-        double                         gpc = 0;
+        /* Calc derivative along line
+         *
+         * To maximize the ability of the compiler to optimize, all
+         * the arrays of RVec should be annotated with gmx_restrict,
+         * so the compiler knows there is no aliasing, and for the
+         * same reason we do not use ArrayRef<RVec> for them. */
+        const RVec*        pc  = s_c->s.cg_p.data();
+        RVec* gmx_restrict sfc = s_c->f.view().force().data();
+        double             gpc = 0;
         for (int i = 0; i < mdatoms->homenr; i++)
         {
             for (m = 0; m < DIM; m++)
@@ -1757,10 +1771,14 @@ void LegacySimulator::do_cg()
 
                 /* p does not change within a step, but since the domain decomposition
                  * might change, we have to use cg_p of s_b here.
-                 */
-                const rvec*                    pb  = s_b->s.cg_p.rvec_array();
-                gmx::ArrayRef<const gmx::RVec> sfb = s_b->f.view().force();
-                gpb                                = 0;
+                 *
+                 * To maximize the ability of the compiler to optimize, all
+                 * the arrays of RVec should be annotated with gmx_restrict,
+                 * so the compiler knows there is no aliasing, and for the
+                 * same reason we do not use ArrayRef<RVec> for them. */
+                const RVec* gmx_restrict pb  = s_b->s.cg_p.data();
+                RVec* gmx_restrict       sfb = s_b->f.view().force().data();
+                gpb                          = 0;
                 for (int i = 0; i < mdatoms->homenr; i++)
                 {
                     for (m = 0; m < DIM; m++)
@@ -2328,8 +2346,8 @@ void LegacySimulator::do_lbfgs()
         /* make s a pointer to current search direction - point=0 first time we get here */
         gmx::ArrayRef<const real> s = dx[point];
 
-        const real* xx = static_cast<real*>(ems.s.x.rvec_array()[0]);
-        const real* ff = static_cast<real*>(ems.f.view().force().data()[0]);
+        const real* gmx_restrict xx = static_cast<real*>(ems.s.x.rvec_array()[0]);
+        const real* gmx_restrict ff = static_cast<real*>(ems.f.view().force().data()[0]);
 
         // calculate line gradient in position A
         double gpa = 0;
@@ -2361,10 +2379,10 @@ void LegacySimulator::do_lbfgs()
         }
 
         // Before taking any steps along the line, store the old position
-        *last            = ems;
-        real*      lastx = static_cast<real*>(last->s.x.data()[0]);
-        real*      lastf = static_cast<real*>(last->f.view().force().data()[0]);
-        const real Epot0 = ems.epot;
+        *last                    = ems;
+        real* gmx_restrict lastx = static_cast<real*>(last->s.x.data()[0]);
+        real* gmx_restrict lastf = static_cast<real*>(last->f.view().force().data()[0]);
+        const real         Epot0 = ems.epot;
 
         *sa = ems;
 
@@ -2426,7 +2444,7 @@ void LegacySimulator::do_lbfgs()
         } while (maxdelta > inputRec_->em_stepsize);
 
         // Take a trial step and move the coordinate array xc[] to position C
-        real* xc = static_cast<real*>(sc->s.x.rvec_array()[0]);
+        real* gmx_restrict xc = static_cast<real*>(sc->s.x.rvec_array()[0]);
         for (int i = 0; i < n; i++)
         {
             xc[i] = lastx[i] + c * s[i];
@@ -2437,8 +2455,8 @@ void LegacySimulator::do_lbfgs()
         energyEvaluator.run(sc, mu_tot, vir, pres, step, FALSE, step);
 
         // Calc line gradient in position C
-        real*  fc  = static_cast<real*>(sc->f.view().force()[0]);
-        double gpc = 0;
+        real* gmx_restrict fc  = static_cast<real*>(sc->f.view().force()[0]);
+        double             gpc = 0;
         for (int i = 0; i < n; i++)
         {
             gpc -= s[i] * fc[i]; /* f is negative gradient, thus the sign */
@@ -2510,7 +2528,7 @@ void LegacySimulator::do_lbfgs()
                 }
 
                 // Take a trial step to point B
-                real* xb = static_cast<real*>(sb->s.x.rvec_array()[0]);
+                real* gmx_restrict xb = static_cast<real*>(sb->s.x.rvec_array()[0]);
                 for (int i = 0; i < n; i++)
                 {
                     xb[i] = lastx[i] + b * s[i];
@@ -2522,8 +2540,8 @@ void LegacySimulator::do_lbfgs()
                 fnorm = sb->fnorm;
 
                 // Calculate gradient in point B
-                real*  fb  = static_cast<real*>(sb->f.view().force()[0]);
-                double gpb = 0;
+                real* gmx_restrict fb  = static_cast<real*>(sb->f.view().force()[0]);
+                double             gpb = 0;
                 for (int i = 0; i < n; i++)
                 {
                     gpb -= s[i] * fb[i]; /* f is negative gradient, thus the sign */
