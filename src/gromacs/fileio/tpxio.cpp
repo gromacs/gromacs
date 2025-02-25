@@ -318,7 +318,7 @@ static const t_ftupd ftupd[] = {
  **************************************************************/
 static void do_pullgrp_tpx_pre95(gmx::ISerializer* serializer, t_pull_group* pgrp, t_pull_coord* pcrd)
 {
-    rvec tmp;
+    gmx::RVec tmp;
 
     int numAtoms = pgrp->ind.size();
     serializer->doInt(&numAtoms);
@@ -329,7 +329,7 @@ static void do_pullgrp_tpx_pre95(gmx::ISerializer* serializer, t_pull_group* pgr
     pgrp->weight.resize(numWeights);
     serializer->doRealArray(pgrp->weight.data(), numWeights);
     serializer->doInt(&pgrp->pbcatom);
-    serializer->doRvec(&pcrd->vec.as_vec());
+    serializer->doRvec(&pcrd->vec);
     clear_rvec(pcrd->origin);
     serializer->doRvec(&tmp);
     pcrd->init = tmp[0];
@@ -440,8 +440,8 @@ static void do_pull_coord(gmx::ISerializer* serializer,
             copy_ivec(dimOld, pcrd->dim);
         }
     }
-    serializer->doRvec(&pcrd->origin.as_vec());
-    serializer->doRvec(&pcrd->vec.as_vec());
+    serializer->doRvec(&pcrd->origin);
+    serializer->doRvec(&pcrd->vec);
     if (file_version >= tpxv_PullCoordTypeGeom)
     {
         serializer->doBool(&pcrd->bStart);
@@ -906,7 +906,7 @@ static void do_rotgrp(gmx::ISerializer* serializer, t_rotgrp* rotg)
     }
     for (gmx::RVec& x : rotg->x_ref_original)
     {
-        serializer->doRvec(as_rvec_array(&x));
+        serializer->doRvec(&x);
     }
     serializer->doRvec(&rotg->inputVec);
     serializer->doRvec(&rotg->pivot);
@@ -1452,8 +1452,8 @@ static void do_inputrec(gmx::ISerializer* serializer, t_inputrec* ir, int file_v
         ir->posresCom.resize(numPosresComGroups);
         ir->posresComB.resize(numPosresComGroups);
     }
-    serializer->doRvecArray(as_rvec_array(ir->posresCom.data()), numPosresComGroups);
-    serializer->doRvecArray(as_rvec_array(ir->posresComB.data()), numPosresComGroups);
+    serializer->doRvecArray(ir->posresCom);
+    serializer->doRvecArray(ir->posresComB);
 
     if (file_version < tpxv_Pre96Version79)
     {
@@ -1565,9 +1565,9 @@ static void do_inputrec(gmx::ISerializer* serializer, t_inputrec* ir, int file_v
         serializer->doBool(&ir->bAdress);
         if (ir->bAdress)
         {
-            int  idum, numThermoForceGroups, numEnergyGroups;
-            real rdum;
-            rvec rvecdum;
+            int       idum, numThermoForceGroups, numEnergyGroups;
+            real      rdum;
+            gmx::RVec rvecdum;
             serializer->doInt(&idum);
             serializer->doReal(&rdum);
             serializer->doReal(&rdum);
@@ -1744,17 +1744,20 @@ static void do_inputrec(gmx::ISerializer* serializer, t_inputrec* ir, int file_v
     }
     if (ir->opts.ngfrz > 0)
     {
-        serializer->doIvecArray(ir->opts.nFreeze, ir->opts.ngfrz);
+        serializer->doIvecArray(gmx::arrayRefFromArray(
+                reinterpret_cast<gmx::IVec*>(ir->opts.nFreeze), ir->opts.ngfrz));
     }
     if (ir->opts.ngacc > 0)
     {
-        serializer->doRvecArray(ir->opts.acceleration, ir->opts.ngacc);
+        serializer->doRvecArray(gmx::arrayRefFromArray(
+                reinterpret_cast<gmx::RVec*>(ir->opts.acceleration), ir->opts.ngacc));
     }
     if (serializer->reading())
     {
         ir->useConstantAcceleration = false;
         for (int g = 0; g < ir->opts.ngacc; g++)
         {
+            GMX_ASSERT(ir->opts.acceleration[g], "Must have acceleration group");
             if (norm2(ir->opts.acceleration[g]) != 0)
             {
                 ir->useConstantAcceleration = true;
@@ -2737,7 +2740,7 @@ static void do_molblock(gmx::ISerializer* serializer, gmx_molblock_t* molb, int 
         {
             molb->posres_xA.resize(numPosres_xA);
         }
-        serializer->doRvecArray(as_rvec_array(molb->posres_xA.data()), numPosres_xA);
+        serializer->doRvecArray(molb->posres_xA);
     }
     int numPosres_xB = molb->posres_xB.size();
     serializer->doInt(&numPosres_xB);
@@ -2747,7 +2750,7 @@ static void do_molblock(gmx::ISerializer* serializer, gmx_molblock_t* molb, int 
         {
             molb->posres_xB.resize(numPosres_xB);
         }
-        serializer->doRvecArray(as_rvec_array(molb->posres_xB.data()), numPosres_xB);
+        serializer->doRvecArray(molb->posres_xB);
     }
 }
 
@@ -3042,6 +3045,11 @@ static void do_tpxheader(gmx::FileIOXdrSerializer*    serializer,
     if ((serializer)->reading() && ((p) != nullptr) && !(b)) \
     gmx_fatal(FARGS, "No %s in input file", #p)
 
+static gmx::ArrayRef<gmx::RVec> asArrayRefRvec(matrix m, const int n)
+{
+    return gmx::arrayRefFromArray(reinterpret_cast<gmx::RVec*>(m[XX]), n);
+}
+
 /*! \brief
  * Process the first part of the TPR into the state datastructure.
  *
@@ -3067,21 +3075,21 @@ static void do_tpx_state_first(gmx::ISerializer* serializer, TpxFileHeader* tpx,
     do_test(serializer, tpx->bBox, state->box);
     if (tpx->bBox)
     {
-        serializer->doRvecArray(state->box, DIM);
+        serializer->doRvecArray(asArrayRefRvec(state->box, DIM));
         if (tpx->fileVersion >= tpxv_Pre96Version51)
         {
-            serializer->doRvecArray(state->box_rel, DIM);
+            serializer->doRvecArray(asArrayRefRvec(state->box_rel, DIM));
         }
         else
         {
             /* We initialize box_rel after reading the inputrec */
             clear_mat(state->box_rel);
         }
-        serializer->doRvecArray(state->boxv, DIM);
+        serializer->doRvecArray(asArrayRefRvec(state->boxv, DIM));
         if (tpx->fileVersion < tpxv_Pre96Version56)
         {
             matrix mdum;
-            serializer->doRvecArray(mdum, DIM);
+            serializer->doRvecArray(asArrayRefRvec(mdum, DIM));
         }
     }
 
@@ -3186,7 +3194,7 @@ static void do_tpx_state_second(gmx::ISerializer* serializer, TpxFileHeader* tpx
         {
             state->addEntry(StateEntry::X);
         }
-        serializer->doRvecArray(x, tpx->natoms);
+        serializer->doRvecArray(asArrayRefRvec(x, tpx->natoms));
     }
 
     // We cannot call do_test() with v as some "integrators" don't use v
@@ -3199,11 +3207,11 @@ static void do_tpx_state_second(gmx::ISerializer* serializer, TpxFileHeader* tpx
         if (!v)
         {
             std::vector<gmx::RVec> dummyVelocities(tpx->natoms);
-            serializer->doRvecArray(as_rvec_array(dummyVelocities.data()), tpx->natoms);
+            serializer->doRvecArray(dummyVelocities);
         }
         else
         {
-            serializer->doRvecArray(v, tpx->natoms);
+            serializer->doRvecArray(asArrayRefRvec(v, tpx->natoms));
         }
     }
     else if (v)
@@ -3220,7 +3228,7 @@ static void do_tpx_state_second(gmx::ISerializer* serializer, TpxFileHeader* tpx
     if (tpx->bF)
     {
         std::vector<gmx::RVec> dummyForces(state->numAtoms());
-        serializer->doRvecArray(as_rvec_array(dummyForces.data()), tpx->natoms);
+        serializer->doRvecArray(dummyForces);
     }
 }
 /*! \brief

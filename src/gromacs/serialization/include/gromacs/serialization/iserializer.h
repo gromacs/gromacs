@@ -58,6 +58,7 @@
 #include <string>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -91,7 +92,9 @@ public:
     virtual void doDouble(double* value)                = 0;
     virtual void doReal(real* value)                    = 0;
     virtual void doIvec(ivec* value)                    = 0;
+    virtual void doIvec(IVec* value)                    = 0;
     virtual void doRvec(rvec* value)                    = 0;
+    virtual void doRvec(RVec* value)                    = 0;
     virtual void doString(std::string* value)           = 0;
     virtual void doOpaque(char* data, std::size_t size) = 0;
     ///@}
@@ -170,18 +173,27 @@ public:
             doReal(&(values[i]));
         }
     }
-    void doIvecArray(ivec* values, int elements)
+    void doIVecs(ArrayRef<IVec> values)
     {
-        for (int i = 0; i < elements; i++)
+        for (IVec& v : values)
         {
-            doIvec(&(values[i]));
+            doIvec(&v);
         }
     }
-    virtual void doRvecArray(rvec* values, int elements)
+    void doIvecArray(ArrayRef<IVec> values)
     {
-        for (int i = 0; i < elements; i++)
+        for (IVec& v : values)
         {
-            doRvec(&(values[i]));
+            doIvec(&v);
+        }
+    }
+    // Virtual to allow specialization to be efficient for coordinate vectors
+    virtual void doRvecArray(ArrayRef<RVec> values)
+    {
+        // Default implementation
+        for (RVec& v : values)
+        {
+            doRvec(&v);
         }
     }
     ///@}

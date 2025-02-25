@@ -89,7 +89,9 @@ public:
     void doOpaque(char* /* value */, std::size_t /* size */) override { raiseAssert(); }
     void doReal(real* /* value */) override { raiseAssert(); }
     void doIvec(ivec* /* value */) override { raiseAssert(); }
+    void doIvec(IVec* /* value */) override { raiseAssert(); }
     void doRvec(rvec* /* value */) override { raiseAssert(); }
+    void doRvec(RVec* /* value */) override { raiseAssert(); }
 
 private:
     gmx::test::TestReferenceChecker checker_;

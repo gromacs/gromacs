@@ -240,9 +240,25 @@ void InMemorySerializer::doRvec(rvec* value)
     }
 }
 
+void InMemorySerializer::doRvec(RVec* value)
+{
+    for (real& v : value->as_vec())
+    {
+        doReal(&v);
+    }
+}
+
 void InMemorySerializer::doIvec(ivec* value)
 {
     for (int& v : *value)
+    {
+        doInt(&v);
+    }
+}
+
+void InMemorySerializer::doIvec(IVec* value)
+{
+    for (int& v : value->as_vec())
     {
         doInt(&v);
     }
@@ -388,9 +404,25 @@ void InMemoryDeserializer::doRvec(rvec* value)
     }
 }
 
+void InMemoryDeserializer::doRvec(RVec* value)
+{
+    for (real& v : value->as_vec())
+    {
+        doReal(&v);
+    }
+}
+
 void InMemoryDeserializer::doIvec(ivec* value)
 {
     for (int& v : *value)
+    {
+        doInt(&v);
+    }
+}
+
+void InMemoryDeserializer::doIvec(IVec* value)
+{
+    for (int& v : value->as_vec())
     {
         doInt(&v);
     }
