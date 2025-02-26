@@ -61,6 +61,7 @@
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
@@ -134,16 +135,14 @@ int gmx_genconf(int argc, char* argv[])
     const char* bugs[] = { "The program should allow for random displacement of lattice points." };
 
     int               vol;
-    rvec *            x, *xx, *v; /* coordinates? */
-    real              t;
+    rvec *            x, *v; /* coordinates? */
     vec4 *            xrot, *vrot;
     PbcType           pbcType;
-    matrix            box, boxx; /* box length matrix */
+    matrix            box; /* box length matrix */
     rvec              shift;
     int               natoms; /* number of atoms in one molecule  */
     int               nres;   /* number of molecules? */
     int               i, j, k, l, m, ndx, nrdx, nx, ny, nz;
-    t_trxstatus*      status;
     bool              bTRX;
     gmx_output_env_t* oenv;
 
@@ -203,12 +202,17 @@ int gmx_genconf(int argc, char* argv[])
     snew(xrot, natoms);      /* get space for rotation matrix? */
     snew(vrot, natoms);
 
+    t_trxstatus* status;
+    t_trxframe   frame;
+    rvec*        xx;
+
     if (bTRX)
     {
-        if (read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &xx, boxx) == 0)
+        if (!read_first_frame(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &frame, TRX_NEED_X))
         {
-            gmx_fatal(FARGS, "No atoms in trajectory %s", ftp2fn(efTRX, NFILE, fnm));
+            gmx_fatal(FARGS, "Could not read trajectory %s", ftp2fn(efTRX, NFILE, fnm));
         }
+        xx = frame.x;
     }
     else
     {
@@ -218,7 +222,6 @@ int gmx_genconf(int argc, char* argv[])
             copy_rvec(x[i], xx[i]);
         }
     }
-
 
     for (k = 0; (k < nz); k++) /* loop over all gridpositions    */
     {
@@ -283,7 +286,7 @@ int gmx_genconf(int argc, char* argv[])
                 }
                 if (bTRX)
                 {
-                    if (!read_next_x(oenv, status, &t, xx, boxx) && ((i + 1) * (j + 1) * (k + 1) < vol))
+                    if (!read_next_frame(oenv, status, &frame) && ((i + 1) * (j + 1) * (k + 1) < vol))
                     {
                         gmx_fatal(FARGS, "Not enough frames in trajectory");
                     }
@@ -293,7 +296,12 @@ int gmx_genconf(int argc, char* argv[])
     }
     if (bTRX)
     {
+        done_frame(&frame);
         close_trx(status);
+    }
+    else
+    {
+        sfree(xx);
     }
 
     /* make box bigger */
@@ -325,7 +333,6 @@ int gmx_genconf(int argc, char* argv[])
     sfree(v);
     sfree(xrot);
     sfree(vrot);
-    sfree(xx);
     done_atom(&atoms);
     output_env_done(oenv);
 
