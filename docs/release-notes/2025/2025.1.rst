@@ -16,6 +16,9 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Prevent "Need at least one thread" error from domain decomposition
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
 Running domain decomposition with 9 or more ranks could cause mdrun to exit
 with an assertion failure.
 
@@ -44,5 +47,25 @@ or "missing header" problems. This should now be fixed.
 
 :issue:`5290`
 
+Fix build issues with MSVC and CUDA
+"""""""""""""""""""""""""""""""""""
+
+Building |Gromacs| on Windows using MSVC + CUDA (OpenMP is enabled by default) now works.
+
+:issue:`5294`
+
 Miscellaneous
 ^^^^^^^^^^^^^
+
+Silence compiler warning when building with ARM SVE
+"""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Silence a few harmless warnings when building with a recent compiler for ARM SVE.
+
+Fix CMake issues when building with Plumed
+""""""""""""""""""""""""""""""""""""""""""
+
+To activate Plumed during compilation CMake had to be run twice. This has now been fixed
+and CMake only requires a single invocation for the build.
+
+:issue:`5292`
