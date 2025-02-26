@@ -36,12 +36,13 @@
  */
 
 
+/* Can be enabled with CMake option GMX_TMPI_DEBUG */
 /*#define TMPI_DEBUG*/
 
 
 /* If this is defined, thread_mpi will print a message when for every MPI
    call is called or returns. Useful for debugging MPI-related issues
-   in the calling program. */
+   in the calling program. Can be enabled with CMake option GMX_TMPI_TRACE. */
 /*#define TMPI_TRACE*/
 
 /* if this is defined, MPI will warn/hang/crash on practices that don't conform
