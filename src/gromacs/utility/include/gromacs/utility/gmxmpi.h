@@ -77,10 +77,14 @@
 #        include "thread_mpi/mpi_bindings.h" /* IWYU pragma: export */
 #        include "thread_mpi/tmpi.h"         /* IWYU pragma: export */
 #    else
-typedef void* MPI_Comm;
-typedef void* MPI_Request;
-typedef void* MPI_Status;
-typedef void* MPI_Group;
+struct GmxNoMpiDummyMpiComm;
+typedef GmxNoMpiDummyMpiComm* MPI_Comm;
+struct GmxNoMpiDummyMpiRequest;
+typedef GmxNoMpiDummyMpiRequest* MPI_Request;
+struct GmxNoMpiDummyMpiStatus;
+typedef GmxNoMpiDummyMpiStatus* MPI_Status;
+struct GmxNoMpiDummyMpiGroup;
+typedef GmxNoMpiDummyMpiGroup* MPI_Group;
 #        define MPI_COMM_NULL nullptr
 #        define MPI_GROUP_NULL nullptr
 #        define MPI_COMM_WORLD nullptr
