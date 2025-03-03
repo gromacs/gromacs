@@ -607,7 +607,9 @@ simulations wanted the following respective behaviors:
                      std::begin(simulationParts), std::end(simulationParts), std::not_equal_to<>())
              == std::end(simulationParts));
 
-    if (!identicalSimulationParts)
+    const char* envVar = "GMX_OVERRIDE_IDENTICAL_SIMULATION_PARTS";
+
+    if (!identicalSimulationParts && getenv(envVar) == nullptr)
     {
         std::string message = formatString(R"(
 Multi-simulations must all start in the same way, either a new
@@ -619,10 +621,14 @@ part (and, if you want to append to output files, ensure the old output
 files are present and named as they were when the checkpoint file was
 written).
 
+If you want to avoid this check and are sure you know what you are doing,
+you can set the %s enviroment variable.
+
 To help you identify which directories need attention, the %d
 simulation checkpoint files were from the following respective
 simulation parts:
 )",
+                                           envVar,
                                            ms->numSimulations_);
         for (Index partIndex = 0; partIndex != gmx::ssize(simulationParts); ++partIndex)
         {

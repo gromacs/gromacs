@@ -403,6 +403,10 @@ Performance and Run Control
         by mdrun. Values should be between the pruning frequency value
         (1 for CPU and 2 for GPU) and :mdp:`nstlist` ``- 1``.
 
+``GMX_OVERRIDE_IDENTICAL_SIMULATION_PARTS``
+        overrides the check for identical simulation parts when continuing simulations
+        with :ref:`gmx mdrun` with the ``-multidir`` option.
+
 ``GMX_PME_NUM_THREADS``
         set the number of OpenMP or PME threads; overrides the default set by
         :ref:`gmx mdrun`; can be used instead of the ``-npme`` command line option,
