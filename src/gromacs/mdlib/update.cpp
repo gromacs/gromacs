@@ -575,7 +575,7 @@ static void updateMDLeapfrogGeneral(int                                 start,
                                     real                                dtPressureCouple,
                                     gmx::ArrayRef<const unsigned short> cTC,
                                     gmx::ArrayRef<const unsigned short> cAcceleration,
-                                    const rvec* gmx_restrict            acceleration,
+                                    const gmx::RVec* gmx_restrict       acceleration,
                                     const matrix                        boxDeformation,
                                     gmx::ArrayRef<const gmx::RVec>      invMassPerDim,
                                     const gmx_ekindata_t*               ekind,
@@ -709,7 +709,7 @@ static void do_update_md(int                                  start,
                          gmx::ArrayRef<const unsigned short>  cTC,
                          const AccelerationType               simulationAccelerationType,
                          gmx::ArrayRef<const unsigned short>  cAcceleration,
-                         const rvec*                          acceleration,
+                         gmx::ArrayRef<const gmx::RVec>       acceleration,
                          const matrix                         boxDeformation,
                          gmx::ArrayRef<const real> gmx_unused invmass,
                          gmx::ArrayRef<const gmx::RVec>       invMassPerDim,
@@ -769,7 +769,7 @@ static void do_update_md(int                                  start,
                                                                          dtPressureCouple,
                                                                          cTC,
                                                                          cAcceleration,
-                                                                         acceleration,
+                                                                         acceleration.data(),
                                                                          boxDeformation,
                                                                          invMassPerDim,
                                                                          ekind,
@@ -896,7 +896,7 @@ static void do_update_vv_vel(int                                 start,
                              real                                dt,
                              gmx::ArrayRef<const ivec>           nFreeze,
                              gmx::ArrayRef<const unsigned short> cAcceleration,
-                             const rvec*                         acceleration,
+                             const gmx::RVec* gmx_restrict       acceleration,
                              gmx::ArrayRef<const real>           invmass,
                              gmx::ArrayRef<const ParticleType>   ptype,
                              gmx::ArrayRef<const unsigned short> cFREEZE,
@@ -1142,7 +1142,7 @@ static void doSDUpdateGeneral(const gmx_stochd_t&                 sd,
                               gmx::ArrayRef<const unsigned short> cFREEZE,
                               gmx::ArrayRef<const unsigned short> cTC,
                               gmx::ArrayRef<const unsigned short> cAcceleration,
-                              const rvec*                         acceleration,
+                              const gmx::RVec* gmx_restrict       acceleration,
                               const rvec                          x[],
                               rvec                                xprime[],
                               rvec                                v[],
@@ -1178,16 +1178,16 @@ static void doSDUpdateGeneral(const gmx_stochd_t&                 sd,
 
     for (int n = start; n < nrend; n++)
     {
-        int globalAtomIndex = gatindex ? gatindex[n] : n;
+        const int globalAtomIndex = gatindex ? gatindex[n] : n;
         rng.restart(step, globalAtomIndex);
         dist.reset();
 
-        real inverseMass = invmass[n];
-        real invsqrtMass = std::sqrt(inverseMass);
+        const real inverseMass = invmass[n];
+        const real invsqrtMass = std::sqrt(inverseMass);
 
-        int freezeGroup       = !cFREEZE.empty() ? cFREEZE[n] : 0;
-        int accelerationGroup = !cAcceleration.empty() ? cAcceleration[n] : 0;
-        int temperatureGroup  = !cTC.empty() ? cTC[n] : 0;
+        const int freezeGroup       = !cFREEZE.empty() ? cFREEZE[n] : 0;
+        const int accelerationGroup = !cAcceleration.empty() ? cAcceleration[n] : 0;
+        const int temperatureGroup  = !cTC.empty() ? cTC[n] : 0;
 
         RVec parrinelloRahmanScaledVelocity;
         if (updateType != SDUpdate::FrictionAndNoiseOnly)
@@ -1258,7 +1258,7 @@ static void do_update_sd(int                                 start,
                          gmx::ArrayRef<const unsigned short> cFREEZE,
                          gmx::ArrayRef<const unsigned short> cTC,
                          gmx::ArrayRef<const unsigned short> cAcceleration,
-                         const rvec*                         acceleration,
+                         gmx::ArrayRef<const RVec>           acceleration,
                          int                                 seed,
                          const t_commrec*                    cr,
                          const gmx_stochd_t&                 sd,
@@ -1293,7 +1293,7 @@ static void do_update_sd(int                                 start,
                                                 cFREEZE,
                                                 gmx::ArrayRef<const unsigned short>(),
                                                 cAcceleration,
-                                                acceleration,
+                                                acceleration.data(),
                                                 x,
                                                 xprime,
                                                 v,
@@ -1317,7 +1317,7 @@ static void do_update_sd(int                                 start,
                 cFREEZE,
                 cTC,
                 cAcceleration,
-                acceleration,
+                acceleration.data(),
                 x,
                 xprime,
                 v,
@@ -1626,7 +1626,7 @@ void Update::Impl::update_sd_second_half(const t_inputrec&                 input
                         cFREEZE_,
                         cTC_,
                         cAcceleration_,
-                        inputRecord.opts.acceleration,
+                        inputRecord.opts.acceleration.data(),
                         state->x.rvec_array(),
                         xp_.rvec_array(),
                         state->v.rvec_array(),
@@ -1859,7 +1859,7 @@ void Update::Impl::update_coords(const t_inputrec&                 inputRecord,
                                              gmx::arrayRefFromArray(inputRecord.opts.nFreeze,
                                                                     inputRecord.opts.ngfrz),
                                              cAcceleration_,
-                                             inputRecord.opts.acceleration,
+                                             inputRecord.opts.acceleration.data(),
                                              invMass,
                                              ptype,
                                              cFREEZE_,

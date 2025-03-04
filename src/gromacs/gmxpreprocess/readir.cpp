@@ -2087,31 +2087,44 @@ static void convertReals(WarningHandler* wi, gmx::ArrayRef<const std::string> in
     }
 }
 
-static void convertRvecs(WarningHandler* wi, gmx::ArrayRef<const std::string> inputs, const char* name, rvec* outputs)
+static std::vector<gmx::RVec> convertGroupRvecs(WarningHandler*                  wi,
+                                                gmx::ArrayRef<const std::string> inputs,
+                                                const char*                      name,
+                                                const int                        numGroupsRequired)
 {
-    int i = 0, d = 0;
-    for (const auto& input : inputs)
+    GMX_RELEASE_ASSERT(gmx::ssize(inputs) == (numGroupsRequired - 1) * DIM,
+                       "Input size must match output size (including rest group)");
+    GMX_RELEASE_ASSERT(inputs.size() % DIM == 0, "Need one input per dimension");
+    std::vector<gmx::RVec> values;
+    values.reserve(numGroupsRequired);
+    for (std::size_t g = 0; g < inputs.size(); g += DIM)
     {
-        try
+        gmx::RVec v;
+        for (int d = 0; d < DIM; ++d)
         {
-            outputs[i][d] = gmx::fromString<real>(input);
+            try
+            {
+                v[d] = gmx::fromString<real>(inputs[g + d]);
+            }
+            catch (gmx::GromacsException&)
+            {
+                auto message = gmx::formatString(
+                        "Invalid value for mdp option %s. %s should only consist of real numbers "
+                        "separated by spaces.",
+                        name,
+                        name);
+                wi->addError(message);
+                // Keep uninitialized-value checkers happy
+                v[d] = 0;
+            }
         }
-        catch (gmx::GromacsException&)
-        {
-            auto message = gmx::formatString(
-                    "Invalid value for mdp option %s. %s should only consist of real numbers "
-                    "separated by spaces.",
-                    name,
-                    name);
-            wi->addError(message);
-        }
-        ++d;
-        if (d == DIM)
-        {
-            d = 0;
-            ++i;
-        }
+        values.push_back(v);
     }
+    // Ensure that the "rest" group has zero values
+    values.push_back(gmx::RVec{ 0, 0, 0 });
+    GMX_RELEASE_ASSERT(gmx::ssize(values) == numGroupsRequired,
+                       "Could not fill required group count");
+    return values;
 }
 
 static void do_wall_params(t_inputrec*     ir,
@@ -4401,11 +4414,8 @@ void do_index(const char*                                 mdparin,
                  GroupCoverage::AllGenerateRest,
                  bVerbose,
                  wi);
-    nr = groups->groups[SimulationAtomGroupType::Acceleration].size();
-    snew(ir->opts.acceleration, nr);
-    ir->opts.ngacc = nr;
-
-    convertRvecs(wi, accelerations, "accelerations", ir->opts.acceleration);
+    nr                    = groups->groups[SimulationAtomGroupType::Acceleration].size();
+    ir->opts.acceleration = convertGroupRvecs(wi, accelerations, "accelerations", nr);
 
     auto freezeDims       = gmx::splitString(inputrecStrings->frdim);
     auto freezeGroupNames = gmx::splitString(inputrecStrings->freeze);

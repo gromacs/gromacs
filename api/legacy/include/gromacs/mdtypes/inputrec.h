@@ -67,8 +67,6 @@ struct t_grpopts
     int ngtc = 0;
     //! Number of of Nose-Hoover chains per group
     int nhchainlength = 0;
-    //! Number of Accelerate groups
-    int ngacc;
     //! Number of Freeze groups
     int ngfrz = 0;
     //! Number of Energy groups
@@ -88,7 +86,7 @@ struct t_grpopts
     //! Tau coupling time
     real* tau_t = nullptr;
     //! Acceleration per group
-    rvec* acceleration = nullptr;
+    std::vector<gmx::RVec> acceleration;
     //! Whether the group will be frozen in each direction
     ivec* nFreeze = nullptr;
     //! Exclusions/tables of energy group pairs

@@ -1714,11 +1714,16 @@ static void do_inputrec(gmx::ISerializer* serializer, t_inputrec* ir, int file_v
     if (serializer->reading() && file_version >= tpxv_RemovedConstantAcceleration
         && file_version < tpxv_ReaddedConstantAcceleration)
     {
-        ir->opts.ngacc = 0;
+        GMX_RELEASE_ASSERT(ir->opts.acceleration.empty(), "Should read into an empty ir");
     }
     else
     {
-        serializer->doInt(&ir->opts.ngacc);
+        int numAccelerationGroups = ir->opts.acceleration.size();
+        serializer->doInt(&numAccelerationGroups);
+        if (serializer->reading())
+        {
+            ir->opts.acceleration.resize(numAccelerationGroups);
+        }
     }
     serializer->doInt(&ir->opts.ngfrz);
     serializer->doInt(&ir->opts.ngener);
@@ -1733,7 +1738,6 @@ static void do_inputrec(gmx::ISerializer* serializer, t_inputrec* ir, int file_v
         snew(ir->opts.anneal_temp, ir->opts.ngtc);
         snew(ir->opts.tau_t, ir->opts.ngtc);
         snew(ir->opts.nFreeze, ir->opts.ngfrz);
-        snew(ir->opts.acceleration, ir->opts.ngacc);
         snew(ir->opts.egp_flags, ir->opts.ngener * ir->opts.ngener);
     }
     if (ir->opts.ngtc > 0)
@@ -1747,22 +1751,15 @@ static void do_inputrec(gmx::ISerializer* serializer, t_inputrec* ir, int file_v
         serializer->doIvecArray(gmx::arrayRefFromArray(
                 reinterpret_cast<gmx::IVec*>(ir->opts.nFreeze), ir->opts.ngfrz));
     }
-    if (ir->opts.ngacc > 0)
+    if (!ir->opts.acceleration.empty())
     {
-        serializer->doRvecArray(gmx::arrayRefFromArray(
-                reinterpret_cast<gmx::RVec*>(ir->opts.acceleration), ir->opts.ngacc));
+        serializer->doRvecArray(ir->opts.acceleration);
     }
     if (serializer->reading())
     {
-        ir->useConstantAcceleration = false;
-        for (int g = 0; g < ir->opts.ngacc; g++)
-        {
-            GMX_ASSERT(ir->opts.acceleration[g], "Must have acceleration group");
-            if (norm2(ir->opts.acceleration[g]) != 0)
-            {
-                ir->useConstantAcceleration = true;
-            }
-        }
+        ir->useConstantAcceleration = std::any_of(ir->opts.acceleration.begin(),
+                                                  ir->opts.acceleration.end(),
+                                                  [](const gmx::RVec& v) { return v.norm2() != 0; });
     }
     serializer->doIntArray(ir->opts.egp_flags, ir->opts.ngener * ir->opts.ngener);
 
