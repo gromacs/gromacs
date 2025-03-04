@@ -2528,37 +2528,6 @@ static void balance_fep_lists(ArrayRef<std::unique_ptr<AtomPairlist>> fepLists, 
     }
 }
 
-/* Returns the next ci to be processes by our thread */
-static bool next_ci(const Grid& grid, int nth, int ci_block, int* ci_x, int* ci_y, int* ci_b, int* ci)
-{
-    (*ci_b)++;
-    (*ci)++;
-
-    if (*ci_b == ci_block)
-    {
-        /* Jump to the next block assigned to this task */
-        *ci += (nth - 1) * ci_block;
-        *ci_b = 0;
-    }
-
-    if (*ci >= grid.numCells())
-    {
-        return FALSE;
-    }
-
-    while (*ci >= grid.firstCellInColumn(*ci_x * grid.dimensions().numCells[YY] + *ci_y + 1))
-    {
-        *ci_y += 1;
-        if (*ci_y == grid.dimensions().numCells[YY])
-        {
-            *ci_x += 1;
-            *ci_y = 0;
-        }
-    }
-
-    return TRUE;
-}
-
 /* Returns the distance^2 for which we put cell pairs in the list
  * without checking atom pair distances. This is usually < rlist^2.
  */
@@ -2600,6 +2569,46 @@ static float boundingbox_only_distance2(const GridDimensions& iGridDims,
 #endif
 }
 
+//! Iterator to loop over cells on a grid in a thread parallel fashion for generating balanced lists
+class ThreadedCellIndexer
+{
+public:
+    //! Constructor, \p next() needs to be called once after construction to get a valid cell
+    ThreadedCellIndexer(const Grid& iGrid, bool haveMultipleDomains, int numThreads, int threadIndex);
+
+    //! Go to the next cell, returns true when there is a cell, false when the end is reached
+    bool next();
+
+    //! Returns the size of contiguous blocks of cells assigned to threads
+    int blockSize() const { return blockSize_; }
+
+    //! Returns the current cell index
+    int cellIndex() const { return cellIndex_; }
+
+    //! Returns the current cell index along X
+    int cellIndexX() const { return cellIndexX_; }
+
+    //! Returns the current cell index along Y
+    int cellIndexY() const { return cellIndexY_; }
+
+private:
+    //! The grid we iterate over
+    const Grid& grid_;
+    //! The number of threads used
+    int numThreads_;
+    //! The size of contiguous blocks of cells assigned to threads
+    int blockSize_;
+    //! The local index of our thread into the current block
+    int indexInLocalBlock_;
+    //! The current cell index
+    int cellIndex_;
+    //! The current cell index along x
+    int cellIndexX_;
+    //! The current cell index along y
+    int cellIndexY_;
+};
+
+//! Returns a suitable block size, in cells, per thread that will generate reasonably balanced lists
 static int get_ci_block_size(const Grid& iGrid, const bool haveMultipleDomains, const int numLists)
 {
     const int ci_block_enum      = 5;
@@ -2652,6 +2661,48 @@ static int get_ci_block_size(const Grid& iGrid, const bool haveMultipleDomains, 
     }
 
     return ci_block;
+}
+
+ThreadedCellIndexer::ThreadedCellIndexer(const Grid& iGrid, bool haveMultipleDomains, int numThreads, int threadIndex) :
+    grid_(iGrid),
+    numThreads_(numThreads),
+    blockSize_(get_ci_block_size(iGrid, haveMultipleDomains, numThreads)),
+    indexInLocalBlock_(-1),
+    cellIndex_(threadIndex * blockSize_ - 1),
+    cellIndexX_(0),
+    cellIndexY_(0)
+{
+}
+
+bool ThreadedCellIndexer::next()
+{
+    indexInLocalBlock_++;
+    cellIndex_++;
+
+    if (indexInLocalBlock_ == blockSize_)
+    {
+        /* Jump to the next block assigned to this task */
+        cellIndex_ += (numThreads_ - 1) * blockSize_;
+        indexInLocalBlock_ = 0;
+    }
+
+    if (cellIndex_ >= grid_.numCells())
+    {
+        return false;
+    }
+
+    while (cellIndex_
+           >= grid_.firstCellInColumn(cellIndexX_ * grid_.dimensions().numCells[YY] + cellIndexY_ + 1))
+    {
+        cellIndexY_ += 1;
+        if (cellIndexY_ == grid_.dimensions().numCells[YY])
+        {
+            cellIndexX_ += 1;
+            cellIndexY_ = 0;
+        }
+    }
+
+    return true;
 }
 
 /* Returns the number of bits to right-shift a cluster index to obtain
@@ -2797,7 +2848,6 @@ static void nbnxn_make_pairlist_part(const GridSet&          gridSet,
                                      const ListOfLists<int>& exclusions,
                                      real                    rlist,
                                      const PairlistType      pairlistType,
-                                     int                     ci_block,
                                      bool                    bFBufferFlag,
                                      int                     nsubpair_max,
                                      bool                    progBal,
@@ -2913,29 +2963,28 @@ static void nbnxn_make_pairlist_part(const GridSet&          gridSet,
     ArrayRef<const BoundingBox1D> bbcz_j  = jGrid.zBoundingBoxes();
     int                           cell0_i = iGrid.cellOffset();
 
+    int numDistanceChecks = 0;
+
+    const real listRangeBBToJCell2 =
+            square(listRangeForBoundingBoxToGridCell(rlist, jGrid.dimensions()));
+
+    ThreadedCellIndexer threadedCellIndexer(iGrid, gridSet.domainSetup().haveMultipleDomains, nth, th);
+
     if (debug)
     {
         fprintf(debug,
                 "nbl nc_i %d col.av. %.1f ci_block %d\n",
                 iGrid.numCells(),
                 iGrid.numCells() / static_cast<double>(iGrid.numColumns()),
-                ci_block);
+                threadedCellIndexer.blockSize());
     }
 
-    int numDistanceChecks = 0;
-
-    const real listRangeBBToJCell2 =
-            square(listRangeForBoundingBoxToGridCell(rlist, jGrid.dimensions()));
-
-    /* Initially ci_b and ci to 1 before where we want them to start,
-     * as they will both be incremented in next_ci.
-     */
-    int ci_b = -1;
-    int ci   = th * ci_block - 1;
-    int ci_x = 0;
-    int ci_y = 0;
-    while (next_ci(iGrid, nth, ci_block, &ci_x, &ci_y, &ci_b, &ci))
+    while (threadedCellIndexer.next())
     {
+        const int ci   = threadedCellIndexer.cellIndex();
+        const int ci_x = threadedCellIndexer.cellIndexX();
+        const int ci_y = threadedCellIndexer.cellIndexY();
+
         /* Skip i-clusters that do not interact.
          * With perturbed atoms, we can not skip clusters, as we check the exclusion
          * count of perturbed interactions, including those with zero coefficients.
@@ -3727,9 +3776,6 @@ void PairlistSet::constructPairlists(InteractionLocality      locality,
                 searchCycleCounting->start(enbsCCsearch);
             }
 
-            const int ci_block =
-                    get_ci_block_size(iGrid, gridSet.domainSetup().haveMultipleDomains, numLists);
-
             /* With GPU: generate progressively smaller lists for
              * load balancing for local only or non-local with 2 zones.
              */
@@ -3772,7 +3818,6 @@ void PairlistSet::constructPairlists(InteractionLocality      locality,
                                                  exclusions,
                                                  rlist,
                                                  params_.pairlistType,
-                                                 ci_block,
                                                  nbat->useBufferFlags(),
                                                  nsubpair_target,
                                                  progBal,
@@ -3792,7 +3837,6 @@ void PairlistSet::constructPairlists(InteractionLocality      locality,
                                                  exclusions,
                                                  rlist,
                                                  params_.pairlistType,
-                                                 ci_block,
                                                  nbat->useBufferFlags(),
                                                  nsubpair_target,
                                                  progBal,
