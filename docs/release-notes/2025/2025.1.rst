@@ -33,6 +33,25 @@ were affected.
 
 :issue:`5298`
 
+Fix PME-PP direct GPU communication with threadMPI
+""""""""""""""""""""""""""""""""""""""""""""""""""
+
+We observed crashes in runs using threadMPI and GPU-direct MPI communication with |Gromacs| 2024,
+and because of this direct GPU communication for PME-PP coordinate and force transfers
+were disabled in |Gromacs| 2025.0 (where GPU-direct communication became the default).
+
+The original issue was caused by missing synchronization with multiple PP ranks and a PME rank,
+only affected systems with 23 thousand particles or less.
+In such cases, after a few hundred steps simulation crashed with thread-MPI errors, so no wrong physics ensued.
+For such small systems PP decomposition is not beneficial, so the crashes were unlikely to be triggered,
+hence these went unnoticed until the direct GPU communication became the default.
+This issue has now been fixed and direct GPU communication is enabled by default, making the
+performance on par or slightly better than |Gromacs| 2024 with ``GMX_ENABLE_DIRECT_GPU_COMM``
+and much better than |Gromacs| 2024 running with the default settings.
+
+:issue:`5283`
+:issue:`5306`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 

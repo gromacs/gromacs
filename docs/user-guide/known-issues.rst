@@ -72,21 +72,3 @@ some cases. Using oneAPI 2024.2 or newer should resolve the issue.
 
 :issue:`5247`
 
-Separate PME ranks with thread-MPI and CUDA do not work with small systems
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Running |Gromacs| 2024.x and 2025.0 with thread-MPI and CUDA and a separate PME rank gives
-incorrect energies after step zero and fails after some steps with fatal error.
-
-With 2024, the issue is only triggered with direct GPU communication is explicitly enabled
-(``GMX_ENABLE_DIRECT_GPU_COMM``).
-In 2025, the direct GPU communication has been disabled for thread-MPI builds of |Gromacs|
-to avoid this issue. Once it has been fixed, direct GPU communication will be made default
-for both MPI and thread-MPI builds.
-
-As a workaround, build |Gromacs| with library ("real") MPI.
-
-You can also continue using thread-MPI, but disable direct GPU communication for the
-|Gromacs| 2024 series by not setting ``GMX_ENABLE_DIRECT_GPU_COMM``.
-
-:issue:`5283`

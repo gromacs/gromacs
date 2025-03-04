@@ -163,10 +163,10 @@ void PmeCoordinateReceiverGpu::Impl::launchReceiveCoordinatesFromPpGpuAwareMpi(D
 #endif
 }
 
-std::tuple<int, GpuEventSynchronizer*> PmeCoordinateReceiverGpu::Impl::receivePpCoordinateSendEvent(int pipelineStage)
+std::tuple<int, GpuEventSynchronizer*> PmeCoordinateReceiverGpu::Impl::receivePpCoordinateSendEvent(int requestIndex)
 {
 #if GMX_MPI
-    if (requests_[pipelineStage] != MPI_REQUEST_NULL)
+    if (requests_[requestIndex] != MPI_REQUEST_NULL)
     {
         // MPI_Waitany is not available in thread-MPI. However, the
         // MPI_Wait here is not associated with data but is host-side
@@ -175,8 +175,8 @@ std::tuple<int, GpuEventSynchronizer*> PmeCoordinateReceiverGpu::Impl::receivePp
         // receive in order of pipeline stage, still allowing the
         // scheduled GPU-direct comms to initiate out-of-order in their
         // respective streams.
-        MPI_Wait(&(requests_[pipelineStage]), MPI_STATUS_IGNORE);
-        return std::make_tuple(pipelineStage, ppCommManagers_[pipelineStage].sync);
+        MPI_Wait(&(requests_[requestIndex]), MPI_STATUS_IGNORE);
+        return std::make_tuple(requestIndex, ppCommManagers_[requestIndex].sync);
     }
     else
     {
@@ -251,9 +251,9 @@ void PmeCoordinateReceiverGpu::launchReceiveCoordinatesFromPpGpuAwareMpi(DeviceB
     impl_->launchReceiveCoordinatesFromPpGpuAwareMpi(recvbuf, numAtoms, numBytes, ppRank, senderIndex);
 }
 
-std::tuple<int, GpuEventSynchronizer*> PmeCoordinateReceiverGpu::receivePpCoordinateSendEvent(int pipelineStage)
+std::tuple<int, GpuEventSynchronizer*> PmeCoordinateReceiverGpu::receivePpCoordinateSendEvent(int requestIndex)
 {
-    return impl_->receivePpCoordinateSendEvent(pipelineStage);
+    return impl_->receivePpCoordinateSendEvent(requestIndex);
 }
 
 int PmeCoordinateReceiverGpu::waitForCoordinatesFromAnyPpRank()

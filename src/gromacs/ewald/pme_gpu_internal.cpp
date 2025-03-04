@@ -1790,23 +1790,22 @@ static auto selectSpreadKernelPtr(const PmeGpu*  pmeGpu,
  * In each case, the rank of the sender associated with the corresponding stage is returned.
  *
  * \param[in]  pmeGpu                    The PME GPU structure.
- * \param[in]  pmeCoordinateReceiverGpu  The PME coordinate reciever GPU object
+ * \param[in]  pmeCoordinateReceiverGpu  The PME coordinate receiver GPU object
  * \param[in]  usePipeline               Whether pipelining is in use for PME-PP communication
- * \param[in]  pipelineStage             Stage of the PME-PP communication pipeline
+ * \param[in]  senderIndex               Index of the PP rank (when \p usePipeline is false) or pipeline stage (otherwise)
  *
  * \return Rank of remote sender associated with this stage
  */
 static int manageSyncWithPpCoordinateSenderGpu(const PmeGpu* pmeGpu,
                                                gmx::PmeCoordinateReceiverGpu* pmeCoordinateReceiverGpu,
-                                               bool usePipeline   = false,
-                                               int  pipelineStage = 0)
+                                               bool usePipeline,
+                                               int  senderIndex)
 {
     int senderRank;
     if (GMX_THREAD_MPI)
     {
         GpuEventSynchronizer* event;
-        std::tie(senderRank, event) =
-                pmeCoordinateReceiverGpu->receivePpCoordinateSendEvent(pipelineStage);
+        std::tie(senderRank, event) = pmeCoordinateReceiverGpu->receivePpCoordinateSendEvent(senderIndex);
         // If a pipeline stage has no particles, no send event will be
         // sent and senderRank will be < 0.
         if (senderRank >= 0)
@@ -1961,8 +1960,8 @@ void pme_gpu_spread(PmeGpu*                        pmeGpu,
             for (int i = 0; i < numStagesInPipeline; i++)
             {
                 wallcycle_start(wcycle, WallCycleCounter::WaitGpuPmePPRecvX);
-                int senderRank = manageSyncWithPpCoordinateSenderGpu(
-                        pmeGpu, pmeCoordinateReceiverGpu, kernelParamsPtr->usePipeline != 0, i);
+                int senderRank =
+                        manageSyncWithPpCoordinateSenderGpu(pmeGpu, pmeCoordinateReceiverGpu, true, i);
                 if (senderRank < 0)
                 {
                     // A pipeline stage with no coordinates was reached
@@ -2026,7 +2025,7 @@ void pme_gpu_spread(PmeGpu*                        pmeGpu,
                 wallcycle_start(wcycle, WallCycleCounter::WaitGpuPmePPRecvX);
                 for (int i = 0; i < pmeCoordinateReceiverGpu->ppCommNumSenderRanks(); i++)
                 {
-                    manageSyncWithPpCoordinateSenderGpu(pmeGpu, pmeCoordinateReceiverGpu);
+                    manageSyncWithPpCoordinateSenderGpu(pmeGpu, pmeCoordinateReceiverGpu, false, i);
                 }
                 wallcycle_stop(wcycle, WallCycleCounter::WaitGpuPmePPRecvX);
             }

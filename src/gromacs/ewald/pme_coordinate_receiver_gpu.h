@@ -113,10 +113,11 @@ public:
     /*! \brief
      * Return PP co-ordinate transfer event received from PP
      * rank determined from pipeline stage, for consumer to enqueue
-     * \param[in] pipelineStage  stage of pipeline corresponding to this transfer
+     * \param[in] requestIndex   index of the request (pipeline stage or PP rank when no pipelining)
      * \returns                  tuple with rank of sending PP task and corresponding event
+     *                           or -1 when no event was sent (from a PP rank with no particles)
      */
-    std::tuple<int, GpuEventSynchronizer*> receivePpCoordinateSendEvent(int pipelineStage);
+    std::tuple<int, GpuEventSynchronizer*> receivePpCoordinateSendEvent(int requestIndex);
 
     /*! \brief
      * Wait for coordinates from any PP rank
