@@ -61,7 +61,9 @@ target_link_libraries(pulling PRIVATE
 )
 
 # pulling needs muparser defines 
-target_link_libraries(pulling PUBLIC muparser::muparser)
+if (HAVE_MUPARSER)
+    target_link_libraries(pulling PUBLIC muparser::muparser)
+endif()
 
 # Public interface for modules, including dependencies and interfaces
 target_include_directories(pulling PUBLIC

@@ -13,6 +13,7 @@
 #   FFT: FFTW3
 #   Parallelism nt/ntomp: 1/4
 #   CP2K: v9.1
+#   Others: Build without muParser
 
 gromacs-cp2k-9.1:gcc-11-nightly:configure:
   extends:
@@ -38,7 +39,7 @@ gromacs-cp2k-9.1:gcc-11-nightly:configure:
     CP2K_DIR: "/opt/cp2k/lib/local/ssmp"
     CP2K_LINKER_FLAGS: ""
     COMPILER_MAJOR_VERSION: 11
-    CMAKE_EXTRA_OPTIONS: "-DBUILD_SHARED_LIBS=OFF -DGMXAPI=OFF -DGMX_INSTALL_NBLIB_API=OFF"
+    CMAKE_EXTRA_OPTIONS: "-DBUILD_SHARED_LIBS=OFF -DGMXAPI=OFF -DGMX_INSTALL_NBLIB_API=OFF -DGMX_USE_MUPARSER=None"
   script:
     # Call configure script (CP2K specific)
     - bash -x admin/ci-scripts/gromacs-cp2k-configure.sh

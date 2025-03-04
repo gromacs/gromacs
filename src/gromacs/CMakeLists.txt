@@ -451,7 +451,9 @@ set_target_properties(libgromacs PROPERTIES
 
 gmx_manage_lmfit()
 target_link_libraries(libgromacs PRIVATE lmfit)
-target_link_libraries(libgromacs PRIVATE muparser::muparser)
+if (HAVE_MUPARSER)
+    target_link_libraries(libgromacs PRIVATE muparser::muparser)
+endif()
 gmx_manage_colvars()
 target_link_libraries(libgromacs PRIVATE colvars)
 target_link_libraries(libgromacs PRIVATE plumedgmx)

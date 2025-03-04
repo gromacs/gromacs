@@ -87,13 +87,6 @@ function(gmx_manage_muparser)
             message(FATAL_ERROR "External muParser library with wide char enabled not supported.")
         endif()
     else()
-        # Create a dummy link target so the calling code doesn't need to know
-        # whether muparser support is being compiled.
-        add_library(muparser::muparser INTERFACE)
-        # Add the muparser interface library to the libgromacs Export name, even though
-        # we will not be installing any content.
-        install(TARGETS muparser EXPORT libgromacs)
-
         set(HAVE_MUPARSER 0 CACHE INTERNAL "Is muparser found?")
     endif()
     mark_as_advanced(HAVE_MUPARSER)
