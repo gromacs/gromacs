@@ -66,11 +66,6 @@ static constexpr gmx::EnumerationArray<PairlistType, int> JClusterSizePerListTyp
     { 2, 4, 8, sc_gpuClusterSize(PairlistType::Hierarchical8x8x8), 1 }
 };
 
-//! True if given pairlist type is used on GPU, false if on CPU.
-static constexpr gmx::EnumerationArray<PairlistType, bool> sc_isGpuPairListType = {
-    { false, false, false, true, false }
-};
-
 /*! \internal
  * \brief The setup for generating and pruning the nbnxn pair list.
  *
