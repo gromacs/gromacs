@@ -55,6 +55,15 @@ and much better than |Gromacs| 2024 running with the default settings.
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix parsing of CMAP types with arbitrary number of spaces between elements 
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The CMAP type parser assumed there is only a single space between consecutive elements,
+while some tools prefer to add extra whitespace when formatting. Now we happily accept
+arbitrary number of spaces or tabs.
+
+:issue:`5312`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

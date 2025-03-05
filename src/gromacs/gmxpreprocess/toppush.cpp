@@ -1235,8 +1235,7 @@ void push_cmaptype(Directive                         d,
             wi->addError(message);
             return;
         }
-        std::getline(cmapLine, buffer, ' ');
-
+        cmapLine >> buffer;
         std::istringstream atomResTypeStream(buffer);
         std::string        atomType;
         std::getline(atomResTypeStream, atomType, '-');
@@ -1292,7 +1291,7 @@ void push_cmaptype(Directive                         d,
     int type = 0;
     try
     {
-        std::getline(cmapLine, buffer, ' ');
+        cmapLine >> buffer;
         type = std::stoi(buffer);
         if (type != 1)
         {
@@ -1312,12 +1311,12 @@ void push_cmaptype(Directive                         d,
     int nxcmap = 0, nycmap = 0;
     try
     {
-        std::getline(cmapLine, buffer, ' ');
+        cmapLine >> buffer;
         nxcmap = std::stoi(buffer);
         GMX_RELEASE_ASSERT(
                 nxcmap > 0,
                 "Invalid cmap type grid spacing in x dimension: must be larger than zero");
-        std::getline(cmapLine, buffer, ' ');
+        cmapLine >> buffer;
         nycmap = std::stoi(buffer);
         GMX_RELEASE_ASSERT(
                 nycmap > 0,
@@ -1368,7 +1367,7 @@ void push_cmaptype(Directive                         d,
             wi->addError(message);
         }
 
-        std::getline(cmapLine, buffer, ' ');
+        cmapLine >> buffer;
         try
         {
             bt[F_CMAP].cmap.emplace_back(std::stod(buffer));
