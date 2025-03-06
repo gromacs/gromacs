@@ -40,9 +40,11 @@ if(GMX_USE_HDF5)
     target_sources(h5md PRIVATE
         h5md.cpp
         h5md_attribute.cpp
+        h5md_dataset.cpp
         h5md_error.cpp
         h5md_group.cpp
-        h5md_guard.cpp)
+        h5md_guard.cpp
+    )
 
     target_include_directories(h5md SYSTEM PUBLIC ${HDF5_INCLUDE_DIRS})
     target_link_libraries(h5md PUBLIC ${HDF5_LIBRARIES})
