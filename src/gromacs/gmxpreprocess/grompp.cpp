@@ -71,6 +71,7 @@
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/warninp.h"
 #include "gromacs/gmxpreprocess/add_par.h"
+#include "gromacs/gmxpreprocess/compute_io.h"
 #include "gromacs/gmxpreprocess/convparm.h"
 #include "gromacs/gmxpreprocess/gen_maxwell_velocities.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
@@ -90,7 +91,6 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/calc_verletbuf.h"
-#include "gromacs/mdlib/compute_io.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/md_support.h"
 #include "gromacs/mdlib/perf_est.h"
@@ -2837,7 +2837,8 @@ int gmx_grompp(int argc, char* argv[])
         double      cio = compute_io(ir, sys.natoms, sys.groups, F_NRE, 1);
         std::string warningMessage =
                 gmx::formatString("This run will generate roughly %.0f Mb of data", cio);
-        if (cio > 2000)
+        const double minimumOutputMebibytesForWarning = 20000;
+        if (cio > minimumOutputMebibytesForWarning)
         {
             wi.setFileAndLineNumber(mdparin, -1);
             wi.addNote(warningMessage);

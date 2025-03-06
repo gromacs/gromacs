@@ -89,7 +89,6 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/checkpointhandler.h"
-#include "gromacs/mdlib/compute_io.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/coupling.h"
 #include "gromacs/mdlib/ebin.h"
@@ -364,14 +363,6 @@ void gmx::LegacySimulator::do_md()
                                                 ir->nstcalcenergy,
                                                 haveDDAtomOrdering(*cr_),
                                                 useGpuForPme);
-
-    {
-        double io = compute_io(ir, topGlobal_.natoms, *groups, energyOutput.numEnergyTerms(), 1);
-        if ((io > 2000) && MAIN(cr_))
-        {
-            fprintf(stderr, "\nWARNING: This run will generate roughly %.0f Mb of data\n\n", io);
-        }
-    }
 
     ObservablesReducer observablesReducer = observablesReducerBuilder_->build();
 

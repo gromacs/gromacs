@@ -31,14 +31,21 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
+/*! \libinternal \file
+ * \brief
+ * Declares compute_io
+ *
+ * \inlibraryapi
+ * \ingroup module_preprocessing
+ */
 
-#ifndef GMX_MDLIB_COMPUTE_IO_H
-#define GMX_MDLIB_COMPUTE_IO_H
+#ifndef GMX_GMXPREPROCESS_COMPUTE_IO_H
+#define GMX_GMXPREPROCESS_COMPUTE_IO_H
 
 struct SimulationGroups;
 struct t_inputrec;
 
+//! Return an estimate of the total output in MiB to be written from this simulation
 double compute_io(const t_inputrec* ir, int natoms, const SimulationGroups& groups, int nrener, int nrepl);
-/* Return total output to be written from this simulation. */
 
 #endif

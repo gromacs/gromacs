@@ -44,7 +44,6 @@
 
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdlib/compute_io.h"
 #include "gromacs/mdlib/enerdata_utils.h"
 #include "gromacs/mdlib/energyoutput.h"
 #include "gromacs/mdlib/mdatoms.h"
@@ -181,14 +180,6 @@ void EnergyData::setup(gmx_mdoutf* outf)
 
     initializeEnergyHistory(startingBehavior_, observablesHistory_, energyOutput_.get());
 
-    // TODO: This probably doesn't really belong here...
-    //       but we have all we need in this element,
-    //       so we'll leave it here for now!
-    double io = compute_io(inputrec_, top_global_.natoms, *groups_, energyOutput_->numEnergyTerms(), 1);
-    if ((io > 2000) && isMainRank_)
-    {
-        fprintf(stderr, "\nWARNING: This run will generate roughly %.0f Mb of data\n\n", io);
-    }
     if (!inputrec_->bContinuation)
     {
         real temp = enerd_->term[F_TEMP];

@@ -31,15 +31,16 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
+/*! \libinternal \file
+ * \brief
+ * Defines compute_io
+ *
+ * \inlibraryapi
+ * \ingroup module_preprocessing
+ */
 #include "gmxpre.h"
 
 #include "compute_io.h"
-
-#include <csignal>
-#include <cstdlib>
-
-#include <memory>
-#include <vector>
 
 #include "gromacs/math/functions.h"
 #include "gromacs/mdtypes/inputrec.h"
