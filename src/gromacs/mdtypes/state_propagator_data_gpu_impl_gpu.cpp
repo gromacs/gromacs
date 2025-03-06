@@ -337,9 +337,24 @@ void StatePropagatorDataGpu::Impl::reinit(int numAtomsLocal, int numAtomsAll, co
 
             if (isPmeRank)
             {
-                nvshmemPpCommData_->d_recvBuf_.resize(totalDimsAndPulses);
-                nvshmemPpCommData_->d_recvBufSize_.resize(totalDimsAndPulses, -1);
-                nvshmemPpCommData_->d_recvBufCapacity_.resize(totalDimsAndPulses, -1);
+                int prevSize = gmx::ssize(nvshmemPpCommData_->d_recvBufSize_);
+                if (prevSize < totalDimsAndPulses)
+                {
+                    // Resize only if the previous size is smaller; otherwise,
+                    // avoid resizing, keep redundant dimensions/pulses.
+                    // This is to ensure parity with the `constructGpuHaloExchange`
+                    // function in `domdec`. If there is a decrease in pulses/dimensions
+                    // followed by an increase (or vice versa), any mismatch
+                    // in PME buffer sizes with `cr.dd->gpuHaloExchange` can lead to
+                    // symmetric `nvshmem` memory allocation calls from the PME side due to
+                    // reallocation. Such a mismatch can cause a hang, as the PME rank may post a
+                    // `nvshmem_malloc` without a corresponding matching call from the PP side.
+                    nvshmemPpCommData_->d_recvBuf_.resize(totalDimsAndPulses);
+                    // Only initialize the newly allocated elements.
+                    nvshmemPpCommData_->d_recvBufSize_.resize(totalDimsAndPulses, -1);
+                    nvshmemPpCommData_->d_recvBufCapacity_.resize(totalDimsAndPulses, -1);
+                }
+
                 totalDimsAndPulses = 0;
                 for (int d = 0; d < cr.dd->ndim; d++)
                 {

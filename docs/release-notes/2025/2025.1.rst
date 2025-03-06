@@ -51,6 +51,16 @@ and much better than |Gromacs| 2024 running with the default settings.
 
 :issue:`5283`
 :issue:`5306`
+Fix NVSHMEM enabled mdrun hang with 7PP:1PME ranks for certain inputs
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Fix NVSHMEM enabled mdrun hang with a varying number of communication pulses
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+A hang is encountered when the domain decomposition involves increasing and decreasing
+the number of communication pulses involving 1 PME and more than one PP ranks.
+
+:issue:`5303`
 
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
