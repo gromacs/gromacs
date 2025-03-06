@@ -82,6 +82,14 @@ Building |Gromacs| on Windows using MSVC + CUDA (OpenMP is enabled by default) n
 
 :issue:`5294`
 
+Fix build with SYCL and HeFFTe
+""""""""""""""""""""""""""""""
+
+|Gromacs| 2025.0 was failing to build with AdaptiveCpp and HeFFTe due to incomplete refactoring.
+This is now fixed.
+
+:issue:`5314`
+
 Miscellaneous
 ^^^^^^^^^^^^^
 

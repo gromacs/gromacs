@@ -74,10 +74,6 @@
 #    error This file can only be compiled with AdaptiveCpp/hipSYCL enabled
 #endif
 
-#if !defined HIPSYCL_PLATFORM_ROCM
-#    error Only ROCM platform is supported for 3D FFT with hipSYCL
-#endif
-
 namespace gmx
 {
 
@@ -145,7 +141,8 @@ RocfftPlan makePlan(const std::string&     descriptiveString,
                     auto a_requiredWorkBufferSize =
                             requiredWorkBufferSizeView.get_access(cgh, sycl::read_write, sycl::no_init);
                     auto a_result = resultBuffer.get_access(cgh, sycl::write_only, sycl::no_init);
-                    cgh.hipSYCL_enqueue_custom_operation(
+                    gmx::syclEnqueueCustomOp(
+                            cgh,
                             [=](sycl::interop_handle& /*h*/)
                             {
                                 const int numBatches = 1;
@@ -323,24 +320,27 @@ void Gpu3dFft::ImplSyclRocfft::perform3dFft(gmx_fft_direction dir, CommandEvent*
         outputGrid = &impl_->realGrid_;
     }
     // Enqueue the 3D FFT work
-    impl_->queue_.submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
-        // Use a hipSYCL custom operation to access the native buffers
-        // needed to call rocFFT
-        cgh.hipSYCL_enqueue_custom_operation(
-                [=](sycl::interop_handle& gmx_unused h)
-                {
-                    void*       d_inputGrid  = reinterpret_cast<void*>(*inputGrid);
-                    void*       d_outputGrid = reinterpret_cast<void*>(*outputGrid);
-                    hipStream_t stream       = h.get_native_queue<sycl::backend::hip>();
-                    rocfft_execution_info_set_stream(impl_->plans_[direction].info, stream);
-                    // Don't check results generated asynchronously,
-                    // because we don't know what to do with them
-                    rocfft_execute(impl_->plans_[direction].plan,
-                                   &d_inputGrid,
-                                   &d_outputGrid,
-                                   impl_->plans_[direction].info);
-                });
-    });
+    gmx::syclSubmitWithoutEvent(
+            impl_->queue_,
+            [&](sycl::handler& cgh)
+            {
+                // Use a hipSYCL custom operation to access the native buffers needed to call rocFFT
+                gmx::syclEnqueueCustomOp(
+                        cgh,
+                        [=](sycl::interop_handle& gmx_unused h)
+                        {
+                            void*       d_inputGrid  = reinterpret_cast<void*>(*inputGrid);
+                            void*       d_outputGrid = reinterpret_cast<void*>(*outputGrid);
+                            hipStream_t stream       = h.get_native_queue<sycl::backend::hip>();
+                            rocfft_execution_info_set_stream(impl_->plans_[direction].info, stream);
+                            // Don't check results generated asynchronously,
+                            // because we don't know what to do with them
+                            rocfft_execute(impl_->plans_[direction].plan,
+                                           &d_inputGrid,
+                                           &d_outputGrid,
+                                           impl_->plans_[direction].info);
+                        });
+            });
 }
 
 Gpu3dFft::ImplSyclRocfft::ImplSyclRocfft(bool                 allocateRealGrid,

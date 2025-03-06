@@ -419,22 +419,30 @@ void Gpu3dFft::ImplHeFfte<backend_tag>::perform3dFft(gmx_fft_direction dir, Comm
     {
         case GMX_FFT_REAL_TO_COMPLEX:
 #if GMX_SYCL_ACPP
-            pmeRawStream_.submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
-                cgh.hipSYCL_enqueue_custom_operation(
-                        [=](sycl::interop_handle& gmx_unused h)
-                        { fftPlan_->forward(realGrid, complexGrid, workspace_.data()); });
-            });
+            gmx::syclSubmitWithoutEvent(
+                    pmeRawStream_,
+                    [&](sycl::handler& cgh)
+                    {
+                        gmx::syclEnqueueCustomOp(
+                                cgh,
+                                [=](sycl::interop_handle& gmx_unused h)
+                                { fftPlan_->forward(realGrid, complexGrid, workspace_.data()); });
+                    });
 #else
             fftPlan_->forward(realGrid, complexGrid, workspace_.data());
 #endif
             break;
         case GMX_FFT_COMPLEX_TO_REAL:
 #if GMX_SYCL_ACPP
-            pmeRawStream_.submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
-                cgh.hipSYCL_enqueue_custom_operation(
-                        [=](sycl::interop_handle& gmx_unused h)
-                        { fftPlan_->backward(complexGrid, realGrid, workspace_.data()); });
-            });
+            gmx::syclSubmitWithoutEvent(
+                    pmeRawStream_,
+                    [&](sycl::handler& cgh)
+                    {
+                        gmx::syclEnqueueCustomOp(
+                                cgh,
+                                [=](sycl::interop_handle& gmx_unused h)
+                                { fftPlan_->backward(complexGrid, realGrid, workspace_.data()); });
+                    });
 #else
             fftPlan_->backward(complexGrid, realGrid, workspace_.data());
 #endif
