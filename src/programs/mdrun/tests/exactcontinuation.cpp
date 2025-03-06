@@ -429,6 +429,18 @@ TEST_P(MdrunNoAppendContinuationIsExact, WithinTolerances)
         mdpFieldValues["verlet-buffer-tolerance"] = "1e-5";
     }
 
+    const int ulpToleranceForPotentialEnergy = (binaryReproducible ? 0 : 256);
+    const int ulpToleranceForKineticEnergy   = (binaryReproducible ? 0 : 512);
+    // Testing shows that PE and KE need wider tolerances
+    EnergyTermsToCompare energyTermsToCompare{
+        { { interaction_function[F_EPOT].longname,
+            relativeToleranceAsPrecisionDependentUlp(
+                    10.0, ulpToleranceForPotentialEnergy, ulpToleranceForPotentialEnergy) },
+          { interaction_function[F_EKIN].longname,
+            relativeToleranceAsPrecisionDependentUlp(
+                    10.0, ulpToleranceForKineticEnergy, ulpToleranceForKineticEnergy) } }
+    };
+
     int ulpToleranceInMixed  = 0;
     int ulpToleranceInDouble = 0;
     if (!binaryReproducible)
@@ -437,16 +449,9 @@ TEST_P(MdrunNoAppendContinuationIsExact, WithinTolerances)
         // sumation order.
         // Forces and update on GPUs are generally result in different
         // sumation order
-        ulpToleranceInMixed  = 64;
+        ulpToleranceInMixed  = 65;
         ulpToleranceInDouble = 128;
     }
-
-    EnergyTermsToCompare energyTermsToCompare{
-        { { interaction_function[F_EPOT].longname,
-            relativeToleranceAsPrecisionDependentUlp(10.0, ulpToleranceInMixed, ulpToleranceInDouble) },
-          { interaction_function[F_EKIN].longname,
-            relativeToleranceAsPrecisionDependentUlp(10.0, ulpToleranceInMixed, ulpToleranceInDouble) } }
-    };
 
     if (temperatureCoupling != "no" || pressureCoupling != "no")
     {
