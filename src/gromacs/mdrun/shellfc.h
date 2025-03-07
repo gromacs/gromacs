@@ -82,7 +82,7 @@ class VirtualSitesHandler;
  * \param nflexcon Number of flexible constraints.
  * \param nstcalcenergy How often are energies calculated. Must be provided for sanity check.
  * \param usingDomainDecomposition Whether domain decomposition is used. Must be provided for sanity check.
- * \param usingPmeOnGpu Set to true if GPU will be used for PME calculations. Necessary for proper buffer initialization.
+ * \param haveGpuCoordinates Set to true if GPU is handling coordinate transformation or PME. Necessary for proper buffer initialization.
  *
  * \returns a pointer to an initialized \c shellfc object.
  */
@@ -91,7 +91,7 @@ gmx_shellfc_t* init_shell_flexcon(FILE*             fplog,
                                   int               nflexcon,
                                   int               nstcalcenergy,
                                   bool              usingDomainDecomposition,
-                                  bool              usingPmeOnGpu);
+                                  bool              haveGpuCoordinates);
 
 /* Optimize shell positions */
 void relax_shell_flexcon(FILE*                               log,

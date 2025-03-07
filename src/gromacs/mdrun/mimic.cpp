@@ -284,13 +284,19 @@ void gmx::LegacySimulator::do_mimic()
 
     gstat = global_stat_init(ir);
 
+    const auto& simulationWork = runScheduleWork_->simulationWork;
+    const bool  useGpuForPme   = simulationWork.useGpuPme;
+    const bool  useGpuForBufferOps =
+            simulationWork.useGpuXBufferOpsWhenAllowed || simulationWork.useGpuFBufferOpsWhenAllowed;
+
+
     /* Check for polarizable models and flexible constraints */
     shellfc = init_shell_flexcon(fpLog_,
                                  topGlobal_,
                                  constr_ ? constr_->numFlexibleConstraints() : 0,
                                  ir->nstcalcenergy,
                                  haveDDAtomOrdering(*cr_),
-                                 runScheduleWork_->simulationWork.useGpuPme);
+                                 useGpuForPme || useGpuForBufferOps);
 
     {
         double io = compute_io(ir, topGlobal_.natoms, *groups, energyOutput.numEnergyTerms(), 1);

@@ -62,6 +62,14 @@ the number of communication pulses involving 1 PME and more than one PP ranks.
 
 :issue:`5303`
 
+Fix host buffer pinning with shell/flexcon and PME on CPU
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+In edge cases it would be possible to crash |Gromacs| when running code with flexible constraints when PME was performed
+on the CPU (or not used) and GPU buffer operations are used.
+
+:issue:`5317`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
