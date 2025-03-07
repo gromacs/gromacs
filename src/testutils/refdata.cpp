@@ -55,6 +55,7 @@
 #include <optional>
 #include <ostream>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -101,9 +102,9 @@ class TestReferenceDataImpl
 {
 public:
     //! Initializes a checker in the given mode.
-    TestReferenceDataImpl(ReferenceDataMode                    mode,
-                          bool                                 bSelfTestMode,
-                          std::optional<std::filesystem::path> testNameOverride);
+    TestReferenceDataImpl(ReferenceDataMode                           mode,
+                          bool                                        bSelfTestMode,
+                          const std::optional<std::filesystem::path>& testNameOverride);
 
     //! Performs final reference data processing when test ends.
     void onTestEnd(bool testPassed) const;
@@ -163,13 +164,20 @@ typedef std::shared_ptr<internal::TestReferenceDataImpl> TestReferenceDataImplPo
  * object is destructed (and other post-processing is done) at the end of each
  * test by ReferenceDataTestEventListener (which is installed as a Google Test
  * test listener).
+ *
+ * This is a map with at most a single element, because it will
+ * shortly be refactored into a map that will contain multiple
+ * elements corresponding to the reference data of a multi-rank test
+ * case implemented with thread-MPI.
  */
-TestReferenceDataImplPointer g_referenceData;
+std::unordered_map<int, TestReferenceDataImplPointer> g_referenceData;
+
 //! Global reference data mode set by the `-ref-data` command-line option
 ReferenceDataMode g_referenceDataMode = ReferenceDataMode::Compare;
 
 } // namespace
 
+//! Return the reference data mode
 ReferenceDataMode referenceDataMode()
 {
     return g_referenceDataMode;
@@ -178,47 +186,59 @@ ReferenceDataMode referenceDataMode()
 namespace
 {
 
+//! Class that connects GoogleTest success/failure to reference-data handling
 class ReferenceDataTestEventListener : public ::testing::EmptyTestEventListener
 {
 public:
     void OnTestEnd(const ::testing::TestInfo& test_info) override
     {
-        if (g_referenceData)
+        // Did this test create test reference data?
+        if (g_referenceData[0])
         {
-            GMX_RELEASE_ASSERT(g_referenceData.use_count() == 1,
-                               "Test leaked TestRefeferenceData objects");
-            g_referenceData->onTestEnd(test_info.result()->Passed());
-            g_referenceData.reset();
+            GMX_RELEASE_ASSERT(g_referenceData[0].use_count() == 1,
+                               "Test leaked TestReferenceData objects");
+            // Pass the test result to the reference data handler, so it can
+            // e.g. write reference data only when appropriate.
+            g_referenceData[0]->onTestEnd(test_info.result()->Passed());
+            // Remove the reference data handler for this test
+            g_referenceData[0].reset();
         }
     }
-
+    //! Callback after all the tests in the the test case have run
     void OnTestProgramEnd(const ::testing::UnitTest& /*unused*/) override
     {
-        // Could be used e.g. to free internal buffers allocated by an XML parsing library
+        // Could be used e.g. to free internal buffers
     }
 };
 
 //! Returns a reference to the global reference data object.
-TestReferenceDataImplPointer initReferenceDataInstance(std::optional<std::filesystem::path> testNameOverride)
+TestReferenceDataImplPointer initReferenceDataInstance(const std::optional<std::filesystem::path>& testNameOverride)
 {
-    GMX_RELEASE_ASSERT(!g_referenceData, "Test cannot create multiple TestReferenceData instances");
-    g_referenceData = std::make_shared<internal::TestReferenceDataImpl>(
-            referenceDataMode(), false, std::move(testNameOverride));
-    return g_referenceData;
+    GMX_RELEASE_ASSERT(g_referenceData.find(0) == g_referenceData.end() or !g_referenceData[0],
+                       "Test cannot create multiple TestReferenceData instances");
+    g_referenceData[0] = std::make_shared<internal::TestReferenceDataImpl>(
+            referenceDataMode(), false, testNameOverride);
+    // Let the reference data handler find out the test result
+    ::testing::UnitTest::GetInstance()->listeners().Append(new ReferenceDataTestEventListener);
+    return g_referenceData[0];
 }
 
-//! Handles reference data creation for self-tests.
+//! Handles reference data creation for self tests.
 TestReferenceDataImplPointer initReferenceDataInstanceForSelfTest(ReferenceDataMode mode)
 {
-    if (g_referenceData)
+    // A previous test might or might not have made the handle to the instance
+    if ((g_referenceData.find(0) != g_referenceData.end()) && g_referenceData[0])
     {
-        GMX_RELEASE_ASSERT(g_referenceData.use_count() == 1,
+        // Clean up the old instance from earlier in this test case
+        GMX_RELEASE_ASSERT(g_referenceData[0].use_count() == 1,
                            "Test cannot create multiple TestReferenceData instances");
-        g_referenceData->onTestEnd(true);
-        g_referenceData.reset();
+        g_referenceData[0]->onTestEnd(true);
+        g_referenceData[0].reset();
     }
-    g_referenceData = std::make_shared<internal::TestReferenceDataImpl>(mode, true, std::nullopt);
-    return g_referenceData;
+    g_referenceData[0] = std::make_shared<internal::TestReferenceDataImpl>(mode, true, std::nullopt);
+    // Let the reference data handler find out the test result
+    ::testing::UnitTest::GetInstance()->listeners().Append(new ReferenceDataTestEventListener);
+    return g_referenceData[0];
 }
 
 //! Formats a path to a reference data entry with a non-null id.
@@ -293,7 +313,6 @@ void initReferenceData(IOptionsContainer* options)
                                .enumValue(s_refDataNames)
                                .store(&g_referenceDataMode)
                                .description("Operation mode for tests that use reference data"));
-    ::testing::UnitTest::GetInstance()->listeners().Append(new ReferenceDataTestEventListener);
 }
 
 /********************************************************************
@@ -305,15 +324,14 @@ namespace internal
 
 TestReferenceDataImpl::TestReferenceDataImpl(ReferenceDataMode mode,
                                              bool              bSelfTestMode,
-                                             std::optional<std::filesystem::path> testNameOverride) :
+                                             const std::optional<std::filesystem::path>& testNameOverride) :
     updateMismatchingEntries_(false), bSelfTestMode_(bSelfTestMode), bInUse_(false)
 {
     const std::filesystem::path dirname = bSelfTestMode
                                                   ? TestFileManager::getGlobalOutputTempDirectory()
                                                   : TestFileManager::getInputDataDirectory();
     const std::filesystem::path filename =
-            testNameOverride.has_value() ? testNameOverride.value()
-                                         : TestFileManager::getTestSpecificFileName(".xml");
+            testNameOverride.value_or(TestFileManager::getTestSpecificFileName(".xml"));
     fullFilename_ = dirname / "refdata" / filename;
 
     switch (mode)
@@ -706,13 +724,13 @@ ReferenceDataEntry* TestReferenceChecker::Impl::findOrCreateEntry(const char* ty
 TestReferenceData::TestReferenceData() : impl_(initReferenceDataInstance(std::nullopt)) {}
 
 
-TestReferenceData::TestReferenceData(std::string testNameOverride) :
-    impl_(initReferenceDataInstance(std::move(testNameOverride)))
+TestReferenceData::TestReferenceData(const std::string& testNameOverride) :
+    impl_(initReferenceDataInstance(testNameOverride))
 {
 }
 
-TestReferenceData::TestReferenceData(std::filesystem::path testNameOverride) :
-    impl_(initReferenceDataInstance(std::move(testNameOverride)))
+TestReferenceData::TestReferenceData(const std::filesystem::path& testNameOverride) :
+    impl_(initReferenceDataInstance(testNameOverride))
 {
 }
 

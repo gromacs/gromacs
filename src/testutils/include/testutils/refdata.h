@@ -212,9 +212,9 @@ public:
      * run modes. The name should include a filename suffix
      * e.g. `.xml` and refers to a file that will be found in the
      * `refdata` subdirectory for the test case. */
-    explicit TestReferenceData(std::string testNameOverride);
+    explicit TestReferenceData(const std::string& testNameOverride);
     //! \copydoc TestReferenceData::TestReferenceData(std::string)
-    explicit TestReferenceData(std::filesystem::path testNameOverride);
+    explicit TestReferenceData(const std::filesystem::path& testNameOverride);
     /*! \brief
      * Initializes the reference data in a specific mode.
      *
