@@ -70,6 +70,11 @@ on the CPU (or not used) and GPU buffer operations are used.
 
 :issue:`5317`
 
+Fix segmentation fault in NNPot with domain decomposition
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When using the NNPot module with domain decomposition, a segmentation fault could occur.
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
