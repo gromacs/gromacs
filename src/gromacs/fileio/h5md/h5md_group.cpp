@@ -68,6 +68,14 @@ hid_t createGroup(const hid_t container, const char* name)
     return group;
 }
 
+hid_t openGroup(const hid_t container, const char* name)
+{
+    const hid_t group = H5Gopen(container, name, H5P_DEFAULT);
+    throwUponH5mdError(group == H5I_INVALID_HID, "Cannot open group.");
+
+    return group;
+}
+
 hid_t openOrCreateGroup(const hid_t container, const char* name)
 {
     hid_t groupId = H5Gopen(container, name, H5P_DEFAULT);
