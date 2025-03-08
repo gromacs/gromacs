@@ -79,7 +79,6 @@ static const std::string& simdString(SimdType s)
                                                           { SimdType::X86_Avx2, "AVX2_256" },
                                                           { SimdType::X86_Avx2_128, "AVX2_128" },
                                                           { SimdType::X86_Avx512, "AVX_512" },
-                                                          { SimdType::X86_Avx512Knl, "AVX_512_KNL" },
                                                           { SimdType::Arm_NeonAsimd,
                                                             "ARM_NEON_ASIMD" },
                                                           { SimdType::Arm_Sve, "ARM_SVE" },
@@ -97,11 +96,7 @@ SimdType simdSuggested(const CpuInfo& c)
         switch (c.vendor())
         {
             case CpuInfo::Vendor::Intel:
-                if (c.feature(CpuInfo::Feature::X86_Avx512ER))
-                {
-                    suggested = SimdType::X86_Avx512Knl;
-                }
-                else if (c.feature(CpuInfo::Feature::X86_Avx512F))
+                if (c.feature(CpuInfo::Feature::X86_Avx512F))
                 {
                     // If we could not identify the number of AVX512 FMA units we assume 2
                     suggested = (identifyAvx512FmaUnits() == 1) ? SimdType::X86_Avx2 : SimdType::X86_Avx512;
@@ -198,9 +193,7 @@ SimdType simdSuggested(const CpuInfo& c)
 
 static SimdType simdCompiled()
 {
-#if GMX_SIMD_X86_AVX_512_KNL
-    return SimdType::X86_Avx512Knl;
-#elif GMX_SIMD_X86_AVX_512
+#if GMX_SIMD_X86_AVX_512
     return SimdType::X86_Avx512;
 #elif GMX_SIMD_X86_AVX2_256
     return SimdType::X86_Avx2;

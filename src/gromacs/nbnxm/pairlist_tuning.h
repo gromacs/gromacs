@@ -58,7 +58,6 @@ struct t_inputrec;
 namespace gmx
 {
 struct PairlistParams;
-class CpuInfo;
 class MDLogger;
 
 /*! \brief Try to increase nstlist when using the Verlet cut-off scheme
@@ -71,7 +70,6 @@ class MDLogger;
  * \param[in]     box      The unit cell
  * \param[in]     effectiveAtomDensity  The effective atom density
  * \param[in]     useOrEmulateGpuForNonbondeds  Tells if we are using a GPU for non-bondeds
- * \param[in]     cpuinfo  Information about the CPU(s)
  */
 void increaseNstlist(FILE*             fplog,
                      t_commrec*        cr,
@@ -80,8 +78,7 @@ void increaseNstlist(FILE*             fplog,
                      const gmx_mtop_t* mtop,
                      const matrix      box,
                      real              effectiveAtomDensity,
-                     bool              useOrEmulateGpuForNonbondeds,
-                     const CpuInfo&    cpuinfo);
+                     bool              useOrEmulateGpuForNonbondeds);
 
 /*! \brief Set up the dynamic pairlist pruning
  *

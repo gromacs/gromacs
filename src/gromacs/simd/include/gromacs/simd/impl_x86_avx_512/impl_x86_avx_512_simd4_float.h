@@ -158,13 +158,10 @@ static inline Simd4Float gmx_simdcall fnms(Simd4Float a, Simd4Float b, Simd4Floa
     return { _mm_fnmsub_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_) };
 }
 
-// Override for AVX-512-KNL
-#if GMX_SIMD_X86_AVX_512
 static inline Simd4Float gmx_simdcall rsqrt(Simd4Float x)
 {
     return { _mm512_castps512_ps128(_mm512_rsqrt14_ps(_mm512_castps128_ps512(x.simdInternal_))) };
 }
-#endif
 
 static inline Simd4Float gmx_simdcall abs(Simd4Float x)
 {

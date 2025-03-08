@@ -190,22 +190,6 @@ elseif(GMX_SIMD_ACTIVE STREQUAL "AVX_512")
     set(GMX_SIMD_X86_${GMX_SIMD_ACTIVE} 1)
     set(SIMD_STATUS_MESSAGE "Enabling 512-bit AVX-512 SIMD instructions using CXX flags: ${SIMD_AVX_512_CXX_FLAGS}")
 
-elseif(GMX_SIMD_ACTIVE STREQUAL "AVX_512_KNL")
-    message(WARNING "Intel Xeon Phi support is deprecated and will be removed in the future versions.")  # See #4740
-
-    gmx_find_simd_avx_512_knl_flags(SIMD_AVX_512_KNL_C_SUPPORTED SIMD_AVX_512_KNL_CXX_SUPPORTED
-                                    SIMD_AVX_512_KNL_C_FLAGS SIMD_AVX_512_KNL_CXX_FLAGS)
-
-    if(NOT SIMD_AVX_512_KNL_C_SUPPORTED OR NOT SIMD_AVX_512_KNL_CXX_SUPPORTED)
-        gmx_give_fatal_error_when_simd_support_not_found("AVX 512ER" "choose a lower level of SIMD (slower)" "${SUGGEST_BINUTILS_UPDATE}")
-    endif()
-
-    # If multiple flags are neeed, make them into a list
-    string(REPLACE " " ";" SIMD_C_FLAGS ${SIMD_AVX_512_KNL_C_FLAGS})
-    string(REPLACE " " ";" SIMD_CXX_FLAGS ${SIMD_AVX_512_KNL_CXX_FLAGS})
-    set(GMX_SIMD_X86_${GMX_SIMD_ACTIVE} 1)
-    set(SIMD_STATUS_MESSAGE "Enabling 512-bit AVX-512-KNL SIMD instructions using CXX flags: ${SIMD_AVX_512_KNL_CXX_FLAGS}")
-
 elseif(GMX_SIMD_ACTIVE STREQUAL "ARM_NEON_ASIMD")
 
     gmx_find_simd_arm_neon_asimd_flags(SIMD_ARM_NEON_ASIMD_C_SUPPORTED SIMD_ARM_NEON_ASIMD_CXX_SUPPORTED

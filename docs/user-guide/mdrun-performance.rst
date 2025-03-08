@@ -1432,7 +1432,7 @@ Known limitations of the OpenCL support
 
 Limitations in the current OpenCL support of interest to |Gromacs| users:
 
-- Intel integrated GPUs are supported. Intel CPUs and Xeon Phi are not supported.
+- Intel integrated GPUs are supported. Intel CPUs are not supported.
   Set ``-DGMX_GPU_NB_CLUSTER_SIZE=4`` when compiling |Gromacs| to run on consumer
   Intel GPUs (as opposed to Ponte Vecchio / Data Center Max GPUs).
 - Due to blocking behavior of some asynchronous task enqueuing functions

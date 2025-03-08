@@ -87,7 +87,6 @@
 #include "gromacs/gpu_utils/gpueventsynchronizer_helpers.h"
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/gpu_utils/nvshmem_utils.h"
-#include "gromacs/hardware/cpuinfo.h"
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/hardware/device_management.h"
 #include "gromacs/hardware/hardwaretopology.h"
@@ -474,8 +473,7 @@ static void prepare_verlet_scheme(FILE*                          fplog,
                                   const gmx_mtop_t&              mtop,
                                   gmx::ArrayRef<const gmx::RVec> coordinates,
                                   const matrix                   box,
-                                  bool                           makeGpuPairList,
-                                  const gmx::CpuInfo&            cpuinfo)
+                                  bool                           makeGpuPairList)
 {
     // We checked the cut-offs in grompp, but double-check here.
     // We have PME+LJcutoff kernels for rcoulomb>rvdw.
@@ -545,8 +543,8 @@ static void prepare_verlet_scheme(FILE*                          fplog,
     if (EI_DYNAMICS(ir->eI))
     {
         /* Set or try nstlist values */
-        increaseNstlist(
-                fplog, cr, ir, nstlist_cmdline, &mtop, box, effectiveAtomDensity.value(), makeGpuPairList, cpuinfo);
+        gmx::increaseNstlist(
+                fplog, cr, ir, nstlist_cmdline, &mtop, box, effectiveAtomDensity.value(), makeGpuPairList);
     }
 }
 
@@ -1337,8 +1335,7 @@ int Mdrunner::mdrunner()
                           mtop,
                           MAIN(cr) ? globalState->x : gmx::ArrayRef<const gmx::RVec>(),
                           box,
-                          useGpuForNonbonded || (emulateGpuNonbonded == EmulateGpuNonbonded::Yes),
-                          *hwinfo_->cpuInfo);
+                          useGpuForNonbonded || (emulateGpuNonbonded == EmulateGpuNonbonded::Yes));
 
     // We need to decide on update groups early, as this affects
     // inter-domain communication distances.

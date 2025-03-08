@@ -158,13 +158,10 @@ static inline Simd4Double gmx_simdcall fnms(Simd4Double a, Simd4Double b, Simd4D
     return { _mm256_fnmsub_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_) };
 }
 
-// Override for AVX-512-KNL
-#if GMX_SIMD_X86_AVX_512
 static inline Simd4Double gmx_simdcall rsqrt(Simd4Double x)
 {
     return { _mm512_castpd512_pd256(_mm512_rsqrt14_pd(_mm512_castpd256_pd512(x.simdInternal_))) };
 }
-#endif
 
 static inline Simd4Double gmx_simdcall abs(Simd4Double x)
 {

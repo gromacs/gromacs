@@ -429,7 +429,7 @@ use mixed or double precision for |Gromacs|. There is no need to
 compile FFTW with threading or MPI support, but it does no harm. On
 x86 hardware, compile with all of ``--enable-sse2``, ``--enable-avx``,
 and ``--enable-avx2`` flags. On Intel processors supporting
-512-wide AVX, including KNL, add ``--enable-avx512`` too.
+512-wide AVX, add ``--enable-avx512`` too.
 FFTW will create a fat library with codelets for all different instruction sets,
 and pick the fastest supported one at runtime.
 On ARM architectures with SIMD support use ``--enable-neon`` flag;
@@ -833,11 +833,10 @@ lead to performance loss, e.g. on Intel Skylake-X/SP and AMD Zen (first generati
    On AMD it is beneficial to use starting with Zen4.
    Additionally, with GPU accelerated runs ``AVX2_256`` can also be
    faster on high-end Skylake CPUs with both 512-bit FMA units enabled.
-9. ``AVX_512_KNL`` Knights Landing Xeon Phi processors.
-10. ``IBM_VSX`` Power7, Power8, Power9 and later have this.
-11. ``ARM_NEON_ASIMD`` 64-bit ARMv8 and later. For maximum performance on NVIDIA 
+9. ``IBM_VSX`` Power7, Power8, Power9 and later have this.
+10. ``ARM_NEON_ASIMD`` 64-bit ARMv8 and later. For maximum performance on NVIDIA 
     Grace (ARMv9), we strongly suggest at least GNU >= 13, LLVM >= 16. 
-12. ``ARM_SVE`` 64-bit ARMv8 and later with the Scalable Vector Extensions (SVE).
+11. ``ARM_SVE`` 64-bit ARMv8 and later with the Scalable Vector Extensions (SVE).
     The SVE vector length is fixed at CMake configure time. The default vector
     length is automatically detected, and this can be changed via the
     ``GMX_SIMD_ARM_SVE_LENGTH`` CMake variable.  If compiling for a different 
@@ -1729,26 +1728,6 @@ environmental variable to ``ftn`` when compiling FFTW.
 The ARM ThunderX2 Cray XC50 machines differ only in that the recommended
 compiler is the ARM HPC Compiler (``armclang``).
 
-
-Intel Xeon Phi
-^^^^^^^^^^^^^^
-
-
-Xeon Phi processors, hosted or self-hosted, are supported.
-The Knights Landing-based Xeon Phi processors behave like standard x86 nodes,
-but support a special SIMD instruction set. When cross-compiling for such nodes,
-use the ``AVX_512_KNL`` SIMD flavor.
-Knights Landing processors support so-called "clustering modes" which
-allow reconfiguring the memory subsystem for lower latency. |Gromacs| can
-benefit from the quadrant or SNC clustering modes.
-Care needs to be taken to correctly pin threads. In particular, threads of
-an MPI rank should not cross cluster and NUMA boundaries.
-In addition to the main DRAM memory, Knights Landing has a high-bandwidth
-stacked memory called MCDRAM. Using it offers performance benefits if
-it is ensured that ``mdrun`` runs entirely from this memory; to do so
-it is recommended that MCDRAM is configured in "Flat mode" and ``mdrun`` is
-bound to the appropriate NUMA node (use e.g. ``numactl --membind 1`` with
-quadrant clustering mode).
 
 NVIDIA Grace
 ^^^^^^^^^^^^

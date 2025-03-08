@@ -53,7 +53,6 @@
 #include <string>
 
 #include "gromacs/domdec/domdec.h"
-#include "gromacs/hardware/cpuinfo.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/calc_verletbuf.h"
@@ -122,9 +121,6 @@ const int nstlist_try[] = { 20, 25, 40, 50, 80, 100 };
 // CPU: pair-search is a factor ~1.5 slower than the non-bonded kernel.
 //! Target pair-list size increase ratio for CPU
 static const float c_nbnxnListSizeFactorCpu = 1.25;
-// Intel KNL: pair-search is a factor ~2-3 slower than the non-bonded kernel.
-//! Target pair-list size increase ratio for Intel KNL
-static const float c_nbnxnListSizeFactorIntelXeonPhi = 1.4;
 // GPU: pair-search is a factor 1.5-3 slower than the non-bonded kernel.
 //! Target pair-list size increase ratio for GPU
 static const float c_nbnxnListSizeFactorGPU = 1.4;
@@ -166,8 +162,7 @@ void increaseNstlist(FILE*             fp,
                      const gmx_mtop_t* mtop,
                      const matrix      box,
                      const real        effectiveAtomDensity,
-                     bool              useOrEmulateGpuForNonbondeds,
-                     const CpuInfo&    cpuinfo)
+                     bool              useOrEmulateGpuForNonbondeds)
 {
     if (!EI_DYNAMICS(ir->eI))
     {
@@ -263,11 +258,9 @@ void increaseNstlist(FILE*             fp,
                        "In all cases that do not support dynamic nstlist, we should have returned "
                        "with an appropriate message above");
 
-    const bool  runningOnXeonPhi = (cpuinfo.brandString().find("Xeon Phi") != std::string::npos);
-    const float listfac_ok       = useOrEmulateGpuForNonbondeds ? c_nbnxnListSizeFactorGPU
-                                   : runningOnXeonPhi           ? c_nbnxnListSizeFactorIntelXeonPhi
-                                                                : c_nbnxnListSizeFactorCpu;
-    float       listfac_max      = listfac_ok + c_nbnxnListSizeFactorMargin;
+    const float listfac_ok =
+            useOrEmulateGpuForNonbondeds ? c_nbnxnListSizeFactorGPU : c_nbnxnListSizeFactorCpu;
+    float listfac_max = listfac_ok + c_nbnxnListSizeFactorMargin;
 
     const int nstlist_orig = ir->nstlist;
     if (nstlist_cmdline > 0)
