@@ -55,8 +55,8 @@
 #    include <sys/time.h>
 #endif
 #if GMX_NATIVE_WINDOWS
-#    include <Windows.h>
 #    include <process.h>
+#    include <windows.h>
 #endif
 #if HAVE_PWD_H
 #    include <pwd.h>

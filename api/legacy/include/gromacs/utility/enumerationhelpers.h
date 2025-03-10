@@ -79,6 +79,7 @@
 #define GMX_UTILITY_ENUMHELPERS_H
 
 #include <cstddef>
+#include <cstdint>
 
 #include <iterator>
 #include <type_traits>

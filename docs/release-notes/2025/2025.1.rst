@@ -113,6 +113,15 @@ This is now fixed.
 
 :issue:`5314`
 
+Fixed cross-compile for Windows with MinGW GCC on Linux
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Cross-compiling of |Gromacs| 2025.0 for Windows with MinGW GCC on Linux could fail due to
+a missing include and Linux-incompatible case sensitivity of Windows-specific includes.
+This is now fixed.
+
+:issue:`5088`
+
 Miscellaneous
 ^^^^^^^^^^^^^
 
