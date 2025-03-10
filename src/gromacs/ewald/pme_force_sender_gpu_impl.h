@@ -67,12 +67,17 @@ namespace gmx
 
 typedef struct CacheLineAlignedFlag
 {
-    // gcc warns about such uses in header files in case they
+    // gcc 12+ warns about such uses in header files in case they
     // could make a public ABI dependent on the compilation flags.
-    // This is an internal header, so we silence gcc.
+    // This is an internal header, so we silence gcc. We could
+    // do this better if we had a proper CMake target
+#if defined(__GNUC__) && __GNUC__ > 11
     GCC_DIAGNOSTIC_IGNORE("-Winterference-size")
+#endif
     alignas(hardware_destructive_interference_size) bool flag;
+#if defined(__GNUC__) && __GNUC__ > 11
     GCC_DIAGNOSTIC_RESET
+#endif
 } CacheLineAlignedFlag;
 
 /*! \internal
