@@ -22,7 +22,8 @@ gromacs:gcc-12:coverage:configure:
   variables:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX2_256"
-    CMAKE_EXTRA_OPTIONS: "-DGMX_BUILD_FOR_COVERAGE=ON"
+    # Coverage tests are slow, so we relax the timeout
+    CMAKE_EXTRA_OPTIONS: "-DGMX_BUILD_FOR_COVERAGE=ON -DGMX_TEST_TIMEOUT_FACTOR=2"
     COMPILER_MAJOR_VERSION: 12
 
 gromacs:gcc-12:coverage:build:
@@ -54,12 +55,14 @@ gromacs:coverage:analyse:
     - mkdir public
     - outputdir=`pwd`/public
     - cd $BUILD_DIR
-    - ctest -T test ctest -T coverage || true
+    - ctest -T test
+    - ctest -T coverage || true
+    - mv "Testing/`head -n 1 Testing/TAG`" "Testing/Results"
   coverage: '/Percentage.*\: (\d+\.\d+)\%/'
   artifacts:
     paths:
-      - $BUILD_DIR/Testing/`head -n 1 < $BUILD_DIR/Testing/TAG`/
+      - $BUILD_DIR/Testing/Results/
     reports:
       coverage_report:
         coverage_format: cobertura
-        path: $BUILD_DIR/Testing/`head -n 1 < $BUILD_DIR/Testing/TAG`/Coverage.xml
+        path: $BUILD_DIR/Testing/Results/Coverage.xml
