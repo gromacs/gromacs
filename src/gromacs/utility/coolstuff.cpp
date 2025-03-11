@@ -1703,7 +1703,9 @@ std::string getCoolQuote()
           "Newton's equations of motion did not change between them.",
           "Davide Mercadante" },
         { "First rule of atomics: Thou shalt not make generalized statements about atomics!",
-          "Noah Wolfe, on discussing GPU atomic operations" }
+          "Noah Wolfe, on discussing GPU atomic operations" },
+        { "We should change the code to FORTRAN, so it would be all caps, same as the name.",
+          "Paul Bauer, while discussing the spelling of GROMACS" }
 
     };
 
