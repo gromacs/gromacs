@@ -95,45 +95,45 @@ void gmx_omp_set_num_threads(int num_threads)
 #endif
 }
 
-bool gmx_omp_check_thread_affinity(char** message)
+std::optional<std::string> messageWhenOpenMPLibraryWillSetAffinity()
 {
-    bool shouldSetAffinity = true;
-
-    *message = nullptr;
+    std::optional<std::string> message;
 #if GMX_OPENMP
-    /* We assume that the affinity setting is available on all platforms
-     * gcc supports. Even if this is not the case (e.g. Mac OS) the user
-     * will only get a warning. */
-#    if defined(__GNUC__)
-    const char* programName;
-    try
+    // The OMP_PROC_BIND is the standard environment variable used by
+    // OpenMP implementations. The KMP_AFFINITY environment variable
+    // is used by Intel's compiler, and GOMP_CPU_AFFINITY by the GNU
+    // compilers (Intel also honors it as well).
+    std::string environmentVariablesFoundToBeSet;
+    for (const char* nameOfEnvironmentVariable :
+         { "OMP_PROC_BIND", "GOMP_CPU_AFFINITY", "KMP_AFFINITY" })
     {
-        programName = gmx::getProgramContext().displayName();
+        const char* const environmentVariableValue = std::getenv(nameOfEnvironmentVariable);
+        if (environmentVariableValue != nullptr && *environmentVariableValue != '\0')
+        {
+            if (!environmentVariablesFoundToBeSet.empty())
+            {
+                environmentVariablesFoundToBeSet += ", ";
+            }
+            environmentVariablesFoundToBeSet += nameOfEnvironmentVariable;
+        }
     }
-    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
-
-    const char* const gomp_env            = getenv("GOMP_CPU_AFFINITY");
-    const bool        bGompCpuAffinitySet = (gomp_env != nullptr);
-
-    /* turn off internal pinning if GOMP_CPU_AFFINITY is set & non-empty */
-    if (bGompCpuAffinitySet && *gomp_env != '\0')
+    if (!environmentVariablesFoundToBeSet.empty())
     {
         try
         {
-            std::string buf = gmx::formatString(
-                    "NOTE: GOMP_CPU_AFFINITY set, will turn off %s internal affinity\n"
-                    "      setting as the two can conflict and cause performance degradation.\n"
-                    "      To keep using the %s internal affinity setting, unset the\n"
-                    "      GOMP_CPU_AFFINITY environment variable.",
+            const char* programName = gmx::getProgramContext().displayName();
+            message                 = gmx::formatString(
+                    "NOTE: Thread-affinity variable(s) set, will turn off %s internal affinity\n"
+                                    "      setting as the two can conflict and cause performance degradation.\n"
+                                    "      To keep using the %s internal affinity setting, unset the\n"
+                                    "      following environment variable(s):\n"
+                                    "      %s",
                     programName,
-                    programName);
-            *message = gmx_strdup(buf.c_str());
+                    programName,
+                    environmentVariablesFoundToBeSet.c_str());
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
-        shouldSetAffinity = false;
     }
-#    endif /* __GNUC__ */
-
 #endif /* GMX_OPENMP */
-    return shouldSetAffinity;
+    return message;
 }

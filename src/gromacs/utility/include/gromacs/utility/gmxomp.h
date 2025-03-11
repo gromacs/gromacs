@@ -48,6 +48,9 @@
 #ifndef GMX_UTILITY_OMP_H
 #define GMX_UTILITY_OMP_H
 
+#include <optional>
+#include <string>
+
 /*! \addtogroup module_utility
  * \{
  */
@@ -83,23 +86,17 @@ int gmx_omp_get_thread_num();
  */
 void gmx_omp_set_num_threads(int num_threads);
 
-/*! \brief
- * Check for externally set thread affinity to avoid conflicts with \Gromacs
- * internal setting.
+/*! \brief Return a descriptive message when a relevant OpenMP
+ * variable that controls whether the OpenMP library will set thread
+ * affinity is itself set and non-empty.
  *
- * \param[out] message  Receives the message to be shown to the user.
- * \returns `true` if we can set thread affinity ourselves.
+ * Several environment variables are checked, including OMP_PROC_BIND,
+ * GOMP_CPU_AFFINITY, and KMP_AFFINITY.  When any of them are set,
+ * GROMACS should not set thread affinities itself.
  *
- * The KMP_AFFINITY environment variable is used by Intel, GOMP_CPU_AFFINITY
- * by the GNU compilers (Intel also honors it well).  If any of the variables
- * is set, we should honor it and disable the internal pinning.
- *
- * If this function returns `false`, the caller is responsible to disable the
- * pinning, show the message from \p *message to the user, and free the memory
- * allocated for \p *message.
- * If the return value is `true`, \p *message is NULL.
+ * \returns An optional message to be shown to the user when the library will set affinities.
  */
-bool gmx_omp_check_thread_affinity(char** message);
+std::optional<std::string> messageWhenOpenMPLibraryWillSetAffinity();
 
 /*! \} */
 
