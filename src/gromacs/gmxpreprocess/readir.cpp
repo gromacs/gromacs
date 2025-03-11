@@ -402,12 +402,12 @@ void check_ir(const char*                    mdparin,
             wi->addError("With Verlet lists nstlist should be larger than 0");
         }
 
-        if (ir->nstlist < 10)
+        if (ir->nstlist <= 10 && ir->verletbuf_tol <= 0)
         {
             wi->addNote(
-                    "With Verlet lists the optimal nstlist is >= 10, with GPUs >= 20. Note "
-                    "that with the Verlet scheme, nstlist has no effect on the accuracy of "
-                    "your simulation.");
+                    "With Verlet lists and no buffer tolerance, the optimal nstlist "
+                    "is >= 10, with GPUs >= 20. Note that with the Verlet scheme, "
+                    "nstlist has no effect on the accuracy of your simulation.");
         }
 
         rc_max = std::max(ir->rvdw, ir->rcoulomb);
