@@ -333,6 +333,18 @@ bool simdCheck(const CpuInfo& cpuInfo, gmx::SimdType wanted, FILE* log, bool war
                 simdString(compiled).c_str()));
         warnMsg = logMsg;
     }
+    else if (cpuInfo.feature(CpuInfo::Feature::Arm_Sve)
+             && cpuInfo.feature(CpuInfo::Feature::Arm_NeonAsimd) && cpuIsNeoverseV2(cpuInfo))
+    {
+        // On neoverse, best perf is dependent on exact run time/compiler configuration
+        logMsg  = wrapper.wrapToString(formatString(
+                "There are multiple SIMD instruction sets that are supported by all nodes "
+                 "but the best cannot be determined. Check the install guide "
+                 "SIMD Support section for recommendations for your particular case. \n"
+                 "SIMD instructions selected at compile time: %s",
+                simdString(compiled).c_str()));
+        warnMsg = logMsg;
+    }
     else if (wanted != compiled)
     {
         // This warning will also occur if compiled is X86_Avx and wanted is X86_Avx128Fma

@@ -137,3 +137,11 @@ To activate Plumed during compilation CMake had to be run twice. This has now be
 and CMake only requires a single invocation for the build.
 
 :issue:`5292`
+Correctly suggest NEON over SVE for CPU builds on Neoverse-v2 at run time
+No longer suggest SVE over NEON for CPU builds on Neoverse-v2 at run time
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+On Neoverse-v2, the most performant SIMD instruction depends on exact run time
+configuration so the user is now directed to the install guide when running on 
+this architecture. 
+
+:issue:`5296`
