@@ -52,6 +52,7 @@
 #include <limits>
 #include <list>
 #include <memory>
+#include <mutex>
 #include <optional>
 #include <ostream>
 #include <string>
@@ -157,18 +158,25 @@ namespace
 //! Convenience typedef for a smart pointer to TestReferenceDataImpl.
 typedef std::shared_ptr<internal::TestReferenceDataImpl> TestReferenceDataImplPointer;
 
+//! Provide mutual exclusion in thread-MPI build configurations
+std::mutex g_referenceDataMutex;
+
 /*! \brief
- * Global reference data instance.
+ * Global reference data instances, one per MPI rank running the test binary.
  *
- * The object is created when the test creates a TestReferenceData, and the
- * object is destructed (and other post-processing is done) at the end of each
+ * The instances are created when the test creates a TestReferenceData, and
+ * destructed (and other post-processing is done) at the end of each
  * test by ReferenceDataTestEventListener (which is installed as a Google Test
  * test listener).
  *
- * This is a map with at most a single element, because it will
- * shortly be refactored into a map that will contain multiple
- * elements corresponding to the reference data of a multi-rank test
- * case implemented with thread-MPI.
+ * With thread-MPI (or no MPI), one internal::TestReferenceDataImpl
+ * object is created per rank. When using multiple ranks, the
+ * expectation is that each rank uses only the reference data that
+ * corresponds to itself, but this is not enforced.
+ *
+ * With library MPI, only the element corresponding to this rank is
+ * populated. Because each rank is a different process, ranks cannot
+ * see test reference data corresponding to other ranks.
  */
 std::unordered_map<int, TestReferenceDataImplPointer> g_referenceData;
 
@@ -190,18 +198,28 @@ namespace
 class ReferenceDataTestEventListener : public ::testing::EmptyTestEventListener
 {
 public:
+    ReferenceDataTestEventListener() = default;
+    //! Construct a listener for the reference data for this MPI \c rank
+    explicit ReferenceDataTestEventListener(const int rank) : rank_(rank) {}
+    //! Callback after the test body has been run
     void OnTestEnd(const ::testing::TestInfo& test_info) override
     {
+        // Avoid races with thread-MPI
+        std::lock_guard<std::mutex> guard(g_referenceDataMutex);
+        GMX_RELEASE_ASSERT(g_referenceData.find(rank_) != g_referenceData.end(),
+                           "If there's a reference data listener for this rank, there must also be "
+                           "an allocation for possible reference data handler to respond");
         // Did this test create test reference data?
-        if (g_referenceData[0])
+        if (g_referenceData[rank_])
         {
-            GMX_RELEASE_ASSERT(g_referenceData[0].use_count() == 1,
-                               "Test leaked TestReferenceData objects");
+            GMX_RELEASE_ASSERT(
+                    g_referenceData[rank_].use_count() == 1,
+                    formatString("Test leaked TestReferenceData objects for rank %d", rank_).c_str());
             // Pass the test result to the reference data handler, so it can
             // e.g. write reference data only when appropriate.
-            g_referenceData[0]->onTestEnd(test_info.result()->Passed());
+            g_referenceData[rank_]->onTestEnd(test_info.result()->Passed());
             // Remove the reference data handler for this test
-            g_referenceData[0].reset();
+            g_referenceData[rank_].reset();
         }
     }
     //! Callback after all the tests in the the test case have run
@@ -209,11 +227,17 @@ public:
     {
         // Could be used e.g. to free internal buffers
     }
+
+private:
+    //! The MPI rank that configured this listener
+    int rank_ = 0;
 };
 
 //! Returns a reference to the global reference data object.
 TestReferenceDataImplPointer initReferenceDataInstance(const std::optional<std::filesystem::path>& testNameOverride)
 {
+    // Avoid races with thread-MPI
+    std::lock_guard<std::mutex> guard(g_referenceDataMutex);
     GMX_RELEASE_ASSERT(g_referenceData.find(0) == g_referenceData.end() or !g_referenceData[0],
                        "Test cannot create multiple TestReferenceData instances");
     g_referenceData[0] = std::make_shared<internal::TestReferenceDataImpl>(
@@ -223,9 +247,35 @@ TestReferenceDataImplPointer initReferenceDataInstance(const std::optional<std::
     return g_referenceData[0];
 }
 
+//! Returns a reference to the global reference data object for MPI rank \c rank with a custom test name.
+TestReferenceDataImplPointer initReferenceDataInstance(const std::optional<std::filesystem::path>& testNameOverride,
+                                                       const int rank)
+{
+    // Avoid races with thread-MPI
+    std::lock_guard<std::mutex> guard(g_referenceDataMutex);
+    GMX_RELEASE_ASSERT((g_referenceData.find(rank) == g_referenceData.end()) or !g_referenceData[rank],
+                       "Test cannot create multiple TestReferenceData instances for a rank");
+    const std::filesystem::path filenameWithRank = concatenateBeforeExtension(
+            testNameOverride.value_or(TestFileManager::getTestSpecificFileName(".xml")),
+            formatString("_rank_%d", rank));
+    g_referenceData[rank] = std::make_shared<internal::TestReferenceDataImpl>(
+            referenceDataMode(), false, filenameWithRank);
+    // Let the reference data handler find out the test result
+    ::testing::UnitTest::GetInstance()->listeners().Append(new ReferenceDataTestEventListener(rank));
+    return g_referenceData[rank];
+}
+
+//! Returns a reference to the global reference data object for MPI rank \c rank.
+TestReferenceDataImplPointer initReferenceDataInstance(const int rank)
+{
+    return initReferenceDataInstance(std::nullopt, rank);
+}
+
 //! Handles reference data creation for self tests.
 TestReferenceDataImplPointer initReferenceDataInstanceForSelfTest(ReferenceDataMode mode)
 {
+    // Avoid races with thread-MPI
+    std::lock_guard<std::mutex> guard(g_referenceDataMutex);
     // A previous test might or might not have made the handle to the instance
     if ((g_referenceData.find(0) != g_referenceData.end()) && g_referenceData[0])
     {
@@ -733,6 +783,13 @@ TestReferenceData::TestReferenceData(const std::filesystem::path& testNameOverri
     impl_(initReferenceDataInstance(testNameOverride))
 {
 }
+
+TestReferenceData::TestReferenceData(const std::filesystem::path& testNameOverride, const int rank) :
+    impl_(initReferenceDataInstance(testNameOverride, rank))
+{
+}
+
+TestReferenceData::TestReferenceData(const int rank) : impl_(initReferenceDataInstance(rank)) {}
 
 TestReferenceData::TestReferenceData(ReferenceDataMode mode) :
     impl_(initReferenceDataInstanceForSelfTest(mode))

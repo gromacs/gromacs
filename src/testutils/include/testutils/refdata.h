@@ -215,6 +215,11 @@ public:
     explicit TestReferenceData(const std::string& testNameOverride);
     //! \copydoc TestReferenceData::TestReferenceData(std::string)
     explicit TestReferenceData(const std::filesystem::path& testNameOverride);
+    /*! \brief Initializes the reference data in the global mode for MPI rank \c rank
+     * and with a custom name for the test. */
+    explicit TestReferenceData(const std::filesystem::path& testNameOverride, int rank);
+    //! Initializes the reference data in the global mode for MPI rank \c rank
+    explicit TestReferenceData(int rank);
     /*! \brief
      * Initializes the reference data in a specific mode.
      *
