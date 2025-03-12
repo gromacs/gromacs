@@ -78,6 +78,7 @@ PullCoordExpressionParser::PullCoordExpressionParser(const std::string& expressi
     }
 #else
     GMX_UNUSED_VALUE(numCoordVariables);
+    GMX_UNUSED_VALUE(allowTimeAsVariable);
     GMX_RELEASE_ASSERT(expression.empty(),
                        "Can not use transformation pull coordinate without muparser");
 #endif

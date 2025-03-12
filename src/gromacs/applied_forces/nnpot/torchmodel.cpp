@@ -160,6 +160,11 @@ void TorchModel::evaluateModel()
         c10::IValue out = model_.forward(inputs_);
         outputs_ = out.isTuple() ? out.toTuple() : c10::ivalue::Tuple::create({ out.toTensor() });
     }
+    else
+    {
+        // empty tuple for non-main ranks
+        outputs_ = c10::ivalue::Tuple::create({});
+    }
 
     outputReady_ = true;
 }

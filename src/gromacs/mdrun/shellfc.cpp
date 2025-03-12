@@ -246,7 +246,7 @@ gmx_shellfc_t* init_shell_flexcon(FILE*             fplog,
                                   int               nflexcon,
                                   int               nstcalcenergy,
                                   bool              usingDomainDecomposition,
-                                  bool              usingPmeOnGpu)
+                                  bool              haveGpuCoordinates)
 {
     gmx_shellfc_t* shfc;
 
@@ -534,8 +534,8 @@ gmx_shellfc_t* init_shell_flexcon(FILE*             fplog,
     }
 
     /* shfc->x is used as a coordinate buffer for the sim_util's `do_force` function, and
-     * when using PME it must be pinned. */
-    if (usingPmeOnGpu)
+     * must be pinned if coordinates are on the GPU (e.g. for PME or GPU buffer ops). */
+    if (haveGpuCoordinates)
     {
         for (i = 0; i < 2; i++)
         {

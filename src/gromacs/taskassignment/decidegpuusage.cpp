@@ -838,15 +838,6 @@ bool decideWhetherDirectGpuCommunicationCanBeUsed(gmx::GpuAwareMpiStatus gpuAwar
         return false;
     }
 
-    if (isSupportedThreadMpiBuild)
-    {
-        GMX_LOG(mdlog.info)
-                .asParagraph()
-                .appendText(
-                        "Please note that for thread-MPI builds, only PP ranks use GPU direct "
-                        "communication");
-    }
-
     // Direct GPU comm path is being used with GPU-aware MPI
     // make sure underlying MPI implementation is GPU-aware
     // A compatible THREAD MPI build (checked above) is always GPU-aware.

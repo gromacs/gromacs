@@ -397,25 +397,26 @@ static void get_state_f_norm_max(const t_commrec* cr, const t_grpopts* opts, t_m
 }
 
 //! Initialize the energy minimization
-static void init_em(FILE*                     fplog,
-                    const gmx::MDLogger&      mdlog,
-                    const char*               title,
-                    const t_commrec*          cr,
-                    const t_inputrec*         ir,
-                    const MDModulesNotifiers& mdModulesNotifiers,
-                    gmx::ImdSession*          imdSession,
-                    pull_t*                   pull_work,
-                    t_state*                  state_global,
-                    const gmx_mtop_t&         top_global,
-                    em_state_t*               ems,
-                    gmx_localtop_t*           top,
-                    t_nrnb*                   nrnb,
-                    t_forcerec*               fr,
-                    gmx::MDAtoms*             mdAtoms,
-                    gmx_global_stat_t*        gstat,
-                    VirtualSitesHandler*      vsite,
-                    gmx::Constraints*         constr,
-                    gmx_shellfc_t**           shellfc)
+static void init_em(FILE*                        fplog,
+                    const gmx::MDLogger&         mdlog,
+                    const char*                  title,
+                    const t_commrec*             cr,
+                    const t_inputrec*            ir,
+                    const MDModulesNotifiers&    mdModulesNotifiers,
+                    gmx::ImdSession*             imdSession,
+                    pull_t*                      pull_work,
+                    t_state*                     state_global,
+                    const gmx_mtop_t&            top_global,
+                    em_state_t*                  ems,
+                    gmx_localtop_t*              top,
+                    t_nrnb*                      nrnb,
+                    t_forcerec*                  fr,
+                    gmx::MDAtoms*                mdAtoms,
+                    gmx_global_stat_t*           gstat,
+                    VirtualSitesHandler*         vsite,
+                    gmx::Constraints*            constr,
+                    const MdrunScheduleWorkload& runScheduleWork,
+                    gmx_shellfc_t**              shellfc)
 {
     real dvdl_constr;
 
@@ -437,12 +438,18 @@ static void init_em(FILE*                     fplog,
     {
         GMX_ASSERT(shellfc != nullptr, "With NM we always support shells");
 
+        const auto& simulationWork     = runScheduleWork.simulationWork;
+        const bool  useGpuForPme       = simulationWork.useGpuPme;
+        const bool  useGpuForBufferOps = simulationWork.useGpuXBufferOpsWhenAllowed
+                                        || simulationWork.useGpuFBufferOpsWhenAllowed;
+
+
         *shellfc = init_shell_flexcon(stdout,
                                       top_global,
                                       constr ? constr->numFlexibleConstraints() : 0,
                                       ir->nstcalcenergy,
                                       haveDDAtomOrdering(*cr),
-                                      thisRankHasDuty(cr, DUTY_PME));
+                                      useGpuForPme || useGpuForBufferOps);
     }
     else
     {
@@ -1375,6 +1382,7 @@ void LegacySimulator::do_cg()
             &gstat,
             virtualSites_,
             constr_,
+            *runScheduleWork_,
             nullptr);
     const bool        simulationsShareState = false;
     gmx_mdoutf*       outf                  = init_mdoutf(fpLog_,
@@ -2118,6 +2126,7 @@ void LegacySimulator::do_lbfgs()
             &gstat,
             virtualSites_,
             constr_,
+            *runScheduleWork_,
             nullptr);
     const bool        simulationsShareState = false;
     gmx_mdoutf*       outf                  = init_mdoutf(fpLog_,
@@ -2915,6 +2924,7 @@ void LegacySimulator::do_steep()
             &gstat,
             virtualSites_,
             constr_,
+            *runScheduleWork_,
             nullptr);
     const bool        simulationsShareState = false;
     gmx_mdoutf*       outf                  = init_mdoutf(fpLog_,
@@ -3265,6 +3275,7 @@ void LegacySimulator::do_nm()
             &gstat,
             virtualSites_,
             constr_,
+            *runScheduleWork_,
             &shellfc);
     const bool  simulationsShareState = false;
     gmx_mdoutf* outf                  = init_mdoutf(fpLog_,

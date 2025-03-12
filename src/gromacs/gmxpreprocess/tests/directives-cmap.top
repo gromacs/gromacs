@@ -18,6 +18,15 @@ X Y X Y 1 2 2
 #ifdef MATCHING_CMAPTYPE
 X Y X X Y 1 2 2 0.1 0.2 0.3 0.4
 #endif
+#ifdef MATCHING_CMAPTYPE_DOUBLESPACED
+X  Y  X  X  Y  1  2  2  0.1  0.2  0.3  0.4
+#endif
+#ifdef MATCHING_CMAPTYPE_PADDED
+X       Y       X       X       Y       1       2       2       0.1     0.2     0.3     0.4
+#endif
+#ifdef MATCHING_CMAPTYPE_TABBED
+X	Y	X	X	Y	1	2	2	0.1	0.2	0.3	0.4
+#endif
 #ifdef UNKNOWN_ATOMTYPE_IN_CMAPTYPE
 X Y X X Z 1 2 2 1.0 2.0 3.0 4.0
 #endif

@@ -1204,6 +1204,18 @@ bool cpuIsAmdZen1(const CpuInfo& cpuInfo)
            || (cpuInfo.vendor() == CpuInfo::Vendor::Hygon);
 }
 
+bool cpuIsNeoverseV2(const CpuInfo& cpuInfo)
+{
+    /* Neoverse V2 will have part=0xd4f, which we store under brand
+     * See https://github.com/torvalds/linux/blob/master/arch/arm64/include/asm/cputype.h
+     */
+
+    std::string brand = cpuInfo.brandString();
+    std::transform(
+            brand.begin(), brand.end(), brand.begin(), [](const char& c) { return std::tolower(c); });
+    return (cpuInfo.vendor() == CpuInfo::Vendor::Arm && (brand == "neoverse v2" || brand == "0xd4f"));
+}
+
 } // namespace gmx
 
 #ifdef GMX_CPUINFO_STANDALONE

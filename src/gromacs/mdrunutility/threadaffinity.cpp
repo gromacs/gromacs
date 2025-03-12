@@ -600,15 +600,14 @@ void gmx_check_thread_affinity_set(const gmx::MDLogger& mdlog,
          */
         if (hw_opt->threadAffinity != ThreadAffinity::Off)
         {
-            char* message;
-            if (!gmx_omp_check_thread_affinity(&message))
+            std::optional<std::string> message = messageWhenOpenMPLibraryWillSetAffinity();
+            if (message.has_value())
             {
                 /* We only pin automatically with totNumThreadsIsAuto=true */
                 if (hw_opt->threadAffinity == ThreadAffinity::On || hw_opt->totNumThreadsIsAuto)
                 {
-                    GMX_LOG(mdlog.warning).asParagraph().appendText(message);
+                    GMX_LOG(mdlog.warning).asParagraph().appendText(message.value());
                 }
-                sfree(message);
                 hw_opt->threadAffinity = ThreadAffinity::Off;
             }
         }

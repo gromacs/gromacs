@@ -64,8 +64,8 @@
 
 #    if GMX_NATIVE_WINDOWS
 
-#        include <Windows.h>
-#        include <Winsock.h>
+#        include <windows.h>
+#        include <winsock.h>
 
 //! Constant for passing no flags
 constexpr int c_noFlags = 0;

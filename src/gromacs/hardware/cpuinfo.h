@@ -289,6 +289,14 @@ bool cpuIsX86Nehalem(const CpuInfo& cpuInfo);
  */
 bool cpuIsAmdZen1(const CpuInfo& cpuInfo);
 
+/*! \brief Return true if the CPU has Neoverse V2 cores (including Grace and Graviton 4)
+ *
+ * \param cpuInfo  Object with cpu information
+ *
+ * \returns  True if running on Neoverse V2
+ */
+bool cpuIsNeoverseV2(const CpuInfo& cpuInfo);
+
 } // namespace gmx
 
 #endif // GMX_HARDWARE_CPUINFO_H
