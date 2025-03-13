@@ -66,6 +66,19 @@ else ()
     target_compile_definitions(utility INTERFACE TMPI_USE_VISIBILITY)
 endif ()
 
+
+if (GMX_CP2K)
+   target_compile_definitions(utility INTERFACE GMX_CP2K_ACTIVE=1)
+else()
+   target_compile_definitions(utility INTERFACE GMX_CP2K_ACTIVE=0)
+endif()
+if (GMX_PLUMED_ACTIVE)
+   target_compile_definitions(utility INTERFACE GMX_PLUMED_ACTIVE=1)
+else()
+   target_compile_definitions(utility INTERFACE GMX_PLUMED_ACTIVE=0)
+endif()
+
+
 # TODO(#3288): when utility is an OBJECT target, explicitly link source dependencies.
 # Source files have the following private module dependencies.
 #target_link_libraries(utility PRIVATE common)

@@ -69,6 +69,18 @@
 #    include <hwloc.h>
 #endif
 
+#if GMX_CP2K_ACTIVE
+#    include <libcp2k.h>
+#endif
+
+#if GMX_HAVE_COLVARS
+#    include "external/colvars/colvars_version.h"
+#endif
+
+#if GMX_TORCH
+#    include <torch/torch.h>
+#endif
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -474,6 +486,34 @@ void gmx_print_version_info(gmx::TextWriter* writer)
 #else
     writer->writeLine("Tracing support:     disabled");
 #endif
+
+/* MDModules */
+#if GMX_HAVE_COLVARS
+    writer->writeLine(formatString("Colvars support:     enabled (version %s)", COLVARS_VERSION));
+#else
+    writer->writeLine("Colvars support:     disabled");
+#endif
+#if GMX_CP2K_ACTIVE
+    std::vector<char> cp2kVersion(100);
+    cp2k_get_version(cp2kVersion.data(), 100);
+    if (!gmx::isNullOrEmpty(cp2kVersion.data()))
+    {
+        writer->writeLine(formatString("CP2K support:        enabled (version %s)", cp2kVersion.data()));
+    }
+    else
+    {
+        writer->writeLine("CP2K support:        enabled");
+    }
+#else
+    writer->writeLine("CP2K support:        disabled");
+#endif
+#if GMX_TORCH
+    writer->writeLine(formatString("Torch support:       enabled (version %s)", TORCH_VERSION));
+#else
+    writer->writeLine("Torch support:       disabled");
+#endif
+    writer->writeLine(formatString("Plumed support:      %s", GMX_PLUMED_ACTIVE ? "enabled" : "disabled"));
+
 
 #if GMX_USE_NVTX
     writer->writeLine("Instrumention API:   NVTX");
