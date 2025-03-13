@@ -425,7 +425,7 @@ void pme_gpu_wait_and_reduce(gmx_pme_t*               pme,
     pme_gpu_reduce_outputs(computeEnergyAndVirial, output, wcycle, forceWithVirial, enerd);
 }
 
-void pme_gpu_reinit_computation(const gmx_pme_t* pme, const bool gpuGraphWithSeparatePmeRank, gmx_wallcycle* wcycle)
+void pme_gpu_finish_step(const gmx_pme_t* pme, const bool gpuGraphWithSeparatePmeRank, gmx_wallcycle* wcycle)
 {
     GMX_ASSERT(pme_gpu_active(pme), "This should be a GPU run of PME but it is not enabled.");
 

@@ -969,7 +969,7 @@ static void launchGpuEndOfStepTasks(nonbonded_verlet_t*          nbv,
     {
         wallcycle_start_nocount(wcycle, WallCycleCounter::PmeGpuMesh);
         bool gpuGraphWithSeparatePmeRank = false;
-        pme_gpu_reinit_computation(pmedata, gpuGraphWithSeparatePmeRank, wcycle);
+        pme_gpu_finish_step(pmedata, gpuGraphWithSeparatePmeRank, wcycle);
         wallcycle_stop(wcycle, WallCycleCounter::PmeGpuMesh);
     }
 

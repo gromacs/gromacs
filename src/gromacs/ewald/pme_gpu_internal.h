@@ -579,15 +579,6 @@ GPU_FUNC_QUALIFIER void pme_gpu_reinit_atoms(PmeGpu*     GPU_FUNC_ARGUMENT(pmeGp
                                              const real* GPU_FUNC_ARGUMENT(chargesA),
                                              const real* GPU_FUNC_ARGUMENT(chargesB) = nullptr) GPU_FUNC_TERM;
 
-/*! \brief \libinternal
- * The PME GPU reinitialization function that is called both at the end of any PME computation and on any load balancing.
- *
- * This clears the device-side working buffers in preparation for new computation.
- *
- * \param[in] pmeGpu            The PME GPU structure.
- */
-void pme_gpu_reinit_computation(const PmeGpu* pmeGpu);
-
 /*! \brief
  * Blocks until PME GPU tasks are completed, and gets the output forces and virial/energy
  * (if they were to be computed).

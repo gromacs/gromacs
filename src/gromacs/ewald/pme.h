@@ -509,23 +509,19 @@ GPU_FUNC_QUALIFIER void pme_gpu_wait_and_reduce(gmx_pme_t* GPU_FUNC_ARGUMENT(pme
                                                 gmx_enerdata_t* GPU_FUNC_ARGUMENT(enerd),
                                                 real GPU_FUNC_ARGUMENT(lambdaQ)) GPU_FUNC_TERM;
 
-/*! \brief
- * The PME GPU reinitialization function that is called both at the end of any PME computation and on any load balancing.
+/*! \brief Do house-keeping at the end of a PME GPU step.
  *
  * Clears the internal grid and energy/virial buffers; it is not safe to start
  * the PME computation without calling this.
  * Note that unlike in the nbnxn module, the force buffer does not need clearing.
  *
- * \todo Rename this function to *clear* -- it clearly only does output resetting
- * and we should be clear about what the function does..
- *
  * \param[in] pme                            The PME data structure.
  * \param[in] gpuGraphWithSeparatePmeRank    Whether MD GPU Graph with separate PME rank is in use.
  * \param[in] wcycle                         The wallclock counter.
  */
-GPU_FUNC_QUALIFIER void pme_gpu_reinit_computation(const gmx_pme_t* GPU_FUNC_ARGUMENT(pme),
-                                                   bool GPU_FUNC_ARGUMENT(gpuGraphWithSeparatePmeRank),
-                                                   gmx_wallcycle* GPU_FUNC_ARGUMENT(wcycle)) GPU_FUNC_TERM;
+GPU_FUNC_QUALIFIER void pme_gpu_finish_step(const gmx_pme_t* GPU_FUNC_ARGUMENT(pme),
+                                            bool GPU_FUNC_ARGUMENT(gpuGraphWithSeparatePmeRank),
+                                            gmx_wallcycle* GPU_FUNC_ARGUMENT(wcycle)) GPU_FUNC_TERM;
 
 /*! \brief Set pointer to device copy of coordinate data.
  * \param[in] pme            The PME data structure.

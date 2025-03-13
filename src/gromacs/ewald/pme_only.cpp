@@ -865,7 +865,7 @@ int gmx_pmeonly(struct gmx_pme_t**              pmeFromRunnerPtr,
         {
             // Reinit before PME->PP force send so it is included in graph
             // which implicitly joins back to PP task as part of force transfer
-            pme_gpu_reinit_computation(pme, pme_pp->useMdGpuGraph, wcycle);
+            pme_gpu_finish_step(pme, pme_pp->useMdGpuGraph, wcycle);
         }
 
         gmx_pme_send_force_vir_ener(*pme, pme_pp.get(), output, cycles, stepWork.computeVirial);
@@ -873,7 +873,7 @@ int gmx_pmeonly(struct gmx_pme_t**              pmeFromRunnerPtr,
         // Reinit after PME->PP force send so it is removed from the critical path
         if (useGpuForPme && !pme_pp->useMdGpuGraph)
         {
-            pme_gpu_reinit_computation(pme, pme_pp->useMdGpuGraph, wcycle);
+            pme_gpu_finish_step(pme, pme_pp->useMdGpuGraph, wcycle);
         }
     } /***** end of quasi-loop, we stop with the break above */
     while (TRUE);
