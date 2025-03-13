@@ -1,18 +1,43 @@
 mdrun modules {#page_mdmodules}
 =============
 
-Currently, most of mdrun is constructed as a set of C routines calling each
-other, and sharing data through a couple of common data structures (t_inputrec,
-t_forcerec, t_state etc.) that flow throughout the code.
+All functionality of mdrun that is not basic computation of bonded and
+non-bonded forces and integration should be implemented through the
+mdrun "MD module" interface. This is a limited interface that completely
+hides the internals of the mdrun machinery. The intent is to keep this
+interface simple and stable. Thus most of the "special" functionalities,
+both those are part of the \Gromacs main code base and developed
+by users, keep functioning with each new version of \Gromacs.
 
-The electric field code (in `src/gromacs/applied-forces/`) implements an
-alternative concept that allows keeping everything related to the electric
-field functionality in a single place.  At least for most special-purpose
-functionality, this would hopefully provide a more maintainable approach that
-would also support more easily adding new functionality.  Some core features
-may still need stronger coupling than this provides.
+Most current MD modules are "force providers" implemented in a single call-back
+function that is called at each MD step during the force calculation.
+Here coordinates and parameters of local atoms are provided and forces,
+the energy and virial can be returned. Additionally there are several
+callbacks during setup and domain decomposition time, and interfaces for
+declaring MDP file options and writing output. This enables all
+the specifics of the setup and input parameter handling to be contained
+inside the MD module. Extensions to support other kinds of operations are
+envisaged and proposals welcome.
 
-The rest of the page documents those parts of the modularity mechanism that
+To keep the API limited, the functionality is limited, also performance
+wise. There is e.g. no formal support for computation on GPUs.
+Note that any MPI communication of an MD module can significantly
+impact the parallel performance of mdrun, as mdrun avoids and bundles
+global communication for standard runs as much as possible.
+However, when most of the standard force computation is handled by GPUs,
+the MD modules computation and communication can overlap with the standard
+work by using the, otherwise empty, CPU resources.
+
+Several current MD modules are in sub-directories in the
+`src/gromacs/applied-forces/` directory (note that not all modules
+there use the MD module interface yet). There is a, very simple,
+electric field module, as well as a more complex neural network
+potential module, interfaces to the Colvars and Plumed packages, and
+the density-fitting module.
+When implementing a new module, it can be useful to have a look
+at these modules.
+
+The rest of this page documents those parts of the modularity mechanism that
 have taken a clear form.  Generalizing and designing other parts may require
 more code to be converted to modules to have clearer requirements on what the
 mechanism needs to support and what is the best way to express that in a
