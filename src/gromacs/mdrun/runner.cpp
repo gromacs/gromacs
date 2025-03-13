@@ -1591,21 +1591,23 @@ int Mdrunner::mdrunner()
     // so this boolean is sufficient on all ranks to determine whether separate PME ranks are used,
     // but this will no longer be the case if cr->duty is changed for !usingPme(fr->ic->eeltype).
     const bool haveSeparatePmeRank = (!thisRankHasDuty(cr, DUTY_PP) || !thisRankHasDuty(cr, DUTY_PME));
-    runScheduleWork.simulationWork = createSimulationWorkload(mdlog,
-                                                              *inputrec,
-                                                              replExParams.exchangeInterval > 0,
-                                                              disableNonbondedCalculation,
-                                                              devFlags,
-                                                              haveFillerParticlesInLocalState,
-                                                              havePPDomainDecomposition(cr),
-                                                              haveSeparatePmeRank,
-                                                              useGpuForNonbonded,
-                                                              pmeRunMode,
-                                                              useGpuForBonded,
-                                                              useGpuForUpdate,
-                                                              useGpuDirectHalo,
-                                                              canUseDirectGpuComm,
-                                                              useGpuPmeDecomposition);
+    runScheduleWork.simulationWork = createSimulationWorkload(
+            mdlog,
+            *inputrec,
+            inputrecDynamicBox(inputrec.get()) || doRerun || inputrec->eI == IntegrationAlgorithm::Mimic,
+            replExParams.exchangeInterval > 0,
+            disableNonbondedCalculation,
+            devFlags,
+            haveFillerParticlesInLocalState,
+            havePPDomainDecomposition(cr),
+            haveSeparatePmeRank,
+            useGpuForNonbonded,
+            pmeRunMode,
+            useGpuForBonded,
+            useGpuForUpdate,
+            useGpuDirectHalo,
+            canUseDirectGpuComm,
+            useGpuPmeDecomposition);
 
     if (GMX_LIB_MPI && deviceInfo
         && (runScheduleWork.simulationWork.useGpuDirectCommunication

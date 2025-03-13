@@ -99,7 +99,6 @@ public:
                  EnergyData*                 energyData,
                  FreeEnergyPerturbationData* freeEnergyPerturbationData,
                  bool                        isVerbose,
-                 bool                        isDynamicBox,
                  FILE*                       fplog,
                  const t_commrec*            cr,
                  const t_inputrec*           inputrec,
@@ -190,8 +189,6 @@ private:
     //! The local topology - updated by Topology via Client system
     const gmx_localtop_t* localTopology_;
 
-    //! Whether we're having a dynamic box
-    const bool isDynamicBox_;
     //! Whether we're being verbose
     const bool isVerbose_;
     //! The number of shell relaxation steps we did

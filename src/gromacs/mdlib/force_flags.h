@@ -38,8 +38,6 @@
 
 /* The state has changed, always set unless TPI is used. */
 #define GMX_FORCE_STATECHANGED (1u << 0u)
-/* The box might have changed */
-#define GMX_FORCE_DYNAMICBOX (1u << 1u)
 /* Do neighbor searching */
 #define GMX_FORCE_NS (1u << 2u)
 /* Calculate listed energies/forces (e.g. bonds, restraints, 1-4, FEP non-bonded) */

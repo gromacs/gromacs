@@ -513,9 +513,10 @@ void gmx::LegacySimulator::do_mimic()
 
         fr_->longRangeNonbondeds->updateAfterPartition(*mdatoms);
 
-        force_flags = (GMX_FORCE_STATECHANGED | GMX_FORCE_DYNAMICBOX | GMX_FORCE_ALLFORCES
-                       | GMX_FORCE_VIRIAL | // TODO: Get rid of this once #2649 is solved
-                       GMX_FORCE_ENERGY | (doFreeEnergyPerturbation ? GMX_FORCE_DHDL : 0));
+        force_flags = (GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES
+                       | GMX_FORCE_VIRIAL
+                       // TODO: Get rid of this once #2649 is solved
+                       | GMX_FORCE_ENERGY | (doFreeEnergyPerturbation ? GMX_FORCE_DHDL : 0));
 
         const int shellfcFlags     = force_flags | (mdrunOptions_.verbose ? GMX_FORCE_ENERGY : 0);
         const int legacyForceFlags = ((shellfc) ? shellfcFlags : force_flags) | GMX_FORCE_NS;

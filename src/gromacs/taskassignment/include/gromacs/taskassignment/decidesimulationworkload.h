@@ -66,28 +66,33 @@ class MDLogger;
  * Build datastructure that contains decisions whether to run different workload
  * task on GPUs.
  *
- * \param[in] mdlog                Logger object.
- * \param[in] inputrec           The input record
- * \param[in] useReplicaExchange Whether we are using replica exchange
- * \param[in] disableNonbondedCalculation  Disable calculation of nonbonded forces
- * \param[in] devFlags           The development feature flags
- * \param[in] haveFillerParticlesInLocalState Whether filler particles are part of the local state.
- * \param[in] havePpDomainDecomposition Whether PP domain decomposition is used in this run.
- * \param[in] haveSeparatePmeRank Whether separate PME rank(s) are used in this run.
- * \param[in] useGpuForNonbonded Whether we have short-range nonbonded interactions
- *                               calculations on GPU(s).
- * \param[in] pmeRunMode         Run mode indicating what resource is PME executed on.
- * \param[in] useGpuForBonded    Whether bonded interactions are calculated on GPU(s).
- * \param[in] useGpuForUpdate    Whether coordinate update and constraint solving is performed on
- *                               GPU(s).
- * \param[in] useGpuDirectHalo   Whether halo exchange is performed directly between GPUs.
- * \param[in] canUseDirectGpuComm Whether direct GPU communication can be used in this run.
- * \param[in] useGpuPmeDecomposition GPU based PME decomposition used.
+ * \param[in] mdlog                            Logger object.
+ * \param[in] inputrec                         The input record
+ * \param[in] haveDynamicBox                   Whether the simulation box is dynamic (ie. changes
+ *                                             each step)
+ * \param[in] useReplicaExchange               Whether we are using replica exchange
+ * \param[in] disableNonbondedCalculation      Disable calculation of nonbonded forces
+ * \param[in] devFlags                         The development feature flags
+ * \param[in] haveFillerParticlesInLocalState  Whether filler particles are part of the local state.
+ * \param[in] havePpDomainDecomposition        Whether PP domain decomposition is used in this run.
+ * \param[in] haveSeparatePmeRank              Whether separate PME rank(s) are used in this run.
+ * \param[in] useGpuForNonbonded               Whether we have short-range nonbonded interactions
+ *                                             calculations on GPU(s).
+ * \param[in] pmeRunMode                       Run mode indicating what resource is PME executed on.
+ * \param[in] useGpuForBonded                  Whether bonded interactions are calculated on GPU(s).
+ * \param[in] useGpuForUpdate                  Whether coordinate update and constraint solving
+ *                                             is performed on GPU(s).
+ * \param[in] useGpuDirectHalo                 Whether halo exchange is performed directly
+ *                                             between GPUs
+ * \param[in] canUseDirectGpuComm              Whether direct GPU communication can be used in
+ *                                             this run.
+ * \param[in] useGpuPmeDecomposition           GPU based PME decomposition used.
  *
  * \returns Simulation lifetime constant workload description.
  */
 SimulationWorkload createSimulationWorkload(const gmx::MDLogger& mdlog,
                                             const t_inputrec&    inputrec,
+                                            bool                 haveDynamicBox,
                                             bool                 useReplicaExchange,
                                             bool                 disableNonbondedCalculation,
                                             const DevelopmentFeatureFlags& devFlags,

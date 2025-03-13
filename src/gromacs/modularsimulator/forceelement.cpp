@@ -79,7 +79,6 @@ ForceElement::ForceElement(StatePropagatorData*        statePropagatorData,
                            EnergyData*                 energyData,
                            FreeEnergyPerturbationData* freeEnergyPerturbationData,
                            bool                        isVerbose,
-                           bool                        isDynamicBox,
                            FILE*                       fplog,
                            const t_commrec*            cr,
                            const t_inputrec*           inputrec,
@@ -112,7 +111,6 @@ ForceElement::ForceElement(StatePropagatorData*        statePropagatorData,
     energyData_(energyData),
     freeEnergyPerturbationData_(freeEnergyPerturbationData),
     localTopology_(nullptr),
-    isDynamicBox_(isDynamicBox),
     isVerbose_(isVerbose),
     nShellRelaxationSteps_(0),
     ddBalanceRegionHandler_(cr),
@@ -156,13 +154,12 @@ ForceElement::~ForceElement() = default;
 
 void ForceElement::scheduleTask(Step step, Time time, const RegisterRunFunction& registerRunFunction)
 {
-    unsigned int flags =
-            (GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES | (isDynamicBox_ ? GMX_FORCE_DYNAMICBOX : 0)
-             | (doShellFC_ && isVerbose_ ? GMX_FORCE_ENERGY : 0)
-             | (nextVirialCalculationStep_ == step ? GMX_FORCE_VIRIAL : 0)
-             | (nextEnergyCalculationStep_ == step ? GMX_FORCE_ENERGY : 0)
-             | (nextFreeEnergyCalculationStep_ == step ? GMX_FORCE_DHDL : 0)
-             | (nextNSStep_ == step ? GMX_FORCE_NS : 0));
+    unsigned int flags = (GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES
+                          | (doShellFC_ && isVerbose_ ? GMX_FORCE_ENERGY : 0)
+                          | (nextVirialCalculationStep_ == step ? GMX_FORCE_VIRIAL : 0)
+                          | (nextEnergyCalculationStep_ == step ? GMX_FORCE_ENERGY : 0)
+                          | (nextFreeEnergyCalculationStep_ == step ? GMX_FORCE_DHDL : 0)
+                          | (nextNSStep_ == step ? GMX_FORCE_NS : 0));
 
     registerRunFunction(
             [this, step, time, flags]()
@@ -359,14 +356,12 @@ ForceElement::getElementPointerImpl(LegacySimulatorData*                    lega
                                     GlobalCommunicationHelper gmx_unused* globalCommunicationHelper,
                                     ObservablesReducer* /*observablesReducer*/)
 {
-    const bool isVerbose    = legacySimulatorData->mdrunOptions_.verbose;
-    const bool isDynamicBox = inputrecDynamicBox(legacySimulatorData->inputRec_);
+    const bool isVerbose = legacySimulatorData->mdrunOptions_.verbose;
     return builderHelper->storeElement(
             std::make_unique<ForceElement>(statePropagatorData,
                                            energyData,
                                            freeEnergyPerturbationData,
                                            isVerbose,
-                                           isDynamicBox,
                                            legacySimulatorData->fpLog_,
                                            legacySimulatorData->cr_,
                                            legacySimulatorData->inputRec_,

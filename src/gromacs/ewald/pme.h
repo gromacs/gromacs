@@ -81,6 +81,7 @@ class ArrayRef;
 class ForceWithVirial;
 class MDLogger;
 enum class PinningPolicy : int;
+class SimulationWorkload;
 class StepWorkload;
 
 /*! \libinternal \brief Class for managing usage of separate PME-only ranks
@@ -403,12 +404,15 @@ GPU_FUNC_QUALIFIER void pme_gpu_get_timings(const gmx_pme_t* GPU_FUNC_ARGUMENT(p
  * \param[in] pme               The PME data structure.
  * \param[in] box               The unit cell box.
  * \param[in] wcycle            The wallclock counter.
+ * \param[in] simulationWork    The required work for this simulation
  * \param[in] stepWork          The required work for this simulation step
  */
-GPU_FUNC_QUALIFIER void pme_gpu_prepare_computation(gmx_pme_t*     GPU_FUNC_ARGUMENT(pme),
-                                                    const matrix   GPU_FUNC_ARGUMENT(box),
-                                                    gmx_wallcycle* GPU_FUNC_ARGUMENT(wcycle),
-                                                    const gmx::StepWorkload& GPU_FUNC_ARGUMENT(stepWork)) GPU_FUNC_TERM;
+GPU_FUNC_QUALIFIER void
+pme_gpu_prepare_computation(gmx_pme_t*                     GPU_FUNC_ARGUMENT(pme),
+                            const matrix                   GPU_FUNC_ARGUMENT(box),
+                            gmx_wallcycle*                 GPU_FUNC_ARGUMENT(wcycle),
+                            const gmx::SimulationWorkload& GPU_FUNC_ARGUMENT(simulationWork),
+                            const gmx::StepWorkload& GPU_FUNC_ARGUMENT(stepWork)) GPU_FUNC_TERM;
 
 /*! \brief
  * Launches first stage of PME on GPU - spreading kernel.

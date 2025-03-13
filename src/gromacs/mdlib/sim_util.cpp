@@ -726,22 +726,24 @@ static void computeSpecialForces(FILE*                fplog,
  *
  * \param[in]  pmedata              The PME structure
  * \param[in]  box                  The box matrix
+ * \param[in]  simulationWork       Simulation schedule flags
  * \param[in]  stepWork             Step schedule flags
  * \param[in]  xReadyOnDevice       Event synchronizer indicating that the coordinates are ready in the device memory.
  * \param[in]  lambdaQ              The Coulomb lambda of the current state.
  * \param[in]  useMdGpuGraph        Whether MD GPU Graph is in use.
  * \param[in]  wcycle               The wallcycle structure
  */
-static inline void launchPmeGpuSpread(gmx_pme_t*            pmedata,
-                                      const matrix          box,
-                                      const StepWorkload&   stepWork,
-                                      GpuEventSynchronizer* xReadyOnDevice,
-                                      const real            lambdaQ,
-                                      bool                  useMdGpuGraph,
-                                      gmx_wallcycle*        wcycle)
+static inline void launchPmeGpuSpread(gmx_pme_t*                pmedata,
+                                      const matrix              box,
+                                      const SimulationWorkload& simulationWork,
+                                      const StepWorkload&       stepWork,
+                                      GpuEventSynchronizer*     xReadyOnDevice,
+                                      const real                lambdaQ,
+                                      bool                      useMdGpuGraph,
+                                      gmx_wallcycle*            wcycle)
 {
     wallcycle_start(wcycle, WallCycleCounter::PmeGpuMesh);
-    pme_gpu_prepare_computation(pmedata, box, wcycle, stepWork);
+    pme_gpu_prepare_computation(pmedata, box, wcycle, simulationWork, stepWork);
     bool                      useGpuDirectComm         = false;
     PmeCoordinateReceiverGpu* pmeCoordinateReceiverGpu = nullptr;
     pme_gpu_launch_spread(
@@ -1600,12 +1602,12 @@ void do_force(FILE*                         fplog,
         /* Compute shift vectors every step,
          * because of pressure coupling or box deformation!
          */
-        if (stepWork.haveDynamicBox && stepWork.stateChanged)
+        if (simulationWork.haveDynamicBox && stepWork.stateChanged)
         {
             calc_shifts(box, fr->shift_vec);
         }
     }
-    nbnxn_atomdata_copy_shiftvec(stepWork.haveDynamicBox, fr->shift_vec, &nbv->nbat());
+    nbnxn_atomdata_copy_shiftvec(simulationWork.haveDynamicBox, fr->shift_vec, &nbv->nbat());
 
 
     GMX_ASSERT(simulationWork.useGpuHaloExchange
@@ -1703,6 +1705,7 @@ void do_force(FILE*                         fplog,
     {
         launchPmeGpuSpread(fr->pmedata,
                            box,
+                           simulationWork,
                            stepWork,
                            localXReadyOnDevice,
                            lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)],

@@ -78,6 +78,7 @@ namespace gmx
 
 SimulationWorkload createSimulationWorkload(const gmx::MDLogger& mdlog,
                                             const t_inputrec&    inputrec,
+                                            const bool           haveDynamicBox,
                                             const bool           useReplicaExchange,
                                             const bool           disableNonbondedCalculation,
                                             const DevelopmentFeatureFlags& devFlags,
@@ -98,6 +99,7 @@ SimulationWorkload createSimulationWorkload(const gmx::MDLogger& mdlog,
             simulationWorkload.computeNonbonded && inputrec.useMts
             && inputrec.mtsLevels.back().forceGroups[static_cast<int>(MtsForceGroups::Nonbonded)];
     simulationWorkload.computeMuTot    = inputrecNeedMutot(&inputrec);
+    simulationWorkload.haveDynamicBox  = haveDynamicBox;
     simulationWorkload.useCpuNonbonded = !useGpuForNonbonded;
     simulationWorkload.useGpuNonbonded = useGpuForNonbonded;
     simulationWorkload.useCpuPme       = (pmeRunMode == PmeRunMode::CPU);
@@ -246,7 +248,6 @@ StepWorkload setupStepWorkload(const int                     legacyFlags,
 
     StepWorkload flags;
     flags.stateChanged                  = ((legacyFlags & GMX_FORCE_STATECHANGED) != 0);
-    flags.haveDynamicBox                = ((legacyFlags & GMX_FORCE_DYNAMICBOX) != 0);
     flags.doNeighborSearch              = ((legacyFlags & GMX_FORCE_NS) != 0);
     flags.computeSlowForces             = computeSlowForces;
     flags.computeVirial                 = ((legacyFlags & GMX_FORCE_VIRIAL) != 0);

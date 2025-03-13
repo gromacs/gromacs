@@ -788,18 +788,19 @@ int gmx_pmeonly(struct gmx_pme_t**              pmeFromRunnerPtr,
         // of pme_pp (maybe box, energy and virial, too; and likewise
         // from mdatoms for the other call to gmx_pme_do), so we have
         // fewer lines of code and less parameter passing.
-        gmx::StepWorkload stepWork;
+        gmx::SimulationWorkload simulationWork;
+        gmx::StepWorkload       stepWork;
         stepWork.computeVirial = computeEnergyAndVirial;
         stepWork.computeEnergy = computeEnergyAndVirial;
         stepWork.computeForces = true;
         PmeOutput output       = { {}, false, 0, { { 0 } }, 0, 0, 0, { { 0 } } };
         if (useGpuForPme)
         {
-            stepWork.haveDynamicBox      = false;
-            stepWork.useGpuPmeFReduction = pme_pp->useGpuDirectComm;
+            simulationWork.haveDynamicBox = false;
+            stepWork.useGpuPmeFReduction  = pme_pp->useGpuDirectComm;
             // TODO this should be set properly by gmx_pme_recv_coeffs_coords,
             // or maybe use inputrecDynamicBox(ir), at the very least - change this when this codepath is tested!
-            pme_gpu_prepare_computation(pme, box, wcycle, stepWork);
+            pme_gpu_prepare_computation(pme, box, wcycle, simulationWork, stepWork);
             if (!pme_pp->useGpuDirectComm)
             {
                 /* In PME-only mode, everything is on the same stream, so we do not consume the

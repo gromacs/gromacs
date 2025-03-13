@@ -150,10 +150,11 @@ void inline parallel_3dfft_execute_gpu_wrapper(gmx_pme_t*             pme,
 
 /* The PME computation code split into a few separate functions. */
 
-void pme_gpu_prepare_computation(gmx_pme_t*               pme,
-                                 const matrix             box,
-                                 gmx_wallcycle*           wcycle,
-                                 const gmx::StepWorkload& stepWork)
+void pme_gpu_prepare_computation(gmx_pme_t*                     pme,
+                                 const matrix                   box,
+                                 gmx_wallcycle*                 wcycle,
+                                 const gmx::SimulationWorkload& simulationWork,
+                                 const gmx::StepWorkload&       stepWork)
 {
     GMX_ASSERT(pme_gpu_active(pme), "This should be a GPU run of PME but it is not enabled.");
     GMX_ASSERT(pme->nnodes > 0, "");
@@ -173,7 +174,7 @@ void pme_gpu_prepare_computation(gmx_pme_t*               pme,
         }
     }
 
-    if (stepWork.haveDynamicBox || shouldUpdateBox) // || is to make the first computation always update
+    if (simulationWork.haveDynamicBox || shouldUpdateBox) // || is to make the first computation always update
     {
         wallcycle_start(wcycle, WallCycleCounter::LaunchGpuPme);
         pme_gpu_update_input_box(pmeGpu, box);

@@ -65,8 +65,6 @@ class StepWorkload
 public:
     //! Whether the state has changed, always set unless TPI is used.
     bool stateChanged = false;
-    //! Whether the box might have changed
-    bool haveDynamicBox = false;
     //! Whether neighbor searching needs to be done this step
     bool doNeighborSearch = false;
     //! Whether the slow forces need to be computed this step (in addition to the faster forces)
@@ -167,6 +165,8 @@ public:
     bool computeNonbondedAtMtsLevel1 = false;
     //! Whether total dipole needs to be computed
     bool computeMuTot = false;
+    //! Whether the box might change over the course of the simulation
+    bool haveDynamicBox = false;
     //! If we have calculation of short range nonbondeds on CPU
     bool useCpuNonbonded = false;
     //! If we have calculation of short range nonbondeds on GPU
