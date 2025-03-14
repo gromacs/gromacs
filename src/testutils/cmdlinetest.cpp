@@ -205,6 +205,11 @@ void CommandLine::addOption(const char* name, const std::string& value)
     addOption(name, value.c_str());
 }
 
+void CommandLine::addOption(const char* name, const std::filesystem::path& value)
+{
+    addOption(name, value.string().c_str());
+}
+
 void CommandLine::addOption(const char* name, int value)
 {
     append(name);
