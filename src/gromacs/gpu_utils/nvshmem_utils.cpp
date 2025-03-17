@@ -86,9 +86,9 @@ gmxNvshmemHandle::gmxNvshmemHandle(const gmx::MDLogger& mdlog, MPI_Comm comm) :
                         "100%% for multi-process GPU sharing.\n");
     }
 
-    GMX_RELEASE_ASSERT((nvshmem_stat == NVSHMEM_STATUS_IS_INITIALIZED)
-                               || (nvshmem_stat == NVSHMEM_STATUS_FULL_MPG),
-                       "NVSHMEM is not initialized correctly");
+    GMX_RELEASE_ASSERT(
+            (nvshmem_stat == NVSHMEM_STATUS_IS_INITIALIZED) || (nvshmem_stat == NVSHMEM_STATUS_FULL_MPG),
+            gmx::formatString("NVSHMEM is not initialized correctly: status was %d", nvshmem_stat).c_str());
 #else
     GMX_UNUSED_VALUE(nvshmem_mpi_comm_);
     GMX_UNUSED_VALUE(comm);
