@@ -107,7 +107,7 @@ void MPIEventForward::OnTestEnd(const ::testing::TestInfo& test_info)
 {
     // Serialize printing test results to stdout in rank order by
     // passing a flag in order from ranks 0 .. (n-1). Rank 0 does not
-    // need to recieve, rank n-1 does not need to send.
+    // need to receive, rank n-1 does not need to send.
     int timeToPrint = (0 == rank_);
     if (!timeToPrint)
     {
@@ -122,6 +122,10 @@ void MPIEventForward::OnTestEnd(const ::testing::TestInfo& test_info)
         // TODO: This sometimes races with the defaultPrinter_, but
         // unsure why
         printf("Test failures from rank %d:\n", rank_);
+        localPassed = false;
+    }
+    if (result->Failed() or result->Skipped())
+    {
         for (int i = 0; i < result->total_part_count(); ++i)
         {
             /* TODO: A future implementation might forward the
@@ -132,10 +136,9 @@ void MPIEventForward::OnTestEnd(const ::testing::TestInfo& test_info)
                indicative of rank 0. */
             defaultPrinter_->OnTestPartResult(result->GetTestPartResult(i));
         }
-        localPassed = false;
     }
 
-    // Pass on the printing token to the next rank
+    // Permit the next rank to print
     if (size_ != rank_ + 1)
     {
         MPI_Send(&timeToPrint, 1, MPI_INT, rank_ + 1, 0, MPI_COMM_WORLD);
