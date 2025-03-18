@@ -50,7 +50,7 @@ potential is, for reasons of computational efficiency, written as:
 
 The corresponding force is:
 
-.. math:: \mathbf{F}_i(\mathbf{r}_{ij}) = k^b_{ij}({r_{ij}}^2-b_{ij}^2)~\mathbf{r}_ij
+.. math:: \mathbf{F}_i(\mathbf{r}_{ij}) = k^b_{ij}({r_{ij}}^2-b_{ij}^2)~\mathbf{r}_{ij}
           :label: eqng96bondforce
 
 The force constants for this form of the potential are related to the
@@ -334,7 +334,7 @@ deviation of a central atom in a triplet *i,j,k* from a reference position
 
 where a is defined by the bond-length *i-j* and *j-k*, in a symmetric
 molecule such as carbon dioxide *a = 1/2*. If the compound has different
-bond lengths :math:`b_{ij}` and :math:`b_{jk}` respectivey, we instead have
+bond lengths :math:`b_{ij}` and :math:`b_{jk}` respectively, we instead have
 
 .. math:: a = \frac{b_{jk}}{b_{ij}+b_{jk}}.
 
