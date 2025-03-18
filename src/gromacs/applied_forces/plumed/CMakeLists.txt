@@ -41,6 +41,12 @@ if(GMX_PLUMED_ACTIVE)
     gmx_add_libgromacs_sources(
         ${PLUMED_SOURCES}
     )
+    # TODO Use gmx_target_warning_suppression when applied_forces is a
+    # proper target, or apply it only to plumedforceprovider.cpp
+    check_cxx_compiler_flag("-Wno-stringop-truncation" HAS_NO_STRINGOP_TRUNCATION)
+    if(HAS_NO_STRINGOP_TRUNCATION)
+        target_compile_options(applied_forces INTERFACE $<$<COMPILE_LANGUAGE:CXX>:-Wno-stringop-truncation>)
+    endif()
     
     if (BUILD_TESTING)
         add_subdirectory(tests)
