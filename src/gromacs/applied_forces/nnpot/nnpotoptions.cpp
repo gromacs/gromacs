@@ -409,50 +409,18 @@ void NNPotOptions::checkNNPotModel()
     {
         GMX_THROW(FileIOError("Unrecognized extension for model file: " + params_.modelFileName_));
     }
-    model->initModel();
 
     // check if model accepts inputs
     // prepare dummy inputs for NN model
-    int               inputsFound = 0;
     std::vector<RVec> positions(1, RVec({ 0.0, 0.0, 0.0 }));
     std::vector<int>  atomNumbers(1, 1);
     matrix            box = { { 1.0, 0.0, 0.0 }, { 0.0, 1.0, 0.0 }, { 0.0, 0.0, 1.0 } };
     PbcType           pbc = PbcType();
     t_commrec         cr;
     model->setCommRec(&cr);
-    for (const std::string& input : params_.modelInput_)
-    {
-        if (input.empty())
-        {
-            continue;
-        }
-        else if (input == "atom-positions")
-        {
-            inputsFound++;
-            model->prepareAtomPositions(positions);
-        }
-        else if (input == "atom-numbers")
-        {
-            inputsFound++;
-            model->prepareAtomNumbers(atomNumbers);
-        }
-        else if (input == "box")
-        {
-            inputsFound++;
-            model->prepareBox(box);
-        }
-        else if (input == "pbc")
-        {
-            inputsFound++;
-            model->preparePbcType(pbc);
-        }
-        else
-        {
-            GMX_THROW(InconsistentInputError("Unknown input to NN model: " + input));
-        }
-    }
+
     // check that inputs are not empty
-    if (inputsFound == 0)
+    if (params_.modelInput_.size() == 0)
     {
         GMX_THROW(InconsistentInputError("No inputs to NN model provided."));
     }
@@ -463,18 +431,21 @@ void NNPotOptions::checkNNPotModel()
     bool modelOutputsForces = false;
     try
     {
-        // might throw a runtime error if the model is not compatible with the dummy input
-        model->evaluateModel();
-
-        // check if model outputs forces after forward pass
-        modelOutputsForces = model->outputsForces();
-
         // prepare dummy output
         std::vector<int>  indices(1, 0);
         gmx_enerdata_t    enerd(1, nullptr);
         std::vector<RVec> forcesVec(1, RVec({ 0.0, 0.0, 0.0 }));
         ArrayRef<RVec>    forces(forcesVec);
-        model->getOutputs(indices, enerd, forces);
+
+        // might throw a runtime error if the model is not compatible with the dummy input
+        auto indicesRef = makeConstArrayRef(indices);
+        auto inputs     = makeConstArrayRef(params_.modelInput_);
+        auto posRef     = makeArrayRef(positions);
+        auto atomNumRef = makeArrayRef(atomNumbers);
+        model->evaluateModel(&enerd, forces, indicesRef, inputs, posRef, atomNumRef, &box, &pbc);
+
+        // check if model outputs forces after forward pass
+        modelOutputsForces = model->outputsForces();
 
         // log wheter model outputs forces or we need to compute them
         if (modelOutputsForces)

@@ -82,22 +82,25 @@ public:
 
     ~TorchModel();
 
-    //! Initialize the neural network model
-    void initModel() override;
-
-    //! Functions to prepare inputs for NN model. Create input torch::Tensors for the model.
-    //! \{
-    void prepareAtomPositions(std::vector<RVec>& positions) override;
-    void prepareAtomNumbers(std::vector<int>& atomTypes) override;
-    void prepareBox(matrix& box) override;
-    void preparePbcType(PbcType& pbcType) override;
-    //! \}
-
-    //! Call inference on NN model
-    void evaluateModel() override;
-
-    //! Retrieve NN model outputs
-    void getOutputs(std::vector<int>& indices, gmx_enerdata_t& enerd, const ArrayRef<RVec>& forces) override;
+    /*! Call inference on NN model and retrieve outputs
+     * \param[in] indexLookup lookup table for local atom indices
+     * \param[out] enerd energy data struct
+     * \param[out] forces forces on atoms
+     * \param[in] indexLookup lookup table for atom indices
+     * \param[in] inputs list of strings specifying input data
+     * \param[in] positions atom positions
+     * \param[in] atomNumbers atom numbers
+     * \param[in] box simulation box
+     * \param[in] pbcType periodic boundary conditions
+     */
+    void evaluateModel(gmx_enerdata_t*              enerd,
+                       const ArrayRef<RVec>&        forces,
+                       ArrayRef<const int>&         indexLookup,
+                       ArrayRef<const std::string>& inputs,
+                       ArrayRef<RVec>&              positions,
+                       ArrayRef<int>&               atomNumbers,
+                       matrix*                      box     = nullptr,
+                       PbcType*                     pbcType = nullptr) override;
 
     //! Set communication record for possible communication of input/output data between ranks
     void setCommRec(const t_commrec* cr) override;
@@ -105,26 +108,23 @@ public:
     //! helper function to check if model outputs forces
     bool outputsForces() const override;
 
-    //! determine which device to use depending on GMX_NN_DEVICE environment variable
-    void setDevice();
-
-    //! load custom extensions used to compile the TorchScript model from extra_files
-    void loadModelExtensions(std::string& extension_libs);
-
 private:
-    //! flag to check if model is initialized
-    bool isInit_ = false;
-    //! flag to check if model output is ready
-    bool outputReady_ = false;
+    //! Functions to prepare inputs for NN model. Create input torch::Tensors for the model.
+    //! \{
+    void prepareAtomPositions(ArrayRef<RVec>& positions);
+    void prepareAtomNumbers(ArrayRef<int>& atomTypes);
+    void prepareBox(matrix* box);
+    void preparePbcType(PbcType* pbcType);
+    //! \}
 
     //! pointer to the communication record
     const t_commrec* cr_ = nullptr;
     //! MDLogger during mdrun
     const MDLogger& logger_;
 
-    //! TorchScript model
-    std::shared_ptr<torch::Device> device_;
     //! device to run the model on
+    torch::Device device_;
+    //! TorchScript model
     torch::jit::script::Module model_;
     //! input tensors for the model
     std::vector<torch::jit::IValue> inputs_;

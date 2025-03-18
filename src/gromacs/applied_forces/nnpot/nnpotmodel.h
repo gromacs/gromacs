@@ -60,29 +60,23 @@ namespace gmx
 class INNPotModel
 {
 public:
-    //! Initialize the neural network model
-    virtual void initModel() = 0;
-
-    /*! \brief Prepare inputs for NN model.
+    /*! \brief Evaluate NN model.
      *
+     * Includes the preparation of inputs, calling inference of the model, and retrieval of outputs.
      * Currently supported inputs:
-     *   - atom positions (std::vector<RVec>): atomic positions
-     *   - atom numbers (std::vector<int>): atomic numbers
+     *   - atom positions (ArrayRef<RVec>): atomic positions
+     *   - atom numbers (ArrayRef<int>): atomic numbers
      *   - box (matrix): simulation box vectors
      *   - pbc type (PbcType): boolean flags for periodic boundary conditions in x, y, z
      */
-    //! \{
-    virtual void prepareAtomPositions(std::vector<RVec>&) = 0;
-    virtual void prepareAtomNumbers(std::vector<int>&)    = 0;
-    virtual void prepareBox(matrix&)                      = 0;
-    virtual void preparePbcType(PbcType&)                 = 0;
-    //! \}
-
-    //! call inference on NN model
-    virtual void evaluateModel() = 0;
-
-    //! retrieve NN model outputs
-    virtual void getOutputs(std::vector<int>&, gmx_enerdata_t&, const ArrayRef<RVec>&) = 0;
+    virtual void evaluateModel(gmx_enerdata_t*,
+                               const ArrayRef<RVec>&,
+                               ArrayRef<const int>&,
+                               ArrayRef<const std::string>&,
+                               ArrayRef<RVec>&,
+                               ArrayRef<int>&,
+                               matrix*,
+                               PbcType*) = 0;
 
     //! set communication record for possible communication of input/output data between ranks
     virtual void setCommRec(const t_commrec*) = 0;

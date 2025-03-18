@@ -84,55 +84,44 @@ NNPotForceProvider::NNPotForceProvider(const NNPotParameters& nnpotParameters, c
     {
         GMX_THROW(FileIOError("Unrecognized extension for model file: " + params_.modelFileName_));
     }
-    model_->initModel();
+
+    // set communication record
+    model_->setCommRec(params_.cr_);
 }
 
 NNPotForceProvider::~NNPotForceProvider() {}
 
 void NNPotForceProvider::calculateForces(const ForceProviderInput& fInput, ForceProviderOutput* fOutput)
 {
-    // store a pointer to the communication record
-    cr_ = &(fInput.cr_);
-    model_->setCommRec(cr_);
-
-    // prepare inputs for NN model
-    // order in input vector is the same as in mdp file
-    for (const std::string& input : params_.modelInput_)
+    // make sure inputs are available
+    if (params_.modelNeedsInput("atom-positions"))
     {
-        if (input.empty())
-        {
-            continue;
-        }
-        else if (input == "atom-positions")
-        {
-            gatherAtomPositions(fInput.x_);
-            model_->prepareAtomPositions(positions_);
-        }
-        else if (input == "atom-numbers")
-        {
-            model_->prepareAtomNumbers(atomNumbers_);
-        }
-        else if (input == "box")
-        {
-            copy_mat(fInput.box_, box_);
-            model_->prepareBox(box_);
-        }
-        else if (input == "pbc")
-        {
-            copy_mat(fInput.box_, box_);
-            t_pbc pbc;
-            set_pbc(&pbc, *(params_.pbcType_), box_); // might not be necessary
-            model_->preparePbcType(*(params_.pbcType_));
-        }
-        else
-        {
-            GMX_THROW(InconsistentInputError("Unknown input to NN model: " + input));
-        }
+        gatherAtomPositions(fInput.x_);
     }
+    if (params_.modelNeedsInput("box"))
+    {
+        copy_mat(fInput.box_, box_);
+    }
+    if (params_.modelNeedsInput("pbc"))
+    {
+        copy_mat(fInput.box_, box_);
+        t_pbc pbc;
+        set_pbc(&pbc, *(params_.pbcType_), box_);
+    }
+    // prepare inputs for NN model
 
-    model_->evaluateModel();
-
-    model_->getOutputs(idxLookup_, fOutput->enerd_, fOutput->forceWithVirial_.force_);
+    auto idxLookupRef = makeConstArrayRef(idxLookup_);
+    auto inputs       = makeConstArrayRef(params_.modelInput_);
+    auto posRef       = makeArrayRef(positions_);
+    auto atomNumRef   = makeArrayRef(atomNumbers_);
+    model_->evaluateModel(&(fOutput->enerd_),
+                          fOutput->forceWithVirial_.force_,
+                          idxLookupRef,
+                          inputs,
+                          posRef,
+                          atomNumRef,
+                          &box_,
+                          params_.pbcType_.get());
 }
 
 void NNPotForceProvider::gatherAtomNumbersIndices()
