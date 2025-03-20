@@ -179,12 +179,6 @@ public:
     //! Returns the maximum number of grid cells in a column
     int numCellsColumnMax() const { return numCellsColumnMax_; }
 
-    //! Returns the start of the source atom range mapped to this grid
-    int srcAtomBegin() const { return srcAtomBegin_; }
-
-    //! Returns the end of the source atom range mapped to this grid
-    int srcAtomEnd() const { return srcAtomEnd_; }
-
     //! Returns the first cell index in the grid, starting at 0 in this grid
     int firstCellInColumn(int columnIndex) const { return cxy_ind_[columnIndex]; }
 
@@ -384,11 +378,6 @@ private:
     int cellOffset_;
     //! The maximum number of cells in a column
     int numCellsColumnMax_;
-
-    //! The start of the source atom range mapped to this grid
-    int srcAtomBegin_;
-    //! The end of the source atom range mapped to this grid
-    int srcAtomEnd_;
 
     /* Grid data */
     /*! \brief The number of, non-filler, atoms for each grid column.
