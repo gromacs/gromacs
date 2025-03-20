@@ -112,12 +112,14 @@ public:
 
     /*! \brief
      * Return PP co-ordinate transfer event received from PP
-     * rank determined from pipeline stage, for consumer to enqueue
-     * \param[in] requestIndex   index of the request (pipeline stage or PP rank when no pipelining)
-     * \returns                  tuple with rank of sending PP task and corresponding event
-     *                           or -1 when no event was sent (from a PP rank with no particles)
+     * rank determined from \c senderIndex, for consumer to enqueue
+     *
+     * \param[in]  senderIndex   Index of the sender within the set of PP ranks
+     * \returns                  tuple with index of sending PP rank (or -1 when no
+     *                           event was sent (from a PP rank with no particles)
+     *                           and corresponding event.
      */
-    std::tuple<int, GpuEventSynchronizer*> receivePpCoordinateSendEvent(int requestIndex);
+    std::tuple<int, GpuEventSynchronizer*> receivePpCoordinateSendEvent(int senderIndex);
 
     /*! \brief
      * Wait for coordinates from any PP rank
@@ -142,8 +144,8 @@ public:
      */
     int ppCommNumSenderRanks();
 
-    /*! \brief
-     * Mark an event in the sender stream \p senderIndex and enqueue it into \p stream.
+    /*! \brief Mark an event in the sender stream \p senderIndex
+     * (which must be valid) and enqueue it into \p stream.
      */
     void insertAsDependencyIntoStream(int senderIndex, const DeviceStream& stream);
 
