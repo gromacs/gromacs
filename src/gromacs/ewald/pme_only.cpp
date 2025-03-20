@@ -233,8 +233,7 @@ static gmx_pme_t* gmx_pmeonly_switch(std::vector<gmx_pme_t*>* pmedata,
  * \param[out] maxshift_y             Maximum shift in Y direction, if received.
  * \param[out] lambda_q               Free-energy lambda for electrostatics, if received.
  * \param[out] lambda_lj              Free-energy lambda for Lennard-Jones, if received.
- * \param[out] computeEnergyAndVirial Set to true if this is an energy/virial calculation
- *                                    step, otherwise set to false.
+ * \param[out] stepWork               The workload of this simulation step
  * \param[out] step                   MD integration step number.
  * \param[out] grid_size              PME grid size, if received.
  * \param[out] ewaldcoeff_q           Ewald cut-off parameter for electrostatics, if received.
@@ -257,7 +256,7 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
                                       int*                         maxshift_y,
                                       real*                        lambda_q,
                                       real*                        lambda_lj,
-                                      gmx_bool*                    computeEnergyAndVirial,
+                                      gmx::StepWorkload*           stepWork,
                                       int64_t*                     step,
                                       ivec*                        grid_size,
                                       real*                        ewaldcoeff_q,
@@ -460,8 +459,24 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
             copy_mat(cnb.box, box);
             *lambda_q               = cnb.lambda_q;
             *lambda_lj              = cnb.lambda_lj;
-            *computeEnergyAndVirial = ((cnb.flags & PP_PME_ENER_VIR) != 0U);
+            stepWork->computeVirial = ((cnb.flags & PP_PME_ENER_VIR) != 0U);
+            stepWork->computeEnergy = stepWork->computeVirial;
             *step                   = cnb.step;
+            if (useGpuForPme)
+            {
+                // The peer PP rank always sends a box along with the
+                // flag, even when the box has not changed. This box
+                // is used to update PME data structures in the call
+                // below. This approach means that dynamic boxes are
+                // automatically handled correctly, including pressure
+                // coupling, box deformation, and replica
+                // exchange. The update is lightweight and typically
+                // the PME-only rank is still waiting for coordinates
+                // from all PP ranks, so if the box has not actually
+                // changed, there is little inefficiency in practice.
+                const bool updateBox = true;
+                pme_gpu_prepare_computation(pme, box, updateBox, *stepWork);
+            }
 
             /* Receive the coordinates in place */
             nat             = 0;
@@ -525,7 +540,7 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
     GMX_UNUSED_VALUE(maxshift_y);
     GMX_UNUSED_VALUE(lambda_q);
     GMX_UNUSED_VALUE(lambda_lj);
-    GMX_UNUSED_VALUE(computeEnergyAndVirial);
+    GMX_UNUSED_VALUE(stepWork);
     GMX_UNUSED_VALUE(step);
     GMX_UNUSED_VALUE(grid_size);
     GMX_UNUSED_VALUE(ewaldcoeff_q);
@@ -670,7 +685,6 @@ int gmx_pmeonly(struct gmx_pme_t**              pmeFromRunnerPtr,
     real    lambda_lj  = 0;
     int     maxshift_x = 0, maxshift_y = 0;
     float   cycles;
-    bool    computeEnergyAndVirial = false;
     int64_t step;
 
     gmx_pme_t* pmeFromRunner = *pmeFromRunnerPtr;
@@ -726,8 +740,10 @@ int gmx_pmeonly(struct gmx_pme_t**              pmeFromRunnerPtr,
     clear_nrnb(mynrnb);
 
     // the current PME data structure, may change due to PME tuning
-    gmx_pme_t* pme               = pmeFromRunner;
-    bool       haveStartedTiming = false;
+    gmx_pme_t*        pme               = pmeFromRunner;
+    bool              haveStartedTiming = false;
+    gmx::StepWorkload stepWork;
+    stepWork.computeForces = true;
     do /****** this is a quasi-loop over time steps! */
     {
         /* The reason for having a loop here is PME grid tuning/switching */
@@ -744,7 +760,7 @@ int gmx_pmeonly(struct gmx_pme_t**              pmeFromRunnerPtr,
                                              &maxshift_y,
                                              &lambda_q,
                                              &lambda_lj,
-                                             &computeEnergyAndVirial,
+                                             &stepWork,
                                              &step,
                                              &newGridSize,
                                              &ewaldcoeff_q,
@@ -788,19 +804,9 @@ int gmx_pmeonly(struct gmx_pme_t**              pmeFromRunnerPtr,
         // of pme_pp (maybe box, energy and virial, too; and likewise
         // from mdatoms for the other call to gmx_pme_do), so we have
         // fewer lines of code and less parameter passing.
-        gmx::SimulationWorkload simulationWork;
-        gmx::StepWorkload       stepWork;
-        stepWork.computeVirial = computeEnergyAndVirial;
-        stepWork.computeEnergy = computeEnergyAndVirial;
-        stepWork.computeForces = true;
-        PmeOutput output       = { {}, false, 0, { { 0 } }, 0, 0, 0, { { 0 } } };
+        PmeOutput output = { {}, false, 0, { { 0 } }, 0, 0, 0, { { 0 } } };
         if (useGpuForPme)
         {
-            simulationWork.haveDynamicBox = false;
-            stepWork.useGpuPmeFReduction  = pme_pp->useGpuDirectComm;
-            // TODO this should be set properly by gmx_pme_recv_coeffs_coords,
-            // or maybe use inputrecDynamicBox(ir), at the very least - change this when this codepath is tested!
-            pme_gpu_prepare_computation(pme, box, wcycle, simulationWork, stepWork);
             if (!pme_pp->useGpuDirectComm)
             {
                 /* In PME-only mode, everything is on the same stream, so we do not consume the
@@ -823,7 +829,8 @@ int gmx_pmeonly(struct gmx_pme_t**              pmeFromRunnerPtr,
                                   pme_pp->useMdGpuGraph);
             pme_gpu_launch_complex_transforms(pme, wcycle, stepWork);
             pme_gpu_launch_gather(pme, wcycle, lambda_q, stepWork.computeVirial);
-            output = pme_gpu_wait_finish_task(pme, computeEnergyAndVirial, lambda_q, wcycle);
+            output = pme_gpu_wait_finish_task(
+                    pme, stepWork.computeEnergy || stepWork.computeVirial, lambda_q, wcycle);
         }
         else
         {

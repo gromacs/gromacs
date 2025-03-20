@@ -69,6 +69,7 @@
 #include "gromacs/domdec/mdsetup.h"
 #include "gromacs/domdec/partition.h"
 #include "gromacs/essentialdynamics/edsam.h"
+#include "gromacs/ewald/pme.h"
 #include "gromacs/ewald/pme_load_balancing.h"
 #include "gromacs/ewald/pme_pp.h"
 #include "gromacs/fileio/enxio.h"
@@ -2096,6 +2097,11 @@ void gmx::LegacySimulator::do_md()
                                 FALSE);
             upd.updateAfterPartition(state_->numAtoms(), md->cFREEZE, md->cTC, md->cACC);
             fr_->longRangeNonbondeds->updateAfterPartition(*md);
+            if (runScheduleWork_->stepWork.haveGpuPmeOnThisRank)
+            {
+                pme_gpu_prepare_computation(
+                        fr_->pmedata, state_->box, simulationWork.haveDynamicBox, runScheduleWork_->stepWork);
+            }
         }
 
         bFirstStep = FALSE;
