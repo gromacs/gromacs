@@ -389,7 +389,6 @@ endif()
 
 target_link_libraries(libgromacs
                       PRIVATE
-                      ${EXTRAE_LIBRARIES}
                       ${GMX_EXTRA_LIBRARIES}
                       ${GMX_COMMON_LIBRARIES}
                       ${FFT_LIBRARIES} ${LINEAR_ALGEBRA_LIBRARIES}

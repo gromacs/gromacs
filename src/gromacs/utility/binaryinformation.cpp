@@ -44,8 +44,16 @@
 #include "config.h"
 
 #include <climits>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
+#include <algorithm>
+#include <array>
 #include <filesystem>
+#include <numeric>
+#include <string>
+#include <unordered_map>
 #include <vector>
 
 #if GMX_FFT_FFTW3 || GMX_FFT_ARMPL_FFTW3
@@ -59,10 +67,6 @@
 
 #if GMX_GPU_FFT_ONEMATH
 #    include <oneapi/math/dft.hpp>
-#endif
-
-#if HAVE_EXTRAE
-#    include <extrae_user_events.h>
 #endif
 
 #if GMX_USE_HWLOC
@@ -80,15 +84,6 @@
 #if GMX_TORCH
 #    include <torch/torch.h>
 #endif
-
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-
-#include <algorithm>
-#include <array>
-#include <numeric>
-#include <string>
 
 /* This file is completely threadsafe - keep it that way! */
 
@@ -478,14 +473,7 @@ void gmx_print_version_info(gmx::TextWriter* writer)
 #else
     writer->writeLine("Hwloc support:       disabled");
 #endif
-#if HAVE_EXTRAE
-    unsigned major, minor, revision;
-    Extrae_get_version(&major, &minor, &revision);
-    writer->writeLine(formatString(
-            "Tracing support:     enabled. Using Extrae-%d.%d.%d", major, minor, revision));
-#else
     writer->writeLine("Tracing support:     disabled");
-#endif
 
 /* MDModules */
 #if GMX_HAVE_COLVARS

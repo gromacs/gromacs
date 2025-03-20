@@ -662,19 +662,6 @@ if(GMX_EXTERNAL_TINYXML2)
     endif()
 endif()
 
-option(GMX_EXTRAE "Add support for tracing using EXTRAE" OFF)
-mark_as_advanced(GMX_EXTRAE)
-
-if (GMX_EXTRAE)
-  find_package(EXTRAE)
-  if(EXTRAE_FOUND)
-    include_directories(SYSTEM ${EXTRAE_INCLUDE_DIR})
-    set(HAVE_EXTRAE 1)
-  else()
-    message(FATAL_ERROR "EXTRAE library was not found. Please add the correct path to CMAKE_PREFIX_PATH")
-  endif()
-endif()
-
 include(ThreadMPI)
 # Enable core threading facilities
 tmpi_enable_core("${CMAKE_SOURCE_DIR}/src/external/thread_mpi/include")
