@@ -27,9 +27,16 @@ zero atoms.
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix parsing of pdb files with multiple cyclic and acyclic chains
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+pdb2gmx computed incorrect coordinate distances when checking for cyclicity
+of the second and later chains in the pdb input file.
+
+:issue:`5091`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Miscellaneous
 ^^^^^^^^^^^^^
-
