@@ -113,7 +113,7 @@ TEST(GpuEventSynchronizerTest, BasicFunctionality)
             gpuEventSynchronizer.waitForEvent();
         }
 
-#    if !GMX_GPU_CUDA // CUDA has very lax rules for event consumption. See Issues #2527 and #3988.
+#    if !GMX_GPU_CUDA && !GMX_GPU_HIP // CUDA has very lax rules for event consumption. See Issues #2527 and #3988.
         {
             SCOPED_TRACE("Wait before marking");
             GpuEventSynchronizer gpuEventSynchronizer;
