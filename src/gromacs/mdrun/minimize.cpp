@@ -416,7 +416,8 @@ static void init_em(FILE*                        fplog,
                     VirtualSitesHandler*         vsite,
                     gmx::Constraints*            constr,
                     const MdrunScheduleWorkload& runScheduleWork,
-                    gmx_shellfc_t**              shellfc)
+                    gmx_shellfc_t**              shellfc,
+                    gmx::StatePropagatorDataGpu* stateGpu)
 {
     real dvdl_constr;
 
@@ -434,13 +435,13 @@ static void init_em(FILE*                        fplog,
     initialize_lambdas(
             fplog, ir->efep, ir->bSimTemp, *ir->fepvals, ir->simtempvals->temperatures, nullptr, MAIN(cr), fep_state, lambda);
 
+    const auto& simulationWork = runScheduleWork.simulationWork;
     if (ir->eI == IntegrationAlgorithm::NM)
     {
         GMX_ASSERT(shellfc != nullptr, "With NM we always support shells");
 
-        const auto& simulationWork     = runScheduleWork.simulationWork;
-        const bool  useGpuForPme       = simulationWork.useGpuPme;
-        const bool  useGpuForBufferOps = simulationWork.useGpuXBufferOpsWhenAllowed
+        const bool useGpuForPme       = simulationWork.useGpuPme;
+        const bool useGpuForBufferOps = simulationWork.useGpuXBufferOpsWhenAllowed
                                         || simulationWork.useGpuFBufferOpsWhenAllowed;
 
 
@@ -480,10 +481,12 @@ static void init_em(FILE*                        fplog,
                             state_global,
                             top_global,
                             *ir,
+                            runScheduleWork.simulationWork,
                             mdModulesNotifiers,
                             imdSession,
                             pull_work,
                             &ems->s,
+                            stateGpu,
                             &ems->f,
                             mdAtoms,
                             top,
@@ -500,8 +503,18 @@ static void init_em(FILE*                        fplog,
         /* Just copy the state */
         ems->s = *state_global;
 
-        mdAlgorithmsSetupAtomData(
-                cr, *ir, top_global, top, fr, &ems->f, mdAtoms, constr, vsite, shellfc ? *shellfc : nullptr);
+        mdAlgorithmsSetupAtomData(cr,
+                                  *ir,
+                                  runScheduleWork.simulationWork,
+                                  top_global,
+                                  top,
+                                  fr,
+                                  &ems->f,
+                                  mdAtoms,
+                                  constr,
+                                  vsite,
+                                  shellfc ? *shellfc : nullptr,
+                                  stateGpu);
     }
 
     update_mdatoms(mdAtoms->mdatoms(), ems->s.lambda[FreeEnergyPerturbationCouplingType::Mass]);
@@ -819,24 +832,26 @@ static bool do_em_step(const t_commrec*                          cr,
 }
 
 //! Prepare EM for using domain decomposition parallellization
-static void em_dd_partition_system(FILE*                     fplog,
-                                   const gmx::MDLogger&      mdlog,
-                                   int                       step,
-                                   const t_commrec*          cr,
-                                   const gmx_mtop_t&         top_global,
-                                   const t_inputrec*         ir,
-                                   const MDModulesNotifiers& mdModulesNotifiers,
+static void em_dd_partition_system(FILE*                          fplog,
+                                   const gmx::MDLogger&           mdlog,
+                                   int                            step,
+                                   const t_commrec*               cr,
+                                   const gmx_mtop_t&              top_global,
+                                   const t_inputrec*              ir,
+                                   const gmx::SimulationWorkload& simulationWork,
+                                   const MDModulesNotifiers&      mdModulesNotifiers,
 
-                                   gmx::ImdSession*     imdSession,
-                                   pull_t*              pull_work,
-                                   em_state_t*          ems,
-                                   gmx_localtop_t*      top,
-                                   gmx::MDAtoms*        mdAtoms,
-                                   t_forcerec*          fr,
-                                   VirtualSitesHandler* vsite,
-                                   gmx::Constraints*    constr,
-                                   t_nrnb*              nrnb,
-                                   gmx_wallcycle*       wcycle)
+                                   gmx::ImdSession*             imdSession,
+                                   pull_t*                      pull_work,
+                                   em_state_t*                  ems,
+                                   gmx::StatePropagatorDataGpu* stateGpu,
+                                   gmx_localtop_t*              top,
+                                   gmx::MDAtoms*                mdAtoms,
+                                   t_forcerec*                  fr,
+                                   VirtualSitesHandler*         vsite,
+                                   gmx::Constraints*            constr,
+                                   t_nrnb*                      nrnb,
+                                   gmx_wallcycle*               wcycle)
 {
     /* Repartition the domain decomposition */
     dd_partition_system(fplog,
@@ -847,10 +862,12 @@ static void em_dd_partition_system(FILE*                     fplog,
                         nullptr,
                         top_global,
                         *ir,
+                        simulationWork,
                         mdModulesNotifiers,
                         imdSession,
                         pull_work,
                         &ems->s,
+                        stateGpu,
                         &ems->f,
                         mdAtoms,
                         top,
@@ -985,6 +1002,8 @@ public:
     int ddpCountPairSearch;
     //! The local coordinates that were used for pair searching, stored for computing displacements
     std::vector<RVec> pairSearchCoordinates;
+    //! Manages state buffers on GPU, can be nullptr
+    gmx::StatePropagatorDataGpu* stateGpu;
 };
 
 void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres, int64_t count, gmx_bool bFirst, int64_t step)
@@ -1031,10 +1050,12 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
                                    cr,
                                    top_global,
                                    inputrec,
+                                   runScheduleWork->simulationWork,
                                    mdModulesNotifiers,
                                    imdSession,
                                    pull_work,
                                    ems,
+                                   stateGpu,
                                    top,
                                    mdAtoms,
                                    fr,
@@ -1383,7 +1404,8 @@ void LegacySimulator::do_cg()
             virtualSites_,
             constr_,
             *runScheduleWork_,
-            nullptr);
+            nullptr,
+            stateGpu_);
     const bool        simulationsShareState = false;
     gmx_mdoutf*       outf                  = init_mdoutf(fpLog_,
                                    nFile_,
@@ -1446,7 +1468,8 @@ void LegacySimulator::do_cg()
                                      runScheduleWork_,
                                      enerd_,
                                      -1,
-                                     {} };
+                                     {},
+                                     stateGpu_ };
     /* Call the force routine and some auxiliary (neighboursearching etc.) */
     /* do_force always puts the charge groups in the box and shifts again
      * We do not unshift, so molecules are always whole in congrad.c
@@ -1633,10 +1656,12 @@ void LegacySimulator::do_cg()
                                    cr_,
                                    topGlobal_,
                                    inputRec_,
+                                   runScheduleWork_->simulationWork,
                                    mdModulesNotifiers_,
                                    imdSession_,
                                    pullWork_,
                                    s_min,
+                                   stateGpu_,
                                    top_,
                                    mdAtoms_,
                                    fr_,
@@ -1755,10 +1780,12 @@ void LegacySimulator::do_cg()
                                            cr_,
                                            topGlobal_,
                                            inputRec_,
+                                           runScheduleWork_->simulationWork,
                                            mdModulesNotifiers_,
                                            imdSession_,
                                            pullWork_,
                                            s_min,
+                                           stateGpu_,
                                            top_,
                                            mdAtoms_,
                                            fr_,
@@ -2127,7 +2154,8 @@ void LegacySimulator::do_lbfgs()
             virtualSites_,
             constr_,
             *runScheduleWork_,
-            nullptr);
+            nullptr,
+            stateGpu_);
     const bool        simulationsShareState = false;
     gmx_mdoutf*       outf                  = init_mdoutf(fpLog_,
                                    nFile_,
@@ -2228,7 +2256,8 @@ void LegacySimulator::do_lbfgs()
                                      runScheduleWork_,
                                      enerd_,
                                      -1,
-                                     {} };
+                                     {},
+                                     stateGpu_ };
     rvec            mu_tot;
     tensor          vir;
     tensor          pres;
@@ -2925,7 +2954,8 @@ void LegacySimulator::do_steep()
             virtualSites_,
             constr_,
             *runScheduleWork_,
-            nullptr);
+            nullptr,
+            stateGpu_);
     const bool        simulationsShareState = false;
     gmx_mdoutf*       outf                  = init_mdoutf(fpLog_,
                                    nFile_,
@@ -2994,7 +3024,8 @@ void LegacySimulator::do_steep()
                                      runScheduleWork_,
                                      enerd_,
                                      -1,
-                                     {} };
+                                     {},
+                                     stateGpu_ };
 
     /**** HERE STARTS THE LOOP ****
      * count is the counter for the number of steps
@@ -3130,10 +3161,12 @@ void LegacySimulator::do_steep()
                                        cr_,
                                        topGlobal_,
                                        inputRec_,
+                                       runScheduleWork_->simulationWork,
                                        mdModulesNotifiers_,
                                        imdSession_,
                                        pullWork_,
                                        s_min,
+                                       stateGpu_,
                                        top_,
                                        mdAtoms_,
                                        fr_,
@@ -3276,7 +3309,8 @@ void LegacySimulator::do_nm()
             virtualSites_,
             constr_,
             *runScheduleWork_,
-            &shellfc);
+            &shellfc,
+            stateGpu_);
     const bool  simulationsShareState = false;
     gmx_mdoutf* outf                  = init_mdoutf(fpLog_,
                                    nFile_,
@@ -3386,7 +3420,8 @@ void LegacySimulator::do_nm()
                                      runScheduleWork_,
                                      enerd_,
                                      -1,
-                                     {} };
+                                     {},
+                                     stateGpu_ };
     energyEvaluator.run(&state_work, mu_tot, vir, pres, -1, TRUE, 0);
     cr_->nnodes = nnodes;
 

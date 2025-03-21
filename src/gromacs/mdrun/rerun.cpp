@@ -353,10 +353,12 @@ void gmx::LegacySimulator::do_rerun()
                             stateGlobal_,
                             topGlobal_,
                             *ir,
+                            runScheduleWork_->simulationWork,
                             mdModulesNotifiers_,
                             imdSession_,
                             pullWork_,
                             state_,
+                            stateGpu_,
                             &f,
                             mdAtoms_,
                             top_,
@@ -372,8 +374,18 @@ void gmx::LegacySimulator::do_rerun()
         /* Copy the pointer to the global state */
         state_ = stateGlobal_;
 
-        mdAlgorithmsSetupAtomData(
-                cr_, *ir, topGlobal_, top_, fr_, &f, mdAtoms_, constr_, virtualSites_, shellfc);
+        mdAlgorithmsSetupAtomData(cr_,
+                                  *ir,
+                                  runScheduleWork_->simulationWork,
+                                  topGlobal_,
+                                  top_,
+                                  fr_,
+                                  &f,
+                                  mdAtoms_,
+                                  constr_,
+                                  virtualSites_,
+                                  shellfc,
+                                  stateGpu_);
     }
 
     auto* mdatoms = mdAtoms_->mdatoms();
@@ -596,10 +608,12 @@ void gmx::LegacySimulator::do_rerun()
                                 stateGlobal_,
                                 topGlobal_,
                                 *ir,
+                                runScheduleWork_->simulationWork,
                                 mdModulesNotifiers_,
                                 imdSession_,
                                 pullWork_,
                                 state_,
+                                stateGpu_,
                                 &f,
                                 mdAtoms_,
                                 top_,

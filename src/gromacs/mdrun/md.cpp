@@ -369,6 +369,8 @@ void gmx::LegacySimulator::do_md()
 
     ObservablesReducer observablesReducer = observablesReducerBuilder_->build();
 
+    StatePropagatorDataGpu* stateGpu = fr_->stateGpu;
+
     ForceBuffers     f(simulationWork.useMts,
                    (simulationWork.useGpuFBufferOpsWhenAllowed || useGpuForUpdate)
                                ? PinningPolicy::PinnedIfSupported
@@ -388,10 +390,12 @@ void gmx::LegacySimulator::do_md()
                             stateGlobal_,
                             topGlobal_,
                             *ir,
+                            simulationWork,
                             mdModulesNotifiers_,
                             imdSession_,
                             pullWork_,
                             state_,
+                            stateGpu,
                             &f,
                             mdAtoms_,
                             top_,
@@ -408,7 +412,7 @@ void gmx::LegacySimulator::do_md()
     {
         /* Generate and initialize new topology */
         mdAlgorithmsSetupAtomData(
-                cr_, *ir, topGlobal_, top_, fr_, &f, mdAtoms_, constr_, virtualSites_, shellfc);
+                cr_, *ir, simulationWork, topGlobal_, top_, fr_, &f, mdAtoms_, constr_, virtualSites_, shellfc, stateGpu);
 
         upd.updateAfterPartition(state_->numAtoms(), md->cFREEZE, md->cTC, md->cACC);
         fr_->longRangeNonbondeds->updateAfterPartition(*md);
@@ -425,8 +429,6 @@ void gmx::LegacySimulator::do_md()
                           &pressureCouplingMu);
 
     std::unique_ptr<UpdateConstrainGpu> integrator;
-
-    StatePropagatorDataGpu* stateGpu = fr_->stateGpu;
 
     // TODO: the assertions below should be handled by UpdateConstraintsBuilder.
     if (useGpuForUpdate)
@@ -1015,10 +1017,12 @@ void gmx::LegacySimulator::do_md()
                                     stateGlobal_,
                                     topGlobal_,
                                     *ir,
+                                    simulationWork,
                                     mdModulesNotifiers_,
                                     imdSession_,
                                     pullWork_,
                                     state_,
+                                    stateGpu,
                                     &f,
                                     mdAtoms_,
                                     top_,
@@ -2082,10 +2086,12 @@ void gmx::LegacySimulator::do_md()
                                 stateGlobal_,
                                 topGlobal_,
                                 *ir,
+                                simulationWork,
                                 mdModulesNotifiers_,
                                 imdSession_,
                                 pullWork_,
                                 state_,
+                                stateGpu,
                                 &f,
                                 mdAtoms_,
                                 top_,

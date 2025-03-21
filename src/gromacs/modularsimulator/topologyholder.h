@@ -62,6 +62,8 @@ namespace gmx
 {
 class Constraints;
 class MDAtoms;
+class SimulationWorkload;
+class StatePropagatorDataGpu;
 class VirtualSitesHandler;
 
 /*! \internal
@@ -80,10 +82,12 @@ public:
                    gmx_localtop_t*                     localTopology,
                    const t_commrec*                    cr,
                    const t_inputrec*                   inputrec,
+                   const SimulationWorkload&           simulationWork,
                    t_forcerec*                         fr,
                    MDAtoms*                            mdAtoms,
                    Constraints*                        constr,
-                   VirtualSitesHandler*                vsite);
+                   VirtualSitesHandler*                vsite,
+                   StatePropagatorDataGpu*             stateGpu);
 
     //! Get global topology
     const gmx_mtop_t& globalTopology() const;

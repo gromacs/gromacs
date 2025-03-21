@@ -54,6 +54,8 @@
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdatom.h"
+#include "gromacs/mdtypes/simulation_workload.h"
+#include "gromacs/mdtypes/state_propagator_data_gpu.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/mtop_util.h"
@@ -69,16 +71,18 @@ namespace gmx
  * The final solution should be an MD algorithm base class with methods
  * for initialization and atom-data setup.
  */
-void mdAlgorithmsSetupAtomData(const t_commrec*     cr,
-                               const t_inputrec&    inputrec,
-                               const gmx_mtop_t&    top_global,
-                               gmx_localtop_t*      top,
-                               t_forcerec*          fr,
-                               ForceBuffers*        force,
-                               MDAtoms*             mdAtoms,
-                               Constraints*         constr,
-                               VirtualSitesHandler* vsite,
-                               gmx_shellfc_t*       shellfc)
+void mdAlgorithmsSetupAtomData(const t_commrec*          cr,
+                               const t_inputrec&         inputrec,
+                               const SimulationWorkload& simulationWork,
+                               const gmx_mtop_t&         top_global,
+                               gmx_localtop_t*           top,
+                               t_forcerec*               fr,
+                               ForceBuffers*             force,
+                               MDAtoms*                  mdAtoms,
+                               Constraints*              constr,
+                               VirtualSitesHandler*      vsite,
+                               gmx_shellfc_t*            shellfc,
+                               StatePropagatorDataGpu*   stateGpu)
 {
     bool usingDomDec = haveDDAtomOrdering(*cr);
 
@@ -167,6 +171,19 @@ void mdAlgorithmsSetupAtomData(const t_commrec*     cr,
                                mdatoms->nMassPerturbed != 0,
                                mdatoms->lambda,
                                mdatoms->cFREEZE);
+    }
+
+    if (needStateGpu(simulationWork))
+    {
+        stateGpu->reinit(mdatoms->homenr,
+                         simulationWork.havePpDomainDecomposition ? dd_numAtomsZones(*cr->dd)
+                                                                  : mdatoms->homenr,
+                         *cr,
+                         -1);
+        if (simulationWork.haveGpuPmeOnPpRank())
+        {
+            pme_gpu_set_device_x(fr->pmedata, stateGpu->getCoordinates());
+        }
     }
 }
 

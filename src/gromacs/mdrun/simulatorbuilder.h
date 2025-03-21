@@ -81,6 +81,7 @@ struct MdrunOptions;
 class ObservablesReducerBuilder;
 class ReadCheckpointDataHolder;
 enum class StartingBehavior;
+class StatePropagatorDataGpu;
 class StopHandlerBuilder;
 class VirtualSitesHandler;
 
@@ -117,16 +118,18 @@ public:
 struct SimulatorStateData
 {
     //! Build collection of current state data.
-    SimulatorStateData(t_state*            globalState,
-                       t_state*            localState,
-                       ObservablesHistory* observablesHistory,
-                       gmx_enerdata_t*     enerdata,
-                       gmx_ekindata_t*     ekindata) :
+    SimulatorStateData(t_state*                globalState,
+                       t_state*                localState,
+                       ObservablesHistory*     observablesHistory,
+                       gmx_enerdata_t*         enerdata,
+                       gmx_ekindata_t*         ekindata,
+                       StatePropagatorDataGpu* stateGpu) :
         globalState_p(globalState),
         localState_p(localState),
         observablesHistory_p(observablesHistory),
         enerdata_p(enerdata),
-        ekindata_p(ekindata)
+        ekindata_p(ekindata),
+        stateGpu_p(stateGpu)
     {
     }
 
@@ -143,6 +146,8 @@ struct SimulatorStateData
     gmx_enerdata_t* enerdata_p;
     //! Handle to collected data for kinectic energy.
     gmx_ekindata_t* ekindata_p;
+    //! Handle to manager of state buffers on the GPU.
+    StatePropagatorDataGpu* stateGpu_p;
 };
 
 /*! \brief
