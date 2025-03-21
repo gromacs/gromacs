@@ -46,6 +46,23 @@ computational cost of the reciprocal part of the sum increases as
 :math:`N^2` (or :math:`N^{3/2}` with a slightly better algorithm) and it
 is therefore not realistic for use in large systems.
 
+There are two sources of error in the Ewald method. One is due to the
+truncation of the Fourier sum and another is due to the truncation of the
+direct space interaction at the cut-off. If one would use the potential as
+given by :eq:`eqn. %s <eqntotalcoulomb>`, energy conservation would be
+violated due to the jump in energy at a direct space cut-off distance.
+To maintain energy conservation, |GROMACS| by default shifts the pair potential
+in :math:`V_\mathrm{dir}` by a constant such that the potential is zero at the
+cut-off. This shift is also applied with PME.
+
+In the log file and energy file that :ref:`gmx mdrun` outputs the EWALD/PME
+energy contributions are reported in two terms. The term ``Coulomb (SR)``
+contains the :math:`V_\mathrm{dir}` with the constant shift applied minus
+the reciprocal contribution for excluded atom pairs. The term ``Coul. recip.``
+contains the reciprocal sum :math:`V_{\mathrm{rec}}`, including contributions
+of excluded atoms pairs, plus the charge correction :math:`V_0` plus an
+optional surface correction term that depends on the system dipole.
+
 Using Ewald
 ^^^^^^^^^^^
 
