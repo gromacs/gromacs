@@ -184,7 +184,7 @@ auto nbnxmKernelPruneOnly(sycl::handler& cgh,
         {
             unsigned imaskFull, imaskCheck, imaskNew;
 
-            nbnxn_cj_packed_t* plistCJPacked = indexedAddress(gm_plistCJPacked, jPacked);
+            nbnxn_cj_packed_t<pairlistType>* plistCJPacked = indexedAddress(gm_plistCJPacked, jPacked);
 
             if constexpr (haveFreshList)
             {
