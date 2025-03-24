@@ -1042,7 +1042,7 @@ gmx_pme_t* gmx_pme_init(const t_commrec*                 cr,
             GMX_THROW(gmx::NotImplementedError(errorString));
         }
         const bool useMdGpuGraph = false; // This will be reset later after PP communication
-        pme_gpu_reinit(pme.get(), deviceContext, deviceStream, pmeGpuProgram, useMdGpuGraph, box);
+        pme_gpu_reinit(pme.get(), deviceContext, deviceStream, pmeGpuProgram, useMdGpuGraph);
     }
     else
     {

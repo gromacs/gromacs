@@ -146,28 +146,16 @@ PmeSafePointer pmeInitWrapper(const t_inputrec*    inputRec,
                               const real           ewaldCoeff_lj)
 {
     const MDLogger dummyLogger;
-    const auto     runMode = (mode == CodePath::CPU) ? PmeRunMode::CPU : PmeRunMode::Mixed;
+    const matrix   dummyBox = { { 0 } };
+    const auto     runMode  = (mode == CodePath::CPU) ? PmeRunMode::CPU : PmeRunMode::Mixed;
     t_commrec      dummyCommrec;
     NumPmeDomains  numPmeDomains = { 1, 1 };
     // TODO: Need to use proper value when GPU PME decomposition code path is tested
-    const real haloExtentForAtomDisplacement = 1.0;
-
-    // TODO get rid of this with proper matrix type
-    matrix boxTemp;
-    for (int i = 0; i < DIM; i++)
-    {
-        for (int j = 0; j < DIM; j++)
-        {
-            boxTemp[i][j] = box[i * DIM + j];
-        }
-    }
-    const char* boxError = check_box(PbcType::Unset, boxTemp);
-    GMX_RELEASE_ASSERT(boxError == nullptr, boxError);
-
-    gmx_pme_t*     pmeDataRaw = gmx_pme_init(&dummyCommrec,
+    const real     haloExtentForAtomDisplacement = 1.0;
+    gmx_pme_t*     pmeDataRaw                    = gmx_pme_init(&dummyCommrec,
                                          numPmeDomains,
                                          inputRec,
-                                         boxTemp,
+                                         dummyBox,
                                          haloExtentForAtomDisplacement,
                                          false,
                                          false,
@@ -184,11 +172,26 @@ PmeSafePointer pmeInitWrapper(const t_inputrec*    inputRec,
                                          nullptr);
     PmeSafePointer pme(pmeDataRaw); // taking ownership
 
+    // TODO get rid of this with proper matrix type
+    matrix boxTemp;
+    for (int i = 0; i < DIM; i++)
+    {
+        for (int j = 0; j < DIM; j++)
+        {
+            boxTemp[i][j] = box[i * DIM + j];
+        }
+    }
+    const char* boxError = check_box(PbcType::Unset, boxTemp);
+    GMX_RELEASE_ASSERT(boxError == nullptr, boxError);
+
     switch (mode)
     {
         case CodePath::CPU: invertBoxMatrix(boxTemp, pme->recipbox); break;
 
-        case CodePath::GPU: pme_gpu_set_testing(pme->gpu, true); break;
+        case CodePath::GPU:
+            pme_gpu_set_testing(pme->gpu, true);
+            pme_gpu_update_input_box(pme->gpu, boxTemp);
+            break;
 
         default: GMX_THROW(InternalError("Test not implemented for this mode"));
     }

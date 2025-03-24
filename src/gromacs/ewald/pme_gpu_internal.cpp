@@ -1124,29 +1124,20 @@ PmeOutput pme_gpu_getOutput(gmx_pme_t* pme, const bool computeEnergyAndVirial, c
     return output;
 }
 
-void pme_gpu_update_input_box(gmx_pme_t gmx_unused* pme, const matrix gmx_unused box)
+void pme_gpu_update_input_box(PmeGpu gmx_unused* pmeGpu, const matrix gmx_unused box)
 {
 #if GMX_DOUBLE
     GMX_THROW(gmx::NotImplementedError("PME is implemented for single-precision only on GPU"));
 #else
-    matrix  scaledBox;
-    PmeGpu* pmeGpu = pme->gpu;
+    matrix scaledBox;
     pmeGpu->common->boxScaler->scaleBox(box, scaledBox);
-    // Set (scaled) box volume to use in GPU kernels
     auto* kernelParamsPtr              = pme_gpu_get_kernel_params_base_ptr(pmeGpu);
     kernelParamsPtr->current.boxVolume = scaledBox[XX][XX] * scaledBox[YY][YY] * scaledBox[ZZ][ZZ];
     GMX_ASSERT(kernelParamsPtr->current.boxVolume != 0.0F, "Zero volume of the unit cell");
-
-    // Data in pme object is only needed when
-    // !pme_gpu_settings(pmeGpu).performGPUSolve), but it's simpler to
-    // always use that storage.
-    pme->boxVolume   = kernelParamsPtr->current.boxVolume;
-    matrix& recipBox = pme->recipbox;
+    matrix recipBox;
     gmx::invertBoxMatrix(scaledBox, recipBox);
 
-    /* Set reciprocal box to use in GPU kernels
-     *
-     * The GPU recipBox is transposed as compared to the CPU recipBox.
+    /* The GPU recipBox is transposed as compared to the CPU recipBox.
      * Spread uses matrix columns (while solve and gather use rows).
      * There is no particular reason for this; it might be further rethought/optimized for better access patterns.
      */
@@ -1319,15 +1310,12 @@ static void pme_gpu_select_best_performing_pme_spreadgather_kernels(PmeGpu* pmeG
  * \param[in,out] pme            The PME structure.
  * \param[in]     deviceContext  The GPU context.
  * \param[in]     deviceStream   The GPU stream.
- * \param[in,out] pmeGpuProgram  The handle to the program/kernel data created outside
- *                               (e.g. in unit tests/runner)
- * \param[in]     box            Simulation box
+ * \param[in,out] pmeGpuProgram  The handle to the program/kernel data created outside (e.g. in unit tests/runner)
  */
 static void pme_gpu_init(gmx_pme_t*           pme,
                          const DeviceContext& deviceContext,
                          const DeviceStream&  deviceStream,
-                         const PmeGpuProgram* pmeGpuProgram,
-                         const matrix         box)
+                         const PmeGpuProgram* pmeGpuProgram)
 {
     pme->gpu       = new PmeGpu();
     PmeGpu* pmeGpu = pme->gpu;
@@ -1358,7 +1346,6 @@ static void pme_gpu_init(gmx_pme_t*           pme,
 
     auto* kernelParamsPtr               = pme_gpu_get_kernel_params_base_ptr(pmeGpu);
     kernelParamsPtr->constants.elFactor = gmx::c_one4PiEps0 / pmeGpu->common->epsilon_r;
-    pme_gpu_update_input_box(pme, box);
 }
 
 void pme_gpu_get_real_grid_sizes(const PmeGpu* pmeGpu, gmx::IVec* gridSize, gmx::IVec* paddedGridSize)
@@ -1378,8 +1365,7 @@ void pme_gpu_reinit(gmx_pme_t*           pme,
                     const DeviceContext* deviceContext,
                     const DeviceStream*  deviceStream,
                     const PmeGpuProgram* pmeGpuProgram,
-                    const bool           useMdGpuGraph,
-                    const matrix         box)
+                    const bool           useMdGpuGraph)
 {
     GMX_ASSERT(pme != nullptr, "Need valid PME object");
 
@@ -1390,7 +1376,7 @@ void pme_gpu_reinit(gmx_pme_t*           pme,
         GMX_RELEASE_ASSERT(deviceStream != nullptr,
                            "Device stream can not be nullptr when setting up PME on GPU.");
         /* First-time initialization */
-        pme_gpu_init(pme, *deviceContext, *deviceStream, pmeGpuProgram, box);
+        pme_gpu_init(pme, *deviceContext, *deviceStream, pmeGpuProgram);
     }
     else
     {
@@ -1408,6 +1394,10 @@ void pme_gpu_reinit(gmx_pme_t*           pme,
     // Note: if timing the reinit launch overhead becomes more relevant
     // (e.g. with regular PP-PME re-balancing), we should pass wcycle here.
     pme_gpu_finish_step(pme, useMdGpuGraph, nullptr);
+    /* Clear the previous box - doesn't hurt, and forces the PME CPU recipbox
+     * update for mixed mode on grid switch. TODO: use shared recipbox field.
+     */
+    std::memset(pme->gpu->common->previousBox, 0, sizeof(pme->gpu->common->previousBox));
 }
 
 void pme_gpu_destroy(PmeGpu* pmeGpu)

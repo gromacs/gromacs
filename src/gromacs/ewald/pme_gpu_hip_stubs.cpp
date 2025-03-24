@@ -126,7 +126,7 @@ PmeOutput pme_gpu_getOutput(gmx_pme_t* /* pme */, bool /* computeEnergyAndVirial
     return {};
 }
 
-void pme_gpu_update_input_box(gmx_pme_t* /* pme */, const matrix /* box */)
+void pme_gpu_update_input_box(PmeGpu* /* pmeGpu */, const matrix /* box */)
 {
     GMX_RELEASE_ASSERT(false, "HIP PME not implemented yet");
 }
@@ -140,8 +140,7 @@ void pme_gpu_reinit(gmx_pme_t* /* pme */,
                     const DeviceContext* /* deviceContext */,
                     const DeviceStream* /* deviceStream */,
                     const PmeGpuProgram* /* pmeGpuProgram */,
-                    bool /* useMdGpuGraph */,
-                    const matrix /* box */)
+                    bool /* useMdGpuGraph */)
 {
     GMX_RELEASE_ASSERT(false, "HIP PME not implemented yet");
 }
