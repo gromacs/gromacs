@@ -931,7 +931,7 @@ static auto nbnxmKernel(sycl::handler& cgh,
         // loop over the j clusters = seen by any of the atoms in the current super-cluster
         for (int jPacked = cijPackedBegin; jPacked < cijPackedEnd; jPacked += 1)
         {
-            nbnxn_cj_packed_t* plistCJPacked = indexedAddress(gm_plistCJPacked, jPacked);
+            nbnxn_cj_packed_t<pairlistType>* plistCJPacked = indexedAddress(gm_plistCJPacked, jPacked);
             unsigned imask = UNIFORM_LOAD_CLUSTER_PAIR_DATA(plistCJPacked->imei[imeiIdx].imask);
             if (!doPruneNBL && !imask)
             {
