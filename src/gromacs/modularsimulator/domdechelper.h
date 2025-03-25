@@ -61,9 +61,7 @@ class ImdSession;
 class MDAtoms;
 class MDLogger;
 struct MDModulesNotifiers;
-class SimulationWorkload;
 class StatePropagatorData;
-class StatePropagatorDataGpu;
 class TopologyHolder;
 class VirtualSitesHandler;
 
@@ -90,14 +88,12 @@ public:
     DomDecHelper(bool                          isVerbose,
                  int                           verbosePrintInterval,
                  StatePropagatorData*          statePropagatorData,
-                 StatePropagatorDataGpu*       stateGpu,
                  TopologyHolder*               topologyHolder,
                  FILE*                         fplog,
                  t_commrec*                    cr,
                  const MDLogger&               mdlog,
                  Constraints*                  constr,
                  const t_inputrec*             inputrec,
-                 const SimulationWorkload&     simulationWork,
                  const MDModulesNotifiers&     mdModulesNotifiers,
                  MDAtoms*                      mdAtoms,
                  t_nrnb*                       nrnb,
@@ -156,8 +152,6 @@ private:
     Constraints* constr_;
     //! Contains user input mdp options.
     const t_inputrec* inputrec_;
-    //! Describes the compute workload of this simulation
-    const SimulationWorkload& simulationWork_;
     //! Handles notifications for MDModules
     const MDModulesNotifiers& mdModulesNotifiers_;
     //! Atom parameters for this domain.
@@ -174,8 +168,6 @@ private:
     ImdSession* imdSession_;
     //! The pull work object.
     pull_t* pull_work_;
-    //! Manages state buffers on the GPU
-    StatePropagatorDataGpu* stateGpu_;
 };
 
 /*! \internal

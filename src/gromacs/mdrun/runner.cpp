@@ -2267,7 +2267,7 @@ int Mdrunner::mdrunner()
             SimulatorBuilder simulatorBuilder;
 
             simulatorBuilder.add(SimulatorStateData(
-                    globalState.get(), localState, &observablesHistory, &enerd, &ekind, stateGpu.get()));
+                    globalState.get(), localState, &observablesHistory, &enerd, &ekind));
             simulatorBuilder.add(std::move(membedHolder));
             simulatorBuilder.add(std::move(stopHandlerBuilder_));
             simulatorBuilder.add(SimulatorConfig(mdrunOptions, startingBehavior, &runScheduleWork));

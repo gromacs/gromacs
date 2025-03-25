@@ -2571,29 +2571,27 @@ void print_dd_statistics(const t_commrec* cr, const t_inputrec& inputrec, FILE* 
 }
 
 //!\brief TODO Remove fplog when group scheme and charge groups are gone
-void dd_partition_system(FILE*                        fplog,
-                         const gmx::MDLogger&         mdlog,
-                         int64_t                      step,
-                         const t_commrec*             cr,
-                         bool                         bMainState,
-                         t_state*                     state_global,
-                         const gmx_mtop_t&            top_global,
-                         const t_inputrec&            inputrec,
-                         const SimulationWorkload&    simulationWork,
-                         const MDModulesNotifiers&    mdModulesNotifiers,
-                         gmx::ImdSession*             imdSession,
-                         pull_t*                      pull_work,
-                         t_state*                     state_local,
-                         gmx::StatePropagatorDataGpu* stateGpu,
-                         gmx::ForceBuffers*           f,
-                         gmx::MDAtoms*                mdAtoms,
-                         gmx_localtop_t*              top_local,
-                         t_forcerec*                  fr,
-                         gmx::VirtualSitesHandler*    vsite,
-                         gmx::Constraints*            constr,
-                         t_nrnb*                      nrnb,
-                         gmx_wallcycle*               wcycle,
-                         bool                         bVerbose)
+void dd_partition_system(FILE*                     fplog,
+                         const gmx::MDLogger&      mdlog,
+                         int64_t                   step,
+                         const t_commrec*          cr,
+                         bool                      bMainState,
+                         t_state*                  state_global,
+                         const gmx_mtop_t&         top_global,
+                         const t_inputrec&         inputrec,
+                         const MDModulesNotifiers& mdModulesNotifiers,
+                         gmx::ImdSession*          imdSession,
+                         pull_t*                   pull_work,
+                         t_state*                  state_local,
+                         gmx::ForceBuffers*        f,
+                         gmx::MDAtoms*             mdAtoms,
+                         gmx_localtop_t*           top_local,
+                         t_forcerec*               fr,
+                         gmx::VirtualSitesHandler* vsite,
+                         gmx::Constraints*         constr,
+                         t_nrnb*                   nrnb,
+                         gmx_wallcycle*            wcycle,
+                         bool                      bVerbose)
 {
     gmx_ddbox_t ddbox = { 0 };
     int         ncgindex_set;
@@ -3139,8 +3137,7 @@ void dd_partition_system(FILE*                        fplog,
 
     /* Update atom data for mdatoms and several algorithms */
     wallcycle_sub_stop(wcycle, WallCycleSubCounter::DDTopOther);
-    mdAlgorithmsSetupAtomData(
-            cr, inputrec, simulationWork, top_global, top_local, fr, f, mdAtoms, constr, vsite, nullptr, stateGpu);
+    mdAlgorithmsSetupAtomData(cr, inputrec, top_global, top_local, fr, f, mdAtoms, constr, vsite, nullptr);
     wallcycle_sub_start_nocount(wcycle, WallCycleSubCounter::DDTopOther);
 
     auto* mdatoms = mdAtoms->mdatoms();

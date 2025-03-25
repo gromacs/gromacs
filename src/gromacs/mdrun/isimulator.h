@@ -76,7 +76,6 @@ class ImdSession;
 class MDLogger;
 class MDAtoms;
 class ObservablesReducerBuilder;
-class StatePropagatorDataGpu;
 class StopHandlerBuilder;
 struct MdrunOptions;
 class VirtualSitesHandler;
@@ -134,7 +133,6 @@ public:
                         gmx_localtop_t*                     top,
                         t_state*                            state_global,
                         t_state*                            state,
-                        StatePropagatorDataGpu*             stateGpu,
                         ObservablesHistory*                 observablesHistory,
                         MDAtoms*                            mdAtoms,
                         t_nrnb*                             nrnb,
@@ -185,8 +183,7 @@ public:
         membed_(membed),
         wallTimeAccounting_(walltime_accounting),
         stopHandlerBuilder_(std::move(stopHandlerBuilder)),
-        doRerun_(doRerun),
-        stateGpu_(stateGpu)
+        doRerun_(doRerun)
     {
     }
 
@@ -264,8 +261,6 @@ public:
     std::unique_ptr<StopHandlerBuilder> stopHandlerBuilder_;
     //! Whether we're doing a rerun.
     bool doRerun_;
-    //! Handle to manager of state buffers on the GPU.
-    StatePropagatorDataGpu* stateGpu_;
 };
 
 } // namespace gmx

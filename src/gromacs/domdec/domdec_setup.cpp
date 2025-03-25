@@ -762,7 +762,7 @@ gmx::SeparatePmeRanksPermitted checkForSeparatePmeRanks(const gmx::MDModulesNoti
 {
     gmx::SeparatePmeRanksPermitted separatePmeRanksPermitted;
 
-    // Ask MDModules to reply whether they can use separate PME-only ranks
+    /* Permit MDModules to notify whether they want to use PME-only ranks */
     notifiers.simulationSetupNotifier_.notify(&separatePmeRanksPermitted);
 
     /* With NB GPUs we don't automatically use PME-only ranks. PME-only CPU ranks can

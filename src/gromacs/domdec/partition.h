@@ -72,8 +72,6 @@ class ImdSession;
 class MDAtoms;
 class MDLogger;
 struct MDModulesNotifiers;
-class SimulationWorkload;
-class StatePropagatorDataGpu;
 class VirtualSitesHandler;
 
 //! Check whether the DD grid has moved too far for correctness.
@@ -89,53 +87,49 @@ void print_dd_statistics(const t_commrec* cr, const t_inputrec& inputrec, FILE* 
  * else state_local is redistributed between the nodes.
  * When f!=NULL, *f will be reallocated to the size of state_local.
  *
- * \param[in] fplog               Pointer to the log file
- * \param[in] mdlog               MD file logger
- * \param[in] step                Current step
- * \param[in] cr                  Communication record
- * \param[in] bMainState          Is it a main state
- * \param[in] state_global        Global state
- * \param[in] top_global          Global topology
- * \param[in] inputrec            Input record
- * \param[in] simulationWork      The simulation workload
+ * \param[in] fplog         Pointer to the log file
+ * \param[in] mdlog         MD file logger
+ * \param[in] step          Current step
+ * \param[in] cr            Communication record
+ * \param[in] bMainState  Is it a main state
+ * \param[in] state_global  Global state
+ * \param[in] top_global    Global topology
+ * \param[in] inputrec      Input record
  * \param[in] mdModulesNotifiers  MDModules notifications handler
- * \param[in] imdSession          IMD handle
- * \param[in] pull_work           Pulling data
- * \param[in] state_local         Local state
- * \param[in] stateGpu            The GPU state manager, can be nullptr
- * \param[in] f                   Force buffer
- * \param[in] mdAtoms             MD atoms
- * \param[in] top_local           Local topology
- * \param[in] fr                  Force record
- * \param[in] vsite               Virtual sites handler
- * \param[in] constr              Constraints
- * \param[in] nrnb                Cycle counters
- * \param[in] wcycle              Timers
- * \param[in] bVerbose            Be verbose
+ * \param[in] imdSession    IMD handle
+ * \param[in] pull_work     Pulling data
+ * \param[in] state_local   Local state
+ * \param[in] f             Force buffer
+ * \param[in] mdAtoms       MD atoms
+ * \param[in] top_local     Local topology
+ * \param[in] fr            Force record
+ * \param[in] vsite         Virtual sites handler
+ * \param[in] constr        Constraints
+ * \param[in] nrnb          Cycle counters
+ * \param[in] wcycle        Timers
+ * \param[in] bVerbose      Be verbose
  */
-void dd_partition_system(FILE*                        fplog,
-                         const gmx::MDLogger&         mdlog,
-                         int64_t                      step,
-                         const t_commrec*             cr,
-                         bool                         bMainState,
-                         t_state*                     state_global,
-                         const gmx_mtop_t&            top_global,
-                         const t_inputrec&            inputrec,
-                         const SimulationWorkload&    simulationWork,
-                         const MDModulesNotifiers&    mdModulesNotifiers,
-                         gmx::ImdSession*             imdSession,
-                         pull_t*                      pull_work,
-                         t_state*                     state_local,
-                         gmx::StatePropagatorDataGpu* stateGpu,
-                         gmx::ForceBuffers*           f,
-                         gmx::MDAtoms*                mdAtoms,
-                         gmx_localtop_t*              top_local,
-                         t_forcerec*                  fr,
-                         gmx::VirtualSitesHandler*    vsite,
-                         gmx::Constraints*            constr,
-                         t_nrnb*                      nrnb,
-                         gmx_wallcycle*               wcycle,
-                         bool                         bVerbose);
+void dd_partition_system(FILE*                     fplog,
+                         const gmx::MDLogger&      mdlog,
+                         int64_t                   step,
+                         const t_commrec*          cr,
+                         bool                      bMainState,
+                         t_state*                  state_global,
+                         const gmx_mtop_t&         top_global,
+                         const t_inputrec&         inputrec,
+                         const MDModulesNotifiers& mdModulesNotifiers,
+                         gmx::ImdSession*          imdSession,
+                         pull_t*                   pull_work,
+                         t_state*                  state_local,
+                         gmx::ForceBuffers*        f,
+                         gmx::MDAtoms*             mdAtoms,
+                         gmx_localtop_t*           top_local,
+                         t_forcerec*               fr,
+                         gmx::VirtualSitesHandler* vsite,
+                         gmx::Constraints*         constr,
+                         t_nrnb*                   nrnb,
+                         gmx_wallcycle*            wcycle,
+                         bool                      bVerbose);
 
 } // namespace gmx
 #endif

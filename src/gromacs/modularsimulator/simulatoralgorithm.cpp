@@ -558,17 +558,14 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::build()
             legacySimulatorData_->wallTimeAccounting_);
 
     // Build topology holder
-    algorithm.topologyHolder_ =
-            topologyHolderBuilder_.build(legacySimulatorData_->topGlobal_,
-                                         legacySimulatorData_->top_,
-                                         legacySimulatorData_->cr_,
-                                         legacySimulatorData_->inputRec_,
-                                         legacySimulatorData_->runScheduleWork_->simulationWork,
-                                         legacySimulatorData_->fr_,
-                                         legacySimulatorData_->mdAtoms_,
-                                         legacySimulatorData_->constr_,
-                                         legacySimulatorData_->virtualSites_,
-                                         legacySimulatorData_->stateGpu_);
+    algorithm.topologyHolder_ = topologyHolderBuilder_.build(legacySimulatorData_->topGlobal_,
+                                                             legacySimulatorData_->top_,
+                                                             legacySimulatorData_->cr_,
+                                                             legacySimulatorData_->inputRec_,
+                                                             legacySimulatorData_->fr_,
+                                                             legacySimulatorData_->mdAtoms_,
+                                                             legacySimulatorData_->constr_,
+                                                             legacySimulatorData_->virtualSites_);
     registerWithInfrastructureAndSignallers(algorithm.topologyHolder_.get());
 
     // Build PME load balance helper
@@ -612,14 +609,12 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::build()
                 domDecHelperBuilder_.build(legacySimulatorData_->mdrunOptions_.verbose,
                                            legacySimulatorData_->mdrunOptions_.verboseStepPrintInterval,
                                            algorithm.statePropagatorData_.get(),
-                                           legacySimulatorData_->stateGpu_,
                                            algorithm.topologyHolder_.get(),
                                            legacySimulatorData_->fpLog_,
                                            legacySimulatorData_->cr_,
                                            legacySimulatorData_->mdLog_,
                                            legacySimulatorData_->constr_,
                                            legacySimulatorData_->inputRec_,
-                                           legacySimulatorData_->runScheduleWork_->simulationWork,
                                            legacySimulatorData_->mdModulesNotifiers_,
                                            legacySimulatorData_->mdAtoms_,
                                            legacySimulatorData_->nrnb_,

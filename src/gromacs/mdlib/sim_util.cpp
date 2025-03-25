@@ -1318,6 +1318,22 @@ static void doPairSearch(const t_commrec*             cr,
     const SimulationWorkload& simulationWork = runScheduleWork.simulationWork;
     const StepWorkload&       stepWork       = runScheduleWork.stepWork;
 
+    if (needStateGpu(simulationWork))
+    {
+        // TODO refactor this to do_md, after partitioning.
+        stateGpu->reinit(mdatoms.homenr,
+                         getLocalAtomCount(cr->dd, mdatoms, simulationWork.havePpDomainDecomposition),
+                         *cr,
+                         -1);
+    }
+
+    if (simulationWork.haveGpuPmeOnPpRank())
+    {
+        GMX_ASSERT(needStateGpu(simulationWork), "StatePropagatorDataGpu is needed");
+        // TODO: This should be moved into PME setup function ( pme_gpu_prepare_computation(...) )
+        pme_gpu_set_device_x(fr->pmedata, stateGpu->getCoordinates());
+    }
+
     if (fr->pbcType != PbcType::No)
     {
         const bool calcCGCM = (stepWork.stateChanged && !haveDDAtomOrdering(*cr));
