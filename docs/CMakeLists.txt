@@ -610,12 +610,15 @@ if (SPHINX_FOUND)
         gmx_add_sphinx_source_files(
             FILES
             gmxapi/userguide/pythonreference.rst
-            )
+            gmxapi/userguide/usage.rst
+        )
     else()
         gmx_add_sphinx_source_files(
             FROM ${CMAKE_CURRENT_SOURCE_DIR}/gmxapi/userguide-stub
             TO gmxapi/userguide/
-            FILES pythonreference.rst
+            FILES
+            pythonreference.rst
+            usage.rst
             )
     endif ()
 
