@@ -105,9 +105,7 @@ class AtomProperties::Impl
 {
 public:
     //! Should user be warned about error.
-    bool bWarned = false;
-    //! Should user be warned about vdW not found.
-    bool bWarnVDW = false;
+    bool hasWarnedAboutGuessedAtomProperties = false;
     //! The different atom properties.
     AtomProperty prop[epropNR];
     //! The residue types.
@@ -315,10 +313,9 @@ static void readProperty(AtomProperty* ap, const ResidueTypeMap& residueTypeMap,
  * \param[in] ap Atomproperty to set.
  * \param[in] residueTypeMap Library of residue types.
  * \param[in] eprop Which property to set.
- * \param[in] haveBeenWarned If we already set a warning before
- * \returns True of warning should be printed.
+ * \returns True if warning should be printed.
  */
-static bool setProperties(AtomProperty* ap, const ResidueTypeMap& residueTypeMap, int eprop, bool haveBeenWarned)
+static bool setProperties(AtomProperty* ap, const ResidueTypeMap& residueTypeMap, int eprop)
 {
     const char* fns[epropNR] = {
         "atommass.dat", "vdwradii.dat", "dgsolv.dat", "electroneg.dat", "elements.dat"
@@ -326,7 +323,6 @@ static bool setProperties(AtomProperty* ap, const ResidueTypeMap& residueTypeMap
     double fac[epropNR] = { 1.0, 1.0, 418.4, 1.0, 1.0 };
     double def[epropNR] = { 12.011, 0.14, 0.0, 2.2, -1 };
 
-    bool printWarning = false;
     if (!ap->isSet)
     {
         ap->db  = fns[eprop];
@@ -338,12 +334,12 @@ static bool setProperties(AtomProperty* ap, const ResidueTypeMap& residueTypeMap
             fprintf(debug, "Entries in %s: %zu\n", ap->db.c_str(), ap->entry.size());
         }
 
-        if ((!haveBeenWarned && (eprop == epropMass)) || (eprop == epropVDW))
+        if (eprop == epropMass || eprop == epropVDW)
         {
-            printWarning = true;
+            return true;
         }
     }
-    return printWarning;
+    return false;
 }
 
 AtomProperties::AtomProperties() : impl_(new Impl) {}
@@ -356,30 +352,19 @@ AtomProperty* AtomProperties::prop(int eprop)
 }
 
 //! Print warning that vdW radii and masses are guessed.
-static void printWarning()
+static void printWarningAboutGuessedAtomProperties()
 {
-    printf("\n"
-           "WARNING: Masses and atomic (Van der Waals) radii will be guessed\n"
-           "         based on residue and atom names, since they could not be\n"
-           "         definitively assigned from the information in your input\n"
-           "         files. These guessed numbers might deviate from the mass\n"
-           "         and radius of the atom type. Please check the output\n"
-           "         files if necessary. Note, that this functionality may\n"
-           "         be removed in a future GROMACS version. Please, consider\n"
-           "         using another file format for your input.\n\n");
-}
-
-static void printvdwWarning(FILE* fp)
-{
-    if (nullptr != fp)
-    {
-        fprintf(fp,
-                "NOTE: From version 5.0 %s uses the Van der Waals radii\n",
-                gmx::getProgramContext().displayName());
-        fprintf(fp, "from the source below. This means the results may be different\n");
-        fprintf(fp, "compared to previous GROMACS versions.\n");
-        please_cite(fp, "Bondi1964a");
-    }
+    fprintf(stdout,
+            "\nWARNING: Masses and atomic (Van der Waals) radii will be guessed\n"
+            "         based on residue and atom names, since they could not be\n"
+            "         definitively assigned from the information in your input\n"
+            "         files. These guessed numbers might deviate from the mass\n"
+            "         and radius of the atom type. Please check the output\n"
+            "         files if necessary. Note, that this functionality may\n"
+            "         be removed in a future GROMACS version. Please, consider\n"
+            "         using another file format for your input.\n\n"
+            "         The atomic radii are set according to:\n");
+    please_cite(stdout, "Bondi1964a");
 }
 
 bool AtomProperties::setAtomProperty(int                eprop,
@@ -390,10 +375,10 @@ bool AtomProperties::setAtomProperty(int                eprop,
     std::string tmpAtomName;
     bool        bExact = false;
 
-    if (setProperties(prop(eprop), impl_->residueTypeMap, eprop, impl_->bWarned))
+    if (setProperties(prop(eprop), impl_->residueTypeMap, eprop) && not impl_->hasWarnedAboutGuessedAtomProperties)
     {
-        printWarning();
-        impl_->bWarned = true;
+        printWarningAboutGuessedAtomProperties();
+        impl_->hasWarnedAboutGuessedAtomProperties = true;
     }
     if (std::isdigit(atomName[0]))
     {
@@ -408,11 +393,6 @@ bool AtomProperties::setAtomProperty(int                eprop,
     const int j = findPropertyIndex(
             &(impl_->prop[eprop]), impl_->residueTypeMap, residueName, tmpAtomName, &bExact);
 
-    if (eprop == epropVDW && !impl_->bWarnVDW)
-    {
-        printvdwWarning(stdout);
-        impl_->bWarnVDW = true;
-    }
     if (j >= 0)
     {
         *value = impl_->prop[eprop].entry[j].value;
@@ -428,11 +408,8 @@ bool AtomProperties::setAtomProperty(int                eprop,
 
 std::string AtomProperties::elementFromAtomNumber(int atomNumber)
 {
-    if (setProperties(prop(epropElement), impl_->residueTypeMap, epropElement, impl_->bWarned))
-    {
-        printWarning();
-        impl_->bWarned = true;
-    }
+    setProperties(prop(epropElement), impl_->residueTypeMap, epropElement);
+
     for (const auto& e : prop(epropElement)->entry)
     {
         if (std::round(e.value) == atomNumber)
@@ -445,11 +422,8 @@ std::string AtomProperties::elementFromAtomNumber(int atomNumber)
 
 int AtomProperties::atomNumberFromElement(const char* element)
 {
-    if (setProperties(prop(epropElement), impl_->residueTypeMap, epropElement, impl_->bWarned))
-    {
-        printWarning();
-        impl_->bWarned = true;
-    }
+    setProperties(prop(epropElement), impl_->residueTypeMap, epropElement);
+
     for (const auto& e : prop(epropElement)->entry)
     {
         if (gmx_strcasecmp(e.atomName.c_str(), element) == 0)
