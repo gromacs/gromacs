@@ -488,6 +488,9 @@
 /* Define if we are building with Torch */
 #cmakedefine01 GMX_TORCH
 
+/* Define if we are building with an external FMM implementation */
+#cmakedefine01 GMX_USE_EXT_FMM
+
 /* Build using clang analyzer */
 #cmakedefine01 GMX_CLANG_ANALYZER
 

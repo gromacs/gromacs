@@ -86,6 +86,7 @@ add_subdirectory(commandline)
 add_subdirectory(domdec)
 add_subdirectory(ewald)
 add_subdirectory(fft)
+add_subdirectory(fmm)
 add_subdirectory(gpu_utils)
 add_subdirectory(hardware)
 add_subdirectory(linearalgebra)
@@ -416,6 +417,7 @@ target_link_libraries(libgromacs PRIVATE
                       $<BUILD_INTERFACE:ewald>
                       $<BUILD_INTERFACE:fft>
                       $<BUILD_INTERFACE:fileio>
+                      $<BUILD_INTERFACE:fmm>
                       $<BUILD_INTERFACE:gmxana>
                       $<BUILD_INTERFACE:gmxlib>
                       $<BUILD_INTERFACE:gmxpreprocess>
