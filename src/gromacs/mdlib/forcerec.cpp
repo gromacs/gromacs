@@ -839,6 +839,10 @@ void init_forcerec(FILE*                            fplog,
             forcerec->nbkernel_elec_interaction = NbkernelElecType::Ewald;
             break;
 
+        case CoulombInteractionType::Fmm:
+            GMX_RELEASE_ASSERT(false, "FMM is not yet supported by mdrun");
+            break;
+
         default:
             gmx_fatal(FARGS,
                       "Unsupported electrostatic interaction: %s",

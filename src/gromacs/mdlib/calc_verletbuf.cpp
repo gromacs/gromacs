@@ -1060,6 +1060,10 @@ static pot_derivatives_t getElecDerivatives(const t_inputrec& ir)
         elec.d2  = elfac / (rc * rc)
                   * (2 * b * (1 + br * br) * std::exp(-br * br) * M_2_SQRTPI + 2 * std::erfc(br) / rc);
     }
+    else if (ir.coulombtype == CoulombInteractionType::Fmm)
+    {
+        // No direct cut-off artifacts
+    }
     else
     {
         gmx_fatal(FARGS,

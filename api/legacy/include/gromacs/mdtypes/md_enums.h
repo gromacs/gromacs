@@ -269,6 +269,7 @@ enum class CoulombInteractionType : int
     PmeSwitch,
     PmeUserSwitch,
     RFZero,
+    Fmm,
     Count,
     Default = Cut
 };
@@ -310,7 +311,8 @@ static inline bool usingPmeOrEwald(const CoulombInteractionType& cit)
 //! Returns whether we use full electrostatics of any sort
 static inline bool usingFullElectrostatics(const CoulombInteractionType& cit)
 {
-    return (usingPmeOrEwald(cit) || cit == CoulombInteractionType::Poisson);
+    return (usingPmeOrEwald(cit) || cit == CoulombInteractionType::Poisson
+            || cit == CoulombInteractionType::Fmm);
 }
 
 //! Returns whether we use user defined electrostatics

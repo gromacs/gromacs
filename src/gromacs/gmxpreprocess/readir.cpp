@@ -376,10 +376,11 @@ void check_ir(const char*                    mdparin,
             wi->addError("With Verlet lists only cut-off and PME LJ interactions are supported");
         }
         if (!(ir->coulombtype == CoulombInteractionType::Cut || usingRF(ir->coulombtype)
-              || usingPme(ir->coulombtype) || ir->coulombtype == CoulombInteractionType::Ewald))
+              || usingPme(ir->coulombtype) || ir->coulombtype == CoulombInteractionType::Ewald
+              || ir->coulombtype == CoulombInteractionType::Fmm))
         {
             wi->addError(
-                    "With Verlet lists only cut-off, reaction-field, PME and Ewald "
+                    "With Verlet lists only cut-off, reaction-field, PME, Ewald, and FMM"
                     "electrostatics are supported");
         }
         if (!(ir->coulomb_modifier == InteractionModifiers::None
