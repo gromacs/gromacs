@@ -39,12 +39,12 @@ target_sources(fmm PRIVATE
 
 if(GMX_USE_EXT_FMM)
     target_sources(fmm PRIVATE
-        # FMM sources
+        fmmforceprovider.cpp
     )
 
 else()
     target_sources(fmm PRIVATE
-        # stub FMM sources
+        fmmforceprovider_stub.cpp
     )
 
 endif()
@@ -59,7 +59,10 @@ target_compile_definitions(fmm PRIVATE HAVE_CONFIG_H)
 target_link_libraries(fmm PRIVATE
     common
     legacy_modules
-    math)
+    math
+    mdtypes
+    utility
+    )
 
 if (BUILD_TESTING)
     add_subdirectory(tests)

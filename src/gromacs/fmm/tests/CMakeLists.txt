@@ -31,3 +31,15 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out https://www.gromacs.org.
 
+gmx_add_unit_test(FmmInterfaceUnitTests fmm-interface-tests
+        CPP_SOURCE_FILES
+        fmmforceprovider.cpp
+        
+        )
+
+# Currently relying on getting libgromacs via gmx_add_unit_test
+# which transitively provides the fmm linkage. Also linking fmm
+# directly here is an ODR violation on the FmmForceProvider class,
+# according to ASAN, so until we change gmx_add_unit_test, we don't
+# link the fmm module directly here.
+# target_link_libraries(fmm-interface-tests PRIVATE fmm)
