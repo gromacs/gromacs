@@ -490,7 +490,7 @@ in use.
 **[ defaults ] :**
 
 -  ``nbfunc`` is the non-bonded function type. Use 1 (Lennard-Jones) or 2
-   (Buckingham)
+   (Buckingham, no longer supported by :ref:`gmx mdrun`)
 
 -  ``comb-rule`` is the number of the combination rule (see :ref:`nbpar`).
 
