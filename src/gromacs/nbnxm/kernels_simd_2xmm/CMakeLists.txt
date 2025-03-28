@@ -124,6 +124,30 @@ if (GMX_USE_SIMD_KERNELS)
         kernel_ElecRF_VdwLJ_VF.cpp
         kernel_ElecRF_VdwLJ_VgrpF.cpp
         )
+    
+    if (GMX_USE_EXT_FMM)
+        file(GLOB ELECNONE_KERNEL_SOURCES
+            kernel_ElecNone_VdwLJCombGeom_F.cpp
+            kernel_ElecNone_VdwLJCombGeom_VF.cpp
+            kernel_ElecNone_VdwLJCombGeom_VgrpF.cpp
+            kernel_ElecNone_VdwLJCombLB_F.cpp
+            kernel_ElecNone_VdwLJCombLB_VF.cpp
+            kernel_ElecNone_VdwLJCombLB_VgrpF.cpp
+            kernel_ElecNone_VdwLJEwCombGeom_F.cpp
+            kernel_ElecNone_VdwLJEwCombGeom_VF.cpp
+            kernel_ElecNone_VdwLJEwCombGeom_VgrpF.cpp
+            kernel_ElecNone_VdwLJ_F.cpp
+            kernel_ElecNone_VdwLJFSw_F.cpp
+            kernel_ElecNone_VdwLJFSw_VF.cpp
+            kernel_ElecNone_VdwLJFSw_VgrpF.cpp
+            kernel_ElecNone_VdwLJPSw_F.cpp
+            kernel_ElecNone_VdwLJPSw_VF.cpp
+            kernel_ElecNone_VdwLJPSw_VgrpF.cpp
+            kernel_ElecNone_VdwLJ_VF.cpp
+            kernel_ElecNone_VdwLJ_VgrpF.cpp
+            )
+        list(APPEND KERNEL_SOURCES ${ELECNONE_KERNEL_SOURCES})
+    endif()
 endif()
 
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${KERNEL_SOURCES} PARENT_SCOPE)

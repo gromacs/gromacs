@@ -103,6 +103,10 @@ ElectrostaticsDict["ElecEw"] = {
 ElectrostaticsDict["ElecEwTwinCut"] = {
     "param": "KernelCoulombType::EwaldAnalytical, VdwCutoffCheck::Yes"
 }
+ElectrostaticsDict["ElecNone"] = {
+    "param": "KernelCoulombType::None, VdwCutoffCheck::Yes"
+}
+
 
 # The dict order must match the order of a C enumeration.
 VdwTreatmentDict = collections.OrderedDict()

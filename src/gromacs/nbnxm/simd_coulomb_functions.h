@@ -57,6 +57,7 @@
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/simd/simd.h"
+#include "gromacs/utility/fatalerror.h"
 
 #include "atomdata.h"
 
@@ -68,7 +69,8 @@ enum class KernelCoulombType
 {
     RF,              //!< Reaction-field, also used for plain cut-off
     EwaldAnalytical, //!< Ewald with analytical reciprocal contribution correction
-    EwaldTabulated   //!< Ewald with tabulated reciprocal contribution correction
+    EwaldTabulated,  //!< Ewald with tabulated reciprocal contribution correction
+    None             //!< If FMM implementation has its own Coulomb kernels
 };
 
 //! Base Coulomb calculator class, only specializations are used
@@ -348,6 +350,51 @@ private:
     const real* const tablePotential_;
     //! The self energy of the reciprocal part
     const real selfEnergy_;
+};
+
+// This class contains no computational logic; it exists solely to allow the construction
+// of a CoulombCalculator for any choice of electrostatics treatment
+template<>
+class CoulombCalculator<KernelCoulombType::None>
+{
+public:
+    inline CoulombCalculator(const interaction_const_t&) {}
+
+    //! Never use this method
+    inline real selfEnergy() const
+    {
+        gmx_fatal(FARGS,
+                  "CoulombCalculator->selfEnergy() should not be called when NBNxM kernels are not "
+                  "used");
+        return 0.0;
+    }
+
+    //! Never use this method
+    template<int nR>
+    inline std::array<SimdReal, nR> force(std::array<SimdReal, nR>&,
+                                          std::array<SimdReal, nR>&,
+                                          std::array<SimdReal, nR>&,
+                                          std::array<SimdBool, nR>&)
+    {
+        gmx_fatal(
+                FARGS,
+                "CoulombCalculator->force() should not be called when NBNxM kernels are not used");
+        return genArr<nR>([&](int) { return 0.0; });
+    }
+
+    //! Never use this method
+    template<int nR, std::size_t energySize>
+    inline void forceAndCorrectionEnergy(std::array<SimdReal, nR>&,
+                                         std::array<SimdReal, nR>&,
+                                         std::array<SimdReal, nR>&,
+                                         std::array<SimdBool, nR>&,
+                                         std::array<SimdReal, nR>&,
+                                         std::array<SimdReal, energySize>&)
+    {
+        gmx_fatal(FARGS,
+                  "CoulombCalculator->forceAndCorrectionEnergy() should not be called when NBNxM "
+                  "kernels are not used");
+    }
 };
 
 } // namespace gmx
