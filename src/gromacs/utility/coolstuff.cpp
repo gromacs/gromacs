@@ -1705,8 +1705,10 @@ std::string getCoolQuote()
         { "First rule of atomics: Thou shalt not make generalized statements about atomics!",
           "Noah Wolfe, on discussing GPU atomic operations" },
         { "We should change the code to FORTRAN, so it would be all caps, same as the name.",
-          "Paul Bauer, while discussing the spelling of GROMACS" }
-
+          "Paul Bauer, while discussing the spelling of GROMACS" },
+        { "It may be worthwhile to reflect on whether the predictive power of the force fields "
+          "used is sufficient to justify the enormous usage of computer power and energy.",
+          "Anonymous reviewer, upon reading a draft of 10.1002/jcc.70059" },
     };
 
     if (beCool())
