@@ -743,7 +743,7 @@ static inline void launchPmeGpuSpread(gmx_pme_t*                pmedata,
                                       gmx_wallcycle*            wcycle)
 {
     wallcycle_start(wcycle, WallCycleCounter::PmeGpuMesh);
-    pme_gpu_prepare_computation(pmedata, box, wcycle, simulationWork, stepWork);
+    pme_gpu_prepare_computation(pmedata, box, simulationWork.haveDynamicBox, stepWork);
     bool                      useGpuDirectComm         = false;
     PmeCoordinateReceiverGpu* pmeCoordinateReceiverGpu = nullptr;
     pme_gpu_launch_spread(

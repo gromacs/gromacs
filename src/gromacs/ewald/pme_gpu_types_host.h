@@ -133,11 +133,6 @@ struct PmeShared
     bool isRankPmeOnly;
     /*! \brief The box scaler based on inputrec - created in pme_init and managed by CPU structure */
     class EwaldBoxZScaler* boxScaler;
-    /*! \brief The previous computation box to know if we even need to update the current box params.
-     * \todo Manage this on higher level.
-     * \todo Alternatively, when this structure is used by CPU PME code, make use of this field there as well.
-     */
-    matrix previousBox;
 
     /*! \brief The The number of decomposition dimensions */
     int ndecompdim;

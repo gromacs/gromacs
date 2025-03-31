@@ -148,46 +148,20 @@ void inline parallel_3dfft_execute_gpu_wrapper(gmx_pme_t*             pme,
     }
 }
 
-/* The PME computation code split into a few separate functions. */
-
-void pme_gpu_prepare_computation(gmx_pme_t*                     pme,
-                                 const matrix                   box,
-                                 gmx_wallcycle*                 wcycle,
-                                 const gmx::SimulationWorkload& simulationWork,
-                                 const gmx::StepWorkload&       stepWork)
+void pme_gpu_prepare_computation(gmx_pme_t*               pme,
+                                 const matrix             box,
+                                 const bool               updateBox,
+                                 const gmx::StepWorkload& stepWork)
 {
     GMX_ASSERT(pme_gpu_active(pme), "This should be a GPU run of PME but it is not enabled.");
     GMX_ASSERT(pme->nnodes > 0, "");
     GMX_ASSERT(pme->nnodes == 1 || pme->ndecompdim > 0, "");
 
-    PmeGpu* pmeGpu = pme->gpu;
-    // TODO these flags are only here to honor the CPU PME code, and probably should be removed
-    pmeGpu->settings.useGpuForceReduction = stepWork.useGpuPmeFReduction;
+    pme->gpu->settings.useGpuForceReduction = stepWork.useGpuPmeFReduction;
 
-    bool shouldUpdateBox = false;
-    for (int i = 0; i < DIM; ++i)
+    if (updateBox)
     {
-        for (int j = 0; j <= i; ++j)
-        {
-            shouldUpdateBox |= (pmeGpu->common->previousBox[i][j] != box[i][j]);
-            pmeGpu->common->previousBox[i][j] = box[i][j];
-        }
-    }
-
-    if (simulationWork.haveDynamicBox || shouldUpdateBox) // || is to make the first computation always update
-    {
-        wallcycle_start(wcycle, WallCycleCounter::LaunchGpuPme);
-        pme_gpu_update_input_box(pmeGpu, box);
-        wallcycle_stop(wcycle, WallCycleCounter::LaunchGpuPme);
-
-        if (!pme_gpu_settings(pmeGpu).performGPUSolve)
-        {
-            // TODO remove code duplication and add test coverage
-            matrix scaledBox;
-            pmeGpu->common->boxScaler->scaleBox(box, scaledBox);
-            gmx::invertBoxMatrix(scaledBox, pme->recipbox);
-            pme->boxVolume = scaledBox[XX][XX] * scaledBox[YY][YY] * scaledBox[ZZ][ZZ];
-        }
+        pme_gpu_update_input_box(pme, box);
     }
 }
 

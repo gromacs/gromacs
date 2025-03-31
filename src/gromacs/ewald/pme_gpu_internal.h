@@ -523,10 +523,10 @@ GPU_FUNC_QUALIFIER PmeOutput pme_gpu_getOutput(gmx_pme_t* GPU_FUNC_ARGUMENT(pme)
 /*! \libinternal \brief
  * Updates the unit cell parameters. Does not check if update is necessary - that is done in pme_gpu_prepare_computation().
  *
- * \param[in] pmeGpu         The PME GPU structure.
+ * \param[in] pme            The PME structure.
  * \param[in] box            The unit cell box.
  */
-GPU_FUNC_QUALIFIER void pme_gpu_update_input_box(PmeGpu*      GPU_FUNC_ARGUMENT(pmeGpu),
+GPU_FUNC_QUALIFIER void pme_gpu_update_input_box(gmx_pme_t*   GPU_FUNC_ARGUMENT(pme),
                                                  const matrix GPU_FUNC_ARGUMENT(box)) GPU_FUNC_TERM;
 
 /*! \libinternal \brief
@@ -548,13 +548,18 @@ GPU_FUNC_QUALIFIER void pme_gpu_get_real_grid_sizes(const PmeGpu* GPU_FUNC_ARGUM
  * \param[in]     deviceStream      The GPU stream.
  * \param[in,out] pmeGpuProgram     The handle to the program/kernel data created outside (e.g. in unit tests/runner)
  * \param[in]     useMdGpuGraph     Whether MD GPU Graph is in use
+ * \param[in]     box               The simulation box.
  * \throws gmx::NotImplementedError if this generally valid PME structure is not valid for GPU runs.
+ *
+ * Note that the simulation box is needed upon init, but not upon reinit. Passing a box here
+ * is forced by the design of doing initial init via a call to the reinit routine.
  */
 GPU_FUNC_QUALIFIER void pme_gpu_reinit(gmx_pme_t*           GPU_FUNC_ARGUMENT(pme),
                                        const DeviceContext* GPU_FUNC_ARGUMENT(deviceContext),
                                        const DeviceStream*  GPU_FUNC_ARGUMENT(deviceStream),
                                        const PmeGpuProgram* GPU_FUNC_ARGUMENT(pmeGpuProgram),
-                                       bool GPU_FUNC_ARGUMENT(useMdGpuGraph)) GPU_FUNC_TERM;
+                                       bool                 GPU_FUNC_ARGUMENT(useMdGpuGraph),
+                                       const matrix         GPU_FUNC_ARGUMENT(box)) GPU_FUNC_TERM;
 
 /*! \libinternal \brief
  * Destroys the PME GPU data at the end of the run.
