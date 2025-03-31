@@ -35,6 +35,13 @@ of the second and later chains in the pdb input file.
 
 :issue:`5091`
 
+Fix out-of-boundary read in gmx sorient
+"""""""""""""""""""""""""""""""""""""""
+
+The outermost (maximum radius) bin in the histograms created for the -o and -no
+output files from this tool added a value which was read from unallocated memory. Only
+values in this bin were affected.
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
