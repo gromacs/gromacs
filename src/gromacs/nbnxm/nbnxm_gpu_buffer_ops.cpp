@@ -78,8 +78,6 @@ void nbnxn_gpu_x_to_nbat_x(const Grid&           grid,
 
     const DeviceStream& deviceStream = *nb->deviceStreams[interactionLoc];
 
-    const int numAtoms = grid.srcAtomEnd() - grid.srcAtomBegin();
-
     // Only insert wait on the first iteration of the loop.
     if (xReadyOnDevice != nullptr)
     {
@@ -87,7 +85,7 @@ void nbnxn_gpu_x_to_nbat_x(const Grid&           grid,
     }
 
     // avoid empty kernel launch, skip to inserting stream dependency
-    if (numAtoms != 0)
+    if (grid.numCells() != 0)
     {
         GMX_ASSERT(d_x, "Need a valid device pointer");
         launchNbnxmKernelTransformXToXq(grid, nb, d_x, deviceStream, numColumnsMax, gridId);

@@ -266,8 +266,8 @@ int gmx_sorient(int argc, char* argv[])
 
     invrbw = 1 / rbinw;
 
-    snew(hist1, nbin1);
-    snew(hist2, nbin2);
+    snew(hist1, nbin1 + 1);
+    snew(hist2, nbin2 + 1);
     nrbin = 1 + static_cast<int>(rcut / rbinw);
     if (nrbin == 0)
     {

@@ -1442,7 +1442,7 @@ void modify_chain_numbers(t_atoms* pdba, ChainSeparationType chainSeparation, co
 }
 
 bool checkChainCyclicity(t_atoms*                               pdba,
-                         rvec*                                  pdbx,
+                         gmx::ArrayRef<const gmx::RVec>         x,
                          int                                    start_ter,
                          int                                    end_ter,
                          gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
@@ -1522,7 +1522,7 @@ bool checkChainCyclicity(t_atoms*                               pdba,
 
     if (bothFound)
     {
-        real dist = distance2(pdbx[ai.value()], pdbx[aj.value()]);
+        real dist = distance2(x[ai.value()], x[aj.value()]);
         /* it is better to read bond length from ffbonded.itp */
         return (dist < gmx::square(long_bond_dist_) && dist > gmx::square(short_bond_dist_));
     }
@@ -2468,7 +2468,7 @@ int pdb2gmx::run()
             if (cc->r_start[j] >= 0 && cc->r_end[j] >= 0)
             {
                 if (checkChainCyclicity(
-                            pdba, pdbx, cc->r_start[j], cc->r_end[j], rtpFFDB, rtprename, long_bond_dist_, short_bond_dist_))
+                            pdba, x, cc->r_start[j], cc->r_end[j], rtpFFDB, rtprename, long_bond_dist_, short_bond_dist_))
                 {
                     cc->cyclicBondsIndex.push_back(cc->r_start[j]);
                     cc->cyclicBondsIndex.push_back(cc->r_end[j]);

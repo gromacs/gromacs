@@ -1405,9 +1405,6 @@ void Grid::setCellIndices(int                  ddZone,
 {
     cellOffset_ = cellOffset;
 
-    srcAtomBegin_ = *atomRange.begin();
-    srcAtomEnd_   = *atomRange.end();
-
     const int nthread = gmx_omp_nthreads_get(ModuleMultiThread::Pairsearch);
 
     const int numAtomsPerCell = geometry_.numAtomsPerCell_;
@@ -1721,9 +1718,6 @@ void Grid::setNonLocalGrid(const int                           ddZone,
     gridSetData->cells.resize(numAtomsOverAllGrids);
     gridSetData->atomIndices.resize(numAtomsOverAllGrids);
     resizeBoundingBoxesAndFlags(numCellsTotal_);
-
-    srcAtomBegin_ = cellOffset_ * numAtomsPerCell;
-    srcAtomEnd_   = numAtomsOverAllGrids;
 
     // Set the bounding boxes and the interaction flags for all cells in the grid
     numClusters_.resize(numCellsTotal_);
