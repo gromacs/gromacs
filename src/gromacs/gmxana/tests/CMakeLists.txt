@@ -39,6 +39,7 @@ gmx_add_gtest_executable(${exename}
         gmx_chi.cpp
         gmx_mindist.cpp
         gmx_rmsf.cpp
+        gmx_sorient.cpp
         gmx_traj.cpp
         )
 gmx_register_gtest_test(GmxAnaTest ${exename} INTEGRATION_TEST IGNORE_LEAKS)
