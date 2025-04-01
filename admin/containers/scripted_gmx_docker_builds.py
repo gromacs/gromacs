@@ -574,13 +574,19 @@ def get_clfft(args):
 
 def get_heffte(args):
     if args.heffte is not None:
+        opts = [
+            "-D CMAKE_BUILD_TYPE=Release",
+            "-D Heffte_ENABLE_FFTW=OFF",
+            "-D BUILD_SHARED_LIBS=ON",
+        ]
+        if args.cuda is not None:
+            opts.append("-D Heffte_ENABLE_CUDA=ON")
+        if args.rocm is not None:
+            opts.append("-D Heffte_ENABLE_ROCM=ON")
+            opts.append("-D CMAKE_HIP_ARCHITECTURES=gfx1034,gfx906")
+
         return hpccm.building_blocks.generic_cmake(
-            cmake_opts=[
-                "-D CMAKE_BUILD_TYPE=Release",
-                "-D Heffte_ENABLE_CUDA=ON",
-                "-D Heffte_ENABLE_FFTW=OFF",
-                "-D BUILD_SHARED_LIBS=ON",
-            ],
+            cmake_opts=opts,
             repository="https://github.com/icl-utk-edu/heffte",
             prefix="/usr/local",
             recursive=True,
