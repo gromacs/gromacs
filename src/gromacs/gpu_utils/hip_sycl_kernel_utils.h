@@ -323,6 +323,23 @@ public:
     }
 };
 
+/*! \brief Get expected wavefront size for device code.
+ *
+ * Instead of relying on the warpSize field, we need to use
+ * this manual hack to get compile time constant information
+ * about the device wave size. See issue #5259 for details.
+ */
+constexpr int deviceWavefrontSize()
+{
+#    if defined(__GFX8__) || defined(__GFX9__)
+    return 64;
+#    elif defined(__AMDGCN__)
+    return 32;
+#    else
+    static_assert(false); // prevent using this outside of device kernels
+#    endif
+}
+
 #endif /* Device code only */
 
 #undef GMX_HOST_ATTRIBUTE
