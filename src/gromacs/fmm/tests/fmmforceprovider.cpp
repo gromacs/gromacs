@@ -51,8 +51,16 @@ class FmmForceProviderTest : public ::testing::Test
 
 TEST_F(FmmForceProviderTest, ThrowsWhenConstructingStub)
 {
-    EXPECT_ANY_THROW(FmmForceProvider());
+    if (GMX_USE_EXT_FMM)
+    {
+        EXPECT_NO_THROW(FmmForceProvider());
+    }
+    else
+    {
+        EXPECT_ANY_THROW(FmmForceProvider());
+    }
 }
+
 } // namespace test
 
 } // namespace gmx
