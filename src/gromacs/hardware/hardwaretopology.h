@@ -186,7 +186,7 @@ public:
         std::uint16_t vendorId;   //!< Vendor identification
         std::uint16_t deviceId;   //!< Vendor-specific device identification
         std::uint16_t classId;    //!< class (high 8 bits) and subclass (low 8 bits)
-        std::uint16_t domain;     //!< Domain, usually 0 for PCI bus
+        std::uint32_t domain;     //!< Domain, usually 0 for PCI bus
         std::uint8_t  bus;        //!< Bus number in domain
         std::uint8_t  dev;        //!< Device on bus
         std::uint8_t  func;       //!< Function id for multi-function devices
