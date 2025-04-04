@@ -34,11 +34,7 @@
 
 /*! \libinternal \file
  *
- * \brief Definitions for NVSHMEM initialization/finalize class.
- * gmxNvshmemHandle takes the MPI communicator and initializes the
- * NVSHMEM over all the ranks involved in the given MPI communicator.
- * This is a collective call for all the ranks in the given MPI comm.
- * After NVSHMEM initialization all NVSHMEM APIs can be safely used.
+ * \brief Definitions for NVSHMEM halo exchange helper class.
  *
  * \author Mahesh Doijade <mdoijade@nvidia.com>
  *
@@ -52,8 +48,6 @@
 
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/utility/basedefinitions.h"
-#include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/gmxassert.h"
 #if GMX_NVSHMEM
 #    include <nvshmem.h>
 #endif
@@ -61,55 +55,18 @@
 #    include "gromacs/gpu_utils/devicebuffer.h"
 #endif
 
-gmxNvshmemHandle::gmxNvshmemHandle(const gmx::MDLogger& mdlog, MPI_Comm comm) :
-    d_ppHaloExSyncBase_(nullptr)
-{
-#if GMX_NVSHMEM
-    // Duplicate the existing communicator for NVSHMEM usage as the communicator
-    // should remain valid from nvshmem init to destruction.
-    MPI_Comm_dup(comm, &nvshmem_mpi_comm_);
-    nvshmemx_init_attr_t attr;
-    attr.mpi_comm = (void*)&nvshmem_mpi_comm_;
-
-    int nvshmem_stat = nvshmemx_init_attr(NVSHMEMX_INIT_WITH_MPI_COMM, &attr);
-    GMX_RELEASE_ASSERT(nvshmem_stat == 0, "NVSHMEM init failed");
-
-    nvshmem_stat = nvshmemx_init_status();
-    if (nvshmem_stat == NVSHMEM_STATUS_FULL_MPG)
-    {
-        GMX_LOG(mdlog.info)
-                .asParagraph()
-                .appendText(
-                        "Note: To use multiple processses per GPU NVSHMEM requires MPS enabled "
-                        "and the "
-                        "total active thread percentage of all PEs on the same GPU to be under "
-                        "100%% for multi-process GPU sharing.\n");
-    }
-
-    GMX_RELEASE_ASSERT(
-            (nvshmem_stat == NVSHMEM_STATUS_IS_INITIALIZED) || (nvshmem_stat == NVSHMEM_STATUS_FULL_MPG),
-            gmx::formatString("NVSHMEM is not initialized correctly: status was %d", nvshmem_stat).c_str());
-#else
-    GMX_UNUSED_VALUE(nvshmem_mpi_comm_);
-    GMX_UNUSED_VALUE(comm);
-    GMX_UNUSED_VALUE(mdlog);
-#endif
-}
+gmxNvshmemHandle::gmxNvshmemHandle() : d_ppHaloExSyncBase_(nullptr) {}
 
 gmxNvshmemHandle::~gmxNvshmemHandle()
 {
 #if GMX_NVSHMEM
     freeDeviceBuffer(&d_ppHaloExSyncBase_);
-
-    // Call nvshmem_finalize before destroying the MPI Comm.
-    nvshmem_finalize();
-    MPI_Comm_free(&nvshmem_mpi_comm_);
 #endif
 }
 
 // NOLINTNEXTLINE readability-convert-member-functions-to-static
 void gmxNvshmemHandle::allocateAndInitSignalBufs(int                  totalDimsAndPulses,
-                                                 const DeviceContext& deviceContext_,
+                                                 const DeviceContext& deviceContext,
                                                  const DeviceStream*  localStream)
 {
 #if GMX_GPU
@@ -118,7 +75,7 @@ void gmxNvshmemHandle::allocateAndInitSignalBufs(int                  totalDimsA
                            totalSyncBufSize,
                            &ppHaloExSyncBufSize_,
                            &ppHaloExSyncBufCapacity_,
-                           deviceContext_,
+                           deviceContext,
                            true);
     // If the num of dims/pulses have changed we initialize the signalling
     // buffer to max val.
@@ -127,6 +84,8 @@ void gmxNvshmemHandle::allocateAndInitSignalBufs(int                  totalDimsA
         // Initialize the signalling buffer with max value.
         ppHaloExPerSyncBufSize_ = totalDimsAndPulses;
 
+        // TODO A class member variable for hostBuffer will tend
+        // to reduce the number of host allocations made
         gmx::HostVector<uint64_t> hostBuffer = {
             {}, gmx::HostAllocationPolicy(gmx::PinningPolicy::PinnedIfSupported)
         };
@@ -144,7 +103,7 @@ void gmxNvshmemHandle::allocateAndInitSignalBufs(int                  totalDimsA
     }
 #else
     GMX_UNUSED_VALUE(totalDimsAndPulses);
-    GMX_UNUSED_VALUE(deviceContext_);
+    GMX_UNUSED_VALUE(deviceContext);
     GMX_UNUSED_VALUE(localStream);
 #endif
 }

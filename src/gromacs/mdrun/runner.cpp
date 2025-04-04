@@ -86,6 +86,7 @@
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/gpu_utils/gpueventsynchronizer_helpers.h"
 #include "gromacs/gpu_utils/hostallocator.h"
+#include "gromacs/gpu_utils/nvshmem_manager.h"
 #include "gromacs/gpu_utils/nvshmem_utils.h"
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/hardware/device_management.h"
@@ -1647,6 +1648,12 @@ int Mdrunner::mdrunner()
                 *deviceInfo, runScheduleWork.simulationWork, useGpuTiming);
     }
 
+    std::unique_ptr<NvshmemManager> nvshmemManager;
+    if (runScheduleWork.simulationWork.useNvshmem)
+    {
+        nvshmemManager = std::make_unique<NvshmemManager>(mdlog, cr->mpi_comm_mysim);
+    }
+
     // If the user chose a task assignment, give them some hints
     // where appropriate.
     if (!userGpuTaskAssignment.empty())
@@ -2046,7 +2053,7 @@ int Mdrunner::mdrunner()
 
     if (runScheduleWork.simulationWork.useNvshmem)
     {
-        cr->initNvshmem(mdlog);
+        cr->initNvshmem();
     }
 
     /* Set thread affinity after gmx_pme_init(), otherwise with cuFFTMp the NVSHMEM helper thread
@@ -2376,6 +2383,7 @@ int Mdrunner::mdrunner()
         // TODO convert to C++ so we can get rid of these frees
         sfree(disresdata);
 
+        nvshmemManager.reset(nullptr);
         // Destroy streams after all the structures using them
         deviceStreamManager.reset(nullptr);
 

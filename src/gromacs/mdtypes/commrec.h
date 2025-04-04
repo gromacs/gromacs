@@ -40,7 +40,6 @@
 
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxmpi.h"
-#include "gromacs/utility/logger.h"
 
 struct gmx_domdec_t;
 class gmxNvshmemHandle;
@@ -88,7 +87,7 @@ struct t_commrec
     void destroyNvshmem();
 
     //! Initialization the NVSHMEM handle \p nvshmemHandleUniquePtr
-    void initNvshmem(const gmx::MDLogger& mdlog);
+    void initNvshmem();
 
     //! Whether to use NVSHMEM
     bool useNvshmem = false;

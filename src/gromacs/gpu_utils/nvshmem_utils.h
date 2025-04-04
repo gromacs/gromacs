@@ -34,11 +34,7 @@
 
 /*! \libinternal \file
  *
- * \brief Declarations for NVSHMEM initialization/finalize class.
- * gmxNvshmemHandle takes the MPI communicator and initializes the
- * NVSHMEM over all the ranks involved in the given MPI communicator.
- * This is a collective call for all the ranks in the given MPI comm.
- * After NVSHMEM initialization all NVSHMEM APIs can be safely used.
+ * \brief Declarations for NVSHMEM GPU halo exchange helper class
  *
  * \author Mahesh Doijade <mdoijade@nvidia.com>
  *
@@ -49,19 +45,17 @@
 #ifndef GMX_NVSHMEM_UTILS_H_
 #define GMX_NVSHMEM_UTILS_H_
 
-#include "gromacs/gpu_utils/device_stream_manager.h"
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
-#include "gromacs/utility/gmxmpi.h"
-#include "gromacs/utility/logger.h"
 
+class DeviceContext;
+class DeviceStream;
+
+//! Assists GPU halo exchange with NVSHMEM
 class gmxNvshmemHandle
 {
 
-private:
-    MPI_Comm nvshmem_mpi_comm_;
-
 public:
-    gmxNvshmemHandle(const gmx::MDLogger& mdlog, MPI_Comm comm);
+    gmxNvshmemHandle();
 
     ~gmxNvshmemHandle();
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright 2022- The GROMACS Authors
+ * Copyright 2023- The GROMACS Authors
  * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
  * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
  *
@@ -31,60 +31,55 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
-#include "gmxpre.h"
 
-#include "gromacs/mdtypes/commrec.h"
+/*! \libinternal \file
+ *
+ * \brief Declarations for NVSHMEM initialization/finalize class.
+ *
+ * \author Mahesh Doijade <mdoijade@nvidia.com>
+ *
+ * \ingroup module_gpu_utils
+ * \inlibraryapi
+ */
 
-#include "config.h"
+#ifndef GMX_NVSHMEM_MANAGER_H_
+#define GMX_NVSHMEM_MANAGER_H_
 
-#include <utility>
+#include <gromacs/utility/gmxmpi.h>
 
-#include "gromacs/domdec/domdec_struct.h"
-#include "gromacs/gpu_utils/nvshmem_utils.h"
-#include "gromacs/utility/gmxmpi.h"
-
-t_commrec::t_commrec() = default;
-
-t_commrec::~t_commrec()
+namespace gmx
 {
-#if GMX_MPI
-    // TODO We need to be able to free communicators, but the
-    // structure of the commrec and domdec initialization code makes
-    // it hard to avoid both leaks and double frees.
-    bool mySimIsMyGroup = (mpi_comm_mysim == mpi_comm_mygroup);
-    if (mpi_comm_mysim != MPI_COMM_NULL && mpi_comm_mysim != MPI_COMM_WORLD)
-    {
-        // TODO see above
-        // MPI_Comm_free(&cr->mpi_comm_mysim);
-    }
-    if (!mySimIsMyGroup && mpi_comm_mygroup != MPI_COMM_NULL && mpi_comm_mygroup != MPI_COMM_WORLD)
-    {
-        // TODO see above
-        // MPI_Comm_free(&cr->mpi_comm_mygroup);
-    }
+class MDLogger;
+
+/*! \libinternal
+ * \brief Duplicates the communicator and initializes NVSHMEM over it.
+ * This is a collective call for all the ranks in the given MPI comm.
+ * After NVSHMEM initialization all NVSHMEM APIs can be safely used.
+ *
+ * May issue warnings advisory notes about the runtime environment for
+ * NVSHMEM use.
+ *
+ * Frees the communicator in the destructor after finalizing the
+ * NVSHMEM library.
+ *
+ * \author Mahesh Doijade <mdoijade@nvidia.com>
+ *
+ * \ingroup module_gpu_utils
+ * \inlibraryapi
+ */
+
+class NvshmemManager
+{
+
+private:
+    MPI_Comm nvshmem_mpi_comm_;
+
+public:
+    NvshmemManager(const MDLogger& mdlog, MPI_Comm comm);
+
+    ~NvshmemManager();
+};
+
+} // namespace gmx
+
 #endif
-}
-
-void t_commrec::setDD(std::unique_ptr<gmx_domdec_t>&& ddUniquePtr)
-{
-    ddUniquePtr_ = std::move(ddUniquePtr);
-    dd           = ddUniquePtr_.get();
-}
-
-void t_commrec::destroyDD()
-{
-    ddUniquePtr_.reset(nullptr);
-    dd = nullptr;
-}
-
-void t_commrec::initNvshmem()
-{
-    nvshmemHandleUniquePtr_ = std::make_unique<gmxNvshmemHandle>();
-    nvshmemHandlePtr        = nvshmemHandleUniquePtr_.get();
-    useNvshmem              = true;
-}
-
-void t_commrec::destroyNvshmem()
-{
-    nvshmemHandleUniquePtr_.reset(nullptr);
-}
