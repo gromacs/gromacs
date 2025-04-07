@@ -43,7 +43,6 @@
 #include "gromacs/analysisdata/abstractdata.h"
 
 #include <memory>
-#include <utility>
 #include <vector>
 
 #include "gromacs/analysisdata/dataframe.h"

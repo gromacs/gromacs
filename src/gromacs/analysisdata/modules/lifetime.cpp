@@ -42,17 +42,14 @@
 
 #include "gromacs/analysisdata/modules/lifetime.h"
 
-#include <cmath>
 #include <cstddef>
 
 #include <algorithm>
 #include <deque>
-#include <memory>
 #include <vector>
 
 #include "gromacs/analysisdata/abstractdata.h"
 #include "gromacs/analysisdata/dataframe.h"
-#include "gromacs/analysisdata/datastorage.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 

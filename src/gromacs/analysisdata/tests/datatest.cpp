@@ -44,7 +44,6 @@
 
 #include <memory>
 
-#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "gromacs/analysisdata/abstractdata.h"
@@ -52,7 +51,6 @@
 #include "gromacs/analysisdata/paralleloptions.h"
 #include "gromacs/analysisdata/tests/mock_datamodule.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/stringutil.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"

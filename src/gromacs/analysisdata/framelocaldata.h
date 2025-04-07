@@ -41,7 +41,6 @@
 #ifndef GMX_ANALYSISDATA_FRAMELOCALDATA_H
 #define GMX_ANALYSISDATA_FRAMELOCALDATA_H
 
-#include <algorithm>
 #include <numeric>
 #include <vector>
 

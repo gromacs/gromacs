@@ -45,8 +45,6 @@
 #include <cstdio>
 #include <cstring>
 
-#include <filesystem>
-#include <memory>
 #include <string>
 #include <vector>
 
@@ -60,7 +58,6 @@
 #include "gromacs/options/ioptionscontainer.h"
 #include "gromacs/options/timeunitmanager.h"
 #include "gromacs/selection/selectioncollection.h"
-#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/exceptions.h"
