@@ -49,6 +49,7 @@
 #include "gromacs/fileio/h5md/h5md.h"
 #include "gromacs/fileio/h5md/h5md_guard.h"
 #include "gromacs/fileio/h5md/h5md_type.h"
+#include "gromacs/fileio/h5md/tests/h5mdtestbase.h"
 #include "gromacs/utility/exceptions.h"
 
 #include "testutils/testfilemanager.h"
@@ -62,7 +63,7 @@ namespace
 
 //! \brief Test fixture for all primitive types
 template<typename ValueType>
-class H5mdDataSetTest : public ::testing::Test
+class H5mdDataSetTest : public H5mdTestBase
 {
 };
 
@@ -72,15 +73,10 @@ using PrimitiveList = ::testing::Types<int32_t, int64_t, float, double>;
 // Set up suites for testing of all relevant types
 TYPED_TEST_SUITE(H5mdDataSetTest, PrimitiveList);
 
-TEST(H5mdDataSetTest, Create1dFrameDataSetCreatesEmpty1dSet)
+TYPED_TEST(H5mdDataSetTest, Create1dFrameDataSetCreatesEmpty1dSet)
 {
-    TestFileManager       fileManager;
-    std::filesystem::path fileName = fileManager.getTemporaryFilePath("ref.h5md");
-
-    H5md file(fileName, H5mdFileMode::Write);
-
     const auto [dataSet, dataSetGuard] =
-            makeH5mdDataSetGuard(create1dFrameDataSet<int32_t>(file.fileid(), "testDataSet"));
+            makeH5mdDataSetGuard(create1dFrameDataSet<TypeParam>(this->fileid(), "testDataSet"));
 
     const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet));
     const int numDims                      = H5Sget_simple_extent_ndims(dataSpace);
@@ -93,13 +89,8 @@ TEST(H5mdDataSetTest, Create1dFrameDataSetCreatesEmpty1dSet)
 
 TYPED_TEST(H5mdDataSetTest, Create1dFrameDataSetsCorrectDataType)
 {
-    TestFileManager       fileManager;
-    std::filesystem::path fileName = fileManager.getTemporaryFilePath("ref.h5md");
-
-    H5md file(fileName, H5mdFileMode::Write);
-
     const auto [dataSet, dataSetGuard] =
-            makeH5mdDataSetGuard(create1dFrameDataSet<TypeParam>(file.fileid(), "testDataSet"));
+            makeH5mdDataSetGuard(create1dFrameDataSet<TypeParam>(this->fileid(), "testDataSet"));
     const auto [dataType, dataTypeGuard] = makeH5mdTypeGuard(H5Dget_type(dataSet));
 
     const TypeParam                 value = 1;
@@ -108,15 +99,10 @@ TYPED_TEST(H5mdDataSetTest, Create1dFrameDataSetsCorrectDataType)
     EXPECT_TRUE(valueTypeIsDataType(dataType, array));
 }
 
-TEST(H5mdDataSetTest, Create1dFrameDataSetSetsUnlimitedMaxSize)
+TYPED_TEST(H5mdDataSetTest, Create1dFrameDataSetSetsUnlimitedMaxSize)
 {
-    TestFileManager       fileManager;
-    std::filesystem::path fileName = fileManager.getTemporaryFilePath("ref.h5md");
-
-    H5md file(fileName, H5mdFileMode::Write);
-
     const auto [dataSet, dataSetGuard] =
-            makeH5mdDataSetGuard(create1dFrameDataSet<int32_t>(file.fileid(), "testDataSet"));
+            makeH5mdDataSetGuard(create1dFrameDataSet<TypeParam>(this->fileid(), "testDataSet"));
 
     const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet));
     DataSetDims<1> dataSetMaxDims;
@@ -125,31 +111,21 @@ TEST(H5mdDataSetTest, Create1dFrameDataSetSetsUnlimitedMaxSize)
     EXPECT_EQ(dataSetMaxDims.at(0), H5S_UNLIMITED);
 }
 
-TEST(H5mdDataSetTest, Create1dFrameDataSetThrowsForNonExistingContainer)
+TYPED_TEST(H5mdDataSetTest, Create1dFrameDataSetThrowsForNonExistingContainer)
 {
-    EXPECT_THROW(create1dFrameDataSet<int32_t>(H5I_INVALID_HID, "testDataSet"), gmx::FileIOError);
+    EXPECT_THROW(create1dFrameDataSet<TypeParam>(H5I_INVALID_HID, "testDataSet"), gmx::FileIOError);
 }
 
-TEST(H5mdDataSetTest, Create1dFrameDataSetThrowsForEmptyName)
+TYPED_TEST(H5mdDataSetTest, Create1dFrameDataSetThrowsForEmptyName)
 {
-    TestFileManager       fileManager;
-    std::filesystem::path fileName = fileManager.getTemporaryFilePath("ref.h5md");
-
-    H5md file(fileName, H5mdFileMode::Write);
-
-    EXPECT_THROW(create1dFrameDataSet<int32_t>(file.fileid(), ""), gmx::FileIOError);
+    EXPECT_THROW(create1dFrameDataSet<TypeParam>(this->fileid(), ""), gmx::FileIOError);
 }
 
-TEST(H5mdDataSetTest, Create1dFrameDataSetThrowsForDuplicateName)
+TYPED_TEST(H5mdDataSetTest, Create1dFrameDataSetThrowsForDuplicateName)
 {
-    TestFileManager       fileManager;
-    std::filesystem::path fileName = fileManager.getTemporaryFilePath("ref.h5md");
-
-    H5md file(fileName, H5mdFileMode::Write);
-
     constexpr char dataSetName[] = "testDataSet";
-    create1dFrameDataSet<int32_t>(file.fileid(), dataSetName);
-    EXPECT_THROW(create1dFrameDataSet<int32_t>(file.fileid(), dataSetName), gmx::FileIOError);
+    create1dFrameDataSet<TypeParam>(this->fileid(), dataSetName);
+    EXPECT_THROW(create1dFrameDataSet<TypeParam>(this->fileid(), dataSetName), gmx::FileIOError);
 }
 
 TEST(H5mdDataSetTest, Create1dFrameDataSetThrowsForReadOnlyFile)
@@ -168,26 +144,23 @@ TEST(H5mdDataSetTest, Create1dFrameDataSetThrowsForReadOnlyFile)
     }
 }
 
-TEST(H5mdDataSetTest, OpenDataSetWorksForWriteModeFiles)
+TYPED_TEST(H5mdDataSetTest, OpenDataSetWorksForWriteModeFiles)
 {
-    TestFileManager       fileManager;
-    std::filesystem::path fileName = fileManager.getTemporaryFilePath("ref.h5md");
-
-    H5md           file(fileName, H5mdFileMode::Write);
     constexpr char dataSetName[] = "testDataSet";
 
     {
         const auto [dataSet, dataSetGuard] =
-                makeH5mdDataSetGuard(create1dFrameDataSet<int32_t>(file.fileid(), dataSetName));
+                makeH5mdDataSetGuard(create1dFrameDataSet<TypeParam>(this->fileid(), dataSetName));
         const auto [dataType, dataTypeGuard] = makeH5mdTypeGuard(H5Dget_type(dataSet));
-        ASSERT_GT(H5Tequal(dataType, H5T_NATIVE_INT32), 0)
+        ASSERT_GT(H5Tequal(dataType, hdf5DataTypeFor<TypeParam>()), 0)
                 << "Sanity check failed: data types should match after creation";
     }
     {
         const auto [dataSet, dataSetGuard] =
-                makeH5mdDataSetGuard(openDataSet(file.fileid(), dataSetName));
+                makeH5mdDataSetGuard(openDataSet(this->fileid(), dataSetName));
         const auto [dataType, dataTypeGuard] = makeH5mdTypeGuard(H5Dget_type(dataSet));
-        EXPECT_GT(H5Tequal(dataType, H5T_NATIVE_INT32), 0) << "Data types must match after opening";
+        EXPECT_GT(H5Tequal(dataType, hdf5DataTypeFor<TypeParam>()), 0)
+                << "Data types must match after opening";
     }
 }
 
@@ -220,34 +193,25 @@ TEST(H5mdDataSetTest, OpenDataSetThrowsForInvalidContainer)
     EXPECT_THROW(openDataSet(H5I_INVALID_HID, "testDataSet"), gmx::FileIOError);
 }
 
-TEST(H5mdDataSetTest, OpenDataSetThrowsForInvalidSetName)
+TYPED_TEST(H5mdDataSetTest, OpenDataSetThrowsForInvalidSetName)
 {
-    TestFileManager       fileManager;
-    std::filesystem::path fileName = fileManager.getTemporaryFilePath("ref.h5md");
-
-    H5md file(fileName, H5mdFileMode::Write);
-
     {
         // Create a data set to ensure that there is something in the file which we cannot read with bad names
         const auto [dataSet, dataSetGuard] =
-                makeH5mdDataSetGuard(create1dFrameDataSet<int32_t>(file.fileid(), "testDataSet"));
+                makeH5mdDataSetGuard(create1dFrameDataSet<TypeParam>(this->fileid(), "testDataSet"));
         ASSERT_NE(dataSet, H5I_INVALID_HID) << "Sanity check failed: data set should be created";
     }
 
-    EXPECT_THROW(openDataSet(file.fileid(), ""), gmx::FileIOError) << "Should throw for empty name";
-    EXPECT_THROW(openDataSet(file.fileid(), "aBadIdea"), gmx::FileIOError)
+    EXPECT_THROW(openDataSet(this->fileid(), ""), gmx::FileIOError)
+            << "Should throw for empty name";
+    EXPECT_THROW(openDataSet(this->fileid(), "aBadIdea"), gmx::FileIOError)
             << "Should throw for bad name";
 }
 
-TEST(H5mdDataSetTest, GetNumFramesFor1dDataSetsReturnsSize)
+TYPED_TEST(H5mdDataSetTest, GetNumFramesFor1dDataSetsReturnsSize)
 {
-    TestFileManager       fileManager;
-    std::filesystem::path fileName = fileManager.getTemporaryFilePath("ref.h5md");
-
-    H5md file(fileName, H5mdFileMode::Write);
-
     const auto [dataSet, dataSetGuard] =
-            makeH5mdDataSetGuard(create1dFrameDataSet<int32_t>(file.fileid(), "testDataSet"));
+            makeH5mdDataSetGuard(create1dFrameDataSet<TypeParam>(this->fileid(), "testDataSet"));
 
     EXPECT_EQ(getNumFrames<1>(dataSet), 0) << "1d frame data sets are created as empty";
 
@@ -256,13 +220,8 @@ TEST(H5mdDataSetTest, GetNumFramesFor1dDataSetsReturnsSize)
     EXPECT_EQ(getNumFrames<1>(dataSet), newSize) << "Number of frames should match new size";
 }
 
-TEST(H5mdDataSetTest, GetNumFramesThrowsForInvalidDataSetHandle)
+TYPED_TEST(H5mdDataSetTest, GetNumFramesThrowsForInvalidDataSetHandle)
 {
-    TestFileManager       fileManager;
-    std::filesystem::path fileName = fileManager.getTemporaryFilePath("ref.h5md");
-
-    H5md file(fileName, H5mdFileMode::Write);
-
     // We use a scope guard to create a data set and store its handle here; as the scope exits
     // the data set is closed and this turns invalid
     hid_t dataSetToTest = H5I_INVALID_HID;
@@ -271,7 +230,7 @@ TEST(H5mdDataSetTest, GetNumFramesThrowsForInvalidDataSetHandle)
         // Create a data set with some data in the file to ensure that there is something
         // there which cannot be read with bad data set handles.
         const auto [dataSet, dataSetGuard] =
-                makeH5mdDataSetGuard(create1dFrameDataSet<int32_t>(file.fileid(), "testDataSet"));
+                makeH5mdDataSetGuard(create1dFrameDataSet<TypeParam>(this->fileid(), "testDataSet"));
 
         dataSetToTest = dataSet;
         ASSERT_NE(dataSetToTest, H5I_INVALID_HID)
