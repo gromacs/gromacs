@@ -47,6 +47,15 @@
 #include "gromacs/gpu_utils/gmxopencl.h"
 #include "gromacs/math/vectypes.h"
 
+#define GMX_HOST_ATTRIBUTE
+#define GMX_DEVICE_ATTRIBUTE
+#define GMX_HOSTDEVICE_ATTRIBUTE GMX_HOST_ATTRIBUTE GMX_DEVICE_ATTRIBUTE
+#if !defined(NDEBUG)
+#    define GMX_DEVICE_ASSERT(condition) assert(condition)
+#else
+#    define GMX_DEVICE_ASSERT(condition)
+#endif
+
 using DeviceTexture = void*;
 
 //! \brief Single GPU call timing event

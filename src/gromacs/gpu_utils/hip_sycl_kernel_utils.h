@@ -55,32 +55,7 @@
 
 // As this header is used both in SYCL and HIP builds, we define the __host__ __device__ attributes
 // based on the build type. We also can only use assertions here if they are actually usable
-#if GMX_GPU_SYCL
-#    define GMX_HOST_ATTRIBUTE
-#    define GMX_DEVICE_ATTRIBUTE
-#    define GMX_HOSTDEVICE_ATTRIBUTE GMX_HOST_ATTRIBUTE GMX_DEVICE_ATTRIBUTE
-#    if defined(SYCL_EXT_ONEAPI_ASSERT) && SYCL_EXT_ONEAPI_ASSERT && !defined(NDEBUG)
-#        define PACKED_FLOAT_ASSERT(condition) assert(condition)
-#    else
-#        define PACKED_FLOAT_ASSERT(condition)
-#    endif
-#    include "gputraits_sycl.h"
-#elif GMX_GPU_HIP
-#    define GMX_HOST_ATTRIBUTE __host__
-#    define GMX_DEVICE_ATTRIBUTE __device__
-#    define GMX_HOSTDEVICE_ATTRIBUTE GMX_HOST_ATTRIBUTE GMX_DEVICE_ATTRIBUTE
-#    if !defined(NDEBUG)
-#        define PACKED_FLOAT_ASSERT(condition) assert(condition)
-#    else
-#        define PACKED_FLOAT_ASSERT(condition)
-#    endif
-#    include "gputraits_hip.h"
-#else
-#    error Including hip_sycl_kernel_utils.h header in unsupported build config
-#endif
-
-#define GMX_ALWAYS_INLINE_ATTRIBUTE __attribute__((always_inline))
-#define GMX_FUNC_ATTRIBUTE GMX_HOSTDEVICE_ATTRIBUTE GMX_ALWAYS_INLINE_ATTRIBUTE
+#include "gputraits.h"
 
 //! Convert type of pointer to char while preserving const-ness.
 template<typename TPtr>
@@ -199,7 +174,7 @@ struct AmdPackedFloat3
         {
             case 0: return xy_.x;
             case 1: return xy_.y;
-            default: PACKED_FLOAT_ASSERT(i == 2); return z_;
+            default: GMX_DEVICE_ASSERT(i == 2); return z_;
         }
     }
     template<typename Index>
@@ -209,7 +184,7 @@ struct AmdPackedFloat3
         {
             case 0: return x_;
             case 1: return y_;
-            default: PACKED_FLOAT_ASSERT(i == 2); return z_;
+            default: GMX_DEVICE_ASSERT(i == 2); return z_;
         }
     }
 
@@ -341,11 +316,5 @@ constexpr int deviceWavefrontSize()
 }
 
 #endif /* Device code only */
-
-#undef GMX_HOST_ATTRIBUTE
-#undef GMX_DEVICE_ATTRIBUTE
-#undef GMX_HOSTDEVICE_ATTRIBUTE
-#undef GMX_ALWAYS_INLINE_ATTRIBUTE
-#undef GMX_FUNC_ATTRIBUTE
 
 #endif /* GMX_GPU_UTILS_WAVE_MOVE_DPP_H */

@@ -48,6 +48,15 @@
 #include "gromacs/gpu_utils/gmxsycl.h"
 #include "gromacs/math/vectypes.h"
 
+#define GMX_HOST_ATTRIBUTE
+#define GMX_DEVICE_ATTRIBUTE
+#define GMX_HOSTDEVICE_ATTRIBUTE GMX_HOST_ATTRIBUTE GMX_DEVICE_ATTRIBUTE
+#if defined(SYCL_EXT_ONEAPI_ASSERT) && SYCL_EXT_ONEAPI_ASSERT && !defined(NDEBUG)
+#    define GMX_DEVICE_ASSERT(condition) assert(condition)
+#else
+#    define GMX_DEVICE_ASSERT(condition)
+#endif
+
 //! Type of device texture object. In SYCL, that would be \c sycl::image, but it's not used.
 using DeviceTexture = void*;
 

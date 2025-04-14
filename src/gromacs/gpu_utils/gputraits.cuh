@@ -47,6 +47,15 @@
 
 #include "gromacs/math/vectypes.h"
 
+#define GMX_HOST_ATTRIBUTE __host__
+#define GMX_DEVICE_ATTRIBUTE __device__
+#define GMX_HOSTDEVICE_ATTRIBUTE GMX_HOST_ATTRIBUTE GMX_DEVICE_ATTRIBUTE
+#if !defined(NDEBUG)
+#    define GMX_DEVICE_ASSERT(condition) assert(condition)
+#else
+#    define GMX_DEVICE_ASSERT(condition)
+#endif
+
 //! Device texture for fast read-only data fetching
 using DeviceTexture = cudaTextureObject_t;
 

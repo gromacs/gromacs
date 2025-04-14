@@ -64,6 +64,9 @@
 
 #else
 
+#    define GMX_HOST_ATTRIBUTE
+#    define GMX_DEVICE_ATTRIBUTE
+
 using DeviceTexture = void*;
 
 //! \brief Single GPU call timing event
@@ -81,6 +84,10 @@ struct Float4
 };
 
 #endif // GMX_GPU
+
+#define GMX_ALWAYS_INLINE_ATTRIBUTE __attribute__((always_inline))
+#define GMX_FUNC_ATTRIBUTE GMX_HOSTDEVICE_ATTRIBUTE GMX_ALWAYS_INLINE_ATTRIBUTE
+#define GMX_DEVICE_FUNC_ATTRIBUTE GMX_DEVICE_ATTRIBUTE GMX_ALWAYS_INLINE_ATTRIBUTE
 
 namespace gmx
 {
