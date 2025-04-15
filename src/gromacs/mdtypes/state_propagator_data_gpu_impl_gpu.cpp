@@ -43,7 +43,7 @@
 
 #include "config.h"
 
-#if GMX_GPU && !GMX_GPU_HIP
+#if GMX_GPU
 #    include <numeric>
 
 #    include "gromacs/domdec/domdec_internal.h"
@@ -265,9 +265,9 @@ void StatePropagatorDataGpu::Impl::reinit(int numAtomsLocal, int numAtomsAll, co
     reallocateDeviceBuffer(&d_f_, numAtomsAll_, &d_fSize_, &d_fCapacity_, deviceContext_);
 
     // Clearing of the forces can be done in local stream since the nonlocal stream cannot reach
-    // the force accumulation stage before syncing with the local stream. Only done in CUDA and
-    // SYCL, since the force buffer ops are not implemented in OpenCL.
-    static constexpr bool sc_haveGpuFBufferOps = ((GMX_GPU_CUDA != 0) || (GMX_GPU_SYCL != 0));
+    // the force accumulation stage before syncing with the local stream. Not done for OpenCL,
+    // since the force buffer ops are not implemented for it.
+    static constexpr bool sc_haveGpuFBufferOps = GMX_GPU && !GMX_GPU_OPENCL;
     if (sc_haveGpuFBufferOps)
     {
         if (isNvshmemBufRegRequired)

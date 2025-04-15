@@ -66,7 +66,7 @@ struct gmx_wallcycle;
 struct gmx_domdec_t;
 struct t_commrec;
 
-#if !GMX_GPU || GMX_GPU_HIP
+#if !GMX_GPU
 namespace gmx
 {
 
@@ -343,4 +343,4 @@ void StatePropagatorDataGpu::waitCoordinatesUpdatedOnDevice()
 
 } // namespace gmx
 
-#endif // !GMX_GPU || GMX_GPU_HIP
+#endif // !GMX_GPU
