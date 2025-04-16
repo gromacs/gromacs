@@ -141,9 +141,6 @@
 /* Reference SIMD implementation for testing */
 #cmakedefine01 GMX_SIMD_REFERENCE
 
-/* String for SIMD instruction choice (for writing to log files and stdout) */
-#define GMX_SIMD_STRING "@GMX_SIMD_ACTIVE@"
-
 /* Calling convention string (if any) for routines with SIMD variable args */
 #define gmx_simdcall @GMX_SIMD_CALLING_CONVENTION@
 
@@ -466,15 +463,6 @@
 
 /* Define if we have fedisableexcept */
 #cmakedefine01 HAVE_FEDISABLEEXCEPT
-
-/* Define if we have MKL available */
-#cmakedefine01 HAVE_LIBMKL
-
-// Describes the origin of BLAS routines
-#define GMX_DESCRIBE_BLAS "@GMX_DESCRIBE_BLAS@"
-
-// Describes the origin of LAPACK routines
-#define GMX_DESCRIBE_LAPACK "@GMX_DESCRIBE_LAPACK@"
 
 /* Define if we have lmfit support */
 #cmakedefine01 HAVE_LMFIT

@@ -33,11 +33,17 @@
 
 add_library(linearalgebra OBJECT)
 target_sources(linearalgebra PRIVATE
+        binary_information.cpp
         eigensolver.cpp
         gmx_arpack.cpp
         matrix.cpp
         sparsematrix.cpp
 )
+
+# Note that the use of MKL for FFT determines that MKL will be used
+# also for linear algebra, for simplicity.
+set_source_files_properties(binary_information.cpp PROPERTIES COMPILE_FLAGS
+    "-DGMX_DESCRIBE_BLAS=\"${GMX_DESCRIBE_BLAS}\" -DGMX_DESCRIBE_LAPACK=\"${GMX_DESCRIBE_LAPACK}\" -DGMX_FFT_MKL=${GMX_FFT_MKL}")
 
 if (NOT GMX_EXTERNAL_BLAS)
     file(GLOB BLAS_SOURCES gmx_blas/*.cpp)

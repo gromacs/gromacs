@@ -387,6 +387,11 @@ if (GMX_INTERNAL_XDR)
     target_include_directories(libgromacs SYSTEM PRIVATE ${_xdr_dir})
 endif()
 
+# This can move to a suitable OBJECT target when one exists
+set_source_files_properties(hardware/simd_support.cpp PROPERTIES COMPILE_FLAGS
+    "-DGMX_SIMD_ENUM_VALUE=\"${GMX_SIMD_ENUM_VALUE}\""
+    )
+
 target_link_libraries(libgromacs
                       PRIVATE
                       ${GMX_EXTRA_LIBRARIES}

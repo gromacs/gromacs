@@ -59,6 +59,7 @@
 
 #include "gromacs/hardware/cpuinfo.h"
 #include "gromacs/hardware/identifyavx512fmaunits.h"
+#include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -390,3 +391,12 @@ bool simdCheck(const CpuInfo& cpuInfo, gmx::SimdType wanted, FILE* log, bool war
 /*! \endcond */
 
 } // namespace gmx
+
+static const std::string& sc_simdDescription = gmx::simdString(GMX_SIMD_ENUM_VALUE);
+
+static bool s_registeredBinaryInformation = []()
+{
+    gmx::BinaryInformationRegistry& registry = gmx::globalBinaryInformationRegistry();
+    registry.insert("SIMD instructions", sc_simdDescription);
+    return true;
+}();

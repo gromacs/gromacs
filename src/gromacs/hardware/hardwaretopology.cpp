@@ -68,7 +68,9 @@
 #include <sys/types.h>
 
 #include "gromacs/hardware/cpuinfo.h"
+#include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/stringutil.h"
 
 #ifdef HAVE_SCHED_H
 #    include <sched.h>
@@ -1320,3 +1322,14 @@ HardwareTopology::HardwareTopology(const std::string&      filesystemRoot,
 }
 
 } // namespace gmx
+
+static bool s_registeredBinaryInformation = []()
+{
+    gmx::BinaryInformationRegistry& registry = gmx::globalBinaryInformationRegistry();
+#if GMX_USE_HWLOC
+    registry.insert("Hwloc support", gmx::formatString("hwloc-%s", HWLOC_VERSION));
+#else
+    registry.insert("Hwloc support", "disabled");
+#endif
+    return true;
+}();

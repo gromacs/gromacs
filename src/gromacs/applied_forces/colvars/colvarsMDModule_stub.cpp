@@ -49,6 +49,7 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/imdmodule.h"
 #include "gromacs/mdtypes/imdpoptionprovider.h"
+#include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 
 #include "colvarsMDModule.h"
@@ -108,7 +109,6 @@ private:
     ColvarsOptions colvarsOptionsStub_;
 };
 
-
 } // namespace
 
 std::unique_ptr<IMDModule> ColvarsModuleInfo::create()
@@ -119,3 +119,10 @@ std::unique_ptr<IMDModule> ColvarsModuleInfo::create()
 const std::string ColvarsModuleInfo::name_ = "colvars";
 
 } // namespace gmx
+
+static bool s_registeredBinaryInformation = []()
+{
+    gmx::BinaryInformationRegistry& registry = gmx::globalBinaryInformationRegistry();
+    registry.insert("Colvars support", "disabled");
+    return true;
+}();

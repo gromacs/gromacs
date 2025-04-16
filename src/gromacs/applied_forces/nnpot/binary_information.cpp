@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright 2021- The GROMACS Authors
+ * Copyright 2025- The GROMACS Authors
  * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
  * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
  *
@@ -31,17 +31,29 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
-#ifndef GMX_UTILITY_SYCL_VERSION_INFORMATION_H
-#define GMX_UTILITY_SYCL_VERSION_INFORMATION_H
+/*! \internal \file
+ * \brief
+ * Registers binary information for NNPot
+ *
+ * \ingroup module_applied_forces
+ */
 
-#include <string>
+#include "config.h"
 
-namespace gmx
-{
+#include "gromacs/utility/binaryinformation.h"
+#include "gromacs/utility/stringutil.h"
 
-//! Returns an internal version strings of the Intel DPC++ and AdaptiveCpp compiler.
-std::string getSyclCompilerVersion();
-
-} // namespace gmx
-
+#if GMX_TORCH
+#    include <torch/torch.h>
 #endif
+
+static bool s_registeredBinaryInformation = []()
+{
+    gmx::BinaryInformationRegistry& registry = gmx::globalBinaryInformationRegistry();
+#if GMX_TORCH
+    registry.insert("Torch support", gmx::formatString("enabled (version %s)", TORCH_VERSION));
+#else
+    registry.insert("Torch support", "disabled");
+#endif
+    return true;
+}();

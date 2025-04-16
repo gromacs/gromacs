@@ -125,4 +125,7 @@ configure_file(gmxpre-config.h.cmakein include/gmxpre-config.h)
 set(CMAKE_BUILD_CONFIGURATION_C_FLAGS   ${CMAKE_C_FLAGS_${CMAKE_BUILD_TYPE_UPPER}})
 set(CMAKE_BUILD_CONFIGURATION_CXX_FLAGS ${CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE_UPPER}})
 configure_file(buildinfo.h.cmakein include/buildinfo.h ESCAPE_QUOTES)
+# This can be handled by directly configuring gromacs/gpu_utils/binary_information.cpp
+# when gpu_utils becomes an object library.
+configure_file(gromacs/gpu_utils/gpuinfo.h.cmakein include/gpuinfo.h ESCAPE_QUOTES)
 configure_file(contributors.h.cmakein include/contributors.h)

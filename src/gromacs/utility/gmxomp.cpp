@@ -53,6 +53,7 @@
 #endif
 
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -137,3 +138,12 @@ std::optional<std::string> messageWhenOpenMPLibraryWillSetAffinity()
 #endif /* GMX_OPENMP */
     return message;
 }
+
+static bool s_registeredBinaryInformation = []()
+{
+    gmx::BinaryInformationRegistry& registry = gmx::globalBinaryInformationRegistry();
+    registry.insert("OpenMP support",
+                    GMX_OPENMP ? gmx::formatString("enabled (GMX_OPENMP_MAX_THREADS = %d)", GMX_OPENMP_MAX_THREADS)
+                               : "disabled");
+    return true;
+}();

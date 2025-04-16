@@ -46,6 +46,7 @@
 
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/mdtypes/imdmodule.h"
+#include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/exceptions.h"
 
 #include "plumedMDModule.h"
@@ -94,7 +95,6 @@ public:
     void initForceProviders(ForceProviders* /*forceProviders*/) override {}
 };
 
-
 } // namespace
 
 std::unique_ptr<IMDModule> PlumedModuleInfo::create()
@@ -103,3 +103,10 @@ std::unique_ptr<IMDModule> PlumedModuleInfo::create()
 }
 
 } // namespace gmx
+
+static bool s_registeredBinaryInformation = []()
+{
+    gmx::BinaryInformationRegistry& registry = gmx::globalBinaryInformationRegistry();
+    registry.insert("Plumed support", "disabled");
+    return true;
+}();

@@ -46,7 +46,9 @@
 // need to include gmxapi.h here as mpi.h needs to be included before mpi-ext.h
 #include "config.h"
 
+#include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/stringutil.h"
 
 #if HAVE_MPI_EXT
 #    include <mpi-ext.h>
@@ -78,8 +80,6 @@ std::string findMpiLibraryVersionString()
 #endif
 }
 
-} // namespace
-
 std::string_view mpiLibraryVersionString()
 {
     // Avoid calling into the MPI library and then making a new
@@ -89,6 +89,8 @@ std::string_view mpiLibraryVersionString()
 
     return cachedVersionString;
 }
+
+} // namespace
 
 bool usingIntelMpi()
 {
@@ -199,3 +201,67 @@ GpuAwareMpiStatus checkMpiZEAwareSupport()
 }
 
 } // namespace gmx
+
+namespace
+{
+
+//! Return a one-line string describing the MPI library
+std::string cleanMpiLibraryVersionString()
+{
+    std::string returnString(gmx::mpiLibraryVersionString());
+    // Replace embedded newlines or tabs with spaces
+    size_t currentPosition = 0;
+    size_t newLinePosition = returnString.find_first_of("\n\t", currentPosition);
+    while (newLinePosition != std::string::npos)
+    {
+        returnString[newLinePosition] = ' ';
+        currentPosition               = newLinePosition;
+        newLinePosition               = returnString.find_first_of("\n\t", currentPosition);
+    }
+    return returnString;
+}
+
+bool s_registeredBinaryInformation = []()
+{
+    gmx::BinaryInformationRegistry& registry = gmx::globalBinaryInformationRegistry();
+    if (GMX_THREAD_MPI)
+    {
+        registry.insert("MPI library", "thread_mpi");
+        registry.insert("MPI version", "built in");
+    }
+    else if (GMX_LIB_MPI)
+    {
+        std::vector<std::string> gpuAwareBackendsSupported;
+        if (gmx::checkMpiCudaAwareSupport() == gmx::GpuAwareMpiStatus::Supported)
+        {
+            gpuAwareBackendsSupported.emplace_back("CUDA");
+        }
+        if (gmx::checkMpiHipAwareSupport() == gmx::GpuAwareMpiStatus::Supported)
+        {
+            gpuAwareBackendsSupported.emplace_back("HIP");
+        }
+        if (gmx::checkMpiZEAwareSupport() == gmx::GpuAwareMpiStatus::Supported)
+        {
+            gpuAwareBackendsSupported.emplace_back("LevelZero");
+        }
+        if (!gpuAwareBackendsSupported.empty())
+        {
+            registry.insert("MPI library",
+                            gmx::formatString("MPI (GPU-aware: %s)",
+                                              gmx::joinStrings(gpuAwareBackendsSupported, ", ").c_str()));
+        }
+        else
+        {
+            registry.insert("MPI library", "MPI");
+        }
+        registry.insert("MPI version", cleanMpiLibraryVersionString());
+    }
+    else
+    {
+        registry.insert("MPI library", "none");
+        registry.insert("MPI version", "none");
+    }
+    return true;
+}();
+
+} // namespace

@@ -58,7 +58,6 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/hardware/device_management.h"
-#include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/gmxassert.h"
 
 #include "testutils/test_device.h"
@@ -101,9 +100,7 @@ TEST(DevicesAvailable, ShouldBeAbleToRunOnDevice)
         ASSERT_TRUE(GMX_GPU) << "GROMACS was compiled without GPU support, yet "
                                 "GMX_TEST_REQUIRED_NUMBER_OF_DEVICES is set.";
 
-        std::string platformString(getGpuImplementationString());
-
-        std::string errorMessage = "Can't perform device detection in " + platformString + ":\n";
+        std::string errorMessage = "Can't perform device detection:\n";
         std::string detectionErrorMessage;
 
         // Test if the detection is working

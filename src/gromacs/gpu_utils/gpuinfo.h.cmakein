@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright 2012- The GROMACS Authors
+ * Copyright 2025- The GROMACS Authors
  * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
  * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
  *
@@ -31,34 +31,42 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
+/*! \internal \file
+ * \brief
+ * GPU compiler/SDK information from the build system.
+ *
+ * Used for log output.
+ */
 
-#include "gmxpre.h"
+/** CUDA compiler version information */
+#define CUDA_COMPILER_INFO "@CUDA_COMPILER_INFO@"
 
-#include "cuda_version_information.h"
+/** CUDA compiler flags (device flags, plus host flags if propagated)*/
+#define CUDA_DEVICE_COMPILER_FLAGS "@CUDA_DEVICE_COMPILER_FLAGS@"
+#define CUDA_HOST_COMPILER_FLAGS @CUDA_HOST_COMPILER_FLAGS@
+#define CUDA_COMPILER_FLAGS CUDA_DEVICE_COMPILER_FLAGS CUDA_HOST_COMPILER_FLAGS
 
-#include "gromacs/utility/stringutil.h"
+/** HIP compiler version information */
+#define HIP_COMPILER_INFO "@HIP_COMPILER_INFO@"
 
-namespace gmx
-{
+/** HIP compiler flags (device flags)*/
+#define HIP_COMPILER_FLAGS "@HIP_COMPILER_FLAGS@"
 
-std::string getCudaDriverVersionString()
-{
-    int cuda_driver = 0;
-    if (cudaDriverGetVersion(&cuda_driver) != cudaSuccess)
-    {
-        return "N/A";
-    }
-    return formatString("%d.%d", cuda_driver / 1000, cuda_driver % 100);
-}
+/** OpenCL include dir */
+#define OPENCL_INCLUDE_DIR "@OpenCL_INCLUDE_DIR@"
 
-std::string getCudaRuntimeVersionString()
-{
-    int cuda_runtime = 0;
-    if (cudaRuntimeGetVersion(&cuda_runtime) != cudaSuccess)
-    {
-        return "N/A";
-    }
-    return formatString("%d.%d", cuda_runtime / 1000, cuda_runtime % 100);
-}
+/** OpenCL library */
+#define OPENCL_LIBRARY "@OpenCL_LIBRARY@"
 
-} // namespace gmx
+/** OpenCL version */
+#define OPENCL_VERSION_STRING "@OpenCL_VERSION_STRING@"
+
+/** SYCL oneAPI DPC++ flags */
+#define SYCL_DPCPP_COMPILER_FLAGS "@SYCL_TOOLCHAIN_CXX_FLAGS_STR@"
+#define SYCL_DPCPP_LINKER_FLAGS "@SYCL_TOOLCHAIN_LINKER_FLAGS_STR@"
+
+/** SYCL AdaptiveCpp flags */
+#define SYCL_ACPP_COMPILER_LAUNCHER "@ACPP_COMPILER_LAUNCHER@"
+#define SYCL_ACPP_COMPILER_FLAGS "@ACPP_EXTRA_ARGS@"
+#define SYCL_ACPP_DEVICE_COMPILER_FLAGS "@ACPP_EXTRA_COMPILE_OPTIONS_STR@"
+#define SYCL_ACPP_TARGETS "@ACPP_TARGETS@"

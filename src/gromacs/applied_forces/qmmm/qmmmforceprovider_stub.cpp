@@ -46,6 +46,7 @@
 #include <string>
 
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/exceptions.h"
 
 #include "qmmmforceprovider.h"
@@ -116,3 +117,10 @@ void QMMMForceProvider::calculateForces(const ForceProviderInput& /*fInput*/, Fo
 CLANG_DIAGNOSTIC_RESET
 
 } // namespace gmx
+
+static bool s_registeredBinaryInformation = []()
+{
+    gmx::BinaryInformationRegistry& registry = gmx::globalBinaryInformationRegistry();
+    registry.insert("CP2K support", "disabled");
+    return true;
+}();

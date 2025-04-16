@@ -42,16 +42,42 @@
 
 #include <cstdio>
 
+#include <memory>
+#include <string>
+
 namespace gmx
 {
 
 class IProgramContext;
 class TextWriter;
 
+/*! \brief Central location where modules can describe themselves */
+class BinaryInformationRegistry
+{
+public:
+    BinaryInformationRegistry();
+    ~BinaryInformationRegistry();
+    //! Inserts \c value into the registry at label \c label
+    void insert(const std::string& label, const std::string& value);
+    /*! \brief Returns value previously stored as \c label
+     *
+     * \throws std::out_of_range if label is not found */
+    const std::string& at(const std::string& label) const;
+    //! Returns whether a value was previously stored as \c label */
+    bool exists(const std::string& label) const;
+
+private:
+    class Impl;
+    std::unique_ptr<Impl> impl_;
+};
+
+//! Returns global instance for modules to use when registering
+BinaryInformationRegistry& globalBinaryInformationRegistry();
+
 /*! \libinternal \brief
  * Settings for printBinaryInformation().
  *
- * This class is used to specify what printBinaryInformation() prints.
+ * This class is used to specify what printBinaryInformation() writes.
  *
  * \ingroup module_utility
  * \inlibraryapi
@@ -112,13 +138,6 @@ private:
                                        const BinaryInformationSettings& settings);
 };
 
-/*! \brief
- * Print basic information about the executable.
- *
- * \param     fp             Where to print the information to.
- * \param[in] programContext Program information object to use.
- */
-void printBinaryInformation(FILE* fp, const IProgramContext& programContext);
 /*! \brief
  * Print basic information about the executable with custom settings.
  *

@@ -53,6 +53,7 @@
 #include "gromacs/timing/gpu_timing.h"
 #include "gromacs/timing/wallcyclereporting.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
@@ -1094,3 +1095,24 @@ void wcycle_set_reset_counters(gmx_wallcycle* wc, int64_t reset_counters)
     }
     wc->reset_counters = reset_counters;
 }
+
+
+static bool s_registeredBinaryInformation = []()
+{
+    gmx::BinaryInformationRegistry& registry = gmx::globalBinaryInformationRegistry();
+    if (GMX_TARGET_X86)
+    {
+        registry.insert("RDTSCP usage", GMX_USE_RDTSCP ? "enabled" : "disabled");
+    }
+#if GMX_USE_NVTX
+    registry.insert("Instrumention API", "NVTX");
+#elif GMX_USE_ROCTX
+    registry.insert("Instrumention API", "ROCTX");
+#elif GMX_USE_ITT
+    registry.insert("Instrumention API", "ITT");
+#else
+    // This registry entry is optional, don't register anything.
+    GMX_UNUSED_VALUE(registry);
+#endif
+    return true;
+}();

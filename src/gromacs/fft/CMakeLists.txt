@@ -35,6 +35,7 @@
 add_library(fft INTERFACE)
 
 gmx_add_libgromacs_sources(
+     binary_information.cpp
      calcgrid.cpp
      fft.cpp
      fft5d.cpp

@@ -33,6 +33,9 @@
 
 include_guard()
 
+# Set default that we are not using MKL for FFTs.
+set(GMX_FFT_MKL 0)
+
 # Manage setup of the different FFT libraries we can use in Gromacs.
 set(PKG_FFT "")
 set(PKG_FFT_LIBS "")
@@ -142,9 +145,8 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
         message(FATAL_ERROR "Linking with MKL was requested, but was not successful: ${MKL_ERROR_MESSAGE}")
     endif()
 
-    # Set variables to signal that we have MKL available and should use it for FFTs.
+    # Set variable to signal that we have MKL available and should use it for FFTs.
     set(GMX_FFT_MKL 1)
-    set(HAVE_LIBMKL 1)
 
     # Hide internal MKL options
     get_cmake_property(_VARS VARIABLES)

@@ -77,14 +77,14 @@ macro(manage_linear_algebra_library name function_in_library)
                     message(WARNING "GMX_${name}_USER library ${GMX_${name}_USER} was specified, but it may not provide ${name}. We are proceeding by assuming you know what you are doing and that linking F77-style to this library will work.")
                 endif()
 
-                if(HAVE_LIBMKL)
+                if(GMX_FFT_MKL)
                     message(STATUS "MKL and GMX_${name}_USER were both specified. Using the latter for ${name}.")
                 endif()
             endif()
             set(GMX_DESCRIBE_${name} "External - user-supplied")
         endif()
 
-        if(NOT _library_was_found AND HAVE_LIBMKL)
+        if(NOT _library_was_found AND GMX_FFT_MKL)
             set(CMAKE_REQUIRED_LIBRARIES "${FFT_LIBRARIES}")
             set(CMAKE_REQUIRED_FLAGS "${FFT_LINKER_FLAGS}")
             check_function_exists(${function_in_library} _${name}_mkl_works)
@@ -171,7 +171,7 @@ endmacro()
 # Inputs:
 #     GMX_EXTERNAL_BLAS     user input about whether to detect BLAS
 #     GMX_EXTERNAL_LAPACK   user input about whether to detect LAPACK
-#     HAVE_LIBMKL           true if the build will link to MKL
+#     GMX_FFT_MKL           true if the build will link to MKL for FFT
 #     FFT_LINKER_FLAGS      used iff HAVE_MKL
 #     FFT_LIBRARIES         used iff HAVE_MKL
 #     GMX_BLAS_USER         user input for BLAS libraries to use

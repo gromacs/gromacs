@@ -38,6 +38,7 @@
 add_library(gpu_utils INTERFACE)
 
 gmx_add_libgromacs_sources(
+        binary_information.cpp
         clfftinitializer.cpp
         device_stream_manager.cpp
         gpu_utils.cpp
@@ -64,6 +65,7 @@ elseif(GMX_GPU_CUDA)
         pmalloc.cu
         )
     _gmx_add_files_to_property(CUDA_SOURCES
+        binary_information.cpp
         device_stream_manager.cpp
         )
 elseif(GMX_GPU_HIP)
@@ -74,6 +76,7 @@ elseif(GMX_GPU_HIP)
         pmalloc_hip.cpp
         )
     _gmx_add_files_to_property(HIP_SOURCES
+        binary_information.cpp
         device_stream_hip.cpp
         gpu_utils_hip.cpp
         pmalloc_hip.cpp
@@ -87,6 +90,7 @@ elseif(GMX_GPU_SYCL)
         pmalloc_sycl.cpp
         )
     _gmx_add_files_to_property(SYCL_SOURCES
+        binary_information.cpp
         devicebuffer_sycl.cpp
         device_context_manager.cpp
         device_context_sycl.cpp

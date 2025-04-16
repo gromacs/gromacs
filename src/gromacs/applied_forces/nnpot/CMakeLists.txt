@@ -34,6 +34,7 @@
 include(CheckLinkerFlag)
 
 gmx_add_libgromacs_sources(
+    binary_information.cpp
     nnpotoptions.cpp
     nnpot.cpp
     nnpottopologypreprocessor.cpp

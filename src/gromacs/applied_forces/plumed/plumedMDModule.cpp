@@ -50,6 +50,7 @@
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/imdmodule.h"
+#include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 
 #include "plumedOptions.h"
@@ -152,3 +153,10 @@ std::unique_ptr<IMDModule> PlumedModuleInfo::create()
     return std::make_unique<PlumedMDModule>();
 }
 } // namespace gmx
+
+static bool s_registeredBinaryInformation = []()
+{
+    gmx::BinaryInformationRegistry& registry = gmx::globalBinaryInformationRegistry();
+    registry.insert("Plumed support", "enabled");
+    return true;
+}();

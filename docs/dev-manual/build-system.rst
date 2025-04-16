@@ -254,10 +254,6 @@ Variables affecting compilation/linking
    :doc:`Mixed or Double precision </reference-manual/definitions>`
    for further information.
 
-.. cmake:: GMX_EXTRAE
-
-   Add support for tracing using `Extrae <https://tools.bsc.es/extrae>`_.
-
 .. cmake:: GMX_EXTERNAL_BLAS
 
    If not set (the default), CMake will first try to use an external BLAS library,

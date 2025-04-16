@@ -38,6 +38,7 @@
 #include "config.h"
 
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/gmxassert.h"
 
 #include "baseversion_gen.h"
@@ -68,48 +69,19 @@ void gmx_is_double_precision() {}
 void gmx_is_single_precision() {}
 #endif
 
-const char* getGpuImplementationString()
+static bool s_registeredBinaryInformation = []()
 {
-    // Some flavors of clang complain about unreachable returns.
-    CLANG_DIAGNOSTIC_IGNORE("-Wunreachable-code-return")
-    if (GMX_GPU)
+    gmx::BinaryInformationRegistry& registry = gmx::globalBinaryInformationRegistry();
+    registry.insert("GROMACS version", gmx_version());
+    const char* const git_hash = gmx_version_git_full_hash();
+    if (git_hash[0] != '\0')
     {
-        if (GMX_GPU_CUDA)
-        {
-            return "CUDA";
-        }
-        else if (GMX_GPU_OPENCL)
-        {
-            return "OpenCL";
-        }
-        else if (GMX_GPU_HIP)
-        {
-            return "HIP";
-        }
-        else if (GMX_GPU_SYCL)
-        {
-            if (GMX_SYCL_DPCPP)
-            {
-                return "SYCL (oneAPI DPC++)";
-            }
-            else if (GMX_SYCL_ACPP)
-            {
-                return "SYCL (AdaptiveCpp)";
-            }
-            else
-            {
-                return "SYCL (unknown)";
-            }
-        }
-        else
-        {
-            GMX_RELEASE_ASSERT(false, "Unknown GPU configuration");
-            return "impossible";
-        }
+        registry.insert("GIT SHA1 hash", git_hash);
     }
-    else
+    const char* const base_hash = gmx_version_git_central_base_hash();
+    if (base_hash[0] != '\0')
     {
-        return "disabled";
+        registry.insert("Branched from", base_hash);
     }
-    CLANG_DIAGNOSTIC_RESET
-}
+    return true;
+}();
