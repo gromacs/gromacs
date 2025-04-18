@@ -83,7 +83,7 @@ std::string describeMkl()
 const char* sc_blasDescription   = STRINGIZE(GMX_DESCRIBE_BLAS);
 const char* sc_lapackDescription = STRINGIZE(GMX_DESCRIBE_LAPACK);
 
-static bool s_registeredBinaryInformation = []()
+static const bool s_registeredBinaryInformation = []()
 {
     gmx::BinaryInformationRegistry& registry = gmx::globalBinaryInformationRegistry();
     // Describe the BLAS and LAPACK libraries. We generally don't know

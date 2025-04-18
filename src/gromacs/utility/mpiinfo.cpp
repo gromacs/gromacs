@@ -221,7 +221,7 @@ std::string cleanMpiLibraryVersionString()
     return returnString;
 }
 
-bool s_registeredBinaryInformation = []()
+bool const s_registeredBinaryInformation = []()
 {
     gmx::BinaryInformationRegistry& registry = gmx::globalBinaryInformationRegistry();
     if (GMX_THREAD_MPI)

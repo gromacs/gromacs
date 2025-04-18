@@ -1927,7 +1927,7 @@ int gmx_tng_get_lambda_output_interval(gmx_tng_trajectory_t gmx_tng)
 #endif
 }
 
-static bool s_registeredBinaryInformation = []()
+static const bool s_registeredBinaryInformation = []()
 {
     gmx::BinaryInformationRegistry& registry = gmx::globalBinaryInformationRegistry();
     registry.insert("TNG support", GMX_USE_TNG ? "enabled" : "disabled");

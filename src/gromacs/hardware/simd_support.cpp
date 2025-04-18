@@ -394,7 +394,7 @@ bool simdCheck(const CpuInfo& cpuInfo, gmx::SimdType wanted, FILE* log, bool war
 
 static const std::string& sc_simdDescription = gmx::simdString(GMX_SIMD_ENUM_VALUE);
 
-static bool s_registeredBinaryInformation = []()
+static const bool s_registeredBinaryInformation = []()
 {
     gmx::BinaryInformationRegistry& registry = gmx::globalBinaryInformationRegistry();
     registry.insert("SIMD instructions", sc_simdDescription);

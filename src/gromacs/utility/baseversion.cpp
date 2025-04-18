@@ -69,7 +69,7 @@ void gmx_is_double_precision() {}
 void gmx_is_single_precision() {}
 #endif
 
-static bool s_registeredBinaryInformation = []()
+static const bool s_registeredBinaryInformation = []()
 {
     gmx::BinaryInformationRegistry& registry = gmx::globalBinaryInformationRegistry();
     registry.insert("GROMACS version", gmx_version());

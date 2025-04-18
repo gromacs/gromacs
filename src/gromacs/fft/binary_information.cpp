@@ -225,7 +225,7 @@ std::string getMultiGpuFftDescriptionString()
 
 } // namespace
 
-static bool s_registeredBinaryInformation = []()
+static const bool s_registeredBinaryInformation = []()
 {
     gmx::BinaryInformationRegistry& registry = gmx::globalBinaryInformationRegistry();
     registry.insert("CPU FFT library", getCpuFftDescriptionString());

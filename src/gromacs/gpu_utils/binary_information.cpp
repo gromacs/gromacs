@@ -191,7 +191,7 @@ const char* getGpuImplementationString()
 
 } // namespace
 
-[[maybe_unused]] static bool s_registeredBinaryInformation = []()
+[[maybe_unused]] static const bool s_registeredBinaryInformation = []()
 {
     gmx::BinaryInformationRegistry& registry = gmx::globalBinaryInformationRegistry();
     registry.insert("GPU support", getGpuImplementationString());

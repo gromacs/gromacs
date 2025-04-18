@@ -410,7 +410,7 @@ void printBinaryInformation(TextWriter*                      writer,
 
 } // namespace gmx
 
-static bool s_registeredBinaryInformation = []()
+static const bool s_registeredBinaryInformation = []()
 {
     gmx::BinaryInformationRegistry& registry = gmx::globalBinaryInformationRegistry();
     // No better place to put these

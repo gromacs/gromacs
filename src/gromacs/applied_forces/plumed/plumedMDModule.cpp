@@ -154,7 +154,7 @@ std::unique_ptr<IMDModule> PlumedModuleInfo::create()
 }
 } // namespace gmx
 
-static bool s_registeredBinaryInformation = []()
+static const bool s_registeredBinaryInformation = []()
 {
     gmx::BinaryInformationRegistry& registry = gmx::globalBinaryInformationRegistry();
     registry.insert("Plumed support", "enabled");

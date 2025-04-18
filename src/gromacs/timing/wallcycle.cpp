@@ -1097,7 +1097,7 @@ void wcycle_set_reset_counters(gmx_wallcycle* wc, int64_t reset_counters)
 }
 
 
-static bool s_registeredBinaryInformation = []()
+static const bool s_registeredBinaryInformation = []()
 {
     gmx::BinaryInformationRegistry& registry = gmx::globalBinaryInformationRegistry();
     if (GMX_TARGET_X86)

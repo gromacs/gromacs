@@ -281,7 +281,7 @@ const std::string ColvarsModuleInfo::name_ = "colvars";
 
 } // namespace gmx
 
-static bool s_registeredBinaryInformation = []()
+static const bool s_registeredBinaryInformation = []()
 {
     gmx::BinaryInformationRegistry& registry = gmx::globalBinaryInformationRegistry();
     registry.insert("Colvars support", gmx::formatString("enabled (version %s)", COLVARS_VERSION));

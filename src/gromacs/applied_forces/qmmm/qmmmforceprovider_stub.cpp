@@ -118,7 +118,7 @@ CLANG_DIAGNOSTIC_RESET
 
 } // namespace gmx
 
-static bool s_registeredBinaryInformation = []()
+static const bool s_registeredBinaryInformation = []()
 {
     gmx::BinaryInformationRegistry& registry = gmx::globalBinaryInformationRegistry();
     registry.insert("CP2K support", "disabled");

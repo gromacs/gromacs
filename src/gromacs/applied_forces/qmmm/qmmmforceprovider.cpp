@@ -320,14 +320,13 @@ void QMMMForceProvider::calculateForces(const ForceProviderInput& fInput, ForceP
 
 } // namespace gmx
 
-static bool s_registeredBinaryInformation = []()
+static const bool s_registeredBinaryInformation = []()
 {
     std::vector<char> cp2kVersion(100);
     cp2k_get_version(cp2kVersion.data(), 100);
-    BinaryInformationRegistry& registry = globalBinaryInformationRegistry();
+    gmx::BinaryInformationRegistry& registry = gmx::globalBinaryInformationRegistry();
     registry.insert("CP2K support",
-                    !isNullOrEmpty(cp2kVersion.data())
-                            ? formatString("enabled (version %s)", cp2kVersion.data())
-                            : "enabled");
+                    cp2kVersion[0] != '\0' ? gmx::formatString("enabled (version %s)", cp2kVersion.data())
+                                           : "enabled");
     return true;
 }();
