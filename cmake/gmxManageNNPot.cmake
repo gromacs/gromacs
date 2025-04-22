@@ -42,6 +42,7 @@ if(TORCH_ALREADY_SEARCHED)
     set(FIND_TORCH_QUIETLY ON)
 endif()
 
+set(GMX_TORCH OFF)
 if(NOT GMX_NNPOT STREQUAL "OFF")
 
     find_package(Torch 2.0.0 QUIET)
