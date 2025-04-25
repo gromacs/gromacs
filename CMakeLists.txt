@@ -686,6 +686,8 @@ include(gmxManageColvars)
 
 include(gmxManagePlumed)
 
+include(gmxManageFMM)
+
 ##################################################
 # Process SIMD instruction settings
 ##################################################
