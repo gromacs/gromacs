@@ -60,13 +60,13 @@
 
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
+#include "gromacs/mdrun/binary_information.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/baseversion.h"
-#include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
@@ -1927,9 +1927,12 @@ int gmx_tng_get_lambda_output_interval(gmx_tng_trajectory_t gmx_tng)
 #endif
 }
 
-static const bool s_registeredBinaryInformation = []()
+namespace gmx
 {
-    gmx::BinaryInformationRegistry& registry = gmx::globalBinaryInformationRegistry();
-    registry.insert("TNG support", GMX_USE_TNG ? "enabled" : "disabled");
-    return true;
-}();
+
+std::string tngDescription()
+{
+    return GMX_USE_TNG ? "enabled" : "disabled";
+}
+
+} // namespace gmx

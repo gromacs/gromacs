@@ -47,7 +47,6 @@
 #include "gromacs/domdec/domdec_zones.h"
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/timing/wallcycle.h"
-#include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/message_string_collector.h"
 
 #include "nbnxm_gpu.h"
@@ -280,24 +279,20 @@ void nonbonded_verlet_t::setNonLocalGrid(const int                           gri
     pairSearch_->setNonLocalGrid(gridIndex, ddZone, gridDimensions, columns, atomInfo, x, nbat_.get());
 }
 
-} // namespace gmx
-
-static const bool s_registeredBinaryInformation = []()
+std::optional<std::string> nbnxmGpuClusteringDescription()
 {
-    gmx::BinaryInformationRegistry& registry = gmx::globalBinaryInformationRegistry();
 #if GMX_GPU
-    registry.insert(
-            "NBNxM GPU setup",
-            gmx::formatString("super-cluster %dx%dx%d / cluster %d (cluster-pair splitting %s)",
-                              GMX_GPU_NB_NUM_CLUSTER_PER_CELL_X,
-                              GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Y,
-                              GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Z,
-                              GMX_GPU_NB_CLUSTER_SIZE,
-                              GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT ? "off" : "on"));
+    return formatString("super-cluster %dx%dx%d / cluster %d (cluster-pair splitting %s)",
+                        GMX_GPU_NB_NUM_CLUSTER_PER_CELL_X,
+                        GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Y,
+                        GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Z,
+                        GMX_GPU_NB_CLUSTER_SIZE,
+                        GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT ? "off" : "on");
 #else
-    GMX_UNUSED_VALUE(registry);
+    return std::nullopt;
 #endif
-    return true;
-}();
+}
+
+} // namespace gmx
 
 /*! \endcond */

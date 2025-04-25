@@ -46,7 +46,6 @@
 // need to include gmxapi.h here as mpi.h needs to be included before mpi-ext.h
 #include "config.h"
 
-#include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -200,8 +199,6 @@ GpuAwareMpiStatus checkMpiZEAwareSupport()
     return status;
 }
 
-} // namespace gmx
-
 namespace
 {
 
@@ -221,47 +218,50 @@ std::string cleanMpiLibraryVersionString()
     return returnString;
 }
 
-bool const s_registeredBinaryInformation = []()
+} // namespace
+
+std::unordered_map<std::string, std::string> mpiDescriptions()
 {
-    gmx::BinaryInformationRegistry& registry = gmx::globalBinaryInformationRegistry();
+    std::unordered_map<std::string, std::string> descriptions;
+    // Note that these string keys must be kept in sync with
+    // those in mdrun/binary_information.cpp
     if (GMX_THREAD_MPI)
     {
-        registry.insert("MPI library", "thread_mpi");
-        registry.insert("MPI version", "built in");
+        descriptions["MPI library"] = "thread_mpi";
+        descriptions["MPI version"] = "built in";
     }
     else if (GMX_LIB_MPI)
     {
         std::vector<std::string> gpuAwareBackendsSupported;
-        if (gmx::checkMpiCudaAwareSupport() == gmx::GpuAwareMpiStatus::Supported)
+        if (checkMpiCudaAwareSupport() == GpuAwareMpiStatus::Supported)
         {
             gpuAwareBackendsSupported.emplace_back("CUDA");
         }
-        if (gmx::checkMpiHipAwareSupport() == gmx::GpuAwareMpiStatus::Supported)
+        if (checkMpiHipAwareSupport() == GpuAwareMpiStatus::Supported)
         {
             gpuAwareBackendsSupported.emplace_back("HIP");
         }
-        if (gmx::checkMpiZEAwareSupport() == gmx::GpuAwareMpiStatus::Supported)
+        if (checkMpiZEAwareSupport() == GpuAwareMpiStatus::Supported)
         {
             gpuAwareBackendsSupported.emplace_back("LevelZero");
         }
         if (!gpuAwareBackendsSupported.empty())
         {
-            registry.insert("MPI library",
-                            gmx::formatString("MPI (GPU-aware: %s)",
-                                              gmx::joinStrings(gpuAwareBackendsSupported, ", ").c_str()));
+            descriptions["MPI library"] = formatString(
+                    "MPI (GPU-aware: %s)", joinStrings(gpuAwareBackendsSupported, ", ").c_str());
         }
         else
         {
-            registry.insert("MPI library", "MPI");
+            descriptions["MPI library"] = "MPI";
         }
-        registry.insert("MPI version", cleanMpiLibraryVersionString());
+        descriptions["MPI version"] = cleanMpiLibraryVersionString();
     }
     else
     {
-        registry.insert("MPI library", "none");
-        registry.insert("MPI version", "none");
+        descriptions["MPI library"] = "none";
+        descriptions["MPI version"] = "none";
     }
-    return true;
-}();
+    return descriptions;
+}
 
-} // namespace
+} // namespace gmx

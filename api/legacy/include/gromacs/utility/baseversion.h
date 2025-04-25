@@ -42,6 +42,9 @@
 #ifndef GMX_UTILITY_BASEVERSION_H
 #define GMX_UTILITY_BASEVERSION_H
 
+#include <string>
+#include <unordered_map>
+
 /*! \brief
  * Version string, containing the version, date, and abbreviated hash.
  *
@@ -96,5 +99,13 @@ void gmx_is_single_precision();
  * DOI string, or empty when not a release build.
  */
 const char* gmxDOI();
+
+namespace gmx
+{
+
+//! Returns information for describing the GROMACS version
+std::unordered_map<std::string, std::string> versionDescriptions();
+
+} // namespace gmx
 
 #endif

@@ -110,6 +110,8 @@
 #define GMX_NBNXM_NBNXM_H
 
 #include <memory>
+#include <optional>
+#include <string>
 
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/math/vectypes.h"
@@ -471,6 +473,10 @@ void nbnxn_put_on_grid_nonlocal(nonbonded_verlet_t*     nb_verlet,
                                 const gmx::DomdecZones& zones,
                                 ArrayRef<const int32_t> atomInfo,
                                 ArrayRef<const RVec>    x);
+
+/*! \brief Returns information for describing the NBNXM GPU clustering
+ * support, if applicable to the build. */
+std::optional<std::string> nbnxmGpuClusteringDescription();
 
 } // namespace gmx
 

@@ -42,8 +42,8 @@
 #include <algorithm>
 #include <string_view>
 
+#include "gromacs/mdrun/binary_information.h"
 #include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/exceptions.h"

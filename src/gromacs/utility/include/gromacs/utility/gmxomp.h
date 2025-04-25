@@ -100,4 +100,12 @@ std::optional<std::string> messageWhenOpenMPLibraryWillSetAffinity();
 
 /*! \} */
 
+namespace gmx
+{
+
+//! Returns information for describing the OpenMP support
+std::string openmpDescription();
+
+} // namespace gmx
+
 #endif

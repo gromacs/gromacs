@@ -39,12 +39,13 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/linearalgebra/binary_information.h"
+
 #if GMX_FFT_MKL
 #    include <mkl.h>
 #endif
 
 #include "gromacs/utility/basedefinitions.h"
-#include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace
@@ -72,8 +73,6 @@ std::string describeMkl()
 #endif
 }
 
-} // namespace
-
 // Turn A into a string literal without expanding macro definitions.
 #define STRINGIZE_NO_EXPAND(A) #A
 
@@ -83,31 +82,35 @@ std::string describeMkl()
 const char* sc_blasDescription   = STRINGIZE(GMX_DESCRIBE_BLAS);
 const char* sc_lapackDescription = STRINGIZE(GMX_DESCRIBE_LAPACK);
 
-static const bool s_registeredBinaryInformation = []()
+} // namespace
+
+namespace gmx
 {
-    gmx::BinaryInformationRegistry& registry = gmx::globalBinaryInformationRegistry();
-    // Describe the BLAS and LAPACK libraries. We generally don't know
+
+std::string blasDescription()
+{
+    // Describe the BLAS library. We generally don't know
     // much about what external library was detected, but we do in the
     // case of MKL so then it is reported.
-    bool descriptionContainsMkl = std::strstr(sc_blasDescription, "MKL") != nullptr;
-    if (GMX_FFT_MKL && descriptionContainsMkl)
+    const bool descriptionContainsMkl = std::strstr(sc_blasDescription, "MKL") != nullptr;
+    if (descriptionContainsMkl)
     {
-        registry.insert("BLAS library", describeMkl());
+        return describeMkl();
     }
-    else
+    return sc_blasDescription;
+}
+
+std::string lapackDescription()
+{
+    // Describe the LAPACK library. We generally don't know
+    // much about what external library was detected, but we do in the
+    // case of MKL so then it is reported.
+    const bool descriptionContainsMkl = std::strstr(sc_lapackDescription, "MKL") != nullptr;
+    if (descriptionContainsMkl)
     {
-        registry.insert("BLAS library", sc_blasDescription);
-        GMX_UNUSED_VALUE(descriptionContainsMkl);
+        return describeMkl();
     }
-    descriptionContainsMkl = std::strstr(sc_lapackDescription, "MKL") != nullptr;
-    if (GMX_FFT_MKL && descriptionContainsMkl)
-    {
-        registry.insert("LAPACK library", describeMkl());
-    }
-    else
-    {
-        registry.insert("LAPACK library", sc_lapackDescription);
-        GMX_UNUSED_VALUE(descriptionContainsMkl);
-    }
-    return true;
-}();
+    return sc_lapackDescription;
+}
+
+} // namespace gmx

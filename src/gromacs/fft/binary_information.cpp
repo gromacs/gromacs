@@ -39,6 +39,8 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/fft/binary_information.h"
+
 #include "config.h"
 
 #if GMX_FFT_FFTW3 || GMX_FFT_ARMPL_FFTW3
@@ -54,10 +56,11 @@
 #    include <oneapi/math/dft.hpp>
 #endif
 
-#include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
+namespace gmx
+{
 namespace
 {
 
@@ -107,8 +110,10 @@ std::string describeOneMath()
 #endif
 }
 
+} // namespace
+
 //! Construct a string that describes the library that provides CPU FFT support to this build
-std::string getCpuFftDescriptionString()
+std::string cpuFftDescription()
 {
 // Define the FFT description string
 #if GMX_FFT_FFTW3 || GMX_FFT_ARMPL_FFTW3
@@ -133,7 +138,7 @@ std::string getCpuFftDescriptionString()
 }
 
 //! Construct a string that describes the library that provides GPU FFT support to this build
-std::string getGpuFftDescriptionString()
+std::string gpuFftDescription()
 {
     if (GMX_GPU)
     {
@@ -186,7 +191,7 @@ std::string getGpuFftDescriptionString()
 
 /*! \brief Construct a string that describes the library (if any)
  * that provides multi-GPU FFT support to this build */
-std::string getMultiGpuFftDescriptionString()
+std::string multiGpuFftDescription()
 {
     if (GMX_USE_Heffte)
     {
@@ -223,13 +228,4 @@ std::string getMultiGpuFftDescriptionString()
     }
 }
 
-} // namespace
-
-static const bool s_registeredBinaryInformation = []()
-{
-    gmx::BinaryInformationRegistry& registry = gmx::globalBinaryInformationRegistry();
-    registry.insert("CPU FFT library", getCpuFftDescriptionString());
-    registry.insert("GPU FFT library", getGpuFftDescriptionString());
-    registry.insert("Multi-GPU FFT", getMultiGpuFftDescriptionString());
-    return true;
-}();
+} // namespace gmx

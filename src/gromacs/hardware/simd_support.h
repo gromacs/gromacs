@@ -47,6 +47,8 @@
 
 #include <cstdio>
 
+#include <string>
+
 namespace gmx
 {
 
@@ -87,6 +89,9 @@ SimdType simdSuggested(const CpuInfo& c);
 bool simdCheck(const CpuInfo& cpuInfo, SimdType wanted, FILE* log, bool warnToStdErr);
 
 /*! \endcond */
+
+//! Return a string describing the SIMD support
+std::string simdDescription();
 
 } // namespace gmx
 

@@ -38,7 +38,6 @@
 #include "config.h"
 
 #include "gromacs/utility/basedefinitions.h"
-#include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/gmxassert.h"
 
 #include "baseversion_gen.h"
@@ -69,19 +68,26 @@ void gmx_is_double_precision() {}
 void gmx_is_single_precision() {}
 #endif
 
-static const bool s_registeredBinaryInformation = []()
+namespace gmx
 {
-    gmx::BinaryInformationRegistry& registry = gmx::globalBinaryInformationRegistry();
-    registry.insert("GROMACS version", gmx_version());
-    const char* const git_hash = gmx_version_git_full_hash();
+
+std::unordered_map<std::string, std::string> versionDescriptions()
+{
+    std::unordered_map<std::string, std::string> descriptions;
+    // Note that these string keys must be kept in sync with
+    // those in mdrun/binary_information.cpp
+    descriptions["GROMACS version"] = gmx_version();
+    const char* const git_hash      = gmx_version_git_full_hash();
     if (git_hash[0] != '\0')
     {
-        registry.insert("GIT SHA1 hash", git_hash);
+        descriptions["GIT SHA1 hash"] = git_hash;
     }
     const char* const base_hash = gmx_version_git_central_base_hash();
     if (base_hash[0] != '\0')
     {
-        registry.insert("Branched from", base_hash);
+        descriptions["Branched from"] = base_hash;
     }
-    return true;
-}();
+    return descriptions;
+}
+
+} // namespace gmx

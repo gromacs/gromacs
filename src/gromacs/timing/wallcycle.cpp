@@ -53,7 +53,6 @@
 #include "gromacs/timing/gpu_timing.h"
 #include "gromacs/timing/wallcyclereporting.h"
 #include "gromacs/utility/basedefinitions.h"
-#include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
@@ -1096,23 +1095,30 @@ void wcycle_set_reset_counters(gmx_wallcycle* wc, int64_t reset_counters)
     wc->reset_counters = reset_counters;
 }
 
-
-static const bool s_registeredBinaryInformation = []()
+namespace gmx
 {
-    gmx::BinaryInformationRegistry& registry = gmx::globalBinaryInformationRegistry();
+
+std::optional<std::string> rdtscpDescription()
+{
     if (GMX_TARGET_X86)
     {
-        registry.insert("RDTSCP usage", GMX_USE_RDTSCP ? "enabled" : "disabled");
+        return GMX_USE_RDTSCP ? "enabled" : "disabled";
     }
+    return std::nullopt;
+}
+
+std::optional<std::string> instrumentationApiDescription()
+{
 #if GMX_USE_NVTX
-    registry.insert("Instrumention API", "NVTX");
+    return "NVTX";
 #elif GMX_USE_ROCTX
-    registry.insert("Instrumention API", "ROCTX");
+    return "ROCTX";
 #elif GMX_USE_ITT
-    registry.insert("Instrumention API", "ITT");
+    return "ITT";
 #else
-    // This registry entry is optional, don't register anything.
-    GMX_UNUSED_VALUE(registry);
+    // This registry entry is optional
+    return std::nullopt;
 #endif
-    return true;
-}();
+}
+
+} // namespace gmx

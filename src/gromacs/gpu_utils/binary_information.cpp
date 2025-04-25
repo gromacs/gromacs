@@ -39,10 +39,11 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/gpu_utils/binary_information.h"
+
 #include "config.h"
 
 #include "gromacs/utility/basedefinitions.h"
-#include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -191,35 +192,42 @@ const char* getGpuImplementationString()
 
 } // namespace
 
-[[maybe_unused]] static const bool s_registeredBinaryInformation = []()
+namespace gmx
 {
-    gmx::BinaryInformationRegistry& registry = gmx::globalBinaryInformationRegistry();
-    registry.insert("GPU support", getGpuImplementationString());
+
+std::unordered_map<std::string, std::string> gpuDescriptions()
+{
+    std::unordered_map<std::string, std::string> descriptions;
+    // Note that these string keys must be kept in sync with
+    // those in mdrun/binary_information.cpp
+    descriptions["GPU support"] = getGpuImplementationString();
 #if GMX_GPU_OPENCL
-    registry.insert("OpenCL include dir", OPENCL_INCLUDE_DIR);
-    registry.insert("OpenCL library", OPENCL_LIBRARY);
-    registry.insert("OpenCL version", OPENCL_VERSION_STRING);
+    descriptions["OpenCL include dir"] = OPENCL_INCLUDE_DIR;
+    descriptions["OpenCL library"]     = OPENCL_LIBRARY;
+    descriptions["OpenCL version"]     = OPENCL_VERSION_STRING;
 #elif GMX_GPU_CUDA
-    registry.insert("CUDA compiler", CUDA_COMPILER_INFO);
-    registry.insert("CUDA compiler flags",
-                    std::string(CUDA_COMPILER_FLAGS) + " " + CMAKE_BUILD_CONFIGURATION_CXX_FLAGS);
-    registry.insert("CUDA driver", getCudaDriverVersionString());
-    registry.insert("CUDA runtime", getCudaRuntimeVersionString());
+    descriptions["CUDA compiler"] = CUDA_COMPILER_INFO;
+    descriptions["CUDA compiler flags"] =
+            std::string(CUDA_COMPILER_FLAGS) + " " + CMAKE_BUILD_CONFIGURATION_CXX_FLAGS;
+    descriptions["CUDA driver"]  = getCudaDriverVersionString();
+    descriptions["CUDA runtime"] = getCudaRuntimeVersionString();
 #elif GMX_SYCL_DPCPP
-    registry.insert("SYCL version", "oneAPI DPC++ " + getSyclCompilerVersion());
-    registry.insert("SYCL compiler flags", SYCL_DPCPP_COMPILER_FLAGS);
-    registry.insert("SYCL linker flags", SYCL_DPCPP_LINKER_FLAGS);
+    descriptions["SYCL version"]        = "oneAPI DPC++ " + getSyclCompilerVersion();
+    descriptions["SYCL compiler flags"] = SYCL_DPCPP_COMPILER_FLAGS;
+    descriptions["SYCL linker flags"]   = SYCL_DPCPP_LINKER_FLAGS;
 #elif GMX_SYCL_ACPP
-    registry.insert("SYCL version", getSyclCompilerVersion());
-    registry.insert("SYCL compiler", SYCL_ACPP_COMPILER_LAUNCHER);
-    registry.insert("SYCL compiler flags", SYCL_ACPP_COMPILER_FLAGS);
-    registry.insert("SYCL GPU flags", SYCL_ACPP_DEVICE_COMPILER_FLAGS);
-    registry.insert("SYCL targets", SYCL_ACPP_TARGETS);
+    descriptions["SYCL version"]        = getSyclCompilerVersion();
+    descriptions["SYCL compiler"]       = SYCL_ACPP_COMPILER_LAUNCHER;
+    descriptions["SYCL compiler flags"] = SYCL_ACPP_COMPILER_FLAGS;
+    descriptions["SYCL GPU flags"]      = SYCL_ACPP_DEVICE_COMPILER_FLAGS;
+    descriptions["SYCL targets"]        = SYCL_ACPP_TARGETS;
 #elif GMX_GPU_HIP
-    registry.insert("HIP compiler", HIP_COMPILER_INFO);
-    registry.insert("HIP compiler flags",
-                    std::string(HIP_COMPILER_FLAGS) + " " + CMAKE_BUILD_CONFIGURATION_CXX_FLAGS);
-    registry.insert("HIP driver/runtime", getHipDriverAndRuntimeVersionString());
+    descriptions["HIP compiler"] = HIP_COMPILER_INFO;
+    descriptions["HIP compiler flags"] =
+            std::string(HIP_COMPILER_FLAGS) + " " + CMAKE_BUILD_CONFIGURATION_CXX_FLAGS;
+    descriptions["HIP driver/runtime"] = getHipDriverAndRuntimeVersionString();
 #endif
-    return true;
-}();
+    return descriptions;
+};
+
+} // namespace gmx

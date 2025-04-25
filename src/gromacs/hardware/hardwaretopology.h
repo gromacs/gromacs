@@ -438,6 +438,9 @@ private:
     int          maxThreads_;   //!< Recommended max # threads
 };
 
+//! Returns information for describing the hwloc support
+std::string hwlocDescription();
+
 } // namespace gmx
 
 #endif // GMX_HARDWARE_HARDWARETOPOLOGY_H

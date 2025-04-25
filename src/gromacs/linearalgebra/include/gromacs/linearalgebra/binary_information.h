@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright 2024- The GROMACS Authors
+ * Copyright 2025- The GROMACS Authors
  * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
  * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
  *
@@ -31,42 +31,18 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
-/*! \internal \file
- * \brief
- * Declares factory structure for Plumed MDModule class
- *
- * \author Daniele Rapetti <drapetti@sissa.it>
- * \ingroup module_applied_forces
- */
-#ifndef PLUMED_MDMODULE_H
-#define PLUMED_MDMODULE_H
+#ifndef GMX_LINEARALGEBRA_BINARY_INFORMATION_H
+#define GMX_LINEARALGEBRA_BINARY_INFORMATION_H
 
-#include <memory>
 #include <string>
-#include <string_view>
 
 namespace gmx
 {
 
-class IMDModule;
-
-/*! \internal
-    \brief Information about the PLUMED module.
- *
- * Provides name and method to create a PLUMED module.
- */
-struct PlumedModuleInfo
-{
-    /*! \brief
-     * Creates a module for applying forces with PLUMED.
-     */
-    static std::unique_ptr<IMDModule> create();
-    //! The name of the module
-    static constexpr std::string_view name_ = "plumed";
-};
-
-//! Returns information for describing the PLUMED support
-std::string plumedDescription();
+//! Returns information for describing the BLAS libary
+std::string blasDescription();
+//! Returns information for describing the LAPACK libary
+std::string lapackDescription();
 
 } // namespace gmx
 

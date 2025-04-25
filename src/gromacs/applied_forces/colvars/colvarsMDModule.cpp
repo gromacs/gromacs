@@ -53,7 +53,6 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/iforceprovider.h"
 #include "gromacs/mdtypes/imdmodule.h"
-#include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -279,11 +278,9 @@ std::unique_ptr<IMDModule> ColvarsModuleInfo::create()
 
 const std::string ColvarsModuleInfo::name_ = "colvars";
 
-} // namespace gmx
-
-static const bool s_registeredBinaryInformation = []()
+std::string colvarsDescription()
 {
-    gmx::BinaryInformationRegistry& registry = gmx::globalBinaryInformationRegistry();
-    registry.insert("Colvars support", gmx::formatString("enabled (version %s)", COLVARS_VERSION));
-    return true;
-}();
+    return formatString("enabled (version %s)", COLVARS_VERSION);
+}
+
+} // namespace gmx

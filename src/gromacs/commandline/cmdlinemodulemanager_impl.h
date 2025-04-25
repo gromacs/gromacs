@@ -48,8 +48,8 @@
 
 #include "gromacs/commandline/cmdlinemodule.h"
 #include "gromacs/commandline/cmdlinemodulemanager.h"
+#include "gromacs/mdrun/binary_information.h"
 #include "gromacs/options/options.h"
-#include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/gmxassert.h"
 

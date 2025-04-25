@@ -33,27 +33,32 @@
  */
 /*! \internal \file
  * \brief
- * Registers binary information for NNPot
+ * \brief Defines functionality for printing information about the
+ * Torch support in the currently running binary
  *
  * \ingroup module_applied_forces
  */
 
+#include "gromacs/applied_forces/nnpot/binary_information.h"
+
 #include "config.h"
 
-#include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/stringutil.h"
 
 #if GMX_TORCH
 #    include <torch/torch.h>
 #endif
 
-static const bool s_registeredBinaryInformation = []()
+namespace gmx
 {
-    gmx::BinaryInformationRegistry& registry = gmx::globalBinaryInformationRegistry();
+
+std::string torchDescription()
+{
 #if GMX_TORCH
-    registry.insert("Torch support", gmx::formatString("enabled (version %s)", TORCH_VERSION));
+    return formatString("enabled (version %s)", TORCH_VERSION);
 #else
-    registry.insert("Torch support", "disabled");
+    return "disabled";
 #endif
-    return true;
-}();
+}
+
+} // namespace gmx

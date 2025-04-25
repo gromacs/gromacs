@@ -51,7 +51,6 @@
 #include "gromacs/math/units.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
-#include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/filestream.h"
 #include "gromacs/utility/stringutil.h"
@@ -318,15 +317,11 @@ void QMMMForceProvider::calculateForces(const ForceProviderInput& fInput, ForceP
     }
 };
 
-} // namespace gmx
-
-static const bool s_registeredBinaryInformation = []()
+std::string qmmmDescription()
 {
     std::vector<char> cp2kVersion(100);
     cp2k_get_version(cp2kVersion.data(), 100);
-    gmx::BinaryInformationRegistry& registry = gmx::globalBinaryInformationRegistry();
-    registry.insert("CP2K support",
-                    cp2kVersion[0] != '\0' ? gmx::formatString("enabled (version %s)", cp2kVersion.data())
-                                           : "enabled");
-    return true;
-}();
+    return cp2kVersion[0] != '\0' ? formatString("enabled (version %s)", cp2kVersion.data()) : "enabled";
+}
+
+} // namespace gmx

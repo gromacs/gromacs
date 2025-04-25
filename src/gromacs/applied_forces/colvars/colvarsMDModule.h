@@ -64,6 +64,8 @@ struct ColvarsModuleInfo
     static const std::string name_;
 };
 
+//! Returns information for describing the colvars support
+std::string colvarsDescription();
 
 } // namespace gmx
 

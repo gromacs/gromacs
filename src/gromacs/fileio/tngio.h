@@ -39,6 +39,7 @@
 #include <cstdio>
 
 #include <filesystem>
+#include <string>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -208,5 +209,13 @@ int gmx_tng_get_box_output_interval(gmx_tng_trajectory_t gmx_tng);
  *
  * \return The box output interval, or -1 when TNG support is not available. */
 int gmx_tng_get_lambda_output_interval(gmx_tng_trajectory_t gmx_tng);
+
+namespace gmx
+{
+
+//! Returns information for describing the TNG support
+std::string tngDescription();
+
+} // namespace gmx
 
 #endif /* GMX_FILEIO_TNGIO_H */

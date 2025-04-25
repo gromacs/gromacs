@@ -34,6 +34,9 @@
 #ifndef GMX_UTILITY_MPI_INFO_H
 #define GMX_UTILITY_MPI_INFO_H
 
+#include <string>
+#include <unordered_map>
+
 namespace gmx
 {
 /*! \brief Enum describing GPU-aware support in underlying MPI library.
@@ -80,6 +83,8 @@ GpuAwareMpiStatus checkMpiHipAwareSupport();
  * \returns     LevelZero-aware status in MPI implementation */
 GpuAwareMpiStatus checkMpiZEAwareSupport();
 
+//! Returns information for describing the MPI support
+std::unordered_map<std::string, std::string> mpiDescriptions();
 
 } // namespace gmx
 

@@ -607,4 +607,14 @@ inline void wallcycle_sub_stop(gmx_wallcycle* wc, WallCycleSubCounter ewcs)
     }
 }
 
+namespace gmx
+{
+
+//! When targeting x86,  returns whether RDTSCP support is present
+std::optional<std::string> rdtscpDescription();
+//! Returns information for describing a possible profiling/instrumentation API
+std::optional<std::string> instrumentationApiDescription();
+
+} // namespace gmx
+
 #endif
