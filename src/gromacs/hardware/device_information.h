@@ -114,32 +114,19 @@ enum class DeviceStatus : int
 };
 
 /*! \brief Names of the GPU detection/check results
- *
- * Check-source wants to warn about the use of a symbol name that would
- * require an inclusion of config.h. However the use is in a comment, so that
- * is a false warning. So C-style string concatenation is used to fool the
- * naive parser in check-source. That needs a clang-format suppression
- * in order to look reasonable. Also clang-tidy wants to suggest that a comma is
- * missing, so that is suppressed.
  */
-static const gmx::EnumerationArray<DeviceStatus, const char*> c_deviceStateString = {
+static constexpr gmx::EnumerationArray<DeviceStatus, const char*> c_deviceStateString = {
     "compatible",
     "nonexistent",
     "incompatible",
-    // clang-format off
-    // NOLINTNEXTLINE(bugprone-suspicious-missing-comma)
-    "incompatible (please recompile with correct GMX" "_GPU_NB_CLUSTER_SIZE of 4)",
-    // clang-format on
+    "incompatible (please recompile with correct GMX_GPU_NB_CLUSTER_SIZE of 4)",
     "incompatible (please use CUDA build for NVIDIA Volta GPUs or newer)",
     "not recommended (please use ONEAPI_DEVICE_SELECTOR to limit visibility to a single backend)",
     "non-functional",
     "unavailable",
     "not in set of targeted devices",
     "incompatible (AMD RDNA devices are not supported)", // Issue #4521
-    // clang-format off
-    // NOLINTNEXTLINE(bugprone-suspicious-missing-comma)
-    "incompatible (please recompile with GMX" "_ENABLE_AMD_RDNA_SUPPORT)"
-    // clang-format on
+    "incompatible (please recompile with GMX_ENABLE_AMD_RDNA_SUPPORT)"
 };
 
 //! Device vendors
