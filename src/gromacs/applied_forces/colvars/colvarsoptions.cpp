@@ -234,15 +234,14 @@ void ColvarsOptions::readInternalParametersFromKvt(const KeyValueTreeObject& tre
 
 
     // Retrieve the content of all inputfiles listed in the KVT as "colvars-inputStreams-filename"
+    const std::string inputStreamsKeySubstring = c_colvarsModuleName + "-" + c_inputStreamsTag_;
     for (const auto& a : tree.properties())
     {
-        std::size_t pos = a.key().find(c_colvarsModuleName + "-" + c_inputStreamsTag_);
+        std::size_t pos = a.key().find(inputStreamsKeySubstring);
         if (pos != std::string::npos)
         {
-            std::string filename = a.key().substr(
-                    pos + std::string(c_colvarsModuleName + "-" + c_inputStreamsTag_).size() + 1);
-
-            inputFiles_[filename] = tree[a.key()].cast<std::string>();
+            const std::string filename = a.key().substr(pos + inputStreamsKeySubstring.size() + 1);
+            inputFiles_[filename]      = tree[a.key()].cast<std::string>();
         }
     }
 
