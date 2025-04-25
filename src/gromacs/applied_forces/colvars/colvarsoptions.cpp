@@ -103,6 +103,27 @@ void colvarsMdpTransformFromString(IKeyValueTreeTransformRules* rules,
             .transformWith(transformationFunction);
 }
 
+/*! \brief Following Tags denotes names of parameters from .mdp file
+ * \note Changing this strings will break .tpr backwards compability
+ */
+//! \{
+const std::string c_activeTag_          = "active";
+const std::string c_colvarsFileNameTag_ = "configfile";
+const std::string c_colvarsSeedTag_     = "seed";
+//! \}
+
+
+/*! \brief This tags for parameters which will be generated during grompp
+ * and stored into *.tpr file via KVT
+ */
+//! \{
+const std::string c_inputStreamsTag_   = "inputStreams";
+const std::string c_configStringTag_   = "configString";
+const std::string c_startingCoordsTag_ = "startingCoords";
+const std::string c_ensTempTag_        = "ensTemp";
+
+//! \}
+
 } // namespace
 
 

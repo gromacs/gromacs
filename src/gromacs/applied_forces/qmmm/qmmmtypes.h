@@ -138,8 +138,6 @@ struct QMMMParameters
         qmBox_{ { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 } }, qmTrans_{ 0.0, 0.0, 0.0 }
     {
     }
-
-    GMX_DISALLOW_COPY_AND_ASSIGN(QMMMParameters);
 };
 
 } // namespace gmx

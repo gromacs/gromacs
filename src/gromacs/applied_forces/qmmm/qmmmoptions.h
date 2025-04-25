@@ -154,32 +154,6 @@ private:
      */
     void processExternalInputFile();
 
-    /*! \brief Following Tags denotes names of parameters from .mdp file
-     * \note Changing this strings will break .tpr backwards compatibility
-     */
-    //! \{
-    const std::string c_activeTag_              = "active";
-    const std::string c_qmGroupTag_             = "qmgroup";
-    const std::string c_qmChargeTag_            = "qmcharge";
-    const std::string c_qmMultTag_              = "qmmultiplicity";
-    const std::string c_qmMethodTag_            = "qmmethod";
-    const std::string c_qmUserInputFileNameTag_ = "qmfilenames";
-    //! \}
-
-    /*! \brief This tags for parameters which will be generated during grompp
-     * and stored into *.tpr file via KVT
-     */
-    //! \{
-    const std::string c_atomNumbersTag_ = "atomnumbers";
-    const std::string c_mmGroupTag_     = "mmgroup";
-    const std::string c_qmLinkTag_      = "qmlink";
-    const std::string c_mmLinkTag_      = "mmlink";
-    const std::string c_qmInputTag_     = "qminput";
-    const std::string c_qmPdbTag_       = "qmpdb";
-    const std::string c_qmBoxTag_       = "qmbox";
-    const std::string c_qmTransTag_     = "qmtrans";
-    //! \}
-
     /*! \brief MDLogger during preprocessing
      *
      * This is a pointer only because we need an "optional reference"

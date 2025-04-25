@@ -174,30 +174,6 @@ private:
             void
             checkNNPotModel();
 
-    /*! \brief Following Tags denotes names of parameters from .mdp file
-     * \note Changing this strings will break .tpr backwards compability
-     */
-    //! \{
-    const std::string c_activeTag_        = "active";
-    const std::string c_modelFileNameTag_ = "modelfile";
-    const std::string c_inputGroupTag_    = "input-group";
-    //! complement to input_group, needed to write to tpr
-    const std::string c_mmGroupTag_ = "mm-group";
-
-    /*! \brief User defined input to NN model.
-     *
-     *  Possible values:
-     * - "atom-positions" vector of atom positions
-     * - "atom-numbers" vector of atom types
-     * - "box" unit vectors of simulation box
-     * - "pbc" boolean vector indicating periodic boundary conditions
-     */
-    const std::string c_modelInput1Tag_ = "model-input1";
-    const std::string c_modelInput2Tag_ = "model-input2";
-    const std::string c_modelInput3Tag_ = "model-input3";
-    const std::string c_modelInput4Tag_ = "model-input4";
-    //! \}
-
     //! NNPot parameters
     NNPotParameters params_;
 

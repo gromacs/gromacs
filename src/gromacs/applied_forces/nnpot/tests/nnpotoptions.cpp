@@ -48,17 +48,14 @@
 #include "gromacs/domdec/localatomset.h"
 #include "gromacs/fileio/warninp.h"
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
-#include "gromacs/options/options.h"
-#include "gromacs/options/treesupport.h"
+#include "gromacs/mdtypes/imdpoptionprovider_test_helper.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/keyvaluetreemdpwriter.h"
-#include "gromacs/utility/keyvaluetreetransform.h"
 #include "gromacs/utility/logger.h"
-#include "gromacs/utility/stringcompare.h"
 #include "gromacs/utility/stringstream.h"
 #include "gromacs/utility/textwriter.h"
 
@@ -73,26 +70,15 @@ namespace gmx
 namespace test
 {
 
+//! Convenience method to avoid specifying the template parameter repetitively
+static NNPotOptions fillOptionsFromMdpValues(const KeyValueTreeObject& moduleMdpValues)
+{
+    return test::fillOptionsFromMdpValuesTemplate<NNPotOptions>(moduleMdpValues);
+}
+
 class NNPotOptionsTest : public ::testing::Test
 {
 public:
-    void setFromMdpValues(const KeyValueTreeObject& qmmmMdpValues)
-    {
-        // Setup options
-        Options qmmmModuleOptions;
-        nnpotOptions_.initMdpOptions(&qmmmModuleOptions);
-
-        // Add rules to transform mdp inputs to densityFittingModule data
-        KeyValueTreeTransformer transform;
-        transform.rules()->addRule().keyMatchType("/", StringCompareType::CaseAndDashInsensitive);
-
-        nnpotOptions_.initMdpTransform(transform.rules());
-
-        // Execute the transform on the mdpValues
-        auto transformedMdpValues = transform.transform(qmmmMdpValues, nullptr);
-        assignOptionsFromKeyValueTree(&qmmmModuleOptions, transformedMdpValues.object(), nullptr);
-    }
-
     static KeyValueTreeObject nnpotBuildDefaultMdpValues()
     {
         // Prepare MDP inputs
@@ -128,14 +114,12 @@ public:
 
         return IndexGroupsAndNames(indexGroups);
     }
-
-protected:
-    NNPotOptions nnpotOptions_;
 };
 
 TEST_F(NNPotOptionsTest, DefaultParameters)
 {
-    const NNPotParameters&          defaultParams = nnpotOptions_.parameters();
+    NNPotOptions                    nnpotOptions;
+    const NNPotParameters&          defaultParams = nnpotOptions.parameters();
     gmx::test::TestReferenceData    data;
     gmx::test::TestReferenceChecker checker(data.rootChecker());
 
@@ -150,9 +134,10 @@ TEST_F(NNPotOptionsTest, DefaultParameters)
 
 TEST_F(NNPotOptionsTest, OptionSetsActive)
 {
-    EXPECT_FALSE(nnpotOptions_.parameters().active_);
-    setFromMdpValues(nnpotBuildDefaultMdpValues());
-    EXPECT_TRUE(nnpotOptions_.parameters().active_);
+    NNPotOptions nnpotOptions;
+    EXPECT_FALSE(nnpotOptions.parameters().active_);
+    nnpotOptions = fillOptionsFromMdpValues(nnpotBuildDefaultMdpValues());
+    EXPECT_TRUE(nnpotOptions.parameters().active_);
 }
 
 TEST_F(NNPotOptionsTest, OutputNoDefaultValuesWhenInactive)
@@ -162,7 +147,8 @@ TEST_F(NNPotOptionsTest, OutputNoDefaultValuesWhenInactive)
     KeyValueTreeBuilder       builder;
     KeyValueTreeObjectBuilder builderObject = builder.rootObject();
 
-    nnpotOptions_.buildMdpOutput(&builderObject);
+    NNPotOptions nnpotOptions;
+    nnpotOptions.buildMdpOutput(&builderObject);
     {
         TextWriter writer(&stream);
         writeKeyValueTreeAsMdp(&writer, builder.build());
@@ -179,14 +165,14 @@ TEST_F(NNPotOptionsTest, OutputDefaultValuesWhenActive)
 {
 
     // Set nnpot-active = true
-    setFromMdpValues(nnpotBuildDefaultMdpValues());
+    NNPotOptions nnpotOptions = fillOptionsFromMdpValues(nnpotBuildDefaultMdpValues());
 
     // Transform module data into a flat key-value tree for output.
     StringOutputStream        stream;
     KeyValueTreeBuilder       builder;
     KeyValueTreeObjectBuilder builderObject = builder.rootObject();
 
-    nnpotOptions_.buildMdpOutput(&builderObject);
+    nnpotOptions.buildMdpOutput(&builderObject);
     {
         TextWriter writer(&stream);
         writeKeyValueTreeAsMdp(&writer, builder.build());
@@ -202,39 +188,39 @@ TEST_F(NNPotOptionsTest, OutputDefaultValuesWhenActive)
 TEST_F(NNPotOptionsTest, InternalsToKvtAndBack)
 {
     // Set nnpot-active = true
-    setFromMdpValues(nnpotBuildInputMdpValues());
+    NNPotOptions nnpotOptions = fillOptionsFromMdpValues(nnpotBuildInputMdpValues());
 
     // Set indices
     const IndexGroupsAndNames indexGroupAndNames = indexGroupsAndNamesGeneric();
-    nnpotOptions_.setInputGroupIndices(indexGroupAndNames);
+    nnpotOptions.setInputGroupIndices(indexGroupAndNames);
 
     // Set dummy logger and warning handler
     MDLogger logger;
-    nnpotOptions_.setLogger(logger);
+    nnpotOptions.setLogger(logger);
     WarningHandler warninp(true, 0);
-    nnpotOptions_.setWarninp(&warninp);
+    nnpotOptions.setWarninp(&warninp);
 
     // Copy internal parameters
-    const NNPotParameters& params           = nnpotOptions_.parameters();
+    const NNPotParameters& params           = nnpotOptions.parameters();
     auto                   nnpIndicesBefore = params.nnpIndices_;
     auto                   mmIndicesBefore  = params.mmIndices_;
 
     KeyValueTreeBuilder builder;
     if (GMX_TORCH)
     {
-        EXPECT_NO_THROW(nnpotOptions_.writeParamsToKvt(builder.rootObject()));
+        EXPECT_NO_THROW(nnpotOptions.writeParamsToKvt(builder.rootObject()));
         const auto inputTree = builder.build();
 
-        EXPECT_NO_THROW(nnpotOptions_.readParamsFromKvt(inputTree));
+        EXPECT_NO_THROW(nnpotOptions.readParamsFromKvt(inputTree));
 
         // Check Internal parameters taken back from KVT
-        const NNPotParameters& params2 = nnpotOptions_.parameters();
+        const NNPotParameters& params2 = nnpotOptions.parameters();
         EXPECT_EQ(nnpIndicesBefore, params2.nnpIndices_);
         EXPECT_EQ(mmIndicesBefore, params2.mmIndices_);
     }
     else
     {
-        EXPECT_ANY_THROW(nnpotOptions_.writeParamsToKvt(builder.rootObject()));
+        EXPECT_ANY_THROW(nnpotOptions.writeParamsToKvt(builder.rootObject()));
     }
 }
 

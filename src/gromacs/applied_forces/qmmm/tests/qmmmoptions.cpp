@@ -50,16 +50,13 @@
 
 #include "gromacs/applied_forces/qmmm/qmmmtypes.h"
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
-#include "gromacs/options/options.h"
-#include "gromacs/options/treesupport.h"
+#include "gromacs/mdtypes/imdpoptionprovider_test_helper.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/keyvaluetreemdpwriter.h"
-#include "gromacs/utility/keyvaluetreetransform.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringcompare.h"
 #include "gromacs/utility/stringstream.h"
 #include "gromacs/utility/textwriter.h"
@@ -72,26 +69,15 @@
 namespace gmx
 {
 
+//! Convenience method to avoid specifying the template parameter repetitively
+static QMMMOptions fillOptionsFromMdpValues(const KeyValueTreeObject& moduleMdpValues)
+{
+    return test::fillOptionsFromMdpValuesTemplate<QMMMOptions>(moduleMdpValues);
+}
+
 class QMMMOptionsTest : public ::testing::Test
 {
 public:
-    void setFromMdpValues(const KeyValueTreeObject& qmmmMdpValues)
-    {
-        // Setup options
-        Options qmmmModuleOptions;
-        qmmmOptions_.initMdpOptions(&qmmmModuleOptions);
-
-        // Add rules to transform mdp inputs to densityFittingModule data
-        KeyValueTreeTransformer transform;
-        transform.rules()->addRule().keyMatchType("/", StringCompareType::CaseAndDashInsensitive);
-
-        qmmmOptions_.initMdpTransform(transform.rules());
-
-        // Execute the transform on the mdpValues
-        auto transformedMdpValues = transform.transform(qmmmMdpValues, nullptr);
-        assignOptionsFromKeyValueTree(&qmmmModuleOptions, transformedMdpValues.object(), nullptr);
-    }
-
     static KeyValueTreeObject qmmmBuildDefaulMdpValues()
     {
         // Prepare MDP inputs
@@ -142,14 +128,12 @@ public:
 
         return IndexGroupsAndNames(indexGroups);
     }
-
-protected:
-    QMMMOptions qmmmOptions_;
 };
 
 TEST_F(QMMMOptionsTest, DefaultParameters)
 {
-    const QMMMParameters&           defaultParameters = qmmmOptions_.parameters();
+    QMMMOptions                     qmmmOptions;
+    const QMMMParameters&           defaultParameters = qmmmOptions.parameters();
     gmx::test::TestReferenceData    data;
     gmx::test::TestReferenceChecker checker(data.rootChecker());
 
@@ -174,9 +158,10 @@ TEST_F(QMMMOptionsTest, DefaultParameters)
 
 TEST_F(QMMMOptionsTest, OptionSetsActive)
 {
-    EXPECT_FALSE(qmmmOptions_.parameters().active_);
-    setFromMdpValues(qmmmBuildDefaulMdpValues());
-    EXPECT_TRUE(qmmmOptions_.parameters().active_);
+    QMMMOptions qmmmOptions;
+    EXPECT_FALSE(qmmmOptions.parameters().active_);
+    qmmmOptions = fillOptionsFromMdpValues(qmmmBuildDefaulMdpValues());
+    EXPECT_TRUE(qmmmOptions.parameters().active_);
 }
 
 TEST_F(QMMMOptionsTest, OutputNoDefaultValuesWhenInactive)
@@ -187,7 +172,8 @@ TEST_F(QMMMOptionsTest, OutputNoDefaultValuesWhenInactive)
     KeyValueTreeBuilder       builder;
     KeyValueTreeObjectBuilder builderObject = builder.rootObject();
 
-    qmmmOptions_.buildMdpOutput(&builderObject);
+    QMMMOptions qmmmOptions;
+    qmmmOptions.buildMdpOutput(&builderObject);
     {
         TextWriter writer(&stream);
         writeKeyValueTreeAsMdp(&writer, builder.build());
@@ -204,7 +190,7 @@ TEST_F(QMMMOptionsTest, OutputDefaultValuesWhenActive)
 {
 
     // Set qmmm-active = true
-    setFromMdpValues(qmmmBuildDefaulMdpValues());
+    QMMMOptions qmmmOptions = fillOptionsFromMdpValues(qmmmBuildDefaulMdpValues());
 
     // Transform module data into a flat key-value tree for output.
 
@@ -212,7 +198,7 @@ TEST_F(QMMMOptionsTest, OutputDefaultValuesWhenActive)
     KeyValueTreeBuilder       builder;
     KeyValueTreeObjectBuilder builderObject = builder.rootObject();
 
-    qmmmOptions_.buildMdpOutput(&builderObject);
+    qmmmOptions.buildMdpOutput(&builderObject);
     {
         TextWriter writer(&stream);
         writeKeyValueTreeAsMdp(&writer, builder.build());
@@ -228,48 +214,48 @@ TEST_F(QMMMOptionsTest, OutputDefaultValuesWhenActive)
 TEST_F(QMMMOptionsTest, CanConvertGroupStringToIndexGroup)
 {
     // Set qmmm-active = true
-    setFromMdpValues(qmmmBuildDefaulMdpValues());
+    QMMMOptions qmmmOptions = fillOptionsFromMdpValues(qmmmBuildDefaulMdpValues());
 
     // Generic index data
     const auto indexGroupAndNames = indexGroupsAndNamesGeneric();
-    qmmmOptions_.setQMMMGroupIndices(indexGroupAndNames);
+    qmmmOptions.setQMMMGroupIndices(indexGroupAndNames);
 
     gmx::test::TestReferenceData    data;
     gmx::test::TestReferenceChecker checker(data.rootChecker());
 
-    checker.checkInteger(qmmmOptions_.parameters().qmIndices_.size(), "Size of qmIndices");
-    checker.checkInteger(qmmmOptions_.parameters().mmIndices_.size(), "Size of mmIndices");
+    checker.checkInteger(qmmmOptions.parameters().qmIndices_.size(), "Size of qmIndices");
+    checker.checkInteger(qmmmOptions.parameters().mmIndices_.size(), "Size of mmIndices");
 }
 
 TEST_F(QMMMOptionsTest, NoQMGroupConvertGroupStringToIndexGroup)
 {
     // Set qmmm-active = true
-    setFromMdpValues(qmmmBuildDefaulMdpValues());
+    QMMMOptions qmmmOptions = fillOptionsFromMdpValues(qmmmBuildDefaulMdpValues());
 
     const auto indexGroupAndNames = indexGroupsAndNamesNoQM();
-    EXPECT_ANY_THROW(qmmmOptions_.setQMMMGroupIndices(indexGroupAndNames));
+    EXPECT_ANY_THROW(qmmmOptions.setQMMMGroupIndices(indexGroupAndNames));
 }
 
 TEST_F(QMMMOptionsTest, EmptyQMGroupConvertGroupStringToIndexGroup)
 {
     // Set qmmm-active = true
-    setFromMdpValues(qmmmBuildDefaulMdpValues());
+    QMMMOptions qmmmOptions = fillOptionsFromMdpValues(qmmmBuildDefaulMdpValues());
 
     const auto indexGroupAndNames = indexGroupsAndNamesEmptyQM();
-    EXPECT_ANY_THROW(qmmmOptions_.setQMMMGroupIndices(indexGroupAndNames));
+    EXPECT_ANY_THROW(qmmmOptions.setQMMMGroupIndices(indexGroupAndNames));
 }
 
 TEST_F(QMMMOptionsTest, InternalsToKvtAndBack)
 {
     // Set qmmm-active = true
-    setFromMdpValues(qmmmBuildDefaulMdpValues());
+    QMMMOptions qmmmOptions = fillOptionsFromMdpValues(qmmmBuildDefaulMdpValues());
 
     // Set indices
     const IndexGroupsAndNames indexGroupAndNames = indexGroupsAndNamesGeneric();
-    qmmmOptions_.setQMMMGroupIndices(indexGroupAndNames);
+    qmmmOptions.setQMMMGroupIndices(indexGroupAndNames);
 
     // Copy internal parameters
-    const QMMMParameters& params            = qmmmOptions_.parameters();
+    const QMMMParameters& params            = qmmmOptions.parameters();
     auto                  qmIndicesBefore   = params.qmIndices_;
     auto                  mmIndicesBefore   = params.mmIndices_;
     auto                  atomNumbersBefore = params.atomNumbers_;
@@ -279,13 +265,13 @@ TEST_F(QMMMOptionsTest, InternalsToKvtAndBack)
 
 
     KeyValueTreeBuilder builder;
-    qmmmOptions_.writeInternalParametersToKvt(builder.rootObject());
+    qmmmOptions.writeInternalParametersToKvt(builder.rootObject());
     const auto inputTree = builder.build();
 
-    qmmmOptions_.readInternalParametersFromKvt(inputTree);
+    qmmmOptions.readInternalParametersFromKvt(inputTree);
 
     // Check Internal parameters taken back from KVT
-    const QMMMParameters& params2 = qmmmOptions_.parameters();
+    const QMMMParameters& params2 = qmmmOptions.parameters();
     EXPECT_EQ(qmIndicesBefore, params2.qmIndices_);
     EXPECT_EQ(mmIndicesBefore, params2.mmIndices_);
     EXPECT_EQ(atomNumbersBefore, params2.atomNumbers_);
@@ -297,16 +283,16 @@ TEST_F(QMMMOptionsTest, InternalsToKvtAndBack)
 TEST_F(QMMMOptionsTest, CP2KInputProcessing)
 {
     // Set qmmm-active = true and qmmm-qmmethod = INPUT
-    setFromMdpValues(qmmmBuildMethodInputMdpValues());
+    QMMMOptions qmmmOptions = fillOptionsFromMdpValues(qmmmBuildMethodInputMdpValues());
 
     // Path to the sample CP2K input file
     std::string cp2kInput =
             gmx::test::TestFileManager::getInputFilePath("sample_cp2k_input.inp").string();
 
     // Process input file
-    qmmmOptions_.setQMExternalInputFile({ true, cp2kInput });
+    qmmmOptions.setQMExternalInputFile({ true, cp2kInput });
 
-    const QMMMParameters& params = qmmmOptions_.parameters();
+    const QMMMParameters& params = qmmmOptions.parameters();
 
     gmx::test::TestReferenceData    data;
     gmx::test::TestReferenceChecker checker(data.rootChecker());
