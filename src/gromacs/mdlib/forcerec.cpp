@@ -1055,6 +1055,7 @@ void init_forcerec(FILE*                            fplog,
             forcerec->listedForces.emplace_back(
                     mtop.ffparams,
                     mtop.groups.groups[SimulationAtomGroupType::EnergyOutput].size(),
+                    inputrec.posresCom.size(),
                     gmx_omp_nthreads_get(ModuleMultiThread::Bonded),
                     interactionSelection,
                     fplog);
@@ -1066,6 +1067,7 @@ void init_forcerec(FILE*                            fplog,
         forcerec->listedForces.emplace_back(
                 mtop.ffparams,
                 mtop.groups.groups[SimulationAtomGroupType::EnergyOutput].size(),
+                inputrec.posresCom.size(),
                 gmx_omp_nthreads_get(ModuleMultiThread::Bonded),
                 ListedForces::interactionSelectionAll(),
                 fplog);

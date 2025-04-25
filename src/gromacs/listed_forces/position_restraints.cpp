@@ -210,10 +210,6 @@ real fbposres(int                                       nbonds,
 
     if (refcoord_scaling == RefCoordScaling::Com)
     {
-        // Barrier to avoid modifying COM data that might still be in use in posres()
-        // on another OpenMP thread
-#pragma omp barrier
-#pragma omp single
         {
             for (gmx::Index comGroup = 0; comGroup < gmx::ssize(centersOfMass); ++comGroup)
             {
@@ -360,7 +356,6 @@ real posres(int                                       nbonds,
 
     if (refcoord_scaling == RefCoordScaling::Com)
     {
-#pragma omp single
         {
             for (gmx::Index comGroup = 0; comGroup < gmx::ssize(centersOfMassA); ++comGroup)
             {

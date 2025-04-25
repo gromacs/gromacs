@@ -414,7 +414,10 @@ void setup_bonded_threading(bonded_threading_t*           bt,
     bt->threadedForceBuffer.setupReduction();
 }
 
-bonded_threading_t::bonded_threading_t(const int numThreads, const int numEnergyGroups, FILE* fplog) :
+bonded_threading_t::bonded_threading_t(const int numThreads,
+                                       const int numEnergyGroups,
+                                       int       numComGroups,
+                                       FILE*     fplog) :
     nthreads(numThreads),
     threadedForceBuffer(numThreads, true, numEnergyGroups),
     haveBondeds(false),
@@ -449,5 +452,14 @@ bonded_threading_t::bonded_threading_t(const int numThreads, const int numEnergy
     else
     {
         max_nthread_uniform = max_nthread_uniform_default;
+    }
+
+    centersOfMassScaledBuffers_.resize(numThreads);
+#pragma omp parallel for schedule(static)
+    for (int thread = 0; thread < numThreads; thread++)
+    {
+        auto& bufs = centersOfMassScaledBuffers_[thread];
+        bufs.comA_.resize(std::max(numComGroups, 1), { 0.0, 0.0, 0.0 });
+        bufs.comB_.resize(std::max(numComGroups, 1), { 0.0, 0.0, 0.0 });
     }
 }

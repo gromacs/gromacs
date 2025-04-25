@@ -87,11 +87,19 @@ private:
     std::vector<int> packedBounds_;
 };
 
+struct CentersOfMassScaledBuffers
+{
+    //! Buffer for computing scaled centers of mass for position restraints
+    std::vector<gmx::RVec> comA_;
+    //! Buffer for computing scaled centers of mass for topology B for position restraints
+    std::vector<gmx::RVec> comB_;
+};
+
 /*! \internal \brief struct contain all data for bonded force threading */
 struct bonded_threading_t
 {
     //! Constructor
-    bonded_threading_t(int numThreads, int numEnergyGroups, FILE* fplog);
+    bonded_threading_t(int numThreads, int numEnergyGroups, int numComGroups, FILE* fplog);
 
     //! Number of threads to be used for bondeds
     int nthreads = 0;
@@ -111,6 +119,9 @@ struct bonded_threading_t
 
     //! Work division for free-energy foreign lambda calculations, always uses 1 thread
     WorkDivision foreignLambdaWorkDivision;
+
+    //! Buffers for each thread for computing scaled centers of mass for position restraints
+    std::vector<CentersOfMassScaledBuffers> centersOfMassScaledBuffers_;
 
     GMX_DISALLOW_COPY_MOVE_AND_ASSIGN(bonded_threading_t);
 };

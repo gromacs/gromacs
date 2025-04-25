@@ -85,12 +85,13 @@
 
 ListedForces::ListedForces(const gmx_ffparams_t&      ffparams,
                            const int                  numEnergyGroups,
+                           const int                  numComGroups,
                            const int                  numThreads,
                            const InteractionSelection interactionSelection,
                            FILE*                      fplog) :
     numEnergyGroups_(numEnergyGroups),
     idefSelection_(ffparams),
-    threading_(std::make_unique<bonded_threading_t>(numThreads, numEnergyGroups, fplog)),
+    threading_(std::make_unique<bonded_threading_t>(numThreads, numEnergyGroups, numComGroups, fplog)),
     interactionSelection_(interactionSelection),
     foreignEnergyGroups_(std::make_unique<gmx_grppairener_t>(numEnergyGroups))
 {
@@ -151,8 +152,7 @@ static void selectInteractions(InteractionDefinitions*                   idef,
 void ListedForces::setup(const InteractionDefinitions&             domainIdef,
                          const int                                 numAtomsForce,
                          const bool                                useGpu,
-                         const gmx::ArrayRef<const unsigned short> restraintComIndices,
-                         const int                                 numComGroups)
+                         const gmx::ArrayRef<const unsigned short> restraintComIndices)
 {
     if (interactionSelection_.all())
     {
@@ -188,13 +188,6 @@ void ListedForces::setup(const InteractionDefinitions&             domainIdef,
     }
 
     restraintComIndices_ = restraintComIndices;
-
-    // When refCoordScaling!=com we allocate a buffer so we can avoid conditionals in the kernel
-    if (centersOfMassScaledBuffer_.empty())
-    {
-        centersOfMassScaledBuffer_.resize(std::max(numComGroups, 1), { 0.0, 0.0, 0.0 });
-        centersOfMassBScaledBuffer_.resize(std::max(numComGroups, 1), { 0.0, 0.0, 0.0 });
-    }
 }
 
 namespace
@@ -392,8 +385,6 @@ static void calcPositionRestraintForces(const InteractionDefinitions& idef,
                                         const t_pbc&                  pbc,
                                         const t_forcerec*             fr,
                                         const gmx::ArrayRef<const unsigned short> refScaleComIndices,
-                                        gmx::ArrayRef<gmx::RVec>  centersOfMassScaledBuffer,
-                                        gmx::ArrayRef<gmx::RVec>  centersOfMassBScaledBuffer,
                                         gmx::RVec*                virial,
                                         gmx_enerdata_t*           enerd,
                                         t_nrnb*                   nrnb,
@@ -406,6 +397,8 @@ static void calcPositionRestraintForces(const InteractionDefinitions& idef,
         try
         {
             auto& threadBuffer = bt->threadedForceBuffer.threadForceBuffer(thread);
+
+            auto& comBuffers = bt->centersOfMassScaledBuffers_[thread];
 
             if (needToClearThreadForceBuffers)
             {
@@ -433,8 +426,8 @@ static void calcPositionRestraintForces(const InteractionDefinitions& idef,
                                        lambda,
                                        fr,
                                        refScaleComIndices,
-                                       centersOfMassScaledBuffer,
-                                       centersOfMassBScaledBuffer,
+                                       comBuffers.comA_,
+                                       comBuffers.comB_,
                                        forces,
                                        &virialRef,
                                        &dvdlRef[int(FreeEnergyPerturbationCouplingType::Restraint)]);
@@ -447,15 +440,8 @@ static void calcPositionRestraintForces(const InteractionDefinitions& idef,
                 auto iatoms = gmx::arrayRefFromArray(idef.il[F_FBPOSRES].iatoms.data() + bound0,
                                                      bound1 - bound0);
 
-                epot[F_FBPOSRES] += fbposres_wrapper(iatoms,
-                                                     idef.iparams_fbposres,
-                                                     pbc,
-                                                     x,
-                                                     fr,
-                                                     refScaleComIndices,
-                                                     centersOfMassScaledBuffer,
-                                                     forces,
-                                                     &virialRef);
+                epot[F_FBPOSRES] += fbposres_wrapper(
+                        iatoms, idef.iparams_fbposres, pbc, x, fr, refScaleComIndices, comBuffers.comA_, forces, &virialRef);
             }
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
@@ -812,8 +798,6 @@ void ListedForces::calculate(struct gmx_wallcycle*                     wcycle,
                                         pbc,
                                         fr,
                                         restraintComIndices_,
-                                        centersOfMassScaledBuffer_,
-                                        centersOfMassBScaledBuffer_,
                                         &diagonalVirial,
                                         enerd,
                                         nrnb,
@@ -901,8 +885,16 @@ void ListedForces::calculate(struct gmx_wallcycle*                     wcycle,
             t_pbc pbc;
             set_pbc(&pbc, fr->pbcType, box);
 
-            posres_wrapper_lambda(
-                    wcycle, idef, pbc, x, enerd, lambda, fr, restraintComIndices_, centersOfMassScaledBuffer_, centersOfMassBScaledBuffer_);
+            posres_wrapper_lambda(wcycle,
+                                  idef,
+                                  pbc,
+                                  x,
+                                  enerd,
+                                  lambda,
+                                  fr,
+                                  restraintComIndices_,
+                                  threading_->centersOfMassScaledBuffers_[0].comA_,
+                                  threading_->centersOfMassScaledBuffers_[0].comB_);
         }
         if (idef.ilsort != ilsortNO_FE)
         {
