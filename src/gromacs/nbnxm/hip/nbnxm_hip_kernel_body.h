@@ -538,7 +538,7 @@ reduceEnergyWarpShuffle(float localLJ, float localEl, float* gm_LJ, float* gm_El
     // only CDNA (wave64) devices support broadcasts
     // so we can only use those dpp instructions on devices
     // with wave64 (aka CDNA)
-    if constexpr (warpSize == 64)
+    if constexpr (deviceWavefrontSize() == 64)
     {
         // DPP: row_bcast15 (Broadcast thread 15 of each row to next row)
         localLJ += amdDppUpdateShfl<float, 0x142>(localLJ);

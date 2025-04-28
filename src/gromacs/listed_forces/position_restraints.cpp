@@ -208,17 +208,22 @@ real fbposres(int                                       nbonds,
 
     const int npbcdim = numPbcDimensions(pbcType);
 
-#pragma omp single
     if (refcoord_scaling == RefCoordScaling::Com)
     {
-        for (gmx::Index comGroup = 0; comGroup < gmx::ssize(centersOfMass); ++comGroup)
+        // Barrier to avoid modifying COM data that might still be in use in posres()
+        // on another OpenMP thread
+#pragma omp barrier
+#pragma omp single
         {
-            for (int m = 0; m < npbcdim; m++)
+            for (gmx::Index comGroup = 0; comGroup < gmx::ssize(centersOfMass); ++comGroup)
             {
-                centersOfMassScaled[comGroup][m] = 0;
-                for (int d = m; d < npbcdim; d++)
+                for (int m = 0; m < npbcdim; m++)
                 {
-                    centersOfMassScaled[comGroup][m] += centersOfMass[comGroup][d] * pbc.box[d][m];
+                    centersOfMassScaled[comGroup][m] = 0;
+                    for (int d = m; d < npbcdim; d++)
+                    {
+                        centersOfMassScaled[comGroup][m] += centersOfMass[comGroup][d] * pbc.box[d][m];
+                    }
                 }
             }
         }
@@ -353,19 +358,21 @@ real posres(int                                       nbonds,
 
     const int npbcdim = numPbcDimensions(pbc.pbcType);
 
-#pragma omp single
     if (refcoord_scaling == RefCoordScaling::Com)
     {
-        for (gmx::Index comGroup = 0; comGroup < gmx::ssize(centersOfMassA); ++comGroup)
+#pragma omp single
         {
-            for (int m = 0; m < npbcdim; m++)
+            for (gmx::Index comGroup = 0; comGroup < gmx::ssize(centersOfMassA); ++comGroup)
             {
-                centersOfMassAScaled[comGroup][m] = 0;
-                centersOfMassBScaled[comGroup][m] = 0;
-                for (int d = m; d < npbcdim; d++)
+                for (int m = 0; m < npbcdim; m++)
                 {
-                    centersOfMassAScaled[comGroup][m] += centersOfMassA[comGroup][d] * pbc.box[d][m];
-                    centersOfMassBScaled[comGroup][m] += centersOfMassB[comGroup][d] * pbc.box[d][m];
+                    centersOfMassAScaled[comGroup][m] = 0;
+                    centersOfMassBScaled[comGroup][m] = 0;
+                    for (int d = m; d < npbcdim; d++)
+                    {
+                        centersOfMassAScaled[comGroup][m] += centersOfMassA[comGroup][d] * pbc.box[d][m];
+                        centersOfMassBScaled[comGroup][m] += centersOfMassB[comGroup][d] * pbc.box[d][m];
+                    }
                 }
             }
         }

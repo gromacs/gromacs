@@ -41,6 +41,7 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <limits>
 #include <string>
 
 #include "gromacs/commandline/filenm.h"
@@ -312,7 +313,8 @@ int gmx_covar(int argc, char* argv[])
     snew(x, natoms);
     snew(xav, natoms);
     ndim = natoms * DIM;
-    if (std::sqrt(static_cast<real>(INT64_MAX)) < static_cast<real>(ndim))
+    // eigensolver() currently takes int for size arguments
+    if (gmx::square<int64_t>(ndim) > std::numeric_limits<int>::max())
     {
         gmx_fatal(FARGS, "Number of degrees of freedoms to large for matrix.\n");
     }
@@ -326,7 +328,7 @@ int gmx_covar(int argc, char* argv[])
         fprintf(stderr,
                 "\nWARNING: number of atoms in structure file (%d) and trajectory (%d) do not "
                 "match\n",
-                natoms,
+                atoms->nr,
                 nat);
     }
     gmx::throwErrorIfIndexOutOfBounds({ ifit, ifit + nfit }, nat, "fitting");

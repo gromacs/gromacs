@@ -24,6 +24,15 @@ zero atoms.
 
 :issue:`5322`
 
+Fix mdrun crashes with position restraints + flat-bottomed position restraints + p-coupling with COM refcoord-scaling + OpenMP
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This combination can lead to (too) high position restraint forces when OpenMP
+threads run slightly out of sync. Simulations will have very likely crashed
+due to too high forces, unless they are very short.
+
+:issue:`5337`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
