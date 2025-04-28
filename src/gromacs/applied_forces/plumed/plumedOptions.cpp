@@ -95,5 +95,4 @@ bool PlumedOptionProvider::active() const
     return opts_.active_;
 }
 
-
 } // namespace gmx

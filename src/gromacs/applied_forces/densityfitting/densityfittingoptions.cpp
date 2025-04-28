@@ -45,14 +45,12 @@
 #include "gromacs/applied_forces/densityfitting/densityfitting.h"
 #include "gromacs/math/densityfit.h"
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
+#include "gromacs/mdtypes/imdpoptionprovider_helpers.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/optionsection.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/keyvaluetreebuilder.h"
-#include "gromacs/utility/keyvaluetreetransform.h"
-#include "gromacs/utility/strconvert.h"
 
 #include "densityfittingamplitudelookup.h"
 
@@ -68,65 +66,6 @@ std::string moduleName()
     return std::string(DensityFittingModuleInfo::sc_name);
 }
 
-/*! \brief Helper to declare mdp transform rules.
- *
- * Enforces uniform mdp options that are always prepended with the correct
- * string for the densityfitting mdp options.
- *
- * \tparam ToType type to be transformed to
- * \tparam TransformWithFunctionType type of transformation function to be used
- *
- * \param[in] rules KVT transformation rules
- * \param[in] transformationFunction the function to transform the flat kvt tree
- * \param[in] optionTag string tag that describes the mdp option, appended to the
- *                      default string for the density guided simulation
- */
-template<class ToType, class TransformWithFunctionType>
-void densityfittingMdpTransformFromString(IKeyValueTreeTransformRules* rules,
-                                          TransformWithFunctionType    transformationFunction,
-                                          const std::string&           optionTag)
-{
-    rules->addRule()
-            .from<std::string>("/" + moduleName() + "-" + optionTag)
-            .to<ToType>("/" + moduleName() + "/" + optionTag)
-            .transformWith(transformationFunction);
-}
-/*! \brief Helper to declare mdp output.
- *
- * Enforces uniform mdp options output strings that are always prepended with the
- * correct string for the densityfitting mdp options and are consistent with the
- * options name and transformation type.
- *
- * \tparam OptionType the type of the mdp option
- * \param[in] builder the KVT builder to generate the output
- * \param[in] option the mdp option
- * \param[in] optionTag string tag that describes the mdp option, appended to the
- *                      default string for the density guided simulation
- */
-template<class OptionType>
-void addDensityFittingMdpOutputValue(KeyValueTreeObjectBuilder* builder,
-                                     const OptionType&          option,
-                                     const std::string&         optionTag)
-{
-    builder->addValue<OptionType>(moduleName() + "-" + optionTag, option);
-}
-
-/*! \brief Helper to declare mdp output comments.
- *
- * Enforces uniform mdp options comment output strings that are always prepended
- * with the correct string for the densityfitting mdp options and are consistent
- * with the options name and transformation type.
- *
- * \param[in] builder the KVT builder to generate the output
- * \param[in] comment on the mdp option
- * \param[in] optionTag string tag that describes the mdp option
- */
-void addDensityFittingMdpOutputValueComment(KeyValueTreeObjectBuilder* builder,
-                                            const std::string&         comment,
-                                            const std::string&         optionTag)
-{
-    builder->addValue<std::string>("comment-" + moduleName() + "-" + optionTag, comment);
-}
 
 const std::string c_activeTag = "active";
 
@@ -164,22 +103,35 @@ const std::string c_transformationMatrixTag = "transformation-matrix";
 void DensityFittingOptions::initMdpTransform(IKeyValueTreeTransformRules* rules)
 {
     const auto& stringIdentityTransform = [](std::string s) { return s; };
-    densityfittingMdpTransformFromString<bool>(rules, &fromStdString<bool>, c_activeTag);
-    densityfittingMdpTransformFromString<std::string>(rules, stringIdentityTransform, c_groupTag);
-    densityfittingMdpTransformFromString<std::string>(rules, stringIdentityTransform, c_similarityMeasureTag);
-    densityfittingMdpTransformFromString<std::string>(rules, stringIdentityTransform, c_amplitudeMethodTag);
-    densityfittingMdpTransformFromString<real>(rules, &fromStdString<real>, c_forceConstantTag);
-    densityfittingMdpTransformFromString<real>(
-            rules, &fromStdString<real>, c_gaussianTransformSpreadingWidthTag);
-    densityfittingMdpTransformFromString<real>(
-            rules, &fromStdString<real>, c_gaussianTransformSpreadingRangeInMultiplesOfWidthTag);
-    densityfittingMdpTransformFromString<std::string>(
-            rules, stringIdentityTransform, c_referenceDensityFileNameTag);
-    densityfittingMdpTransformFromString<std::int64_t>(rules, &fromStdString<std::int64_t>, c_everyNStepsTag);
-    densityfittingMdpTransformFromString<bool>(rules, &fromStdString<bool>, c_normalizeDensitiesTag);
-    densityfittingMdpTransformFromString<bool>(rules, &fromStdString<bool>, c_adaptiveForceScalingTag);
-    densityfittingMdpTransformFromString<real>(
-            rules, &fromStdString<real>, c_adaptiveForceScalingTimeConstantTag);
+    addMdpTransformFromString<bool>(
+            rules, &fromStdString<bool>, DensityFittingModuleInfo::sc_name, c_activeTag);
+    addMdpTransformFromString<std::string>(
+            rules, stringIdentityTransform, DensityFittingModuleInfo::sc_name, c_groupTag);
+    addMdpTransformFromString<std::string>(
+            rules, stringIdentityTransform, DensityFittingModuleInfo::sc_name, c_similarityMeasureTag);
+    addMdpTransformFromString<std::string>(
+            rules, stringIdentityTransform, DensityFittingModuleInfo::sc_name, c_amplitudeMethodTag);
+    addMdpTransformFromString<real>(
+            rules, &fromStdString<real>, DensityFittingModuleInfo::sc_name, c_forceConstantTag);
+    addMdpTransformFromString<real>(
+            rules, &fromStdString<real>, DensityFittingModuleInfo::sc_name, c_gaussianTransformSpreadingWidthTag);
+    addMdpTransformFromString<real>(rules,
+                                    &fromStdString<real>,
+                                    DensityFittingModuleInfo::sc_name,
+                                    c_gaussianTransformSpreadingRangeInMultiplesOfWidthTag);
+    addMdpTransformFromString<std::string>(
+            rules, stringIdentityTransform, DensityFittingModuleInfo::sc_name, c_referenceDensityFileNameTag);
+    addMdpTransformFromString<std::int64_t>(
+            rules, &fromStdString<std::int64_t>, DensityFittingModuleInfo::sc_name, c_everyNStepsTag);
+    addMdpTransformFromString<bool>(
+            rules, &fromStdString<bool>, DensityFittingModuleInfo::sc_name, c_normalizeDensitiesTag);
+    addMdpTransformFromString<bool>(
+            rules, &fromStdString<bool>, DensityFittingModuleInfo::sc_name, c_adaptiveForceScalingTag);
+    addMdpTransformFromString<real>(rules,
+                                    &fromStdString<real>,
+                                    DensityFittingModuleInfo::sc_name,
+                                    c_adaptiveForceScalingTimeConstantTag);
+
     const auto& stringRVecToStringRVecWithCheck = [](const std::string& str)
     {
         return stringIdentityTransformWithArrayCheck<real, 3>(
@@ -187,8 +139,8 @@ void DensityFittingOptions::initMdpTransform(IKeyValueTreeTransformRules* rules)
                 "Reading three real values as vector while parsing the .mdp input failed in "
                         + moduleName() + ".");
     };
-    densityfittingMdpTransformFromString<std::string>(
-            rules, stringRVecToStringRVecWithCheck, c_translationTag);
+    addMdpTransformFromString<std::string>(
+            rules, stringRVecToStringRVecWithCheck, DensityFittingModuleInfo::sc_name, c_translationTag);
 
     const auto& stringMatrixToStringMatrixWithCheck = [](const std::string& str)
     {
@@ -197,8 +149,10 @@ void DensityFittingOptions::initMdpTransform(IKeyValueTreeTransformRules* rules)
                 "Reading nine real values as vector while parsing the .mdp input failed in "
                         + moduleName() + ".");
     };
-    densityfittingMdpTransformFromString<std::string>(
-            rules, stringMatrixToStringMatrixWithCheck, c_transformationMatrixTag);
+    addMdpTransformFromString<std::string>(rules,
+                                           stringMatrixToStringMatrixWithCheck,
+                                           DensityFittingModuleInfo::sc_name,
+                                           c_transformationMatrixTag);
 }
 
 //! Name the methods that may be used to evaluate similarity between densities
@@ -212,58 +166,87 @@ static const EnumerationArray<DensityFittingAmplitudeMethod, const char*> c_dens
 
 void DensityFittingOptions::buildMdpOutput(KeyValueTreeObjectBuilder* builder) const
 {
+    addMdpOutputComment(builder, DensityFittingModuleInfo::sc_name, "empty-line", "");
+    addMdpOutputComment(
+            builder, DensityFittingModuleInfo::sc_name, "module", "; Density guided simulation");
+    addMdpOutputValue(builder, DensityFittingModuleInfo::sc_name, c_activeTag, parameters_.active_);
 
-    addDensityFittingMdpOutputValueComment(builder, "", "empty-line");
-    addDensityFittingMdpOutputValueComment(builder, "; Density guided simulation", "module");
-
-    addDensityFittingMdpOutputValue(builder, parameters_.active_, c_activeTag);
     if (parameters_.active_)
     {
-        addDensityFittingMdpOutputValue(builder, groupString_, c_groupTag);
+        addMdpOutputValue(builder, DensityFittingModuleInfo::sc_name, c_groupTag, groupString_);
 
-        addDensityFittingMdpOutputValueComment(
+        addMdpOutputComment(
                 builder,
+                DensityFittingModuleInfo::sc_name,
+                c_similarityMeasureTag,
                 "; Similarity measure between densities: inner-product, relative-entropy, or "
-                "cross-correlation",
-                c_similarityMeasureTag);
-        addDensityFittingMdpOutputValue<std::string>(
+                "cross-correlation");
+        addMdpOutputValue<std::string>(
                 builder,
-                c_densitySimilarityMeasureMethodNames[parameters_.similarityMeasureMethod_],
-                c_similarityMeasureTag);
+                DensityFittingModuleInfo::sc_name,
+                c_similarityMeasureTag,
+                c_densitySimilarityMeasureMethodNames[parameters_.similarityMeasureMethod_]);
 
-        addDensityFittingMdpOutputValueComment(
-                builder, "; Atom amplitude for spreading onto grid: unity, mass, or charge", c_amplitudeMethodTag);
-        addDensityFittingMdpOutputValue<std::string>(
+        addMdpOutputComment(builder,
+                            DensityFittingModuleInfo::sc_name,
+                            c_amplitudeMethodTag,
+                            "; Atom amplitude for spreading onto grid: unity, mass, or charge");
+        addMdpOutputValue<std::string>(
                 builder,
-                c_densityFittingAmplitudeMethodNames[parameters_.amplitudeLookupMethod_],
-                c_amplitudeMethodTag);
+                DensityFittingModuleInfo::sc_name,
+                c_amplitudeMethodTag,
+                c_densityFittingAmplitudeMethodNames[parameters_.amplitudeLookupMethod_]);
+        addMdpOutputValue(
+                builder, DensityFittingModuleInfo::sc_name, c_forceConstantTag, parameters_.forceConstant_);
+        addMdpOutputValue(builder,
+                          DensityFittingModuleInfo::sc_name,
+                          c_gaussianTransformSpreadingWidthTag,
+                          parameters_.gaussianTransformSpreadingWidth_);
+        addMdpOutputValue(builder,
+                          DensityFittingModuleInfo::sc_name,
+                          c_gaussianTransformSpreadingRangeInMultiplesOfWidthTag,
+                          parameters_.gaussianTransformSpreadingRangeInMultiplesOfWidth_);
 
-        addDensityFittingMdpOutputValue(builder, parameters_.forceConstant_, c_forceConstantTag);
-        addDensityFittingMdpOutputValue(builder,
-                                        parameters_.gaussianTransformSpreadingWidth_,
-                                        c_gaussianTransformSpreadingWidthTag);
-        addDensityFittingMdpOutputValue(builder,
-                                        parameters_.gaussianTransformSpreadingRangeInMultiplesOfWidth_,
-                                        c_gaussianTransformSpreadingRangeInMultiplesOfWidthTag);
-        addDensityFittingMdpOutputValueComment(builder,
-                                               "; Reference density file location as absolute path "
-                                               "or relative to the gmx mdrun calling location",
-                                               c_referenceDensityFileNameTag);
-        addDensityFittingMdpOutputValue(builder, referenceDensityFileName_, c_referenceDensityFileNameTag);
-        addDensityFittingMdpOutputValue(builder, parameters_.calculationIntervalInSteps_, c_everyNStepsTag);
-        addDensityFittingMdpOutputValueComment(
-                builder, "; Normalize the sum of density voxel values to one", c_normalizeDensitiesTag);
-        addDensityFittingMdpOutputValue(builder, parameters_.normalizeDensities_, c_normalizeDensitiesTag);
-        addDensityFittingMdpOutputValueComment(
-                builder, "; Apply adaptive force scaling", c_adaptiveForceScalingTag);
-        addDensityFittingMdpOutputValue(
-                builder, parameters_.adaptiveForceScaling_, c_adaptiveForceScalingTag);
-        addDensityFittingMdpOutputValueComment(builder,
-                                               "; Time constant for adaptive force scaling in ps",
-                                               c_adaptiveForceScalingTimeConstantTag);
-        addDensityFittingMdpOutputValue(builder,
-                                        parameters_.adaptiveForceScalingTimeConstant_,
-                                        c_adaptiveForceScalingTimeConstantTag);
+        addMdpOutputComment(builder,
+                            DensityFittingModuleInfo::sc_name,
+                            c_referenceDensityFileNameTag,
+                            "; Reference density file location as absolute path "
+                            "or relative to the gmx mdrun calling location");
+        addMdpOutputValue(builder,
+                          DensityFittingModuleInfo::sc_name,
+                          c_referenceDensityFileNameTag,
+                          referenceDensityFileName_);
+        addMdpOutputValue(builder,
+                          DensityFittingModuleInfo::sc_name,
+                          c_everyNStepsTag,
+                          parameters_.calculationIntervalInSteps_);
+
+        addMdpOutputComment(builder,
+                            DensityFittingModuleInfo::sc_name,
+                            c_normalizeDensitiesTag,
+                            "; Normalize the sum of density voxel values to one");
+        addMdpOutputValue(builder,
+                          DensityFittingModuleInfo::sc_name,
+                          c_normalizeDensitiesTag,
+                          parameters_.normalizeDensities_);
+
+        addMdpOutputComment(builder,
+                            DensityFittingModuleInfo::sc_name,
+                            c_adaptiveForceScalingTag,
+                            "; Apply adaptive force scaling");
+        addMdpOutputValue(builder,
+                          DensityFittingModuleInfo::sc_name,
+                          c_adaptiveForceScalingTag,
+                          parameters_.adaptiveForceScaling_);
+
+        addMdpOutputComment(builder,
+                            DensityFittingModuleInfo::sc_name,
+                            c_adaptiveForceScalingTimeConstantTag,
+                            "; Time constant for adaptive force scaling in ps");
+        addMdpOutputValue(builder,
+                          DensityFittingModuleInfo::sc_name,
+                          c_adaptiveForceScalingTimeConstantTag,
+                          parameters_.adaptiveForceScalingTimeConstant_);
     }
 }
 

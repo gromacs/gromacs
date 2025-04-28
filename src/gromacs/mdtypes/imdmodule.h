@@ -59,6 +59,10 @@ struct MDModulesNotifiers;
  * those interfaces that the module does not need to implement, but currently
  * the callers are not prepared to generically handle various cases.
  *
+ *  See also:
+ * - imdpprovider_test_helper.h: Provides a helper to populate IMdpOptionProviders from key-value trees for testing.
+ * - imdpoptionprovider_helpers.h for helpers to transform and output mdp options.
+ *
  * \inlibraryapi
  * \ingroup module_mdtypes
  */

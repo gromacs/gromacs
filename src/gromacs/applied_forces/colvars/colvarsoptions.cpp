@@ -51,6 +51,7 @@
 
 #include "gromacs/math/arrayrefwithpadding.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/imdpoptionprovider_helpers.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/ioptionscontainerwithsections.h"
 #include "gromacs/options/optionsection.h"
@@ -59,8 +60,6 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/keyvaluetree.h"
-#include "gromacs/utility/keyvaluetreebuilder.h"
-#include "gromacs/utility/keyvaluetreetransform.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/textreader.h"
@@ -78,30 +77,6 @@ namespace gmx
 
 namespace
 {
-
-/*! \brief Helper to declare mdp transform rules.
- *
- * Enforces uniform mdp options that are always prepended with the correct
- * string for the colvars mdp options.
- *
- * \tparam ToType type to be transformed to
- * \tparam TransformWithFunctionType type of transformation function to be used
- *
- * \param[in] rules KVT transformation rules
- * \param[in] transformationFunction the function to transform the flat kvt tree
- * \param[in] optionTag string tag that describes the mdp option, appended to the
- *                      default string for the density guided simulation
- */
-template<class ToType, class TransformWithFunctionType>
-void colvarsMdpTransformFromString(IKeyValueTreeTransformRules* rules,
-                                   TransformWithFunctionType    transformationFunction,
-                                   const std::string&           optionTag)
-{
-    rules->addRule()
-            .from<std::string>("/" + c_colvarsModuleName + "-" + optionTag)
-            .to<ToType>("/" + c_colvarsModuleName + "/" + optionTag)
-            .transformWith(transformationFunction);
-}
 
 /*! \brief Following Tags denotes names of parameters from .mdp file
  * \note Changing this strings will break .tpr backwards compability
@@ -130,29 +105,28 @@ const std::string c_ensTempTag_        = "ensTemp";
 void ColvarsOptions::initMdpTransform(IKeyValueTreeTransformRules* rules)
 {
     const auto& stringIdentityTransform = [](std::string s) { return s; };
-    colvarsMdpTransformFromString<bool>(rules, &fromStdString<bool>, c_activeTag_);
-    colvarsMdpTransformFromString<std::string>(rules, stringIdentityTransform, c_colvarsFileNameTag_);
-    colvarsMdpTransformFromString<int>(rules, &fromStdString<int>, c_colvarsSeedTag_);
+    addMdpTransformFromString<bool>(rules, &fromStdString<bool>, c_colvarsModuleName, c_activeTag_);
+    addMdpTransformFromString<std::string>(
+            rules, stringIdentityTransform, c_colvarsModuleName, c_colvarsFileNameTag_);
+    addMdpTransformFromString<int>(rules, &fromStdString<int>, c_colvarsModuleName, c_colvarsSeedTag_);
 }
 
 
 void ColvarsOptions::buildMdpOutput(KeyValueTreeObjectBuilder* builder) const
 {
     // new empty line before writing colvars mdp values
-    builder->addValue<std::string>("comment-" + c_colvarsModuleName + "empty-line", "");
-
-    builder->addValue<std::string>("comment-" + c_colvarsModuleName + "-module", "; Colvars bias");
-    builder->addValue<bool>(c_colvarsModuleName + "-" + c_activeTag_, active_);
+    addMdpOutputComment(builder, c_colvarsModuleName, "empty-line", "");
+    addMdpOutputComment(builder, c_colvarsModuleName, "module", "; Colvars bias");
+    addMdpOutputValue(builder, c_colvarsModuleName, c_activeTag_, active_);
 
     if (active_)
     {
-        builder->addValue<std::string>("comment-" + c_colvarsModuleName + "-" + c_colvarsFileNameTag_,
-                                       "; colvars config file");
-        builder->addValue<std::string>(c_colvarsModuleName + "-" + c_colvarsFileNameTag_, colvarsFileName_);
+        addMdpOutputComment(
+                builder, c_colvarsModuleName, c_colvarsFileNameTag_, "; colvars config file");
+        addMdpOutputValue<std::string>(builder, c_colvarsModuleName, c_colvarsFileNameTag_, colvarsFileName_);
 
-        builder->addValue<std::string>("comment-" + c_colvarsModuleName + "-" + c_colvarsSeedTag_,
-                                       "; Colvars seed");
-        builder->addValue<int>(c_colvarsModuleName + "-" + c_colvarsSeedTag_, colvarsSeed_);
+        addMdpOutputComment(builder, c_colvarsModuleName, c_colvarsSeedTag_, "; Colvars seed");
+        addMdpOutputValue<int>(builder, c_colvarsModuleName, c_colvarsSeedTag_, colvarsSeed_);
     }
 }
 

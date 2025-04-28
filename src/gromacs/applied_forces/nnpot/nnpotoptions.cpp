@@ -48,16 +48,14 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
+#include "gromacs/mdtypes/imdpoptionprovider_helpers.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/optionsection.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
-#include "gromacs/utility/keyvaluetreebuilder.h"
-#include "gromacs/utility/keyvaluetreetransform.h"
 #include "gromacs/utility/logger.h"
-#include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "nnpottopologypreprocessor.h"
@@ -71,30 +69,6 @@ namespace gmx
 
 namespace
 {
-
-/*! \brief \internal Helper to declare mdp transform rules.
- *
- * Enforces uniform mdp options that are always prepended with the correct
- * string for the NNPot mdp options.
- *
- * \tparam ToType type to be transformed to
- * \tparam TransformWithFunctionType type of transformation function to be used
- *
- * \param[in] rules KVT transformation rules
- * \param[in] transformationFunction the function to transform the flat kvt tree
- * \param[in] optionTag string tag that describes the mdp option, appended to the
- *                      default string for the QMMM simulation
- */
-template<class ToType, class TransformWithFunctionType>
-void NNPotMdpTransformFromString(IKeyValueTreeTransformRules* rules,
-                                 TransformWithFunctionType    transformationFunction,
-                                 const std::string&           optionTag)
-{
-    rules->addRule()
-            .from<std::string>("/" + c_nnpotModuleName + "-" + optionTag)
-            .to<ToType>("/" + c_nnpotModuleName + "/" + optionTag)
-            .transformWith(transformationFunction);
-}
 
 /*! \brief Following Tags denotes names of parameters from .mdp file
  * \note Changing this strings will break .tpr backwards compability
@@ -125,13 +99,19 @@ const std::string c_modelInput4Tag_ = "model-input4";
 void NNPotOptions::initMdpTransform(IKeyValueTreeTransformRules* rules)
 {
     const auto& stringIdentityTransform = [](std::string s) { return s; };
-    NNPotMdpTransformFromString<bool>(rules, &fromStdString<bool>, c_activeTag_);
-    NNPotMdpTransformFromString<std::string>(rules, stringIdentityTransform, c_modelFileNameTag_);
-    NNPotMdpTransformFromString<std::string>(rules, stringIdentityTransform, c_inputGroupTag_);
-    NNPotMdpTransformFromString<std::string>(rules, stringIdentityTransform, c_modelInput1Tag_);
-    NNPotMdpTransformFromString<std::string>(rules, stringIdentityTransform, c_modelInput2Tag_);
-    NNPotMdpTransformFromString<std::string>(rules, stringIdentityTransform, c_modelInput3Tag_);
-    NNPotMdpTransformFromString<std::string>(rules, stringIdentityTransform, c_modelInput4Tag_);
+    addMdpTransformFromString<bool>(rules, &fromStdString<bool>, c_nnpotModuleName, c_activeTag_);
+    addMdpTransformFromString<std::string>(
+            rules, stringIdentityTransform, c_nnpotModuleName, c_modelFileNameTag_);
+    addMdpTransformFromString<std::string>(
+            rules, stringIdentityTransform, c_nnpotModuleName, c_inputGroupTag_);
+    addMdpTransformFromString<std::string>(
+            rules, stringIdentityTransform, c_nnpotModuleName, c_modelInput1Tag_);
+    addMdpTransformFromString<std::string>(
+            rules, stringIdentityTransform, c_nnpotModuleName, c_modelInput2Tag_);
+    addMdpTransformFromString<std::string>(
+            rules, stringIdentityTransform, c_nnpotModuleName, c_modelInput3Tag_);
+    addMdpTransformFromString<std::string>(
+            rules, stringIdentityTransform, c_nnpotModuleName, c_modelInput4Tag_);
 }
 
 void NNPotOptions::initMdpOptions(IOptionsContainerWithSections* options)
@@ -149,24 +129,23 @@ void NNPotOptions::initMdpOptions(IOptionsContainerWithSections* options)
 void NNPotOptions::buildMdpOutput(KeyValueTreeObjectBuilder* builder) const
 {
     // new empty line before writing nnpot mdp values
-    builder->addValue<std::string>("comment-" + c_nnpotModuleName + "empty-line", "");
-
-    builder->addValue<std::string>("comment-" + c_nnpotModuleName + "-module",
-                                   "; Neural Network potential");
-    builder->addValue<bool>(c_nnpotModuleName + "-" + c_activeTag_, params_.active_);
+    addMdpOutputComment(builder, c_nnpotModuleName, "empty-line", "");
+    addMdpOutputComment(builder, c_nnpotModuleName, "module", "; Neural Network potential");
+    addMdpOutputValue(builder, c_nnpotModuleName, c_activeTag_, params_.active_);
 
     if (params_.active_)
     {
-        builder->addValue<std::string>(c_nnpotModuleName + "-" + c_modelFileNameTag_, params_.modelFileName_);
-        builder->addValue<std::string>(c_nnpotModuleName + "-" + c_inputGroupTag_, params_.inputGroup_);
-        builder->addValue<std::string>(c_nnpotModuleName + "-" + c_modelInput1Tag_,
-                                       params_.modelInput_[0]);
-        builder->addValue<std::string>(c_nnpotModuleName + "-" + c_modelInput2Tag_,
-                                       params_.modelInput_[1]);
-        builder->addValue<std::string>(c_nnpotModuleName + "-" + c_modelInput3Tag_,
-                                       params_.modelInput_[2]);
-        builder->addValue<std::string>(c_nnpotModuleName + "-" + c_modelInput4Tag_,
-                                       params_.modelInput_[3]);
+        addMdpOutputValue<std::string>(
+                builder, c_nnpotModuleName, c_modelFileNameTag_, params_.modelFileName_);
+        addMdpOutputValue<std::string>(builder, c_nnpotModuleName, c_inputGroupTag_, params_.inputGroup_);
+        addMdpOutputValue<std::string>(
+                builder, c_nnpotModuleName, c_modelInput1Tag_, params_.modelInput_[0]);
+        addMdpOutputValue<std::string>(
+                builder, c_nnpotModuleName, c_modelInput2Tag_, params_.modelInput_[1]);
+        addMdpOutputValue<std::string>(
+                builder, c_nnpotModuleName, c_modelInput3Tag_, params_.modelInput_[2]);
+        addMdpOutputValue<std::string>(
+                builder, c_nnpotModuleName, c_modelInput4Tag_, params_.modelInput_[3]);
     }
 }
 

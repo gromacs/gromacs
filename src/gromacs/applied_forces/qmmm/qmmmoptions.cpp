@@ -48,6 +48,7 @@
 #include "gromacs/fileio/warninp.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
+#include "gromacs/mdtypes/imdpoptionprovider_helpers.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/optionsection.h"
 #include "gromacs/selection/indexutil.h"
@@ -55,11 +56,8 @@
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/keyvaluetreebuilder.h"
-#include "gromacs/utility/keyvaluetreetransform.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/path.h"
-#include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textreader.h"
 
@@ -71,65 +69,6 @@ namespace gmx
 
 namespace
 {
-
-/*! \brief Helper to declare mdp transform rules.
- *
- * Enforces uniform mdp options that are always prepended with the correct
- * string for the QMMM mdp options.
- *
- * \tparam ToType type to be transformed to
- * \tparam TransformWithFunctionType type of transformation function to be used
- *
- * \param[in] rules KVT transformation rules
- * \param[in] transformationFunction the function to transform the flat kvt tree
- * \param[in] optionTag string tag that describes the mdp option, appended to the
- *                      default string for the QMMM simulation
- */
-template<class ToType, class TransformWithFunctionType>
-void QMMMMdpTransformFromString(IKeyValueTreeTransformRules* rules,
-                                TransformWithFunctionType    transformationFunction,
-                                const std::string&           optionTag)
-{
-    rules->addRule()
-            .from<std::string>("/" + c_qmmmCP2KModuleName + "-" + optionTag)
-            .to<ToType>("/" + c_qmmmCP2KModuleName + "/" + optionTag)
-            .transformWith(transformationFunction);
-}
-
-/*! \brief Helper to declare mdp output.
- *
- * Enforces uniform mdp options output strings that are always prepended with the
- * correct string for the QMMM mdp options and are consistent with the
- * options name and transformation type.
- *
- * \tparam OptionType the type of the mdp option
- * \param[in] builder the KVT builder to generate the output
- * \param[in] option the mdp option
- * \param[in] optionTag string tag that describes the mdp option, appended to the
- *                      default string for the QMMM simulation
- */
-template<class OptionType>
-void addQMMMMdpOutputValue(KeyValueTreeObjectBuilder* builder, const OptionType& option, const std::string& optionTag)
-{
-    builder->addValue<OptionType>(c_qmmmCP2KModuleName + "-" + optionTag, option);
-}
-
-/*! \brief Helper to declare mdp output comments.
- *
- * Enforces uniform mdp options comment output strings that are always prepended
- * with the correct string for the QMMM mdp options and are consistent
- * with the options name and transformation type.
- *
- * \param[in] builder the KVT builder to generate the output
- * \param[in] comment on the mdp option
- * \param[in] optionTag string tag that describes the mdp option
- */
-void addQMMMMdpOutputValueComment(KeyValueTreeObjectBuilder* builder,
-                                  const std::string&         comment,
-                                  const std::string&         optionTag)
-{
-    builder->addValue<std::string>("comment-" + c_qmmmCP2KModuleName + "-" + optionTag, comment);
-}
 
 /*! \brief Following Tags denotes names of parameters from .mdp file
  * \note Changing this strings will break .tpr backwards compatibility
@@ -162,46 +101,54 @@ const std::string c_qmTransTag_     = "qmtrans";
 void QMMMOptions::initMdpTransform(IKeyValueTreeTransformRules* rules)
 {
     const auto& stringIdentityTransform = [](std::string s) { return s; };
-    QMMMMdpTransformFromString<bool>(rules, &fromStdString<bool>, c_activeTag_);
-    QMMMMdpTransformFromString<std::string>(rules, stringIdentityTransform, c_qmGroupTag_);
-    QMMMMdpTransformFromString<std::string>(rules, stringIdentityTransform, c_qmMethodTag_);
-    QMMMMdpTransformFromString<int>(rules, &fromStdString<int>, c_qmChargeTag_);
-    QMMMMdpTransformFromString<int>(rules, &fromStdString<int>, c_qmMultTag_);
-    QMMMMdpTransformFromString<std::string>(rules, stringIdentityTransform, c_qmUserInputFileNameTag_);
+    addMdpTransformFromString<bool>(rules, &fromStdString<bool>, c_qmmmCP2KModuleName, c_activeTag_);
+    addMdpTransformFromString<std::string>(
+            rules, stringIdentityTransform, c_qmmmCP2KModuleName, c_qmGroupTag_);
+    addMdpTransformFromString<std::string>(
+            rules, stringIdentityTransform, c_qmmmCP2KModuleName, c_qmMethodTag_);
+    addMdpTransformFromString<int>(rules, &fromStdString<int>, c_qmmmCP2KModuleName, c_qmChargeTag_);
+    addMdpTransformFromString<int>(rules, &fromStdString<int>, c_qmmmCP2KModuleName, c_qmMultTag_);
+    addMdpTransformFromString<std::string>(
+            rules, stringIdentityTransform, c_qmmmCP2KModuleName, c_qmUserInputFileNameTag_);
 }
 
 void QMMMOptions::buildMdpOutput(KeyValueTreeObjectBuilder* builder) const
 {
-
-    addQMMMMdpOutputValueComment(builder, "", "empty-line");
-
+    addMdpOutputComment(builder, c_qmmmCP2KModuleName, "empty-line", "");
     // Active flag
-    addQMMMMdpOutputValueComment(builder, "; QM/MM with CP2K", "module");
-    addQMMMMdpOutputValue(builder, parameters_.active_, c_activeTag_);
+    addMdpOutputComment(builder, c_qmmmCP2KModuleName, "module", "; QM/MM with CP2K");
+    addMdpOutputValue(builder, c_qmmmCP2KModuleName, c_activeTag_, parameters_.active_);
 
     if (parameters_.active_)
     {
         // Index group for QM atoms, default System
-        addQMMMMdpOutputValueComment(builder, "; Index group with QM atoms", c_qmGroupTag_);
-        addQMMMMdpOutputValue(builder, groupString_, c_qmGroupTag_);
+        addMdpOutputComment(
+                builder, c_qmmmCP2KModuleName, c_qmGroupTag_, "; Index group with QM atoms");
+        addMdpOutputValue(builder, c_qmmmCP2KModuleName, c_qmGroupTag_, groupString_);
 
         // QM method (DFT functional), default PBE
-        addQMMMMdpOutputValueComment(builder, "; DFT functional for QM calculations", c_qmMethodTag_);
-        addQMMMMdpOutputValue<std::string>(
-                builder, c_qmmmQMMethodNames[parameters_.qmMethod_], c_qmMethodTag_);
+        addMdpOutputComment(builder,
+                            c_qmmmCP2KModuleName,
+                            c_qmMethodTag_,
+                            "; DFT functional for QM calculations");
+        addMdpOutputValue<std::string>(
+                builder, c_qmmmCP2KModuleName, c_qmMethodTag_, c_qmmmQMMethodNames[parameters_.qmMethod_]);
 
         // QM charge, default 0
-        addQMMMMdpOutputValueComment(builder, "; QM charge", c_qmChargeTag_);
-        addQMMMMdpOutputValue(builder, parameters_.qmCharge_, c_qmChargeTag_);
+        addMdpOutputComment(builder, c_qmmmCP2KModuleName, c_qmChargeTag_, "; QM charge");
+        addMdpOutputValue(builder, c_qmmmCP2KModuleName, c_qmChargeTag_, parameters_.qmCharge_);
 
         // QM mutiplicity, default 1
-        addQMMMMdpOutputValueComment(builder, "; QM multiplicity", c_qmMultTag_);
-        addQMMMMdpOutputValue(builder, parameters_.qmMultiplicity_, c_qmMultTag_);
+        addMdpOutputComment(builder, c_qmmmCP2KModuleName, c_qmMultTag_, "; QM multiplicity");
+        addMdpOutputValue(builder, c_qmmmCP2KModuleName, c_qmMultTag_, parameters_.qmMultiplicity_);
 
         // QM input filename, default empty (will be deduced from *.tpr name during mdrun)
-        addQMMMMdpOutputValueComment(
-                builder, "; Names of CP2K files during simulation", c_qmUserInputFileNameTag_);
-        addQMMMMdpOutputValue(builder, parameters_.qmFileNameBase_, c_qmUserInputFileNameTag_);
+        addMdpOutputComment(builder,
+                            c_qmmmCP2KModuleName,
+                            c_qmUserInputFileNameTag_,
+                            "; Names of CP2K files during simulation");
+        addMdpOutputValue(
+                builder, c_qmmmCP2KModuleName, c_qmUserInputFileNameTag_, parameters_.qmFileNameBase_);
     }
 }
 
