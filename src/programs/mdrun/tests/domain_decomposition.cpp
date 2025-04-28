@@ -171,7 +171,7 @@ std::optional<std::string> reasonsTestIsInvalid(MdpFlavor       mdpFlavor,
 #if GMX_GPU
     errorReasons.appendIf(haveAnyGpuWork && !haveCompatibleDevices,
                           "Cannot use GPU offload without a compatible GPU");
-    errorReasons.appendIf((GMX_GPU_OPENCL || GMX_GPU_HIP) && updateFlavor == UpdateFlavor::Gpu,
+    errorReasons.appendIf(GMX_GPU_OPENCL && updateFlavor == UpdateFlavor::Gpu,
                           "GPU Update not supported with OpenCL");
     errorReasons.appendIf(updateFlavor == UpdateFlavor::Gpu && pmeFlavor == PmeFlavor::Cpu
                                   && separatePmeRankFlavor != SeparatePmeRankFlavor::None,
