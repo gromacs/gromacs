@@ -113,21 +113,20 @@ const std::string DensityFittingForceProviderState::stepsSinceLastCalculationNam
         "stepsSinceLastCalculation";
 
 void DensityFittingForceProviderState::writeState(KeyValueTreeObjectBuilder kvtBuilder,
-                                                  const std::string&        identifier) const
+                                                  std::string_view          identifier) const
 {
     writeKvtCheckpointValue(
             stepsSinceLastCalculation_, stepsSinceLastCalculationName_, identifier, kvtBuilder);
     writeKvtCheckpointValue(
             adaptiveForceConstantScale_, adaptiveForceConstantScaleName_, identifier, kvtBuilder);
 
-    KeyValueTreeObjectBuilder exponentialMovingAverageKvtEntry =
-            kvtBuilder.addObject(identifier + "-" + exponentialMovingAverageStateName_);
+    const std::string key = std::string(identifier) + "-" + exponentialMovingAverageStateName_;
+    KeyValueTreeObjectBuilder exponentialMovingAverageKvtEntry = kvtBuilder.addObject(key);
     exponentialMovingAverageStateAsKeyValueTree(exponentialMovingAverageKvtEntry,
                                                 exponentialMovingAverageState_);
 }
 
-void DensityFittingForceProviderState::readState(const KeyValueTreeObject& kvtData,
-                                                 const std::string&        identifier)
+void DensityFittingForceProviderState::readState(const KeyValueTreeObject& kvtData, std::string_view identifier)
 {
     readKvtCheckpointValue(compat::make_not_null(&stepsSinceLastCalculation_),
                            stepsSinceLastCalculationName_,
@@ -138,10 +137,11 @@ void DensityFittingForceProviderState::readState(const KeyValueTreeObject& kvtDa
                            identifier,
                            kvtData);
 
-    if (kvtData.keyExists(identifier + "-" + exponentialMovingAverageStateName_))
+    if (const std::string key = std::string(identifier) + "-" + exponentialMovingAverageStateName_;
+        kvtData.keyExists(key))
     {
-        exponentialMovingAverageState_ = exponentialMovingAverageStateFromKeyValueTree(
-                kvtData[identifier + "-" + exponentialMovingAverageStateName_].asObject());
+        exponentialMovingAverageState_ =
+                exponentialMovingAverageStateFromKeyValueTree(kvtData[key].asObject());
     }
 }
 
@@ -447,7 +447,7 @@ void DensityFittingForceProvider::calculateForces(const ForceProviderInput& forc
 }
 
 void DensityFittingForceProvider::writeCheckpointData(MDModulesWriteCheckpointData checkpointWriting,
-                                                      const std::string& moduleName)
+                                                      std::string_view moduleName)
 {
     impl_->stateToCheckpoint().writeState(checkpointWriting.builder_, moduleName);
 }

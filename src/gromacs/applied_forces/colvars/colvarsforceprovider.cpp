@@ -91,7 +91,7 @@ const std::string ColvarsForceProviderState::sc_colvarStateFileName_ = "colvarSt
 const std::string ColvarsForceProviderState::sc_colvarStateFileSizeName_ = "colvarStateFileSize";
 
 void ColvarsForceProviderState::writeState(KeyValueTreeObjectBuilder kvtBuilder,
-                                           const std::string&        identifier) const
+                                           std::string_view          identifier) const
 {
     writeKvtCheckpointValue(nColvarsAtoms_, sc_nColvarsAtomsName_, identifier, kvtBuilder);
 
@@ -117,7 +117,7 @@ void ColvarsForceProviderState::writeState(KeyValueTreeObjectBuilder kvtBuilder,
     }
 }
 
-void ColvarsForceProviderState::readState(const KeyValueTreeObject& kvtData, const std::string& identifier)
+void ColvarsForceProviderState::readState(const KeyValueTreeObject& kvtData, std::string_view identifier)
 {
 
     stateRead_ = true;
@@ -460,7 +460,7 @@ void ColvarsForceProvider::add_energy(cvm::real energy)
 
 
 void ColvarsForceProvider::writeCheckpointData(MDModulesWriteCheckpointData checkpointWriting,
-                                               const std::string&           moduleName)
+                                               std::string_view             moduleName)
 {
     colvars->write_state_buffer(stateToCheckpoint_.colvarStateFile_);
     stateToCheckpoint_.writeState(checkpointWriting.builder_, moduleName);

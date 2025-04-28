@@ -348,7 +348,7 @@ void ElectricField::calculateForces(const ForceProviderInput& forceProviderInput
 
 } // namespace
 
-std::unique_ptr<IMDModule> createElectricFieldModule()
+std::unique_ptr<IMDModule> ElectricFieldModuleInfo::create()
 {
     return std::make_unique<ElectricField>();
 }

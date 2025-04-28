@@ -91,7 +91,7 @@ public:
     static void test(int dim, real E0, real omega, real t0, real sigma, real expectedValue)
     {
         // Make the electric field module
-        auto module = createElectricFieldModule();
+        auto module = ElectricFieldModuleInfo::create();
 
         // Fill the module as if from .mdp inputs
         {

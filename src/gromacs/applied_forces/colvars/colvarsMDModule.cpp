@@ -207,12 +207,12 @@ public:
 
         // writing checkpoint data
         const auto checkpointDataWriting = [this](MDModulesWriteCheckpointData checkpointData)
-        { colvarsForceProvider_->writeCheckpointData(checkpointData, ColvarsModuleInfo::name_); };
+        { colvarsForceProvider_->writeCheckpointData(checkpointData, ColvarsModuleInfo::sc_name); };
         notifiers->checkpointingNotifier_.subscribe(checkpointDataWriting);
 
         // reading checkpoint data
         const auto checkpointDataReading = [this](MDModulesCheckpointReadingDataOnMain checkpointData)
-        { colvarsState_.readState(checkpointData.checkpointedData_, ColvarsModuleInfo::name_); };
+        { colvarsState_.readState(checkpointData.checkpointedData_, ColvarsModuleInfo::sc_name); };
         notifiers->checkpointingNotifier_.subscribe(checkpointDataReading);
 
         // Handle the atoms redistributed signal
@@ -275,8 +275,6 @@ std::unique_ptr<IMDModule> ColvarsModuleInfo::create()
 {
     return std::make_unique<ColvarsMDModule>();
 }
-
-const std::string ColvarsModuleInfo::name_ = "colvars";
 
 std::string colvarsDescription()
 {

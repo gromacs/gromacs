@@ -62,6 +62,12 @@ namespace gmx
 namespace
 {
 
+//! Helper function to make a std::string containing the module name
+std::string moduleName()
+{
+    return std::string(DensityFittingModuleInfo::sc_name);
+}
+
 /*! \brief Helper to declare mdp transform rules.
  *
  * Enforces uniform mdp options that are always prepended with the correct
@@ -81,8 +87,8 @@ void densityfittingMdpTransformFromString(IKeyValueTreeTransformRules* rules,
                                           const std::string&           optionTag)
 {
     rules->addRule()
-            .from<std::string>("/" + DensityFittingModuleInfo::name_ + "-" + optionTag)
-            .to<ToType>("/" + DensityFittingModuleInfo::name_ + "/" + optionTag)
+            .from<std::string>("/" + moduleName() + "-" + optionTag)
+            .to<ToType>("/" + moduleName() + "/" + optionTag)
             .transformWith(transformationFunction);
 }
 /*! \brief Helper to declare mdp output.
@@ -102,7 +108,7 @@ void addDensityFittingMdpOutputValue(KeyValueTreeObjectBuilder* builder,
                                      const OptionType&          option,
                                      const std::string&         optionTag)
 {
-    builder->addValue<OptionType>(DensityFittingModuleInfo::name_ + "-" + optionTag, option);
+    builder->addValue<OptionType>(moduleName() + "-" + optionTag, option);
 }
 
 /*! \brief Helper to declare mdp output comments.
@@ -119,7 +125,7 @@ void addDensityFittingMdpOutputValueComment(KeyValueTreeObjectBuilder* builder,
                                             const std::string&         comment,
                                             const std::string&         optionTag)
 {
-    builder->addValue<std::string>("comment-" + DensityFittingModuleInfo::name_ + "-" + optionTag, comment);
+    builder->addValue<std::string>("comment-" + moduleName() + "-" + optionTag, comment);
 }
 
 const std::string c_activeTag = "active";
@@ -179,7 +185,7 @@ void DensityFittingOptions::initMdpTransform(IKeyValueTreeTransformRules* rules)
         return stringIdentityTransformWithArrayCheck<real, 3>(
                 str,
                 "Reading three real values as vector while parsing the .mdp input failed in "
-                        + DensityFittingModuleInfo::name_ + ".");
+                        + moduleName() + ".");
     };
     densityfittingMdpTransformFromString<std::string>(
             rules, stringRVecToStringRVecWithCheck, c_translationTag);
@@ -189,7 +195,7 @@ void DensityFittingOptions::initMdpTransform(IKeyValueTreeTransformRules* rules)
         return stringIdentityTransformWithArrayCheck<real, 9>(
                 str,
                 "Reading nine real values as vector while parsing the .mdp input failed in "
-                        + DensityFittingModuleInfo::name_ + ".");
+                        + moduleName() + ".");
     };
     densityfittingMdpTransformFromString<std::string>(
             rules, stringMatrixToStringMatrixWithCheck, c_transformationMatrixTag);
@@ -263,7 +269,7 @@ void DensityFittingOptions::buildMdpOutput(KeyValueTreeObjectBuilder* builder) c
 
 void DensityFittingOptions::initMdpOptions(IOptionsContainerWithSections* options)
 {
-    auto section = options->addSection(OptionSection(DensityFittingModuleInfo::name_.c_str()));
+    auto section = options->addSection(OptionSection(moduleName().c_str()));
 
     section.addOption(BooleanOption(c_activeTag.c_str()).store(&parameters_.active_));
     section.addOption(StringOption(c_groupTag.c_str()).store(&groupString_));
@@ -320,8 +326,7 @@ void DensityFittingOptions::setFitGroupIndices(const IndexGroupsAndNames& indexG
 
 void DensityFittingOptions::writeInternalParametersToKvt(KeyValueTreeObjectBuilder treeBuilder)
 {
-    auto groupIndexAdder =
-            treeBuilder.addUniformArray<std::int64_t>(DensityFittingModuleInfo::name_ + "-" + c_groupTag);
+    auto groupIndexAdder = treeBuilder.addUniformArray<std::int64_t>(moduleName() + "-" + c_groupTag);
     for (const auto& indexValue : parameters_.indices_)
     {
         groupIndexAdder.addValue(indexValue);
@@ -335,12 +340,12 @@ void DensityFittingOptions::readInternalParametersFromKvt(const KeyValueTreeObje
         return;
     }
 
-    if (!tree.keyExists(DensityFittingModuleInfo::name_ + "-" + c_groupTag))
+    if (!tree.keyExists(moduleName() + "-" + c_groupTag))
     {
         GMX_THROW(InconsistentInputError(
                 "Cannot find atom index vector required for density guided simulation."));
     }
-    auto kvtIndexArray = tree[DensityFittingModuleInfo::name_ + "-" + c_groupTag].asArray().values();
+    auto kvtIndexArray = tree[moduleName() + "-" + c_groupTag].asArray().values();
     parameters_.indices_.resize(kvtIndexArray.size());
     std::transform(std::begin(kvtIndexArray),
                    std::end(kvtIndexArray),
@@ -357,8 +362,8 @@ void DensityFittingOptions::checkEnergyCaluclationFrequency(
         energyCalculationFrequencyErrors->addError(
                 "nstcalcenergy ("
                 + toString(energyCalculationFrequencyErrors->energyCalculationIntervalInSteps())
-                + ") is not a multiple of " + DensityFittingModuleInfo::name_ + "-" + c_everyNStepsTag
-                + " (" + toString(parameters_.calculationIntervalInSteps_) + ") .");
+                + ") is not a multiple of " + moduleName() + "-" + c_everyNStepsTag + " ("
+                + toString(parameters_.calculationIntervalInSteps_) + ") .");
     }
 }
 

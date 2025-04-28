@@ -147,7 +147,7 @@ class SwapCoordinates final : public IMDModule
     void subscribeToPreProcessingNotifications(MDModulesNotifiers* /* notifiers */) override {}
 };
 
-std::unique_ptr<IMDModule> createSwapCoordinatesModule()
+std::unique_ptr<IMDModule> SwapCoordinatesModuleInfo::create()
 {
     return std::make_unique<SwapCoordinates>();
 }

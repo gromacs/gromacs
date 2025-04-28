@@ -45,6 +45,7 @@
 
 #include <memory>
 #include <string>
+#include <string_view>
 
 #include "gromacs/fileio/checkpoint.h"
 #include "gromacs/math/exponentialmovingaverage.h"
@@ -100,13 +101,13 @@ struct DensityFittingForceProviderState
      *
      * \param[in] identifier denotes the module that is checkpointing the data
      */
-    void writeState(KeyValueTreeObjectBuilder kvtBuilder, const std::string& identifier) const;
+    void writeState(KeyValueTreeObjectBuilder kvtBuilder, std::string_view identifier) const;
 
     /*! \brief Read the internal parameters from the checkpoint file on main
      * \param[in] kvtData holding the checkpoint information
      * \param[in] identifier identifies the data in a key-value-tree
      */
-    void readState(const KeyValueTreeObject& kvtData, const std::string& identifier);
+    void readState(const KeyValueTreeObject& kvtData, std::string_view identifier);
 
     /*! \brief Broadcast the internal parameters.
      *
@@ -148,7 +149,7 @@ public:
      * \note The provided state to checkpoint has to change if checkpointing
      *       is moved before the force provider call in the MD-loop.
      */
-    void writeCheckpointData(MDModulesWriteCheckpointData checkpointWriting, const std::string& moduleName);
+    void writeCheckpointData(MDModulesWriteCheckpointData checkpointWriting, std::string_view moduleName);
 
 private:
     class Impl;

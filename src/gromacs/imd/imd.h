@@ -65,6 +65,7 @@
 #include <cstdint>
 
 #include <memory>
+#include <string_view>
 
 #include "gromacs/math/vectypes.h"
 
@@ -92,10 +93,19 @@ struct MdrunOptions;
 template<typename>
 class ArrayRef;
 
-/*! \brief
- * Creates a module for interactive molecular dynamics.
+/*! \libinternal \brief Information about the interactive molecular dynamics module
+ *
+ * Provides name and method to create an interactive molecular dynamics module.
  */
-std::unique_ptr<IMDModule> createInteractiveMolecularDynamicsModule();
+struct InteractiveMolecularDynamicsModuleInfo
+{
+    /*! \brief
+     * Creates a module for interactive molecular dynamics.
+     */
+    static std::unique_ptr<IMDModule> create();
+    //! The name of the module
+    static constexpr std::string_view sc_name = "interactive-molecular-dynamics";
+};
 
 static const char IMDstr[] = "IMD:"; /**< Tag output from the IMD module with this string. */
 

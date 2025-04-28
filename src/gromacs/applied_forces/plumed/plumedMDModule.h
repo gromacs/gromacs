@@ -62,7 +62,7 @@ struct PlumedModuleInfo
      */
     static std::unique_ptr<IMDModule> create();
     //! The name of the module
-    static constexpr std::string_view name_ = "plumed";
+    static constexpr std::string_view sc_name = "plumed";
 };
 
 //! Returns information for describing the PLUMED support

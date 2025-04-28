@@ -115,8 +115,6 @@ std::unique_ptr<IMDModule> ColvarsModuleInfo::create()
     return std::make_unique<ColvarsMDModule>();
 }
 
-const std::string ColvarsModuleInfo::name_ = "colvars";
-
 std::string colvarsDescription()
 {
     return "disabled";

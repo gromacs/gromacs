@@ -213,6 +213,4 @@ std::unique_ptr<IMDModule> NNPotModuleInfo::create()
     return std::make_unique<NNPotMDModule>();
 }
 
-const std::string NNPotModuleInfo::name_ = "nnpot";
-
 } // end namespace gmx

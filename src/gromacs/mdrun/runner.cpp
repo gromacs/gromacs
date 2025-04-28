@@ -1089,8 +1089,8 @@ int Mdrunner::mdrunner()
     // TODO: capture all restraints into a single RestraintModule, passed to the runner builder.
     for (auto&& restraint : restraintManager_->getRestraints())
     {
-        auto module = RestraintMDModule::create(restraint, restraint->sites());
-        mdModules_->add(std::move(module));
+        mdModules_->add(RestraintMDModule::sc_name,
+                        RestraintMDModule::create(restraint, restraint->sites()));
     }
 
     // TODO: Error handling

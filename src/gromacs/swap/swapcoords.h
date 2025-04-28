@@ -54,6 +54,7 @@
 #include <cstdio>
 
 #include <memory>
+#include <string_view>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -77,10 +78,20 @@ class IMDModule;
 class LocalAtomSetManager;
 struct MdrunOptions;
 
-/*! \brief
- * Creates a module for Computational Electrophysiology swapping.
+/*! \internal
+    \brief Information about the computational-electrophysiology module.
+ *
+ * Provides name and method to create a computational-electrophysiology module.
  */
-std::unique_ptr<IMDModule> createSwapCoordinatesModule();
+struct SwapCoordinatesModuleInfo
+{
+    /*! \brief
+     * Creates a module for Computational Electrophysiology swapping.
+     */
+    static std::unique_ptr<IMDModule> create();
+    //! The name of the module
+    static constexpr std::string_view sc_name = "swap-coordinates";
+};
 
 } // namespace gmx
 

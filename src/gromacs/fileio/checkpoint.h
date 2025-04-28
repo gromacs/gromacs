@@ -41,6 +41,7 @@
 #include <filesystem>
 #include <limits>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "gromacs/compat/pointers.h"
@@ -88,18 +89,18 @@ static constexpr int64_t sc_checkpointMaxAtomCount = std::numeric_limits<unsigne
  */
 template<typename ValueType>
 void readKvtCheckpointValue(compat::not_null<ValueType*> value,
-                            const std::string&           name,
-                            const std::string&           identifier,
+                            std::string_view             name,
+                            std::string_view             identifier,
                             const KeyValueTreeObject&    kvt);
 //! \copydoc readKvtCheckpointValue
 extern template void readKvtCheckpointValue(compat::not_null<std::int64_t*> value,
-                                            const std::string&              name,
-                                            const std::string&              identifier,
+                                            std::string_view                name,
+                                            std::string_view                identifier,
                                             const KeyValueTreeObject&       kvt);
 //! \copydoc readKvtCheckpointValue
 extern template void readKvtCheckpointValue(compat::not_null<real*>   value,
-                                            const std::string&        name,
-                                            const std::string&        identifier,
+                                            std::string_view          name,
+                                            std::string_view          identifier,
                                             const KeyValueTreeObject& kvt);
 
 /*! \brief Write to a key-value-tree used for checkpointing.
@@ -114,18 +115,18 @@ extern template void readKvtCheckpointValue(compat::not_null<real*>   value,
  */
 template<typename ValueType>
 void writeKvtCheckpointValue(const ValueType&          value,
-                             const std::string&        name,
-                             const std::string&        identifier,
+                             std::string_view          name,
+                             std::string_view          identifier,
                              KeyValueTreeObjectBuilder kvtBuilder);
 //! \copydoc writeKvtCheckpointValue
 extern template void writeKvtCheckpointValue(const std::int64_t&       value,
-                                             const std::string&        name,
-                                             const std::string&        identifier,
+                                             std::string_view          name,
+                                             std::string_view          identifier,
                                              KeyValueTreeObjectBuilder kvtBuilder);
 //! \copydoc writeKvtCheckpointValue
 extern template void writeKvtCheckpointValue(const real&               value,
-                                             const std::string&        name,
-                                             const std::string&        identifier,
+                                             std::string_view          name,
+                                             std::string_view          identifier,
                                              KeyValueTreeObjectBuilder kvtBuilder);
 
 /*! \libinternal

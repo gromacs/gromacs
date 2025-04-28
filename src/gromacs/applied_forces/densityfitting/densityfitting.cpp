@@ -327,14 +327,14 @@ public:
 
         // writing checkpoint data
         const auto checkpointDataWriting = [this](MDModulesWriteCheckpointData checkpointData)
-        { forceProvider_->writeCheckpointData(checkpointData, DensityFittingModuleInfo::name_); };
+        { forceProvider_->writeCheckpointData(checkpointData, DensityFittingModuleInfo::sc_name); };
         notifiers->checkpointingNotifier_.subscribe(checkpointDataWriting);
 
         // reading checkpoint data
         const auto checkpointDataReading = [this](MDModulesCheckpointReadingDataOnMain checkpointData)
         {
             densityFittingState_.readState(checkpointData.checkpointedData_,
-                                           DensityFittingModuleInfo::name_);
+                                           DensityFittingModuleInfo::sc_name);
         };
         notifiers->checkpointingNotifier_.subscribe(checkpointDataReading);
 
@@ -419,7 +419,5 @@ std::unique_ptr<IMDModule> DensityFittingModuleInfo::create()
 {
     return std::make_unique<DensityFitting>();
 }
-
-const std::string DensityFittingModuleInfo::name_ = "density-guided-simulation";
 
 } // namespace gmx

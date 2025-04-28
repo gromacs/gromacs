@@ -38,8 +38,8 @@
 #include <cstdio>
 
 #include <memory>
+#include <unordered_map>
 #include <utility>
-#include <vector>
 
 #include "gromacs/applied_forces/colvars/colvarsMDModule.h"
 #include "gromacs/applied_forces/densityfitting/densityfitting.h"
@@ -58,11 +58,12 @@
 #include "gromacs/options/optionsection.h"
 #include "gromacs/options/treesupport.h"
 #include "gromacs/swap/swapcoords.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/keyvaluetreetransform.h"
-#include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/stringutil.h"
 
 struct gmx_output_env_t;
 
@@ -72,40 +73,64 @@ namespace gmx
 class MDModules::Impl : public IMDOutputProvider
 {
 public:
-    Impl() :
-        densityFitting_(DensityFittingModuleInfo::create()),
-        field_(createElectricFieldModule()),
-        imd_(createInteractiveMolecularDynamicsModule()),
-        qmmm_(QMMMModuleInfo::create()),
-        swapCoordinates_(createSwapCoordinatesModule()),
-        colvars_(ColvarsModuleInfo::create()),
-        plumed_(PlumedModuleInfo::create()),
-        nnpot_(NNPotModuleInfo::create())
+    Impl()
     {
+        modules_[std::string(DensityFittingModuleInfo::sc_name)] = DensityFittingModuleInfo::create();
+        modules_[std::string(ElectricFieldModuleInfo::sc_name)] = ElectricFieldModuleInfo::create();
+        modules_[std::string(InteractiveMolecularDynamicsModuleInfo::sc_name)] =
+                InteractiveMolecularDynamicsModuleInfo::create();
+        modules_[std::string(QMMMModuleInfo::sc_name)] = QMMMModuleInfo::create();
+        modules_[std::string(SwapCoordinatesModuleInfo::sc_name)] = SwapCoordinatesModuleInfo::create();
+        modules_[std::string(ColvarsModuleInfo::sc_name)] = ColvarsModuleInfo::create();
+        modules_[std::string(PlumedModuleInfo::sc_name)]  = PlumedModuleInfo::create();
+        modules_[std::string(NNPotModuleInfo::sc_name)]   = NNPotModuleInfo::create();
     }
 
     void makeModuleOptions(Options* options) const
     {
+        // TODO When we have mdp option providers other than
+        // applied-forces modules, do we need to extend IMdpOptions to
+        // return an optional section name, like "applied-forces"?
+        // What value does it provide other than prepending a string?
+        // Can we handle it differently?
+
         // Create a section for applied-forces modules
         auto appliedForcesOptions = options->addSection(OptionSection("applied-forces"));
-        field_->mdpOptionProvider()->initMdpOptions(&appliedForcesOptions);
-        densityFitting_->mdpOptionProvider()->initMdpOptions(&appliedForcesOptions);
-        qmmm_->mdpOptionProvider()->initMdpOptions(&appliedForcesOptions);
-        colvars_->mdpOptionProvider()->initMdpOptions(&appliedForcesOptions);
-        nnpot_->mdpOptionProvider()->initMdpOptions(&appliedForcesOptions);
+        for (std::string_view moduleName : { ElectricFieldModuleInfo::sc_name,
+                                             DensityFittingModuleInfo::sc_name,
+                                             QMMMModuleInfo::sc_name,
+                                             ColvarsModuleInfo::sc_name,
+                                             NNPotModuleInfo::sc_name })
+        {
+            IMDModule*          module            = modules_.at(std::string(moduleName)).get();
+            IMdpOptionProvider* mdpOptionProvider = module->mdpOptionProvider();
+            GMX_RELEASE_ASSERT(mdpOptionProvider,
+                               "Applied-forces modules all implement MDP options");
+            mdpOptionProvider->initMdpOptions(&appliedForcesOptions);
+        }
         // In future, other sections would also go here.
     }
 
     // From IMDOutputProvider
     void initOutput(FILE* fplog, int nfile, const t_filenm fnm[], bool bAppendFiles, const gmx_output_env_t* oenv) override
     {
-        field_->outputProvider()->initOutput(fplog, nfile, fnm, bAppendFiles, oenv);
-        densityFitting_->outputProvider()->initOutput(fplog, nfile, fnm, bAppendFiles, oenv);
+        for (auto& [_, module] : modules_)
+        {
+            if (module->outputProvider())
+            {
+                module->outputProvider()->initOutput(fplog, nfile, fnm, bAppendFiles, oenv);
+            }
+        }
     }
     void finishOutput() override
     {
-        field_->outputProvider()->finishOutput();
-        densityFitting_->outputProvider()->finishOutput();
+        for (auto& [_, module] : modules_)
+        {
+            if (module->outputProvider())
+            {
+                module->outputProvider()->finishOutput();
+            }
+        }
     }
 
     /*! \brief Manages callbacks and notifies the MD modules.
@@ -115,26 +140,10 @@ public:
      */
     MDModulesNotifiers notifiers_;
 
-    std::unique_ptr<IMDModule>      densityFitting_;
-    std::unique_ptr<IMDModule>      field_;
     std::unique_ptr<ForceProviders> forceProviders_;
-    std::unique_ptr<IMDModule>      imd_;
-    std::unique_ptr<IMDModule>      qmmm_;
-    std::unique_ptr<IMDModule>      swapCoordinates_;
-    std::unique_ptr<IMDModule>      colvars_;
-    std::unique_ptr<IMDModule>      plumed_;
-    std::unique_ptr<IMDModule>      nnpot_;
 
-    /*! \brief List of registered MDModules
-     *
-     * Note that MDModules::Impl owns this container, but it is only used by
-     * the MDModules::initForceProviders() function. To be consistent with
-     * IMDModule's vision, as indicated by its docs, we should
-     * \todo update IMDModule docs to allow nullptr return values
-     * \todo check for nullptr returned by IMDModule methods.
-     * \todo include field_ in modules_
-     */
-    std::vector<std::shared_ptr<IMDModule>> modules_;
+    /*! \brief List of registered MDModules */
+    std::unordered_map<std::string, std::shared_ptr<IMDModule>> modules_;
 };
 
 MDModules::MDModules() : impl_(new Impl) {}
@@ -144,20 +153,34 @@ MDModules::~MDModules() {}
 void MDModules::initMdpTransform(IKeyValueTreeTransformRules* rules)
 {
     auto appliedForcesScope = rules->scopedTransform("/applied-forces");
-    impl_->field_->mdpOptionProvider()->initMdpTransform(appliedForcesScope.rules());
-    impl_->densityFitting_->mdpOptionProvider()->initMdpTransform(appliedForcesScope.rules());
-    impl_->qmmm_->mdpOptionProvider()->initMdpTransform(appliedForcesScope.rules());
-    impl_->colvars_->mdpOptionProvider()->initMdpTransform(appliedForcesScope.rules());
-    impl_->nnpot_->mdpOptionProvider()->initMdpTransform(appliedForcesScope.rules());
+    for (std::string_view moduleName : { ElectricFieldModuleInfo::sc_name,
+                                         DensityFittingModuleInfo::sc_name,
+                                         QMMMModuleInfo::sc_name,
+                                         ColvarsModuleInfo::sc_name,
+                                         NNPotModuleInfo::sc_name })
+    {
+        IMDModule*          module            = impl_->modules_.at(std::string(moduleName)).get();
+        IMdpOptionProvider* mdpOptionProvider = module->mdpOptionProvider();
+        GMX_RELEASE_ASSERT(mdpOptionProvider, "Applied-forces modules all implement MDP options");
+        mdpOptionProvider->initMdpTransform(appliedForcesScope.rules());
+    }
 }
 
 void MDModules::buildMdpOutput(KeyValueTreeObjectBuilder* builder)
 {
-    impl_->field_->mdpOptionProvider()->buildMdpOutput(builder);
-    impl_->densityFitting_->mdpOptionProvider()->buildMdpOutput(builder);
-    impl_->qmmm_->mdpOptionProvider()->buildMdpOutput(builder);
-    impl_->colvars_->mdpOptionProvider()->buildMdpOutput(builder);
-    impl_->nnpot_->mdpOptionProvider()->buildMdpOutput(builder);
+    // Note that the order here should be kept stable so that the
+    // fields in the mdp output file appear in a reliable order.
+    for (std::string_view moduleName : { ElectricFieldModuleInfo::sc_name,
+                                         DensityFittingModuleInfo::sc_name,
+                                         QMMMModuleInfo::sc_name,
+                                         ColvarsModuleInfo::sc_name,
+                                         NNPotModuleInfo::sc_name })
+    {
+        IMDModule*                module = impl_->modules_.at(std::string(moduleName)).get();
+        const IMdpOptionProvider* mdpOptionProvider = module->mdpOptionProvider();
+        GMX_RELEASE_ASSERT(mdpOptionProvider, "Applied-forces modules all implement MDP options");
+        mdpOptionProvider->buildMdpOutput(builder);
+    }
 }
 
 void MDModules::assignOptionsToModules(const KeyValueTreeObject& params, IKeyValueTreeErrorHandler* errorHandler)
@@ -192,13 +215,7 @@ ForceProviders* MDModules::initForceProviders(gmx_wallcycle* wallCycle)
     GMX_RELEASE_ASSERT(impl_->forceProviders_ == nullptr,
                        "Force providers initialized multiple times");
     impl_->forceProviders_ = std::make_unique<ForceProviders>(wallCycle);
-    impl_->field_->initForceProviders(impl_->forceProviders_.get());
-    impl_->densityFitting_->initForceProviders(impl_->forceProviders_.get());
-    impl_->qmmm_->initForceProviders(impl_->forceProviders_.get());
-    impl_->colvars_->initForceProviders(impl_->forceProviders_.get());
-    impl_->plumed_->initForceProviders(impl_->forceProviders_.get());
-    impl_->nnpot_->initForceProviders(impl_->forceProviders_.get());
-    for (auto&& module : impl_->modules_)
+    for (auto& [_, module] : impl_->modules_)
     {
         module->initForceProviders(impl_->forceProviders_.get());
     }
@@ -207,24 +224,28 @@ ForceProviders* MDModules::initForceProviders(gmx_wallcycle* wallCycle)
 
 void MDModules::subscribeToPreProcessingNotifications()
 {
-    impl_->densityFitting_->subscribeToPreProcessingNotifications(&impl_->notifiers_);
-    impl_->qmmm_->subscribeToPreProcessingNotifications(&impl_->notifiers_);
-    impl_->colvars_->subscribeToPreProcessingNotifications(&impl_->notifiers_);
-    impl_->nnpot_->subscribeToPreProcessingNotifications(&impl_->notifiers_);
+    for (auto& [_, module] : impl_->modules_)
+    {
+        module->subscribeToPreProcessingNotifications(&impl_->notifiers_);
+    }
 }
 
 void MDModules::subscribeToSimulationSetupNotifications()
 {
-    impl_->densityFitting_->subscribeToSimulationSetupNotifications(&impl_->notifiers_);
-    impl_->qmmm_->subscribeToSimulationSetupNotifications(&impl_->notifiers_);
-    impl_->colvars_->subscribeToSimulationSetupNotifications(&impl_->notifiers_);
-    impl_->plumed_->subscribeToSimulationSetupNotifications(&impl_->notifiers_);
-    impl_->nnpot_->subscribeToSimulationSetupNotifications(&impl_->notifiers_);
+    for (auto& [_, module] : impl_->modules_)
+    {
+        module->subscribeToSimulationSetupNotifications(&impl_->notifiers_);
+    }
 }
 
-void MDModules::add(std::shared_ptr<gmx::IMDModule> module)
+void MDModules::add(std::string_view nameView, std::shared_ptr<IMDModule> module)
 {
-    impl_->modules_.emplace_back(std::move(module));
+    const std::string name(nameView);
+    if (impl_->modules_.find(name) != impl_->modules_.end())
+    {
+        GMX_THROW(APIError(formatString("Module with name %s already added", name.c_str())));
+    }
+    impl_->modules_[name] = std::move(module);
 }
 
 const MDModulesNotifiers& MDModules::notifiers()

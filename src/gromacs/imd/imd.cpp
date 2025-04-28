@@ -342,7 +342,7 @@ class InteractiveMolecularDynamics final : public IMDModule
     void subscribeToPreProcessingNotifications(MDModulesNotifiers* /* notifiers */) override {}
 };
 
-std::unique_ptr<IMDModule> createInteractiveMolecularDynamicsModule()
+std::unique_ptr<IMDModule> InteractiveMolecularDynamicsModuleInfo::create()
 {
     return std::make_unique<InteractiveMolecularDynamics>();
 }

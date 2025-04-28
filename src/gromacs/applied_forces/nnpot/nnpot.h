@@ -42,7 +42,7 @@
 #define NNPOT_MDMODULE_H
 
 #include <memory>
-#include <string>
+#include <string_view>
 
 namespace gmx
 {
@@ -61,7 +61,7 @@ struct NNPotModuleInfo
      */
     static std::unique_ptr<IMDModule> create();
     //! The name of the module
-    static const std::string name_;
+    static constexpr std::string_view sc_name = "nnpot";
 };
 
 

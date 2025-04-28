@@ -43,6 +43,7 @@
 #define GMX_MDRUN_MDMODULES_H
 
 #include <memory>
+#include <string_view>
 
 struct gmx_wallcycle;
 struct t_inputrec;
@@ -69,7 +70,7 @@ struct MDModulesNotifiers;
  * few modules and use them.
  *
  * The general idea is that each module takes care of its own data rather than
- * mdrun having to know about all the details of each type of force calculation.
+ * (for example) mdrun having to know about all the details of each type of force calculation.
  * Initially this is applied for simple things like electric field calculations
  * but later more complex forces will be supported too.
  *
@@ -164,7 +165,7 @@ public:
     void subscribeToPreProcessingNotifications();
 
     /*!
-     * \brief Add a module to the container.
+     * \brief Add a module to the container associated with the given name.
      *
      * An object may be added by a client to the bound MD Modules at run time.
      * Both the client and the MDModules object may need to extend the life
@@ -173,19 +174,18 @@ public:
      * may attempt to use its the interfaces accessible through IMDModule
      * methods.
      *
-     * \param module implements some sort of modular functionality for MD.
-     *
-     * \note: There is not yet a way to add a IMDModule object between
-     * creation of the MDModules container and the execution of the various
-     * initialization protocols it supports.
+     * \param name   Unique name for this module in the collection
+     * \param module Implements some sort of modular functionality for MD.
      *
      * \internal
      * Adding a module at an arbitrary point in the MDModules life breaks
      * some assumptions in the protocol of the other member functions. If
      * MDModules should not change after some point, we should move this
      * to a builder class.
+     *
+     * \throws APIError When a module with the given name is already added
      */
-    void add(std::shared_ptr<IMDModule> module);
+    void add(std::string_view name, std::shared_ptr<IMDModule> module);
 
     /*! \brief Return a handle to the notifiers used for callbacks between modules.
      */

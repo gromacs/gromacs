@@ -9,7 +9,7 @@ interface simple and stable. Thus most of the "special" functionalities,
 both those are part of the \Gromacs main code base and developed
 by users, keep functioning with each new version of \Gromacs.
 
-Most current MD modules are "force providers" implemented in a single call-back
+Many current MD modules are "force providers" implemented in a single call-back
 function that is called at each MD step during the force calculation.
 Here coordinates and parameters of local atoms are provided and forces,
 the energy and virial can be returned. Additionally there are several
