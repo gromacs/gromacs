@@ -54,6 +54,16 @@ values in this bin were affected.
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fixed cross-test for Windows on Linux with Wine
+"""""""""""""""""""""""""""""""""""""""""""""""
+
+Cross-testing of |Gromacs| 2025.1 for Windows on Linux with Wine, by setting the
+``CMAKE_CROSSCOMPILING_EMULATOR`` variable to ``wine`` or ``wine64``, could fail
+due to our tests using CMake generator expressions and ignoring the variable
+setting. The tests are now executed using the emulator set in the variable.
+
+:issue:`5342`
+
 Miscellaneous
 ^^^^^^^^^^^^^
 
