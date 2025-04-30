@@ -56,3 +56,11 @@ Fixes that affect portability
 
 Miscellaneous
 ^^^^^^^^^^^^^
+
+Intel Xe2/Battlemage documentation
+""""""""""""""""""""""""""""""""""
+
+Expanded the documentation and rephrased a misleading error message.
+
+:issue:`5330`
+

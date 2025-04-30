@@ -1086,7 +1086,8 @@ must be set:
             -DGMX_GPU=SYCL -DGMX_SYCL=DPCPP
 
 When compiling for Intel Data Center GPU Max (also knows as Ponte Vecchio / PVC),
-we recommend passing additional flags for compatibility and improved performance:
+Intel Xe2 GPUs (Lunar Lake, Arc Battlemage) and newer, we recommend passing additional
+flags for compatibility and improved performance:
 
 ::
 
