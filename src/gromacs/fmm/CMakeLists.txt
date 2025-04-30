@@ -37,6 +37,8 @@ gmx_manage_fmm()
 
 target_sources(fmm PRIVATE
     fmm_mdmodule.cpp
+    fmm_mdpoptions.cpp
+    fmmoptions.cpp
 )
 
 if(GMX_USE_EXT_FMM)

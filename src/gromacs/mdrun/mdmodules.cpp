@@ -47,6 +47,7 @@
 #include "gromacs/applied_forces/nnpot/nnpot.h"
 #include "gromacs/applied_forces/plumed/plumedMDModule.h"
 #include "gromacs/applied_forces/qmmm/qmmm.h"
+#include "gromacs/fmm/fmm_mdmodule.h"
 #include "gromacs/imd/imd.h"
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/mdtypes/iforceprovider.h"
@@ -84,6 +85,7 @@ public:
         modules_[std::string(ColvarsModuleInfo::sc_name)] = ColvarsModuleInfo::create();
         modules_[std::string(PlumedModuleInfo::sc_name)]  = PlumedModuleInfo::create();
         modules_[std::string(NNPotModuleInfo::sc_name)]   = NNPotModuleInfo::create();
+        modules_[std::string(FmmModuleInfo::sc_name)]     = FmmModuleInfo::create();
     }
 
     void makeModuleOptions(Options* options) const
@@ -108,6 +110,14 @@ public:
                                "Applied-forces modules all implement MDP options");
             mdpOptionProvider->initMdpOptions(&appliedForcesOptions);
         }
+
+        auto       fmmModuleOptions = options->addSection(OptionSection("fast-multipole-method"));
+        IMDModule* fmmModule        = modules_.at(std::string(FmmModuleInfo::sc_name)).get();
+        IMdpOptionProvider* fmmMdpOptionProvider = fmmModule->mdpOptionProvider();
+        GMX_RELEASE_ASSERT(fmmMdpOptionProvider,
+                           "Fast-multipole-method module must implement MDP options");
+        fmmMdpOptionProvider->initMdpOptions(&fmmModuleOptions);
+
         // In future, other sections would also go here.
     }
 
@@ -164,6 +174,13 @@ void MDModules::initMdpTransform(IKeyValueTreeTransformRules* rules)
         GMX_RELEASE_ASSERT(mdpOptionProvider, "Applied-forces modules all implement MDP options");
         mdpOptionProvider->initMdpTransform(appliedForcesScope.rules());
     }
+
+    auto                fmmScope  = rules->scopedTransform("/fast-multipole-method");
+    IMDModule*          fmmModule = impl_->modules_.at(std::string(FmmModuleInfo::sc_name)).get();
+    IMdpOptionProvider* fmmMdpOptionProvider = fmmModule->mdpOptionProvider();
+    GMX_RELEASE_ASSERT(fmmMdpOptionProvider,
+                       "Fast-multipole-method module must implement MDP options");
+    fmmMdpOptionProvider->initMdpTransform(fmmScope.rules());
 }
 
 void MDModules::buildMdpOutput(KeyValueTreeObjectBuilder* builder)
@@ -181,6 +198,12 @@ void MDModules::buildMdpOutput(KeyValueTreeObjectBuilder* builder)
         GMX_RELEASE_ASSERT(mdpOptionProvider, "Applied-forces modules all implement MDP options");
         mdpOptionProvider->buildMdpOutput(builder);
     }
+
+    IMDModule* fmmModule = impl_->modules_.at(std::string(FmmModuleInfo::sc_name)).get();
+    const IMdpOptionProvider* fmmMdpOptionProvider = fmmModule->mdpOptionProvider();
+    GMX_RELEASE_ASSERT(fmmMdpOptionProvider,
+                       "Fast-multipole-method module must implement MDP options");
+    fmmMdpOptionProvider->buildMdpOutput(builder);
 }
 
 void MDModules::assignOptionsToModules(const KeyValueTreeObject& params, IKeyValueTreeErrorHandler* errorHandler)

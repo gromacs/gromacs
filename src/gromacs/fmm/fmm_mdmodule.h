@@ -35,7 +35,7 @@
 #define GMX_FMM_MDMODULE_H
 
 #include <memory>
-#include <string>
+#include <string_view>
 
 namespace gmx
 {
@@ -55,9 +55,8 @@ struct FmmModuleInfo
      */
     static std::unique_ptr<IMDModule> create();
     //! The name of the module
-    static const std::string name_;
+    static constexpr std::string_view sc_name = "fmm";
 };
-
 
 } // namespace gmx
 

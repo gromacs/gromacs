@@ -528,6 +528,22 @@ TEST_F(GetIrTest, lambdaOverOneCheck_LambdaVector_And_ExactlyAsManyStep_negative
     runTest(joinStrings(inputMdpFile, "\n"), TestBehavior::NoErrorAndDoNotCompareOutput);
 }
 
+TEST_F(GetIrTest, AcceptsFmmOptions)
+{
+    const char* inputMdpFile[] = { "fmm-backend = exafmm",
+                                   "fmm-exafmm-order = 6",
+                                   "fmm-exafmm-direct-range = 2",
+                                   "fmm-exafmm-direct-provider = GROMACS",
+                                   "fmm-fmsolvr-order= 8",
+                                   "fmm-fmsolvr-direct-range = 2",
+                                   "fmm-fmsolvr-direct-provider = FMM",
+                                   "fmm-fmsolvr-dipole-compensation = yes",
+                                   "fmm-fmsolvr-tree-depth = 3",
+                                   "fmm-fmsolvr-sparse = no" };
+    runTest(joinStrings(inputMdpFile, "\n"));
+}
+
+
 #endif // HAVE_MUPARSER
 
 } // namespace test

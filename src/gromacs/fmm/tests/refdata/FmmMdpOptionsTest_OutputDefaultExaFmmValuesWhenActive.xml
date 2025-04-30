@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="Mdp output">
+; Fast Multipole Method
+fmm-backend              = exafmm
+fmm-exafmm-order         = 6
+fmm-exafmm-direct-range  = 2
+fmm-exafmm-direct-provider = GROMACS
+</String>
+</ReferenceData>

@@ -309,7 +309,7 @@ userreal4                = 0
 ; sigma = 0 means no pulse, leaving the field to be a cosine function.
 electric-field-x         = 0 0 0 0
 electric-field-y         = 0 0 0 0
-electric-field-z         = 3.7 7.5 0 0
+electric-field-z         = 0 0 0 0
 
 ; Density guided simulation
 density-guided-simulation-active = false
@@ -324,6 +324,9 @@ colvars-active           = false
 nnpot-active             = false
 
 ; Fast Multipole Method
-fmm-backend              = inactive
+fmm-backend              = exafmm
+fmm-exafmm-order         = 6
+fmm-exafmm-direct-range  = 2
+fmm-exafmm-direct-provider = GROMACS
 </String>
 </ReferenceData>

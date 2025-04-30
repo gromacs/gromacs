@@ -39,6 +39,9 @@
 #include "gromacs/mdtypes/imdmodule.h"
 #include "gromacs/mdtypes/imdpoptionprovider.h"
 
+#include "fmm_mdpoptions.h"
+#include "fmmforceprovider.h"
+
 namespace gmx
 {
 
@@ -60,16 +63,27 @@ public:
 
     void subscribeToSimulationSetupNotifications(MDModulesNotifiers* /* notifiers */) override {}
 
-    void initForceProviders(ForceProviders* /* forceProviders */) override {}
+    void initForceProviders(ForceProviders* forceProviders) override
+    {
+        if (fmmMdpOptions_.activeFmmBackend() == ActiveFmmBackend::Inactive)
+        {
+            return;
+        }
+        fmmForceProvider_ = std::make_unique<FmmForceProvider>();
+        forceProviders->addForceProvider(fmmForceProvider_.get(), std::string(FmmModuleInfo::sc_name));
+    }
 
     //! From IMDModule
-    IMdpOptionProvider* mdpOptionProvider() override { return nullptr; }
+    IMdpOptionProvider* mdpOptionProvider() override { return &fmmMdpOptions_; }
 
     //! From IMDModule
     //! doesn't need extra output
     IMDOutputProvider* outputProvider() override { return nullptr; }
-};
 
+private:
+    std::unique_ptr<FmmForceProvider> fmmForceProvider_;
+    FmmMdpOptions                     fmmMdpOptions_;
+};
 
 } // namespace
 
@@ -77,7 +91,5 @@ std::unique_ptr<IMDModule> FmmModuleInfo::create()
 {
     return std::make_unique<FmmMDModule>();
 }
-
-const std::string FmmModuleInfo::name_ = "FMM";
 
 } // namespace gmx

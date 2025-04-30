@@ -322,5 +322,8 @@ colvars-active           = false
 
 ; Neural Network potential
 nnpot-active             = false
+
+; Fast Multipole Method
+fmm-backend              = inactive
 </String>
 </ReferenceData>
