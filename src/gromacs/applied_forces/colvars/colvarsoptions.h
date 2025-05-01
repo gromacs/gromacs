@@ -70,10 +70,6 @@ class IOptionsContainerWithSections;
 class KeyValueTreeObjectBuilder;
 
 
-//! Tag with name of the Colvars MDModule
-static const std::string c_colvarsModuleName = "colvars";
-
-
 /*! \internal
  * \brief Input data storage for colvars
  */

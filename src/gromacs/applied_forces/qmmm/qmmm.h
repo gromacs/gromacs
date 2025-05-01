@@ -63,7 +63,7 @@ struct QMMMModuleInfo
      */
     static std::unique_ptr<IMDModule> create();
     //! The name of the module
-    static constexpr std::string_view sc_name = "qmmm";
+    static constexpr std::string_view sc_name = "qmmm-cp2k";
 };
 
 } // namespace gmx

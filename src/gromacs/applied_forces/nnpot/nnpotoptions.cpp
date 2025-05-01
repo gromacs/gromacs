@@ -58,6 +58,7 @@
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "nnpot.h"
 #include "nnpottopologypreprocessor.h"
 
 #if GMX_TORCH
@@ -69,6 +70,12 @@ namespace gmx
 
 namespace
 {
+
+//! Helper function to make a std::string containing the module name
+std::string moduleName()
+{
+    return std::string(NNPotModuleInfo::sc_name);
+}
 
 /*! \brief Following Tags denotes names of parameters from .mdp file
  * \note Changing this strings will break .tpr backwards compability
@@ -99,24 +106,24 @@ const std::string c_modelInput4Tag_ = "model-input4";
 void NNPotOptions::initMdpTransform(IKeyValueTreeTransformRules* rules)
 {
     const auto& stringIdentityTransform = [](std::string s) { return s; };
-    addMdpTransformFromString<bool>(rules, &fromStdString<bool>, c_nnpotModuleName, c_activeTag_);
+    addMdpTransformFromString<bool>(rules, &fromStdString<bool>, NNPotModuleInfo::sc_name, c_activeTag_);
     addMdpTransformFromString<std::string>(
-            rules, stringIdentityTransform, c_nnpotModuleName, c_modelFileNameTag_);
+            rules, stringIdentityTransform, NNPotModuleInfo::sc_name, c_modelFileNameTag_);
     addMdpTransformFromString<std::string>(
-            rules, stringIdentityTransform, c_nnpotModuleName, c_inputGroupTag_);
+            rules, stringIdentityTransform, NNPotModuleInfo::sc_name, c_inputGroupTag_);
     addMdpTransformFromString<std::string>(
-            rules, stringIdentityTransform, c_nnpotModuleName, c_modelInput1Tag_);
+            rules, stringIdentityTransform, NNPotModuleInfo::sc_name, c_modelInput1Tag_);
     addMdpTransformFromString<std::string>(
-            rules, stringIdentityTransform, c_nnpotModuleName, c_modelInput2Tag_);
+            rules, stringIdentityTransform, NNPotModuleInfo::sc_name, c_modelInput2Tag_);
     addMdpTransformFromString<std::string>(
-            rules, stringIdentityTransform, c_nnpotModuleName, c_modelInput3Tag_);
+            rules, stringIdentityTransform, NNPotModuleInfo::sc_name, c_modelInput3Tag_);
     addMdpTransformFromString<std::string>(
-            rules, stringIdentityTransform, c_nnpotModuleName, c_modelInput4Tag_);
+            rules, stringIdentityTransform, NNPotModuleInfo::sc_name, c_modelInput4Tag_);
 }
 
 void NNPotOptions::initMdpOptions(IOptionsContainerWithSections* options)
 {
-    auto section = options->addSection(OptionSection(c_nnpotModuleName.c_str()));
+    auto section = options->addSection(OptionSection(moduleName().c_str()));
     section.addOption(BooleanOption(c_activeTag_.c_str()).store(&params_.active_));
     section.addOption(StringOption(c_modelFileNameTag_.c_str()).store(&params_.modelFileName_));
     section.addOption(StringOption(c_inputGroupTag_.c_str()).store(&params_.inputGroup_));
@@ -129,23 +136,24 @@ void NNPotOptions::initMdpOptions(IOptionsContainerWithSections* options)
 void NNPotOptions::buildMdpOutput(KeyValueTreeObjectBuilder* builder) const
 {
     // new empty line before writing nnpot mdp values
-    addMdpOutputComment(builder, c_nnpotModuleName, "empty-line", "");
-    addMdpOutputComment(builder, c_nnpotModuleName, "module", "; Neural Network potential");
-    addMdpOutputValue(builder, c_nnpotModuleName, c_activeTag_, params_.active_);
+    addMdpOutputComment(builder, NNPotModuleInfo::sc_name, "empty-line", "");
+    addMdpOutputComment(builder, NNPotModuleInfo::sc_name, "module", "; Neural Network potential");
+    addMdpOutputValue(builder, NNPotModuleInfo::sc_name, c_activeTag_, params_.active_);
 
     if (params_.active_)
     {
         addMdpOutputValue<std::string>(
-                builder, c_nnpotModuleName, c_modelFileNameTag_, params_.modelFileName_);
-        addMdpOutputValue<std::string>(builder, c_nnpotModuleName, c_inputGroupTag_, params_.inputGroup_);
+                builder, NNPotModuleInfo::sc_name, c_modelFileNameTag_, params_.modelFileName_);
         addMdpOutputValue<std::string>(
-                builder, c_nnpotModuleName, c_modelInput1Tag_, params_.modelInput_[0]);
+                builder, NNPotModuleInfo::sc_name, c_inputGroupTag_, params_.inputGroup_);
         addMdpOutputValue<std::string>(
-                builder, c_nnpotModuleName, c_modelInput2Tag_, params_.modelInput_[1]);
+                builder, NNPotModuleInfo::sc_name, c_modelInput1Tag_, params_.modelInput_[0]);
         addMdpOutputValue<std::string>(
-                builder, c_nnpotModuleName, c_modelInput3Tag_, params_.modelInput_[2]);
+                builder, NNPotModuleInfo::sc_name, c_modelInput2Tag_, params_.modelInput_[1]);
         addMdpOutputValue<std::string>(
-                builder, c_nnpotModuleName, c_modelInput4Tag_, params_.modelInput_[3]);
+                builder, NNPotModuleInfo::sc_name, c_modelInput3Tag_, params_.modelInput_[2]);
+        addMdpOutputValue<std::string>(
+                builder, NNPotModuleInfo::sc_name, c_modelInput4Tag_, params_.modelInput_[3]);
     }
 }
 
@@ -302,14 +310,14 @@ void NNPotOptions::writeParamsToKvt(KeyValueTreeObjectBuilder treeBuilder)
 
     // Write input atom indices
     auto GroupIndexAdder =
-            treeBuilder.addUniformArray<std::int64_t>(c_nnpotModuleName + "-" + c_inputGroupTag_);
+            treeBuilder.addUniformArray<std::int64_t>(moduleName() + "-" + c_inputGroupTag_);
     for (const auto& indexValue : params_.nnpIndices_)
     {
         GroupIndexAdder.addValue(indexValue);
     }
 
     // Write MM atoms index
-    GroupIndexAdder = treeBuilder.addUniformArray<std::int64_t>(c_nnpotModuleName + "-" + c_mmGroupTag_);
+    GroupIndexAdder = treeBuilder.addUniformArray<std::int64_t>(moduleName() + "-" + c_mmGroupTag_);
     for (const auto& indexValue : params_.mmIndices_)
     {
         GroupIndexAdder.addValue(indexValue);
@@ -328,7 +336,7 @@ void NNPotOptions::readParamsFromKvt(const KeyValueTreeObject& tree)
     }
 
     // Try to read input atoms index
-    std::string key = c_nnpotModuleName + "-" + c_inputGroupTag_;
+    std::string key = moduleName() + "-" + c_inputGroupTag_;
     if (!tree.keyExists(key))
     {
         GMX_THROW(InconsistentInputError(
@@ -343,7 +351,7 @@ void NNPotOptions::readParamsFromKvt(const KeyValueTreeObject& tree)
                    [](const KeyValueTreeValue& val) { return val.cast<std::int64_t>(); });
 
     // Try to read MM atoms index
-    key = c_nnpotModuleName + "-" + c_mmGroupTag_;
+    key = moduleName() + "-" + c_mmGroupTag_;
     if (!tree.keyExists(key))
     {
         GMX_THROW(InconsistentInputError(

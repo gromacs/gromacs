@@ -50,6 +50,7 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/applied_forces/colvars/colvarsMDModule.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/math/paddedvector.h"
@@ -95,7 +96,8 @@ public:
     {
         // Prepare MDP inputs
         KeyValueTreeBuilder mdpValueBuilder;
-        mdpValueBuilder.rootObject().addValue(c_colvarsModuleName + "-active", std::string("true"));
+        mdpValueBuilder.rootObject().addValue(std::string(ColvarsModuleInfo::sc_name) + "-active",
+                                              std::string("true"));
         return mdpValueBuilder.build();
     }
 
@@ -103,9 +105,12 @@ public:
     {
         // Prepare MDP inputs
         KeyValueTreeBuilder mdpValueBuilder;
-        mdpValueBuilder.rootObject().addValue(c_colvarsModuleName + "-active", std::string("true"));
-        mdpValueBuilder.rootObject().addValue(c_colvarsModuleName + "-configfile", colvarsConfig);
-        mdpValueBuilder.rootObject().addValue(c_colvarsModuleName + "-seed", std::string("12345789"));
+        mdpValueBuilder.rootObject().addValue(std::string(ColvarsModuleInfo::sc_name) + "-active",
+                                              std::string("true"));
+        mdpValueBuilder.rootObject().addValue(
+                std::string(ColvarsModuleInfo::sc_name) + "-configfile", colvarsConfig);
+        mdpValueBuilder.rootObject().addValue(std::string(ColvarsModuleInfo::sc_name) + "-seed",
+                                              std::string("12345789"));
         return mdpValueBuilder.build();
     }
 

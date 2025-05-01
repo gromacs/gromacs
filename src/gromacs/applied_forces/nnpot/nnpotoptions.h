@@ -68,9 +68,6 @@ class KeyValueTreeObject;
 class IndexGroupsAndNames;
 class LocalAtomSet;
 
-//! Tag with name of the NNPot MDModule
-static const std::string c_nnpotModuleName = "nnpot";
-
 //!\brief \internal Data structure to store NNPot input parameters
 struct NNPotParameters
 {

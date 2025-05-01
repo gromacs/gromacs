@@ -62,9 +62,6 @@ struct MdRunInputFilename;
 struct CoordinatesAndBoxPreprocessed;
 struct QMInputFileName;
 
-//! Tag with name of the QMMM with CP2K MDModule
-static const std::string c_qmmmCP2KModuleName = "qmmm-cp2k";
-
 /*! \internal
  * \brief Input data storage for QM/MM
  */

@@ -48,6 +48,7 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/applied_forces/qmmm/qmmm.h"
 #include "gromacs/applied_forces/qmmm/qmmmtypes.h"
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/mdtypes/imdpoptionprovider_test_helper.h"
@@ -82,7 +83,8 @@ public:
     {
         // Prepare MDP inputs
         KeyValueTreeBuilder mdpValueBuilder;
-        mdpValueBuilder.rootObject().addValue(c_qmmmCP2KModuleName + "-active", std::string("true"));
+        mdpValueBuilder.rootObject().addValue(std::string(QMMMModuleInfo::sc_name) + "-active",
+                                              std::string("true"));
         return mdpValueBuilder.build();
     }
 
@@ -90,8 +92,10 @@ public:
     {
         // Prepare MDP inputs
         KeyValueTreeBuilder mdpValueBuilder;
-        mdpValueBuilder.rootObject().addValue(c_qmmmCP2KModuleName + "-active", std::string("true"));
-        mdpValueBuilder.rootObject().addValue(c_qmmmCP2KModuleName + "-qmmethod", std::string("INPUT"));
+        mdpValueBuilder.rootObject().addValue(std::string(QMMMModuleInfo::sc_name) + "-active",
+                                              std::string("true"));
+        mdpValueBuilder.rootObject().addValue(std::string(QMMMModuleInfo::sc_name) + "-qmmethod",
+                                              std::string("INPUT"));
         return mdpValueBuilder.build();
     }
 

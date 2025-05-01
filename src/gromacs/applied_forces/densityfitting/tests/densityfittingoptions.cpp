@@ -49,6 +49,7 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/applied_forces/densityfitting/densityfitting.h"
 #include "gromacs/applied_forces/densityfitting/densityfittingamplitudelookup.h"
 #include "gromacs/applied_forces/densityfitting/densityfittingparameters.h"
 #include "gromacs/math/densityfit.h"
@@ -84,7 +85,8 @@ public:
     {
         // Prepare MDP inputs
         KeyValueTreeBuilder mdpValueBuilder;
-        mdpValueBuilder.rootObject().addValue("density-guided-simulation-active", std::string("yes"));
+        mdpValueBuilder.rootObject().addValue(
+                std::string(DensityFittingModuleInfo::sc_name) + "-active", std::string("yes"));
         return mdpValueBuilder.build();
     }
 

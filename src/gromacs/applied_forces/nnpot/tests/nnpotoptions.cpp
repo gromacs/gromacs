@@ -45,6 +45,7 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/applied_forces/nnpot/nnpot.h"
 #include "gromacs/domdec/localatomset.h"
 #include "gromacs/fileio/warninp.h"
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
@@ -83,7 +84,8 @@ public:
     {
         // Prepare MDP inputs
         KeyValueTreeBuilder mdpValueBuilder;
-        mdpValueBuilder.rootObject().addValue(c_nnpotModuleName + "-active", std::string("true"));
+        mdpValueBuilder.rootObject().addValue(std::string(NNPotModuleInfo::sc_name) + "-active",
+                                              std::string("true"));
         return mdpValueBuilder.build();
     }
 
@@ -91,16 +93,19 @@ public:
     {
         // Prepare MDP inputs
         KeyValueTreeBuilder mdpValueBuilder;
-        mdpValueBuilder.rootObject().addValue(c_nnpotModuleName + "-active", std::string("true"));
+        mdpValueBuilder.rootObject().addValue(std::string(NNPotModuleInfo::sc_name) + "-active",
+                                              std::string("true"));
         mdpValueBuilder.rootObject().addValue(
-                c_nnpotModuleName + "-modelfile",
+                std::string(NNPotModuleInfo::sc_name) + "-modelfile",
                 gmx::test::TestFileManager::getInputFilePath("model.pt").string());
-        mdpValueBuilder.rootObject().addValue(c_nnpotModuleName + "-model-input1",
-                                              std::string("atom-positions"));
-        mdpValueBuilder.rootObject().addValue(c_nnpotModuleName + "-model-input2",
-                                              std::string("atom-numbers"));
-        mdpValueBuilder.rootObject().addValue(c_nnpotModuleName + "-model-input3", std::string("box"));
-        mdpValueBuilder.rootObject().addValue(c_nnpotModuleName + "-model-input4", std::string("pbc"));
+        mdpValueBuilder.rootObject().addValue(
+                std::string(NNPotModuleInfo::sc_name) + "-model-input1", std::string("atom-positions"));
+        mdpValueBuilder.rootObject().addValue(
+                std::string(NNPotModuleInfo::sc_name) + "-model-input2", std::string("atom-numbers"));
+        mdpValueBuilder.rootObject().addValue(
+                std::string(NNPotModuleInfo::sc_name) + "-model-input3", std::string("box"));
+        mdpValueBuilder.rootObject().addValue(
+                std::string(NNPotModuleInfo::sc_name) + "-model-input4", std::string("pbc"));
         return mdpValueBuilder.build();
     }
 
