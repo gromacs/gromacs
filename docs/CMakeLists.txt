@@ -603,7 +603,6 @@ if (SPHINX_FOUND)
             FILES
             gmxapi/index.rst
             gmxapi/userguide/install.rst
-            gmxapi/userguide/usage.rst
     )
 
     if (GMX_PYTHON_PACKAGE)
