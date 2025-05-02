@@ -99,6 +99,7 @@ _common_packages = [
     "libx11-dev",
     "moreutils",
     "ninja-build",
+    "python3",
     "rsync",
     "valgrind",
     "vim",
@@ -470,14 +471,18 @@ def get_mpi(args, compiler, ucx):
                 if args.oneapi is not None:
                     raise RuntimeError("oneAPI building OpenMPI is not supported")
                 use_cuda = args.cuda is not None
+                configure_opts = []
+                if args.rocm is not None:
+                    configure_opts.append("--with-rocm=/opt/rocm")
                 use_ucx = ucx is not None
-                # Version last updated October 7, 2022
+                # Version last updated April 17, 2025
                 return hpccm.building_blocks.openmpi(
                     toolchain=compiler.toolchain,
-                    version="4.1.4",
+                    version="5.0.3",
                     cuda=use_cuda,
                     ucx=use_ucx,
                     infiniband=False,
+                    configure_opts=configure_opts,
                 )
             else:
                 raise RuntimeError("compiler is not an HPCCM compiler building block!")
