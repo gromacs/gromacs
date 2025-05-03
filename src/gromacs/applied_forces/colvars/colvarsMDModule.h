@@ -42,6 +42,7 @@
 #define COLVARS_MDMODULE_H
 
 #include <memory>
+#include <string>
 #include <string_view>
 
 namespace gmx

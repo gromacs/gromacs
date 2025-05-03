@@ -42,6 +42,8 @@
 #ifndef GMX_APPLIED_FORCES_QMMMFORCEPROVIDER_H
 #define GMX_APPLIED_FORCES_QMMMFORCEPROVIDER_H
 
+#include <string>
+
 #include "gromacs/domdec/localatomset.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/iforceprovider.h"
