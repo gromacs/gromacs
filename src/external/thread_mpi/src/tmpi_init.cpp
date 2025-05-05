@@ -325,6 +325,10 @@ static void tMPI_Thread_destroy(struct tmpi_thread *th)
     {
         free(th->argv[i]);
     }
+    if (th->argv)
+    {
+        tMPI_Free(th->argv);
+    }
 }
 
 static int tMPI_Global_init(struct tmpi_global *g, int nthreads)

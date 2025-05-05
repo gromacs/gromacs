@@ -1,0 +1,23 @@
+
+function (gmx_add_tmpi_test_executable EXENAME)
+    cmake_parse_arguments(ARG "" "" "SOURCES;ARGS" ${ARGN})
+    add_executable(${EXENAME} EXCLUDE_FROM_ALL ${ARG_SOURCES})
+    target_link_libraries(${EXENAME} PRIVATE thread_mpi)
+    target_compile_definitions(${EXENAME} PRIVATE HAVE_CONFIG_H)
+    target_include_directories(${EXENAME} PRIVATE ${PROJECT_BINARY_DIR}/src/include)
+    target_include_directories(${EXENAME} SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)
+    target_compile_definitions(${EXENAME} PRIVATE TMPI_USE_VISIBILITY)
+    gmx_get_test_prefix_cmd(_prefix_cmd)
+    add_test(NAME "threadMPI-${EXENAME}" COMMAND ${_prefix_cmd} $<TARGET_FILE:${EXENAME}> ${ARG_ARGS})
+    set_tests_properties("threadMPI-${EXENAME}" PROPERTIES PROCESSORS 3)
+    add_dependencies(tests ${EXENAME})
+endfunction()
+
+if (BUILD_TESTING AND GMX_THREAD_MPI)
+    gmx_add_tmpi_test_executable (mpithreads SOURCES
+        main.cpp reduce.cpp once.cpp send_recv.cpp multicast.cpp cond-var.cpp atomic.cpp cycles.cpp split.cpp ARGS -nt 3)
+    gmx_add_tmpi_test_executable (sync_cyclecount SOURCES sync_cyclecount.cpp ARGS 2 0 1)
+    gmx_add_tmpi_test_executable (mpi_speedtest SOURCES mpi_speedtest.cpp send_recv.cpp multicast.cpp ARGS -nt 3)
+    gmx_add_tmpi_test_executable (notmpi SOURCES notmpi.cpp ARGS -nt 3)
+    gmx_add_tmpi_test_executable (alloc_check SOURCES alloc_check.cpp ARGS -nt 3)
+endif()

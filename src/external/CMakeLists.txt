@@ -88,6 +88,8 @@ if(BUILD_TESTING AND GMX_BUILD_UNITTESTS)
     endif()
 
     set(GTEST_IS_THREADSAFE "${GTEST_IS_THREADSAFE}" PARENT_SCOPE)
+
+    add_subdirectory(thread_mpi/test)
 endif()
 add_subdirectory(boost)
 add_subdirectory(rpc_xdr)
