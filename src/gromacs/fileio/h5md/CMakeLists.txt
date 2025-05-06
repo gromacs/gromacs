@@ -44,6 +44,7 @@ if(GMX_USE_HDF5)
         h5md_error.cpp
         h5md_group.cpp
         h5md_guard.cpp
+        h5md_read.cpp
     )
 
     target_include_directories(h5md SYSTEM PUBLIC ${HDF5_INCLUDE_DIRS})

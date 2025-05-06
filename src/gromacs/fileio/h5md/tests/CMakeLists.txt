@@ -39,6 +39,7 @@ if (GMX_USE_HDF5)
             h5md_dataset.cpp
             h5md_group.cpp
             h5md_guard.cpp
+            h5md_read.cpp
             h5md_type.cpp
         )
 else()

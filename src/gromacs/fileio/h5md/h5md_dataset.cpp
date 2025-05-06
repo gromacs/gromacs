@@ -91,6 +91,44 @@ static DataSetDims<numDims> getDataSetDims(const hid_t dataSet)
     return dataSetDims;
 }
 
+/*! \brief Return the per-dimension offset to the data corresponding to a given frame.
+ *
+ * Since frames are always the major axis the first value of the returned offset is
+ * the given frame index. We are only considering the case when all data for that frame
+ * is selected, so the offset for all other axis is 0. For example, to reach frame 15
+ * of a 3d set we use the offset [15, 0, 0] to access the memory.
+ *
+ * \tparam numDims Number of dimensions of data set.
+ * \param[in] frameIndex Index of frame.
+ * \returns Fixed-size array with the offset.
+ */
+template<int numDims>
+static DataSetDims<numDims> getFrameChunkOffset(const hsize_t frameIndex)
+{
+    return DataSetDims<numDims>{ frameIndex };
+}
+
+/* \brief Return the dimensions of the memory chunk for a single frame.
+ *
+ * Since frames are always the major axis the first value off the chunk dimensions is 1.
+ * We only consider the case of selecting all data corresponding to a single frame so
+ * all other chunk dimensions are equal to the data set dimensions. For example, the
+ * chunk which contains a single frame in a data set with dimensions [30, 150, 3] is
+ * [1, 150, 3].
+ *
+ * \tparam numDims Number of dimensions of data set.
+ * \param[in] dataSetDims Dimensions of data set.
+ * \returns Fixed-size array with the chunk dimensions.
+ */
+template<int numDims>
+static DataSetDims<numDims> getFrameChunkDims(const DataSetDims<numDims>& dataSetDims)
+{
+    DataSetDims<numDims> chunkDims = dataSetDims;
+    chunkDims[0]                   = 1;
+
+    return chunkDims;
+}
+
 /*! \brief Create a data set and return its handle.
  *
  * The returned handle must be closed with H5Dclose to avoid resource leaks.
@@ -204,6 +242,32 @@ hsize_t getNumFrames(const hid_t dataSet)
     return dataSetDims.at(0);
 }
 
+template<int numDims>
+hid_t getFrameDataSpace(const hid_t dataSet, const hsize_t frameIndex)
+{
+    const DataSetDims<numDims> dataSetDims = getDataSetDims<numDims>(dataSet);
+    const DataSetDims<numDims> chunkOffset = getFrameChunkOffset<numDims>(frameIndex);
+    const DataSetDims<numDims> chunkDims   = getFrameChunkDims<numDims>(dataSetDims);
+
+    const hid_t frameDataSpace = H5Dget_space(dataSet);
+    throwUponH5mdError(
+            H5Sselect_hyperslab(
+                    frameDataSpace, H5S_SELECT_SET, chunkOffset.data(), nullptr, chunkDims.data(), nullptr)
+                    < 0,
+            "Could not select hyperslab for given frame index.");
+
+    return frameDataSpace;
+}
+
+template<int numDims>
+hid_t getFrameMemoryDataSpace(const hid_t dataSet)
+{
+    const DataSetDims<numDims> dataSetDims = getDataSetDims<numDims>(dataSet);
+    const DataSetDims<numDims> chunkDims   = getFrameChunkDims<numDims>(dataSetDims);
+
+    return H5Screate_simple(numDims, chunkDims.data(), nullptr);
+}
+
 template hid_t create1dFrameDataSet<int32_t>(const hid_t, const std::string&);
 
 template hid_t create1dFrameDataSet<int64_t>(const hid_t, const std::string&);
@@ -213,6 +277,10 @@ template hid_t create1dFrameDataSet<float>(const hid_t, const std::string&);
 template hid_t create1dFrameDataSet<double>(const hid_t, const std::string&);
 
 template hsize_t getNumFrames<1>(const hid_t dataSet);
+
+template hid_t getFrameDataSpace<1>(const hid_t dataSet, const hsize_t frameIndex);
+
+template hid_t getFrameMemoryDataSpace<1>(const hid_t);
 
 } // namespace gmx
 
