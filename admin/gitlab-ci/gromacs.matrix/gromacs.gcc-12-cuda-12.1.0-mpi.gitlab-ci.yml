@@ -16,7 +16,7 @@
 #   FFT: FFTW3
 #   Parallelism nt/ntomp: 4/2 (unit tests)
 
-gromacs:gcc-12-cuda-12.1.0:configureMPI:
+gromacs:gcc-12-cuda-12.1.0-openmpi-5.0.3:configureMPI:
   extends:
     - .gromacs:base:configure
     - .use-gcc:base
@@ -24,33 +24,33 @@ gromacs:gcc-12-cuda-12.1.0:configureMPI:
     - .use-mpi
   rules:
     - !reference [.rules:merge-and-post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-12-cuda-12.1.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-12-cuda-12.1.0-openmpi-5.0.3
   variables:
     CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=SSE4.1"
     CMAKE_EXTRA_OPTIONS: "-DGMX_USE_HEFFTE=ON"
     COMPILER_MAJOR_VERSION: 12
 
-gromacs:gcc-12-cuda-12.1.0:buildMPI:
+gromacs:gcc-12-cuda-12.1.0-openmpi-5.0.3:buildMPI:
   extends:
     - .gromacs:base:build
     - .before_script:default
     - .use-ccache
   rules:
     - !reference [.rules:merge-and-post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-12-cuda-12.1.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-12-cuda-12.1.0-openmpi-5.0.3
   variables:
     CMAKE: /usr/local/cmake-3.29.8/bin/cmake
   needs:
-    - job: gromacs:gcc-12-cuda-12.1.0:configureMPI
+    - job: gromacs:gcc-12-cuda-12.1.0-openmpi-5.0.3:configureMPI
 
-gromacs:gcc-12-cuda-12.1.0:testMPI:
+gromacs:gcc-12-cuda-12.1.0-openmpi-5.0.3:testMPI:
   extends:
     - .gromacs:base:test
   rules:
     - !reference [.rules:skip-if-single-nvidia-gpu-unavailable, rules]
     - !reference [.rules:merge-requests, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-12-cuda-12.1.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-12-cuda-12.1.0-openmpi-5.0.3
   variables:
     CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     GMX_GPU_PME_DECOMPOSITION: 1
@@ -60,4 +60,4 @@ gromacs:gcc-12-cuda-12.1.0:testMPI:
   tags:
     - $GITLAB_RUNNER_TAG_1X_NVIDIA_GPU
   needs:
-    - job: gromacs:gcc-12-cuda-12.1.0:buildMPI
+    - job: gromacs:gcc-12-cuda-12.1.0-openmpi-5.0.3:buildMPI

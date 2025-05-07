@@ -18,7 +18,7 @@ gromacs:gcc-11-hip-622:configure:
     - .use-hip
   rules:
     - !reference [.rules:merge-and-post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-11-rocm-6.2.2
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-11-rocm-6.2.2-openmpi-5.0.3
   variables:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX2_256"
@@ -33,7 +33,7 @@ gromacs:gcc-11-hip-622:build:
     - .use-ccache
   rules:
     - !reference [.rules:merge-and-post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-11-rocm-6.2.2
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-11-rocm-6.2.2-openmpi-5.0.3
   variables:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
   needs:
@@ -45,7 +45,7 @@ gromacs:gcc-11-hip-622:test:
   rules:
     - !reference [.rules:skip-if-single-amd-gpu-unavailable, rules]
     - !reference [.rules:merge-and-post-merge-acceptance, rules]                 
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-11-rocm-6.2.2
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-11-rocm-6.2.2-openmpi-5.0.3
   variables:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
@@ -65,7 +65,7 @@ gromacs:gcc-11-hip-622:regressiontest:
   rules:
     - !reference [.rules:skip-if-single-amd-gpu-unavailable, rules]
     - !reference [.rules:merge-and-post-merge-acceptance, rules]                     
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-11-rocm-6.2.2
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-11-rocm-6.2.2-openmpi-5.0.3
   variables:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
     REGRESSIONTEST_PME_RANK_NUMBER: 0
@@ -87,7 +87,7 @@ gromacs:gcc-11-hip-622-nightly:configure:
     - .use-hip
   rules:
     - !reference [.rules:nightly-not-for-release, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-11-rocm-6.2.2
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-11-rocm-6.2.2-openmpi-5.0.3
   variables:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX2_128"
@@ -102,7 +102,7 @@ gromacs:gcc-11-hip-622-nightly:build:
     - .use-ccache
   rules:
     - !reference [.rules:nightly-not-for-release, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-11-rocm-6.2.2
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-11-rocm-6.2.2-openmpi-5.0.3
   variables:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
   needs:
@@ -113,7 +113,7 @@ gromacs:gcc-11-hip-622-nightly:test:
     - .gromacs:base:test
   rules:
     - !reference [.rules:nightly-not-for-release, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-11-rocm-6.2.2
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-11-rocm-6.2.2-openmpi-5.0.3
   variables:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
     # The following two variables are not used by k8s, since this job runs on a separate host
@@ -132,7 +132,7 @@ gromacs:gcc-11-hip-622-nightly:regressiontest:
     - .gromacs:base:regressiontest
   rules:
     - !reference [.rules:nightly-not-for-release, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-11-rocm-6.2.2
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-11-rocm-6.2.2-openmpi-5.0.3
   variables:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 2

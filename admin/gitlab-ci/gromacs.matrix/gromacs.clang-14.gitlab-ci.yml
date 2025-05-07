@@ -22,9 +22,9 @@ gromacs:clang-14:configure:
     - .use-clang:base
   rules:
     - !reference [.rules:merge-requests, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-llvm-14-cuda-12.1.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-llvm-14-cuda-12.1.0-openmpi-5.0.3
   variables:
-    CMAKE: /usr/local/cmake-3.29.3/bin/cmake
+    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     COMPILER_MAJOR_VERSION: 14
     CMAKE_EXTRA_OPTIONS: -DGMX_INSTALL_LEGACY_API=ON -DGMX_USE_TNG=no -DGMX_USE_COLVARS=NONE -DGMX_USE_PLUMED=OFF
 
@@ -35,9 +35,9 @@ gromacs:clang-14:build:
     - .use-ccache
   rules:
     - !reference [.rules:merge-requests, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-llvm-14-cuda-12.1.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-llvm-14-cuda-12.1.0-openmpi-5.0.3
   variables:
-    CMAKE: /usr/local/cmake-3.29.3/bin/cmake
+    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
   needs:
     - job: gromacs:clang-14:configure
 
@@ -46,9 +46,9 @@ gromacs:clang-14:test:
     - .gromacs:base:test
   rules:
     - !reference [.rules:merge-requests, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-llvm-14-cuda-12.1.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-llvm-14-cuda-12.1.0-openmpi-5.0.3
   variables:
-    CMAKE: /usr/local/cmake-3.29.3/bin/cmake
+    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     GMX_FORCE_UPDATE_DEFAULT_CPU: 1
     GMX_FILLERS_IN_LOCAL_STATE: 1
   needs:
@@ -59,9 +59,9 @@ gromacs:clang-14:regressiontest:
     - .gromacs:base:regressiontest
   rules:
     - !reference [.rules:merge-requests, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-llvm-14-cuda-12.1.0
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-llvm-14-cuda-12.1.0-openmpi-5.0.3
   variables:
-    CMAKE: /usr/local/cmake-3.29.3/bin/cmake
+    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     GMX_FILLERS_IN_LOCAL_STATE: 1
   needs:
     - job: gromacs:clang-14:build

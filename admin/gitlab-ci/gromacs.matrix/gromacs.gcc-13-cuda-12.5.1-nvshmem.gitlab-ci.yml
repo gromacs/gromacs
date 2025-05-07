@@ -23,9 +23,9 @@ gromacs:gcc-13-cuda-12.5.1:configureMPI-NVSHMEM:
     - .use-mpi
   rules:
     - !reference [.rules:post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-13-cuda-12.5.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-13-cuda-12.5.1-openmpi-5.0.3
   variables:
-    CMAKE: /usr/local/cmake-3.29.3/bin/cmake
+    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=SSE4.1"
     CMAKE_EXTRA_OPTIONS: "-DGMX_NVSHMEM=ON -DNVSHMEM_ROOT=/opt/nvidia/hpc_sdk/Linux_x86_64/2024/comm_libs/nvshmem"
     COMPILER_MAJOR_VERSION: 13
@@ -37,9 +37,9 @@ gromacs:gcc-13-cuda-12.5.1:buildMPI-NVSHMEM:
     - .use-ccache
   rules:
     - !reference [.rules:post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-13-cuda-12.5.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-13-cuda-12.5.1-openmpi-5.0.3
   variables:
-    CMAKE: /usr/local/cmake-3.29.3/bin/cmake
+    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     CMAKE_EXTRA_OPTIONS: "-DGMX_NVSHMEM=ON -DNVSHMEM_ROOT=/opt/nvidia/hpc_sdk/Linux_x86_64/2024/comm_libs/nvshmem"
     # Workaround because the CMake support for NVSHMEM needs improvement:
     LD_LIBRARY_FLAGS: /opt/nvidia/hpc_sdk/Linux_x86_64/2024/comm_libs/nvshmem
@@ -52,9 +52,9 @@ gromacs:gcc-13-cuda-12.5.1:testMPI-NVSHMEM:
   rules:
     - !reference [.rules:skip-if-dual-nvidia-gpus-unavailable, rules]
     - !reference [.rules:post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-13-cuda-12.5.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-13-cuda-12.5.1-openmpi-5.0.3
   variables:
-    CMAKE: /usr/local/cmake-3.29.3/bin/cmake
+    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     GMX_ENABLE_NVSHMEM: 1
     # if NVSHMEM uses NCCL it requires more than 4 GB of GPU RAM as min memory,
     # in CI we've GPUs like T400 which have 4 GB RAM so we disable NVSHMEM's
@@ -77,7 +77,7 @@ gromacs:gcc-13-cuda-12.5.1:regressiontest-gpucommupd-MPI-NVSHMEM:
   rules:
     - !reference [.rules:skip-if-dual-nvidia-gpus-unavailable, rules]
     - !reference [.rules:post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-13-cuda-12.5.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-13-cuda-12.5.1-openmpi-5.0.3
   variables:
     CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     GMX_ENABLE_NVSHMEM: 1
@@ -113,7 +113,7 @@ gromacs:gcc-13-cuda-12.5.1:regressiontest-gpucommupd-RF-MPI-NVSHMEM:
   rules:
     - !reference [.rules:skip-if-dual-nvidia-gpus-unavailable, rules]
     - !reference [.rules:post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-13-cuda-12.5.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-13-cuda-12.5.1-openmpi-5.0.3
   variables:
     CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     GMX_ENABLE_NVSHMEM: 1

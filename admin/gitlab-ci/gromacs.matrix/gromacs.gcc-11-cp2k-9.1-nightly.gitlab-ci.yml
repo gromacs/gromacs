@@ -23,7 +23,7 @@ gromacs-cp2k-9.1:gcc-11-nightly:configure:
   stage: configure-build
   cache: {}
   # Dockefile generated with /admin/containers/scripted_gmx_docker_builds.py
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-11-cp2k-9.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-11-cp2k-9.1-openmpi-5.0.3
   variables:
     CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     KUBERNETES_CPU_LIMIT: 1
@@ -57,7 +57,7 @@ gromacs-cp2k-9.1:gcc-11-nightly:build-test:
   stage: build
   rules:
     - !reference [.rules:nightly-not-for-release, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-11-cp2k-9.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-11-cp2k-9.1-openmpi-5.0.3
   variables:
     CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     KUBERNETES_CPU_LIMIT: 4
