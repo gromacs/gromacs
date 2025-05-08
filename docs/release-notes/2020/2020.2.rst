@@ -67,14 +67,14 @@ Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 Time output unit fixes
-^^^^^^^^^^^^^^^^^^^^^^
+""""""""""""""""""""""
 
 When selecting a time unit of microseconds or larger,
 ``gmx tool -tu`` now produces the correct string in .xvg and
 particularly .xvgr plots
 
 Fix do_dssp
-^^^^^^^^^^^
+"""""""""""
 
 The tool would fail with a segmentation fault.
 
@@ -84,7 +84,7 @@ Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Give clearer message about not detecting IBM_VSX support in gcc > 9
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 CMake would fail with a confusing error message.
 
