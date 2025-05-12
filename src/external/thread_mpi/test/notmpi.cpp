@@ -99,7 +99,7 @@ static void *thread_fn(void *arg)
     {
         tMPI_Atomic_fetch_add(&at, 1);
     }
-    printf("My ID=%d, i=%d, tid=%lx\n", id, i, (long int)tid);
+    printf("My ID=%d, i=%d, tid=%p\n", id, i, (void *)tid);
 
     return NULL;
 }

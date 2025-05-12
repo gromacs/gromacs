@@ -66,8 +66,8 @@ void split_tester(int N, int myrank)
         MPI_Comm_split(MPI_COMM_WORLD, myrank%2, -myrank, &comm);
         MPI_Comm_rank(comm, &newrank);
         MPI_Comm_size(comm, &newsize);
-        printf("I'm in world rank %d, and have new rank %d in group %ld of size %d\n",
-               myrank, newrank, ((long int)comm), newsize);
+        printf("I'm in world rank %d, and have new rank %d in group %p of size %d\n",
+               myrank, newrank, ((void *)comm), newsize);
         MPI_Comm_free(&comm);
     }
 
@@ -83,7 +83,7 @@ void split_tester(int N, int myrank)
         MPI_Comm_split(MPI_COMM_WORLD, myrank%3, -myrank, &comm);
         MPI_Comm_rank(comm, &newrank);
         MPI_Comm_size(comm, &newsize);
-        printf("I'm in world rank %d, and have new rank %d in group %ld of size %d\n", myrank, newrank, ((long int)comm), newsize);
+        printf("I'm in world rank %d, and have new rank %d in group %p of size %d\n", myrank, newrank, ((void *)comm), newsize);
 
         {
             int compare_res;
@@ -106,7 +106,7 @@ void split_tester(int N, int myrank)
         MPI_Comm_split(MPI_COMM_WORLD, myrank/8, -myrank, &comm);
         MPI_Comm_rank(comm, &newrank);
         MPI_Comm_size(comm, &newsize);
-        printf("I'm in world rank %d, and have new rank %d in group %ld of size %d\n", myrank, newrank, ((long int)comm), newsize);
+        printf("I'm in world rank %d, and have new rank %d in group %p of size %d\n", myrank, newrank, ((void *)comm), newsize);
 
         {
             int compare_res;

@@ -3,6 +3,10 @@
  * This is only supported on newer Intel/AMD hardware, but provides better accuracy.
  */
 
+#ifdef _MSC_VER
+#    include <intrin.h>
+#endif
+
 /* check for cycle counters on supported platforms */
 #if ((defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__)  || defined(__PGIC__)) && (defined(__i386__) || defined(__x86_64__)))
 #define TMPI_CYCLE_COUNT
