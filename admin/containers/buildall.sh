@@ -10,6 +10,20 @@ PYTHON=${PYTHON:-$(which python3)}
 # images needed, because the same one can test library,
 # thread and no MPI configurations.
 
+# These rows correspond to the containers that are currently used in
+# GROMACS CI testing for this source-code branch. Release branches
+# seldom ever change these, because only bug fixes are accepted and
+# minimum support levels seldom change.
+#
+# In main branch, these are changed often as new minimum support
+# levels are adopted and new capabilities of dependencies are
+# utilized.
+#
+# This script outputs bash commands that are useful to make
+# all GROMACS CI containers. In the usual case of not re-making
+# all containers, it can be useful to use grep to select the
+# relevant commands and pipe that to bash
+
 args[${#args[@]}]="--ubuntu 22.04 --gcc 12 --clfft --mpi openmpi --rocm 5.4.1 --hdf5"
 args[${#args[@]}]="--ubuntu 22.04 --gcc 13 --cuda 12.5.1 --clfft --mpi openmpi --nvhpcsdk 24.7"
 args[${#args[@]}]="--ubuntu 22.04 --gcc 12 --cuda 12.1.0 --clfft --mpi openmpi --heffte v2.4.0 --libtorch"
