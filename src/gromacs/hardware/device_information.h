@@ -85,7 +85,7 @@ enum class DeviceStatus : int
     Nonexistent,
     //! Device is not compatible
     Incompatible,
-    //! OpenCL device has incompatible cluster size for non-bonded kernels.
+    //! OpenCL/SYCL device has incompatible cluster size for non-bonded kernels.
     IncompatibleClusterSize,
     //! There are known issues with OpenCL on NVIDIA Volta and newer.
     IncompatibleNvidiaVolta,
@@ -119,7 +119,7 @@ static constexpr gmx::EnumerationArray<DeviceStatus, const char*> c_deviceStateS
     "compatible",
     "nonexistent",
     "incompatible",
-    "incompatible (please recompile with correct GMX_GPU_NB_CLUSTER_SIZE of 4)",
+    "incompatible (please recompile with correct GMX_GPU_NB_CLUSTER_SIZE)",
     "incompatible (please use CUDA build for NVIDIA Volta GPUs or newer)",
     "not recommended (please use ONEAPI_DEVICE_SELECTOR to limit visibility to a single backend)",
     "non-functional",

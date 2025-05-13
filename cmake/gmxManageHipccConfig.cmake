@@ -104,7 +104,12 @@ function(gmx_check_hip_architectures _target_architectures)
     endif()
     set(GMX_HIP_HIPCC_FLAGS ${GMX_HIP_HIPCC_FLAGS} PARENT_SCOPE)
     set(CMAKE_HIP_ARCHITECTURES ${_all_accepted_architectures} PARENT_SCOPE)
-    set(AMDGPU_TARGETS ${_all_accepted_architectures} PARENT_SCOPE)
+    # Only set the old AMDGPU_TARGETS for older versions of ROCm, use GPU_TARGETS for newer versions
+    if (${HIP_VERSION} VERSION_LESS 6.4.0)
+        set(AMDGPU_TARGETS ${_all_accepted_architectures} PARENT_SCOPE)
+    else()
+        set(GPU_TARGETS ${_all_accepted_architectures} PARENT_SCOPE)
+    endif()
 endfunction()
 
 # iterate over user supplied and GROMACS default list of optimization flags

@@ -1,7 +1,7 @@
 GROMACS 2025.2 release notes
 ----------------------------
 
-This version was released on TODO, 2025. These release notes
+This version was released on May 12th, 2025. These release notes
 document the changes that have taken place in |Gromacs| since the
 previous 2025.1 version, to fix known issues. It also incorporates all
 fixes made in version 2024.5 and earlier, which you can find described
@@ -17,7 +17,7 @@ Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Fix assertion failure with CUDA and HIP builds with empty domains
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 mdrun could exit with an assertion failure when a domain contained
 zero atoms.
@@ -25,7 +25,7 @@ zero atoms.
 :issue:`5322`
 
 Fix mdrun crashes with position restraints + flat-bottomed position restraints + p-coupling with COM refcoord-scaling + OpenMP
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 This combination can lead to (too) high position restraint forces when OpenMP
 threads run slightly out of sync. Simulations will have very likely crashed
@@ -54,5 +54,23 @@ values in this bin were affected.
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fixed cross-test for Windows on Linux with Wine
+"""""""""""""""""""""""""""""""""""""""""""""""
+
+Cross-testing of |Gromacs| 2025.1 for Windows on Linux with Wine, by setting the
+``CMAKE_CROSSCOMPILING_EMULATOR`` variable to ``wine`` or ``wine64``, could fail
+due to our tests using CMake generator expressions and ignoring the variable
+setting. The tests are now executed using the emulator set in the variable.
+
+:issue:`5342`
+
 Miscellaneous
 ^^^^^^^^^^^^^
+
+Intel Xe2/Battlemage documentation
+""""""""""""""""""""""""""""""""""
+
+Expanded the documentation and rephrased a misleading error message.
+
+:issue:`5330`
+

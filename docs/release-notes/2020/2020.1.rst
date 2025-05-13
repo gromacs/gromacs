@@ -190,7 +190,7 @@ Add support for Intel Compiler based on LLVM technology.
 To compile |Gromacs| with this compiler use ``CXX=icpc CXXFLAGS=-qnextgen cmake``.
 
 Document known issues with OpenCL on Volta and Turing
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+"""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 :issue:`3125`
 

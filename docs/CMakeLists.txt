@@ -378,6 +378,7 @@ if (SPHINX_FOUND)
         release-notes/2026/major/api.rst
         release-notes/2025/2025.1.rst
         release-notes/2025/2025.2.rst
+        release-notes/2025/2025.3.rst
         release-notes/2025/major/highlights.rst
         release-notes/2025/major/features.rst
         release-notes/2025/major/performance.rst
@@ -613,19 +614,21 @@ if (SPHINX_FOUND)
             FILES
             gmxapi/index.rst
             gmxapi/userguide/install.rst
-            gmxapi/userguide/usage.rst
     )
 
     if (GMX_PYTHON_PACKAGE)
         gmx_add_sphinx_source_files(
             FILES
             gmxapi/userguide/pythonreference.rst
-            )
+            gmxapi/userguide/usage.rst
+        )
     else()
         gmx_add_sphinx_source_files(
             FROM ${CMAKE_CURRENT_SOURCE_DIR}/gmxapi/userguide-stub
             TO gmxapi/userguide/
-            FILES pythonreference.rst
+            FILES
+            pythonreference.rst
+            usage.rst
             )
     endif ()
 

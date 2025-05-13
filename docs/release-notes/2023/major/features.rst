@@ -41,7 +41,7 @@ goes to the terminal would have to be caught from outside the Python
 interpreter. In mpi4py based ensembles, it could be challenging to catch the
 output at all, without manipulating the ``mpiexec`` command line.
 
-`gmxapi.mdrun` now redirects STDERR and STDOUT during simulation, and provides
+``gmxapi.mdrun`` now redirects STDERR and STDOUT during simulation, and provides
 paths to the resulting text files on new *stdout* and *stderr* outputs.
 
 Reference :issue:`4541`

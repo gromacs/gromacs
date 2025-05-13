@@ -109,7 +109,7 @@ As Iron has no corresponding parameters, the entry has been removed.
 :issue:`2711`
 
 Made normal-mode analysis work for more than one molecule
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 Fixed an issue where normal mode analysis would only consider
 the first copy of each molecule in a system. Also fixed issues

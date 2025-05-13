@@ -93,7 +93,7 @@ static const bool c_disableCudaTextures = DISABLE_CUDA_TEXTURES;
 #    if GMX_PTX_ARCH == 750 // CC 7.5, lower limits compared to 7.0
 #        define GMX_CUDA_MAX_THREADS_PER_MP 1024
 #    elif (GMX_PTX_ARCH == 860 || GMX_PTX_ARCH == 870 || GMX_PTX_ARCH == 890 \
-           || GMX_PTX_ARCH == 1200) // Lower limits compared to 8.0
+           || GMX_PTX_ARCH == 1200 || GMX_PTX_ARCH == 1210) // Lower limits compared to 8.0
 #        define GMX_CUDA_MAX_THREADS_PER_MP 1536
 #    else // CC 5.x, 6.x, 7.0, 8.0, 9.0, 10.x
 /* Note that this final branch covers all future architectures (current gen

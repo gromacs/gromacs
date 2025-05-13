@@ -1085,7 +1085,8 @@ must be set:
             -DGMX_GPU=SYCL -DGMX_SYCL=DPCPP
 
 When compiling for Intel Data Center GPU Max (also knows as Ponte Vecchio / PVC),
-we recommend passing additional flags for compatibility and improved performance:
+Intel Xe2 GPUs (Lunar Lake, Arc Battlemage) and newer, we recommend passing additional
+flags for compatibility and improved performance:
 
 ::
 
@@ -1114,7 +1115,8 @@ is set correctly, e.g. to ``/opt/rocm`` in the case of default installation):
 
    cmake .. -DCMAKE_C_COMPILER=${ROCM_PATH}/llvm/bin/clang \
             -DCMAKE_CXX_COMPILER=${ROCM_PATH}/llvm/bin/clang++ \
-            -DLLVM_DIR=${ROCM_PATH}/llvm/lib/cmake/llvm/
+            -DLLVM_DIR=${ROCM_PATH}/llvm/lib/cmake/llvm/ \
+            -DACPP_COMPILER_FEATURE_PROFILE=minimal
 
 After compiling and installing AdaptiveCpp, the following settings can be used for
 building |Gromacs| itself (set ``ACPP_TARGETS`` to the target hardware):
