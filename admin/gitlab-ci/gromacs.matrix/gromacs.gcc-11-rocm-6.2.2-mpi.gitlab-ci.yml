@@ -50,6 +50,7 @@ gromacs:gcc-11-hip-622-mpi:test:
   variables:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
+    HSA_ENABLE_SDMA: 0  # Work around CI issues, Issue #5341
     GPU_VENDOR: "AMD"
     GPU_COUNT: 1         
   tags:
