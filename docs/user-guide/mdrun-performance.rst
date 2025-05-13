@@ -855,12 +855,12 @@ component.
 
 ::
 
-    mpirun -np 11 gmx_mpi mdrun -ntomp 2 -npme 6 -ntomp_pme 1
+    mpirun -np 16 gmx_mpi mdrun -ntomp 2 -npme 6 -ntomp_pme 1
 
-Starts :ref:`gmx mdrun` with 11 ranks, as above, and
+Starts :ref:`gmx mdrun` with 16 ranks, as above, and
 require that six of them are dedicated to the PME
 component with one OpenMP thread each. The remaining
-five do the PP component, with two OpenMP threads
+ten do the PP component, with two OpenMP threads
 each.
 
 ::
