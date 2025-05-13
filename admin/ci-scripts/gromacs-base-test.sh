@@ -40,6 +40,7 @@ fi
 if grep -qF 'AMD' <<< "$GPU_VENDOR"; then
     clinfo -l || true;
     rocm-smi || true;
+    export GPU_MAX_HW_QUEUES=2  # Prevent "amdgpu: Runlist is getting oversubscribed", Issue #5341
 fi
 if grep -qF 'INTEL' <<< "$GPU_VENDOR"; then
     sycl-ls || true;

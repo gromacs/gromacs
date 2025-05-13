@@ -50,6 +50,7 @@ gromacs:acpp-rocm:test:
   variables:
     CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
+    HSA_ENABLE_SDMA: 0  # Work around CI issues, Issue #5341
     GPU_VENDOR: "AMD"
     GPU_COUNT: 1
   tags:
@@ -66,6 +67,7 @@ gromacs:acpp-rocm:regressiontest:
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-11-adaptivecpp-23.10.0-rocm-5.7.1
   variables:
     CMAKE: /usr/local/cmake-3.29.8/bin/cmake
+    HSA_ENABLE_SDMA: 0  # Work around CI issues, Issue #5341
     GPU_VENDOR: "AMD"
     GPU_COUNT: 1
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
