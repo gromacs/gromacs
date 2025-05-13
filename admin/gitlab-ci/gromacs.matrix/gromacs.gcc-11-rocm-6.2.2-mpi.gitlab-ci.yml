@@ -52,7 +52,7 @@ gromacs:gcc-11-hip-622-mpi:test:
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
     HSA_ENABLE_SDMA: 0  # Work around CI issues, Issue #5341
     GPU_VENDOR: "AMD"
-    GPU_COUNT: 1         
+    GPU_COUNT: 1
   tags:
     - $GITLAB_RUNNER_TAG_1X_AMD_GPU
   needs:
@@ -71,6 +71,9 @@ gromacs:gcc-11-hip-622-mpi:regressiontest:
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
     REGRESSIONTEST_PARALLEL: "-np"
+    HSA_ENABLE_SDMA: 0  # Work around CI issues, Issue #5341
+    GPU_VENDOR: "AMD"
+    GPU_COUNT: 1
   tags:
     - $GITLAB_RUNNER_TAG_1X_AMD_GPU
   needs:
