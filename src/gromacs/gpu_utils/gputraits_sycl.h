@@ -90,6 +90,6 @@ struct KernelLaunchConfig
  * with that, so we can pass embedded buffers to them, which is what this
  * constant actually controls.
  */
-#define c_canEmbedBuffers true
+static constexpr bool c_canEmbedBuffers = true;
 
 #endif

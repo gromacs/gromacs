@@ -1997,25 +1997,30 @@ void pme_gpu_spread(PmeGpu*                        pmeGpu,
                 config.gridSize[0]   = dimGrid.first;
                 config.gridSize[1]   = dimGrid.second;
 
-
-#if c_canEmbedBuffers
-                const auto kernelArgs = prepareGpuKernelArguments(kernelPtr, config, kernelParamsPtr);
-#else
-                const auto kernelArgs =
-                        prepareGpuKernelArguments(kernelPtr,
-                                                  config,
-                                                  kernelParamsPtr,
-                                                  &kernelParamsPtr->atoms.d_theta,
-                                                  &kernelParamsPtr->atoms.d_dtheta,
-                                                  &kernelParamsPtr->atoms.d_gridlineIndices,
-                                                  &kernelParamsPtr->grid.d_realGrid[FEP_STATE_A],
-                                                  &kernelParamsPtr->grid.d_realGrid[FEP_STATE_B],
-                                                  &kernelParamsPtr->grid.d_fractShiftsTable,
-                                                  &kernelParamsPtr->grid.d_gridlineIndicesTable,
-                                                  &kernelParamsPtr->atoms.d_coefficients[FEP_STATE_A],
-                                                  &kernelParamsPtr->atoms.d_coefficients[FEP_STATE_B],
-                                                  &kernelParamsPtr->atoms.d_coordinates);
-#endif
+                const auto kernelArgs = [&]()
+                {
+                    if constexpr (c_canEmbedBuffers)
+                    {
+                        return prepareGpuKernelArguments(kernelPtr, config, kernelParamsPtr);
+                    }
+                    else
+                    {
+                        return prepareGpuKernelArguments(
+                                kernelPtr,
+                                config,
+                                kernelParamsPtr,
+                                &kernelParamsPtr->atoms.d_theta,
+                                &kernelParamsPtr->atoms.d_dtheta,
+                                &kernelParamsPtr->atoms.d_gridlineIndices,
+                                &kernelParamsPtr->grid.d_realGrid[FEP_STATE_A],
+                                &kernelParamsPtr->grid.d_realGrid[FEP_STATE_B],
+                                &kernelParamsPtr->grid.d_fractShiftsTable,
+                                &kernelParamsPtr->grid.d_gridlineIndicesTable,
+                                &kernelParamsPtr->atoms.d_coefficients[FEP_STATE_A],
+                                &kernelParamsPtr->atoms.d_coefficients[FEP_STATE_B],
+                                &kernelParamsPtr->atoms.d_coordinates);
+                    }
+                }();
 
                 launchGpuKernel(kernelPtr, config, *launchStream, timingEvent, "PME spline/spread", kernelArgs);
                 wallcycle_stop(wcycle, WallCycleCounter::LaunchGpuPme);
@@ -2042,24 +2047,29 @@ void pme_gpu_spread(PmeGpu*                        pmeGpu,
 
             wallcycle_start(wcycle, WallCycleCounter::LaunchGpuPme);
 
-#if c_canEmbedBuffers
-            const auto kernelArgs = prepareGpuKernelArguments(kernelPtr, config, kernelParamsPtr);
-#else
-            const auto kernelArgs =
-                    prepareGpuKernelArguments(kernelPtr,
-                                              config,
-                                              kernelParamsPtr,
-                                              &kernelParamsPtr->atoms.d_theta,
-                                              &kernelParamsPtr->atoms.d_dtheta,
-                                              &kernelParamsPtr->atoms.d_gridlineIndices,
-                                              &kernelParamsPtr->grid.d_realGrid[FEP_STATE_A],
-                                              &kernelParamsPtr->grid.d_realGrid[FEP_STATE_B],
-                                              &kernelParamsPtr->grid.d_fractShiftsTable,
-                                              &kernelParamsPtr->grid.d_gridlineIndicesTable,
-                                              &kernelParamsPtr->atoms.d_coefficients[FEP_STATE_A],
-                                              &kernelParamsPtr->atoms.d_coefficients[FEP_STATE_B],
-                                              &kernelParamsPtr->atoms.d_coordinates);
-#endif
+            const auto kernelArgs = [&]()
+            {
+                if constexpr (c_canEmbedBuffers)
+                {
+                    return prepareGpuKernelArguments(kernelPtr, config, kernelParamsPtr);
+                }
+                else
+                {
+                    return prepareGpuKernelArguments(kernelPtr,
+                                                     config,
+                                                     kernelParamsPtr,
+                                                     &kernelParamsPtr->atoms.d_theta,
+                                                     &kernelParamsPtr->atoms.d_dtheta,
+                                                     &kernelParamsPtr->atoms.d_gridlineIndices,
+                                                     &kernelParamsPtr->grid.d_realGrid[FEP_STATE_A],
+                                                     &kernelParamsPtr->grid.d_realGrid[FEP_STATE_B],
+                                                     &kernelParamsPtr->grid.d_fractShiftsTable,
+                                                     &kernelParamsPtr->grid.d_gridlineIndicesTable,
+                                                     &kernelParamsPtr->atoms.d_coefficients[FEP_STATE_A],
+                                                     &kernelParamsPtr->atoms.d_coefficients[FEP_STATE_B],
+                                                     &kernelParamsPtr->atoms.d_coordinates);
+                }
+            }();
 
             launchGpuKernel(kernelPtr,
                             config,
@@ -2257,18 +2267,24 @@ void pme_gpu_solve(PmeGpu* pmeGpu, const int gridIndex, t_complex* h_grid, GridO
     }
 
     pme_gpu_start_timing(pmeGpu, timingId);
-    auto* timingEvent = pme_gpu_fetch_timing_event(pmeGpu, timingId);
-#if c_canEmbedBuffers
-    const auto kernelArgs = prepareGpuKernelArguments(kernelPtr, config, kernelParamsPtr);
-#else
-    const auto kernelArgs =
-            prepareGpuKernelArguments(kernelPtr,
-                                      config,
-                                      kernelParamsPtr,
-                                      &kernelParamsPtr->grid.d_splineModuli[gridIndex],
-                                      &kernelParamsPtr->constants.d_virialAndEnergy[gridIndex],
-                                      &kernelParamsPtr->grid.d_fftComplexGrid[gridIndex]);
-#endif
+    auto*      timingEvent = pme_gpu_fetch_timing_event(pmeGpu, timingId);
+    const auto kernelArgs  = [&]()
+    {
+        if constexpr (c_canEmbedBuffers)
+        {
+            return prepareGpuKernelArguments(kernelPtr, config, kernelParamsPtr);
+        }
+        else
+        {
+            return prepareGpuKernelArguments(kernelPtr,
+                                             config,
+                                             kernelParamsPtr,
+                                             &kernelParamsPtr->grid.d_splineModuli[gridIndex],
+                                             &kernelParamsPtr->constants.d_virialAndEnergy[gridIndex],
+                                             &kernelParamsPtr->grid.d_fftComplexGrid[gridIndex]);
+        }
+    }();
+
     launchGpuKernel(kernelPtr, config, pmeGpu->archSpecific->pmeStream_, timingEvent, "PME solve", kernelArgs);
     pme_gpu_stop_timing(pmeGpu, timingId);
 
@@ -2497,22 +2513,28 @@ void pme_gpu_gather(PmeGpu*                       pmeGpu,
         GMX_UNUSED_VALUE(computeVirial);
 #endif
 
-#if c_canEmbedBuffers
-        const auto kernelArgs = prepareGpuKernelArguments(kernelPtr, config, kernelParamsPtr);
-#else
-        const auto kernelArgs =
-                prepareGpuKernelArguments(kernelPtr,
-                                          config,
-                                          kernelParamsPtr,
-                                          &kernelParamsPtr->atoms.d_coefficients[FEP_STATE_A],
-                                          &kernelParamsPtr->atoms.d_coefficients[FEP_STATE_B],
-                                          &kernelParamsPtr->grid.d_realGrid[FEP_STATE_A],
-                                          &kernelParamsPtr->grid.d_realGrid[FEP_STATE_B],
-                                          &kernelParamsPtr->atoms.d_theta,
-                                          &kernelParamsPtr->atoms.d_dtheta,
-                                          &kernelParamsPtr->atoms.d_gridlineIndices,
-                                          &kernelParamsPtr->atoms.d_forces);
-#endif
+        const auto kernelArgs = [&]()
+        {
+            if constexpr (c_canEmbedBuffers)
+            {
+                return prepareGpuKernelArguments(kernelPtr, config, kernelParamsPtr);
+            }
+            else
+            {
+                return prepareGpuKernelArguments(kernelPtr,
+                                                 config,
+                                                 kernelParamsPtr,
+                                                 &kernelParamsPtr->atoms.d_coefficients[FEP_STATE_A],
+                                                 &kernelParamsPtr->atoms.d_coefficients[FEP_STATE_B],
+                                                 &kernelParamsPtr->grid.d_realGrid[FEP_STATE_A],
+                                                 &kernelParamsPtr->grid.d_realGrid[FEP_STATE_B],
+                                                 &kernelParamsPtr->atoms.d_theta,
+                                                 &kernelParamsPtr->atoms.d_dtheta,
+                                                 &kernelParamsPtr->atoms.d_gridlineIndices,
+                                                 &kernelParamsPtr->atoms.d_forces);
+            }
+        }();
+
         launchGpuKernel(
                 kernelPtr, config, pmeGpu->archSpecific->pmeStream_, timingEvent, "PME gather", kernelArgs);
         if (!computeVirial && pmeGpu->useNvshmem)

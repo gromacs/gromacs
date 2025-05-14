@@ -78,7 +78,6 @@ struct KernelLaunchConfig
 };
 
 //! Sets whether device code can use arrays that are embedded in structs.
-#define c_canEmbedBuffers true
-// TODO this should be constexpr bool
+static constexpr bool c_canEmbedBuffers = true;
 
 #endif
