@@ -413,6 +413,7 @@ target_link_libraries(libgromacs PRIVATE
                       $<BUILD_INTERFACE:gmxpreprocess>
                       $<BUILD_INTERFACE:gpu_utils>
                       $<BUILD_INTERFACE:hardware>
+                      $<BUILD_INTERFACE:h5md>
                       $<BUILD_INTERFACE:imd>
                       $<BUILD_INTERFACE:linearalgebra>
                       $<BUILD_INTERFACE:listed_forces>
