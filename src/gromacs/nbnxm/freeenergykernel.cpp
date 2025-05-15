@@ -1363,15 +1363,15 @@ typedef void (*KernelFunction)(const AtomPairlist&                    nlist,
 template<KernelSoftcoreType softcoreType, bool scLambdasOrAlphasDiffer, bool elecInteractionTypeIsEwald, LJKernelType ljKernelType, bool computeForces>
 static KernelFunction dispatchKernelOnUseSimd(const bool useSimd)
 {
-    if (useSimd)
+#if GMX_SIMD_HAVE_REAL && GMX_SIMD_HAVE_INT32_ARITHMETICS
+    if (GMX_USE_SIMD_KERNELS && useSimd)
     {
-#if GMX_SIMD_HAVE_REAL && GMX_SIMD_HAVE_INT32_ARITHMETICS && GMX_USE_SIMD_KERNELS
         return (nb_free_energy_kernel<SimdDataTypes, softcoreType, scLambdasOrAlphasDiffer, elecInteractionTypeIsEwald, ljKernelType, computeForces>);
-#else
-        return (nb_free_energy_kernel<ScalarDataTypes, softcoreType, scLambdasOrAlphasDiffer, elecInteractionTypeIsEwald, ljKernelType, computeForces>);
-#endif
     }
     else
+#else
+    GMX_UNUSED_VALUE(useSimd);
+#endif
     {
         return (nb_free_energy_kernel<ScalarDataTypes, softcoreType, scLambdasOrAlphasDiffer, elecInteractionTypeIsEwald, ljKernelType, computeForces>);
     }

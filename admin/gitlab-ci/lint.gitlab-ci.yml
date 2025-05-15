@@ -13,6 +13,16 @@ clang-tidy:configure-mr:
     BUILD_DIR: build-clang-tidy
     CMAKE_EXTRA_OPTIONS: -DCLANG_TIDY=clang-tidy-$COMPILER_MAJOR_VERSION -DGMX_CLANG_TIDY=ON -DGMX_COMPILER_WARNINGS=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
+# This configuration prepares to test "all" files in a GROMACS build
+# with clang-tidy.  Such runs take a long time, so we deliberately
+# configure this post-merge per-commit configuration without many
+# "external" things and SIMD kernels. Those change rarely. When we do
+# change them, the pre-submit clang-tidy build will check them.
+#
+# TODO: rebuild lint container with system XDR so this configuration
+#       avoids compiling the internal version
+# TODO: GROMACS currently builds and links all of thread-MPI even
+#       when configured without it. Reduce this footprint.
 clang-tidy:configure-schedule:
   extends:
     - .gromacs:base:configure
@@ -24,7 +34,7 @@ clang-tidy:configure-schedule:
     CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     COMPILER_MAJOR_VERSION: 18
     BUILD_DIR: build-clang-tidy
-    CMAKE_EXTRA_OPTIONS: -DCLANG_TIDY=clang-tidy-$COMPILER_MAJOR_VERSION -DGMX_CLANG_TIDY=ON -DGMX_COMPILER_WARNINGS=ON
+    CMAKE_EXTRA_OPTIONS: -DCLANG_TIDY=clang-tidy-$COMPILER_MAJOR_VERSION -DGMX_CLANG_TIDY=ON -DGMX_COMPILER_WARNINGS=ON -DGMX_THREAD_MPI=off -DGMX_USE_LMFIT=none -DGMX_USE_COLVARS=none -DGMX_USE_MUPARSER=none -DGMX_USE_TNG=off -DGMX_USE_SIMD_KERNELS=off
 
 clang-tidy:configure-schedule-cuda:
   extends:
@@ -77,6 +87,8 @@ clang-tidy:build-cuda:
     # Remove object files to minimize artifact size
     - find . -mindepth 1 -name '*.o' ! -type l -printf '%p\n' -delete 2>&1 > remove-build-objects.log
 
+# This test has logic so that only the files changed in this merge request
+# are examined by clang-tidy
 clang-tidy:test:
   extends:
     - .gromacs:base:build
