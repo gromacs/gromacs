@@ -66,6 +66,7 @@
 #include "gromacs/ewald/pme.h"
 #include "gromacs/hardware/device_management.h"
 #include "gromacs/hardware/hw_info.h"
+#include "gromacs/taskassignment/taskassignment.h"
 #include "gromacs/trajectory/energyframe.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basenetwork.h"
@@ -80,6 +81,7 @@
 #include "testutils/mpitest.h"
 #include "testutils/naming.h"
 #include "testutils/refdata.h"
+#include "testutils/test_hardware_environment.h"
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 
@@ -127,6 +129,8 @@ const RefDataFilenameMaker<PmeTestParameters> sc_refDataFilenameMaker{
 class PmeTest : public MdrunTestFixture, public ::testing::WithParamInterface<PmeTestParameters>
 {
 public:
+    PmeTest();
+    ~PmeTest() override;
     //! Names of tpr files built by grompp in SetUpTestSuite to run in tests
     inline static EnumerationArray<PmeTestFlavor, std::string> s_tprFileNames;
     //! Mutex to protect creation of the TestFileManager with thread-MPI
@@ -145,6 +149,21 @@ public:
     //! Check the energies against the reference data.
     void checkEnergies(bool usePmeTuning) const;
 };
+
+PmeTest::PmeTest()
+{
+    // Avoid a possible error about inefficient resource assignment
+    // that is potentially useful to an mdrun user and not useful when
+    // trying to ensure good testing coverage on arbitrary node
+    // configurations.
+    setThrowForPerformanceProblems(false);
+}
+
+PmeTest::~PmeTest()
+{
+    // Restore the default
+    setThrowForPerformanceProblems(true);
+}
 
 // static
 void PmeTest::SetUpTestSuite()
@@ -277,12 +296,21 @@ MessageStringCollector PmeTest::getSkipMessagesIfNecessary(const CommandLine& co
         // A check on whether the .tpr is supported for PME on GPUs is
         // not needed, because it is supported by design.
     }
+
+    // In principle, a node with MPS configured could get around this.
+    // See https://gitlab.com/gromacs/gromacs/-/issues/5345
+    messages.appendIf((std::getenv("GMX_ENABLE_NVSHMEM") != nullptr)
+                              && (getNumberOfTestMpiRanks()
+                                  > getTestHardwareEnvironment()->hwinfo()->ngpu_compatible_tot),
+                      "it targets multiple ranks with NVSHMEM, but that requires at least as "
+                      "many GPUs as ranks");
     return messages;
 }
 
 TEST_P(PmeTest, Runs)
 {
     auto [pmeTestFlavor, mdrunCommandLine] = GetParam();
+    // Set up the mdrun command line
     CommandLine commandLine(splitString(mdrunCommandLine));
 
     // Run mdrun on the tpr file that was built in SetUpTestSuite()
@@ -307,6 +335,30 @@ TEST_P(PmeTest, Runs)
         if (!skipMessages.isEmpty())
         {
             GTEST_SKIP() << skipMessages.toString();
+        }
+
+        // We need some extra skips while we coordinate code fixes.
+        // We separate them from the other skips for clarity.
+        {
+            const std::string pmeOptionArgument(commandLine.argumentOf("-pme").value());
+            const bool        commandLineTargetsPmeOnCpu = (pmeOptionArgument == "cpu");
+            const std::string npmeOptionArgument(commandLine.argumentOf("-npme").value());
+            const bool        commandLineTargetsPmeOnlyRanks = (std::stoi(npmeOptionArgument) > 0);
+            if (!commandLineTargetsPmeOnCpu && commandLineTargetsPmeOnlyRanks)
+            {
+                if (getNumberOfTestMpiRanks() == 4 && GMX_LIB_MPI)
+                {
+                    GTEST_SKIP()
+                            << "PME coordinate receiver and force reduction don't handle empty "
+                               "domains properly with GPU on PME-only ranks and library MPI";
+                }
+                const bool directGpuCommDisabled = std::getenv("GMX_DISABLE_DIRECT_GPU_COMM") != nullptr;
+                if (getNumberOfTestMpiRanks() == 4 && GMX_THREAD_MPI && !directGpuCommDisabled)
+                {
+                    GTEST_SKIP() << "force reduction with separate PME ranks doesn't handle empty "
+                                    "domains properly with thread-MPI and direct GPU communication";
+                }
+            }
         }
 
         ASSERT_EQ(0, runner_.callMdrun(commandLine));
@@ -375,14 +427,14 @@ void PmeTest::checkEnergies(const bool usePmeTuning) const
 //
 // Note that some of these cases can only run when there is one MPI
 // rank and some require more than one MPI rank. CTest has been
-// instructed to run the test binary twice, with respectively one and
-// two ranks, so that all tests that can run do run. The test binaries
+// instructed to run the test binary with respectively one, two and
+// four ranks, so that all tests that can run do run. The test binaries
 // consider the hardware, build configuration, and rank count and skip
 // those tests that they cannot run.
 const auto c_reproducesEnergies = ::testing::ValuesIn(std::vector<PmeTestParameters>{ {
         // Here are all tests without a PME-only rank. These can
-        // always run with a single rank, but can only run with two
-        // ranks when not targeting GPUs.
+        // always run with a single rank, but can run with more
+        // ranks when either not targeting GPUs or doing PME decomposition.
         // Note that an -npme argument is required.
         { PmeTestFlavor::Basic, "-notunepme -npme 0 -pme cpu" },
         { PmeTestFlavor::Basic, "-notunepme -npme 0 -pme auto" },

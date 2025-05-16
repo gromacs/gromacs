@@ -262,14 +262,20 @@ gmx_add_gtest_executable(${exename} MPI
         # pseudo-library for code for mdrun
         $<TARGET_OBJECTS:mdrun_objlib>
         )
-target_link_libraries(${exename} PRIVATE mdrun_test_infrastructure)
-gmx_register_gtest_test(MdrunMpi1RankPmeTests ${exename} MPI_RANKS 1 OPENMP_THREADS 2 INTEGRATION_TEST IGNORE_LEAKS SLOW_GPU_TEST)
-gmx_register_gtest_test(MdrunMpi2RankPmeTests ${exename} MPI_RANKS 2 OPENMP_THREADS 2 INTEGRATION_TEST IGNORE_LEAKS SLOW_GPU_TEST)
+target_link_libraries(${exename} PRIVATE mdrun_test_infrastructure taskassignment)
+gmx_register_gtest_test(MdrunMpi1RankPmeTests ${exename} MPI_RANKS 1 OPENMP_THREADS 2 HARDWARE_DETECTION INTEGRATION_TEST IGNORE_LEAKS SLOW_GPU_TEST)
+gmx_register_gtest_test(MdrunMpi2RankPmeTests ${exename} MPI_RANKS 2 OPENMP_THREADS 2 HARDWARE_DETECTION INTEGRATION_TEST IGNORE_LEAKS SLOW_GPU_TEST)
+gmx_register_gtest_test(MdrunMpi4RankPmeTests ${exename} MPI_RANKS 4 OPENMP_THREADS 1 HARDWARE_DETECTION INTEGRATION_TEST IGNORE_LEAKS SLOW_GPU_TEST)
 # Because the mdrun tests depend on writing files whose names are not
 # unique across test cases, prevent CTest from running these tests
 # concurrently. See #4654
 if (TEST MdrunMpi2RankPmeTests AND TEST MdrunMpi1RankPmeTests)
     set_tests_properties(MdrunMpi2RankPmeTests PROPERTIES DEPENDS MdrunMpi1RankPmeTests)
+endif()
+# NB the 4-rank test also depends transitively on the 1-rank test via
+# the 2-rank test dependency on the 1-rank test
+if (TEST MdrunMpi4RankPmeTests AND TEST MdrunMpi2RankPmeTests)
+    set_tests_properties(MdrunMpi4RankPmeTests PROPERTIES DEPENDS MdrunMpi2RankPmeTests)
 endif()
 
 # Slow-running tests that target testing multiple-rank coordination behaviors

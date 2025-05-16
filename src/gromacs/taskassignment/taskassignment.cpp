@@ -258,7 +258,18 @@ void barrierOverAllRanks(MPI_Comm comm)
 #endif
 }
 
+/*! \brief Flag for controlling error behaviour in cases where
+ * performance might be low.
+ *
+ * See docs for \c setThrowForPerformanceProblems(const bool) for details. */
+bool g_throwForPerformanceProblems = true;
+
 } // namespace
+
+void setThrowForPerformanceProblems(const bool newValue)
+{
+    g_throwForPerformanceProblems = newValue;
+}
 
 GpuTaskAssignmentsBuilder::GpuTaskAssignmentsBuilder() = default;
 
@@ -338,6 +349,7 @@ GpuTaskAssignments GpuTaskAssignmentsBuilder::build(const gmx::ArrayRef<const in
             // but we don't have any way to do a better job reliably.
             generatedGpuIds = makeGpuIds(compatibleGpusToUse, numGpuTasksOnThisNode);
 
+            // Be vocal about inefficient task assignments
             if ((numGpuTasksOnThisNode > availableDevices.size())
                 && (numGpuTasksOnThisNode % availableDevices.size() != 0))
             {
@@ -346,7 +358,7 @@ GpuTaskAssignments GpuTaskAssignmentsBuilder::build(const gmx::ArrayRef<const in
                 char host[STRLEN];
                 gmx_gethostname(host, STRLEN);
 
-                GMX_THROW(InconsistentInputError(formatString(
+                const auto message = formatString(
                         "There were %zu GPU tasks found on node %s, but %zu GPUs were "
                         "available. If the GPUs are equivalent, then it is usually best "
                         "to have a number of tasks that is a multiple of the number of GPUs. "
@@ -355,7 +367,19 @@ GpuTaskAssignments GpuTaskAssignmentsBuilder::build(const gmx::ArrayRef<const in
                         "perhaps after measuring the performance you can get.",
                         numGpuTasksOnThisNode,
                         host,
-                        availableDevices.size())));
+                        availableDevices.size());
+                if (g_throwForPerformanceProblems)
+                {
+                    GMX_THROW(InconsistentInputError(message));
+                }
+                else
+                {
+                    // Provide non-fatal acknowledgement of the
+                    // potential issue.  No need to plumb MDLogger in
+                    // here for a code path we only intend to take in
+                    // tests.
+                    std::fputs(message.c_str(), stderr);
+                }
             }
             deviceIdAssignment = generatedGpuIds;
         }

@@ -256,6 +256,20 @@ public:
     std::vector<int> deviceIdsAssigned() { return deviceIdsAssigned_; }
 };
 
+/*! \brief Flag for controlling behaviour in cases where performance might be low
+ *
+ * In mdrun, by default we will make an efficient task assignment by
+ * creating as many tasks as available GPUs. If users make a partial
+ * assigment that would likely be inefficient (e.g. using fewer ranks
+ * than GPUs, or like -nb gpu -pme cpu -npme 1), we want users to
+ * think about what they are doing and be fully specific if they
+ * really want to do things their way.
+ *
+ * In tests, we want to be able to cover many code paths on the
+ * available hardware regardless of performance. This setter allows
+ * test code to avoid irrelevant fatal errors about performance. */
+void setThrowForPerformanceProblems(const bool newValue);
+
 } // namespace gmx
 
 #endif
