@@ -179,6 +179,8 @@ for type in VerletKernelTypeDict:
     for ener in EnergiesComputationDict:
         KernelFunctionLookupTable[ener] = ""
         for elec in ElectrostaticsDict:
+            if elec == "ElecNone":
+                KernelFunctionLookupTable[ener] += "#    if GMX_USE_EXT_FMM\n"
             KernelFunctionLookupTable[ener] += "    {\n"
             for ljtreat in VdwTreatmentDict:
                 KernelName = "{0}<{1}, {2}, {3}, {4}>".format(
@@ -219,6 +221,9 @@ for type in VerletKernelTypeDict:
                 )
 
             KernelFunctionLookupTable[ener] += "    },\n"
+            if elec == "ElecNone":
+                KernelFunctionLookupTable[ener] += "#    endif\n"
+
         KernelDeclarations += "\n"
 
     # Write the header file that declares all the kernel
