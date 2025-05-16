@@ -107,14 +107,15 @@ static int gmx_fio_int_flush(t_fileio* fio)
     return rc;
 }
 
-/* lock the mutex associated with this fio. This needs to be done for every
-   type of access to the fio's elements. */
-void gmx_fio_lock(t_fileio* fio)
+/* Lock the mutex associated with this fio. This needs to be done for every
+   type of access to the fio's elements if another thread might be modifying
+   the contents. */
+static void gmx_fio_lock(t_fileio* fio)
 {
     tMPI_Lock_lock(&(fio->mtx));
 }
 /* unlock the mutex associated with this fio.  */
-void gmx_fio_unlock(t_fileio* fio)
+static void gmx_fio_unlock(t_fileio* fio)
 {
     tMPI_Lock_unlock(&(fio->mtx));
 }

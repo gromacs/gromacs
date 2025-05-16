@@ -86,27 +86,21 @@ static const char* enumValueToString(InputOutputType enumValue)
 
 void gmx_fio_setprecision(t_fileio* fio, gmx_bool bDouble)
 {
-    gmx_fio_lock(fio);
     fio->bDouble = bDouble;
-    gmx_fio_unlock(fio);
 }
 
 bool gmx_fio_is_double(t_fileio* fio)
 {
     bool isDouble = false;
-    gmx_fio_lock(fio);
-    isDouble = fio->bDouble;
-    gmx_fio_unlock(fio);
+    isDouble      = fio->bDouble;
     return isDouble;
 }
 
 XDR* gmx_fio_getxdr(t_fileio* fio)
 {
     XDR* ret = nullptr;
-    gmx_fio_lock(fio);
     GMX_RELEASE_ASSERT(fio->xdr != nullptr, "Implementation error: NULL XDR pointers");
     ret = fio->xdr;
-    gmx_fio_unlock(fio);
     return ret;
 }
 
@@ -482,36 +476,28 @@ gmx_bool gmx_fio_writee_string(t_fileio* fio, const char* item, const char* desc
 {
     gmx_bool ret;
     void*    it = const_cast<char*>(item); /* ugh.. */
-    gmx_fio_lock(fio);
-    ret = do_xdr(fio, it, 1, InputOutputType::String, desc, srcfile, line);
-    gmx_fio_unlock(fio);
+    ret         = do_xdr(fio, it, 1, InputOutputType::String, desc, srcfile, line);
     return ret;
 }
 
 gmx_bool gmx_fio_doe_real(t_fileio* fio, real* item, const char* desc, const char* srcfile, int line)
 {
     gmx_bool ret;
-    gmx_fio_lock(fio);
     ret = do_xdr(fio, item, 1, InputOutputType::Real, desc, srcfile, line);
-    gmx_fio_unlock(fio);
     return ret;
 }
 
 gmx_bool gmx_fio_doe_float(t_fileio* fio, float* item, const char* desc, const char* srcfile, int line)
 {
     gmx_bool ret;
-    gmx_fio_lock(fio);
     ret = do_xdr(fio, item, 1, InputOutputType::Float, desc, srcfile, line);
-    gmx_fio_unlock(fio);
     return ret;
 }
 
 gmx_bool gmx_fio_doe_double(t_fileio* fio, double* item, const char* desc, const char* srcfile, int line)
 {
     gmx_bool ret;
-    gmx_fio_lock(fio);
     ret = do_xdr(fio, item, 1, InputOutputType::Double, desc, srcfile, line);
-    gmx_fio_unlock(fio);
     return ret;
 }
 
@@ -520,7 +506,6 @@ gmx_bool gmx_fio_doe_gmx_bool(t_fileio* fio, gmx_bool* item, const char* desc, c
 {
     gmx_bool ret;
 
-    gmx_fio_lock(fio);
     if (fio->bRead)
     {
         int itmp = 0;
@@ -532,97 +517,76 @@ gmx_bool gmx_fio_doe_gmx_bool(t_fileio* fio, gmx_bool* item, const char* desc, c
         int itmp = static_cast<int>(*item);
         ret      = do_xdr(fio, &itmp, 1, InputOutputType::Int, desc, srcfile, line);
     }
-    gmx_fio_unlock(fio);
     return ret;
 }
 
 gmx_bool gmx_fio_doe_int(t_fileio* fio, int* item, const char* desc, const char* srcfile, int line)
 {
     gmx_bool ret;
-    gmx_fio_lock(fio);
     ret = do_xdr(fio, item, 1, InputOutputType::Int, desc, srcfile, line);
-    gmx_fio_unlock(fio);
     return ret;
 }
 
 gmx_bool gmx_fio_doe_int32(t_fileio* fio, int32_t* item, const char* desc, const char* srcfile, int line)
 {
     gmx_bool ret;
-    gmx_fio_lock(fio);
     ret = do_xdr(fio, item, 1, InputOutputType::Int32, desc, srcfile, line);
-    gmx_fio_unlock(fio);
     return ret;
 }
 
 gmx_bool gmx_fio_doe_int64(t_fileio* fio, int64_t* item, const char* desc, const char* srcfile, int line)
 {
     gmx_bool ret;
-    gmx_fio_lock(fio);
     ret = do_xdr(fio, item, 1, InputOutputType::Int64, desc, srcfile, line);
-    gmx_fio_unlock(fio);
     return ret;
 }
 
 gmx_bool gmx_fio_doe_uchar(t_fileio* fio, unsigned char* item, const char* desc, const char* srcfile, int line)
 {
     gmx_bool ret;
-    gmx_fio_lock(fio);
     ret = do_xdr(fio, item, 1, InputOutputType::UnsignedChar, desc, srcfile, line);
-    gmx_fio_unlock(fio);
     return ret;
 }
 
 gmx_bool gmx_fio_doe_char(t_fileio* fio, char* item, const char* desc, const char* srcfile, int line)
 {
     gmx_bool ret;
-    gmx_fio_lock(fio);
     ret = do_xdr(fio, item, 1, InputOutputType::Char, desc, srcfile, line);
-    gmx_fio_unlock(fio);
     return ret;
 }
 
 gmx_bool gmx_fio_doe_ushort(t_fileio* fio, unsigned short* item, const char* desc, const char* srcfile, int line)
 {
     gmx_bool ret;
-    gmx_fio_lock(fio);
     ret = do_xdr(fio, item, 1, InputOutputType::UnsignedShort, desc, srcfile, line);
-    gmx_fio_unlock(fio);
     return ret;
 }
 
 gmx_bool gmx_fio_doe_rvec(t_fileio* fio, rvec* item, const char* desc, const char* srcfile, int line)
 {
     gmx_bool ret;
-    gmx_fio_lock(fio);
     ret = do_xdr(fio, item, 1, InputOutputType::RVec, desc, srcfile, line);
-    gmx_fio_unlock(fio);
     return ret;
 }
 
 gmx_bool gmx_fio_doe_ivec(t_fileio* fio, ivec* item, const char* desc, const char* srcfile, int line)
 {
     gmx_bool ret;
-    gmx_fio_lock(fio);
     ret = do_xdr(fio, item, 1, InputOutputType::IVec, desc, srcfile, line);
-    gmx_fio_unlock(fio);
     return ret;
 }
 
 gmx_bool gmx_fio_doe_string(t_fileio* fio, char* item, const char* desc, const char* srcfile, int line)
 {
     gmx_bool ret;
-    gmx_fio_lock(fio);
     ret = do_xdr(fio, item, 1, InputOutputType::String, desc, srcfile, line);
-    gmx_fio_unlock(fio);
     return ret;
 }
 
 gmx_bool gmx_fio_doe_opaque(t_fileio* fio, char* data, std::size_t size, const char* desc, const char* srcfile, int line)
 {
     gmx_bool ret;
-    gmx_fio_lock(fio);
     ret = do_xdr(fio, data, size, InputOutputType::Opaque, desc, srcfile, line);
-    gmx_fio_unlock(fio);
     return ret;
 }
 
@@ -632,12 +596,10 @@ gmx_bool gmx_fio_ndoe_real(t_fileio* fio, real* item, int n, const char* desc, c
 {
     gmx_bool ret = TRUE;
     int      i;
-    gmx_fio_lock(fio);
     for (i = 0; i < n; i++)
     {
         ret = ret && do_xdr(fio, &(item[i]), 1, InputOutputType::Real, desc, srcfile, line);
     }
-    gmx_fio_unlock(fio);
     return ret;
 }
 
@@ -646,12 +608,10 @@ gmx_bool gmx_fio_ndoe_float(t_fileio* fio, float* item, int n, const char* desc,
 {
     gmx_bool ret = TRUE;
     int      i;
-    gmx_fio_lock(fio);
     for (i = 0; i < n; i++)
     {
         ret = ret && do_xdr(fio, &(item[i]), 1, InputOutputType::Float, desc, srcfile, line);
     }
-    gmx_fio_unlock(fio);
     return ret;
 }
 
@@ -660,12 +620,10 @@ gmx_bool gmx_fio_ndoe_double(t_fileio* fio, double* item, int n, const char* des
 {
     gmx_bool ret = TRUE;
     int      i;
-    gmx_fio_lock(fio);
     for (i = 0; i < n; i++)
     {
         ret = ret && do_xdr(fio, &(item[i]), 1, InputOutputType::Double, desc, srcfile, line);
     }
-    gmx_fio_unlock(fio);
     return ret;
 }
 
@@ -675,7 +633,6 @@ gmx_bool gmx_fio_ndoe_gmx_bool(t_fileio* fio, gmx_bool* item, int n, const char*
     gmx_bool ret = TRUE;
     int      i;
 
-    gmx_fio_lock(fio);
     for (i = 0; i < n; i++)
     {
         if (fio->bRead)
@@ -690,7 +647,6 @@ gmx_bool gmx_fio_ndoe_gmx_bool(t_fileio* fio, gmx_bool* item, int n, const char*
             ret      = ret && do_xdr(fio, &itmp, 1, InputOutputType::Int, desc, srcfile, line);
         }
     }
-    gmx_fio_unlock(fio);
     return ret;
 }
 
@@ -698,12 +654,10 @@ gmx_bool gmx_fio_ndoe_int(t_fileio* fio, int* item, int n, const char* desc, con
 {
     gmx_bool ret = TRUE;
     int      i;
-    gmx_fio_lock(fio);
     for (i = 0; i < n; i++)
     {
         ret = ret && do_xdr(fio, &(item[i]), 1, InputOutputType::Int, desc, srcfile, line);
     }
-    gmx_fio_unlock(fio);
     return ret;
 }
 
@@ -712,12 +666,10 @@ gmx_bool gmx_fio_ndoe_int64(t_fileio* fio, int64_t* item, int n, const char* des
 {
     gmx_bool ret = TRUE;
     int      i;
-    gmx_fio_lock(fio);
     for (i = 0; i < n; i++)
     {
         ret = ret && do_xdr(fio, &(item[i]), 1, InputOutputType::Int64, desc, srcfile, line);
     }
-    gmx_fio_unlock(fio);
     return ret;
 }
 
@@ -725,18 +677,14 @@ gmx_bool gmx_fio_ndoe_int64(t_fileio* fio, int64_t* item, int n, const char* des
 gmx_bool gmx_fio_ndoe_uchar(t_fileio* fio, unsigned char* item, int n, const char* desc, const char* srcfile, int line)
 {
     gmx_bool ret = TRUE;
-    gmx_fio_lock(fio);
     ret = ret && do_xdr(fio, item, n, InputOutputType::UnsignedCharArray, desc, srcfile, line);
-    gmx_fio_unlock(fio);
     return ret;
 }
 
 gmx_bool gmx_fio_ndoe_char(t_fileio* fio, char* item, int n, const char* desc, const char* srcfile, int line)
 {
     gmx_bool ret = TRUE;
-    gmx_fio_lock(fio);
-    ret = ret && do_xdr(fio, item, n, InputOutputType::CharArray, desc, srcfile, line);
-    gmx_fio_unlock(fio);
+    ret          = ret && do_xdr(fio, item, n, InputOutputType::CharArray, desc, srcfile, line);
     return ret;
 }
 
@@ -745,12 +693,10 @@ gmx_bool gmx_fio_ndoe_ushort(t_fileio* fio, unsigned short* item, int n, const c
 {
     gmx_bool ret = TRUE;
     int      i;
-    gmx_fio_lock(fio);
     for (i = 0; i < n; i++)
     {
         ret = ret && do_xdr(fio, &(item[i]), 1, InputOutputType::UnsignedShort, desc, srcfile, line);
     }
-    gmx_fio_unlock(fio);
     return ret;
 }
 
@@ -758,9 +704,7 @@ gmx_bool gmx_fio_ndoe_ushort(t_fileio* fio, unsigned short* item, int n, const c
 gmx_bool gmx_fio_ndoe_rvec(t_fileio* fio, rvec* item, int n, const char* desc, const char* srcfile, int line)
 {
     gmx_bool ret = TRUE;
-    gmx_fio_lock(fio);
-    ret = ret && do_xdr(fio, item, n, InputOutputType::RVecArray, desc, srcfile, line);
-    gmx_fio_unlock(fio);
+    ret          = ret && do_xdr(fio, item, n, InputOutputType::RVecArray, desc, srcfile, line);
     return ret;
 }
 
@@ -769,12 +713,10 @@ gmx_bool gmx_fio_ndoe_ivec(t_fileio* fio, ivec* item, int n, const char* desc, c
 {
     gmx_bool ret = TRUE;
     int      i;
-    gmx_fio_lock(fio);
     for (i = 0; i < n; i++)
     {
         ret = ret && do_xdr(fio, &(item[i]), 1, InputOutputType::IVec, desc, srcfile, line);
     }
-    gmx_fio_unlock(fio);
     return ret;
 }
 
@@ -783,12 +725,10 @@ gmx_bool gmx_fio_ndoe_string(t_fileio* fio, char* item[], int n, const char* des
 {
     gmx_bool ret = TRUE;
     int      i;
-    gmx_fio_lock(fio);
     for (i = 0; i < n; i++)
     {
         ret = ret && do_xdr(fio, &(item[i]), 1, InputOutputType::String, desc, srcfile, line);
     }
-    gmx_fio_unlock(fio);
     return ret;
 }
 

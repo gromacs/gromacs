@@ -76,9 +76,4 @@ struct t_fileio
                               a lock */
 };
 
-/** lock the mutex associated with a fio  */
-void gmx_fio_lock(t_fileio* fio);
-/** unlock the mutex associated with a fio  */
-void gmx_fio_unlock(t_fileio* fio);
-
 #endif
