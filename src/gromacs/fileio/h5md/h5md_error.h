@@ -64,7 +64,7 @@ void printHdf5ErrorsDebug();
  */
 void throwUponH5mdError(const bool errorExists, const std::string& message);
 
-/*! \brief Throw a gmx::FileIOError if the HDF5 ID is invalid (= H5I_INVALID_HID).
+/*! \brief Throw a gmx::FileIOError if the HDF5 ID is invalid (H5Iis_valid <= 0).
  *
  * \param[in] id The id to check.
  * \param[in] message The message to throw.

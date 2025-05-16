@@ -59,21 +59,20 @@ namespace test
 namespace
 {
 
+//! \brief Determines whether an identifier is valid with the H5Iis_valid method
 TEST(H5mdGuardTest, H5mdTypeGuardWorks)
 {
-    // We use an externally scoped variable to ensure that the scope guards close on exit
-    // by checking whether we can still get its size: returns 0 if the data type is invalid
     hid_t dataTypeToTest = H5I_INVALID_HID;
 
     {
         const auto [dataType, dataTypeGuard] = gmx::makeH5mdTypeGuard(H5Tcopy(H5T_NATIVE_INT));
         dataTypeToTest                       = dataType;
 
-        EXPECT_GT(H5Tget_size(dataTypeToTest), 0);
+        ASSERT_GT(H5Iis_valid(dataTypeToTest), 0);
     }
 
-    EXPECT_EQ(H5Tget_size(dataTypeToTest), 0)
-            << "Guard failed: Data type not closed after exiting scope";
+    ASSERT_LE(H5Iis_valid(dataTypeToTest), 0)
+            << "Guard failed: Data type handle should be invalid after exiting scope";
 }
 
 TEST(H5mdGuardTest, H5mdGroupGuardWorks)
@@ -83,8 +82,6 @@ TEST(H5mdGuardTest, H5mdGroupGuardWorks)
 
     H5md file(fileName, H5mdFileMode::Write);
 
-    // We use an externally scoped variable to ensure that the scope guards close on exit
-    // by flushing the handle: this returns <0 if the handle is invalid
     hid_t groupToTest = H5I_INVALID_HID;
 
     {
@@ -92,11 +89,11 @@ TEST(H5mdGuardTest, H5mdGroupGuardWorks)
                 gmx::makeH5mdGroupGuard(createGroup(file.fileid(), "group"));
         groupToTest = group;
 
-        EXPECT_GE(H5Gflush(groupToTest), 0);
-        EXPECT_GE(H5Gflush(groupToTest), 0) << "directly flushing again should still work";
+        ASSERT_GT(H5Iis_valid(groupToTest), 0);
     }
 
-    EXPECT_LT(H5Gflush(groupToTest), 0) << "Guard failed: Group not closed after exiting scope";
+    ASSERT_LE(H5Iis_valid(groupToTest), 0)
+            << "Guard failed: Group handle should be invalid after exiting scope";
 }
 
 TEST(H5mdGuardTest, H5mdDataSpaceGuardWorks)
@@ -106,19 +103,17 @@ TEST(H5mdGuardTest, H5mdDataSpaceGuardWorks)
 
     H5md file(fileName, H5mdFileMode::Write);
 
-    // We use an externally scoped variable to ensure that the scope guards close on exit
-    // by checking whether we can still find a property in it: returns <0 if handle is invalid
     hid_t dataSpaceToTest = H5I_INVALID_HID;
 
     {
         const auto [dataSpace, dataSpaceGuard] = gmx::makeH5mdDataSpaceGuard(H5Screate(H5S_SCALAR));
         dataSpaceToTest                        = dataSpace;
 
-        EXPECT_GE(H5Sis_simple(dataSpaceToTest), 0);
+        ASSERT_GT(H5Iis_valid(dataSpaceToTest), 0);
     }
 
-    EXPECT_LT(H5Sis_simple(dataSpaceToTest), 0)
-            << "Guard failed: Data space not closed after exiting scope";
+    ASSERT_LE(H5Iis_valid(dataSpaceToTest), 0)
+            << "Guard failed: Data space handle should be invalid after exiting scope";
 }
 
 TEST(H5mdGuardTest, H5mdDataSetGuardWorks)
@@ -128,8 +123,6 @@ TEST(H5mdGuardTest, H5mdDataSetGuardWorks)
 
     H5md file(fileName, H5mdFileMode::Write);
 
-    // We use an externally scoped variable to ensure that the scope guards close on exit
-    // by checking whether we can access its data type
     hid_t dataSetToTest = H5I_INVALID_HID;
 
     const auto [dataSpace, dataSpaceGuard] = gmx::makeH5mdDataSpaceGuard(H5Screate(H5S_SCALAR));
@@ -139,11 +132,11 @@ TEST(H5mdGuardTest, H5mdDataSetGuardWorks)
                 file.fileid(), "testDataSet", H5T_NATIVE_INT, dataSpace, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT));
         dataSetToTest                      = dataSet;
 
-        EXPECT_NE(H5Dget_type(dataSetToTest), H5I_INVALID_HID);
+        ASSERT_GT(H5Iis_valid(dataSetToTest), 0);
     }
 
-    EXPECT_EQ(H5Dget_type(dataSetToTest), H5I_INVALID_HID)
-            << "Guard failed: Data set not closed after exiting scope";
+    ASSERT_LE(H5Iis_valid(dataSetToTest), 0)
+            << "Guard failed: Data set handle should be invalid after exiting scope";
 }
 
 TEST(H5mdGuardTest, H5mdAttributeGuardWorks)
@@ -153,8 +146,6 @@ TEST(H5mdGuardTest, H5mdAttributeGuardWorks)
 
     H5md file(fileName, H5mdFileMode::Write);
 
-    // We use an externally scoped variable to ensure that the scope guards close on exit
-    // by checking whether we can access its data type
     hid_t attributeToTest = H5I_INVALID_HID;
 
     const auto [dataSpace, dataSpaceGuard] = gmx::makeH5mdDataSpaceGuard(H5Screate(H5S_SCALAR));
@@ -164,17 +155,15 @@ TEST(H5mdGuardTest, H5mdAttributeGuardWorks)
                 file.fileid(), "testAttribute", H5T_NATIVE_INT, dataSpace, H5P_DEFAULT, H5P_DEFAULT));
         attributeToTest                        = attribute;
 
-        EXPECT_NE(H5Aget_type(attributeToTest), H5I_INVALID_HID);
+        ASSERT_GT(H5Iis_valid(attributeToTest), 0);
     }
 
-    EXPECT_EQ(H5Aget_type(attributeToTest), H5I_INVALID_HID)
-            << "Guard failed: Attribute not closed after exiting scope";
+    ASSERT_LE(H5Iis_valid(attributeToTest), 0)
+            << "Attribute handle should be invalid after exiting scope";
 }
 
 TEST(H5mdGuardTest, H5mdPropertyListGuardWorks)
 {
-    // We use an externally scoped variable to ensure that the scope guards close on exit
-    // by checking if we can find some property inside it: this returns <0 if handle is invalid
     hid_t propertyListToTest = H5I_INVALID_HID;
 
     {
@@ -182,11 +171,11 @@ TEST(H5mdGuardTest, H5mdPropertyListGuardWorks)
                 gmx::makeH5mdPropertyListGuard(H5Pcreate(H5P_DATASET_CREATE));
         propertyListToTest = propertyList;
 
-        EXPECT_GE(H5Pexist(propertyListToTest, "test"), 0);
+        ASSERT_GT(H5Iis_valid(propertyListToTest), 0);
     }
 
-    EXPECT_LT(H5Pexist(propertyListToTest, "test"), 0)
-            << "Guard failed: Property list handle valid after exiting scope";
+    ASSERT_LE(H5Iis_valid(propertyListToTest), 0)
+            << "Property list handle should be invalid after exiting scope";
 }
 
 } // namespace

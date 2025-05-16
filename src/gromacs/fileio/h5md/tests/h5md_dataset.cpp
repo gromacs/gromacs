@@ -199,7 +199,8 @@ TYPED_TEST(H5mdDataSetTest, OpenDataSetThrowsForInvalidSetName)
         // Create a data set to ensure that there is something in the file which we cannot read with bad names
         const auto [dataSet, dataSetGuard] =
                 makeH5mdDataSetGuard(create1dFrameDataSet<TypeParam>(this->fileid(), "testDataSet"));
-        ASSERT_NE(dataSet, H5I_INVALID_HID) << "Sanity check failed: data set should be created";
+        ASSERT_GT(H5Iis_valid(dataSet), 0)
+                << "Sanity check failed: data set handle should be valid";
     }
 
     EXPECT_THROW(openDataSet(this->fileid(), ""), gmx::FileIOError)
@@ -233,7 +234,7 @@ TYPED_TEST(H5mdDataSetTest, GetNumFramesThrowsForInvalidDataSetHandle)
                 makeH5mdDataSetGuard(create1dFrameDataSet<TypeParam>(this->fileid(), "testDataSet"));
 
         dataSetToTest = dataSet;
-        ASSERT_NE(dataSetToTest, H5I_INVALID_HID)
+        ASSERT_GT(H5Iis_valid(dataSetToTest), 0)
                 << "Sanity check failed: data set handle must be valid before exiting scope";
     }
 
