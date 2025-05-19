@@ -304,20 +304,27 @@ void PmePpCommGpu::Impl::sendCoordinatesToPme(Float3*               sendPtr,
         sendCoordinatesToPmeGpuAwareMpi(sendPtr, sendSize, coordinatesReadyOnDeviceEvent);
     }
 }
-DeviceBuffer<Float3> PmePpCommGpu::Impl::getGpuForceStagingPtr()
+std::optional<DeviceBuffer<Float3>> PmePpCommGpu::Impl::getGpuForceStagingPtr()
 {
-    return d_pmeForces_;
+    if (d_pmeForcesSize_ > 0)
+    {
+        return d_pmeForces_;
+    }
+    else
+    {
+        return std::nullopt;
+    }
 }
 
-GpuEventSynchronizer* PmePpCommGpu::Impl::getForcesReadySynchronizer()
+std::optional<GpuEventSynchronizer*> PmePpCommGpu::Impl::getForcesReadySynchronizer()
 {
-    if (GMX_THREAD_MPI)
+    if (GMX_THREAD_MPI && d_pmeForcesSize_ > 0)
     {
         return &forcesReadySynchronizer_;
     }
     else
     {
-        return nullptr;
+        return std::nullopt;
     }
 }
 
@@ -360,12 +367,12 @@ void PmePpCommGpu::sendCoordinatesToPmeFromCpu(RVec* sendPtr, int sendSize)
     impl_->sendCoordinatesToPme(sendPtr, sendSize, nullptr);
 }
 
-DeviceBuffer<Float3> PmePpCommGpu::getGpuForceStagingPtr()
+std::optional<DeviceBuffer<Float3>> PmePpCommGpu::getGpuForceStagingPtr()
 {
     return impl_->getGpuForceStagingPtr();
 }
 
-GpuEventSynchronizer* PmePpCommGpu::getForcesReadySynchronizer()
+std::optional<GpuEventSynchronizer*> PmePpCommGpu::getForcesReadySynchronizer()
 {
     return impl_->getForcesReadySynchronizer();
 }

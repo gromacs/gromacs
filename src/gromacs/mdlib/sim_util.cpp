@@ -1213,13 +1213,17 @@ static void setupLocalGpuForceReduction(const MdrunScheduleWorkload& runSchedule
     }
     else if (runScheduleWork.simulationWork.useGpuPmePpCommunication)
     {
-        pmeForcePtr = pmePpCommGpu->getGpuForceStagingPtr();
-        GMX_ASSERT(pmeForcePtr, "PME force for reduction has no data");
-        if (GMX_THREAD_MPI)
+        std::optional<DeviceBuffer<RVec>> pmeStagingPtr = pmePpCommGpu->getGpuForceStagingPtr();
+        if (pmeStagingPtr)
         {
-            pmeSynchronizer = pmePpCommGpu->getForcesReadySynchronizer();
+            pmeForcePtr = pmeStagingPtr.value();
+            GMX_ASSERT(pmeForcePtr, "PME force for reduction has no data");
+            if (GMX_THREAD_MPI)
+            {
+                pmeSynchronizer = pmePpCommGpu->getForcesReadySynchronizer().value();
+            }
+            havePmeContribution = true;
         }
-        havePmeContribution = true;
     }
 
     if (havePmeContribution)

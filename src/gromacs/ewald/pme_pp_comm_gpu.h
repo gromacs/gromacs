@@ -42,6 +42,7 @@
 #define GMX_PME_PP_COMM_GPU_H
 
 #include <memory>
+#include <optional>
 #include <vector>
 
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
@@ -110,15 +111,15 @@ public:
      */
     void sendCoordinatesToPmeFromCpu(RVec* sendPtr, int sendSize);
 
-    /*! \brief
-     * Return pointer to buffer used for staging PME force on GPU
-     */
-    DeviceBuffer<gmx::RVec> getGpuForceStagingPtr();
+    /*! \brief When this PP rank has particles with PME force
+     * contributions expected from its PME-only rank, return pointer
+     * to buffer used for staging PME force on GPU. */
+    std::optional<DeviceBuffer<RVec>> getGpuForceStagingPtr();
 
-    /*! \brief
-     * Return pointer to event recorded when forces are ready
-     */
-    GpuEventSynchronizer* getForcesReadySynchronizer();
+    /*! \brief When this thread-MPI rank has particles with PME force
+     * contribtions expected from its PME-only rank, return pointer to
+     * event recorded when forces are ready. */
+    std::optional<GpuEventSynchronizer*> getForcesReadySynchronizer();
 
     /*! \brief
      * Return pointer to force synchronization NVSHMEM object

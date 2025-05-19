@@ -121,7 +121,7 @@ void PmePpCommGpu::sendCoordinatesToPmeFromCpu(RVec* /* sendPtr */, int /* sendS
 }
 
 //NOLINTNEXTLINE(readability-convert-member-functions-to-static)
-DeviceBuffer<gmx::RVec> PmePpCommGpu::getGpuForceStagingPtr()
+std::optional<DeviceBuffer<RVec>> PmePpCommGpu::getGpuForceStagingPtr()
 {
     GMX_ASSERT(!impl_,
                "A CPU stub for PME-PP GPU communication was called instead of the correct "
@@ -130,7 +130,7 @@ DeviceBuffer<gmx::RVec> PmePpCommGpu::getGpuForceStagingPtr()
 }
 
 //NOLINTNEXTLINE(readability-convert-member-functions-to-static)
-GpuEventSynchronizer* PmePpCommGpu::getForcesReadySynchronizer()
+std::optional<GpuEventSynchronizer*> PmePpCommGpu::getForcesReadySynchronizer()
 {
     GMX_ASSERT(!impl_,
                "A CPU stub for PME-PP GPU communication was called instead of the correct "

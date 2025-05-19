@@ -352,12 +352,6 @@ TEST_P(PmeTest, Runs)
                             << "PME coordinate receiver and force reduction don't handle empty "
                                "domains properly with GPU on PME-only ranks and library MPI";
                 }
-                const bool directGpuCommDisabled = std::getenv("GMX_DISABLE_DIRECT_GPU_COMM") != nullptr;
-                if (getNumberOfTestMpiRanks() == 4 && GMX_THREAD_MPI && !directGpuCommDisabled)
-                {
-                    GTEST_SKIP() << "force reduction with separate PME ranks doesn't handle empty "
-                                    "domains properly with thread-MPI and direct GPU communication";
-                }
             }
         }
 
