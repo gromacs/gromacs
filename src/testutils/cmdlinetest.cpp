@@ -425,7 +425,7 @@ std::string CommandLineTestHelper::setOutputFileWithGeneratedName(const std::str
                                                                   const IFileMatcherSettings& matcher)
 {
     impl_->outputFiles_.emplace_back(label, filename, matcher.createFileMatcher());
-    std::string filenameToReturn(filename);
+    std::string filenameToReturn = filename.string();
     impl_->fileManager_.manageGeneratedOutputFile(filename);
     return filenameToReturn;
 }
@@ -438,7 +438,7 @@ void CommandLineTestHelper::checkOutputFiles(TestReferenceChecker checker) const
         for (const auto& outfile : impl_->outputFiles_)
         {
             TestReferenceChecker fileChecker(outputChecker.checkCompound("File", outfile.label_));
-            outfile.matcher_->checkFile(outfile.path_, &fileChecker);
+            outfile.matcher_->checkFile(outfile.path_.string(), &fileChecker);
         }
     }
 }
