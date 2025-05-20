@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -e
 CMAKE=${CMAKE:-$(which cmake)}
+echo "Running on host:" $KUBERNETES_HOSTNAME
 echo $CMAKE_COMPILER_SCRIPT
 echo $CMAKE_EXTRA_OPTIONS
 echo $CMAKE_SIMD_OPTIONS

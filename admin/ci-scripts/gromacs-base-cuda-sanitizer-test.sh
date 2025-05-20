@@ -3,6 +3,7 @@ set -eo pipefail
 
 CMAKE="${CMAKE:-$(which cmake)}"
 CTEST="$(dirname $CMAKE)/ctest"
+echo "Running on host:" $KUBERNETES_HOSTNAME
 cd "${BUILD_DIR}"
 
 # If $GMX_TEST_REQUIRED_NUMBER_OF_DEVICES is not set and we have GPUs, set it

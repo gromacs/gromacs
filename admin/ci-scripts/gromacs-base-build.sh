@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -e
 CMAKE=${CMAKE:-$(which cmake)}
+echo "Running on host:" $KUBERNETES_HOSTNAME
 cd $BUILD_DIR
 
 # If there is a parameter, use that value, else default to $KUBERNETES_CPU_LIMIT
