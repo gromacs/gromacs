@@ -32,7 +32,7 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 /*! \internal \file
- * \brief Tests for gmx rmsf.
+ * \brief Tests for gmx saltbr.
  *
  * \author Petter Johansson <pettjoha@kth.se>
  */
@@ -46,7 +46,6 @@
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/tests/gmxanatestbase.h"
 
-#include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 #include "testutils/tprfilegenerator.h"
 #include "testutils/xvgtest.h"
@@ -58,23 +57,26 @@ namespace test
 namespace
 {
 
-class GmxRmsfTest : public GmxAnaTestBase
+class GmxSaltbrTest : public GmxAnaTestBase
 {
-    int gmxTool(int argc, char* argv[]) const override { return gmx_rmsf(argc, argv); }
+    int gmxTool(int argc, char* argv[]) const override { return gmx_saltbr(argc, argv); }
 };
 
-TEST_F(GmxRmsfTest, BasicOutputWorks)
+TEST_F(GmxSaltbrTest, BasicOutputWorks)
 {
-    const std::string fileNameBase = "lysozyme";
+    // saltbr creates huge output files, so we check a tiny trajectory of 2 molecules
+    const std::string fileNameBase = "spc2-traj";
     TprAndFileManager tprFileHandle(fileNameBase);
 
     commandLine().addOption("-f", TestFileManager::getInputFilePath(fileNameBase + ".xtc"));
     commandLine().addOption("-s", tprFileHandle.tprName());
 
-    setOutputFile("-o", "rmsf.xvg", XvgMatch().tolerance(relativeToleranceAsFloatingPoint(1.0, 1e-4)));
-    setOutputFile("-od", "rmsdev.xvg", XvgMatch());
+    const FloatingPointTolerance tolerance = relativeToleranceAsFloatingPoint(1.0, 1e-4);
+    setOutputFileWithGeneratedName("min-min.xvg", "min-min.xvg", XvgMatch().tolerance(tolerance));
+    setOutputFileWithGeneratedName("plus-min.xvg", "plus-min.xvg", XvgMatch().tolerance(tolerance));
+    setOutputFileWithGeneratedName("plus-plus.xvg", "plus-plus.xvg", XvgMatch().tolerance(tolerance));
 
-    selectGroups({ "C-alpha" });
+    selectGroups({ "System" });
     runAndCheckResults();
 }
 

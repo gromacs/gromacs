@@ -15,52 +15,52 @@ TYPE xy
         <Sequence Name="Row0">
           <Int Name="Length">2</Int>
           <Real>5</Real>
-          <Real>0.0027</Real>
+          <Real>0.0336</Real>
         </Sequence>
         <Sequence Name="Row1">
           <Int Name="Length">2</Int>
           <Real>27</Real>
-          <Real>0.0051</Real>
+          <Real>0.0611</Real>
         </Sequence>
         <Sequence Name="Row2">
           <Int Name="Length">2</Int>
           <Real>43</Real>
-          <Real>0.0053</Real>
+          <Real>0.0508</Real>
         </Sequence>
         <Sequence Name="Row3">
           <Int Name="Length">2</Int>
           <Real>63</Real>
-          <Real>0.0020</Real>
+          <Real>0.0355</Real>
         </Sequence>
         <Sequence Name="Row4">
           <Int Name="Length">2</Int>
           <Real>70</Real>
-          <Real>0.0017</Real>
+          <Real>0.0335</Real>
         </Sequence>
         <Sequence Name="Row5">
           <Int Name="Length">2</Int>
           <Real>94</Real>
-          <Real>0.0062</Real>
+          <Real>0.0460</Real>
         </Sequence>
         <Sequence Name="Row6">
           <Int Name="Length">2</Int>
           <Real>105</Real>
-          <Real>0.0036</Real>
+          <Real>0.0322</Real>
         </Sequence>
         <Sequence Name="Row7">
           <Int Name="Length">2</Int>
           <Real>120</Real>
-          <Real>0.0026</Real>
+          <Real>0.0546</Real>
         </Sequence>
         <Sequence Name="Row8">
           <Int Name="Length">2</Int>
           <Real>139</Real>
-          <Real>0.0015</Real>
+          <Real>0.0411</Real>
         </Sequence>
         <Sequence Name="Row9">
           <Int Name="Length">2</Int>
           <Real>149</Real>
-          <Real>0.0040</Real>
+          <Real>0.0422</Real>
         </Sequence>
       </XvgData>
     </File>
@@ -77,52 +77,52 @@ TYPE xy
         <Sequence Name="Row0">
           <Int Name="Length">2</Int>
           <Real>5</Real>
-          <Real>0.0028</Real>
+          <Real>0.0457</Real>
         </Sequence>
         <Sequence Name="Row1">
           <Int Name="Length">2</Int>
           <Real>27</Real>
-          <Real>0.0073</Real>
+          <Real>0.0977</Real>
         </Sequence>
         <Sequence Name="Row2">
           <Int Name="Length">2</Int>
           <Real>43</Real>
-          <Real>0.0080</Real>
+          <Real>0.0718</Real>
         </Sequence>
         <Sequence Name="Row3">
           <Int Name="Length">2</Int>
           <Real>63</Real>
-          <Real>0.0030</Real>
+          <Real>0.0596</Real>
         </Sequence>
         <Sequence Name="Row4">
           <Int Name="Length">2</Int>
           <Real>70</Real>
-          <Real>0.0035</Real>
+          <Real>0.0502</Real>
         </Sequence>
         <Sequence Name="Row5">
           <Int Name="Length">2</Int>
           <Real>94</Real>
-          <Real>0.0081</Real>
+          <Real>0.0705</Real>
         </Sequence>
         <Sequence Name="Row6">
           <Int Name="Length">2</Int>
           <Real>105</Real>
-          <Real>0.0039</Real>
+          <Real>0.0427</Real>
         </Sequence>
         <Sequence Name="Row7">
           <Int Name="Length">2</Int>
           <Real>120</Real>
-          <Real>0.0034</Real>
+          <Real>0.0772</Real>
         </Sequence>
         <Sequence Name="Row8">
           <Int Name="Length">2</Int>
           <Real>139</Real>
-          <Real>0.0015</Real>
+          <Real>0.0584</Real>
         </Sequence>
         <Sequence Name="Row9">
           <Int Name="Length">2</Int>
           <Real>149</Real>
-          <Real>0.0054</Real>
+          <Real>0.0677</Real>
         </Sequence>
       </XvgData>
     </File>

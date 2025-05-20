@@ -1,0 +1,53 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <OutputFiles Name="Files">
+    <File Name="-o">
+      <XvgLegend Name="Legend">
+        <String Name="XvgLegend"><![CDATA[
+title "Fit matrix"
+xaxis  label "Time (ps)"
+yaxis  label ""
+TYPE xy
+s0 legend "xx"
+s1 legend "xy"
+s2 legend "xz"
+s3 legend "yx"
+s4 legend "yy"
+s5 legend "yz"
+s6 legend "zx"
+s7 legend "zy"
+s8 legend "zz"
+]]></String>
+      </XvgLegend>
+      <XvgData Name="Data">
+        <Sequence Name="Row0">
+          <Int Name="Length">10</Int>
+          <Real>0</Real>
+          <Real>1.0000</Real>
+          <Real>-0.0000</Real>
+          <Real>-0.0001</Real>
+          <Real>0.0000</Real>
+          <Real>1.0000</Real>
+          <Real>-0.0000</Real>
+          <Real>0.0001</Real>
+          <Real>0.0000</Real>
+          <Real>1.0000</Real>
+        </Sequence>
+        <Sequence Name="Row1">
+          <Int Name="Length">10</Int>
+          <Real>1</Real>
+          <Real>0.9908</Real>
+          <Real>-0.1326</Real>
+          <Real>-0.0274</Real>
+          <Real>0.1320</Real>
+          <Real>0.9910</Real>
+          <Real>-0.0236</Real>
+          <Real>0.0303</Real>
+          <Real>0.0198</Real>
+          <Real>0.9993</Real>
+        </Sequence>
+      </XvgData>
+    </File>
+  </OutputFiles>
+</ReferenceData>

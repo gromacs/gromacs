@@ -32,7 +32,7 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 /*! \internal \file
- * \brief Tests for gmx rmsf.
+ * \brief Tests for gmx rotmat.
  *
  * \author Petter Johansson <pettjoha@kth.se>
  */
@@ -46,7 +46,6 @@
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/tests/gmxanatestbase.h"
 
-#include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 #include "testutils/tprfilegenerator.h"
 #include "testutils/xvgtest.h"
@@ -58,23 +57,23 @@ namespace test
 namespace
 {
 
-class GmxRmsfTest : public GmxAnaTestBase
+class GmxRotmatTest : public GmxAnaTestBase
 {
-    int gmxTool(int argc, char* argv[]) const override { return gmx_rmsf(argc, argv); }
+    int gmxTool(int argc, char* argv[]) const override { return gmx_rotmat(argc, argv); }
 };
 
-TEST_F(GmxRmsfTest, BasicOutputWorks)
+TEST_F(GmxRotmatTest, BasicOutputWorks)
 {
     const std::string fileNameBase = "lysozyme";
     TprAndFileManager tprFileHandle(fileNameBase);
 
     commandLine().addOption("-f", TestFileManager::getInputFilePath(fileNameBase + ".xtc"));
     commandLine().addOption("-s", tprFileHandle.tprName());
+    commandLine().addOption("-e", 1); // operation is O(numFrames^2) so always cut this early
 
-    setOutputFile("-o", "rmsf.xvg", XvgMatch().tolerance(relativeToleranceAsFloatingPoint(1.0, 1e-4)));
-    setOutputFile("-od", "rmsdev.xvg", XvgMatch());
+    setOutputFile("-o", "rotmat.xvg", XvgMatch().tolerance(relativeToleranceAsFloatingPoint(1.0, 1e-3)));
 
-    selectGroups({ "C-alpha" });
+    selectGroups({ "Backbone" });
     runAndCheckResults();
 }
 
