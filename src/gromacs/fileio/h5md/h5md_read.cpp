@@ -50,6 +50,18 @@
 namespace gmx
 {
 
+/*! \brief Read data at index \p index of the \p dataSet into \p readBuffer.
+ *
+ * Operations common for reading all types of data are performed in this function
+ * before the read. This includes checking that the data type matches as well as
+ * extracting the HDF5 data space which handles the read data buffers.
+ *
+ * WARNING: The caller must have verified that the size of \p writeBuffer matches
+ * that of a single frame for the \p dataSet.
+ *
+ * TODO: Once we have a proper data set class it becomes easier to verify this
+ * inside this function so we should return to this assumption.
+ */
 template<typename ValueType, int numDims>
 static void readFrameData(const hid_t dataSet, const hsize_t index, const ArrayRef<ValueType> readBuffer)
 {
@@ -74,11 +86,11 @@ static void readFrameData(const hid_t dataSet, const hsize_t index, const ArrayR
 }
 
 template<typename ValueType>
-void readFrame(const hid_t dataSet, const hsize_t index, ValueType& readBuffer)
+void readFrame(const hid_t dataSet, const hsize_t index, ValueType& value)
 {
     constexpr int numDims = 1;
 
-    readFrameData<ValueType, numDims>(dataSet, index, ArrayRef(&readBuffer, &readBuffer + 1));
+    readFrameData<ValueType, numDims>(dataSet, index, ArrayRef(&value, &value + 1));
 }
 
 template void readFrame<int32_t>(const hid_t, const hsize_t, int32_t&);

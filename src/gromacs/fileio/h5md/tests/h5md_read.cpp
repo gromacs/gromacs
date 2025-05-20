@@ -85,11 +85,11 @@ TYPED_TEST(H5mdReadNumericPrimitiveTest, ReadValueFrom1dSetWorks)
     H5Dset_extent(dataSet, &numFrames);
     H5Dwrite(dataSet, hdf5DataTypeFor<TypeParam>(), H5S_ALL, H5S_ALL, H5P_DEFAULT, values.data());
 
-    TypeParam readBuffer;
+    TypeParam value;
     for (hsize_t frameIndex = 0; frameIndex < values.size(); ++frameIndex)
     {
-        readFrame(dataSet, frameIndex, readBuffer);
-        EXPECT_FLOAT_EQ(readBuffer, values[frameIndex]);
+        readFrame(dataSet, frameIndex, value);
+        EXPECT_FLOAT_EQ(value, values[frameIndex]);
     }
 }
 
@@ -104,10 +104,10 @@ TYPED_TEST(H5mdReadNumericPrimitiveTest, ReadValueOutsideOfSetBoundsThrows)
     H5Dset_extent(dataSet, &numFrames);
     H5Dwrite(dataSet, hdf5DataTypeFor<TypeParam>(), H5S_ALL, H5S_ALL, H5P_DEFAULT, values.data());
 
-    TypeParam readBuffer;
-    EXPECT_NO_THROW(readFrame(dataSet, values.size() - 1, readBuffer))
+    TypeParam value;
+    EXPECT_NO_THROW(readFrame(dataSet, values.size() - 1, value))
             << "Sanity check failed: reading last value must work";
-    EXPECT_THROW(readFrame(dataSet, values.size(), readBuffer), gmx::FileIOError)
+    EXPECT_THROW(readFrame(dataSet, values.size(), value), gmx::FileIOError)
             << "Must throw when reading out of bounds";
 }
 
@@ -124,23 +124,23 @@ TYPED_TEST(H5mdReadNumericPrimitiveTest, ReadValueOfNonMatchingTypeThrows)
 
     if (!std::is_same_v<TypeParam, float>)
     {
-        float readBuffer;
-        EXPECT_THROW(readFrame(dataSet, 0, readBuffer), gmx::FileIOError);
+        float value;
+        EXPECT_THROW(readFrame(dataSet, 0, value), gmx::FileIOError);
     }
     if (!std::is_same_v<TypeParam, double>)
     {
-        double readBuffer;
-        EXPECT_THROW(readFrame(dataSet, 0, readBuffer), gmx::FileIOError);
+        double value;
+        EXPECT_THROW(readFrame(dataSet, 0, value), gmx::FileIOError);
     }
     if (!std::is_same_v<TypeParam, int32_t>)
     {
-        int32_t readBuffer;
-        EXPECT_THROW(readFrame(dataSet, 0, readBuffer), gmx::FileIOError);
+        int32_t value;
+        EXPECT_THROW(readFrame(dataSet, 0, value), gmx::FileIOError);
     }
     if (!std::is_same_v<TypeParam, int64_t>)
     {
-        int64_t readBuffer;
-        EXPECT_THROW(readFrame(dataSet, 0, readBuffer), gmx::FileIOError);
+        int64_t value;
+        EXPECT_THROW(readFrame(dataSet, 0, value), gmx::FileIOError);
     }
 }
 
@@ -149,7 +149,7 @@ TYPED_TEST(H5mdReadNumericPrimitiveTest, ReadValueFromNonValidDataSetThrows)
     const auto [dataSet, dataSetGuard] =
             makeH5mdDataSetGuard(create1dFrameDataSet<TypeParam>(this->fileid(), "testDataSet"));
 
-    TypeParam readBuffer;
+    TypeParam value;
     {
         // Write values to data set in bulk for efficiency
         const std::vector<TypeParam> values    = { 9, 3, 1, 0, 6 };
@@ -157,14 +157,14 @@ TYPED_TEST(H5mdReadNumericPrimitiveTest, ReadValueFromNonValidDataSetThrows)
         H5Dset_extent(dataSet, &numFrames);
         H5Dwrite(dataSet, hdf5DataTypeFor<TypeParam>(), H5S_ALL, H5S_ALL, H5P_DEFAULT, values.data());
 
-        ASSERT_NO_THROW(readFrame(dataSet, 0, readBuffer))
+        ASSERT_NO_THROW(readFrame(dataSet, 0, value))
                 << "Sanity check failed: reading value from open set must work";
         H5Dclose(dataSet);
     }
 
-    EXPECT_THROW(readFrame(dataSet, 0, readBuffer), gmx::FileIOError)
+    EXPECT_THROW(readFrame(dataSet, 0, value), gmx::FileIOError)
             << "We must throw when trying to read from a closed data set";
-    EXPECT_THROW(readFrame(H5I_INVALID_HID, 0, readBuffer), gmx::FileIOError)
+    EXPECT_THROW(readFrame(H5I_INVALID_HID, 0, value), gmx::FileIOError)
             << "We must throw when trying to read from a non-existing data set";
 }
 

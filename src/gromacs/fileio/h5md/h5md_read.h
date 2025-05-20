@@ -50,10 +50,10 @@ namespace gmx
  * \tparam ValueType Type of value.
  * \param[in] dataSet Open handle to the data set.
  * \param[in] index Index of frame to read.
- * \param[out] readBuffer Single value buffer to read value into.
+ * \param[out] value Single value buffer to read value into.
  */
 template<typename ValueType>
-void readFrame(const hid_t dataSet, const hsize_t index, ValueType& readBuffer);
+void readFrame(const hid_t dataSet, const hsize_t index, ValueType& value);
 
 extern template void readFrame<float>(const hid_t, const hsize_t, float&);
 
