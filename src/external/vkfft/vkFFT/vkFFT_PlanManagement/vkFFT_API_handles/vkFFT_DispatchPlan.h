@@ -209,7 +209,7 @@ static inline VkFFTResult VkFFT_DispatchPlan(VkFFTApplication* app, VkFFTAxis* a
 						args, 0);
 				}
 				if (result != CUDA_SUCCESS) {
-					printf("cuLaunchKernel error: %d, %" PRIu64 " %" PRIu64 " %" PRIu64 " - %" PRIu64 " %" PRIu64 " %" PRIu64 "\n", result, dispatchSize[0], dispatchSize[1], dispatchSize[2], axis->specializationConstants.localSize[0].data.i, axis->specializationConstants.localSize[1].data.i, axis->specializationConstants.localSize[2].data.i);
+					printf("cuLaunchKernel error: %d, %" PRIu64 " %" PRIu64 " %" PRIu64 " - %" PRId64 " %" PRId64 " %" PRId64 "\n", result, dispatchSize[0], dispatchSize[1], dispatchSize[2], axis->specializationConstants.localSize[0].data.i, axis->specializationConstants.localSize[1].data.i, axis->specializationConstants.localSize[2].data.i);
 					return VKFFT_ERROR_FAILED_TO_LAUNCH_KERNEL;
 				}
 				if (app->configuration.num_streams > 1) {
@@ -276,7 +276,7 @@ static inline VkFFTResult VkFFT_DispatchPlan(VkFFTApplication* app, VkFFTAxis* a
 						args, 0);
 				}
 				if (result != hipSuccess) {
-					printf("hipModuleLaunchKernel error: %d, %" PRIu64 " %" PRIu64 " %" PRIu64 " - %" PRIu64 " %" PRIu64 " %" PRIu64 "\n", result, dispatchSize[0], dispatchSize[1], dispatchSize[2], axis->specializationConstants.localSize[0].data.i, axis->specializationConstants.localSize[1].data.i, axis->specializationConstants.localSize[2].data.i);
+					printf("hipModuleLaunchKernel error: %d, %" PRIu64 " %" PRIu64 " %" PRIu64 " - %" PRId64 " %" PRId64 " %" PRId64 "\n", result, dispatchSize[0], dispatchSize[1], dispatchSize[2], axis->specializationConstants.localSize[0].data.i, axis->specializationConstants.localSize[1].data.i, axis->specializationConstants.localSize[2].data.i);
 					return VKFFT_ERROR_FAILED_TO_LAUNCH_KERNEL;
 				}
 				if (app->configuration.num_streams > 1) {

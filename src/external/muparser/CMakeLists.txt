@@ -56,6 +56,16 @@ target_include_directories(muparser SYSTEM PUBLIC
 # This compiles the "DLL" interface (C API)
 target_compile_definitions(muparser PRIVATE MUPARSER_DLL)
 
+# Intel LLVM 2021.2 and later defaults to no-finite-math which isn't OK
+if(GMX_INTEL_LLVM)
+    if (WIN32)
+        set (_flag "/fp:precise")
+    else()
+        set(_flag "-fno-finite-math-only")
+    endif()
+    gmx_target_warning_suppression(muparser ${_flag} HAS_NO_FINITE_MATH_ONLY)
+endif()
+
 if (BUILD_SHARED_LIBS)
   target_compile_definitions(muparser PRIVATE MUPARSERLIB_EXPORTS)
   add_definitions( -DMUPARSERLIB_EXPORTS )

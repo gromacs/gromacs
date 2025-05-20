@@ -86,6 +86,16 @@ if(BUILD_TESTING AND GMX_BUILD_UNITTESTS)
     if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
         gmx_target_warning_suppression(gtest -Wno-implicit-int-float-conversion HAVE_NO_IMPLICIT_INT_FLOAT_CONVERSION)
     endif()
+    # Intel LLVM 2021.2 defaults to no-finite-math which isn't OK
+    if(GMX_INTEL_LLVM)
+        if (WIN32)
+            set (_flag "/fp:precise")
+        else()
+            set(_flag "-fno-finite-math-only")
+        endif()
+        gmx_target_warning_suppression(gmock ${_flag} HAS_NO_FINITE_MATH_ONLY)
+        gmx_target_warning_suppression(gtest ${_flag} HAS_NO_FINITE_MATH_ONLY)
+    endif()
 
     set(GTEST_IS_THREADSAFE "${GTEST_IS_THREADSAFE}" PARENT_SCOPE)
 

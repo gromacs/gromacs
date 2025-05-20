@@ -507,6 +507,16 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
      >
    )
 endif()
+# Intel LLVM 2021.2 and later defaults to no-finite-math which isn't OK
+# for GROMACS and its dependencies (muParser and GTest).
+if(GMX_INTEL_LLVM)
+    if (WIN32)
+        set (_flag "/fp:precise")
+    else()
+        set(_flag "-fno-finite-math-only")
+    endif()
+    gmx_target_warning_suppression(libgromacs ${_flag} HAS_NO_FINITE_MATH_ONLY)
+endif()
 
 if (GMX_CLANG_TIDY)
    # Temporarily exclude Colvars headers to silence warnings from code that is not built with GROMACS

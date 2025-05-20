@@ -1,54 +1,54 @@
-# Test goal: Newest oneAPI with SYCL with tests on NVIDIA GPUs
+# Test goal: Oldest supported oneAPI with SYCL with tests on NVIDIA GPUs
 # Test intents (should change rarely and conservatively):
 #   OS: Ubuntu newest supported
-#   Compiler: oneAPI ICPX newest supported
+#   Compiler: oneAPI ICPX oldest supported
 #   FFT: MKL
 #   GPU: SYCL DPC++ (newest supported CUDA backend)
 #   Scope: configure, build, unit tests, regression tests
 # Test implementation choices (free to change as needed):
 #   OS: Ubuntu 22.04
 #   Build type: RelWithAssert
-#   Compiler: oneAPI 2024.2
+#   Compiler: oneAPI 2025.0
 #   GPU: Codeplay plugin for CUDA 12.0.1
 #   MPI: threadMPI
 #   SIMD: AVX2_256
 #   Parallelism nt/ntomp: 2/1 and 2/2
 
-gromacs:oneapi-2024.2-nvidia-nightly:configure:
+gromacs:oneapi-2025.0-nvidia-nightly:configure:
   extends:
    - .gromacs:base:configure
    - .use-oneapi-intel-llvm:base
    - .use-sycl
   rules:
    - !reference [.rules:nightly-not-for-release, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-oneapi-2024.2-cuda-12.0.1-rocm-6.1.3:latest
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-oneapi-2025.0-cuda-12.0.1-rocm-6.1.3:latest
   variables:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
     CMAKE_EXTRA_OPTIONS: "-DSYCL_CXX_FLAGS_EXTRA=-fsycl-targets=nvptx64-nvidia-cuda -DGMX_GPU_NB_CLUSTER_SIZE=8 -DGMX_GPU_FFT_LIBRARY=VkFFT -DGMX_SYCL_ENABLE_GRAPHS=ON"
-    COMPILER_MAJOR_VERSION: 2024
+    COMPILER_MAJOR_VERSION: 2025
 
-gromacs:oneapi-2024.2-nvidia-nightly:build:
+gromacs:oneapi-2025.0-nvidia-nightly:build:
   extends:
     - .gromacs:base:build
     - .use-ccache
     - .use-oneapi-intel-llvm:base
   rules:
     - !reference [.rules:nightly-not-for-release, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-oneapi-2024.2-cuda-12.0.1-rocm-6.1.3:latest
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-oneapi-2025.0-cuda-12.0.1-rocm-6.1.3:latest
   variables:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
   needs:
-    - job: gromacs:oneapi-2024.2-nvidia-nightly:configure
+    - job: gromacs:oneapi-2025.0-nvidia-nightly:configure
 
-gromacs:oneapi-2024.2-nvidia-nightly:test:
+gromacs:oneapi-2025.0-nvidia-nightly:test:
   extends:
     - .gromacs:base:test
     - .use-oneapi-intel-llvm:base
   rules:
     - !reference [.rules:skip-if-single-nvidia-gpu-unavailable, rules]
     - !reference [.rules:nightly-not-for-release, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-oneapi-2024.2-cuda-12.0.1-rocm-6.1.3:latest
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-oneapi-2025.0-cuda-12.0.1-rocm-6.1.3:latest
   variables:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
@@ -57,16 +57,16 @@ gromacs:oneapi-2024.2-nvidia-nightly:test:
   tags:
     - $GITLAB_RUNNER_TAG_1X_NVIDIA_GPU
   needs:
-    - job: gromacs:oneapi-2024.2-nvidia-nightly:build
+    - job: gromacs:oneapi-2025.0-nvidia-nightly:build
 
-gromacs:oneapi-2024.2-nvidia-nightly:regressiontest:
+gromacs:oneapi-2025.0-nvidia-nightly:regressiontest:
   extends:
     - .gromacs:base:regressiontest
     - .use-oneapi-intel-llvm:base
   rules:
     - !reference [.rules:skip-if-single-nvidia-gpu-unavailable, rules]
     - !reference [.rules:nightly-not-for-release, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-oneapi-2024.2-cuda-12.0.1-rocm-6.1.3:latest
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-oneapi-2025.0-cuda-12.0.1-rocm-6.1.3:latest
   variables:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
     # Default not working, see #2980
@@ -77,5 +77,5 @@ gromacs:oneapi-2024.2-nvidia-nightly:regressiontest:
   tags:
     - $GITLAB_RUNNER_TAG_1X_NVIDIA_GPU
   needs:
-    - job: gromacs:oneapi-2024.2-nvidia-nightly:build
+    - job: gromacs:oneapi-2025.0-nvidia-nightly:build
     - job: regressiontests:prepare

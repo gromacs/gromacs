@@ -137,7 +137,7 @@ void PmeGpuProgramImpl::compileKernels(const DeviceInformation& deviceInfo)
          * in the JIT compilation that happens at runtime.
          */
         const std::string commonDefines = gmx::formatString(
-                "-Dwarp_size=%zd "
+                "-Dwarp_size=%zu "
                 "-Dorder=%d "
                 "-DthreadsPerAtom=%d "
                 // forwarding from pme_grid.h, used for spline computation table sizes only
@@ -146,9 +146,9 @@ void PmeGpuProgramImpl::compileKernels(const DeviceInformation& deviceInfo)
                 "-Dc_skipNeutralAtoms=%d "
                 "-Dc_virialAndEnergyCount=%d "
                 // forwarding kernel work sizes
-                "-Dc_spreadWorkGroupSize=%zd "
-                "-Dc_solveMaxWorkGroupSize=%zd "
-                "-Dc_gatherWorkGroupSize=%zd "
+                "-Dc_spreadWorkGroupSize=%zu "
+                "-Dc_solveMaxWorkGroupSize=%zu "
+                "-Dc_gatherWorkGroupSize=%zu "
                 // forwarding from vectypes.h
                 "-DDIM=%d -DXX=%d -DYY=%d -DZZ=%d "
                 // decomposition parameter placeholders

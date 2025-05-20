@@ -131,7 +131,11 @@ public:
 
         auto velocities = statePropagatorData_->velocitiesView().unpaddedArrayRef();
         int  nth        = gmx_omp_nthreads_get(ModuleMultiThread::Update);
-#pragma omp parallel for num_threads(nth) schedule(static) default(none) shared(nth, velocities)
+        // This loop breaks icpx from oneAPI 2025.0.4
+#if !defined(__INTEL_LLVM_COMPILER) \
+        || ((__INTEL_LLVM_COMPILER < 20250000) || (__INTEL_LLVM_COMPILER >= 20250100))
+#    pragma omp parallel for num_threads(nth) schedule(static) default(none) shared(nth, velocities)
+#endif
         for (int threadIndex = 0; threadIndex < nth; threadIndex++)
         {
             int startAtom = 0;

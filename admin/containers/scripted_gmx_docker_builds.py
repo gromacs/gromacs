@@ -214,6 +214,33 @@ _docs_extra_packages = [
     "tex-gyre",
 ]
 
+
+def get_oneapi_repository(args) -> "hpccm.building_blocks.base":
+    if args.ubuntu is None:
+        raise RuntimeError("oneAPI only supported on Ubuntu")
+    return hpccm.building_blocks.packages(
+        apt_keys=[
+            "https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB"
+        ],
+        apt_repositories=[
+            "deb [signed-by=/usr/share/keyrings/GPG-PUB-KEY-INTEL-SW-PRODUCTS.gpg arch=amd64] https://apt.repos.intel.com/oneapi all main"
+        ],
+    )
+
+
+def get_impi_version(oneapi_version) -> str:
+    # Map oneAPI version numbers to the version numbers of
+    # Intel MPI that they contain.
+    version_map = {
+        "2025.1": "2021.15",
+        "2025.0": "2021.14",
+        "2024.2": "2021.13",
+        "2024.1": "2021.12",
+        "2024.0": "2021.11",
+    }
+    return version_map[oneapi_version]
+
+
 # Parse command line arguments
 parser = argparse.ArgumentParser(
     description="GROMACS CI image creation script", parents=[utility.parser]
@@ -514,13 +541,20 @@ def get_mpi(args, compiler, ucx):
             else:
                 raise RuntimeError("compiler is not an HPCCM compiler building block!")
         elif args.mpi == "impi":
-            # TODO Intel MPI from the oneAPI repo is not working reliably,
-            # reasons are unclear. When solved, add packagages called:
-            # 'intel-oneapi-mpi', 'intel-oneapi-mpi-devel'
-            # during the compiler stage.
-            # TODO also consider hpccm's intel_mpi package if that doesn't need
-            # a license to run.
-            raise RuntimeError("Intel MPI recipe not implemented yet.")
+            if args.oneapi is None:
+                # Note IMPI works with all compilers, but GROMACS doesn't test that in CI
+                raise RuntimeError("IMPI build requires oneAPI")
+            impi_version = get_impi_version(args.oneapi)
+            impi_stage = hpccm.Stage()
+            impi_stage += get_oneapi_repository(args)
+            impi_stage += hpccm.building_blocks.packages(
+                # Add minimal packages (not the whole HPC toolkit!)
+                ospackages=[
+                    f"intel-oneapi-mpi-{impi_version}",
+                    f"intel-oneapi-mpi-devel-{impi_version}",
+                ],
+            )
+            return impi_stage
         else:
             raise RuntimeError("Requested unknown MPI implementation.")
     else:
@@ -537,16 +571,31 @@ def get_oneapi_plugins(args):
         if backend_version.count(".") == 2:
             backend_version = ".".join(backend_version.split(".")[:2])  # 12.0.1 -> 12.0
         oneapi_version = args.oneapi
-        url = f"https://developer.codeplay.com/api/v1/products/download?product=oneapi&version={oneapi_version}&variant={variant}&filters[]=linux&filters[]={backend_version}"
         outfile = f"/tmp/oneapi_plugin_{variant}.sh"
-        blocks.append(
-            hpccm.primitives.shell(
-                commands=[
-                    f"wget --content-disposition '{url}' --output-document '{outfile}'",
-                    f"bash '{outfile}' --yes",
-                ]
+        if packaging.version.Version(args.oneapi) >= packaging.version.Version(
+            "2025.1"
+        ):
+            url = f"https://developer.codeplay.com/api/v1/products/download?product=oneapi&version={oneapi_version}&variant={variant}&filters[]=linux"
+            blocks.append(
+                hpccm.primitives.shell(
+                    commands=[
+                        f"wget --content-disposition '{url}' --output-document '{outfile}'",
+                        # Work around unilateral assumption made in installer
+                        f"mkdir -p /opt/intel/oneapi/{args.oneapi}/lib",
+                        f"bash {outfile} --backend-version {backend_version} --yes",
+                    ]
+                )
             )
-        )
+        else:
+            url = f"https://developer.codeplay.com/api/v1/products/download?product=oneapi&version={oneapi_version}&variant={variant}&filters[]=linux&filters[]={backend_version}"
+            blocks.append(
+                hpccm.primitives.shell(
+                    commands=[
+                        f"wget --content-disposition '{url}' --output-document '{outfile}'",
+                        f"bash '{outfile}' --yes",
+                    ]
+                )
+            )
 
     if args.oneapi_plugin_nvidia:
         _add_plugin("nvidia")
@@ -851,13 +900,8 @@ def add_oneapi_compiler_build_stage(
     oneapi_stage += hpccm.building_blocks.packages(
         ospackages=["wget", "gnupg2", "ca-certificates", "lsb-release"]
     )
+    oneapi_stage += get_oneapi_repository(args)
     oneapi_stage += hpccm.building_blocks.packages(
-        apt_keys=[
-            "https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB"
-        ],
-        apt_repositories=[
-            "deb [signed-by=/usr/share/keyrings/GPG-PUB-KEY-INTEL-SW-PRODUCTS.gpg arch=amd64] https://apt.repos.intel.com/oneapi all main"
-        ],
         # Add minimal packages (not the whole HPC toolkit!)
         ospackages=[
             f"intel-oneapi-dpcpp-cpp-{version}",
@@ -1011,7 +1055,6 @@ def prepare_venv(version: packaging.version.Version) -> typing.Sequence[str]:
             'furo' \
             'gcovr>=4.2' \
             'importlib-resources;python_version<"3.10"' \
-            'mpi4py>=3.0.3' \
             'mypy' \
             'networkx>=2.0' \
             'numpy>1.7' \
