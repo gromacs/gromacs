@@ -1284,6 +1284,9 @@ int Mdrunner::mdrunner()
             prepareLogAppending(fplog);
             logOwner = buildLogger(fplog, MAIN(cr));
             mdlog    = logOwner.logger();
+            // Provide the log file handle to the fatal error handler
+            gmx_fatal_set_log_file(fplog);
+            // A scope guard in mdrun handles clearing this when the log file is closed.
         }
     }
 

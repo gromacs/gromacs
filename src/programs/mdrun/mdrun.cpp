@@ -57,6 +57,8 @@
 #include <utility>
 #include <vector>
 
+#include "external/scope_guard/scope_guard.h"
+
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/compat/pointers.h"
@@ -76,6 +78,7 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/basenetwork.h"
+#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/physicalnodecommunicator.h"
 #include "gromacs/utility/unique_cptr.h"
 
@@ -251,6 +254,16 @@ int gmx_mdrun(MPI_Comm communicator, const gmx_hw_info_t& hwinfo, int argc, char
                                                              options.mdrunOptions.appendingBehavior,
                                                              gmx::ssize(options.filenames),
                                                              options.filenames.data());
+    if (startingBehavior != StartingBehavior::RestartWithAppending && logFileGuard)
+    {
+        // Provide the log file handle to the fatal error handler
+        FILE* fplog = gmx_fio_getfp(logFileGuard.get());
+        gmx_fatal_set_log_file(fplog);
+    }
+    // Set up a scope guard that clears the log file held by the fatal
+    // error handler. This is OK even if no log file is ever set with
+    // the handler.
+    auto fatalErrorLogFileGuard = sg::make_scope_guard([]() { gmx_fatal_set_log_file(nullptr); });
 
     /* The named components for the builder exposed here are descriptive of the
      * state of mdrun at implementation and are not intended to be prescriptive
