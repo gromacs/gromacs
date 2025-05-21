@@ -2413,7 +2413,11 @@ int Mdrunner::mdrunner()
         const bool haveDetectedOrForcedCudaAwareMpi =
                 (gmx::checkMpiCudaAwareSupport() == gmx::GpuAwareMpiStatus::Supported
                  || gmx::checkMpiCudaAwareSupport() == gmx::GpuAwareMpiStatus::Forced);
-        if (!haveDetectedOrForcedCudaAwareMpi)
+        const bool haveDetectedOrForcedHipAwareMpi =
+                (gmx::checkMpiHipAwareSupport() == gmx::GpuAwareMpiStatus::Supported
+                 || gmx::checkMpiHipAwareSupport() == gmx::GpuAwareMpiStatus::Forced);
+
+        if (!haveDetectedOrForcedCudaAwareMpi && !haveDetectedOrForcedHipAwareMpi)
         {
             // Don't reset GPU in case of GPU-AWARE MPI
             // UCX creates GPU buffers which are cleaned-up as part of MPI_Finalize()
