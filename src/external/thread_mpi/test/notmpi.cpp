@@ -69,6 +69,7 @@
 #include <sys/time.h>
 #endif
 #elif defined(THREAD_WINDOWS)
+#include <windows.h>
 #define snprintf sprintf_s
 #endif
 
