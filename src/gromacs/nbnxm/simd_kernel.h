@@ -155,7 +155,7 @@ private:
  * \tparam vdwModifier     The modifier for the LJ interactions
  * \tparam ljEwald         The type of LJ Ewald treatment, can be none
  * \tparam energyOutput    Which types of output are requested
- * \param[in] nbl          The cluster pair list
+ * \param[in] pairlist     The cluster pair list
  * \param[in] nbat         Input data for atoms, including charges and LJ parameters
  * \param[in] ic           The interaction constants
  * \param[in] shift_vec    A list of PBC shift vectors
@@ -168,9 +168,9 @@ template<KernelLayout         kernelLayout,
          InteractionModifiers vdwModifier,
          LJEwald              ljEwald,
          EnergyOutput         energyOutput>
-void nbnxmKernelSimd(const NbnxnPairlistCpu*    nbl,
-                     const nbnxn_atomdata_t*    nbat,
-                     const interaction_const_t* ic,
+void nbnxmKernelSimd(const NbnxnPairlistCpu&    pairlist,
+                     const nbnxn_atomdata_t&    nbat,
+                     const interaction_const_t& ic,
                      const rvec*                shift_vec,
                      nbnxn_atomdata_output_t*   out)
 {
@@ -208,7 +208,7 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu*    nbl,
     int npair = 0;
 #endif
 
-    const nbnxn_atomdata_t::Params& nbatParams = nbat->params();
+    const nbnxn_atomdata_t::Params& nbatParams = nbat.params();
 
     static_assert(!(haveLJEwaldGeometric && ljCombinationRule == LJCombinationRule::LorentzBerthelot),
                   "Can not have LJ-PME with LB combination rule");
@@ -228,12 +228,12 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu*    nbl,
     }
 
     /* Set up the diagonal exclusion masks */
-    const DiagonalMasker<nR, kernelLayout, clusterRatio> diagonalMasker(nbat->simdMasks());
+    const DiagonalMasker<nR, kernelLayout, clusterRatio> diagonalMasker(nbat.simdMasks());
 
 #if GMX_DOUBLE && !GMX_SIMD_HAVE_INT32_LOGICAL
-    const std::uint64_t* gmx_restrict exclusion_filter = nbat->simdMasks().exclusion_filter64.data();
+    const std::uint64_t* gmx_restrict exclusion_filter = nbat.simdMasks().exclusion_filter64.data();
 #else
-    const std::uint32_t* gmx_restrict exclusion_filter = nbat->simdMasks().exclusion_filter.data();
+    const std::uint32_t* gmx_restrict exclusion_filter = nbat.simdMasks().exclusion_filter.data();
 #endif
 
     /* Here we cast the exclusion filters from unsigned * to int * or real *.
@@ -252,12 +252,12 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu*    nbl,
 #endif
     }
 
-    CoulombCalculator<coulombType> coulombCalculator(*ic);
+    CoulombCalculator<coulombType> coulombCalculator(ic);
 
     gmx_unused SimdReal ewaldShift;
     if constexpr (coulombType != KernelCoulombType::RF && calculateEnergies)
     {
-        ewaldShift = SimdReal(ic->sh_ewald);
+        ewaldShift = SimdReal(ic.sh_ewald);
     }
 
     /* LJ function constants, only actually needed with energies or potential switching */
@@ -267,7 +267,7 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu*    nbl,
     static_assert(!(haveLJEwaldGeometric && vdwModifier != InteractionModifiers::PotShift),
                   "LJ-PME only supports potential-shift");
 
-    LennardJonesCalculator<calculateEnergies, vdwModifier> ljCalculator(*ic);
+    LennardJonesCalculator<calculateEnergies, vdwModifier> ljCalculator(ic);
 
     std::array<SimdReal, haveLJEwaldGeometric ? 5 : 0> gmx_unused ljEwaldParams;
     real                                                          lj_ewaldcoeff6_6;
@@ -275,35 +275,35 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu*    nbl,
     {
         ljEwaldParams[0]          = SimdReal(1.0_real);
         ljEwaldParams[1]          = SimdReal(0.5_real);
-        const real lj_ewaldcoeff2 = ic->ewaldcoeff_lj * ic->ewaldcoeff_lj;
+        const real lj_ewaldcoeff2 = ic.ewaldcoeff_lj * ic.ewaldcoeff_lj;
         lj_ewaldcoeff6_6          = lj_ewaldcoeff2 * lj_ewaldcoeff2 * lj_ewaldcoeff2 / 6;
         ljEwaldParams[2]          = SimdReal(lj_ewaldcoeff2);
         ljEwaldParams[3]          = SimdReal(lj_ewaldcoeff6_6);
         /* Determine the grid potential at the cut-off */
-        ljEwaldParams[4] = ic->sh_lj_ewald;
+        ljEwaldParams[4] = ic.sh_lj_ewald;
     }
 
     /* The kernel either supports rcoulomb = rvdw or rcoulomb >= rvdw */
-    const SimdReal cutoffSquared(ic->rcoulomb * ic->rcoulomb);
+    const SimdReal cutoffSquared(ic.rcoulomb * ic.rcoulomb);
     SimdReal       vdwCutoffSquared;
     if constexpr (haveVdwCutoffCheck)
     {
-        vdwCutoffSquared = SimdReal(ic->rvdw * ic->rvdw);
+        vdwCutoffSquared = SimdReal(ic.rvdw * ic.rvdw);
     }
 
     const SimdReal minDistanceSquared(c_nbnxnMinDistanceSquared);
 
     const real* gmx_restrict q        = nbatParams.q.data();
-    const real               facel    = ic->epsfac;
+    const real               facel    = ic.epsfac;
     const real* gmx_restrict shiftvec = shift_vec[0];
-    const real* gmx_restrict x        = nbat->x().data();
+    const real* gmx_restrict x        = nbat.x().data();
 
     EnergyAccumulator<useEnergyGroups, calculateEnergies>& energyAccumulator =
             EnergyAccumulatorGetter<useEnergyGroups, calculateEnergies>(out).get();
 
-    const nbnxn_cj_t* l_cj = nbl->cj.list_.data();
+    const nbnxn_cj_t* l_cj = pairlist.cj.list_.data();
 
-    for (const nbnxn_ci_t& ciEntry : nbl->ci)
+    for (const nbnxn_ci_t& ciEntry : pairlist.ci)
     {
         const int ish    = (ciEntry.shift & NBNXN_CI_SHIFT);
         const int ish3   = ish * 3;
@@ -468,7 +468,7 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu*    nbl,
             constexpr ILJInteractions c_iLJInteractions              = ILJInteractions::Half;
             {
                 constexpr bool c_needToCheckExclusions = true;
-                while (cjind < cjind1 && nbl->cj.excl(cjind) != NBNXN_INTERACTION_MASK_ALL)
+                while (cjind < cjind1 && pairlist.cj.excl(cjind) != NBNXN_INTERACTION_MASK_ALL)
                 {
 #include "simd_kernel_inner.h"
                     cjind++;
@@ -489,7 +489,7 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu*    nbl,
             constexpr ILJInteractions c_iLJInteractions              = ILJInteractions::All;
             {
                 constexpr bool c_needToCheckExclusions = true;
-                while (cjind < cjind1 && nbl->cj.excl(cjind) != NBNXN_INTERACTION_MASK_ALL)
+                while (cjind < cjind1 && pairlist.cj.excl(cjind) != NBNXN_INTERACTION_MASK_ALL)
                 {
 #include "simd_kernel_inner.h"
                     cjind++;
@@ -510,7 +510,7 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu*    nbl,
             constexpr ILJInteractions c_iLJInteractions              = ILJInteractions::All;
             {
                 constexpr bool c_needToCheckExclusions = true;
-                while (cjind < cjind1 && nbl->cj.excl(cjind) != NBNXN_INTERACTION_MASK_ALL)
+                while (cjind < cjind1 && pairlist.cj.excl(cjind) != NBNXN_INTERACTION_MASK_ALL)
                 {
 #include "simd_kernel_inner.h"
                     cjind++;

@@ -89,13 +89,13 @@ void
 #endif
 #undef NBK_FUNC_NAME
 #undef NBK_FUNC_NAME2
-        (const NbnxnPairlistCpu*    nbl,
-         const nbnxn_atomdata_t*    nbat,
-         const interaction_const_t* ic,
+        (const NbnxnPairlistCpu&    pairlist,
+         const nbnxn_atomdata_t&    nbat,
+         const interaction_const_t& ic,
          const rvec*                shift_vec,
          nbnxn_atomdata_output_t*   out)
 {
-    GMX_RELEASE_ASSERT(UNROLLI == nbl->na_ci && UNROLLJ == nbl->na_cj,
+    GMX_RELEASE_ASSERT(UNROLLI == pairlist.na_ci && UNROLLJ == pairlist.na_cj,
                        "Kernel and list cluster sizes should match");
 
     /* Unpack pointers for output */
@@ -117,65 +117,65 @@ void
 #endif
 
 #ifdef LJ_POT_SWITCH
-    const real swV3 = ic->vdw_switch.c3;
-    const real swV4 = ic->vdw_switch.c4;
-    const real swV5 = ic->vdw_switch.c5;
-    const real swF2 = 3 * ic->vdw_switch.c3;
-    const real swF3 = 4 * ic->vdw_switch.c4;
-    const real swF4 = 5 * ic->vdw_switch.c5;
+    const real swV3 = ic.vdw_switch.c3;
+    const real swV4 = ic.vdw_switch.c4;
+    const real swV5 = ic.vdw_switch.c5;
+    const real swF2 = 3 * ic.vdw_switch.c3;
+    const real swF3 = 4 * ic.vdw_switch.c4;
+    const real swF4 = 5 * ic.vdw_switch.c5;
 #endif
 
-    const nbnxn_atomdata_t::Params& nbatParams = nbat->params();
+    const nbnxn_atomdata_t::Params& nbatParams = nbat.params();
 
 #ifdef LJ_EWALD
-    const real lje_coeff2   = ic->ewaldcoeff_lj * ic->ewaldcoeff_lj;
+    const real lje_coeff2   = ic.ewaldcoeff_lj * ic.ewaldcoeff_lj;
     const real lje_coeff6_6 = lje_coeff2 * lje_coeff2 * lje_coeff2 / 6.0;
 #    ifdef CALC_ENERGIES
-    const real lje_vc = ic->sh_lj_ewald;
+    const real lje_vc = ic.sh_lj_ewald;
 #    endif
 
     const real* ljc = nbatParams.nbfp_comb.data();
 #endif
 
 #ifdef CALC_COUL_RF
-    const real k_rf2 = 2 * ic->reactionFieldCoefficient;
+    const real k_rf2 = 2 * ic.reactionFieldCoefficient;
 #    ifdef CALC_ENERGIES
-    const real reactionFieldCoefficient = ic->reactionFieldCoefficient;
-    const real reactionFieldShift       = ic->reactionFieldShift;
+    const real reactionFieldCoefficient = ic.reactionFieldCoefficient;
+    const real reactionFieldShift       = ic.reactionFieldShift;
 #    endif
 #endif
 #ifdef CALC_COUL_TAB
-    const real tab_coul_scale = ic->coulombEwaldTables->scale;
+    const real tab_coul_scale = ic.coulombEwaldTables->scale;
 #    ifdef CALC_ENERGIES
     const real halfsp = 0.5 / tab_coul_scale;
 #    endif
 
 #    if !GMX_DOUBLE
-    const real* tab_coul_FDV0 = ic->coulombEwaldTables->tableFDV0.data();
+    const real* tab_coul_FDV0 = ic.coulombEwaldTables->tableFDV0.data();
 #    else
-    const real* tab_coul_F = ic->coulombEwaldTables->tableF.data();
+    const real* tab_coul_F = ic.coulombEwaldTables->tableF.data();
 #        ifdef CALC_ENERGIES
-    const real* tab_coul_V = ic->coulombEwaldTables->tableV.data();
+    const real* tab_coul_V = ic.coulombEwaldTables->tableV.data();
 #        endif
 #    endif
 #endif
 
-    const real rcut2 = ic->rcoulomb * ic->rcoulomb;
+    const real rcut2 = ic.rcoulomb * ic.rcoulomb;
 #ifdef VDW_CUTOFF_CHECK
-    const real rvdw2 = ic->rvdw * ic->rvdw;
+    const real rvdw2 = ic.rvdw * ic.rvdw;
 #endif
 
     const int   ntype2   = nbatParams.numTypes * 2;
     const real* nbfp     = nbatParams.nbfp.data();
     const real* q        = nbatParams.q.data();
     const int*  type     = nbatParams.type.data();
-    const real  facel    = ic->epsfac;
+    const real  facel    = ic.epsfac;
     const real* shiftvec = shift_vec[0];
-    const real* x        = nbat->x().data();
+    const real* x        = nbat.x().data();
 
-    const nbnxn_cj_t* l_cj = nbl->cj.list_.data();
+    const nbnxn_cj_t* l_cj = pairlist.cj.list_.data();
 
-    for (const nbnxn_ci_t& ciEntry : nbl->ci)
+    for (const nbnxn_ci_t& ciEntry : pairlist.ci)
     {
         const int ish = (ciEntry.shift & NBNXN_CI_SHIFT);
         /* x, f and fshift are assumed to be stored with stride 3 */
@@ -271,7 +271,7 @@ void
 #if VECTORIZE_JLOOP && defined __clang__
 #    pragma clang loop vectorize(assume_safety)
 #endif
-        for (; cjind < cjind1 && (VECTORIZE_JLOOP || nbl->cj.excl(cjind) != 0xffff); cjind++)
+        for (; cjind < cjind1 && (VECTORIZE_JLOOP || pairlist.cj.excl(cjind) != 0xffff); cjind++)
         {
 #define CHECK_EXCLS
             if (half_LJ)

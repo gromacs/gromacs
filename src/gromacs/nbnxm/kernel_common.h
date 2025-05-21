@@ -64,9 +64,9 @@ enum class EwaldExclusionType : int;
 
 /*! \brief Pair-interaction kernel type that also calculates energies.
  */
-typedef void(NbnxmKernelFunc)(const NbnxnPairlistCpu*    nbl,
-                              const nbnxn_atomdata_t*    nbat,
-                              const interaction_const_t* ic,
+typedef void(NbnxmKernelFunc)(const NbnxnPairlistCpu&    nbl,
+                              const nbnxn_atomdata_t&    nbat,
+                              const interaction_const_t& ic,
                               const rvec*                shift_vec,
                               nbnxn_atomdata_output_t*   out);
 

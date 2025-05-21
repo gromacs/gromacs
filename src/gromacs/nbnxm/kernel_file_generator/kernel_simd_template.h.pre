@@ -40,9 +40,9 @@ namespace gmx
 enum class KernelCoulombType;
 
 template<KernelLayout kernelLayout, KernelCoulombType coulombType, VdwCutoffCheck vdwCutoffCheck, LJCombinationRule ljCombinationRule, InteractionModifiers vdwModifier, LJEwald ljEwald, EnergyOutput energyOutput>
-void nbnxmKernelSimd(const NbnxnPairlistCpu*    nbl,
-                     const nbnxn_atomdata_t*    nbat,
-                     const interaction_const_t* ic,
+void nbnxmKernelSimd(const NbnxnPairlistCpu&    pairlist,
+                     const nbnxn_atomdata_t&    nbat,
+                     const interaction_const_t& ic,
                      const rvec*                shift_vec,
                      nbnxn_atomdata_output_t*   out);
 

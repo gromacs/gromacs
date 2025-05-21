@@ -198,7 +198,7 @@ for type in VerletKernelTypeDict:
                 KernelDeclarations += "extern template {1}\n        {0}(\n".format(
                     KernelName, EnergiesComputationDict[ener]["function type"]
                 )
-                KernelDeclarations += "        const NbnxnPairlistCpu*    nbl,\n        const nbnxn_atomdata_t*    nbat,\n        const interaction_const_t* ic,\n        const rvec*                shift_vec,\n        nbnxn_atomdata_output_t*   out);\n\n"
+                KernelDeclarations += "        const NbnxnPairlistCpu&    pairlist,\n        const nbnxn_atomdata_t&    nbat,\n        const interaction_const_t& ic,\n        const rvec*                shift_vec,\n        nbnxn_atomdata_output_t*   out);\n\n"
 
                 # Write the file with the kernel definition
                 with open(

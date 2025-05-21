@@ -252,7 +252,7 @@ static void nbnxn_kernel_cpu(const PairlistSet&             pairlistSet,
         }
 
         // TODO: Change to reference
-        const NbnxnPairlistCpu* pairlist = &pairlists[nb];
+        const NbnxnPairlistCpu& pairlist = pairlists[nb];
 
         if (!stepWork.computeEnergy)
         {
@@ -260,22 +260,22 @@ static void nbnxn_kernel_cpu(const PairlistSet&             pairlistSet,
             switch (kernelSetup.kernelType)
             {
                 case NbnxmKernelType::Cpu4x4_PlainC:
-                    nbnxn_kernel_4x4_noener_ref[coulkt][vdwkt](pairlist, nbat, &ic, shiftVecPointer, &out);
+                    nbnxn_kernel_4x4_noener_ref[coulkt][vdwkt](pairlist, *nbat, ic, shiftVecPointer, &out);
                     break;
 #if GMX_HAVE_NBNXM_SIMD_2XMM
                 case NbnxmKernelType::Cpu4xN_Simd_2xNN:
                     gmx::nbnxmKernelNoenerSimd2xmm[coulkt][vdwkt](
-                            pairlist, nbat, &ic, shiftVecPointer, &out);
+                            pairlist, *nbat, ic, shiftVecPointer, &out);
                     break;
 #endif
 #if GMX_HAVE_NBNXM_SIMD_4XM
                 case NbnxmKernelType::Cpu4xN_Simd_4xN:
                     gmx::nbnxmKernelNoenerSimd4xm[coulkt][vdwkt](
-                            pairlist, nbat, &ic, shiftVecPointer, &out);
+                            pairlist, *nbat, ic, shiftVecPointer, &out);
                     break;
 #endif
                 case NbnxmKernelType::Cpu1x1_PlainC:
-                    nbnxn_kernel_1x1_noener_ref[coulkt][vdwkt](pairlist, nbat, &ic, shiftVecPointer, &out);
+                    nbnxn_kernel_1x1_noener_ref[coulkt][vdwkt](pairlist, *nbat, ic, shiftVecPointer, &out);
                     break;
                 default: GMX_RELEASE_ASSERT(false, "Unsupported kernel architecture");
             }
@@ -297,20 +297,20 @@ static void nbnxn_kernel_cpu(const PairlistSet&             pairlistSet,
             switch (kernelSetup.kernelType)
             {
                 case NbnxmKernelType::Cpu4x4_PlainC:
-                    nbnxn_kernel_4x4_ener_ref[coulkt][vdwkt](pairlist, nbat, &ic, shiftVecPointer, &out);
+                    nbnxn_kernel_4x4_ener_ref[coulkt][vdwkt](pairlist, *nbat, ic, shiftVecPointer, &out);
                     break;
 #if GMX_HAVE_NBNXM_SIMD_2XMM
                 case NbnxmKernelType::Cpu4xN_Simd_2xNN:
-                    gmx::nbnxmKernelEnerSimd2xmm[coulkt][vdwkt](pairlist, nbat, &ic, shiftVecPointer, &out);
+                    gmx::nbnxmKernelEnerSimd2xmm[coulkt][vdwkt](pairlist, *nbat, ic, shiftVecPointer, &out);
                     break;
 #endif
 #if GMX_HAVE_NBNXM_SIMD_4XM
                 case NbnxmKernelType::Cpu4xN_Simd_4xN:
-                    gmx::nbnxmKernelEnerSimd4xm[coulkt][vdwkt](pairlist, nbat, &ic, shiftVecPointer, &out);
+                    gmx::nbnxmKernelEnerSimd4xm[coulkt][vdwkt](pairlist, *nbat, ic, shiftVecPointer, &out);
                     break;
 #endif
                 case NbnxmKernelType::Cpu1x1_PlainC:
-                    nbnxn_kernel_1x1_ener_ref[coulkt][vdwkt](pairlist, nbat, &ic, shiftVecPointer, &out);
+                    nbnxn_kernel_1x1_ener_ref[coulkt][vdwkt](pairlist, *nbat, ic, shiftVecPointer, &out);
                     break;
                 default: GMX_RELEASE_ASSERT(false, "Unsupported kernel architecture");
             }
@@ -338,22 +338,22 @@ static void nbnxn_kernel_cpu(const PairlistSet&             pairlistSet,
             switch (kernelSetup.kernelType)
             {
                 case NbnxmKernelType::Cpu4x4_PlainC:
-                    nbnxn_kernel_4x4_energrp_ref[coulkt][vdwkt](pairlist, nbat, &ic, shiftVecPointer, &out);
+                    nbnxn_kernel_4x4_energrp_ref[coulkt][vdwkt](pairlist, *nbat, ic, shiftVecPointer, &out);
                     break;
 #if GMX_HAVE_NBNXM_SIMD_2XMM
                 case NbnxmKernelType::Cpu4xN_Simd_2xNN:
                     gmx::nbnxmKernelEnergrpSimd2xmm[coulkt][vdwkt](
-                            pairlist, nbat, &ic, shiftVecPointer, &out);
+                            pairlist, *nbat, ic, shiftVecPointer, &out);
                     break;
 #endif
 #if GMX_HAVE_NBNXM_SIMD_4XM
                 case NbnxmKernelType::Cpu4xN_Simd_4xN:
                     gmx::nbnxmKernelEnergrpSimd4xm[coulkt][vdwkt](
-                            pairlist, nbat, &ic, shiftVecPointer, &out);
+                            pairlist, *nbat, ic, shiftVecPointer, &out);
                     break;
 #endif
                 case NbnxmKernelType::Cpu1x1_PlainC:
-                    nbnxn_kernel_1x1_energrp_ref[coulkt][vdwkt](pairlist, nbat, &ic, shiftVecPointer, &out);
+                    nbnxn_kernel_1x1_energrp_ref[coulkt][vdwkt](pairlist, *nbat, ic, shiftVecPointer, &out);
                     break;
                 default: GMX_RELEASE_ASSERT(false, "Unsupported kernel architecture");
             }
