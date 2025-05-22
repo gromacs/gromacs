@@ -74,6 +74,7 @@ enum class FftBackend
     HeFFTe_Sycl_OneMkl, //!< supports only multi-gpu
     HeFFTe_Sycl_Rocfft, //!< supports only multi-gpu
     HeFFTe_Sycl_cuFFT,  //!< supports only multi-gpu
+    HeFFTe_HIP,         //!< supports only multi-gpu
     SyclMkl,            //!< supports only single-GPU
     SyclOneMath,        //!< supports only single-GPU
     SyclRocfft,         //!< supports only single-GPU

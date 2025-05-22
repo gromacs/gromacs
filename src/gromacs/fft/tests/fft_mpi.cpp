@@ -88,6 +88,7 @@ static GpuAwareMpiStatus getGpuAwareMpiStatusForFftBackend(const FftBackend fftB
         case FftBackend::CuFFTMp:
         case FftBackend::HeFFTe_CUDA:
         case FftBackend::HeFFTe_Sycl_cuFFT: return checkMpiCudaAwareSupport();
+        case FftBackend::HeFFTe_HIP:
         case FftBackend::HeFFTe_Sycl_Rocfft: return checkMpiHipAwareSupport();
         case FftBackend::HeFFTe_Sycl_OneMkl: return checkMpiZEAwareSupport();
         default: return GpuAwareMpiStatus::NotSupported;
@@ -280,6 +281,9 @@ std::vector<FftBackend> const           inputBackends{
 #    endif
 #    if GMX_GPU_SYCL && GMX_GPU_FFT_CUFFT
     FftBackend::HeFFTe_Sycl_cuFFT,
+#    endif
+#    if GMX_GPU_HIP
+    FftBackend::HeFFTe_HIP,
 #    endif
 #endif
 #if GMX_USE_cuFFTMp
