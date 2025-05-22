@@ -116,21 +116,14 @@ void gmx_fio_rewind(t_fileio* fio);
 int gmx_fio_flush(t_fileio* fio);
 /* Flush the fio, returns 0 on success */
 
-int gmx_fio_fsync(t_fileio* fio);
-/* fsync the fio, returns 0 on success.
-   NOTE: don't use fsync function unless you're absolutely sure you need it
-   because it deliberately interferes with the OS's caching mechanisms and
-   can cause dramatically slowed down IO performance. Some OSes (Linux,
-   for example), may implement fsync as a full sync() point. */
-
 gmx_off_t gmx_fio_ftell(t_fileio* fio);
-/* Return file position if possible */
+/* Return file position if possible; zero if not open */
 
 int gmx_fio_seek(t_fileio* fio, gmx_off_t fpos);
 /* Set file position if possible, quit otherwise */
 
 FILE* gmx_fio_getfp(t_fileio* fio);
-/* Return the file pointer itself */
+/* Return the file pointer itself, or nullptr if none exists */
 
 
 /* Element with information about position in a currently open file.
@@ -153,13 +146,13 @@ struct gmx_file_position_t
 std::vector<gmx_file_position_t> gmx_fio_get_output_file_positions();
 
 t_fileio* gmx_fio_all_output_fsync();
-/* fsync all open output files. This is used for checkpointing, where
+/* fsync all open non-TNG output files. This is used for checkpointing, where
    we need to ensure that all output is actually written out to
    disk.
    This is most important in the case of some networked file systems,
    where data is not synced with the file server until close() or
    fsync(), so data could remain in cache for days.
-   Note the caveats reported with gmx_fio_fsync().
+   Note the caveats reported with gmx_fio_int_fsync().
 
     returns: NULL if no error occurred, or a pointer to the first file that
              failed if an error occurred

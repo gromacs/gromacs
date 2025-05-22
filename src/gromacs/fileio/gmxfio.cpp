@@ -45,8 +45,6 @@
 #include <string>
 #include <vector>
 
-#include <thread_mpi/lock.h>
-
 #include "gromacs/fileio/xdrf.h"
 
 #if HAVE_IO_H
@@ -55,8 +53,6 @@
 #ifdef HAVE_UNISTD_H
 #    include <unistd.h>
 #endif
-
-#include "thread_mpi/threads.h"
 
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/md5.h"
@@ -75,11 +71,12 @@
 static t_fileio* open_files = nullptr;
 
 
-/* this mutex locks the open_files structure so that no two threads can
-   modify it.
+/* this mutex locks the open_files structure so that list modifications
+   are not concurrent with other list operations
 
    For now, we use this as a coarse grained lock on all file
-   insertion/deletion operations because it makes avoiding deadlocks
+   insertion/deletion operations and traversing the list,
+   because it makes avoiding deadlocks
    easier, and adds almost no overhead: the only overhead is during
    opening and closing of files, or during global operations like
    iterating along all open files. All these cases should be rare
@@ -107,20 +104,7 @@ static int gmx_fio_int_flush(t_fileio* fio)
     return rc;
 }
 
-/* Lock the mutex associated with this fio. This needs to be done for every
-   type of access to the fio's elements if another thread might be modifying
-   the contents. */
-static void gmx_fio_lock(t_fileio* fio)
-{
-    tMPI_Lock_lock(&(fio->mtx));
-}
-/* unlock the mutex associated with this fio.  */
-static void gmx_fio_unlock(t_fileio* fio)
-{
-    tMPI_Lock_unlock(&(fio->mtx));
-}
-
-/* make a dummy head element, assuming we locked everything. */
+/* make a dummy head element, assuming we locked open_file_mutex. */
 static void gmx_fio_make_dummy()
 {
     if (!open_files)
@@ -130,7 +114,6 @@ static void gmx_fio_make_dummy()
         open_files->fn.clear();
         open_files->next = open_files;
         open_files->prev = open_files;
-        tMPI_Lock_init(&(open_files->mtx));
     }
 }
 
@@ -149,62 +132,34 @@ static void gmx_fio_insert(t_fileio* fio)
     Lock      openFilesLock(open_file_mutex);
     gmx_fio_make_dummy();
 
-    /* and lock the fio we got and the list's head **/
-    gmx_fio_lock(fio);
-    gmx_fio_lock(open_files);
     prev = open_files->prev;
-    /* lock the element after the current one */
-    if (prev != open_files)
-    {
-        gmx_fio_lock(prev);
-    }
 
     /* now do the actual insertion: */
     fio->next        = open_files;
     open_files->prev = fio;
     prev->next       = fio;
     fio->prev        = prev;
-
-    /* now unlock all our locks */
-    if (prev != open_files)
-    {
-        gmx_fio_unlock(prev);
-    }
-    gmx_fio_unlock(open_files);
-    gmx_fio_unlock(fio);
 }
 
-/* remove a t_fileio into the list. We assume the fio is locked, and we leave
-   it locked.
-   NOTE: We also assume that the open_file_mutex has been locked */
+/* remove a t_fileio from the list.
+   NOTE: We assume that the open_file_mutex has been locked */
 static void gmx_fio_remove(t_fileio* fio)
 {
-    /* lock prev, because we're changing it */
-    gmx_fio_lock(fio->prev);
-
-    /* now set the prev's pointer */
     fio->prev->next = fio->next;
-    gmx_fio_unlock(fio->prev);
-
-    /* with the next ptr, we can simply lock while the original was locked */
-    gmx_fio_lock(fio->next);
     fio->next->prev = fio->prev;
-    gmx_fio_unlock(fio->next);
-
     /* and make sure we point nowhere in particular */
     fio->next = fio->prev = fio;
 }
 
 
 /* get the first open file, or NULL if there is none.
-   Returns a locked fio. Assumes open_files_mutex is locked. */
+   Assumes open_file_mutex is locked. */
 static t_fileio* gmx_fio_get_first()
 {
     t_fileio* ret;
 
     gmx_fio_make_dummy();
 
-    gmx_fio_lock(open_files);
     ret = open_files->next;
 
 
@@ -214,18 +169,12 @@ static t_fileio* gmx_fio_get_first()
         /* after this, the open_file pointer should never change */
         ret = nullptr;
     }
-    else
-    {
-        gmx_fio_lock(open_files->next);
-    }
-    gmx_fio_unlock(open_files);
 
 
     return ret;
 }
 
 /* get the next open file, or NULL if there is none.
-   Unlocks the previous fio and locks the next one.
    Assumes open_file_mutex is locked. */
 static t_fileio* gmx_fio_get_next(t_fileio* fio)
 {
@@ -237,19 +186,8 @@ static t_fileio* gmx_fio_get_next(t_fileio* fio)
     {
         ret = nullptr;
     }
-    else
-    {
-        gmx_fio_lock(ret);
-    }
-    gmx_fio_unlock(fio);
 
     return ret;
-}
-
-/* Stop looping through the open_files. Assumes open_file_mutex is locked. */
-static void gmx_fio_stop_getting_next(t_fileio* fio)
-{
-    gmx_fio_unlock(fio);
 }
 
 
@@ -300,8 +238,7 @@ t_fileio* gmx_fio_open(const std::filesystem::path& fn, const char* mode)
         std::strcat(newmode, "b");
     }
 
-    fio = new t_fileio{};
-    tMPI_Lock_init(&(fio->mtx));
+    fio        = new t_fileio{};
     bRead      = (newmode[0] == 'r' && newmode[1] != '+');
     bReadWrite = (newmode[1] == '+');
     fio->fp    = nullptr;
@@ -353,7 +290,7 @@ t_fileio* gmx_fio_open(const std::filesystem::path& fn, const char* mode)
     return fio;
 }
 
-static int gmx_fio_close_locked(t_fileio* fio)
+static int gmx_fio_close_inner(t_fileio* fio)
 {
     int rc = 0;
 
@@ -376,13 +313,9 @@ int gmx_fio_close(t_fileio* fio)
     int rc = 0;
 
     Lock openFilesLock(open_file_mutex);
-
-    gmx_fio_lock(fio);
     /* first remove it from the list */
     gmx_fio_remove(fio);
-    rc = gmx_fio_close_locked(fio);
-    gmx_fio_unlock(fio);
-
+    rc = gmx_fio_close_inner(fio);
     delete fio;
 
     return rc;
@@ -392,13 +325,11 @@ int gmx_fio_close(t_fileio* fio)
 int gmx_fio_fp_close(t_fileio* fio)
 {
     int rc = 0;
-    gmx_fio_lock(fio);
     if (fio->xdr == nullptr)
     {
         rc      = gmx_ffclose(fio->fp); /* fclose returns 0 if happy */
         fio->fp = nullptr;
     }
-    gmx_fio_unlock(fio);
 
     return rc;
 }
@@ -409,9 +340,7 @@ FILE* gmx_fio_fopen(const std::filesystem::path& fn, const char* mode)
     t_fileio* fio;
 
     fio = gmx_fio_open(fn, mode);
-    gmx_fio_lock(fio);
     ret = fio->fp;
-    gmx_fio_unlock(fio);
 
     return ret;
 }
@@ -427,9 +356,8 @@ int gmx_fio_fclose(FILE* fp)
     {
         if (cur->fp == fp)
         {
-            rc = gmx_fio_close_locked(cur);
+            rc = gmx_fio_close_inner(cur);
             gmx_fio_remove(cur);
-            gmx_fio_stop_getting_next(cur);
             delete cur;
             break;
         }
@@ -439,8 +367,7 @@ int gmx_fio_fclose(FILE* fp)
     return rc;
 }
 
-/*! \brief Internal variant of get_file_md5 that operates on a locked
- * file.
+/*! \brief Internal variant of get_file_md5
  *
  * \return -1 any time a checksum cannot be computed, otherwise the
  *            length of the data from which the checksum was computed. */
@@ -532,14 +459,11 @@ int gmx_fio_get_file_md5(t_fileio* fio, gmx_off_t offset, std::array<unsigned ch
 {
     int ret;
 
-    gmx_fio_lock(fio);
     ret = gmx_fio_int_get_file_md5(fio, offset, checksum);
-    gmx_fio_unlock(fio);
 
     return ret;
 }
 
-/* The fio_mutex should ALWAYS be locked when this function is called */
 static int gmx_fio_int_get_file_position(t_fileio* fio, gmx_off_t* offset)
 {
     /* Flush the file, so we are sure it is written */
@@ -596,9 +520,7 @@ std::vector<gmx_file_position_t> gmx_fio_get_output_file_positions()
 std::filesystem::path gmx_fio_getname(t_fileio* fio)
 {
     std::filesystem::path ret;
-    gmx_fio_lock(fio);
     ret = fio->fn;
-    gmx_fio_unlock(fio);
 
     return ret;
 }
@@ -607,17 +529,13 @@ int gmx_fio_getftp(t_fileio* fio)
 {
     int ret;
 
-    gmx_fio_lock(fio);
     ret = fio->iFTP;
-    gmx_fio_unlock(fio);
 
     return ret;
 }
 
 void gmx_fio_rewind(t_fileio* fio)
 {
-    gmx_fio_lock(fio);
-
     if (fio->xdr)
     {
         xdr_destroy(fio->xdr);
@@ -628,7 +546,6 @@ void gmx_fio_rewind(t_fileio* fio)
     {
         frewind(fio->fp);
     }
-    gmx_fio_unlock(fio);
 }
 
 
@@ -636,14 +553,17 @@ int gmx_fio_flush(t_fileio* fio)
 {
     int ret;
 
-    gmx_fio_lock(fio);
     ret = gmx_fio_int_flush(fio);
-    gmx_fio_unlock(fio);
 
     return ret;
 }
 
 
+/* fsync the fio, returns 0 on success.
+   NOTE: don't use fsync function unless you're absolutely sure you need it
+   because it deliberately interferes with the OS's caching mechanisms and
+   can cause dramatically slowed down IO performance. Some OSes (Linux,
+   for example), may implement fsync as a full sync() point. */
 static int gmx_fio_int_fsync(t_fileio* fio)
 {
     int rc = 0;
@@ -654,19 +574,6 @@ static int gmx_fio_int_fsync(t_fileio* fio)
     }
     return rc;
 }
-
-
-int gmx_fio_fsync(t_fileio* fio)
-{
-    int rc;
-
-    gmx_fio_lock(fio);
-    rc = gmx_fio_int_fsync(fio);
-    gmx_fio_unlock(fio);
-
-    return rc;
-}
-
 
 t_fileio* gmx_fio_all_output_fsync()
 {
@@ -708,12 +615,10 @@ gmx_off_t gmx_fio_ftell(t_fileio* fio)
 {
     gmx_off_t ret = 0;
 
-    gmx_fio_lock(fio);
     if (fio->fp)
     {
         ret = gmx_ftell(fio->fp);
     }
-    gmx_fio_unlock(fio);
     return ret;
 }
 
@@ -721,7 +626,6 @@ int gmx_fio_seek(t_fileio* fio, gmx_off_t fpos)
 {
     int rc;
 
-    gmx_fio_lock(fio);
     if (fio->fp)
     {
         rc = gmx_fseek(fio->fp, fpos, SEEK_SET);
@@ -730,7 +634,6 @@ int gmx_fio_seek(t_fileio* fio, gmx_off_t fpos)
     {
         gmx_file(fio->fn.string());
     }
-    gmx_fio_unlock(fio);
     return rc;
 }
 
@@ -738,12 +641,10 @@ FILE* gmx_fio_getfp(t_fileio* fio)
 {
     FILE* ret = nullptr;
 
-    gmx_fio_lock(fio);
     if (fio->fp)
     {
         ret = fio->fp;
     }
-    gmx_fio_unlock(fio);
     return ret;
 }
 
@@ -751,9 +652,7 @@ gmx_bool gmx_fio_getread(t_fileio* fio)
 {
     gmx_bool ret;
 
-    gmx_fio_lock(fio);
     ret = fio->bRead;
-    gmx_fio_unlock(fio);
 
     return ret;
 }
@@ -762,9 +661,7 @@ int xtc_seek_time(t_fileio* fio, real time, int natoms, gmx_bool bSeekForwardOnl
 {
     int ret;
 
-    gmx_fio_lock(fio);
     ret = xdr_xtc_seek_time(time, fio->fp, fio->xdr, natoms, bSeekForwardOnly);
-    gmx_fio_unlock(fio);
 
     return ret;
 }

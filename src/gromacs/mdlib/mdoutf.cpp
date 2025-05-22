@@ -351,7 +351,11 @@ static void write_checkpoint(const char*                     fn,
         fprintf(fplog, "Writing checkpoint, step %s at %s\n\n", gmx_step_str(step, buf), timebuf.c_str());
     }
 
-    /* Get offsets for open files */
+    // Get offsets for open files
+    //
+    // Note that TNG file positions and md5 sums are not stored to the
+    // checkpoint properly (see
+    // https://gitlab.com/gromacs/gromacs/-/issues/5358)
     auto outputfiles = gmx_fio_get_output_file_positions();
 
     fp = gmx_fio_open(fntemp, "w");
@@ -420,6 +424,7 @@ static void write_checkpoint(const char*                     fn,
        and all the files it depends on, out to disk. Because we've
        opened the checkpoint with gmx_fio_open(), it's in our list
        of open files.  */
+    // Note that TNG files are flushed by the caller
     ret = gmx_fio_all_output_fsync();
 
     if (ret)
