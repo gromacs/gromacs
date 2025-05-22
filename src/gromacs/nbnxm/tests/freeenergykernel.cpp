@@ -167,12 +167,12 @@ public:
 
         // initialize correction tables
         interaction_const_t tmp;
-        tmp.ewaldcoeff_q       = calc_ewaldcoeff_q(1.0, 1.0e-5);
-        coulEwaldCoeff_        = tmp.ewaldcoeff_q;
-        tmp.ewaldcoeff_lj      = calc_ewaldcoeff_lj(1.0, 1.0e-5);
-        vdwEwaldCoeff_         = tmp.ewaldcoeff_lj;
-        tmp.eeltype            = coulType;
-        tmp.vdwtype            = vdwType;
+        tmp.coulomb.ewaldCoeff = calc_ewaldcoeff_q(1.0, 1.0e-5);
+        coulEwaldCoeff_        = tmp.coulomb.ewaldCoeff;
+        tmp.vdw.ewaldCoeff     = calc_ewaldcoeff_lj(1.0, 1.0e-5);
+        vdwEwaldCoeff_         = tmp.vdw.ewaldCoeff;
+        tmp.coulomb.type       = coulType;
+        tmp.vdw.type           = vdwType;
         tmp.coulombEwaldTables = std::make_unique<EwaldCorrectionTables>();
         tmp.vdwEwaldTables     = std::make_unique<EwaldCorrectionTables>();
 
@@ -197,20 +197,20 @@ public:
         *ic->vdwEwaldTables = vdwTables_;
 
         // set coulomb and vdw types
-        ic->eeltype      = coulType_;
-        ic->vdwtype      = vdwType_;
-        ic->vdw_modifier = vdwMod_;
+        ic->coulomb.type = coulType_;
+        ic->vdw.type     = vdwType_;
+        ic->vdw.modifier = vdwMod_;
 
         // some non default parameters used in this testcase
-        ic->epsfac                   = gmx::c_one4PiEps0 * 0.25;
-        ic->reactionFieldCoefficient = 0.0; // former k_rf
-        ic->reactionFieldShift       = 1.0; // former c_rf
-        ic->ewaldcoeff_q             = coulEwaldCoeff_;
-        ic->ewaldcoeff_lj            = vdwEwaldCoeff_;
-        ic->sh_ewald                 = 1.0e-5;
-        ic->sh_lj_ewald              = -1.0;
-        ic->dispersion_shift.cpot    = -1.0;
-        ic->repulsion_shift.cpot     = -1.0;
+        ic->coulomb.epsfac                   = gmx::c_one4PiEps0 * 0.25;
+        ic->coulomb.reactionFieldCoefficient = 0.0; // former k_rf
+        ic->coulomb.reactionFieldShift       = 1.0; // former c_rf
+        ic->coulomb.ewaldCoeff               = coulEwaldCoeff_;
+        ic->vdw.ewaldCoeff                   = vdwEwaldCoeff_;
+        ic->coulomb.ewaldShift               = 1.0e-5;
+        ic->vdw.ewaldShift                   = -1.0;
+        ic->vdw.dispersionShift.cpot         = -1.0;
+        ic->vdw.repulsionShift.cpot          = -1.0;
     }
 
 private:

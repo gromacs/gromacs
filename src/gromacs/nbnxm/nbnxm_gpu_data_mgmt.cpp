@@ -148,7 +148,7 @@ static bool useTabulatedEwaldByDefault(const DeviceInformation& deviceInfo)
 static inline ElecType nbnxn_gpu_pick_ewald_kernel_type(const interaction_const_t& ic,
                                                         const DeviceInformation&   deviceInfo)
 {
-    bool bTwinCut = (ic.rcoulomb != ic.rvdw);
+    bool bTwinCut = (ic.coulomb.cutoff != ic.vdw.cutoff);
 
     /* Benchmarking/development environment variables to force the use of
        analytical or tabulated Ewald kernel. */
@@ -199,24 +199,24 @@ static inline void set_cutoff_parameters(NBParamGpu*                nbp,
                                          const interaction_const_t& ic,
                                          const PairlistParams&      listParams)
 {
-    nbp->ewald_beta        = ic.ewaldcoeff_q;
-    nbp->sh_ewald          = ic.sh_ewald;
-    nbp->epsfac            = ic.epsfac;
-    nbp->two_k_rf          = 2.0 * ic.reactionFieldCoefficient;
-    nbp->c_rf              = ic.reactionFieldShift;
-    nbp->rvdw_sq           = ic.rvdw * ic.rvdw;
-    nbp->rcoulomb_sq       = ic.rcoulomb * ic.rcoulomb;
+    nbp->ewald_beta        = ic.coulomb.ewaldCoeff;
+    nbp->sh_ewald          = ic.coulomb.ewaldShift;
+    nbp->epsfac            = ic.coulomb.epsfac;
+    nbp->two_k_rf          = 2.0 * ic.coulomb.reactionFieldCoefficient;
+    nbp->c_rf              = ic.coulomb.reactionFieldShift;
+    nbp->rvdw_sq           = gmx::square(ic.vdw.cutoff);
+    nbp->rcoulomb_sq       = gmx::square(ic.coulomb.cutoff);
     nbp->rlistOuter_sq     = listParams.rlistOuter * listParams.rlistOuter;
     nbp->rlistInner_sq     = listParams.rlistInner * listParams.rlistInner;
     nbp->useDynamicPruning = listParams.useDynamicPruning;
 
-    nbp->sh_lj_ewald   = ic.sh_lj_ewald;
-    nbp->ewaldcoeff_lj = ic.ewaldcoeff_lj;
+    nbp->sh_lj_ewald   = ic.vdw.ewaldShift;
+    nbp->ewaldcoeff_lj = ic.vdw.ewaldCoeff;
 
-    nbp->rvdw_switch      = ic.rvdw_switch;
-    nbp->dispersion_shift = ic.dispersion_shift;
-    nbp->repulsion_shift  = ic.repulsion_shift;
-    nbp->vdw_switch       = ic.vdw_switch;
+    nbp->rvdw_switch      = ic.vdw.switchDistance;
+    nbp->dispersion_shift = ic.vdw.dispersionShift;
+    nbp->repulsion_shift  = ic.vdw.repulsionShift;
+    nbp->vdw_switch       = ic.vdw.switchConstants;
 }
 
 GpuPairlistSorting::GpuPairlistSorting() {}
@@ -297,9 +297,9 @@ static inline void initAtomdataFirst(NBAtomDataGpu*       atomdata,
 static inline VdwType nbnxmGpuPickVdwKernelType(const interaction_const_t& ic,
                                                 LJCombinationRule          ljCombinationRule)
 {
-    if (ic.vdwtype == VanDerWaalsType::Cut)
+    if (ic.vdw.type == VanDerWaalsType::Cut)
     {
-        switch (ic.vdw_modifier)
+        switch (ic.vdw.modifier)
         {
             case InteractionModifiers::None:
             case InteractionModifiers::PotShift:
@@ -320,12 +320,12 @@ static inline VdwType nbnxmGpuPickVdwKernelType(const interaction_const_t& ic,
                 GMX_THROW(InconsistentInputError(
                         formatString("The requested VdW interaction modifier %s is not "
                                      "implemented in the GPU accelerated kernels!",
-                                     enumValueToString(ic.vdw_modifier))));
+                                     enumValueToString(ic.vdw.modifier))));
         }
     }
-    else if (ic.vdwtype == VanDerWaalsType::Pme)
+    else if (ic.vdw.type == VanDerWaalsType::Pme)
     {
-        if (ic.ljpme_comb_rule == LongRangeVdW::Geom)
+        if (ic.vdw.pmeCombinationRule == LongRangeVdW::Geom)
         {
             GMX_RELEASE_ASSERT(
                     ljCombinationRule == LJCombinationRule::Geometric,
@@ -344,22 +344,22 @@ static inline VdwType nbnxmGpuPickVdwKernelType(const interaction_const_t& ic,
     {
         GMX_THROW(InconsistentInputError(formatString(
                 "The requested VdW type %s is not implemented in the GPU accelerated kernels!",
-                enumValueToString(ic.vdwtype))));
+                enumValueToString(ic.vdw.type))));
     }
 }
 
 static inline ElecType nbnxmGpuPickElectrostaticsKernelType(const interaction_const_t& ic,
                                                             const DeviceInformation&   deviceInfo)
 {
-    if (ic.eeltype == CoulombInteractionType::Cut)
+    if (ic.coulomb.type == CoulombInteractionType::Cut)
     {
         return ElecType::Cut;
     }
-    else if (usingRF(ic.eeltype))
+    else if (usingRF(ic.coulomb.type))
     {
         return ElecType::RF;
     }
-    else if ((usingPme(ic.eeltype) || ic.eeltype == CoulombInteractionType::Ewald))
+    else if ((usingPme(ic.coulomb.type) || ic.coulomb.type == CoulombInteractionType::Ewald))
     {
         return nbnxn_gpu_pick_ewald_kernel_type(ic, deviceInfo);
     }
@@ -369,7 +369,7 @@ static inline ElecType nbnxmGpuPickElectrostaticsKernelType(const interaction_co
         GMX_THROW(InconsistentInputError(
                 formatString("The requested electrostatics type %s is not implemented in "
                              "the GPU accelerated kernels!",
-                             enumValueToString(ic.eeltype))));
+                             enumValueToString(ic.coulomb.type))));
     }
 }
 
@@ -388,11 +388,11 @@ static inline void initNbparam(NBParamGpu*                     nbp,
     nbp->vdwType  = nbnxmGpuPickVdwKernelType(ic, nbatParams.ljCombinationRule);
     nbp->elecType = nbnxmGpuPickElectrostaticsKernelType(ic, deviceContext.deviceInfo());
 
-    if (ic.vdwtype == VanDerWaalsType::Pme)
+    if (ic.vdw.type == VanDerWaalsType::Pme)
     {
-        GMX_ASSERT((ic.ljpme_comb_rule == LongRangeVdW::Geom
+        GMX_ASSERT((ic.vdw.pmeCombinationRule == LongRangeVdW::Geom
                     && nbatParams.ljCombinationRule == LJCombinationRule::Geometric)
-                           || (ic.ljpme_comb_rule == LongRangeVdW::LB
+                           || (ic.vdw.pmeCombinationRule == LongRangeVdW::LB
                                && nbatParams.ljCombinationRule == LJCombinationRule::LorentzBerthelot),
                    "Combination rule mismatch!");
     }
@@ -418,7 +418,7 @@ static inline void initNbparam(NBParamGpu*                     nbp,
     }
 
     /* set up LJ-PME parameter lookup table */
-    if (ic.vdwtype == VanDerWaalsType::Pme)
+    if (ic.vdw.type == VanDerWaalsType::Pme)
     {
         static_assert(sizeof(decltype(nbp->nbfp_comb))
                               == 2 * sizeof(decltype(*nbatParams.nbfp_comb.data())),

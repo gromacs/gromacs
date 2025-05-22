@@ -117,31 +117,31 @@ void
 #endif
 
 #ifdef LJ_POT_SWITCH
-    const real swV3 = ic.vdw_switch.c3;
-    const real swV4 = ic.vdw_switch.c4;
-    const real swV5 = ic.vdw_switch.c5;
-    const real swF2 = 3 * ic.vdw_switch.c3;
-    const real swF3 = 4 * ic.vdw_switch.c4;
-    const real swF4 = 5 * ic.vdw_switch.c5;
+    const real swV3 = ic.vdw.switchConstants.c3;
+    const real swV4 = ic.vdw.switchConstants.c4;
+    const real swV5 = ic.vdw.switchConstants.c5;
+    const real swF2 = 3 * ic.vdw.switchConstants.c3;
+    const real swF3 = 4 * ic.vdw.switchConstants.c4;
+    const real swF4 = 5 * ic.vdw.switchConstants.c5;
 #endif
 
     const nbnxn_atomdata_t::Params& nbatParams = nbat.params();
 
 #ifdef LJ_EWALD
-    const real lje_coeff2   = ic.ewaldcoeff_lj * ic.ewaldcoeff_lj;
+    const real lje_coeff2   = gmx::square(ic.vdw.ewaldCoeff);
     const real lje_coeff6_6 = lje_coeff2 * lje_coeff2 * lje_coeff2 / 6.0;
 #    ifdef CALC_ENERGIES
-    const real lje_vc = ic.sh_lj_ewald;
+    const real lje_vc = ic.vdw.ewaldShift;
 #    endif
 
     const real* ljc = nbatParams.nbfp_comb.data();
 #endif
 
 #ifdef CALC_COUL_RF
-    const real k_rf2 = 2 * ic.reactionFieldCoefficient;
+    const real k_rf2 = 2 * ic.coulomb.reactionFieldCoefficient;
 #    ifdef CALC_ENERGIES
-    const real reactionFieldCoefficient = ic.reactionFieldCoefficient;
-    const real reactionFieldShift       = ic.reactionFieldShift;
+    const real reactionFieldCoefficient = ic.coulomb.reactionFieldCoefficient;
+    const real reactionFieldShift       = ic.coulomb.reactionFieldShift;
 #    endif
 #endif
 #ifdef CALC_COUL_TAB
@@ -160,16 +160,16 @@ void
 #    endif
 #endif
 
-    const real rcut2 = ic.rcoulomb * ic.rcoulomb;
+    const real rcut2 = gmx::square(ic.coulomb.cutoff);
 #ifdef VDW_CUTOFF_CHECK
-    const real rvdw2 = ic.rvdw * ic.rvdw;
+    const real rvdw2 = gmx::square(ic.vdw.cutoff);
 #endif
 
     const int   ntype2   = nbatParams.numTypes * 2;
     const real* nbfp     = nbatParams.nbfp.data();
     const real* q        = nbatParams.q.data();
     const int*  type     = nbatParams.type.data();
-    const real  facel    = ic.epsfac;
+    const real  facel    = ic.coulomb.epsfac;
     const real* shiftvec = shift_vec[0];
     const real* x        = nbat.x().data();
 

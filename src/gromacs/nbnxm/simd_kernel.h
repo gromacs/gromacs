@@ -257,7 +257,7 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu&    pairlist,
     gmx_unused SimdReal ewaldShift;
     if constexpr (coulombType != KernelCoulombType::RF && calculateEnergies)
     {
-        ewaldShift = SimdReal(ic.sh_ewald);
+        ewaldShift = SimdReal(ic.coulomb.ewaldShift);
     }
 
     /* LJ function constants, only actually needed with energies or potential switching */
@@ -267,7 +267,7 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu&    pairlist,
     static_assert(!(haveLJEwaldGeometric && vdwModifier != InteractionModifiers::PotShift),
                   "LJ-PME only supports potential-shift");
 
-    LennardJonesCalculator<calculateEnergies, vdwModifier> ljCalculator(ic);
+    LennardJonesCalculator<calculateEnergies, vdwModifier> ljCalculator(ic.vdw);
 
     std::array<SimdReal, haveLJEwaldGeometric ? 5 : 0> gmx_unused ljEwaldParams;
     real                                                          lj_ewaldcoeff6_6;
@@ -275,26 +275,26 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu&    pairlist,
     {
         ljEwaldParams[0]          = SimdReal(1.0_real);
         ljEwaldParams[1]          = SimdReal(0.5_real);
-        const real lj_ewaldcoeff2 = ic.ewaldcoeff_lj * ic.ewaldcoeff_lj;
+        const real lj_ewaldcoeff2 = gmx::square(ic.vdw.ewaldCoeff);
         lj_ewaldcoeff6_6          = lj_ewaldcoeff2 * lj_ewaldcoeff2 * lj_ewaldcoeff2 / 6;
         ljEwaldParams[2]          = SimdReal(lj_ewaldcoeff2);
         ljEwaldParams[3]          = SimdReal(lj_ewaldcoeff6_6);
         /* Determine the grid potential at the cut-off */
-        ljEwaldParams[4] = ic.sh_lj_ewald;
+        ljEwaldParams[4] = ic.vdw.ewaldShift;
     }
 
     /* The kernel either supports rcoulomb = rvdw or rcoulomb >= rvdw */
-    const SimdReal cutoffSquared(ic.rcoulomb * ic.rcoulomb);
+    const SimdReal cutoffSquared(gmx::square(ic.coulomb.cutoff));
     SimdReal       vdwCutoffSquared;
     if constexpr (haveVdwCutoffCheck)
     {
-        vdwCutoffSquared = SimdReal(ic.rvdw * ic.rvdw);
+        vdwCutoffSquared = SimdReal(gmx::square(ic.vdw.cutoff));
     }
 
     const SimdReal minDistanceSquared(c_nbnxnMinDistanceSquared);
 
     const real* gmx_restrict q        = nbatParams.q.data();
-    const real               facel    = ic.epsfac;
+    const real               facel    = ic.coulomb.epsfac;
     const real* gmx_restrict shiftvec = shift_vec[0];
     const real* gmx_restrict x        = nbat.x().data();
 

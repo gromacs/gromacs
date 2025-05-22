@@ -59,7 +59,7 @@ class StepWorkload;
 //! Reference (slow) kernel for nb n vs n GPU type pair lists
 void nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu*    nbl,
                           const nbnxn_atomdata_t*    nbat,
-                          const interaction_const_t* iconst,
+                          const interaction_const_t& iconst,
                           ArrayRef<const RVec>       shiftvec,
                           const StepWorkload&        stepWork,
                           int                        clearF,

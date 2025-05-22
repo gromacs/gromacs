@@ -3314,7 +3314,7 @@ void LegacySimulator::do_nm()
      * will be when we use a cutoff.
      * For small systems (n<1000) it is easier to always use full matrix format, though.
      */
-    if (usingFullElectrostatics(fr_->ic->eeltype) || fr_->rlist == 0.0)
+    if (usingFullElectrostatics(fr_->ic->coulomb.type) || fr_->rlist == 0.0)
     {
         GMX_LOG(mdLog_.warning)
                 .appendText("Non-cutoff electrostatics used, forcing full Hessian format.");

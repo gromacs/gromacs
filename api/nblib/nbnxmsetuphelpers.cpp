@@ -237,54 +237,56 @@ real ewaldCoeff(const real ewald_rtol, const real pairlistCutoff)
 interaction_const_t createInteractionConst(const NBKernelOptions& options)
 {
     interaction_const_t interactionConst;
-    interactionConst.vdwtype      = VanDerWaalsType::Cut;
-    interactionConst.vdw_modifier = InteractionModifiers::PotShift;
-    interactionConst.rvdw         = options.pairlistCutoff;
+    interactionConst.vdw.type     = VanDerWaalsType::Cut;
+    interactionConst.vdw.modifier = InteractionModifiers::PotShift;
+    interactionConst.vdw.cutoff   = options.pairlistCutoff;
 
     switch (options.coulombType)
     {
-        case CoulombType::Pme: interactionConst.eeltype = CoulombInteractionType::Pme; break;
-        case CoulombType::Cutoff: interactionConst.eeltype = CoulombInteractionType::Cut; break;
+        case CoulombType::Pme: interactionConst.coulomb.type = CoulombInteractionType::Pme; break;
+        case CoulombType::Cutoff:
+            interactionConst.coulomb.type = CoulombInteractionType::Cut;
+            break;
         case CoulombType::ReactionField:
-            interactionConst.eeltype = CoulombInteractionType::RF;
+            interactionConst.coulomb.type = CoulombInteractionType::RF;
             break;
         case CoulombType::Count: throw InputException("Unsupported electrostatic interaction");
     }
-    interactionConst.coulomb_modifier = InteractionModifiers::PotShift;
-    interactionConst.rcoulomb         = options.pairlistCutoff;
+    interactionConst.coulomb.modifier = InteractionModifiers::PotShift;
+    interactionConst.coulomb.cutoff   = options.pairlistCutoff;
     // Note: values correspond to ic->coulomb_modifier = eintmodPOTSHIFT
-    interactionConst.dispersion_shift.cpot = -1.0 / gmx::power6(interactionConst.rvdw);
-    interactionConst.repulsion_shift.cpot  = -1.0 / gmx::power12(interactionConst.rvdw);
+    interactionConst.vdw.dispersionShift.cpot = -1.0 / gmx::power6(interactionConst.vdw.cutoff);
+    interactionConst.vdw.repulsionShift.cpot  = -1.0 / gmx::power12(interactionConst.vdw.cutoff);
 
     // These are the initialized values but we leave them here so that later
     // these can become options.
-    interactionConst.epsilon_r                = 1.0;
-    interactionConst.reactionFieldPermitivity = 1.0;
+    interactionConst.coulomb.epsilon_r   = 1.0;
+    const real reactionFieldPermittivity = 1.0;
 
     /* Set the Coulomb energy conversion factor */
-    if (interactionConst.epsilon_r != 0)
+    if (interactionConst.coulomb.epsilon_r != 0)
     {
-        interactionConst.epsfac = ONE_4PI_EPS0 / interactionConst.epsilon_r;
+        interactionConst.coulomb.epsfac = ONE_4PI_EPS0 / interactionConst.coulomb.epsilon_r;
     }
     else
     {
         /* eps = 0 is infinite dieletric: no Coulomb interactions */
-        interactionConst.epsfac = 0;
+        interactionConst.coulomb.epsfac = 0;
     }
 
     calc_rffac(nullptr,
-               interactionConst.epsilon_r,
-               interactionConst.reactionFieldPermitivity,
-               interactionConst.rcoulomb,
-               &interactionConst.reactionFieldCoefficient,
-               &interactionConst.reactionFieldShift);
+               interactionConst.coulomb.epsilon_r,
+               reactionFieldPermittivity,
+               interactionConst.coulomb.cutoff,
+               &interactionConst.coulomb.reactionFieldCoefficient,
+               &interactionConst.coulomb.reactionFieldShift);
 
 
-    if (usingPmeOrEwald(interactionConst.eeltype))
+    if (usingPmeOrEwald(interactionConst.coulomb.type))
     {
         // Ewald coefficients, we ignore the potential shift
-        interactionConst.ewaldcoeff_q = ewaldCoeff(1e-5, options.pairlistCutoff);
-        if (interactionConst.ewaldcoeff_q <= 0)
+        interactionConst.coulomb.ewaldCoeff = ewaldCoeff(1e-5, options.pairlistCutoff);
+        if (interactionConst.coulomb.ewaldCoeff <= 0)
         {
             throw InputException("Ewald coefficient should be > 0");
         }

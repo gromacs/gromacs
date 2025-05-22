@@ -188,9 +188,9 @@ public:
 
         // set data in fr
         real tableRange = 2.9;
-        fr_.pairsTable = make_tables(nullptr, fr_.ic.get(), nullptr, tableRange, GMX_MAKETABLES_14ONLY);
-        fr_.efep             = haveFep_;
-        fr_.fudgeQQ          = 0.5;
+        fr_.pairsTable  = make_tables(nullptr, *fr_.ic, nullptr, tableRange, GMX_MAKETABLES_14ONLY);
+        fr_.efep        = haveFep_;
+        fr_.fudgeQQ     = 0.5;
         fr_.use_simd_kernels = useSimd_;
         fr_.bMolPBC          = haveMolPBC_;
     }

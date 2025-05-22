@@ -189,7 +189,7 @@ double v_lj_ewald_lr(double beta, double r);
  * \return Pointer to inner loop table structure
  */
 std::unique_ptr<t_forcetable>
-make_tables(FILE* fp, const interaction_const_t* ic, const char* fn, real rtab, int flags);
+make_tables(FILE* fp, const interaction_const_t& ic, const char* fn, real rtab, int flags);
 
 /*! \brief Return a table for bonded interactions,
  *
@@ -206,6 +206,6 @@ bondedtable_t make_bonded_table(FILE* fplog, const char* fn, int angle);
  * Returns pointer owning nothing when tabfn=nullptr.
  */
 std::unique_ptr<t_forcetable>
-makeDispersionCorrectionTable(FILE* fp, const interaction_const_t* ic, real rtab, const char* tabfn);
+makeDispersionCorrectionTable(FILE* fp, const interaction_const_t& ic, real rtab, const char* tabfn);
 
 #endif /* GMX_TABLES_FORCETABLE_H */

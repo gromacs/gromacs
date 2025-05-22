@@ -328,25 +328,25 @@ real ewald_spline3_table_scale(const interaction_const_t& ic,
                                const bool                 generateCoulombTables,
                                const bool                 generateVdwTables)
 {
-    GMX_RELEASE_ASSERT(!generateCoulombTables || usingPmeOrEwald(ic.eeltype),
+    GMX_RELEASE_ASSERT(!generateCoulombTables || usingPmeOrEwald(ic.coulomb.type),
                        "Can only use tables with Ewald");
-    GMX_RELEASE_ASSERT(!generateVdwTables || usingLJPme(ic.vdwtype),
+    GMX_RELEASE_ASSERT(!generateVdwTables || usingLJPme(ic.vdw.type),
                        "Can only use tables with Ewald");
 
     real sc = 0;
 
     if (generateCoulombTables)
     {
-        GMX_RELEASE_ASSERT(ic.ewaldcoeff_q > 0, "The Ewald coefficient should be positive");
+        GMX_RELEASE_ASSERT(ic.coulomb.ewaldCoeff > 0, "The Ewald coefficient should be positive");
 
         double erf_x_d3 = 1.0522; /* max of (erf(x)/x)''' */
         double etol;
         real   sc_q;
 
         /* Energy tolerance: 0.1 times the cut-off jump */
-        etol = 0.1 * std::erfc(ic.ewaldcoeff_q * ic.rcoulomb);
+        etol = 0.1 * std::erfc(ic.coulomb.ewaldCoeff * ic.coulomb.cutoff);
 
-        sc_q = spline3_table_scale(erf_x_d3, ic.ewaldcoeff_q, etol);
+        sc_q = spline3_table_scale(erf_x_d3, ic.coulomb.ewaldCoeff, etol);
 
         if (debug)
         {
@@ -358,17 +358,17 @@ real ewald_spline3_table_scale(const interaction_const_t& ic,
 
     if (generateVdwTables)
     {
-        GMX_RELEASE_ASSERT(ic.ewaldcoeff_lj > 0, "The Ewald coefficient should be positive");
+        GMX_RELEASE_ASSERT(ic.vdw.ewaldCoeff > 0, "The Ewald coefficient should be positive");
 
         double func_d3 = 0.42888; /* max of (x^-6 (1 - exp(-x^2)(1+x^2+x^4/2)))''' */
         double xrc2, etol;
         real   sc_lj;
 
         /* Energy tolerance: 0.1 times the cut-off jump */
-        xrc2 = gmx::square(ic.ewaldcoeff_lj * ic.rvdw);
+        xrc2 = gmx::square(ic.vdw.ewaldCoeff * ic.vdw.cutoff);
         etol = 0.1 * std::exp(-xrc2) * (1 + xrc2 + xrc2 * xrc2 / 2.0);
 
-        sc_lj = spline3_table_scale(func_d3, ic.ewaldcoeff_lj, etol);
+        sc_lj = spline3_table_scale(func_d3, ic.vdw.ewaldCoeff, etol);
 
         if (debug)
         {
@@ -751,7 +751,7 @@ static std::vector<t_tabledata> read_tables(FILE* fp, const char* filename, int 
     return td;
 }
 
-static void fill_table(t_tabledata* td, int tp, const interaction_const_t* ic, gmx_bool b14only)
+static void fill_table(t_tabledata* td, int tp, const interaction_const_t& ic, gmx_bool b14only)
 {
     /* Fill the table according to the formulas in the manual.
      * In principle, we only need the potential and the second
@@ -774,8 +774,8 @@ static void fill_table(t_tabledata* td, int tp, const interaction_const_t* ic, g
     double ksw, swi, swi1;
     /* Temporary parameters */
     gmx_bool bPotentialSwitch, bForceSwitch, bPotentialShift;
-    double   ewc   = ic->ewaldcoeff_q;
-    double   ewclj = ic->ewaldcoeff_lj;
+    double   ewc   = ic.coulomb.ewaldCoeff;
+    double   ewclj = ic.vdw.ewaldCoeff;
     double   Vcut  = 0;
 
     if (b14only)
@@ -789,28 +789,28 @@ static void fill_table(t_tabledata* td, int tp, const interaction_const_t* ic, g
         bPotentialSwitch =
                 ((tp == etabLJ6Switch) || (tp == etabLJ12Switch) || (tp == etabCOULSwitch)
                  || (tp == etabEwaldSwitch) || (tp == etabEwaldUserSwitch)
-                 || (tprops[tp].bCoulomb && (ic->coulomb_modifier == InteractionModifiers::PotSwitch))
-                 || (!tprops[tp].bCoulomb && (ic->vdw_modifier == InteractionModifiers::PotSwitch)));
+                 || (tprops[tp].bCoulomb && (ic.coulomb.modifier == InteractionModifiers::PotSwitch))
+                 || (!tprops[tp].bCoulomb && (ic.vdw.modifier == InteractionModifiers::PotSwitch)));
         bForceSwitch =
                 ((tp == etabLJ6Shift) || (tp == etabLJ12Shift) || (tp == etabShift)
-                 || (tprops[tp].bCoulomb && (ic->coulomb_modifier == InteractionModifiers::ForceSwitch))
-                 || (!tprops[tp].bCoulomb && (ic->vdw_modifier == InteractionModifiers::ForceSwitch)));
+                 || (tprops[tp].bCoulomb && (ic.coulomb.modifier == InteractionModifiers::ForceSwitch))
+                 || (!tprops[tp].bCoulomb && (ic.vdw.modifier == InteractionModifiers::ForceSwitch)));
         bPotentialShift =
-                ((tprops[tp].bCoulomb && (ic->coulomb_modifier == InteractionModifiers::PotShift))
-                 || (!tprops[tp].bCoulomb && (ic->vdw_modifier == InteractionModifiers::PotShift)));
+                ((tprops[tp].bCoulomb && (ic.coulomb.modifier == InteractionModifiers::PotShift))
+                 || (!tprops[tp].bCoulomb && (ic.vdw.modifier == InteractionModifiers::PotShift)));
     }
 
-    reppow = ic->reppow;
+    reppow = ic.vdw.repulsionPower;
 
     if (tprops[tp].bCoulomb)
     {
-        r1 = ic->rcoulomb_switch;
-        rc = ic->rcoulomb;
+        r1 = ic.coulomb.switchDistance;
+        rc = ic.coulomb.cutoff;
     }
     else
     {
-        r1 = ic->rvdw_switch;
-        rc = ic->rvdw;
+        r1 = ic.vdw.switchDistance;
+        rc = ic.vdw.cutoff;
     }
     if (bPotentialSwitch)
     {
@@ -1017,8 +1017,8 @@ static void fill_table(t_tabledata* td, int tp, const interaction_const_t* ic, g
                 break;
             case etabRF:
             case etabRF_ZERO:
-                Vtab = 1.0 / r + ic->reactionFieldCoefficient * r2 - ic->reactionFieldShift;
-                Ftab = 1.0 / r2 - 2 * ic->reactionFieldCoefficient * r;
+                Vtab = 1.0 / r + ic.coulomb.reactionFieldCoefficient * r2 - ic.coulomb.reactionFieldShift;
+                Ftab = 1.0 / r2 - 2 * ic.coulomb.reactionFieldCoefficient * r;
                 if (tp == etabRF_ZERO && r >= rc)
                 {
                     Vtab = 0;
@@ -1104,7 +1104,7 @@ static void fill_table(t_tabledata* td, int tp, const interaction_const_t* ic, g
     }
 }
 
-static void set_table_type(int tabsel[], const interaction_const_t* ic, gmx_bool b14only)
+static void set_table_type(int tabsel[], const interaction_const_t& ic, gmx_bool b14only)
 {
     /* Set the different table indices.
      * Coulomb first.
@@ -1115,7 +1115,7 @@ static void set_table_type(int tabsel[], const interaction_const_t* ic, gmx_bool
 
     if (b14only)
     {
-        switch (ic->eeltype)
+        switch (ic.coulomb.type)
         {
             case CoulombInteractionType::User:
             case CoulombInteractionType::PmeUser:
@@ -1127,7 +1127,7 @@ static void set_table_type(int tabsel[], const interaction_const_t* ic, gmx_bool
     }
     else
     {
-        eltype = ic->eeltype;
+        eltype = ic.coulomb.type;
     }
 
     switch (eltype)
@@ -1135,7 +1135,7 @@ static void set_table_type(int tabsel[], const interaction_const_t* ic, gmx_bool
         case CoulombInteractionType::Cut: tabsel[etiCOUL] = etabCOUL; break;
         case CoulombInteractionType::Poisson: tabsel[etiCOUL] = etabShift; break;
         case CoulombInteractionType::Shift:
-            if (ic->rcoulomb > ic->rcoulomb_switch)
+            if (ic.coulomb.cutoff > ic.coulomb.switchDistance)
             {
                 tabsel[etiCOUL] = etabShift;
             }
@@ -1157,87 +1157,78 @@ static void set_table_type(int tabsel[], const interaction_const_t* ic, gmx_bool
         default: gmx_fatal(FARGS, "Invalid eeltype %s", enumValueToString(eltype));
     }
 
-    /* Van der Waals time */
-    if (ic->useBuckingham && !b14only)
+    if (b14only && ic.vdw.type != VanDerWaalsType::User)
     {
-        tabsel[etiLJ6]  = etabLJ6;
-        tabsel[etiLJ12] = etabEXPMIN;
+        vdwtype = VanDerWaalsType::Cut;
     }
     else
     {
-        if (b14only && ic->vdwtype != VanDerWaalsType::User)
+        vdwtype = ic.vdw.type;
+    }
+
+    switch (vdwtype)
+    {
+        case VanDerWaalsType::Switch:
+            tabsel[etiLJ6]  = etabLJ6Switch;
+            tabsel[etiLJ12] = etabLJ12Switch;
+            break;
+        case VanDerWaalsType::Shift:
+            tabsel[etiLJ6]  = etabLJ6Shift;
+            tabsel[etiLJ12] = etabLJ12Shift;
+            break;
+        case VanDerWaalsType::User:
+            tabsel[etiLJ6]  = etabUSER;
+            tabsel[etiLJ12] = etabUSER;
+            break;
+        case VanDerWaalsType::Cut:
+            tabsel[etiLJ6]  = etabLJ6;
+            tabsel[etiLJ12] = etabLJ12;
+            break;
+        case VanDerWaalsType::Pme:
+            tabsel[etiLJ6]  = etabLJ6Ewald;
+            tabsel[etiLJ12] = etabLJ12;
+            break;
+        default:
+            gmx_fatal(FARGS, "Invalid vdwtype %s in %s line %d", enumValueToString(vdwtype), __FILE__, __LINE__);
+    }
+
+    if (!b14only && ic.vdw.modifier != InteractionModifiers::None)
+    {
+        if (ic.vdw.modifier != InteractionModifiers::PotShift && ic.vdw.type != VanDerWaalsType::Cut)
         {
-            vdwtype = VanDerWaalsType::Cut;
-        }
-        else
-        {
-            vdwtype = ic->vdwtype;
+            gmx_incons(
+                    "Potential modifiers other than potential-shift are only implemented for "
+                    "LJ cut-off");
         }
 
-        switch (vdwtype)
+        /* LJ-PME and other (shift-only) modifiers are handled by applying the modifiers
+         * to the original interaction forms when we fill the table, so we only check cutoffs here.
+         */
+        if (ic.vdw.type == VanDerWaalsType::Cut)
         {
-            case VanDerWaalsType::Switch:
-                tabsel[etiLJ6]  = etabLJ6Switch;
-                tabsel[etiLJ12] = etabLJ12Switch;
-                break;
-            case VanDerWaalsType::Shift:
-                tabsel[etiLJ6]  = etabLJ6Shift;
-                tabsel[etiLJ12] = etabLJ12Shift;
-                break;
-            case VanDerWaalsType::User:
-                tabsel[etiLJ6]  = etabUSER;
-                tabsel[etiLJ12] = etabUSER;
-                break;
-            case VanDerWaalsType::Cut:
-                tabsel[etiLJ6]  = etabLJ6;
-                tabsel[etiLJ12] = etabLJ12;
-                break;
-            case VanDerWaalsType::Pme:
-                tabsel[etiLJ6]  = etabLJ6Ewald;
-                tabsel[etiLJ12] = etabLJ12;
-                break;
-            default:
-                gmx_fatal(FARGS, "Invalid vdwtype %s in %s line %d", enumValueToString(vdwtype), __FILE__, __LINE__);
-        }
-
-        if (!b14only && ic->vdw_modifier != InteractionModifiers::None)
-        {
-            if (ic->vdw_modifier != InteractionModifiers::PotShift && ic->vdwtype != VanDerWaalsType::Cut)
+            switch (ic.vdw.modifier)
             {
-                gmx_incons(
-                        "Potential modifiers other than potential-shift are only implemented for "
-                        "LJ cut-off");
-            }
-
-            /* LJ-PME and other (shift-only) modifiers are handled by applying the modifiers
-             * to the original interaction forms when we fill the table, so we only check cutoffs here.
-             */
-            if (ic->vdwtype == VanDerWaalsType::Cut)
-            {
-                switch (ic->vdw_modifier)
-                {
-                    case InteractionModifiers::None:
-                    case InteractionModifiers::PotShift:
-                    case InteractionModifiers::ExactCutoff:
-                        /* No modification */
-                        break;
-                    case InteractionModifiers::PotSwitch:
-                        tabsel[etiLJ6]  = etabLJ6Switch;
-                        tabsel[etiLJ12] = etabLJ12Switch;
-                        break;
-                    case InteractionModifiers::ForceSwitch:
-                        tabsel[etiLJ6]  = etabLJ6Shift;
-                        tabsel[etiLJ12] = etabLJ12Shift;
-                        break;
-                    default: gmx_incons("Unsupported vdw_modifier");
-                }
+                case InteractionModifiers::None:
+                case InteractionModifiers::PotShift:
+                case InteractionModifiers::ExactCutoff:
+                    /* No modification */
+                    break;
+                case InteractionModifiers::PotSwitch:
+                    tabsel[etiLJ6]  = etabLJ6Switch;
+                    tabsel[etiLJ12] = etabLJ12Switch;
+                    break;
+                case InteractionModifiers::ForceSwitch:
+                    tabsel[etiLJ6]  = etabLJ6Shift;
+                    tabsel[etiLJ12] = etabLJ12Shift;
+                    break;
+                default: gmx_incons("Unsupported vdw_modifier");
             }
         }
     }
 }
 
 std::unique_ptr<t_forcetable>
-make_tables(FILE* fp, const interaction_const_t* ic, const char* fn, real rtab, int flags)
+make_tables(FILE* fp, const interaction_const_t& ic, const char* fn, real rtab, int flags)
 {
     gmx_bool b14only, useUserTable;
     int      nx0, tabsel[etiNR];
@@ -1324,11 +1315,7 @@ make_tables(FILE* fp, const interaction_const_t* ic, const char* fn, real rtab, 
         if (tabsel[k] != etabUSER)
         {
             real scale = table->scale;
-            if (ic->useBuckingham && (ic->buckinghamBMax != 0) && tabsel[k] == etabEXPMIN)
-            {
-                scale /= ic->buckinghamBMax;
-            }
-            td[k] = t_tabledata(table->numTablePoints, nx0, scale, !useUserTable);
+            td[k]      = t_tabledata(table->numTablePoints, nx0, scale, !useUserTable);
 
             fill_table(&(td[k]), tabsel[k], ic, b14only);
             if (fp)
@@ -1401,9 +1388,9 @@ bondedtable_t make_bonded_table(FILE* fplog, const char* fn, int angle)
 }
 
 std::unique_ptr<t_forcetable>
-makeDispersionCorrectionTable(FILE* fp, const interaction_const_t* ic, real rtab, const char* tabfn)
+makeDispersionCorrectionTable(FILE* fp, const interaction_const_t& ic, real rtab, const char* tabfn)
 {
-    GMX_RELEASE_ASSERT(ic->vdwtype != VanDerWaalsType::User || tabfn,
+    GMX_RELEASE_ASSERT(ic.vdw.type != VanDerWaalsType::User || tabfn,
                        "With VdW user tables we need a table file name");
 
     std::unique_ptr<t_forcetable> fullTable = make_tables(fp, ic, tabfn, rtab, 0);

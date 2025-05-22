@@ -538,10 +538,10 @@ static void setDynamicPairlistPruningParameters(const t_inputrec&          input
     /* We compute rlistInner and increase nstlist as long as we have
      * a pairlist buffer of length 0 (i.e. rlistInner == cutoff).
      */
-    const real interactionCutoff = std::max(interactionConst.rcoulomb, interactionConst.rvdw);
-    int        nstlistPrune;
-    real       rlistInner;
-    int        tunedNstlistPrune = listParams->nstlistPrune;
+    const real interactionCutoff = std::max(interactionConst.coulomb.cutoff, interactionConst.vdw.cutoff);
+    int  nstlistPrune;
+    real rlistInner;
+    int  tunedNstlistPrune = listParams->nstlistPrune;
     do
     {
         /* Dynamic pruning on the GPU is performed on the list for
@@ -713,7 +713,7 @@ void setupDynamicPairlistPruning(const MDLogger&            mdlog,
 
     std::string mesg;
 
-    const real interactionCutoff = std::max(interactionConst.rcoulomb, interactionConst.rvdw);
+    const real interactionCutoff = std::max(interactionConst.coulomb.cutoff, interactionConst.vdw.cutoff);
     if (listParams->useDynamicPruning)
     {
         /* Even though we are treating the GPU clusters internally such that i and j cluster sizes are equal,

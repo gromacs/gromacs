@@ -211,17 +211,20 @@ static void nbnxn_kernel_cpu(const PairlistSet&             pairlistSet,
 {
     const nbnxn_atomdata_t::Params& nbatParams = nbat->params();
 
-    GMX_ASSERT(ic.vdwtype != VanDerWaalsType::Pme
-                       || ((ic.ljpme_comb_rule == LongRangeVdW::Geom
+    GMX_ASSERT(ic.vdw.type != VanDerWaalsType::Pme
+                       || ((ic.vdw.pmeCombinationRule == LongRangeVdW::Geom
                             && nbatParams.ljCombinationRule == LJCombinationRule::Geometric)
-                           || (ic.ljpme_comb_rule == LongRangeVdW::LB
+                           || (ic.vdw.pmeCombinationRule == LongRangeVdW::LB
                                && nbatParams.ljCombinationRule == LJCombinationRule::LorentzBerthelot)),
                "nbat combination rule parameters should match those for LJ-PME");
 
     const int coulkt = static_cast<int>(getCoulombKernelType(
-            kernelSetup.ewaldExclusionType, ic.eeltype, (ic.rcoulomb == ic.rvdw)));
-    const int vdwkt  = getVdwKernelType(
-            kernelSetup.kernelType, nbatParams.ljCombinationRule, ic.vdwtype, ic.vdw_modifier, ic.ljpme_comb_rule);
+            kernelSetup.ewaldExclusionType, ic.coulomb.type, (ic.coulomb.cutoff == ic.vdw.cutoff)));
+    const int vdwkt  = getVdwKernelType(kernelSetup.kernelType,
+                                       nbatParams.ljCombinationRule,
+                                       ic.vdw.type,
+                                       ic.vdw.modifier,
+                                       ic.vdw.pmeCombinationRule);
 
     const bool usingSimdKernel = kernelTypeIsSimd(kernelSetup.kernelType);
 
@@ -381,7 +384,7 @@ static void accountFlops(t_nrnb*                    nrnb,
     const bool usingGpuKernels = nbv.useGpu();
 
     int enr_nbnxn_kernel_ljc = eNRNB;
-    if (usingRF(ic.eeltype) || ic.eeltype == CoulombInteractionType::Cut)
+    if (usingRF(ic.coulomb.type) || ic.coulomb.type == CoulombInteractionType::Cut)
     {
         enr_nbnxn_kernel_ljc = eNR_NBNXN_LJ_RF;
     }
@@ -407,21 +410,21 @@ static void accountFlops(t_nrnb*                    nrnb,
     /* The Coulomb-only kernels are offset -eNR_NBNXN_LJ_RF+eNR_NBNXN_RF */
     inc_nrnb(nrnb, enr_nbnxn_kernel_ljc - eNR_NBNXN_LJ_RF + eNR_NBNXN_RF, pairlistSet.natpair_q_);
 
-    if (ic.vdw_modifier == InteractionModifiers::ForceSwitch)
+    if (ic.vdw.modifier == InteractionModifiers::ForceSwitch)
     {
         /* We add up the switch cost separately */
         inc_nrnb(nrnb,
                  eNR_NBNXN_ADD_LJ_FSW + (stepWork.computeEnergy ? 1 : 0),
                  pairlistSet.natpair_ljq_ + pairlistSet.natpair_lj_);
     }
-    if (ic.vdw_modifier == InteractionModifiers::PotSwitch)
+    if (ic.vdw.modifier == InteractionModifiers::PotSwitch)
     {
         /* We add up the switch cost separately */
         inc_nrnb(nrnb,
                  eNR_NBNXN_ADD_LJ_PSW + (stepWork.computeEnergy ? 1 : 0),
                  pairlistSet.natpair_ljq_ + pairlistSet.natpair_lj_);
     }
-    if (ic.vdwtype == VanDerWaalsType::Pme)
+    if (ic.vdw.type == VanDerWaalsType::Pme)
     {
         /* We add up the LJ Ewald cost separately */
         inc_nrnb(nrnb,
@@ -464,7 +467,7 @@ void nonbonded_verlet_t::dispatchNonbondedKernel(gmx::InteractionLocality       
         case NbnxmKernelType::Cpu8x8x8_PlainC:
             nbnxn_kernel_gpu_ref(pairlistSet.gpuList(),
                                  nbat_.get(),
-                                 &ic,
+                                 ic,
                                  shiftvec,
                                  stepWork,
                                  clearF,

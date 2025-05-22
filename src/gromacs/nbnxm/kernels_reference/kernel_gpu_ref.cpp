@@ -63,7 +63,7 @@ static constexpr int c_clSize = sc_gpuClusterSize(refPairlistLayoutType);
 
 void nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu*    nbl,
                           const nbnxn_atomdata_t*    nbat,
-                          const interaction_const_t* iconst,
+                          const interaction_const_t& iconst,
                           ArrayRef<const RVec>       shiftvec,
                           const StepWorkload&        stepWork,
                           int                        clearF,
@@ -94,15 +94,15 @@ void nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu*    nbl,
         }
     }
 
-    const bool bEwald = usingFullElectrostatics(iconst->eeltype);
+    const bool bEwald = usingFullElectrostatics(iconst.coulomb.type);
 
-    const real rcut2 = iconst->rcoulomb * iconst->rcoulomb;
-    const real rvdw2 = iconst->rvdw * iconst->rvdw;
+    const real rcut2 = gmx::square(iconst.coulomb.cutoff);
+    const real rvdw2 = gmx::square(iconst.vdw.cutoff);
 
     const real rlist2 = nbl->rlist * nbl->rlist;
 
     const int*  type     = nbat->params().type.data();
-    const real  facel    = iconst->epsfac;
+    const real  facel    = iconst.coulomb.epsfac;
     const real* vdwparam = nbat->params().nbfp.data();
     const int   ntype    = nbat->params().numTypes;
 
@@ -144,12 +144,12 @@ void nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu*    nbl,
             }
             if (!bEwald)
             {
-                vctot *= -facel * 0.5 * iconst->reactionFieldShift;
+                vctot *= -facel * 0.5 * iconst.coulomb.reactionFieldShift;
             }
             else
             {
                 /* last factor 1/sqrt(pi) */
-                vctot *= -facel * iconst->ewaldcoeff_q * M_1_SQRTPI;
+                vctot *= -facel * iconst.coulomb.ewaldCoeff * M_1_SQRTPI;
             }
         }
 
@@ -242,20 +242,20 @@ void nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu*    nbl,
                                 if (!bEwald)
                                 {
                                     /* Reaction-field */
-                                    const real krsq = iconst->reactionFieldCoefficient * rsq;
+                                    const real krsq = iconst.coulomb.reactionFieldCoefficient * rsq;
                                     fscal           = qq * (int_bit * rinv - 2 * krsq) * rinvsq;
                                     if (stepWork.computeEnergy)
                                     {
-                                        vcoul = qq * (int_bit * rinv + krsq - iconst->reactionFieldShift);
+                                        vcoul = qq * (int_bit * rinv + krsq - iconst.coulomb.reactionFieldShift);
                                     }
                                 }
                                 else
                                 {
                                     const real  r    = rsq * rinv;
-                                    const real  rt   = r * iconst->coulombEwaldTables->scale;
+                                    const real  rt   = r * iconst.coulombEwaldTables->scale;
                                     const int   n0   = static_cast<int>(rt);
                                     const real  eps  = rt - static_cast<real>(n0);
-                                    const real* Ftab = iconst->coulombEwaldTables->tableF.data();
+                                    const real* Ftab = iconst.coulombEwaldTables->tableF.data();
 
                                     const real fexcl = (1 - eps) * Ftab[n0] + eps * Ftab[n0 + 1];
 
@@ -264,8 +264,8 @@ void nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu*    nbl,
                                     if (stepWork.computeEnergy)
                                     {
                                         vcoul = qq
-                                                * ((int_bit - std::erf(iconst->ewaldcoeff_q * r)) * rinv
-                                                   - int_bit * iconst->sh_ewald);
+                                                * ((int_bit - std::erf(iconst.coulomb.ewaldCoeff * r)) * rinv
+                                                   - int_bit * iconst.coulomb.ewaldShift);
                                     }
                                 }
 
@@ -286,11 +286,12 @@ void nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu*    nbl,
                                     {
                                         vctot += vcoul;
 
-                                        Vvdwtot +=
-                                                (Vvdw_rep + int_bit * c12 * iconst->repulsion_shift.cpot) / 12
-                                                - (Vvdw_disp
-                                                   + int_bit * c6 * iconst->dispersion_shift.cpot)
-                                                          / 6;
+                                        Vvdwtot += (Vvdw_rep
+                                                    + int_bit * c12 * iconst.vdw.repulsionShift.cpot)
+                                                           / 12
+                                                   - (Vvdw_disp
+                                                      + int_bit * c6 * iconst.vdw.dispersionShift.cpot)
+                                                             / 6;
                                     }
                                 }
 

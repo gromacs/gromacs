@@ -405,15 +405,15 @@ static int getMinimumIlistCountForGpuBalancing(NbnxmGpu* nbnxmGpu)
 //! Returns the LJ combination rule choices for the LJ pair parameters
 static std::optional<LJCombinationRule> chooseLJCombinationRule(const t_forcerec& forcerec)
 {
-    if (forcerec.ic->vdwtype == VanDerWaalsType::Cut
-        && (forcerec.ic->vdw_modifier == InteractionModifiers::None
-            || forcerec.ic->vdw_modifier == InteractionModifiers::PotShift)
+    if (forcerec.ic->vdw.type == VanDerWaalsType::Cut
+        && (forcerec.ic->vdw.modifier == InteractionModifiers::None
+            || forcerec.ic->vdw.modifier == InteractionModifiers::PotShift)
         && std::getenv("GMX_NO_LJ_COMB_RULE") == nullptr)
     {
         /* Plain LJ cut-off: we can optimize with combination rules */
         return std::nullopt;
     }
-    else if (forcerec.ic->vdwtype == VanDerWaalsType::Pme)
+    else if (forcerec.ic->vdw.type == VanDerWaalsType::Pme)
     { // NOLINT bugprone-branch-clone
         /* With LJ-PME the NBNxM module does not support combination rules for the pair parameters */
         return LJCombinationRule::None;
@@ -428,7 +428,7 @@ static std::optional<LJCombinationRule> chooseLJCombinationRule(const t_forcerec
 //! Returns the LJ combination rule choices for the LJ PME-grid parameters
 static LJCombinationRule chooseLJPmeCombinationRule(const t_forcerec& forcerec)
 {
-    if (forcerec.ic->vdwtype == VanDerWaalsType::Pme)
+    if (forcerec.ic->vdw.type == VanDerWaalsType::Pme)
     {
         /* LJ-PME: we need to use a combination rule for the grid and none for the pairs */
         switch (forcerec.ljpme_combination_rule)
@@ -527,7 +527,7 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
             mimimumNumEnergyGroupNonbonded,
             (useGpuForNonbonded || emulateGpu) ? 1 : gmx_omp_nthreads_get(ModuleMultiThread::Nonbonded));
 
-    if (forcerec.ic->vdwtype == VanDerWaalsType::Pme)
+    if (forcerec.ic->vdw.type == VanDerWaalsType::Pme)
     {
         GMX_RELEASE_ASSERT(
                 (forcerec.ljpme_combination_rule == LongRangeVdW::Geom

@@ -605,8 +605,8 @@ static void init_ewald_f_table(const interaction_const_t& ic,
                                EwaldCorrectionTables*     coulombTables,
                                EwaldCorrectionTables*     vdwTables)
 {
-    const bool useCoulombTable = (usingPmeOrEwald(ic.eeltype) && coulombTables != nullptr);
-    const bool useVdwTable     = (usingLJPme(ic.vdwtype) && vdwTables != nullptr);
+    const bool useCoulombTable = (usingPmeOrEwald(ic.coulomb.type) && coulombTables != nullptr);
+    const bool useVdwTable     = (usingLJPme(ic.vdw.type) && vdwTables != nullptr);
 
     /* Get the Ewald table spacing based on Coulomb and/or LJ
      * Ewald coefficients and rtol.
@@ -615,7 +615,7 @@ static void init_ewald_f_table(const interaction_const_t& ic,
 
     const bool havePerturbedNonbondeds = (ic.softCoreParameters != nullptr);
 
-    real tableLen = ic.rcoulomb;
+    real tableLen = ic.coulomb.cutoff;
     if ((useCoulombTable || useVdwTable) && havePerturbedNonbondeds && rlist + tabext > 0.0)
     {
         /* TODO: Ideally this should also check if couple-intramol == no, but that isn't
@@ -630,25 +630,25 @@ static void init_ewald_f_table(const interaction_const_t& ic,
 
     if (useCoulombTable)
     {
-        *coulombTables =
-                generateEwaldCorrectionTables(tableSize, tableScale, ic.ewaldcoeff_q, v_q_ewald_lr);
+        *coulombTables = generateEwaldCorrectionTables(
+                tableSize, tableScale, ic.coulomb.ewaldCoeff, v_q_ewald_lr);
     }
 
     if (useVdwTable)
     {
-        *vdwTables = generateEwaldCorrectionTables(tableSize, tableScale, ic.ewaldcoeff_lj, v_lj_ewald_lr);
+        *vdwTables = generateEwaldCorrectionTables(tableSize, tableScale, ic.vdw.ewaldCoeff, v_lj_ewald_lr);
     }
 }
 
 void init_interaction_const_tables(FILE* fp, interaction_const_t* ic, const real rlist, const real tableExtensionLength)
 {
-    if (usingPmeOrEwald(ic->eeltype) || usingLJPme(ic->vdwtype))
+    if (usingPmeOrEwald(ic->coulomb.type) || usingLJPme(ic->vdw.type))
     {
         init_ewald_f_table(
                 *ic, rlist, tableExtensionLength, ic->coulombEwaldTables.get(), ic->vdwEwaldTables.get());
         if (fp != nullptr)
         {
-            if (usingPmeOrEwald(ic->eeltype))
+            if (usingPmeOrEwald(ic->coulomb.type))
             {
                 fprintf(fp,
                         "Initialized non-bonded Coulomb Ewald tables, spacing: %.2e size: %zu\n\n",
@@ -813,7 +813,7 @@ void init_forcerec(FILE*                            fplog,
     const interaction_const_t* interactionConst = forcerec->ic.get();
 
     /* Electrostatics: Translate from interaction-setting-in-mdp-file to kernel interaction format */
-    switch (interactionConst->eeltype)
+    switch (interactionConst->coulomb.type)
     {
         case CoulombInteractionType::Cut:
             forcerec->nbkernel_elec_interaction = NbkernelElecType::Coulomb;
@@ -846,12 +846,12 @@ void init_forcerec(FILE*                            fplog,
         default:
             gmx_fatal(FARGS,
                       "Unsupported electrostatic interaction: %s",
-                      enumValueToString(interactionConst->eeltype));
+                      enumValueToString(interactionConst->coulomb.type));
     }
-    forcerec->nbkernel_elec_modifier = interactionConst->coulomb_modifier;
+    forcerec->nbkernel_elec_modifier = interactionConst->coulomb.modifier;
 
     /* Vdw: Translate from mdp settings to kernel format */
-    switch (interactionConst->vdwtype)
+    switch (interactionConst->vdw.type)
     {
         case VanDerWaalsType::Cut:
             if (forcerec->haveBuckingham)
@@ -874,18 +874,20 @@ void init_forcerec(FILE*                            fplog,
             break;
 
         default:
-            gmx_fatal(FARGS, "Unsupported vdw interaction: %s", enumValueToString(interactionConst->vdwtype));
+            gmx_fatal(FARGS,
+                      "Unsupported vdw interaction: %s",
+                      enumValueToString(interactionConst->vdw.type));
     }
-    forcerec->nbkernel_vdw_modifier = interactionConst->vdw_modifier;
+    forcerec->nbkernel_vdw_modifier = interactionConst->vdw.modifier;
 
-    if (!gmx_within_tol(interactionConst->reppow, 12.0, 10 * GMX_DOUBLE_EPS))
+    if (!gmx_within_tol(interactionConst->vdw.repulsionPower, 12.0, 10 * GMX_DOUBLE_EPS))
     {
         gmx_fatal(FARGS, "Only LJ repulsion power 12 is supported");
     }
     /* Older tpr files can contain Coulomb user tables with the Verlet cutoff-scheme,
      * while mdrun does not (and never did) support this.
      */
-    if (usingUserTableElectrostatics(forcerec->ic->eeltype))
+    if (usingUserTableElectrostatics(forcerec->ic->coulomb.type))
     {
         gmx_fatal(FARGS,
                   "Electrostatics type %s is currently not supported",
@@ -905,8 +907,8 @@ void init_forcerec(FILE*                            fplog,
             forcerec->forceProviders->hasForceProvider() || gmx_mtop_ftype_count(mtop, F_POSRES) > 0
             || gmx_mtop_ftype_count(mtop, F_FBPOSRES) > 0 || inputrec.nwall > 0 || inputrec.bPull
             || inputrec.bRot || inputrec.bIMD;
-    const bool haveDirectVirialContributionsSlow = usingFullElectrostatics(interactionConst->eeltype)
-                                                   || usingLJPme(interactionConst->vdwtype);
+    const bool haveDirectVirialContributionsSlow = usingFullElectrostatics(interactionConst->coulomb.type)
+                                                   || usingLJPme(interactionConst->vdw.type);
     for (int i = 0; i < (simulationWork.useMts ? 2 : 1); i++)
     {
         bool haveDirectVirialContributions =
@@ -925,7 +927,7 @@ void init_forcerec(FILE*                            fplog,
     forcerec->ntype = mtop.ffparams.atnr + 1;
     forcerec->nbfp  = makeNonBondedParameterLists(
             mtop.ffparams.atnr, true, mtop.ffparams.iparams, forcerec->haveBuckingham);
-    if (usingLJPme(interactionConst->vdwtype))
+    if (usingLJPme(interactionConst->vdw.type))
     {
         forcerec->ljpme_c6grid = makeLJPmeC6GridCorrectionParameters(
                 mtop.ffparams.atnr, mtop.ffparams.iparams, forcerec->ljpme_combination_rule);
@@ -935,34 +937,34 @@ void init_forcerec(FILE*                            fplog,
     forcerec->egp_flags = inputrec.opts.egp_flags;
 
     /* Van der Waals stuff */
-    if ((interactionConst->vdwtype != VanDerWaalsType::Cut)
-        && (interactionConst->vdwtype != VanDerWaalsType::User) && !forcerec->haveBuckingham)
+    if ((interactionConst->vdw.type != VanDerWaalsType::Cut)
+        && (interactionConst->vdw.type != VanDerWaalsType::User) && !forcerec->haveBuckingham)
     {
-        if (interactionConst->rvdw_switch >= interactionConst->rvdw)
+        if (interactionConst->vdw.switchDistance >= interactionConst->vdw.cutoff)
         {
             gmx_fatal(FARGS,
                       "rvdw_switch (%f) must be < rvdw (%f)",
-                      interactionConst->rvdw_switch,
-                      interactionConst->rvdw);
+                      interactionConst->vdw.switchDistance,
+                      interactionConst->vdw.cutoff);
         }
         if (fplog)
         {
             fprintf(fplog,
                     "Using %s Lennard-Jones, switch between %g and %g nm\n",
-                    (interactionConst->eeltype == CoulombInteractionType::Switch) ? "switched" : "shifted",
-                    interactionConst->rvdw_switch,
-                    interactionConst->rvdw);
+                    (interactionConst->coulomb.type == CoulombInteractionType::Switch) ? "switched" : "shifted",
+                    interactionConst->vdw.switchDistance,
+                    interactionConst->vdw.cutoff);
         }
     }
 
-    if (forcerec->haveBuckingham && usingLJPme(interactionConst->vdwtype))
+    if (forcerec->haveBuckingham && usingLJPme(interactionConst->vdw.type))
     {
         gmx_fatal(FARGS, "LJ PME not supported with Buckingham");
     }
 
     if (forcerec->haveBuckingham
-        && (interactionConst->vdwtype == VanDerWaalsType::Shift
-            || interactionConst->vdwtype == VanDerWaalsType::Switch))
+        && (interactionConst->vdw.type == VanDerWaalsType::Shift
+            || interactionConst->vdw.type == VanDerWaalsType::Switch))
     {
         gmx_fatal(FARGS, "Switch/shift interaction not supported with Buckingham");
     }
@@ -990,7 +992,7 @@ void init_forcerec(FILE*                            fplog,
     if (gmx_mtop_ftype_count(mtop, F_LJ14) > 0 || gmx_mtop_ftype_count(mtop, F_LJC14_Q) > 0
         || gmx_mtop_ftype_count(mtop, F_LJC_PAIRS_NB) > 0)
     {
-        forcerec->pairsTable = make_tables(fplog, interactionConst, tabpfn, rtab, GMX_MAKETABLES_14ONLY);
+        forcerec->pairsTable = make_tables(fplog, *interactionConst, tabpfn, rtab, GMX_MAKETABLES_14ONLY);
     }
 
     /* Wall stuff */

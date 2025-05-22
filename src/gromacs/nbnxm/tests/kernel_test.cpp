@@ -564,7 +564,7 @@ TEST_P(NbnxmKernelTest, WorksWith)
         const real           forceMagnitude = 1000;
         const real           ulpTolerance   = 50;
         real                 tolerance      = forceMagnitude * simdRealEps * ulpTolerance;
-        if (usingPmeOrEwald(ic.eeltype))
+        if (usingPmeOrEwald(ic.coulomb.type))
         {
             real ewaldRelError;
             if (isTabulated(options_.coulombType))
@@ -577,12 +577,12 @@ TEST_P(NbnxmKernelTest, WorksWith)
             {
                 ewaldRelError = GMX_DOUBLE ? 1e-11 : 1e-6;
             }
-            const real maxEwaldPairForceError =
-                    ic.epsfac * ewaldRelError * gmx::square(system_.maxCharge() / ic.rcoulomb);
+            const real maxEwaldPairForceError = ic.coulomb.epsfac * ewaldRelError
+                                                * gmx::square(system_.maxCharge() / ic.coulomb.cutoff);
             // We assume that the total force error is at max 20 times that of one pair
             tolerance = std::max(tolerance, 20 * maxEwaldPairForceError);
         }
-        if (ic.vdwtype == VanDerWaalsType::Pme)
+        if (ic.vdw.type == VanDerWaalsType::Pme)
         {
             const real ulpToleranceExp = 400;
             tolerance = std::max(tolerance, forceMagnitude * simdRealEps * ulpToleranceExp);

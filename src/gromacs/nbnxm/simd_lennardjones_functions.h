@@ -172,7 +172,7 @@ template<>
 class LennardJonesCalculator<false, InteractionModifiers::PotShift>
 {
 public:
-    inline LennardJonesCalculator(const interaction_const_t gmx_unused& ic) {}
+    inline LennardJonesCalculator(const interaction_const_t::VanDerWaalsSettings gmx_unused& ic) {}
 
     //! Computes F*r for LJ with (un)shifted potential with C6/C12 parameters
     template<int nR, bool maskInteractions, std::size_t inputSize, std::size_t interactSize, std::size_t vljvSize>
@@ -224,8 +224,9 @@ template<>
 class LennardJonesCalculator<true, InteractionModifiers::PotShift>
 {
 public:
-    inline LennardJonesCalculator(const interaction_const_t& ic) :
-        dispersionShift_(ic.dispersion_shift.cpot), repulsionShift_(ic.repulsion_shift.cpot)
+    inline LennardJonesCalculator(const interaction_const_t::VanDerWaalsSettings& vdwSettings) :
+        dispersionShift_(vdwSettings.dispersionShift.cpot),
+        repulsionShift_(vdwSettings.repulsionShift.cpot)
     {
     }
 
@@ -325,24 +326,24 @@ template<bool calculateEnergies>
 class LennardJonesCalculator<calculateEnergies, InteractionModifiers::ForceSwitch>
 {
 public:
-    inline LennardJonesCalculator(const interaction_const_t& ic) :
-        rSwitch_(ic.rvdw_switch),
-        dispersionShiftC2_(ic.dispersion_shift.c2),
-        dispersionShiftC3_(ic.dispersion_shift.c3),
-        repulsionShiftC2_(ic.repulsion_shift.c2),
-        repulsionShiftC3_(ic.repulsion_shift.c3)
+    inline LennardJonesCalculator(const interaction_const_t::VanDerWaalsSettings& vdwSettings) :
+        rSwitch_(vdwSettings.switchDistance),
+        dispersionShiftC2_(vdwSettings.dispersionShift.c2),
+        dispersionShiftC3_(vdwSettings.dispersionShift.c3),
+        repulsionShiftC2_(vdwSettings.repulsionShift.c2),
+        repulsionShiftC3_(vdwSettings.repulsionShift.c3)
     {
         if constexpr (calculateEnergies)
         {
             SimdReal mthird_S(-1.0_real / 3.0_real);
             SimdReal mfourth_S(-1.0_real / 4.0_real);
 
-            potentialParams_[0] = mthird_S * ic.dispersion_shift.c2;
-            potentialParams_[1] = mfourth_S * ic.dispersion_shift.c3;
-            potentialParams_[2] = SimdReal(ic.dispersion_shift.cpot / 6.0_real);
-            potentialParams_[3] = mthird_S * ic.repulsion_shift.c2;
-            potentialParams_[4] = mfourth_S * ic.repulsion_shift.c3;
-            potentialParams_[5] = SimdReal(ic.repulsion_shift.cpot / 12.0_real);
+            potentialParams_[0] = mthird_S * vdwSettings.dispersionShift.c2;
+            potentialParams_[1] = mfourth_S * vdwSettings.dispersionShift.c3;
+            potentialParams_[2] = SimdReal(vdwSettings.dispersionShift.cpot / 6.0_real);
+            potentialParams_[3] = mthird_S * vdwSettings.repulsionShift.c2;
+            potentialParams_[4] = mfourth_S * vdwSettings.repulsionShift.c3;
+            potentialParams_[5] = SimdReal(vdwSettings.repulsionShift.cpot / 12.0_real);
         }
     }
 
@@ -485,14 +486,14 @@ template<bool calculateEnergies>
 class LennardJonesCalculator<calculateEnergies, InteractionModifiers::PotSwitch>
 {
 public:
-    inline LennardJonesCalculator(const interaction_const_t& ic) :
-        rSwitch_(ic.rvdw_switch),
-        c3_(ic.vdw_switch.c3),
-        c4_(ic.vdw_switch.c4),
-        c5_(ic.vdw_switch.c5),
-        c3times3_(3.0_real * ic.vdw_switch.c3),
-        c4times4_(4.0_real * ic.vdw_switch.c4),
-        c5times5_(5.0_real * ic.vdw_switch.c5)
+    inline LennardJonesCalculator(const interaction_const_t::VanDerWaalsSettings& vdwSettings) :
+        rSwitch_(vdwSettings.switchDistance),
+        c3_(vdwSettings.switchConstants.c3),
+        c4_(vdwSettings.switchConstants.c4),
+        c5_(vdwSettings.switchConstants.c5),
+        c3times3_(3.0_real * vdwSettings.switchConstants.c3),
+        c4times4_(4.0_real * vdwSettings.switchConstants.c4),
+        c5times5_(5.0_real * vdwSettings.switchConstants.c5)
     {
     }
 

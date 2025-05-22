@@ -1866,18 +1866,18 @@ int Mdrunner::mdrunner()
                                "version of bonded forces.");
             fr->listedForcesGpu =
                     std::make_unique<ListedForcesGpu>(mtop.ffparams,
-                                                      fr->ic->epsfac * fr->fudgeQQ,
+                                                      fr->ic->coulomb.epsfac * fr->fudgeQQ,
                                                       inputrec->opts.ngener - inputrec->nwall,
                                                       deviceStreamManager->context(),
                                                       deviceStreamManager->bondedStream(),
                                                       wcycle.get());
         }
         fr->longRangeNonbondeds = std::make_unique<CpuPpLongRangeNonbondeds>(fr->n_tpi,
-                                                                             fr->ic->ewaldcoeff_q,
-                                                                             fr->ic->epsilon_r,
+                                                                             fr->ic->coulomb.ewaldCoeff,
+                                                                             fr->ic->coulomb.epsilon_r,
                                                                              fr->qsum,
-                                                                             fr->ic->eeltype,
-                                                                             fr->ic->vdwtype,
+                                                                             fr->ic->coulomb.type,
+                                                                             fr->ic->vdw.type,
                                                                              *inputrec,
                                                                              &nrnb,
                                                                              wcycle.get(),
@@ -1937,10 +1937,10 @@ int Mdrunner::mdrunner()
             dd_make_reverse_top(fplog, cr->dd, mtop, vsite.get(), *inputrec, domdecOptions.ddBondedChecking);
         }
 
-        if (usingPme(fr->ic->eeltype) || usingLJPme(fr->ic->vdwtype))
+        if (usingPme(fr->ic->coulomb.type) || usingLJPme(fr->ic->vdw.type))
         {
-            ewaldcoeff_q  = fr->ic->ewaldcoeff_q;
-            ewaldcoeff_lj = fr->ic->ewaldcoeff_lj;
+            ewaldcoeff_q  = fr->ic->coulomb.ewaldCoeff;
+            ewaldcoeff_lj = fr->ic->vdw.ewaldCoeff;
         }
     }
     else

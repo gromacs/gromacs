@@ -107,6 +107,70 @@ struct EwaldCorrectionTables
  */
 struct interaction_const_t
 {
+    //! Settings and parameters for Van der Waals functional forms
+    struct VanDerWaalsSettings
+    {
+        //! The type of Van der Waals interaction
+        VanDerWaalsType type = VanDerWaalsType::Cut;
+        //! The potential modifier
+        InteractionModifiers modifier = InteractionModifiers::None;
+        //! The exponent for the repulsive part of the Van der Waals potential
+        double repulsionPower = 12;
+
+        // Range parameters
+        //! Cutoff distance
+        real cutoff = 1;
+        //! Switch distance for potential and force switch
+        real switchDistance = 0;
+
+        //! Parameters for force shifted dispersion interactions
+        struct shift_consts_t dispersionShift = { 0, 0, 0 };
+        //! Parameters for force shifted repulsion interactions
+        struct shift_consts_t repulsionShift = { 0, 0, 0 };
+        //! Parameters for potential switching
+        struct switch_consts_t switchConstants = { 0, 0, 0 };
+
+        // LJ-PME
+        //! Ewald splitting coefficient
+        real ewaldCoeff = 0;
+        //! LJ combination rule for the LJ PME mesh part
+        LongRangeVdW pmeCombinationRule = LongRangeVdW::Geom;
+        //! ewaldShift is added to the correction potential
+        real ewaldShift = 0;
+    };
+
+    //! Settings and parameters for Coulomb functional forms
+    struct CoulombSettings
+    {
+        //! Cutoff distance
+        CoulombInteractionType type = CoulombInteractionType::Cut;
+        //! The potential modifier
+        InteractionModifiers modifier = InteractionModifiers::None;
+
+        // Range parameters
+        //! Cutoff distance
+        real cutoff = 1;
+        //! Switch distance for potential and force switch
+        real switchDistance = 0;
+
+        // PME/Ewald
+        //! Ewald splitting coefficient
+        real ewaldCoeff = 0;
+        //! -ewaldShift is added to the direct space potential
+        real ewaldShift = 0;
+
+        // Dielectric constant
+        real epsilon_r = 1;
+        //! The electrostatics constant
+        real epsfac = 1;
+
+        // Constants for reaction-field
+        //! Coefficient for reaction field; scales relation between epsilon_r and reactionFieldPermitivity
+        real reactionFieldCoefficient = 0;
+        //! Constant shift to reaction field Coulomb interaction to make the potential the integral of the force
+        real reactionFieldShift = 0;
+    };
+
     /* This struct contains the soft-core parameters from t_lambda,
      * but processed for direct use in the kernels.
      */
@@ -135,44 +199,11 @@ struct interaction_const_t
         real gapsysSigma6VdW;
     };
 
-    /* VdW */
-    VanDerWaalsType        vdwtype          = VanDerWaalsType::Cut;
-    InteractionModifiers   vdw_modifier     = InteractionModifiers::None;
-    double                 reppow           = 12;
-    real                   rvdw             = 1;
-    real                   rvdw_switch      = 0;
-    struct shift_consts_t  dispersion_shift = { 0, 0, 0 };
-    struct shift_consts_t  repulsion_shift  = { 0, 0, 0 };
-    struct switch_consts_t vdw_switch       = { 0, 0, 0 };
-    bool                   useBuckingham    = false;
-    real                   buckinghamBMax   = 0;
+    //! Van der Waals settings
+    VanDerWaalsSettings vdw;
 
-    /* type of electrostatics */
-    CoulombInteractionType eeltype          = CoulombInteractionType::Cut;
-    InteractionModifiers   coulomb_modifier = InteractionModifiers::None;
-
-    /* Coulomb */
-    real rcoulomb        = 1;
-    real rcoulomb_switch = 0;
-
-    /* PME/Ewald */
-    real ewaldcoeff_q  = 0;
-    real ewaldcoeff_lj = 0;
-    LongRangeVdW ljpme_comb_rule = LongRangeVdW::Geom; /* LJ combination rule for the LJ PME mesh part */
-    real sh_ewald    = 0; /* -sh_ewald is added to the direct space potential */
-    real sh_lj_ewald = 0; /* sh_lj_ewald is added to the correction potential */
-
-    /* Dielectric constant resp. multiplication factor for charges */
-    real epsilon_r = 1;
-    real epsfac    = 1;
-
-    /* Constants for reaction-field or plain cut-off */
-    //! Dielectric constant for reaction field beyond the cutoff distance
-    real reactionFieldPermitivity = 1;
-    //! Coefficient for reaction field; scales relation between epsilon_r and reactionFieldPermitivity
-    real reactionFieldCoefficient = 0;
-    //! Constant shift to reaction field Coulomb interaction to make potential an integral of force
-    real reactionFieldShift = 0;
+    //! Coulomb settings
+    CoulombSettings coulomb;
 
     // Coulomb Ewald correction table
     std::unique_ptr<EwaldCorrectionTables> coulombEwaldTables;

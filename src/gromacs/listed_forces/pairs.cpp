@@ -611,7 +611,7 @@ static real do_pairs_general(int                                 ftype,
             fr->pairsTable->interaction_ == TableInteraction::ElectrostaticVdwRepulsionVdwDispersion,
             "Pair interaction kernels need a table with Coulomb, repulsion and dispersion entries");
 
-    const real epsfac = fr->ic->epsfac;
+    const real epsfac = fr->ic->coulomb.epsfac;
 
     bFreeEnergy = FALSE;
     for (i = 0; (i < nbonds);)
@@ -697,7 +697,7 @@ static real do_pairs_general(int                                 ftype,
                 {
                     fscal = free_energy_evaluate_single<KernelSoftcoreType::None>(
                             r2,
-                            fr->ic->rcoulomb,
+                            fr->ic->coulomb.cutoff,
                             *fr->ic->softCoreParameters,
                             fr->pairsTable->scale,
                             fr->pairsTable->data.data(),
@@ -724,7 +724,7 @@ static real do_pairs_general(int                                 ftype,
                 {
                     fscal = free_energy_evaluate_single<KernelSoftcoreType::Beutler>(
                             r2,
-                            fr->ic->rcoulomb,
+                            fr->ic->coulomb.cutoff,
                             *fr->ic->softCoreParameters,
                             fr->pairsTable->scale,
                             fr->pairsTable->data.data(),
@@ -754,7 +754,7 @@ static real do_pairs_general(int                                 ftype,
                 {
                     fscal = free_energy_evaluate_single<KernelSoftcoreType::None>(
                             r2,
-                            fr->ic->rcoulomb,
+                            fr->ic->coulomb.cutoff,
                             *fr->ic->softCoreParameters,
                             fr->pairsTable->scale,
                             fr->pairsTable->data.data(),
@@ -781,7 +781,7 @@ static real do_pairs_general(int                                 ftype,
                 {
                     fscal = free_energy_evaluate_single<KernelSoftcoreType::Gapsys>(
                             r2,
-                            fr->ic->rcoulomb,
+                            fr->ic->coulomb.cutoff,
                             *fr->ic->softCoreParameters,
                             fr->pairsTable->scale,
                             fr->pairsTable->data.data(),
@@ -969,8 +969,8 @@ void do_pairs(int                                 ftype,
               gmx_grppairener_t*                  grppener,
               int*                                global_atom_index)
 {
-    if (ftype == F_LJ14 && fr->ic->vdwtype != VanDerWaalsType::User
-        && !usingUserTableElectrostatics(fr->ic->eeltype) && !havePerturbedInteractions
+    if (ftype == F_LJ14 && fr->ic->vdw.type != VanDerWaalsType::User
+        && !usingUserTableElectrostatics(fr->ic->coulomb.type) && !havePerturbedInteractions
         && (!stepWork.computeVirial && !stepWork.computeEnergy))
     {
         /* We use a fast code-path for plain LJ 1-4 without FEP.
@@ -988,7 +988,7 @@ void do_pairs(int                                 ftype,
             set_pbc_simd(pbc, pbc_simd);
 
             do_pairs_simple<SimdReal, GMX_SIMD_REAL_WIDTH, const real*>(
-                    nbonds, iatoms, iparams, x, f, pbc_simd, chargeA, fr->ic->epsfac * fr->fudgeQQ);
+                    nbonds, iatoms, iparams, x, f, pbc_simd, chargeA, fr->ic->coulomb.epsfac * fr->fudgeQQ);
         }
         else
 #endif
@@ -1008,7 +1008,7 @@ void do_pairs(int                                 ftype,
             }
 
             do_pairs_simple<real, 1, const t_pbc*>(
-                    nbonds, iatoms, iparams, x, f, pbc_nonnull, chargeA, fr->ic->epsfac * fr->fudgeQQ);
+                    nbonds, iatoms, iparams, x, f, pbc_nonnull, chargeA, fr->ic->coulomb.epsfac * fr->fudgeQQ);
         }
     }
     else if (stepWork.computeVirial)

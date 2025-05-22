@@ -333,7 +333,7 @@ template<typename DataTypes, KernelSoftcoreType softcoreType, bool scLambdasOrAl
 static void nb_free_energy_kernel(const AtomPairlist&                    nlist,
                                   const ArrayRefWithPadding<const RVec>& coords,
                                   const int                              ntype,
-                                  const interaction_const_t&             interactionParameters,
+                                  const interaction_const_t&             ic,
                                   ArrayRef<const RVec>                   shiftvec,
                                   ArrayRef<const real>                   nbfp,
                                   ArrayRef<const real> gmx_unused        nbfp_grid,
@@ -377,7 +377,7 @@ static void nb_free_energy_kernel(const AtomPairlist&                    nlist,
     const real lambdaVdw  = lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Vdw)];
 
     // Extract softcore parameters
-    const auto&           scParams               = *interactionParameters.softCoreParameters;
+    const auto&           scParams               = *ic.softCoreParameters;
     const real            lambdaPower            = scParams.lambdaPower;
     const real gmx_unused alphaCoulomb           = scParams.alphaCoulomb;
     const real gmx_unused alphaVdw               = scParams.alphaVdw;
@@ -392,32 +392,32 @@ static void nb_free_energy_kernel(const AtomPairlist&                    nlist,
     const bool            doPotential   = computeForeignLambda || stepWork->computeEnergy;
 
     // Extract data from interaction_const_t
-    const real            elecEpsilonFactor        = interactionParameters.epsfac;
-    const real            rCoulomb                 = interactionParameters.rcoulomb;
-    const real            reactionFieldCoefficient = interactionParameters.reactionFieldCoefficient;
-    const real gmx_unused reactionFieldShift       = interactionParameters.reactionFieldShift;
-    const real gmx_unused shLjEwald                = interactionParameters.sh_lj_ewald;
-    const real            rVdw                     = interactionParameters.rvdw;
-    const real            dispersionShift          = interactionParameters.dispersion_shift.cpot;
-    const real gmx_unused dispersionShift2         = interactionParameters.dispersion_shift.c2;
-    const real gmx_unused dispersionShift3         = interactionParameters.dispersion_shift.c3;
-    const real            repulsionShift           = interactionParameters.repulsion_shift.cpot;
-    const real gmx_unused repulsionShift2          = interactionParameters.repulsion_shift.c2;
-    const real gmx_unused repulsionShift3          = interactionParameters.repulsion_shift.c3;
-    const real            ewaldBeta                = interactionParameters.ewaldcoeff_q;
+    const real            elecEpsilonFactor        = ic.coulomb.epsfac;
+    const real            rCoulomb                 = ic.coulomb.cutoff;
+    const real            reactionFieldCoefficient = ic.coulomb.reactionFieldCoefficient;
+    const real gmx_unused reactionFieldShift       = ic.coulomb.reactionFieldShift;
+    const real gmx_unused shLjEwald                = ic.vdw.ewaldShift;
+    const real            rVdw                     = ic.vdw.cutoff;
+    const real            dispersionShift          = ic.vdw.dispersionShift.cpot;
+    const real gmx_unused dispersionShift2         = ic.vdw.dispersionShift.c2;
+    const real gmx_unused dispersionShift3         = ic.vdw.dispersionShift.c3;
+    const real            repulsionShift           = ic.vdw.repulsionShift.cpot;
+    const real gmx_unused repulsionShift2          = ic.vdw.repulsionShift.c2;
+    const real gmx_unused repulsionShift3          = ic.vdw.repulsionShift.c3;
+    const real            ewaldBeta                = ic.coulomb.ewaldCoeff;
     real gmx_unused       ewaldLJCoeffSq;
     real gmx_unused       ewaldLJCoeffSixDivSix;
     if constexpr (ljKernelType == LJKernelType::Ewald)
     {
-        ewaldLJCoeffSq = interactionParameters.ewaldcoeff_lj * interactionParameters.ewaldcoeff_lj;
+        ewaldLJCoeffSq        = gmx::square(ic.vdw.ewaldCoeff);
         ewaldLJCoeffSixDivSix = ewaldLJCoeffSq * ewaldLJCoeffSq * ewaldLJCoeffSq / six;
     }
 
     // Note that the nbnxm kernels do not support Coulomb potential switching at all
-    GMX_ASSERT(interactionParameters.coulomb_modifier != InteractionModifiers::PotSwitch,
+    GMX_ASSERT(ic.coulomb.modifier != InteractionModifiers::PotSwitch,
                "Potential switching is not supported for Coulomb with FEP");
 
-    const real      rVdwSwitch = interactionParameters.rvdw_switch;
+    const real      rVdwSwitch = ic.vdw.switchDistance;
     real gmx_unused vdw_swV3, vdw_swV4, vdw_swV5, vdw_swF2, vdw_swF3, vdw_swF4;
     if constexpr (ljKernelType == LJKernelType::PotentialSwitch)
     {
@@ -454,8 +454,7 @@ static void nb_free_energy_kernel(const AtomPairlist&                    nlist,
     }
 
     NbkernelElecType coulombInteractionType;
-    if (interactionParameters.eeltype == CoulombInteractionType::Cut
-        || usingRF(interactionParameters.eeltype))
+    if (ic.coulomb.type == CoulombInteractionType::Cut || usingRF(ic.coulomb.type))
     {
         coulombInteractionType = NbkernelElecType::ReactionField;
     }
@@ -464,14 +463,14 @@ static void nb_free_energy_kernel(const AtomPairlist&                    nlist,
         coulombInteractionType = NbkernelElecType::None;
     }
 
-    real rCutoffMaxSq = std::max(interactionParameters.rcoulomb, interactionParameters.rvdw);
-    rCutoffMaxSq      = rCutoffMaxSq * rCutoffMaxSq;
-    const real gmx_unused rCutoffCoul = interactionParameters.rcoulomb;
+    real rCutoffMaxSq                 = std::max(ic.coulomb.cutoff, ic.vdw.cutoff);
+    rCutoffMaxSq                      = rCutoffMaxSq * rCutoffMaxSq;
+    const real gmx_unused rCutoffCoul = ic.coulomb.cutoff;
 
     real gmx_unused sh_ewald = zero;
     if constexpr (elecInteractionTypeIsEwald || ljKernelType == LJKernelType::Ewald)
     {
-        sh_ewald = interactionParameters.sh_ewald;
+        sh_ewald = ic.coulomb.ewaldShift;
     }
 
     /* For Ewald/PME interactions we cannot easily apply the soft-core component to
@@ -1509,9 +1508,9 @@ void gmx_nb_free_energy_kernel(const AtomPairlist&                    nlist,
                                ArrayRef<real>                         threadVVdw,
                                ArrayRef<real>                         threadDvdl)
 {
-    GMX_ASSERT(usingPmeOrEwald(interactionParameters.eeltype)
-                       || interactionParameters.eeltype == CoulombInteractionType::Cut
-                       || usingRF(interactionParameters.eeltype),
+    GMX_ASSERT(usingPmeOrEwald(interactionParameters.coulomb.type)
+                       || interactionParameters.coulomb.type == CoulombInteractionType::Cut
+                       || usingRF(interactionParameters.coulomb.type),
                "Unsupported eeltype with free energy");
     GMX_ASSERT(interactionParameters.softCoreParameters, "We need soft-core parameters");
 
@@ -1521,26 +1520,26 @@ void gmx_nb_free_energy_kernel(const AtomPairlist&                    nlist,
                "We need actual padding with at least one element for SIMD scatter operations");
 
     const auto&  scParams                   = *interactionParameters.softCoreParameters;
-    const bool   elecInteractionTypeIsEwald = (usingPmeOrEwald(interactionParameters.eeltype));
+    const bool   elecInteractionTypeIsEwald = (usingPmeOrEwald(interactionParameters.coulomb.type));
     LJKernelType ljKernelType = LJKernelType::Cutoff; // Just to make sure it is initialized.
-    if (usingLJPme(interactionParameters.vdwtype))
+    if (usingLJPme(interactionParameters.vdw.type))
     {
         ljKernelType = LJKernelType::Ewald;
 
-        GMX_ASSERT(interactionParameters.vdw_modifier == InteractionModifiers::PotShift
-                           || interactionParameters.vdw_modifier == InteractionModifiers::None,
+        GMX_ASSERT(interactionParameters.vdw.modifier == InteractionModifiers::PotShift
+                           || interactionParameters.vdw.modifier == InteractionModifiers::None,
                    "No force or potential modifiers are supported with LJ-Ewald");
     }
-    else if (interactionParameters.vdw_modifier == InteractionModifiers::PotShift
-             || interactionParameters.vdw_modifier == InteractionModifiers::None)
+    else if (interactionParameters.vdw.modifier == InteractionModifiers::PotShift
+             || interactionParameters.vdw.modifier == InteractionModifiers::None)
     {
         ljKernelType = LJKernelType::Cutoff;
     }
-    else if (interactionParameters.vdw_modifier == InteractionModifiers::ForceSwitch)
+    else if (interactionParameters.vdw.modifier == InteractionModifiers::ForceSwitch)
     {
         ljKernelType = LJKernelType::ForceSwitch;
     }
-    else if (interactionParameters.vdw_modifier == InteractionModifiers::PotSwitch)
+    else if (interactionParameters.vdw.modifier == InteractionModifiers::PotSwitch)
     {
         ljKernelType = LJKernelType::PotentialSwitch;
     }

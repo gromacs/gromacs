@@ -130,8 +130,8 @@
                 frLJ         = FrLJ12 - FrLJ6;
                 /* 7 flops for r^-2 + LJ force */
 #    if defined CALC_ENERGIES || defined LJ_POT_SWITCH
-                VLJ = (FrLJ12 + c12 * ic.repulsion_shift.cpot) / 12
-                      - (FrLJ6 + c6 * ic.dispersion_shift.cpot) / 6;
+                VLJ = (FrLJ12 + c12 * ic.vdw.repulsionShift.cpot) / 12
+                      - (FrLJ6 + c6 * ic.vdw.dispersionShift.cpot) / 6;
                 /* 7 flops for LJ energy */
 #    endif
 #endif
@@ -139,16 +139,17 @@
 #if defined LJ_FORCE_SWITCH || defined LJ_POT_SWITCH
                 /* Force or potential switching from ic.rvdw_switch */
                 real r   = rsq * rinv;
-                real rsw = r - ic.rvdw_switch;
+                real rsw = r - ic.vdw.switchDistance;
                 rsw      = (rsw >= 0.0 ? rsw : 0.0);
 #endif
 #ifdef LJ_FORCE_SWITCH
-                frLJ += -c6 * (ic.dispersion_shift.c2 + ic.dispersion_shift.c3 * rsw) * rsw * rsw * r
-                        + c12 * (ic.repulsion_shift.c2 + ic.repulsion_shift.c3 * rsw) * rsw * rsw * r;
+                frLJ += -c6 * (ic.vdw.dispersionShift.c2 + ic.vdw.dispersionShift.c3 * rsw) * rsw * rsw * r
+                        + c12 * (ic.vdw.repulsionShift.c2 + ic.vdw.repulsionShift.c3 * rsw) * rsw * rsw * r;
 #    if defined CALC_ENERGIES
-                VLJ += -c6 * (-ic.dispersion_shift.c2 / 3 - ic.dispersion_shift.c3 / 4 * rsw) * rsw * rsw * rsw
-                       + c12 * (-ic.repulsion_shift.c2 / 3 - ic.repulsion_shift.c3 / 4 * rsw) * rsw
-                                 * rsw * rsw;
+                VLJ += -c6 * (-ic.vdw.dispersionShift.c2 / 3 - ic.vdw.dispersionShift.c3 / 4 * rsw)
+                               * rsw * rsw * rsw
+                       + c12 * (-ic.vdw.repulsionShift.c2 / 3 - ic.vdw.repulsionShift.c3 / 4 * rsw)
+                                 * rsw * rsw * rsw;
 #    endif
 #endif
 
@@ -279,12 +280,12 @@
 #            if !GMX_DOUBLE
             real vcoul =
                     qq
-                    * (interact * (rinv - ic.sh_ewald)
+                    * (interact * (rinv - ic.coulomb.ewaldShift)
                        - (tab_coul_FDV0[ri * 4 + 2] - halfsp * frac * (tab_coul_FDV0[ri * 4] + fexcl)));
             /* 7 flops for float 1/r-table energy (8 with excls) */
 #            else
             real vcoul = qq
-                         * (interact * (rinv - ic.sh_ewald)
+                         * (interact * (rinv - ic.coulomb.ewaldShift)
                             - (tab_coul_V[ri] - halfsp * frac * (tab_coul_F[ri] + fexcl)));
 #            endif
 #        endif

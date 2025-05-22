@@ -164,25 +164,26 @@ static interaction_const_t setupInteractionConst(const NbnxmKernelBenchOptions& 
 {
     interaction_const_t ic;
 
-    ic.vdwtype      = VanDerWaalsType::Cut;
-    ic.vdw_modifier = InteractionModifiers::PotShift;
-    ic.rvdw         = options.pairlistCutoff;
+    ic.vdw.type     = VanDerWaalsType::Cut;
+    ic.vdw.modifier = InteractionModifiers::PotShift;
+    ic.vdw.cutoff   = options.pairlistCutoff;
 
-    ic.eeltype = (options.coulombType == NbnxmBenchMarkCoulomb::Pme ? CoulombInteractionType::Pme
-                                                                    : CoulombInteractionType::RF);
-    ic.coulomb_modifier = InteractionModifiers::PotShift;
-    ic.rcoulomb         = options.pairlistCutoff;
+    ic.coulomb.type = (options.coulombType == NbnxmBenchMarkCoulomb::Pme ? CoulombInteractionType::Pme
+                                                                         : CoulombInteractionType::RF);
+    ic.coulomb.modifier = InteractionModifiers::PotShift;
+    ic.coulomb.cutoff   = options.pairlistCutoff;
 
     // Reaction-field with reactionFieldPermitivity=inf
     // TODO: Replace by calc_rffac() after refactoring that
-    ic.reactionFieldCoefficient = 0.5 * std::pow(ic.rcoulomb, -3);
-    ic.reactionFieldShift = 1 / ic.rcoulomb + ic.reactionFieldCoefficient * ic.rcoulomb * ic.rcoulomb;
+    ic.coulomb.reactionFieldCoefficient = 0.5 * std::pow(ic.coulomb.cutoff, -3);
+    ic.coulomb.reactionFieldShift =
+            1 / ic.coulomb.cutoff + ic.coulomb.reactionFieldCoefficient * gmx::square(ic.coulomb.cutoff);
 
-    if (usingPmeOrEwald(ic.eeltype))
+    if (usingPmeOrEwald(ic.coulomb.type))
     {
         // Ewald coefficients, we ignore the potential shift
         GMX_RELEASE_ASSERT(options.ewaldcoeff_q > 0, "Ewald coefficient should be > 0");
-        ic.ewaldcoeff_q       = options.ewaldcoeff_q;
+        ic.coulomb.ewaldCoeff = options.ewaldcoeff_q;
         ic.coulombEwaldTables = std::make_unique<EwaldCorrectionTables>();
         init_interaction_const_tables(nullptr, &ic, 0, 0);
     }

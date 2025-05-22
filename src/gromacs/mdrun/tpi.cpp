@@ -152,17 +152,17 @@ static real reactionFieldExclusionCorrection(gmx::ArrayRef<const gmx::RVec> x,
     for (int i = beginAtom; i < mdatoms.homenr; i++)
     {
         const real qi = mdatoms.chargeA[i];
-        energy -= 0.5 * qi * qi * ic.reactionFieldShift;
+        energy -= 0.5 * qi * qi * ic.coulomb.reactionFieldShift;
 
         for (int j = i + 1; j < mdatoms.homenr; j++)
         {
             const real qj  = mdatoms.chargeA[j];
             const real rsq = distance2(x[i], x[j]);
-            energy += qi * qj * (ic.reactionFieldCoefficient * rsq - ic.reactionFieldShift);
+            energy += qi * qj * (ic.coulomb.reactionFieldCoefficient * rsq - ic.coulomb.reactionFieldShift);
         }
     }
 
-    return ic.epsfac * energy;
+    return ic.coulomb.epsfac * energy;
 }
 
 //! The limit in kT for the histogram of insertion energies
@@ -605,7 +605,7 @@ std::pair<double, double> TestParticleInsertion::performSingleInsertion(const do
     std::feclearexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
     std::feupdateenv(&floatingPointEnvironment);
 
-    if (usingRF(fr_.ic->eeltype))
+    if (usingRF(fr_.ic->coulomb.type))
     {
         enerd_.term[F_EPOT] += rfExclusionEnergy_;
     }
@@ -685,7 +685,7 @@ std::pair<double, double> TestParticleInsertion::performSingleInsertion(const do
             {
                 sum_UgembU_[e++] += rfExclusionEnergy_ * embU;
             }
-            if (usingFullElectrostatics(fr_.ic->eeltype))
+            if (usingFullElectrostatics(fr_.ic->coulomb.type))
             {
                 sum_UgembU_[e++] += enerd_.term[F_COUL_RECIP] * embU;
             }
@@ -975,7 +975,7 @@ void LegacySimulator::do_tpi()
 
     auto x = makeArrayRef(stateGlobal_->x);
 
-    if (usingPme(fr_->ic->eeltype))
+    if (usingPme(fr_->ic->coulomb.type))
     {
         gmx_pme_reinit_atoms(fr_->pmedata, *testAtomsRange.begin(), {}, {});
     }
@@ -985,7 +985,7 @@ void LegacySimulator::do_tpi()
      * for the inserted molecule.
      */
     real rfExclusionEnergy = 0;
-    if (usingRF(fr_->ic->eeltype))
+    if (usingRF(fr_->ic->coulomb.type))
     {
         rfExclusionEnergy =
                 reactionFieldExclusionCorrection(x, *mdatoms, *fr_->ic, *testAtomsRange.begin());

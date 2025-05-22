@@ -238,10 +238,10 @@ void pme_loadbal_init(pme_load_balancing_t**         pme_lb_p,
 
     pme_lb->cutoff_scheme = ir.cutoff_scheme;
 
-    pme_lb->rbufOuter_coulomb = nbv.pairlistOuterRadius() - ic.rcoulomb;
-    pme_lb->rbufOuter_vdw     = nbv.pairlistOuterRadius() - ic.rvdw;
-    pme_lb->rbufInner_coulomb = nbv.pairlistInnerRadius() - ic.rcoulomb;
-    pme_lb->rbufInner_vdw     = nbv.pairlistInnerRadius() - ic.rvdw;
+    pme_lb->rbufOuter_coulomb = nbv.pairlistOuterRadius() - ic.coulomb.cutoff;
+    pme_lb->rbufOuter_vdw     = nbv.pairlistOuterRadius() - ic.vdw.cutoff;
+    pme_lb->rbufInner_coulomb = nbv.pairlistInnerRadius() - ic.coulomb.cutoff;
+    pme_lb->rbufInner_vdw     = nbv.pairlistInnerRadius() - ic.vdw.cutoff;
 
     /* Scale box with Ewald wall factor; note that we pmedata->boxScaler
      * can't always usedd as it's not available with separate PME ranks.
@@ -251,18 +251,18 @@ void pme_loadbal_init(pme_load_balancing_t**         pme_lb_p,
 
     pme_lb->setup.resize(1);
 
-    pme_lb->rcut_vdw           = ic.rvdw;
+    pme_lb->rcut_vdw           = ic.vdw.cutoff;
     pme_lb->rcut_coulomb_start = ir.rcoulomb;
 
     pme_lb->cur                    = 0;
-    pme_lb->setup[0].rcut_coulomb  = ic.rcoulomb;
+    pme_lb->setup[0].rcut_coulomb  = ic.coulomb.cutoff;
     pme_lb->setup[0].rlistOuter    = nbv.pairlistOuterRadius();
     pme_lb->setup[0].rlistInner    = nbv.pairlistInnerRadius();
     pme_lb->setup[0].grid[XX]      = ir.nkx;
     pme_lb->setup[0].grid[YY]      = ir.nky;
     pme_lb->setup[0].grid[ZZ]      = ir.nkz;
-    pme_lb->setup[0].ewaldcoeff_q  = ic.ewaldcoeff_q;
-    pme_lb->setup[0].ewaldcoeff_lj = ic.ewaldcoeff_lj;
+    pme_lb->setup[0].ewaldcoeff_q  = ic.coulomb.ewaldCoeff;
+    pme_lb->setup[0].ewaldcoeff_lj = ic.vdw.ewaldCoeff;
 
     if (!pme_lb->bSepPMERanks)
     {
@@ -823,29 +823,30 @@ static void pme_load_balance(pme_load_balancing_t*          pme_lb,
 
     set = &pme_lb->setup[pme_lb->cur];
 
-    ic->rcoulomb = set->rcut_coulomb;
+    ic->coulomb.cutoff = set->rcut_coulomb;
     nbv->changePairlistRadii(set->rlistOuter, set->rlistInner);
-    ic->ewaldcoeff_q = set->ewaldcoeff_q;
+    ic->coulomb.ewaldCoeff = set->ewaldcoeff_q;
     /* TODO: centralize the code that sets the potentials shifts */
-    if (ic->coulomb_modifier == InteractionModifiers::PotShift)
+    if (ic->coulomb.modifier == InteractionModifiers::PotShift)
     {
-        GMX_RELEASE_ASSERT(ic->rcoulomb != 0, "Cutoff radius cannot be zero");
-        ic->sh_ewald = std::erfc(ic->ewaldcoeff_q * ic->rcoulomb) / ic->rcoulomb;
+        GMX_RELEASE_ASSERT(ic->coulomb.cutoff != 0, "Cutoff radius cannot be zero");
+        ic->coulomb.ewaldShift =
+                std::erfc(ic->coulomb.ewaldCoeff * ic->coulomb.cutoff) / ic->coulomb.cutoff;
     }
-    if (usingLJPme(ic->vdwtype))
+    if (usingLJPme(ic->vdw.type))
     {
         /* We have PME for both Coulomb and VdW, set rvdw equal to rcoulomb */
-        ic->rvdw          = set->rcut_coulomb;
-        ic->ewaldcoeff_lj = set->ewaldcoeff_lj;
-        if (ic->vdw_modifier == InteractionModifiers::PotShift)
+        ic->vdw.cutoff     = set->rcut_coulomb;
+        ic->vdw.ewaldCoeff = set->ewaldcoeff_lj;
+        if (ic->vdw.modifier == InteractionModifiers::PotShift)
         {
             real crc2;
 
-            ic->dispersion_shift.cpot = -1.0 / gmx::power6(static_cast<double>(ic->rvdw));
-            ic->repulsion_shift.cpot  = -1.0 / gmx::power12(static_cast<double>(ic->rvdw));
-            crc2                      = gmx::square(ic->ewaldcoeff_lj * ic->rvdw);
-            ic->sh_lj_ewald =
-                    (std::exp(-crc2) * (1 + crc2 + 0.5 * crc2 * crc2) - 1) / gmx::power6(ic->rvdw);
+            ic->vdw.dispersionShift.cpot = -1.0 / gmx::power6(static_cast<double>(ic->vdw.cutoff));
+            ic->vdw.repulsionShift.cpot  = -1.0 / gmx::power12(static_cast<double>(ic->vdw.cutoff));
+            crc2                         = gmx::square(ic->vdw.ewaldCoeff * ic->vdw.cutoff);
+            ic->vdw.ewaldShift           = (std::exp(-crc2) * (1 + crc2 + 0.5 * crc2 * crc2) - 1)
+                                 / gmx::power6(ic->vdw.cutoff);
         }
     }
 

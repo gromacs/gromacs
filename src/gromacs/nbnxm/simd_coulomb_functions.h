@@ -83,9 +83,9 @@ class CoulombCalculator<KernelCoulombType::RF>
 {
 public:
     inline CoulombCalculator(const interaction_const_t& ic) :
-        minusTwoTimesRFCoeff_(-2.0_real * ic.reactionFieldCoefficient),
-        rfOffset_(ic.reactionFieldShift),
-        selfEnergy_(0.5_real * ic.reactionFieldShift)
+        minusTwoTimesRFCoeff_(-2.0_real * ic.coulomb.reactionFieldCoefficient),
+        rfOffset_(ic.coulomb.reactionFieldShift),
+        selfEnergy_(0.5_real * ic.coulomb.reactionFieldShift)
     {
     }
 
@@ -134,9 +134,9 @@ class CoulombCalculator<KernelCoulombType::EwaldAnalytical>
 {
 public:
     inline CoulombCalculator(const interaction_const_t& ic) :
-        beta_(ic.ewaldcoeff_q),
-        betaSquared_(ic.ewaldcoeff_q * ic.ewaldcoeff_q),
-        selfEnergy_(0.5_real * ic.ewaldcoeff_q * M_2_SQRTPI) // beta/sqrt(pi)
+        beta_(ic.coulomb.ewaldCoeff),
+        betaSquared_(gmx::square(ic.coulomb.ewaldCoeff)),
+        selfEnergy_(0.5_real * ic.coulomb.ewaldCoeff * M_2_SQRTPI) // beta/sqrt(pi)
     {
     }
 
