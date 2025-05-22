@@ -485,7 +485,7 @@ void pmePerformGather(gmx_pme_t* pme, CodePath mode, ForcesVector& forces)
             }
             copy_fftgrid_to_pmegrid(pme, &grids, pme->nthread, threadIndex);
             unwrap_periodic_pmegrid(pme, pmegrid);
-            gather_f_bsplines(pme, pmegrid, true, atc, &atc->spline[threadIndex], scale);
+            gather_f_bsplines(*pme, pmegrid, true, atc, atc->spline[threadIndex], scale);
             break;
 
 /* The compiler will complain about passing fftgrid (converting double ** to float **) if using

@@ -1146,7 +1146,7 @@ real gmx_pme_calc_energy(gmx_pme_t* pme, gmx::ArrayRef<const gmx::RVec> x, gmx::
     /* Only calculate the spline coefficients, don't actually spread */
     spread_on_grid(pme, atc, &grids, true, false, false);
 
-    return gather_energy_bsplines(pme, grids.pmeGrids.grid.grid, atc);
+    return gather_energy_bsplines(*pme, grids.pmeGrids.grid.grid, *atc);
 }
 
 /*! \brief Calculate initial Lorentz-Berthelot coefficients for LJ-PME */
@@ -1435,11 +1435,11 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
             {
                 try
                 {
-                    gather_f_bsplines(pme,
+                    gather_f_bsplines(*pme,
                                       pmegrid.grid.grid,
                                       bClearF,
                                       &atc,
-                                      &atc.spline[thread],
+                                      atc.spline[thread],
                                       pme->bFEP ? (gridsRef.gridsIndex == 0 ? 1.0 - lambda : lambda) : 1.0);
                 }
                 GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
@@ -1691,11 +1691,11 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
                     {
                         try
                         {
-                            gather_f_bsplines(pme,
+                            gather_f_bsplines(*pme,
                                               pmegrid.grid.grid,
                                               bClearF,
                                               &pme->atc[0],
-                                              &pme->atc[0].spline[thread],
+                                              pme->atc[0].spline[thread],
                                               scale);
                         }
                         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR

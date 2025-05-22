@@ -72,10 +72,10 @@ using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
  */
 struct do_fspline
 {
-    do_fspline(const gmx_pme_t*                 pme,
+    do_fspline(const gmx_pme_t&                 pme,
                const real* gmx_restrict         grid,
-               const PmeAtomComm* gmx_restrict  atc,
-               const splinedata_t* gmx_restrict spline,
+               const PmeAtomComm& gmx_restrict  atc,
+               const splinedata_t& gmx_restrict spline,
                int                              nn) :
         pme_(pme), grid_(grid), atc_(atc), spline_(spline), nn_(nn)
     {
@@ -90,12 +90,12 @@ struct do_fspline
         const int norder = nn_ * order;
 
         /* Pointer arithmetic alert, next six statements */
-        const real* const gmx_restrict thx  = spline_->theta.coefficients[XX] + norder;
-        const real* const gmx_restrict thy  = spline_->theta.coefficients[YY] + norder;
-        const real* const gmx_restrict thz  = spline_->theta.coefficients[ZZ] + norder;
-        const real* const gmx_restrict dthx = spline_->dtheta.coefficients[XX] + norder;
-        const real* const gmx_restrict dthy = spline_->dtheta.coefficients[YY] + norder;
-        const real* const gmx_restrict dthz = spline_->dtheta.coefficients[ZZ] + norder;
+        const real* const gmx_restrict thx  = spline_.theta.coefficients[XX] + norder;
+        const real* const gmx_restrict thy  = spline_.theta.coefficients[YY] + norder;
+        const real* const gmx_restrict thz  = spline_.theta.coefficients[ZZ] + norder;
+        const real* const gmx_restrict dthx = spline_.dtheta.coefficients[XX] + norder;
+        const real* const gmx_restrict dthy = spline_.dtheta.coefficients[YY] + norder;
+        const real* const gmx_restrict dthz = spline_.dtheta.coefficients[ZZ] + norder;
 
         RVec f(0, 0, 0);
 
@@ -137,12 +137,12 @@ struct do_fspline
     {
         const int norder = nn_ * 4;
         /* Pointer arithmetic alert, next six statements */
-        const real* const gmx_restrict thx  = spline_->theta.coefficients[XX] + norder;
-        const real* const gmx_restrict thy  = spline_->theta.coefficients[YY] + norder;
-        const real* const gmx_restrict thz  = spline_->theta.coefficients[ZZ] + norder;
-        const real* const gmx_restrict dthx = spline_->dtheta.coefficients[XX] + norder;
-        const real* const gmx_restrict dthy = spline_->dtheta.coefficients[YY] + norder;
-        const real* const gmx_restrict dthz = spline_->dtheta.coefficients[ZZ] + norder;
+        const real* const gmx_restrict thx  = spline_.theta.coefficients[XX] + norder;
+        const real* const gmx_restrict thy  = spline_.theta.coefficients[YY] + norder;
+        const real* const gmx_restrict thz  = spline_.theta.coefficients[ZZ] + norder;
+        const real* const gmx_restrict dthx = spline_.dtheta.coefficients[XX] + norder;
+        const real* const gmx_restrict dthy = spline_.dtheta.coefficients[YY] + norder;
+        const real* const gmx_restrict dthz = spline_.dtheta.coefficients[ZZ] + norder;
 
         Simd4NReal fx_S = setZero();
         Simd4NReal fy_S = setZero();
@@ -208,7 +208,7 @@ struct do_fspline
 
 #ifdef PME_SIMD4_SPREAD_GATHER
     /* This code assumes that the grid is allocated 4-real aligned
-     * and that pme->pmegrid_nz is a multiple of 4.
+     * and that pme.pmegrid_nz is a multiple of 4.
      * This code supports pme_order <= 5.
      */
     template<int Order>
@@ -219,14 +219,14 @@ struct do_fspline
                    "For aligned SIMD4 operations the grid size has to be padded up to a multiple "
                    "of 4");
         /* Pointer arithmetic alert, next six statements */
-        const real* const gmx_restrict thx  = spline_->theta.coefficients[XX] + norder;
-        const real* const gmx_restrict thy  = spline_->theta.coefficients[YY] + norder;
-        const real* const gmx_restrict thz  = spline_->theta.coefficients[ZZ] + norder;
-        const real* const gmx_restrict dthx = spline_->dtheta.coefficients[XX] + norder;
-        const real* const gmx_restrict dthy = spline_->dtheta.coefficients[YY] + norder;
-        const real* const gmx_restrict dthz = spline_->dtheta.coefficients[ZZ] + norder;
+        const real* const gmx_restrict thx  = spline_.theta.coefficients[XX] + norder;
+        const real* const gmx_restrict thy  = spline_.theta.coefficients[YY] + norder;
+        const real* const gmx_restrict thz  = spline_.theta.coefficients[ZZ] + norder;
+        const real* const gmx_restrict dthx = spline_.dtheta.coefficients[XX] + norder;
+        const real* const gmx_restrict dthy = spline_.dtheta.coefficients[YY] + norder;
+        const real* const gmx_restrict dthz = spline_.dtheta.coefficients[ZZ] + norder;
 
-        const pme_spline_work& work = *pme_->spline_work;
+        const pme_spline_work& work = *pme_.spline_work;
 
         const int offset = idxZ & 3;
 
@@ -276,42 +276,42 @@ struct do_fspline
     }
 #endif
 private:
-    const gmx_pme_t* const                 pme_;
-    const real* const gmx_restrict         grid_;
-    const PmeAtomComm* const gmx_restrict  atc_;
-    const splinedata_t* const gmx_restrict spline_;
-    const int                              nn_;
+    const gmx_pme_t&               pme_;
+    const real* const gmx_restrict grid_;
+    const PmeAtomComm&             atc_;
+    const splinedata_t&            spline_;
+    const int                      nn_;
 
-    const int gridNY = pme_->pmegrid_ny;
-    const int gridNZ = pme_->pmegrid_nz;
+    const int gridNY = pme_.pmegrid_ny;
+    const int gridNZ = pme_.pmegrid_nz;
 
-    const int* const idxptr = atc_->idx[spline_->ind[nn_]];
+    const int* const idxptr = atc_.idx[spline_.ind[nn_]];
     const int        idxX   = idxptr[XX];
     const int        idxY   = idxptr[YY];
     const int        idxZ   = idxptr[ZZ];
 };
 
 
-void gather_f_bsplines(const gmx_pme_t*          pme,
+void gather_f_bsplines(const gmx_pme_t&          pme,
                        gmx::ArrayRef<const real> grid,
-                       gmx_bool                  bClearF,
-                       const PmeAtomComm*        atc,
-                       const splinedata_t*       spline,
-                       real                      scale)
+                       const bool                clearForces,
+                       PmeAtomComm*              atc,
+                       const splinedata_t&       spline,
+                       real                      scaleFactor)
 {
     /* sum forces for local particles */
 
-    const int order = pme->pme_order;
-    const int nx    = pme->nkx;
-    const int ny    = pme->nky;
-    const int nz    = pme->nkz;
+    const int order = pme.pme_order;
+    const int nx    = pme.nkx;
+    const int ny    = pme.nky;
+    const int nz    = pme.nkz;
 
-    const real rxx = pme->recipbox[XX][XX];
-    const real ryx = pme->recipbox[YY][XX];
-    const real ryy = pme->recipbox[YY][YY];
-    const real rzx = pme->recipbox[ZZ][XX];
-    const real rzy = pme->recipbox[ZZ][YY];
-    const real rzz = pme->recipbox[ZZ][ZZ];
+    const real rxx = pme.recipbox[XX][XX];
+    const real ryx = pme.recipbox[YY][XX];
+    const real ryy = pme.recipbox[YY][YY];
+    const real rzx = pme.recipbox[ZZ][XX];
+    const real rzy = pme.recipbox[ZZ][YY];
+    const real rzz = pme.recipbox[ZZ][ZZ];
 
     const real* gmx_restrict gridPtr = grid.data();
 
@@ -321,12 +321,12 @@ void gather_f_bsplines(const gmx_pme_t*          pme,
     /* Note that unrolling this loop by templating this function on order
      * deteriorates performance significantly with gcc5/6/7.
      */
-    for (int nn = 0; nn < spline->n; nn++)
+    for (int nn = 0; nn < spline.n; nn++)
     {
-        const int  n           = spline->ind[nn];
-        const real coefficient = scale * atc->coefficient[n];
+        const int  n           = spline.ind[nn];
+        const real coefficient = scaleFactor * atc->coefficient[n];
 
-        if (bClearF)
+        if (clearForces)
         {
             force[n][XX] = 0;
             force[n][YY] = 0;
@@ -335,7 +335,7 @@ void gather_f_bsplines(const gmx_pme_t*          pme,
         if (coefficient != 0)
         {
             RVec       f;
-            const auto spline_func = do_fspline(pme, gridPtr, atc, spline, nn);
+            const auto spline_func = do_fspline(pme, gridPtr, *atc, spline, nn);
 
             switch (order)
             {
@@ -361,55 +361,50 @@ void gather_f_bsplines(const gmx_pme_t*          pme,
 }
 
 
-real gather_energy_bsplines(gmx_pme_t* pme, gmx::ArrayRef<const real> grid, PmeAtomComm* atc)
+real gather_energy_bsplines(const gmx_pme_t& pme, gmx::ArrayRef<const real> grid, const PmeAtomComm& atc)
 {
-    splinedata_t* spline;
-    int           ithx, ithy, ithz, i0, j0, k0;
-    int           index_x, index_xy;
-    int*          idxptr;
-    real          energy, pot, tx, ty, coefficient, gval;
-    int           norder;
-    int           order;
+    GMX_RELEASE_ASSERT(pme.nnodes == 1, "MPI parallelization is not supported here");
+    GMX_RELEASE_ASSERT(atc.nthread == 1, "OpenMP parallelization is not supported here");
 
-    spline = &atc->spline[0];
+    const splinedata_t& spline = atc.spline[0];
 
-    order = pme->pme_order;
+    const int order = pme.pme_order;
 
     const real* gmx_restrict gridPtr = grid.data();
 
-    energy = 0;
-    for (int n = 0; n < atc->numAtoms(); n++)
+    real energy = 0;
+    for (int n = 0; n < atc.numAtoms(); n++)
     {
-        coefficient = atc->coefficient[n];
+        const real coefficient = atc.coefficient[n];
 
         if (coefficient != 0)
         {
-            idxptr = atc->idx[n];
-            norder = n * order;
+            const int* idxptr = atc.idx[n];
+            const int  norder = n * order;
 
-            i0 = idxptr[XX];
-            j0 = idxptr[YY];
-            k0 = idxptr[ZZ];
+            const int i0 = idxptr[XX];
+            const int j0 = idxptr[YY];
+            const int k0 = idxptr[ZZ];
 
             /* Pointer arithmetic alert, next three statements */
-            const real* thx = spline->theta.coefficients[XX] + norder;
-            const real* thy = spline->theta.coefficients[YY] + norder;
-            const real* thz = spline->theta.coefficients[ZZ] + norder;
+            const real* thx = spline.theta.coefficients[XX] + norder;
+            const real* thy = spline.theta.coefficients[YY] + norder;
+            const real* thz = spline.theta.coefficients[ZZ] + norder;
 
-            pot = 0;
-            for (ithx = 0; (ithx < order); ithx++)
+            real pot = 0;
+            for (int ithx = 0; ithx < order; ithx++)
             {
-                index_x = (i0 + ithx) * pme->pmegrid_ny * pme->pmegrid_nz;
-                tx      = thx[ithx];
+                const int  index_x = (i0 + ithx) * pme.pmegrid_ny * pme.pmegrid_nz;
+                const real tx      = thx[ithx];
 
-                for (ithy = 0; (ithy < order); ithy++)
+                for (int ithy = 0; ithy < order; ithy++)
                 {
-                    index_xy = index_x + (j0 + ithy) * pme->pmegrid_nz;
-                    ty       = thy[ithy];
+                    const int  index_xy = index_x + (j0 + ithy) * pme.pmegrid_nz;
+                    const real ty       = thy[ithy];
 
-                    for (ithz = 0; (ithz < order); ithz++)
+                    for (int ithz = 0; ithz < order; ithz++)
                     {
-                        gval = gridPtr[index_xy + (k0 + ithz)];
+                        const real gval = gridPtr[index_xy + (k0 + ithz)];
                         pot += tx * ty * thz[ithz] * gval;
                     }
                 }
