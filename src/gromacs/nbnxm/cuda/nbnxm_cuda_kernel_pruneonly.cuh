@@ -283,7 +283,7 @@ nbnxn_kernel_prune_cuda<false>(const NBAtomDataGpu, const NBParamGpu, const GpuP
 
                             /* distance between i and j atoms */
                             float3 rv = make_float3(xi.x, xi.y, xi.z) - xj;
-                            float  r2 = norm2(rv);
+                            float  r2 = gmxDeviceNorm2(rv);
 
                             /* If _none_ of the atoms pairs are in rlistOuter
                                range, the bit corresponding to the current

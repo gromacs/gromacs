@@ -133,8 +133,8 @@ __device__ __forceinline__ void bonds_gpu(const int i,
     float3 dx;
     int    ki = pbcDxAiuc<calcVir>(pbcAiuc, gm_xq[ai], gm_xq[aj], dx);
 
-    float dr2 = norm2(dx);
-    float dr  = sqrt(dr2);
+    float dr2 = gmxDeviceNorm2(dx);
+    float dr  = gmxDeviceSqrt(dr2);
 
     float vbond;
     float fbond;
@@ -147,7 +147,7 @@ __device__ __forceinline__ void bonds_gpu(const int i,
 
     if (dr2 != 0.0F)
     {
-        fbond *= rsqrtf(dr2);
+        fbond *= gmxDeviceRSqrt(dr2);
 
         float3 fij = fbond * dx;
         staggeredAtomicAddForce(&gm_f[ai], fij);
@@ -175,10 +175,9 @@ __device__ __forceinline__ static float bond_angle_gpu(const float4   xi,
     *t1 = pbcDxAiuc<returnShift>(pbcAiuc, xi, xj, *r_ij);
     *t2 = pbcDxAiuc<returnShift>(pbcAiuc, xk, xj, *r_kj);
 
-    *costh   = cos_angle(*r_ij, *r_kj);
-    float th = acosf(*costh);
-
-    return th;
+    *costh = gmxDeviceCosAngle(*r_ij, *r_kj);
+    // Return value is the angle between the bonds i-j and j-k
+    return gmxDeviceAcos(*costh);
 }
 
 template<bool calcVir, bool calcEner>
@@ -222,13 +221,13 @@ __device__ __forceinline__ void angles_gpu(const int i,
     float cos_theta2 = cos_theta * cos_theta;
     if (cos_theta2 < 1.0F)
     {
-        float st    = dVdt * rsqrtf(1.0F - cos_theta2);
+        float st    = dVdt * gmxDeviceRSqrt(1.0F - cos_theta2);
         float sth   = st * cos_theta;
-        float nrij2 = norm2(r_ij);
-        float nrkj2 = norm2(r_kj);
+        float nrij2 = gmxDeviceNorm2(r_ij);
+        float nrkj2 = gmxDeviceNorm2(r_kj);
 
-        float nrij_1 = rsqrtf(nrij2);
-        float nrkj_1 = rsqrtf(nrkj2);
+        float nrij_1 = gmxDeviceRSqrt(nrij2);
+        float nrkj_1 = gmxDeviceRSqrt(nrkj2);
 
         float cik = st * nrij_1 * nrkj_1;
         float cii = sth * nrij_1 * nrij_1;
@@ -293,8 +292,8 @@ __device__ __forceinline__ void urey_bradley_gpu(const int i,
     float3 r_ik;
     int    ki = pbcDxAiuc<calcVir>(pbcAiuc, gm_xq[ai], gm_xq[ak], r_ik);
 
-    float dr2 = norm2(r_ik);
-    float dr  = dr2 * rsqrtf(dr2);
+    float dr2 = gmxDeviceNorm2(r_ik);
+    float dr  = dr2 * gmxDeviceRSqrt(dr2);
 
     float vbond;
     float fbond;
@@ -308,13 +307,13 @@ __device__ __forceinline__ void urey_bradley_gpu(const int i,
 
     if (cos_theta2 < 1.0F)
     {
-        float st  = dVdt * rsqrtf(1.0F - cos_theta2);
+        float st  = dVdt * gmxDeviceRSqrt(1.0F - cos_theta2);
         float sth = st * cos_theta;
 
-        float nrkj2 = norm2(r_kj);
-        float nrij2 = norm2(r_ij);
+        float nrkj2 = gmxDeviceNorm2(r_kj);
+        float nrij2 = gmxDeviceNorm2(r_ij);
 
-        float cik = st * rsqrtf(nrkj2 * nrij2);
+        float cik = st * gmxDeviceRSqrt(nrkj2 * nrij2);
         float cii = sth / nrij2;
         float ckk = sth / nrkj2;
 
@@ -338,7 +337,7 @@ __device__ __forceinline__ void urey_bradley_gpu(const int i,
             *vtot_loc += vbond;
         }
 
-        fbond *= rsqrtf(dr2);
+        fbond *= gmxDeviceRSqrt(dr2);
 
         float3 fik = fbond * r_ik;
         f_i += fik;
@@ -381,10 +380,10 @@ __device__ __forceinline__ static float dih_angle_gpu(const T        xi,
     *t2 = pbcDxAiuc<returnShift>(pbcAiuc, xk, xj, *r_kj);
     *t3 = pbcDxAiuc<returnShift>(pbcAiuc, xk, xl, *r_kl);
 
-    *m         = cprod(*r_ij, *r_kj);
-    *n         = cprod(*r_kj, *r_kl);
-    float phi  = gmx_angle(*m, *n);
-    float ipr  = iprod(*r_ij, *n);
+    *m         = gmxDeviceCrossProd(*r_ij, *r_kj);
+    *n         = gmxDeviceCrossProd(*r_kj, *r_kl);
+    float phi  = gmxDeviceAngle(*m, *n);
+    float ipr  = gmxDeviceInternalProd(*r_ij, *n);
     float sign = (ipr < 0.0F) ? -1.0F : 1.0F;
     phi        = sign * phi;
 
@@ -409,21 +408,21 @@ __device__ __forceinline__ static float dih_angle_gpu_sincos(const T        xi,
     *t2 = pbcDxAiuc<returnShift>(pbcAiuc, xk, xj, *r_kj);
     pbcDxAiuc<returnShift>(pbcAiuc, xk, xl, *r_kl);
 
-    *m = cprod(*r_ij, *r_kj);
-    *n = cprod(*r_kj, *r_kl);
+    *m = gmxDeviceCrossProd(*r_ij, *r_kj);
+    *n = gmxDeviceCrossProd(*r_kj, *r_kl);
 
-    float3 w    = cprod(*m, *n);
-    float  wLen = norm(w);
-    float  s    = iprod(*m, *n);
+    float3 w    = gmxDeviceCrossProd(*m, *n);
+    float  wLen = gmxDeviceNorm(w);
+    float  s    = gmxDeviceInternalProd(*m, *n);
 
-    float mLenSq = norm2(*m);
-    float nLenSq = norm2(*n);
-    float mnInv  = rsqrtf(mLenSq * nLenSq);
+    float mLenSq = gmxDeviceNorm2(*m);
+    float nLenSq = gmxDeviceNorm2(*n);
+    float mnInv  = gmxDeviceRSqrt(mLenSq * nLenSq);
 
     *cosval      = s * mnInv;
     float sinval = wLen * mnInv;
 
-    float ipr  = iprod(*r_ij, *n);
+    float ipr  = gmxDeviceInternalProd(*r_ij, *n);
     float sign = (ipr < 0.0F) ? -1.0F : 1.0F;
     return sign * sinval;
 }
@@ -435,8 +434,8 @@ dopdihs_gpu(const float cpA, const float phiA, const int mult, const float phi, 
     float mdphi, sdphi;
 
     mdphi = mult * phi - phiA * CUDA_DEG2RAD_F;
-    sdphi = sinf(mdphi);
-    *v    = cpA * (1.0F + cosf(mdphi));
+    sdphi = gmxDeviceSin(mdphi);
+    *v    = cpA * (1.0F + gmxDeviceCos(mdphi));
     *f    = -cpA * mult * sdphi;
 }
 
@@ -458,22 +457,22 @@ __device__ __forceinline__ static void do_dih_fup_gpu(const int      i,
                                                       const int      t1,
                                                       const int      t2)
 {
-    float iprm  = norm2(m);
-    float iprn  = norm2(n);
-    float nrkj2 = norm2(r_kj);
+    float iprm  = gmxDeviceNorm2(m);
+    float iprn  = gmxDeviceNorm2(n);
+    float nrkj2 = gmxDeviceNorm2(r_kj);
     float toler = nrkj2 * GMX_REAL_EPS;
     if ((iprm > toler) && (iprn > toler))
     {
-        float  nrkj_1 = rsqrtf(nrkj2); // replacing std::invsqrt call
+        float  nrkj_1 = gmxDeviceRSqrt(nrkj2); // replacing std::invsqrt call
         float  nrkj_2 = nrkj_1 * nrkj_1;
         float  nrkj   = nrkj2 * nrkj_1;
         float  a      = -ddphi * nrkj / iprm;
         float3 f_i    = a * m;
         float  b      = ddphi * nrkj / iprn;
         float3 f_l    = b * n;
-        float  p      = iprod(r_ij, r_kj);
+        float  p      = gmxDeviceInternalProd(r_ij, r_kj);
         p *= nrkj_2;
-        float q = iprod(r_kl, r_kj);
+        float q = gmxDeviceInternalProd(r_kl, r_kj);
         q *= nrkj_2;
         float3 uvec = p * f_i;
         float3 vvec = q * f_l;
@@ -732,8 +731,8 @@ __device__ __forceinline__ void pairs_gpu(const int i,
     float3 dr;
     int    fshift_index = pbcDxAiuc<calcVir>(pbcAiuc, gm_xq[ai], gm_xq[aj], dr);
 
-    float r2    = norm2(dr);
-    float rinv  = rsqrtf(r2);
+    float r2    = gmxDeviceNorm2(dr);
+    float rinv  = gmxDeviceRSqrt(r2);
     float rinv2 = rinv * rinv;
     float rinv6 = rinv2 * rinv2 * rinv2;
 

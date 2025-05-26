@@ -32,36 +32,11 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 
-#ifndef GMX_GPU_UTILS_VECTYPE_OPS_SHARED_GPU_TRIG_MATH_H
-#define GMX_GPU_UTILS_VECTYPE_OPS_SHARED_GPU_TRIG_MATH_H
+#ifndef GMX_GPU_UTILS_VECTYPE_OPS_SYCL_H
+#define GMX_GPU_UTILS_VECTYPE_OPS_SYCL_H
 
-#if !defined(__CUDACC__) && !defined(__HIPCC__)
-#    error Including header specific for CUDA or HIP device code without compiling the file with the correct compiler
-#endif
-
-/**** float3 ****/
-static __forceinline__ __host__ __device__ float gmxDeviceNorm(float3 a)
-{
-    return sqrt(a.x * a.x + a.y * a.y + a.z * a.z);
-}
-static __forceinline__ __host__ __device__ float gmxDeviceNorm2(float3 a)
-{
-    return (a.x * a.x + a.y * a.y + a.z * a.z);
-}
-static __forceinline__ __host__ __device__ float gmxDeviceDist3(float3 a, float3 b)
-{
-    return gmxDeviceNorm(b - a);
-}
-
-static __forceinline__ __host__ __device__ float gmxDeviceNorm(float4 a)
-{
-    return sqrt(a.x * a.x + a.y * a.y + a.z * a.z + a.w * a.w);
-}
-
-static __forceinline__ __host__ __device__ float gmxDeviceDist3(float4 a, float4 b)
-{
-    return gmxDeviceNorm(b - a);
-}
+#include "gromacs/gpu_utils/gmxsycl.h"
+#include "gromacs/gpu_utils/gputraits_sycl.h"
 
 /* \brief Compute the scalar product of two vectors.
  *
@@ -69,9 +44,9 @@ static __forceinline__ __host__ __device__ float gmxDeviceDist3(float4 a, float4
  * \param[in] b  Second vector.
  * \returns Scalar product.
  */
-static __forceinline__ __device__ float gmxDeviceInternalProd(const float3 a, const float3 b)
+static inline float gmxDeviceInternalProd(const Float3 a, const Float3 b)
 {
-    return a.x * b.x + a.y * b.y + a.z * b.z;
+    return a.dot(b);
 }
 
 /* \brief Compute the vector product of two vectors.
@@ -80,45 +55,48 @@ static __forceinline__ __device__ float gmxDeviceInternalProd(const float3 a, co
  * \param[in] b  Second vector.
  * \returns Vector product.
  */
-static __forceinline__ __device__ float3 gmxDeviceCrossProd(const float3 a, const float3 b)
+static inline Float3 gmxDeviceCrossProd(const Float3 a, const Float3 b)
 {
-    float3 c;
-    c.x = a.y * b.z - a.z * b.y;
-    c.y = a.z * b.x - a.x * b.z;
-    c.z = a.x * b.y - a.y * b.x;
-    return c;
+    return a.cross(b);
 }
 
 
-/* \brief Compute the angle between two vectors.
- *
- * Uses atan( |axb| / a.b ) formula.
- *
- * \param[in] a  First vector.
- * \param[in] b  Second vector.
- * \returns Angle between vectors in radians.
- */
-static __forceinline__ __device__ float gmxDeviceAngle(const float3 a, const float3 b)
+static inline float gmxDeviceSin(const float a)
 {
-    float3 w = gmxDeviceCrossProd(a, b);
-
-    float wlen = gmxDeviceNorm(w);
-    float s    = gmxDeviceInternalProd(a, b);
-
-    return atan2f(wlen, s); // requires float
+    return sycl::sin(a);
 }
 
-static __forceinline__ __device__ float gmxDeviceSin(const float a)
+static inline float gmxDeviceCos(const float a)
 {
-    return sinf(a);
+    return sycl::cos(a);
 }
 
-static __forceinline__ __device__ float gmxDeviceCos(const float a)
+static float inline gmxDeviceSqrt(float input)
 {
-    return cosf(a);
+    return sycl::sqrt(input);
 }
 
-/* \brief Cosine of an angle between two vectors.
+static inline float gmxDeviceRSqrt(float input)
+{
+    return sycl::rsqrt(input);
+}
+
+static inline float gmxDeviceAcos(float input)
+{
+    return sycl::acos(input);
+}
+
+static inline float gmxDeviceNorm(Float3 a)
+{
+    return a.norm();
+}
+
+static inline float gmxDeviceNorm2(Float3 a)
+{
+    return a.norm2();
+}
+
+/*! \brief Cosine of an angle between two vectors.
  *
  * Computes cosine using the following formula:
  *
@@ -133,7 +111,7 @@ static __forceinline__ __device__ float gmxDeviceCos(const float a)
  * \param[in] b  Second vector.
  * \returns Cosine between a and b.
  */
-static __forceinline__ __device__ float gmxDeviceCosAngle(const float3 a, const float3 b)
+static inline float gmxDeviceCosAngle(const Float3& a, const Float3& b)
 {
     float cosval;
 
@@ -161,4 +139,22 @@ static __forceinline__ __device__ float gmxDeviceCosAngle(const float3 a, const 
     return cosval;
 }
 
-#endif /* GMX_GPU_UTILS_VECTYPE_OPS_SHARED_CUDA_HIP_TRIG_MATH_H */
+/*! \brief Compute the angle between two vectors.
+ *
+ * Uses atan( |axb| / a.b ) formula.
+ *
+ * \param[in] a  First vector.
+ * \param[in] b  Second vector.
+ * \returns Angle between vectors in radians.
+ */
+static inline float gmxDeviceAngle(const Float3& a, const Float3& b)
+{
+    Float3 w = gmxDeviceCrossProd(a, b);
+
+    float wlen = gmxDeviceSqrt(gmxDeviceNorm2(w));
+    float s    = gmxDeviceInternalProd(a, b);
+
+    return sycl::atan2(wlen, s);
+}
+
+#endif /* GMX_GPU_UTILS_VECTYPE_OPS_SYCL_H */

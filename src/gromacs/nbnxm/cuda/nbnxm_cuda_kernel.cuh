@@ -475,7 +475,7 @@ __launch_bounds__(THREADS_PER_BLOCK, MIN_BLOCKS_PER_MP)
 
                             /* distance between i and j atoms */
                             rv = xi - xj;
-                            r2 = norm2(rv);
+                            r2 = gmxDeviceNorm2(rv);
 
 #    ifdef PRUNE_NBL
                             /* If _none_ of the atoms pairs are in cutoff range,

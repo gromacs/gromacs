@@ -135,10 +135,20 @@ static __forceinline__ __host__ __device__ void operator-=(float4& a, float3 b)
     a.y -= b.y;
     a.z -= b.z;
 }
-// NOLINTNEXTLINE(google-runtime-references)
-static __forceinline__ __device__ float gmxDeviceRSqrt(float& input)
+
+static float __forceinline__ __device__ gmxDeviceSqrt(float input)
 {
-    return rsqrt(input);
+    return sqrtf(input);
+}
+
+static __forceinline__ __device__ float gmxDeviceRSqrt(float input)
+{
+    return rsqrtf(input);
+}
+
+static __forceinline__ __device__ float gmxDeviceAcos(float input)
+{
+    return acosf(input);
 }
 
 #endif /* GMX_GPU_UTILS_VECTYPE_OPS_CUDA_BASE_MATH_H */
