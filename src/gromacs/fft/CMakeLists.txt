@@ -46,6 +46,8 @@ if (GMX_FFT_FFTPACK)
     gmx_add_libgromacs_sources(
         fft_fftpack.cpp
         ${CMAKE_SOURCE_DIR}/src/external/fftpack/fftpack.cpp)
+    # Silence a warning from fftpack
+    gmx_target_interface_warning_suppression(fft "-Wno-array-parameter" HAS_WARNING_NO_ARRAY_PARAMETER)
 endif()
 if (GMX_FFT_FFTW3 OR GMX_FFT_ARMPL_FFTW3)
     gmx_add_libgromacs_sources(fft_fftw3.cpp)
