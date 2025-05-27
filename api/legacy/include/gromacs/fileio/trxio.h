@@ -170,8 +170,10 @@ void close_trx(t_trxstatus* status);
  * in new code. Use read_first_frame() and close_trx() instead. */
 void done_trx_xframe(t_trxstatus* status);
 
+/*! \brief Open a TRX file and return an allocated status pointer
+ *
+ * Silently fails with TNG files */
 t_trxstatus* open_trx(const std::filesystem::path& outfile, const char* filemode);
-/* Open a TRX file and return an allocated status pointer */
 
 struct t_fileio* trx_get_fileio(t_trxstatus* status);
 /* get a fileio from a trxstatus */
