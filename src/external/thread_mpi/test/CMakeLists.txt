@@ -2,7 +2,7 @@
 function (gmx_add_tmpi_test_executable EXENAME)
     cmake_parse_arguments(ARG "" "" "SOURCES;ARGS" ${ARGN})
     add_executable(${EXENAME} EXCLUDE_FROM_ALL ${ARG_SOURCES})
-    target_link_libraries(${EXENAME} PRIVATE thread_mpi)
+    target_link_libraries(${EXENAME} PRIVATE thread_mpi Threads::Threads)
     target_compile_definitions(${EXENAME} PRIVATE HAVE_CONFIG_H)
     target_include_directories(${EXENAME} PRIVATE ${PROJECT_BINARY_DIR}/src/include)
     target_include_directories(${EXENAME} SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)
