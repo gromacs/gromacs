@@ -51,6 +51,9 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/gmxpreprocess/grompp.h"
+#include "gromacs/tools/dump.h"
+#include "gromacs/tools/trjconv.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -83,11 +86,9 @@ public:
         mdpFieldValues["nstvout"] = toString(numSteps);
         mdpFieldValues["nstfout"] = toString(0);
 
-        // Run grompp
         runner_.useStringAsMdpFile(prepareMdpFileContents(mdpFieldValues));
         runGrompp(&runner_);
 
-        // Do first mdrun
         runMdrun(&runner_, {});
     }
 
@@ -158,8 +159,108 @@ TEST_P(CheckpointCoordinatesSanityChecks, WithinTolerances)
     compareCptAndTrr(runner_.fullPrecisionTrajectoryFileName_,
                      runner_.cptOutputFileName_,
                      { trajectoryMatchSettings, trajectoryTolerances });
+
+    // This choice needs to stay in sync with the parameter lists so
+    // that at least one test case does not do the fast return.
+    if (integrator != "md" or simulationName != "spc2" or temperatureCoupling != "no"
+        or pressureCoupling != "no")
+    {
+        return;
+    }
+
+    // We want to check that gmx tools like grompp, trjconv,
+    // and dump work with checkpoint files, but we don't want to save
+    // a particular checkpoint file in the repo because the format is
+    // not intended to be stable across major versions. Nor do we want
+    // to run a special mdrun just to generate a valid checkpoint
+    // file. So we re-use the tpr, checkpoint and trajectory file just
+    // generated here. We don't need to test this capacity for
+    // checkpoint files for different kinds of simulation, hence the
+    // fast return above.
+    {
+        SCOPED_TRACE("gmx dump works with checkpoint file");
+
+        std::vector<const char*> args = { "gmx" };
+        CommandLine              commandLine(args);
+        commandLine.addOption("-cp", runner_.cptOutputFileName_);
+        ASSERT_EQ(0, gmx::test::CommandLineTestHelper::runModuleFactory(&gmx::DumpInfo::create, &commandLine));
+        // Ideally, we would now match something out of the dump, but currently there's no
+        // way to redirect the output of gmx dump to a file, even in tests.
+    }
+    {
+        SCOPED_TRACE("gmx trjconv works with checkpoint file");
+        const std::filesystem::path outputFile =
+                fileManager_.getTemporaryFilePath("trjconv-output.trr");
+
+        {
+            SCOPED_TRACE("Running trjconv");
+            std::vector<const char*> args = { "gmx" };
+            CommandLine              commandLine(args);
+            commandLine.addOption("-f", runner_.cptOutputFileName_);
+            commandLine.addOption("-o", outputFile);
+            ASSERT_EQ(0, gmx_trjconv(commandLine.argc(), commandLine.argv()));
+        }
+
+        TrajectoryFrameReader reader(outputFile);
+        reader.readNextFrame();
+        {
+            TrajectoryFrame frame = reader.frame();
+            // This depends on the mdp file for the system of simulationName
+            EXPECT_EQ(frame.time(), 0.016_real) << "Output file first frame has expected time";
+        }
+        EXPECT_FALSE(reader.readNextFrame())
+                << "Only one frame can have been converted from a checkpoint file";
+    }
+    {
+        SCOPED_TRACE("gmx trjconv -dump works with checkpoint file");
+        const std::filesystem::path dumpedFrame =
+                fileManager_.getTemporaryFilePath("dumped-frame.trr");
+
+        {
+            SCOPED_TRACE("Running trjconv -dump");
+            std::vector<const char*> args = { "gmx" };
+            CommandLine              commandLine(args);
+            commandLine.addOption("-f", runner_.cptOutputFileName_);
+            const real dumpTime = -1.0_real;
+            commandLine.addOption("-dump", std::to_string(dumpTime));
+            commandLine.addOption("-o", dumpedFrame);
+            ASSERT_EQ(0, gmx_trjconv(commandLine.argc(), commandLine.argv()));
+        }
+
+        TrajectoryFrameReader reader(dumpedFrame);
+        reader.readNextFrame();
+        {
+            TrajectoryFrame frame = reader.frame();
+            // This depends on the mdp file for the system of simulationName
+            EXPECT_EQ(frame.time(), 0.016_real) << "Dumped frame has expected time";
+        }
+        EXPECT_FALSE(reader.readNextFrame()) << "Only one frame can have been dumped from a "
+                                                "checkpoint file (or written with trjconv -dump)";
+    }
+    {
+        SCOPED_TRACE("gmx grompp -t works with checkpoint file");
+        const std::filesystem::path newTpr =
+                fileManager_.getTemporaryFilePath("from-checkpoint.tpr");
+        const std::filesystem::path anotherMdpOutputFileName =
+                fileManager_.getTemporaryFilePath("second.mdp");
+
+        std::vector<const char*> args = { "gmx" };
+        CommandLine              commandLine(args);
+        commandLine.addOption("-f", runner_.mdpOutputFileName_);
+        commandLine.addOption("-po", anotherMdpOutputFileName);
+        commandLine.addOption("-p", runner_.topFileName_);
+        commandLine.addOption("-c", runner_.groFileName_);
+        commandLine.addOption("-t", runner_.cptOutputFileName_);
+        commandLine.addOption("-o", newTpr);
+        ASSERT_EQ(0, gmx_grompp(commandLine.argc(), commandLine.argv()));
+        // Ideally, we would now match something out of the tpr
+        // (overkill) or stdout from grompp. But the latter currently
+        // cannot be redirected to a file, even in tests.
+    }
 }
 
+// If these are changed, consider matching changes that ensure that
+// at least one combination tests file operations on checkpoint files!
 #if !GMX_GPU_OPENCL
 INSTANTIATE_TEST_SUITE_P(CheckpointCoordinatesAreSane,
                          CheckpointCoordinatesSanityChecks,

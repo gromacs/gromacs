@@ -526,7 +526,7 @@ int gmx_trjcat(int argc, char* argv[])
     }
     fprintf(stdout,
             "Note that major changes are planned in future for "
-            "trjcat, to improve usability and utility.");
+            "trjcat, to improve usability and utility.\n");
 
     auto timeUnit = output_env_get_time_unit(oenv);
 
