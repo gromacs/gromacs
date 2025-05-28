@@ -961,10 +961,10 @@ int gmx_order(int argc, char* argv[])
     };
 
     const char* bugs[] = {
-        "This tool only works for saturated carbons and united atom force fields.",
-        "For anything else, it is highly recommended to use a different analysis method!",
-        "The option [TT]-unsat[tt] claimed to do analysis for unsaturated carbons",
-        "this but hasn't worked ever since it was added and has thus been removed."
+        "This tool only works for saturated carbons and united atom force fields. For anything "
+        "else, it is highly recommended to use a different analysis method!",
+        "The option [TT]-unsat[tt] claimed to do analysis for unsaturated carbons but this hasn't "
+        "worked ever since it was added and has thus been removed."
     };
 
     static int         nslices       = 1;     /* nr of slices defined       */

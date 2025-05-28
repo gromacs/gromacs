@@ -1338,8 +1338,8 @@ int gmx_chi(int argc, char* argv[])
         "C(-)-N-CA-C, and N-CA-C-O for [GRK]psi[grk] instead of N-CA-C-N(+). "
         "This causes (usually small) discrepancies with the output of other "
         "tools like [gmx-rama].",
-        "Rotamers with multiplicity 2 are printed in [TT]chi.log[tt] as if they had ",
-        "multiplicity 3, with the 3rd (g(+)) always having probability 0"
+        "Rotamers with multiplicity 2 are printed in [TT]chi.log[tt] as if they had multiplicity "
+        "3, with the 3rd (g(+)) always having probability 0"
     };
 
     /* defaults */
