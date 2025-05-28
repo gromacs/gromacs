@@ -41,10 +41,10 @@
 #ifndef GMX_FILEIO_H5MD_ATTRIBUTE_H
 #define GMX_FILEIO_H5MD_ATTRIBUTE_H
 
+#include <hdf5.h>
+
 #include <optional>
 #include <string>
-
-#include "h5md.h"
 
 namespace gmx
 {

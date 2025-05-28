@@ -42,7 +42,7 @@
 #ifndef GMX_FILEIO_H5MD_GROUP_H
 #define GMX_FILEIO_H5MD_GROUP_H
 
-#include "h5md.h"
+#include <hdf5.h>
 
 namespace gmx
 {

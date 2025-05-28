@@ -48,7 +48,6 @@
 
 #include "external/scope_guard/scope_guard.h"
 
-#include "h5md.h"
 
 namespace gmx
 {
