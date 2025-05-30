@@ -158,6 +158,14 @@ TEST_F(SelectModuleTest, WritesResidueIndices)
     runTest(CommandLine(cmdline));
 }
 
+TEST_F(SelectModuleTest, HandlesPrimeInAtomName)
+{
+    const char* const cmdline[] = { "select", "-select", "name \"O4'\"" };
+    setTopology("adenine.pdb");
+    includeDataset("index");
+    runTest(CommandLine(cmdline));
+}
+
 } // namespace
 } // namespace test
 } // namespace gmx
