@@ -183,7 +183,7 @@ std::tuple<int, GpuEventSynchronizer*> PmeCoordinateReceiverGpu::Impl::receivePp
         return std::make_tuple(-1, nullptr);
     }
 #else
-    GMX_UNUSED_VALUE(pipelineStage);
+    GMX_UNUSED_VALUE(requestIndex);
     return std::make_tuple(-1, nullptr);
 #endif
 }

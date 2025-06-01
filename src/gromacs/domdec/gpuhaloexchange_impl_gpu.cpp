@@ -153,8 +153,8 @@ void GpuHaloExchange::Impl::reinitHalo(DeviceBuffer<Float3> d_coordinatesBuffer,
     if (useNvshmem_)
     {
         reinitXGridSizeAndDevBarrier();
-        MPI_Allreduce(&newSize, &recvBufNewSize, 1, MPI_INT, MPI_MAX, mpi_comm_mysim_world_);
 #if GMX_MPI
+        MPI_Allreduce(&newSize, &recvBufNewSize, 1, MPI_INT, MPI_MAX, mpi_comm_mysim_world_);
         // remote PE atomOffset to nvshmem put halo coordinates
         MPI_Sendrecv(&atomOffset_,
                      sizeof(int),
