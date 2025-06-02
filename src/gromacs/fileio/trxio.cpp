@@ -73,6 +73,7 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
@@ -953,7 +954,7 @@ bool read_first_frame(const gmx_output_env_t*      oenv,
         /* Special treatment for TNG files */
         gmx_tng_open(fn, 'r', &(*status)->tng);
     }
-    else
+    else if ((*status)->fileType != efCPT)
     {
         fio = (*status)->fio = gmx_fio_open(fn, "r");
     }
@@ -961,7 +962,9 @@ bool read_first_frame(const gmx_output_env_t*      oenv,
     {
         case efTRR: break;
         case efCPT:
-            read_checkpoint_trxframe(fio, fr);
+            // Only one frame can be read from a checkpoint, so we don't
+            // want to leave an open file handle around.
+            read_checkpoint_trxframe(fn, fr);
             bFirst = FALSE;
             break;
         case efG96:

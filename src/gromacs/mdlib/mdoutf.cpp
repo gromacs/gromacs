@@ -314,7 +314,6 @@ static void write_checkpoint(const char*                     fn,
                              bool                            applyMpiBarrierBeforeRename,
                              MPI_Comm                        mpiBarrierCommunicator)
 {
-    t_fileio* fp;
     char*     fntemp; /* the temporary checkpoint file name */
     int       npmenodes;
     char      buf[1024], suffix[5 + STEPSTRSIZE], sbuf[STEPSTRSIZE];
@@ -357,8 +356,6 @@ static void write_checkpoint(const char*                     fn,
     // checkpoint properly (see
     // https://gitlab.com/gromacs/gromacs/-/issues/5358)
     auto outputfiles = gmx_fio_get_output_file_positions();
-
-    fp = gmx_fio_open(fntemp, "w");
 
     /* We can check many more things now (CPU, acceleration, etc), but
      * it is highly unlikely to have two separate builds with exactly
@@ -410,7 +407,7 @@ static void write_checkpoint(const char*                     fn,
         copy_ivec(domdecCells, headerContents.dd_nc);
     }
 
-    write_checkpoint_data(fp,
+    write_checkpoint_data(fntemp,
                           headerContents,
                           bExpanded,
                           elamstats,
@@ -420,10 +417,8 @@ static void write_checkpoint(const char*                     fn,
                           &outputfiles,
                           modularSimulatorCheckpointData);
 
-    /* we really, REALLY, want to make sure to physically write the checkpoint,
-       and all the files it depends on, out to disk. Because we've
-       opened the checkpoint with gmx_fio_open(), it's in our list
-       of open files.  */
+    /* we really, REALLY, want to make sure to physically write
+       all the files the checkpoint depends on, out to disk. */
     // Note that TNG files are flushed by the caller
     ret = gmx_fio_all_output_fsync();
 
@@ -442,11 +437,6 @@ static void write_checkpoint(const char*                     fn,
         {
             gmx_warning("%s", buf);
         }
-    }
-
-    if (gmx_fio_close(fp) != 0)
-    {
-        gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of disk space?");
     }
 
     /* we don't move the checkpoint if the user specified they didn't want it,

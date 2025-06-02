@@ -242,10 +242,11 @@ bool read_first_frame(const gmx_output_env_t*      oenv,
  * Returns true when succeeded, false otherwise.
  */
 
-bool read_next_frame(const gmx_output_env_t* oenv, t_trxstatus* status, struct t_trxframe* fr);
-/* Reads the next frame which is in accordance with fr->flags.
- * Returns true when succeeded, false otherwise.
+/*! \brief Reads the next frame which is in accordance with fr->flags.
+ *
+ * \returns true when succeeded, false otherwise.
  */
+bool read_next_frame(const gmx_output_env_t* oenv, t_trxstatus* status, struct t_trxframe* fr);
 
 int read_first_x(const gmx_output_env_t*      oenv,
                  t_trxstatus**                status,

@@ -311,7 +311,7 @@ struct CheckpointHeaderContents
 };
 
 /*! \brief Low-level checkpoint writing function */
-void write_checkpoint_data(t_fileio*                         fp,
+void write_checkpoint_data(const std::filesystem::path&      filename,
                            CheckpointHeaderContents          headerContents,
                            gmx_bool                          bExpanded,
                            LambdaWeightCalculation           elamstats,
@@ -340,8 +340,12 @@ void load_checkpoint(const std::filesystem::path&   fn,
                      gmx::ReadCheckpointDataHolder* modularSimulatorCheckpointData,
                      bool                           useModularSimulator);
 
-/* Read everything that can be stored in t_trxframe from a checkpoint file */
-void read_checkpoint_trxframe(struct t_fileio* fp, t_trxframe* fr);
+/*! \brief Read everything that can be stored in t_trxframe from a checkpoint file
+ *
+ * \param[in]  filename         Name of checkpoint file from which to read
+ * \param[out] fr               Trajectory frame into which to read
+ */
+void read_checkpoint_trxframe(const std::filesystem::path& filename, t_trxframe* fr);
 
 /* Print the complete contents of checkpoint file fn to out */
 void list_checkpoint(const std::filesystem::path& fn, FILE* out);
@@ -354,17 +358,17 @@ void list_checkpoint(const std::filesystem::path& fn, FILE* out);
  * \param[out] simulation_part  The part of the simulation that wrote the checkpoint
  * \param[out] step             The final step number of the simulation that wrote the checkpoint
  *
- * The output variables will both contain 0 if filename is NULL, the file
- * does not exist, or is not readable. */
+ * \throws FileIOError if the file cannot be opened */
 void read_checkpoint_part_and_step(const std::filesystem::path& filename, int* simulation_part, int64_t* step);
 
 /*!\brief Return header information from an open checkpoint file.
  *
  * Used by mdrun to handle restarts
  *
- * \param[in]  fp               Handle to open checkpoint file
+ * \param[in]  filename         Name of checkpoint file
  * \param[out] outputfiles      Container of output file names from the previous run. */
 CheckpointHeaderContents
-read_checkpoint_simulation_part_and_filenames(t_fileio* fp, std::vector<gmx_file_position_t>* outputfiles);
+read_checkpoint_simulation_part_and_filenames(const std::filesystem::path&      filename,
+                                              std::vector<gmx_file_position_t>* outputfiles);
 
 #endif

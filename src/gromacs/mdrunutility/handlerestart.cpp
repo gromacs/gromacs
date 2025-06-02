@@ -292,18 +292,9 @@ StartingBehaviorHandler chooseStartingBehavior(const AppendingBehavior appending
         return handler;
     }
 
-    t_fileio* fp = gmx_fio_open(checkpointFilename, "r");
-    if (fp == nullptr)
-    {
-        GMX_THROW(FileIOError(
-                formatString("Checkpoint file '%s' was found but could not be opened for "
-                             "reading. Check the file permissions.",
-                             checkpointFilename)));
-    }
-
     std::vector<gmx_file_position_t> outputFiles;
     CheckpointHeaderContents         headerContents =
-            read_checkpoint_simulation_part_and_filenames(fp, &outputFiles);
+            read_checkpoint_simulation_part_and_filenames(checkpointFilename, &outputFiles);
 
     GMX_RELEASE_ASSERT(!outputFiles.empty(),
                        "The checkpoint file or its reading is broken, as no output "

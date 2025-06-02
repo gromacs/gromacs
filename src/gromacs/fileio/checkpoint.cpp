@@ -2349,7 +2349,7 @@ static int do_cpt_files(XDR*                              xd,
     return 0;
 }
 
-void write_checkpoint_data(t_fileio*                         fp,
+void write_checkpoint_data(const std::filesystem::path&      filename,
                            CheckpointHeaderContents          headerContents,
                            gmx_bool                          bExpanded,
                            LambdaWeightCalculation           elamstats,
@@ -2359,6 +2359,8 @@ void write_checkpoint_data(t_fileio*                         fp,
                            std::vector<gmx_file_position_t>* outputfiles,
                            gmx::WriteCheckpointDataHolder*   modularSimulatorCheckpointData)
 {
+    t_fileio* fio            = gmx_fio_open(filename, "w");
+    XDR*      xdr            = gmx_fio_getxdr(fio);
     headerContents.flags_eks = 0;
     if (state->ekinstate.bUpToDate)
     {
@@ -2454,26 +2456,19 @@ void write_checkpoint_data(t_fileio*                         fp,
                                       | enumValueToBitMask(StateAwhEntry::ForceCorrelationGrid));
     }
 
-    do_cpt_header(gmx_fio_getxdr(fp), FALSE, nullptr, &headerContents);
+    do_cpt_header(xdr, FALSE, nullptr, &headerContents);
 
-    if ((do_cpt_state(gmx_fio_getxdr(fp), state->flags(), state, nullptr) < 0)
-        || (do_cpt_ekinstate(gmx_fio_getxdr(fp), headerContents.flags_eks, &state->ekinstate, nullptr) < 0)
-        || (do_cpt_enerhist(gmx_fio_getxdr(fp), FALSE, headerContents.flags_enh, enerhist, nullptr) < 0)
-        || (doCptPullHist(gmx_fio_getxdr(fp), FALSE, headerContents.flagsPullHistory, pullHist, nullptr) < 0)
-        || (do_cpt_df_hist(gmx_fio_getxdr(fp), headerContents.flags_dfh, headerContents.nlambda, &state->dfhist, nullptr)
+    if ((do_cpt_state(xdr, state->flags(), state, nullptr) < 0)
+        || (do_cpt_ekinstate(xdr, headerContents.flags_eks, &state->ekinstate, nullptr) < 0)
+        || (do_cpt_enerhist(xdr, FALSE, headerContents.flags_enh, enerhist, nullptr) < 0)
+        || (doCptPullHist(xdr, FALSE, headerContents.flagsPullHistory, pullHist, nullptr) < 0)
+        || (do_cpt_df_hist(xdr, headerContents.flags_dfh, headerContents.nlambda, &state->dfhist, nullptr) < 0)
+        || (do_cpt_EDstate(xdr, FALSE, headerContents.nED, observablesHistory->edsamHistory.get(), nullptr) < 0)
+        || (do_cpt_awh(xdr, FALSE, headerContents.flags_awhh, state->awhHistory.get(), nullptr, CheckPointVersion::CurrentVersion)
             < 0)
-        || (do_cpt_EDstate(
-                    gmx_fio_getxdr(fp), FALSE, headerContents.nED, observablesHistory->edsamHistory.get(), nullptr)
+        || (do_cpt_swapstate(xdr, FALSE, headerContents.eSwapCoords, observablesHistory->swapHistory.get(), nullptr)
             < 0)
-        || (do_cpt_awh(gmx_fio_getxdr(fp), FALSE, headerContents.flags_awhh, state->awhHistory.get(), nullptr, CheckPointVersion::CurrentVersion)
-            < 0)
-        || (do_cpt_swapstate(gmx_fio_getxdr(fp),
-                             FALSE,
-                             headerContents.eSwapCoords,
-                             observablesHistory->swapHistory.get(),
-                             nullptr)
-            < 0)
-        || (do_cpt_files(gmx_fio_getxdr(fp), FALSE, outputfiles, nullptr, headerContents.file_version) < 0))
+        || (do_cpt_files(xdr, FALSE, outputfiles, nullptr, headerContents.file_version) < 0))
     {
         gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of disk space?");
     }
@@ -2484,17 +2479,17 @@ void write_checkpoint_data(t_fileio*                         fp,
         gmx::MDModulesWriteCheckpointData mdModulesWriteCheckpoint = { builder.rootObject() };
         mdModulesNotifiers.checkpointingNotifier_.notify(mdModulesWriteCheckpoint);
         auto                     tree = builder.build();
-        gmx::FileIOXdrSerializer serializer(fp);
+        gmx::FileIOXdrSerializer serializer(fio);
         gmx::serializeKeyValueTree(tree, &serializer);
     }
 
     // Checkpointing modular simulator
     {
-        gmx::FileIOXdrSerializer serializer(fp);
+        gmx::FileIOXdrSerializer serializer(fio);
         modularSimulatorCheckpointData->serialize(&serializer);
     }
 
-    do_cpt_footer(gmx_fio_getxdr(fp), headerContents.file_version);
+    do_cpt_footer(xdr, headerContents.file_version);
 #if GMX_FAHCORE
     /* Always FAH checkpoint immediately after a Gromacs checkpoint.
      *
@@ -2511,6 +2506,7 @@ void write_checkpoint_data(t_fileio*                         fp,
      */
     fcCheckpoint();
 #endif
+    gmx_fio_close(fio);
 }
 
 static void check_int(FILE* fplog, const char* type, int p, int f, gmx_bool* mm)
@@ -3074,13 +3070,14 @@ static CheckpointHeaderContents read_checkpoint_data(t_fileio*                  
     return headerContents;
 }
 
-void read_checkpoint_trxframe(t_fileio* fp, t_trxframe* fr)
+void read_checkpoint_trxframe(const std::filesystem::path& filename, t_trxframe* fr)
 {
+    t_fileio*                        fio = gmx_fio_open(filename, "r");
     t_state                          state;
     std::vector<gmx_file_position_t> outputfiles;
     gmx::ReadCheckpointDataHolder    modularSimulatorCheckpointData;
     CheckpointHeaderContents         headerContents =
-            read_checkpoint_data(fp, &state, &outputfiles, &modularSimulatorCheckpointData);
+            read_checkpoint_data(fio, &state, &outputfiles, &modularSimulatorCheckpointData);
     if (headerContents.isModularSimulatorCheckpoint)
     {
         gmx::ModularSimulator::readCheckpointToTrxFrame(fr, &modularSimulatorCheckpointData, headerContents);
@@ -3111,6 +3108,10 @@ void read_checkpoint_trxframe(t_fileio* fp, t_trxframe* fr)
     if (fr->bBox)
     {
         copy_mat(state.box, fr->box);
+    }
+    if (gmx_fio_close(fio) != 0)
+    {
+        gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of disk space?");
     }
 }
 
@@ -3208,14 +3209,15 @@ void list_checkpoint(const std::filesystem::path& fn, FILE* out)
 }
 
 /* This routine cannot print tons of data, since it is called before the log file is opened. */
-CheckpointHeaderContents read_checkpoint_simulation_part_and_filenames(t_fileio* fp,
+CheckpointHeaderContents read_checkpoint_simulation_part_and_filenames(const std::filesystem::path& filename,
                                                                        std::vector<gmx_file_position_t>* outputfiles)
 {
+    t_fileio*                     fio = gmx_fio_open(filename, "r");
     t_state                       state;
     gmx::ReadCheckpointDataHolder modularSimulatorCheckpointData;
     CheckpointHeaderContents      headerContents =
-            read_checkpoint_data(fp, &state, outputfiles, &modularSimulatorCheckpointData);
-    if (gmx_fio_close(fp) != 0)
+            read_checkpoint_data(fio, &state, outputfiles, &modularSimulatorCheckpointData);
+    if (gmx_fio_close(fio) != 0)
     {
         gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of disk space?");
     }

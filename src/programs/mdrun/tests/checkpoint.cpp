@@ -108,9 +108,8 @@ public:
         // Now compare frames
         trajectoryComparison(cptReader.frame(), trrReader.frame());
 
-        // Files had exactly 1 / 2 frames
-        EXPECT_FALSE(cptReader.readNextFrame());
-        EXPECT_FALSE(trrReader.readNextFrame());
+        EXPECT_FALSE(cptReader.readNextFrame()) << "checkpoint files only ever have one frame";
+        EXPECT_FALSE(trrReader.readNextFrame()) << "trajectory file had only two frames";
     }
 };
 
