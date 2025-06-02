@@ -69,25 +69,32 @@ static sycl::property_list makeQueuePropertyList(const bool enableProfiling, Pro
     }
 }
 
+#if GMX_SYCL_ACPP
+static auto acppPriorityProperty(int value)
+{
+#    if defined(ACPP_EXT_QUEUE_PRIORITY) // Since ACpp 24.06
+    return sycl::property::queue::AdaptiveCpp_priority{ value };
+#    elif defined(HIPSYCL_EXT_QUEUE_PRIORITY)
+    return sycl::property::queue::hipSYCL_priority{ value };
+#    else
+    GMX_RELEASE_ASSERT(false,
+                       "acppPriorityProperty should only be called when the queue priority "
+                       "extensions are supported");
+#    endif
+}
+#endif
+
 //! Return a SYCL property list for a queue with the requested properties, where supported
 static sycl::property_list makeQueuePropertyList(const bool enableProfiling, const DeviceStreamPriority priority)
 {
-#ifdef HIPSYCL_EXT_QUEUE_PRIORITY // Use AdaptiveCpp/hipSYCL extension
+#if defined(ACPP_EXT_QUEUE_PRIORITY) || defined(HIPSYCL_EXT_QUEUE_PRIORITY) // Use AdaptiveCpp extension
     // For simplicity, we assume 0 to be the default priority (guaranteed for CUDA, verified for HIP)
     const int defaultPrioValue = 0;
     // In both CUDA and HIP, lower value means higher priority, and values are automatically clamped
     // to the valid range, so we just choose a large negative value here.
     const int highPrioValue = -999;
-    if (priority == DeviceStreamPriority::High)
-    {
-        return makeQueuePropertyList(enableProfiling,
-                                     sycl::property::queue::hipSYCL_priority{ highPrioValue });
-    }
-    else
-    {
-        return makeQueuePropertyList(enableProfiling,
-                                     sycl::property::queue::hipSYCL_priority{ defaultPrioValue });
-    }
+    const int chosenPrioValue = (priority == DeviceStreamPriority::High) ? highPrioValue : defaultPrioValue;
+    return makeQueuePropertyList(enableProfiling, acppPriorityProperty(chosenPrioValue));
 #elif defined(SYCL_EXT_ONEAPI_QUEUE_PRIORITY) // Use oneAPI DPC++ extension
     if (priority == DeviceStreamPriority::High)
     {
@@ -121,7 +128,7 @@ DeviceStream::DeviceStream(const DeviceContext& deviceContext, DeviceStreamPrior
 DeviceStream::~DeviceStream()
 {
 #if GMX_SYCL_ACPP
-    // Prevents use-after-free errors in hipSYCL's CUDA backend during unit tests
+    // Prevents use-after-free errors in ACpp's CUDA backend during unit tests
     try
     {
         synchronize();
