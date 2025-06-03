@@ -3081,6 +3081,12 @@ void read_checkpoint_trxframe(const std::filesystem::path& filename, t_trxframe*
     if (headerContents.isModularSimulatorCheckpoint)
     {
         gmx::ModularSimulator::readCheckpointToTrxFrame(fr, &modularSimulatorCheckpointData, headerContents);
+        if (gmx_fio_close(fio) != 0)
+        {
+            gmx_file(
+                    "Cannot read/write checkpoint; corrupt file, or maybe you are out of disk "
+                    "space?");
+        }
         return;
     }
 
