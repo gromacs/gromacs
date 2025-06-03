@@ -106,12 +106,11 @@ enum class NonbondedResource : int
     EmulateGpu
 };
 
-/*! \brief Returns whether CPU SIMD support exists for the given inputrec
+/*! \brief Returns whether CPU SIMD support exists for the given \p inputrec
  *
- * If the return value is FALSE and fplog/cr != NULL, prints a fallback
- * message to fplog/stderr.
+ * If the return value is \c false, issue a warning to \p mdlog
  */
-static bool nbnxn_simd_supported(const MDLogger& mdlog, const t_inputrec& inputrec)
+static bool nbnxmSimdSupported(const MDLogger& mdlog, const t_inputrec& inputrec)
 {
     if (inputrec.vdwtype == VanDerWaalsType::Pme && inputrec.ljpme_combination_rule == LongRangeVdW::LB)
     {
@@ -123,139 +122,156 @@ static bool nbnxn_simd_supported(const MDLogger& mdlog, const t_inputrec& inputr
                 .appendText(
                         "LJ-PME with Lorentz-Berthelot is not supported with SIMD kernels, falling "
                         "back to plain C kernels");
-        return FALSE;
+        return false;
     }
 
-    return TRUE;
+    return true;
 }
 
-/*! \brief Returns the most suitable CPU kernel type and Ewald handling */
-static NbnxmKernelSetup pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused&    inputrec,
-                                              const gmx_hw_info_t gmx_unused& hardwareInfo)
+/*! \brief Returns the most suitable CPU SIMD kernel type
+ *
+ * Environment variables GMX_NBNXN_SIMD_4XN and GMX_NBNXN_SIMD_2XNN take priority.
+ * Then, as long as both 2x(N+N) and 4xN kernels are built, we choose between them.
+ * This is based on the SIMD acceleration choice and CPU information detected at runtime.
+ *
+ * 4xN calculates more (zero) interactions, but has less pair-search
+ * work and much better kernel instruction scheduling.
+ *
+ * Up till now we have only seen that on Intel Sandy/Ivy Bridge,
+ * which doesn't have FMA, both the analytical and tabulated Ewald
+ * kernels have similar pair rates for 4x8 and 2x(4+4), so we choose
+ * 2x(4+4) because it results in significantly fewer pairs.
+ * For RF, the raw pair rate of the 4x8 kernel is higher than 2x(4+4),
+ * 10% with HT, 50% without HT. As we currently don't detect the actual
+ * use of HT, use 4x8 to avoid a potential performance hit.
+ * On Intel Haswell 4x8 is always faster.
+ *
+ */
+static NbnxmKernelType pickNbnxmKernelCpuSimdType(const t_inputrec&               inputrec,
+                                                  const gmx_hw_info_t gmx_unused& hardwareInfo)
 {
-    NbnxmKernelSetup kernelSetup;
+    GMX_RELEASE_ASSERT(sc_haveNbnxmSimd4xmKernels || sc_haveNbnxmSimd2xmmKernels,
+                       "Here at least on of SIMD kernels should be supported");
 
-    if (!GMX_SIMD)
+    const bool envForce4xn  = (std::getenv("GMX_NBNXN_SIMD_4XN") != nullptr);
+    const bool envForce2xnn = (std::getenv("GMX_NBNXN_SIMD_2XNN") != nullptr);
+    if (envForce4xn && envForce2xnn)
     {
-        kernelSetup.kernelType         = NbnxmKernelType::Cpu4x4_PlainC;
-        kernelSetup.ewaldExclusionType = EwaldExclusionType::Table;
+        GMX_THROW(gmx::InvalidInputError(
+                "Cannot have both GMX_NBNXN_SIMD_4XN and GMX_NBNXN_SIMD_2XNN env.variables defined "
+                "at the same time"));
     }
-    else if (sc_haveNbnxmSimd4xmKernels && !sc_haveNbnxmSimd2xmmKernels)
+    if (envForce2xnn)
     {
-        kernelSetup.kernelType = NbnxmKernelType::Cpu4xN_Simd_4xN;
+        if (!sc_haveNbnxmSimd2xmmKernels)
+        {
+            GMX_THROW(gmx::InvalidInputError(
+                    "SIMD 2x(N+N) kernels requested, but GROMACS has been compiled without "
+                    "support for these kernels"));
+        }
+        return NbnxmKernelType::Cpu4xN_Simd_2xNN;
     }
-    else if (!sc_haveNbnxmSimd4xmKernels && sc_haveNbnxmSimd2xmmKernels)
+    if (envForce4xn)
     {
-        kernelSetup.kernelType = NbnxmKernelType::Cpu4xN_Simd_2xNN;
+        if (!sc_haveNbnxmSimd4xmKernels)
+        {
+            GMX_THROW(gmx::InvalidInputError(
+                    "SIMD 4xN kernels requested, but GROMACS has been compiled without support "
+                    "for these kernels"));
+        }
+        return NbnxmKernelType::Cpu4xN_Simd_4xN;
+    }
+    if (sc_haveNbnxmSimd4xmKernels && !sc_haveNbnxmSimd2xmmKernels)
+    {
+        return NbnxmKernelType::Cpu4xN_Simd_4xN;
+    }
+    if (!sc_haveNbnxmSimd4xmKernels && sc_haveNbnxmSimd2xmmKernels)
+    {
+        return NbnxmKernelType::Cpu4xN_Simd_2xNN;
+    }
+
+    GMX_RELEASE_ASSERT(sc_haveNbnxmSimd4xmKernels && sc_haveNbnxmSimd2xmmKernels,
+                       "Here both 4xM and 2xMM SIMD kernels should be supported");
+
+    if (hardwareInfo.haveAmdZen1Cpu)
+    {
+        /* One 256-bit FMA per cycle makes 2xNN faster */
+        return NbnxmKernelType::Cpu4xN_Simd_2xNN;
+    }
+    if (!GMX_SIMD_HAVE_FMA && (usingPmeOrEwald(inputrec.coulombtype) || usingLJPme(inputrec.vdwtype)))
+    {
+        /* We have Ewald kernels without FMA (Intel Sandy/Ivy Bridge).
+         * There are enough instructions to make 2x(4+4) efficient.
+         */
+        return NbnxmKernelType::Cpu4xN_Simd_2xNN;
+    }
+
+    return NbnxmKernelType::Cpu4xN_Simd_4xN;
+}
+
+/*! \brief Returns the most suitable CPU SIMD kernel exclusion type
+ *
+ * Environment variables GMX_NBNXN_EWALD_TABLE and GMX_NBNXN_EWALD_ANALYTICAL override all heuristics below.
+ *
+ * Since table lookup's don't parallelize with SIMD, analytical will probably always be faster for a SIMD width of 8 or more.
+ * With FMA analytical is sometimes faster for a width if 4 as well.
+ * In single precision, this is faster on Bulldozer.
+ * On AMD Zen1, tabulated Ewald kernels are faster on all 4 combinations of single or double precision and 128 or 256-bit AVX2.
+ */
+static EwaldExclusionType pickNbnxmKernelCpuSimdExclusion(const gmx_hw_info_t gmx_unused& hardwareInfo)
+{
+    const bool envForceTable = (std::getenv("GMX_NBNXN_EWALD_TABLE") != nullptr);
+    const bool envForceAna   = (std::getenv("GMX_NBNXN_EWALD_ANALYTICAL") != nullptr);
+    if (envForceTable && envForceAna)
+    {
+        GMX_THROW(gmx::InvalidInputError(
+                "Cannot have both GMX_NBNXN_EWALD_TABLE and GMX_NBNXN_EWALD_ANALYTICAL "
+                "env.variables defined at the same time"));
+    }
+    if (envForceAna)
+    {
+        return EwaldExclusionType::Analytical;
+    }
+    if (envForceTable)
+    {
+        return EwaldExclusionType::Table;
+    }
+
+#if GMX_SIMD                     // To avoid using undefined macros
+    MSVC_DIAGNOSTIC_IGNORE(6285) // Always zero because compile time constant
+    if ((GMX_SIMD_REAL_WIDTH >= 8 || (GMX_SIMD_REAL_WIDTH >= 4 && GMX_SIMD_HAVE_FMA && !GMX_DOUBLE))
+        && !hardwareInfo.haveAmdZen1Cpu)
+    {
+        return EwaldExclusionType::Analytical;
     }
     else
     {
-        GMX_RELEASE_ASSERT(sc_haveNbnxmSimd4xmKernels && sc_haveNbnxmSimd2xmmKernels,
-                           "Here both 4xM and 2xMM SIMD kernels should be supported");
-
-        /* We need to choose if we want 2x(N+N) or 4xN kernels.
-         * This is based on the SIMD acceleration choice and CPU information
-         * detected at runtime.
-         *
-         * 4xN calculates more (zero) interactions, but has less pair-search
-         * work and much better kernel instruction scheduling.
-         *
-         * Up till now we have only seen that on Intel Sandy/Ivy Bridge,
-         * which doesn't have FMA, both the analytical and tabulated Ewald
-         * kernels have similar pair rates for 4x8 and 2x(4+4), so we choose
-         * 2x(4+4) because it results in significantly fewer pairs.
-         * For RF, the raw pair rate of the 4x8 kernel is higher than 2x(4+4),
-         * 10% with HT, 50% without HT. As we currently don't detect the actual
-         * use of HT, use 4x8 to avoid a potential performance hit.
-         * On Intel Haswell 4x8 is always faster.
-         */
-        kernelSetup.kernelType = NbnxmKernelType::Cpu4xN_Simd_4xN;
-
-        if (!GMX_SIMD_HAVE_FMA && (usingPmeOrEwald(inputrec.coulombtype) || usingLJPme(inputrec.vdwtype)))
-        {
-            /* We have Ewald kernels without FMA (Intel Sandy/Ivy Bridge).
-             * There are enough instructions to make 2x(4+4) efficient.
-             */
-            kernelSetup.kernelType = NbnxmKernelType::Cpu4xN_Simd_2xNN;
-        }
-
-        if (hardwareInfo.haveAmdZen1Cpu)
-        {
-            /* One 256-bit FMA per cycle makes 2xNN faster */
-            kernelSetup.kernelType = NbnxmKernelType::Cpu4xN_Simd_2xNN;
-        }
+        return EwaldExclusionType::Table;
     }
-
-    if (std::getenv("GMX_NBNXN_SIMD_4XN") != nullptr)
-    {
-        if (sc_haveNbnxmSimd4xmKernels)
-        {
-            kernelSetup.kernelType = NbnxmKernelType::Cpu4xN_Simd_4xN;
-        }
-        else
-        {
-            gmx_fatal(FARGS,
-                      "SIMD 4xN kernels requested, but GROMACS has been compiled without support "
-                      "for these kernels");
-        }
-    }
-    if (std::getenv("GMX_NBNXN_SIMD_2XNN") != nullptr)
-    {
-        if (sc_haveNbnxmSimd2xmmKernels)
-        {
-            kernelSetup.kernelType = NbnxmKernelType::Cpu4xN_Simd_2xNN;
-        }
-        else
-        {
-            gmx_fatal(FARGS,
-                      "SIMD 2x(N+N) kernels requested, but GROMACS has been compiled without "
-                      "support for these kernels");
-        }
-    }
-
-    if (getenv("GMX_NBNXN_PLAINC_1X1") != nullptr)
-    {
-        kernelSetup.kernelType         = NbnxmKernelType::Cpu1x1_PlainC;
-        kernelSetup.ewaldExclusionType = EwaldExclusionType::Table;
-    }
-
-    if (kernelSetup.kernelType == NbnxmKernelType::Cpu4xN_Simd_2xNN
-        || kernelSetup.kernelType == NbnxmKernelType::Cpu4xN_Simd_4xN)
-    {
-        /* Analytical Ewald exclusion correction is only an option in
-         * the SIMD kernel.
-         * Since table lookup's don't parallelize with SIMD, analytical
-         * will probably always be faster for a SIMD width of 8 or more.
-         * With FMA analytical is sometimes faster for a width if 4 as well.
-         * In single precision, this is faster on Bulldozer.
-         * On AMD Zen, tabulated Ewald kernels are faster on all 4 combinations
-         * of single or double precision and 128 or 256-bit AVX2.
-         */
-        MSVC_DIAGNOSTIC_IGNORE(6285) // Always zero because compile time constant
-        if (
-#if GMX_SIMD
-                (GMX_SIMD_REAL_WIDTH >= 8 || (GMX_SIMD_REAL_WIDTH >= 4 && GMX_SIMD_HAVE_FMA && !GMX_DOUBLE)) &&
+    MSVC_DIAGNOSTIC_RESET
+#else
+    GMX_RELEASE_ASSERT(false, "Can only pick SIMD kernel when GROMACS is built with SIMD");
+    return EwaldExclusionType::NotSet;
 #endif
-                !hardwareInfo.haveAmdZen1Cpu)
-        {
-            kernelSetup.ewaldExclusionType = EwaldExclusionType::Analytical;
-        }
-        MSVC_DIAGNOSTIC_RESET
-        else
-        {
-            kernelSetup.ewaldExclusionType = EwaldExclusionType::Table;
-        }
-        if (std::getenv("GMX_NBNXN_EWALD_TABLE") != nullptr)
-        {
-            kernelSetup.ewaldExclusionType = EwaldExclusionType::Table;
-        }
-        if (std::getenv("GMX_NBNXN_EWALD_ANALYTICAL") != nullptr)
-        {
-            kernelSetup.ewaldExclusionType = EwaldExclusionType::Analytical;
-        }
-    }
+}
 
-    return kernelSetup;
+/*! \brief Returns the most suitable CPU kernel type and Ewald handling */
+static NbnxmKernelSetup pickNbnxnKernelCpu(const t_inputrec&    inputrec,
+                                           const gmx_hw_info_t& hardwareInfo,
+                                           bool                 useSimd,
+                                           const MDLogger&      mdlog)
+{
+    // Analytical Ewald exclusion correction is only an option in the SIMD kernel.
+    if (std::getenv("GMX_NBNXN_PLAINC_1X1") != nullptr)
+    {
+        return NbnxmKernelSetup{ NbnxmKernelType::Cpu1x1_PlainC, EwaldExclusionType::Table };
+    }
+    if (GMX_SIMD && useSimd && nbnxmSimdSupported(mdlog, inputrec))
+    {
+        return NbnxmKernelSetup{ pickNbnxmKernelCpuSimdType(inputrec, hardwareInfo),
+                                 pickNbnxmKernelCpuSimdExclusion(hardwareInfo) };
+    }
+    return NbnxmKernelSetup{ NbnxmKernelType::Cpu4x4_PlainC, EwaldExclusionType::Table };
 }
 
 const char* nbnxmKernelTypeToName(const NbnxmKernelType kernelType)
@@ -298,15 +314,7 @@ static NbnxmKernelSetup pick_nbnxn_kernel(const gmx::MDLogger&     mdlog,
     }
     else
     {
-        if (use_simd_kernels && nbnxn_simd_supported(mdlog, inputrec))
-        {
-            kernelSetup = pick_nbnxn_kernel_cpu(inputrec, hardwareInfo);
-        }
-        else
-        {
-            kernelSetup.kernelType         = NbnxmKernelType::Cpu4x4_PlainC;
-            kernelSetup.ewaldExclusionType = EwaldExclusionType::Analytical;
-        }
+        kernelSetup = pickNbnxnKernelCpu(inputrec, hardwareInfo, use_simd_kernels, mdlog);
     }
 
     const int iClusterSize = (nonbondedResource == NonbondedResource::Cpu)
@@ -334,7 +342,7 @@ static NbnxmKernelSetup pick_nbnxn_kernel(const gmx::MDLogger&     mdlog,
     }
 
     // Warn when using non-SIMD CPU kernels on architectures with (fast) SIMD support
-    const bool haveSimdSupportForArch =
+    constexpr bool haveSimdSupportForArch =
             (c_architecture == Architecture::X86 || c_architecture == Architecture::Arm
              || c_architecture == Architecture::PowerPC);
     if (kernelTypeUsesSimplePairlist(kernelSetup.kernelType)
