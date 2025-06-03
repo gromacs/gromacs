@@ -14,3 +14,12 @@ Status of MDModules that require an external library is now logged
 Support status of CP2K QM/MM, Colvars, Plumed & Neural Network Potential modules
 along with the version of libraries they use are now reported
 in ``md.log`` and ``gmx --version``.
+
+Invalid ``-nstlist`` value is now an error instead of a warning
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+An invalid (e.g., too large) ``-nstlist`` value now triggers a fatal error instead
+of falling back to the fixed value from the TPR.
+
+:issue:`5365`
+

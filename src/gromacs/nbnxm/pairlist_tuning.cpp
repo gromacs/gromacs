@@ -380,10 +380,16 @@ void increaseNstlist(FILE*             fp,
 
     if (!bBox || !bDD)
     {
-        gmx_warning("%s", !bBox ? box_err : dd_err);
+        const char* const msg = !bBox ? box_err : dd_err;
+        // If the user requested a specific nstlist and we cannot use it, raise a fatal error
+        if (nstlist_cmdline > 0)
+        {
+            gmx_fatal(FARGS, "%s", msg);
+        }
+        gmx_warning("%s", msg);
         if (fp != nullptr)
         {
-            fprintf(fp, "\n%s\n", !bBox ? box_err : dd_err);
+            fprintf(fp, "\n%s\n", msg);
         }
         ir->nstlist = nstlist_orig;
     }
