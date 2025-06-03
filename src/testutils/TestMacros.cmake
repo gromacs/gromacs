@@ -365,13 +365,19 @@ function (gmx_add_unit_test NAME EXENAME)
 endfunction()
 
 function (gmx_add_mpi_unit_test NAME EXENAME RANKS)
-    cmake_parse_arguments(ARG "HARDWARE_DETECTION" "" "" ${ARGN})
+    set(_options SLOW_TEST HARDWARE_DETECTION)
+    cmake_parse_arguments(ARG "${_options}" "" "" ${ARGN})
     if (GMX_MPI OR (GMX_THREAD_MPI AND GTEST_IS_THREADSAFE))
         gmx_add_gtest_executable(${EXENAME} MPI ${ARGN})
         set(_test_labels "")
         if (ARG_HARDWARE_DETECTION)
-            # All unit tests should be quick, so mark them as QUICK_GPU_TEST if they use GPU
-            set(_test_labels "QUICK_GPU_TEST")
+            if (ARG_SLOW_TEST)
+                # Some tests might be known to be slow in GPU configs, mark them as such
+                set(_test_labels SLOW_TEST QUICK_GPU_TEST)
+            elseif()
+                # If not explicitly marked, all unit tests should be quick, so mark them as QUICK_GPU_TEST if they use GPU
+                set(_test_labels "QUICK_GPU_TEST")
+            endif()
         endif()
         gmx_register_gtest_test(${NAME} ${EXENAME} ${_test_labels} MPI_RANKS ${RANKS})
     endif()
