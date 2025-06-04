@@ -87,6 +87,7 @@
 #include "gromacs/nbnxm/gridset.h"
 #include "gromacs/nbnxm/kernel_common.h"
 #include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/nbnxm/nbnxm_geometry.h"
 #include "gromacs/nbnxm/nbnxm_simd.h"
 #include "gromacs/nbnxm/pairlistparams.h"
 #include "gromacs/nbnxm/pairlistset.h"
@@ -485,6 +486,8 @@ TEST_P(NbnxmKernelTest, WorksWith)
         }
         options_.useLJPme = (parameters_.vdwKernelType == vdwktLJEWALDCOMBGEOM);
 
+        const bool kernelIsPlainC = kernelTypeIsPlainC(options_.kernelSetup.kernelType);
+
         if (referenceDataMode() != ReferenceDataMode::Compare)
         {
             // Note that (for simplicity) runs in modes
@@ -497,7 +500,7 @@ TEST_P(NbnxmKernelTest, WorksWith)
                                  "double-precision build of GROMACS";
             }
 
-            if (options_.kernelSetup.kernelType == NbnxmKernelType::Cpu4x4_PlainC)
+            if (kernelIsPlainC)
             {
                 GTEST_SKIP() << "Plain-C kernels are never used to generate reference data";
             }
@@ -520,10 +523,6 @@ TEST_P(NbnxmKernelTest, WorksWith)
             GTEST_SKIP() << "Cannot test or generate data for 2xNN kernels without suitable SIMD "
                             "support";
         }
-
-        const bool kernelIsPlainC =
-                (options_.kernelSetup.kernelType == NbnxmKernelType::Cpu4x4_PlainC
-                 || options_.kernelSetup.kernelType == NbnxmKernelType::Cpu1x1_PlainC);
 
         if (kernelIsPlainC
             && (options_.coulombType == CoulombKernelType::Ewald

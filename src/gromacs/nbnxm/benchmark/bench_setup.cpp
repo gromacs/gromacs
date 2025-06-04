@@ -73,6 +73,7 @@
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/nbnxm/nbnxm_geometry.h"
 #include "gromacs/nbnxm/nbnxm_simd.h"
 #include "gromacs/nbnxm/pairlistparams.h"
 #include "gromacs/nbnxm/pairlistset.h"
@@ -145,7 +146,7 @@ static NbnxmKernelSetup getKernelSetup(const NbnxmKernelBenchOptions& options)
     // The int enum options.nbnxnSimd is set up to match KernelType + 1
     kernelSetup.kernelType = translateBenchmarkEnum(options.nbnxmSimd);
     // The plain-C kernel does not support analytical ewald correction
-    if (kernelSetup.kernelType == NbnxmKernelType::Cpu4x4_PlainC)
+    if (kernelTypeIsPlainC((kernelSetup.kernelType)))
     {
         kernelSetup.ewaldExclusionType = EwaldExclusionType::Table;
     }

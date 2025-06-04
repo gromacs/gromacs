@@ -134,7 +134,8 @@ gmx::NbnxmKernelSetup createKernelSetupCPU(const SimdKernels nbnxmSimd, const bo
     kernelSetup.kernelType = translateBenchmarkEnum(nbnxmSimd);
 
     // The plain-C kernel does not support analytical ewald correction
-    if (kernelSetup.kernelType == gmx::NbnxmKernelType::Cpu4x4_PlainC)
+    if (kernelSetup.kernelType == gmx::NbnxmKernelType::Cpu4x4_PlainC
+        || kernelSetup.kernelType == gmx::NbnxmKernelType::Cpu1x1_PlainC)
     {
         kernelSetup.ewaldExclusionType = gmx::EwaldExclusionType::Table;
     }

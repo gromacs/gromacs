@@ -117,11 +117,17 @@ static constexpr bool kernelTypeIsSimd(const NbnxmKernelType kernelType)
             || kernelType == NbnxmKernelType::Cpu4xN_Simd_2xNN);
 }
 
-/*! \brief Returns whether the pair-list corresponding to nb_kernel_type is simple */
+//! Returns whether a plain-C kernel is in use
+static constexpr bool kernelTypeIsPlainC(const NbnxmKernelType kernelType)
+{
+    return (kernelType == NbnxmKernelType::Cpu4x4_PlainC || kernelType == NbnxmKernelType::Cpu1x1_PlainC);
+}
+
+
+/*! \brief Returns whether the pair-list corresponding to \p kernelType is simple */
 static constexpr bool kernelTypeUsesSimplePairlist(const NbnxmKernelType kernelType)
 {
-    return (kernelType == NbnxmKernelType::Cpu4x4_PlainC
-            || kernelType == NbnxmKernelType::Cpu1x1_PlainC || kernelTypeIsSimd(kernelType));
+    return (kernelTypeIsPlainC(kernelType) || kernelTypeIsSimd(kernelType));
 }
 
 /*! \brief Returns the increase in pairlist radius when including volume of pairs beyond rlist

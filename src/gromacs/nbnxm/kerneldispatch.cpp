@@ -166,7 +166,7 @@ int getVdwKernelType(const NbnxmKernelType      kernelType,
         else
         {
             /* At setup we (should have) selected the C reference kernel */
-            GMX_RELEASE_ASSERT(kernelType == NbnxmKernelType::Cpu4x4_PlainC,
+            GMX_RELEASE_ASSERT(kernelTypeIsPlainC(kernelType),
                                "Only the C reference nbnxn SIMD kernel supports LJ-PME with LB "
                                "combination rules");
             return vdwktLJEWALDCOMBLB;
