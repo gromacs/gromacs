@@ -117,6 +117,7 @@ static bool useTabulatedEwaldByDefault(InteractionModifiers vdwModifier, const D
      *  - NVIDIA CC 7.0 and 8.0,
      *  - AMD GPUs except MI3xx with SYCL (tested for gfx906, 908, 90a, 942 only).
      *    - For MI3xx, prefer tabulated for ForceSwitch kernels.
+     *  - AMD GPUs except MI3xx with HIP
      *
      * Note 1: this function does not handle OpenCL.
      * Note 2: for SYCL, the heuristics are taken from CUDA/HIP ports, and were only partially
@@ -127,9 +128,11 @@ static bool useTabulatedEwaldByDefault(InteractionModifiers vdwModifier, const D
     return (deviceInfo.prop.major == 7 && deviceInfo.prop.minor == 0)
            || (deviceInfo.prop.major == 8 && deviceInfo.prop.minor == 0);
 #elif GMX_GPU_HIP
-    GMX_UNUSED_VALUE(deviceInfo);
     GMX_UNUSED_VALUE(vdwModifier);
-    return true;
+    const int  major   = deviceInfo.prop.major;
+    const int  minor   = deviceInfo.prop.minor;
+    const bool isMi300 = (major == 9 && minor == 4);
+    return !isMi300;
 #elif GMX_GPU_SYCL
     const int major = deviceInfo.hardwareVersionMajor.value_or(-1);
     const int minor = deviceInfo.hardwareVersionMinor.value_or(-1);
