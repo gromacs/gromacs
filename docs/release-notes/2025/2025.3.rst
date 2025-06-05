@@ -25,4 +25,11 @@ Fixes that affect portability
 Miscellaneous
 ^^^^^^^^^^^^^
 
+mdrun reported double the number of domain decompositions when using GPUs
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
+When using GPUs, the cycle count table at the end of the log file reported a number of calls
+for Domain decomp. that was too high by a factor of one plus the number of dimensions that
+were decomposed. The times and cycle counts were correct.
+
+:issue:`5369`
