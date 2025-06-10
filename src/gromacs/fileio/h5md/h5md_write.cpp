@@ -88,6 +88,14 @@ void writeFrame(const hid_t dataSet, const hsize_t index, const ValueType& value
     writeFrameData<ValueType, numDims>(dataSet, index, ArrayRef(&value, &value + 1));
 }
 
+template<typename ValueType>
+void writeFrame(const hid_t dataSet, const hsize_t index, const ArrayRef<const BasicVector<ValueType>> values)
+{
+    constexpr int numDims = 1;
+
+    writeFrameData<BasicVector<ValueType>, numDims>(dataSet, index, values);
+}
+
 template void writeFrame<int32_t>(const hid_t, const hsize_t, const int32_t&);
 
 template void writeFrame<int64_t>(const hid_t, const hsize_t, const int64_t&);
@@ -95,5 +103,9 @@ template void writeFrame<int64_t>(const hid_t, const hsize_t, const int64_t&);
 template void writeFrame<float>(const hid_t, const hsize_t, const float&);
 
 template void writeFrame<double>(const hid_t, const hsize_t, const double&);
+
+template void writeFrame<float>(const hid_t, const hsize_t, const ArrayRef<const BasicVector<float>>);
+
+template void writeFrame<double>(const hid_t, const hsize_t, const ArrayRef<const BasicVector<double>>);
 
 } // namespace gmx

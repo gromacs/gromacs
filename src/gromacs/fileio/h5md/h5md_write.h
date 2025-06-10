@@ -42,6 +42,9 @@
 
 #include <hdf5.h>
 
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/arrayref.h"
+
 namespace gmx
 {
 
@@ -55,6 +58,16 @@ namespace gmx
 template<typename ValueType>
 void writeFrame(const hid_t dataSet, const hsize_t index, const ValueType& value);
 
+/*! \brief Write a list of BasicVectors to a given index in a data set.
+ *
+ * \tparam ValueType Type of BasicVector.
+ * \param[in] dataSet Open handle to the data set.
+ * \param[in] index Index of set to write into.
+ * \param[in] values Array with BasicVectors to write.
+ */
+template<typename ValueType>
+void writeFrame(const hid_t dataSet, const hsize_t index, const ArrayRef<const BasicVector<ValueType>> values);
+
 extern template void writeFrame<int32_t>(const hid_t, const hsize_t, const int32_t&);
 
 extern template void writeFrame<int64_t>(const hid_t, const hsize_t, const int64_t&);
@@ -62,6 +75,10 @@ extern template void writeFrame<int64_t>(const hid_t, const hsize_t, const int64
 extern template void writeFrame<float>(const hid_t, const hsize_t, const float&);
 
 extern template void writeFrame<double>(const hid_t, const hsize_t, const double&);
+
+extern template void writeFrame<float>(const hid_t, const hsize_t, const ArrayRef<const BasicVector<float>>);
+
+extern template void writeFrame<double>(const hid_t, const hsize_t, const ArrayRef<const BasicVector<double>>);
 
 } // namespace gmx
 

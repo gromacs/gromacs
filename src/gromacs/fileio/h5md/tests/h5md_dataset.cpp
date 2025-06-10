@@ -50,6 +50,7 @@
 #include "gromacs/fileio/h5md/h5md_guard.h"
 #include "gromacs/fileio/h5md/h5md_type.h"
 #include "gromacs/fileio/h5md/tests/h5mdtestbase.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/exceptions.h"
 
 #include "testutils/testfilemanager.h"
@@ -63,17 +64,24 @@ namespace
 
 //! \brief Test fixture for all primitive types
 template<typename ValueType>
-class H5mdDataSetTest : public H5mdTestBase
+class H5mdPrimitiveDataSetTest : public H5mdTestBase
+{
+};
+
+template<typename ValueType>
+class H5mdBasicVectorListDataSetTest : public H5mdTestBase
 {
 };
 
 //! \brief List of primitives for which to create tests
-using PrimitiveList = ::testing::Types<int32_t, int64_t, float, double>;
+using NumericPrimitiveList = ::testing::Types<int32_t, int64_t, float, double>;
+TYPED_TEST_SUITE(H5mdPrimitiveDataSetTest, NumericPrimitiveList);
 
-// Set up suites for testing of all relevant types
-TYPED_TEST_SUITE(H5mdDataSetTest, PrimitiveList);
+//! \brief List of numeric primitives for which to create real-valued tests
+using RealPrimitiveList = ::testing::Types<float, double>;
+TYPED_TEST_SUITE(H5mdBasicVectorListDataSetTest, RealPrimitiveList);
 
-TYPED_TEST(H5mdDataSetTest, Create1dFrameDataSetCreatesEmpty1dSet)
+TYPED_TEST(H5mdPrimitiveDataSetTest, Create1dFrameDataSetCreatesEmpty1dSet)
 {
     const auto [dataSet, dataSetGuard] =
             makeH5mdDataSetGuard(create1dFrameDataSet<TypeParam>(this->fileid(), "testDataSet"));
@@ -87,7 +95,7 @@ TYPED_TEST(H5mdDataSetTest, Create1dFrameDataSetCreatesEmpty1dSet)
     EXPECT_EQ(dataSetDims, 0);
 }
 
-TYPED_TEST(H5mdDataSetTest, Create1dFrameDataSetsCorrectDataType)
+TYPED_TEST(H5mdPrimitiveDataSetTest, Create1dFrameDataSetsCorrectDataType)
 {
     const auto [dataSet, dataSetGuard] =
             makeH5mdDataSetGuard(create1dFrameDataSet<TypeParam>(this->fileid(), "testDataSet"));
@@ -99,7 +107,7 @@ TYPED_TEST(H5mdDataSetTest, Create1dFrameDataSetsCorrectDataType)
     EXPECT_TRUE(valueTypeIsDataType(dataType, array));
 }
 
-TYPED_TEST(H5mdDataSetTest, Create1dFrameDataSetSetsUnlimitedMaxSize)
+TYPED_TEST(H5mdPrimitiveDataSetTest, Create1dFrameDataSetSetsUnlimitedMaxSize)
 {
     const auto [dataSet, dataSetGuard] =
             makeH5mdDataSetGuard(create1dFrameDataSet<TypeParam>(this->fileid(), "testDataSet"));
@@ -111,17 +119,17 @@ TYPED_TEST(H5mdDataSetTest, Create1dFrameDataSetSetsUnlimitedMaxSize)
     EXPECT_EQ(dataSetMaxDims.at(0), H5S_UNLIMITED);
 }
 
-TYPED_TEST(H5mdDataSetTest, Create1dFrameDataSetThrowsForNonExistingContainer)
+TYPED_TEST(H5mdPrimitiveDataSetTest, Create1dFrameDataSetThrowsForNonExistingContainer)
 {
     EXPECT_THROW(create1dFrameDataSet<TypeParam>(H5I_INVALID_HID, "testDataSet"), gmx::FileIOError);
 }
 
-TYPED_TEST(H5mdDataSetTest, Create1dFrameDataSetThrowsForEmptyName)
+TYPED_TEST(H5mdPrimitiveDataSetTest, Create1dFrameDataSetThrowsForEmptyName)
 {
     EXPECT_THROW(create1dFrameDataSet<TypeParam>(this->fileid(), ""), gmx::FileIOError);
 }
 
-TYPED_TEST(H5mdDataSetTest, Create1dFrameDataSetThrowsForDuplicateName)
+TYPED_TEST(H5mdPrimitiveDataSetTest, Create1dFrameDataSetThrowsForDuplicateName)
 {
     constexpr char dataSetName[] = "testDataSet";
     create1dFrameDataSet<TypeParam>(this->fileid(), dataSetName);
@@ -144,7 +152,7 @@ TEST(H5mdDataSetTest, Create1dFrameDataSetThrowsForReadOnlyFile)
     }
 }
 
-TYPED_TEST(H5mdDataSetTest, OpenDataSetWorksForWriteModeFiles)
+TYPED_TEST(H5mdPrimitiveDataSetTest, OpenDataSetWorksForWriteModeFiles)
 {
     constexpr char dataSetName[] = "testDataSet";
 
@@ -193,7 +201,7 @@ TEST(H5mdDataSetTest, OpenDataSetThrowsForInvalidContainer)
     EXPECT_THROW(openDataSet(H5I_INVALID_HID, "testDataSet"), gmx::FileIOError);
 }
 
-TYPED_TEST(H5mdDataSetTest, OpenDataSetThrowsForInvalidSetName)
+TYPED_TEST(H5mdPrimitiveDataSetTest, OpenDataSetThrowsForInvalidSetName)
 {
     {
         // Create a data set to ensure that there is something in the file which we cannot read with bad names
@@ -209,7 +217,7 @@ TYPED_TEST(H5mdDataSetTest, OpenDataSetThrowsForInvalidSetName)
             << "Should throw for bad name";
 }
 
-TYPED_TEST(H5mdDataSetTest, GetNumFramesFor1dDataSetsReturnsSize)
+TYPED_TEST(H5mdPrimitiveDataSetTest, GetNumFramesFor1dDataSetsReturnsSize)
 {
     const auto [dataSet, dataSetGuard] =
             makeH5mdDataSetGuard(create1dFrameDataSet<TypeParam>(this->fileid(), "testDataSet"));
@@ -221,7 +229,7 @@ TYPED_TEST(H5mdDataSetTest, GetNumFramesFor1dDataSetsReturnsSize)
     EXPECT_EQ(getNumFrames<1>(dataSet), newSize) << "Number of frames should match new size";
 }
 
-TYPED_TEST(H5mdDataSetTest, GetNumFramesThrowsForInvalidDataSetHandle)
+TYPED_TEST(H5mdPrimitiveDataSetTest, GetNumFramesThrowsForInvalidDataSetHandle)
 {
     // We use a scope guard to create a data set and store its handle here; as the scope exits
     // the data set is closed and this turns invalid
@@ -240,6 +248,65 @@ TYPED_TEST(H5mdDataSetTest, GetNumFramesThrowsForInvalidDataSetHandle)
 
     EXPECT_THROW(getNumFrames<1>(dataSetToTest), gmx::FileIOError);
     EXPECT_THROW(getNumFrames<1>(H5I_INVALID_HID), gmx::FileIOError);
+}
+
+TYPED_TEST(H5mdBasicVectorListDataSetTest, CreateDataSetCreatesEmpty1d)
+{
+    const auto [dataSet, dataSetGuard] = makeH5mdDataSetGuard(
+            createUnboundedFrameBasicVectorListDataSet<TypeParam>(this->fileid(), "testDataSet", 1));
+    const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet));
+
+    const int numDims = H5Sget_simple_extent_ndims(dataSpace);
+    EXPECT_EQ(numDims, 1);
+
+    hsize_t dataSetDims;
+    hsize_t dataSetMaxDims;
+    H5Sget_simple_extent_dims(dataSpace, &dataSetDims, &dataSetMaxDims);
+    EXPECT_EQ(dataSetDims, 0);
+    EXPECT_EQ(dataSetMaxDims, H5S_UNLIMITED);
+}
+
+TYPED_TEST(H5mdBasicVectorListDataSetTest, CreateDataSetCreatesCorrectDataType)
+{
+    const auto [dataSet, dataSetGuard] = makeH5mdDataSetGuard(
+            createUnboundedFrameBasicVectorListDataSet<TypeParam>(this->fileid(), "testDataSet", 1));
+
+    const auto [dataType, dataTypeGuard] = makeH5mdTypeGuard(H5Dget_type(dataSet));
+    EXPECT_TRUE(H5Tget_class(dataType) == H5T_ARRAY) << "Data set type is not an array";
+    EXPECT_TRUE(H5Tequal(H5Tget_super(dataType), hdf5DataTypeFor<TypeParam>()))
+            << "Base primitive type of array dataset is not correct";
+}
+
+TYPED_TEST(H5mdBasicVectorListDataSetTest, CreateDataSetUsesCorrectRowOrder)
+{
+    const int numAtoms = 5; // distinct from DIM (3)
+    const auto [dataSet, dataSetGuard] =
+            makeH5mdDataSetGuard(createUnboundedFrameBasicVectorListDataSet<TypeParam>(
+                    this->fileid(), "testDataSet", numAtoms));
+
+    const auto [dataType, dataTypeGuard] = makeH5mdTypeGuard(H5Dget_type(dataSet));
+    const int numDims                    = H5Tget_array_ndims(dataType);
+    EXPECT_EQ(numDims, 2) << "Lists of BasicVectors must have 2 dimensions";
+
+    DataSetDims<2> dataSetDims;
+    H5Tget_array_dims(dataType, dataSetDims.data());
+    EXPECT_EQ(dataSetDims[0], numAtoms) << "Major axis should be for atoms with numAtoms values";
+    EXPECT_EQ(dataSetDims[1], DIM) << "Minor axis should be for BasicVector with DIM values";
+}
+
+TYPED_TEST(H5mdBasicVectorListDataSetTest, CreateDataSetForZeroOrFewerNumberOfAtomsThrows)
+{
+    ASSERT_NO_THROW(createUnboundedFrameBasicVectorListDataSet<TypeParam>(
+            this->fileid(), "testNumAtomsOne", 1))
+            << "Sanity check failed: creating data set for 1 atom should work";
+    EXPECT_THROW(createUnboundedFrameBasicVectorListDataSet<TypeParam>(
+                         this->fileid(), "testNumAtomsZero", 0),
+                 gmx::FileIOError)
+            << "Creating data set for 0 atoms must throw";
+    EXPECT_THROW(createUnboundedFrameBasicVectorListDataSet<TypeParam>(
+                         this->fileid(), "testNumAtomsNegative", -1),
+                 gmx::FileIOError)
+            << "Creating data set for -1 atoms must throw";
 }
 
 } // namespace

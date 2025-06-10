@@ -79,6 +79,62 @@ using DataSetDims = std::array<hsize_t, numDims>;
 template<typename ValueType>
 hid_t create1dFrameDataSet(const hid_t container, const std::string& dataSetName);
 
+/*! \brief Create a 1d data set for per-frame data of lists of BasicVectors (called \p dataSetName, in \p container).
+ *
+ * Data sets created with this function can contain trajectory data, such as multiple frames
+ * of atom positions, velocities or forces. The data set is created empty and has no limit
+ * on the number of frames it can contain.
+ *
+ * The data set is 1d, wherein the data for each frame is stored subsequently along this axis.
+ * For each frame the list of BasicVectors is stored in a 2d array with dimensions [\p numAtoms, \p DIM].
+ *
+ * The returned handle must be closed with H5Dclose to avoid resource leaks.
+ *
+ * \tparam ValueType Type of BasicVector.
+ * \param[in] container The ID of the container of the data.
+ * \param[in] dataSetName The name of the data set.
+ * \param[in] numAtoms Number of atoms to create data set for.
+ * \returns The ID of the data set.
+ *
+ * \throws gmx::FileIOError if the data set cannot be created.
+ */
+template<typename ValueType>
+hid_t createUnboundedFrameBasicVectorListDataSet(const hid_t        container,
+                                                 const std::string& dataSetName,
+                                                 const int          numAtoms);
+
+/*! \brief Create a 1d data set for per-frame data of lists of RVec (called \p dataSetName, in \p container).
+ *
+ * \note This is a convenience function which calls createUnboundedFrameBasicVectorListDataSet
+ * with `real` as the templated value type.
+ *
+ * Data sets created with this function can contain trajectory data, such as multiple frames
+ * of atom positions, velocities or forces. The data set is created empty and has no limit
+ * on the number of frames it can contain.
+ *
+ * The data set is 1d, wherein the data for each frame is stored subsequently along this axis.
+ * For each frame the list of RVecs is stored in a 2d array with dimensions [\p numAtoms, \p DIM].
+ *
+ * The returned handle must be closed with H5Dclose to avoid resource leaks.
+ *
+ * \param[in] container The ID of the container of the data.
+ * \param[in] dataSetName The name of the data set.
+ * \param[in] numAtoms Number of atoms to create data set for.
+ * \returns The ID of the data set.
+ *
+ * \throws gmx::FileIOError if the data set cannot be created.
+ */
+inline hid_t createUnboundedFrameRvecListDataSet(const hid_t        container,
+                                                 const std::string& dataSetName,
+                                                 const int          numAtoms)
+{
+#if GMX_DOUBLE
+    return createUnboundedFrameBasicVectorListDataSet<double>(container, dataSetName, numAtoms);
+#else
+    return createUnboundedFrameBasicVectorListDataSet<float>(container, dataSetName, numAtoms);
+#endif
+}
+
 /*! \brief Open an existing data set (called \p dataSetName, in \p container).
  *
  * The returned handle must be closed with H5Dclose to avoid resource leaks.
@@ -151,6 +207,14 @@ extern template hsize_t getNumFrames<1>(const hid_t dataSet);
 extern template hid_t getFrameDataSpace<1>(const hid_t dataSet, const hsize_t frameIndex);
 
 extern template hid_t getFrameMemoryDataSpace<1>(const hid_t);
+
+extern template hid_t createUnboundedFrameBasicVectorListDataSet<float>(const hid_t,
+                                                                        const std::string&,
+                                                                        const int);
+
+extern template hid_t createUnboundedFrameBasicVectorListDataSet<double>(const hid_t,
+                                                                         const std::string&,
+                                                                         const int);
 
 } // namespace gmx
 

@@ -42,6 +42,7 @@
 
 #include "h5md_dataset.h"
 
+#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
 #include "h5md_error.h"
@@ -64,8 +65,17 @@ using namespace gmx;
 template<typename ValueType>
 static void setNumericFillValue(const hid_t createPropertyList, const hid_t dataType)
 {
-    throwUponH5mdError(!valueTypeIsDataType<ValueType>(dataType),
-                       "ValueType != dataType mismatch when setting fill value for data set");
+    // For composite types (arrays, records, etc.) we need to get the base data type
+    // for checking against our ValueType below
+    hid_t baseDataType = dataType;
+    switch (H5Tget_class(dataType))
+    {
+        case H5T_ARRAY:
+        case H5T_COMPOUND: baseDataType = H5Tget_super(dataType); break;
+        default: break;
+    }
+    throwUponH5mdError(!valueTypeIsDataType<ValueType>(baseDataType),
+                       "ValueType != baseDataType mismatch when setting fill value for data set");
 
     constexpr ValueType fillValue = -1;
     H5Pset_fill_value(createPropertyList, dataType, &fillValue);
@@ -226,6 +236,28 @@ hid_t create1dFrameDataSet(const hid_t container, const std::string& dataSetName
     return createDataSet<ValueType, numDims>(container, dataSetName, dataType, dataSetDims, dataSetMaxDims);
 }
 
+template<typename ValueType>
+hid_t createUnboundedFrameBasicVectorListDataSet(const hid_t        container,
+                                                 const std::string& dataSetName,
+                                                 const int          numAtoms)
+{
+    constexpr int numDimsDataSet = 1;
+
+    const DataSetDims<numDimsDataSet> dataSetDims    = { 0 };
+    const DataSetDims<numDimsDataSet> dataSetMaxDims = { H5S_UNLIMITED };
+
+    // NOTE: HDF5 does not like array data types with size 0 along any dimension.
+    // If this is required we need to find a different approach
+    throwUponH5mdError(numAtoms < 1, "Cannot create particle-RVec data set for <1 number of atoms");
+    constexpr int                   numDimsArray = 2;
+    const DataSetDims<numDimsArray> arrayDims    = { static_cast<hsize_t>(numAtoms), DIM };
+    const hid_t                     dataType =
+            H5Tarray_create2(hdf5DataTypeFor<ValueType>(), numDimsArray, arrayDims.data());
+
+    return createDataSet<ValueType, numDimsDataSet>(
+            container, dataSetName, dataType, dataSetDims, dataSetMaxDims);
+}
+
 hid_t openDataSet(const hid_t container, const std::string& dataSetName)
 {
     const hid_t dataSet = H5Dopen(container, dataSetName.c_str(), H5P_DEFAULT);
@@ -281,6 +313,10 @@ template hsize_t getNumFrames<1>(const hid_t dataSet);
 template hid_t getFrameDataSpace<1>(const hid_t dataSet, const hsize_t frameIndex);
 
 template hid_t getFrameMemoryDataSpace<1>(const hid_t);
+
+template hid_t createUnboundedFrameBasicVectorListDataSet<float>(const hid_t, const std::string&, const int);
+
+template hid_t createUnboundedFrameBasicVectorListDataSet<double>(const hid_t, const std::string&, const int);
 
 } // namespace gmx
 

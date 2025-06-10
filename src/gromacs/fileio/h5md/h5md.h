@@ -99,8 +99,12 @@ public:
     H5md(H5md&&)                 = delete;
     H5md& operator=(H5md&&)      = delete;
 
-    /*! \brief Return the HDF5 identifier of the file.
-     *  \returns The file id.
+    /*! \brief Return the HDF5 handle of the file.
+     *
+     * This handle is used as the root container of the file's data hierarchy, to which
+     * the tree of groups and data sets can be added.
+     *
+     *  \returns The file handle.
      */
     hid_t fileid() const;
 

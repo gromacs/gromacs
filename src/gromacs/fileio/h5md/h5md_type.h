@@ -42,6 +42,7 @@
 
 #include <hdf5.h>
 
+#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 
@@ -125,6 +126,38 @@ template<typename ValueType>
 bool valueTypeIsDataType(const hid_t dataType, const ArrayRef<const ValueType> gmx_unused valueBuffer) noexcept
 {
     return valueTypeIsDataType<ValueType>(dataType);
+}
+
+/*! \brief Return true if the templated array of BasicVectors matches the HDF5 data type.
+ *
+ * Checks that the HDF5 data type is an array whose dimensions matches that of \p valueBuffer,
+ * then that the array base type is a real.
+ *
+ * \tparam ValueType Type of BasicVector.
+ * \param[in] dataType Handle to HDF5 data type to check against.
+ * \param[in] valueBuffer Array of RVecs to check for.
+ * \returns True if the types match, otherwise false.
+ */
+template<typename ValueType>
+inline bool valueTypeIsDataType(const hid_t                                  dataType,
+                                const ArrayRef<const BasicVector<ValueType>> valueBuffer) noexcept
+{
+    constexpr int numDimsArray = 2;
+
+    if (H5Tget_class(dataType) != H5T_ARRAY || H5Tget_array_ndims(dataType) != numDimsArray)
+    {
+        return false;
+    }
+
+    std::array<hsize_t, numDimsArray> arrayDims;
+    H5Tget_array_dims(dataType, arrayDims.data());
+    if (arrayDims[0] != valueBuffer.size() || arrayDims[1] != DIM)
+    {
+        return false;
+    }
+
+    const hid_t baseDataType = H5Tget_super(dataType);
+    return valueTypeIsDataType<ValueType>(baseDataType);
 }
 
 } // namespace gmx
