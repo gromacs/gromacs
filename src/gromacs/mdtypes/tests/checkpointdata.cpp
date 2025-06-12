@@ -52,7 +52,7 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/gmxfio_xdr.h"
+#include "gromacs/fileio/xdr_serializer.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/serialization/inmemoryserializer.h"
 #include "gromacs/utility/arrayref.h"
@@ -406,16 +406,16 @@ public:
                 writeFunction(&writeCheckpointData);
             }
 
-            auto*               file = gmx_fio_open(filename_, "w");
-            FileIOXdrSerializer serializer(file);
+            auto*         file = gmx_fio_open(filename_, "w");
+            XdrSerializer serializer(file);
             writeCheckpointDataHolder.serialize(&serializer);
             gmx_fio_close(file);
         }
 
         // Deserialize values and test against reference
         {
-            auto*               file = gmx_fio_open(filename_, "r");
-            FileIOXdrSerializer deserializer(file);
+            auto*         file = gmx_fio_open(filename_, "r");
+            XdrSerializer deserializer(file);
 
             ReadCheckpointDataHolder readCheckpointDataHolder;
             readCheckpointDataHolder.deserialize(&deserializer);

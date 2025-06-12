@@ -41,7 +41,6 @@
 
 #include "gromacs/fileio/xdrf.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/serialization/iserializer.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -156,64 +155,5 @@ gmx_bool gmx_fio_ndoe_string(struct t_fileio* fio, char* item[], int n, const ch
 #define gmx_fio_ndo_ivec(fio, item, n) gmx_fio_ndoe_ivec(fio, item, n, (#item), __FILE__, __LINE__)
 #define gmx_fio_ndo_string(fio, item, n) \
     gmx_fio_ndoe_string(fio, item, n, (#item), __FILE__, __LINE__)
-
-namespace gmx
-{
-/*!\internal \brief
- * Serializer to read/write XDR data.
- */
-class FileIOXdrSerializer : public ISerializer
-{
-public:
-    //! Only create with valid file I/O handle.
-    explicit FileIOXdrSerializer(t_fileio* fio);
-
-    //! If file is open in reading mode.
-    bool reading() const override;
-    //! Handle bool I/O.
-    void doBool(bool* value) override;
-    //! Handle unsigned char I/O.
-    void doUChar(unsigned char* value) override;
-    //! Handle char I/O.
-    void doChar(char* value) override;
-    //! Handle unsigned short I/O.
-    void doUShort(unsigned short* value) override;
-    //! Handle default integer I/O.
-    void doInt(int* value) override;
-    //! Handle int32 I/O.
-    void doInt32(int32_t* value) override;
-    //! Handle int64 I/O.
-    void doInt64(int64_t* value) override;
-    //! Handle single precision float I/O.
-    void doFloat(float* value) override;
-    //! Handle double precision float I/O.
-    void doDouble(double* value) override;
-    //! Handle GROMACS floating point number I/O.
-    void doReal(real* value) override;
-    //! Handle I/O of integer vector of size DIM.
-    void doIvec(ivec* value) override;
-    //! Handle I/O of integer vector of size DIM.
-    void doIvec(IVec* value) override;
-    //! Handle I/O of GROMACS real vector of size DIM.
-    void doRvec(rvec* value) override;
-    //! Handle I/O of GROMACS real vector of size DIM.
-    void doRvec(RVec* value) override;
-    //! Handle I/O if string.
-    void doString(std::string* value) override;
-    //! Handle opaque data.
-    void doOpaque(char* data, std::size_t size) override;
-    //! Special case for handling I/O of a vector of characters.
-    void doCharArray(char* values, int elements) override;
-    //! Special case for handling I/O of a vector of unsigned characters.
-    void doUCharArray(unsigned char* values, int elements) override;
-    //! Special case for handling I/O of an ArrayRef of RVec.
-    void doRvecArray(ArrayRef<RVec> values) override;
-
-private:
-    //! File I/O handle.
-    t_fileio* fio_;
-};
-
-} // namespace gmx
 
 #endif

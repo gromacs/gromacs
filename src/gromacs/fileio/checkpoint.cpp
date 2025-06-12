@@ -53,6 +53,7 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/gmxfio_xdr.h"
 #include "gromacs/fileio/xdr_datatype.h"
+#include "gromacs/fileio/xdr_serializer.h"
 #include "gromacs/fileio/xdrf.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/vec.h"
@@ -2247,8 +2248,8 @@ static void do_cpt_mdmodules(CheckPointVersion              fileVersion,
 {
     if (fileVersion >= CheckPointVersion::MDModules)
     {
-        gmx::FileIOXdrSerializer serializer(checkpointFileHandle);
-        gmx::KeyValueTreeObject  mdModuleCheckpointParameterTree =
+        gmx::XdrSerializer      serializer(checkpointFileHandle);
+        gmx::KeyValueTreeObject mdModuleCheckpointParameterTree =
                 gmx::deserializeKeyValueTree(&serializer);
         if (outputFile)
         {
@@ -2478,14 +2479,14 @@ void write_checkpoint_data(const std::filesystem::path&      filename,
         gmx::KeyValueTreeBuilder          builder;
         gmx::MDModulesWriteCheckpointData mdModulesWriteCheckpoint = { builder.rootObject() };
         mdModulesNotifiers.checkpointingNotifier_.notify(mdModulesWriteCheckpoint);
-        auto                     tree = builder.build();
-        gmx::FileIOXdrSerializer serializer(fio);
+        auto               tree = builder.build();
+        gmx::XdrSerializer serializer(fio);
         gmx::serializeKeyValueTree(tree, &serializer);
     }
 
     // Checkpointing modular simulator
     {
-        gmx::FileIOXdrSerializer serializer(fio);
+        gmx::XdrSerializer serializer(fio);
         modularSimulatorCheckpointData->serialize(&serializer);
     }
 
@@ -2878,7 +2879,7 @@ static void read_checkpoint(const std::filesystem::path&   fn,
     do_cpt_mdmodules(headerContents->file_version, fp, mdModulesNotifiers, nullptr);
     if (headerContents->file_version >= CheckPointVersion::ModularSimulator)
     {
-        gmx::FileIOXdrSerializer serializer(fp);
+        gmx::XdrSerializer serializer(fp);
         modularSimulatorCheckpointData->deserialize(&serializer);
     }
     ret = do_cpt_footer(gmx_fio_getxdr(fp), headerContents->file_version);
@@ -3059,7 +3060,7 @@ static CheckpointHeaderContents read_checkpoint_data(t_fileio*                  
     if (headerContents.file_version >= CheckPointVersion::ModularSimulator)
     {
         // Store modular checkpoint data into modularSimulatorCheckpointData
-        gmx::FileIOXdrSerializer serializer(fp);
+        gmx::XdrSerializer serializer(fp);
         modularSimulatorCheckpointData->deserialize(&serializer);
     }
     ret = do_cpt_footer(gmx_fio_getxdr(fp), headerContents.file_version);
@@ -3193,7 +3194,7 @@ void list_checkpoint(const std::filesystem::path& fn, FILE* out)
     do_cpt_mdmodules(headerContents.file_version, fp, mdModuleNotifiers, out);
     if (headerContents.file_version >= CheckPointVersion::ModularSimulator)
     {
-        gmx::FileIOXdrSerializer      serializer(fp);
+        gmx::XdrSerializer            serializer(fp);
         gmx::ReadCheckpointDataHolder modularSimulatorCheckpointData;
         modularSimulatorCheckpointData.deserialize(&serializer);
         modularSimulatorCheckpointData.dump(out);

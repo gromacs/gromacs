@@ -33,13 +33,15 @@
  */
 /*! \internal \file
  * \brief
- * Tests for gmx::FileIOXdrSerializer.
+ * Tests for gmx::XdrSerializer.
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_fileio
  */
 
 #include "gmxpre.h"
+
+#include "gromacs/fileio/xdr_serializer.h"
 
 #include <cstdint>
 #include <cstdio>
@@ -89,7 +91,7 @@ struct XdrSerializerTestParameters
  * write as if it was either kind of configuration, and to read back
  * natively.
  */
-class FileIOXdrSerializerTest : public ::testing::TestWithParam<XdrSerializerTestParameters>
+class XdrSerializerTest : public ::testing::TestWithParam<XdrSerializerTestParameters>
 {
 public:
     // These types all have well-defined widths in bytes AFTER XDR serialization,
@@ -200,7 +202,7 @@ public:
     std::filesystem::path filename_ = fileManager_.getTemporaryFilePath("data.edr");
 };
 
-TEST_P(FileIOXdrSerializerTest, Works)
+TEST_P(XdrSerializerTest, Works)
 {
     SerializerValues valuesToWrite;
     valuesToWrite.boolValue          = true;
@@ -247,7 +249,7 @@ TEST_P(FileIOXdrSerializerTest, Works)
         // similarly in the tests.
         bool writeAsDouble = GetParam().writeAsDouble;
         gmx_fio_setprecision(file, writeAsDouble);
-        FileIOXdrSerializer serializer(file);
+        XdrSerializer serializer(file);
         serializer.doBool(&writeAsDouble);
         valuesToWrite.serialize(&serializer);
         gmx_fio_close(file);
@@ -267,11 +269,11 @@ TEST_P(FileIOXdrSerializerTest, Works)
     }
     {
         SCOPED_TRACE("Reading XDR file contents");
-        t_fileio*           file = gmx_fio_open(filename_, "r");
-        FileIOXdrSerializer serializer(file);
-        bool                writtenAsDouble;
+        t_fileio*     file = gmx_fio_open(filename_, "r");
+        XdrSerializer serializer(file);
+        bool          writtenAsDouble;
         serializer.doBool(&writtenAsDouble);
-        gmx_fio_setprecision(file, writtenAsDouble);
+        serializer.setDoublePrecision(writtenAsDouble);
         // Now real and rvec will read correctly
 
         SerializerValues valuesToRead;
@@ -330,9 +332,7 @@ const XdrSerializerTestParameters sc_testParameters[] = {
     { false },
     { true },
 };
-INSTANTIATE_TEST_SUITE_P(InDifferentPrecisionModes,
-                         FileIOXdrSerializerTest,
-                         ::testing::ValuesIn(sc_testParameters));
+INSTANTIATE_TEST_SUITE_P(InDifferentPrecisionModes, XdrSerializerTest, ::testing::ValuesIn(sc_testParameters));
 
 } // namespace
 } // namespace test
