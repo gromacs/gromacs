@@ -66,27 +66,12 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/mpitypes.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
 using gmx::ArrayRef;
 using gmx::RVec;
-
-#if GMX_MPI
-
-// Helper function to deduce MPI datatype from the type of data
-gmx_unused static MPI_Datatype mpiDatatype(const float gmx_unused* data)
-{
-    return MPI_FLOAT;
-}
-
-// Helper function to deduce MPI datatype from the type of data
-gmx_unused static MPI_Datatype mpiDatatype(const double gmx_unused* data)
-{
-    return MPI_DOUBLE;
-}
-
-#endif // GMX_MPI
 
 #if !GMX_DOUBLE
 // Helper function; note that gmx_sum(d) should actually be templated
@@ -117,7 +102,7 @@ static void pullAllReduce(const t_commrec* cr, pull_comm_t* comm, int n, T* data
         {
             /* Separate branch because gmx_sum uses cr->mpi_comm_mygroup */
 #if GMX_MPI
-            MPI_Allreduce(MPI_IN_PLACE, data, n, mpiDatatype(data), MPI_SUM, comm->mpi_comm_com);
+            MPI_Allreduce(MPI_IN_PLACE, data, n, gmx::mpiType<T>(), MPI_SUM, comm->mpi_comm_com);
 #else
             gmx_incons("comm->bParticipateAll=FALSE without GMX_MPI");
 #endif

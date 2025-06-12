@@ -60,6 +60,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/mpitypes.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace gmx
@@ -213,33 +214,6 @@ BiasSharing::~BiasSharing()
     }
 #endif // GMX_MPI
 }
-
-namespace
-{
-
-#if GMX_MPI
-
-template<typename T>
-std::enable_if_t<std::is_same_v<T, int>, MPI_Datatype> mpiType()
-{
-    return MPI_INT;
-}
-
-template<typename T>
-std::enable_if_t<std::is_same_v<T, long>, MPI_Datatype> mpiType()
-{
-    return MPI_LONG;
-}
-
-template<typename T>
-std::enable_if_t<std::is_same_v<T, double>, MPI_Datatype> mpiType()
-{
-    return MPI_DOUBLE;
-}
-
-#endif // GMX_MPI
-
-} // namespace
 
 /*! \brief
  * Sum an array over all simulations on main ranks or all ranks of each simulation.
