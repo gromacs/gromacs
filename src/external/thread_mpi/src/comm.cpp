@@ -470,6 +470,9 @@ int tMPI_Comm_free(tMPI_Comm *comm)
         }
     }
 #endif
+
+    *comm = TMPI_COMM_NULL;
+
     return TMPI_SUCCESS;
 }
 
