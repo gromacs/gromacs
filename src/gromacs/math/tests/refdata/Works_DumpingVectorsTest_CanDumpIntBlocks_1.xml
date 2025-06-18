@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="output"><![CDATA[
+  The title (11):
+     The title[-1,...,-1] = {1,...,5}
+     The title[-1,...,-1] = {10,...,13}
+     The title[-1]=99
+     The title[-1]=127
+]]></String>
+</ReferenceData>

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright 2019- The GROMACS Authors
+ * Copyright 2025- The GROMACS Authors
  * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
  * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
  *
@@ -31,31 +31,72 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
-/*! \libinternal \file
+/*! \internal \file
  * \brief
- * Helper functions to have identical behavior of setenv and unsetenv
- * on Unix and Windows systems.
+ * Tests for PosixMemstream
  *
- * \author Pascal Merz <pascal.merz@me.com>
- * \inlibraryapi
  * \ingroup module_testutils
  */
+#include "gmxpre.h"
 
-#ifndef GMX_TESTUTILS_SETENV_H
-#define GMX_TESTUTILS_SETENV_H
+#include "testutils/posixmemstream.h"
+
+#include <string>
+#include <vector>
+
+#include <gtest/gtest.h>
 
 namespace gmx
 {
 namespace test
 {
+namespace
+{
 
-//! Polyfiller to make setenv work on Windows
-int gmxSetenv(const char* name, const char* value, const bool overwrite);
+TEST(PosixMemstreamTest, ConstructsAndDestructs)
+{
+    PosixMemstream memstream;
+}
 
-//! Polyfiller to make unsetenv work on Windows
-int gmxUnsetenv(const char* name);
+TEST(PosixMemstreamTest, HasAStreamUntilClosed)
+{
+    PosixMemstream memstream;
+    EXPECT_NE(memstream.stream(), nullptr);
+    memstream.closeStream();
+    EXPECT_EQ(memstream.stream(), nullptr);
+    // Also tests that destruction works after closing the stream
+}
 
+TEST(PosixMemstreamTest, CanFetchString)
+{
+    PosixMemstream memstream;
+    memstream.toString();
+}
+
+TEST(PosixMemstreamTest, HasAStreamUntilStringIsFetched)
+{
+    PosixMemstream memstream;
+    EXPECT_NE(memstream.stream(), nullptr);
+    memstream.toString();
+    EXPECT_EQ(memstream.stream(), nullptr);
+}
+
+TEST(PosixMemstreamTest, CanWriteToStream)
+{
+    PosixMemstream memstream;
+    fprintf(memstream.stream(), "Hello world\n");
+}
+
+TEST(PosixMemstreamTest, CanCheckBufferWithContents)
+{
+    PosixMemstream memstream;
+    fprintf(memstream.stream(), "Hello world\n");
+    if (memstream.canCheckBufferContents())
+    {
+        EXPECT_EQ(memstream.toString(), "Hello world\n");
+    }
+}
+
+} // namespace
 } // namespace test
 } // namespace gmx
-
-#endif // GMX_TESTUTILS_SETENV_H

@@ -55,6 +55,7 @@ gmx_add_unit_test(UtilityUnitTests utility-test
         template_mp.cpp
         textreader.cpp
         textwriter.cpp
+        txtdump.cpp
         typetraits.cpp
         )
 # TODO: Remove `legacy_modules` once specific modules are explicitly linked.

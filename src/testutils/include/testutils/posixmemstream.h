@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright 2019- The GROMACS Authors
+ * Copyright 2012- The GROMACS Authors
  * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
  * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
  *
@@ -33,29 +33,60 @@
  */
 /*! \libinternal \file
  * \brief
- * Helper functions to have identical behavior of setenv and unsetenv
- * on Unix and Windows systems.
+ * Declares gmx::test::PosixMemstream
  *
- * \author Pascal Merz <pascal.merz@me.com>
  * \inlibraryapi
  * \ingroup module_testutils
  */
+#ifndef GMX_TESTUTILS_POSIXMEMSTREAM_H
+#define GMX_TESTUTILS_POSIXMEMSTREAM_H
 
-#ifndef GMX_TESTUTILS_SETENV_H
-#define GMX_TESTUTILS_SETENV_H
+#include <cstdio>
+
+#include <string>
 
 namespace gmx
 {
+
 namespace test
 {
 
-//! Polyfiller to make setenv work on Windows
-int gmxSetenv(const char* name, const char* value, const bool overwrite);
+/*! \brief Open an in-memory string stream that works like a FILE*
+ * handle.
+ *
+ * This permits writing tests based on the contents of that string
+ * after the stream has closed.
+ *
+ * When open_memstream() is not supported, provides a minimal
+ * functional implementation that writes to stdout.
+ * This lets us have test coverage of legacy code on POSIX-compliant
+ * systems, which is much better than nothing.
+ */
+class PosixMemstream
+{
+public:
+    PosixMemstream();
+    ~PosixMemstream();
+    //! Get the stream
+    FILE* stream();
+    //! Close the string stream (if supported)
+    void closeStream();
+    //! Return whether checking the buffer contents is supported
+    static bool canCheckBufferContents();
+    /*! \brief Close the stream and return a string
+     *
+     * \return A string containing the stream contents (if supported),
+     * else an emptry string. */
+    std::string toString();
 
-//! Polyfiller to make unsetenv work on Windows
-int gmxUnsetenv(const char* name);
+private:
+    char*  buffer_     = nullptr;
+    size_t bufferSize_ = 0;
+    FILE*  stream_     = nullptr;
+    bool   isOpen_     = true;
+};
 
 } // namespace test
 } // namespace gmx
 
-#endif // GMX_TESTUTILS_SETENV_H
+#endif

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright 2019- The GROMACS Authors
+ * Copyright 2025- The GROMACS Authors
  * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
  * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
  *
@@ -31,31 +31,75 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
-/*! \libinternal \file
+/*! \internal \file
  * \brief
- * Helper functions to have identical behavior of setenv and unsetenv
- * on Unix and Windows systems.
+ * Implements gmx::test::PosixMemstream
  *
- * \author Pascal Merz <pascal.merz@me.com>
- * \inlibraryapi
  * \ingroup module_testutils
  */
+#include "gmxpre.h"
 
-#ifndef GMX_TESTUTILS_SETENV_H
-#define GMX_TESTUTILS_SETENV_H
+#include "testutils/posixmemstream.h"
+
+#include <gtest/gtest.h>
+
+#include "gromacs/utility/basedefinitions.h"
 
 namespace gmx
 {
 namespace test
 {
 
-//! Polyfiller to make setenv work on Windows
-int gmxSetenv(const char* name, const char* value, const bool overwrite);
+PosixMemstream::PosixMemstream()
+{
+#if HAVE_OPEN_MEMSTREAM
+    stream_ = open_memstream(&buffer_, &bufferSize_);
+#else
+    GMX_UNUSED_VALUE(bufferSize_);
+    stream_ = stdout;
+#endif
+}
 
-//! Polyfiller to make unsetenv work on Windows
-int gmxUnsetenv(const char* name);
+PosixMemstream::~PosixMemstream()
+{
+    closeStream();
+    if (buffer_)
+    {
+        free(buffer_);
+    }
+}
+
+FILE* PosixMemstream::stream()
+{
+    return stream_;
+}
+
+void PosixMemstream::closeStream()
+{
+    if (isOpen_)
+    {
+#if HAVE_OPEN_MEMSTREAM
+        fclose(stream());
+#endif
+        isOpen_ = false;
+        stream_ = nullptr;
+    }
+}
+
+bool PosixMemstream::canCheckBufferContents()
+{
+#if HAVE_OPEN_MEMSTREAM
+    return true;
+#else
+    return false;
+#endif
+}
+
+std::string PosixMemstream::toString()
+{
+    closeStream();
+    return buffer_ ? std::string(buffer_) : std::string{};
+}
 
 } // namespace test
 } // namespace gmx
-
-#endif // GMX_TESTUTILS_SETENV_H

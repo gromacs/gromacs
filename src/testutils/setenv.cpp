@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright 2019- The GROMACS Authors
+ * Copyright 2025- The GROMACS Authors
  * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
  * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
  *
@@ -31,31 +31,51 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
-/*! \libinternal \file
+/*! \internal \file
  * \brief
- * Helper functions to have identical behavior of setenv and unsetenv
- * on Unix and Windows systems.
+ * Implements helper routines for setting environment variables in tests
  *
- * \author Pascal Merz <pascal.merz@me.com>
- * \inlibraryapi
  * \ingroup module_testutils
  */
+#include "gmxpre.h"
 
-#ifndef GMX_TESTUTILS_SETENV_H
-#define GMX_TESTUTILS_SETENV_H
+#include "testutils/setenv.h"
+
+#include "config.h"
+
+#include <cstdlib>
 
 namespace gmx
 {
 namespace test
 {
 
-//! Polyfiller to make setenv work on Windows
-int gmxSetenv(const char* name, const char* value, const bool overwrite);
+int gmxSetenv(const char* name, const char* value, const bool overwrite)
+{
+#if GMX_NATIVE_WINDOWS
+    if (!overwrite)
+    {
+        size_t size  = 0;
+        int    error = getenv_s(&size, nullptr, 0, name);
+        if (error != 0 || size != 0)
+        {
+            return error;
+        }
+    }
+    return _putenv_s(name, value);
+#else
+    return setenv(name, value, static_cast<int>(overwrite));
+#endif
+}
 
-//! Polyfiller to make unsetenv work on Windows
-int gmxUnsetenv(const char* name);
+int gmxUnsetenv(const char* name)
+{
+#if GMX_NATIVE_WINDOWS
+    return _putenv_s(name, "");
+#else
+    return unsetenv(name);
+#endif
+}
 
 } // namespace test
 } // namespace gmx
-
-#endif // GMX_TESTUTILS_SETENV_H

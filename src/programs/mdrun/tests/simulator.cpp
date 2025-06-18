@@ -281,7 +281,7 @@ TEST_P(SimulatorComparisonTest, WithinTolerances)
     runMdrun(&runner_);
 
     // Set tested environment variable
-    const int overWriteEnvironmentVariable = 1;
+    const bool overWriteEnvironmentVariable = true;
     gmxSetenv(environmentVariable.c_str(), "ON", overWriteEnvironmentVariable);
 
     // Do second mdrun

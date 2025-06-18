@@ -95,7 +95,8 @@ protected:
             GTEST_FAIL()
                     << "GMX_TEST_PLUMED_KERNEL_IS_AVAILABLE was set but PLUMED kernel not found";
         }
-        gmxSetenv("PLUMED_MAXBACKUP", "0", 1);
+        const bool overWriteEnvironmentVariable = true;
+        gmxSetenv("PLUMED_MAXBACKUP", "0", overWriteEnvironmentVariable);
     }
 
 public:
