@@ -42,6 +42,7 @@
 
 #include "h5md_group.h"
 
+#include "gromacs/fileio/h5md/h5md_util.h"
 #include "gromacs/utility/basedefinitions.h"
 
 #include "h5md_error.h"
@@ -71,19 +72,21 @@ hid_t createGroup(const hid_t container, const char* name)
 hid_t openGroup(const hid_t container, const char* name)
 {
     const hid_t group = H5Gopen(container, name, H5P_DEFAULT);
-    throwUponH5mdError(group == H5I_INVALID_HID, "Cannot open group.");
+    throwUponInvalidHid(group, "Cannot open group.");
 
     return group;
 }
 
 hid_t openOrCreateGroup(const hid_t container, const char* name)
 {
-    hid_t groupId = H5Gopen(container, name, H5P_DEFAULT);
-    if (groupId == H5I_INVALID_HID)
+    if (objectExists(container, name))
     {
-        groupId = createGroup(container, name);
+        return openGroup(container, name);
     }
-    return groupId;
+    else
+    {
+        return createGroup(container, name);
+    }
 }
 
 } // namespace gmx

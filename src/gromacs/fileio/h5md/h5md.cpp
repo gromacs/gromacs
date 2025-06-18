@@ -56,6 +56,7 @@
 #    include "h5md_error.h"
 #    include "h5md_group.h"
 #    include "h5md_guard.h"
+#    include "h5md_util.h"
 CLANG_DIAGNOSTIC_IGNORE("-Wold-style-cast")
 #else
 CLANG_DIAGNOSTIC_IGNORE("-Wmissing-noreturn")
@@ -97,7 +98,7 @@ H5md::H5md(const std::filesystem::path& fileName, const H5mdFileMode mode)
 H5md::~H5md()
 {
 #if GMX_USE_HDF5
-    if (file_ != H5I_INVALID_HID)
+    if (handleIsValid(file_))
     {
         // Do not throw exceptions when flushing from the destructor.
         flush(false);
@@ -126,8 +127,7 @@ void H5md::flush(bool throwExceptionUponError)
 #if GMX_USE_HDF5
     if (throwExceptionUponError)
     {
-        GMX_ASSERT(file_ != H5I_INVALID_HID, "Cannot flush an invalid H5MD file.");
-
+        GMX_ASSERT(handleIsValid(file_), "Cannot flush an invalid H5MD file.");
         gmx::throwUponH5mdError(H5Fflush(file_, H5F_SCOPE_LOCAL) < 0, "Error flushing H5MD.");
     }
     else
@@ -156,14 +156,15 @@ void H5md::setAuthor(const std::string& authorName)
 std::optional<std::string> H5md::author()
 {
 #if GMX_USE_HDF5
-    const auto [authorGroup, groupGuard] = makeH5mdGroupGuard(H5Gopen(file_, "h5md/author", H5P_DEFAULT));
-
-    if (authorGroup == H5I_INVALID_HID)
+    if (objectExists(file_, "h5md/author"))
+    {
+        const auto [group, groupGuard] = makeH5mdGroupGuard(openGroup(file_, "h5md/author"));
+        return getAttribute(group, "name");
+    }
+    else
     {
         return std::nullopt;
     }
-
-    return getAttribute(authorGroup, "name");
 
 #else
     throw gmx::NotImplementedError(
@@ -187,15 +188,15 @@ void H5md::setCreatorProgramName(const std::string& creatorName)
 std::optional<std::string> H5md::creatorProgramName()
 {
 #if GMX_USE_HDF5
-    const auto [creatorGroup, groupGuard] =
-            makeH5mdGroupGuard(H5Gopen(file_, "h5md/creator", H5P_DEFAULT));
-
-    if (creatorGroup == H5I_INVALID_HID)
+    if (objectExists(file_, "h5md/creator"))
+    {
+        const auto [group, groupGuard] = makeH5mdGroupGuard(openGroup(file_, "h5md/creator"));
+        return getAttribute(group, "name");
+    }
+    else
     {
         return std::nullopt;
     }
-
-    return getAttribute(creatorGroup, "name");
 
 #else
     throw gmx::NotImplementedError(
@@ -219,15 +220,15 @@ void H5md::setCreatorProgramVersion(const std::string& version)
 std::optional<std::string> H5md::creatorProgramVersion()
 {
 #if GMX_USE_HDF5
-    const auto [creatorGroup, groupGuard] =
-            makeH5mdGroupGuard(H5Gopen(file_, "h5md/creator", H5P_DEFAULT));
-
-    if (creatorGroup == H5I_INVALID_HID)
+    if (objectExists(file_, "h5md/creator"))
+    {
+        const auto [group, groupGuard] = makeH5mdGroupGuard(openGroup(file_, "h5md/creator"));
+        return getAttribute(group, "version");
+    }
+    else
     {
         return std::nullopt;
     }
-
-    return getAttribute(creatorGroup, "version");
 
 #else
     throw gmx::NotImplementedError(

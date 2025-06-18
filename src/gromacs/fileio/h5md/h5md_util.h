@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright 2024- The GROMACS Authors
+ * Copyright 2025- The GROMACS Authors
  * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
  * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
  *
@@ -32,55 +32,44 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 
-/*! \brief Definitions of error utility functions for the H5md module.
+/*! \brief Declarations of H5md utility functions.
  *
- * \author Magnus Lundborg <lundborg.magnus@gmail.com>
  * \author Petter Johansson <pettjoha@kth.se>
  */
 
-#include "gmxpre.h"
-
-#include "h5md_error.h"
+#ifndef GMX_FILEIO_H5MD_UTIL_H
+#define GMX_FILEIO_H5MD_UTIL_H
 
 #include <hdf5.h>
-
-#include "gromacs/utility/basedefinitions.h"
-#include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/fatalerror.h"
-
-#include "h5md_util.h"
-
-// HDF5 constants use old style casts.
-CLANG_DIAGNOSTIC_IGNORE("-Wold-style-cast")
 
 namespace gmx
 {
 
-void printHdf5ErrorsDebug()
+/*! \brief Return whether object \p name exists in the given HDF5 \p container.
+ *
+ * \param[in] container Handle to container in which to check.
+ * \param[in] name      Name of object to look for.
+ *
+ * \returns True if the object exists, otherwise false.
+ */
+inline bool objectExists(const hid_t container, const char* name) noexcept
 {
-    if (debug)
-    {
-        H5Eprint2(H5E_DEFAULT, debug);
-    }
-#ifndef NDEBUG
-    H5Eprint2(H5E_DEFAULT, nullptr);
-#endif
+    // Return value: <0 = error, 0 = does not exist, >0 = exists
+    return H5Oexists_by_name(container, name, H5P_DEFAULT) > 0;
 }
 
-void throwUponH5mdError(const bool errorExists, const std::string& message)
+/*! \brief Return whether HDF5 \p handle is valid.
+ *
+ * \param[in] handle HDF5 handle to check.
+ *
+ * \returns True if the handle is valid, otherwise false.
+ */
+inline bool handleIsValid(const hid_t handle) noexcept
 {
-    if (errorExists)
-    {
-        gmx::printHdf5ErrorsDebug();
-        throw gmx::FileIOError(message.c_str());
-    }
-}
-
-void throwUponInvalidHid(const hid_t id, const std::string& message)
-{
-    throwUponH5mdError(!handleIsValid(id), message);
+    // Return value: <0 = error, 0 = invalid, >0 = valid
+    return H5Iis_valid(handle) > 0;
 }
 
 } // namespace gmx
 
-CLANG_DIAGNOSTIC_RESET
+#endif // GMX_FILEIO_H5MD_UTIL_H

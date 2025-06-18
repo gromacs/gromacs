@@ -42,6 +42,7 @@ if (GMX_USE_HDF5)
             h5md_read.cpp
             h5md_type.cpp
             h5md_write.cpp
+            h5md_util.cpp
         )
 else()
     gmx_add_unit_test(H5mdTests h5md-test

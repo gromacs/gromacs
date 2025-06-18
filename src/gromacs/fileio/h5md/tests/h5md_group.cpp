@@ -49,6 +49,7 @@
 
 #include "gromacs/fileio/h5md/h5md.h"
 #include "gromacs/fileio/h5md/h5md_guard.h"
+#include "gromacs/fileio/h5md/h5md_util.h"
 #include "gromacs/utility/exceptions.h"
 
 #include "testutils/testasserts.h"
@@ -78,7 +79,7 @@ TEST(H5mdGroupTest, CreateGroupWorks)
         SCOPED_TRACE("Assert that group was created");
         const auto [group, groupGuard] =
                 makeH5mdGroupGuard(H5Gopen(file.fileid(), groupName, H5P_DEFAULT));
-        ASSERT_GT(H5Iis_valid(group), 0);
+        ASSERT_TRUE(handleIsValid(group));
     }
 }
 
@@ -145,7 +146,7 @@ TEST(H5mdGroupTest, OpenGroupWorksForWriteModeFile)
     {
         SCOPED_TRACE("Open group");
         const auto [group, groupGuard] = makeH5mdGroupGuard(openGroup(file.fileid(), groupName));
-        ASSERT_GT(H5Iis_valid(group), 0);
+        ASSERT_TRUE(handleIsValid(group));
     }
 }
 
@@ -165,7 +166,7 @@ TEST(H5mdGroupTest, OpenGroupWorksForReadOnlyModeFile)
         SCOPED_TRACE("Open group");
         H5md file(fileName, H5mdFileMode::Read);
         const auto [group, groupGuard] = makeH5mdGroupGuard(openGroup(file.fileid(), groupName));
-        ASSERT_GT(H5Iis_valid(group), 0);
+        ASSERT_TRUE(handleIsValid(group));
     }
 }
 

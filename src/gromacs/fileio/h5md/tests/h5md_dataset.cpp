@@ -49,6 +49,7 @@
 #include "gromacs/fileio/h5md/h5md.h"
 #include "gromacs/fileio/h5md/h5md_guard.h"
 #include "gromacs/fileio/h5md/h5md_type.h"
+#include "gromacs/fileio/h5md/h5md_util.h"
 #include "gromacs/fileio/h5md/tests/h5mdtestbase.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/exceptions.h"
@@ -207,7 +208,7 @@ TYPED_TEST(H5mdPrimitiveDataSetTest, OpenDataSetThrowsForInvalidSetName)
         // Create a data set to ensure that there is something in the file which we cannot read with bad names
         const auto [dataSet, dataSetGuard] =
                 makeH5mdDataSetGuard(create1dFrameDataSet<TypeParam>(this->fileid(), "testDataSet"));
-        ASSERT_GT(H5Iis_valid(dataSet), 0)
+        ASSERT_TRUE(handleIsValid(dataSet))
                 << "Sanity check failed: data set handle should be valid";
     }
 
@@ -242,7 +243,7 @@ TYPED_TEST(H5mdPrimitiveDataSetTest, GetNumFramesThrowsForInvalidDataSetHandle)
                 makeH5mdDataSetGuard(create1dFrameDataSet<TypeParam>(this->fileid(), "testDataSet"));
 
         dataSetToTest = dataSet;
-        ASSERT_GT(H5Iis_valid(dataSetToTest), 0)
+        ASSERT_TRUE(handleIsValid(dataSetToTest))
                 << "Sanity check failed: data set handle must be valid before exiting scope";
     }
 
