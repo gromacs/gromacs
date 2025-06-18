@@ -73,7 +73,6 @@
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gpu_utils/device_stream_manager.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
-#include "gromacs/gpu_utils/nvshmem_utils.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
@@ -3080,7 +3079,8 @@ bool change_dd_cutoff(t_commrec*                     cr,
 
 void constructGpuHaloExchange(const t_commrec&                cr,
                               const gmx::DeviceStreamManager& deviceStreamManager,
-                              gmx_wallcycle*                  wcycle)
+                              gmx_wallcycle*                  wcycle,
+                              const bool                      useNvshmem)
 {
     GMX_RELEASE_ASSERT(deviceStreamManager.streamIsValid(gmx::DeviceStreamType::NonBondedLocal),
                        "Local non-bonded stream should be valid when using"
@@ -3088,6 +3088,15 @@ void constructGpuHaloExchange(const t_commrec&                cr,
     GMX_RELEASE_ASSERT(deviceStreamManager.streamIsValid(gmx::DeviceStreamType::NonBondedNonLocal),
                        "Non-local non-bonded stream should be valid when using "
                        "GPU halo exchange.");
+
+    if (useNvshmem)
+    {
+        cr.dd->gpuHaloExchangeNvshmemHelper = std::make_unique<gmx::GpuHaloExchangeNvshmemHelper>(
+                cr,
+                deviceStreamManager.context(),
+                deviceStreamManager.stream(gmx::DeviceStreamType::NonBondedLocal),
+                std::nullopt);
+    }
 
     for (int d = 0; d < cr.dd->ndim; d++)
     {
@@ -3103,20 +3112,36 @@ void reinitGpuHaloExchange(const t_commrec&              cr,
                            const DeviceBuffer<gmx::RVec> d_coordinatesBuffer,
                            const DeviceBuffer<gmx::RVec> d_forcesBuffer)
 {
-    int numDimsAndPulses = 0;
     for (int d = 0; d < cr.dd->ndim; d++)
     {
         for (int pulse = 0; pulse < cr.dd->comm->cd[d].numPulses(); pulse++)
         {
             cr.dd->gpuHaloExchange[d][pulse]->reinitHalo(d_coordinatesBuffer, d_forcesBuffer);
-            cr.dd->gpuHaloExchange[d][pulse]->reinitNvshmemSignal(cr, numDimsAndPulses++);
+        }
+    }
+}
+
+void reinitGpuHaloExchangeNvshmem(const t_commrec& cr)
+{
+    // Does global communication and symmetric reallocation
+    cr.dd->gpuHaloExchangeNvshmemHelper->reinit();
+    DeviceBuffer<uint64_t> d_syncBuffer = cr.dd->gpuHaloExchangeNvshmemHelper->getSyncBuffer();
+    const int totalPulsesAndDims        = cr.dd->gpuHaloExchangeNvshmemHelper->totalPulsesAndDims();
+
+    int numDimsAndPulses = 0;
+    for (int d = 0; d < cr.dd->ndim; d++)
+    {
+        for (int pulse = 0; pulse < cr.dd->comm->cd[d].numPulses(); pulse++)
+        {
+            cr.dd->gpuHaloExchange[d][pulse]->reinitNvshmemSignal(
+                    d_syncBuffer, totalPulsesAndDims, numDimsAndPulses++);
         }
     }
 }
 
 void destroyGpuHaloExchangeNvshmemBuf(const t_commrec& cr)
 {
-    if (cr.nvshmemHandlePtr != nullptr)
+    if (cr.dd->gpuHaloExchangeNvshmemHelper)
     {
         for (int d = 0; d < cr.dd->ndim; d++)
         {
@@ -3126,6 +3151,7 @@ void destroyGpuHaloExchangeNvshmemBuf(const t_commrec& cr)
             }
         }
     }
+    cr.dd->gpuHaloExchangeNvshmemHelper.reset(nullptr);
 }
 
 GpuEventSynchronizer* communicateGpuHaloCoordinates(const t_commrec&      cr,

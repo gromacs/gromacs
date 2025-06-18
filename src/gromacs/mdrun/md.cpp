@@ -1039,7 +1039,8 @@ void gmx::LegacySimulator::do_md()
             GMX_RELEASE_ASSERT(fr_->deviceStreamManager != nullptr,
                                "GPU device manager has to be initialized to use GPU "
                                "version of halo exchange.");
-            constructGpuHaloExchange(*cr_, *fr_->deviceStreamManager, wallCycleCounters_);
+            constructGpuHaloExchange(
+                    *cr_, *fr_->deviceStreamManager, wallCycleCounters_, simulationWork.useNvshmem);
         }
 
         if (MAIN(cr_) && do_log)

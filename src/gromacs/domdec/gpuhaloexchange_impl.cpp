@@ -107,7 +107,9 @@ void GpuHaloExchange::reinitHalo(DeviceBuffer<RVec> /* d_coordinatesBuffer */,
                "A CPU stub for GPU Halo Exchange was called insted of the correct implementation.");
 }
 
-void GpuHaloExchange::reinitNvshmemSignal(const t_commrec& /* cr */, int /* signalObjOffset */)
+void GpuHaloExchange::reinitNvshmemSignal(DeviceBuffer<uint64_t> /* d_syncBuffer */,
+                                          const int /* totalPulsesAndDims */,
+                                          const int /* signalObjOffset */)
 {
     GMX_ASSERT(!impl_,
                "A CPU stub for GPU Halo Exchange was called insted of the correct implementation.");
@@ -142,6 +144,48 @@ GpuEventSynchronizer* GpuHaloExchange::getForcesReadyOnDeviceEvent()
 void GpuHaloExchange::destroyGpuHaloExchangeNvshmemBuf()
 {
     GMX_ASSERT(!impl_,
+               "A CPU stub for GPU Halo Exchange was called insted of the correct implementation.");
+}
+
+GpuHaloExchangeNvshmemHelper::GpuHaloExchangeNvshmemHelper(const t_commrec&     cr,
+                                                           const DeviceContext& context,
+                                                           const DeviceStream&  stream,
+                                                           const std::optional<int>& /* peerRank */) :
+    cr_(cr), stream_(stream), context_(context)
+{
+    GMX_ASSERT(false,
+               "A CPU stub for GPU Halo Exchange was called insted of the correct implementation.");
+}
+
+GpuHaloExchangeNvshmemHelper::~GpuHaloExchangeNvshmemHelper() = default;
+
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+DeviceBuffer<uint64_t> GpuHaloExchangeNvshmemHelper::getSyncBuffer() const
+{
+    GMX_ASSERT(false,
+               "A CPU stub for GPU Halo Exchange was called insted of the correct implementation.");
+    return DeviceBuffer<uint64_t>{};
+}
+
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+int GpuHaloExchangeNvshmemHelper::totalPulsesAndDims() const
+{
+    GMX_ASSERT(false,
+               "A CPU stub for GPU Halo Exchange was called insted of the correct implementation.");
+    return -1;
+}
+
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+void GpuHaloExchangeNvshmemHelper::allocateAndInitSignalBufs(int /* totalDimsAndPulses */)
+{
+    GMX_ASSERT(false,
+               "A CPU stub for GPU Halo Exchange was called insted of the correct implementation.");
+}
+
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+void GpuHaloExchangeNvshmemHelper::reinit()
+{
+    GMX_ASSERT(false,
                "A CPU stub for GPU Halo Exchange was called insted of the correct implementation.");
 }
 

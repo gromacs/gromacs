@@ -171,9 +171,8 @@ public:
      *  \param[in] numAtomsLocal  Number of atoms in local domain.
      *  \param[in] numAtomsAll    Total number of atoms to handle.
      *  \param[in] cr             Communication structure pointer
-     *  \param[in] peerRank       Peer PP rank used to communicate with PME.
      */
-    void reinit(int numAtomsLocal, int numAtomsAll, const t_commrec& cr, int peerRank);
+    void reinit(int numAtomsLocal, int numAtomsAll, const t_commrec& cr);
 
     /*! \brief Returns the range of atoms to be copied based on the copy type (all, local or non-local).
      *

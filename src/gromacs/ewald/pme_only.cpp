@@ -71,6 +71,7 @@
 #include <vector>
 
 #include "gromacs/domdec/domdec.h"
+#include "gromacs/domdec/gpuhaloexchange.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/ewald/pme_coordinate_receiver_gpu.h"
 #include "gromacs/ewald/pme_force_sender_gpu.h"
@@ -137,6 +138,11 @@ struct gmx_pme_pp
     bool useMdGpuGraph = false;
     /*! \brief Whether a NVSHMEM should be used for GPU communication if run conditions allow */
     bool useNvshmem = false;
+    /*! \brief Whether GPU halo exchange is in use
+     *
+     * Together with NVSHMEM support, this requires otherwise unnecessary communication
+     * and symmetric allocations */
+    bool useGpuHaloExchange = false;
 };
 
 static std::vector<PpRanks> makePpRanks(const t_commrec* cr)
@@ -240,6 +246,8 @@ static gmx_pme_t* gmx_pmeonly_switch(std::vector<gmx_pme_t*>* pmedata,
  * \param[out] ewaldcoeff_lj          Ewald cut-off parameter for Lennard-Jones, if received.
  * \param[in]  useGpuForPme           Flag on whether PME is on GPU.
  * \param[in]  stateGpu               GPU state propagator object.
+ * \param[in]  gpuHaloExchangeNvshmemHelper  Supports symmetric operations with NVSHMEM halo
+ *                                           exchange
  * \param[in]  cr                     The commrec object.
  * \param[in]  runMode                PME run mode.
  *
@@ -263,8 +271,9 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
                                       real*                        ewaldcoeff_lj,
                                       bool                         useGpuForPme,
                                       gmx::StatePropagatorDataGpu* stateGpu,
-                                      const t_commrec&             cr,
-                                      PmeRunMode gmx_unused        runMode)
+                                      gmx::GpuHaloExchangeNvshmemHelper* gpuHaloExchangeNvshmemHelper,
+                                      const t_commrec&      cr,
+                                      PmeRunMode gmx_unused runMode)
 {
     int status = -1;
     int nat    = 0;
@@ -439,7 +448,13 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
                 gmx_pme_reinit_atoms(pme, nat, pme_pp->chargeA, pme_pp->chargeB);
                 if (useGpuForPme)
                 {
-                    stateGpu->reinit(nat, nat, cr, pme_pp->peerRankId);
+                    // Does global communication and symmetric reallocation with NVSHMEM
+                    stateGpu->reinit(nat, nat, cr);
+                    if (pme_pp->useNvshmem && pme_pp->useGpuHaloExchange)
+                    {
+                        // Does global communication and symmetric reallocation
+                        gpuHaloExchangeNvshmemHelper->reinit();
+                    }
                     pme_gpu_set_device_x(pme, stateGpu->getCoordinates());
                 }
                 if (pme_pp->useGpuDirectComm)
@@ -548,6 +563,7 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
     GMX_UNUSED_VALUE(ewaldcoeff_lj);
     GMX_UNUSED_VALUE(useGpuForPme);
     GMX_UNUSED_VALUE(stateGpu);
+    GMX_UNUSED_VALUE(gpuHaloExchangeNvshmemHelper);
     GMX_UNUSED_VALUE(cr);
 
     status = pmerecvqxX;
@@ -677,6 +693,7 @@ int gmx_pmeonly(struct gmx_pme_t**              pmeFromRunnerPtr,
                 PmeRunMode                      runMode,
                 bool                            useGpuPmePpCommunication,
                 bool                            useNvshmem,
+                bool                            useGpuHaloExchange,
                 const gmx::DeviceStreamManager* deviceStreamManager)
 {
     int     ret;
@@ -696,9 +713,12 @@ int gmx_pmeonly(struct gmx_pme_t**              pmeFromRunnerPtr,
     std::vector<gmx_pme_t*> pmedata;
     pmedata.push_back(pmeFromRunner);
 
-    auto pme_pp = std::make_unique<gmx_pme_pp>(cr->mpi_comm_mysim, makePpRanks(cr));
+    auto pme_pp                = std::make_unique<gmx_pme_pp>(cr->mpi_comm_mysim, makePpRanks(cr));
+    pme_pp->useNvshmem         = useNvshmem;
+    pme_pp->useGpuHaloExchange = useGpuHaloExchange;
 
-    std::unique_ptr<gmx::StatePropagatorDataGpu> stateGpu;
+    std::unique_ptr<gmx::StatePropagatorDataGpu>       stateGpu;
+    std::unique_ptr<gmx::GpuHaloExchangeNvshmemHelper> gpuHaloExchangeNvshmemHelper;
     // TODO the variable below should be queried from the task assignment info
     const bool useGpuForPme = (runMode == PmeRunMode::GPU) || (runMode == PmeRunMode::Mixed);
     if (useGpuForPme)
@@ -720,10 +740,17 @@ int gmx_pmeonly(struct gmx_pme_t**              pmeFromRunnerPtr,
                     pme_pp->mpi_comm_mysim,
                     deviceStreamManager->context(),
                     pme_pp->ppRanks);
-            if (useNvshmem)
+            if (pme_pp->useNvshmem)
             {
+                if (pme_pp->useGpuHaloExchange)
+                {
+                    gpuHaloExchangeNvshmemHelper = std::make_unique<gmx::GpuHaloExchangeNvshmemHelper>(
+                            *cr,
+                            deviceStreamManager->context(),
+                            deviceStreamManager->stream(gmx::DeviceStreamType::Pme),
+                            pme_pp->peerRankId);
+                }
                 pme_gpu_use_nvshmem(pmeFromRunner->gpu, useNvshmem);
-                pme_pp->useNvshmem                            = useNvshmem;
                 pmeFromRunner->gpu->nvshmemParams->ppRanksRef = pme_pp->ppRanks;
             }
         }
@@ -768,6 +795,7 @@ int gmx_pmeonly(struct gmx_pme_t**              pmeFromRunnerPtr,
                                              &ewaldcoeff_lj,
                                              useGpuForPme,
                                              stateGpu.get(),
+                                             gpuHaloExchangeNvshmemHelper.get(),
                                              *cr,
                                              runMode);
 

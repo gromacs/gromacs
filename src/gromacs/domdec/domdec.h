@@ -270,10 +270,12 @@ void dd_init_local_state(const gmx_domdec_t& dd, const t_state* state_global, t_
  * \param[in] cr                  The commrec object.
  * \param[in] deviceStreamManager Manager of the GPU context and streams.
  * \param[in] wcycle              The wallclock counter.
+ * \param[in] useNvshmem          Whether NVSHMEM is in use for GPU halo exchange
  */
 void constructGpuHaloExchange(const t_commrec&                cr,
                               const gmx::DeviceStreamManager& deviceStreamManager,
-                              gmx_wallcycle*                  wcycle);
+                              gmx_wallcycle*                  wcycle,
+                              const bool                      useNvshmem);
 
 /*! \brief
  * (Re-) Initialization for GPU halo exchange
@@ -284,6 +286,15 @@ void constructGpuHaloExchange(const t_commrec&                cr,
 void reinitGpuHaloExchange(const t_commrec&        cr,
                            DeviceBuffer<gmx::RVec> d_coordinatesBuffer,
                            DeviceBuffer<gmx::RVec> d_forcesBuffer);
+
+/*! \brief
+ * (Re-) Initialization for GPU halo exchange with NVSHMEM
+ *
+ * Does global communication and symmetric reallocation
+ *
+ * \param [in] cr                   The commrec object
+ */
+void reinitGpuHaloExchangeNvshmem(const t_commrec& cr);
 
 /*! \brief Destructor for symmetric d_recvBuf used by NVSHMEM.
  * \param [in] cr                The commrec object

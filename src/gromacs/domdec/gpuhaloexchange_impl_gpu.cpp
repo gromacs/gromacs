@@ -52,13 +52,14 @@
 #    include <nvshmemx.h>
 #endif
 
+#include <numeric>
+
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/gpuhaloexchange.h"
 #include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/gpueventsynchronizer.h"
-#include "gromacs/gpu_utils/nvshmem_utils.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/timing/wallcycle.h"
@@ -256,22 +257,23 @@ void GpuHaloExchange::Impl::reinitHalo(DeviceBuffer<Float3> d_coordinatesBuffer,
     wallcycle_stop(wcycle_, WallCycleCounter::Domdec);
 }
 
-void GpuHaloExchange::Impl::reinitNvshmemSignal(const t_commrec& cr, int signalObjOffset)
+void GpuHaloExchange::Impl::reinitNvshmemSignal(DeviceBuffer<uint64_t> d_syncBuffer,
+                                                const int              totalPulsesAndDims,
+                                                const int              signalObjOffset)
 {
     if (useNvshmem_)
     {
-        GMX_RELEASE_ASSERT(cr.nvshmemHandlePtr->d_ppHaloExSyncBase_ != nullptr,
+        GMX_RELEASE_ASSERT(d_syncBuffer != nullptr,
                            "NVSHMEM Coordinate Halo exchange requires valid signal buffer");
         nvshmemHaloExchange_.signalObjOffset_     = signalObjOffset;
-        nvshmemHaloExchange_.d_signalSenderRankX_ = cr.nvshmemHandlePtr->d_ppHaloExSyncBase_;
+        nvshmemHaloExchange_.d_signalSenderRankX_ = d_syncBuffer;
         // As only CUDA DeviceBuffer<> supports pointer updates from host side
         // we guard these pointer update code by GMX_GPU_CUDA
 #if GMX_GPU_CUDA
-        int totalPulsesAndDims = cr.nvshmemHandlePtr->ppHaloExPerSyncBufSize_;
-        nvshmemHaloExchange_.d_signalReceiverRankX_ =
-                cr.nvshmemHandlePtr->d_ppHaloExSyncBase_ + totalPulsesAndDims;
-        nvshmemHaloExchange_.d_signalReceiverRankF_ =
-                cr.nvshmemHandlePtr->d_ppHaloExSyncBase_ + 2 * totalPulsesAndDims;
+        nvshmemHaloExchange_.d_signalReceiverRankX_ = d_syncBuffer + totalPulsesAndDims;
+        nvshmemHaloExchange_.d_signalReceiverRankF_ = d_syncBuffer + 2 * totalPulsesAndDims;
+#else
+        GMX_UNUSED_VALUE(totalPulsesAndDims);
 #endif
     }
 }
@@ -738,7 +740,10 @@ GpuHaloExchange::Impl::~Impl()
 void GpuHaloExchange::Impl::destroyGpuHaloExchangeNvshmemBuf()
 {
     // freeing the NVSHMEM symmetric buffer
-    freeDeviceBuffer(&d_recvBuf_);
+    if (useNvshmem_)
+    {
+        freeDeviceBuffer(&d_recvBuf_);
+    }
 }
 
 GpuHaloExchange::GpuHaloExchange(gmx_domdec_t*        dd,
@@ -768,9 +773,11 @@ void GpuHaloExchange::reinitHalo(DeviceBuffer<RVec> d_coordinatesBuffer, DeviceB
     impl_->reinitHalo(d_coordinatesBuffer, d_forcesBuffer);
 }
 
-void GpuHaloExchange::reinitNvshmemSignal(const t_commrec& cr, int signalObjOffset)
+void GpuHaloExchange::reinitNvshmemSignal(DeviceBuffer<uint64_t> d_syncBuffer,
+                                          const int              totalPulsesAndDims,
+                                          const int              signalObjOffset)
 {
-    impl_->reinitNvshmemSignal(cr, signalObjOffset);
+    impl_->reinitNvshmemSignal(d_syncBuffer, totalPulsesAndDims, signalObjOffset);
 }
 
 void GpuHaloExchange::destroyGpuHaloExchangeNvshmemBuf()
@@ -794,4 +801,141 @@ GpuEventSynchronizer* GpuHaloExchange::getForcesReadyOnDeviceEvent()
 {
     return impl_->getForcesReadyOnDeviceEvent();
 }
+
+GpuHaloExchangeNvshmemHelper::GpuHaloExchangeNvshmemHelper(const t_commrec&          cr,
+                                                           const DeviceContext&      context,
+                                                           const DeviceStream&       stream,
+                                                           const std::optional<int>& peerRank) :
+    cr_(cr), stream_(stream), peerRank_(peerRank), context_(context)
+{
+}
+
+GpuHaloExchangeNvshmemHelper::~GpuHaloExchangeNvshmemHelper()
+{
+    if (ppHaloExSyncBufCapacity_ > 0)
+    {
+        freeDeviceBuffer(&d_ppHaloExSyncBase_);
+    }
+}
+
+DeviceBuffer<uint64_t> GpuHaloExchangeNvshmemHelper::getSyncBuffer() const
+{
+    return d_ppHaloExSyncBase_;
+}
+
+int GpuHaloExchangeNvshmemHelper::totalPulsesAndDims() const
+{
+    return ppHaloExPerSyncBufSize_;
+}
+
+void GpuHaloExchangeNvshmemHelper::allocateAndInitSignalBufs(int totalDimsAndPulses)
+{
+    int totalSyncBufSize = totalDimsAndPulses * numOfPpHaloExSyncBufs;
+    reallocateDeviceBuffer(
+            &d_ppHaloExSyncBase_, totalSyncBufSize, &ppHaloExSyncBufSize_, &ppHaloExSyncBufCapacity_, context_, true);
+    // If the num of dims/pulses have changed we initialize the signalling
+    // buffer to max val.
+    if (ppHaloExPerSyncBufSize_ < totalDimsAndPulses)
+    {
+        // Initialize the signalling buffer with max value.
+        ppHaloExPerSyncBufSize_ = totalDimsAndPulses;
+
+        // TODO host allocation should be minimized by making this a
+        // member variable
+        gmx::HostVector<uint64_t> hostBuffer = {
+            {}, gmx::HostAllocationPolicy(gmx::PinningPolicy::PinnedIfSupported)
+        };
+        hostBuffer.resize(totalSyncBufSize, ~0);
+        // TODO replace this D2H with cudaMemsetAsync
+        copyToDeviceBuffer<uint64_t>(&d_ppHaloExSyncBase_,
+                                     hostBuffer.data(),
+                                     0,
+                                     static_cast<size_t>(totalSyncBufSize),
+                                     stream_,
+                                     GpuApiCallBehavior::Async,
+                                     nullptr);
+#if GMX_NVSHMEM
+        nvshmemx_sync_all_on_stream(stream_.stream());
+#endif
+    }
+}
+
+void GpuHaloExchangeNvshmemHelper::reinit()
+{
+    GMX_ASSERT(cr_.dd, "DD was not initialized.");
+    numDimsAndPulses_.resize(cr_.dd->ndim);
+    const bool isPmeRank = peerRank_.has_value();
+    if (isPmeRank)
+    {
+#if GMX_MPI
+        // recv remote data of num of pulses in each dim.
+        MPI_Recv(numDimsAndPulses_.data(), cr_.dd->ndim, MPI_INT, peerRank_.value(), 0, cr_.mpi_comm_mysim, MPI_STATUS_IGNORE);
+#endif
+    }
+    else
+    {
+        for (int d = 0; d < cr_.dd->ndim; d++)
+        {
+            numDimsAndPulses_[d] = cr_.dd->comm->cd[d].numPulses();
+        }
+#if GMX_MPI
+        // we use PP rank which receives virial and energy from PME rank
+        // to send the number of pulses data to PME rank.
+        if (cr_.dd->pme_receive_vir_ener)
+        {
+            MPI_Send(numDimsAndPulses_.data(), cr_.dd->ndim, MPI_INT, cr_.dd->pme_nodeid, 0, cr_.mpi_comm_mysim);
+        }
+#endif
+    }
+
+    int totalDimsAndPulses = std::accumulate(numDimsAndPulses_.begin(), numDimsAndPulses_.end(), 0);
+    if (totalDimsAndPulses > 0)
+    {
+        // These allocations are required only for PP Haloexchange
+        // which is enabled if totalDimsAndPulses > 0
+        allocateAndInitSignalBufs(totalDimsAndPulses);
+
+        if (isPmeRank)
+        {
+            const int prevSize = gmx::ssize(d_recvBufSize_);
+            if (prevSize < totalDimsAndPulses)
+            {
+                // Resize only if the previous size is smaller; otherwise,
+                // avoid resizing, keep redundant dimensions/pulses.
+                // This is to ensure parity with the `constructGpuHaloExchange`
+                // function in `domdec`. If there is a decrease in pulses/dimensions
+                // followed by an increase (or vice versa), any mismatch
+                // in PME buffer sizes with `cr_.dd->gpuHaloExchange` can lead to
+                // symmetric `nvshmem` memory allocation calls from the PME side due to
+                // reallocation. Such a mismatch can cause a hang, as the PME rank may post a
+                // `nvshmem_malloc` without a corresponding matching call from the PP side.
+                d_recvBuf_.resize(totalDimsAndPulses);
+                // Only initialize the newly allocated elements.
+                d_recvBufSize_.resize(totalDimsAndPulses, -1);
+                d_recvBufCapacity_.resize(totalDimsAndPulses, -1);
+            }
+
+            totalDimsAndPulses = 0;
+            for (int d = 0; d < cr_.dd->ndim; d++)
+            {
+                for (int pulse = 0; pulse < numDimsAndPulses_[d]; pulse++)
+                {
+                    int recvBufSize = 1;
+                    int newSize     = 1;
+#if GMX_MPI
+                    MPI_Allreduce(&newSize, &recvBufSize, 1, MPI_INT, MPI_MAX, cr_.mpi_comm_mysim);
+#endif
+                    reallocateDeviceBuffer(&d_recvBuf_[totalDimsAndPulses],
+                                           recvBufSize,
+                                           &d_recvBufSize_[totalDimsAndPulses],
+                                           &d_recvBufCapacity_[totalDimsAndPulses],
+                                           context_,
+                                           true);
+                    totalDimsAndPulses++;
+                }
+            }
+        }
+    }
+}
+
 } // namespace gmx

@@ -42,6 +42,7 @@
 #define GMX_DOMDEC_GPUHALOEXCHANGE_H
 
 #include <memory>
+#include <optional>
 
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/math/vectypes.h"
@@ -115,10 +116,11 @@ public:
 
     /*! \brief
      * (Re-) Initialization for NVSHMEM Signal objects
-     * \param [in] cr  Communication structure ref.
-     * \param [in] signalObjOffset  offset of the signal object corresponding to given pulse/dim.
+     * \param [in] d_syncBuffer        Device buffer for the signals
+     * \param [in] totalPulsesAndDims  Total number of DD pulses and dimensions
+     * \param [in] signalObjOffset     Offset of the signal object corresponding to given pulse/dim.
      */
-    void reinitNvshmemSignal(const t_commrec& cr, int signalObjOffset);
+    void reinitNvshmemSignal(DeviceBuffer<uint64_t> d_syncBuffer, int totalPulsesAndDims, int signalObjOffset);
 
     /*! \brief GPU halo exchange of coordinates buffer.
      *
@@ -150,6 +152,71 @@ public:
 private:
     class Impl;
     std::unique_ptr<Impl> impl_;
+};
+
+/*! \brief Handles NVSHMEM aspects of GPU Halo exchange
+ *
+ * GPU halo exchange requires extra signal buffers with NVSHMEM, as
+ * well as the ability to coordinate with a possible PME-only rank to
+ * arrange for global communication and symmetric allocations. */
+class GpuHaloExchangeNvshmemHelper
+{
+
+public:
+    GpuHaloExchangeNvshmemHelper(const t_commrec&          cr,
+                                 const DeviceContext&      context,
+                                 const DeviceStream&       stream,
+                                 const std::optional<int>& peerRank);
+
+    ~GpuHaloExchangeNvshmemHelper();
+
+    /*! \brief Re-initialize after domain repartitioning */
+    void reinit();
+    //! Return the sync buffer
+    DeviceBuffer<uint64_t> getSyncBuffer() const;
+    //! Return the total number of DD pulses and dimensions
+    int totalPulsesAndDims() const;
+    //! Permit symmetric deallocation
+    void freeHaloExchangeBuffers();
+
+private:
+    //! Communication record
+    const t_commrec& cr_;
+    //! Number of signal buffers types used for PP Halo exchange
+    static const int numOfPpHaloExSyncBufs = 3;
+    //! Size for the each of the 3 signal buffers used for PP Halo exchange
+    int ppHaloExPerSyncBufSize_ = 0;
+    //! Allocation size for the signal buffers used for PP Halo exchange
+    int ppHaloExSyncBufSize_ = -1;
+    //! Allocation capacity for the signal buffers used for PP Halo exchange
+    int ppHaloExSyncBufCapacity_ = -1;
+    //! Buffer used for synchronization signals
+    DeviceBuffer<uint64_t> d_ppHaloExSyncBase_;
+    //! Device stream
+    const DeviceStream& stream_;
+
+    //! Data structures used on PME-only ranks to implement symmetric allocations
+    /*! \{ */
+    //! On a PME rank, the rank of its PP peer
+    std::optional<int> peerRank_;
+    //! device buffer for receiving packed data
+    std::vector<DeviceBuffer<gmx::RVec>> d_recvBuf_;
+    //! keeps track of number of dimensions and pulses in each dimension.
+    std::vector<int> numDimsAndPulses_;
+    //! Allocation size for the recvBuf
+    std::vector<int> d_recvBufSize_;
+    //! Allocation capacity for the recvBuf
+    std::vector<int> d_recvBufCapacity_;
+    //! Device context
+    const DeviceContext& context_;
+    /*! \} */
+
+    /*! \brief Handles NVSHEM signal buffer initialization
+     *
+     * Allocates and initializes the signal buffers used in NVSHMEM enabled
+     * PP Halo exchange.
+     */
+    void allocateAndInitSignalBufs(int totalDimsAndPulses);
 };
 
 } // namespace gmx

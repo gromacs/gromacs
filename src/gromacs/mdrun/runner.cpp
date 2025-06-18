@@ -87,7 +87,6 @@
 #include "gromacs/gpu_utils/gpueventsynchronizer_helpers.h"
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/gpu_utils/nvshmem_manager.h"
-#include "gromacs/gpu_utils/nvshmem_utils.h"
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/hardware/device_management.h"
 #include "gromacs/hardware/hardwaretopology.h"
@@ -2054,11 +2053,6 @@ int Mdrunner::mdrunner()
         }
     }
 
-    if (runScheduleWork.simulationWork.useNvshmem)
-    {
-        cr->initNvshmem();
-    }
-
     /* Set thread affinity after gmx_pme_init(), otherwise with cuFFTMp the NVSHMEM helper thread
      * can be pinned to the same core as the PME thread, causing performance degradation.
      */
@@ -2332,6 +2326,7 @@ int Mdrunner::mdrunner()
                         pmeRunMode,
                         runScheduleWork.simulationWork.useGpuPmePpCommunication,
                         runScheduleWork.simulationWork.useNvshmem,
+                        runScheduleWork.simulationWork.useGpuHaloExchange,
                         deviceStreamManager.get());
         }
 
@@ -2374,10 +2369,6 @@ int Mdrunner::mdrunner()
         // Pinned buffers are associated with contexts in CUDA.
         // As soon as we destroy GPU contexts after mdrunner() exits, these lines should go.
         cr->destroyDD();
-        if (runScheduleWork.simulationWork.useNvshmem)
-        {
-            cr->destroyNvshmem();
-        }
         mdAtoms.reset(nullptr);
         globalState.reset(nullptr);
         localStateInstance.reset(nullptr);

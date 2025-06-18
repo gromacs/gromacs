@@ -45,7 +45,6 @@ gmx_add_libgromacs_sources(
         gpueventsynchronizer_helpers.cpp
         hostallocator.cpp
         nvshmem_manager.cpp
-        nvshmem_utils.cpp
         )
 if(GMX_GPU_OPENCL)
     gmx_add_libgromacs_sources(
@@ -97,9 +96,6 @@ elseif(GMX_GPU_SYCL)
         device_stream_manager.cpp
         device_stream_sycl.cpp
         pmalloc_sycl.cpp
-        # due to dependency on DeviceContext which requires sycl.h
-        # need to add it here
-        nvshmem_utils.cpp
         )
 else()
     gmx_add_libgromacs_sources(

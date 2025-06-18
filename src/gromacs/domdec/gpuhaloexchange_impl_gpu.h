@@ -147,10 +147,11 @@ public:
 
     /*! \brief
      * (Re-) Initialization for NVSHMEM Signal objects
-     * \param [in] cr  Communication structure ref.
-     * \param [in] signalObjOffset  offset of the signal object corresponding to given pulse/dim.
+     * \param [in] d_syncBuffer        Device buffer for the signals
+     * \param [in] totalPulsesAndDims  Total number of DD pulses and dimensions
+     * \param [in] signalObjOffset     Offset of the signal object corresponding to given pulse/dim.
      */
-    void reinitNvshmemSignal(const t_commrec& cr, int signalObjOffset);
+    void reinitNvshmemSignal(DeviceBuffer<uint64_t> d_syncBuffer, int totalPulsesAndDims, int signalObjOffset);
 
     /*! \brief
      * GPU halo exchange of coordinates buffer

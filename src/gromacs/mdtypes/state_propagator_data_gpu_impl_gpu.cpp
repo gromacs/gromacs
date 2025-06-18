@@ -51,7 +51,6 @@
 #    include "gromacs/gpu_utils/device_stream_manager.h"
 #    include "gromacs/gpu_utils/devicebuffer.h"
 #    include "gromacs/gpu_utils/gpueventsynchronizer.h"
-#    include "gromacs/gpu_utils/nvshmem_utils.h"
 #    include "gromacs/math/functions.h"
 #    include "gromacs/math/utilities.h"
 #    include "gromacs/math/vectypes.h"
@@ -117,11 +116,6 @@ StatePropagatorDataGpu::Impl::Impl(const DeviceStreamManager& deviceStreamManage
 
     copyInStream_ = std::make_unique<DeviceStream>(deviceContext_, DeviceStreamPriority::Normal, false);
     memsetStream_ = std::make_unique<DeviceStream>(deviceContext_, DeviceStreamPriority::Normal, false);
-
-    if (useNvshmem_)
-    {
-        nvshmemPpCommData_ = std::make_unique<NvshmemPpCommData>();
-    }
 }
 
 StatePropagatorDataGpu::Impl::Impl(const DeviceStream*  pmeStream,
@@ -160,11 +154,6 @@ StatePropagatorDataGpu::Impl::Impl(const DeviceStream*  pmeStream,
     fCopyStreams_[AtomLocality::Local]    = nullptr;
     fCopyStreams_[AtomLocality::NonLocal] = nullptr;
     fCopyStreams_[AtomLocality::All]      = nullptr;
-
-    if (useNvshmem_)
-    {
-        nvshmemPpCommData_ = std::make_unique<NvshmemPpCommData>();
-    }
 }
 
 StatePropagatorDataGpu::Impl::~Impl()
@@ -184,22 +173,9 @@ StatePropagatorDataGpu::Impl::~Impl()
     freeDeviceBuffer(&d_x_);
     freeDeviceBuffer(&d_v_);
     freeDeviceBuffer(&d_f_);
-
-    if (isPmeRank && useNvshmem_)
-    {
-        int nbufs = 0;
-        for (size_t d = 0; d < nvshmemPpCommData_->numDimsAndPulses_.size(); d++)
-        {
-            for (int i = 0; i < nvshmemPpCommData_->numDimsAndPulses_[d]; i++)
-            {
-                freeDeviceBuffer(&nvshmemPpCommData_->d_recvBuf_[nbufs]);
-                nbufs++;
-            }
-        }
-    }
 }
 
-void StatePropagatorDataGpu::Impl::reinit(int numAtomsLocal, int numAtomsAll, const t_commrec& cr, int peerRank)
+void StatePropagatorDataGpu::Impl::reinit(int numAtomsLocal, int numAtomsAll, const t_commrec& cr)
 {
     wallcycle_start_nocount(wcycle_, WallCycleCounter::LaunchGpuPp);
     wallcycle_sub_start_nocount(wcycle_, WallCycleSubCounter::LaunchStatePropagatorData);
@@ -286,96 +262,6 @@ void StatePropagatorDataGpu::Impl::reinit(int numAtomsLocal, int numAtomsAll, co
         clearDeviceBufferAsync(&d_f_, 0, d_fCapacity_, *localStream_);
         // We need to synchronize to avoid a data race with copyForcesToGpu(Local).
         localStream_->synchronize();
-    }
-
-    if (useNvshmem_)
-    {
-        GMX_ASSERT(cr.dd, "DD was not initialized.");
-        nvshmemPpCommData_->numDimsAndPulses_.resize(cr.dd->ndim);
-        if (isPmeRank)
-        {
-#    if GMX_MPI
-            // recv remote data of num of pulses in each dim.
-            MPI_Recv(nvshmemPpCommData_->numDimsAndPulses_.data(),
-                     cr.dd->ndim,
-                     MPI_INT,
-                     peerRank,
-                     0,
-                     cr.mpi_comm_mysim,
-                     MPI_STATUS_IGNORE);
-#    endif
-        }
-        else
-        {
-            for (int d = 0; d < cr.dd->ndim; d++)
-            {
-                nvshmemPpCommData_->numDimsAndPulses_[d] = cr.dd->comm->cd[d].numPulses();
-            }
-#    if GMX_MPI
-            // we use PP rank which receives virial and energy from PME rank
-            // to send the number of pulses data to PME rank.
-            if (cr.dd->pme_receive_vir_ener)
-            {
-                MPI_Send(nvshmemPpCommData_->numDimsAndPulses_.data(),
-                         cr.dd->ndim,
-                         MPI_INT,
-                         cr.dd->pme_nodeid,
-                         0,
-                         cr.mpi_comm_mysim);
-            }
-#    endif
-        }
-        int totalDimsAndPulses = std::accumulate(nvshmemPpCommData_->numDimsAndPulses_.begin(),
-                                                 nvshmemPpCommData_->numDimsAndPulses_.end(),
-                                                 0);
-
-        if (totalDimsAndPulses > 0)
-        {
-            // These allocations are required only for PP Haloexchange
-            // which is enabled if totalDimsAndPulses > 0
-            cr.nvshmemHandlePtr->allocateAndInitSignalBufs(totalDimsAndPulses, deviceContext_, localStream_);
-
-            if (isPmeRank)
-            {
-                int prevSize = gmx::ssize(nvshmemPpCommData_->d_recvBufSize_);
-                if (prevSize < totalDimsAndPulses)
-                {
-                    // Resize only if the previous size is smaller; otherwise,
-                    // avoid resizing, keep redundant dimensions/pulses.
-                    // This is to ensure parity with the `constructGpuHaloExchange`
-                    // function in `domdec`. If there is a decrease in pulses/dimensions
-                    // followed by an increase (or vice versa), any mismatch
-                    // in PME buffer sizes with `cr.dd->gpuHaloExchange` can lead to
-                    // symmetric `nvshmem` memory allocation calls from the PME side due to
-                    // reallocation. Such a mismatch can cause a hang, as the PME rank may post a
-                    // `nvshmem_malloc` without a corresponding matching call from the PP side.
-                    nvshmemPpCommData_->d_recvBuf_.resize(totalDimsAndPulses);
-                    // Only initialize the newly allocated elements.
-                    nvshmemPpCommData_->d_recvBufSize_.resize(totalDimsAndPulses, -1);
-                    nvshmemPpCommData_->d_recvBufCapacity_.resize(totalDimsAndPulses, -1);
-                }
-
-                totalDimsAndPulses = 0;
-                for (int d = 0; d < cr.dd->ndim; d++)
-                {
-                    for (int pulse = 0; pulse < nvshmemPpCommData_->numDimsAndPulses_[d]; pulse++)
-                    {
-                        int recvBufSize = 1;
-                        int newSize     = 1;
-#    if GMX_MPI
-                        MPI_Allreduce(&newSize, &recvBufSize, 1, MPI_INT, MPI_MAX, cr.mpi_comm_mysim);
-#    endif
-                        reallocateDeviceBuffer(&nvshmemPpCommData_->d_recvBuf_[totalDimsAndPulses],
-                                               recvBufSize,
-                                               &nvshmemPpCommData_->d_recvBufSize_[totalDimsAndPulses],
-                                               &nvshmemPpCommData_->d_recvBufCapacity_[totalDimsAndPulses],
-                                               deviceContext_,
-                                               true);
-                        totalDimsAndPulses++;
-                    }
-                }
-            }
-        }
     }
 
     wallcycle_sub_stop(wcycle_, WallCycleSubCounter::LaunchStatePropagatorData);
@@ -855,9 +741,9 @@ StatePropagatorDataGpu& StatePropagatorDataGpu::operator=(StatePropagatorDataGpu
 StatePropagatorDataGpu::~StatePropagatorDataGpu() = default;
 
 
-void StatePropagatorDataGpu::reinit(int numAtomsLocal, int numAtomsAll, const t_commrec& cr, int peerRank)
+void StatePropagatorDataGpu::reinit(int numAtomsLocal, int numAtomsAll, const t_commrec& cr)
 {
-    return impl_->reinit(numAtomsLocal, numAtomsAll, cr, peerRank);
+    return impl_->reinit(numAtomsLocal, numAtomsAll, cr);
 }
 
 std::tuple<int, int> StatePropagatorDataGpu::getAtomRangesFromAtomLocality(AtomLocality atomLocality) const

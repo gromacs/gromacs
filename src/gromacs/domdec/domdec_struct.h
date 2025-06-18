@@ -77,6 +77,7 @@ class HashedMap;
 class LocalAtomSetManager;
 class LocalTopologyChecker;
 class GpuHaloExchange;
+class GpuHaloExchangeNvshmemHelper;
 } // namespace gmx
 
 struct gmx_ddbox_t
@@ -196,6 +197,9 @@ struct gmx_domdec_t
 
     /* gmx_pme_recv_f buffer */
     gmx::HostVector<gmx::RVec> pmeForceReceiveBuffer;
+
+    //! GPU halo exchange aspects specific to NVSHMEM.
+    std::unique_ptr<gmx::GpuHaloExchangeNvshmemHelper> gpuHaloExchangeNvshmemHelper;
 
     /* GPU halo exchange objects: this structure supports a vector of pulses for each dimension */
     std::vector<std::unique_ptr<gmx::GpuHaloExchange>> gpuHaloExchange[DIM];

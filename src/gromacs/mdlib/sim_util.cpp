@@ -1325,10 +1325,16 @@ static void doPairSearch(const t_commrec*             cr,
     if (needStateGpu(simulationWork))
     {
         // TODO refactor this to do_md, after partitioning.
+        //
+        // Does global communication and symmetric reallocation with NVSHMEM
         stateGpu->reinit(mdatoms.homenr,
                          getLocalAtomCount(cr->dd, mdatoms, simulationWork.havePpDomainDecomposition),
-                         *cr,
-                         -1);
+                         *cr);
+        if (simulationWork.useGpuHaloExchange && runScheduleWork.simulationWork.useNvshmem)
+        {
+            // Does global communication and symmetric reallocation
+            reinitGpuHaloExchangeNvshmem(*cr);
+        }
     }
 
     if (simulationWork.haveGpuPmeOnPpRank())
@@ -1482,6 +1488,8 @@ static void doPairSearch(const t_commrec*             cr,
         // to location in do_md where GPU halo exchange is
         // constructed at partitioning, after above stateGpu
         // re-initialization has similarly been refactored
+        // because with NVSHMEM the ordering of synchronous
+        // global operations must be preserved.
         if (simulationWork.useGpuHaloExchange)
         {
             reinitGpuHaloExchange(*cr, stateGpu->getCoordinates(), stateGpu->getForces());
