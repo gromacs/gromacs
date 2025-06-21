@@ -32,7 +32,7 @@
 # the research papers on the package. Check out https://www.gromacs.org.
 
 add_executable(template template.cpp)
-if (WIN32)
+if (MSVC)
     gmx_target_warning_suppression(template /wd4244 HAS_NO_MSVC_LOSSY_CONVERSION_DOUBLE_TO_REAL)
     gmx_target_warning_suppression(template /wd4267 HAS_NO_MSVC_LOSSY_CONVERSION_SIZE_T_TO_INT)
 endif()

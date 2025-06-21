@@ -68,7 +68,7 @@ target_compile_definitions(linearalgebra PRIVATE HAVE_CONFIG_H)
 # The linearalgebra code is all considered external, and we will
 # not keep it free of warnings. Any compiler suppressions required
 # should be added here.
-if (WIN32)
+if (MSVC)
     gmx_target_warning_suppression(linearalgebra /wd4305 HAS_NO_MSVC_INITIALIZING_FLOAT_FROM_DOUBLE)
     gmx_target_warning_suppression(linearalgebra /wd4244 HAS_NO_MSVC_LOSSY_CONVERSION_DOUBLE_TO_REAL)
     gmx_target_warning_suppression(linearalgebra /wd4996 HAS_NO_MSVC_UNSAFE_FUNCTION)

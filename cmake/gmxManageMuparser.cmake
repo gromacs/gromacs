@@ -65,7 +65,7 @@ function(gmx_manage_muparser)
             # so that it gets installed along with libgromacs.
             install(TARGETS muparser EXPORT libgromacs)
         endif()
-        if (WIN32)
+        if (MSVC)
             gmx_target_warning_suppression(muparser /wd4310 HAS_NO_MSVC_CAST_TRUNCATES_CONSTANT_VALUE)
         endif()
 
