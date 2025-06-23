@@ -35,21 +35,33 @@
 
 #include "xdr_serializer.h"
 
-#include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/gmxfio_xdr.h"
 #include "gromacs/fileio/xdrf.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
 
 namespace gmx
 {
 
-XdrSerializer::XdrSerializer(t_fileio* fio)
+XdrSerializer::XdrSerializer(const std::filesystem::path& filename, const char* mode) :
+    reading_(mode[0] == 'r'), doublePrecision_(GMX_DOUBLE)
 {
-    GMX_RELEASE_ASSERT(fio, "Need valid file I/O handle");
-    xdr_             = gmx_fio_getxdr(fio);
-    reading_         = gmx_fio_getread(fio);
-    doublePrecision_ = gmx_fio_is_double(fio);
+    // TODO this always makes a backup, which is not clearly what is
+    // wanted in all cases.
+    fp_ = gmx_ffopen(filename, mode);
+    if (!fp_)
+    {
+        GMX_THROW(FileIOError("Failed to open XDR serializer to file " + filename.string()));
+    }
+    const enum xdr_op xdrMode = reading_ ? XDR_DECODE : XDR_ENCODE;
+    // Note there is no documented failure mode for this call
+    xdrstdio_create(&xdr_, fp_, xdrMode);
+}
+
+XdrSerializer::~XdrSerializer()
+{
+    xdr_destroy(&xdr_);
+    gmx_ffclose(fp_);
 }
 
 bool XdrSerializer::reading() const
@@ -72,7 +84,7 @@ void XdrSerializer::doBool(bool* value)
 
 void XdrSerializer::doUChar(unsigned char* value)
 {
-    if (xdr_u_char(xdr_, value) == 0)
+    if (xdr_u_char(&xdr_, value) == 0)
     {
         GMX_THROW(FileIOError("Failed to serialize unsigned char value to XDR"));
     }
@@ -80,7 +92,7 @@ void XdrSerializer::doUChar(unsigned char* value)
 
 void XdrSerializer::doChar(char* value)
 {
-    if (xdr_char(xdr_, value) == 0)
+    if (xdr_char(&xdr_, value) == 0)
     {
         GMX_THROW(FileIOError("Failed to serialize char value to XDR"));
     }
@@ -88,7 +100,7 @@ void XdrSerializer::doChar(char* value)
 
 void XdrSerializer::doUShort(unsigned short* value)
 {
-    if (xdr_u_short(xdr_, value) == 0)
+    if (xdr_u_short(&xdr_, value) == 0)
     {
         GMX_THROW(FileIOError("Failed to serialize unsigned short value to XDR"));
     }
@@ -96,7 +108,7 @@ void XdrSerializer::doUShort(unsigned short* value)
 
 void XdrSerializer::doInt(int* value)
 {
-    if (xdr_int(xdr_, value) == 0)
+    if (xdr_int(&xdr_, value) == 0)
     {
         GMX_THROW(FileIOError("Failed to serialize int value to XDR"));
     }
@@ -104,7 +116,7 @@ void XdrSerializer::doInt(int* value)
 
 void XdrSerializer::doInt32(int32_t* value)
 {
-    if (xdr_int32(xdr_, value) == 0)
+    if (xdr_int32(&xdr_, value) == 0)
     {
         GMX_THROW(FileIOError("Failed to serialize int32 value to XDR"));
     }
@@ -112,7 +124,7 @@ void XdrSerializer::doInt32(int32_t* value)
 
 void XdrSerializer::doInt64(int64_t* value)
 {
-    if (xdr_int64(xdr_, value) == 0)
+    if (xdr_int64(&xdr_, value) == 0)
     {
         GMX_THROW(FileIOError("Failed to serialize int64 value to XDR"));
     }
@@ -120,7 +132,7 @@ void XdrSerializer::doInt64(int64_t* value)
 
 void XdrSerializer::doFloat(float* value)
 {
-    if (xdr_float(xdr_, value) == 0)
+    if (xdr_float(&xdr_, value) == 0)
     {
         GMX_THROW(FileIOError("Failed to serialize float value to XDR"));
     }
@@ -128,7 +140,7 @@ void XdrSerializer::doFloat(float* value)
 
 void XdrSerializer::doDouble(double* value)
 {
-    if (xdr_double(xdr_, value) == 0)
+    if (xdr_double(&xdr_, value) == 0)
     {
         GMX_THROW(FileIOError("Failed to serialize double value to XDR"));
     }
@@ -139,7 +151,7 @@ void XdrSerializer::doReal(real* value)
     if (doublePrecision_)
     {
         double temp = static_cast<double>(*value);
-        if (xdr_double(xdr_, &temp) == 0)
+        if (xdr_double(&xdr_, &temp) == 0)
         {
             GMX_THROW(FileIOError("Failed to serialize real(double) value to XDR"));
         }
@@ -148,7 +160,7 @@ void XdrSerializer::doReal(real* value)
     else
     {
         float temp = static_cast<float>(*value);
-        if (xdr_float(xdr_, &temp) == 0)
+        if (xdr_float(&xdr_, &temp) == 0)
         {
             GMX_THROW(FileIOError("Failed to serialize real(float) value to XDR"));
         }
@@ -198,7 +210,7 @@ void XdrSerializer::doRvec(rvec* value)
             }
             d = &(temp[0]);
         }
-        if (xdr_vector(xdr_,
+        if (xdr_vector(&xdr_,
                        reinterpret_cast<char*>(d),
                        DIM,
                        static_cast<unsigned int>(sizeof(double)),
@@ -237,7 +249,7 @@ void XdrSerializer::doRvec(rvec* value)
             // No need for conversions
             f = reinterpret_cast<float*>(&((*value)[0]));
         }
-        if (xdr_vector(xdr_,
+        if (xdr_vector(&xdr_,
                        reinterpret_cast<char*>(f),
                        DIM,
                        static_cast<unsigned int>(sizeof(float)),
@@ -267,7 +279,7 @@ void XdrSerializer::doCharArray(char* values, int elements)
 {
     GMX_RELEASE_ASSERT(elements < static_cast<int>(std::numeric_limits<int>::max()),
                        "The XDR interface cannot handle array lengths > 2^31");
-    if (xdr_vector(xdr_,
+    if (xdr_vector(&xdr_,
                    values,
                    static_cast<int>(elements),
                    static_cast<unsigned int>(sizeof(char)),
@@ -282,7 +294,7 @@ void XdrSerializer::doUCharArray(unsigned char* values, int elements)
 {
     GMX_RELEASE_ASSERT(elements < static_cast<int>(std::numeric_limits<int>::max()),
                        "The XDR interface cannot handle array lengths > 2^31");
-    if (xdr_vector(xdr_,
+    if (xdr_vector(&xdr_,
                    // xdr_vector expects a char* regardless
                    reinterpret_cast<char*>(values),
                    static_cast<int>(elements),
@@ -315,7 +327,7 @@ void XdrSerializer::doString(std::string* value)
     // written by GROMACS can still be read, this is perpetuated.
     const int stringLength            = static_cast<int>(value->size());
     int       stringLengthToSerialize = stringLength + 1;
-    if (xdr_int(xdr_, &stringLengthToSerialize) == 0)
+    if (xdr_int(&xdr_, &stringLengthToSerialize) == 0)
     {
         GMX_THROW(FileIOError("Failed to serialize string length to XDR"));
     }
@@ -328,7 +340,7 @@ void XdrSerializer::doString(std::string* value)
     // access that null character, so long as we replace it when
     // writing.
     char* charPtr = value->data();
-    if (xdr_string(xdr_, &charPtr, stringLengthToSerialize) == 0)
+    if (xdr_string(&xdr_, &charPtr, stringLengthToSerialize) == 0)
     {
         GMX_THROW(FileIOError("Failed to serialize string contents to XDR"));
     }
@@ -355,7 +367,7 @@ void XdrSerializer::doOpaque(char* data, std::size_t size)
     for (result = 1; result > 0 && size > 0;)
     {
         const std::size_t thisChunk = std::min(maxChunk, size);
-        result                      = xdr_opaque(xdr_, data + offset, thisChunk);
+        result                      = xdr_opaque(&xdr_, data + offset, thisChunk);
         offset += thisChunk;
         size -= thisChunk;
     }
@@ -363,6 +375,11 @@ void XdrSerializer::doOpaque(char* data, std::size_t size)
     {
         GMX_THROW(FileIOError("Failed to serialize string contents to XDR"));
     }
+}
+
+XDR* XdrSerializer::xdr()
+{
+    return &xdr_;
 }
 
 } // namespace gmx

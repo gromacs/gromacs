@@ -36,6 +36,7 @@
 
 #include "config.h"
 
+#include <filesystem>
 #include <string>
 
 #include "gromacs/math/vectypes.h"
@@ -63,8 +64,8 @@ namespace gmx
 class XdrSerializer : public ISerializer
 {
 public:
-    //! Only create with valid file I/O handle.
-    explicit XdrSerializer(t_fileio* fio);
+    XdrSerializer(const std::filesystem::path& filename, const char* mode);
+    ~XdrSerializer() override;
 
     //! If file is open in reading mode.
     bool reading() const override;
@@ -114,12 +115,17 @@ public:
     //! Special case for handling I/O of an ArrayRef of RVec.
     void doRvecArray(ArrayRef<RVec> values) override;
 
+    //! Temporary getter while XDR serialization still uses legacy interfaces
+    XDR* xdr();
+
 private:
+    //! File handle opened during construction
+    FILE* fp_ = nullptr;
     /*! \brief XDR I/O handle using external file pointer.
      *
      * Used when interacting with legacy routines not yet ported
      * to use this serializer. */
-    XDR* xdr_ = nullptr;
+    XDR xdr_;
     //! Whether the file is reading or writing
     bool reading_ = false;
     //! Whether the build that wrote (or is writing) this file was double precision

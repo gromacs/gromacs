@@ -105,6 +105,9 @@ enum class ChannelHistory : int;
 #define CPT_MAGIC1 171817
 #define CPT_MAGIC2 171819
 
+using gmx::ISerializer;
+using gmx::XdrSerializer;
+
 namespace gmx
 {
 
@@ -420,10 +423,10 @@ static void cp_warning(FILE* fp)
     gmx_fatal(FARGS, "Checkpoint file corrupted/truncated, or maybe you are out of disk space?");
 }
 
-static void do_cpt_string_err(XDR* xd, const char* desc, gmx::ArrayRef<char> s, FILE* list)
+static void do_cpt_string_err(XdrSerializer* serializer, const char* desc, gmx::ArrayRef<char> s, FILE* list)
 {
     char* data = s.data();
-    if (xdr_string(xd, &data, s.size()) == 0)
+    if (xdr_string(serializer->xdr(), &data, s.size()) == 0)
     {
         cp_error();
     }
@@ -433,9 +436,9 @@ static void do_cpt_string_err(XDR* xd, const char* desc, gmx::ArrayRef<char> s, 
     }
 }
 
-static int do_cpt_int(XDR* xd, const char* desc, int* i, FILE* list)
+static int do_cpt_int(XdrSerializer* serializer, const char* desc, int* i, FILE* list)
 {
-    if (xdr_int(xd, i) == 0)
+    if (xdr_int(serializer->xdr(), i) == 0)
     {
         return -1;
     }
@@ -446,7 +449,7 @@ static int do_cpt_int(XDR* xd, const char* desc, int* i, FILE* list)
     return 0;
 }
 
-static int do_cpt_u_chars(XDR* xd, const char* desc, int n, unsigned char* i, FILE* list)
+static int do_cpt_u_chars(XdrSerializer* serializer, const char* desc, int n, unsigned char* i, FILE* list)
 {
     if (list)
     {
@@ -455,7 +458,7 @@ static int do_cpt_u_chars(XDR* xd, const char* desc, int n, unsigned char* i, FI
     bool_t res = 1;
     for (int j = 0; j < n && res; j++)
     {
-        res &= xdr_u_char(xd, &i[j]);
+        res &= xdr_u_char(serializer->xdr(), &i[j]);
         if (list)
         {
             fprintf(list, "%02x", i[j]);
@@ -474,12 +477,12 @@ static int do_cpt_u_chars(XDR* xd, const char* desc, int n, unsigned char* i, FI
 }
 
 template<typename EnumType>
-static int do_cpt_enum_as_int(XDR* xd, const char* desc, EnumType* enumValue, FILE* list)
+static int do_cpt_enum_as_int(XdrSerializer* serializer, const char* desc, EnumType* enumValue, FILE* list)
 {
     static_assert(std::is_same_v<std::underlying_type_t<EnumType>, int>,
                   "Only enums with underlying type int are supported.");
     auto castedValue = static_cast<int>(*enumValue);
-    if (xdr_int(xd, &castedValue) == 0)
+    if (xdr_int(serializer->xdr(), &castedValue) == 0)
     {
         return -1;
     }
@@ -492,12 +495,12 @@ static int do_cpt_enum_as_int(XDR* xd, const char* desc, EnumType* enumValue, FI
 }
 
 template<typename EnumType>
-static int do_cpt_n_enum_as_int(XDR* xd, const char* desc, int n, EnumType* enumValue, FILE* list)
+static int do_cpt_n_enum_as_int(XdrSerializer* serializer, const char* desc, int n, EnumType* enumValue, FILE* list)
 {
     bool_t res = 1;
     for (int j = 0; j < n && res; j++)
     {
-        res &= do_cpt_enum_as_int<EnumType>(xd, desc, &enumValue[j], list);
+        res &= do_cpt_enum_as_int<EnumType>(serializer, desc, &enumValue[j], list);
     }
     if (res == 0)
     {
@@ -507,19 +510,19 @@ static int do_cpt_n_enum_as_int(XDR* xd, const char* desc, int n, EnumType* enum
     return 0;
 }
 
-static void do_cpt_int_err(XDR* xd, const char* desc, int* i, FILE* list)
+static void do_cpt_int_err(XdrSerializer* serializer, const char* desc, int* i, FILE* list)
 {
-    if (do_cpt_int(xd, desc, i, list) < 0)
+    if (do_cpt_int(serializer, desc, i, list) < 0)
     {
         cp_error();
     }
 }
 
-static void do_cpt_bool_err(XDR* xd, const char* desc, bool* b, FILE* list)
+static void do_cpt_bool_err(XdrSerializer* serializer, const char* desc, bool* b, FILE* list)
 {
     int i = static_cast<int>(*b);
 
-    if (do_cpt_int(xd, desc, &i, list) < 0)
+    if (do_cpt_int(serializer, desc, &i, list) < 0)
     {
         cp_error();
     }
@@ -527,11 +530,11 @@ static void do_cpt_bool_err(XDR* xd, const char* desc, bool* b, FILE* list)
     *b = (i != 0);
 }
 
-static void do_cpt_step_err(XDR* xd, const char* desc, int64_t* i, FILE* list)
+static void do_cpt_step_err(XdrSerializer* serializer, const char* desc, int64_t* i, FILE* list)
 {
     char buf[STEPSTRSIZE];
 
-    if (xdr_int64(xd, i) == 0)
+    if (xdr_int64(serializer->xdr(), i) == 0)
     {
         cp_error();
     }
@@ -541,9 +544,9 @@ static void do_cpt_step_err(XDR* xd, const char* desc, int64_t* i, FILE* list)
     }
 }
 
-static void do_cpt_double_err(XDR* xd, const char* desc, double* f, FILE* list)
+static void do_cpt_double_err(XdrSerializer* serializer, const char* desc, double* f, FILE* list)
 {
-    if (xdr_double(xd, f) == 0)
+    if (xdr_double(serializer->xdr(), f) == 0)
     {
         cp_error();
     }
@@ -553,12 +556,12 @@ static void do_cpt_double_err(XDR* xd, const char* desc, double* f, FILE* list)
     }
 }
 
-static void do_cpt_real_err(XDR* xd, real* f)
+static void do_cpt_real_err(XdrSerializer* serializer, real* f)
 {
 #if GMX_DOUBLE
-    bool_t res = xdr_double(xd, f);
+    bool_t res = xdr_double(serializer->xdr(), f);
 #else
-    bool_t res = xdr_float(xd, f);
+    bool_t res = xdr_float(serializer->xdr(), f);
 #endif
     if (res == 0)
     {
@@ -566,13 +569,13 @@ static void do_cpt_real_err(XDR* xd, real* f)
     }
 }
 
-static void do_cpt_n_rvecs_err(XDR* xd, const char* desc, int n, rvec f[], FILE* list)
+static void do_cpt_n_rvecs_err(XdrSerializer* serializer, const char* desc, int n, rvec f[], FILE* list)
 {
     for (int i = 0; i < n; i++)
     {
         for (int j = 0; j < DIM; j++)
         {
-            do_cpt_real_err(xd, &f[i][j]);
+            do_cpt_real_err(serializer, &f[i][j]);
         }
     }
 
@@ -641,13 +644,13 @@ static inline xdrproc_t xdrProc(XdrDataType xdrType)
  * When list==NULL only reads the elements.
  */
 template<typename Enum>
-static bool_t listXdrVector(XDR* xd, Enum ecpt, int nf, XdrDataType xdrType, FILE* list, CptElementType cptElementType)
+static bool_t listXdrVector(XdrSerializer* serializer, Enum ecpt, int nf, XdrDataType xdrType, FILE* list, CptElementType cptElementType)
 {
     bool_t res = 0;
 
     const unsigned int elemSize = sizeOfXdrType(xdrType);
     std::vector<char>  data(nf * elemSize);
-    res = xdr_vector(xd, data.data(), nf, elemSize, xdrProc(xdrType));
+    res = xdr_vector(serializer->xdr(), data.data(), nf, elemSize, xdrProc(xdrType));
 
     if (list != nullptr)
     {
@@ -735,7 +738,7 @@ static void convertArrayRealPrecision(const char gmx_unused* c, int gmx_unused* 
  * If nval n<0, vector->size() is used.
  */
 template<typename T, typename AllocatorType, typename Enum>
-static int doVectorLow(XDR*                           xd,
+static int doVectorLow(XdrSerializer*                 serializer,
                        Enum                           ecpt,
                        int                            sflags,
                        const int64_t                  nval,
@@ -775,7 +778,7 @@ static int doVectorLow(XDR*                           xd,
     /* Read/write the vector element count */
     /* We store an unsigned int as a signed int to avoid changing the file format */
     int* numElemInTheFileIntPtr = reinterpret_cast<int*>(&numElemInTheFile);
-    res                         = xdr_int(xd, numElemInTheFileIntPtr);
+    res                         = xdr_int(serializer->xdr(), numElemInTheFileIntPtr);
     if (res == 0)
     {
         return -1;
@@ -784,8 +787,8 @@ static int doVectorLow(XDR*                           xd,
     constexpr XdrDataType xdrTypeInTheCode      = xdr_type<T>::value;
     XdrDataType           xdrTypeInTheFile      = xdrTypeInTheCode;
     int                   xdrTypeInTheFileAsInt = static_cast<int>(xdrTypeInTheFile);
-    res                                         = xdr_int(xd, &xdrTypeInTheFileAsInt);
-    xdrTypeInTheFile                            = static_cast<XdrDataType>(xdrTypeInTheFileAsInt);
+    res              = xdr_int(serializer->xdr(), &xdrTypeInTheFileAsInt);
+    xdrTypeInTheFile = static_cast<XdrDataType>(xdrTypeInTheFileAsInt);
     if (res == 0)
     {
         return -1;
@@ -861,8 +864,11 @@ static int doVectorLow(XDR*                           xd,
         {
             snew(vChar, numElemInTheFile * sizeOfXdrType(xdrTypeInTheFile));
         }
-        res = xdr_vector(
-                xd, vChar, numElemInTheFile, sizeOfXdrType(xdrTypeInTheFile), xdrProc(xdrTypeInTheFile));
+        res = xdr_vector(serializer->xdr(),
+                         vChar,
+                         numElemInTheFile,
+                         sizeOfXdrType(xdrTypeInTheFile),
+                         xdrProc(xdrTypeInTheFile));
         if (res == 0)
         {
             return -1;
@@ -881,7 +887,7 @@ static int doVectorLow(XDR*                           xd,
     }
     else
     {
-        res = listXdrVector(xd, ecpt, numElemInTheFile, xdrTypeInTheFile, list, cptElementType);
+        res = listXdrVector(serializer, ecpt, numElemInTheFile, xdrTypeInTheFile, list, cptElementType);
     }
 
     return 0;
@@ -889,18 +895,24 @@ static int doVectorLow(XDR*                           xd,
 
 //! \brief Read/Write a std::vector, on read checks the number of elements matches \p numElements, if specified.
 template<typename T, typename Enum>
-static int doVector(XDR* xd, Enum ecpt, int sflags, std::vector<T>* vector, FILE* list, int numElements = -1)
+static int doVector(XdrSerializer*  serializer,
+                    Enum            ecpt,
+                    int             sflags,
+                    std::vector<T>* vector,
+                    FILE*           list,
+                    int             numElements = -1)
 {
-    return doVectorLow<T>(xd, ecpt, sflags, numElements, nullptr, vector, list, CptElementType::realnum);
+    return doVectorLow<T>(
+            serializer, ecpt, sflags, numElements, nullptr, vector, list, CptElementType::realnum);
 }
 
 //! \brief Read/Write an ArrayRef<real>.
 template<typename Enum>
-static int doRealArrayRef(XDR* xd, Enum ecpt, int sflags, gmx::ArrayRef<real> vector, FILE* list)
+static int doRealArrayRef(XdrSerializer* serializer, Enum ecpt, int sflags, gmx::ArrayRef<real> vector, FILE* list)
 {
     real* v_real = vector.data();
     return doVectorLow<real, std::allocator<real>>(
-            xd, ecpt, sflags, vector.size(), &v_real, nullptr, list, CptElementType::realnum);
+            serializer, ecpt, sflags, vector.size(), &v_real, nullptr, list, CptElementType::realnum);
 }
 
 //! Convert from view of RVec to view of real.
@@ -911,7 +923,12 @@ static gmx::ArrayRef<real> realArrayRefFromRVecArrayRef(gmx::ArrayRef<gmx::RVec>
 
 //! \brief Read/Write a PaddedVector whose value_type is RVec.
 template<typename PaddedVectorOfRVecType, typename Enum>
-static int doRvecVector(XDR* xd, Enum ecpt, int sflags, PaddedVectorOfRVecType* v, int numAtoms, FILE* list)
+static int doRvecVector(XdrSerializer*          serializer,
+                        Enum                    ecpt,
+                        int                     sflags,
+                        PaddedVectorOfRVecType* v,
+                        int                     numAtoms,
+                        FILE*                   list)
 {
     const int numReals = numAtoms * DIM;
 
@@ -922,7 +939,8 @@ static int doRvecVector(XDR* xd, Enum ecpt, int sflags, PaddedVectorOfRVecType* 
                 "When not listing, the flag for the entry should be set when requesting i/o");
         GMX_RELEASE_ASSERT(v->size() == numAtoms, "v should have sufficient size for numAtoms");
 
-        return doRealArrayRef(xd, ecpt, sflags, realArrayRefFromRVecArrayRef(makeArrayRef(*v)), list);
+        return doRealArrayRef(
+                serializer, ecpt, sflags, realArrayRefFromRVecArrayRef(makeArrayRef(*v)), list);
     }
     else
     {
@@ -931,7 +949,7 @@ static int doRvecVector(XDR* xd, Enum ecpt, int sflags, PaddedVectorOfRVecType* 
         using realAllocator =
                 typename std::allocator_traits<typename PaddedVectorOfRVecType::allocator_type>::template rebind_alloc<real>;
         return doVectorLow<real, realAllocator>(
-                xd, ecpt, sflags, numReals, nullptr, nullptr, list, CptElementType::realnum);
+                serializer, ecpt, sflags, numReals, nullptr, nullptr, list, CptElementType::realnum);
     }
 }
 
@@ -940,63 +958,63 @@ static int doRvecVector(XDR* xd, Enum ecpt, int sflags, PaddedVectorOfRVecType* 
  * a fatal error is generated when this is not the case.
  */
 template<typename Enum>
-static int do_cpte_reals(XDR* xd, Enum ecpt, int sflags, int n, real** v, FILE* list)
+static int do_cpte_reals(XdrSerializer* serializer, Enum ecpt, int sflags, int n, real** v, FILE* list)
 {
     return doVectorLow<real, std::allocator<real>>(
-            xd, ecpt, sflags, n, v, nullptr, list, CptElementType::realnum);
+            serializer, ecpt, sflags, n, v, nullptr, list, CptElementType::realnum);
 }
 
 template<typename Enum>
-static int do_cpte_real(XDR* xd, Enum ecpt, int sflags, real* r, FILE* list)
+static int do_cpte_real(XdrSerializer* serializer, Enum ecpt, int sflags, real* r, FILE* list)
 {
     return doVectorLow<real, std::allocator<real>>(
-            xd, ecpt, sflags, 1, &r, nullptr, list, CptElementType::realnum);
+            serializer, ecpt, sflags, 1, &r, nullptr, list, CptElementType::realnum);
 }
 
 template<typename Enum>
-static int do_cpte_ints(XDR* xd, Enum ecpt, int sflags, int n, int** v, FILE* list)
+static int do_cpte_ints(XdrSerializer* serializer, Enum ecpt, int sflags, int n, int** v, FILE* list)
 {
     return doVectorLow<int, std::allocator<int>>(
-            xd, ecpt, sflags, n, v, nullptr, list, CptElementType::integer);
+            serializer, ecpt, sflags, n, v, nullptr, list, CptElementType::integer);
 }
 
 template<typename Enum>
-static int do_cpte_int(XDR* xd, Enum ecpt, int sflags, int* i, FILE* list)
+static int do_cpte_int(XdrSerializer* serializer, Enum ecpt, int sflags, int* i, FILE* list)
 {
-    return do_cpte_ints(xd, ecpt, sflags, 1, &i, list);
+    return do_cpte_ints(serializer, ecpt, sflags, 1, &i, list);
 }
 
 template<typename Enum>
-static int do_cpte_bool(XDR* xd, Enum ecpt, int sflags, bool* b, FILE* list)
+static int do_cpte_bool(XdrSerializer* serializer, Enum ecpt, int sflags, bool* b, FILE* list)
 {
     int i   = static_cast<int>(*b);
-    int ret = do_cpte_int(xd, ecpt, sflags, &i, list);
+    int ret = do_cpte_int(serializer, ecpt, sflags, &i, list);
     *b      = (i != 0);
     return ret;
 }
 
 template<typename Enum>
-static int do_cpte_doubles(XDR* xd, Enum ecpt, int sflags, int n, double** v, FILE* list)
+static int do_cpte_doubles(XdrSerializer* serializer, Enum ecpt, int sflags, int n, double** v, FILE* list)
 {
     return doVectorLow<double, std::allocator<double>>(
-            xd, ecpt, sflags, n, v, nullptr, list, CptElementType::realnum);
+            serializer, ecpt, sflags, n, v, nullptr, list, CptElementType::realnum);
 }
 
 template<typename Enum>
-static int do_cpte_double(XDR* xd, Enum ecpt, int sflags, double* r, FILE* list)
+static int do_cpte_double(XdrSerializer* serializer, Enum ecpt, int sflags, double* r, FILE* list)
 {
-    return do_cpte_doubles(xd, ecpt, sflags, 1, &r, list);
+    return do_cpte_doubles(serializer, ecpt, sflags, 1, &r, list);
 }
 
 template<typename Enum>
-static int do_cpte_matrix(XDR* xd, Enum ecpt, int sflags, matrix v, FILE* list)
+static int do_cpte_matrix(XdrSerializer* serializer, Enum ecpt, int sflags, matrix v, FILE* list)
 {
     real* vr;
     int   ret;
 
     vr  = &(v[0][0]);
     ret = doVectorLow<real, std::allocator<real>>(
-            xd, ecpt, sflags, DIM * DIM, &vr, nullptr, nullptr, CptElementType::matrix3x3);
+            serializer, ecpt, sflags, DIM * DIM, &vr, nullptr, nullptr, CptElementType::matrix3x3);
 
     if (list && ret == 0)
     {
@@ -1007,7 +1025,7 @@ static int do_cpte_matrix(XDR* xd, Enum ecpt, int sflags, matrix v, FILE* list)
 }
 
 template<typename Enum>
-static int do_cpte_nmatrix(XDR* xd, Enum ecpt, int sflags, int n, real** v, FILE* list)
+static int do_cpte_nmatrix(XdrSerializer* serializer, Enum ecpt, int sflags, int n, real** v, FILE* list)
 {
     int  i;
     int  ret, reti;
@@ -1021,7 +1039,7 @@ static int do_cpte_nmatrix(XDR* xd, Enum ecpt, int sflags, int n, real** v, FILE
     for (i = 0; i < n; i++)
     {
         reti = doVectorLow<real, std::allocator<real>>(
-                xd, ecpt, sflags, n, &(v[i]), nullptr, nullptr, CptElementType::matrix3x3);
+                serializer, ecpt, sflags, n, &(v[i]), nullptr, nullptr, CptElementType::matrix3x3);
         if (list && reti == 0)
         {
             sprintf(name, "%s[%d]", enumValueToString(ecpt), i);
@@ -1036,7 +1054,7 @@ static int do_cpte_nmatrix(XDR* xd, Enum ecpt, int sflags, int n, real** v, FILE
 }
 
 template<typename Enum>
-static int do_cpte_matrices(XDR* xd, Enum ecpt, int sflags, int n, matrix** v, FILE* list)
+static int do_cpte_matrices(XdrSerializer* serializer, Enum ecpt, int sflags, int n, matrix** v, FILE* list)
 {
     bool_t  res = 0;
     matrix *vp, *va = nullptr;
@@ -1045,7 +1063,7 @@ static int do_cpte_matrices(XDR* xd, Enum ecpt, int sflags, int n, matrix** v, F
     int     ret;
 
     nf  = n;
-    res = xdr_int(xd, &nf);
+    res = xdr_int(serializer->xdr(), &nf);
     if (res == 0)
     {
         return -1;
@@ -1083,7 +1101,7 @@ static int do_cpte_matrices(XDR* xd, Enum ecpt, int sflags, int n, matrix** v, F
         }
     }
     ret = doVectorLow<real, std::allocator<real>>(
-            xd, ecpt, sflags, nf * DIM * DIM, &vr, nullptr, nullptr, CptElementType::matrix3x3);
+            serializer, ecpt, sflags, nf * DIM * DIM, &vr, nullptr, nullptr, CptElementType::matrix3x3);
     for (i = 0; i < nf; i++)
     {
         for (j = 0; j < DIM; j++)
@@ -1111,7 +1129,7 @@ static int do_cpte_matrices(XDR* xd, Enum ecpt, int sflags, int n, matrix** v, F
     return ret;
 }
 
-static void do_cpt_header(XDR* xd, gmx_bool bRead, FILE* list, CheckpointHeaderContents* contents)
+static void do_cpt_header(XdrSerializer* serializer, gmx_bool bRead, FILE* list, CheckpointHeaderContents* contents)
 {
     bool_t res = 0;
     int    magic;
@@ -1124,7 +1142,7 @@ static void do_cpt_header(XDR* xd, gmx_bool bRead, FILE* list, CheckpointHeaderC
     {
         magic = CPT_MAGIC1;
     }
-    res = xdr_int(xd, &magic);
+    res = xdr_int(serializer->xdr(), &magic);
     if (res == 0)
     {
         gmx_fatal(FARGS,
@@ -1143,20 +1161,21 @@ static void do_cpt_header(XDR* xd, gmx_bool bRead, FILE* list, CheckpointHeaderC
     {
         gmx_gethostname(fhost, 255);
     }
-    do_cpt_string_err(xd, "GROMACS version", contents->version, list);
+    do_cpt_string_err(serializer, "GROMACS version", contents->version, list);
     // The following fields are no longer ever written with meaningful
     // content, but because they precede the file version, there is no
     // good way for new code to read the old and new formats, nor a
     // good way for old code to avoid giving an error while reading a
     // new format. So we read and write a field that no longer has a
     // purpose.
-    do_cpt_string_err(xd, "GROMACS build time UNUSED", contents->btime_UNUSED, list);
-    do_cpt_string_err(xd, "GROMACS build user UNUSED", contents->buser_UNUSED, list);
-    do_cpt_string_err(xd, "GROMACS build host UNUSED", contents->bhost_UNUSED, list);
-    do_cpt_string_err(xd, "generating program", contents->fprog, list);
-    do_cpt_string_err(xd, "generation time", contents->ftime, list);
+    do_cpt_string_err(serializer, "GROMACS build time UNUSED", contents->btime_UNUSED, list);
+    do_cpt_string_err(serializer, "GROMACS build user UNUSED", contents->buser_UNUSED, list);
+    do_cpt_string_err(serializer, "GROMACS build host UNUSED", contents->bhost_UNUSED, list);
+    do_cpt_string_err(serializer, "generating program", contents->fprog, list);
+    do_cpt_string_err(serializer, "generation time", contents->ftime, list);
     contents->file_version = cpt_version;
-    do_cpt_enum_as_int<CheckPointVersion>(xd, "checkpoint file version", &contents->file_version, list);
+    do_cpt_enum_as_int<CheckPointVersion>(
+            serializer, "checkpoint file version", &contents->file_version, list);
     if (contents->file_version > cpt_version)
     {
         gmx_fatal(FARGS,
@@ -1166,7 +1185,7 @@ static void do_cpt_header(XDR* xd, gmx_bool bRead, FILE* list, CheckpointHeaderC
     }
     if (contents->file_version >= CheckPointVersion::DoublePrecisionBuild)
     {
-        do_cpt_int_err(xd, "GROMACS double precision", &contents->double_prec, list);
+        do_cpt_int_err(serializer, "GROMACS double precision", &contents->double_prec, list);
     }
     else
     {
@@ -1174,13 +1193,13 @@ static void do_cpt_header(XDR* xd, gmx_bool bRead, FILE* list, CheckpointHeaderC
     }
     if (contents->file_version >= CheckPointVersion::HostInformation)
     {
-        do_cpt_string_err(xd, "generating host", fhost, list);
+        do_cpt_string_err(serializer, "generating host", fhost, list);
     }
-    do_cpt_int_err(xd, "#atoms", &contents->natoms, list);
-    do_cpt_int_err(xd, "#T-coupling groups", &contents->ngtc, list);
+    do_cpt_int_err(serializer, "#atoms", &contents->natoms, list);
+    do_cpt_int_err(serializer, "#T-coupling groups", &contents->ngtc, list);
     if (contents->file_version >= CheckPointVersion::NoseHooverThermostat)
     {
-        do_cpt_int_err(xd, "#Nose-Hoover T-chains", &contents->nhchainlength, list);
+        do_cpt_int_err(serializer, "#Nose-Hoover T-chains", &contents->nhchainlength, list);
     }
     else
     {
@@ -1188,7 +1207,7 @@ static void do_cpt_header(XDR* xd, gmx_bool bRead, FILE* list, CheckpointHeaderC
     }
     if (contents->file_version >= CheckPointVersion::NoseHooverBarostat)
     {
-        do_cpt_int_err(xd, "#Nose-Hoover T-chains for barostat ", &contents->nnhpres, list);
+        do_cpt_int_err(serializer, "#Nose-Hoover T-chains for barostat ", &contents->nnhpres, list);
     }
     else
     {
@@ -1196,7 +1215,7 @@ static void do_cpt_header(XDR* xd, gmx_bool bRead, FILE* list, CheckpointHeaderC
     }
     if (contents->file_version >= CheckPointVersion::LambdaStateAndHistory)
     {
-        do_cpt_int_err(xd, "# of total lambda states ", &contents->nlambda, list);
+        do_cpt_int_err(serializer, "# of total lambda states ", &contents->nlambda, list);
     }
     else
     {
@@ -1204,7 +1223,7 @@ static void do_cpt_header(XDR* xd, gmx_bool bRead, FILE* list, CheckpointHeaderC
     }
     {
         int integrator = static_cast<int>(contents->eIntegrator);
-        do_cpt_int_err(xd, "integrator", &integrator, list);
+        do_cpt_int_err(serializer, "integrator", &integrator, list);
         if (bRead)
         {
             contents->eIntegrator = static_cast<IntegrationAlgorithm>(integrator);
@@ -1212,7 +1231,7 @@ static void do_cpt_header(XDR* xd, gmx_bool bRead, FILE* list, CheckpointHeaderC
     }
     if (contents->file_version >= CheckPointVersion::SafeSimulationPart)
     {
-        do_cpt_int_err(xd, "simulation part #", &contents->simulation_part, list);
+        do_cpt_int_err(serializer, "simulation part #", &contents->simulation_part, list);
     }
     else
     {
@@ -1220,25 +1239,25 @@ static void do_cpt_header(XDR* xd, gmx_bool bRead, FILE* list, CheckpointHeaderC
     }
     if (contents->file_version >= CheckPointVersion::SafeSteps)
     {
-        do_cpt_step_err(xd, "step", &contents->step, list);
+        do_cpt_step_err(serializer, "step", &contents->step, list);
     }
     else
     {
         int idum = 0;
-        do_cpt_int_err(xd, "step", &idum, list);
+        do_cpt_int_err(serializer, "step", &idum, list);
         contents->step = static_cast<int64_t>(idum);
     }
-    do_cpt_double_err(xd, "t", &contents->t, list);
-    do_cpt_int_err(xd, "#PP-ranks", &contents->nnodes, list);
-    do_cpt_int_err(xd, "dd_nc[x]", &contents->dd_nc[XX], list);
-    do_cpt_int_err(xd, "dd_nc[y]", &contents->dd_nc[YY], list);
-    do_cpt_int_err(xd, "dd_nc[z]", &contents->dd_nc[ZZ], list);
-    do_cpt_int_err(xd, "#PME-only ranks", &contents->npme, list);
-    do_cpt_int_err(xd, "state flags", &contents->flags_state, list);
+    do_cpt_double_err(serializer, "t", &contents->t, list);
+    do_cpt_int_err(serializer, "#PP-ranks", &contents->nnodes, list);
+    do_cpt_int_err(serializer, "dd_nc[x]", &contents->dd_nc[XX], list);
+    do_cpt_int_err(serializer, "dd_nc[y]", &contents->dd_nc[YY], list);
+    do_cpt_int_err(serializer, "dd_nc[z]", &contents->dd_nc[ZZ], list);
+    do_cpt_int_err(serializer, "#PME-only ranks", &contents->npme, list);
+    do_cpt_int_err(serializer, "state flags", &contents->flags_state, list);
     if (contents->file_version >= CheckPointVersion::EkinDataAndFlags)
     {
-        do_cpt_int_err(xd, "ekin data flags", &contents->flags_eks, list);
-        do_cpt_int_err(xd, "energy history flags", &contents->flags_enh, list);
+        do_cpt_int_err(serializer, "ekin data flags", &contents->flags_eks, list);
+        do_cpt_int_err(serializer, "energy history flags", &contents->flags_enh, list);
     }
     else
     {
@@ -1251,7 +1270,7 @@ static void do_cpt_header(XDR* xd, gmx_bool bRead, FILE* list, CheckpointHeaderC
     }
     if (contents->file_version >= CheckPointVersion::LambdaStateAndHistory)
     {
-        do_cpt_int_err(xd, "df history flags", &contents->flags_dfh, list);
+        do_cpt_int_err(serializer, "df history flags", &contents->flags_dfh, list);
     }
     else
     {
@@ -1260,7 +1279,7 @@ static void do_cpt_header(XDR* xd, gmx_bool bRead, FILE* list, CheckpointHeaderC
 
     if (contents->file_version >= CheckPointVersion::EssentialDynamics)
     {
-        do_cpt_int_err(xd, "ED data sets", &contents->nED, list);
+        do_cpt_int_err(serializer, "ED data sets", &contents->nED, list);
     }
     else
     {
@@ -1270,7 +1289,7 @@ static void do_cpt_header(XDR* xd, gmx_bool bRead, FILE* list, CheckpointHeaderC
     if (contents->file_version >= CheckPointVersion::SwapState)
     {
         int swapState = static_cast<int>(contents->eSwapCoords);
-        do_cpt_int_err(xd, "swap", &swapState, list);
+        do_cpt_int_err(serializer, "swap", &swapState, list);
         if (bRead)
         {
             contents->eSwapCoords = static_cast<SwapType>(swapState);
@@ -1283,7 +1302,7 @@ static void do_cpt_header(XDR* xd, gmx_bool bRead, FILE* list, CheckpointHeaderC
 
     if (contents->file_version >= CheckPointVersion::AwhHistoryFlags)
     {
-        do_cpt_int_err(xd, "AWH history flags", &contents->flags_awhh, list);
+        do_cpt_int_err(serializer, "AWH history flags", &contents->flags_awhh, list);
     }
     else
     {
@@ -1292,7 +1311,7 @@ static void do_cpt_header(XDR* xd, gmx_bool bRead, FILE* list, CheckpointHeaderC
 
     if (contents->file_version >= CheckPointVersion::RemoveBuildMachineInformation)
     {
-        do_cpt_int_err(xd, "pull history flags", &contents->flagsPullHistory, list);
+        do_cpt_int_err(serializer, "pull history flags", &contents->flagsPullHistory, list);
     }
     else
     {
@@ -1302,7 +1321,7 @@ static void do_cpt_header(XDR* xd, gmx_bool bRead, FILE* list, CheckpointHeaderC
     if (contents->file_version >= CheckPointVersion::ModularSimulator)
     {
         do_cpt_bool_err(
-                xd, "Is modular simulator checkpoint", &contents->isModularSimulatorCheckpoint, list);
+                serializer, "Is modular simulator checkpoint", &contents->isModularSimulatorCheckpoint, list);
     }
     else
     {
@@ -1310,7 +1329,7 @@ static void do_cpt_header(XDR* xd, gmx_bool bRead, FILE* list, CheckpointHeaderC
     }
 }
 
-static int do_cpt_footer(XDR* xd, CheckPointVersion file_version)
+static int do_cpt_footer(XdrSerializer* serializer, CheckPointVersion file_version)
 {
     bool_t res = 0;
     int    magic;
@@ -1318,7 +1337,7 @@ static int do_cpt_footer(XDR* xd, CheckPointVersion file_version)
     if (file_version >= CheckPointVersion::AddMagicNumber)
     {
         magic = CPT_MAGIC2;
-        res   = xdr_int(xd, &magic);
+        res   = xdr_int(serializer->xdr(), &magic);
         if (res == 0)
         {
             cp_error();
@@ -1332,7 +1351,7 @@ static int do_cpt_footer(XDR* xd, CheckPointVersion file_version)
     return 0;
 }
 
-static int do_cpt_state(XDR* xd, int fflags, t_state* state, FILE* list)
+static int do_cpt_state(XdrSerializer* serializer, int fflags, t_state* state, FILE* list)
 {
     GMX_RELEASE_ASSERT(static_cast<unsigned int>(state->numAtoms())
                                <= std::numeric_limits<unsigned int>::max() / 3,
@@ -1348,56 +1367,58 @@ static int do_cpt_state(XDR* xd, int fflags, t_state* state, FILE* list)
             switch (*i)
             {
                 case StateEntry::Lambda:
-                    ret = doRealArrayRef(xd, *i, sflags, state->lambda, list);
+                    ret = doRealArrayRef(serializer, *i, sflags, state->lambda, list);
                     break;
                 case StateEntry::FepState:
-                    ret = do_cpte_int(xd, *i, sflags, &state->fep_state, list);
+                    ret = do_cpte_int(serializer, *i, sflags, &state->fep_state, list);
                     break;
-                case StateEntry::Box: ret = do_cpte_matrix(xd, *i, sflags, state->box, list); break;
+                case StateEntry::Box:
+                    ret = do_cpte_matrix(serializer, *i, sflags, state->box, list);
+                    break;
                 case StateEntry::BoxRel:
-                    ret = do_cpte_matrix(xd, *i, sflags, state->box_rel, list);
+                    ret = do_cpte_matrix(serializer, *i, sflags, state->box_rel, list);
                     break;
                 case StateEntry::BoxV:
-                    ret = do_cpte_matrix(xd, *i, sflags, state->boxv, list);
+                    ret = do_cpte_matrix(serializer, *i, sflags, state->boxv, list);
                     break;
                 case StateEntry::PressurePrevious:
-                    ret = do_cpte_matrix(xd, *i, sflags, state->pres_prev, list);
+                    ret = do_cpte_matrix(serializer, *i, sflags, state->pres_prev, list);
                     break;
                 case StateEntry::SVirPrev:
-                    ret = do_cpte_matrix(xd, *i, sflags, state->svir_prev, list);
+                    ret = do_cpte_matrix(serializer, *i, sflags, state->svir_prev, list);
                     break;
                 case StateEntry::FVirPrev:
-                    ret = do_cpte_matrix(xd, *i, sflags, state->fvir_prev, list);
+                    ret = do_cpte_matrix(serializer, *i, sflags, state->fvir_prev, list);
                     break;
                 case StateEntry::Nhxi:
-                    ret = doVector<double>(xd, *i, sflags, &state->nosehoover_xi, list);
+                    ret = doVector<double>(serializer, *i, sflags, &state->nosehoover_xi, list);
                     break;
                 case StateEntry::Nhvxi:
-                    ret = doVector<double>(xd, *i, sflags, &state->nosehoover_vxi, list);
+                    ret = doVector<double>(serializer, *i, sflags, &state->nosehoover_vxi, list);
                     break;
                 case StateEntry::Nhpresxi:
-                    ret = doVector<double>(xd, *i, sflags, &state->nhpres_xi, list);
+                    ret = doVector<double>(serializer, *i, sflags, &state->nhpres_xi, list);
                     break;
                 case StateEntry::Nhpresvxi:
-                    ret = doVector<double>(xd, *i, sflags, &state->nhpres_vxi, list);
+                    ret = doVector<double>(serializer, *i, sflags, &state->nhpres_vxi, list);
                     break;
                 case StateEntry::ThermInt:
-                    ret = doVector<double>(xd, *i, sflags, &state->therm_integral, list);
+                    ret = doVector<double>(serializer, *i, sflags, &state->therm_integral, list);
                     break;
                 case StateEntry::BarosInt:
-                    ret = do_cpte_double(xd, *i, sflags, &state->baros_integral, list);
+                    ret = do_cpte_double(serializer, *i, sflags, &state->baros_integral, list);
                     break;
                 case StateEntry::Veta:
-                    ret = do_cpte_real(xd, *i, sflags, &state->veta, list);
+                    ret = do_cpte_real(serializer, *i, sflags, &state->veta, list);
                     break;
                 case StateEntry::Vol0:
-                    ret = do_cpte_real(xd, *i, sflags, &state->vol0, list);
+                    ret = do_cpte_real(serializer, *i, sflags, &state->vol0, list);
                     break;
                 case StateEntry::X:
-                    ret = doRvecVector(xd, *i, sflags, &state->x, state->numAtoms(), list);
+                    ret = doRvecVector(serializer, *i, sflags, &state->x, state->numAtoms(), list);
                     break;
                 case StateEntry::V:
-                    ret = doRvecVector(xd, *i, sflags, &state->v, state->numAtoms(), list);
+                    ret = doRvecVector(serializer, *i, sflags, &state->v, state->numAtoms(), list);
                     break;
                 /* The RNG entries are no longer written,
                  * the next 4 lines are only for reading old files.
@@ -1407,22 +1428,22 @@ static int do_cpt_state(XDR* xd, int fflags, t_state* state, FILE* list)
                 case StateEntry::LDRngINotSupported:
                 case StateEntry::MCRngNotSupported:
                 case StateEntry::MCRngINotSupported:
-                    ret = do_cpte_ints(xd, *i, sflags, 0, nullptr, list);
+                    ret = do_cpte_ints(serializer, *i, sflags, 0, nullptr, list);
                     break;
                 case StateEntry::DisreInitF:
-                    ret = do_cpte_real(xd, *i, sflags, &state->hist.disre_initf, list);
+                    ret = do_cpte_real(serializer, *i, sflags, &state->hist.disre_initf, list);
                     break;
                 case StateEntry::DisreRm3Tav:
-                    ret = doVector<real>(xd, *i, sflags, &state->hist.disre_rm3tav, list);
+                    ret = doVector<real>(serializer, *i, sflags, &state->hist.disre_rm3tav, list);
                     break;
                 case StateEntry::OrireInitF:
-                    ret = do_cpte_real(xd, *i, sflags, &state->hist.orire_initf, list);
+                    ret = do_cpte_real(serializer, *i, sflags, &state->hist.orire_initf, list);
                     break;
                 case StateEntry::OrireDtav:
-                    ret = doVector<real>(xd, *i, sflags, &state->hist.orire_Dtav, list);
+                    ret = doVector<real>(serializer, *i, sflags, &state->hist.orire_Dtav, list);
                     break;
                 case StateEntry::PullComPrevStep:
-                    ret = doVector<double>(xd, *i, sflags, &state->pull_com_prev_step, list);
+                    ret = doVector<double>(serializer, *i, sflags, &state->pull_com_prev_step, list);
                     break;
                 default:
                     gmx_fatal(FARGS,
@@ -1436,7 +1457,7 @@ static int do_cpt_state(XDR* xd, int fflags, t_state* state, FILE* list)
     return ret;
 }
 
-static int do_cpt_ekinstate(XDR* xd, int fflags, ekinstate_t* ekins, FILE* list)
+static int do_cpt_ekinstate(XdrSerializer* serializer, int fflags, ekinstate_t* ekins, FILE* list)
 {
     int ret = 0;
 
@@ -1449,34 +1470,34 @@ static int do_cpt_ekinstate(XDR* xd, int fflags, ekinstate_t* ekins, FILE* list)
             {
 
                 case StateKineticEntry::EkinNumber:
-                    ret = do_cpte_int(xd, *i, fflags, &ekins->ekin_n, list);
+                    ret = do_cpte_int(serializer, *i, fflags, &ekins->ekin_n, list);
                     break;
                 case StateKineticEntry::EkinHalfStep:
-                    ret = do_cpte_matrices(xd, *i, fflags, ekins->ekin_n, &ekins->ekinh, list);
+                    ret = do_cpte_matrices(serializer, *i, fflags, ekins->ekin_n, &ekins->ekinh, list);
                     break;
                 case StateKineticEntry::EkinFullStep:
-                    ret = do_cpte_matrices(xd, *i, fflags, ekins->ekin_n, &ekins->ekinf, list);
+                    ret = do_cpte_matrices(serializer, *i, fflags, ekins->ekin_n, &ekins->ekinf, list);
                     break;
                 case StateKineticEntry::EkinHalfStepOld:
-                    ret = do_cpte_matrices(xd, *i, fflags, ekins->ekin_n, &ekins->ekinh_old, list);
+                    ret = do_cpte_matrices(serializer, *i, fflags, ekins->ekin_n, &ekins->ekinh_old, list);
                     break;
                 case StateKineticEntry::EkinTotal:
-                    ret = do_cpte_matrix(xd, *i, fflags, ekins->ekin_total, list);
+                    ret = do_cpte_matrix(serializer, *i, fflags, ekins->ekin_total, list);
                     break;
                 case StateKineticEntry::EkinNoseHooverScaleFullStep:
-                    ret = doVector<double>(xd, *i, fflags, &ekins->ekinscalef_nhc, list);
+                    ret = doVector<double>(serializer, *i, fflags, &ekins->ekinscalef_nhc, list);
                     break;
                 case StateKineticEntry::VelocityScale:
-                    ret = doVector<double>(xd, *i, fflags, &ekins->vscale_nhc, list);
+                    ret = doVector<double>(serializer, *i, fflags, &ekins->vscale_nhc, list);
                     break;
                 case StateKineticEntry::EkinNoseHooverScaleHalfStep:
-                    ret = doVector<double>(xd, *i, fflags, &ekins->ekinscaleh_nhc, list);
+                    ret = doVector<double>(serializer, *i, fflags, &ekins->ekinscaleh_nhc, list);
                     break;
                 case StateKineticEntry::DEkinDLambda:
-                    ret = do_cpte_real(xd, *i, fflags, &ekins->dekindl, list);
+                    ret = do_cpte_real(serializer, *i, fflags, &ekins->dekindl, list);
                     break;
                 case StateKineticEntry::Mvcos:
-                    ret = do_cpte_real(xd, *i, fflags, &ekins->mvcos, list);
+                    ret = do_cpte_real(serializer, *i, fflags, &ekins->mvcos, list);
                     break;
                 default:
                     gmx_fatal(FARGS,
@@ -1491,7 +1512,11 @@ static int do_cpt_ekinstate(XDR* xd, int fflags, ekinstate_t* ekins, FILE* list)
 }
 
 
-static int do_cpt_swapstate(XDR* xd, gmx_bool bRead, SwapType eSwapCoords, swaphistory_t* swapstate, FILE* list)
+static int do_cpt_swapstate(XdrSerializer* serializer,
+                            gmx_bool       bRead,
+                            SwapType       eSwapCoords,
+                            swaphistory_t* swapstate,
+                            FILE*          list)
 {
     int swap_cpt_version = 2;
 
@@ -1503,7 +1528,7 @@ static int do_cpt_swapstate(XDR* xd, gmx_bool bRead, SwapType eSwapCoords, swaph
     swapstate->bFromCpt    = bRead;
     swapstate->eSwapCoords = eSwapCoords;
 
-    do_cpt_int_err(xd, "swap checkpoint version", &swap_cpt_version, list);
+    do_cpt_int_err(serializer, "swap checkpoint version", &swap_cpt_version, list);
     if (bRead && swap_cpt_version < 2)
     {
         gmx_fatal(FARGS,
@@ -1511,11 +1536,11 @@ static int do_cpt_swapstate(XDR* xd, gmx_bool bRead, SwapType eSwapCoords, swaph
                   "of the ion/water position swapping protocol.\n");
     }
 
-    do_cpt_int_err(xd, "swap coupling steps", &swapstate->nAverage, list);
+    do_cpt_int_err(serializer, "swap coupling steps", &swapstate->nAverage, list);
 
     /* When reading, init_swapcoords has not been called yet,
      * so we have to allocate memory first. */
-    do_cpt_int_err(xd, "number of ion types", &swapstate->nIonTypes, list);
+    do_cpt_int_err(serializer, "number of ion types", &swapstate->nIonTypes, list);
     if (bRead)
     {
         snew(swapstate->ionType, swapstate->nIonTypes);
@@ -1529,20 +1554,20 @@ static int do_cpt_swapstate(XDR* xd, gmx_bool bRead, SwapType eSwapCoords, swaph
 
             if (bRead)
             {
-                do_cpt_int_err(xd, "swap requested atoms", &gs->nMolReq[ic], list);
+                do_cpt_int_err(serializer, "swap requested atoms", &gs->nMolReq[ic], list);
             }
             else
             {
-                do_cpt_int_err(xd, "swap requested atoms p", gs->nMolReq_p[ic], list);
+                do_cpt_int_err(serializer, "swap requested atoms p", gs->nMolReq_p[ic], list);
             }
 
             if (bRead)
             {
-                do_cpt_int_err(xd, "swap influx net", &gs->inflow_net[ic], list);
+                do_cpt_int_err(serializer, "swap influx net", &gs->inflow_net[ic], list);
             }
             else
             {
-                do_cpt_int_err(xd, "swap influx net p", gs->inflow_net_p[ic], list);
+                do_cpt_int_err(serializer, "swap influx net p", gs->inflow_net_p[ic], list);
             }
 
             if (bRead && (nullptr == gs->nMolPast[ic]))
@@ -1554,11 +1579,11 @@ static int do_cpt_swapstate(XDR* xd, gmx_bool bRead, SwapType eSwapCoords, swaph
             {
                 if (bRead)
                 {
-                    do_cpt_int_err(xd, "swap past atom counts", &gs->nMolPast[ic][j], list);
+                    do_cpt_int_err(serializer, "swap past atom counts", &gs->nMolPast[ic][j], list);
                 }
                 else
                 {
-                    do_cpt_int_err(xd, "swap past atom counts p", &gs->nMolPast_p[ic][j], list);
+                    do_cpt_int_err(serializer, "swap past atom counts p", &gs->nMolPast_p[ic][j], list);
                 }
             }
         }
@@ -1573,11 +1598,11 @@ static int do_cpt_swapstate(XDR* xd, gmx_bool bRead, SwapType eSwapCoords, swaph
 
             if (bRead)
             {
-                do_cpt_int_err(xd, "channel flux A->B", &gs->fluxfromAtoB[ic], list);
+                do_cpt_int_err(serializer, "channel flux A->B", &gs->fluxfromAtoB[ic], list);
             }
             else
             {
-                do_cpt_int_err(xd, "channel flux A->B p", gs->fluxfromAtoB_p[ic], list);
+                do_cpt_int_err(serializer, "channel flux A->B p", gs->fluxfromAtoB_p[ic], list);
             }
         }
     }
@@ -1585,11 +1610,11 @@ static int do_cpt_swapstate(XDR* xd, gmx_bool bRead, SwapType eSwapCoords, swaph
     /* Ion flux leakage */
     if (bRead)
     {
-        do_cpt_int_err(xd, "flux leakage", &swapstate->fluxleak, list);
+        do_cpt_int_err(serializer, "flux leakage", &swapstate->fluxleak, list);
     }
     else
     {
-        do_cpt_int_err(xd, "flux leakage", swapstate->fluxleak_p, list);
+        do_cpt_int_err(serializer, "flux leakage", swapstate->fluxleak_p, list);
     }
 
     /* Ion history */
@@ -1597,7 +1622,7 @@ static int do_cpt_swapstate(XDR* xd, gmx_bool bRead, SwapType eSwapCoords, swaph
     {
         swapstateIons_t* gs = &swapstate->ionType[ii];
 
-        do_cpt_int_err(xd, "number of ions", &gs->nMol, list);
+        do_cpt_int_err(serializer, "number of ions", &gs->nMol, list);
 
         if (bRead)
         {
@@ -1605,39 +1630,49 @@ static int do_cpt_swapstate(XDR* xd, gmx_bool bRead, SwapType eSwapCoords, swaph
             snew(gs->comp_from, gs->nMol);
         }
 
-        do_cpt_n_enum_as_int<ChannelHistory>(xd, "channel history", gs->nMol, gs->channel_label, list);
-        do_cpt_n_enum_as_int<Domain>(xd, "domain history", gs->nMol, gs->comp_from, list);
+        do_cpt_n_enum_as_int<ChannelHistory>(
+                serializer, "channel history", gs->nMol, gs->channel_label, list);
+        do_cpt_n_enum_as_int<Domain>(serializer, "domain history", gs->nMol, gs->comp_from, list);
     }
 
     /* Save the last known whole positions to checkpoint
      * file to be able to also make multimeric channels whole in PBC */
-    do_cpt_int_err(xd, "Ch0 atoms", &swapstate->nat[Channel::Zero], list);
-    do_cpt_int_err(xd, "Ch1 atoms", &swapstate->nat[Channel::One], list);
+    do_cpt_int_err(serializer, "Ch0 atoms", &swapstate->nat[Channel::Zero], list);
+    do_cpt_int_err(serializer, "Ch1 atoms", &swapstate->nat[Channel::One], list);
     if (bRead)
     {
         snew(swapstate->xc_old_whole[Channel::Zero], swapstate->nat[Channel::Zero]);
         snew(swapstate->xc_old_whole[Channel::One], swapstate->nat[Channel::One]);
-        do_cpt_n_rvecs_err(
-                xd, "Ch0 whole x", swapstate->nat[Channel::Zero], swapstate->xc_old_whole[Channel::Zero], list);
-        do_cpt_n_rvecs_err(
-                xd, "Ch1 whole x", swapstate->nat[Channel::One], swapstate->xc_old_whole[Channel::One], list);
+        do_cpt_n_rvecs_err(serializer,
+                           "Ch0 whole x",
+                           swapstate->nat[Channel::Zero],
+                           swapstate->xc_old_whole[Channel::Zero],
+                           list);
+        do_cpt_n_rvecs_err(serializer,
+                           "Ch1 whole x",
+                           swapstate->nat[Channel::One],
+                           swapstate->xc_old_whole[Channel::One],
+                           list);
     }
     else
     {
-        do_cpt_n_rvecs_err(xd,
+        do_cpt_n_rvecs_err(serializer,
                            "Ch0 whole x",
                            swapstate->nat[Channel::Zero],
                            *swapstate->xc_old_whole_p[Channel::Zero],
                            list);
-        do_cpt_n_rvecs_err(
-                xd, "Ch1 whole x", swapstate->nat[Channel::One], *swapstate->xc_old_whole_p[Channel::One], list);
+        do_cpt_n_rvecs_err(serializer,
+                           "Ch1 whole x",
+                           swapstate->nat[Channel::One],
+                           *swapstate->xc_old_whole_p[Channel::One],
+                           list);
     }
 
     return 0;
 }
 
 
-static int do_cpt_enerhist(XDR* xd, gmx_bool bRead, int fflags, energyhistory_t* enerhist, FILE* list)
+static int do_cpt_enerhist(XdrSerializer* serializer, gmx_bool bRead, int fflags, energyhistory_t* enerhist, FILE* list)
 {
     int ret = 0;
 
@@ -1671,28 +1706,28 @@ static int do_cpt_enerhist(XDR* xd, gmx_bool bRead, int fflags, energyhistory_t*
             switch (*i)
             {
                 case StateEnergyEntry::N:
-                    ret = do_cpte_int(xd, *i, fflags, &energyHistoryNumEnergies, list);
+                    ret = do_cpte_int(serializer, *i, fflags, &energyHistoryNumEnergies, list);
                     break;
                 case StateEnergyEntry::Aver:
-                    ret = doVector<double>(xd, *i, fflags, &enerhist->ener_ave, list);
+                    ret = doVector<double>(serializer, *i, fflags, &enerhist->ener_ave, list);
                     break;
                 case StateEnergyEntry::Sum:
-                    ret = doVector<double>(xd, *i, fflags, &enerhist->ener_sum, list);
+                    ret = doVector<double>(serializer, *i, fflags, &enerhist->ener_sum, list);
                     break;
                 case StateEnergyEntry::NumSum:
-                    do_cpt_step_err(xd, enumValueToString(*i), &enerhist->nsum, list);
+                    do_cpt_step_err(serializer, enumValueToString(*i), &enerhist->nsum, list);
                     break;
                 case StateEnergyEntry::SumSim:
-                    ret = doVector<double>(xd, *i, fflags, &enerhist->ener_sum_sim, list);
+                    ret = doVector<double>(serializer, *i, fflags, &enerhist->ener_sum_sim, list);
                     break;
                 case StateEnergyEntry::NumSumSim:
-                    do_cpt_step_err(xd, enumValueToString(*i), &enerhist->nsum_sim, list);
+                    do_cpt_step_err(serializer, enumValueToString(*i), &enerhist->nsum_sim, list);
                     break;
                 case StateEnergyEntry::NumSteps:
-                    do_cpt_step_err(xd, enumValueToString(*i), &enerhist->nsteps, list);
+                    do_cpt_step_err(serializer, enumValueToString(*i), &enerhist->nsteps, list);
                     break;
                 case StateEnergyEntry::NumStepsSim:
-                    do_cpt_step_err(xd, enumValueToString(*i), &enerhist->nsteps_sim, list);
+                    do_cpt_step_err(serializer, enumValueToString(*i), &enerhist->nsteps_sim, list);
                     break;
                 case StateEnergyEntry::DeltaHNN:
                 {
@@ -1701,7 +1736,7 @@ static int do_cpt_enerhist(XDR* xd, gmx_bool bRead, int fflags, energyhistory_t*
                     {
                         numDeltaH = deltaH->dh.size();
                     }
-                    do_cpt_int_err(xd, enumValueToString(*i), &numDeltaH, list);
+                    do_cpt_int_err(serializer, enumValueToString(*i), &numDeltaH, list);
                     if (bRead)
                     {
                         if (deltaH == nullptr)
@@ -1717,14 +1752,14 @@ static int do_cpt_enerhist(XDR* xd, gmx_bool bRead, int fflags, energyhistory_t*
                 case StateEnergyEntry::DeltaHList:
                     for (auto dh : deltaH->dh)
                     {
-                        ret = doVector<real>(xd, *i, fflags, &dh, list);
+                        ret = doVector<real>(serializer, *i, fflags, &dh, list);
                     }
                     break;
                 case StateEnergyEntry::DeltaHStartTime:
-                    ret = do_cpte_double(xd, *i, fflags, &(deltaH->start_time), list);
+                    ret = do_cpte_double(serializer, *i, fflags, &(deltaH->start_time), list);
                     break;
                 case StateEnergyEntry::DeltaHStartLambda:
-                    ret = do_cpte_double(xd, *i, fflags, &(deltaH->start_lambda), list);
+                    ret = do_cpte_double(serializer, *i, fflags, &(deltaH->start_lambda), list);
                     break;
                 default:
                     gmx_fatal(FARGS,
@@ -1758,7 +1793,7 @@ static int do_cpt_enerhist(XDR* xd, gmx_bool bRead, int fflags, energyhistory_t*
     return ret;
 }
 
-static int doCptPullCoordHist(XDR* xd, PullCoordinateHistory* pullCoordHist, FILE* list)
+static int doCptPullCoordHist(XdrSerializer* serializer, PullCoordinateHistory* pullCoordHist, FILE* list)
 {
     int ret   = 0;
     int flags = 0;
@@ -1777,36 +1812,36 @@ static int doCptPullCoordHist(XDR* xd, PullCoordinateHistory* pullCoordHist, FIL
         switch (*i)
         {
             case StatePullCoordEntry::ValueReferenceSum:
-                ret = do_cpte_double(xd, *i, flags, &(pullCoordHist->valueRef), list);
+                ret = do_cpte_double(serializer, *i, flags, &(pullCoordHist->valueRef), list);
                 break;
             case StatePullCoordEntry::ValueSum:
-                ret = do_cpte_double(xd, *i, flags, &(pullCoordHist->value), list);
+                ret = do_cpte_double(serializer, *i, flags, &(pullCoordHist->value), list);
                 break;
             case StatePullCoordEntry::DR01Sum:
                 for (int j = 0; j < DIM && ret == 0; j++)
                 {
-                    ret = do_cpte_double(xd, *i, flags, &(pullCoordHist->dr01[j]), list);
+                    ret = do_cpte_double(serializer, *i, flags, &(pullCoordHist->dr01[j]), list);
                 }
                 break;
             case StatePullCoordEntry::DR23Sum:
                 for (int j = 0; j < DIM && ret == 0; j++)
                 {
-                    ret = do_cpte_double(xd, *i, flags, &(pullCoordHist->dr23[j]), list);
+                    ret = do_cpte_double(serializer, *i, flags, &(pullCoordHist->dr23[j]), list);
                 }
                 break;
             case StatePullCoordEntry::DR45Sum:
                 for (int j = 0; j < DIM && ret == 0; j++)
                 {
-                    ret = do_cpte_double(xd, *i, flags, &(pullCoordHist->dr45[j]), list);
+                    ret = do_cpte_double(serializer, *i, flags, &(pullCoordHist->dr45[j]), list);
                 }
                 break;
             case StatePullCoordEntry::FScalarSum:
-                ret = do_cpte_double(xd, *i, flags, &(pullCoordHist->scalarForce), list);
+                ret = do_cpte_double(serializer, *i, flags, &(pullCoordHist->scalarForce), list);
                 break;
             case StatePullCoordEntry::DynaxSum:
                 for (int j = 0; j < DIM && ret == 0; j++)
                 {
-                    ret = do_cpte_double(xd, *i, flags, &(pullCoordHist->dynaX[j]), list);
+                    ret = do_cpte_double(serializer, *i, flags, &(pullCoordHist->dynaX[j]), list);
                 }
                 break;
             default:
@@ -1817,7 +1852,7 @@ static int doCptPullCoordHist(XDR* xd, PullCoordinateHistory* pullCoordHist, FIL
     return ret;
 }
 
-static int doCptPullGroupHist(XDR* xd, PullGroupHistory* pullGroupHist, FILE* list)
+static int doCptPullGroupHist(XdrSerializer* serializer, PullGroupHistory* pullGroupHist, FILE* list)
 {
     int ret   = 0;
     int flags = 0;
@@ -1832,7 +1867,7 @@ static int doCptPullGroupHist(XDR* xd, PullGroupHistory* pullGroupHist, FILE* li
             case StatePullGroupEntry::XSum:
                 for (int j = 0; j < DIM && ret == 0; j++)
                 {
-                    ret = do_cpte_double(xd, *i, flags, &(pullGroupHist->x[j]), list);
+                    ret = do_cpte_double(serializer, *i, flags, &(pullGroupHist->x[j]), list);
                 }
                 break;
             default: gmx_fatal(FARGS, "Unhandled pull group state entry");
@@ -1843,7 +1878,7 @@ static int doCptPullGroupHist(XDR* xd, PullGroupHistory* pullGroupHist, FILE* li
 }
 
 
-static int doCptPullHist(XDR* xd, gmx_bool bRead, int fflags, PullHistory* pullHist, FILE* list)
+static int doCptPullHist(XdrSerializer* serializer, gmx_bool bRead, int fflags, PullHistory* pullHist, FILE* list)
 {
     int ret                       = 0;
     int pullHistoryNumCoordinates = 0;
@@ -1875,16 +1910,16 @@ static int doCptPullHist(XDR* xd, gmx_bool bRead, int fflags, PullHistory* pullH
             switch (*i)
             {
                 case StatePullEntry::NumCoordinates:
-                    do_cpt_int_err(xd, enumValueToString(*i), &pullHistoryNumCoordinates, list);
+                    do_cpt_int_err(serializer, enumValueToString(*i), &pullHistoryNumCoordinates, list);
                     break;
                 case StatePullEntry::NumGroups:
-                    do_cpt_int_err(xd, enumValueToString(*i), &pullHistoryNumGroups, list);
+                    do_cpt_int_err(serializer, enumValueToString(*i), &pullHistoryNumGroups, list);
                     break;
                 case StatePullEntry::NumValuesInXSum:
-                    do_cpt_int_err(xd, enumValueToString(*i), &pullHist->numValuesInXSum, list);
+                    do_cpt_int_err(serializer, enumValueToString(*i), &pullHist->numValuesInXSum, list);
                     break;
                 case StatePullEntry::NumValuesInFSum:
-                    do_cpt_int_err(xd, enumValueToString(*i), &pullHist->numValuesInFSum, list);
+                    do_cpt_int_err(serializer, enumValueToString(*i), &pullHist->numValuesInFSum, list);
                     break;
                 default:
                     gmx_fatal(FARGS,
@@ -1903,18 +1938,18 @@ static int doCptPullHist(XDR* xd, gmx_bool bRead, int fflags, PullHistory* pullH
     {
         for (size_t i = 0; i < pullHist->pullCoordinateSums.size() && ret == 0; i++)
         {
-            ret = doCptPullCoordHist(xd, &(pullHist->pullCoordinateSums[i]), list);
+            ret = doCptPullCoordHist(serializer, &(pullHist->pullCoordinateSums[i]), list);
         }
         for (size_t i = 0; i < pullHist->pullGroupSums.size() && ret == 0; i++)
         {
-            ret = doCptPullGroupHist(xd, &(pullHist->pullGroupSums[i]), list);
+            ret = doCptPullGroupHist(serializer, &(pullHist->pullGroupSums[i]), list);
         }
     }
 
     return ret;
 }
 
-static int do_cpt_df_hist(XDR* xd, int fflags, int nlambda, df_history_t** dfhistPtr, FILE* list)
+static int do_cpt_df_hist(XdrSerializer* serializer, int fflags, int nlambda, df_history_t** dfhistPtr, FILE* list)
 {
     int ret = 0;
 
@@ -1941,51 +1976,51 @@ static int do_cpt_df_hist(XDR* xd, int fflags, int nlambda, df_history_t** dfhis
             switch (*i)
             {
                 case StateFepEntry::IsEquilibrated:
-                    ret = do_cpte_bool(xd, *i, fflags, &dfhist->bEquil, list);
+                    ret = do_cpte_bool(serializer, *i, fflags, &dfhist->bEquil, list);
                     break;
                 case StateFepEntry::NumAtLambdaStats:
                     ret = do_cpte_ints(
-                            xd, *i, fflags, nlambda, &dfhist->numSamplesAtLambdaForStatistics, list);
+                            serializer, *i, fflags, nlambda, &dfhist->numSamplesAtLambdaForStatistics, list);
                     break;
                 case StateFepEntry::NumAtLambdaEquil:
                     ret = do_cpte_ints(
-                            xd, *i, fflags, nlambda, &dfhist->numSamplesAtLambdaForEquilibration, list);
+                            serializer, *i, fflags, nlambda, &dfhist->numSamplesAtLambdaForEquilibration, list);
                     break;
                 case StateFepEntry::WangLandauHistogram:
-                    ret = do_cpte_reals(xd, *i, fflags, nlambda, &dfhist->wl_histo, list);
+                    ret = do_cpte_reals(serializer, *i, fflags, nlambda, &dfhist->wl_histo, list);
                     break;
                 case StateFepEntry::WangLandauDelta:
-                    ret = do_cpte_real(xd, *i, fflags, &dfhist->wl_delta, list);
+                    ret = do_cpte_real(serializer, *i, fflags, &dfhist->wl_delta, list);
                     break;
                 case StateFepEntry::SumWeights:
-                    ret = do_cpte_reals(xd, *i, fflags, nlambda, &dfhist->sum_weights, list);
+                    ret = do_cpte_reals(serializer, *i, fflags, nlambda, &dfhist->sum_weights, list);
                     break;
                 case StateFepEntry::SumDG:
-                    ret = do_cpte_reals(xd, *i, fflags, nlambda, &dfhist->sum_dg, list);
+                    ret = do_cpte_reals(serializer, *i, fflags, nlambda, &dfhist->sum_dg, list);
                     break;
                 case StateFepEntry::SumMinVar:
-                    ret = do_cpte_reals(xd, *i, fflags, nlambda, &dfhist->sum_minvar, list);
+                    ret = do_cpte_reals(serializer, *i, fflags, nlambda, &dfhist->sum_minvar, list);
                     break;
                 case StateFepEntry::SumVar:
-                    ret = do_cpte_reals(xd, *i, fflags, nlambda, &dfhist->sum_variance, list);
+                    ret = do_cpte_reals(serializer, *i, fflags, nlambda, &dfhist->sum_variance, list);
                     break;
                 case StateFepEntry::Accump:
-                    ret = do_cpte_nmatrix(xd, *i, fflags, nlambda, dfhist->accum_p, list);
+                    ret = do_cpte_nmatrix(serializer, *i, fflags, nlambda, dfhist->accum_p, list);
                     break;
                 case StateFepEntry::Accumm:
-                    ret = do_cpte_nmatrix(xd, *i, fflags, nlambda, dfhist->accum_m, list);
+                    ret = do_cpte_nmatrix(serializer, *i, fflags, nlambda, dfhist->accum_m, list);
                     break;
                 case StateFepEntry::Accump2:
-                    ret = do_cpte_nmatrix(xd, *i, fflags, nlambda, dfhist->accum_p2, list);
+                    ret = do_cpte_nmatrix(serializer, *i, fflags, nlambda, dfhist->accum_p2, list);
                     break;
                 case StateFepEntry::Accumm2:
-                    ret = do_cpte_nmatrix(xd, *i, fflags, nlambda, dfhist->accum_m2, list);
+                    ret = do_cpte_nmatrix(serializer, *i, fflags, nlambda, dfhist->accum_m2, list);
                     break;
                 case StateFepEntry::Tij:
-                    ret = do_cpte_nmatrix(xd, *i, fflags, nlambda, dfhist->Tij, list);
+                    ret = do_cpte_nmatrix(serializer, *i, fflags, nlambda, dfhist->Tij, list);
                     break;
                 case StateFepEntry::TijEmp:
-                    ret = do_cpte_nmatrix(xd, *i, fflags, nlambda, dfhist->Tij_empirical, list);
+                    ret = do_cpte_nmatrix(serializer, *i, fflags, nlambda, dfhist->Tij_empirical, list);
                     break;
 
                 default:
@@ -2004,7 +2039,7 @@ static int do_cpt_df_hist(XDR* xd, int fflags, int nlambda, df_history_t** dfhis
 /* This function stores the last whole configuration of the reference and
  * average structure in the .cpt file
  */
-static int do_cpt_EDstate(XDR* xd, gmx_bool bRead, int nED, edsamhistory_t* EDstate, FILE* list)
+static int do_cpt_EDstate(XdrSerializer* serializer, gmx_bool bRead, int nED, edsamhistory_t* EDstate, FILE* list)
 {
     if (nED == 0)
     {
@@ -2031,37 +2066,37 @@ static int do_cpt_EDstate(XDR* xd, gmx_bool bRead, int nED, edsamhistory_t* EDst
 
         /* Reference structure SREF */
         sprintf(buf, "ED%d # of atoms in reference structure", i + 1);
-        do_cpt_int_err(xd, buf, &EDstate->nref[i], list);
+        do_cpt_int_err(serializer, buf, &EDstate->nref[i], list);
         sprintf(buf, "ED%d x_ref", i + 1);
         if (bRead)
         {
             snew(EDstate->old_sref[i], EDstate->nref[i]);
-            do_cpt_n_rvecs_err(xd, buf, EDstate->nref[i], EDstate->old_sref[i], list);
+            do_cpt_n_rvecs_err(serializer, buf, EDstate->nref[i], EDstate->old_sref[i], list);
         }
         else
         {
-            do_cpt_n_rvecs_err(xd, buf, EDstate->nref[i], EDstate->old_sref_p[i], list);
+            do_cpt_n_rvecs_err(serializer, buf, EDstate->nref[i], EDstate->old_sref_p[i], list);
         }
 
         /* Average structure SAV */
         sprintf(buf, "ED%d # of atoms in average structure", i + 1);
-        do_cpt_int_err(xd, buf, &EDstate->nav[i], list);
+        do_cpt_int_err(serializer, buf, &EDstate->nav[i], list);
         sprintf(buf, "ED%d x_av", i + 1);
         if (bRead)
         {
             snew(EDstate->old_sav[i], EDstate->nav[i]);
-            do_cpt_n_rvecs_err(xd, buf, EDstate->nav[i], EDstate->old_sav[i], list);
+            do_cpt_n_rvecs_err(serializer, buf, EDstate->nav[i], EDstate->old_sav[i], list);
         }
         else
         {
-            do_cpt_n_rvecs_err(xd, buf, EDstate->nav[i], EDstate->old_sav_p[i], list);
+            do_cpt_n_rvecs_err(serializer, buf, EDstate->nav[i], EDstate->old_sav_p[i], list);
         }
     }
 
     return 0;
 }
 
-static int do_cpt_correlation_grid(XDR*                         xd,
+static int do_cpt_correlation_grid(XdrSerializer*               serializer,
                                    gmx_bool                     bRead,
                                    gmx_unused int               fflags,
                                    gmx::CorrelationGridHistory* corrGrid,
@@ -2070,9 +2105,9 @@ static int do_cpt_correlation_grid(XDR*                         xd,
 {
     int ret = 0;
 
-    do_cpt_int_err(xd, enumValueToString(eawhh), &(corrGrid->numCorrelationTensors), list);
-    do_cpt_int_err(xd, enumValueToString(eawhh), &(corrGrid->tensorSize), list);
-    do_cpt_int_err(xd, enumValueToString(eawhh), &(corrGrid->blockDataListSize), list);
+    do_cpt_int_err(serializer, enumValueToString(eawhh), &(corrGrid->numCorrelationTensors), list);
+    do_cpt_int_err(serializer, enumValueToString(eawhh), &(corrGrid->tensorSize), list);
+    do_cpt_int_err(serializer, enumValueToString(eawhh), &(corrGrid->blockDataListSize), list);
 
     if (bRead)
     {
@@ -2082,25 +2117,27 @@ static int do_cpt_correlation_grid(XDR*                         xd,
 
     for (gmx::CorrelationBlockDataHistory& blockData : corrGrid->blockDataBuffer)
     {
-        do_cpt_double_err(xd, enumValueToString(eawhh), &(blockData.blockSumWeight), list);
-        do_cpt_double_err(xd, enumValueToString(eawhh), &(blockData.blockSumSquareWeight), list);
-        do_cpt_double_err(xd, enumValueToString(eawhh), &(blockData.blockSumWeightX), list);
-        do_cpt_double_err(xd, enumValueToString(eawhh), &(blockData.blockSumWeightY), list);
-        do_cpt_double_err(xd, enumValueToString(eawhh), &(blockData.sumOverBlocksSquareBlockWeight), list);
-        do_cpt_double_err(xd, enumValueToString(eawhh), &(blockData.sumOverBlocksBlockSquareWeight), list);
+        do_cpt_double_err(serializer, enumValueToString(eawhh), &(blockData.blockSumWeight), list);
+        do_cpt_double_err(serializer, enumValueToString(eawhh), &(blockData.blockSumSquareWeight), list);
+        do_cpt_double_err(serializer, enumValueToString(eawhh), &(blockData.blockSumWeightX), list);
+        do_cpt_double_err(serializer, enumValueToString(eawhh), &(blockData.blockSumWeightY), list);
         do_cpt_double_err(
-                xd, enumValueToString(eawhh), &(blockData.sumOverBlocksBlockWeightBlockWeightX), list);
+                serializer, enumValueToString(eawhh), &(blockData.sumOverBlocksSquareBlockWeight), list);
         do_cpt_double_err(
-                xd, enumValueToString(eawhh), &(blockData.sumOverBlocksBlockWeightBlockWeightY), list);
-        do_cpt_double_err(xd, enumValueToString(eawhh), &(blockData.blockLength), list);
-        do_cpt_int_err(xd, enumValueToString(eawhh), &(blockData.previousBlockIndex), list);
-        do_cpt_double_err(xd, enumValueToString(eawhh), &(blockData.correlationIntegral), list);
+                serializer, enumValueToString(eawhh), &(blockData.sumOverBlocksBlockSquareWeight), list);
+        do_cpt_double_err(
+                serializer, enumValueToString(eawhh), &(blockData.sumOverBlocksBlockWeightBlockWeightX), list);
+        do_cpt_double_err(
+                serializer, enumValueToString(eawhh), &(blockData.sumOverBlocksBlockWeightBlockWeightY), list);
+        do_cpt_double_err(serializer, enumValueToString(eawhh), &(blockData.blockLength), list);
+        do_cpt_int_err(serializer, enumValueToString(eawhh), &(blockData.previousBlockIndex), list);
+        do_cpt_double_err(serializer, enumValueToString(eawhh), &(blockData.correlationIntegral), list);
     }
 
     return ret;
 }
 
-static int do_cpt_awh_bias(XDR*                    xd,
+static int do_cpt_awh_bias(XdrSerializer*          serializer,
                            gmx_bool                bRead,
                            int                     fflags,
                            gmx::AwhBiasHistory*    biasHistory,
@@ -2118,13 +2155,13 @@ static int do_cpt_awh_bias(XDR*                    xd,
             switch (*i)
             {
                 case StateAwhEntry::InInitial:
-                    do_cpt_bool_err(xd, enumValueToString(*i), &state->in_initial, list);
+                    do_cpt_bool_err(serializer, enumValueToString(*i), &state->in_initial, list);
                     break;
                 case StateAwhEntry::EquilibrateHistogram:
-                    do_cpt_bool_err(xd, enumValueToString(*i), &state->equilibrateHistogram, list);
+                    do_cpt_bool_err(serializer, enumValueToString(*i), &state->equilibrateHistogram, list);
                     break;
                 case StateAwhEntry::HistogramSize:
-                    do_cpt_double_err(xd, enumValueToString(*i), &state->histSize, list);
+                    do_cpt_double_err(serializer, enumValueToString(*i), &state->histSize, list);
                     break;
                 case StateAwhEntry::NumPoints:
                 {
@@ -2133,7 +2170,7 @@ static int do_cpt_awh_bias(XDR*                    xd,
                     {
                         numPoints = biasHistory->pointState.size();
                     }
-                    do_cpt_int_err(xd, enumValueToString(*i), &numPoints, list);
+                    do_cpt_int_err(serializer, enumValueToString(*i), &numPoints, list);
                     if (bRead)
                     {
                         biasHistory->pointState.resize(numPoints);
@@ -2143,20 +2180,20 @@ static int do_cpt_awh_bias(XDR*                    xd,
                 case StateAwhEntry::CoordPoint:
                     for (auto& psh : biasHistory->pointState)
                     {
-                        do_cpt_double_err(xd, enumValueToString(*i), &psh.target, list);
-                        do_cpt_double_err(xd, enumValueToString(*i), &psh.free_energy, list);
-                        do_cpt_double_err(xd, enumValueToString(*i), &psh.bias, list);
-                        do_cpt_double_err(xd, enumValueToString(*i), &psh.weightsum_iteration, list);
-                        do_cpt_double_err(xd, enumValueToString(*i), &psh.weightsum_covering, list);
-                        do_cpt_double_err(xd, enumValueToString(*i), &psh.weightsum_tot, list);
-                        do_cpt_double_err(xd, enumValueToString(*i), &psh.weightsum_ref, list);
-                        do_cpt_step_err(xd, enumValueToString(*i), &psh.last_update_index, list);
-                        do_cpt_double_err(xd, enumValueToString(*i), &psh.log_pmfsum, list);
-                        do_cpt_double_err(xd, enumValueToString(*i), &psh.visits_iteration, list);
-                        do_cpt_double_err(xd, enumValueToString(*i), &psh.visits_tot, list);
+                        do_cpt_double_err(serializer, enumValueToString(*i), &psh.target, list);
+                        do_cpt_double_err(serializer, enumValueToString(*i), &psh.free_energy, list);
+                        do_cpt_double_err(serializer, enumValueToString(*i), &psh.bias, list);
+                        do_cpt_double_err(serializer, enumValueToString(*i), &psh.weightsum_iteration, list);
+                        do_cpt_double_err(serializer, enumValueToString(*i), &psh.weightsum_covering, list);
+                        do_cpt_double_err(serializer, enumValueToString(*i), &psh.weightsum_tot, list);
+                        do_cpt_double_err(serializer, enumValueToString(*i), &psh.weightsum_ref, list);
+                        do_cpt_step_err(serializer, enumValueToString(*i), &psh.last_update_index, list);
+                        do_cpt_double_err(serializer, enumValueToString(*i), &psh.log_pmfsum, list);
+                        do_cpt_double_err(serializer, enumValueToString(*i), &psh.visits_iteration, list);
+                        do_cpt_double_err(serializer, enumValueToString(*i), &psh.visits_tot, list);
                         if (fileVersion >= CheckPointVersion::AwhLocalWeightSum)
                         {
-                            do_cpt_double_err(xd, enumValueToString(*i), &psh.localWeightSum, list);
+                            do_cpt_double_err(serializer, enumValueToString(*i), &psh.localWeightSum, list);
                         }
                         else
                         {
@@ -2165,22 +2202,25 @@ static int do_cpt_awh_bias(XDR*                    xd,
                     }
                     break;
                 case StateAwhEntry::UmbrellaGridPoint:
-                    do_cpt_int_err(xd, enumValueToString(*i), &(state->umbrellaGridpoint), list);
+                    do_cpt_int_err(serializer, enumValueToString(*i), &(state->umbrellaGridpoint), list);
                     break;
                 case StateAwhEntry::UpdateList:
-                    do_cpt_int_err(xd, enumValueToString(*i), &(state->origin_index_updatelist), list);
-                    do_cpt_int_err(xd, enumValueToString(*i), &(state->end_index_updatelist), list);
+                    do_cpt_int_err(
+                            serializer, enumValueToString(*i), &(state->origin_index_updatelist), list);
+                    do_cpt_int_err(serializer, enumValueToString(*i), &(state->end_index_updatelist), list);
                     break;
                 case StateAwhEntry::LogScaledSampleWeight:
-                    do_cpt_double_err(xd, enumValueToString(*i), &(state->logScaledSampleWeight), list);
-                    do_cpt_double_err(xd, enumValueToString(*i), &(state->maxLogScaledSampleWeight), list);
+                    do_cpt_double_err(
+                            serializer, enumValueToString(*i), &(state->logScaledSampleWeight), list);
+                    do_cpt_double_err(
+                            serializer, enumValueToString(*i), &(state->maxLogScaledSampleWeight), list);
                     break;
                 case StateAwhEntry::NumUpdates:
-                    do_cpt_step_err(xd, enumValueToString(*i), &(state->numUpdates), list);
+                    do_cpt_step_err(serializer, enumValueToString(*i), &(state->numUpdates), list);
                     break;
                 case StateAwhEntry::ForceCorrelationGrid:
                     ret = do_cpt_correlation_grid(
-                            xd, bRead, fflags, &biasHistory->forceCorrelationGrid, list, *i);
+                            serializer, bRead, fflags, &biasHistory->forceCorrelationGrid, list, *i);
                     break;
                 default: gmx_fatal(FARGS, "Unknown awh history entry %d\n", enumValueToBitMask(*i));
             }
@@ -2190,7 +2230,12 @@ static int do_cpt_awh_bias(XDR*                    xd,
     return ret;
 }
 
-static int do_cpt_awh(XDR* xd, gmx_bool bRead, int fflags, gmx::AwhHistory* awhHistory, FILE* list, const CheckPointVersion fileVersion)
+static int do_cpt_awh(XdrSerializer*          serializer,
+                      gmx_bool                bRead,
+                      int                     fflags,
+                      gmx::AwhHistory*        awhHistory,
+                      FILE*                   list,
+                      const CheckPointVersion fileVersion)
 {
     int ret = 0;
 
@@ -2222,7 +2267,7 @@ static int do_cpt_awh(XDR* xd, gmx_bool bRead, int fflags, gmx::AwhHistory* awhH
         {
             numBias = awhHistory->bias.size();
         }
-        do_cpt_int_err(xd, "awh_nbias", &numBias, list);
+        do_cpt_int_err(serializer, "awh_nbias", &numBias, list);
 
         if (bRead)
         {
@@ -2230,27 +2275,25 @@ static int do_cpt_awh(XDR* xd, gmx_bool bRead, int fflags, gmx::AwhHistory* awhH
         }
         for (auto& bias : awhHistory->bias)
         {
-            ret = do_cpt_awh_bias(xd, bRead, fflags, &bias, list, fileVersion);
+            ret = do_cpt_awh_bias(serializer, bRead, fflags, &bias, list, fileVersion);
             if (ret)
             {
                 return ret;
             }
         }
-        do_cpt_double_err(xd, "awh_potential_offset", &awhHistory->potentialOffset, list);
+        do_cpt_double_err(serializer, "awh_potential_offset", &awhHistory->potentialOffset, list);
     }
     return ret;
 }
 
 static void do_cpt_mdmodules(CheckPointVersion              fileVersion,
-                             t_fileio*                      checkpointFileHandle,
+                             ISerializer*                   serializer,
                              const gmx::MDModulesNotifiers& mdModulesNotifiers,
                              FILE*                          outputFile)
 {
     if (fileVersion >= CheckPointVersion::MDModules)
     {
-        gmx::XdrSerializer      serializer(checkpointFileHandle);
-        gmx::KeyValueTreeObject mdModuleCheckpointParameterTree =
-                gmx::deserializeKeyValueTree(&serializer);
+        gmx::KeyValueTreeObject mdModuleCheckpointParameterTree = gmx::deserializeKeyValueTree(serializer);
         if (outputFile)
         {
             gmx::TextWriter textWriter(outputFile);
@@ -2263,7 +2306,7 @@ static void do_cpt_mdmodules(CheckPointVersion              fileVersion,
     }
 }
 
-static int do_cpt_files(XDR*                              xd,
+static int do_cpt_files(XdrSerializer*                    serializer,
                         gmx_bool                          bRead,
                         std::vector<gmx_file_position_t>* outputfiles,
                         FILE*                             list,
@@ -2278,7 +2321,7 @@ static int do_cpt_files(XDR*                              xd,
     // Ensure that reading pre-allocates outputfiles, while writing
     // writes what is already there.
     int nfiles = outputfiles->size();
-    if (do_cpt_int(xd, "number of output files", &nfiles, list) != 0)
+    if (do_cpt_int(serializer, "number of output files", &nfiles, list) != 0)
     {
         return -1;
     }
@@ -2292,14 +2335,14 @@ static int do_cpt_files(XDR*                              xd,
         /* 64-bit XDR numbers are not portable, so it is stored as separate high/low fractions */
         if (bRead)
         {
-            do_cpt_string_err(xd, "output filename", buf, list);
+            do_cpt_string_err(serializer, "output filename", buf, list);
             std::copy(std::begin(buf), std::end(buf), std::begin(outputfile.filename));
 
-            if (do_cpt_int(xd, "file_offset_high", &offset_high, list) != 0)
+            if (do_cpt_int(serializer, "file_offset_high", &offset_high, list) != 0)
             {
                 return -1;
             }
-            if (do_cpt_int(xd, "file_offset_low", &offset_low, list) != 0)
+            if (do_cpt_int(serializer, "file_offset_low", &offset_low, list) != 0)
             {
                 return -1;
             }
@@ -2308,7 +2351,7 @@ static int do_cpt_files(XDR*                              xd,
         }
         else
         {
-            do_cpt_string_err(xd, "output filename", outputfile.filename, list);
+            do_cpt_string_err(serializer, "output filename", outputfile.filename, list);
             /* writing */
             offset = outputfile.offset;
             if (offset == -1)
@@ -2321,22 +2364,23 @@ static int do_cpt_files(XDR*                              xd,
                 offset_low  = static_cast<int>(offset & mask);
                 offset_high = static_cast<int>((offset >> 32) & mask);
             }
-            if (do_cpt_int(xd, "file_offset_high", &offset_high, list) != 0)
+            if (do_cpt_int(serializer, "file_offset_high", &offset_high, list) != 0)
             {
                 return -1;
             }
-            if (do_cpt_int(xd, "file_offset_low", &offset_low, list) != 0)
+            if (do_cpt_int(serializer, "file_offset_low", &offset_low, list) != 0)
             {
                 return -1;
             }
         }
         if (file_version >= CheckPointVersion::FileChecksumAndSize)
         {
-            if (do_cpt_int(xd, "file_checksum_size", &outputfile.checksumSize, list) != 0)
+            if (do_cpt_int(serializer, "file_checksum_size", &outputfile.checksumSize, list) != 0)
             {
                 return -1;
             }
-            if (do_cpt_u_chars(xd, "file_checksum", outputfile.checksum.size(), outputfile.checksum.data(), list)
+            if (do_cpt_u_chars(
+                        serializer, "file_checksum", outputfile.checksum.size(), outputfile.checksum.data(), list)
                 != 0)
             {
                 return -1;
@@ -2360,8 +2404,7 @@ void write_checkpoint_data(const std::filesystem::path&      filename,
                            std::vector<gmx_file_position_t>* outputfiles,
                            gmx::WriteCheckpointDataHolder*   modularSimulatorCheckpointData)
 {
-    t_fileio* fio            = gmx_fio_open(filename, "w");
-    XDR*      xdr            = gmx_fio_getxdr(fio);
+    XdrSerializer serializer(filename, "w");
     headerContents.flags_eks = 0;
     if (state->ekinstate.bUpToDate)
     {
@@ -2457,19 +2500,22 @@ void write_checkpoint_data(const std::filesystem::path&      filename,
                                       | enumValueToBitMask(StateAwhEntry::ForceCorrelationGrid));
     }
 
-    do_cpt_header(xdr, FALSE, nullptr, &headerContents);
+    do_cpt_header(&serializer, FALSE, nullptr, &headerContents);
 
-    if ((do_cpt_state(xdr, state->flags(), state, nullptr) < 0)
-        || (do_cpt_ekinstate(xdr, headerContents.flags_eks, &state->ekinstate, nullptr) < 0)
-        || (do_cpt_enerhist(xdr, FALSE, headerContents.flags_enh, enerhist, nullptr) < 0)
-        || (doCptPullHist(xdr, FALSE, headerContents.flagsPullHistory, pullHist, nullptr) < 0)
-        || (do_cpt_df_hist(xdr, headerContents.flags_dfh, headerContents.nlambda, &state->dfhist, nullptr) < 0)
-        || (do_cpt_EDstate(xdr, FALSE, headerContents.nED, observablesHistory->edsamHistory.get(), nullptr) < 0)
-        || (do_cpt_awh(xdr, FALSE, headerContents.flags_awhh, state->awhHistory.get(), nullptr, CheckPointVersion::CurrentVersion)
+    if ((do_cpt_state(&serializer, state->flags(), state, nullptr) < 0)
+        || (do_cpt_ekinstate(&serializer, headerContents.flags_eks, &state->ekinstate, nullptr) < 0)
+        || (do_cpt_enerhist(&serializer, FALSE, headerContents.flags_enh, enerhist, nullptr) < 0)
+        || (doCptPullHist(&serializer, FALSE, headerContents.flagsPullHistory, pullHist, nullptr) < 0)
+        || (do_cpt_df_hist(&serializer, headerContents.flags_dfh, headerContents.nlambda, &state->dfhist, nullptr)
             < 0)
-        || (do_cpt_swapstate(xdr, FALSE, headerContents.eSwapCoords, observablesHistory->swapHistory.get(), nullptr)
+        || (do_cpt_EDstate(&serializer, FALSE, headerContents.nED, observablesHistory->edsamHistory.get(), nullptr)
             < 0)
-        || (do_cpt_files(xdr, FALSE, outputfiles, nullptr, headerContents.file_version) < 0))
+        || (do_cpt_awh(&serializer, FALSE, headerContents.flags_awhh, state->awhHistory.get(), nullptr, CheckPointVersion::CurrentVersion)
+            < 0)
+        || (do_cpt_swapstate(
+                    &serializer, FALSE, headerContents.eSwapCoords, observablesHistory->swapHistory.get(), nullptr)
+            < 0)
+        || (do_cpt_files(&serializer, FALSE, outputfiles, nullptr, headerContents.file_version) < 0))
     {
         gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of disk space?");
     }
@@ -2479,18 +2525,16 @@ void write_checkpoint_data(const std::filesystem::path&      filename,
         gmx::KeyValueTreeBuilder          builder;
         gmx::MDModulesWriteCheckpointData mdModulesWriteCheckpoint = { builder.rootObject() };
         mdModulesNotifiers.checkpointingNotifier_.notify(mdModulesWriteCheckpoint);
-        auto               tree = builder.build();
-        gmx::XdrSerializer serializer(fio);
+        auto tree = builder.build();
         gmx::serializeKeyValueTree(tree, &serializer);
     }
 
     // Checkpointing modular simulator
     {
-        gmx::XdrSerializer serializer(fio);
         modularSimulatorCheckpointData->serialize(&serializer);
     }
 
-    do_cpt_footer(xdr, headerContents.file_version);
+    do_cpt_footer(&serializer, headerContents.file_version);
 #if GMX_FAHCORE
     /* Always FAH checkpoint immediately after a Gromacs checkpoint.
      *
@@ -2507,7 +2551,6 @@ void write_checkpoint_data(const std::filesystem::path&      filename,
      */
     fcCheckpoint();
 #endif
-    gmx_fio_close(fio);
 }
 
 static void check_int(FILE* fplog, const char* type, int p, int f, gmx_bool* mm)
@@ -2663,12 +2706,11 @@ static void read_checkpoint(const std::filesystem::path&   fn,
                             gmx::ReadCheckpointDataHolder* modularSimulatorCheckpointData,
                             bool                           useModularSimulator)
 {
-    t_fileio* fp;
-    char      buf[STEPSTRSIZE];
-    int       ret;
+    char buf[STEPSTRSIZE];
+    int  ret;
 
-    fp = gmx_fio_open(fn, "r");
-    do_cpt_header(gmx_fio_getxdr(fp), TRUE, nullptr, headerContents);
+    XdrSerializer serializer(fn, "r");
+    do_cpt_header(&serializer, TRUE, nullptr, headerContents);
 
     // If we are appending, then we don't want write to the open log
     // file because we still need to compute a checksum for it. In
@@ -2771,14 +2813,14 @@ static void read_checkpoint(const std::filesystem::path&   fn,
         check_match(fplog, cr, dd_nc, *headerContents, reproducibilityRequested);
     }
 
-    ret             = do_cpt_state(gmx_fio_getxdr(fp), headerContents->flags_state, state, nullptr);
+    ret             = do_cpt_state(&serializer, headerContents->flags_state, state, nullptr);
     *init_fep_state = state->fep_state; /* there should be a better way to do this than setting it
                                            here. Investigate for 5.0. */
     if (ret)
     {
         cp_error();
     }
-    ret = do_cpt_ekinstate(gmx_fio_getxdr(fp), headerContents->flags_eks, &state->ekinstate, nullptr);
+    ret = do_cpt_ekinstate(&serializer, headerContents->flags_eks, &state->ekinstate, nullptr);
     if (ret)
     {
         cp_error();
@@ -2797,7 +2839,7 @@ static void read_checkpoint(const std::filesystem::path&   fn,
         observablesHistory->energyHistory = std::make_unique<energyhistory_t>();
     }
     ret = do_cpt_enerhist(
-            gmx_fio_getxdr(fp), TRUE, headerContents->flags_enh, observablesHistory->energyHistory.get(), nullptr);
+            &serializer, TRUE, headerContents->flags_enh, observablesHistory->energyHistory.get(), nullptr);
     if (ret)
     {
         cp_error();
@@ -2809,7 +2851,7 @@ static void read_checkpoint(const std::filesystem::path&   fn,
         {
             observablesHistory->pullHistory = std::make_unique<PullHistory>();
         }
-        ret = doCptPullHist(gmx_fio_getxdr(fp),
+        ret = doCptPullHist(&serializer,
                             TRUE,
                             headerContents->flagsPullHistory,
                             observablesHistory->pullHistory.get(),
@@ -2827,7 +2869,7 @@ static void read_checkpoint(const std::filesystem::path&   fn,
     }
 
     ret = do_cpt_df_hist(
-            gmx_fio_getxdr(fp), headerContents->flags_dfh, headerContents->nlambda, &state->dfhist, nullptr);
+            &serializer, headerContents->flags_dfh, headerContents->nlambda, &state->dfhist, nullptr);
     if (ret)
     {
         cp_error();
@@ -2838,7 +2880,7 @@ static void read_checkpoint(const std::filesystem::path&   fn,
         observablesHistory->edsamHistory = std::make_unique<edsamhistory_t>(edsamhistory_t{});
     }
     ret = do_cpt_EDstate(
-            gmx_fio_getxdr(fp), TRUE, headerContents->nED, observablesHistory->edsamHistory.get(), nullptr);
+            &serializer, TRUE, headerContents->nED, observablesHistory->edsamHistory.get(), nullptr);
     if (ret)
     {
         cp_error();
@@ -2848,7 +2890,7 @@ static void read_checkpoint(const std::filesystem::path&   fn,
     {
         state->awhHistory = std::make_shared<gmx::AwhHistory>();
     }
-    ret = do_cpt_awh(gmx_fio_getxdr(fp),
+    ret = do_cpt_awh(&serializer,
                      TRUE,
                      headerContents->flags_awhh,
                      state->awhHistory.get(),
@@ -2864,32 +2906,27 @@ static void read_checkpoint(const std::filesystem::path&   fn,
         observablesHistory->swapHistory = std::make_unique<swaphistory_t>(swaphistory_t{});
     }
     ret = do_cpt_swapstate(
-            gmx_fio_getxdr(fp), TRUE, headerContents->eSwapCoords, observablesHistory->swapHistory.get(), nullptr);
+            &serializer, TRUE, headerContents->eSwapCoords, observablesHistory->swapHistory.get(), nullptr);
     if (ret)
     {
         cp_error();
     }
 
     std::vector<gmx_file_position_t> outputfiles;
-    ret = do_cpt_files(gmx_fio_getxdr(fp), TRUE, &outputfiles, nullptr, headerContents->file_version);
+    ret = do_cpt_files(&serializer, TRUE, &outputfiles, nullptr, headerContents->file_version);
     if (ret)
     {
         cp_error();
     }
-    do_cpt_mdmodules(headerContents->file_version, fp, mdModulesNotifiers, nullptr);
+    do_cpt_mdmodules(headerContents->file_version, &serializer, mdModulesNotifiers, nullptr);
     if (headerContents->file_version >= CheckPointVersion::ModularSimulator)
     {
-        gmx::XdrSerializer serializer(fp);
         modularSimulatorCheckpointData->deserialize(&serializer);
     }
-    ret = do_cpt_footer(gmx_fio_getxdr(fp), headerContents->file_version);
+    ret = do_cpt_footer(&serializer, headerContents->file_version);
     if (ret)
     {
         cp_error();
-    }
-    if (gmx_fio_close(fp) != 0)
-    {
-        gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of disk space?");
     }
 }
 
@@ -2965,73 +3002,71 @@ void load_checkpoint(const std::filesystem::path&   fn,
 
 void read_checkpoint_part_and_step(const std::filesystem::path& filename, int* simulation_part, int64_t* step)
 {
-    t_fileio* fp;
-
-    if (filename.empty() || !gmx_fexist(filename) || ((fp = gmx_fio_open(filename, "r")) == nullptr))
+    if (filename.empty() || !gmx_fexist(filename))
     {
         *simulation_part = 0;
         *step            = 0;
         return;
     }
+    XdrSerializer serializer(filename, "r");
 
     CheckpointHeaderContents headerContents;
-    do_cpt_header(gmx_fio_getxdr(fp), TRUE, nullptr, &headerContents);
-    gmx_fio_close(fp);
+    do_cpt_header(&serializer, TRUE, nullptr, &headerContents);
     *simulation_part = headerContents.simulation_part;
     *step            = headerContents.step;
 }
 
-static CheckpointHeaderContents read_checkpoint_data(t_fileio*                         fp,
+static CheckpointHeaderContents read_checkpoint_data(XdrSerializer*                    serializer,
                                                      t_state*                          state,
                                                      std::vector<gmx_file_position_t>* outputfiles,
                                                      gmx::ReadCheckpointDataHolder* modularSimulatorCheckpointData)
 {
     CheckpointHeaderContents headerContents;
-    do_cpt_header(gmx_fio_getxdr(fp), TRUE, nullptr, &headerContents);
+    do_cpt_header(serializer, TRUE, nullptr, &headerContents);
     state->changeNumAtoms(headerContents.natoms);
     state->ngtc          = headerContents.ngtc;
     state->nnhpres       = headerContents.nnhpres;
     state->nhchainlength = headerContents.nhchainlength;
     state->setFlags(headerContents.flags_state);
-    int ret = do_cpt_state(gmx_fio_getxdr(fp), state->flags(), state, nullptr);
+    int ret = do_cpt_state(serializer, state->flags(), state, nullptr);
     if (ret)
     {
         cp_error();
     }
-    ret = do_cpt_ekinstate(gmx_fio_getxdr(fp), headerContents.flags_eks, &state->ekinstate, nullptr);
+    ret = do_cpt_ekinstate(serializer, headerContents.flags_eks, &state->ekinstate, nullptr);
     if (ret)
     {
         cp_error();
     }
 
     energyhistory_t enerhist;
-    ret = do_cpt_enerhist(gmx_fio_getxdr(fp), TRUE, headerContents.flags_enh, &enerhist, nullptr);
+    ret = do_cpt_enerhist(serializer, TRUE, headerContents.flags_enh, &enerhist, nullptr);
     if (ret)
     {
         cp_error();
     }
     PullHistory pullHist = {};
-    ret = doCptPullHist(gmx_fio_getxdr(fp), TRUE, headerContents.flagsPullHistory, &pullHist, nullptr);
+    ret = doCptPullHist(serializer, TRUE, headerContents.flagsPullHistory, &pullHist, nullptr);
     if (ret)
     {
         cp_error();
     }
 
     ret = do_cpt_df_hist(
-            gmx_fio_getxdr(fp), headerContents.flags_dfh, headerContents.nlambda, &state->dfhist, nullptr);
+            serializer, headerContents.flags_dfh, headerContents.nlambda, &state->dfhist, nullptr);
     if (ret)
     {
         cp_error();
     }
 
     edsamhistory_t edsamhist = {};
-    ret = do_cpt_EDstate(gmx_fio_getxdr(fp), TRUE, headerContents.nED, &edsamhist, nullptr);
+    ret = do_cpt_EDstate(serializer, TRUE, headerContents.nED, &edsamhist, nullptr);
     if (ret)
     {
         cp_error();
     }
 
-    ret = do_cpt_awh(gmx_fio_getxdr(fp),
+    ret = do_cpt_awh(serializer,
                      TRUE,
                      headerContents.flags_awhh,
                      state->awhHistory.get(),
@@ -3043,27 +3078,26 @@ static CheckpointHeaderContents read_checkpoint_data(t_fileio*                  
     }
 
     swaphistory_t swaphist = {};
-    ret = do_cpt_swapstate(gmx_fio_getxdr(fp), TRUE, headerContents.eSwapCoords, &swaphist, nullptr);
+    ret = do_cpt_swapstate(serializer, TRUE, headerContents.eSwapCoords, &swaphist, nullptr);
     if (ret)
     {
         cp_error();
     }
 
-    ret = do_cpt_files(gmx_fio_getxdr(fp), TRUE, outputfiles, nullptr, headerContents.file_version);
+    ret = do_cpt_files(serializer, TRUE, outputfiles, nullptr, headerContents.file_version);
 
     if (ret)
     {
         cp_error();
     }
     gmx::MDModulesNotifiers mdModuleNotifiers;
-    do_cpt_mdmodules(headerContents.file_version, fp, mdModuleNotifiers, nullptr);
+    do_cpt_mdmodules(headerContents.file_version, serializer, mdModuleNotifiers, nullptr);
     if (headerContents.file_version >= CheckPointVersion::ModularSimulator)
     {
         // Store modular checkpoint data into modularSimulatorCheckpointData
-        gmx::XdrSerializer serializer(fp);
-        modularSimulatorCheckpointData->deserialize(&serializer);
+        modularSimulatorCheckpointData->deserialize(serializer);
     }
-    ret = do_cpt_footer(gmx_fio_getxdr(fp), headerContents.file_version);
+    ret = do_cpt_footer(serializer, headerContents.file_version);
     if (ret)
     {
         cp_error();
@@ -3073,21 +3107,15 @@ static CheckpointHeaderContents read_checkpoint_data(t_fileio*                  
 
 void read_checkpoint_trxframe(const std::filesystem::path& filename, t_trxframe* fr)
 {
-    t_fileio*                        fio = gmx_fio_open(filename, "r");
+    XdrSerializer                    serializer(filename, "r");
     t_state                          state;
     std::vector<gmx_file_position_t> outputfiles;
     gmx::ReadCheckpointDataHolder    modularSimulatorCheckpointData;
     CheckpointHeaderContents         headerContents =
-            read_checkpoint_data(fio, &state, &outputfiles, &modularSimulatorCheckpointData);
+            read_checkpoint_data(&serializer, &state, &outputfiles, &modularSimulatorCheckpointData);
     if (headerContents.isModularSimulatorCheckpoint)
     {
         gmx::ModularSimulator::readCheckpointToTrxFrame(fr, &modularSimulatorCheckpointData, headerContents);
-        if (gmx_fio_close(fio) != 0)
-        {
-            gmx_file(
-                    "Cannot read/write checkpoint; corrupt file, or maybe you are out of disk "
-                    "space?");
-        }
         return;
     }
 
@@ -3116,62 +3144,57 @@ void read_checkpoint_trxframe(const std::filesystem::path& filename, t_trxframe*
     {
         copy_mat(state.box, fr->box);
     }
-    if (gmx_fio_close(fio) != 0)
-    {
-        gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of disk space?");
-    }
 }
 
 void list_checkpoint(const std::filesystem::path& fn, FILE* out)
 {
-    t_fileio* fp;
-    int       ret;
+    int ret;
 
     t_state state;
 
-    fp = gmx_fio_open(fn, "r");
+    XdrSerializer            serializer(fn, "r");
     CheckpointHeaderContents headerContents;
-    do_cpt_header(gmx_fio_getxdr(fp), TRUE, out, &headerContents);
+    do_cpt_header(&serializer, TRUE, out, &headerContents);
     state.changeNumAtoms(headerContents.natoms);
     state.ngtc          = headerContents.ngtc;
     state.nnhpres       = headerContents.nnhpres;
     state.nhchainlength = headerContents.nhchainlength;
     state.setFlags(headerContents.flags_state);
-    ret = do_cpt_state(gmx_fio_getxdr(fp), state.flags(), &state, out);
+    ret = do_cpt_state(&serializer, state.flags(), &state, out);
     if (ret)
     {
         cp_error();
     }
-    ret = do_cpt_ekinstate(gmx_fio_getxdr(fp), headerContents.flags_eks, &state.ekinstate, out);
+    ret = do_cpt_ekinstate(&serializer, headerContents.flags_eks, &state.ekinstate, out);
     if (ret)
     {
         cp_error();
     }
 
     energyhistory_t enerhist;
-    ret = do_cpt_enerhist(gmx_fio_getxdr(fp), TRUE, headerContents.flags_enh, &enerhist, out);
+    ret = do_cpt_enerhist(&serializer, TRUE, headerContents.flags_enh, &enerhist, out);
 
     if (ret == 0)
     {
         PullHistory pullHist = {};
-        ret = doCptPullHist(gmx_fio_getxdr(fp), TRUE, headerContents.flagsPullHistory, &pullHist, out);
+        ret = doCptPullHist(&serializer, TRUE, headerContents.flagsPullHistory, &pullHist, out);
     }
 
     if (ret == 0)
     {
         ret = do_cpt_df_hist(
-                gmx_fio_getxdr(fp), headerContents.flags_dfh, headerContents.nlambda, &state.dfhist, out);
+                &serializer, headerContents.flags_dfh, headerContents.nlambda, &state.dfhist, out);
     }
 
     if (ret == 0)
     {
         edsamhistory_t edsamhist = {};
-        ret = do_cpt_EDstate(gmx_fio_getxdr(fp), TRUE, headerContents.nED, &edsamhist, out);
+        ret = do_cpt_EDstate(&serializer, TRUE, headerContents.nED, &edsamhist, out);
     }
 
     if (ret == 0)
     {
-        ret = do_cpt_awh(gmx_fio_getxdr(fp),
+        ret = do_cpt_awh(&serializer,
                          TRUE,
                          headerContents.flags_awhh,
                          state.awhHistory.get(),
@@ -3182,19 +3205,18 @@ void list_checkpoint(const std::filesystem::path& fn, FILE* out)
     if (ret == 0)
     {
         swaphistory_t swaphist = {};
-        ret = do_cpt_swapstate(gmx_fio_getxdr(fp), TRUE, headerContents.eSwapCoords, &swaphist, out);
+        ret = do_cpt_swapstate(&serializer, TRUE, headerContents.eSwapCoords, &swaphist, out);
     }
 
     if (ret == 0)
     {
         std::vector<gmx_file_position_t> outputfiles;
-        ret = do_cpt_files(gmx_fio_getxdr(fp), TRUE, &outputfiles, out, headerContents.file_version);
+        ret = do_cpt_files(&serializer, TRUE, &outputfiles, out, headerContents.file_version);
     }
     gmx::MDModulesNotifiers mdModuleNotifiers;
-    do_cpt_mdmodules(headerContents.file_version, fp, mdModuleNotifiers, out);
+    do_cpt_mdmodules(headerContents.file_version, &serializer, mdModuleNotifiers, out);
     if (headerContents.file_version >= CheckPointVersion::ModularSimulator)
     {
-        gmx::XdrSerializer            serializer(fp);
         gmx::ReadCheckpointDataHolder modularSimulatorCheckpointData;
         modularSimulatorCheckpointData.deserialize(&serializer);
         modularSimulatorCheckpointData.dump(out);
@@ -3202,16 +3224,12 @@ void list_checkpoint(const std::filesystem::path& fn, FILE* out)
 
     if (ret == 0)
     {
-        ret = do_cpt_footer(gmx_fio_getxdr(fp), headerContents.file_version);
+        ret = do_cpt_footer(&serializer, headerContents.file_version);
     }
 
     if (ret)
     {
         cp_warning(out);
-    }
-    if (gmx_fio_close(fp) != 0)
-    {
-        gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of disk space?");
     }
 }
 
@@ -3219,14 +3237,10 @@ void list_checkpoint(const std::filesystem::path& fn, FILE* out)
 CheckpointHeaderContents read_checkpoint_simulation_part_and_filenames(const std::filesystem::path& filename,
                                                                        std::vector<gmx_file_position_t>* outputfiles)
 {
-    t_fileio*                     fio = gmx_fio_open(filename, "r");
+    XdrSerializer                 serializer(filename, "r");
     t_state                       state;
     gmx::ReadCheckpointDataHolder modularSimulatorCheckpointData;
     CheckpointHeaderContents      headerContents =
-            read_checkpoint_data(fio, &state, outputfiles, &modularSimulatorCheckpointData);
-    if (gmx_fio_close(fio) != 0)
-    {
-        gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of disk space?");
-    }
+            read_checkpoint_data(&serializer, &state, outputfiles, &modularSimulatorCheckpointData);
     return headerContents;
 }

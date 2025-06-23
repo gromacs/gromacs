@@ -51,7 +51,6 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xdr_serializer.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/serialization/inmemoryserializer.h"
@@ -406,20 +405,16 @@ public:
                 writeFunction(&writeCheckpointData);
             }
 
-            auto*         file = gmx_fio_open(filename_, "w");
-            XdrSerializer serializer(file);
+            XdrSerializer serializer(filename_, "w");
             writeCheckpointDataHolder.serialize(&serializer);
-            gmx_fio_close(file);
         }
 
         // Deserialize values and test against reference
         {
-            auto*         file = gmx_fio_open(filename_, "r");
-            XdrSerializer deserializer(file);
+            XdrSerializer deserializer(filename_, "r");
 
             ReadCheckpointDataHolder readCheckpointDataHolder;
             readCheckpointDataHolder.deserialize(&deserializer);
-            gmx_fio_close(file);
 
             auto readCheckpointData = readCheckpointDataHolder.checkpointData("test");
             for (const auto& testFunction : testFunctions_)

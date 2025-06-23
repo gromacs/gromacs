@@ -54,8 +54,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/gmxfio_xdr.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/real.h"
 
 #include "testutils/testfilemanager.h"
@@ -195,11 +194,8 @@ public:
         }
     };
 
-    TestFileManager fileManager_;
-    // Make sure the file extension is one that gmx_fio_open will
-    // recognize to open as binary, even though we're just abusing it
-    // to write arbitrary XDR output.
-    std::filesystem::path filename_ = fileManager_.getTemporaryFilePath("data.edr");
+    TestFileManager       fileManager_;
+    std::filesystem::path filename_ = fileManager_.getTemporaryFilePath("data.bin");
 };
 
 TEST_P(XdrSerializerTest, Works)
@@ -242,35 +238,32 @@ TEST_P(XdrSerializerTest, Works)
 
     {
         SCOPED_TRACE("Writing XDR file");
-        t_fileio* file = gmx_fio_open(filename_, "w");
+        XdrSerializer serializer(filename_, "w");
         // In GROMACS XDR files, a value describing the precision of
         // the build is written to a header, so that a reader built
         // with either precision can do the right thing. So we do
         // similarly in the tests.
         bool writeAsDouble = GetParam().writeAsDouble;
-        gmx_fio_setprecision(file, writeAsDouble);
-        XdrSerializer serializer(file);
         serializer.doBool(&writeAsDouble);
+        serializer.setDoublePrecision(writeAsDouble);
         valuesToWrite.serialize(&serializer);
-        gmx_fio_close(file);
     }
     {
         SCOPED_TRACE("Reading XDR file size");
-        t_fileio* file = gmx_fio_open(filename_, "r");
+        FILE* file = gmx_ffopen(filename_, "r");
 
         // Determine file size. This ensures mutual compatibility of
         // all the XDR implementations that GROMACS is built on, and
         // the inter-operability of files written and read by both
         // kinds of GROMACS precision configurations.
-        gmx_fseek(gmx_fio_getfp(file), 0, SEEK_END);
-        gmx_off_t fileSize = gmx_fio_ftell(file);
+        gmx_fseek(file, 0, SEEK_END);
+        gmx_off_t fileSize = gmx_ftell(file);
         EXPECT_EQ(fileSize, 224 + (GetParam().writeAsDouble ? 52 : 0));
-        gmx_fio_close(file);
+        gmx_ffclose(file);
     }
     {
         SCOPED_TRACE("Reading XDR file contents");
-        t_fileio*     file = gmx_fio_open(filename_, "r");
-        XdrSerializer serializer(file);
+        XdrSerializer serializer(filename_, "r");
         bool          writtenAsDouble;
         serializer.doBool(&writtenAsDouble);
         serializer.setDoublePrecision(writtenAsDouble);
@@ -323,8 +316,6 @@ TEST_P(XdrSerializerTest, Works)
         EXPECT_THAT(valuesToRead.rvecArray, testing::Pointwise(testing::Eq(), valuesToWrite.rvecArray));
         EXPECT_EQ(valuesToRead.emptyStringValue, valuesToWrite.emptyStringValue);
         EXPECT_EQ(valuesToRead.stringValue, valuesToWrite.stringValue);
-
-        gmx_fio_close(file);
     }
 }
 

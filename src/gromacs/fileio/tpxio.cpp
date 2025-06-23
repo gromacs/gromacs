@@ -64,8 +64,6 @@
 
 #include "gromacs/applied_forces/awh/read_params.h"
 #include "gromacs/fileio/filetypes.h"
-#include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/gmxfio_xdr.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/xdr_serializer.h"
 #include "gromacs/math/units.h"
@@ -2880,13 +2878,11 @@ static void do_mtop(gmx::ISerializer* serializer, gmx_mtop_t* mtop, int file_ver
  * \param[in,out] serializer The serializer used to handle header processing.
  * \param[in,out] tpx File header datastructure.
  * \param[in]     filename The name of the file being read/written
- * \param[in,out] fio File handle.
  * \param[in] TopOnlyOK If not reading \p ir is fine or not.
  */
 static void do_tpxheader(gmx::XdrSerializer*          serializer,
                          TpxFileHeader*               tpx,
                          const std::filesystem::path& filename,
-                         t_fileio*                    fio,
                          bool                         TopOnlyOK)
 {
     int  precision;
@@ -2926,7 +2922,6 @@ static void do_tpxheader(gmx::XdrSerializer*          serializer,
                       sizeof(float),
                       sizeof(double));
         }
-        gmx_fio_setprecision(fio, tpx->isDouble);
         serializer->setDoublePrecision(tpx->isDouble);
         fprintf(stderr,
                 "Reading file %s, %s (%s precision)\n",
@@ -2938,7 +2933,6 @@ static void do_tpxheader(gmx::XdrSerializer*          serializer,
     {
         buf = gmx::formatString("VERSION %s", gmx_version());
         serializer->doString(&buf);
-        gmx_fio_setprecision(fio, tpx->isDouble);
         serializer->setDoublePrecision(tpx->isDouble);
         serializer->doInt(&precision);
         fileTag = tpx_tag;
@@ -3396,16 +3390,6 @@ static PbcType do_tpx_body(gmx::ISerializer* serializer, TpxFileHeader* tpx, t_i
     return do_tpx_body(serializer, tpx, ir, nullptr, nullptr, nullptr, mtop);
 }
 
-static t_fileio* open_tpx(const std::filesystem::path& fn, const char* mode)
-{
-    return gmx_fio_open(fn, mode);
-}
-
-static void close_tpx(t_fileio* fio)
-{
-    gmx_fio_close(fio);
-}
-
 /*! \brief
  * Fill information into the header only from state before writing.
  *
@@ -3529,14 +3513,10 @@ static PartialDeserializedTprFile readTpxBody(TpxFileHeader*    tpx,
 
 TpxFileHeader readTpxHeader(const std::filesystem::path& fileName, bool canReadTopologyOnly)
 {
-    t_fileio* fio;
-
-    fio = open_tpx(fileName, "r");
-    gmx::XdrSerializer serializer(fio);
+    gmx::XdrSerializer serializer(fileName, "r");
 
     TpxFileHeader tpx;
-    do_tpxheader(&serializer, &tpx, fileName, fio, canReadTopologyOnly);
-    close_tpx(fio);
+    do_tpxheader(&serializer, &tpx, fileName, canReadTopologyOnly);
     return tpx;
 }
 
@@ -3550,8 +3530,6 @@ void write_tpx_state(const std::filesystem::path& fn,
      * populated before we write the main body because it has some information that is
      * otherwise not available.
      */
-
-    t_fileio* fio;
 
     TpxFileHeader tpx = populateTpxHeader(*state, ir, &mtop);
     // Long-term we should move to use little endian in files to avoid extra byte swapping,
@@ -3572,12 +3550,9 @@ void write_tpx_state(const std::filesystem::path& fn,
     std::vector<char> tprBody = tprBodySerializer.finishAndGetBuffer();
     tpx.sizeOfTprBody         = tprBody.size();
 
-    fio = open_tpx(fn, "w");
-    gmx::XdrSerializer serializer(fio);
-    do_tpxheader(&serializer, &tpx, fn, fio, ir == nullptr);
+    gmx::XdrSerializer serializer(fn, "w");
+    do_tpxheader(&serializer, &tpx, fn, ir == nullptr);
     doTpxBodyBuffer(&serializer, tprBody);
-
-    close_tpx(fio);
 }
 
 PbcType completeTprDeserialization(PartialDeserializedTprFile* partialDeserializedTpr,
@@ -3608,29 +3583,23 @@ PbcType completeTprDeserialization(PartialDeserializedTprFile* partialDeserializ
 PartialDeserializedTprFile
 read_tpx_state(const std::filesystem::path& fn, t_inputrec* ir, t_state* state, gmx_mtop_t* mtop)
 {
-    t_fileio* fio;
-    fio = open_tpx(fn, "r");
-    gmx::XdrSerializer         serializer(fio);
+    gmx::XdrSerializer         serializer(fn, "r");
     PartialDeserializedTprFile partialDeserializedTpr;
-    do_tpxheader(&serializer, &partialDeserializedTpr.header, fn, fio, ir == nullptr);
+    do_tpxheader(&serializer, &partialDeserializedTpr.header, fn, ir == nullptr);
     partialDeserializedTpr =
             readTpxBody(&partialDeserializedTpr.header, &serializer, ir, state, nullptr, nullptr, mtop);
-    close_tpx(fio);
     return partialDeserializedTpr;
 }
 
 PbcType read_tpx(const std::filesystem::path& fn, t_inputrec* ir, matrix box, int* natoms, rvec* x, rvec* v, gmx_mtop_t* mtop)
 {
-    t_fileio* fio;
-    t_state   state;
+    t_state state;
 
-    TpxFileHeader tpx;
-    fio = open_tpx(fn, "r");
-    gmx::XdrSerializer serializer(fio);
-    do_tpxheader(&serializer, &tpx, fn, fio, ir == nullptr);
+    TpxFileHeader      tpx;
+    gmx::XdrSerializer serializer(fn, "r");
+    do_tpxheader(&serializer, &tpx, fn, ir == nullptr);
     PartialDeserializedTprFile partialDeserializedTpr =
             readTpxBody(&tpx, &serializer, ir, &state, x, v, mtop);
-    close_tpx(fio);
     if (mtop != nullptr && natoms != nullptr)
     {
         *natoms = mtop->natoms;
