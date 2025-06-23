@@ -49,6 +49,7 @@
 
 #include "gromacs/commandline/cmdlinemodule.h"
 #include "gromacs/commandline/cmdlinemodulemanager.h"
+#include "gromacs/commandline/cmdlinemodulesettings.h"
 #include "gromacs/commandline/cmdlineoptionsmodule.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxpreprocess/editconf.h"

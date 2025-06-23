@@ -53,6 +53,7 @@
 
 // arrayref.h is not strictly necessary for this header, but nearly all
 // callers will need it to use the constructor that takes ArrayRef.
+#include "gromacs/commandline/cmdlinemodulesettings.h"
 #include "gromacs/utility/arrayref.h"
 
 namespace gmx
@@ -234,10 +235,13 @@ public:
      *     The function does not take ownership.
      * \param[in,out] commandLine  Command line parameters to pass.
      *     This is only modified if \p module modifies it.
+     * \param[in]     settings     Settings for the command-line module
      * \returns The return value of the module.
      * \throws  unspecified  Any exception thrown by the module.
      */
-    static int runModuleDirect(ICommandLineModule* module, CommandLine* commandLine);
+    static int runModuleDirect(ICommandLineModule*         module,
+                               CommandLine*                commandLine,
+                               CommandLineModuleSettings&& settings = {});
     /*! \brief
      * Runs a command-line program that implements
      * ICommandLineOptionsModule.
@@ -245,10 +249,13 @@ public:
      * \param[in,out] module       Module to run.
      * \param[in,out] commandLine  Command line parameters to pass.
      *     This is only modified if \p module modifies it.
+     * \param[in]     settings     Settings for the command-line module
      * \returns The return value of the module.
      * \throws  unspecified  Any exception thrown by the module.
      */
-    static int runModuleDirect(std::unique_ptr<ICommandLineOptionsModule> module, CommandLine* commandLine);
+    static int runModuleDirect(std::unique_ptr<ICommandLineOptionsModule> module,
+                               CommandLine*                               commandLine,
+                               CommandLineModuleSettings&&                settings = {});
     /*! \brief
      * Runs a command-line program that implements
      * ICommandLineOptionsModule.
@@ -256,12 +263,14 @@ public:
      * \param[in] factory          Factory method for the module to run.
      * \param[in,out] commandLine  Command line parameters to pass.
      *     This is only modified if the module modifies it.
+     * \param[in]     settings     Settings for the command-line module
      * \returns The return value of the module.
      * \throws  unspecified  Any exception thrown by the factory or the
      *     module.
      */
     static int runModuleFactory(const std::function<std::unique_ptr<ICommandLineOptionsModule>()>& factory,
-                                CommandLine* commandLine);
+                                CommandLine*                commandLine,
+                                CommandLineModuleSettings&& settings = {});
 
     /*! \brief
      * Initializes an instance.

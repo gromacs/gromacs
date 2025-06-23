@@ -55,8 +55,10 @@
 #include "gromacs/tools/dump.h"
 #include "gromacs/tools/trjconv.h"
 #include "gromacs/utility/strconvert.h"
+#include "gromacs/utility/stringstream.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "testutils/posixmemstream.h"
 #include "testutils/simulationdatabase.h"
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
@@ -182,9 +184,31 @@ TEST_P(CheckpointCoordinatesSanityChecks, WithinTolerances)
         std::vector<const char*> args = { "gmx" };
         CommandLine              commandLine(args);
         commandLine.addOption("-cp", runner_.cptOutputFileName_);
-        ASSERT_EQ(0, gmx::test::CommandLineTestHelper::runModuleFactory(&gmx::DumpInfo::create, &commandLine));
-        // Ideally, we would now match something out of the dump, but currently there's no
-        // way to redirect the output of gmx dump to a file, even in tests.
+        CommandLineModuleSettings settings;
+        PosixMemstream            outputStream;
+        settings.setOutputStream(outputStream.stream());
+        ASSERT_EQ(0,
+                  gmx::test::CommandLineTestHelper::runModuleFactory(
+                          &gmx::DumpInfo::create, &commandLine, std::move(settings)));
+        if (PosixMemstream::canCheckBufferContents())
+        {
+            // Most of the contents of a checkpoint dump are not
+            // appropriate to test, but we pick out a few lines that are
+            // useful.
+            StringInputStream inputStream(outputStream.toString());
+            std::string       line;
+            while (inputStream.readLine(&line))
+            {
+                if (line.find("step = ") == 0)
+                {
+                    EXPECT_EQ(line, "step = 16\n") << "Checkpoint file has expected step";
+                }
+                if (line.find("t =") == 0)
+                {
+                    EXPECT_EQ(line, "t = 0.016000\n") << "Checkpoint file has expected time";
+                }
+            }
+        }
     }
     {
         SCOPED_TRACE("gmx trjconv works with checkpoint file");

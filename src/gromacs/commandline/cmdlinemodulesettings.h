@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright 2014- The GROMACS Authors
+ * Copyright 2025- The GROMACS Authors
  * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
  * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
  *
@@ -31,35 +31,65 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
-/*! \internal \file
+/*! \file
  * \brief
- * Implements function from cmdlinemodule.h.
+ * Declares gmx::CommandLineModuleSettings
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
+ * \inpublicapi
  * \ingroup module_commandline
  */
-#include "gmxpre.h"
+#ifndef GMX_COMMANDLINE_CMDLINEMODULESETTINGS_H
+#define GMX_COMMANDLINE_CMDLINEMODULESETTINGS_H
 
-#include "cmdlinemodule.h"
+#include <cstdio>
 
-#include "gromacs/commandline/cmdlinehelpcontext.h"
+#include <memory>
 
 namespace gmx
 {
 
-//! \cond libapi
-void writeCommandLineHelpCMain(const CommandLineHelpContext& context,
-                               const char*                   name,
-                               int (*mainFunction)(int argc, char* argv[]))
+/*! \brief
+ * Settings to pass information between a module and the general runner.
+ *
+ * Methods in this class do not throw, except that construction may throw
+ * std::bad_alloc.
+ *
+ * \inpublicapi
+ * \ingroup module_commandline
+ */
+class CommandLineModuleSettings
 {
-    char* argv[2];
-    int   argc = 1;
-    // TODO: The constness should not be cast away.
-    argv[0] = const_cast<char*>(name);
-    argv[1] = nullptr;
-    GlobalCommandLineHelpContext global(context);
-    mainFunction(argc, argv);
-}
-//! \endcond
+public:
+    CommandLineModuleSettings();
+    ~CommandLineModuleSettings();
+    //! Move constructor
+    explicit CommandLineModuleSettings(CommandLineModuleSettings&& old) noexcept;
+    //! Move assignment
+    CommandLineModuleSettings& operator=(CommandLineModuleSettings&& other);
+
+    //! Returns the default nice level for this module.
+    int defaultNiceLevel() const;
+
+    /*! \brief
+     * Sets the default nice level for this module.
+     *
+     * If not called, the module will be niced.
+     */
+    void setDefaultNiceLevel(int niceLevel);
+
+    //! Returns the output stream (by default, stdout)
+    FILE* outputStream() const;
+
+    //! Set the output stream
+    void setOutputStream(FILE* stream);
+
+private:
+    class Impl;
+
+    std::unique_ptr<Impl> impl_;
+};
 
 } // namespace gmx
+
+#endif

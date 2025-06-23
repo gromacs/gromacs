@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright 2014- The GROMACS Authors
+ * Copyright 2025- The GROMACS Authors
  * and the project initiators Erik Lindahl, Berk Hess and David van der Spoel.
  * Consult the AUTHORS/COPYING files and https://www.gromacs.org for details.
  *
@@ -33,33 +33,55 @@
  */
 /*! \internal \file
  * \brief
- * Implements function from cmdlinemodule.h.
+ * Implements gmx::CommandLineModuleSettings
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_commandline
  */
 #include "gmxpre.h"
 
-#include "cmdlinemodule.h"
-
-#include "gromacs/commandline/cmdlinehelpcontext.h"
+#include "cmdlinemodulesettings.h"
 
 namespace gmx
 {
 
-//! \cond libapi
-void writeCommandLineHelpCMain(const CommandLineHelpContext& context,
-                               const char*                   name,
-                               int (*mainFunction)(int argc, char* argv[]))
+class CommandLineModuleSettings::Impl
 {
-    char* argv[2];
-    int   argc = 1;
-    // TODO: The constness should not be cast away.
-    argv[0] = const_cast<char*>(name);
-    argv[1] = nullptr;
-    GlobalCommandLineHelpContext global(context);
-    mainFunction(argc, argv);
+public:
+    Impl() : defaultNiceLevel_(19) {}
+
+    //! The nice level
+    int defaultNiceLevel_;
+    //! The output stream to use
+    FILE* stream_ = stdout;
+};
+
+CommandLineModuleSettings::CommandLineModuleSettings() : impl_(new Impl) {}
+
+CommandLineModuleSettings::~CommandLineModuleSettings() {}
+
+CommandLineModuleSettings::CommandLineModuleSettings(CommandLineModuleSettings&& old) noexcept = default;
+
+CommandLineModuleSettings& CommandLineModuleSettings::operator=(CommandLineModuleSettings&& other) = default;
+
+int CommandLineModuleSettings::defaultNiceLevel() const
+{
+    return impl_->defaultNiceLevel_;
 }
-//! \endcond
+
+void CommandLineModuleSettings::setDefaultNiceLevel(int niceLevel)
+{
+    impl_->defaultNiceLevel_ = niceLevel;
+}
+
+FILE* CommandLineModuleSettings::outputStream() const
+{
+    return impl_->stream_;
+}
+
+void CommandLineModuleSettings::setOutputStream(FILE* stream)
+{
+    impl_->stream_ = stream;
+}
 
 } // namespace gmx

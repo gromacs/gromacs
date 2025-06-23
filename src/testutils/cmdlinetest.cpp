@@ -334,29 +334,33 @@ public:
  */
 
 // static
-int CommandLineTestHelper::runModuleDirect(ICommandLineModule* module, CommandLine* commandLine)
+int CommandLineTestHelper::runModuleDirect(ICommandLineModule*         module,
+                                           CommandLine*                commandLine,
+                                           CommandLineModuleSettings&& settings)
 {
-    CommandLineModuleSettings settings;
+
     module->init(&settings);
     return module->run(commandLine->argc(), commandLine->argv());
 }
 
 // static
 int CommandLineTestHelper::runModuleDirect(std::unique_ptr<ICommandLineOptionsModule> module,
-                                           CommandLine*                               commandLine)
+                                           CommandLine*                               commandLine,
+                                           CommandLineModuleSettings&&                settings)
 {
     // The name and description are not used in the tests, so they can be NULL.
     const std::unique_ptr<ICommandLineModule> wrapperModule(
             ICommandLineOptionsModule::createModule(nullptr, nullptr, std::move(module)));
-    return runModuleDirect(wrapperModule.get(), commandLine);
+    return runModuleDirect(wrapperModule.get(), commandLine, std::move(settings));
 }
 
 // static
 int CommandLineTestHelper::runModuleFactory(
         const std::function<std::unique_ptr<ICommandLineOptionsModule>()>& factory,
-        CommandLine*                                                       commandLine)
+        CommandLine*                                                       commandLine,
+        CommandLineModuleSettings&&                                        settings)
 {
-    return runModuleDirect(factory(), commandLine);
+    return runModuleDirect(factory(), commandLine, std::move(settings));
 }
 
 CommandLineTestHelper::CommandLineTestHelper(TestFileManager* fileManager) :

@@ -78,43 +78,11 @@
 #ifndef GMX_COMMANDLINE_CMDLINEMODULE_H
 #define GMX_COMMANDLINE_CMDLINEMODULE_H
 
-#include <memory>
-
 namespace gmx
 {
 
 class CommandLineHelpContext;
-
-/*! \brief
- * Settings to pass information between a module and the general runner.
- *
- * Methods in this class do not throw, except that construction may throw
- * std::bad_alloc.
- *
- * \inpublicapi
- * \ingroup module_commandline
- */
-class CommandLineModuleSettings
-{
-public:
-    CommandLineModuleSettings();
-    ~CommandLineModuleSettings();
-
-    //! Returns the default nice level for this module.
-    int defaultNiceLevel() const;
-
-    /*! \brief
-     * Sets the default nice level for this module.
-     *
-     * If not called, the module will be niced.
-     */
-    void setDefaultNiceLevel(int niceLevel);
-
-private:
-    class Impl;
-
-    std::unique_ptr<Impl> impl_;
-};
+class CommandLineModuleSettings;
 
 /*! \brief
  * Module that can be run from command line using CommandLineModuleManager.

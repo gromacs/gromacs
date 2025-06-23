@@ -45,6 +45,7 @@
 #include <string>
 
 #include "gromacs/commandline/cmdlinemodule.h"
+#include "gromacs/commandline/cmdlinemodulesettings.h"
 #include "gromacs/onlinehelp/ihelptopic.h"
 
 #include "cmdlinemodulemanager_impl.h"
