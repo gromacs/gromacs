@@ -1709,6 +1709,7 @@ std::string getCoolQuote()
         { "It may be worthwhile to reflect on whether the predictive power of the force fields "
           "used is sufficient to justify the enormous usage of computer power and energy.",
           "Anonymous reviewer, upon reading a draft of 10.1002/jcc.70059" },
+        { "Software was a mistake.", "Paul Bauer" },
     };
 
     if (beCool())
