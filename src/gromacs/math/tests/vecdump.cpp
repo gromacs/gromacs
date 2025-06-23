@@ -41,14 +41,14 @@
 
 #include "gromacs/math/vecdump.h"
 
-#include "config.h"
-
 #include <iostream>
 #include <vector>
 
 #include <gtest/gtest.h>
 
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/stringstream.h"
+#include "gromacs/utility/textwriter.h"
 
 #include "testutils/posixmemstream.h"
 #include "testutils/refdata.h"
@@ -81,11 +81,11 @@ public:
     template<typename T>
     using LegacyTestFunctionType = void (*)(FILE*, int, const char*, const T[], int, gmx_bool);
     template<typename T>
-    void testFunction(LegacyTestFunctionType<T> legacyFunctionToTest,
-                      const T*                  v,
-                      int                       size,
-                      const char*               id,
-                      const bool                testingLongFormat = false)
+    void testLegacyFunction(LegacyTestFunctionType<T> legacyFunctionToTest,
+                            const T*                  v,
+                            int                       size,
+                            const char*               id,
+                            const bool                testingLongFormat = false)
     {
         PosixMemstream       stream;
         const TestParameters parameters = GetParam();
@@ -103,20 +103,49 @@ public:
             checker().disableUnusedEntriesCheck();
         }
     }
+    template<typename T>
+    using TestFunctionType = void (*)(TextWriter*, const char*, ArrayRef<const T>, bool);
+    template<typename T>
+    void testModernFunction(TestFunctionType<T> functionToTest,
+                            ArrayRef<T>         testArrayRef,
+                            const char*         id,
+                            const bool          testingLongFormat = false)
+    {
+        StringOutputStream stringStream;
+        {
+            TextWriter           writer(&stringStream);
+            ScopedIndenter       indenter   = writer.addScopedIndentation(amountToIndent_);
+            const TestParameters parameters = GetParam();
+            functionToTest(&writer, title_, testArrayRef, parameters.showIndices);
+        }
+        // Check the buffer contents, except that the long format for
+        // RVec output only serializes reliably when the values were
+        // in double precision, so we only check its output in that
+        // case.
+        if (GMX_DOUBLE or !testingLongFormat)
+        {
+            checkText(stringStream.toString(), id);
+        }
+        else
+        {
+            checker().disableUnusedEntriesCheck();
+        }
+    }
 
 private:
     const int   amountToIndent_ = 2;
     const char* title_          = "The title";
 };
 
-TEST_P(DumpingVectorsTest, CanDumpInt)
+TEST_P(DumpingVectorsTest, CanDumpIntIdentically)
 {
     const TestParameters parameters = GetParam();
     using TestType                  = int;
     std::vector<TestType> vector    = { 1, 2, 3 };
     const auto            testArrayRef =
             parameters.valuesAvailable ? ArrayRef<TestType>(vector) : ArrayRef<TestType>{};
-    testFunction(pr_ivec, testArrayRef.data(), testArrayRef.size(), "output");
+    testLegacyFunction(pr_ivec, testArrayRef.data(), testArrayRef.size(), "output");
+    testModernFunction(dumpIntArrayRef, testArrayRef, "output");
 }
 
 TEST_P(DumpingVectorsTest, CanDumpIntBlocks)
@@ -126,37 +155,40 @@ TEST_P(DumpingVectorsTest, CanDumpIntBlocks)
     std::vector<TestType> vector    = { 1, 2, 3, 4, 5, 10, 11, 12, 13, 99, 127 };
     const auto            testArrayRef =
             parameters.valuesAvailable ? ArrayRef<TestType>(vector) : ArrayRef<TestType>{};
-    testFunction(pr_ivec_block, testArrayRef.data(), testArrayRef.size(), "output");
+    testLegacyFunction(pr_ivec_block, testArrayRef.data(), testArrayRef.size(), "output");
 }
 
-TEST_P(DumpingVectorsTest, CanDumpFloat)
+TEST_P(DumpingVectorsTest, CanDumpFloatIdentically)
 {
     const TestParameters parameters = GetParam();
     using TestType                  = float;
     std::vector<TestType> vector    = { 1.1, 2.2, 3.3 };
     const auto            testArrayRef =
             parameters.valuesAvailable ? ArrayRef<TestType>(vector) : ArrayRef<TestType>{};
-    testFunction(pr_fvec, testArrayRef.data(), testArrayRef.size(), "output");
+    testLegacyFunction(pr_fvec, testArrayRef.data(), testArrayRef.size(), "output");
+    testModernFunction(dumpFloatArrayRef, testArrayRef, "output");
 }
 
-TEST_P(DumpingVectorsTest, CanDumpDouble)
+TEST_P(DumpingVectorsTest, CanDumpDoubleIdentically)
 {
     const TestParameters parameters = GetParam();
     using TestType                  = double;
     std::vector<TestType> vector    = { 1.1, 2.2, 3.3 };
     const auto            testArrayRef =
             parameters.valuesAvailable ? ArrayRef<TestType>(vector) : ArrayRef<TestType>{};
-    testFunction(pr_dvec, testArrayRef.data(), testArrayRef.size(), "output");
+    testLegacyFunction(pr_dvec, testArrayRef.data(), testArrayRef.size(), "output");
+    testModernFunction(dumpDoubleArrayRef, testArrayRef, "output");
 }
 
-TEST_P(DumpingVectorsTest, CanDumpReal)
+TEST_P(DumpingVectorsTest, CanDumpRealIdentically)
 {
     const TestParameters parameters = GetParam();
     using TestType                  = real;
     std::vector<TestType> vector    = { 1.1, 2.2, 3.3 };
     const auto            testArrayRef =
             parameters.valuesAvailable ? ArrayRef<TestType>(vector) : ArrayRef<TestType>{};
-    testFunction(pr_rvec, testArrayRef.data(), testArrayRef.size(), "output");
+    testLegacyFunction(pr_rvec, testArrayRef.data(), testArrayRef.size(), "output");
+    testModernFunction(dumpRealArrayRef, testArrayRef, "output");
 }
 
 //! Wrapper that ignores the "show indices" boolean
@@ -165,7 +197,13 @@ void pr_rvecs_wrapper(FILE* fp, int indent, const char* title, const rvec vec[],
     pr_rvecs(fp, indent, title, vec, n);
 }
 
-TEST_P(DumpingVectorsTest, CanDumpRvec)
+//! Wrapper that ignores the "show indices" boolean
+void dumpRvecArrayRefWrapper(TextWriter* writer, const char* description, ArrayRef<const RVec> values, bool /* unused */)
+{
+    dumpRvecArrayRef(writer, description, values);
+}
+
+TEST_P(DumpingVectorsTest, CanDumpRvecIdentically)
 {
     const TestParameters parameters = GetParam();
     if (!parameters.showIndices)
@@ -181,12 +219,15 @@ TEST_P(DumpingVectorsTest, CanDumpRvec)
     const auto            testArrayRef =
             parameters.valuesAvailable ? ArrayRef<TestType>(vector) : ArrayRef<TestType>{};
     const rvec* rvecPtr = reinterpret_cast<rvec*>(testArrayRef.data());
-    testFunction(pr_rvecs_wrapper, rvecPtr, testArrayRef.size(), "output");
+    testLegacyFunction(pr_rvecs_wrapper, rvecPtr, testArrayRef.size(), "output");
+    testModernFunction(dumpRvecArrayRefWrapper, testArrayRef, "output");
     {
         SCOPED_TRACE("In long format");
         const bool overWriteEnvironmentVariable = true;
         gmxSetenv("GMX_PRINT_LONGFORMAT", "1", overWriteEnvironmentVariable);
-        testFunction(pr_rvecs_wrapper, rvecPtr, testArrayRef.size(), "long format", true);
+        const bool testingLongFormat = true;
+        testLegacyFunction(pr_rvecs_wrapper, rvecPtr, testArrayRef.size(), "long format", testingLongFormat);
+        testModernFunction(dumpRvecArrayRefWrapper, testArrayRef, "long format", testingLongFormat);
         gmxUnsetenv("GMX_PRINT_LONGFORMAT");
     }
 }

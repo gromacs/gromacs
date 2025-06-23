@@ -37,8 +37,26 @@
 #include <cstdio>
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
+
+
+namespace gmx
+{
+
+template<typename>
+class ArrayRef;
+class TextWriter;
+
+//! \{
+/*! \brief Dump the formatted \c values to \c writer along with a description and/or indices. */
+void dumpIntArrayRef(TextWriter* writer, const char* description, ArrayRef<const int> values, bool showIndices);
+void dumpFloatArrayRef(TextWriter* writer, const char* description, ArrayRef<const float> values, bool showIndices);
+void dumpDoubleArrayRef(TextWriter* writer, const char* description, ArrayRef<const double> values, bool showIndices);
+void dumpRealArrayRef(TextWriter* writer, const char* description, ArrayRef<const real> values, bool showIndices);
+void dumpRvecArrayRef(TextWriter* writer, const char* description, ArrayRef<const RVec> values);
+//! \}
+
+} // namespace gmx
 
 void pr_ivec(FILE* fp, int indent, const char* title, const int vec[], int n, gmx_bool bShowNumbers);
 void pr_ivec_block(FILE* fp, int indent, const char* title, const int vec[], int n, gmx_bool bShowNumbers);

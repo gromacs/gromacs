@@ -47,6 +47,9 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/utility/stringstream.h"
+#include "gromacs/utility/textwriter.h"
+
 #include "testutils/posixmemstream.h"
 #include "testutils/stringtest.h"
 
@@ -81,7 +84,7 @@ TEST_F(DumpingTextTest, LegacyIndentingWorks)
     }
 }
 
-TEST_F(DumpingTextTest, ReportsWhenNotAvailable)
+TEST_F(DumpingTextTest, ReportsWhenNotAvailableIdentically)
 {
     const int   amountToIndent = 2;
     const char* title          = "The title";
@@ -94,9 +97,16 @@ TEST_F(DumpingTextTest, ReportsWhenNotAvailable)
             checkText(stream.toString(), "output");
         }
     }
+    {
+        StringOutputStream stringStream;
+        TextWriter         writer(&stringStream);
+        ScopedIndenter     indenter = writer.addScopedIndentation(amountToIndent);
+        EXPECT_EQ(checkIfAvailable(&writer, title, test), false);
+        checkText(stringStream.toString(), "output");
+    }
 }
 
-TEST_F(DumpingTextTest, QuietWhenAvailable)
+TEST_F(DumpingTextTest, QuietWhenAvailableIdentically)
 {
     const int   amountToIndent = 2;
     const char* title          = "The title";
@@ -109,9 +119,16 @@ TEST_F(DumpingTextTest, QuietWhenAvailable)
             checkText(stream.toString(), "output");
         }
     }
+    {
+        StringOutputStream stringStream;
+        TextWriter         writer(&stringStream);
+        ScopedIndenter     indenter = writer.addScopedIndentation(amountToIndent);
+        EXPECT_EQ(checkIfAvailable(&writer, title, test), true);
+        checkText(stringStream.toString(), "output");
+    }
 }
 
-TEST_F(DumpingTextTest, PrintsTitleAndSize)
+TEST_F(DumpingTextTest, PrintsTitleAndSizeIdentically)
 {
     const int   amountToIndent = 2;
     const char* title          = "The title";
@@ -123,6 +140,13 @@ TEST_F(DumpingTextTest, PrintsTitleAndSize)
         {
             checkText(stream.toString(), "output");
         }
+    }
+    {
+        StringOutputStream stringStream;
+        TextWriter         writer(&stringStream);
+        ScopedIndenter     indenter = writer.addScopedIndentation(amountToIndent);
+        printTitleAndSize(&writer, title, numberToPrint);
+        checkText(stringStream.toString(), "output");
     }
 }
 

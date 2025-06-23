@@ -38,12 +38,112 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include <type_traits>
+
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/strconvert.h"
+#include "gromacs/utility/textwriter.h"
 #include "gromacs/utility/txtdump.h"
+
+namespace gmx
+{
+
+void dumpIntArrayRef(TextWriter* writer, const char* description, ArrayRef<const int> values, bool showIndices)
+{
+    if (!checkIfAvailable(writer, description, values.data()))
+    {
+        return;
+    }
+
+    printTitleAndSize(writer, description, values.size());
+    {
+        ScopedIndenter indenter(writer);
+        for (int i = 0; i != values.ssize(); ++i)
+        {
+            writer->writeStringFormatted("%s[%d]=%d\n", description, showIndices ? i : -1, values[i]);
+        }
+    }
+}
+
+namespace
+{
+
+//! Common implementation method for several dumping methods
+template<typename T>
+std::enable_if_t<std::is_floating_point_v<T>, void> dumpFloatingPointArrayRef(TextWriter* writer,
+                                                                              const char* description,
+                                                                              ArrayRef<const T> values,
+                                                                              bool showIndices)
+{
+    if (!checkIfAvailable(writer, description, values.data()))
+    {
+        return;
+    }
+
+    printTitleAndSize(writer, description, values.size());
+    {
+        ScopedIndenter indenter(writer);
+        for (int i = 0; i != values.ssize(); ++i)
+        {
+            writer->writeStringFormatted("%s[%d]=%12.5e\n", description, showIndices ? i : -1, values[i]);
+        }
+    }
+}
+
+} // namespace
+
+void dumpFloatArrayRef(TextWriter* writer, const char* description, ArrayRef<const float> values, bool showIndices)
+{
+    dumpFloatingPointArrayRef(writer, description, values, showIndices);
+}
+
+void dumpDoubleArrayRef(TextWriter* writer, const char* description, ArrayRef<const double> values, bool showIndices)
+{
+    dumpFloatingPointArrayRef(writer, description, values, showIndices);
+}
+
+void dumpRealArrayRef(TextWriter* writer, const char* description, ArrayRef<const real> values, bool showIndices)
+{
+    dumpFloatingPointArrayRef(writer, description, values, showIndices);
+}
+
+void dumpRvecArrayRef(TextWriter* writer, const char* description, ArrayRef<const RVec> values)
+{
+    if (!checkIfAvailable(writer, description, values.data()))
+    {
+        return;
+    }
+
+    const bool useLongFormat       = (std::getenv("GMX_PRINT_LONGFORMAT") != nullptr);
+    const int  realFormatWidth     = useLongFormat ? 15 : 12;
+    const int  realFormatPrecision = useLongFormat ? 8 : 5;
+
+    writer->writeStringFormatted("%s (%dx%d):\n", description, values.ssize(), DIM);
+    {
+        ScopedIndenter indenter(writer);
+        for (int i = 0; i < values.ssize(); i++)
+        {
+            writer->writeStringFormatted("%s[%5d]={%*.*e, %*.*e, %*.*e}\n",
+                                         description,
+                                         i,
+                                         realFormatWidth,
+                                         realFormatPrecision,
+                                         values[i][XX],
+                                         realFormatWidth,
+                                         realFormatPrecision,
+                                         values[i][YY],
+                                         realFormatWidth,
+                                         realFormatPrecision,
+                                         values[i][ZZ]);
+        }
+    }
+}
+
+} // namespace gmx
 
 void pr_ivec(FILE* fp, int indent, const char* title, const int vec[], int n, gmx_bool bShowNumbers)
 {

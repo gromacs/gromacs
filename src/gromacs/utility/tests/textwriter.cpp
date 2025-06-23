@@ -149,6 +149,45 @@ TEST_F(TextWriterTest, PreservesTrailingWhitespace)
     checkOutput();
 }
 
+TEST_F(TextWriterTest, WritesIndentedLines)
+{
+    writer_.writeLine("Normal text");
+    writer_.wrapperSettings().setIndent(2);
+    writer_.writeLine("Indented text");
+    writer_.wrapperSettings().setIndent(5);
+    writer_.writeLine("Further indented text");
+    writer_.writeLine();
+    checkOutput();
+}
+
+TEST_F(TextWriterTest, ScopedIndenterWritesIndentedLines)
+{
+    writer_.writeLine("Normal text");
+    {
+        ScopedIndenter indenter = writer_.addScopedIndentation(2);
+        writer_.writeLine("Indented text");
+    }
+    writer_.writeLine("Normal text again");
+    {
+        ScopedIndenter indenter = writer_.addScopedIndentation(2);
+        writer_.writeLine("Indented text again");
+        {
+            ScopedIndenter indenter = writer_.addScopedIndentation(2);
+            writer_.writeLine("Further indented text again");
+        }
+        writer_.writeLine("Indented text again");
+    }
+    writer_.writeLine("Normal text again");
+    {
+        SCOPED_TRACE("Scoped indenter copes with manual changes of identation");
+        ScopedIndenter indenter = writer_.addScopedIndentation(2);
+        writer_.wrapperSettings().setIndent(5);
+        writer_.writeLine("Very indented text");
+    }
+    writer_.writeLine("Normal text again");
+    checkOutput();
+}
+
 } // namespace
 } // namespace test
 } // namespace gmx

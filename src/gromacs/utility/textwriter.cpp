@@ -229,4 +229,20 @@ void TextWriter::close()
     impl_->stream_->close();
 }
 
+ScopedIndenter TextWriter::addScopedIndentation(const int extraIndentation)
+{
+    return ScopedIndenter(this, extraIndentation);
+}
+
+ScopedIndenter::ScopedIndenter(TextWriter* writer, const int extraIndentation) :
+    settings_(writer->wrapperSettings()), oldIndentation_(settings_.indent())
+{
+    settings_.setIndent(oldIndentation_ + extraIndentation);
+}
+
+ScopedIndenter::~ScopedIndenter()
+{
+    settings_.setIndent(oldIndentation_);
+}
+
 } // namespace gmx

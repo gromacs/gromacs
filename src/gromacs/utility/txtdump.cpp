@@ -45,6 +45,26 @@
 #include <cstdlib>
 
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/textwriter.h"
+
+namespace gmx
+{
+
+bool checkIfAvailable(TextWriter* writer, const char* description, const void* p)
+{
+    if (!p)
+    {
+        writer->writeStringFormatted("%s: not available\n", description);
+    }
+    return (p != nullptr);
+}
+
+void printTitleAndSize(TextWriter* writer, const char* title, const int n)
+{
+    writer->writeStringFormatted("%s (%d):\n", title, n);
+}
+
+} // namespace gmx
 
 int pr_indent(FILE* fp, int n)
 {
