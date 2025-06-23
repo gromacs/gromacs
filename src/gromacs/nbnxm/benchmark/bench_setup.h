@@ -79,6 +79,14 @@ enum class NbnxmBenchMarkCoulomb : int
     Count
 };
 
+enum class NbnxmBenchMarkInteractionModifiers : int
+{
+    PotShift,
+    PotSwitch,
+    ForceSwitch,
+    Count
+};
+
 /*! \internal \brief
  * The options for the kernel benchmarks
  */
@@ -92,6 +100,8 @@ struct NbnxmKernelBenchOptions
     NbnxmBenchMarkKernels nbnxmSimd = NbnxmBenchMarkKernels::SimdAuto;
     //! The LJ combination rule
     NbnxmBenchMarkCombRule ljCombinationRule = NbnxmBenchMarkCombRule::RuleGeom;
+    //! The Coulomb / VdW interaction modifier
+    NbnxmBenchMarkInteractionModifiers interactionModifier = NbnxmBenchMarkInteractionModifiers::PotShift;
     //! Use i-cluster half-LJ optimization for clusters with <= half LJ
     bool useHalfLJOptimization = false;
     //! The pairlist and interaction cut-off

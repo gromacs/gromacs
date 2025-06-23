@@ -159,9 +159,23 @@ static NbnxmKernelSetup getKernelSetup(const NbnxmKernelBenchOptions& options)
     return kernelSetup;
 }
 
+//! Converts the benchmark interaction modifier enum to the corresponding NBNxM enum
+static InteractionModifiers convertInteractionModifiers(const NbnxmBenchMarkInteractionModifiers interactionModifier)
+{
+    switch (interactionModifier)
+    {
+        case NbnxmBenchMarkInteractionModifiers::PotShift: return InteractionModifiers::PotShift;
+        case NbnxmBenchMarkInteractionModifiers::PotSwitch: return InteractionModifiers::PotSwitch;
+        case NbnxmBenchMarkInteractionModifiers::ForceSwitch:
+            return InteractionModifiers::ForceSwitch;
+        default: GMX_RELEASE_ASSERT(false, "Unhandled case");
+    }
+
+    return InteractionModifiers::None;
+}
+
 //! Return an interaction constants struct with members used in the benchmark set appropriately
 static interaction_const_t setupInteractionConst(const NbnxmKernelBenchOptions& options)
-
 {
     interaction_const_t ic;
 
@@ -171,7 +185,7 @@ static interaction_const_t setupInteractionConst(const NbnxmKernelBenchOptions& 
 
     ic.coulomb.type = (options.coulombType == NbnxmBenchMarkCoulomb::Pme ? CoulombInteractionType::Pme
                                                                          : CoulombInteractionType::RF);
-    ic.coulomb.modifier = InteractionModifiers::PotShift;
+    ic.coulomb.modifier = convertInteractionModifiers(options.interactionModifier);
     ic.coulomb.cutoff   = options.pairlistCutoff;
 
     // Reaction-field with reactionFieldPermitivity=inf
@@ -347,18 +361,25 @@ static void setupAndRunInstance(const BenchmarkSystem&         system,
                                                                                   "LB",
                                                                                   "none" };
 
+    const EnumerationArray<NbnxmBenchMarkInteractionModifiers, std::string> interactionModifierNames = {
+        "PotShift", "PotSwitch", "ForceSwitch"
+    };
+
+
     if (!doWarmup)
     {
         fprintf(stdout,
-                "%-7s %-4s %-5s %-4s ",
+                "%-7s %-4s %-5s %-4s %-12s",
                 options.coulombType == NbnxmBenchMarkCoulomb::Pme ? "Ewald" : "RF",
                 options.useHalfLJOptimization ? "half" : "all",
                 combruleNames[options.ljCombinationRule].c_str(),
-                kernelNames[options.nbnxmSimd].c_str());
+                kernelNames[options.nbnxmSimd].c_str(),
+                interactionModifierNames[options.interactionModifier].c_str());
         if (!options.outputFile.empty())
         {
             fprintf(system.csv,
-                    "\"%d\",\"%zu\",\"%g\",\"%d\",\"%d\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%"
+                    "\"%d\",\"%zu\",\"%g\",\"%d\",\"%d\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\","
+                    "\"%"
                     "s\",",
 #if GMX_SIMD
                     (options.nbnxmSimd != NbnxmBenchMarkKernels::SimdNo) ? GMX_SIMD_REAL_WIDTH : 0,
@@ -378,7 +399,8 @@ static void setupAndRunInstance(const BenchmarkSystem&         system,
                     options.coulombType == NbnxmBenchMarkCoulomb::Pme ? "Ewald" : "RF",
                     options.useHalfLJOptimization ? "half" : "all",
                     combruleNames[options.ljCombinationRule].c_str(),
-                    kernelNames[options.nbnxmSimd].c_str());
+                    kernelNames[options.nbnxmSimd].c_str(),
+                    interactionModifierNames[options.interactionModifier].c_str());
         }
     }
 
@@ -504,21 +526,26 @@ void bench(const int sizeFactor, const NbnxmKernelBenchOptions& options)
     std::vector<NbnxmKernelBenchOptions> optionsList;
     if (options.doAll)
     {
-        NbnxmKernelBenchOptions                   opt = options;
-        EnumerationWrapper<NbnxmBenchMarkCoulomb> coulombIter;
-        for (auto coulombType : coulombIter)
+        NbnxmKernelBenchOptions                                opt = options;
+        EnumerationWrapper<NbnxmBenchMarkInteractionModifiers> interactionIter;
+        for (auto interactionModifier : interactionIter)
         {
-            opt.coulombType = coulombType;
-            for (int halfLJ = 0; halfLJ <= 1; halfLJ++)
+            opt.interactionModifier = interactionModifier;
+            EnumerationWrapper<NbnxmBenchMarkCoulomb> coulombIter;
+            for (auto coulombType : coulombIter)
             {
-                opt.useHalfLJOptimization = (halfLJ == 1);
-
-                EnumerationWrapper<NbnxmBenchMarkCombRule> combRuleIter;
-                for (auto combRule : combRuleIter)
+                opt.coulombType = coulombType;
+                for (int halfLJ = 0; halfLJ <= 1; halfLJ++)
                 {
-                    opt.ljCombinationRule = combRule;
+                    opt.useHalfLJOptimization = (halfLJ == 1);
 
-                    expandSimdOptionAndPushBack(opt, &optionsList);
+                    EnumerationWrapper<NbnxmBenchMarkCombRule> combRuleIter;
+                    for (auto combRule : combRuleIter)
+                    {
+                        opt.ljCombinationRule = combRule;
+
+                        expandSimdOptionAndPushBack(opt, &optionsList);
+                    }
                 }
             }
         }
@@ -558,34 +585,38 @@ void bench(const int sizeFactor, const NbnxmKernelBenchOptions& options)
     if (options.reportTime)
     {
         fprintf(stdout,
-                "Coulomb LJ   comb. SIMD       usec         usec/it.        %s\n",
+                "Coulomb LJ   comb. SIMD intmod.           usec         usec/it.        %s\n",
                 options.cyclesPerPair ? "usec/pair" : "pairs/usec");
         if (!options.outputFile.empty())
         {
             fprintf(system.csv,
                     "\"width\",\"atoms\",\"cut-off radius\",\"threads\",\"iter\",\"compute "
                     "energy\",\"Ewald excl. "
-                    "corr.\",\"Coulomb\",\"LJ\",\"comb\",\"SIMD\",\"usec\",\"usec/it\",\"total "
+                    "corr.\",\"Coulomb\",\"LJ\",\"comb\",\"SIMD\",\"intmod\",\"usec\",\"usec/"
+                    "it\",\"total "
                     "pairs/usec\",\"useful pairs/usec\"\n");
         }
         fprintf(stdout,
-                "                                                        total      useful\n");
+                "                                                                    total      "
+                "useful\n");
     }
     else
     {
         fprintf(stdout,
-                "Coulomb LJ   comb. SIMD    Mcycles  Mcycles/it.   %s\n",
+                "Coulomb LJ   comb. SIMD intmod.        Mcycles  Mcycles/it.   %s\n",
                 options.cyclesPerPair ? "cycles/pair" : "pairs/cycle");
         if (!options.outputFile.empty())
         {
             fprintf(system.csv,
                     "\"width\",\"atoms\",\"cut-off radius\",\"threads\",\"iter\",\"compute "
                     "energy\",\"Ewald excl. "
-                    "corr.\",\"Coulomb\",\"LJ\",\"comb\",\"SIMD\",\"Mcycles\",\"Mcycles/"
+                    "corr.\",\"Coulomb\",\"LJ\",\"comb\",\"SIMD\",\"intmod\",\"Mcycles\",\"Mcycles/"
                     "it\",\"total "
                     "total cycles/pair\",\"total cycles per useful pair\"\n");
         }
-        fprintf(stdout, "                                                total    useful\n");
+        fprintf(stdout,
+                "                                                            total    "
+                "useful\n");
     }
 
     for (const auto& optionsInstance : optionsList)
