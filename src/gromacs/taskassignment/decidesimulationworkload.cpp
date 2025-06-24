@@ -179,6 +179,7 @@ static bool haveSpecialForces(const t_inputrec&          inputrec,
 
     return ((forceProviders.hasForceProvider()) ||                 // forceProviders
             (inputrec.bPull && pull_have_potential(*pull_work)) || // pull
+            inputrec.bDoAwh ||                                     // AWH
             inputrec.bRot ||                                       // enforced rotation
             (ed != nullptr) ||                                     // flooding
             (inputrec.bIMD));                                      // IMD
