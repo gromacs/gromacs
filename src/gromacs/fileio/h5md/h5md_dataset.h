@@ -44,17 +44,15 @@
 
 #include <hdf5.h>
 
-#include <array>
 #include <string>
+#include <vector>
 
 namespace gmx
 {
 
 /*! \brief Dimensions of a HDF5 data set.
- * \tparam numDims Number of dimensions of the data set.
  */
-template<int numDims>
-using DataSetDims = std::array<hsize_t, numDims>;
+using DataSetDims = std::vector<hsize_t>;
 
 /*! \brief Create a 1d data set for per-frame data (called \p dataSetName, in \p container).
  *
@@ -153,12 +151,22 @@ hid_t openDataSet(const hid_t container, const std::string& dataSetName);
  * a 1d data set with dimensions [30] obviously has 30 frames. A 3d data set with
  * dimensions [30, 150, 3] also has 30 frames.
  *
- * \tparam numDims Number of dimensions of data set.
  * \param[in] dataSet Handle to data set.
  * \returns Number of frames.
  */
-template<int numDims>
 hsize_t getNumFrames(const hid_t dataSet);
+
+/*! \brief Resize \p dataSet to store \p numFrames frames.
+ *
+ * This resizes the data set along the major axis (=0). It does not alter the size
+ * along other axes.
+ *
+ * If the new number of frames is smaller than the current size, data will be discarded.
+ *
+ * \param[in] dataSet   Handle to data set.
+ * \param[in] numFrames New number of frames for data set.
+ */
+void setNumFrames(const hid_t dataSet, hsize_t numFrames);
 
 /*! \brief Return a data space for a given data set, with a selected hyperslab for the frame.
  *
@@ -170,12 +178,10 @@ hsize_t getNumFrames(const hid_t dataSet);
  * which refers to this slab. This data space is then used by the reading/writing routines
  * of HDF5 to perform the action.
  *
- * \tparam numDims Number of dimensions of data set.
  * \param[in] dataSet Handle to data set.
  * \param[in] frameIndex Index of frame to select hyperslab for.
  * \returns Handle to data space with the selected hyperslab.
  */
-template<int numDims>
 hid_t getFrameDataSpace(const hid_t dataSet, const hsize_t frameIndex);
 
 /*! \brief Return a data space for storing a single frame from a data set.
@@ -187,11 +193,9 @@ hid_t getFrameDataSpace(const hid_t dataSet, const hsize_t frameIndex);
  * frame memory chunks, to be used by the reading/writing routines of HDF5 to perform
  * the action.
  *
- * \tparam numDims Number of dimensions of data set.
  * \param[in] dataSet Handle to data set.
  * \returns Handle to data space with storage for a single frame.
  */
-template<int numDims>
 hid_t getFrameMemoryDataSpace(const hid_t dataSet);
 
 extern template hid_t create1dFrameDataSet<int32_t>(const hid_t, const std::string&);
@@ -201,12 +205,6 @@ extern template hid_t create1dFrameDataSet<int64_t>(const hid_t, const std::stri
 extern template hid_t create1dFrameDataSet<float>(const hid_t, const std::string&);
 
 extern template hid_t create1dFrameDataSet<double>(const hid_t, const std::string&);
-
-extern template hsize_t getNumFrames<1>(const hid_t dataSet);
-
-extern template hid_t getFrameDataSpace<1>(const hid_t dataSet, const hsize_t frameIndex);
-
-extern template hid_t getFrameMemoryDataSpace<1>(const hid_t);
 
 extern template hid_t createUnboundedFrameBasicVectorListDataSet<float>(const hid_t,
                                                                         const std::string&,

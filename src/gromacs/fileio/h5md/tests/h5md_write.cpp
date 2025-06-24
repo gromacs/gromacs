@@ -96,7 +96,7 @@ TYPED_TEST(H5mdWriteNumericPrimitiveTest, WriteValueTo1dSetWritesToCorrectIndex)
     // List of values to write into data set one-by-one with our tested function
     const std::vector<TypeParam> valuesToWrite = { 9, 3, 1, 0, 6 };
     const hsize_t                numFrames     = valuesToWrite.size();
-    H5Dset_extent(dataSet, &numFrames);
+    setNumFrames(dataSet, numFrames);
 
     for (hsize_t writeIndex = 0; writeIndex < valuesToWrite.size(); ++writeIndex)
     {
@@ -114,7 +114,7 @@ TYPED_TEST(H5mdWriteNumericPrimitiveTest, WriteValueOutsideOfSetBoundsThrows)
     const auto [dataSet, dataSetGuard] =
             makeH5mdDataSetGuard(create1dFrameDataSet<TypeParam>(this->fileid(), "testDataSet"));
     constexpr hsize_t numFrames = 5;
-    H5Dset_extent(dataSet, &numFrames);
+    setNumFrames(dataSet, numFrames);
 
     constexpr TypeParam value = 0;
     ASSERT_NO_THROW(writeFrame(dataSet, numFrames - 1, value))
@@ -128,7 +128,7 @@ TYPED_TEST(H5mdWriteNumericPrimitiveTest, WriteValueOfNonMatchingTypeThrows)
     const auto [dataSet, dataSetGuard] =
             makeH5mdDataSetGuard(create1dFrameDataSet<TypeParam>(this->fileid(), "testDataSet"));
     constexpr hsize_t numFrames = 1; // enable writing into index = 0
-    H5Dset_extent(dataSet, &numFrames);
+    setNumFrames(dataSet, numFrames);
 
     if (!std::is_same_v<TypeParam, float>)
     {
@@ -160,7 +160,7 @@ TYPED_TEST(H5mdWriteNumericPrimitiveTest, WriteValueToNonValidDataSetThrows)
         const auto [dataSet, dataSetGuard] =
                 makeH5mdDataSetGuard(create1dFrameDataSet<TypeParam>(this->fileid(), "testDataSet"));
         constexpr hsize_t numFrames = 1; // enable writing into index = 0
-        H5Dset_extent(dataSet, &numFrames);
+        setNumFrames(dataSet, numFrames);
 
         invalidDataSet = dataSet;
         ASSERT_NO_THROW(writeFrame(invalidDataSet, 0, value))
@@ -190,7 +190,7 @@ TYPED_TEST(H5mdWriteNumericPrimitiveTest, WriteValueForReadOnlyFileThrows)
                 makeH5mdDataSetGuard(create1dFrameDataSet<TypeParam>(file.fileid(), dataSetName));
 
         constexpr hsize_t numFrames = 1;
-        H5Dset_extent(dataSet, &numFrames);
+        setNumFrames(dataSet, numFrames);
         constexpr TypeParam value = 10;
         ASSERT_NO_THROW(writeFrame(dataSet, 0, value))
                 << "Sanity check failed: writing value to write-mode file must work";
@@ -215,7 +215,7 @@ TYPED_TEST(H5mdWriteBasicVectorListTest, WriteFrameWorks)
                     this->fileid(), "testDataSet", numAtoms));
     const auto [dataType, dataTypeGuard] = makeH5mdTypeGuard(H5Dget_type(dataSet));
     constexpr hsize_t numFrames          = 1;
-    H5Dset_extent(dataSet, &numFrames);
+    setNumFrames(dataSet, numFrames);
 
     const std::array<gmx::BasicVector<TypeParam>, numAtoms> rvecList = {
         BasicVector<TypeParam>{ 0.0, 1.0, 2.0 },
@@ -240,7 +240,7 @@ TYPED_TEST(H5mdWriteBasicVectorListTest, WriteFrameToIndexWorks)
                     this->fileid(), "testDataSet", numAtoms));
     const auto [dataType, dataTypeGuard] = makeH5mdTypeGuard(H5Dget_type(dataSet));
     constexpr hsize_t numFrames          = 5;
-    H5Dset_extent(dataSet, &numFrames);
+    setNumFrames(dataSet, numFrames);
 
     // Write 5 frames to the data set in order
     std::array<std::array<gmx::BasicVector<TypeParam>, numAtoms>, numFrames> perFrameRvecLists;
@@ -277,7 +277,7 @@ TYPED_TEST(H5mdWriteBasicVectorListTest, WritingFrameToNonSequentialIndexWorks)
             makeH5mdDataSetGuard(createUnboundedFrameBasicVectorListDataSet<TypeParam>(
                     this->fileid(), "testDataSet", numAtoms));
     constexpr hsize_t numFrames = 3;
-    H5Dset_extent(dataSet, &numFrames);
+    setNumFrames(dataSet, numFrames);
 
     std::array<std::array<gmx::BasicVector<TypeParam>, numAtoms>, numFrames> perFrameRvecLists;
     for (int frameIndex = 0; frameIndex < gmx::ssize(perFrameRvecLists); ++frameIndex)
@@ -312,7 +312,7 @@ TYPED_TEST(H5mdWriteBasicVectorListTest, InputBufferWithNonMatchingDimensionsThr
             makeH5mdDataSetGuard(createUnboundedFrameBasicVectorListDataSet<TypeParam>(
                     this->fileid(), "testDataSet", numAtoms));
     constexpr hsize_t numFrames = 1;
-    H5Dset_extent(dataSet, &numFrames);
+    setNumFrames(dataSet, numFrames);
 
     std::array<BasicVector<TypeParam>, numAtoms> readBufferCorrect;
     ASSERT_NO_THROW(writeFrame(dataSet, 0, makeConstArrayRef(readBufferCorrect)))
@@ -332,7 +332,7 @@ TYPED_TEST(H5mdWriteBasicVectorListTest, CorrectRowOrderIsUsedForWritingArrayDat
                     this->fileid(), "testDataSet", numAtoms));
     const auto [dataType, dataTypeGuard] = makeH5mdTypeGuard(H5Dget_type(dataSet));
     constexpr hsize_t numFrames          = 1;
-    H5Dset_extent(dataSet, &numFrames);
+    setNumFrames(dataSet, numFrames);
 
     // Write a 2d [numAtoms, DIM] array with values in row-major increasing order as a single frame
     const std::array<gmx::BasicVector<TypeParam>, numAtoms> rvecList = {
@@ -367,7 +367,7 @@ TYPED_TEST(H5mdWriteBasicVectorListTest, WriteAfterResizingDataSetWorks)
             makeH5mdDataSetGuard(createUnboundedFrameBasicVectorListDataSet<TypeParam>(
                     this->fileid(), "testDataSet", numAtoms));
     hsize_t numFrames = 1;
-    H5Dset_extent(dataSet, &numFrames);
+    setNumFrames(dataSet, numFrames);
 
     const std::array<gmx::BasicVector<TypeParam>, numAtoms> writeBuffer;
     ASSERT_NO_THROW(writeFrame(dataSet, 0, makeConstArrayRef(writeBuffer)))
@@ -376,7 +376,7 @@ TYPED_TEST(H5mdWriteBasicVectorListTest, WriteAfterResizingDataSetWorks)
             << "Sanity check failed: must throw when trying to write into index 1 before resize";
 
     numFrames = 2;
-    H5Dset_extent(dataSet, &numFrames);
+    setNumFrames(dataSet, numFrames);
     ASSERT_NO_THROW(writeFrame(dataSet, 1, makeConstArrayRef(writeBuffer)))
             << "Must be able to write to index 1 after resize";
 }
@@ -386,7 +386,7 @@ TYPED_TEST(H5mdWriteBasicVectorListTest, WriteSingleValueToBasicVectorListDataSe
     const auto [rvecListDataSet, rvecListDataSetGuard] = makeH5mdDataSetGuard(
             createUnboundedFrameBasicVectorListDataSet<TypeParam>(this->fileid(), "testDataSet", 1));
     constexpr hsize_t numFrames = 1;
-    H5Dset_extent(rvecListDataSet, &numFrames);
+    setNumFrames(rvecListDataSet, numFrames);
 
     const TypeParam writeBuffer = 1.0;
     EXPECT_THROW(writeFrame<TypeParam>(rvecListDataSet, 0, writeBuffer), gmx::FileIOError);
@@ -401,7 +401,7 @@ TYPED_TEST(H5mdWriteNumericPrimitiveTest, WriteBasicVectorListToSingleValueDataS
         const auto [primitiveTypeDataSet, primitiveDataSetGuard] =
                 makeH5mdDataSetGuard(create1dFrameDataSet<TypeParam>(this->fileid(), "testDataSet"));
         constexpr hsize_t numFrames = 1;
-        H5Dset_extent(primitiveTypeDataSet, &numFrames);
+        setNumFrames(primitiveTypeDataSet, numFrames);
 
         const std::array<BasicVector<TypeParam>, 1> writeBuffer;
         EXPECT_THROW(writeFrame(primitiveTypeDataSet, 0, makeConstArrayRef(writeBuffer)), gmx::FileIOError);

@@ -63,7 +63,7 @@ namespace gmx
 template<typename ValueType, int numDims>
 static void writeFrameData(const hid_t dataSet, const hsize_t index, const ArrayRef<const ValueType> writeBuffer)
 {
-    const hsize_t numFrames = getNumFrames<numDims>(dataSet);
+    const hsize_t numFrames = getNumFrames(dataSet);
     gmx::throwUponH5mdError(index >= numFrames, "Cannot write frame with index >= numFrames");
 
     const auto [dataType, dataTypeGuard] = makeH5mdTypeGuard(H5Dget_type(dataSet));
@@ -71,9 +71,9 @@ static void writeFrameData(const hid_t dataSet, const hsize_t index, const Array
                             "Cannot write frame into set with non-matching data type");
 
     const auto [frameDataSpace, frameDataSpaceGuard] =
-            makeH5mdDataSpaceGuard(getFrameDataSpace<numDims>(dataSet, index));
+            makeH5mdDataSpaceGuard(getFrameDataSpace(dataSet, index));
     const auto [memoryDataSpace, memoryDataSpaceGuard] =
-            makeH5mdDataSpaceGuard(getFrameMemoryDataSpace<numDims>(dataSet));
+            makeH5mdDataSpaceGuard(getFrameMemoryDataSpace(dataSet));
 
     gmx::throwUponH5mdError(
             H5Dwrite(dataSet, dataType, memoryDataSpace, frameDataSpace, H5P_DEFAULT, writeBuffer.data()) < 0,

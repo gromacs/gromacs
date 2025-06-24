@@ -114,7 +114,7 @@ TYPED_TEST(H5mdPrimitiveDataSetTest, Create1dFrameDataSetSetsUnlimitedMaxSize)
             makeH5mdDataSetGuard(create1dFrameDataSet<TypeParam>(this->fileid(), "testDataSet"));
 
     const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet));
-    DataSetDims<1> dataSetMaxDims;
+    DataSetDims dataSetMaxDims(1, 0);
     H5Sget_simple_extent_dims(dataSpace, nullptr, dataSetMaxDims.data());
 
     EXPECT_EQ(dataSetMaxDims.at(0), H5S_UNLIMITED);
@@ -223,11 +223,11 @@ TYPED_TEST(H5mdPrimitiveDataSetTest, GetNumFramesFor1dDataSetsReturnsSize)
     const auto [dataSet, dataSetGuard] =
             makeH5mdDataSetGuard(create1dFrameDataSet<TypeParam>(this->fileid(), "testDataSet"));
 
-    EXPECT_EQ(getNumFrames<1>(dataSet), 0) << "1d frame data sets are created as empty";
+    EXPECT_EQ(getNumFrames(dataSet), 0) << "1d frame data sets are created as empty";
 
     const hsize_t newSize = 6;
     H5Dset_extent(dataSet, &newSize);
-    EXPECT_EQ(getNumFrames<1>(dataSet), newSize) << "Number of frames should match new size";
+    EXPECT_EQ(getNumFrames(dataSet), newSize) << "Number of frames should match new size";
 }
 
 TYPED_TEST(H5mdPrimitiveDataSetTest, GetNumFramesThrowsForInvalidDataSetHandle)
@@ -247,8 +247,8 @@ TYPED_TEST(H5mdPrimitiveDataSetTest, GetNumFramesThrowsForInvalidDataSetHandle)
                 << "Sanity check failed: data set handle must be valid before exiting scope";
     }
 
-    EXPECT_THROW(getNumFrames<1>(dataSetToTest), gmx::FileIOError);
-    EXPECT_THROW(getNumFrames<1>(H5I_INVALID_HID), gmx::FileIOError);
+    EXPECT_THROW(getNumFrames(dataSetToTest), gmx::FileIOError);
+    EXPECT_THROW(getNumFrames(H5I_INVALID_HID), gmx::FileIOError);
 }
 
 TYPED_TEST(H5mdBasicVectorListDataSetTest, CreateDataSetCreatesEmpty1d)
@@ -289,7 +289,7 @@ TYPED_TEST(H5mdBasicVectorListDataSetTest, CreateDataSetUsesCorrectRowOrder)
     const int numDims                    = H5Tget_array_ndims(dataType);
     EXPECT_EQ(numDims, 2) << "Lists of BasicVectors must have 2 dimensions";
 
-    DataSetDims<2> dataSetDims;
+    DataSetDims dataSetDims(2, 0);
     H5Tget_array_dims(dataType, dataSetDims.data());
     EXPECT_EQ(dataSetDims[0], numAtoms) << "Major axis should be for atoms with numAtoms values";
     EXPECT_EQ(dataSetDims[1], DIM) << "Minor axis should be for BasicVector with DIM values";
@@ -308,6 +308,72 @@ TYPED_TEST(H5mdBasicVectorListDataSetTest, CreateDataSetForZeroOrFewerNumberOfAt
                          this->fileid(), "testNumAtomsNegative", -1),
                  gmx::FileIOError)
             << "Creating data set for -1 atoms must throw";
+}
+
+TYPED_TEST(H5mdPrimitiveDataSetTest, SetNumFramesWorks)
+{
+    const auto [dataSet, dataSetGuard] =
+            makeH5mdDataSetGuard(create1dFrameDataSet<TypeParam>(this->fileid(), "testDataSet"));
+
+    {
+        SCOPED_TRACE("Validate data set size before setting number of frames");
+        const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet));
+        DataSetDims dataSetDims(1, 0);
+        H5Sget_simple_extent_dims(dataSpace, dataSetDims.data(), nullptr);
+        ASSERT_EQ(dataSetDims, (DataSetDims{ 0 }))
+                << "Sanity check failed: unexpected initial size of data set";
+    }
+
+    constexpr hsize_t newNumFrames = 2;
+    setNumFrames(dataSet, newNumFrames);
+    // The data space is invalidated after changing the data set size, so we cannot
+    // reuse the one created for checking the initial size above
+    const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet));
+    DataSetDims dataSetDims(1, 0);
+    H5Sget_simple_extent_dims(dataSpace, dataSetDims.data(), nullptr);
+    EXPECT_EQ(dataSetDims, (DataSetDims{ newNumFrames }))
+            << "Incorrect data set size after setNumFrames";
+}
+
+TYPED_TEST(H5mdPrimitiveDataSetTest, SetNumFramesCanShrinkDataset)
+{
+    const auto [dataSet, dataSetGuard] =
+            makeH5mdDataSetGuard(create1dFrameDataSet<TypeParam>(this->fileid(), "testDataSet"));
+
+    setNumFrames(dataSet, 2);
+    setNumFrames(dataSet, 1);
+
+    const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet));
+    DataSetDims dataSetDims(1, 0);
+    H5Sget_simple_extent_dims(dataSpace, dataSetDims.data(), nullptr);
+    EXPECT_EQ(dataSetDims, (DataSetDims{ 1 })) << "Incorrect data set size after setNumFrames";
+}
+
+TYPED_TEST(H5mdBasicVectorListDataSetTest, SetNumFramesWorksForBasicVector)
+{
+    constexpr hsize_t numAtoms = 5;
+    const auto [dataSet, dataSetGuard] =
+            makeH5mdDataSetGuard(createUnboundedFrameBasicVectorListDataSet<TypeParam>(
+                    this->fileid(), "testDataSet", numAtoms));
+
+    {
+        SCOPED_TRACE("Validate data set size before setting number of frames");
+        const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet));
+        DataSetDims dataSetDims(1, 0);
+        H5Sget_simple_extent_dims(dataSpace, dataSetDims.data(), nullptr);
+        ASSERT_EQ(dataSetDims, (DataSetDims{ 0 }))
+                << "Sanity check failed: unexpected initial size of data set";
+    }
+
+    constexpr hsize_t newNumFrames = 2;
+    setNumFrames(dataSet, newNumFrames);
+    // The data space is invalidated after changing the data set size, so we cannot
+    // reuse the one created for checking the initial size above
+    const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet));
+    DataSetDims dataSetDims(1, 0);
+    H5Sget_simple_extent_dims(dataSpace, dataSetDims.data(), nullptr);
+    EXPECT_EQ(dataSetDims, (DataSetDims{ newNumFrames }))
+            << "Incorrect data set size after setNumFrames";
 }
 
 } // namespace

@@ -90,7 +90,7 @@ TYPED_TEST(H5mdReadNumericPrimitiveTest, ReadValueFrom1dSetWorks)
     // Write values to data set in bulk for efficiency
     const std::vector<TypeParam> values    = { 9, 3, 1, 0, 6 };
     const hsize_t                numFrames = values.size();
-    H5Dset_extent(dataSet, &numFrames);
+    setNumFrames(dataSet, numFrames);
     H5Dwrite(dataSet, hdf5DataTypeFor<TypeParam>(), H5S_ALL, H5S_ALL, H5P_DEFAULT, values.data());
 
     TypeParam value;
@@ -109,7 +109,7 @@ TYPED_TEST(H5mdReadNumericPrimitiveTest, ReadValueOutsideOfSetBoundsThrows)
     // Write values to data set in bulk for efficiency
     const std::vector<TypeParam> values    = { 9, 3, 1, 0, 6 };
     const hsize_t                numFrames = values.size();
-    H5Dset_extent(dataSet, &numFrames);
+    setNumFrames(dataSet, numFrames);
     H5Dwrite(dataSet, hdf5DataTypeFor<TypeParam>(), H5S_ALL, H5S_ALL, H5P_DEFAULT, values.data());
 
     TypeParam value;
@@ -127,7 +127,7 @@ TYPED_TEST(H5mdReadNumericPrimitiveTest, ReadValueOfNonMatchingTypeThrows)
     // Write values to data set in bulk for efficiency
     const std::vector<TypeParam> values    = { 9, 3, 1, 0, 6 };
     const hsize_t                numFrames = values.size();
-    H5Dset_extent(dataSet, &numFrames);
+    setNumFrames(dataSet, numFrames);
     H5Dwrite(dataSet, hdf5DataTypeFor<TypeParam>(), H5S_ALL, H5S_ALL, H5P_DEFAULT, values.data());
 
     if (!std::is_same_v<TypeParam, float>)
@@ -162,7 +162,7 @@ TYPED_TEST(H5mdReadNumericPrimitiveTest, ReadValueFromNonValidDataSetThrows)
         // Write values to data set in bulk for efficiency
         const std::vector<TypeParam> values    = { 9, 3, 1, 0, 6 };
         const hsize_t                numFrames = values.size();
-        H5Dset_extent(dataSet, &numFrames);
+        setNumFrames(dataSet, numFrames);
         H5Dwrite(dataSet, hdf5DataTypeFor<TypeParam>(), H5S_ALL, H5S_ALL, H5P_DEFAULT, values.data());
 
         ASSERT_NO_THROW(readFrame(dataSet, 0, value))
@@ -184,7 +184,7 @@ TYPED_TEST(H5mdReadBasicVectorListTest, ReadFrameWorks)
                     this->fileid(), "testDataSet", numAtoms));
     const auto [dataType, dataTypeGuard] = makeH5mdTypeGuard(H5Dget_type(dataSet));
     constexpr hsize_t numFrames          = 1;
-    H5Dset_extent(dataSet, &numFrames);
+    setNumFrames(dataSet, numFrames);
 
     // Write 5 RVecs to the data set (this matches its complete size: 1 frame * 5 atoms * 3 values)
     const std::array<gmx::BasicVector<TypeParam>, numAtoms> rvecListToWrite = {
@@ -212,7 +212,7 @@ TYPED_TEST(H5mdReadBasicVectorListTest, ReadingFrameFromNonSequentialIndexWorks)
                     this->fileid(), "testDataSet", numAtoms));
     const auto [dataType, dataTypeGuard] = makeH5mdTypeGuard(H5Dget_type(dataSet));
     constexpr hsize_t numFrames          = 5;
-    H5Dset_extent(dataSet, &numFrames);
+    setNumFrames(dataSet, numFrames);
 
     // Prepare a list of numFrames rvec-lists and write it to the data set in bulk
     // Total number of values matches that of the data set: 5 frames * 5 atoms * 3 values
@@ -248,7 +248,7 @@ TYPED_TEST(H5mdReadBasicVectorListTest, OutputBufferWithNonMatchingDimensionsThr
             makeH5mdDataSetGuard(createUnboundedFrameBasicVectorListDataSet<TypeParam>(
                     this->fileid(), "testDataSet", numAtoms));
     constexpr hsize_t numFrames = 1;
-    H5Dset_extent(dataSet, &numFrames);
+    setNumFrames(dataSet, numFrames);
 
     std::array<BasicVector<TypeParam>, numAtoms> readBufferCorrect;
     ASSERT_NO_THROW(readFrame(dataSet, 0, makeArrayRef(readBufferCorrect)))
@@ -268,7 +268,7 @@ TYPED_TEST(H5mdReadBasicVectorListTest, CorrectRowOrderIsUsedForReadingArrayData
                     this->fileid(), "testDataSet", numAtoms));
     const auto [dataType, dataTypeGuard] = makeH5mdTypeGuard(H5Dget_type(dataSet));
     const hsize_t numFrames              = 1;
-    H5Dset_extent(dataSet, &numFrames);
+    setNumFrames(dataSet, numFrames);
 
     // Write a 1d array with values 0..(numAtoms * DIM) to the data set
     std::array<TypeParam, DIM * numAtoms> writeBuffer1d;
@@ -298,7 +298,7 @@ TYPED_TEST(H5mdReadBasicVectorListTest, ReadSingleValueFromBasicVectorListDataSe
     const auto [rvecListDataSet, rvecListDataSetGuard] = makeH5mdDataSetGuard(
             createUnboundedFrameBasicVectorListDataSet<TypeParam>(this->fileid(), "testDataSet", 1));
     const hsize_t numFrames = 1;
-    H5Dset_extent(rvecListDataSet, &numFrames);
+    setNumFrames(rvecListDataSet, numFrames);
 
     TypeParam readBuffer;
     EXPECT_THROW(readFrame<TypeParam>(rvecListDataSet, 0, readBuffer), gmx::FileIOError);
@@ -313,7 +313,7 @@ TYPED_TEST(H5mdReadNumericPrimitiveTest, ReadBasicVectorListFromSingleValueDataS
         const auto [primitiveValueDataSet, primitiveValueDataSetGuard] =
                 makeH5mdDataSetGuard(create1dFrameDataSet<TypeParam>(this->fileid(), "testDataSet"));
         const hsize_t numFrames = 1;
-        H5Dset_extent(primitiveValueDataSet, &numFrames);
+        setNumFrames(primitiveValueDataSet, numFrames);
 
         std::array<BasicVector<TypeParam>, 1> readBuffer;
         EXPECT_THROW(readFrame(primitiveValueDataSet, 0, makeArrayRef(readBuffer)), gmx::FileIOError);

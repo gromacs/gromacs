@@ -65,7 +65,7 @@ namespace gmx
 template<typename ValueType, int numDims>
 static void readFrameData(const hid_t dataSet, const hsize_t index, const ArrayRef<ValueType> readBuffer)
 {
-    const hsize_t numFrames = getNumFrames<numDims>(dataSet);
+    const hsize_t numFrames = getNumFrames(dataSet);
     gmx::throwUponH5mdError(index >= numFrames, "Cannot read frame with frameIndex >= numFrames");
 
     // When reading the data we must consider that the native data type (on the current compiler
@@ -78,9 +78,9 @@ static void readFrameData(const hid_t dataSet, const hsize_t index, const ArrayR
                        "Cannot read frame from set with non-matching data type");
 
     const auto [frameDataSpace, frameDataSpaceGuard] =
-            makeH5mdDataSpaceGuard(getFrameDataSpace<numDims>(dataSet, index));
+            makeH5mdDataSpaceGuard(getFrameDataSpace(dataSet, index));
     const auto [memoryDataSpace, memoryDataSpaceGuard] =
-            makeH5mdDataSpaceGuard(getFrameMemoryDataSpace<numDims>(dataSet));
+            makeH5mdDataSpaceGuard(getFrameMemoryDataSpace(dataSet));
 
     H5Dread(dataSet, nativeDataType, memoryDataSpace, frameDataSpace, H5P_DEFAULT, readBuffer.data());
 }

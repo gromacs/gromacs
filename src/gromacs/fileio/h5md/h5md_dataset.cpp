@@ -83,18 +83,15 @@ static void setNumericFillValue(const hid_t createPropertyList, const hid_t data
 
 /*! \brief Return the dimensions of a data set.
  *
- * \tparam numDims Number of dimensions of data set.
  * \param[in] dataSet Handle to data set.
  * \returns Fixed-size array with the dimensions.
  *
  * \throws gmx::FileIOError if the dimensions cannot be read.
  */
-template<int numDims>
-static DataSetDims<numDims> getDataSetDims(const hid_t dataSet)
+static DataSetDims getDataSetDims(const hid_t dataSet)
 {
-    DataSetDims<numDims> dataSetDims;
-
     const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet));
+    DataSetDims dataSetDims(H5Sget_simple_extent_ndims(dataSpace), 0);
     throwUponH5mdError(H5Sget_simple_extent_dims(dataSpace, dataSetDims.data(), nullptr) < 0,
                        "Could not get dimensions from data set.");
 
@@ -108,14 +105,17 @@ static DataSetDims<numDims> getDataSetDims(const hid_t dataSet)
  * is selected, so the offset for all other axis is 0. For example, to reach frame 15
  * of a 3d set we use the offset [15, 0, 0] to access the memory.
  *
- * \tparam numDims Number of dimensions of data set.
+ * \param[in] dataSet Handle to data set.
  * \param[in] frameIndex Index of frame.
  * \returns Fixed-size array with the offset.
  */
-template<int numDims>
-static DataSetDims<numDims> getFrameChunkOffset(const hsize_t frameIndex)
+static DataSetDims getFrameChunkOffset(const hid_t dataSet, const hsize_t frameIndex)
 {
-    return DataSetDims<numDims>{ frameIndex };
+    const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet));
+    DataSetDims chunkOffset(H5Sget_simple_extent_ndims(dataSpace), 0);
+    chunkOffset[0] = frameIndex;
+
+    return chunkOffset;
 }
 
 /* \brief Return the dimensions of the memory chunk for a single frame.
@@ -126,15 +126,13 @@ static DataSetDims<numDims> getFrameChunkOffset(const hsize_t frameIndex)
  * chunk which contains a single frame in a data set with dimensions [30, 150, 3] is
  * [1, 150, 3].
  *
- * \tparam numDims Number of dimensions of data set.
  * \param[in] dataSetDims Dimensions of data set.
  * \returns Fixed-size array with the chunk dimensions.
  */
-template<int numDims>
-static DataSetDims<numDims> getFrameChunkDims(const DataSetDims<numDims>& dataSetDims)
+static DataSetDims getFrameChunkDims(const DataSetDims& dataSetDims)
 {
-    DataSetDims<numDims> chunkDims = dataSetDims;
-    chunkDims[0]                   = 1;
+    DataSetDims chunkDims = dataSetDims;
+    chunkDims[0]          = 1;
 
     return chunkDims;
 }
@@ -153,23 +151,23 @@ static DataSetDims<numDims> getFrameChunkDims(const DataSetDims<numDims>& dataSe
  * \returns Handle to created data set.
  */
 template<typename ValueType, int numDims>
-static hid_t createDataSet(const hid_t                 container,
-                           const std::string&          dataSetName,
-                           const hid_t                 dataType,
-                           const DataSetDims<numDims>& dataSetDims,
-                           const DataSetDims<numDims>& dataSetMaxDims)
+static hid_t createDataSet(const hid_t        container,
+                           const std::string& dataSetName,
+                           const hid_t        dataType,
+                           const DataSetDims& dataSetDims,
+                           const DataSetDims& dataSetMaxDims)
 {
     // We need to set some options for the new data set, using this property list
     const auto [creationPropertyList, creationPropertyListGuard] =
             makeH5mdPropertyListGuard(H5Pcreate(H5P_DATASET_CREATE));
 
     // Memory chunk sizes must be > 0 along every dimension when reading or writing
-    const DataSetDims<numDims> chunkDims = [&]()
+    const DataSetDims chunkDims = [&]()
     {
-        DataSetDims<numDims> chunkDims = dataSetDims;
+        DataSetDims chunkDims = dataSetDims;
         for (auto& v : chunkDims)
         {
-            if (v < 1)
+            if (v == 0)
             {
                 v = 1;
             }
@@ -229,9 +227,9 @@ hid_t create1dFrameDataSet(const hid_t container, const std::string& dataSetName
 {
     constexpr int numDims = 1;
 
-    const DataSetDims<numDims> dataSetDims    = { 0 };
-    const DataSetDims<numDims> dataSetMaxDims = { H5S_UNLIMITED };
-    const hid_t                dataType       = hdf5DataTypeFor<ValueType>();
+    const DataSetDims dataSetDims    = { 0 };
+    const DataSetDims dataSetMaxDims = { H5S_UNLIMITED };
+    const hid_t       dataType       = hdf5DataTypeFor<ValueType>();
 
     return createDataSet<ValueType, numDims>(container, dataSetName, dataType, dataSetDims, dataSetMaxDims);
 }
@@ -243,15 +241,15 @@ hid_t createUnboundedFrameBasicVectorListDataSet(const hid_t        container,
 {
     constexpr int numDimsDataSet = 1;
 
-    const DataSetDims<numDimsDataSet> dataSetDims    = { 0 };
-    const DataSetDims<numDimsDataSet> dataSetMaxDims = { H5S_UNLIMITED };
+    const DataSetDims dataSetDims    = { 0 };
+    const DataSetDims dataSetMaxDims = { H5S_UNLIMITED };
 
     // NOTE: HDF5 does not like array data types with size 0 along any dimension.
     // If this is required we need to find a different approach
     throwUponH5mdError(numAtoms < 1, "Cannot create particle-RVec data set for <1 number of atoms");
-    constexpr int                   numDimsArray = 2;
-    const DataSetDims<numDimsArray> arrayDims    = { static_cast<hsize_t>(numAtoms), DIM };
-    const hid_t                     dataType =
+    constexpr int     numDimsArray = 2;
+    const DataSetDims arrayDims    = { static_cast<hsize_t>(numAtoms), DIM };
+    const hid_t       dataType =
             H5Tarray_create2(hdf5DataTypeFor<ValueType>(), numDimsArray, arrayDims.data());
 
     return createDataSet<ValueType, numDimsDataSet>(
@@ -266,20 +264,33 @@ hid_t openDataSet(const hid_t container, const std::string& dataSetName)
     return dataSet;
 }
 
-template<int numDims>
 hsize_t getNumFrames(const hid_t dataSet)
 {
-    const DataSetDims<numDims> dataSetDims = getDataSetDims<numDims>(dataSet);
+    throwUponInvalidHid(dataSet, "Cannot get number of frames from invalid data set handle.");
+    const DataSetDims dataSetDims = getDataSetDims(dataSet);
 
-    return dataSetDims.at(0);
+    return dataSetDims[0];
 }
 
-template<int numDims>
+void setNumFrames(const hid_t dataSet, const hsize_t numFrames)
+{
+    const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet));
+    throwUponInvalidHid(dataSpace, "Could not get data space when resizing data set.");
+
+    const hsize_t numDims = H5Sget_simple_extent_ndims(dataSpace);
+    throwUponH5mdError(numDims == 0, "Cannot set number of frames for 0-dimensional data set");
+    std::vector<hsize_t> dataSetDims(numDims, 0);
+    H5Sget_simple_extent_dims(dataSpace, dataSetDims.data(), nullptr);
+
+    dataSetDims[0] = numFrames;
+    H5Dset_extent(dataSet, dataSetDims.data());
+}
+
 hid_t getFrameDataSpace(const hid_t dataSet, const hsize_t frameIndex)
 {
-    const DataSetDims<numDims> dataSetDims = getDataSetDims<numDims>(dataSet);
-    const DataSetDims<numDims> chunkOffset = getFrameChunkOffset<numDims>(frameIndex);
-    const DataSetDims<numDims> chunkDims   = getFrameChunkDims<numDims>(dataSetDims);
+    const DataSetDims dataSetDims = getDataSetDims(dataSet);
+    const DataSetDims chunkOffset = getFrameChunkOffset(dataSet, frameIndex);
+    const DataSetDims chunkDims   = getFrameChunkDims(dataSetDims);
 
     const hid_t frameDataSpace = H5Dget_space(dataSet);
     throwUponH5mdError(
@@ -291,13 +302,13 @@ hid_t getFrameDataSpace(const hid_t dataSet, const hsize_t frameIndex)
     return frameDataSpace;
 }
 
-template<int numDims>
 hid_t getFrameMemoryDataSpace(const hid_t dataSet)
 {
-    const DataSetDims<numDims> dataSetDims = getDataSetDims<numDims>(dataSet);
-    const DataSetDims<numDims> chunkDims   = getFrameChunkDims<numDims>(dataSetDims);
+    const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet));
+    const DataSetDims dataSetDims          = getDataSetDims(dataSet);
+    const DataSetDims chunkDims            = getFrameChunkDims(dataSetDims);
 
-    return H5Screate_simple(numDims, chunkDims.data(), nullptr);
+    return H5Screate_simple(H5Sget_simple_extent_ndims(dataSpace), chunkDims.data(), nullptr);
 }
 
 template hid_t create1dFrameDataSet<int32_t>(const hid_t, const std::string&);
@@ -307,12 +318,6 @@ template hid_t create1dFrameDataSet<int64_t>(const hid_t, const std::string&);
 template hid_t create1dFrameDataSet<float>(const hid_t, const std::string&);
 
 template hid_t create1dFrameDataSet<double>(const hid_t, const std::string&);
-
-template hsize_t getNumFrames<1>(const hid_t dataSet);
-
-template hid_t getFrameDataSpace<1>(const hid_t dataSet, const hsize_t frameIndex);
-
-template hid_t getFrameMemoryDataSpace<1>(const hid_t);
 
 template hid_t createUnboundedFrameBasicVectorListDataSet<float>(const hid_t, const std::string&, const int);
 
