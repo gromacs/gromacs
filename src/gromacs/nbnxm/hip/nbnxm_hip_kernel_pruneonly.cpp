@@ -84,7 +84,8 @@ __launch_bounds__(c_clSizeSq<pairlistType>* threadZ, minBlocksPp<hasLargeRegiste
                                          int                       numParts)
 {
     // we only want to actually compile the kernel for archs that have matching execution widths
-    constexpr bool c_matchingExecutionWidth = sc_gpuParallelExecutionWidth(pairlistType) == warpSize;
+    constexpr bool c_matchingExecutionWidth =
+            sc_gpuParallelExecutionWidth(pairlistType) == deviceWavefrontSize();
     constexpr bool c_deviceRegisterPoolMatch = hasLargeRegisterPool == c_deviceLargeRegisterPool;
     constexpr bool c_doGenerateKernel = c_deviceRegisterPoolMatch && c_matchingExecutionWidth;
     if constexpr (c_doGenerateKernel)

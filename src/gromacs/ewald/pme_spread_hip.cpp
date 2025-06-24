@@ -178,7 +178,7 @@ LAUNCH_BOUNDS_EXACT_SINGLE(sc_spreadMaxThreadsPerBlock<parallelExecutionWidth>)
 __global__ void pmeSplineAndSpreadKernel(const PmeGpuKernelParamsBase kernelParams)
 {
     // only compile kernel for matching architecture
-    if constexpr (parallelExecutionWidth == warpSize)
+    if constexpr (parallelExecutionWidth == deviceWavefrontSize())
     {
         constexpr int threadsPerAtomValue =
                 (threadsPerAtom == ThreadsPerAtom::Order) ? order : order * order;
