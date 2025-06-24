@@ -16,6 +16,16 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+AWH for free-energy lambda coordinate was not active
+""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When using AWH for a free-energy lambda coordinate (and no other dimension),
+the lambda state would remain at the initial state and all resulting
+free energies would be zero. Affected versions: 2024.4, 2024.5,  2025.0,
+2025.1 and 2025.2.
+
+:issue:`5371`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -25,4 +35,11 @@ Fixes that affect portability
 Miscellaneous
 ^^^^^^^^^^^^^
 
+mdrun reported double the number of domain decompositions when using GPUs
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
+When using GPUs, the cycle count table at the end of the log file reported a number of calls
+for Domain decomp. that was too high by a factor of one plus the number of dimensions that
+were decomposed. The times and cycle counts were correct.
+
+:issue:`5369`

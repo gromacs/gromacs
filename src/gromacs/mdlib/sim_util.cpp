@@ -670,10 +670,12 @@ static void computeSpecialForces(FILE*                fplog,
     /* pull_potential_wrapper(), awh->applyBiasForcesAndUpdateBias(), pull_apply_forces()
      * have to be called in this order
      */
+    // Note: this condition is mirrored in haveSpecialForces()
     if (doPulling)
     {
         pull_potential_wrapper(cr, inputrec, box, x, mdatoms, enerd, pull_work, lambda.data(), t, wcycle);
     }
+    // Note: the awh condition is mirrored in haveSpecialForces()
     if (awh && (pullMtsLevel == 0 || stepWork.computeSlowForces))
     {
         const bool          needForeignEnergyDifferences = awh->needForeignEnergyDifferences(step);
@@ -688,6 +690,7 @@ static void computeSpecialForces(FILE*                fplog,
         enerd->term[F_COM_PULL] += awh->applyBiasForcesAndUpdateBias(
                 inputrec.pbcType, foreignLambdaDeltaH, foreignLambdaDhDl, box, t, step, wcycle, fplog);
     }
+    // Note: this condition is mirrored in haveSpecialForces()
     if (doPulling)
     {
         wallcycle_start_nocount(wcycle, WallCycleCounter::PullPot);
@@ -697,6 +700,7 @@ static void computeSpecialForces(FILE*                fplog,
     }
 
     /* Add the forces from enforced rotation potentials (if any) */
+    // Note: this condition is mirrored in haveSpecialForces()
     if (inputrec.bRot)
     {
         wallcycle_start(wcycle, WallCycleCounter::RotAdd);
@@ -705,6 +709,7 @@ static void computeSpecialForces(FILE*                fplog,
         wallcycle_stop(wcycle, WallCycleCounter::RotAdd);
     }
 
+    // Note: this condition is mirrored in haveSpecialForces()
     if (ed)
     {
         /* Note that since init_edsam() is called after the initialization
@@ -716,6 +721,7 @@ static void computeSpecialForces(FILE*                fplog,
     }
 
     /* Add forces from interactive molecular dynamics (IMD), if any */
+    // Note: this condition is mirrored in haveSpecialForces()
     if (inputrec.bIMD && stepWork.computeForces)
     {
         imdSession->applyForces(forceWithVirialMtsLevel0->force_);

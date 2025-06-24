@@ -196,7 +196,9 @@ void StatePropagatorDataGpu::Impl::reinit(int numAtomsLocal, int numAtomsAll, co
     int maxNumAtomsPadded = numAtomsPadded;
     if (useNvshmem_)
     {
+#    if GMX_MPI
         MPI_Allreduce(&numAtomsPadded, &maxNumAtomsPadded, 1, MPI_INT, MPI_MAX, cr.mpi_comm_mysim);
+#    endif
     }
 
     reallocateDeviceBuffer(
