@@ -57,19 +57,6 @@ namespace gmx
 namespace test
 {
 
-/**
- * @brief Convenience method to create FmmMdpOptions from transformed MDP key-value input.
- *
- * Mimics grompp-style option processing for testing.
- *
- * @param moduleMdpValues Key-value tree representing MDP input values.
- * @return Filled FmmMdpOptions object.
- */
-static FmmMdpOptions fillOptionsFromMdpValues(const KeyValueTreeObject& moduleMdpValues)
-{
-    return test::fillOptionsFromMdpValuesTemplate<FmmMdpOptions>(moduleMdpValues);
-}
-
 /*! \brief Returns the string name for a given FMM backend.
  *
  * \param backend The FMM backend enum value.
@@ -108,7 +95,7 @@ TEST_F(FmmMdpOptionsTest, ExaFmmOptionsMatchDefaultsWhenActive)
 
     mdpValueBuilder.rootObject().addValue(fmmActiveBackendKey, fmmBackendName(ActiveFmmBackend::ExaFmm));
 
-    fmmMdpOptions_ = fillOptionsFromMdpValues(mdpValueBuilder.build());
+    fillOptionsFromMdpValues(mdpValueBuilder.build(), &fmmMdpOptions_);
 
     const ExaFmmOptions  defaultExaFmmOptionValues;
     const ExaFmmOptions& opts = fmmMdpOptions_.exaFmmOptions();
@@ -130,7 +117,7 @@ TEST_F(FmmMdpOptionsTest, FMSolvrOptionsMatchDefaultsWhenActive)
 
     mdpValueBuilder.rootObject().addValue(fmmActiveBackendKey, fmmBackendName(ActiveFmmBackend::FMSolvr));
 
-    fmmMdpOptions_ = fillOptionsFromMdpValues(mdpValueBuilder.build());
+    fillOptionsFromMdpValues(mdpValueBuilder.build(), &fmmMdpOptions_);
 
     const FMSolvrOptions  defaultFMSolvrOptionValues;
     const FMSolvrOptions& opts = fmmMdpOptions_.fmSolvrOptions();
@@ -161,7 +148,7 @@ TEST_F(FmmMdpOptionsTest, ParsesNonDefaultExaFmmOrder)
     mdpValueBuilder.rootObject().addValue(activeBackendKey, fmmBackendName(ActiveFmmBackend::ExaFmm));
     mdpValueBuilder.rootObject().addValue(orderKey, std::string("10"));
 
-    fmmMdpOptions_ = fillOptionsFromMdpValues(mdpValueBuilder.build());
+    fillOptionsFromMdpValues(mdpValueBuilder.build(), &fmmMdpOptions_);
 
     const ExaFmmOptions& opts = fmmMdpOptions_.exaFmmOptions();
     EXPECT_EQ(opts.order, 10); // Non-default value
@@ -185,7 +172,7 @@ TEST_F(FmmMdpOptionsTest, ParsesNonDefaultFMSolvrOrder)
     mdpValueBuilder.rootObject().addValue(activeBackendKey, fmmBackendName(ActiveFmmBackend::FMSolvr));
     mdpValueBuilder.rootObject().addValue(orderKey, std::string("10"));
 
-    fmmMdpOptions_ = fillOptionsFromMdpValues(mdpValueBuilder.build());
+    fillOptionsFromMdpValues(mdpValueBuilder.build(), &fmmMdpOptions_);
 
     const FMSolvrOptions& opts = fmmMdpOptions_.fmSolvrOptions();
     EXPECT_EQ(opts.order, 10); // Non-default value
@@ -224,7 +211,7 @@ TEST_F(FmmMdpOptionsTest, OutputDefaultExaFmmValuesWhenActive)
 
     mdpValueBuilder.rootObject().addValue(activeBackendKey, fmmBackendName(ActiveFmmBackend::ExaFmm));
 
-    fmmMdpOptions_ = fillOptionsFromMdpValues(mdpValueBuilder.build());
+    fillOptionsFromMdpValues(mdpValueBuilder.build(), &fmmMdpOptions_);
 
     // Transform module data into a flat key-value tree for output.
     StringOutputStream        stream;
@@ -256,7 +243,7 @@ TEST_F(FmmMdpOptionsTest, OutputDefaultFMSolvrValuesWhenActive)
 
     mdpValueBuilder.rootObject().addValue(activeBackendKey, fmmBackendName(ActiveFmmBackend::FMSolvr));
 
-    fmmMdpOptions_ = fillOptionsFromMdpValues(mdpValueBuilder.build());
+    fillOptionsFromMdpValues(mdpValueBuilder.build(), &fmmMdpOptions_);
 
     // Transform module data into a flat key-value tree for output.
     StringOutputStream        stream;

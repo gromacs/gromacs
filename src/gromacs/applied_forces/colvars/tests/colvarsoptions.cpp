@@ -83,12 +83,6 @@ namespace gmx
 
 static const std::string colvarsConfig = "colvars_sample.dat";
 
-//! Convenience method to avoid specifying the template parameter repetitively
-static ColvarsOptions fillOptionsFromMdpValues(const KeyValueTreeObject& moduleMdpValues)
-{
-    return test::fillOptionsFromMdpValuesTemplate<ColvarsOptions>(moduleMdpValues);
-}
-
 class ColvarsOptionsTest : public ::testing::Test
 {
 public:
@@ -203,7 +197,8 @@ TEST_F(ColvarsOptionsTest, OutputDefaultValuesWhenActive)
 {
 
     // Activate colvars
-    ColvarsOptions colvarsOptions = fillOptionsFromMdpValues(ColvarsBuildDefaulMdpValues());
+    ColvarsOptions colvarsOptions;
+    test::fillOptionsFromMdpValues(ColvarsBuildDefaulMdpValues(), &colvarsOptions);
 
     // Transform module data into a flat key-value tree for output.
     StringOutputStream        stream;
@@ -227,7 +222,8 @@ TEST_F(ColvarsOptionsTest, OutputValuesWhenActive)
 {
 
     // Activate colvars
-    ColvarsOptions colvarsOptions = fillOptionsFromMdpValues(ColvarsBuildInputMdpValues());
+    ColvarsOptions colvarsOptions;
+    test::fillOptionsFromMdpValues(ColvarsBuildInputMdpValues(), &colvarsOptions);
 
     // Transform module data into a flat key-value tree for output.
     StringOutputStream        stream;
@@ -253,7 +249,7 @@ TEST_F(ColvarsOptionsTest, OptionSetsActive)
 {
     ColvarsOptions colvarsOptions;
     EXPECT_FALSE(colvarsOptions.isActive());
-    colvarsOptions = fillOptionsFromMdpValues(ColvarsBuildDefaulMdpValues());
+    test::fillOptionsFromMdpValues(ColvarsBuildDefaulMdpValues(), &colvarsOptions);
     EXPECT_TRUE(colvarsOptions.isActive());
 }
 
@@ -261,7 +257,8 @@ TEST_F(ColvarsOptionsTest, InternalsToKvtAndBack)
 {
 
     // Activate colvars
-    ColvarsOptions colvarsOptions = fillOptionsFromMdpValues(ColvarsBuildInputMdpValues());
+    ColvarsOptions colvarsOptions;
+    test::fillOptionsFromMdpValues(ColvarsBuildInputMdpValues(), &colvarsOptions);
     // Set up parameters with a test system
     prepareInputColvarsPreProcessor("4water", &colvarsOptions);
 
@@ -302,7 +299,8 @@ TEST_F(ColvarsOptionsTest, InternalsToKvtAndBack)
 TEST_F(ColvarsOptionsTest, RetrieveEdrFilename)
 {
     // Activate colvars
-    ColvarsOptions colvarsOptions = fillOptionsFromMdpValues(ColvarsBuildInputMdpValues());
+    ColvarsOptions colvarsOptions;
+    test::fillOptionsFromMdpValues(ColvarsBuildInputMdpValues(), &colvarsOptions);
 
     std::string refEdrFilename = "output/ener.edr";
     colvarsOptions.processEdrFilename(EdrOutputFilename{ refEdrFilename });

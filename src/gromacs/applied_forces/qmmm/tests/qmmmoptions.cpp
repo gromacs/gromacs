@@ -70,12 +70,6 @@
 namespace gmx
 {
 
-//! Convenience method to avoid specifying the template parameter repetitively
-static QMMMOptions fillOptionsFromMdpValues(const KeyValueTreeObject& moduleMdpValues)
-{
-    return test::fillOptionsFromMdpValuesTemplate<QMMMOptions>(moduleMdpValues);
-}
-
 class QMMMOptionsTest : public ::testing::Test
 {
 public:
@@ -164,7 +158,7 @@ TEST_F(QMMMOptionsTest, OptionSetsActive)
 {
     QMMMOptions qmmmOptions;
     EXPECT_FALSE(qmmmOptions.parameters().active_);
-    qmmmOptions = fillOptionsFromMdpValues(qmmmBuildDefaulMdpValues());
+    test::fillOptionsFromMdpValues(qmmmBuildDefaulMdpValues(), &qmmmOptions);
     EXPECT_TRUE(qmmmOptions.parameters().active_);
 }
 
@@ -194,7 +188,8 @@ TEST_F(QMMMOptionsTest, OutputDefaultValuesWhenActive)
 {
 
     // Set qmmm-active = true
-    QMMMOptions qmmmOptions = fillOptionsFromMdpValues(qmmmBuildDefaulMdpValues());
+    QMMMOptions qmmmOptions;
+    test::fillOptionsFromMdpValues(qmmmBuildDefaulMdpValues(), &qmmmOptions);
 
     // Transform module data into a flat key-value tree for output.
 
@@ -218,7 +213,8 @@ TEST_F(QMMMOptionsTest, OutputDefaultValuesWhenActive)
 TEST_F(QMMMOptionsTest, CanConvertGroupStringToIndexGroup)
 {
     // Set qmmm-active = true
-    QMMMOptions qmmmOptions = fillOptionsFromMdpValues(qmmmBuildDefaulMdpValues());
+    QMMMOptions qmmmOptions;
+    test::fillOptionsFromMdpValues(qmmmBuildDefaulMdpValues(), &qmmmOptions);
 
     // Generic index data
     const auto indexGroupAndNames = indexGroupsAndNamesGeneric();
@@ -234,7 +230,8 @@ TEST_F(QMMMOptionsTest, CanConvertGroupStringToIndexGroup)
 TEST_F(QMMMOptionsTest, NoQMGroupConvertGroupStringToIndexGroup)
 {
     // Set qmmm-active = true
-    QMMMOptions qmmmOptions = fillOptionsFromMdpValues(qmmmBuildDefaulMdpValues());
+    QMMMOptions qmmmOptions;
+    test::fillOptionsFromMdpValues(qmmmBuildDefaulMdpValues(), &qmmmOptions);
 
     const auto indexGroupAndNames = indexGroupsAndNamesNoQM();
     EXPECT_ANY_THROW(qmmmOptions.setQMMMGroupIndices(indexGroupAndNames));
@@ -243,7 +240,8 @@ TEST_F(QMMMOptionsTest, NoQMGroupConvertGroupStringToIndexGroup)
 TEST_F(QMMMOptionsTest, EmptyQMGroupConvertGroupStringToIndexGroup)
 {
     // Set qmmm-active = true
-    QMMMOptions qmmmOptions = fillOptionsFromMdpValues(qmmmBuildDefaulMdpValues());
+    QMMMOptions qmmmOptions;
+    test::fillOptionsFromMdpValues(qmmmBuildDefaulMdpValues(), &qmmmOptions);
 
     const auto indexGroupAndNames = indexGroupsAndNamesEmptyQM();
     EXPECT_ANY_THROW(qmmmOptions.setQMMMGroupIndices(indexGroupAndNames));
@@ -252,7 +250,8 @@ TEST_F(QMMMOptionsTest, EmptyQMGroupConvertGroupStringToIndexGroup)
 TEST_F(QMMMOptionsTest, InternalsToKvtAndBack)
 {
     // Set qmmm-active = true
-    QMMMOptions qmmmOptions = fillOptionsFromMdpValues(qmmmBuildDefaulMdpValues());
+    QMMMOptions qmmmOptions;
+    test::fillOptionsFromMdpValues(qmmmBuildDefaulMdpValues(), &qmmmOptions);
 
     // Set indices
     const IndexGroupsAndNames indexGroupAndNames = indexGroupsAndNamesGeneric();
@@ -287,7 +286,8 @@ TEST_F(QMMMOptionsTest, InternalsToKvtAndBack)
 TEST_F(QMMMOptionsTest, CP2KInputProcessing)
 {
     // Set qmmm-active = true and qmmm-qmmethod = INPUT
-    QMMMOptions qmmmOptions = fillOptionsFromMdpValues(qmmmBuildMethodInputMdpValues());
+    QMMMOptions qmmmOptions;
+    test::fillOptionsFromMdpValues(qmmmBuildMethodInputMdpValues(), &qmmmOptions);
 
     // Path to the sample CP2K input file
     std::string cp2kInput =

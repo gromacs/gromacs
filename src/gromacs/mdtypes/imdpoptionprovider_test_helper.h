@@ -59,21 +59,23 @@ namespace test
  * to a module's IMdpOptionsProvider.
  *
  * Converts the set of .mdp option values for a module like grompp
- * does with the text-file input and returns them in the module's
+ * does with the text-file input and fills them in the module's
  * IMdpOptionsProvider.
  */
-template<typename MdpOptionsProvider>
-MdpOptionsProvider fillOptionsFromMdpValuesTemplate(const KeyValueTreeObject& moduleMdpValues)
+inline void fillOptionsFromMdpValues(const KeyValueTreeObject& moduleMdpValues,
+                                     IMdpOptionProvider*       moduleMdpOptionsProvider)
 {
-    MdpOptionsProvider moduleMdpOptionsProvider;
-    Options            moduleOptions;
+    // Ensure the provider is valid
+    GMX_ASSERT(moduleMdpOptionsProvider != nullptr, "moduleMdpOptionsProvider must not be null");
+
+    Options moduleOptions;
     // Fill the Options object with the module options
-    moduleMdpOptionsProvider.initMdpOptions(&moduleOptions);
+    moduleMdpOptionsProvider->initMdpOptions(&moduleOptions);
 
     // Add rules to transform mdp inputs to module data
     KeyValueTreeTransformer transform;
     transform.rules()->addRule().keyMatchType("/", StringCompareType::CaseAndDashInsensitive);
-    moduleMdpOptionsProvider.initMdpTransform(transform.rules());
+    moduleMdpOptionsProvider->initMdpTransform(transform.rules());
 
     // Execute the transform on the moduleMdpValues
     auto transformedMdpValues = transform.transform(moduleMdpValues, nullptr);
@@ -81,10 +83,8 @@ MdpOptionsProvider fillOptionsFromMdpValuesTemplate(const KeyValueTreeObject& mo
     // options are then stored in variables set up in
     // moduleMdpOptionsProvider by its initMdpOptions() method.
     assignOptionsFromKeyValueTree(&moduleOptions, transformedMdpValues.object(), nullptr);
-
-    // Return the mdp options from the KVT now stored in the provider
-    return moduleMdpOptionsProvider;
 }
+
 
 } // namespace test
 

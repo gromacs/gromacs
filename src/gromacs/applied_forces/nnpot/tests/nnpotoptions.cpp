@@ -71,12 +71,6 @@ namespace gmx
 namespace test
 {
 
-//! Convenience method to avoid specifying the template parameter repetitively
-static NNPotOptions fillOptionsFromMdpValues(const KeyValueTreeObject& moduleMdpValues)
-{
-    return test::fillOptionsFromMdpValuesTemplate<NNPotOptions>(moduleMdpValues);
-}
-
 class NNPotOptionsTest : public ::testing::Test
 {
 public:
@@ -141,7 +135,7 @@ TEST_F(NNPotOptionsTest, OptionSetsActive)
 {
     NNPotOptions nnpotOptions;
     EXPECT_FALSE(nnpotOptions.parameters().active_);
-    nnpotOptions = fillOptionsFromMdpValues(nnpotBuildDefaultMdpValues());
+    test::fillOptionsFromMdpValues(nnpotBuildDefaultMdpValues(), &nnpotOptions);
     EXPECT_TRUE(nnpotOptions.parameters().active_);
 }
 
@@ -170,7 +164,8 @@ TEST_F(NNPotOptionsTest, OutputDefaultValuesWhenActive)
 {
 
     // Set nnpot-active = true
-    NNPotOptions nnpotOptions = fillOptionsFromMdpValues(nnpotBuildDefaultMdpValues());
+    NNPotOptions nnpotOptions;
+    test::fillOptionsFromMdpValues(nnpotBuildDefaultMdpValues(), &nnpotOptions);
 
     // Transform module data into a flat key-value tree for output.
     StringOutputStream        stream;
@@ -193,7 +188,8 @@ TEST_F(NNPotOptionsTest, OutputDefaultValuesWhenActive)
 TEST_F(NNPotOptionsTest, InternalsToKvtAndBack)
 {
     // Set nnpot-active = true
-    NNPotOptions nnpotOptions = fillOptionsFromMdpValues(nnpotBuildInputMdpValues());
+    NNPotOptions nnpotOptions;
+    fillOptionsFromMdpValues(nnpotBuildInputMdpValues(), &nnpotOptions);
 
     // Set indices
     const IndexGroupsAndNames indexGroupAndNames = indexGroupsAndNamesGeneric();

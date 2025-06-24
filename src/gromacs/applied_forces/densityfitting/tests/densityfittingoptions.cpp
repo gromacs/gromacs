@@ -72,12 +72,6 @@ namespace gmx
 namespace
 {
 
-//! Convenience method to avoid specifying the template parameter repetitively
-DensityFittingOptions fillOptionsFromMdpValues(const KeyValueTreeObject& moduleMdpValues)
-{
-    return test::fillOptionsFromMdpValuesTemplate<DensityFittingOptions>(moduleMdpValues);
-}
-
 class DensityFittingOptionsTest : public ::testing::Test
 {
 public:
@@ -126,7 +120,7 @@ TEST_F(DensityFittingOptionsTest, OptionSetsActive)
 {
     DensityFittingOptions densityFittingOptions;
     EXPECT_FALSE(densityFittingOptions.buildParameters().active_);
-    densityFittingOptions = fillOptionsFromMdpValues(densityFittingSetActiveAsMdpValues());
+    test::fillOptionsFromMdpValues(densityFittingSetActiveAsMdpValues(), &densityFittingOptions);
     EXPECT_TRUE(densityFittingOptions.buildParameters().active_);
 }
 
@@ -153,8 +147,8 @@ TEST_F(DensityFittingOptionsTest, OutputNoDefaultValuesWhenInactive)
 
 TEST_F(DensityFittingOptionsTest, OutputDefaultValuesWhenActive)
 {
-    DensityFittingOptions densityFittingOptions =
-            fillOptionsFromMdpValues(densityFittingSetActiveAsMdpValues());
+    DensityFittingOptions densityFittingOptions;
+    test::fillOptionsFromMdpValues(densityFittingSetActiveAsMdpValues(), &densityFittingOptions);
     // Transform module data into a flat key-value tree for output.
 
     StringOutputStream        stream;
@@ -198,8 +192,8 @@ TEST_F(DensityFittingOptionsTest, OutputDefaultValuesWhenActive)
 
 TEST_F(DensityFittingOptionsTest, CanConvertGroupStringToIndexGroup)
 {
-    DensityFittingOptions densityFittingOptions =
-            fillOptionsFromMdpValues(densityFittingSetActiveAsMdpValues());
+    DensityFittingOptions densityFittingOptions;
+    test::fillOptionsFromMdpValues(densityFittingSetActiveAsMdpValues(), &densityFittingOptions);
 
     const auto indexGroupAndNames = genericIndexGroupsAndNames();
     densityFittingOptions.setFitGroupIndices(indexGroupAndNames);
@@ -224,8 +218,8 @@ TEST_F(DensityFittingOptionsTest, InternalsToKvt)
 
 TEST_F(DensityFittingOptionsTest, KvtToInternal)
 {
-    DensityFittingOptions densityFittingOptions =
-            fillOptionsFromMdpValues(densityFittingSetActiveAsMdpValues());
+    DensityFittingOptions densityFittingOptions;
+    test::fillOptionsFromMdpValues(densityFittingSetActiveAsMdpValues(), &densityFittingOptions);
 
     KeyValueTreeBuilder builder;
     auto                addedArray =
@@ -243,8 +237,8 @@ TEST_F(DensityFittingOptionsTest, KvtToInternal)
 
 TEST_F(DensityFittingOptionsTest, RoundTripForInternalsIsIdempotent)
 {
-    DensityFittingOptions densityFittingOptions =
-            fillOptionsFromMdpValues(densityFittingSetActiveAsMdpValues());
+    DensityFittingOptions densityFittingOptions;
+    test::fillOptionsFromMdpValues(densityFittingSetActiveAsMdpValues(), &densityFittingOptions);
     {
         const IndexGroupsAndNames indexGroupAndNames = genericIndexGroupsAndNames();
         densityFittingOptions.setFitGroupIndices(indexGroupAndNames);

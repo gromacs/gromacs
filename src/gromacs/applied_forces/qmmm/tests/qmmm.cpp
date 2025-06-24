@@ -57,6 +57,7 @@
 #include "gromacs/mdtypes/iforceprovider.h"
 #include "gromacs/mdtypes/imdmodule.h"
 #include "gromacs/mdtypes/imdpoptionprovider.h"
+#include "gromacs/mdtypes/imdpoptionprovider_test_helper.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/treesupport.h"
@@ -93,18 +94,7 @@ public:
 
         QMMMModule_ = QMMMModuleInfo::create();
 
-        // set up options
-        Options QMMMModuleOptions;
-        QMMMModule_->mdpOptionProvider()->initMdpOptions(&QMMMModuleOptions);
-
-        // Add rules to transform mdp inputs to QMMMModule data
-        KeyValueTreeTransformer transform;
-        transform.rules()->addRule().keyMatchType("/", StringCompareType::CaseAndDashInsensitive);
-        QMMMModule_->mdpOptionProvider()->initMdpTransform(transform.rules());
-
-        // Execute the transform on the mdpValues
-        auto transformedMdpValues = transform.transform(mdpOptionsTree, nullptr);
-        assignOptionsFromKeyValueTree(&QMMMModuleOptions, transformedMdpValues.object(), nullptr);
+        test::fillOptionsFromMdpValues(mdpOptionsTree, QMMMModule_->mdpOptionProvider());
     }
 
     void initializeForceProviders()
