@@ -71,7 +71,7 @@ LAUNCH_BOUNDS_EXACT_SINGLE(sc_solveMaxThreadsPerBlock<parallelExecutionWidth>)
 __global__ void pmeSolveKernel(const PmeGpuKernelParamsBase kernelParams)
 {
     // only compile for matching architecture
-    if constexpr (parallelExecutionWidth == warpSize)
+    if constexpr (parallelExecutionWidth == deviceWavefrontSize())
     {
         /* This kernel supports 2 different grid dimension orderings: YZX and XYZ */
         constexpr int majorDim  = gridOrdering == GridOrdering::YZX ? YY : XX;
