@@ -56,6 +56,7 @@
  */
 
 #include "gromacs/gpu_utils/hip_kernel_utils.h"
+#include "gromacs/gpu_utils/hip_sycl_kernel_utils.h"
 #include "gromacs/gpu_utils/typecasts_cuda_hip.h"
 #include "gromacs/gpu_utils/vectype_ops_hip.h"
 #include "gromacs/hardware/device_information.h"
@@ -84,7 +85,7 @@ __device__ static constexpr int c_fbufStride = c_clSizeSq<pairlistType>;
 template<PairlistType pairlistType>
 __device__ __forceinline__ int nb_any_internal(int predicate, int widx)
 {
-    if constexpr (c_subWarp<pairlistType> == warpSize)
+    if constexpr (c_subWarp<pairlistType> == deviceWavefrontSize())
     {
         return __any(predicate);
     }

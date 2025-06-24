@@ -593,7 +593,8 @@ __launch_bounds__(c_clSizeSq<pairlistType>* nthreadZ,
         static void nbnxmKernel(NBAtomDataGpu atdat, NBParamGpu nbparam, GpuPairlist<pairlistType> plist, bool doCalcShift)
 {
     // We only want to compile kernels that match the execution architecture
-    constexpr bool c_matchingExecutionWidth = sc_gpuParallelExecutionWidth(pairlistType) == warpSize;
+    constexpr bool c_matchingExecutionWidth =
+            sc_gpuParallelExecutionWidth(pairlistType) == deviceWavefrontSize();
     constexpr bool c_deviceRegisterPoolMatch = hasLargeRegisterPool == c_deviceLargeRegisterPool;
     constexpr bool c_doGenerateKernel = c_deviceRegisterPoolMatch && c_matchingExecutionWidth;
     if constexpr (c_doGenerateKernel)

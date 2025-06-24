@@ -271,7 +271,7 @@ __launch_bounds__(sc_gatherMaxThreadsPerBlock<parallelExecutionWidth>,
         void pmeGatherKernel(const PmeGpuKernelParamsBase kernelParams)
 {
     // only compile for matching architecture
-    if constexpr (parallelExecutionWidth == warpSize)
+    if constexpr (parallelExecutionWidth == deviceWavefrontSize())
     {
 
         static_assert(numGrids == 1 || numGrids == 2);
