@@ -1,0 +1,204 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <File Name="swap output after 2 steps">
+    <XvgLegend Name="Legend">
+      <String Name="XvgLegend"><![CDATA[
+title "Molecule counts"
+xaxis  label "Time (ps)"
+yaxis  label "counts"
+TYPE xy
+s0 legend "A NA+ ions (charge +1)"
+s1 legend "A av. mismatch to 19 NA+ ions"
+s2 legend "A net NA+ ion influx"
+s3 legend "A CL- ions (charge -1)"
+s4 legend "A av. mismatch to 19 CL- ions"
+s5 legend "A net CL- ion influx"
+s6 legend "B NA+ ions (charge +1)"
+s7 legend "B av. mismatch to 0 NA+ ions"
+s8 legend "B net NA+ ion influx"
+s9 legend "B CL- ions (charge -1)"
+s10 legend "B av. mismatch to 0 CL- ions"
+s11 legend "B net CL- ion influx"
+s12 legend "Z-center of mass of split group 0"
+s13 legend "Z-center of geometry of split group 1"
+s14 legend "A->ch0->B NA+ permeations"
+s15 legend "A->ch0->B CL- permeations"
+s16 legend "A->ch1->B NA+ permeations"
+s17 legend "A->ch1->B CL- permeations"
+s18 legend "leakage"
+]]></String>
+    </XvgLegend>
+    <XvgData Name="Data">
+      <Sequence Name="Row0">
+        <Int Name="Length">20</Int>
+        <Real>4.00000e-03</Real>
+        <Real>9</Real>
+        <Real>-10.0</Real>
+        <Real>0</Real>
+        <Real>9</Real>
+        <Real>-10.0</Real>
+        <Real>0</Real>
+        <Real>10</Real>
+        <Real>10.0</Real>
+        <Real>0</Real>
+        <Real>10</Real>
+        <Real>10.0</Real>
+        <Real>0</Real>
+        <Real>7.29157</Real>
+        <Real>2.37538</Real>
+        <Real>0</Real>
+        <Real>0</Real>
+        <Real>0</Real>
+        <Real>0</Real>
+        <Real>0</Real>
+      </Sequence>
+      <Sequence Name="Row1">
+        <Int Name="Length">20</Int>
+        <Real>4.00000e-03</Real>
+        <Real>19</Real>
+        <Real>0.0</Real>
+        <Real>10</Real>
+        <Real>19</Real>
+        <Real>0.0</Real>
+        <Real>10</Real>
+        <Real>0</Real>
+        <Real>0.0</Real>
+        <Real>-10</Real>
+        <Real>0</Real>
+        <Real>0.0</Real>
+        <Real>-10</Real>
+        <Real>7.29157</Real>
+        <Real>2.37538</Real>
+        <Real>0</Real>
+        <Real>0</Real>
+        <Real>0</Real>
+        <Real>0</Real>
+        <Real>0</Real>
+      </Sequence>
+    </XvgData>
+  </File>
+  <File Name="swap output after 4 steps">
+    <XvgLegend Name="Legend">
+      <String Name="XvgLegend"><![CDATA[
+title "Molecule counts"
+xaxis  label "Time (ps)"
+yaxis  label "counts"
+TYPE xy
+s0 legend "A NA+ ions (charge +1)"
+s1 legend "A av. mismatch to 19 NA+ ions"
+s2 legend "A net NA+ ion influx"
+s3 legend "A CL- ions (charge -1)"
+s4 legend "A av. mismatch to 19 CL- ions"
+s5 legend "A net CL- ion influx"
+s6 legend "B NA+ ions (charge +1)"
+s7 legend "B av. mismatch to 0 NA+ ions"
+s8 legend "B net NA+ ion influx"
+s9 legend "B CL- ions (charge -1)"
+s10 legend "B av. mismatch to 0 CL- ions"
+s11 legend "B net CL- ion influx"
+s12 legend "Z-center of mass of split group 0"
+s13 legend "Z-center of geometry of split group 1"
+s14 legend "A->ch0->B NA+ permeations"
+s15 legend "A->ch0->B CL- permeations"
+s16 legend "A->ch1->B NA+ permeations"
+s17 legend "A->ch1->B CL- permeations"
+s18 legend "leakage"
+]]></String>
+    </XvgLegend>
+    <XvgData Name="Data">
+      <Sequence Name="Row0">
+        <Int Name="Length">20</Int>
+        <Real>4.00000e-03</Real>
+        <Real>9</Real>
+        <Real>-10.0</Real>
+        <Real>0</Real>
+        <Real>9</Real>
+        <Real>-10.0</Real>
+        <Real>0</Real>
+        <Real>10</Real>
+        <Real>10.0</Real>
+        <Real>0</Real>
+        <Real>10</Real>
+        <Real>10.0</Real>
+        <Real>0</Real>
+        <Real>7.29157</Real>
+        <Real>2.37538</Real>
+        <Real>0</Real>
+        <Real>0</Real>
+        <Real>0</Real>
+        <Real>0</Real>
+        <Real>0</Real>
+      </Sequence>
+      <Sequence Name="Row1">
+        <Int Name="Length">20</Int>
+        <Real>4.00000e-03</Real>
+        <Real>19</Real>
+        <Real>0.0</Real>
+        <Real>10</Real>
+        <Real>19</Real>
+        <Real>0.0</Real>
+        <Real>10</Real>
+        <Real>0</Real>
+        <Real>0.0</Real>
+        <Real>-10</Real>
+        <Real>0</Real>
+        <Real>0.0</Real>
+        <Real>-10</Real>
+        <Real>7.29157</Real>
+        <Real>2.37538</Real>
+        <Real>0</Real>
+        <Real>0</Real>
+        <Real>0</Real>
+        <Real>0</Real>
+        <Real>0</Real>
+      </Sequence>
+      <Sequence Name="Row2">
+        <Int Name="Length">20</Int>
+        <Real>8.00000e-03</Real>
+        <Real>19</Real>
+        <Real>0.0</Real>
+        <Real>10</Real>
+        <Real>19</Real>
+        <Real>0.0</Real>
+        <Real>10</Real>
+        <Real>0</Real>
+        <Real>0.0</Real>
+        <Real>-10</Real>
+        <Real>0</Real>
+        <Real>0.0</Real>
+        <Real>-10</Real>
+        <Real>7.29142</Real>
+        <Real>2.37504</Real>
+        <Real>0</Real>
+        <Real>0</Real>
+        <Real>0</Real>
+        <Real>0</Real>
+        <Real>0</Real>
+      </Sequence>
+      <Sequence Name="Row3">
+        <Int Name="Length">20</Int>
+        <Real>1.20000e-02</Real>
+        <Real>19</Real>
+        <Real>0.0</Real>
+        <Real>10</Real>
+        <Real>19</Real>
+        <Real>0.0</Real>
+        <Real>10</Real>
+        <Real>0</Real>
+        <Real>0.0</Real>
+        <Real>-10</Real>
+        <Real>0</Real>
+        <Real>0.0</Real>
+        <Real>-10</Real>
+        <Real>7.29126</Real>
+        <Real>2.3747</Real>
+        <Real>0</Real>
+        <Real>0</Real>
+        <Real>0</Real>
+        <Real>0</Real>
+        <Real>0</Real>
+      </Sequence>
+    </XvgData>
+  </File>
+</ReferenceData>

@@ -133,6 +133,12 @@ void checkXvgFile(TextInputStream* input, TestReferenceChecker* checker, const X
         {
             break;
         }
+        // Remove trailing comments, except # characters in legend strings
+        if (const auto pos = line.find('#'); !startsWith(line, "@") && pos != std::string::npos)
+        {
+            line = line.substr(0, pos);
+        }
+
         const std::vector<std::string> columns = splitString(line);
         const std::string              id      = formatString("Row%d", dataRowCount);
         dataChecker.checkSequence(columns.begin(), columns.end(), id.c_str(), &checkXvgDataPoint);
