@@ -2276,6 +2276,10 @@ int gmx_grompp(int argc, char* argv[])
         mdModules.notifiers().preProcessingNotifier_.notify(qmInputFileName);
     }
 
+    // Notify MDModules of the coulomb type
+    gmx::MdModulesCoulombTypeInfo coulombType = { ir->coulombtype };
+    mdModules.notifiers().preProcessingNotifier_.notify(coulombType);
+
     if (bVerbose)
     {
         GMX_LOG(logger.info)

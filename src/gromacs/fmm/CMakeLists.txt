@@ -38,6 +38,7 @@ gmx_manage_fmm()
 target_sources(fmm PRIVATE
     fmm_mdmodule.cpp
     fmm_mdpoptions.cpp
+    fmm_mdpvalidator.cpp
     fmmoptions.cpp
 )
 

@@ -34,6 +34,7 @@
 gmx_add_unit_test(FmmInterfaceUnitTests fmm-interface-tests
         CPP_SOURCE_FILES
         fmm_mdpoptions.cpp
+        fmm_mdpvalidator.cpp
         fmmforceprovider.cpp
         
         )

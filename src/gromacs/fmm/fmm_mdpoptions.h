@@ -96,10 +96,23 @@ public:
      */
     const FMSolvrOptions& fmSolvrOptions() const;
 
+    /**
+     * \brief Returns FMM options for the active backend.
+     *
+     * These represent the backend-specific part of the MDP options,
+     * exposed via the IFmmOptions interface.
+     *
+     * \return Pointer to active backend's IFmmOptions, or nullptr if inactive.
+     */
+    const IFmmOptions* activeFmmOptions() const;
+
+
 private:
     ExaFmmOptions  exaFmmOptions_;  ///< Options specific to the ExaFMM backend
     FMSolvrOptions fmSolvrOptions_; ///< Options specific to the FMSolvr backend
     ActiveFmmBackend activeFmmBackend_ = ActiveFmmBackend::Inactive; ///< Currently selected FMM backend
+    //! Lookup table for backend-specific FMM options
+    const EnumerationArray<ActiveFmmBackend, const IFmmOptions*> activeOptionLookup_;
 };
 
 } // namespace gmx

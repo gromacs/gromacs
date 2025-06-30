@@ -59,10 +59,11 @@ std::string moduleName()
 
 } // namespace
 
-FmmMdpOptions::FmmMdpOptions()
+FmmMdpOptions::FmmMdpOptions() :
+    exaFmmOptions_(),
+    fmSolvrOptions_(),
+    activeOptionLookup_{ { nullptr, &exaFmmOptions_, &fmSolvrOptions_ } }
 {
-    exaFmmOptions_  = ExaFmmOptions{};
-    fmSolvrOptions_ = FMSolvrOptions{};
 }
 
 void FmmMdpOptions::initMdpOptions(IOptionsContainerWithSections* options)
@@ -125,6 +126,11 @@ const FMSolvrOptions& FmmMdpOptions::fmSolvrOptions() const
                 gmx::InternalError("FMSolvrOptions requested, but active backend is not FMSolvr."));
     }
     return fmSolvrOptions_;
+}
+
+const IFmmOptions* FmmMdpOptions::activeFmmOptions() const
+{
+    return activeOptionLookup_[activeFmmBackend()];
 }
 
 } // namespace gmx

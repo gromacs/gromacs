@@ -85,7 +85,6 @@ inline void fillOptionsFromMdpValues(const KeyValueTreeObject& moduleMdpValues,
     assignOptionsFromKeyValueTree(&moduleOptions, transformedMdpValues.object(), nullptr);
 }
 
-
 } // namespace test
 
 } // namespace gmx

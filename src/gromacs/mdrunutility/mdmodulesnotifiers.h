@@ -53,6 +53,7 @@
 #include "gromacs/math/matrix.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdrunutility/mdmodulesnotifier.h"
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
@@ -224,6 +225,13 @@ struct EnsembleTemperature
     std::optional<real> constantEnsembleTemperature_;
 };
 
+/*! \libinternal \brief Provides Coulomb interaction type info to MD modules
+ */
+struct MdModulesCoulombTypeInfo
+{
+    CoulombInteractionType coulombInteractionType;
+};
+
 /*! \libinternal
  * \brief Group of notifers to organize that MDModules
  * can receive callbacks they subscribe to.
@@ -344,6 +352,7 @@ struct MDModulesNotifiers
                            const IndexGroupsAndNames&,
                            KeyValueTreeObjectBuilder,
                            const QMInputFileName&,
+                           const MdModulesCoulombTypeInfo&,
                            const EnsembleTemperature&>::type preProcessingNotifier_;
 
     /*! \brief Handles subscribing and calling checkpointing callback functions.

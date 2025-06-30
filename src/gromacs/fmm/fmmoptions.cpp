@@ -33,6 +33,7 @@
  */
 #include "fmmoptions.h"
 
+#include "gromacs/fileio/warninp.h"
 #include "gromacs/mdtypes/imdpoptionprovider_helpers.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/optionsection.h"
@@ -47,17 +48,7 @@ static const EnumerationArray<FmmDirectProvider, const char*> c_fmmDirectProvide
     { "GROMACS", "FMM" }
 };
 
-// ExaFMM MDP option names
-
-//! MDP option name to configure the direct interaction range for ExaFMM (1 or 2)
-const std::string c_fmmExaFmmDirectRangeOptionName = "exafmm-direct-range";
-//! MDP option name to select the direct interaction provider for ExaFMM (GROMACS or FMM)
-const std::string c_fmmExaFmmDirectProviderOptionName = "exafmm-direct-provider";
-//! MDP option name to set the maximum number of particles per cell in the ExaFMM tree
-const std::string c_fmmExaFmmMaxParticlesPerCellOptionName = "exafmm-max-particles-per-cell";
-
-
-// FMSolvr MDP option names
+//  Additional FMSolvr MDP option names
 
 //! MDP option name to configure the direct interaction range for FMSolvr (1 or 2)
 const std::string c_fmmFMSolvrDirectRangeOptionName = "fmsolvr-direct-range";
@@ -65,11 +56,18 @@ const std::string c_fmmFMSolvrDirectRangeOptionName = "fmsolvr-direct-range";
 const std::string c_fmmFMSolvrDirectProviderOptionName = "fmsolvr-direct-provider";
 //! MDP option name to enable dipole compensation for improved accuracy in FMSolvr
 const std::string c_fmmFMSolvrDipoleCompensationOptionName = "fmsolvr-dipole-compensation";
-//! MDP option name to set the tree depth for FMSolvr (controls spatial subdivision granularity)
-const std::string c_fmmFMSolvrTreeDepthOptionName = "fmsolvr-tree-depth";
 //! MDP option name to enable sparse tree representation in FMSolvr for memory optimization
 const std::string c_fmmFMSolvrSparseOptionName = "fmsolvr-sparse";
 
+std::string fmmBackendName(ActiveFmmBackend backend)
+{
+    return std::string(c_activeFmmBackendNames[backend]);
+}
+
+std::string fmmDirectProviderName(FmmDirectProvider directProvider)
+{
+    return std::string(c_fmmDirectProviderNames[directProvider]);
+}
 
 void ExaFmmOptions::initMdpOptionsFmm(OptionSectionHandle& section)
 {
@@ -89,8 +87,6 @@ void ExaFmmOptions::initMdpTransformFmm(IKeyValueTreeTransformRules* rules)
             rules, &fromStdString<int>, FmmModuleInfo::sc_name, c_fmmExaFmmDirectRangeOptionName);
     addMdpTransformFromString<std::string>(
             rules, stringIdentityTransform, FmmModuleInfo::sc_name, c_fmmExaFmmDirectProviderOptionName);
-    addMdpTransformFromString<int>(
-            rules, &fromStdString<int>, FmmModuleInfo::sc_name, c_fmmExaFmmMaxParticlesPerCellOptionName);
 }
 
 void ExaFmmOptions::buildMdpOutputFmm(KeyValueTreeObjectBuilder* builder) const
@@ -145,6 +141,54 @@ void FMSolvrOptions::buildMdpOutputFmm(KeyValueTreeObjectBuilder* builder) const
             builder, FmmModuleInfo::sc_name, c_fmmFMSolvrDipoleCompensationOptionName, dipoleCompensation);
     addMdpOutputValue<int>(builder, FmmModuleInfo::sc_name, c_fmmFMSolvrTreeDepthOptionName, treeDepth);
     addMdpOutputValue<bool>(builder, FmmModuleInfo::sc_name, c_fmmFMSolvrSparseOptionName, sparse);
+}
+
+void ExaFmmOptions::validateMdpOptions(WarningHandler* wi) const
+{
+    if (wi == nullptr)
+    {
+        GMX_THROW(InconsistentInputError(
+                "ExaFMMOptions requires a WarningHandler to validate mdp options."));
+    }
+
+    if (order < 1)
+    {
+        wi->addError("ExaFMM expansion order must be greater than 0.");
+    }
+
+    if (directRange < 1 || directRange > 2)
+    {
+        wi->addError("ExaFMM direct range must be either 1 or 2.");
+    }
+
+    if (directRange == 1 && directProvider == FmmDirectProvider::Gromacs)
+    {
+        wi->addError("ExaFMM direct range must be 2 when using GROMACS as a direct provider.");
+    }
+}
+
+void FMSolvrOptions::validateMdpOptions(WarningHandler* wi) const
+{
+    if (wi == nullptr)
+    {
+        GMX_THROW(InconsistentInputError(
+                "FMSolvrOptions requires a WarningHandler to validate mdp options."));
+    }
+
+    if (order < 1)
+    {
+        wi->addError("FMSolvr expansion order must be greater than 0.");
+    }
+
+    if (directRange != 1)
+    {
+        wi->addError("FMSolvr direct range must be 1.");
+    }
+
+    if (treeDepth < 0)
+    {
+        wi->addError("FMSolvr tree depth must be greater than or equal to 0.");
+    }
 }
 
 } // namespace gmx

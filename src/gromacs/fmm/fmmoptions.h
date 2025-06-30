@@ -42,6 +42,8 @@
 #include "gromacs/utility/keyvaluetreetransform.h"
 #include "gromacs/utility/strconvert.h"
 
+class WarningHandler;
+
 namespace gmx
 {
 class OptionSectionHandle;
@@ -76,14 +78,39 @@ static const EnumerationArray<ActiveFmmBackend, const char*> c_activeFmmBackendN
     { "inactive", "exafmm", "fmsolvr" }
 };
 
+/*! \brief Returns the string name for a given FMM backend.
+ *
+ * \param backend The FMM backend enum value.
+ * \return The corresponding backend name as a std::string.
+ */
+std::string fmmBackendName(ActiveFmmBackend backend);
+
+/*! \brief Returns the string name for a given FMM direct provider.
+ *
+ * \param directProvider The FmmDirectProvider enum value.
+ * \return The corresponding direct provider name as a std::string.
+ */
+std::string fmmDirectProviderName(FmmDirectProvider directProvider);
+
+
 //! MDP option name to enable one of the FMM backends (e.g., ExaFMM).
 const std::string c_fmmActiveOptionName = "backend";
 
+// ExaFMM MDP option names
+
+//! MDP option name to configure the direct interaction range for ExaFMM (1 or 2)
+const std::string c_fmmExaFmmDirectRangeOptionName = "exafmm-direct-range";
+//! MDP option name to select the direct interaction provider for ExaFMM (GROMACS or FMM)
+const std::string c_fmmExaFmmDirectProviderOptionName = "exafmm-direct-provider";
 //! MDP option name to set the multipole expansion order for ExaFMM
 const std::string c_fmmExaFmmOrderOptionName = "exafmm-order";
 
+//  FMSolvr MDP option names
+
 //! MDP option name to set the multipole expansion order for FMSolvr
 const std::string c_fmmFMSolvrOrderOptionName = "fmsolvr-order";
+//! MDP option name to set the tree depth for FMSolvr (controls spatial subdivision granularity)
+const std::string c_fmmFMSolvrTreeDepthOptionName = "fmsolvr-tree-depth";
 
 /**
  * @brief Interface for FMM option sets used in MDP handling.
@@ -108,6 +135,7 @@ struct IFmmOptions
     virtual void initMdpOptionsFmm(OptionSectionHandle& section)             = 0;
     virtual void initMdpTransformFmm(IKeyValueTreeTransformRules* rules)     = 0;
     virtual void buildMdpOutputFmm(KeyValueTreeObjectBuilder* builder) const = 0;
+    virtual void validateMdpOptions(WarningHandler* wi) const                = 0;
 
     virtual ~IFmmOptions() = default;
     GMX_DEFAULT_CONSTRUCTORS(IFmmOptions);
@@ -122,6 +150,7 @@ struct ExaFmmOptions : IFmmOptions
     void initMdpOptionsFmm(OptionSectionHandle& section) override;
     void initMdpTransformFmm(IKeyValueTreeTransformRules* rules) override;
     void buildMdpOutputFmm(KeyValueTreeObjectBuilder* builder) const override;
+    void validateMdpOptions(WarningHandler* wi) const override;
 };
 
 struct FMSolvrOptions : IFmmOptions
@@ -136,6 +165,7 @@ struct FMSolvrOptions : IFmmOptions
     void initMdpOptionsFmm(OptionSectionHandle& section) override;
     void initMdpTransformFmm(IKeyValueTreeTransformRules* rules) override;
     void buildMdpOutputFmm(KeyValueTreeObjectBuilder* builder) const override;
+    void validateMdpOptions(WarningHandler* wi) const override;
 };
 
 } // namespace gmx

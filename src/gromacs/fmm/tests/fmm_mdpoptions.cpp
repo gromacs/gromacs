@@ -57,16 +57,6 @@ namespace gmx
 namespace test
 {
 
-/*! \brief Returns the string name for a given FMM backend.
- *
- * \param backend The FMM backend enum value.
- * \return The corresponding backend name as a std::string.
- */
-static std::string fmmBackendName(ActiveFmmBackend backend)
-{
-    return std::string(c_activeFmmBackendNames[backend]);
-}
-
 class FmmMdpOptionsTest : public ::testing::Test
 {
 protected:

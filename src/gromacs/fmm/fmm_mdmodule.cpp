@@ -40,6 +40,7 @@
 #include "gromacs/mdtypes/imdpoptionprovider.h"
 
 #include "fmm_mdpoptions.h"
+#include "fmm_mdpvalidator.h"
 #include "fmmforceprovider.h"
 
 namespace gmx
@@ -59,7 +60,31 @@ public:
     //! \brief Construct the FMM module.
     explicit FmmMDModule() = default;
 
-    void subscribeToPreProcessingNotifications(MDModulesNotifiers* /* notifiers */) override {}
+    /*! \brief Subscribes to preprocessing (grompp) stage notifications.
+     *
+     * Registers handlers needed during preprocessing. This includes:
+     *   - Setting the WarningHandler to emit preprocessing-time errors.
+     *   - Checking that the Coulomb interaction type is set to FMM.
+     *   - Validating FMM MDP settings.
+     */
+    void subscribeToPreProcessingNotifications(MDModulesNotifiers* notifiers) override
+    {
+        if (fmmMdpOptions_.activeFmmBackend() == ActiveFmmBackend::Inactive)
+        {
+            return;
+        }
+
+        fmmMdpValidator_ = std::make_unique<FmmMdpValidator>(*fmmMdpOptions_.activeFmmOptions());
+
+        const auto setWarningFunction = [this](WarningHandler* wi)
+        { fmmMdpValidator_->setWarningHandler(wi); };
+        notifiers->preProcessingNotifier_.subscribe(setWarningFunction);
+
+        // Make sure that the Coulomb type is FMM and validate the FMM-related .mdp options
+        const auto setCoulombTypeFunction = [this](const MdModulesCoulombTypeInfo& coulombTypeInfo)
+        { fmmMdpValidator_->validateFmmMdpSettings(coulombTypeInfo); };
+        notifiers->preProcessingNotifier_.subscribe(setCoulombTypeFunction);
+    }
 
     void subscribeToSimulationSetupNotifications(MDModulesNotifiers* /* notifiers */) override {}
 
@@ -83,6 +108,7 @@ public:
 private:
     std::unique_ptr<FmmForceProvider> fmmForceProvider_;
     FmmMdpOptions                     fmmMdpOptions_;
+    std::unique_ptr<FmmMdpValidator>  fmmMdpValidator_;
 };
 
 } // namespace
