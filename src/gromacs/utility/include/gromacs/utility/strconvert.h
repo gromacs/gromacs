@@ -74,6 +74,15 @@ bool boolFromString(const char* str);
  */
 int intFromString(const char* str);
 /*! \brief
+ * Parses an unsigned integer from a string.
+ *
+ * \throws  InvalidInputError if `str` is not a valid integer.
+ *
+ * Also checks for overflow.
+ */
+uint uintFromString(const char* str);
+
+/*! \brief
  * Parses a 64-bit integer from a string.
  *
  * \throws  InvalidInputError if `str` is not a valid integer.
@@ -82,12 +91,21 @@ int intFromString(const char* str);
  */
 int64_t int64FromString(const char* str);
 /*! \brief
+ * Parses a 64-bit unsigned integer from a string.
+ *
+ * \throws  InvalidInputError if `str` is not a valid number.
+ *
+ * Also checks for overflow.
+ */
+uint64_t uint64FromString(const char* str);
+/*! \brief
  * Parses a float value from a string.
  *
  * \throws  InvalidInputError if `str` is not a valid number.
  *
  * Also checks for overflow.
  */
+
 float floatFromString(const char* str);
 /*! \brief
  * Parses a double value from a string.
@@ -138,12 +156,25 @@ inline int fromString<int>(const char* str)
 {
     return intFromString(str);
 }
+//! Implementation for unsigned integer values.
+template<>
+inline uint fromString<uint>(const char* str)
+{
+    return uintFromString(str);
+}
 //! Implementation for 64-bit integer values.
 template<>
 inline int64_t fromString<int64_t>(const char* str)
 {
     return int64FromString(str);
 }
+//! Implementation for 64-bit unsigned integer values.
+template<>
+inline uint64_t fromString<uint64_t>(const char* str)
+{
+    return uint64FromString(str);
+}
+
 //! Implementation for float values.
 template<>
 inline float fromString<float>(const char* str)
@@ -175,10 +206,25 @@ static inline std::string intToString(int t)
 {
     return formatString("%d", t);
 }
+/*! \brief
+ * Returns a string containing the value of \c t.
+ *
+ * \throws std::bad_alloc if out of memory.
+ */
+static inline std::string uintToString(uint t)
+{
+    return formatString("%u" PRIu32, t);
+}
+
 //! \copydoc intToString(int)
 static inline std::string int64ToString(int64_t t)
 {
     return formatString("%" PRId64, t);
+}
+//! \copydoc intToString(int)
+static inline std::string uint64ToString(uint64_t t)
+{
+    return formatString("%" PRIu64, t);
 }
 //! \copydoc intToString(int)
 static inline std::string doubleToString(double t)
@@ -205,9 +251,17 @@ static inline std::string toString(int t)
 {
     return intToString(t);
 }
+static inline std::string toString(uint t)
+{
+    return uintToString(t);
+}
 static inline std::string toString(int64_t t)
 {
     return int64ToString(t);
+}
+static inline std::string toString(uint64_t t)
+{
+    return uint64ToString(t);
 }
 static inline std::string toString(float t)
 {

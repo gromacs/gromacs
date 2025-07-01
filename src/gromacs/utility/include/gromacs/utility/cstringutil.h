@@ -160,6 +160,14 @@ char* wrap_lines(const char* buf, int line_width, int indent, gmx_bool bIndentFi
  */
 int64_t str_to_int64_t(const char* str, char** endptr);
 
+/*! \brief
+ * Convert a string to uint64_t.
+ *
+ * This method works as the standard library function strtol(), except that it
+ * does not support different bases.
+ */
+uint64_t str_to_uint64_t(const char* str, char** endptr);
+
 /** Minimum size of buffer to pass to gmx_step_str(). */
 #define STEPSTRSIZE 22
 

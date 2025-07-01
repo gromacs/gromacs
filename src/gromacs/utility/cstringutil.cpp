@@ -497,6 +497,16 @@ int64_t str_to_int64_t(const char* str, char** endptr)
 #endif
 }
 
+uint64_t str_to_uint64_t(const char* str, char** endptr)
+{
+#ifndef _MSC_VER
+    return std::strtoull(str, endptr, 10);
+#else
+    return _strtoui64(str, endptr, 10);
+#endif
+}
+
+
 char* gmx_step_str(int64_t i, char* buf)
 {
     sprintf(buf, "%" PRId64, i);

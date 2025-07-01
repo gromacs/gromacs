@@ -91,11 +91,45 @@ int intFromString(const char* str)
     return value;
 }
 
+uint uintFromString(const char* str)
+{
+    errno                          = 0;
+    char*                   endptr = nullptr;
+    const unsigned long int value  = std::strtoul(str, &endptr, 10);
+    if (errno == ERANGE || value > std::numeric_limits<uint>::max())
+    {
+        GMX_THROW(InvalidInputError("Invalid value: '" + std::string(str)
+                                    + "'; it causes an integer overflow"));
+    }
+    if (str[0] == '\0' || *endptr != '\0')
+    {
+        GMX_THROW(InvalidInputError("Invalid value: '" + std::string(str) + "'; expected an integer"));
+    }
+    return value;
+}
+
 int64_t int64FromString(const char* str)
 {
     errno                = 0;
     char*         endptr = nullptr;
     const int64_t value  = str_to_int64_t(str, &endptr);
+    if (errno == ERANGE)
+    {
+        GMX_THROW(InvalidInputError("Invalid value: '" + std::string(str)
+                                    + "'; it causes an integer overflow"));
+    }
+    if (str[0] == '\0' || *endptr != '\0')
+    {
+        GMX_THROW(InvalidInputError("Invalid value: '" + std::string(str) + "'; expected an integer"));
+    }
+    return value;
+}
+
+uint64_t uint64FromString(const char* str)
+{
+    errno                 = 0;
+    char*          endptr = nullptr;
+    const uint64_t value  = str_to_uint64_t(str, &endptr);
     if (errno == ERANGE)
     {
         GMX_THROW(InvalidInputError("Invalid value: '" + std::string(str)

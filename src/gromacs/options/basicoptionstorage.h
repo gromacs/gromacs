@@ -82,7 +82,7 @@ private:
 };
 
 /*! \internal \brief
- * Converts, validates, and stores integer values.
+ * Converts, validates, and stores 32-bit integer values.
  */
 class IntegerOptionStorage : public OptionStorageTemplateSimple<int>
 {
@@ -102,7 +102,31 @@ private:
 };
 
 /*! \internal \brief
- * Converts, validates, and stores integer values.
+ * Converts, validates, and stores 32-bit unsigned integer values.
+ */
+class UnsignedIntegerOptionStorage : public OptionStorageTemplateSimple<uint>
+{
+public:
+    //! \copydoc BooleanOptionStorage::BooleanOptionStorage()
+    explicit UnsignedIntegerOptionStorage(const UnsignedIntegerOption& settings) :
+        MyBase(settings), info_(this)
+    {
+    }
+
+    OptionInfo& optionInfo() override { return info_; }
+    std::string typeString() const override { return isVector() ? "vector" : "uint"; }
+    std::string formatSingleValue(const uint& value) const override;
+
+private:
+    void initConverter(ConverterType* converter) override;
+    void processSetValues(ValueList* values) override;
+
+    UnsignedIntegerOptionInfo info_;
+};
+
+
+/*! \internal \brief
+ * Converts, validates, and stores 64-bit integer values.
  */
 class Int64OptionStorage : public OptionStorageTemplateSimple<int64_t>
 {
@@ -111,13 +135,37 @@ public:
     explicit Int64OptionStorage(const Int64Option& settings) : MyBase(settings), info_(this) {}
 
     OptionInfo& optionInfo() override { return info_; }
-    std::string typeString() const override { return "int"; }
+    std::string typeString() const override { return isVector() ? "vector" : "int"; }
     std::string formatSingleValue(const int64_t& value) const override;
 
 private:
     void initConverter(ConverterType* converter) override;
+    void processSetValues(ValueList* values) override;
 
     Int64OptionInfo info_;
+};
+
+/*! \internal \brief
+ * Converts, validates, and stores unsigned 64-bit integer values.
+ */
+class UnsignedInt64OptionStorage : public OptionStorageTemplateSimple<uint64_t>
+{
+public:
+    //! \copydoc BooleanOptionStorage::BooleanOptionStorage()
+    explicit UnsignedInt64OptionStorage(const UnsignedInt64Option& settings) :
+        MyBase(settings), info_(this)
+    {
+    }
+
+    OptionInfo& optionInfo() override { return info_; }
+    std::string typeString() const override { return isVector() ? "vector" : "uint"; }
+    std::string formatSingleValue(const uint64_t& value) const override;
+
+private:
+    void initConverter(ConverterType* converter) override;
+    void processSetValues(ValueList* values) override;
+
+    UnsignedInt64OptionInfo info_;
 };
 
 /*! \internal \brief

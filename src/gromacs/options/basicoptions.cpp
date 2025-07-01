@@ -228,6 +228,47 @@ AbstractOptionStorage* IntegerOption::createStorage(const OptionManagerContainer
     return new IntegerOptionStorage(*this);
 }
 
+/********************************************************************
+ * UnsignedIntegerOptionStorage
+ */
+
+std::string UnsignedIntegerOptionStorage::formatSingleValue(const uint& value) const
+{
+    return toString(value);
+}
+
+void UnsignedIntegerOptionStorage::initConverter(ConverterType* converter)
+{
+    converter->addConverter<std::string>(&fromStdString<uint>);
+}
+
+void UnsignedIntegerOptionStorage::processSetValues(ValueList* values)
+{
+    if (isVector())
+    {
+        expandVector(maxValueCount(), values);
+    }
+}
+
+/********************************************************************
+ * UnsignedIntegerOptionInfo
+ */
+
+UnsignedIntegerOptionInfo::UnsignedIntegerOptionInfo(UnsignedIntegerOptionStorage* option) :
+    OptionInfo(option)
+{
+}
+
+/********************************************************************
+ * UnsignedIntegerOption
+ */
+
+AbstractOptionStorage* UnsignedIntegerOption::createStorage(const OptionManagerContainer& /*managers*/) const
+{
+    // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
+    return new UnsignedIntegerOptionStorage(*this);
+}
+
 
 /********************************************************************
  * Int64OptionStorage
@@ -241,6 +282,14 @@ std::string Int64OptionStorage::formatSingleValue(const int64_t& value) const
 void Int64OptionStorage::initConverter(ConverterType* converter)
 {
     converter->addConverter<std::string>(&fromStdString<int64_t>);
+}
+
+void Int64OptionStorage::processSetValues(ValueList* values)
+{
+    if (isVector())
+    {
+        expandVector(maxValueCount(), values);
+    }
 }
 
 /********************************************************************
@@ -257,6 +306,48 @@ AbstractOptionStorage* Int64Option::createStorage(const OptionManagerContainer& 
 {
     // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
     return new Int64OptionStorage(*this);
+}
+
+/********************************************************************
+ * UnsignedInt64OptionStorage
+ */
+
+std::string UnsignedInt64OptionStorage::formatSingleValue(const uint64_t& value) const
+{
+    return toString(value);
+}
+
+void UnsignedInt64OptionStorage::initConverter(ConverterType* converter)
+{
+    converter->addConverter<std::string>(&fromStdString<uint64_t>);
+}
+
+void UnsignedInt64OptionStorage::processSetValues(ValueList* values)
+{
+    if (isVector())
+    {
+        expandVector(maxValueCount(), values);
+    }
+}
+
+
+/********************************************************************
+ * UnsignedInt64OptionInfo
+ */
+
+UnsignedInt64OptionInfo::UnsignedInt64OptionInfo(UnsignedInt64OptionStorage* option) :
+    OptionInfo(option)
+{
+}
+
+/********************************************************************
+ * UnsignedInt64Option
+ */
+
+AbstractOptionStorage* UnsignedInt64Option::createStorage(const OptionManagerContainer& /*managers*/) const
+{
+    // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
+    return new UnsignedInt64OptionStorage(*this);
 }
 
 

@@ -64,8 +64,12 @@ class BooleanOptionInfo;
 class BooleanOptionStorage;
 class IntegerOptionInfo;
 class IntegerOptionStorage;
+class UnsignedIntegerOptionInfo;
+class UnsignedIntegerOptionStorage;
 class Int64OptionInfo;
 class Int64OptionStorage;
+class UnsignedInt64OptionInfo;
+class UnsignedInt64OptionStorage;
 class DoubleOptionInfo;
 class DoubleOptionStorage;
 class FloatOptionInfo;
@@ -107,7 +111,7 @@ private:
 };
 
 /*! \brief
- * Specifies an option that provides integer values.
+ * Specifies an option that provides 32-bit integer values.
  *
  * Examples:
  * \code
@@ -159,6 +163,49 @@ private:
 };
 
 /*! \brief
+ * Specifies an option that provides unsigned 32-bit integer values.
+ *
+ * Public methods in this class do not throw.
+ *
+ * \see IntegerOption
+ *
+ * \inpublicapi
+ */
+class UnsignedIntegerOption : public OptionTemplate<uint, UnsignedIntegerOption>
+{
+public:
+    //! OptionInfo subclass corresponding to this option type.
+    typedef UnsignedIntegerOptionInfo InfoType;
+
+    //! Initializes an option with the given name.
+    explicit UnsignedIntegerOption(const char* name) : MyBase(name) {}
+
+    /*! \brief
+     * Sets the option to return a vector value.
+     *
+     * A vector value returns a fixed number of values, the default being
+     * three (can be changed with valueCount()).  However, it also accepts
+     * a single value, in which case the value is used to fill the whole
+     * vector.
+     */
+    MyClass& vector()
+    {
+        setVector();
+        return me();
+    }
+
+private:
+    //! Creates an UnsignedIntegerOptionStorage object.
+    AbstractOptionStorage* createStorage(const OptionManagerContainer& managers) const override;
+
+    /*! \brief
+     * Needed to initialize UnsignedIntegerOptionStorage from this class without
+     * otherwise unnecessary accessors.
+     */
+    friend class UnsignedIntegerOptionStorage;
+};
+
+/*! \brief
  * Specifies an option that provides 64-bit integer values.
  *
  * Public methods in this class do not throw.
@@ -176,6 +223,20 @@ public:
     //! Initializes an option with the given name.
     explicit Int64Option(const char* name) : MyBase(name) {}
 
+    /*! \brief
+     * Sets the option to return a vector value.
+     *
+     * A vector value returns a fixed number of values, the default being
+     * three (can be changed with valueCount()).  However, it also accepts
+     * a single value, in which case the value is used to fill the whole
+     * vector.
+     */
+    MyClass& vector()
+    {
+        setVector();
+        return me();
+    }
+
 private:
     //! Creates an Int64OptionStorage object.
     AbstractOptionStorage* createStorage(const OptionManagerContainer& managers) const override;
@@ -186,6 +247,50 @@ private:
      */
     friend class Int64OptionStorage;
 };
+
+/*! \brief
+ * Specifies an option that provides 64-bit unsigned integer values.
+ *
+ * Public methods in this class do not throw.
+ *
+ * \see IntegerOption
+ *
+ * \inpublicapi
+ */
+class UnsignedInt64Option : public OptionTemplate<uint64_t, UnsignedInt64Option>
+{
+public:
+    //! OptionInfo subclass corresponding to this option type.
+    typedef UnsignedInt64OptionInfo InfoType;
+
+    //! Initializes an option with the given name.
+    explicit UnsignedInt64Option(const char* name) : MyBase(name) {}
+
+    /*! \brief
+     * Sets the option to return a vector value.
+     *
+     * A vector value returns a fixed number of values, the default being
+     * three (can be changed with valueCount()).  However, it also accepts
+     * a single value, in which case the value is used to fill the whole
+     * vector.
+     */
+    MyClass& vector()
+    {
+        setVector();
+        return me();
+    }
+
+private:
+    //! Creates an UnsignedInt64OptionStorage object.
+    AbstractOptionStorage* createStorage(const OptionManagerContainer& managers) const override;
+
+    /*! \brief
+     * Needed to initialize UnsignedInt64OptionStorage from this class without
+     * otherwise unnecessary accessors.
+     */
+    friend class UnsignedInt64OptionStorage;
+};
+
 
 /*! \brief
  * Specifies an option that provides floating-point (double) values.
@@ -707,7 +812,7 @@ private:
 };
 
 /*! \brief
- * Wrapper class for accessing integer option information.
+ * Wrapper class for accessing 32-bit integer option information.
  *
  * \inpublicapi
  */
@@ -716,6 +821,18 @@ class IntegerOptionInfo : public OptionInfo
 public:
     //! Creates an option info object for the given option.
     explicit IntegerOptionInfo(IntegerOptionStorage* option);
+};
+
+/*! \brief
+ * Wrapper class for accessing unsigned 32-bit integer option information.
+ *
+ * \inpublicapi
+ */
+class UnsignedIntegerOptionInfo : public OptionInfo
+{
+public:
+    //! Creates an option info object for the given option.
+    explicit UnsignedIntegerOptionInfo(UnsignedIntegerOptionStorage* option);
 };
 
 /*! \brief
@@ -728,6 +845,18 @@ class Int64OptionInfo : public OptionInfo
 public:
     //! Creates an option info object for the given option.
     explicit Int64OptionInfo(Int64OptionStorage* option);
+};
+
+/*! \brief
+ * Wrapper class for accessing 64-bit unsigned integer option information.
+ *
+ * \inpublicapi
+ */
+class UnsignedInt64OptionInfo : public OptionInfo
+{
+public:
+    //! Creates an option info object for the given option.
+    explicit UnsignedInt64OptionInfo(UnsignedInt64OptionStorage* option);
 };
 
 /*! \brief
