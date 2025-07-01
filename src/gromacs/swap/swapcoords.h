@@ -67,12 +67,13 @@ struct swaphistory_t;
 struct t_commrec;
 struct t_inputrec;
 class t_state;
-struct t_swap;
 struct t_swapcoords;
 struct ObservablesHistory;
 
 namespace gmx
 {
+template<typename T>
+class ArrayRef;
 enum class StartingBehavior;
 class IMDModule;
 class LocalAtomSetManager;
@@ -95,6 +96,17 @@ struct SwapCoordinatesModuleInfo
 
 } // namespace gmx
 
+class SwapCoords
+{
+public:
+    SwapCoords();
+    ~SwapCoords();
+    //! Impl class, currently public while module evolves
+    class Impl;
+    //! Impl object, currently public while module evolves
+    std::unique_ptr<Impl> impl_;
+};
+
 /*! \brief Initialize ion / water position swapping ("Computational Electrophysiology").
  *
  * This routine does the memory allocation for various helper arrays, opens
@@ -113,24 +125,17 @@ struct SwapCoordinatesModuleInfo
  * \param[in] mdrunOptions  Options for mdrun.
  * \param[in] startingBehavior  Describes whether this is a restart appending to output files
  */
-t_swap* init_swapcoords(FILE*                     fplog,
-                        const t_inputrec*         ir,
-                        const char*               fn,
-                        const gmx_mtop_t&         mtop,
-                        const t_state*            globalState,
-                        ObservablesHistory*       oh,
-                        t_commrec*                cr,
-                        gmx::LocalAtomSetManager* atomSets,
-                        const gmx_output_env_t*   oenv,
-                        const gmx::MdrunOptions&  mdrunOptions,
-                        gmx::StartingBehavior     startingBehavior);
-
-
-/*! \brief Finalizes ion / water position swapping, if it was active.
- *
- * \param[in] s             Pointer to swap data.
- */
-void finish_swapcoords(t_swap* s);
+std::unique_ptr<SwapCoords> init_swapcoords(FILE*                     fplog,
+                                            const t_inputrec*         ir,
+                                            const char*               fn,
+                                            const gmx_mtop_t&         mtop,
+                                            const t_state*            globalState,
+                                            ObservablesHistory*       oh,
+                                            t_commrec*                cr,
+                                            gmx::LocalAtomSetManager* atomSets,
+                                            const gmx_output_env_t*   oenv,
+                                            const gmx::MdrunOptions&  mdrunOptions,
+                                            gmx::StartingBehavior     startingBehavior);
 
 
 /*! \brief "Computational Electrophysiology" main routine within MD loop.
@@ -148,15 +153,15 @@ void finish_swapcoords(t_swap* s);
  *
  * \returns Whether at least one pair of molecules was swapped.
  */
-gmx_bool do_swapcoords(t_commrec*        cr,
-                       int64_t           step,
-                       double            t,
-                       const t_inputrec* ir,
-                       t_swap*           s,
-                       gmx_wallcycle*    wcycle,
-                       rvec              x[],
-                       matrix            box,
-                       gmx_bool          bVerbose,
-                       gmx_bool          bRerun);
+gmx_bool do_swapcoords(t_commrec*               cr,
+                       int64_t                  step,
+                       double                   t,
+                       const t_inputrec*        ir,
+                       SwapCoords*              s,
+                       gmx_wallcycle*           wcycle,
+                       gmx::ArrayRef<gmx::RVec> x,
+                       matrix                   box,
+                       gmx_bool                 bVerbose,
+                       gmx_bool                 bRerun);
 
 #endif

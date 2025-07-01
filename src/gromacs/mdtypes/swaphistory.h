@@ -40,6 +40,10 @@
 #ifndef GMX_MDLIB_SWAPHISTORY_H
 #define GMX_MDLIB_SWAPHISTORY_H
 
+#include <memory>
+#include <vector>
+
+#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/enumerationhelpers.h"
 
@@ -59,9 +63,10 @@ struct swapstateIons_t
     // Channel flux detection, this is counting only and has no influence on whether swaps are performed or not:                                                                 */
     gmx::EnumerationArray<Channel, int>  fluxfromAtoB;   // Flux determined from the split cylinders
     gmx::EnumerationArray<Channel, int*> fluxfromAtoB_p; // Pointer to this data
-    int                                  nMol; // Number of molecules, size of the following arrays
-    Domain*                              comp_from;     // Ion came from which compartment?
-    ChannelHistory*                      channel_label; // Through which channel did this ion pass?
+    // Sometimes these vectors are filled during checkpoint reading, and sometimes during tpr reading,
+    // so we use std::shared_ptr so there will be only one vector and it can be allocated from either place.
+    std::shared_ptr<std::vector<Domain>> comp_from;             // Ion came from which compartment?
+    std::shared_ptr<std::vector<ChannelHistory>> channel_label; // Through which channel did this ion pass?
 };
 
 /* Position swapping state
@@ -77,15 +82,13 @@ struct swapstateIons_t
 typedef struct swaphistory_t
 {
     SwapType eSwapCoords; // Swapping along x, y, or z-direction?
-    int      nIonTypes;   // Number of ion types, this is the size of the following arrays
     int  nAverage; // Use average over this many swap attempt steps when determining the ion counts
     int  fluxleak; // Ions not going through any channel (bad!)
-    int* fluxleak_p;                         // Pointer to this data
-    bool bFromCpt;                           // Did we start from a checkpoint file?
-    gmx::EnumerationArray<Channel, int> nat; // Size of xc_old_whole, i.e. the number of atoms in each channel
-    gmx::EnumerationArray<Channel, rvec*> xc_old_whole; // Last known whole positions of the two channels (important for multimeric ch.!)
-    gmx::EnumerationArray<Channel, rvec**> xc_old_whole_p; // Pointer to these positions
-    swapstateIons_t*                       ionType;        // History information for one ion type
+    int* fluxleak_p; // Pointer to this data
+    bool bFromCpt;   // Did we start from a checkpoint file?
+    gmx::EnumerationArray<Channel, std::vector<gmx::RVec>> xc_old_whole; // Last known whole positions of the two channels (important for multimeric ch.!)
+    gmx::EnumerationArray<Channel, std::vector<gmx::RVec>*> xc_old_whole_p; // Pointer to these positions
+    std::vector<swapstateIons_t> ionType; // History information for one ion type
 } swaphistory_t;
 
 #endif

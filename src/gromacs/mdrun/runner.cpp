@@ -206,7 +206,6 @@ class DeviceStream;
 struct DeviceInformation;
 struct gmx_pme_t;
 struct pull_t;
-struct t_swap;
 
 namespace gmx
 {
@@ -2137,7 +2136,7 @@ int Mdrunner::mdrunner()
                                             startingBehavior);
             }
 
-            t_swap* swap = nullptr;
+            std::unique_ptr<SwapCoords> swap;
             if (inputrec->eSwapCoords != SwapType::No)
             {
                 /* Initialize ion swapping code */
@@ -2291,7 +2290,7 @@ int Mdrunner::mdrunner()
             simulatorBuilder.add(SimulatorModules(mdModules_->outputProvider(), mdModules_->notifiers()));
             simulatorBuilder.add(CenterOfMassPulling(pull_work));
             // Todo move to an MDModule
-            simulatorBuilder.add(IonSwapping(swap));
+            simulatorBuilder.add(IonSwapping(swap.get()));
             simulatorBuilder.add(TopologyData(mtop, &localTopology, mdAtoms.get()));
             simulatorBuilder.add(BoxDeformationHandle(deform.get()));
             simulatorBuilder.add(std::move(modularSimulatorCheckpointData));
@@ -2310,7 +2309,6 @@ int Mdrunner::mdrunner()
             {
                 finish_pull(pull_work);
             }
-            finish_swapcoords(swap);
         }
         else
         {

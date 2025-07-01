@@ -2054,7 +2054,7 @@ void gmx::LegacySimulator::do_md()
                                              ir,
                                              swap_,
                                              wallCycleCounters_,
-                                             as_rvec_array(state_->x.data()),
+                                             state_->x,
                                              state_->box,
                                              MAIN(cr_) && mdrunOptions_.verbose,
                                              bRerunMD);

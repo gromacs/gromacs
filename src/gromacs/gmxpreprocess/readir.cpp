@@ -2765,35 +2765,25 @@ void get_ir(const char*     mdparin,
     ir->eSwapCoords = getEnum<SwapType>(&inp, "swapcoords", wi);
     if (ir->eSwapCoords != SwapType::No)
     {
-        char buf[STRLEN];
-        int  nIonTypes;
-
-
-        snew(ir->swap, 1);
+        ir->swap = std::make_unique<t_swapcoords>();
         printStringNoNewline(&inp, "Swap attempt frequency");
         ir->swap->nstswap = get_eint(&inp, "swap-frequency", 1, wi);
         printStringNoNewline(&inp, "Number of ion types to be controlled");
-        nIonTypes = get_eint(&inp, "iontypes", 1, wi);
+        int nIonTypes = get_eint(&inp, "iontypes", 1, wi);
         if (nIonTypes < 1)
         {
             wi->addError("You need to provide at least one ion type for position exchanges.");
         }
-        ir->swap->ngrp = nIonTypes + static_cast<int>(SwapGroupSplittingType::Count);
-        snew(ir->swap->grp, ir->swap->ngrp);
-        for (i = 0; i < ir->swap->ngrp; i++)
-        {
-            snew(ir->swap->grp[i].molname, STRLEN);
-        }
+        ir->swap->groups.resize(t_swapcoords::sc_numRequiredGroups + nIonTypes);
         printStringNoNewline(&inp,
                              "Two index groups that contain the compartment-partitioning atoms");
-        setStringEntry(&inp,
-                       "split-group0",
-                       ir->swap->grp[static_cast<int>(SwapGroupSplittingType::Split0)].molname,
-                       nullptr);
-        setStringEntry(&inp,
-                       "split-group1",
-                       ir->swap->grp[static_cast<int>(SwapGroupSplittingType::Split1)].molname,
-                       nullptr);
+        ir->swap->requiredGroup(SwapGroupSplittingType::Split0).molname =
+                setStringEntry(&inp,
+                               "split-group0",
+
+                               "");
+        ir->swap->requiredGroup(SwapGroupSplittingType::Split1).molname =
+                setStringEntry(&inp, "split-group1", "");
         printStringNoNewline(&inp,
                              "Use center of mass of split groups (yes/no), otherwise center of "
                              "geometry is used");
@@ -2801,10 +2791,8 @@ void get_ir(const char*     mdparin,
         ir->swap->massw_split[1] = (getEnum<Boolean>(&inp, "massw-split1", wi) != Boolean::No);
 
         printStringNoNewline(&inp, "Name of solvent molecules");
-        setStringEntry(&inp,
-                       "solvent-group",
-                       ir->swap->grp[static_cast<int>(SwapGroupSplittingType::Solvent)].molname,
-                       nullptr);
+        ir->swap->requiredGroup(SwapGroupSplittingType::Solvent).molname =
+                setStringEntry(&inp, "solvent-group", "");
 
         printStringNoNewline(&inp,
                              "Split cylinder: radius, upper and lower extension (nm) (this will "
@@ -2832,16 +2820,14 @@ void get_ir(const char*     mdparin,
         printStringNoNewline(
                 &inp, "and the requested number of ions of this type in compartments A and B");
         printStringNoNewline(&inp, "-1 means fix the numbers as found in step 0");
-        for (i = 0; i < nIonTypes; i++)
+        for (size_t ig = 0; ig != ir->swap->ionGroups().size(); ig++)
         {
-            int ig = static_cast<int>(SwapGroupSplittingType::Count) + i;
-
-            sprintf(buf, "iontype%d-name", i);
-            setStringEntry(&inp, buf, ir->swap->grp[ig].molname, nullptr);
-            sprintf(buf, "iontype%d-in-A", i);
-            ir->swap->grp[ig].nmolReq[0] = get_eint(&inp, buf, -1, wi);
-            sprintf(buf, "iontype%d-in-B", i);
-            ir->swap->grp[ig].nmolReq[1] = get_eint(&inp, buf, -1, wi);
+            ir->swap->ionGroup(ig).molname =
+                    setStringEntry(&inp, gmx::formatString("iontype%zu-name", ig), "");
+            ir->swap->ionGroup(ig).nmolReq[0] =
+                    get_eint(&inp, gmx::formatString("iontype%zu-in-A", ig).c_str(), -1, wi);
+            ir->swap->ionGroup(ig).nmolReq[1] =
+                    get_eint(&inp, gmx::formatString("iontype%zu-in-B", ig).c_str(), -1, wi);
         }
 
         printStringNoNewline(
@@ -3738,47 +3724,38 @@ static bool do_egp_flag(t_inputrec* ir, SimulationGroups* groups, const char* op
 
 static void make_swap_groups(t_swapcoords* swap, gmx::ArrayRef<const IndexGroup> indexGroups)
 {
-    int          ig = -1, i = 0, gind;
-    t_swapGroup* swapg;
-
-
     /* Just a quick check here, more thorough checks are in mdrun */
-    if (std::strcmp(swap->grp[static_cast<int>(SwapGroupSplittingType::Split0)].molname,
-                    swap->grp[static_cast<int>(SwapGroupSplittingType::Split1)].molname)
-        == 0)
+    if (swap->requiredGroup(SwapGroupSplittingType::Split0).molname
+        == swap->requiredGroup(SwapGroupSplittingType::Split1).molname)
     {
         gmx_fatal(FARGS,
                   "The split groups can not both be '%s'.",
-                  swap->grp[static_cast<int>(SwapGroupSplittingType::Split0)].molname);
+                  swap->requiredGroup(SwapGroupSplittingType::Split0).molname.c_str());
     }
 
     /* Get the index atoms of the split0, split1, solvent, and swap groups */
-    for (ig = 0; ig < swap->ngrp; ig++)
+    for (int ig = 0; ig != gmx::ssize(swap->groups); ++ig)
     {
-        swapg      = &swap->grp[ig];
-        gind       = getGroupIndex(swap->grp[ig].molname, indexGroups);
-        swapg->nat = gmx::ssize(indexGroups[gind].particleIndices);
-
-        if (swapg->nat > 0)
+        t_swapGroup& swapg    = swap->groups[ig];
+        const char*  name     = (ig < t_swapcoords::sc_numRequiredGroups)
+                                        ? enumValueToString(SwapGroupSplittingType{ ig })
+                                        : "Swap";
+        const int    gind     = getGroupIndex(swapg.molname, indexGroups);
+        const int    numAtoms = gmx::ssize(indexGroups[gind].particleIndices);
+        if (numAtoms > 0)
         {
-            fprintf(stderr,
-                    "%s group '%s' contains %d atoms.\n",
-                    ig < 3 ? enumValueToString(static_cast<SwapGroupSplittingType>(ig)) : "Swap",
-                    swap->grp[ig].molname,
-                    swapg->nat);
-            snew(swapg->ind, swapg->nat);
-            for (i = 0; i < swapg->nat; i++)
-            {
-                swapg->ind[i] = indexGroups[gind].particleIndices[i];
-            }
+            fprintf(stderr, "%s group '%s' contains %d atoms.\n", name, swapg.molname.c_str(), numAtoms);
+            swapg.ind.resize(numAtoms);
+            std::copy(indexGroups[gind].particleIndices.begin(),
+                      indexGroups[gind].particleIndices.end(),
+                      swapg.ind.begin());
         }
         else
         {
-            gmx_fatal(FARGS, "Swap group %s does not contain any atoms.", swap->grp[ig].molname);
+            gmx_fatal(FARGS, "Swap group %s does not contain any atoms.", swapg.molname.c_str());
         }
-    }
+    };
 }
-
 
 static void make_IMD_group(t_IMD* IMDgroup, const char* IMDgname, gmx::ArrayRef<const IndexGroup> indexGroups)
 {
@@ -4385,7 +4362,7 @@ void do_index(const char*                                 mdparin,
 
     if (ir->eSwapCoords != SwapType::No)
     {
-        make_swap_groups(ir->swap, defaultIndexGroups);
+        make_swap_groups(ir->swap.get(), defaultIndexGroups);
     }
 
     /* Make indices for IMD session */

@@ -888,7 +888,7 @@ void gmx::LegacySimulator::do_rerun()
                           ir,
                           swap_,
                           wallCycleCounters_,
-                          rerun_fr.x,
+                          gmx::arrayRefFromArray(reinterpret_cast<gmx::RVec*>(rerun_fr.x), rerun_fr.natoms),
                           rerun_fr.box,
                           MAIN(cr_) && mdrunOptions_.verbose,
                           doRerun);

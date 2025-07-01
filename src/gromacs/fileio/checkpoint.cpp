@@ -1519,50 +1519,49 @@ static int do_cpt_swapstate(XdrSerializer* serializer,
 
     /* When reading, init_swapcoords has not been called yet,
      * so we have to allocate memory first. */
-    do_cpt_int_err(serializer, "number of ion types", &swapstate->nIonTypes, list);
+    int numIonTypes = swapstate->ionType.size();
+    do_cpt_int_err(serializer, "number of ion types", &numIonTypes, list);
     if (bRead)
     {
-        snew(swapstate->ionType, swapstate->nIonTypes);
+        swapstate->ionType.resize(numIonTypes);
     }
 
     for (auto ic : gmx::EnumerationWrapper<Compartment>{})
     {
-        for (int ii = 0; ii < swapstate->nIonTypes; ii++)
+        for (swapstateIons_t& gs : swapstate->ionType)
         {
-            swapstateIons_t* gs = &swapstate->ionType[ii];
-
             if (bRead)
             {
-                do_cpt_int_err(serializer, "swap requested atoms", &gs->nMolReq[ic], list);
+                do_cpt_int_err(serializer, "swap requested atoms", &gs.nMolReq[ic], list);
             }
             else
             {
-                do_cpt_int_err(serializer, "swap requested atoms p", gs->nMolReq_p[ic], list);
+                do_cpt_int_err(serializer, "swap requested atoms p", gs.nMolReq_p[ic], list);
             }
 
             if (bRead)
             {
-                do_cpt_int_err(serializer, "swap influx net", &gs->inflow_net[ic], list);
+                do_cpt_int_err(serializer, "swap influx net", &gs.inflow_net[ic], list);
             }
             else
             {
-                do_cpt_int_err(serializer, "swap influx net p", gs->inflow_net_p[ic], list);
+                do_cpt_int_err(serializer, "swap influx net p", gs.inflow_net_p[ic], list);
             }
 
-            if (bRead && (nullptr == gs->nMolPast[ic]))
+            if (bRead && (nullptr == gs.nMolPast[ic]))
             {
-                snew(gs->nMolPast[ic], swapstate->nAverage);
+                snew(gs.nMolPast[ic], swapstate->nAverage);
             }
 
             for (int j = 0; j < swapstate->nAverage; j++)
             {
                 if (bRead)
                 {
-                    do_cpt_int_err(serializer, "swap past atom counts", &gs->nMolPast[ic][j], list);
+                    do_cpt_int_err(serializer, "swap past atom counts", &gs.nMolPast[ic][j], list);
                 }
                 else
                 {
-                    do_cpt_int_err(serializer, "swap past atom counts p", &gs->nMolPast_p[ic][j], list);
+                    do_cpt_int_err(serializer, "swap past atom counts p", &gs.nMolPast_p[ic][j], list);
                 }
             }
         }
@@ -1571,17 +1570,15 @@ static int do_cpt_swapstate(XdrSerializer* serializer,
     /* Ion flux per channel */
     for (auto ic : gmx::EnumerationWrapper<Channel>{})
     {
-        for (int ii = 0; ii < swapstate->nIonTypes; ii++)
+        for (swapstateIons_t& gs : swapstate->ionType)
         {
-            swapstateIons_t* gs = &swapstate->ionType[ii];
-
             if (bRead)
             {
-                do_cpt_int_err(serializer, "channel flux A->B", &gs->fluxfromAtoB[ic], list);
+                do_cpt_int_err(serializer, "channel flux A->B", &gs.fluxfromAtoB[ic], list);
             }
             else
             {
-                do_cpt_int_err(serializer, "channel flux A->B p", gs->fluxfromAtoB_p[ic], list);
+                do_cpt_int_err(serializer, "channel flux A->B p", gs.fluxfromAtoB_p[ic], list);
             }
         }
     }
@@ -1597,53 +1594,64 @@ static int do_cpt_swapstate(XdrSerializer* serializer,
     }
 
     /* Ion history */
-    for (int ii = 0; ii < swapstate->nIonTypes; ii++)
+    for (swapstateIons_t& gs : swapstate->ionType)
     {
-        swapstateIons_t* gs = &swapstate->ionType[ii];
-
-        do_cpt_int_err(serializer, "number of ions", &gs->nMol, list);
+        int numMolecules;
+        if (!bRead)
+        {
+            numMolecules = gs.channel_label->size();
+        }
+        do_cpt_int_err(serializer, "number of ions", &numMolecules, list);
 
         if (bRead)
         {
-            snew(gs->channel_label, gs->nMol);
-            snew(gs->comp_from, gs->nMol);
+            gs.channel_label = std::make_shared<std::vector<ChannelHistory>>(numMolecules);
+            gs.comp_from     = std::make_shared<std::vector<Domain>>(numMolecules);
         }
 
         do_cpt_n_enum_as_int<ChannelHistory>(
-                serializer, "channel history", gs->nMol, gs->channel_label, list);
-        do_cpt_n_enum_as_int<Domain>(serializer, "domain history", gs->nMol, gs->comp_from, list);
+                serializer, "channel history", numMolecules, gs.channel_label->data(), list);
+        do_cpt_n_enum_as_int<Domain>(serializer, "domain history", numMolecules, gs.comp_from->data(), list);
     }
 
     /* Save the last known whole positions to checkpoint
      * file to be able to also make multimeric channels whole in PBC */
-    do_cpt_int_err(serializer, "Ch0 atoms", &swapstate->nat[Channel::Zero], list);
-    do_cpt_int_err(serializer, "Ch1 atoms", &swapstate->nat[Channel::One], list);
+    int numAtoms;
+    if (!bRead)
+    {
+        numAtoms = swapstate->xc_old_whole_p[Channel::Zero]->size();
+    }
+    do_cpt_int_err(serializer, "Ch0 atoms", &numAtoms, list);
     if (bRead)
     {
-        snew(swapstate->xc_old_whole[Channel::Zero], swapstate->nat[Channel::Zero]);
-        snew(swapstate->xc_old_whole[Channel::One], swapstate->nat[Channel::One]);
+        swapstate->xc_old_whole[Channel::Zero].resize(numAtoms);
+    }
+    do_cpt_int_err(serializer, "Ch1 atoms", &numAtoms, list);
+    if (bRead)
+    {
+        swapstate->xc_old_whole[Channel::One].resize(numAtoms);
         do_cpt_n_rvecs_err(serializer,
                            "Ch0 whole x",
-                           swapstate->nat[Channel::Zero],
-                           swapstate->xc_old_whole[Channel::Zero],
+                           swapstate->xc_old_whole[Channel::Zero].size(),
+                           as_rvec_array(swapstate->xc_old_whole[Channel::Zero].data()),
                            list);
         do_cpt_n_rvecs_err(serializer,
                            "Ch1 whole x",
-                           swapstate->nat[Channel::One],
-                           swapstate->xc_old_whole[Channel::One],
+                           swapstate->xc_old_whole[Channel::One].size(),
+                           as_rvec_array(swapstate->xc_old_whole[Channel::One].data()),
                            list);
     }
     else
     {
         do_cpt_n_rvecs_err(serializer,
                            "Ch0 whole x",
-                           swapstate->nat[Channel::Zero],
-                           *swapstate->xc_old_whole_p[Channel::Zero],
+                           swapstate->xc_old_whole_p[Channel::Zero]->size(),
+                           as_rvec_array(swapstate->xc_old_whole_p[Channel::Zero]->data()),
                            list);
         do_cpt_n_rvecs_err(serializer,
                            "Ch1 whole x",
-                           swapstate->nat[Channel::One],
-                           *swapstate->xc_old_whole_p[Channel::One],
+                           swapstate->xc_old_whole_p[Channel::One]->size(),
+                           as_rvec_array(swapstate->xc_old_whole_p[Channel::One]->data()),
                            list);
     }
 

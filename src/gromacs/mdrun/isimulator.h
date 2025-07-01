@@ -56,12 +56,12 @@ struct gmx_walltime_accounting;
 struct ObservablesHistory;
 struct pull_t;
 struct ReplicaExchangeParameters;
+class SwapCoords;
 struct t_commrec;
 struct t_forcerec;
 struct t_filenm;
 struct t_inputrec;
 struct t_nrnb;
-struct t_swap;
 class t_state;
 
 namespace gmx
@@ -128,7 +128,7 @@ public:
                         t_inputrec*                         inputrec,
                         ImdSession*                         imdSession,
                         pull_t*                             pull_work,
-                        t_swap*                             swap,
+                        SwapCoords*                         swap,
                         const gmx_mtop_t&                   top_global,
                         gmx_localtop_t*                     top,
                         t_state*                            state_global,
@@ -224,7 +224,7 @@ public:
     //! The pull work object.
     pull_t* pullWork_;
     //! The coordinate-swapping session.
-    t_swap* swap_;
+    SwapCoords* swap_;
     //! Full system topology.
     const gmx_mtop_t& topGlobal_;
     //! Handle to local simulation topology.

@@ -37,10 +37,12 @@
 #include <cstdio>
 
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
 
@@ -307,11 +309,9 @@ struct t_IMD
 struct t_swapGroup
 {
     //! Name of the swap group, e.g. NA, CL, SOL
-    char* molname;
-    //! Number of atoms in this group
-    int nat;
+    std::string molname;
     //! The global ion group atoms numbers
-    int* ind;
+    std::vector<int> ind;
     //! Requested number of molecules of this type per compartment
     gmx::EnumerationArray<Compartment, int> nmolReq;
 };
@@ -336,10 +336,34 @@ struct t_swapcoords
     real threshold;
     //! Offset of the swap layer (='bulk') with respect to the compartment-defining layers
     gmx::EnumerationArray<Compartment, real> bulkOffset;
-    //! Number of groups to be controlled
-    int ngrp;
-    //! All swap groups, including split and solvent
-    t_swapGroup* grp;
+    //! Groups for two channels, solvent and (user-defined) ions
+    std::vector<t_swapGroup> groups;
+    //! Three required groups: channel0, channel1, solvent
+    static constexpr int sc_numRequiredGroups = static_cast<int>(SwapGroupSplittingType::Count);
+    //! Return an ArrayRef to the ion groups
+    gmx::ArrayRef<t_swapGroup> ionGroups()
+    {
+        return { groups.data() + sc_numRequiredGroups, groups.data() + groups.size() };
+    }
+    //! Return an ArrayRef-to-const to the ion groups
+    gmx::ArrayRef<const t_swapGroup> ionGroups() const
+    {
+        return { groups.data() + sc_numRequiredGroups, groups.data() + groups.size() };
+    }
+    //! Return a reference to the split or solvent group \c groupType
+    t_swapGroup& requiredGroup(SwapGroupSplittingType groupType)
+    {
+        return groups[static_cast<int>(groupType)];
+    }
+    //! Return a const reference to the split or solvent group \c groupType
+    const t_swapGroup& requiredGroup(SwapGroupSplittingType groupType) const
+    {
+        return groups[static_cast<int>(groupType)];
+    }
+    //! Return a reference to the ion group \c index (i.e within the set of ion groups)
+    t_swapGroup& ionGroup(size_t index) { return groups[index + sc_numRequiredGroups]; }
+    //! Return a const reference to the ion group \c index (i.e within the set of ion groups)
+    const t_swapGroup& ionGroup(size_t index) const { return groups[index + sc_numRequiredGroups]; }
 };
 
 struct PressureCouplingOptions
@@ -585,7 +609,7 @@ struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
     //! Whether to do ion/water position exchanges (CompEL)
     SwapType eSwapCoords = SwapType::Default;
     //! Swap data structure.
-    t_swapcoords* swap = nullptr;
+    std::unique_ptr<t_swapcoords> swap;
 
     //! Whether the tpr makes an interactive MD session possible.
     bool bIMD = false;

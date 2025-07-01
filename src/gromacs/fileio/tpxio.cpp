@@ -954,14 +954,15 @@ static void do_swapgroup(gmx::ISerializer* serializer, t_swapGroup* g)
     }
 
     /* Number of atoms in the group */
-    serializer->doInt(&g->nat);
+    int numAtoms = g->ind.size();
+    serializer->doInt(&numAtoms);
 
     /* The group's atom indices */
     if (serializer->reading())
     {
-        snew(g->ind, g->nat);
+        g->ind.resize(numAtoms);
     }
-    serializer->doIntArray(g->ind, g->nat);
+    serializer->doIntArray(g->ind.data(), g->ind.size());
 
     /* Requested counts for compartments A and B */
     serializer->doIntArray(g->nmolReq.data(), static_cast<int>(Compartment::Count));
@@ -987,14 +988,15 @@ static void do_swapcoords_tpx(gmx::ISerializer* serializer, t_swapcoords* swap, 
         /* The total number of swap groups is the sum of the fixed groups
          * (split0, split1, solvent), and the user-defined groups (2+ types of ions)
          */
-        serializer->doInt(&swap->ngrp);
+        int numGroups = swap->groups.size();
+        serializer->doInt(&numGroups);
         if (serializer->reading())
         {
-            snew(swap->grp, swap->ngrp);
+            swap->groups.resize(numGroups);
         }
-        for (int ig = 0; ig < swap->ngrp; ig++)
+        for (t_swapGroup& group : swap->groups)
         {
-            do_swapgroup(serializer, &swap->grp[ig]);
+            do_swapgroup(serializer, &group);
         }
         serializer->doBool(&swap->massw_split[eChannel0]);
         serializer->doBool(&swap->massw_split[eChannel1]);
@@ -1012,22 +1014,25 @@ static void do_swapcoords_tpx(gmx::ISerializer* serializer, t_swapcoords* swap, 
     {
         /*** Support reading older CompEl .tpr files ***/
 
-        /* In the original CompEl .tpr files, we always have 5 groups: */
-        swap->ngrp = 5;
-        snew(swap->grp, swap->ngrp);
+        /* In the original CompEl .tpr files, we always have two ion groups: */
+        swap->groups.resize(2 + t_swapcoords::sc_numRequiredGroups);
 
-        swap->grp[static_cast<int>(SwapGroupSplittingType::Split0)].molname = gmx_strdup("split0"); // group 0: split0
-        swap->grp[static_cast<int>(SwapGroupSplittingType::Split1)].molname = gmx_strdup("split1"); // group 1: split1
-        swap->grp[static_cast<int>(SwapGroupSplittingType::Solvent)].molname =
-                gmx_strdup("solvent");                // group 2: solvent
-        swap->grp[3].molname = gmx_strdup("anions");  // group 3: anions
-        swap->grp[4].molname = gmx_strdup("cations"); // group 4: cations
+        swap->requiredGroup(SwapGroupSplittingType::Split0).molname = "split0";   // group 0: split0
+        swap->requiredGroup(SwapGroupSplittingType::Split1).molname = "split1";   // group 1: split1
+        swap->requiredGroup(SwapGroupSplittingType::Solvent).molname = "solvent"; // group 2: solvent
+        swap->groups[3].molname = "anions";                                       // group 3: anions
+        swap->groups[4].molname = "cations"; // group 4: cations
 
-        serializer->doInt(&swap->grp[3].nat);
-        serializer->doInt(&swap->grp[static_cast<int>(SwapGroupSplittingType::Solvent)].nat);
-        serializer->doInt(&swap->grp[static_cast<int>(SwapGroupSplittingType::Split0)].nat);
+        int numAtoms;
+        serializer->doInt(&numAtoms);
+        swap->groups[3].ind.resize(numAtoms);
+        serializer->doInt(&numAtoms);
+        swap->requiredGroup(SwapGroupSplittingType::Solvent).ind.resize(numAtoms);
+        serializer->doInt(&numAtoms);
+        swap->requiredGroup(SwapGroupSplittingType::Split0).ind.resize(numAtoms);
         serializer->doBool(&swap->massw_split[eChannel0]);
-        serializer->doInt(&swap->grp[static_cast<int>(SwapGroupSplittingType::Split1)].nat);
+        serializer->doInt(&numAtoms);
+        swap->requiredGroup(SwapGroupSplittingType::Split1).ind.resize(numAtoms);
         serializer->doBool(&swap->massw_split[eChannel1]);
         serializer->doInt(&swap->nstswap);
         serializer->doInt(&swap->nAverage);
@@ -1039,26 +1044,20 @@ static void do_swapcoords_tpx(gmx::ISerializer* serializer, t_swapcoords* swap, 
         serializer->doReal(&swap->cyl1u);
         serializer->doReal(&swap->cyl1l);
 
-        // The order[] array keeps compatibility with older .tpr files
+        // Keep compatibility with older .tpr files
         // by reading in the groups in the classic order
-        {
-            const int order[4] = { 3,
-                                   static_cast<int>(SwapGroupSplittingType::Solvent),
-                                   static_cast<int>(SwapGroupSplittingType::Split0),
-                                   static_cast<int>(SwapGroupSplittingType::Split1) };
-
-            for (int ig = 0; ig < 4; ig++)
-            {
-                int g = order[ig];
-                snew(swap->grp[g].ind, swap->grp[g].nat);
-                serializer->doIntArray(swap->grp[g].ind, swap->grp[g].nat);
-            }
-        }
+        serializer->doIntArray(swap->groups[3].ind.data(), swap->groups[3].ind.size());
+        serializer->doIntArray(swap->requiredGroup(SwapGroupSplittingType::Solvent).ind.data(),
+                               swap->requiredGroup(SwapGroupSplittingType::Solvent).ind.size());
+        serializer->doIntArray(swap->requiredGroup(SwapGroupSplittingType::Split0).ind.data(),
+                               swap->requiredGroup(SwapGroupSplittingType::Split0).ind.size());
+        serializer->doIntArray(swap->requiredGroup(SwapGroupSplittingType::Split1).ind.data(),
+                               swap->requiredGroup(SwapGroupSplittingType::Split1).ind.size());
 
         for (int j = eCompA; j <= eCompB; j++)
         {
-            serializer->doInt(&swap->grp[3].nmolReq[j]); // group 3 = anions
-            serializer->doInt(&swap->grp[4].nmolReq[j]); // group 4 = cations
+            serializer->doInt(&swap->groups[3].nmolReq[j]); // group 3 = anions
+            serializer->doInt(&swap->groups[4].nmolReq[j]); // group 4 = cations
         }
     } /* End support reading older CompEl .tpr files */
 
@@ -1802,9 +1801,9 @@ static void do_inputrec(gmx::ISerializer* serializer, t_inputrec* ir, int file_v
         {
             if (serializer->reading())
             {
-                snew(ir->swap, 1);
+                ir->swap = std::make_unique<t_swapcoords>();
             }
-            do_swapcoords_tpx(serializer, ir->swap, file_version);
+            do_swapcoords_tpx(serializer, ir->swap.get(), file_version);
         }
     }
 

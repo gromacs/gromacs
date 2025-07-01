@@ -298,21 +298,6 @@ static void done_t_rot(t_rot* rot)
     }
 }
 
-static void done_t_swapCoords(t_swapcoords* swapCoords)
-{
-    if (swapCoords == nullptr)
-    {
-        return;
-    }
-    for (int i = 0; i < swapCoords->ngrp; i++)
-    {
-        sfree(swapCoords->grp[i].ind);
-        sfree(swapCoords->grp[i].molname);
-    }
-    sfree(swapCoords->grp);
-    sfree(swapCoords);
-}
-
 void done_inputrec(t_inputrec* ir)
 {
     sfree(ir->opts.nrdf);
@@ -330,7 +315,6 @@ void done_inputrec(t_inputrec* ir)
     sfree(ir->opts.nFreeze);
     sfree(ir->opts.egp_flags);
 
-    done_t_swapCoords(ir->swap);
     done_t_rot(ir->rot.get());
     delete ir->params;
 }
@@ -751,8 +735,6 @@ static void pr_rot(FILE* fp, int indent, const t_rot* rot)
 
 static void pr_swap(FILE* fp, int indent, const t_swapcoords* swap)
 {
-    char str[STRLEN];
-
     /* Enums for better readability of the code */
     enum
     {
@@ -764,31 +746,29 @@ static void pr_swap(FILE* fp, int indent, const t_swapcoords* swap)
     PI("swap-frequency", swap->nstswap);
 
     /* The split groups that define the compartments */
-    for (int j = 0; j < 2; j++)
     {
-        snprintf(str, STRLEN, "massw_split%d", j);
-        PS(str, EBOOL(swap->massw_split[j]));
-        snprintf(str, STRLEN, "split atoms group %d", j);
-        pr_ivec_block(fp, indent, str, swap->grp[j].ind, swap->grp[j].nat, TRUE);
+        PS("massw_split0", EBOOL(swap->massw_split[0]));
+        const t_swapGroup& group = swap->requiredGroup(SwapGroupSplittingType::Split0);
+        pr_ivec_block(fp, indent, "split atoms group 0", group.ind.data(), group.ind.size(), TRUE);
+    }
+    {
+        PS("massw_split1", EBOOL(swap->massw_split[1]));
+        const t_swapGroup& group = swap->requiredGroup(SwapGroupSplittingType::Split1);
+        pr_ivec_block(fp, indent, "split atoms group 1", group.ind.data(), group.ind.size(), TRUE);
     }
 
     /* The solvent group */
-    snprintf(str,
-             STRLEN,
-             "solvent group %s",
-             swap->grp[static_cast<int>(SwapGroupSplittingType::Solvent)].molname);
-    pr_ivec_block(fp,
-                  indent,
-                  str,
-                  swap->grp[static_cast<int>(SwapGroupSplittingType::Solvent)].ind,
-                  swap->grp[static_cast<int>(SwapGroupSplittingType::Solvent)].nat,
-                  TRUE);
+    {
+        const t_swapGroup& group = swap->requiredGroup(SwapGroupSplittingType::Solvent);
+        pr_ivec_block(
+                fp, indent, ("solvent group " + group.molname).c_str(), group.ind.data(), group.ind.size(), TRUE);
+    }
 
     /* Now print the indices for all the ion groups: */
-    for (int ig = static_cast<int>(SwapGroupSplittingType::Count); ig < swap->ngrp; ig++)
+    for (const t_swapGroup& group : swap->ionGroups())
     {
-        snprintf(str, STRLEN, "ion group %s", swap->grp[ig].molname);
-        pr_ivec_block(fp, indent, str, swap->grp[ig].ind, swap->grp[ig].nat, TRUE);
+        pr_ivec_block(
+                fp, indent, ("ion group " + group.molname).c_str(), group.ind.data(), group.ind.size(), TRUE);
     }
 
     PR("cyl0-r", swap->cyl0r);
@@ -800,12 +780,14 @@ static void pr_swap(FILE* fp, int indent, const t_swapcoords* swap)
     PI("coupl-steps", swap->nAverage);
 
     /* Print the requested ion counts for both compartments */
-    for (int ic = eCompA; ic <= eCompB; ic++)
+    for (char ic = eCompA; ic <= eCompB; ic++)
     {
-        for (int ig = static_cast<int>(SwapGroupSplittingType::Count); ig < swap->ngrp; ig++)
+        const char  label = 'A' + ic;
+        std::string suffix("-in-");
+        suffix += label;
+        for (const t_swapGroup& group : swap->ionGroups())
         {
-            snprintf(str, STRLEN, "%s-in-%c", swap->grp[ig].molname, 'A' + ic);
-            PI(str, swap->grp[ig].nmolReq[ic]);
+            PI((group.molname + suffix).c_str(), group.nmolReq[ic]);
         }
     }
 
@@ -1062,7 +1044,7 @@ void pr_inputrec(FILE* fp, int indent, const char* title, const t_inputrec* ir, 
         PS("swapcoords", enumValueToString(ir->eSwapCoords));
         if (ir->eSwapCoords != SwapType::No)
         {
-            pr_swap(fp, indent, ir->swap);
+            pr_swap(fp, indent, ir->swap.get());
         }
 
         /* USER-DEFINED THINGIES */
