@@ -203,7 +203,7 @@ struct QMInputFileName
     std::string qmInputFileName_;
 };
 
-/*! \libinternal \brief Notification for the optianal plumed input filename
+/*! \libinternal \brief Notification for the optional plumed input filename
  *  provided by user as command-line argument for mdrun
  */
 struct PlumedInputFilename
@@ -342,6 +342,9 @@ struct MDModulesNotifiers
      *                              Enables writing of module internal data to .tpr files.
      * \tparam QMInputFileName      Allows the QMMM module to know if the user has provided
      *                              an external QM input file
+     * \tparam MdModulesCoulombTypeInfo
+     *                              Allows modules to access the Coulomb interaction type configured
+     *                              for the simulation (e.g., PME, RF, FMM, etc.).
      * \tparam EnsembleTemperature  Provides modules with the constant ensemble temperature.
      */
     BuildMDModulesNotifier<const CoordinatesAndBoxPreprocessed&,
