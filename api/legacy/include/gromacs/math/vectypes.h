@@ -115,9 +115,9 @@ public:
     //! Default move assignment operator.
     constexpr BasicVector& operator=(BasicVector&& v) noexcept = default;
     //! Indexing operator to make the class work as the raw array.
-    constexpr ValueType& operator[](int i) { return x_[i]; }
+    constexpr ValueType& operator[](size_t i) { return x_[i]; }
     //! Indexing operator to make the class work as the raw array.
-    constexpr ValueType operator[](int i) const { return x_[i]; }
+    constexpr ValueType operator[](size_t i) const { return x_[i]; }
     //! Return whether all elements compare equal
     constexpr bool operator==(const BasicVector<ValueType>& right) const
     {
