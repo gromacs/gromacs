@@ -45,7 +45,9 @@
 #include "gromacs/gpu_utils/cuda_kernel_utils.cuh"
 #include "gromacs/gpu_utils/vectype_ops_cuda.h"
 
-#include "pme.cuh"
+#include "pme_gpu_constants.h"
+#include "pme_gpu_internal.h"
+#include "pme_gpu_types.h"
 #include "pme_grid.h"
 
 /*! \internal \brief
@@ -188,10 +190,10 @@ static __device__ __forceinline__ void pme_gpu_stage_atom_data(T* __restrict__ s
  */
 
 template<int order, int atomsPerBlock, int atomsPerWarp, bool writeSmDtheta, bool writeGlobal, int numGrids>
-static __device__ __forceinline__ void calculate_splines(const PmeGpuCudaKernelParams kernelParams,
-                                                         const int    atomIndexOffset,
-                                                         const float3 atomX,
-                                                         const float  atomCharge,
+static __device__ __forceinline__ void calculate_splines(const PmeGpuKernelParams kernelParams,
+                                                         const int                atomIndexOffset,
+                                                         const float3             atomX,
+                                                         const float              atomCharge,
                                                          float* __restrict__ sm_theta,
                                                          float* __restrict__ sm_dtheta,
                                                          int* __restrict__ sm_gridlineIndices)

@@ -56,7 +56,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/timing/wallcycle.h"
 
-#include "pme.cuh"
+#include "pme_gpu_internal.h"
 #include "pme_gpu_types.h"
 #include "pme_gpu_types_host.h"
 #include "pme_gpu_types_host_impl.h"

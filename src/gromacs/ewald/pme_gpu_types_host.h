@@ -72,14 +72,8 @@ typedef int PmeGpuSpecific;
 typedef int PmeGpuHaloExchange;
 #endif
 
-#if GMX_GPU_CUDA
-struct PmeGpuCudaKernelParams;
-/*! \brief A typedef for including the GPU kernel arguments data by pointer */
-typedef PmeGpuCudaKernelParams PmeGpuKernelParams;
-#elif GMX_GPU_OPENCL || GMX_GPU_SYCL
-struct PmeGpuKernelParamsBase;
-/*! \brief A typedef for including the GPU kernel arguments data by pointer */
-typedef PmeGpuKernelParamsBase PmeGpuKernelParams;
+#if GMX_GPU && !GMX_GPU_HIP
+struct PmeGpuKernelParams;
 #else
 /*! \brief A dummy typedef for the GPU kernel arguments data placeholder on non-GPU builds */
 typedef int PmeGpuKernelParams;

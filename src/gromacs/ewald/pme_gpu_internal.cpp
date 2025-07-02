@@ -76,10 +76,6 @@
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/stringutil.h"
 
-#if GMX_GPU_CUDA
-#    include "pme.cuh"
-#endif
-
 #include "pme_gpu_calculate_splines.h"
 #include "pme_gpu_constants.h"
 #include "pme_gpu_grid.h"
@@ -98,10 +94,10 @@
  * \param[in] pmeGpu  The PME GPU structure.
  * \returns The pointer to the kernel parameters.
  */
-static PmeGpuKernelParamsBase* pme_gpu_get_kernel_params_base_ptr(const PmeGpu* pmeGpu)
+static PmeGpuKernelParams* pme_gpu_get_kernel_params_ptr(const PmeGpu* pmeGpu)
 {
     // reinterpret_cast is needed because the derived CUDA structure is not known in this file
-    auto* kernelParamsPtr = reinterpret_cast<PmeGpuKernelParamsBase*>(pmeGpu->kernelParams.get());
+    auto* kernelParamsPtr = reinterpret_cast<PmeGpuKernelParams*>(pmeGpu->kernelParams.get());
     return kernelParamsPtr;
 }
 
@@ -965,7 +961,7 @@ void pme_gpu_reinit_3dfft(const PmeGpu* pmeGpu)
 
         const gmx::FftBackend backend = getFftBackend(pmeGpu);
 
-        PmeGpuGridParams& grid = pme_gpu_get_kernel_params_base_ptr(pmeGpu)->grid;
+        PmeGpuGridParams& grid = pme_gpu_get_kernel_params_ptr(pmeGpu)->grid;
         for (int gridIndex = 0; gridIndex < pmeGpu->common->ngrids; gridIndex++)
         {
             const bool useDecomposition = pmeGpu->settings.useDecomposition;
@@ -1012,7 +1008,7 @@ void pme_gpu_reinit_3dfft(const PmeGpu* pmeGpu)
         // Initialize fft complex grid and size.
         // These values needs to be initialized for unit tests which run pme_gpu_solve even in mixed
         // mode. In real world cases, pme_gpu_solve is never called in mixed mode.
-        PmeGpuGridParams& grid = pme_gpu_get_kernel_params_base_ptr(pmeGpu)->grid;
+        PmeGpuGridParams& grid = pme_gpu_get_kernel_params_ptr(pmeGpu)->grid;
         std::memcpy(grid.localComplexGridSizePadded, grid.complexGridSizePadded, DIM * sizeof(int));
         std::memcpy(grid.localComplexGridSize, grid.complexGridSize, DIM * sizeof(int));
 
@@ -1133,7 +1129,7 @@ void pme_gpu_update_input_box(gmx_pme_t gmx_unused* pme, const matrix gmx_unused
     PmeGpu* pmeGpu = pme->gpu;
     pmeGpu->common->boxScaler->scaleBox(box, scaledBox);
     // Set (scaled) box volume to use in GPU kernels
-    auto* kernelParamsPtr              = pme_gpu_get_kernel_params_base_ptr(pmeGpu);
+    auto* kernelParamsPtr              = pme_gpu_get_kernel_params_ptr(pmeGpu);
     kernelParamsPtr->current.boxVolume = scaledBox[XX][XX] * scaledBox[YY][YY] * scaledBox[ZZ][ZZ];
     GMX_ASSERT(kernelParamsPtr->current.boxVolume != 0.0F, "Zero volume of the unit cell");
 
@@ -1164,7 +1160,7 @@ void pme_gpu_update_input_box(gmx_pme_t gmx_unused* pme, const matrix gmx_unused
  */
 static void pme_gpu_reinit_grids(PmeGpu* pmeGpu)
 {
-    auto* kernelParamsPtr = pme_gpu_get_kernel_params_base_ptr(pmeGpu);
+    auto* kernelParamsPtr = pme_gpu_get_kernel_params_ptr(pmeGpu);
 
     GMX_ASSERT(
             pmeGpu->common->ngrids == 1 || pmeGpu->common->ngrids == 2,
@@ -1356,7 +1352,7 @@ static void pme_gpu_init(gmx_pme_t*           pme,
 
     GMX_ASSERT(pmeGpu->common->epsilon_r != 0.0F, "PME GPU: bad electrostatic coefficient");
 
-    auto* kernelParamsPtr               = pme_gpu_get_kernel_params_base_ptr(pmeGpu);
+    auto* kernelParamsPtr               = pme_gpu_get_kernel_params_ptr(pmeGpu);
     kernelParamsPtr->constants.elFactor = gmx::c_one4PiEps0 / pmeGpu->common->epsilon_r;
     pme_gpu_update_input_box(pme, box);
 }
@@ -1366,7 +1362,7 @@ void pme_gpu_get_real_grid_sizes(const PmeGpu* pmeGpu, gmx::IVec* gridSize, gmx:
     GMX_ASSERT(gridSize != nullptr, "");
     GMX_ASSERT(paddedGridSize != nullptr, "");
     GMX_ASSERT(pmeGpu != nullptr, "");
-    auto* kernelParamsPtr = pme_gpu_get_kernel_params_base_ptr(pmeGpu);
+    auto* kernelParamsPtr = pme_gpu_get_kernel_params_ptr(pmeGpu);
     for (int i = 0; i < DIM; i++)
     {
         (*gridSize)[i]       = kernelParamsPtr->grid.realGridSize[i];
@@ -1435,7 +1431,7 @@ void pme_gpu_destroy(PmeGpu* pmeGpu)
 
 void pme_gpu_reinit_atoms(PmeGpu* pmeGpu, const int nAtoms, const real* chargesA, const real* chargesB)
 {
-    auto* kernelParamsPtr         = pme_gpu_get_kernel_params_base_ptr(pmeGpu);
+    auto* kernelParamsPtr         = pme_gpu_get_kernel_params_ptr(pmeGpu);
     kernelParamsPtr->atoms.nAtoms = nAtoms;
     const int  blockSize          = pme_gpu_get_atom_data_block_size();
     const int  nAtomsNewPadded    = gmx::divideRoundUp(nAtoms, blockSize) * blockSize;

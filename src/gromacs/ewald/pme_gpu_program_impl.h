@@ -81,7 +81,7 @@ struct PmeGpuProgramImpl
 
     //! Conveniently all the PME kernels use the same single argument type
 #if GMX_GPU_CUDA
-    using PmeKernelHandle = void (*)(const struct PmeGpuCudaKernelParams);
+    using PmeKernelHandle = void (*)(const struct PmeGpuKernelParams);
 #elif GMX_GPU_OPENCL
     using PmeKernelHandle = cl_kernel;
 #else
