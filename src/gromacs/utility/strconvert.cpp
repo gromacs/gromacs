@@ -91,12 +91,12 @@ int intFromString(const char* str)
     return value;
 }
 
-uint uintFromString(const char* str)
+unsigned int uintFromString(const char* str)
 {
     errno                          = 0;
     char*                   endptr = nullptr;
     const unsigned long int value  = std::strtoul(str, &endptr, 10);
-    if (errno == ERANGE || value > std::numeric_limits<uint>::max())
+    if (errno == ERANGE || value > std::numeric_limits<unsigned int>::max())
     {
         GMX_THROW(InvalidInputError("Invalid value: '" + std::string(str)
                                     + "'; it causes an integer overflow"));

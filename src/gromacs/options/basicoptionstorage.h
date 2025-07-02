@@ -104,7 +104,7 @@ private:
 /*! \internal \brief
  * Converts, validates, and stores 32-bit unsigned integer values.
  */
-class UnsignedIntegerOptionStorage : public OptionStorageTemplateSimple<uint>
+class UnsignedIntegerOptionStorage : public OptionStorageTemplateSimple<unsigned int>
 {
 public:
     //! \copydoc BooleanOptionStorage::BooleanOptionStorage()
@@ -115,7 +115,7 @@ public:
 
     OptionInfo& optionInfo() override { return info_; }
     std::string typeString() const override { return isVector() ? "vector" : "uint"; }
-    std::string formatSingleValue(const uint& value) const override;
+    std::string formatSingleValue(const unsigned int& value) const override;
 
 private:
     void initConverter(ConverterType* converter) override;

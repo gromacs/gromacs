@@ -623,7 +623,7 @@ TEST(OptionsAssignerIntegerTest, HandlesVectorsWithDefaultValueWithInvalidAssign
 TEST(OptionsAssignerUnsignedIntegerTest, StoresSingleValue)
 {
     gmx::Options options;
-    uint         value = 1;
+    unsigned int value = 1;
     using gmx::UnsignedIntegerOption;
     ASSERT_NO_THROW(options.addOption(UnsignedIntegerOption("p").store(&value)));
 
@@ -641,7 +641,7 @@ TEST(OptionsAssignerUnsignedIntegerTest, StoresSingleValue)
 TEST(OptionsAssignerUnsignedIntegerTest, HandlesEmptyValue)
 {
     gmx::Options options;
-    uint         value = 1;
+    unsigned int value = 1;
     using gmx::UnsignedIntegerOption;
     ASSERT_NO_THROW(options.addOption(UnsignedIntegerOption("p").store(&value)));
 
@@ -659,7 +659,7 @@ TEST(OptionsAssignerUnsignedIntegerTest, HandlesEmptyValue)
 TEST(OptionsAssignerUnsignedIntegerTest, HandlesInvalidValue)
 {
     gmx::Options options;
-    uint         value = 1;
+    unsigned int value = 1;
     using gmx::UnsignedIntegerOption;
     ASSERT_NO_THROW(options.addOption(UnsignedIntegerOption("p").store(&value)));
 
@@ -677,14 +677,14 @@ TEST(OptionsAssignerUnsignedIntegerTest, HandlesInvalidValue)
 TEST(OptionsAssignerUnsignedIntegerTest, HandlesOverflow)
 {
     gmx::Options options;
-    uint         value = 1;
+    unsigned int value = 1;
     using gmx::UnsignedIntegerOption;
     ASSERT_NO_THROW(options.addOption(UnsignedIntegerOption("p").store(&value)));
 
     gmx::OptionsAssigner assigner(&options);
     EXPECT_NO_THROW(assigner.start());
     ASSERT_NO_THROW(assigner.startOption("p"));
-    std::string overflowValue(gmx::formatString("%u0000", std::numeric_limits<uint>::max()));
+    std::string overflowValue(gmx::formatString("%u0000", std::numeric_limits<unsigned int>::max()));
     EXPECT_THROW(assigner.appendValue(overflowValue), gmx::InvalidInputError);
     EXPECT_NO_THROW(assigner.finishOption());
     EXPECT_NO_THROW(assigner.finish());
@@ -696,7 +696,7 @@ TEST(OptionsAssignerUnsignedIntegerTest, HandlesOverflow)
 TEST(OptionsAssignerUnsignedIntegerTest, StoresDefaultValue)
 {
     gmx::Options options;
-    uint         value = -1;
+    unsigned int value = -1;
     using gmx::UnsignedIntegerOption;
     ASSERT_NO_THROW(options.addOption(UnsignedIntegerOption("p").store(&value).defaultValue(2)));
     EXPECT_EQ(2, value);
@@ -712,7 +712,7 @@ TEST(OptionsAssignerUnsignedIntegerTest, StoresDefaultValue)
 TEST(OptionsAssignerUnsignedIntegerTest, StoresDefaultValueIfSet)
 {
     gmx::Options options;
-    uint         value = 2;
+    unsigned int value = 2;
     using gmx::UnsignedIntegerOption;
     ASSERT_NO_THROW(options.addOption(UnsignedIntegerOption("p").store(&value).defaultValueIfSet(2)));
     EXPECT_EQ(2, value);
@@ -730,7 +730,7 @@ TEST(OptionsAssignerUnsignedIntegerTest, StoresDefaultValueIfSet)
 TEST(OptionsAssignerUnsignedIntegerTest, HandlesDefaultValueIfSetWhenNotSet)
 {
     gmx::Options options;
-    uint         value = 2;
+    unsigned int value = 2;
     using gmx::UnsignedIntegerOption;
     ASSERT_NO_THROW(options.addOption(UnsignedIntegerOption("p").store(&value).defaultValueIfSet(2)));
     EXPECT_EQ(2, value);
@@ -746,7 +746,7 @@ TEST(OptionsAssignerUnsignedIntegerTest, HandlesDefaultValueIfSetWhenNotSet)
 TEST(OptionsAssignerUnsignedIntegerTest, HandlesBothDefaultValues)
 {
     gmx::Options options;
-    uint         value = 2;
+    unsigned int value = 2;
     using gmx::UnsignedIntegerOption;
     ASSERT_NO_THROW(options.addOption(
             UnsignedIntegerOption("p").store(&value).defaultValue(1).defaultValueIfSet(2)));
@@ -764,8 +764,8 @@ TEST(OptionsAssignerUnsignedIntegerTest, HandlesBothDefaultValues)
 
 TEST(OptionsAssignerUnsignedIntegerTest, StoresToVector)
 {
-    gmx::Options      options;
-    std::vector<uint> values;
+    gmx::Options              options;
+    std::vector<unsigned int> values;
     using gmx::UnsignedIntegerOption;
     ASSERT_NO_THROW(options.addOption(UnsignedIntegerOption("p").storeVector(&values).multiValue()));
 
@@ -788,7 +788,7 @@ TEST(OptionsAssignerUnsignedIntegerTest, StoresToVector)
 TEST(OptionsAssignerUnsignedIntegerTest, HandlesVectors)
 {
     gmx::Options options;
-    uint         vec[3] = { 0, 0, 0 };
+    unsigned int vec[3] = { 0, 0, 0 };
     using gmx::UnsignedIntegerOption;
     ASSERT_NO_THROW(options.addOption(UnsignedIntegerOption("p").store(vec).vector()));
 
@@ -810,7 +810,7 @@ TEST(OptionsAssignerUnsignedIntegerTest, HandlesVectors)
 TEST(OptionsAssignerUnsignedIntegerTest, HandlesVectorFromSingleValue)
 {
     gmx::Options options;
-    uint         vec[3] = { 0, 0, 0 };
+    unsigned int vec[3] = { 0, 0, 0 };
     using gmx::UnsignedIntegerOption;
     ASSERT_NO_THROW(options.addOption(UnsignedIntegerOption("p").store(vec).vector()));
 
@@ -830,7 +830,7 @@ TEST(OptionsAssignerUnsignedIntegerTest, HandlesVectorFromSingleValue)
 TEST(OptionsAssignerUnsignedIntegerTest, HandlesVectorsWithDefaultValue)
 {
     gmx::Options options;
-    uint         vec[3] = { 3, 2, 1 };
+    unsigned int vec[3] = { 3, 2, 1 };
     using gmx::UnsignedIntegerOption;
     ASSERT_NO_THROW(options.addOption(UnsignedIntegerOption("p").store(vec).vector()));
 
@@ -844,7 +844,7 @@ TEST(OptionsAssignerUnsignedIntegerTest, HandlesVectorsWithDefaultValue)
 TEST(OptionsAssignerUnsignedIntegerTest, HandlesVectorsWithDefaultValueWithInvalidAssignment)
 {
     gmx::Options options;
-    uint         vec[3] = { 3, 2, 1 };
+    unsigned int vec[3] = { 3, 2, 1 };
     using gmx::UnsignedIntegerOption;
     ASSERT_NO_THROW(options.addOption(UnsignedIntegerOption("p").store(vec).vector()));
 

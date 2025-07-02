@@ -171,7 +171,7 @@ private:
  *
  * \inpublicapi
  */
-class UnsignedIntegerOption : public OptionTemplate<uint, UnsignedIntegerOption>
+class UnsignedIntegerOption : public OptionTemplate<unsigned int, UnsignedIntegerOption>
 {
 public:
     //! OptionInfo subclass corresponding to this option type.

@@ -80,7 +80,7 @@ int intFromString(const char* str);
  *
  * Also checks for overflow.
  */
-uint uintFromString(const char* str);
+unsigned int uintFromString(const char* str);
 
 /*! \brief
  * Parses a 64-bit integer from a string.
@@ -158,7 +158,7 @@ inline int fromString<int>(const char* str)
 }
 //! Implementation for unsigned integer values.
 template<>
-inline uint fromString<uint>(const char* str)
+inline unsigned int fromString<unsigned int>(const char* str)
 {
     return uintFromString(str);
 }
@@ -211,7 +211,7 @@ static inline std::string intToString(int t)
  *
  * \throws std::bad_alloc if out of memory.
  */
-static inline std::string uintToString(uint t)
+static inline std::string uintToString(unsigned int t)
 {
     return formatString("%u" PRIu32, t);
 }
@@ -251,7 +251,7 @@ static inline std::string toString(int t)
 {
     return intToString(t);
 }
-static inline std::string toString(uint t)
+static inline std::string toString(unsigned int t)
 {
     return uintToString(t);
 }

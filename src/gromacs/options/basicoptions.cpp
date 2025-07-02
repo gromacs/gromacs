@@ -232,14 +232,14 @@ AbstractOptionStorage* IntegerOption::createStorage(const OptionManagerContainer
  * UnsignedIntegerOptionStorage
  */
 
-std::string UnsignedIntegerOptionStorage::formatSingleValue(const uint& value) const
+std::string UnsignedIntegerOptionStorage::formatSingleValue(const unsigned int& value) const
 {
     return toString(value);
 }
 
 void UnsignedIntegerOptionStorage::initConverter(ConverterType* converter)
 {
-    converter->addConverter<std::string>(&fromStdString<uint>);
+    converter->addConverter<std::string>(&fromStdString<unsigned int>);
 }
 
 void UnsignedIntegerOptionStorage::processSetValues(ValueList* values)
