@@ -32,6 +32,13 @@ Fixes for ``gmx`` tools
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix build with ROCm 7 and newer
+"""""""""""""""""""""""""""""""
+
+Building and linking |Gromacs| would fail due to changes in the linking behaviour of the main HIP library.
+
+:issue:`5380`
+
 Miscellaneous
 ^^^^^^^^^^^^^
 
