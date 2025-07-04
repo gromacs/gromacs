@@ -46,9 +46,14 @@ namespace gmx
 XdrSerializer::XdrSerializer(const std::filesystem::path& filename, const char* mode) :
     reading_(mode[0] == 'r'), doublePrecision_(GMX_DOUBLE)
 {
+    std::string binaryMode(mode);
+    if (binaryMode.find('b') == std::string::npos)
+    {
+        binaryMode += 'b'; // Always open XDR in binary mode
+    }
     // TODO this always makes a backup, which is not clearly what is
     // wanted in all cases.
-    fp_ = gmx_ffopen(filename, mode);
+    fp_ = gmx_ffopen(filename, binaryMode.c_str());
     if (!fp_)
     {
         GMX_THROW(FileIOError("Failed to open XDR serializer to file " + filename.string()));

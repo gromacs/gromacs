@@ -933,7 +933,7 @@ TEST(OptionsAssignerInt64Test, HandlesOverflow)
     gmx::OptionsAssigner assigner(&options);
     EXPECT_NO_THROW(assigner.start());
     ASSERT_NO_THROW(assigner.startOption("p"));
-    std::string overflowValue(gmx::formatString("%ld0000", std::numeric_limits<int64_t>::max()));
+    std::string overflowValue(gmx::formatString("%" PRIi64 "0000", std::numeric_limits<int64_t>::max()));
     EXPECT_THROW(assigner.appendValue(overflowValue), gmx::InvalidInputError);
     EXPECT_NO_THROW(assigner.finishOption());
     EXPECT_NO_THROW(assigner.finish());
@@ -1180,7 +1180,7 @@ TEST(OptionsAssignerUnsignedInt64Test, HandlesOverflow)
     gmx::OptionsAssigner assigner(&options);
     EXPECT_NO_THROW(assigner.start());
     ASSERT_NO_THROW(assigner.startOption("p"));
-    std::string overflowValue(gmx::formatString("%lu0000", std::numeric_limits<uint64_t>::max()));
+    std::string overflowValue(gmx::formatString("%" PRIu64 "0000", std::numeric_limits<uint64_t>::max()));
     EXPECT_THROW(assigner.appendValue(overflowValue), gmx::InvalidInputError);
     EXPECT_NO_THROW(assigner.finishOption());
     EXPECT_NO_THROW(assigner.finish());
