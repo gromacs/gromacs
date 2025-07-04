@@ -36,6 +36,7 @@
  *
  * \author Magnus Lundborg <lundborg.magnus@gmail.com>
  * \author Petter Johansson <pettjoha@kth.se>
+ * \author Yang Zhang <yang.zhang@scilifelab.se>
  */
 
 #ifndef GMX_FILEIO_H5MD_ATTRIBUTE_H
@@ -46,26 +47,168 @@
 #include <optional>
 #include <string>
 
+#include "h5md_error.h"
+#include "h5md_guard.h"
+#include "h5md_type.h"
+
 namespace gmx
 {
-
-/*! \brief Set a string attribute value in a group or data set.
- * \param[in] container The ID of the HDF5 container, i.e., group or data set.
- * \param[in] name The name of the attribute.
- * \param[in] value The string to set as attribute value.
+/*! \brief Read an attribute of a given data type
  *
- * \throws FileIOError If the parameter could not be set/written or if it already existed
+ * \tparam ValueType The type of the attribute to read
+ * \param[in] container The path of the group or dataset to read the attribute from.
+ * \param[in] attributeName The name of the attribute to read.
+ * \returns The value of the desired type, or std::nullopt if the attribute does not exist.
  */
-void setAttribute(const hid_t container, const char* name, const char* value);
+template<typename ValueType>
+std::optional<ValueType> getAttribute(const hid_t container, const std::string& attributeName);
 
-/*! \brief Get a string attribute value from a group or data set.
- * \param[in] container The ID of the HDF5 container, i.e., group or data set.
- * \param[in] name The name of the attribute.
- * \returns the string value of the attribute, if it was found.
- *
- * \throws FileIOError If the parameter could not be read
+/*! \copydoc getAttribute()
+ * \brief Specialization of getAttribute() for reading attributes of string type.
  */
-std::optional<std::string> getAttribute(const hid_t container, const char* name);
+template<>
+std::optional<std::string> getAttribute<std::string>(const hid_t container, const std::string& attributeName);
+
+/*! \brief Read a vector-like attribute of a given data type
+ *
+ * \tparam ValueType The type of the attribute to read
+ * \param[in] container The path of the group or dataset to read the attribute from.
+ * \param[in] attributeName The name of the attribute to read.
+ * \returns The 1D vector of the desired data, or std::nullopt if the attribute does not exist.
+ */
+template<typename ValueType>
+std::optional<std::vector<ValueType>> getAttributeVector(const hid_t        container,
+                                                         const std::string& attributeName);
+
+/*! \copydoc getAttributeVector()
+ * \brief Specialization of getAttributeVector() for reading attributes of string type.
+ */
+template<>
+std::optional<std::vector<std::string>> getAttributeVector<std::string>(const hid_t container,
+                                                                        const std::string& attributeName);
+
+/*! \brief Write a scalar attribute of a given data type
+ *
+ * \tparam ValueType The type of the attribute to write
+ * \param[in] container The path of the group or dataset to write the attribute to.
+ * \param[in] attributeName The name of the attribute to write.
+ * \param[in] value The scalar to write.
+ */
+template<typename ValueType>
+void setAttribute(const hid_t container, const std::string& attributeName, const ValueType& value);
+
+/*! \copydoc setAttribute()
+ * \brief Specialization of setAttribute() for writing attributes of char* type.
+ */
+template<>
+void setAttribute<const char*>(const hid_t        container,
+                               const std::string& attributeName,
+                               const char* const& value);
+
+/*! \copydoc setAttribute()
+ * \brief Specialization of setAttribute() for writing attributes of std::string type.
+ */
+template<>
+void setAttribute<std::string>(const hid_t        container,
+                               const std::string& attributeName,
+                               const std::string& value);
+
+/*! \brief Write a vector-like attribute of a given data type
+ *
+ * \tparam ValueType The type of the attribute to write.
+ * \param[in] container The path of the group or dataset to write the attribute to.
+ * \param[in] attributeName The name of the attribute to write.
+ * \param[in] value The 1D-vector to write.
+ */
+template<typename ValueType>
+void setAttributeVector(const hid_t                   container,
+                        const std::string&            attributeName,
+                        const std::vector<ValueType>& value);
+
+/*! \copydoc setAttributeVector()
+ * \brief Specialization of setAttributeVector() for writing attributes of char* type.
+ */
+template<>
+void setAttributeVector<const char*>(const hid_t                     container,
+                                     const std::string&              attributeName,
+                                     const std::vector<const char*>& value);
+
+/*! \copydoc setAttributeVector()
+ * \brief Specialization of setAttributeVector() for writing attributes of std::string type.
+ */
+template<>
+void setAttributeVector<std::string>(const hid_t                     container,
+                                     const std::string&              attributeName,
+                                     const std::vector<std::string>& value);
+
+
+extern template std::optional<int32_t>  getAttribute<int32_t>(const hid_t        container,
+                                                             const std::string& attributeName);
+extern template std::optional<int64_t>  getAttribute<int64_t>(const hid_t        container,
+                                                             const std::string& attributeName);
+extern template std::optional<uint32_t> getAttribute<uint32_t>(const hid_t        container,
+                                                               const std::string& attributeName);
+extern template std::optional<uint64_t> getAttribute<uint64_t>(const hid_t        container,
+                                                               const std::string& attributeName);
+extern template std::optional<float>    getAttribute<float>(const hid_t        container,
+                                                         const std::string& attributeName);
+extern template std::optional<double>   getAttribute<double>(const hid_t        container,
+                                                           const std::string& attributeName);
+
+
+extern template std::optional<std::vector<int32_t>>
+getAttributeVector<int32_t>(const hid_t container, const std::string& attributeName);
+extern template std::optional<std::vector<int64_t>>
+getAttributeVector<int64_t>(const hid_t container, const std::string& attributeName);
+extern template std::optional<std::vector<uint32_t>>
+getAttributeVector<uint32_t>(const hid_t container, const std::string& attributeName);
+extern template std::optional<std::vector<uint64_t>>
+getAttributeVector<uint64_t>(const hid_t container, const std::string& attributeName);
+extern template std::optional<std::vector<float>>  getAttributeVector<float>(const hid_t container,
+                                                                            const std::string& attributeName);
+extern template std::optional<std::vector<double>> getAttributeVector<double>(const hid_t container,
+                                                                              const std::string& attributeName);
+
+
+extern template void setAttribute<int32_t>(const hid_t        container,
+                                           const std::string& attributeName,
+                                           const int32_t&     value);
+extern template void setAttribute<int64_t>(const hid_t        container,
+                                           const std::string& attributeName,
+                                           const int64_t&     value);
+extern template void setAttribute<uint32_t>(const hid_t        container,
+                                            const std::string& attributeName,
+                                            const uint32_t&    value);
+extern template void setAttribute<uint64_t>(const hid_t        container,
+                                            const std::string& attributeName,
+                                            const uint64_t&    value);
+extern template void setAttribute<float>(const hid_t        container,
+                                         const std::string& attributeName,
+                                         const float&       value);
+extern template void setAttribute<double>(const hid_t        container,
+                                          const std::string& attributeName,
+                                          const double&      value);
+
+
+extern template void setAttributeVector<int32_t>(const hid_t                 container,
+                                                 const std::string&          attributeName,
+                                                 const std::vector<int32_t>& value);
+extern template void setAttributeVector<int64_t>(const hid_t                 container,
+                                                 const std::string&          attributeName,
+                                                 const std::vector<int64_t>& value);
+extern template void setAttributeVector<uint32_t>(const hid_t                  container,
+                                                  const std::string&           attributeName,
+                                                  const std::vector<uint32_t>& value);
+extern template void setAttributeVector<uint64_t>(const hid_t                  container,
+                                                  const std::string&           attributeName,
+                                                  const std::vector<uint64_t>& value);
+extern template void setAttributeVector<float>(const hid_t               container,
+                                               const std::string&        attributeName,
+                                               const std::vector<float>& value);
+extern template void setAttributeVector<double>(const hid_t                container,
+                                                const std::string&         attributeName,
+                                                const std::vector<double>& value);
+
 
 } // namespace gmx
 

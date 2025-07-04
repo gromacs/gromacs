@@ -35,6 +35,7 @@
 /*! \brief Declarations of H5md data type utility routines.
  *
  * \author Petter Johansson <pettjoha@kth.se>
+ * \author Yang Zhang <yang.zhang@scilifelab.se>
  */
 
 #ifndef GMX_FILEIO_H5MD_TYPE_H
@@ -42,6 +43,7 @@
 
 #include <hdf5.h>
 
+#include "gromacs/fileio/h5md/h5md_error.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -61,6 +63,7 @@ namespace gmx
 // We should only ever be using this module when the library has been initialized, so the call to H5open
 // is not necessary: we only want the type! This is why the functions below use the _g suffix form,
 // while most documentation does not.
+
 
 /*! \brief Return a handle to a native HDF5 type corresponding to the templated value type.
  *
@@ -100,6 +103,41 @@ inline hid_t hdf5DataTypeFor<double>() noexcept
     return H5T_NATIVE_DOUBLE_g;
 }
 
+//! \copydoc hdf5DataTypeFor
+template<>
+inline hid_t hdf5DataTypeFor<uint32_t>() noexcept
+{
+    return H5T_NATIVE_UINT32_g;
+}
+
+//! \copydoc hdf5DataTypeFor
+template<>
+inline hid_t hdf5DataTypeFor<uint64_t>() noexcept
+{
+    return H5T_NATIVE_UINT64_g;
+}
+
+/*! \brief Return a handle to a HDF5 data type for fixed-size strings.
+ *
+ * The string type is created with a UTF8 character set and null termination, so stored
+ * strings may be shorter than the maximum length but a fixed amount of memory is always
+ * allocated. Data sets of fixed size strings are contiguous in memory and can be compressed.
+ *
+ * The returned handle must be closed with a call to H5Tclose to avoid leaking resources.
+ *
+ * \param[in] maxStringLength Fixed maximum size of string.
+ *
+ * \throws gmx::FileIOError if \p maxStringLength is not a positive value.
+ */
+inline hid_t hdf5DataTypeForFixedSizeString(const hsize_t maxStringLength)
+{
+    const hid_t dataType = H5Tcopy(H5T_C_S1_g);
+    H5Tset_cset(dataType, H5T_CSET_UTF8);
+    throwUponH5mdError(H5Tset_size(dataType, maxStringLength) < 0,
+                       "Invalid fixed-size for string type");
+    return dataType;
+}
+
 /*! \brief Return true if the template value type matches the HDF5 data type.
  *
  * \tparam ValueType Type of value to check.
@@ -111,6 +149,33 @@ bool valueTypeIsDataType(const hid_t dataType) noexcept
 {
     const hid_t valueType = hdf5DataTypeFor<ValueType>();
     return H5Tequal(valueType, dataType) > 0;
+}
+
+/*! \copydoc valueTypeIsDataType()
+ * \brief Specialization of valueTypeIsDataType() for char* type.
+ */
+template<>
+inline bool valueTypeIsDataType<char*>(const hid_t dataType) noexcept
+{
+    return H5Tget_class(dataType) == H5T_STRING;
+}
+
+/*! \copydoc valueTypeIsDataType()
+ * \brief Specialization of valueTypeIsDataType() for const char* type.
+ */
+template<>
+inline bool valueTypeIsDataType<const char*>(const hid_t dataType) noexcept
+{
+    return H5Tget_class(dataType) == H5T_STRING;
+}
+
+/*! \copydoc valueTypeIsDataType()
+ * \brief Specialization of valueTypeIsDataType() for std::string type.
+ */
+template<>
+inline bool valueTypeIsDataType<std::string>(const hid_t dataType) noexcept
+{
+    return H5Tget_class(dataType) == H5T_STRING;
 }
 
 /*! \brief Return true if the template value type matches the HDF5 data type.

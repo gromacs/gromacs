@@ -36,6 +36,7 @@ if (GMX_USE_HDF5)
         CPP_SOURCE_FILES
             h5md.cpp
             h5mdtestbase.cpp
+            h5md_attribute.cpp
             h5md_dataset.cpp
             h5md_datasetbuilder.cpp
             h5md_framedatasetbuilder.cpp

@@ -146,7 +146,7 @@ void H5md::setAuthor(const std::string& authorName)
 #if GMX_USE_HDF5
     const auto [authorGroup, groupGuard] =
             makeH5mdGroupGuard(openOrCreateGroup(file_, "h5md/author"));
-    setAttribute(authorGroup, "name", authorName.c_str());
+    setAttribute<std::string>(authorGroup, "name", authorName);
 #else
     GMX_UNUSED_VALUE(authorName);
 #endif
@@ -159,7 +159,7 @@ std::optional<std::string> H5md::author()
     if (objectExists(file_, "h5md/author"))
     {
         const auto [group, groupGuard] = makeH5mdGroupGuard(openGroup(file_, "h5md/author"));
-        return getAttribute(group, "name");
+        return getAttribute<std::string>(group, "name");
     }
     else
     {
@@ -178,7 +178,7 @@ void H5md::setCreatorProgramName(const std::string& creatorName)
 #if GMX_USE_HDF5
     const auto [creatorGroup, groupGuard] =
             makeH5mdGroupGuard(openOrCreateGroup(file_, "h5md/creator"));
-    setAttribute(creatorGroup, "name", creatorName.c_str());
+    setAttribute<std::string>(creatorGroup, "name", creatorName);
 #else
     GMX_UNUSED_VALUE(creatorName);
 #endif
@@ -191,7 +191,7 @@ std::optional<std::string> H5md::creatorProgramName()
     if (objectExists(file_, "h5md/creator"))
     {
         const auto [group, groupGuard] = makeH5mdGroupGuard(openGroup(file_, "h5md/creator"));
-        return getAttribute(group, "name");
+        return getAttribute<std::string>(group, "name");
     }
     else
     {
@@ -210,7 +210,7 @@ void H5md::setCreatorProgramVersion(const std::string& version)
 #if GMX_USE_HDF5
     const auto [creatorGroup, groupGuard] =
             makeH5mdGroupGuard(openOrCreateGroup(file_, "h5md/creator"));
-    setAttribute(creatorGroup, "version", version.c_str());
+    setAttribute<std::string>(creatorGroup, "version", version);
 #else
     GMX_UNUSED_VALUE(version);
 #endif
@@ -223,7 +223,7 @@ std::optional<std::string> H5md::creatorProgramVersion()
     if (objectExists(file_, "h5md/creator"))
     {
         const auto [group, groupGuard] = makeH5mdGroupGuard(openGroup(file_, "h5md/creator"));
-        return getAttribute(group, "version");
+        return getAttribute<std::string>(group, "version");
     }
     else
     {
