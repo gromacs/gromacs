@@ -81,23 +81,6 @@ static void setNumericFillValue(const hid_t createPropertyList, const hid_t data
     H5Pset_fill_value(createPropertyList, dataType, &fillValue);
 }
 
-/*! \brief Return the dimensions of a data set.
- *
- * \param[in] dataSet Handle to data set.
- * \returns Fixed-size array with the dimensions.
- *
- * \throws gmx::FileIOError if the dimensions cannot be read.
- */
-static DataSetDims getDataSetDims(const hid_t dataSet)
-{
-    const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet));
-    DataSetDims dataSetDims(H5Sget_simple_extent_ndims(dataSpace), 0);
-    throwUponH5mdError(H5Sget_simple_extent_dims(dataSpace, dataSetDims.data(), nullptr) < 0,
-                       "Could not get dimensions from data set.");
-
-    return dataSetDims;
-}
-
 /*! \brief Return the per-dimension offset to the data corresponding to a given frame.
  *
  * Since frames are always the major axis the first value of the returned offset is
@@ -239,18 +222,17 @@ hid_t createUnboundedFrameBasicVectorListDataSet(const hid_t        container,
                                                  const std::string& dataSetName,
                                                  const int          numAtoms)
 {
-    constexpr int numDimsDataSet = 1;
+    constexpr int numDimsDataSet = 3;
 
-    const DataSetDims dataSetDims    = { 0 };
-    const DataSetDims dataSetMaxDims = { H5S_UNLIMITED };
+    const DataSetDims dataSetDims    = { 0, static_cast<hsize_t>(numAtoms), DIM };
+    const DataSetDims dataSetMaxDims = { H5S_UNLIMITED, static_cast<hsize_t>(numAtoms), DIM };
 
     // NOTE: HDF5 does not like array data types with size 0 along any dimension.
     // If this is required we need to find a different approach
     throwUponH5mdError(numAtoms < 1, "Cannot create particle-RVec data set for <1 number of atoms");
-    constexpr int     numDimsArray = 2;
-    const DataSetDims arrayDims    = { static_cast<hsize_t>(numAtoms), DIM };
-    const hid_t       dataType =
-            H5Tarray_create2(hdf5DataTypeFor<ValueType>(), numDimsArray, arrayDims.data());
+
+    // Returns a native type that does not need to be closed at end of scope
+    const hid_t dataType = hdf5DataTypeFor<ValueType>();
 
     return createDataSet<ValueType, numDimsDataSet>(
             container, dataSetName, dataType, dataSetDims, dataSetMaxDims);
@@ -262,6 +244,17 @@ hid_t openDataSet(const hid_t container, const std::string& dataSetName)
     throwUponInvalidHid(dataSet, "Could not open data set.");
 
     return dataSet;
+}
+
+DataSetDims getDataSetDims(const hid_t dataSet)
+{
+    throwUponInvalidHid(dataSet, "Cannot get dimensions from invalid data set handle.");
+    const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet));
+    DataSetDims dataSetDims(H5Sget_simple_extent_ndims(dataSpace), 0);
+    throwUponH5mdError(H5Sget_simple_extent_dims(dataSpace, dataSetDims.data(), nullptr) < 0,
+                       "Could not get dimensions from data set.");
+
+    return dataSetDims;
 }
 
 hsize_t getNumFrames(const hid_t dataSet)

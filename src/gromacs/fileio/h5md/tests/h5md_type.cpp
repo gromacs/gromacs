@@ -216,44 +216,6 @@ TYPED_TEST(H5mdTypeTest, ValueTypeIsDataTypeWorksForAllTypesWithBufferTypeInfere
     }
 }
 
-TEST(H5mdTypeTest, ValueTypeIsDataTypeWorksForRvecListDataTypes)
-{
-    constexpr int                numAtoms  = 1; // HDF5 arrays need at least one value
-    const std::array<hsize_t, 2> arrayDims = { numAtoms, DIM };
-    const auto [dataType, dataTypeGuard]   = makeH5mdTypeGuard(
-            H5Tarray_create2(hdf5DataTypeFor<real>(), arrayDims.size(), arrayDims.data()));
-
-    const std::array<gmx::RVec, numAtoms> rvecList;
-    EXPECT_TRUE(valueTypeIsDataType(dataType, makeConstArrayRef(rvecList)));
-}
-
-TEST(H5mdTypeTest, ValueTypeIsDataTypeForRvecListDataTypesChecksArrayDimension)
-{
-    constexpr int numAtoms = 5;
-
-    const std::array<gmx::RVec, numAtoms> rvecList;
-    const std::array<hsize_t, 2>          arrayDims = { numAtoms, DIM };
-    const auto [dataType, dataTypeGuard]            = makeH5mdTypeGuard(
-            H5Tarray_create2(hdf5DataTypeFor<real>(), arrayDims.size(), arrayDims.data()));
-
-    ASSERT_TRUE(valueTypeIsDataType(dataType, makeConstArrayRef(rvecList)))
-            << "Sanity check failed: correctly sized arrays must match";
-
-    const std::array<gmx::RVec, numAtoms - 1> smallRvecList;
-    EXPECT_FALSE(valueTypeIsDataType(dataType, makeConstArrayRef(smallRvecList)));
-    const std::array<gmx::RVec, numAtoms + 1> largeRvecList;
-    EXPECT_FALSE(valueTypeIsDataType(dataType, makeConstArrayRef(largeRvecList)));
-}
-
-TYPED_TEST(H5mdTypeTest, ValueTypeIsDataTypeFailsIfDataTypeIsArrayAndValueTypeIsPrimitive)
-{
-    const std::array<hsize_t, 2> arrayDims = { 1, DIM };
-    const auto [dataType, dataTypeGuard]   = makeH5mdTypeGuard(
-            H5Tarray_create2(hdf5DataTypeFor<TypeParam>(), arrayDims.size(), arrayDims.data()));
-
-    EXPECT_FALSE(valueTypeIsDataType<TypeParam>(dataType));
-}
-
 } // namespace
 } // namespace test
 } // namespace gmx

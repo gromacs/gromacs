@@ -44,6 +44,7 @@
 #include "gromacs/fileio/h5md/h5md_guard.h"
 #include "gromacs/fileio/h5md/h5md_type.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace gmx
 {
@@ -85,15 +86,33 @@ void writeFrame(const hid_t dataSet, const hsize_t index, const ValueType& value
 {
     constexpr int numDims = 1;
 
+    const DataSetDims dims = getDataSetDims(dataSet);
+    throwUponH5mdError(
+            dims.size() != numDims,
+            gmx::formatString("Expected a 1d data set to write value into, but got a %lud data set",
+                              dims.size()));
+
     writeFrameData<ValueType, numDims>(dataSet, index, ArrayRef(&value, &value + 1));
 }
 
 template<typename ValueType>
 void writeFrame(const hid_t dataSet, const hsize_t index, const ArrayRef<const BasicVector<ValueType>> values)
 {
-    constexpr int numDims = 1;
+    constexpr int numDims = 3;
 
-    writeFrameData<BasicVector<ValueType>, numDims>(dataSet, index, values);
+    const DataSetDims dims = getDataSetDims(dataSet);
+    throwUponH5mdError(dims.size() != numDims,
+                       gmx::formatString("Data set must be 3d but is %lud", dims.size()));
+    throwUponH5mdError(
+            dims[1] != values.size(),
+            gmx::formatString("Data set has %llu values but write buffer has %lu", dims[1], values.size()));
+    throwUponH5mdError(dims[2] != DIM, "Data set inner dimension must be 3");
+
+    const size_t              numValues = DIM * values.size();
+    ArrayRef<const ValueType> arrayRef =
+            arrayRefFromArray(reinterpret_cast<const ValueType*>(values.data()), numValues);
+
+    writeFrameData<ValueType, numDims>(dataSet, index, arrayRef);
 }
 
 template void writeFrame<int32_t>(const hid_t, const hsize_t, const int32_t&);

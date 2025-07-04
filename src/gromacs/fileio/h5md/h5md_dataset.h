@@ -77,14 +77,15 @@ using DataSetDims = std::vector<hsize_t>;
 template<typename ValueType>
 hid_t create1dFrameDataSet(const hid_t container, const std::string& dataSetName);
 
-/*! \brief Create a 1d data set for per-frame data of lists of BasicVectors (called \p dataSetName, in \p container).
+/*! \brief Create a 3d data set for per-frame data of lists of BasicVectors (called \p dataSetName, in \p container).
  *
  * Data sets created with this function can contain trajectory data, such as multiple frames
  * of atom positions, velocities or forces. The data set is created empty and has no limit
  * on the number of frames it can contain.
  *
- * The data set is 1d, wherein the data for each frame is stored subsequently along this axis.
- * For each frame the list of BasicVectors is stored in a 2d array with dimensions [\p numAtoms, \p DIM].
+ * The data set is 3d, wherein the data for each frame is stored subsequently along the major axis,
+ * atom indexing is along axis 1 and the vector data along axis 2. Storage layout is thus row-major:
+ * [numFrames][numAtoms][DIM].
  *
  * The returned handle must be closed with H5Dclose to avoid resource leaks.
  *
@@ -144,6 +145,15 @@ inline hid_t createUnboundedFrameRvecListDataSet(const hid_t        container,
  * \throws gmx::FileIOError if data set cannot be opened.
  */
 hid_t openDataSet(const hid_t container, const std::string& dataSetName);
+
+/*! \brief Return the dimensions of a data set.
+ *
+ * \param[in] dataSet Handle to data set.
+ * \returns Vector containing the dimensions.
+ *
+ * \throws gmx::FileIOError if the dimensions cannot be read.
+ */
+DataSetDims getDataSetDims(const hid_t dataSet);
 
 /*! \brief Return the number of frames in a data set.
  *
