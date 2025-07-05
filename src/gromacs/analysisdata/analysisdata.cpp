@@ -120,7 +120,7 @@ AnalysisData::AnalysisData() : impl_(new Impl) {}
 AnalysisData::~AnalysisData() {}
 
 
-void AnalysisData::setDataSetCount(int dataSetCount)
+void AnalysisData::setDataSetCount(size_t dataSetCount)
 {
     GMX_RELEASE_ASSERT(impl_->handles_.empty(),
                        "Cannot change data dimensionality after creating handles");
@@ -128,7 +128,7 @@ void AnalysisData::setDataSetCount(int dataSetCount)
 }
 
 
-void AnalysisData::setColumnCount(int dataSet, int columnCount)
+void AnalysisData::setColumnCount(size_t dataSet, size_t columnCount)
 {
     GMX_RELEASE_ASSERT(impl_->handles_.empty(),
                        "Cannot change data dimensionality after creating handles");
@@ -143,7 +143,7 @@ void AnalysisData::setMultipoint(bool bMultipoint)
 }
 
 
-int AnalysisData::frameCount() const
+size_t AnalysisData::frameCount() const
 {
     return impl_->storage_.frameCount();
 }
@@ -164,7 +164,7 @@ AnalysisDataHandle AnalysisData::startData(const AnalysisDataParallelOptions& op
 }
 
 
-void AnalysisData::finishFrameSerial(int frameIndex)
+void AnalysisData::finishFrameSerial(size_t frameIndex)
 {
     impl_->storage_.finishFrameSerial(frameIndex);
 }
@@ -192,13 +192,13 @@ void AnalysisData::finishData(AnalysisDataHandle handle)
 }
 
 
-AnalysisDataFrameRef AnalysisData::tryGetDataFrameInternal(int index) const
+AnalysisDataFrameRef AnalysisData::tryGetDataFrameInternal(size_t index) const
 {
     return impl_->storage_.tryGetDataFrame(index);
 }
 
 
-bool AnalysisData::requestStorageInternal(int nframes)
+bool AnalysisData::requestStorageInternal(size_t nframes)
 {
     return impl_->storage_.requestStorage(nframes);
 }
@@ -214,7 +214,7 @@ AnalysisDataHandle::AnalysisDataHandle() : impl_(nullptr) {}
 AnalysisDataHandle::AnalysisDataHandle(internal::AnalysisDataHandleImpl* impl) : impl_(impl) {}
 
 
-void AnalysisDataHandle::startFrame(int index, real x, real dx)
+void AnalysisDataHandle::startFrame(size_t index, real x, real dx)
 {
     GMX_RELEASE_ASSERT(impl_ != nullptr, "Invalid data handle used");
     GMX_RELEASE_ASSERT(impl_->currentFrame_ == nullptr,
@@ -223,7 +223,7 @@ void AnalysisDataHandle::startFrame(int index, real x, real dx)
 }
 
 
-void AnalysisDataHandle::selectDataSet(int index)
+void AnalysisDataHandle::selectDataSet(size_t index)
 {
     GMX_RELEASE_ASSERT(impl_ != nullptr, "Invalid data handle used");
     GMX_RELEASE_ASSERT(impl_->currentFrame_ != nullptr,
@@ -232,7 +232,7 @@ void AnalysisDataHandle::selectDataSet(int index)
 }
 
 
-void AnalysisDataHandle::setPoint(int column, real value, bool bPresent)
+void AnalysisDataHandle::setPoint(size_t column, real value, bool bPresent)
 {
     GMX_RELEASE_ASSERT(impl_ != nullptr, "Invalid data handle used");
     GMX_RELEASE_ASSERT(impl_->currentFrame_ != nullptr,
@@ -241,7 +241,7 @@ void AnalysisDataHandle::setPoint(int column, real value, bool bPresent)
 }
 
 
-void AnalysisDataHandle::setPoint(int column, real value, real error, bool bPresent)
+void AnalysisDataHandle::setPoint(size_t column, real value, real error, bool bPresent)
 {
     GMX_RELEASE_ASSERT(impl_ != nullptr, "Invalid data handle used");
     GMX_RELEASE_ASSERT(impl_->currentFrame_ != nullptr,
@@ -250,12 +250,12 @@ void AnalysisDataHandle::setPoint(int column, real value, real error, bool bPres
 }
 
 
-void AnalysisDataHandle::setPoints(int firstColumn, int count, const real* values, bool bPresent)
+void AnalysisDataHandle::setPoints(size_t firstColumn, size_t count, const real* values, bool bPresent)
 {
     GMX_RELEASE_ASSERT(impl_ != nullptr, "Invalid data handle used");
     GMX_RELEASE_ASSERT(impl_->currentFrame_ != nullptr,
                        "setPoints() called without calling startFrame()");
-    for (int i = 0; i < count; ++i)
+    for (size_t i = 0; i < count; ++i)
     {
         impl_->currentFrame_->setValue(firstColumn + i, values[i], bPresent);
     }

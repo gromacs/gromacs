@@ -98,27 +98,27 @@ bool AbstractAnalysisData::isMultipoint() const
     return impl_->bMultipoint_;
 }
 
-int AbstractAnalysisData::dataSetCount() const
+size_t AbstractAnalysisData::dataSetCount() const
 {
     return impl_->columnCounts_.size();
 }
 
-int AbstractAnalysisData::columnCount(int dataSet) const
+size_t AbstractAnalysisData::columnCount(size_t dataSet) const
 {
-    GMX_ASSERT(dataSet >= 0 && dataSet < dataSetCount(), "Out of range data set index");
+    GMX_ASSERT(dataSet < dataSetCount(), "Out of range data set index");
     return impl_->columnCounts_[dataSet];
 }
 
-int AbstractAnalysisData::columnCount() const
+size_t AbstractAnalysisData::columnCount() const
 {
     GMX_ASSERT(dataSetCount() == 1, "Convenience method not available for multiple data sets");
     return columnCount(0);
 }
 
 
-AnalysisDataFrameRef AbstractAnalysisData::tryGetDataFrame(int index) const
+AnalysisDataFrameRef AbstractAnalysisData::tryGetDataFrame(size_t index) const
 {
-    if (index < 0 || index >= frameCount())
+    if (index >= frameCount())
     {
         return AnalysisDataFrameRef();
     }
@@ -126,7 +126,7 @@ AnalysisDataFrameRef AbstractAnalysisData::tryGetDataFrame(int index) const
 }
 
 
-AnalysisDataFrameRef AbstractAnalysisData::getDataFrame(int index) const
+AnalysisDataFrameRef AbstractAnalysisData::getDataFrame(size_t index) const
 {
     AnalysisDataFrameRef frame = tryGetDataFrame(index);
     if (!frame.isValid())
@@ -154,9 +154,9 @@ void AbstractAnalysisData::addModule(const AnalysisDataModulePointer& module)
 }
 
 
-void AbstractAnalysisData::addColumnModule(int col, int span, const AnalysisDataModulePointer& module)
+void AbstractAnalysisData::addColumnModule(size_t col, size_t span, const AnalysisDataModulePointer& module)
 {
-    GMX_RELEASE_ASSERT(col >= 0 && span >= 1, "Invalid columns specified for a column module");
+    GMX_RELEASE_ASSERT(span >= 1, "Invalid columns specified for a column module");
     std::shared_ptr<AnalysisDataProxy> proxy(new AnalysisDataProxy(col, span, this));
     proxy->addModule(module);
     addModule(proxy);
@@ -169,7 +169,7 @@ void AbstractAnalysisData::applyModule(IAnalysisDataModule* module)
 }
 
 /*! \cond libapi */
-void AbstractAnalysisData::setDataSetCount(int dataSetCount)
+void AbstractAnalysisData::setDataSetCount(size_t dataSetCount)
 {
     GMX_RELEASE_ASSERT(dataSetCount > 0, "Invalid data column count");
     impl_->modules_.dataPropertyAboutToChange(AnalysisDataModuleManager::eMultipleDataSets,
@@ -177,13 +177,13 @@ void AbstractAnalysisData::setDataSetCount(int dataSetCount)
     impl_->columnCounts_.resize(dataSetCount);
 }
 
-void AbstractAnalysisData::setColumnCount(int dataSet, int columnCount)
+void AbstractAnalysisData::setColumnCount(size_t dataSet, size_t columnCount)
 {
-    GMX_RELEASE_ASSERT(dataSet >= 0 && dataSet < dataSetCount(), "Out of range data set index");
+    GMX_RELEASE_ASSERT(dataSet < dataSetCount(), "Out of range data set index");
     GMX_RELEASE_ASSERT(columnCount > 0, "Invalid data column count");
 
     bool bMultipleColumns = columnCount > 1;
-    for (int i = 0; i < dataSetCount() && !bMultipleColumns; ++i)
+    for (size_t i = 0; i < dataSetCount() && !bMultipleColumns; ++i)
     {
         if (i != dataSet && this->columnCount(i) > 1)
         {

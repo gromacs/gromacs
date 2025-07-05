@@ -152,13 +152,13 @@ void AnalysisDataDisplacementModule::setMSDHistogram(const AnalysisDataBinAverag
 }
 
 
-AnalysisDataFrameRef AnalysisDataDisplacementModule::tryGetDataFrameInternal(int /*index*/) const
+AnalysisDataFrameRef AnalysisDataDisplacementModule::tryGetDataFrameInternal(size_t /*index*/) const
 {
     return AnalysisDataFrameRef();
 }
 
 
-bool AnalysisDataDisplacementModule::requestStorageInternal(int /*nframes*/)
+bool AnalysisDataDisplacementModule::requestStorageInternal(size_t /*nframes*/)
 {
     return false;
 }

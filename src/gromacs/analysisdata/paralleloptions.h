@@ -70,13 +70,13 @@ public:
      *      Number of frames that may be constructed concurrently.
      *      Must be >= 1.
      */
-    explicit AnalysisDataParallelOptions(int parallelizationFactor);
+    explicit AnalysisDataParallelOptions(size_t parallelizationFactor);
 
     //! Returns the number of frames that may be constructed concurrently.
-    int parallelizationFactor() const { return parallelizationFactor_; }
+    size_t parallelizationFactor() const { return parallelizationFactor_; }
 
 private:
-    int parallelizationFactor_;
+    size_t parallelizationFactor_;
 };
 
 } // namespace gmx

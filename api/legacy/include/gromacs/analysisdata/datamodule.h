@@ -42,6 +42,8 @@
 #ifndef GMX_ANALYSISDATA_DATAMODULE_H
 #define GMX_ANALYSISDATA_DATAMODULE_H
 
+#include <cstddef>
+
 namespace gmx
 {
 
@@ -215,7 +217,7 @@ public:
      * an empty implementation, as there frameFinished() can be used for
      * the same purpose.
      */
-    virtual void frameFinishedSerial(int frameIndex) = 0;
+    virtual void frameFinishedSerial(size_t frameIndex) = 0;
     /*! \brief
      * Called (once) when no more data is available.
      *
@@ -250,7 +252,7 @@ public:
 
 private:
     bool parallelDataStarted(AbstractAnalysisData* data, const AnalysisDataParallelOptions& options) override;
-    void frameFinishedSerial(int /*frameIndex*/) override {}
+    void frameFinishedSerial(size_t /*frameIndex*/) override {}
 };
 
 /*! \brief
@@ -275,7 +277,7 @@ public:
     void frameStarted(const AnalysisDataFrameHeader& frame) override              = 0;
     void pointsAdded(const AnalysisDataPointSetRef& points) override              = 0;
     void frameFinished(const AnalysisDataFrameHeader& header) override            = 0;
-    void frameFinishedSerial(int index) override                                  = 0;
+    void frameFinishedSerial(size_t index) override                               = 0;
     void dataFinished() override                                                  = 0;
 
 private:

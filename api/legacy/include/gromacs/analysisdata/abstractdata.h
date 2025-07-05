@@ -150,7 +150,7 @@ public:
      *
      * Does not throw.
      */
-    int dataSetCount() const;
+    size_t dataSetCount() const;
     /*! \brief
      * Returns the number of columns in a data set.
      *
@@ -168,7 +168,7 @@ public:
      *
      * Does not throw.
      */
-    int columnCount(int dataSet) const;
+    size_t columnCount(size_t dataSet) const;
     /*! \brief
      * Returns the number of columns in the data.
      *
@@ -181,7 +181,7 @@ public:
      *
      * \see columnCount(int)
      */
-    int columnCount() const;
+    size_t columnCount() const;
     /*! \brief
      * Returns the total number of frames in the data.
      *
@@ -202,7 +202,7 @@ public:
      * AnalysisDataModuleManager::notifyFrameFinish() is called.
      * \endif
      */
-    virtual int frameCount() const = 0;
+    virtual size_t frameCount() const = 0;
     /*! \brief
      * Access stored data.
      *
@@ -217,7 +217,7 @@ public:
      * \see requestStorage()
      * \see getDataFrame()
      */
-    AnalysisDataFrameRef tryGetDataFrame(int index) const;
+    AnalysisDataFrameRef tryGetDataFrame(size_t index) const;
     /*! \brief
      * Access stored data.
      *
@@ -230,7 +230,7 @@ public:
      * \see requestStorage()
      * \see tryGetDataFrame()
      */
-    AnalysisDataFrameRef getDataFrame(int index) const;
+    AnalysisDataFrameRef getDataFrame(size_t index) const;
     /*! \brief
      * Request storage of frames.
      *
@@ -294,7 +294,7 @@ public:
      *
      * \see addModule()
      */
-    void addColumnModule(int col, int span, const AnalysisDataModulePointer& module);
+    void addColumnModule(size_t col, size_t span, const AnalysisDataModulePointer& module);
     /*! \brief
      * Applies a module to process data that is ready.
      *
@@ -343,7 +343,7 @@ protected:
      *
      * \see dataSetCount()
      */
-    void setDataSetCount(int dataSetCount);
+    void setDataSetCount(size_t dataSetCount);
     /*! \brief
      * Sets the number of columns for a data set.
      *
@@ -362,7 +362,7 @@ protected:
      *
      * \see columnCount()
      */
-    void setColumnCount(int dataSet, int columnCount);
+    void setColumnCount(size_t dataSet, size_t columnCount);
     /*! \brief
      * Sets whether the data has multiple points per column in a frame.
      *
@@ -404,7 +404,7 @@ protected:
      *
      * \see AnalysisDataStorage
      */
-    virtual AnalysisDataFrameRef tryGetDataFrameInternal(int index) const = 0;
+    virtual AnalysisDataFrameRef tryGetDataFrameInternal(size_t index) const = 0;
     /*! \brief
      * Implements storage requests.
      *
@@ -422,7 +422,7 @@ protected:
      *
      * \see AnalysisDataStorage
      */
-    virtual bool requestStorageInternal(int nframes) = 0;
+    virtual bool requestStorageInternal(size_t nframes) = 0;
 
     //! Returns the module manager to use for calling notification methods.
     AnalysisDataModuleManager& moduleManager();

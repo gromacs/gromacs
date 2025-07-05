@@ -65,7 +65,7 @@ namespace test
  * AnalysisDataTestInputPointSet
  */
 
-AnalysisDataTestInputPointSet::AnalysisDataTestInputPointSet(int index, int dataSetIndex, int firstColumn) :
+AnalysisDataTestInputPointSet::AnalysisDataTestInputPointSet(size_t index, size_t dataSetIndex, size_t firstColumn) :
     index_(index), dataSetIndex_(dataSetIndex), firstColumn_(firstColumn)
 {
 }
@@ -75,28 +75,30 @@ AnalysisDataTestInputPointSet::AnalysisDataTestInputPointSet(int index, int data
  * AnalysisDataTestInputFrame
  */
 
-AnalysisDataTestInputFrame::AnalysisDataTestInputFrame(int index, real x) : index_(index), x_(x) {}
+AnalysisDataTestInputFrame::AnalysisDataTestInputFrame(size_t index, real x) : index_(index), x_(x)
+{
+}
 
-AnalysisDataTestInputPointSet& AnalysisDataTestInputFrame::addPointSet(int dataSet, int firstColumn)
+AnalysisDataTestInputPointSet& AnalysisDataTestInputFrame::addPointSet(size_t dataSet, size_t firstColumn)
 {
     pointSets_.push_back(AnalysisDataTestInputPointSet(pointSets_.size(), dataSet, firstColumn));
     return pointSets_.back();
 }
 
-void AnalysisDataTestInputFrame::addPointSetWithValues(int dataSet, int firstColumn, real y1)
+void AnalysisDataTestInputFrame::addPointSetWithValues(size_t dataSet, size_t firstColumn, real y1)
 {
     AnalysisDataTestInputPointSet& pointSet = addPointSet(dataSet, firstColumn);
     pointSet.addValue(y1);
 }
 
-void AnalysisDataTestInputFrame::addPointSetWithValues(int dataSet, int firstColumn, real y1, real y2)
+void AnalysisDataTestInputFrame::addPointSetWithValues(size_t dataSet, size_t firstColumn, real y1, real y2)
 {
     AnalysisDataTestInputPointSet& pointSet = addPointSet(dataSet, firstColumn);
     pointSet.addValue(y1);
     pointSet.addValue(y2);
 }
 
-void AnalysisDataTestInputFrame::addPointSetWithValues(int dataSet, int firstColumn, real y1, real y2, real y3)
+void AnalysisDataTestInputFrame::addPointSetWithValues(size_t dataSet, size_t firstColumn, real y1, real y2, real y3)
 {
     AnalysisDataTestInputPointSet& pointSet = addPointSet(dataSet, firstColumn);
     pointSet.addValue(y1);
@@ -104,7 +106,7 @@ void AnalysisDataTestInputFrame::addPointSetWithValues(int dataSet, int firstCol
     pointSet.addValue(y3);
 }
 
-void AnalysisDataTestInputFrame::addPointSetWithValueAndError(int dataSet, int firstColumn, real y1, real e1)
+void AnalysisDataTestInputFrame::addPointSetWithValueAndError(size_t dataSet, size_t firstColumn, real y1, real e1)
 {
     AnalysisDataTestInputPointSet& pointSet = addPointSet(dataSet, firstColumn);
     pointSet.addValueWithError(y1, e1);
@@ -115,7 +117,7 @@ void AnalysisDataTestInputFrame::addPointSetWithValueAndError(int dataSet, int f
  * AnalysisDataTestInput
  */
 
-AnalysisDataTestInput::AnalysisDataTestInput(int dataSetCount, bool bMultipoint) :
+AnalysisDataTestInput::AnalysisDataTestInput(size_t dataSetCount, bool bMultipoint) :
     columnCounts_(dataSetCount), bMultipoint_(bMultipoint)
 {
 }
@@ -124,16 +126,16 @@ AnalysisDataTestInput::AnalysisDataTestInput(int dataSetCount, bool bMultipoint)
 AnalysisDataTestInput::~AnalysisDataTestInput() {}
 
 
-const AnalysisDataTestInputFrame& AnalysisDataTestInput::frame(int index) const
+const AnalysisDataTestInputFrame& AnalysisDataTestInput::frame(size_t index) const
 {
-    GMX_RELEASE_ASSERT(index >= 0 && index < frameCount(), "Out-of-range frame index");
+    GMX_RELEASE_ASSERT(index < frameCount(), "Out-of-range frame index");
     return frames_[index];
 }
 
 
-void AnalysisDataTestInput::setColumnCount(int dataSet, int columnCount)
+void AnalysisDataTestInput::setColumnCount(size_t dataSet, size_t columnCount)
 {
-    GMX_RELEASE_ASSERT(dataSet >= 0 && dataSet < dataSetCount(), "Out-of-range data set index");
+    GMX_RELEASE_ASSERT(dataSet < dataSetCount(), "Out-of-range data set index");
     columnCounts_[dataSet] = columnCount;
 }
 
@@ -179,7 +181,7 @@ AnalysisDataTestFixture::AnalysisDataTestFixture() {}
 void AnalysisDataTestFixture::setupDataObject(const AnalysisDataTestInput& input, AnalysisData* data)
 {
     data->setDataSetCount(input.dataSetCount());
-    for (int i = 0; i < input.dataSetCount(); ++i)
+    for (size_t i = 0; i < input.dataSetCount(); ++i)
     {
         data->setColumnCount(i, input.columnCount(i));
     }
@@ -191,7 +193,7 @@ void AnalysisDataTestFixture::presentAllData(const AnalysisDataTestInput& input,
 {
     gmx::AnalysisDataParallelOptions options;
     gmx::AnalysisDataHandle          handle = data->startData(options);
-    for (int row = 0; row < input.frameCount(); ++row)
+    for (size_t row = 0; row < input.frameCount(); ++row)
     {
         presentDataFrame(input, row, handle);
         EXPECT_EQ(row + 1, data->frameCount());
@@ -204,11 +206,11 @@ void AnalysisDataTestFixture::presentDataFrame(const AnalysisDataTestInput& inpu
 {
     const AnalysisDataTestInputFrame& frame = input.frame(row);
     handle.startFrame(row, frame.x(), AnalysisDataTestInputFrame::dx());
-    for (int i = 0; i < frame.pointSetCount(); ++i)
+    for (size_t i = 0; i < frame.pointSetCount(); ++i)
     {
         const AnalysisDataTestInputPointSet& points = frame.pointSet(i);
         handle.selectDataSet(points.dataSetIndex());
-        for (int j = 0; j < points.size(); ++j)
+        for (size_t j = 0; j < points.size(); ++j)
         {
             if (points.hasError(j))
             {

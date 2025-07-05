@@ -80,7 +80,7 @@ class AbstractAnalysisArrayData : public AbstractAnalysisData
 public:
     ~AbstractAnalysisArrayData() override;
 
-    int frameCount() const override { return bReady_ ? rowCount_ : 0; }
+    size_t frameCount() const override { return bReady_ ? rowCount_ : 0; }
 
     /*! \brief
      * Returns the number of rows in the data array.
@@ -88,7 +88,7 @@ public:
      * This function is identical to frameCount(), except that frameCount()
      * returns 0 before valuesReady() has been called.
      */
-    int rowCount() const { return rowCount_; }
+    size_t rowCount() const { return rowCount_; }
     //! Returns true if values have been allocated.
     bool isAllocated() const { return !value_.empty(); }
     //! Returns the step between frame x values when the x axis is uniform.
@@ -98,16 +98,16 @@ public:
         return xstep_;
     }
     //! Returns the x value of a row.
-    real xvalue(int row) const
+    real xvalue(size_t row) const
     {
-        GMX_ASSERT(row >= 0 && row < rowCount(), "Row index out of range");
+        GMX_ASSERT(row < rowCount(), "Row index out of range");
         return xvalue_[row];
     }
     //! Returns a given array element.
-    const AnalysisDataValue& value(int row, int col) const
+    const AnalysisDataValue& value(size_t row, size_t col) const
     {
-        GMX_ASSERT(row >= 0 && row < rowCount(), "Row index out of range");
-        GMX_ASSERT(col >= 0 && col < columnCount(), "Column index out of range");
+        GMX_ASSERT(row < rowCount(), "Row index out of range");
+        GMX_ASSERT(col < columnCount(), "Column index out of range");
         GMX_ASSERT(isAllocated(), "Data array not allocated");
         return value_[row * columnCount() + col];
     }
@@ -129,7 +129,7 @@ protected:
      *
      * See AbstractAnalysisData::setColumnCount() for exception behavior.
      */
-    void setColumnCount(int ncols);
+    void setColumnCount(size_t ncols);
     /*! \brief
      * Sets the number of rows in the data array.
      *
@@ -143,7 +143,7 @@ protected:
      *
      * Does not throw.
      */
-    void setRowCount(int rowCount);
+    void setRowCount(size_t rowCount);
     /*! \brief
      * Allocates memory for the values.
      *
@@ -186,12 +186,12 @@ protected:
      *
      * Does not throw.
      */
-    void setXAxisValue(int row, real value);
+    void setXAxisValue(size_t row, real value);
     //! Returns a reference to a given array element.
-    AnalysisDataValue& value(int row, int col)
+    AnalysisDataValue& value(size_t row, size_t col)
     {
-        GMX_ASSERT(row >= 0 && row < rowCount(), "Row index out of range");
-        GMX_ASSERT(col >= 0 && col < columnCount(), "Column index out of range");
+        GMX_ASSERT(row < rowCount(), "Row index out of range");
+        GMX_ASSERT(col < columnCount(), "Column index out of range");
         GMX_ASSERT(isAllocated(), "Data array not allocated");
         return value_[row * columnCount() + col];
     }
@@ -219,11 +219,11 @@ protected:
     static void copyContents(const AbstractAnalysisArrayData* src, AbstractAnalysisArrayData* dest);
 
 private:
-    AnalysisDataFrameRef tryGetDataFrameInternal(int index) const override;
-    bool                 requestStorageInternal(int nframes) override;
+    AnalysisDataFrameRef tryGetDataFrameInternal(size_t index) const override;
+    bool                 requestStorageInternal(size_t nframes) override;
 
     //! The number of rows
-    int                      rowCount_;
+    size_t                   rowCount_;
     AnalysisDataPointSetInfo pointSetInfo_;
     //! The values of the columns of data
     std::vector<AnalysisDataValue> value_;

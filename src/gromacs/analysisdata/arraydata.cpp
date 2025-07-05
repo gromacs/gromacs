@@ -64,7 +64,7 @@ AbstractAnalysisArrayData::AbstractAnalysisArrayData() :
 AbstractAnalysisArrayData::~AbstractAnalysisArrayData() {}
 
 
-AnalysisDataFrameRef AbstractAnalysisArrayData::tryGetDataFrameInternal(int index) const
+AnalysisDataFrameRef AbstractAnalysisArrayData::tryGetDataFrameInternal(size_t index) const
 {
     if (!isAllocated())
     {
@@ -76,13 +76,13 @@ AnalysisDataFrameRef AbstractAnalysisArrayData::tryGetDataFrameInternal(int inde
 }
 
 
-bool AbstractAnalysisArrayData::requestStorageInternal(int /*nframes*/)
+bool AbstractAnalysisArrayData::requestStorageInternal(size_t /*nframes*/)
 {
     return true;
 }
 
 
-void AbstractAnalysisArrayData::setColumnCount(int ncols)
+void AbstractAnalysisArrayData::setColumnCount(size_t ncols)
 {
     GMX_RELEASE_ASSERT(!isAllocated(), "Cannot change column count after data has been allocated");
     AbstractAnalysisData::setColumnCount(0, ncols);
@@ -90,16 +90,16 @@ void AbstractAnalysisArrayData::setColumnCount(int ncols)
 }
 
 
-void AbstractAnalysisArrayData::setRowCount(int rowCount)
+void AbstractAnalysisArrayData::setRowCount(size_t rowCount)
 {
     GMX_RELEASE_ASSERT(rowCount > 0, "Invalid number of rows");
     GMX_RELEASE_ASSERT(!isAllocated(), "Cannot change row count after data has been allocated");
-    GMX_RELEASE_ASSERT(bUniformX_ || xvalue_.empty() || rowCount == gmx::ssize(xvalue_),
+    GMX_RELEASE_ASSERT(bUniformX_ || xvalue_.empty() || rowCount == xvalue_.size(),
                        "X axis set with setXAxisValue() does not match the row count");
     xvalue_.resize(rowCount);
     if (bUniformX_ && rowCount > rowCount_)
     {
-        for (int i = rowCount_; i < rowCount; ++i)
+        for (size_t i = rowCount_; i < rowCount; ++i)
         {
             xvalue_[i] = xstart_ + i * xstep_;
         }
@@ -128,21 +128,21 @@ void AbstractAnalysisArrayData::setXAxis(real start, real step)
     xstart_    = start;
     xstep_     = step;
     bUniformX_ = true;
-    for (int i = 0; i < rowCount_; ++i)
+    for (size_t i = 0; i < rowCount_; ++i)
     {
         xvalue_[i] = start + i * xstep_;
     }
 }
 
 
-void AbstractAnalysisArrayData::setXAxisValue(int row, real value)
+void AbstractAnalysisArrayData::setXAxisValue(size_t row, real value)
 {
     GMX_RELEASE_ASSERT(!bReady_, "X axis cannot be set after data is finished");
     if (rowCount_ > 0)
     {
-        GMX_RELEASE_ASSERT(row >= 0 && row < rowCount(), "Row index out of range");
+        GMX_RELEASE_ASSERT(row < rowCount(), "Row index out of range");
     }
-    else if (row >= gmx::ssize(xvalue_))
+    else if (row >= xvalue_.size())
     {
         xvalue_.resize(row + 1);
     }
@@ -164,7 +164,7 @@ void AbstractAnalysisArrayData::valuesReady()
 
     AnalysisDataModuleManager& modules = moduleManager();
     modules.notifyDataStart(this);
-    for (int i = 0; i < rowCount(); ++i)
+    for (size_t i = 0; i < rowCount(); ++i)
     {
         AnalysisDataFrameHeader header(i, xvalue(i), 0);
         modules.notifyFrameStart(header);

@@ -274,7 +274,7 @@ public:
      * If not called, a single data set is assumed.
      * If called multiple times, the last call takes effect.
      */
-    void setDataSetCount(int dataSetCount);
+    void setDataSetCount(size_t dataSetCount);
     /*! \brief
      * Sets the number of columns in a data set.
      *
@@ -287,7 +287,7 @@ public:
      * Must not be called after startData() has been called.
      * If called multiple times for a data set, the last call takes effect.
      */
-    void setColumnCount(int dataSet, int columnCount);
+    void setColumnCount(size_t dataSet, size_t columnCount);
     /*! \brief
      * Sets whether the data contains multiple points per column per frame.
      *
@@ -304,7 +304,7 @@ public:
      */
     void setMultipoint(bool bMultipoint);
 
-    int frameCount() const override;
+    size_t frameCount() const override;
 
     /*! \brief
      * Creates a handle for adding data.
@@ -341,7 +341,7 @@ public:
      * handle is created and the parallelization options provided at that
      * time do not indicate parallelism.
      */
-    void finishFrameSerial(int frameIndex);
+    void finishFrameSerial(size_t frameIndex);
     /*! \brief
      * Destroys a handle after all data has been added.
      *
@@ -358,8 +358,8 @@ public:
     void finishData(AnalysisDataHandle handle);
 
 private:
-    AnalysisDataFrameRef tryGetDataFrameInternal(int index) const override;
-    bool                 requestStorageInternal(int nframes) override;
+    AnalysisDataFrameRef tryGetDataFrameInternal(size_t index) const override;
+    bool                 requestStorageInternal(size_t nframes) override;
 
     class Impl;
 
@@ -443,7 +443,7 @@ public:
      * the index can be in the future (as counted from the first frame that
      * is not finished).
      */
-    void startFrame(int index, real x, real dx = 0.0);
+    void startFrame(size_t index, real x, real dx = 0.0);
     /*! \brief
      * Selects a data set for subsequent setPoint()/setPoints() calls.
      *
@@ -455,7 +455,7 @@ public:
      *
      * Does not throw.
      */
-    void selectDataSet(int index);
+    void selectDataSet(size_t index);
     /*! \brief
      * Set a value for a single column for the current frame.
      *
@@ -468,7 +468,7 @@ public:
      *
      * Does not throw.
      */
-    void setPoint(int column, real value, bool bPresent = true);
+    void setPoint(size_t column, real value, bool bPresent = true);
     /*! \brief
      * Set a value and its error estimate for a single column for the
      * current frame.
@@ -483,7 +483,7 @@ public:
      *
      * Does not throw.
      */
-    void setPoint(int column, real value, real error, bool bPresent = true);
+    void setPoint(size_t column, real value, real error, bool bPresent = true);
     /*! \brief
      * Set values for consecutive columns for the current frame.
      *
@@ -497,7 +497,7 @@ public:
      *
      * Does not throw.
      */
-    void setPoints(int firstColumn, int count, const real* values, bool bPresent = true);
+    void setPoints(size_t firstColumn, size_t count, const real* values, bool bPresent = true);
     /*! \brief
      * Finish data for the current point set.
      *

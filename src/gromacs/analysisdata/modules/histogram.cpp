@@ -115,7 +115,6 @@ AnalysisHistogramSettings::AnalysisHistogramSettings(const AnalysisHistogramSett
                        "Histogram end value must be larger than start value");
     GMX_RELEASE_ASSERT(!isDefined(settings.binWidth_) || settings.binWidth_ > 0.0,
                        "Histogram bin width must be positive");
-    GMX_RELEASE_ASSERT(settings.binCount_ >= 0, "Histogram bin count must be positive");
 
     if (!isDefined(settings.max_))
     {
@@ -189,13 +188,13 @@ AnalysisHistogramSettings::AnalysisHistogramSettings(const AnalysisHistogramSett
 }
 
 
-int AnalysisHistogramSettings::findBin(real y) const
+size_t AnalysisHistogramSettings::findBin(real y) const
 {
     if (y < firstEdge_)
     {
         return bAll_ ? 0 : -1;
     }
-    int bin = static_cast<int>((y - firstEdge_) * inverseBinWidth_);
+    size_t bin = static_cast<size_t>((y - firstEdge_) * inverseBinWidth_);
     if (bin >= binCount_)
     {
         return bAll_ ? binCount_ - 1 : -1;
@@ -279,7 +278,7 @@ AverageHistogramPointer AbstractAverageHistogram::resampleDoubleBinWidth(bool bI
     for (int i = 0, j = 0; i < nbins; ++i)
     {
         const bool bFirstHalfBin = (bIntegerBins && i == 0);
-        for (int c = 0; c < columnCount(); ++c)
+        for (size_t c = 0; c < columnCount(); ++c)
         {
             const real v1 = bFirstHalfBin ? value(0, c).value() : value(j, c).value();
             const real v2 = bFirstHalfBin ? 0 : value(j + 1, c).value();
@@ -311,10 +310,10 @@ AverageHistogramPointer AbstractAverageHistogram::clone() const
 
 void AbstractAverageHistogram::normalizeProbability()
 {
-    for (int c = 0; c < columnCount(); ++c)
+    for (size_t c = 0; c < columnCount(); ++c)
     {
         double sum = 0;
-        for (int i = 0; i < rowCount(); ++i)
+        for (size_t i = 0; i < rowCount(); ++i)
         {
             sum += value(i, c).value();
         }
@@ -327,10 +326,10 @@ void AbstractAverageHistogram::normalizeProbability()
 
 void AbstractAverageHistogram::makeCumulative()
 {
-    for (int c = 0; c < columnCount(); ++c)
+    for (size_t c = 0; c < columnCount(); ++c)
     {
         double sum = 0;
-        for (int i = 0; i < rowCount(); ++i)
+        for (size_t i = 0; i < rowCount(); ++i)
         {
             sum += value(i, c).value();
             // Clear the error, as we don't cumulate that.
@@ -342,9 +341,9 @@ void AbstractAverageHistogram::makeCumulative()
 }
 
 
-void AbstractAverageHistogram::scaleSingle(int index, real factor)
+void AbstractAverageHistogram::scaleSingle(size_t index, real factor)
 {
-    for (int i = 0; i < rowCount(); ++i)
+    for (size_t i = 0; i < rowCount(); ++i)
     {
         value(i, index).value() *= factor;
         value(i, index).error() *= factor;
@@ -354,7 +353,7 @@ void AbstractAverageHistogram::scaleSingle(int index, real factor)
 
 void AbstractAverageHistogram::scaleAll(real factor)
 {
-    for (int i = 0; i < columnCount(); ++i)
+    for (size_t i = 0; i < columnCount(); ++i)
     {
         scaleSingle(i, factor);
     }
@@ -363,9 +362,9 @@ void AbstractAverageHistogram::scaleAll(real factor)
 
 void AbstractAverageHistogram::scaleAllByVector(const real factor[])
 {
-    for (int c = 0; c < columnCount(); ++c)
+    for (size_t c = 0; c < columnCount(); ++c)
     {
-        for (int i = 0; i < rowCount(); ++i)
+        for (size_t i = 0; i < rowCount(); ++i)
         {
             value(i, c).value() *= factor[i];
             value(i, c).error() *= factor[i];
@@ -436,7 +435,7 @@ void BasicAverageHistogramModule::dataStarted(AbstractAnalysisData* data)
 {
     setColumnCount(data->dataSetCount());
     averagers_.resize(data->dataSetCount());
-    for (int i = 0; i < data->dataSetCount(); ++i)
+    for (size_t i = 0; i < data->dataSetCount(); ++i)
     {
         GMX_RELEASE_ASSERT(rowCount() == data->columnCount(i),
                            "Inconsistent data sizes, something is wrong in the initialization");
@@ -460,10 +459,10 @@ void BasicAverageHistogramModule::frameFinished(const AnalysisDataFrameHeader& /
 void BasicAverageHistogramModule::dataFinished()
 {
     allocateValues();
-    for (int i = 0; i < columnCount(); ++i)
+    for (size_t i = 0; i < columnCount(); ++i)
     {
         averagers_[i].finish();
-        for (int j = 0; j < rowCount(); ++j)
+        for (size_t j = 0; j < rowCount(); ++j)
         {
             value(j, i).setValue(averagers_[i].average(j), std::sqrt(averagers_[i].variance(j)));
         }
@@ -585,7 +584,7 @@ const AnalysisHistogramSettings& AnalysisDataSimpleHistogramModule::settings() c
 }
 
 
-int AnalysisDataSimpleHistogramModule::frameCount() const
+size_t AnalysisDataSimpleHistogramModule::frameCount() const
 {
     return impl_->storage_.frameCount();
 }
@@ -645,7 +644,7 @@ void AnalysisDataSimpleHistogramModule::frameFinished(const AnalysisDataFrameHea
     Impl::FrameLocalData::FrameHandle handle      = impl_->accumulator_.frameData(header.index());
     AnalysisDataStorageFrame&         frame       = impl_->storage_.startFrame(header);
     const int                         columnCount = settings().binCount();
-    for (int s = 0; s < dataSetCount(); ++s)
+    for (size_t s = 0; s < dataSetCount(); ++s)
     {
         Impl::FrameLocalData::DataSetHandle dataSet = handle.dataSet(s);
         frame.selectDataSet(s);
@@ -658,7 +657,7 @@ void AnalysisDataSimpleHistogramModule::frameFinished(const AnalysisDataFrameHea
 }
 
 
-void AnalysisDataSimpleHistogramModule::frameFinishedSerial(int frameIndex)
+void AnalysisDataSimpleHistogramModule::frameFinishedSerial(size_t frameIndex)
 {
     impl_->storage_.finishFrameSerial(frameIndex);
 }
@@ -670,13 +669,13 @@ void AnalysisDataSimpleHistogramModule::dataFinished()
 }
 
 
-AnalysisDataFrameRef AnalysisDataSimpleHistogramModule::tryGetDataFrameInternal(int index) const
+AnalysisDataFrameRef AnalysisDataSimpleHistogramModule::tryGetDataFrameInternal(size_t index) const
 {
     return impl_->storage_.tryGetDataFrame(index);
 }
 
 
-bool AnalysisDataSimpleHistogramModule::requestStorageInternal(int nframes)
+bool AnalysisDataSimpleHistogramModule::requestStorageInternal(size_t nframes)
 {
     return impl_->storage_.requestStorage(nframes);
 }
@@ -735,7 +734,7 @@ const AnalysisHistogramSettings& AnalysisDataWeightedHistogramModule::settings()
 }
 
 
-int AnalysisDataWeightedHistogramModule::frameCount() const
+size_t AnalysisDataWeightedHistogramModule::frameCount() const
 {
     return impl_->storage_.frameCount();
 }
@@ -795,12 +794,12 @@ void AnalysisDataWeightedHistogramModule::frameFinished(const AnalysisDataFrameH
 {
     Impl::FrameLocalData::FrameHandle handle      = impl_->accumulator_.frameData(header.index());
     AnalysisDataStorageFrame&         frame       = impl_->storage_.startFrame(header);
-    const int                         columnCount = settings().binCount();
-    for (int s = 0; s < dataSetCount(); ++s)
+    const size_t                      columnCount = settings().binCount();
+    for (size_t s = 0; s < dataSetCount(); ++s)
     {
         Impl::FrameLocalData::DataSetHandle dataSet = handle.dataSet(s);
         frame.selectDataSet(s);
-        for (int i = 0; i < columnCount; ++i)
+        for (size_t i = 0; i < columnCount; ++i)
         {
             frame.setValue(i, dataSet.value(i));
         }
@@ -809,7 +808,7 @@ void AnalysisDataWeightedHistogramModule::frameFinished(const AnalysisDataFrameH
 }
 
 
-void AnalysisDataWeightedHistogramModule::frameFinishedSerial(int frameIndex)
+void AnalysisDataWeightedHistogramModule::frameFinishedSerial(size_t frameIndex)
 {
     impl_->storage_.finishFrameSerial(frameIndex);
 }
@@ -821,13 +820,13 @@ void AnalysisDataWeightedHistogramModule::dataFinished()
 }
 
 
-AnalysisDataFrameRef AnalysisDataWeightedHistogramModule::tryGetDataFrameInternal(int index) const
+AnalysisDataFrameRef AnalysisDataWeightedHistogramModule::tryGetDataFrameInternal(size_t index) const
 {
     return impl_->storage_.tryGetDataFrame(index);
 }
 
 
-bool AnalysisDataWeightedHistogramModule::requestStorageInternal(int nframes)
+bool AnalysisDataWeightedHistogramModule::requestStorageInternal(size_t nframes)
 {
     return impl_->storage_.requestStorage(nframes);
 }
@@ -890,7 +889,7 @@ void AnalysisDataBinAverageModule::dataStarted(AbstractAnalysisData* data)
 {
     setColumnCount(data->dataSetCount());
     impl_->averagers_.resize(data->dataSetCount());
-    for (int i = 0; i < data->dataSetCount(); ++i)
+    for (size_t i = 0; i < data->dataSetCount(); ++i)
     {
         impl_->averagers_[i].setColumnCount(rowCount());
     }
@@ -924,11 +923,11 @@ void AnalysisDataBinAverageModule::frameFinished(const AnalysisDataFrameHeader& 
 void AnalysisDataBinAverageModule::dataFinished()
 {
     allocateValues();
-    for (int i = 0; i < columnCount(); ++i)
+    for (size_t i = 0; i < columnCount(); ++i)
     {
         AnalysisDataFrameAverager& averager = impl_->averagers_[i];
         averager.finish();
-        for (int j = 0; j < rowCount(); ++j)
+        for (size_t j = 0; j < rowCount(); ++j)
         {
             value(j, i).setValue(averager.average(j), std::sqrt(averager.variance(j)));
         }

@@ -100,7 +100,7 @@ public:
      *
      * Does not throw.
      */
-    void selectDataSet(int index);
+    void selectDataSet(size_t index);
 
     //! Returns number of columns for the frame.
     int columnCount() const { return columnCount_; }

@@ -100,8 +100,8 @@ void AnalysisDataAverageModule::dataStarted(AbstractAnalysisData* data)
     {
         setColumnCount(data->dataSetCount());
         impl_->averagers_.resize(data->dataSetCount());
-        int rowCount = 0;
-        for (int i = 0; i < data->dataSetCount(); ++i)
+        size_t rowCount = 0;
+        for (size_t i = 0; i < data->dataSetCount(); ++i)
         {
             impl_->averagers_[i].setColumnCount(data->columnCount(i));
             rowCount = std::max(rowCount, data->columnCount(i));
@@ -136,10 +136,10 @@ void AnalysisDataAverageModule::frameFinished(const AnalysisDataFrameHeader& /*h
 void AnalysisDataAverageModule::dataFinished()
 {
     allocateValues();
-    for (int i = 0; i < columnCount(); ++i)
+    for (size_t i = 0; i < columnCount(); ++i)
     {
         impl_->averagers_[i].finish();
-        int j = 0;
+        size_t j = 0;
         for (; j < impl_->averagers_[i].columnCount(); ++j)
         {
             value(j, i).setValue(impl_->averagers_[i].average(j),
@@ -201,7 +201,7 @@ AnalysisDataFrameAverageModule::AnalysisDataFrameAverageModule() : impl_(new Imp
 
 AnalysisDataFrameAverageModule::~AnalysisDataFrameAverageModule() {}
 
-int AnalysisDataFrameAverageModule::frameCount() const
+size_t AnalysisDataFrameAverageModule::frameCount() const
 {
     return impl_->storage_.frameCount();
 }
@@ -221,7 +221,7 @@ void AnalysisDataFrameAverageModule::dataStarted(AbstractAnalysisData* data)
 void AnalysisDataFrameAverageModule::frameStarted(const AnalysisDataFrameHeader& header)
 {
     AnalysisDataStorageFrame& frame = impl_->storage_.startFrame(header);
-    for (int i = 0; i < columnCount(); ++i)
+    for (size_t i = 0; i < columnCount(); ++i)
     {
         impl_->sampleCount_[i] = 0;
         frame.setValue(i, 0.0);
@@ -255,12 +255,12 @@ void AnalysisDataFrameAverageModule::dataFinished()
     impl_->storage_.finishDataStorage();
 }
 
-AnalysisDataFrameRef AnalysisDataFrameAverageModule::tryGetDataFrameInternal(int index) const
+AnalysisDataFrameRef AnalysisDataFrameAverageModule::tryGetDataFrameInternal(size_t index) const
 {
     return impl_->storage_.tryGetDataFrame(index);
 }
 
-bool AnalysisDataFrameAverageModule::requestStorageInternal(int nframes)
+bool AnalysisDataFrameAverageModule::requestStorageInternal(size_t nframes)
 {
     return impl_->storage_.requestStorage(nframes);
 }

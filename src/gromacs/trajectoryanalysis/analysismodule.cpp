@@ -139,7 +139,7 @@ TrajectoryAnalysisModuleData::Impl::Impl(TrajectoryAnalysisModule*          modu
 
 bool TrajectoryAnalysisModuleData::Impl::isInitialized(const AnalysisData& data)
 {
-    for (int i = 0; i < data.dataSetCount(); ++i)
+    for (size_t i = 0; i < data.dataSetCount(); ++i)
     {
         if (data.columnCount(i) > 0)
         {

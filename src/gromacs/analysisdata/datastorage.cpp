@@ -70,7 +70,7 @@ namespace gmx
 AnalysisDataParallelOptions::AnalysisDataParallelOptions() : parallelizationFactor_(1) {}
 
 
-AnalysisDataParallelOptions::AnalysisDataParallelOptions(int parallelizationFactor) :
+AnalysisDataParallelOptions::AnalysisDataParallelOptions(size_t parallelizationFactor) :
     parallelizationFactor_(parallelizationFactor)
 {
     GMX_RELEASE_ASSERT(parallelizationFactor >= 1, "Invalid parallelization factor");
@@ -548,7 +548,7 @@ AnalysisDataStorageFrameData::AnalysisDataStorageFrameData(AnalysisDataStorageIm
     if (!baseData().isMultipoint())
     {
         int offset = 0;
-        for (int i = 0; i < baseData().dataSetCount(); ++i)
+        for (size_t i = 0; i < baseData().dataSetCount(); ++i)
         {
             int columnCount = baseData().columnCount(i);
             pointSets_.emplace_back(offset, columnCount, i, 0);
@@ -607,7 +607,7 @@ AnalysisDataFrameBuilderPointer AnalysisDataStorageFrameData::finishFrame(bool b
     status_ = eFinished;
     if (!bMultipoint)
     {
-        GMX_RELEASE_ASSERT(gmx::ssize(pointSets_) == baseData().dataSetCount(),
+        GMX_RELEASE_ASSERT(pointSets_.size() == baseData().dataSetCount(),
                            "Point sets created for non-multipoint data");
         values_ = builder_->values_;
         builder_->clearValues();
@@ -646,7 +646,7 @@ AnalysisDataStorageFrame::AnalysisDataStorageFrame(const AbstractAnalysisData& d
     bPointSetInProgress_(false)
 {
     int totalColumnCount = 0;
-    for (int i = 0; i < data.dataSetCount(); ++i)
+    for (size_t i = 0; i < data.dataSetCount(); ++i)
     {
         totalColumnCount += data.columnCount(i);
     }
@@ -671,17 +671,17 @@ void AnalysisDataStorageFrame::clearValues()
 }
 
 
-void AnalysisDataStorageFrame::selectDataSet(int index)
+void AnalysisDataStorageFrame::selectDataSet(size_t index)
 {
     GMX_RELEASE_ASSERT(data_ != nullptr, "Invalid frame accessed");
     const AbstractAnalysisData& baseData = data_->baseData();
-    GMX_RELEASE_ASSERT(index >= 0 && index < baseData.dataSetCount(), "Out of range data set index");
+    GMX_RELEASE_ASSERT(index < baseData.dataSetCount(), "Out of range data set index");
     GMX_RELEASE_ASSERT(!baseData.isMultipoint() || !bPointSetInProgress_,
                        "Point sets in multipoint data cannot span data sets");
     currentDataSet_ = index;
     currentOffset_  = 0;
     // TODO: Consider precalculating.
-    for (int i = 0; i < index; ++i)
+    for (size_t i = 0; i < index; ++i)
     {
         currentOffset_ += baseData.columnCount(i);
     }
