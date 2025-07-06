@@ -126,7 +126,6 @@ std::vector<RVec> initialCoordinates()
 }
 
 using COMInPlaceTestParams = std::tuple<UnitCellType, CenteringType, PbcType>;
-using test::FloatingPointTolerance;
 
 /*! \brief
  * Test fixture for checking correct molecule COM treatment.
