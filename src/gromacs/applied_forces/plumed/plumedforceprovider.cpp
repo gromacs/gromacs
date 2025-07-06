@@ -132,6 +132,11 @@ catch (const std::exception& ex)
             std::string("An error occurred while initializing the PLUMED force provider:\n") + ex.what()));
 }
 
+void PlumedForceProvider::setGlobalAtomIndices(const std::optional<ArrayRef<const int>>& globalAtomIndices)
+{
+    globalAtomIndices_ = globalAtomIndices;
+}
+
 void PlumedForceProvider::writeCheckpointData()
 try
 {
@@ -153,14 +158,13 @@ try
 {
     // setup: these instructions in the original patch are BEFORE do_force()
     // now this is called within do_force(), but this does not impact the results
-    const gmx_domdec_t* dd    = forceProviderInput.dd_;
-    long int            lstep = forceProviderInput.step_;
+    long int lstep = forceProviderInput.step_;
     plumed_->cmd("setStepLong", &lstep);
-    if (dd)
+    if (globalAtomIndices_.has_value())
     {
-        int nat_home = dd_numHomeAtoms(*dd);
+        int nat_home = gmx::ssize(globalAtomIndices_.value());
         plumed_->cmd("setAtomsNlocal", &nat_home);
-        plumed_->cmd("setAtomsGatindex", dd->globalAtomIndices.data());
+        plumed_->cmd("setAtomsGatindex", globalAtomIndices_.value().data());
     }
 
     plumed_->cmd("setPositions", &(forceProviderInput.x_.data()->as_vec()[0]));

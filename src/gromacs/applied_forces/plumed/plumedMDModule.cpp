@@ -45,7 +45,6 @@
 #include <memory>
 #include <string>
 
-#include "gromacs/domdec/localatomsetmanager.h"
 #include "gromacs/fileio/checkpoint.h"
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/mdtypes/imdmodule.h"
@@ -119,9 +118,21 @@ public:
                 });
     }
 
-    /*! \brief No subscriptions to MDModules notifications during the simulation.
+    /*! \brief Subscribe to MDModules notifications for information needed during the simulation.
      */
-    void subscribeToSimulationRunNotifications(MDModulesNotifiers* /* notifier */) override {}
+    void subscribeToSimulationRunNotifications(MDModulesNotifiers* notifier) override
+    {
+        if (!options_.active())
+        {
+            return;
+        }
+
+        // Retrieve the global atom indices
+        notifier->simulationRunNotifier_.subscribe(
+                [this](const MDModulesAtomsRedistributedSignal& atomsRedistributedSignal) {
+                    plumedForceProvider_->setGlobalAtomIndices(atomsRedistributedSignal.globalAtomIndices_);
+                });
+    }
 
     //! From IMDModule
     IMdpOptionProvider* mdpOptionProvider() override { return nullptr; }

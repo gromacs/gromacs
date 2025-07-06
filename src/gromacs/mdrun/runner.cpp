@@ -1790,7 +1790,6 @@ int Mdrunner::mdrunner()
     if (thisRankHasPPDuty(cr->dd))
     {
         setupNotifier.notify(cr->commMyGroup);
-        setupNotifier.notify(cr->dd);
         setupNotifier.notify(ms);
         setupNotifier.notify(&atomSets);
         setupNotifier.notify(mtop);

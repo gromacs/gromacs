@@ -42,6 +42,7 @@
 #define GMX_APPLIED_FORCES_PLUMEDFORCEPROVIDER_H
 
 #include <memory>
+#include <optional>
 
 #include "gromacs/mdtypes/iforceprovider.h"
 
@@ -51,6 +52,8 @@ class Plumed;
 }
 namespace gmx
 {
+template<typename>
+class ArrayRef;
 struct PlumedOptions;
 /*! \internal \brief
  * Implements IForceProvider for PLUMED.
@@ -64,6 +67,10 @@ public:
      */
     PlumedForceProvider(const PlumedOptions& options);
     ~PlumedForceProvider();
+    /*! @brief Sets the global atom indices list
+     * param[in] globalAtomIndices  the, optional, list of global atom indices
+     */
+    void setGlobalAtomIndices(const std::optional<ArrayRef<const int>>& globalAtomIndices);
     /*! \brief Tells PLUMED to output the checkpoint data
      *
      * If the PLUMED API version is not greater than 3 it will do nothing.
@@ -79,6 +86,8 @@ public:
 private:
     std::unique_ptr<PLMD::Plumed> plumed_;
     int                           plumedAPIversion_;
+
+    std::optional<ArrayRef<const int>> globalAtomIndices_;
 };
 
 } // namespace gmx

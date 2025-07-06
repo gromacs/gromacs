@@ -58,7 +58,6 @@
 #include "gromacs/utility/real.h"
 
 
-struct gmx_domdec_t;
 struct gmx_mtop_t;
 class WarningHandler;
 enum class PbcType : int;
@@ -90,8 +89,10 @@ enum class StartingBehavior;
  */
 struct MDModulesAtomsRedistributedSignal
 {
-    MDModulesAtomsRedistributedSignal(const matrix box, gmx::ArrayRef<const RVec> x) :
-        box_(createMatrix3x3FromLegacyMatrix(box)), x_(x)
+    MDModulesAtomsRedistributedSignal(const matrix                            box,
+                                      gmx::ArrayRef<const RVec>               x,
+                                      std::optional<gmx::ArrayRef<const int>> globalAtomIndices) :
+        box_(createMatrix3x3FromLegacyMatrix(box)), x_(x), globalAtomIndices_(globalAtomIndices)
     {
     }
 
@@ -99,6 +100,15 @@ struct MDModulesAtomsRedistributedSignal
     const Matrix3x3 box_;
     //! List of local atom coordinates after partitioning
     gmx::ArrayRef<const RVec> x_;
+    /*! \brief List of global atom indices for the home atoms
+     *
+     * Filler particles might be present in the home atom list, these have index -1
+     * Note that this index list will only be present when domain decomposition is active.
+     *
+     * Note that when using fixed sub-groups of the system, the LocalAtomSet mechanism
+     * is the preferred and more convenient way to manage atom indices of groups.
+     */
+    std::optional<gmx::ArrayRef<const int>> globalAtomIndices_;
 };
 
 /*! \libinternal \brief Check if module outputs energy to a specific field.
@@ -403,11 +413,8 @@ struct MDModulesNotifiers
      *                              them to interconvert between step and time information
      * \tparam EnsembleTemperature& Provides modules with the (eventual) constant ensemble
      *                              temperature
-     * \tparam MpiComm&          Provides a communicator to the modules during simulation
+     * \tparam MpiComm&             Provides a communicator to the modules during simulation
      *                              setup
-     * \tparam gmx_domdec_t*        Provides access to the domain decomposition object.
-     *                              Note that this will be nullptr when DD is not in use.
-     *                              Note: DEPRECATED, use LocalAtomSet instead
      * \tparam gmx_multisim_t&      Shares the multisim struct with the modules
      *                              Subscribing to this notifier will sync checkpointing
      *                              of simulations and will cause simulations to stop,
@@ -432,7 +439,6 @@ struct MDModulesNotifiers
                            const SimulationTimeStep&,
                            const EnsembleTemperature&,
                            const MpiComm&,
-                           const gmx_domdec_t*,
                            const gmx_multisim_t*,
                            const MdRunInputFilename&,
                            const EdrOutputFilename&,
