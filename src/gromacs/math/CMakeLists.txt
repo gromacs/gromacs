@@ -44,7 +44,6 @@ set(MATH_SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/functions.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/gausstransform.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/invertmatrix.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/matrix.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/neldermead.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/nrjac.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/optimization.cpp

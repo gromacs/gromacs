@@ -665,8 +665,7 @@ static void updateMDLeapfrogGeneral(int                                 start,
             factorNH = 0.5 * nsttcouple * dt * nh_vxi[gt];
         }
 
-        const RVec parrinelloRahmanScaledVelocity =
-                dtPressureCouple * multiplyVectorByMatrix(parrinelloRahmanM, vRel);
+        const RVec parrinelloRahmanScaledVelocity = dtPressureCouple * (parrinelloRahmanM * vRel);
         for (int d = 0; d < DIM; d++)
         {
             real vNew = (lg * vRel[d]
@@ -1229,8 +1228,7 @@ static void doSDUpdateGeneral(const gmx_stochd_t&                 sd,
         RVec parrinelloRahmanScaledVelocity;
         if (updateType != SDUpdate::FrictionAndNoiseOnly)
         {
-            parrinelloRahmanScaledVelocity =
-                    dtPressureCouple * multiplyVectorByMatrix(parrinelloRahmanM, v[n]);
+            parrinelloRahmanScaledVelocity = dtPressureCouple * (parrinelloRahmanM * v[n]);
         }
         for (int d = 0; d < DIM; d++)
         {

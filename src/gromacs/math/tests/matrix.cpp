@@ -277,17 +277,6 @@ TEST_F(MatrixTest, MatrixScalarDivision)
     EXPECT_EQ(c(2, 2), 0.5);
 }
 
-
-TEST_F(MatrixTest, MatrixVectorMultiplicationFunction)
-{
-    const Matrix3x3 matrix({ 0.1, 1, 0.1, 0.4, 1, 0.6, 0.7, 0.8, 0.9 });
-    RVec            vector(1, 2, 3);
-    matrixVectorMultiply(&matrix, &vector);
-    EXPECT_REAL_EQ(2.4, vector[XX]);
-    EXPECT_REAL_EQ(4.2, vector[YY]);
-    EXPECT_REAL_EQ(5.0, vector[ZZ]);
-}
-
 TEST_F(MatrixTest, MatrixVectorMultiplicationOperator)
 {
     const Matrix3x3 matrix({ 0.1, 1, 0.1, 0.4, 1, 0.6, 0.7, 0.8, 0.9 });

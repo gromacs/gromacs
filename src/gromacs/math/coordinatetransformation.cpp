@@ -222,8 +222,7 @@ void AffineTransformation::operator()(ArrayRef<RVec> vectors) const
 {
     for (RVec& vector : vectors)
     {
-        matrixVectorMultiply(&matrix_, &vector);
-        vector += translation_;
+        vector = (matrix_ * vector) + translation_;
     }
 }
 

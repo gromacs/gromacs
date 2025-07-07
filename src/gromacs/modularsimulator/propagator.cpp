@@ -89,7 +89,7 @@ static void inline updateVelocities(int                      a,
     RVec parrinelloRahmanScaledVelocity;
     if (parrinelloRahmanVelocityScaling == ParrinelloRahmanVelocityScaling::Anisotropic)
     {
-        parrinelloRahmanScaledVelocity = multiplyVectorByMatrix(matrixPR, v[a]);
+        parrinelloRahmanScaledVelocity = matrixPR * v[a];
     }
     for (int d = 0; d < DIM; d++)
     {

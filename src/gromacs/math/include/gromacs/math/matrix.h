@@ -317,18 +317,6 @@ BasicMatrix3x3<ElementType> identityMatrix()
     return diagonalMatrix(static_cast<ElementType>(1));
 }
 
-//! Return the product of multiplying the vector v by the 3x3 matrix m
-template<typename ElementType>
-BasicVector<ElementType> multiplyVectorByMatrix(const BasicMatrix3x3<ElementType>& m, const rvec v)
-{
-    BasicVector<ElementType> result;
-    for (int d = 0; d < DIM; ++d)
-    {
-        result[d] = m(d, 0) * v[0] + m(d, 1) * v[1] + m(d, 2) * v[2];
-    }
-    return result;
-}
-
 //! Create new matrix type from legacy type.
 static inline Matrix3x3 createMatrix3x3FromLegacyMatrix(const matrix legacyMatrix)
 {
@@ -356,9 +344,6 @@ static inline void fillLegacyMatrix(Matrix3x3 newMatrix, matrix legacyMatrix)
         }
     }
 }
-
-//! Multiply matrix with vector.
-void matrixVectorMultiply(const Matrix3x3* matrix, RVec* v);
 
 } // namespace gmx
 
