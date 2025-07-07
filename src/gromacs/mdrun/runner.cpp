@@ -1814,7 +1814,7 @@ int Mdrunner::mdrunner()
 
         deform = buildBoxDeformation(globalState != nullptr
                                              ? createMatrix3x3FromLegacyMatrix(globalState->box)
-                                             : diagonalMatrix<real, 3, 3>(0.0),
+                                             : diagonalMatrix<real>(0.0),
                                      MAIN(cr) ? DDRole::Main : DDRole::Agent,
                                      PAR(cr) ? NumRanks::Multiple : NumRanks::Single,
                                      cr->mpi_comm_mygroup,

@@ -426,10 +426,10 @@ const std::vector<PressureCouplingOptions> c_options = []()
     PressureCouplingOptions options;
     options.epc                     = PressureCoupling::ParrinelloRahman;
     options.tau_p                   = 1.;
-    const Matrix3x3 compressibility = diagonalMatrix<real, 3, 3>(4.5e-5);
+    const Matrix3x3 compressibility = diagonalMatrix<real>(4.5e-5);
     fillLegacyMatrix(compressibility, options.compress);
 
-    const Matrix3x3 referencePressure = identityMatrix<real, 3, 3>();
+    const Matrix3x3 referencePressure = identityMatrix<real>();
     fillLegacyMatrix(referencePressure, options.ref_p);
 
     std::vector<PressureCouplingOptions> optionsVector;

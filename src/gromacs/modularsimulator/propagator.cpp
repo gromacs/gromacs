@@ -580,7 +580,7 @@ Propagator<integrationStage>::Propagator(double               timestep,
     doSingleEndVelocityScaling_(false),
     doGroupEndVelocityScaling_(false),
     scalingStepVelocity_(-1),
-    matrixPR_{ { 0 } },
+    matrixPR_{ 0 },
     scalingStepPR_(-1),
     mdAtoms_(mdAtoms),
     wcycle_(wcycle)

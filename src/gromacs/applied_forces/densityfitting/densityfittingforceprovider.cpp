@@ -246,13 +246,13 @@ DensityFittingForceProvider::Impl::Impl(const DensityFittingParameters& paramete
     {
         Matrix3x3 translationMatrix = transformationMatrixParametersAsArray.has_value()
                                               ? *transformationMatrixParametersAsArray
-                                              : identityMatrix<real, 3>();
+                                              : identityMatrix<real>();
         RVec      translationVector = translationParametersAsArray.has_value()
                                               ? RVec((*translationParametersAsArray)[XX],
                                                 (*translationParametersAsArray)[YY],
                                                 (*translationParametersAsArray)[ZZ])
                                               : RVec(0, 0, 0);
-        affineTransformation_.emplace(translationMatrix.asConstView(), translationVector);
+        affineTransformation_.emplace(translationMatrix, translationVector);
     }
 
     referenceDensityCenter_ = { real(referenceDensity.extent(XX)) / 2,
@@ -371,7 +371,7 @@ void DensityFittingForceProvider::Impl::calculateForces(const ForceProviderInput
         const Matrix3x3 gradient = affineTransformation_->gradient();
         for (RVec& currentForce : forces_)
         {
-            matrixVectorMultiply(gradient, &currentForce);
+            matrixVectorMultiply(&gradient, &currentForce);
         }
     }
 

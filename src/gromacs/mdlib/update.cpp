@@ -756,7 +756,7 @@ static void do_update_md(int                                  start,
         || stepAccelerationType != AccelerationType::None)
     {
         // If there's no Parrinello-Rahman scaling this step, we need to pass a zero matrix instead
-        Matrix3x3        zero = { { 0._real } };
+        Matrix3x3        zero = { 0._real };
         const Matrix3x3& parrinelloRahmanMToUseThisStep =
                 parrinelloRahmanVelocityScaling != ParrinelloRahmanVelocityScaling::No ? parrinelloRahmanM
                                                                                        : zero;
@@ -1310,7 +1310,7 @@ static void do_update_sd(int                                 start,
             (doParrinelloRahmanThisStep ? ParrinelloRahmanVelocityScaling::Anisotropic
                                         : ParrinelloRahmanVelocityScaling::No);
     // If there's no Parrinello-Rahman scaling this step, we need to pass a zero matrix instead
-    Matrix3x3        zero = { { 0._real } };
+    Matrix3x3        zero = { 0._real };
     const Matrix3x3& parrinelloRahmanMToUseThisStep =
             parrinelloRahmanVelocityScaling != ParrinelloRahmanVelocityScaling::No ? parrinelloRahmanM
                                                                                    : zero;
@@ -1637,7 +1637,7 @@ void Update::Impl::update_sd_second_half(const t_inputrec&                 input
          */
         real dt = inputRecord.delta_t;
 
-        Matrix3x3 parrinelloRahmanM{ { 0._real } };
+        Matrix3x3 parrinelloRahmanM{ 0._real };
         real      dtPressureCouple = 0;
 
         wallcycle_start(wcycle, WallCycleCounter::Update);

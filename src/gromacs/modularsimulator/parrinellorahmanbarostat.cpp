@@ -76,7 +76,7 @@ ParrinelloRahmanBarostat::ParrinelloRahmanBarostat(int                  nstpcoup
     offset_(offset),
     couplingTimePeriod_(couplingTimePeriod),
     initStep_(initStep),
-    mu_{ { 0 } },
+    mu_{ 0 },
     boxRel_{ { 0 } },
     boxVelocity_{ { 0 } },
     statePropagatorData_(statePropagatorData),

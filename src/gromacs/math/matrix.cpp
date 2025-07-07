@@ -43,37 +43,22 @@
 #include "gromacs/math/matrix.h"
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdspan/layouts.h"
-#include "gromacs/mdspan/mdspan.h"
 #include "gromacs/utility/real.h"
 
 namespace gmx
 {
 
-
-Matrix3x3 transpose(Matrix3x3ConstSpan matrixView)
+void matrixVectorMultiply(const Matrix3x3* matrix, RVec* v)
 {
-
-    return Matrix3x3({ matrixView(0, 0),
-                       matrixView(1, 0),
-                       matrixView(2, 0),
-                       matrixView(0, 1),
-                       matrixView(1, 1),
-                       matrixView(2, 1),
-                       matrixView(0, 2),
-                       matrixView(1, 2),
-                       matrixView(2, 2) });
-}
-
-void matrixVectorMultiply(Matrix3x3ConstSpan matrix, RVec* v)
-{
-    const real resultXX =
-            matrix(XX, XX) * (*v)[XX] + matrix(XX, YY) * (*v)[YY] + matrix(XX, ZZ) * (*v)[ZZ];
-    const real resultYY =
-            matrix(YY, XX) * (*v)[XX] + matrix(YY, YY) * (*v)[YY] + matrix(YY, ZZ) * (*v)[ZZ];
-    (*v)[ZZ] = matrix(ZZ, XX) * (*v)[XX] + matrix(ZZ, YY) * (*v)[YY] + matrix(ZZ, ZZ) * (*v)[ZZ];
+    const real resultXX = ((*matrix)(XX, XX) * (*v)[XX]) + ((*matrix)(XX, YY) * (*v)[YY])
+                          + ((*matrix)(XX, ZZ) * (*v)[ZZ]);
+    const real resultYY = ((*matrix)(YY, XX) * (*v)[XX]) + ((*matrix)(YY, YY) * (*v)[YY])
+                          + ((*matrix)(YY, ZZ) * (*v)[ZZ]);
+    const real resultZZ = ((*matrix)(ZZ, XX) * (*v)[XX]) + ((*matrix)(ZZ, YY) * (*v)[YY])
+                          + ((*matrix)(ZZ, ZZ) * (*v)[ZZ]);
     (*v)[XX] = resultXX;
     (*v)[YY] = resultYY;
+    (*v)[ZZ] = resultZZ;
 }
 
 

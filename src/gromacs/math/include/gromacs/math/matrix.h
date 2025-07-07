@@ -36,6 +36,7 @@
  * \brief Declares special case of 3x3 matrix frequently used, and associated functions.
  *
  * \author Christian Blau <cblau@gwdg.de>
+ * \author Alexey Shvetsov <alexxyum@gmail.com>
  * \ingroup module_math
  */
 
@@ -57,73 +58,276 @@ namespace gmx
  * \tparam ElementType type of element to be stored in matrix
  */
 template<class ElementType>
-using BasicMatrix3x3 = MultiDimArray<std::array<ElementType, 3 * 3>, extents<3, 3>>;
+class BasicMatrix3x3 : public MultiDimArray<std::array<ElementType, DIM * DIM>, extents<DIM, DIM>>
+{
+public:
+    //! Default constructor
+    BasicMatrix3x3() : MultiDimArray<std::array<ElementType, DIM * DIM>, extents<DIM, DIM>>({}) {}
+
+    //! Propagate constructor from Base
+    template<typename... Args>
+    BasicMatrix3x3(Args&&... args) :
+        MultiDimArray<std::array<ElementType, DIM * DIM>, extents<DIM, DIM>>(std::forward<Args>(args)...)
+    {
+    }
+
+    //! Constructor for list initializer (either 1 or 9 elements in row major ordering)
+    BasicMatrix3x3(std::initializer_list<ElementType> initList)
+    {
+        if ((initList.size() != DIM * DIM) && (initList.size() != 1))
+        {
+            throw std::invalid_argument(
+                    "Initializer list must contain exactly either 1 or 9 elements");
+        }
+        if (initList.size() != 1)
+        {
+            auto it = initList.begin();
+            for (size_t i = 0; i < DIM; ++i)
+            {
+                for (size_t j = 0; j < DIM; ++j)
+                {
+                    (*this)(i, j) = *it++;
+                }
+            }
+        }
+        else
+        {
+            auto initValue = *initList.begin();
+            for (size_t i = 0; i < DIM; ++i)
+            {
+                for (size_t j = 0; j < DIM; ++j)
+                {
+                    (*this)(i, j) = initValue;
+                }
+            }
+        }
+    }
+
+
+    //! Return result of adding \c other matrix to this one
+    BasicMatrix3x3 operator+(const BasicMatrix3x3& other) const
+    {
+        BasicMatrix3x3<ElementType> result;
+        for (int i = 0; i < DIM; i++)
+        {
+            for (int j = 0; j < DIM; j++)
+            {
+                result(i, j) = (*this)(i, j) + other(i, j);
+            }
+        }
+        return result;
+    }
+
+    //! Return result of subtracting \c other matrix from this one
+    BasicMatrix3x3 operator-(const BasicMatrix3x3& other) const
+    {
+        BasicMatrix3x3<ElementType> result;
+        for (int i = 0; i < DIM; i++)
+        {
+            for (int j = 0; j < DIM; j++)
+            {
+                result(i, j) = (*this)(i, j) - other(i, j);
+            }
+        }
+        return result;
+    }
+
+    //! Return negation of all values of this matrix
+    BasicMatrix3x3 operator-() const
+    {
+        BasicMatrix3x3<ElementType> result;
+        for (int i = 0; i < DIM; i++)
+        {
+            for (int j = 0; j < DIM; j++)
+            {
+                result(i, j) = -(*this)(i, j);
+            }
+        }
+        return result;
+    }
+
+    //! Return result of multiplication (inner product) of this matrix by \c other matrix
+    BasicMatrix3x3 operator*(const BasicMatrix3x3& other) const
+    {
+        BasicMatrix3x3<ElementType> result(
+                { (*this)(0, 0) * other(0, 0) + (*this)(0, 1) * other(1, 0) + (*this)(0, 2) * other(2, 0),
+                  (*this)(0, 0) * other(0, 1) + (*this)(0, 1) * other(1, 1) + (*this)(0, 2) * other(2, 1),
+                  (*this)(0, 0) * other(0, 2) + (*this)(0, 1) * other(1, 2) + (*this)(0, 2) * other(2, 2),
+                  (*this)(1, 0) * other(0, 0) + (*this)(1, 1) * other(1, 0) + (*this)(1, 2) * other(2, 0),
+                  (*this)(1, 0) * other(0, 1) + (*this)(1, 1) * other(1, 1) + (*this)(1, 2) * other(2, 1),
+                  (*this)(1, 0) * other(0, 2) + (*this)(1, 1) * other(1, 2) + (*this)(1, 2) * other(2, 2),
+                  (*this)(2, 0) * other(0, 0) + (*this)(2, 1) * other(1, 0) + (*this)(2, 2) * other(2, 0),
+                  (*this)(2, 0) * other(0, 1) + (*this)(2, 1) * other(1, 1) + (*this)(2, 2) * other(2, 1),
+                  (*this)(2, 0) * other(0, 2) + (*this)(2, 1) * other(1, 2) + (*this)(2, 2) * other(2, 2) });
+        return result;
+    }
+
+    //! Return result of multiplication this matrix by constant \c scalar
+    BasicMatrix3x3 operator*(const ElementType& scalar) const
+    {
+        BasicMatrix3x3<ElementType> result;
+        for (int i = 0; i < DIM; i++)
+        {
+            for (int j = 0; j < DIM; j++)
+            {
+                result(i, j) = (*this)(i, j) * scalar;
+            }
+        }
+        return result;
+    }
+
+    //! Return result of division this matrix by constant scalar
+    BasicMatrix3x3 operator/(const ElementType& scalar) const
+    {
+        GMX_RELEASE_ASSERT(scalar != 0, "Division by zero.");
+        BasicMatrix3x3<ElementType> result;
+        for (int i = 0; i < DIM; i++)
+        {
+            for (int j = 0; j < DIM; j++)
+            {
+                result(i, j) = (*this)(i, j) / scalar;
+            }
+        }
+        return result;
+    }
+
+    //! Return result of addition with assignment of \c other matrix to this matrix
+    BasicMatrix3x3& operator+=(const BasicMatrix3x3& other)
+    {
+        *this = *this + other;
+        return *this;
+    }
+
+    //! Return result of subtraction with assignment of \c other matrix from this matrix
+    BasicMatrix3x3& operator-=(const BasicMatrix3x3& other)
+    {
+        *this = *this - other;
+        return *this;
+    }
+
+    //! Return result of multiplication with assignment of this matrix by \c scalar
+    BasicMatrix3x3& operator*=(const ElementType& scalar)
+    {
+        *this = *this * scalar;
+        return *this;
+    }
+
+    //! Return result of division with assignment of this matrix by \c scalar
+    BasicMatrix3x3& operator/=(const ElementType& scalar)
+    {
+        GMX_RELEASE_ASSERT(scalar != 0, "Division by zero.");
+        *this = *this / scalar;
+        return *this;
+    }
+
+    //! Returns result of multiplication of this matrix by a \c vector
+    BasicVector<ElementType> operator*(const BasicVector<ElementType>& vector) const
+    {
+        BasicVector<ElementType> result = { 0, 0, 0 };
+        for (auto i = 0; i < DIM; ++i)
+        {
+            for (auto j = 0; j < DIM; ++j)
+            {
+                result[i] += (*this)(i, j) * vector[j];
+            }
+        }
+        return result;
+    }
+};
+
+//! Return the product of multiplying the 3x3 matrix \c other by the \c scalar
+template<typename ElementType>
+BasicMatrix3x3<ElementType> operator*(const ElementType scalar, const BasicMatrix3x3<ElementType>& other)
+{
+    return other * scalar;
+}
+
+//! Return a vector that is the diagonal of the 3x3 \c matrix
+template<typename ElementType>
+BasicVector<ElementType> diagonal(const BasicMatrix3x3<ElementType>& matrix)
+{
+    return { matrix(XX, XX), matrix(YY, YY), matrix(ZZ, ZZ) };
+}
+
+//! Returns the transposition of \c matrix
+template<typename ElementType>
+BasicMatrix3x3<ElementType> transpose(BasicMatrix3x3<ElementType> matrix)
+{
+
+    return { matrix(0, 0), matrix(1, 0), matrix(2, 0), matrix(0, 1), matrix(1, 1),
+             matrix(2, 1), matrix(0, 2), matrix(1, 2), matrix(2, 2) };
+}
+
+//! Returns the determinant of \c matrix
+template<typename ElementType>
+constexpr ElementType determinant(BasicMatrix3x3<ElementType> matrix)
+{
+    return { matrix(0, 0) * (matrix(1, 1) * matrix(2, 2) - matrix(2, 1) * matrix(1, 2))
+             - matrix(1, 0) * (matrix(0, 1) * matrix(2, 2) - matrix(2, 1) * matrix(0, 2))
+             + matrix(2, 0) * (matrix(0, 1) * matrix(1, 2) - matrix(1, 1) * matrix(0, 2)) };
+}
+
+//! Returns the trace of \c matrix
+template<typename ElementType>
+constexpr ElementType trace(BasicMatrix3x3<ElementType> matrix)
+{
+    return matrix(0, 0) + matrix(1, 1) + matrix(2, 2);
+}
+
+//! Return the inner product of multiplication of two 3x3 matrices \c a and \c b
+template<typename ElementType>
+BasicMatrix3x3<ElementType> inner(const BasicMatrix3x3<ElementType>& a,
+                                  const BasicMatrix3x3<ElementType>& b)
+{
+    return a * b;
+}
 
 /*! \brief Three-by-three real number matrix.
  * \note will replace the C-style real[3][3] "matrix"
  */
 using Matrix3x3 = BasicMatrix3x3<real>;
-//! Convenience alias for a matrix view
-using Matrix3x3Span = Matrix3x3::view_type;
-//! Convenience alias for a const matrix view
-using Matrix3x3ConstSpan = Matrix3x3::const_view_type;
 
-//! Determinant of a 3x3 matrix
-constexpr real determinant(Matrix3x3ConstSpan matrix)
-{
-    return (matrix(0, 0) * (matrix(1, 1) * matrix(2, 2) - matrix(2, 1) * matrix(1, 2))
-            - matrix(1, 0) * (matrix(0, 1) * matrix(2, 2) - matrix(2, 1) * matrix(0, 2))
-            + matrix(2, 0) * (matrix(0, 1) * matrix(1, 2) - matrix(1, 1) * matrix(0, 2)));
-}
-
-//! Calculates the trace of a 3x3 matrix view
-constexpr real trace(Matrix3x3ConstSpan matrixView)
-{
-    return matrixView(0, 0) + matrixView(1, 1) + matrixView(2, 2);
-}
-
-/*! \brief Create a diagonal matrix of ElementType with N * M elements.
+/*! \brief Create a diagonal matrix of ElementType.
  *
  * \tparam ElementType type of matrix elements
- * \tparam N           number of rows
- * \tparam M           number of columns, defaults to number of rows if not set
  * \param  value       The value that fills the leading diagonal
  *
  * \returns a matrix with values \c value where row equals column index and null
  *          where row does not equal column index
  */
-template<typename ElementType, int N, int M = N>
-MultiDimArray<std::array<ElementType, N * M>, extents<N, M>> diagonalMatrix(const ElementType value)
+template<typename ElementType>
+BasicMatrix3x3<ElementType> diagonalMatrix(const ElementType value)
 {
-    std::array<ElementType, N * M>                               matrixEntries{};
-    MultiDimArray<std::array<ElementType, N * M>, extents<N, M>> matrix(matrixEntries);
-    for (int i = 0; i < std::min(N, M); i++)
+    BasicMatrix3x3<ElementType> matrix = { 0 };
+    for (auto i = 0; i < DIM; i++)
     {
         matrix(i, i) = value;
     }
     return matrix;
 }
 
-/*! \brief Create an identity matrix of ElementType with N * M elements.
- *
+/*! \brief Create an identity matrix of ElementType.
  * \tparam ElementType type of matrix elements
- * \tparam N number of rows
- * \tparam M number of columns, defaults to number of rows if not set
- *
  * \returns a matrix with values one where row equals column index and null
  *          where row does not equal column index
  */
-template<typename ElementType, int N, int M = N>
-MultiDimArray<std::array<ElementType, N * M>, extents<N, M>> identityMatrix()
+template<typename ElementType>
+BasicMatrix3x3<ElementType> identityMatrix()
 {
-    return diagonalMatrix<ElementType, N, M>(1);
+    return diagonalMatrix(static_cast<ElementType>(1));
 }
 
-//! Calculate the transpose of a 3x3 matrix, from its view
-Matrix3x3 transpose(Matrix3x3ConstSpan matrixView);
-
-//! Multiply matrix with vector.
-void matrixVectorMultiply(Matrix3x3ConstSpan matrix, RVec* v);
+//! Return the product of multiplying the vector v by the 3x3 matrix m
+template<typename ElementType>
+BasicVector<ElementType> multiplyVectorByMatrix(const BasicMatrix3x3<ElementType>& m, const rvec v)
+{
+    BasicVector<ElementType> result;
+    for (int d = 0; d < DIM; ++d)
+    {
+        result[d] = m(d, 0) * v[0] + m(d, 1) * v[1] + m(d, 2) * v[2];
+    }
+    return result;
+}
 
 //! Create new matrix type from legacy type.
 static inline Matrix3x3 createMatrix3x3FromLegacyMatrix(const matrix legacyMatrix)
@@ -140,8 +344,8 @@ static inline Matrix3x3 createMatrix3x3FromLegacyMatrix(const matrix legacyMatri
     return newMatrix;
 }
 
-//! Fill legacy matrix from new matrix type.
-static inline void fillLegacyMatrix(Matrix3x3ConstSpan newMatrix, matrix legacyMatrix)
+//! Fill existing legacy matrix from new matrix type.
+static inline void fillLegacyMatrix(Matrix3x3 newMatrix, matrix legacyMatrix)
 {
     GMX_RELEASE_ASSERT(legacyMatrix, "Need valid legacy matrix");
     for (int i = 0; i < DIM; i++)
@@ -153,135 +357,8 @@ static inline void fillLegacyMatrix(Matrix3x3ConstSpan newMatrix, matrix legacyM
     }
 }
 
-//! Return the product of multiplying the vector \c v by the 3x3 matrix \c m
-template<typename ElementType>
-BasicVector<ElementType> multiplyVectorByMatrix(const BasicMatrix3x3<ElementType>& m, const rvec v)
-{
-    BasicVector<ElementType> result;
-    for (int d = 0; d < DIM; ++d)
-    {
-        result[d] = m(d, 0) * v[0] + m(d, 1) * v[1] + m(d, 2) * v[2];
-    }
-    return result;
-}
-
-//! Return the sum of two 3x3 matrices \c a and \c b
-template<typename ElementType>
-BasicMatrix3x3<ElementType> operator+(const BasicMatrix3x3<ElementType>& a,
-                                      const BasicMatrix3x3<ElementType>& b)
-{
-    BasicMatrix3x3<ElementType> result;
-    for (int i = 0; i < DIM; i++)
-    {
-        for (int j = 0; j < DIM; j++)
-        {
-            result(i, j) = a(i, j) + b(i, j);
-        }
-    }
-    return result;
-}
-
-//! Return the difference between two 3x3 matrices \c a and \c b
-template<typename ElementType>
-BasicMatrix3x3<ElementType> operator-(const BasicMatrix3x3<ElementType>& a,
-                                      const BasicMatrix3x3<ElementType>& b)
-{
-    BasicMatrix3x3<ElementType> result;
-    for (int i = 0; i < DIM; i++)
-    {
-        for (int j = 0; j < DIM; j++)
-        {
-            result(i, j) = a(i, j) - b(i, j);
-        }
-    }
-    return result;
-}
-
-//! Return the negative 3x3 matrix from matrix \c a
-template<typename ElementType>
-BasicMatrix3x3<ElementType> operator-(const BasicMatrix3x3<ElementType>& a)
-{
-    BasicMatrix3x3<ElementType> result;
-    for (int i = 0; i < DIM; i++)
-    {
-        for (int j = 0; j < DIM; j++)
-        {
-            result(i, j) = -a(i, j);
-        }
-    }
-    return result;
-}
-
-//! Return the inner product of multiplication of two 3x3 matrices \c a and \c b
-template<typename ElementType>
-BasicMatrix3x3<ElementType> inner(const BasicMatrix3x3<ElementType>& a,
-                                  const BasicMatrix3x3<ElementType>& b)
-{
-    BasicMatrix3x3<ElementType> result({ a(0, 0) * b(0, 0) + a(0, 1) * b(1, 0) + a(0, 2) * b(2, 0),
-                                         a(0, 0) * b(0, 1) + a(0, 1) * b(1, 1) + a(0, 2) * b(2, 1),
-                                         a(0, 0) * b(0, 2) + a(0, 1) * b(1, 2) + a(0, 2) * b(2, 2),
-                                         a(1, 0) * b(0, 0) + a(1, 1) * b(1, 0) + a(1, 2) * b(2, 0),
-                                         a(1, 0) * b(0, 1) + a(1, 1) * b(1, 1) + a(1, 2) * b(2, 1),
-                                         a(1, 0) * b(0, 2) + a(1, 1) * b(1, 2) + a(1, 2) * b(2, 2),
-                                         a(2, 0) * b(0, 0) + a(2, 1) * b(1, 0) + a(2, 2) * b(2, 0),
-                                         a(2, 0) * b(0, 1) + a(2, 1) * b(1, 1) + a(2, 2) * b(2, 1),
-                                         a(2, 0) * b(0, 2) + a(2, 1) * b(1, 2) + a(2, 2) * b(2, 2) });
-    return result;
-}
-
-//! Return the inner product of multiplication of two 3x3 matrices \c a and \c b
-template<typename ElementType>
-BasicMatrix3x3<ElementType> operator*(const BasicMatrix3x3<ElementType>& a,
-                                      const BasicMatrix3x3<ElementType>& b)
-{
-    return inner(a, b);
-}
-
-//! Return the product of multiplying the 3x3 matrix \c m by the scalar \c s
-template<typename ElementType>
-BasicMatrix3x3<ElementType> operator*(const BasicMatrix3x3<ElementType>& m, const ElementType s)
-{
-    BasicMatrix3x3<ElementType> result;
-    for (int i = 0; i < DIM; i++)
-    {
-        for (int j = 0; j < DIM; j++)
-        {
-            result(i, j) = m(i, j) * s;
-        }
-    }
-    return result;
-}
-
-//! Return the product of multiplying the 3x3 matrix \c m by the scalar \c s
-template<typename ElementType>
-BasicMatrix3x3<ElementType> operator*(const ElementType s, const BasicMatrix3x3<ElementType>& m)
-{
-    return m * s;
-}
-
-//! Return the product of multiplying the 3x3 matrix \c m  by vector \c v
-template<typename ElementType>
-gmx::BasicVector<ElementType> operator*(const gmx::BasicMatrix3x3<ElementType>& m,
-                                        const gmx::BasicVector<ElementType>&    v)
-{
-    gmx::BasicVector<ElementType> result = { 0., 0., 0. };
-    for (int i = 0; i < DIM; ++i)
-    {
-        for (int j = 0; j < DIM; ++j)
-        {
-            result[i] += m(i, j) * v[j];
-        }
-    }
-    return result;
-}
-
-
-//! Return a vector that is the diagonal of the 3x3 matrix \c m
-template<typename ElementType>
-BasicVector<ElementType> diagonal(const BasicMatrix3x3<ElementType>& m)
-{
-    return { m(XX, XX), m(YY, YY), m(ZZ, ZZ) };
-}
+//! Multiply matrix with vector.
+void matrixVectorMultiply(const Matrix3x3* matrix, RVec* v);
 
 } // namespace gmx
 

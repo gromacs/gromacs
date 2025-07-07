@@ -199,7 +199,7 @@ void gmx::LegacySimulator::do_md()
     gmx_bool     bDoExpanded = FALSE;
     tensor    force_vir = { { 0 } }, shake_vir = { { 0 } }, total_vir = { { 0 } }, pres = { { 0 } };
     rvec      mu_tot;
-    Matrix3x3 pressureCouplingMu{ { 0. } }, parrinelloRahmanM{ { 0. } };
+    Matrix3x3 pressureCouplingMu{ 0. }, parrinelloRahmanM{ 0. };
     gmx_repl_ex_t     repl_ex = nullptr;
     gmx_bool          bSumEkinhOld, bDoReplEx, bExchanged, bNeedRepartition;
     real              dvdl_constr;

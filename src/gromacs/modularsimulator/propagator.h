@@ -258,7 +258,7 @@ private:
     Step scalingStepPosition_;
 
     //! The full PR scaling matrix
-    Matrix3x3 matrixPR_ = { { 0._real } };
+    Matrix3x3 matrixPR_ = { 0._real };
     //! The next PR scaling step
     Step scalingStepPR_;
 

@@ -161,7 +161,7 @@ COMInPlaceTest::COMInPlaceTest() :
     molblock.type        = 0;
     testTopology_.natoms = moltype.atoms.nr * molblock.nmol;
     testTopology_.finalize();
-    FloatingPointTolerance tolerance(
+    test::FloatingPointTolerance tolerance(
             FloatingPointTolerance(1.0e-6, 1.0e-6, 1.0e-8, 1.0e-12, 10000, 100, false));
     checker_.setDefaultTolerance(tolerance);
 }

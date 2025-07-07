@@ -202,7 +202,7 @@ TEST_F(TranslateAndScaleTest, scalingInverseWithOneScaleDimensionZeroSingleVecto
 
 TEST_F(AffineTransformationTest, identityTransformYieldsSameVectors)
 {
-    const AffineTransformation identityTransformation(identityMatrix<real, 3>(), { 0, 0, 0 });
+    const AffineTransformation identityTransformation(identityMatrix<real>(), { 0, 0, 0 });
     for (const auto& vector : testVectors_)
     {
         RVec vectorTransformed = vector;

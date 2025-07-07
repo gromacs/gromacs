@@ -76,7 +76,7 @@ void LangevinHostTestRunner::integrate(LangevinTestData* testData, int numSteps)
 
     gmx_omp_nthreads_set(ModuleMultiThread::Update, 1);
 
-    Matrix3x3 parrinelloRahmanM{ { 0. } };
+    Matrix3x3 parrinelloRahmanM{ 0. };
 
     for (int step = 0; step < numSteps; step++)
     {
