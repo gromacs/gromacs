@@ -59,11 +59,11 @@
 #include "gromacs/applied_forces/awh/pointstate.h"
 #include "gromacs/applied_forces/awh/tests/awh_setup.h"
 #include "gromacs/mdtypes/awh_params.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/refdata.h"
@@ -101,7 +101,7 @@ void parallelTestFunction(const void gmx_unused* dummy)
     MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
     const int shareGroup = 1 + (myRank / c_numSharingBiases);
 
-    t_commrec commRecord(MpiComm(MpiComm::SingleRank{}));
+    MpiComm mpiComm(MpiComm::SingleRank{});
 
     const std::vector<char> serializedAwhParametersPerDim = awhDimParamSerialized();
     auto              awhDimArrayRef = gmx::arrayRefFromArray(&serializedAwhParametersPerDim, 1);
@@ -115,7 +115,7 @@ void parallelTestFunction(const void gmx_unused* dummy)
                                                     0,
                                                     shareGroup);
 
-    BiasSharing biasSharing(params.awhParams, commRecord, MPI_COMM_WORLD);
+    BiasSharing biasSharing(params.awhParams, mpiComm, MPI_COMM_WORLD);
 
     EXPECT_EQ(biasSharing.numSharingSimulations(0), c_numSharingBiases);
     EXPECT_EQ(biasSharing.sharingSimulationIndex(0), myRank % c_numSharingBiases);
@@ -146,7 +146,7 @@ void sharingSamplesFrictionTest(const void* nStepsArg)
     MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
     const int shareGroup = 1 + (myRank / c_numSharingBiases);
 
-    t_commrec    commRecord(MpiComm(MpiComm::SingleRank{}));
+    MpiComm      mpiComm(MpiComm::SingleRank{});
     const double myRankFraction = double(myRank + 1) / numRanks;
 
     const std::vector<char> serializedAwhParametersPerDim = awhDimParamSerialized();
@@ -165,7 +165,7 @@ void sharingSamplesFrictionTest(const void* nStepsArg)
                                                     scaleTargetByMetric);
     const AwhDimParams& awhDimParams = params.awhParams.awhBiasParams(0).dimParams(0);
 
-    BiasSharing biasSharing(params.awhParams, commRecord, MPI_COMM_WORLD);
+    BiasSharing biasSharing(params.awhParams, mpiComm, MPI_COMM_WORLD);
 
     constexpr double mdTimeStep = 0.1;
 

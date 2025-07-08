@@ -69,9 +69,9 @@
 #include "gromacs/mdtypes/awh_correlation_history.h"
 #include "gromacs/mdtypes/awh_history.h"
 #include "gromacs/mdtypes/awh_params.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "biassharing.h"
@@ -310,12 +310,12 @@ static void ensureStateAndRunConsistency(const BiasParams& params, const BiasSta
     }
 }
 
-void Bias::restoreStateFromHistory(const AwhBiasHistory* biasHistory, const t_commrec* cr)
+void Bias::restoreStateFromHistory(const AwhBiasHistory* biasHistory, const MpiComm& mpiComm)
 {
-    GMX_RELEASE_ASSERT(thisRankDoesIO_ == MAIN(cr),
+    GMX_RELEASE_ASSERT(thisRankDoesIO_ == mpiComm.isMainRank(),
                        "The main rank should do I/O, the other ranks should not");
 
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         GMX_RELEASE_ASSERT(biasHistory != nullptr,
                            "On the main rank we need a valid history object to restore from");
@@ -333,9 +333,9 @@ void Bias::restoreStateFromHistory(const AwhBiasHistory* biasHistory, const t_co
         }
     }
 
-    if (PAR(cr))
+    if (mpiComm.size() > 1)
     {
-        state_.broadcast(cr->commMyGroup);
+        state_.broadcast(mpiComm);
     }
 }
 

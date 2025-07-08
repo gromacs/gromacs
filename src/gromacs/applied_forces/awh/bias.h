@@ -71,7 +71,6 @@
 #include "biaswriter.h"
 #include "dimparams.h"
 
-struct t_commrec;
 struct t_enxsubblock;
 
 namespace gmx
@@ -86,6 +85,7 @@ class CorrelationGrid;
 class BiasGrid;
 class BiasSharing;
 class GridAxis;
+class MpiComm;
 class PointState;
 
 /*! \internal
@@ -248,9 +248,9 @@ public:
      * Restore the bias state from history on the main rank and broadcast it.
      *
      * \param[in] biasHistory  Bias history struct, only allowed to be nullptr on worker ranks.
-     * \param[in] cr           The communication record.
+     * \param[in] mpiComm      MPI communicator.
      */
-    void restoreStateFromHistory(const AwhBiasHistory* biasHistory, const t_commrec* cr);
+    void restoreStateFromHistory(const AwhBiasHistory* biasHistory, const MpiComm& mpiComm);
 
     /*! \brief
      * Allocate and initialize a bias history with the given bias state.

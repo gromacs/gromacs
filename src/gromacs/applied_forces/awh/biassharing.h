@@ -56,7 +56,6 @@
 #include "gromacs/utility/gmxmpi.h"
 
 struct gmx_multisim_t;
-struct t_commrec;
 
 namespace gmx
 {
@@ -64,6 +63,7 @@ namespace gmx
 template<typename>
 class ArrayRef;
 class AwhParams;
+class MpiComm;
 
 class BiasSharing
 {
@@ -71,10 +71,10 @@ public:
     /*! \brief Constructor
      *
      * \param[in] awhParams              Parameters for all biases in this simulation
-     * \param[in] commRecord             Intra-simulation communication record
+     * \param[in] mpiComm                The MPI communicator
      * \param[in] simulationMainComm     MPI communicator for all main ranks of all simulations that share this bias
      */
-    BiasSharing(const AwhParams& awhParams, const t_commrec& commRecord, MPI_Comm simulationMainComm);
+    BiasSharing(const AwhParams& awhParams, const MpiComm& mpiComm, MPI_Comm simulationMainComm);
 
     ~BiasSharing();
 
@@ -112,8 +112,8 @@ private:
     std::vector<int> numSharingSimulations_;
     //! The index of our simulations in the simulations for each bias
     std::vector<int> sharingSimulationIndices_;
-    //! Reference to the intra-simulation communication record
-    const t_commrec& commRecord_;
+    //! Reference to the intra-simulation MPI communicator
+    const MpiComm& mpiComm_;
 
     //! Communicator between main ranks sharing a bias, for each bias
     std::vector<MPI_Comm> multiSimCommPerBias_;

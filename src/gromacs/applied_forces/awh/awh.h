@@ -77,7 +77,6 @@ struct gmx_multisim_t;
 struct gmx_wallcycle;
 struct pull_t;
 class t_state;
-struct t_commrec;
 struct t_enxframe;
 struct t_inputrec;
 enum class PbcType : int;
@@ -93,6 +92,7 @@ class Bias;
 struct BiasCoupledToSystem;
 class BiasSharing;
 class ForceWithVirial;
+class MpiComm;
 
 /*! \libinternal
  * \brief Coupling of the accelerated weight histogram method (AWH) with the system.
@@ -121,7 +121,7 @@ public:
      *
      * \param[in,out] fplog              General output file, normally md.log, can be nullptr.
      * \param[in]     inputRecord        General input parameters (as set up by grompp).
-     * \param[in]     commRecord         Struct for communication, can be nullptr.
+     * \param[in]     mpiComm            The MPI communicator for intra-simulation communication.
      * \param[in]     multiSimRecord     Multi-sim handler
      * \param[in]     awhParams          AWH input parameters, consistent with the relevant
      * parts of \p inputRecord (as set up by grompp).
@@ -135,7 +135,7 @@ public:
      */
     Awh(FILE*                 fplog,
         const t_inputrec&     inputRecord,
-        const t_commrec*      commRecord,
+        const MpiComm&        mpiComm,
         const gmx_multisim_t* multiSimRecord,
         const AwhParams&      awhParams,
         const std::string&    biasInitFilename,
@@ -274,9 +274,9 @@ private:
     bool isOutputStep(int64_t step) const;
 
     std::vector<BiasCoupledToSystem> biasCoupledToSystem_; /**< AWH biases and definitions of their coupling to the system. */
-    const int64_t    seed_;   /**< Random seed for MC jumping with umbrella type bias potential. */
-    const int        nstout_; /**< Interval in steps for writing to energy file. */
-    const t_commrec* commRecord_; /**< Pointer to the communication record. */
+    const int64_t  seed_;    /**< Random seed for MC jumping with umbrella type bias potential. */
+    const int      nstout_;  /**< Interval in steps for writing to energy file. */
+    const MpiComm& mpiComm_; /**< Reference tothe MPI communicator. */
     //! Object for sharing bias between simulations, only set when needed
     std::unique_ptr<BiasSharing> biasSharing_;
     pull_t*                      pull_; /**< Pointer to the pull working data. */
@@ -293,7 +293,7 @@ private:
  * \param[in,out] fplog                   General output file, normally md.log, can be nullptr.
  * \param[in]     inputRecord             General input parameters (as set up by grompp).
  * \param[in]     stateGlobal             A pointer to the global state structure.
- * \param[in]     commRecord              Struct for communication, can be nullptr.
+ * \param[in]     mpiComm                 The MPI communicator for intra-simulation communication.
  * \param[in]     multiSimRecord          Multi-sim handler
  * \param[in]     startingFromCheckpoint  Whether the simulation is starting from a checkpoint
  * \param[in]     usingShellParticles     Whether the user requested shell particles (which is unsupported)
@@ -306,7 +306,7 @@ private:
 std::unique_ptr<Awh> prepareAwhModule(FILE*                 fplog,
                                       const t_inputrec&     inputRecord,
                                       t_state*              stateGlobal,
-                                      const t_commrec*      commRecord,
+                                      const MpiComm&        mpiComm,
                                       const gmx_multisim_t* multiSimRecord,
                                       bool                  startingFromCheckpoint,
                                       bool                  usingShellParticles,

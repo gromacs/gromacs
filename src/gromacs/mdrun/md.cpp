@@ -542,7 +542,7 @@ void gmx::LegacySimulator::do_md()
     auto awh = prepareAwhModule(fpLog_,
                                 *ir,
                                 stateGlobal_,
-                                cr_,
+                                cr_->commMyGroup,
                                 ms_,
                                 startingBehavior_ != StartingBehavior::NewSimulation,
                                 shellfc != nullptr,

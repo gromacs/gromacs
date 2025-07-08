@@ -66,8 +66,6 @@
 #include "dimparams.h"
 #include "histogramsize.h"
 
-struct t_commrec;
-
 namespace gmx
 {
 

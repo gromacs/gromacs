@@ -55,11 +55,11 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/mdtypes/awh_params.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/mpitypes.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -120,13 +120,13 @@ std::multiset<int> getGlobalShareIndices(ArrayRef<const int> localShareIndices, 
 
 } // namespace
 
-BiasSharing::BiasSharing(const AwhParams& awhParams, const t_commrec& commRecord, MPI_Comm simulationMainComm) :
-    commRecord_(commRecord)
+BiasSharing::BiasSharing(const AwhParams& awhParams, const MpiComm& mpiComm, MPI_Comm simulationMainComm) :
+    mpiComm_(mpiComm)
 {
     // Both main and non-main PP ranks need this lookup to be valid
     multiSimCommPerBias_.resize(awhParams.numBias(), MPI_COMM_NULL);
 
-    if (MAIN(&commRecord))
+    if (mpiComm.isMainRank())
     {
         std::vector<int> localShareIndices;
         int              shareGroupPrev = 0;
@@ -196,14 +196,10 @@ BiasSharing::BiasSharing(const AwhParams& awhParams, const t_commrec& commRecord
     }
 
 #if GMX_MPI
-    if (commRecord.commMyGroup.size() > 1)
+    if (mpiComm.size() > 1)
     {
         numSharingSimulations_.resize(awhParams.numBias());
-        MPI_Bcast(numSharingSimulations_.data(),
-                  numSharingSimulations_.size(),
-                  MPI_INT,
-                  0,
-                  commRecord.commMyGroup.comm());
+        MPI_Bcast(numSharingSimulations_.data(), numSharingSimulations_.size(), MPI_INT, 0, mpiComm.comm());
     }
 #endif // GMX_MPI
 }
@@ -226,26 +222,26 @@ BiasSharing::~BiasSharing()
  * \param[in,out] data          The data to sum.
  * \param[in]     multiSimComm  Communicator for the main ranks of sharing simulations.
  * \param[in]     broadcastWithinSimulation  Broadcast the result to all ranks within the simulation
- * \param[in]     commRecord    Struct for intra-simulation communication.
+ * \param[in]     mpiComm       MPI communicator for intra-simulation communication.
  */
 template<typename T>
-void sumOverSimulations(ArrayRef<T>      data,
-                        MPI_Comm         multiSimComm,
-                        const bool       broadcastWithinSimulation,
-                        const t_commrec& commRecord)
+void sumOverSimulations(ArrayRef<T>    data,
+                        MPI_Comm       multiSimComm,
+                        const bool     broadcastWithinSimulation,
+                        const MpiComm& mpiComm)
 {
 #if GMX_MPI
-    if (MAIN(&commRecord))
+    if (mpiComm.isMainRank())
     {
         MPI_Allreduce(MPI_IN_PLACE, data.data(), data.size(), mpiType<T>(), MPI_SUM, multiSimComm);
     }
-    if (broadcastWithinSimulation && commRecord.commMyGroup.size() > 1)
+    if (broadcastWithinSimulation && mpiComm.size() > 1)
     {
-        gmx_bcast(data.size() * sizeof(T), data.data(), commRecord.commMyGroup.comm());
+        gmx_bcast(data.size() * sizeof(T), data.data(), mpiComm.comm());
     }
 #else
     GMX_UNUSED_VALUE(data);
-    GMX_UNUSED_VALUE(commRecord);
+    GMX_UNUSED_VALUE(mpiComm);
     GMX_UNUSED_VALUE(broadcastWithinSimulation);
     GMX_UNUSED_VALUE(multiSimComm);
 #endif // GMX_MPI
@@ -253,27 +249,27 @@ void sumOverSimulations(ArrayRef<T>      data,
 
 void BiasSharing::sumOverSharingMainRanks(ArrayRef<int> data, const int biasIndex) const
 {
-    sumOverSimulations(data, multiSimCommPerBias_[biasIndex], false, commRecord_);
+    sumOverSimulations(data, multiSimCommPerBias_[biasIndex], false, mpiComm_);
 }
 
 void BiasSharing::sumOverSharingMainRanks(ArrayRef<long> data, const int biasIndex) const
 {
-    sumOverSimulations(data, multiSimCommPerBias_[biasIndex], false, commRecord_);
+    sumOverSimulations(data, multiSimCommPerBias_[biasIndex], false, mpiComm_);
 }
 
 void BiasSharing::sumOverSharingMainRanks(ArrayRef<double> data, const int biasIndex) const
 {
-    sumOverSimulations(data, multiSimCommPerBias_[biasIndex], false, commRecord_);
+    sumOverSimulations(data, multiSimCommPerBias_[biasIndex], false, mpiComm_);
 }
 
 void BiasSharing::sumOverSharingSimulations(ArrayRef<int> data, const int biasIndex) const
 {
-    sumOverSimulations(data, multiSimCommPerBias_[biasIndex], true, commRecord_);
+    sumOverSimulations(data, multiSimCommPerBias_[biasIndex], true, mpiComm_);
 }
 
 void BiasSharing::sumOverSharingSimulations(ArrayRef<double> data, const int biasIndex) const
 {
-    sumOverSimulations(data, multiSimCommPerBias_[biasIndex], true, commRecord_);
+    sumOverSimulations(data, multiSimCommPerBias_[biasIndex], true, mpiComm_);
 }
 
 bool haveBiasSharingWithinSimulation(const AwhParams& awhParams)

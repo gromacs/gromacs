@@ -71,7 +71,6 @@
 #include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/mdtypes/awh_history.h"
 #include "gromacs/mdtypes/awh_params.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/pull_params.h"
@@ -83,6 +82,7 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -170,7 +170,7 @@ BiasCoupledToSystem::BiasCoupledToSystem(Bias bias, const std::vector<int>& pull
 
 Awh::Awh(FILE*                 fplog,
          const t_inputrec&     inputRecord,
-         const t_commrec*      commRecord,
+         const MpiComm&        mpiComm,
          const gmx_multisim_t* multiSimRecord,
          const AwhParams&      awhParams,
          const std::string&    biasInitFilename,
@@ -179,7 +179,7 @@ Awh::Awh(FILE*                 fplog,
          int                   fepLambdaState) :
     seed_(awhParams.seed()),
     nstout_(awhParams.nstout()),
-    commRecord_(commRecord),
+    mpiComm_(mpiComm),
     pull_(pull_work),
     potentialOffset_(0),
     numFepLambdaStates_(numFepLambdaStates),
@@ -217,9 +217,7 @@ Awh::Awh(FILE*                 fplog,
 
     if (awhParams.shareBiasMultisim() && multiSimRecord != nullptr)
     {
-        GMX_RELEASE_ASSERT(commRecord, "Need a valid commRecord");
-        biasSharing_ =
-                std::make_unique<BiasSharing>(awhParams, *commRecord, multiSimRecord->mainRanksComm_);
+        biasSharing_ = std::make_unique<BiasSharing>(awhParams, mpiComm, multiSimRecord->mainRanksComm_);
         if (fplog)
         {
             for (int k = 0; k < awhParams.numBias(); k++)
@@ -290,7 +288,7 @@ Awh::Awh(FILE*                 fplog,
 
         /* Construct the bias and couple it to the system. */
         Bias::ThisRankWillDoIO thisRankWillDoIO =
-                (MAIN(commRecord_) ? Bias::ThisRankWillDoIO::Yes : Bias::ThisRankWillDoIO::No);
+                (mpiComm_.isMainRank() ? Bias::ThisRankWillDoIO::Yes : Bias::ThisRankWillDoIO::No);
         biasCoupledToSystem_.emplace_back(Bias(k,
                                                awhParams,
                                                awhBiasParams[k],
@@ -308,7 +306,7 @@ Awh::Awh(FILE*                 fplog,
     /* Need to register the AWH coordinates to be allowed to apply forces to the pull coordinates. */
     registerAwhWithPull(awhParams, pull_);
 
-    if (biasSharing_ && MAIN(commRecord_))
+    if (biasSharing_ && mpiComm_.isMainRank())
     {
         std::vector<size_t> pointSize;
         pointSize.reserve(biasCoupledToSystem_.size());
@@ -427,12 +425,12 @@ real Awh::applyBiasForcesAndUpdateBias(PbcType                pbcType,
 
     wallcycle_stop(wallcycle, WallCycleCounter::Awh);
 
-    return MAIN(commRecord_) ? static_cast<real>(awhPotential) : 0;
+    return mpiComm_.isMainRank() ? static_cast<real>(awhPotential) : 0;
 }
 
 std::shared_ptr<AwhHistory> Awh::initHistoryFromState() const
 {
-    if (MAIN(commRecord_))
+    if (mpiComm_.isMainRank())
     {
         std::shared_ptr<AwhHistory> awhHistory(new AwhHistory);
         awhHistory->bias.clear();
@@ -455,7 +453,7 @@ std::shared_ptr<AwhHistory> Awh::initHistoryFromState() const
 void Awh::restoreStateFromHistory(const AwhHistory* awhHistory)
 {
     /* Restore the history to the current state */
-    if (MAIN(commRecord_))
+    if (mpiComm_.isMainRank())
     {
         GMX_RELEASE_ASSERT(awhHistory != nullptr,
                            "The main rank should have a valid awhHistory when restoring the "
@@ -470,21 +468,21 @@ void Awh::restoreStateFromHistory(const AwhHistory* awhHistory)
 
         potentialOffset_ = awhHistory->potentialOffset;
     }
-    if (PAR(commRecord_))
+    if (mpiComm_.size() > 1)
     {
-        gmx_bcast(sizeof(potentialOffset_), &potentialOffset_, commRecord_->commMyGroup.comm());
+        gmx_bcast(sizeof(potentialOffset_), &potentialOffset_, mpiComm_.comm());
     }
 
     for (size_t k = 0; k < biasCoupledToSystem_.size(); k++)
     {
         biasCoupledToSystem_[k].bias_.restoreStateFromHistory(
-                awhHistory ? &awhHistory->bias[k] : nullptr, commRecord_);
+                awhHistory ? &awhHistory->bias[k] : nullptr, mpiComm_);
     }
 }
 
 void Awh::updateHistory(AwhHistory* awhHistory) const
 {
-    if (!MAIN(commRecord_))
+    if (!mpiComm_.isMainRank())
     {
         return;
     }
@@ -527,7 +525,7 @@ void Awh::registerAwhWithPull(const AwhParams& awhParams, pull_t* pull_work)
 /* Fill the AWH data block of an energy frame with data (if there is any). */
 void Awh::writeToEnergyFrame(int64_t step, t_enxframe* frame)
 {
-    GMX_ASSERT(MAIN(commRecord_), "writeToEnergyFrame should only be called on the main rank");
+    GMX_ASSERT(mpiComm_.isMainRank(), "writeToEnergyFrame should only be called on the main rank");
     GMX_ASSERT(frame != nullptr, "Need a valid energy frame");
 
     if (!isOutputStep(step))
@@ -603,7 +601,7 @@ bool Awh::needForeignEnergyDifferences(const int64_t step) const
 std::unique_ptr<Awh> prepareAwhModule(FILE*                 fplog,
                                       const t_inputrec&     inputRecord,
                                       t_state*              stateGlobal,
-                                      const t_commrec*      commRecord,
+                                      const MpiComm&        mpiComm,
                                       const gmx_multisim_t* multiSimRecord,
                                       const bool            startingFromCheckpoint,
                                       const bool            usingShellParticles,
@@ -621,7 +619,7 @@ std::unique_ptr<Awh> prepareAwhModule(FILE*                 fplog,
 
     auto awh = std::make_unique<Awh>(fplog,
                                      inputRecord,
-                                     commRecord,
+                                     mpiComm,
                                      multiSimRecord,
                                      *inputRecord.awhParams,
                                      biasInitFilename,
@@ -632,9 +630,9 @@ std::unique_ptr<Awh> prepareAwhModule(FILE*                 fplog,
     if (startingFromCheckpoint)
     {
         // Restore the AWH history read from checkpoint
-        awh->restoreStateFromHistory(MAIN(commRecord) ? stateGlobal->awhHistory.get() : nullptr);
+        awh->restoreStateFromHistory(mpiComm.isMainRank() ? stateGlobal->awhHistory.get() : nullptr);
     }
-    else if (MAIN(commRecord))
+    else if (mpiComm.isMainRank())
     {
         // Initialize the AWH history here
         stateGlobal->awhHistory = awh->initHistoryFromState();
