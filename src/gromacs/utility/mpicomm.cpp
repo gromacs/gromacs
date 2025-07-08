@@ -66,7 +66,7 @@ public:
      */
     HierarchicalReducer(MPI_Comm commIntra, MPI_Comm commInter, int numPhysicalNodes);
 
-    //! Constuctor, note that this duplicates the communicators
+    //! Constructor, note that this duplicates the communicators
     HierarchicalReducer(const HierarchicalReducer& other);
 
     //! Destructor, frees the MPI communicators

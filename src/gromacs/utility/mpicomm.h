@@ -57,7 +57,7 @@ namespace gmx
 template<typename T>
 class ArrayRef;
 
-/*! \brief MPI communicator with optimized reduction functionality
+/*! \libinternal \brief MPI communicator with optimized reduction functionality
  *
  * This class refers to an MPI communicator and derived data
  * and provides summation reductions that can be hierarchical.
@@ -75,7 +75,7 @@ public:
     //! Constructs an object for MPI communicator \p comm
     explicit MpiComm(MPI_Comm comm);
 
-    /*! Constructs a communicator with a single rank
+    /*! \brief Constructs a communicator with a single rank
      *
      * \note The \p comm() method will return MPI_COMM_NULL. This communicator
      *       should not be passed to MPI calls. Thus any code that might take
