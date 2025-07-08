@@ -64,7 +64,6 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdrunutility/multisim.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/ifunc.h"
@@ -75,6 +74,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/physicalnodecommunicator.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -587,7 +587,7 @@ int get_nthreads_mpi(const gmx_hw_info_t* hwinfo,
 
 void check_resource_division_efficiency(const gmx_hw_info_t* hwinfo,
                                         bool                 willUsePhysicalGpu,
-                                        t_commrec*           cr,
+                                        const gmx::MpiComm*  mpiCommMySim,
                                         const gmx::MDLogger& mdlog)
 {
     GMX_UNUSED_VALUE(hwinfo);
@@ -608,14 +608,14 @@ void check_resource_division_efficiency(const gmx_hw_info_t* hwinfo,
 
     bool anyRankIsUsingGpus = willUsePhysicalGpu;
     /* Thread-MPI seems to have a bug with reduce on 1 node, so use a cond. */
-    if (cr->nnodes > 1)
+    if (mpiCommMySim && mpiCommMySim->size() > 1)
     {
         std::array<int, 2> count, count_max;
 
         count[0] = nth_omp_max;
         count[1] = int(willUsePhysicalGpu);
 
-        MPI_Allreduce(count.data(), count_max.data(), count.size(), MPI_INT, MPI_MAX, cr->mpi_comm_mysim);
+        MPI_Allreduce(count.data(), count_max.data(), count.size(), MPI_INT, MPI_MAX, mpiCommMySim->comm());
 
         /* In case of an inhomogeneous run setup we use the maximum counts */
         nth_omp_max        = count_max[0];
@@ -636,7 +636,7 @@ void check_resource_division_efficiency(const gmx_hw_info_t* hwinfo,
         nthreads_omp_mpi_ok_min = nthreads_omp_mpi_ok_min_gpu;
     }
 
-    if (cr && (cr->nnodes > 1) && !anyRankIsUsingGpus)
+    if (mpiCommMySim && mpiCommMySim->size() > 1 && !anyRankIsUsingGpus)
     {
         if (nth_omp_max < nthreads_omp_mpi_ok_min || nth_omp_max > nthreads_omp_mpi_ok_max)
         {
@@ -653,7 +653,7 @@ void check_resource_division_efficiency(const gmx_hw_info_t* hwinfo,
     }
 #else  // !GMX_OPENMP || ! GMX_MPI
     GMX_UNUSED_VALUE(willUsePhysicalGpu);
-    GMX_UNUSED_VALUE(cr);
+    GMX_UNUSED_VALUE(mpiCommMySim);
     GMX_UNUSED_VALUE(nthreads_omp_mpi_ok_max);
     GMX_UNUSED_VALUE(nthreads_omp_mpi_ok_min_cpu);
 
@@ -868,7 +868,7 @@ void checkAndUpdateHardwareOptions(const gmx::MDLogger& mdlog,
 
 void checkAndUpdateRequestedNumOpenmpThreads(gmx_hw_opt_t*         hw_opt,
                                              const gmx_hw_info_t&  hwinfo,
-                                             const t_commrec*      cr,
+                                             const gmx::MpiComm&   mpiCommMySim,
                                              const gmx_multisim_t* ms,
                                              int                   numRanksOnThisNode,
                                              PmeRunMode            pmeRunMode,
@@ -928,9 +928,9 @@ void checkAndUpdateRequestedNumOpenmpThreads(gmx_hw_opt_t*         hw_opt,
      * We currently only limit SMT for simulations using a single rank.
      * TODO: Consider limiting also for multi-rank simulations.
      */
-    bool canChooseNumOpenmpThreads      = (GMX_OPENMP && hw_opt->nthreads_omp <= 0);
-    bool haveSmtSupport                 = gmxSmtIsUsedOnAllCores(*hwinfo.hardwareTopology);
-    bool simRunsSingleRankNBAndPmeOnGpu = (cr->nnodes == 1 && pmeRunMode == PmeRunMode::GPU);
+    bool canChooseNumOpenmpThreads = (GMX_OPENMP && hw_opt->nthreads_omp <= 0);
+    bool haveSmtSupport            = gmxSmtIsUsedOnAllCores(*hwinfo.hardwareTopology);
+    bool simRunsSingleRankNBAndPmeOnGpu = (mpiCommMySim.size() == 1 && pmeRunMode == PmeRunMode::GPU);
 
     if (canChooseNumOpenmpThreads && haveSmtSupport && simRunsSingleRankNBAndPmeOnGpu)
     {
@@ -938,8 +938,8 @@ void checkAndUpdateRequestedNumOpenmpThreads(gmx_hw_opt_t*         hw_opt,
          * all detected ncore_tot physical cores. We are currently not
          * checking for that here.
          */
-        int numRanksTot     = cr->nnodes * (isMultiSim(ms) ? ms->numSimulations_ : 1);
-        int numAtomsPerRank = mtop.natoms / cr->nnodes;
+        int numRanksTot     = mpiCommMySim.size() * (isMultiSim(ms) ? ms->numSimulations_ : 1);
+        int numAtomsPerRank = mtop.natoms / mpiCommMySim.size();
         int numCoresPerRank = hwinfo.ncore_tot / numRanksTot;
         if (numAtomsPerRank < c_numAtomsPerCoreSquaredSmtThreshold * gmx::square(numCoresPerRank))
         {

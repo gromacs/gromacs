@@ -49,7 +49,6 @@
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/units.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/filestream.h"
@@ -119,7 +118,7 @@ void QMMMForceProvider::appendLog(const std::string& msg)
     GMX_LOG(logger_.info).asParagraph().appendText(msg);
 }
 
-void QMMMForceProvider::initCP2KForceEnvironment(const t_commrec& cr)
+void QMMMForceProvider::initCP2KForceEnvironment(const MpiComm& mpiComm)
 {
     // Check that we have filename either defined in KVT or deduced from *.tpr name
     GMX_RELEASE_ASSERT(!parameters_.qmFileNameBase_.empty(),
@@ -132,7 +131,7 @@ void QMMMForceProvider::initCP2KForceEnvironment(const t_commrec& cr)
     const std::string cp2kOutputName = parameters_.qmFileNameBase_ + ".out";
 
     // Write CP2K input if we are Main
-    if (MAIN(&cr))
+    if (mpiComm.isMainRank())
     {
         // In the CP2K Input we need to substitute placeholder with the actuall *.pdb file name
         writeStringToFile(cp2kInputName, formatString(parameters_.qmInput_.c_str(), cp2kPdbName.c_str()));
@@ -154,7 +153,7 @@ void QMMMForceProvider::initCP2KForceEnvironment(const t_commrec& cr)
         // TODO: Probably there should be more elegant solution
 #if GMX_LIB_MPI
         cp2k_create_force_env_comm(
-                &force_env_, cp2kInputName.c_str(), cp2kOutputName.c_str(), MPI_Comm_c2f(cr.mpi_comm_mysim));
+                                   &force_env_, cp2kInputName.c_str(), cp2kOutputName.c_str(), MPI_Comm_c2f(mpiComm.comm());
 #endif
     }
     else

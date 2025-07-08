@@ -46,11 +46,11 @@
 #include "gromacs/utility/real.h"
 
 class gmx_ekindata_t;
+struct gmx_domdec_t;
 struct gmx_enerdata_t;
 struct gmx_global_stat;
 struct gmx_wallcycle;
 struct pull_t;
-struct t_commrec;
 struct t_extmass;
 struct t_fcdata;
 struct t_forcerec;
@@ -64,6 +64,7 @@ namespace gmx
 {
 class Constraints;
 class ForceBuffers;
+class MpiComm;
 class ObservablesReducer;
 class SimulationSignaller;
 class Update;
@@ -79,7 +80,8 @@ enum class StartingBehavior : int;
  * \param[in]  nstglobalcomm     Will globals be computed on this step.
  * \param[in]  ir                Input record.
  * \param[in]  fr                Force record.
- * \param[in]  cr                Comunication record.
+ * \param[in]  mpiComm           Communication object for my group.
+ * \param[in]  dd                Domain decomposition object, pass nullptr when dd is not in use.
  * \param[in]  state             Simulation state.
  * \param[in]  mdatoms           MD atoms data.
  * \param[in]  fcdata            Force calculation data.
@@ -120,7 +122,8 @@ void integrateVVFirstStep(int64_t                   step,
                           int                       nstglobalcomm,
                           const t_inputrec*         ir,
                           t_forcerec*               fr,
-                          t_commrec*                cr,
+                          const gmx::MpiComm&       mpiComm,
+                          const gmx_domdec_t*       dd,
                           t_state*                  state,
                           t_mdatoms*                mdatoms,
                           t_fcdata*                 fcdata,
@@ -160,7 +163,8 @@ void integrateVVFirstStep(int64_t                   step,
  * \param[in]  step              Current timestep.
  * \param[in]  ir                Input record.
  * \param[in]  fr                Force record.
- * \param[in]  cr                Comunication record.
+ * \param[in]  mpiComm           Communication object for my group.
+ * \param[in]  dd                Domain decomposition object, pass nullptr when dd is not in use.
  * \param[in]  state             Simulation state.
  * \param[in]  mdatoms           MD atoms data.
  * \param[in]  fcdata            Force calculation data.
@@ -194,7 +198,8 @@ void integrateVVFirstStep(int64_t                   step,
 void integrateVVSecondStep(int64_t                   step,
                            const t_inputrec*         ir,
                            t_forcerec*               fr,
-                           t_commrec*                cr,
+                           const gmx::MpiComm&       mpiComm,
+                           const gmx_domdec_t*       dd,
                            t_state*                  state,
                            t_mdatoms*                mdatoms,
                            t_fcdata*                 fcdata,

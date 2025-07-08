@@ -54,11 +54,11 @@ struct gmx_hw_info_t;
 struct gmx_hw_opt_t;
 struct gmx_mtop_t;
 struct gmx_multisim_t;
-struct t_commrec;
 struct t_inputrec;
 
 namespace gmx
 {
+class MpiComm;
 class HardwareTopology;
 class MDLogger;
 class PhysicalNodeCommunicator;
@@ -91,7 +91,7 @@ int get_nthreads_mpi(const gmx_hw_info_t* hwinfo,
  */
 void check_resource_division_efficiency(const gmx_hw_info_t* hwinfo,
                                         bool                 willUsePhysicalGpu,
-                                        t_commrec*           cr,
+                                        const gmx::MpiComm*  mpiCommMySim,
                                         const gmx::MDLogger& mdlog);
 
 /*! \brief Checks what our hardware options are based on how Gromacs was compiled
@@ -115,7 +115,7 @@ void checkAndUpdateHardwareOptions(const gmx::MDLogger& mdlog,
  */
 void checkAndUpdateRequestedNumOpenmpThreads(gmx_hw_opt_t*         hw_opt,
                                              const gmx_hw_info_t&  hwinfo,
-                                             const t_commrec*      cr,
+                                             const gmx::MpiComm&   mpiCommMySim,
                                              const gmx_multisim_t* ms,
                                              int                   numRanksOnThisNode,
                                              PmeRunMode            pmeRunMode,

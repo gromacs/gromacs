@@ -54,6 +54,7 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
+struct gmx_domdec_t;
 struct gmx_edsam;
 struct gmx_localtop_t;
 struct gmx_moltype_t;
@@ -61,7 +62,6 @@ struct gmx_mtop_t;
 struct gmx_multisim_t;
 struct gmx_wallcycle;
 struct pull_t;
-struct t_commrec;
 struct t_ilist;
 struct t_inputrec;
 struct t_nrnb;
@@ -72,6 +72,7 @@ namespace gmx
 {
 template<typename T>
 class ArrayRefWithPadding;
+class MpiComm;
 template<typename>
 class ListOfLists;
 class ObservablesReducerBuilder;
@@ -104,7 +105,8 @@ private:
                 const t_inputrec&          ir,
                 pull_t*                    pull_work,
                 FILE*                      log,
-                const t_commrec*           cr,
+                const MpiComm&             mpiComm,
+                gmx_domdec_t*              dd,
                 bool                       useUpdateGroups,
                 const gmx_multisim_t*      ms,
                 t_nrnb*                    nrnb,

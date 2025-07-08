@@ -59,7 +59,7 @@ NNPotForceProvider::NNPotForceProvider(const NNPotParameters& nnpotParameters, c
     idxLookup_(params_.numAtoms_, -1),
     box_{ { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 } },
     logger_(logger),
-    cr_(params_.cr_)
+    mpiComm_(*params_.mpiComm_)
 {
     GMX_THROW(InternalError(
             "Libtorch/NN backend is not linked into GROMACS, NNPot simulation is not possible."

@@ -37,7 +37,10 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
-struct t_commrec;
+namespace gmx
+{
+class MpiComm;
+} // namespace gmx
 
 typedef struct
 {
@@ -61,7 +64,7 @@ int add_bind(t_bin* b, int nr, const double r[]);
 int add_bind(t_bin* b, gmx::ArrayRef<const double> r);
 /* Add reals to the bin. Returns index */
 
-void sum_bin(t_bin* b, const t_commrec* cr);
+void sum_bin(t_bin* b, const gmx::MpiComm& mpiComm);
 /* Globally sum the reals in the bin */
 
 void extract_binr(t_bin* b, int index, int nr, real r[]);

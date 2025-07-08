@@ -129,9 +129,11 @@ public:
 
     //! Write private data to checkpoint
     virtual void writeCheckpoint(std::optional<WriteCheckpointData> checkpointData,
-                                 const t_commrec*                   cr) = 0;
+                                 const MpiComm&                     mpiComm) = 0;
     //! Read private data from checkpoint
-    virtual void readCheckpoint(std::optional<ReadCheckpointData> checkpointData, const t_commrec* cr) = 0;
+    virtual void readCheckpoint(std::optional<ReadCheckpointData> checkpointData,
+                                const MpiComm&                    mpiComm,
+                                gmx_domdec_t*                     dd) = 0;
 
     //! Update the reference temperature and update and return the temperature coupling integral
     virtual real updateReferenceTemperatureAndIntegral(int  temperatureGroup,
@@ -213,12 +215,13 @@ public:
 
     //! No data to write to checkpoint
     void writeCheckpoint(std::optional<WriteCheckpointData> gmx_unused checkpointData,
-                         const t_commrec gmx_unused*                   cr) override
+                         const MpiComm gmx_unused&                     mpiComm) override
     {
     }
     //! No data to read from checkpoints
     void readCheckpoint(std::optional<ReadCheckpointData> gmx_unused checkpointData,
-                        const t_commrec gmx_unused*                  cr) override
+                        const MpiComm gmx_unused&                    mpiComm,
+                        gmx_domdec_t gmx_unused*                     dd) override
     {
     }
 
@@ -295,12 +298,13 @@ public:
 
     //! No data to write to checkpoint
     void writeCheckpoint(std::optional<WriteCheckpointData> gmx_unused checkpointData,
-                         const t_commrec gmx_unused*                   cr) override
+                         const MpiComm gmx_unused&                     mpiComm) override
     {
     }
     //! No data to read from checkpoints
     void readCheckpoint(std::optional<ReadCheckpointData> gmx_unused checkpointData,
-                        const t_commrec gmx_unused*                  cr) override
+                        const MpiComm gmx_unused&                    mpiComm,
+                        gmx_domdec_t gmx_unused*                     dd) override
     {
     }
 
@@ -458,24 +462,26 @@ public:
     }
 
     //! Write thermostat dof to checkpoint
-    void writeCheckpoint(std::optional<WriteCheckpointData> checkpointData, const t_commrec* cr) override
+    void writeCheckpoint(std::optional<WriteCheckpointData> checkpointData, const MpiComm& mpiComm) override
     {
-        if (MAIN(cr))
+        if (mpiComm.isMainRank())
         {
             doCheckpointData(&checkpointData.value());
         }
     }
     //! Read thermostat dof from checkpoint
-    void readCheckpoint(std::optional<ReadCheckpointData> checkpointData, const t_commrec* cr) override
+    void readCheckpoint(std::optional<ReadCheckpointData> checkpointData,
+                        const MpiComm&                    mpiComm,
+                        gmx_domdec_t*                     dd) override
     {
-        if (MAIN(cr))
+        if (mpiComm.isMainRank())
         {
             doCheckpointData(&checkpointData.value());
         }
-        if (haveDDAtomOrdering(*cr))
+        if (dd)
         {
-            dd_bcast(cr->dd, xi_.size() * sizeof(real), xi_.data());
-            dd_bcast(cr->dd, xiVelocities_.size() * sizeof(real), xiVelocities_.data());
+            dd_bcast(dd, xi_.size() * sizeof(real), xi_.data());
+            dd_bcast(dd, xiVelocities_.size() * sizeof(real), xiVelocities_.data());
         }
     }
 
@@ -708,9 +714,10 @@ void VelocityScalingTemperatureCoupling::doCheckpointData(CheckpointData<operati
 }
 
 void VelocityScalingTemperatureCoupling::saveCheckpointState(std::optional<WriteCheckpointData> checkpointData,
-                                                             const t_commrec* cr)
+                                                             const MpiComm& mpiComm,
+                                                             gmx_domdec_t*  dd)
 {
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         doCheckpointData<CheckpointDataOperation::Write>(&checkpointData.value());
     }
@@ -718,19 +725,22 @@ void VelocityScalingTemperatureCoupling::saveCheckpointState(std::optional<Write
             checkpointData
                     ? std::make_optional(checkpointData->subCheckpointData("thermostat impl"))
                     : std::nullopt,
-            cr);
+            mpiComm);
+
+    GMX_UNUSED_VALUE(dd);
 }
 
 void VelocityScalingTemperatureCoupling::restoreCheckpointState(std::optional<ReadCheckpointData> checkpointData,
-                                                                const t_commrec* cr)
+                                                                const MpiComm& mpiComm,
+                                                                gmx_domdec_t*  dd)
 {
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         doCheckpointData<CheckpointDataOperation::Read>(&checkpointData.value());
     }
-    if (haveDDAtomOrdering(*cr))
+    if (dd)
     {
-        dd_bcast(cr->dd,
+        dd_bcast(dd,
                  gmx::ssize(temperatureCouplingIntegral_) * int(sizeof(double)),
                  temperatureCouplingIntegral_.data());
     }
@@ -738,7 +748,8 @@ void VelocityScalingTemperatureCoupling::restoreCheckpointState(std::optional<Re
             checkpointData
                     ? std::make_optional(checkpointData->subCheckpointData("thermostat impl"))
                     : std::nullopt,
-            cr);
+            mpiComm,
+            dd);
 }
 
 const std::string& VelocityScalingTemperatureCoupling::clientID()

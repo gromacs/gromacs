@@ -914,7 +914,7 @@ static void do_single_flood(FILE*                          edo,
                             t_edpar*                       edi,
                             int64_t                        step,
                             const matrix                   box,
-                            const t_commrec*               cr,
+                            const gmx::MpiComm&            mpiComm,
                             gmx_bool bNS) /* Are we in a neighbor searching step? */
 {
     int                i;
@@ -931,7 +931,7 @@ static void do_single_flood(FILE*                          edo,
     /* Broadcast the positions of the AVERAGE structure such that they are known on
      * every processor. Each node contributes its local positions x and stores them in
      * the collective ED array buf->xcoll */
-    communicate_group_positions(cr,
+    communicate_group_positions(mpiComm,
                                 buf->xcoll,
                                 buf->shifts_xcoll,
                                 buf->extra_shifts_xcoll,
@@ -947,7 +947,7 @@ static void do_single_flood(FILE*                          edo,
     /* Only assembly REFERENCE positions if their indices differ from the average ones */
     if (!edi->bRefEqAv)
     {
-        communicate_group_positions(cr,
+        communicate_group_positions(mpiComm,
                                     buf->xc_ref,
                                     buf->shifts_xc_ref,
                                     buf->extra_shifts_xc_ref,
@@ -1010,7 +1010,7 @@ static void do_single_flood(FILE*                          edo,
     }
 
     /* Output is written by the main process */
-    if (do_per_step(step, edi->outfrq) && MAIN(cr))
+    if (do_per_step(step, edi->outfrq) && mpiComm.isMainRank())
     {
         /* Output how well we fit to the reference */
         if (edi->bRefEqAv)
@@ -1032,7 +1032,7 @@ static void do_single_flood(FILE*                          edo,
 
 
 /* Main flooding routine, called from do_force */
-void do_flood(const t_commrec*               cr,
+void do_flood(const gmx::MpiComm&            mpiComm,
               const t_inputrec&              ir,
               gmx::ArrayRef<const gmx::RVec> coords,
               gmx::ArrayRef<gmx::RVec>       force,
@@ -1043,7 +1043,7 @@ void do_flood(const t_commrec*               cr,
 {
     /* Write time to edo, when required. Output the time anyhow since we need
      * it in the output file for ED constraints. */
-    if (MAIN(cr) && do_per_step(step, ed->edpar.begin()->outfrq))
+    if (mpiComm.isMainRank() && do_per_step(step, ed->edpar.begin()->outfrq))
     {
         fprintf(ed->edo, "\n%12f", ir.init_t + step * ir.delta_t);
     }
@@ -1058,7 +1058,7 @@ void do_flood(const t_commrec*               cr,
         /* Call flooding for one matrix */
         if (edi.flood.vecs.neig)
         {
-            do_single_flood(ed->edo, coords, force, &edi, step, box, cr, bNS);
+            do_single_flood(ed->edo, coords, force, &edi, step, box, mpiComm, bNS);
         }
     }
 }
@@ -1160,14 +1160,14 @@ static std::unique_ptr<gmx::EssentialDynamics> ed_open(int                      
                                                        const char*                 edoFileName,
                                                        const gmx::StartingBehavior startingBehavior,
                                                        const gmx_output_env_t*     oenv,
-                                                       const t_commrec*            cr)
+                                                       const gmx::MpiComm&         mpiComm)
 {
     auto  edHandle = std::make_unique<gmx::EssentialDynamics>();
     auto* ed       = edHandle->getLegacyED();
     /* We want to perform ED (this switch might later be upgraded to EssentialDynamicsType::Flooding) */
     ed->eEDtype = EssentialDynamicsType::EDSampling;
 
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         // If we start from a checkpoint file, we already have an edsamHistory struct
         if (oh->edsamHistory == nullptr)
@@ -1212,12 +1212,12 @@ static std::unique_ptr<gmx::EssentialDynamics> ed_open(int                      
 
 
 /* Broadcasts the structure data */
-static void bc_ed_positions(const t_commrec* cr, struct gmx_edx* s, EssentialDynamicsStructure stype)
+static void bc_ed_positions(const gmx::MpiComm& mpiComm, struct gmx_edx* s, EssentialDynamicsStructure stype)
 {
-    snew_bc(MAIN(cr), s->anrs, s->nr); /* Index numbers     */
-    snew_bc(MAIN(cr), s->x, s->nr);    /* Positions         */
-    nblock_bc(cr->mpi_comm_mygroup, s->nr, s->anrs);
-    nblock_bc(cr->mpi_comm_mygroup, s->nr, s->x);
+    snew_bc(mpiComm.isMainRank(), s->anrs, s->nr); /* Index numbers     */
+    snew_bc(mpiComm.isMainRank(), s->x, s->nr);    /* Positions         */
+    nblock_bc(mpiComm.comm(), s->nr, s->anrs);
+    nblock_bc(mpiComm.comm(), s->nr, s->x);
 
     /* For the average & reference structures we need an array for the collective indices,
      * and we need to broadcast the masses as well */
@@ -1227,95 +1227,95 @@ static void bc_ed_positions(const t_commrec* cr, struct gmx_edx* s, EssentialDyn
         snew(s->c_ind, s->nr); /* Collective indices */
         /* Local atom indices get assigned in dd_make_local_group_indices.
          * There, also memory is allocated */
-        s->nalloc_loc = 0;                  /* allocation size of s->anrs_loc */
-        snew_bc(MAIN(cr), s->x_old, s->nr); /* To be able to always make the ED molecule whole, ... */
-        nblock_bc(cr->mpi_comm_mygroup, s->nr, s->x_old); /* ... keep track of shift changes with the help of old coords */
+        s->nalloc_loc = 0;                              /* allocation size of s->anrs_loc */
+        snew_bc(mpiComm.isMainRank(), s->x_old, s->nr); /* To be able to always make the ED molecule whole, ... */
+        nblock_bc(mpiComm.comm(), s->nr, s->x_old); /* ... keep track of shift changes with the help of old coords */
     }
 
     /* broadcast masses for the reference structure (for mass-weighted fitting) */
     if (stype == EssentialDynamicsStructure::Reference)
     {
-        snew_bc(MAIN(cr), s->m, s->nr);
-        nblock_bc(cr->mpi_comm_mygroup, s->nr, s->m);
+        snew_bc(mpiComm.isMainRank(), s->m, s->nr);
+        nblock_bc(mpiComm.comm(), s->nr, s->m);
     }
 
     /* For the average structure we might need the masses for mass-weighting */
     if (stype == EssentialDynamicsStructure::Average)
     {
-        snew_bc(MAIN(cr), s->sqrtm, s->nr);
-        nblock_bc(cr->mpi_comm_mygroup, s->nr, s->sqrtm);
-        snew_bc(MAIN(cr), s->m, s->nr);
-        nblock_bc(cr->mpi_comm_mygroup, s->nr, s->m);
+        snew_bc(mpiComm.isMainRank(), s->sqrtm, s->nr);
+        nblock_bc(mpiComm.comm(), s->nr, s->sqrtm);
+        snew_bc(mpiComm.isMainRank(), s->m, s->nr);
+        nblock_bc(mpiComm.comm(), s->nr, s->m);
     }
 }
 
 
 /* Broadcasts the eigenvector data */
-static void bc_ed_vecs(const t_commrec* cr, t_eigvec* ev, int length)
+static void bc_ed_vecs(const gmx::MpiComm& mpiComm, t_eigvec* ev, int length)
 {
     int i;
 
-    snew_bc(MAIN(cr), ev->ieig, ev->neig);    /* index numbers of eigenvector  */
-    snew_bc(MAIN(cr), ev->stpsz, ev->neig);   /* stepsizes per eigenvector     */
-    snew_bc(MAIN(cr), ev->xproj, ev->neig);   /* instantaneous x projection    */
-    snew_bc(MAIN(cr), ev->fproj, ev->neig);   /* instantaneous f projection    */
-    snew_bc(MAIN(cr), ev->refproj, ev->neig); /* starting or target projection */
+    snew_bc(mpiComm.isMainRank(), ev->ieig, ev->neig);    /* index numbers of eigenvector  */
+    snew_bc(mpiComm.isMainRank(), ev->stpsz, ev->neig);   /* stepsizes per eigenvector     */
+    snew_bc(mpiComm.isMainRank(), ev->xproj, ev->neig);   /* instantaneous x projection    */
+    snew_bc(mpiComm.isMainRank(), ev->fproj, ev->neig);   /* instantaneous f projection    */
+    snew_bc(mpiComm.isMainRank(), ev->refproj, ev->neig); /* starting or target projection */
 
-    nblock_bc(cr->mpi_comm_mygroup, ev->neig, ev->ieig);
-    nblock_bc(cr->mpi_comm_mygroup, ev->neig, ev->stpsz);
-    nblock_bc(cr->mpi_comm_mygroup, ev->neig, ev->xproj);
-    nblock_bc(cr->mpi_comm_mygroup, ev->neig, ev->fproj);
-    nblock_bc(cr->mpi_comm_mygroup, ev->neig, ev->refproj);
+    nblock_bc(mpiComm.comm(), ev->neig, ev->ieig);
+    nblock_bc(mpiComm.comm(), ev->neig, ev->stpsz);
+    nblock_bc(mpiComm.comm(), ev->neig, ev->xproj);
+    nblock_bc(mpiComm.comm(), ev->neig, ev->fproj);
+    nblock_bc(mpiComm.comm(), ev->neig, ev->refproj);
 
-    snew_bc(MAIN(cr), ev->vec, ev->neig); /* Eigenvector components        */
+    snew_bc(mpiComm.isMainRank(), ev->vec, ev->neig); /* Eigenvector components        */
     for (i = 0; i < ev->neig; i++)
     {
-        snew_bc(MAIN(cr), ev->vec[i], length);
-        nblock_bc(cr->mpi_comm_mygroup, length, ev->vec[i]);
+        snew_bc(mpiComm.isMainRank(), ev->vec[i], length);
+        nblock_bc(mpiComm.comm(), length, ev->vec[i]);
     }
 }
 
 
 /* Broadcasts the ED / flooding data to other nodes
  * and allocates memory where needed */
-static void broadcast_ed_data(const t_commrec* cr, gmx_edsam* ed)
+static void broadcast_ed_data(const gmx::MpiComm& mpiComm, gmx_edsam* ed)
 {
     /* Main lets the other nodes know if its ED only or also flooding */
-    gmx_bcast(sizeof(ed->eEDtype), &(ed->eEDtype), cr->mpi_comm_mygroup);
+    gmx_bcast(sizeof(ed->eEDtype), &(ed->eEDtype), mpiComm.comm());
 
     int numedis = ed->edpar.size();
     /* First let everybody know how many ED data sets to expect */
-    gmx_bcast(sizeof(numedis), &numedis, cr->mpi_comm_mygroup);
-    nblock_abc(MAIN(cr), cr->mpi_comm_mygroup, numedis, &(ed->edpar));
+    gmx_bcast(sizeof(numedis), &numedis, mpiComm.comm());
+    nblock_abc(mpiComm.isMainRank(), mpiComm.comm(), numedis, &(ed->edpar));
     /* Now transfer the ED data set(s) */
     for (auto& edi : ed->edpar)
     {
         /* Broadcast a single ED data set */
-        block_bc(cr->mpi_comm_mygroup, edi);
+        block_bc(mpiComm.comm(), edi);
 
         /* Broadcast positions */
-        bc_ed_positions(cr, &(edi.sref), EssentialDynamicsStructure::Reference); /* reference positions (don't broadcast masses)    */
-        bc_ed_positions(cr, &(edi.sav), EssentialDynamicsStructure::Average); /* average positions (do broadcast masses as well) */
-        bc_ed_positions(cr, &(edi.star), EssentialDynamicsStructure::Target); /* target positions */
-        bc_ed_positions(cr, &(edi.sori), EssentialDynamicsStructure::Origin); /* origin positions */
+        bc_ed_positions(mpiComm, &(edi.sref), EssentialDynamicsStructure::Reference); /* reference positions (don't broadcast masses)    */
+        bc_ed_positions(mpiComm, &(edi.sav), EssentialDynamicsStructure::Average); /* average positions (do broadcast masses as well) */
+        bc_ed_positions(mpiComm, &(edi.star), EssentialDynamicsStructure::Target); /* target positions */
+        bc_ed_positions(mpiComm, &(edi.sori), EssentialDynamicsStructure::Origin); /* origin positions */
 
         /* Broadcast eigenvectors */
-        bc_ed_vecs(cr, &edi.vecs.mon, edi.sav.nr);
-        bc_ed_vecs(cr, &edi.vecs.linfix, edi.sav.nr);
-        bc_ed_vecs(cr, &edi.vecs.linacc, edi.sav.nr);
-        bc_ed_vecs(cr, &edi.vecs.radfix, edi.sav.nr);
-        bc_ed_vecs(cr, &edi.vecs.radacc, edi.sav.nr);
-        bc_ed_vecs(cr, &edi.vecs.radcon, edi.sav.nr);
+        bc_ed_vecs(mpiComm, &edi.vecs.mon, edi.sav.nr);
+        bc_ed_vecs(mpiComm, &edi.vecs.linfix, edi.sav.nr);
+        bc_ed_vecs(mpiComm, &edi.vecs.linacc, edi.sav.nr);
+        bc_ed_vecs(mpiComm, &edi.vecs.radfix, edi.sav.nr);
+        bc_ed_vecs(mpiComm, &edi.vecs.radacc, edi.sav.nr);
+        bc_ed_vecs(mpiComm, &edi.vecs.radcon, edi.sav.nr);
         /* Broadcast flooding eigenvectors and, if needed, values for the moving reference */
-        bc_ed_vecs(cr, &edi.flood.vecs, edi.sav.nr);
+        bc_ed_vecs(mpiComm, &edi.flood.vecs, edi.sav.nr);
 
         /* For harmonic restraints the reference projections can change with time */
         if (edi.flood.bHarmonic)
         {
-            snew_bc(MAIN(cr), edi.flood.initialReferenceProjection, edi.flood.vecs.neig);
-            snew_bc(MAIN(cr), edi.flood.referenceProjectionSlope, edi.flood.vecs.neig);
-            nblock_bc(cr->mpi_comm_mygroup, edi.flood.vecs.neig, edi.flood.initialReferenceProjection);
-            nblock_bc(cr->mpi_comm_mygroup, edi.flood.vecs.neig, edi.flood.referenceProjectionSlope);
+            snew_bc(mpiComm.isMainRank(), edi.flood.initialReferenceProjection, edi.flood.vecs.neig);
+            snew_bc(mpiComm.isMainRank(), edi.flood.referenceProjectionSlope, edi.flood.vecs.neig);
+            nblock_bc(mpiComm.comm(), edi.flood.vecs.neig, edi.flood.initialReferenceProjection);
+            nblock_bc(mpiComm.comm(), edi.flood.vecs.neig, edi.flood.referenceProjectionSlope);
         }
     }
 }
@@ -2714,7 +2714,8 @@ std::unique_ptr<gmx::EssentialDynamics> init_edsam(const gmx::MDLogger&        m
                                                    const char*                 edoFileName,
                                                    const gmx_mtop_t&           mtop,
                                                    const t_inputrec&           ir,
-                                                   const t_commrec*            cr,
+                                                   const gmx::MpiComm&         mpiComm,
+                                                   const gmx_domdec_t*         dd,
                                                    gmx::Constraints*           constr,
                                                    const t_state*              globalState,
                                                    ObservablesHistory*         oh,
@@ -2728,7 +2729,7 @@ std::unique_ptr<gmx::EssentialDynamics> init_edsam(const gmx::MDLogger&        m
     rvec*  ref_x_old = nullptr;               /* helper pointer */
 
 
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         fprintf(stderr, "ED: Initializing essential dynamics constraints.\n");
 
@@ -2747,8 +2748,8 @@ std::unique_ptr<gmx::EssentialDynamics> init_edsam(const gmx::MDLogger&        m
                     "gmx grompp and the related .mdp options may change also.");
 
     /* Open input and output files, allocate space for ED data structure */
-    auto  edHandle = ed_open(mtop.natoms, oh, ediFileName, edoFileName, startingBehavior, oenv, cr);
-    auto* ed       = edHandle->getLegacyED();
+    auto edHandle = ed_open(mtop.natoms, oh, ediFileName, edoFileName, startingBehavior, oenv, mpiComm);
+    auto* ed = edHandle->getLegacyED();
     GMX_RELEASE_ASSERT(constr != nullptr, "Must have valid constraints object");
     constr->saveEdsamPointer(ed);
 
@@ -2758,7 +2759,7 @@ std::unique_ptr<gmx::EssentialDynamics> init_edsam(const gmx::MDLogger&        m
     /* The input file is read by the main and the edi structures are
      * initialized here. Input is stored in ed->edpar. Then the edi
      * structures are transferred to the other nodes */
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         /* Initialization for every ED/flooding group. Flooding uses one edi group per
          * flooding vector, Essential dynamics can be applied to more than one structure
@@ -2775,7 +2776,7 @@ std::unique_ptr<gmx::EssentialDynamics> init_edsam(const gmx::MDLogger&        m
 
     /* The main does the work here. The other nodes get the positions
      * not before dd_partition_system which is called after init_edsam */
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         const edsamhistory_t* EDstate = oh->edsamHistory.get();
 
@@ -2989,11 +2990,11 @@ std::unique_ptr<gmx::EssentialDynamics> init_edsam(const gmx::MDLogger&        m
 
     } /* end of MAIN only section */
 
-    if (haveDDAtomOrdering(*cr))
+    if (dd)
     {
         /* Broadcast the essential dynamics / flooding data to all nodes.
          * In a single-rank case, only the necessary memory allocation is done. */
-        broadcast_ed_data(cr, ed);
+        broadcast_ed_data(mpiComm, ed);
     }
     else
     {
@@ -3038,7 +3039,7 @@ std::unique_ptr<gmx::EssentialDynamics> init_edsam(const gmx::MDLogger&        m
     for (auto edi = ed->edpar.begin(); edi != ed->edpar.end(); ++edi)
     {
         /* Allocate space for ED buffer variables */
-        snew_bc(MAIN(cr), edi->buf, 1); /* MAIN has already allocated edi->buf in init_edi() */
+        snew_bc(mpiComm.isMainRank(), edi->buf, 1); /* MAIN has already allocated edi->buf in init_edi() */
         snew(edi->buf->do_edsam, 1);
 
         /* Space for collective ED buffer variables */
@@ -3072,7 +3073,7 @@ std::unique_ptr<gmx::EssentialDynamics> init_edsam(const gmx::MDLogger&        m
 
 void do_edsam(const t_inputrec*        ir,
               int64_t                  step,
-              const t_commrec*         cr,
+              const gmx::MpiComm&      mpiComm,
               gmx::ArrayRef<gmx::RVec> coords,
               gmx::ArrayRef<gmx::RVec> velocities,
               const matrix             box,
@@ -3118,11 +3119,11 @@ void do_edsam(const t_inputrec*        ir,
              * the collective buf->xcoll array. Note that for edinr > 1
              * xs could already have been modified by an earlier ED */
 
-            communicate_group_positions(cr,
+            communicate_group_positions(mpiComm,
                                         buf->xcoll,
                                         buf->shifts_xcoll,
                                         buf->extra_shifts_xcoll,
-                                        PAR(cr) ? buf->bUpdateShifts : TRUE,
+                                        mpiComm.size() > 1 ? buf->bUpdateShifts : TRUE,
                                         as_rvec_array(coords.data()),
                                         edi.sav.nr,
                                         edi.sav.nr_loc,
@@ -3134,11 +3135,11 @@ void do_edsam(const t_inputrec*        ir,
             /* Only assembly reference positions if their indices differ from the average ones */
             if (!edi.bRefEqAv)
             {
-                communicate_group_positions(cr,
+                communicate_group_positions(mpiComm,
                                             buf->xc_ref,
                                             buf->shifts_xc_ref,
                                             buf->extra_shifts_xc_ref,
-                                            PAR(cr) ? buf->bUpdateShifts : TRUE,
+                                            mpiComm.size() > 1 ? buf->bUpdateShifts : TRUE,
                                             as_rvec_array(coords.data()),
                                             edi.sref.nr,
                                             edi.sref.nr_loc,
@@ -3170,7 +3171,7 @@ void do_edsam(const t_inputrec*        ir,
             translate_and_rotate(buf->xcoll, edi.sav.nr, transvec, rotmat);
 
             /* Find out how well we fit to the reference (just for output steps) */
-            if (do_per_step(step, edi.outfrq) && MAIN(cr))
+            if (do_per_step(step, edi.outfrq) && mpiComm.isMainRank())
             {
                 if (edi.bRefEqAv)
                 {
@@ -3223,7 +3224,7 @@ void do_edsam(const t_inputrec*        ir,
             if (do_per_step(step, edi.outfrq))
             {
                 project(buf->xcoll, &edi);
-                if (MAIN(cr) && !bSuppress)
+                if (mpiComm.isMainRank() && !bSuppress)
                 {
                     write_edo(edi, ed->edo, rmsdev);
                 }

@@ -78,6 +78,7 @@ class BiasParams;
 class BiasGrid;
 class BiasSharing;
 class CorrelationGrid;
+class MpiComm;
 class GridAxis;
 class PointState;
 
@@ -125,9 +126,9 @@ public:
     /*! \brief
      * Broadcast the bias state over the MPI ranks in this simulation.
      *
-     * \param[in] commRecord  Struct for communication.
+     * \param[in] mpiComm  MPI communicator for my group.
      */
-    void broadcast(const t_commrec* commRecord);
+    void broadcast(const MpiComm& mpiComm);
 
     /*! \brief
      * Allocate and initialize a bias history with the given bias state.

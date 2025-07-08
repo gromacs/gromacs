@@ -100,18 +100,18 @@ double ColvarsSimulationsParameters::simulationTimeStep() const
 }
 
 
-void ColvarsSimulationsParameters::setComm(const t_commrec& cr)
+void ColvarsSimulationsParameters::setComm(const MpiComm& mpiComm)
 {
-    cr_ = &cr;
+    mpiComm_ = &mpiComm;
 }
 
-const t_commrec* ColvarsSimulationsParameters::comm() const
+const MpiComm& ColvarsSimulationsParameters::comm() const
 {
-    if (cr_ == nullptr)
+    if (mpiComm_ == nullptr)
     {
-        GMX_THROW(InternalError("Communication record not set for Colvars simulation."));
+        GMX_THROW(InternalError("Communication object not set for Colvars simulation."));
     }
-    return cr_;
+    return *mpiComm_;
 }
 
 void ColvarsSimulationsParameters::setMultisim(const gmx_multisim_t* ms)

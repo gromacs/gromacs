@@ -38,6 +38,7 @@
 
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/smalloc.h"
 
 t_bin* mk_bin()
@@ -133,7 +134,7 @@ int add_bind(t_bin* b, gmx::ArrayRef<const double> r)
     return add_bind(b, r.size(), r.data());
 }
 
-void sum_bin(t_bin* b, const t_commrec* cr)
+void sum_bin(t_bin* b, const gmx::MpiComm& mpiComm)
 {
     int i;
 
@@ -141,7 +142,7 @@ void sum_bin(t_bin* b, const t_commrec* cr)
     {
         b->rbuf[i] = 0;
     }
-    gmx_sumd(b->maxreal, b->rbuf, cr);
+    mpiComm.sumReduce(b->maxreal, b->rbuf);
 }
 
 void extract_binr(t_bin* b, int index, int nr, real r[])

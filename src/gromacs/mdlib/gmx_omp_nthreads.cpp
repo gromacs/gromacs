@@ -403,7 +403,7 @@ static void reportOpenmpSettings(const gmx::MDLogger& mdlog, const t_commrec* cr
     }
 
 #if GMX_MPI
-    if (cr->nnodes > 1)
+    if (cr->commMySim.size() > 1)
     {
         /* Get the min and max thread counts over the MPI ranks */
         int buf_in[4], buf_out[4];
@@ -413,7 +413,7 @@ static void reportOpenmpSettings(const gmx::MDLogger& mdlog, const t_commrec* cr
         buf_in[2] = -modth.gnth_pme;
         buf_in[3] = modth.gnth_pme;
 
-        MPI_Allreduce(buf_in, buf_out, 4, MPI_INT, MPI_MAX, cr->mpi_comm_mysim);
+        MPI_Allreduce(buf_in, buf_out, 4, MPI_INT, MPI_MAX, cr->commMySim.comm());
 
         nth_min     = -buf_out[0];
         nth_max     = buf_out[1];
@@ -436,7 +436,7 @@ static void reportOpenmpSettings(const gmx::MDLogger& mdlog, const t_commrec* cr
                 .appendTextFormatted("Using %d OpenMP thread%s %s",
                                      nth_min,
                                      nth_min > 1 ? "s" : "",
-                                     cr->nnodes > 1 ? mpi_str : "");
+                                     cr->commMySim.size() > 1 ? mpi_str : "");
     }
     else
     {
@@ -451,7 +451,7 @@ static void reportOpenmpSettings(const gmx::MDLogger& mdlog, const t_commrec* cr
                     .appendTextFormatted("Using %d OpenMP thread%s %s for PME",
                                          nth_pme_min,
                                          nth_pme_min > 1 ? "s" : "",
-                                         cr->nnodes > 1 ? mpi_str : "");
+                                         cr->commMySim.size() > 1 ? mpi_str : "");
         }
         else
         {
@@ -485,7 +485,7 @@ void gmx_omp_nthreads_init(const gmx::MDLogger& mdlog,
      * the setup is complete. */
     if (PAR(cr))
     {
-        MPI_Barrier(cr->mpi_comm_mysim);
+        MPI_Barrier(cr->commMySim.comm());
     }
 #endif
 

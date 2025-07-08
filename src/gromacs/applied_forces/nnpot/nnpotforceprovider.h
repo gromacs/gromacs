@@ -51,8 +51,8 @@ namespace gmx
 
 struct NNPotParameters;
 class INNPotModel;
-
 class MDLogger;
+class MpiComm;
 
 /*! \brief \internal
  * NNPotForceProvider class
@@ -107,8 +107,8 @@ private:
      * actual reference. */
     const MDLogger& logger_;
 
-    //! stores communication record
-    const t_commrec* cr_;
+    //! stores communication object
+    const MpiComm& mpiComm_;
 };
 
 } // namespace gmx

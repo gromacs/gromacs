@@ -237,7 +237,7 @@ void gmx::LegacySimulator::do_mimic()
     {
         // TODO: Avoid changing inputrec (#3854)
         auto* nonConstInputrec = const_cast<t_inputrec*>(inputRec_);
-        gmx_bcast(sizeof(ir->nsteps), &nonConstInputrec->nsteps, cr_->mpi_comm_mygroup);
+        gmx_bcast(sizeof(ir->nsteps), &nonConstInputrec->nsteps, cr_->commMyGroup.comm());
     }
 
     const SimulationGroups* groups = &topGlobal_.groups;
@@ -354,7 +354,7 @@ void gmx::LegacySimulator::do_mimic()
         bool   bSumEkinhOld = false;
         t_vcm* vcm          = nullptr;
         compute_globals(gstat,
-                        cr_,
+                        cr_->commMyGroup,
                         ir,
                         fr_,
                         ekind_,
@@ -661,7 +661,7 @@ void gmx::LegacySimulator::do_mimic()
 
             int cglo_flags = CGLO_GSTAT | CGLO_ENERGY;
             compute_globals(gstat,
-                            cr_,
+                            cr_->commMyGroup,
                             ir,
                             fr_,
                             ekind_,

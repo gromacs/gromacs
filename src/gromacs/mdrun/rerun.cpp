@@ -399,7 +399,7 @@ void gmx::LegacySimulator::do_rerun()
         bool   bSumEkinhOld = false;
         t_vcm* vcm          = nullptr;
         compute_globals(gstat,
-                        cr_,
+                        cr_->commMyGroup,
                         ir,
                         fr_,
                         ekind_,
@@ -503,7 +503,7 @@ void gmx::LegacySimulator::do_rerun()
 
     if (PAR(cr_))
     {
-        rerun_parallel_comm(cr_, &rerun_fr, &isLastStep);
+        rerun_parallel_comm(cr_->commMyGroup, &rerun_fr, &isLastStep);
     }
 
     if (ir->pbcType != PbcType::No)
@@ -780,7 +780,7 @@ void gmx::LegacySimulator::do_rerun()
 
             int cglo_flags = CGLO_GSTAT | CGLO_ENERGY;
             compute_globals(gstat,
-                            cr_,
+                            cr_->commMyGroup,
                             ir,
                             fr_,
                             ekind_,
@@ -882,7 +882,7 @@ void gmx::LegacySimulator::do_rerun()
             && do_per_step(step, ir->swap->nstswap))
         {
             const bool doRerun = true;
-            do_swapcoords(cr_,
+            do_swapcoords(cr_->commMyGroup,
                           step,
                           t,
                           ir,
@@ -902,7 +902,7 @@ void gmx::LegacySimulator::do_rerun()
 
         if (PAR(cr_))
         {
-            rerun_parallel_comm(cr_, &rerun_fr, &isLastStep);
+            rerun_parallel_comm(cr_->commMyGroup, &rerun_fr, &isLastStep);
         }
 
         cycles = wallcycle_stop(wallCycleCounters_, WallCycleCounter::Step);

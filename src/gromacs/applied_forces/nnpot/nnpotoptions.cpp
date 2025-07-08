@@ -45,7 +45,6 @@
 #include "gromacs/domdec/localatomset.h"
 #include "gromacs/domdec/localatomsetmanager.h"
 #include "gromacs/fileio/warninp.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/imdpoptionprovider_helpers.h"
@@ -56,6 +55,7 @@
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "nnpot.h"
@@ -387,9 +387,9 @@ void NNPotOptions::setLogger(const MDLogger& logger)
     logger_ = &logger;
 }
 
-void NNPotOptions::setCommRec(const t_commrec& cr)
+void NNPotOptions::setComm(const MpiComm& mpiComm)
 {
-    params_.cr_ = &cr;
+    params_.mpiComm_ = &mpiComm;
 }
 
 const MDLogger& NNPotOptions::logger() const
@@ -432,8 +432,7 @@ void NNPotOptions::checkNNPotModel()
     std::vector<int>  atomNumbers(1, 1);
     matrix            box = { { 1.0, 0.0, 0.0 }, { 0.0, 1.0, 0.0 }, { 0.0, 0.0, 1.0 } };
     PbcType           pbc = PbcType();
-    t_commrec         cr;
-    model->setCommRec(&cr);
+    model->setComm(MpiComm(MpiComm::SingleRank{}));
 
     // check that inputs are not empty
     if (params_.modelInput_.size() == 0)

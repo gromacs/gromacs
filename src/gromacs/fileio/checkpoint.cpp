@@ -2586,15 +2586,15 @@ static void check_match(FILE*                           fplog,
                      headerContents.fprog,
                      &mm);
 
-        check_int(fplog, "#ranks", cr->nnodes, headerContents.nnodes, &mm);
+        check_int(fplog, "#ranks", cr->commMySim.size(), headerContents.nnodes, &mm);
     }
 
-    if (cr->sizeOfDefaultCommunicator > 1 && reproducibilityRequested)
+    if (cr->mpiDefaultCommunicator.size() > 1 && reproducibilityRequested)
     {
         // TODO: These checks are incorrect (see redmine #3309)
         check_int(fplog, "#PME-ranks", cr->npmenodes, headerContents.npme, &mm);
 
-        int npp = cr->sizeOfDefaultCommunicator;
+        int npp = cr->mpiDefaultCommunicator.size();
         if (cr->npmenodes >= 0)
         {
             npp -= cr->npmenodes;
@@ -2926,9 +2926,10 @@ void load_checkpoint(const std::filesystem::path&   fn,
     }
     if (PAR(cr))
     {
-        gmx_bcast(sizeof(headerContents.step), &headerContents.step, cr->mpiDefaultCommunicator);
-        gmx::MDModulesCheckpointReadingBroadcast broadcastCheckPointData = { cr->mpiDefaultCommunicator,
-                                                                             PAR(cr) };
+        gmx_bcast(sizeof(headerContents.step), &headerContents.step, cr->mpiDefaultCommunicator.comm());
+        gmx::MDModulesCheckpointReadingBroadcast broadcastCheckPointData = {
+            cr->mpiDefaultCommunicator.comm(), PAR(cr)
+        };
         mdModulesNotifiers.checkpointingNotifier_.notify(broadcastCheckPointData);
     }
     ir->bContinuation = TRUE;

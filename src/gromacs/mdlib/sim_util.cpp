@@ -224,7 +224,7 @@ static void pull_potential_wrapper(const t_commrec*     cr,
             pull_potential(pull_work,
                            mdatoms->massT,
                            pbc,
-                           cr,
+                           cr->commMyGroup,
                            t,
                            lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Restraint)],
                            x,
@@ -656,7 +656,8 @@ static void computeSpecialForces(FILE*                fplog,
                                               t,
                                               step,
                                               box,
-                                              *cr);
+                                              cr->commMyGroup,
+                                              cr->dd);
         ForceProviderOutput forceProviderOutput(forceWithVirialMtsLevel0, enerd);
 
         /* Collect forces from modules */
@@ -684,7 +685,8 @@ static void computeSpecialForces(FILE*                fplog,
         {
             enerd->foreignLambdaTerms.finalizePotentialContributions(
                     enerd->dvdl_lin, lambda, *inputrec.fepvals);
-            std::tie(foreignLambdaDeltaH, foreignLambdaDhDl) = enerd->foreignLambdaTerms.getTerms(cr);
+            std::tie(foreignLambdaDeltaH, foreignLambdaDhDl) =
+                    enerd->foreignLambdaTerms.getTerms(cr->commMyGroup);
         }
 
         enerd->term[F_COM_PULL] += awh->applyBiasForcesAndUpdateBias(
@@ -695,7 +697,7 @@ static void computeSpecialForces(FILE*                fplog,
     {
         wallcycle_start_nocount(wcycle, WallCycleCounter::PullPot);
         auto& forceWithVirial = (pullMtsLevel == 0) ? forceWithVirialMtsLevel0 : forceWithVirialMtsLevel1;
-        pull_apply_forces(pull_work, mdatoms->massT, cr, forceWithVirial);
+        pull_apply_forces(pull_work, mdatoms->massT, cr->commMyGroup, forceWithVirial);
         wallcycle_stop(wcycle, WallCycleCounter::PullPot);
     }
 
@@ -704,8 +706,8 @@ static void computeSpecialForces(FILE*                fplog,
     if (inputrec.bRot)
     {
         wallcycle_start(wcycle, WallCycleCounter::RotAdd);
-        enerd->term[F_COM_PULL] +=
-                add_rot_forces(enforcedRotation, forceWithVirialMtsLevel0->force_, cr, step, t);
+        enerd->term[F_COM_PULL] += add_rot_forces(
+                enforcedRotation, forceWithVirialMtsLevel0->force_, cr->commMyGroup, step, t);
         wallcycle_stop(wcycle, WallCycleCounter::RotAdd);
     }
 
@@ -717,7 +719,7 @@ static void computeSpecialForces(FILE*                fplog,
          * Thus if no other algorithm (e.g. PME) requires it, the forces
          * here will contribute to the virial.
          */
-        do_flood(cr, inputrec, x, forceWithVirialMtsLevel0->force_, ed, box, step, didNeighborSearch);
+        do_flood(cr->commMyGroup, inputrec, x, forceWithVirialMtsLevel0->force_, ed, box, step, didNeighborSearch);
     }
 
     /* Add forces from interactive molecular dynamics (IMD), if any */
@@ -2021,7 +2023,7 @@ void do_force(FILE*                         fplog,
     if (inputrec.bRot)
     {
         wallcycle_start(wcycle, WallCycleCounter::Rot);
-        do_rotation(cr, enforcedRotation, box, x.unpaddedConstArrayRef(), t, step, stepWork.doNeighborSearch);
+        do_rotation(cr->commMyGroup, cr->dd, enforcedRotation, box, x.unpaddedConstArrayRef(), t, step, stepWork.doNeighborSearch);
         wallcycle_stop(wcycle, WallCycleCounter::Rot);
     }
 

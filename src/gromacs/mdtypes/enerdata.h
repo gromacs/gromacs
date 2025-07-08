@@ -45,8 +45,12 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 
-struct t_commrec;
 struct t_lambda;
+
+namespace gmx
+{
+class MpiComm;
+} // namespace gmx
 
 // The non-bonded energy terms accumulated for energy group pairs
 enum class NonBondedEnergyTerms : int
@@ -190,9 +194,9 @@ public:
      * Note: should only be called after the object has been finalized by a call to
      * accumulateLinearPotentialComponents() (is asserted).
      *
-     * \param[in] cr  Communication record, used to reduce the terms when !=nullptr
+     * \param[in] mpiComm  Communication object for my group
      */
-    std::pair<std::vector<double>, std::vector<double>> getTerms(const t_commrec* cr) const;
+    std::pair<std::vector<double>, std::vector<double>> getTerms(const gmx::MpiComm& mpiComm) const;
 
     //! Sets all terms to 0
     void zeroAllTerms();

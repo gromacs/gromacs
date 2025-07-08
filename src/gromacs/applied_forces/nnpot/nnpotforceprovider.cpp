@@ -47,12 +47,12 @@
 #include "gromacs/domdec/localatomset.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/mpicomm.h"
 
 #include "nnpotmodel.h"
 #include "nnpotoptions.h"
@@ -68,7 +68,7 @@ NNPotForceProvider::NNPotForceProvider(const NNPotParameters& nnpotParameters, c
     idxLookup_(params_.numAtoms_, -1),
     box_{ { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 } },
     logger_(logger),
-    cr_(params_.cr_)
+    mpiComm_(*params_.mpiComm_)
 {
     // initialize the neural network model
     std::filesystem::path modelPath(params_.modelFileName_);
@@ -86,7 +86,7 @@ NNPotForceProvider::NNPotForceProvider(const NNPotParameters& nnpotParameters, c
     }
 
     // set communication record
-    model_->setCommRec(params_.cr_);
+    model_->setComm(*params_.mpiComm_);
 }
 
 NNPotForceProvider::~NNPotForceProvider() {}
@@ -146,9 +146,9 @@ void NNPotForceProvider::gatherAtomNumbersIndices()
     }
 
     // distribute atom numbers to all ranks
-    if (havePPDomainDecomposition(cr_))
+    if (mpiComm_.size() > 1)
     {
-        gmx_sumi(params_.numAtoms_, atomNumbers_.data(), cr_);
+        mpiComm_.sumReduce(atomNumbers_);
     }
 
     // remove unused elements in atomNumbers_, and idxLookup
@@ -188,9 +188,9 @@ void NNPotForceProvider::gatherAtomPositions(ArrayRef<const RVec> pos)
     }
 
     // in case of dom dec, distribute positions to all ranks
-    if (havePPDomainDecomposition(cr_))
+    if (mpiComm_.size() > 1)
     {
-        gmx_sum(3 * numInput, positions_.data()->as_vec(), cr_);
+        mpiComm_.sumReduce(3 * numInput, positions_.data()->as_vec());
     }
 }
 

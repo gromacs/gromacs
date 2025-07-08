@@ -84,6 +84,7 @@ ListedGmxCalculator::ListedGmxCalculator(const ListedInteractionData& interactio
     virialProxy(forceBuffer, true),
     forceOutputs(shiftProxy, true, virialProxy),
     enerd(1, nullptr),
+    cr(gmx::MpiComm(gmx::MpiComm::SingleRank{})),
     lambdaBuffer(42) // values unused; just initialized with something larger than the number of enum types in FreeEnergyPerturbationCouplingType
 {
     std::tie(idef, ffparams) = convertToGmxInteractions(interactions);

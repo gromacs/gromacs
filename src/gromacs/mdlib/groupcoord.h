@@ -51,7 +51,12 @@
 #include "gromacs/utility/real.h"
 
 class gmx_ga2la_t;
-struct t_commrec;
+
+namespace gmx
+{
+class MpiComm;
+} // namespace gmx
+
 
 /*! \brief Select local atoms of a group.
  *
@@ -96,7 +101,7 @@ extern void dd_make_local_group_indices(const gmx_ga2la_t* ga2la,
  * and distributed to all nodes. The variables marked "optional" are not used in
  * that case.
  *
- * \param[in]     cr           Pointer to MPI communication data.
+ * \param[in]     mpiComm      Reference to MPI communication data.
  * \param[out]    xcoll        Collective array of positions, identical on all nodes
  *                             after this routine has been called.
  * \param[in,out] shifts       Collective array of shifts for xcoll, needed to make
@@ -124,18 +129,18 @@ extern void dd_make_local_group_indices(const gmx_ga2la_t* ga2la,
  * \param[in]     box          Simulation box matrix, needed to shift xcoll such that
  *                             the group becomes whole (optional).
  */
-extern void communicate_group_positions(const t_commrec* cr,
-                                        rvec*            xcoll,
-                                        ivec*            shifts,
-                                        ivec*            extra_shifts,
-                                        gmx_bool         bNS,
-                                        const rvec*      x_loc,
-                                        int              nr,
-                                        int              nr_loc,
-                                        const int*       anrs_loc,
-                                        const int*       coll_ind,
-                                        rvec*            xcoll_old,
-                                        const matrix     box);
+extern void communicate_group_positions(const gmx::MpiComm& mpiComm,
+                                        rvec*               xcoll,
+                                        ivec*               shifts,
+                                        ivec*               extra_shifts,
+                                        gmx_bool            bNS,
+                                        const rvec*         x_loc,
+                                        int                 nr,
+                                        int                 nr_loc,
+                                        const int*          anrs_loc,
+                                        const int*          coll_ind,
+                                        rvec*               xcoll_old,
+                                        const matrix        box);
 
 /*! \brief Calculates the center of the positions x locally.
  *
@@ -175,7 +180,7 @@ extern double get_sum_of_positions(const rvec x[], real weight[], int nr, dvec d
  * this routine if no collective coordinates are assembled from which the center
  * could be calculated without communication.
  *
- * \param[in]   cr           Pointer to MPI communication data.
+ * \param[in]   mpiComm      Reference to MPI communication data.
  * \param[in]   x_loc        Array of local positions [0..nr_loc].
  * \param[in]   weight_loc   Array of local weights, these are the masses if the
  *                           center of mass is to be calculated.
@@ -186,7 +191,12 @@ extern double get_sum_of_positions(const rvec x[], real weight[], int nr, dvec d
  * \param[out]  center       The (weighted) center of all x_loc from all the
  *                           nodes.
  */
-extern void get_center_comm(const t_commrec* cr, rvec x_loc[], real weight_loc[], int nr_loc, int nr_group, rvec center);
+extern void get_center_comm(const gmx::MpiComm& mpiComm,
+                            rvec                x_loc[],
+                            real                weight_loc[],
+                            int                 nr_loc,
+                            int                 nr_group,
+                            rvec                center);
 
 
 /*! \brief Translate positions.

@@ -292,6 +292,8 @@ struct pull_t
 
     std::vector<ComSums> comSums; /* Work array for summing for COM, 1 entry per thread */
 
+    bool haveDDAtomOrdering;
+
     pull_comm_t comm; /* Communication parameters, communicator and buffers */
 
     FILE* out_x; /* Output file for pull data */

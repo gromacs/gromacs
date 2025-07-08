@@ -582,8 +582,8 @@ static void pme_load_balance(pme_load_balancing_t*          pme_lb,
 
     if (cr->dd && cr->dd->nnodes > 1)
     {
-        gmx_sumd(1, &cycles, cr);
-        cycles /= cr->dd->nnodes;
+        cr->commMyGroup.sumReduce(1, &cycles);
+        cycles /= cr->commMyGroup.size();
     }
 
     set = &pme_lb->setup[pme_lb->cur];

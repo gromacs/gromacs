@@ -50,7 +50,6 @@
 struct gmx_ddbox_t;
 struct gmx_domdec_t;
 struct gmx_mtop_t;
-struct t_commrec;
 
 //! Write the DD grid to a PDB file
 void write_dd_grid_pdb(const char* fn, int64_t step, gmx_domdec_t* dd, matrix box, gmx_ddbox_t* ddbox);
@@ -59,13 +58,13 @@ void write_dd_grid_pdb(const char* fn, int64_t step, gmx_domdec_t* dd, matrix bo
  *
  * When natoms=-1, dump all known atoms.
  */
-void write_dd_pdb(const char*       fn,
-                  int64_t           step,
-                  const char*       title,
-                  const gmx_mtop_t& mtop,
-                  const t_commrec*  cr,
-                  int               natoms,
-                  const rvec        x[],
-                  const matrix      box);
+void write_dd_pdb(const char*         fn,
+                  int64_t             step,
+                  const char*         title,
+                  const gmx_mtop_t&   mtop,
+                  const gmx_domdec_t& dd,
+                  int                 natoms,
+                  const rvec          x[],
+                  const matrix        box);
 
 #endif

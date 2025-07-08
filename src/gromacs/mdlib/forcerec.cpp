@@ -767,10 +767,10 @@ void init_forcerec(FILE*                            fplog,
         const bool moleculesAreAlwaysWhole =
                 (haveDDAtomOrdering(*commrec) && dd_moleculesAreAlwaysWhole(*commrec->dd));
         // WholeMoleculeTransform is only supported with a single PP rank
-        if (!moleculesAreAlwaysWhole && !havePPDomainDecomposition(commrec)
+        if (!moleculesAreAlwaysWhole && !havePPDomainDecomposition(commrec->dd)
             && (useEwaldSurfaceCorrection || haveOrientationRestraints))
         {
-            if (havePPDomainDecomposition(commrec))
+            if (havePPDomainDecomposition(commrec->dd))
             {
                 gmx_fatal(FARGS,
                           "You requested Ewald surface correction or orientation restraints, "

@@ -201,7 +201,7 @@ StatePropagatorData::StatePropagatorData(int                numAtoms,
 {
     bool stateHasVelocities;
     // Local state only becomes valid now.
-    if (haveDDAtomOrdering(*cr))
+    if (cr->dd)
     {
         dd_init_local_state(*cr->dd, globalState, localState);
         stateHasVelocities = localState->hasEntry(StateEntry::V);
@@ -224,7 +224,7 @@ StatePropagatorData::StatePropagatorData(int                numAtoms,
         changePinningPolicy(&x_, gmx::PinningPolicy::PinnedIfSupported);
     }
 
-    if (haveDDAtomOrdering(*cr) && MAIN(cr))
+    if (cr->dd && cr->commMyGroup.isMainRank())
     {
         xGlobal_.resizeWithPadding(totalNumAtoms_);
         previousXGlobal_.resizeWithPadding(totalNumAtoms_);
@@ -625,18 +625,19 @@ void StatePropagatorData::doCheckpointData(CheckpointData<operation>* checkpoint
 }
 
 void StatePropagatorData::Element::saveCheckpointState(std::optional<WriteCheckpointData> checkpointData,
-                                                       const t_commrec* cr)
+                                                       const MpiComm& mpiComm,
+                                                       gmx_domdec_t*  dd)
 {
-    if (haveDDAtomOrdering(*cr))
+    if (dd)
     {
         // Collect state from all ranks into global vectors
-        dd_collect_vec(cr->dd,
+        dd_collect_vec(dd,
                        statePropagatorData_->ddpCount_,
                        statePropagatorData_->ddpCountCgGl_,
                        statePropagatorData_->cgGl_,
                        statePropagatorData_->x_,
                        statePropagatorData_->xGlobal_);
-        dd_collect_vec(cr->dd,
+        dd_collect_vec(dd,
                        statePropagatorData_->ddpCount_,
                        statePropagatorData_->ddpCountCgGl_,
                        statePropagatorData_->cgGl_,
@@ -655,7 +656,7 @@ void StatePropagatorData::Element::saveCheckpointState(std::optional<WriteCheckp
                   statePropagatorData_->v_.end(),
                   statePropagatorData_->vGlobal_.begin());
     }
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         statePropagatorData_->doCheckpointData<CheckpointDataOperation::Write>(&checkpointData.value());
     }
@@ -684,15 +685,16 @@ static void updateGlobalState(t_state*                      globalState,
 }
 
 void StatePropagatorData::Element::restoreCheckpointState(std::optional<ReadCheckpointData> checkpointData,
-                                                          const t_commrec* cr)
+                                                          const MpiComm& mpiComm,
+                                                          gmx_domdec_t*  dd)
 {
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         statePropagatorData_->doCheckpointData<CheckpointDataOperation::Read>(&checkpointData.value());
     }
 
     // Copy data to global state to be distributed by DD at setup stage
-    if (haveDDAtomOrdering(*cr) && MAIN(cr))
+    if (dd && mpiComm.isMainRank())
     {
         updateGlobalState(statePropagatorData_->globalState_,
                           statePropagatorData_->xGlobal_,
@@ -703,7 +705,7 @@ void StatePropagatorData::Element::restoreCheckpointState(std::optional<ReadChec
                           statePropagatorData_->cgGl_);
     }
     // Everything is local - copy global vectors to local ones
-    if (!haveDDAtomOrdering(*cr))
+    if (dd == nullptr)
     {
         statePropagatorData_->x_.resizeWithPadding(statePropagatorData_->totalNumAtoms_);
         statePropagatorData_->v_.resizeWithPadding(statePropagatorData_->totalNumAtoms_);
@@ -734,16 +736,18 @@ void StatePropagatorData::Element::trajectoryWriterTeardown(gmx_mdoutf* gmx_unus
     GMX_ASSERT(localStateBackupValid_, "Final trajectory writing called, but no state saved.");
 
     wallcycle_start(mdoutf_get_wcycle(outf), WallCycleCounter::Traj);
-    if (haveDDAtomOrdering(*cr_))
+    if (cr_->dd)
     {
-        auto globalXRef = MAIN(cr_) ? statePropagatorData_->globalState_->x : gmx::ArrayRef<gmx::RVec>();
+        auto globalXRef = cr_->commMyGroup.isMainRank() ? statePropagatorData_->globalState_->x
+                                                        : gmx::ArrayRef<gmx::RVec>();
         dd_collect_vec(cr_->dd,
                        localStateBackup_->ddp_count,
                        localStateBackup_->ddp_count_cg_gl,
                        localStateBackup_->cg_gl,
                        localStateBackup_->x,
                        globalXRef);
-        auto globalVRef = MAIN(cr_) ? statePropagatorData_->globalState_->v : gmx::ArrayRef<gmx::RVec>();
+        auto globalVRef = cr_->commMyGroup.isMainRank() ? statePropagatorData_->globalState_->v
+                                                        : gmx::ArrayRef<gmx::RVec>();
         dd_collect_vec(cr_->dd,
                        localStateBackup_->ddp_count,
                        localStateBackup_->ddp_count_cg_gl,
@@ -757,7 +761,7 @@ void StatePropagatorData::Element::trajectoryWriterTeardown(gmx_mdoutf* gmx_unus
         statePropagatorData_->globalState_ = localStateBackup_.get();
     }
 
-    if (MAIN(cr_))
+    if (cr_->commMyGroup.isMainRank())
     {
         fprintf(stderr, "\nWriting final coordinates.\n");
         if (canMoleculesBeDistributedOverPBC_ && !systemHasPeriodicMolecules_)

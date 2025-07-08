@@ -73,30 +73,16 @@
 using gmx::ArrayRef;
 using gmx::RVec;
 
-#if !GMX_DOUBLE
-// Helper function; note that gmx_sum(d) should actually be templated
-gmx_unused static void gmxAllReduce(int n, real* data, const t_commrec* cr)
-{
-    gmx_sum(n, data, cr);
-}
-#endif
-
-// Helper function; note that gmx_sum(d) should actually be templated
-gmx_unused static void gmxAllReduce(int n, double* data, const t_commrec* cr)
-{
-    gmx_sumd(n, data, cr);
-}
-
 // Reduce data of n elements over all ranks currently participating in pull
 template<typename T>
-static void pullAllReduce(const t_commrec* cr, pull_comm_t* comm, int n, T* data)
+static void pullAllReduce(const gmx::MpiComm& mpiComm, pull_comm_t* comm, int n, T* data)
 {
-    if (cr != nullptr && PAR(cr))
+    if (mpiComm.size() > 1)
     {
         if (comm->bParticipateAll)
         {
             /* Sum the contributions over all DD ranks */
-            gmxAllReduce(n, data, cr);
+            mpiComm.sumReduce(n, data);
         }
         else
         {
@@ -134,7 +120,10 @@ static void setPbcAtomCoords(const pull_group_work_t& pgrp, ArrayRef<const RVec>
     }
 }
 
-static void pull_set_pbcatoms(const t_commrec* cr, struct pull_t* pull, ArrayRef<const RVec> x, ArrayRef<RVec> x_pbc)
+static void pull_set_pbcatoms(const gmx::MpiComm&  mpiComm,
+                              struct pull_t*       pull,
+                              ArrayRef<const RVec> x,
+                              ArrayRef<RVec>       x_pbc)
 {
     int numPbcAtoms = 0;
     for (size_t g = 0; g < pull->group.size(); g++)
@@ -151,17 +140,17 @@ static void pull_set_pbcatoms(const t_commrec* cr, struct pull_t* pull, ArrayRef
         }
     }
 
-    if (cr && PAR(cr) && numPbcAtoms > 0)
+    if (mpiComm.size() > 1 && numPbcAtoms > 0)
     {
         /* Sum over participating ranks to get x_pbc from the home ranks.
          * This can be very expensive at high parallelization, so we only
          * do this after each DD repartitioning.
          */
-        pullAllReduce(cr, &pull->comm, pull->group.size() * DIM, static_cast<real*>(x_pbc[0]));
+        pullAllReduce(mpiComm, &pull->comm, pull->group.size() * DIM, static_cast<real*>(x_pbc[0]));
     }
 }
 
-static void make_cyl_refgrps(const t_commrec*     cr,
+static void make_cyl_refgrps(const gmx::MpiComm&  mpiComm,
                              pull_t*              pull,
                              ArrayRef<const real> masses,
                              const t_pbc&         pbc,
@@ -295,10 +284,11 @@ static void make_cyl_refgrps(const t_commrec*     cr,
         buffer[8] = radf_fac1[ZZ];
     }
 
-    if (cr != nullptr && PAR(cr))
+    if (mpiComm.size() > 1)
     {
         /* Sum the contributions over the ranks */
-        pullAllReduce(cr, comm, pull->coord.size() * c_cylinderBufferStride, comm->cylinderBuffer.data());
+        pullAllReduce(
+                mpiComm, comm, pull->coord.size() * c_cylinderBufferStride, comm->cylinderBuffer.data());
     }
 
     int pullCoordIndex = 0;
@@ -507,7 +497,7 @@ static void sum_com_part_cosweight(const pull_group_work_t* pgrp,
 }
 
 /* calculates center of mass of selection index from all coordinates x */
-void pull_calc_coms(const t_commrec*     cr,
+void pull_calc_coms(const gmx::MpiComm&  mpiComm,
                     pull_t*              pull,
                     ArrayRef<const real> masses,
                     const t_pbc&         pbc,
@@ -527,9 +517,9 @@ void pull_calc_coms(const t_commrec*     cr,
 
     if (pull->bRefAt && pull->bSetPBCatoms)
     {
-        pull_set_pbcatoms(cr, pull, x, comm->pbcAtomBuffer);
+        pull_set_pbcatoms(mpiComm, pull, x, comm->pbcAtomBuffer);
 
-        if (cr != nullptr && haveDDAtomOrdering(*cr))
+        if (pull->haveDDAtomOrdering)
         {
             /* We can keep these PBC reference coordinates fixed for nstlist
              * steps, since atoms won't jump over PBC.
@@ -705,7 +695,7 @@ void pull_calc_coms(const t_commrec*     cr,
         }
     }
 
-    pullAllReduce(cr,
+    pullAllReduce(mpiComm,
                   comm,
                   pull->group.size() * c_comBufferStride * DIM,
                   static_cast<double*>(comm->comBuffer[0]));
@@ -797,7 +787,7 @@ void pull_calc_coms(const t_commrec*     cr,
     if (pull->bCylinder)
     {
         /* Calculate the COMs for the cyclinder reference groups */
-        make_cyl_refgrps(cr, pull, masses, pbc, t, x);
+        make_cyl_refgrps(mpiComm, pull, masses, pbc, t, x);
     }
 }
 
@@ -1071,7 +1061,7 @@ void allocStatePrevStepPullCom(t_state* state, const pull_t* pull)
     }
 }
 
-void initPullComFromPrevStep(const t_commrec*     cr,
+void initPullComFromPrevStep(const gmx::MpiComm&  mpiComm,
                              pull_t*              pull,
                              ArrayRef<const real> masses,
                              const t_pbc&         pbc,
@@ -1090,7 +1080,7 @@ void initPullComFromPrevStep(const t_commrec*     cr,
     GMX_ASSERT(comm->comBuffer.size() == pull->group.size() * c_comBufferStride,
                "comBuffer should have size #group*c_comBufferStride");
 
-    pull_set_pbcatoms(cr, pull, x, comm->pbcAtomBuffer);
+    pull_set_pbcatoms(mpiComm, pull, x, comm->pbcAtomBuffer);
 
     for (size_t g = 0; g < ngroup; g++)
     {
@@ -1154,7 +1144,8 @@ void initPullComFromPrevStep(const t_commrec*     cr,
         }
     }
 
-    pullAllReduce(cr, comm, ngroup * c_comBufferStride * DIM, static_cast<double*>(comm->comBuffer[0]));
+    pullAllReduce(
+            mpiComm, comm, ngroup * c_comBufferStride * DIM, static_cast<double*>(comm->comBuffer[0]));
 
     for (size_t g = 0; g < ngroup; g++)
     {

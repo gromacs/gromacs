@@ -46,12 +46,12 @@
 #include <iostream>
 
 #include "gromacs/gmxlib/network.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace gmx
@@ -258,7 +258,7 @@ void TorchModel::evaluateModel(gmx_enerdata_t*              enerd,
     }
 
     // for now: only do inference on main rank
-    if (MAIN(cr_))
+    if (mpiComm_->isMainRank())
     {
         // run model
         c10::IValue out = model_.forward(inputs_);
@@ -278,7 +278,7 @@ void TorchModel::evaluateModel(gmx_enerdata_t*              enerd,
     const int     N           = indexLookup.size();
     torch::Tensor forceTensor = torch::zeros({ N, DIM });
 
-    if (MAIN(cr_))
+    if (mpiComm_->isMainRank())
     {
         // get energy
         energyTensor = outputs_->elements()[0].toTensor();
@@ -306,9 +306,9 @@ void TorchModel::evaluateModel(gmx_enerdata_t*              enerd,
     }
 
     // distribute forces
-    if (havePPDomainDecomposition(cr_))
+    if (mpiComm_->size() > 1)
     {
-        gmx_sum(3 * N, static_cast<real*>(forceTensor.data_ptr()), cr_);
+        mpiComm_->sumReduce(3 * N, static_cast<real*>(forceTensor.data_ptr()));
     }
 
     // accumulate forces only on local atoms
@@ -330,9 +330,9 @@ void TorchModel::evaluateModel(gmx_enerdata_t*              enerd,
     inputs_.resize(0);
 }
 
-void TorchModel::setCommRec(const t_commrec* cr)
+void TorchModel::setComm(const MpiComm& mpiComm)
 {
-    cr_ = cr;
+    mpiComm_ = &mpiComm;
 }
 
 bool TorchModel::outputsForces() const

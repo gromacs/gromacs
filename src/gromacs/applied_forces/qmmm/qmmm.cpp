@@ -58,7 +58,6 @@
 #include "gromacs/math/multidimarray.h"
 #include "gromacs/mdlib/broadcaststructs.h"
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/iforceprovider.h"
 #include "gromacs/mdtypes/imdmodule.h"
 #include "gromacs/mdtypes/imdoutputprovider.h"

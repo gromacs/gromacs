@@ -159,7 +159,7 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
         of->mainRanksComm = ms->mainRanksComm_;
     }
 
-    if (MAIN(cr))
+    if (cr->commMyGroup.isMainRank())
     {
         of->bKeepAndNumCPT = mdrunOptions.checkpointOptions.keepAndNumberCheckpointFiles;
 
@@ -249,7 +249,7 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
             }
         }
 
-        if (ir->nstfout && haveDDAtomOrdering(*cr))
+        if (ir->nstfout && cr->dd != nullptr)
         {
             snew(of->f_global, top_global.natoms);
         }
@@ -533,8 +533,8 @@ void mdoutf_write_checkpoint(gmx_mdoutf_t                    of,
                      of->bKeepAndNumCPT,
                      fplog,
                      cr,
-                     haveDDAtomOrdering(*cr) ? cr->dd->numCells : one_ivec,
-                     haveDDAtomOrdering(*cr) ? cr->dd->nnodes : cr->nnodes,
+                     cr->dd ? cr->dd->numCells : one_ivec,
+                     cr->dd ? cr->dd->nnodes : cr->commMySim.size(),
                      of->eIntegrator,
                      of->simulation_part,
                      of->bExpanded,

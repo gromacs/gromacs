@@ -70,7 +70,6 @@
 #include "gromacs/mdlib/makeconstraints.h"
 #include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/group.h"
@@ -88,6 +87,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/enumerationhelpers.h"
+#include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
@@ -196,8 +196,10 @@ public:
     std::vector<char*> groupNameHandles_;
     //! Total dipole momentum
     rvec muTotal_;
-    //! Communication record
-    t_commrec cr_;
+    //! Communication object
+    MpiComm mpiComm_;
+    //! Domain decomposition pointer
+    gmx_domdec_t* dd_ = nullptr;
     //! Constraints object (for constraints RMSD output in case of LINCS)
     std::unique_ptr<Constraints> constraints_;
     //! Temporary output filename
@@ -215,6 +217,7 @@ public:
 
     EnergyOutputTest() :
         ekindata_(tcgInit_, EnsembleTemperatureSetting::NotAvailable, -1.0_real, false, cosAccel_, 1),
+        mpiComm_(MpiComm(MpiComm::SingleRank{})),
         logFilename_(fileManager_.getTemporaryFilePath(".log").string()),
         edrFilename_(fileManager_.getTemporaryFilePath(".edr").string()),
         log_(std::fopen(logFilename_.c_str(), "w")),
@@ -374,16 +377,12 @@ public:
         snew(inputrec_.opts.anneal_time, inputrec_.opts.ngtc);
         snew(inputrec_.opts.anneal_temp, inputrec_.opts.ngtc);
 
-        // Communication record (for Constraints constructor)
-        cr_.nnodes = 1;
-        cr_.dd     = nullptr;
-
         // Constraints object (to get constraints RMSD from)
         // TODO EnergyOutput should not take Constraints object
         // TODO This object will always return zero as RMSD value.
         //      It is more relevant to have non-zero value for testing.
         constraints_ = makeConstraints(
-                mtop_, inputrec_, nullptr, false, false, nullptr, &cr_, false, nullptr, nullptr, nullptr, false, nullptr);
+                mtop_, inputrec_, nullptr, false, false, nullptr, mpiComm_, dd_, false, nullptr, nullptr, nullptr, false, nullptr);
     }
 
     /*! \brief Helper function to generate synthetic data to output

@@ -115,7 +115,8 @@ public:
     /*!
      * \brief Get the position of this site at time t.
      *
-     * \param cr Communications record.
+     * \param mpiComm Communication object for my group.
+     * \param dd      Pointer to domain decomposition object, pass nullptr when DD is not in use.
      * \param nx Number of locally available atoms (size of local atom data arrays)
      * \param x Array of locally available atom coordinates.
      * \param t the current time.
@@ -126,15 +127,19 @@ public:
      * In the long term, we would prefer to also allow client code to preregister interest in a
      * position at a given time, or issue "futures".
      */
-    RVec centerOfMass(const t_commrec& cr, size_t nx, ArrayRef<const RVec> x, double gmx_unused t)
+    RVec centerOfMass(const MpiComm&       mpiComm,
+                      const gmx_domdec_t*  dd,
+                      size_t               nx,
+                      ArrayRef<const RVec> x,
+                      double gmx_unused    t)
     {
         // Center of mass to return for the site. Currently the only form of site
         // implemented is as a global atomic coordinate.
         gmx::RVec r = { 0, 0, 0 };
-        if (haveDDAtomOrdering(cr)) // Domain decomposition
+        if (dd) // Domain decomposition
         {
             // Get global-to-local indexing structure
-            auto* crossRef = cr.dd->ga2la.get();
+            auto* crossRef = dd->ga2la.get();
             GMX_ASSERT(crossRef, "Domain decomposition must provide global/local cross-reference.");
             if (const auto* localIndex = crossRef->findHome(index_))
             {
@@ -160,7 +165,7 @@ public:
             // \todo use generalized "pull group" facility when available.
             std::array<double, 3> buffer{ { r[0], r[1], r[2] } };
             // This should be an all-reduce sum, which gmx_sumd appears to be.
-            gmx_sumd(3, buffer.data(), &cr);
+            mpiComm.sumReduce(buffer);
             r[0] = static_cast<real>(buffer[0]);
             r[1] = static_cast<real>(buffer[1]);
             r[2] = static_cast<real>(buffer[2]);

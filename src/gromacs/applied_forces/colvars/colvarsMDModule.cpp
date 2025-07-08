@@ -50,10 +50,10 @@
 #include "gromacs/fileio/checkpoint.h"
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/mdrunutility/multisim.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/iforceprovider.h"
 #include "gromacs/mdtypes/imdmodule.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
+#include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "colvarsforceprovider.h"
@@ -149,7 +149,7 @@ public:
      *   - the topology of the system
      *     by taking a gmx_mtop_t * as parameter
      *   - the communicator
-     *     by taking a t_commrec as parameter
+     *     by taking a MpiComm as parameter
      *   - the simulation time step
      *     by taking a SimulationTimeStep as a parameter
      *   - MDLogger for notifications output
@@ -183,8 +183,8 @@ public:
         notifiers->simulationSetupNotifier_.subscribe(setTopologyFunction);
 
         // Retrieve the Communication Record during simulations setup
-        const auto setCommFunction = [this](const t_commrec& cr)
-        { this->ColvarsSimulationsParameters_.setComm(cr); };
+        const auto setCommFunction = [this](const MpiComm& mpiComm)
+        { this->ColvarsSimulationsParameters_.setComm(mpiComm); };
         notifiers->simulationSetupNotifier_.subscribe(setCommFunction);
 
         // Retrieve the Multisim Record during simulations setup

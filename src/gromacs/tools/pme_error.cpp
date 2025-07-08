@@ -497,10 +497,10 @@ static real estimate_reciprocal(PmeErrorInputs* info,
     startglobal = -info->nkx[0] / 2;
     stopglobal  = info->nkx[0] / 2;
     xtot        = stopglobal * 2 + 1;
-    if (PAR(cr))
+    if (cr->commMySim.size() > 1)
     {
-        x_per_core = static_cast<int>(std::ceil(static_cast<real>(xtot) / cr->nnodes));
-        startlocal = startglobal + x_per_core * cr->nodeid;
+        x_per_core = static_cast<int>(std::ceil(static_cast<real>(xtot) / cr->commMyGroup.size()));
+        startlocal = startglobal + x_per_core * cr->commMyGroup.rank();
         stoplocal  = startlocal + x_per_core - 1;
         if (stoplocal > stopglobal)
         {
@@ -640,17 +640,17 @@ static real estimate_reciprocal(PmeErrorInputs* info,
         /* Here xtot is the number of samples taken for the Monte Carlo calculation
          * of the average of term IV of equation 35 in Wang2010. Round up to a
          * number of samples that is divisible by the number of nodes */
-        x_per_core = static_cast<int>(std::ceil(info->fracself * nr / cr->nnodes));
-        xtot       = x_per_core * cr->nnodes;
+        x_per_core = static_cast<int>(std::ceil(info->fracself * nr / cr->commMyGroup.size()));
+        xtot       = x_per_core * cr->commMyGroup.size();
     }
     else
     {
         /* In this case we use all nr particle positions */
         xtot       = nr;
-        x_per_core = static_cast<int>(std::ceil(static_cast<real>(xtot) / cr->nnodes));
+        x_per_core = static_cast<int>(std::ceil(static_cast<real>(xtot) / cr->commMyGroup.size()));
     }
 
-    startlocal = x_per_core * cr->nodeid;
+    startlocal = x_per_core * cr->commMyGroup.rank();
     stoplocal  = std::min(startlocal + x_per_core, xtot); /* min needed if xtot == nr */
 
     if (bFraction)
@@ -669,7 +669,7 @@ static real estimate_reciprocal(PmeErrorInputs* info,
         /* Broadcast the random number array to the other nodes */
         if (PAR(cr))
         {
-            nblock_bc(cr->mpi_comm_mygroup, xtot, numbers);
+            nblock_bc(cr->commMyGroup.comm(), xtot, numbers);
         }
 
         if (bVerbose && MAIN(cr))
@@ -811,6 +811,11 @@ static void create_info(PmeErrorInputs* info)
     snew(info->fn_out, info->n_entries);
     snew(info->e_dir, info->n_entries);
     snew(info->e_rec, info->n_entries);
+
+    // Keep the static-analyzer happy
+    info->volume  = 0;
+    info->q2all   = 0;
+    info->q2allnr = 0;
 }
 
 
@@ -819,7 +824,7 @@ static void create_info(PmeErrorInputs* info)
  */
 static int prepare_x_q(real* q[], rvec* x[], const gmx_mtop_t* mtop, const rvec x_orig[], t_commrec* cr)
 {
-    int nq; /* number of charged particles */
+    int nq = 0; /* number of charged particles, keep static-analyzer happy by zeroing here */
 
 
     if (MAIN(cr))
@@ -849,11 +854,11 @@ static int prepare_x_q(real* q[], rvec* x[], const gmx_mtop_t* mtop, const rvec 
     if (PAR(cr))
     {
         /* Transfer the number of charges */
-        block_bc(cr->mpi_comm_mygroup, nq);
+        block_bc(cr->commMyGroup.comm(), nq);
         snew_bc(MAIN(cr), *x, nq);
         snew_bc(MAIN(cr), *q, nq);
-        nblock_bc(cr->mpi_comm_mygroup, nq, *x);
-        nblock_bc(cr->mpi_comm_mygroup, nq, *q);
+        nblock_bc(cr->commMyGroup.comm(), nq, *x);
+        nblock_bc(cr->commMyGroup.comm(), nq, *q);
     }
 
     return nq;
@@ -908,20 +913,20 @@ static void read_tpr_file(const char*     fn_sim_tpr,
 /* Transfer what we need for parallelizing the reciprocal error estimate */
 static void bcast_info(PmeErrorInputs* info, const t_commrec* cr)
 {
-    nblock_bc(cr->mpi_comm_mygroup, info->n_entries, info->nkx);
-    nblock_bc(cr->mpi_comm_mygroup, info->n_entries, info->nky);
-    nblock_bc(cr->mpi_comm_mygroup, info->n_entries, info->nkz);
-    nblock_bc(cr->mpi_comm_mygroup, info->n_entries, info->ewald_beta);
-    nblock_bc(cr->mpi_comm_mygroup, info->n_entries, info->pme_order);
-    nblock_bc(cr->mpi_comm_mygroup, info->n_entries, info->e_dir);
-    nblock_bc(cr->mpi_comm_mygroup, info->n_entries, info->e_rec);
-    block_bc(cr->mpi_comm_mygroup, info->volume);
-    block_bc(cr->mpi_comm_mygroup, info->recipbox);
-    block_bc(cr->mpi_comm_mygroup, info->natoms);
-    block_bc(cr->mpi_comm_mygroup, info->fracself);
-    block_bc(cr->mpi_comm_mygroup, info->bTUNE);
-    block_bc(cr->mpi_comm_mygroup, info->q2all);
-    block_bc(cr->mpi_comm_mygroup, info->q2allnr);
+    nblock_bc(cr->commMyGroup.comm(), info->n_entries, info->nkx);
+    nblock_bc(cr->commMyGroup.comm(), info->n_entries, info->nky);
+    nblock_bc(cr->commMyGroup.comm(), info->n_entries, info->nkz);
+    nblock_bc(cr->commMyGroup.comm(), info->n_entries, info->ewald_beta);
+    nblock_bc(cr->commMyGroup.comm(), info->n_entries, info->pme_order);
+    nblock_bc(cr->commMyGroup.comm(), info->n_entries, info->e_dir);
+    nblock_bc(cr->commMyGroup.comm(), info->n_entries, info->e_rec);
+    block_bc(cr->commMyGroup.comm(), info->volume);
+    block_bc(cr->commMyGroup.comm(), info->recipbox);
+    block_bc(cr->commMyGroup.comm(), info->natoms);
+    block_bc(cr->commMyGroup.comm(), info->fracself);
+    block_bc(cr->commMyGroup.comm(), info->bTUNE);
+    block_bc(cr->commMyGroup.comm(), info->q2all);
+    block_bc(cr->commMyGroup.comm(), info->q2allnr);
 }
 
 
@@ -1152,9 +1157,9 @@ int gmx_pme_error(int argc, char* argv[])
 
 #define NFILE asize(fnm)
 
-    std::unique_ptr<t_commrec> commrecHandle = init_commrec(MPI_COMM_WORLD);
-    t_commrec*                 cr            = commrecHandle.get();
-    PCA_Flags                                = PCA_NOEXIT_ON_ARGS;
+    const gmx::MpiComm mpiCommWorld(MPI_COMM_WORLD);
+    t_commrec          cr(mpiCommWorld);
+    PCA_Flags = PCA_NOEXIT_ON_ARGS;
 
     if (!parse_common_args(
                 &argc, argv, PCA_Flags, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
@@ -1174,7 +1179,7 @@ int gmx_pme_error(int argc, char* argv[])
     info.fourier_sp[0] = fs;
 
     t_inputrec ir;
-    if (MAIN(cr))
+    if (MAIN(&cr))
     {
         read_tpr_file(opt2fn("-s", NFILE, fnm), &info, &state, &mtop, &ir, user_beta, fracself);
         /* Open logfile for reading */
@@ -1188,7 +1193,7 @@ int gmx_pme_error(int argc, char* argv[])
     }
 
     /* Check consistency if the user provided fourierspacing */
-    if (fs > 0 && MAIN(cr))
+    if (fs > 0 && MAIN(&cr))
     {
         /* Recalculate the grid dimensions using fourierspacing from user input */
         info.nkx[0] = 0;
@@ -1218,15 +1223,15 @@ int gmx_pme_error(int argc, char* argv[])
 
     /* Estimate (S)PME force error */
 
-    if (PAR(cr))
+    if (PAR(&cr))
     {
-        bcast_info(&info, cr);
+        bcast_info(&info, &cr);
     }
 
     /* Get an error estimate of the input tpr file and do some tuning if requested */
-    estimate_PME_error(&info, &state, &mtop, fp, bVerbose, seed, cr);
+    estimate_PME_error(&info, &state, &mtop, fp, bVerbose, seed, &cr);
 
-    if (MAIN(cr))
+    if (MAIN(&cr))
     {
         /* Write out optimized tpr file if requested */
         if (opt2bSet("-so", NFILE, fnm) || bTUNE)

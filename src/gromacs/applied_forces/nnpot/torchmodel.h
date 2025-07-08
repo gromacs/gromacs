@@ -58,6 +58,7 @@
 
 namespace gmx
 {
+class MpiComm;
 
 /*! \brief Define the torch datatype according to GMX_DOUBLE.
  *
@@ -102,8 +103,8 @@ public:
                        matrix*                      box     = nullptr,
                        PbcType*                     pbcType = nullptr) override;
 
-    //! Set communication record for possible communication of input/output data between ranks
-    void setCommRec(const t_commrec* cr) override;
+    //! Set communication object for possible communication of input/output data between ranks
+    void setComm(const MpiComm& mpiComm) override;
 
     //! helper function to check if model outputs forces
     bool outputsForces() const override;
@@ -117,8 +118,8 @@ private:
     void preparePbcType(PbcType* pbcType);
     //! \}
 
-    //! pointer to the communication record
-    const t_commrec* cr_ = nullptr;
+    //! pointer to the communication object
+    const MpiComm* mpiComm_ = nullptr;
     //! MDLogger during mdrun
     const MDLogger& logger_;
 

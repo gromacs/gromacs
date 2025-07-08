@@ -219,34 +219,38 @@ void FreeEnergyPerturbationData::Element::doCheckpointData(CheckpointData<operat
 }
 
 void FreeEnergyPerturbationData::Element::saveCheckpointState(std::optional<WriteCheckpointData> checkpointData,
-                                                              const t_commrec* cr)
+                                                              const MpiComm& mpiComm,
+                                                              gmx_domdec_t*  dd)
 {
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         freeEnergyPerturbationData_->doCheckpointData<CheckpointDataOperation::Write>(
                 &checkpointData.value());
         doCheckpointData<CheckpointDataOperation::Write>(&checkpointData.value());
     }
+
+    GMX_UNUSED_VALUE(dd);
 }
 
 void FreeEnergyPerturbationData::Element::restoreCheckpointState(std::optional<ReadCheckpointData> checkpointData,
-                                                                 const t_commrec* cr)
+                                                                 const MpiComm& mpiComm,
+                                                                 gmx_domdec_t*  dd)
 {
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         freeEnergyPerturbationData_->doCheckpointData<CheckpointDataOperation::Read>(
                 &checkpointData.value());
         doCheckpointData<CheckpointDataOperation::Read>(&checkpointData.value());
     }
-    if (haveDDAtomOrdering(*cr))
+    if (dd)
     {
-        dd_bcast(cr->dd, sizeof(int), &freeEnergyPerturbationData_->currentFEPState_);
-        dd_bcast(cr->dd,
+        dd_bcast(dd, sizeof(int), &freeEnergyPerturbationData_->currentFEPState_);
+        dd_bcast(dd,
                  ssize(freeEnergyPerturbationData_->lambda_) * int(sizeof(real)),
                  freeEnergyPerturbationData_->lambda_.data());
         auto externalLambdaSetting = int(externalFepStateSetting_.has_value());
-        dd_bcast(cr->dd, sizeof(int), &externalLambdaSetting);
-        if (!MAIN(cr) && externalLambdaSetting)
+        dd_bcast(dd, sizeof(int), &externalLambdaSetting);
+        if (!mpiComm.isMainRank() && externalLambdaSetting)
         {
             // Main rank constructed this while reading the
             // checkpoint, but other ranks have to do this now.
@@ -254,10 +258,8 @@ void FreeEnergyPerturbationData::Element::restoreCheckpointState(std::optional<R
         }
         if (externalFepStateSetting_.has_value())
         {
-            dd_bcast(cr->dd,
-                     sizeof(externalFepStateSetting_->newFepState),
-                     &externalFepStateSetting_->newFepState);
-            dd_bcast(cr->dd,
+            dd_bcast(dd, sizeof(externalFepStateSetting_->newFepState), &externalFepStateSetting_->newFepState);
+            dd_bcast(dd,
                      sizeof(externalFepStateSetting_->newFepStateStep),
                      &externalFepStateSetting_->newFepStateStep);
         }

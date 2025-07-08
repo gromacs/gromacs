@@ -592,7 +592,7 @@ static int ddcoord2simnodeid(const t_commrec* cr, int x, int y, int z)
     if (cartSetup.bCartesianPP_PME)
     {
 #if GMX_MPI
-        MPI_Cart_rank(cr->mpi_comm_mysim, coords, &nodeid);
+        MPI_Cart_rank(cr->commMySim.comm(), coords, &nodeid);
 #endif
     }
     else
@@ -632,12 +632,12 @@ static int dd_simnode2pmenode(const DDRankSetup&          ddRankSetup,
     {
 #if GMX_MPI
         ivec coord, coord_pme;
-        MPI_Cart_coords(cr->mpi_comm_mysim, sim_nodeid, DIM, coord);
+        MPI_Cart_coords(cr->commMySim.comm(), sim_nodeid, DIM, coord);
         if (coord[cartSetup.cartpmedim] < ddRankSetup.numPPCells[cartSetup.cartpmedim])
         {
             /* This is a PP rank */
             dd_cart_coord2pmecoord(ddRankSetup, cartSetup, coord, coord_pme);
-            MPI_Cart_rank(cr->mpi_comm_mysim, coord_pme, &pmenode);
+            MPI_Cart_rank(cr->commMySim.comm(), coord_pme, &pmenode);
         }
 #endif
     }
@@ -741,14 +741,14 @@ static gmx_bool receive_vir_ener(const gmx_domdec_t* dd, gmx::ArrayRef<const int
         if (cartSetup.bCartesianPP_PME)
         {
 #if GMX_MPI
-            int  pmenode = dd_simnode2pmenode(ddRankSetup, cartSetup, pmeRanks, cr, cr->sim_nodeid);
+            int pmenode = dd_simnode2pmenode(ddRankSetup, cartSetup, pmeRanks, cr, cr->commMySim.rank());
             ivec coords;
-            MPI_Cart_coords(cr->mpi_comm_mysim, cr->sim_nodeid, DIM, coords);
+            MPI_Cart_coords(cr->commMySim.comm(), cr->commMySim.rank(), DIM, coords);
             coords[cartSetup.cartpmedim]++;
             if (coords[cartSetup.cartpmedim] < dd->numCells[cartSetup.cartpmedim])
             {
                 int rank = 0;
-                MPI_Cart_rank(cr->mpi_comm_mysim, coords, &rank);
+                MPI_Cart_rank(cr->commMySim.comm(), coords, &rank);
                 if (dd_simnode2pmenode(ddRankSetup, cartSetup, pmeRanks, cr, rank) == pmenode)
                 {
                     /* This is not the last PP node for pmenode */
@@ -763,9 +763,9 @@ static gmx_bool receive_vir_ener(const gmx_domdec_t* dd, gmx::ArrayRef<const int
         }
         else
         {
-            int pmenode = dd_simnode2pmenode(ddRankSetup, cartSetup, pmeRanks, cr, cr->sim_nodeid);
-            if (cr->sim_nodeid + 1 < cr->nnodes
-                && dd_simnode2pmenode(ddRankSetup, cartSetup, pmeRanks, cr, cr->sim_nodeid + 1) == pmenode)
+            int pmenode = dd_simnode2pmenode(ddRankSetup, cartSetup, pmeRanks, cr, cr->commMySim.rank());
+            if (cr->commMySim.rank() + 1 < cr->commMySim.size()
+                && dd_simnode2pmenode(ddRankSetup, cartSetup, pmeRanks, cr, cr->commMySim.rank() + 1) == pmenode)
             {
                 /* This is not the last PP node for pmenode */
                 bReceive = FALSE;
@@ -974,7 +974,7 @@ void dd_setup_dlb_resource_sharing(const t_commrec* cr, const int uniqueDeviceId
         return;
     }
 
-    if (cr->nnodes == 1)
+    if (cr->commMySim.size() == 1)
     {
         dd->comm->nrank_gpu_shared = 1;
 
@@ -1122,12 +1122,13 @@ static void make_pp_communicator(const gmx::MDLogger&  mdlog,
             periods[i] = TRUE;
         }
         MPI_Comm comm_cart = MPI_COMM_NULL;
-        MPI_Cart_create(cr->mpi_comm_mygroup, DIM, dd->numCells, periods, static_cast<int>(reorder), &comm_cart);
+        MPI_Cart_create(
+                cr->commMyGroup.comm(), DIM, dd->numCells, periods, static_cast<int>(reorder), &comm_cart);
         /* We overwrite the old communicator with the new cartesian one */
-        cr->mpi_comm_mygroup = comm_cart;
+        cr->commMyGroup = gmx::MpiComm(comm_cart);
     }
 
-    dd->mpi_comm_all = cr->mpi_comm_mygroup;
+    dd->mpi_comm_all = cr->commMyGroup.comm();
     MPI_Comm_rank(dd->mpi_comm_all, &dd->rank);
 
     if (cartSetup.bCartesianPP_PME)
@@ -1151,9 +1152,8 @@ static void make_pp_communicator(const gmx::MDLogger&  mdlog,
             /* The PP communicator is also
              * the communicator for this simulation
              */
-            cr->mpi_comm_mysim = cr->mpi_comm_mygroup;
+            cr->commMySim = gmx::MpiComm(cr->commMyGroup.comm());
         }
-        cr->nodeid = dd->rank;
 
         MPI_Cart_coords(dd->mpi_comm_all, dd->rank, DIM, dd->ci);
 
@@ -1164,10 +1164,15 @@ static void make_pp_communicator(const gmx::MDLogger&  mdlog,
         std::vector<int> buf(dd->nnodes);
         if (thisRankHasDuty(cr, DUTY_PP))
         {
-            buf[dd_index(dd->numCells, dd->ci)] = cr->sim_nodeid;
+            buf[dd_index(dd->numCells, dd->ci)] = cr->commMySim.rank();
         }
         /* Communicate the ddindex to simulation nodeid index */
-        MPI_Allreduce(buf.data(), cartSetup.ddindex2simnodeid.data(), dd->nnodes, MPI_INT, MPI_SUM, cr->mpi_comm_mysim);
+        MPI_Allreduce(buf.data(),
+                      cartSetup.ddindex2simnodeid.data(),
+                      dd->nnodes,
+                      MPI_INT,
+                      MPI_SUM,
+                      cr->commMySim.comm());
 
         /* Determine the main coordinates and rank.
          * The DD main should be the same node as the main of this sim.
@@ -1224,10 +1229,15 @@ static void receive_ddindex2simnodeid(gmx_domdec_t* dd, t_commrec* cr)
         std::vector<int> buf(dd->nnodes);
         if (thisRankHasDuty(cr, DUTY_PP))
         {
-            buf[dd_index(dd->numCells, dd->ci)] = cr->sim_nodeid;
+            buf[dd_index(dd->numCells, dd->ci)] = cr->commMySim.rank();
         }
         /* Communicate the ddindex to simulation nodeid index */
-        MPI_Allreduce(buf.data(), cartSetup.ddindex2simnodeid.data(), dd->nnodes, MPI_INT, MPI_SUM, cr->mpi_comm_mysim);
+        MPI_Allreduce(buf.data(),
+                      cartSetup.ddindex2simnodeid.data(),
+                      dd->nnodes,
+                      MPI_INT,
+                      MPI_SUM,
+                      cr->commMySim.comm());
     }
 #else
     GMX_UNUSED_VALUE(dd);
@@ -1315,9 +1325,10 @@ static CartesianRankSetup split_communicator(const gmx::MDLogger& mdlog,
             periods[i] = TRUE;
         }
         MPI_Comm comm_cart = MPI_COMM_NULL;
-        MPI_Cart_create(cr->mpi_comm_mysim, DIM, cartSetup.ntot, periods, static_cast<int>(reorder), &comm_cart);
+        MPI_Cart_create(
+                cr->commMySim.comm(), DIM, cartSetup.ntot, periods, static_cast<int>(reorder), &comm_cart);
         MPI_Comm_rank(comm_cart, &rank);
-        if (MAIN(cr) && rank != 0)
+        if (cr->commMySim.isMainRank() && rank != 0)
         {
             gmx_fatal(FARGS, "MPI rank 0 was renumbered by MPI_Cart_create, we do not allow this");
         }
@@ -1325,14 +1336,13 @@ static CartesianRankSetup split_communicator(const gmx::MDLogger& mdlog,
         /* With this assigment we loose the link to the original communicator
          * which will usually be MPI_COMM_WORLD, unless have multisim.
          */
-        cr->mpi_comm_mysim = comm_cart;
-        cr->sim_nodeid     = rank;
+        cr->commMySim = gmx::MpiComm(comm_cart);
 
-        MPI_Cart_coords(cr->mpi_comm_mysim, cr->sim_nodeid, DIM, ddCellIndex);
+        MPI_Cart_coords(cr->commMySim.comm(), cr->commMySim.rank(), DIM, ddCellIndex);
 
         GMX_LOG(mdlog.info)
                 .appendTextFormatted("Cartesian rank %d, coordinates %d %d %d\n",
-                                     cr->sim_nodeid,
+                                     cr->commMySim.rank(),
                                      ddCellIndex[XX],
                                      ddCellIndex[YY],
                                      ddCellIndex[ZZ]);
@@ -1348,11 +1358,10 @@ static CartesianRankSetup split_communicator(const gmx::MDLogger& mdlog,
         }
 
         /* Split the sim communicator into PP and PME only nodes */
-        MPI_Comm_split(cr->mpi_comm_mysim,
-                       getThisRankDuties(cr),
-                       dd_index(cartSetup.ntot, ddCellIndex),
-                       &cr->mpi_comm_mygroup);
-        MPI_Comm_size(cr->mpi_comm_mygroup, &cr->sizeOfMyGroupCommunicator);
+        MPI_Comm commMyGroup;
+        MPI_Comm_split(
+                cr->commMySim.comm(), getThisRankDuties(cr), dd_index(cartSetup.ntot, ddCellIndex), &commMyGroup);
+        cr->commMyGroup = gmx::MpiComm(commMyGroup);
 #else
         GMX_UNUSED_VALUE(ddCellIndex);
 #endif
@@ -1373,7 +1382,7 @@ static CartesianRankSetup split_communicator(const gmx::MDLogger& mdlog,
             default: gmx_fatal(FARGS, "Invalid ddRankOrder=%d", static_cast<int>(ddRankOrder));
         }
 
-        if (dd_simnode2pmenode(ddRankSetup, cartSetup, *pmeRanks, cr, cr->sim_nodeid) == -1)
+        if (dd_simnode2pmenode(ddRankSetup, cartSetup, *pmeRanks, cr, cr->commMySim.rank()) == -1)
         {
             cr->duty = DUTY_PME;
         }
@@ -1383,9 +1392,9 @@ static CartesianRankSetup split_communicator(const gmx::MDLogger& mdlog,
         }
 #if GMX_MPI
         /* Split the sim communicator into PP and PME only nodes */
-        MPI_Comm_split(cr->mpi_comm_mysim, getThisRankDuties(cr), cr->nodeid, &cr->mpi_comm_mygroup);
-        MPI_Comm_size(cr->mpi_comm_mygroup, &cr->sizeOfMyGroupCommunicator);
-        MPI_Comm_rank(cr->mpi_comm_mygroup, &cr->nodeid);
+        MPI_Comm commMyGroup;
+        MPI_Comm_split(cr->commMySim.comm(), getThisRankDuties(cr), cr->commMySim.rank(), &commMyGroup);
+        cr->commMyGroup = gmx::MpiComm(commMyGroup);
 #endif
     }
 
@@ -1413,12 +1422,9 @@ static CartesianRankSetup makeGroupCommunicators(const gmx::MDLogger& mdlog,
 {
     CartesianRankSetup cartSetup;
 
-    // As a default, both group and sim communicators are equal to the default communicator
-    cr->mpi_comm_mygroup = cr->mpiDefaultCommunicator;
-    cr->mpi_comm_mysim   = cr->mpiDefaultCommunicator;
-    cr->nnodes           = cr->sizeOfDefaultCommunicator;
-    cr->nodeid           = cr->rankInDefaultCommunicator;
-    cr->sim_nodeid       = cr->rankInDefaultCommunicator;
+    // As a default, both sim and group communicators are equal to the default communicator
+    cr->commMySim   = gmx::MpiComm(cr->mpiDefaultCommunicator);
+    cr->commMyGroup = gmx::MpiComm(cr->mpiDefaultCommunicator);
 
     if (ddRankSetup.usePmeOnlyRanks)
     {
@@ -1475,7 +1481,7 @@ static void setupGroupCommunication(const gmx::MDLogger&     mdlog,
     if (!thisRankHasDuty(cr, DUTY_PME))
     {
         /* Set up the commnuication to our PME node */
-        dd->pme_nodeid = dd_simnode2pmenode(ddRankSetup, cartSetup, pmeRanks, cr, cr->sim_nodeid);
+        dd->pme_nodeid = dd_simnode2pmenode(ddRankSetup, cartSetup, pmeRanks, cr, cr->commMySim.rank());
         dd->pme_receive_vir_ener = receive_vir_ener(dd, pmeRanks, cr);
         if (debug)
         {
@@ -2011,8 +2017,7 @@ static DDSystemInfo getSystemInfo(const gmx::MDLogger&              mdlog,
  * implemented. */
 static void checkDDGridSetup(const DDGridSetup&   ddGridSetup,
                              DDRole               ddRole,
-                             MPI_Comm             communicator,
-                             int                  numNodes,
+                             const gmx::MpiComm&  mpiComm,
                              const DomdecOptions& options,
                              const DDSettings&    ddSettings,
                              const DDSystemInfo&  systemInfo,
@@ -2030,13 +2035,13 @@ static void checkDDGridSetup(const DDGridSetup&   ddGridSetup,
                                   bC ? " or your LINCS settings" : "");
 
         gmx_fatal_collective(FARGS,
-                             communicator,
+                             mpiComm.comm(),
                              ddRole == DDRole::Main,
                              "There is no domain decomposition for %d ranks that is compatible "
                              "with the given box and a minimum cell size of %g nm\n"
                              "%s\n"
                              "Look in the log file for details on the domain decomposition",
-                             numNodes - ddGridSetup.numPmeOnlyRanks,
+                             mpiComm.size() - ddGridSetup.numPmeOnlyRanks,
                              cellsizeLimit,
                              message.c_str());
     }
@@ -2054,7 +2059,7 @@ static void checkDDGridSetup(const DDGridSetup&   ddGridSetup,
         {
             gmx_fatal_collective(
                     FARGS,
-                    communicator,
+                    mpiComm.comm(),
                     ddRole == DDRole::Main,
                     "The initial cell size (%f) is smaller than the cell size limit (%f), change "
                     "options -dd, -rdd or -rcon, see the log file for details",
@@ -2065,21 +2070,21 @@ static void checkDDGridSetup(const DDGridSetup&   ddGridSetup,
 
     const int numPPRanks =
             ddGridSetup.numDomains[XX] * ddGridSetup.numDomains[YY] * ddGridSetup.numDomains[ZZ];
-    if (numNodes - numPPRanks != ddGridSetup.numPmeOnlyRanks)
+    if (mpiComm.size() - numPPRanks != ddGridSetup.numPmeOnlyRanks)
     {
         gmx_fatal_collective(FARGS,
-                             communicator,
+                             mpiComm.comm(),
                              ddRole == DDRole::Main,
                              "The size of the domain decomposition grid (%d) does not match the "
                              "number of PP ranks (%d). The total number of ranks is %d",
                              numPPRanks,
-                             numNodes - ddGridSetup.numPmeOnlyRanks,
-                             numNodes);
+                             mpiComm.size() - ddGridSetup.numPmeOnlyRanks,
+                             mpiComm.size());
     }
     if (ddGridSetup.numPmeOnlyRanks > numPPRanks)
     {
         gmx_fatal_collective(FARGS,
-                             communicator,
+                             mpiComm.comm(),
                              ddRole == DDRole::Main,
                              "The number of separate PME ranks (%d) is larger than the number of "
                              "PP ranks (%d), this is not supported.",
@@ -2761,19 +2766,21 @@ DomainDecompositionBuilder::Impl::Impl(const MDLogger&           mdlog,
                                        bool                 canUseGpuPmeDecomposition) :
     mdlog_(mdlog), cr_(cr), options_(options), mtop_(mtop), ir_(ir), notifiers_(notifiers)
 {
-    GMX_LOG(mdlog_.info).appendTextFormatted("\nInitializing Domain Decomposition on %d ranks", cr_->sizeOfDefaultCommunicator);
+    GMX_LOG(mdlog_.info)
+            .appendTextFormatted("\nInitializing Domain Decomposition on %d ranks",
+                                 cr_->mpiDefaultCommunicator.size());
 
     ddSettings_ = getDDSettings(mdlog_, options_, mdrunOptions, ir_, useGpuForPme, canUseGpuPmeDecomposition);
 
     if (ddSettings_.eFlop > 1)
     {
         /* Ensure that we have different random flop counts on different ranks */
-        std::srand(1 + cr_->rankInDefaultCommunicator);
+        std::srand(1 + cr_->mpiDefaultCommunicator.rank());
     }
 
     systemInfo_ = getSystemInfo(mdlog_,
                                 MAIN(cr_) ? DDRole::Main : DDRole::Agent,
-                                cr->mpiDefaultCommunicator,
+                                cr->mpiDefaultCommunicator.comm(),
                                 options_,
                                 mtop_,
                                 ir_,
@@ -2783,7 +2790,7 @@ DomainDecompositionBuilder::Impl::Impl(const MDLogger&           mdlog,
                                 maxUpdateGroupRadius,
                                 xGlobal);
 
-    const int  numRanksRequested         = cr_->sizeOfDefaultCommunicator;
+    const int  numRanksRequested         = cr_->mpiDefaultCommunicator.size();
     const bool checkForLargePrimeFactors = (options_.numCells[0] <= 0);
 
 
@@ -2820,7 +2827,7 @@ DomainDecompositionBuilder::Impl::Impl(const MDLogger&           mdlog,
                                         numRanksRequested);
     ddGridSetup_ = getDDGridSetup(mdlog_,
                                   MAIN(cr_) ? DDRole::Main : DDRole::Agent,
-                                  cr->mpiDefaultCommunicator,
+                                  cr->mpiDefaultCommunicator.comm(),
                                   numRanksRequested,
                                   options_,
                                   ddSettings_,
@@ -2835,7 +2842,6 @@ DomainDecompositionBuilder::Impl::Impl(const MDLogger&           mdlog,
     checkDDGridSetup(ddGridSetup_,
                      MAIN(cr_) ? DDRole::Main : DDRole::Agent,
                      cr->mpiDefaultCommunicator,
-                     cr->sizeOfDefaultCommunicator,
                      options_,
                      ddSettings_,
                      systemInfo_,
@@ -2845,7 +2851,7 @@ DomainDecompositionBuilder::Impl::Impl(const MDLogger&           mdlog,
     cr_->npmenodes = ddGridSetup_.numPmeOnlyRanks;
 
     ddRankSetup_ = getDDRankSetup(
-            mdlog_, cr_->sizeOfDefaultCommunicator, options_.rankOrder, ddGridSetup_, ir_);
+            mdlog_, cr_->mpiDefaultCommunicator.size(), options_.rankOrder, ddGridSetup_, ir_);
 
     /* Generate the group communicator, also decides the duty of each rank */
     cartSetup_ = makeGroupCommunicators(
@@ -2901,7 +2907,8 @@ DomainDecompositionBuilder::Impl::build(LocalAtomSetManager*       atomSets,
     dd->atomSets = atomSets;
 
     dd->localTopologyChecker = std::make_unique<LocalTopologyChecker>(mdlog_,
-                                                                      cr_,
+                                                                      cr_->commMyGroup,
+                                                                      *dd,
                                                                       mtop_,
                                                                       options_.ddBondedChecking,
                                                                       localTopology,
@@ -3102,8 +3109,15 @@ void constructGpuHaloExchange(const t_commrec&                cr,
     {
         for (int pulse = cr.dd->gpuHaloExchange[d].size(); pulse < cr.dd->comm->cd[d].numPulses(); pulse++)
         {
-            cr.dd->gpuHaloExchange[d].push_back(std::make_unique<gmx::GpuHaloExchange>(
-                    cr.dd, d, cr.mpi_comm_mygroup, cr.mpi_comm_mysim, deviceStreamManager.context(), pulse, cr.useNvshmem, wcycle));
+            cr.dd->gpuHaloExchange[d].push_back(
+                    std::make_unique<gmx::GpuHaloExchange>(cr.dd,
+                                                           d,
+                                                           cr.commMyGroup.comm(),
+                                                           cr.commMySim.comm(),
+                                                           deviceStreamManager.context(),
+                                                           pulse,
+                                                           cr.useNvshmem,
+                                                           wcycle));
         }
     }
 }

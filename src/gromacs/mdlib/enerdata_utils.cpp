@@ -125,7 +125,7 @@ composeDhdl(const int lambdaIndex,
     return dhdlSum;
 }
 
-std::pair<std::vector<double>, std::vector<double>> ForeignLambdaTerms::getTerms(const t_commrec* cr) const
+std::pair<std::vector<double>, std::vector<double>> ForeignLambdaTerms::getTerms(const gmx::MpiComm& mpiComm) const
 {
     GMX_RELEASE_ASSERT(finalizedPotentialContributions_,
                        "The object needs to be finalized before calling getTerms");
@@ -136,9 +136,9 @@ std::pair<std::vector<double>, std::vector<double>> ForeignLambdaTerms::getTerms
         data[i]               = energies_[1 + i] - energies_[0];
         data[numLambdas_ + i] = composeDhdl(i, *allLambdas_, dhdl_[1 + i]);
     }
-    if (cr && cr->nnodes > 1)
+    if (mpiComm.size() > 1)
     {
-        gmx_sumd(data.size(), data.data(), cr);
+        mpiComm.sumReduce(data);
     }
     auto dataMid = data.begin() + numLambdas_;
 

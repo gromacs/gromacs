@@ -62,7 +62,6 @@
 #include "gromacs/mdlib/broadcaststructs.h"
 #include "gromacs/mdspan/extents.h"
 #include "gromacs/mdspan/layouts.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -318,9 +317,9 @@ void DensityFittingForceProvider::Impl::calculateForces(const ForceProviderInput
     if (parameters_.normalizeDensities_)
     {
         real sum = std::accumulate(std::begin(amplitudes), std::end(amplitudes), 0.);
-        if (havePPDomainDecomposition(&forceProviderInput.cr_))
+        if (forceProviderInput.mpiComm_.size() > 1)
         {
-            gmx_sum(1, &sum, &forceProviderInput.cr_);
+            forceProviderInput.mpiComm_.sumReduce(1, &sum);
         }
         for (real& amplitude : amplitudes)
         {
@@ -337,12 +336,11 @@ void DensityFittingForceProvider::Impl::calculateForces(const ForceProviderInput
     }
 
     // communicate grid
-    if (havePPDomainDecomposition(&forceProviderInput.cr_))
+    if (forceProviderInput.mpiComm_.size() > 2)
     {
         // \todo update to real once GaussTransform class returns real
-        gmx_sumf(gaussTransform_.view().mapping().required_span_size(),
-                 gaussTransform_.view().data(),
-                 &forceProviderInput.cr_);
+        forceProviderInput.mpiComm_.sumReduce(gaussTransform_.view().mapping().required_span_size(),
+                                              gaussTransform_.view().data());
     }
 
     // calculate grid derivative
@@ -387,7 +385,7 @@ void DensityFittingForceProvider::Impl::calculateForces(const ForceProviderInput
     }
 
     const float similarity = measure_.similarity(gaussTransform_.constView());
-    if (MAIN(&(forceProviderInput.cr_)))
+    if (forceProviderInput.mpiComm_.isMainRank())
     {
         // calculate corresponding potential energy
         const real energy = -similarity * parameters_.forceConstant_ * state_.adaptiveForceConstantScale_;

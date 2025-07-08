@@ -147,7 +147,7 @@ PmeSafePointer pmeInitWrapper(const t_inputrec*    inputRec,
 {
     const MDLogger dummyLogger;
     const auto     runMode = (mode == CodePath::CPU) ? PmeRunMode::CPU : PmeRunMode::Mixed;
-    t_commrec      dummyCommrec;
+    t_commrec      dummyCommrec(MpiComm(MpiComm::SingleRank{}));
     NumPmeDomains  numPmeDomains = { 1, 1 };
     // TODO: Need to use proper value when GPU PME decomposition code path is tested
     const real haloExtentForAtomDisplacement = 1.0;
@@ -224,7 +224,7 @@ void pmeInitAtoms(gmx_pme_t*               pme,
     const Index atomCount = coordinates.size();
     GMX_RELEASE_ASSERT(atomCount == gmx::ssize(charges), "Mismatch in atom data");
     PmeAtomComm* atc = nullptr;
-    t_commrec    dummyCommrec;
+    t_commrec    dummyCommrec(MpiComm(MpiComm::SingleRank{}));
 
     switch (mode)
     {

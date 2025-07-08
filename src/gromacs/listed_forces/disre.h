@@ -49,10 +49,10 @@
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/real.h"
 
+struct gmx_domdec_t;
 struct gmx_mtop_t;
 struct gmx_multisim_t;
 class history_t;
-struct t_commrec;
 struct t_disresdata;
 struct t_oriresdata;
 struct t_fcdata;
@@ -67,6 +67,7 @@ namespace gmx
 {
 template<typename>
 class ArrayRef;
+class MpiComm;
 } // namespace gmx
 
 //! Whether distance restraints are called from mdrun or from an analysis tool
@@ -102,7 +103,8 @@ void init_disres(FILE*                 fplog,
  * Calculates r and r^-3 (inst. and time averaged) for all pairs
  * and the ensemble averaged r^-6 (inst. and time averaged) for all restraints
  */
-void calc_disres_R_6(const t_commrec*      cr,
+void calc_disres_R_6(const gmx::MpiComm&   mpiComm,
+                     const gmx_domdec_t*   dd,
                      const gmx_multisim_t* ms,
                      int                   nfa,
                      const t_iatom*        fa,

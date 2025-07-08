@@ -453,7 +453,8 @@ static LJCombinationRule chooseLJPmeCombinationRule(const t_forcerec& forcerec)
 std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
                                                    const t_inputrec&    inputrec,
                                                    const t_forcerec&    forcerec,
-                                                   const t_commrec*     commrec,
+                                                   const MpiComm&       mpiComm,
+                                                   const gmx_domdec_t*  dd,
                                                    const gmx_hw_info_t& hardwareInfo,
                                                    const bool           useGpuForNonbonded,
                                                    const gmx::DeviceStreamManager* deviceStreamManager,
@@ -490,7 +491,7 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
     NbnxmKernelSetup kernelSetup = pick_nbnxn_kernel(
             mdlog, forcerec.use_simd_kernels, hardwareInfo, gpuPairlistLayout, nonbondedResource, inputrec);
 
-    const bool haveMultipleDomains = havePPDomainDecomposition(commrec);
+    const bool haveMultipleDomains = havePPDomainDecomposition(dd);
 
     bool bFEP_NonBonded = (forcerec.efep != FreeEnergyPerturbationType::No)
                           && haveFepPerturbedNBInteractions(mtop);
@@ -498,7 +499,7 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
             kernelSetup.kernelType, gpuPairlistLayout, bFEP_NonBonded, inputrec.rlist, haveMultipleDomains);
 
     const real effectiveAtomDensity = computeEffectiveAtomDensity(
-            coordinates, box, std::max(inputrec.rcoulomb, inputrec.rvdw), commrec->mpi_comm_mygroup);
+            coordinates, box, std::max(inputrec.rcoulomb, inputrec.rvdw), mpiComm.comm());
 
     if (kernelSetup.kernelType != NbnxmKernelType::Cpu1x1_PlainC)
     {
@@ -563,22 +564,21 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
     auto pairlistSets = std::make_unique<PairlistSets>(
             pairlistParams, haveMultipleDomains, minimumIlistCountForGpuBalancing);
 
-    auto pairSearch = std::make_unique<PairSearch>(
-            inputrec.pbcType,
-            EI_TPI(inputrec.eI),
-            haveDDAtomOrdering(*commrec) ? &commrec->dd->numCells : nullptr,
-            haveDDAtomOrdering(*commrec) ? &getDomdecZones(*commrec->dd) : nullptr,
-            pairlistParams.pairlistType,
-            bFEP_NonBonded,
-            localAtomOrderMatchesNbnxmOrder,
-            gmx_omp_nthreads_get(ModuleMultiThread::Pairsearch),
-            pinPolicy);
+    auto pairSearch = std::make_unique<PairSearch>(inputrec.pbcType,
+                                                   EI_TPI(inputrec.eI),
+                                                   (dd != nullptr) ? &dd->numCells : nullptr,
+                                                   (dd != nullptr) ? &getDomdecZones(*dd) : nullptr,
+                                                   pairlistParams.pairlistType,
+                                                   bFEP_NonBonded,
+                                                   localAtomOrderMatchesNbnxmOrder,
+                                                   gmx_omp_nthreads_get(ModuleMultiThread::Pairsearch),
+                                                   pinPolicy);
 
     std::unique_ptr<ExclusionChecker> exclusionChecker;
     if (inputrec.efep != FreeEnergyPerturbationType::No
         && (usingPmeOrEwald(inputrec.coulombtype) || usingLJPme(inputrec.vdwtype)))
     {
-        exclusionChecker = std::make_unique<ExclusionChecker>(commrec, mtop, observablesReducerBuilder);
+        exclusionChecker = std::make_unique<ExclusionChecker>(mpiComm, mtop, observablesReducerBuilder);
     }
 
     return std::make_unique<nonbonded_verlet_t>(std::move(pairlistSets),

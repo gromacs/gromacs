@@ -134,7 +134,8 @@ void do_md_trajectory_writing(FILE*                          fplog,
                 update_ekinstate(MAIN(cr) ? &state_global->ekinstate : nullptr,
                                  ekind,
                                  ekindataState == EkindataState::UsedNeedToReduce,
-                                 cr);
+                                 cr->commMyGroup,
+                                 cr->dd);
             }
 
             if (MAIN(cr))

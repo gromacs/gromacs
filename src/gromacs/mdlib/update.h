@@ -48,6 +48,7 @@
 #include "gromacs/utility/real.h"
 
 class ekinstate_t;
+struct gmx_domdec_t;
 class gmx_ekindata_t;
 struct gmx_enerdata_t;
 enum class PbcType;
@@ -58,12 +59,12 @@ struct t_inputrec;
 struct t_nrnb;
 class t_state;
 enum class ParticleType;
-struct t_commrec;
 
 namespace gmx
 {
 class BoxDeformation;
 class Constraints;
+class MpiComm;
 template<typename T>
 class ArrayRefWithPadding;
 
@@ -125,7 +126,7 @@ public:
      * \param[in]  ekind                     Kinetic energy data (for temperature coupling, energy groups, etc.).
      * \param[in]  parrinelloRahmanM         Parrinello-Rahman velocity scaling matrix.
      * \param[in]  updatePart                What should be updated, coordinates or velocities. This enum only used in VV integrator.
-     * \param[in]  cr                        Comunication record  (Old comment: these shouldn't be here -- need to think about it).
+     * \param[in]  dd                        Domain decomposition object, nullptr without DD.
      * \param[in]  haveConstraints           If the system has constraints.
      */
     void update_coords(const t_inputrec&                                inputRecord,
@@ -141,7 +142,7 @@ public:
                        const gmx_ekindata_t*                            ekind,
                        const Matrix3x3&                                 parrinelloRahmanM,
                        int                                              updatePart,
-                       const t_commrec*                                 cr,
+                       const gmx_domdec_t*                              dd,
                        bool                                             haveConstraints);
 
     /*! \brief Finalize the coordinate update.
@@ -174,7 +175,7 @@ public:
      * \param[in]  ptype        The list of particle types.
      * \param[in]  invMass      Inverse atomic mass per atom, 0 for vsites and shells.
      * \param[in]  state        System state object.
-     * \param[in]  cr           Comunication record.
+     * \param[in]  dd           Domain decomposition object, pass nullptr when DD is not in use.
      * \param[in]  nrnb         Cycle counters.
      * \param[in]  wcycle       Wall-clock cycle counter.
      * \param[in]  constr       Constraints object. The constraints are applied
@@ -189,7 +190,7 @@ public:
                                gmx::ArrayRef<const ParticleType> ptype,
                                gmx::ArrayRef<const real>         invMass,
                                t_state*                          state,
-                               const t_commrec*                  cr,
+                               const gmx_domdec_t*               dd,
                                t_nrnb*                           nrnb,
                                gmx_wallcycle*                    wcycle,
                                gmx::Constraints*                 constr,
@@ -269,13 +270,20 @@ void init_ekinstate(ekinstate_t* ekinstate, const t_inputrec* ir);
  * \param[out] ekinstate  The kinetic energy state to update
  * \param[in]  ekind      The kinetic energy data to store
  * \param[in]  sumEkin    Whether kinetic energy terms still need to be summed over all ranks
- * \param[in]  cr         Communication record, needed when sumEkin==true
+ * \param[in]  mpiComm    Communication data for my group, needed when sumEkin==true
+ * \param[in]  dd         Domain decomposition object, pass nullptr when DD is not in use
  */
-void update_ekinstate(ekinstate_t* ekinstate, const gmx_ekindata_t* ekind, bool sumEkin, const t_commrec* cr);
+void update_ekinstate(ekinstate_t*          ekinstate,
+                      const gmx_ekindata_t* ekind,
+                      bool                  sumEkin,
+                      const gmx::MpiComm&   mpiComm,
+                      const gmx_domdec_t*   dd);
 
 /*! \brief Restores data from \p ekinstate to \p ekind, then broadcasts it
    to the rest of the simulation */
-void restore_ekinstate_from_state(const t_commrec* cr, gmx_ekindata_t* ekind, const ekinstate_t* ekinstate);
+void restore_ekinstate_from_state(const gmx::MpiComm& mpiComm,
+                                  gmx_ekindata_t*     ekind,
+                                  const ekinstate_t*  ekinstate);
 
 /*! \brief Computes the atom range for a thread to operate on, ensuring SIMD aligned ranges
  *

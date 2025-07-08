@@ -70,6 +70,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
@@ -686,8 +687,9 @@ pull_t* set_pull_init(t_inputrec*                    ir,
     t_pbc   pbc;
 
     pull_params_t*           pull = ir->pull.get();
+    const gmx::MpiComm       mpiComm(gmx::MpiComm(gmx::MpiComm::SingleRank{}));
     gmx::LocalAtomSetManager atomSets;
-    pull_work     = init_pull(nullptr, pull, ir, mtop, nullptr, &atomSets, lambda);
+    pull_work     = init_pull(nullptr, pull, ir, mtop, mpiComm, nullptr, &atomSets, lambda);
     auto  mdAtoms = gmx::makeMDAtoms(nullptr, mtop, *ir, false);
     auto* md      = mdAtoms->mdatoms();
     atoms2md(mtop, *ir, -1, {}, mtop.natoms, mdAtoms.get());
@@ -702,9 +704,9 @@ pull_t* set_pull_init(t_inputrec*                    ir,
 
     if (pull->bSetPbcRefToPrevStepCOM)
     {
-        initPullComFromPrevStep(nullptr, pull_work, md->massT, pbc, x);
+        initPullComFromPrevStep(mpiComm, pull_work, md->massT, pbc, x);
     }
-    pull_calc_coms(nullptr, pull_work, md->massT, pbc, t_start, x, {});
+    pull_calc_coms(mpiComm, pull_work, md->massT, pbc, t_start, x, {});
 
     for (int g = 0; g < pull->ngroup; g++)
     {

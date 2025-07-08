@@ -91,7 +91,7 @@ TprReader::TprReader(std::string filename)
 
     // init forcerec
     t_forcerec          forceRecord;
-    t_commrec           commrec{};
+    t_commrec           commrec(gmx::MpiComm(gmx::MpiComm::SingleRank{}));
     gmx::ForceProviders forceProviders;
     forceRecord.forceProviders = &forceProviders;
     init_forcerec(nullptr,

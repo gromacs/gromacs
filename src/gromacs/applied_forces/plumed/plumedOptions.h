@@ -47,11 +47,12 @@
 
 #include "gromacs/utility/real.h"
 
+struct gmx_domdec_t;
 struct gmx_mtop_t;
-struct t_commrec;
 
 namespace gmx
 {
+class MpiComm;
 enum class StartingBehavior;
 struct EnsembleTemperature;
 
@@ -59,7 +60,8 @@ struct PlumedOptions
 {
     std::string         plumedFile_;
     int                 natoms_;
-    const t_commrec*    cr_;
+    const MpiComm*      mpiComm_;
+    const gmx_domdec_t* dd_;
     real                simulationTimeStep_;
     std::optional<real> ensembleTemperature_{};
     StartingBehavior    startingBehavior_{};
@@ -94,10 +96,10 @@ public:
      * @param startingBehavior the starting behaviopur object
      */
     void setStartingBehavior(const StartingBehavior& startingBehavior);
-    /*! @brief Sets the address to the communication record object
-     * @param cr  the Communication Record object
+    /*! @brief Sets the address to the communication object
+     * @param mpiComm  the Communication object
      */
-    void setComm(const t_commrec& cr);
+    void setComm(const MpiComm& mpiComm);
     //! @brief returns the active status of the module
     bool active() const;
 

@@ -129,8 +129,8 @@ public:
      *     by taking a PbcType as parameter
      *   - access the MDLogger to log messages
      *     by taking a const MDLogger& as parameter
-     *   - access the communication record
-     *     by taking a const t_commrec& as parameter
+     *   - access the communication object
+     *     by taking a const MpiComm& as parameter
      *   - notify when atoms are redistributed
      *     by taking a const MDModulesAtomsRedistributedSignal as parameter
      */
@@ -173,8 +173,9 @@ public:
         notifiers->simulationSetupNotifier_.subscribe(setLoggerFunction);
 
         // set communication record during simulation setup
-        const auto setCommRecFunction = [this](const t_commrec& cr) { nnpotOptions_.setCommRec(cr); };
-        notifiers->simulationSetupNotifier_.subscribe(setCommRecFunction);
+        const auto setCommFunction = [this](const MpiComm& mpiComm)
+        { nnpotOptions_.setComm(mpiComm); };
+        notifiers->simulationSetupNotifier_.subscribe(setCommFunction);
 
         // subscribe to DD notification to trigger atom number and index gathering
         const auto notifyDDFunction = [this](const MDModulesAtomsRedistributedSignal& /*signal*/)

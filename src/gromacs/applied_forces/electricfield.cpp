@@ -57,7 +57,6 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/iforceprovider.h"
 #include "gromacs/mdtypes/imdmodule.h"
@@ -70,6 +69,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/keyvaluetreetransform.h"
+#include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/strconvert.h"
@@ -318,8 +318,8 @@ void ElectricField::calculateForces(const ForceProviderInput& forceProviderInput
 {
     if (isActive())
     {
-        const double     t  = forceProviderInput.t_;
-        const t_commrec& cr = forceProviderInput.cr_;
+        const double   t       = forceProviderInput.t_;
+        const MpiComm& mpiComm = forceProviderInput.mpiComm_;
 
         // NOTE: The non-conservative electric field does not have a virial
         ArrayRef<RVec> f = forceProviderOutput->forceWithVirial_.force_;
@@ -339,7 +339,7 @@ void ElectricField::calculateForces(const ForceProviderInput& forceProviderInput
                 }
             }
         }
-        if (MAIN(&cr) && fpField_ != nullptr)
+        if (mpiComm.isMainRank() && fpField_ != nullptr)
         {
             printComponents(t);
         }

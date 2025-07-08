@@ -50,6 +50,7 @@ namespace gmx
 {
 template<typename T>
 class ArrayRef;
+class MpiComm;
 class ObservablesReducer;
 } // namespace gmx
 
@@ -61,7 +62,7 @@ void global_stat_destroy(gmx_global_stat_t gs);
 
 /*! \brief All-reduce energy-like quantities over cr->mpi_comm_mysim  */
 void global_stat(const gmx_global_stat&   gs,
-                 const t_commrec*         cr,
+                 const gmx::MpiComm&      mpiComm,
                  gmx_enerdata_t*          enerd,
                  tensor                   fvir,
                  tensor                   svir,

@@ -61,12 +61,12 @@
 #include "colvarproxygromacs.h"
 
 enum class PbcType : int;
-struct t_commrec;
 struct gmx_multisim_t;
 
 
 namespace gmx
 {
+class MpiComm;
 class KeyValueTreeObject;
 class KeyValueTreeObjectBuilder;
 class LocalAtomSetManager;
@@ -183,7 +183,7 @@ public:
      * \param[in] ensembleTemperature the constant ensemble temperature
      * \param[in] seed The colvars seed for random number generator
      * \param[in] localAtomSetManager Atom Manager to retrieve Colvars index atoms
-     * \param[in] cr Communication Record
+     * \param[in] mpiComm Communication object for my group
      * \param[in] ms Multi-simulation record
      * \param[in] simulationTimeStep The simulation time step
      * \param[in] colvarsCoords The colvars atoms coordinates retrived from the TPR's KVT
@@ -198,7 +198,7 @@ public:
                          real                                      ensembleTemperature,
                          int                                       seed,
                          LocalAtomSetManager*                      localAtomSetManager,
-                         const t_commrec*                          cr,
+                         const MpiComm&                            mpiComm,
                          const gmx_multisim_t*                     ms,
                          double                                    simulationTimeStep,
                          const std::vector<RVec>&                  colvarsCoords,

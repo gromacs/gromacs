@@ -358,14 +358,15 @@ static void get_f_norm_max(const t_commrec*         cr,
     }
     if (PAR(cr))
     {
-        snew(sum, 2 * cr->nnodes + 1);
-        sum[2 * cr->nodeid]     = fmax2;
-        sum[2 * cr->nodeid + 1] = a_max;
-        sum[2 * cr->nnodes]     = fnorm2;
-        gmx_sumd(2 * cr->nnodes + 1, sum, cr);
-        fnorm2 = sum[2 * cr->nnodes];
+        const gmx::MpiComm& mpiComm = cr->commMyGroup;
+        snew(sum, 2 * mpiComm.size() + 1);
+        sum[2 * mpiComm.rank()]     = fmax2;
+        sum[2 * mpiComm.rank() + 1] = a_max;
+        sum[2 * mpiComm.size()]     = fnorm2;
+        gmx_sumd(2 * mpiComm.size() + 1, sum, cr);
+        fnorm2 = sum[2 * mpiComm.size()];
         /* Determine the global maximum */
-        for (i = 0; i < cr->nnodes; i++)
+        for (i = 0; i < mpiComm.size(); i++)
         {
             if (sum[2 * i] > fmax2)
             {
@@ -792,14 +793,14 @@ static bool do_em_step(const t_commrec*                          cr,
                                   nullptr,
                                   gmx::ConstraintVariable::Positions);
 
-        if (cr->nnodes > 1)
+        if (cr->commMyGroup.size() > 1)
         {
             /* This global reduction will affect performance at high
              * parallelization, but we can not really avoid it.
              * But usually EM is not run at high parallelization.
              */
             int reductionBuffer = static_cast<int>(!validStep);
-            gmx_sumi(1, &reductionBuffer, cr);
+            cr->commMyGroup.sumReduce(1, &reductionBuffer);
             validStep = (reductionBuffer == 0);
         }
 
@@ -1016,7 +1017,7 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
         // We need to generate a new pairlist when one atom moved more than half the buffer size
         ArrayRef<const RVec> localCoordinates =
                 ArrayRef<const RVec>(ems->s.x).subArray(0, mdAtoms->mdatoms()->homenr);
-        bNS = 2 * maxCoordinateDifference(pairSearchCoordinates, localCoordinates, cr->mpi_comm_mygroup)
+        bNS = 2 * maxCoordinateDifference(pairSearchCoordinates, localCoordinates, cr->commMyGroup.comm())
               > bufferSize;
     }
 
@@ -1130,7 +1131,7 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
         wallcycle_start(wcycle, WallCycleCounter::MoveE);
 
         global_stat(*gstat,
-                    cr,
+                    cr->commMyGroup,
                     enerd,
                     force_vir,
                     shake_vir,
@@ -3217,7 +3218,6 @@ void LegacySimulator::do_steep()
 void LegacySimulator::do_nm()
 {
     const char*         NM = "Normal Mode Analysis";
-    int                 nnodes;
     gmx_global_stat_t   gstat;
     tensor              vir, pres;
     rvec                mu_tot = { 0 };
@@ -3360,13 +3360,14 @@ void LegacySimulator::do_nm()
                 numSteps);
     }
 
-    nnodes = cr_->nnodes;
-
     /* Make evaluate_energy do a single node force calculation */
-    cr_->nnodes = 1;
+    t_commrec crSingleRank(gmx::MpiComm(gmx::MpiComm::SingleRank{}));
+    crSingleRank.npmenodes = cr_->npmenodes;
+    crSingleRank.duty      = cr_->duty;
+    crSingleRank.dd        = cr_->dd;
     EnergyEvaluator energyEvaluator{ fpLog_,
                                      mdLog_,
-                                     cr_,
+                                     &crSingleRank,
                                      ms_,
                                      topGlobal_,
                                      top_,
@@ -3388,7 +3389,6 @@ void LegacySimulator::do_nm()
                                      -1,
                                      {} };
     energyEvaluator.run(&state_work, mu_tot, vir, pres, -1, TRUE, 0);
-    cr_->nnodes = nnodes;
 
     /* if forces are not small, warn user */
     get_state_f_norm_max(cr_, &(inputRec_->opts), mdatoms, &state_work);
@@ -3413,11 +3413,13 @@ void LegacySimulator::do_nm()
      *
      ************************************************************/
 
+    const int numRanks = cr_->commMyGroup.size();
+
     /* Steps are divided one by one over the nodes */
     bool bNS          = true;
     auto state_work_x = makeArrayRef(state_work.s.x);
     auto state_work_f = state_work.f.view().force();
-    for (Index aid = cr_->nodeid; aid < gmx::ssize(atom_index); aid += nnodes)
+    for (Index aid = cr_->commMyGroup.rank(); aid < gmx::ssize(atom_index); aid += numRanks)
     {
         size_t atom = atom_index[aid];
         for (size_t d = 0; d < DIM; d++)
@@ -3439,12 +3441,11 @@ void LegacySimulator::do_nm()
                 }
 
                 /* Make evaluate_energy do a single node force calculation */
-                cr_->nnodes = 1;
                 if (shellfc)
                 {
                     /* Now is the time to relax the shells */
                     relax_shell_flexcon(fpLog_,
-                                        cr_,
+                                        &crSingleRank,
                                         ms_,
                                         mdrunOptions_.verbose,
                                         nullptr,
@@ -3484,8 +3485,6 @@ void LegacySimulator::do_nm()
                     energyEvaluator.run(&state_work, mu_tot, vir, pres, aid * 2 + dx, FALSE, step);
                 }
 
-                cr_->nnodes = nnodes;
-
                 if (dx == 0)
                 {
                     std::copy(state_work_f.begin(), state_work_f.begin() + atom_index.size(), fneg.begin());
@@ -3507,18 +3506,29 @@ void LegacySimulator::do_nm()
             {
 #if GMX_MPI
 #    define mpi_type GMX_MPI_REAL
-                MPI_Send(dfdx[0], atom_index.size() * DIM, mpi_type, MAIN(cr_), cr_->nodeid, cr_->mpi_comm_mygroup);
+                MPI_Send(dfdx[0],
+                         atom_index.size() * DIM,
+                         mpi_type,
+                         MAIN(cr_),
+                         cr_->commMyGroup.rank(),
+                         cr_->commMyGroup.comm());
 #endif
             }
             else
             {
-                for (Index node = 0; (node < nnodes && aid + node < gmx::ssize(atom_index)); node++)
+                for (Index node = 0; (node < numRanks && aid + node < gmx::ssize(atom_index)); node++)
                 {
                     if (node > 0)
                     {
 #if GMX_MPI
                         MPI_Status stat;
-                        MPI_Recv(dfdx[0], atom_index.size() * DIM, mpi_type, node, node, cr_->mpi_comm_mygroup, &stat);
+                        MPI_Recv(dfdx[0],
+                                 atom_index.size() * DIM,
+                                 mpi_type,
+                                 node,
+                                 node,
+                                 cr_->commMyGroup.comm(),
+                                 &stat);
 #    undef mpi_type
 #endif
                     }
@@ -3557,7 +3567,7 @@ void LegacySimulator::do_nm()
         {
             fprintf(stderr,
                     "\rFinished step %d out of %td",
-                    std::min<int>(atom + nnodes, atom_index.size()),
+                    std::min<int>(atom + numRanks, atom_index.size()),
                     gmx::ssize(atom_index));
             std::fflush(stderr);
         }

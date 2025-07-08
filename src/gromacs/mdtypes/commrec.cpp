@@ -40,9 +40,16 @@
 #include <utility>
 
 #include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/gmxmpi.h"
 
-t_commrec::t_commrec() = default;
+t_commrec::t_commrec(const gmx::MpiComm& mpiComm) :
+    commMySim(mpiComm), commMyGroup(mpiComm), mpiDefaultCommunicator(mpiComm), duty(DUTY_PP | DUTY_PME)
+{
+#if GMX_LIB_MPI
+    GMX_RELEASE_ASSERT(gmx_mpi_initialized(), "Must have initialized MPI before building commrec");
+#endif
+}
 
 t_commrec::~t_commrec()
 {
@@ -50,13 +57,13 @@ t_commrec::~t_commrec()
     // TODO We need to be able to free communicators, but the
     // structure of the commrec and domdec initialization code makes
     // it hard to avoid both leaks and double frees.
-    bool mySimIsMyGroup = (mpi_comm_mysim == mpi_comm_mygroup);
-    if (mpi_comm_mysim != MPI_COMM_NULL && mpi_comm_mysim != MPI_COMM_WORLD)
+    const bool mySimIsMyGroup = (commMySim.comm() == commMyGroup.comm());
+    if (commMySim.comm() != MPI_COMM_NULL && commMySim.comm() != MPI_COMM_WORLD)
     {
         // TODO see above
         // MPI_Comm_free(&cr->mpi_comm_mysim);
     }
-    if (!mySimIsMyGroup && mpi_comm_mygroup != MPI_COMM_NULL && mpi_comm_mygroup != MPI_COMM_WORLD)
+    if (!mySimIsMyGroup && commMyGroup.comm() != MPI_COMM_NULL && commMyGroup.comm() != MPI_COMM_WORLD)
     {
         // TODO see above
         // MPI_Comm_free(&cr->mpi_comm_mygroup);

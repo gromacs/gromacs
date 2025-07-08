@@ -130,7 +130,7 @@ private:
     //! Constructor
     ModularSimulatorAlgorithm(std::string              topologyName,
                               FILE*                    fplog,
-                              t_commrec*               cr,
+                              t_commrec&               cr,
                               const MDLogger&          mdlog,
                               const MdrunOptions&      mdrunOptions,
                               const t_inputrec*        inputrec,
@@ -288,7 +288,7 @@ private:
     //! Handles logging.
     FILE* fpLog_;
     //! Handles communication.
-    t_commrec* cr_;
+    t_commrec& cr_;
     //! Handles logging.
     const MDLogger& mdLog_;
     //! Contains command-line options to mdrun.

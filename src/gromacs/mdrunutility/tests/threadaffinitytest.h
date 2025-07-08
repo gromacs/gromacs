@@ -43,15 +43,13 @@
 
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/mdrunutility/threadaffinity.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/physicalnodecommunicator.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/loggertest.h"
-
-struct t_commrec;
 
 namespace gmx
 {
@@ -157,7 +155,7 @@ public:
         analyzeThreadsOnThisNode(
                 comm, numThreadsOnThisRank, &numThreadsOnThisNode, &indexWithinNodeOfFirstThreadOnThisRank);
         gmx_set_thread_affinity(logHelper_.logger(),
-                                &cr_,
+                                mpiComm_,
                                 &hwOpt_,
                                 *hwTop_,
                                 numThreadsOnThisRank,
@@ -167,7 +165,7 @@ public:
     }
 
 private:
-    t_commrec                         cr_;
+    MpiComm                           mpiComm_;
     gmx_hw_opt_t                      hwOpt_;
     std::unique_ptr<HardwareTopology> hwTop_;
     MockThreadAffinityAccess          affinityAccess_;

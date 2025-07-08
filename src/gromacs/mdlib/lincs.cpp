@@ -73,7 +73,6 @@
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdrunutility/multisim.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/observablesreducer.h"
@@ -1041,7 +1040,7 @@ static void do_lincs(ArrayRefWithPadding<const RVec> xPadded,
                      Lincs*                          lincsd,
                      int                             th,
                      ArrayRef<const real>            invmass,
-                     const t_commrec*                cr,
+                     gmx_domdec_t*                   dd,
                      bool                            bCalcDHDL,
                      real                            wangle,
                      bool*                           bWarn,
@@ -1184,16 +1183,16 @@ static void do_lincs(ArrayRefWithPadding<const RVec> xPadded,
 
     for (int iter = 0; iter < lincsd->nIter; iter++)
     {
-        if ((lincsd->bCommIter && haveDDAtomOrdering(*cr) && cr->dd->constraints))
+        if ((lincsd->bCommIter && dd != nullptr && dd->constraints))
         {
 #pragma omp barrier
 #pragma omp master
             {
                 /* Communicate the corrected non-local coordinates */
-                if (haveDDAtomOrdering(*cr))
+                if (dd != nullptr)
                 {
                     wallcycle_sub_start(wcycle, WallCycleSubCounter::ConstrComm);
-                    dd_move_x_constraints(cr->dd, box, xpPadded.unpaddedArrayRef(), ArrayRef<RVec>(), FALSE);
+                    dd_move_x_constraints(dd, box, xpPadded.unpaddedArrayRef(), ArrayRef<RVec>(), FALSE);
                     wallcycle_sub_stop(wcycle, WallCycleSubCounter::ConstrComm);
                 }
             }
@@ -2035,7 +2034,7 @@ void set_lincs(const InteractionDefinitions& idef,
                ArrayRef<const real>          invmass,
                const real                    lambda,
                bool                          bDynamics,
-               const t_commrec*              cr,
+               const gmx_domdec_t*           dd,
                Lincs*                        li)
 {
     li->nc_real = 0;
@@ -2071,17 +2070,17 @@ void set_lincs(const InteractionDefinitions& idef,
     }
 
     int natoms;
-    if (haveDDAtomOrdering(*cr))
+    if (dd != nullptr)
     {
-        if (cr->dd->constraints)
+        if (dd->constraints)
         {
             int start;
 
-            dd_get_constraint_range(*cr->dd, &start, &natoms);
+            dd_get_constraint_range(*dd, &start, &natoms);
         }
         else
         {
-            natoms = dd_numHomeAtoms(*cr->dd);
+            natoms = dd_numHomeAtoms(*dd);
         }
     }
     else
@@ -2105,7 +2104,7 @@ void set_lincs(const InteractionDefinitions& idef,
     li->blnr.resize(numEntries + 1);
     li->bllen.resize(numEntries);
     li->tmpv.resizeWithPadding(numEntries);
-    if (haveDDAtomOrdering(*cr))
+    if (dd != nullptr)
     {
         li->nlocat.resize(numEntries);
     }
@@ -2255,7 +2254,7 @@ void set_lincs(const InteractionDefinitions& idef,
     /* Without DD we order the blbnb matrix to optimize memory access.
      * With DD the overhead of sorting is more than the gain during access.
      */
-    bSortMatrix = !haveDDAtomOrdering(*cr);
+    bSortMatrix = (dd == nullptr);
 
     li->blbnb.resize(li->ncc);
 
@@ -2278,7 +2277,7 @@ void set_lincs(const InteractionDefinitions& idef,
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
     }
 
-    if (cr->dd == nullptr)
+    if (dd == nullptr)
     {
         /* Since the matrix is static, we should free some memory */
         li->blbnb.resize(li->ncc);
@@ -2288,7 +2287,7 @@ void set_lincs(const InteractionDefinitions& idef,
     li->blmf1.resize(li->ncc);
     li->tmpncc.resize(li->ncc);
 
-    gmx::ArrayRef<const int> nlocat_dd = dd_constraints_nlocalatoms(cr->dd);
+    gmx::ArrayRef<const int> nlocat_dd = dd_constraints_nlocalatoms(dd);
     if (!nlocat_dd.empty())
     {
         /* Convert nlocat from local topology to LINCS constraint indexing */
@@ -2445,7 +2444,7 @@ bool constrain_lincs(bool                            computeRmsd,
                      int64_t                         step,
                      Lincs*                          lincsd,
                      ArrayRef<const real>            invmass,
-                     const t_commrec*                cr,
+                     gmx_domdec_t*                   dd,
                      const gmx_multisim_t*           ms,
                      ArrayRefWithPadding<const RVec> xPadded,
                      ArrayRefWithPadding<RVec>       xprimePadded,
@@ -2473,7 +2472,7 @@ bool constrain_lincs(bool                            computeRmsd,
      */
     bool bCalcDHDL = (ir.efep != FreeEnergyPerturbationType::No && dvdlambda != nullptr);
 
-    if (lincsd->nc == 0 && cr->dd == nullptr)
+    if (lincsd->nc == 0 && dd == nullptr)
     {
         return bOK;
     }
@@ -2536,8 +2535,8 @@ bool constrain_lincs(bool                            computeRmsd,
                     "       Before LINCS          %.6f    %.6f %6d %6d\n",
                     std::sqrt(deviations.sumSquaredDeviation / deviations.numConstraints),
                     deviations.maxDeviation,
-                    ddglatnr(cr->dd, lincsd->atoms[deviations.indexOfMaxDeviation].index1),
-                    ddglatnr(cr->dd, lincsd->atoms[deviations.indexOfMaxDeviation].index2));
+                    ddglatnr(dd, lincsd->atoms[deviations.indexOfMaxDeviation].index1),
+                    ddglatnr(dd, lincsd->atoms[deviations.indexOfMaxDeviation].index2));
         }
 
         /* This bWarn var can be updated by multiple threads
@@ -2562,7 +2561,7 @@ bool constrain_lincs(bool                            computeRmsd,
                          lincsd,
                          th,
                          invmass,
-                         cr,
+                         dd,
                          bCalcDHDL,
                          ir.LincsWarnAngle,
                          &bWarn,
@@ -2609,8 +2608,8 @@ bool constrain_lincs(bool                            computeRmsd,
                         "        After LINCS          %.6f    %.6f %6d %6d\n\n",
                         std::sqrt(deviations.sumSquaredDeviation / deviations.numConstraints),
                         deviations.maxDeviation,
-                        ddglatnr(cr->dd, lincsd->atoms[deviations.indexOfMaxDeviation].index1),
-                        ddglatnr(cr->dd, lincsd->atoms[deviations.indexOfMaxDeviation].index2));
+                        ddglatnr(dd, lincsd->atoms[deviations.indexOfMaxDeviation].index1),
+                        ddglatnr(dd, lincsd->atoms[deviations.indexOfMaxDeviation].index2));
             }
 
             if (bWarn)
@@ -2632,11 +2631,11 @@ bool constrain_lincs(bool                            computeRmsd,
                             simMesg.c_str(),
                             std::sqrt(deviations.sumSquaredDeviation / deviations.numConstraints),
                             deviations.maxDeviation,
-                            ddglatnr(cr->dd, lincsd->atoms[deviations.indexOfMaxDeviation].index1),
-                            ddglatnr(cr->dd, lincsd->atoms[deviations.indexOfMaxDeviation].index2));
+                            ddglatnr(dd, lincsd->atoms[deviations.indexOfMaxDeviation].index1),
+                            ddglatnr(dd, lincsd->atoms[deviations.indexOfMaxDeviation].index2));
 
                     lincs_warning(
-                            cr->dd, x, xprime, pbc, lincsd->nc, lincsd->atoms, lincsd->bllen, ir.LincsWarnAngle, maxwarn, warncount);
+                            dd, x, xprime, pbc, lincsd->nc, lincsd->atoms, lincsd->bllen, ir.LincsWarnAngle, maxwarn, warncount);
                 }
                 bOK = (deviations.maxDeviation < 0.5);
             }

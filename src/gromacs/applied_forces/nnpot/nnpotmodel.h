@@ -44,12 +44,12 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 
-struct t_commrec;
 struct gmx_enerdata_t;
 enum class PbcType;
 
 namespace gmx
 {
+class MpiComm;
 
 /*! \brief NNPot Module
  *
@@ -78,8 +78,8 @@ public:
                                matrix*,
                                PbcType*) = 0;
 
-    //! set communication record for possible communication of input/output data between ranks
-    virtual void setCommRec(const t_commrec*) = 0;
+    //! set communication object for possible communication of input/output data between ranks
+    virtual void setComm(const MpiComm&) = 0;
 
     //! helper function to check if model outputs forces
     virtual bool outputsForces() const = 0;

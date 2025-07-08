@@ -869,7 +869,13 @@ void GpuHaloExchangeNvshmemHelper::reinit()
     {
 #if GMX_MPI
         // recv remote data of num of pulses in each dim.
-        MPI_Recv(numDimsAndPulses_.data(), cr_.dd->ndim, MPI_INT, peerRank_.value(), 0, cr_.mpi_comm_mysim, MPI_STATUS_IGNORE);
+        MPI_Recv(numDimsAndPulses_.data(),
+                 cr_.dd->ndim,
+                 MPI_INT,
+                 peerRank_.value(),
+                 0,
+                 cr_.commMySim.comm(),
+                 MPI_STATUS_IGNORE);
 #endif
     }
     else
@@ -883,7 +889,12 @@ void GpuHaloExchangeNvshmemHelper::reinit()
         // to send the number of pulses data to PME rank.
         if (cr_.dd->pme_receive_vir_ener)
         {
-            MPI_Send(numDimsAndPulses_.data(), cr_.dd->ndim, MPI_INT, cr_.dd->pme_nodeid, 0, cr_.mpi_comm_mysim);
+            MPI_Send(numDimsAndPulses_.data(),
+                     cr_.dd->ndim,
+                     MPI_INT,
+                     cr_.dd->pme_nodeid,
+                     0,
+                     cr_.commMySim.comm());
         }
 #endif
     }
@@ -923,7 +934,7 @@ void GpuHaloExchangeNvshmemHelper::reinit()
                     int recvBufSize = 1;
                     int newSize     = 1;
 #if GMX_MPI
-                    MPI_Allreduce(&newSize, &recvBufSize, 1, MPI_INT, MPI_MAX, cr_.mpi_comm_mysim);
+                    MPI_Allreduce(&newSize, &recvBufSize, 1, MPI_INT, MPI_MAX, cr_.commMySim.comm());
 #endif
                     reallocateDeviceBuffer(&d_recvBuf_[totalDimsAndPulses],
                                            recvBufSize,

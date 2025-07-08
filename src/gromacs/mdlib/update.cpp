@@ -141,7 +141,7 @@ public:
                        const gmx_ekindata_t*                       ekind,
                        const Matrix3x3&                            parrinelloRahmanM,
                        int                                         UpdatePart,
-                       const t_commrec*                            cr,
+                       const gmx_domdec_t*                         dd,
                        bool                                        haveConstraints);
 
     void finish_update(const t_inputrec&                   inputRecord,
@@ -159,7 +159,7 @@ public:
                                gmx::ArrayRef<const ParticleType> ptype,
                                gmx::ArrayRef<const real>         invMass,
                                t_state*                          state,
-                               const t_commrec*                  cr,
+                               const gmx_domdec_t*               dd,
                                t_nrnb*                           nrnb,
                                gmx_wallcycle*                    wcycle,
                                gmx::Constraints*                 constr,
@@ -241,7 +241,7 @@ void Update::update_coords(const t_inputrec&                           inputReco
                            const gmx_ekindata_t*                       ekind,
                            const Matrix3x3&                            parrinelloRahmanM,
                            int                                         updatePart,
-                           const t_commrec*                            cr,
+                           const gmx_domdec_t*                         dd,
                            const bool                                  haveConstraints)
 {
     impl_->update_coords(inputRecord,
@@ -257,7 +257,7 @@ void Update::update_coords(const t_inputrec&                           inputReco
                          ekind,
                          parrinelloRahmanM,
                          updatePart,
-                         cr,
+                         dd,
                          haveConstraints);
 }
 
@@ -279,7 +279,7 @@ void Update::update_sd_second_half(const t_inputrec&                 inputRecord
                                    gmx::ArrayRef<const ParticleType> ptype,
                                    gmx::ArrayRef<const real>         invMass,
                                    t_state*                          state,
-                                   const t_commrec*                  cr,
+                                   const gmx_domdec_t*               dd,
                                    t_nrnb*                           nrnb,
                                    gmx_wallcycle*                    wcycle,
                                    gmx::Constraints*                 constr,
@@ -287,7 +287,7 @@ void Update::update_sd_second_half(const t_inputrec&                 inputRecord
                                    bool                              do_ene)
 {
     impl_->update_sd_second_half(
-            inputRecord, step, dvdlambda, homenr, ptype, invMass, state, cr, nrnb, wcycle, constr, do_log, do_ene);
+            inputRecord, step, dvdlambda, homenr, ptype, invMass, state, dd, nrnb, wcycle, constr, do_log, do_ene);
 }
 
 void Update::update_for_constraint_virial(const t_inputrec&         inputRecord,
@@ -1295,7 +1295,7 @@ static void do_update_sd(int                                 start,
                          gmx::ArrayRef<const unsigned short> cAcceleration,
                          gmx::ArrayRef<const RVec>           acceleration,
                          int                                 seed,
-                         const t_commrec*                    cr,
+                         const gmx_domdec_t*                 dd,
                          const gmx_stochd_t&                 sd,
                          bool                                haveConstraints,
                          const PressureCoupling              pressureCoupling,
@@ -1341,27 +1341,26 @@ static void do_update_sd(int                                 start,
     }
     else
     {
-        doSDUpdateGeneral<SDUpdate::Combined>(
-                sd,
-                start,
-                nrend,
-                dt,
-                nFreeze,
-                invmass,
-                ptype,
-                cFREEZE,
-                cTC,
-                cAcceleration,
-                acceleration.data(),
-                x,
-                xprime,
-                v,
-                f,
-                step,
-                seed,
-                (cr != nullptr && haveDDAtomOrdering(*cr)) ? cr->dd->globalAtomIndices.data() : nullptr,
-                dtPressureCouple,
-                parrinelloRahmanMToUseThisStep);
+        doSDUpdateGeneral<SDUpdate::Combined>(sd,
+                                              start,
+                                              nrend,
+                                              dt,
+                                              nFreeze,
+                                              invmass,
+                                              ptype,
+                                              cFREEZE,
+                                              cTC,
+                                              cAcceleration,
+                                              acceleration.data(),
+                                              x,
+                                              xprime,
+                                              v,
+                                              f,
+                                              step,
+                                              seed,
+                                              (dd != nullptr) ? dd->globalAtomIndices.data() : nullptr,
+                                              dtPressureCouple,
+                                              parrinelloRahmanMToUseThisStep);
     }
 }
 
@@ -1454,7 +1453,11 @@ extern void init_ekinstate(ekinstate_t* ekinstate, const t_inputrec* ir)
     ekinstate->hasReadEkinState = false;
 }
 
-void update_ekinstate(ekinstate_t* ekinstate, const gmx_ekindata_t* ekind, const bool sumEkin, const t_commrec* cr)
+void update_ekinstate(ekinstate_t*          ekinstate,
+                      const gmx_ekindata_t* ekind,
+                      const bool            sumEkin,
+                      const gmx::MpiComm&   mpiComm,
+                      const gmx_domdec_t*   dd)
 {
     /* Note that it might seem like we are storing the current kinetic energy at time t+dt/2 here
      * as we are operating on ekinh and dekindl. But this function is called before the kinetic
@@ -1463,7 +1466,7 @@ void update_ekinstate(ekinstate_t* ekinstate, const gmx_ekindata_t* ekind, const
      * to ekind->ekinh_old and ekind->dekindl_old.
      */
 
-    const bool reduceEkin = (sumEkin && havePPDomainDecomposition(cr));
+    const bool reduceEkin = (sumEkin && havePPDomainDecomposition(dd));
 
     if (reduceEkin)
     {
@@ -1494,10 +1497,10 @@ void update_ekinstate(ekinstate_t* ekinstate, const gmx_ekindata_t* ekind, const
         }
         buffer[bufIndex++] = ekind->dekindl;
 
-        gmx_sumd(bufIndex, buffer.data(), cr);
+        mpiComm.sumReduce(bufIndex, buffer.data());
 
         // Extract to ekinstate on the main rank only
-        if (MAIN(cr))
+        if (mpiComm.isMainRank())
         {
             bufIndex = 0;
             for (int g = 0; g < ekinstate->ekin_n; g++)
@@ -1521,7 +1524,7 @@ void update_ekinstate(ekinstate_t* ekinstate, const gmx_ekindata_t* ekind, const
         }
     }
 
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         if (!reduceEkin)
         {
@@ -1546,11 +1549,11 @@ void update_ekinstate(ekinstate_t* ekinstate, const gmx_ekindata_t* ekind, const
     }
 }
 
-void restore_ekinstate_from_state(const t_commrec* cr, gmx_ekindata_t* ekind, const ekinstate_t* ekinstate)
+void restore_ekinstate_from_state(const gmx::MpiComm& mpiComm, gmx_ekindata_t* ekind, const ekinstate_t* ekinstate)
 {
     int i, n;
 
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         for (i = 0; i < ekinstate->ekin_n; i++)
         {
@@ -1566,29 +1569,29 @@ void restore_ekinstate_from_state(const t_commrec* cr, gmx_ekindata_t* ekind, co
         n                   = ekinstate->ekin_n;
     }
 
-    if (PAR(cr))
+    if (mpiComm.size() > 1)
     {
-        gmx_bcast(sizeof(n), &n, cr->mpi_comm_mygroup);
+        gmx_bcast(sizeof(n), &n, mpiComm.comm());
         for (i = 0; i < n; i++)
         {
             gmx_bcast(DIM * DIM * sizeof(ekind->tcstat[i].ekinh[0][0]),
                       ekind->tcstat[i].ekinh[0],
-                      cr->mpi_comm_mygroup);
+                      mpiComm.comm());
             gmx_bcast(DIM * DIM * sizeof(ekind->tcstat[i].ekinf[0][0]),
                       ekind->tcstat[i].ekinf[0],
-                      cr->mpi_comm_mygroup);
+                      mpiComm.comm());
 
             gmx_bcast(sizeof(ekind->tcstat[i].ekinscalef_nhc),
                       &(ekind->tcstat[i].ekinscalef_nhc),
-                      cr->mpi_comm_mygroup);
+                      mpiComm.comm());
             gmx_bcast(sizeof(ekind->tcstat[i].ekinscaleh_nhc),
                       &(ekind->tcstat[i].ekinscaleh_nhc),
-                      cr->mpi_comm_mygroup);
-            gmx_bcast(sizeof(ekind->tcstat[i].vscale_nhc), &(ekind->tcstat[i].vscale_nhc), cr->mpi_comm_mygroup);
+                      mpiComm.comm());
+            gmx_bcast(sizeof(ekind->tcstat[i].vscale_nhc), &(ekind->tcstat[i].vscale_nhc), mpiComm.comm());
         }
 
-        gmx_bcast(sizeof(ekind->dekindl), &ekind->dekindl, cr->mpi_comm_mygroup);
-        gmx_bcast(sizeof(ekind->cosacc.mvcos), &ekind->cosacc.mvcos, cr->mpi_comm_mygroup);
+        gmx_bcast(sizeof(ekind->dekindl), &ekind->dekindl, mpiComm.comm());
+        gmx_bcast(sizeof(ekind->cosacc.mvcos), &ekind->cosacc.mvcos, mpiComm.comm());
     }
 }
 
@@ -1612,7 +1615,7 @@ void Update::Impl::update_sd_second_half(const t_inputrec&                 input
                                          gmx::ArrayRef<const ParticleType> ptype,
                                          gmx::ArrayRef<const real>         invMass,
                                          t_state*                          state,
-                                         const t_commrec*                  cr,
+                                         const gmx_domdec_t*               dd,
                                          t_nrnb*                           nrnb,
                                          gmx_wallcycle*                    wcycle,
                                          gmx::Constraints*                 constr,
@@ -1668,7 +1671,7 @@ void Update::Impl::update_sd_second_half(const t_inputrec&                 input
                         nullptr,
                         step,
                         inputRecord.ld_seed,
-                        haveDDAtomOrdering(*cr) ? cr->dd->globalAtomIndices.data() : nullptr,
+                        dd ? dd->globalAtomIndices.data() : nullptr,
                         dtPressureCouple,
                         parrinelloRahmanM);
             }
@@ -1764,7 +1767,7 @@ void Update::Impl::update_coords(const t_inputrec&                 inputRecord,
                                  const gmx_ekindata_t*                       ekind,
                                  const Matrix3x3&                            parrinelloRahmanM,
                                  int                                         updatePart,
-                                 const t_commrec*                            cr,
+                                 const gmx_domdec_t*                         dd,
                                  const bool                                  haveConstraints)
 {
     /* Running the velocity half does nothing except for velocity verlet */
@@ -1848,7 +1851,7 @@ void Update::Impl::update_coords(const t_inputrec&                 inputRecord,
                                  cAcceleration_,
                                  inputRecord.opts.acceleration,
                                  inputRecord.ld_seed,
-                                 cr,
+                                 dd,
                                  sd_,
                                  haveConstraints,
                                  inputRecord.pressureCouplingOptions.epc,
@@ -1872,7 +1875,7 @@ void Update::Impl::update_coords(const t_inputrec&                 inputRecord,
                                  inputRecord.bd_fric,
                                  sd_.bd_rf.data(),
                                  inputRecord.ld_seed,
-                                 haveDDAtomOrdering(*cr) ? cr->dd->globalAtomIndices.data() : nullptr);
+                                 dd ? dd->globalAtomIndices.data() : nullptr);
                     break;
                 case (IntegrationAlgorithm::VV):
                 case (IntegrationAlgorithm::VVAK):

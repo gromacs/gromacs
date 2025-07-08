@@ -156,7 +156,8 @@ static void flagInteractionsForType(const int              ftype,
  *
  * \note This function needs to be called on all ranks (contains a global summation)
  */
-static std::string printMissingInteractionsMolblock(const t_commrec*         cr,
+static std::string printMissingInteractionsMolblock(const MpiComm&           mpiComm,
+                                                    const gmx_domdec_t&      dd,
                                                     const gmx_reverse_top_t& rt,
                                                     const char*              moltypename,
                                                     const reverse_ilist_t&   ril,
@@ -175,11 +176,11 @@ static std::string printMissingInteractionsMolblock(const t_commrec*         cr,
         if (dd_check_ftype(ftype, rt.options()))
         {
             flagInteractionsForType(
-                    ftype, idef.il[ftype], ril, atomRange, numAtomsPerMolecule, cr->dd->globalAtomIndices, isAssigned);
+                    ftype, idef.il[ftype], ril, atomRange, numAtomsPerMolecule, dd.globalAtomIndices, isAssigned);
         }
     }
 
-    gmx_sumi(isAssigned.size(), isAssigned.data(), cr);
+    mpiComm.sumReduce(isAssigned);
 
     const int numMissingToPrint = 10;
     int       i                 = 0;
@@ -193,7 +194,7 @@ static std::string printMissingInteractionsMolblock(const t_commrec*         cr,
             int j     = mol * nril_mol + j_mol;
             if (isAssigned[j] == 0 && !(interaction_function[ftype].flags & IF_VSITE))
             {
-                if (DDMAIN(cr->dd))
+                if (DDMAIN(&dd))
                 {
                     if (i == 0)
                     {
@@ -237,11 +238,12 @@ static std::string printMissingInteractionsMolblock(const t_commrec*         cr,
 
 /*! \brief Help print error output when interactions are missing */
 static void printMissingInteractionsAtoms(const MDLogger&               mdlog,
-                                          const t_commrec*              cr,
+                                          const MpiComm&                mpiComm,
+                                          const gmx_domdec_t&           dd,
                                           const gmx_mtop_t&             mtop,
                                           const InteractionDefinitions& idef)
 {
-    const gmx_reverse_top_t& rt = *cr->dd->reverse_top;
+    const gmx_reverse_top_t& rt = *dd.reverse_top;
 
     /* Print the atoms in the missing interactions per molblock */
     int a_end = 0;
@@ -253,10 +255,11 @@ static void printMissingInteractionsAtoms(const MDLogger&               mdlog,
         const Range<int> atomRange(a_start, a_end);
 
         auto warning = printMissingInteractionsMolblock(
-                cr,
+                mpiComm,
+                dd,
                 rt,
                 *(moltype.name),
-                cr->dd->reverse_top->interactionListForMoleculeType(molb.type),
+                dd.reverse_top->interactionListForMoleculeType(molb.type),
                 atomRange,
                 moltype.atoms.nr,
                 molb.nmol,
@@ -267,8 +270,9 @@ static void printMissingInteractionsAtoms(const MDLogger&               mdlog,
 }
 
 /*! \brief Print error output when interactions are missing */
-[[noreturn]] static void dd_print_missing_interactions(const MDLogger&  mdlog,
-                                                       const t_commrec* cr,
+[[noreturn]] static void dd_print_missing_interactions(const MDLogger&     mdlog,
+                                                       const MpiComm&      mpiComm,
+                                                       const gmx_domdec_t& dd,
                                                        const int numBondedInteractionsOverAllDomains,
                                                        const int expectedNumGlobalBondedInteractions,
                                                        const gmx_mtop_t&     top_global,
@@ -276,9 +280,6 @@ static void printMissingInteractionsAtoms(const MDLogger&               mdlog,
                                                        ArrayRef<const RVec>  x,
                                                        const matrix          box)
 {
-    int           cl[F_NRE];
-    gmx_domdec_t* dd = cr->dd;
-
     GMX_LOG(mdlog.warning)
             .appendText(
                     "Not all bonded interactions have been properly assigned to the domain "
@@ -286,15 +287,16 @@ static void printMissingInteractionsAtoms(const MDLogger&               mdlog,
 
     const int ndiff_tot = numBondedInteractionsOverAllDomains - expectedNumGlobalBondedInteractions;
 
+    std::array<int, F_NRE> cl;
     for (int ftype = 0; ftype < F_NRE; ftype++)
     {
         const int nral = NRAL(ftype);
         cl[ftype]      = top_local.idef.il[ftype].size() / (1 + nral);
     }
 
-    gmx_sumi(F_NRE, cl, cr);
+    mpiComm.sumReduce(cl);
 
-    if (DDMAIN(dd))
+    if (DDMAIN(&dd))
     {
         GMX_LOG(mdlog.warning).appendText("A list of missing interactions:");
         int rest_global = expectedNumGlobalBondedInteractions;
@@ -305,7 +307,7 @@ static void printMissingInteractionsAtoms(const MDLogger&               mdlog,
              * into F_CONSTR. So in the if statement we skip F_CONSTRNC
              * and add these constraints when doing F_CONSTR.
              */
-            if (dd_check_ftype(ftype, dd->reverse_top->options()) && ftype != F_CONSTRNC)
+            if (dd_check_ftype(ftype, dd.reverse_top->options()) && ftype != F_CONSTRNC)
             {
                 int n = gmx_mtop_ftype_count(top_global, ftype);
                 if (ftype == F_CONSTR)
@@ -333,10 +335,10 @@ static void printMissingInteractionsAtoms(const MDLogger&               mdlog,
         }
     }
 
-    printMissingInteractionsAtoms(mdlog, cr, top_global, top_local.idef);
+    printMissingInteractionsAtoms(mdlog, mpiComm, dd, top_global, top_local.idef);
     if (!x.empty())
     {
-        write_dd_pdb("dd_dump_err", 0, "dump", top_global, cr, -1, as_rvec_array(x.data()), box);
+        write_dd_pdb("dd_dump_err", 0, "dump", top_global, dd, -1, as_rvec_array(x.data()), box);
     }
 
     std::string errorMessage;
@@ -356,10 +358,10 @@ static void printMissingInteractionsAtoms(const MDLogger&               mdlog,
                 "also see option -ddcheck",
                 -ndiff_tot,
                 expectedNumGlobalBondedInteractions,
-                dd_cutoff_multibody(dd),
-                dd_cutoff_twobody(dd));
+                dd_cutoff_multibody(&dd),
+                dd_cutoff_twobody(&dd));
     }
-    gmx_fatal_collective(FARGS, cr->mpi_comm_mygroup, MAIN(cr), "%s", errorMessage.c_str());
+    gmx_fatal_collective(FARGS, mpiComm.comm(), mpiComm.isMainRank(), "%s", errorMessage.c_str());
 }
 
 /*! \brief Data to help check local topology construction
@@ -376,7 +378,8 @@ class LocalTopologyChecker::Impl
 public:
     //! Constructor
     Impl(const MDLogger&       mdlog,
-         const t_commrec*      cr,
+         const MpiComm&        mpiComm,
+         const gmx_domdec_t&   dd,
          const gmx_mtop_t&     mtop,
          DDBondedChecking      ddBondedChecking,
          const gmx_localtop_t& localTopology,
@@ -386,8 +389,10 @@ public:
     //! {
     //! Logger
     const MDLogger& mdlog_;
-    //! Communication record
-    const t_commrec* cr_;
+    //! Communication object for my group
+    const MpiComm& mpiComm_;
+    //! Domain decomposition object
+    const gmx_domdec_t& dd_;
     //! Global system topology
     const gmx_mtop_t& mtop_;
     //! Local topology
@@ -440,14 +445,16 @@ static int computeExpectedNumGlobalBondedInteractions(const gmx_mtop_t&      mto
 }
 
 LocalTopologyChecker::Impl::Impl(const MDLogger&        mdlog,
-                                 const t_commrec*       cr,
+                                 const MpiComm&         mpiComm,
+                                 const gmx_domdec_t&    dd,
                                  const gmx_mtop_t&      mtop,
                                  const DDBondedChecking ddBondedChecking,
                                  const gmx_localtop_t&  localTopology,
                                  const t_state*         localState,
                                  bool                   useUpdateGroups) :
     mdlog_(mdlog),
-    cr_(cr),
+    mpiComm_(mpiComm),
+    dd_(dd),
     mtop_(mtop),
     localTopology_(localTopology),
     localState_(localState),
@@ -457,14 +464,15 @@ LocalTopologyChecker::Impl::Impl(const MDLogger&        mdlog,
 }
 
 LocalTopologyChecker::LocalTopologyChecker(const MDLogger&            mdlog,
-                                           const t_commrec*           cr,
+                                           const MpiComm&             mpiComm,
+                                           const gmx_domdec_t&        dd,
                                            const gmx_mtop_t&          mtop,
                                            const DDBondedChecking     ddBondedChecking,
                                            const gmx_localtop_t&      localTopology,
                                            const t_state*             localState,
                                            const bool                 useUpdateGroups,
                                            ObservablesReducerBuilder* observablesReducerBuilder) :
-    impl_(std::make_unique<Impl>(mdlog, cr, mtop, ddBondedChecking, localTopology, localState, useUpdateGroups))
+    impl_(std::make_unique<Impl>(mdlog, mpiComm, dd, mtop, ddBondedChecking, localTopology, localState, useUpdateGroups))
 {
     Impl*                                          impl = impl_.get();
     ObservablesReducerBuilder::CallbackFromBuilder callbackFromBuilder =
@@ -484,7 +492,8 @@ LocalTopologyChecker::LocalTopologyChecker(const MDLogger&            mdlog,
             // Give error and exit
             dd_print_missing_interactions(
                     impl->mdlog_,
-                    impl->cr_,
+                    impl->mpiComm_,
+                    impl->dd_,
                     numTotalBondedInteractionsFound,
                     impl->expectedNumGlobalBondedInteractions_,
                     impl->mtop_,
@@ -512,7 +521,7 @@ void LocalTopologyChecker::scheduleCheckOfLocalTopology(const int numBondedInter
 {
     // When we have a single domain, we don't need to reduce and we algorithmically can not miss
     // any interactions, so we can assert here.
-    if (!havePPDomainDecomposition(impl_->cr_))
+    if (impl_->mpiComm_.size() == 1)
     {
         GMX_RELEASE_ASSERT(numBondedInteractionsToReduce == impl_->expectedNumGlobalBondedInteractions_,
                            "With a single domain the number of assigned bonded interactions should "

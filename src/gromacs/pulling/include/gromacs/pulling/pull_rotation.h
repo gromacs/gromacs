@@ -55,7 +55,6 @@ struct gmx_domdec_t;
 struct gmx_enfrot;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
-struct t_commrec;
 struct t_filenm;
 struct t_inputrec;
 struct t_rot;
@@ -63,6 +62,7 @@ class t_state;
 
 namespace gmx
 {
+class MpiComm;
 enum class StartingBehavior;
 class LocalAtomSetManager;
 struct MdrunOptions;
@@ -101,7 +101,7 @@ private:
  * \param fnm      The filenames struct containing also the names
  *                 of the rotation output files.
  * \param atomSets Tracks indices of atoms subject to enforced rotation for each DD rank.
- * \param cr       Pointer to MPI communication data.
+ * \param mpiComm  Reference to MPI communication data.
  * \param globalState  The global state, only used on the main rank.
  * \param mtop     Molecular topology.
  * \param oenv     Needed to open the rotation output xvgr file.
@@ -113,7 +113,7 @@ std::unique_ptr<gmx::EnforcedRotation> init_rot(FILE*                     fplog,
                                                 t_inputrec*               ir,
                                                 int                       nfile,
                                                 const t_filenm            fnm[],
-                                                const t_commrec*          cr,
+                                                const gmx::MpiComm&       mpiComm,
                                                 gmx::LocalAtomSetManager* atomSets,
                                                 const t_state*            globalState,
                                                 const gmx_mtop_t&         mtop,
@@ -127,7 +127,8 @@ std::unique_ptr<gmx::EnforcedRotation> init_rot(FILE*                     fplog,
  * step. Here the rotation potential as well as the resulting forces are
  * calculated.
  *
- * \param cr      Pointer to MPI communication data.
+ * \param mpiComm Reference to MPI communication data.
+ * \param dd      Pointer to domain decomposition data, only used for recording load balance
  * \param er      Pointer to the enforced rotation working data.
  * \param box     Simulation box, needed to make group whole.
  * \param coords  The positions of all the local particles.
@@ -136,7 +137,8 @@ std::unique_ptr<gmx::EnforcedRotation> init_rot(FILE*                     fplog,
  * \param bNS     After domain decomposition / neighbor searching several
  *                local arrays have to be updated (masses, shifts)
  */
-void do_rotation(const t_commrec*               cr,
+void do_rotation(const gmx::MpiComm&            mpiComm,
+                 const gmx_domdec_t*            dd,
                  gmx_enfrot*                    er,
                  const matrix                   box,
                  gmx::ArrayRef<const gmx::RVec> coords,
@@ -157,12 +159,16 @@ void do_rotation(const t_commrec*               cr,
  * \param er      Pointer to the enforced rotation working data.
  * \param force   The local forces to which the rotational forces have
  *                to be added.
- * \param cr      Pointer to MPI communication data.
+ * \param mpiComm Reference to MPI communication data.
  * \param step    The time step, used for output.
  * \param t       Time, used for output.
  * \returns       The potential energy of the rotation potentials.
  */
-real add_rot_forces(gmx_enfrot* er, gmx::ArrayRef<gmx::RVec> force, const t_commrec* cr, int64_t step, real t);
+real add_rot_forces(gmx_enfrot*              er,
+                    gmx::ArrayRef<gmx::RVec> force,
+                    const gmx::MpiComm&      mpiComm,
+                    int64_t                  step,
+                    real                     t);
 
 
 #endif

@@ -205,7 +205,7 @@ bool ResetHandler::resetCountersImpl(int64_t                     step,
         clear_nrnb(nrnb);
         wallcycle_start(wcycle, WallCycleCounter::Run);
         walltime_accounting_reset_time(walltime_accounting, step);
-        print_date_and_time(fplog, cr->nodeid, "Restarted time", gmx_gettime());
+        print_date_and_time(fplog, cr->commMyGroup.rank(), "Restarted time", gmx_gettime());
 
         wcycle_set_reset_counters(wcycle, -1);
         if (!thisRankHasDuty(cr, DUTY_PME))

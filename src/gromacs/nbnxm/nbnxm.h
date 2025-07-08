@@ -124,13 +124,13 @@
 
 struct DeviceInformation;
 class ExclusionChecker;
+struct gmx_domdec_t;
 struct gmx_enerdata_t;
 struct gmx_hw_info_t;
 struct gmx_mtop_t;
 struct gmx_wallcycle;
 struct interaction_const_t;
 enum class LJCombinationRule;
-struct t_commrec;
 struct t_nrnb;
 struct t_forcerec;
 struct t_inputrec;
@@ -140,6 +140,7 @@ class GpuEventSynchronizer;
 namespace gmx
 {
 class FreeEnergyDispatch;
+class MpiComm;
 class Grid;
 struct GridDimensions;
 struct NbnxmGpu;
@@ -453,7 +454,8 @@ private:
 std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const MDLogger&            mdlog,
                                                    const t_inputrec&          inputrec,
                                                    const t_forcerec&          forcerec,
-                                                   const t_commrec*           commrec,
+                                                   const MpiComm&             mpiComm,
+                                                   const gmx_domdec_t*        dd,
                                                    const gmx_hw_info_t&       hardwareInfo,
                                                    bool                       useGpuForNonbonded,
                                                    const DeviceStreamManager* deviceStreamManager,

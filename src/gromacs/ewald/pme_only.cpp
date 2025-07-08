@@ -149,9 +149,7 @@ static std::vector<PpRanks> makePpRanks(const t_commrec* cr)
 {
     std::vector<PpRanks> ppRanks;
 #if GMX_MPI
-    int rank;
-    MPI_Comm_rank(cr->mpi_comm_mygroup, &rank);
-    std::vector<int> ppRankIds = get_pme_ddranks(cr, rank);
+    std::vector<int> ppRankIds = get_pme_ddranks(cr, cr->commMyGroup.rank());
     ppRanks.reserve(ppRanks.size());
     for (const auto& ppRankId : ppRankIds)
     {
@@ -713,8 +711,8 @@ int gmx_pmeonly(struct gmx_pme_t**              pmeFromRunnerPtr,
     std::vector<gmx_pme_t*> pmedata;
     pmedata.push_back(pmeFromRunner);
 
-    auto pme_pp                = std::make_unique<gmx_pme_pp>(cr->mpi_comm_mysim, makePpRanks(cr));
-    pme_pp->useNvshmem         = useNvshmem;
+    auto pme_pp        = std::make_unique<gmx_pme_pp>(cr->commMySim.comm(), makePpRanks(cr));
+    pme_pp->useNvshmem = useNvshmem;
     pme_pp->useGpuHaloExchange = useGpuHaloExchange;
 
     std::unique_ptr<gmx::StatePropagatorDataGpu>       stateGpu;

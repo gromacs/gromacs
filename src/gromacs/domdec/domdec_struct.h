@@ -205,6 +205,15 @@ struct gmx_domdec_t
     std::vector<std::unique_ptr<gmx::GpuHaloExchange>> gpuHaloExchange[DIM];
 };
 
+/*! \brief Returns whether we have actual domain decomposition for the particle-particle interactions
+ *
+ * Will return false when we use 1 rank for PP and 1 for PME
+ */
+static bool inline havePPDomainDecomposition(const gmx_domdec_t* dd)
+{
+    return dd && dd->nnodes > 1;
+}
+
 /*! Return whether \p globalAtomIndex is a valid global atom (and not a filler particle)
  *
  * \param[in] globalAtomIndex  The index in the global topology to check

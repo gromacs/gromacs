@@ -139,24 +139,28 @@ void ExpandedEnsembleElement::doCheckpointData(CheckpointData<operation>* checkp
 }
 
 void ExpandedEnsembleElement::saveCheckpointState(std::optional<WriteCheckpointData> checkpointData,
-                                                  const t_commrec*                   cr)
+                                                  const MpiComm&                     mpiComm,
+                                                  gmx_domdec_t*                      dd)
 {
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         doCheckpointData<CheckpointDataOperation::Write>(&checkpointData.value());
     }
+
+    GMX_UNUSED_VALUE(dd);
 }
 
 void ExpandedEnsembleElement::restoreCheckpointState(std::optional<ReadCheckpointData> checkpointData,
-                                                     const t_commrec* cr)
+                                                     const MpiComm& mpiComm,
+                                                     gmx_domdec_t*  dd)
 {
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         doCheckpointData<CheckpointDataOperation::Read>(&checkpointData.value());
     }
-    if (haveDDAtomOrdering(*cr))
+    if (dd)
     {
-        dd_distribute_dfhist(cr->dd, dfhist_.get());
+        dd_distribute_dfhist(dd, dfhist_.get());
     }
     restoredFromCheckpoint_ = true;
 }

@@ -40,6 +40,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -187,19 +188,20 @@ static void shift_positions_group(const matrix box,
 /* Assemble the positions of the group such that every node has all of them.
  * The atom indices are retrieved from anrs_loc[0..nr_loc]
  * Note that coll_ind[i] = i is needed in the serial case */
-extern void communicate_group_positions(const t_commrec* cr, /* Pointer to MPI communication data */
-                                        rvec*            xcoll, /* Collective array of positions */
-                                        ivec* shifts, /* Collective array of shifts for xcoll (can be NULL) */
-                                        ivec* extra_shifts, /* (optional) Extra shifts since last time step */
-                                        const gmx_bool bNS, /* (optional) NS step, the shifts have changed */
-                                        const rvec* x_loc,  /* Local positions on this node */
-                                        const int   nr,     /* Total number of atoms in the group */
-                                        const int   nr_loc, /* Local number of atoms in the group */
-                                        const int*  anrs_loc, /* Local atom numbers */
-                                        const int*  coll_ind, /* Collective index */
-                                        rvec* xcoll_old,  /* (optional) Positions from the last time
-                                                             step,  used to make group whole */
-                                        const matrix box) /* (optional) The box */
+extern void
+communicate_group_positions(const gmx::MpiComm& mpiComm, /* Reference to MPI communication data */
+                            rvec*               xcoll,   /* Collective array of positions */
+                            ivec* shifts, /* Collective array of shifts for xcoll (can be NULL) */
+                            ivec* extra_shifts,   /* (optional) Extra shifts since last time step */
+                            const gmx_bool bNS,   /* (optional) NS step, the shifts have changed */
+                            const rvec*    x_loc, /* Local positions on this node */
+                            const int      nr,    /* Total number of atoms in the group */
+                            const int      nr_loc,    /* Local number of atoms in the group */
+                            const int*     anrs_loc,  /* Local atom numbers */
+                            const int*     coll_ind,  /* Collective index */
+                            rvec*          xcoll_old, /* (optional) Positions from the last time
+                                                         step,  used to make group whole */
+                            const matrix box)         /* (optional) The box */
 {
     int i;
 
@@ -214,10 +216,10 @@ extern void communicate_group_positions(const t_commrec* cr, /* Pointer to MPI c
         copy_rvec(x_loc[anrs_loc[i]], xcoll[coll_ind[i]]);
     }
 
-    if (PAR(cr))
+    if (mpiComm.size() > 1)
     {
         /* Add the arrays from all nodes together */
-        gmx_sum(nr * 3, xcoll[0], cr);
+        mpiComm.sumReduce(nr * 3, xcoll[0]);
     }
     /* Now we have all the positions of the group in the xcoll array present on all
      * nodes.
@@ -324,32 +326,32 @@ extern void get_center(const rvec x[], real weight[], const int nr, rvec rcenter
 
 /* Get the center from local positions that already have the correct
  * PBC representation */
-extern void get_center_comm(const t_commrec* cr,
-                            rvec             x_loc[],      /* Local positions */
-                            real             weight_loc[], /* Local masses or other weights */
-                            int              nr_loc,       /* Local number of atoms */
-                            int              nr_group,     /* Total number of atoms of the group */
-                            rvec             center)                   /* Weighted center */
+extern void get_center_comm(const gmx::MpiComm& mpiComm,
+                            rvec                x_loc[],      /* Local positions */
+                            real                weight_loc[], /* Local masses or other weights */
+                            int                 nr_loc,       /* Local number of atoms */
+                            int                 nr_group, /* Total number of atoms of the group */
+                            rvec                center)                  /* Weighted center */
 {
     double weight_sum, denom;
     dvec   dsumvec;
-    double buf[4];
-
 
     weight_sum = get_sum_of_positions(x_loc, weight_loc, nr_loc, dsumvec);
 
     /* Add the local contributions from all nodes. Put the sum vector and the
      * weight in a buffer array so that we get along with a single communication
      * call. */
-    if (PAR(cr))
+    if (mpiComm.size() > 1)
     {
+        std::array<double, 4> buf;
+
         buf[0] = dsumvec[XX];
         buf[1] = dsumvec[YY];
         buf[2] = dsumvec[ZZ];
         buf[3] = weight_sum;
 
         /* Communicate buffer */
-        gmx_sumd(4, buf, cr);
+        mpiComm.sumReduce(buf);
 
         dsumvec[XX] = buf[0];
         dsumvec[YY] = buf[1];

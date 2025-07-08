@@ -165,7 +165,7 @@ class ImdSession::Impl
 {
 public:
     //! Constructor
-    Impl(const MDLogger& mdlog);
+    Impl(const MDLogger& mdlog, const MpiComm& mpiComm, const gmx_domdec_t* dd);
     ~Impl();
 
     /*! \brief Prepare the socket on the MAIN. */
@@ -206,7 +206,7 @@ public:
      */
     void outputForces(double time);
     /*! \brief Synchronize the nodes. */
-    void syncNodes(const t_commrec* cr, double t);
+    void syncNodes(double t);
     /*! \brief Reads header from the client and decides what to do. */
     void readCommand();
     /*! \brief Open IMD output file and write header information.
@@ -219,7 +219,7 @@ public:
     /*! \brief Removes shifts of molecules diffused outside of the box. */
     void removeMolecularShifts(const matrix box) const;
     /*! \brief Initialize arrays used to assemble the positions from the other nodes. */
-    void prepareForPositionAssembly(const t_commrec* cr, gmx::ArrayRef<const gmx::RVec> coords);
+    void prepareForPositionAssembly(gmx::ArrayRef<const gmx::RVec> coords);
     /*! \brief Interact with any connected VMD session */
     bool run(int64_t step, bool bNS, const matrix box, gmx::ArrayRef<const gmx::RVec> coords, double t);
 
@@ -317,7 +317,9 @@ public:
     //! Logger
     const MDLogger& mdLog_;
     //! Commmunication object
-    const t_commrec* cr_ = nullptr;
+    const MpiComm& mpiComm_;
+    //! Domain decomposition object
+    const gmx_domdec_t* dd_ = nullptr;
     //! Wallcycle counting manager.
     gmx_wallcycle* wcycle = nullptr;
     //! Energy output handler
@@ -851,12 +853,12 @@ void ImdSession::Impl::outputForces(double time)
 }
 
 
-void ImdSession::Impl::syncNodes(const t_commrec* cr, double t)
+void ImdSession::Impl::syncNodes(double t)
 {
     /* Notify the other nodes whether we are still connected. */
-    if (PAR(cr))
+    if (mpiComm_.size() > 1)
     {
-        block_bc(cr->mpi_comm_mygroup, bConnected);
+        block_bc(mpiComm_.comm(), bConnected);
     }
 
     /* ...if not connected, the job is done here. */
@@ -866,9 +868,9 @@ void ImdSession::Impl::syncNodes(const t_commrec* cr, double t)
     }
 
     /* Let the other nodes know whether we got a new IMD synchronization frequency. */
-    if (PAR(cr))
+    if (mpiComm_.size() > 1)
     {
-        block_bc(cr->mpi_comm_mygroup, nstimd_new);
+        block_bc(mpiComm_.comm(), nstimd_new);
     }
 
     /* Now we all set the (new) nstimd communication time step */
@@ -883,7 +885,7 @@ void ImdSession::Impl::syncNodes(const t_commrec* cr, double t)
     /* OK, let's check if we have received forces which we need to communicate
      * to the other nodes */
     int new_nforces = 0;
-    if (MAIN(cr))
+    if (mpiComm_.isMainRank())
     {
         if (bNewForces)
         {
@@ -897,9 +899,9 @@ void ImdSession::Impl::syncNodes(const t_commrec* cr, double t)
     }
 
     /* make new_forces known to the clients */
-    if (PAR(cr))
+    if (mpiComm_.size() > 1)
     {
-        block_bc(cr->mpi_comm_mygroup, new_nforces);
+        block_bc(mpiComm_.comm(), new_nforces);
     }
 
     /* When new_natoms < 0 then we know that these are still the same forces
@@ -918,7 +920,7 @@ void ImdSession::Impl::syncNodes(const t_commrec* cr, double t)
     prepareMDForces();
 
     /* we first update the MD forces on the main by converting the VMD forces */
-    if (MAIN(cr))
+    if (mpiComm_.isMainRank())
     {
         copyToMDForces();
         /* We also write out forces on every update, so that we know which
@@ -930,10 +932,10 @@ void ImdSession::Impl::syncNodes(const t_commrec* cr, double t)
     }
 
     /* In parallel mode we communicate the to-be-applied forces to the other nodes */
-    if (PAR(cr))
+    if (mpiComm_.size() > 1)
     {
-        nblock_bc(cr->mpi_comm_mygroup, nforces, f_ind);
-        nblock_bc(cr->mpi_comm_mygroup, nforces, f);
+        nblock_bc(mpiComm_.comm(), nforces, f_ind);
+        nblock_bc(mpiComm_.comm(), nforces, f);
     }
 
     /* done communicating the forces, reset bNewForces */
@@ -1079,7 +1081,8 @@ void ImdSession::Impl::openOutputFile(const char*                 fn,
 }
 
 
-ImdSession::Impl::Impl(const MDLogger& mdlog) : mdLog_(mdlog)
+ImdSession::Impl::Impl(const MDLogger& mdlog, const MpiComm& mpiComm, const gmx_domdec_t* dd) :
+    mdLog_(mdlog), mpiComm_(mpiComm), dd_(dd)
 {
     init_block(&mols);
 }
@@ -1256,7 +1259,7 @@ void ImdSession::Impl::removeMolecularShifts(const matrix box) const
 }
 
 
-void ImdSession::Impl::prepareForPositionAssembly(const t_commrec* cr, gmx::ArrayRef<const gmx::RVec> coords)
+void ImdSession::Impl::prepareForPositionAssembly(gmx::ArrayRef<const gmx::RVec> coords)
 {
     snew(xa, nat);
     snew(xa_ind, nat);
@@ -1266,7 +1269,7 @@ void ImdSession::Impl::prepareForPositionAssembly(const t_commrec* cr, gmx::Arra
 
     /* Save the original (whole) set of positions such that later the
      * molecule can always be made whole again */
-    if (MAIN(cr))
+    if (mpiComm_.isMainRank())
     {
         for (int i = 0; i < nat; i++)
         {
@@ -1275,7 +1278,7 @@ void ImdSession::Impl::prepareForPositionAssembly(const t_commrec* cr, gmx::Arra
         }
     }
 
-    if (!haveDDAtomOrdering(*cr))
+    if (dd_ == nullptr)
     {
         nat_loc = nat;
         ind_loc = ind;
@@ -1288,17 +1291,17 @@ void ImdSession::Impl::prepareForPositionAssembly(const t_commrec* cr, gmx::Arra
     }
 
     /* Communicate initial coordinates xa_old to all processes */
-    if (cr && havePPDomainDecomposition(cr))
+    if (mpiComm_.size() > 1)
     {
-        gmx_bcast(nat * sizeof(xa_old[0]), xa_old, cr->mpi_comm_mygroup);
+        gmx_bcast(nat * sizeof(xa_old[0]), xa_old, mpiComm_.comm());
     }
 }
 
 
 /*! \brief Check for non-working integrator / parallel options. */
-static void imd_check_integrator_parallel(const t_inputrec* ir, const t_commrec* cr)
+static void imd_check_integrator_parallel(const t_inputrec* ir, const MpiComm& mpiComm)
 {
-    if (PAR(cr))
+    if (mpiComm.size() > 1)
     {
         if (((ir->eI) == IntegrationAlgorithm::Steep) || ((ir->eI) == IntegrationAlgorithm::CG)
             || ((ir->eI) == IntegrationAlgorithm::LBFGS) || ((ir->eI) == IntegrationAlgorithm::NM))
@@ -1312,7 +1315,8 @@ static void imd_check_integrator_parallel(const t_inputrec* ir, const t_commrec*
 }
 
 std::unique_ptr<ImdSession> makeImdSession(const t_inputrec*              ir,
-                                           const t_commrec*               cr,
+                                           const MpiComm&                 mpiComm,
+                                           const gmx_domdec_t*            dd,
                                            gmx_wallcycle*                 wcycle,
                                            gmx_enerdata_t*                enerd,
                                            const gmx_multisim_t*          ms,
@@ -1325,7 +1329,7 @@ std::unique_ptr<ImdSession> makeImdSession(const t_inputrec*              ir,
                                            const ImdOptions&              options,
                                            const gmx::StartingBehavior    startingBehavior)
 {
-    std::unique_ptr<ImdSession> session(new ImdSession(mdlog));
+    std::unique_ptr<ImdSession> session(new ImdSession(mdlog, mpiComm, dd));
     auto*                       impl = session->impl_.get();
 
     /* We will allow IMD sessions only if supported by the binary and
@@ -1374,7 +1378,7 @@ std::unique_ptr<ImdSession> makeImdSession(const t_inputrec*              ir,
     bool createSession = false;
     /* It seems we have a .tpr file that defines an IMD group and thus allows IMD connections.
      * Check whether we can actually provide the IMD functionality for this setting: */
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         /* Check whether IMD was enabled by one of the command line switches: */
         if (options.wait || options.terminatable || options.pull)
@@ -1396,9 +1400,9 @@ std::unique_ptr<ImdSession> makeImdSession(const t_inputrec*              ir,
     } /* end main only */
 
     /* Let the other nodes know whether we want IMD */
-    if (PAR(cr))
+    if (mpiComm.size() > 1)
     {
-        block_bc(cr->mpi_comm_mygroup, createSession);
+        block_bc(mpiComm.comm(), createSession);
     }
 
     /*... if not we are done.*/
@@ -1409,7 +1413,7 @@ std::unique_ptr<ImdSession> makeImdSession(const t_inputrec*              ir,
 
 
     /* check if we're using a sane integrator / parallel combination */
-    imd_check_integrator_parallel(ir, cr);
+    imd_check_integrator_parallel(ir, mpiComm);
 
 
     /*
@@ -1428,12 +1432,11 @@ std::unique_ptr<ImdSession> makeImdSession(const t_inputrec*              ir,
     {
         impl->port = options.port;
     }
-    impl->cr_    = cr;
     impl->wcycle = wcycle;
     impl->enerd  = enerd;
 
     /* We might need to open an output file for IMD forces data */
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         impl->openOutputFile(opt2fn("-if", nfile, fnm), nat_total, oenv, startingBehavior);
     }
@@ -1455,7 +1458,7 @@ std::unique_ptr<ImdSession> makeImdSession(const t_inputrec*              ir,
     }
 
     /* read environment on main and prepare socket for incoming connections */
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         /* we allocate memory for our IMD energy structure */
         int32_t recsize = c_headerSize + sizeof(IMDEnergyBlock);
@@ -1495,13 +1498,13 @@ std::unique_ptr<ImdSession> makeImdSession(const t_inputrec*              ir,
     }
 
     /* do we allow interactive pulling? If so let the other nodes know. */
-    if (PAR(cr))
+    if (mpiComm.size() > 1)
     {
-        block_bc(cr->mpi_comm_mygroup, impl->bForceActivated);
+        block_bc(mpiComm.comm(), impl->bForceActivated);
     }
 
     /* setup the listening socket on main process */
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         GMX_LOG(mdlog.warning).appendTextFormatted("%s Setting port for connection requests to %d.", IMDstr, impl->port);
         impl->prepareMainSocket();
@@ -1516,13 +1519,13 @@ std::unique_ptr<ImdSession> makeImdSession(const t_inputrec*              ir,
         }
     }
     /* Let the other nodes know whether we are connected */
-    impl->syncNodes(cr, 0);
+    impl->syncNodes(0);
 
     /* Initialize arrays used to assemble the positions from the other nodes */
-    impl->prepareForPositionAssembly(cr, coords);
+    impl->prepareForPositionAssembly(coords);
 
     /* Initialize molecule blocks to make them whole later...*/
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         impl->prepareMoleculesInImdGroup(top_global);
     }
@@ -1542,7 +1545,7 @@ bool ImdSession::Impl::run(int64_t step, bool bNS, const matrix box, gmx::ArrayR
     wallcycle_start(wcycle, WallCycleCounter::Imd);
 
     /* read command from client and check if new incoming connection */
-    if (MAIN(cr_))
+    if (mpiComm_.isMainRank())
     {
         /* If not already connected, check for new connections */
         if (!clientsocket)
@@ -1571,7 +1574,7 @@ bool ImdSession::Impl::run(int64_t step, bool bNS, const matrix box, gmx::ArrayR
     if (imdstep)
     {
         /* First we sync all nodes to let everybody know whether we are connected to VMD */
-        syncNodes(cr_, t);
+        syncNodes(t);
     }
 
     /* If a client is connected, we collect the positions
@@ -1580,11 +1583,21 @@ bool ImdSession::Impl::run(int64_t step, bool bNS, const matrix box, gmx::ArrayR
     {
         /* Transfer the IMD positions to the main node. Every node contributes
          * its local positions x and stores them in the assembled xa array. */
-        communicate_group_positions(
-                cr_, xa, xa_shifts, xa_eshifts, true, as_rvec_array(coords.data()), nat, nat_loc, ind_loc, xa_ind, xa_old, box);
+        communicate_group_positions(mpiComm_,
+                                    xa,
+                                    xa_shifts,
+                                    xa_eshifts,
+                                    true,
+                                    as_rvec_array(coords.data()),
+                                    nat,
+                                    nat_loc,
+                                    ind_loc,
+                                    xa_ind,
+                                    xa_old,
+                                    box);
 
         /* If connected and main -> remove shifts */
-        if ((imdstep && bConnected) && MAIN(cr_))
+        if ((imdstep && bConnected) && mpiComm_.isMainRank())
         {
             removeMolecularShifts(box);
         }
@@ -1684,9 +1697,8 @@ void ImdSession::applyForces(gmx::ArrayRef<gmx::RVec> force)
         int j = impl_->ind[impl_->f_ind[i]];
 
         /* check if this is a local atom and find out locndx */
-        const int*       locndx;
-        const t_commrec* cr = impl_->cr_;
-        if (PAR(cr) && (locndx = cr->dd->ga2la->findHome(j)))
+        const int* locndx;
+        if (impl_->mpiComm_.size() > 1 && (locndx = impl_->dd_->ga2la->findHome(j)))
         {
             j = *locndx;
         }
@@ -1697,7 +1709,10 @@ void ImdSession::applyForces(gmx::ArrayRef<gmx::RVec> force)
     wallcycle_stop(impl_->wcycle, WallCycleCounter::Imd);
 }
 
-ImdSession::ImdSession(const MDLogger& mdlog) : impl_(new Impl(mdlog)) {}
+ImdSession::ImdSession(const MDLogger& mdlog, const MpiComm& mpiComm, const gmx_domdec_t* dd) :
+    impl_(new Impl(mdlog, mpiComm, dd))
+{
+}
 
 ImdSession::~ImdSession() = default;
 

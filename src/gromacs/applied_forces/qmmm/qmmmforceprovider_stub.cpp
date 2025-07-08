@@ -51,7 +51,6 @@
 #include "qmmmforceprovider.h"
 
 enum class PbcType : int;
-struct t_commrec;
 
 namespace gmx
 {
@@ -99,7 +98,7 @@ void QMMMForceProvider::appendLog(const std::string& /*msg*/)
 }
 
 // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
-void QMMMForceProvider::initCP2KForceEnvironment(const t_commrec& /*cr*/)
+void QMMMForceProvider::initCP2KForceEnvironment(const MpiComm& /*mpiComm*/)
 {
     GMX_THROW(
             InternalError("CP2K has not been linked into GROMACS, QMMM simulation is not "

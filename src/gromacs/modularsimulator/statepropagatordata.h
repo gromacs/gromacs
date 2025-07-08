@@ -63,9 +63,9 @@
 #include "modularsimulatorinterfaces.h"
 #include "topologyholder.h"
 
+struct gmx_domdec_t;
 struct gmx_mdoutf;
 enum class PbcType : int;
-struct t_commrec;
 struct t_inputrec;
 class t_state;
 struct t_mdatoms;
@@ -79,6 +79,7 @@ enum class ConstraintVariable;
 class EnergyData;
 class FreeEnergyPerturbationData;
 class GlobalCommunicationHelper;
+class MpiComm;
 class LegacySimulatorData;
 class ModularSimulatorAlgorithmBuilderHelper;
 class ObservablesReducer;
@@ -347,9 +348,13 @@ public:
     void setFreeEnergyPerturbationData(FreeEnergyPerturbationData* freeEnergyPerturbationData);
 
     //! ICheckpointHelperClient write checkpoint implementation
-    void saveCheckpointState(std::optional<WriteCheckpointData> checkpointData, const t_commrec* cr) override;
+    void saveCheckpointState(std::optional<WriteCheckpointData> checkpointData,
+                             const MpiComm&                     mpiComm,
+                             gmx_domdec_t*                      dd) override;
     //! ICheckpointHelperClient read checkpoint implementation
-    void restoreCheckpointState(std::optional<ReadCheckpointData> checkpointData, const t_commrec* cr) override;
+    void restoreCheckpointState(std::optional<ReadCheckpointData> checkpointData,
+                                const MpiComm&                    mpiComm,
+                                gmx_domdec_t*                     dd) override;
     //! ICheckpointHelperClient key implementation
     const std::string& clientID() override;
 

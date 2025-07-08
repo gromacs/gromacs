@@ -67,7 +67,6 @@
 #include "gromacs/mdlib/shake.h"
 #include "gromacs/mdlib/tests/constrtestdata.h"
 #include "gromacs/mdrunutility/multisim.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -121,10 +120,8 @@ void LincsConstraintsRunner::applyConstraints(ConstraintsTestData* testData, t_p
     int    warncount_lincs = 0;
     gmx_omp_nthreads_set(ModuleMultiThread::Lincs, 1);
 
-    // Communication record
-    t_commrec cr;
-    cr.nnodes = 1;
-    cr.dd     = nullptr;
+    // Domain decomposition object
+    gmx_domdec_t* dd = nullptr;
 
     // Multi-sim record
     gmx_multisim_t ms{ 1, 0, MPI_COMM_NULL, MPI_COMM_NULL };
@@ -153,7 +150,7 @@ void LincsConstraintsRunner::applyConstraints(ConstraintsTestData* testData, t_p
               testData->invmass_,
               testData->lambda_,
               EI_DYNAMICS(testData->ir_.eI),
-              &cr,
+              dd,
               lincsd);
 
     // Evaluate constraints
@@ -162,7 +159,7 @@ void LincsConstraintsRunner::applyConstraints(ConstraintsTestData* testData, t_p
                                    0,
                                    lincsd,
                                    testData->invmass_,
-                                   &cr,
+                                   dd,
                                    &ms,
                                    testData->x_.arrayRefWithPadding(),
                                    testData->xPrime_.arrayRefWithPadding(),

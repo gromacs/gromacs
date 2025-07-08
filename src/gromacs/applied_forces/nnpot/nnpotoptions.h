@@ -52,7 +52,6 @@
 
 // some forward declarations
 struct gmx_mtop_t;
-struct t_commrec;
 class WarningHandler;
 enum class PbcType;
 
@@ -60,6 +59,7 @@ namespace gmx
 {
 
 // more forward declarations
+class MpiComm;
 class MDLogger;
 class IOptionsContainerWithSections;
 class IKeyValueTreeTransformRules;
@@ -99,8 +99,8 @@ struct NNPotParameters
     t_atoms atoms_;
     int     numAtoms_;
 
-    //! stores communication record
-    const t_commrec* cr_ = nullptr;
+    //! stores communication object for my group
+    const MpiComm* mpiComm_ = nullptr;
 
     bool modelNeedsInput(const std::string& input) const
     {
@@ -143,8 +143,8 @@ public:
     //! set topology of the system during simulation setup
     void setTopology(const gmx_mtop_t&);
 
-    //! set communication record during simulation setup
-    void setCommRec(const t_commrec&);
+    //! set communication object during simulation setup
+    void setComm(const MpiComm&);
 
     //! Store the paramers that are not mdp options in the tpr file
     // This is needed to retain data from preprocessing to simulation setup

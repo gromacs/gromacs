@@ -491,7 +491,7 @@ static void prepare_verlet_scheme(FILE*                          fplog,
     if (EI_DYNAMICS(ir->eI))
     {
         effectiveAtomDensity = computeEffectiveAtomDensity(
-                coordinates, box, std::max(ir->rcoulomb, ir->rvdw), cr->mpiDefaultCommunicator);
+                coordinates, box, std::max(ir->rcoulomb, ir->rvdw), cr->mpiDefaultCommunicator.comm());
     }
 
     /* For NVE simulations, we will retain the initial list buffer */
@@ -669,12 +669,12 @@ static void finish_run(FILE*                     fplog,
 
     t_nrnb*                 nrnb_tot;
     std::unique_ptr<t_nrnb> nrnbTotalStorage;
-    if (cr->nnodes > 1)
+    if (cr->commMySim.size() > 1)
     {
         nrnbTotalStorage = std::make_unique<t_nrnb>();
         nrnb_tot         = nrnbTotalStorage.get();
 #if GMX_MPI
-        MPI_Allreduce(nrnb->n.data(), nrnb_tot->n.data(), eNRNB, MPI_DOUBLE, MPI_SUM, cr->mpi_comm_mysim);
+        MPI_Allreduce(nrnb->n.data(), nrnb_tot->n.data(), eNRNB, MPI_DOUBLE, MPI_SUM, cr->commMySim.comm());
 #endif
     }
     else
@@ -685,12 +685,13 @@ static void finish_run(FILE*                     fplog,
     elapsed_time = walltime_accounting_get_time_since_reset(walltime_accounting);
     elapsed_time_over_all_threads =
             walltime_accounting_get_time_since_reset_over_all_threads(walltime_accounting);
-    if (GMX_MPI && cr->nnodes > 1)
+    if (GMX_MPI && cr->commMySim.size() > 1)
     {
 #if GMX_MPI
         /* reduce elapsed_time over all MPI ranks in the current simulation */
-        MPI_Allreduce(&elapsed_time, &elapsed_time_over_all_ranks, 1, MPI_DOUBLE, MPI_SUM, cr->mpi_comm_mysim);
-        elapsed_time_over_all_ranks /= cr->nnodes;
+        MPI_Allreduce(
+                &elapsed_time, &elapsed_time_over_all_ranks, 1, MPI_DOUBLE, MPI_SUM, cr->commMySim.comm());
+        elapsed_time_over_all_ranks /= cr->commMySim.size();
         /* Reduce elapsed_time_over_all_threads over all MPI ranks in the
          * current simulation. */
         MPI_Allreduce(&elapsed_time_over_all_threads,
@@ -698,7 +699,7 @@ static void finish_run(FILE*                     fplog,
                       1,
                       MPI_DOUBLE,
                       MPI_SUM,
-                      cr->mpi_comm_mysim);
+                      cr->commMySim.comm());
 #endif
     }
     else
@@ -739,7 +740,7 @@ static void finish_run(FILE*                     fplog,
         }
         wallcycle_print(fplog,
                         mdlog,
-                        cr->nnodes,
+                        cr->commMySim.size(),
                         cr->npmenodes,
                         nthreads_pp,
                         nthreads_pme,
@@ -972,8 +973,9 @@ int Mdrunner::mdrunner()
 
     GMX_RELEASE_ASSERT(!GMX_MPI || ms || simulationCommunicator != MPI_COMM_NULL,
                        "Must have valid communicator unless running a multi-simulation");
-    std::unique_ptr<t_commrec> crHandle(init_commrec(simulationCommunicator));
-    t_commrec*                 cr = crHandle.get();
+    const MpiComm mpiCommSimulation(simulationCommunicator);
+    t_commrec     commRec(mpiCommSimulation);
+    t_commrec*    cr = &commRec;
     GMX_RELEASE_ASSERT(cr != nullptr, "Must have valid commrec");
 
     PhysicalNodeCommunicator physicalNodeComm(libraryWorldCommunicator, gmx_physicalnode_id_hash());
@@ -987,8 +989,11 @@ int Mdrunner::mdrunner()
             // On non-main ranks, allocate the object that will receive data in the following call.
             inputrec = std::make_unique<t_inputrec>();
         }
-        init_parallel(
-                cr->mpiDefaultCommunicator, MAIN(cr), inputrec.get(), &mtop, partialDeserializedTpr.get());
+        init_parallel(cr->mpiDefaultCommunicator.comm(),
+                      MAIN(cr),
+                      inputrec.get(),
+                      &mtop,
+                      partialDeserializedTpr.get());
     }
     GMX_RELEASE_ASSERT(inputrec != nullptr, "All ranks should have a valid inputrec now");
     partialDeserializedTpr.reset(nullptr);
@@ -1029,7 +1034,7 @@ int Mdrunner::mdrunner()
                                                     pmeFftTarget,
                                                     userGpuTaskAssignment,
                                                     *inputrec,
-                                                    cr->sizeOfDefaultCommunicator,
+                                                    cr->mpiDefaultCommunicator.size(),
                                                     domdecOptions.numPmeRanks,
                                                     gpusWereDetected);
         useGpuForBonded    = decideWhetherToUseGpusForBonded(
@@ -1162,7 +1167,7 @@ int Mdrunner::mdrunner()
             globalState = std::make_unique<t_state>();
         }
         broadcastStateWithoutDynamics(
-                cr->mpiDefaultCommunicator, haveDDAtomOrdering(*cr), PAR(cr), globalState.get());
+                cr->mpiDefaultCommunicator.comm(), haveDDAtomOrdering(*cr), PAR(cr), globalState.get());
     }
 
     /* A parallel command line option consistency check that we can
@@ -1209,7 +1214,7 @@ int Mdrunner::mdrunner()
                 DisResRunMode::MDRun,
                 MAIN(cr) ? DDRole::Main : DDRole::Agent,
                 PAR(cr) ? NumRanks::Multiple : NumRanks::Single,
-                cr->mpi_comm_mysim,
+                cr->commMySim.comm(),
                 ms,
                 disresdata,
                 globalState.get(),
@@ -1316,7 +1321,7 @@ int Mdrunner::mdrunner()
 
     if (PAR(cr))
     {
-        gmx_bcast(sizeof(box), box, cr->mpiDefaultCommunicator);
+        gmx_bcast(sizeof(box), box, cr->mpiDefaultCommunicator.comm());
     }
 
     if (inputrec->cutoff_scheme != CutoffScheme::Verlet)
@@ -1403,7 +1408,7 @@ int Mdrunner::mdrunner()
     // Initialize development feature flags that enabled by environment variable
     // and report those features that are enabled.
     const DevelopmentFeatureFlags devFlags = manageDevelopmentFeatures(
-            mdlog, pmeRunMode, cr->sizeOfDefaultCommunicator, domdecOptions.numPmeRanks, canUseDirectGpuComm);
+            mdlog, pmeRunMode, cr->mpiDefaultCommunicator.size(), domdecOptions.numPmeRanks, canUseDirectGpuComm);
 
     bool useGpuDirectHalo = false;
 
@@ -1413,7 +1418,7 @@ int Mdrunner::mdrunner()
         // domdecOptions.numPmeRanks == -1 results in 0 separate PME ranks when useGpuForNonbonded is true.
         // Todo: remove this assumption later once auto mode has support for separate PME rank
         const int numPmeRanks = domdecOptions.numPmeRanks > 0 ? domdecOptions.numPmeRanks : 0;
-        bool      havePPDomainDecomposition = (cr->sizeOfDefaultCommunicator - numPmeRanks) > 1;
+        bool      havePPDomainDecomposition = (cr->mpiDefaultCommunicator.size() - numPmeRanks) > 1;
         useGpuDirectHalo = decideWhetherToUseGpuForHalo(havePPDomainDecomposition,
                                                         useGpuForNonbonded,
                                                         canUseDirectGpuComm,
@@ -1427,12 +1432,12 @@ int Mdrunner::mdrunner()
             mtop,
             *inputrec,
             useDomainDecomposition,
-            cr->sizeOfDefaultCommunicator == 1
-                    || cr->sizeOfDefaultCommunicator - domdecOptions.numPmeRanks == 1,
+            cr->mpiDefaultCommunicator.size() == 1
+                    || cr->mpiDefaultCommunicator.size() - domdecOptions.numPmeRanks == 1,
             useGpuDirectHalo);
 
     if (haveFillerParticlesInLocalState && useDomainDecomposition
-        && cr->sizeOfDefaultCommunicator - domdecOptions.numPmeRanks > 1
+        && cr->mpiDefaultCommunicator.size() - domdecOptions.numPmeRanks > 1
         && domdecOptions.dlbOption != gmx::DlbOption::no)
     {
         GMX_LOG(mdlog.info)
@@ -1477,14 +1482,11 @@ int Mdrunner::mdrunner()
     else
     {
         /* PME, if used, is done on all nodes with 1D decomposition */
-        cr->mpi_comm_mygroup = cr->mpiDefaultCommunicator;
-        cr->mpi_comm_mysim   = cr->mpiDefaultCommunicator;
+        cr->commMyGroup = MpiComm(cr->mpiDefaultCommunicator);
+        cr->commMySim   = MpiComm(cr->mpiDefaultCommunicator);
 
-        cr->nnodes     = cr->sizeOfDefaultCommunicator;
-        cr->sim_nodeid = cr->rankInDefaultCommunicator;
-        cr->nodeid     = cr->rankInDefaultCommunicator;
-        cr->npmenodes  = 0;
-        cr->duty       = (DUTY_PP | DUTY_PME);
+        cr->npmenodes = 0;
+        cr->duty      = (DUTY_PP | DUTY_PME);
 
         if (inputrec->pbcType == PbcType::Screw)
         {
@@ -1601,7 +1603,7 @@ int Mdrunner::mdrunner()
             disableNonbondedCalculation,
             devFlags,
             haveFillerParticlesInLocalState,
-            havePPDomainDecomposition(cr),
+            havePPDomainDecomposition(cr->dd),
             haveSeparatePmeRank,
             useGpuForNonbonded,
             pmeRunMode,
@@ -1633,7 +1635,7 @@ int Mdrunner::mdrunner()
         gmx::internal::disableGpuEventConsumptionCounting();
     }
 
-    const bool printHostName = (cr->nnodes > 1);
+    const bool printHostName = (cr->commMySim.size() > 1);
     gpuTaskAssignments.reportGpuUsage(mdlog, printHostName, pmeRunMode, runScheduleWork.simulationWork);
 
     std::unique_ptr<DeviceStreamManager> deviceStreamManager = nullptr;
@@ -1652,7 +1654,7 @@ int Mdrunner::mdrunner()
     std::unique_ptr<NvshmemManager> nvshmemManager;
     if (runScheduleWork.simulationWork.useNvshmem)
     {
-        nvshmemManager = std::make_unique<NvshmemManager>(mdlog, cr->mpi_comm_mysim);
+        nvshmemManager = std::make_unique<NvshmemManager>(mdlog, cr->commMySim.comm());
     }
 
     // If the user chose a task assignment, give them some hints
@@ -1665,9 +1667,15 @@ int Mdrunner::mdrunner()
     if (PAR(cr))
     {
         /* After possible communicator splitting in make_dd_communicators.
-         * we can set up the intra/inter node communication.
+         * we can set up the intra/inter node hierarchical reductions.
          */
-        gmx_setup_nodecomm(fplog, cr);
+        cr->commMyGroup.initializeHierarchicalReductions(gmx_physicalnode_id_hash());
+
+        const auto mesg = cr->commMyGroup.getHierarchicalReductionsReport();
+        if (mesg)
+        {
+            GMX_LOG(mdlog.info).asParagraph().appendText(*mesg);
+        }
     }
 
 #if GMX_MPI
@@ -1683,11 +1691,11 @@ int Mdrunner::mdrunner()
     }
     GMX_LOG(mdlog.warning)
             .appendTextFormatted("Using %d MPI %s\n",
-                                 cr->nnodes,
+                                 cr->commMyGroup.size(),
 #    if GMX_THREAD_MPI
-                                 cr->nnodes == 1 ? "thread" : "threads"
+                                 cr->commMyGroup.size() == 1 ? "thread" : "threads"
 #    else
-                                 cr->nnodes == 1 ? "process" : "processes"
+                                 cr->commMyGroup.size() == 1 ? "process" : "processes"
 #    endif
             );
     std::fflush(stderr);
@@ -1702,7 +1710,7 @@ int Mdrunner::mdrunner()
             mdlog, &hw_opt, hwinfo_->hardwareTopology->maxThreads(), FALSE, libraryWorldCommunicator);
     /* Check and update the number of OpenMP threads requested */
     checkAndUpdateRequestedNumOpenmpThreads(
-            &hw_opt, *hwinfo_, cr, ms, physicalNodeComm.size_, pmeRunMode, mtop, *inputrec);
+            &hw_opt, *hwinfo_, cr->commMySim, ms, physicalNodeComm.size_, pmeRunMode, mtop, *inputrec);
 
     gmx_omp_nthreads_init(mdlog,
                           cr,
@@ -1720,7 +1728,8 @@ int Mdrunner::mdrunner()
     }
 
     /* Now that we know the setup is consistent, check for efficiency */
-    check_resource_division_efficiency(hwinfo_, gpuTaskAssignments.thisRankHasAnyGpuTask(), cr, mdlog);
+    check_resource_division_efficiency(
+            hwinfo_, gpuTaskAssignments.thisRankHasAnyGpuTask(), &cr->commMySim, mdlog);
 
     /* getting number of PP/PME threads on this MPI / tMPI rank.
        PME: env variable should be read only on one node to make sure it is
@@ -1730,7 +1739,7 @@ int Mdrunner::mdrunner()
                                              ? gmx_omp_nthreads_get(ModuleMultiThread::Nonbonded)
                                              : gmx_omp_nthreads_get(ModuleMultiThread::Pme);
     checkHardwareOversubscription(
-            numThreadsOnThisRank, cr->nodeid, *hwinfo_->hardwareTopology, physicalNodeComm, mdlog);
+            numThreadsOnThisRank, cr->commMyGroup.rank(), *hwinfo_->hardwareTopology, physicalNodeComm, mdlog);
 
     // Enable Peer access between GPUs where available
     // Only for DD, only main PP rank needs to perform setup, and only if thread MPI plus
@@ -1758,7 +1767,7 @@ int Mdrunner::mdrunner()
         /* Main synchronizes its value of reset_counters with all nodes
          * including PME only nodes */
         int64_t reset_counters = wcycle_get_reset_counters(wcycle.get());
-        gmx_bcast(sizeof(reset_counters), &reset_counters, cr->mpi_comm_mysim);
+        gmx_bcast(sizeof(reset_counters), &reset_counters, cr->commMySim.comm());
         wcycle_set_reset_counters(wcycle.get(), reset_counters);
     }
 
@@ -1780,7 +1789,8 @@ int Mdrunner::mdrunner()
     t_nrnb nrnb;
     if (thisRankHasDuty(cr, DUTY_PP))
     {
-        setupNotifier.notify(*cr);
+        setupNotifier.notify(cr->commMyGroup);
+        setupNotifier.notify(cr->dd);
         setupNotifier.notify(ms);
         setupNotifier.notify(&atomSets);
         setupNotifier.notify(mtop);
@@ -1817,7 +1827,7 @@ int Mdrunner::mdrunner()
                                              : diagonalMatrix<real>(0.0),
                                      MAIN(cr) ? DDRole::Main : DDRole::Agent,
                                      PAR(cr) ? NumRanks::Multiple : NumRanks::Single,
-                                     cr->mpi_comm_mygroup,
+                                     cr->commMyGroup.comm(),
                                      *inputrec);
 
         // Save a handle to device stream manager to use elsewhere in the code
@@ -1835,7 +1845,7 @@ int Mdrunner::mdrunner()
                     "GPU PP-PME stream should be valid in order to use GPU PME-PP direct "
                     "communications.");
             fr->pmePpCommGpu = std::make_unique<gmx::PmePpCommGpu>(
-                    cr->mpi_comm_mysim,
+                    cr->commMySim.comm(),
                     cr->dd->pme_nodeid,
                     &cr->dd->pmeForceReceiveBuffer,
                     deviceStreamManager->context(),
@@ -1846,7 +1856,8 @@ int Mdrunner::mdrunner()
         fr->nbv = init_nb_verlet(mdlog,
                                  *inputrec,
                                  *fr,
-                                 cr,
+                                 cr->commMyGroup,
+                                 cr->dd,
                                  *hwinfo_,
                                  runScheduleWork.simulationWork.useGpuNonbonded,
                                  deviceStreamManager.get(),
@@ -1989,8 +2000,8 @@ int Mdrunner::mdrunner()
         if (cr->npmenodes > 0)
         {
             /* The PME only nodes need to know nChargePerturbed(FEP on Q) and nTypePerturbed(FEP on LJ)*/
-            gmx_bcast(sizeof(nChargePerturbed), &nChargePerturbed, cr->mpi_comm_mysim);
-            gmx_bcast(sizeof(nTypePerturbed), &nTypePerturbed, cr->mpi_comm_mysim);
+            gmx_bcast(sizeof(nChargePerturbed), &nChargePerturbed, cr->commMySim.comm());
+            gmx_bcast(sizeof(nTypePerturbed), &nTypePerturbed, cr->commMySim.comm());
         }
 
         if (thisRankHasDuty(cr, DUTY_PME))
@@ -2070,7 +2081,7 @@ int Mdrunner::mdrunner()
 
         /* Set the CPU affinity */
         gmx_set_thread_affinity(mdlog,
-                                cr,
+                                cr->commMySim,
                                 &hw_opt,
                                 *hwinfo_->hardwareTopology,
                                 numThreadsOnThisRank,
@@ -2105,7 +2116,8 @@ int Mdrunner::mdrunner()
                                       inputrec->pull.get(),
                                       inputrec.get(),
                                       mtop,
-                                      cr,
+                                      cr->commMyGroup,
+                                      cr->dd,
                                       &atomSets,
                                       inputrec->fepvals->init_lambda_without_states);
                 if (inputrec->pull->bXOutAverage || inputrec->pull->bFOutAverage)
@@ -2127,7 +2139,7 @@ int Mdrunner::mdrunner()
                                             inputrec.get(),
                                             filenames.size(),
                                             filenames.data(),
-                                            cr,
+                                            cr->commMyGroup,
                                             &atomSets,
                                             globalState.get(),
                                             mtop,
@@ -2146,7 +2158,8 @@ int Mdrunner::mdrunner()
                                        mtop,
                                        globalState.get(),
                                        &observablesHistory,
-                                       cr,
+                                       cr->commMyGroup,
+                                       cr->dd,
                                        &atomSets,
                                        oenv,
                                        mdrunOptions,
@@ -2160,7 +2173,8 @@ int Mdrunner::mdrunner()
                                           pull_work != nullptr ? pull_have_constraint(*pull_work) : false,
                                           doEssentialDynamics,
                                           fplog,
-                                          cr,
+                                          cr->commMyGroup,
+                                          cr->dd,
                                           updateGroups.useUpdateGroups(),
                                           ms,
                                           &nrnb,
@@ -2187,7 +2201,8 @@ int Mdrunner::mdrunner()
 
             /* Set up interactive MD (IMD) */
             auto imdSession = makeImdSession(inputrec.get(),
-                                             cr,
+                                             cr->commMyGroup,
+                                             cr->dd,
                                              wcycle.get(),
                                              &enerd,
                                              ms,
@@ -2230,14 +2245,14 @@ int Mdrunner::mdrunner()
                     fr->mdGraph[MdGraphEvenOrOddStep::EvenStep] =
                             std::make_unique<gmx::MdGpuGraph>(*fr->deviceStreamManager,
                                                               runScheduleWork.simulationWork,
-                                                              cr->mpi_comm_mygroup,
+                                                              cr->commMyGroup.comm(),
                                                               MdGraphEvenOrOddStep::EvenStep,
                                                               wcycle.get());
 
                     fr->mdGraph[MdGraphEvenOrOddStep::OddStep] =
                             std::make_unique<gmx::MdGpuGraph>(*fr->deviceStreamManager,
                                                               runScheduleWork.simulationWork,
-                                                              cr->mpi_comm_mygroup,
+                                                              cr->commMyGroup.comm(),
                                                               MdGraphEvenOrOddStep::OddStep,
                                                               wcycle.get());
 
@@ -2419,7 +2434,7 @@ int Mdrunner::mdrunner()
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
 
     /* Does what it says */
-    print_date_and_time(fplog, cr->nodeid, "Finished mdrun", gmx_gettime());
+    print_date_and_time(fplog, cr->commMyGroup.rank(), "Finished mdrun", gmx_gettime());
     walltime_accounting_destroy(walltime_accounting);
 
     // Ensure log file content is written

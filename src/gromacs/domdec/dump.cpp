@@ -167,37 +167,35 @@ void write_dd_grid_pdb(const char* fn, int64_t step, gmx_domdec_t* dd, matrix bo
     }
 }
 
-void write_dd_pdb(const char*       fn,
-                  int64_t           step,
-                  const char*       title,
-                  const gmx_mtop_t& mtop,
-                  const t_commrec*  cr,
-                  int               natoms,
-                  const rvec        x[],
-                  const matrix      box)
+void write_dd_pdb(const char*         fn,
+                  int64_t             step,
+                  const char*         title,
+                  const gmx_mtop_t&   mtop,
+                  const gmx_domdec_t& dd,
+                  int                 natoms,
+                  const rvec          x[],
+                  const matrix        box)
 {
-    char          fname[STRLEN], buf[22];
-    FILE*         out;
-    int           resnr;
-    const char *  atomname, *resname;
-    gmx_domdec_t* dd;
+    char        fname[STRLEN], buf[22];
+    FILE*       out;
+    int         resnr;
+    const char *atomname, *resname;
 
-    dd = cr->dd;
     if (natoms == -1)
     {
-        natoms = dd->comm->atomRanges.end(DDAtomRanges::Type::Vsites);
+        natoms = dd.comm->atomRanges.end(DDAtomRanges::Type::Vsites);
     }
 
-    sprintf(fname, "%s_%s_n%d.pdb", fn, gmx_step_str(step, buf), cr->sim_nodeid);
+    sprintf(fname, "%s_%s_n%d.pdb", fn, gmx_step_str(step, buf), dd.rank);
 
     out = gmx_fio_fopen(fname, "w");
 
     fprintf(out, "TITLE     %s\n", title);
-    gmx_write_pdb_box(out, dd->unitCellInfo.haveScrewPBC ? PbcType::Screw : PbcType::Xyz, box);
+    gmx_write_pdb_box(out, dd.unitCellInfo.haveScrewPBC ? PbcType::Screw : PbcType::Xyz, box);
     int molb = 0;
     for (int i = 0; i < natoms; i++)
     {
-        int ii = dd->globalAtomIndices[i];
+        int ii = dd.globalAtomIndices[i];
         if (!isValidGlobalAtom(ii))
         {
             continue;
@@ -205,22 +203,22 @@ void write_dd_pdb(const char*       fn,
         mtopGetAtomAndResidueName(mtop, ii, &molb, &atomname, &resnr, &resname, nullptr);
         int  c;
         real b;
-        if (i < dd->comm->atomRanges.end(DDAtomRanges::Type::Zones))
+        if (i < dd.comm->atomRanges.end(DDAtomRanges::Type::Zones))
         {
             c = 0;
-            while (i >= *dd->zones.atomRange(c).end())
+            while (i >= *dd.zones.atomRange(c).end())
             {
                 c++;
             }
             b = c;
         }
-        else if (i < dd->comm->atomRanges.end(DDAtomRanges::Type::Vsites))
+        else if (i < dd.comm->atomRanges.end(DDAtomRanges::Type::Vsites))
         {
-            b = dd->zones.numZones();
+            b = dd.zones.numZones();
         }
         else
         {
-            b = dd->zones.numZones() + 1;
+            b = dd.zones.numZones() + 1;
         }
         gmx_fprintf_pdb_atomline(out,
                                  PdbRecordType::Atom,

@@ -69,7 +69,6 @@
 #include "gromacs/mdlib/lincs.h"
 #include "gromacs/mdlib/settle.h"
 #include "gromacs/mdlib/shake.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
@@ -90,6 +89,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/listoflists.h"
+#include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/txtdump.h"
@@ -114,7 +114,8 @@ public:
          const t_inputrec&          ir_p,
          pull_t*                    pull_work,
          FILE*                      log_p,
-         const t_commrec*           cr_p,
+         const MpiComm&             mpiComm_p,
+         gmx_domdec_t*              dd_p,
          bool                       useUpdateGroups,
          const gmx_multisim_t*      ms,
          t_nrnb*                    nrnb,
@@ -198,7 +199,9 @@ public:
     //! Logging support.
     FILE* log = nullptr;
     //! Communication support.
-    const t_commrec* cr = nullptr;
+    const MpiComm& mpiComm;
+    //! Domain decomposition object, can be nullptr.
+    gmx_domdec_t* dd;
     //! Multi-sim support.
     const gmx_multisim_t* ms = nullptr;
     //! Pulling code object, if any.
@@ -269,28 +272,26 @@ static void write_constr_pdb(const char*          fn,
                              const gmx_mtop_t&    mtop,
                              int                  start,
                              int                  homenr,
-                             const t_commrec*     cr,
+                             const MpiComm&       mpiComm,
+                             const gmx_domdec_t*  dd,
                              ArrayRef<const RVec> x,
                              const matrix         box)
 {
-    char          fname[STRLEN];
-    FILE*         out;
-    int           dd_ac0 = 0, dd_ac1 = 0, i, ii, resnr;
-    gmx_domdec_t* dd;
-    const char *  anm, *resnm;
+    char        fname[STRLEN];
+    FILE*       out;
+    int         dd_ac0 = 0, dd_ac1 = 0, i, ii, resnr;
+    const char *anm, *resnm;
 
-    dd = nullptr;
-    if (haveDDAtomOrdering(*cr))
+    if (dd)
     {
-        dd = cr->dd;
         dd_get_constraint_range(*dd, &dd_ac0, &dd_ac1);
         start  = 0;
         homenr = dd_ac1;
     }
 
-    if (PAR(cr))
+    if (mpiComm.size() > 1)
     {
-        sprintf(fname, "%s_n%d.pdb", fn, cr->sim_nodeid);
+        sprintf(fname, "%s_n%d.pdb", fn, mpiComm.rank());
     }
     else
     {
@@ -348,7 +349,8 @@ static void dump_confs(FILE*                log,
                        const gmx_mtop_t&    mtop,
                        int                  start,
                        int                  homenr,
-                       const t_commrec*     cr,
+                       const MpiComm&       mpiComm,
+                       const gmx_domdec_t*  dd,
                        ArrayRef<const RVec> x,
                        ArrayRef<const RVec> xprime,
                        const matrix         box)
@@ -362,9 +364,9 @@ static void dump_confs(FILE*                log,
     }
 
     sprintf(buf, "step%sb", gmx_step_str(step, buf2));
-    write_constr_pdb(buf, "initial coordinates", mtop, start, homenr, cr, x, box);
+    write_constr_pdb(buf, "initial coordinates", mtop, start, homenr, mpiComm, dd, x, box);
     sprintf(buf, "step%sc", gmx_step_str(step, buf2));
-    write_constr_pdb(buf, "coordinates after constraining", mtop, start, homenr, cr, xprime, box);
+    write_constr_pdb(buf, "coordinates after constraining", mtop, start, homenr, mpiComm, dd, xprime, box);
     if (log)
     {
         fprintf(log, "Wrote pdb files with previous and current coordinates\n");
@@ -484,15 +486,13 @@ bool Constraints::Impl::apply(const bool                computeRmsd,
      * Note that PBC for constraints is different from PBC for bondeds.
      * For constraints there is both forward and backward communication.
      */
-    if (ir.pbcType != PbcType::No && (cr->dd || pbcHandlingRequired_)
-        && !(cr->dd && cr->dd->constraint_comm == nullptr))
+    if (ir.pbcType != PbcType::No && (dd || pbcHandlingRequired_) && !(dd && dd->constraint_comm == nullptr))
     {
         /* With pbc=screw the screw has been changed to a shift
          * by the constraint coordinate communication routine,
          * so that here we can use normal pbc.
          */
-        pbc_null = set_pbc_dd(
-                &pbc, ir.pbcType, haveDDAtomOrdering(*cr) ? &cr->dd->numCells : nullptr, FALSE, box);
+        pbc_null = set_pbc_dd(&pbc, ir.pbcType, dd ? &dd->numCells : nullptr, FALSE, box);
     }
     else
     {
@@ -502,14 +502,11 @@ bool Constraints::Impl::apply(const bool                computeRmsd,
     /* Communicate the coordinates required for the non-local constraints
      * for LINCS and/or SETTLE.
      */
-    if (havePPDomainDecomposition(cr))
+    if (havePPDomainDecomposition(dd))
     {
         wallcycle_sub_start(wcycle, WallCycleSubCounter::ConstrComm);
-        dd_move_x_constraints(cr->dd,
-                              box,
-                              x.unpaddedArrayRef(),
-                              xprime.unpaddedArrayRef(),
-                              econq == ConstraintVariable::Positions);
+        dd_move_x_constraints(
+                dd, box, x.unpaddedArrayRef(), xprime.unpaddedArrayRef(), econq == ConstraintVariable::Positions);
         wallcycle_sub_stop(wcycle, WallCycleSubCounter::ConstrComm);
 
         if (!v.empty())
@@ -518,7 +515,7 @@ bool Constraints::Impl::apply(const bool                computeRmsd,
              * We never actually use these values, but we do increment them,
              * so we should avoid uninitialized variables and overflows.
              */
-            clear_constraint_quantity_nonlocal(*cr->dd, v.unpaddedArrayRef());
+            clear_constraint_quantity_nonlocal(*dd, v.unpaddedArrayRef());
         }
     }
 
@@ -529,7 +526,7 @@ bool Constraints::Impl::apply(const bool                computeRmsd,
                               step,
                               lincsd,
                               inverseMasses_,
-                              cr,
+                              dd,
                               ms,
                               x,
                               xprime,
@@ -765,7 +762,7 @@ bool Constraints::Impl::apply(const bool                computeRmsd,
 
     if (bDump)
     {
-        dump_confs(log, step, mtop, start, numHomeAtoms_, cr, x.unpaddedArrayRef(), xprime.unpaddedArrayRef(), box);
+        dump_confs(log, step, mtop, start, numHomeAtoms_, mpiComm, dd, x.unpaddedArrayRef(), xprime.unpaddedArrayRef(), box);
     }
 
     if (econq == ConstraintVariable::Positions)
@@ -784,7 +781,7 @@ bool Constraints::Impl::apply(const bool                computeRmsd,
             pull_constraint(pullWork_,
                             masses_,
                             pbc,
-                            cr,
+                            mpiComm,
                             ir.delta_t,
                             t,
                             x.unpaddedArrayRef(),
@@ -795,7 +792,7 @@ bool Constraints::Impl::apply(const bool                computeRmsd,
         if (ed && delta_step > 0)
         {
             /* apply the essential dynamics constraints here */
-            do_edsam(&ir, step, cr, xprime.unpaddedArrayRef(), v.unpaddedArrayRef(), box, ed);
+            do_edsam(&ir, step, mpiComm, xprime.unpaddedArrayRef(), v.unpaddedArrayRef(), box, ed);
         }
     }
     wallcycle_stop(wcycle, WallCycleCounter::Constr);
@@ -1021,12 +1018,12 @@ void Constraints::Impl::setConstraints(gmx_localtop_t*                     top,
         if (ir.eConstrAlg == ConstraintAlgorithm::Lincs)
         {
             wallcycle_sub_start(wcycle, WallCycleSubCounter::SetLincs);
-            set_lincs(*idef, numAtoms_, inverseMasses_, lambda_, EI_DYNAMICS(ir.eI), cr, lincsd);
+            set_lincs(*idef, numAtoms_, inverseMasses_, lambda_, EI_DYNAMICS(ir.eI), dd, lincsd);
             wallcycle_sub_stop(wcycle, WallCycleSubCounter::SetLincs);
         }
         if (ir.eConstrAlg == ConstraintAlgorithm::Shake)
         {
-            if (cr->dd)
+            if (dd)
             {
                 // We are using the local topology, so there are only
                 // F_CONSTR constraints.
@@ -1049,9 +1046,9 @@ void Constraints::Impl::setConstraints(gmx_localtop_t*                     top,
     }
 
     /* Make a selection of the local atoms for essential dynamics */
-    if (ed && cr->dd)
+    if (ed && dd)
     {
-        dd_make_local_ed_indices(cr->dd, ed);
+        dd_make_local_ed_indices(dd, ed);
     }
 }
 
@@ -1102,7 +1099,8 @@ Constraints::Constraints(const gmx_mtop_t&          mtop,
                          const t_inputrec&          ir,
                          pull_t*                    pull_work,
                          FILE*                      log,
-                         const t_commrec*           cr,
+                         const MpiComm&             mpiComm,
+                         gmx_domdec_t*              dd,
                          const bool                 useUpdateGroups,
                          const gmx_multisim_t*      ms,
                          t_nrnb*                    nrnb,
@@ -1111,7 +1109,20 @@ Constraints::Constraints(const gmx_mtop_t&          mtop,
                          ObservablesReducerBuilder* observablesReducerBuilder,
                          int                        numConstraints,
                          int                        numSettles) :
-    impl_(new Impl(mtop, ir, pull_work, log, cr, useUpdateGroups, ms, nrnb, wcycle, pbcHandlingRequired, observablesReducerBuilder, numConstraints, numSettles))
+    impl_(new Impl(mtop,
+                   ir,
+                   pull_work,
+                   log,
+                   mpiComm,
+                   dd,
+                   useUpdateGroups,
+                   ms,
+                   nrnb,
+                   wcycle,
+                   pbcHandlingRequired,
+                   observablesReducerBuilder,
+                   numConstraints,
+                   numSettles))
 {
 }
 
@@ -1119,7 +1130,8 @@ Constraints::Impl::Impl(const gmx_mtop_t&          mtop_p,
                         const t_inputrec&          ir_p,
                         pull_t*                    pull_work,
                         FILE*                      log_p,
-                        const t_commrec*           cr_p,
+                        const MpiComm&             mpiComm_p,
+                        gmx_domdec_t*              dd_p,
                         const bool                 useUpdateGroups,
                         const gmx_multisim_t*      ms_p,
                         t_nrnb*                    nrnb_p,
@@ -1132,7 +1144,8 @@ Constraints::Impl::Impl(const gmx_mtop_t&          mtop_p,
     mtop(mtop_p),
     pbcHandlingRequired_(pbcHandlingRequired),
     log(log_p),
-    cr(cr_p),
+    mpiComm(mpiComm_p),
+    dd(dd_p),
     ms(ms_p),
     pullWork_(pull_work),
     ir(ir_p),
@@ -1181,11 +1194,11 @@ Constraints::Impl::Impl(const gmx_mtop_t&          mtop_p,
         // When there are multiple PP domains and update groups are
         // not in use, the constraints might be split across the
         // domains, needing particular handling.
-        const bool mayHaveSplitConstraints = haveDDAtomOrdering(*cr) && !useUpdateGroups;
+        const bool mayHaveSplitConstraints = (dd != nullptr) && !useUpdateGroups;
 
         if (ir.eConstrAlg == ConstraintAlgorithm::Lincs)
         {
-            GMX_ASSERT(observablesReducerBuilder == nullptr || PAR(cr_p),
+            GMX_ASSERT(observablesReducerBuilder == nullptr || mpiComm.size() > 1,
                        "ObservablesReducer only works with LINCS when there is more than one rank");
             lincsd = init_lincs(
                     log, mtop, nflexcon, at2con_mt, mayHaveSplitConstraints, ir.nLincsIter, ir.nProjOrder, observablesReducerBuilder);
@@ -1260,7 +1273,7 @@ Constraints::Impl::Impl(const gmx_mtop_t&          mtop_p,
         {
             fprintf(log, "Setting the maximum number of constraint warnings to %d\n", maxwarn);
         }
-        if (MAIN(cr))
+        if (mpiComm.isMainRank())
         {
             fprintf(stderr, "Setting the maximum number of constraint warnings to %d\n", maxwarn);
         }

@@ -93,9 +93,9 @@ private:
     bool isQMAtom(Index globalAtomIndex);
 
     /*!\brief Initialization of QM program.
-     * \param[in] cr connection record structure
+     * \param[in] mpiComm communication object
      */
-    void initCP2KForceEnvironment(const t_commrec& cr);
+    void initCP2KForceEnvironment(const MpiComm& mpiComm);
 
     const QMMMParameters& parameters_;
     const LocalAtomSet&   qmAtoms_;

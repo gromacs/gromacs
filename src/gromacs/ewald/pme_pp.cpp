@@ -131,7 +131,7 @@ static void gmx_pme_send_coeffs_coords(t_forcerec*                    fr,
     {
         fprintf(debug,
                 "PP rank %d sending to PME rank %d: %d%s%s%s%s\n",
-                cr->sim_nodeid,
+                cr->commMySim.rank(),
                 dd->pme_nodeid,
                 n,
                 (flags & PP_PME_CHARGE) ? " charges" : "",
@@ -186,7 +186,7 @@ static void gmx_pme_send_coeffs_coords(t_forcerec*                    fr,
                   MPI_BYTE,
                   dd->pme_nodeid,
                   eCommType_CNB,
-                  cr->mpi_comm_mysim,
+                  cr->commMySim.comm(),
                   &dd->req_pme[dd->nreq_pme++]);
 #endif
     }
@@ -199,7 +199,7 @@ static void gmx_pme_send_coeffs_coords(t_forcerec*                    fr,
                   MPI_BYTE,
                   dd->pme_nodeid,
                   eCommType_CNB,
-                  cr->mpi_comm_mysim,
+                  cr->commMySim.comm(),
                   &dd->req_pme[dd->nreq_pme++]);
 #endif
     }
@@ -214,7 +214,7 @@ static void gmx_pme_send_coeffs_coords(t_forcerec*                    fr,
                       MPI_BYTE,
                       dd->pme_nodeid,
                       eCommType_ChargeA,
-                      cr->mpi_comm_mysim,
+                      cr->commMySim.comm(),
                       &dd->req_pme[dd->nreq_pme++]);
         }
         if (flags & PP_PME_CHARGEB)
@@ -224,7 +224,7 @@ static void gmx_pme_send_coeffs_coords(t_forcerec*                    fr,
                       MPI_BYTE,
                       dd->pme_nodeid,
                       eCommType_ChargeB,
-                      cr->mpi_comm_mysim,
+                      cr->commMySim.comm(),
                       &dd->req_pme[dd->nreq_pme++]);
         }
         if (flags & PP_PME_SQRTC6)
@@ -234,7 +234,7 @@ static void gmx_pme_send_coeffs_coords(t_forcerec*                    fr,
                       MPI_BYTE,
                       dd->pme_nodeid,
                       eCommType_SQRTC6A,
-                      cr->mpi_comm_mysim,
+                      cr->commMySim.comm(),
                       &dd->req_pme[dd->nreq_pme++]);
         }
         if (flags & PP_PME_SQRTC6B)
@@ -244,7 +244,7 @@ static void gmx_pme_send_coeffs_coords(t_forcerec*                    fr,
                       MPI_BYTE,
                       dd->pme_nodeid,
                       eCommType_SQRTC6B,
-                      cr->mpi_comm_mysim,
+                      cr->commMySim.comm(),
                       &dd->req_pme[dd->nreq_pme++]);
         }
         if (flags & PP_PME_SIGMA)
@@ -254,7 +254,7 @@ static void gmx_pme_send_coeffs_coords(t_forcerec*                    fr,
                       MPI_BYTE,
                       dd->pme_nodeid,
                       eCommType_SigmaA,
-                      cr->mpi_comm_mysim,
+                      cr->commMySim.comm(),
                       &dd->req_pme[dd->nreq_pme++]);
         }
         if (flags & PP_PME_SIGMAB)
@@ -264,7 +264,7 @@ static void gmx_pme_send_coeffs_coords(t_forcerec*                    fr,
                       MPI_BYTE,
                       dd->pme_nodeid,
                       eCommType_SigmaB,
-                      cr->mpi_comm_mysim,
+                      cr->commMySim.comm(),
                       &dd->req_pme[dd->nreq_pme++]);
         }
         if (flags & PP_PME_COORD)
@@ -298,7 +298,7 @@ static void gmx_pme_send_coeffs_coords(t_forcerec*                    fr,
                           MPI_BYTE,
                           dd->pme_nodeid,
                           eCommType_COORD,
-                          cr->mpi_comm_mysim,
+                          cr->commMySim.comm(),
                           &dd->req_pme[dd->nreq_pme++]);
             }
         }
@@ -471,7 +471,7 @@ void gmx_pme_send_switchgrid(const t_commrec* cr, ivec grid_size, real ewaldcoef
         cnb.ewaldcoeff_lj = ewaldcoeff_lj;
 
         /* We send this, uncommon, message blocking to simplify the code */
-        MPI_Send(&cnb, sizeof(cnb), MPI_BYTE, cr->dd->pme_nodeid, eCommType_CNB, cr->mpi_comm_mysim);
+        MPI_Send(&cnb, sizeof(cnb), MPI_BYTE, cr->dd->pme_nodeid, eCommType_CNB, cr->commMySim.comm());
     }
 #else
     GMX_UNUSED_VALUE(cr);
@@ -493,7 +493,7 @@ void gmx_pme_send_resetcounters(const t_commrec gmx_unused* cr, int64_t gmx_unus
         cnb.step  = step;
 
         /* We send this, uncommon, message blocking to simplify the code */
-        MPI_Send(&cnb, sizeof(cnb), MPI_BYTE, cr->dd->pme_nodeid, eCommType_CNB, cr->mpi_comm_mysim);
+        MPI_Send(&cnb, sizeof(cnb), MPI_BYTE, cr->dd->pme_nodeid, eCommType_CNB, cr->commMySim.comm());
     }
 #endif
 }
@@ -515,7 +515,7 @@ static void receive_virial_energy(const t_commrec*      cr,
         {
             fprintf(debug,
                     "PP rank %d receiving from PME rank %d: virial and energy\n",
-                    cr->sim_nodeid,
+                    cr->commMySim.rank(),
                     cr->dd->pme_nodeid);
         }
 #if GMX_MPI
@@ -524,7 +524,7 @@ static void receive_virial_energy(const t_commrec*      cr,
                  MPI_BYTE,
                  cr->dd->pme_nodeid,
                  eCommType_ENERGY_VIRIAL_DVDL,
-                 cr->mpi_comm_mysim,
+                 cr->commMySim.comm(),
                  MPI_STATUS_IGNORE);
 #else
         std::memset(&cve, 0, sizeof(cve));
@@ -569,7 +569,13 @@ static void recvFFromPme(gmx::PmePpCommGpu* pmePpCommGpu,
     {
         // Receive data using MPI
 #if GMX_MPI
-        MPI_Recv(recvptr, n * sizeof(rvec), MPI_BYTE, cr->dd->pme_nodeid, eCommType_FORCES, cr->mpi_comm_mysim, MPI_STATUS_IGNORE);
+        MPI_Recv(recvptr,
+                 n * sizeof(rvec),
+                 MPI_BYTE,
+                 cr->dd->pme_nodeid,
+                 eCommType_FORCES,
+                 cr->commMySim.comm(),
+                 MPI_STATUS_IGNORE);
 #else
         GMX_UNUSED_VALUE(cr);
         GMX_UNUSED_VALUE(n);

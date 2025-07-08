@@ -59,7 +59,6 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdrunutility/multisim.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/iforceprovider.h"
@@ -71,6 +70,7 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/textreader.h"
@@ -176,7 +176,8 @@ protected:
     PbcType                            pbcType_;
     MDLogger                           logger_;
     t_atoms                            atoms_;
-    t_commrec                          cr_;
+    const MpiComm                      mpiComm_ = MpiComm(MpiComm::SingleRank{});
+    const gmx_domdec_t*                dd_      = nullptr;
     std::map<std::string, std::string> KVTInputs;
     ColvarsForceProviderState          colvarsState_;
 
@@ -202,7 +203,7 @@ TEST_F(ColvarsForceProviderTest, CanConstructOrNot)
                                                        temperature_,
                                                        seed_,
                                                        &atomSetManager_,
-                                                       &cr_,
+                                                       mpiComm_,
                                                        nullptr,
                                                        simulationTimeStep_,
                                                        atomCoords_,
@@ -228,7 +229,7 @@ TEST_F(ColvarsForceProviderTest, SimpleInputs)
                                        temperature_,
                                        seed_,
                                        &atomSetManager_,
-                                       &cr_,
+                                       mpiComm_,
                                        nullptr,
                                        simulationTimeStep_,
                                        atomCoords_,
@@ -291,7 +292,7 @@ TEST_F(ColvarsForceProviderTest, WrongColvarsInput)
                                                         temperature_,
                                                         seed_,
                                                         &atomSetManager_,
-                                                        &cr_,
+                                                        mpiComm_,
                                                         nullptr,
                                                         simulationTimeStep_,
                                                         atomCoords_,
@@ -315,7 +316,7 @@ TEST_F(ColvarsForceProviderTest, CalculateForces4water)
     atomCoords_ = { RVec(x_[0]), RVec(x_[4]) };
 
     // Prepare a ForceProviderInput
-    ForceProviderInput forceProviderInput(x_, atoms_.nr, {}, {}, 0.0, 0, box_, cr_);
+    ForceProviderInput forceProviderInput(x_, atoms_.nr, {}, {}, 0.0, 0, box_, mpiComm_, dd_);
 
     // Prepare a ForceProviderOutput
     std::vector<RVec>   forces(atoms_.nr, RVec{ 0, 0, 0 });
@@ -331,7 +332,7 @@ TEST_F(ColvarsForceProviderTest, CalculateForces4water)
                                        temperature_,
                                        seed_,
                                        &atomSetManager_,
-                                       &cr_,
+                                       mpiComm_,
                                        nullptr,
                                        simulationTimeStep_,
                                        atomCoords_,
@@ -360,7 +361,7 @@ TEST_F(ColvarsForceProviderTest, CalculateForcesAlanine)
     atomCoords_ = { RVec(x_[0]), RVec(x_[4]), RVec(x_[10]), RVec(x_[11]) };
 
     // Prepare a ForceProviderInput
-    ForceProviderInput forceProviderInput(x_, atoms_.nr, {}, {}, 0.0, 0, box_, cr_);
+    ForceProviderInput forceProviderInput(x_, atoms_.nr, {}, {}, 0.0, 0, box_, mpiComm_, dd_);
 
     // Prepare a ForceProviderOutput
     std::vector<RVec>   forces(atoms_.nr, RVec{ 0, 0, 0 });
@@ -376,7 +377,7 @@ TEST_F(ColvarsForceProviderTest, CalculateForcesAlanine)
                                        temperature_,
                                        seed_,
                                        &atomSetManager_,
-                                       &cr_,
+                                       mpiComm_,
                                        nullptr,
                                        simulationTimeStep_,
                                        atomCoords_,

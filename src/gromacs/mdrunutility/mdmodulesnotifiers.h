@@ -58,7 +58,7 @@
 #include "gromacs/utility/real.h"
 
 
-struct t_commrec;
+struct gmx_domdec_t;
 struct gmx_mtop_t;
 class WarningHandler;
 enum class PbcType : int;
@@ -68,6 +68,7 @@ struct gmx_multisim_t;
 namespace gmx
 {
 
+class MpiComm;
 class KeyValueTreeObject;
 class KeyValueTreeObjectBuilder;
 class LocalAtomSetManager;
@@ -402,9 +403,11 @@ struct MDModulesNotifiers
      *                              them to interconvert between step and time information
      * \tparam EnsembleTemperature& Provides modules with the (eventual) constant ensemble
      *                              temperature
-     * \tparam t_commrec&           Provides a communicator to the modules during simulation
+     * \tparam MpiComm&          Provides a communicator to the modules during simulation
      *                              setup
-     *
+     * \tparam gmx_domdec_t*        Provides access to the domain decomposition object.
+     *                              Note that this will be nullptr when DD is not in use.
+     *                              Note: DEPRECATED, use LocalAtomSet instead
      * \tparam gmx_multisim_t&      Shares the multisim struct with the modules
      *                              Subscribing to this notifier will sync checkpointing
      *                              of simulations and will cause simulations to stop,
@@ -429,7 +432,8 @@ struct MDModulesNotifiers
                            const PbcType&,
                            const SimulationTimeStep&,
                            const EnsembleTemperature&,
-                           const t_commrec&,
+                           const MpiComm&,
+                           const gmx_domdec_t*,
                            const gmx_multisim_t*,
                            const MdRunInputFilename&,
                            const EdrOutputFilename&,

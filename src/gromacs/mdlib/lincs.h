@@ -52,11 +52,11 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+struct gmx_domdec_t;
 struct gmx_mtop_t;
 struct gmx_multisim_t;
 struct gmx_wallcycle;
 class InteractionDefinitions;
-struct t_commrec;
 struct t_inputrec;
 struct t_nrnb;
 struct t_pbc;
@@ -95,7 +95,7 @@ void set_lincs(const InteractionDefinitions& idef,
                ArrayRef<const real>          invmass,
                real                          lambda,
                bool                          bDynamics,
-               const t_commrec*              cr,
+               const gmx_domdec_t*           dd,
                Lincs*                        li);
 
 /*! \brief Applies LINCS constraints.
@@ -106,7 +106,7 @@ bool constrain_lincs(bool                            computeRmsd,
                      int64_t                         step,
                      Lincs*                          lincsd,
                      ArrayRef<const real>            invmass,
-                     const t_commrec*                cr,
+                     gmx_domdec_t*                   dd,
                      const gmx_multisim_t*           ms,
                      ArrayRefWithPadding<const RVec> x,
                      ArrayRefWithPadding<RVec>       xprime,

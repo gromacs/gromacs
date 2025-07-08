@@ -439,7 +439,7 @@ void logInitialMultisimStatus(const gmx_multisim_t* ms,
                           "The initial step is not consistent across multi simulations which "
                           "share the state");
             }
-            gmx_barrier(cr->mpi_comm_mygroup);
+            gmx_barrier(cr->commMyGroup.comm());
         }
         else
         {

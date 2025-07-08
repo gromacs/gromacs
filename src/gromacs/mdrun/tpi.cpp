@@ -133,11 +133,11 @@ namespace gmx
 {
 
 //! Global max algorithm
-static void global_max(t_commrec* cr, int* n)
+static void global_max(const MpiComm& mpiComm, int* n)
 {
-    std::vector<int> sum(cr->nnodes);
-    sum[cr->nodeid] = *n;
-    gmx_sumi(cr->nnodes, sum.data(), cr);
+    std::vector<int> sum(mpiComm.size());
+    sum[mpiComm.rank()] = *n;
+    mpiComm.sumReduce(sum);
     *n = *std::max_element(sum.begin(), sum.end());
 }
 
@@ -355,6 +355,7 @@ TestParticleInsertion::TestParticleInsertion(const t_inputrec&         inputRec,
     top_(top),
     mdatoms_(mdatoms),
     mdModulesNotifiers_(mdModulesNotifiers),
+    cr_(MpiComm(MpiComm::SingleRank{})),
     fr_(*forceRec),
     enerd_(*enerd),
     rng_(inputRec.ld_seed, RandomDomain::TestParticleInsertion),
@@ -1135,8 +1136,8 @@ void LegacySimulator::do_tpi()
                               beta,
                               rfExclusionEnergy,
                               det(rerun_fr.box),
-                              cr_->nnodes,
-                              cr_->nodeid);
+                              cr_->commMyGroup.size(),
+                              cr_->commMyGroup.rank());
 
     tpi.checkEnergyGroups(fr_->atomInfoForEachMoleculeBlock, fpLog_);
 
@@ -1202,7 +1203,7 @@ void LegacySimulator::do_tpi()
         runScheduleWork_->domainWork = setupDomainLifetimeWorkload(
                 *inputRec_, *fr_, pullWork_, ed, *mdatoms, runScheduleWork_->simulationWork);
 
-        const int64_t step = cr_->nodeid * tpi.stepBlockSize();
+        const int64_t step = cr_->commMyGroup.rank() * tpi.stepBlockSize();
 
         double sum_embU = tpi.insertIntoFrame(
                 rerun_fr.time,
@@ -1285,7 +1286,7 @@ void LegacySimulator::do_tpi()
     {
         /* When running in parallel sum the bins over the processes */
         int i = gmx::ssize(bins);
-        global_max(cr_, &i);
+        global_max(cr_->commMyGroup, &i);
         bins.resize(i);
         gmx_sumd(gmx::ssize(bins), bins.data(), cr_);
     }

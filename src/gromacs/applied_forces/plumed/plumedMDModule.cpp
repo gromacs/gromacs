@@ -48,7 +48,6 @@
 #include "gromacs/domdec/localatomsetmanager.h"
 #include "gromacs/fileio/checkpoint.h"
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/imdmodule.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 
@@ -99,8 +98,8 @@ public:
         notifier->simulationSetupNotifier_.subscribe([this](const gmx_mtop_t& mtop)
                                                      { this->options_.setTopology(mtop); });
         // Retrieve the Communication Record during simulations setup
-        notifier->simulationSetupNotifier_.subscribe([this](const t_commrec& cr)
-                                                     { this->options_.setComm(cr); });
+        notifier->simulationSetupNotifier_.subscribe([this](const MpiComm& mpiComm)
+                                                     { this->options_.setComm(mpiComm); });
         // setting the simulation time step
         notifier->simulationSetupNotifier_.subscribe(
                 [this](const SimulationTimeStep& simulationTimeStep)

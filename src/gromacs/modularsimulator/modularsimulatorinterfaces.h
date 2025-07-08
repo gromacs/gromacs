@@ -65,9 +65,9 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 
+struct gmx_domdec_t;
 struct gmx_localtop_t;
 struct gmx_mdoutf;
-struct t_commrec;
 class t_state;
 
 namespace gmx
@@ -75,6 +75,7 @@ namespace gmx
 template<typename T>
 class ArrayRef;
 class EnergySignaller;
+class MpiComm;
 class LastStepSignaller;
 class LoggingSignaller;
 class NeighborSearchSignaller;
@@ -355,19 +356,19 @@ protected:
  * to write a single templated function, e.g.
  *     template<CheckpointDataOperation operation>
  *     void doCheckpointData(CheckpointData<operation>* checkpointData,
- *                           const t_commrec* cr)
+ *                           const MpiComm& mpiComm)
  *     {
  *         checkpointData->scalar("important value", &value_);
  *     }
  * for both checkpoint reading and writing. This function can then be
  * dispatched from the interface functions,
- *     void writeCheckpoint(WriteCheckpointData checkpointData, const t_commrec* cr)
+ *     void writeCheckpoint(WriteCheckpointData checkpointData, const MpiComm& mpiComm)
  *     {
- *         doCheckpointData<CheckpointDataOperation::Write>(&checkpointData, cr);
+ *         doCheckpointData<CheckpointDataOperation::Write>(&checkpointData, mpiComm);
  *     }
- *     void readCheckpoint(ReadCheckpointData checkpointData, const t_commrec* cr)
+ *     void readCheckpoint(ReadCheckpointData checkpointData, const MpiComm& mpiComm, gmx_domdec_t* dd)
  *     {
- *         doCheckpointData<CheckpointDataOperation::Read>(&checkpointData, cr);
+ *         doCheckpointData<CheckpointDataOperation::Read>(&checkpointData, mpiComm, dd);
  *     }
  * This reduces code duplication and ensures that reading and writing
  * operations will not get out of sync.
@@ -380,10 +381,12 @@ public:
 
     //! Write checkpoint (CheckpointData object only passed on main rank)
     virtual void saveCheckpointState(std::optional<WriteCheckpointData> checkpointData,
-                                     const t_commrec*                   cr) = 0;
+                                     const MpiComm&                     mpiComm,
+                                     gmx_domdec_t*                      dd) = 0;
     //! Read checkpoint (CheckpointData object only passed on main rank)
     virtual void restoreCheckpointState(std::optional<ReadCheckpointData> checkpointData,
-                                        const t_commrec*                  cr) = 0;
+                                        const MpiComm&                    mpiComm,
+                                        gmx_domdec_t*                     dd) = 0;
     //! Get unique client id
     [[nodiscard]] virtual const std::string& clientID() = 0;
 };

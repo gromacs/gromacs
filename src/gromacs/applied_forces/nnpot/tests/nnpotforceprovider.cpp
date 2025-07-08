@@ -50,7 +50,6 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/hardware/device_information.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -58,6 +57,7 @@
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/textwriter.h"
 
 #include "testutils/cmdlinetest.h"
@@ -114,7 +114,7 @@ public:
         params_.active_        = true;
         params_.modelFileName_ = gmx::test::TestFileManager::getInputFilePath("model.pt").string();
         params_.numAtoms_      = 6;
-        params_.cr_            = &cr_;
+        params_.mpiComm_       = &mpiComm_;
     }
 
     void setParametersTopology()
@@ -123,7 +123,7 @@ public:
         params_.modelFileName_ = gmx::test::TestFileManager::getInputFilePath("model.pt").string();
         params_.atoms_         = gmx_mtop_global_atoms(mtop_);
         params_.numAtoms_      = params_.atoms_.nr;
-        params_.cr_            = &cr_;
+        params_.mpiComm_       = &mpiComm_;
         params_.modelInput_    = { "atom-positions", "atom-numbers", "box", "pbc" };
 
         std::vector<gmx::Index> nnpIndices = { 0, 1, 2, 3, 4, 5 };
@@ -141,7 +141,7 @@ public:
         EXPECT_NO_THROW(nnpotForceProvider->gatherAtomNumbersIndices());
 
         // Prepare input for force provider
-        ForceProviderInput fInput(x_, params_.numAtoms_, {}, {}, 0.0, 0, box_, cr_);
+        ForceProviderInput fInput(x_, params_.numAtoms_, {}, {}, 0.0, 0, box_, mpiComm_, dd_);
 
         // Prepare output for force provider
         std::vector<RVec>   forces(params_.numAtoms_, RVec{ 0, 0, 0 });
@@ -162,7 +162,8 @@ protected:
     MDLogger                      logger_;
     LocalAtomSetManager           atomSetManager_;
     std::unique_ptr<LocalAtomSet> inpAtomSet_;
-    t_commrec                     cr_;
+    const MpiComm                 mpiComm_ = MpiComm(MpiComm::SingleRank{});
+    const gmx_domdec_t*           dd_      = nullptr;
     gmx::test::TestFileManager    fileManager_;
 
     rvec*                coords = nullptr;

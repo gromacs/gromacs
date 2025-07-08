@@ -52,13 +52,6 @@ struct t_filenm;
 //! Free memory associated with the commrec.
 void done_commrec(t_commrec* cr);
 
-//! Allocate, initialize and return the commrec.
-std::unique_ptr<t_commrec> init_commrec(MPI_Comm communicator);
-
-
-void gmx_setup_nodecomm(FILE* fplog, struct t_commrec* cr);
-/* Sets up fast global communication for clusters with multi-core nodes */
-
 //! Wait until all processes in communicator have reached the barrier
 void gmx_barrier(MPI_Comm communicator);
 

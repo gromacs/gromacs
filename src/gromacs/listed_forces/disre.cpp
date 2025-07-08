@@ -68,6 +68,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
@@ -295,7 +296,8 @@ void init_disres(FILE*                 fplog,
     }
 }
 
-void calc_disres_R_6(const t_commrec*      cr,
+void calc_disres_R_6(const gmx::MpiComm&   mpiComm,
+                     const gmx_domdec_t*   domdec,
                      const gmx_multisim_t* ms,
                      int                   nfa,
                      const t_iatom         forceatoms[],
@@ -380,9 +382,9 @@ void calc_disres_R_6(const t_commrec*      cr,
     }
 
     /* NOTE: Rt_6 and Rtav_6 are stored consecutively in memory */
-    if (cr && haveDDAtomOrdering(*cr))
+    if (domdec)
     {
-        gmx_sum(2 * dd->nres, dd->Rt_6, cr);
+        mpiComm.sumReduce(2 * dd->nres, dd->Rt_6);
     }
 
     if (dd->nsystems > 1)
@@ -396,12 +398,12 @@ void calc_disres_R_6(const t_commrec*      cr,
             Rtav_6[res] *= invn;
         }
 
-        GMX_ASSERT(cr != nullptr && ms != nullptr, "We need multisim with nsystems>1");
+        GMX_ASSERT(ms != nullptr, "We need multisim with nsystems>1");
         gmx_sum_sim(2 * dd->nres, dd->Rt_6, ms);
 
-        if (haveDDAtomOrdering(*cr))
+        if (domdec)
         {
-            gmx_bcast(2 * dd->nres, dd->Rt_6, cr->mpi_comm_mygroup);
+            gmx_bcast(2 * dd->nres, dd->Rt_6, mpiComm.comm());
         }
     }
 

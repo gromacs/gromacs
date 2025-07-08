@@ -128,5 +128,5 @@ void print_start(FILE* fplog, const t_commrec* cr, gmx_walltime_accounting_t wal
 
     sprintf(buf, "Started %s", name);
     print_date_and_time(
-            fplog, cr->nodeid, buf, walltime_accounting_get_start_time_stamp(walltime_accounting));
+            fplog, cr->commMyGroup.rank(), buf, walltime_accounting_get_start_time_stamp(walltime_accounting));
 }

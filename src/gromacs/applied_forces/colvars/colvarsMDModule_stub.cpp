@@ -46,7 +46,6 @@
 
 #include "gromacs/domdec/localatomsetmanager.h"
 #include "gromacs/fileio/checkpoint.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/imdmodule.h"
 #include "gromacs/mdtypes/imdpoptionprovider.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"

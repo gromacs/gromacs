@@ -90,11 +90,12 @@ void RestraintForceProvider::calculateForces(const ForceProviderInput& forceProv
     t_pbc pbc{};
     set_pbc(&pbc, PbcType::Unset, box);
 
-    const auto& x  = forceProviderInput.x_;
-    const auto& cr = forceProviderInput.cr_;
-    const auto& t  = forceProviderInput.t_;
+    const auto& x       = forceProviderInput.x_;
+    const auto& mpiComm = forceProviderInput.mpiComm_;
+    const auto* dd      = forceProviderInput.dd_;
+    const auto& t       = forceProviderInput.t_;
     // Cooperatively get Cartesian coordinates for center of mass of each site
-    RVec r1 = sites_[0].centerOfMass(cr, static_cast<size_t>(homenr), x, t);
+    RVec r1 = sites_[0].centerOfMass(mpiComm, dd, static_cast<size_t>(homenr), x, t);
     // r2 is to be constructed as
     // r2 = (site[N] - site[N-1]) + (site_{N-1} - site_{N-2}) + ... + (site_2 - site_1) + site_1
     // where the minimum image convention is applied to each path but not to the overall sum.
@@ -110,8 +111,8 @@ void RestraintForceProvider::calculateForces(const ForceProviderInput& forceProv
     // a big molecule in a small box.
     for (size_t i = 0; i < sites_.size() - 1; ++i)
     {
-        RVec a = sites_[i].centerOfMass(cr, static_cast<size_t>(homenr), x, t);
-        RVec b = sites_[i + 1].centerOfMass(cr, static_cast<size_t>(homenr), x, t);
+        RVec a = sites_[i].centerOfMass(mpiComm, dd, static_cast<size_t>(homenr), x, t);
+        RVec b = sites_[i + 1].centerOfMass(mpiComm, dd, static_cast<size_t>(homenr), x, t);
         // dr = minimum_image_vector(b - a)
         pbc_dx(&pbc, b, a, dr);
         r2[0] += dr[0];
@@ -123,17 +124,17 @@ void RestraintForceProvider::calculateForces(const ForceProviderInput& forceProv
 
     // Main rank update call-back. This needs to be moved to a discrete place in the
     // time step to avoid extraneous barriers. The code would be prettier with "futures"...
-    if ((cr.dd == nullptr) || MAIN(&cr))
+    if ((dd == nullptr) || mpiComm.isMainRank())
     {
         restraint_->update(RVec(r1), r2, t);
     }
     // All ranks wait for the update to finish.
     // tMPI ranks are depending on structures that may have just been updated.
-    if (haveDDAtomOrdering(cr))
+    if (mpiComm.size() > 1)
     {
         // Note: this assumes that all ranks are hitting this line, which is not generally true.
         // I need to find the right subcommunicator. What I really want is a _scoped_ communicator...
-        gmx_barrier(cr.mpi_comm_mygroup);
+        gmx_barrier(mpiComm.comm());
     }
 
     // Apply restraint on all thread ranks only after any updates have been made.
@@ -145,7 +146,7 @@ void RestraintForceProvider::calculateForces(const ForceProviderInput& forceProv
     const int* aLocal = &site1;
     // Set forces using index `site1` if no domain decomposition, otherwise set with local index if available.
     const auto& force = forceProviderOutput->forceWithVirial_.force_;
-    if ((cr.dd == nullptr) || (aLocal = cr.dd->ga2la->findHome(site1)))
+    if ((dd == nullptr) || (aLocal = dd->ga2la->findHome(site1)))
     {
         force[static_cast<size_t>(*aLocal)] += result.force;
     }
@@ -157,7 +158,7 @@ void RestraintForceProvider::calculateForces(const ForceProviderInput& forceProv
     // following logic.
     const int  site2  = static_cast<int>(sites_.back().index());
     const int* bLocal = &site2;
-    if ((cr.dd == nullptr) || (bLocal = cr.dd->ga2la->findHome(site2)))
+    if ((dd == nullptr) || (bLocal = dd->ga2la->findHome(site2)))
     {
         force[static_cast<size_t>(*bLocal)] -= result.force;
     }

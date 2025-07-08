@@ -59,6 +59,7 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/real.h"
 
 #if HAVE_MUPARSER
@@ -330,7 +331,7 @@ TEST_F(PullTest, TransformationCoordAdvanced)
 
         // Distribute the transformation coordinate forces
         pull.comm.bParticipate = true;
-        pull_apply_forces(&pull, {}, nullptr, nullptr);
+        pull_apply_forces(&pull, {}, MpiComm(MpiComm::SingleRank{}), nullptr);
 
         // 2) check forces on transformation and normal pull coordinates with a direct relationship
         double tolX4 = 1e-2;

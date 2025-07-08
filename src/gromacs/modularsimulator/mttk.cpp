@@ -293,27 +293,33 @@ void MttkData::doCheckpointData(CheckpointData<operation>* checkpointData)
     checkpointData->scalar("integralTime", &integralTime_);
 }
 
-void MttkData::saveCheckpointState(std::optional<WriteCheckpointData> checkpointData, const t_commrec* cr)
+void MttkData::saveCheckpointState(std::optional<WriteCheckpointData> checkpointData,
+                                   const MpiComm&                     mpiComm,
+                                   gmx_domdec_t*                      dd)
 {
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         doCheckpointData<CheckpointDataOperation::Write>(&checkpointData.value());
     }
+
+    GMX_UNUSED_VALUE(dd);
 }
 
-void MttkData::restoreCheckpointState(std::optional<ReadCheckpointData> checkpointData, const t_commrec* cr)
+void MttkData::restoreCheckpointState(std::optional<ReadCheckpointData> checkpointData,
+                                      const MpiComm&                    mpiComm,
+                                      gmx_domdec_t*                     dd)
 {
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         doCheckpointData<CheckpointDataOperation::Read>(&checkpointData.value());
     }
-    if (haveDDAtomOrdering(*cr))
+    if (dd)
     {
-        dd_bcast(cr->dd, int(sizeof(real)), &etaVelocity_);
-        dd_bcast(cr->dd, int(sizeof(real)), &invMass_);
-        dd_bcast(cr->dd, int(sizeof(Time)), &etaVelocityTime_);
-        dd_bcast(cr->dd, int(sizeof(double)), &temperatureCouplingIntegral_);
-        dd_bcast(cr->dd, int(sizeof(Time)), &integralTime_);
+        dd_bcast(dd, int(sizeof(real)), &etaVelocity_);
+        dd_bcast(dd, int(sizeof(real)), &invMass_);
+        dd_bcast(dd, int(sizeof(Time)), &etaVelocityTime_);
+        dd_bcast(dd, int(sizeof(double)), &temperatureCouplingIntegral_);
+        dd_bcast(dd, int(sizeof(Time)), &integralTime_);
     }
 }
 

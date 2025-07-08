@@ -335,7 +335,7 @@ void Bias::restoreStateFromHistory(const AwhBiasHistory* biasHistory, const t_co
 
     if (PAR(cr))
     {
-        state_.broadcast(cr);
+        state_.broadcast(cr->commMyGroup);
     }
 }
 

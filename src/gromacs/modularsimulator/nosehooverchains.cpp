@@ -413,26 +413,30 @@ void NoseHooverGroup::broadcastCheckpointValues(const gmx_domdec_t* dd)
 }
 
 void NoseHooverChainsData::saveCheckpointState(std::optional<WriteCheckpointData> checkpointData,
-                                               const t_commrec*                   cr)
+                                               const MpiComm&                     mpiComm,
+                                               gmx_domdec_t*                      dd)
 {
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         doCheckpointData<CheckpointDataOperation::Write>(&checkpointData.value());
     }
+
+    GMX_UNUSED_VALUE(dd);
 }
 
 void NoseHooverChainsData::restoreCheckpointState(std::optional<ReadCheckpointData> checkpointData,
-                                                  const t_commrec*                  cr)
+                                                  const MpiComm&                    mpiComm,
+                                                  gmx_domdec_t*                     dd)
 {
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         doCheckpointData<CheckpointDataOperation::Read>(&checkpointData.value());
     }
     for (auto& group : noseHooverGroups_)
     {
-        if (haveDDAtomOrdering(*cr))
+        if (dd)
         {
-            group.broadcastCheckpointValues(cr->dd);
+            group.broadcastCheckpointValues(dd);
         }
         group.calculateIntegral();
     }

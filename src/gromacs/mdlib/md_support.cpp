@@ -63,7 +63,6 @@
 #include "gromacs/mdlib/tgroup.h"
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdlib/vcm.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/df_history.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/energyhistory.h"
@@ -88,6 +87,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
@@ -425,7 +425,7 @@ static void correctEkinForBoxDeformation(gmx_ekindata_t* ekind,
 /* TODO Specialize this routine into init-time and loop-time versions?
    e.g. bReadEkin is only true when restoring from checkpoint */
 void compute_globals(gmx_global_stat*               gstat,
-                     t_commrec*                     cr,
+                     const gmx::MpiComm&            mpiComm,
                      const t_inputrec*              ir,
                      t_forcerec*                    fr,
                      gmx_ekindata_t*                ekind,
@@ -501,11 +501,11 @@ void compute_globals(gmx_global_stat*               gstat,
         else
         {
             gmx::ArrayRef<real> signalBuffer = signalCoordinator->getCommunicationBuffer();
-            if (PAR(cr))
+            if (mpiComm.size() > 1)
             {
                 wallcycle_start(wcycle, WallCycleCounter::MoveE);
                 global_stat(*gstat,
-                            cr,
+                            mpiComm,
                             enerd,
                             force_vir,
                             shake_vir,
@@ -637,11 +637,11 @@ int computeGlobalCommunicationPeriod(const t_inputrec* ir)
     return nstglobalcomm;
 }
 
-int computeGlobalCommunicationPeriod(const gmx::MDLogger& mdlog, const t_inputrec* ir, const t_commrec* cr)
+int computeGlobalCommunicationPeriod(const gmx::MDLogger& mdlog, const t_inputrec* ir, const gmx::MpiComm& mpiComm)
 {
     const int nstglobalcomm = computeGlobalCommunicationPeriod(ir);
 
-    if (cr->nnodes > 1)
+    if (mpiComm.size() > 1)
     {
         GMX_LOG(mdlog.info)
                 .appendTextFormatted("Intra-simulation communication will occur every %d steps.\n",
@@ -650,17 +650,17 @@ int computeGlobalCommunicationPeriod(const gmx::MDLogger& mdlog, const t_inputre
     return nstglobalcomm;
 }
 
-void rerun_parallel_comm(t_commrec* cr, t_trxframe* fr, gmx_bool* bLastStep)
+void rerun_parallel_comm(const gmx::MpiComm& mpiComm, t_trxframe* fr, gmx_bool* bLastStep)
 {
     rvec *xp, *vp;
 
-    if (MAIN(cr) && *bLastStep)
+    if (mpiComm.isMainRank() && *bLastStep)
     {
         fr->natoms = -1;
     }
     xp = fr->x;
     vp = fr->v;
-    gmx_bcast(sizeof(*fr), fr, cr->mpi_comm_mygroup);
+    gmx_bcast(sizeof(*fr), fr, mpiComm.comm());
     fr->x = xp;
     fr->v = vp;
 

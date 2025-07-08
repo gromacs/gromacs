@@ -58,7 +58,6 @@
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdlib/vcm.h"
 #include "gromacs/mdrunutility/handlerestart.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/forcebuffers.h"
@@ -74,6 +73,7 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/smalloc.h"
 
 void integrateVVFirstStep(int64_t                   step,
@@ -83,7 +83,8 @@ void integrateVVFirstStep(int64_t                   step,
                           int                       nstglobalcomm,
                           const t_inputrec*         ir,
                           t_forcerec*               fr,
-                          t_commrec*                cr,
+                          const gmx::MpiComm&       mpiComm,
+                          const gmx_domdec_t*       dd,
                           t_state*                  state,
                           t_mdatoms*                mdatoms,
                           t_fcdata*                 fcdata,
@@ -165,7 +166,7 @@ void integrateVVFirstStep(int64_t                   step,
                            ekind,
                            dummyParrinelloRahmanM,
                            etrtVELOCITY1,
-                           cr,
+                           dd,
                            constr != nullptr);
 
         wallcycle_stop(wcycle, WallCycleCounter::Update);
@@ -197,7 +198,7 @@ void integrateVVFirstStep(int64_t                   step,
                      | (bTemp ? CGLO_TEMPERATURE : 0) | (bPres ? CGLO_PRESSURE : 0)
                      | (bPres ? CGLO_CONSTRAINT : 0) | (bStopCM ? CGLO_STOPCM : 0) | CGLO_SCALEEKIN);
             compute_globals(gstat,
-                            cr,
+                            mpiComm,
                             ir,
                             fr,
                             ekind,
@@ -276,7 +277,7 @@ void integrateVVFirstStep(int64_t                   step,
                  * the full step kinetic energy and possibly for T-coupling.*/
                 /* This may not be quite working correctly yet . . . . */
                 compute_globals(gstat,
-                                cr,
+                                mpiComm,
                                 ir,
                                 fr,
                                 ekind,
@@ -337,7 +338,8 @@ void integrateVVFirstStep(int64_t                   step,
 void integrateVVSecondStep(int64_t                   step,
                            const t_inputrec*         ir,
                            t_forcerec*               fr,
-                           t_commrec*                cr,
+                           const gmx::MpiComm&       mpiComm,
+                           const gmx_domdec_t*       dd,
                            t_state*                  state,
                            t_mdatoms*                mdatoms,
                            t_fcdata*                 fcdata,
@@ -384,7 +386,7 @@ void integrateVVSecondStep(int64_t                   step,
                        ekind,
                        dummyParrinelloRahmanM,
                        etrtVELOCITY2,
-                       cr,
+                       dd,
                        constr != nullptr);
 
 
@@ -417,7 +419,7 @@ void integrateVVSecondStep(int64_t                   step,
                        ekind,
                        dummyParrinelloRahmanM,
                        etrtPOSITION,
-                       cr,
+                       dd,
                        constr != nullptr);
 
     wallcycle_stop(wcycle, WallCycleCounter::Update);
@@ -426,7 +428,7 @@ void integrateVVSecondStep(int64_t                   step,
             constr, do_log || do_ene, step, state, upd->xp()->arrayRefWithPadding(), dvdl_constr, bCalcVir, shake_vir);
 
     upd->update_sd_second_half(
-            *ir, step, dvdl_constr, mdatoms->homenr, mdatoms->ptype, mdatoms->invmass, state, cr, nrnb, wcycle, constr, do_log, do_ene);
+            *ir, step, dvdl_constr, mdatoms->homenr, mdatoms->ptype, mdatoms->invmass, state, dd, nrnb, wcycle, constr, do_log, do_ene);
     upd->finish_update(
             *ir, mdatoms->havePartiallyFrozenAtoms, mdatoms->homenr, state, wcycle, constr != nullptr);
 
@@ -435,7 +437,7 @@ void integrateVVSecondStep(int64_t                   step,
         /* erase F_EKIN and F_TEMP here? */
         /* just compute the kinetic energy at the half step to perform a trotter step */
         compute_globals(gstat,
-                        cr,
+                        mpiComm,
                         ir,
                         fr,
                         ekind,
@@ -485,7 +487,7 @@ void integrateVVSecondStep(int64_t                   step,
                            ekind,
                            dummyParrinelloRahmanM,
                            etrtPOSITION,
-                           cr,
+                           dd,
                            constr != nullptr);
         wallcycle_stop(wcycle, WallCycleCounter::Update);
 

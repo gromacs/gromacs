@@ -1615,15 +1615,15 @@ void BiasState::restoreFromHistory(const AwhBiasHistory& biasHistory, const Bias
     linearGridindexToMultiDim(grid, stateHistory.end_index_updatelist, endUpdatelist_);
 }
 
-void BiasState::broadcast(const t_commrec* commRecord)
+void BiasState::broadcast(const MpiComm& mpiComm)
 {
-    gmx_bcast(sizeof(coordState_), &coordState_, commRecord->mpi_comm_mygroup);
+    gmx_bcast(sizeof(coordState_), &coordState_, mpiComm.comm());
 
-    gmx_bcast(points_.size() * sizeof(PointState), points_.data(), commRecord->mpi_comm_mygroup);
+    gmx_bcast(points_.size() * sizeof(PointState), points_.data(), mpiComm.comm());
 
-    gmx_bcast(weightSumCovering_.size() * sizeof(double), weightSumCovering_.data(), commRecord->mpi_comm_mygroup);
+    gmx_bcast(weightSumCovering_.size() * sizeof(double), weightSumCovering_.data(), mpiComm.comm());
 
-    gmx_bcast(sizeof(histogramSize_), &histogramSize_, commRecord->mpi_comm_mygroup);
+    gmx_bcast(sizeof(histogramSize_), &histogramSize_, mpiComm.comm());
 }
 
 void BiasState::setFreeEnergyToConvolvedPmf(ArrayRef<const DimParams> dimParams, const BiasGrid& grid)

@@ -64,7 +64,6 @@ struct gmx_mtop_t;
 struct gmx_output_env_t;
 struct gmx_wallcycle;
 struct swaphistory_t;
-struct t_commrec;
 struct t_inputrec;
 class t_state;
 struct t_swapcoords;
@@ -74,6 +73,7 @@ namespace gmx
 {
 template<typename T>
 class ArrayRef;
+class MpiComm;
 enum class StartingBehavior;
 class IMDModule;
 class LocalAtomSetManager;
@@ -119,7 +119,8 @@ public:
  * \param[in] mtop          Molecular topology.
  * \param[in] globalState   The global state, only used on the main rank.
  * \param[in] oh            Contains struct with swap data that is read from or written to checkpoint.
- * \param[in] cr            Pointer to MPI communication data.
+ * \param[in] mpiComm       Communicator object for my group.
+ * \param[in] dd            Domain decomposition object, is nullptr when DD is not active.
  * \param[in] atomSets      Manager tending to swap atom indices.
  * \param[in] oenv          Needed to open the swap output XVGR file.
  * \param[in] mdrunOptions  Options for mdrun.
@@ -131,7 +132,8 @@ std::unique_ptr<SwapCoords> init_swapcoords(FILE*                     fplog,
                                             const gmx_mtop_t&         mtop,
                                             const t_state*            globalState,
                                             ObservablesHistory*       oh,
-                                            t_commrec*                cr,
+                                            const gmx::MpiComm&       mpiComm,
+                                            const gmx_domdec_t*       dd,
                                             gmx::LocalAtomSetManager* atomSets,
                                             const gmx_output_env_t*   oenv,
                                             const gmx::MdrunOptions&  mdrunOptions,
@@ -140,7 +142,7 @@ std::unique_ptr<SwapCoords> init_swapcoords(FILE*                     fplog,
 
 /*! \brief "Computational Electrophysiology" main routine within MD loop.
  *
- * \param[in] cr       Pointer to MPI communication data.
+ * \param[in] mpiComm  Communicator object for my group.
  * \param[in] step     The number of the MD time step.
  * \param[in] t        The time.
  * \param[in] ir       Structure containing MD input parameters
@@ -153,7 +155,7 @@ std::unique_ptr<SwapCoords> init_swapcoords(FILE*                     fplog,
  *
  * \returns Whether at least one pair of molecules was swapped.
  */
-gmx_bool do_swapcoords(t_commrec*               cr,
+gmx_bool do_swapcoords(const gmx::MpiComm&      mpiComm,
                        int64_t                  step,
                        double                   t,
                        const t_inputrec*        ir,

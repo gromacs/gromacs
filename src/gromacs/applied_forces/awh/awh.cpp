@@ -472,7 +472,7 @@ void Awh::restoreStateFromHistory(const AwhHistory* awhHistory)
     }
     if (PAR(commRecord_))
     {
-        gmx_bcast(sizeof(potentialOffset_), &potentialOffset_, commRecord_->mpi_comm_mygroup);
+        gmx_bcast(sizeof(potentialOffset_), &potentialOffset_, commRecord_->commMyGroup.comm());
     }
 
     for (size_t k = 0; k < biasCoupledToSystem_.size(); k++)

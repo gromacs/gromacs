@@ -245,7 +245,7 @@ void gmx::LegacySimulator::do_md()
 
     const bool bRerunMD = false;
 
-    const int  nstglobalcomm   = computeGlobalCommunicationPeriod(mdLog_, ir, cr_);
+    const int  nstglobalcomm   = computeGlobalCommunicationPeriod(mdLog_, ir, cr_->commMyGroup);
     const bool bGStatEveryStep = (nstglobalcomm == 1);
 
     const SimulationGroups* groups = &topGlobal_.groups;
@@ -259,7 +259,8 @@ void gmx::LegacySimulator::do_md()
                         opt2fn("-eo", nFile_, fnm_),
                         topGlobal_,
                         *ir,
-                        cr_,
+                        cr_->commMyGroup,
+                        cr_->dd,
                         constr_,
                         stateGlobal_,
                         observablesHistory_,
@@ -529,8 +530,13 @@ void gmx::LegacySimulator::do_md()
         EnergyData::initializeEnergyHistory(startingBehavior_, observablesHistory_, &energyOutput);
     }
 
-    preparePrevStepPullCom(
-            ir, pullWork_, md->massT, state_, stateGlobal_, cr_, startingBehavior_ != StartingBehavior::NewSimulation);
+    preparePrevStepPullCom(ir,
+                           pullWork_,
+                           md->massT,
+                           state_,
+                           stateGlobal_,
+                           cr_->commMyGroup,
+                           startingBehavior_ != StartingBehavior::NewSimulation);
 
     // TODO: Remove this by converting AWH into a ForceProvider
     auto awh = prepareAwhModule(fpLog_,
@@ -619,13 +625,14 @@ void gmx::LegacySimulator::do_md()
     // reading directly follows .tpr reading, because all ranks can
     // agree on hasReadEkinState at that time.
     bool hasReadEkinState = MAIN(cr_) ? stateGlobal_->ekinstate.hasReadEkinState : false;
-    if (PAR(cr_))
+    if (cr_->commMyGroup.size() > 1)
     {
-        gmx_bcast(sizeof(hasReadEkinState), &hasReadEkinState, cr_->mpi_comm_mygroup);
+        gmx_bcast(sizeof(hasReadEkinState), &hasReadEkinState, cr_->commMyGroup.comm());
     }
     if (hasReadEkinState)
     {
-        restore_ekinstate_from_state(cr_, ekind_, MAIN(cr_) ? &stateGlobal_->ekinstate : nullptr);
+        restore_ekinstate_from_state(
+                cr_->commMyGroup, ekind_, MAIN(cr_) ? &stateGlobal_->ekinstate : nullptr);
     }
 
     unsigned int cglo_flags =
@@ -655,7 +662,7 @@ void gmx::LegacySimulator::do_md()
             cglo_flags_iteration &= ~CGLO_TEMPERATURE;
         }
         compute_globals(gstat,
-                        cr_,
+                        cr_->commMyGroup,
                         ir,
                         fr_,
                         ekind_,
@@ -701,7 +708,7 @@ void gmx::LegacySimulator::do_md()
            perhaps loses some logic?*/
 
         compute_globals(gstat,
-                        cr_,
+                        cr_->commMyGroup,
                         ir,
                         fr_,
                         ekind_,
@@ -1060,7 +1067,7 @@ void gmx::LegacySimulator::do_md()
             /* This may not be quite working correctly yet . . . . */
             int cglo_flags = CGLO_GSTAT | CGLO_TEMPERATURE;
             compute_globals(gstat,
-                            cr_,
+                            cr_->commMyGroup,
                             ir,
                             fr_,
                             ekind_,
@@ -1300,7 +1307,8 @@ void gmx::LegacySimulator::do_md()
                                      nstglobalcomm,
                                      ir,
                                      fr_,
-                                     cr_,
+                                     cr_->commMyGroup,
+                                     cr_->dd,
                                      state_,
                                      mdAtoms_->mdatoms(),
                                      &fcdata,
@@ -1524,7 +1532,8 @@ void gmx::LegacySimulator::do_md()
                 integrateVVSecondStep(step,
                                       ir,
                                       fr_,
-                                      cr_,
+                                      cr_->commMyGroup,
+                                      cr_->dd,
                                       state_,
                                       mdAtoms_->mdatoms(),
                                       &fcdata,
@@ -1667,7 +1676,7 @@ void gmx::LegacySimulator::do_md()
                                       ekind_,
                                       parrinelloRahmanM,
                                       etrtPOSITION,
-                                      cr_,
+                                      cr_->dd,
                                       constr_ != nullptr);
 
                     wallcycle_stop(wallCycleCounters_, WallCycleCounter::Update);
@@ -1688,7 +1697,7 @@ void gmx::LegacySimulator::do_md()
                                               md->ptype,
                                               md->invmass,
                                               state_,
-                                              cr_,
+                                              cr_->dd,
                                               nrnb_,
                                               wallCycleCounters_,
                                               constr_,
@@ -1790,7 +1799,7 @@ void gmx::LegacySimulator::do_md()
                 SimulationSignaller signaller(&signals, cr_, ms_, doInterSimSignal, doIntraSimSignal);
 
                 compute_globals(gstat,
-                                cr_,
+                                cr_->commMyGroup,
                                 ir,
                                 fr_,
                                 ekind_,
@@ -2048,7 +2057,7 @@ void gmx::LegacySimulator::do_md()
         if ((ir->eSwapCoords != SwapType::No) && (step > 0) && !bLastStep
             && do_per_step(step, ir->swap->nstswap))
         {
-            bNeedRepartition = do_swapcoords(cr_,
+            bNeedRepartition = do_swapcoords(cr_->commMyGroup,
                                              step,
                                              t,
                                              ir,

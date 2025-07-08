@@ -56,6 +56,7 @@ namespace gmx
 class EnergyData;
 class FreeEnergyPerturbationData;
 class GlobalCommunicationHelper;
+class MpiComm;
 class LegacySimulatorData;
 class MDAtoms;
 class ModularSimulatorAlgorithmBuilderHelper;
@@ -73,7 +74,7 @@ public:
                 PbcType              pbcType,
                 StatePropagatorData* statePropagatorData,
                 pull_t*              pullWork,
-                const t_commrec*     commrec,
+                const MpiComm&       mpiComm,
                 const MDAtoms*       mdAtoms);
     //! Update annealing temperature
     void scheduleTask(Step step, Time time, const RegisterRunFunction& registerRunFunction) override;
@@ -83,9 +84,13 @@ public:
     void elementTeardown() override {}
 
     //! ICheckpointHelperClient write checkpoint implementation
-    void saveCheckpointState(std::optional<WriteCheckpointData> checkpointData, const t_commrec* cr) override;
+    void saveCheckpointState(std::optional<WriteCheckpointData> checkpointData,
+                             const MpiComm&                     mpiComm,
+                             gmx_domdec_t*                      dd) override;
     //! ICheckpointHelperClient read checkpoint implementation
-    void restoreCheckpointState(std::optional<ReadCheckpointData> checkpointData, const t_commrec* cr) override;
+    void restoreCheckpointState(std::optional<ReadCheckpointData> checkpointData,
+                                const MpiComm&                    mpiComm,
+                                gmx_domdec_t*                     dd) override;
     //! ICheckpointHelperClient key implementation
     const std::string& clientID() override;
 
@@ -131,7 +136,7 @@ private:
     //! The pull work object.
     pull_t* pullWork_;
     //! Handles communication.
-    const t_commrec* commrec_;
+    const MpiComm& mpiComm_;
     //! Atom parameters for this domain.
     const MDAtoms* mdAtoms_;
 };

@@ -303,7 +303,7 @@ void ComputeGlobalsElement<algorithm>::compute(gmx::Step            step,
                                      : statePropagatorData_->constBox();
 
     compute_globals(gstat_,
-                    cr_,
+                    cr_->commMyGroup,
                     inputrec_,
                     fr_,
                     energyData_->ekindata(),

@@ -116,7 +116,7 @@ void SimulationSignaller::signalInterSim()
     if (haveDDAtomOrdering(*cr_))
     {
         // Communicate the signals from the main to the others.
-        gmx_bcast(eglsNR * sizeof(mpiBuffer_[0]), mpiBuffer_.data(), cr_->mpi_comm_mygroup);
+        gmx_bcast(eglsNR * sizeof(mpiBuffer_[0]), mpiBuffer_.data(), cr_->commMyGroup.comm());
     }
 }
 

@@ -40,6 +40,7 @@
 
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/mpicomm.h"
 
 struct gmx_domdec_t;
 
@@ -71,8 +72,8 @@ struct gmx_nodecomm_t
 
 struct t_commrec
 {
-    //! Constructs a valid object with one rank and no communicators
-    t_commrec();
+    //! Constructs a valid object with all communicators set to \p mpiComm
+    t_commrec(const gmx::MpiComm& mpiComm);
 
     ~t_commrec();
 
@@ -88,30 +89,19 @@ struct t_commrec
      * All communication within some simulation should happen
      * in mpi_comm_mysim, or its subset mpi_comm_mygroup.
      */
-    //! The rank-id in mpi_comm_mysim;
-    int sim_nodeid = 0;
-    //! The number of ranks in mpi_comm_mysim
-    int nnodes = 1;
     //! The number of separate PME ranks, 0 when no separate PME ranks are used
     int npmenodes = 0;
-
-    //! The rank-id in mpi_comm_mygroup;
-    int nodeid = 0;
 
     /* MPI communicators within a single simulation
      * Note: other parts of the code may further subset these communicators.
      */
-    MPI_Comm mpi_comm_mysim = MPI_COMM_NULL;   /* communicator including all ranks of
-                                  a single simulation */
-    MPI_Comm mpi_comm_mygroup = MPI_COMM_NULL; /* subset of mpi_comm_mysim including only
-                                  the ranks in the same group (PP or PME) */
-    //! The number of ranks in mpi_comm_mygroup
-    int sizeOfMyGroupCommunicator = 1;
+    /* Communicator including all ranks of a single simulation */
+    gmx::MpiComm commMySim;
+    /* Subset of commMySim including only the ranks in the same group (PP or PME) */
+    gmx::MpiComm commMyGroup;
 
     //! The communicator used before DD was initialized
-    MPI_Comm mpiDefaultCommunicator    = MPI_COMM_NULL;
-    int      sizeOfDefaultCommunicator = 0;
-    int      rankInDefaultCommunicator = 0;
+    gmx::MpiComm mpiDefaultCommunicator;
 
     gmx_nodecomm_t nc;
 
@@ -159,10 +149,10 @@ inline bool thisRankHasDuty(const t_commrec* cr, int duty)
  * In particular, this is true for multi-rank runs with TPI and NM, because
  * they use a decomposition that is not the domain decomposition used by
  * other simulation types. */
-#define PAR(cr) ((cr)->sizeOfDefaultCommunicator > 1)
+#define PAR(cr) ((cr)->mpiDefaultCommunicator.size() > 1)
 
 //! True of this is the main node
-#define MAIN(cr) (((cr)->rankInDefaultCommunicator == 0) || !PAR(cr))
+#define MAIN(cr) ((cr)->mpiDefaultCommunicator.rank() == 0)
 
 // Note that currently, main is always PP main, so this is equivalent to MAIN(cr)
 //! True if this is the particle-particle main
@@ -189,22 +179,6 @@ inline bool thisRankHasDuty(const t_commrec* cr, int duty)
 static bool inline haveDDAtomOrdering(const t_commrec& cr)
 {
     return cr.dd != nullptr;
-}
-
-/*! \brief Returns whether we have actual domain decomposition for the particle-particle interactions
- *
- * Will return false when we use 1 rank for PP and 1 for PME
- */
-static bool inline havePPDomainDecomposition(const t_commrec* cr)
-{
-    /* NOTE: It would be better to use cr->dd->nnodes, but we do not want
-     *       to pull in a dependency on domdec.h into this file.
-     */
-    GMX_ASSERT(cr != nullptr, "Invalid call of havePPDomainDecomposition before commrec is made");
-    GMX_ASSERT(cr->npmenodes >= 0,
-               "Invalid call of havePPDomainDecomposition before MPMD automated decomposition was "
-               "chosen.");
-    return (cr->dd != nullptr && cr->nnodes - cr->npmenodes > 1);
 }
 
 #endif

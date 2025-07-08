@@ -60,133 +60,6 @@
 /* The source code in this file should be thread-safe.
       Please keep it that way. */
 
-std::unique_ptr<t_commrec> init_commrec(MPI_Comm communicator)
-{
-    int rankInCommunicator, sizeOfCommunicator;
-#if GMX_MPI
-#    if GMX_LIB_MPI
-    GMX_RELEASE_ASSERT(gmx_mpi_initialized(), "Must have initialized MPI before building commrec");
-#    endif
-    MPI_Comm_rank(communicator, &rankInCommunicator);
-    MPI_Comm_size(communicator, &sizeOfCommunicator);
-#else
-    GMX_UNUSED_VALUE(communicator);
-    rankInCommunicator = 0;
-    sizeOfCommunicator = 1;
-#endif
-
-    std::unique_ptr<t_commrec> cr = std::make_unique<t_commrec>();
-
-    cr->mpiDefaultCommunicator    = communicator;
-    cr->sizeOfDefaultCommunicator = sizeOfCommunicator;
-    cr->rankInDefaultCommunicator = rankInCommunicator;
-
-    // For now, we want things to go horribly wrong if this is used too early...
-    // TODO: Remove when communicators are removed from commrec (#2395)
-    cr->nnodes                    = -1;
-    cr->sizeOfMyGroupCommunicator = -1;
-    cr->nodeid                    = -1;
-    cr->sim_nodeid                = -1;
-    cr->mpi_comm_mysim            = MPI_COMM_NULL;
-    cr->mpi_comm_mygroup          = MPI_COMM_NULL;
-
-    // TODO cr->duty should not be initialized here
-    cr->duty = (DUTY_PP | DUTY_PME);
-
-    return cr;
-}
-
-void gmx_setup_nodecomm(FILE gmx_unused* fplog, t_commrec* cr)
-{
-    gmx_nodecomm_t* nc;
-
-    /* Many MPI implementations do not optimize MPI_Allreduce
-     * (and probably also other global communication calls)
-     * for multi-core nodes connected by a network.
-     * We can optimize such communication by using one MPI call
-     * within each node and one between the nodes.
-     * For MVAPICH2 and Intel MPI this reduces the time for
-     * the global_stat communication by 25%
-     * for 2x2-core 3 GHz Woodcrest connected by mixed DDR/SDR Infiniband.
-     * B. Hess, November 2007
-     */
-
-    nc = &cr->nc;
-
-    nc->bUse = FALSE;
-#if !GMX_THREAD_MPI
-#    if GMX_MPI
-    int n, rank;
-
-    // TODO PhysicalNodeCommunicator could be extended/used to handle
-    // the need for per-node per-group communicators.
-    MPI_Comm_size(cr->mpi_comm_mygroup, &n);
-    MPI_Comm_rank(cr->mpi_comm_mygroup, &rank);
-
-    int nodehash = gmx_physicalnode_id_hash();
-
-    if (debug)
-    {
-        fprintf(debug, "In gmx_setup_nodecomm: splitting communicator of size %d\n", n);
-    }
-
-
-    /* The intra-node communicator, split on node number */
-    MPI_Comm_split(cr->mpi_comm_mygroup, nodehash, rank, &nc->comm_intra);
-    MPI_Comm_rank(nc->comm_intra, &nc->rank_intra);
-    if (debug)
-    {
-        fprintf(debug, "In gmx_setup_nodecomm: node ID %d rank within node %d\n", rank, nc->rank_intra);
-    }
-    /* The inter-node communicator, split on rank_intra.
-     * We actually only need the one for rank=0,
-     * but it is easier to create them all.
-     */
-    MPI_Comm_split(cr->mpi_comm_mygroup, nc->rank_intra, rank, &nc->comm_inter);
-    /* Check if this really created two step communication */
-    int ng, ni;
-
-    MPI_Comm_size(nc->comm_inter, &ng);
-    MPI_Comm_size(nc->comm_intra, &ni);
-    if (debug)
-    {
-        fprintf(debug, "In gmx_setup_nodecomm: groups %d, my group size %d\n", ng, ni);
-    }
-
-    if (std::getenv("GMX_NO_NODECOMM") == nullptr && ((ng > 1 && ng < n) || (ni > 1 && ni < n)))
-    {
-        nc->bUse = TRUE;
-        if (fplog)
-        {
-            fprintf(fplog,
-                    "Using two step summing over %d groups of on average %.1f ranks\n\n",
-                    ng,
-                    real(n) / real(ng));
-        }
-        if (nc->rank_intra > 0)
-        {
-            MPI_Comm_free(&nc->comm_inter);
-        }
-    }
-    else
-    {
-        /* One group or all processes in a separate group, use normal summing */
-        MPI_Comm_free(&nc->comm_inter);
-        MPI_Comm_free(&nc->comm_intra);
-        if (debug)
-        {
-            fprintf(debug,
-                    "In gmx_setup_nodecomm: not unsing separate inter- and intra-node "
-                    "communicators.\n");
-        }
-    }
-#    endif
-#else
-    /* tMPI runs only on a single node so just use the nodeid */
-    nc->rank_intra = cr->nodeid;
-#endif
-}
-
 void gmx_barrier(MPI_Comm gmx_unused communicator)
 {
     if (communicator == MPI_COMM_NULL)
@@ -220,7 +93,7 @@ void gmx_sumd(std::size_t gmx_unused nr, double gmx_unused r[], const t_commrec 
 {
     // Without MPI we have a single rank, so sum is a no-op
 #if GMX_MPI
-    if (cr->sizeOfMyGroupCommunicator == 1)
+    if (cr->commMyGroup.size() == 1)
     {
         return;
     }
@@ -266,7 +139,7 @@ void gmx_sumd(std::size_t gmx_unused nr, double gmx_unused r[], const t_commrec 
         for (std::size_t written = 0, remain = nr; remain > 0;)
         {
             std::size_t chunk = std::min(remain, maxSignedInt);
-            MPI_Allreduce(MPI_IN_PLACE, r + written, chunk, MPI_DOUBLE, MPI_SUM, cr->mpi_comm_mygroup);
+            MPI_Allreduce(MPI_IN_PLACE, r + written, chunk, MPI_DOUBLE, MPI_SUM, cr->commMyGroup.comm());
             written += chunk;
             remain -= chunk;
         }
@@ -278,7 +151,7 @@ void gmx_sumf(std::size_t gmx_unused nr, float gmx_unused r[], const t_commrec g
 {
     // Without MPI we have a single rank, so sum is a no-op
 #if GMX_MPI
-    if (cr->sizeOfMyGroupCommunicator == 1)
+    if (cr->commMyGroup.size() == 1)
     {
         return;
     }
@@ -324,7 +197,7 @@ void gmx_sumf(std::size_t gmx_unused nr, float gmx_unused r[], const t_commrec g
         for (std::size_t written = 0, remain = nr; remain > 0;)
         {
             std::size_t chunk = std::min(remain, maxSignedInt);
-            MPI_Allreduce(MPI_IN_PLACE, r + written, chunk, MPI_FLOAT, MPI_SUM, cr->mpi_comm_mygroup);
+            MPI_Allreduce(MPI_IN_PLACE, r + written, chunk, MPI_FLOAT, MPI_SUM, cr->commMyGroup.comm());
             written += chunk;
             remain -= chunk;
         }
@@ -336,7 +209,7 @@ void gmx_sumi(std::size_t gmx_unused nr, int gmx_unused r[], const t_commrec gmx
 {
     // Without MPI we have a single rank, so sum is a no-op
 #if GMX_MPI
-    if (cr->sizeOfMyGroupCommunicator == 1)
+    if (cr->commMyGroup.size() == 1)
     {
         return;
     }
@@ -382,7 +255,7 @@ void gmx_sumi(std::size_t gmx_unused nr, int gmx_unused r[], const t_commrec gmx
         for (std::size_t written = 0, remain = nr; remain > 0;)
         {
             std::size_t chunk = std::min(remain, maxSignedInt);
-            MPI_Allreduce(MPI_IN_PLACE, r + written, chunk, MPI_INT, MPI_SUM, cr->mpi_comm_mygroup);
+            MPI_Allreduce(MPI_IN_PLACE, r + written, chunk, MPI_INT, MPI_SUM, cr->commMyGroup.comm());
             written += chunk;
             remain -= chunk;
         }

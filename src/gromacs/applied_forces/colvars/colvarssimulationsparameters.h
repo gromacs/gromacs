@@ -45,7 +45,6 @@
 #include <memory>
 
 #include "gromacs/domdec/localatomsetmanager.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/atoms.h"
@@ -56,6 +55,7 @@ struct gmx_mtop_t;
 
 namespace gmx
 {
+class MpiComm;
 
 /*! \internal
  * \brief Collect colvars parameters only available during simulation setup.
@@ -106,9 +106,9 @@ public:
     double simulationTimeStep() const;
 
     //! Set the communicator
-    void setComm(const t_commrec& cr);
+    void setComm(const MpiComm& mpiComm);
     //! Return the communicator
-    const t_commrec* comm() const;
+    const MpiComm& comm() const;
 
     //! Set the Multisim record
     void setMultisim(const gmx_multisim_t* ms);
@@ -133,7 +133,7 @@ private:
     //! The topology
     t_atoms gmxAtoms_;
     //! The communicator
-    const t_commrec* cr_;
+    const MpiComm* mpiComm_;
     //! The multisim record
     const gmx_multisim_t* ms_;
     /*! \brief MDLogger during mdrun

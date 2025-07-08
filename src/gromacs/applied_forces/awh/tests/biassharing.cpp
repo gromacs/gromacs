@@ -101,7 +101,7 @@ void parallelTestFunction(const void gmx_unused* dummy)
     MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
     const int shareGroup = 1 + (myRank / c_numSharingBiases);
 
-    t_commrec commRecord;
+    t_commrec commRecord(MpiComm(MpiComm::SingleRank{}));
 
     const std::vector<char> serializedAwhParametersPerDim = awhDimParamSerialized();
     auto              awhDimArrayRef = gmx::arrayRefFromArray(&serializedAwhParametersPerDim, 1);
@@ -146,7 +146,7 @@ void sharingSamplesFrictionTest(const void* nStepsArg)
     MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
     const int shareGroup = 1 + (myRank / c_numSharingBiases);
 
-    t_commrec    commRecord;
+    t_commrec    commRecord(MpiComm(MpiComm::SingleRank{}));
     const double myRankFraction = double(myRank + 1) / numRanks;
 
     const std::vector<char> serializedAwhParametersPerDim = awhDimParamSerialized();

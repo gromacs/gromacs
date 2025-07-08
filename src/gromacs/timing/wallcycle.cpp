@@ -285,7 +285,7 @@ void wallcycleBarrier(gmx_wallcycle* wc)
 #if GMX_MPI
     if (wc->wc_barrier)
     {
-        MPI_Barrier(wc->cr->mpi_comm_mygroup);
+        MPI_Barrier(wc->cr->commMyGroup.comm());
     }
 #else
     GMX_UNUSED_VALUE(wc);
@@ -449,7 +449,7 @@ WallcycleCounts wallcycle_sum(const t_commrec* cr, gmx_wallcycle* wc)
     }
 
 #if GMX_MPI
-    if (cr->nnodes > 1)
+    if (cr->commMySim.size() > 1)
     {
         gmx::EnumerationArray<WallCycleCounter, double>    bufMain;
         gmx::EnumerationArray<WallCycleSubCounter, double> bufSub;
@@ -459,12 +459,22 @@ WallcycleCounts wallcycle_sum(const t_commrec* cr, gmx_wallcycle* wc)
         // wallcycle_print, and avoid bugs
         double haveInvalidCount = (wc->haveInvalidCount ? 1 : 0);
         // TODO Use MPI_Reduce
-        MPI_Allreduce(cyclesMainOnNode.data(), bufMain.data(), bufMain.size(), MPI_DOUBLE, MPI_MAX, cr->mpi_comm_mysim);
+        MPI_Allreduce(cyclesMainOnNode.data(),
+                      bufMain.data(),
+                      bufMain.size(),
+                      MPI_DOUBLE,
+                      MPI_MAX,
+                      cr->commMySim.comm());
         if constexpr (sc_useCycleSubcounters)
         {
-            MPI_Allreduce(cyclesSubOnNode.data(), bufSub.data(), bufSub.size(), MPI_DOUBLE, MPI_MAX, cr->mpi_comm_mysim);
+            MPI_Allreduce(cyclesSubOnNode.data(),
+                          bufSub.data(),
+                          bufSub.size(),
+                          MPI_DOUBLE,
+                          MPI_MAX,
+                          cr->commMySim.comm());
         }
-        MPI_Allreduce(MPI_IN_PLACE, &haveInvalidCount, 1, MPI_DOUBLE, MPI_MAX, cr->mpi_comm_mysim);
+        MPI_Allreduce(MPI_IN_PLACE, &haveInvalidCount, 1, MPI_DOUBLE, MPI_MAX, cr->commMySim.comm());
         for (auto key : keysOf(wcc))
         {
             wcc[key].n = gmx::roundToInt(bufMain[key]);
@@ -479,7 +489,12 @@ WallcycleCounts wallcycle_sum(const t_commrec* cr, gmx_wallcycle* wc)
         }
 
         // TODO Use MPI_Reduce
-        MPI_Allreduce(cyclesMain.data(), cycles_sum.data(), cyclesMain.size(), MPI_DOUBLE, MPI_SUM, cr->mpi_comm_mysim);
+        MPI_Allreduce(cyclesMain.data(),
+                      cycles_sum.data(),
+                      cyclesMain.size(),
+                      MPI_DOUBLE,
+                      MPI_SUM,
+                      cr->commMySim.comm());
         if constexpr (sc_useCycleSubcounters)
         {
             MPI_Allreduce(cyclesSub.data(),
@@ -487,7 +502,7 @@ WallcycleCounts wallcycle_sum(const t_commrec* cr, gmx_wallcycle* wc)
                           cyclesSub.size(),
                           MPI_DOUBLE,
                           MPI_SUM,
-                          cr->mpi_comm_mysim);
+                          cr->commMySim.comm());
         }
 
         if (!wc->wcc_all.empty())
@@ -505,7 +520,7 @@ WallcycleCounts wallcycle_sum(const t_commrec* cr, gmx_wallcycle* wc)
                           sc_numWallCycleCountersSquared,
                           MPI_DOUBLE,
                           MPI_SUM,
-                          cr->mpi_comm_mysim);
+                          cr->commMySim.comm());
             for (int i = 0; i < sc_numWallCycleCountersSquared; i++)
             {
                 wc->wcc_all[i].c = static_cast<gmx_cycles_t>(buf_all[i]);

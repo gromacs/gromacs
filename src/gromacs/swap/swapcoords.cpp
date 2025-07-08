@@ -64,7 +64,6 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/groupcoord.h"
 #include "gromacs/mdrunutility/handlerestart.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/imdmodule.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -82,6 +81,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
@@ -789,7 +789,7 @@ static void detect_flux_per_channel(t_swapgrp*          group,
 
 /*! \brief Determines which ions or solvent molecules are in compartment A and B */
 static void sortMoleculesIntoCompartments(t_swapgrp*          group,
-                                          t_commrec*          cr,
+                                          const gmx::MpiComm& mpiComm,
                                           const t_swapcoords& sc,
                                           SwapCoords::Impl*   s,
                                           const matrix        box,
@@ -833,7 +833,7 @@ static void sortMoleculesIntoCompartments(t_swapgrp*          group,
                 add_to_list(iAtom, &group->comp[comp], dist);
 
                 /* Main also checks for ion groups through which channel each ion has passed */
-                if (MAIN(cr) && !group->comp_now.empty() && !bIsSolvent)
+                if (mpiComm.isMainRank() && !group->comp_now.empty() && !bIsSolvent)
                 {
                     int globalAtomNr =
                             group->atomSet.globalIndex()[iAtom] + 1; /* PDB index starts at 1 ... */
@@ -866,7 +866,7 @@ static void sortMoleculesIntoCompartments(t_swapgrp*          group,
     }
 
     /* Flux detection warnings */
-    if (MAIN(cr) && !bIsSolvent)
+    if (mpiComm.isMainRank() && !bIsSolvent)
     {
         if (group->nCylBoth > 0)
         {
@@ -930,7 +930,7 @@ static void get_initial_ioncounts(const t_swapcoords&            sc,
                                   SwapCoords::Impl*              s,
                                   gmx::ArrayRef<const gmx::RVec> x, /* the initial positions */
                                   const matrix                   box,
-                                  t_commrec*                     cr,
+                                  const gmx::MpiComm&            mpiComm,
                                   gmx_bool                       bRerun)
 {
     /* Loop over the user-defined (ion) groups */
@@ -946,7 +946,7 @@ static void get_initial_ioncounts(const t_swapcoords&            sc,
         }
 
         /* Set up the compartments and get lists of atoms in each compartment */
-        sortMoleculesIntoCompartments(&group, cr, sc, s, box, 0, s->fpout, bRerun, FALSE);
+        sortMoleculesIntoCompartments(&group, mpiComm, sc, s, box, 0, s->fpout, bRerun, FALSE);
 
         /* Set initial molecule counts if requested (as signaled by "-1" value) */
         for (auto ic : gmx::EnumerationWrapper<Compartment>{})
@@ -1001,10 +1001,10 @@ static void get_initial_ioncounts(const t_swapcoords&            sc,
 static void get_initial_ioncounts_from_cpt(const t_swapcoords& sc,
                                            SwapCoords::Impl*   s,
                                            swaphistory_t*      swapstate,
-                                           t_commrec*          cr,
+                                           const gmx::MpiComm& mpiComm,
                                            gmx_bool            bVerbose)
 {
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         /* Copy the past values from the checkpoint values that have been read in already */
         if (bVerbose)
@@ -1050,17 +1050,17 @@ static void get_initial_ioncounts_from_cpt(const t_swapcoords& sc,
 
 
 /*! \brief The main lets all others know about the initial ion counts. */
-static void bc_initial_concentrations(t_commrec* cr, t_swapcoords* swap, SwapCoords::Impl* s)
+static void bc_initial_concentrations(const gmx::MpiComm& mpiComm, t_swapcoords* swap, SwapCoords::Impl* s)
 {
     for (t_swapgrp& group : s->ionGroups())
     {
         for (auto ic : gmx::EnumerationWrapper<Compartment>{})
         {
-            gmx_bcast(sizeof(group.comp[ic].nMolReq), &(group.comp[ic].nMolReq), cr->mpi_comm_mygroup);
-            gmx_bcast(sizeof(group.comp[ic].nMol), &(group.comp[ic].nMol), cr->mpi_comm_mygroup);
+            gmx_bcast(sizeof(group.comp[ic].nMolReq), &(group.comp[ic].nMolReq), mpiComm.comm());
+            gmx_bcast(sizeof(group.comp[ic].nMol), &(group.comp[ic].nMol), mpiComm.comm());
             gmx_bcast(swap->nAverage * sizeof(group.comp[ic].nMolPast[0]),
                       group.comp[ic].nMolPast.data(),
-                      cr->mpi_comm_mygroup);
+                      mpiComm.comm());
         }
     }
 }
@@ -1443,7 +1443,7 @@ static real getRequestedChargeImbalance(SwapCoords::Impl* s)
  * This routine should be called for the 'anions' and 'cations' group,
  * of which the indices were lumped together in the older version of the code.
  */
-static void copyIndicesToGroup(gmx::ArrayRef<const int> indIons, t_swapGroup* group, t_commrec* cr)
+static void copyIndicesToGroup(gmx::ArrayRef<const int> indIons, t_swapGroup* group, const gmx::MpiComm& mpiComm)
 {
     /* If explicit ion counts were requested in the .mdp file
      * (by setting positive values for the number of ions),
@@ -1454,8 +1454,8 @@ static void copyIndicesToGroup(gmx::ArrayRef<const int> indIons, t_swapGroup* gr
         {
             gmx_fatal_collective(
                     FARGS,
-                    cr->mpi_comm_mysim,
-                    MAIN(cr),
+                    mpiComm.comm(),
+                    mpiComm.isMainRank(),
                     "%s Inconsistency while importing swap-related data from an old "
                     "input file version.\n"
                     "%s The requested ion counts in compartments A (%d) and B (%d)\n"
@@ -1488,7 +1488,10 @@ static void copyIndicesToGroup(gmx::ArrayRef<const int> indIons, t_swapGroup* gr
  * #4 cations        - empty before conversion
  *
  */
-static void convertOldToNewGroupFormat(t_swapcoords* sc, const gmx_mtop_t& mtop, gmx_bool bVerbose, t_commrec* cr)
+static void convertOldToNewGroupFormat(t_swapcoords*       sc,
+                                       const gmx_mtop_t&   mtop,
+                                       gmx_bool            bVerbose,
+                                       const gmx::MpiComm& mpiComm)
 {
     t_swapGroup& group = sc->ionGroup(0);
 
@@ -1530,9 +1533,9 @@ static void convertOldToNewGroupFormat(t_swapcoords* sc, const gmx_mtop_t& mtop,
     /* Now we have the correct lists of anions and cations.
      * Copy it to the right groups.
      */
-    copyIndicesToGroup(indAnions, &group, cr);
+    copyIndicesToGroup(indAnions, &group, mpiComm);
     group = sc->ionGroup(1);
-    copyIndicesToGroup(indCations, &group, cr);
+    copyIndicesToGroup(indCations, &group, mpiComm);
 }
 
 
@@ -1551,7 +1554,8 @@ std::unique_ptr<SwapCoords> init_swapcoords(FILE*                       fplog,
                                             const gmx_mtop_t&           mtop,
                                             const t_state*              globalState,
                                             ObservablesHistory*         oh,
-                                            t_commrec*                  cr,
+                                            const gmx::MpiComm&         mpiComm,
+                                            const gmx_domdec_t*         dd,
                                             gmx::LocalAtomSetManager*   atomSets,
                                             const gmx_output_env_t*     oenv,
                                             const gmx::MdrunOptions&    mdrunOptions,
@@ -1559,7 +1563,7 @@ std::unique_ptr<SwapCoords> init_swapcoords(FILE*                       fplog,
 {
     swaphistory_t* swapstate = nullptr;
 
-    if ((PAR(cr)) && !haveDDAtomOrdering(*cr))
+    if (mpiComm.size() > 1 && dd == nullptr)
     {
         gmx_fatal(FARGS, "Position swapping is only implemented for domain decomposition!");
     }
@@ -1572,7 +1576,7 @@ std::unique_ptr<SwapCoords> init_swapcoords(FILE*                       fplog,
 
     if (mdrunOptions.rerun)
     {
-        if (PAR(cr))
+        if (mpiComm.size() > 1)
         {
             gmx_fatal(FARGS,
                       "%s This module does not support reruns in parallel\nPlease request a serial "
@@ -1585,7 +1589,7 @@ std::unique_ptr<SwapCoords> init_swapcoords(FILE*                       fplog,
         scModifiable->nAverage = 1; /* averaging makes no sense for reruns */
     }
 
-    if (MAIN(cr) && startingBehavior == gmx::StartingBehavior::NewSimulation)
+    if (mpiComm.isMainRank() && startingBehavior == gmx::StartingBehavior::NewSimulation)
     {
         fprintf(fplog, "\nInitializing ion/water position exchanges\n");
         please_cite(fplog, "Kutzner2011b");
@@ -1604,7 +1608,7 @@ std::unique_ptr<SwapCoords> init_swapcoords(FILE*                       fplog,
     // For compatibility with old .tpr files
     if (bConvertFromOldTpr(scModifiable))
     {
-        convertOldToNewGroupFormat(scModifiable, mtop, bVerbose && MAIN(cr), cr);
+        convertOldToNewGroupFormat(scModifiable, mtop, bVerbose && mpiComm.isMainRank(), mpiComm);
     }
     // Now sc can be const
     const t_swapcoords& sc = *ir->swap;
@@ -1618,7 +1622,7 @@ std::unique_ptr<SwapCoords> init_swapcoords(FILE*                       fplog,
     }
 
     /* Check for overlapping atoms */
-    check_swap_groups(s, mtop.natoms, bVerbose && MAIN(cr));
+    check_swap_groups(s, mtop.natoms, bVerbose && mpiComm.isMainRank());
 
     /* Allocate space for the collective arrays for all groups */
     for (int ig = 0; ig != gmx::ssize(s->groups); ++ig)
@@ -1640,7 +1644,7 @@ std::unique_ptr<SwapCoords> init_swapcoords(FILE*                       fplog,
         group.xc_old.resize(numAtomsGlobal, { 0, 0, 0 });
     }
 
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         if (oh->swapHistory == nullptr)
         {
@@ -1653,11 +1657,11 @@ std::unique_ptr<SwapCoords> init_swapcoords(FILE*                       fplog,
 
     /* After init_swapstate we have a set of (old) whole positions for our
      * channels. Now transfer that to all nodes */
-    if (PAR(cr))
+    if (mpiComm.size() > 1)
     {
         for (t_swapgrp& group : s->splitGroups())
         {
-            gmx_bcast(group.xc_old.size() * sizeof(group.xc_old[0]), group.xc_old.data(), cr->mpi_comm_mygroup);
+            gmx_bcast(group.xc_old.size() * sizeof(group.xc_old[0]), group.xc_old.data(), mpiComm.comm());
         }
     }
 
@@ -1665,7 +1669,7 @@ std::unique_ptr<SwapCoords> init_swapcoords(FILE*                       fplog,
      * same number of atoms each */
     for (t_swapgrp& group : s->solventAndIonGroups())
     {
-        group.apm = get_group_apm_check(group, MAIN(cr) && bVerbose, mtop);
+        group.apm = get_group_apm_check(group, mpiComm.isMainRank() && bVerbose, mtop);
 
         /* Since all molecules of a group are equal, we only need enough space
          * to determine properties of a single molecule at at time */
@@ -1698,7 +1702,7 @@ std::unique_ptr<SwapCoords> init_swapcoords(FILE*                       fplog,
     }
 
     bool restartWithAppending = (startingBehavior == gmx::StartingBehavior::RestartWithAppending);
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         if (bVerbose)
         {
@@ -1828,16 +1832,16 @@ std::unique_ptr<SwapCoords> init_swapcoords(FILE*                       fplog,
     }
 
     /* Get the initial particle concentrations and let the other nodes know */
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         if (startingBehavior != gmx::StartingBehavior::NewSimulation)
         {
-            get_initial_ioncounts_from_cpt(sc, s, swapstate, cr, bVerbose);
+            get_initial_ioncounts_from_cpt(sc, s, swapstate, mpiComm, bVerbose);
         }
         else
         {
             fprintf(stderr, "%s Determining initial numbers of ions per compartment.\n", SwS.c_str());
-            get_initial_ioncounts(sc, s, globalState->x, globalState->box, cr, mdrunOptions.rerun);
+            get_initial_ioncounts(sc, s, globalState->x, globalState->box, mpiComm, mdrunOptions.rerun);
         }
 
         /* Prepare (further) checkpoint writes ... */
@@ -1884,9 +1888,9 @@ std::unique_ptr<SwapCoords> init_swapcoords(FILE*                       fplog,
         }
     }
 
-    if (PAR(cr))
+    if (mpiComm.size() > 1)
     {
-        bc_initial_concentrations(cr, ir->swap.get(), s);
+        bc_initial_concentrations(mpiComm, ir->swap.get(), s);
     }
 
     /* Update the time-averaged number of molecules for all groups and compartments */
@@ -1902,7 +1906,7 @@ std::unique_ptr<SwapCoords> init_swapcoords(FILE*                       fplog,
     detect_flux_per_channel_init(s, swapstate, startingBehavior != gmx::StartingBehavior::NewSimulation);
 
     /* We need to print the legend if we open this file for the first time. */
-    if (MAIN(cr) && !restartWithAppending)
+    if (mpiComm.isMainRank() && !restartWithAppending)
     {
         print_ionlist_legend(ir, s, oenv);
     }
@@ -2023,7 +2027,7 @@ static void apply_modified_positions(const t_swapgrp& group, gmx::ArrayRef<gmx::
 }
 
 
-gmx_bool do_swapcoords(t_commrec*               cr,
+gmx_bool do_swapcoords(const gmx::MpiComm&      mpiComm,
                        int64_t                  step,
                        double                   t,
                        const t_inputrec*        ir,
@@ -2049,7 +2053,7 @@ gmx_bool do_swapcoords(t_commrec*               cr,
      * any dimension */
     for (t_swapgrp& group : s->splitGroups())
     {
-        communicate_group_positions(cr,
+        communicate_group_positions(mpiComm,
                                     as_rvec_array(group.xc.data()),
                                     as_ivec_array(group.xc_shifts.data()),
                                     as_ivec_array(group.xc_eshifts.data()),
@@ -2073,7 +2077,7 @@ gmx_bool do_swapcoords(t_commrec*               cr,
      * Therefore we pass NULL as third argument to communicate_group_positions. */
     for (t_swapgrp& group : s->ionGroups())
     {
-        communicate_group_positions(cr,
+        communicate_group_positions(mpiComm,
                                     as_rvec_array(group.xc.data()),
                                     nullptr,
                                     nullptr,
@@ -2087,11 +2091,11 @@ gmx_bool do_swapcoords(t_commrec*               cr,
                                     nullptr);
 
         /* Determine how many ions of this type each compartment contains */
-        sortMoleculesIntoCompartments(&group, cr, sc, s, box, step, s->fpout, bRerun, FALSE);
+        sortMoleculesIntoCompartments(&group, mpiComm, sc, s, box, step, s->fpout, bRerun, FALSE);
     }
 
     /* Output how many ions are in the compartments */
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         print_ionlist(s, t, "");
     }
@@ -2110,7 +2114,7 @@ gmx_bool do_swapcoords(t_commrec*               cr,
         /* Since we here know that we have to perform ion/water position exchanges,
          * we now assemble the solvent positions */
         t_swapgrp& solventGroup = s->requiredGroup(SwapGroupSplittingType::Solvent);
-        communicate_group_positions(cr,
+        communicate_group_positions(mpiComm,
                                     as_rvec_array(solventGroup.xc.data()),
                                     nullptr,
                                     nullptr,
@@ -2124,7 +2128,7 @@ gmx_bool do_swapcoords(t_commrec*               cr,
                                     nullptr);
 
         /* Determine how many molecules of solvent each compartment contains */
-        sortMoleculesIntoCompartments(&solventGroup, cr, sc, s, box, step, s->fpout, bRerun, TRUE);
+        sortMoleculesIntoCompartments(&solventGroup, mpiComm, sc, s, box, step, s->fpout, bRerun, TRUE);
 
         /* Save number of solvent molecules per compartment prior to any swaps */
         solventGroup.comp[Compartment::A].nMolBefore = solventGroup.comp[Compartment::A].nMol;
@@ -2191,7 +2195,7 @@ gmx_bool do_swapcoords(t_commrec*               cr,
                         group.comp[otherC].nMolPast[j]--;
                     }
                     /* Clear ion history */
-                    if (MAIN(cr))
+                    if (mpiComm.isMainRank())
                     {
                         int iMol                     = iion / group.apm;
                         (*group.channel_label)[iMol] = ChannelHistory::None;

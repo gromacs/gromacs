@@ -404,16 +404,18 @@ void EnergyData::Element::doCheckpointData(CheckpointData<operation>* checkpoint
 }
 
 void EnergyData::Element::saveCheckpointState(std::optional<WriteCheckpointData> checkpointData,
-                                              const t_commrec*                   cr)
+                                              const MpiComm&                     mpiComm,
+                                              gmx_domdec_t*                      dd)
 {
     // Here we always store the ekinstate, even when it might be not be used at this step.
     // It would be cleaner make it conditional on when it is used (and thus up to date).
-    update_ekinstate(MAIN(cr) ? &energyData_->ekinstate_ : nullptr,
+    update_ekinstate(mpiComm.isMainRank() ? &energyData_->ekinstate_ : nullptr,
                      energyData_->ekind_,
                      energyData_->needToSumEkinhOld_,
-                     cr);
+                     mpiComm,
+                     dd);
 
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         energyData_->ekinstate_.bUpToDate = true;
 
@@ -421,27 +423,33 @@ void EnergyData::Element::saveCheckpointState(std::optional<WriteCheckpointData>
                 energyData_->observablesHistory_->energyHistory.get());
         doCheckpointData<CheckpointDataOperation::Write>(&checkpointData.value());
     }
+
+    GMX_UNUSED_VALUE(dd);
 }
 
 void EnergyData::Element::restoreCheckpointState(std::optional<ReadCheckpointData> checkpointData,
-                                                 const t_commrec*                  cr)
+                                                 const MpiComm&                    mpiComm,
+                                                 gmx_domdec_t*                     dd)
 {
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         doCheckpointData<CheckpointDataOperation::Read>(&checkpointData.value());
     }
-    energyData_->hasReadEkinFromCheckpoint_ = MAIN(cr) ? energyData_->ekinstate_.bUpToDate : false;
-    if (PAR(cr))
+    energyData_->hasReadEkinFromCheckpoint_ =
+            mpiComm.isMainRank() ? energyData_->ekinstate_.bUpToDate : false;
+    if (mpiComm.size() > 1)
     {
         gmx_bcast(sizeof(hasReadEkinFromCheckpoint_),
                   &energyData_->hasReadEkinFromCheckpoint_,
-                  cr->mpi_comm_mygroup);
+                  mpiComm.comm());
     }
     if (energyData_->hasReadEkinFromCheckpoint_)
     {
         // this takes care of broadcasting from main to agents
-        restore_ekinstate_from_state(cr, energyData_->ekind_, &energyData_->ekinstate_);
+        restore_ekinstate_from_state(mpiComm, energyData_->ekind_, &energyData_->ekinstate_);
     }
+
+    GMX_UNUSED_VALUE(dd);
 }
 
 const std::string& EnergyData::Element::clientID()

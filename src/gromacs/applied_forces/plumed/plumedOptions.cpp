@@ -45,6 +45,7 @@
 #include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/mpicomm.h"
 
 namespace gmx
 {
@@ -85,9 +86,9 @@ void PlumedOptionProvider::setStartingBehavior(const StartingBehavior& behavior)
     opts_.startingBehavior_ = behavior;
 }
 
-void PlumedOptionProvider::setComm(const t_commrec& cr)
+void PlumedOptionProvider::setComm(const MpiComm& mpiComm)
 {
-    opts_.cr_ = &cr;
+    opts_.mpiComm_ = &mpiComm;
 }
 
 bool PlumedOptionProvider::active() const

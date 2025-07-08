@@ -194,26 +194,30 @@ void FirstOrderPressureCoupling::doCheckpointData(CheckpointData<operation>* che
 }
 
 void FirstOrderPressureCoupling::saveCheckpointState(std::optional<WriteCheckpointData> checkpointData,
-                                                     const t_commrec* cr)
+                                                     const MpiComm& mpiComm,
+                                                     gmx_domdec_t*  dd)
 {
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         doCheckpointData<CheckpointDataOperation::Write>(&checkpointData.value());
     }
+
+    GMX_UNUSED_VALUE(dd);
 }
 
 void FirstOrderPressureCoupling::restoreCheckpointState(std::optional<ReadCheckpointData> checkpointData,
-                                                        const t_commrec* cr)
+                                                        const MpiComm& mpiComm,
+                                                        gmx_domdec_t*  dd)
 {
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         doCheckpointData<CheckpointDataOperation::Read>(&checkpointData.value());
     }
-    if (haveDDAtomOrdering(*cr))
+    if (dd)
     {
-        dd_bcast(cr->dd, sizeof(conservedEnergyContribution_), &conservedEnergyContribution_);
-        dd_bcast(cr->dd, sizeof(conservedEnergyContributionStep_), &conservedEnergyContributionStep_);
-        dd_bcast(cr->dd, sizeof(boxRel_), boxRel_);
+        dd_bcast(dd, sizeof(conservedEnergyContribution_), &conservedEnergyContribution_);
+        dd_bcast(dd, sizeof(conservedEnergyContributionStep_), &conservedEnergyContributionStep_);
+        dd_bcast(dd, sizeof(boxRel_), boxRel_);
     }
 }
 

@@ -60,13 +60,13 @@ struct gmx_domdec_t;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
 struct ObservablesHistory;
-struct t_commrec;
 struct t_filenm;
 struct t_inputrec;
 class t_state;
 
 namespace gmx
 {
+class MpiComm;
 enum class StartingBehavior;
 class Constraints;
 template<typename>
@@ -96,7 +96,7 @@ class MDLogger;
  *
  * \param ir                MD input parameter record.
  * \param step              Number of the time step.
- * \param cr                Data needed for MPI communication.
+ * \param mpiComm           Communication object for my group.
  * \param coords            The local positions on this processor.
  * \param velocities        The local velocities.
  * \param box               The simulation box.
@@ -104,7 +104,7 @@ class MDLogger;
  */
 void do_edsam(const t_inputrec*        ir,
               int64_t                  step,
-              const t_commrec*         cr,
+              const gmx::MpiComm&      mpiComm,
               gmx::ArrayRef<gmx::RVec> coords,
               gmx::ArrayRef<gmx::RVec> velocities,
               const matrix             box,
@@ -118,7 +118,8 @@ void do_edsam(const t_inputrec*        ir,
  * \param edoFileName       Output file for essential dynamics data.
  * \param mtop              Molecular topology.
  * \param ir                MD input parameter record.
- * \param cr                Data needed for MPI communication.
+ * \param mpiComm           Communication object for my group.
+ * \param dd                Domain decomposition object, pass nullptr when DD is not active.
  * \param constr            Data structure keeping the constraint information.
  * \param globalState       The global state, only used on the main rank.
  * \param oh                The observables history container.
@@ -132,7 +133,8 @@ std::unique_ptr<gmx::EssentialDynamics> init_edsam(const gmx::MDLogger&    mdlog
                                                    const char*             edoFileName,
                                                    const gmx_mtop_t&       mtop,
                                                    const t_inputrec&       ir,
-                                                   const t_commrec*        cr,
+                                                   const gmx::MpiComm&     mpiComm,
+                                                   const gmx_domdec_t*     dd,
                                                    gmx::Constraints*       constr,
                                                    const t_state*          globalState,
                                                    ObservablesHistory*     oh,
@@ -151,7 +153,7 @@ void dd_make_local_ed_indices(gmx_domdec_t* dd, gmx_edsam* ed);
 
 /*! \brief Evaluate the flooding potential(s) and forces as requested in the .edi input file.
  *
- * \param cr                Data needed for MPI communication.
+ * \param mpiComm           Communication object for my group.
  * \param ir                MD input parameter record.
  * \param coords            Positions on the local processor.
  * \param force             Forcefield forces to which the flooding forces are added.
@@ -160,7 +162,7 @@ void dd_make_local_ed_indices(gmx_domdec_t* dd, gmx_edsam* ed);
  * \param step              Number of the time step.
  * \param bNS               Are we in a neighbor searching step?
  */
-void do_flood(const t_commrec*               cr,
+void do_flood(const gmx::MpiComm&            mpiComm,
               const t_inputrec&              ir,
               gmx::ArrayRef<const gmx::RVec> coords,
               gmx::ArrayRef<gmx::RVec>       force,

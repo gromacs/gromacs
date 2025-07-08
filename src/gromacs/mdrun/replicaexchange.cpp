@@ -1308,7 +1308,7 @@ gmx_bool replica_exchange(FILE*                 fplog,
     if (haveDDAtomOrdering(*cr))
     {
 #if GMX_MPI
-        MPI_Bcast(&bThisReplicaExchanged, sizeof(gmx_bool), MPI_BYTE, MAINRANK(cr), cr->mpi_comm_mygroup);
+        MPI_Bcast(&bThisReplicaExchanged, sizeof(gmx_bool), MPI_BYTE, MAINRANK(cr), cr->commMyGroup.comm());
 #endif
     }
 

@@ -50,6 +50,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/output.h"
 #include "gromacs/pulling/pull.h"
+#include "gromacs/utility/mpicomm.h"
 
 #include "simulatoralgorithm.h"
 #include "statepropagatordata.h"
@@ -61,14 +62,14 @@ PullElement::PullElement(bool                 setPbcRefToPrevStepCOM,
                          PbcType              pbcType,
                          StatePropagatorData* statePropagatorData,
                          pull_t*              pullWork,
-                         const t_commrec*     commrec,
+                         const MpiComm&       mpiComm,
                          const MDAtoms*       mdAtoms) :
     setPbcRefToPrevStepCOM_(setPbcRefToPrevStepCOM),
     pbcType_(pbcType),
     restoredFromCheckpoint_(false),
     statePropagatorData_(statePropagatorData),
     pullWork_(pullWork),
-    commrec_(commrec),
+    mpiComm_(mpiComm),
     mdAtoms_(mdAtoms)
 {
 }
@@ -77,7 +78,7 @@ void PullElement::elementSetup()
 {
     if (setPbcRefToPrevStepCOM_ && !restoredFromCheckpoint_)
     {
-        preparePrevStepPullComNewSimulation(commrec_,
+        preparePrevStepPullComNewSimulation(mpiComm_,
                                             pullWork_,
                                             mdAtoms_->mdatoms()->massT,
                                             statePropagatorData_->constPositionsView().unpaddedArrayRef(),
@@ -99,7 +100,7 @@ void PullElement::schedulePostStep(Step step, Time time, const RegisterRunFuncti
 {
     // Printing output must happen after all external pull potentials
     // (currently only AWH) were applied, so execute this after step
-    if (MAIN(commrec_))
+    if (mpiComm_.isMainRank())
     {
         registerRunFunction([this, step, time]() { pull_print_output(pullWork_, step, time); });
     }
@@ -129,26 +130,31 @@ static void doCheckpointData(CheckpointData<operation>* checkpointData, ArrayRef
                              makeCheckpointArrayRef<operation>(previousStepCom));
 }
 
-void PullElement::saveCheckpointState(std::optional<WriteCheckpointData> checkpointData, const t_commrec* cr)
+void PullElement::saveCheckpointState(std::optional<WriteCheckpointData> checkpointData,
+                                      const MpiComm&                     mpiComm,
+                                      gmx_domdec_t*                      dd)
 {
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         auto previousStepCom = prevStepPullCom(pullWork_);
         doCheckpointData<CheckpointDataOperation::Write>(&checkpointData.value(), previousStepCom);
     }
+
+    GMX_UNUSED_VALUE(dd);
 }
 
 void PullElement::restoreCheckpointState(std::optional<ReadCheckpointData> checkpointData,
-                                         const t_commrec*                  cr)
+                                         const MpiComm&                    mpiComm,
+                                         gmx_domdec_t*                     dd)
 {
     auto previousStepCom = prevStepPullCom(pullWork_);
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         doCheckpointData<CheckpointDataOperation::Read>(&checkpointData.value(), previousStepCom);
     }
-    if (haveDDAtomOrdering(*cr))
+    if (dd)
     {
-        gmx_bcast(sizeof(double) * previousStepCom.size(), previousStepCom.data(), cr->mpi_comm_mygroup);
+        gmx_bcast(sizeof(double) * previousStepCom.size(), previousStepCom.data(), mpiComm.comm());
     }
     setPrevStepPullCom(pullWork_, previousStepCom);
     restoredFromCheckpoint_ = true;
@@ -172,7 +178,7 @@ ISimulatorElement* PullElement::getElementPointerImpl(LegacySimulatorData* legac
             legacySimulatorData->inputRec_->pbcType,
             statePropagatorData,
             legacySimulatorData->pullWork_,
-            legacySimulatorData->cr_,
+            legacySimulatorData->cr_->commMyGroup,
             legacySimulatorData->mdAtoms_));
     // Printing output is scheduled after the step
     builderHelper->registerPostStepScheduling(

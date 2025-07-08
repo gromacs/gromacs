@@ -678,7 +678,7 @@ gmx_pme_t* gmx_pme_init(const t_commrec*                 cr,
 
     if (numPmeDomains.x * numPmeDomains.y > 1)
     {
-        pme->mpi_comm = cr->mpi_comm_mygroup;
+        pme->mpi_comm = cr->commMyGroup.comm();
 
 #if GMX_MPI
         MPI_Comm_rank(pme->mpi_comm, &pme->nodeid);

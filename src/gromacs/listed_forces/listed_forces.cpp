@@ -841,7 +841,8 @@ void ListedForces::calculate(struct gmx_wallcycle*                     wcycle,
         }
         if (fcdata->disres->nres > 0)
         {
-            calc_disres_R_6(cr,
+            calc_disres_R_6(cr->commMyGroup,
+                            cr->dd,
                             ms,
                             idef.il[F_DISRES].size(),
                             idef.il[F_DISRES].iatoms.data(),

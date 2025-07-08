@@ -146,7 +146,7 @@ static int filter_enerdterm(const real* afrom, gmx_bool bToBuffer, real* ato, gm
 }
 
 void global_stat(const gmx_global_stat&   gs,
-                 const t_commrec*         cr,
+                 const gmx::MpiComm&      mpiComm,
                  gmx_enerdata_t*          enerd,
                  tensor                   fvir,
                  tensor                   svir,
@@ -318,7 +318,7 @@ void global_stat(const gmx_global_stat&   gs,
                 add_bind(rb, observablesReducerBuffer.ssize(), observablesReducerBuffer.data());
     }
 
-    sum_bin(rb, cr);
+    sum_bin(rb, mpiComm);
 
     /* Extract all the data locally */
 

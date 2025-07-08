@@ -464,7 +464,7 @@ static inline gmx_bool bSlabTau(const gmx_enfrot* er, const t_rotgrp* rotg, int6
 }
 
 /* Output rotation energy, torques, etc. for each rotation group */
-static void reduce_output(const t_commrec* cr, gmx_enfrot* er, real t, int64_t step)
+static void reduce_output(const gmx::MpiComm& mpiComm, gmx_enfrot* er, real t, int64_t step)
 {
     int      i, islab, nslabs = 0;
     int      count; /* MPI element counter                               */
@@ -473,7 +473,7 @@ static void reduce_output(const t_commrec* cr, gmx_enfrot* er, real t, int64_t s
 
     /* Fill the MPI buffer with stuff to reduce. If items are added for reduction
      * here, the MPI buffer size has to be enlarged also in calc_mpi_bufsize() */
-    if (PAR(cr))
+    if (mpiComm.size() > 1)
     {
         count = 0;
         for (auto& ergRef : er->enfrotgrp)
@@ -508,11 +508,11 @@ static void reduce_output(const t_commrec* cr, gmx_enfrot* er, real t, int64_t s
         }
 
 #if GMX_MPI
-        MPI_Reduce(er->mpi_inbuf, er->mpi_outbuf, count, GMX_MPI_REAL, MPI_SUM, MAINRANK(cr), cr->mpi_comm_mygroup);
+        MPI_Reduce(er->mpi_inbuf, er->mpi_outbuf, count, GMX_MPI_REAL, MPI_SUM, mpiComm.mainRank(), mpiComm.comm());
 #endif
 
         /* Copy back the reduced data from the buffer on the main */
-        if (MAIN(cr))
+        if (mpiComm.size() > 1)
         {
             count = 0;
             for (auto& ergRef : er->enfrotgrp)
@@ -544,7 +544,7 @@ static void reduce_output(const t_commrec* cr, gmx_enfrot* er, real t, int64_t s
     }
 
     /* Output */
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         /* Angle and torque for each rotation group */
         for (auto& ergRef : er->enfrotgrp)
@@ -617,7 +617,7 @@ static void reduce_output(const t_commrec* cr, gmx_enfrot* er, real t, int64_t s
 
 /* Add the forces from enforced rotation potential to the local forces.
  * Should be called after the SR forces have been evaluated */
-real add_rot_forces(gmx_enfrot* er, gmx::ArrayRef<gmx::RVec> force, const t_commrec* cr, int64_t step, real t)
+real add_rot_forces(gmx_enfrot* er, gmx::ArrayRef<gmx::RVec> force, const gmx::MpiComm& mpiComm, int64_t step, real t)
 {
     real Vrot = 0.0; /* If more than one rotation group is present, Vrot
                         assembles the local parts from all groups         */
@@ -642,7 +642,7 @@ real add_rot_forces(gmx_enfrot* er, gmx::ArrayRef<gmx::RVec> force, const t_comm
      * on the main and output these values to file. */
     if ((do_per_step(step, er->nstrout) || do_per_step(step, er->nstsout)) && er->bOut)
     {
-        reduce_output(cr, er, t, step);
+        reduce_output(mpiComm, er, t, step);
     }
 
     /* When appending, er->bOut is FALSE the first time to avoid duplicate entries */
@@ -3450,16 +3450,16 @@ static inline void copy_correct_pbc_image(const rvec xcurr, /* copy vector xcurr
 }
 
 
-static void init_rot_group(FILE*             fplog,
-                           const t_commrec*  cr,
-                           gmx_enfrotgrp*    erg,
-                           rvec*             x,
-                           const gmx_mtop_t& mtop,
-                           gmx_bool          bVerbose,
-                           FILE*             out_slabs,
-                           const matrix      box,
-                           t_inputrec*       ir,
-                           gmx_bool          bOutputCenters)
+static void init_rot_group(FILE*               fplog,
+                           const gmx::MpiComm& mpiComm,
+                           gmx_enfrotgrp*      erg,
+                           rvec*               x,
+                           const gmx_mtop_t&   mtop,
+                           gmx_bool            bVerbose,
+                           FILE*               out_slabs,
+                           const matrix        box,
+                           t_inputrec*         ir,
+                           gmx_bool            bOutputCenters)
 {
     rvec            coord, xref, *xdum;
     gmx_bool        bFlex, bColl;
@@ -3564,7 +3564,7 @@ static void init_rot_group(FILE*             fplog,
         get_center(as_rvec_array(erg->rotg->x_ref_original.data()), erg->mc, erg->rotg->nat, erg->xc_ref_center);
 
         /* Center of the actual positions */
-        if (MAIN(cr))
+        if (mpiComm.isMainRank())
         {
             snew(xdum, erg->rotg->nat);
             for (int i = 0; i < erg->rotg->nat; i++)
@@ -3576,9 +3576,9 @@ static void init_rot_group(FILE*             fplog,
             sfree(xdum);
         }
 #if GMX_MPI
-        if (PAR(cr))
+        if (mpiComm.size() > 1)
         {
-            gmx_bcast(sizeof(erg->xc_center), erg->xc_center, cr->mpi_comm_mygroup);
+            gmx_bcast(sizeof(erg->xc_center), erg->xc_center, mpiComm.comm());
         }
 #endif
     }
@@ -3591,7 +3591,7 @@ static void init_rot_group(FILE*             fplog,
          * restarted, we compute the starting reference positions (given the time)
          * and assume that the correct PBC image of each position is the one nearest
          * to the current reference */
-        if (MAIN(cr))
+        if (mpiComm.isMainRank())
         {
             /* Calculate the rotation matrix for this angle: */
             t_start       = ir->init_t + ir->init_step * ir->delta_t;
@@ -3612,9 +3612,9 @@ static void init_rot_group(FILE*             fplog,
             }
         }
 #if GMX_MPI
-        if (PAR(cr))
+        if (mpiComm.size() > 1)
         {
-            gmx_bcast(erg->rotg->nat * sizeof(erg->xc_old[0]), erg->xc_old, cr->mpi_comm_mygroup);
+            gmx_bcast(erg->rotg->nat * sizeof(erg->xc_old[0]), erg->xc_old, mpiComm.comm());
         }
 #endif
     }
@@ -3699,7 +3699,7 @@ std::unique_ptr<gmx::EnforcedRotation> init_rot(FILE*                       fplo
                                                 t_inputrec*                 ir,
                                                 int                         nfile,
                                                 const t_filenm              fnm[],
-                                                const t_commrec*            cr,
+                                                const gmx::MpiComm&         mpiComm,
                                                 gmx::LocalAtomSetManager*   atomSets,
                                                 const t_state*              globalState,
                                                 const gmx_mtop_t&           mtop,
@@ -3709,7 +3709,7 @@ std::unique_ptr<gmx::EnforcedRotation> init_rot(FILE*                       fplo
 {
     int nat_max = 0; /* Size of biggest rotation group */
 
-    if (MAIN(cr) && mdrunOptions.verbose)
+    if (mpiComm.isMainRank() && mdrunOptions.verbose)
     {
         fprintf(stdout, "%s Initializing ...\n", RotStr.c_str());
     }
@@ -3723,7 +3723,7 @@ std::unique_ptr<gmx::EnforcedRotation> init_rot(FILE*                       fplo
     /* When appending, skip first output to avoid duplicate entries in the data files */
     er->bOut = !er->restartWithAppending;
 
-    if (MAIN(cr) && er->bOut)
+    if (mpiComm.isMainRank() && er->bOut)
     {
         please_cite(fplog, "Kutzner2011");
     }
@@ -3745,7 +3745,7 @@ std::unique_ptr<gmx::EnforcedRotation> init_rot(FILE*                       fplo
     }
 
     er->out_slabs = nullptr;
-    if (MAIN(cr) && HaveFlexibleGroups(er->rot))
+    if (mpiComm.isMainRank() && HaveFlexibleGroups(er->rot))
     {
         er->out_slabs = open_slab_out(opt2fn("-rs", nfile, fnm), er);
     }
@@ -3753,7 +3753,7 @@ std::unique_ptr<gmx::EnforcedRotation> init_rot(FILE*                       fplo
     /* Space for the pbc-correct atom positions */
     std::vector<gmx::RVec> x_pbc;
 
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         /* Remove pbc, make molecule whole.
          * When ir->bContinuation=TRUE this has already been done, but ok. */
@@ -3791,13 +3791,13 @@ std::unique_ptr<gmx::EnforcedRotation> init_rot(FILE*                       fplo
             nat_max = std::max(nat_max, erg->rotg->nat);
 
             init_rot_group(fplog,
-                           cr,
+                           mpiComm,
                            erg,
                            as_rvec_array(x_pbc.data()),
                            mtop,
                            mdrunOptions.verbose,
                            er->out_slabs,
-                           MAIN(cr) ? globalState->box : nullptr,
+                           mpiComm.isMainRank() ? globalState->box : nullptr,
                            ir,
                            !er->restartWithAppending); /* Do not output the reference centers
                                                         * again if we are appending */
@@ -3812,7 +3812,7 @@ std::unique_ptr<gmx::EnforcedRotation> init_rot(FILE*                       fplo
     snew(er->mbuf, nat_max);
 
     /* Buffers for MPI reducing torques, angles, weights (for each group), and V */
-    if (PAR(cr))
+    if (mpiComm.size() > 1)
     {
         er->mpi_bufsize = calc_mpi_bufsize(er) + 100; /* larger to catch errors */
         snew(er->mpi_inbuf, er->mpi_bufsize);
@@ -3829,7 +3829,7 @@ std::unique_ptr<gmx::EnforcedRotation> init_rot(FILE*                       fplo
     er->out_angles = nullptr;
     er->out_rot    = nullptr;
     er->out_torque = nullptr;
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         er->out_rot = open_rot_out(opt2fn("-ro", nfile, fnm), oenv, er);
 
@@ -3892,7 +3892,8 @@ static void choose_pbc_image(gmx::ArrayRef<const gmx::RVec> coords, gmx_enfrotgr
 }
 
 
-void do_rotation(const t_commrec*               cr,
+void do_rotation(const gmx::MpiComm&            mpiComm,
+                 const gmx_domdec_t*            dd,
                  gmx_enfrot*                    er,
                  const matrix                   box,
                  gmx::ArrayRef<const gmx::RVec> coords,
@@ -3918,7 +3919,7 @@ void do_rotation(const t_commrec*               cr,
     outstep_slab = do_per_step(step, er->nstsout) && er->bOut;
 
     /* Output time into rotation output file */
-    if (outstep_rot && MAIN(cr))
+    if (outstep_rot && mpiComm.isMainRank())
     {
         fprintf(er->out_rot, "%12.3e", t);
     }
@@ -3942,7 +3943,7 @@ void do_rotation(const t_commrec*               cr,
             /* Transfer the rotation group's positions such that every node has
              * all of them. Every node contributes its local positions x and stores
              * it in the collective erg->xc array. */
-            communicate_group_positions(cr,
+            communicate_group_positions(mpiComm,
                                         erg->xc,
                                         erg->xc_shifts,
                                         erg->xc_eshifts,
@@ -3982,7 +3983,7 @@ void do_rotation(const t_commrec*               cr,
                 || (rotg->eType == EnforcedRotationGroupType::Pmpf))
             {
                 get_center_comm(
-                        cr, erg->x_loc_pbc, erg->m_loc, erg->atomSet->numAtomsLocal(), rotg->nat, erg->xc_center);
+                        mpiComm, erg->x_loc_pbc, erg->m_loc, erg->atomSet->numAtomsLocal(), rotg->nat, erg->xc_center);
             }
         }
 
@@ -3990,9 +3991,9 @@ void do_rotation(const t_commrec*               cr,
 
     /**************************************************************************/
     /* Done communicating, we can start to count cycles for the load balancing now ... */
-    if (haveDDAtomOrdering(*cr))
+    if (dd)
     {
-        ddReopenBalanceRegionCpu(cr->dd);
+        ddReopenBalanceRegionCpu(dd);
     }
 
 #ifdef TAKETIME
@@ -4004,7 +4005,7 @@ void do_rotation(const t_commrec*               cr,
         gmx_enfrotgrp*  erg  = &ergRef;
         const t_rotgrp* rotg = erg->rotg;
 
-        if (outstep_rot && MAIN(cr))
+        if (outstep_rot && mpiComm.isMainRank())
         {
             fprintf(er->out_rot, "%12.4f", erg->degangle);
         }
@@ -4052,20 +4053,20 @@ void do_rotation(const t_commrec*               cr,
                 get_center(erg->xc, erg->mc, rotg->nat, erg->xc_center);
                 svmul(-1.0, erg->xc_center, transvec);
                 translate_x(erg->xc, rotg->nat, transvec);
-                do_flexible(MAIN(cr), er, erg, coords, box, t, outstep_rot, outstep_slab);
+                do_flexible(mpiComm.isMainRank(), er, erg, coords, box, t, outstep_rot, outstep_slab);
                 break;
             case EnforcedRotationGroupType::Flex:
             case EnforcedRotationGroupType::Flex2:
                 /* Do NOT subtract the center of mass in the low level routines! */
                 clear_rvec(erg->xc_center);
-                do_flexible(MAIN(cr), er, erg, coords, box, t, outstep_rot, outstep_slab);
+                do_flexible(mpiComm.isMainRank(), er, erg, coords, box, t, outstep_rot, outstep_slab);
                 break;
             default: gmx_fatal(FARGS, "No such rotation potential.");
         }
     }
 
 #ifdef TAKETIME
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         fprintf(stderr,
                 "%s calculation (step %" PRId64 ") took %g seconds.\n",

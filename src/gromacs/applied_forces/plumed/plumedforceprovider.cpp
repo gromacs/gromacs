@@ -45,10 +45,10 @@
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/math/units.h"
 #include "gromacs/mdrunutility/handlerestart.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/mpicomm.h"
 
 #include "plumedOptions.h"
 
@@ -76,7 +76,7 @@ try : plumed_(std::make_unique<PLMD::Plumed>())
     // at the implementation and not at the function signature:
     // less code to edit when adding new options :)
 #if GMX_THREAD_MPI
-    if (options.cr_->nnodes > 1)
+    if (options.mpiComm_->size() > 1)
     {
         GMX_THROW(InvalidInputError(
                 "plumed MPI interface is not compatible with THREAD_MPI when uses more than one "
@@ -114,9 +114,9 @@ try : plumed_(std::make_unique<PLMD::Plumed>())
         }
     }
 
-    if (havePPDomainDecomposition(options.cr_))
+    if (options.mpiComm_->size() > 1)
     {
-        plumed_->cmd("setMPIComm", &options.cr_->mpi_comm_mygroup);
+        plumed_->cmd("setMPIComm", options.mpiComm_->comm());
     }
 
     plumed_->cmd("setNatoms", options.natoms_);
@@ -153,14 +153,14 @@ try
 {
     // setup: these instructions in the original patch are BEFORE do_force()
     // now this is called within do_force(), but this does not impact the results
-    const t_commrec* cr    = &(forceProviderInput.cr_);
-    long int         lstep = forceProviderInput.step_;
+    const gmx_domdec_t* dd    = forceProviderInput.dd_;
+    long int            lstep = forceProviderInput.step_;
     plumed_->cmd("setStepLong", &lstep);
-    if (haveDDAtomOrdering(*cr))
+    if (dd)
     {
-        int nat_home = dd_numHomeAtoms(*cr->dd);
+        int nat_home = dd_numHomeAtoms(*dd);
         plumed_->cmd("setAtomsNlocal", &nat_home);
-        plumed_->cmd("setAtomsGatindex", cr->dd->globalAtomIndices.data());
+        plumed_->cmd("setAtomsGatindex", dd->globalAtomIndices.data());
     }
 
     plumed_->cmd("setPositions", &(forceProviderInput.x_.data()->as_vec()[0]));

@@ -3168,7 +3168,7 @@ void dd_partition_system(FILE*                     fplog,
     if (inputrec.bPull)
     {
         /* Update the local pull groups */
-        dd_make_local_pull_groups(cr, pull_work);
+        dd_make_local_pull_groups(cr->commMyGroup, cr->dd, pull_work);
     }
 
     /* Update the local atoms to be communicated via the IMD protocol if bIMD is true. */
@@ -3194,7 +3194,7 @@ void dd_partition_system(FILE*                     fplog,
                      step,
                      "dump",
                      top_global,
-                     cr,
+                     *dd,
                      -1,
                      state_local->x.rvec_array(),
                      state_local->box);

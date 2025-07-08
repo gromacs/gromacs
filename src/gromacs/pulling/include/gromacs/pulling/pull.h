@@ -57,12 +57,12 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+struct gmx_domdec_t;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
 struct pull_coord_work_t;
 struct pull_params_t;
 struct pull_t;
-struct t_commrec;
 struct t_filenm;
 struct t_inputrec;
 struct t_pbc;
@@ -74,6 +74,7 @@ namespace gmx
 template<typename>
 class ArrayRef;
 class ForceWithVirial;
+class MpiComm;
 class LocalAtomSetManager;
 } // namespace gmx
 
@@ -178,21 +179,21 @@ void clear_pull_forces(pull_t* pull);
  *
  * Note: performance global MPI communication, potentially on a subset of the MPI ranks.
  *
- * \param[in,out] pull   The pull struct.
- * \param[in]     masses Atoms masses.
- * \param[in]     pbc    Information struct about periodicity.
- * \param[in]     cr     Struct for communication info.
- * \param[in]     t      Time.
- * \param[in]     lambda The value of lambda in FEP calculations.
- * \param[in]     x      Positions.
- * \param[out] dvdlambda Pull contribution to dV/d(lambda).
+ * \param[in,out] pull     The pull struct.
+ * \param[in]     masses   Atoms masses.
+ * \param[in]     pbc      Information struct about periodicity.
+ * \param[in]     mpiComm  Communication object for my group.
+ * \param[in]     t        Time.
+ * \param[in]     lambda   The value of lambda in FEP calculations.
+ * \param[in]     x        Positions.
+ * \param[out] dvdlambda   Pull contribution to dV/d(lambda).
  *
  * \returns The pull potential energy.
  */
 real pull_potential(pull_t*                        pull,
                     gmx::ArrayRef<const real>      masses,
                     const t_pbc&                   pbc,
-                    const t_commrec*               cr,
+                    const gmx::MpiComm&            mpiComm,
                     double                         t,
                     real                           lambda,
                     gmx::ArrayRef<const gmx::RVec> x,
@@ -211,14 +212,14 @@ real pull_potential(pull_t*                        pull,
  *
  * Note: this function is fully local and does not perform MPI communication.
  *
- * \param[in,out] pull   The pull struct.
- * \param[in]     masses Atoms masses.
- * \param[in]     cr     Struct for communication info.
- * \param[in,out] force  Forces and virial.
+ * \param[in,out] pull     The pull struct.
+ * \param[in]     masses   Atoms masses.
+ * \param[in]     mpiComm  Communication object for my group.
+ * \param[in,out] force    Forces and virial.
  */
 void pull_apply_forces(struct pull_t*            pull,
                        gmx::ArrayRef<const real> masses,
-                       const t_commrec*          cr,
+                       const gmx::MpiComm&       mpiComm,
                        gmx::ForceWithVirial*     force);
 
 /*! \brief Constrain the coordinates xp in the directions in x
@@ -227,7 +228,7 @@ void pull_apply_forces(struct pull_t*            pull,
  * \param[in,out] pull   The pull data.
  * \param[in]     masses Atoms masses.
  * \param[in]     pbc    Information struct about periodicity.
- * \param[in]     cr     Struct for communication info.
+ * \param[in]     mpiComm  Communication object for my group.
  * \param[in]     dt     The time step length.
  * \param[in]     t      The time.
  * \param[in]     x      Positions.
@@ -238,7 +239,7 @@ void pull_apply_forces(struct pull_t*            pull,
 void pull_constraint(struct pull_t*            pull,
                      gmx::ArrayRef<const real> masses,
                      const t_pbc&              pbc,
-                     const t_commrec*          cr,
+                     const gmx::MpiComm&       mpiComm,
                      double                    dt,
                      double                    t,
                      gmx::ArrayRef<gmx::RVec>  x,
@@ -250,10 +251,11 @@ void pull_constraint(struct pull_t*            pull,
 /*! \brief Make a selection of the home atoms for all pull groups.
  * Should be called at every domain decomposition.
  *
- * \param cr             Structure for communication info.
- * \param pull           The pull group.
+ * \param mpiComm  Communication object for my group.
+ * \param dd       Domain decomposition struct, is nullptr when DD is not in use.
+ * \param pull     The pull group.
  */
-void dd_make_local_pull_groups(const t_commrec* cr, pull_t* pull);
+void dd_make_local_pull_groups(const gmx::MpiComm& mpiComm, gmx_domdec_t* dd, pull_t* pull);
 
 
 /*! \brief Allocate, initialize and return a pull work struct.
@@ -262,7 +264,8 @@ void dd_make_local_pull_groups(const t_commrec* cr, pull_t* pull);
  * \param pull_params The pull input parameters containing all pull settings.
  * \param ir          The inputrec.
  * \param mtop        The topology of the whole system.
- * \param cr          Struct for communication info.
+ * \param mpiComm     Communication object for my group.
+ * \param dd          Domain decomposition object, is nullptr when DD is not used.
  * \param atomSets    The manager that handles the pull atom sets
  * \param lambda      FEP lambda.
  */
@@ -270,7 +273,8 @@ struct pull_t* init_pull(FILE*                     fplog,
                          const pull_params_t*      pull_params,
                          const t_inputrec*         ir,
                          const gmx_mtop_t&         mtop,
-                         const t_commrec*          cr,
+                         const gmx::MpiComm&       mpiComm,
+                         gmx_domdec_t*             dd,
                          gmx::LocalAtomSetManager* atomSets,
                          real                      lambda);
 
@@ -284,7 +288,7 @@ void finish_pull(struct pull_t* pull);
 
 /*! \brief Calculates centers of mass all pull groups.
  *
- * \param[in] cr       Struct for communication info.
+ * \param[in] mpiComm  Communication object for my group.
  * \param[in] pull     The pull data structure.
  * \param[in] masses   Atoms masses.
  * \param[in] pbc      Information struct about periodicity.
@@ -293,7 +297,7 @@ void finish_pull(struct pull_t* pull);
  * \param[in,out] xp   Updated x, can be NULL.
  *
  */
-void pull_calc_coms(const t_commrec*               cr,
+void pull_calc_coms(const gmx::MpiComm&            mpiComm,
                     pull_t*                        pull,
                     gmx::ArrayRef<const real>      masses,
                     const t_pbc&                   pbc,
@@ -421,7 +425,7 @@ void setPrevStepPullCom(pull_t* pull, gmx::ArrayRef<const double> prevStepPullCo
  * \param[in] masses                 Atoms masses.
  * \param[in] state                  The local (to this rank) state.
  * \param[in] state_global           The global state.
- * \param[in] cr                     Struct for communication info.
+ * \param[in] mpiComm                Communication object for my group.
  * \param[in] startingFromCheckpoint Is the simulation starting from a checkpoint?
  */
 void preparePrevStepPullCom(const t_inputrec*         ir,
@@ -429,18 +433,18 @@ void preparePrevStepPullCom(const t_inputrec*         ir,
                             gmx::ArrayRef<const real> masses,
                             t_state*                  state,
                             const t_state*            state_global,
-                            const t_commrec*          cr,
+                            const gmx::MpiComm&       mpiComm,
                             bool                      startingFromCheckpoint);
 
 /*! \brief Initializes the COM of the previous step (set to initial COM)
  *
- * \param[in] cr       Struct for communication info.
+ * \param[in] mpiComm  Communication object for my group.
  * \param[in] pull     The pull data structure.
  * \param[in] masses   Atoms masses.
  * \param[in] pbc      Information struct about periodicity.
  * \param[in] x        The local positions.
  */
-void initPullComFromPrevStep(const t_commrec*               cr,
+void initPullComFromPrevStep(const gmx::MpiComm&            mpiComm,
                              pull_t*                        pull,
                              gmx::ArrayRef<const real>      masses,
                              const t_pbc&                   pbc,
@@ -448,7 +452,7 @@ void initPullComFromPrevStep(const t_commrec*               cr,
 
 /*! \brief Initializes the previous step pull COM for new simulations (no reading from checkpoint).
  *
- * \param[in] cr               Struct for communication info.
+ * \param[in] mpiComm          Communication object for my group.
  * \param[in] pull_work        The COM pull force calculation data structure.
  * \param[in] masses           Atoms masses.
  * \param[in] x                The local positions.
@@ -456,7 +460,7 @@ void initPullComFromPrevStep(const t_commrec*               cr,
  * \param[in] pbcType          The type of periodic boundary conditions.
  * \param[in] comPreviousStep  The COM of the previous step of each pull group.
  */
-void preparePrevStepPullComNewSimulation(const t_commrec*                       cr,
+void preparePrevStepPullComNewSimulation(const gmx::MpiComm&                    mpiComm,
                                          pull_t*                                pull_work,
                                          gmx::ArrayRef<const real>              masses,
                                          gmx::ArrayRef<const gmx::RVec>         x,

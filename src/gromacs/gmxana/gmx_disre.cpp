@@ -241,7 +241,8 @@ static void check_viol(FILE*                          log,
         } while (((i + n) < disres.size())
                  && (forceparams[forceatoms[i + n]].disres.label == label + label_old));
 
-        calc_disres_R_6(nullptr, nullptr, n, &forceatoms[i], x, pbc, disresdata, nullptr);
+        calc_disres_R_6(
+                gmx::MpiComm(MPI_COMM_NULL), nullptr, nullptr, n, &forceatoms[i], x, pbc, disresdata, nullptr);
 
         if (disresdata->Rt_6[label] <= 0)
         {

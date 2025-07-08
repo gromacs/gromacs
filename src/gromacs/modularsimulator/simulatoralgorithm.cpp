@@ -108,7 +108,7 @@ namespace gmx
 {
 ModularSimulatorAlgorithm::ModularSimulatorAlgorithm(std::string              topologyName,
                                                      FILE*                    fplog,
-                                                     t_commrec*               cr,
+                                                     t_commrec&               cr,
                                                      const MDLogger&          mdlog,
                                                      const MdrunOptions&      mdrunOptions,
                                                      const t_inputrec*        inputrec,
@@ -216,7 +216,7 @@ void ModularSimulatorAlgorithm::simulatorSetup()
                         "may be removed in a future version.");
     }
 
-    if (MAIN(cr_))
+    if (MAIN(&cr_))
     {
         char        sbuf[STEPSTRSIZE], sbuf2[STEPSTRSIZE];
         std::string timeString;
@@ -249,7 +249,7 @@ void ModularSimulatorAlgorithm::simulatorSetup()
 
     walltime_accounting_start_time(wallTimeAccounting_);
     wallcycle_start(wallCycle_, WallCycleCounter::Run);
-    print_start(fpLog_, cr_, wallTimeAccounting_, "mdrun");
+    print_start(fpLog_, &cr_, wallTimeAccounting_, "mdrun");
 
     step_ = inputRec_->init_step;
 }
@@ -260,10 +260,10 @@ void ModularSimulatorAlgorithm::simulatorTeardown()
     // Stop measuring walltime
     walltime_accounting_end_time(wallTimeAccounting_);
 
-    if (!thisRankHasDuty(cr_, DUTY_PME))
+    if (!thisRankHasDuty(&cr_, DUTY_PME))
     {
         /* Tell the PME only node to finish */
-        gmx_pme_send_finish(cr_);
+        gmx_pme_send_finish(&cr_);
     }
 
     walltime_accounting_set_nsteps_done(wallTimeAccounting_, step_ - inputRec_->init_step);
@@ -300,7 +300,7 @@ void ModularSimulatorAlgorithm::preStep(Step step, Time gmx_unused time)
 void ModularSimulatorAlgorithm::postStep(Step step, Time gmx_unused time)
 {
     // Output stuff
-    if (MAIN(cr_))
+    if (MAIN(&cr_))
     {
         if (do_per_step(step, inputRec_->nstlog))
         {
@@ -314,23 +314,23 @@ void ModularSimulatorAlgorithm::postStep(Step step, Time gmx_unused time)
                             && (step % mdrunOptions_.verboseStepPrintInterval == 0
                                 || step == inputRec_->init_step || step == signalHelper_->lastStep_);
     // Print the remaining wall clock time for the run
-    if (MAIN(cr_) && (do_verbose || gmx_got_usr_signal())
+    if (MAIN(&cr_) && (do_verbose || gmx_got_usr_signal())
         && !(pmeLoadBalanceHelper_ && pmeLoadBalanceHelper_->pmePrinting()))
     {
-        print_time(stderr, wallTimeAccounting_, step, inputRec_, cr_);
+        print_time(stderr, wallTimeAccounting_, step, inputRec_, &cr_);
     }
 
     double cycles = wallcycle_stop(wallCycle_, WallCycleCounter::Step);
-    if (haveDDAtomOrdering(*cr_) && wallCycle_)
+    if (haveDDAtomOrdering(cr_) && wallCycle_)
     {
-        dd_cycles_add(cr_->dd, static_cast<float>(cycles), ddCyclStep);
+        dd_cycles_add(cr_.dd, static_cast<float>(cycles), ddCyclStep);
     }
 
     resetHandler_->resetCounters(step,
                                  step - inputRec_->init_step,
                                  mdLog_,
                                  fpLog_,
-                                 cr_,
+                                 &cr_,
                                  fr_->nbv.get(),
                                  nrnb_,
                                  fr_->pmedata,
@@ -425,7 +425,7 @@ ModularSimulatorAlgorithmBuilder::ModularSimulatorAlgorithmBuilder(
     elementAdditionHelper_(this),
     globalCommunicationHelper_(computeGlobalCommunicationPeriod(legacySimulatorData->mdLog_,
                                                                 legacySimulatorData->inputRec_,
-                                                                legacySimulatorData->cr_),
+                                                                legacySimulatorData->cr_->commMyGroup),
                                signals_.get()),
     observablesReducer_(legacySimulatorData->observablesReducerBuilder_->build()),
     checkpointHelperBuilder_(std::move(checkpointDataHolder),
@@ -511,7 +511,7 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::build()
 
     ModularSimulatorAlgorithm algorithm(*(legacySimulatorData_->topGlobal_.name),
                                         legacySimulatorData_->fpLog_,
-                                        legacySimulatorData_->cr_,
+                                        *legacySimulatorData_->cr_,
                                         legacySimulatorData_->mdLog_,
                                         legacySimulatorData_->mdrunOptions_,
                                         legacySimulatorData_->inputRec_,
