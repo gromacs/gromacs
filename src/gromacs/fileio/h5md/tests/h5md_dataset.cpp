@@ -47,6 +47,7 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/fileio/h5md/h5md.h"
+#include "gromacs/fileio/h5md/h5md_framedatasetbuilder.h"
 #include "gromacs/fileio/h5md/h5md_guard.h"
 #include "gromacs/fileio/h5md/h5md_type.h"
 #include "gromacs/fileio/h5md/h5md_util.h"
@@ -82,84 +83,13 @@ TYPED_TEST_SUITE(H5mdPrimitiveDataSetTest, NumericPrimitiveList);
 using RealPrimitiveList = ::testing::Types<float, double>;
 TYPED_TEST_SUITE(H5mdBasicVectorListDataSetTest, RealPrimitiveList);
 
-TYPED_TEST(H5mdPrimitiveDataSetTest, Create1dFrameDataSetCreatesEmpty1dSet)
-{
-    const auto [dataSet, dataSetGuard] =
-            makeH5mdDataSetGuard(create1dFrameDataSet<TypeParam>(this->fileid(), "testDataSet"));
-
-    const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet));
-    const int numDims                      = H5Sget_simple_extent_ndims(dataSpace);
-    EXPECT_EQ(numDims, 1);
-
-    hsize_t dataSetDims; // numDims = 1 so we only need to allocate memory for 1 dimension value
-    H5Sget_simple_extent_dims(dataSpace, &dataSetDims, nullptr);
-    EXPECT_EQ(dataSetDims, 0);
-}
-
-TYPED_TEST(H5mdPrimitiveDataSetTest, Create1dFrameDataSetsCorrectDataType)
-{
-    const auto [dataSet, dataSetGuard] =
-            makeH5mdDataSetGuard(create1dFrameDataSet<TypeParam>(this->fileid(), "testDataSet"));
-    const auto [dataType, dataTypeGuard] = makeH5mdTypeGuard(H5Dget_type(dataSet));
-
-    const TypeParam                 value = 1;
-    const ArrayRef<const TypeParam> array = arrayRefFromArray(&value, 1);
-
-    EXPECT_TRUE(valueTypeIsDataType(dataType, array));
-}
-
-TYPED_TEST(H5mdPrimitiveDataSetTest, Create1dFrameDataSetSetsUnlimitedMaxSize)
-{
-    const auto [dataSet, dataSetGuard] =
-            makeH5mdDataSetGuard(create1dFrameDataSet<TypeParam>(this->fileid(), "testDataSet"));
-
-    const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet));
-    DataSetDims dataSetMaxDims(1, 0);
-    H5Sget_simple_extent_dims(dataSpace, nullptr, dataSetMaxDims.data());
-
-    EXPECT_EQ(dataSetMaxDims.at(0), H5S_UNLIMITED);
-}
-
-TYPED_TEST(H5mdPrimitiveDataSetTest, Create1dFrameDataSetThrowsForNonExistingContainer)
-{
-    EXPECT_THROW(create1dFrameDataSet<TypeParam>(H5I_INVALID_HID, "testDataSet"), gmx::FileIOError);
-}
-
-TYPED_TEST(H5mdPrimitiveDataSetTest, Create1dFrameDataSetThrowsForEmptyName)
-{
-    EXPECT_THROW(create1dFrameDataSet<TypeParam>(this->fileid(), ""), gmx::FileIOError);
-}
-
-TYPED_TEST(H5mdPrimitiveDataSetTest, Create1dFrameDataSetThrowsForDuplicateName)
-{
-    constexpr char dataSetName[] = "testDataSet";
-    create1dFrameDataSet<TypeParam>(this->fileid(), dataSetName);
-    EXPECT_THROW(create1dFrameDataSet<TypeParam>(this->fileid(), dataSetName), gmx::FileIOError);
-}
-
-TEST(H5mdDataSetTest, Create1dFrameDataSetThrowsForReadOnlyFile)
-{
-    TestFileManager       fileManager;
-    std::filesystem::path fileName = fileManager.getTemporaryFilePath("ref.h5md");
-
-    {
-        SCOPED_TRACE("Create file.");
-        H5md file(fileName, H5mdFileMode::Write);
-    }
-    {
-        SCOPED_TRACE("Open file for reading and try to create data set.");
-        H5md file(fileName, H5mdFileMode::Read);
-        EXPECT_THROW(create1dFrameDataSet<int32_t>(file.fileid(), "testDataSet"), gmx::FileIOError);
-    }
-}
-
 TYPED_TEST(H5mdPrimitiveDataSetTest, OpenDataSetWorksForWriteModeFiles)
 {
     constexpr char dataSetName[] = "testDataSet";
 
     {
-        const auto [dataSet, dataSetGuard] =
-                makeH5mdDataSetGuard(create1dFrameDataSet<TypeParam>(this->fileid(), dataSetName));
+        const auto [dataSet, dataSetGuard] = makeH5mdDataSetGuard(
+                H5mdFrameDataSetBuilder<TypeParam>(this->fileid(), dataSetName).build());
         const auto [dataType, dataTypeGuard] = makeH5mdTypeGuard(H5Dget_type(dataSet));
         ASSERT_GT(H5Tequal(dataType, hdf5DataTypeFor<TypeParam>()), 0)
                 << "Sanity check failed: data types should match after creation";
@@ -182,8 +112,8 @@ TEST(H5mdDataSetTest, OpenDataSetWorksForReadOnlyFiles)
 
     {
         H5md file(fileName, H5mdFileMode::Write);
-        const auto [dataSet, dataSetGuard] =
-                makeH5mdDataSetGuard(create1dFrameDataSet<int32_t>(file.fileid(), dataSetName));
+        const auto [dataSet, dataSetGuard] = makeH5mdDataSetGuard(
+                H5mdFrameDataSetBuilder<int32_t>(file.fileid(), dataSetName).build());
         const auto [dataType, dataTypeGuard] = makeH5mdTypeGuard(H5Dget_type(dataSet));
         ASSERT_GT(H5Tequal(dataType, H5T_NATIVE_INT32), 0)
                 << "Sanity check failed: data types should match after creation";
@@ -206,8 +136,8 @@ TYPED_TEST(H5mdPrimitiveDataSetTest, OpenDataSetThrowsForInvalidSetName)
 {
     {
         // Create a data set to ensure that there is something in the file which we cannot read with bad names
-        const auto [dataSet, dataSetGuard] =
-                makeH5mdDataSetGuard(create1dFrameDataSet<TypeParam>(this->fileid(), "testDataSet"));
+        const auto [dataSet, dataSetGuard] = makeH5mdDataSetGuard(
+                H5mdFrameDataSetBuilder<TypeParam>(this->fileid(), "testDataSet").build());
         ASSERT_TRUE(handleIsValid(dataSet))
                 << "Sanity check failed: data set handle should be valid";
     }
@@ -220,14 +150,27 @@ TYPED_TEST(H5mdPrimitiveDataSetTest, OpenDataSetThrowsForInvalidSetName)
 
 TYPED_TEST(H5mdPrimitiveDataSetTest, GetNumFramesFor1dDataSetsReturnsSize)
 {
-    const auto [dataSet, dataSetGuard] =
-            makeH5mdDataSetGuard(create1dFrameDataSet<TypeParam>(this->fileid(), "testDataSet"));
-
-    EXPECT_EQ(getNumFrames(dataSet), 0) << "1d frame data sets are created as empty";
+    const auto [dataSet, dataSetGuard] = makeH5mdDataSetGuard(
+            H5mdFrameDataSetBuilder<TypeParam>(this->fileid(), "testDataSet").build());
 
     const hsize_t newSize = 6;
     H5Dset_extent(dataSet, &newSize);
     EXPECT_EQ(getNumFrames(dataSet), newSize) << "Number of frames should match new size";
+}
+
+TYPED_TEST(H5mdPrimitiveDataSetTest, GetNumFramesFor3dDataSetsReturnsDim0Value)
+{
+    const std::vector<hsize_t> frameDimensions = { 5, 2 };
+    const auto [dataSet, dataSetGuard] =
+            makeH5mdDataSetGuard(H5mdFrameDataSetBuilder<TypeParam>(this->fileid(), "testDataSet")
+                                         .withFrameDimension(frameDimensions)
+                                         .build());
+
+    const hsize_t     newSize = 6;
+    const DataSetDims newDims = { newSize, frameDimensions[0], frameDimensions[1] };
+    H5Dset_extent(dataSet, newDims.data());
+    EXPECT_EQ(getNumFrames(dataSet), newSize)
+            << "Number of frames should match new size along dim 0";
 }
 
 TYPED_TEST(H5mdPrimitiveDataSetTest, GetNumFramesThrowsForInvalidDataSetHandle)
@@ -239,8 +182,8 @@ TYPED_TEST(H5mdPrimitiveDataSetTest, GetNumFramesThrowsForInvalidDataSetHandle)
     {
         // Create a data set with some data in the file to ensure that there is something
         // there which cannot be read with bad data set handles.
-        const auto [dataSet, dataSetGuard] =
-                makeH5mdDataSetGuard(create1dFrameDataSet<TypeParam>(this->fileid(), "testDataSet"));
+        const auto [dataSet, dataSetGuard] = makeH5mdDataSetGuard(
+                H5mdFrameDataSetBuilder<TypeParam>(this->fileid(), "testDataSet").build());
 
         dataSetToTest = dataSet;
         ASSERT_TRUE(handleIsValid(dataSetToTest))
@@ -251,65 +194,10 @@ TYPED_TEST(H5mdPrimitiveDataSetTest, GetNumFramesThrowsForInvalidDataSetHandle)
     EXPECT_THROW(getNumFrames(H5I_INVALID_HID), gmx::FileIOError);
 }
 
-TYPED_TEST(H5mdBasicVectorListDataSetTest, CreateDataSetCreatesEmpty3d)
-{
-    const auto [dataSet, dataSetGuard] = makeH5mdDataSetGuard(
-            createUnboundedFrameBasicVectorListDataSet<TypeParam>(this->fileid(), "testDataSet", 1));
-    const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet));
-
-    const int numDims = H5Sget_simple_extent_ndims(dataSpace);
-    EXPECT_EQ(numDims, 3);
-
-    DataSetDims dataSetDims(3, 0);
-    DataSetDims dataSetMaxDims(3, 0);
-    H5Sget_simple_extent_dims(dataSpace, dataSetDims.data(), dataSetMaxDims.data());
-    EXPECT_EQ(dataSetDims[0], 0);
-    EXPECT_EQ(dataSetMaxDims[0], H5S_UNLIMITED);
-}
-
-TYPED_TEST(H5mdBasicVectorListDataSetTest, CreateDataSetCreatesCorrectDataType)
-{
-    const auto [dataSet, dataSetGuard] = makeH5mdDataSetGuard(
-            createUnboundedFrameBasicVectorListDataSet<TypeParam>(this->fileid(), "testDataSet", 1));
-
-    const auto [dataType, dataTypeGuard] = makeH5mdTypeGuard(H5Dget_type(dataSet));
-    EXPECT_TRUE(valueTypeIsDataType<TypeParam>(dataType));
-}
-
-TYPED_TEST(H5mdBasicVectorListDataSetTest, CreateDataSetUsesCorrectRowOrder)
-{
-    const int numAtoms = 5; // distinct from DIM (3)
-    const auto [dataSet, dataSetGuard] =
-            makeH5mdDataSetGuard(createUnboundedFrameBasicVectorListDataSet<TypeParam>(
-                    this->fileid(), "testDataSet", numAtoms));
-    const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet));
-
-    DataSetDims dataSetDims(3, 0);
-    H5Sget_simple_extent_dims(dataSpace, dataSetDims.data(), nullptr);
-    EXPECT_EQ(dataSetDims[0], 0) << "numFrames = 0 should be outermost axis";
-    EXPECT_EQ(dataSetDims[1], numAtoms) << "Center axis should be for atoms with numAtoms values";
-    EXPECT_EQ(dataSetDims[2], DIM) << "Minor axis should be for BasicVector with DIM values";
-}
-
-TYPED_TEST(H5mdBasicVectorListDataSetTest, CreateDataSetForZeroOrFewerNumberOfAtomsThrows)
-{
-    ASSERT_NO_THROW(createUnboundedFrameBasicVectorListDataSet<TypeParam>(
-            this->fileid(), "testNumAtomsOne", 1))
-            << "Sanity check failed: creating data set for 1 atom should work";
-    EXPECT_THROW(createUnboundedFrameBasicVectorListDataSet<TypeParam>(
-                         this->fileid(), "testNumAtomsZero", 0),
-                 gmx::FileIOError)
-            << "Creating data set for 0 atoms must throw";
-    EXPECT_THROW(createUnboundedFrameBasicVectorListDataSet<TypeParam>(
-                         this->fileid(), "testNumAtomsNegative", -1),
-                 gmx::FileIOError)
-            << "Creating data set for -1 atoms must throw";
-}
-
 TYPED_TEST(H5mdPrimitiveDataSetTest, SetNumFramesWorks)
 {
-    const auto [dataSet, dataSetGuard] =
-            makeH5mdDataSetGuard(create1dFrameDataSet<TypeParam>(this->fileid(), "testDataSet"));
+    const auto [dataSet, dataSetGuard] = makeH5mdDataSetGuard(
+            H5mdFrameDataSetBuilder<TypeParam>(this->fileid(), "testDataSet").build());
 
     {
         SCOPED_TRACE("Validate data set size before setting number of frames");
@@ -333,8 +221,8 @@ TYPED_TEST(H5mdPrimitiveDataSetTest, SetNumFramesWorks)
 
 TYPED_TEST(H5mdPrimitiveDataSetTest, SetNumFramesCanShrinkDataset)
 {
-    const auto [dataSet, dataSetGuard] =
-            makeH5mdDataSetGuard(create1dFrameDataSet<TypeParam>(this->fileid(), "testDataSet"));
+    const auto [dataSet, dataSetGuard] = makeH5mdDataSetGuard(
+            H5mdFrameDataSetBuilder<TypeParam>(this->fileid(), "testDataSet").build());
 
     setNumFrames(dataSet, 2);
     setNumFrames(dataSet, 1);
@@ -347,10 +235,11 @@ TYPED_TEST(H5mdPrimitiveDataSetTest, SetNumFramesCanShrinkDataset)
 
 TYPED_TEST(H5mdBasicVectorListDataSetTest, SetNumFramesWorksForBasicVector)
 {
-    constexpr hsize_t numAtoms = 5;
-    const auto [dataSet, dataSetGuard] =
-            makeH5mdDataSetGuard(createUnboundedFrameBasicVectorListDataSet<TypeParam>(
-                    this->fileid(), "testDataSet", numAtoms));
+    constexpr int numAtoms             = 5;
+    const auto [dataSet, dataSetGuard] = makeH5mdDataSetGuard(
+            H5mdFrameDataSetBuilder<gmx::BasicVector<TypeParam>>(this->fileid(), "testDataSet")
+                    .withFrameDimension({ numAtoms })
+                    .build());
 
     {
         SCOPED_TRACE("Validate data set size before setting number of frames");
@@ -360,7 +249,6 @@ TYPED_TEST(H5mdBasicVectorListDataSetTest, SetNumFramesWorksForBasicVector)
         ASSERT_EQ(dataSetDims, (DataSetDims{ 0, numAtoms, DIM }))
                 << "Sanity check failed: unexpected initial size of data set";
     }
-
 
     constexpr hsize_t newNumFrames = 2;
     setNumFrames(dataSet, newNumFrames);

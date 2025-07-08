@@ -68,17 +68,17 @@ void writeFrame(const hid_t dataSet, const hsize_t index, const ValueType& value
 template<typename ValueType>
 void writeFrame(const hid_t dataSet, const hsize_t index, const ArrayRef<const BasicVector<ValueType>> values);
 
-extern template void writeFrame<int32_t>(const hid_t, const hsize_t, const int32_t&);
+extern template void writeFrame(const hid_t, const hsize_t, const int32_t&);
 
-extern template void writeFrame<int64_t>(const hid_t, const hsize_t, const int64_t&);
+extern template void writeFrame(const hid_t, const hsize_t, const int64_t&);
 
-extern template void writeFrame<float>(const hid_t, const hsize_t, const float&);
+extern template void writeFrame(const hid_t, const hsize_t, const float&);
 
-extern template void writeFrame<double>(const hid_t, const hsize_t, const double&);
+extern template void writeFrame(const hid_t, const hsize_t, const double&);
 
-extern template void writeFrame<float>(const hid_t, const hsize_t, const ArrayRef<const BasicVector<float>>);
+extern template void writeFrame(const hid_t, const hsize_t, const ArrayRef<const BasicVector<float>>);
 
-extern template void writeFrame<double>(const hid_t, const hsize_t, const ArrayRef<const BasicVector<double>>);
+extern template void writeFrame(const hid_t, const hsize_t, const ArrayRef<const BasicVector<double>>);
 
 } // namespace gmx
 

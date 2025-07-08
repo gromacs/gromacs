@@ -42,7 +42,6 @@
 
 #include "h5md_dataset.h"
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
 #include "h5md_error.h"
@@ -120,123 +119,10 @@ static DataSetDims getFrameChunkDims(const DataSetDims& dataSetDims)
     return chunkDims;
 }
 
-/*! \brief Create a data set and return its handle.
- *
- * The returned handle must be closed with H5Dclose to avoid resource leaks.
- *
- * \tparam ValueType The compiled type of data to create data set for.
- * \tparam numDims Number of dimensions of created data set.
- * \param[in] container Container in which to create the data set.
- * \param[in] dataSetName Name of data set.
- * \param[in] dataType Handle to HDF5 data type for the data set values.
- * \param[in] dataSetDims Dimensions to create the data set with.
- * \param[in] dataSetMaxDims Maximum dimensions of the data set.
- * \returns Handle to created data set.
- */
-template<typename ValueType, int numDims>
-static hid_t createDataSet(const hid_t        container,
-                           const std::string& dataSetName,
-                           const hid_t        dataType,
-                           const DataSetDims& dataSetDims,
-                           const DataSetDims& dataSetMaxDims)
-{
-    // We need to set some options for the new data set, using this property list
-    const auto [creationPropertyList, creationPropertyListGuard] =
-            makeH5mdPropertyListGuard(H5Pcreate(H5P_DATASET_CREATE));
-
-    // Memory chunk sizes must be > 0 along every dimension when reading or writing
-    const DataSetDims chunkDims = [&]()
-    {
-        DataSetDims chunkDims = dataSetDims;
-        for (auto& v : chunkDims)
-        {
-            if (v == 0)
-            {
-                v = 1;
-            }
-        }
-        return chunkDims;
-    }();
-
-    H5Pset_chunk(creationPropertyList, numDims, chunkDims.data());
-    setNumericFillValue<ValueType>(creationPropertyList, dataType);
-
-    /* It would be nice to have an option not to write full incomplete edge chunks,
-     * but the closest option is:
-     * H5Pset_chunk_opts(createPropertyList, H5D_CHUNK_DONT_FILTER_PARTIAL_CHUNKS);
-     * But that only avoids compressing/decompressing the edge chunks.
-     * Keep an eye open for alternatives.
-     * Refs #5286: It is possible that it would be time-efficient
-     * to avoid compressing edge chunks when writing checkpoints. Pros and cons for slightly
-     * larger files vs slightly faster checkpoint writing must be evaluated.
-     * Currently it seems like incomplete edge chunks are compressed even with this option.
-     */
-    H5Pset_chunk_opts(creationPropertyList, H5D_CHUNK_DONT_FILTER_PARTIAL_CHUNKS);
-
-    /* Set a reasonable cache (in bytes) based on chunk sizes. The cache is not stored in file,
-     * so must be set when opening a data set / Magnus
-     * Refs #5286
-     */
-    size_t cacheSize = H5Tget_size(dataType);
-    for (const auto& chunkSize : chunkDims)
-    {
-        cacheSize *= chunkSize;
-    }
-
-    const auto [accessPropertyList, accessPropertyListGuard] =
-            makeH5mdPropertyListGuard(H5Pcreate(H5P_DATASET_ACCESS));
-    throwUponH5mdError(
-            H5Pset_chunk_cache(accessPropertyList, H5D_CHUNK_CACHE_NSLOTS_DEFAULT, cacheSize, H5D_CHUNK_CACHE_W0_DEFAULT)
-                    < 0,
-            "Cannot set chunk cache parameters.");
-
-    const auto [dataSpace, dataSpaceGuard] =
-            makeH5mdDataSpaceGuard(H5Screate_simple(numDims, dataSetDims.data(), dataSetMaxDims.data()));
-
-    const hid_t dataSet = H5Dcreate(
-            container, dataSetName.c_str(), dataType, dataSpace, H5P_DEFAULT, creationPropertyList, accessPropertyList);
-    throwUponInvalidHid(dataSet, "Cannot create dataSet.");
-
-    return dataSet;
-}
-
 } // namespace
 
 namespace gmx
 {
-
-template<typename ValueType>
-hid_t create1dFrameDataSet(const hid_t container, const std::string& dataSetName)
-{
-    constexpr int numDims = 1;
-
-    const DataSetDims dataSetDims    = { 0 };
-    const DataSetDims dataSetMaxDims = { H5S_UNLIMITED };
-    const hid_t       dataType       = hdf5DataTypeFor<ValueType>();
-
-    return createDataSet<ValueType, numDims>(container, dataSetName, dataType, dataSetDims, dataSetMaxDims);
-}
-
-template<typename ValueType>
-hid_t createUnboundedFrameBasicVectorListDataSet(const hid_t        container,
-                                                 const std::string& dataSetName,
-                                                 const int          numAtoms)
-{
-    constexpr int numDimsDataSet = 3;
-
-    const DataSetDims dataSetDims    = { 0, static_cast<hsize_t>(numAtoms), DIM };
-    const DataSetDims dataSetMaxDims = { H5S_UNLIMITED, static_cast<hsize_t>(numAtoms), DIM };
-
-    // NOTE: HDF5 does not like array data types with size 0 along any dimension.
-    // If this is required we need to find a different approach
-    throwUponH5mdError(numAtoms < 1, "Cannot create particle-RVec data set for <1 number of atoms");
-
-    // Returns a native type that does not need to be closed at end of scope
-    const hid_t dataType = hdf5DataTypeFor<ValueType>();
-
-    return createDataSet<ValueType, numDimsDataSet>(
-            container, dataSetName, dataType, dataSetDims, dataSetMaxDims);
-}
 
 hid_t openDataSet(const hid_t container, const std::string& dataSetName)
 {
@@ -303,18 +189,6 @@ hid_t getFrameMemoryDataSpace(const hid_t dataSet)
 
     return H5Screate_simple(H5Sget_simple_extent_ndims(dataSpace), chunkDims.data(), nullptr);
 }
-
-template hid_t create1dFrameDataSet<int32_t>(const hid_t, const std::string&);
-
-template hid_t create1dFrameDataSet<int64_t>(const hid_t, const std::string&);
-
-template hid_t create1dFrameDataSet<float>(const hid_t, const std::string&);
-
-template hid_t create1dFrameDataSet<double>(const hid_t, const std::string&);
-
-template hid_t createUnboundedFrameBasicVectorListDataSet<float>(const hid_t, const std::string&, const int);
-
-template hid_t createUnboundedFrameBasicVectorListDataSet<double>(const hid_t, const std::string&, const int);
 
 } // namespace gmx
 

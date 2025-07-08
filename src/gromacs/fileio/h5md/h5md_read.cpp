@@ -122,16 +122,16 @@ void readFrame(const hid_t dataSet, const hsize_t index, const ArrayRef<BasicVec
     readFrameData<ValueType, numDims>(dataSet, index, arrayRef);
 }
 
-template void readFrame<int32_t>(const hid_t, const hsize_t, int32_t&);
+template void readFrame(const hid_t, const hsize_t, int32_t&);
 
-template void readFrame<int64_t>(const hid_t, const hsize_t, int64_t&);
+template void readFrame(const hid_t, const hsize_t, int64_t&);
 
-template void readFrame<float>(const hid_t, const hsize_t, float&);
+template void readFrame(const hid_t, const hsize_t, float&);
 
-template void readFrame<double>(const hid_t, const hsize_t, double&);
+template void readFrame(const hid_t, const hsize_t, double&);
 
-template void readFrame<float>(const hid_t, const hsize_t, const ArrayRef<BasicVector<float>>);
+template void readFrame(const hid_t, const hsize_t, const ArrayRef<BasicVector<float>>);
 
-template void readFrame<double>(const hid_t, const hsize_t, const ArrayRef<BasicVector<double>>);
+template void readFrame(const hid_t, const hsize_t, const ArrayRef<BasicVector<double>>);
 
 } // namespace gmx

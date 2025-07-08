@@ -68,17 +68,17 @@ void readFrame(const hid_t dataSet, const hsize_t index, ValueType& value);
 template<typename ValueType>
 void readFrame(const hid_t dataSet, const hsize_t index, const ArrayRef<BasicVector<ValueType>> values);
 
-extern template void readFrame<float>(const hid_t, const hsize_t, float&);
+extern template void readFrame(const hid_t, const hsize_t, float&);
 
-extern template void readFrame<double>(const hid_t, const hsize_t, double&);
+extern template void readFrame(const hid_t, const hsize_t, double&);
 
-extern template void readFrame<int32_t>(const hid_t, const hsize_t, int32_t&);
+extern template void readFrame(const hid_t, const hsize_t, int32_t&);
 
-extern template void readFrame<int64_t>(const hid_t, const hsize_t, int64_t&);
+extern template void readFrame(const hid_t, const hsize_t, int64_t&);
 
-extern template void readFrame<float>(const hid_t, const hsize_t, const ArrayRef<BasicVector<float>>);
+extern template void readFrame(const hid_t, const hsize_t, const ArrayRef<BasicVector<float>>);
 
-extern template void readFrame<double>(const hid_t, const hsize_t, const ArrayRef<BasicVector<double>>);
+extern template void readFrame(const hid_t, const hsize_t, const ArrayRef<BasicVector<double>>);
 
 } // namespace gmx
 

@@ -54,86 +54,6 @@ namespace gmx
  */
 using DataSetDims = std::vector<hsize_t>;
 
-/*! \brief Create a 1d data set for per-frame data (called \p dataSetName, in \p container).
- *
- * The data set is empty and has no limit on the number of values it can contain. This informs
- * its purpose: to append values corresponding to different frames. Since it can grow it should
- * not be used to create a fixed-size data set.
- *
- * Use this to create data sets for e.g. storing time stamps, simulation steps or energies.
- *
- * Note that this should only be used for simple primitive \p ValueType types. More complicated
- * types such as strings, gmx::RVecs or similar should use specialized functions.
- *
- * The returned handle must be closed with H5Dclose to avoid resource leaks.
- *
- * \tparam ValueType The type of data to store.
- * \param[in] container The ID of the container of the data.
- * \param[in] dataSetName The name of the data set.
- * \returns The ID of the data set.
- *
- * \throws gmx::FileIOError if the data set cannot be created.
- */
-template<typename ValueType>
-hid_t create1dFrameDataSet(const hid_t container, const std::string& dataSetName);
-
-/*! \brief Create a 3d data set for per-frame data of lists of BasicVectors (called \p dataSetName, in \p container).
- *
- * Data sets created with this function can contain trajectory data, such as multiple frames
- * of atom positions, velocities or forces. The data set is created empty and has no limit
- * on the number of frames it can contain.
- *
- * The data set is 3d, wherein the data for each frame is stored subsequently along the major axis,
- * atom indexing is along axis 1 and the vector data along axis 2. Storage layout is thus row-major:
- * [numFrames][numAtoms][DIM].
- *
- * The returned handle must be closed with H5Dclose to avoid resource leaks.
- *
- * \tparam ValueType Type of BasicVector.
- * \param[in] container The ID of the container of the data.
- * \param[in] dataSetName The name of the data set.
- * \param[in] numAtoms Number of atoms to create data set for.
- * \returns The ID of the data set.
- *
- * \throws gmx::FileIOError if the data set cannot be created.
- */
-template<typename ValueType>
-hid_t createUnboundedFrameBasicVectorListDataSet(const hid_t        container,
-                                                 const std::string& dataSetName,
-                                                 const int          numAtoms);
-
-/*! \brief Create a 1d data set for per-frame data of lists of RVec (called \p dataSetName, in \p container).
- *
- * \note This is a convenience function which calls createUnboundedFrameBasicVectorListDataSet
- * with `real` as the templated value type.
- *
- * Data sets created with this function can contain trajectory data, such as multiple frames
- * of atom positions, velocities or forces. The data set is created empty and has no limit
- * on the number of frames it can contain.
- *
- * The data set is 1d, wherein the data for each frame is stored subsequently along this axis.
- * For each frame the list of RVecs is stored in a 2d array with dimensions [\p numAtoms, \p DIM].
- *
- * The returned handle must be closed with H5Dclose to avoid resource leaks.
- *
- * \param[in] container The ID of the container of the data.
- * \param[in] dataSetName The name of the data set.
- * \param[in] numAtoms Number of atoms to create data set for.
- * \returns The ID of the data set.
- *
- * \throws gmx::FileIOError if the data set cannot be created.
- */
-inline hid_t createUnboundedFrameRvecListDataSet(const hid_t        container,
-                                                 const std::string& dataSetName,
-                                                 const int          numAtoms)
-{
-#if GMX_DOUBLE
-    return createUnboundedFrameBasicVectorListDataSet<double>(container, dataSetName, numAtoms);
-#else
-    return createUnboundedFrameBasicVectorListDataSet<float>(container, dataSetName, numAtoms);
-#endif
-}
-
 /*! \brief Open an existing data set (called \p dataSetName, in \p container).
  *
  * The returned handle must be closed with H5Dclose to avoid resource leaks.
@@ -207,22 +127,6 @@ hid_t getFrameDataSpace(const hid_t dataSet, const hsize_t frameIndex);
  * \returns Handle to data space with storage for a single frame.
  */
 hid_t getFrameMemoryDataSpace(const hid_t dataSet);
-
-extern template hid_t create1dFrameDataSet<int32_t>(const hid_t, const std::string&);
-
-extern template hid_t create1dFrameDataSet<int64_t>(const hid_t, const std::string&);
-
-extern template hid_t create1dFrameDataSet<float>(const hid_t, const std::string&);
-
-extern template hid_t create1dFrameDataSet<double>(const hid_t, const std::string&);
-
-extern template hid_t createUnboundedFrameBasicVectorListDataSet<float>(const hid_t,
-                                                                        const std::string&,
-                                                                        const int);
-
-extern template hid_t createUnboundedFrameBasicVectorListDataSet<double>(const hid_t,
-                                                                         const std::string&,
-                                                                         const int);
 
 } // namespace gmx
 
