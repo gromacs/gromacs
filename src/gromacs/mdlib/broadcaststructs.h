@@ -49,7 +49,6 @@
 #include <vector>
 
 #include "gromacs/gmxlib/network.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/smalloc.h"
 
 struct gmx_mtop_t;

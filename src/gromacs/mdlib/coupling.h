@@ -46,8 +46,8 @@
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
 
+struct gmx_domdec_t;
 class gmx_ekindata_t;
-struct t_commrec;
 struct t_extmass;
 struct t_grpopts;
 struct t_inputrec;
@@ -141,7 +141,7 @@ void update_pcouple_after_coordinates(FILE*                               fplog,
 
 extern bool update_randomize_velocities(const t_inputrec*                   ir,
                                         int64_t                             step,
-                                        const t_commrec*                    cr,
+                                        const gmx_domdec_t*                 dd,
                                         int                                 homenr,
                                         gmx::ArrayRef<const unsigned short> cTC,
                                         gmx::ArrayRef<const real>           invMass,
@@ -156,7 +156,7 @@ void berendsen_tcoupl(const t_inputrec*    ir,
 
 void andersen_tcoupl(const t_inputrec*                   ir,
                      int64_t                             step,
-                     const t_commrec*                    cr,
+                     const gmx_domdec_t*                 dd,
                      int                                 homenr,
                      gmx::ArrayRef<const unsigned short> cTC,
                      gmx::ArrayRef<const real>           invMass,

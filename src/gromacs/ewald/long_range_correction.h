@@ -50,7 +50,6 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
 
-struct t_commrec;
 struct t_forcerec;
 struct t_inputrec;
 enum class EwaldGeometry : int;
@@ -59,14 +58,15 @@ namespace gmx
 {
 template<typename>
 class ArrayRef;
-}
+class MpiComm;
+} // namespace gmx
 
 /*! \brief Calculate long-range Ewald correction terms.
  *
  * Calculate correction for electrostatic surface dipole terms.
  */
 void ewald_LRcorrection(int                            numAtomsLocal,
-                        const t_commrec*               commrec,
+                        const gmx::MpiComm&            mpiComm,
                         int                            numThreads,
                         int                            thread,
                         real                           epsilonR,

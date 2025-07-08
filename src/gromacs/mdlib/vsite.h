@@ -53,7 +53,6 @@
 
 struct gmx_domdec_t;
 struct gmx_mtop_t;
-struct t_commrec;
 struct InteractionList;
 struct t_nrnb;
 struct gmx_wallcycle;
@@ -193,7 +192,8 @@ int countInterUpdategroupVsites(const gmx_mtop_t&                 mtop,
 /*! \brief Create the virtual site handler
  *
  * \param[in] mtop                           The global topology
- * \param[in] cr                             The communication record
+ * \param[in] domdec                         The domain decomposition struct, pass nullptr
+ *                                           when DD is not in use
  * \param[in] pbcType                        The type of PBC
  * \param[in] updateGroupingPerMoleculeType  Update grouping per molecule type, pass
  *                                           empty when not using update groups
@@ -201,7 +201,7 @@ int countInterUpdategroupVsites(const gmx_mtop_t&                 mtop,
  */
 std::unique_ptr<VirtualSitesHandler>
 makeVirtualSitesHandler(const gmx_mtop_t&                 mtop,
-                        const t_commrec*                  cr,
+                        gmx_domdec_t*                     domdec,
                         PbcType                           pbcType,
                         ArrayRef<const RangePartitioning> updateGroupingPerMoleculeType);
 

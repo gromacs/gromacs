@@ -56,7 +56,6 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -2546,12 +2545,10 @@ int countInterUpdategroupVsites(const gmx_mtop_t& mtop,
 }
 
 std::unique_ptr<VirtualSitesHandler> makeVirtualSitesHandler(const gmx_mtop_t& mtop,
-                                                             const t_commrec*  cr,
+                                                             gmx_domdec_t*     domdec,
                                                              PbcType           pbcType,
                                                              ArrayRef<const RangePartitioning> updateGroupingPerMoleculeType)
 {
-    GMX_RELEASE_ASSERT(cr != nullptr, "We need a valid commrec");
-
     std::unique_ptr<VirtualSitesHandler> vsite;
 
     /* check if there are vsites */
@@ -2577,7 +2574,7 @@ std::unique_ptr<VirtualSitesHandler> makeVirtualSitesHandler(const gmx_mtop_t& m
         return vsite;
     }
 
-    return std::make_unique<VirtualSitesHandler>(mtop, cr->dd, pbcType, updateGroupingPerMoleculeType);
+    return std::make_unique<VirtualSitesHandler>(mtop, domdec, pbcType, updateGroupingPerMoleculeType);
 }
 
 ThreadingInfo::ThreadingInfo() : numThreads_(gmx_omp_nthreads_get(ModuleMultiThread::VirtualSite))

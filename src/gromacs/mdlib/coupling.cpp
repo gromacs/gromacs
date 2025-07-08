@@ -60,7 +60,6 @@
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdspan/extents.h"
 #include "gromacs/mdspan/layouts.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/inputrec.h"
@@ -404,7 +403,7 @@ void update_pcouple_after_coordinates(FILE*                               fplog,
 
 extern bool update_randomize_velocities(const t_inputrec*                   ir,
                                         int64_t                             step,
-                                        const t_commrec*                    cr,
+                                        const gmx_domdec_t*                 dd,
                                         int                                 homenr,
                                         gmx::ArrayRef<const unsigned short> cTC,
                                         gmx::ArrayRef<const real>           invMass,
@@ -433,7 +432,7 @@ extern bool update_randomize_velocities(const t_inputrec*                   ir,
     if ((ir->etc == TemperatureCoupling::Andersen) || do_per_step(step, gmx::roundToInt(1.0 / rate)))
     {
         andersen_tcoupl(
-                ir, step, cr, homenr, cTC, invMass, v, rate, upd->getAndersenRandomizeGroup(), upd->getBoltzmanFactor());
+                ir, step, dd, homenr, cTC, invMass, v, rate, upd->getAndersenRandomizeGroup(), upd->getBoltzmanFactor());
         return TRUE;
     }
     return FALSE;
@@ -1432,7 +1431,7 @@ void berendsen_tcoupl(const t_inputrec* ir, gmx_ekindata_t* ekind, real dt, std:
 
 void andersen_tcoupl(const t_inputrec*                   ir,
                      int64_t                             step,
-                     const t_commrec*                    cr,
+                     const gmx_domdec_t*                 dd,
                      const int                           homenr,
                      gmx::ArrayRef<const unsigned short> cTC,
                      gmx::ArrayRef<const real>           invMass,
@@ -1441,11 +1440,11 @@ void andersen_tcoupl(const t_inputrec*                   ir,
                      const std::vector<bool>&            randomize,
                      gmx::ArrayRef<const real>           boltzfac)
 {
-    const int* gatindex = (haveDDAtomOrdering(*cr) ? cr->dd->globalAtomIndices.data() : nullptr);
-    int        i;
-    int        gc = 0;
-    gmx::ThreeFry2x64<0>               rng(ir->andersen_seed, gmx::RandomDomain::Thermostat);
-    gmx::UniformRealDistribution<real> uniformDist;
+    const int*           gatindex = (dd != nullptr ? dd->globalAtomIndices.data() : nullptr);
+    int                  i;
+    int                  gc = 0;
+    gmx::ThreeFry2x64<0> rng(ir->andersen_seed, gmx::RandomDomain::Thermostat);
+    gmx::UniformRealDistribution<real>         uniformDist;
     gmx::TabulatedNormalDistribution<real, 14> normalDist;
 
     /* randomize the velocities of the selected particles */

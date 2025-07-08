@@ -1909,7 +1909,7 @@ int Mdrunner::mdrunner()
 
         /* Initialize the virtual site communication */
         vsite = makeVirtualSitesHandler(
-                mtop, cr, fr->pbcType, updateGroups.updateGroupingPerMoleculeType());
+                mtop, cr->dd, fr->pbcType, updateGroups.updateGroupingPerMoleculeType());
 
         calc_shifts(box, fr->shift_vec);
 

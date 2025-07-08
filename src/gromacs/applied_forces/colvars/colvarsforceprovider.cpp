@@ -68,6 +68,7 @@
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
+#include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/smalloc.h"
 
 enum class PbcType : int;

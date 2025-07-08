@@ -1472,7 +1472,7 @@ void gmx::LegacySimulator::do_md()
             {
                 gmx_bool bIfRandomize;
                 bIfRandomize = update_randomize_velocities(
-                        ir, step, cr_, md->homenr, md->cTC, md->invmass, state_->v, &upd, constr_);
+                        ir, step, cr_->dd, md->homenr, md->cTC, md->invmass, state_->v, &upd, constr_);
                 /* if we have constraints, we have to remove the kinetic energy parallel to the bonds */
                 if (constr_ && bIfRandomize)
                 {

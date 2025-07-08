@@ -52,7 +52,6 @@
 #include "gromacs/restraint/restraintpotential.h"
 #include "gromacs/utility/basedefinitions.h"
 
-struct t_commrec;
 struct t_mdatoms;
 struct pull_t;
 
