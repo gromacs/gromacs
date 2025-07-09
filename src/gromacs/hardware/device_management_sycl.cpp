@@ -114,7 +114,8 @@ static std::optional<std::tuple<int, int>> getHardwareVersionNvidia(const sycl::
     {
         return result;
     }
-#if (GMX_SYCL_ACPP && GMX_ACPP_HAVE_CUDA_TARGET) // hipSYCL uses CUDA Runtime API
+#if (GMX_SYCL_ACPP && GMX_ACPP_HAVE_CUDA_TARGET \
+     && !GMX_ACPP_HAVE_GENERIC_TARGET) // hipSYCL uses CUDA Runtime API
     const int             nativeDeviceId = sycl::get_native<sycl::backend::cuda>(device);
     struct cudaDeviceProp prop;
     cudaError_t           status = cudaGetDeviceProperties(&prop, nativeDeviceId);
@@ -189,7 +190,7 @@ static std::optional<std::tuple<int, int, int>> getHardwareVersionAmd(const sycl
     {
         return result;
     }
-#if (GMX_SYCL_ACPP && GMX_ACPP_HAVE_HIP_TARGET)
+#if (GMX_SYCL_ACPP && GMX_ACPP_HAVE_HIP_TARGET && !GMX_ACPP_HAVE_GENERIC_TARGET)
     // Fall back on the native device query
     const int              nativeDeviceId = sycl::get_native<sycl::backend::hip>(device);
     struct hipDeviceProp_t prop;
@@ -326,9 +327,9 @@ static DeviceStatus isDeviceCompatible(const sycl::device&           syclDevice,
 #if GMX_GPU_NB_CLUSTER_SIZE == 4
         const std::vector<int> compiledNbnxmSubGroupSizes{ 8 };
 #elif GMX_GPU_NB_CLUSTER_SIZE == 8
-#    if GMX_SYCL_ACPP && !(GMX_ACPP_HAVE_HIP_TARGET)
+#    if GMX_SYCL_ACPP && !(GMX_ACPP_HAVE_HIP_TARGET) && !GMX_ACPP_HAVE_GENERIC_TARGET
         const std::vector<int> compiledNbnxmSubGroupSizes{ 32 }; // Only NVIDIA
-#    elif GMX_SYCL_ACPP && (GMX_ACPP_HAVE_HIP_TARGET && !GMX_ENABLE_AMD_RDNA_SUPPORT)
+#    elif GMX_SYCL_ACPP && (GMX_ACPP_HAVE_HIP_TARGET && !GMX_ENABLE_AMD_RDNA_SUPPORT) && !GMX_ACPP_HAVE_GENERIC_TARGET
         const std::vector<int> compiledNbnxmSubGroupSizes{ 64 }; // Only AMD GCN and CDNA
 #    else
         const std::vector<int> compiledNbnxmSubGroupSizes{ 32, 64 };

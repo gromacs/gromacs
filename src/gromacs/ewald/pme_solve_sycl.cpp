@@ -484,7 +484,7 @@ CLANG_DIAGNOSTIC_IGNORE("-Wweak-template-vtables")
     template class PmeSolveKernel<GridOrdering::YZX, false, 1, subGroupSize>; \
     template class PmeSolveKernel<GridOrdering::YZX, true, 1, subGroupSize>;
 
-#if GMX_SYCL_DPCPP
+#if GMX_SYCL_DPCPP || GMX_ACPP_HAVE_GENERIC_TARGET
 INSTANTIATE(16);
 #endif
 INSTANTIATE(32);

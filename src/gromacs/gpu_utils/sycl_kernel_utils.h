@@ -87,7 +87,11 @@ constexpr bool compilingForHost()
     // Skip compiling for CPU. Makes compiling this file ~10% faster for oneAPI/CUDA or
     // hipSYCL/CUDA. For DPC++, any non-CPU targets must be explicitly allowed in the #if below.
 #if GMX_SYCL_ACPP
+#    if !GMX_ACPP_HAVE_GENERIC_TARGET
     __hipsycl_if_target_host(return true;);
+#    else
+    return false;
+#    endif
 #endif
     // We need to list all valid device targets here
 #if GMX_SYCL_DPCPP \
@@ -106,6 +110,8 @@ constexpr bool compilingForSubGroupSize()
     return expectedSubGroupSize == __AMDGCN_WAVEFRONT_SIZE;
 #elif defined(__SYCL_DEVICE_ONLY__) && (defined(__SPIR__) || defined(__SPIRV__))
     return true; // Assume that we have set reqd_sub_group_size attribute for the kernel
+#elif GMX_ACPP_HAVE_GENERIC_TARGET
+    return true;
 #else
     return false; // Unknown architecture
 #endif
@@ -124,7 +130,7 @@ constexpr bool skipKernelCompilation()
     }
     /* Currently, the only SPIR-V target is Intel; for this we don't need 64-wide kernels.
      * This will require changing if we ever have other SPIR-V targets. */
-#if defined(__SYCL_DEVICE_ONLY__) && (defined(__SPIR__) || defined(__SPIRV__))
+#if (defined(__SYCL_DEVICE_ONLY__) && (defined(__SPIR__) || defined(__SPIRV__))) && !GMX_ACPP_HAVE_GENERIC_TARGET
     if constexpr (expectedSubGroupSize > 32)
     {
         return true;

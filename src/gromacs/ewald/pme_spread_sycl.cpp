@@ -447,7 +447,7 @@ CLANG_DIAGNOSTIC_IGNORE("-Wweak-template-vtables")
     INSTANTIATE_2(order, 2, ThreadsPerAtom::Order, subGroupSize);        \
     INSTANTIATE_2(order, 2, ThreadsPerAtom::OrderSquared, subGroupSize);
 
-#if GMX_SYCL_DPCPP
+#if GMX_SYCL_DPCPP || GMX_ACPP_HAVE_GENERIC_TARGET
 INSTANTIATE(4, 16); // TODO: Choose best value, Issue #4153.
 #endif
 INSTANTIATE(4, 32);

@@ -113,6 +113,15 @@ const char* const g_specifyEverythingFormatString =
         "ROCR_VISIBLE_DEVICES"
 #    elif GMX_GPU_SYCL && GMX_SYCL_ACPP && GMX_ACPP_HAVE_CUDA_TARGET
         "CUDA_VISIBLE_DEVIES"
+#    elif GMX_ACPP_HAVE_GENERIC_TARGET
+        // https://github.com/AdaptiveCpp/AdaptiveCpp/blob/develop/doc/env_variables.md
+        // In case of generic target multiple backends might be active.
+        // This variable whitelists the selected backends.
+        // For controlling device visibility in general the respective
+        // backend method should be used.
+        // For instance selecting the AMD GPU with ID 0:
+        // ACPP_VISIBILITY_MASK=hip ROCR_VISIBLE_DEVICES=0
+        "ACPP_VISIBILITY_MASK"
 #    else
 #        error "Unreachable branch"
 #    endif
