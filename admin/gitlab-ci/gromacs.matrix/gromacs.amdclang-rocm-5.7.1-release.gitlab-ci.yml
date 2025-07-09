@@ -1,0 +1,88 @@
+# Test goal: build with HIP to check HIP compilation
+# Test intents (should change rarely and conservatively):
+#   OS: Ubuntu newest supported
+#   Compiler: amdclang
+#   GPU: HIP
+#   Scope: configure, build
+# Test implementation choices (free to change as needed):
+#   OS: Ubuntu 22.04
+#   Build type: RelWithAssert
+#   Compiler: amdclang
+#   MPI: threadMPI (AMD build)
+#   SIMD: AVX2_256
+
+gromacs:amdclang-hip-571:release:configure:
+  extends:
+    - .gromacs:base:release:configure
+    - .use-amdclang:base
+    - .use-hip
+  rules:
+    - !reference [.rules:nightly-only-for-release, rules]
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-11-adaptivecpp-23.10.0-rocm-5.7.1
+  variables:
+    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
+    CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX2_256"
+    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
+    CMAKE_EXTRA_OPTIONS: "-DGMX_HIP_TARGET_ARCH=gfx1034"
+    COMPILER_MAJOR_VERSION: 15
+    RELEASE_BUILD_DIR: release-builds-amdclang
+  dependencies:
+    - archive:package
+    - regressiontests:package
+    - prepare-release-version
+
+gromacs:amdclang-hip-571:release:build:
+  extends:
+    - .gromacs:base:build
+    - .use-amdclang:base
+    - .use-ccache
+  stage: release-build
+  rules:
+    - !reference [.rules:nightly-only-for-release, rules]
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-11-adaptivecpp-23.10.0-rocm-5.7.1
+  variables:
+    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
+    BUILD_DIR: release-builds-amdclang
+  needs:
+    - job: gromacs:amdclang-hip-571:release:configure
+
+gromacs:amdclang-hip-571:release:test:
+  extends:
+    - .gromacs:base:test
+  rules:
+    - !reference [.rules:skip-if-single-amd-gpu-unavailable, rules]    
+    - !reference [.rules:nightly-only-for-release, rules]                 
+  stage: release-tests
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-11-adaptivecpp-23.10.0-rocm-5.7.1
+  variables:
+    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
+    GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
+    GPU_VENDOR: "AMD"
+    GPU_COUNT: 1
+    BUILD_DIR: release-builds-amdclang
+  tags:
+    - $GITLAB_RUNNER_TAG_1X_AMD_GPU
+  needs:
+    - job: gromacs:amdclang-hip-571:release:configure
+    - job: gromacs:amdclang-hip-571:release:build
+
+gromacs:amdclang-hip-571:release:regressiontest:
+  extends:
+    - .gromacs:base:regressiontest
+  rules:
+    - !reference [.rules:skip-if-single-amd-gpu-unavailable, rules]        
+    - !reference [.rules:nightly-only-for-release, rules]                     
+  stage: release-tests
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-11-adaptivecpp-23.10.0-rocm-5.7.1
+  variables:
+    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
+    REGRESSIONTEST_PME_RANK_NUMBER: 0
+    REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
+    REGRESSIONTEST_OMP_RANK_NUMBER: 1
+    GPU_VENDOR: "AMD"
+    GPU_COUNT: 1             
+  tags:
+    - $GITLAB_RUNNER_TAG_1X_AMD_GPU
+  needs:
+    - job: gromacs:amdclang-hip-571:release:build
+    - job: regressiontests:package

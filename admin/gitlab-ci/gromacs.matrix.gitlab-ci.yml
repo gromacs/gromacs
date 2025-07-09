@@ -220,3 +220,5 @@ include:
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.amdclang-rocm-5.7.1.gitlab-ci.yml'
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.gcc-11-rocm-6.2.2.gitlab-ci.yml'
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.gcc-11-rocm-6.2.2-mpi.gitlab-ci.yml'
+  - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.gcc-11-rocm-6.2.2-mpi-release.gitlab-ci.yml'
+  - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.amdclang-rocm-5.7.1-release.gitlab-ci.yml'
