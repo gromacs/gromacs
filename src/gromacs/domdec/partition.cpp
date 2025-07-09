@@ -3144,7 +3144,8 @@ void dd_partition_system(FILE*                     fplog,
     if (!thisRankHasDuty(cr, DUTY_PME))
     {
         /* Send the charges and/or c6/sigmas to our PME only node */
-        gmx_pme_send_parameters(cr,
+        gmx_pme_send_parameters(cr->commMySim,
+                                cr->dd,
                                 *fr->ic,
                                 mdatoms->nChargePerturbed != 0,
                                 mdatoms->nTypePerturbed != 0,

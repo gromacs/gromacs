@@ -263,7 +263,7 @@ void ModularSimulatorAlgorithm::simulatorTeardown()
     if (!thisRankHasDuty(&cr_, DUTY_PME))
     {
         /* Tell the PME only node to finish */
-        gmx_pme_send_finish(&cr_);
+        gmx_pme_send_finish(cr_.commMySim, cr_.dd);
     }
 
     walltime_accounting_set_nsteps_done(wallTimeAccounting_, step_ - inputRec_->init_step);

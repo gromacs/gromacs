@@ -2183,7 +2183,7 @@ void gmx::LegacySimulator::do_md()
     if (simulationWork.haveSeparatePmeRank)
     {
         /* Tell the PME only node to finish */
-        gmx_pme_send_finish(cr_);
+        gmx_pme_send_finish(cr_->commMySim, cr_->dd);
     }
 
     // This is to free PP ranks gpuhaloexchange symmetric buffer `d_recvBuf_`

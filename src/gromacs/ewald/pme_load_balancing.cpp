@@ -883,7 +883,7 @@ static void pme_load_balance(pme_load_balancing_t*          pme_lb,
     else
     {
         /* Tell our PME-only rank to switch grid */
-        gmx_pme_send_switchgrid(cr, set->grid, set->ewaldcoeff_q, set->ewaldcoeff_lj);
+        gmx_pme_send_switchgrid(cr->commMySim, *cr->dd, set->grid, set->ewaldcoeff_q, set->ewaldcoeff_lj);
     }
 
     if (debug)

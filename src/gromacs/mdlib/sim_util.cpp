@@ -200,7 +200,7 @@ static void calc_virial(int                         start,
     }
 }
 
-static void pull_potential_wrapper(const t_commrec*     cr,
+static void pull_potential_wrapper(const MpiComm&       mpiComm,
                                    const t_inputrec&    ir,
                                    const matrix         box,
                                    ArrayRef<const RVec> x,
@@ -224,7 +224,7 @@ static void pull_potential_wrapper(const t_commrec*     cr,
             pull_potential(pull_work,
                            mdatoms->massT,
                            pbc,
-                           cr->commMyGroup,
+                           mpiComm,
                            t,
                            lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Restraint)],
                            x,
@@ -234,7 +234,8 @@ static void pull_potential_wrapper(const t_commrec*     cr,
 }
 
 static void pme_receive_force_ener(t_forcerec*      fr,
-                                   const t_commrec* cr,
+                                   const MpiComm&   mpiCommMySim,
+                                   gmx_domdec_t*    dd,
                                    ForceWithVirial* forceWithVirial,
                                    gmx_enerdata_t*  enerd,
                                    bool             useGpuPmePpComms,
@@ -245,7 +246,7 @@ static void pme_receive_force_ener(t_forcerec*      fr,
     float cycles_ppdpme, cycles_seppme;
 
     cycles_ppdpme = wallcycle_stop(wcycle, WallCycleCounter::PpDuringPme);
-    dd_cycles_add(cr->dd, cycles_ppdpme, ddCyclPPduringPME);
+    dd_cycles_add(dd, cycles_ppdpme, ddCyclPPduringPME);
 
     /* In case of node-splitting, the PP nodes receive the long-range
      * forces, virial and energy from the PME nodes here.
@@ -254,7 +255,8 @@ static void pme_receive_force_ener(t_forcerec*      fr,
     dvdl_q  = 0;
     dvdl_lj = 0;
     gmx_pme_receive_f(fr->pmePpCommGpu.get(),
-                      cr,
+                      mpiCommMySim,
+                      dd,
                       forceWithVirial,
                       &e_q,
                       &e_lj,
@@ -270,14 +272,14 @@ static void pme_receive_force_ener(t_forcerec*      fr,
 
     if (wcycle)
     {
-        dd_cycles_add(cr->dd, cycles_seppme, ddCyclPME);
+        dd_cycles_add(dd, cycles_seppme, ddCyclPME);
     }
     wallcycle_stop(wcycle, WallCycleCounter::PpPmeWaitRecvF);
 }
 
 static void print_large_forces(FILE*                fp,
                                const t_mdatoms*     md,
-                               const t_commrec*     cr,
+                               const gmx_domdec_t*  dd,
                                int64_t              step,
                                real                 forceTolerance,
                                ArrayRef<const RVec> x,
@@ -294,7 +296,7 @@ static void print_large_forces(FILE*                fp,
             fprintf(fp,
                     "step %" PRId64 " atom %6d  x %8.3f %8.3f %8.3f  force %12.5e\n",
                     step,
-                    ddglatnr(cr->dd, i),
+                    ddglatnr(dd, i),
                     x[i][XX],
                     x[i][YY],
                     x[i][ZZ],
@@ -354,7 +356,7 @@ static void postProcessForceWithShiftForces(t_nrnb*              nrnb,
 }
 
 //! Spread, compute virial for and sum forces, when necessary
-static void postProcessForces(const t_commrec*     cr,
+static void postProcessForces(const gmx_domdec_t*  dd,
                               int64_t              step,
                               t_nrnb*              nrnb,
                               gmx_wallcycle*       wcycle,
@@ -420,7 +422,7 @@ static void postProcessForces(const t_commrec*     cr,
 
     if (fr->print_force >= 0)
     {
-        print_large_forces(stderr, mdatoms, cr, step, fr->print_force, x, f);
+        print_large_forces(stderr, mdatoms, dd, step, fr->print_force, x, f);
     }
 }
 
@@ -597,7 +599,8 @@ static void checkPotentialEnergyValidity(int64_t step, const gmx_enerdata_t& ene
  * are as close together as possible.
  *
  * \param[in]     fplog            The log file
- * \param[in]     cr               The communication record
+ * \param[in]     mpiComm          The communication object for my group
+ * \param[in]     dd               Pointer to the domdec object, is nullptr when DD is not in use
  * \param[in]     inputrec         The input record
  * \param[in]     awh              The Awh module (nullptr if none in use).
  * \param[in]     enforcedRotation Enforced rotation module.
@@ -623,7 +626,8 @@ static void checkPotentialEnergyValidity(int64_t step, const gmx_enerdata_t& ene
  * \todo Convert all other algorithms called here to ForceProviders.
  */
 static void computeSpecialForces(FILE*                fplog,
-                                 const t_commrec*     cr,
+                                 const MpiComm&       mpiComm,
+                                 const gmx_domdec_t*  dd,
                                  const t_inputrec&    inputrec,
                                  Awh*                 awh,
                                  gmx_enfrot*          enforcedRotation,
@@ -656,8 +660,8 @@ static void computeSpecialForces(FILE*                fplog,
                                               t,
                                               step,
                                               box,
-                                              cr->commMyGroup,
-                                              cr->dd);
+                                              mpiComm,
+                                              dd);
         ForceProviderOutput forceProviderOutput(forceWithVirialMtsLevel0, enerd);
 
         /* Collect forces from modules */
@@ -674,7 +678,8 @@ static void computeSpecialForces(FILE*                fplog,
     // Note: this condition is mirrored in haveSpecialForces()
     if (doPulling)
     {
-        pull_potential_wrapper(cr, inputrec, box, x, mdatoms, enerd, pull_work, lambda.data(), t, wcycle);
+        pull_potential_wrapper(
+                mpiComm, inputrec, box, x, mdatoms, enerd, pull_work, lambda.data(), t, wcycle);
     }
     // Note: the awh condition is mirrored in haveSpecialForces()
     if (awh && (pullMtsLevel == 0 || stepWork.computeSlowForces))
@@ -685,8 +690,7 @@ static void computeSpecialForces(FILE*                fplog,
         {
             enerd->foreignLambdaTerms.finalizePotentialContributions(
                     enerd->dvdl_lin, lambda, *inputrec.fepvals);
-            std::tie(foreignLambdaDeltaH, foreignLambdaDhDl) =
-                    enerd->foreignLambdaTerms.getTerms(cr->commMyGroup);
+            std::tie(foreignLambdaDeltaH, foreignLambdaDhDl) = enerd->foreignLambdaTerms.getTerms(mpiComm);
         }
 
         enerd->term[F_COM_PULL] += awh->applyBiasForcesAndUpdateBias(
@@ -697,7 +701,7 @@ static void computeSpecialForces(FILE*                fplog,
     {
         wallcycle_start_nocount(wcycle, WallCycleCounter::PullPot);
         auto& forceWithVirial = (pullMtsLevel == 0) ? forceWithVirialMtsLevel0 : forceWithVirialMtsLevel1;
-        pull_apply_forces(pull_work, mdatoms->massT, cr->commMyGroup, forceWithVirial);
+        pull_apply_forces(pull_work, mdatoms->massT, mpiComm, forceWithVirial);
         wallcycle_stop(wcycle, WallCycleCounter::PullPot);
     }
 
@@ -706,8 +710,8 @@ static void computeSpecialForces(FILE*                fplog,
     if (inputrec.bRot)
     {
         wallcycle_start(wcycle, WallCycleCounter::RotAdd);
-        enerd->term[F_COM_PULL] += add_rot_forces(
-                enforcedRotation, forceWithVirialMtsLevel0->force_, cr->commMyGroup, step, t);
+        enerd->term[F_COM_PULL] +=
+                add_rot_forces(enforcedRotation, forceWithVirialMtsLevel0->force_, mpiComm, step, t);
         wallcycle_stop(wcycle, WallCycleCounter::RotAdd);
     }
 
@@ -719,7 +723,7 @@ static void computeSpecialForces(FILE*                fplog,
          * Thus if no other algorithm (e.g. PME) requires it, the forces
          * here will contribute to the virial.
          */
-        do_flood(cr->commMyGroup, inputrec, x, forceWithVirialMtsLevel0->force_, ed, box, step, didNeighborSearch);
+        do_flood(mpiComm, inputrec, x, forceWithVirialMtsLevel0->force_, ed, box, step, didNeighborSearch);
     }
 
     /* Add forces from interactive molecular dynamics (IMD), if any */
@@ -1113,15 +1117,15 @@ struct DipoleData
 
 
 static void reduceAndUpdateMuTot(DipoleData*                   dipoleData,
-                                 const t_commrec*              cr,
+                                 const MpiComm&                mpiComm,
                                  const bool                    haveFreeEnergy,
                                  ArrayRef<const real>          lambda,
                                  rvec                          muTotal,
                                  const DDBalanceRegionHandler& ddBalanceRegionHandler)
 {
-    if (PAR(cr))
+    if (mpiComm.size() > 1)
     {
-        gmx_sumd(2 * DIM, dipoleData->muStaging[0], cr);
+        mpiComm.sumReduce(2 * DIM, dipoleData->muStaging[0]);
         ddBalanceRegionHandler.reopenRegionCpu();
     }
     for (int i = 0; i < 2; i++)
@@ -1571,7 +1575,8 @@ void do_force(FILE*                         fplog,
         // in order for nvshmem collective calls in StatePropagatorDataGpu::Impl::reinit
         // to be in sync with PME-PP
         gmx_pme_send_coordinates(fr,
-                                 cr,
+                                 cr->commMySim,
+                                 cr->dd,
                                  box,
                                  x.unpaddedArrayRef(),
                                  lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)],
@@ -1688,7 +1693,8 @@ void do_force(FILE*                         fplog,
         }
 
         gmx_pme_send_coordinates(fr,
-                                 cr,
+                                 cr->commMySim,
+                                 cr->dd,
                                  box,
                                  x.unpaddedArrayRef(),
                                  lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)],
@@ -2007,8 +2013,12 @@ void do_force(FILE*                         fplog,
                 dipoleData.muStaging[0],
                 dipoleData.muStaging[1]);
 
-        reduceAndUpdateMuTot(
-                &dipoleData, cr, (fr->efep != FreeEnergyPerturbationType::No), lambda, muTotal, ddBalanceRegionHandler);
+        reduceAndUpdateMuTot(&dipoleData,
+                             cr->commMyGroup,
+                             (fr->efep != FreeEnergyPerturbationType::No),
+                             lambda,
+                             muTotal,
+                             ddBalanceRegionHandler);
     }
 
     /* Reset energies */
@@ -2237,7 +2247,8 @@ void do_force(FILE*                         fplog,
              * forces, virial and energy from the PME nodes here.
              */
             pme_receive_force_ener(fr,
-                                   cr,
+                                   cr->commMySim,
+                                   cr->dd,
                                    &forceOutMtsLevel1->forceWithVirial(),
                                    enerd,
                                    simulationWork.useGpuPmePpCommunication,
@@ -2252,7 +2263,8 @@ void do_force(FILE*                         fplog,
         ddBalanceRegionHandler.closeAfterForceComputationCpu();
 
         computeSpecialForces(fplog,
-                             cr,
+                             cr->commMyGroup,
+                             cr->dd,
                              inputrec,
                              awh,
                              enforcedRotation,
@@ -2511,7 +2523,8 @@ void do_force(FILE*                         fplog,
          * forces, virial and energy from the PME nodes here.
          */
         pme_receive_force_ener(fr,
-                               cr,
+                               cr->commMySim,
+                               cr->dd,
                                &forceOutMtsLevel1->forceWithVirial(),
                                enerd,
                                simulationWork.useGpuPmePpCommunication,
@@ -2613,7 +2626,8 @@ void do_force(FILE*                         fplog,
          * forces, virial and energy from the PME nodes here.
          */
         pme_receive_force_ener(fr,
-                               cr,
+                               cr->commMySim,
+                               cr->dd,
                                &forceOutMtsLevel1->forceWithVirial(),
                                enerd,
                                simulationWork.useGpuPmePpCommunication,
@@ -2629,12 +2643,22 @@ void do_force(FILE*                         fplog,
          */
         ForceOutputs& forceOutCombined = (haveCombinedMtsForces ? forceOutMts.value() : forceOutMtsLevel0);
         postProcessForces(
-                cr, step, nrnb, wcycle, box, x.unpaddedArrayRef(), &forceOutCombined, vir_force, mdatoms, fr, vsite, stepWork);
+                cr->dd, step, nrnb, wcycle, box, x.unpaddedArrayRef(), &forceOutCombined, vir_force, mdatoms, fr, vsite, stepWork);
 
         if (simulationWork.useMts && stepWork.computeSlowForces && !haveCombinedMtsForces)
         {
-            postProcessForces(
-                    cr, step, nrnb, wcycle, box, x.unpaddedArrayRef(), forceOutMtsLevel1, vir_force, mdatoms, fr, vsite, stepWork);
+            postProcessForces(cr->dd,
+                              step,
+                              nrnb,
+                              wcycle,
+                              box,
+                              x.unpaddedArrayRef(),
+                              forceOutMtsLevel1,
+                              vir_force,
+                              mdatoms,
+                              fr,
+                              vsite,
+                              stepWork);
 
             combineMtsForces(mdatoms->homenr,
                              force.unpaddedArrayRef(),

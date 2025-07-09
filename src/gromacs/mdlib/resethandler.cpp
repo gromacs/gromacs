@@ -211,7 +211,7 @@ bool ResetHandler::resetCountersImpl(int64_t                     step,
         if (!thisRankHasDuty(cr, DUTY_PME))
         {
             /* Tell our PME node to reset its counters */
-            gmx_pme_send_resetcounters(cr, step);
+            gmx_pme_send_resetcounters(cr->commMySim, cr->dd, step);
         }
         /* Reset can only happen once, so clear the triggering flag. */
         signal_.set = static_cast<signed char>(ResetSignal::noSignal);

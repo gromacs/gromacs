@@ -936,7 +936,7 @@ void gmx::LegacySimulator::do_rerun()
     if (!thisRankHasDuty(cr_, DUTY_PME))
     {
         /* Tell the PME only node to finish */
-        gmx_pme_send_finish(cr_);
+        gmx_pme_send_finish(cr_->commMySim, cr_->dd);
     }
 
     done_mdoutf(outf);
