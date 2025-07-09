@@ -789,7 +789,7 @@ static auto nbnxmKernel(sycl::handler& cgh,
         const unsigned tidxj = itemIdx.get_local_id(1);
         const unsigned tidx  = tidxj * c_clSize + tidxi;
 
-        const unsigned bidx = itemIdx.get_group(0);
+        const unsigned bidx = itemIdx.get_group(2);
 
         const sycl::sub_group sg = itemIdx.get_sub_group();
         // Could use sg.get_group_range to compute the imask & exclusion Idx, but too much of the logic relies on it anyway
@@ -1287,7 +1287,7 @@ static void launchNbnxmKernel(const DeviceStream& deviceStream, const int numSci
     constexpr int           c_clSize  = sc_gpuClusterSize(sc_layoutType);
     const int               numBlocks = numSci;
     const sycl::range<3>    blockSize{ 1, c_clSize, c_clSize };
-    const sycl::range<3>    globalSize{ numBlocks * blockSize[0], blockSize[1], blockSize[2] };
+    const sycl::range<3>    globalSize{ blockSize[0], blockSize[1], numBlocks * blockSize[2] };
     const sycl::nd_range<3> range{ globalSize, blockSize };
 
     sycl::queue q = deviceStream.stream();

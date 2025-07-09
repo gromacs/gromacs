@@ -119,7 +119,7 @@ auto nbnxmKernelPruneOnly(sycl::handler& cgh,
         const unsigned tidxj = itemIdx.get_local_id(1);
         const int      tidx  = tidxj * c_clSize + tidxi;
         const unsigned tidxz = itemIdx.get_local_id(0);
-        const int      bidx  = itemIdx.get_group(0);
+        const int      bidx  = itemIdx.get_group(2);
 
         int part = gm_rollingPruningPart[bidx];
         itemIdx.barrier(fence_space::global_and_local);
@@ -303,7 +303,7 @@ void launchNbnxmKernelPruneOnly(const DeviceStream& deviceStream, const int numS
      */
     const unsigned long     numBlocks = numSciInPartMax;
     const sycl::range<3>    blockSize{ c_syclPruneKernelJPackedConcurrency, c_clSize, c_clSize };
-    const sycl::range<3>    globalSize{ numBlocks * blockSize[0], blockSize[1], blockSize[2] };
+    const sycl::range<3>    globalSize{ blockSize[0], blockSize[1], numBlocks * blockSize[2] };
     const sycl::nd_range<3> range{ globalSize, blockSize };
 
     sycl::queue q = deviceStream.stream();
