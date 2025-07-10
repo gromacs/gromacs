@@ -389,13 +389,19 @@ void NNPotOptions::setLogger(const MDLogger& logger)
 
 void NNPotOptions::setComm(const MpiComm& mpiComm)
 {
-    params_.mpiComm_ = &mpiComm;
+    mpiComm_ = &mpiComm;
 }
 
 const MDLogger& NNPotOptions::logger() const
 {
     GMX_RELEASE_ASSERT(logger_, "Logger not set for NNPotOptions.");
     return *logger_;
+}
+
+const MpiComm& NNPotOptions::mpiComm() const
+{
+    GMX_RELEASE_ASSERT(mpiComm_, "MPI communicator not set for NNPotOptions.");
+    return *mpiComm_;
 }
 
 void NNPotOptions::setWarninp(WarningHandler* wi)
@@ -432,7 +438,8 @@ void NNPotOptions::checkNNPotModel()
     std::vector<int>  atomNumbers(1, 1);
     matrix            box = { { 1.0, 0.0, 0.0 }, { 0.0, 1.0, 0.0 }, { 0.0, 0.0, 1.0 } };
     PbcType           pbc = PbcType();
-    model->setComm(MpiComm(MpiComm::SingleRank{}));
+    MpiComm           comm(MpiComm::SingleRank{});
+    model->setComm(comm);
 
     // check that inputs are not empty
     if (params_.modelInput_.size() == 0)

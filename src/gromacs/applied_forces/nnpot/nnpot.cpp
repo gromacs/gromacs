@@ -203,8 +203,8 @@ public:
             return;
         }
 
-        nnpotForceProvider_ = std::make_unique<NNPotForceProvider>(nnpotOptions_.parameters(),
-                                                                   nnpotOptions_.logger());
+        nnpotForceProvider_ = std::make_unique<NNPotForceProvider>(
+                nnpotOptions_.parameters(), nnpotOptions_.logger(), nnpotOptions_.mpiComm());
         forceProviders->addForceProvider(nnpotForceProvider_.get(), "NN potential");
     }
 

@@ -56,6 +56,7 @@
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/keyvaluetreetransform.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/stringcompare.h"
 
 #include "testutils/testasserts.h"
@@ -91,6 +92,7 @@ public:
         MDModulesNotifiers notifiers;
         NNPotModule_->subscribeToSimulationSetupNotifications(&notifiers);
         notifiers.simulationSetupNotifier_.notify(logger_);
+        notifiers.simulationSetupNotifier_.notify(mpiComm_);
         NNPotModule_->initForceProviders(&NNPotForces_);
     }
 
@@ -99,6 +101,7 @@ protected:
     ForceProviders             NNPotForces_;
     std::unique_ptr<IMDModule> NNPotModule_;
     MDLogger                   logger_;
+    MpiComm                    mpiComm_{ MpiComm::SingleRank{} };
 };
 
 TEST_F(NNPotTest, ForceProviderLackingInputThrows)

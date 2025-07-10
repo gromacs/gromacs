@@ -43,6 +43,7 @@
 
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/mpicomm.h"
 
 #include "nnpotforceprovider.h"
 #include "nnpotoptions.h"
@@ -52,19 +53,22 @@ namespace gmx
 
 CLANG_DIAGNOSTIC_IGNORE("-Wmissing-noreturn")
 
-NNPotForceProvider::NNPotForceProvider(const NNPotParameters& nnpotParameters, const MDLogger& logger) :
+NNPotForceProvider::NNPotForceProvider(const NNPotParameters& nnpotParameters,
+                                       const MDLogger&        logger,
+                                       const MpiComm&         mpiComm) :
     params_(nnpotParameters),
     positions_(params_.numAtoms_, RVec({ 0.0, 0.0, 0.0 })),
     atomNumbers_(params_.numAtoms_, -1),
     idxLookup_(params_.numAtoms_, -1),
     box_{ { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 } },
     logger_(logger),
-    mpiComm_(*params_.mpiComm_)
+    mpiComm_(mpiComm)
 {
     GMX_THROW(InternalError(
             "Libtorch/NN backend is not linked into GROMACS, NNPot simulation is not possible."
             " Please, reconfigure GROMACS with -DGMX_NNPOT=TORCH\n"));
 }
+
 
 NNPotForceProvider::~NNPotForceProvider() {}
 

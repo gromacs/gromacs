@@ -99,9 +99,6 @@ struct NNPotParameters
     t_atoms atoms_;
     int     numAtoms_;
 
-    //! stores communication object for my group
-    const MpiComm* mpiComm_ = nullptr;
-
     bool modelNeedsInput(const std::string& input) const
     {
         return std::find(modelInput_.begin(), modelInput_.end(), input) != modelInput_.end();
@@ -162,6 +159,7 @@ public:
     void            setLogger(const MDLogger&);
     void            setWarninp(WarningHandler*);
     const MDLogger& logger() const;
+    const MpiComm&  mpiComm() const;
 
 private:
 //! Make sure that model and model inputs are compatible
@@ -180,6 +178,9 @@ private:
      * to a const MDLogger before the notification always provides the
      * actual reference. */
     const MDLogger* logger_ = nullptr;
+
+    //! stores communication object for my group
+    const MpiComm* mpiComm_ = nullptr;
 
     //! Instance of warning bookkeeper
     WarningHandler* wi_ = nullptr;

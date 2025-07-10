@@ -61,14 +61,16 @@
 namespace gmx
 {
 
-NNPotForceProvider::NNPotForceProvider(const NNPotParameters& nnpotParameters, const MDLogger& logger) :
+NNPotForceProvider::NNPotForceProvider(const NNPotParameters& nnpotParameters,
+                                       const MDLogger&        logger,
+                                       const MpiComm&         mpiComm) :
     params_(nnpotParameters),
     positions_(params_.numAtoms_, RVec({ 0.0, 0.0, 0.0 })),
     atomNumbers_(params_.numAtoms_, -1),
     idxLookup_(params_.numAtoms_, -1),
     box_{ { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 } },
     logger_(logger),
-    mpiComm_(*params_.mpiComm_)
+    mpiComm_(mpiComm)
 {
     // initialize the neural network model
     std::filesystem::path modelPath(params_.modelFileName_);
@@ -86,7 +88,7 @@ NNPotForceProvider::NNPotForceProvider(const NNPotParameters& nnpotParameters, c
     }
 
     // set communication record
-    model_->setComm(*params_.mpiComm_);
+    model_->setComm(mpiComm_);
 }
 
 NNPotForceProvider::~NNPotForceProvider() {}

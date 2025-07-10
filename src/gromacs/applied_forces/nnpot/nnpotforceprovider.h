@@ -62,7 +62,7 @@ class MpiComm;
 class NNPotForceProvider final : public IForceProvider
 {
 public:
-    NNPotForceProvider(const NNPotParameters&, const MDLogger& logger);
+    NNPotForceProvider(const NNPotParameters&, const MDLogger& logger, const MpiComm& mpiComm);
 
     //! Destroy force provider for NNPot
     ~NNPotForceProvider();

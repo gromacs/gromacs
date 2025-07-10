@@ -114,7 +114,6 @@ public:
         params_.active_        = true;
         params_.modelFileName_ = gmx::test::TestFileManager::getInputFilePath("model.pt").string();
         params_.numAtoms_      = 6;
-        params_.mpiComm_       = &mpiComm_;
     }
 
     void setParametersTopology()
@@ -123,7 +122,6 @@ public:
         params_.modelFileName_ = gmx::test::TestFileManager::getInputFilePath("model.pt").string();
         params_.atoms_         = gmx_mtop_global_atoms(mtop_);
         params_.numAtoms_      = params_.atoms_.nr;
-        params_.mpiComm_       = &mpiComm_;
         params_.modelInput_    = { "atom-positions", "atom-numbers", "box", "pbc" };
 
         std::vector<gmx::Index> nnpIndices = { 0, 1, 2, 3, 4, 5 };
@@ -137,7 +135,8 @@ public:
         gmx::test::TestReferenceChecker checker(testData.rootChecker());
 
         std::unique_ptr<NNPotForceProvider> nnpotForceProvider;
-        EXPECT_NO_THROW(nnpotForceProvider = std::make_unique<NNPotForceProvider>(params_, logger_));
+        EXPECT_NO_THROW(nnpotForceProvider =
+                                std::make_unique<NNPotForceProvider>(params_, logger_, mpiComm_));
         EXPECT_NO_THROW(nnpotForceProvider->gatherAtomNumbersIndices());
 
         // Prepare input for force provider
@@ -182,13 +181,13 @@ TEST_F(NNPotForceProviderTest, CanConstruct)
     {
         {
             SCOPED_TRACE("Check construction on CPU");
-            EXPECT_NO_THROW(NNPotForceProvider nnpotForceProvider(params_, logger_));
+            EXPECT_NO_THROW(NNPotForceProvider nnpotForceProvider(params_, logger_, mpiComm_));
         }
 
         {
             SCOPED_TRACE("Check construction with invalid model file name");
             params_.modelFileName_ = "model";
-            EXPECT_THROW_GMX(NNPotForceProvider nnpotForceProvider(params_, logger_), FileIOError);
+            EXPECT_THROW_GMX(NNPotForceProvider nnpotForceProvider(params_, logger_, mpiComm_), FileIOError);
             params_.modelFileName_ = gmx::test::TestFileManager::getInputFilePath("model.pt").string();
         }
 
@@ -200,7 +199,7 @@ TEST_F(NNPotForceProviderTest, CanConstruct)
                 SCOPED_TRACE("Check construction on default NVIDIA GPU");
                 const bool overWriteEnvironmentVariable = true;
                 gmxSetenv("GMX_NN_DEVICE", "cuda", overWriteEnvironmentVariable);
-                EXPECT_NO_THROW(NNPotForceProvider nnpotForceProvider(params_, logger_));
+                EXPECT_NO_THROW(NNPotForceProvider nnpotForceProvider(params_, logger_, mpiComm_));
                 gmxUnsetenv("GMX_NN_DEVICE");
                 break; // Only test one GPU until we have a better way to hande device selection
             }
@@ -208,7 +207,7 @@ TEST_F(NNPotForceProviderTest, CanConstruct)
     }
     else
     {
-        EXPECT_ANY_THROW(NNPotForceProvider nnpotForceProvider(params_, logger_));
+        EXPECT_ANY_THROW(NNPotForceProvider nnpotForceProvider(params_, logger_, mpiComm_));
     }
 }
 
