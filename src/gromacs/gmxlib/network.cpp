@@ -91,7 +91,7 @@ void gmx_bcast(std::size_t gmx_unused nbytes, void gmx_unused* b, MPI_Comm gmx_u
 
 const char* opt2fn_main(const char* opt, int nfile, const t_filenm fnm[], t_commrec* cr)
 {
-    return SIMMAIN(cr) ? opt2fn(opt, nfile, fnm) : nullptr;
+    return cr->isSimulationMainRank() ? opt2fn(opt, nfile, fnm) : nullptr;
 }
 
 void gmx_fatal_collective(int                    f_errno,

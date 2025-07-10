@@ -164,7 +164,7 @@ void CpuPpLongRangeNonbondeds::calculate(gmx_pme_t*                     pmedata,
                                          const DDBalanceRegionHandler&  ddBalanceRegionHandler)
 {
     const bool computePmeOnCpu = (usingPme(coulombInteractionType_) || usingLJPme(vanDerWaalsType_))
-                                 && thisRankHasDuty(commrec, DUTY_PME)
+                                 && thisRankHasPmeDuty(commrec->dd)
                                  && (pme_run_mode(pmedata) == PmeRunMode::CPU);
 
     /* Do long-range electrostatics and/or LJ-PME

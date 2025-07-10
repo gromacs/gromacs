@@ -966,7 +966,7 @@ void dd_setup_dlb_resource_sharing(const t_commrec* cr, const int uniqueDeviceId
     GMX_ASSERT(uniqueDeviceId >= 0, "Device ID should be non-negative");
     gmx_domdec_t* dd = cr->dd;
 
-    if (!thisRankHasDuty(cr, DUTY_PP))
+    if (!dd->hasPPDuty)
     {
         /* Only ranks with short-ranged tasks (currently) use GPUs.
          * If we don't have GPUs assigned, there are no resources to share.
@@ -1162,7 +1162,7 @@ static void make_pp_communicator(const gmx::MDLogger&  mdlog,
          */
         cartSetup.ddindex2simnodeid.resize(dd->nnodes);
         std::vector<int> buf(dd->nnodes);
-        if (thisRankHasDuty(cr, DUTY_PP))
+        if (dd->hasPPDuty)
         {
             buf[dd_index(dd->numCells, dd->ci)] = cr->commMySim.rank();
         }
@@ -1227,7 +1227,7 @@ static void receive_ddindex2simnodeid(gmx_domdec_t* dd, t_commrec* cr)
     {
         cartSetup.ddindex2simnodeid.resize(dd->nnodes);
         std::vector<int> buf(dd->nnodes);
-        if (thisRankHasDuty(cr, DUTY_PP))
+        if (dd->hasPPDuty)
         {
             buf[dd_index(dd->numCells, dd->ci)] = cr->commMySim.rank();
         }
@@ -1245,13 +1245,13 @@ static void receive_ddindex2simnodeid(gmx_domdec_t* dd, t_commrec* cr)
 #endif
 }
 
-static CartesianRankSetup split_communicator(const gmx::MDLogger& mdlog,
-                                             t_commrec*           cr,
-                                             const DdRankOrder    ddRankOrder,
-                                             bool gmx_unused      reorder,
-                                             const DDRankSetup&   ddRankSetup,
-                                             ivec                 ddCellIndex,
-                                             std::vector<int>*    pmeRanks)
+static std::tuple<CartesianRankSetup, bool, bool> split_communicator(const gmx::MDLogger& mdlog,
+                                                                     t_commrec*           cr,
+                                                                     const DdRankOrder  ddRankOrder,
+                                                                     bool gmx_unused    reorder,
+                                                                     const DDRankSetup& ddRankSetup,
+                                                                     ivec               ddCellIndex,
+                                                                     std::vector<int>*  pmeRanks)
 {
     CartesianRankSetup cartSetup;
 
@@ -1307,6 +1307,9 @@ static CartesianRankSetup split_communicator(const gmx::MDLogger& mdlog,
         }
     }
 
+    bool hasPPDuty;
+    bool hasPmeDuty;
+
     if (cartSetup.bCartesianPP_PME)
     {
 #if GMX_MPI
@@ -1347,20 +1350,16 @@ static CartesianRankSetup split_communicator(const gmx::MDLogger& mdlog,
                                      ddCellIndex[YY],
                                      ddCellIndex[ZZ]);
 
-        if (ddCellIndex[cartSetup.cartpmedim] < numDDCells[cartSetup.cartpmedim])
-        {
-            cr->duty = DUTY_PP;
-        }
-        if (!ddRankSetup.usePmeOnlyRanks
-            || ddCellIndex[cartSetup.cartpmedim] >= numDDCells[cartSetup.cartpmedim])
-        {
-            cr->duty = DUTY_PME;
-        }
+        hasPPDuty  = (ddCellIndex[cartSetup.cartpmedim] < numDDCells[cartSetup.cartpmedim]);
+        hasPmeDuty = (!ddRankSetup.usePmeOnlyRanks
+                      || ddCellIndex[cartSetup.cartpmedim] >= numDDCells[cartSetup.cartpmedim]);
 
         /* Split the sim communicator into PP and PME only nodes */
         MPI_Comm commMyGroup;
-        MPI_Comm_split(
-                cr->commMySim.comm(), getThisRankDuties(cr), dd_index(cartSetup.ntot, ddCellIndex), &commMyGroup);
+        MPI_Comm_split(cr->commMySim.comm(),
+                       static_cast<int>(cr->dd->hasPmeDuty),
+                       dd_index(cartSetup.ntot, ddCellIndex),
+                       &commMyGroup);
         cr->commMyGroup = gmx::MpiComm(commMyGroup);
 #else
         GMX_UNUSED_VALUE(ddCellIndex);
@@ -1382,45 +1381,40 @@ static CartesianRankSetup split_communicator(const gmx::MDLogger& mdlog,
             default: gmx_fatal(FARGS, "Invalid ddRankOrder=%d", static_cast<int>(ddRankOrder));
         }
 
-        if (dd_simnode2pmenode(ddRankSetup, cartSetup, *pmeRanks, cr, cr->commMySim.rank()) == -1)
-        {
-            cr->duty = DUTY_PME;
-        }
-        else
-        {
-            cr->duty = DUTY_PP;
-        }
+        hasPmeDuty =
+                (dd_simnode2pmenode(ddRankSetup, cartSetup, *pmeRanks, cr, cr->commMySim.rank()) == -1);
+        hasPPDuty = !hasPmeDuty;
 #if GMX_MPI
         /* Split the sim communicator into PP and PME only nodes */
         MPI_Comm commMyGroup;
-        MPI_Comm_split(cr->commMySim.comm(), getThisRankDuties(cr), cr->commMySim.rank(), &commMyGroup);
+        MPI_Comm_split(cr->commMySim.comm(), static_cast<int>(hasPmeDuty), cr->commMySim.rank(), &commMyGroup);
         cr->commMyGroup = gmx::MpiComm(commMyGroup);
 #endif
     }
 
-    GMX_LOG(mdlog.info)
-            .appendTextFormatted("This rank does only %s work.\n",
-                                 thisRankHasDuty(cr, DUTY_PP) ? "particle-particle" : "PME-mesh");
+    GMX_LOG(mdlog.info).appendTextFormatted("This rank does only %s work.\n", hasPPDuty ? "particle-particle" : "PME-mesh");
 
-    return cartSetup;
+    return { cartSetup, hasPPDuty, hasPmeDuty };
 }
 
 /*! \brief Makes the PP communicator and the PME communicator, when needed
  *
- * Returns the Cartesian rank setup.
+ * Returns the Cartesian rank setup and the rank duties.
  * Sets \p cr->mpi_comm_mygroup
  * For PP ranks, sets the DD PP cell index in \p ddCellIndex.
  * With separate PME ranks in interleaved order, set the PME ranks in \p pmeRanks.
  */
-static CartesianRankSetup makeGroupCommunicators(const gmx::MDLogger& mdlog,
-                                                 const DDSettings&    ddSettings,
-                                                 const DdRankOrder    ddRankOrder,
-                                                 const DDRankSetup&   ddRankSetup,
-                                                 t_commrec*           cr,
-                                                 ivec                 ddCellIndex,
-                                                 std::vector<int>*    pmeRanks)
+static std::tuple<CartesianRankSetup, bool, bool> makeGroupCommunicators(const gmx::MDLogger& mdlog,
+                                                                         const DDSettings& ddSettings,
+                                                                         const DdRankOrder ddRankOrder,
+                                                                         const DDRankSetup& ddRankSetup,
+                                                                         t_commrec* cr,
+                                                                         ivec       ddCellIndex,
+                                                                         std::vector<int>* pmeRanks)
 {
     CartesianRankSetup cartSetup;
+    bool               hasPPDuty;
+    bool               hasPmeDuty;
 
     // As a default, both sim and group communicators are equal to the default communicator
     cr->commMySim   = gmx::MpiComm(cr->mpiDefaultCommunicator);
@@ -1429,7 +1423,7 @@ static CartesianRankSetup makeGroupCommunicators(const gmx::MDLogger& mdlog,
     if (ddRankSetup.usePmeOnlyRanks)
     {
         /* Split the communicator into a PP and PME part */
-        cartSetup = split_communicator(
+        std::tie(cartSetup, hasPPDuty, hasPmeDuty) = split_communicator(
                 mdlog, cr, ddRankOrder, ddSettings.useCartesianReorder, ddRankSetup, ddCellIndex, pmeRanks);
     }
     else
@@ -1438,9 +1432,12 @@ static CartesianRankSetup makeGroupCommunicators(const gmx::MDLogger& mdlog,
         /* We do not require separate communicators */
         cartSetup.bCartesianPP     = false;
         cartSetup.bCartesianPP_PME = false;
+
+        hasPPDuty  = true;
+        hasPmeDuty = true;
     }
 
-    return cartSetup;
+    return { cartSetup, hasPPDuty, hasPmeDuty };
 }
 
 /*! \brief For PP ranks, sets or makes the communicator
@@ -1458,7 +1455,7 @@ static void setupGroupCommunication(const gmx::MDLogger&     mdlog,
     const DDRankSetup&        ddRankSetup = dd->comm->ddRankSetup;
     const CartesianRankSetup& cartSetup   = dd->comm->cartesianRankSetup;
 
-    if (thisRankHasDuty(cr, DUTY_PP))
+    if (dd->hasPPDuty)
     {
         if (dd->nnodes > 1)
         {
@@ -1478,7 +1475,7 @@ static void setupGroupCommunication(const gmx::MDLogger&     mdlog,
         receive_ddindex2simnodeid(dd, cr);
     }
 
-    if (!thisRankHasDuty(cr, DUTY_PME))
+    if (!dd->hasPmeDuty)
     {
         /* Set up the commnuication to our PME node */
         dd->pme_nodeid = dd_simnode2pmenode(ddRankSetup, cartSetup, pmeRanks, cr, cr->commMySim.rank());
@@ -2744,6 +2741,10 @@ public:
     std::vector<int> pmeRanks_;
     //! Contains a valid Cartesian-communicator-based setup, or defaults.
     CartesianRankSetup cartSetup_;
+    //! Whether this rank computes particle-particle interactions
+    bool hasPPDuty_;
+    //! Whether this rank computes PME mesh interactions
+    bool hasPmeDuty_;
     //! }
 };
 
@@ -2854,7 +2855,7 @@ DomainDecompositionBuilder::Impl::Impl(const MDLogger&           mdlog,
             mdlog_, cr_->mpiDefaultCommunicator.size(), options_.rankOrder, ddGridSetup_, ir_);
 
     /* Generate the group communicator, also decides the duty of each rank */
-    cartSetup_ = makeGroupCommunicators(
+    std::tie(cartSetup_, hasPPDuty_, hasPmeDuty_) = makeGroupCommunicators(
             mdlog_, ddSettings_, options_.rankOrder, ddRankSetup_, cr_, ddCellIndex_, &pmeRanks_);
 }
 
@@ -2875,6 +2876,9 @@ DomainDecompositionBuilder::Impl::build(LocalAtomSetManager*       atomSets,
     dd->comm->ddRankSetup        = ddRankSetup_;
     dd->comm->cartesianRankSetup = cartSetup_;
 
+    dd->hasPPDuty  = hasPPDuty_;
+    dd->hasPmeDuty = hasPmeDuty_;
+
     set_dd_limits(mdlog_,
                   MAIN(cr_) ? DDRole::Main : DDRole::Agent,
                   dd.get(),
@@ -2888,7 +2892,13 @@ DomainDecompositionBuilder::Impl::build(LocalAtomSetManager*       atomSets,
 
     setupGroupCommunication(mdlog_, ddSettings_, pmeRanks_, cr_, mtop_.natoms, dd.get());
 
-    if (thisRankHasDuty(cr_, DUTY_PP))
+    // The simulation main rank is the PP rank with rank id 0, check that this matches
+    // the main simulation rank in t_commrec
+    const bool isSimulationMainRank = (dd->rank == 0 && dd->hasPPDuty);
+    GMX_RELEASE_ASSERT(isSimulationMainRank == cr_->isSimulationMainRank(),
+                       "The DD build should not change the simulation main rank");
+
+    if (dd->hasPPDuty)
     {
         set_ddgrid_parameters(mdlog_, dd.get(), options_.dlbScaling, mtop_, ir_, &ddbox_);
 

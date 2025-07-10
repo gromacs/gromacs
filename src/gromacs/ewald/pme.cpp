@@ -84,6 +84,7 @@
 #include <utility>
 
 #include "gromacs/domdec/domdec.h"
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/ewald/ewald_utils.h"
 #include "gromacs/ewald/pme_output.h"
 #include "gromacs/fft/fft.h"
@@ -748,8 +749,8 @@ gmx_pme_t* gmx_pme_init(const t_commrec*                 cr,
         }
     }
     // cr is always initialized if there is a a PP rank, so we can safely assume
-    // that when it is not, like in ewald tests, we not on a PP rank.
-    pme->bPPnode = ((cr != nullptr && cr->duty != 0) && thisRankHasDuty(cr, DUTY_PP));
+    // that when it is not, like in ewald tests, we are not on a PP rank.
+    pme->bPPnode = (cr != nullptr && thisRankHasPPDuty(cr->dd));
 
     pme->nthread = nthread;
 

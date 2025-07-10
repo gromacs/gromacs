@@ -558,7 +558,7 @@ static void finish_em(const t_commrec*          cr,
                       gmx_walltime_accounting_t walltime_accounting,
                       gmx_wallcycle*            wcycle)
 {
-    if (!thisRankHasDuty(cr, DUTY_PME))
+    if (!thisRankHasPmeDuty(cr->dd))
     {
         /* Tell the PME only node to finish */
         gmx_pme_send_finish(cr->commMySim, cr->dd);
@@ -3362,7 +3362,6 @@ void LegacySimulator::do_nm()
     /* Make evaluate_energy do a single node force calculation */
     t_commrec crSingleRank(gmx::MpiComm(gmx::MpiComm::SingleRank{}));
     crSingleRank.npmenodes = cr_->npmenodes;
-    crSingleRank.duty      = cr_->duty;
     crSingleRank.dd        = cr_->dd;
     EnergyEvaluator energyEvaluator{ fpLog_,
                                      mdLog_,

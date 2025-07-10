@@ -657,7 +657,7 @@ static void finish_run(FILE*                     fplog,
        Further, we only report performance for dynamical integrators,
        because those are the only ones for which we plan to
        consider doing any optimizations. */
-    bool printReport = EI_DYNAMICS(inputrec.eI) && SIMMAIN(cr);
+    bool printReport = EI_DYNAMICS(inputrec.eI) && cr->isSimulationMainRank();
 
     if (printReport && !walltime_accounting_get_valid_finish(walltime_accounting))
     {
@@ -713,7 +713,7 @@ static void finish_run(FILE*                     fplog,
         print_flop(fplog, nrnb_tot, &nbfs, &mflop);
     }
 
-    if (thisRankHasDuty(cr, DUTY_PP) && haveDDAtomOrdering(*cr))
+    if (thisRankHasPPDuty(cr->dd) && haveDDAtomOrdering(*cr))
     {
         print_dd_statistics(cr, inputrec, fplog);
     }
@@ -725,7 +725,7 @@ static void finish_run(FILE*                     fplog,
     int nthreads_pp  = gmx_omp_nthreads_get(ModuleMultiThread::Nonbonded);
     int nthreads_pme = gmx_omp_nthreads_get(ModuleMultiThread::Pme);
     wallcycle_scale_by_num_threads(
-            wcycle, thisRankHasDuty(cr, DUTY_PME) && !thisRankHasDuty(cr, DUTY_PP), nthreads_pp, nthreads_pme);
+            wcycle, thisRankHasPmeDuty(cr->dd) && !thisRankHasPPDuty(cr->dd), nthreads_pp, nthreads_pme);
     auto cycle_sum(wallcycle_sum(cr, wcycle));
 
     if (printReport)
@@ -1135,7 +1135,7 @@ int Mdrunner::mdrunner()
         fprintf(fplog, "\n");
     }
 
-    if (SIMMAIN(cr))
+    if (cr->isSimulationMainRank())
     {
         /* In rerun, set velocities to zero if present */
         if (doRerun && globalState->hasEntry(StateEntry::V))
@@ -1486,7 +1486,6 @@ int Mdrunner::mdrunner()
         cr->commMySim   = MpiComm(cr->mpiDefaultCommunicator);
 
         cr->npmenodes = 0;
-        cr->duty      = (DUTY_PP | DUTY_PME);
 
         if (inputrec->pbcType == PbcType::Screw)
         {
@@ -1507,10 +1506,10 @@ int Mdrunner::mdrunner()
             updateTarget,
             useGpuForNonbonded,
             useGpuForPme,
-            thisRankHasDuty(cr, DUTY_PP),
-            // TODO cr->duty & DUTY_PME should imply that a PME
+            thisRankHasPPDuty(cr->dd),
+            // TODO thisRankHasPmeDuty(cr->dd) should imply that a PME
             // algorithm is active, but currently does not.
-            usingPme(inputrec->coulombtype) && thisRankHasDuty(cr, DUTY_PME));
+            usingPme(inputrec->coulombtype) && thisRankHasPmeDuty(cr->dd));
 
     // Get the device handle for the modules on this rank, nullptr
     // when no task is assigned.
@@ -1594,7 +1593,7 @@ int Mdrunner::mdrunner()
     // Note: currently the default duty is DUTY_PP | DUTY_PME for all simulations, including those without PME,
     // so this boolean is sufficient on all ranks to determine whether separate PME ranks are used,
     // but this will no longer be the case if cr->duty is changed for !usingPme(fr->ic->eeltype).
-    const bool haveSeparatePmeRank = (!thisRankHasDuty(cr, DUTY_PP) || !thisRankHasDuty(cr, DUTY_PME));
+    const bool haveSeparatePmeRank = (thisRankHasPPDuty(cr->dd) != thisRankHasPmeDuty(cr->dd));
     runScheduleWork.simulationWork = createSimulationWorkload(
             mdlog,
             *inputrec,
@@ -1642,7 +1641,7 @@ int Mdrunner::mdrunner()
 
     if (deviceInfo != nullptr)
     {
-        if (runScheduleWork.simulationWork.havePpDomainDecomposition && thisRankHasDuty(cr, DUTY_PP))
+        if (runScheduleWork.simulationWork.havePpDomainDecomposition && thisRankHasPPDuty(cr->dd))
         {
             dd_setup_dlb_resource_sharing(cr, uniqueDeviceId(*deviceInfo));
         }
@@ -1714,11 +1713,12 @@ int Mdrunner::mdrunner()
 
     gmx_omp_nthreads_init(mdlog,
                           cr,
+                          haveSeparatePmeRank,
                           hwinfo_->hardwareTopology->maxThreads(),
                           physicalNodeComm.size_,
                           hw_opt.nthreads_omp,
                           hw_opt.nthreads_omp_pme,
-                          !thisRankHasDuty(cr, DUTY_PP));
+                          !thisRankHasPPDuty(cr->dd));
 
     const bool bEnableFPE = gmxShouldEnableFPExceptions();
     // FIXME - reconcile with gmx_feenableexcept() call from CommandLineModuleManager::run()
@@ -1735,7 +1735,7 @@ int Mdrunner::mdrunner()
        PME: env variable should be read only on one node to make sure it is
        identical everywhere;
      */
-    const int numThreadsOnThisRank = thisRankHasDuty(cr, DUTY_PP)
+    const int numThreadsOnThisRank = thisRankHasPPDuty(cr->dd)
                                              ? gmx_omp_nthreads_get(ModuleMultiThread::Nonbonded)
                                              : gmx_omp_nthreads_get(ModuleMultiThread::Pme);
     checkHardwareOversubscription(
@@ -1744,7 +1744,7 @@ int Mdrunner::mdrunner()
     // Enable Peer access between GPUs where available
     // Only for DD, only main PP rank needs to perform setup, and only if thread MPI plus
     // any of the GPU communication features are active.
-    if (haveDDAtomOrdering(*cr) && MAIN(cr) && thisRankHasDuty(cr, DUTY_PP) && GMX_THREAD_MPI
+    if (haveDDAtomOrdering(*cr) && MAIN(cr) && thisRankHasPPDuty(cr->dd) && GMX_THREAD_MPI
         && (runScheduleWork.simulationWork.useGpuHaloExchange
             || runScheduleWork.simulationWork.useGpuPmePpCommunication))
     {
@@ -1787,7 +1787,7 @@ int Mdrunner::mdrunner()
     std::unique_ptr<VirtualSitesHandler> vsite;
 
     t_nrnb nrnb;
-    if (thisRankHasDuty(cr, DUTY_PP))
+    if (thisRankHasPPDuty(cr->dd))
     {
         setupNotifier.notify(cr->commMyGroup);
         setupNotifier.notify(cr->dd);
@@ -1838,7 +1838,7 @@ int Mdrunner::mdrunner()
         // TODO: Forcerec is not a correct place to store it.
         fr->deviceStreamManager = deviceStreamManager.get();
 
-        if (runScheduleWork.simulationWork.useGpuPmePpCommunication && !thisRankHasDuty(cr, DUTY_PME))
+        if (runScheduleWork.simulationWork.useGpuPmePpCommunication && !thisRankHasPmeDuty(cr->dd))
         {
             GMX_RELEASE_ASSERT(
                     deviceStreamManager != nullptr,
@@ -1969,7 +1969,7 @@ int Mdrunner::mdrunner()
 
     gmx_pme_t* sepPmeData = nullptr;
     // This reference hides the fact that PME data is owned by runner on PME-only ranks and by forcerec on other ranks
-    GMX_ASSERT(thisRankHasDuty(cr, DUTY_PP) == (fr != nullptr),
+    GMX_ASSERT(thisRankHasPPDuty(cr->dd) == (fr != nullptr),
                "Double-checking that only PME-only ranks have no forcerec");
     gmx_pme_t*& pmedata = fr ? fr->pmedata : sepPmeData;
 
@@ -2008,7 +2008,7 @@ int Mdrunner::mdrunner()
             gmx_bcast(sizeof(nTypePerturbed), &nTypePerturbed, cr->commMySim.comm());
         }
 
-        if (thisRankHasDuty(cr, DUTY_PME))
+        if (thisRankHasPmeDuty(cr->dd))
         {
             try
             {
@@ -2107,7 +2107,7 @@ int Mdrunner::mdrunner()
     try
     {
         pull_t* pull_work = nullptr;
-        if (thisRankHasDuty(cr, DUTY_PP))
+        if (thisRankHasPPDuty(cr->dd))
         {
             /* Assumes uniform use of the number of OpenMP threads */
             walltime_accounting =

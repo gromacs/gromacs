@@ -269,9 +269,9 @@ struct CheckpointHeaderContents
     //! Which integrator is in use.
     IntegrationAlgorithm eIntegrator;
     //! Which part of the simulation this is.
-    int simulation_part;
+    int simulation_part = 0;
     //! Which step the checkpoint is at.
-    int64_t step;
+    int64_t step = 0;
     //! Current simulation time.
     double t;
     //! Number of nodes used for simulation,

@@ -44,9 +44,6 @@
 
 struct gmx_domdec_t;
 
-#define DUTY_PP (1U << 0U)
-#define DUTY_PME (1U << 1U)
-
 //! Whether the current DD role is main or slave
 enum class DDRole
 {
@@ -67,6 +64,9 @@ struct t_commrec
     t_commrec(const gmx::MpiComm& mpiComm);
 
     ~t_commrec();
+
+    //! Returns whether this is the main rank in the simulation, i.e. the rank that does IO
+    bool isSimulationMainRank() const { return (commMySim.rank() == 0); }
 
     //! Transfers the ownership of \p ddUniquePtr and sets \p dd
     void setDD(std::unique_ptr<gmx_domdec_t>&& ddUniquePtr);
@@ -101,37 +101,7 @@ private:
 public:
     //! C-pointer to ddUniquePtr (should be replaced by a getter)
     gmx_domdec_t* dd = nullptr;
-
-    /* The duties of this node, see the DUTY_ defines above.
-     * This should be read through thisRankHasDuty() or getThisRankDuties().
-     */
-    int duty = 0;
 };
-
-/*! \brief
- * Returns the rank's duty, and asserts that it has been initialized.
- */
-inline int getThisRankDuties(const t_commrec* cr)
-{
-    GMX_ASSERT(cr, "Invalid commrec pointer");
-    GMX_ASSERT(cr->duty != 0, "Commrec duty was not initialized!");
-    return cr->duty;
-}
-
-/*! \brief
- * A convenience getter for the commrec duty assignment;
- * asserts that duty is actually valid (have been initialized).
- *
- * \param[in] cr    Communication structure pointer
- * \param[in] duty  A single duty's corresponding DUTY_ flag. Combinations are not supported.
- *
- * \returns Whether this duty is assigned to this rank.
- */
-inline bool thisRankHasDuty(const t_commrec* cr, int duty)
-{
-    GMX_ASSERT((duty == DUTY_PME) || (duty == DUTY_PP), "Invalid duty type");
-    return (getThisRankDuties(cr) & duty) != 0;
-}
 
 /*! \brief True if this is a simulation with more than 1 rank
  *
@@ -142,10 +112,6 @@ inline bool thisRankHasDuty(const t_commrec* cr, int duty)
 
 //! True of this is the main node
 #define MAIN(cr) ((cr)->mpiDefaultCommunicator.rank() == 0)
-
-// Note that currently, main is always PP main, so this is equivalent to MAIN(cr)
-//! True if this is the particle-particle main
-#define SIMMAIN(cr) ((MAIN(cr) && thisRankHasDuty((cr), DUTY_PP)) || !PAR(cr))
 
 //! The node id for this rank
 #define RANK(cr, nodeid) (nodeid)

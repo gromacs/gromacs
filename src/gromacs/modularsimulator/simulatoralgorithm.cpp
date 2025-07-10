@@ -49,6 +49,7 @@
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/domdec.h"
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/ewald/pme_load_balancing.h"
 #include "gromacs/ewald/pme_pp.h"
@@ -260,7 +261,7 @@ void ModularSimulatorAlgorithm::simulatorTeardown()
     // Stop measuring walltime
     walltime_accounting_end_time(wallTimeAccounting_);
 
-    if (!thisRankHasDuty(&cr_, DUTY_PME))
+    if (!thisRankHasPmeDuty(cr_.dd))
     {
         /* Tell the PME only node to finish */
         gmx_pme_send_finish(cr_.commMySim, cr_.dd);

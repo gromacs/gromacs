@@ -2907,7 +2907,7 @@ void load_checkpoint(const std::filesystem::path&   fn,
                      bool                           useModularSimulator)
 {
     CheckpointHeaderContents headerContents;
-    if (SIMMAIN(cr))
+    if (cr->isSimulationMainRank())
     {
         /* Read the state from the checkpoint file */
         read_checkpoint(fn,

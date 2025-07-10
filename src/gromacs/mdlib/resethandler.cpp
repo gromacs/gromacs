@@ -48,6 +48,7 @@
 #include <filesystem>
 
 #include "gromacs/domdec/domdec.h"
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/ewald/pme_load_balancing.h"
 #include "gromacs/ewald/pme_pp.h"
@@ -208,7 +209,7 @@ bool ResetHandler::resetCountersImpl(int64_t                     step,
         print_date_and_time(fplog, cr->commMyGroup.rank(), "Restarted time", gmx_gettime());
 
         wcycle_set_reset_counters(wcycle, -1);
-        if (!thisRankHasDuty(cr, DUTY_PME))
+        if (!thisRankHasPmeDuty(cr->dd))
         {
             /* Tell our PME node to reset its counters */
             gmx_pme_send_resetcounters(cr->commMySim, cr->dd, step);

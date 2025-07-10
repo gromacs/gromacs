@@ -249,7 +249,7 @@ static void manage_number_of_openmp_threads(const gmx::MDLogger& mdlog,
      * detection is done on the main only. It is not thread-safe
      * with multiple simulations, but that's anyway not supported by
      * tMPI. */
-    if (!SIMMAIN(cr))
+    if (!cr->isSimulationMainRank())
     {
         return;
     }
@@ -464,21 +464,25 @@ static void reportOpenmpSettings(const gmx::MDLogger& mdlog, const t_commrec* cr
 }
 
 void gmx_omp_nthreads_init(const gmx::MDLogger& mdlog,
-                           t_commrec*           cr,
+                           const t_commrec*     cr,
+                           const bool           haveSeparatePmeRanks,
                            int                  maxThreads,
                            int                  numRanksOnThisNode,
                            int                  omp_nthreads_req,
                            int                  omp_nthreads_pme_req,
                            gmx_bool             bThisNodePMEOnly)
 {
-    gmx_bool bSepPME;
-
     const bool bOMP = GMX_OPENMP;
 
-    bSepPME = (thisRankHasDuty(cr, DUTY_PP) != thisRankHasDuty(cr, DUTY_PME));
-
-    manage_number_of_openmp_threads(
-            mdlog, cr, bOMP, maxThreads, omp_nthreads_req, omp_nthreads_pme_req, bThisNodePMEOnly, numRanksOnThisNode, bSepPME);
+    manage_number_of_openmp_threads(mdlog,
+                                    cr,
+                                    bOMP,
+                                    maxThreads,
+                                    omp_nthreads_req,
+                                    omp_nthreads_pme_req,
+                                    bThisNodePMEOnly,
+                                    numRanksOnThisNode,
+                                    haveSeparatePmeRanks);
 #if GMX_THREAD_MPI
     /* Non-main threads have to wait for the OpenMP management to be
      * done, so that code elsewhere that uses OpenMP can be certain
@@ -489,7 +493,7 @@ void gmx_omp_nthreads_init(const gmx::MDLogger& mdlog,
     }
 #endif
 
-    reportOpenmpSettings(mdlog, cr, bOMP, bSepPME);
+    reportOpenmpSettings(mdlog, cr, bOMP, haveSeparatePmeRanks);
 }
 
 int gmx_omp_nthreads_get(ModuleMultiThread mod)

@@ -228,7 +228,7 @@ void pme_loadbal_init(pme_load_balancing_t**         pme_lb_p,
 
     pme_lb = new pme_load_balancing_t;
 
-    pme_lb->bSepPMERanks = !thisRankHasDuty(cr, DUTY_PME);
+    pme_lb->bSepPMERanks = !thisRankHasPmeDuty(cr->dd);
 
     /* Initially we turn on balancing directly on based on PP/PME imbalance */
     pme_lb->bTriggerOnDLB = FALSE;

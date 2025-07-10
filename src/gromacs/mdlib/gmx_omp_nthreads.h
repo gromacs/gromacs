@@ -71,7 +71,8 @@ enum class ModuleMultiThread : int
  * available with tMPI).
  * This function should be called only once during the initialization of mdrun. */
 void gmx_omp_nthreads_init(const gmx::MDLogger& fplog,
-                           t_commrec*           cr,
+                           const t_commrec*     cr,
+                           bool                 haveSeparatePmeRanks,
                            int                  maxThreads,
                            int                  numRanksOnThisNode,
                            int                  omp_nthreads_req,

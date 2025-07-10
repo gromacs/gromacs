@@ -3141,7 +3141,7 @@ void dd_partition_system(FILE*                     fplog,
     wallcycle_sub_start_nocount(wcycle, WallCycleSubCounter::DDTopOther);
 
     auto* mdatoms = mdAtoms->mdatoms();
-    if (!thisRankHasDuty(cr, DUTY_PME))
+    if (!dd->hasPmeDuty)
     {
         /* Send the charges and/or c6/sigmas to our PME only node */
         gmx_pme_send_parameters(cr->commMySim,

@@ -117,6 +117,11 @@ struct gmx_domdec_t
     gmx_domdec_t(const t_inputrec& ir, gmx::ArrayRef<const int> ddDims);
     ~gmx_domdec_t();
 
+    //! Whether this rank computes particle-particle interactions
+    bool hasPPDuty = true;
+    //! Whether this rank computes PME mesh interactions, also true when PME is not in use
+    bool hasPmeDuty = true;
+
     /* The DD particle-particle nodes only */
     /* The communication setup within the communicator all
      * defined in dd->comm in domdec.c
@@ -204,6 +209,24 @@ struct gmx_domdec_t
     /* GPU halo exchange objects: this structure supports a vector of pulses for each dimension */
     std::vector<std::unique_ptr<gmx::GpuHaloExchange>> gpuHaloExchange[DIM];
 };
+
+/*! \brief Returns whether this rank computes particle-particle interactions
+ *
+ * Can be called with \p dd=nullptr, in which case this returns \c true.
+ */
+static bool inline thisRankHasPPDuty(const gmx_domdec_t* dd)
+{
+    return (dd == nullptr || dd->hasPPDuty);
+}
+
+/*! \brief Returns whether this rank computes PME mesh interactions, also returns true when PME is not in use
+ *
+ * Can be called with \p dd=nullptr, in which case this returns \c true.
+ */
+static bool inline thisRankHasPmeDuty(const gmx_domdec_t* dd)
+{
+    return (dd == nullptr || dd->hasPmeDuty);
+}
 
 /*! \brief Returns whether we have actual domain decomposition for the particle-particle interactions
  *

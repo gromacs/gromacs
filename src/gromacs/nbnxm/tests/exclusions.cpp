@@ -102,9 +102,8 @@ diagonalPairlist(const NbnxmKernelType kernelType, const int numAtoms)
     const gmx::MDLogger emptyLogger;
 
     t_commrec commRec(MpiComm(MpiComm::SingleRank{}));
-    commRec.duty = (DUTY_PP | DUTY_PME);
 
-    gmx_omp_nthreads_init(emptyLogger, &commRec, 1, 1, 1, 1, false);
+    gmx_omp_nthreads_init(emptyLogger, &commRec, false, 1, 1, 1, 1, false);
 
     const PairlistParams pairlistParams(kernelType, {}, false, 1, false);
 
