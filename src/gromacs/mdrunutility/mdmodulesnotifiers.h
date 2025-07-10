@@ -424,7 +424,6 @@ struct MDModulesNotifiers
                            const StartingBehavior&,
                            const MDLogger&,
                            const gmx_mtop_t&,
-                           const MDModulesAtomsRedistributedSignal,
                            MDModulesEnergyOutputToDensityFittingRequestChecker*,
                            MDModulesEnergyOutputToQMMMRequestChecker*,
                            MDModulesEnergyOutputToNNPotRequestChecker*,
@@ -438,6 +437,14 @@ struct MDModulesNotifiers
                            const MdRunInputFilename&,
                            const EdrOutputFilename&,
                            const PlumedInputFilename&>::type simulationSetupNotifier_;
+
+    /*! \brief Handles subscribing and calling callbacks during a running simulation.
+     *
+     * These callbacks are called after calling all simulation setup notifications.
+     *
+     * \tparam MDModulesAtomsRedistributedSignal  Allows modules to react on atom redistribution
+     */
+    BuildMDModulesNotifier<const MDModulesAtomsRedistributedSignal&>::type simulationRunNotifier_;
 };
 
 } // namespace gmx

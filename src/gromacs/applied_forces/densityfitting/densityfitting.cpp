@@ -346,6 +346,9 @@ public:
         notifiers->checkpointingNotifier_.subscribe(checkpointDataBroadcast);
     }
 
+    //! No subscriptions to run notifications
+    void subscribeToSimulationRunNotifications(MDModulesNotifiers* /* notifiers */) override {}
+
     //! From IMDModule
     IMdpOptionProvider* mdpOptionProvider() override { return &densityFittingOptions_; }
 

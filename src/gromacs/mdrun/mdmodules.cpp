@@ -261,6 +261,14 @@ void MDModules::subscribeToSimulationSetupNotifications()
     }
 }
 
+void MDModules::subscribeToSimulationRunNotifications()
+{
+    for (auto& [_, module] : impl_->modules_)
+    {
+        module->subscribeToSimulationRunNotifications(&impl_->notifiers_);
+    }
+}
+
 void MDModules::add(std::string_view nameView, std::shared_ptr<IMDModule> module)
 {
     const std::string name(nameView);

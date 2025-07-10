@@ -88,6 +88,8 @@ public:
 
     void subscribeToSimulationSetupNotifications(MDModulesNotifiers* /* notifiers */) override {}
 
+    void subscribeToSimulationRunNotifications(MDModulesNotifiers* /* notifiers */) override {}
+
     void initForceProviders(ForceProviders* forceProviders) override
     {
         if (fmmMdpOptions_.activeFmmBackend() == ActiveFmmBackend::Inactive)

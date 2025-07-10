@@ -87,6 +87,8 @@ public:
                 });
     }
 
+    void subscribeToSimulationRunNotifications(MDModulesNotifiers* /* notifier */) override {}
+
     IMdpOptionProvider* mdpOptionProvider() override { return nullptr; }
 
     IMDOutputProvider* outputProvider() override { return nullptr; }

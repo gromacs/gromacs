@@ -87,6 +87,8 @@ public:
 
     void subscribeToSimulationSetupNotifications(MDModulesNotifiers* /*notifier*/) override {}
 
+    void subscribeToSimulationRunNotifications(MDModulesNotifiers* /*notifier*/) override {}
+
     IMdpOptionProvider* mdpOptionProvider() override { return &colvarsOptionsStub_; }
 
     IMDOutputProvider* outputProvider() override { return nullptr; }

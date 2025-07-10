@@ -119,6 +119,10 @@ public:
                 });
     }
 
+    /*! \brief No subscriptions to MDModules notifications during the simulation.
+     */
+    void subscribeToSimulationRunNotifications(MDModulesNotifiers* /* notifier */) override {}
+
     //! From IMDModule
     IMdpOptionProvider* mdpOptionProvider() override { return nullptr; }
     //! From IMDModule

@@ -1799,6 +1799,10 @@ int Mdrunner::mdrunner()
         setupNotifier.notify(startingBehavior);
         setupNotifier.notify(EnsembleTemperature{ *inputrec });
 
+        // Now that all simulation setup notifications have been emitted,
+        // set up the simulation run notification subscriptions
+        mdModules_->subscribeToSimulationRunNotifications();
+
         /* Initiate forcerecord */
         fr                 = std::make_unique<t_forcerec>();
         fr->forceProviders = mdModules_->initForceProviders(wcycle.get());

@@ -124,6 +124,8 @@ public:
 
     //! Subscribe to simulation setup notifications
     void subscribeToSimulationSetupNotifications(MDModulesNotifiers* notifiers) override;
+    //! Subscribe to simulation run notifications
+    void subscribeToSimulationRunNotifications(MDModulesNotifiers* notifiers) override;
     //! Subscribe to pre processing notifications
     void subscribeToPreProcessingNotifications(MDModulesNotifiers* notifiers) override;
 

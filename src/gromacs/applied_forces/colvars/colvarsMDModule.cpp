@@ -214,12 +214,27 @@ public:
         const auto checkpointDataReading = [this](MDModulesCheckpointReadingDataOnMain checkpointData)
         { colvarsState_.readState(checkpointData.checkpointedData_, ColvarsModuleInfo::sc_name); };
         notifiers->checkpointingNotifier_.subscribe(checkpointDataReading);
+    }
+
+    /*! \brief Request to be notified.
+     *
+     * \param[in] notifiers allows the module to subscribe to notifications from MdModules.
+     *
+     * The Colvars MDModule subscribes to this notification:
+     *   - the atom redistributed signal
+     */
+    void subscribeToSimulationRunNotifications(MDModulesNotifiers* notifiers) override
+    {
+        if (!colvarsOptions_.isActive())
+        {
+            return;
+        }
 
         // Handle the atoms redistributed signal
         const auto handleAtomsRedistributedSignal =
                 [this](const MDModulesAtomsRedistributedSignal& atomsRedistributedSignal)
         { colvarsForceProvider_->processAtomsRedistributedSignal(atomsRedistributedSignal); };
-        notifiers->simulationSetupNotifier_.subscribe(handleAtomsRedistributedSignal);
+        notifiers->simulationRunNotifier_.subscribe(handleAtomsRedistributedSignal);
     }
 
     //! From IMDModule

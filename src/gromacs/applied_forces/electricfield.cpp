@@ -188,6 +188,7 @@ public:
                          ForceProviderOutput*      forceProviderOutput) override;
 
     void subscribeToSimulationSetupNotifications(MDModulesNotifiers* /* notifiers */) override {}
+    void subscribeToSimulationRunNotifications(MDModulesNotifiers* /* notifiers */) override {}
     void subscribeToPreProcessingNotifications(MDModulesNotifiers* /* notifiers */) override {}
 
 private:

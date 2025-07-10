@@ -213,6 +213,8 @@ void RestraintMDModule::subscribeToSimulationSetupNotifications(MDModulesNotifie
 {
 }
 
+void RestraintMDModule::subscribeToSimulationRunNotifications(MDModulesNotifiers* /*notifiers*/) {}
+
 void RestraintMDModule::subscribeToPreProcessingNotifications(MDModulesNotifiers* /*notifiers*/) {}
 
 // private constructor to implement static create() method.

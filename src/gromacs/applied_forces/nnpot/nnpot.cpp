@@ -117,7 +117,6 @@ public:
      *
      * \param[in] notifiers allows the module to subscribe to notifications from MdModules.
      *
-     *
      * NNPot module subscribes to the following notifications:
      *   - the topology of the system
      *     by taking a const gmx_mtop_t& as parameter
@@ -131,8 +130,6 @@ public:
      *     by taking a const MDLogger& as parameter
      *   - access the communication object
      *     by taking a const MpiComm& as parameter
-     *   - notify when atoms are redistributed
-     *     by taking a const MDModulesAtomsRedistributedSignal as parameter
      */
     void subscribeToSimulationSetupNotifications(MDModulesNotifiers* notifiers) override
     {
@@ -176,11 +173,27 @@ public:
         const auto setCommFunction = [this](const MpiComm& mpiComm)
         { nnpotOptions_.setComm(mpiComm); };
         notifiers->simulationSetupNotifier_.subscribe(setCommFunction);
+    }
+
+    /*! \brief Requests to be notified during the simulation.
+     *
+     * \param[in] notifiers allows the module to subscribe to notifications from MdModules.
+     *
+     * NNPot module subscribes to the following notifications:
+     *   - notify when atoms are redistributed
+     *     by taking a const MDModulesAtomsRedistributedSignal as parameter
+     */
+    void subscribeToSimulationRunNotifications(MDModulesNotifiers* notifiers) override
+    {
+        if (!nnpotOptions_.isActive())
+        {
+            return;
+        }
 
         // subscribe to DD notification to trigger atom number and index gathering
         const auto notifyDDFunction = [this](const MDModulesAtomsRedistributedSignal& /*signal*/)
         { nnpotForceProvider_->gatherAtomNumbersIndices(); };
-        notifiers->simulationSetupNotifier_.subscribe(notifyDDFunction);
+        notifiers->simulationRunNotifier_.subscribe(notifyDDFunction);
     }
 
     void initForceProviders(ForceProviders* forceProviders) override

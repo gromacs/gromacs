@@ -148,6 +148,14 @@ public:
      */
     ForceProviders* initForceProviders(gmx_wallcycle* wallCycle);
 
+    /*! \brief Subscribe MDModules to notifications during pre-processing.
+     *
+     * Allows MDModules to subscribe to notifications that are called back
+     * during pre processing an MD simulation, after the options were
+     * assigned to the modules.
+     */
+    void subscribeToPreProcessingNotifications();
+
     /*! \brief Subscribe MDModules to simulation setup notifications.
      *
      * Allows MDModules to subscribe to notifications that are called back
@@ -156,13 +164,13 @@ public:
      */
     void subscribeToSimulationSetupNotifications();
 
-    /*! \brief Subscribe MDModules to notifications during pre-processing.
+    /*! \brief Subscribe MDModules to simulation run notifications.
      *
      * Allows MDModules to subscribe to notifications that are called back
-     * during pre processing an MD simulation, after the options were
-     * assigned to the modules.
+     * during an MD simulation, after the options were assigned to the modules
+     * and setup notifications have been emitted.
      */
-    void subscribeToPreProcessingNotifications();
+    void subscribeToSimulationRunNotifications();
 
     /*!
      * \brief Add a module to the container associated with the given name.

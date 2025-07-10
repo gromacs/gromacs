@@ -77,10 +77,12 @@ public:
     virtual IMDOutputProvider* outputProvider() = 0;
     //! Initializes force providers from this module.
     virtual void initForceProviders(ForceProviders* forceProviders) = 0;
-    //! Subscribe to simulation setup notifications
-    virtual void subscribeToSimulationSetupNotifications(MDModulesNotifiers* notifiers) = 0;
     //! Subscribe to pre processing notifications
     virtual void subscribeToPreProcessingNotifications(MDModulesNotifiers* notifiers) = 0;
+    //! Subscribe to simulation setup notifications
+    virtual void subscribeToSimulationSetupNotifications(MDModulesNotifiers* notifiers) = 0;
+    //! Subscribe to simulation run notifications
+    virtual void subscribeToSimulationRunNotifications(MDModulesNotifiers* notifiers) = 0;
 };
 
 } // namespace gmx

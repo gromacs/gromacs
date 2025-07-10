@@ -349,6 +349,9 @@ public:
         notifiers->simulationSetupNotifier_.subscribe(requestPmeRanks);
     }
 
+    //! No subscriptions to run notifications
+    void subscribeToSimulationRunNotifications(MDModulesNotifiers* /* notifiers */) override {}
+
     //! From IMDModule
     IMdpOptionProvider* mdpOptionProvider() override { return &qmmmOptions_; }
 
