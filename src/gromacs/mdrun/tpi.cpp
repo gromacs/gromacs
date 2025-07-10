@@ -1220,8 +1220,8 @@ void LegacySimulator::do_tpi()
         if (PAR(cr_))
         {
             /* When running in parallel sum the energies over the processes */
-            gmx_sumd(1, &sum_embU, cr_);
-            gmx_sumd(gmx::ssize(sum_UgembU), sum_UgembU.data(), cr_);
+            cr_->commMyGroup.sumReduce(1, &sum_embU);
+            cr_->commMyGroup.sumReduce(sum_UgembU);
         }
 
         frame++;
@@ -1288,7 +1288,7 @@ void LegacySimulator::do_tpi()
         int i = gmx::ssize(bins);
         global_max(cr_->commMyGroup, &i);
         bins.resize(i);
-        gmx_sumd(gmx::ssize(bins), bins.data(), cr_);
+        cr_->commMyGroup.sumReduce(bins);
     }
     if (MAIN(cr_))
     {

@@ -61,29 +61,6 @@ void gmx_barrier(MPI_Comm communicator);
  */
 void gmx_bcast(std::size_t nbytes, void* b, MPI_Comm communicator);
 
-/*! \brief Calculate the global sum of an array of ints
- *
- * Can be called with a single rank or without MPI
- */
-void gmx_sumi(std::size_t nr, int r[], const struct t_commrec* cr);
-
-/*! \brief Calculate the global sum of an array of floats
- *
- * Can be called with a single rank or without MPI
- */
-void gmx_sumf(std::size_t nr, float r[], const struct t_commrec* cr);
-
-/*! \brief Calculate the global sum of an array of doubles
- *
- * Can be called with a single rank or without MPI
- */
-void gmx_sumd(std::size_t nr, double r[], const struct t_commrec* cr);
-
-#if GMX_DOUBLE
-#    define gmx_sum gmx_sumd
-#else
-#    define gmx_sum gmx_sumf
-#endif
 
 const char* opt2fn_main(const char* opt, int nfile, const t_filenm fnm[], t_commrec* cr);
 /* Return the filename belonging to cmd-line option opt, or NULL when

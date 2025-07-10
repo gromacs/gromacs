@@ -1138,7 +1138,7 @@ static void make_pp_communicator(const gmx::MDLogger&  mdlog,
          */
         cartSetup.ddindex2ddnodeid.resize(dd->nnodes);
         cartSetup.ddindex2ddnodeid[dd_index(dd->numCells, dd->ci)] = dd->rank;
-        gmx_sumi(dd->nnodes, cartSetup.ddindex2ddnodeid.data(), cr);
+        cr->commMyGroup.sumReduce(cartSetup.ddindex2ddnodeid);
         /* Get the rank of the DD main,
          * above we made sure that the main node is a PP node.
          */
@@ -3057,7 +3057,7 @@ static gmx_bool test_dd_cutoff(const t_commrec*               cr,
             LocallyLimited = 1;
         }
 
-        gmx_sumi(1, &LocallyLimited, cr);
+        cr->commMyGroup.sumReduce(1, &LocallyLimited);
 
         if (LocallyLimited > 0)
         {

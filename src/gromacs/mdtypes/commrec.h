@@ -61,15 +61,6 @@ enum class NumRanks
     Multiple
 };
 
-//! Settings and communicators for two-step communication: intra + inter-node
-struct gmx_nodecomm_t
-{
-    bool     bUse       = false;
-    MPI_Comm comm_intra = MPI_COMM_NULL;
-    int      rank_intra = 0;
-    MPI_Comm comm_inter = MPI_COMM_NULL;
-};
-
 struct t_commrec
 {
     //! Constructs a valid object with all communicators set to \p mpiComm
@@ -102,8 +93,6 @@ struct t_commrec
 
     //! The communicator used before DD was initialized
     gmx::MpiComm mpiDefaultCommunicator;
-
-    gmx_nodecomm_t nc;
 
 private:
     //! Storage for the domain decomposition data

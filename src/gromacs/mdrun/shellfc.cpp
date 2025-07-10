@@ -775,8 +775,8 @@ static real rms_force(const t_commrec*        cr,
                       real*                   sf_dir,
                       real*                   Epot)
 {
-    double      buf[4];
-    const rvec* f = as_rvec_array(force.data());
+    std::array<double, 4> buf;
+    const rvec*           f = as_rvec_array(force.data());
 
     buf[0] = *sf_dir;
     for (const t_shell& shell : shells)
@@ -790,7 +790,7 @@ static real rms_force(const t_commrec*        cr,
         buf[1] = ntot;
         buf[2] = *sf_dir;
         buf[3] = *Epot;
-        gmx_sumd(4, buf, cr);
+        cr->commMyGroup.sumReduce(buf);
         ntot    = gmx::roundToInt(buf[1]);
         *sf_dir = buf[2];
         *Epot   = buf[3];

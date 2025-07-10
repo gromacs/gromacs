@@ -779,9 +779,9 @@ static real estimate_reciprocal(PmeErrorInputs* info,
 
     if (PAR(cr))
     {
-        gmx_sum(1, &e_rec1, cr);
-        gmx_sum(1, &e_rec2, cr);
-        gmx_sum(1, &e_rec3, cr);
+        cr->commMyGroup.sumReduce(1, &e_rec1);
+        cr->commMyGroup.sumReduce(1, &e_rec2);
+        cr->commMyGroup.sumReduce(1, &e_rec3);
     }
 
     /* e_rec1*=8.0 * q2_all / info->volume / info->volume / nr ;

@@ -2520,7 +2520,7 @@ void print_dd_statistics(const t_commrec* cr, const t_inputrec& inputrec, FILE* 
     gmx_domdec_comm_t* comm = cr->dd->comm.get();
 
     const int numRanges = static_cast<int>(DDAtomRanges::Type::Number);
-    gmx_sumd(numRanges, comm->sum_nat, cr);
+    cr->commMyGroup.sumReduce(numRanges, comm->sum_nat);
 
     if (fplog == nullptr)
     {

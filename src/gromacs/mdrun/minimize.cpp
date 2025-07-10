@@ -301,7 +301,7 @@ static void get_f_norm_max(const t_commrec*         cr,
                            real*                    fmax,
                            int*                     a_fmax)
 {
-    double fnorm2, *sum;
+    double fnorm2;
     real   fmax2, fam;
     int    la_max, a_max, start, end, i, m, gf;
 
@@ -359,11 +359,11 @@ static void get_f_norm_max(const t_commrec*         cr,
     if (PAR(cr))
     {
         const gmx::MpiComm& mpiComm = cr->commMyGroup;
-        snew(sum, 2 * mpiComm.size() + 1);
+        std::vector<double> sum(2 * mpiComm.size() + 1, 0);
         sum[2 * mpiComm.rank()]     = fmax2;
         sum[2 * mpiComm.rank() + 1] = a_max;
         sum[2 * mpiComm.size()]     = fnorm2;
-        gmx_sumd(2 * mpiComm.size() + 1, sum, cr);
+        cr->commMyGroup.sumReduce(sum);
         fnorm2 = sum[2 * mpiComm.size()];
         /* Determine the global maximum */
         for (i = 0; i < mpiComm.size(); i++)
@@ -374,7 +374,6 @@ static void get_f_norm_max(const t_commrec*         cr,
                 a_max = gmx::roundToInt(sum[2 * i + 1]);
             }
         }
-        sfree(sum);
     }
 
     if (fnorm)
@@ -1226,7 +1225,7 @@ static double reorder_partsum(const t_commrec*  cr,
         }
         i++;
     }
-    gmx_sum(top_global.natoms * 3, reinterpret_cast<real*>(fmg.data()), cr);
+    cr->commMyGroup.sumReduce(top_global.natoms * 3, reinterpret_cast<real*>(fmg.data()));
 
     /* Now we will determine the part of the sum for the cgs in state s_b */
     gmx::ArrayRef<const int> indicesB = s_b->s.cg_gl;
@@ -1306,7 +1305,7 @@ static real pr_beta(const t_commrec*  cr,
     }
     if (PAR(cr))
     {
-        gmx_sumd(1, &sum, cr);
+        cr->commMyGroup.sumReduce(1, &sum);
     }
 
     return sum / gmx::square(s_min->fnorm);
@@ -1541,7 +1540,7 @@ void LegacySimulator::do_cg()
         /* Sum the gradient along the line across CPUs */
         if (PAR(cr_))
         {
-            gmx_sumd(1, &gpa, cr_);
+            cr_->commMyGroup.sumReduce(1, &gpa);
         }
 
         /* Calculate the norm of the search vector */
@@ -1587,7 +1586,7 @@ void LegacySimulator::do_cg()
         /* Add up from all CPUs */
         if (PAR(cr_))
         {
-            gmx_sumd(1, &minstep, cr_);
+            cr_->commMyGroup.sumReduce(1, &minstep);
         }
 
         minstep = GMX_REAL_EPS / std::sqrt(minstep / (3 * topGlobal_.natoms));
@@ -1674,7 +1673,7 @@ void LegacySimulator::do_cg()
         /* Sum the gradient along the line across CPUs */
         if (PAR(cr_))
         {
-            gmx_sumd(1, &gpc, cr_);
+            cr_->commMyGroup.sumReduce(1, &gpc);
         }
 
         /* This is the max amount of increase in energy we tolerate */
@@ -1798,7 +1797,7 @@ void LegacySimulator::do_cg()
                 /* Sum the gradient along the line across CPUs */
                 if (PAR(cr_))
                 {
-                    gmx_sumd(1, &gpb, cr_);
+                    cr_->commMyGroup.sumReduce(1, &gpb);
                 }
 
                 if (debug)
@@ -2474,7 +2473,7 @@ void LegacySimulator::do_lbfgs()
         /* Sum the gradient along the line across CPUs */
         if (PAR(cr_))
         {
-            gmx_sumd(1, &gpc, cr_);
+            cr_->commMyGroup.sumReduce(1, &gpc);
         }
 
         // This is the max amount of increase in energy we tolerate.
@@ -2559,7 +2558,7 @@ void LegacySimulator::do_lbfgs()
                 /* Sum the gradient along the line across CPUs */
                 if (PAR(cr_))
                 {
-                    gmx_sumd(1, &gpb, cr_);
+                    cr_->commMyGroup.sumReduce(1, &gpb);
                 }
 
                 // Keep one of the intervals [A,B] or [B,C] based on the value of the derivative
