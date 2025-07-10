@@ -90,6 +90,18 @@ struct BoundingBox1D
 //! The physical dimensions of a grid \internal
 struct GridDimensions
 {
+    //! Returns the lower corner along dimension \p dim of the cell with index \p cellIndex
+    real cellLowerCorner(int dim, int cellIndex) const
+    {
+        return lowerCorner[dim] + cellIndex * cellSize[dim];
+    }
+
+    //! Return the index of the column on the grid given the x+y-indices
+    int columnIndex(int columnIndexX, int columnIndexY) const
+    {
+        return columnIndexX * numCells[YY] + columnIndexY;
+    }
+
     //! The lower corner of the (local) grid
     RVec lowerCorner;
     //! The upper corner of the (local) grid
@@ -266,6 +278,9 @@ public:
             return numClustersTotal_;
         }
     }
+
+    //! Returns the avarage dimension of a grid cell
+    RVec averageCellSize() const;
 
     //! Resizes the bouding box and FEP flag lists for at most \p maxNumCells
     void resizeBoundingBoxesAndFlags(const int maxNumCells);

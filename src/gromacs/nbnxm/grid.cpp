@@ -113,6 +113,20 @@ Grid::Grid(const PairlistType pairlistType, const int ddZone, const bool& haveFe
 {
 }
 
+RVec Grid::averageCellSize() const
+{
+    const PairlistType    layoutType      = geometry().pairlistType_;
+    const int             numAtomsCluster = geometry().numAtomsICluster_;
+    const GridDimensions& dims            = dimensions();
+
+    RVec ls;
+    ls[XX] = dims.cellSize[XX] / sc_gpuNumClusterPerCellX(layoutType);
+    ls[YY] = dims.cellSize[YY] / sc_gpuNumClusterPerCellY(layoutType);
+    ls[ZZ] = numAtomsCluster / (dims.atomDensity * ls[XX] * ls[YY]);
+
+    return ls;
+}
+
 /*! \brief Returns the atom density (> 0) of a rectangular grid */
 static real gridAtomDensity(int numAtoms, const RVec& gridBoundingBoxSize)
 {

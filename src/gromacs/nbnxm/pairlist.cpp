@@ -168,9 +168,7 @@ get_cell_range(real b0, real b1, const GridDimensions& jGridDims, real d2, real 
     real distanceInCells    = (b0 - jGridDims.lowerCorner[dim]) * jGridDims.invCellSize[dim];
     *cf                     = std::max(static_cast<int>(distanceInCells), 0);
 
-    while (*cf > 0
-           && d2 + square((b0 - jGridDims.lowerCorner[dim]) - (*cf - 1 + 1) * jGridDims.cellSize[dim])
-                      < listRangeBBToCell2)
+    while (*cf > 0 && d2 + square(b0 - jGridDims.cellLowerCorner(dim, *cf - 1 + 1)) < listRangeBBToCell2)
     {
         (*cf)--;
     }
@@ -178,8 +176,7 @@ get_cell_range(real b0, real b1, const GridDimensions& jGridDims, real d2, real 
     *cl = std::min(static_cast<int>((b1 - jGridDims.lowerCorner[dim]) * jGridDims.invCellSize[dim]),
                    jGridDims.numCells[dim] - 1);
     while (*cl < jGridDims.numCells[dim] - 1
-           && d2 + square((*cl + 1) * jGridDims.cellSize[dim] - (b1 - jGridDims.lowerCorner[dim]))
-                      < listRangeBBToCell2)
+           && d2 + square(jGridDims.cellLowerCorner(dim, *cl + 1) - b1) < listRangeBBToCell2)
     {
         (*cl)++;
     }
@@ -2229,8 +2226,7 @@ static void get_nsubpair_target(const GridSet&            gridSet,
      */
     const int nsubpair_target_min = 36;
 
-    const Grid&        grid       = gridSet.grid(0);
-    const PairlistType layoutType = grid.geometry().pairlistType_;
+    const Grid& grid = gridSet.grid(0);
 
     /* We don't need to balance list sizes if:
      * - We didn't request balancing.
@@ -2247,13 +2243,8 @@ static void get_nsubpair_target(const GridSet&            gridSet,
         return;
     }
 
-    RVec                  ls;
-    const int             numAtomsCluster = grid.geometry().numAtomsICluster_;
-    const GridDimensions& dims            = grid.dimensions();
-
-    ls[XX] = dims.cellSize[XX] / sc_gpuNumClusterPerCellX(layoutType);
-    ls[YY] = dims.cellSize[YY] / sc_gpuNumClusterPerCellY(layoutType);
-    ls[ZZ] = numAtomsCluster / (dims.atomDensity * ls[XX] * ls[YY]);
+    const RVec ls              = grid.averageCellSize();
+    const int  numAtomsCluster = grid.geometry().numAtomsICluster_;
 
     /* The formulas below are a heuristic estimate of the average nsj per si*/
     const real r_eff_sup = rlist + nbnxn_get_rlist_effective_inc(numAtomsCluster, ls);
@@ -2261,7 +2252,7 @@ static void get_nsubpair_target(const GridSet&            gridSet,
     real nsp_est_nl = 0;
     if (gridSet.domainSetup().haveMultipleDomains && gridSet.domainSetup().zones->numZones() != 1)
     {
-        nsp_est_nl = square(dims.atomDensity / numAtomsCluster)
+        nsp_est_nl = square(grid.dimensions().atomDensity / numAtomsCluster)
                      * nonlocal_vol2(*gridSet.domainSetup().zones, ls, r_eff_sup);
     }
 
@@ -2280,7 +2271,7 @@ static void get_nsubpair_target(const GridSet&            gridSet,
         /* Estimate the number of cluster pairs as the local number of
          * clusters times the volume they interact with times the density.
          */
-        nsp_est = grid.numClusters() * vol_est * dims.atomDensity / numAtomsCluster;
+        nsp_est = grid.numClusters() * vol_est * grid.dimensions().atomDensity / numAtomsCluster;
 
         /* Subtract the non-local pair count */
         nsp_est -= nsp_est_nl;
@@ -2626,7 +2617,7 @@ static int get_ci_block_size(const Grid& iGrid, const bool haveMultipleDomains, 
      * zone boundaries with 3D domain decomposition. At the same time
      * the blocks will not become too small.
      */
-    GMX_ASSERT(iGrid.dimensions().numCells[XX] > 0, "Grid can't be empty");
+    GMX_ASSERT(iGrid.numColumns() > 0, "Grid can't be empty");
     GMX_ASSERT(numLists > 0, "We need at least one list");
     int ci_block = (iGrid.numCells() * ci_block_enum)
                    / (ci_block_denom * iGrid.dimensions().numCells[XX] * numLists);
@@ -2998,9 +2989,7 @@ static void nbnxn_make_pairlist_part(const GridSet&          gridSet,
         real d2cx = 0;
         if (!isIntraGridList && shiftRange[XX] == 0)
         {
-            const real bx1 = c_listIsSimple ? bb_i[ci].upper.x
-                                            : iGridDims.lowerCorner[XX]
-                                                      + (real(ci_x) + 1) * iGridDims.cellSize[XX];
+            const real bx1 = c_listIsSimple ? bb_i[ci].upper.x : iGridDims.cellLowerCorner(XX, ci_x + 1);
             if (bx1 < jGridDims.lowerCorner[XX])
             {
                 d2cx = square(jGridDims.lowerCorner[XX] - bx1);
@@ -3012,7 +3001,7 @@ static void nbnxn_make_pairlist_part(const GridSet&          gridSet,
             }
         }
 
-        int ci_xy = ci_x * iGridDims.numCells[YY] + ci_y;
+        const int ci_xy = iGridDims.columnIndex(ci_x, ci_y);
 
         /* Loop over shift vectors in three dimensions */
         for (int tz = -shiftRange[ZZ]; tz <= shiftRange[ZZ]; tz++)
@@ -3051,12 +3040,9 @@ static void nbnxn_make_pairlist_part(const GridSet&          gridSet,
                 const real shy = real(ty) * box[YY][YY] + real(tz) * box[ZZ][YY];
 
                 const real by0 = c_listIsSimple ? bb_i[ci].lower.y + shy
-                                                : iGridDims.lowerCorner[YY]
-                                                          + (real(ci_y)) * iGridDims.cellSize[YY] + shy;
-                const real by1 = c_listIsSimple
-                                         ? bb_i[ci].upper.y + shy
-                                         : iGridDims.lowerCorner[YY]
-                                                   + (real(ci_y) + 1) * iGridDims.cellSize[YY] + shy;
+                                                : iGridDims.cellLowerCorner(YY, ci_y) + shy;
+                const real by1 = c_listIsSimple ? bb_i[ci].upper.y + shy
+                                                : iGridDims.cellLowerCorner(YY, ci_y + 1) + shy;
 
                 int cyf, cyl; //NOLINT(cppcoreguidelines-init-variables)
                 get_cell_range<YY>(by0, by1, jGridDims, d2z_cx, rlist, &cyf, &cyl);
@@ -3090,14 +3076,10 @@ static void nbnxn_make_pairlist_part(const GridSet&          gridSet,
                     const real shx =
                             real(tx) * box[XX][XX] + real(ty) * box[YY][XX] + real(tz) * box[ZZ][XX];
 
-                    const real bx0 = c_listIsSimple
-                                             ? bb_i[ci].lower.x + shx
-                                             : iGridDims.lowerCorner[XX]
-                                                       + (real(ci_x)) * iGridDims.cellSize[XX] + shx;
-                    const real bx1 = c_listIsSimple
-                                             ? bb_i[ci].upper.x + shx
-                                             : iGridDims.lowerCorner[XX]
-                                                       + (real(ci_x) + 1) * iGridDims.cellSize[XX] + shx;
+                    const real bx0 = c_listIsSimple ? bb_i[ci].lower.x + shx
+                                                    : iGridDims.cellLowerCorner(XX, ci_x) + shx;
+                    const real bx1 = c_listIsSimple ? bb_i[ci].upper.x + shx
+                                                    : iGridDims.cellLowerCorner(XX, ci_x + 1) + shx;
 
                     int cxf, cxl; //NOLINT(cppcoreguidelines-init-variables)
                     get_cell_range<XX>(bx0, bx1, jGridDims, d2z_cy, rlist, &cxf, &cxl);
@@ -3128,17 +3110,16 @@ static void nbnxn_make_pairlist_part(const GridSet&          gridSet,
 
                     for (int cx = cxf; cx <= cxl; cx++)
                     {
-                        const real cx_real = cx;
-                        real       d2zx    = d2z;
-                        if (jGridDims.lowerCorner[XX] + cx_real * jGridDims.cellSize[XX] > bx1)
+                        const real cellLowerCornerX = jGridDims.cellLowerCorner(XX, cx);
+                        const real cellUpperCornerX = jGridDims.cellLowerCorner(XX, cx + 1);
+                        real       d2zx             = d2z;
+                        if (cellLowerCornerX > bx1)
                         {
-                            d2zx += square(jGridDims.lowerCorner[XX]
-                                           + cx_real * jGridDims.cellSize[XX] - bx1);
+                            d2zx += square(cellLowerCornerX - bx1);
                         }
-                        else if (jGridDims.lowerCorner[XX] + (cx_real + 1) * jGridDims.cellSize[XX] < bx0)
+                        else if (cellUpperCornerX < bx0)
                         {
-                            d2zx += square(jGridDims.lowerCorner[XX]
-                                           + (cx_real + 1) * jGridDims.cellSize[XX] - bx0);
+                            d2zx += square(cellUpperCornerX - bx0);
                         }
 
                         /* When true, leave the pairs with i > j.
@@ -3152,21 +3133,20 @@ static void nbnxn_make_pairlist_part(const GridSet&          gridSet,
                         for (int cy = cyf_x; cy <= cyl; cy++)
                         {
                             const int columnStart =
-                                    jGrid.firstCellInColumn(cx * jGridDims.numCells[YY] + cy);
+                                    jGrid.firstCellInColumn(jGridDims.columnIndex(cx, cy));
                             const int columnEnd =
-                                    jGrid.firstCellInColumn(cx * jGridDims.numCells[YY] + cy + 1);
+                                    jGrid.firstCellInColumn(jGridDims.columnIndex(cx, cy + 1));
 
-                            const real cy_real = cy;
-                            real       d2zxy   = d2zx;
-                            if (jGridDims.lowerCorner[YY] + cy_real * jGridDims.cellSize[YY] > by1)
+                            const real cellLowerCornerY = jGridDims.cellLowerCorner(YY, cy);
+                            const real cellUpperCornerY = jGridDims.cellLowerCorner(YY, cy + 1);
+                            real       d2zxy            = d2zx;
+                            if (cellLowerCornerY > by1)
                             {
-                                d2zxy += square(jGridDims.lowerCorner[YY]
-                                                + cy_real * jGridDims.cellSize[YY] - by1);
+                                d2zxy += square(cellLowerCornerY - by1);
                             }
-                            else if (jGridDims.lowerCorner[YY] + (cy_real + 1) * jGridDims.cellSize[YY] < by0)
+                            else if (cellUpperCornerY < by0)
                             {
-                                d2zxy += square(jGridDims.lowerCorner[YY]
-                                                + (cy_real + 1) * jGridDims.cellSize[YY] - by0);
+                                d2zxy += square(cellUpperCornerY - by0);
                             }
                             if (columnStart < columnEnd && d2zxy < listRangeBBToJCell2)
                             {
@@ -3752,7 +3732,7 @@ void PairlistSet::constructPairlists(InteractionLocality      locality,
 
     for (const Grid& iGrid : iGridList)
     {
-        if (iGrid.dimensions().numCells[XX] == 0)
+        if (iGrid.numColumns() == 0)
         {
             // We can and have to skip empty i-lists
             continue;
