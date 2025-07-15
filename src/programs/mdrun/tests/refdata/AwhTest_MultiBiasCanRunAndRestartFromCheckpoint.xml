@@ -1,0 +1,120 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <File Name="AWH pull x output after 20 steps">
+    <XvgLegend Name="Legend">
+      <String Name="XvgLegend"><![CDATA[
+title "Pull COM"
+xaxis  label "Time (ps)"
+yaxis  label "Position (nm, deg)"
+TYPE xy
+s0 legend "1"
+s1 legend "2"
+]]></String>
+    </XvgLegend>
+    <XvgData Name="Data">
+      <Sequence Name="Row0">
+        <Int Name="Length">3</Int>
+        <Real>0.0000</Real>
+        <Real>179.101</Real>
+        <Real>158.656</Real>
+      </Sequence>
+      <Sequence Name="Row1">
+        <Int Name="Length">3</Int>
+        <Real>0.0200</Real>
+        <Real>-176.772</Real>
+        <Real>159.379</Real>
+      </Sequence>
+    </XvgData>
+  </File>
+  <File Name="AWH pull f output after 20 steps">
+    <XvgLegend Name="Legend">
+      <String Name="XvgLegend"><![CDATA[
+title "Pull force"
+xaxis  label "Time (ps)"
+yaxis  label "Force (kJ/mol/nm, kJ/mol/rad)"
+TYPE xy
+s0 legend "1"
+s1 legend "2"
+]]></String>
+    </XvgLegend>
+    <XvgData Name="Data">
+      <Sequence Name="Row0">
+        <Int Name="Length">3</Int>
+        <Real>0.0000</Real>
+        <Real>8.23281</Real>
+        <Real>-0.000114776</Real>
+      </Sequence>
+      <Sequence Name="Row1">
+        <Int Name="Length">3</Int>
+        <Real>0.0200</Real>
+        <Real>-106.953</Real>
+        <Real>20.2677</Real>
+      </Sequence>
+    </XvgData>
+  </File>
+  <File Name="AWH pull x output after 40 steps">
+    <XvgLegend Name="Legend">
+      <String Name="XvgLegend"><![CDATA[
+title "Pull COM"
+xaxis  label "Time (ps)"
+yaxis  label "Position (nm, deg)"
+TYPE xy
+s0 legend "1"
+s1 legend "2"
+]]></String>
+    </XvgLegend>
+    <XvgData Name="Data">
+      <Sequence Name="Row0">
+        <Int Name="Length">3</Int>
+        <Real>0.0000</Real>
+        <Real>179.101</Real>
+        <Real>158.656</Real>
+      </Sequence>
+      <Sequence Name="Row1">
+        <Int Name="Length">3</Int>
+        <Real>0.0200</Real>
+        <Real>-176.772</Real>
+        <Real>159.379</Real>
+      </Sequence>
+      <Sequence Name="Row2">
+        <Int Name="Length">3</Int>
+        <Real>0.0400</Real>
+        <Real>-175.432</Real>
+        <Real>168.358</Real>
+      </Sequence>
+    </XvgData>
+  </File>
+  <File Name="AWH pull f output after 40 steps">
+    <XvgLegend Name="Legend">
+      <String Name="XvgLegend"><![CDATA[
+title "Pull force"
+xaxis  label "Time (ps)"
+yaxis  label "Force (kJ/mol/nm, kJ/mol/rad)"
+TYPE xy
+s0 legend "1"
+s1 legend "2"
+]]></String>
+    </XvgLegend>
+    <XvgData Name="Data">
+      <Sequence Name="Row0">
+        <Int Name="Length">3</Int>
+        <Real>0.0000</Real>
+        <Real>8.23281</Real>
+        <Real>-0.000114776</Real>
+      </Sequence>
+      <Sequence Name="Row1">
+        <Int Name="Length">3</Int>
+        <Real>0.0200</Real>
+        <Real>-106.953</Real>
+        <Real>20.2677</Real>
+      </Sequence>
+      <Sequence Name="Row2">
+        <Int Name="Length">3</Int>
+        <Real>0.0400</Real>
+        <Real>-204.684</Real>
+        <Real>0.0653309</Real>
+      </Sequence>
+    </XvgData>
+  </File>
+</ReferenceData>

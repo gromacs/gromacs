@@ -101,6 +101,7 @@ set(exename "mdrun-test")
 
 gmx_add_gtest_executable(${exename} MPI
     CPP_SOURCE_FILES
+        awh.cpp
         multiple_time_stepping.cpp
         swapcoords.cpp
         tabulated_bonded_interactions.cpp
