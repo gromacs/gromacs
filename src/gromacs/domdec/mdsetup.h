@@ -45,10 +45,10 @@
 #include "gromacs/math/vectypes.h"
 
 struct bonded_threading_t;
+struct gmx_domdec_t;
 struct gmx_localtop_t;
 struct gmx_mtop_t;
 struct gmx_shellfc_t;
-struct t_commrec;
 struct t_forcerec;
 struct t_inputrec;
 struct t_mdatoms;
@@ -62,11 +62,11 @@ class VirtualSitesHandler;
 
 /*! \brief Gets the local shell with domain decomposition
  *
- * \param[in]     cr        Communication record
+ * \param[in]     dd        Domain decomposition struct, can be nullptr
  * \param[in]     md        The MD atom data
  * \param[in,out] shfc      The shell/flexible-constraint data
  */
-void make_local_shells(const t_commrec* cr, const t_mdatoms& md, gmx_shellfc_t* shfc);
+void make_local_shells(const gmx_domdec_t* dd, const t_mdatoms& md, gmx_shellfc_t* shfc);
 
 /*! \brief Sets atom data for several MD algorithms
  *
@@ -75,7 +75,7 @@ void make_local_shells(const t_commrec* cr, const t_mdatoms& md, gmx_shellfc_t* 
  * This routine sets the atom data for the (locally available) atoms.
  * This is called at the start of serial runs and during domain decomposition.
  *
- * \param[in]     cr         Communication record
+ * \param[in]     dd         Domain decomposition struct, can be nullptr
  * \param[in]     inputrec   Input parameter record
  * \param[in]     top_global The global topology
  * \param[in,out] top        The local topology
@@ -86,7 +86,7 @@ void make_local_shells(const t_commrec* cr, const t_mdatoms& md, gmx_shellfc_t* 
  * \param[in,out] vsite      The virtual site data, can be NULL
  * \param[in,out] shellfc    The shell/flexible-constraint data, can be NULL
  */
-void mdAlgorithmsSetupAtomData(const t_commrec*     cr,
+void mdAlgorithmsSetupAtomData(const gmx_domdec_t*  dd,
                                const t_inputrec&    inputrec,
                                const gmx_mtop_t&    top_global,
                                gmx_localtop_t*      top,

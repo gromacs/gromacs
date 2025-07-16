@@ -181,7 +181,7 @@ int ddRankFromDDCoord(const gmx_domdec_t& dd, const gmx::IVec& coord)
     {
 #if GMX_MPI
         gmx::IVec tmp = coord;
-        MPI_Cart_rank(dd.mpi_comm_all, static_cast<int*>(&tmp[0]), &rank);
+        MPI_Cart_rank(dd.mpiComm().comm(), static_cast<int*>(&tmp[0]), &rank);
 #endif
     }
     else
@@ -922,7 +922,7 @@ static void make_load_communicator(gmx_domdec_t* dd, int dim_ind, ivec loc)
             bPartOfGroup = TRUE;
         }
     }
-    MPI_Comm_split(dd->mpi_comm_all, bPartOfGroup ? 0 : MPI_UNDEFINED, dd->rank, &c_row);
+    MPI_Comm_split(dd->mpiComm().comm(), bPartOfGroup ? 0 : MPI_UNDEFINED, dd->rank, &c_row);
     if (bPartOfGroup)
     {
         dd->comm->mpi_comm_load[dim_ind] = c_row;
@@ -990,7 +990,7 @@ void dd_setup_dlb_resource_sharing(const t_commrec* cr, const int uniqueDeviceId
     // TODO PhysicalNodeCommunicator could be extended/used to handle
     // the need for per-node per-group communicators.
     MPI_Comm mpi_comm_pp_physicalnode;
-    MPI_Comm_split(dd->mpi_comm_all, physicalnode_id_hash, dd->rank, &mpi_comm_pp_physicalnode);
+    MPI_Comm_split(dd->mpiComm().comm(), physicalnode_id_hash, dd->rank, &mpi_comm_pp_physicalnode);
     MPI_Comm_split(mpi_comm_pp_physicalnode, uniqueDeviceId, dd->rank, &dd->comm->mpi_comm_gpu_shared);
     MPI_Comm_free(&mpi_comm_pp_physicalnode);
     MPI_Comm_size(dd->comm->mpi_comm_gpu_shared, &dd->comm->nrank_gpu_shared);
@@ -1128,8 +1128,8 @@ static void make_pp_communicator(const gmx::MDLogger&  mdlog,
         cr->commMyGroup = gmx::MpiComm(comm_cart);
     }
 
-    dd->mpi_comm_all = cr->commMyGroup.comm();
-    MPI_Comm_rank(dd->mpi_comm_all, &dd->rank);
+    dd->mpiComm_ = &cr->commMyGroup;
+    dd->rank     = dd->mpiComm().rank();
 
     if (cartSetup.bCartesianPP_PME)
     {
@@ -1143,7 +1143,7 @@ static void make_pp_communicator(const gmx::MDLogger&  mdlog,
          * above we made sure that the main node is a PP node.
          */
         int rank = MAIN(cr) ? dd->rank : 0;
-        MPI_Allreduce(&rank, &dd->mainrank, 1, MPI_INT, MPI_SUM, dd->mpi_comm_all);
+        MPI_Allreduce(&rank, &dd->mainrank, 1, MPI_INT, MPI_SUM, dd->mpiComm().comm());
     }
     else if (cartSetup.bCartesianPP)
     {
@@ -1155,7 +1155,7 @@ static void make_pp_communicator(const gmx::MDLogger&  mdlog,
             cr->commMySim = gmx::MpiComm(cr->commMyGroup.comm());
         }
 
-        MPI_Cart_coords(dd->mpi_comm_all, dd->rank, DIM, dd->ci);
+        MPI_Cart_coords(dd->mpiComm().comm(), dd->rank, DIM, dd->ci);
 
         /* We need to make an index to go from the coordinates
          * to the nodeid of this simulation.
@@ -1182,7 +1182,7 @@ static void make_pp_communicator(const gmx::MDLogger&  mdlog,
             if (cartSetup.ddindex2simnodeid[i] == 0)
             {
                 ddindex2xyz(dd->numCells, i, dd->main_ci);
-                MPI_Cart_rank(dd->mpi_comm_all, dd->main_ci, &dd->mainrank);
+                MPI_Cart_rank(dd->mpiComm().comm(), dd->main_ci, &dd->mainrank);
             }
         }
         if (debug)
@@ -1475,6 +1475,9 @@ static void setupGroupCommunication(const gmx::MDLogger&     mdlog,
         receive_ddindex2simnodeid(dd, cr);
     }
 
+    // Set mpiComm_ as a pointer to cr (we should make gmx_domdec_t the owner of this MpiComm)
+    dd->mpiComm_ = &cr->commMyGroup;
+
     if (!dd->hasPmeDuty)
     {
         /* Set up the commnuication to our PME node */
@@ -1729,9 +1732,9 @@ static DlbState determineInitialDlbState(const gmx::MDLogger&     mdlog,
     return dlbState;
 }
 
-static std::unique_ptr<gmx_domdec_comm_t> init_dd_comm()
+static std::unique_ptr<gmx_domdec_comm_t> init_dd_comm(gmx::MpiComm& mpiCommMySim)
 {
-    auto comm = std::make_unique<gmx_domdec_comm_t>();
+    auto comm = std::make_unique<gmx_domdec_comm_t>(mpiCommMySim);
 
     comm->n_load_have    = 0;
     comm->n_load_collect = 0;
@@ -2580,7 +2583,7 @@ static void set_ddgrid_parameters(const gmx::MDLogger& mdlog,
         if (dd->pme_nodeid >= 0)
         {
             gmx_fatal_collective(FARGS,
-                                 dd->mpi_comm_all,
+                                 dd->mpiComm().comm(),
                                  DDMAIN(dd),
                                  "Can not have separate PME ranks without PME electrostatics");
         }
@@ -2665,8 +2668,10 @@ static DDSettings getDDSettings(const gmx::MDLogger&     mdlog,
     return ddSettings;
 }
 
-gmx_domdec_t::gmx_domdec_t(const t_inputrec& ir, gmx::ArrayRef<const int> ddDims) :
-    unitCellInfo(ir), zones(ddDims)
+// Note that here we assign the sim communicator \p mpiCommMySim to \c mpiComm,
+// this will be updated later when separate PME ranks are used.
+gmx_domdec_t::gmx_domdec_t(gmx::MpiComm& mpiCommMySim, const t_inputrec& ir, gmx::ArrayRef<const int> ddDims) :
+    mpiComm_(&mpiCommMySim), unitCellInfo(ir), zones(ddDims)
 {
 }
 
@@ -2828,7 +2833,7 @@ DomainDecompositionBuilder::Impl::Impl(const MDLogger&           mdlog,
                                         numRanksRequested);
     ddGridSetup_ = getDDGridSetup(mdlog_,
                                   MAIN(cr_) ? DDRole::Main : DDRole::Agent,
-                                  cr->mpiDefaultCommunicator.comm(),
+                                  cr->mpiDefaultCommunicator,
                                   numRanksRequested,
                                   options_,
                                   ddSettings_,
@@ -2867,11 +2872,11 @@ DomainDecompositionBuilder::Impl::build(LocalAtomSetManager*       atomSets,
                                         ObservablesReducerBuilder* observablesReducerBuilder)
 {
     auto dd = std::make_unique<gmx_domdec_t>(
-            ir_, arrayRefFromArray(ddGridSetup_.ddDimensions, ddGridSetup_.numDDDimensions));
+            cr_->commMySim, ir_, arrayRefFromArray(ddGridSetup_.ddDimensions, ddGridSetup_.numDDDimensions));
 
     copy_ivec(ddCellIndex_, dd->ci);
 
-    dd->comm = init_dd_comm();
+    dd->comm = init_dd_comm(cr_->commMySim);
 
     dd->comm->ddRankSetup        = ddRankSetup_;
     dd->comm->cartesianRankSetup = cartSetup_;

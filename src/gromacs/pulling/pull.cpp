@@ -1827,7 +1827,7 @@ void dd_make_local_pull_groups(const gmx::MpiComm& mpiComm, gmx_domdec_t* dd, pu
              * to avoid this splitting as much as possible.
              */
             assert(dd != nullptr);
-            MPI_Comm_split(dd->mpi_comm_all, bWillParticipate ? 0 : 1, dd->rank, &comm->mpi_comm_com);
+            MPI_Comm_split(dd->mpiComm().comm(), bWillParticipate ? 0 : 1, dd->rank, &comm->mpi_comm_com);
 #endif
 
             comm->bParticipate = bWillParticipate;

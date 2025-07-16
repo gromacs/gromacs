@@ -44,13 +44,6 @@
 
 struct gmx_domdec_t;
 
-//! Whether the current DD role is main or slave
-enum class DDRole
-{
-    Main,
-    Agent
-};
-
 //! Whether one or more ranks are used
 enum class NumRanks
 {

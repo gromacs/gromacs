@@ -64,6 +64,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/mpicomm.h"
 
 #include "domainpaircomm.h"
 #include "domdec_internal.h"
@@ -310,8 +311,14 @@ void HaloExchange::checkDomainRangeAllocation(const gmx_domdec_t& dd, const IVec
                         domainShift[2],
                         static_cast<int>(commOverPbc));
             }
-            domainPairComm_.emplace_back(
-                    backwardRank, forwardRank, zone, domainShift, pbcType_, commOverPbc, pbcShift, dd.mpi_comm_all);
+            domainPairComm_.emplace_back(backwardRank,
+                                         forwardRank,
+                                         zone,
+                                         domainShift,
+                                         pbcType_,
+                                         commOverPbc,
+                                         pbcShift,
+                                         dd.mpiComm().comm());
         }
     }
 

@@ -384,7 +384,7 @@ void gmx::LegacySimulator::do_md()
         dd_partition_system(fpLog_,
                             mdLog_,
                             ir->init_step,
-                            cr_,
+                            cr_->dd,
                             TRUE,
                             stateGlobal_,
                             topGlobal_,
@@ -409,7 +409,7 @@ void gmx::LegacySimulator::do_md()
     {
         /* Generate and initialize new topology */
         mdAlgorithmsSetupAtomData(
-                cr_, *ir, topGlobal_, top_, fr_, &f, mdAtoms_, constr_, virtualSites_, shellfc);
+                cr_->dd, *ir, topGlobal_, top_, fr_, &f, mdAtoms_, constr_, virtualSites_, shellfc);
 
         upd.updateAfterPartition(state_->numAtoms(), md->cFREEZE, md->cTC, md->cACC);
         fr_->longRangeNonbondeds->updateAfterPartition(*md);
@@ -861,7 +861,7 @@ void gmx::LegacySimulator::do_md()
             wallCycleCounters_,
             wallTimeAccounting_);
 
-    const DDBalanceRegionHandler ddBalanceRegionHandler(cr_);
+    const DDBalanceRegionHandler ddBalanceRegionHandler(cr_->dd);
 
     if (MAIN(cr_) && isMultiSim(ms_) && !useReplicaExchange)
     {
@@ -1017,7 +1017,7 @@ void gmx::LegacySimulator::do_md()
                 dd_partition_system(fpLog_,
                                     mdLog_,
                                     step,
-                                    cr_,
+                                    cr_->dd,
                                     bMainState,
                                     stateGlobal_,
                                     topGlobal_,
@@ -2087,7 +2087,7 @@ void gmx::LegacySimulator::do_md()
             dd_partition_system(fpLog_,
                                 mdLog_,
                                 step,
-                                cr_,
+                                cr_->dd,
                                 TRUE,
                                 stateGlobal_,
                                 topGlobal_,

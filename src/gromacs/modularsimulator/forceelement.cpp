@@ -50,6 +50,7 @@
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdrun/shellfc.h"
+#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/forcebuffers.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
@@ -113,7 +114,7 @@ ForceElement::ForceElement(StatePropagatorData*        statePropagatorData,
     localTopology_(nullptr),
     isVerbose_(isVerbose),
     nShellRelaxationSteps_(0),
-    ddBalanceRegionHandler_(cr),
+    ddBalanceRegionHandler_(cr->dd),
     longRangeNonbondeds_(std::make_unique<CpuPpLongRangeNonbondeds>(fr->n_tpi,
                                                                     fr->ic->coulomb.ewaldCoeff,
                                                                     fr->ic->coulomb.epsilon_r,
@@ -146,7 +147,7 @@ ForceElement::ForceElement(StatePropagatorData*        statePropagatorData,
     {
         // This was done in mdAlgorithmsSetupAtomData(), but shellfc
         // won't be available outside this element.
-        make_local_shells(cr, *mdAtoms->mdatoms(), shellfc_);
+        make_local_shells(cr->dd, *mdAtoms->mdatoms(), shellfc_);
     }
 }
 

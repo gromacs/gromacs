@@ -47,7 +47,6 @@
 #include <memory>
 
 #include "gromacs/domdec/domdec_struct.h"
-#include "gromacs/mdtypes/commrec.h"
 
 struct gmx_domdec_t;
 struct t_nrnb;
@@ -85,10 +84,9 @@ void ddReopenBalanceRegionCpu(const gmx_domdec_t* dd);
 class DDBalanceRegionHandler
 {
 public:
-    //! Constructor, pass a pointer to t_commrec or nullptr when not using domain decomposition
-    DDBalanceRegionHandler(const t_commrec* cr) :
-        useBalancingRegion_(cr != nullptr ? havePPDomainDecomposition(cr->dd) : false),
-        dd_(cr != nullptr ? cr->dd : nullptr)
+    //! Constructor, pass a pointer to gmx_domdec_t or nullptr when not using domain decomposition
+    DDBalanceRegionHandler(gmx_domdec_t* dd) :
+        useBalancingRegion_(dd != nullptr ? havePPDomainDecomposition(dd) : false), dd_(dd)
     {
     }
 

@@ -47,6 +47,7 @@
 #include <filesystem>
 #include <vector>
 
+#include "gromacs/domdec/domdec.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
@@ -227,7 +228,7 @@ void init_disres(FILE*                 fplog,
         {
             fprintf(fplog, "Found GMX_DISRE_ENSEMBLE_SIZE set to %d systems per ensemble\n", dd->nsystems);
         }
-        /* This check is only valid on MAIN(cr), so probably
+        /* This check is only valid on the main rank, so probably
          * ensemble-averaged distance restraints are broken on more
          * than one processor per simulation system. */
         if (ddRole == DDRole::Main)

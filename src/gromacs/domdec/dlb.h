@@ -47,7 +47,6 @@
 #include "gromacs/utility/real.h"
 
 struct gmx_domdec_t;
-struct t_commrec;
 
 
 /*! \brief We check if to turn on DLB at the first and every 100 DD partitionings.
@@ -81,7 +80,7 @@ void set_dlb_limits(gmx_domdec_t* dd);
  * should still be possible after subsequently setting a shorter cut-off
  * with change_dd_cutoff.
  */
-void set_dd_dlb_max_cutoff(struct t_commrec* cr, real cutoff);
+void set_dd_dlb_max_cutoff(gmx_domdec_t* dd, real cutoff);
 
 /*! \brief Sets whether we should later check the load imbalance data, so that
  * we can trigger dynamic load balancing if enough imbalance has

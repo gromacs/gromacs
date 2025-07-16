@@ -56,7 +56,6 @@ struct gmx_localtop_t;
 struct gmx_mtop_t;
 struct gmx_wallcycle;
 struct pull_t;
-struct t_commrec;
 struct t_forcerec;
 struct t_inputrec;
 struct t_nrnb;
@@ -72,13 +71,14 @@ class ImdSession;
 class MDAtoms;
 class MDLogger;
 struct MDModulesNotifiers;
+class MpiComm;
 class VirtualSitesHandler;
 
 //! Check whether the DD grid has moved too far for correctness.
 bool check_grid_jump(int64_t step, const gmx_domdec_t* dd, real cutoff, const gmx_ddbox_t* ddbox, bool bFatal);
 
 /*! \brief Print statistics for domain decomposition communication */
-void print_dd_statistics(const t_commrec* cr, const t_inputrec& inputrec, FILE* fplog);
+void print_dd_statistics(gmx_domdec_t* dd, const t_inputrec& inputrec, FILE* fplog);
 
 /*! \brief Partition the system over the nodes.
  *
@@ -90,7 +90,7 @@ void print_dd_statistics(const t_commrec* cr, const t_inputrec& inputrec, FILE* 
  * \param[in] fplog         Pointer to the log file
  * \param[in] mdlog         MD file logger
  * \param[in] step          Current step
- * \param[in] cr            Communication record
+ * \param[in,out] dd        The domain decomposition struct, can not be nullptr
  * \param[in] bMainState  Is it a main state
  * \param[in] state_global  Global state
  * \param[in] top_global    Global topology
@@ -112,7 +112,7 @@ void print_dd_statistics(const t_commrec* cr, const t_inputrec& inputrec, FILE* 
 void dd_partition_system(FILE*                     fplog,
                          const gmx::MDLogger&      mdlog,
                          int64_t                   step,
-                         const t_commrec*          cr,
+                         gmx_domdec_t*             dd,
                          bool                      bMainState,
                          t_state*                  state_global,
                          const gmx_mtop_t&         top_global,

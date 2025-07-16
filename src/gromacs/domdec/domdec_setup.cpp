@@ -66,7 +66,6 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/perf_est.h"
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -76,6 +75,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "atomdistribution.h"
@@ -959,7 +959,7 @@ static int set_dd_dim(const gmx::IVec& numDDCells, const DDSettings& ddSettings,
 
 DDGridSetup getDDGridSetup(const gmx::MDLogger&                  mdlog,
                            DDRole                                ddRole,
-                           MPI_Comm                              communicator,
+                           const gmx::MpiComm&                   mpiComm,
                            const int                             numRanksRequested,
                            const DomdecOptions&                  options,
                            const DDSettings&                     ddSettings,
@@ -979,11 +979,11 @@ DDGridSetup getDDGridSetup(const gmx::MDLogger&                  mdlog,
     if (options.numCells[XX] > 0)
     {
         numDomains = gmx::IVec(options.numCells);
-        set_ddbox_cr(ddRole, communicator, &numDomains, ir, box, xGlobal, ddbox);
+        set_ddbox_MpiComm(ddRole, mpiComm, &numDomains, ir, box, xGlobal, ddbox);
     }
     else
     {
-        set_ddbox_cr(ddRole, communicator, nullptr, ir, box, xGlobal, ddbox);
+        set_ddbox_MpiComm(ddRole, mpiComm, nullptr, ir, box, xGlobal, ddbox);
 
         if (ddRole == DDRole::Main)
         {
@@ -993,10 +993,10 @@ DDGridSetup getDDGridSetup(const gmx::MDLogger&                  mdlog,
     }
 
     /* Communicate the information set by the coordinator to all ranks */
-    gmx_bcast(sizeof(numDomains), numDomains, communicator);
+    gmx_bcast(sizeof(numDomains), numDomains, mpiComm.comm());
     if (usingPme(ir.coulombtype))
     {
-        gmx_bcast(sizeof(numPmeOnlyRanks), &numPmeOnlyRanks, communicator);
+        gmx_bcast(sizeof(numPmeOnlyRanks), &numPmeOnlyRanks, mpiComm.comm());
     }
 
     DDGridSetup ddGridSetup;

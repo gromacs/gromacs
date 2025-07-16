@@ -55,6 +55,7 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/mpicomm.h"
 
 #include "domdec_internal.h"
 
@@ -96,16 +97,23 @@ static void ddSendrecv(const struct gmx_domdec_t* dd,
                      MPI_BYTE,
                      receiveRank,
                      mpiTag,
-                     dd->mpi_comm_all,
+                     dd->mpiComm().comm(),
                      &mpiStatus);
     }
     else if (numElementsToSend > 0)
     {
-        MPI_Send(sendBuffer, numElementsToSend * sizeof(T), MPI_BYTE, sendRank, mpiTag, dd->mpi_comm_all);
+        MPI_Send(
+                sendBuffer, numElementsToSend * sizeof(T), MPI_BYTE, sendRank, mpiTag, dd->mpiComm().comm());
     }
     else if (numElementsToReceive > 0)
     {
-        MPI_Recv(receiveBuffer, numElementsToReceive * sizeof(T), MPI_BYTE, receiveRank, mpiTag, dd->mpi_comm_all, &mpiStatus);
+        MPI_Recv(receiveBuffer,
+                 numElementsToReceive * sizeof(T),
+                 MPI_BYTE,
+                 receiveRank,
+                 mpiTag,
+                 dd->mpiComm().comm(),
+                 &mpiStatus);
     }
 #else  // GMX_MPI
     GMX_UNUSED_VALUE(dd);
@@ -161,6 +169,8 @@ void dd_sendrecv2_rvec(const struct gmx_domdec_t gmx_unused* dd,
 
     if (!dd->comm->ddSettings.useSendRecv2)
     {
+        MPI_Comm comm = dd->mpiComm().comm();
+
         /* Try to send and receive in two directions simultaneously.
          * Should be faster, especially on machines
          * with full 3D communication networks.
@@ -172,19 +182,19 @@ void dd_sendrecv2_rvec(const struct gmx_domdec_t gmx_unused* dd,
         int nreq = 0;
         if (n_r_fw)
         {
-            MPI_Irecv(buf_r_fw[0], n_r_fw * sizeof(rvec), MPI_BYTE, rank_bw, 0, dd->mpi_comm_all, &req[nreq++]);
+            MPI_Irecv(buf_r_fw[0], n_r_fw * sizeof(rvec), MPI_BYTE, rank_bw, 0, comm, &req[nreq++]);
         }
         if (n_r_bw)
         {
-            MPI_Irecv(buf_r_bw[0], n_r_bw * sizeof(rvec), MPI_BYTE, rank_fw, 1, dd->mpi_comm_all, &req[nreq++]);
+            MPI_Irecv(buf_r_bw[0], n_r_bw * sizeof(rvec), MPI_BYTE, rank_fw, 1, comm, &req[nreq++]);
         }
         if (n_s_fw)
         {
-            MPI_Isend(buf_s_fw[0], n_s_fw * sizeof(rvec), MPI_BYTE, rank_fw, 0, dd->mpi_comm_all, &req[nreq++]);
+            MPI_Isend(buf_s_fw[0], n_s_fw * sizeof(rvec), MPI_BYTE, rank_fw, 0, comm, &req[nreq++]);
         }
         if (n_s_bw)
         {
-            MPI_Isend(buf_s_bw[0], n_s_bw * sizeof(rvec), MPI_BYTE, rank_bw, 1, dd->mpi_comm_all, &req[nreq++]);
+            MPI_Isend(buf_s_bw[0], n_s_bw * sizeof(rvec), MPI_BYTE, rank_bw, 1, comm, &req[nreq++]);
         }
         if (nreq)
         {
@@ -208,7 +218,7 @@ void dd_sendrecv2_rvec(const struct gmx_domdec_t gmx_unused* dd,
                      MPI_BYTE,
                      rank_bw,
                      0,
-                     dd->mpi_comm_all,
+                     dd->mpiComm().comm(),
                      &stat[0]);
         /* Backward */
         MPI_Sendrecv(buf_s_bw[0],
@@ -221,7 +231,7 @@ void dd_sendrecv2_rvec(const struct gmx_domdec_t gmx_unused* dd,
                      MPI_BYTE,
                      rank_fw,
                      0,
-                     dd->mpi_comm_all,
+                     dd->mpiComm().comm(),
                      &stat[0]);
     }
 #endif
@@ -232,7 +242,7 @@ void dd_bcast(const gmx_domdec_t gmx_unused* dd, int gmx_unused nbytes, void gmx
 #if GMX_MPI
     if (dd->nnodes > 1)
     {
-        MPI_Bcast(data, nbytes, MPI_BYTE, DDMAINRANK(dd), dd->mpi_comm_all);
+        MPI_Bcast(data, nbytes, MPI_BYTE, DDMAINRANK(dd), dd->mpiComm().comm());
     }
 #endif
 }
@@ -243,7 +253,14 @@ void dd_scatter(const gmx_domdec_t gmx_unused* dd, int gmx_unused nbytes, const 
     if (dd->nnodes > 1)
     {
         /* Some MPI implementions don't specify const */
-        MPI_Scatter(const_cast<void*>(src), nbytes, MPI_BYTE, dest, nbytes, MPI_BYTE, DDMAINRANK(dd), dd->mpi_comm_all);
+        MPI_Scatter(const_cast<void*>(src),
+                    nbytes,
+                    MPI_BYTE,
+                    dest,
+                    nbytes,
+                    MPI_BYTE,
+                    DDMAINRANK(dd),
+                    dd->mpiComm().comm());
     }
     else
 #endif
@@ -265,7 +282,14 @@ void dd_gather(const gmx_domdec_t gmx_unused* dd,
     if (dd->nnodes > 1)
     {
         /* Some MPI implementions don't specify const */
-        MPI_Gather(const_cast<void*>(src), nbytes, MPI_BYTE, dest, nbytes, MPI_BYTE, DDMAINRANK(dd), dd->mpi_comm_all);
+        MPI_Gather(const_cast<void*>(src),
+                   nbytes,
+                   MPI_BYTE,
+                   dest,
+                   nbytes,
+                   MPI_BYTE,
+                   DDMAINRANK(dd),
+                   dd->mpiComm().comm());
     }
     else
 #endif
@@ -305,7 +329,7 @@ void dd_scatterv(const gmx_domdec_t gmx_unused*      dd,
                      rcount,
                      mpiDatatype,
                      DDMAINRANK(dd),
-                     dd->mpi_comm_all);
+                     dd->mpiComm().comm());
     }
     else
 #endif
@@ -367,7 +391,7 @@ void dd_gatherv(const gmx_domdec_t gmx_unused&      dd,
                     const_cast<int*>(disps.data()),
                     mpiDatatype,
                     DDMAINRANK(&dd),
-                    dd.mpi_comm_all);
+                    dd.mpiComm().comm());
     }
     else
 #endif

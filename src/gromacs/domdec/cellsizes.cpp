@@ -58,11 +58,11 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/mpicomm.h"
 
 #include "atomdistribution.h"
 #include "domdec_internal.h"
@@ -310,7 +310,7 @@ gmx::ArrayRef<const std::vector<real>> set_dd_cell_sizes_slb(gmx_domdec_t*      
 
             if (setmode == setcellsizeslbLOCAL)
             {
-                gmx_fatal_collective(FARGS, dd->mpi_comm_all, DDMAIN(dd), "%s", error_string);
+                gmx_fatal_collective(FARGS, dd->mpiComm().comm(), DDMAIN(dd), "%s", error_string);
             }
             else
             {

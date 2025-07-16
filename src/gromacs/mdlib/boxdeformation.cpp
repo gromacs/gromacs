@@ -52,6 +52,7 @@
 #include <array>
 #include <memory>
 
+#include "gromacs/domdec/domdec.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/boxmatrix.h"
 #include "gromacs/math/invertmatrix.h"

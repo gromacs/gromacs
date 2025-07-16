@@ -60,6 +60,7 @@
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/real.h"
 
 #include "atomdistribution.h"
@@ -179,7 +180,7 @@ static void dd_collect_vec_sendrecv(gmx_domdec_t*                  dd,
                  MPI_BYTE,
                  dd->mainrank,
                  dd->rank,
-                 dd->mpi_comm_all);
+                 dd->mpiComm().comm());
 #endif
     }
     else
@@ -220,7 +221,7 @@ static void dd_collect_vec_sendrecv(gmx_domdec_t*                  dd,
                          MPI_BYTE,
                          rank,
                          rank,
-                         dd->mpi_comm_all,
+                         dd->mpiComm().comm(),
                          MPI_STATUS_IGNORE);
 #endif
                 int localAtom = 0;

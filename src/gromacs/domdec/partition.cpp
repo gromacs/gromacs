@@ -1335,11 +1335,9 @@ static void turn_off_dlb_forever(const gmx::MDLogger& mdlog, gmx_domdec_t* dd, i
     dd->comm->dlbState = DlbState::offForever;
 }
 
-void set_dd_dlb_max_cutoff(t_commrec* cr, real cutoff)
+void set_dd_dlb_max_cutoff(gmx_domdec_t* dd, real cutoff)
 {
-    gmx_domdec_comm_t* comm;
-
-    comm = cr->dd->comm.get();
+    gmx_domdec_comm_t* comm = dd->comm.get();
 
     /* Turn on the DLB limiting (might have been on already) */
     comm->bPMELoadBalDLBLimits = TRUE;
@@ -2515,12 +2513,12 @@ bool check_grid_jump(int64_t step, const gmx_domdec_t* dd, real cutoff, const gm
     return invalid;
 }
 
-void print_dd_statistics(const t_commrec* cr, const t_inputrec& inputrec, FILE* fplog)
+void print_dd_statistics(gmx_domdec_t* dd, const t_inputrec& inputrec, FILE* fplog)
 {
-    gmx_domdec_comm_t* comm = cr->dd->comm.get();
+    gmx_domdec_comm_t& comm = *dd->comm;
 
     const int numRanges = static_cast<int>(DDAtomRanges::Type::Number);
-    cr->commMyGroup.sumReduce(numRanges, comm->sum_nat);
+    dd->mpiComm().sumReduce(numRanges, comm.sum_nat);
 
     if (fplog == nullptr)
     {
@@ -2532,14 +2530,14 @@ void print_dd_statistics(const t_commrec* cr, const t_inputrec& inputrec, FILE* 
     for (int i = static_cast<int>(DDAtomRanges::Type::Zones); i < numRanges; i++)
     {
         auto   range = static_cast<DDAtomRanges::Type>(i);
-        double av    = comm->sum_nat[i] / comm->ndecomp;
+        double av    = comm.sum_nat[i] / comm.ndecomp;
         switch (range)
         {
             case DDAtomRanges::Type::Zones:
                 fprintf(fplog, " av. #atoms communicated per step for force:  %d x %.1f\n", 2, av);
                 break;
             case DDAtomRanges::Type::Vsites:
-                if (cr->dd->vsite_comm)
+                if (dd->vsite_comm)
                 {
                     fprintf(fplog,
                             " av. #atoms communicated per step for vsites: %d x %.1f\n",
@@ -2551,7 +2549,7 @@ void print_dd_statistics(const t_commrec* cr, const t_inputrec& inputrec, FILE* 
                 }
                 break;
             case DDAtomRanges::Type::Constraints:
-                if (cr->dd->constraint_comm)
+                if (dd->constraint_comm)
                 {
                     fprintf(fplog,
                             " av. #atoms communicated per step for LINCS:  %d x %.1f\n",
@@ -2564,9 +2562,9 @@ void print_dd_statistics(const t_commrec* cr, const t_inputrec& inputrec, FILE* 
     }
     fprintf(fplog, "\n");
 
-    if (comm->ddSettings.recordLoad && EI_DYNAMICS(inputrec.eI))
+    if (comm.ddSettings.recordLoad && EI_DYNAMICS(inputrec.eI))
     {
-        print_dd_load_av(fplog, cr->dd);
+        print_dd_load_av(fplog, dd);
     }
 }
 
@@ -2574,7 +2572,7 @@ void print_dd_statistics(const t_commrec* cr, const t_inputrec& inputrec, FILE* 
 void dd_partition_system(FILE*                     fplog,
                          const gmx::MDLogger&      mdlog,
                          int64_t                   step,
-                         const t_commrec*          cr,
+                         gmx_domdec_t*             dd,
                          bool                      bMainState,
                          t_state*                  state_global,
                          const gmx_mtop_t&         top_global,
@@ -2599,7 +2597,6 @@ void dd_partition_system(FILE*                     fplog,
 
     wallcycle_start(wcycle, WallCycleCounter::Domdec);
 
-    gmx_domdec_t*      dd   = cr->dd;
     gmx_domdec_comm_t* comm = dd->comm.get();
 
     // TODO if the update code becomes accessible here, use
@@ -3137,15 +3134,15 @@ void dd_partition_system(FILE*                     fplog,
 
     /* Update atom data for mdatoms and several algorithms */
     wallcycle_sub_stop(wcycle, WallCycleSubCounter::DDTopOther);
-    mdAlgorithmsSetupAtomData(cr, inputrec, top_global, top_local, fr, f, mdAtoms, constr, vsite, nullptr);
+    mdAlgorithmsSetupAtomData(dd, inputrec, top_global, top_local, fr, f, mdAtoms, constr, vsite, nullptr);
     wallcycle_sub_start_nocount(wcycle, WallCycleSubCounter::DDTopOther);
 
     auto* mdatoms = mdAtoms->mdatoms();
     if (!dd->hasPmeDuty)
     {
         /* Send the charges and/or c6/sigmas to our PME only node */
-        gmx_pme_send_parameters(cr->commMySim,
-                                cr->dd,
+        gmx_pme_send_parameters(dd->comm->mpiCommMySim_,
+                                dd,
                                 *fr->ic,
                                 mdatoms->nChargePerturbed != 0,
                                 mdatoms->nTypePerturbed != 0,
@@ -3169,7 +3166,7 @@ void dd_partition_system(FILE*                     fplog,
     if (inputrec.bPull)
     {
         /* Update the local pull groups */
-        dd_make_local_pull_groups(cr->commMyGroup, cr->dd, pull_work);
+        dd_make_local_pull_groups(dd->mpiComm(), dd, pull_work);
     }
 
     /* Update the local atoms to be communicated via the IMD protocol if bIMD is true. */

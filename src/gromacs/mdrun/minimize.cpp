@@ -475,7 +475,7 @@ static void init_em(FILE*                        fplog,
         dd_partition_system(fplog,
                             mdlog,
                             ir->init_step,
-                            cr,
+                            cr->dd,
                             TRUE,
                             state_global,
                             top_global,
@@ -501,7 +501,7 @@ static void init_em(FILE*                        fplog,
         ems->s = *state_global;
 
         mdAlgorithmsSetupAtomData(
-                cr, *ir, top_global, top, fr, &ems->f, mdAtoms, constr, vsite, shellfc ? *shellfc : nullptr);
+                cr->dd, *ir, top_global, top, fr, &ems->f, mdAtoms, constr, vsite, shellfc ? *shellfc : nullptr);
     }
 
     update_mdatoms(mdAtoms->mdatoms(), ems->s.lambda[FreeEnergyPerturbationCouplingType::Mass]);
@@ -842,7 +842,7 @@ static void em_dd_partition_system(FILE*                     fplog,
     dd_partition_system(fplog,
                         mdlog,
                         step,
-                        cr,
+                        cr->dd,
                         FALSE,
                         nullptr,
                         top_global,
@@ -1118,7 +1118,7 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
              t,
              ed,
              fr->longRangeNonbondeds.get(),
-             DDBalanceRegionHandler(cr));
+             DDBalanceRegionHandler(cr->dd));
 
     /* Clear the unused shake virial and pressure */
     clear_mat(shake_vir);

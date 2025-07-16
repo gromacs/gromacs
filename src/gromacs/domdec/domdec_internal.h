@@ -54,6 +54,7 @@
 #include "gromacs/utility/defaultinitializationallocator.h"
 #include "gromacs/utility/fixedcapacityvector.h"
 #include "gromacs/utility/listoflists.h"
+#include "gromacs/utility/mpicomm.h"
 
 struct t_commrec;
 
@@ -557,8 +558,13 @@ struct CartesianRankSetup
  */
 struct gmx_domdec_comm_t // NOLINT (clang-analyzer-optin.performance.Padding)
 {
+    gmx_domdec_comm_t(gmx::MpiComm& mpiCommMySim) : mpiCommMySim_(mpiCommMySim) {}
+
     /**< Constant parameters that control DD behavior */
     DDSettings ddSettings;
+
+    /**< Reference to the MPI communicator for the whole simulation */
+    gmx::MpiComm& mpiCommMySim_;
 
     /**< Information on how the DD ranks are set up */
     DDRankSetup ddRankSetup;

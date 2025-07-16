@@ -348,7 +348,7 @@ void gmx::LegacySimulator::do_rerun()
         dd_partition_system(fpLog_,
                             mdLog_,
                             ir->init_step,
-                            cr_,
+                            cr_->dd,
                             TRUE,
                             stateGlobal_,
                             topGlobal_,
@@ -373,7 +373,7 @@ void gmx::LegacySimulator::do_rerun()
         state_ = stateGlobal_;
 
         mdAlgorithmsSetupAtomData(
-                cr_, *ir, topGlobal_, top_, fr_, &f, mdAtoms_, constr_, virtualSites_, shellfc);
+                cr_->dd, *ir, topGlobal_, top_, fr_, &f, mdAtoms_, constr_, virtualSites_, shellfc);
     }
 
     auto* mdatoms = mdAtoms_->mdatoms();
@@ -529,7 +529,7 @@ void gmx::LegacySimulator::do_rerun()
     // we don't do counter resetting in rerun - finish will always be valid
     walltime_accounting_set_valid_finish(wallTimeAccounting_);
 
-    const DDBalanceRegionHandler ddBalanceRegionHandler(cr_);
+    const DDBalanceRegionHandler ddBalanceRegionHandler(cr_->dd);
 
     /* and stop now if we should */
     isLastStep = (isLastStep || (ir->nsteps >= 0 && step_rel > ir->nsteps));
@@ -591,7 +591,7 @@ void gmx::LegacySimulator::do_rerun()
             dd_partition_system(fpLog_,
                                 mdLog_,
                                 step,
-                                cr_,
+                                cr_->dd,
                                 bMainState,
                                 stateGlobal_,
                                 topGlobal_,

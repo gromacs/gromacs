@@ -60,19 +60,19 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/real.h"
 
 #include "domdec_internal.h"
 
 /*! \brief Calculates the average and standard deviation in 3D of atoms */
-static void calc_pos_av_stddev(gmx::ArrayRef<const gmx::RVec> x, rvec av, rvec stddev, const MPI_Comm* mpiCommunicator)
+static void calc_pos_av_stddev(gmx::ArrayRef<const gmx::RVec> x, rvec av, rvec stddev, const gmx::MpiComm* mpiComm)
 {
     dvec s1, s2;
 
@@ -90,32 +90,26 @@ static void calc_pos_av_stddev(gmx::ArrayRef<const gmx::RVec> x, rvec av, rvec s
 
     /* With mpiCommunicator != nullptr, x.size() is the home atom count */
     int numAtoms = x.size();
-#if GMX_MPI
-    if (mpiCommunicator)
+    if (mpiComm && mpiComm->size() > 1)
     {
-        constexpr int c_bufSize = 7;
-        double        sendBuffer[c_bufSize];
-        double        receiveBuffer[c_bufSize];
+        std::array<double, 7> buffer;
 
         for (int d = 0; d < DIM; d++)
         {
-            sendBuffer[d]       = s1[d];
-            sendBuffer[DIM + d] = s2[d];
+            buffer[d]       = s1[d];
+            buffer[DIM + d] = s2[d];
         }
-        sendBuffer[6] = numAtoms;
+        buffer[6] = numAtoms;
 
-        MPI_Allreduce(sendBuffer, receiveBuffer, c_bufSize, MPI_DOUBLE, MPI_SUM, *mpiCommunicator);
+        mpiComm->sumReduce(buffer);
 
         for (int d = 0; d < DIM; d++)
         {
-            s1[d] = receiveBuffer[d];
-            s2[d] = receiveBuffer[DIM + d];
+            s1[d] = buffer[d];
+            s2[d] = buffer[DIM + d];
         }
-        numAtoms = gmx::roundToInt(receiveBuffer[6]);
+        numAtoms = gmx::roundToInt(buffer[6]);
     }
-#else  // GMX_MPI
-    GMX_UNUSED_VALUE(mpiCommunicator);
-#endif // GMX_MPI
 
     dsvmul(1.0 / numAtoms, s1, s1);
     dsvmul(1.0 / numAtoms, s2, s2);
@@ -242,7 +236,7 @@ static void low_set_ddbox(int                            numPbcDimensions,
                           const matrix                   box,
                           bool                           calculateUnboundedSize,
                           gmx::ArrayRef<const gmx::RVec> x,
-                          const MPI_Comm*                mpiCommunicator,
+                          const gmx::MpiComm*            mpiComm,
                           gmx_ddbox_t*                   ddbox)
 {
     rvec av, stddev;
@@ -258,7 +252,7 @@ static void low_set_ddbox(int                            numPbcDimensions,
 
     if (ddbox->nboundeddim < DIM && calculateUnboundedSize)
     {
-        calc_pos_av_stddev(x, av, stddev, mpiCommunicator);
+        calc_pos_av_stddev(x, av, stddev, mpiComm);
 
         /* c_gridStdDevFactor * stddev
          * gives a uniform load for a rectangular block of cg's.
@@ -299,7 +293,7 @@ void set_ddbox(const gmx_domdec_t&            dd,
                       box,
                       calculateUnboundedSize,
                       xRef,
-                      needToReduceCoordinateData ? &dd.mpi_comm_all : nullptr,
+                      needToReduceCoordinateData ? &dd.mpiComm() : nullptr,
                       ddbox);
     }
 
@@ -309,13 +303,13 @@ void set_ddbox(const gmx_domdec_t&            dd,
     }
 }
 
-void set_ddbox_cr(DDRole                         ddRole,
-                  MPI_Comm                       communicator,
-                  const gmx::IVec*               numDomains,
-                  const t_inputrec&              ir,
-                  const matrix                   box,
-                  gmx::ArrayRef<const gmx::RVec> x,
-                  gmx_ddbox_t*                   ddbox)
+void set_ddbox_MpiComm(DDRole                         ddRole,
+                       const gmx::MpiComm&            mpiComm,
+                       const gmx::IVec*               numDomains,
+                       const t_inputrec&              ir,
+                       const matrix                   box,
+                       gmx::ArrayRef<const gmx::RVec> x,
+                       gmx_ddbox_t*                   ddbox)
 {
     if (ddRole == DDRole::Main)
     {
@@ -323,7 +317,7 @@ void set_ddbox_cr(DDRole                         ddRole,
                 numPbcDimensions(ir.pbcType), inputrec2nboundeddim(&ir), numDomains, box, true, x, nullptr, ddbox);
     }
 
-    gmx_bcast(sizeof(gmx_ddbox_t), ddbox, communicator);
+    gmx_bcast(sizeof(gmx_ddbox_t), ddbox, mpiComm.comm());
 }
 
 gmx_ddbox_t get_ddbox(const gmx::IVec&               numDomains,

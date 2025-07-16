@@ -57,7 +57,6 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/df_history.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
@@ -69,6 +68,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/real.h"
 
 #include "atomdistribution.h"
@@ -101,7 +101,12 @@ static void distributeVecSendrecv(gmx_domdec_t*                  dd,
                                    "The index count and number of indices should match");
 
 #if GMX_MPI
-                MPI_Send(buffer.data(), domainGroups.numAtoms * sizeof(gmx::RVec), MPI_BYTE, rank, rank, dd->mpi_comm_all);
+                MPI_Send(buffer.data(),
+                         domainGroups.numAtoms * sizeof(gmx::RVec),
+                         MPI_BYTE,
+                         rank,
+                         rank,
+                         dd->mpiComm().comm());
 #endif
             }
         }
@@ -122,7 +127,7 @@ static void distributeVecSendrecv(gmx_domdec_t*                  dd,
                  MPI_BYTE,
                  dd->mainrank,
                  MPI_ANY_TAG,
-                 dd->mpi_comm_all,
+                 dd->mpiComm().comm(),
                  MPI_STATUS_IGNORE);
 #endif
     }

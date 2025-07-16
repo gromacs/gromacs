@@ -546,14 +546,12 @@ gmx_shellfc_t* init_shell_flexcon(FILE*             fplog,
     return shfc;
 }
 
-void gmx::make_local_shells(const t_commrec* cr, const t_mdatoms& md, gmx_shellfc_t* shfc)
+void gmx::make_local_shells(const gmx_domdec_t* dd, const t_mdatoms& md, gmx_shellfc_t* shfc)
 {
-    int           a0, a1;
-    gmx_domdec_t* dd = nullptr;
+    int a0, a1;
 
-    if (haveDDAtomOrdering(*cr))
+    if (dd)
     {
-        dd = cr->dd;
         a0 = 0;
         a1 = dd_numHomeAtoms(*dd);
     }

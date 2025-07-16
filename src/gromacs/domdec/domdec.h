@@ -38,8 +38,6 @@
  * ranks to try to distribute work evenly with minimal communication
  * overheads.
  *
- * \todo Get domdec stuff out of mdtypes/commrec.h
- *
  * \author Berk Hess <hess@kth.se>
  *
  */
@@ -95,6 +93,13 @@ class ArrayRef;
 template<typename, size_t>
 class FixedCapacityVector;
 } // namespace gmx
+
+//! Describes a role within the domain decomposition ranks
+enum class DDRole
+{
+    Main,
+    Agent
+};
 
 //! Returns the MPI rank for the PP domain corresponding to \p coord
 int ddRankFromDDCoord(const gmx_domdec_t& dd, const gmx::IVec& coord);

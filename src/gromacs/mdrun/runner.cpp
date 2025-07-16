@@ -715,7 +715,7 @@ static void finish_run(FILE*                     fplog,
 
     if (thisRankHasPPDuty(cr->dd) && haveDDAtomOrdering(*cr))
     {
-        print_dd_statistics(cr, inputrec, fplog);
+        print_dd_statistics(cr->dd, inputrec, fplog);
     }
 
     /* TODO Move the responsibility for any scaling by thread counts

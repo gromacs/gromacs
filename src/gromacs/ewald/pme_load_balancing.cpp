@@ -651,7 +651,7 @@ static void pme_load_balance(pme_load_balancing_t*          pme_lb,
              * better overal performance can be obtained with a slightly
              * shorter cut-off and better DD load balancing.
              */
-            set_dd_dlb_max_cutoff(cr, pme_lb->setup[pme_lb->fastest].rlistOuter);
+            set_dd_dlb_max_cutoff(cr->dd, pme_lb->setup[pme_lb->fastest].rlistOuter);
         }
     }
     cycles_fast = pme_lb->setup[pme_lb->fastest].cycles;
@@ -1050,7 +1050,7 @@ void pme_loadbal_do(pme_load_balancing_t*          pme_lb,
              * This also ensures that we won't disable the currently
              * optimal setting during a second round of PME balancing.
              */
-            set_dd_dlb_max_cutoff(cr, fr->nbv->pairlistOuterRadius());
+            set_dd_dlb_max_cutoff(cr->dd, fr->nbv->pairlistOuterRadius());
         }
     }
 
