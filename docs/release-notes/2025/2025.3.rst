@@ -50,3 +50,11 @@ for Domain decomp. that was too high by a factor of one plus the number of dimen
 were decomposed. The times and cycle counts were correct.
 
 :issue:`5369`
+
+Support added for compilation with NVIDIA CUDA 13 toolkit
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Addition of a compilation option necessary to avoid CUDA build failures when using the NVCC
+compiler from version 13 of the CUDA toolkit.
+
+:issue:`5389`
