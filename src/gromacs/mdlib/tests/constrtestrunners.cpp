@@ -59,8 +59,6 @@
 
 #include "gromacs/math/arrayrefwithpadding.h"
 #include "gromacs/math/paddedvector.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/lincs.h"
@@ -77,6 +75,8 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/unique_cptr.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "testutils/testasserts.h"
 

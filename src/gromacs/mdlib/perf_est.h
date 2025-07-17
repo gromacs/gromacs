@@ -34,8 +34,8 @@
 #ifndef GMX_MDLIB_PERF_EST_H
 #define GMX_MDLIB_PERF_EST_H
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/vectypes.h"
 
 struct gmx_mtop_t;
 struct t_inputrec;

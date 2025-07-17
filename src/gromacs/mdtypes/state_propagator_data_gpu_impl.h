@@ -50,10 +50,10 @@
 
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/gpueventsynchronizer.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/state_propagator_data_gpu.h"
 #include "gromacs/utility/enumerationhelpers.h"
+#include "gromacs/utility/vectypes.h"
 
 struct gmx_wallcycle;
 

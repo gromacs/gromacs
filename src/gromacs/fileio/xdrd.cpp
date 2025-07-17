@@ -36,10 +36,10 @@
 #include <cstdint>
 
 #include "gromacs/fileio/xdrf.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vectypes.h"
 
 int xdr_real(XDR* xdrs, real* r)
 {

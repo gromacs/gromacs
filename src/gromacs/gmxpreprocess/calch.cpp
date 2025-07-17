@@ -43,9 +43,9 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vec.h"
 
 #define xAI xa[0]
 #define xAJ xa[1]

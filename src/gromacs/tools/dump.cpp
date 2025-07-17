@@ -67,8 +67,6 @@
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/gmxpreprocess/gmxcpp.h"
 #include "gromacs/linearalgebra/sparsematrix.h"
-#include "gromacs/math/vecdump.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdrun/mdmodules.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
@@ -93,6 +91,8 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/txtdump.h"
+#include "gromacs/utility/vecdump.h"
+#include "gromacs/utility/vectypes.h"
 
 namespace gmx
 {

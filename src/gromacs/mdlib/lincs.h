@@ -46,11 +46,11 @@
 #include <cstdint>
 #include <cstdio>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 struct gmx_domdec_t;
 struct gmx_mtop_t;

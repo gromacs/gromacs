@@ -62,8 +62,6 @@
 #include "gromacs/math/nrjac.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/groupcoord.h"
 #include "gromacs/mdlib/stat.h"
 #include "gromacs/mdrunutility/handlerestart.h"
@@ -89,6 +87,8 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 struct gmx_output_env_t;
 

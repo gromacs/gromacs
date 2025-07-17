@@ -74,8 +74,6 @@
 #include "gromacs/gpu_utils/device_stream_manager.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/hardware/hw_info.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/calc_verletbuf.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/constraintrange.h"
@@ -122,6 +120,8 @@
 #include "gromacs/utility/stringstream.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "atomdistribution.h"
 #include "box.h"

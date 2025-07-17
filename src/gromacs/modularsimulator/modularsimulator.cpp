@@ -55,7 +55,6 @@
 #include "gromacs/fileio/checkpoint.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/listed_forces/listed_forces.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/checkpointhandler.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/coupling.h"
@@ -88,6 +87,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/int64_to_int.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "andersentemperaturecoupling.h"
 #include "computeglobalselement.h"

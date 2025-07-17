@@ -53,7 +53,6 @@
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/timecontrol.h"
 #include "gromacs/fileio/trxio.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/ioptionscontainer.h"
@@ -76,6 +75,7 @@
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/vec.h"
 
 #include "analysissettings_impl.h"
 

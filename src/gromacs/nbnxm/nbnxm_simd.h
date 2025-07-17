@@ -45,9 +45,9 @@
 
 #include "config.h"
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "pairlist.h"
 #include "pairlistparams.h"

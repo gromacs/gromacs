@@ -39,13 +39,13 @@
 
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/pleasecite.h"
+#include "gromacs/utility/vec.h"
 
 void calc_rffac(FILE* fplog, real eps_r, real eps_rf, real Rc, real* krf, real* crf)
 {

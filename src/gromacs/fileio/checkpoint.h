@@ -45,10 +45,10 @@
 #include <vector>
 
 #include "gromacs/compat/pointers.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
+#include "gromacs/utility/vectypes.h"
 
 class energyhistory_t;
 struct gmx_file_position_t;

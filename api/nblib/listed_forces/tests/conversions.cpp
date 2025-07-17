@@ -54,11 +54,11 @@
 
 #include "listed_forces/conversionscommon.h"
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/forcefieldparameters.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "testutils/testasserts.h"
 

@@ -53,12 +53,12 @@
 
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/gpu_utils/hostallocator.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/locality.h"
 #include "gromacs/nbnxm/nbnxm_enums.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/bitmask.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 class GpuEventSynchronizer;
 

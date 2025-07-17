@@ -50,9 +50,9 @@
 #include <memory>
 
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/idef.h"
+#include "gromacs/utility/vectypes.h"
 
 class DeviceContext;
 class DeviceStream;

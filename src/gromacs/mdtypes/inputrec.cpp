@@ -50,9 +50,6 @@
 #include <vector>
 
 #include "gromacs/applied_forces/awh/read_params.h"
-#include "gromacs/math/veccompare.h"
-#include "gromacs/math/vecdump.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/vcm.h"
 #include "gromacs/mdtypes/awh_params.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -74,6 +71,9 @@
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
 #include "gromacs/utility/txtdump.h"
+#include "gromacs/utility/veccompare.h"
+#include "gromacs/utility/vecdump.h"
+#include "gromacs/utility/vectypes.h"
 
 //! Macro to select a bool name
 #define EBOOL(e) gmx::boolToString(e)

@@ -45,11 +45,11 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "colvarproxygromacs.h"
 

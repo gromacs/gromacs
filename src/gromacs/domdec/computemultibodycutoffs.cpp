@@ -53,7 +53,6 @@
 
 #include "gromacs/domdec/options.h"
 #include "gromacs/domdec/reversetopology.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -69,6 +68,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/vec.h"
 
 using gmx::ArrayRef;
 using gmx::DDBondedChecking;

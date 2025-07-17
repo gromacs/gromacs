@@ -63,7 +63,6 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdlib/perf_est.h"
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/mdtypes/inputrec.h"
@@ -77,6 +76,7 @@
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/vec.h"
 
 #include "atomdistribution.h"
 #include "box.h"

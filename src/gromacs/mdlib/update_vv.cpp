@@ -47,7 +47,6 @@
 #include "gromacs/math/arrayrefwithpadding.h"
 #include "gromacs/math/matrix.h"
 #include "gromacs/math/paddedvector.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/coupling.h"
 #include "gromacs/mdlib/enerdata_utils.h"
@@ -75,6 +74,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vec.h"
 
 void integrateVVFirstStep(int64_t                   step,
                           bool                      bFirstStep,

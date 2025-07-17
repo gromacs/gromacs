@@ -57,7 +57,6 @@
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/ga2la.h"
 #include "gromacs/gmxlib/nrnb.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/updategroupscog.h"
 #include "gromacs/mdtypes/atominfo.h"
@@ -73,6 +72,7 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/template_mp.h"
+#include "gromacs/utility/vec.h"
 
 #include "domdec_internal.h"
 #include "utility.h"

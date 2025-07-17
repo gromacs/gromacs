@@ -48,8 +48,8 @@
 #include "gromacs/ewald/pme_pp_comm_gpu.h"
 #include "gromacs/gpu_utils/gpueventsynchronizer.h"
 #include "gromacs/gpu_utils/gputraits.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/vectypes.h"
 
 
 namespace gmx

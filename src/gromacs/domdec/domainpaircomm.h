@@ -52,12 +52,12 @@
 
 #include <vector>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/nbnxm/grid.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/defaultinitializationallocator.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/vectypes.h"
 
 enum class PbcType : int;
 struct gmx_domdec_t;

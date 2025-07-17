@@ -36,7 +36,7 @@
 
 #include <cstdio>
 
-#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/vectypes.h"
 
 /*! \brief Change box components to preserve the relative box shape
  *

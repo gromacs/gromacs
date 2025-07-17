@@ -43,7 +43,7 @@
 #ifndef NBLIB_BASICVECTOR_H
 #define NBLIB_BASICVECTOR_H
 
-#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/vectypes.h"
 
 namespace nblib
 {

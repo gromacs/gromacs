@@ -55,7 +55,6 @@
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/gputraits.h"
 #include "gromacs/math/functions.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/constraint_gpu_helpers.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
@@ -64,6 +63,7 @@
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/listoflists.h"
+#include "gromacs/utility/vec.h"
 
 
 namespace gmx

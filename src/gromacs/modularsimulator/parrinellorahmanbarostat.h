@@ -44,8 +44,8 @@
 #define GMX_MODULARSIMULATOR_PARRINELLORAHMANBAROSTAT_H
 
 #include "gromacs/math/matrix.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "modularsimulatorinterfaces.h"
 #include "propagator.h"

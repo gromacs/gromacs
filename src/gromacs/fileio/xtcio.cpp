@@ -41,10 +41,10 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/gmxfio_xdr.h"
 #include "gromacs/fileio/xdrf.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vec.h"
 
 static int xdr_r2f(XDR* xdrs, real* r, gmx_bool gmx_unused bRead)
 {

@@ -47,9 +47,9 @@
 
 #include "gromacs/math/multidimarray.h"
 #include "gromacs/math/utilities.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 namespace gmx
 {

@@ -62,7 +62,6 @@
 #include "gromacs/listed_forces/pairs.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdlib/dispersioncorrection.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
@@ -106,6 +105,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/vec.h"
 
 #include "gpuforcereduction.h"
 #include "mdgraph_gpu.h"

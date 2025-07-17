@@ -48,7 +48,6 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/topology.h"
@@ -61,6 +60,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strdb.h"
+#include "gromacs/utility/vec.h"
 
 
 typedef struct gmx_structurefactors

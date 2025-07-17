@@ -47,10 +47,10 @@
 #include <string>
 
 #include "gromacs/libgromacs_export.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 struct gmx_cmap_t;
 struct t_fcdata;

@@ -65,13 +65,13 @@
 #endif
 
 #include "gromacs/gpu_utils/gpu_utils.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/timing/gpu_timing.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/vec.h"
 
 #include "gpu_common_utils.h"
 #include "nbnxm_gpu.h"

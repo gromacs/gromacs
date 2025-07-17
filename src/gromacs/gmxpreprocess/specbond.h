@@ -38,8 +38,8 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/symtab.h"
+#include "gromacs/utility/vectypes.h"
 
 struct t_atoms;
 struct SpecialBond;

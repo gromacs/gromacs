@@ -44,13 +44,13 @@
 
 #include <cmath>
 
-#include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vec.h"
 
 void gmx_calc_cog(const gmx_mtop_t* /* top */, rvec x[], int nrefat, const int index[], rvec xout)
 {

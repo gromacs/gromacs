@@ -41,11 +41,11 @@
 #include <filesystem>
 #include <vector>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 typedef struct t_fileio t_fileio;
 

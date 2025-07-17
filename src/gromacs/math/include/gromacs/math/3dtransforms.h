@@ -36,8 +36,8 @@
 
 #include <cstdio>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 /** Index for the fourth dimension for `vec4`. */
 #define WW 3

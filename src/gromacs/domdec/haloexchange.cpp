@@ -46,7 +46,6 @@
 
 #include "config.h"
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -54,6 +53,7 @@
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/range.h"
 #include "gromacs/utility/template_mp.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "domainpaircomm.h"
 #include "domdec_internal.h"

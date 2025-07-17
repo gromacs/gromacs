@@ -53,9 +53,9 @@
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/math/functions.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 #ifdef HAVE_SYS_TIME_H
 #    include <sys/time.h>
@@ -67,7 +67,6 @@
 #include "gromacs/fileio/checkpoint.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/math/utilities.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdlib/perf_est.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -85,6 +84,7 @@
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/vec.h"
 
 struct gmx_output_env_t;
 

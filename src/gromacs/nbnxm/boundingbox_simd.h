@@ -46,9 +46,9 @@
 
 #include "config.h"
 
-#include "gromacs/math/vec.h"
 #include "gromacs/nbnxm/pairlistparams.h"
 #include "gromacs/simd/simd.h"
+#include "gromacs/utility/vec.h"
 
 #include "nbnxm_enums.h"
 

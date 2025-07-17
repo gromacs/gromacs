@@ -46,7 +46,6 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/forcefieldparameters.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -56,6 +55,7 @@
 #include "gromacs/utility/stringstream.h"
 #include "gromacs/utility/textwriter.h"
 #include "gromacs/utility/txtdump.h"
+#include "gromacs/utility/vectypes.h"
 
 static void printHarmonicInteraction(gmx::TextWriter* writer,
                                      const t_iparams& iparams,

@@ -62,7 +62,6 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/ishift.h"
@@ -78,6 +77,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vec.h"
 
 #include "listed_internal.h"
 #include "restcbt.h"

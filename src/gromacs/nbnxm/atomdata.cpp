@@ -47,7 +47,6 @@
 
 #include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdtypes/atominfo.h"
 #include "gromacs/mdtypes/forcerec.h" // only for GET_CGINFO_*
@@ -67,6 +66,7 @@
 #include "gromacs/utility/range.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/vec.h"
 
 #include "grid.h"
 #include "gridset.h"

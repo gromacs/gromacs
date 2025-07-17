@@ -37,8 +37,8 @@
 
 #include <cstdint>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 class gmx_ekindata_t;
 struct gmx_enerdata_t;

@@ -59,7 +59,7 @@
 #include "gromacs/domdec/nsgrid.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/functions.h"
-#include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/block.h"
@@ -68,6 +68,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vec.h"
 
 #include "domdec_internal.h"
 

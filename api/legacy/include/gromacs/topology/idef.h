@@ -46,9 +46,9 @@
 #include <array>
 #include <vector>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 struct gmx_ffparams_t;
 

@@ -54,7 +54,6 @@
 #include "gromacs/domdec/localatomsetmanager.h"
 #include "gromacs/fileio/checkpoint.h"
 #include "gromacs/gmxlib/network.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdlib/broadcaststructs.h"
 #include "gromacs/mdlib/groupcoord.h"
 #include "gromacs/mdrunutility/multisim.h"
@@ -70,6 +69,7 @@
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vec.h"
 
 enum class PbcType : int;
 

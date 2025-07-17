@@ -34,7 +34,7 @@
 #ifndef GMX_PREPROCESS_CALCH_H
 #define GMX_PREPROCESS_CALCH_H
 
-#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/vectypes.h"
 
 void calc_h_pos(int nht, rvec xa[], rvec xh[], int* l);
 /*

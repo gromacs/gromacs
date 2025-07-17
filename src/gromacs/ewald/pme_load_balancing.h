@@ -45,8 +45,8 @@
 #ifndef GMX_EWALD_PME_LOAD_BALANCING_H
 #define GMX_EWALD_PME_LOAD_BALANCING_H
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/vectypes.h"
 
 
 struct t_commrec;

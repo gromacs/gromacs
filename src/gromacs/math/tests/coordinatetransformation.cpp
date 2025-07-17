@@ -51,11 +51,11 @@
 
 #include "gromacs/math/matrix.h"
 #include "gromacs/math/multidimarray.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdspan/extents.h"
 #include "gromacs/mdspan/layouts.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "testutils/testasserts.h"
 #include "testutils/testmatchers.h"

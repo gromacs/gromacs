@@ -48,7 +48,6 @@
 #include <memory>
 #include <vector>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/threaded_force_buffer.h"
 #include "gromacs/topology/idef.h"
@@ -57,6 +56,7 @@
 #include "gromacs/utility/bitmask.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/enumerationhelpers.h"
+#include "gromacs/utility/vectypes.h"
 
 /*! \internal \brief The division of bonded interactions of the threads */
 class WorkDivision

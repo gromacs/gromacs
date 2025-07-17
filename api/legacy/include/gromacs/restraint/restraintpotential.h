@@ -58,7 +58,7 @@
 #include <ostream>
 #include <vector>
 
-#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/vectypes.h"
 
 // TODO(3152): Get from a header once the public API settles down a bit.
 namespace gmxapi

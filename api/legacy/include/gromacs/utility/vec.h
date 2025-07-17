@@ -31,14 +31,14 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
-#ifndef GMX_MATH_VEC_H
-#define GMX_MATH_VEC_H
+#ifndef GMX_UTILITY_VEC_H
+#define GMX_UTILITY_VEC_H
 
 /*! \brief Mathematical operations on (deprecated) rvec and matrix classes
  *
  * \todo Remove functions as Rvec replaces rvec and BasicMatrix3x3 replaces matrix
  *
- * \ingroup module_math
+ * \ingroup module_utility
  */
 /*
    collection of in-line ready operations:
@@ -105,8 +105,8 @@
 #include <type_traits>
 
 #include "gromacs/math/functions.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 static inline void rvec_add(const rvec a, const rvec b, rvec c)
 {

@@ -67,7 +67,6 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/imd/imdsocket.h"
 #include "gromacs/math/units.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdlib/broadcaststructs.h"
 #include "gromacs/mdlib/groupcoord.h"
 #include "gromacs/mdlib/sighandler.h"
@@ -95,6 +94,7 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/vec.h"
 
 namespace gmx
 {

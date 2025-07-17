@@ -42,10 +42,10 @@
 #define GMX_DOMDEC_DOMDEC_SETUP_H
 
 
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 enum class DDRole;
 struct DDSettings;

@@ -59,7 +59,6 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdlib/calc_verletbuf.h"
 #include "gromacs/mdlib/vcm.h"
 #include "gromacs/mdrun/mdmodules.h"
@@ -103,6 +102,7 @@
 #include "gromacs/utility/stringcompare.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
+#include "gromacs/utility/vec.h"
 
 #define NOGID 255
 

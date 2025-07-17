@@ -43,7 +43,6 @@
 #include "energydata.h"
 
 #include "gromacs/gmxlib/network.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdlib/enerdata_utils.h"
 #include "gromacs/mdlib/energyoutput.h"
 #include "gromacs/mdlib/mdatoms.h"
@@ -60,6 +59,7 @@
 #include "gromacs/mdtypes/observableshistory.h"
 #include "gromacs/mdtypes/pullhistory.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/vec.h"
 
 #include "freeenergyperturbationdata.h"
 #include "modularsimulator.h"

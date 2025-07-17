@@ -53,12 +53,12 @@
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/arrayrefwithpadding.h"
 #include "gromacs/math/paddedvector.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/checkpointdata.h"
 #include "gromacs/mdtypes/forcebuffers.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "modularsimulatorinterfaces.h"
 #include "topologyholder.h"

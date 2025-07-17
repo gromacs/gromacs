@@ -44,7 +44,6 @@
 #include <filesystem>
 
 #include "gromacs/math/utilities.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/random/threefry.h"
 #include "gromacs/random/uniformintdistribution.h"
 #include "gromacs/topology/topology.h"
@@ -57,6 +56,7 @@
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strdb.h"
+#include "gromacs/utility/vec.h"
 
 void check_binwidth(real binwidth)
 {

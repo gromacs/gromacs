@@ -56,8 +56,8 @@
 #include "gromacs/ewald/pme_gpu_program.h"
 #include "gromacs/gpu_utils/clfftinitializer.h"
 #include "gromacs/gpu_utils/hostallocator.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "pme_force_sender_gpu.h"
 #include "pme_gpu_settings.h"

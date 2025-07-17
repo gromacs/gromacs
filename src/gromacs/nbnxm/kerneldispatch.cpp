@@ -42,7 +42,6 @@
 
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gpu_utils/hostallocator.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/enerdata_utils.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
@@ -68,6 +67,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "kernel_common.h"
 #include "nbnxm_enums.h"

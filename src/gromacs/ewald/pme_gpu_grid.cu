@@ -53,8 +53,8 @@
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/gpu_utils/devicebuffer.cuh"
 #include "gromacs/math/functions.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/vec.h"
 
 #include "pme_gpu_internal.h"
 #include "pme_gpu_types.h"

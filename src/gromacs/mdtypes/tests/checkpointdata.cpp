@@ -52,11 +52,11 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/fileio/xdr_serializer.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/serialization/inmemoryserializer.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "testutils/testfilemanager.h"
 

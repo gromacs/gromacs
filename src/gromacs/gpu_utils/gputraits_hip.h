@@ -44,7 +44,7 @@
  */
 #include <hip/hip_runtime.h>
 
-#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/vectypes.h"
 
 #define GMX_HOST_ATTRIBUTE __host__
 #define GMX_DEVICE_ATTRIBUTE __device__

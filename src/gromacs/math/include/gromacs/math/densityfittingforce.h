@@ -43,9 +43,9 @@
 #include <memory>
 
 #include "gromacs/math/gausstransform.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdspan/extensions.h"
 #include "gromacs/mdspan/mdspan.h"
+#include "gromacs/utility/vectypes.h"
 
 namespace gmx
 {

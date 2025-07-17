@@ -54,7 +54,6 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/math/functions.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdlib/calc_verletbuf.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
@@ -75,6 +74,7 @@
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/vec.h"
 
 #include "nbnxm_geometry.h"
 #include "pairlistsets.h"

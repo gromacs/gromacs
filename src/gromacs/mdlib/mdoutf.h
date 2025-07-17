@@ -38,10 +38,10 @@
 #include <cstdio>
 
 #include "gromacs/fileio/enxio.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/vectypes.h"
 
 class energyhistory_t;
 struct gmx_mtop_t;

@@ -43,9 +43,9 @@
 #ifndef GMX_NBNXM_KERNELS_REFERENCE_KERNEL_GPU_REF_H
 #define GMX_NBNXM_KERNELS_REFERENCE_KERNEL_GPU_REF_H
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 struct interaction_const_t;
 struct t_forcerec;

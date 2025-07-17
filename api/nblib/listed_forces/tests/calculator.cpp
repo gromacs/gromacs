@@ -59,9 +59,9 @@
 #include "listed_forces/dataflow.hpp"
 #include "listed_forces/traits.h"
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"

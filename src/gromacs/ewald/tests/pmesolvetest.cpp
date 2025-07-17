@@ -59,7 +59,6 @@
 #include "gromacs/ewald/pme_gpu_internal.h"
 #include "gromacs/ewald/pme_output.h"
 #include "gromacs/math/gmxcomplex.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/arrayref.h"
@@ -69,6 +68,7 @@
 #include "gromacs/utility/range.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "testutils/refdata.h"
 #include "testutils/test_hardware_environment.h"

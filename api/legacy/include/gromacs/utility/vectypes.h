@@ -31,8 +31,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
-#ifndef GMX_MATH_VECTYPES_H
-#define GMX_MATH_VECTYPES_H
+#ifndef GMX_UTILITY_VECTYPES_H
+#define GMX_UTILITY_VECTYPES_H
 
 #include <cassert>
 #include <cmath>

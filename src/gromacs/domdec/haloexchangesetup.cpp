@@ -54,7 +54,6 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/domdec/domdec_struct.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/state.h"
@@ -65,6 +64,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/mpicomm.h"
+#include "gromacs/utility/vec.h"
 
 #include "domainpaircomm.h"
 #include "domdec_internal.h"

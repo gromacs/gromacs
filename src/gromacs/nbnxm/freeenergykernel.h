@@ -46,9 +46,9 @@
 #ifndef GMX_NBNXM_FREEENERGYKERNEL_H
 #define GMX_NBNXM_FREEENERGYKERNEL_H
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 struct t_forcerec;
 struct t_nrnb;

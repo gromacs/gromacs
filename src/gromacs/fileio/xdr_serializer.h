@@ -39,9 +39,9 @@
 #include <filesystem>
 #include <string>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/serialization/iserializer.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 #if GMX_INTERNAL_XDR
 #    include "rpc_xdr/xdr.h"

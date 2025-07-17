@@ -46,13 +46,13 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/mdtypes/imdpoptionprovider.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 enum class PbcType : int;
 struct gmx_mtop_t;

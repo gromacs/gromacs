@@ -51,9 +51,9 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
+#include "gromacs/utility/vec.h"
 
 /* This function computes factors needed for restricted angle potential.
  * For explanations on formula used see file "restcbt.h" */

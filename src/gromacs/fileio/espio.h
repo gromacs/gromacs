@@ -38,7 +38,7 @@
 
 #include <filesystem>
 
-#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/vectypes.h"
 
 struct t_atoms;
 struct t_symtab;

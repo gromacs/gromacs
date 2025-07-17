@@ -56,12 +56,12 @@
 #include "gromacs/ewald/pme_gpu_program.h"
 #include "gromacs/ewald/pme_output.h"
 #include "gromacs/math/gmxcomplex.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/state_propagator_data_gpu.h"
 #include "gromacs/utility/message_string_collector.h"
 #include "gromacs/utility/range.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/unique_cptr.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "testutils/test_device.h"
 

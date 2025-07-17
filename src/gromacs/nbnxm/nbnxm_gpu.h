@@ -43,11 +43,11 @@
 #define GMX_NBNXM_NBNXM_GPU_H
 
 #include "gromacs/gpu_utils/gpu_macros.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/locality.h"
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "nbnxm.h"
 

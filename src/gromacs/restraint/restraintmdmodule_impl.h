@@ -49,7 +49,6 @@
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/ga2la.h"
 #include "gromacs/gmxlib/network.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/iforceprovider.h"
 #include "gromacs/mdtypes/imdmodule.h"
@@ -59,6 +58,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/restraint/restraintpotential.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/vec.h"
 
 namespace gmx
 {

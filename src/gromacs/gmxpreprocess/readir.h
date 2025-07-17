@@ -41,10 +41,10 @@
 #include <vector>
 
 #include "gromacs/fileio/readinp.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/multipletimestepping.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 namespace gmx
 {

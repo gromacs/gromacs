@@ -42,7 +42,6 @@
 
 #include <string>
 
-#include "gromacs/math/vec.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/position.h"
 #include "gromacs/selection/selparam.h"
@@ -52,6 +51,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/vec.h"
 
 #include "selmethod.h"
 #include "selmethod_impl.h"

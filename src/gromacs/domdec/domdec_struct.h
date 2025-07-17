@@ -50,13 +50,13 @@
 
 #include "gromacs/domdec/domdec_zones.h"
 #include "gromacs/gpu_utils/hostallocator.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/utility/defaultinitializationallocator.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/range.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 struct AtomDistribution;
 struct gmx_domdec_comm_t;

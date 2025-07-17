@@ -55,8 +55,6 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/math/paddedvector.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/mdtypes/enerdata.h"
@@ -75,6 +73,8 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/textreader.h"
 #include "gromacs/utility/textwriter.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"

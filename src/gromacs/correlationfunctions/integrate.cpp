@@ -46,8 +46,8 @@
 #include <filesystem>
 
 #include "gromacs/math/functions.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/vec.h"
 
 /*! \brief Integrate a function and printe the integral value. */
 real print_and_integrate(FILE* fp, int n, real dt, const real c[], const real* fit, int nskip)

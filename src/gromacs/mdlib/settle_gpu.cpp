@@ -54,10 +54,10 @@
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/gputraits.h"
 #include "gromacs/math/functions.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdlib/constraint_gpu_helpers.h"
 #include "gromacs/mdlib/settle_gpu_internal.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/utility/vec.h"
 
 namespace gmx
 {

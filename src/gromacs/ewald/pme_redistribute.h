@@ -43,9 +43,9 @@
 #ifndef GMX_EWALD_PME_REDISTRIBUTE_H
 #define GMX_EWALD_PME_REDISTRIBUTE_H
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "pme_internal.h"
 

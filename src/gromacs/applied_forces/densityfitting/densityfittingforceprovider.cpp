@@ -58,7 +58,6 @@
 #include "gromacs/math/gausstransform.h"
 #include "gromacs/math/matrix.h"
 #include "gromacs/math/multidimarray.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/broadcaststructs.h"
 #include "gromacs/mdspan/extents.h"
 #include "gromacs/mdspan/layouts.h"
@@ -72,6 +71,7 @@
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/strconvert.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "densityfittingamplitudelookup.h"
 #include "densityfittingparameters.h"

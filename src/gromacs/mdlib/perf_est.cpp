@@ -43,7 +43,6 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -58,6 +57,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vec.h"
 
 /* Computational cost of bonded, non-bonded and PME calculations.
  * This will be machine dependent.

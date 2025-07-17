@@ -55,8 +55,6 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/listed_forces/listed_forces.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/forcerec.h"
@@ -76,6 +74,8 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringstream.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"

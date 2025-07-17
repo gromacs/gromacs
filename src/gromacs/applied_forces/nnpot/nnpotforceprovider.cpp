@@ -46,13 +46,13 @@
 
 #include "gromacs/domdec/localatomset.h"
 #include "gromacs/gmxlib/network.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/mpicomm.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "nnpotmodel.h"
 #include "nnpotoptions.h"

@@ -52,11 +52,11 @@
 #include <vector>
 
 #include "gromacs/domdec/localatomset.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/mdtypes/iforceprovider.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "colvarproxygromacs.h"
 

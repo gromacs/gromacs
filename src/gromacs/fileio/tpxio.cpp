@@ -33,7 +33,6 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/forcefieldparameters.h"
 #include "gromacs/topology/idef.h"
@@ -44,6 +43,7 @@
 #include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/vectypes.h"
 
 /* This file is completely threadsafe - keep it that way! */
 
@@ -67,7 +67,6 @@
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/xdr_serializer.h"
 #include "gromacs/math/units.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/awh_history.h"
 #include "gromacs/mdtypes/awh_params.h"
 #include "gromacs/mdtypes/inputrec.h"
@@ -96,6 +95,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
 #include "gromacs/utility/txtdump.h"
+#include "gromacs/utility/vec.h"
 
 #define TPX_TAG_RELEASE "release"
 

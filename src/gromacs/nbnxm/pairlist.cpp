@@ -56,7 +56,6 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -78,6 +77,7 @@
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/range.h"
+#include "gromacs/utility/vec.h"
 
 #include "atompairlist.h"
 #include "boundingbox.h"

@@ -49,7 +49,7 @@
 
 #include <memory>
 
-#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/vectypes.h"
 
 /*! \brief Abstract type for essential dynamics
  *

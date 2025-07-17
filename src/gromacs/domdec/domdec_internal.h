@@ -47,7 +47,6 @@
 #include "gromacs/domdec/dlbtiming.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/updategroupscog.h"
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/topology/block.h"
@@ -55,6 +54,7 @@
 #include "gromacs/utility/fixedcapacityvector.h"
 #include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/mpicomm.h"
+#include "gromacs/utility/vectypes.h"
 
 struct t_commrec;
 

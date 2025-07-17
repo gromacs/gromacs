@@ -46,9 +46,9 @@
 
 #include <string>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/imdpoptionprovider.h"
 #include "gromacs/topology/atoms.h"
+#include "gromacs/utility/vectypes.h"
 
 // some forward declarations
 struct gmx_mtop_t;

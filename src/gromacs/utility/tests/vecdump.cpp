@@ -35,11 +35,11 @@
  * \brief
  * Tests various text-dumping routines
  *
- * \ingroup module_math
+ * \ingroup module_utility
  */
 #include "gmxpre.h"
 
-#include "gromacs/math/vecdump.h"
+#include "gromacs/utility/vecdump.h"
 
 #include <iostream>
 #include <vector>

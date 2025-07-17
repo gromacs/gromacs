@@ -44,7 +44,6 @@
 
 #include "gromacs/domdec/mdsetup.h"
 #include "gromacs/listed_forces/listed_forces_gpu.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/force_flags.h"
@@ -62,6 +61,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/taskassignment/include/gromacs/taskassignment/decidesimulationworkload.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "energydata.h"
 #include "freeenergyperturbationdata.h"

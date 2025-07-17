@@ -43,9 +43,9 @@
 #include <memory>
 #include <vector>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/enumerationhelpers.h"
+#include "gromacs/utility/vectypes.h"
 
 enum class Domain : int;
 enum class ChannelHistory : int;

@@ -48,7 +48,6 @@
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/utilities.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdlib/md_support.h"
 #include "gromacs/mdlib/rbin.h"
 #include "gromacs/mdlib/tgroup.h"
@@ -66,6 +65,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vec.h"
 
 struct gmx_global_stat
 {

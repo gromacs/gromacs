@@ -62,7 +62,6 @@
 #include "gromacs/gmxpreprocess/topio.h"
 #include "gromacs/gmxpreprocess/toputil.h"
 #include "gromacs/math/functions.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdrun/binary_information.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/ifunc.h"
@@ -85,6 +84,7 @@
 #include "gromacs/utility/strdb.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
+#include "gromacs/utility/vec.h"
 
 #include "hackblock.h"
 #include "resall.h"

@@ -42,8 +42,8 @@
 
 #include <vector>
 
-#include "gromacs/math/vec.h"
 #include "gromacs/utility/listoflists.h"
+#include "gromacs/utility/vec.h"
 
 namespace gmx
 {

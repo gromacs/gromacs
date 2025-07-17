@@ -39,8 +39,8 @@
 #include <optional>
 #include <vector>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 class PreprocessingAtomTypes;
 struct t_atoms;

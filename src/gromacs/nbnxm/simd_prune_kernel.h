@@ -41,9 +41,9 @@
  * \ingroup module_nbnxm
  */
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "nbnxm_simd.h"
 

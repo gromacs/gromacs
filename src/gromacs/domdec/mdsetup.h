@@ -42,7 +42,7 @@
 #ifndef GMX_DOMDEC_MDSETUP_H
 #define GMX_DOMDEC_MDSETUP_H
 
-#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/vectypes.h"
 
 struct bonded_threading_t;
 struct gmx_domdec_t;

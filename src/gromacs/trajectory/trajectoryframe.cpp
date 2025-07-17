@@ -43,8 +43,6 @@
 #include <array>
 #include <string>
 
-#include "gromacs/math/veccompare.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -53,6 +51,8 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/veccompare.h"
+#include "gromacs/utility/vectypes.h"
 
 enum class PbcType : int;
 

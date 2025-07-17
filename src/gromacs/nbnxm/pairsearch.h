@@ -55,7 +55,6 @@
 #include <memory>
 #include <vector>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/nbnxm/nbnxm_enums.h"
 #include "gromacs/timing/cyclecounter.h"
@@ -63,6 +62,7 @@
 #include "gromacs/utility/bitmask.h"
 #include "gromacs/utility/range.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "gridset.h"
 #include "pairlist.h"

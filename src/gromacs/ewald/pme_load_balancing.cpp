@@ -59,7 +59,6 @@
 #include "gromacs/fft/calcgrid.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/functions.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdlib/dispersioncorrection.h"
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -79,6 +78,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/strconvert.h"
+#include "gromacs/utility/vec.h"
 
 #include "pme_internal.h"
 #include "pme_pp.h"

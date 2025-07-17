@@ -43,7 +43,6 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/math/vec.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/nbsearch.h"
 #include "gromacs/selection/position.h"
@@ -52,6 +51,7 @@
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vec.h"
 
 #include "selmethod.h"
 #include "selmethod_impl.h"

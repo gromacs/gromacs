@@ -42,9 +42,9 @@
 #include <vector>
 
 #include "gromacs/gmxpreprocess/grompp.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
+#include "gromacs/utility/vec.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/testfilemanager.h"

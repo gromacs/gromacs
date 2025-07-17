@@ -36,11 +36,11 @@
 
 #include <cstdint>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/vcm.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/vectypes.h"
 
 class gmx_ekindata_t;
 struct gmx_enerdata_t;

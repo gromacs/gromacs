@@ -53,7 +53,6 @@
 #include "gromacs/domdec/localatomsetmanager.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/gmxpreprocess/grompp.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/topology/mtop_util.h"
@@ -63,6 +62,7 @@
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/textwriter.h"
+#include "gromacs/utility/vec.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"

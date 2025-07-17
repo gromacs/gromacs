@@ -64,7 +64,6 @@
 #include "gromacs/math/arrayrefwithpadding.h"
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/math/utilities.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/lincs.h"
 #include "gromacs/mdlib/settle.h"
@@ -93,6 +92,7 @@
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/txtdump.h"
+#include "gromacs/utility/vec.h"
 
 namespace gmx
 {

@@ -42,7 +42,6 @@
 
 #include "constraintelement.h"
 
-#include "gromacs/math/vec.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
@@ -50,6 +49,7 @@
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/vec.h"
 
 #include "energydata.h"
 #include "freeenergyperturbationdata.h"

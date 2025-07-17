@@ -42,8 +42,6 @@
 #include <string>
 
 #include "gromacs/math/paddedvector.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/veccompare.h"
 #include "gromacs/mdtypes/awh_history.h"
 #include "gromacs/mdtypes/df_history.h"
 #include "gromacs/mdtypes/group.h"
@@ -57,6 +55,8 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/veccompare.h"
 
 #include "checkpointdata.h"
 

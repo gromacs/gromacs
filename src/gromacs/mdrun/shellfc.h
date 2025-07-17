@@ -37,12 +37,12 @@
 #include <cstdint>
 #include <cstdio>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 class DDBalanceRegionHandler;
 struct gmx_enerdata_t;

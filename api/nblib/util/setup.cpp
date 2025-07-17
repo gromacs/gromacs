@@ -49,12 +49,12 @@
 
 #include <algorithm>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/random/seed.h"
 #include "gromacs/random/tabulatednormaldistribution.h"
 #include "gromacs/random/threefry.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/vectypes.h"
 
 namespace nblib
 {

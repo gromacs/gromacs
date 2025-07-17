@@ -49,11 +49,11 @@
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/typecasts_cuda_hip.h"
 #include "gromacs/gpu_utils/vectype_ops_cuda.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/pbc_aiuc_cuda.cuh"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/vec.h"
 
 namespace gmx
 {

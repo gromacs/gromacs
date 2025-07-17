@@ -44,9 +44,9 @@
 #include <hdf5.h>
 
 #include "gromacs/fileio/h5md/h5md_error.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/vectypes.h"
 
 namespace gmx
 {

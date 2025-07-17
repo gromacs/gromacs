@@ -44,7 +44,7 @@
 #ifndef GMX_NBXNM_KERNEL_COMMON_H
 #define GMX_NBXNM_KERNEL_COMMON_H
 
-#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/vectypes.h"
 /* nbnxn_atomdata_t and nbnxn_pairlist_t could be forward declared, but that requires modifications in all SIMD kernel files */
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/utility/real.h"

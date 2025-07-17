@@ -89,7 +89,6 @@
 
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/multidimarray.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdspan/layouts.h"
 #include "gromacs/mdspan/mdspan.h"
 #include "gromacs/topology/ifunc.h"
@@ -99,6 +98,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"

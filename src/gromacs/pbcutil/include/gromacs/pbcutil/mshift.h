@@ -38,9 +38,9 @@
 
 #include <vector>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/listoflists.h"
+#include "gromacs/utility/vectypes.h"
 
 struct InteractionList;
 struct gmx_moltype_t;

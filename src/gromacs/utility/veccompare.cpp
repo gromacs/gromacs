@@ -33,17 +33,17 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/math/veccompare.h"
+#include "gromacs/utility/veccompare.h"
 
 #include <cmath>
 #include <cstdio>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/compare.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 void cmp_rvec(FILE* fp, const char* s, int index, const rvec i1, const rvec i2, real ftol, real abstol)
 {

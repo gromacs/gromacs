@@ -44,9 +44,9 @@
 #ifndef GMX_NBNXM_PAIRLIST_SIMD_KERNEL_H
 #define GMX_NBNXM_PAIRLIST_SIMD_KERNEL_H
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "pairlistwork.h"
 

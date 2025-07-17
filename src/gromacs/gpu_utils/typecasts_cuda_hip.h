@@ -43,7 +43,7 @@
 
 #include "gmxpre.h"
 
-#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/vectypes.h"
 
 /*! \brief Cast RVec buffer to float3 buffer.
  *

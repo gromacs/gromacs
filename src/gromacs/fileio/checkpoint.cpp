@@ -56,9 +56,6 @@
 #include "gromacs/fileio/xdr_serializer.h"
 #include "gromacs/fileio/xdrf.h"
 #include "gromacs/gmxlib/network.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vecdump.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/mdtypes/awh_correlation_history.h"
 #include "gromacs/mdtypes/awh_history.h"
@@ -96,6 +93,9 @@
 #include "gromacs/utility/sysinfo.h"
 #include "gromacs/utility/textwriter.h"
 #include "gromacs/utility/txtdump.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vecdump.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "buildinfo.h"
 

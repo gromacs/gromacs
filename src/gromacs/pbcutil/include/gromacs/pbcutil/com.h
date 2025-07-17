@@ -45,8 +45,8 @@
 #include <algorithm>
 #include <memory>
 
-#include "gromacs/math/vec.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/vec.h"
 
 #include "pbcenums.h"
 

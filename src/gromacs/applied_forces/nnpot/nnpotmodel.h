@@ -41,8 +41,8 @@
 #ifndef GMX_APPLIED_FORCES_NNPOTMODEL_H
 #define GMX_APPLIED_FORCES_NNPOTMODEL_H
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/vectypes.h"
 
 struct gmx_enerdata_t;
 enum class PbcType;

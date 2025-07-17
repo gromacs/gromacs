@@ -50,8 +50,8 @@
 #include <vector>
 
 #include "gromacs/math/coordinatetransformation.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdspan/extensions.h"
+#include "gromacs/utility/vectypes.h"
 
 namespace gmx
 {

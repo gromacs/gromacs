@@ -51,10 +51,10 @@
 #include "listed_forces/dataflow.hpp"
 #include "listed_forces/helpers.hpp"
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "nblib/box.h"
 #include "nblib/exception.h"

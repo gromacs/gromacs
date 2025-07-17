@@ -45,7 +45,6 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/interaction_const.h"
@@ -54,6 +53,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/mpicomm.h"
+#include "gromacs/utility/vec.h"
 
 /* There's nothing special to do here if just masses are perturbed,
  * but if either charge or type is perturbed then the implementation

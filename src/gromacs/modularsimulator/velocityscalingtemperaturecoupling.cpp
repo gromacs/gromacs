@@ -54,7 +54,6 @@
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdlib/coupling.h"
 #include "gromacs/mdlib/stat.h"
 #include "gromacs/mdrun/isimulator.h"
@@ -72,6 +71,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/strconvert.h"
+#include "gromacs/utility/vec.h"
 
 #include "modularsimulator.h"
 #include "simulatoralgorithm.h"

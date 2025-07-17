@@ -46,7 +46,6 @@
 #include <map>
 
 #include "gromacs/fileio/warninp.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/mdtypes/imdpoptionprovider_helpers.h"
 #include "gromacs/options/basicoptions.h"
@@ -60,6 +59,7 @@
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textreader.h"
+#include "gromacs/utility/vec.h"
 
 #include "qmmm.h"
 #include "qmmminputgenerator.h"

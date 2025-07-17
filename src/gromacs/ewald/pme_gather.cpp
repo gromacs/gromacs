@@ -36,11 +36,11 @@
 
 #include "pme_gather.h"
 
-#include "gromacs/math/vec.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/typetraits.h"
+#include "gromacs/utility/vec.h"
 
 #include "pme_internal.h"
 #include "pme_simd.h"

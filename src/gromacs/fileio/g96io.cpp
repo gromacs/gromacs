@@ -42,8 +42,6 @@
 #include <string>
 
 #include "gromacs/fileio/trxio.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/trajectory/trajectoryframe.h"
@@ -52,6 +50,8 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 #define CHAR_SHIFT 24
 

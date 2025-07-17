@@ -46,7 +46,7 @@
 #include <cstddef>
 
 #include "gromacs/gpu_utils/gmxsycl.h"
-#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/vectypes.h"
 
 #define GMX_HOST_ATTRIBUTE
 #define GMX_DEVICE_ATTRIBUTE

@@ -38,12 +38,12 @@
 
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/math/paddedvector.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/vectypes.h"
 
 template<typename AllocatorType>
 static void bcastPaddedRVecVector(MPI_Comm                                     communicator,

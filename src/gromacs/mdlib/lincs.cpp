@@ -69,7 +69,6 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/math/units.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdrunutility/multisim.h"
@@ -97,6 +96,7 @@
 #include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/vec.h"
 
 namespace
 {

@@ -60,12 +60,12 @@
 #include "gromacs/domdec/ga2la.h"
 #include "gromacs/domdec/hashedmap.h"
 #include "gromacs/domdec/partition.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/vec.h"
 
 void dd_move_f_specat(const gmx_domdec_t* dd, gmx_domdec_specat_comm_t* spac, gmx::RVec* f, gmx::RVec* fshift)
 {

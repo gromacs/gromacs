@@ -45,9 +45,9 @@
 #include <vector>
 
 #include "gromacs/gmxpreprocess/notset.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/enumerationhelpers.h"
+#include "gromacs/utility/vectypes.h"
 
 struct t_atom;
 struct t_symtab;

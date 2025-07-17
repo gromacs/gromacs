@@ -40,11 +40,11 @@
  * to/from rvec work as intended.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
- * \ingroup module_math
+ * \ingroup module_utility
  */
 #include "gmxpre.h"
 
-#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/vectypes.h"
 
 #include <array>
 #include <string>
@@ -53,8 +53,8 @@
 
 #include <gtest/gtest.h>
 
-#include "gromacs/math/vec.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vec.h"
 
 #include "testutils/testasserts.h"
 

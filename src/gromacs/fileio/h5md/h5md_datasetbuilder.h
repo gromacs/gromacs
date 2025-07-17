@@ -51,9 +51,9 @@
 #include "gromacs/fileio/h5md/h5md_guard.h"
 #include "gromacs/fileio/h5md/h5md_type.h"
 #include "gromacs/fileio/h5md/h5md_util.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/classhelpers.h"
+#include "gromacs/utility/vectypes.h"
 
 namespace gmx
 {

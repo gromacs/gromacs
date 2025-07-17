@@ -41,7 +41,6 @@
 
 #include "kernels_reference/kernel_ref_prune.h"
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdtypes/locality.h"
 #include "gromacs/nbnxm/atomdata.h"
@@ -53,6 +52,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "clusterdistancekerneltype.h"
 #include "nbnxm_gpu.h"

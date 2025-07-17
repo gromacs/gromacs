@@ -41,11 +41,11 @@
  */
 #include "plumedOptions.h"
 
-#include "gromacs/math/vec.h"
 #include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/mpicomm.h"
+#include "gromacs/utility/vec.h"
 
 namespace gmx
 {

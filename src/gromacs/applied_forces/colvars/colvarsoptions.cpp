@@ -50,7 +50,6 @@
 #include <optional>
 
 #include "gromacs/math/arrayrefwithpadding.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/imdpoptionprovider_helpers.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/ioptionscontainerwithsections.h"
@@ -63,6 +62,7 @@
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/textreader.h"
+#include "gromacs/utility/vec.h"
 
 #include "colvarsMDModule.h"
 

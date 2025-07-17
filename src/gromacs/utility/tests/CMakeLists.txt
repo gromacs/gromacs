@@ -57,6 +57,8 @@ gmx_add_unit_test(UtilityUnitTests utility-test
         textwriter.cpp
         txtdump.cpp
         typetraits.cpp
+        vecdump.cpp
+        vectypes.cpp
         )
 # TODO: Remove `legacy_modules` once specific modules are explicitly linked.
 target_link_libraries(utility-test PRIVATE legacy_modules)

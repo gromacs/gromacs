@@ -46,7 +46,7 @@
 #include <map>
 #include <utility>
 
-#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "nblib/exception.h"
 #include "nblib/interactions.h"

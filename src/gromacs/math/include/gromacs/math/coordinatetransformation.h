@@ -44,7 +44,7 @@
 
 #include <memory>
 
-#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "matrix.h"
 

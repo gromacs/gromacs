@@ -51,7 +51,6 @@
 #include "gromacs/compat/pointers.h"
 #include "gromacs/domdec/options.h"
 #include "gromacs/hardware/hw_info.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdrun/mdmodules.h"
 #include "gromacs/mdrun/simulationinputhandle.h"
 #include "gromacs/mdrunutility/handlerestart.h"
@@ -62,6 +61,7 @@
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/unique_cptr.h"
+#include "gromacs/utility/vec.h"
 
 #include "replicaexchange.h"
 

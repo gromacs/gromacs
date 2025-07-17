@@ -55,7 +55,6 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/domdec/domdec_struct.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/nbnxm/grid.h"
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/pbcutil/ishift.h"
@@ -64,6 +63,7 @@
 #include "gromacs/utility/fixedcapacityvector.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/range.h"
+#include "gromacs/utility/vec.h"
 
 #include "domdec_internal.h"
 #include "utility.h"

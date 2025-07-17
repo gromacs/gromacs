@@ -53,7 +53,6 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/math/units.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdlib/boxdeformation.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
@@ -82,6 +81,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/template_mp.h"
+#include "gromacs/utility/vec.h"
 
 using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
 

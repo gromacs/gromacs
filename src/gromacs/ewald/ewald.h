@@ -66,8 +66,8 @@
 
 #include <vector>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 struct t_commrec;
 struct t_forcerec;

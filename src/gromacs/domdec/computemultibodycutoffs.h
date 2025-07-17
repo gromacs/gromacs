@@ -45,8 +45,8 @@
 #ifndef GMX_DOMDEC_COMPUTEMULTIBODYCUTOFFS_H
 #define GMX_DOMDEC_COMPUTEMULTIBODYCUTOFFS_H
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 struct gmx_mtop_t;
 struct t_inputrec;

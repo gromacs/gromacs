@@ -49,7 +49,7 @@
 #include "gromacs/fileio/h5md/h5md_guard.h"
 #include "gromacs/fileio/h5md/h5md_type.h"
 #include "gromacs/fileio/h5md/tests/h5mdtestbase.h"
-#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/vectypes.h"
 
 namespace gmx
 {

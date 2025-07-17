@@ -50,8 +50,8 @@
 #include "gromacs/fft/parallel_3dfft.h"
 #include "gromacs/gpu_utils/gmxsycl.h"
 #include "gromacs/gpu_utils/syclutils.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/vec.h"
 
 #include "pme_gpu_grid.h"
 #include "pme_gpu_types.h"

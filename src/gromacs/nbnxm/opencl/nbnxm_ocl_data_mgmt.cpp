@@ -51,7 +51,6 @@
 
 #include "gromacs/hardware/device_information.h"
 #include "gromacs/hardware/device_management.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -67,6 +66,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "nbnxm_ocl_types.h"
 

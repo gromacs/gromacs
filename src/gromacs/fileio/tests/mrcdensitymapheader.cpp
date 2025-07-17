@@ -53,10 +53,10 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/math/coordinatetransformation.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdspan/extents.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "testutils/testasserts.h"
 #include "testutils/testmatchers.h"

@@ -50,7 +50,6 @@
 
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/paddedvector.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
@@ -67,6 +66,7 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringcompare.h"
+#include "gromacs/utility/vec.h"
 
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"

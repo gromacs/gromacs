@@ -54,7 +54,6 @@
 
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/domdec/domdec_struct.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/enumerationhelpers.h"
@@ -62,6 +61,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vec.h"
 
 #include "atomdistribution.h"
 #include "distribute.h"

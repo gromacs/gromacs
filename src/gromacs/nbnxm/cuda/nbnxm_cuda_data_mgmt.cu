@@ -56,7 +56,6 @@
 #include "gromacs/gpu_utils/gpueventsynchronizer.h"
 #include "gromacs/hardware/device_information.h"
 #include "gromacs/hardware/device_management.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -74,6 +73,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "nbnxm_cuda.h"
 /* Required to stop gcc emitting multiple definition warnings as cuda_fp16.h, which is included by

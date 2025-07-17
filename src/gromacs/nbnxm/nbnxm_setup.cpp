@@ -55,7 +55,6 @@
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/hardware/architecture.h"
 #include "gromacs/hardware/hw_info.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/calc_verletbuf.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdtypes/enerdata.h"
@@ -78,6 +77,7 @@
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "exclusionchecker.h"
 #include "freeenergydispatch.h"

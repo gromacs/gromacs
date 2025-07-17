@@ -48,8 +48,8 @@
 
 #include "gromacs/coordinateio/frameconverterenums.h"
 #include "gromacs/coordinateio/iframeconverter.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 struct t_trxframe;
 

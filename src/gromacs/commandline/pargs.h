@@ -45,9 +45,9 @@
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/fileio/oenv.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 struct gmx_output_env_t;
 

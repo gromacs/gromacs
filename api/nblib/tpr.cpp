@@ -51,7 +51,6 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/listed_forces/listed_forces.h"
 #include "gromacs/math/paddedvector.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -70,6 +69,7 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "nblib/box.h"
 #include "nblib/exception.h"

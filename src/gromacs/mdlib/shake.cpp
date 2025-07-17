@@ -53,7 +53,6 @@
 
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/functions.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/splitter.h"
 #include "gromacs/mdtypes/inputrec.h"
@@ -67,6 +66,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/listoflists.h"
+#include "gromacs/utility/vec.h"
 
 namespace gmx
 {

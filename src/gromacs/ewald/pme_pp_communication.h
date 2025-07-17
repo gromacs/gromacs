@@ -46,9 +46,9 @@
 #ifndef GMX_EWALD_PME_PP_COMMUNICATION_H
 #define GMX_EWALD_PME_PP_COMMUNICATION_H
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 /*! \brief MPI Tags used to separate communication of different types of quantities */
 enum

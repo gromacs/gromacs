@@ -54,7 +54,6 @@
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdlib/boxdeformation.h"
 #include "gromacs/mdlib/coupling.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
@@ -91,6 +90,7 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
+#include "gromacs/utility/vec.h"
 
 template<bool haveBoxDeformation>
 static void calc_ke_part_normal(const matrix                   deform,

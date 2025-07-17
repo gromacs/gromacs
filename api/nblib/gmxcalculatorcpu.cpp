@@ -46,7 +46,6 @@
 #include <type_traits>
 
 #include "gromacs/ewald/ewald_utils.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/interaction_const.h"
@@ -64,6 +63,7 @@
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/range.h"
+#include "gromacs/utility/vec.h"
 
 #include "nblib/exception.h"
 #include "nblib/kerneloptions.h"

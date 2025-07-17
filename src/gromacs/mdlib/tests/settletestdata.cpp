@@ -54,8 +54,6 @@
 
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/math/paddedvector.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/settle.h"
 #include "gromacs/mdlib/tests/watersystem.h"
 #include "gromacs/mdtypes/mdatom.h"
@@ -68,6 +66,8 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/unique_cptr.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "testutils/testasserts.h"
 

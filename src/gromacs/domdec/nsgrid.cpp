@@ -42,8 +42,8 @@
 #include "gromacs/domdec/dlb.h"
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/vec.h"
 
 /*! \brief The extent of the neighborsearch grid is a bit larger than sqrt(3)
  * to account for less dense regions at the edges of the system.

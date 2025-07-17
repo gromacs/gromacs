@@ -42,7 +42,6 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/tngio.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdlib/energyoutput.h"
 #include "gromacs/mdlib/mdoutf.h"
 #include "gromacs/mdlib/stat.h"
@@ -58,6 +57,7 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vec.h"
 
 void do_md_trajectory_writing(FILE*                          fplog,
                               t_commrec*                     cr,

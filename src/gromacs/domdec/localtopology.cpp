@@ -60,7 +60,6 @@
 #include "gromacs/domdec/options.h"
 #include "gromacs/domdec/reversetopology.h"
 #include "gromacs/math/functions.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/atominfo.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/mdatom.h"
@@ -80,6 +79,7 @@
 #include "gromacs/utility/range.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/strconvert.h"
+#include "gromacs/utility/vec.h"
 
 using gmx::ArrayRef;
 using gmx::DDBondedChecking;

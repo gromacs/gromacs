@@ -45,7 +45,6 @@
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/math/boxmatrix.h"
 #include "gromacs/math/units.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdlib/coupling.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/stat.h"
@@ -54,6 +53,7 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/boxutilities.h"
+#include "gromacs/utility/vec.h"
 
 #include "energydata.h"
 #include "modularsimulator.h"

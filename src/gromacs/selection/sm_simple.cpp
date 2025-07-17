@@ -44,7 +44,6 @@
 
 #include <vector>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/position.h"
 #include "gromacs/selection/selparam.h"
@@ -55,6 +54,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "selmethod.h"
 #include "selmethod_impl.h"

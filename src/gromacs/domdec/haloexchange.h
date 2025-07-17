@@ -60,9 +60,9 @@
 
 #include <vector>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/range.h"
+#include "gromacs/utility/vectypes.h"
 
 struct gmx_ddbox_t;
 struct gmx_domdec_t;

@@ -64,7 +64,6 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/fileio/enxio.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/ebin.h"
 #include "gromacs/mdlib/makeconstraints.h"
@@ -93,6 +92,7 @@
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textreader.h"
 #include "gromacs/utility/unique_cptr.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "testutils/refdata.h"
 #include "testutils/setenv.h"

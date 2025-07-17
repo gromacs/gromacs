@@ -33,21 +33,21 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/math/vecdump.h"
+#include "gromacs/utility/vecdump.h"
 
 #include <cstdio>
 #include <cstdlib>
 
 #include <type_traits>
 
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/textwriter.h"
 #include "gromacs/utility/txtdump.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 namespace gmx
 {

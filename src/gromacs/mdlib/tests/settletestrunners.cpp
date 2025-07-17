@@ -53,12 +53,12 @@
 
 #include "gromacs/math/arrayrefwithpadding.h"
 #include "gromacs/math/paddedvector.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/settle.h"
 #include "gromacs/mdlib/tests/settletestdata.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "testutils/testasserts.h"
 

@@ -52,12 +52,12 @@
 #include "gromacs/commandline/cmdlineoptionsmodule.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/math/functions.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/tools/convert_tpr.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"

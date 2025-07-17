@@ -47,7 +47,7 @@
 #ifndef GMX_DOMDEC_DOMDEC_NETWORK_H
 #define GMX_DOMDEC_DOMDEC_NETWORK_H
 
-#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/vectypes.h"
 
 struct gmx_domdec_t;
 

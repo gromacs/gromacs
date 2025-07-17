@@ -47,10 +47,10 @@
 #include <memory>
 
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/fixedcapacityvector.h"
+#include "gromacs/utility/vectypes.h"
 
 class GpuEventSynchronizer;
 class DeviceStream;

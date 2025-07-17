@@ -58,7 +58,6 @@
 #include "gromacs/ewald/pme_pp_comm_gpu.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gpu_utils/hostallocator.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdtypes/forceoutput.h"
@@ -75,6 +74,7 @@
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vec.h"
 
 #include "pme_pp_communication.h"
 

@@ -41,10 +41,10 @@
  * \ingroup module_nbnxm
  */
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/nbnxm/nbnxm_enums.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 namespace gmx
 {

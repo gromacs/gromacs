@@ -45,8 +45,6 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/math/vecdump.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/forcefieldparameters.h"
@@ -65,6 +63,8 @@
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/txtdump.h"
+#include "gromacs/utility/vecdump.h"
+#include "gromacs/utility/vectypes.h"
 
 const char* shortName(SimulationAtomGroupType type)
 {

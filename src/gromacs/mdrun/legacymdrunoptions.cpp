@@ -53,10 +53,10 @@
 
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/math/functions.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/vectypes.h"
 
 namespace gmx
 {

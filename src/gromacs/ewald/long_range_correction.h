@@ -47,8 +47,8 @@
 #ifndef GMX_EWALD_LONG_RANGE_CORRECTION_H
 #define GMX_EWALD_LONG_RANGE_CORRECTION_H
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 struct t_forcerec;
 struct t_inputrec;

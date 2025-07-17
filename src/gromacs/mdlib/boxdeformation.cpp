@@ -56,13 +56,13 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/boxmatrix.h"
 #include "gromacs/math/invertmatrix.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vec.h"
 
 namespace gmx
 {
