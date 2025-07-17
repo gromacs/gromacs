@@ -103,9 +103,10 @@ void writeFrame(const hid_t dataSet, const hsize_t index, const ArrayRef<const B
     const DataSetDims dims = getDataSetDims(dataSet);
     throwUponH5mdError(dims.size() != numDims,
                        gmx::formatString("Data set must be 3d but is %lud", dims.size()));
-    throwUponH5mdError(
-            dims[1] != values.size(),
-            gmx::formatString("Data set has %llu values but write buffer has %lu", dims[1], values.size()));
+    throwUponH5mdError(dims[1] != values.size(),
+                       gmx::formatString("Data set has %llu values but write buffer has %lu",
+                                         static_cast<unsigned long long>(dims[1]),
+                                         values.size()));
     throwUponH5mdError(dims[2] != DIM, "Data set inner dimension must be 3");
 
     const size_t              numValues = DIM * values.size();
