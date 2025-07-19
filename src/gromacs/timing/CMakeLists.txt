@@ -35,6 +35,7 @@
 add_library(timing INTERFACE)
 set(TIMING_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/cyclecounter.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/external_tracing.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/wallcycle.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/walltime_accounting.cpp
     )

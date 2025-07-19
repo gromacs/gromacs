@@ -58,6 +58,7 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
 #include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/timing/external_tracing.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/utility/cstringutil.h"
@@ -196,6 +197,7 @@ bool ResetHandler::resetCountersImpl(int64_t                     step,
         {
             resetGpuProfiler();
         }
+        resumeIttTracingWhenAppropriate();
 
         wallcycle_stop(wcycle, WallCycleCounter::Run);
         wallcycle_reset_all(wcycle);

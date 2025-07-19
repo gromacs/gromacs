@@ -89,6 +89,7 @@
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/mdtypes/state_propagator_data_gpu.h"
 #include "gromacs/timing/cyclecounter.h"
+#include "gromacs/timing/external_tracing.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -182,6 +183,7 @@ static void reset_pmeonly_counters(gmx_wallcycle*            wcycle,
     *nrnb = { 0 };
     wallcycle_start(wcycle, WallCycleCounter::Run);
     walltime_accounting_reset_time(walltime_accounting, step);
+    gmx::resumeIttTracingWhenAppropriate();
 
     if (useGpuForPme)
     {
