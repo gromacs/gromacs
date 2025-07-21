@@ -1290,6 +1290,79 @@ def add_base_stage(
             output_stages[name] += bb
 
 
+def get_cross_compilation_packages(args):
+    """Get packages needed for cross-compilation."""
+    if args.cross is None:
+        return []
+
+    arch_triplet = f"{args.cross}-linux-gnu"
+    packages = [
+        "qemu-user",
+        "qemu-user-static",
+        "binfmt-support",
+        "libtool",
+        f"crossbuild-essential-{args.cross}",
+        f"gcc-{args.gcc}-{arch_triplet}",
+        f"g++-{args.gcc}-{arch_triplet}",
+    ]
+    return packages
+
+
+def add_cross_compilation_support(
+    args, output_stages: typing.MutableMapping[str, "hpccm.Stage"]
+):
+    """Configure cross-compilation toolchain and QEMU support."""
+    if args.cross is None:
+        return
+
+    arch_triplet = f"{args.cross}-linux-gnu"
+
+    # Determine compiler settings based on which compiler is specified
+    if args.llvm is not None:
+        c_compiler = f"clang-{args.llvm}"
+        cxx_compiler = f"clang++-{args.llvm}"
+        # Add additional compiler flags needed for cross-compiling with LLVM
+        compiler_flags = f"--target={arch_triplet}"
+    else:
+        # Default to GCC
+        c_compiler = f"{arch_triplet}-gcc-{args.gcc}"
+        cxx_compiler = f"{arch_triplet}-g++-{args.gcc}"
+        compiler_flags = ""
+        qemu_flags = ""
+
+    if args.cross == "riscv64" and args.llvm is not None:
+        # QEmu support VLen up to 1024 bits
+        compiler_flags += " -march=rv64gcv_zvl1024b"
+        qemu_flags += " -cpu rv64,v=true,vext_spec=v1.0,vlen=1024"
+
+    # Add host architecture environment for CMake cross-compilation
+    output_stages["main"] += hpccm.primitives.shell(
+        commands=[
+            # Create a CMake toolchain file for cross-compilation
+            f"mkdir -p /opt/cross",
+            f"echo 'set(CMAKE_SYSTEM_NAME Linux)' > /opt/cross/{args.cross}-toolchain.cmake",
+            f"echo 'set(CMAKE_SYSTEM_PROCESSOR {args.cross})' >> /opt/cross/{args.cross}-toolchain.cmake",
+            f"echo 'set(CMAKE_C_COMPILER {c_compiler})' >> /opt/cross/{args.cross}-toolchain.cmake",
+            f"echo 'set(CMAKE_CXX_COMPILER {cxx_compiler})' >> /opt/cross/{args.cross}-toolchain.cmake",
+            f"echo 'set(CMAKE_C_FLAGS_INIT \"{compiler_flags}\")' >> /opt/cross/{args.cross}-toolchain.cmake",
+            f"echo 'set(CMAKE_CXX_FLAGS_INIT \"{compiler_flags}\")' >> /opt/cross/{args.cross}-toolchain.cmake",
+            f"echo 'set(CMAKE_FIND_ROOT_PATH /usr/{arch_triplet})' >> /opt/cross/{args.cross}-toolchain.cmake",
+            f"echo 'set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)' >> /opt/cross/{args.cross}-toolchain.cmake",
+            f"echo 'set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)' >> /opt/cross/{args.cross}-toolchain.cmake",
+            f"echo 'set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)' >> /opt/cross/{args.cross}-toolchain.cmake",
+            f"echo 'set(CMAKE_CROSSCOMPILING_EMULATOR /usr/local/bin/run-{args.cross})' >> /opt/cross/{args.cross}-toolchain.cmake",
+            # Configure QEMU for this architecture
+            f"echo '#!/bin/bash' > /usr/local/bin/run-{args.cross}",
+            f"echo 'export QEMU_LD_PREFIX=/usr/{arch_triplet}' >> /usr/local/bin/run-{args.cross}",
+            f"echo 'qemu-{args.cross} {qemu_flags} \"$@\"' >> /usr/local/bin/run-{args.cross}",
+            f"chmod +x /usr/local/bin/run-{args.cross}",
+        ]
+    )
+
+    # Set environment variables for cross-compilation
+    output_stages["main"] += hpccm.primitives.environment(variables=env_vars)
+
+
 def build_stages(args) -> typing.Iterable["hpccm.Stage"]:
     """Define and sequence the stages for the recipe corresponding to *args*."""
 
@@ -1328,6 +1401,7 @@ def build_stages(args) -> typing.Iterable["hpccm.Stage"]:
         list(get_llvm_packages(args))
         + get_opencl_packages(args)
         + get_cp2k_packages(args)
+        + get_cross_compilation_packages(args)
     )
     if args.doxygen is not None:
         os_packages += _docs_extra_packages
@@ -1459,6 +1533,10 @@ def build_stages(args) -> typing.Iterable["hpccm.Stage"]:
             "/usr/bin/python --version"
         ]
     )
+
+    # Add cross-compilation support if requested
+    if args.cross is not None:
+        add_cross_compilation_support(args, stages)
 
     # Note that the list of stages should be sorted in dependency order.
     for build_stage in stages.values():

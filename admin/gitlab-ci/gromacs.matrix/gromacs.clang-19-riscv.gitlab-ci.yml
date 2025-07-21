@@ -1,0 +1,56 @@
+# Test goal: Cross-compiling for RISC-V with NBNXM autovec
+# Test intents (should change rarely and conservatively):
+#   OS: Ubuntu newest supported
+#   Compiler: Clang
+#   GPU: no
+#   Scope: configure, build, unit tests, regression tests
+# Test implementation choices (free to change as needed):
+#   OS: Ubuntu 24.04
+#   Build type: RelWithAssert
+#   Compiler: Clang 19
+#   MPI: thread_MPI
+#   SIMD: None
+#   FFT: fftpack
+#   Parallelism nt/ntomp: 4/2
+
+gromacs:clang-19:riscv:configure:
+  extends:
+    - .gromacs:base:configure
+    - .use-clang:base
+  rules:
+    - !reference [.rules:merge-requests, rules]
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-19-cross-riscv64
+  variables:
+    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
+    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
+    CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=None"
+    # For simplicity, we use FFTPack, no OpenMP, no HDF5 etc.
+    # The toolchain file takes care of setting the target architecture, emulator, etc
+    CMAKE_EXTRA_OPTIONS: "-DCMAKE_TOOLCHAIN_FILE=/opt/cross/riscv64-toolchain.cmake -DGMX_OPENMP=OFF -DGMX_FFT_LIBRARY=fftpack -DGMX_USE_HDF5=OFF"
+    COMPILER_MAJOR_VERSION: 19
+
+gromacs:clang-19:riscv:build:
+  extends:
+    - .gromacs:base:build
+    - .before_script:default
+    - .use-ccache
+  rules:
+    - !reference [.rules:merge-requests, rules]
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-19-cross-riscv64
+  variables:
+    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
+  needs:
+    - job: gromacs:clang-19:riscv:configure
+
+gromacs:clang-19:riscv:test:
+  extends:
+    - .gromacs:base:test
+  rules:
+    - !reference [.rules:merge-requests, rules]
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-19-cross-riscv64
+  variables:
+    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
+  needs:
+    - job: gromacs:clang-19:riscv:build
+
+# Don't run regression tests because the script does not support using custom launchers

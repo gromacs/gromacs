@@ -43,7 +43,8 @@
 
 #include "gromacs/utility/real.h"
 
-#if HAVE_FEDISABLEEXCEPT || (defined(__i386__) || defined(__x86_64__)) && defined(__APPLE__)
+#if (HAVE_FEDISABLEEXCEPT && !defined(__riscv)) \
+        || (defined(__i386__) || defined(__x86_64__)) && defined(__APPLE__)
 //! Floating point exception set that we use and care about
 constexpr int c_FPexceptions = FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW;
 #endif

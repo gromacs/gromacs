@@ -274,6 +274,16 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    "--cross",
+    type=str,
+    nargs="?",
+    const="aarch64",
+    default=None,
+    choices=["aarch64", "riscv64"],
+    help="Add cross-compilation support for the specified architecture with QEMU emulation",
+)
+
+parser.add_argument(
     "--libtorch",
     type=str,
     nargs="?",
@@ -339,6 +349,10 @@ def image_name(configuration: argparse.Namespace) -> str:
         value = getattr(configuration, attr, None)
         if value is not None:
             elements.append(cases[attr])
+
+    # Add cross-compilation target if specified
+    if configuration.cross is not None:
+        elements.append(f"cross-{configuration.cross}")
     slug = "-".join(elements)
     # we are using the GitLab container registry to store the images
     # to get around issues with pulling them repeatedly from DockerHub
