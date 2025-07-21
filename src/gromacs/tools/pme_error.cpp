@@ -60,7 +60,6 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/mdlib/broadcaststructs.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
@@ -75,6 +74,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
@@ -434,7 +434,7 @@ static real estimate_reciprocal(PmeErrorInputs* info,
                                 int  seed,     /* The seed for the random number generator */
                                 int* nsamples, /* Return the number of samples used if Monte Carlo
                                                 * algorithm is used for self energy error estimate */
-                                t_commrec* cr)
+                                const gmx::MpiComm& mpiComm)
 {
     real     e_rec   = 0; /* reciprocal error estimate */
     real     e_rec1  = 0; /* Error estimate term 1*/
@@ -497,10 +497,10 @@ static real estimate_reciprocal(PmeErrorInputs* info,
     startglobal = -info->nkx[0] / 2;
     stopglobal  = info->nkx[0] / 2;
     xtot        = stopglobal * 2 + 1;
-    if (cr->commMySim.size() > 1)
+    if (mpiComm.size() > 1)
     {
-        x_per_core = static_cast<int>(std::ceil(static_cast<real>(xtot) / cr->commMyGroup.size()));
-        startlocal = startglobal + x_per_core * cr->commMyGroup.rank();
+        x_per_core = static_cast<int>(std::ceil(static_cast<real>(xtot) / mpiComm.size()));
+        startlocal = startglobal + x_per_core * mpiComm.rank();
         stoplocal  = startlocal + x_per_core - 1;
         if (stoplocal > stopglobal)
         {
@@ -516,14 +516,14 @@ static real estimate_reciprocal(PmeErrorInputs* info,
 
 #if GMX_LIB_MPI
 #    ifdef TAKETIME
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         t0 = MPI_Wtime();
     }
 #    endif
 #endif
 
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
 
         fprintf(stderr, "Calculating reciprocal error part 1 ...");
@@ -618,7 +618,7 @@ static real estimate_reciprocal(PmeErrorInputs* info,
                 e_rec2 += 4.0 * coeff * coeff * tmp * q2_all * q2_all / nr;
             }
         }
-        if (MAIN(cr))
+        if (mpiComm.isMainRank())
         {
             fprintf(stderr,
                     "\rCalculating reciprocal error part 1 ... %3.0f%%",
@@ -627,7 +627,7 @@ static real estimate_reciprocal(PmeErrorInputs* info,
         }
     }
 
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         fprintf(stderr, "\n");
     }
@@ -640,17 +640,17 @@ static real estimate_reciprocal(PmeErrorInputs* info,
         /* Here xtot is the number of samples taken for the Monte Carlo calculation
          * of the average of term IV of equation 35 in Wang2010. Round up to a
          * number of samples that is divisible by the number of nodes */
-        x_per_core = static_cast<int>(std::ceil(info->fracself * nr / cr->commMyGroup.size()));
-        xtot       = x_per_core * cr->commMyGroup.size();
+        x_per_core = static_cast<int>(std::ceil(info->fracself * nr / mpiComm.size()));
+        xtot       = x_per_core * mpiComm.size();
     }
     else
     {
         /* In this case we use all nr particle positions */
         xtot       = nr;
-        x_per_core = static_cast<int>(std::ceil(static_cast<real>(xtot) / cr->commMyGroup.size()));
+        x_per_core = static_cast<int>(std::ceil(static_cast<real>(xtot) / mpiComm.size()));
     }
 
-    startlocal = x_per_core * cr->commMyGroup.rank();
+    startlocal = x_per_core * mpiComm.rank();
     stoplocal  = std::min(startlocal + x_per_core, xtot); /* min needed if xtot == nr */
 
     if (bFraction)
@@ -659,7 +659,7 @@ static real estimate_reciprocal(PmeErrorInputs* info,
          * take the sample indices from a single, global random number array that
          * is constructed on the main node and that only depends on the seed */
         snew(numbers, xtot);
-        if (MAIN(cr))
+        if (mpiComm.isMainRank())
         {
             for (i = 0; i < xtot; i++)
             {
@@ -667,18 +667,18 @@ static real estimate_reciprocal(PmeErrorInputs* info,
             }
         }
         /* Broadcast the random number array to the other nodes */
-        if (PAR(cr))
+        if (mpiComm.size() > 1)
         {
-            nblock_bc(cr->commMyGroup.comm(), xtot, numbers);
+            nblock_bc(mpiComm.comm(), xtot, numbers);
         }
 
-        if (bVerbose && MAIN(cr))
+        if (bVerbose && mpiComm.isMainRank())
         {
             fprintf(stdout,
                     "Using %d sample%s to approximate the self interaction error term",
                     xtot,
                     xtot == 1 ? "" : "s");
-            if (PAR(cr))
+            if (mpiComm.size() > 1)
             {
                 fprintf(stdout, " (%d sample%s per rank)", x_per_core, x_per_core == 1 ? "" : "s");
             }
@@ -748,21 +748,21 @@ static real estimate_reciprocal(PmeErrorInputs* info,
 
         e_rec3 += q[ci] * q[ci] * q[ci] * q[ci] * norm2(tmpvec2)
                   / (xtot * M_PI * info->volume * M_PI * info->volume);
-        if (MAIN(cr))
+        if (mpiComm.isMainRank())
         {
             fprintf(stderr, "\rCalculating reciprocal error part 2 ... %3.0f%%", 100.0 * (i + 1) / stoplocal);
             std::fflush(stderr);
         }
     }
 
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         fprintf(stderr, "\n");
     }
 
 #if GMX_LIB_MPI
 #    ifdef TAKETIME
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         t1 = MPI_Wtime() - t0;
         fprintf(fp_out, "Recip. err. est. took   : %lf s\n", t1);
@@ -771,17 +771,17 @@ static real estimate_reciprocal(PmeErrorInputs* info,
 #endif
 
 #ifdef DEBUG
-    if (PAR(cr))
+    if (mpiComm.size() > 1)
     {
-        fprintf(stderr, "Rank %3d: nx=[%3d...%3d]  e_rec3=%e\n", cr->nodeid, startlocal, stoplocal, e_rec3);
+        fprintf(stderr, "Rank %3d: nx=[%3d...%3d]  e_rec3=%e\n", mpiComm.rank(), startlocal, stoplocal, e_rec3);
     }
 #endif
 
-    if (PAR(cr))
+    if (mpiComm.size() > 1)
     {
-        cr->commMyGroup.sumReduce(1, &e_rec1);
-        cr->commMyGroup.sumReduce(1, &e_rec2);
-        cr->commMyGroup.sumReduce(1, &e_rec3);
+        mpiComm.sumReduce(1, &e_rec1);
+        mpiComm.sumReduce(1, &e_rec2);
+        mpiComm.sumReduce(1, &e_rec3);
     }
 
     /* e_rec1*=8.0 * q2_all / info->volume / info->volume / nr ;
@@ -822,12 +822,12 @@ static void create_info(PmeErrorInputs* info)
 /* Allocate and fill an array with coordinates and charges,
  * returns the number of charges found
  */
-static int prepare_x_q(real* q[], rvec* x[], const gmx_mtop_t* mtop, const rvec x_orig[], t_commrec* cr)
+static int prepare_x_q(real* q[], rvec* x[], const gmx_mtop_t* mtop, const rvec x_orig[], const gmx::MpiComm& mpiComm)
 {
     int nq = 0; /* number of charged particles, keep static-analyzer happy by zeroing here */
 
 
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         snew(*q, mtop->natoms);
         snew(*x, mtop->natoms);
@@ -851,14 +851,14 @@ static int prepare_x_q(real* q[], rvec* x[], const gmx_mtop_t* mtop, const rvec 
         srenew(*x, nq);
     }
     /* Broadcast x and q in the parallel case */
-    if (PAR(cr))
+    if (mpiComm.size() > 1)
     {
         /* Transfer the number of charges */
-        block_bc(cr->commMyGroup.comm(), nq);
-        snew_bc(MAIN(cr), *x, nq);
-        snew_bc(MAIN(cr), *q, nq);
-        nblock_bc(cr->commMyGroup.comm(), nq, *x);
-        nblock_bc(cr->commMyGroup.comm(), nq, *q);
+        block_bc(mpiComm.comm(), nq);
+        snew_bc(mpiComm.isMainRank(), *x, nq);
+        snew_bc(mpiComm.isMainRank(), *q, nq);
+        nblock_bc(mpiComm.comm(), nq, *x);
+        nblock_bc(mpiComm.comm(), nq, *q);
     }
 
     return nq;
@@ -911,22 +911,22 @@ static void read_tpr_file(const char*     fn_sim_tpr,
 
 
 /* Transfer what we need for parallelizing the reciprocal error estimate */
-static void bcast_info(PmeErrorInputs* info, const t_commrec* cr)
+static void bcast_info(PmeErrorInputs* info, const gmx::MpiComm& mpiComm)
 {
-    nblock_bc(cr->commMyGroup.comm(), info->n_entries, info->nkx);
-    nblock_bc(cr->commMyGroup.comm(), info->n_entries, info->nky);
-    nblock_bc(cr->commMyGroup.comm(), info->n_entries, info->nkz);
-    nblock_bc(cr->commMyGroup.comm(), info->n_entries, info->ewald_beta);
-    nblock_bc(cr->commMyGroup.comm(), info->n_entries, info->pme_order);
-    nblock_bc(cr->commMyGroup.comm(), info->n_entries, info->e_dir);
-    nblock_bc(cr->commMyGroup.comm(), info->n_entries, info->e_rec);
-    block_bc(cr->commMyGroup.comm(), info->volume);
-    block_bc(cr->commMyGroup.comm(), info->recipbox);
-    block_bc(cr->commMyGroup.comm(), info->natoms);
-    block_bc(cr->commMyGroup.comm(), info->fracself);
-    block_bc(cr->commMyGroup.comm(), info->bTUNE);
-    block_bc(cr->commMyGroup.comm(), info->q2all);
-    block_bc(cr->commMyGroup.comm(), info->q2allnr);
+    nblock_bc(mpiComm.comm(), info->n_entries, info->nkx);
+    nblock_bc(mpiComm.comm(), info->n_entries, info->nky);
+    nblock_bc(mpiComm.comm(), info->n_entries, info->nkz);
+    nblock_bc(mpiComm.comm(), info->n_entries, info->ewald_beta);
+    nblock_bc(mpiComm.comm(), info->n_entries, info->pme_order);
+    nblock_bc(mpiComm.comm(), info->n_entries, info->e_dir);
+    nblock_bc(mpiComm.comm(), info->n_entries, info->e_rec);
+    block_bc(mpiComm.comm(), info->volume);
+    block_bc(mpiComm.comm(), info->recipbox);
+    block_bc(mpiComm.comm(), info->natoms);
+    block_bc(mpiComm.comm(), info->fracself);
+    block_bc(mpiComm.comm(), info->bTUNE);
+    block_bc(mpiComm.comm(), info->q2all);
+    block_bc(mpiComm.comm(), info->q2allnr);
 }
 
 
@@ -934,13 +934,13 @@ static void bcast_info(PmeErrorInputs* info, const t_commrec* cr)
  * a) a homogeneous distribution of the charges
  * b) a total charge of zero.
  */
-static void estimate_PME_error(PmeErrorInputs*   info,
-                               const t_state*    state,
-                               const gmx_mtop_t* mtop,
-                               FILE*             fp_out,
-                               gmx_bool          bVerbose,
-                               unsigned int      seed,
-                               t_commrec*        cr)
+static void estimate_PME_error(PmeErrorInputs*     info,
+                               const t_state*      state,
+                               const gmx_mtop_t*   mtop,
+                               FILE*               fp_out,
+                               gmx_bool            bVerbose,
+                               unsigned int        seed,
+                               const gmx::MpiComm& mpiComm)
 {
     rvec* x     = nullptr; /* The coordinates */
     real* q     = nullptr; /* The charges     */
@@ -957,15 +957,15 @@ static void estimate_PME_error(PmeErrorInputs*   info,
 
     // Help humans and analyzers understand that the main rank has
     // a valid pointer
-    GMX_RELEASE_ASSERT((MAIN(cr)) == (fp_out != nullptr), "Inconsistent file pointer");
-    if (MAIN(cr))
+    GMX_RELEASE_ASSERT(mpiComm.isMainRank() == (fp_out != nullptr), "Inconsistent file pointer");
+    if (mpiComm.isMainRank())
     {
         fprintf(fp_out, "\n--- PME ERROR ESTIMATE ---\n");
     }
 
     /* Prepare an x and q array with only the charged atoms */
-    ncharges = prepare_x_q(&q, &x, mtop, state->x.rvec_array(), cr);
-    if (MAIN(cr))
+    ncharges = prepare_x_q(&q, &x, mtop, state->x.rvec_array(), mpiComm);
+    if (mpiComm.isMainRank())
     {
         calc_q2all(mtop, &(info->q2all), &(info->q2allnr));
         info->ewald_rtol[0] = std::erfc(info->rcoulomb[0] * info->ewald_beta[0]);
@@ -980,9 +980,9 @@ static void estimate_PME_error(PmeErrorInputs*   info,
         std::fflush(fp_out);
     }
 
-    if (PAR(cr))
+    if (mpiComm.size() > 1)
     {
-        bcast_info(info, cr);
+        bcast_info(info, mpiComm);
     }
 
 
@@ -990,17 +990,17 @@ static void estimate_PME_error(PmeErrorInputs*   info,
     info->e_dir[0] = estimate_direct(info);
 
     /* Calculate reciprocal space error */
-    info->e_rec[0] = estimate_reciprocal(info, x, q, ncharges, fp_out, bVerbose, seed, &nsamples, cr);
+    info->e_rec[0] = estimate_reciprocal(info, x, q, ncharges, fp_out, bVerbose, seed, &nsamples, mpiComm);
 
-    if (PAR(cr))
+    if (mpiComm.size() > 1)
     {
-        bcast_info(info, cr);
+        bcast_info(info, mpiComm);
     }
 
     // Help humans and analyzers understand that the main rank has
     // a valid pointer
-    GMX_RELEASE_ASSERT((MAIN(cr)) == (fp_out != nullptr), "Inconsistent file pointer");
-    if (MAIN(cr))
+    GMX_RELEASE_ASSERT((mpiComm.isMainRank()) == (fp_out != nullptr), "Inconsistent file pointer");
+    if (mpiComm.isMainRank())
     {
         fprintf(fp_out, "Direct space error est. : %10.3e kJ/(mol*nm)\n", info->e_dir[0]);
         fprintf(fp_out, "Reciprocal sp. err. est.: %10.3e kJ/(mol*nm)\n", info->e_rec[0]);
@@ -1014,7 +1014,7 @@ static void estimate_PME_error(PmeErrorInputs*   info,
 
     if (info->bTUNE)
     {
-        if (MAIN(cr))
+        if (mpiComm.isMainRank())
         {
             fprintf(stderr, "Starting tuning ...\n");
         }
@@ -1031,11 +1031,12 @@ static void estimate_PME_error(PmeErrorInputs*   info,
             info->ewald_beta[0] -= 0.1;
         }
         info->e_dir[0] = estimate_direct(info);
-        info->e_rec[0] = estimate_reciprocal(info, x, q, ncharges, fp_out, bVerbose, seed, &nsamples, cr);
+        info->e_rec[0] =
+                estimate_reciprocal(info, x, q, ncharges, fp_out, bVerbose, seed, &nsamples, mpiComm);
 
-        if (PAR(cr))
+        if (mpiComm.size() > 1)
         {
-            bcast_info(info, cr);
+            bcast_info(info, mpiComm);
         }
 
 
@@ -1052,19 +1053,19 @@ static void estimate_PME_error(PmeErrorInputs*   info,
             derr0               = derr;
 
             info->e_dir[0] = estimate_direct(info);
-            info->e_rec[0] =
-                    estimate_reciprocal(info, x, q, ncharges, fp_out, bVerbose, seed, &nsamples, cr);
+            info->e_rec[0] = estimate_reciprocal(
+                    info, x, q, ncharges, fp_out, bVerbose, seed, &nsamples, mpiComm);
 
-            if (PAR(cr))
+            if (mpiComm.size() > 1)
             {
-                bcast_info(info, cr);
+                bcast_info(info, mpiComm);
             }
 
             edir = info->e_dir[0];
             erec = info->e_rec[0];
             derr = edir - erec;
 
-            if (MAIN(cr))
+            if (mpiComm.isMainRank())
             {
                 i++;
                 fprintf(stderr,
@@ -1078,7 +1079,7 @@ static void estimate_PME_error(PmeErrorInputs*   info,
 
         info->ewald_rtol[0] = std::erfc(info->rcoulomb[0] * info->ewald_beta[0]);
 
-        if (MAIN(cr))
+        if (mpiComm.isMainRank())
         {
             /* Write some info to log file */
             std::fflush(fp_out);
@@ -1157,8 +1158,7 @@ int gmx_pme_error(int argc, char* argv[])
 
 #define NFILE asize(fnm)
 
-    const gmx::MpiComm mpiCommWorld(MPI_COMM_WORLD);
-    t_commrec          cr(mpiCommWorld);
+    const gmx::MpiComm mpiComm(MPI_COMM_WORLD);
     PCA_Flags = PCA_NOEXIT_ON_ARGS;
 
     if (!parse_common_args(
@@ -1179,7 +1179,7 @@ int gmx_pme_error(int argc, char* argv[])
     info.fourier_sp[0] = fs;
 
     t_inputrec ir;
-    if (MAIN(&cr))
+    if (mpiComm.isMainRank())
     {
         read_tpr_file(opt2fn("-s", NFILE, fnm), &info, &state, &mtop, &ir, user_beta, fracself);
         /* Open logfile for reading */
@@ -1193,7 +1193,7 @@ int gmx_pme_error(int argc, char* argv[])
     }
 
     /* Check consistency if the user provided fourierspacing */
-    if (fs > 0 && MAIN(&cr))
+    if (fs > 0 && mpiComm.isMainRank())
     {
         /* Recalculate the grid dimensions using fourierspacing from user input */
         info.nkx[0] = 0;
@@ -1223,15 +1223,15 @@ int gmx_pme_error(int argc, char* argv[])
 
     /* Estimate (S)PME force error */
 
-    if (PAR(&cr))
+    if (mpiComm.size() > 1)
     {
-        bcast_info(&info, &cr);
+        bcast_info(&info, mpiComm);
     }
 
     /* Get an error estimate of the input tpr file and do some tuning if requested */
-    estimate_PME_error(&info, &state, &mtop, fp, bVerbose, seed, &cr);
+    estimate_PME_error(&info, &state, &mtop, fp, bVerbose, seed, mpiComm);
 
-    if (MAIN(&cr))
+    if (mpiComm.isMainRank())
     {
         /* Write out optimized tpr file if requested */
         if (opt2bSet("-so", NFILE, fnm) || bTUNE)
