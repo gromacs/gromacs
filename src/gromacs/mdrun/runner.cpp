@@ -1856,20 +1856,21 @@ int Mdrunner::mdrunner()
                     runScheduleWork.simulationWork.useNvshmem);
         }
 
-        fr->nbv = init_nb_verlet(mdlog,
-                                 *inputrec,
-                                 *fr,
-                                 cr->commMyGroup,
-                                 cr->dd,
-                                 *hwinfo_,
-                                 runScheduleWork.simulationWork.useGpuNonbonded,
-                                 deviceStreamManager.get(),
-                                 mtop,
-                                 runScheduleWork.simulationWork.haveFillerParticlesInLocalState,
-                                 PAR(cr) ? &observablesReducerBuilder : nullptr,
-                                 isSimulationMainRank ? globalState->x : gmx::ArrayRef<const gmx::RVec>(),
-                                 box,
-                                 wcycle.get());
+        fr->nbv = init_nb_verlet(
+                mdlog,
+                *inputrec,
+                *fr,
+                cr->commMyGroup,
+                cr->dd,
+                *hwinfo_,
+                runScheduleWork.simulationWork.useGpuNonbonded,
+                deviceStreamManager.get(),
+                mtop,
+                runScheduleWork.simulationWork.haveFillerParticlesInLocalState,
+                (cr->dd && cr->dd->mpiComm().size() > 1) ? &observablesReducerBuilder : nullptr,
+                isSimulationMainRank ? globalState->x : gmx::ArrayRef<const gmx::RVec>(),
+                box,
+                wcycle.get());
         // TODO: Move the logic below to a GPU bonded builder
         if (runScheduleWork.simulationWork.useGpuBonded)
         {
