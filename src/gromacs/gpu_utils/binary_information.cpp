@@ -50,6 +50,10 @@
 #include "buildinfo.h"
 #include "gpuinfo.h"
 
+#if GMX_NVSHMEM
+#    include <nvshmem.h>
+#endif
+
 #if GMX_GPU_SYCL
 #    include "gromacs/gpu_utils/gmxsycl.h"
 #endif
@@ -81,6 +85,16 @@ std::string getCudaRuntimeVersionString()
     }
     return gmx::formatString("%d.%d", cuda_runtime / 1000, cuda_runtime % 100);
 }
+
+#    if GMX_NVSHMEM
+std::string getNvshmemVersion()
+{
+    char nvshmemName[NVSHMEM_MAX_NAME_LEN] = "version unknown";
+    // Does not initialize the runtime
+    nvshmem_info_get_name(nvshmemName); // does not report errors; resul contains version
+    return gmx::formatString("enabled, %s", nvshmemName);
+}
+#    endif
 #endif
 
 #if GMX_GPU_SYCL
@@ -211,6 +225,11 @@ std::unordered_map<std::string, std::string> gpuDescriptions()
             std::string(CUDA_COMPILER_FLAGS) + " " + CMAKE_BUILD_CONFIGURATION_CXX_FLAGS;
     descriptions["CUDA driver"]  = getCudaDriverVersionString();
     descriptions["CUDA runtime"] = getCudaRuntimeVersionString();
+#    if GMX_NVSHMEM
+    descriptions["NVSHMEM"] = getNvshmemVersion();
+#    else
+    descriptions["NVSHMEM"] = "disabled";
+#    endif
 #elif GMX_SYCL_DPCPP
     descriptions["SYCL version"]        = "oneAPI DPC++ " + getSyclCompilerVersion();
     descriptions["SYCL compiler flags"] = SYCL_DPCPP_COMPILER_FLAGS;

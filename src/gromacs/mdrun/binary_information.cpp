@@ -287,6 +287,7 @@ void writeExtendedInfo(gmx::TextWriter* writer)
     writeOptionalLineFromMap(writer, "CUDA compiler flags", gpuDescriptionStrings);
     writeOptionalLineFromMap(writer, "CUDA driver", gpuDescriptionStrings);
     writeOptionalLineFromMap(writer, "CUDA runtime", gpuDescriptionStrings);
+    writeOptionalLineFromMap(writer, "NVSHMEM", gpuDescriptionStrings);
     writeOptionalLineFromMap(writer, "SYCL version", gpuDescriptionStrings);
     writeOptionalLineFromMap(writer, "SYCL compiler", gpuDescriptionStrings);
     writeOptionalLineFromMap(writer, "SYCL compiler flags", gpuDescriptionStrings);
