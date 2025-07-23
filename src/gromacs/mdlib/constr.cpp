@@ -1198,8 +1198,9 @@ Constraints::Impl::Impl(const gmx_mtop_t&          mtop_p,
 
         if (ir.eConstrAlg == ConstraintAlgorithm::Lincs)
         {
-            GMX_ASSERT(observablesReducerBuilder == nullptr || mpiComm.size() > 1,
-                       "ObservablesReducer only works with LINCS when there is more than one rank");
+            GMX_RELEASE_ASSERT(
+                    observablesReducerBuilder == nullptr || mpiComm.size() > 1,
+                    "ObservablesReducer only works with LINCS when there is more than one rank");
             lincsd = init_lincs(
                     log, mtop, nflexcon, at2con_mt, mayHaveSplitConstraints, ir.nLincsIter, ir.nProjOrder, observablesReducerBuilder);
         }

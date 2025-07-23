@@ -2171,20 +2171,21 @@ int Mdrunner::mdrunner()
             }
 
             /* Let makeConstraints know whether we have essential dynamics constraints. */
-            auto constr = makeConstraints(mtop,
-                                          *inputrec,
-                                          pull_work,
-                                          pull_work != nullptr ? pull_have_constraint(*pull_work) : false,
-                                          doEssentialDynamics,
-                                          fplog,
-                                          cr->commMyGroup,
-                                          cr->dd,
-                                          updateGroups.useUpdateGroups(),
-                                          ms,
-                                          &nrnb,
-                                          wcycle.get(),
-                                          fr->bMolPBC,
-                                          PAR(cr) ? &observablesReducerBuilder : nullptr);
+            auto constr = makeConstraints(
+                    mtop,
+                    *inputrec,
+                    pull_work,
+                    pull_work != nullptr ? pull_have_constraint(*pull_work) : false,
+                    doEssentialDynamics,
+                    fplog,
+                    cr->commMyGroup,
+                    cr->dd,
+                    updateGroups.useUpdateGroups(),
+                    ms,
+                    &nrnb,
+                    wcycle.get(),
+                    fr->bMolPBC,
+                    (cr->dd && cr->dd->mpiComm().size() > 1) ? &observablesReducerBuilder : nullptr);
 
             /* Energy terms and groups */
             gmx_enerdata_t enerd(mtop.groups.groups[SimulationAtomGroupType::EnergyOutput].size(),
