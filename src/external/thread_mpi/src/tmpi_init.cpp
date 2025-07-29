@@ -425,9 +425,9 @@ int tMPI_Start_threads(tmpi_bool main_returns, int N,
 {
     int ret;
 #ifdef TMPI_TRACE
-    tMPI_Trace_print("tMPI_Start_threads(%d, %d, %d, %d, %d, %p, %p, %p, %p)",
+    tMPI_Trace_print("tMPI_Start_threads(%d, %d, %d, %p, %p, %p, %p, %p)",
                      main_returns, N, aff_strategy, argc, argv, start_fn,
-                     start_arg);
+                     start_arg, start_fn_main);
 #endif
     if (N > 0)
     {
