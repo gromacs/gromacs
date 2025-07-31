@@ -58,3 +58,11 @@ Addition of a compilation option necessary to avoid CUDA build failures when usi
 compiler from version 13 of the CUDA toolkit.
 
 :issue:`5389`
+
+Avoid installing 3rd party header files
+"""""""""""""""""""""""""""""""""""""""
+
+Fixed a regression where |Gromacs| installed muParser headers, causing conflicts with
+the separate muParser package if installed.
+
+:issue:`5282`

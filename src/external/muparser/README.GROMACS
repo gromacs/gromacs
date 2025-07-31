@@ -8,6 +8,8 @@ ENABLE_SAMPLES is set off
 
 ENABLE_OPENMP gets its value from GMX_OPENMP
 
+Added EXCLUDE_FROM_ALL to Development components to prevent them from being installed.
+
 The minimum required CMake version was changed to match that used for
 GROMACS, so that the policy usage is consistent, so that muParser
 cache variables can be overridden by normal GROMACS variables without
