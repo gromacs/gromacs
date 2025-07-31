@@ -23,6 +23,10 @@
 
 #include <unistd.h>
 
+#if defined(__cplusplus) && __cplusplus >= 202002L
+#include <version>
+#endif
+
 #ifdef __cpp_lib_filesystem
 #include <filesystem>
 #endif

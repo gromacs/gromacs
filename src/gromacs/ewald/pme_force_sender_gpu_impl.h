@@ -51,6 +51,10 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 
+#if defined(__cplusplus) && __cplusplus >= 202002L
+#    include <version>
+#endif
+
 // Portable definition of cache line size
 #ifdef __cpp_lib_hardware_interference_size
 using std::hardware_destructive_interference_size;

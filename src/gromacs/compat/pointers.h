@@ -71,6 +71,8 @@
 #ifndef GMX_COMPAT_POINTERS_H
 #define GMX_COMPAT_POINTERS_H
 
+#include <cstddef>
+
 #include <type_traits>
 #include <utility>
 
