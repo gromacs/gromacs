@@ -61,7 +61,7 @@ namespace gmx
  */
 struct GridSetData
 {
-    //! The cell indices for all atoms
+    //! The cell indices for all atoms, the cell indices number contiguously over all grids
     HostVector<int> cells;
     //! The atom indices for all atoms stored in cell order
     HostVector<int> atomIndices;

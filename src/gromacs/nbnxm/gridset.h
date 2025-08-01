@@ -211,7 +211,7 @@ public:
         return constArrayRefFromArray(grids_.data(), numGridsInUse_);
     }
 
-    //! Returns the grid atom indices covering all grids
+    //! Returns the cell indices for all atoms, the cell indices number contiguously over all grids
     ArrayRef<const int> cells() const { return gridSetData_.cells; }
 
     //! Returns the grid atom indices covering all grids
