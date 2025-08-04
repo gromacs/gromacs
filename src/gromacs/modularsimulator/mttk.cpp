@@ -81,7 +81,7 @@ void MttkData::build(LegacySimulatorData*                    legacySimulatorData
     // TODO: Make sure we have a valid state in statePropagatorData at all times (#3421)
     if (haveDDAtomOrdering(*legacySimulatorData->cr_))
     {
-        if (MAIN(legacySimulatorData->cr_))
+        if (legacySimulatorData->cr_->commMyGroup.isMainRank())
         {
             initialVolume = det(legacySimulatorData->stateGlobal_->box);
         }

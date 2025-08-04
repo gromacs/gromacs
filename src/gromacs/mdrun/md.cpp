@@ -275,10 +275,12 @@ void gmx::LegacySimulator::do_md()
                   "Either specify the -ei option to mdrun, or do not use this checkpoint file.");
     }
 
-    int*                fep_state = MAIN(cr_) ? &stateGlobal_->fep_state : nullptr;
-    gmx::ArrayRef<real> lambda    = MAIN(cr_) ? stateGlobal_->lambda : gmx::ArrayRef<real>();
+    const bool isMainRank = cr_->commMySim.isMainRank();
+
+    int*                fep_state = isMainRank ? &stateGlobal_->fep_state : nullptr;
+    gmx::ArrayRef<real> lambda    = isMainRank ? stateGlobal_->lambda : gmx::ArrayRef<real>();
     initialize_lambdas(
-            fpLog_, ir->efep, ir->bSimTemp, *ir->fepvals, ir->simtempvals->temperatures, ekind_, MAIN(cr_), fep_state, lambda);
+            fpLog_, ir->efep, ir->bSimTemp, *ir->fepvals, ir->simtempvals->temperatures, ekind_, isMainRank, fep_state, lambda);
     Update upd(*ir, *ekind_, deform_);
 
     // Simulated annealing updates the reference temperature.
@@ -525,7 +527,7 @@ void gmx::LegacySimulator::do_md()
         init_expanded_ensemble(startingBehavior_ != StartingBehavior::NewSimulation, ir, state_->dfhist);
     }
 
-    if (MAIN(cr_))
+    if (isMainRank)
     {
         EnergyData::initializeEnergyHistory(startingBehavior_, observablesHistory_, &energyOutput);
     }
@@ -549,7 +551,7 @@ void gmx::LegacySimulator::do_md()
                                 opt2fn("-awh", nFile_, fnm_),
                                 pullWork_);
 
-    if (useReplicaExchange && MAIN(cr_))
+    if (useReplicaExchange && isMainRank)
     {
         repl_ex = init_replica_exchange(fpLog_, ms_, topGlobal_.natoms, ir, replExParams_);
     }
@@ -624,7 +626,7 @@ void gmx::LegacySimulator::do_md()
     // TODO Consider removing this communication if/when checkpoint
     // reading directly follows .tpr reading, because all ranks can
     // agree on hasReadEkinState at that time.
-    bool hasReadEkinState = MAIN(cr_) ? stateGlobal_->ekinstate.hasReadEkinState : false;
+    bool hasReadEkinState = isMainRank ? stateGlobal_->ekinstate.hasReadEkinState : false;
     if (cr_->commMyGroup.size() > 1)
     {
         gmx_bcast(sizeof(hasReadEkinState), &hasReadEkinState, cr_->commMyGroup.comm());
@@ -632,7 +634,7 @@ void gmx::LegacySimulator::do_md()
     if (hasReadEkinState)
     {
         restore_ekinstate_from_state(
-                cr_->commMyGroup, ekind_, MAIN(cr_) ? &stateGlobal_->ekinstate : nullptr);
+                cr_->commMyGroup, ekind_, isMainRank ? &stateGlobal_->ekinstate : nullptr);
     }
 
     unsigned int cglo_flags =
@@ -747,7 +749,7 @@ void gmx::LegacySimulator::do_md()
        for non-trotter temperature control */
     auto trotter_seq = init_npt_vars(ir, *ekind_, state_, &MassQ, bTrotter);
 
-    if (MAIN(cr_))
+    if (isMainRank)
     {
         if (!ir->bContinuation)
         {
@@ -817,7 +819,7 @@ void gmx::LegacySimulator::do_md()
     auto stopHandler = stopHandlerBuilder_->getStopHandlerMD(
             compat::not_null<SimulationSignal*>(&signals[eglsSTOPCOND]),
             simulationsShareState,
-            MAIN(cr_),
+            isMainRank,
             ir->nstlist,
             mdrunOptions_.reproducible,
             nstSignalComm,
@@ -845,7 +847,7 @@ void gmx::LegacySimulator::do_md()
             compat::make_not_null<SimulationSignal*>(&signals[eglsCHKPT]),
             simulationsShareState,
             ir->nstlist == 0,
-            MAIN(cr_),
+            isMainRank,
             mdrunOptions_.writeConfout,
             checkpointPeriod);
 
@@ -854,7 +856,7 @@ void gmx::LegacySimulator::do_md()
             compat::make_not_null<SimulationSignal*>(&signals[eglsRESETCOUNTERS]),
             !resetCountersIsLocal,
             ir->nsteps,
-            MAIN(cr_),
+            isMainRank,
             mdrunOptions_.timingOptions.resetHalfway,
             mdrunOptions_.maximumHoursToRun,
             mdLog_,
@@ -863,7 +865,7 @@ void gmx::LegacySimulator::do_md()
 
     const DDBalanceRegionHandler ddBalanceRegionHandler(cr_->dd);
 
-    if (MAIN(cr_) && isMultiSim(ms_) && !useReplicaExchange)
+    if (isMainRank && isMultiSim(ms_) && !useReplicaExchange)
     {
         logInitialMultisimStatus(ms_, cr_, mdLog_, simulationsShareState, ir->nsteps, ir->init_step);
     }
@@ -887,7 +889,7 @@ void gmx::LegacySimulator::do_md()
             }
             /* PME grid + cut-off optimization with GPUs or PME nodes */
             pme_loadbal_do(pme_loadbal,
-                           (mdrunOptions_.verbose && MAIN(cr_)) ? stderr : nullptr,
+                           (mdrunOptions_.verbose && isMainRank) ? stderr : nullptr,
                            fpLog_,
                            mdLog_,
                            *ir,
@@ -1049,7 +1051,7 @@ void gmx::LegacySimulator::do_md()
                     *cr_, *fr_->deviceStreamManager, wallCycleCounters_, simulationWork.useNvshmem);
         }
 
-        if (MAIN(cr_) && do_log)
+        if (isMainRank && do_log)
         {
             gmx::EnergyOutput::printHeader(fpLog_, step, t); /* can we improve the information printed here? */
         }
@@ -1251,7 +1253,7 @@ void gmx::LegacySimulator::do_md()
                    bias function could then be called after do_md_trajectory_writing (then containing
                    update_awh_history). The checkpointing will in the future probably moved to the start
                    of the md loop which will rid of this issue. */
-                if (awh && checkpointHandler->isCheckpointingStep() && MAIN(cr_))
+                if (awh && checkpointHandler->isCheckpointingStep() && isMainRank)
                 {
                     awh->updateHistory(stateGlobal_->awhHistory.get());
                 }
@@ -1370,7 +1372,7 @@ void gmx::LegacySimulator::do_md()
                                                   md->homenr,
                                                   md->cTC);
                 /* history is maintained in state->dfhist, but state_global is what is sent to trajectory and log output */
-                if (MAIN(cr_))
+                if (isMainRank)
                 {
                     copy_df_history(stateGlobal_->dfhist, state_->dfhist);
                 }
@@ -1948,7 +1950,7 @@ void gmx::LegacySimulator::do_md()
         }
 
         /* Output stuff */
-        if (MAIN(cr_))
+        if (isMainRank)
         {
             if (fpLog_ && do_log && bDoExpanded)
             {
@@ -2040,7 +2042,7 @@ void gmx::LegacySimulator::do_md()
             state_->fep_state = awh->fepLambdaState();
         }
         /* Print the remaining wall clock time for the run */
-        if (isMainSimMainRank(ms_, MAIN(cr_)) && (do_verbose || gmx_got_usr_signal()) && !bPMETunePrinting)
+        if (isMainSimMainRank(ms_, isMainRank) && (do_verbose || gmx_got_usr_signal()) && !bPMETunePrinting)
         {
             if (shellfc)
             {
@@ -2064,7 +2066,7 @@ void gmx::LegacySimulator::do_md()
                                              wallCycleCounters_,
                                              state_->x,
                                              state_->box,
-                                             MAIN(cr_) && mdrunOptions_.verbose,
+                                             isMainRank && mdrunOptions_.verbose,
                                              bRerunMD);
 
             if (bNeedRepartition && haveDDAtomOrdering(*cr_))
@@ -2193,7 +2195,7 @@ void gmx::LegacySimulator::do_md()
         destroyGpuHaloExchangeNvshmemBuf(*cr_);
     }
 
-    if (MAIN(cr_))
+    if (isMainRank)
     {
         if (ir->nstcalcenergy > 0)
         {
@@ -2212,7 +2214,7 @@ void gmx::LegacySimulator::do_md()
 
     done_shellfc(fpLog_, shellfc, step_rel);
 
-    if (useReplicaExchange && MAIN(cr_))
+    if (useReplicaExchange && isMainRank)
     {
         print_replica_exchange_statistics(fpLog_, repl_ex);
     }

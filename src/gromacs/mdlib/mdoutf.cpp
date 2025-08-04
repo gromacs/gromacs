@@ -562,6 +562,8 @@ void mdoutf_write_to_trajectory_files(FILE*                          fplog,
                                       gmx::ArrayRef<const gmx::RVec> f_local,
                                       gmx::WriteCheckpointDataHolder* modularSimulatorCheckpointData)
 {
+    const bool isMainRank = cr->commMyGroup.isMainRank();
+
     const rvec* f_global;
 
     if (haveDDAtomOrdering(*cr))
@@ -574,7 +576,7 @@ void mdoutf_write_to_trajectory_files(FILE*                          fplog,
         {
             if (mdof_flags & (MDOF_X | MDOF_X_COMPRESSED))
             {
-                auto globalXRef = MAIN(cr) ? state_global->x : gmx::ArrayRef<gmx::RVec>();
+                auto globalXRef = isMainRank ? state_global->x : gmx::ArrayRef<gmx::RVec>();
                 dd_collect_vec(cr->dd,
                                state_local->ddp_count,
                                state_local->ddp_count_cg_gl,
@@ -584,7 +586,7 @@ void mdoutf_write_to_trajectory_files(FILE*                          fplog,
             }
             if (mdof_flags & MDOF_V)
             {
-                auto globalVRef = MAIN(cr) ? state_global->v : gmx::ArrayRef<gmx::RVec>();
+                auto globalVRef = isMainRank ? state_global->v : gmx::ArrayRef<gmx::RVec>();
                 dd_collect_vec(cr->dd,
                                state_local->ddp_count,
                                state_local->ddp_count_cg_gl,
@@ -596,9 +598,10 @@ void mdoutf_write_to_trajectory_files(FILE*                          fplog,
         f_global = of->f_global;
         if (mdof_flags & MDOF_F)
         {
-            auto globalFRef = MAIN(cr) ? gmx::arrayRefFromArray(reinterpret_cast<gmx::RVec*>(of->f_global),
-                                                                of->natoms_global)
-                                       : gmx::ArrayRef<gmx::RVec>();
+            auto globalFRef =
+                    isMainRank ? gmx::arrayRefFromArray(reinterpret_cast<gmx::RVec*>(of->f_global),
+                                                        of->natoms_global)
+                               : gmx::ArrayRef<gmx::RVec>();
             dd_collect_vec(cr->dd,
                            state_local->ddp_count,
                            state_local->ddp_count_cg_gl,
@@ -615,7 +618,7 @@ void mdoutf_write_to_trajectory_files(FILE*                          fplog,
         f_global = as_rvec_array(f_local.data());
     }
 
-    if (MAIN(cr))
+    if (isMainRank)
     {
         if (mdof_flags & MDOF_CPT)
         {

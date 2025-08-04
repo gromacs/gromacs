@@ -216,7 +216,7 @@ ISimulatorElement* ExpandedEnsembleElement::getElementPointerImpl(
         ObservablesReducer* /*observablesReducer*/)
 {
     return builderHelper->storeElement(std::make_unique<ExpandedEnsembleElement>(
-            MAIN(legacySimulatorData->cr_),
+            legacySimulatorData->cr_->commMyGroup.isMainRank(),
             legacySimulatorData->inputRec_->init_step,
             legacySimulatorData->inputRec_->expandedvals->nstexpanded,
             energyData,

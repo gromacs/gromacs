@@ -183,6 +183,8 @@ static void prepareRerunState(const t_trxframe&          rerunFrame,
 
 void gmx::LegacySimulator::do_rerun()
 {
+    const bool isMainRank = cr_->commMyGroup.isMainRank();
+
     // TODO Historically, the EM and MD "integrators" used different
     // names for the t_inputrec *parameter, but these must have the
     // same name, now that it's a member of a struct. We use this ir
@@ -294,10 +296,10 @@ void gmx::LegacySimulator::do_rerun()
         auto* nonConstGlobalTopology                         = const_cast<gmx_mtop_t*>(&topGlobal_);
         nonConstGlobalTopology->intermolecularExclusionGroup = genQmmmIndices(topGlobal_);
     }
-    int*                fep_state = MAIN(cr_) ? &stateGlobal_->fep_state : nullptr;
-    gmx::ArrayRef<real> lambda    = MAIN(cr_) ? stateGlobal_->lambda : gmx::ArrayRef<real>();
+    int*                fep_state = isMainRank ? &stateGlobal_->fep_state : nullptr;
+    gmx::ArrayRef<real> lambda    = isMainRank ? stateGlobal_->lambda : gmx::ArrayRef<real>();
     initialize_lambdas(
-            fpLog_, ir->efep, ir->bSimTemp, *ir->fepvals, ir->simtempvals->temperatures, ekind_, MAIN(cr_), fep_state, lambda);
+            fpLog_, ir->efep, ir->bSimTemp, *ir->fepvals, ir->simtempvals->temperatures, ekind_, isMainRank, fep_state, lambda);
     const bool        simulationsShareState = false;
     gmx_mdoutf*       outf                  = init_mdoutf(fpLog_,
                                    nFile_,
@@ -425,7 +427,7 @@ void gmx::LegacySimulator::do_rerun()
         observablesReducer.markAsReadyToReduce();
     }
 
-    if (MAIN(cr_))
+    if (isMainRank)
     {
         fprintf(stderr,
                 "starting md rerun '%s', reading coordinates from"
@@ -460,7 +462,7 @@ void gmx::LegacySimulator::do_rerun()
     }
 
     rerun_fr.natoms = 0;
-    if (MAIN(cr_))
+    if (isMainRank)
     {
         isLastStep = !read_first_frame(oenv_, &status, opt2fn("-rerun", nFile_, fnm_), &rerun_fr, TRX_NEED_X);
         if (rerun_fr.natoms != topGlobal_.natoms)
@@ -501,7 +503,7 @@ void gmx::LegacySimulator::do_rerun()
                     "Rerun does not report kinetic energy, total energy, temperature, virial and "
                     "pressure.");
 
-    if (PAR(cr_))
+    if (cr_->commMyGroup.size() > 1)
     {
         rerun_parallel_comm(cr_->commMyGroup, &rerun_fr, &isLastStep);
     }
@@ -517,7 +519,7 @@ void gmx::LegacySimulator::do_rerun()
     auto stopHandler = stopHandlerBuilder_->getStopHandlerMD(
             compat::not_null<SimulationSignal*>(&signals[eglsSTOPCOND]),
             false,
-            MAIN(cr_),
+            isMainRank,
             1, // rerun constructs the pairlist for each frame
             mdrunOptions_.reproducible,
             nstglobalcomm,
@@ -551,7 +553,7 @@ void gmx::LegacySimulator::do_rerun()
             t = step;
         }
 
-        if (ir->efep != FreeEnergyPerturbationType::No && MAIN(cr_))
+        if (ir->efep != FreeEnergyPerturbationType::No && isMainRank)
         {
             if (rerun_fr.bLambda)
             {
@@ -568,7 +570,7 @@ void gmx::LegacySimulator::do_rerun()
             stateGlobal_->lambda = currentLambdas(step, *(ir->fepvals), state_->fep_state);
         }
 
-        if (MAIN(cr_))
+        if (isMainRank)
         {
             const bool constructVsites =
                     ((virtualSites_ != nullptr) && mdrunOptions_.rerunConstructVsites);
@@ -611,7 +613,7 @@ void gmx::LegacySimulator::do_rerun()
                                 mdrunOptions_.verbose);
         }
 
-        if (MAIN(cr_))
+        if (isMainRank)
         {
             EnergyOutput::printHeader(fpLog_, step, t); /* can we improve the information printed here? */
         }
@@ -812,7 +814,7 @@ void gmx::LegacySimulator::do_rerun()
            generate the new shake_vir, but test the veta value for convergence.  This will take some thought. */
 
         /* Output stuff */
-        if (MAIN(cr_))
+        if (isMainRank)
         {
             const bool bCalcEnerStep = true;
             energyOutput.addDataAtEnergyStep(doFreeEnergyPerturbation,
@@ -866,7 +868,7 @@ void gmx::LegacySimulator::do_rerun()
         }
 
         /* Print the remaining wall clock time for the run */
-        if (isMainSimMainRank(ms_, MAIN(cr_)) && (mdrunOptions_.verbose || gmx_got_usr_signal()))
+        if (isMainSimMainRank(ms_, isMainRank) && (mdrunOptions_.verbose || gmx_got_usr_signal()))
         {
             if (shellfc)
             {
@@ -890,17 +892,17 @@ void gmx::LegacySimulator::do_rerun()
                           wallCycleCounters_,
                           gmx::arrayRefFromArray(reinterpret_cast<gmx::RVec*>(rerun_fr.x), rerun_fr.natoms),
                           rerun_fr.box,
-                          MAIN(cr_) && mdrunOptions_.verbose,
+                          isMainRank && mdrunOptions_.verbose,
                           doRerun);
         }
 
-        if (MAIN(cr_))
+        if (isMainRank)
         {
             /* read next frame from input trajectory */
             isLastStep = !read_next_frame(oenv_, status, &rerun_fr);
         }
 
-        if (PAR(cr_))
+        if (cr_->commMyGroup.size() > 1)
         {
             rerun_parallel_comm(cr_->commMyGroup, &rerun_fr, &isLastStep);
         }
@@ -928,7 +930,7 @@ void gmx::LegacySimulator::do_rerun()
     /* Stop measuring walltime */
     walltime_accounting_end_time(wallTimeAccounting_);
 
-    if (MAIN(cr_))
+    if (isMainRank)
     {
         close_trx(status);
     }

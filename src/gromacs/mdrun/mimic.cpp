@@ -224,7 +224,9 @@ void gmx::LegacySimulator::do_mimic()
 
     ObservablesReducer observablesReducer = observablesReducerBuilder_->build();
 
-    if (MAIN(cr_))
+    const bool isMainRank = cr_->commMySim.isMainRank();
+
+    if (isMainRank)
     {
         MimicCommunicator::init();
         auto* nonConstGlobalTopology = const_cast<gmx_mtop_t*>(&topGlobal_);
@@ -252,7 +254,7 @@ void gmx::LegacySimulator::do_mimic()
                        *ir->fepvals,
                        ir->simtempvals->temperatures,
                        ekind_,
-                       MAIN(cr_),
+                       isMainRank,
                        &stateGlobal_->fep_state,
                        stateGlobal_->lambda);
 
@@ -380,7 +382,7 @@ void gmx::LegacySimulator::do_mimic()
         observablesReducer.markAsReadyToReduce();
     }
 
-    if (MAIN(cr_))
+    if (isMainRank)
     {
         fprintf(stderr, "starting MiMiC MD run '%s'\n\n", *(topGlobal_.name));
         if (mdrunOptions_.verbose)
@@ -421,7 +423,7 @@ void gmx::LegacySimulator::do_mimic()
     auto stopHandler = stopHandlerBuilder_->getStopHandlerMD(
             compat::not_null<SimulationSignal*>(&signals[eglsSTOPCOND]),
             false,
-            MAIN(cr_),
+            isMainRank,
             ir->nstlist,
             mdrunOptions_.reproducible,
             nstglobalcomm,
@@ -444,7 +446,7 @@ void gmx::LegacySimulator::do_mimic()
 
         t = step;
 
-        if (MAIN(cr_))
+        if (isMainRank)
         {
             MimicCommunicator::getCoords(stateGlobal_->x, stateGlobal_->numAtoms());
         }
@@ -454,7 +456,7 @@ void gmx::LegacySimulator::do_mimic()
             state_->lambda = currentLambdas(step, *(ir->fepvals), stateGlobal_->fep_state);
         }
 
-        if (MAIN(cr_))
+        if (isMainRank)
         {
             const bool constructVsites =
                     ((virtualSites_ != nullptr) && mdrunOptions_.rerunConstructVsites);
@@ -501,7 +503,7 @@ void gmx::LegacySimulator::do_mimic()
                                 mdrunOptions_.verbose);
         }
 
-        if (MAIN(cr_))
+        if (isMainRank)
         {
             EnergyOutput::printHeader(fpLog_, step, t); /* can we improve the information printed here? */
         }
@@ -700,7 +702,7 @@ void gmx::LegacySimulator::do_mimic()
                 ftemp = f.view().force();
             }
 
-            if (MAIN(cr_))
+            if (isMainRank)
             {
                 MimicCommunicator::sendEnergies(enerd_->term[F_EPOT]);
                 MimicCommunicator::sendForces(ftemp, stateGlobal_->numAtoms());
@@ -721,7 +723,7 @@ void gmx::LegacySimulator::do_mimic()
         }
 
         /* Output stuff */
-        if (MAIN(cr_))
+        if (isMainRank)
         {
             const bool bCalcEnerStep = true;
             energyOutput.addDataAtEnergyStep(doFreeEnergyPerturbation,
@@ -770,7 +772,7 @@ void gmx::LegacySimulator::do_mimic()
         }
 
         /* Print the remaining wall clock time for the run */
-        if (isMainSimMainRank(ms_, MAIN(cr_)) && (mdrunOptions_.verbose || gmx_got_usr_signal()))
+        if (isMainSimMainRank(ms_, isMainRank) && (mdrunOptions_.verbose || gmx_got_usr_signal()))
         {
             if (shellfc)
             {
@@ -799,7 +801,7 @@ void gmx::LegacySimulator::do_mimic()
     /* Stop measuring walltime */
     walltime_accounting_end_time(wallTimeAccounting_);
 
-    if (MAIN(cr_))
+    if (isMainRank)
     {
         MimicCommunicator::finalize();
     }

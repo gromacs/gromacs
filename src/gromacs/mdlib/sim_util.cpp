@@ -2198,7 +2198,8 @@ void do_force(FILE*                         fplog,
     wallcycle_stop(wcycle, WallCycleCounter::Force);
 
     // VdW dispersion correction, only computed on main rank to avoid double counting
-    if ((stepWork.computeEnergy || stepWork.computeVirial) && fr->dispersionCorrection && MAIN(cr))
+    if ((stepWork.computeEnergy || stepWork.computeVirial) && fr->dispersionCorrection
+        && cr->commMySim.isMainRank())
     {
         // Calculate long range corrections to pressure and energy
         const DispersionCorrection::Correction correction = fr->dispersionCorrection->calculate(
@@ -2217,7 +2218,7 @@ void do_force(FILE*                         fplog,
         }
     }
 
-    const bool needToReceivePmeResultsFromSeparateRank = (PAR(cr) && stepWork.computePmeOnSeparateRank);
+    const bool needToReceivePmeResultsFromSeparateRank = stepWork.computePmeOnSeparateRank;
     const bool needToReceivePmeResults =
             (stepWork.haveGpuPmeOnThisRank || needToReceivePmeResultsFromSeparateRank);
 

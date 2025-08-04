@@ -131,14 +131,14 @@ void do_md_trajectory_writing(FILE*                          fplog,
             const bool checkpointEkindata = (ekindataState != EkindataState::NotUsed);
             if (checkpointEkindata)
             {
-                update_ekinstate(MAIN(cr) ? &state_global->ekinstate : nullptr,
+                update_ekinstate(cr->commMyGroup.isMainRank() ? &state_global->ekinstate : nullptr,
                                  ekind,
                                  ekindataState == EkindataState::UsedNeedToReduce,
                                  cr->commMyGroup,
                                  cr->dd);
             }
 
-            if (MAIN(cr))
+            if (cr->commMyGroup.isMainRank())
             {
                 state_global->ekinstate.bUpToDate = checkpointEkindata;
 
@@ -154,7 +154,7 @@ void do_md_trajectory_writing(FILE*                          fplog,
         // TODO: Remove duplication asap, make sure to keep in sync in the meantime.
         mdoutf_write_to_trajectory_files(
                 fplog, cr, outf, mdof_flags, top_global.natoms, step, t, state, state_global, observablesHistory, f, &checkpointDataHolder);
-        if (bLastStep && step_rel == ir->nsteps && bDoConfOut && MAIN(cr) && !bRerunMD)
+        if (bLastStep && step_rel == ir->nsteps && bDoConfOut && cr->commMyGroup.isMainRank() && !bRerunMD)
         {
             // With box deformation we would have to correct the output velocities, which is tedious
             const bool makeMoleculesWholeInConfout =

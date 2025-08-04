@@ -1070,7 +1070,7 @@ gmx_membed_t* init_membed(FILE*          fplog,
     snew(ins_at, 1);
     snew(pos_ins, 1);
 
-    if (MAIN(cr))
+    if (cr->commMySim.isMainRank())
     {
         fprintf(fplog,
                 "Note: it is expected that in future gmx mdrun -membed will not be the "
@@ -1098,7 +1098,7 @@ gmx_membed_t* init_membed(FILE*          fplog,
             gmx_input("Change integrator to a dynamics integrator in mdp file (e.g. md or sd).");
         }
 
-        if (PAR(cr))
+        if (cr->commMySim.size() > 1)
         {
             gmx_input("Sorry, parallel membed is not yet fully functional.");
         }

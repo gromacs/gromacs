@@ -108,7 +108,7 @@ void SimulationSignaller::signalInterSim()
     // error at mdrun time in release mode, so there's no need for a
     // release-mode assertion.
     GMX_ASSERT(isMultiSim(ms_), "Cannot do inter-simulation signalling without a multi-simulation");
-    if (MAIN(cr_))
+    if (cr_->commMySim.isMainRank())
     {
         // Communicate the signals between the simulations.
         gmx_sum_sim(eglsNR, mpiBuffer_.data(), ms_);

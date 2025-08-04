@@ -242,7 +242,7 @@ ISimulatorElement* ConstraintsElement<variable>::getElementPointerImpl(
             statePropagatorData,
             energyData,
             freeEnergyPerturbationData,
-            MAIN(legacySimulatorData->cr_),
+            legacySimulatorData->cr_->commMyGroup.isMainRank(),
             legacySimulatorData->fpLog_,
             legacySimulatorData->inputRec_,
             legacySimulatorData->mdAtoms_->mdatoms()));

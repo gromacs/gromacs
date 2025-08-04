@@ -1285,6 +1285,8 @@ gmx_bool replica_exchange(FILE*                 fplog,
                           int64_t               step,
                           real                  time)
 {
+    const bool isMainRank = cr->commMyGroup.isMainRank();
+
     int j;
     int replica_id = 0;
     int exchange_partner;
@@ -1295,7 +1297,7 @@ gmx_bool replica_exchange(FILE*                 fplog,
     /* The order in which multiple exchanges will occur. */
     gmx_bool bThisReplicaExchanged = FALSE;
 
-    if (MAIN(cr))
+    if (isMainRank)
     {
         replica_id = re->repl;
         test_for_replica_exchange(fplog, ms, re, enerd, det(state_local->box), step, time);
@@ -1308,7 +1310,11 @@ gmx_bool replica_exchange(FILE*                 fplog,
     if (haveDDAtomOrdering(*cr))
     {
 #if GMX_MPI
-        MPI_Bcast(&bThisReplicaExchanged, sizeof(gmx_bool), MPI_BYTE, MAINRANK(cr), cr->commMyGroup.comm());
+        MPI_Bcast(&bThisReplicaExchanged,
+                  sizeof(gmx_bool),
+                  MPI_BYTE,
+                  cr->commMyGroup.mainRank(),
+                  cr->commMyGroup.comm());
 #endif
     }
 
@@ -1325,7 +1331,7 @@ gmx_bool replica_exchange(FILE*                 fplog,
             copy_state_serial(state_local, state);
         }
 
-        if (MAIN(cr))
+        if (isMainRank)
         {
             /* There will be only one swap cycle with standard replica
              * exchange, but there may be multiple swap cycles if we
