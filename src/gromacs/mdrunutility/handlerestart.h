@@ -94,26 +94,37 @@ enum class StartingBehavior : int
  * If there is no checkpoint file, we return a value to indicate a new
  * simulation is starting.
  *
- * On return, \p fnm is updated with suffix strings for part numbers if we are
- * doing a restart from checkpoint and are not appending.
+ * On return, \p fnm is updated with suffix strings for part numbers
+ * if we are doing a restart from checkpoint and are not
+ * appending. Output files may have been truncated if we are
+ * restarting from a checkpoint and are appending.
  *
  * The routine also does communication to coordinate behaviour between
  * all simulations, including for error conditions.
  *
- * \throws FileIOError             When the filesystem behavior prevents the
- *                                 user's choices being implemented.
- * \throws InconsistentInputError  When the users's choices cannot be implemented.
- * \throws GromacsException        On ranks upon which the error condition was
- *                                 not detected.
+ * Note that this function looks like it does lots of different things
+ * that could be separated, but that is actually difficult.  The
+ * starting behaviour can depend on the state of the filesystem and
+ * the contents of the checkpoint header, each of which we only want
+ * to read once, so we can't easily separate the decision of what to
+ * do from the details of doing it (e.g. changing output filenames or
+ * truncating output files).
  *
- * \param[in]    isSimulationMain Whether this rank is the main rank of a simulation
- * \param[in]    communicator       MPI communicator
+ * \throws FileIOError               When the filesystem behavior prevents the
+ *                                   user's choices being implemented.
+ * \throws InconsistentInputError    When the users's choices cannot be implemented.
+ * \throws ParallelConsistencyError  On ranks upon which the error condition was
+ *                                   not detected.
+ *
+ * \param[in]    isSimulationMain   Whether this rank is the main rank of a simulation
+ * \param[in]    communicator       MPI communicator across which error behaviour must
+ *                                  be kept consistent
  * \param[in]    ms                 Handles multi-simulations.
  * \param[in]    appendingBehavior  User choice for appending
  * \param[in]    nfile              Size of fnm struct
  * \param[inout] fnm                Filename parameters to mdrun
  *
- * \return  Description of how mdrun is starting */
+ * \return  Description of how mdrun is starting and log file pointer */
 std::tuple<StartingBehavior, LogFilePtr> handleRestart(bool                  isSimulationMain,
                                                        MPI_Comm              communicator,
                                                        const gmx_multisim_t* ms,

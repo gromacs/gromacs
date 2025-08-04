@@ -71,5 +71,6 @@ gmx_add_mpi_unit_test(MpiCommTests mpicomm-test 4
 
 gmx_add_mpi_unit_test(UtilityMpiUnitTests utility-mpi-test 2
     CPP_SOURCE_FILES
+        coordinate_exception_handling.cpp
         physicalnodecommunicator_mpi.cpp
         )

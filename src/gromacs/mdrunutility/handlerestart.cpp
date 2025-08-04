@@ -90,6 +90,7 @@
 #include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/coordinate_exception_handling.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -127,7 +128,9 @@ gmx_bool exist_output_file(const std::filesystem::path& fnm_cp, int nfile, const
  * If we get here, the user requested restarting from a checkpoint file, that checkpoint
  * file was found (so it is not the first part of a new run), but we are still missing
  * some or all checkpoint files. In this case we issue a fatal error since there are
- * so many special cases we cannot keep track of, and better safe than sorry. */
+ * so many special cases we cannot keep track of, and better safe than sorry.
+ *
+ * \throws InconsistentInputError when it is unclear what the behaviour should be */
 [[noreturn]] void throwBecauseOfMissingOutputFiles(const std::filesystem::path& checkpointFilename,
                                                    ArrayRef<const gmx_file_position_t> outputfiles,
                                                    int                                 nfile,
@@ -260,7 +263,11 @@ public:
  * values that depend on whether the respective checkpoint files are
  * found (and other files found, when appending), and so can differ
  * between multi-simulations. It is the caller's responsibility to
- * detect this and react accordingly. */
+ * detect this and react accordingly.
+ *
+ * \throws InconsistentInputError when it is unclear what the behaviour should be
+ * \throws FileIOError            when file handling failed
+ */
 StartingBehaviorHandler chooseStartingBehavior(const AppendingBehavior appendingBehavior,
                                                const int               nfile,
                                                t_filenm                fnm[])
@@ -499,7 +506,9 @@ void lockLogFile(t_fileio* logfio, const std::filesystem::path& logFilename)
  * checked such that we can be sure that we do not truncate other
  * (maybe important) files. The log file is locked so that we can
  * avoid cases where another mdrun instance might still be writing to
- * the file. */
+ * the file.
+ *
+ * \throws FileIOError            when file handling failed */
 void prepareForAppending(const ArrayRef<const gmx_file_position_t> outputFiles, t_fileio* logfio)
 {
     if (GMX_FAHCORE)
@@ -646,6 +655,53 @@ std::optional<int> StartingBehaviorHandler::makeIndexOfNextPart(const AppendingB
     return indexOfNextPart;
 }
 
+/*! \brief Implement details of handleRestart directly related to restarting
+ *
+ * See \c handleRestart for detailed documentation.
+ *
+ * \throws InconsistentInputError when it is unclear what the behaviour should be
+ * \throws FileIOError            when file handling failed */
+std::tuple<StartingBehavior, LogFilePtr> handleRestartInner(const bool            isSimulationMain,
+                                                            const gmx_multisim_t* ms,
+                                                            const AppendingBehavior appendingBehavior,
+                                                            const int nfile,
+                                                            t_filenm  fnm[])
+{
+    StartingBehaviorHandler handler;
+    LogFilePtr              logFileGuard = nullptr;
+
+    // Only the main rank of each simulation can do anything with
+    // output files, so it is the only one that needs to consider
+    // whether a restart might take place, and how to implement it.
+    if (isSimulationMain)
+    {
+        handler = chooseStartingBehavior(appendingBehavior, nfile, fnm);
+
+        handler.ensureMultiSimBehaviorsMatch(ms);
+
+        // When not appending, prepare a suffix for the part number
+        std::optional<int> indexOfNextPart = handler.makeIndexOfNextPart(appendingBehavior);
+
+        // If a part suffix is used, change the file names accordingly.
+        if (indexOfNextPart)
+        {
+            std::string suffix = formatString(".part%04d", *indexOfNextPart);
+            add_suffix_to_output_names(fnm, nfile, suffix.c_str());
+        }
+
+        // Open the log file, now that it has the right name
+        logFileGuard = openLogFile(ftp2fn(efLOG, nfile, fnm),
+                                   handler.startingBehavior == StartingBehavior::RestartWithAppending);
+
+        // When appending, the other output files need special handling before opening
+        if (handler.startingBehavior == StartingBehavior::RestartWithAppending)
+        {
+            prepareForAppending(*handler.outputFiles, logFileGuard.get());
+        }
+    }
+    return std::make_tuple(handler.startingBehavior, std::move(logFileGuard));
+}
+
 } // namespace
 
 std::tuple<StartingBehavior, LogFilePtr> handleRestart(const bool              isSimulationMain,
@@ -655,90 +711,22 @@ std::tuple<StartingBehavior, LogFilePtr> handleRestart(const bool              i
                                                        const int               nfile,
                                                        t_filenm                fnm[])
 {
-    StartingBehaviorHandler handler;
-    LogFilePtr              logFileGuard = nullptr;
-
-    // Make sure all ranks agree on whether the (multi-)simulation can
-    // proceed.
-    int                numErrorsFound = 0;
-    std::exception_ptr exceptionPtr;
-
-    // Only the main rank of each simulation can do anything with
-    // output files, so it is the only one that needs to consider
-    // whether a restart might take place, and how to implement it.
-    if (isSimulationMain)
-    {
-        try
-        {
-            handler = chooseStartingBehavior(appendingBehavior, nfile, fnm);
-
-            handler.ensureMultiSimBehaviorsMatch(ms);
-
-            // When not appending, prepare a suffix for the part number
-            std::optional<int> indexOfNextPart = handler.makeIndexOfNextPart(appendingBehavior);
-
-            // If a part suffix is used, change the file names accordingly.
-            if (indexOfNextPart)
-            {
-                std::string suffix = formatString(".part%04d", *indexOfNextPart);
-                add_suffix_to_output_names(fnm, nfile, suffix.c_str());
-            }
-
-            // Open the log file, now that it has the right name
-            logFileGuard = openLogFile(ftp2fn(efLOG, nfile, fnm),
-                                       handler.startingBehavior == StartingBehavior::RestartWithAppending);
-
-            // When appending, the other output files need special handling before opening
-            if (handler.startingBehavior == StartingBehavior::RestartWithAppending)
-            {
-                prepareForAppending(*handler.outputFiles, logFileGuard.get());
-            }
-        }
-        catch (const std::exception& /*ex*/)
-        {
-            exceptionPtr   = std::current_exception();
-            numErrorsFound = 1;
-        }
-    }
+    auto inner = [=]()
+    { return handleRestartInner(isSimulationMain, ms, appendingBehavior, nfile, fnm); };
     // Since the main rank (perhaps of only one simulation) may have
     // found an error condition, we now coordinate the behavior across
-    // all ranks. However, only the applicable ranks will throw a
-    // non-default exception.
-    //
-    // TODO Evolve some re-usable infrastructure for this, because it
-    // will be needed in many places while setting up simulations.
-#if GMX_LIB_MPI
-    int reducedNumErrorsFound;
-    MPI_Allreduce(&numErrorsFound, &reducedNumErrorsFound, 1, MPI_INT, MPI_SUM, communicator);
-    numErrorsFound = reducedNumErrorsFound;
-#else
-    // There is nothing to do with no MPI or thread-MPI, as there is
-    // only one rank at this point.
-    GMX_RELEASE_ASSERT(communicator == MPI_COMM_NULL, "Must have null communicator at this point");
-#endif
-
-    // Throw in a globally coordinated way, if needed
-    if (numErrorsFound > 0)
-    {
-        if (exceptionPtr)
-        {
-            std::rethrow_exception(exceptionPtr);
-        }
-        else
-        {
-            GMX_THROW(ParallelConsistencyError("Another MPI rank encountered an exception"));
-        }
-    }
+    // all ranks so that if one throws anything, all throw something.
+    auto [startingBehavior, logFilePtr] = coordinateExceptionHandling(communicator, inner);
 
     // Ensure all ranks agree on the starting behavior, which is easy
     // because all simulations in a multi-simulation already agreed on
     // the starting behavior. There is nothing to do with no
     // MPI or thread-MPI.
 #if GMX_LIB_MPI
-    MPI_Bcast(&handler.startingBehavior, 1, MPI_INT, 0, communicator);
+    MPI_Bcast(&startingBehavior, 1, MPI_INT, 0, communicator);
 #endif
 
-    return std::make_tuple(handler.startingBehavior, std::move(logFileGuard));
+    return std::make_tuple(startingBehavior, std::move(logFilePtr));
 }
 
 } // namespace gmx
