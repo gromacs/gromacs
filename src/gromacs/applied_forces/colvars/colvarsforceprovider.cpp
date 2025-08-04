@@ -214,7 +214,7 @@ ColvarsForceProvider::ColvarsForceProvider(const std::string& colvarsConfigStrin
         nColvarsAtoms = atoms_ids.size();
     }
 
-    if (mpiComm.size() > 1)
+    if (mpiComm.isParallel())
     {
         // Let the other nodes know the number of colvar atoms and their ids to construct a gmx::LocalAtomSet
         block_bc(mpiComm.comm(), nColvarsAtoms);
@@ -295,7 +295,7 @@ ColvarsForceProvider::ColvarsForceProvider(const std::string& colvarsConfigStrin
 
 
     // // Communicate initial coordinates to all processes
-    if (mpiComm.size() > 1)
+    if (mpiComm.isParallel())
     {
         nblock_bc(mpiComm.comm(), nColvarsAtoms, xColvarsOldWhole);
     }
@@ -413,7 +413,7 @@ void ColvarsForceProvider::calculateForces(const ForceProviderInput& forceProvid
 
 
     // Broadcast the forces to all the nodes
-    if (mpiComm.size() > 1)
+    if (mpiComm.isParallel())
     {
         nblock_bc(mpiComm.comm(), nColvarsAtoms, fColvars);
     }

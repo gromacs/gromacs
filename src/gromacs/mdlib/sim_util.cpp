@@ -1121,7 +1121,7 @@ static void reduceAndUpdateMuTot(DipoleData*                   dipoleData,
                                  rvec                          muTotal,
                                  const DDBalanceRegionHandler& ddBalanceRegionHandler)
 {
-    if (mpiComm.size() > 1)
+    if (mpiComm.isParallel())
     {
         mpiComm.sumReduce(2 * DIM, dipoleData->muStaging[0]);
         ddBalanceRegionHandler.reopenRegionCpu();

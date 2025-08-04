@@ -501,7 +501,7 @@ void compute_globals(gmx_global_stat*               gstat,
         else
         {
             gmx::ArrayRef<real> signalBuffer = signalCoordinator->getCommunicationBuffer();
-            if (mpiComm.size() > 1)
+            if (mpiComm.isParallel())
             {
                 wallcycle_start(wcycle, WallCycleCounter::MoveE);
                 global_stat(*gstat,
@@ -641,7 +641,7 @@ int computeGlobalCommunicationPeriod(const gmx::MDLogger& mdlog, const t_inputre
 {
     const int nstglobalcomm = computeGlobalCommunicationPeriod(ir);
 
-    if (mpiComm.size() > 1)
+    if (mpiComm.isParallel())
     {
         GMX_LOG(mdlog.info)
                 .appendTextFormatted("Intra-simulation communication will occur every %d steps.\n",

@@ -318,7 +318,7 @@ void DensityFittingForceProvider::Impl::calculateForces(const ForceProviderInput
     if (parameters_.normalizeDensities_)
     {
         real sum = std::accumulate(std::begin(amplitudes), std::end(amplitudes), 0.);
-        if (forceProviderInput.mpiComm_.size() > 1)
+        if (forceProviderInput.mpiComm_.isParallel())
         {
             forceProviderInput.mpiComm_.sumReduce(1, &sum);
         }

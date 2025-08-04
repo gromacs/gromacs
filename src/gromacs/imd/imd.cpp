@@ -857,7 +857,7 @@ void ImdSession::Impl::outputForces(double time)
 void ImdSession::Impl::syncNodes(double t)
 {
     /* Notify the other nodes whether we are still connected. */
-    if (mpiComm_.size() > 1)
+    if (mpiComm_.isParallel())
     {
         block_bc(mpiComm_.comm(), bConnected);
     }
@@ -869,7 +869,7 @@ void ImdSession::Impl::syncNodes(double t)
     }
 
     /* Let the other nodes know whether we got a new IMD synchronization frequency. */
-    if (mpiComm_.size() > 1)
+    if (mpiComm_.isParallel())
     {
         block_bc(mpiComm_.comm(), nstimd_new);
     }
@@ -900,7 +900,7 @@ void ImdSession::Impl::syncNodes(double t)
     }
 
     /* make new_forces known to the clients */
-    if (mpiComm_.size() > 1)
+    if (mpiComm_.isParallel())
     {
         block_bc(mpiComm_.comm(), new_nforces);
     }
@@ -933,7 +933,7 @@ void ImdSession::Impl::syncNodes(double t)
     }
 
     /* In parallel mode we communicate the to-be-applied forces to the other nodes */
-    if (mpiComm_.size() > 1)
+    if (mpiComm_.isParallel())
     {
         nblock_bc(mpiComm_.comm(), nforces, f_ind);
         nblock_bc(mpiComm_.comm(), nforces, f);
@@ -1292,7 +1292,7 @@ void ImdSession::Impl::prepareForPositionAssembly(gmx::ArrayRef<const gmx::RVec>
     }
 
     /* Communicate initial coordinates xa_old to all processes */
-    if (mpiComm_.size() > 1)
+    if (mpiComm_.isParallel())
     {
         gmx_bcast(nat * sizeof(xa_old[0]), xa_old, mpiComm_.comm());
     }
@@ -1302,7 +1302,7 @@ void ImdSession::Impl::prepareForPositionAssembly(gmx::ArrayRef<const gmx::RVec>
 /*! \brief Check for non-working integrator / parallel options. */
 static void imd_check_integrator_parallel(const t_inputrec* ir, const MpiComm& mpiComm)
 {
-    if (mpiComm.size() > 1)
+    if (mpiComm.isParallel())
     {
         if (((ir->eI) == IntegrationAlgorithm::Steep) || ((ir->eI) == IntegrationAlgorithm::CG)
             || ((ir->eI) == IntegrationAlgorithm::LBFGS) || ((ir->eI) == IntegrationAlgorithm::NM))
@@ -1401,7 +1401,7 @@ std::unique_ptr<ImdSession> makeImdSession(const t_inputrec*              ir,
     } /* end main only */
 
     /* Let the other nodes know whether we want IMD */
-    if (mpiComm.size() > 1)
+    if (mpiComm.isParallel())
     {
         block_bc(mpiComm.comm(), createSession);
     }
@@ -1499,7 +1499,7 @@ std::unique_ptr<ImdSession> makeImdSession(const t_inputrec*              ir,
     }
 
     /* do we allow interactive pulling? If so let the other nodes know. */
-    if (mpiComm.size() > 1)
+    if (mpiComm.isParallel())
     {
         block_bc(mpiComm.comm(), impl->bForceActivated);
     }
@@ -1699,7 +1699,7 @@ void ImdSession::applyForces(gmx::ArrayRef<gmx::RVec> force)
 
         /* check if this is a local atom and find out locndx */
         const int* locndx;
-        if (impl_->mpiComm_.size() > 1 && (locndx = impl_->dd_->ga2la->findHome(j)))
+        if (impl_->mpiComm_.isParallel() && (locndx = impl_->dd_->ga2la->findHome(j)))
         {
             j = *locndx;
         }

@@ -627,7 +627,7 @@ void gmx::LegacySimulator::do_md()
     // reading directly follows .tpr reading, because all ranks can
     // agree on hasReadEkinState at that time.
     bool hasReadEkinState = isMainRank ? stateGlobal_->ekinstate.hasReadEkinState : false;
-    if (cr_->commMyGroup.size() > 1)
+    if (cr_->commMyGroup.isParallel())
     {
         gmx_bcast(sizeof(hasReadEkinState), &hasReadEkinState, cr_->commMyGroup.comm());
     }

@@ -403,7 +403,7 @@ static void reportOpenmpSettings(const gmx::MDLogger& mdlog, const t_commrec* cr
     }
 
 #if GMX_MPI
-    if (cr->commMySim.size() > 1)
+    if (cr->commMySim.isParallel())
     {
         /* Get the min and max thread counts over the MPI ranks */
         int buf_in[4], buf_out[4];
@@ -436,7 +436,7 @@ static void reportOpenmpSettings(const gmx::MDLogger& mdlog, const t_commrec* cr
                 .appendTextFormatted("Using %d OpenMP thread%s %s",
                                      nth_min,
                                      nth_min > 1 ? "s" : "",
-                                     cr->commMySim.size() > 1 ? mpi_str : "");
+                                     cr->commMySim.isParallel() ? mpi_str : "");
     }
     else
     {
@@ -451,7 +451,7 @@ static void reportOpenmpSettings(const gmx::MDLogger& mdlog, const t_commrec* cr
                     .appendTextFormatted("Using %d OpenMP thread%s %s for PME",
                                          nth_pme_min,
                                          nth_pme_min > 1 ? "s" : "",
-                                         cr->commMySim.size() > 1 ? mpi_str : "");
+                                         cr->commMySim.isParallel() ? mpi_str : "");
         }
         else
         {

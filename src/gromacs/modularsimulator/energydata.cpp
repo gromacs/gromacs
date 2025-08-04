@@ -437,7 +437,7 @@ void EnergyData::Element::restoreCheckpointState(std::optional<ReadCheckpointDat
     }
     energyData_->hasReadEkinFromCheckpoint_ =
             mpiComm.isMainRank() ? energyData_->ekinstate_.bUpToDate : false;
-    if (mpiComm.size() > 1)
+    if (mpiComm.isParallel())
     {
         gmx_bcast(sizeof(hasReadEkinFromCheckpoint_),
                   &energyData_->hasReadEkinFromCheckpoint_,

@@ -669,7 +669,7 @@ static void finish_run(FILE*                     fplog,
 
     t_nrnb*                 nrnb_tot;
     std::unique_ptr<t_nrnb> nrnbTotalStorage;
-    if (cr->commMySim.size() > 1)
+    if (cr->commMySim.isParallel())
     {
         nrnbTotalStorage = std::make_unique<t_nrnb>();
         nrnb_tot         = nrnbTotalStorage.get();
@@ -685,7 +685,7 @@ static void finish_run(FILE*                     fplog,
     elapsed_time = walltime_accounting_get_time_since_reset(walltime_accounting);
     elapsed_time_over_all_threads =
             walltime_accounting_get_time_since_reset_over_all_threads(walltime_accounting);
-    if (GMX_MPI && cr->commMySim.size() > 1)
+    if (GMX_MPI && cr->commMySim.isParallel())
     {
 #if GMX_MPI
         /* reduce elapsed_time over all MPI ranks in the current simulation */
@@ -1432,7 +1432,7 @@ int Mdrunner::mdrunner()
             mtop,
             *inputrec,
             useDomainDecomposition,
-            cr->mpiDefaultCommunicator.size() == 1
+            cr->mpiDefaultCommunicator.isSerial()
                     || cr->mpiDefaultCommunicator.size() - domdecOptions.numPmeRanks == 1,
             useGpuDirectHalo);
 
@@ -1632,7 +1632,7 @@ int Mdrunner::mdrunner()
         gmx::internal::disableGpuEventConsumptionCounting();
     }
 
-    const bool printHostName = (cr->commMySim.size() > 1);
+    const bool printHostName = (cr->commMySim.isParallel());
     gpuTaskAssignments.reportGpuUsage(mdlog, printHostName, pmeRunMode, runScheduleWork.simulationWork);
 
     std::unique_ptr<DeviceStreamManager> deviceStreamManager = nullptr;
@@ -1690,9 +1690,9 @@ int Mdrunner::mdrunner()
             .appendTextFormatted("Using %d MPI %s\n",
                                  cr->commMyGroup.size(),
 #    if GMX_THREAD_MPI
-                                 cr->commMyGroup.size() == 1 ? "thread" : "threads"
+                                 cr->commMyGroup.isSerial() ? "thread" : "threads"
 #    else
-                                 cr->commMyGroup.size() == 1 ? "process" : "processes"
+                                 cr->commMyGroup.isSerial() ? "process" : "processes"
 #    endif
             );
     std::fflush(stderr);
@@ -1865,7 +1865,7 @@ int Mdrunner::mdrunner()
                 deviceStreamManager.get(),
                 mtop,
                 runScheduleWork.simulationWork.haveFillerParticlesInLocalState,
-                (cr->dd && cr->dd->mpiComm().size() > 1) ? &observablesReducerBuilder : nullptr,
+                (cr->dd && cr->dd->mpiComm().isParallel()) ? &observablesReducerBuilder : nullptr,
                 isSimulationMainRank ? globalState->x : gmx::ArrayRef<const gmx::RVec>(),
                 box,
                 wcycle.get());
@@ -2183,7 +2183,7 @@ int Mdrunner::mdrunner()
                     &nrnb,
                     wcycle.get(),
                     fr->bMolPBC,
-                    (cr->dd && cr->dd->mpiComm().size() > 1) ? &observablesReducerBuilder : nullptr);
+                    (cr->dd && cr->dd->mpiComm().isParallel()) ? &observablesReducerBuilder : nullptr);
 
             /* Energy terms and groups */
             gmx_enerdata_t enerd(mtop.groups.groups[SimulationAtomGroupType::EnergyOutput].size(),

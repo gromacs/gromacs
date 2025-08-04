@@ -972,7 +972,7 @@ void dd_setup_dlb_resource_sharing(const t_commrec* cr, const int uniqueDeviceId
         return;
     }
 
-    if (cr->commMySim.size() == 1)
+    if (cr->commMySim.isSerial())
     {
         dd->comm->nrank_gpu_shared = 1;
 

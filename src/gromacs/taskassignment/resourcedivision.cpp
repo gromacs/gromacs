@@ -608,7 +608,7 @@ void check_resource_division_efficiency(const gmx_hw_info_t* hwinfo,
 
     bool anyRankIsUsingGpus = willUsePhysicalGpu;
     /* Thread-MPI seems to have a bug with reduce on 1 node, so use a cond. */
-    if (mpiCommMySim && mpiCommMySim->size() > 1)
+    if (mpiCommMySim && mpiCommMySim->isParallel())
     {
         std::array<int, 2> count, count_max;
 
@@ -636,7 +636,7 @@ void check_resource_division_efficiency(const gmx_hw_info_t* hwinfo,
         nthreads_omp_mpi_ok_min = nthreads_omp_mpi_ok_min_gpu;
     }
 
-    if (mpiCommMySim && mpiCommMySim->size() > 1 && !anyRankIsUsingGpus)
+    if (mpiCommMySim && mpiCommMySim->isParallel() && !anyRankIsUsingGpus)
     {
         if (nth_omp_max < nthreads_omp_mpi_ok_min || nth_omp_max > nthreads_omp_mpi_ok_max)
         {
@@ -930,7 +930,7 @@ void checkAndUpdateRequestedNumOpenmpThreads(gmx_hw_opt_t*         hw_opt,
      */
     bool canChooseNumOpenmpThreads = (GMX_OPENMP && hw_opt->nthreads_omp <= 0);
     bool haveSmtSupport            = gmxSmtIsUsedOnAllCores(*hwinfo.hardwareTopology);
-    bool simRunsSingleRankNBAndPmeOnGpu = (mpiCommMySim.size() == 1 && pmeRunMode == PmeRunMode::GPU);
+    bool simRunsSingleRankNBAndPmeOnGpu = (mpiCommMySim.isSerial() && pmeRunMode == PmeRunMode::GPU);
 
     if (canChooseNumOpenmpThreads && haveSmtSupport && simRunsSingleRankNBAndPmeOnGpu)
     {

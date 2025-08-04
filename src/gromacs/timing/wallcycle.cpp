@@ -450,7 +450,7 @@ WallcycleCounts wallcycle_sum(const t_commrec* cr, gmx_wallcycle* wc)
     }
 
 #if GMX_MPI
-    if (cr->commMySim.size() > 1)
+    if (cr->commMySim.isParallel())
     {
         gmx::EnumerationArray<WallCycleCounter, double>    bufMain;
         gmx::EnumerationArray<WallCycleSubCounter, double> bufSub;

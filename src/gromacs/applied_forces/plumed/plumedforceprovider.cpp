@@ -76,7 +76,7 @@ try : plumed_(std::make_unique<PLMD::Plumed>())
     // at the implementation and not at the function signature:
     // less code to edit when adding new options :)
 #if GMX_THREAD_MPI
-    if (options.mpiComm_->size() > 1)
+    if (options.mpiComm_->isParallel())
     {
         GMX_THROW(InvalidInputError(
                 "plumed MPI interface is not compatible with THREAD_MPI when uses more than one "
@@ -114,7 +114,7 @@ try : plumed_(std::make_unique<PLMD::Plumed>())
         }
     }
 
-    if (options.mpiComm_->size() > 1)
+    if (options.mpiComm_->isParallel())
     {
         plumed_->cmd("setMPIComm", options.mpiComm_->comm());
     }

@@ -110,6 +110,12 @@ public:
     //! Returns the number of ranks in the communicator
     int size() const { return size_; }
 
+    //! Returns true when \p size() == 1
+    bool isSerial() const { return size_ == 1; }
+
+    //! Returns true when \p size() > 1
+    bool isParallel() const { return size_ > 1; }
+
     //! Returns our rank id in the communicator
     int rank() const { return rank_; }
 

@@ -216,7 +216,7 @@ communicate_group_positions(const gmx::MpiComm& mpiComm, /* Reference to MPI com
         copy_rvec(x_loc[anrs_loc[i]], xcoll[coll_ind[i]]);
     }
 
-    if (mpiComm.size() > 1)
+    if (mpiComm.isParallel())
     {
         /* Add the arrays from all nodes together */
         mpiComm.sumReduce(nr * 3, xcoll[0]);
@@ -341,7 +341,7 @@ extern void get_center_comm(const gmx::MpiComm& mpiComm,
     /* Add the local contributions from all nodes. Put the sum vector and the
      * weight in a buffer array so that we get along with a single communication
      * call. */
-    if (mpiComm.size() > 1)
+    if (mpiComm.isParallel())
     {
         std::array<double, 4> buf;
 

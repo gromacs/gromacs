@@ -356,7 +356,7 @@ static void get_f_norm_max(const t_commrec*         cr,
     {
         a_max = la_max;
     }
-    if (cr->commMyGroup.size() > 1)
+    if (cr->commMyGroup.isParallel())
     {
         const gmx::MpiComm& mpiComm = cr->commMyGroup;
         std::vector<double> sum(2 * mpiComm.size() + 1, 0);
@@ -542,7 +542,7 @@ static void init_em(FILE*                        fplog,
         }
     }
 
-    if (cr->commMyGroup.size() > 1)
+    if (cr->commMyGroup.isParallel())
     {
         *gstat = global_stat_init(ir);
     }
@@ -796,7 +796,7 @@ static bool do_em_step(const t_commrec*                          cr,
                                   nullptr,
                                   gmx::ConstraintVariable::Positions);
 
-        if (cr->commMyGroup.size() > 1)
+        if (cr->commMyGroup.isParallel())
         {
             /* This global reduction will affect performance at high
              * parallelization, but we can not really avoid it.
@@ -1129,7 +1129,7 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
     clear_mat(pres);
 
     /* Communicate stuff when parallel */
-    if (cr->commMyGroup.size() > 1 && inputrec->eI != IntegrationAlgorithm::NM)
+    if (cr->commMyGroup.isParallel() && inputrec->eI != IntegrationAlgorithm::NM)
     {
         wallcycle_start(wcycle, WallCycleCounter::MoveE);
 
@@ -2065,7 +2065,7 @@ void LegacySimulator::do_lbfgs()
     {
         gmx_fatal(FARGS, "L_BFGS is currently not supported");
     }
-    if (cr_->commMySim.size() > 1)
+    if (cr_->commMySim.isParallel())
     {
         gmx_fatal(FARGS, "L-BFGS minimization only supports a single rank");
     }

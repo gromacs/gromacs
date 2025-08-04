@@ -333,7 +333,7 @@ void Bias::restoreStateFromHistory(const AwhBiasHistory* biasHistory, const MpiC
         }
     }
 
-    if (mpiComm.size() > 1)
+    if (mpiComm.isParallel())
     {
         state_.broadcast(mpiComm);
     }

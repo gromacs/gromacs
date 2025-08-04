@@ -306,7 +306,7 @@ void TorchModel::evaluateModel(gmx_enerdata_t*              enerd,
     }
 
     // distribute forces
-    if (mpiComm_->size() > 1)
+    if (mpiComm_->isParallel())
     {
         mpiComm_->sumReduce(3 * N, static_cast<real*>(forceTensor.data_ptr()));
     }

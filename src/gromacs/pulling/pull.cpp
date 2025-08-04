@@ -1873,7 +1873,7 @@ static void init_pull_group_index(FILE*               fplog,
                              || ir->eI == IntegrationAlgorithm::BD);
 
     /* In parallel, store we need to extract localWeights from weights at DD time */
-    std::vector<real>& weights = (mpiComm.size() > 1 ? pg->globalWeights : pg->localWeights);
+    std::vector<real>& weights = (mpiComm.isParallel() ? pg->globalWeights : pg->localWeights);
 
     const SimulationGroups& groups = mtop.groups;
 
@@ -2478,7 +2478,7 @@ void preparePrevStepPullCom(const t_inputrec*    ir,
         {
             state->pull_com_prev_step = state_global->pull_com_prev_step;
         }
-        if (mpiComm.size() > 1)
+        if (mpiComm.isParallel())
         {
             /* Only the main rank has the checkpointed COM from the previous step */
             gmx_bcast(sizeof(double) * state->pull_com_prev_step.size(),

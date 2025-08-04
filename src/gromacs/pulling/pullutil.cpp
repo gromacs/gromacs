@@ -77,7 +77,7 @@ using gmx::RVec;
 template<typename T>
 static void pullAllReduce(const gmx::MpiComm& mpiComm, pull_comm_t* comm, int n, T* data)
 {
-    if (mpiComm.size() > 1)
+    if (mpiComm.isParallel())
     {
         if (comm->bParticipateAll)
         {
@@ -140,7 +140,7 @@ static void pull_set_pbcatoms(const gmx::MpiComm&  mpiComm,
         }
     }
 
-    if (mpiComm.size() > 1 && numPbcAtoms > 0)
+    if (mpiComm.isParallel() && numPbcAtoms > 0)
     {
         /* Sum over participating ranks to get x_pbc from the home ranks.
          * This can be very expensive at high parallelization, so we only
@@ -284,7 +284,7 @@ static void make_cyl_refgrps(const gmx::MpiComm&  mpiComm,
         buffer[8] = radf_fac1[ZZ];
     }
 
-    if (mpiComm.size() > 1)
+    if (mpiComm.isParallel())
     {
         /* Sum the contributions over the ranks */
         pullAllReduce(

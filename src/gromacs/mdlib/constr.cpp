@@ -289,7 +289,7 @@ static void write_constr_pdb(const char*          fn,
         homenr = dd_ac1;
     }
 
-    if (mpiComm.size() > 1)
+    if (mpiComm.isParallel())
     {
         sprintf(fname, "%s_n%d.pdb", fn, mpiComm.rank());
     }
@@ -1199,7 +1199,7 @@ Constraints::Impl::Impl(const gmx_mtop_t&          mtop_p,
         if (ir.eConstrAlg == ConstraintAlgorithm::Lincs)
         {
             GMX_RELEASE_ASSERT(
-                    observablesReducerBuilder == nullptr || mpiComm.size() > 1,
+                    observablesReducerBuilder == nullptr || mpiComm.isParallel(),
                     "ObservablesReducer only works with LINCS when there is more than one rank");
             lincsd = init_lincs(
                     log, mtop, nflexcon, at2con_mt, mayHaveSplitConstraints, ir.nLincsIter, ir.nProjOrder, observablesReducerBuilder);

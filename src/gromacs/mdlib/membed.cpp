@@ -1098,7 +1098,7 @@ gmx_membed_t* init_membed(FILE*          fplog,
             gmx_input("Change integrator to a dynamics integrator in mdp file (e.g. md or sd).");
         }
 
-        if (cr->commMySim.size() > 1)
+        if (cr->commMySim.isParallel())
         {
             gmx_input("Sorry, parallel membed is not yet fully functional.");
         }

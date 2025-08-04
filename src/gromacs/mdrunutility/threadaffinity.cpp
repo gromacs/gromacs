@@ -96,7 +96,7 @@ gmx::IThreadAffinityAccess::~IThreadAffinityAccess() {}
 static bool invalidWithinSimulation(const gmx::MpiComm& mpiCommMySim, bool invalidLocally)
 {
 #if GMX_MPI
-    if (mpiCommMySim.size() > 1)
+    if (mpiCommMySim.isParallel())
     {
         int value = invalidLocally ? 1 : 0;
         int globalValue;
@@ -377,7 +377,7 @@ static bool set_affinity(const gmx::MpiComm&         mpiCommMySim,
         /* sbuf1 contains rank info, while sbuf2 OpenMP thread info */
         sbuf1[0] = sbuf2[0] = '\0';
         /* Only add rank info if we have more than one rank. */
-        if (mpiCommMySim.size() > 1)
+        if (mpiCommMySim.isParallel())
         {
 #if GMX_MPI
 #    if GMX_THREAD_MPI

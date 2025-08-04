@@ -1569,7 +1569,7 @@ void restore_ekinstate_from_state(const gmx::MpiComm& mpiComm, gmx_ekindata_t* e
         n                   = ekinstate->ekin_n;
     }
 
-    if (mpiComm.size() > 1)
+    if (mpiComm.isParallel())
     {
         gmx_bcast(sizeof(n), &n, mpiComm.comm());
         for (i = 0; i < n; i++)

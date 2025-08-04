@@ -2590,7 +2590,7 @@ static void check_match(FILE*                           fplog,
         check_int(fplog, "#ranks", cr->commMySim.size(), headerContents.nnodes, &mm);
     }
 
-    if (cr->mpiDefaultCommunicator.size() > 1 && reproducibilityRequested)
+    if (cr->mpiDefaultCommunicator.isParallel() && reproducibilityRequested)
     {
         // TODO: These checks are incorrect (see redmine #3309)
         const int numPmeOnlyRanks = (cr->dd ? cr->dd->numPmeOnlyRanks : 0);

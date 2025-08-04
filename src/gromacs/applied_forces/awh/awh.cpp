@@ -468,7 +468,7 @@ void Awh::restoreStateFromHistory(const AwhHistory* awhHistory)
 
         potentialOffset_ = awhHistory->potentialOffset;
     }
-    if (mpiComm_.size() > 1)
+    if (mpiComm_.isParallel())
     {
         gmx_bcast(sizeof(potentialOffset_), &potentialOffset_, mpiComm_.comm());
     }

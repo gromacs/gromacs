@@ -148,7 +148,7 @@ void NNPotForceProvider::gatherAtomNumbersIndices()
     }
 
     // distribute atom numbers to all ranks
-    if (mpiComm_.size() > 1)
+    if (mpiComm_.isParallel())
     {
         mpiComm_.sumReduce(atomNumbers_);
     }
@@ -190,7 +190,7 @@ void NNPotForceProvider::gatherAtomPositions(ArrayRef<const RVec> pos)
     }
 
     // in case of dom dec, distribute positions to all ranks
-    if (mpiComm_.size() > 1)
+    if (mpiComm_.isParallel())
     {
         mpiComm_.sumReduce(3 * numInput, positions_.data()->as_vec());
     }

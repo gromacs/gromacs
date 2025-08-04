@@ -503,7 +503,7 @@ void gmx::LegacySimulator::do_rerun()
                     "Rerun does not report kinetic energy, total energy, temperature, virial and "
                     "pressure.");
 
-    if (cr_->commMyGroup.size() > 1)
+    if (cr_->commMyGroup.isParallel())
     {
         rerun_parallel_comm(cr_->commMyGroup, &rerun_fr, &isLastStep);
     }
@@ -902,7 +902,7 @@ void gmx::LegacySimulator::do_rerun()
             isLastStep = !read_next_frame(oenv_, status, &rerun_fr);
         }
 
-        if (cr_->commMyGroup.size() > 1)
+        if (cr_->commMyGroup.isParallel())
         {
             rerun_parallel_comm(cr_->commMyGroup, &rerun_fr, &isLastStep);
         }

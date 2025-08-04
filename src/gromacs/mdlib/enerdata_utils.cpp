@@ -136,7 +136,7 @@ std::pair<std::vector<double>, std::vector<double>> ForeignLambdaTerms::getTerms
         data[i]               = energies_[1 + i] - energies_[0];
         data[numLambdas_ + i] = composeDhdl(i, *allLambdas_, dhdl_[1 + i]);
     }
-    if (mpiComm.size() > 1)
+    if (mpiComm.isParallel())
     {
         mpiComm.sumReduce(data);
     }

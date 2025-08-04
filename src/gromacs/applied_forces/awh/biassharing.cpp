@@ -196,7 +196,7 @@ BiasSharing::BiasSharing(const AwhParams& awhParams, const MpiComm& mpiComm, MPI
     }
 
 #if GMX_MPI
-    if (mpiComm.size() > 1)
+    if (mpiComm.isParallel())
     {
         numSharingSimulations_.resize(awhParams.numBias());
         MPI_Bcast(numSharingSimulations_.data(), numSharingSimulations_.size(), MPI_INT, 0, mpiComm.comm());
@@ -235,7 +235,7 @@ void sumOverSimulations(ArrayRef<T>    data,
     {
         MPI_Allreduce(MPI_IN_PLACE, data.data(), data.size(), mpiType<T>(), MPI_SUM, multiSimComm);
     }
-    if (broadcastWithinSimulation && mpiComm.size() > 1)
+    if (broadcastWithinSimulation && mpiComm.isParallel())
     {
         gmx_bcast(data.size() * sizeof(T), data.data(), mpiComm.comm());
     }

@@ -473,7 +473,7 @@ static void reduce_output(const gmx::MpiComm& mpiComm, gmx_enfrot* er, real t, i
 
     /* Fill the MPI buffer with stuff to reduce. If items are added for reduction
      * here, the MPI buffer size has to be enlarged also in calc_mpi_bufsize() */
-    if (mpiComm.size() > 1)
+    if (mpiComm.isParallel())
     {
         count = 0;
         for (auto& ergRef : er->enfrotgrp)
@@ -512,7 +512,7 @@ static void reduce_output(const gmx::MpiComm& mpiComm, gmx_enfrot* er, real t, i
 #endif
 
         /* Copy back the reduced data from the buffer on the main */
-        if (mpiComm.size() > 1)
+        if (mpiComm.isParallel())
         {
             count = 0;
             for (auto& ergRef : er->enfrotgrp)
@@ -3576,7 +3576,7 @@ static void init_rot_group(FILE*               fplog,
             sfree(xdum);
         }
 #if GMX_MPI
-        if (mpiComm.size() > 1)
+        if (mpiComm.isParallel())
         {
             gmx_bcast(sizeof(erg->xc_center), erg->xc_center, mpiComm.comm());
         }
@@ -3612,7 +3612,7 @@ static void init_rot_group(FILE*               fplog,
             }
         }
 #if GMX_MPI
-        if (mpiComm.size() > 1)
+        if (mpiComm.isParallel())
         {
             gmx_bcast(erg->rotg->nat * sizeof(erg->xc_old[0]), erg->xc_old, mpiComm.comm());
         }
@@ -3812,7 +3812,7 @@ std::unique_ptr<gmx::EnforcedRotation> init_rot(FILE*                       fplo
     snew(er->mbuf, nat_max);
 
     /* Buffers for MPI reducing torques, angles, weights (for each group), and V */
-    if (mpiComm.size() > 1)
+    if (mpiComm.isParallel())
     {
         er->mpi_bufsize = calc_mpi_bufsize(er) + 100; /* larger to catch errors */
         snew(er->mpi_inbuf, er->mpi_bufsize);

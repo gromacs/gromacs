@@ -521,7 +521,7 @@ void LocalTopologyChecker::scheduleCheckOfLocalTopology(const int numBondedInter
 {
     // When we have a single domain, we don't need to reduce and we algorithmically can not miss
     // any interactions, so we can assert here.
-    if (impl_->mpiComm_.size() == 1)
+    if (impl_->mpiComm_.isSerial())
     {
         GMX_RELEASE_ASSERT(numBondedInteractionsToReduce == impl_->expectedNumGlobalBondedInteractions_,
                            "With a single domain the number of assigned bonded interactions should "

@@ -151,7 +151,7 @@ ExclusionChecker::ExclusionChecker(const gmx::MpiComm&             mpiComm,
                                    gmx::ObservablesReducerBuilder* observablesReducerBuilder) :
     impl_(std::make_unique<Impl>(mpiComm, mtop))
 {
-    if (mpiComm.size() == 1)
+    if (mpiComm.isSerial())
     {
         // No reduction required
         return;
@@ -214,7 +214,7 @@ void ExclusionChecker::scheduleCheckOfExclusions(const int numPerturbedExclusion
 {
     // When we have a single domain, we don't need to reduce and we algorithmically can not miss
     // any interactions, so we can assert here.
-    if (impl_->mpiComm_.size() == 1)
+    if (impl_->mpiComm_.isSerial())
     {
         impl_->check(numPerturbedExclusionsToReduce);
     }

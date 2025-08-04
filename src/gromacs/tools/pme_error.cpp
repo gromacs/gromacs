@@ -497,7 +497,7 @@ static real estimate_reciprocal(PmeErrorInputs* info,
     startglobal = -info->nkx[0] / 2;
     stopglobal  = info->nkx[0] / 2;
     xtot        = stopglobal * 2 + 1;
-    if (mpiComm.size() > 1)
+    if (mpiComm.isParallel())
     {
         x_per_core = static_cast<int>(std::ceil(static_cast<real>(xtot) / mpiComm.size()));
         startlocal = startglobal + x_per_core * mpiComm.rank();
@@ -667,7 +667,7 @@ static real estimate_reciprocal(PmeErrorInputs* info,
             }
         }
         /* Broadcast the random number array to the other nodes */
-        if (mpiComm.size() > 1)
+        if (mpiComm.isParallel())
         {
             nblock_bc(mpiComm.comm(), xtot, numbers);
         }
@@ -678,7 +678,7 @@ static real estimate_reciprocal(PmeErrorInputs* info,
                     "Using %d sample%s to approximate the self interaction error term",
                     xtot,
                     xtot == 1 ? "" : "s");
-            if (mpiComm.size() > 1)
+            if (mpiComm.isParallel())
             {
                 fprintf(stdout, " (%d sample%s per rank)", x_per_core, x_per_core == 1 ? "" : "s");
             }
@@ -771,13 +771,13 @@ static real estimate_reciprocal(PmeErrorInputs* info,
 #endif
 
 #ifdef DEBUG
-    if (mpiComm.size() > 1)
+    if (mpiComm.isParallel())
     {
         fprintf(stderr, "Rank %3d: nx=[%3d...%3d]  e_rec3=%e\n", mpiComm.rank(), startlocal, stoplocal, e_rec3);
     }
 #endif
 
-    if (mpiComm.size() > 1)
+    if (mpiComm.isParallel())
     {
         mpiComm.sumReduce(1, &e_rec1);
         mpiComm.sumReduce(1, &e_rec2);
@@ -851,7 +851,7 @@ static int prepare_x_q(real* q[], rvec* x[], const gmx_mtop_t* mtop, const rvec 
         srenew(*x, nq);
     }
     /* Broadcast x and q in the parallel case */
-    if (mpiComm.size() > 1)
+    if (mpiComm.isParallel())
     {
         /* Transfer the number of charges */
         block_bc(mpiComm.comm(), nq);
@@ -980,7 +980,7 @@ static void estimate_PME_error(PmeErrorInputs*     info,
         std::fflush(fp_out);
     }
 
-    if (mpiComm.size() > 1)
+    if (mpiComm.isParallel())
     {
         bcast_info(info, mpiComm);
     }
@@ -992,7 +992,7 @@ static void estimate_PME_error(PmeErrorInputs*     info,
     /* Calculate reciprocal space error */
     info->e_rec[0] = estimate_reciprocal(info, x, q, ncharges, fp_out, bVerbose, seed, &nsamples, mpiComm);
 
-    if (mpiComm.size() > 1)
+    if (mpiComm.isParallel())
     {
         bcast_info(info, mpiComm);
     }
@@ -1034,7 +1034,7 @@ static void estimate_PME_error(PmeErrorInputs*     info,
         info->e_rec[0] =
                 estimate_reciprocal(info, x, q, ncharges, fp_out, bVerbose, seed, &nsamples, mpiComm);
 
-        if (mpiComm.size() > 1)
+        if (mpiComm.isParallel())
         {
             bcast_info(info, mpiComm);
         }
@@ -1056,7 +1056,7 @@ static void estimate_PME_error(PmeErrorInputs*     info,
             info->e_rec[0] = estimate_reciprocal(
                     info, x, q, ncharges, fp_out, bVerbose, seed, &nsamples, mpiComm);
 
-            if (mpiComm.size() > 1)
+            if (mpiComm.isParallel())
             {
                 bcast_info(info, mpiComm);
             }
@@ -1223,7 +1223,7 @@ int gmx_pme_error(int argc, char* argv[])
 
     /* Estimate (S)PME force error */
 
-    if (mpiComm.size() > 1)
+    if (mpiComm.isParallel())
     {
         bcast_info(&info, mpiComm);
     }

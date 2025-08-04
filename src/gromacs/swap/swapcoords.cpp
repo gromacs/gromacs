@@ -1564,7 +1564,7 @@ std::unique_ptr<SwapCoords> init_swapcoords(FILE*                       fplog,
 {
     swaphistory_t* swapstate = nullptr;
 
-    if (mpiComm.size() > 1 && dd == nullptr)
+    if (mpiComm.isParallel() && dd == nullptr)
     {
         gmx_fatal(FARGS, "Position swapping is only implemented for domain decomposition!");
     }
@@ -1577,7 +1577,7 @@ std::unique_ptr<SwapCoords> init_swapcoords(FILE*                       fplog,
 
     if (mdrunOptions.rerun)
     {
-        if (mpiComm.size() > 1)
+        if (mpiComm.isParallel())
         {
             gmx_fatal(FARGS,
                       "%s This module does not support reruns in parallel\nPlease request a serial "
@@ -1658,7 +1658,7 @@ std::unique_ptr<SwapCoords> init_swapcoords(FILE*                       fplog,
 
     /* After init_swapstate we have a set of (old) whole positions for our
      * channels. Now transfer that to all nodes */
-    if (mpiComm.size() > 1)
+    if (mpiComm.isParallel())
     {
         for (t_swapgrp& group : s->splitGroups())
         {
@@ -1889,7 +1889,7 @@ std::unique_ptr<SwapCoords> init_swapcoords(FILE*                       fplog,
         }
     }
 
-    if (mpiComm.size() > 1)
+    if (mpiComm.isParallel())
     {
         bc_initial_concentrations(mpiComm, ir->swap.get(), s);
     }

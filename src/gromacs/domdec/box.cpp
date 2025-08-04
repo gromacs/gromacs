@@ -91,7 +91,7 @@ static void calc_pos_av_stddev(gmx::ArrayRef<const gmx::RVec> x, rvec av, rvec s
 
     /* With mpiCommunicator != nullptr, x.size() is the home atom count */
     int numAtoms = x.size();
-    if (mpiComm && mpiComm->size() > 1)
+    if (mpiComm && mpiComm->isParallel())
     {
         std::array<double, 7> buffer;
 
