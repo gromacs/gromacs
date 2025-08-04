@@ -53,7 +53,6 @@
 
 struct gmx_domdec_t;
 struct gmx_wallcycle;
-struct t_commrec;
 class DeviceContext;
 class DeviceStream;
 class GpuEventSynchronizer;
@@ -163,7 +162,7 @@ class GpuHaloExchangeNvshmemHelper
 {
 
 public:
-    GpuHaloExchangeNvshmemHelper(const t_commrec&          cr,
+    GpuHaloExchangeNvshmemHelper(const gmx_domdec_t&       dd,
                                  const DeviceContext&      context,
                                  const DeviceStream&       stream,
                                  const std::optional<int>& peerRank);
@@ -181,7 +180,7 @@ public:
 
 private:
     //! Communication record
-    const t_commrec& cr_;
+    const gmx_domdec_t& dd_;
     //! Number of signal buffers types used for PP Halo exchange
     static const int numOfPpHaloExSyncBufs = 3;
     //! Size for the each of the 3 signal buffers used for PP Halo exchange

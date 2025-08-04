@@ -54,7 +54,6 @@
 #include <filesystem>
 #include <vector>
 
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -477,7 +476,6 @@ void dd_pmeredist_f(struct gmx_pme_t* pme, PmeAtomComm* atc, gmx::ArrayRef<gmx::
 }
 
 void do_redist_pos_coeffs(struct gmx_pme_t*              pme,
-                          const t_commrec*               cr,
                           gmx_bool                       bFirst,
                           gmx::ArrayRef<const gmx::RVec> x,
                           gmx::ArrayRef<const real>      data)
@@ -503,7 +501,7 @@ void do_redist_pos_coeffs(struct gmx_pme_t*              pme,
         atc.pd.resize(xRef.size());
         pme_calc_pidx_wrapper(xRef, pme->recipbox, &atc);
         /* Redistribute x (only once) and qA/c6A or qB/c6B */
-        if (haveDDAtomOrdering(*cr))
+        if (pme->haveDDAtomOrdering)
         {
             dd_pmeredist_pos_coeffs(pme, bFirst, xRef, param_d, &atc);
         }

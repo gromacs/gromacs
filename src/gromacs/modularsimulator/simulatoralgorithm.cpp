@@ -264,7 +264,7 @@ void ModularSimulatorAlgorithm::simulatorTeardown()
     if (!thisRankHasPmeDuty(cr_.dd))
     {
         /* Tell the PME only node to finish */
-        gmx_pme_send_finish(cr_.commMySim, cr_.dd);
+        gmx_pme_send_finish(cr_.dd);
     }
 
     walltime_accounting_set_nsteps_done(wallTimeAccounting_, step_ - inputRec_->init_step);
@@ -579,7 +579,7 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::build()
                 std::make_unique<PmeLoadBalanceHelper>(legacySimulatorData_->mdrunOptions_.verbose,
                                                        algorithm.statePropagatorData_.get(),
                                                        legacySimulatorData_->fpLog_,
-                                                       legacySimulatorData_->cr_,
+                                                       legacySimulatorData_->cr_->dd,
                                                        legacySimulatorData_->mdLog_,
                                                        legacySimulatorData_->inputRec_,
                                                        legacySimulatorData_->wallCycleCounters_,

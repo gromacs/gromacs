@@ -69,7 +69,6 @@
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/boxmatrix.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/locality.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -146,8 +145,7 @@ PmeSafePointer pmeInitWrapper(const t_inputrec*    inputRec,
                               const real           ewaldCoeff_lj)
 {
     const MDLogger dummyLogger;
-    const auto     runMode = (mode == CodePath::CPU) ? PmeRunMode::CPU : PmeRunMode::Mixed;
-    t_commrec      dummyCommrec(MpiComm(MpiComm::SingleRank{}));
+    const auto     runMode       = (mode == CodePath::CPU) ? PmeRunMode::CPU : PmeRunMode::Mixed;
     NumPmeDomains  numPmeDomains = { 1, 1 };
     // TODO: Need to use proper value when GPU PME decomposition code path is tested
     const real haloExtentForAtomDisplacement = 1.0;
@@ -164,7 +162,7 @@ PmeSafePointer pmeInitWrapper(const t_inputrec*    inputRec,
     const char* boxError = check_box(PbcType::Unset, boxTemp);
     GMX_RELEASE_ASSERT(boxError == nullptr, boxError);
 
-    gmx_pme_t*     pmeDataRaw = gmx_pme_init(&dummyCommrec,
+    gmx_pme_t*     pmeDataRaw = gmx_pme_init(nullptr,
                                          numPmeDomains,
                                          inputRec,
                                          boxTemp,
@@ -224,7 +222,6 @@ void pmeInitAtoms(gmx_pme_t*               pme,
     const Index atomCount = coordinates.size();
     GMX_RELEASE_ASSERT(atomCount == gmx::ssize(charges), "Mismatch in atom data");
     PmeAtomComm* atc = nullptr;
-    t_commrec    dummyCommrec(MpiComm(MpiComm::SingleRank{}));
 
     switch (mode)
     {
@@ -243,7 +240,7 @@ void pmeInitAtoms(gmx_pme_t*               pme,
             atc->setNumAtoms(atomCount);
             gmx_pme_reinit_atoms(pme, atomCount, charges, {});
 
-            stateGpu->reinit(atomCount, atomCount, dummyCommrec);
+            stateGpu->reinit(atomCount, atomCount, MPI_COMM_NULL);
             stateGpu->copyCoordinatesToGpu(arrayRefFromArray(coordinates.data(), coordinates.size()),
                                            gmx::AtomLocality::Local);
             pme_gpu_set_kernelparam_coordinates(pme->gpu, stateGpu->getCoordinates());

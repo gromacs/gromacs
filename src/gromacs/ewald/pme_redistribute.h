@@ -47,21 +47,20 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/vectypes.h"
 
-#include "pme_internal.h"
+struct gmx_pme_t;
+class PmeAtomComm;
 
 namespace gmx
 {
 template<typename T>
 class ArrayRef;
 } // namespace gmx
-struct t_commrec;
 
 //! Redistributes forces along the dimension gives by \p atc
-void dd_pmeredist_f(struct gmx_pme_t* pme, PmeAtomComm* atc, gmx::ArrayRef<gmx::RVec> f, gmx_bool bAddF);
+void dd_pmeredist_f(gmx_pme_t* pme, PmeAtomComm* atc, gmx::ArrayRef<gmx::RVec> f, gmx_bool bAddF);
 
 //! Redistributes coefficients and when \p bFirst=true coordinates over MPI ranks
-void do_redist_pos_coeffs(struct gmx_pme_t*              pme,
-                          const t_commrec*               cr,
+void do_redist_pos_coeffs(gmx_pme_t*                     pme,
                           gmx_bool                       bFirst,
                           gmx::ArrayRef<const gmx::RVec> x,
                           gmx::ArrayRef<const real>      data);

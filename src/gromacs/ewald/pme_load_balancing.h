@@ -49,7 +49,7 @@
 #include "gromacs/utility/vectypes.h"
 
 
-struct t_commrec;
+struct gmx_domdec_t;
 struct t_forcerec;
 struct t_inputrec;
 struct interaction_const_t;
@@ -78,7 +78,7 @@ bool pme_loadbal_is_active(const pme_load_balancing_t* pme_lb);
  * usage.
  */
 void pme_loadbal_init(pme_load_balancing_t**         pme_lb_p,
-                      t_commrec*                     cr,
+                      gmx_domdec_t*                  dd,
                       const gmx::MDLogger&           mdlog,
                       const t_inputrec&              ir,
                       const matrix                   box,
@@ -95,7 +95,6 @@ void pme_loadbal_init(pme_load_balancing_t**         pme_lb_p,
  * Returns if the load balancing is printing to fp_err.
  */
 void pme_loadbal_do(pme_load_balancing_t*          pme_lb,
-                    struct t_commrec*              cr,
                     FILE*                          fp_err,
                     FILE*                          fp_log,
                     const gmx::MDLogger&           mdlog,

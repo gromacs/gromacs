@@ -147,11 +147,11 @@ void GpuHaloExchange::destroyGpuHaloExchangeNvshmemBuf()
                "A CPU stub for GPU Halo Exchange was called insted of the correct implementation.");
 }
 
-GpuHaloExchangeNvshmemHelper::GpuHaloExchangeNvshmemHelper(const t_commrec&     cr,
+GpuHaloExchangeNvshmemHelper::GpuHaloExchangeNvshmemHelper(const gmx_domdec_t&  dd,
                                                            const DeviceContext& context,
                                                            const DeviceStream&  stream,
                                                            const std::optional<int>& /* peerRank */) :
-    cr_(cr), stream_(stream), context_(context)
+    dd_(dd), stream_(stream), context_(context)
 {
     GMX_ASSERT(false,
                "A CPU stub for GPU Halo Exchange was called insted of the correct implementation.");

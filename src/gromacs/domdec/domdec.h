@@ -146,8 +146,8 @@ struct NumPmeDomains
 /*! \brief Returns the number of PME domains, can be called with dd=NULL */
 NumPmeDomains getNumPmeDomains(const gmx_domdec_t* dd);
 
-/*! \brief Returns the set of DD ranks that communicate with pme node cr->nodeid */
-std::vector<int> get_pme_ddranks(const t_commrec* cr, int pmenodeid);
+/*! \brief Returns the set of DD ranks that communicate with pme node id \p pmenodeid */
+std::vector<int> get_pme_ddranks(const gmx_domdec_t& dd, int pmenodeid);
 
 /*! \brief Returns the maximum shift for coordinate communication in PME, dim x */
 int dd_pme_maxshift_x(const gmx_domdec_t& dd);
@@ -169,14 +169,14 @@ bool dd_bonded_molpbc(const gmx_domdec_t& dd, PbcType pbcType);
  * This could fail when trying to increase the cut-off,
  * then FALSE will be returned and the cut-off is not modified.
  *
- * \param[in] cr               Communication recrod
+ * \param[in] dd               Pointer to the domain decomposition object
  * \param[in] box              Box matrix, used for computing the dimensions of the system
  * \param[in] x                Position vector, used for computing the dimensions of the system
  * \param[in] cutoffRequested  The requested atom to atom cut-off distance, usually the pair-list
  *                             cutoff distance
  * \param[in] checkGpuDdLimitation Whether to check the GPU DD support limitation
  */
-bool change_dd_cutoff(t_commrec*                     cr,
+bool change_dd_cutoff(gmx_domdec_t*                  dd,
                       const matrix                   box,
                       gmx::ArrayRef<const gmx::RVec> x,
                       real                           cutoffRequested,

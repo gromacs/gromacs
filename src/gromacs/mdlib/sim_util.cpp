@@ -234,7 +234,6 @@ static void pull_potential_wrapper(const MpiComm&       mpiComm,
 }
 
 static void pme_receive_force_ener(t_forcerec*      fr,
-                                   const MpiComm&   mpiCommMySim,
                                    gmx_domdec_t*    dd,
                                    ForceWithVirial* forceWithVirial,
                                    gmx_enerdata_t*  enerd,
@@ -255,7 +254,6 @@ static void pme_receive_force_ener(t_forcerec*      fr,
     dvdl_q  = 0;
     dvdl_lj = 0;
     gmx_pme_receive_f(fr->pmePpCommGpu.get(),
-                      mpiCommMySim,
                       dd,
                       forceWithVirial,
                       &e_q,
@@ -1341,7 +1339,7 @@ static void doPairSearch(const t_commrec*             cr,
         // Does global communication and symmetric reallocation with NVSHMEM
         stateGpu->reinit(mdatoms.homenr,
                          getLocalAtomCount(cr->dd, mdatoms, simulationWork.havePpDomainDecomposition),
-                         *cr);
+                         cr->commMySim.comm());
         if (simulationWork.useGpuHaloExchange && runScheduleWork.simulationWork.useNvshmem)
         {
             // Does global communication and symmetric reallocation
@@ -1575,7 +1573,6 @@ void do_force(FILE*                         fplog,
         // in order for nvshmem collective calls in StatePropagatorDataGpu::Impl::reinit
         // to be in sync with PME-PP
         gmx_pme_send_coordinates(fr,
-                                 cr->commMySim,
                                  cr->dd,
                                  box,
                                  x.unpaddedArrayRef(),
@@ -1693,7 +1690,6 @@ void do_force(FILE*                         fplog,
         }
 
         gmx_pme_send_coordinates(fr,
-                                 cr->commMySim,
                                  cr->dd,
                                  box,
                                  x.unpaddedArrayRef(),
@@ -2247,7 +2243,6 @@ void do_force(FILE*                         fplog,
              * forces, virial and energy from the PME nodes here.
              */
             pme_receive_force_ener(fr,
-                                   cr->commMySim,
                                    cr->dd,
                                    &forceOutMtsLevel1->forceWithVirial(),
                                    enerd,
@@ -2523,7 +2518,6 @@ void do_force(FILE*                         fplog,
          * forces, virial and energy from the PME nodes here.
          */
         pme_receive_force_ener(fr,
-                               cr->commMySim,
                                cr->dd,
                                &forceOutMtsLevel1->forceWithVirial(),
                                enerd,
@@ -2626,7 +2620,6 @@ void do_force(FILE*                         fplog,
          * forces, virial and energy from the PME nodes here.
          */
         pme_receive_force_ener(fr,
-                               cr->commMySim,
                                cr->dd,
                                &forceOutMtsLevel1->forceWithVirial(),
                                enerd,

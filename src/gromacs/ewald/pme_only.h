@@ -48,9 +48,9 @@
 
 #include "gromacs/timing/walltime_accounting.h"
 
-struct t_commrec;
 struct t_inputrec;
 struct t_nrnb;
+struct gmx_domdec_t;
 struct gmx_pme_t;
 struct gmx_wallcycle;
 
@@ -62,7 +62,7 @@ class DeviceStreamManager;
 
 /*! \brief Called on the nodes that do PME exclusively */
 int gmx_pmeonly(gmx_pme_t**                     pme,
-                const t_commrec*                cr,
+                const gmx_domdec_t&             dd,
                 t_nrnb*                         mynrnb,
                 gmx_wallcycle*                  wcycle,
                 gmx_walltime_accounting_t       walltime_accounting,

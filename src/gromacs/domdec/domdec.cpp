@@ -583,31 +583,29 @@ static int gmx_ddcoord2pmeindex(const gmx_domdec_t& dd, int x, int y, int z)
     return slab;
 }
 
-static int ddcoord2simnodeid(const t_commrec* cr, int x, int y, int z)
+static int ddcoord2simnodeid(const gmx_domdec_t& dd, int x, int y, int z)
 {
-    const CartesianRankSetup& cartSetup = cr->dd->comm->cartesianRankSetup;
+    const CartesianRankSetup& cartSetup = dd.comm->cartesianRankSetup;
     ivec                      coords    = { x, y, z };
     int                       nodeid    = -1;
 
     if (cartSetup.bCartesianPP_PME)
     {
-#if GMX_MPI
-        MPI_Cart_rank(cr->commMySim.comm(), coords, &nodeid);
-#endif
+        nodeid = dd.comm->mpiCommMySim_.rank();
     }
     else
     {
-        int ddindex = dd_index(cr->dd->numCells, coords);
+        int ddindex = dd_index(dd.numCells, coords);
         if (cartSetup.bCartesianPP)
         {
             nodeid = cartSetup.ddindex2simnodeid[ddindex];
         }
         else
         {
-            const DDRankSetup& rankSetup = cr->dd->comm->ddRankSetup;
+            const DDRankSetup& rankSetup = dd.comm->ddRankSetup;
             if (rankSetup.rankOrder != DdRankOrder::pp_pme && rankSetup.usePmeOnlyRanks)
             {
-                nodeid = ddindex + gmx_ddcoord2pmeindex(*cr->dd, x, y, z);
+                nodeid = ddindex + gmx_ddcoord2pmeindex(dd, x, y, z);
             }
             else
             {
@@ -690,10 +688,10 @@ NumPmeDomains getNumPmeDomains(const gmx_domdec_t* dd)
     }
 }
 
-std::vector<int> get_pme_ddranks(const t_commrec* cr, const int pmenodeid)
+std::vector<int> get_pme_ddranks(const gmx_domdec_t& dd, const int pmenodeid)
 {
-    const DDRankSetup&        ddRankSetup = cr->dd->comm->ddRankSetup;
-    const CartesianRankSetup& cartSetup   = cr->dd->comm->cartesianRankSetup;
+    const DDRankSetup&        ddRankSetup = dd.comm->ddRankSetup;
+    const CartesianRankSetup& cartSetup   = dd.comm->cartesianRankSetup;
     GMX_RELEASE_ASSERT(ddRankSetup.usePmeOnlyRanks,
                        "This function should only be called when PME-only ranks are in use");
     std::vector<int> ddranks;
@@ -710,18 +708,18 @@ std::vector<int> get_pme_ddranks(const t_commrec* cr, const int pmenodeid)
                     ivec coord = { x, y, z };
                     ivec coord_pme;
                     dd_cart_coord2pmecoord(ddRankSetup, cartSetup, coord, coord_pme);
-                    if (cr->dd->ci[XX] == coord_pme[XX] && cr->dd->ci[YY] == coord_pme[YY]
-                        && cr->dd->ci[ZZ] == coord_pme[ZZ])
+                    if (dd.ci[XX] == coord_pme[XX] && dd.ci[YY] == coord_pme[YY]
+                        && dd.ci[ZZ] == coord_pme[ZZ])
                     {
-                        ddranks.push_back(ddcoord2simnodeid(cr, x, y, z));
+                        ddranks.push_back(ddcoord2simnodeid(dd, x, y, z));
                     }
                 }
                 else
                 {
                     /* The slab corresponds to the nodeid in the PME group */
-                    if (gmx_ddcoord2pmeindex(*cr->dd, x, y, z) == pmenodeid)
+                    if (gmx_ddcoord2pmeindex(dd, x, y, z) == pmenodeid)
                     {
-                        ddranks.push_back(ddcoord2simnodeid(cr, x, y, z));
+                        ddranks.push_back(ddcoord2simnodeid(dd, x, y, z));
                     }
                 }
             }
@@ -1474,6 +1472,9 @@ static void setupGroupCommunication(const gmx::MDLogger&     mdlog,
     {
         receive_ddindex2simnodeid(dd, cr);
     }
+
+    // Set mpiComm_ as a pointer to cr (we should make gmx_domdec_t the owner of this MpiComm)
+    dd->mpiComm_ = &cr->commMyGroup;
 
     // Set mpiComm_ as a pointer to cr (we should make gmx_domdec_t the owner of this MpiComm)
     dd->mpiComm_ = &cr->commMyGroup;
@@ -2677,6 +2678,13 @@ gmx_domdec_t::gmx_domdec_t(gmx::MpiComm& mpiCommMySim, const t_inputrec& ir, gmx
 
 gmx_domdec_t::~gmx_domdec_t() = default;
 
+const gmx::MpiComm& gmx_domdec_t::mpiCommMySim() const
+{
+    GMX_ASSERT(comm, "comm should be initialized");
+
+    return comm->mpiCommMySim_;
+}
+
 namespace gmx
 {
 
@@ -3012,7 +3020,7 @@ static int getNumCommunicationPulsesForDim(const gmx_ddbox_t& ddbox,
 /* Returns whether a cutoff distance of \p cutoffRequested satisfies
  * all limitations of the domain decomposition and thus could be used
  */
-static gmx_bool test_dd_cutoff(const t_commrec*               cr,
+static gmx_bool test_dd_cutoff(const gmx_domdec_t*            dd,
                                const matrix                   box,
                                gmx::ArrayRef<const gmx::RVec> x,
                                real                           cutoffRequested,
@@ -3020,8 +3028,6 @@ static gmx_bool test_dd_cutoff(const t_commrec*               cr,
 {
     gmx_ddbox_t ddbox;
     int         LocallyLimited = 0;
-
-    const auto* dd = cr->dd;
 
     set_ddbox(*dd, false, box, true, x, &ddbox);
 
@@ -3056,7 +3062,7 @@ static gmx_bool test_dd_cutoff(const t_commrec*               cr,
         /* The GPU halo communication code currently does not allow multiple
          * pulses along dimensions other than the first.
          */
-        if (checkGpuDdLimitation && (!cr->dd->gpuHaloExchange[0].empty()) && d > 0 && np > 1)
+        if (checkGpuDdLimitation && (!dd->gpuHaloExchange[0].empty()) && d > 0 && np > 1)
         {
             return FALSE;
         }
@@ -3072,7 +3078,7 @@ static gmx_bool test_dd_cutoff(const t_commrec*               cr,
             LocallyLimited = 1;
         }
 
-        cr->commMyGroup.sumReduce(1, &LocallyLimited);
+        dd->mpiComm().sumReduce(1, &LocallyLimited);
 
         if (LocallyLimited > 0)
         {
@@ -3083,17 +3089,17 @@ static gmx_bool test_dd_cutoff(const t_commrec*               cr,
     return TRUE;
 }
 
-bool change_dd_cutoff(t_commrec*                     cr,
+bool change_dd_cutoff(gmx_domdec_t*                  dd,
                       const matrix                   box,
                       gmx::ArrayRef<const gmx::RVec> x,
                       real                           cutoffRequested,
                       bool                           checkGpuDdLimitation)
 {
-    bool bCutoffAllowed = test_dd_cutoff(cr, box, x, cutoffRequested, checkGpuDdLimitation);
+    bool bCutoffAllowed = test_dd_cutoff(dd, box, x, cutoffRequested, checkGpuDdLimitation);
 
     if (bCutoffAllowed)
     {
-        cr->dd->comm->systemInfo.cutoff = cutoffRequested;
+        dd->comm->systemInfo.cutoff = cutoffRequested;
     }
 
     return bCutoffAllowed;
@@ -3114,7 +3120,7 @@ void constructGpuHaloExchange(const t_commrec&                cr,
     if (useNvshmem)
     {
         cr.dd->gpuHaloExchangeNvshmemHelper = std::make_unique<gmx::GpuHaloExchangeNvshmemHelper>(
-                cr,
+                *cr.dd,
                 deviceStreamManager.context(),
                 deviceStreamManager.stream(gmx::DeviceStreamType::NonBondedLocal),
                 std::nullopt);

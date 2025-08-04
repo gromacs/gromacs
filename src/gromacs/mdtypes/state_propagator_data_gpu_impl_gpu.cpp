@@ -53,7 +53,6 @@
 #    include "gromacs/gpu_utils/gpueventsynchronizer.h"
 #    include "gromacs/math/functions.h"
 #    include "gromacs/math/utilities.h"
-#    include "gromacs/mdtypes/commrec.h"
 #    include "gromacs/mdtypes/state_propagator_data_gpu.h"
 #    include "gromacs/timing/wallcycle.h"
 #    include "gromacs/utility/classhelpers.h"
@@ -62,7 +61,6 @@
 #    include "state_propagator_data_gpu_impl.h"
 
 struct gmx_domdec_t;
-struct t_commrec;
 struct gmx_domdec_comm_t;
 
 namespace gmx
@@ -175,7 +173,7 @@ StatePropagatorDataGpu::Impl::~Impl()
     freeDeviceBuffer(&d_f_);
 }
 
-void StatePropagatorDataGpu::Impl::reinit(int numAtomsLocal, int numAtomsAll, const t_commrec& cr)
+void StatePropagatorDataGpu::Impl::reinit(int numAtomsLocal, int numAtomsAll, MPI_Comm mpiCommMySim)
 {
     wallcycle_start_nocount(wcycle_, WallCycleCounter::LaunchGpuPp);
     wallcycle_sub_start_nocount(wcycle_, WallCycleSubCounter::LaunchStatePropagatorData);
@@ -197,7 +195,7 @@ void StatePropagatorDataGpu::Impl::reinit(int numAtomsLocal, int numAtomsAll, co
     if (useNvshmem_)
     {
 #    if GMX_MPI
-        MPI_Allreduce(&numAtomsPadded, &maxNumAtomsPadded, 1, MPI_INT, MPI_MAX, cr.commMySim.comm());
+        MPI_Allreduce(&numAtomsPadded, &maxNumAtomsPadded, 1, MPI_INT, MPI_MAX, mpiCommMySim);
 #    endif
     }
 
@@ -743,9 +741,9 @@ StatePropagatorDataGpu& StatePropagatorDataGpu::operator=(StatePropagatorDataGpu
 StatePropagatorDataGpu::~StatePropagatorDataGpu() = default;
 
 
-void StatePropagatorDataGpu::reinit(int numAtomsLocal, int numAtomsAll, const t_commrec& cr)
+void StatePropagatorDataGpu::reinit(int numAtomsLocal, int numAtomsAll, MPI_Comm mpiCommMySim)
 {
-    return impl_->reinit(numAtomsLocal, numAtomsAll, cr);
+    return impl_->reinit(numAtomsLocal, numAtomsAll, mpiCommMySim);
 }
 
 std::tuple<int, int> StatePropagatorDataGpu::getAtomRangesFromAtomLocality(AtomLocality atomLocality) const

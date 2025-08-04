@@ -69,8 +69,8 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/vectypes.h"
 
-struct t_commrec;
 struct t_forcerec;
+struct gmx_domdec_t;
 struct t_inputrec;
 struct t_complex;
 enum class FreeEnergyPerturbationType : int;
@@ -106,7 +106,7 @@ real do_ewald(bool                           havePbcXY2Walls,
               gmx::ArrayRef<const real>      chargeA,
               gmx::ArrayRef<const real>      chargeB,
               const matrix                   box,
-              const t_commrec*               commrec,
+              const gmx_domdec_t*            dd,
               int                            natoms,
               matrix                         lrvir,
               real                           ewaldcoeff,
@@ -118,7 +118,7 @@ real do_ewald(bool                           havePbcXY2Walls,
  * charge.
  *
  * Should only be called on one thread. */
-real ewald_charge_correction(const t_commrec*            commrec,
+real ewald_charge_correction(const gmx_domdec_t*         dd,
                              real                        epsilonR,
                              real                        ewaldcoeffQ,
                              gmx::ArrayRef<const double> qsum,

@@ -803,11 +803,11 @@ GpuEventSynchronizer* GpuHaloExchange::getForcesReadyOnDeviceEvent()
     return impl_->getForcesReadyOnDeviceEvent();
 }
 
-GpuHaloExchangeNvshmemHelper::GpuHaloExchangeNvshmemHelper(const t_commrec&          cr,
+GpuHaloExchangeNvshmemHelper::GpuHaloExchangeNvshmemHelper(const gmx_domdec_t&       dd,
                                                            const DeviceContext&      context,
                                                            const DeviceStream&       stream,
                                                            const std::optional<int>& peerRank) :
-    cr_(cr), stream_(stream), peerRank_(peerRank), context_(context)
+    dd_(dd), stream_(stream), peerRank_(peerRank), context_(context)
 {
 }
 
@@ -863,39 +863,38 @@ void GpuHaloExchangeNvshmemHelper::allocateAndInitSignalBufs(int totalDimsAndPul
 
 void GpuHaloExchangeNvshmemHelper::reinit()
 {
-    GMX_ASSERT(cr_.dd, "DD was not initialized.");
-    numDimsAndPulses_.resize(cr_.dd->ndim);
+    numDimsAndPulses_.resize(dd_.ndim);
     const bool isPmeRank = peerRank_.has_value();
     if (isPmeRank)
     {
 #if GMX_MPI
         // recv remote data of num of pulses in each dim.
         MPI_Recv(numDimsAndPulses_.data(),
-                 cr_.dd->ndim,
+                 dd_.ndim,
                  MPI_INT,
                  peerRank_.value(),
                  0,
-                 cr_.commMySim.comm(),
+                 dd_.mpiCommMySim().comm(),
                  MPI_STATUS_IGNORE);
 #endif
     }
     else
     {
-        for (int d = 0; d < cr_.dd->ndim; d++)
+        for (int d = 0; d < dd_.ndim; d++)
         {
-            numDimsAndPulses_[d] = cr_.dd->comm->cd[d].numPulses();
+            numDimsAndPulses_[d] = dd_.comm->cd[d].numPulses();
         }
 #if GMX_MPI
         // we use PP rank which receives virial and energy from PME rank
         // to send the number of pulses data to PME rank.
-        if (cr_.dd->pme_receive_vir_ener)
+        if (dd_.pme_receive_vir_ener)
         {
             MPI_Send(numDimsAndPulses_.data(),
-                     cr_.dd->ndim,
+                     dd_.ndim,
                      MPI_INT,
-                     cr_.dd->pme_nodeid,
+                     dd_.pme_nodeid,
                      0,
-                     cr_.commMySim.comm());
+                     dd_.mpiCommMySim().comm());
         }
 #endif
     }
@@ -928,14 +927,14 @@ void GpuHaloExchangeNvshmemHelper::reinit()
             }
 
             totalDimsAndPulses = 0;
-            for (int d = 0; d < cr_.dd->ndim; d++)
+            for (int d = 0; d < dd_.ndim; d++)
             {
                 for (int pulse = 0; pulse < numDimsAndPulses_[d]; pulse++)
                 {
                     int recvBufSize = 1;
                     int newSize     = 1;
 #if GMX_MPI
-                    MPI_Allreduce(&newSize, &recvBufSize, 1, MPI_INT, MPI_MAX, cr_.commMySim.comm());
+                    MPI_Allreduce(&newSize, &recvBufSize, 1, MPI_INT, MPI_MAX, dd_.mpiCommMySim().comm());
 #endif
                     reallocateDeviceBuffer(&d_recvBuf_[totalDimsAndPulses],
                                            recvBufSize,

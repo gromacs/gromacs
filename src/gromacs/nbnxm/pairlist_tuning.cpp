@@ -341,7 +341,7 @@ void increaseNstlist(FILE*             fp,
             // nstlist tuning happens before GPU DD is initialized so we can't check
             // whether the new cutoff would conflict with direct GPU communication.
             const bool checkGpuDdLimitation = false;
-            bDD = change_dd_cutoff(cr, box, ArrayRef<const RVec>(), rlist_new, checkGpuDdLimitation);
+            bDD = change_dd_cutoff(cr->dd, box, ArrayRef<const RVec>(), rlist_new, checkGpuDdLimitation);
         }
 
         if (debug)

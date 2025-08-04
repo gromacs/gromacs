@@ -99,7 +99,7 @@ StatePropagatorDataGpu& StatePropagatorDataGpu::operator=(StatePropagatorDataGpu
 
 StatePropagatorDataGpu::~StatePropagatorDataGpu() = default;
 
-void StatePropagatorDataGpu::reinit(int /* numAtomsLocal */, int /* numAtomsAll*/, const t_commrec& /*cr*/)
+void StatePropagatorDataGpu::reinit(int /* numAtomsLocal */, int /* numAtomsAll*/, MPI_Comm /*mpiCommMySim*/)
 {
     GMX_ASSERT(!impl_,
                "A CPU stub method from GPU state propagator data was called instead of one from "

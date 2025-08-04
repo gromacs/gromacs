@@ -42,8 +42,8 @@
 
 #include "pmeloadbalancehelper.h"
 
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/ewald/pme_load_balancing.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/interaction_const.h"
@@ -68,7 +68,7 @@ bool PmeLoadBalanceHelper::doPmeLoadBalancing(const MdrunOptions&       mdrunOpt
 PmeLoadBalanceHelper::PmeLoadBalanceHelper(bool                 isVerbose,
                                            StatePropagatorData* statePropagatorData,
                                            FILE*                fplog,
-                                           t_commrec*           cr,
+                                           gmx_domdec_t*        dd,
                                            const MDLogger&      mdlog,
                                            const t_inputrec*    inputrec,
                                            gmx_wallcycle*       wcycle,
@@ -79,7 +79,7 @@ PmeLoadBalanceHelper::PmeLoadBalanceHelper(bool                 isVerbose,
     bPMETunePrinting_(false),
     statePropagatorData_(statePropagatorData),
     fplog_(fplog),
-    cr_(cr),
+    dd_(dd),
     mdlog_(mdlog),
     inputrec_(inputrec),
     wcycle_(wcycle),
@@ -93,7 +93,7 @@ void PmeLoadBalanceHelper::setup()
     GMX_RELEASE_ASSERT(box[0][0] != 0 && box[1][1] != 0 && box[2][2] != 0,
                        "PmeLoadBalanceHelper cannot be initialized with zero box.");
     pme_loadbal_init(
-            &pme_loadbal_, cr_, mdlog_, *inputrec_, box, *fr_->ic, *fr_->nbv, fr_->pmedata, fr_->nbv->useGpu());
+            &pme_loadbal_, dd_, mdlog_, *inputrec_, box, *fr_->ic, *fr_->nbv, fr_->pmedata, fr_->nbv->useGpu());
 }
 
 void PmeLoadBalanceHelper::run(gmx::Step step, gmx::Time gmx_unused time)
@@ -107,8 +107,7 @@ void PmeLoadBalanceHelper::run(gmx::Step step, gmx::Time gmx_unused time)
     // TODO pass SimulationWork object into this function, such that last argument can be set as
     // simulationWork.useGpuPmePpCommunication as is done in main MD loop.
     pme_loadbal_do(pme_loadbal_,
-                   cr_,
-                   (isVerbose_ && MAIN(cr_)) ? stderr : nullptr,
+                   (isVerbose_ && (dd_ == nullptr || DDMAIN(*dd_))) ? stderr : nullptr,
                    fplog_,
                    mdlog_,
                    *inputrec_,

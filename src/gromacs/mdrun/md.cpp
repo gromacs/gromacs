@@ -563,7 +563,7 @@ void gmx::LegacySimulator::do_md()
     if (bPMETune)
     {
         pme_loadbal_init(
-                &pme_loadbal, cr_, mdLog_, *ir, state_->box, *fr_->ic, *fr_->nbv, fr_->pmedata, fr_->nbv->useGpu());
+                &pme_loadbal, cr_->dd, mdLog_, *ir, state_->box, *fr_->ic, *fr_->nbv, fr_->pmedata, fr_->nbv->useGpu());
     }
 
     if (!ir->bContinuation)
@@ -887,7 +887,6 @@ void gmx::LegacySimulator::do_md()
             }
             /* PME grid + cut-off optimization with GPUs or PME nodes */
             pme_loadbal_do(pme_loadbal,
-                           cr_,
                            (mdrunOptions_.verbose && MAIN(cr_)) ? stderr : nullptr,
                            fpLog_,
                            mdLog_,
@@ -2183,7 +2182,7 @@ void gmx::LegacySimulator::do_md()
     if (simulationWork.haveSeparatePmeRank)
     {
         /* Tell the PME only node to finish */
-        gmx_pme_send_finish(cr_->commMySim, cr_->dd);
+        gmx_pme_send_finish(cr_->dd);
     }
 
     // This is to free PP ranks gpuhaloexchange symmetric buffer `d_recvBuf_`

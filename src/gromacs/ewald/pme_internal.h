@@ -61,19 +61,24 @@
 #include "gromacs/utility/defaultinitializationallocator.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/unique_cptr.h"
 #include "gromacs/utility/vectypes.h"
 
 //! A repeat of typedef from parallel_3dfft.h
 typedef struct gmx_parallel_3dfft* gmx_parallel_3dfft_t;
 
-struct t_commrec;
 struct t_inputrec;
 struct PmeGpu;
 class EwaldBoxZScaler;
 enum class PmeRunMode;
 enum class LongRangeVdW : int;
 class PmeSolve;
+
+namespace gmx
+{
+class MpiComm;
+}
 
 //! The number of grids for LJ-PME with LB combination rules
 static constexpr int sc_numGridsLJLB = 7;
@@ -90,13 +95,6 @@ static const real lb_scale_factor_symm[] = { 2.0 / 64, 12.0 / 64, 30.0 / 64, 20.
  * If needed it can be changed here.
  */
 #define PME_ORDER_MAX 12
-
-
-/* Temporary suppression until these structs become opaque and don't live in
- * a header that is included by other headers. Also, until then I have no
- * idea what some of the names mean. */
-
-//! @cond Doxygen_Suppress
 
 template<typename T>
 using AlignedVector = std::vector<T, gmx::AlignedAllocator<T>>;
@@ -330,7 +328,10 @@ struct pme_solve_work_t;
 
 /*! \brief Main PME data structure */
 struct gmx_pme_t
-{                   //NOLINT(clang-analyzer-optin.performance.Padding)
+{ //NOLINT(clang-analyzer-optin.performance.Padding)
+    //! Constructor, can be called with nullptr, in that case a single rank comm is used
+    gmx_pme_t(const gmx::MpiComm* mpiComm);
+
     int ndecompdim; /* The number of decomposition dimensions */
     int nodeid;     /* Our nodeid in mpi->mpi_comm */
     int nodeid_major;
@@ -339,7 +340,12 @@ struct gmx_pme_t
     int nnodes_major;
     int nnodes_minor;
 
-    MPI_Comm mpi_comm;
+    // Used when mpiComm passed to the constructor is nullptr
+    const gmx::MpiComm mpiCommSingleRank;
+
+    // Communicator for PME ranks (same as PP when no separate PME ranks are in use)
+    const gmx::MpiComm& mpiComm;
+
     MPI_Comm mpi_comm_d[2]; /* Indexed on dimension, 0=x, 1=y */
 #if GMX_MPI
     MPI_Datatype rvec_mpi; /* the pme vector's MPI type */
@@ -347,6 +353,9 @@ struct gmx_pme_t
 
     bool bUseThreads; /* Does any of the PME ranks have nthread>1 ?  */
     int  nthread;     /* The number of threads doing PME on our rank */
+
+    bool simulationIsParallel; /* Whether more than one MPI rank is used for the simulation */
+    bool haveDDAtomOrdering;   /* Whether atoms are ordered according to DD instead of global top */
 
     bool bPPnode;   /* Node also does particle-particle forces */
     bool doCoulomb; /* Apply PME to electrostatics */
@@ -453,7 +462,5 @@ struct gmx_pme_t
     /* thread local work data for solve_pme */
     std::unique_ptr<PmeSolve> pmeSolve;
 };
-
-//! @endcond
 
 #endif

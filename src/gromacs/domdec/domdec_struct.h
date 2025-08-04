@@ -121,6 +121,9 @@ struct gmx_domdec_t
     //! Returns the group MPI communicator, i.e. for the PP or PME ranks
     const gmx::MpiComm& mpiComm() const { return *mpiComm_; }
 
+    //! Returns the communicator for the whole simulation
+    const gmx::MpiComm& mpiCommMySim() const;
+
     //! Whether this rank computes particle-particle interactions
     bool hasPPDuty = true;
     //! Whether this rank computes PME mesh interactions, also true when PME is not in use
@@ -232,6 +235,17 @@ static bool inline thisRankHasPPDuty(const gmx_domdec_t* dd)
 static bool inline thisRankHasPmeDuty(const gmx_domdec_t* dd)
 {
     return (dd == nullptr || dd->hasPmeDuty);
+}
+
+/*! \brief Returns whether atoms are (re)ordered by domain decomposition
+ *
+ * When \c true is returned, the atoms are not ordered according to the (global) topology.
+ *
+ * Can be called with \p dd=nullptr, in which case this returns \c false.
+ */
+static bool inline haveDDAtomOrdering(const gmx_domdec_t* dd)
+{
+    return (dd != nullptr);
 }
 
 /*! \brief Returns whether we have actual domain decomposition for the particle-particle interactions

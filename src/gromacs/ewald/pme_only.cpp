@@ -71,6 +71,7 @@
 #include <vector>
 
 #include "gromacs/domdec/domdec.h"
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/gpuhaloexchange.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/ewald/pme_coordinate_receiver_gpu.h"
@@ -83,7 +84,6 @@
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/gmxcomplex.h"
 #include "gromacs/math/units.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/simulation_workload.h"
@@ -95,6 +95,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/gmxomp.h"
+#include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/vec.h"
 
 #include "pme_gpu_internal.h"
@@ -146,18 +147,18 @@ struct gmx_pme_pp
     bool useGpuHaloExchange = false;
 };
 
-static std::vector<PpRanks> makePpRanks(const t_commrec* cr)
+static std::vector<PpRanks> makePpRanks(const gmx_domdec_t& dd)
 {
     std::vector<PpRanks> ppRanks;
 #if GMX_MPI
-    std::vector<int> ppRankIds = get_pme_ddranks(cr, cr->commMyGroup.rank());
+    std::vector<int> ppRankIds = get_pme_ddranks(dd, dd.rank);
     ppRanks.reserve(ppRanks.size());
     for (const auto& ppRankId : ppRankIds)
     {
         ppRanks.push_back({ ppRankId, 0 });
     }
 #else
-    GMX_UNUSED_VALUE(cr);
+    GMX_UNUSED_VALUE(dd);
 #endif
     return ppRanks;
 }
@@ -195,7 +196,7 @@ static gmx_pme_t* gmx_pmeonly_switch(std::vector<gmx_pme_t*>* pmedata,
                                      const ivec               grid_size,
                                      real                     ewaldcoeff_q,
                                      real                     ewaldcoeff_lj,
-                                     const t_commrec*         cr,
+                                     const gmx_domdec_t&      dd,
                                      const t_inputrec*        ir)
 {
     GMX_ASSERT(pmedata, "Bad PME tuning list pointer");
@@ -211,7 +212,7 @@ static gmx_pme_t* gmx_pmeonly_switch(std::vector<gmx_pme_t*>* pmedata,
              * TODO: this should be something like gmx_pme_update_split_params()
              */
             gmx_pme_t* pmeNew;
-            gmx_pme_reinit(&pmeNew, cr, pme, ir, grid_size, ewaldcoeff_q, ewaldcoeff_lj);
+            gmx_pme_reinit(&pmeNew, &dd, pme, ir, grid_size, ewaldcoeff_q, ewaldcoeff_lj);
             gmx_pme_destroy(pme, false);
             pme = pmeNew;
             return pmeNew;
@@ -221,7 +222,7 @@ static gmx_pme_t* gmx_pmeonly_switch(std::vector<gmx_pme_t*>* pmedata,
     const auto& pme          = pmedata->back();
     gmx_pme_t*  newStructure = nullptr;
     // Copy last structure with new grid params
-    gmx_pme_reinit(&newStructure, cr, pme, ir, grid_size, ewaldcoeff_q, ewaldcoeff_lj);
+    gmx_pme_reinit(&newStructure, &dd, pme, ir, grid_size, ewaldcoeff_q, ewaldcoeff_lj);
     pmedata->push_back(newStructure);
     return newStructure;
 }
@@ -248,7 +249,7 @@ static gmx_pme_t* gmx_pmeonly_switch(std::vector<gmx_pme_t*>* pmedata,
  * \param[in]  stateGpu               GPU state propagator object.
  * \param[in]  gpuHaloExchangeNvshmemHelper  Supports symmetric operations with NVSHMEM halo
  *                                           exchange
- * \param[in]  cr                     The commrec object.
+ * \param[in]  dd                     The domain decompostion object.
  * \param[in]  runMode                PME run mode.
  *
  * \retval pmerecvqxX                 All parameters were set, chargeA and chargeB can be NULL.
@@ -272,7 +273,7 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
                                       bool                         useGpuForPme,
                                       gmx::StatePropagatorDataGpu* stateGpu,
                                       gmx::GpuHaloExchangeNvshmemHelper* gpuHaloExchangeNvshmemHelper,
-                                      const t_commrec&      cr,
+                                      const gmx_domdec_t&   dd,
                                       PmeRunMode gmx_unused runMode)
 {
     int status = -1;
@@ -449,7 +450,7 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
                 if (useGpuForPme)
                 {
                     // Does global communication and symmetric reallocation with NVSHMEM
-                    stateGpu->reinit(nat, nat, cr);
+                    stateGpu->reinit(nat, nat, dd.mpiCommMySim().comm());
                     if (pme_pp->useNvshmem && pme_pp->useGpuHaloExchange)
                     {
                         // Does global communication and symmetric reallocation
@@ -564,7 +565,7 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
     GMX_UNUSED_VALUE(useGpuForPme);
     GMX_UNUSED_VALUE(stateGpu);
     GMX_UNUSED_VALUE(gpuHaloExchangeNvshmemHelper);
-    GMX_UNUSED_VALUE(cr);
+    GMX_UNUSED_VALUE(dd);
 
     status = pmerecvqxX;
 #endif
@@ -685,7 +686,7 @@ static void gmx_pme_send_force_vir_ener(const gmx_pme_t& pme,
 }
 
 int gmx_pmeonly(struct gmx_pme_t**              pmeFromRunnerPtr,
-                const t_commrec*                cr,
+                const gmx_domdec_t&             dd,
                 t_nrnb*                         mynrnb,
                 gmx_wallcycle*                  wcycle,
                 gmx_walltime_accounting_t       walltime_accounting,
@@ -713,7 +714,7 @@ int gmx_pmeonly(struct gmx_pme_t**              pmeFromRunnerPtr,
     std::vector<gmx_pme_t*> pmedata;
     pmedata.push_back(pmeFromRunner);
 
-    auto pme_pp        = std::make_unique<gmx_pme_pp>(cr->commMySim.comm(), makePpRanks(cr));
+    auto pme_pp        = std::make_unique<gmx_pme_pp>(dd.mpiCommMySim().comm(), makePpRanks(dd));
     pme_pp->useNvshmem = useNvshmem;
     pme_pp->useGpuHaloExchange = useGpuHaloExchange;
 
@@ -745,7 +746,7 @@ int gmx_pmeonly(struct gmx_pme_t**              pmeFromRunnerPtr,
                 if (pme_pp->useGpuHaloExchange)
                 {
                     gpuHaloExchangeNvshmemHelper = std::make_unique<gmx::GpuHaloExchangeNvshmemHelper>(
-                            *cr,
+                            dd,
                             deviceStreamManager->context(),
                             deviceStreamManager->stream(gmx::DeviceStreamType::Pme),
                             pme_pp->peerRankId);
@@ -796,13 +797,13 @@ int gmx_pmeonly(struct gmx_pme_t**              pmeFromRunnerPtr,
                                              useGpuForPme,
                                              stateGpu.get(),
                                              gpuHaloExchangeNvshmemHelper.get(),
-                                             *cr,
+                                             dd,
                                              runMode);
 
             if (ret == pmerecvqxSWITCHGRID)
             {
                 /* Switch the PME grid to newGridSize */
-                pme = gmx_pmeonly_switch(&pmedata, newGridSize, ewaldcoeff_q, ewaldcoeff_lj, cr, ir);
+                pme = gmx_pmeonly_switch(&pmedata, newGridSize, ewaldcoeff_q, ewaldcoeff_lj, dd, ir);
             }
 
             if (ret == pmerecvqxRESETCOUNTERS)
@@ -876,7 +877,6 @@ int gmx_pmeonly(struct gmx_pme_t**              pmeFromRunnerPtr,
                        pme_pp->sigmaA,
                        pme_pp->sigmaB,
                        box,
-                       cr,
                        maxshift_x,
                        maxshift_y,
                        mynrnb,

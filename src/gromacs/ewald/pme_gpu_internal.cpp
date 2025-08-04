@@ -74,6 +74,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "pme_gpu_calculate_splines.h"
@@ -1284,7 +1285,7 @@ static void pme_gpu_copy_common_data_from(const gmx_pme_t* pme)
     pmeGpu->common->boxScaler     = pme->boxScaler.get();
     pmeGpu->common->mpiCommX      = pme->mpi_comm_d[0];
     pmeGpu->common->mpiCommY      = pme->mpi_comm_d[1];
-    pmeGpu->common->mpiComm       = pme->mpi_comm;
+    pmeGpu->common->mpiComm       = pme->mpiComm.comm();
 }
 
 /*! \libinternal \brief

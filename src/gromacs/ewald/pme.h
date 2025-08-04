@@ -56,10 +56,10 @@
 #include "gromacs/utility/vectypes.h"
 
 struct gmx_hw_info_t;
-struct t_commrec;
 struct t_inputrec;
 struct t_nrnb;
 struct PmeGpu;
+struct gmx_domdec_t;
 struct gmx_wallclock_gpu_pme_t;
 struct gmx_enerdata_t;
 struct gmx_mtop_t;
@@ -190,7 +190,7 @@ bool gmx_pme_check_restrictions(int  pme_order,
  * related things whose lifetime can/should exceed that of a task (or
  * perhaps task manager). See Issue #2522.
  */
-gmx_pme_t* gmx_pme_init(const t_commrec*                 cr,
+gmx_pme_t* gmx_pme_init(const gmx_domdec_t*              dd,
                         const NumPmeDomains&             numPmeDomains,
                         const t_inputrec*                ir,
                         const matrix                     box,
@@ -212,13 +212,13 @@ gmx_pme_t* gmx_pme_init(const t_commrec*                 cr,
 /*! \brief As gmx_pme_init, but takes most settings, except the grid/Ewald coefficients,
  * and the shared grid storage from pme_src.
  */
-void gmx_pme_reinit(gmx_pme_t**       pmedata,
-                    const t_commrec*  cr,
-                    gmx_pme_t*        pme_src,
-                    const t_inputrec* ir,
-                    const ivec        grid_size,
-                    real              ewaldcoeff_q,
-                    real              ewaldcoeff_lj);
+void gmx_pme_reinit(gmx_pme_t**         pmedata,
+                    const gmx_domdec_t* dd,
+                    gmx_pme_t*          pme_src,
+                    const t_inputrec*   ir,
+                    const ivec          grid_size,
+                    real                ewaldcoeff_q,
+                    real                ewaldcoeff_lj);
 
 /*! \brief Destroys the PME data structure (including GPU data). */
 void gmx_pme_destroy(gmx_pme_t* pme);
@@ -253,7 +253,6 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
                gmx::ArrayRef<const real>      sigmaA,
                gmx::ArrayRef<const real>      sigmaB,
                const matrix                   box,
-               const t_commrec*               cr,
                int                            maxshift_x,
                int                            maxshift_y,
                t_nrnb*                        nrnb,

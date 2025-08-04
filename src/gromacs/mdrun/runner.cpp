@@ -2044,7 +2044,7 @@ int Mdrunner::mdrunner()
                                                          updateGroups.updateGroupingPerMoleculeType(),
                                                          ir->ewald_rtol,
                                                          ChanceTarget::Atom);
-                pmedata = gmx_pme_init(cr,
+                pmedata = gmx_pme_init(cr->dd,
                                        getNumPmeDomains(cr->dd),
                                        ir,
                                        box,
@@ -2336,7 +2336,7 @@ int Mdrunner::mdrunner()
             /* do PME only */
             walltime_accounting = walltime_accounting_init(gmx_omp_nthreads_get(ModuleMultiThread::Pme));
             gmx_pmeonly(&pmedata,
-                        cr,
+                        *cr->dd,
                         &nrnb,
                         wcycle.get(),
                         walltime_accounting,

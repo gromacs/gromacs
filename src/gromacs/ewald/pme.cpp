@@ -98,7 +98,6 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/gmxcomplex.h"
 #include "gromacs/math/units.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -629,7 +628,19 @@ static void initGrids(gmx::ArrayRef<PmeAndFftGrids>                   gridsSet,
     }
 }
 
-gmx_pme_t* gmx_pme_init(const t_commrec*                 cr,
+// Mirror suppression in pme_internal.h
+
+//! @cond Doxygen_Suppress
+
+gmx_pme_t::gmx_pme_t(const gmx::MpiComm* mpiComm) :
+    mpiCommSingleRank(gmx::MpiComm::SingleRank{}),
+    mpiComm(mpiComm ? *mpiComm : gmx_pme_t::mpiCommSingleRank)
+{
+}
+
+//! @endcond
+
+gmx_pme_t* gmx_pme_init(const gmx_domdec_t*              dd,
                         const NumPmeDomains&             numPmeDomains,
                         const t_inputrec*                ir,
                         const matrix                     box,
@@ -653,7 +664,7 @@ gmx_pme_t* gmx_pme_init(const t_commrec*                 cr,
         fprintf(debug, "Creating PME data structures.\n");
     }
 
-    gmx::unique_cptr<gmx_pme_t, gmx_pme_destroy> pme(new gmx_pme_t());
+    gmx::unique_cptr<gmx_pme_t, gmx_pme_destroy> pme(new gmx_pme_t(dd ? &dd->mpiComm() : nullptr));
 
     /* When pmeGridsStorage!=nullptr we reuse storage for the PME grids.
      * We would like to reuse the fft grids, but that's harder
@@ -671,29 +682,16 @@ gmx_pme_t* gmx_pme_init(const t_commrec*                 cr,
     }
     PmeGridsStorage& pmeGridsStorage = *pme->pmeGridsStorage;
 
-    pme->nnodes  = 1;
     pme->bPPnode = true;
+
+    pme->nnodes = pme->mpiComm.size();
+    pme->nodeid = pme->mpiComm.rank();
 
     pme->nnodes_major = numPmeDomains.x;
     pme->nnodes_minor = numPmeDomains.y;
 
-    if (numPmeDomains.x * numPmeDomains.y > 1)
-    {
-        pme->mpi_comm = cr->commMyGroup.comm();
-
-#if GMX_MPI
-        MPI_Comm_rank(pme->mpi_comm, &pme->nodeid);
-        MPI_Comm_size(pme->mpi_comm, &pme->nnodes);
-#endif
-        if (pme->nnodes != numPmeDomains.x * numPmeDomains.y)
-        {
-            gmx_incons("PME rank count mismatch");
-        }
-    }
-    else
-    {
-        pme->mpi_comm = MPI_COMM_NULL;
-    }
+    GMX_RELEASE_ASSERT(numPmeDomains.x * numPmeDomains.y == pme->nnodes,
+                       "PME decomposition should match the total rank count");
 
     if (pme->nnodes == 1)
     {
@@ -707,7 +705,7 @@ gmx_pme_t* gmx_pme_init(const t_commrec*                 cr,
     {
         if (numPmeDomains.y == 1)
         {
-            pme->mpi_comm_d[0] = pme->mpi_comm;
+            pme->mpi_comm_d[0] = pme->mpiComm.comm();
             pme->mpi_comm_d[1] = MPI_COMM_NULL;
             pme->ndecompdim    = 1;
             pme->nodeid_major  = pme->nodeid;
@@ -716,7 +714,7 @@ gmx_pme_t* gmx_pme_init(const t_commrec*                 cr,
         else if (numPmeDomains.x == 1)
         {
             pme->mpi_comm_d[0] = MPI_COMM_NULL;
-            pme->mpi_comm_d[1] = pme->mpi_comm;
+            pme->mpi_comm_d[1] = pme->mpiComm.comm();
             pme->ndecompdim    = 1;
             pme->nodeid_major  = 0;
             pme->nodeid_minor  = pme->nodeid;
@@ -732,11 +730,11 @@ gmx_pme_t* gmx_pme_init(const t_commrec*                 cr,
             pme->ndecompdim = 2;
 
 #if GMX_MPI
-            MPI_Comm_split(pme->mpi_comm,
+            MPI_Comm_split(pme->mpiComm.comm(),
                            pme->nodeid % numPmeDomains.y,
                            pme->nodeid,
                            &pme->mpi_comm_d[0]); /* My communicator along major dimension */
-            MPI_Comm_split(pme->mpi_comm,
+            MPI_Comm_split(pme->mpiComm.comm(),
                            pme->nodeid / numPmeDomains.y,
                            pme->nodeid,
                            &pme->mpi_comm_d[1]); /* My communicator along minor dimension */
@@ -748,31 +746,28 @@ gmx_pme_t* gmx_pme_init(const t_commrec*                 cr,
 #endif
         }
     }
-    // cr is always initialized if there is a a PP rank, so we can safely assume
+    // dd is always initialized if there is a a PP rank, so we can safely assume
     // that when it is not, like in ewald tests, we are not on a PP rank.
-    pme->bPPnode = (cr != nullptr && thisRankHasPPDuty(cr->dd));
+    pme->bPPnode = (dd != nullptr && thisRankHasPPDuty(dd));
 
     pme->nthread = nthread;
 
     /* Check if any of the PME MPI ranks uses threads */
     int use_threads = (pme->nthread > 1 ? 1 : 0);
-    int sum_use_threads;
-#if GMX_MPI
     if (pme->nnodes > 1)
     {
-        MPI_Allreduce(&use_threads, &sum_use_threads, 1, MPI_INT, MPI_SUM, pme->mpi_comm);
+        pme->mpiComm.sumReduce(1, &use_threads);
     }
-    else
-#endif
-    {
-        sum_use_threads = use_threads;
-    }
-    pme->bUseThreads = (sum_use_threads > 0);
+    pme->bUseThreads = (use_threads > 0);
 
     if (ir->pbcType == PbcType::Screw)
     {
         gmx_fatal(FARGS, "pme does not (yet) work with pbc = screw");
     }
+
+    pme->simulationIsParallel = (dd != nullptr && (dd->nnodes > 1 || dd->hasPPDuty != dd->hasPmeDuty));
+
+    pme->haveDDAtomOrdering = (dd != nullptr);
 
     /* NOTE:
      * It is likely that the current gmx_pme_do() routine supports calculating
@@ -1056,13 +1051,13 @@ gmx_pme_t* gmx_pme_init(const t_commrec*                 cr,
     return pme.release();
 }
 
-void gmx_pme_reinit(struct gmx_pme_t** pmedata,
-                    const t_commrec*   cr,
-                    struct gmx_pme_t*  pme_src,
-                    const t_inputrec*  ir,
-                    const ivec         grid_size,
-                    real               ewaldcoeff_q,
-                    real               ewaldcoeff_lj)
+void gmx_pme_reinit(struct gmx_pme_t**  pmedata,
+                    const gmx_domdec_t* dd,
+                    struct gmx_pme_t*   pme_src,
+                    const t_inputrec*   ir,
+                    const ivec          grid_size,
+                    real                ewaldcoeff_q,
+                    real                ewaldcoeff_lj)
 {
     GMX_RELEASE_ASSERT(pme_src != nullptr, "Need a source gmx_pme_t object");
 
@@ -1091,7 +1086,7 @@ void gmx_pme_reinit(struct gmx_pme_t** pmedata,
         const matrix        dummyBox = { { 0 } };
         GMX_ASSERT(pmedata, "Invalid PME pointer");
         NumPmeDomains numPmeDomains = { pme_src->nnodes_major, pme_src->nnodes_minor };
-        *pmedata                    = gmx_pme_init(cr,
+        *pmedata                    = gmx_pme_init(dd,
                                 numPmeDomains,
                                 &irc,
                                 dummyBox,
@@ -1183,7 +1178,6 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
                gmx::ArrayRef<const real>      sigmaA,
                gmx::ArrayRef<const real>      sigmaB,
                const matrix                   box,
-               const t_commrec*               cr,
                int                            maxshift_x,
                int                            maxshift_y,
                t_nrnb*                        nrnb,
@@ -1282,7 +1276,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
         else
         {
             wallcycle_start(wcycle, WallCycleCounter::PmeRedistXF);
-            do_redist_pos_coeffs(pme, cr, bFirst, coordinates, coefficient);
+            do_redist_pos_coeffs(pme, bFirst, coordinates, coefficient);
 
             wallcycle_stop(wcycle, WallCycleCounter::PmeRedistXF);
         }
@@ -1430,7 +1424,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
              * therefore we should not clear it.
              */
             const real lambda  = gridsRef.isCoulomb ? lambda_q : lambda_lj;
-            const bool bClearF = (bFirst && PAR(cr));
+            const bool bClearF = (bFirst && pme->simulationIsParallel);
 #pragma omp parallel for num_threads(pme->nthread) schedule(static)
             for (int thread = 0; thread < pme->nthread; thread++)
             {
@@ -1518,7 +1512,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
                 }
                 wallcycle_start(wcycle, WallCycleCounter::PmeRedistXF);
 
-                do_redist_pos_coeffs(pme, cr, bFirst, coordinates, RedistC6);
+                do_redist_pos_coeffs(pme, bFirst, coordinates, RedistC6);
                 pme->lb_buf1.resize(atc.numAtoms());
                 pme->lb_buf2.resize(atc.numAtoms());
                 local_c6.assign(pme->lb_buf1.begin(), pme->lb_buf1.end());
@@ -1527,7 +1521,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
                     local_c6[i] = atc.coefficient[i];
                 }
 
-                do_redist_pos_coeffs(pme, cr, false, coordinates, RedistSigma);
+                do_redist_pos_coeffs(pme, false, coordinates, RedistSigma);
                 local_sigma.assign(pme->lb_buf2.begin(), pme->lb_buf2.end());
                 for (int i = 0; i < atc.numAtoms(); ++i)
                 {
@@ -1683,7 +1677,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
                 if (stepWork.computeForces)
                 {
                     /* interpolate forces for our local atoms */
-                    bool bClearF = (bFirst && PAR(cr));
+                    bool bClearF = (bFirst && pme->simulationIsParallel);
                     real scale   = pme->bFEP ? (fep_state < 1 ? 1.0 - lambda_lj : lambda_lj) : 1.0;
                     scale *= lb_scale_factor[gridsIndex];
 
@@ -1730,7 +1724,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
             {
                 forcesRef = pme->atc[d + 1].f;
             }
-            if (haveDDAtomOrdering(*cr))
+            if (pme->haveDDAtomOrdering)
             {
                 dd_pmeredist_f(pme, &pme->atc[d], forcesRef, d == pme->ndecompdim - 1 && pme->bPPnode);
             }

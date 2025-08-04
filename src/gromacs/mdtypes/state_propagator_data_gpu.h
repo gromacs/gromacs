@@ -60,10 +60,10 @@
 
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/classhelpers.h"
+#include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/vectypes.h"
 
 #include "locality.h"
@@ -72,7 +72,6 @@ class DeviceContext;
 class DeviceStream;
 class GpuEventSynchronizer;
 struct gmx_wallcycle;
-struct t_commrec;
 
 namespace gmx
 {
@@ -170,9 +169,9 @@ public:
      *
      *  \param[in] numAtomsLocal  Number of atoms in local domain.
      *  \param[in] numAtomsAll    Total number of atoms to handle.
-     *  \param[in] cr             Communication structure pointer
+     *  \param[in] mpiCommMySim   MPI communicator for the whole simulation
      */
-    void reinit(int numAtomsLocal, int numAtomsAll, const t_commrec& cr);
+    void reinit(int numAtomsLocal, int numAtomsAll, MPI_Comm mpiCommMySim);
 
     /*! \brief Returns the range of atoms to be copied based on the copy type (all, local or non-local).
      *

@@ -66,8 +66,7 @@ class ArrayRef;
 } // namespace gmx
 
 /*! \brief Send the charges and maxshift to out PME-only node. */
-void gmx_pme_send_parameters(const gmx::MpiComm&        mpiCommMySim,
-                             gmx_domdec_t*              dd,
+void gmx_pme_send_parameters(gmx_domdec_t*              dd,
                              const interaction_const_t& interactionConst,
                              bool                       bFreeEnergy_q,
                              bool                       bFreeEnergy_lj,
@@ -82,7 +81,6 @@ void gmx_pme_send_parameters(const gmx::MpiComm&        mpiCommMySim,
 
 /*! \brief Send the coordinates to our PME-only node and request a PME calculation */
 void gmx_pme_send_coordinates(t_forcerec*                    fr,
-                              const gmx::MpiComm&            mpiCommMySim,
                               gmx_domdec_t*                  dd,
                               const matrix                   box,
                               gmx::ArrayRef<const gmx::RVec> x,
@@ -99,14 +97,13 @@ void gmx_pme_send_coordinates(t_forcerec*                    fr,
                               gmx_wallcycle*                 wcycle);
 
 /*! \brief Tell our PME-only node to finish */
-void gmx_pme_send_finish(const gmx::MpiComm& mpiCommMySim, gmx_domdec_t* dd);
+void gmx_pme_send_finish(gmx_domdec_t* dd);
 
 /*! \brief Tell our PME-only node to reset all cycle and flop counters */
 void gmx_pme_send_resetcounters(const gmx::MpiComm& mpiCommMySim, gmx_domdec_t* dd, int64_t step);
 
 /*! \brief PP nodes receive the long range forces from the PME nodes */
 void gmx_pme_receive_f(gmx::PmePpCommGpu*    pmePpCommGpu,
-                       const gmx::MpiComm&   mpiCommMySim,
                        gmx_domdec_t*         dd,
                        gmx::ForceWithVirial* forceWithVirial,
                        real*                 energy_q,
@@ -118,10 +115,6 @@ void gmx_pme_receive_f(gmx::PmePpCommGpu*    pmePpCommGpu,
                        float*                pme_cycles);
 
 /*! \brief Tell our PME-only node to switch to a new grid size */
-void gmx_pme_send_switchgrid(const gmx::MpiComm& mpiCommMySim,
-                             const gmx_domdec_t& dd,
-                             ivec                grid_size,
-                             real                ewaldcoeff_q,
-                             real                ewaldcoeff_lj);
+void gmx_pme_send_switchgrid(const gmx_domdec_t& dd, ivec grid_size, real ewaldcoeff_q, real ewaldcoeff_lj);
 
 #endif

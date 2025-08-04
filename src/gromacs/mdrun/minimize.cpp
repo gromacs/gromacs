@@ -561,7 +561,7 @@ static void finish_em(const t_commrec*          cr,
     if (!thisRankHasPmeDuty(cr->dd))
     {
         /* Tell the PME only node to finish */
-        gmx_pme_send_finish(cr->commMySim, cr->dd);
+        gmx_pme_send_finish(cr->dd);
     }
 
     done_mdoutf(outf);
