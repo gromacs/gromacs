@@ -3361,8 +3361,7 @@ void LegacySimulator::do_nm()
 
     /* Make evaluate_energy do a single node force calculation */
     t_commrec crSingleRank(gmx::MpiComm(gmx::MpiComm::SingleRank{}));
-    crSingleRank.npmenodes = cr_->npmenodes;
-    crSingleRank.dd        = cr_->dd;
+    crSingleRank.dd = cr_->dd;
     EnergyEvaluator energyEvaluator{ fpLog_,
                                      mdLog_,
                                      &crSingleRank,

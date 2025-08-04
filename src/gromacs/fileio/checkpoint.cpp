@@ -49,6 +49,7 @@
 #include <memory>
 #include <type_traits>
 
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/gmxfio_xdr.h"
@@ -2592,12 +2593,13 @@ static void check_match(FILE*                           fplog,
     if (cr->mpiDefaultCommunicator.size() > 1 && reproducibilityRequested)
     {
         // TODO: These checks are incorrect (see redmine #3309)
-        check_int(fplog, "#PME-ranks", cr->npmenodes, headerContents.npme, &mm);
+        const int numPmeOnlyRanks = (cr->dd ? cr->dd->numPmeOnlyRanks : 0);
+        check_int(fplog, "#PME-ranks", numPmeOnlyRanks, headerContents.npme, &mm);
 
         int npp = cr->mpiDefaultCommunicator.size();
-        if (cr->npmenodes >= 0)
+        if (numPmeOnlyRanks >= 0)
         {
-            npp -= cr->npmenodes;
+            npp -= numPmeOnlyRanks;
         }
         int npp_f = headerContents.nnodes;
         if (headerContents.npme >= 0)

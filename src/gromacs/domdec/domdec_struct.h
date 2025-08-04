@@ -143,6 +143,7 @@ struct gmx_domdec_t
     gmx::IVec main_ci  = { 0, 0, 0 };
     int       mainrank = 0;
     /* Communication with the PME only nodes */
+    int                   numPmeOnlyRanks      = 0;
     int                   pme_nodeid           = 0;
     gmx_bool              pme_receive_vir_ener = false;
     gmx_pme_comm_n_box_t* cnb                  = nullptr;

@@ -47,6 +47,7 @@
 #include <string>
 #include <vector>
 
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/timing/cyclecounter.h"
@@ -397,7 +398,7 @@ WallcycleCounts wallcycle_sum(const t_commrec* cr, gmx_wallcycle* wc)
 
     subtract_cycles(wcc, WallCycleCounter::PmeFft, WallCycleCounter::PmeFftComm);
 
-    if (cr->npmenodes == 0)
+    if (cr->dd && cr->dd->numPmeOnlyRanks == 0)
     {
         /* All nodes do PME (or no PME at all) */
         subtract_cycles(wcc, WallCycleCounter::Force, WallCycleCounter::PmeMesh);

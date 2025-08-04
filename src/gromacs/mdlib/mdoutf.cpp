@@ -319,9 +319,9 @@ static void write_checkpoint(const char*                     fn,
     char      buf[1024], suffix[5 + STEPSTRSIZE], sbuf[STEPSTRSIZE];
     t_fileio* ret;
 
-    if (haveDDAtomOrdering(*cr))
+    if (cr->dd)
     {
-        npmenodes = cr->npmenodes;
+        npmenodes = cr->dd->numPmeOnlyRanks;
     }
     else
     {

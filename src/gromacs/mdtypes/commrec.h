@@ -73,8 +73,6 @@ struct t_commrec
      * All communication within some simulation should happen
      * in mpi_comm_mysim, or its subset mpi_comm_mygroup.
      */
-    //! The number of separate PME ranks, 0 when no separate PME ranks are used
-    int npmenodes = 0;
 
     /* MPI communicators within a single simulation
      * Note: other parts of the code may further subset these communicators.

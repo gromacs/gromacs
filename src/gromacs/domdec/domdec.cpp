@@ -2862,8 +2862,6 @@ DomainDecompositionBuilder::Impl::Impl(const MDLogger&           mdlog,
                      gridSetupCellsizeLimit,
                      ddbox_);
 
-    cr_->npmenodes = ddGridSetup_.numPmeOnlyRanks;
-
     ddRankSetup_ = getDDRankSetup(
             mdlog_, cr_->mpiDefaultCommunicator.size(), options_.rankOrder, ddGridSetup_, ir_);
 
@@ -2888,6 +2886,8 @@ DomainDecompositionBuilder::Impl::build(LocalAtomSetManager*       atomSets,
 
     dd->comm->ddRankSetup        = ddRankSetup_;
     dd->comm->cartesianRankSetup = cartSetup_;
+
+    dd->numPmeOnlyRanks = ddGridSetup_.numPmeOnlyRanks;
 
     dd->hasPPDuty  = hasPPDuty_;
     dd->hasPmeDuty = hasPmeDuty_;

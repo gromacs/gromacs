@@ -741,7 +741,7 @@ static void finish_run(FILE*                     fplog,
         wallcycle_print(fplog,
                         mdlog,
                         cr->commMySim.size(),
-                        cr->npmenodes,
+                        cr->dd ? cr->dd->numPmeOnlyRanks : 0,
                         nthreads_pp,
                         nthreads_pme,
                         elapsed_time_over_all_ranks,
@@ -1481,11 +1481,9 @@ int Mdrunner::mdrunner()
     }
     else
     {
-        /* PME, if used, is done on all nodes with 1D decomposition */
+        // DD is inactive, so all ranks have all PP and PME duties
         cr->commMyGroup = MpiComm(cr->mpiDefaultCommunicator);
         cr->commMySim   = MpiComm(cr->mpiDefaultCommunicator);
-
-        cr->npmenodes = 0;
 
         if (inputrec->pbcType == PbcType::Screw)
         {
@@ -2001,7 +1999,7 @@ int Mdrunner::mdrunner()
                 nTypePerturbed = mdAtoms->mdatoms()->nTypePerturbed;
             }
         }
-        if (cr->npmenodes > 0)
+        if (cr->dd && cr->dd->numPmeOnlyRanks > 0)
         {
             /* The PME only nodes need to know nChargePerturbed(FEP on Q) and nTypePerturbed(FEP on LJ)*/
             gmx_bcast(sizeof(nChargePerturbed), &nChargePerturbed, cr->commMySim.comm());
