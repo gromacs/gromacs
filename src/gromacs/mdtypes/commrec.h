@@ -67,8 +67,6 @@ struct t_commrec
     //! Destroys the dd object
     void destroyDD();
 
-    //! Whether to use NVSHMEM
-    bool useNvshmem = false;
     /* The nodeids in one sim are numbered sequentially from 0.
      * All communication within some simulation should happen
      * in mpi_comm_mysim, or its subset mpi_comm_mygroup.
