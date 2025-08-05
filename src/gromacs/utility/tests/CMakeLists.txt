@@ -45,6 +45,7 @@ gmx_add_unit_test(UtilityUnitTests utility-test
         listoflists.cpp
         logger.cpp
         message_string_collector.cpp
+        mpicomm.cpp
         path.cpp
         physicalnodecommunicator.cpp
         range.cpp
@@ -65,7 +66,7 @@ target_link_libraries(utility-test PRIVATE legacy_modules)
 target_link_libraries(utility-test PRIVATE utility)
 
 gmx_add_mpi_unit_test(MpiCommTests mpicomm-test 4
-    GPU_CPP_SOURCE_FILES
+    CPP_SOURCE_FILES
         mpicomm.cpp
         )
 

@@ -77,6 +77,32 @@ void testReduction(const MpiComm& mpiComm)
     EXPECT_EQ(a[0], sum);
 }
 
+TEST(MpiComm, SingleRankNoComm)
+{
+    GMX_MPI_TEST(AllowAnyRankCount);
+
+    MpiComm mpiComm(MpiComm::SingleRank{});
+
+    EXPECT_EQ(mpiComm.size(), 1);
+    EXPECT_EQ(mpiComm.isSerial(), true);
+    EXPECT_EQ(mpiComm.isParallel(), false);
+
+    // This tests that reductions also work with a single rank and without an MPI_Comm
+    testReduction(mpiComm);
+}
+
+TEST(MpiComm, CommWorld)
+{
+    GMX_MPI_TEST(AllowAnyRankCount);
+
+    MpiComm mpiComm(MPI_COMM_WORLD);
+
+    EXPECT_EQ(mpiComm.isSerial(), mpiComm.size() == 1);
+    EXPECT_EQ(mpiComm.isParallel(), mpiComm.size() > 1);
+
+    testReduction(mpiComm);
+}
+
 // Creates and MpiComm for comm.
 // Initializes an HierarchicalReducer using \p physicalNodeId.
 // Checks whether the presence of the HierarchicalReducer matches \p expectHierarchicalReducer.
@@ -164,6 +190,9 @@ TEST(MpiComm, CopyConstructorWorks)
 
 CLANG_DIAGNOSTIC_IGNORE("-Wself-assign-overloaded")
 CLANG_DIAGNOSTIC_IGNORE("-Wself-move")
+#if __GNUC__ > 12
+GCC_DIAGNOSTIC_IGNORE("-Wself-move")
+#endif
 
 TEST(MpiComm, AssigmentWorks)
 {
@@ -238,6 +267,9 @@ TEST(MpiComm, MoveAssigmentWorksForSelf)
 #endif // !defined(__clang_analyzer__) && !GMX_CLANG_ANALYZER
 
 CLANG_DIAGNOSTIC_RESET
+#if __GNUC__ > 12
+GCC_DIAGNOSTIC_RESET
+#endif
 
 } // namespace
 
