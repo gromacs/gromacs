@@ -1421,6 +1421,10 @@ static CartesianRankSetup makeGroupCommunicators(const gmx::MDLogger& mdlog,
     cr->nodeid           = cr->rankInDefaultCommunicator;
     cr->sim_nodeid       = cr->rankInDefaultCommunicator;
 
+#if GMX_MPI
+    MPI_Comm_size(cr->mpi_comm_mygroup, &cr->sizeOfMyGroupCommunicator);
+#endif
+
     if (ddRankSetup.usePmeOnlyRanks)
     {
         /* Split the communicator into a PP and PME part */
