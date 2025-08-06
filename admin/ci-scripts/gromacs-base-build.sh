@@ -9,7 +9,12 @@ BUILD_PARALLELISM=${1:-$KUBERNETES_CPU_LIMIT}
 BUILD_TEST_PARALLELISM=${2:-$KUBERNETES_CPU_LIMIT}
 
 $CMAKE --build . -- -j$BUILD_PARALLELISM 2>&1 | tee buildLogFile.log
-$CMAKE --build . --target tests -- -j$BUILD_TEST_PARALLELISM 2>&1 | tee testBuildLogFile.log
+
+# Accepts string containing a space-separated list of CMake test
+# targets to build, which can be "tests" (in order to make all of
+# them).  "tests" is also the default if the environment variable
+# GMX_TESTS_TO_BUILD is empty.
+$CMAKE --build . --target ${GMX_TESTS_TO_BUILD:-tests} -- -j$BUILD_TEST_PARALLELISM 2>&1 | tee testBuildLogFile.log
 
 # Find compiler warnings
 awk '/warning/,/warning.*generated|^$/' buildLogFile.log testBuildLogFile.log \

@@ -72,9 +72,12 @@ gromacs-cp2k-2024.2:gcc-14-nightly:build-test:
     - job: gromacs-cp2k-2024.2:gcc-14-nightly:configure
   script:
     # Call build script, reducing parallelism when building tests
-    # to avoid out-of-memory conditions during the linking phase
+    # to avoid out-of-memory conditions during the linking phase,
+    # and only building the relevant test binary
+    - export GMX_TESTS_TO_BUILD="qmmm_applied_forces-test"
     - bash -x admin/ci-scripts/gromacs-base-build.sh $KUBERNETES_CPU_LIMIT 1
-    # Call test script (default)
+    # Call test script, running only the tests that were built
+    - export GMX_TESTS_TO_RUN_REGEX="^QMMMAppliedForcesUnitTest$"
     - bash -x admin/ci-scripts/gromacs-base-test.sh
   artifacts:
     when: always
