@@ -45,6 +45,17 @@ Avoid launch bounds PTX error for new NVIDIA RTX Blackwell GPUs
 Fix compatibility issue preventing using |Gromacs| 2024 on
 new NVIDIA GPUs.
 
+AWH bias sharing caused error without separate PME ranks
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Using AWH in conjuction with bias sharing between several simulations
+caused mdrun to segfault if more than one rank per simulation was used
+but no separate PME ranks were present. This could not produce incorrect
+results.
+Affected versions: 2024.5, 2025.0, 2025.1 and 2025.2.  
+
+:issue:`5394`
+
 Miscellaneous
 ^^^^^^^^^^^^^
 
