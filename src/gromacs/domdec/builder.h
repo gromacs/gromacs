@@ -65,6 +65,7 @@ class RangePartitioning;
 struct DomdecOptions;
 struct MdrunOptions;
 struct MDModulesNotifiers;
+class MpiComm;
 class ObservablesReducerBuilder;
 
 template<typename T>
@@ -81,7 +82,7 @@ class DomainDecompositionBuilder
 public:
     //! Constructor
     DomainDecompositionBuilder(const MDLogger&                   mdlog,
-                               t_commrec*                        cr,
+                               const MpiComm&                    mpiCommSimulation,
                                const DomdecOptions&              options,
                                const MdrunOptions&               mdrunOptions,
                                const gmx_mtop_t&                 mtop,
@@ -99,12 +100,20 @@ public:
                                bool                              canUseGpuPmeDecomposition);
     //! Destructor
     ~DomainDecompositionBuilder();
+
+    //! Returns whether this rank will compute particle-particle interactions
+    bool thisRankHasPPDuty() const;
+
+    //! Returns whether this rank computes PME mesh interactions, also returns true when PME is not in use
+    bool thisRankHasPmeDuty() const;
+
     /*! \brief Build the resulting DD manager
      *
      * \p localState is used for printing distances in case bonded interactions can not
      * be assigned. Pass nullptr when multiple local states are used (e.g. during EM).
      */
-    std::unique_ptr<gmx_domdec_t> build(LocalAtomSetManager*       atomSets,
+    std::unique_ptr<gmx_domdec_t> build(t_commrec*                 cr,
+                                        LocalAtomSetManager*       atomSets,
                                         const gmx_localtop_t&      localTopology,
                                         const t_state*             localState,
                                         bool                       haveFillerParticlesInLocalState,

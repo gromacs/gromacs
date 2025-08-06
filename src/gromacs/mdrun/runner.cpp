@@ -1462,7 +1462,7 @@ int Mdrunner::mdrunner()
         // (in particular for testing) does not break depending on GPU direct communication being enabled.
         ddBuilder = std::make_unique<DomainDecompositionBuilder>(
                 mdlog,
-                cr,
+                cr->mpiDefaultCommunicator,
                 domdecOptions,
                 mdrunOptions,
                 mtop,
@@ -1504,10 +1504,10 @@ int Mdrunner::mdrunner()
             updateTarget,
             useGpuForNonbonded,
             useGpuForPme,
-            thisRankHasPPDuty(cr->dd),
-            // TODO thisRankHasPmeDuty(cr->dd) should imply that a PME
+            ddBuilder ? ddBuilder->thisRankHasPPDuty() : true,
+            // TODO ddBuilder->thisRankHasPmeDuty should imply that a PME
             // algorithm is active, but currently does not.
-            usingPme(inputrec->coulombtype) && thisRankHasPmeDuty(cr->dd));
+            usingPme(inputrec->coulombtype) && (ddBuilder ? ddBuilder->thisRankHasPmeDuty() : true));
 
     // Get the device handle for the modules on this rank, nullptr
     // when no task is assigned.
@@ -1539,7 +1539,8 @@ int Mdrunner::mdrunner()
         localState         = localStateInstance.get();
         // TODO Pass the GPU streams to ddBuilder to use in buffer
         // transfers (e.g. halo exchange)
-        cr->setDD(ddBuilder->build(&atomSets,
+        cr->setDD(ddBuilder->build(cr,
+                                   &atomSets,
                                    localTopology,
                                    EI_ENERGY_MINIMIZATION(inputrec->eI) ? nullptr : localState,
                                    haveFillerParticlesInLocalState,
