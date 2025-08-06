@@ -50,7 +50,7 @@ and the `Codeplay plugin <https://developer.codeplay.com/products/oneapi/nvidia/
 set up the environment by running ``source /opt/intel/oneapi/setvars.sh``
 or loading an appropriate :command:`module load` on an HPC system.
 
- Then, configure |Gromacs| using the following command:
+Then, configure |Gromacs| using the following command:
 
 ::
 
@@ -131,9 +131,16 @@ RISC-V with VEC unit
 ~~~~~~~~~~~~~~~~~~~~
 
 GROMACS runs on RISC-V. The non-bonded kernel can be ran on the VEC vector unit,
-when available. To enable this, add ``-DENABLE_NBNXM_CPU_VECTORIZATION=on`` to
-the ``CMAKE_CXX_FLAGS``. A clang compiler is required with version >=19.
+when available. To enable this, add ``-DGMX_ENABLE_NBNXM_CPU_VECTORIZATION=on`` to
+the CMake flags. A clang compiler is required with version >=19.
+
 If you want to check which loops have been vectorized, add
 ``-Rpass=loop-vectorize -Rpass-missed=loop-vectorize -Rpass-analysis=loop-vectorize``
-to the ``CMAKE_CXX_FLAGS``. When calling ``gmx mdrun``, set the
+to the ``CMAKE_CXX_FLAGS``.
+
+When calling ``gmx mdrun``, set the
 ``GMX_NBNXN_PLAINC_1X1`` environment variable to choose the correct kernel.
+
+Please note the early state and instability of the compilers at the time of writing.
+If you experience errors, try adding ``-fno-vectorize``, after ``-O3`` when present,
+to ``CMAKE_CXX_FLAGS`` to disable vectorization of the code that's not explicitly vectorized.
