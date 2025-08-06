@@ -85,13 +85,15 @@
 #include "base.h"
 #include "data.h"
 
-#if GMX_SIMD
-
 namespace gmx
 {
 namespace test
 {
 
+// Type for half-open intervals specifying test ranges
+using RealRange = std::pair<real, real>;
+
+#if GMX_SIMD
 
 /*! \cond internal */
 /*! \addtogroup module_simd */
@@ -304,9 +306,9 @@ SimdInt32 setSimdIntFrom1I(int value);
 /*! \} */
 /*! \endcond */
 
+#endif // GMX_SIMD
+
 } // namespace test
 } // namespace gmx
-
-#endif // GMX_SIMD
 
 #endif // GMX_SIMD_TESTS_SIMD_H

@@ -65,6 +65,7 @@
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 
+#include "generate_test_points.h"
 #include "simd.h"
 
 #if GMX_SIMD
@@ -83,9 +84,6 @@ namespace test
 class SimdMathTest : public SimdTest
 {
 public:
-    /*! \brief Type for half-open intervals specifying test ranges */
-    typedef std::pair<real, real> Range;
-
     /*! \brief Control what is considered matching values
      *
      * Normal simply means that we request the values to be equal
@@ -121,7 +119,7 @@ public:
     /*! \brief Settings used for simd math function comparisons */
     struct CompareSettings
     {
-        Range        range;     //!< Range over which to test function
+        RealRange    range;     //!< Range over which to test function
         std::int64_t ulpTol;    //!< Ulp tolerance
         real         absTol;    //!< Absolute tolerance
         MatchRule    matchRule; //!< Decide what we consider a match
@@ -133,36 +131,6 @@ public:
                                                        real                   refFunc(real x),
                                                        SimdReal gmx_simdcall  simdFunc(SimdReal x),
                                                        const CompareSettings& compareSettings);
-
-    /*! \brief Generate test point vector
-     *
-     *  \param range  The test interval, half open. Upper limit is not included.
-     *                Pass by value, since we need to modify in method anyway.
-     *  \param points Number of points to generate. This might be increased
-     *                slightly to account both for extra special values like 0.0
-     *                and the SIMD width.
-     *
-     * This routine generates a vector with test points separated by constant
-     * multiplicative factors, based on the range and number of points in the
-     * class. If the range includes both negative and positive values, points
-     * will be generated separately for the negative/positive intervals down
-     * to the smallest real number that can be represented, and we also include
-     * 0.0 explicitly.
-     *
-     * This is highly useful for large test ranges. For example, with a linear
-     * 1000-point division of the range (1,1e10) the first three values to test
-     * would be 1, 10000000.999, and 20000000.998, etc. For large values we would
-     * commonly hit the point where adding the small delta has no effect due to
-     * limited numerical precision.
-     * When we instead use this routine, the values will be 1, 1.0239, 1.0471, etc.
-     * This will spread the entropy over all bits in the IEEE754 representation,
-     * and be a much better test of all potential input values.
-     *
-     *  \note We do not use the static variable s_nPoints in the parent class
-     *        to avoid altering any value the user has set on the command line; since
-     *        it's a static member, changing it would have permanent effect.
-     */
-    static std::vector<real> generateTestPoints(Range range, std::size_t points);
 
     /*! \brief Test routine for the test point vector generation
      */
@@ -179,92 +147,6 @@ public:
 #        define GMX_EXPECT_SIMD_FUNC_NEAR(refFunc, tstFunc, compareSettings) \
             EXPECT_PRED_FORMAT3(compareSimdMathFunction, refFunc, tstFunc, compareSettings)
 
-std::vector<real> SimdMathTest::generateTestPoints(Range inputRange, std::size_t inputPoints)
-{
-
-    std::vector<real> testPoints;
-    testPoints.reserve(inputPoints);
-
-    GMX_RELEASE_ASSERT(inputRange.first < inputRange.second,
-                       "The start of the interval must come before the end");
-
-    std::vector<Range> testRanges;
-
-    if (inputRange.first < 0 && inputRange.second > 0)
-    {
-        testRanges.emplace_back(Range({ inputRange.first, -std::numeric_limits<real>::min() }));
-        testRanges.emplace_back(Range({ 0.0, inputRange.second }));
-    }
-    else
-    {
-        if (inputRange.second == 0)
-        {
-            inputRange.second = -std::numeric_limits<real>::min();
-            inputRange.first  = std::min(inputRange.first, inputRange.second);
-        }
-        testRanges.push_back(inputRange);
-    }
-
-    for (Range& range : testRanges)
-    {
-        std::size_t points = inputPoints / testRanges.size();
-
-        // The value 0 is special, and can only occur at the start of
-        // the interval after the corrections outside this loop.
-        // Add it explicitly, and adjust the interval to continue
-        // at the first valid non-zero positive number.
-        if (range.first == 0)
-        {
-            testPoints.push_back(0.0);
-            range.first = std::numeric_limits<real>::min();
-            points--; // Used one point
-        }
-
-        union
-        {
-            real                                                                               r;
-            std::conditional<sizeof(real) == sizeof(double), std::int64_t, std::int32_t>::type i;
-        } low, high, x;
-
-        low.r  = range.first;
-        high.r = range.second;
-
-        // IEEE754 floating-point numbers have the cool property that for any range of
-        // constant sign, for all non-zero numbers a constant (i.e., linear) difference
-        // in the bitwise representation corresponds to a constant multiplicative factor.
-        //
-        // Divide the ulp difference evenly
-        std::int64_t ulpDiff = high.i - low.i;
-        // dividend and divisor must both be signed types
-        std::int64_t ulpDelta    = ulpDiff / static_cast<std::int64_t>(points);
-        std::int64_t minUlpDelta = (ulpDiff > 0) ? 1 : -1;
-
-        if (ulpDelta == 0)
-        {
-            // Very short interval or very many points caused round-to-zero.
-            // Select the smallest possible change, which is one ulp (with correct sign)
-            ulpDelta = minUlpDelta;
-            points   = std::abs(ulpDiff);
-        }
-
-        x.r = low.r;
-        // Use an index-based loop to avoid floating-point comparisons with
-        // values that might have overflowed. Save one point for the very last
-        // bitwise value that is part of the interval
-        for (std::size_t i = 0; i < points - 1; i++)
-        {
-            testPoints.push_back(x.r);
-            x.i += ulpDelta;
-        }
-
-        // Make sure we test the very last point that is inside the interval
-        x.r = high.r;
-        x.i -= minUlpDelta;
-        testPoints.push_back(x.r);
-    }
-    return testPoints;
-}
-
 /*! \brief Implementation routine to compare SIMD vs reference functions.
  *
  * \param refFuncExpr         Description of reference function expression
@@ -275,7 +157,7 @@ std::vector<real> SimdMathTest::generateTestPoints(Range inputRange, std::size_t
  * \param compareSettings     Structure with the range, tolerances, and
  *                            matching rules to use for the comparison.
  *
- * \note You should not never call this function directly,  but use the
+ * \note You should never call this function directly, but use the
  *       macro GMX_EXPECT_SIMD_FUNC_NEAR(refFunc,tstFunc,matchRule) instead.
  */
 ::testing::AssertionResult SimdMathTest::compareSimdMathFunction(const char* refFuncExpr,
@@ -288,8 +170,6 @@ std::vector<real> SimdMathTest::generateTestPoints(Range inputRange, std::size_t
     std::vector<real> vx(GMX_SIMD_REAL_WIDTH);
     std::vector<real> vref(GMX_SIMD_REAL_WIDTH);
     std::vector<real> vtst(GMX_SIMD_REAL_WIDTH);
-    real              absDiff;
-    std::int64_t      ulpDiff;
     std::int64_t      maxUlpDiff = 0;
     real              maxUlpDiffPos;
     real              refValMaxUlpDiff, simdValMaxUlpDiff;
@@ -297,8 +177,8 @@ std::vector<real> SimdMathTest::generateTestPoints(Range inputRange, std::size_t
 
     union
     {
-        real                                                                               r;
-        std::conditional<sizeof(real) == sizeof(double), std::int64_t, std::int32_t>::type i;
+        real                                                                           r;
+        std::conditional_t<sizeof(real) == sizeof(double), std::int64_t, std::int32_t> i;
     } conv0, conv1;
 
     // Allow zero-size intervals - nothing to test means we succeeded at it
@@ -353,9 +233,9 @@ std::vector<real> SimdMathTest::generateTestPoints(Range inputRange, std::size_t
                 continue;
             }
 
-            absDiff = std::abs(vref[i] - vtst[i]);
-            absOk   = absOk && (absDiff < compareSettings.absTol);
-            signOk  = signOk && ((vref[i] >= 0 && vtst[i] >= 0) || (vref[i] <= 0 && vtst[i] <= 0));
+            const real absDiff = std::abs(vref[i] - vtst[i]);
+            absOk              = absOk && (absDiff < compareSettings.absTol);
+            signOk = signOk && ((vref[i] >= 0 && vtst[i] >= 0) || (vref[i] <= 0 && vtst[i] <= 0));
 
             if (absDiff >= compareSettings.absTol)
             {
@@ -364,9 +244,9 @@ std::vector<real> SimdMathTest::generateTestPoints(Range inputRange, std::size_t
                  * us to run through the entire test range and report the largest deviation
                  * without lots of extra glue routines.
                  */
-                conv0.r = vref[i];
-                conv1.r = vtst[i];
-                ulpDiff = std::llabs(conv0.i - conv1.i);
+                conv0.r              = vref[i];
+                conv1.r              = vtst[i];
+                std::int64_t ulpDiff = std::llabs(conv0.i - conv1.i);
                 if (ulpDiff > maxUlpDiff)
                 {
                     maxUlpDiff        = ulpDiff;
@@ -426,34 +306,34 @@ void SimdMathTest::generateTestPointsTest()
 
     std::vector<real> result;
 
-    result = generateTestPoints(Range(-1e10, -1), points);
+    result = generateTestPoints({ -1e10, -1 }, points);
     checker.checkSequence(result.begin(), result.end(), "Test points for interval [-1e10,-1[");
 
-    result = generateTestPoints(Range(-1e10, -1e-10), points);
+    result = generateTestPoints({ -1e10, -1e-10 }, points);
     checker.checkSequence(result.begin(), result.end(), "Test points for interval [-1e10, -1e-10[");
 
-    result = generateTestPoints(Range(1, 1e10), points);
+    result = generateTestPoints({ 1, 1e10 }, points);
     checker.checkSequence(result.begin(), result.end(), "Test points for interval [1, 1e10[");
 
-    result = generateTestPoints(Range(1e-10, 1e10), points);
+    result = generateTestPoints({ 1e-10, 1e10 }, points);
     checker.checkSequence(result.begin(), result.end(), "Test points for interval [1e-10, 1e10[");
 
-    result = generateTestPoints(Range(-1e10, 1e-10), points);
+    result = generateTestPoints({ -1e10, 1e-10 }, points);
     checker.checkSequence(result.begin(), result.end(), "Test points for interval [-1e10, 1e-10[");
 
-    result = generateTestPoints(Range(-1e-10, 1e-10), points);
+    result = generateTestPoints({ -1e-10, 1e-10 }, points);
     checker.checkSequence(result.begin(), result.end(), "Test points for interval [-1e-10, 1e-10[");
 
-    result = generateTestPoints(Range(-1e-10, 1e10), points);
+    result = generateTestPoints({ -1e-10, 1e10 }, points);
     checker.checkSequence(result.begin(), result.end(), "Test points for interval [-1e-10, 1e10[");
 
-    result = generateTestPoints(Range(-1e10, 1e10), points);
+    result = generateTestPoints({ -1e10, 1e10 }, points);
     checker.checkSequence(result.begin(), result.end(), "Test points for interval [-1e10, 1e10[");
 
-    result = generateTestPoints(Range(-1000, 0), points);
+    result = generateTestPoints({ -1000, 0 }, points);
     checker.checkSequence(result.begin(), result.end(), "Test points for interval [-1000, 0[");
 
-    result = generateTestPoints(Range(0, 1000), points);
+    result = generateTestPoints({ 0, 1000 }, points);
     checker.checkSequence(result.begin(), result.end(), "Test points for interval [0, 1000[");
 }
 
@@ -505,7 +385,7 @@ TEST_F(SimdMathTest, invsqrt)
 {
     const real      low  = std::numeric_limits<float>::min();
     const real      high = std::numeric_limits<float>::max();
-    CompareSettings settings{ Range(low, high), ulpTol_, absTol_, MatchRule::Normal };
+    CompareSettings settings{ { low, high }, ulpTol_, absTol_, MatchRule::Normal };
 
     GMX_EXPECT_SIMD_FUNC_NEAR(refInvsqrt, invsqrt, settings);
 }
@@ -541,7 +421,7 @@ TEST_F(SimdMathTest, invsqrtPair)
 
     // Accuracy conversions lose a bit of accuracy compared to all-double,
     // so increase the tolerance to 4*ulpTol_
-    CompareSettings settings{ Range(low, high), 4 * ulpTol_, absTol_, MatchRule::Normal };
+    CompareSettings settings{ { low, high }, 4 * ulpTol_, absTol_, MatchRule::Normal };
 
     GMX_EXPECT_SIMD_FUNC_NEAR(refInvsqrt, tstInvsqrtPair0, settings);
     GMX_EXPECT_SIMD_FUNC_NEAR(refInvsqrt, tstInvsqrtPair1, settings);
@@ -580,7 +460,7 @@ TEST_F(SimdMathTest, sqrt)
     // This test range must not be called for single precision, since if we try to divide
     // the interval (0.0, low( in npoints we will try to multiply by factors so small that
     // they end up being flushed to zero, and the loop would never end.
-    settings = { Range(0.0, minFloat), ulpTol_, absTol_, MatchRule::ReferenceOrZero };
+    settings = { { 0.0, minFloat }, ulpTol_, absTol_, MatchRule::ReferenceOrZero };
     GMX_EXPECT_SIMD_FUNC_NEAR(refSqrt, sqrt, settings);
 #        endif
 
@@ -589,10 +469,10 @@ TEST_F(SimdMathTest, sqrt)
     // for denormals. We can probably relax the latter in double precision, but since we
     // anyway cannot handle numbers that cannot be represented in single it's not worth
     // worrying too much about whether we have zero or an exact values around 10^-38....
-    settings = { Range(minFloat, minSafeFloat), ulpTol_, absTol_, MatchRule::ReferenceOrZero };
+    settings = { { minFloat, minSafeFloat }, ulpTol_, absTol_, MatchRule::ReferenceOrZero };
     GMX_EXPECT_SIMD_FUNC_NEAR(refSqrt, sqrt, settings);
 
-    settings = { Range(minSafeFloat, maxSafeFloat), ulpTol_, absTol_, MatchRule::Normal };
+    settings = { { minSafeFloat, maxSafeFloat }, ulpTol_, absTol_, MatchRule::Normal };
     GMX_EXPECT_SIMD_FUNC_NEAR(refSqrt, sqrt, settings);
 }
 
@@ -605,7 +485,7 @@ TEST_F(SimdMathTest, sqrtUnsafe)
     // doing the iterations in all-double, so we use 4*ulpTol_
     setUlpTol(4 * ulpTol_);
 
-    CompareSettings settings{ Range(minSafeFloat, maxSafeFloat), 4 * ulpTol_, absTol_, MatchRule::Normal };
+    CompareSettings settings{ { minSafeFloat, maxSafeFloat }, 4 * ulpTol_, absTol_, MatchRule::Normal };
     GMX_EXPECT_SIMD_FUNC_NEAR(refSqrt, sqrt<MathOptimization::Unsafe>, settings);
 }
 
@@ -632,21 +512,21 @@ TEST_F(SimdMathTest, inv)
     CompareSettings settings;
 
     // Danger zone where intermediates might be flushed to zero and produce 1/x==0.0
-    settings = { Range(-maxFloat, -maxSafeFloat), ulpTol_, absTol_, MatchRule::ReferenceOrZero };
+    settings = { { -maxFloat, -maxSafeFloat }, ulpTol_, absTol_, MatchRule::ReferenceOrZero };
     GMX_EXPECT_SIMD_FUNC_NEAR(refInv, inv, settings);
 
     // Normal checks for x < 0
-    settings = { Range(-maxSafeFloat, -minSafeFloat), ulpTol_, absTol_, MatchRule::Normal };
+    settings = { { -maxSafeFloat, -minSafeFloat }, ulpTol_, absTol_, MatchRule::Normal };
     GMX_EXPECT_SIMD_FUNC_NEAR(refInv, inv, settings);
 
     // We do not care about the small range -minSafeFloat < x < +minSafeFloat where the result can be +/- Inf, since we don't require strict IEEE754.
 
     // Normal checks for x > 0
-    settings = { Range(minSafeFloat, maxSafeFloat), ulpTol_, absTol_, MatchRule::Normal };
+    settings = { { minSafeFloat, maxSafeFloat }, ulpTol_, absTol_, MatchRule::Normal };
     GMX_EXPECT_SIMD_FUNC_NEAR(refInv, inv, settings);
 
     // Danger zone where intermediates might be flushed to zero and produce 1/x==0.0
-    settings = { Range(maxSafeFloat, maxFloat), ulpTol_, absTol_, MatchRule::ReferenceOrZero };
+    settings = { { maxSafeFloat, maxFloat }, ulpTol_, absTol_, MatchRule::ReferenceOrZero };
     GMX_EXPECT_SIMD_FUNC_NEAR(refInv, inv, settings);
 }
 
@@ -663,7 +543,7 @@ TEST_F(SimdMathTest, cbrt)
     const real low  = -std::numeric_limits<real>::max();
     const real high = std::numeric_limits<real>::max();
 
-    CompareSettings settings{ Range(low, high), ulpTol_, absTol_, MatchRule::Normal };
+    CompareSettings settings{ { low, high }, ulpTol_, absTol_, MatchRule::Normal };
     GMX_EXPECT_SIMD_FUNC_NEAR(std::cbrt, cbrt, settings);
 }
 
@@ -679,13 +559,13 @@ TEST_F(SimdMathTest, invcbrt)
     real low  = -std::numeric_limits<real>::max();
     real high = -std::numeric_limits<real>::min();
 
-    CompareSettings settings{ Range(low, high), ulpTol_, absTol_, MatchRule::Normal };
+    CompareSettings settings{ { low, high }, ulpTol_, absTol_, MatchRule::Normal };
     GMX_EXPECT_SIMD_FUNC_NEAR(refInvCbrt, invcbrt, settings);
 
     // Positive values
     low      = std::numeric_limits<real>::min();
     high     = std::numeric_limits<real>::max();
-    settings = { Range(low, high), ulpTol_, absTol_, MatchRule::Normal };
+    settings = { { low, high }, ulpTol_, absTol_, MatchRule::Normal };
     GMX_EXPECT_SIMD_FUNC_NEAR(refInvCbrt, invcbrt, settings);
 }
 
@@ -694,7 +574,7 @@ TEST_F(SimdMathTest, log2)
     const real low  = std::numeric_limits<real>::min();
     const real high = std::numeric_limits<real>::max();
 
-    CompareSettings settings{ Range(low, high), ulpTol_, absTol_, MatchRule::Normal };
+    CompareSettings settings{ { low, high }, ulpTol_, absTol_, MatchRule::Normal };
     GMX_EXPECT_SIMD_FUNC_NEAR(std::log2, log2, settings);
 }
 
@@ -703,7 +583,7 @@ TEST_F(SimdMathTest, log)
     const real low  = std::numeric_limits<real>::min();
     const real high = std::numeric_limits<real>::max();
 
-    CompareSettings settings{ Range(low, high), ulpTol_, absTol_, MatchRule::Normal };
+    CompareSettings settings{ { low, high }, ulpTol_, absTol_, MatchRule::Normal };
     GMX_EXPECT_SIMD_FUNC_NEAR(std::log, log, settings);
 }
 
@@ -723,21 +603,19 @@ TEST_F(SimdMathTest, exp2)
     CompareSettings settings;
 
     // Below subnormal range all results should be zero (so, match the reference)
-    settings = { Range(lowestReal, lowestRealThatProducesDenormal), ulpTol_, absTol_, MatchRule::Normal };
+    settings = { { lowestReal, lowestRealThatProducesDenormal }, ulpTol_, absTol_, MatchRule::Normal };
     GMX_EXPECT_SIMD_FUNC_NEAR(std::exp2, exp2, settings);
 
     // Subnormal range, require matching, but DTZ is fine
-    settings = { Range(lowestRealThatProducesDenormal, lowestRealThatProducesNormal),
-                 ulpTol_,
-                 absTol_,
-                 MatchRule::Dtz };
+    settings = {
+        { lowestRealThatProducesDenormal, lowestRealThatProducesNormal }, ulpTol_, absTol_, MatchRule::Dtz
+    };
     GMX_EXPECT_SIMD_FUNC_NEAR(std::exp2, exp2, settings);
 
     // Normal range, standard result expected
-    settings = { Range(lowestRealThatProducesNormal, highestRealThatProducesNormal),
-                 ulpTol_,
-                 absTol_,
-                 MatchRule::Normal };
+    settings = {
+        { lowestRealThatProducesNormal, highestRealThatProducesNormal }, ulpTol_, absTol_, MatchRule::Normal
+    };
     GMX_EXPECT_SIMD_FUNC_NEAR(std::exp2, exp2, settings);
 }
 
@@ -751,10 +629,9 @@ TEST_F(SimdMathTest, exp2Unsafe)
             std::numeric_limits<real>::max_exponent
             - 1; // adding the significant corresponds to one more unit in exponent
 
-    CompareSettings settings{ Range(lowestRealThatProducesNormal, highestRealThatProducesNormal),
-                              ulpTol_,
-                              absTol_,
-                              MatchRule::Normal };
+    CompareSettings settings{
+        { lowestRealThatProducesNormal, highestRealThatProducesNormal }, ulpTol_, absTol_, MatchRule::Normal
+    };
     GMX_EXPECT_SIMD_FUNC_NEAR(std::exp2, exp2<MathOptimization::Unsafe>, settings);
 }
 
@@ -776,21 +653,19 @@ TEST_F(SimdMathTest, exp)
     CompareSettings settings;
 
     // Below subnormal range all results should be zero (so, match the reference)
-    settings = { Range(lowestReal, lowestRealThatProducesDenormal), ulpTol_, absTol_, MatchRule::Normal };
+    settings = { { lowestReal, lowestRealThatProducesDenormal }, ulpTol_, absTol_, MatchRule::Normal };
     GMX_EXPECT_SIMD_FUNC_NEAR(std::exp, exp, settings);
 
     // Subnormal range, require matching, but DTZ is fine
-    settings = { Range(lowestRealThatProducesDenormal, lowestRealThatProducesNormal),
-                 ulpTol_,
-                 absTol_,
-                 MatchRule::Dtz };
+    settings = {
+        { lowestRealThatProducesDenormal, lowestRealThatProducesNormal }, ulpTol_, absTol_, MatchRule::Dtz
+    };
     GMX_EXPECT_SIMD_FUNC_NEAR(std::exp, exp, settings);
 
     // Normal range, standard result expected
-    settings = { Range(lowestRealThatProducesNormal, highestRealThatProducesNormal),
-                 ulpTol_,
-                 absTol_,
-                 MatchRule::Normal };
+    settings = {
+        { lowestRealThatProducesNormal, highestRealThatProducesNormal }, ulpTol_, absTol_, MatchRule::Normal
+    };
     GMX_EXPECT_SIMD_FUNC_NEAR(std::exp, exp, settings);
 }
 
@@ -803,10 +678,9 @@ TEST_F(SimdMathTest, expUnsafe)
     const real highestRealThatProducesNormal =
             (std::numeric_limits<real>::max_exponent - 1) * std::log(2.0);
 
-    CompareSettings settings{ Range(lowestRealThatProducesNormal, highestRealThatProducesNormal),
-                              ulpTol_,
-                              absTol_,
-                              MatchRule::Normal };
+    CompareSettings settings{
+        { lowestRealThatProducesNormal, highestRealThatProducesNormal }, ulpTol_, absTol_, MatchRule::Normal
+    };
     GMX_EXPECT_SIMD_FUNC_NEAR(std::exp, exp<MathOptimization::Unsafe>, settings);
 }
 
@@ -852,7 +726,7 @@ real refErf(real x)
 
 TEST_F(SimdMathTest, erf)
 {
-    CompareSettings settings{ Range(-9, 9), ulpTol_, std::numeric_limits<real>::min(), MatchRule::Normal };
+    CompareSettings settings{ { -9, 9 }, ulpTol_, std::numeric_limits<real>::min(), MatchRule::Normal };
     GMX_EXPECT_SIMD_FUNC_NEAR(refErf, erf, settings);
 }
 
@@ -869,27 +743,27 @@ real refErfc(real x)
 TEST_F(SimdMathTest, erfc)
 {
     // Our erfc algorithm has 4 ulp accuracy, so relax tolerance a bit to 4*ulpTol
-    CompareSettings settings{ Range(-9, 9), 4 * ulpTol_, std::numeric_limits<real>::min(), MatchRule::Normal };
+    CompareSettings settings{ { -9, 9 }, 4 * ulpTol_, std::numeric_limits<real>::min(), MatchRule::Normal };
     GMX_EXPECT_SIMD_FUNC_NEAR(refErfc, erfc, settings);
 }
 
 TEST_F(SimdMathTest, sin)
 {
-    CompareSettings settings{ Range(-8 * M_PI, 8 * M_PI), ulpTol_, absTol_, MatchRule::Normal };
+    CompareSettings settings{ { -8 * M_PI, 8 * M_PI }, ulpTol_, absTol_, MatchRule::Normal };
     GMX_EXPECT_SIMD_FUNC_NEAR(std::sin, sin, settings);
 
     // Range reduction leads to accuracy loss, so we might want higher tolerance here
-    settings = { Range(-10000, 10000), 2 * ulpTol_, absTol_, MatchRule::Normal };
+    settings = { { -10000, 10000 }, 2 * ulpTol_, absTol_, MatchRule::Normal };
     GMX_EXPECT_SIMD_FUNC_NEAR(std::sin, sin, settings);
 }
 
 TEST_F(SimdMathTest, cos)
 {
-    CompareSettings settings{ Range(-8 * M_PI, 8 * M_PI), ulpTol_, absTol_, MatchRule::Normal };
+    CompareSettings settings{ { -8 * M_PI, 8 * M_PI }, ulpTol_, absTol_, MatchRule::Normal };
     GMX_EXPECT_SIMD_FUNC_NEAR(std::cos, cos, settings);
 
     // Range reduction leads to accuracy loss, so we might want higher tolerance here
-    settings = { Range(-10000, 10000), 2 * ulpTol_, absTol_, MatchRule::Normal };
+    settings = { { -10000, 10000 }, 2 * ulpTol_, absTol_, MatchRule::Normal };
     GMX_EXPECT_SIMD_FUNC_NEAR(std::cos, cos, settings);
 }
 
@@ -898,32 +772,32 @@ TEST_F(SimdMathTest, tan)
     // Tan(x) is a little sensitive due to the division in the algorithm.
     // Rather than using lots of extra FP operations, we accept the algorithm
     // presently only achieves a ~3 ulp error and use the medium tolerance.
-    CompareSettings settings{ Range(-8 * M_PI, 8 * M_PI), ulpTol_, absTol_, MatchRule::Normal };
+    CompareSettings settings{ { -8 * M_PI, 8 * M_PI }, ulpTol_, absTol_, MatchRule::Normal };
     GMX_EXPECT_SIMD_FUNC_NEAR(std::tan, tan, settings);
 
     // Range reduction leads to accuracy loss, so we might want higher tolerance here
-    settings = { Range(-10000, 10000), 2 * ulpTol_, absTol_, MatchRule::Normal };
+    settings = { { -10000, 10000 }, 2 * ulpTol_, absTol_, MatchRule::Normal };
     GMX_EXPECT_SIMD_FUNC_NEAR(std::tan, tan, settings);
 }
 
 TEST_F(SimdMathTest, asin)
 {
     // Our present asin(x) algorithm achieves 2-3 ulp accuracy
-    CompareSettings settings{ Range(-1, 1), ulpTol_, absTol_, MatchRule::Normal };
+    CompareSettings settings{ { -1, 1 }, ulpTol_, absTol_, MatchRule::Normal };
     GMX_EXPECT_SIMD_FUNC_NEAR(std::asin, asin, settings);
 }
 
 TEST_F(SimdMathTest, acos)
 {
     // Our present acos(x) algorithm achieves 2-3 ulp accuracy
-    CompareSettings settings{ Range(-1, 1), ulpTol_, absTol_, MatchRule::Normal };
+    CompareSettings settings{ { -1, 1 }, ulpTol_, absTol_, MatchRule::Normal };
     GMX_EXPECT_SIMD_FUNC_NEAR(std::acos, acos, settings);
 }
 
 TEST_F(SimdMathTest, atan)
 {
     // Our present atan(x) algorithm achieves 1 ulp accuracy
-    CompareSettings settings{ Range(-10000, 10000), ulpTol_, absTol_, MatchRule::Normal };
+    CompareSettings settings{ { -10000, 10000 }, ulpTol_, absTol_, MatchRule::Normal };
     GMX_EXPECT_SIMD_FUNC_NEAR(std::atan, atan, settings);
 }
 
@@ -980,7 +854,7 @@ TEST_F(SimdMathTest, pmeForceCorrection)
     // Pme correction relative accuracy only needs to be ~1e-6 accuracy single, 1e-10 double
     const std::int64_t ulpTol = (GMX_DOUBLE ? 5e-10 : 5e-6) / GMX_REAL_EPS;
 
-    CompareSettings settings{ Range(0.15, 4), ulpTol, GMX_REAL_EPS, MatchRule::Normal };
+    CompareSettings settings{ { 0.15, 4 }, ulpTol, GMX_REAL_EPS, MatchRule::Normal };
     GMX_EXPECT_SIMD_FUNC_NEAR(refPmeForceCorrection, pmeForceCorrection, settings);
 }
 
@@ -997,7 +871,7 @@ TEST_F(SimdMathTest, pmePotentialCorrection)
     // Pme correction relative accuracy only needs to be ~1e-6 accuracy single, 1e-10 double
     const std::int64_t ulpTol = (GMX_DOUBLE ? 5e-10 : 5e-6) / GMX_REAL_EPS;
 
-    CompareSettings settings{ Range(0.15, 4), ulpTol, GMX_REAL_EPS, MatchRule::Normal };
+    CompareSettings settings{ { 0.15, 4 }, ulpTol, GMX_REAL_EPS, MatchRule::Normal };
     GMX_EXPECT_SIMD_FUNC_NEAR(refPmePotentialCorrection, pmePotentialCorrection, settings);
 }
 
@@ -1012,7 +886,7 @@ TEST_F(SimdMathTest, invsqrtSingleAccuracy)
     /* Increase the allowed error by the difference between the actual precision and single */
     setUlpTolSingleAccuracy(ulpTol_);
 
-    CompareSettings settings{ Range(low, high), ulpTol_, absTol_, MatchRule::Normal };
+    CompareSettings settings{ { low, high }, ulpTol_, absTol_, MatchRule::Normal };
     GMX_EXPECT_SIMD_FUNC_NEAR(refInvsqrt, invsqrtSingleAccuracy, settings);
 }
 
@@ -1040,7 +914,7 @@ TEST_F(SimdMathTest, invsqrtPairSingleAccuracy)
     /* Increase the allowed error by the difference between the actual precision and single */
     setUlpTolSingleAccuracy(ulpTol_);
 
-    CompareSettings settings{ Range(low, high), ulpTol_, absTol_, MatchRule::Normal };
+    CompareSettings settings{ { low, high }, ulpTol_, absTol_, MatchRule::Normal };
     GMX_EXPECT_SIMD_FUNC_NEAR(refInvsqrt, tst_invsqrt_SingleAccuracy_pair0, settings);
     GMX_EXPECT_SIMD_FUNC_NEAR(refInvsqrt, tst_invsqrt_SingleAccuracy_pair1, settings);
 }
@@ -1072,11 +946,11 @@ TEST_F(SimdMathTest, sqrtSingleAccuracy)
     // This test range must not be called for single precision, since if we try to divide
     // the interval (0.0, low( in npoints we will try to multiply by factors so small that
     // they end up being flushed to zero, and the loop would never end.
-    settings = { Range(0.0, low), ulpTol_, absTol_, MatchRule::ReferenceOrZero };
+    settings = { { 0.0, low }, ulpTol_, absTol_, MatchRule::ReferenceOrZero };
     GMX_EXPECT_SIMD_FUNC_NEAR(refSqrt, sqrtSingleAccuracy, settings);
 #        endif
 
-    settings = { Range(low, high), ulpTol_, absTol_, MatchRule::Normal };
+    settings = { { low, high }, ulpTol_, absTol_, MatchRule::Normal };
     GMX_EXPECT_SIMD_FUNC_NEAR(refSqrt, sqrtSingleAccuracy, settings);
 }
 
@@ -1089,7 +963,7 @@ TEST_F(SimdMathTest, sqrtSingleAccuracyUnsafe)
     /* Increase the allowed error by the difference between the actual precision and single */
     setUlpTolSingleAccuracy(ulpTol_);
 
-    CompareSettings settings{ Range(low, high), ulpTol_, absTol_, MatchRule::Normal };
+    CompareSettings settings{ { low, high }, ulpTol_, absTol_, MatchRule::Normal };
     GMX_EXPECT_SIMD_FUNC_NEAR(refSqrt, sqrtSingleAccuracy<MathOptimization::Unsafe>, settings);
 }
 
@@ -1100,10 +974,10 @@ TEST_F(SimdMathTest, invSingleAccuracy)
     // compiled in double precision.
 
     // Relevant threshold points
-    const real minSafeFloat = std::numeric_limits<float>::min()
-                              * 10; // X value guaranteed not to result in Inf intermediates for 1/x calc.
-    const real maxSafeFloat = std::numeric_limits<float>::max()
-                              * 0.1; // X value guaranteed not to result in DTZ intermediates for 1/x calc.
+    // X value guaranteed not to result in Inf intermediates for 1/x calc.
+    const real minSafeFloat = std::numeric_limits<float>::min() * 10;
+    // X value guaranteed not to result in DTZ intermediates for 1/x calc.
+    const real maxSafeFloat = std::numeric_limits<float>::max() * 0.1;
     // Scale highest value by 1-eps, since we will do some arithmetics on this value
     const real maxFloat =
             std::numeric_limits<float>::max() * (1.0 - std::numeric_limits<float>::epsilon());
@@ -1113,21 +987,21 @@ TEST_F(SimdMathTest, invSingleAccuracy)
     setUlpTolSingleAccuracy(ulpTol_);
 
     // Danger zone where intermediates might be flushed to zero and produce 1/x==0.0
-    settings = { Range(-maxFloat, -maxSafeFloat), ulpTol_, absTol_, MatchRule::ReferenceOrZero };
+    settings = { { -maxFloat, -maxSafeFloat }, ulpTol_, absTol_, MatchRule::ReferenceOrZero };
     GMX_EXPECT_SIMD_FUNC_NEAR(refInv, inv, settings);
 
     // Normal checks for x < 0
-    settings = { Range(-maxSafeFloat, -minSafeFloat), ulpTol_, absTol_, MatchRule::Normal };
+    settings = { { -maxSafeFloat, -minSafeFloat }, ulpTol_, absTol_, MatchRule::Normal };
     GMX_EXPECT_SIMD_FUNC_NEAR(refInv, inv, settings);
 
     // We do not care about the small range -minSafeFloat < x < +minSafeFloat where the result can be +/- Inf, since we don't require strict IEEE754.
 
     // Normal checks for x > 0
-    settings = { Range(minSafeFloat, maxSafeFloat), ulpTol_, absTol_, MatchRule::Normal };
+    settings = { { minSafeFloat, maxSafeFloat }, ulpTol_, absTol_, MatchRule::Normal };
     GMX_EXPECT_SIMD_FUNC_NEAR(refInv, inv, settings);
 
     // Danger zone where intermediates might be flushed to zero and produce 1/x==0.0
-    settings = { Range(maxSafeFloat, maxFloat), ulpTol_, absTol_, MatchRule::ReferenceOrZero };
+    settings = { { maxSafeFloat, maxFloat }, ulpTol_, absTol_, MatchRule::ReferenceOrZero };
     GMX_EXPECT_SIMD_FUNC_NEAR(refInv, inv, settings);
 }
 
@@ -1139,7 +1013,7 @@ TEST_F(SimdMathTest, cbrtSingleAccuracy)
     // Increase the allowed error by the difference between the actual precision and single
     setUlpTolSingleAccuracy(ulpTol_);
 
-    CompareSettings settings{ Range(low, high), ulpTol_, absTol_, MatchRule::Normal };
+    CompareSettings settings{ { low, high }, ulpTol_, absTol_, MatchRule::Normal };
     GMX_EXPECT_SIMD_FUNC_NEAR(std::cbrt, cbrtSingleAccuracy, settings);
 }
 
@@ -1152,13 +1026,13 @@ TEST_F(SimdMathTest, invcbrtSingleAccuracy)
     real low  = -std::numeric_limits<real>::max();
     real high = -std::numeric_limits<real>::min();
 
-    CompareSettings settings{ Range(low, high), ulpTol_, absTol_, MatchRule::Normal };
+    CompareSettings settings{ { low, high }, ulpTol_, absTol_, MatchRule::Normal };
     GMX_EXPECT_SIMD_FUNC_NEAR(refInvCbrt, invcbrtSingleAccuracy, settings);
 
     // Positive values
     low      = std::numeric_limits<real>::min();
     high     = std::numeric_limits<real>::max();
-    settings = { Range(low, high), ulpTol_, absTol_, MatchRule::Normal };
+    settings = { { low, high }, ulpTol_, absTol_, MatchRule::Normal };
     GMX_EXPECT_SIMD_FUNC_NEAR(refInvCbrt, invcbrtSingleAccuracy, settings);
 }
 
@@ -1170,7 +1044,7 @@ TEST_F(SimdMathTest, log2SingleAccuracy)
     // Increase the allowed error by the difference between the actual precision and single
     setUlpTolSingleAccuracy(ulpTol_);
 
-    CompareSettings settings{ Range(low, high), ulpTol_, absTol_, MatchRule::Normal };
+    CompareSettings settings{ { low, high }, ulpTol_, absTol_, MatchRule::Normal };
     GMX_EXPECT_SIMD_FUNC_NEAR(std::log2, log2SingleAccuracy, settings);
 }
 
@@ -1182,7 +1056,7 @@ TEST_F(SimdMathTest, logSingleAccuracy)
     // Increase the allowed error by the difference between the actual precision and single
     setUlpTolSingleAccuracy(ulpTol_);
 
-    CompareSettings settings{ Range(low, high), ulpTol_, absTol_, MatchRule::Normal };
+    CompareSettings settings{ { low, high }, ulpTol_, absTol_, MatchRule::Normal };
     GMX_EXPECT_SIMD_FUNC_NEAR(std::log, logSingleAccuracy, settings);
 }
 
@@ -1190,56 +1064,48 @@ TEST_F(SimdMathTest, exp2SingleAccuracy)
 {
     // Relevant threshold points - float limits since we only target single accuracy
     constexpr real lowestReal = -std::numeric_limits<real>::max();
-    constexpr real lowestRealThatProducesNormal =
-            std::numeric_limits<real>::min_exponent
-            - 1; // adding the significant corresponds to one more unit in exponent
+    // adding the significant corresponds to one more unit in exponent
+    constexpr real lowestRealThatProducesNormal = std::numeric_limits<real>::min_exponent - 1;
+    // digits refer to bits in significand, so 24/53 for float/double
     constexpr real lowestRealThatProducesDenormal =
-            lowestRealThatProducesNormal
-            - std::numeric_limits<real>::digits; // digits refer to bits in significand, so 24/53 for float/double
-    constexpr real highestRealThatProducesNormal =
-            std::numeric_limits<real>::max_exponent
-            - 1; // adding the significant corresponds to one more unit in exponent
+            lowestRealThatProducesNormal - std::numeric_limits<real>::digits;
+    // adding the significant corresponds to one more unit in exponent
+    constexpr real  highestRealThatProducesNormal = std::numeric_limits<real>::max_exponent - 1;
     CompareSettings settings;
 
     // Increase the allowed error by the difference between the actual precision and single
     setUlpTolSingleAccuracy(ulpTol_);
 
     // Below subnormal range all results should be zero
-    settings = { Range(lowestReal, lowestRealThatProducesDenormal), ulpTol_, absTol_, MatchRule::Normal };
+    settings = { { lowestReal, lowestRealThatProducesDenormal }, ulpTol_, absTol_, MatchRule::Normal };
     GMX_EXPECT_SIMD_FUNC_NEAR(std::exp2, exp2SingleAccuracy, settings);
 
     // Subnormal range, require matching, but DTZ is fine
-    settings = { Range(lowestRealThatProducesDenormal, lowestRealThatProducesNormal),
-                 ulpTol_,
-                 absTol_,
-                 MatchRule::Dtz };
+    settings = {
+        { lowestRealThatProducesDenormal, lowestRealThatProducesNormal }, ulpTol_, absTol_, MatchRule::Dtz
+    };
     GMX_EXPECT_SIMD_FUNC_NEAR(std::exp2, exp2SingleAccuracy, settings);
 
     // Normal range, standard result expected
-    settings = { Range(lowestRealThatProducesNormal, highestRealThatProducesNormal),
-                 ulpTol_,
-                 absTol_,
-                 MatchRule::Normal };
+    settings = {
+        { lowestRealThatProducesNormal, highestRealThatProducesNormal }, ulpTol_, absTol_, MatchRule::Normal
+    };
     GMX_EXPECT_SIMD_FUNC_NEAR(std::exp2, exp2SingleAccuracy, settings);
 }
 
 TEST_F(SimdMathTest, exp2SingleAccuracyUnsafe)
 {
     // The unsafe version is only defined in the normal range
-    constexpr real lowestRealThatProducesNormal =
-            std::numeric_limits<real>::min_exponent
-            - 1; // adding the significant corresponds to one more unit in exponent
-    constexpr real highestRealThatProducesNormal =
-            std::numeric_limits<real>::max_exponent
-            - 1; // adding the significant corresponds to one more unit in exponent
+    // adding the significant corresponds to one more unit in exponent
+    constexpr real lowestRealThatProducesNormal  = std::numeric_limits<real>::min_exponent - 1;
+    constexpr real highestRealThatProducesNormal = std::numeric_limits<real>::max_exponent - 1;
 
     /* Increase the allowed error by the difference between the actual precision and single */
     setUlpTolSingleAccuracy(ulpTol_);
 
-    CompareSettings settings{ Range(lowestRealThatProducesNormal, highestRealThatProducesNormal),
-                              ulpTol_,
-                              absTol_,
-                              MatchRule::Normal };
+    CompareSettings settings{
+        { lowestRealThatProducesNormal, highestRealThatProducesNormal }, ulpTol_, absTol_, MatchRule::Normal
+    };
     GMX_EXPECT_SIMD_FUNC_NEAR(std::exp2, exp2SingleAccuracy<MathOptimization::Unsafe>, settings);
 }
 
@@ -1263,21 +1129,19 @@ TEST_F(SimdMathTest, expSingleAccuracy)
     setUlpTolSingleAccuracy(ulpTol_);
 
     // Below subnormal range all results should be zero (so, match the reference)
-    settings = { Range(lowestReal, lowestRealThatProducesDenormal), ulpTol_, absTol_, MatchRule::Normal };
+    settings = { { lowestReal, lowestRealThatProducesDenormal }, ulpTol_, absTol_, MatchRule::Normal };
     GMX_EXPECT_SIMD_FUNC_NEAR(std::exp, expSingleAccuracy, settings);
 
     // Subnormal range, require matching, but DTZ is fine
-    settings = { Range(lowestRealThatProducesDenormal, lowestRealThatProducesNormal),
-                 ulpTol_,
-                 absTol_,
-                 MatchRule::Dtz };
+    settings = {
+        { lowestRealThatProducesDenormal, lowestRealThatProducesNormal }, ulpTol_, absTol_, MatchRule::Dtz
+    };
     GMX_EXPECT_SIMD_FUNC_NEAR(std::exp, expSingleAccuracy, settings);
 
     // Normal range, standard result expected
-    settings = { Range(lowestRealThatProducesNormal, highestRealThatProducesNormal),
-                 ulpTol_,
-                 absTol_,
-                 MatchRule::Normal };
+    settings = {
+        { lowestRealThatProducesNormal, highestRealThatProducesNormal }, ulpTol_, absTol_, MatchRule::Normal
+    };
     GMX_EXPECT_SIMD_FUNC_NEAR(std::exp, expSingleAccuracy, settings);
 }
 
@@ -1293,10 +1157,9 @@ TEST_F(SimdMathTest, expSingleAccuracyUnsafe)
     // Increase the allowed error by the difference between the actual precision and single
     setUlpTolSingleAccuracy(ulpTol_);
 
-    CompareSettings settings{ Range(lowestRealThatProducesNormal, highestRealThatProducesNormal),
-                              ulpTol_,
-                              absTol_,
-                              MatchRule::Normal };
+    CompareSettings settings{
+        { lowestRealThatProducesNormal, highestRealThatProducesNormal }, ulpTol_, absTol_, MatchRule::Normal
+    };
     GMX_EXPECT_SIMD_FUNC_NEAR(std::exp, expSingleAccuracy<MathOptimization::Unsafe>, settings);
 }
 
@@ -1342,7 +1205,7 @@ TEST_F(SimdMathTest, erfSingleAccuracy)
     // Increase the allowed error by the difference between the actual precision and single
     setUlpTolSingleAccuracy(ulpTol_);
 
-    CompareSettings settings{ Range(-9, 9), ulpTol_, GMX_REAL_MIN, MatchRule::Normal };
+    CompareSettings settings{ { -9, 9 }, ulpTol_, GMX_REAL_MIN, MatchRule::Normal };
     GMX_EXPECT_SIMD_FUNC_NEAR(refErf, erfSingleAccuracy, settings);
 }
 
@@ -1352,7 +1215,7 @@ TEST_F(SimdMathTest, erfcSingleAccuracy)
     setUlpTolSingleAccuracy(ulpTol_);
 
     // Our erfc algorithm has 4 ulp accuracy, so relax tolerance a bit
-    CompareSettings settings{ Range(-9, 9), 4 * ulpTol_, GMX_REAL_MIN, MatchRule::Normal };
+    CompareSettings settings{ { -9, 9 }, 4 * ulpTol_, GMX_REAL_MIN, MatchRule::Normal };
     GMX_EXPECT_SIMD_FUNC_NEAR(refErfc, erfcSingleAccuracy, settings);
 }
 
@@ -1362,11 +1225,11 @@ TEST_F(SimdMathTest, sinSingleAccuracy)
     /* Increase the allowed error by the difference between the actual precision and single */
     setUlpTolSingleAccuracy(ulpTol_);
 
-    CompareSettings settings{ Range(-8 * M_PI, 8 * M_PI), ulpTol_, absTol_, MatchRule::Normal };
+    CompareSettings settings{ { -8 * M_PI, 8 * M_PI }, ulpTol_, absTol_, MatchRule::Normal };
     GMX_EXPECT_SIMD_FUNC_NEAR(std::sin, sinSingleAccuracy, settings);
 
     // Range reduction leads to accuracy loss, so we might want higher tolerance here
-    settings = { Range(-10000, 10000), 2 * ulpTol_, absTol_, MatchRule::Normal };
+    settings = { { -10000, 10000 }, 2 * ulpTol_, absTol_, MatchRule::Normal };
     GMX_EXPECT_SIMD_FUNC_NEAR(std::sin, sinSingleAccuracy, settings);
 }
 
@@ -1375,11 +1238,11 @@ TEST_F(SimdMathTest, cosSingleAccuracy)
     /* Increase the allowed error by the difference between the actual precision and single */
     setUlpTolSingleAccuracy(ulpTol_);
 
-    CompareSettings settings{ Range(-8 * M_PI, 8 * M_PI), ulpTol_, absTol_, MatchRule::Normal };
+    CompareSettings settings{ { -8 * M_PI, 8 * M_PI }, ulpTol_, absTol_, MatchRule::Normal };
     GMX_EXPECT_SIMD_FUNC_NEAR(std::cos, cosSingleAccuracy, settings);
 
     // Range reduction leads to accuracy loss, so we might want higher tolerance here
-    settings = { Range(-10000, 10000), ulpTol_, absTol_, MatchRule::Normal };
+    settings = { { -10000, 10000 }, ulpTol_, absTol_, MatchRule::Normal };
     GMX_EXPECT_SIMD_FUNC_NEAR(std::cos, cosSingleAccuracy, settings);
 }
 
@@ -1391,11 +1254,11 @@ TEST_F(SimdMathTest, tanSingleAccuracy)
     // Tan(x) is a little sensitive due to the division in the algorithm.
     // Rather than using lots of extra FP operations, we accept the algorithm
     // presently only achieves a ~3 ulp error and use the medium tolerance.
-    CompareSettings settings{ Range(-8 * M_PI, 8 * M_PI), ulpTol_, absTol_, MatchRule::Normal };
+    CompareSettings settings{ { -8 * M_PI, 8 * M_PI }, ulpTol_, absTol_, MatchRule::Normal };
     GMX_EXPECT_SIMD_FUNC_NEAR(std::tan, tanSingleAccuracy, settings);
 
     // Range reduction leads to accuracy loss, so we might want higher tolerance here
-    settings = { Range(-10000, 10000), ulpTol_, absTol_, MatchRule::Normal };
+    settings = { { -10000, 10000 }, ulpTol_, absTol_, MatchRule::Normal };
     GMX_EXPECT_SIMD_FUNC_NEAR(std::tan, tanSingleAccuracy, settings);
 }
 
@@ -1405,7 +1268,7 @@ TEST_F(SimdMathTest, asinSingleAccuracy)
     setUlpTolSingleAccuracy(ulpTol_);
 
     // Our present asin(x) algorithm achieves 2-3 ulp accuracy
-    CompareSettings settings{ Range(-1, 1), ulpTol_, absTol_, MatchRule::Normal };
+    CompareSettings settings{ { -1, 1 }, ulpTol_, absTol_, MatchRule::Normal };
     GMX_EXPECT_SIMD_FUNC_NEAR(std::asin, asinSingleAccuracy, settings);
 }
 
@@ -1415,7 +1278,7 @@ TEST_F(SimdMathTest, acosSingleAccuracy)
     setUlpTolSingleAccuracy(ulpTol_);
 
     // Our present acos(x) algorithm achieves 2-3 ulp accuracy
-    CompareSettings settings{ Range(-1, 1), ulpTol_, absTol_, MatchRule::Normal };
+    CompareSettings settings{ { -1, 1 }, ulpTol_, absTol_, MatchRule::Normal };
     GMX_EXPECT_SIMD_FUNC_NEAR(std::acos, acosSingleAccuracy, settings);
 }
 
@@ -1425,7 +1288,7 @@ TEST_F(SimdMathTest, atanSingleAccuracy)
     setUlpTolSingleAccuracy(ulpTol_);
 
     // Our present atan(x) algorithm achieves 1 ulp accuracy
-    CompareSettings settings{ Range(-10000, 10000), ulpTol_, absTol_, MatchRule::Normal };
+    CompareSettings settings{ { -10000, 10000 }, ulpTol_, absTol_, MatchRule::Normal };
     GMX_EXPECT_SIMD_FUNC_NEAR(std::atan, atanSingleAccuracy, settings);
 }
 
@@ -1473,7 +1336,7 @@ TEST_F(SimdMathTest, pmeForceCorrectionSingleAccuracy)
     // Then increase the allowed error by the difference between the actual precision and single.
     setUlpTolSingleAccuracy(std::int64_t(5e-6 / GMX_FLOAT_EPS));
 
-    CompareSettings settings{ Range(0.15, 4), ulpTol_, GMX_FLOAT_EPS, MatchRule::Normal };
+    CompareSettings settings{ { 0.15, 4 }, ulpTol_, GMX_FLOAT_EPS, MatchRule::Normal };
     GMX_EXPECT_SIMD_FUNC_NEAR(refPmeForceCorrection, pmeForceCorrectionSingleAccuracy, settings);
 }
 
@@ -1484,7 +1347,7 @@ TEST_F(SimdMathTest, pmePotentialCorrectionSingleAccuracy)
     // Then increase the allowed error by the difference between the actual precision and single.
     setUlpTolSingleAccuracy(std::int64_t(5e-6 / GMX_FLOAT_EPS));
 
-    CompareSettings settings{ Range(0.15, 4), ulpTol_, GMX_FLOAT_EPS, MatchRule::Normal };
+    CompareSettings settings{ { 0.15, 4 }, ulpTol_, GMX_FLOAT_EPS, MatchRule::Normal };
     GMX_EXPECT_SIMD_FUNC_NEAR(refPmePotentialCorrection, pmePotentialCorrectionSingleAccuracy, settings);
 }
 
