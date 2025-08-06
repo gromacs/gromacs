@@ -184,7 +184,7 @@ public:
     // Allow zero-size intervals - nothing to test means we succeeded at it
     if (compareSettings.range.first == compareSettings.range.second)
     {
-        ::testing::AssertionSuccess();
+        return ::testing::AssertionSuccess();
     }
 
     // Calculate the tolerance limit to use for denormals - we want
