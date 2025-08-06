@@ -31,33 +31,33 @@
 //
 // This file tests the built-in actions.
 
-// Silence C4100 (unreferenced formal parameter) and C4503 (decorated name
-// length exceeded) for MSVC.
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable : 4100)
-#pragma warning(disable : 4503)
-#if _MSC_VER == 1900
-// and silence C4800 (C4800: 'int *const ': forcing value
-// to bool 'true' or 'false') for MSVC 15
-#pragma warning(disable : 4800)
-#endif
-#endif
-
 #include "gmock/gmock-actions.h"
 
 #include <algorithm>
 #include <functional>
 #include <iterator>
 #include <memory>
+#include <sstream>
 #include <string>
+#include <tuple>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 #include "gmock/gmock.h"
 #include "gmock/internal/gmock-port.h"
 #include "gtest/gtest-spi.h"
 #include "gtest/gtest.h"
+#include "gtest/internal/gtest-port.h"
+
+// Silence C4100 (unreferenced formal parameter) and C4503 (decorated name
+// length exceeded) for MSVC.
+GTEST_DISABLE_MSC_WARNINGS_PUSH_(4100 4503)
+#if defined(_MSC_VER) && (_MSC_VER == 1900)
+// and silence C4800 (C4800: 'int *const ': forcing value
+// to bool 'true' or 'false') for MSVC 15
+GTEST_DISABLE_MSC_WARNINGS_PUSH_(4800)
+#endif
 
 namespace testing {
 namespace {
@@ -222,7 +222,8 @@ TEST(TypeTraits, IsInvocableRV) {
   // In C++17 and above, where it's guaranteed that functions can return
   // non-moveable objects, everything should work fine for non-moveable rsult
   // types too.
-#if defined(__cplusplus) && __cplusplus >= 201703L
+  // TODO(b/396121064) - Fix this test under MSVC
+#ifndef _MSC_VER
   {
     struct NonMoveable {
       NonMoveable() = default;
@@ -243,7 +244,7 @@ TEST(TypeTraits, IsInvocableRV) {
     static_assert(!internal::is_callable_r<int, Callable>::value);
     static_assert(!internal::is_callable_r<NonMoveable, Callable, int>::value);
   }
-#endif  // C++17 and above
+#endif  // _MSC_VER
 
   // Nothing should choke when we try to call other arguments besides directly
   // callable objects, but they should not show up as callable.
@@ -440,15 +441,15 @@ TEST(DefaultValueDeathTest, GetReturnsBuiltInDefaultValueWhenUnset) {
 
   EXPECT_EQ(0, DefaultValue<int>::Get());
 
-  EXPECT_DEATH_IF_SUPPORTED({ DefaultValue<MyNonDefaultConstructible>::Get(); },
-                            "");
+  EXPECT_DEATH_IF_SUPPORTED(
+      { DefaultValue<MyNonDefaultConstructible>::Get(); }, "");
 }
 
 TEST(DefaultValueTest, GetWorksForMoveOnlyIfSet) {
   EXPECT_TRUE(DefaultValue<std::unique_ptr<int>>::Exists());
   EXPECT_TRUE(DefaultValue<std::unique_ptr<int>>::Get() == nullptr);
   DefaultValue<std::unique_ptr<int>>::SetFactory(
-      [] { return std::unique_ptr<int>(new int(42)); });
+      [] { return std::make_unique<int>(42); });
   EXPECT_TRUE(DefaultValue<std::unique_ptr<int>>::Exists());
   std::unique_ptr<int> i = DefaultValue<std::unique_ptr<int>>::Get();
   EXPECT_EQ(42, *i);
@@ -504,8 +505,8 @@ TEST(DefaultValueOfReferenceDeathTest, GetReturnsBuiltInDefaultValueWhenUnset) {
   EXPECT_FALSE(DefaultValue<MyNonDefaultConstructible&>::IsSet());
 
   EXPECT_DEATH_IF_SUPPORTED({ DefaultValue<int&>::Get(); }, "");
-  EXPECT_DEATH_IF_SUPPORTED({ DefaultValue<MyNonDefaultConstructible>::Get(); },
-                            "");
+  EXPECT_DEATH_IF_SUPPORTED(
+      { DefaultValue<MyNonDefaultConstructible>::Get(); }, "");
 }
 
 // Tests that ActionInterface can be implemented by defining the
@@ -986,7 +987,7 @@ TEST(ReturnRoundRobinTest, WorksForVector) {
 
 class MockClass {
  public:
-  MockClass() {}
+  MockClass() = default;
 
   MOCK_METHOD1(IntFunc, int(bool flag));  // NOLINT
   MOCK_METHOD0(Foo, MyNonDefaultConstructible());
@@ -1410,7 +1411,7 @@ TEST(DoAll, ProvidesLvalueReferencesToInitialActions) {
       void operator()(Obj&&) const { FAIL() << "Unexpected call"; }
     };
 
-    MockFunction<void(Obj &&)> mock;
+    MockFunction<void(Obj&&)> mock;
     EXPECT_CALL(mock, Call)
         .WillOnce(DoAll(InitialAction{}, InitialAction{}, [](Obj&&) {}))
         .WillRepeatedly(DoAll(InitialAction{}, InitialAction{}, [](Obj&&) {}));
@@ -1438,7 +1439,7 @@ TEST(DoAll, ProvidesLvalueReferencesToInitialActions) {
       void operator()(Obj&) && {}
     };
 
-    MockFunction<void(Obj &&)> mock;
+    MockFunction<void(Obj&&)> mock;
     EXPECT_CALL(mock, Call)
         .WillOnce(DoAll(InitialAction{}, InitialAction{}, [](Obj&&) {}));
 
@@ -1473,6 +1474,54 @@ TEST(DoAll, SupportsTypeErasedActions) {
         .WillOnce(DoAll(initial_action, initial_action, FinalAction{}));
 
     EXPECT_EQ(17, mock.AsStdFunction()());
+  }
+}
+
+// A DoAll action should be convertible to a OnceAction, even when its component
+// sub-actions are user-provided types that define only an Action conversion
+// operator. If they supposed being called more than once then they also support
+// being called at most once.
+TEST(DoAll, ConvertibleToOnceActionWithUserProvidedActionConversion) {
+  // Simplest case: only one sub-action.
+  struct CustomFinal final {
+    operator Action<int()>() {  // NOLINT
+      return Return(17);
+    }
+
+    operator Action<int(int, char)>() {  // NOLINT
+      return Return(19);
+    }
+  };
+
+  {
+    OnceAction<int()> action = DoAll(CustomFinal{});
+    EXPECT_EQ(17, std::move(action).Call());
+  }
+
+  {
+    OnceAction<int(int, char)> action = DoAll(CustomFinal{});
+    EXPECT_EQ(19, std::move(action).Call(0, 0));
+  }
+
+  // It should also work with multiple sub-actions.
+  struct CustomInitial final {
+    operator Action<void()>() {  // NOLINT
+      return [] {};
+    }
+
+    operator Action<void(int, char)>() {  // NOLINT
+      return [] {};
+    }
+  };
+
+  {
+    OnceAction<int()> action = DoAll(CustomInitial{}, CustomFinal{});
+    EXPECT_EQ(17, std::move(action).Call());
+  }
+
+  {
+    OnceAction<int(int, char)> action = DoAll(CustomInitial{}, CustomFinal{});
+    EXPECT_EQ(19, std::move(action).Call(0, 0));
   }
 }
 
@@ -1596,7 +1645,23 @@ TEST(WithArgsTest, RefQualifiedInnerAction) {
   EXPECT_EQ(19, mock.AsStdFunction()(0, 17));
 }
 
-#if !GTEST_OS_WINDOWS_MOBILE
+// It should be fine to provide an lvalue WithArgsAction to WillOnce, even when
+// the inner action only wants to convert to OnceAction.
+TEST(WithArgsTest, ProvideAsLvalueToWillOnce) {
+  struct SomeAction {
+    operator OnceAction<int(int)>() const {  // NOLINT
+      return [](const int arg) { return arg + 2; };
+    }
+  };
+
+  const auto wa = WithArg<1>(SomeAction{});
+
+  MockFunction<int(int, int)> mock;
+  EXPECT_CALL(mock, Call).WillOnce(wa);
+  EXPECT_EQ(19, mock.AsStdFunction()(0, 17));
+}
+
+#ifndef GTEST_OS_WINDOWS_MOBILE
 
 class SetErrnoAndReturnTest : public testing::Test {
  protected:
@@ -1755,9 +1820,7 @@ TEST(ReturnNewTest, ConstructorThatTakes10Arguments) {
   delete c;
 }
 
-std::unique_ptr<int> UniquePtrSource() {
-  return std::unique_ptr<int>(new int(19));
-}
+std::unique_ptr<int> UniquePtrSource() { return std::make_unique<int>(19); }
 
 std::vector<std::unique_ptr<int>> VectorUniquePtrSource() {
   std::vector<std::unique_ptr<int>> out;
@@ -1806,7 +1869,7 @@ TEST(MockMethodTest, CanReturnMoveOnlyValue_Invoke) {
 
   // Check default value
   DefaultValue<std::unique_ptr<int>>::SetFactory(
-      [] { return std::unique_ptr<int>(new int(42)); });
+      [] { return std::make_unique<int>(42); });
   EXPECT_EQ(42, *mock.MakeUnique());
 
   EXPECT_CALL(mock, MakeUnique()).WillRepeatedly(Invoke(UniquePtrSource));
@@ -1826,7 +1889,7 @@ TEST(MockMethodTest, CanReturnMoveOnlyValue_Invoke) {
 
 TEST(MockMethodTest, CanTakeMoveOnlyValue) {
   MockClass mock;
-  auto make = [](int i) { return std::unique_ptr<int>(new int(i)); };
+  auto make = [](int i) { return std::make_unique<int>(i); };
 
   EXPECT_CALL(mock, TakeUnique(_)).WillRepeatedly([](std::unique_ptr<int> i) {
     return *i;
@@ -2057,9 +2120,7 @@ struct Double {
   }
 };
 
-std::unique_ptr<int> UniqueInt(int i) {
-  return std::unique_ptr<int>(new int(i));
-}
+std::unique_ptr<int> UniqueInt(int i) { return std::make_unique<int>(i); }
 
 TEST(FunctorActionTest, ActionFromFunction) {
   Action<int(int, int&, int*)> a = &Add;
@@ -2165,3 +2226,8 @@ TEST(ActionMacro, LargeArity) {
 
 }  // namespace
 }  // namespace testing
+
+#if defined(_MSC_VER) && (_MSC_VER == 1900)
+GTEST_DISABLE_MSC_WARNINGS_POP_()  // 4800
+#endif
+GTEST_DISABLE_MSC_WARNINGS_POP_()  // 4100 4503
