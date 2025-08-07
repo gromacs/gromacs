@@ -64,7 +64,6 @@ gromacs:gcc-12-opencl:release:test:
     LD_LIBRARY_PATH: "/opt/rocm/opencl/lib"
     # Enable limited support of RDNA devices
     GMX_OCL_FORCE_AMD_WAVEFRONT64: 1
-    HSA_ENABLE_SDMA: 0  # Work around CI issues, Issue #5341
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
     GPU_VENDOR: "AMD"
     GPU_COUNT: 1
@@ -91,7 +90,6 @@ gromacs:gcc-12-opencl:release:regressiontest:
     LD_LIBRARY_PATH: "/opt/rocm/opencl/lib"
     # Enable limited support of RDNA devices
     GMX_OCL_FORCE_AMD_WAVEFRONT64: 1
-    HSA_ENABLE_SDMA: 0  # Work around CI issues, Issue #5341
     GPU_VENDOR: "AMD"
     GPU_COUNT: 1
   tags:

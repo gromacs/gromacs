@@ -52,7 +52,6 @@ gromacs:gcc-11-hip-622:test:
     GMX_TEST_PLUMED_KERNEL_IS_AVAILABLE: "YES"
     # TODO: this PLUMED_KERNEL is needed because there is a possible configuration mishap in scripted_gmx_docker_builds.py (in particular: runtime_environment={"PLUMED_KERNEL": "/usr/local/lib/libplumedKernel.so"},)
     PLUMED_KERNEL: "/usr/local/lib/libplumedKernel.so"
-    HSA_ENABLE_SDMA: 0  # Work around CI issues, Issue #5341
     GPU_VENDOR: "AMD"
     GPU_COUNT: 1         
   tags:
@@ -72,7 +71,6 @@ gromacs:gcc-11-hip-622:regressiontest:
     REGRESSIONTEST_PME_RANK_NUMBER: 0
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
-    HSA_ENABLE_SDMA: 0  # Work around CI issues, Issue #5341
     GMX_TEST_PLUMED_KERNEL_IS_AVAILABLE: "YES"
     # TODO: this PLUMED_KERNEL is needed because there is a possible configuration mishap in scripted_gmx_docker_builds.py (see above)
     PLUMED_KERNEL: "/usr/local/lib/libplumedKernel.so"
@@ -118,8 +116,6 @@ gromacs:gcc-11-hip-622-nightly:test:
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-11-rocm-6.2.2-openmpi-5.0.3
   variables:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
-    # The following two variables are not used by k8s, since this job runs on a separate host
-    # But it's easier to set them up and use the existing scripts for job preparation that rely on them
     GPU_VENDOR: "AMD"
     GPU_COUNT: 2
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"

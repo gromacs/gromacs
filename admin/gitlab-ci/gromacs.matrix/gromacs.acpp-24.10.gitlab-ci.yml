@@ -55,8 +55,6 @@ gromacs:acpp-rocm-mpi:test:
     CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
     GMX_FORCE_GPU_AWARE_MPI: 1
-    UCX_TLS: "sm,self,rocm_copy"  # rocm_ipc does not work well enough
-    HSA_ENABLE_SDMA: 0  # Work around CI issues, Issue #5341
     GPU_VENDOR: "AMD"
     GPU_COUNT: 2
   tags:
@@ -78,8 +76,6 @@ gromacs:acpp-rocm-mpi:regressiontest:
     REGRESSIONTEST_OMP_RANK_NUMBER: 2
     REGRESSIONTEST_PARALLEL: "-np"
     GMX_FORCE_GPU_AWARE_MPI: 1
-    UCX_TLS: "sm,self,rocm_copy"  # rocm_ipc does not work well enough
-    HSA_ENABLE_SDMA: 0  # Work around CI issues, Issue #5341
     GPU_VENDOR: "AMD"
     GPU_COUNT: 2
   tags:

@@ -54,22 +54,8 @@ gromacs:nvcxx-24.7-cuda-12.5.1:testMPI:
   variables:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
     GMX_GPU_PME_DECOMPOSITION: 1
-    # Flag that cuFFTMp should be disabled when running on incompatible devices
-    GMX_CI_DISABLE_CUFFTMP_DECOMPOSITION_ON_INCOMPATIBLE_DEVICES: 1
     # Location of CUDA FFT library, required for preload to avoid cuFFTMp on incompatible devices 
     CUFFTLIB: "/opt/nvidia/hpc_sdk/Linux_x86_64/24.7/math_libs/lib64/libcufft.so"
-    # cuFFTMp uses NVSHMEM, which in turn will use NCCL on single-node when available
-    # But NCCL has extra restrictions (such as only 1 rank per GPU) so we disable for CI
-    NVSHMEM_DISABLE_NCCL: 1
-    # Default NVSHMEM_SYMMETRIC_SIZE is around 1.5GB which causes mem allocation error on CI
-    # GPUs having 4GB vidmem also this size is overkill for PME decomp tests, hence we
-    # restrict the default NVSHMEM heap size to 32MB.
-    NVSHMEM_SYMMETRIC_SIZE: 32M
-    # set CUDA Module load to be lazy in order to save on CUDA libraries memory footprint
-    # as without lazy loading whole cuFFTMp library may get loaded into GPU RAM.
-    CUDA_MODULE_LOADING: LAZY
-    # set nvshmem cumem allocation granularity to 2MB, default is 512MB.
-    NVSHMEM_CUMEM_GRANULARITY: 2097152
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
     GPU_VENDOR: "NVIDIA"
     GPU_COUNT: 1

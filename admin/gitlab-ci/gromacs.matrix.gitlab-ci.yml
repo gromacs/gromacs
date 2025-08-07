@@ -171,15 +171,9 @@
   retry:
     max: 1
   script:
-    - export LSAN_OPTIONS="suppressions=$CI_PROJECT_DIR/admin/lsan-suppressions.txt:print_suppressions=0"
-    - export ASAN_OPTIONS="check_initialization_order=1:detect_invalid_pointer_pairs=1:strict_init_order=true:strict_string_checks=true:detect_stack_use_after_return=true"
-    # Needed to run MPI enabled code in the docker images, until we set up different users
-    - export OMPI_ALLOW_RUN_AS_ROOT=1
-    - export OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
     - tar xzf gmx-regressiontests.tar.gz
     - source $INSTALL_DIR/bin/GMXRC
-    - cd regressiontests
-    - perl gmxtest.pl $REGRESSIONTEST_PARALLEL $REGRESSIONTEST_TOTAL_RANK_NUMBER -ntomp $REGRESSIONTEST_OMP_RANK_NUMBER -npme $REGRESSIONTEST_PME_RANK_NUMBER $REGRESSIONTEST_DOUBLE $REGRESSIONTEST_MPI_RUN_COMMAND -xml all
+    - bash -x admin/ci-scripts/gromacs-base-regressiontest.sh
   artifacts:
     paths:
       - regressiontests/gmxtest.xml

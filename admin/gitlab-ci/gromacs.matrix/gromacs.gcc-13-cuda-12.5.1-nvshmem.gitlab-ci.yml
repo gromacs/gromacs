@@ -56,11 +56,6 @@ gromacs:gcc-13-cuda-12.5.1:testMPI-NVSHMEM:
   variables:
     CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     GMX_ENABLE_NVSHMEM: 1
-    # if NVSHMEM uses NCCL it requires more than 4 GB of GPU RAM as min memory,
-    # in CI we've GPUs like T400 which have 4 GB RAM so we disable NVSHMEM's
-    # NCCL usage, as NCCL isn't required in our NVSHMEM usage.
-    NVSHMEM_DISABLE_NCCL: 1
-    GMX_TEST_REQUIRED_NUMBER_OF_DEVICES: 2
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
     GPU_VENDOR: "NVIDIA"
     GPU_COUNT: 2
@@ -87,11 +82,6 @@ gromacs:gcc-13-cuda-12.5.1:regressiontest-gpucommupd-MPI-NVSHMEM:
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
     REGRESSIONTEST_PARALLEL: "-np"
-    GMX_TEST_REQUIRED_NUMBER_OF_DEVICES: 2
-    # if NVSHMEM uses NCCL it requires more than 4 GB of GPU RAM as min memory,
-    # in CI we've GPUs like T400 which have 4 GB RAM so we disable NVSHMEM's
-    # NCCL usage, as NCCL isn't required in our NVSHMEM usage.
-    NVSHMEM_DISABLE_NCCL: 1
     GPU_VENDOR: "NVIDIA"
     GPU_COUNT: 2
   tags:
@@ -122,11 +112,6 @@ gromacs:gcc-13-cuda-12.5.1:regressiontest-gpucommupd-RF-MPI-NVSHMEM:
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
     REGRESSIONTEST_PARALLEL: "-np"
-    GMX_TEST_REQUIRED_NUMBER_OF_DEVICES: 2
-    # if NVSHMEM uses NCCL it requires more than 4 GB of GPU RAM as min memory,
-    # in CI we've GPUs like T400 which have 4 GB RAM so we disable NVSHMEM's
-    # NCCL usage, as NCCL isn't required in our NVSHMEM usage.
-    NVSHMEM_DISABLE_NCCL: 1
     GPU_VENDOR: "NVIDIA"
     GPU_COUNT: 2
   tags:
