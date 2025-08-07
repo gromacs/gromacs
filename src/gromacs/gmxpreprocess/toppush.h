@@ -37,6 +37,8 @@
 
 #include <vector>
 
+#include "gromacs/topology/ifunc.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
 
 enum class Directive : int;
@@ -72,54 +74,58 @@ void push_at(PreprocessingAtomTypes*    at,
              t_nbparam***               pair,
              WarningHandler*            wi);
 
-void push_bt(Directive                         d,
-             gmx::ArrayRef<InteractionsOfType> bt,
-             int                               nral,
-             PreprocessingAtomTypes*           at,
-             PreprocessingBondAtomType*        bat,
-             char*                             line,
-             WarningHandler*                   wi);
+void push_bt(Directive                                                       d,
+             gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& bt,
+             int                                                             nral,
+             PreprocessingAtomTypes*                                         at,
+             PreprocessingBondAtomType*                                      bat,
+             char*                                                           line,
+             WarningHandler*                                                 wi);
 
-void push_dihedraltype(Directive                         d,
-                       gmx::ArrayRef<InteractionsOfType> bt,
-                       PreprocessingBondAtomType*        bat,
-                       char*                             line,
-                       WarningHandler*                   wi);
+void push_dihedraltype(Directive                                                       d,
+                       gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& bt,
+                       PreprocessingBondAtomType*                                      bat,
+                       char*                                                           line,
+                       WarningHandler*                                                 wi);
 
-void push_cmaptype(Directive                         d,
-                   gmx::ArrayRef<InteractionsOfType> bt,
-                   int                               nral,
-                   PreprocessingAtomTypes*           at,
-                   PreprocessingBondAtomType*        bat,
-                   char*                             line,
-                   WarningHandler*                   wi);
+void push_cmaptype(Directive                                                       d,
+                   gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& bt,
+                   int                                                             nral,
+                   PreprocessingAtomTypes*                                         at,
+                   PreprocessingBondAtomType*                                      bat,
+                   char*                                                           line,
+                   WarningHandler*                                                 wi);
 
 void push_nbt(Directive d, t_nbparam** nbt, PreprocessingAtomTypes* atype, char* plines, int nb_funct, WarningHandler* wi);
 
 void push_atom(struct t_symtab* symtab, t_atoms* at, PreprocessingAtomTypes* atype, char* line, WarningHandler* wi);
 
-void push_bond(Directive                         d,
-               gmx::ArrayRef<InteractionsOfType> bondtype,
-               gmx::ArrayRef<InteractionsOfType> bond,
-               t_atoms*                          at,
-               PreprocessingAtomTypes*           atype,
-               char*                             line,
-               bool                              bBonded,
-               bool                              bGenPairs,
-               real                              fudgeQQ,
-               bool                              bZero,
-               bool*                             bWarn_copy_A_B,
-               WarningHandler*                   wi);
+void push_bond(Directive                                                       d,
+               gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& bondtype,
+               gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& bond,
+               t_atoms*                                                        at,
+               PreprocessingAtomTypes*                                         atype,
+               char*                                                           line,
+               bool                                                            bBonded,
+               bool                                                            bGenPairs,
+               real                                                            fudgeQQ,
+               bool                                                            bZero,
+               bool*                                                           bWarn_copy_A_B,
+               WarningHandler*                                                 wi);
 
-void push_cmap(Directive                         d,
-               gmx::ArrayRef<InteractionsOfType> bondtype,
-               gmx::ArrayRef<InteractionsOfType> bond,
-               t_atoms*                          at,
-               PreprocessingAtomTypes*           atype,
-               char*                             line,
-               WarningHandler*                   wi);
+void push_cmap(Directive                                                       d,
+               gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& bondtype,
+               gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& bond,
+               t_atoms*                                                        at,
+               PreprocessingAtomTypes*                                         atype,
+               char*                                                           line,
+               WarningHandler*                                                 wi);
 
-void push_vsitesn(Directive d, gmx::ArrayRef<InteractionsOfType> bond, t_atoms* at, char* line, WarningHandler* wi);
+void push_vsitesn(Directive                                                       d,
+                  gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& bond,
+                  t_atoms*                                                        at,
+                  char*                                                           line,
+                  WarningHandler*                                                 wi);
 
 void push_mol(gmx::ArrayRef<MoleculeInformation> mols, char* pline, int* whichmol, int* nrcopies, WarningHandler* wi);
 

@@ -150,7 +150,7 @@ struct gmx_mtop_t //NOLINT(clang-analyzer-optin.performance.Padding)
     bool bIntermolecularInteractions = false;
     /* \brief
      * List of intermolecular interactions using system wide
-     * atom indices, either NULL or size F_NRE
+     * atom indices, either NULL or size InteractionFunction::Count
      */
     std::unique_ptr<InteractionLists> intermolecular_ilist = nullptr;
     //! Number of global atoms.

@@ -65,6 +65,7 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/fileptr.h"
 #include "gromacs/utility/futil.h"
@@ -665,19 +666,19 @@ static void my_add_param(InteractionsOfType* plist, int ai, int aj, real b)
     add_param(plist, ai, aj, c, nullptr);
 }
 
-static void add_vsites(gmx::ArrayRef<InteractionsOfType>     plist,
-                       gmx::ArrayRef<const VsiteTypeAndSign> vsite_type,
-                       int                                   Heavy,
-                       int                                   nrHatoms,
-                       int                                   Hatoms[],
-                       int                                   nrheavies,
-                       int                                   heavies[])
+static void add_vsites(gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
+                       gmx::ArrayRef<const VsiteTypeAndSign>                           vsite_type,
+                       int                                                             Heavy,
+                       int                                                             nrHatoms,
+                       int                                                             Hatoms[],
+                       int                                                             nrheavies,
+                       int                                                             heavies[])
 {
     for (int i = 0; i < nrHatoms; i++)
     {
-        const int  ftype      = vsite_type[Hatoms[i]].ftype.value();
-        const bool swapParity = vsite_type[Hatoms[i]].swapSign;
-        if (ftype == F_BONDS)
+        const InteractionFunction ftype      = vsite_type[Hatoms[i]].ftype.value();
+        const bool                swapParity = vsite_type[Hatoms[i]].swapSign;
+        if (ftype == InteractionFunction::Bonds)
         {
             if ((nrheavies != 1) && (nrHatoms != 1))
             {
@@ -687,15 +688,15 @@ static void add_vsites(gmx::ArrayRef<InteractionsOfType>     plist,
                           nrheavies,
                           nrHatoms);
             }
-            my_add_param(&(plist[F_CONSTRNC]), Hatoms[i], heavies[0], NOTSET);
+            my_add_param(&(plist[InteractionFunction::ConstraintsNoCoupling]), Hatoms[i], heavies[0], NOTSET);
         }
         else
         {
             switch (ftype)
             {
-                case F_VSITE3:
-                case F_VSITE3FD:
-                case F_VSITE3OUT:
+                case InteractionFunction::VirtualSite3:
+                case InteractionFunction::VirtualSite3FlexibleDistance:
+                case InteractionFunction::VirtualSite3Outside:
                     if (nrheavies < 2)
                     {
                         gmx_fatal(FARGS,
@@ -705,7 +706,7 @@ static void add_vsites(gmx::ArrayRef<InteractionsOfType>     plist,
                     }
                     add_vsite3_atoms(&plist[ftype], Hatoms[i], Heavy, heavies[0], heavies[1], swapParity);
                     break;
-                case F_VSITE3FAD:
+                case InteractionFunction::VirtualSite3FlexibleAngleDistance:
                 {
                     int moreheavy;
 
@@ -718,8 +719,8 @@ static void add_vsites(gmx::ArrayRef<InteractionsOfType>     plist,
                         /* find more heavy atoms */
                         bool foundHeavy = false;
                         int  other      = -1;
-                        for (auto parm = plist[F_BONDS].interactionTypes.begin();
-                             (parm != plist[F_BONDS].interactionTypes.end()) && !foundHeavy;
+                        for (auto parm = plist[InteractionFunction::Bonds].interactionTypes.begin();
+                             (parm != plist[InteractionFunction::Bonds].interactionTypes.end()) && !foundHeavy;
                              parm++)
                         {
                             if (parm->ai() == heavies[0])
@@ -744,8 +745,8 @@ static void add_vsites(gmx::ArrayRef<InteractionsOfType>     plist,
                     add_vsite3_atoms(&plist[ftype], Hatoms[i], Heavy, heavies[0], moreheavy, swapParity);
                     break;
                 }
-                case F_VSITE4FD:
-                case F_VSITE4FDN:
+                case InteractionFunction::VirtualSite4FlexibleDistance:
+                case InteractionFunction::VirtualSite4FlexibleDistanceNormalization:
                     if (nrheavies < 3)
                     {
                         gmx_fatal(FARGS,
@@ -773,15 +774,15 @@ static void add_vsites(gmx::ArrayRef<InteractionsOfType>     plist,
 /* get cos(alpha) when a, b and c are given: */
 #define acosrule(a, b, c) ((gmx::square(b) + gmx::square(c) - gmx::square(a)) / (2 * (b) * (c)))
 
-static int gen_vsites_6ring(t_atoms*                          at,
-                            gmx::ArrayRef<VsiteTypeAndSign>   vsite_type,
-                            gmx::ArrayRef<InteractionsOfType> plist,
-                            int                               nrfound,
-                            int*                              ats,
-                            real                              bond_cc,
-                            real                              bond_ch,
-                            real                              xcom,
-                            bool                              bDoZ)
+static int gen_vsites_6ring(t_atoms*                        at,
+                            gmx::ArrayRef<VsiteTypeAndSign> vsite_type,
+                            gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
+                            int                                                             nrfound,
+                            int*                                                            ats,
+                            real                                                            bond_cc,
+                            real                                                            bond_ch,
+                            real                                                            xcom,
+                            bool                                                            bDoZ)
 {
     /* these MUST correspond to the atnms array in do_vsite_aromatics! */
     enum
@@ -817,9 +818,9 @@ static int gen_vsites_6ring(t_atoms*                          at,
 
     /* constraints between CG, CE1 and CE2: */
     dCGCE = std::sqrt(cosrule(bond_cc, bond_cc, ANGLE_6RING));
-    my_add_param(&(plist[F_CONSTRNC]), ats[atCG], ats[atCE1], dCGCE);
-    my_add_param(&(plist[F_CONSTRNC]), ats[atCG], ats[atCE2], dCGCE);
-    my_add_param(&(plist[F_CONSTRNC]), ats[atCE1], ats[atCE2], dCGCE);
+    my_add_param(&(plist[InteractionFunction::ConstraintsNoCoupling]), ats[atCG], ats[atCE1], dCGCE);
+    my_add_param(&(plist[InteractionFunction::ConstraintsNoCoupling]), ats[atCG], ats[atCE2], dCGCE);
+    my_add_param(&(plist[InteractionFunction::ConstraintsNoCoupling]), ats[atCE1], ats[atCE2], dCGCE);
 
     /* rest will be vsite3 */
     mtot   = 0;
@@ -831,7 +832,7 @@ static int gen_vsites_6ring(t_atoms*                          at,
         {
             at->atom[ats[i]].m       = 0;
             at->atom[ats[i]].mB      = 0;
-            vsite_type[ats[i]].ftype = F_VSITE3;
+            vsite_type[ats[i]].ftype = InteractionFunction::VirtualSite3;
             nvsite++;
         }
     }
@@ -852,34 +853,42 @@ static int gen_vsites_6ring(t_atoms*                          at,
     tmp1 *= 2;
     a = b = -bond_ch / tmp1;
     /* HE1 and HE2: */
-    add_vsite3_param(&plist[F_VSITE3], ats[atHE1], ats[atCE1], ats[atCE2], ats[atCG], a, b);
-    add_vsite3_param(&plist[F_VSITE3], ats[atHE2], ats[atCE2], ats[atCE1], ats[atCG], a, b);
+    add_vsite3_param(
+            &plist[InteractionFunction::VirtualSite3], ats[atHE1], ats[atCE1], ats[atCE2], ats[atCG], a, b);
+    add_vsite3_param(
+            &plist[InteractionFunction::VirtualSite3], ats[atHE2], ats[atCE2], ats[atCE1], ats[atCG], a, b);
     /* CD1, CD2 and CZ: */
     a = b = tmp2 / tmp1;
-    add_vsite3_param(&plist[F_VSITE3], ats[atCD1], ats[atCE2], ats[atCE1], ats[atCG], a, b);
-    add_vsite3_param(&plist[F_VSITE3], ats[atCD2], ats[atCE1], ats[atCE2], ats[atCG], a, b);
+    add_vsite3_param(
+            &plist[InteractionFunction::VirtualSite3], ats[atCD1], ats[atCE2], ats[atCE1], ats[atCG], a, b);
+    add_vsite3_param(
+            &plist[InteractionFunction::VirtualSite3], ats[atCD2], ats[atCE1], ats[atCE2], ats[atCG], a, b);
     if (bDoZ)
     {
-        add_vsite3_param(&plist[F_VSITE3], ats[atCZ], ats[atCG], ats[atCE1], ats[atCE2], a, b);
+        add_vsite3_param(
+                &plist[InteractionFunction::VirtualSite3], ats[atCZ], ats[atCG], ats[atCE1], ats[atCE2], a, b);
     }
     /* HD1, HD2 and HZ: */
     a = b = (bond_ch + tmp2) / tmp1;
-    add_vsite3_param(&plist[F_VSITE3], ats[atHD1], ats[atCE2], ats[atCE1], ats[atCG], a, b);
-    add_vsite3_param(&plist[F_VSITE3], ats[atHD2], ats[atCE1], ats[atCE2], ats[atCG], a, b);
+    add_vsite3_param(
+            &plist[InteractionFunction::VirtualSite3], ats[atHD1], ats[atCE2], ats[atCE1], ats[atCG], a, b);
+    add_vsite3_param(
+            &plist[InteractionFunction::VirtualSite3], ats[atHD2], ats[atCE1], ats[atCE2], ats[atCG], a, b);
     if (bDoZ)
     {
-        add_vsite3_param(&plist[F_VSITE3], ats[atHZ], ats[atCG], ats[atCE1], ats[atCE2], a, b);
+        add_vsite3_param(
+                &plist[InteractionFunction::VirtualSite3], ats[atHZ], ats[atCG], ats[atCE1], ats[atCE2], a, b);
     }
 
     return nvsite;
 }
 
-static int gen_vsites_phe(t_atoms*                                 at,
-                          gmx::ArrayRef<VsiteTypeAndSign>          vsite_type,
-                          gmx::ArrayRef<InteractionsOfType>        plist,
-                          int                                      nrfound,
-                          int*                                     ats,
-                          gmx::ArrayRef<const VirtualSiteTopology> vsitetop)
+static int gen_vsites_phe(t_atoms*                        at,
+                          gmx::ArrayRef<VsiteTypeAndSign> vsite_type,
+                          gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
+                          int                                                             nrfound,
+                          int*                                                            ats,
+                          gmx::ArrayRef<const VirtualSiteTopology>                        vsitetop)
 {
     real bond_cc, bond_ch;
     real xcom, mtot;
@@ -948,22 +957,22 @@ calc_vsite3_param(real xd, real yd, real xi, real yi, real xj, real yj, real xk,
 }
 
 
-static int gen_vsites_trp(PreprocessingAtomTypes*                  atype,
-                          std::vector<gmx::RVec>*                  newx,
-                          t_atom*                                  newatom[],
-                          char***                                  newatomname[],
-                          int*                                     o2n[],
-                          std::vector<VsiteTypeAndSign>*           newvsite_type,
-                          t_symtab*                                symtab,
-                          int*                                     nadd,
-                          gmx::ArrayRef<const gmx::RVec>           x,
-                          t_atoms*                                 at,
-                          gmx::ArrayRef<VsiteTypeAndSign>          vsite_type,
-                          gmx::ArrayRef<InteractionsOfType>        plist,
-                          int                                      nrfound,
-                          int*                                     ats,
-                          int                                      add_shift,
-                          gmx::ArrayRef<const VirtualSiteTopology> vsitetop)
+static int gen_vsites_trp(PreprocessingAtomTypes*         atype,
+                          std::vector<gmx::RVec>*         newx,
+                          t_atom*                         newatom[],
+                          char***                         newatomname[],
+                          int*                            o2n[],
+                          std::vector<VsiteTypeAndSign>*  newvsite_type,
+                          t_symtab*                       symtab,
+                          int*                            nadd,
+                          gmx::ArrayRef<const gmx::RVec>  x,
+                          t_atoms*                        at,
+                          gmx::ArrayRef<VsiteTypeAndSign> vsite_type,
+                          gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
+                          int                                                             nrfound,
+                          int*                                                            ats,
+                          int                                                             add_shift,
+                          gmx::ArrayRef<const VirtualSiteTopology>                        vsitetop)
 {
 #define NMASS 2
     /* these MUST correspond to the atnms array in do_vsite_aromatics! */
@@ -1200,9 +1209,12 @@ static int gen_vsites_trp(PreprocessingAtomTypes*                  atype,
     dCBM1 = std::hypot(xcom[0] - xi[atCB], ycom[0] - yi[atCB]);
     dM1M2 = std::hypot(xcom[0] - xcom[1], ycom[0] - ycom[1]);
     dCBM2 = std::hypot(xcom[1] - xi[atCB], ycom[1] - yi[atCB]);
-    my_add_param(&(plist[F_CONSTRNC]), ats[atCB], add_shift + atM[0], dCBM1);
-    my_add_param(&(plist[F_CONSTRNC]), ats[atCB], add_shift + atM[1], dCBM2);
-    my_add_param(&(plist[F_CONSTRNC]), add_shift + atM[0], add_shift + atM[1], dM1M2);
+    my_add_param(&(plist[InteractionFunction::ConstraintsNoCoupling]), ats[atCB], add_shift + atM[0], dCBM1);
+    my_add_param(&(plist[InteractionFunction::ConstraintsNoCoupling]), ats[atCB], add_shift + atM[1], dCBM2);
+    my_add_param(&(plist[InteractionFunction::ConstraintsNoCoupling]),
+                 add_shift + atM[0],
+                 add_shift + atM[1],
+                 dM1M2);
 
     /* rest will be vsite3 */
     nvsite = 0;
@@ -1212,7 +1224,7 @@ static int gen_vsites_trp(PreprocessingAtomTypes*                  atype,
         {
             at->atom[ats[i]].m       = 0;
             at->atom[ats[i]].mB      = 0;
-            vsite_type[ats[i]].ftype = F_VSITE3;
+            vsite_type[ats[i]].ftype = InteractionFunction::VirtualSite3;
             nvsite++;
         }
     }
@@ -1221,12 +1233,17 @@ static int gen_vsites_trp(PreprocessingAtomTypes*                  atype,
        r_d = r_M1 + a r_M1_M2 + b r_M1_CB */
     for (i = 0; i < atNR; i++)
     {
-        if (vsite_type[ats[i]].ftype == F_VSITE3)
+        if (vsite_type[ats[i]].ftype == InteractionFunction::VirtualSite3)
         {
             calc_vsite3_param(
                     xi[i], yi[i], xcom[0], ycom[0], xcom[1], ycom[1], xi[atCB], yi[atCB], &a, &b);
-            add_vsite3_param(
-                    &plist[F_VSITE3], ats[i], add_shift + atM[0], add_shift + atM[1], ats[atCB], a, b);
+            add_vsite3_param(&plist[InteractionFunction::VirtualSite3],
+                             ats[i],
+                             add_shift + atM[0],
+                             add_shift + atM[1],
+                             ats[atCB],
+                             a,
+                             b);
         }
     }
     return nvsite;
@@ -1234,22 +1251,22 @@ static int gen_vsites_trp(PreprocessingAtomTypes*                  atype,
 }
 
 
-static int gen_vsites_tyr(PreprocessingAtomTypes*                  atype,
-                          std::vector<gmx::RVec>*                  newx,
-                          t_atom*                                  newatom[],
-                          char***                                  newatomname[],
-                          int*                                     o2n[],
-                          std::vector<VsiteTypeAndSign>*           newvsite_type,
-                          t_symtab*                                symtab,
-                          int*                                     nadd,
-                          gmx::ArrayRef<const gmx::RVec>           x,
-                          t_atoms*                                 at,
-                          gmx::ArrayRef<VsiteTypeAndSign>          vsite_type,
-                          gmx::ArrayRef<InteractionsOfType>        plist,
-                          int                                      nrfound,
-                          int*                                     ats,
-                          int                                      add_shift,
-                          gmx::ArrayRef<const VirtualSiteTopology> vsitetop)
+static int gen_vsites_tyr(PreprocessingAtomTypes*         atype,
+                          std::vector<gmx::RVec>*         newx,
+                          t_atom*                         newatom[],
+                          char***                         newatomname[],
+                          int*                            o2n[],
+                          std::vector<VsiteTypeAndSign>*  newvsite_type,
+                          t_symtab*                       symtab,
+                          int*                            nadd,
+                          gmx::ArrayRef<const gmx::RVec>  x,
+                          t_atoms*                        at,
+                          gmx::ArrayRef<VsiteTypeAndSign> vsite_type,
+                          gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
+                          int                                                             nrfound,
+                          int*                                                            ats,
+                          int                                                             add_shift,
+                          gmx::ArrayRef<const VirtualSiteTopology>                        vsitetop)
 {
     int  nvsite, i, i0, j, atM, tpM;
     real dCGCE, dCEOH, dCGM, tmp1, a, b;
@@ -1321,14 +1338,15 @@ static int gen_vsites_tyr(PreprocessingAtomTypes*                  atype,
     /* then construct CZ from the 2nd triangle */
     /* vsite3 construction: r_d = r_i + a r_ij + b r_ik */
     a = b = 0.5 * bond_co / (bond_co - bond_cc * std::cos(ANGLE_6RING));
-    add_vsite3_param(&plist[F_VSITE3], ats[atCZ], ats[atOH], ats[atCE1], ats[atCE2], a, b);
+    add_vsite3_param(
+            &plist[InteractionFunction::VirtualSite3], ats[atCZ], ats[atOH], ats[atCE1], ats[atCE2], a, b);
     at->atom[ats[atCZ]].m = at->atom[ats[atCZ]].mB = 0;
 
     /* constraints between CE1, CE2 and OH */
     dCGCE = std::sqrt(cosrule(bond_cc, bond_cc, ANGLE_6RING));
     dCEOH = std::sqrt(cosrule(bond_cc, bond_co, ANGLE_6RING));
-    my_add_param(&(plist[F_CONSTRNC]), ats[atCE1], ats[atOH], dCEOH);
-    my_add_param(&(plist[F_CONSTRNC]), ats[atCE2], ats[atOH], dCEOH);
+    my_add_param(&(plist[InteractionFunction::ConstraintsNoCoupling]), ats[atCE1], ats[atOH], dCEOH);
+    my_add_param(&(plist[InteractionFunction::ConstraintsNoCoupling]), ats[atCE2], ats[atOH], dCEOH);
 
     /* We also want to constrain the angle C-O-H, but since CZ is constructed
      * we need to introduce a constraint to CG.
@@ -1381,24 +1399,25 @@ static int gen_vsites_tyr(PreprocessingAtomTypes*                  atype,
     (*newatom)[atM].elem[0]                      = 'M';
     (*newatom)[atM].elem[1]                      = '\0';
 
-    vsite_type[ats[atHH]].ftype = F_VSITE2;
+    vsite_type[ats[atHH]].ftype = InteractionFunction::VirtualSite2;
     nvsite++;
     /* assume we also want the COH angle constrained: */
     tmp1 = bond_cc * std::cos(0.5 * ANGLE_6RING) + dCGCE * std::sin(ANGLE_6RING * 0.5) + bond_co;
     dCGM = std::sqrt(cosrule(tmp1, vdist, angle_coh));
-    my_add_param(&(plist[F_CONSTRNC]), ats[atCG], add_shift + atM, dCGM);
-    my_add_param(&(plist[F_CONSTRNC]), ats[atOH], add_shift + atM, vdist);
+    my_add_param(&(plist[InteractionFunction::ConstraintsNoCoupling]), ats[atCG], add_shift + atM, dCGM);
+    my_add_param(&(plist[InteractionFunction::ConstraintsNoCoupling]), ats[atOH], add_shift + atM, vdist);
 
-    add_vsite2_param(&plist[F_VSITE2], ats[atHH], ats[atOH], add_shift + atM, 1.0 / 2.0);
+    add_vsite2_param(
+            &plist[InteractionFunction::VirtualSite2], ats[atHH], ats[atOH], add_shift + atM, 1.0 / 2.0);
     return nvsite;
 }
 
-static int gen_vsites_his(t_atoms*                                 at,
-                          gmx::ArrayRef<VsiteTypeAndSign>          vsite_type,
-                          gmx::ArrayRef<InteractionsOfType>        plist,
-                          int                                      nrfound,
-                          int*                                     ats,
-                          gmx::ArrayRef<const VirtualSiteTopology> vsitetop)
+static int gen_vsites_his(t_atoms*                        at,
+                          gmx::ArrayRef<VsiteTypeAndSign> vsite_type,
+                          gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
+                          int                                                             nrfound,
+                          int*                                                            ats,
+                          gmx::ArrayRef<const VirtualSiteTopology>                        vsitetop)
 {
     int  nvsite, i;
     real a, b, alpha, dCGCE1, dCGNE2;
@@ -1494,8 +1513,8 @@ static int gen_vsites_his(t_atoms*                                 at,
     dCGCE1 = std::sqrt(cosrule(b_CG_ND1, b_ND1_CE1, a_CG_ND1_CE1));
     dCGNE2 = std::sqrt(cosrule(b_CG_CD2, b_CD2_NE2, a_CG_CD2_NE2));
 
-    my_add_param(&(plist[F_CONSTRNC]), ats[atCG], ats[atCE1], dCGCE1);
-    my_add_param(&(plist[F_CONSTRNC]), ats[atCG], ats[atNE2], dCGNE2);
+    my_add_param(&(plist[InteractionFunction::ConstraintsNoCoupling]), ats[atCG], ats[atCE1], dCGCE1);
+    my_add_param(&(plist[InteractionFunction::ConstraintsNoCoupling]), ats[atCG], ats[atNE2], dCGNE2);
     /* we already have a constraint CE1-NE2, so we don't add it again */
 
     /* calculate the positions in a local frame of reference.
@@ -1567,7 +1586,7 @@ static int gen_vsites_his(t_atoms*                                 at,
             {
                 at->atom[ats[i]].m       = 0;
                 at->atom[ats[i]].mB      = 0;
-                vsite_type[ats[i]].ftype = F_VSITE3;
+                vsite_type[ats[i]].ftype = InteractionFunction::VirtualSite3;
                 nvsite++;
             }
         }
@@ -1595,61 +1614,67 @@ static int gen_vsites_his(t_atoms*                                 at,
     {
         calc_vsite3_param(
                 x[atHE1], y[atHE1], x[atCE1], y[atCE1], x[atNE2], y[atNE2], x[atCG], y[atCG], &a, &b);
-        add_vsite3_param(&plist[F_VSITE3], ats[atHE1], ats[atCE1], ats[atNE2], ats[atCG], a, b);
+        add_vsite3_param(
+                &plist[InteractionFunction::VirtualSite3], ats[atHE1], ats[atCE1], ats[atNE2], ats[atCG], a, b);
     }
     /* HE2 */
     if (ats[atHE2] != NOTSET)
     {
         calc_vsite3_param(
                 x[atHE2], y[atHE2], x[atNE2], y[atNE2], x[atCE1], y[atCE1], x[atCG], y[atCG], &a, &b);
-        add_vsite3_param(&plist[F_VSITE3], ats[atHE2], ats[atNE2], ats[atCE1], ats[atCG], a, b);
+        add_vsite3_param(
+                &plist[InteractionFunction::VirtualSite3], ats[atHE2], ats[atNE2], ats[atCE1], ats[atCG], a, b);
     }
 
     /* ND1 */
     calc_vsite3_param(
             x[atND1], y[atND1], x[atNE2], y[atNE2], x[atCE1], y[atCE1], x[atCG], y[atCG], &a, &b);
-    add_vsite3_param(&plist[F_VSITE3], ats[atND1], ats[atNE2], ats[atCE1], ats[atCG], a, b);
+    add_vsite3_param(
+            &plist[InteractionFunction::VirtualSite3], ats[atND1], ats[atNE2], ats[atCE1], ats[atCG], a, b);
 
     /* CD2 */
     calc_vsite3_param(
             x[atCD2], y[atCD2], x[atCE1], y[atCE1], x[atNE2], y[atNE2], x[atCG], y[atCG], &a, &b);
-    add_vsite3_param(&plist[F_VSITE3], ats[atCD2], ats[atCE1], ats[atNE2], ats[atCG], a, b);
+    add_vsite3_param(
+            &plist[InteractionFunction::VirtualSite3], ats[atCD2], ats[atCE1], ats[atNE2], ats[atCG], a, b);
 
     /* HD1 */
     if (ats[atHD1] != NOTSET)
     {
         calc_vsite3_param(
                 x[atHD1], y[atHD1], x[atNE2], y[atNE2], x[atCE1], y[atCE1], x[atCG], y[atCG], &a, &b);
-        add_vsite3_param(&plist[F_VSITE3], ats[atHD1], ats[atNE2], ats[atCE1], ats[atCG], a, b);
+        add_vsite3_param(
+                &plist[InteractionFunction::VirtualSite3], ats[atHD1], ats[atNE2], ats[atCE1], ats[atCG], a, b);
     }
     /* HD2 */
     if (ats[atHD2] != NOTSET)
     {
         calc_vsite3_param(
                 x[atHD2], y[atHD2], x[atCE1], y[atCE1], x[atNE2], y[atNE2], x[atCG], y[atCG], &a, &b);
-        add_vsite3_param(&plist[F_VSITE3], ats[atHD2], ats[atCE1], ats[atNE2], ats[atCG], a, b);
+        add_vsite3_param(
+                &plist[InteractionFunction::VirtualSite3], ats[atHD2], ats[atCE1], ats[atNE2], ats[atCG], a, b);
     }
     return nvsite;
 }
 
 //! Returns true when vsiteType is set and the value is an interaction type that is a vsite
-static bool is_vsite(const std::optional<int>& vsiteType)
+static bool is_vsite(const std::optional<InteractionFunction>& vsiteType)
 {
     return vsiteType && (interaction_function[vsiteType.value()].flags & IF_VSITE) != 0;
 }
 
 static const char atomnamesuffix[] = "1234";
 
-void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
-               PreprocessingAtomTypes*                atype,
-               t_atoms*                               at,
-               t_symtab*                              symtab,
-               std::vector<gmx::RVec>*                x,
-               gmx::ArrayRef<InteractionsOfType>      plist,
-               std::vector<VsiteTypeAndSign>*         vsiteTypeAndSign,
-               const real                             mHmult,
-               const bool                             bVsiteAromatics,
-               const std::filesystem::path&           ffdir)
+void do_vsites(gmx::ArrayRef<const PreprocessResidue>                          rtpFFDB,
+               PreprocessingAtomTypes*                                         atype,
+               t_atoms*                                                        at,
+               t_symtab*                                                       symtab,
+               std::vector<gmx::RVec>*                                         x,
+               gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
+               std::vector<VsiteTypeAndSign>*                                  vsiteTypeAndSign,
+               const real                                                      mHmult,
+               const bool                                                      bVsiteAromatics,
+               const std::filesystem::path&                                    ffdir)
 {
 #define MAXATOMSPERRESIDUE 16
     int     k, m, i0, ni0, whatres, add_shift, nvsite, nadd;
@@ -1943,7 +1968,15 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
         {
             /* find heavy atom, count #bonds from it and #H atoms bound to it
                and return H atom numbers (Hatoms) and heavy atom numbers (heavies) */
-            count_bonds(i, &plist[F_BONDS], at->atomname, &nrbonds, &nrHatoms, Hatoms, &Heavy, &nrheavies, heavies);
+            count_bonds(i,
+                        &plist[InteractionFunction::Bonds],
+                        at->atomname,
+                        &nrbonds,
+                        &nrHatoms,
+                        Hatoms,
+                        &Heavy,
+                        &nrheavies,
+                        heavies);
             /* get Heavy atom type */
             tpHeavy     = get_atype(Heavy, at, rtpFFDB, residueTypeMap);
             auto tpname = atype->atomNameFromAtomType(tpHeavy);
@@ -1958,7 +1991,7 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
             {
                 switch (nrbonds)
                 {
-                    case 2: /* -O-H */ vsite_type[i].ftype = F_BONDS; break;
+                    case 2: /* -O-H */ vsite_type[i].ftype = InteractionFunction::Bonds; break;
                     case 3: /* =CH-, -NH- or =NH+- */
                         /* We need special treatment here for the case of tetrahedral
                          * structures with lone pairs, such as neutral secondary amines */
@@ -1980,19 +2013,19 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
                          * tetrahedral vsite, otherwise a planar vsite should be used. */
                         if (th < 111) /* likely tetrahedral geometry */
                         {
-                            vsite_type[i].ftype = F_VSITE3OUT;
+                            vsite_type[i].ftype = InteractionFunction::VirtualSite3Outside;
                         }
                         else /* planar geometry */
                         {
 
-                            vsite_type[i].ftype = F_VSITE3FD;
+                            vsite_type[i].ftype = InteractionFunction::VirtualSite3FlexibleDistance;
                         }
                         break;
                     case 4: /* --CH- (tert) */
                         /* The old type 4FD had stability issues, so
                          * all new constructs should use 4FDN
                          */
-                        vsite_type[i].ftype = F_VSITE4FDN;
+                        vsite_type[i].ftype = InteractionFunction::VirtualSite4FlexibleDistanceNormalization;
 
                         /* Check parity of heavy atoms from coordinates */
                         ai = Heavy;
@@ -2029,8 +2062,8 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
             else if ((nrHatoms == 2) && (nrbonds == 4))
             {
                 /* -CH2- , -NH2+- */
-                vsite_type[Hatoms[0]] = { F_VSITE3OUT, false };
-                vsite_type[Hatoms[1]] = { F_VSITE3OUT, true };
+                vsite_type[Hatoms[0]] = { InteractionFunction::VirtualSite3Outside, false };
+                vsite_type[Hatoms[1]] = { InteractionFunction::VirtualSite3Outside, true };
             }
             else
             {
@@ -2051,16 +2084,18 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
                 if ((nrHatoms == 2) && (nrbonds == 3) && (!isN || planarN))
                 {
                     /* =CH2 or, if it is a nitrogen NH2, it is a planar one */
-                    vsite_type[Hatoms[0]] = { F_VSITE3FAD, false };
-                    vsite_type[Hatoms[1]] = { F_VSITE3FAD, true };
+                    vsite_type[Hatoms[0]] = { InteractionFunction::VirtualSite3FlexibleAngleDistance, false };
+                    vsite_type[Hatoms[1]] = { InteractionFunction::VirtualSite3FlexibleAngleDistance, true };
                 }
                 else if (((nrHatoms == 2) && (nrbonds == 3) && (isN && !planarN))
                          || ((nrHatoms == 3) && (nrbonds == 4)))
                 {
                     /* CH3, NH3 or non-planar NH2 group */
-                    const std::vector<VsiteTypeAndSign> vsiteTypeNonPlanar = { { F_VSITE3, false },
-                                                                               { F_VSITE3OUT, true },
-                                                                               { F_VSITE3OUT, false } };
+                    const std::vector<VsiteTypeAndSign> vsiteTypeNonPlanar = {
+                        { InteractionFunction::VirtualSite3, false },
+                        { InteractionFunction::VirtualSite3Outside, true },
+                        { InteractionFunction::VirtualSite3Outside, false }
+                    };
 
                     if (debug)
                     {
@@ -2068,7 +2103,7 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
                     }
                     bAddVsiteParam = FALSE; /* we'll do this ourselves! */
                     /* -NH2 (umbrella), -NH3+ or -CH3 */
-                    vsite_type[Heavy].ftype = F_VSITE3;
+                    vsite_type[Heavy].ftype = InteractionFunction::VirtualSite3;
                     for (int j = 0; j < nrHatoms; j++)
                     {
                         vsite_type[Hatoms[j]] = vsiteTypeNonPlanar[j];
@@ -2189,9 +2224,18 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
                     }
                     /* add constraints between dummy masses and to heavies[0] */
                     /* 'add_shift' says which atoms won't be renumbered afterwards */
-                    my_add_param(&(plist[F_CONSTRNC]), heavies[0], add_shift + ni0, NOTSET);
-                    my_add_param(&(plist[F_CONSTRNC]), heavies[0], add_shift + ni0 + 1, NOTSET);
-                    my_add_param(&(plist[F_CONSTRNC]), add_shift + ni0, add_shift + ni0 + 1, NOTSET);
+                    my_add_param(&(plist[InteractionFunction::ConstraintsNoCoupling]),
+                                 heavies[0],
+                                 add_shift + ni0,
+                                 NOTSET);
+                    my_add_param(&(plist[InteractionFunction::ConstraintsNoCoupling]),
+                                 heavies[0],
+                                 add_shift + ni0 + 1,
+                                 NOTSET);
+                    my_add_param(&(plist[InteractionFunction::ConstraintsNoCoupling]),
+                                 add_shift + ni0,
+                                 add_shift + ni0 + 1,
+                                 NOTSET);
 
                     /* generate Heavy, H1, H2 and H3 from M1, M2 and heavies[0] */
                     /* note that vsite_type cannot be nullopt, because we just set it */
@@ -2332,7 +2376,7 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
     }
 
     /* now renumber all the interactions because of the added atoms */
-    for (int ftype = 0; ftype < F_NRE; ftype++)
+    for (const auto ftype : gmx::EnumerationWrapper<InteractionFunction>{})
     {
         InteractionsOfType* params = &(plist[ftype]);
         if (debug)
@@ -2371,7 +2415,7 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
         }
     }
     /* sort constraint parameters */
-    InteractionsOfType* params = &(plist[F_CONSTRNC]);
+    InteractionsOfType* params = &(plist[InteractionFunction::ConstraintsNoCoupling]);
     for (auto& type : params->interactionTypes)
     {
         type.sortAtomIds();
@@ -2383,7 +2427,7 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
     /* tell the user what we did */
     fprintf(stderr, "Marked %d virtual sites\n", nvsite);
     fprintf(stderr, "Added %d dummy masses\n", nadd);
-    fprintf(stderr, "Added %zu new constraints\n", plist[F_CONSTRNC].size());
+    fprintf(stderr, "Added %zu new constraints\n", plist[InteractionFunction::ConstraintsNoCoupling].size());
 }
 
 void do_h_mass(const InteractionsOfType&             psb,

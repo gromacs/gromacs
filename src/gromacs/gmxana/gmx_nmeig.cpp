@@ -112,13 +112,13 @@ static double u_corr(double nu, double T)
 
 static size_t get_nharm_mt(const gmx_moltype_t* mt)
 {
-    static int harm_func[] = { F_BONDS };
-    int        i, ft;
-    size_t     nh = 0;
+    static InteractionFunction harm_func[] = { InteractionFunction::Bonds };
+    int                        i;
+    size_t                     nh = 0;
 
     for (i = 0; (i < asize(harm_func)); i++)
     {
-        ft = harm_func[i];
+        const InteractionFunction ft = harm_func[i];
         nh += mt->ilist[ft].size() / (interaction_function[ft].nratoms + 1);
     }
     return nh;

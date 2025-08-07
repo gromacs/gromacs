@@ -919,7 +919,7 @@ static void test_for_replica_exchange(FILE*                 fplog,
             re->Epot[i] = 0;
         }
         bEpot              = TRUE;
-        re->Epot[re->repl] = enerd->term[F_EPOT];
+        re->Epot[re->repl] = enerd->term[InteractionFunction::PotentialEnergy];
         /* temperatures of different states*/
         for (i = 0; i < re->nrepl; i++)
         {

@@ -129,7 +129,7 @@ static constexpr t_interaction_function def_nofc(const char* str, const char* ls
  * terminating '\0'). So please abbreviate accordingly,
  * e.g. "Conserved En."
  */
-const t_interaction_function interaction_function[F_NRE] = {
+const gmx::EnumerationArray<InteractionFunction, t_interaction_function> interaction_function = {
     def_bond("BONDS", "Bond", 2, 2, 2),
     def_bond("G96BONDS", "G96Bond", 2, 2, 2),
     def_bond("MORSE", "Morse", 2, 3, 3),

@@ -137,8 +137,8 @@ static gmx::ListOfLists<int> genBondedLinks(const gmx_mtop_t& mtop,
                 int i = ril.index[a];
                 while (i < ril.index[a + 1])
                 {
-                    int ftype = ril.il[i++];
-                    int nral  = NRAL(ftype);
+                    InteractionFunction ftype = static_cast<InteractionFunction>(ril.il[i++]);
+                    int                 nral  = NRAL(ftype);
                     /* Skip the ifunc index */
                     i++;
                     for (int j = 0; j < nral; j++)
@@ -157,8 +157,9 @@ static gmx::ListOfLists<int> genBondedLinks(const gmx_mtop_t& mtop,
                     int i = ril_intermol.index[atomIndex];
                     while (i < ril_intermol.index[atomIndex + 1])
                     {
-                        int ftype = ril_intermol.il[i++];
-                        int nral  = NRAL(ftype);
+                        InteractionFunction ftype =
+                                static_cast<InteractionFunction>(ril_intermol.il[i++]);
+                        int nral = NRAL(ftype);
                         /* Skip the ifunc index */
                         i++;
                         for (int j = 0; j < nral; j++)

@@ -40,6 +40,9 @@ struct gmx_moltype_t;
 struct t_atoms;
 struct InteractionsOfType;
 
+#include "gromacs/topology/ifunc.h"
+#include "gromacs/utility/enumerationhelpers.h"
+
 namespace gmx
 {
 template<typename>
@@ -47,11 +50,11 @@ class ArrayRef;
 class MDLogger;
 } // namespace gmx
 
-int set_vsites(bool                              bVerbose,
-               t_atoms*                          atoms,
-               PreprocessingAtomTypes*           atype,
-               gmx::ArrayRef<InteractionsOfType> plist,
-               const gmx::MDLogger&              logger);
+int set_vsites(bool                                                            bVerbose,
+               t_atoms*                                                        atoms,
+               PreprocessingAtomTypes*                                         atype,
+               gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
+               const gmx::MDLogger&                                            logger);
 /* set parameters for virtual sites, return number of virtual sites */
 
 void set_vsites_ptype(bool bVerbose, gmx_moltype_t* molt, const gmx::MDLogger& logger);
@@ -61,9 +64,9 @@ void set_vsites_ptype(bool bVerbose, gmx_moltype_t* molt, const gmx::MDLogger& l
  *
  * Throw away all obsolete bonds, angles and dihedrals.
  * Throw away all constraints. */
-void clean_vsite_bondeds(gmx::ArrayRef<InteractionsOfType> ps,
-                         int                               natoms,
-                         bool                              bRmVSiteBds,
-                         const gmx::MDLogger&              logger);
+void clean_vsite_bondeds(gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& ps,
+                         int                                                             natoms,
+                         bool                 bRmVSiteBds,
+                         const gmx::MDLogger& logger);
 
 #endif

@@ -82,6 +82,7 @@ enum class Directive : int
     d_none,
     Count
 };
+enum class InteractionFunction : int;
 
 const char* enumValueToString(Directive d);
 
@@ -91,7 +92,7 @@ struct DirStack
     DirStack* prev;
 };
 
-int ifunc_index(Directive d, int type);
+InteractionFunction ifunc_index(Directive d, int type);
 
 Directive str2dir(const char* dstr);
 

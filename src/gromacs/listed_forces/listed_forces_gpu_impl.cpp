@@ -83,7 +83,8 @@ static bool someInteractionsCanRunOnGpu(const InteractionLists& ilists)
     // here.
     return std::any_of(fTypesOnGpu.begin(),
                        fTypesOnGpu.end(),
-                       [ilists](int fType) { return !ilists[fType].iatoms.empty(); });
+                       [ilists](InteractionFunction fType)
+                       { return !ilists[static_cast<int>(fType)].iatoms.empty(); });
 }
 
 //! Returns whether there are any bonded interactions in the global topology suitable for a GPU.

@@ -150,7 +150,7 @@ std::vector<int> buildQMMMAtomNumbers(const gmx_mtop_t& mtop);
 /*! \brief Modifies pairwise bonded interactions
  *
  * Removes any other pairwise bonded interactions between QM-QM atoms
- * Creates F_CONNBOND between QM atoms
+ * Creates InteractionFunction::ConnectBonds between QM atoms
  * Any restraints and constraints will be kept
  * \param[in,out] mtop topology to be modified
  * \param[in] qmIndices set with global indices of QM atoms
@@ -166,7 +166,8 @@ void modifyQMMMTwoCenterInteractions(gmx_mtop_t*              mtop,
  *
  * Removes any other three-centers bonded interactions including 2 or more QM atoms
  * Any restraints and constraints will be kept
- * Any F_SETTLE containing QM atoms will be converted to the pair of F_CONNBONDS
+ * Any InteractionFunction::SETTLE containing QM atoms will be converted to the pair of
+ * InteractionFunction::CONNBOND
  * \param[in,out] mtop topology to be modified
  * \param[in] qmIndices set with global indices of QM atoms
  * \param[in] bQMBlock vector with flags for QM-containing blocks

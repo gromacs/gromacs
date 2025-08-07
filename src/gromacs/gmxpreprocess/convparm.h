@@ -35,6 +35,8 @@
 #ifndef GMX_GMXPREPROCESS_CONVPARM_H
 #define GMX_GMXPREPROCESS_CONVPARM_H
 
+#include "gromacs/topology/ifunc.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
 
 struct gmx_mtop_t;
@@ -49,7 +51,7 @@ class ArrayRef;
 }
 
 //! Whether interactions of type \c ftype should have parameters converted
-bool shouldConvertInteractionType(int ftype);
+bool shouldConvertInteractionType(InteractionFunction ftype);
 
 /*! \brief Convert the raw arrays of parameters read from the topology
  * file to those which match the interaction type and fill into \c mtop.
@@ -66,8 +68,8 @@ bool shouldConvertInteractionType(int ftype);
  * \param[in]  fudgeQQ The 1-4 scaling factor
  * \param[out] mtop    The molecular topology containing the converted parameters
  */
-void convertInteractionsOfType(int                                      atnr,
-                               gmx::ArrayRef<const InteractionsOfType>  nbtypes,
+void convertInteractionsOfType(int atnr,
+                               const gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& nbtypes,
                                gmx::ArrayRef<const MoleculeInformation> mi,
                                const MoleculeInformation*               intermolecular_interactions,
                                CombinationRule                          comb,

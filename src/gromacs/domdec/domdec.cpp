@@ -1869,9 +1869,10 @@ static DDSystemInfo getSystemInfo(const gmx::MDLogger&              mdlog,
     }
     else
     {
-        systemInfo.mayHaveSplitConstraints = (gmx_mtop_ftype_count(mtop, F_CONSTR) > 0
-                                              || gmx_mtop_ftype_count(mtop, F_CONSTRNC) > 0);
-        systemInfo.mayHaveSplitSettles     = (gmx_mtop_ftype_count(mtop, F_SETTLE) > 0);
+        systemInfo.mayHaveSplitConstraints =
+                (gmx_mtop_ftype_count(mtop, InteractionFunction::Constraints) > 0
+                 || gmx_mtop_ftype_count(mtop, InteractionFunction::ConstraintsNoCoupling) > 0);
+        systemInfo.mayHaveSplitSettles = (gmx_mtop_ftype_count(mtop, InteractionFunction::SETTLE) > 0);
     }
 
     if (ir.rlist == 0)

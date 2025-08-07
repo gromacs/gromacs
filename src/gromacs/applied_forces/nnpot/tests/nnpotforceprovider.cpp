@@ -151,7 +151,8 @@ public:
         EXPECT_NO_THROW(nnpotForceProvider->calculateForces(fInput, &forceProviderOutput));
 
         checker.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(100000.0, 5e-5));
-        checker.checkReal(enerdDummy.term[F_ENNPOT], "Energy");
+        checker.checkReal(enerdDummy.term[InteractionFunction::NeuralNetworkPotentialEnergy],
+                          "Energy");
         checker.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(100.0, 5e-5));
         checker.checkSequence(forces.begin(), forces.end(), "Forces");
     }

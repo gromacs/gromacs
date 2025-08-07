@@ -167,7 +167,7 @@ std::unique_ptr<MDAtoms> makeMDAtoms(FILE* fp, const gmx_mtop_t& mtop, const t_i
         }
     }
 
-    md->bOrires = (gmx_mtop_ftype_count(mtop, F_ORIRES) != 0);
+    md->bOrires = (gmx_mtop_ftype_count(mtop, InteractionFunction::OrientationRestraints) != 0);
 
     return mdAtoms;
 }

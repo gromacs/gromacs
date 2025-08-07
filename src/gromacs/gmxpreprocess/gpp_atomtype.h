@@ -49,6 +49,8 @@
 #include <optional>
 #include <string>
 
+#include "gromacs/topology/ifunc.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
 
 struct gmx_mtop_t;
@@ -196,7 +198,10 @@ public:
      * \param[inout] wallAtomType Atom types of wall atoms, which may also be renumbered
      * \param[in] verbose If we want to print additional info.
      */
-    void renumberTypes(gmx::ArrayRef<InteractionsOfType> plist, gmx_mtop_t* mtop, int* wallAtomType, bool verbose);
+    void renumberTypes(gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
+                       gmx_mtop_t*                                                     mtop,
+                       int*                                                            wallAtomType,
+                       bool                                                            verbose);
 
 private:
     class Impl;

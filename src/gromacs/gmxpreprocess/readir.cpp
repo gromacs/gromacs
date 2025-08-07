@@ -3441,7 +3441,8 @@ static void calc_nrdf(const gmx_mtop_t* mtop, t_inputrec* ir, gmx::ArrayRef<cons
         const t_atom*        atom = molt.atoms.atom;
         for (int mol = 0; mol < molb.nmol; mol++)
         {
-            for (int ftype = F_CONSTR; ftype <= F_CONSTRNC; ftype++)
+            for (InteractionFunction ftype :
+                 { InteractionFunction::Constraints, InteractionFunction::ConstraintsNoCoupling })
             {
                 gmx::ArrayRef<const int> ia = molt.ilist[ftype].iatoms;
                 for (int i = 0; i < molt.ilist[ftype].size();)
@@ -3492,8 +3493,8 @@ static void calc_nrdf(const gmx_mtop_t* mtop, t_inputrec* ir, gmx::ArrayRef<cons
                     i += interaction_function[ftype].nratoms + 1;
                 }
             }
-            gmx::ArrayRef<const int> ia = molt.ilist[F_SETTLE].iatoms;
-            for (int i = 0; i < molt.ilist[F_SETTLE].size();)
+            gmx::ArrayRef<const int> ia = molt.ilist[InteractionFunction::SETTLE].iatoms;
+            for (int i = 0; i < molt.ilist[InteractionFunction::SETTLE].size();)
             {
                 /* Subtract 1 dof from every atom in the SETTLE */
                 for (int j = 0; j < 3; j++)
@@ -4648,15 +4649,15 @@ void processConstantAcceleration(t_inputrec* ir, const gmx_mtop_t& sys)
 
 static void check_disre(const gmx_mtop_t& mtop)
 {
-    if (gmx_mtop_ftype_count(mtop, F_DISRES) > 0)
+    if (gmx_mtop_ftype_count(mtop, InteractionFunction::DistanceRestraints) > 0)
     {
         const gmx_ffparams_t& ffparams  = mtop.ffparams;
         int                   ndouble   = 0;
         int                   old_label = -1;
         for (int i = 0; i < ffparams.numTypes(); i++)
         {
-            int ftype = ffparams.functype[i];
-            if (ftype == F_DISRES)
+            InteractionFunction ftype = ffparams.functype[i];
+            if (ftype == InteractionFunction::DistanceRestraints)
             {
                 int label = ffparams.iparams[i].disres.label;
                 if (label == old_label)
@@ -4710,8 +4711,8 @@ static BasicVector<bool> havePositionRestraints(const gmx_mtop_t& sys)
 
     for (const auto ilists : IListRange(sys))
     {
-        const auto& posResList   = ilists.list()[F_POSRES];
-        const auto& fbPosResList = ilists.list()[F_FBPOSRES];
+        const auto& posResList = ilists.list()[InteractionFunction::PositionRestraints];
+        const auto& fbPosResList = ilists.list()[InteractionFunction::FlatBottomedPositionRestraints];
         if (ilists.nmol() > 0 && (!havePosres[XX] || !havePosres[YY] || !havePosres[ZZ]))
         {
             for (int i = 0; i < posResList.size(); i += 2)

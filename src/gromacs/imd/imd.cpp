@@ -1630,15 +1630,15 @@ void ImdSession::fillEnergyRecord(int64_t step, bool bHaveNewEnergies)
      * last global communication step are still on display in the viewer. */
     if (bHaveNewEnergies)
     {
-        ene->T_abs   = static_cast<float>(impl_->enerd->term[F_TEMP]);
-        ene->E_pot   = static_cast<float>(impl_->enerd->term[F_EPOT]);
-        ene->E_tot   = static_cast<float>(impl_->enerd->term[F_ETOT]);
-        ene->E_bond  = static_cast<float>(impl_->enerd->term[F_BONDS]);
-        ene->E_angle = static_cast<float>(impl_->enerd->term[F_ANGLES]);
-        ene->E_dihe  = static_cast<float>(impl_->enerd->term[F_PDIHS]);
-        ene->E_impr  = static_cast<float>(impl_->enerd->term[F_IDIHS]);
-        ene->E_vdw   = static_cast<float>(impl_->enerd->term[F_LJ]);
-        ene->E_coul  = static_cast<float>(impl_->enerd->term[F_COUL_SR]);
+        ene->T_abs   = static_cast<float>(impl_->enerd->term[InteractionFunction::Temperature]);
+        ene->E_pot   = static_cast<float>(impl_->enerd->term[InteractionFunction::PotentialEnergy]);
+        ene->E_tot   = static_cast<float>(impl_->enerd->term[InteractionFunction::TotalEnergy]);
+        ene->E_bond  = static_cast<float>(impl_->enerd->term[InteractionFunction::Bonds]);
+        ene->E_angle = static_cast<float>(impl_->enerd->term[InteractionFunction::Angles]);
+        ene->E_dihe  = static_cast<float>(impl_->enerd->term[InteractionFunction::ProperDihedrals]);
+        ene->E_impr = static_cast<float>(impl_->enerd->term[InteractionFunction::ImproperDihedrals]);
+        ene->E_vdw = static_cast<float>(impl_->enerd->term[InteractionFunction::LennardJonesShortRange]);
+        ene->E_coul = static_cast<float>(impl_->enerd->term[InteractionFunction::CoulombShortRange]);
     }
 }
 

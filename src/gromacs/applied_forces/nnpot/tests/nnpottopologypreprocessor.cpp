@@ -152,9 +152,9 @@ TEST_F(NNPotTopologyPreprocessorTest, FourWatersFirstInQMRegion)
             MDLogger::LogLevel::Info,
             "Number of embedded NNP atoms: 3\nNumber of regular atoms: 9\n");
     logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info, "Number of exclusions made: 3\n");
-    logHelper_.expectEntryMatchingRegex(
-            MDLogger::LogLevel::Info,
-            "Number of settles removed: 1 \\(replaced by 2 F_CONNBONDS\\) \n");
+    logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info,
+                                        "Number of settles removed: 1 \\(replaced by 2 "
+                                        "InteractionFunction::ConnectBonds\\) \n");
     topPrep.preprocess(mtop.get(), logHelper_.logger(), &wi);
 }
 
@@ -175,9 +175,9 @@ TEST_F(NNPotTopologyPreprocessorTest, FourWatersSecondAndFourthInQMRegion)
             MDLogger::LogLevel::Info,
             "Number of embedded NNP atoms: 6\nNumber of regular atoms: 6\n");
     logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info, "Number of exclusions made: 6\n");
-    logHelper_.expectEntryMatchingRegex(
-            MDLogger::LogLevel::Info,
-            "Number of settles removed: 2 \\(replaced by 4 F_CONNBONDS\\) \n");
+    logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info,
+                                        "Number of settles removed: 2 \\(replaced by 4 "
+                                        "InteractionFunction::ConnectBonds\\) \n");
     topPrep.preprocess(mtop.get(), logHelper_.logger(), &wi);
 }
 
@@ -198,8 +198,9 @@ TEST_F(NNPotTopologyPreprocessorTest, AlanineDipeptideWithLinkAtomsNoConstraints
             "Number of embedded NNP atoms: 6\nNumber of regular atoms: 16\n");
     logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info, "Number of exclusions made: 6\n");
     logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info, "Number of bonds removed: 8\n");
-    logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info,
-                                        "Number of F_CONNBONDS \\(type 5 bonds\\) added: 5\n");
+    logHelper_.expectEntryMatchingRegex(
+            MDLogger::LogLevel::Info,
+            "Number of InteractionFunction::ConnectBonds \\(type 5 bonds\\) added: 5\n");
     logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info, "Number of angles removed: 11\n");
     logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info,
                                         "Number of dihedrals removed: 9\n");

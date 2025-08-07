@@ -213,7 +213,7 @@ static void get_vsite_masses(const gmx_moltype_t&  moltype,
             const t_iparams& ip = ffparams.iparams[ilist.iatoms[i]];
             const int        a1 = ilist.iatoms[i + 1];
 
-            if (ilist.functionType != F_VSITEN)
+            if (ilist.functionType != InteractionFunction::VirtualSiteN)
             {
                 /* Only vsiten can have more than four
                    constructing atoms, so NRAL(ft) <= 5 */
@@ -234,20 +234,20 @@ static void get_vsite_masses(const gmx_moltype_t&  moltype,
 
                 switch (ilist.functionType)
                 {
-                    case F_VSITE2:
+                    case InteractionFunction::VirtualSite2:
                         /* Exact */
                         vsite_m[a1] = (cam[1] * cam[2])
                                       / (cam[2] * gmx::square(1 - ip.vsite.a)
                                          + cam[1] * gmx::square(ip.vsite.a));
                         break;
-                    case F_VSITE3:
+                    case InteractionFunction::VirtualSite3:
                         /* Exact */
                         vsite_m[a1] = (cam[1] * cam[2] * cam[3])
                                       / (cam[2] * cam[3] * gmx::square(1 - ip.vsite.a - ip.vsite.b)
                                          + cam[1] * cam[3] * gmx::square(ip.vsite.a)
                                          + cam[1] * cam[2] * gmx::square(ip.vsite.b));
                         break;
-                    case F_VSITEN:
+                    case InteractionFunction::VirtualSiteN:
                         GMX_RELEASE_ASSERT(false, "VsiteN should not end up in this code path");
                         break;
                     default:
@@ -259,7 +259,7 @@ static void get_vsite_masses(const gmx_moltype_t&  moltype,
                          * over-estimate of the displacement of the vsite.
                          * This condition holds for all H mass replacement
                          * vsite constructions, except for SP2/3 groups.
-                         * In SP3 groups one H will have a F_VSITE3
+                         * In SP3 groups one H will have a InteractionFunction::VirtualSite3
                          * construction, so even there the total drift
                          * estimate shouldn't be far off.
                          */
@@ -401,11 +401,12 @@ static AtomNonbondedAndKineticPropertiesResolutions getResolutions(const gmx_mto
             chargeRmsMax.add(atoms.atom[a].q, nmol);
         }
 
-        for (int ft = F_CONSTR; ft <= F_CONSTRNC; ft++)
+        for (InteractionFunction iftype :
+             { InteractionFunction::Constraints, InteractionFunction::ConstraintsNoCoupling })
         {
-            const InteractionList& il = moltype.ilist[ft];
+            const InteractionList& il = moltype.ilist[iftype];
 
-            for (int i = 0; i < il.size(); i += 1 + NRAL(ft))
+            for (int i = 0; i < il.size(); i += 1 + NRAL(iftype))
             {
                 const t_iparams& ip = mtop.ffparams.iparams[il.iatoms[i]];
                 if (!(useFep && ip.constr.dB != ip.constr.dA) && ip.constr.dA != 0)
@@ -415,9 +416,9 @@ static AtomNonbondedAndKineticPropertiesResolutions getResolutions(const gmx_mto
             }
         }
 
-        const InteractionList& il = moltype.ilist[F_SETTLE];
+        const InteractionList& il = moltype.ilist[InteractionFunction::SETTLE];
 
-        for (int i = 0; i < il.size(); i += 1 + NRAL(F_SETTLE))
+        for (int i = 0; i < il.size(); i += 1 + NRAL(InteractionFunction::SETTLE))
         {
             const t_iparams& ip = mtop.ffparams.iparams[il.iatoms[i]];
 
@@ -487,11 +488,12 @@ static std::vector<VerletbufAtomtype> getVerletBufferAtomtypes(const gmx_mtop_t&
         std::vector<AtomNonbondedAndKineticProperties> prop(
                 atoms->nr, AtomNonbondedAndKineticProperties(resolutions));
 
-        for (int ft = F_CONSTR; ft <= F_CONSTRNC; ft++)
+        for (InteractionFunction iftype :
+             { InteractionFunction::Constraints, InteractionFunction::ConstraintsNoCoupling })
         {
-            const InteractionList& il = moltype.ilist[ft];
+            const InteractionList& il = moltype.ilist[iftype];
 
-            for (int i = 0; i < il.size(); i += 1 + NRAL(ft))
+            for (int i = 0; i < il.size(); i += 1 + NRAL(iftype))
             {
                 const t_iparams& ip = mtop.ffparams.iparams[il.iatoms[i]];
                 /* When using free-energy perturbation constraint can be perturbed.
@@ -524,9 +526,9 @@ static std::vector<VerletbufAtomtype> getVerletBufferAtomtypes(const gmx_mtop_t&
             }
         }
 
-        const InteractionList& il = moltype.ilist[F_SETTLE];
+        const InteractionList& il = moltype.ilist[InteractionFunction::SETTLE];
 
-        for (int i = 0; i < il.size(); i += 1 + NRAL(F_SETTLE))
+        for (int i = 0; i < il.size(); i += 1 + NRAL(InteractionFunction::SETTLE))
         {
             const t_iparams* ip = &mtop.ffparams.iparams[il.iatoms[i]];
 
@@ -1661,7 +1663,7 @@ static std::vector<AtomConstraintProps> getAtomConstraintProps(const gmx_moltype
     for (const auto& ilist : extractILists(moltype.ilist, IF_CONSTRAINT))
     {
         // Settles are handled separately
-        if (ilist.functionType == F_SETTLE)
+        if (ilist.functionType == InteractionFunction::SETTLE)
         {
             continue;
         }
@@ -1744,10 +1746,10 @@ static real chanceOfUpdateGroupCrossingCell(const gmx_moltype_t&          moltyp
             // All normal atoms must be connected by SETTLE
             for (const int atom : block)
             {
-                const auto& ilist = moltype.ilist[F_SETTLE];
+                const auto& ilist = moltype.ilist[InteractionFunction::SETTLE];
                 GMX_RELEASE_ASSERT(!ilist.empty(),
                                    "There should be at least one settle in this moltype");
-                for (int i = 0; i < ilist.size(); i += 1 + NRAL(F_SETTLE))
+                for (int i = 0; i < ilist.size(); i += 1 + NRAL(InteractionFunction::SETTLE))
                 {
                     if (atom == ilist.iatoms[i + 1])
                     {

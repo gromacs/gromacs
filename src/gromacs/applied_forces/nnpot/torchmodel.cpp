@@ -299,8 +299,8 @@ void TorchModel::evaluateModel(gmx_enerdata_t*              enerd,
             forceTensor = -1. * inputs_[0].toTensor().grad().to(torch::kCPU);
         }
         // set energy
-        energyTensor          = energyTensor.to(torchRealType).to(torch::kCPU);
-        enerd->term[F_ENNPOT] = energyTensor.item<real>();
+        energyTensor = energyTensor.to(torchRealType).to(torch::kCPU);
+        enerd->term[InteractionFunction::NeuralNetworkPotentialEnergy] = energyTensor.item<real>();
 
         forceTensor = forceTensor.to(torchRealType).to(torch::kCPU);
     }

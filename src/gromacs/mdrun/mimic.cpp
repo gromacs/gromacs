@@ -702,7 +702,7 @@ void gmx::LegacySimulator::do_mimic()
 
             if (isMainRank)
             {
-                MimicCommunicator::sendEnergies(enerd_->term[F_EPOT]);
+                MimicCommunicator::sendEnergies(enerd_->term[InteractionFunction::PotentialEnergy]);
                 MimicCommunicator::sendForces(ftemp, stateGlobal_->numAtoms());
             }
         }

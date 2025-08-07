@@ -514,10 +514,11 @@ void Hbond::searchAcceptors(const TopologyInformation& top,
 void Hbond::searchDonors(const TopologyInformation& top, t_info* selectionTool, const std::vector<int>* selection)
 {
     std::vector<std::pair<int, int>> dhUnsorted;
-    for (t_functype func_type = 0; (func_type < F_NRE); ++func_type)
+    for (const auto func_type : gmx::EnumerationWrapper<InteractionFunction>{})
     {
         const InteractionList* interaction = &(top.expandedTopology()->idef.il[func_type]);
-        if (func_type == F_POSRES || func_type == F_FBPOSRES)
+        if (func_type == InteractionFunction::PositionRestraints
+            || func_type == InteractionFunction::FlatBottomedPositionRestraints)
         {
             /* We don't need posre interactions for hbonds anyway.*/
             continue;
@@ -532,7 +533,7 @@ void Hbond::searchDonors(const TopologyInformation& top, t_info* selectionTool, 
                 fprintf(stderr, "Error in func_type '%s'", interaction_function[func_type].longname);
                 continue;
             }
-            if (func_type == F_SETTLE)
+            if (func_type == InteractionFunction::SETTLE)
             {
                 int nr1 = interaction->iatoms[i + 1]; // DONOR
                 int nr2 = interaction->iatoms[i + 2]; // HYDRO 1

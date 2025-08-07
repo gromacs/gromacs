@@ -56,6 +56,7 @@
 #include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/logger.h"
@@ -94,7 +95,7 @@ void QMMMTopologyPreprocessor::preprocess(gmx_mtop_t* mtop, real refQ, const MDL
     // 4) Build atomNumbers vector with atomic numbers of all atoms
     atomNumbers_ = buildQMMMAtomNumbers(*mtop);
 
-    // 5) Make F_CONNBOND between atoms within QM region
+    // 5) Make InteractionFunction::ConnectBonds between atoms within QM region
     modifyQMMMTwoCenterInteractions(mtop, qmIndices_, bQMBlock, logger);
 
     // 6) Remove angles and settles containing 2 or more QM atoms
@@ -293,7 +294,7 @@ std::vector<real> removeQMClassicalCharges(gmx_mtop_t*              mtop,
             int start = mtop->moleculeBlockIndices[molBlockIndex].globalAtomStart;
 
             // loop over all interaction types
-            for (int ftype = 0; ftype < F_NRE; ftype++)
+            for (const auto ftype : gmx::EnumerationWrapper<InteractionFunction>{})
             {
                 // If this is VSite interaction and ilist is not empty
                 if (IS_VSITE(ftype) && !molType->ilist[ftype].empty())
@@ -425,13 +426,16 @@ void modifyQMMMTwoCenterInteractions(gmx_mtop_t*              mtop,
             int start = mtop->moleculeBlockIndices[molBlockIndex].globalAtomStart;
 
             // loop over all interaction types
-            for (int ftype = 0; ftype < F_NRE; ftype++)
+            for (const auto ftype : gmx::EnumerationWrapper<InteractionFunction>{})
             {
-                // If not bonded interaction or F_CONNBONDS, or some form of Restraints,
+                // If not bonded interaction or InteractionFunction::ConnectBonds, or some form of Restraints,
                 // or not pair interaction, or no interactions of that type: then go the next type
-                if (!(interaction_function[ftype].flags & IF_BOND) || ftype == F_CONNBONDS
-                    || ftype == F_RESTRBONDS || ftype == F_HARMONIC || ftype == F_DISRES || ftype == F_ORIRES
-                    || ftype == F_ANGRESZ || NRAL(ftype) != 2 || molType->ilist[ftype].empty())
+                if (!(interaction_function[ftype].flags & IF_BOND) || ftype == InteractionFunction::ConnectBonds
+                    || ftype == InteractionFunction::RestraintBonds || ftype == InteractionFunction::HarmonicPotential
+                    || ftype == InteractionFunction::DistanceRestraints
+                    || ftype == InteractionFunction::OrientationRestraints
+                    || ftype == InteractionFunction::AngleZAxisRestraints || NRAL(ftype) != 2
+                    || molType->ilist[ftype].empty())
                 {
                     continue;
                 }
@@ -446,22 +450,22 @@ void modifyQMMMTwoCenterInteractions(gmx_mtop_t*              mtop,
                 for (int j = 0; j < molType->ilist[ftype].size(); j += numInteractionElements)
                 {
 
-                    // If both atoms are QM and it is IF_CHEMBOND then convert it to F_CONNBONDS
+                    // If both atoms are QM and it is IF_CHEMBOND then convert it to InteractionFunction::ConnectBonds
                     if (isQMAtom(molType->ilist[ftype].iatoms[j + 1] + start, qmIndices)
                         && isQMAtom(molType->ilist[ftype].iatoms[j + 2] + start, qmIndices))
                     {
 
-                        // Add chemical bond to the F_CONNBONDS (bond type 5)
+                        // Add chemical bond to the InteractionFunction::ConnectBonds (bond type 5)
                         if (IS_CHEMBOND(ftype))
                         {
-                            // Bond type is not used in F_CONNBONDS, so for generated bonds we set it to -1
+                            // Bond type is not used in InteractionFunction::ConnectBonds, so for generated bonds we set it to -1
                             const int connBondsType = -1;
 
-                            // Add new CONNBOND between atoms
-                            molType->ilist[F_CONNBONDS].iatoms.push_back(connBondsType);
-                            molType->ilist[F_CONNBONDS].iatoms.push_back(
+                            // Add new InteractionFunction::ConnectBonds between atoms
+                            molType->ilist[InteractionFunction::ConnectBonds].iatoms.push_back(connBondsType);
+                            molType->ilist[InteractionFunction::ConnectBonds].iatoms.push_back(
                                     molType->ilist[ftype].iatoms[j + 1]);
-                            molType->ilist[F_CONNBONDS].iatoms.push_back(
+                            molType->ilist[InteractionFunction::ConnectBonds].iatoms.push_back(
                                     molType->ilist[ftype].iatoms[j + 2]);
 
                             numConnBondsAdded++;
@@ -491,7 +495,10 @@ void modifyQMMMTwoCenterInteractions(gmx_mtop_t*              mtop,
     }
     if (numConnBondsAdded > 0)
     {
-        GMX_LOG(logger.info).appendTextFormatted("Number of F_CONNBONDS (type 5 bonds) added: %d\n", numConnBondsAdded);
+        GMX_LOG(logger.info)
+                .appendTextFormatted(
+                        "Number of InteractionFunction::ConnectBonds (type 5 bonds) added: %d\n",
+                        numConnBondsAdded);
     }
 }
 
@@ -516,7 +523,7 @@ std::vector<LinkFrontier> buildQMMMLink(gmx_mtop_t*              mtop,
             int start = mtop->moleculeBlockIndices[molBlockIndex].globalAtomStart;
 
             // loop over all interaction types
-            for (int ftype = 0; ftype < F_NRE; ftype++)
+            for (const auto ftype : gmx::EnumerationWrapper<InteractionFunction>{})
             {
                 // If not chemical bond interaction or not pair interaction
                 // or no interactions of that type: then skip current ftype
@@ -581,14 +588,14 @@ void modifyQMMMThreeCenterInteractions(gmx_mtop_t*              mtop,
             int start = mtop->moleculeBlockIndices[molBlockIndex].globalAtomStart;
 
             // loop over all interaction types
-            for (int ftype = 0; ftype < F_NRE; ftype++)
+            for (const auto ftype : gmx::EnumerationWrapper<InteractionFunction>{})
             {
                 // If not bonded interaction or Restraints
                 // or not three-particle interaction or no interactions of that type
                 // and not Settle: then go the next type
-                if ((!(interaction_function[ftype].flags & IF_BOND) || ftype == F_RESTRANGLES
+                if ((!(interaction_function[ftype].flags & IF_BOND) || ftype == InteractionFunction::RestrictedBendingPotential
                      || NRAL(ftype) != 3 || molType->ilist[ftype].empty())
-                    && (ftype != F_SETTLE))
+                    && (ftype != InteractionFunction::SETTLE))
                 {
                     continue;
                 }
@@ -615,23 +622,23 @@ void modifyQMMMThreeCenterInteractions(gmx_mtop_t*              mtop,
                     // If at least 2 atoms are QM then remove interaction
                     if (numQm >= 2)
                     {
-                        // If this is SETTLE then replace it with two F_CONNBONDS
-                        if (ftype == F_SETTLE)
+                        // If this is SETTLE then replace it with two InteractionFunction::ConnectBonds
+                        if (ftype == InteractionFunction::SETTLE)
                         {
-                            // Bond type is not used in F_CONNBONDS, so for generated bonds we set it to -1
+                            // Bond type is not used in InteractionFunction::ConnectBonds, so for generated bonds we set it to -1
                             const int connBondsType = -1;
 
-                            // Add CONNBOND between atoms 1 and 2 first
-                            molType->ilist[F_CONNBONDS].iatoms.push_back(connBondsType);
-                            molType->ilist[F_CONNBONDS].iatoms.push_back(
+                            // Add InteractionFunction::ConnectBonds between atoms 1 and 2 first
+                            molType->ilist[InteractionFunction::ConnectBonds].iatoms.push_back(connBondsType);
+                            molType->ilist[InteractionFunction::ConnectBonds].iatoms.push_back(
                                     molType->ilist[ftype].iatoms[j + 1]);
-                            molType->ilist[F_CONNBONDS].iatoms.push_back(
+                            molType->ilist[InteractionFunction::ConnectBonds].iatoms.push_back(
                                     molType->ilist[ftype].iatoms[j + 2]);
                             // Then between atoms 1 and 3
-                            molType->ilist[F_CONNBONDS].iatoms.push_back(connBondsType);
-                            molType->ilist[F_CONNBONDS].iatoms.push_back(
+                            molType->ilist[InteractionFunction::ConnectBonds].iatoms.push_back(connBondsType);
+                            molType->ilist[InteractionFunction::ConnectBonds].iatoms.push_back(
                                     molType->ilist[ftype].iatoms[j + 1]);
-                            molType->ilist[F_CONNBONDS].iatoms.push_back(
+                            molType->ilist[InteractionFunction::ConnectBonds].iatoms.push_back(
                                     molType->ilist[ftype].iatoms[j + 3]);
 
                             numConnBondsAdded += 2;
@@ -666,7 +673,8 @@ void modifyQMMMThreeCenterInteractions(gmx_mtop_t*              mtop,
     {
         GMX_LOG(logger.info)
                 .appendTextFormatted(
-                        "Number of settles removed: %d (replaced by %d F_CONNBONDS) \n",
+                        "Number of settles removed: %d (replaced by %d "
+                        "InteractionFunction::ConnectBonds) \n",
                         numSettleRemoved,
                         numConnBondsAdded);
     }
@@ -693,12 +701,13 @@ void modifyQMMMFourCenterInteractions(gmx_mtop_t*              mtop,
             int start = mtop->moleculeBlockIndices[molBlockIndex].globalAtomStart;
 
             // loop over all interaction types
-            for (int ftype = 0; ftype < F_NRE; ftype++)
+            for (const auto ftype : gmx::EnumerationWrapper<InteractionFunction>{})
             {
                 // If not bonded interaction or Restraints
                 // or not four-particle interaction or no interactions of that type: then go the next type
-                if (!(interaction_function[ftype].flags & IF_BOND) || ftype == F_RESTRDIHS
-                    || NRAL(ftype) != 4 || molType->ilist[ftype].empty())
+                if (!(interaction_function[ftype].flags & IF_BOND)
+                    || ftype == InteractionFunction::RestrictedTorsionPotential || NRAL(ftype) != 4
+                    || molType->ilist[ftype].empty())
                 {
                     continue;
                 }
@@ -767,7 +776,7 @@ void checkConstrainedBonds(gmx_mtop_t*              mtop,
             int start = mtop->moleculeBlockIndices[molBlockIndex].globalAtomStart;
 
             // loop over all interaction types
-            for (int ftype = 0; ftype < F_NRE; ftype++)
+            for (const auto ftype : gmx::EnumerationWrapper<InteractionFunction>{})
             {
                 // If not chemical bond interaction or not pair interaction
                 // or no interactions of that type: then skip current ftype

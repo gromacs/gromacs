@@ -72,6 +72,7 @@
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/filestream.h"
 #include "gromacs/utility/futil.h"
@@ -253,18 +254,23 @@ static void lo_set_force_const(InteractionsOfType* plist, real c[], int nrfp, bo
     }
 }
 
-static void set_force_const(gmx::ArrayRef<InteractionsOfType> plist, real kb, real kt, real kp, bool bRound, bool bParam)
+static void set_force_const(gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
+                            real                                                            kb,
+                            real                                                            kt,
+                            real                                                            kp,
+                            bool                                                            bRound,
+                            bool                                                            bParam)
 {
     real c[MAXFORCEPARAM];
 
     c[0] = 0;
     c[1] = kb;
-    lo_set_force_const(&plist[F_BONDS], c, 2, bRound, FALSE, bParam);
+    lo_set_force_const(&plist[InteractionFunction::Bonds], c, 2, bRound, FALSE, bParam);
     c[1] = kt;
-    lo_set_force_const(&plist[F_ANGLES], c, 2, bRound, FALSE, bParam);
+    lo_set_force_const(&plist[InteractionFunction::Angles], c, 2, bRound, FALSE, bParam);
     c[1] = kp;
     c[2] = 3;
-    lo_set_force_const(&plist[F_PDIHS], c, 3, bRound, TRUE, bParam);
+    lo_set_force_const(&plist[InteractionFunction::ProperDihedrals], c, 3, bRound, TRUE, bParam);
 }
 
 static void calc_angles_dihs(InteractionsOfType* ang, InteractionsOfType* dih, const rvec x[], bool bPBC, matrix box)
@@ -309,8 +315,11 @@ static void dump_hybridization(FILE* fp, t_atoms* atoms, int nbonds[])
     }
 }
 
-static void
-print_pl(FILE* fp, gmx::ArrayRef<const InteractionsOfType> plist, int ftp, const char* name, char*** atomname)
+static void print_pl(FILE*                                                                 fp,
+                     const gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
+                     InteractionFunction                                                   ftp,
+                     const char*                                                           name,
+                     char***                                                               atomname)
 {
     if (!plist[ftp].interactionTypes.empty())
     {
@@ -337,12 +346,12 @@ print_pl(FILE* fp, gmx::ArrayRef<const InteractionsOfType> plist, int ftp, const
     }
 }
 
-static void print_rtp(const char*                             filenm,
-                      const char*                             title,
-                      t_atoms*                                atoms,
-                      gmx::ArrayRef<const InteractionsOfType> plist,
-                      PreprocessingAtomTypes*                 atypes,
-                      int                                     cgnr[])
+static void print_rtp(const char*                                                           filenm,
+                      const char*                                                           title,
+                      t_atoms*                                                              atoms,
+                      const gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
+                      PreprocessingAtomTypes*                                               atypes,
+                      int                                                                   cgnr[])
 {
     FILE* fp;
     int   i, tp;
@@ -363,10 +372,10 @@ static void print_rtp(const char*                             filenm,
         }
         fprintf(fp, "%-8s  %12s  %8.4f  %5d\n", *atoms->atomname[i], tpnm->c_str(), atoms->atom[i].q, cgnr[i]);
     }
-    print_pl(fp, plist, F_BONDS, "bonds", atoms->atomname);
-    print_pl(fp, plist, F_ANGLES, "angles", atoms->atomname);
-    print_pl(fp, plist, F_PDIHS, "dihedrals", atoms->atomname);
-    print_pl(fp, plist, F_IDIHS, "impropers", atoms->atomname);
+    print_pl(fp, plist, InteractionFunction::Bonds, "bonds", atoms->atomname);
+    print_pl(fp, plist, InteractionFunction::Angles, "angles", atoms->atomname);
+    print_pl(fp, plist, InteractionFunction::ProperDihedrals, "dihedrals", atoms->atomname);
+    print_pl(fp, plist, InteractionFunction::ImproperDihedrals, "impropers", atoms->atomname);
 
     gmx_fio_fclose(fp);
 }
@@ -401,22 +410,22 @@ int gmx_x2top(int argc, char* argv[])
         ("The atoms to atomtype translation table is incomplete ([TT]atomname2type.n2t[tt] file in "
          "the data directory). Please extend it and send the results back to the GROMACS crew.")
     };
-    FILE*                                 fp;
-    std::array<InteractionsOfType, F_NRE> plist;
-    t_excls*                              excls;
-    t_nm2type*                            nm2t;
-    t_mols                                mymol;
-    int                                   nnm;
-    char                                  forcefield[32];
-    rvec*                                 x; /* coordinates? */
-    int *                                 nbonds, *cgnr;
-    int                                   bts[] = { 1, 1, 1, 2 };
-    matrix                                box;    /* box length matrix */
-    int                                   natoms; /* number of atoms in one molecule  */
-    PbcType                               pbcType;
-    bool                                  bRTP, bTOP, bOPLS;
-    real                                  qtot, mtot;
-    gmx_output_env_t*                     oenv;
+    FILE*                                                          fp;
+    gmx::EnumerationArray<InteractionFunction, InteractionsOfType> plist;
+    t_excls*                                                       excls;
+    t_nm2type*                                                     nm2t;
+    t_mols                                                         mymol;
+    int                                                            nnm;
+    char                                                           forcefield[32];
+    rvec*                                                          x; /* coordinates? */
+    int *                                                          nbonds, *cgnr;
+    int                                                            bts[] = { 1, 1, 1, 2 };
+    matrix                                                         box; /* box length matrix */
+    int               natoms; /* number of atoms in one molecule  */
+    PbcType           pbcType;
+    bool              bRTP, bTOP, bOPLS;
+    real              qtot, mtot;
+    gmx_output_env_t* oenv;
 
     t_filenm fnm[] = { { efSTX, "-f", "conf", ffREAD },
                        { efTOP, "-o", "out", ffOPTWR },
@@ -538,10 +547,10 @@ int gmx_x2top(int argc, char* argv[])
     }
     GMX_LOG(logger.info).asParagraph().appendTextFormatted("Generating bonds from distances...");
     snew(nbonds, atoms->nr);
-    mk_bonds(nnm, nm2t, atoms, x, &(plist[F_BONDS]), nbonds, bPBC, box);
+    mk_bonds(nnm, nm2t, atoms, x, &(plist[InteractionFunction::Bonds]), nbonds, bPBC, box);
 
     PreprocessingAtomTypes atypes;
-    set_atom_type(&atypes, atoms, &(plist[F_BONDS]), nbonds, nnm, nm2t, logger);
+    set_atom_type(&atypes, atoms, &(plist[InteractionFunction::Bonds]), nbonds, nnm, nm2t, logger);
 
     /* Make Angles and Dihedrals */
     snew(excls, atoms->nr);
@@ -552,22 +561,23 @@ int gmx_x2top(int argc, char* argv[])
 
     if (!bPairs)
     {
-        plist[F_LJ14].interactionTypes.clear();
+        plist[InteractionFunction::LennardJones14].interactionTypes.clear();
     }
     GMX_LOG(logger.info)
             .asParagraph()
             .appendTextFormatted(
                     "There are %4zu %s dihedrals, %4zu impropers, %4zu angles\n"
                     "          %4zu pairs,     %4zu bonds and  %4d atoms\n",
-                    plist[F_PDIHS].size(),
+                    plist[InteractionFunction::ProperDihedrals].size(),
                     bOPLS ? "Ryckaert-Bellemans" : "proper",
-                    plist[F_IDIHS].size(),
-                    plist[F_ANGLES].size(),
-                    plist[F_LJ14].size(),
-                    plist[F_BONDS].size(),
+                    plist[InteractionFunction::ImproperDihedrals].size(),
+                    plist[InteractionFunction::Angles].size(),
+                    plist[InteractionFunction::LennardJones14].size(),
+                    plist[InteractionFunction::Bonds].size(),
                     atoms->nr);
 
-    calc_angles_dihs(&plist[F_ANGLES], &plist[F_PDIHS], x, bPBC, box);
+    calc_angles_dihs(
+            &plist[InteractionFunction::Angles], &plist[InteractionFunction::ProperDihedrals], x, bPBC, box);
 
     set_force_const(plist, kb, kt, kp, bRound, bParam);
 

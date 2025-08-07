@@ -50,6 +50,7 @@
 #include <math_constants.h>
 
 #include <cassert>
+#include <cstddef>
 
 #include "gromacs/gpu_utils/cuda_arch_utils.cuh"
 #include "gromacs/gpu_utils/cudautils.cuh"
@@ -63,6 +64,7 @@
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/pbcutil/pbc_aiuc_cuda.cuh"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/gmxassert.h"
 
 #include "listed_forces_gpu_impl.h"
@@ -85,7 +87,7 @@ __global__ void bonded_kernel_gpu(BondedGpuKernelParameters kernelParams,
     assert(blockDim.y == 1 && blockDim.z == 1);
     const int tid          = blockIdx.x * blockDim.x + threadIdx.x;
     float     vtot_loc     = 0.0F;
-    float     vtotElec_loc = 0.0F; // Used only for F_LJ14
+    float     vtotElec_loc = 0.0F; // Used only for InteractionFunction::LennardJones14
 
     extern __shared__ char sm_dynamicShmem[];
     char*                  sm_nextSlotPtr = sm_dynamicShmem;
@@ -104,8 +106,8 @@ __global__ void bonded_kernel_gpu(BondedGpuKernelParameters kernelParams,
         __syncthreads();
     }
 
-    int  fType;
-    bool threadComputedPotential = false;
+    InteractionFunction fType;
+    bool                threadComputedPotential = false;
 #pragma unroll
     for (int j = 0; j < numFTypesOnGpu; j++)
     {
@@ -128,7 +130,7 @@ __global__ void bonded_kernel_gpu(BondedGpuKernelParameters kernelParams,
 
             switch (fType)
             {
-                case F_BONDS:
+                case InteractionFunction::Bonds:
                     bonds_gpu<calcVir, calcEner>(fTypeTid,
                                                  &vtot_loc,
                                                  iatoms,
@@ -139,7 +141,7 @@ __global__ void bonded_kernel_gpu(BondedGpuKernelParameters kernelParams,
                                                  kernelParams.pbcAiuc,
                                                  threadIdx.x);
                     break;
-                case F_ANGLES:
+                case InteractionFunction::Angles:
                     angles_gpu<calcVir, calcEner>(fTypeTid,
                                                   &vtot_loc,
                                                   iatoms,
@@ -150,7 +152,7 @@ __global__ void bonded_kernel_gpu(BondedGpuKernelParameters kernelParams,
                                                   kernelParams.pbcAiuc,
                                                   threadIdx.x);
                     break;
-                case F_UREY_BRADLEY:
+                case InteractionFunction::UreyBradleyPotential:
                     urey_bradley_gpu<calcVir, calcEner>(fTypeTid,
                                                         &vtot_loc,
                                                         iatoms,
@@ -161,8 +163,8 @@ __global__ void bonded_kernel_gpu(BondedGpuKernelParameters kernelParams,
                                                         kernelParams.pbcAiuc,
                                                         threadIdx.x);
                     break;
-                case F_PDIHS:
-                case F_PIDIHS:
+                case InteractionFunction::ProperDihedrals:
+                case InteractionFunction::PeriodicImproperDihedrals:
                     pdihs_gpu<calcVir, calcEner>(fTypeTid,
                                                  &vtot_loc,
                                                  iatoms,
@@ -173,7 +175,7 @@ __global__ void bonded_kernel_gpu(BondedGpuKernelParameters kernelParams,
                                                  kernelParams.pbcAiuc,
                                                  threadIdx.x);
                     break;
-                case F_RBDIHS:
+                case InteractionFunction::RyckaertBellemansDihedrals:
                     rbdihs_gpu<calcVir, calcEner>(fTypeTid,
                                                   &vtot_loc,
                                                   iatoms,
@@ -184,7 +186,7 @@ __global__ void bonded_kernel_gpu(BondedGpuKernelParameters kernelParams,
                                                   kernelParams.pbcAiuc,
                                                   threadIdx.x);
                     break;
-                case F_IDIHS:
+                case InteractionFunction::ImproperDihedrals:
                     idihs_gpu<calcVir, calcEner>(fTypeTid,
                                                  &vtot_loc,
                                                  iatoms,
@@ -195,7 +197,7 @@ __global__ void bonded_kernel_gpu(BondedGpuKernelParameters kernelParams,
                                                  kernelParams.pbcAiuc,
                                                  threadIdx.x);
                     break;
-                case F_LJ14:
+                case InteractionFunction::LennardJones14:
                     pairs_gpu<calcVir, calcEner>(fTypeTid,
                                                  iatoms,
                                                  kernelBuffers.d_forceParams,
@@ -208,6 +210,9 @@ __global__ void bonded_kernel_gpu(BondedGpuKernelParameters kernelParams,
                                                  &vtotElec_loc,
                                                  threadIdx.x);
                     break;
+                default:
+                    // these types do not appear on the GPU
+                    break;
             }
             break;
         }
@@ -215,8 +220,8 @@ __global__ void bonded_kernel_gpu(BondedGpuKernelParameters kernelParams,
 
     if (threadComputedPotential)
     {
-        float* vtot     = kernelBuffers.d_vTot + fType;
-        float* vtotElec = kernelBuffers.d_vTot + F_COUL14;
+        float* vtot = kernelBuffers.d_vTot + static_cast<ptrdiff_t>(fType);
+        float* vtotElec = kernelBuffers.d_vTot + static_cast<ptrdiff_t>(InteractionFunction::Coulomb14);
 
         // Perform warp-local reduction
         vtot_loc += __shfl_down_sync(c_fullWarpMask, vtot_loc, 1);
@@ -236,7 +241,7 @@ __global__ void bonded_kernel_gpu(BondedGpuKernelParameters kernelParams,
         {
             atomicAdd(vtot, vtot_loc);
         }
-        else if ((threadIdx.x % warpSize == 1) && (fType == F_LJ14))
+        else if ((threadIdx.x % warpSize == 1) && (fType == InteractionFunction::LennardJones14))
         {
             atomicAdd(vtotElec, vtot_loc);
         }

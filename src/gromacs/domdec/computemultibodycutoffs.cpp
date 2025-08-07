@@ -66,6 +66,7 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/logger.h"
@@ -79,17 +80,17 @@ struct bonded_distance_t
 {
     real r2 = 0;
     //! Interaction type, can nullopt for an exclusion interaction
-    std::optional<int> ftype;
-    int                a1 = -1;
-    int                a2 = -1;
+    std::optional<InteractionFunction> ftype;
+    int                                a1 = -1;
+    int                                a2 = -1;
 };
 
 /*! \brief Compare distance^2 \p r2 against the distance in \p bd and if larger store it along with \p ftype and atom indices \p a1 and \p a2 */
-static void update_max_bonded_distance(const real                        r2,
-                                       const std::optional<int>          ftype,
-                                       const int                         a1,
-                                       const int                         a2,
-                                       std::optional<bonded_distance_t>* bd)
+static void update_max_bonded_distance(const real                               r2,
+                                       const std::optional<InteractionFunction> ftype,
+                                       const int                                a1,
+                                       const int                                a2,
+                                       std::optional<bonded_distance_t>*        bd)
 {
     if (!bd->has_value() || r2 > bd->value().r2)
     {
@@ -127,7 +128,7 @@ static void bonded_cg_distance_mol(const gmx_moltype_t*              molt,
 {
     const ReverseTopOptions rtOptions(ddBondedChecking);
 
-    for (int ftype = 0; ftype < F_NRE; ftype++)
+    for (const auto ftype : gmx::EnumerationWrapper<InteractionFunction>{})
     {
         if (dd_check_ftype(ftype, rtOptions))
         {
@@ -190,7 +191,7 @@ static void bonded_distance_intermol(const InteractionLists&           ilists_in
 
     const ReverseTopOptions rtOptions(ddBondedChecking);
 
-    for (int ftype = 0; ftype < F_NRE; ftype++)
+    for (const auto ftype : gmx::EnumerationWrapper<InteractionFunction>{})
     {
         if (dd_check_ftype(ftype, rtOptions))
         {
@@ -228,7 +229,7 @@ static void bonded_distance_intermol(const InteractionLists&           ilists_in
 static bool moltypeHasVsite(const gmx_moltype_t& molt)
 {
     bool hasVsite = false;
-    for (int i = 0; i < F_NRE; i++)
+    for (const auto i : gmx::EnumerationWrapper<InteractionFunction>{})
     {
         if ((interaction_function[i].flags & IF_VSITE) && !molt.ilist[i].empty())
         {
@@ -274,7 +275,7 @@ static void getWholeMoleculeCoordinates(const gmx_moltype_t*  molt,
 
     if (moltypeHasVsite(*molt))
     {
-        gmx::constructVirtualSites(xs, ffparams->iparams, molt->ilist);
+        gmx::constructVirtualSites(xs, ffparams->iparams, &molt->ilist);
     }
 }
 

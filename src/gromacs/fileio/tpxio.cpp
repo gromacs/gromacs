@@ -254,8 +254,8 @@ static const int tpx_incompatible_version = tpxv_Pre96Version57; // GMX4.0 has v
 /* Struct used to maintain tpx compatibility when function types are added */
 typedef struct
 {
-    int fvnr;  /* file version number in which the function type first appeared */
-    int ftype; /* function type */
+    int                 fvnr;  /* file version number in which the function type first appeared */
+    InteractionFunction ftype; /* function type */
 } t_ftupd;
 
 /*
@@ -276,37 +276,38 @@ typedef struct
  * update TpxGeneration.
  */
 static const t_ftupd ftupd[] = {
-    { tpxv_Pre96Version70, F_RESTRBONDS },
-    { tpxv_RestrictedBendingAndCombinedAngleTorsionPotentials, F_RESTRANGLES },
-    { tpxv_Pre96Version76, F_LINEAR_ANGLES },
-    { tpxv_RestrictedBendingAndCombinedAngleTorsionPotentials, F_RESTRDIHS },
-    { tpxv_RestrictedBendingAndCombinedAngleTorsionPotentials, F_CBTDIHS },
-    { tpxv_Pre96Version65, F_CMAP },
-    { tpxv_Pre96Version60, F_GB12_NOLONGERUSED },
-    { tpxv_Pre96Version61, F_GB13_NOLONGERUSED },
-    { tpxv_Pre96Version61, F_GB14_NOLONGERUSED },
-    { tpxv_Pre96Version72, F_GBPOL_NOLONGERUSED },
-    { tpxv_Pre96Version72, F_NPSOLVATION_NOLONGERUSED },
-    { tpxv_Pre96Version93, F_LJ_RECIP },
-    { tpxv_Pre96Version76, F_ANHARM_POL },
-    { tpxv_Pre96Version90, F_FBPOSRES },
-    { tpxv_VSite1, F_VSITE1 },
-    { tpxv_VSite2FD, F_VSITE2FD },
-    { tpxv_GenericInternalParameters, F_DENSITYFITTING },
-    { tpxv_NNPotIFuncType, F_ENNPOT },
-    { tpxv_Pre96Version69, F_VTEMP_NOLONGERUSED },
-    { tpxv_Pre96Version66, F_PDISPCORR },
-    { tpxv_Pre96Version79, F_DVDL_COUL },
+    { tpxv_Pre96Version70, InteractionFunction::RestraintBonds },
+    { tpxv_RestrictedBendingAndCombinedAngleTorsionPotentials, InteractionFunction::RestrictedBendingPotential },
+    { tpxv_Pre96Version76, InteractionFunction::LinearAngles },
+    { tpxv_RestrictedBendingAndCombinedAngleTorsionPotentials, InteractionFunction::RestrictedTorsionPotential },
+    { tpxv_RestrictedBendingAndCombinedAngleTorsionPotentials,
+      InteractionFunction::CombinedBendingTorsionPotential },
+    { tpxv_Pre96Version65, InteractionFunction::DihedralEnergyCorrectionMap },
+    { tpxv_Pre96Version60, InteractionFunction::GeneralizedBorn12PolarizationUnused },
+    { tpxv_Pre96Version61, InteractionFunction::GeneralizedBorn13PolarizationUnused },
+    { tpxv_Pre96Version61, InteractionFunction::GeneralizedBorn14PolarizationUnused },
+    { tpxv_Pre96Version72, InteractionFunction::GeneralizedBornPolarizationUnused },
+    { tpxv_Pre96Version72, InteractionFunction::NonpolarSolvationUnused },
+    { tpxv_Pre96Version93, InteractionFunction::LennardJonesReciprocalSpace },
+    { tpxv_Pre96Version76, InteractionFunction::AnharmonicPolarization },
+    { tpxv_Pre96Version90, InteractionFunction::FlatBottomedPositionRestraints },
+    { tpxv_VSite1, InteractionFunction::VirtualSite1 },
+    { tpxv_VSite2FD, InteractionFunction::VirtualSite2FlexibleDistance },
+    { tpxv_GenericInternalParameters, InteractionFunction::DensityFitting },
+    { tpxv_NNPotIFuncType, InteractionFunction::NeuralNetworkPotentialEnergy },
+    { tpxv_Pre96Version69, InteractionFunction::VirialTemperatureUnused },
+    { tpxv_Pre96Version66, InteractionFunction::PressureDispersionCorrection },
+    { tpxv_Pre96Version79, InteractionFunction::dVCoulombdLambda },
     {
             tpxv_Pre96Version79,
-            F_DVDL_VDW,
+            InteractionFunction::dVvanderWaalsdLambda,
     },
     {
             tpxv_Pre96Version79,
-            F_DVDL_BONDED,
+            InteractionFunction::dVbondeddLambda,
     },
-    { tpxv_Pre96Version79, F_DVDL_RESTRAINT },
-    { tpxv_Pre96Version79, F_DVDL_TEMPERATURE },
+    { tpxv_Pre96Version79, InteractionFunction::dVrestraintdLambda },
+    { tpxv_Pre96Version79, InteractionFunction::dVtemperaturedLambda },
 };
 #define NFTUPD asize(ftupd)
 
@@ -1918,28 +1919,29 @@ static void do_harm(gmx::ISerializer* serializer, t_iparams* iparams)
     serializer->doReal(&iparams->harmonic.krB);
 }
 
-static void do_iparams(gmx::ISerializer* serializer, t_functype ftype, t_iparams* iparams, int file_version)
+static void do_iparams(gmx::ISerializer* serializer, InteractionFunction ftype, t_iparams* iparams, int file_version)
 {
     int  idum;
     real rdum;
 
     switch (ftype)
     {
-        case F_ANGLES:
-        case F_G96ANGLES:
-        case F_BONDS:
-        case F_G96BONDS:
-        case F_HARMONIC:
-        case F_IDIHS:
+        case InteractionFunction::Angles:
+        case InteractionFunction::GROMOS96Angles:
+        case InteractionFunction::Bonds:
+        case InteractionFunction::GROMOS96Bonds:
+        case InteractionFunction::HarmonicPotential:
+        case InteractionFunction::ImproperDihedrals:
             do_harm(serializer, iparams);
-            if ((ftype == F_ANGRES || ftype == F_ANGRESZ) && serializer->reading())
+            if ((ftype == InteractionFunction::AngleRestraints || ftype == InteractionFunction::AngleZAxisRestraints)
+                && serializer->reading())
             {
                 /* Correct incorrect storage of parameters */
                 iparams->pdihs.phiB = iparams->pdihs.phiA;
                 iparams->pdihs.cpB  = iparams->pdihs.cpA;
             }
             break;
-        case F_RESTRANGLES:
+        case InteractionFunction::RestrictedBendingPotential:
             serializer->doReal(&iparams->harmonic.rA);
             serializer->doReal(&iparams->harmonic.krA);
             if (file_version < tpxv_HandleMartiniBondedBStateParametersProperly && serializer->reading())
@@ -1956,18 +1958,18 @@ static void do_iparams(gmx::ISerializer* serializer, t_functype ftype, t_iparams
                 serializer->doReal(&iparams->harmonic.krB);
             }
             break;
-        case F_LINEAR_ANGLES:
+        case InteractionFunction::LinearAngles:
             serializer->doReal(&iparams->linangle.klinA);
             serializer->doReal(&iparams->linangle.aA);
             serializer->doReal(&iparams->linangle.klinB);
             serializer->doReal(&iparams->linangle.aB);
             break;
-        case F_FENEBONDS:
+        case InteractionFunction::FENEBonds:
             serializer->doReal(&iparams->fene.bm);
             serializer->doReal(&iparams->fene.kb);
             break;
 
-        case F_RESTRBONDS:
+        case InteractionFunction::RestraintBonds:
             serializer->doReal(&iparams->restraint.lowA);
             serializer->doReal(&iparams->restraint.up1A);
             serializer->doReal(&iparams->restraint.up2A);
@@ -1977,26 +1979,26 @@ static void do_iparams(gmx::ISerializer* serializer, t_functype ftype, t_iparams
             serializer->doReal(&iparams->restraint.up2B);
             serializer->doReal(&iparams->restraint.kB);
             break;
-        case F_TABBONDS:
-        case F_TABBONDSNC:
-        case F_TABANGLES:
-        case F_TABDIHS:
+        case InteractionFunction::TabulatedBonds:
+        case InteractionFunction::TabulatedBondsNoCoupling:
+        case InteractionFunction::TabulatedAngles:
+        case InteractionFunction::TabulatedDihedrals:
             serializer->doReal(&iparams->tab.kA);
             serializer->doInt(&iparams->tab.table);
             serializer->doReal(&iparams->tab.kB);
             break;
-        case F_CROSS_BOND_BONDS:
+        case InteractionFunction::CrossBondBonds:
             serializer->doReal(&iparams->cross_bb.r1e);
             serializer->doReal(&iparams->cross_bb.r2e);
             serializer->doReal(&iparams->cross_bb.krr);
             break;
-        case F_CROSS_BOND_ANGLES:
+        case InteractionFunction::CrossBondAngles:
             serializer->doReal(&iparams->cross_ba.r1e);
             serializer->doReal(&iparams->cross_ba.r2e);
             serializer->doReal(&iparams->cross_ba.r3e);
             serializer->doReal(&iparams->cross_ba.krt);
             break;
-        case F_UREY_BRADLEY:
+        case InteractionFunction::UreyBradleyPotential:
             serializer->doReal(&iparams->u_b.thetaA);
             serializer->doReal(&iparams->u_b.kthetaA);
             serializer->doReal(&iparams->u_b.r13A);
@@ -2016,16 +2018,16 @@ static void do_iparams(gmx::ISerializer* serializer, t_functype ftype, t_iparams
                 iparams->u_b.kUBB    = iparams->u_b.kUBA;
             }
             break;
-        case F_QUARTIC_ANGLES:
+        case InteractionFunction::QuarticAngles:
             serializer->doReal(&iparams->qangle.theta);
             serializer->doRealArray(iparams->qangle.c, 5);
             break;
-        case F_BHAM:
+        case InteractionFunction::BuckinghamShortRange:
             serializer->doReal(&iparams->bham.a);
             serializer->doReal(&iparams->bham.b);
             serializer->doReal(&iparams->bham.c);
             break;
-        case F_MORSE:
+        case InteractionFunction::MorsePotential:
             serializer->doReal(&iparams->morse.b0A);
             serializer->doReal(&iparams->morse.cbA);
             serializer->doReal(&iparams->morse.betaA);
@@ -2042,19 +2044,19 @@ static void do_iparams(gmx::ISerializer* serializer, t_functype ftype, t_iparams
                 iparams->morse.betaB = iparams->morse.betaA;
             }
             break;
-        case F_CUBICBONDS:
+        case InteractionFunction::CubicBonds:
             serializer->doReal(&iparams->cubic.b0);
             serializer->doReal(&iparams->cubic.kb);
             serializer->doReal(&iparams->cubic.kcub);
             break;
-        case F_CONNBONDS: break;
-        case F_POLARIZATION: serializer->doReal(&iparams->polarize.alpha); break;
-        case F_ANHARM_POL:
+        case InteractionFunction::ConnectBonds: break;
+        case InteractionFunction::Polarization: serializer->doReal(&iparams->polarize.alpha); break;
+        case InteractionFunction::AnharmonicPolarization:
             serializer->doReal(&iparams->anharm_polarize.alpha);
             serializer->doReal(&iparams->anharm_polarize.drcut);
             serializer->doReal(&iparams->anharm_polarize.khyp);
             break;
-        case F_WATER_POL:
+        case InteractionFunction::WaterPolarization:
             serializer->doReal(&iparams->wpol.al_x);
             serializer->doReal(&iparams->wpol.al_y);
             serializer->doReal(&iparams->wpol.al_z);
@@ -2062,7 +2064,7 @@ static void do_iparams(gmx::ISerializer* serializer, t_functype ftype, t_iparams
             serializer->doReal(&iparams->wpol.rHH);
             serializer->doReal(&iparams->wpol.rOD);
             break;
-        case F_THOLE_POL:
+        case InteractionFunction::TholePolarization:
             serializer->doReal(&iparams->thole.a);
             serializer->doReal(&iparams->thole.alpha1);
             serializer->doReal(&iparams->thole.alpha2);
@@ -2073,40 +2075,40 @@ static void do_iparams(gmx::ISerializer* serializer, t_functype ftype, t_iparams
             }
 
             break;
-        case F_LJ:
+        case InteractionFunction::LennardJonesShortRange:
             serializer->doReal(&iparams->lj.c6);
             serializer->doReal(&iparams->lj.c12);
             break;
-        case F_LJ14:
+        case InteractionFunction::LennardJones14:
             serializer->doReal(&iparams->lj14.c6A);
             serializer->doReal(&iparams->lj14.c12A);
             serializer->doReal(&iparams->lj14.c6B);
             serializer->doReal(&iparams->lj14.c12B);
             break;
-        case F_LJC14_Q:
+        case InteractionFunction::LennardJonesCoulomb14Q:
             serializer->doReal(&iparams->ljc14.fqq);
             serializer->doReal(&iparams->ljc14.qi);
             serializer->doReal(&iparams->ljc14.qj);
             serializer->doReal(&iparams->ljc14.c6);
             serializer->doReal(&iparams->ljc14.c12);
             break;
-        case F_LJC_PAIRS_NB:
+        case InteractionFunction::LennardJonesCoulombNonBondedPairs:
             serializer->doReal(&iparams->ljcnb.qi);
             serializer->doReal(&iparams->ljcnb.qj);
             serializer->doReal(&iparams->ljcnb.c6);
             serializer->doReal(&iparams->ljcnb.c12);
             break;
-        case F_PDIHS:
-        case F_PIDIHS:
-        case F_ANGRES:
-        case F_ANGRESZ:
+        case InteractionFunction::ProperDihedrals:
+        case InteractionFunction::PeriodicImproperDihedrals:
+        case InteractionFunction::AngleRestraints:
+        case InteractionFunction::AngleZAxisRestraints:
             serializer->doReal(&iparams->pdihs.phiA);
             serializer->doReal(&iparams->pdihs.cpA);
             serializer->doReal(&iparams->pdihs.phiB);
             serializer->doReal(&iparams->pdihs.cpB);
             serializer->doInt(&iparams->pdihs.mult);
             break;
-        case F_RESTRDIHS:
+        case InteractionFunction::RestrictedTorsionPotential:
             serializer->doReal(&iparams->pdihs.phiA);
             serializer->doReal(&iparams->pdihs.cpA);
             if (file_version < tpxv_HandleMartiniBondedBStateParametersProperly && serializer->reading())
@@ -2123,7 +2125,7 @@ static void do_iparams(gmx::ISerializer* serializer, t_functype ftype, t_iparams
                 serializer->doReal(&iparams->pdihs.cpB);
             }
             break;
-        case F_DISRES:
+        case InteractionFunction::DistanceRestraints:
             serializer->doInt(&iparams->disres.label);
             serializer->doInt(&iparams->disres.type);
             serializer->doReal(&iparams->disres.low);
@@ -2131,7 +2133,7 @@ static void do_iparams(gmx::ISerializer* serializer, t_functype ftype, t_iparams
             serializer->doReal(&iparams->disres.up2);
             serializer->doReal(&iparams->disres.kfac);
             break;
-        case F_ORIRES:
+        case InteractionFunction::OrientationRestraints:
             serializer->doInt(&iparams->orires.ex);
             serializer->doInt(&iparams->orires.label);
             serializer->doInt(&iparams->orires.power);
@@ -2139,7 +2141,7 @@ static void do_iparams(gmx::ISerializer* serializer, t_functype ftype, t_iparams
             serializer->doReal(&iparams->orires.obs);
             serializer->doReal(&iparams->orires.kfac);
             break;
-        case F_DIHRES:
+        case InteractionFunction::DihedralRestraints:
             if (file_version < tpxv_Pre96Version82)
             {
                 serializer->doInt(&idum);
@@ -2161,19 +2163,19 @@ static void do_iparams(gmx::ISerializer* serializer, t_functype ftype, t_iparams
                 iparams->dihres.kfacB = iparams->dihres.kfacA;
             }
             break;
-        case F_POSRES:
+        case InteractionFunction::PositionRestraints:
             serializer->doRvec(&iparams->posres.pos0A);
             serializer->doRvec(&iparams->posres.fcA);
             serializer->doRvec(&iparams->posres.pos0B);
             serializer->doRvec(&iparams->posres.fcB);
             break;
-        case F_FBPOSRES:
+        case InteractionFunction::FlatBottomedPositionRestraints:
             serializer->doInt(&iparams->fbposres.geom);
             serializer->doRvec(&iparams->fbposres.pos0);
             serializer->doReal(&iparams->fbposres.r);
             serializer->doReal(&iparams->fbposres.k);
             break;
-        case F_CBTDIHS:
+        case InteractionFunction::CombinedBendingTorsionPotential:
             serializer->doRealArray(iparams->cbtdihs.cbtcA, NR_CBTDIHS);
             if (file_version < tpxv_HandleMartiniBondedBStateParametersProperly && serializer->reading())
             {
@@ -2189,47 +2191,49 @@ static void do_iparams(gmx::ISerializer* serializer, t_functype ftype, t_iparams
                 serializer->doRealArray(iparams->cbtdihs.cbtcB, NR_CBTDIHS);
             }
             break;
-        case F_RBDIHS:
+        case InteractionFunction::RyckaertBellemansDihedrals:
             // Fall-through intended
-        case F_FOURDIHS:
+        case InteractionFunction::FourierDihedrals:
             /* Fourier dihedrals are internally represented
              * as Ryckaert-Bellemans since those are faster to compute.
              */
             serializer->doRealArray(iparams->rbdihs.rbcA, NR_RBDIHS);
             serializer->doRealArray(iparams->rbdihs.rbcB, NR_RBDIHS);
             break;
-        case F_CONSTR:
-        case F_CONSTRNC:
+        case InteractionFunction::Constraints:
+        case InteractionFunction::ConstraintsNoCoupling:
             serializer->doReal(&iparams->constr.dA);
             serializer->doReal(&iparams->constr.dB);
             break;
-        case F_SETTLE:
+        case InteractionFunction::SETTLE:
             serializer->doReal(&iparams->settle.doh);
             serializer->doReal(&iparams->settle.dhh);
             break;
-        case F_VSITE1: break; // VSite1 has 0 parameters
-        case F_VSITE2:
-        case F_VSITE2FD: serializer->doReal(&iparams->vsite.a); break;
-        case F_VSITE3:
-        case F_VSITE3FD:
-        case F_VSITE3FAD:
+        case InteractionFunction::VirtualSite1: break; // VSite1 has 0 parameters
+        case InteractionFunction::VirtualSite2:
+        case InteractionFunction::VirtualSite2FlexibleDistance:
+            serializer->doReal(&iparams->vsite.a);
+            break;
+        case InteractionFunction::VirtualSite3:
+        case InteractionFunction::VirtualSite3FlexibleDistance:
+        case InteractionFunction::VirtualSite3FlexibleAngleDistance:
             serializer->doReal(&iparams->vsite.a);
             serializer->doReal(&iparams->vsite.b);
             break;
-        case F_VSITE3OUT:
-        case F_VSITE4FD:
-        case F_VSITE4FDN:
+        case InteractionFunction::VirtualSite3Outside:
+        case InteractionFunction::VirtualSite4FlexibleDistance:
+        case InteractionFunction::VirtualSite4FlexibleDistanceNormalization:
             serializer->doReal(&iparams->vsite.a);
             serializer->doReal(&iparams->vsite.b);
             serializer->doReal(&iparams->vsite.c);
             break;
-        case F_VSITEN:
+        case InteractionFunction::VirtualSiteN:
             serializer->doInt(&iparams->vsiten.n);
             serializer->doReal(&iparams->vsiten.a);
             break;
-        case F_GB12_NOLONGERUSED:
-        case F_GB13_NOLONGERUSED:
-        case F_GB14_NOLONGERUSED:
+        case InteractionFunction::GeneralizedBorn12PolarizationUnused:
+        case InteractionFunction::GeneralizedBorn13PolarizationUnused:
+        case InteractionFunction::GeneralizedBorn14PolarizationUnused:
             // Implicit solvent parameters can still be read, but never used
             if (serializer->reading())
             {
@@ -2250,14 +2254,14 @@ static void do_iparams(gmx::ISerializer* serializer, t_functype ftype, t_iparams
                 }
             }
             break;
-        case F_CMAP:
+        case InteractionFunction::DihedralEnergyCorrectionMap:
             serializer->doInt(&iparams->cmap.cmapA);
             serializer->doInt(&iparams->cmap.cmapB);
             break;
         default:
             gmx_fatal(FARGS,
                       "unknown function type %d (%s) in %s line %d",
-                      ftype,
+                      static_cast<int>(ftype),
                       interaction_function[ftype].name,
                       __FILE__,
                       __LINE__);
@@ -2280,13 +2284,25 @@ static void do_ffparams(gmx::ISerializer* serializer, gmx_ffparams_t* ffparams, 
     serializer->doInt(&ffparams->atnr);
     int numTypes = ffparams->numTypes();
     serializer->doInt(&numTypes);
+    std::vector<int> serializableFuncType(numTypes);
+    if (!serializer->reading())
+    {
+        std::transform(ffparams->functype.begin(),
+                       ffparams->functype.end(),
+                       serializableFuncType.begin(),
+                       [](InteractionFunction val) { return static_cast<int>(val); });
+    }
+    /* Read/write all the function types */
+    serializer->doIntArray(serializableFuncType.data(), serializableFuncType.size());
     if (serializer->reading())
     {
         ffparams->functype.resize(numTypes);
         ffparams->iparams.resize(numTypes);
+        std::transform(serializableFuncType.begin(),
+                       serializableFuncType.end(),
+                       ffparams->functype.begin(),
+                       [](int val) { return static_cast<InteractionFunction>(val); });
     }
-    /* Read/write all the function types */
-    serializer->doIntArray(ffparams->functype.data(), ffparams->functype.size());
 
     if (file_version >= tpxv_Pre96Version66)
     {
@@ -2313,7 +2329,8 @@ static void do_ffparams(gmx::ISerializer* serializer, gmx_ffparams_t* ffparams, 
                 /* Compare the read file_version to the update table */
                 if ((file_version < ftupd[k].fvnr) && (ffparams->functype[i] >= ftupd[k].ftype))
                 {
-                    ffparams->functype[i] += 1;
+                    ffparams->functype[i] =
+                            static_cast<InteractionFunction>(static_cast<int>(ffparams->functype[i]) + 1);
                 }
             }
         }
@@ -2340,18 +2357,18 @@ static void add_settle_atoms(InteractionList* ilist)
 static void do_ilists(gmx::ISerializer* serializer, InteractionLists* ilists, int file_version)
 {
     GMX_RELEASE_ASSERT(ilists, "Need a valid ilists object");
-    GMX_RELEASE_ASSERT(ilists->size() == F_NRE,
+    GMX_RELEASE_ASSERT(ilists->size() == static_cast<int>(InteractionFunction::Count),
                        "The code needs to be in sync with InteractionLists");
 
-    for (int j = 0; j < F_NRE; j++)
+    for (const auto iftype : gmx::EnumerationWrapper<InteractionFunction>{})
     {
-        InteractionList& ilist  = (*ilists)[j];
+        InteractionList& ilist  = (*ilists)[iftype];
         gmx_bool         bClear = FALSE;
         if (serializer->reading())
         {
             for (int k = 0; k < NFTUPD; k++)
             {
-                if ((file_version < ftupd[k].fvnr) && (j == ftupd[k].ftype))
+                if ((file_version < ftupd[k].fvnr) && (iftype == ftupd[k].ftype))
                 {
                     bClear = TRUE;
                 }
@@ -2364,7 +2381,8 @@ static void do_ilists(gmx::ISerializer* serializer, InteractionLists* ilists, in
         else
         {
             do_ilist(serializer, &ilist);
-            if (file_version < tpxv_Pre96Version78 && j == F_SETTLE && !ilist.empty())
+            if (file_version < tpxv_Pre96Version78 && iftype == InteractionFunction::SETTLE
+                && !ilist.empty())
             {
                 add_settle_atoms(&ilist);
             }
@@ -2755,7 +2773,7 @@ static void set_disres_npair(gmx_mtop_t* mtop)
 
     for (const auto ilist : IListRange(*mtop))
     {
-        const InteractionList& il = ilist.list()[F_DISRES];
+        const InteractionList& il = ilist.list()[InteractionFunction::DistanceRestraints];
 
         if (!il.empty())
         {
@@ -3312,13 +3330,14 @@ static void do_tpx_finalize(TpxFileHeader* tpx, t_inputrec* ir, t_state* state, 
         {
             if (tpx->fileVersion < tpxv_Pre96Version57)
             {
-                ir->eDisre = !mtop->moltype[0].ilist[F_DISRES].empty()
+                ir->eDisre = !mtop->moltype[0].ilist[InteractionFunction::DistanceRestraints].empty()
                                      ? DistanceRestraintRefinement::Simple
                                      : DistanceRestraintRefinement::None;
             }
 
             if (tpx->fileVersion < tpxv_RefScaleMultipleCOMs
-                && ((gmx_mtop_ftype_count(*mtop, F_POSRES) == 0 && gmx_mtop_ftype_count(*mtop, F_FBPOSRES) == 0)
+                && ((gmx_mtop_ftype_count(*mtop, InteractionFunction::PositionRestraints) == 0
+                     && gmx_mtop_ftype_count(*mtop, InteractionFunction::FlatBottomedPositionRestraints) == 0)
                     || ir->pressureCouplingOptions.refcoord_scaling != RefCoordScaling::Com))
             {
                 // We do not have position restraints or we do not have COM ref-coord scaling

@@ -511,7 +511,8 @@ static void init_em(FILE*                        fplog,
     if (constr)
     {
         // TODO how should this cross-module support dependency be managed?
-        if (ir->eConstrAlg == ConstraintAlgorithm::Shake && gmx_mtop_ftype_count(top_global, F_CONSTR) > 0)
+        if (ir->eConstrAlg == ConstraintAlgorithm::Shake
+            && gmx_mtop_ftype_count(top_global, InteractionFunction::Constraints) > 0)
         {
             gmx_fatal(FARGS,
                       "Can not do energy minimization with %s, use %s\n",
@@ -1149,7 +1150,7 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
         wallcycle_stop(wcycle, WallCycleCounter::MoveE);
     }
 
-    ems->epot = enerd->term[F_EPOT];
+    ems->epot = enerd->term[InteractionFunction::PotentialEnergy];
 
     if (constr)
     {
@@ -1172,7 +1173,7 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
                       computeVirial,
                       shake_vir,
                       gmx::ConstraintVariable::ForceDispl);
-        enerd->term[F_DVDL_CONSTR] += dvdl_constr;
+        enerd->term[InteractionFunction::dHdLambdaConstraint] += dvdl_constr;
         m_add(force_vir, shake_vir, vir);
     }
     else
@@ -1181,7 +1182,8 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
     }
 
     clear_mat(ekin);
-    enerd->term[F_PRES] = calc_pres(fr->pbcType, inputrec->nwall, ems->s.box, ekin, vir, pres);
+    enerd->term[InteractionFunction::Pressure] =
+            calc_pres(fr->pbcType, inputrec->nwall, ems->s.box, ekin, vir, pres);
 
     if (inputrec->efep != FreeEnergyPerturbationType::No)
     {

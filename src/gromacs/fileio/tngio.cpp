@@ -298,7 +298,6 @@ static void addTngMoleculeFromTopology(gmx_tng_trajectory_t gmx_tng,
 
 void gmx_tng_add_mtop(gmx_tng_trajectory_t gmx_tng, const gmx_mtop_t* mtop)
 {
-    int               i;
     int               j;
     std::vector<real> atomCharges;
     std::vector<real> atomMasses;
@@ -334,7 +333,7 @@ void gmx_tng_add_mtop(gmx_tng_trajectory_t gmx_tng, const gmx_mtop_t* mtop)
         /* Bonds have to be deduced from interactions (constraints etc). Different
          * interactions have different sets of parameters. */
         /* Constraints are specified using two atoms */
-        for (i = 0; i < F_NRE; i++)
+        for (const auto i : gmx::EnumerationWrapper<InteractionFunction>{})
         {
             if (IS_CHEMBOND(i))
             {
@@ -348,7 +347,7 @@ void gmx_tng_add_mtop(gmx_tng_trajectory_t gmx_tng, const gmx_mtop_t* mtop)
             }
         }
         /* Settle is described using three atoms */
-        const InteractionList& ilist = molType->ilist[F_SETTLE];
+        const InteractionList& ilist = molType->ilist[InteractionFunction::SETTLE];
         j                            = 1;
         while (j < ilist.size())
         {
@@ -710,7 +709,7 @@ static void add_selection_groups(gmx_tng_trajectory_t gmx_tng, const gmx_mtop_t*
             /* Add bonds. */
             if (bAtomsAdded)
             {
-                for (int k = 0; k < F_NRE; k++)
+                for (const auto k : gmx::EnumerationWrapper<InteractionFunction>{})
                 {
                     if (IS_CHEMBOND(k))
                     {
@@ -732,7 +731,7 @@ static void add_selection_groups(gmx_tng_trajectory_t gmx_tng, const gmx_mtop_t*
                     }
                 }
                 /* Settle is described using three atoms */
-                const InteractionList& ilist = molType.ilist[F_SETTLE];
+                const InteractionList& ilist = molType.ilist[InteractionFunction::SETTLE];
                 for (int l = 1; l < ilist.size(); l += 4)
                 {
                     int atom1, atom2, atom3;

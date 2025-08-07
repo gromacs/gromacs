@@ -176,7 +176,9 @@ static void rm2par(std::vector<InteractionOfType>* p, peq eq)
     }
 }
 
-static void cppar(gmx::ArrayRef<const InteractionOfType> types, gmx::ArrayRef<InteractionsOfType> plist, int ftype)
+static void cppar(gmx::ArrayRef<const InteractionOfType>                          types,
+                  gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
+                  InteractionFunction                                             ftype)
 {
     /* Keep old stuff */
     for (const auto& type : types)
@@ -626,14 +628,14 @@ static void clean_excls(t_nextnb* nnb, int nrexcl, t_excls excls[])
     }
 }
 
-void gen_pad(t_atoms*                               atoms,
-             gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
-             gmx::ArrayRef<InteractionsOfType>      plist,
-             t_excls                                excls[],
-             gmx::ArrayRef<MoleculePatchDatabase>   globalPatches,
-             bool                                   bAllowMissing,
-             gmx::ArrayRef<const int>               cyclicBondsIndex,
-             gmx::ArrayRef<const DisulfideBond>     ssbonds)
+void gen_pad(t_atoms*                                                        atoms,
+             gmx::ArrayRef<const PreprocessResidue>                          rtpFFDB,
+             gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
+             t_excls                                                         excls[],
+             gmx::ArrayRef<MoleculePatchDatabase>                            globalPatches,
+             bool                                                            bAllowMissing,
+             gmx::ArrayRef<const int>                                        cyclicBondsIndex,
+             gmx::ArrayRef<const DisulfideBond>                              ssbonds)
 {
     t_nextnb nnb;
     init_nnb(&nnb, atoms->nr, 4);
@@ -980,10 +982,10 @@ void gen_pad(t_atoms*                               atoms,
     /* Now we have unique lists of angles and dihedrals
      * Copy them into the destination struct
      */
-    cppar(ang, plist, F_ANGLES);
-    cppar(dih, plist, F_PDIHS);
-    cppar(improper, plist, F_IDIHS);
-    cppar(pai, plist, F_LJ14);
+    cppar(ang, plist, InteractionFunction::Angles);
+    cppar(dih, plist, InteractionFunction::ProperDihedrals);
+    cppar(improper, plist, InteractionFunction::ImproperDihedrals);
+    cppar(pai, plist, InteractionFunction::LennardJones14);
 
     /* Remove all exclusions which are within nrexcl */
     clean_excls(&nnb, rtpFFDB[0].nrexcl, excls);

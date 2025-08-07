@@ -347,7 +347,7 @@ interaction_const_t setupInteractionConst(const KernelOptions& options)
     // Only reppow and functype[0] are used from mtop in init_interaction_const()
     mtop.ffparams.reppow = 12;
     mtop.ffparams.functype.resize(1);
-    mtop.ffparams.functype[0] = F_LJ;
+    mtop.ffparams.functype[0] = InteractionFunction::LennardJonesShortRange;
 
     interaction_const_t ic = init_interaction_const(nullptr, ir, mtop, false);
     init_interaction_const_tables(nullptr, &ic, options.pairlistCutoff, 0);

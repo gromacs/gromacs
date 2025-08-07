@@ -342,7 +342,8 @@ TEST_F(ColvarsForceProviderTest, CalculateForces4water)
     forceProvider.calculateForces(forceProviderInput, &forceProviderOutput);
 
     checker.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(100.0, 5e-5));
-    checker.checkReal(enerdDummy.term[F_COM_PULL], "Bias Energy");
+    checker.checkReal(enerdDummy.term[InteractionFunction::CenterOfMassPullingEnergy],
+                      "Bias Energy");
     checker.checkSequence(forces.begin(), forces.end(), "Forces");
 
     done_atom(&atoms_);
@@ -387,7 +388,8 @@ TEST_F(ColvarsForceProviderTest, CalculateForcesAlanine)
     forceProvider.calculateForces(forceProviderInput, &forceProviderOutput);
 
     checker.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(10.0, 5e-5));
-    checker.checkReal(enerdDummy.term[F_COM_PULL], "Bias Energy");
+    checker.checkReal(enerdDummy.term[InteractionFunction::CenterOfMassPullingEnergy],
+                      "Bias Energy");
     checker.checkSequence(forces.begin(), forces.end(), "Forces");
 
     done_atom(&atoms_);

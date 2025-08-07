@@ -118,7 +118,7 @@ public:
      * Does not recycle the data preparation routines from the CPU version.
      * All three atoms from single water molecule should be handled by the same GPU.
      *
-     * SETTLEs atom ID's is taken from idef.il[F_SETTLE].iatoms.
+     * SETTLEs atom ID's is taken from idef.il[InteractionFunction::SETTLE].iatoms.
      *
      * \param[in] idef    System topology
      */

@@ -88,7 +88,7 @@ void extendStateWithOriresHistory(const gmx_mtop_t& mtop, const t_inputrec& ir, 
     GMX_RELEASE_ASSERT(globalState != nullptr,
                        "We need a valid global state in extendStateWithOriresHistory()");
 
-    const int numRestraints = gmx_mtop_ftype_count(mtop, F_ORIRES);
+    const int numRestraints = gmx_mtop_ftype_count(mtop, InteractionFunction::OrientationRestraints);
     if (numRestraints > 0 && ir.orires_tau > 0)
     {
         /* Extend the state with the orires history */
@@ -126,7 +126,7 @@ t_oriresdata::t_oriresdata(FILE*                     fplog,
                            const gmx_multisim_t*     ms,
                            t_state*                  globalState,
                            gmx::LocalAtomSetManager* localAtomSetManager) :
-    numRestraints(gmx_mtop_ftype_count(mtop, F_ORIRES)),
+    numRestraints(gmx_mtop_ftype_count(mtop, InteractionFunction::OrientationRestraints)),
     fitLocalAtomSet_(localAtomSetManager->add(fitGlobalAtomIndices(mtop)))
 {
     GMX_RELEASE_ASSERT(numRestraints > 0,
@@ -164,7 +164,7 @@ t_oriresdata::t_oriresdata(FILE*                     fplog,
     int typeMax = 0;
     for (const auto il : IListRange(mtop))
     {
-        const int numOrires = il.list()[F_ORIRES].size();
+        const int numOrires = il.list()[InteractionFunction::OrientationRestraints].size();
         if (il.nmol() > 1 && numOrires > 0)
         {
             const std::string mesg = gmx::formatString(
@@ -177,7 +177,7 @@ t_oriresdata::t_oriresdata(FILE*                     fplog,
 
         for (int i = 0; i < numOrires; i += 3)
         {
-            int type = il.list()[F_ORIRES].iatoms[i];
+            int type = il.list()[InteractionFunction::OrientationRestraints].iatoms[i];
             int ex   = mtop.ffparams.iparams[type].orires.ex;
             if (ex >= numExperiments)
             {

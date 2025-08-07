@@ -755,9 +755,8 @@ static void search_donors(const t_topology* top,
                           gmx_bool          bDoIt,
                           unsigned char*    datable)
 {
-    int        i, j;
-    t_functype func_type;
-    int        nr1, nr2, nr3;
+    int i, j;
+    int nr1, nr2, nr3;
 
     if (ddd->dptr.empty())
     {
@@ -781,10 +780,11 @@ static void search_donors(const t_topology* top,
     }
     else
     {
-        for (func_type = 0; (func_type < F_NRE); func_type++)
+        for (const auto func_type : gmx::EnumerationWrapper<InteractionFunction>{})
         {
             const t_ilist* interaction = &(top->idef.il[func_type]);
-            if (func_type == F_POSRES || func_type == F_FBPOSRES)
+            if (func_type == InteractionFunction::PositionRestraints
+                || func_type == InteractionFunction::FlatBottomedPositionRestraints)
             {
                 /* The ilist looks strange for posre. Bug in grompp?
                  * We don't need posre interactions for hbonds anyway.*/
@@ -801,7 +801,7 @@ static void search_donors(const t_topology* top,
                 }
 
                 /* check out this functype */
-                if (func_type == F_SETTLE)
+                if (func_type == InteractionFunction::SETTLE)
                 {
                     nr1 = interaction->iatoms[i + 1];
                     nr2 = interaction->iatoms[i + 2];

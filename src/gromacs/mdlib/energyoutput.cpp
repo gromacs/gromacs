@@ -158,7 +158,7 @@ EnergyOutput::EnergyOutput(ener_file*                fp_ene,
                            const MDModulesNotifiers& mdModulesNotifiers) :
     haveFepLambdaMoves_(haveFepLambdaMoves(inputrec))
 {
-    const char*        ener_nm[F_NRE];
+    gmx::EnumerationArray<InteractionFunction, const char*> ener_nm;
     static const char* pres_nm[]  = { "Pres-XX", "Pres-XY", "Pres-XZ", "Pres-YX", "Pres-YY",
                                       "Pres-YZ", "Pres-ZX", "Pres-ZY", "Pres-ZZ" };
     static const char* surft_nm[] = { "#Surf*SurfTen" };
@@ -171,7 +171,7 @@ EnergyOutput::EnergyOutput(ener_file*                fp_ene,
     char**                  gnm;
     char                    buf[256];
     const char*             bufi;
-    int                     i, j, ni, nj, n, ncon, nset;
+    int                     j, ni, nj, n, ncon, nset;
     bool                    bBHAM, b14;
 
     if (EI_DYNAMICS(inputrec.eI))
@@ -185,11 +185,13 @@ EnergyOutput::EnergyOutput(ener_file*                fp_ene,
 
     groups = &mtop.groups;
 
-    bBHAM = (mtop.ffparams.numTypes() > 0) && (mtop.ffparams.functype[0] == F_BHAM);
-    b14   = (gmx_mtop_ftype_count(mtop, F_LJ14) > 0 || gmx_mtop_ftype_count(mtop, F_LJC14_Q) > 0);
+    bBHAM = (mtop.ffparams.numTypes() > 0)
+            && (mtop.ffparams.functype[0] == InteractionFunction::BuckinghamShortRange);
+    b14 = (gmx_mtop_ftype_count(mtop, InteractionFunction::LennardJones14) > 0
+           || gmx_mtop_ftype_count(mtop, InteractionFunction::LennardJonesCoulomb14Q) > 0);
 
-    ncon         = gmx_mtop_ftype_count(mtop, F_CONSTR);
-    nset         = gmx_mtop_ftype_count(mtop, F_SETTLE);
+    ncon         = gmx_mtop_ftype_count(mtop, InteractionFunction::Constraints);
+    nset         = gmx_mtop_ftype_count(mtop, InteractionFunction::SETTLE);
     bool bConstr = (ncon > 0 || nset > 0) && !isRerun;
     nCrmsd_      = 0;
     if (bConstr)
@@ -212,7 +214,7 @@ EnergyOutput::EnergyOutput(ener_file*                fp_ene,
 
     // Setting true only to those energy terms, that have active interactions and
     // are not vsite terms (not VSITE2, VSITE3, VSITE3FD, VSITE3FAD, VSITE3OUT, VSITE4FD, VSITE4FDN, or VSITEN)
-    for (i = 0; i < F_NRE; i++)
+    for (const auto i : gmx::EnumerationWrapper<InteractionFunction>{})
     {
         bEner_[i] = (gmx_mtop_ftype_count(mtop, i) > 0)
                     && ((interaction_function[i].flags & IF_VSITE) == 0);
@@ -220,71 +222,85 @@ EnergyOutput::EnergyOutput(ener_file*                fp_ene,
 
     if (!isRerun)
     {
-        bEner_[F_EKIN] = EI_DYNAMICS(inputrec.eI);
-        bEner_[F_ETOT] = EI_DYNAMICS(inputrec.eI);
-        bEner_[F_TEMP] = EI_DYNAMICS(inputrec.eI);
+        bEner_[InteractionFunction::KineticEnergy] = EI_DYNAMICS(inputrec.eI);
+        bEner_[InteractionFunction::TotalEnergy]   = EI_DYNAMICS(inputrec.eI);
+        bEner_[InteractionFunction::Temperature]   = EI_DYNAMICS(inputrec.eI);
 
-        bEner_[F_ECONSERVED] = integratorHasConservedEnergyQuantity(&inputrec);
-        bEner_[F_PDISPCORR]  = (inputrec.eDispCorr != DispersionCorrectionType::No);
-        bEner_[F_PRES]       = true;
+        bEner_[InteractionFunction::ConservedEnergy] = integratorHasConservedEnergyQuantity(&inputrec);
+        bEner_[InteractionFunction::PressureDispersionCorrection] =
+                (inputrec.eDispCorr != DispersionCorrectionType::No);
+        bEner_[InteractionFunction::Pressure] = true;
     }
 
-    bEner_[F_LJ]   = !bBHAM;
-    bEner_[F_BHAM] = bBHAM;
-    bEner_[F_RF_EXCL] = (usingRF(inputrec.coulombtype) && inputrec.cutoff_scheme == CutoffScheme::Group);
-    bEner_[F_COUL_RECIP]   = usingFullElectrostatics(inputrec.coulombtype);
-    bEner_[F_LJ_RECIP]     = usingLJPme(inputrec.vdwtype);
-    bEner_[F_LJ14]         = b14;
-    bEner_[F_COUL14]       = b14;
-    bEner_[F_LJC14_Q]      = false;
-    bEner_[F_LJC_PAIRS_NB] = false;
+    bEner_[InteractionFunction::LennardJonesShortRange] = !bBHAM;
+    bEner_[InteractionFunction::BuckinghamShortRange]   = bBHAM;
+    bEner_[InteractionFunction::ReactionFieldExclusion] =
+            (usingRF(inputrec.coulombtype) && inputrec.cutoff_scheme == CutoffScheme::Group);
+    bEner_[InteractionFunction::CoulombReciprocalSpace] = usingFullElectrostatics(inputrec.coulombtype);
+    bEner_[InteractionFunction::LennardJonesReciprocalSpace]       = usingLJPme(inputrec.vdwtype);
+    bEner_[InteractionFunction::LennardJones14]                    = b14;
+    bEner_[InteractionFunction::Coulomb14]                         = b14;
+    bEner_[InteractionFunction::LennardJonesCoulomb14Q]            = false;
+    bEner_[InteractionFunction::LennardJonesCoulombNonBondedPairs] = false;
 
 
-    bEner_[F_DVDL_COUL] = (inputrec.efep != FreeEnergyPerturbationType::No)
-                          && inputrec.fepvals->separate_dvdl[FreeEnergyPerturbationCouplingType::Coul];
-    bEner_[F_DVDL_VDW] = (inputrec.efep != FreeEnergyPerturbationType::No)
-                         && inputrec.fepvals->separate_dvdl[FreeEnergyPerturbationCouplingType::Vdw];
-    bEner_[F_DVDL_BONDED] = (inputrec.efep != FreeEnergyPerturbationType::No)
-                            && inputrec.fepvals->separate_dvdl[FreeEnergyPerturbationCouplingType::Bonded];
-    bEner_[F_DVDL_RESTRAINT] =
+    bEner_[InteractionFunction::dVCoulombdLambda] =
+            (inputrec.efep != FreeEnergyPerturbationType::No)
+            && inputrec.fepvals->separate_dvdl[FreeEnergyPerturbationCouplingType::Coul];
+    bEner_[InteractionFunction::dVvanderWaalsdLambda] =
+            (inputrec.efep != FreeEnergyPerturbationType::No)
+            && inputrec.fepvals->separate_dvdl[FreeEnergyPerturbationCouplingType::Vdw];
+    bEner_[InteractionFunction::dVbondeddLambda] =
+            (inputrec.efep != FreeEnergyPerturbationType::No)
+            && inputrec.fepvals->separate_dvdl[FreeEnergyPerturbationCouplingType::Bonded];
+    bEner_[InteractionFunction::dVrestraintdLambda] =
             (inputrec.efep != FreeEnergyPerturbationType::No)
             && inputrec.fepvals->separate_dvdl[FreeEnergyPerturbationCouplingType::Restraint];
-    bEner_[F_DKDL] = (inputrec.efep != FreeEnergyPerturbationType::No)
-                     && inputrec.fepvals->separate_dvdl[FreeEnergyPerturbationCouplingType::Mass];
-    bEner_[F_DVDL] = (inputrec.efep != FreeEnergyPerturbationType::No)
-                     && inputrec.fepvals->separate_dvdl[FreeEnergyPerturbationCouplingType::Fep];
+    bEner_[InteractionFunction::dEkineticdLambda] =
+            (inputrec.efep != FreeEnergyPerturbationType::No)
+            && inputrec.fepvals->separate_dvdl[FreeEnergyPerturbationCouplingType::Mass];
+    bEner_[InteractionFunction::dVremainingdLambda] =
+            (inputrec.efep != FreeEnergyPerturbationType::No)
+            && inputrec.fepvals->separate_dvdl[FreeEnergyPerturbationCouplingType::Fep];
 
-    bEner_[F_CONSTR]   = false;
-    bEner_[F_CONSTRNC] = false;
-    bEner_[F_SETTLE]   = false;
+    bEner_[InteractionFunction::Constraints]           = false;
+    bEner_[InteractionFunction::ConstraintsNoCoupling] = false;
+    bEner_[InteractionFunction::SETTLE]                = false;
 
-    bEner_[F_COUL_SR] = true;
-    bEner_[F_EPOT]    = true;
+    bEner_[InteractionFunction::CoulombShortRange] = true;
+    bEner_[InteractionFunction::PotentialEnergy]   = true;
 
-    bEner_[F_DISPCORR]   = (inputrec.eDispCorr != DispersionCorrectionType::No);
-    bEner_[F_DISRESVIOL] = (gmx_mtop_ftype_count(mtop, F_DISRES) > 0);
-    bEner_[F_ORIRESDEV]  = (gmx_mtop_ftype_count(mtop, F_ORIRES) > 0);
-    bEner_[F_COM_PULL]   = ((inputrec.bPull && pull_have_potential(*pull_work)) || inputrec.bRot);
+    bEner_[InteractionFunction::DispersionCorrection] =
+            (inputrec.eDispCorr != DispersionCorrectionType::No);
+    bEner_[InteractionFunction::DistanceRestraintViolations] =
+            (gmx_mtop_ftype_count(mtop, InteractionFunction::DistanceRestraints) > 0);
+    bEner_[InteractionFunction::OrientationRestraintDeviations] =
+            (gmx_mtop_ftype_count(mtop, InteractionFunction::OrientationRestraints) > 0);
+    bEner_[InteractionFunction::CenterOfMassPullingEnergy] =
+            ((inputrec.bPull && pull_have_potential(*pull_work)) || inputrec.bRot);
 
     // Check MDModules for any energy output
     MDModulesEnergyOutputToDensityFittingRequestChecker mdModulesAddOutputToDensityFittingFieldRequest;
     mdModulesNotifiers.simulationSetupNotifier_.notify(&mdModulesAddOutputToDensityFittingFieldRequest);
 
-    bEner_[F_DENSITYFITTING] = mdModulesAddOutputToDensityFittingFieldRequest.energyOutputToDensityFitting_;
+    bEner_[InteractionFunction::DensityFitting] =
+            mdModulesAddOutputToDensityFittingFieldRequest.energyOutputToDensityFitting_;
 
     MDModulesEnergyOutputToQMMMRequestChecker mdModulesAddOutputToQMMMFieldRequest;
     mdModulesNotifiers.simulationSetupNotifier_.notify(&mdModulesAddOutputToQMMMFieldRequest);
 
-    bEner_[F_EQM] = mdModulesAddOutputToQMMMFieldRequest.energyOutputToQMMM_;
+    bEner_[InteractionFunction::QuantumMechanicalRegionEnergy] =
+            mdModulesAddOutputToQMMMFieldRequest.energyOutputToQMMM_;
 
     MDModulesEnergyOutputToNNPotRequestChecker mdModulesAddOutputToNNPotFieldRequest;
     mdModulesNotifiers.simulationSetupNotifier_.notify(&mdModulesAddOutputToNNPotFieldRequest);
 
-    bEner_[F_ENNPOT] = mdModulesAddOutputToNNPotFieldRequest.energyOutputToNNPot_;
+    bEner_[InteractionFunction::NeuralNetworkPotentialEnergy] =
+            mdModulesAddOutputToNNPotFieldRequest.energyOutputToNNPot_;
 
     // Counting the energy terms that will be printed and saving their names
     f_nre_ = 0;
-    for (i = 0; i < F_NRE; i++)
+    for (const auto i : gmx::EnumerationWrapper<InteractionFunction>{})
     {
         if (bEner_[i])
         {
@@ -312,7 +328,7 @@ EnergyOutput::EnergyOutput(ener_file*                fp_ene,
     /* Pass NULL for unit to let get_ebin_space determine the units
      * for interaction_function[i].longname
      */
-    ie_ = get_ebin_space(ebin_, f_nre_, ener_nm, nullptr);
+    ie_ = get_ebin_space(ebin_, f_nre_, ener_nm.data(), nullptr);
     if (nCrmsd_)
     {
         /* This should be called directly after the call for ie_,
@@ -394,7 +410,7 @@ EnergyOutput::EnergyOutput(ener_file*                fp_ene,
         {
             snew(gnm[k], STRLEN);
         }
-        for (i = 0; (i < gmx::ssize(groups->groups[SimulationAtomGroupType::EnergyOutput])); i++)
+        for (int i = 0; (i < gmx::ssize(groups->groups[SimulationAtomGroupType::EnergyOutput])); i++)
         {
             ni = groups->groups[SimulationAtomGroupType::EnergyOutput][i];
             for (j = i; (j < gmx::ssize(groups->groups[SimulationAtomGroupType::EnergyOutput])); j++)
@@ -466,14 +482,14 @@ EnergyOutput::EnergyOutput(ener_file*                fp_ene,
     char** grpnms;
     snew(grpnms, std::max(mde_n_, mdeb_n_)); // Just in case mdeb_n_ > mde_n_
 
-    for (i = 0; (i < nTC_); i++)
+    for (int i = 0; (i < nTC_); i++)
     {
         ni = groups->groups[SimulationAtomGroupType::TemperatureCoupling][i];
         sprintf(buf, "T-%s", *(groups->groupNames[ni]));
         grpnms[i] = gmx_strdup(buf);
     }
     itemp_ = get_ebin_space(ebin_, nTC_, grpnms, unit_temp_K);
-    for (i = 0; i < nTC_; i++)
+    for (int i = 0; i < nTC_; i++)
     {
         sfree(grpnms[i]);
     }
@@ -485,7 +501,7 @@ EnergyOutput::EnergyOutput(ener_file*                fp_ene,
         {
             if (bNHC_trotter_)
             {
-                for (i = 0; (i < nTC_); i++)
+                for (int i = 0; (i < nTC_); i++)
                 {
                     ni   = groups->groups[SimulationAtomGroupType::TemperatureCoupling][i];
                     bufi = *(groups->groupNames[ni]);
@@ -501,7 +517,7 @@ EnergyOutput::EnergyOutput(ener_file*                fp_ene,
                 allocated = mde_n_;
                 if (bMTTK_)
                 {
-                    for (i = 0; (i < nTCP_); i++)
+                    for (int i = 0; (i < nTCP_); i++)
                     {
                         bufi = baro_nm[0]; /* All barostat DOF's together for now. */
                         for (j = 0; (j < nNHC_); j++)
@@ -518,7 +534,7 @@ EnergyOutput::EnergyOutput(ener_file*                fp_ene,
             }
             else
             {
-                for (i = 0; (i < nTC_); i++)
+                for (int i = 0; (i < nTC_); i++)
                 {
                     ni   = groups->groups[SimulationAtomGroupType::TemperatureCoupling][i];
                     bufi = *(groups->groupNames[ni]);
@@ -535,7 +551,7 @@ EnergyOutput::EnergyOutput(ener_file*                fp_ene,
     else if (etc_ == TemperatureCoupling::Berendsen || etc_ == TemperatureCoupling::Yes
              || etc_ == TemperatureCoupling::VRescale)
     {
-        for (i = 0; (i < nTC_); i++)
+        for (int i = 0; (i < nTC_); i++)
         {
             ni = groups->groups[SimulationAtomGroupType::TemperatureCoupling][i];
             sprintf(buf, "Lamb-%s", *(groups->groupNames[ni]));
@@ -545,7 +561,7 @@ EnergyOutput::EnergyOutput(ener_file*                fp_ene,
         allocated = mde_n_;
     }
 
-    for (i = 0; i < allocated; i++)
+    for (int i = 0; i < allocated; i++)
     {
         sfree(grpnms[i]);
     }
@@ -919,7 +935,7 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
             pv = vol * ref_p_ / gmx::c_presfac;
 
             add_ebin(ebin_, ipv_, 1, &pv, bSum);
-            enthalpy = pv + enerd->term[F_ETOT];
+            enthalpy = pv + enerd->term[InteractionFunction::TotalEnergy];
             add_ebin(ebin_, ienthalpy_, 1, &enthalpy, bSum);
         }
     }
@@ -1057,7 +1073,8 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
                         "Number of lambdas in energy data is bigger then in input record");
                 /* MRS: is this right, given the way we have defined the exchange probabilities? */
                 /* is this even useful to have at all? */
-                dE_[i] += (temperatures_[i] / temperatures_[fep_state] - 1.0) * enerd->term[F_EKIN];
+                dE_[i] += (temperatures_[i] / temperatures_[fep_state] - 1.0)
+                          * enerd->term[InteractionFunction::KineticEnergy];
             }
         }
 
@@ -1078,11 +1095,11 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
                 switch (fep->edHdLPrintEnergy)
                 {
                     case FreeEnergyPrintEnergy::Potential:
-                        store_energy = enerd->term[F_EPOT];
+                        store_energy = enerd->term[InteractionFunction::PotentialEnergy];
                         break;
                     case FreeEnergyPrintEnergy::Total:
                     case FreeEnergyPrintEnergy::Yes:
-                    default: store_energy = enerd->term[F_ETOT];
+                    default: store_energy = enerd->term[InteractionFunction::TotalEnergy];
                 }
                 fprintf(fp_dhdl_, " %#.8g", store_energy);
             }
@@ -1093,8 +1110,11 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
                 {
                     if (fep->separate_dvdl[i])
                     {
-                        /* assumes F_DVDL is first */
-                        fprintf(fp_dhdl_, " %#.8g", enerd->term[F_DVDL + static_cast<int>(i)]);
+                        /* assumes InteractionFunction::dVremainingdLambda is first */
+                        fprintf(fp_dhdl_,
+                                " %#.8g",
+                                enerd->term[static_cast<int>(InteractionFunction::dVremainingdLambda)
+                                            + static_cast<int>(i)]);
                     }
                 }
             }
@@ -1120,12 +1140,13 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
             {
                 if (fep->separate_dvdl[i])
                 {
-                    /* assumes F_DVDL is first */
-                    store_dhdl[idhdl] = enerd->term[F_DVDL + static_cast<int>(i)];
+                    /* assumes InteractionFunction::dVremainingdLambda is first */
+                    store_dhdl[idhdl] = enerd->term[static_cast<int>(InteractionFunction::dVremainingdLambda)
+                                                    + static_cast<int>(i)];
                     idhdl += 1;
                 }
             }
-            store_energy = enerd->term[F_ETOT];
+            store_energy = enerd->term[InteractionFunction::TotalEnergy];
             /* store_dh is dE */
             mde_delta_h_coll_add_dh(dhc_.get(),
                                     static_cast<double>(fep_state),
@@ -1139,8 +1160,10 @@ void EnergyOutput::addDataAtEnergyStep(bool                    bDoDHDL,
 
     if (conservedEnergyTracker_)
     {
-        conservedEnergyTracker_->addPoint(
-                time, bEner_[F_ECONSERVED] ? enerd->term[F_ECONSERVED] : enerd->term[F_ETOT]);
+        conservedEnergyTracker_->addPoint(time,
+                                          bEner_[InteractionFunction::ConservedEnergy]
+                                                  ? enerd->term[InteractionFunction::ConservedEnergy]
+                                                  : enerd->term[InteractionFunction::TotalEnergy]);
     }
 }
 

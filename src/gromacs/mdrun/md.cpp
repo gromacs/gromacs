@@ -762,7 +762,7 @@ void gmx::LegacySimulator::do_md()
             }
             if (EI_STATE_VELOCITY(ir->eI))
             {
-                real temp = enerd_->term[F_TEMP];
+                real temp = enerd_->term[InteractionFunction::Temperature];
                 if (ir->eI != IntegrationAlgorithm::VV)
                 {
                     /* Result of Ekin averaged over velocities of -half
@@ -1716,7 +1716,7 @@ void gmx::LegacySimulator::do_md()
                     updatePrevStepPullCom(pullWork_, state_->pull_com_prev_step);
                 }
 
-                enerd_->term[F_DVDL_CONSTR] += dvdl_constr;
+                enerd_->term[InteractionFunction::dHdLambdaConstraint] += dvdl_constr;
             }
         }
 
@@ -1922,20 +1922,23 @@ void gmx::LegacySimulator::do_md()
             /* use the directly determined last velocity, not actually the averaged half steps */
             if (bTrotter && ir->eI == IntegrationAlgorithm::VV)
             {
-                enerd_->term[F_EKIN] = last_ekin;
+                enerd_->term[InteractionFunction::KineticEnergy] = last_ekin;
             }
-            enerd_->term[F_ETOT] = enerd_->term[F_EPOT] + enerd_->term[F_EKIN];
+            enerd_->term[InteractionFunction::TotalEnergy] =
+                    enerd_->term[InteractionFunction::PotentialEnergy]
+                    + enerd_->term[InteractionFunction::KineticEnergy];
 
             if (integratorHasConservedEnergyQuantity(ir))
             {
                 if (EI_VV(ir->eI))
                 {
-                    enerd_->term[F_ECONSERVED] = enerd_->term[F_ETOT] + saved_conserved_quantity;
+                    enerd_->term[InteractionFunction::ConservedEnergy] =
+                            enerd_->term[InteractionFunction::TotalEnergy] + saved_conserved_quantity;
                 }
                 else
                 {
-                    enerd_->term[F_ECONSERVED] =
-                            enerd_->term[F_ETOT]
+                    enerd_->term[InteractionFunction::ConservedEnergy] =
+                            enerd_->term[InteractionFunction::TotalEnergy]
                             + NPT_energy(ir->pressureCouplingOptions,
                                          ir->etc,
                                          gmx::constArrayRefFromArray(ir->opts.nrdf, ir->opts.ngtc),

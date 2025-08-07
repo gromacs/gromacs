@@ -88,7 +88,7 @@ gmx::RVec positions[] = { { .130, -.041, -.291 },  { .120, -.056, -.192 },  { .0
 TEST(UpdateGroupsCog, ComputesCogs)
 {
     const int settleType     = 0;
-    const int atomsPerSettle = NRAL(F_SETTLE);
+    const int atomsPerSettle = NRAL(InteractionFunction::SETTLE);
     const int numAtoms       = sizeof(positions) / sizeof(positions[0]);
     const int numMolecules   = gmx::exactDiv(numAtoms, atomsPerSettle);
 
@@ -97,7 +97,7 @@ TEST(UpdateGroupsCog, ComputesCogs)
 
     gmx_moltype_t moltype;
     moltype.atoms.nr         = atomsPerSettle;
-    std::vector<int>& iatoms = moltype.ilist[F_SETTLE].iatoms;
+    std::vector<int>& iatoms = moltype.ilist[InteractionFunction::SETTLE].iatoms;
     iatoms.push_back(settleType);
     iatoms.push_back(0);
     iatoms.push_back(1);

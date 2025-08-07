@@ -375,7 +375,7 @@ struct ListInput
 {
 public:
     //! Function type
-    int fType = F_LJ;
+    InteractionFunction fType = InteractionFunction::LennardJonesShortRange;
     //! Tolerance for float evaluation
     float floatToler = 1e-6;
     //! Tolerance for double evaluation

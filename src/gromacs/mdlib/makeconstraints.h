@@ -100,8 +100,9 @@ std::unique_ptr<Constraints> makeConstraints(const gmx_mtop_t& mtop,
                                              bool              doEssentialDynamics,
                                              Args&&... args)
 {
-    int numConstraints = (gmx_mtop_ftype_count(mtop, F_CONSTR) + gmx_mtop_ftype_count(mtop, F_CONSTRNC));
-    int numSettles = gmx_mtop_ftype_count(mtop, F_SETTLE);
+    int numConstraints = (gmx_mtop_ftype_count(mtop, InteractionFunction::Constraints)
+                          + gmx_mtop_ftype_count(mtop, InteractionFunction::ConstraintsNoCoupling));
+    int numSettles     = gmx_mtop_ftype_count(mtop, InteractionFunction::SETTLE);
     GMX_RELEASE_ASSERT(!ir.bPull || pull_work != nullptr,
                        "When COM pulling is active, it must be initialized before constraints are "
                        "initialized");

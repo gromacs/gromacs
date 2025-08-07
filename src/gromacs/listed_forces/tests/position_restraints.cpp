@@ -142,8 +142,8 @@ protected:
         {
             // First item is "type" - each atom will have a different forceparam type
             // Second item is index - we'll just go from 0.
-            idef_.il[F_POSRES].iatoms.push_back(i);
-            idef_.il[F_POSRES].iatoms.push_back(i);
+            idef_.il[InteractionFunction::PositionRestraints].iatoms.push_back(i);
+            idef_.il[InteractionFunction::PositionRestraints].iatoms.push_back(i);
 
             auto& entry = idef_.iparams_posres.emplace_back();
             copy_rvec(referencePositions[i], entry.posres.pos0A);
@@ -183,7 +183,7 @@ TEST_P(PositionRestraintsTest, BasicPosResNoFreeEnergy)
     real dvdl   = 0;
     RVec virial = { 0.0_real, 0.0_real, 0.0_real };
 
-    const real v = posres_wrapper(idef_.il[F_POSRES].iatoms,
+    const real v = posres_wrapper(idef_.il[InteractionFunction::PositionRestraints].iatoms,
                                   idef_.iparams_posres,
                                   pbc_,
                                   as_rvec_array(x_.data()),

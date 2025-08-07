@@ -609,10 +609,10 @@ std::pair<double, double> TestParticleInsertion::performSingleInsertion(const do
 
     if (usingRF(fr_.ic->coulomb.type))
     {
-        enerd_.term[F_EPOT] += rfExclusionEnergy_;
+        enerd_.term[InteractionFunction::PotentialEnergy] += rfExclusionEnergy_;
     }
 
-    const double epot                = enerd_.term[F_EPOT];
+    const double epot                = enerd_.term[InteractionFunction::PotentialEnergy];
     bool         isEnergyOutOfBounds = false;
 
     /* If the compiler doesn't optimize this check away
@@ -673,7 +673,7 @@ std::pair<double, double> TestParticleInsertion::performSingleInsertion(const do
         }
         if (haveDispCorr_)
         {
-            sum_UgembU_[e++] += enerd_.term[F_DISPCORR] * embU;
+            sum_UgembU_[e++] += enerd_.term[InteractionFunction::DispersionCorrection] * embU;
         }
         if (haveElectrostatics_)
         {
@@ -689,7 +689,7 @@ std::pair<double, double> TestParticleInsertion::performSingleInsertion(const do
             }
             if (usingFullElectrostatics(fr_.ic->coulomb.type))
             {
-                sum_UgembU_[e++] += enerd_.term[F_COUL_RECIP] * embU;
+                sum_UgembU_[e++] += enerd_.term[InteractionFunction::CoulombReciprocalSpace] * embU;
             }
         }
     }

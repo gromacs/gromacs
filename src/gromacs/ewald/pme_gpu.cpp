@@ -291,7 +291,7 @@ static void pme_gpu_reduce_outputs(const bool            computeEnergyAndVirial,
     {
         GMX_ASSERT(enerd, "Invalid energy output manager");
         forceWithVirial->addVirialContribution(output.coulombVirial_);
-        enerd->term[F_COUL_RECIP] += output.coulombEnergy_;
+        enerd->term[InteractionFunction::CoulombReciprocalSpace] += output.coulombEnergy_;
         enerd->dvdl_lin[FreeEnergyPerturbationCouplingType::Coul] += output.coulombDvdl_;
     }
     if (output.haveForceOutput_)

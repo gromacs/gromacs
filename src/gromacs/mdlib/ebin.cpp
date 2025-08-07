@@ -44,7 +44,6 @@
 
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
-#include "gromacs/topology/ifunc.h"
 #include "gromacs/trajectory/energyframe.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -80,7 +79,7 @@ void done_ebin(t_ebin* eb)
 int get_ebin_space(t_ebin* eb, int nener, const char* const enm[], const char* unit)
 {
     int         index;
-    int         i, f;
+    int         i;
     const char* u;
 
     index = eb->nener;
@@ -110,18 +109,21 @@ int get_ebin_space(t_ebin* eb, int nener, const char* const enm[], const char* u
              * entries would be removed from the ifunc array.
              */
             u = unit_energy;
-            for (f = 0; f < F_NRE; f++)
+            for (const auto f : gmx::EnumerationWrapper<InteractionFunction>{})
             {
                 if (std::strcmp(eb->enm[i].name, interaction_function[f].longname) == 0)
                 {
                     /* Only the terms in this list are not energies */
                     switch (f)
                     {
-                        case F_DISRESVIOL: u = unit_length; break;
-                        case F_ORIRESDEV: u = "obs"; break;
-                        case F_TEMP: u = unit_temp_K; break;
-                        case F_PDISPCORR:
-                        case F_PRES: u = unit_pres_bar; break;
+                        case InteractionFunction::DistanceRestraintViolations:
+                            u = unit_length;
+                            break;
+                        case InteractionFunction::OrientationRestraintDeviations: u = "obs"; break;
+                        case InteractionFunction::Temperature: u = unit_temp_K; break;
+                        case InteractionFunction::PressureDispersionCorrection:
+                        case InteractionFunction::Pressure: u = unit_pres_bar; break;
+                        default: break;
                     }
                 }
             }

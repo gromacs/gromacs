@@ -85,7 +85,7 @@ class MtsComparisonTest : public MdrunTestFixture, public ::testing::WithParamIn
 //! Returns set of energy terms to compare with associated tolerances
 EnergyTermsToCompare energyTermsToCompare(const real energyTol, const real virialTol)
 {
-    return EnergyTermsToCompare{ { { interaction_function[F_EPOT].longname,
+    return EnergyTermsToCompare{ { { interaction_function[InteractionFunction::PotentialEnergy].longname,
                                      relativeToleranceAsFloatingPoint(100.0, energyTol) },
                                    { "Vir-XX", relativeToleranceAsFloatingPoint(30.0, virialTol) },
                                    { "Vir-YY", relativeToleranceAsFloatingPoint(30.0, virialTol) },

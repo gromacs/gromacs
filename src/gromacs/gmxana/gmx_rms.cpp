@@ -214,7 +214,7 @@ int gmx_rms(int argc, char* argv[])
         { "-aver", FALSE, etINT, { &avl }, "HIDDENAverage over this distance in the RMSD matrix" }
     };
     int natoms_trx, natoms_trx2, natoms;
-    int i, j, k, m;
+    int i, j, m;
 #define NFRAME 5000
     int        maxframe = NFRAME, maxframe2 = NFRAME;
     real       t, *w_rls, *w_rms, *w_rls_m = nullptr, *w_rms_m = nullptr;
@@ -546,7 +546,7 @@ int gmx_rms(int argc, char* argv[])
     if (bBond)
     {
         ncons = 0;
-        for (k = 0; k < F_NRE; k++)
+        for (const auto k : gmx::EnumerationWrapper<InteractionFunction>{})
         {
             if (IS_CHEMBOND(k))
             {
@@ -557,7 +557,7 @@ int gmx_rms(int argc, char* argv[])
         snew(ind_bond1, ncons);
         snew(ind_bond2, ncons);
         ibond = 0;
-        for (k = 0; k < F_NRE; k++)
+        for (const auto k : gmx::EnumerationWrapper<InteractionFunction>{})
         {
             if (IS_CHEMBOND(k))
             {
@@ -874,7 +874,7 @@ int gmx_rms(int argc, char* argv[])
             {
                 if (bFitAll)
                 {
-                    for (k = 0; k < n_ind_m; k++)
+                    for (int k = 0; k < n_ind_m; k++)
                     {
                         copy_rvec(mat_x2[j][k], mat_x2_j[k]);
                     }

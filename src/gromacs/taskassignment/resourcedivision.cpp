@@ -406,7 +406,8 @@ int get_nthreads_mpi(const gmx_hw_info_t* hwinfo,
         checker.applyConstraint(inputrec->coulombtype == CoulombInteractionType::Ewald,
                                 "Plain Ewald electrostatics");
         checker.applyConstraint(doMembed, "Membrane embedding");
-        bool useOrientationRestraints = (gmx_mtop_ftype_count(mtop, F_ORIRES) > 0);
+        bool useOrientationRestraints =
+                (gmx_mtop_ftype_count(mtop, InteractionFunction::OrientationRestraints) > 0);
         checker.applyConstraint(useOrientationRestraints, "Orientation restraints");
         if (checker.mustUseOneRank())
         {

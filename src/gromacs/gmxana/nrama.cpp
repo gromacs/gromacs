@@ -209,18 +209,19 @@ static void min_max(t_xrama* xr)
 
 static void get_dih_props(t_xrama* xr, const t_idef* idef, int mult)
 {
-    int      i, ft, ftype, nra;
-    t_iatom* ia;
-    t_dih *  dd, key;
+    int                 i, ft, nra;
+    InteractionFunction ftype;
+    t_iatom*            ia;
+    t_dih *             dd, key;
 
-    ia = idef->il[F_PDIHS].iatoms;
-    for (i = 0; (i < idef->il[F_PDIHS].nr);)
+    ia = idef->il[InteractionFunction::ProperDihedrals].iatoms;
+    for (i = 0; (i < idef->il[InteractionFunction::ProperDihedrals].nr);)
     {
         ft    = ia[0];
         ftype = idef->functype[ft];
         nra   = interaction_function[ftype].nratoms;
 
-        if (ftype != F_PDIHS)
+        if (ftype != InteractionFunction::ProperDihedrals)
         {
             gmx_incons("ftype is not a dihedral");
         }

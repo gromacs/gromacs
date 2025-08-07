@@ -159,7 +159,8 @@ TEST_P(EnergyMinimizationTest, WithinTolerances)
     }
 
     EnergyTermsToCompare energyTermsToCompare{ {
-            { interaction_function[F_EPOT].longname, potentialEnergyToleranceForSystem_g.at(simulationName) },
+            { interaction_function[InteractionFunction::PotentialEnergy].longname,
+              potentialEnergyToleranceForSystem_g.at(simulationName) },
     } };
 
     TestReferenceData refData;

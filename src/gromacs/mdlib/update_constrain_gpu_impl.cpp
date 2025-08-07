@@ -214,8 +214,8 @@ void UpdateConstrainGpu::Impl::set(DeviceBuffer<Float3>          d_x,
     }
     else
     {
-        GMX_ASSERT(idef.il[F_SETTLE].empty(), "SETTLE not supported");
-        GMX_ASSERT(idef.il[F_CONSTR].empty(), "LINCS not supported");
+        GMX_ASSERT(idef.il[InteractionFunction::SETTLE].empty(), "SETTLE not supported");
+        GMX_ASSERT(idef.il[InteractionFunction::Constraints].empty(), "LINCS not supported");
     }
 
     wallcycle_stop(wcycle_, WallCycleCounter::GpuSetConstr);

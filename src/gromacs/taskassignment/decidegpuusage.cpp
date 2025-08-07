@@ -718,7 +718,7 @@ bool decideWhetherToUseGpuForUpdate(const bool           isDomainDecomposition,
     errorReasons.appendIf(inputrec.useMts, "Multiple time stepping is not supported.");
 
     errorReasons.appendIf((inputrec.eConstrAlg == ConstraintAlgorithm::Shake && hasAnyConstraints
-                           && gmx_mtop_ftype_count(mtop, F_CONSTR) > 0),
+                           && gmx_mtop_ftype_count(mtop, InteractionFunction::Constraints) > 0),
                           "SHAKE constraints are not supported.");
     // Using the GPU-version of update if:
     // 1. PME is on the GPU (there should be a copy of coordinates on GPU for PME spread) or inactive, or
@@ -776,9 +776,9 @@ bool decideWhetherToUseGpuForUpdate(const bool           isDomainDecomposition,
     errorReasons.appendIf(useModularSimulator, "The modular simulator is not supported.");
     errorReasons.appendIf(doRerun, "Re-run is not supported.");
 
-    // TODO: F_CONSTRNC is only unsupported, because isNumCoupledConstraintsSupported()
+    // TODO: InteractionFunction::ConstraintsNoCoupling is only unsupported, because isNumCoupledConstraintsSupported()
     // does not support it, the actual CUDA LINCS code does support it
-    errorReasons.appendIf((gmx_mtop_ftype_count(mtop, F_CONSTRNC) > 0),
+    errorReasons.appendIf((gmx_mtop_ftype_count(mtop, InteractionFunction::ConstraintsNoCoupling) > 0),
                           "Non-connecting constraints are not supported");
     errorReasons.appendIf(
             !UpdateConstrainGpu::isNumCoupledConstraintsSupported(mtop),

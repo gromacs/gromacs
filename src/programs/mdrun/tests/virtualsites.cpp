@@ -189,14 +189,17 @@ public:
                                                  { 0.411874, -0.038205, -0.151459 } };
         // Virtual site definitions with randomly generated parameters
         std::vector<VirtualSite> virtualSites = {
-            { F_VSITE1, 6, { 0 }, {} },
-            { F_VSITE2, 6, { 0, 1 }, { 0.710573 } },
-            { F_VSITE2FD, 6, { 0, 1 }, { 0.292430 } },
-            { F_VSITE3, 6, { 0, 1, 2 }, { 0.060990, 0.543636 } },
-            { F_VSITE3FD, 6, { 0, 1, 2 }, { 0.125024, 0.444587 } },
-            { F_VSITE3FAD, 6, { 0, 1, 2 }, { 0.414850, 0.349767 } },
-            { F_VSITE3OUT, 6, { 0, 1, 2 }, { 0.779323, 0.093773, 0.743164 } },
-            { F_VSITE4FDN, 6, { 0, 1, 2, 3 }, { 0.975111, 0.952180, 0.757594 } }
+            { InteractionFunction::VirtualSite1, 6, { 0 }, {} },
+            { InteractionFunction::VirtualSite2, 6, { 0, 1 }, { 0.710573 } },
+            { InteractionFunction::VirtualSite2FlexibleDistance, 6, { 0, 1 }, { 0.292430 } },
+            { InteractionFunction::VirtualSite3, 6, { 0, 1, 2 }, { 0.060990, 0.543636 } },
+            { InteractionFunction::VirtualSite3FlexibleDistance, 6, { 0, 1, 2 }, { 0.125024, 0.444587 } },
+            { InteractionFunction::VirtualSite3FlexibleAngleDistance, 6, { 0, 1, 2 }, { 0.414850, 0.349767 } },
+            { InteractionFunction::VirtualSite3Outside, 6, { 0, 1, 2 }, { 0.779323, 0.093773, 0.743164 } },
+            { InteractionFunction::VirtualSite4FlexibleDistanceNormalization,
+              6,
+              { 0, 1, 2, 3 },
+              { 0.975111, 0.952180, 0.757594 } }
         };
 
         // Make integration step
@@ -273,7 +276,7 @@ public:
     struct VirtualSite
     {
         //! Type of virtual site
-        int type;
+        InteractionFunction type;
         //! Index of virtual site
         int atomIdx;
         //! Indices of constructing atoms
@@ -287,7 +290,7 @@ public:
 
     private:
         //! Templated reference implementation of virtual site position and velocity calculation
-        template<int vsiteType>
+        template<InteractionFunction vsiteType>
         [[nodiscard]] std::tuple<RVec, RVec> calculateVSite(ArrayRef<const RVec> positions,
                                                             ArrayRef<const RVec> velocities) const;
     };
@@ -302,10 +305,19 @@ public:
         std::vector<VirtualSite> virtualSites;
         const auto&              localTopology = *topologyInformation.expandedTopology();
         printf("Reading virtual site types...\n");
-        for (int vsiteType = F_VSITE1; vsiteType <= F_VSITEN; vsiteType++)
+        for (InteractionFunction vsiteType : { InteractionFunction::VirtualSite1,
+                                               InteractionFunction::VirtualSite2,
+                                               InteractionFunction::VirtualSite2FlexibleDistance,
+                                               InteractionFunction::VirtualSite3,
+                                               InteractionFunction::VirtualSite3FlexibleDistance,
+                                               InteractionFunction::VirtualSite3FlexibleAngleDistance,
+                                               InteractionFunction::VirtualSite3Outside,
+                                               InteractionFunction::VirtualSite4FlexibleDistance,
+                                               InteractionFunction::VirtualSite4FlexibleDistanceNormalization,
+                                               InteractionFunction::VirtualSiteN })
         {
-            const auto& interactionList = localTopology.idef.il.at(vsiteType);
-            if (vsiteType == F_VSITE4FD || interactionList.empty())
+            const auto& interactionList = localTopology.idef.il[vsiteType];
+            if (vsiteType == InteractionFunction::VirtualSite4FlexibleDistance || interactionList.empty())
             {
                 // 4FD is deprecated. Interaction list empty means system doesn't contain this type.
                 continue;
@@ -324,7 +336,7 @@ public:
                 }
                 indexString += toString(virtualSiteIdx);
 
-                if (vsiteType == F_VSITEN)
+                if (vsiteType == InteractionFunction::VirtualSiteN)
                 {
                     const int vSiteNConstructingAtoms =
                             localTopology.idef.iparams[parameterIdx].vsiten.n;
@@ -359,15 +371,15 @@ public:
 //! \cond
 template<>
 [[nodiscard]] std::tuple<RVec, RVec>
-VirtualSiteTest::VirtualSite::calculateVSite<F_VSITE1>(ArrayRef<const RVec> positions,
-                                                       ArrayRef<const RVec> velocities) const
+VirtualSiteTest::VirtualSite::calculateVSite<InteractionFunction::VirtualSite1>(ArrayRef<const RVec> positions,
+                                                                                ArrayRef<const RVec> velocities) const
 {
     return { positions[constructingAtomIdx.at(0)], velocities[constructingAtomIdx.at(0)] };
 }
 template<>
 [[nodiscard]] std::tuple<RVec, RVec>
-VirtualSiteTest::VirtualSite::calculateVSite<F_VSITE2>(ArrayRef<const RVec> positions,
-                                                       ArrayRef<const RVec> velocities) const
+VirtualSiteTest::VirtualSite::calculateVSite<InteractionFunction::VirtualSite2>(ArrayRef<const RVec> positions,
+                                                                                ArrayRef<const RVec> velocities) const
 {
     const auto& a = parameters[0];
     return { (1 - a) * positions[constructingAtomIdx.at(0)] + a * positions[constructingAtomIdx.at(1)],
@@ -375,8 +387,9 @@ VirtualSiteTest::VirtualSite::calculateVSite<F_VSITE2>(ArrayRef<const RVec> posi
 }
 template<>
 [[nodiscard]] std::tuple<RVec, RVec>
-VirtualSiteTest::VirtualSite::calculateVSite<F_VSITE2FD>(ArrayRef<const RVec> positions,
-                                                         ArrayRef<const RVec> velocities) const
+VirtualSiteTest::VirtualSite::calculateVSite<InteractionFunction::VirtualSite2FlexibleDistance>(
+        ArrayRef<const RVec> positions,
+        ArrayRef<const RVec> velocities) const
 {
     const auto& a   = parameters[0];
     const auto& ri  = positions[constructingAtomIdx.at(0)];
@@ -391,8 +404,8 @@ VirtualSiteTest::VirtualSite::calculateVSite<F_VSITE2FD>(ArrayRef<const RVec> po
 }
 template<>
 [[nodiscard]] std::tuple<RVec, RVec>
-VirtualSiteTest::VirtualSite::calculateVSite<F_VSITE3>(ArrayRef<const RVec> positions,
-                                                       ArrayRef<const RVec> velocities) const
+VirtualSiteTest::VirtualSite::calculateVSite<InteractionFunction::VirtualSite3>(ArrayRef<const RVec> positions,
+                                                                                ArrayRef<const RVec> velocities) const
 {
     const auto& a  = parameters[0];
     const auto& b  = parameters[1];
@@ -407,8 +420,9 @@ VirtualSiteTest::VirtualSite::calculateVSite<F_VSITE3>(ArrayRef<const RVec> posi
 }
 template<>
 [[nodiscard]] std::tuple<RVec, RVec>
-VirtualSiteTest::VirtualSite::calculateVSite<F_VSITE3FD>(ArrayRef<const RVec> positions,
-                                                         ArrayRef<const RVec> velocities) const
+VirtualSiteTest::VirtualSite::calculateVSite<InteractionFunction::VirtualSite3FlexibleDistance>(
+        ArrayRef<const RVec> positions,
+        ArrayRef<const RVec> velocities) const
 {
     const auto& a   = parameters[0];
     const auto& b   = parameters[1];
@@ -432,8 +446,9 @@ VirtualSiteTest::VirtualSite::calculateVSite<F_VSITE3FD>(ArrayRef<const RVec> po
 }
 template<>
 [[nodiscard]] std::tuple<RVec, RVec>
-VirtualSiteTest::VirtualSite::calculateVSite<F_VSITE3FAD>(ArrayRef<const RVec> positions,
-                                                          ArrayRef<const RVec> velocities) const
+VirtualSiteTest::VirtualSite::calculateVSite<InteractionFunction::VirtualSite3FlexibleAngleDistance>(
+        ArrayRef<const RVec> positions,
+        ArrayRef<const RVec> velocities) const
 {
     // Note: a = d * cos(theta)
     //       b = d * sin(theta)
@@ -465,8 +480,9 @@ VirtualSiteTest::VirtualSite::calculateVSite<F_VSITE3FAD>(ArrayRef<const RVec> p
 }
 template<>
 [[nodiscard]] std::tuple<RVec, RVec>
-VirtualSiteTest::VirtualSite::calculateVSite<F_VSITE3OUT>(ArrayRef<const RVec> positions,
-                                                          ArrayRef<const RVec> velocities) const
+VirtualSiteTest::VirtualSite::calculateVSite<InteractionFunction::VirtualSite3Outside>(
+        ArrayRef<const RVec> positions,
+        ArrayRef<const RVec> velocities) const
 {
     const auto& a   = parameters[0];
     const auto& b   = parameters[1];
@@ -487,8 +503,9 @@ VirtualSiteTest::VirtualSite::calculateVSite<F_VSITE3OUT>(ArrayRef<const RVec> p
 }
 template<>
 [[nodiscard]] std::tuple<RVec, RVec>
-VirtualSiteTest::VirtualSite::calculateVSite<F_VSITE4FDN>(ArrayRef<const RVec> positions,
-                                                          ArrayRef<const RVec> velocities) const
+VirtualSiteTest::VirtualSite::calculateVSite<InteractionFunction::VirtualSite4FlexibleDistanceNormalization>(
+        ArrayRef<const RVec> positions,
+        ArrayRef<const RVec> velocities) const
 {
     const auto& a   = parameters[0];
     const auto& b   = parameters[1];
@@ -521,8 +538,8 @@ VirtualSiteTest::VirtualSite::calculateVSite<F_VSITE4FDN>(ArrayRef<const RVec> p
 
 template<>
 [[nodiscard]] std::tuple<RVec, RVec>
-VirtualSiteTest::VirtualSite::calculateVSite<F_VSITEN>(ArrayRef<const RVec> positions,
-                                                       ArrayRef<const RVec> velocities) const
+VirtualSiteTest::VirtualSite::calculateVSite<InteractionFunction::VirtualSiteN>(ArrayRef<const RVec> positions,
+                                                                                ArrayRef<const RVec> velocities) const
 {
     const auto& ri = positions[constructingAtomIdx.at(0)];
     const auto& vi = velocities[constructingAtomIdx.at(0)];
@@ -548,24 +565,33 @@ VirtualSiteTest::VirtualSite::calculate(ArrayRef<const RVec> constructingPositio
 {
     switch (type)
     {
-        case F_VSITE1:
-            return calculateVSite<F_VSITE1>(constructingPositions, constructingVelocities);
-        case F_VSITE2:
-            return calculateVSite<F_VSITE2>(constructingPositions, constructingVelocities);
-        case F_VSITE2FD:
-            return calculateVSite<F_VSITE2FD>(constructingPositions, constructingVelocities);
-        case F_VSITE3:
-            return calculateVSite<F_VSITE3>(constructingPositions, constructingVelocities);
-        case F_VSITE3FD:
-            return calculateVSite<F_VSITE3FD>(constructingPositions, constructingVelocities);
-        case F_VSITE3FAD:
-            return calculateVSite<F_VSITE3FAD>(constructingPositions, constructingVelocities);
-        case F_VSITE3OUT:
-            return calculateVSite<F_VSITE3OUT>(constructingPositions, constructingVelocities);
-        case F_VSITE4FDN:
-            return calculateVSite<F_VSITE4FDN>(constructingPositions, constructingVelocities);
-        case F_VSITEN:
-            return calculateVSite<F_VSITEN>(constructingPositions, constructingVelocities);
+        case InteractionFunction::VirtualSite1:
+            return calculateVSite<InteractionFunction::VirtualSite1>(constructingPositions,
+                                                                     constructingVelocities);
+        case InteractionFunction::VirtualSite2:
+            return calculateVSite<InteractionFunction::VirtualSite2>(constructingPositions,
+                                                                     constructingVelocities);
+        case InteractionFunction::VirtualSite2FlexibleDistance:
+            return calculateVSite<InteractionFunction::VirtualSite2FlexibleDistance>(
+                    constructingPositions, constructingVelocities);
+        case InteractionFunction::VirtualSite3:
+            return calculateVSite<InteractionFunction::VirtualSite3>(constructingPositions,
+                                                                     constructingVelocities);
+        case InteractionFunction::VirtualSite3FlexibleDistance:
+            return calculateVSite<InteractionFunction::VirtualSite3FlexibleDistance>(
+                    constructingPositions, constructingVelocities);
+        case InteractionFunction::VirtualSite3FlexibleAngleDistance:
+            return calculateVSite<InteractionFunction::VirtualSite3FlexibleAngleDistance>(
+                    constructingPositions, constructingVelocities);
+        case InteractionFunction::VirtualSite3Outside:
+            return calculateVSite<InteractionFunction::VirtualSite3Outside>(constructingPositions,
+                                                                            constructingVelocities);
+        case InteractionFunction::VirtualSite4FlexibleDistanceNormalization:
+            return calculateVSite<InteractionFunction::VirtualSite4FlexibleDistanceNormalization>(
+                    constructingPositions, constructingVelocities);
+        case InteractionFunction::VirtualSiteN:
+            return calculateVSite<InteractionFunction::VirtualSiteN>(constructingPositions,
+                                                                     constructingVelocities);
         default: throw NotImplementedError("Unknown virtual site type");
     }
 }

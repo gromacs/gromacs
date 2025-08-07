@@ -790,8 +790,9 @@ static bool localStateHasFillerParticles(const gmx_mtop_t& mtop,
     // WholeMoleculeTransform and GPU-direct does not support filler particles.
     const bool useEwaldSurfaceCorrection =
             (usingPmeOrEwald(inputrec.coulombtype) && inputrec.epsilon_surface != 0);
-    const bool haveOrientationRestraints = (gmx_mtop_ftype_count(mtop, F_ORIRES) > 0);
-    const bool needWholeMolecules        = useEwaldSurfaceCorrection || haveOrientationRestraints;
+    const bool haveOrientationRestraints =
+            (gmx_mtop_ftype_count(mtop, InteractionFunction::OrientationRestraints) > 0);
+    const bool needWholeMolecules = useEwaldSurfaceCorrection || haveOrientationRestraints;
     const bool canHaveFillerParticlesInLocalState =
             useDomainDecomposition
             && ((haveSinglePPRank && !needWholeMolecules) || (!haveSinglePPRank && !useGpuDirectHalo));
@@ -1221,7 +1222,7 @@ int Mdrunner::mdrunner()
                 globalState.get(),
                 replExParams.exchangeInterval > 0);
 
-    if (gmx_mtop_ftype_count(mtop, F_ORIRES) > 0 && isSimulationMainRank)
+    if (gmx_mtop_ftype_count(mtop, InteractionFunction::OrientationRestraints) > 0 && isSimulationMainRank)
     {
         extendStateWithOriresHistory(mtop, *inputrec, globalState.get());
     }
@@ -1376,21 +1377,22 @@ int Mdrunner::mdrunner()
     {
         const bool haveFrozenAtoms = inputrecFrozenAtoms(inputrec.get());
 
-        useGpuForUpdate = decideWhetherToUseGpuForUpdate(useDomainDecomposition,
-                                                         updateGroups.useUpdateGroups(),
-                                                         pmeRunMode,
-                                                         domdecOptions.numPmeRanks > 0,
-                                                         useGpuForNonbonded,
-                                                         updateTarget,
-                                                         gpusWereDetected,
-                                                         *inputrec,
-                                                         mtop,
-                                                         doEssentialDynamics,
-                                                         gmx_mtop_ftype_count(mtop, F_ORIRES) > 0,
-                                                         haveFrozenAtoms,
-                                                         useModularSimulator,
-                                                         doRerun,
-                                                         mdlog);
+        useGpuForUpdate = decideWhetherToUseGpuForUpdate(
+                useDomainDecomposition,
+                updateGroups.useUpdateGroups(),
+                pmeRunMode,
+                domdecOptions.numPmeRanks > 0,
+                useGpuForNonbonded,
+                updateTarget,
+                gpusWereDetected,
+                *inputrec,
+                mtop,
+                doEssentialDynamics,
+                gmx_mtop_ftype_count(mtop, InteractionFunction::OrientationRestraints) > 0,
+                haveFrozenAtoms,
+                useModularSimulator,
+                doRerun,
+                mdlog);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
 
@@ -1817,7 +1819,7 @@ int Mdrunner::mdrunner()
                       pforce);
         // Dirty hack, for fixing disres and orires should be made mdmodules
         fr->fcdata->disres = disresdata;
-        if (gmx_mtop_ftype_count(mtop, F_ORIRES) > 0)
+        if (gmx_mtop_ftype_count(mtop, InteractionFunction::OrientationRestraints) > 0)
         {
             fr->fcdata->orires = std::make_unique<t_oriresdata>(
                     fplog, mtop, *inputrec, ms, globalState.get(), &atomSets);

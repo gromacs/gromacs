@@ -87,7 +87,7 @@ struct gmx_reverse_top_t::Impl
     //! @cond Doxygen_Suppress
     //! Options for the setup of this reverse topology
     const ReverseTopOptions options;
-    //! Are there interaction of type F_POSRES and/or F_FBPOSRES
+    //! Are there interaction of type InteractionFunction::PositionRestraints and/or InteractionFunction::FlatBottomedPositionRestraints
     bool hasPositionRestraints;
     //! \brief Are there bondeds/exclusions between atoms?
     bool bInterAtomicInteractions = false;
@@ -112,7 +112,7 @@ struct gmx_reverse_top_t::Impl
 };
 
 
-int nral_rt(int ftype)
+int nral_rt(InteractionFunction ftype)
 {
     int nral = NRAL(ftype);
     if (interaction_function[ftype].flags & IF_VSITE)
@@ -126,14 +126,16 @@ int nral_rt(int ftype)
     return nral;
 }
 
-bool dd_check_ftype(const int ftype, const ReverseTopOptions& rtOptions)
+bool dd_check_ftype(const InteractionFunction ftype, const ReverseTopOptions& rtOptions)
 {
     return ((((interaction_function[ftype].flags & IF_BOND) != 0U)
              && ((interaction_function[ftype].flags & IF_VSITE) == 0U)
              && ((rtOptions.ddBondedChecking_ == DDBondedChecking::All)
                  || ((interaction_function[ftype].flags & IF_LIMZERO) == 0U)))
-            || (rtOptions.includeConstraints_ && (ftype == F_CONSTR || ftype == F_CONSTRNC))
-            || (rtOptions.includeSettles_ && ftype == F_SETTLE));
+            || (rtOptions.includeConstraints_
+                && (ftype == InteractionFunction::Constraints
+                    || ftype == InteractionFunction::ConstraintsNoCoupling))
+            || (rtOptions.includeSettles_ && ftype == InteractionFunction::SETTLE));
 }
 
 MolecularTopologyAtomIndices globalAtomIndexToMoltypeIndices(const gmx::ArrayRef<const MolblockIndices> molblockIndices,
@@ -207,11 +209,13 @@ static void low_make_reverse_ilist(const InteractionLists&  il_mt,
     const bool includeConstraints = rtOptions.includeConstraints_;
     const bool includeSettles     = rtOptions.includeSettles_;
 
-    for (int ftype = 0; ftype < F_NRE; ftype++)
+    for (const auto ftype : gmx::EnumerationWrapper<InteractionFunction>{})
     {
         if ((interaction_function[ftype].flags & (IF_BOND | IF_VSITE))
-            || (includeConstraints && (ftype == F_CONSTR || ftype == F_CONSTRNC))
-            || (includeSettles && ftype == F_SETTLE))
+            || (includeConstraints
+                && (ftype == InteractionFunction::Constraints
+                    || ftype == InteractionFunction::ConstraintsNoCoupling))
+            || (includeSettles && ftype == InteractionFunction::SETTLE))
         {
             const bool  isVSite = ((interaction_function[ftype].flags & IF_VSITE) != 0U);
             const int   nral    = NRAL(ftype);
@@ -228,7 +232,10 @@ static void low_make_reverse_ilist(const InteractionLists&  il_mt,
                     {
                         GMX_ASSERT(!r_il.empty(), "with bAssign not allowed to be empty");
                         GMX_ASSERT(!r_index.empty(), "with bAssign not allowed to be empty");
-                        r_il[r_index[a] + count[a]]     = (ftype == F_CONSTRNC ? F_CONSTR : ftype);
+                        r_il[r_index[a] + count[a]] =
+                                static_cast<int>(ftype == InteractionFunction::ConstraintsNoCoupling
+                                                         ? InteractionFunction::Constraints
+                                                         : ftype);
                         r_il[r_index[a] + count[a] + 1] = ia[0];
                         for (int j = 1; j < 1 + nral; j++)
                         {
@@ -346,7 +353,9 @@ gmx_reverse_top_t::Impl::Impl(const gmx_mtop_t&        mtop,
                               const bool               useFreeEnergy,
                               const ReverseTopOptions& reverseTopOptions) :
     options(reverseTopOptions),
-    hasPositionRestraints(gmx_mtop_ftype_count(mtop, F_POSRES) + gmx_mtop_ftype_count(mtop, F_FBPOSRES) > 0),
+    hasPositionRestraints(gmx_mtop_ftype_count(mtop, InteractionFunction::PositionRestraints)
+                                  + gmx_mtop_ftype_count(mtop, InteractionFunction::FlatBottomedPositionRestraints)
+                          > 0),
     bInterAtomicInteractions(mtop.bIntermolecularInteractions)
 {
     bInterAtomicInteractions = mtop.bIntermolecularInteractions;

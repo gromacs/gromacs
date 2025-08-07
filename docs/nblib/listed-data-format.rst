@@ -9,13 +9,13 @@ The current format for listed forces in |Gromacs| looks like this:
    struct InteractionDefinitions
    {
        std::vector<t_iparams> iparams;
-       std::array<std::vector<int>, F_NRE> il;
+       gmx::EnumerationArray<InteractionFunction, InteractionList> il;
    };
 
 The format covers all interaction types, i.e. \ ``t_iparams`` is a union
 type which can hold the parameters of any type.
 The other member called ``il`` contains the
-indices for each interaction type, where ``F_NRE`` is the number of
+indices for each interaction type, where ``InteractionFunction::Count`` is the number of
 interaction types that |Gromacs| supports. More precisely, each
 member of ``il``, a ``std::vector<int>``, is a flattened list of all
 interactions for a given interaction type. The vector contains ``N+1`` integer indices
@@ -43,7 +43,7 @@ looks like this:
    {
        // manage timing and multi-threading 
 
-       for (int ftype = 0; ftype < F_NRE; ++type)
+       for (InteractionFunction ftype : gmx::EnumerationWrapper<InteractionFunction>{})
        {
            // branch out and descend stack for 2 intermediate functions based on
            // the type of interaction that ftype corresponds to

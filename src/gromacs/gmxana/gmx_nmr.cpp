@@ -181,10 +181,10 @@ static void get_orires_parms(const char* topnm, t_inputrec* ir, int* nor, int* n
     top = gmx_mtop_t_to_t_topology(&mtop, FALSE);
 
     ip    = top.idef.iparams;
-    iatom = top.idef.il[F_ORIRES].iatoms;
+    iatom = top.idef.il[InteractionFunction::OrientationRestraints].iatoms;
 
     /* Count how many distance restraint there are... */
-    nb = top.idef.il[F_ORIRES].nr;
+    nb = top.idef.il[InteractionFunction::OrientationRestraints].nr;
     if (nb == 0)
     {
         gmx_fatal(FARGS, "No orientation restraints in topology!\n");
@@ -209,16 +209,17 @@ static void get_orires_parms(const char* topnm, t_inputrec* ir, int* nor, int* n
 
 static int get_bounds(real** bounds, int** index, int** dr_pair, int* npairs, const InteractionDefinitions& idef)
 {
-    int   i, j, k, type, ftype, natom;
-    real* b;
-    int * ind, *pair;
-    int   nb, label1;
+    int                 i, j, k, type, natom;
+    InteractionFunction ftype;
+    real*               b;
+    int *               ind, *pair;
+    int                 nb, label1;
 
-    gmx::ArrayRef<const t_functype> functype = idef.functype;
-    gmx::ArrayRef<const t_iparams>  iparams  = idef.iparams;
+    gmx::ArrayRef<const InteractionFunction> functype = idef.functype;
+    gmx::ArrayRef<const t_iparams>           iparams  = idef.iparams;
 
     /* Count how many distance restraint there are... */
-    nb = idef.il[F_DISRES].size();
+    nb = idef.il[InteractionFunction::DistanceRestraints].size();
     if (nb == 0)
     {
         gmx_fatal(FARGS, "No distance restraints in topology!\n");
@@ -234,7 +235,7 @@ static int get_bounds(real** bounds, int** index, int** dr_pair, int* npairs, co
     for (gmx::Index i = 0; i < functype.ssize(); i++)
     {
         ftype = functype[i];
-        if (ftype == F_DISRES)
+        if (ftype == InteractionFunction::DistanceRestraints)
         {
 
             label1  = iparams[i].disres.label;
@@ -247,7 +248,7 @@ static int get_bounds(real** bounds, int** index, int** dr_pair, int* npairs, co
 
     /* Fill the index array */
     label1                          = -1;
-    const InteractionList&   disres = idef.il[F_DISRES];
+    const InteractionList&   disres = idef.il[InteractionFunction::DistanceRestraints];
     gmx::ArrayRef<const int> iatom  = disres.iatoms;
     for (i = j = k = 0; (i < disres.size());)
     {
@@ -660,9 +661,9 @@ int gmx_nmr(int argc, char* argv[])
             blk_disre = find_block_id_enxframe(&fr, enxDISRE, nullptr);
             if (bDisRe && bDRAll && leg.empty() && blk_disre)
             {
-                const InteractionList&   ilist = top->idef.il[F_DISRES];
-                gmx::ArrayRef<const int> fa    = ilist.iatoms;
-                const t_iparams*         ip    = top->idef.iparams.data();
+                const InteractionList& ilist = top->idef.il[InteractionFunction::DistanceRestraints];
+                gmx::ArrayRef<const int> fa = ilist.iatoms;
+                const t_iparams*         ip = top->idef.iparams.data();
                 if (blk_disre->nsub != 2 || (blk_disre->sub[0].nr != blk_disre->sub[1].nr))
                 {
                     gmx_incons("Number of disre sub-blocks not equal to 2");

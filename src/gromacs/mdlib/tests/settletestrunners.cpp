@@ -75,8 +75,10 @@ void SettleHostTestRunner::applySettle(SettleTestData*    testData,
 {
     SettleData settled(testData->mtop_);
 
-    settled.setConstraints(
-            testData->idef_->il[F_SETTLE], testData->numAtoms_, testData->masses_, testData->inverseMasses_);
+    settled.setConstraints(testData->idef_->il[InteractionFunction::SETTLE],
+                           testData->numAtoms_,
+                           testData->masses_,
+                           testData->inverseMasses_);
 
     bool errorOccured;
     int  numThreads  = 1;

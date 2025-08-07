@@ -104,7 +104,7 @@ SettleTestData::SettleTestData(int numSettles) :
     mtop_.moltype.resize(1);
     mtop_.molblock.resize(1);
     mtop_.molblock[0].type   = 0;
-    std::vector<int>& iatoms = mtop_.moltype[0].ilist[F_SETTLE].iatoms;
+    std::vector<int>& iatoms = mtop_.moltype[0].ilist[InteractionFunction::SETTLE].iatoms;
     for (int i = 0; i < numSettles; ++i)
     {
         iatoms.push_back(settleType);
@@ -140,8 +140,8 @@ SettleTestData::SettleTestData(int numSettles) :
         mtop_.moltype[0].atoms.atom[i * atomsPerSettle_ + 2].m = hydrogenMass_;
     }
 
-    idef_               = std::make_unique<InteractionDefinitions>(mtop_.ffparams);
-    idef_->il[F_SETTLE] = mtop_.moltype[0].ilist[F_SETTLE];
+    idef_ = std::make_unique<InteractionDefinitions>(mtop_.ffparams);
+    idef_->il[InteractionFunction::SETTLE] = mtop_.moltype[0].ilist[InteractionFunction::SETTLE];
 }
 
 SettleTestData::~SettleTestData() {}

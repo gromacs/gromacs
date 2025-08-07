@@ -1987,7 +1987,9 @@ int gmx_energy(int argc, char* argv[])
         for (i = 0; (i < nset); i++)
         {
             bIsEner[i] = FALSE;
-            for (j = 0; (j <= F_ETOT); j++)
+            for (j = static_cast<int>(InteractionFunction::Bonds);
+                 (j <= static_cast<int>(InteractionFunction::TotalEnergy));
+                 j++)
             {
                 bIsEner[i] = bIsEner[i]
                              || (gmx_strcasecmp(interaction_function[j].longname, leg[i].c_str()) == 0);

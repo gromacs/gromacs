@@ -47,8 +47,10 @@
 #include <cstdio>
 
 #include "gromacs/fileio/enxio.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/trajectory/energyframe.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
 
 namespace gmx

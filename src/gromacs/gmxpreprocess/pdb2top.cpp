@@ -677,16 +677,16 @@ void print_top_mols(FILE*                                      out,
     }
 }
 
-void write_top(FILE*                                   out,
-               const std::filesystem::path&            pr,
-               const char*                             molname,
-               t_atoms*                                at,
-               bool                                    bRTPresname,
-               gmx::ArrayRef<const int>                bts,
-               gmx::ArrayRef<const InteractionsOfType> plist,
-               t_excls                                 excls[],
-               PreprocessingAtomTypes*                 atype,
-               int                                     nrexcl)
+void write_top(FILE*                                                                 out,
+               const std::filesystem::path&                                          pr,
+               const char*                                                           molname,
+               t_atoms*                                                              at,
+               bool                                                                  bRTPresname,
+               gmx::ArrayRef<const int>                                              bts,
+               const gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
+               t_excls                                                               excls[],
+               PreprocessingAtomTypes*                                               atype,
+               int                                                                   nrexcl)
 /* NOTE: nrexcl is not the size of *excl! */
 {
     if (at && atype)
@@ -696,36 +696,59 @@ void write_top(FILE*                                   out,
         fprintf(out, "%-15s %5d\n\n", molname ? molname : "Protein", nrexcl);
 
         print_atoms(out, atype, at, bRTPresname);
+        print_bondeds(out,
+                      at->nr,
+                      Directive::d_bonds,
+                      InteractionFunction::Bonds,
+                      bts[static_cast<int>(BondedTypes::Bonds)],
+                      plist);
+        print_bondeds(out, at->nr, Directive::d_constraints, InteractionFunction::Constraints, 0, plist);
         print_bondeds(
-                out, at->nr, Directive::d_bonds, F_BONDS, bts[static_cast<int>(BondedTypes::Bonds)], plist);
-        print_bondeds(out, at->nr, Directive::d_constraints, F_CONSTR, 0, plist);
-        print_bondeds(out, at->nr, Directive::d_constraints, F_CONSTRNC, 0, plist);
-        print_bondeds(out, at->nr, Directive::d_pairs, F_LJ14, 0, plist);
+                out, at->nr, Directive::d_constraints, InteractionFunction::ConstraintsNoCoupling, 0, plist);
+        print_bondeds(out, at->nr, Directive::d_pairs, InteractionFunction::LennardJones14, 0, plist);
         print_excl(out, at->nr, excls);
-        print_bondeds(
-                out, at->nr, Directive::d_angles, F_ANGLES, bts[static_cast<int>(BondedTypes::Angles)], plist);
+        print_bondeds(out,
+                      at->nr,
+                      Directive::d_angles,
+                      InteractionFunction::Angles,
+                      bts[static_cast<int>(BondedTypes::Angles)],
+                      plist);
         print_bondeds(out,
                       at->nr,
                       Directive::d_dihedrals,
-                      F_PDIHS,
+                      InteractionFunction::ProperDihedrals,
                       bts[static_cast<int>(BondedTypes::ProperDihedrals)],
                       plist);
         print_bondeds(out,
                       at->nr,
                       Directive::d_dihedrals,
-                      F_IDIHS,
+                      InteractionFunction::ImproperDihedrals,
                       bts[static_cast<int>(BondedTypes::ImproperDihedrals)],
                       plist);
-        print_bondeds(out, at->nr, Directive::d_cmap, F_CMAP, bts[static_cast<int>(BondedTypes::Cmap)], plist);
-        print_bondeds(out, at->nr, Directive::d_polarization, F_POLARIZATION, 0, plist);
-        print_bondeds(out, at->nr, Directive::d_thole_polarization, F_THOLE_POL, 0, plist);
-        print_bondeds(out, at->nr, Directive::d_vsites2, F_VSITE2, 0, plist);
-        print_bondeds(out, at->nr, Directive::d_vsites3, F_VSITE3, 0, plist);
-        print_bondeds(out, at->nr, Directive::d_vsites3, F_VSITE3FD, 0, plist);
-        print_bondeds(out, at->nr, Directive::d_vsites3, F_VSITE3FAD, 0, plist);
-        print_bondeds(out, at->nr, Directive::d_vsites3, F_VSITE3OUT, 0, plist);
-        print_bondeds(out, at->nr, Directive::d_vsites4, F_VSITE4FD, 0, plist);
-        print_bondeds(out, at->nr, Directive::d_vsites4, F_VSITE4FDN, 0, plist);
+        print_bondeds(out,
+                      at->nr,
+                      Directive::d_cmap,
+                      InteractionFunction::DihedralEnergyCorrectionMap,
+                      bts[static_cast<int>(BondedTypes::Cmap)],
+                      plist);
+        print_bondeds(out, at->nr, Directive::d_polarization, InteractionFunction::Polarization, 0, plist);
+        print_bondeds(
+                out, at->nr, Directive::d_thole_polarization, InteractionFunction::TholePolarization, 0, plist);
+        print_bondeds(out, at->nr, Directive::d_vsites2, InteractionFunction::VirtualSite2, 0, plist);
+        print_bondeds(out, at->nr, Directive::d_vsites3, InteractionFunction::VirtualSite3, 0, plist);
+        print_bondeds(
+                out, at->nr, Directive::d_vsites3, InteractionFunction::VirtualSite3FlexibleDistance, 0, plist);
+        print_bondeds(
+                out, at->nr, Directive::d_vsites3, InteractionFunction::VirtualSite3FlexibleAngleDistance, 0, plist);
+        print_bondeds(out, at->nr, Directive::d_vsites3, InteractionFunction::VirtualSite3Outside, 0, plist);
+        print_bondeds(
+                out, at->nr, Directive::d_vsites4, InteractionFunction::VirtualSite4FlexibleDistance, 0, plist);
+        print_bondeds(out,
+                      at->nr,
+                      Directive::d_vsites4,
+                      InteractionFunction::VirtualSite4FlexibleDistanceNormalization,
+                      0,
+                      plist);
 
         if (!pr.empty())
         {
@@ -1519,18 +1542,25 @@ void pdb2top(FILE*                                  top_file,
              gmx::ArrayRef<const int>               cyclicBondsIndex,
              const gmx::MDLogger&                   logger)
 {
-    std::array<InteractionsOfType, F_NRE>   plist;
-    t_excls*                                excls;
-    int                                     i, nmissat;
-    gmx::EnumerationArray<BondedTypes, int> bts;
+    gmx::EnumerationArray<InteractionFunction, InteractionsOfType> plist;
+    t_excls*                                                       excls;
+    int                                                            i, nmissat;
+    gmx::EnumerationArray<BondedTypes, int>                        bts;
 
     ResidueTypeMap residueTypeMap = residueTypeMapFromLibraryFile("residuetypes.dat");
 
     /* Make bonds */
-    at2bonds(&(plist[F_BONDS]), globalPatches, atoms, *x, long_bond_dist, short_bond_dist, cyclicBondsIndex, logger);
+    at2bonds(&(plist[InteractionFunction::Bonds]),
+             globalPatches,
+             atoms,
+             *x,
+             long_bond_dist,
+             short_bond_dist,
+             cyclicBondsIndex,
+             logger);
 
     /* specbonds: disulphide bonds & heme-his */
-    do_ssbonds(&(plist[F_BONDS]), atoms, ssbonds, bAllowMissing);
+    do_ssbonds(&(plist[InteractionFunction::Bonds]), atoms, ssbonds, bAllowMissing);
 
     nmissat = name2type(atoms, usedPpResidues, residueTypeMap, logger);
     if (nmissat)
@@ -1552,7 +1582,7 @@ void pdb2top(FILE*                                  top_file,
     }
 
     /* Cleanup bonds (sort and rm doubles) */
-    clean_bonds(&(plist[F_BONDS]), logger);
+    clean_bonds(&(plist[InteractionFunction::Bonds]), logger);
 
     std::vector<VsiteTypeAndSign> vsiteTypeAndSign(atoms->nr);
     if (bVsites)
@@ -1566,7 +1596,7 @@ void pdb2top(FILE*                                  top_file,
                             "and may be removed in a future version of GROMACS");
         }
         /* determine which atoms will be vsites and add dummy masses
-           also renumber atom numbers in plist[0..F_NRE]! */
+           also renumber atom numbers in plist[0..Count]! */
         do_vsites(rtpFFDB, atype, atoms, tab, x, plist, &vsiteTypeAndSign, mHmult, bVsiteAromatics, ffdir);
     }
 
@@ -1580,37 +1610,46 @@ void pdb2top(FILE*                                  top_file,
     /* Make CMAP */
     if (bCmap)
     {
-        gen_cmap(&(plist[F_CMAP]), usedPpResidues, atoms, cyclicBondsIndex, logger);
-        if (plist[F_CMAP].size() > 0)
+        gen_cmap(&(plist[InteractionFunction::DihedralEnergyCorrectionMap]),
+                 usedPpResidues,
+                 atoms,
+                 cyclicBondsIndex,
+                 logger);
+        if (plist[InteractionFunction::DihedralEnergyCorrectionMap].size() > 0)
         {
             GMX_LOG(logger.info)
                     .asParagraph()
-                    .appendTextFormatted("There are %4zu cmap torsion pairs", plist[F_CMAP].size());
+                    .appendTextFormatted("There are %4zu cmap torsion pairs",
+                                         plist[InteractionFunction::DihedralEnergyCorrectionMap].size());
         }
     }
 
     /* set mass of all remaining hydrogen atoms */
     if (mHmult != 1.0)
     {
-        do_h_mass(plist[F_BONDS], vsiteTypeAndSign, atoms, mHmult, bDeuterate);
+        do_h_mass(plist[InteractionFunction::Bonds], vsiteTypeAndSign, atoms, mHmult, bDeuterate);
     }
 
     /* Cleanup bonds (sort and rm doubles) */
-    /* clean_bonds(&(plist[F_BONDS]));*/
+    /* clean_bonds(&(plist[InteractionFunction::Bonds]));*/
 
     GMX_LOG(logger.info)
             .asParagraph()
             .appendTextFormatted(
                     "There are %4zu dihedrals, %4zu impropers, %4zu angles\n"
                     "          %4zu pairs,     %4zu bonds and  %4zu virtual sites",
-                    plist[F_PDIHS].size(),
-                    plist[F_IDIHS].size(),
-                    plist[F_ANGLES].size(),
-                    plist[F_LJ14].size(),
-                    plist[F_BONDS].size(),
-                    plist[F_VSITE2].size() + plist[F_VSITE3].size() + plist[F_VSITE3FD].size()
-                            + plist[F_VSITE3FAD].size() + plist[F_VSITE3OUT].size()
-                            + plist[F_VSITE4FD].size() + plist[F_VSITE4FDN].size());
+                    plist[InteractionFunction::ProperDihedrals].size(),
+                    plist[InteractionFunction::ImproperDihedrals].size(),
+                    plist[InteractionFunction::Angles].size(),
+                    plist[InteractionFunction::LennardJones14].size(),
+                    plist[InteractionFunction::Bonds].size(),
+                    plist[InteractionFunction::VirtualSite2].size()
+                            + plist[InteractionFunction::VirtualSite3].size()
+                            + plist[InteractionFunction::VirtualSite3FlexibleDistance].size()
+                            + plist[InteractionFunction::VirtualSite3FlexibleAngleDistance].size()
+                            + plist[InteractionFunction::VirtualSite3Outside].size()
+                            + plist[InteractionFunction::VirtualSite4FlexibleDistance].size()
+                            + plist[InteractionFunction::VirtualSite4FlexibleDistanceNormalization].size());
 
     print_sums(atoms, FALSE, logger);
 

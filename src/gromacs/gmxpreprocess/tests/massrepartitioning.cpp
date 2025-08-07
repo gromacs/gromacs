@@ -63,7 +63,7 @@ void setupMTop(gmx_mtop_t* mtop, ArrayRef<const real> masses, ArrayRef<const int
 {
     gmx_moltype_t moltype;
 
-    std::vector<int>& iatoms = moltype.ilist[F_CONNBONDS].iatoms;
+    std::vector<int>& iatoms = moltype.ilist[InteractionFunction::ConnectBonds].iatoms;
     for (Index i = 0; i < bonds.ssize(); i += 2)
     {
         iatoms.push_back(0);

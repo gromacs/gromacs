@@ -42,6 +42,7 @@
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/real.h"
@@ -184,7 +185,7 @@ struct MoleculeInformation
     //! Exclusions in the molecule.
     gmx::ListOfLists<int> excls;
     //! Interactions of a defined type.
-    std::array<InteractionsOfType, F_NRE> interactions;
+    gmx::EnumerationArray<InteractionFunction, InteractionsOfType> interactions;
 
     /*! \brief
      * Initializer.

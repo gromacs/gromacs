@@ -98,7 +98,7 @@ public:
     const real hydrogenMass_ = 1.008;
 
     //! Stride for array with atom indexes
-    const int atomsPerSettle_ = NRAL(F_SETTLE);
+    const int atomsPerSettle_ = NRAL(InteractionFunction::SETTLE);
 
     /*! \brief Construct the object and initialize the data structures.
      *

@@ -103,10 +103,9 @@ public:
 
     /*! \brief Constructor
      * \param[in] threadIndex  The index of the thread that will fill the buffers in this object
-     * \param[in] useEnergyTerms   Whether the list of energy terms will be used
      * \param[in] numEnergyGroups  The number of non-bonded energy groups
      */
-    ThreadForceBuffer(int threadIndex, bool useEnergyTerms, int numEnergyGroups);
+    ThreadForceBuffer(int threadIndex, int numEnergyGroups);
 
     //! Resizes the buffer to \p numAtoms and clears the mask
     void resizeBufferAndClearMask(int numAtoms);
@@ -152,8 +151,8 @@ public:
     //! Returns a reference to the diagonal virial
     gmx::RVec& diagonalVirial() { return diagonalVirial_; }
 
-    //! Returns a view of the energy terms, size F_NRE
-    ArrayRef<real> energyTerms() { return energyTerms_; }
+    //! Returns a view of the energy terms, size InteractionFunction::Count
+    gmx::EnumerationArray<InteractionFunction, real>& energyTerms() { return energyTerms_; }
 
     //! Returns a reference to the energy group pair energies
     gmx_grppairener_t& groupPairEnergies() { return groupPairEnergies_; }
@@ -181,7 +180,7 @@ private:
     //! Virial buffer for diagonal only contributions
     gmx::RVec diagonalVirial_;
     //! Energy array, can be empty
-    std::vector<real> energyTerms_;
+    gmx::EnumerationArray<InteractionFunction, real> energyTerms_;
     //! Group pair energy data for pairs
     gmx_grppairener_t groupPairEnergies_;
     //! Free-energy dV/dl output
@@ -228,12 +227,12 @@ public:
      * Buffers that will not be used as indicated by the flags in \p stepWork
      * are allowed to be nullptr or empty.
      */
-    void reduce(gmx::ForceWithShiftForces* forceWithShiftForces,
-                real*                      ener,
-                gmx_grppairener_t*         grpp,
-                gmx::ArrayRef<real>        dvdl,
-                const gmx::StepWorkload&   stepWork,
-                int                        reductionBeginIndex);
+    void reduce(gmx::ForceWithShiftForces*                        forceWithShiftForces,
+                gmx::EnumerationArray<InteractionFunction, real>* ener,
+                gmx_grppairener_t*                                grpp,
+                gmx::ArrayRef<real>                               dvdl,
+                const gmx::StepWorkload&                          stepWork,
+                int                                               reductionBeginIndex);
 
     /*! \brief Reduces forces with separate virial and energies and dV/dlambda,
      * as requested by \p stepWork
@@ -244,12 +243,12 @@ public:
      * Buffers that will not be used as indicated by the flags in \p stepWork
      * are allowed to be nullptr or empty.
      */
-    void reduce(gmx::ForceWithVirial*    forceWithVirial,
-                real*                    ener,
-                gmx_grppairener_t*       grpp,
-                gmx::ArrayRef<real>      dvdl,
-                const gmx::StepWorkload& stepWork,
-                int                      reductionBeginIndex);
+    void reduce(gmx::ForceWithVirial*                             forceWithVirial,
+                gmx::EnumerationArray<InteractionFunction, real>* ener,
+                gmx_grppairener_t*                                grpp,
+                gmx::ArrayRef<real>                               dvdl,
+                const gmx::StepWorkload&                          stepWork,
+                int                                               reductionBeginIndex);
 
     /*! \brief Reduces energies and dV/dlambda, as requested by \p stepWork
      *
@@ -258,21 +257,21 @@ public:
      * Buffers that will not be used as indicated by the flags in \p stepWork
      * are allowed to be nullptr or empty.
      */
-    void reduceEnergiesAndDvdl(real*                    ener,
-                               gmx_grppairener_t*       grpp,
-                               gmx::ArrayRef<real>      dvdl,
-                               const gmx::StepWorkload& stepWork,
-                               int                      reductionBeginIndex);
+    void reduceEnergiesAndDvdl(gmx::EnumerationArray<InteractionFunction, real>* ener,
+                               gmx_grppairener_t*                                grpp,
+                               gmx::ArrayRef<real>                               dvdl,
+                               const gmx::StepWorkload&                          stepWork,
+                               int reductionBeginIndex);
 
 private:
     //! Template version of \p reduce() above
     template<typename ForceBufferType>
-    void reduceTemplated(ForceBufferType*         forceBuffer,
-                         real*                    ener,
-                         gmx_grppairener_t*       grpp,
-                         gmx::ArrayRef<real>      dvdl,
-                         const gmx::StepWorkload& stepWork,
-                         int                      reductionBeginIndex);
+    void reduceTemplated(ForceBufferType*                                  forceBuffer,
+                         gmx::EnumerationArray<InteractionFunction, real>* ener,
+                         gmx_grppairener_t*                                grpp,
+                         gmx::ArrayRef<real>                               dvdl,
+                         const gmx::StepWorkload&                          stepWork,
+                         int                                               reductionBeginIndex);
 
     //! Whether the energy buffer is used
     bool useEnergyTerms_;

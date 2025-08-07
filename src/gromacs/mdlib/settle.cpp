@@ -160,10 +160,10 @@ SettleData::SettleData(const gmx_mtop_t& mtop) :
 {
     /* Check that we have only one settle type */
     int       settle_type = -1;
-    const int nral1       = 1 + NRAL(F_SETTLE);
+    const int nral1       = 1 + NRAL(InteractionFunction::SETTLE);
     for (const auto ilists : IListRange(mtop))
     {
-        const InteractionList& ilist = ilists.list()[F_SETTLE];
+        const InteractionList& ilist = ilists.list()[InteractionFunction::SETTLE];
         for (int i = 0; i < ilist.size(); i += nral1)
         {
             if (settle_type == -1)
@@ -208,7 +208,7 @@ void SettleData::setConstraints(const InteractionList&    il_settle,
     const int pack_size = 1;
 #endif
 
-    const int nral1   = 1 + NRAL(F_SETTLE);
+    const int nral1   = 1 + NRAL(InteractionFunction::SETTLE);
     int       nsettle = il_settle.size() / nral1;
     numSettles_       = nsettle;
 
@@ -300,7 +300,7 @@ void settle_proj(const SettleData&    settled,
     invdOH = p->invdOH;
     invdHH = p->invdHH;
 
-    const int nral1 = 1 + NRAL(F_SETTLE);
+    const int nral1 = 1 + NRAL(InteractionFunction::SETTLE);
 
     for (i = 0; i < nsettle; i++)
     {

@@ -49,7 +49,9 @@
 #include <vector>
 
 #include "gromacs/domdec/hashedmap.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/enumerationhelpers.h"
 
 namespace gmx
 {
@@ -91,13 +93,13 @@ struct gmx_domdec_constraints_t
 void dd_clear_local_constraint_indices(gmx_domdec_t* dd);
 
 /*! \brief Sets up communication and atom indices for all local+connected constraints */
-int dd_make_local_constraints(struct gmx_domdec_t*           dd,
-                              int                            at_start,
-                              const struct gmx_mtop_t&       mtop,
-                              gmx::ArrayRef<const int32_t>   atomInfo,
-                              gmx::Constraints*              constr,
-                              int                            nrec,
-                              gmx::ArrayRef<InteractionList> il_local);
+int dd_make_local_constraints(struct gmx_domdec_t*         dd,
+                              int                          at_start,
+                              const struct gmx_mtop_t&     mtop,
+                              gmx::ArrayRef<const int32_t> atomInfo,
+                              gmx::Constraints*            constr,
+                              int                          nrec,
+                              gmx::EnumerationArray<InteractionFunction, InteractionList>& il_local);
 
 /*! \brief Initializes the data structures for constraint communication */
 void init_domdec_constraints(gmx_domdec_t* dd, const gmx_mtop_t& mtop);

@@ -1411,7 +1411,7 @@ int expandedEnsembleUpdateLambdaState(FILE*                 log,
                 /* Note -- this assumes no mass changes, since kinetic energy is not added  . . . */
                 scaled_lamee[i] =
                         enerd->foreignLambdaTerms.deltaH(i) / (simtemp->temperatures[i] * gmx::c_boltz)
-                        + enerd->term[F_EPOT]
+                        + enerd->term[InteractionFunction::PotentialEnergy]
                                   * (1.0 / (simtemp->temperatures[i])
                                      - 1.0 / (simtemp->temperatures[fep_state]))
                                   / gmx::c_boltz;
@@ -1434,7 +1434,7 @@ int expandedEnsembleUpdateLambdaState(FILE*                 log,
             for (i = 0; i < nlim; i++)
             {
                 scaled_lamee[i] =
-                        enerd->term[F_EPOT]
+                        enerd->term[InteractionFunction::PotentialEnergy]
                         * (1.0 / simtemp->temperatures[i] - 1.0 / simtemp->temperatures[fep_state])
                         / gmx::c_boltz;
             }

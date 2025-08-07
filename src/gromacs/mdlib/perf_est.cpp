@@ -164,7 +164,6 @@ void count_bonded_distances(const gmx_mtop_t& mtop, const t_inputrec& ir, double
 {
     gmx_bool bExcl;
     double   nonsimd_step_frac;
-    int      ftype;
     double   ndtot_c, ndtot_simd;
 #if GMX_SIMD_HAVE_REAL
     gmx_bool bSimdBondeds = TRUE;
@@ -207,7 +206,7 @@ void count_bonded_distances(const gmx_mtop_t& mtop, const t_inputrec& ir, double
     for (const gmx_molblock_t& molb : mtop.molblock)
     {
         const gmx_moltype_t* molt = &mtop.moltype[molb.type];
-        for (ftype = 0; ftype < F_NRE; ftype++)
+        for (const auto ftype : gmx::EnumerationWrapper<InteractionFunction>{})
         {
             int nbonds;
 
@@ -222,14 +221,14 @@ void count_bonded_distances(const gmx_mtop_t& mtop, const t_inputrec& ir, double
                  */
                 switch (ftype)
                 {
-                    case F_POSRES:
-                    case F_FBPOSRES: nd_c = 1; break;
-                    case F_CONNBONDS: break;
+                    case InteractionFunction::PositionRestraints:
+                    case InteractionFunction::FlatBottomedPositionRestraints: nd_c = 1; break;
+                    case InteractionFunction::ConnectBonds: break;
                     /* These bonded potentially use SIMD */
-                    case F_ANGLES:
-                    case F_PDIHS:
-                    case F_RBDIHS:
-                    case F_LJ14:
+                    case InteractionFunction::Angles:
+                    case InteractionFunction::ProperDihedrals:
+                    case InteractionFunction::RyckaertBellemansDihedrals:
+                    case InteractionFunction::LennardJones14:
                         nd_c    = nonsimd_step_frac * (NRAL(ftype) - 1);
                         nd_simd = (1 - nonsimd_step_frac) * (NRAL(ftype) - 1);
                         break;

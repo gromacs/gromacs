@@ -65,6 +65,7 @@
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/logger.h"
@@ -85,19 +86,20 @@ namespace gmx
  * and flags each of the interactions as assigned in the global \p isAssigned list.
  * Exits with an inconsistency error when an interaction is assigned more than once.
  */
-static void flagInteractionsForType(const int              ftype,
-                                    const InteractionList& il,
-                                    const reverse_ilist_t& ril,
-                                    const Range<int>&      atomRange,
-                                    const int              numAtomsPerMolecule,
-                                    ArrayRef<const int>    globalAtomIndices,
-                                    ArrayRef<int>          isAssigned)
+static void flagInteractionsForType(const InteractionFunction ftype,
+                                    const InteractionList&    il,
+                                    const reverse_ilist_t&    ril,
+                                    const Range<int>&         atomRange,
+                                    const int                 numAtomsPerMolecule,
+                                    ArrayRef<const int>       globalAtomIndices,
+                                    ArrayRef<int>             isAssigned)
 {
     const int nril_mol = ril.index[numAtomsPerMolecule];
     const int nral     = NRAL(ftype);
 
     // Position restraints have different paremeter types in the local topology
-    const bool skipParameterTypeCheck = (ftype == F_POSRES || ftype == F_FBPOSRES);
+    const bool skipParameterTypeCheck = (ftype == InteractionFunction::PositionRestraints
+                                         || ftype == InteractionFunction::FlatBottomedPositionRestraints);
 
     for (int i = 0; i < il.size(); i += 1 + nral)
     {
@@ -118,8 +120,8 @@ static void flagInteractionsForType(const int              ftype,
             bool found = false;
             while (j_mol < ril.index[atomOffset + 1] && !found)
             {
-                const int j       = moleculeIndex * nril_mol + j_mol;
-                const int ftype_j = ril.il[j_mol];
+                const int                 j       = moleculeIndex * nril_mol + j_mol;
+                const InteractionFunction ftype_j = static_cast<InteractionFunction>(ril.il[j_mol]);
                 /* Here we need to check if this interaction has
                  * not already been assigned, since we could have
                  * multiply defined interactions.
@@ -171,7 +173,7 @@ static std::string printMissingInteractionsMolblock(const MpiComm&           mpi
     StringOutputStream stream;
     TextWriter         log(&stream);
 
-    for (int ftype = 0; ftype < F_NRE; ftype++)
+    for (const auto ftype : gmx::EnumerationWrapper<InteractionFunction>{})
     {
         if (dd_check_ftype(ftype, rt.options()))
         {
@@ -189,9 +191,9 @@ static std::string printMissingInteractionsMolblock(const MpiComm&           mpi
         int j_mol = 0;
         while (j_mol < nril_mol)
         {
-            int ftype = ril.il[j_mol];
-            int nral  = NRAL(ftype);
-            int j     = mol * nril_mol + j_mol;
+            InteractionFunction ftype = static_cast<InteractionFunction>(ril.il[j_mol]);
+            int                 nral  = NRAL(ftype);
+            int                 j     = mol * nril_mol + j_mol;
             if (isAssigned[j] == 0 && !(interaction_function[ftype].flags & IF_VSITE))
             {
                 if (DDMAIN(&dd))
@@ -287,8 +289,8 @@ static void printMissingInteractionsAtoms(const MDLogger&               mdlog,
 
     const int ndiff_tot = numBondedInteractionsOverAllDomains - expectedNumGlobalBondedInteractions;
 
-    std::array<int, F_NRE> cl;
-    for (int ftype = 0; ftype < F_NRE; ftype++)
+    gmx::EnumerationArray<InteractionFunction, int> cl;
+    for (const auto ftype : gmx::EnumerationWrapper<InteractionFunction>{})
     {
         const int nral = NRAL(ftype);
         cl[ftype]      = top_local.idef.il[ftype].size() / (1 + nral);
@@ -301,18 +303,19 @@ static void printMissingInteractionsAtoms(const MDLogger&               mdlog,
         GMX_LOG(mdlog.warning).appendText("A list of missing interactions:");
         int rest_global = expectedNumGlobalBondedInteractions;
         int rest        = numBondedInteractionsOverAllDomains;
-        for (int ftype = 0; ftype < F_NRE; ftype++)
+        for (const auto ftype : gmx::EnumerationWrapper<InteractionFunction>{})
         {
             /* In the reverse and local top all constraints are merged
-             * into F_CONSTR. So in the if statement we skip F_CONSTRNC
-             * and add these constraints when doing F_CONSTR.
+             * into InteractionFunction::Constraints. So in the if statement we skip InteractionFunction::ConstraintsNoCoupling
+             * and add these constraints when doing InteractionFunction::Constraints.
              */
-            if (dd_check_ftype(ftype, dd.reverse_top->options()) && ftype != F_CONSTRNC)
+            if (dd_check_ftype(ftype, dd.reverse_top->options())
+                && ftype != InteractionFunction::ConstraintsNoCoupling)
             {
                 int n = gmx_mtop_ftype_count(top_global, ftype);
-                if (ftype == F_CONSTR)
+                if (ftype == InteractionFunction::Constraints)
                 {
-                    n += gmx_mtop_ftype_count(top_global, F_CONSTRNC);
+                    n += gmx_mtop_ftype_count(top_global, InteractionFunction::ConstraintsNoCoupling);
                 }
                 int ndiff = cl[ftype] - n;
                 if (ndiff != 0)

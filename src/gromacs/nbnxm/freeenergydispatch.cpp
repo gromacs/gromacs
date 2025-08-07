@@ -296,10 +296,11 @@ void dispatchFreeEnergyKernel(gmx::ArrayRef<const std::unique_ptr<AtomPairlist>>
             threadedForeignEnergyBuffer->reduceEnergiesAndDvdl(
                     nullptr, foreignGroupPairEnergies, dvdl_nb, stepWorkForeignEnergies, 0);
 
-            std::array<real, F_NRE> foreign_term = { 0 };
-            sum_epot(*foreignGroupPairEnergies, foreign_term.data());
+            gmx::EnumerationArray<InteractionFunction, real> foreign_term = { 0 };
+            sum_epot(*foreignGroupPairEnergies, foreign_term);
             // Accumulate the foreign energy difference and dV/dlambda into the passed enerd
-            enerd->foreignLambdaTerms.accumulate(i, foreign_term[F_EPOT], dvdl_nb);
+            enerd->foreignLambdaTerms.accumulate(
+                    i, foreign_term[InteractionFunction::PotentialEnergy], dvdl_nb);
         }
     }
 }

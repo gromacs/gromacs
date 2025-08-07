@@ -75,7 +75,9 @@ EnergyTerm::EnergyTerm(unsigned int       indexWithinEnergyFile,
     storeData_(bStoreData)
 {
 
-    for (int j = 0; (j <= F_ETOT); j++)
+    for (int j = static_cast<int>(InteractionFunction::Bonds);
+         (j <= static_cast<int>(InteractionFunction::TotalEnergy));
+         j++)
     {
         termIsEnergy_ = termIsEnergy_ || equalIgnoreDash(interaction_function[j].longname, energyTerm);
     }

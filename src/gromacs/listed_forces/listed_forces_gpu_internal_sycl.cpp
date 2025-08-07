@@ -124,8 +124,8 @@ auto bondedKernel(sycl::handler&                   cgh,
             itemIdx.barrier(fence_space::local_space);
         }
 
-        int  fType;
-        bool threadComputedPotential = false;
+        InteractionFunction fType;
+        bool                threadComputedPotential = false;
 #pragma unroll
         for (int j = 0; j < numFTypesOnGpu; j++)
         {
@@ -148,32 +148,32 @@ auto bondedKernel(sycl::handler&                   cgh,
 
                 switch (fType)
                 {
-                    case F_BONDS:
+                    case InteractionFunction::Bonds:
                         bonds_gpu<calcVir, calcEner>(
                                 fTypeTid, &vtot_loc, iatoms, gm_forceParams, gm_xq, gm_f, sm_fShiftLoc, pbcAiuc, localId);
                         break;
-                    case F_ANGLES:
+                    case InteractionFunction::Angles:
                         angles_gpu<calcVir, calcEner>(
                                 fTypeTid, &vtot_loc, iatoms, gm_forceParams, gm_xq, gm_f, sm_fShiftLoc, pbcAiuc, localId);
                         break;
-                    case F_UREY_BRADLEY:
+                    case InteractionFunction::UreyBradleyPotential:
                         urey_bradley_gpu<calcVir, calcEner>(
                                 fTypeTid, &vtot_loc, iatoms, gm_forceParams, gm_xq, gm_f, sm_fShiftLoc, pbcAiuc, localId);
                         break;
-                    case F_PDIHS:
-                    case F_PIDIHS:
+                    case InteractionFunction::ProperDihedrals:
+                    case InteractionFunction::PeriodicImproperDihedrals:
                         pdihs_gpu<calcVir, calcEner>(
                                 fTypeTid, &vtot_loc, iatoms, gm_forceParams, gm_xq, gm_f, sm_fShiftLoc, pbcAiuc, localId);
                         break;
-                    case F_RBDIHS:
+                    case InteractionFunction::RyckaertBellemansDihedrals:
                         rbdihs_gpu<calcVir, calcEner>(
                                 fTypeTid, &vtot_loc, iatoms, gm_forceParams, gm_xq, gm_f, sm_fShiftLoc, pbcAiuc, localId);
                         break;
-                    case F_IDIHS:
+                    case InteractionFunction::ImproperDihedrals:
                         idihs_gpu<calcVir, calcEner>(
                                 fTypeTid, &vtot_loc, iatoms, gm_forceParams, gm_xq, gm_f, sm_fShiftLoc, pbcAiuc, localId);
                         break;
-                    case F_LJ14:
+                    case InteractionFunction::LennardJones14:
                         pairs_gpu<calcVir, calcEner>(fTypeTid,
                                                      iatoms,
                                                      gm_forceParams,
@@ -185,6 +185,9 @@ auto bondedKernel(sycl::handler&                   cgh,
                                                      &vtot_loc,
                                                      &vtotElec_loc,
                                                      localId);
+                        break;
+                    default:
+                        // these types do not appear on the GPU
                         break;
                 }
                 break;
@@ -199,10 +202,10 @@ auto bondedKernel(sycl::handler&                   cgh,
             vtotElec_loc       = sycl::reduce_over_group(sg, vtotElec_loc, sycl::plus<float>());
             if (sg.leader())
             {
-                atomicFetchAdd(gm_vTot[fType], vtot_loc);
-                if (fType == F_LJ14)
+                atomicFetchAdd(gm_vTot[static_cast<int>(fType)], vtot_loc);
+                if (fType == InteractionFunction::LennardJones14)
                 {
-                    atomicFetchAdd(gm_vTot[F_COUL14], vtotElec_loc);
+                    atomicFetchAdd(gm_vTot[static_cast<int>(InteractionFunction::Coulomb14)], vtotElec_loc);
                 }
             }
         }

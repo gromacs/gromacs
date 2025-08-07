@@ -571,10 +571,11 @@ void compute_globals(gmx_global_stat*               gstat,
                 copy_mat(tcstat.ekinh, tcstat.ekinh_old);
             }
         }
-        enerd->term[F_TEMP] = sum_ekin(&(ir->opts), ekind, &dvdl_ekin, bEkinAveVel, bScaleEkin);
+        enerd->term[InteractionFunction::Temperature] =
+                sum_ekin(&(ir->opts), ekind, &dvdl_ekin, bEkinAveVel, bScaleEkin);
         enerd->dvdl_lin[FreeEnergyPerturbationCouplingType::Mass] = static_cast<double>(dvdl_ekin);
 
-        enerd->term[F_EKIN] = trace(ekind->ekin);
+        enerd->term[InteractionFunction::KineticEnergy] = trace(ekind->ekin);
 
         ekind->lastComputeGlobalsStep = step;
     }
@@ -589,7 +590,8 @@ void compute_globals(gmx_global_stat*               gstat,
          * Use the box from last timestep since we already called update().
          */
 
-        enerd->term[F_PRES] = calc_pres(fr->pbcType, ir->nwall, lastbox, ekind->ekin, total_vir, pres);
+        enerd->term[InteractionFunction::Pressure] =
+                calc_pres(fr->pbcType, ir->nwall, lastbox, ekind->ekin, total_vir, pres);
     }
 }
 

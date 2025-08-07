@@ -273,7 +273,8 @@ void QMMMForceProvider::calculateForces(const ForceProviderInput& fInput, ForceP
     {
         double qmEner = 0.0;
         cp2k_get_potential_energy(force_env_, &qmEner);
-        fOutput->enerd_.term[F_EQM] += qmEner * c_hartree2Kj * c_avogadro;
+        fOutput->enerd_.term[InteractionFunction::QuantumMechanicalRegionEnergy] +=
+                qmEner * c_hartree2Kj * c_avogadro;
     }
 
     // Get Forces they are in Hartree/Bohr and will be converted to kJ/mol/nm

@@ -44,7 +44,6 @@
 
 #include "gromacs/gmxpreprocess/grompp_impl.h"
 #include "gromacs/gmxpreprocess/toputil.h"
-#include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
@@ -354,13 +353,13 @@ static void add_b(InteractionsOfType* bonds, int* nrf, sortable* s)
     }
 }
 
-void gen_nnb(t_nextnb* nnb, gmx::ArrayRef<InteractionsOfType> plist)
+void gen_nnb(t_nextnb* nnb, gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& plist)
 {
     sortable* s;
     int       nrbonds, nrf;
 
     nrbonds = 0;
-    for (int i = 0; (i < F_NRE); i++)
+    for (const auto i : gmx::EnumerationWrapper<InteractionFunction>{})
     {
         if (IS_CHEMBOND(i))
         {
@@ -372,7 +371,7 @@ void gen_nnb(t_nextnb* nnb, gmx::ArrayRef<InteractionsOfType> plist)
     snew(s, nrbonds);
 
     nrf = 0;
-    for (int i = 0; (i < F_NRE); i++)
+    for (const auto i : gmx::EnumerationWrapper<InteractionFunction>{})
     {
         if (IS_CHEMBOND(i))
         {
@@ -434,7 +433,10 @@ static void sort_and_purge_nnb(t_nextnb* nnb)
 }
 
 
-void generate_excl(int nrexcl, int nratoms, gmx::ArrayRef<InteractionsOfType> plist, gmx::ListOfLists<int>* excls)
+void generate_excl(int                                                             nrexcl,
+                   int                                                             nratoms,
+                   gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
+                   gmx::ListOfLists<int>*                                          excls)
 {
     t_nextnb nnb;
     if (nrexcl < 0)

@@ -50,6 +50,7 @@
 
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/topology/idef.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/listoflists.h"
 
@@ -147,7 +148,7 @@ public:
     const reverse_ilist_t& interactionListForIntermolecularInteractions() const;
     //! Returns whether the reverse topology describes interatomic interactions
     bool hasInterAtomicInteractions() const;
-    //! Returns whether there are interactions of type F_POSRES and/or F_FBPOSRES
+    //! Returns whether there are interactions of type InteractionFunction::PositionRestraints and/or InteractionFunction::FlatBottomedPositionRestraints
     bool hasPositionRestraints() const;
     //! Returns the per-thread working structures for making the local topology
     gmx::ArrayRef<thread_work_t> threadWorkObjects() const;
@@ -161,10 +162,10 @@ public:
 };
 
 /*! \brief Returns the number of atom entries for il in gmx_reverse_top_t */
-int nral_rt(int ftype);
+int nral_rt(InteractionFunction ftype);
 
 /*! \brief Return whether interactions of type \p ftype need to be assigned exactly once */
-bool dd_check_ftype(int ftype, const ReverseTopOptions& rtOptions);
+bool dd_check_ftype(InteractionFunction ftype, const ReverseTopOptions& rtOptions);
 
 /*! \internal
  *  \brief Molecular topology indices of a global molecule a global atom belongs to

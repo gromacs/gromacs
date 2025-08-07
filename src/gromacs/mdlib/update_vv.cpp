@@ -265,9 +265,9 @@ void integrateVVFirstStep(int64_t                   step,
                 if ((inputrecNptTrotter(ir) || inputrecNvtTrotter(ir)) && ir->eI == IntegrationAlgorithm::VV)
                 {
                     /* update temperature and kinetic energy now that step is over - this is the v(t+dt) point */
-                    enerd->term[F_TEMP] = sum_ekin(
+                    enerd->term[InteractionFunction::Temperature] = sum_ekin(
                             &(ir->opts), ekind, nullptr, (ir->eI == IntegrationAlgorithm::VV), FALSE);
-                    enerd->term[F_EKIN] = trace(ekind->ekin);
+                    enerd->term[InteractionFunction::KineticEnergy] = trace(ekind->ekin);
                 }
             }
             else if (bExchanged)
@@ -321,12 +321,12 @@ void integrateVVFirstStep(int64_t                   step,
                                            MassQ);
     if (ir->eI == IntegrationAlgorithm::VV)
     {
-        *last_ekin = enerd->term[F_EKIN];
+        *last_ekin = enerd->term[InteractionFunction::KineticEnergy];
     }
     if ((ir->eDispCorr != DispersionCorrectionType::EnerPres)
         && (ir->eDispCorr != DispersionCorrectionType::AllEnerPres))
     {
-        *saved_conserved_quantity -= enerd->term[F_DISPCORR];
+        *saved_conserved_quantity -= enerd->term[InteractionFunction::DispersionCorrection];
     }
     /* sum up the foreign kinetic energy and dK/dl terms for vv.  currently done every step so that dhdl is correct in the .edr */
     if (ir->efep != FreeEnergyPerturbationType::No)
@@ -434,7 +434,7 @@ void integrateVVSecondStep(int64_t                   step,
 
     if (ir->eI == IntegrationAlgorithm::VVAK)
     {
-        /* erase F_EKIN and F_TEMP here? */
+        /* erase InteractionFunction::KineticEnergy and InteractionFunction::Temperature here? */
         /* just compute the kinetic energy at the half step to perform a trotter step */
         compute_globals(gstat,
                         mpiComm,
@@ -512,5 +512,5 @@ void integrateVVSecondStep(int64_t                   step,
         this current solution is much better than
         having it completely wrong.
         */
-    enerd->term[F_DVDL_CONSTR] += 2 * *dvdl_constr;
+    enerd->term[InteractionFunction::dHdLambdaConstraint] += 2 * *dvdl_constr;
 }

@@ -73,7 +73,7 @@ int countCoupled(int                                                a,
 std::vector<int> countNumCoupledConstraints(gmx::ArrayRef<const int> iatoms,
                                             const gmx::ListOfLists<AtomsAdjacencyListElement>& atomsAdjacencyList)
 {
-    const int        stride         = 1 + NRAL(F_CONSTR);
+    const int        stride         = 1 + NRAL(InteractionFunction::Constraints);
     const int        numConstraints = iatoms.ssize() / stride;
     std::vector<int> numCoupledConstraints(numConstraints, -1);
     for (int c = 0; c < numConstraints; c++)
@@ -94,7 +94,7 @@ std::vector<int> countNumCoupledConstraints(gmx::ArrayRef<const int> iatoms,
 gmx::ListOfLists<AtomsAdjacencyListElement> constructAtomsAdjacencyList(const int numAtoms,
                                                                         gmx::ArrayRef<const int> iatoms)
 {
-    const int stride         = 1 + NRAL(F_CONSTR);
+    const int stride         = 1 + NRAL(InteractionFunction::Constraints);
     const int numConstraints = iatoms.ssize() / stride;
 
     // count how many constraints each atom has. These counts will be used to place the constraints
@@ -136,7 +136,7 @@ bool isNumCoupledConstraintsSupported(const gmx_mtop_t& mtop, int threadsPerBloc
 {
     for (const gmx_moltype_t& molType : mtop.moltype)
     {
-        gmx::ArrayRef<const int> iatoms = molType.ilist[F_CONSTR].iatoms;
+        gmx::ArrayRef<const int> iatoms = molType.ilist[InteractionFunction::Constraints].iatoms;
         const auto atomsAdjacencyList   = constructAtomsAdjacencyList(molType.atoms.nr, iatoms);
         // Compute, how many constraints are coupled to each constraint
         const auto numCoupledConstraints = countNumCoupledConstraints(iatoms, atomsAdjacencyList);
@@ -157,8 +157,8 @@ int computeTotalNumSettles(const gmx_mtop_t& mtop)
     int totalSettles = 0;
     for (unsigned mt = 0; mt < mtop.moltype.size(); mt++)
     {
-        const int        nral1           = 1 + NRAL(F_SETTLE);
-        InteractionList  interactionList = mtop.moltype[mt].ilist[F_SETTLE];
+        const int        nral1           = 1 + NRAL(InteractionFunction::SETTLE);
+        InteractionList  interactionList = mtop.moltype[mt].ilist[InteractionFunction::SETTLE];
         std::vector<int> iatoms          = interactionList.iatoms;
         totalSettles += iatoms.size() / nral1;
     }
@@ -172,8 +172,8 @@ SettleWaterTopology getSettleTopologyData(const gmx_mtop_t& mtop)
 
     for (unsigned mt = 0; mt < mtop.moltype.size(); mt++)
     {
-        const int        nral1           = 1 + NRAL(F_SETTLE);
-        InteractionList  interactionList = mtop.moltype[mt].ilist[F_SETTLE];
+        const int        nral1           = 1 + NRAL(InteractionFunction::SETTLE);
+        InteractionList  interactionList = mtop.moltype[mt].ilist[InteractionFunction::SETTLE];
         std::vector<int> iatoms          = interactionList.iatoms;
         for (unsigned i = 0; i < iatoms.size() / nral1; i++)
         {
@@ -209,8 +209,8 @@ SettleWaterTopology getSettleTopologyData(const gmx_mtop_t& mtop)
     int settle_type = -1;
     for (unsigned mt = 0; mt < mtop.moltype.size(); mt++)
     {
-        const int       nral1           = 1 + NRAL(F_SETTLE);
-        InteractionList interactionList = mtop.moltype[mt].ilist[F_SETTLE];
+        const int       nral1           = 1 + NRAL(InteractionFunction::SETTLE);
+        InteractionList interactionList = mtop.moltype[mt].ilist[InteractionFunction::SETTLE];
         for (int i = 0; i < interactionList.size(); i += nral1)
         {
             if (settle_type == -1)
@@ -242,13 +242,13 @@ SettleWaterTopology getSettleTopologyData(const gmx_mtop_t& mtop)
 
 LocalSettleData computeNumSettles(const InteractionDefinitions& idef)
 {
-    const int              nral1     = 1 + NRAL(F_SETTLE);
-    const InteractionList& il_settle = idef.il[F_SETTLE];
+    const int              nral1     = 1 + NRAL(InteractionFunction::SETTLE);
+    const InteractionList& il_settle = idef.il[InteractionFunction::SETTLE];
     return { il_settle.size() / nral1, nral1 };
 }
 
 gmx::ArrayRef<const int> localSettleAtoms(const InteractionDefinitions& idef)
 {
-    const InteractionList& il_settle = idef.il[F_SETTLE];
+    const InteractionList& il_settle = idef.il[InteractionFunction::SETTLE];
     return il_settle.iatoms;
 }

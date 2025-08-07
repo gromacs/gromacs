@@ -232,7 +232,7 @@ static int search_atomtypes(const PreprocessingAtomTypes*          ga,
                             gmx::ArrayRef<int>                     typelist,
                             int                                    thistype,
                             gmx::ArrayRef<const InteractionOfType> interactionTypes,
-                            int                                    ftype)
+                            InteractionFunction                    ftype)
 {
     int nn    = *n;
     int nrfp  = NRFP(ftype);
@@ -286,12 +286,13 @@ static int search_atomtypes(const PreprocessingAtomTypes*          ga,
     return i;
 }
 
-void PreprocessingAtomTypes::renumberTypes(gmx::ArrayRef<InteractionsOfType> plist,
-                                           gmx_mtop_t*                       mtop,
-                                           int*                              wall_atomtype,
-                                           bool                              bVerbose)
+void PreprocessingAtomTypes::renumberTypes(gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& plist,
+                                           gmx_mtop_t* mtop,
+                                           int*        wall_atomtype,
+                                           bool        bVerbose)
 {
-    int nat, ftype, ntype;
+    int                 nat, ntype;
+    InteractionFunction ftype;
 
     ntype = size();
     std::vector<int> typelist(ntype);
@@ -310,13 +311,13 @@ void PreprocessingAtomTypes::renumberTypes(gmx::ArrayRef<InteractionsOfType> pli
      */
 
     /* Get nonbonded interaction type */
-    if (plist[F_LJ].size() > 0)
+    if (plist[InteractionFunction::LennardJonesShortRange].size() > 0)
     {
-        ftype = F_LJ;
+        ftype = InteractionFunction::LennardJonesShortRange;
     }
     else
     {
-        ftype = F_BHAM;
+        ftype = InteractionFunction::BuckinghamShortRange;
     }
 
     /* Renumber atomtypes by first making a list of which ones are actually used.

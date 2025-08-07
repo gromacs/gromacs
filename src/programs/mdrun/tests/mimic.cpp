@@ -93,7 +93,8 @@ public:
     void checkRerun()
     {
         EnergyTermsToCompare energyTermsToCompare{ {
-                { interaction_function[F_EPOT].longname, relativeToleranceAsFloatingPoint(-20.1, 1e-4) },
+                { interaction_function[InteractionFunction::PotentialEnergy].longname,
+                  relativeToleranceAsFloatingPoint(-20.1, 1e-4) },
         } };
 
         TestReferenceData refData;

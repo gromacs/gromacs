@@ -165,8 +165,8 @@ public:
      * are handled by a single GPU. Triangles are not handled as special case.
      *
      * Information about constraints is taken from:
-     *     idef.il[F_CONSTR].iatoms  --- type (T) of constraint and two atom indexes (i1, i2)
-     *     idef.iparams[T].constr.dA --- target length for constraint of type T
+     *     idef.il[InteractionFunction::Constraints].iatoms  --- type (T) of constraint and two
+     * atom indexes (i1, i2) idef.iparams[T].constr.dA --- target length for constraint of type T
      *
      * \param[in] idef      Local topology data to get information on constraints from.
      * \param[in] numAtoms  Number of atoms.

@@ -59,7 +59,6 @@
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/topology/idef.h"
-#include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -115,14 +114,16 @@ void dd_clear_local_vsite_indices(gmx_domdec_t* dd)
     }
 }
 
-int dd_make_local_vsites(gmx_domdec_t* dd, int at_start, gmx::ArrayRef<InteractionList> lil)
+int dd_make_local_vsites(gmx_domdec_t*                                                dd,
+                         int                                                          at_start,
+                         gmx::EnumerationArray<InteractionFunction, InteractionList>& lil)
 {
     std::vector<int>&    ireq         = dd->vsite_requestedGlobalAtomIndices;
     gmx::HashedMap<int>* ga2la_specat = dd->ga2la_vsite.get();
 
     ireq.clear();
     /* Loop over all the home vsites */
-    for (int ftype = 0; ftype < F_NRE; ftype++)
+    for (const auto ftype : gmx::EnumerationWrapper<InteractionFunction>{})
     {
         if (interaction_function[ftype].flags & IF_VSITE)
         {
@@ -160,7 +161,7 @@ int dd_make_local_vsites(gmx_domdec_t* dd, int at_start, gmx::ArrayRef<Interacti
             dd, &ireq, dd->vsite_comm.get(), ga2la_specat, at_start, 2, "vsite", "");
 
     /* Fill in the missing indices */
-    for (int ftype = 0; ftype < F_NRE; ftype++)
+    for (const auto ftype : gmx::EnumerationWrapper<InteractionFunction>{})
     {
         if (interaction_function[ftype].flags & IF_VSITE)
         {

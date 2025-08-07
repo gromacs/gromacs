@@ -906,12 +906,16 @@ static int rm_bonded(t_block* ins_at, gmx_mtop_t* mtop)
     {
         if (bRM[i])
         {
-            for (j = 0; j < F_LJ; j++)
+            for (j = static_cast<int>(InteractionFunction::Bonds);
+                 j <= static_cast<int>(InteractionFunction::LennardJonesCoulombNonBondedPairs);
+                 j++)
             {
                 mtop->moltype[i].ilist[j].iatoms.clear();
             }
 
-            for (j = F_POSRES; j <= F_VSITEN; j++)
+            for (j = static_cast<int>(InteractionFunction::PositionRestraints);
+                 j <= static_cast<int>(InteractionFunction::VirtualSiteN);
+                 j++)
             {
                 mtop->moltype[i].ilist[j].iatoms.clear();
             }

@@ -88,8 +88,8 @@ public:
                 relativeToleranceAsFloatingPoint(energyTermMagnitude, 1e-4);
 
         EnergyTermsToCompare energyTermsToCompare{
-            { { interaction_function[F_DENSITYFITTING].longname, energyTermTolerance },
-              { interaction_function[F_EPOT].longname, energyTermTolerance } }
+            { { interaction_function[InteractionFunction::DensityFitting].longname, energyTermTolerance },
+              { interaction_function[InteractionFunction::PotentialEnergy].longname, energyTermTolerance } }
         };
 
         TestReferenceData refData;

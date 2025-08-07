@@ -220,7 +220,7 @@ bool LincsGpu::isNumCoupledConstraintsSupported(const gmx_mtop_t& mtop)
 
 void LincsGpu::set(const InteractionDefinitions& idef, int numAtoms, const ArrayRef<const real> invmass)
 {
-    GMX_ASSERT(!(numAtoms == 0 && !idef.il[F_CONSTR].empty()),
+    GMX_ASSERT(!(numAtoms == 0 && !idef.il[InteractionFunction::Constraints].empty()),
                "The number of atoms needs to be > 0 if there are constraints in the domain.");
 
     GMX_RELEASE_ASSERT(bool(GMX_GPU_CUDA) || bool(GMX_GPU_SYCL),
@@ -237,9 +237,9 @@ void LincsGpu::set(const InteractionDefinitions& idef, int numAtoms, const Array
     std::vector<float> massFactorsHost;
 
     // List of constrained atoms in local topology
-    ArrayRef<const int> iatoms         = idef.il[F_CONSTR].iatoms;
-    const int           stride         = NRAL(F_CONSTR) + 1;
-    const int           numConstraints = idef.il[F_CONSTR].size() / stride;
+    ArrayRef<const int> iatoms         = idef.il[InteractionFunction::Constraints].iatoms;
+    const int           stride         = NRAL(InteractionFunction::Constraints) + 1;
+    const int           numConstraints = idef.il[InteractionFunction::Constraints].size() / stride;
 
     // Early exit if no constraints
     if (numConstraints == 0)

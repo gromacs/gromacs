@@ -434,10 +434,10 @@ TEST_P(MdrunNoAppendContinuationIsExact, WithinTolerances)
     const int ulpToleranceForKineticEnergy   = (binaryReproducible ? 0 : 512);
     // Testing shows that PE and KE need wider tolerances
     EnergyTermsToCompare energyTermsToCompare{
-        { { interaction_function[F_EPOT].longname,
+        { { interaction_function[InteractionFunction::PotentialEnergy].longname,
             relativeToleranceAsPrecisionDependentUlp(
                     10.0, ulpToleranceForPotentialEnergy, ulpToleranceForPotentialEnergy) },
-          { interaction_function[F_EKIN].longname,
+          { interaction_function[InteractionFunction::KineticEnergy].longname,
             relativeToleranceAsPrecisionDependentUlp(
                     10.0, ulpToleranceForKineticEnergy, ulpToleranceForKineticEnergy) } }
     };
@@ -463,13 +463,13 @@ TEST_P(MdrunNoAppendContinuationIsExact, WithinTolerances)
             // with positive KE producing small conserved energy.
             const int factor = 4;
             energyTermsToCompare.insert(
-                    { interaction_function[F_ECONSERVED].longname,
+                    { interaction_function[InteractionFunction::ConservedEnergy].longname,
                       relativeToleranceAsPrecisionDependentUlp(
                               10.0, factor * ulpToleranceInMixed, factor * ulpToleranceInDouble) });
         }
         else
         {
-            energyTermsToCompare.insert({ interaction_function[F_ECONSERVED].longname,
+            energyTermsToCompare.insert({ interaction_function[InteractionFunction::ConservedEnergy].longname,
                                           relativeToleranceAsPrecisionDependentUlp(
                                                   10.0, ulpToleranceInMixed, ulpToleranceInDouble) });
         }
@@ -477,16 +477,16 @@ TEST_P(MdrunNoAppendContinuationIsExact, WithinTolerances)
 
     if (mdpFieldValues.count("free-energy") > 0 && mdpFieldValues.at("free-energy") != "no")
     {
-        energyTermsToCompare.insert({ interaction_function[F_DVDL_COUL].longname,
+        energyTermsToCompare.insert({ interaction_function[InteractionFunction::dVCoulombdLambda].longname,
                                       relativeToleranceAsPrecisionDependentUlp(
                                               10.0, ulpToleranceInMixed, ulpToleranceInDouble) });
-        energyTermsToCompare.insert({ interaction_function[F_DVDL_VDW].longname,
+        energyTermsToCompare.insert(
+                { interaction_function[InteractionFunction::dVvanderWaalsdLambda].longname,
+                  relativeToleranceAsPrecisionDependentUlp(10.0, ulpToleranceInMixed, ulpToleranceInDouble) });
+        energyTermsToCompare.insert({ interaction_function[InteractionFunction::dVbondeddLambda].longname,
                                       relativeToleranceAsPrecisionDependentUlp(
                                               10.0, ulpToleranceInMixed, ulpToleranceInDouble) });
-        energyTermsToCompare.insert({ interaction_function[F_DVDL_BONDED].longname,
-                                      relativeToleranceAsPrecisionDependentUlp(
-                                              10.0, ulpToleranceInMixed, ulpToleranceInDouble) });
-        energyTermsToCompare.insert({ interaction_function[F_DVDL_RESTRAINT].longname,
+        energyTermsToCompare.insert({ interaction_function[InteractionFunction::dVrestraintdLambda].longname,
                                       relativeToleranceAsPrecisionDependentUlp(
                                               10.0, ulpToleranceInMixed, ulpToleranceInDouble) });
     }

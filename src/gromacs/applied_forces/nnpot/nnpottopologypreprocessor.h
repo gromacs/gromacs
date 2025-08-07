@@ -59,7 +59,7 @@ namespace gmx
  * 1) Split molecules containing NNP input atoms from other molecules in blocks
  * 2) Exclude non-bonded interactions between NNP atoms.
  * 3) Build vector with atomic numbers of all atoms.
- * 4) Make F_CONNBOND between atoms within NNP region.
+ * 4) Make InteractionFunction::ConnectBonds between atoms within NNP region.
  * 5) Remove angles and settles containing 2 or more NNP atoms.
  * 6) Remove dihedrals containing 3 or more NNP atoms.
  */

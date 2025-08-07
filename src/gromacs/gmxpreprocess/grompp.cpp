@@ -286,14 +286,14 @@ void MoleculeInformation::fullCleanUp()
     done_block(&mols);
 }
 
-static int rm_interactions(int ifunc, gmx::ArrayRef<MoleculeInformation> mols)
+static int rm_interactions(InteractionFunction ftype, gmx::ArrayRef<MoleculeInformation> mols)
 {
     int n = 0;
     /* For all the molecule types */
     for (auto& mol : mols)
     {
-        n += mol.interactions[ifunc].size();
-        mol.interactions[ifunc].interactionTypes.clear();
+        n += mol.interactions[ftype].size();
+        mol.interactions[ftype].interactionTypes.clear();
     }
     return n;
 }
@@ -376,7 +376,6 @@ static void check_bonds_timestep(const gmx_mtop_t* mtop, double dt, WarningHandl
      */
     int  min_steps_warn = 5;
     int  min_steps_note = 10;
-    int  ftype;
     int  i, a1, a2, w_a1, w_a2, j;
     real twopi2, limit2, fc, re, m1, m2, period2, w_period2;
     bool bFound, bWater, bWarn;
@@ -396,11 +395,12 @@ static void check_bonds_timestep(const gmx_mtop_t* mtop, double dt, WarningHandl
     {
         const t_atom*           atom  = moltype.atoms.atom;
         const InteractionLists& ilist = moltype.ilist;
-        const InteractionList&  ilc   = ilist[F_CONSTR];
-        const InteractionList&  ils   = ilist[F_SETTLE];
-        for (ftype = 0; ftype < F_NRE; ftype++)
+        const InteractionList&  ilc   = ilist[InteractionFunction::Constraints];
+        const InteractionList&  ils   = ilist[InteractionFunction::SETTLE];
+        for (const auto ftype : gmx::EnumerationWrapper<InteractionFunction>{})
         {
-            if (!(ftype == F_BONDS || ftype == F_G96BONDS || ftype == F_HARMONIC))
+            if (!(ftype == InteractionFunction::Bonds || ftype == InteractionFunction::GROMOS96Bonds
+                  || ftype == InteractionFunction::HarmonicPotential))
             {
                 continue;
             }
@@ -410,7 +410,7 @@ static void check_bonds_timestep(const gmx_mtop_t* mtop, double dt, WarningHandl
             {
                 fc = ip[ilb.iatoms[i]].harmonic.krA;
                 re = ip[ilb.iatoms[i]].harmonic.rA;
-                if (ftype == F_G96BONDS)
+                if (ftype == InteractionFunction::GROMOS96Bonds)
                 {
                     /* Convert squared sqaure fc to harmonic fc */
                     fc = 2 * fc * re;
@@ -532,7 +532,7 @@ static void check_shells_inputrec(gmx_mtop_t* mtop, t_inputrec* ir, WarningHandl
 
 /* TODO Decide whether this function can be consolidated with
  * gmx_mtop_ftype_count */
-static int nint_ftype(gmx_mtop_t* mtop, gmx::ArrayRef<const MoleculeInformation> mi, int ftype)
+static int nint_ftype(gmx_mtop_t* mtop, gmx::ArrayRef<const MoleculeInformation> mi, InteractionFunction ftype)
 {
     int nint = 0;
     for (const gmx_molblock_t& molb : mtop->molblock)
@@ -619,13 +619,13 @@ static void new_status(const char*                                 topfile,
                        gmx_mtop_t*                                 sys,
                        std::vector<MoleculeInformation>*           mi,
                        std::unique_ptr<MoleculeInformation>*       intermolecular_interactions,
-                       gmx::ArrayRef<InteractionsOfType>           interactions,
-                       CombinationRule*                            comb,
-                       double*                                     reppow,
-                       real*                                       fudgeQQ,
-                       gmx_bool                                    bMorse,
-                       WarningHandler*                             wi,
-                       const gmx::MDLogger&                        logger)
+                       gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& interactions,
+                       CombinationRule*                                                comb,
+                       double*                                                         reppow,
+                       real*                                                           fudgeQQ,
+                       gmx_bool                                                        bMorse,
+                       WarningHandler*                                                 wi,
+                       const gmx::MDLogger&                                            logger)
 {
     std::vector<gmx_molblock_t> molblock;
     int                         i, nmismatch;
@@ -692,7 +692,7 @@ static void new_status(const char*                                 topfile,
 
     if (ir->eDisre == DistanceRestraintRefinement::None)
     {
-        i = rm_interactions(F_DISRES, *mi);
+        i = rm_interactions(InteractionFunction::DistanceRestraints, *mi);
         if (i > 0)
         {
             wi->setFileAndLineNumber("unknown", -1);
@@ -703,7 +703,7 @@ static void new_status(const char*                                 topfile,
     }
     if (!opts->bOrire)
     {
-        i = rm_interactions(F_ORIRES, *mi);
+        i = rm_interactions(InteractionFunction::OrientationRestraints, *mi);
         if (i > 0)
         {
             wi->setFileAndLineNumber("unknown", -1);
@@ -723,7 +723,7 @@ static void new_status(const char*                                 topfile,
      * constraints only. Do not print note with large timesteps or vsites.
      */
     if (opts->nshake == eshALLBONDS && ffParametrizedWithHBondConstraints && ir->delta_t < 0.0026
-        && gmx_mtop_ftype_count(*sys, F_VSITE3FD) == 0)
+        && gmx_mtop_ftype_count(*sys, InteractionFunction::VirtualSite3FlexibleDistance) == 0)
     {
         wi->setFileAndLineNumber("unknown", -1);
         wi->addNote(
@@ -801,8 +801,10 @@ static void new_status(const char*                                 topfile,
     }
     {
         bool bHasNormalConstraints =
-                0 < (nint_ftype(sys, *mi, F_CONSTR) + nint_ftype(sys, *mi, F_CONSTRNC));
-        bool bHasAnyConstraints = bHasNormalConstraints || 0 < nint_ftype(sys, *mi, F_SETTLE);
+                0 < (nint_ftype(sys, *mi, InteractionFunction::Constraints)
+                     + nint_ftype(sys, *mi, InteractionFunction::ConstraintsNoCoupling));
+        bool bHasAnyConstraints =
+                bHasNormalConstraints || 0 < nint_ftype(sys, *mi, InteractionFunction::SETTLE);
         double_check(ir, state->box, bHasNormalConstraints, bHasAnyConstraints, wi);
     }
 
@@ -1020,9 +1022,11 @@ static void read_posres(gmx_mtop_t*                              mtop,
     snew(hadAtom, natoms);
     for (gmx_molblock_t& molb : mtop->molblock)
     {
-        nat_molb                       = molb.nmol * mtop->moltype[molb.type].atoms.nr;
-        const InteractionsOfType* pr   = &(molinfo[molb.type].interactions[F_POSRES]);
-        const InteractionsOfType* prfb = &(molinfo[molb.type].interactions[F_FBPOSRES]);
+        nat_molb = molb.nmol * mtop->moltype[molb.type].atoms.nr;
+        const InteractionsOfType* pr =
+                &(molinfo[molb.type].interactions[InteractionFunction::PositionRestraints]);
+        const InteractionsOfType* prfb =
+                &(molinfo[molb.type].interactions[InteractionFunction::FlatBottomedPositionRestraints]);
         if (pr->size() > 0 || prfb->size() > 0)
         {
             for (const auto& restraint : pr->interactionTypes)
@@ -1502,12 +1506,13 @@ static int count_constraints(const gmx_mtop_t*                        mtop,
     count = 0;
     for (const gmx_molblock_t& molb : mtop->molblock)
     {
-        count_mol                                            = 0;
-        gmx::ArrayRef<const InteractionsOfType> interactions = mi[molb.type].interactions;
+        count_mol = 0;
+        const gmx::EnumerationArray<InteractionFunction, InteractionsOfType>& interactions =
+                mi[molb.type].interactions;
 
-        for (int i = 0; i < F_NRE; i++)
+        for (const auto i : gmx::EnumerationWrapper<InteractionFunction>{})
         {
-            if (i == F_SETTLE)
+            if (i == InteractionFunction::SETTLE)
             {
                 count_mol += 3 * interactions[i].size();
             }
@@ -1604,10 +1609,11 @@ static void checkForUnboundAtoms(const gmx_moltype_t* molt,
 
     std::vector<int> count(atoms->nr, 0);
 
-    for (int ftype = 0; ftype < F_NRE; ftype++)
+    for (const auto ftype : gmx::EnumerationWrapper<InteractionFunction>{})
     {
-        if (((interaction_function[ftype].flags & IF_BOND) && NRAL(ftype) == 2 && ftype != F_CONNBONDS)
-            || (interaction_function[ftype].flags & IF_CONSTRAINT) || ftype == F_SETTLE)
+        if (((interaction_function[ftype].flags & IF_BOND) && NRAL(ftype) == 2
+             && ftype != InteractionFunction::ConnectBonds)
+            || (interaction_function[ftype].flags & IF_CONSTRAINT) || ftype == InteractionFunction::SETTLE)
         {
             const InteractionList& il   = molt->ilist[ftype];
             const int              nral = NRAL(ftype);
@@ -1679,7 +1685,8 @@ static bool haveDecoupledModeInMol(const gmx_moltype_t&           molt,
                                    gmx::ArrayRef<const t_iparams> iparams,
                                    real                           massFactorThreshold)
 {
-    if (molt.ilist[F_CONSTR].empty() && molt.ilist[F_CONSTRNC].empty())
+    if (molt.ilist[InteractionFunction::Constraints].empty()
+        && molt.ilist[InteractionFunction::ConstraintsNoCoupling].empty())
     {
         return false;
     }
@@ -1690,7 +1697,7 @@ static bool haveDecoupledModeInMol(const gmx_moltype_t&           molt,
             gmx::make_at2con(molt, iparams, gmx::FlexibleConstraintTreatment::Exclude);
 
     bool haveDecoupledMode = false;
-    for (int ftype = 0; ftype < F_NRE; ftype++)
+    for (const auto ftype : gmx::EnumerationWrapper<InteractionFunction>{})
     {
         if (interaction_function[ftype].flags & IF_ATYPE)
         {
@@ -2315,9 +2322,9 @@ int gmx_grompp(int argc, char* argv[])
         wi.addError(warningMessage);
     }
 
-    std::array<InteractionsOfType, F_NRE> interactions;
-    gmx_mtop_t                            sys;
-    PreprocessingAtomTypes                atypes;
+    gmx::EnumerationArray<InteractionFunction, InteractionsOfType> interactions;
+    gmx_mtop_t                                                     sys;
+    PreprocessingAtomTypes                                         atypes;
     if (debug)
     {
         pr_symtab(debug, 0, "Just opened", &sys.symtab);
@@ -2403,7 +2410,8 @@ int gmx_grompp(int argc, char* argv[])
      */
     check_warning_error(wi, FARGS);
 
-    if (nint_ftype(&sys, mi, F_POSRES) > 0 || nint_ftype(&sys, mi, F_FBPOSRES) > 0)
+    if (nint_ftype(&sys, mi, InteractionFunction::PositionRestraints) > 0
+        || nint_ftype(&sys, mi, InteractionFunction::FlatBottomedPositionRestraints) > 0)
     {
         if (ir->pressureCouplingOptions.epc == PressureCoupling::ParrinelloRahman
             || ir->pressureCouplingOptions.epc == PressureCoupling::Mttk)
@@ -2461,14 +2469,14 @@ int gmx_grompp(int argc, char* argv[])
     }
 
     /* If we are using CMAP, setup the pre-interpolation grid */
-    if (interactions[F_CMAP].ncmap() > 0)
+    if (interactions[InteractionFunction::DihedralEnergyCorrectionMap].ncmap() > 0)
     {
         init_cmap_grid(&sys.ffparams.cmap_grid,
-                       interactions[F_CMAP].numCmaps_,
-                       interactions[F_CMAP].cmapGridSpacing_);
-        setup_cmap(interactions[F_CMAP].cmapGridSpacing_,
-                   interactions[F_CMAP].numCmaps_,
-                   interactions[F_CMAP].cmap,
+                       interactions[InteractionFunction::DihedralEnergyCorrectionMap].numCmaps_,
+                       interactions[InteractionFunction::DihedralEnergyCorrectionMap].cmapGridSpacing_);
+        setup_cmap(interactions[InteractionFunction::DihedralEnergyCorrectionMap].cmapGridSpacing_,
+                   interactions[InteractionFunction::DihedralEnergyCorrectionMap].numCmaps_,
+                   interactions[InteractionFunction::DihedralEnergyCorrectionMap].cmap,
                    &sys.ffparams.cmap_grid);
     }
 
@@ -2681,7 +2689,8 @@ int gmx_grompp(int argc, char* argv[])
     }
 
     //! Must be done after do_index, so we do it here before the triple check
-    if ((gmx_mtop_ftype_count(sys, F_POSRES) != 0 || gmx_mtop_ftype_count(sys, F_FBPOSRES) != 0)
+    if ((gmx_mtop_ftype_count(sys, InteractionFunction::PositionRestraints) != 0
+         || gmx_mtop_ftype_count(sys, InteractionFunction::FlatBottomedPositionRestraints) != 0)
         && ir->pressureCouplingOptions.refcoord_scaling == RefCoordScaling::Com)
     {
         ir->posresCom  = calcPosresCom(&sys, false, ir->pbcType, state.box, logger);
@@ -2838,7 +2847,8 @@ int gmx_grompp(int argc, char* argv[])
     }
 
     {
-        double      cio = compute_io(ir, sys.natoms, sys.groups, F_NRE, 1);
+        double cio =
+                compute_io(ir, sys.natoms, sys.groups, static_cast<int>(InteractionFunction::Count), 1);
         std::string warningMessage =
                 gmx::formatString("This run will generate roughly %.0f Mb of data", cio);
         const double minimumOutputMebibytesForWarning = 20000;

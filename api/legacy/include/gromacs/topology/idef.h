@@ -47,6 +47,7 @@
 #include <vector>
 
 #include "gromacs/topology/ifunc.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/vectypes.h"
 
@@ -223,8 +224,6 @@ typedef union t_iparams
     } generic; /* Conversion */
 } t_iparams;
 
-typedef int t_functype;
-
 /*! \brief List of listed interactions.
  *
  * Defines a list of atoms with their interactions.
@@ -308,9 +307,9 @@ struct InteractionList
  *
  * Contains one list for each interaction type.
  *
- * TODO: Consider only including entries in use instead of all F_NRE
+ * TODO: Consider only including entries in use instead of all InteractionFunction::Count
  */
-using InteractionLists = std::array<InteractionList, F_NRE>;
+using InteractionLists = gmx::EnumerationArray<InteractionFunction, InteractionList>;
 
 /*! \brief Deprecated list of listed interactions.
  */
@@ -336,8 +335,8 @@ struct t_ilist
  */
 struct InteractionListHandle
 {
-    const int               functionType; //!< The function type.
-    const std::vector<int>& iatoms;       //!< Reference to interaction list.
+    const InteractionFunction functionType; //!< The function type.
+    const std::vector<int>&   iatoms;       //!< Reference to interaction list.
 };
 
 /*! \brief Returns a list of all non-empty InteractionList entries with any of the interaction flags in \p flags set
@@ -348,11 +347,11 @@ struct InteractionListHandle
 static inline std::vector<InteractionListHandle> extractILists(const InteractionLists& ilists, int flags)
 {
     std::vector<InteractionListHandle> handles;
-    for (size_t ftype = 0; ftype < ilists.size(); ftype++)
+    for (const auto ftype : gmx::EnumerationWrapper<InteractionFunction>{})
     {
         if ((interaction_function[ftype].flags & flags) && !ilists[ftype].empty())
         {
-            handles.push_back({ static_cast<int>(ftype), ilists[ftype].iatoms });
+            handles.push_back({ ftype, ilists[ftype].iatoms });
         }
     }
     return handles;
@@ -412,15 +411,15 @@ public:
     //! The interaction parameters.
     const std::vector<t_iparams>& iparams;
     //! The function type per type.
-    const std::vector<int>& functype;
+    const std::vector<InteractionFunction>& functype;
     //! Position restraint interaction parameters.
     std::vector<t_iparams> iparams_posres;
     //! Flat-bottomed position restraint parameters.
     std::vector<t_iparams> iparams_fbposres;
     //! The list of interactions for each type. Note that some, such as LJ and COUL will have 0 entries.
-    std::array<InteractionList, F_NRE> il;
+    InteractionLists il;
     //! The number of non-perturbed interactions at the start of each entry in il.
-    std::array<int, F_NRE> numNonperturbedInteractions;
+    gmx::EnumerationArray<InteractionFunction, int> numNonperturbedInteractions;
     //! The sorting state of interaction in il.
     int ilsort = ilsortUNKNOWN;
     //! The dihedral correction maps.
@@ -444,7 +443,7 @@ struct t_idef
      * force parameters is a different force type. The type identifier in the
      * forceatoms[] array is an index in this array.
      */
-    t_functype* functype;
+    InteractionFunction* functype;
     /*! Array of length ntypes, defines the parameters for every interaction
      * type. The type identifier in the actual interaction list
      * (ilist[ftype].iatoms[]) is an index in this array.
@@ -454,13 +453,13 @@ struct t_idef
     /*! Defines the parameters for position restraints only.
      * Position restraints are the only interactions that have different
      * parameters (reference positions) for different molecules
-     * of the same type. ilist[F_POSRES].iatoms[] is an index in this array.
+     * of the same type. ilist[InteractionFunction::PositionRestraints].iatoms[] is an index in this array.
      */
     t_iparams *iparams_posres, *iparams_fbposres;
     /*! The list of interactions for each type. Note that some,
      * such as LJ and COUL will have 0 entries.
      */
-    t_ilist il[F_NRE];
+    gmx::EnumerationArray<InteractionFunction, t_ilist> il;
     //! The state of the sorting of il, values are provided above.
     int ilsort;
 };
@@ -470,16 +469,16 @@ namespace gmx
 class TextWriter;
 } // namespace gmx
 
-void printInteractionParameters(gmx::TextWriter* writer, t_functype ftype, const t_iparams& iparams);
-void pr_iparams(FILE* fp, t_functype ftype, const t_iparams& iparams);
-void pr_ilist(FILE*                  fp,
-              int                    indent,
-              const char*            title,
-              const t_functype*      functype,
-              const InteractionList& ilist,
-              bool                   bShowNumbers,
-              bool                   bShowParameters,
-              const t_iparams*       iparams);
+void printInteractionParameters(gmx::TextWriter* writer, InteractionFunction ftype, const t_iparams& iparams);
+void pr_iparams(FILE* fp, InteractionFunction ftype, const t_iparams& iparams);
+void pr_ilist(FILE*                      fp,
+              int                        indent,
+              const char*                title,
+              const InteractionFunction* functype,
+              const InteractionList&     ilist,
+              bool                       bShowNumbers,
+              bool                       bShowParameters,
+              const t_iparams*           iparams);
 void pr_idef(FILE* fp, int indent, const char* title, const t_idef* idef, bool bShowNumbers, bool bShowParameters);
 
 /*! \brief

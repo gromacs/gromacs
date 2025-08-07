@@ -110,7 +110,11 @@ void EdgesGenerator::addEdge(const int a0, const int a1)
  * edges are only added when atoms have a different part index.
  */
 template<typename T>
-static bool mk_igraph(EdgesGenerator* edgesG, int ftype, const T& il, int at_end, ArrayRef<const int> part)
+static bool mk_igraph(EdgesGenerator*     edgesG,
+                      InteractionFunction ftype,
+                      const T&            il,
+                      int                 at_end,
+                      ArrayRef<const int> part)
 {
     int  i, j, np;
     int  end;
@@ -136,7 +140,7 @@ static bool mk_igraph(EdgesGenerator* edgesG, int ftype, const T& il, int at_end
                           at_end,
                           at_end);
             }
-            if (ftype == F_SETTLE)
+            if (ftype == InteractionFunction::SETTLE)
             {
                 /* Bond all the atoms in the settle */
                 edgesG->addEdge(il.iatoms[i + 1], il.iatoms[i + 2]);
@@ -318,7 +322,11 @@ static gmx_bool determine_graph_parts(const EdgesGenerator& edgesG, ArrayRef<int
 }
 
 template<typename T>
-static t_graph mk_graph_ilist(FILE* fplog, const T* ilist, int at_end, gmx_bool bShakeOnly, gmx_bool bSettle)
+static t_graph mk_graph_ilist(FILE*                                                fplog,
+                              const gmx::EnumerationArray<InteractionFunction, T>& ilist,
+                              int                                                  at_end,
+                              gmx_bool                                             bShakeOnly,
+                              gmx_bool                                             bSettle)
 {
     EdgesGenerator edgesG(at_end);
 
@@ -331,7 +339,7 @@ static t_graph mk_graph_ilist(FILE* fplog, const T* ilist, int at_end, gmx_bool 
             /* First add all the real bonds: they should determine the molecular
              * graph.
              */
-            for (int i = 0; (i < F_NRE); i++)
+            for (const auto i : gmx::EnumerationWrapper<InteractionFunction>{})
             {
                 if (interaction_function[i].flags & IF_CHEMBOND)
                 {
@@ -352,7 +360,7 @@ static t_graph mk_graph_ilist(FILE* fplog, const T* ilist, int at_end, gmx_bool 
                  * that are not connected through IF_CHEMBOND interactions.
                  */
                 bool addedEdge = false;
-                for (int i = 0; (i < F_NRE); i++)
+                for (const auto i : gmx::EnumerationWrapper<InteractionFunction>{})
                 {
                     if (!(interaction_function[i].flags & IF_CHEMBOND))
                     {
@@ -374,10 +382,14 @@ static t_graph mk_graph_ilist(FILE* fplog, const T* ilist, int at_end, gmx_bool 
         else
         {
             /* This is a special thing used in splitter.c to generate shake-blocks */
-            mk_igraph(&edgesG, F_CONSTR, ilist[F_CONSTR], at_end, {});
+            mk_igraph(&edgesG,
+                      InteractionFunction::Constraints,
+                      ilist[InteractionFunction::Constraints],
+                      at_end,
+                      {});
             if (bSettle)
             {
-                mk_igraph(&edgesG, F_SETTLE, ilist[F_SETTLE], at_end, {});
+                mk_igraph(&edgesG, InteractionFunction::SETTLE, ilist[InteractionFunction::SETTLE], at_end, {});
             }
         }
     }
@@ -413,19 +425,19 @@ static t_graph mk_graph_ilist(FILE* fplog, const T* ilist, int at_end, gmx_bool 
 
 t_graph mk_graph_moltype(const gmx_moltype_t& moltype)
 {
-    return mk_graph_ilist(nullptr, moltype.ilist.data(), moltype.atoms.nr, FALSE, FALSE);
+    return mk_graph_ilist(nullptr, moltype.ilist, moltype.atoms.nr, FALSE, FALSE);
 }
 
 t_graph mk_graph(const InteractionDefinitions& idef, const int numAtoms)
 {
-    return mk_graph_ilist(nullptr, idef.il.data(), numAtoms, false, false);
+    return mk_graph_ilist(nullptr, idef.il, numAtoms, false, false);
 }
 
 t_graph* mk_graph(FILE* fplog, const InteractionDefinitions& idef, int at_end, gmx_bool bShakeOnly, gmx_bool bSettle)
 {
     t_graph* g = new (t_graph);
 
-    *g = mk_graph_ilist(fplog, idef.il.data(), at_end, bShakeOnly, bSettle);
+    *g = mk_graph_ilist(fplog, idef.il, at_end, bShakeOnly, bSettle);
 
     return g;
 }

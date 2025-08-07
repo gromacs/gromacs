@@ -57,12 +57,12 @@ struct gmx_ffparams_t
     /* TODO: Consider merging functype and iparams, either by storing
      *       the functype in t_iparams or by putting both in a single class.
      */
-    int                     atnr = 0;    /**< The number of non-bonded atom types */
-    std::vector<t_functype> functype;    /**< The function type per type */
-    std::vector<t_iparams>  iparams;     /**< Force field parameters per type */
-    double                  reppow  = 0; /**< The repulsion power for VdW: C12*r^-reppow   */
-    real                    fudgeQQ = 0; /**< The scaling factor for Coulomb 1-4: f*q1*q2  */
-    gmx_cmap_t              cmap_grid;   /**< The dihedral correction maps                 */
+    int                              atnr = 0; /**< The number of non-bonded atom types */
+    std::vector<InteractionFunction> functype; /**< The function type per type */
+    std::vector<t_iparams>           iparams;  /**< Force field parameters per type */
+    double     reppow  = 0;                    /**< The repulsion power for VdW: C12*r^-reppow   */
+    real       fudgeQQ = 0;                    /**< The scaling factor for Coulomb 1-4: f*q1*q2  */
+    gmx_cmap_t cmap_grid;                      /**< The dihedral correction maps                 */
 };
 
 void pr_ffparams(FILE* fp, int indent, const char* title, const gmx_ffparams_t* ffparams, gmx_bool bShowNumbers);

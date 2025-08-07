@@ -51,6 +51,8 @@
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/listed_forces/listed_forces_gpu.h"
 #include "gromacs/pbcutil/pbc_aiuc.h"
+#include "gromacs/topology/ifunc.h"
+#include "gromacs/utility/enumerationhelpers.h"
 
 #if GMX_GPU_SYCL
 #    include "gromacs/gpu_utils/syclutils.h"
@@ -85,7 +87,7 @@ struct BondedGpuKernelParameters
     //! Scale factor
     float electrostaticsScaleFactor;
     //! The bonded types on GPU
-    int fTypesOnGpu[numFTypesOnGpu];
+    InteractionFunction fTypesOnGpu[numFTypesOnGpu];
     //! The number of bonds for every function type
     int numFTypeBonds[numFTypesOnGpu];
     //! The start index in the range of each interaction type
@@ -170,13 +172,13 @@ private:
      *
      * \todo This is potentially several pinned allocations, which
      * could contribute to exhausting such pages. */
-    std::array<HostInteractionList, F_NRE> iLists_;
+    gmx::EnumerationArray<InteractionFunction, HostInteractionList> iLists_;
 
     //! Tells whether there are any interaction in iLists.
     bool haveInteractions_ = false;
     //! Interaction lists on the device.
-    std::array<DeviceBuffer<t_iatom>, F_NRE> d_iAtoms_      = {};
-    std::array<int, F_NRE>                   d_iAtomsAlloc_ = {};
+    gmx::EnumerationArray<InteractionFunction, DeviceBuffer<t_iatom>> d_iAtoms_      = {};
+    gmx::EnumerationArray<InteractionFunction, int>                   d_iAtomsAlloc_ = {};
     //! Bonded parameters for device-side use.
     DeviceBuffer<t_iparams> d_forceParams_ = nullptr;
     //! Position-charge vector on the device.

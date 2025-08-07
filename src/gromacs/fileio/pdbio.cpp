@@ -1081,13 +1081,13 @@ void gmx_pdb_read_conf(const std::filesystem::path& infile,
 
 gmx_conect gmx_conect_generate(const t_topology* top)
 {
-    int        f, i;
+    int        i;
     gmx_conect gc;
 
     /* Fill the conect records */
     gc = gmx_conect_init();
 
-    for (f = 0; (f < F_NRE); f++)
+    for (const auto f : gmx::EnumerationWrapper<InteractionFunction>{})
     {
         if (IS_CHEMBOND(f))
         {
