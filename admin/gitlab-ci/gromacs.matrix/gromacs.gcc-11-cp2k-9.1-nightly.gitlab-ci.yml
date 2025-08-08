@@ -66,7 +66,6 @@ gromacs-cp2k-9.1:gcc-11-nightly:build-test:
     CMAKE_COMPILER_SCRIPT: ""
     COMPILER_MAJOR_VERSION: 11
     CTEST_RUN_MODE: "ExperimentalTest"
-    GMX_FORCE_UPDATE_DEFAULT_CPU: 1
   needs:
     - job: gromacs-cp2k-9.1:gcc-11-nightly:configure
   script:

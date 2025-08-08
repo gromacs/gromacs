@@ -46,7 +46,6 @@ gromacs:clang-TSAN:test:
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-18-tsan
   variables:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
-    GMX_FORCE_UPDATE_DEFAULT_CPU: 1
     # Avoid remaining false positives in OpenMP library, even when instrumented
     TSAN_OPTIONS: ignore_noninstrumented_modules=1
   needs:

@@ -73,7 +73,6 @@ gromacs:oneapi-2025.1-opencl:release:regressiontest:
     REGRESSIONTEST_PME_RANK_NUMBER: 0
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 2
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
-    GMX_FORCE_UPDATE_DEFAULT_CPU: 1
   needs:
     - job: gromacs:oneapi-2025.1-opencl:release:build
     - job: regressiontests:package

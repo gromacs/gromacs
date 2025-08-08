@@ -50,7 +50,6 @@ gromacs:clang-ASAN:test:
     KUBERNETES_CPU_LIMIT: 8
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
     CTEST_RUN_MODE: "ExperimentalMemCheck"
-    GMX_FORCE_UPDATE_DEFAULT_CPU: 1
   needs:
     - job: gromacs:clang-ASAN:build
   after_script:

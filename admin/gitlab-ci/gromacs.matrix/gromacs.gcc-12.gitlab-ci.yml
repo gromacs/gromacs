@@ -55,7 +55,6 @@ gromacs:gcc-12:test:
     # Enable limited support of RDNA devices
     GMX_OCL_FORCE_AMD_WAVEFRONT64: 1
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
-    GMX_FORCE_UPDATE_DEFAULT_CPU: 1
     GPU_VENDOR: "AMD"
     GPU_COUNT: 1
   tags:

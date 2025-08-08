@@ -67,7 +67,6 @@ gromacs:clang-19:regressiontest:
     CMAKE: /usr/local/cmake-3.30.3/bin/cmake
     REGRESSIONTEST_DOUBLE: "-double"
     REGRESSIONTEST_PARALLEL: "-np"
-    GMX_FORCE_UPDATE_DEFAULT_CPU: 1
   needs:
     - job: gromacs:clang-19-mpi:build
     - job: regressiontests:prepare
