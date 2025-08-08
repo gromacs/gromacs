@@ -1411,16 +1411,19 @@ Bonds
 
    .. mdp-value:: all-bonds
 
-      Convert all bonds to constraints.
+      Convert all bonds to constraints. Note that many force fields have
+      been parameterized with flexible bonds between heavy atoms and that
+      constraining these bonds can increase energy barriers of dihedrals.
 
    .. mdp-value:: h-angles
 
       Convert all bonds to constraints and convert the angles that
-      involve H-atoms to bond-constraints.
+      involve H-atoms to bond-constraints. This option is deprecated.
 
    .. mdp-value:: all-angles
 
       Convert all bonds to constraints and all angles to bond-constraints.
+      This option is deprecated.
 
 .. mdp:: constraint-algorithm
 

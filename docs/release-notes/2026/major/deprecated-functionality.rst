@@ -13,3 +13,5 @@ Changes anticipated to |Gromacs| 2026 functionality
 Functionality deprecated in |Gromacs| 2026
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Generating angle constraints with grompp is deprecated
+""""""""""""""""""""""""""""""""""""""""""""""""""""""
