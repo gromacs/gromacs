@@ -332,6 +332,11 @@ TEST_F(AwhTest, MultiBiasCanRunAndRestartFromCheckpoint)
     checkXvgOutputFile(&checker, pullXFileName, "AWH pull x output after 20 steps", pullXTolerance);
     checkXvgOutputFile(&checker, pullFFileName, "AWH pull f output after 20 steps", pullFTolerance);
 
+#if GMX_LIB_MPI
+    // Don't overwrite pullXFileName / pullFFileName before all ranks had the chance to check them
+    MPI_Barrier(MdrunTestFixtureBase::s_communicator);
+#endif
+
     // Continue mdrun from that checkpoint file
     ::gmx::test::CommandLine secondCaller(awhCaller);
     secondCaller.addOption("-cpi", runner_.cptOutputFileName_);
