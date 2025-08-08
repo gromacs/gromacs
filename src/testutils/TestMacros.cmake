@@ -374,7 +374,7 @@ function (gmx_add_mpi_unit_test NAME EXENAME RANKS)
             if (ARG_SLOW_TEST)
                 # Some tests might be known to be slow in GPU configs, mark them as such
                 set(_test_labels SLOW_TEST QUICK_GPU_TEST)
-            elseif()
+            else()
                 # If not explicitly marked, all unit tests should be quick, so mark them as QUICK_GPU_TEST if they use GPU
                 set(_test_labels "QUICK_GPU_TEST")
             endif()
