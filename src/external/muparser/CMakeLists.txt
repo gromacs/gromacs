@@ -108,7 +108,7 @@ set(INSTALL_CONFIGDIR ${CMAKE_INSTALL_LIBDIR}/cmake/muparser)
 install(TARGETS muparser
     EXPORT muparser-export
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT RuntimeLibraries
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT Development
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT Development EXCLUDE_FROM_ALL
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT RuntimeLibraries
 )
 
@@ -117,6 +117,7 @@ install(FILES
     ${MUPARSER_HEADERS}
     DESTINATION include
     COMPONENT Development
+    EXCLUDE_FROM_ALL
 )
 
 # Export the target under the build-tree (no need to install)
@@ -141,12 +142,14 @@ install(EXPORT muparser-export
     FILE muparser-targets.cmake
     NAMESPACE muparser::
     DESTINATION ${INSTALL_CONFIGDIR}
+    EXCLUDE_FROM_ALL
 )
 install(FILES
     ${CMAKE_CURRENT_BINARY_DIR}/muparserConfig.cmake
     ${CMAKE_CURRENT_BINARY_DIR}/muparserConfigVersion.cmake
     DESTINATION ${INSTALL_CONFIGDIR}
     COMPONENT Development
+    EXCLUDE_FROM_ALL
 )
 
 # Define variables for the pkg-config file
@@ -162,6 +165,7 @@ configure_file(
 install(
     FILES ${CMAKE_BINARY_DIR}/muparser.pc
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
+    EXCLUDE_FROM_ALL
 )
 
 include(CTest)

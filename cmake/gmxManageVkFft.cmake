@@ -82,7 +82,9 @@ function(gmx_manage_vkfft BACKEND_NAME)
         endif()
     elseif(BACKEND_NAME STREQUAL "HIP")
         target_compile_definitions(VkFFT INTERFACE VKFFT_BACKEND=2)
-        if (GMX_SYCL_DPCPP)
+        # Since ROCm 7.0 the hiprtc symbols are no longer part of amdhip64, so we need
+        # to ensure we pull those in manually for VkFFT in the HIP build as well.
+        if (GMX_SYCL_DPCPP OR GMX_GPU_HIP)
             # HIP does not include hiprtc CMake config prior to version 5.6
             # https://github.com/ROCm-Developer-Tools/HIP/issues/3131
             # Using find_package(HIP) pulls in too many dependencies, in particular clang_rt.

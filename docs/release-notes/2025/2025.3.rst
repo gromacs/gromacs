@@ -26,11 +26,29 @@ free energies would be zero. Affected versions: 2024.4, 2024.5,  2025.0,
 
 :issue:`5371`
 
+AWH bias sharing caused error without separate PME ranks
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Using AWH in conjuction with bias sharing between several simulations
+caused mdrun to segfault if more than one rank per simulation was used
+but no separate PME ranks were present. This could not produce incorrect
+results.
+Affected versions: 2024.5, 2025.0, 2025.1 and 2025.2.  
+
+:issue:`5394`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Fix build with ROCm 7 and newer
+"""""""""""""""""""""""""""""""
+
+Building and linking |Gromacs| would fail due to changes in the linking behaviour of the main HIP library.
+
+:issue:`5380`
 
 Miscellaneous
 ^^^^^^^^^^^^^
@@ -43,3 +61,19 @@ for Domain decomp. that was too high by a factor of one plus the number of dimen
 were decomposed. The times and cycle counts were correct.
 
 :issue:`5369`
+
+Support added for compilation with NVIDIA CUDA 13 toolkit
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Addition of a compilation option necessary to avoid CUDA build failures when using the NVCC
+compiler from version 13 of the CUDA toolkit.
+
+:issue:`5389`
+
+Avoid installing 3rd party header files
+"""""""""""""""""""""""""""""""""""""""
+
+Fixed a regression where |Gromacs| installed muParser headers, causing conflicts with
+the separate muParser package if installed.
+
+:issue:`5282`
