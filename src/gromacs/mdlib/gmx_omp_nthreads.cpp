@@ -45,13 +45,13 @@
 #include <filesystem>
 
 #include "gromacs/gmxlib/network.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/programcontext.h"
 
 /** Structure with the number of threads for each OpenMP multi-threaded
@@ -116,12 +116,12 @@ static omp_module_nthreads_t modth = { 0, 0, { 0, 0, 0, 0, 0, 0, 0, 0, 0 } };
  *  GMX_*_NUM_THERADS env var is set, case in which its value overrides
  *  the default.
  */
-static void pick_module_nthreads(const gmx::MDLogger& mdlog, ModuleMultiThread m, gmx_bool bSepPME)
+static void pick_module_nthreads(const gmx::MDLogger& mdlog, ModuleMultiThread m, bool haveSeparatePmeRanks)
 {
     char* env;
     int   nth;
 
-    const bool bOMP = GMX_OPENMP;
+    const bool haveOpenMP = GMX_OPENMP;
 
     /* The default should never be set through a GMX_*_NUM_THREADS env var
      * as it's always equal with gnth. */
@@ -135,7 +135,7 @@ static void pick_module_nthreads(const gmx::MDLogger& mdlog, ModuleMultiThread m
     {
         sscanf(env, "%d", &nth);
 
-        if (!bOMP)
+        if (!haveOpenMP)
         {
             gmx_warning("%s=%d is set, but %s is compiled without OpenMP!",
                         enumValueToEnvVariableString(m),
@@ -155,7 +155,8 @@ static void pick_module_nthreads(const gmx::MDLogger& mdlog, ModuleMultiThread m
         }
 
         /* only babble if we are really overriding with a different value */
-        if ((bSepPME && m == ModuleMultiThread::Pme && nth != modth.gnth_pme) || (nth != modth.gnth))
+        if ((haveSeparatePmeRanks && m == ModuleMultiThread::Pme && nth != modth.gnth_pme)
+            || (nth != modth.gnth))
         {
             GMX_LOG(mdlog.warning)
                     .asParagraph()
@@ -169,7 +170,7 @@ static void pick_module_nthreads(const gmx::MDLogger& mdlog, ModuleMultiThread m
     {
         /* pick the global PME node nthreads if we are setting the number
          * of threads in separate PME nodes  */
-        nth = (bSepPME && m == ModuleMultiThread::Pme) ? modth.gnth_pme : modth.gnth;
+        nth = (haveSeparatePmeRanks && m == ModuleMultiThread::Pme) ? modth.gnth_pme : modth.gnth;
     }
 
     gmx_omp_nthreads_set(m, nth);
@@ -177,9 +178,9 @@ static void pick_module_nthreads(const gmx::MDLogger& mdlog, ModuleMultiThread m
 
 void gmx_omp_nthreads_read_env(const gmx::MDLogger& mdlog, int* nthreads_omp)
 {
-    char*    env;
-    gmx_bool bCommandLineSetNthreadsOMP = *nthreads_omp > 0;
-    char     buffer[STRLEN];
+    char* env;
+    bool  bCommandLineSetNthreadsOMP = *nthreads_omp > 0;
+    char  buffer[STRLEN];
 
     GMX_RELEASE_ASSERT(nthreads_omp, "nthreads_omp must be a non-NULL pointer");
 
@@ -231,31 +232,25 @@ void gmx_omp_nthreads_read_env(const gmx::MDLogger& mdlog, int* nthreads_omp)
     of OpenMP threads to use in various modules and deciding what to
     do about it. */
 static void manage_number_of_openmp_threads(const gmx::MDLogger& mdlog,
-                                            const t_commrec*     cr,
-                                            bool                 bOMP,
-                                            int                  maxThreads,
-                                            int                  omp_nthreads_req,
-                                            int                  omp_nthreads_pme_req,
-                                            gmx_bool gmx_unused  bThisNodePMEOnly,
-                                            int                  numRanksOnThisNode,
-                                            gmx_bool             bSepPME)
+                                            const gmx::MpiComm&  mpiCommSimulation,
+                                            const bool           haveOpenMP,
+                                            const int            maxThreads,
+                                            const int            omp_nthreads_req,
+                                            const int            omp_nthreads_pme_req,
+                                            const bool           thisRankIsPmeOnly,
+                                            const int            numRanksOnThisNode,
+                                            const bool           haveSeparatePmeRanks)
 {
-    int   nth;
-    char* env;
-    bool  threadLimitApplied{ false };
+    bool threadLimitApplied{ false };
 
-#if GMX_THREAD_MPI
     /* modth is shared among tMPI threads, so for thread safety, the
      * detection is done on the main only. It is not thread-safe
      * with multiple simulations, but that's anyway not supported by
      * tMPI. */
-    if (!cr->isSimulationMainRank())
+    if (GMX_THREAD_MPI && !mpiCommSimulation.isMainRank())
     {
         return;
     }
-#else
-    GMX_UNUSED_VALUE(cr);
-#endif
 
     /* With full OpenMP support (verlet scheme) set the number of threads
      * per process / default:
@@ -275,10 +270,10 @@ static void manage_number_of_openmp_threads(const gmx::MDLogger& mdlog,
      * - OMP_NUM_THREADS if defined, otherwise
      * - 1
      */
-    nth = 1;
-    if ((env = std::getenv("OMP_NUM_THREADS")) != nullptr)
+    int nth = 1;
+    if (const char* env = std::getenv("OMP_NUM_THREADS"))
     {
-        if (!bOMP && (std::strncmp(env, "1", 1) != 0))
+        if (!haveOpenMP && (std::strncmp(env, "1", 1) != 0))
         {
             gmx_warning("OMP_NUM_THREADS is set, but %s was compiled without OpenMP support!",
                         gmx::getProgramContext().displayName());
@@ -292,7 +287,7 @@ static void manage_number_of_openmp_threads(const gmx::MDLogger& mdlog,
     {
         nth = omp_nthreads_req;
     }
-    else if (bOMP)
+    else if (haveOpenMP)
     {
         /* max available threads per node */
         nth = maxThreads;
@@ -318,7 +313,7 @@ static void manage_number_of_openmp_threads(const gmx::MDLogger& mdlog,
      * - 1 if not compiled with OpenMP
      * - nth for the verlet scheme when compiled with OpenMP
      */
-    if (bOMP)
+    if (haveOpenMP)
     {
         modth.gnth = nth;
     }
@@ -327,7 +322,7 @@ static void manage_number_of_openmp_threads(const gmx::MDLogger& mdlog,
         modth.gnth = 1;
     }
 
-    if (bSepPME)
+    if (haveSeparatePmeRanks)
     {
         if (omp_nthreads_pme_req > 0)
         {
@@ -360,26 +355,24 @@ static void manage_number_of_openmp_threads(const gmx::MDLogger& mdlog,
 
     /* now set the per-module values */
     modth.nth[ModuleMultiThread::Default] = modth.gnth;
-    pick_module_nthreads(mdlog, ModuleMultiThread::Domdec, bSepPME);
-    pick_module_nthreads(mdlog, ModuleMultiThread::Pairsearch, bSepPME);
-    pick_module_nthreads(mdlog, ModuleMultiThread::Nonbonded, bSepPME);
-    pick_module_nthreads(mdlog, ModuleMultiThread::Bonded, bSepPME);
-    pick_module_nthreads(mdlog, ModuleMultiThread::Pme, bSepPME);
-    pick_module_nthreads(mdlog, ModuleMultiThread::Update, bSepPME);
-    pick_module_nthreads(mdlog, ModuleMultiThread::VirtualSite, bSepPME);
-    pick_module_nthreads(mdlog, ModuleMultiThread::Lincs, bSepPME);
-    pick_module_nthreads(mdlog, ModuleMultiThread::Settle, bSepPME);
+    pick_module_nthreads(mdlog, ModuleMultiThread::Domdec, haveSeparatePmeRanks);
+    pick_module_nthreads(mdlog, ModuleMultiThread::Pairsearch, haveSeparatePmeRanks);
+    pick_module_nthreads(mdlog, ModuleMultiThread::Nonbonded, haveSeparatePmeRanks);
+    pick_module_nthreads(mdlog, ModuleMultiThread::Bonded, haveSeparatePmeRanks);
+    pick_module_nthreads(mdlog, ModuleMultiThread::Pme, haveSeparatePmeRanks);
+    pick_module_nthreads(mdlog, ModuleMultiThread::Update, haveSeparatePmeRanks);
+    pick_module_nthreads(mdlog, ModuleMultiThread::VirtualSite, haveSeparatePmeRanks);
+    pick_module_nthreads(mdlog, ModuleMultiThread::Lincs, haveSeparatePmeRanks);
+    pick_module_nthreads(mdlog, ModuleMultiThread::Settle, haveSeparatePmeRanks);
 
     /* set the number of threads globally */
-    if (bOMP)
+    if (haveOpenMP)
     {
-#if !GMX_THREAD_MPI
-        if (bThisNodePMEOnly)
+        if (!GMX_THREAD_MPI && thisRankIsPmeOnly)
         {
             gmx_omp_set_num_threads(modth.gnth_pme);
         }
         else
-#endif /* GMX_THREAD_MPI */
         {
             gmx_omp_set_num_threads(nth);
         }
@@ -387,7 +380,10 @@ static void manage_number_of_openmp_threads(const gmx::MDLogger& mdlog,
 }
 
 /*! \brief Report on the OpenMP settings that will be used */
-static void reportOpenmpSettings(const gmx::MDLogger& mdlog, const t_commrec* cr, gmx_bool bOMP, gmx_bool bSepPME)
+static void reportOpenmpSettings(const gmx::MDLogger& mdlog,
+                                 const gmx::MpiComm&  mpiCommSimulation,
+                                 bool                 haveOpenMP,
+                                 bool                 haveSeparatePmeRanks)
 {
 #if GMX_THREAD_MPI
     const char* mpi_str = "per tMPI thread";
@@ -397,13 +393,13 @@ static void reportOpenmpSettings(const gmx::MDLogger& mdlog, const t_commrec* cr
     int nth_min, nth_max, nth_pme_min, nth_pme_max;
 
     /* inform the user about the settings */
-    if (!bOMP)
+    if (!haveOpenMP)
     {
         return;
     }
 
 #if GMX_MPI
-    if (cr->commMySim.isParallel())
+    if (mpiCommSimulation.isParallel())
     {
         /* Get the min and max thread counts over the MPI ranks */
         int buf_in[4], buf_out[4];
@@ -413,7 +409,7 @@ static void reportOpenmpSettings(const gmx::MDLogger& mdlog, const t_commrec* cr
         buf_in[2] = -modth.gnth_pme;
         buf_in[3] = modth.gnth_pme;
 
-        MPI_Allreduce(buf_in, buf_out, 4, MPI_INT, MPI_MAX, cr->commMySim.comm());
+        MPI_Allreduce(buf_in, buf_out, 4, MPI_INT, MPI_MAX, mpiCommSimulation.comm());
 
         nth_min     = -buf_out[0];
         nth_max     = buf_out[1];
@@ -436,14 +432,14 @@ static void reportOpenmpSettings(const gmx::MDLogger& mdlog, const t_commrec* cr
                 .appendTextFormatted("Using %d OpenMP thread%s %s",
                                      nth_min,
                                      nth_min > 1 ? "s" : "",
-                                     cr->commMySim.isParallel() ? mpi_str : "");
+                                     mpiCommSimulation.isParallel() ? mpi_str : "");
     }
     else
     {
         GMX_LOG(mdlog.warning).appendTextFormatted("Using %d - %d OpenMP threads %s", nth_min, nth_max, mpi_str);
     }
 
-    if (bSepPME && (nth_pme_min != nth_min || nth_pme_max != nth_max))
+    if (haveSeparatePmeRanks && (nth_pme_min != nth_min || nth_pme_max != nth_max))
     {
         if (nth_pme_max == nth_pme_min)
         {
@@ -451,7 +447,7 @@ static void reportOpenmpSettings(const gmx::MDLogger& mdlog, const t_commrec* cr
                     .appendTextFormatted("Using %d OpenMP thread%s %s for PME",
                                          nth_pme_min,
                                          nth_pme_min > 1 ? "s" : "",
-                                         cr->commMySim.isParallel() ? mpi_str : "");
+                                         mpiCommSimulation.isParallel() ? mpi_str : "");
         }
         else
         {
@@ -464,36 +460,36 @@ static void reportOpenmpSettings(const gmx::MDLogger& mdlog, const t_commrec* cr
 }
 
 void gmx_omp_nthreads_init(const gmx::MDLogger& mdlog,
-                           const t_commrec*     cr,
+                           const gmx::MpiComm&  mpiCommSimulation,
                            const bool           haveSeparatePmeRanks,
                            int                  maxThreads,
                            int                  numRanksOnThisNode,
                            int                  omp_nthreads_req,
                            int                  omp_nthreads_pme_req,
-                           gmx_bool             bThisNodePMEOnly)
+                           bool                 thisRankIsPmeOnly)
 {
-    const bool bOMP = GMX_OPENMP;
+    const bool haveOpenMP = GMX_OPENMP;
 
     manage_number_of_openmp_threads(mdlog,
-                                    cr,
-                                    bOMP,
+                                    mpiCommSimulation,
+                                    haveOpenMP,
                                     maxThreads,
                                     omp_nthreads_req,
                                     omp_nthreads_pme_req,
-                                    bThisNodePMEOnly,
+                                    thisRankIsPmeOnly,
                                     numRanksOnThisNode,
                                     haveSeparatePmeRanks);
 #if GMX_THREAD_MPI
     /* Non-main threads have to wait for the OpenMP management to be
      * done, so that code elsewhere that uses OpenMP can be certain
      * the setup is complete. */
-    if (PAR(cr))
+    if (mpiCommSimulation.isParallel())
     {
-        MPI_Barrier(cr->commMySim.comm());
+        MPI_Barrier(mpiCommSimulation.comm());
     }
 #endif
 
-    reportOpenmpSettings(mdlog, cr, bOMP, haveSeparatePmeRanks);
+    reportOpenmpSettings(mdlog, mpiCommSimulation, haveOpenMP, haveSeparatePmeRanks);
 }
 
 int gmx_omp_nthreads_get(ModuleMultiThread mod)

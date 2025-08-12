@@ -57,7 +57,6 @@
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdtypes/atominfo.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/locality.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/nbnxm/atomdata.h"
@@ -73,6 +72,7 @@
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/range.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/vec.h"
@@ -101,9 +101,9 @@ diagonalPairlist(const NbnxmKernelType kernelType, const int numAtoms)
 {
     const gmx::MDLogger emptyLogger;
 
-    t_commrec commRec(MpiComm(MpiComm::SingleRank{}));
+    MpiComm mpiComm(MpiComm::SingleRank{});
 
-    gmx_omp_nthreads_init(emptyLogger, &commRec, false, 1, 1, 1, 1, false);
+    gmx_omp_nthreads_init(emptyLogger, mpiComm, false, 1, 1, 1, 1, false);
 
     const PairlistParams pairlistParams(kernelType, {}, false, 1, false);
 

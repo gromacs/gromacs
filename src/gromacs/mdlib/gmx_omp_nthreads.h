@@ -37,14 +37,11 @@
 
 #include <cstdio>
 
-#include "gromacs/utility/basedefinitions.h"
-
-struct t_commrec;
-
 namespace gmx
 {
 class MDLogger;
-}
+class MpiComm;
+} // namespace gmx
 
 /** Enum values corresponding to multithreaded algorithmic modules. */
 enum class ModuleMultiThread : int
@@ -69,15 +66,25 @@ enum class ModuleMultiThread : int
  *
  * It is compatible with tMPI, thread-safety is ensured (for the features
  * available with tMPI).
- * This function should be called only once during the initialization of mdrun. */
+ * This function should be called only once during the initialization of mdrun.
+ *
+ * \param[in] fplog               Logger for reporting on thread count and system settings
+ * \param[in] mpiCommSimulation   MPI communicator for the whole simulation this rank is part of
+ * \param[in] haveSeparatePmeRanks  True when there are MPI ranks dedicated to PME mesh only
+ * \param[in] maxThreads          The maximum number of threads to use
+ * \param[in] numRanksOnThisNode  The number of MPI ranks in this simulation on this physical node
+ * \param[in] omp_nthreads_req    The number of OpenMP threads requested for PP ranks
+ * \param[in] omp_nthreads_pme_req  The number of OpenMP threads requested for PME-only ranks
+ * \param[in] thisRankIsPmeOnly   Whether this rank is dedicated to PME mesh calculations only
+ */
 void gmx_omp_nthreads_init(const gmx::MDLogger& fplog,
-                           const t_commrec*     cr,
+                           const gmx::MpiComm&  mpiCommSimulation,
                            bool                 haveSeparatePmeRanks,
                            int                  maxThreads,
                            int                  numRanksOnThisNode,
                            int                  omp_nthreads_req,
                            int                  omp_nthreads_pme_req,
-                           gmx_bool             bCurrNodePMEOnly);
+                           bool                 thisRankIsPmeOnly);
 
 /*! \brief
  * Returns the number of threads to be used in the given module \p mod. */

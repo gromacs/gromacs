@@ -1711,7 +1711,7 @@ int Mdrunner::mdrunner()
             &hw_opt, *hwinfo_, cr->commMySim, ms, physicalNodeComm.size_, pmeRunMode, mtop, *inputrec);
 
     gmx_omp_nthreads_init(mdlog,
-                          cr,
+                          cr->commMySim,
                           haveSeparatePmeRank,
                           hwinfo_->hardwareTopology->maxThreads(),
                           physicalNodeComm.size_,
