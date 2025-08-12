@@ -25,6 +25,17 @@ free energies would be zero. Affected versions: 2024.4, 2024.5.
 
 :issue:`5371`
 
+Fix memory error for NVIDIA Pascal and earlier GPUs
+"""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When running on Pascal (e.g., GeForce GTX 10xx, Tesla P100)
+and earlier NVIDIA GPUs, a memory error was present in the neighbor list
+pruning kernel. It has not been observed to cause any incorrect results,
+but could, theoretically, cause undefined behavior.
+All earlier |Gromacs| versions in the 2024 series are affected.
+
+:issue:`5385`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
