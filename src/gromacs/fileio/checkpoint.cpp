@@ -1230,11 +1230,16 @@ static void do_cpt_header(XdrSerializer* serializer, gmx_bool bRead, FILE* list,
         contents->step = static_cast<int64_t>(idum);
     }
     do_cpt_double_err(serializer, "t", &contents->t, list);
-    do_cpt_int_err(serializer, "#PP-ranks", &contents->nnodes, list);
-    do_cpt_int_err(serializer, "dd_nc[x]", &contents->dd_nc[XX], list);
-    do_cpt_int_err(serializer, "dd_nc[y]", &contents->dd_nc[YY], list);
-    do_cpt_int_err(serializer, "dd_nc[z]", &contents->dd_nc[ZZ], list);
-    do_cpt_int_err(serializer, "#PME-only ranks", &contents->npme, list);
+    {
+        // These fields originally supported a check for potentially reproducible
+        // restarts that has been dropped. But we continue to write the fields
+        // so that gmx dump can report them
+        do_cpt_int_err(serializer, "#PP-ranks", &contents->nnodes, list);
+        do_cpt_int_err(serializer, "dd_nc[x]", &contents->dd_nc[XX], list);
+        do_cpt_int_err(serializer, "dd_nc[y]", &contents->dd_nc[YY], list);
+        do_cpt_int_err(serializer, "dd_nc[z]", &contents->dd_nc[ZZ], list);
+        do_cpt_int_err(serializer, "#PME-only ranks", &contents->npme, list);
+    }
     do_cpt_int_err(serializer, "state flags", &contents->flags_state, list);
     if (contents->file_version >= CheckPointVersion::EkinDataAndFlags)
     {
@@ -2551,11 +2556,7 @@ static void check_string(FILE* fplog, const char* type, const char* p, const cha
     }
 }
 
-static void check_match(FILE*                           fplog,
-                        const t_commrec*                cr,
-                        const ivec                      dd_nc,
-                        const CheckpointHeaderContents& headerContents,
-                        gmx_bool                        reproducibilityRequested)
+static void check_match(FILE* fplog, const CheckpointHeaderContents& headerContents, gmx_bool reproducibilityRequested)
 {
     /* Note that this check_string on the version will also print a message
      * when only the minor version differs. But we only print a warning
@@ -2586,32 +2587,6 @@ static void check_match(FILE*                           fplog,
                      gmx::getProgramContext().fullBinaryPath().string().c_str(),
                      headerContents.fprog,
                      &mm);
-
-        check_int(fplog, "#ranks", cr->commMySim.size(), headerContents.nnodes, &mm);
-    }
-
-    if (cr->mpiDefaultCommunicator.isParallel() && reproducibilityRequested)
-    {
-        // TODO: These checks are incorrect (see redmine #3309)
-        const int numPmeOnlyRanks = (cr->dd ? cr->dd->numPmeOnlyRanks : 0);
-        check_int(fplog, "#PME-ranks", numPmeOnlyRanks, headerContents.npme, &mm);
-
-        int npp = cr->mpiDefaultCommunicator.size();
-        if (numPmeOnlyRanks >= 0)
-        {
-            npp -= numPmeOnlyRanks;
-        }
-        int npp_f = headerContents.nnodes;
-        if (headerContents.npme >= 0)
-        {
-            npp_f -= headerContents.npme;
-        }
-        if (npp == npp_f)
-        {
-            check_int(fplog, "#DD-cells[x]", dd_nc[XX], headerContents.dd_nc[XX], &mm);
-            check_int(fplog, "#DD-cells[y]", dd_nc[YY], headerContents.dd_nc[YY], &mm);
-            check_int(fplog, "#DD-cells[z]", dd_nc[ZZ], headerContents.dd_nc[ZZ], &mm);
-        }
     }
 
     if (mm)
@@ -2660,7 +2635,6 @@ static void check_match(FILE*                           fplog,
 static void read_checkpoint(const std::filesystem::path&   fn,
                             t_fileio*                      logfio,
                             const t_commrec*               cr,
-                            const ivec                     dd_nc,
                             IntegrationAlgorithm           eIntegrator,
                             int*                           init_fep_state,
                             CheckpointHeaderContents*      headerContents,
@@ -2775,7 +2749,7 @@ static void read_checkpoint(const std::filesystem::path&   fn,
 
     if (MAIN(cr))
     {
-        check_match(fplog, cr, dd_nc, *headerContents, reproducibilityRequested);
+        check_match(fplog, *headerContents, reproducibilityRequested);
     }
 
     ret             = do_cpt_state(&serializer, state, nullptr);
@@ -2899,7 +2873,6 @@ static void read_checkpoint(const std::filesystem::path&   fn,
 void load_checkpoint(const std::filesystem::path&   fn,
                      t_fileio*                      logfio,
                      const t_commrec*               cr,
-                     const ivec                     dd_nc,
                      t_inputrec*                    ir,
                      t_state*                       state,
                      ObservablesHistory*            observablesHistory,
@@ -2915,7 +2888,6 @@ void load_checkpoint(const std::filesystem::path&   fn,
         read_checkpoint(fn,
                         logfio,
                         cr,
-                        dd_nc,
                         ir->eI,
                         &(ir->fepvals->init_fep_state),
                         &headerContents,

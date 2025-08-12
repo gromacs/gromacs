@@ -151,7 +151,6 @@ void                     applyGlobalTopology(const SimulationInput&, gmx_mtop_t*
 void applyLocalState(const SimulationInput&         simulationInput,
                      t_fileio*                      logfio,
                      const t_commrec*               cr,
-                     int*                           dd_nc,
                      t_inputrec*                    ir,
                      t_state*                       state,
                      ObservablesHistory*            observablesHistory,

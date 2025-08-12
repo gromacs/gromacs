@@ -170,7 +170,7 @@ struct MDModulesWriteCheckpointData
  *
  * The enum helps the code be more self-documenting and ensure merges
  * do not silently resolve when two patches make the same bump. When
- * adding new functionality, add a new element just above Count
+ * changing checkpoint contents, add a new element just above Count
  * in this enumeration, and write code that does the right thing
  * according to the value of file_version.
  */
@@ -331,7 +331,6 @@ void write_checkpoint_data(const std::filesystem::path&      filename,
 void load_checkpoint(const std::filesystem::path&   fn,
                      t_fileio*                      logfio,
                      const t_commrec*               cr,
-                     const ivec                     dd_nc,
                      t_inputrec*                    ir,
                      t_state*                       state,
                      ObservablesHistory*            observablesHistory,

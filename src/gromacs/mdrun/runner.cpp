@@ -1262,7 +1262,6 @@ int Mdrunner::mdrunner()
         applyLocalState(*inputHolder_.get(),
                         logFileHandle,
                         cr,
-                        domdecOptions.numCells,
                         inputrec.get(),
                         globalState.get(),
                         &observablesHistory,
