@@ -47,7 +47,7 @@ if (GMX_TORCH)
     )
     
     # find torch and python to explicitly link against: required for some torch extensions
-    find_package(Python REQUIRED COMPONENTS Interpreter Development)
+    find_package(Python REQUIRED COMPONENTS Development)
 
     # -Wl,--no-as-needed needed to prevent the linker from removing the library if it is not directly used,
     # which is the case for torch extension libraries
