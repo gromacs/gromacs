@@ -263,7 +263,7 @@ void connolly_plot(const char*  fn,
         }
         atoms->nr   = i0 + ndots;
         atoms->nres = r0 + 1;
-        write_sto_conf(fn, title, atoms, xnew, nullptr, pbcType, const_cast<rvec*>(box));
+        write_sto_conf(fn, title, atoms, xnew, nullptr, pbcType, box);
         atoms->nres = r0;
         atoms->nr   = i0;
     }
@@ -289,7 +289,7 @@ void connolly_plot(const char*  fn,
             aaa.pdbinfo[ii0].occup  = 0.0;
         }
         aaa.nr = ndots;
-        write_sto_conf(fn, title, &aaa, xnew, nullptr, pbcType, const_cast<rvec*>(box));
+        write_sto_conf(fn, title, &aaa, xnew, nullptr, pbcType, box);
         do_conect(fn, ndots, xnew);
         done_atom(&aaa);
     }

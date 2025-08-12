@@ -113,7 +113,7 @@ void PmePpCommGpu::sendCoordinatesToPmeFromGpu(DeviceBuffer<RVec> /* sendPtr */,
 }
 
 //NOLINTNEXTLINE(readability-convert-member-functions-to-static)
-void PmePpCommGpu::sendCoordinatesToPmeFromCpu(RVec* /* sendPtr */, int /* sendSize */)
+void PmePpCommGpu::sendCoordinatesToPmeFromCpu(const RVec* /* sendPtr */, int /* sendSize */)
 {
     GMX_ASSERT(!impl_,
                "A CPU stub for PME-PP GPU communication was called instead of the correct "

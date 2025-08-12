@@ -110,7 +110,9 @@ public:
      * \param[in] sendSize Number of elements to send
      * \param[in] coordinatesReadyOnDeviceEvent Event recorded when coordinates are available on device
      */
-    void sendCoordinatesToPme(Float3* sendPtr, int sendSize, GpuEventSynchronizer* coordinatesReadyOnDeviceEvent);
+    void sendCoordinatesToPme(const Float3*         sendPtr,
+                              int                   sendSize,
+                              GpuEventSynchronizer* coordinatesReadyOnDeviceEvent);
 
     /*! \brief When this PP rank has particles with PME force
      * contributions expected from its PME-only rank, return pointer
@@ -152,7 +154,7 @@ private:
      * \param[in] sendSize Number of elements to send
      * \param[in] coordinatesReadyOnDeviceEvent Event recorded when coordinates are available on device
      */
-    void sendCoordinatesToPmePeerToPeer(Float3*               sendPtr,
+    void sendCoordinatesToPmePeerToPeer(const Float3*         sendPtr,
                                         int                   sendSize,
                                         GpuEventSynchronizer* coordinatesReadyOnDeviceEvent);
 
@@ -163,7 +165,7 @@ private:
      * \param[in] sendSize Number of elements to send
      * \param[in] coordinatesReadyOnDeviceEvent Event recorded when coordinates are available on device
      */
-    void sendCoordinatesToPmeGpuAwareMpi(Float3*               sendPtr,
+    void sendCoordinatesToPmeGpuAwareMpi(const Float3*         sendPtr,
                                          int                   sendSize,
                                          GpuEventSynchronizer* coordinatesReadyOnDeviceEvent);
 

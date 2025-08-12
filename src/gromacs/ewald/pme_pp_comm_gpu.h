@@ -109,7 +109,7 @@ public:
      * \param[in] sendPtr Buffer with coordinate data
      * \param[in] sendSize Number of elements to send
      */
-    void sendCoordinatesToPmeFromCpu(RVec* sendPtr, int sendSize);
+    void sendCoordinatesToPmeFromCpu(const RVec* sendPtr, int sendSize);
 
     /*! \brief When this PP rank has particles with PME force
      * contributions expected from its PME-only rank, return pointer

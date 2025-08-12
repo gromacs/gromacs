@@ -104,18 +104,18 @@ void ddSendReceive(const DomainCommBackward& domainCommBackward,
     MPI_Status mpiStatus;
     if (numElementsToSend > 0 && numElementsToReceive > 0)
     {
-        int gmx_unused ret = MPI_Sendrecv(const_cast<T*>(sendBuffer),
-                                          numElementsToSend * sizeof(T),
-                                          MPI_BYTE,
-                                          sendRank,
-                                          mpiTag,
-                                          receiveBuffer,
-                                          numElementsToReceive * sizeof(T),
-                                          MPI_BYTE,
-                                          receiveRank,
-                                          mpiTag,
-                                          mpiComm,
-                                          &mpiStatus);
+        int gmx_used_in_debug ret = MPI_Sendrecv(sendBuffer,
+                                                 numElementsToSend * sizeof(T),
+                                                 MPI_BYTE,
+                                                 sendRank,
+                                                 mpiTag,
+                                                 receiveBuffer,
+                                                 numElementsToReceive * sizeof(T),
+                                                 MPI_BYTE,
+                                                 receiveRank,
+                                                 mpiTag,
+                                                 mpiComm,
+                                                 &mpiStatus);
 
         GMX_ASSERT(ret == 0, "Expect success");
     }

@@ -175,7 +175,7 @@ static void dd_collect_vec_sendrecv(gmx_domdec_t*                  dd,
     {
 #if GMX_MPI
         const int numHomeAtoms = dd->comm->atomRanges.numHomeAtoms();
-        MPI_Send(const_cast<void*>(static_cast<const void*>(lv.data())),
+        MPI_Send(lv.data(),
                  numHomeAtoms * sizeof(rvec),
                  MPI_BYTE,
                  dd->mainrank,

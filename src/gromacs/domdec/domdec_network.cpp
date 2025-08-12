@@ -253,14 +253,7 @@ void dd_scatter(const gmx_domdec_t gmx_unused* dd, int gmx_unused nbytes, const 
     if (dd->nnodes > 1)
     {
         /* Some MPI implementions don't specify const */
-        MPI_Scatter(const_cast<void*>(src),
-                    nbytes,
-                    MPI_BYTE,
-                    dest,
-                    nbytes,
-                    MPI_BYTE,
-                    DDMAINRANK(dd),
-                    dd->mpiComm().comm());
+        MPI_Scatter(src, nbytes, MPI_BYTE, dest, nbytes, MPI_BYTE, DDMAINRANK(dd), dd->mpiComm().comm());
     }
     else
 #endif
@@ -282,14 +275,7 @@ void dd_gather(const gmx_domdec_t gmx_unused* dd,
     if (dd->nnodes > 1)
     {
         /* Some MPI implementions don't specify const */
-        MPI_Gather(const_cast<void*>(src),
-                   nbytes,
-                   MPI_BYTE,
-                   dest,
-                   nbytes,
-                   MPI_BYTE,
-                   DDMAINRANK(dd),
-                   dd->mpiComm().comm());
+        MPI_Gather(src, nbytes, MPI_BYTE, dest, nbytes, MPI_BYTE, DDMAINRANK(dd), dd->mpiComm().comm());
     }
     else
 #endif
@@ -321,9 +307,9 @@ void dd_scatterv(const gmx_domdec_t gmx_unused*      dd,
             rbuf = &dum;
         }
         /* Some MPI implementations don't specify const */
-        MPI_Scatterv(const_cast<T*>(sbuf),
-                     const_cast<int*>(scounts.data()),
-                     const_cast<int*>(disps.data()),
+        MPI_Scatterv(sbuf,
+                     scounts.data(),
+                     disps.data(),
                      mpiDatatype,
                      rbuf,
                      rcount,
@@ -383,12 +369,12 @@ void dd_gatherv(const gmx_domdec_t gmx_unused&      dd,
             sendBufferPtr = sendBuffer.data();
         }
         /* Some MPI implementations don't specify const */
-        MPI_Gatherv(const_cast<T*>(sendBufferPtr),
+        MPI_Gatherv(sendBufferPtr,
                     sendBuffer.ssize(),
                     mpiDatatype,
                     receiveBuffer.data(),
-                    const_cast<int*>(rcounts.data()),
-                    const_cast<int*>(disps.data()),
+                    rcounts.data(),
+                    disps.data(),
                     mpiDatatype,
                     DDMAINRANK(&dd),
                     dd.mpiComm().comm());

@@ -281,7 +281,7 @@ static void gmx_pme_send_coeffs_coords(t_forcerec*                    fr,
                 }
                 else
                 {
-                    fr->pmePpCommGpu->sendCoordinatesToPmeFromCpu(const_cast<gmx::RVec*>(x.data()), n);
+                    fr->pmePpCommGpu->sendCoordinatesToPmeFromCpu(x.data(), n);
                 }
             }
             else

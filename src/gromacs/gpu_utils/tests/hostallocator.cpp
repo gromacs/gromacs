@@ -372,8 +372,7 @@ TYPED_TEST(HostAllocatorTestCopyable, TransfersWithPinningWorkWithDevice)
 template<typename VectorType>
 bool isPinned(const VectorType& v)
 {
-    void* data = const_cast<void*>(static_cast<const void*>(v.data()));
-    return isHostMemoryPinned(data);
+    return isHostMemoryPinned(v.data());
 }
 
 TYPED_TEST(HostAllocatorTestCopyable, ManualPinningOperationsWork)

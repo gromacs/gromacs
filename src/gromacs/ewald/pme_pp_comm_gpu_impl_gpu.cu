@@ -57,8 +57,8 @@
 namespace gmx
 {
 
-void PmePpCommGpu::Impl::sendCoordinatesToPmePeerToPeer(Float3* sendPtr,
-                                                        int     sendSize,
+void PmePpCommGpu::Impl::sendCoordinatesToPmePeerToPeer(const Float3* sendPtr,
+                                                        int           sendSize,
                                                         GpuEventSynchronizer* coordinatesReadyOnDeviceEvent)
 {
     // ensure stream waits until coordinate data is available on device

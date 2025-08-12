@@ -145,7 +145,7 @@ static void sep_line(FILE* fp)
 
 
 /* Wrapper for system calls */
-static int gmx_system_call(char* command)
+static int gmx_system_call(const char* command)
 {
     return (std::system(command));
 }
@@ -1209,14 +1209,12 @@ static void cleanup(const t_filenm* fnm, int nfile, int k, int nnodes, int nPMEn
     char        numstring[STRLEN];
     const char* fn = nullptr;
     int         i;
-    const char* opt;
-
 
     fprintf(stdout, "Cleaning up, deleting benchmark temp files ...\n");
 
     for (i = 0; i < nfile; i++)
     {
-        opt = const_cast<char*>(fnm[i].opt);
+        const char* opt = fnm[i].opt;
         if (std::strcmp(opt, "-p") == 0)
         {
             /* do nothing; keep this file */
@@ -1401,7 +1399,7 @@ static void init_perfdata(t_perf* perfdata[], int ntprs, int datasets, int repea
 
 
 /* Check for errors on mdrun -h */
-static void make_sure_it_runs(char* mdrun_cmd_line, int length, FILE* fp, const t_filenm* fnm, int nfile)
+static void make_sure_it_runs(const char* mdrun_cmd_line, int length, FILE* fp, const t_filenm* fnm, int nfile)
 {
     char *command, *msg;
     int   ret;
@@ -1908,7 +1906,7 @@ static void check_input(int             nnodes,
 
 
 /* Returns TRUE when "opt" is needed at launch time */
-static gmx_bool is_launch_file(char* opt, gmx_bool bSet)
+static gmx_bool is_launch_file(const char* opt, gmx_bool bSet)
 {
     if (0 == std::strncmp(opt, "-swap", 5))
     {
@@ -1928,7 +1926,7 @@ static gmx_bool is_launch_file(char* opt, gmx_bool bSet)
 
 
 /* Returns TRUE when "opt" defines a file which is needed for the benchmarks runs */
-static gmx_bool is_bench_file(char* opt, gmx_bool bSet, gmx_bool bOptional, gmx_bool bIsOutput)
+static gmx_bool is_bench_file(const char* opt, gmx_bool bSet, gmx_bool bOptional, gmx_bool bIsOutput)
 {
     /* Apart from the input .tpr, all files starting with "-b" are for
      * _b_enchmark files exclusively */
@@ -1980,10 +1978,8 @@ create_command_line_snippets(gmx_bool bAppendFiles,
                              char  extra_args[],      /* Add this to the end of the command line */
                              char* deffnm)            /* Default file names, or NULL if not set */
 {
-    int         i;
-    char*       opt;
-    const char* name;
-    char        strbuf[STRLEN];
+    int  i;
+    char strbuf[STRLEN];
 
 
     /* strlen needs at least '\0' as a string: */
@@ -2026,8 +2022,8 @@ create_command_line_snippets(gmx_bool bAppendFiles,
     /********************/
     for (i = 0; i < nfile; i++)
     {
-        opt  = const_cast<char*>(fnm[i].opt);
-        name = opt2fn(opt, nfile, fnm);
+        const char* opt  = fnm[i].opt;
+        const char* name = opt2fn(opt, nfile, fnm);
 
         /* Strbuf contains the options, now let's sort out where we need that */
         sprintf(strbuf, "%s %s ", opt, name);
@@ -2129,17 +2125,15 @@ static float inspect_tpr(int nfile, t_filenm fnm[], real* rcoulomb)
 
 static void couple_files_options(int nfile, t_filenm fnm[])
 {
-    int      i;
-    gmx_bool bSet, bBench;
-    char*    opt;
-    char     buf[20];
+    int  i;
+    char buf[20];
 
 
     for (i = 0; i < nfile; i++)
     {
-        opt    = const_cast<char*>(fnm[i].opt);
-        bSet   = ((fnm[i].flag & ffSET) != 0);
-        bBench = (0 == std::strncmp(opt, "-b", 2));
+        const char* opt    = fnm[i].opt;
+        const bool  bSet   = ((fnm[i].flag & ffSET) != 0);
+        const bool  bBench = (0 == std::strncmp(opt, "-b", 2));
 
         /* Check optional files */
         /* If e.g. -eo is set, then -beo also needs to be set */

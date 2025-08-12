@@ -856,11 +856,11 @@ static void sum_fftgrid_dd(const gmx_pme_t* pme, PmeAndFftGrids* grids)
         }
 
 #if GMX_MPI
-        int   datasize = local_fft_ndata[YY] * local_fft_ndata[ZZ];
-        int   send_id  = overlap->comm_data[ipulse].send_id;
-        int   recv_id  = overlap->comm_data[ipulse].recv_id;
-        auto* sendptr  = const_cast<real*>(overlap->sendbuf.data());
-        auto* recvptr  = const_cast<real*>(overlap->recvbuf.data());
+        int         datasize = local_fft_ndata[YY] * local_fft_ndata[ZZ];
+        int         send_id  = overlap->comm_data[ipulse].send_id;
+        int         recv_id  = overlap->comm_data[ipulse].recv_id;
+        const auto* sendptr  = overlap->sendbuf.data();
+        auto*       recvptr  = const_cast<real*>(overlap->recvbuf.data());
         MPI_Sendrecv(sendptr,
                      send_nindex * datasize,
                      GMX_MPI_REAL,

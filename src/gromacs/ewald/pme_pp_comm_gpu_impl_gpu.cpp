@@ -263,8 +263,8 @@ void PmePpCommGpu::Impl::receiveForceFromPme(Float3* recvPtr, int recvSize, bool
 }
 
 // NOLINTNEXTLINE readability-convert-member-functions-to-static
-void PmePpCommGpu::Impl::sendCoordinatesToPmeGpuAwareMpi(Float3* sendPtr,
-                                                         int     sendSize,
+void PmePpCommGpu::Impl::sendCoordinatesToPmeGpuAwareMpi(const Float3* sendPtr,
+                                                         int           sendSize,
                                                          GpuEventSynchronizer* coordinatesReadyOnDeviceEvent)
 {
     if (sendSize == 0)
@@ -279,19 +279,17 @@ void PmePpCommGpu::Impl::sendCoordinatesToPmeGpuAwareMpi(Float3* sendPtr,
     }
 
 #if GMX_LIB_MPI
-    Float3* sendptr_x = sendPtr;
     // The corresponding wait for the below non-blocking coordinate send is in receiveForceFromPmeGpuAwareMpi.
     // Strictly, a wait is not necessary since the recieve must complete before PME forces are calculated,
     // but it is required to avoid issues in certain MPI libraries.
-    MPI_Isend(sendptr_x, sendSize * DIM, MPI_FLOAT, pmeRank_, eCommType_COORD_GPU, comm_, &coordinateSendRequest_);
+    MPI_Isend(sendPtr, sendSize * DIM, MPI_FLOAT, pmeRank_, eCommType_COORD_GPU, comm_, &coordinateSendRequest_);
     coordinateSendRequestIsActive_ = true;
 #else
     GMX_UNUSED_VALUE(sendPtr);
-    GMX_UNUSED_VALUE(sendSize);
 #endif
 }
 
-void PmePpCommGpu::Impl::sendCoordinatesToPme(Float3*               sendPtr,
+void PmePpCommGpu::Impl::sendCoordinatesToPme(const Float3*         sendPtr,
                                               int                   sendSize,
                                               GpuEventSynchronizer* coordinatesReadyOnDeviceEvent)
 {
@@ -362,7 +360,7 @@ void PmePpCommGpu::sendCoordinatesToPmeFromGpu(DeviceBuffer<RVec>    sendPtr,
     impl_->sendCoordinatesToPme(asMpiPointer(sendPtr), sendSize, coordinatesReadyOnDeviceEvent);
 }
 
-void PmePpCommGpu::sendCoordinatesToPmeFromCpu(RVec* sendPtr, int sendSize)
+void PmePpCommGpu::sendCoordinatesToPmeFromCpu(const RVec* sendPtr, int sendSize)
 {
     impl_->sendCoordinatesToPme(sendPtr, sendSize, nullptr);
 }
