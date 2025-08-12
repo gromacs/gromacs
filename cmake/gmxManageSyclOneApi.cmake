@@ -94,9 +94,9 @@ int main()
 #endif
 #if defined(__SYCL_DEVICE_ONLY__) && defined(__AMDGCN__)
 #    warning GMX_DPCPP_TEST_HAVE_HIP_TARGET
-#    if __AMDGCN_WAVEFRONT_SIZE == 64
+#    if defined(__GFX8__) || defined(__GFX9__)
 #        warning GMX_DPCPP_TEST_HAVE_HIP_WAVE64_TARGET
-#    elif __AMDGCN_WAVEFRONT_SIZE == 32
+#    else
 #        warning GMX_DPCPP_TEST_HAVE_HIP_WAVE32_TARGET
 #    endif
 #endif

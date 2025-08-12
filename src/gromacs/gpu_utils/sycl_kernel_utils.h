@@ -37,6 +37,10 @@
 
 #include "gmxsycl.h"
 
+#if defined(__AMDGCN__)
+#    include "hip_sycl_kernel_utils.h"
+#endif
+
 /*! \file
  *  \brief SYCL kernel helper functions.
  *
@@ -103,7 +107,7 @@ constexpr bool compilingForSubGroupSize()
 #if defined(__SYCL_DEVICE_ONLY__) && defined(__NVPTX__)
     return expectedSubGroupSize == 32;
 #elif defined(__SYCL_DEVICE_ONLY__) && defined(__AMDGCN__)
-    return expectedSubGroupSize == __AMDGCN_WAVEFRONT_SIZE;
+    return expectedSubGroupSize == deviceWavefrontSize();
 #elif defined(__SYCL_DEVICE_ONLY__) && (defined(__SPIR__) || defined(__SPIRV__))
     return true; // Assume that we have set reqd_sub_group_size attribute for the kernel
 #else

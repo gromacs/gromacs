@@ -50,6 +50,11 @@ Building and linking |Gromacs| would fail due to changes in the linking behaviou
 
 :issue:`5380`
 
+Building |Gromacs| would fail due to ``__AMDGCN_WAVEFRONT_SIZE``
+macro removal in ROCm 7.
+
+:issue:`5259`
+
 Miscellaneous
 ^^^^^^^^^^^^^
 
