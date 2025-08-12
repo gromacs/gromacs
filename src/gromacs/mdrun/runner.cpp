@@ -1688,11 +1688,11 @@ int Mdrunner::mdrunner()
     }
     GMX_LOG(mdlog.warning)
             .appendTextFormatted("Using %d MPI %s\n",
-                                 cr->commMyGroup.size(),
+                                 cr->commMySim.size(),
 #    if GMX_THREAD_MPI
-                                 cr->commMyGroup.isSerial() ? "thread" : "threads"
+                                 cr->commMySim.isSerial() ? "thread" : "threads"
 #    else
-                                 cr->commMyGroup.isSerial() ? "process" : "processes"
+                                 cr->commMySim.isSerial() ? "process" : "processes"
 #    endif
             );
     std::fflush(stderr);
