@@ -111,7 +111,7 @@ static sycl::property_list makeQueuePropertyList(const bool enableProfiling, con
 #endif
 }
 
-DeviceStream::DeviceStream(const DeviceContext& deviceContext, DeviceStreamPriority priority, const bool useTiming)
+static sycl::queue makeQueue(const DeviceContext& deviceContext, DeviceStreamPriority priority, const bool useTiming)
 {
     const sycl::device& device = deviceContext.deviceInfo().syclDevice;
 
@@ -121,8 +121,14 @@ DeviceStream::DeviceStream(const DeviceContext& deviceContext, DeviceStreamPrior
         const bool deviceSupportsTiming = device.has(sycl::aspect::queue_profiling);
         enableProfiling                 = deviceSupportsTiming;
     }
-    stream_ = sycl::queue(
-            deviceContext.context(), device, makeQueuePropertyList(enableProfiling, priority));
+    return sycl::queue(deviceContext.context(), device, makeQueuePropertyList(enableProfiling, priority));
+}
+
+DeviceStream::DeviceStream(const DeviceContext& deviceContext,
+                           DeviceStreamPriority priority,
+                           const bool           useTiming) :
+    stream_(makeQueue(deviceContext, priority, useTiming))
+{
 }
 
 DeviceStream::~DeviceStream()
