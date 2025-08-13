@@ -273,7 +273,7 @@ static void manage_number_of_openmp_threads(const gmx::MDLogger& mdlog,
     int nth = 1;
     if (const char* env = std::getenv("OMP_NUM_THREADS"))
     {
-        if (!haveOpenMP && (std::strncmp(env, "1", 1) != 0))
+        if (!haveOpenMP && env[0] == '1' && env[1] == '\0')
         {
             gmx_warning("OMP_NUM_THREADS is set, but %s was compiled without OpenMP support!",
                         gmx::getProgramContext().displayName());
