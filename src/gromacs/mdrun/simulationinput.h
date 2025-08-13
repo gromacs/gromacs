@@ -51,8 +51,6 @@
 
 // Forward declarations for types from other modules that are opaque to the public API.
 // TODO: Document the sources of these symbols or import a (self-documenting) fwd header.
-struct gmx_mtop_t;
-struct t_commrec;
 struct t_fileio;
 struct t_inputrec;
 class t_state;
@@ -61,6 +59,9 @@ struct PartialDeserializedTprFile;
 
 namespace gmx
 {
+
+class MpiComm;
+
 /*
  * \brief Prescription for molecular simulation.
  *
@@ -150,7 +151,7 @@ void                     applyGlobalTopology(const SimulationInput&, gmx_mtop_t*
  */
 void applyLocalState(const SimulationInput&         simulationInput,
                      t_fileio*                      logfio,
-                     const t_commrec*               cr,
+                     const MpiComm&                 mpiCommSimulation,
                      t_inputrec*                    ir,
                      t_state*                       state,
                      ObservablesHistory*            observablesHistory,

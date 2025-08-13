@@ -55,7 +55,6 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/mdlib/calc_verletbuf.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -72,6 +71,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/vec.h"
@@ -156,7 +156,7 @@ static real getPressureTolerance(const real inputrecVerletBufferPressureToleranc
 }
 
 void increaseNstlist(FILE*             fp,
-                     t_commrec*        cr,
+                     const MpiComm&    mpiCommSimulation,
                      t_inputrec*       ir,
                      int               nstlist_cmdline,
                      const gmx_mtop_t* mtop,
@@ -221,7 +221,7 @@ void increaseNstlist(FILE*             fp,
 
     if (EI_MD(ir->eI) && ir->etc == TemperatureCoupling::No)
     {
-        if (MAIN(cr))
+        if (mpiCommSimulation.isMainRank())
         {
             fprintf(stderr, "%s\n", nve_err);
         }
@@ -242,7 +242,7 @@ void increaseNstlist(FILE*             fp,
 
     if (ir->verletbuf_tol < 0)
     {
-        if (MAIN(cr))
+        if (mpiCommSimulation.isMainRank())
         {
             fprintf(stderr, "%s\n", vbd_err);
         }
@@ -301,7 +301,7 @@ void increaseNstlist(FILE*             fp,
     nstlist_prev    = nstlist_orig;
     real rlist_prev = ir->rlist;
     real rlist_new  = 0;
-    bool bBox = false, bDD = false, bCont = false;
+    bool bBox = false, bCont = false;
     do
     {
         if (nstlist_cmdline <= 0)
@@ -323,42 +323,17 @@ void increaseNstlist(FILE*             fp,
 
         /* Does rlist fit in the box? */
         bBox = (square(rlist_new) < max_cutoff2(ir->pbcType, box));
-        bDD  = true;
-        if (bBox && haveDDAtomOrdering(*cr))
-        {
-            /* Currently (as of July 2020), the code in this if clause is never executed.
-             * increaseNstlist(...) is only called from prepare_verlet_scheme, which in turns
-             * gets called by the runner _before_ setting up DD. haveDDAtomOrdering(*cr) will
-             * therefore always be false here. See #3334.
-             */
-            /* Check if rlist fits in the domain decomposition */
-            if (inputrec2nboundeddim(ir) < DIM)
-            {
-                gmx_incons(
-                        "Changing nstlist with domain decomposition and unbounded dimensions is "
-                        "not implemented yet");
-            }
-            // nstlist tuning happens before GPU DD is initialized so we can't check
-            // whether the new cutoff would conflict with direct GPU communication.
-            const bool checkGpuDdLimitation = false;
-            bDD = change_dd_cutoff(cr->dd, box, ArrayRef<const RVec>(), rlist_new, checkGpuDdLimitation);
-        }
 
         if (debug)
         {
-            fprintf(debug,
-                    "nstlist %d rlist %.3f bBox %s bDD %s\n",
-                    ir->nstlist,
-                    rlist_new,
-                    boolToString(bBox),
-                    boolToString(bDD));
+            fprintf(debug, "nstlist %d rlist %.3f bBox %s\n", ir->nstlist, rlist_new, boolToString(bBox));
         }
 
         bCont = false;
 
         if (nstlist_cmdline <= 0)
         {
-            if (bBox && bDD && rlist_new <= rlist_max)
+            if (bBox && rlist_new <= rlist_max)
             {
                 /* Increase nstlist */
                 nstlist_prev = ir->nstlist;
@@ -371,14 +346,13 @@ void increaseNstlist(FILE*             fp,
                 ir->nstlist = nstlist_prev;
                 rlist_new   = rlist_prev;
                 bBox        = true;
-                bDD         = true;
             }
         }
 
         nstlist_ind++;
     } while (bCont);
 
-    if (!bBox || !bDD)
+    if (!bBox)
     {
         const char* const msg = !bBox ? box_err : dd_err;
         // If the user requested a specific nstlist and we cannot use it, raise a fatal error
@@ -401,7 +375,7 @@ void increaseNstlist(FILE*             fp,
                 ir->nstlist,
                 ir->rlist,
                 rlist_new);
-        if (MAIN(cr))
+        if (mpiCommSimulation.isMainRank())
         {
             fprintf(stderr, "%s\n\n", buf);
         }

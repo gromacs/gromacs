@@ -53,7 +53,6 @@
 class energyhistory_t;
 struct gmx_file_position_t;
 struct ObservablesHistory;
-struct t_commrec;
 struct t_fileio;
 struct t_inputrec;
 class t_state;
@@ -67,6 +66,7 @@ namespace gmx
 {
 
 struct MDModulesNotifiers;
+class MpiComm;
 class KeyValueTreeObject;
 class ReadCheckpointDataHolder;
 class WriteCheckpointDataHolder;
@@ -330,7 +330,7 @@ void write_checkpoint_data(const std::filesystem::path&      filename,
  */
 void load_checkpoint(const std::filesystem::path&   fn,
                      t_fileio*                      logfio,
-                     const t_commrec*               cr,
+                     const gmx::MpiComm&            mpiCommSimulation,
                      t_inputrec*                    ir,
                      t_state*                       state,
                      ObservablesHistory*            observablesHistory,

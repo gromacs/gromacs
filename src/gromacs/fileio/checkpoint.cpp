@@ -61,7 +61,6 @@
 #include "gromacs/mdtypes/awh_correlation_history.h"
 #include "gromacs/mdtypes/awh_history.h"
 #include "gromacs/mdtypes/checkpointdata.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/df_history.h"
 #include "gromacs/mdtypes/edsamhistory.h"
 #include "gromacs/mdtypes/energyhistory.h"
@@ -87,6 +86,7 @@
 #include "gromacs/utility/int64_to_int.h"
 #include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
+#include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
@@ -2634,7 +2634,7 @@ static void check_match(FILE* fplog, const CheckpointHeaderContents& headerConte
 
 static void read_checkpoint(const std::filesystem::path&   fn,
                             t_fileio*                      logfio,
-                            const t_commrec*               cr,
+                            const gmx::MpiComm&            mpiCommSimulation,
                             IntegrationAlgorithm           eIntegrator,
                             int*                           init_fep_state,
                             CheckpointHeaderContents*      headerContents,
@@ -2747,7 +2747,7 @@ static void read_checkpoint(const std::filesystem::path&   fn,
                        "GMX_DISABLE_MODULAR_SIMULATOR=ON to overwrite the default behavior and use "
                        "legacy simulator for all implemented use cases.");
 
-    if (MAIN(cr))
+    if (mpiCommSimulation.isMainRank())
     {
         check_match(fplog, *headerContents, reproducibilityRequested);
     }
@@ -2872,7 +2872,7 @@ static void read_checkpoint(const std::filesystem::path&   fn,
 
 void load_checkpoint(const std::filesystem::path&   fn,
                      t_fileio*                      logfio,
-                     const t_commrec*               cr,
+                     const gmx::MpiComm&            mpiCommSimulation,
                      t_inputrec*                    ir,
                      t_state*                       state,
                      ObservablesHistory*            observablesHistory,
@@ -2882,12 +2882,12 @@ void load_checkpoint(const std::filesystem::path&   fn,
                      bool                           useModularSimulator)
 {
     CheckpointHeaderContents headerContents;
-    if (cr->isSimulationMainRank())
+    if (mpiCommSimulation.isMainRank())
     {
         /* Read the state from the checkpoint file */
         read_checkpoint(fn,
                         logfio,
-                        cr,
+                        mpiCommSimulation,
                         ir->eI,
                         &(ir->fepvals->init_fep_state),
                         &headerContents,
@@ -2898,12 +2898,11 @@ void load_checkpoint(const std::filesystem::path&   fn,
                         modularSimulatorCheckpointData,
                         useModularSimulator);
     }
-    if (PAR(cr))
+    if (mpiCommSimulation.isParallel())
     {
-        gmx_bcast(sizeof(headerContents.step), &headerContents.step, cr->mpiDefaultCommunicator.comm());
-        gmx::MDModulesCheckpointReadingBroadcast broadcastCheckPointData = {
-            cr->mpiDefaultCommunicator.comm(), PAR(cr)
-        };
+        gmx_bcast(sizeof(headerContents.step), &headerContents.step, mpiCommSimulation.comm());
+        gmx::MDModulesCheckpointReadingBroadcast broadcastCheckPointData = { mpiCommSimulation.comm(),
+                                                                             mpiCommSimulation.size() > 1 };
         mdModulesNotifiers.checkpointingNotifier_.notify(broadcastCheckPointData);
     }
     ir->bContinuation = TRUE;

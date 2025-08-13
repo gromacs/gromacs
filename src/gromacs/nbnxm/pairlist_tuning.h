@@ -52,18 +52,18 @@
 
 struct gmx_mtop_t;
 struct interaction_const_t;
-struct t_commrec;
 struct t_inputrec;
 
 namespace gmx
 {
 struct PairlistParams;
 class MDLogger;
+class MpiComm;
 
 /*! \brief Try to increase nstlist when using the Verlet cut-off scheme
  *
  * \param[in,out] fplog    Log file
- * \param[in]     cr       The communication record
+ * \param[in]     mpiCommSimulation  MPI communicator for the whole simulation
  * \param[in]     ir       The input parameter record
  * \param[in]     nstlistOnCmdline  The value of nstlist provided on the command line
  * \param[in]     mtop     The global topology
@@ -72,7 +72,7 @@ class MDLogger;
  * \param[in]     useOrEmulateGpuForNonbondeds  Tells if we are using a GPU for non-bondeds
  */
 void increaseNstlist(FILE*             fplog,
-                     t_commrec*        cr,
+                     const MpiComm&    mpiCommSimulation,
                      t_inputrec*       ir,
                      int               nstlistOnCmdline,
                      const gmx_mtop_t* mtop,

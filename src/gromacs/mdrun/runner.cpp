@@ -466,7 +466,7 @@ void Mdrunner::spawnThreads(int numThreadsToLaunch)
 
 /*! \brief Initialize variables for Verlet scheme simulation */
 static void prepare_verlet_scheme(FILE*                          fplog,
-                                  t_commrec*                     cr,
+                                  const gmx::MpiComm&            mpiCommSimulation,
                                   t_inputrec*                    ir,
                                   int                            nstlist_cmdline,
                                   const gmx_mtop_t&              mtop,
@@ -491,7 +491,7 @@ static void prepare_verlet_scheme(FILE*                          fplog,
     if (EI_DYNAMICS(ir->eI))
     {
         effectiveAtomDensity = computeEffectiveAtomDensity(
-                coordinates, box, std::max(ir->rcoulomb, ir->rvdw), cr->mpiDefaultCommunicator.comm());
+                coordinates, box, std::max(ir->rcoulomb, ir->rvdw), mpiCommSimulation.comm());
     }
 
     /* For NVE simulations, we will retain the initial list buffer */
@@ -543,7 +543,7 @@ static void prepare_verlet_scheme(FILE*                          fplog,
     {
         /* Set or try nstlist values */
         gmx::increaseNstlist(
-                fplog, cr, ir, nstlist_cmdline, &mtop, box, effectiveAtomDensity.value(), makeGpuPairList);
+                fplog, mpiCommSimulation, ir, nstlist_cmdline, &mtop, box, effectiveAtomDensity.value(), makeGpuPairList);
     }
 }
 
@@ -974,13 +974,13 @@ int Mdrunner::mdrunner()
     GMX_RELEASE_ASSERT(!GMX_MPI || ms || simulationCommunicator != MPI_COMM_NULL,
                        "Must have valid communicator unless running a multi-simulation");
     const MpiComm mpiCommSimulation(simulationCommunicator);
-    t_commrec     commRec(mpiCommSimulation);
-    t_commrec*    cr = &commRec;
-    GMX_RELEASE_ASSERT(cr != nullptr, "Must have valid commrec");
+
+    const bool simulationIsParallel = mpiCommSimulation.isParallel();
+    const bool isMainSimulationRank = mpiCommSimulation.isMainRank();
 
     PhysicalNodeCommunicator physicalNodeComm(libraryWorldCommunicator, gmx_physicalnode_id_hash());
 
-    if (PAR(cr))
+    if (simulationIsParallel)
     {
         /* now broadcast everything to the non-main nodes/threads: */
         if (!isSimulationMainRank)
@@ -989,8 +989,8 @@ int Mdrunner::mdrunner()
             // On non-main ranks, allocate the object that will receive data in the following call.
             inputrec = std::make_unique<t_inputrec>();
         }
-        init_parallel(cr->mpiDefaultCommunicator.comm(),
-                      MAIN(cr),
+        init_parallel(mpiCommSimulation.comm(),
+                      isMainSimulationRank,
                       inputrec.get(),
                       &mtop,
                       partialDeserializedTpr.get());
@@ -1034,7 +1034,7 @@ int Mdrunner::mdrunner()
                                                     pmeFftTarget,
                                                     userGpuTaskAssignment,
                                                     *inputrec,
-                                                    cr->mpiDefaultCommunicator.size(),
+                                                    mpiCommSimulation.size(),
                                                     domdecOptions.numPmeRanks,
                                                     gpusWereDetected);
         useGpuForBonded    = decideWhetherToUseGpusForBonded(
@@ -1065,7 +1065,7 @@ int Mdrunner::mdrunner()
     const bool canUseDomainDecomposition =
             (inputrec->eI != IntegrationAlgorithm::LBFGS && !hasCustomParallelization
              && gmx_mtop_particletype_count(mtop)[ParticleType::Shell] == 0);
-    GMX_RELEASE_ASSERT(!PAR(cr) || hasCustomParallelization || canUseDomainDecomposition,
+    GMX_RELEASE_ASSERT(!simulationIsParallel || hasCustomParallelization || canUseDomainDecomposition,
                        "A parallel run should not arrive here without DD support");
 
     int useDDWithSingleRank = -1;
@@ -1077,7 +1077,7 @@ int Mdrunner::mdrunner()
     // The overhead of DD partitioning is only compensated when we have both non-bondeds and PME on the CPU
     const bool useDomainDecomposition =
             canUseDomainDecomposition
-            && (PAR(cr)
+            && (simulationIsParallel
                 || (!useGpuForNonbonded && usingFullElectrostatics(inputrec->coulombtype)
                     && useDDWithSingleRank != 0)
                 || useDDWithSingleRank == 1);
@@ -1135,7 +1135,7 @@ int Mdrunner::mdrunner()
         fprintf(fplog, "\n");
     }
 
-    if (cr->isSimulationMainRank())
+    if (isSimulationMainRank)
     {
         /* In rerun, set velocities to zero if present */
         if (doRerun && globalState->hasEntry(StateEntry::V))
@@ -1162,17 +1162,17 @@ int Mdrunner::mdrunner()
      */
     if (inputrec->eI == IntegrationAlgorithm::NM || inputrec->eI == IntegrationAlgorithm::TPI)
     {
-        if (!MAIN(cr))
+        if (!isSimulationMainRank)
         {
             globalState = std::make_unique<t_state>();
         }
         broadcastStateWithoutDynamics(
-                cr->mpiDefaultCommunicator.comm(), haveDDAtomOrdering(*cr), PAR(cr), globalState.get());
+                mpiCommSimulation.comm(), useDomainDecomposition, simulationIsParallel, globalState.get());
     }
 
     /* A parallel command line option consistency check that we can
        only do after any threads have started. */
-    if (!PAR(cr)
+    if (!simulationIsParallel
         && (domdecOptions.numCells[XX] > 1 || domdecOptions.numCells[YY] > 1
             || domdecOptions.numCells[ZZ] > 1 || domdecOptions.numPmeRanks > 0))
     {
@@ -1212,9 +1212,9 @@ int Mdrunner::mdrunner()
                 mtop,
                 inputrec.get(),
                 DisResRunMode::MDRun,
-                MAIN(cr) ? DDRole::Main : DDRole::Agent,
-                PAR(cr) ? NumRanks::Multiple : NumRanks::Single,
-                cr->commMySim.comm(),
+                isSimulationMainRank ? DDRole::Main : DDRole::Agent,
+                simulationIsParallel ? NumRanks::Multiple : NumRanks::Single,
+                mpiCommSimulation.comm(),
                 ms,
                 disresdata,
                 globalState.get(),
@@ -1261,7 +1261,7 @@ int Mdrunner::mdrunner()
         // Reconcile checkpoint file data with Mdrunner state established up to this point.
         applyLocalState(*inputHolder_.get(),
                         logFileHandle,
-                        cr,
+                        mpiCommSimulation,
                         inputrec.get(),
                         globalState.get(),
                         &observablesHistory,
@@ -1284,7 +1284,7 @@ int Mdrunner::mdrunner()
             // Now we can start normal logging to the truncated log file.
             fplog = gmx_fio_getfp(logFileHandle);
             prepareLogAppending(fplog);
-            logOwner = buildLogger(fplog, MAIN(cr));
+            logOwner = buildLogger(fplog, isSimulationMainRank);
             mdlog    = logOwner.logger();
             // Provide the log file handle to the fatal error handler
             gmx_fatal_set_log_file(fplog);
@@ -1318,9 +1318,9 @@ int Mdrunner::mdrunner()
         copy_mat(globalState->box, box);
     }
 
-    if (PAR(cr))
+    if (simulationIsParallel)
     {
-        gmx_bcast(sizeof(box), box, cr->mpiDefaultCommunicator.comm());
+        gmx_bcast(sizeof(box), box, mpiCommSimulation.comm());
     }
 
     if (inputrec->cutoff_scheme != CutoffScheme::Verlet)
@@ -1334,14 +1334,15 @@ int Mdrunner::mdrunner()
      * increase rlist) tries to check if the newly chosen value fits with the DD scheme. As this is
      * run before any DD scheme is set up, this check is never executed. See #3334 for more details.
      */
-    prepare_verlet_scheme(fplog,
-                          cr,
-                          inputrec.get(),
-                          nstlist_cmdline,
-                          mtop,
-                          MAIN(cr) ? globalState->x : gmx::ArrayRef<const gmx::RVec>(),
-                          box,
-                          useGpuForNonbonded || (emulateGpuNonbonded == EmulateGpuNonbonded::Yes));
+    prepare_verlet_scheme(
+            fplog,
+            mpiCommSimulation,
+            inputrec.get(),
+            nstlist_cmdline,
+            mtop,
+            mpiCommSimulation.isMainRank() ? globalState->x : gmx::ArrayRef<const gmx::RVec>{},
+            box,
+            useGpuForNonbonded || (emulateGpuNonbonded == EmulateGpuNonbonded::Yes));
 
     // We need to decide on update groups early, as this affects
     // inter-domain communication distances.
@@ -1407,17 +1408,16 @@ int Mdrunner::mdrunner()
     // Initialize development feature flags that enabled by environment variable
     // and report those features that are enabled.
     const DevelopmentFeatureFlags devFlags = manageDevelopmentFeatures(
-            mdlog, pmeRunMode, cr->mpiDefaultCommunicator.size(), domdecOptions.numPmeRanks, canUseDirectGpuComm);
+            mdlog, pmeRunMode, mpiCommSimulation.size(), domdecOptions.numPmeRanks, canUseDirectGpuComm);
 
     bool useGpuDirectHalo = false;
 
     if (useGpuForNonbonded)
     {
-        // cr->npmenodes is not yet initialized.
         // domdecOptions.numPmeRanks == -1 results in 0 separate PME ranks when useGpuForNonbonded is true.
         // Todo: remove this assumption later once auto mode has support for separate PME rank
         const int numPmeRanks = domdecOptions.numPmeRanks > 0 ? domdecOptions.numPmeRanks : 0;
-        bool      havePPDomainDecomposition = (cr->mpiDefaultCommunicator.size() - numPmeRanks) > 1;
+        bool      havePPDomainDecomposition = (mpiCommSimulation.size() - numPmeRanks) > 1;
         useGpuDirectHalo = decideWhetherToUseGpuForHalo(havePPDomainDecomposition,
                                                         useGpuForNonbonded,
                                                         canUseDirectGpuComm,
@@ -1431,12 +1431,11 @@ int Mdrunner::mdrunner()
             mtop,
             *inputrec,
             useDomainDecomposition,
-            cr->mpiDefaultCommunicator.isSerial()
-                    || cr->mpiDefaultCommunicator.size() - domdecOptions.numPmeRanks == 1,
+            !simulationIsParallel || mpiCommSimulation.size() - domdecOptions.numPmeRanks == 1,
             useGpuDirectHalo);
 
     if (haveFillerParticlesInLocalState && useDomainDecomposition
-        && cr->mpiDefaultCommunicator.size() - domdecOptions.numPmeRanks > 1
+        && mpiCommSimulation.size() - domdecOptions.numPmeRanks > 1
         && domdecOptions.dlbOption != gmx::DlbOption::no)
     {
         GMX_LOG(mdlog.info)
@@ -1461,7 +1460,7 @@ int Mdrunner::mdrunner()
         // (in particular for testing) does not break depending on GPU direct communication being enabled.
         ddBuilder = std::make_unique<DomainDecompositionBuilder>(
                 mdlog,
-                cr->mpiDefaultCommunicator,
+                mpiCommSimulation,
                 domdecOptions,
                 mdrunOptions,
                 mtop,
@@ -1480,10 +1479,6 @@ int Mdrunner::mdrunner()
     }
     else
     {
-        // DD is inactive, so all ranks have all PP and PME duties
-        cr->commMyGroup = MpiComm(cr->mpiDefaultCommunicator);
-        cr->commMySim   = MpiComm(cr->mpiDefaultCommunicator);
-
         if (inputrec->pbcType == PbcType::Screw)
         {
             gmx_fatal(FARGS, "pbc=screw is only implemented with domain decomposition");
@@ -1532,6 +1527,9 @@ int Mdrunner::mdrunner()
     t_state*                 localState;
     gmx_localtop_t           localTopology(mtop.ffparams);
 
+    t_commrec  commRec(mpiCommSimulation);
+    t_commrec* cr = &commRec;
+
     if (ddBuilder)
     {
         localStateInstance = std::make_unique<t_state>();
@@ -1553,6 +1551,10 @@ int Mdrunner::mdrunner()
         // Without DD, the local state is merely an alias to the global state,
         // so we don't need to allocate anything.
         localState = globalState.get();
+
+        // DD is inactive, so all ranks have all PP and PME duties
+        cr->commMyGroup = MpiComm(cr->mpiDefaultCommunicator);
+        cr->commMySim   = MpiComm(cr->mpiDefaultCommunicator);
     }
 
     // Ensure that all atoms within the same update group are in the
