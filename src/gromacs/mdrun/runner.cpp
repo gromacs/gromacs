@@ -1553,8 +1553,8 @@ int Mdrunner::mdrunner()
         localState = globalState.get();
 
         // DD is inactive, so all ranks have all PP and PME duties
-        cr->commMyGroup = MpiComm(cr->mpiDefaultCommunicator);
-        cr->commMySim   = MpiComm(cr->mpiDefaultCommunicator);
+        cr->commMyGroup = MpiComm(mpiCommSimulation);
+        cr->commMySim   = MpiComm(mpiCommSimulation);
     }
 
     // Ensure that all atoms within the same update group are in the

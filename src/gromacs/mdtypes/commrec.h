@@ -80,9 +80,6 @@ struct t_commrec
     /* Subset of commMySim including only the ranks in the same group (PP or PME) */
     gmx::MpiComm commMyGroup;
 
-    //! The communicator used before DD was initialized
-    gmx::MpiComm mpiDefaultCommunicator;
-
 private:
     //! Storage for the domain decomposition data
     std::unique_ptr<gmx_domdec_t> ddUniquePtr_;
@@ -97,16 +94,10 @@ public:
  * In particular, this is true for multi-rank runs with TPI and NM, because
  * they use a decomposition that is not the domain decomposition used by
  * other simulation types. */
-#define PAR(cr) ((cr)->mpiDefaultCommunicator.size() > 1)
+#define PAR(cr) ((cr)->commMySim.size() > 1)
 
 //! True of this is the main node
-#define MAIN(cr) ((cr)->mpiDefaultCommunicator.rank() == 0)
-
-//! The node id for this rank
-#define RANK(cr, nodeid) (nodeid)
-
-//! The node id for the main
-#define MAINRANK(cr) (0)
+#define MAIN(cr) ((cr)->commMySim.rank() == 0)
 
 /*! \brief Returns whether the domain decomposition machinery is active and reorders atoms
  *

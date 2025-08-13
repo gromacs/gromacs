@@ -43,8 +43,7 @@
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/gmxmpi.h"
 
-t_commrec::t_commrec(const gmx::MpiComm& mpiComm) :
-    commMySim(mpiComm), commMyGroup(mpiComm), mpiDefaultCommunicator(mpiComm)
+t_commrec::t_commrec(const gmx::MpiComm& mpiComm) : commMySim(mpiComm), commMyGroup(mpiComm)
 {
 #if GMX_LIB_MPI
     GMX_RELEASE_ASSERT(gmx_mpi_initialized(), "Must have initialized MPI before building commrec");
