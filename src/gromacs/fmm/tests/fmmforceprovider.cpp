@@ -31,11 +31,23 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
+
+/*! \internal \file
+ * \brief Tests for FmmForceProvider class.
+ *
+ * \author Muhammad Umair Sadiq <mumairsadiq1@gmail.com>
+ */
+
 #include "gmxpre.h"
 
 #include "gromacs/fmm/fmmforceprovider.h"
 
 #include <gtest/gtest.h>
+
+#include "gromacs/fmm/fmmoptions.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/utility/logger.h"
 
 #include "testutils/testasserts.h"
 
@@ -51,13 +63,19 @@ class FmmForceProviderTest : public ::testing::Test
 
 TEST_F(FmmForceProviderTest, ThrowsWhenConstructingStub)
 {
+    // default parameters
+    ExaFmmOptions fmmOptions_;
+    gmx_mtop_t    mtop_;
+    PbcType       pbcType_ = PbcType::Xyz;
+    MDLogger      logger_;
+
     if (GMX_USE_EXT_FMM)
     {
-        EXPECT_NO_THROW(FmmForceProvider());
+        EXPECT_NO_THROW(FmmForceProvider(fmmOptions_, mtop_, pbcType_, logger_));
     }
     else
     {
-        EXPECT_ANY_THROW(FmmForceProvider());
+        EXPECT_ANY_THROW(FmmForceProvider(fmmOptions_, mtop_, pbcType_, logger_));
     }
 }
 

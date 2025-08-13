@@ -33,43 +33,56 @@
  */
 
 /*! \internal \file
- * \brief Stub implementation of FmmForceProvider, compiled when GROMACS is not configured with -DGMX_USE_EXT_FMM=ON.
+ * \brief Defines the builder class for constructing an FmmForceProvider.
  *
  * \author Muhammad Umair Sadiq <mumairsadiq1@gmail.com>
  */
 
 #include "gmxpre.h"
 
-#include "gromacs/utility/basedefinitions.h"
+#include "fmmforceproviderbuilder.h"
+
+#include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/utility/exceptions.h"
 
-#include "fmmforceprovider.h"
+#include "fmm_mdmodule.h"
 
 namespace gmx
 {
 
-CLANG_DIAGNOSTIC_IGNORE("-Wmissing-noreturn")
-FmmForceProvider::FmmForceProvider(const IFmmOptions& /* fmmOptions */,
-                                   const gmx_mtop_t& /* mtop */,
-                                   const PbcType& /* pbcType */,
-                                   const MDLogger& /* logger */)
+FmmForceProviderBuilder& FmmForceProviderBuilder::subscribeToSimulationSetupNotifications(MDModulesNotifiers* notifiers)
 {
-    GMX_THROW(
-            InternalError("External FMM is not enabled for GROMACS, simulation with external "
-                          "FMM is not possible."
-                          " Please, reconfigure GROMACS with -DGMX_USE_EXT_FMM=ON\n"));
+    // Set topology
+    const auto setTopologyFunction = [this](const gmx_mtop_t& mtopo) { mtop_ = &mtopo; };
+    notifiers->simulationSetupNotifier_.subscribe(setTopologyFunction);
+
+    // Set the PBC type
+    const auto setPBCTypeFunction = [this](const PbcType& pbcType) { pbcType_ = &pbcType; };
+    notifiers->simulationSetupNotifier_.subscribe(setPBCTypeFunction);
+
+    // Set Logger during simulation setup
+    const auto setLoggerFunction = [this](const MDLogger& logger) { logger_ = &logger; };
+    notifiers->simulationSetupNotifier_.subscribe(setLoggerFunction);
+
+    return *this;
 }
 
-FmmForceProvider::~FmmForceProvider() = default;
-
-void FmmForceProvider::calculateForces(const ForceProviderInput& /*fInput*/, ForceProviderOutput* /*fOutput*/)
+FmmForceProviderBuilder& FmmForceProviderBuilder::setFmmOptions(const IFmmOptions* fmmOptions)
 {
-    GMX_THROW(
-            InternalError("External FMM is not enabled for GROMACS, simulation with external "
-                          "FMM is not possible."
-                          " Please, reconfigure GROMACS with -DGMX_USE_EXT_FMM=ON\n"));
+    fmmOptions_ = fmmOptions;
+    return *this;
 }
 
-CLANG_DIAGNOSTIC_RESET
+std::unique_ptr<FmmForceProvider> FmmForceProviderBuilder::build()
+{
+    if (!fmmOptions_ || !mtop_ || !pbcType_ || !logger_)
+    {
+        GMX_THROW(InternalError(
+                "FmmForceProviderBuilder: Cannot build FmmForceProvider, one or more required "
+                "inputs are missing (fmmOptions, mtop, pbcType, logger)"));
+    }
+
+    return std::make_unique<FmmForceProvider>(*fmmOptions_, *mtop_, *pbcType_, *logger_);
+}
 
 } // namespace gmx

@@ -31,18 +31,34 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
+
+/*! \libinternal \file
+ * \brief Declares force provider for FMM.
+ *
+ * \author Muhammad Umair Sadiq <mumairsadiq1@gmail.com>
+ */
+
 #ifndef GMX_FMMFORCEPROVIDER_H
 #define GMX_FMMFORCEPROVIDER_H
 
 #include "gromacs/mdtypes/iforceprovider.h"
 
+
+enum class PbcType : int;
+struct gmx_mtop_t;
+
 namespace gmx
 {
+class MDLogger;
+struct IFmmOptions;
 
 class FmmForceProvider final : public IForceProvider
 {
 public:
-    FmmForceProvider();
+    FmmForceProvider(const IFmmOptions& fmmOptions_,
+                     const gmx_mtop_t&  mtop_,
+                     const PbcType&     pbcType,
+                     const MDLogger&    logger);
 
     /*! \brief Computes forces using the Fast Multipole Method (FMM).
      * \param[in] fInput input for force provider

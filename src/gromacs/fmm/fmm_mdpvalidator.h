@@ -32,7 +32,8 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 
-/*! \brief Validates FMM MDP settings during preprocessing.
+/*! \libinternal \file
+ * \brief Validates FMM MDP settings during preprocessing.
  *
  * \author Muhammad Umair Sadiq <mumairsadiq1@gmail.com>
  */

@@ -32,7 +32,8 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 
-/*! \brief Implements validation of FMM MDP settings via WarningHandler.
+/*! \internal \file
+ * \brief Implements validation of FMM MDP settings via WarningHandler.
  *
  * \author Muhammad Umair Sadiq <mumairsadiq1@gmail.com>
  */
@@ -43,6 +44,7 @@
 
 #include "gromacs/fileio/warninp.h"
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
+#include "gromacs/utility/strconvert.h"
 
 #include "fmmoptions.h"
 

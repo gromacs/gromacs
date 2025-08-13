@@ -31,16 +31,32 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
+
+/*! \internal \file
+ * \brief Defines the FmmForceProvider.
+ *
+ * \author Muhammad Umair Sadiq <mumairsadiq1@gmail.com>
+ */
+
 #include "gmxpre.h"
 
 #include "fmmforceprovider.h"
 
+#include "gromacs/fmm/fmmoptions.h"
 #include "gromacs/mdtypes/forceoutput.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/utility/logger.h"
+
 
 namespace gmx
 {
-FmmForceProvider::FmmForceProvider() {}
-
+FmmForceProvider::FmmForceProvider(const IFmmOptions& /* fmmOptions */,
+                                   const gmx_mtop_t& /* mtop */,
+                                   const PbcType& /* pbcType */,
+                                   const MDLogger& /* logger */)
+{
+}
 
 void FmmForceProvider::calculateForces(const ForceProviderInput& /* fInput */, ForceProviderOutput* /* fOutput */)
 {

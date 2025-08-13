@@ -32,14 +32,13 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 
-/*! \brief Tests for FmmMdpValidator
+/*! \internal \file
+ * \brief Tests for FmmMdpValidator.
  *
  * \author Muhammad Umair Sadiq <mumairsadiq1@gmail.com>
  */
 
 #include "gmxpre.h"
-
-#include <memory>
 
 #include <gtest/gtest.h>
 
@@ -75,7 +74,7 @@ protected:
     std::unique_ptr<IMDModule> fmmModule_;
     MDModulesNotifiers         notifiers_;
 
-    // mock settings
+    // default settings
     MdModulesCoulombTypeInfo mdCoulombType_;
     WarningHandler           warningHandler_;
 };

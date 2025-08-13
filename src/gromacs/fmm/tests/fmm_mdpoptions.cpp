@@ -31,6 +31,13 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
+
+/*! \internal \file
+ * \brief Tests for FmmMdpOptions class of FMM MDModule.
+ *
+ * \author Muhammad Umair Sadiq <mumairsadiq1@gmail.com>
+ */
+
 #include "gmxpre.h"
 
 #include "gromacs/fmm/fmm_mdpoptions.h"

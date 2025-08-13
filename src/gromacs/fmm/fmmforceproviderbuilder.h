@@ -32,44 +32,43 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 
-/*! \internal \file
- * \brief Stub implementation of FmmForceProvider, compiled when GROMACS is not configured with -DGMX_USE_EXT_FMM=ON.
+/*! \libinternal \file
+ * \brief Declares the builder class for constructing an FmmForceProvider.
  *
  * \author Muhammad Umair Sadiq <mumairsadiq1@gmail.com>
  */
 
-#include "gmxpre.h"
-
-#include "gromacs/utility/basedefinitions.h"
-#include "gromacs/utility/exceptions.h"
+#ifndef GMX_FMM_FORCEPROVIDER_BUILDER_H
+#define GMX_FMM_FORCEPROVIDER_BUILDER_H
 
 #include "fmmforceprovider.h"
 
 namespace gmx
 {
 
-CLANG_DIAGNOSTIC_IGNORE("-Wmissing-noreturn")
-FmmForceProvider::FmmForceProvider(const IFmmOptions& /* fmmOptions */,
-                                   const gmx_mtop_t& /* mtop */,
-                                   const PbcType& /* pbcType */,
-                                   const MDLogger& /* logger */)
+struct MDModulesNotifiers;
+struct IFmmOptions;
+
+/*! \brief Helper class to configure and construct FMM Force Provider.
+ *
+ * Initializes FMM inputs (e.g., topology, PBC type, and logger)
+ * from simulation setup and constructs a fully configured FmmForceProvider.
+ */
+class FmmForceProviderBuilder
 {
-    GMX_THROW(
-            InternalError("External FMM is not enabled for GROMACS, simulation with external "
-                          "FMM is not possible."
-                          " Please, reconfigure GROMACS with -DGMX_USE_EXT_FMM=ON\n"));
-}
+public:
+    FmmForceProviderBuilder& subscribeToSimulationSetupNotifications(MDModulesNotifiers* notifiers);
+    FmmForceProviderBuilder& setFmmOptions(const IFmmOptions* fmmOptions);
 
-FmmForceProvider::~FmmForceProvider() = default;
+    std::unique_ptr<FmmForceProvider> build();
 
-void FmmForceProvider::calculateForces(const ForceProviderInput& /*fInput*/, ForceProviderOutput* /*fOutput*/)
-{
-    GMX_THROW(
-            InternalError("External FMM is not enabled for GROMACS, simulation with external "
-                          "FMM is not possible."
-                          " Please, reconfigure GROMACS with -DGMX_USE_EXT_FMM=ON\n"));
-}
-
-CLANG_DIAGNOSTIC_RESET
+private:
+    const IFmmOptions* fmmOptions_ = nullptr;
+    const gmx_mtop_t*  mtop_       = nullptr;
+    const PbcType*     pbcType_    = nullptr;
+    const MDLogger*    logger_     = nullptr;
+};
 
 } // namespace gmx
+
+#endif // GMX_FMM_FORCEPROVIDER_BUILDER_H

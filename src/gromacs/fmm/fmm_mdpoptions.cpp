@@ -31,6 +31,14 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
+
+/*! \internal \file
+ * \brief Implements FmmMdpOptions for managing MDP options across all FMM backends.
+ *
+ * \author Muhammad Umair Sadiq <mumairsadiq1@gmail.com>
+ */
+
+
 #include "gmxpre.h"
 
 #include "fmm_mdpoptions.h"

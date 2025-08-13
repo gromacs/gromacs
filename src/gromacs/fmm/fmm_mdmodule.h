@@ -31,6 +31,13 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
+
+/*! \libinternal \file
+ * \brief Defines factory structure for FMM MDModule class.
+ *
+ * \author Muhammad Umair Sadiq <mumairsadiq1@gmail.com>
+ */
+
 #ifndef GMX_FMM_MDMODULE_H
 #define GMX_FMM_MDMODULE_H
 

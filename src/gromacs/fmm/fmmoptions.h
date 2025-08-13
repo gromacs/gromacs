@@ -31,6 +31,16 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
+
+/*! \libinternal \file
+ * \brief Declares backend-specific FMM options and enums for use in MDP handling.
+ *
+ * Used internally by FmmMdpOptions to delegate backend configuration.
+ *
+ * \author Muhammad Umair Sadiq <mumairsadiq1@gmail.com>
+ */
+
+
 #ifndef GMX_FMM_OPTIONS_H
 #define GMX_FMM_OPTIONS_H
 

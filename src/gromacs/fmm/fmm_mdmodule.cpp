@@ -31,24 +31,31 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
+
+/*! \internal \file
+ * \brief Declares the FmmMDModule class, an implementation of the IMDModule interface.
+ *
+ * \author Muhammad Umair Sadiq <mumairsadiq1@gmail.com>
+ */
+
 #include "gmxpre.h"
 
 #include "fmm_mdmodule.h"
 
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/mdtypes/imdmodule.h"
-#include "gromacs/mdtypes/imdpoptionprovider.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/utility/logger.h"
 
 #include "fmm_mdpoptions.h"
 #include "fmm_mdpvalidator.h"
-#include "fmmforceprovider.h"
+#include "fmmforceproviderbuilder.h"
 
 namespace gmx
 {
 
 namespace
 {
-
 /*! \internal
  * \brief FMM module
  *
@@ -86,7 +93,24 @@ public:
         notifiers->preProcessingNotifier_.subscribe(setCoulombTypeFunction);
     }
 
-    void subscribeToSimulationSetupNotifications(MDModulesNotifiers* /* notifiers */) override {}
+    /*! \brief Subscribes to simulation setup notifications.
+     *
+     * \param[in] notifiers Pointer to the simulation notifiers used to subscribe to setup events.
+     *
+     * The FMM module registers for the following simulation setup notifications:
+     *   - gmx_mtop_t: Provides the topology, could be need for setting up exclusions in the FMM direct interactions.
+     *   - PbcType : Supplies periodic boundary condition type used during simulation.
+     *   - MDLogger: Provides access to the simulation logger for diagnostic or status messages.
+     */
+    void subscribeToSimulationSetupNotifications(MDModulesNotifiers* notifiers) override
+    {
+        if (fmmMdpOptions_.activeFmmBackend() == ActiveFmmBackend::Inactive)
+        {
+            return;
+        }
+
+        fmmForceProviderBuilder_.subscribeToSimulationSetupNotifications(notifiers);
+    }
 
     void subscribeToSimulationRunNotifications(MDModulesNotifiers* /* notifiers */) override {}
 
@@ -96,7 +120,9 @@ public:
         {
             return;
         }
-        fmmForceProvider_ = std::make_unique<FmmForceProvider>();
+
+        fmmForceProviderBuilder_.setFmmOptions(fmmMdpOptions_.activeFmmOptions());
+        fmmForceProvider_ = fmmForceProviderBuilder_.build();
         forceProviders->addForceProvider(fmmForceProvider_.get(), std::string(FmmModuleInfo::sc_name));
     }
 
@@ -111,6 +137,7 @@ private:
     std::unique_ptr<FmmForceProvider> fmmForceProvider_;
     FmmMdpOptions                     fmmMdpOptions_;
     std::unique_ptr<FmmMdpValidator>  fmmMdpValidator_;
+    FmmForceProviderBuilder           fmmForceProviderBuilder_;
 };
 
 } // namespace
