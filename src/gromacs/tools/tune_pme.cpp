@@ -103,7 +103,6 @@ enum
     eParselogTPXVersion,
     eParselogNotParallel,
     eParselogLargePrimeFactor,
-    eParselogMismatchOfNumberOfPPRanksAndAvailableGPUs,
     eParselogGpuProblem,
     eParselogFatal,
     eParselogNr
@@ -311,7 +310,7 @@ static int parse_logfile(const char* logfile,
                     std::fclose(fp);
                     return eParselogNoDDGrid;
                 }
-                else if (str_starts(line, "The number of ranks you selected"))
+                else if (str_starts(line, "The number of ranks selected for particle-particle work"))
                 {
                     std::fclose(fp);
                     return eParselogLargePrimeFactor;
@@ -330,12 +329,7 @@ static int parse_logfile(const char* logfile,
             case eFoundDDStr:
                 /* Even after the "Domain decomposition grid" string was found,
                  * it could be that mdrun had to quit due to some error. */
-                if (str_starts(line, "Incorrect launch configuration: mismatching number of"))
-                {
-                    std::fclose(fp);
-                    return eParselogMismatchOfNumberOfPPRanksAndAvailableGPUs;
-                }
-                else if (str_starts(line, "Some of the requested GPUs do not exist"))
+                if (str_starts(line, "Some of the requested GPUs do not exist"))
                 {
                     std::fclose(fp);
                     return eParselogGpuProblem;
@@ -1491,7 +1485,6 @@ static void do_the_tests(FILE*  fp,                    /* General tune_pme outpu
                                "TPX version conflict!",
                                "mdrun was not started in parallel!",
                                "Number of PP ranks has a prime factor that is too large.",
-                               "The number of PP ranks did not suit the number of GPUs.",
                                "Some GPUs were not detected or are incompatible.",
                                "An error occurred." };
     char        str_PME_f_load[13];
