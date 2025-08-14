@@ -49,6 +49,7 @@
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/mdtypes/imdmodule.h"
 #include "gromacs/mdtypes/imdpoptionprovider_test_helper.h"
+#include "gromacs/utility/keyvaluetreebuilder.h"
 
 #include "testutils/testasserts.h"
 

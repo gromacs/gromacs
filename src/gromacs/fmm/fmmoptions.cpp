@@ -46,6 +46,9 @@
 #include "gromacs/mdtypes/imdpoptionprovider_helpers.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/optionsection.h"
+#include "gromacs/utility/keyvaluetreebuilder.h"
+#include "gromacs/utility/keyvaluetreetransform.h"
+#include "gromacs/utility/strconvert.h"
 
 #include "fmm_mdmodule.h"
 

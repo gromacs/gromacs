@@ -48,9 +48,6 @@
 
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/enumerationhelpers.h"
-#include "gromacs/utility/keyvaluetreebuilder.h"
-#include "gromacs/utility/keyvaluetreetransform.h"
-#include "gromacs/utility/strconvert.h"
 
 class WarningHandler;
 
@@ -58,6 +55,7 @@ namespace gmx
 {
 class OptionSectionHandle;
 class KeyValueTreeObjectBuilder;
+class IKeyValueTreeTransformRules;
 
 /**
  * @brief Enumeration of possible direct interaction providers.
