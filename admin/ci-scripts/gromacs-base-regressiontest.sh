@@ -38,6 +38,7 @@ if grep -qF 'AMD' <<< "$GPU_VENDOR"; then
         export UCX_TLS="sm,self,rocm_copy"
     fi
     export HSA_ENABLE_SDMA=0  # Work around CI issues, Issue #5341
+    export GPU_MAX_HW_QUEUES=2  # Prevent "amdgpu: Runlist is getting oversubscribed", Issue #5341
 fi
 if grep -qF 'INTEL' <<< "$GPU_VENDOR"; then
     sycl-ls || true;
