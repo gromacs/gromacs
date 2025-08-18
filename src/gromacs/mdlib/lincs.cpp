@@ -794,7 +794,7 @@ static void do_lincsp(ArrayRefWithPadding<const RVec> xPadded,
                        1.0,
                        sol,
                        r,
-                       (econq != ConstraintVariable::Force) ? invmass : gmx::ArrayRef<real>(),
+                       (econq != ConstraintVariable::Force) ? invmass : gmx::ArrayRef<real>{},
                        as_rvec_array(fp.data()));
 
     if (bCalcDHDL)
@@ -1192,7 +1192,7 @@ static void do_lincs(ArrayRefWithPadding<const RVec> xPadded,
                 if (dd != nullptr)
                 {
                     wallcycle_sub_start(wcycle, WallCycleSubCounter::ConstrComm);
-                    dd_move_x_constraints(dd, box, xpPadded.unpaddedArrayRef(), ArrayRef<RVec>(), FALSE);
+                    dd_move_x_constraints(dd, box, xpPadded.unpaddedArrayRef(), ArrayRef<RVec>{}, FALSE);
                     wallcycle_sub_stop(wcycle, WallCycleSubCounter::ConstrComm);
                 }
             }

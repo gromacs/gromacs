@@ -1002,7 +1002,7 @@ void AnalysisNeighborhoodPairSearchImpl::reset(int testIndex)
             }
             else
             {
-                excl_ = ArrayRef<const int>();
+                excl_ = ArrayRef<const int>{};
             }
         }
     }

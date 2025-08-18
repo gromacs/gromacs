@@ -208,7 +208,7 @@ std::optional<int> search_res_atom(const char*    atomName,
     {
         if (atoms->atom[i].resind == resind)
         {
-            return search_atom(atomName, i, atoms, bondtype, bAllowMissing, gmx::ArrayRef<const int>());
+            return search_atom(atomName, i, atoms, bondtype, bAllowMissing, gmx::ArrayRef<const int>{});
         }
     }
 

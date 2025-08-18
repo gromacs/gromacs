@@ -432,7 +432,7 @@ static void init_em(FILE*                        fplog,
         state_global->ngtc = 0;
     }
     int*                fep_state = isMainRank ? &state_global->fep_state : nullptr;
-    gmx::ArrayRef<real> lambda    = isMainRank ? state_global->lambda : gmx::ArrayRef<real>();
+    gmx::ArrayRef<real> lambda    = isMainRank ? state_global->lambda : gmx::ArrayRef<real>{};
     initialize_lambdas(
             fplog, ir->efep, ir->bSimTemp, *ir->fepvals, ir->simtempvals->temperatures, nullptr, isMainRank, fep_state, lambda);
 
@@ -531,11 +531,11 @@ static void init_em(FILE*                        fplog,
                           1.0,
                           ems->s.x.arrayRefWithPadding(),
                           ems->s.x.arrayRefWithPadding(),
-                          ArrayRef<RVec>(),
+                          ArrayRef<RVec>{},
                           ems->s.box,
                           ems->s.lambda[FreeEnergyPerturbationCouplingType::Fep],
                           &dvdl_constr,
-                          gmx::ArrayRefWithPadding<RVec>(),
+                          gmx::ArrayRefWithPadding<RVec>{},
                           computeVirial,
                           nullptr,
                           gmx::ConstraintVariable::Positions);
@@ -635,7 +635,7 @@ static void write_em_traj(FILE*               fplog,
             /* If bX=true, x was collected to state_global in the call above */
             if (!bX)
             {
-                auto globalXRef = isMainRank ? state_global->x : gmx::ArrayRef<gmx::RVec>();
+                auto globalXRef = isMainRank ? state_global->x : gmx::ArrayRef<gmx::RVec>{};
                 dd_collect_vec(
                         cr->dd, state->s.ddp_count, state->s.ddp_count_cg_gl, state->s.cg_gl, state->s.x, globalXRef);
             }
@@ -787,11 +787,11 @@ static bool do_em_step(const t_commrec*                          cr,
                                   1.0,
                                   s1->x.arrayRefWithPadding(),
                                   s2->x.arrayRefWithPadding(),
-                                  ArrayRef<RVec>(),
+                                  ArrayRef<RVec>{},
                                   s2->box,
                                   s2->lambda[FreeEnergyPerturbationCouplingType::Bonded],
                                   &dvdl_constr,
-                                  gmx::ArrayRefWithPadding<RVec>(),
+                                  gmx::ArrayRefWithPadding<RVec>{},
                                   false,
                                   nullptr,
                                   gmx::ConstraintVariable::Positions);
@@ -1169,7 +1169,7 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
                       ems->s.box,
                       ems->s.lambda[FreeEnergyPerturbationCouplingType::Bonded],
                       &dvdl_constr,
-                      gmx::ArrayRefWithPadding<RVec>(),
+                      gmx::ArrayRefWithPadding<RVec>{},
                       computeVirial,
                       shake_vir,
                       gmx::ConstraintVariable::ForceDispl);
@@ -3164,7 +3164,7 @@ void LegacySimulator::do_steep()
         if (imdSession_->run(count,
                              TRUE,
                              isMainRank ? stateGlobal_->box : nullptr,
-                             isMainRank ? stateGlobal_->x : gmx::ArrayRef<gmx::RVec>(),
+                             isMainRank ? stateGlobal_->x : gmx::ArrayRef<gmx::RVec>{},
                              0)
             && isMainRank)
         {

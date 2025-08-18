@@ -80,7 +80,7 @@ public:
                          const gmx::ArrayRef<gmx::RVec>&            shiftForces) :
         force_(force),
         computeVirial_(computeVirial),
-        shiftForces_(computeVirial ? shiftForces : gmx::ArrayRef<gmx::RVec>())
+        shiftForces_(computeVirial ? shiftForces : gmx::ArrayRef<gmx::RVec>{})
     {
         GMX_ASSERT(!computeVirial || !shiftForces.empty(),
                    "We need a valid shift force buffer when computing the virial");

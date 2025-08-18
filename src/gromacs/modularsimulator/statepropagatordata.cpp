@@ -739,7 +739,7 @@ void StatePropagatorData::Element::trajectoryWriterTeardown(gmx_mdoutf* gmx_unus
     if (cr_->dd)
     {
         auto globalXRef = cr_->commMyGroup.isMainRank() ? statePropagatorData_->globalState_->x
-                                                        : gmx::ArrayRef<gmx::RVec>();
+                                                        : gmx::ArrayRef<gmx::RVec>{};
         dd_collect_vec(cr_->dd,
                        localStateBackup_->ddp_count,
                        localStateBackup_->ddp_count_cg_gl,
@@ -747,7 +747,7 @@ void StatePropagatorData::Element::trajectoryWriterTeardown(gmx_mdoutf* gmx_unus
                        localStateBackup_->x,
                        globalXRef);
         auto globalVRef = cr_->commMyGroup.isMainRank() ? statePropagatorData_->globalState_->v
-                                                        : gmx::ArrayRef<gmx::RVec>();
+                                                        : gmx::ArrayRef<gmx::RVec>{};
         dd_collect_vec(cr_->dd,
                        localStateBackup_->ddp_count,
                        localStateBackup_->ddp_count_cg_gl,

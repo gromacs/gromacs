@@ -278,7 +278,7 @@ void gmx::LegacySimulator::do_md()
     const bool isMainRank = cr_->commMySim.isMainRank();
 
     int*                fep_state = isMainRank ? &stateGlobal_->fep_state : nullptr;
-    gmx::ArrayRef<real> lambda    = isMainRank ? stateGlobal_->lambda : gmx::ArrayRef<real>();
+    gmx::ArrayRef<real> lambda    = isMainRank ? stateGlobal_->lambda : gmx::ArrayRef<real>{};
     initialize_lambdas(
             fpLog_, ir->efep, ir->bSimTemp, *ir->fepvals, ir->simtempvals->temperatures, ekind_, isMainRank, fep_state, lambda);
     Update upd(*ir, *ekind_, deform_);
@@ -695,7 +695,7 @@ void gmx::LegacySimulator::do_md()
              * to avoid (incorrect) correction of the initial coordinates.
              */
             auto x = (vcm.mode == ComRemovalAlgorithm::LinearAccelerationCorrection)
-                             ? ArrayRef<RVec>()
+                             ? ArrayRef<RVec>{}
                              : makeArrayRef(state_->x);
             process_and_stopcm_grp(fpLog_, &vcm, *md, x, makeArrayRef(state_->v));
             inc_nrnb(nrnb_, eNR_STOPCM, md->homenr);

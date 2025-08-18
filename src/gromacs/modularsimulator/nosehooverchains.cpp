@@ -234,7 +234,7 @@ void NoseHooverChainsData::build(NhcUsage                                nhcUsag
                         legacySimulatorData->inputRec_->opts.nhchainlength,
                         constArrayRefFromArray(legacySimulatorData->inputRec_->opts.ref_t, 1),
                         constArrayRefFromArray(legacySimulatorData->inputRec_->opts.tau_t, 1),
-                        ArrayRef<real>(),
+                        ArrayRef<real>{},
                         nhcUsage));
     }
     auto* nhcDataPtr =

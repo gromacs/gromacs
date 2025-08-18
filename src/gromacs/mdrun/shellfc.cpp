@@ -1032,7 +1032,7 @@ void relax_shell_flexcon(FILE*                             fplog,
                              fr->haveBoxDeformation,
                              inputrec->deform,
                              x.subArray(0, md.homenr),
-                             v.empty() ? ArrayRef<RVec>() : v.subArray(0, md.homenr),
+                             v.empty() ? ArrayRef<RVec>{} : v.subArray(0, md.homenr),
                              gmx_omp_nthreads_get(ModuleMultiThread::Default));
     }
 

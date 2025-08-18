@@ -1868,7 +1868,7 @@ int Mdrunner::mdrunner()
                 mtop,
                 runScheduleWork.simulationWork.haveFillerParticlesInLocalState,
                 (cr->dd && cr->dd->mpiComm().isParallel()) ? &observablesReducerBuilder : nullptr,
-                isSimulationMainRank ? globalState->x : gmx::ArrayRef<const gmx::RVec>(),
+                isSimulationMainRank ? globalState->x : gmx::ArrayRef<const gmx::RVec>{},
                 box,
                 wcycle.get());
         // TODO: Move the logic below to a GPU bonded builder
@@ -2213,7 +2213,7 @@ int Mdrunner::mdrunner()
                                              ms,
                                              mtop,
                                              mdlog,
-                                             MAIN(cr) ? globalState->x : gmx::ArrayRef<gmx::RVec>(),
+                                             MAIN(cr) ? globalState->x : gmx::ArrayRef<gmx::RVec>{},
                                              filenames.size(),
                                              filenames.data(),
                                              oenv,

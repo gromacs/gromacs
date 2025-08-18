@@ -276,7 +276,7 @@ void update_pcouple_after_coordinates(FILE*                               fplog,
                         start,
                         homenr,
                         state->x,
-                        gmx::ArrayRef<gmx::RVec>(),
+                        gmx::ArrayRef<gmx::RVec>{},
                         cFREEZE,
                         nrnb,
                         scaleCoordinates);

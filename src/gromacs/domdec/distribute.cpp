@@ -284,15 +284,15 @@ static void dd_distribute_state(gmx_domdec_t* dd, const t_state* state, t_state*
 
     if (state_local->hasEntry(StateEntry::X))
     {
-        distributeVec(dd, DDMAIN(dd) ? state->x : gmx::ArrayRef<const gmx::RVec>(), state_local->x);
+        distributeVec(dd, DDMAIN(dd) ? state->x : gmx::ArrayRef<const gmx::RVec>{}, state_local->x);
     }
     if (state_local->hasEntry(StateEntry::V))
     {
-        distributeVec(dd, DDMAIN(dd) ? state->v : gmx::ArrayRef<const gmx::RVec>(), state_local->v);
+        distributeVec(dd, DDMAIN(dd) ? state->v : gmx::ArrayRef<const gmx::RVec>{}, state_local->v);
     }
     if (state_local->hasEntry(StateEntry::Cgp))
     {
-        distributeVec(dd, DDMAIN(dd) ? state->cg_p : gmx::ArrayRef<const gmx::RVec>(), state_local->cg_p);
+        distributeVec(dd, DDMAIN(dd) ? state->cg_p : gmx::ArrayRef<const gmx::RVec>{}, state_local->cg_p);
     }
 }
 
@@ -573,9 +573,9 @@ static void distributeAtomGroups(const gmx::MDLogger& mdlog,
     }
 
     dd_scatterv(dd,
-                bMain ? gmx::makeArrayRef(ma->intBuffer).subArray(0, dd->nnodes) : gmx::ArrayRef<int>(),
+                bMain ? gmx::makeArrayRef(ma->intBuffer).subArray(0, dd->nnodes) : gmx::ArrayRef<int>{},
                 bMain ? gmx::makeArrayRef(ma->intBuffer).subArray(dd->nnodes, dd->nnodes)
-                      : gmx::ArrayRef<int>(),
+                      : gmx::ArrayRef<int>{},
                 bMain ? ma->atomGroups.data() : nullptr,
                 dd->numHomeAtoms,
                 dd->globalAtomIndices.data());

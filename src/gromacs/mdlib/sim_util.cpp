@@ -1364,7 +1364,7 @@ static void doPairSearch(const t_commrec*             cr,
                                  fr->haveBoxDeformation,
                                  inputrec.deform,
                                  x.unpaddedArrayRef().subArray(0, mdatoms.homenr),
-                                 v.empty() ? ArrayRef<RVec>() : v.subArray(0, mdatoms.homenr),
+                                 v.empty() ? ArrayRef<RVec>{} : v.subArray(0, mdatoms.homenr),
                                  gmx_omp_nthreads_get(ModuleMultiThread::Default));
             inc_nrnb(nrnb, eNR_SHIFTX, mdatoms.homenr);
         }

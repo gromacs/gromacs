@@ -85,7 +85,7 @@ namespace
 
 TEST(EmptyArrayRefTest, IsEmpty)
 {
-    ArrayRef<SimdReal> empty = ArrayRef<real>();
+    ArrayRef<SimdReal> empty = ArrayRef<real>{};
 
     EXPECT_EQ(0U, empty.size());
     EXPECT_TRUE(empty.empty());

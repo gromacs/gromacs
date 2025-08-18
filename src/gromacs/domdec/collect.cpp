@@ -159,10 +159,10 @@ static void dd_collect_cg(gmx_domdec_t*            dd,
     dd_gatherv(*dd,
                atomGroups,
                DDMAIN(dd) ? gmx::makeArrayRef(ma->intBuffer).subArray(0, dd->nnodes)
-                          : gmx::ArrayRef<int>(),
+                          : gmx::ArrayRef<int>{},
                DDMAIN(dd) ? gmx::makeArrayRef(ma->intBuffer).subArray(dd->nnodes, dd->nnodes)
-                          : gmx::ArrayRef<int>(),
-               DDMAIN(dd) ? ma->atomGroups : gmx::ArrayRef<int>());
+                          : gmx::ArrayRef<int>{},
+               DDMAIN(dd) ? ma->atomGroups : gmx::ArrayRef<int>{});
 
     dd->comm->main_cg_ddp_count = ddpCount;
 }
@@ -255,7 +255,7 @@ static void dd_collect_vec_gatherv(gmx_domdec_t*                  dd,
                lv.subArray(0, numHomeAtoms),
                recvCounts,
                displacements,
-               DDMAIN(dd) ? dd->ma->rvecBuffer : gmx::ArrayRef<gmx::RVec>());
+               DDMAIN(dd) ? dd->ma->rvecBuffer : gmx::ArrayRef<gmx::RVec>{});
 
     if (DDMAIN(dd))
     {
@@ -341,7 +341,7 @@ void dd_collect_state(gmx_domdec_t* dd, const t_state* state_local, t_state* sta
     }
     if (state_local->hasEntry(StateEntry::X))
     {
-        auto globalXRef = state ? state->x : gmx::ArrayRef<gmx::RVec>();
+        auto globalXRef = state ? state->x : gmx::ArrayRef<gmx::RVec>{};
         dd_collect_vec(dd,
                        state_local->ddp_count,
                        state_local->ddp_count_cg_gl,
@@ -351,7 +351,7 @@ void dd_collect_state(gmx_domdec_t* dd, const t_state* state_local, t_state* sta
     }
     if (state_local->hasEntry(StateEntry::V))
     {
-        auto globalVRef = state ? state->v : gmx::ArrayRef<gmx::RVec>();
+        auto globalVRef = state ? state->v : gmx::ArrayRef<gmx::RVec>{};
         dd_collect_vec(dd,
                        state_local->ddp_count,
                        state_local->ddp_count_cg_gl,
@@ -361,7 +361,7 @@ void dd_collect_state(gmx_domdec_t* dd, const t_state* state_local, t_state* sta
     }
     if (state_local->hasEntry(StateEntry::Cgp))
     {
-        auto globalCgpRef = state ? state->cg_p : gmx::ArrayRef<gmx::RVec>();
+        auto globalCgpRef = state ? state->cg_p : gmx::ArrayRef<gmx::RVec>{};
         dd_collect_vec(dd,
                        state_local->ddp_count,
                        state_local->ddp_count_cg_gl,

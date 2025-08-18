@@ -283,7 +283,7 @@ void dispatchFreeEnergyKernel(gmx::ArrayRef<const std::unique_ptr<AtomPairlist>>
                                               nullptr,
                                               lam_i,
                                               nrnb,
-                                              gmx::ArrayRefWithPadding<gmx::RVec>(),
+                                              gmx::ArrayRefWithPadding<gmx::RVec>{},
                                               nullptr,
                                               threadVc,
                                               threadVv,

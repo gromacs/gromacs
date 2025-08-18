@@ -498,7 +498,7 @@ LocalTopologyChecker::LocalTopologyChecker(const MDLogger&            mdlog,
                     impl->expectedNumGlobalBondedInteractions_,
                     impl->mtop_,
                     impl->localTopology_,
-                    impl->localState_ ? makeArrayRef(impl->localState_->x) : ArrayRef<RVec>(),
+                    impl->localState_ ? makeArrayRef(impl->localState_->x) : ArrayRef<RVec>{},
                     impl->localState_ ? impl->localState_->box : nullptr); // Does not return
         }
     };

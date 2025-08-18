@@ -153,7 +153,7 @@ void ComputeGlobalsElement<algorithm>::elementSetup()
         // At initialization, do not pass x with acceleration-correction mode
         // to avoid (incorrect) correction of the initial coordinates.
         auto x = vcm_.mode == ComRemovalAlgorithm::LinearAccelerationCorrection
-                         ? ArrayRefWithPadding<RVec>()
+                         ? ArrayRefWithPadding<RVec>{}
                          : statePropagatorData_->positionsView();
         process_and_stopcm_grp(
                 fplog_, &vcm_, *mdAtoms_->mdatoms(), x.unpaddedArrayRef(), v.unpaddedArrayRef());
