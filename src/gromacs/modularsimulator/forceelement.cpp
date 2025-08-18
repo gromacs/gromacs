@@ -184,10 +184,6 @@ void ForceElement::elementSetup()
 template<bool doShellFC>
 void ForceElement::run(Step step, Time time, unsigned int flags)
 {
-    // Disabled functionality
-    gmx_multisim_t* ms = nullptr;
-
-
     if (!haveDDAtomOrdering(*cr_) && (flags & GMX_FORCE_NS) && inputrecDynamicBox(inputrec_))
     {
         // TODO: Correcting the box is done in DomDecHelper (if using DD) or here (non-DD simulations).
@@ -233,7 +229,6 @@ void ForceElement::run(Step step, Time time, unsigned int flags)
 
         relax_shell_flexcon(fplog_,
                             cr_,
-                            ms,
                             isVerbose_,
                             enforcedRotation_,
                             step,
@@ -276,7 +271,6 @@ void ForceElement::run(Step step, Time time, unsigned int flags)
 
         do_force(fplog_,
                  cr_,
-                 ms,
                  *inputrec_,
                  mdModulesNotifiers_,
                  awh,

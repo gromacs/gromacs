@@ -101,6 +101,7 @@ TprReader::TprReader(std::string filename)
                   inputRecord,
                   molecularTopology,
                   &commrec,
+                  nullptr,
                   globalState.box,
                   nullptr,
                   nullptr,

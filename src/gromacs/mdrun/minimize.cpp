@@ -1095,7 +1095,6 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
      */
     do_force(fplog,
              cr,
-             ms,
              *inputrec,
              mdModulesNotifiers,
              nullptr,
@@ -3435,7 +3434,6 @@ void LegacySimulator::do_nm()
                     /* Now is the time to relax the shells */
                     relax_shell_flexcon(fpLog_,
                                         &crSingleRank,
-                                        ms_,
                                         mdrunOptions_.verbose,
                                         nullptr,
                                         step,

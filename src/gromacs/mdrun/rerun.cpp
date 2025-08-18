@@ -657,7 +657,6 @@ void gmx::LegacySimulator::do_rerun()
             /* Now is the time to relax the shells */
             relax_shell_flexcon(fpLog_,
                                 cr_,
-                                ms_,
                                 mdrunOptions_.verbose,
                                 enforcedRotation_,
                                 step,
@@ -702,7 +701,6 @@ void gmx::LegacySimulator::do_rerun()
             {
                 do_force(fpLog_,
                          cr_,
-                         ms_,
                          *ir,
                          mdModulesNotifiers_,
                          awh,

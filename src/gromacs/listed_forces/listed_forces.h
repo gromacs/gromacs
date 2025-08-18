@@ -81,12 +81,12 @@
 #include "gromacs/utility/vectypes.h"
 
 struct bonded_threading_t;
+struct gmx_domdec_t;
 struct gmx_enerdata_t;
 struct gmx_ffparams_t;
 struct gmx_grppairener_t;
 struct gmx_multisim_t;
 class history_t;
-struct t_commrec;
 struct t_fcdata;
 struct t_forcerec;
 struct t_nrnb;
@@ -138,6 +138,8 @@ public:
      *                              used for position restraints
      * \param[in] numThreads       The number of threads used for computed listed interactions
      * \param[in] interactionSelection  Select of interaction groups through bits set
+     * \param[in] domDec           Domain decomposition data, pass nulltpr without DD
+     * \param[in] commMultiSim     Multi-simulation communication, can be nullptr
      * \param[in] fplog            Log file for printing env.var. override, can be nullptr
      */
     ListedForces(const gmx_ffparams_t& ffparams,
@@ -145,6 +147,8 @@ public:
                  int                   numComGroups,
                  int                   numThreads,
                  InteractionSelection  interactionSelection,
+                 const gmx_domdec_t*   domDec,
+                 const gmx_multisim_t* commMultiSim,
                  FILE*                 fplog);
 
     //! Move constructor, default, but in the source file to hide implementation classes
@@ -173,8 +177,6 @@ public:
      */
     void calculate(struct gmx_wallcycle*                     wcycle,
                    const matrix                              box,
-                   const t_commrec*                          cr,
-                   const gmx_multisim_t*                     ms,
                    gmx::ArrayRefWithPadding<const gmx::RVec> coordinates,
                    gmx::ArrayRef<const gmx::RVec>            xWholeMolecules,
                    t_fcdata*                                 fcdata,
@@ -225,6 +227,10 @@ private:
     std::unique_ptr<gmx_grppairener_t> foreignEnergyGroups_;
     //! Vector of indices needed in order to loop over the atoms in each COM group (currently just a reference to t_mdatoms.cVCM)
     gmx::ArrayRef<const unsigned short> restraintComIndices_;
+    //! Pointer to domain decomposition data, can be nullptr
+    const gmx_domdec_t* domDec_;
+    //! Pointer to multi-sim communicator, can be nullptr
+    const gmx_multisim_t* commMultiSim_;
 
     GMX_DISALLOW_COPY_AND_ASSIGN(ListedForces);
 };

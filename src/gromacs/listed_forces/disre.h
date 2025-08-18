@@ -103,8 +103,7 @@ void init_disres(FILE*                 fplog,
  * Calculates r and r^-3 (inst. and time averaged) for all pairs
  * and the ensemble averaged r^-6 (inst. and time averaged) for all restraints
  */
-void calc_disres_R_6(const gmx::MpiComm&   mpiComm,
-                     const gmx_domdec_t*   dd,
+void calc_disres_R_6(const gmx_domdec_t*   dd,
                      const gmx_multisim_t* ms,
                      int                   nfa,
                      const t_iatom*        fa,

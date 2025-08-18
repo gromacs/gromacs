@@ -52,7 +52,6 @@
 
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/listed_forces/listed_forces.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
@@ -60,7 +59,6 @@
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/forcefieldparameters.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/utility/real.h"
@@ -124,13 +122,11 @@ private:
     t_fcdata     fcdata_;
     t_mdatoms    mdatoms_;
 
-    t_pbc                          pbc;
-    std::unique_ptr<gmx_wallcycle> wcycle;
-    gmx_enerdata_t                 enerd;
-    gmx::StepWorkload              stepWork;
+    t_pbc             pbc;
+    gmx_enerdata_t    enerd;
+    gmx::StepWorkload stepWork;
 
     t_nrnb            nrnb;
-    t_commrec         cr;
     std::vector<real> lambdaBuffer;
 
     std::unique_ptr<ListedForces> gmxListedForces_;

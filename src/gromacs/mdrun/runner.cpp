@@ -1812,6 +1812,7 @@ int Mdrunner::mdrunner()
                       *inputrec,
                       mtop,
                       cr,
+                      ms,
                       box,
                       opt2fn("-table", filenames.size(), filenames.data()),
                       opt2fn("-tablep", filenames.size(), filenames.data()),

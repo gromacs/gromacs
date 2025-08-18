@@ -44,13 +44,6 @@
 
 struct gmx_domdec_t;
 
-//! Whether one or more ranks are used
-enum class NumRanks
-{
-    Single,
-    Multiple
-};
-
 struct t_commrec
 {
     //! Constructs a valid object with all communicators set to \p mpiComm

@@ -575,7 +575,6 @@ std::pair<double, double> TestParticleInsertion::performSingleInsertion(const do
     rvec mu_tot;
     do_force(nullptr,
              &cr_,
-             nullptr,
              inputRec_,
              mdModulesNotifiers_,
              nullptr,

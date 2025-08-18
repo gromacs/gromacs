@@ -48,10 +48,10 @@
 #include <vector>
 
 #include "gromacs/domdec/domdec.h"
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/mdrunutility/multisim.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -297,8 +297,7 @@ void init_disres(FILE*                 fplog,
     }
 }
 
-void calc_disres_R_6(const gmx::MpiComm&   mpiComm,
-                     const gmx_domdec_t*   domdec,
+void calc_disres_R_6(const gmx_domdec_t*   domdec,
                      const gmx_multisim_t* ms,
                      int                   nfa,
                      const t_iatom         forceatoms[],
@@ -385,7 +384,7 @@ void calc_disres_R_6(const gmx::MpiComm&   mpiComm,
     /* NOTE: Rt_6 and Rtav_6 are stored consecutively in memory */
     if (domdec)
     {
-        mpiComm.sumReduce(2 * dd->nres, dd->Rt_6);
+        domdec->mpiComm().sumReduce(2 * dd->nres, dd->Rt_6);
     }
 
     if (dd->nsystems > 1)
@@ -404,7 +403,7 @@ void calc_disres_R_6(const gmx::MpiComm&   mpiComm,
 
         if (domdec)
         {
-            gmx_bcast(2 * dd->nres, dd->Rt_6, mpiComm.comm());
+            gmx_bcast(2 * dd->nres, dd->Rt_6, domdec->mpiComm().comm());
         }
     }
 

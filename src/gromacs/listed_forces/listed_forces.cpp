@@ -60,7 +60,6 @@
 #include "gromacs/math/arrayrefwithpadding.h"
 #include "gromacs/mdlib/enerdata_utils.h"
 #include "gromacs/mdlib/force.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
@@ -88,12 +87,16 @@ ListedForces::ListedForces(const gmx_ffparams_t&      ffparams,
                            const int                  numComGroups,
                            const int                  numThreads,
                            const InteractionSelection interactionSelection,
+                           const gmx_domdec_t*        domDec,
+                           const gmx_multisim_t*      commMultiSim,
                            FILE*                      fplog) :
     numEnergyGroups_(numEnergyGroups),
     idefSelection_(ffparams),
     threading_(std::make_unique<bonded_threading_t>(numThreads, numEnergyGroups, numComGroups, fplog)),
     interactionSelection_(interactionSelection),
-    foreignEnergyGroups_(std::make_unique<gmx_grppairener_t>(numEnergyGroups))
+    foreignEnergyGroups_(std::make_unique<gmx_grppairener_t>(numEnergyGroups)),
+    domDec_(domDec),
+    commMultiSim_(commMultiSim)
 {
 }
 
@@ -736,8 +739,6 @@ void calc_listed_lambda(const InteractionDefinitions&       idef,
 
 void ListedForces::calculate(struct gmx_wallcycle*                     wcycle,
                              const matrix                              box,
-                             const t_commrec*                          cr,
-                             const gmx_multisim_t*                     ms,
                              gmx::ArrayRefWithPadding<const gmx::RVec> coordinates,
                              gmx::ArrayRef<const gmx::RVec>            xWholeMolecules,
                              t_fcdata*                                 fcdata,
@@ -830,7 +831,7 @@ void ListedForces::calculate(struct gmx_wallcycle*                     wcycle,
         if (fcdata->orires)
         {
             GMX_ASSERT(!xWholeMolecules.empty(), "Need whole molecules for orientation restraints");
-            enerd->term[F_ORIRESDEV] = calc_orires_dev(ms,
+            enerd->term[F_ORIRESDEV] = calc_orires_dev(commMultiSim_,
                                                        idef.il[F_ORIRES].size(),
                                                        idef.il[F_ORIRES].iatoms.data(),
                                                        idef.iparams.data(),
@@ -841,9 +842,8 @@ void ListedForces::calculate(struct gmx_wallcycle*                     wcycle,
         }
         if (fcdata->disres->nres > 0)
         {
-            calc_disres_R_6(cr->commMyGroup,
-                            cr->dd,
-                            ms,
+            calc_disres_R_6(domDec_,
+                            commMultiSim_,
                             idef.il[F_DISRES].size(),
                             idef.il[F_DISRES].iatoms.data(),
                             x,

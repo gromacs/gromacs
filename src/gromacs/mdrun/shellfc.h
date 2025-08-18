@@ -48,7 +48,6 @@ class DDBalanceRegionHandler;
 struct gmx_enerdata_t;
 struct gmx_enfrot;
 struct gmx_localtop_t;
-struct gmx_multisim_t;
 struct gmx_shellfc_t;
 struct gmx_mtop_t;
 class history_t;
@@ -96,7 +95,6 @@ gmx_shellfc_t* init_shell_flexcon(FILE*             fplog,
 /* Optimize shell positions */
 void relax_shell_flexcon(FILE*                               log,
                          const t_commrec*                    cr,
-                         const gmx_multisim_t*               ms,
                          gmx_bool                            bVerbose,
                          gmx_enfrot*                         enforcedRotation,
                          int64_t                             mdstep,

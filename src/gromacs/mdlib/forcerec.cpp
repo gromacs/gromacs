@@ -676,6 +676,7 @@ void init_forcerec(FILE*                            fplog,
                    const t_inputrec&                inputrec,
                    const gmx_mtop_t&                mtop,
                    const t_commrec*                 commrec,
+                   const gmx_multisim_t*            commMultiSim,
                    matrix                           box,
                    const char*                      tabfn,
                    const char*                      tabpfn,
@@ -1060,6 +1061,8 @@ void init_forcerec(FILE*                            fplog,
                     inputrec.posresCom.size(),
                     gmx_omp_nthreads_get(ModuleMultiThread::Bonded),
                     interactionSelection,
+                    commrec->dd,
+                    commMultiSim,
                     fplog);
         }
     }
@@ -1072,6 +1075,8 @@ void init_forcerec(FILE*                            fplog,
                 inputrec.posresCom.size(),
                 gmx_omp_nthreads_get(ModuleMultiThread::Bonded),
                 ListedForces::interactionSelectionAll(),
+                commrec->dd,
+                commMultiSim,
                 fplog);
     }
 

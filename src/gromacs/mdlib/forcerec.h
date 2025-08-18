@@ -52,6 +52,7 @@ struct t_filenm;
 struct t_inputrec;
 struct gmx_localtop_t;
 struct gmx_mtop_t;
+struct gmx_multisim_t;
 struct gmx_wallcycle;
 struct interaction_const_t;
 union t_iparams;
@@ -112,11 +113,12 @@ void init_interaction_const_tables(FILE* fp, interaction_const_t* ic, real rlist
  *
  * \param[in]  fplog              File for printing
  * \param[in]  mdlog              File for printing
- * \param[out] forcerec                 The forcerec
- * \param[in]  simulationWork           Simulation workload flags
- * \param[in]  inputrec                 Inputrec structure
+ * \param[out] forcerec           The forcerec
+ * \param[in]  simulationWork     Simulation workload flags
+ * \param[in]  inputrec           Inputrec structure
  * \param[in]  mtop               Molecular topology
- * \param[in]  commrec                 Communication structures
+ * \param[in]  commrec            Communication structures
+ * \param[in]  commMultiSim       Multi-simulation communication, can be nullptr
  * \param[in]  box                Simulation box
  * \param[in]  tabfn              Table potential file for non-bonded interactions
  * \param[in]  tabpfn             Table potential file for pair interactions
@@ -130,6 +132,7 @@ void init_forcerec(FILE*                            fplog,
                    const t_inputrec&                inputrec,
                    const gmx_mtop_t&                mtop,
                    const t_commrec*                 commrec,
+                   const gmx_multisim_t*            commMultiSim,
                    matrix                           box,
                    const char*                      tabfn,
                    const char*                      tabpfn,

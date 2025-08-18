@@ -94,6 +94,13 @@ template<typename, size_t>
 class FixedCapacityVector;
 } // namespace gmx
 
+//! Whether one or more ranks are used
+enum class NumRanks
+{
+    Single,
+    Multiple
+};
+
 //! Describes a role within the domain decomposition ranks
 enum class DDRole
 {
