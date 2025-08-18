@@ -120,6 +120,6 @@ elseif((GMX_SYCL_ACPP AND GMX_ACPP_HAVE_CUDA_TARGET) OR (GMX_SYCL_DPCPP AND GMX_
 elseif((GMX_SYCL_ACPP AND GMX_ACPP_HAVE_HIP_TARGET) OR (GMX_SYCL_DPCPP AND GMX_DPCPP_HAVE_HIP_TARGET))
     gmx_manage_vkfft("HIP")
 else()
-     message(FATAL_ERROR "VkFFT can only be used with CUDA, HIP or OpenCL backend")
+     message(FATAL_ERROR "VkFFT can only be used with GMX_GPU=SYCL, HIP, or OpenCL; with SYCL, it only supports NVIDIA (CUDA) and AMD (HIP) targets")
 endif()
 

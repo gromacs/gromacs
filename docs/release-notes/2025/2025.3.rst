@@ -55,6 +55,24 @@ macro removal in ROCm 7.
 
 :issue:`5259`
 
+Improved configuration error message with SYCL and VkFFT
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Configuring |Gromacs| with SYCL and VkFFT, targeting Intel devices, would result in an
+error meessage implying using VkFFT with SYCL wasn't suported at all. The message is now
+clarified to include the statement that this lack of support only applies to Intel devices.
+
+:issue:`5401`
+
+Fix detection of unusable MKL GPU offloading library during configuration
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Configuration would previously happily proceed even if development headers of MKL GPU
+offloading library were not found, causing the compilation to fail. This now results
+in an error.
+
+:issue:`5400`
+
 Miscellaneous
 ^^^^^^^^^^^^^
 

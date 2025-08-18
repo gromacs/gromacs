@@ -287,10 +287,10 @@ int main() {
     unset(CMAKE_REQUIRED_LIBRARIES)
     unset(CMAKE_REQUIRED_INCLUDES)
     if (NOT CAN_LINK_SYCL_MKL)
-        message(WARNING "Cannot link mkl_sycl. Make sure the MKL and compiler versions are compatible.")
+        message(WARNING "Cannot compile a program and link mkl_sycl. Make sure that the MKL is installed, with GPU offloading support and development headers, and that the MKL and compiler versions are compatible.")
+    else()
+        set(_sycl_has_valid_fft TRUE)
     endif()
-
-    set(_sycl_has_valid_fft TRUE)
 endif()
 
 if(GMX_GPU_FFT_ONEMATH)
