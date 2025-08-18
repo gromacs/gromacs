@@ -43,6 +43,15 @@ Fixes for ``gmx`` tools
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+SYCL build now works with BUILD_SHARED_LIBS=off
+"""""""""""""""""""""""""""""""""""""""""""""""
+
+Previously ``gmx`` and some test binaries failed to link to ``libgromacs.a`` because
+the required information to link to the SYCL runtime library is missing in that
+case. Linking of executables in SYCL builds is now more robust.
+
+:issue:`5341`
+
 Fix build with ROCm 7 and newer
 """""""""""""""""""""""""""""""
 
