@@ -317,10 +317,14 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu&    pairlist,
         const SimdReal iShiftY(shiftvec[ish3 + 1]);
         const SimdReal iShiftZ(shiftvec[ish3 + 2]);
 
+        // The coordinates, coefficients and forces are stored using contiguous blocks
+        // of size max(c_iClusterSize, c_jClusterSize). Set up the indexing.
+        static_assert(c_iClusterSize >= c_jClusterSize || 2 * c_iClusterSize == c_jClusterSize,
+                      "Only some i/j-cluster size ratios are currently implemented");
         int sci;
         int scix;
         int sci2;
-        if constexpr (c_jClusterSize <= 4)
+        if constexpr (c_iClusterSize >= c_jClusterSize)
         {
             sci  = ci * c_stride;
             scix = sci * DIM;
@@ -528,6 +532,7 @@ void nbnxmKernelSimd(const NbnxnPairlistCpu&    pairlist,
         real fShiftX;
         real fShiftY;
         real fShiftZ;
+        static_assert(c_iClusterSize == 4, "i-force reductions only support cluster size 4");
         if constexpr (c_numJClustersPerSimdRegister == 1)
         {
             fShiftX = reduceIncr4ReturnSum(f + scix, forceIXV[0], forceIXV[1], forceIXV[2], forceIXV[3]);
