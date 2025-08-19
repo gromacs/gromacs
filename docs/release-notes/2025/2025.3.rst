@@ -82,6 +82,11 @@ in an error.
 
 :issue:`5400`
 
+Fix build for NVIDIA sm_101 / sm_110 devices
+""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`5366`
+
 Miscellaneous
 ^^^^^^^^^^^^^
 
