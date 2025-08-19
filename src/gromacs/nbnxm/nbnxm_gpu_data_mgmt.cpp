@@ -115,11 +115,11 @@ static bool useTabulatedEwaldByDefault(const DeviceInformation& deviceInfo)
 {
     /* By default, use analytical Ewald except:
      *  - NVIDIA CC 7.0 and 8.0,
-     *  - all AMD GPUs (although tested for gfx906 and 908 only).
+     *  - AMD GPUs except MI3xx with SYCL (tested for gfx906, 908, 90a, 942 only).
      *
      * Note 1: this function does not handle OpenCL.
      * Note 2: for SYCL, the heuristics are taken from CUDA/HIP ports, and were only partially
-     *         verified on oneAPI/hipSYCL themselves on AMD gfx 906/908/90a.
+     *         verified on with oneAPI/ACPP (mainly on AMD CDNA).
      */
 #if GMX_GPU_CUDA
     return (deviceInfo.prop.major == 7 && deviceInfo.prop.minor == 0)
@@ -128,13 +128,17 @@ static bool useTabulatedEwaldByDefault(const DeviceInformation& deviceInfo)
     GMX_UNUSED_VALUE(deviceInfo);
     return true;
 #elif GMX_GPU_SYCL
+    const int major = deviceInfo.hardwareVersionMajor.value_or(-1);
+    const int minor = deviceInfo.hardwareVersionMinor.value_or(-1);
     switch (deviceInfo.deviceVendor)
     {
-        case DeviceVendor::Amd: return true;
+        case DeviceVendor::Amd:
+        {
+            const bool isMi300 = (major == 9 && minor == 4);
+            return !isMi300;
+        }
         case DeviceVendor::Nvidia:
         {
-            const int major = deviceInfo.hardwareVersionMajor.value_or(-1);
-            const int minor = deviceInfo.hardwareVersionMinor.value_or(-1);
             return ((major == 7 && minor == 0) || (major == 8 && minor == 0));
         }
         default: return false;
