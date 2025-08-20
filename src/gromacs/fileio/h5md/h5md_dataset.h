@@ -1,4 +1,3 @@
-
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
@@ -44,36 +43,19 @@
 
 #include <hdf5.h>
 
-#include <string>
 #include <vector>
+
+#include "gromacs/fileio/h5md/h5md_datasetbase.h"
 
 namespace gmx
 {
 
+template<typename ValueType>
+class BasicVector;
+
 /*! \brief Dimensions of a HDF5 data set.
  */
 using DataSetDims = std::vector<hsize_t>;
-
-/*! \brief Open an existing data set (called \p dataSetName, in \p container).
- *
- * The returned handle must be closed with H5Dclose to avoid resource leaks.
- *
- * \param[in] container The ID of the container of the data.
- * \param[in] dataSetName The name of the data set.
- * \returns The ID of the data set.
- *
- * \throws gmx::FileIOError if data set cannot be opened.
- */
-hid_t openDataSet(const hid_t container, const std::string& dataSetName);
-
-/*! \brief Return the dimensions of a data set.
- *
- * \param[in] dataSet Handle to data set.
- * \returns Vector containing the dimensions.
- *
- * \throws gmx::FileIOError if the dimensions cannot be read.
- */
-DataSetDims getDataSetDims(const hid_t dataSet);
 
 /*! \brief Return the number of frames in a data set.
  *
@@ -84,7 +66,8 @@ DataSetDims getDataSetDims(const hid_t dataSet);
  * \param[in] dataSet Handle to data set.
  * \returns Number of frames.
  */
-hsize_t getNumFrames(const hid_t dataSet);
+template<typename ValueType>
+hsize_t getNumFrames(const H5mdDataSetBase<ValueType>& dataSet);
 
 /*! \brief Resize \p dataSet to store \p numFrames frames.
  *
@@ -96,7 +79,8 @@ hsize_t getNumFrames(const hid_t dataSet);
  * \param[in] dataSet   Handle to data set.
  * \param[in] numFrames New number of frames for data set.
  */
-void setNumFrames(const hid_t dataSet, hsize_t numFrames);
+template<typename ValueType>
+void setNumFrames(const H5mdDataSetBase<ValueType>& dataSet, hsize_t numFrames);
 
 /*! \brief Return a data space for a given data set, with a selected hyperslab for the frame.
  *
@@ -112,7 +96,8 @@ void setNumFrames(const hid_t dataSet, hsize_t numFrames);
  * \param[in] frameIndex Index of frame to select hyperslab for.
  * \returns Handle to data space with the selected hyperslab.
  */
-hid_t getFrameDataSpace(const hid_t dataSet, const hsize_t frameIndex);
+template<typename ValueType>
+hid_t getFrameDataSpace(const H5mdDataSetBase<ValueType>& dataSet, hsize_t frameIndex);
 
 /*! \brief Return a data space for storing a single frame from a data set.
  *
@@ -126,7 +111,56 @@ hid_t getFrameDataSpace(const hid_t dataSet, const hsize_t frameIndex);
  * \param[in] dataSet Handle to data set.
  * \returns Handle to data space with storage for a single frame.
  */
-hid_t getFrameMemoryDataSpace(const hid_t dataSet);
+template<typename ValueType>
+hid_t getFrameMemoryDataSpace(const H5mdDataSetBase<ValueType>& dataSet);
+
+extern template hsize_t getNumFrames(const H5mdDataSetBase<int32_t>&);
+
+extern template hsize_t getNumFrames(const H5mdDataSetBase<int64_t>&);
+
+extern template hsize_t getNumFrames(const H5mdDataSetBase<float>&);
+
+extern template hsize_t getNumFrames(const H5mdDataSetBase<double>&);
+
+extern template hsize_t getNumFrames(const H5mdDataSetBase<gmx::BasicVector<float>>&);
+
+extern template hsize_t getNumFrames(const H5mdDataSetBase<gmx::BasicVector<double>>&);
+
+extern template void setNumFrames(const H5mdDataSetBase<int32_t>&, hsize_t);
+
+extern template void setNumFrames(const H5mdDataSetBase<int64_t>&, hsize_t);
+
+extern template void setNumFrames(const H5mdDataSetBase<float>&, hsize_t);
+
+extern template void setNumFrames(const H5mdDataSetBase<double>&, hsize_t);
+
+extern template void setNumFrames(const H5mdDataSetBase<gmx::BasicVector<float>>&, hsize_t);
+
+extern template void setNumFrames(const H5mdDataSetBase<gmx::BasicVector<double>>&, hsize_t);
+
+extern template hid_t getFrameDataSpace(const H5mdDataSetBase<int32_t>&, hsize_t);
+
+extern template hid_t getFrameDataSpace(const H5mdDataSetBase<int64_t>&, hsize_t);
+
+extern template hid_t getFrameDataSpace(const H5mdDataSetBase<float>&, hsize_t);
+
+extern template hid_t getFrameDataSpace(const H5mdDataSetBase<double>&, hsize_t);
+
+extern template hid_t getFrameDataSpace(const H5mdDataSetBase<BasicVector<float>>&, hsize_t);
+
+extern template hid_t getFrameDataSpace(const H5mdDataSetBase<BasicVector<double>>&, hsize_t);
+
+extern template hid_t getFrameMemoryDataSpace(const H5mdDataSetBase<int32_t>&);
+
+extern template hid_t getFrameMemoryDataSpace(const H5mdDataSetBase<int64_t>&);
+
+extern template hid_t getFrameMemoryDataSpace(const H5mdDataSetBase<float>&);
+
+extern template hid_t getFrameMemoryDataSpace(const H5mdDataSetBase<double>&);
+
+extern template hid_t getFrameMemoryDataSpace(const H5mdDataSetBase<BasicVector<float>>&);
+
+extern template hid_t getFrameMemoryDataSpace(const H5mdDataSetBase<BasicVector<double>>&);
 
 } // namespace gmx
 

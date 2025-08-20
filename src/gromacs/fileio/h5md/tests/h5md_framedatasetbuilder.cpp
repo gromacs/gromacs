@@ -85,9 +85,9 @@ TYPED_TEST_SUITE(H5mdBasicVectorFrameDataSetBuilderTest, RealPrimitives);
 
 TYPED_TEST(H5mdFrameDataSetBuilderTest, DefaultNumFramesIsZero)
 {
-    const auto [dataSet, dataSetGuard] = makeH5mdDataSetGuard(
-            H5mdFrameDataSetBuilder<TypeParam>(this->fileid(), "testDataSet").build());
-    const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet));
+    const H5mdDataSetBase<TypeParam> dataSet =
+            H5mdFrameDataSetBuilder<TypeParam>(this->fileid(), "testDataSet").build();
+    const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet.id()));
 
     std::vector<hsize_t> dims(H5Sget_simple_extent_ndims(dataSpace), 0);
     H5Sget_simple_extent_dims(dataSpace, dims.data(), nullptr);
@@ -96,12 +96,12 @@ TYPED_TEST(H5mdFrameDataSetBuilderTest, DefaultNumFramesIsZero)
 
 TYPED_TEST(H5mdFrameDataSetBuilderTest, SetNumFramesWorks)
 {
-    constexpr int numFrames = 5;
-    const auto [dataSet, dataSetGuard] =
-            makeH5mdDataSetGuard(H5mdFrameDataSetBuilder<TypeParam>(this->fileid(), "testDataSet")
-                                         .withNumFrames(numFrames)
-                                         .build());
-    const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet));
+    constexpr int                    numFrames = 5;
+    const H5mdDataSetBase<TypeParam> dataSet =
+            H5mdFrameDataSetBuilder<TypeParam>(this->fileid(), "testDataSet")
+                    .withNumFrames(numFrames)
+                    .build();
+    const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet.id()));
 
     std::vector<hsize_t> dims(H5Sget_simple_extent_ndims(dataSpace), 0);
     H5Sget_simple_extent_dims(dataSpace, dims.data(), nullptr);
@@ -110,9 +110,9 @@ TYPED_TEST(H5mdFrameDataSetBuilderTest, SetNumFramesWorks)
 
 TYPED_TEST(H5mdFrameDataSetBuilderTest, DefaultMaxNumFramesIsUnlimited)
 {
-    const auto [dataSet, dataSetGuard] = makeH5mdDataSetGuard(
-            H5mdFrameDataSetBuilder<TypeParam>(this->fileid(), "testDataSet").build());
-    const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet));
+    const H5mdDataSetBase<TypeParam> dataSet =
+            H5mdFrameDataSetBuilder<TypeParam>(this->fileid(), "testDataSet").build();
+    const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet.id()));
 
     std::vector<hsize_t> maxDims(H5Sget_simple_extent_ndims(dataSpace), 0);
     H5Sget_simple_extent_dims(dataSpace, nullptr, maxDims.data());
@@ -121,12 +121,12 @@ TYPED_TEST(H5mdFrameDataSetBuilderTest, DefaultMaxNumFramesIsUnlimited)
 
 TYPED_TEST(H5mdFrameDataSetBuilderTest, SetMaxNumFramesWorks)
 {
-    constexpr int maxNumFrames = 5;
-    const auto [dataSet, dataSetGuard] =
-            makeH5mdDataSetGuard(H5mdFrameDataSetBuilder<TypeParam>(this->fileid(), "testDataSet")
-                                         .withMaxNumFrames(maxNumFrames)
-                                         .build());
-    const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet));
+    constexpr int                    maxNumFrames = 5;
+    const H5mdDataSetBase<TypeParam> dataSet =
+            H5mdFrameDataSetBuilder<TypeParam>(this->fileid(), "testDataSet")
+                    .withMaxNumFrames(maxNumFrames)
+                    .build();
+    const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet.id()));
 
     std::vector<hsize_t> maxDims(H5Sget_simple_extent_ndims(dataSpace), 0);
     H5Sget_simple_extent_dims(dataSpace, nullptr, maxDims.data());
@@ -135,31 +135,31 @@ TYPED_TEST(H5mdFrameDataSetBuilderTest, SetMaxNumFramesWorks)
 
 TYPED_TEST(H5mdNumericPrimitiveFrameDataSetBuilderTest, DataTypeIsCorrect)
 {
-    const auto [dataSet, dataSetGuard] = makeH5mdDataSetGuard(
-            H5mdFrameDataSetBuilder<TypeParam>(this->fileid(), "testDataSet").build());
-    const auto [dataType, dataTypeGuard] = makeH5mdTypeGuard(H5Dget_type(dataSet));
+    const H5mdDataSetBase<TypeParam> dataSet =
+            H5mdFrameDataSetBuilder<TypeParam>(this->fileid(), "testDataSet").build();
+    const auto [dataType, dataTypeGuard] = makeH5mdTypeGuard(H5Dget_type(dataSet.id()));
     EXPECT_TRUE(valueTypeIsDataType<TypeParam>(dataType));
 }
 
 TYPED_TEST(H5mdNumericPrimitiveFrameDataSetBuilderTest, DefaultDimsIs1d)
 {
-    const auto [dataSet, dataSetGuard] = makeH5mdDataSetGuard(
-            H5mdFrameDataSetBuilder<TypeParam>(this->fileid(), "testDataSet").build());
-    const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet));
+    const H5mdDataSetBase<TypeParam> dataSet =
+            H5mdFrameDataSetBuilder<TypeParam>(this->fileid(), "testDataSet").build();
+    const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet.id()));
     EXPECT_EQ(H5Sget_simple_extent_ndims(dataSpace), 1)
             << "Primitive data sets should be 1d by default";
 }
 
 TYPED_TEST(H5mdNumericPrimitiveFrameDataSetBuilderTest, SetFrameDimensionAddsDimension1)
 {
-    constexpr int              numFrames      = 3;
-    const std::vector<hsize_t> frameDimension = { 5 };
-    const auto [dataSet, dataSetGuard] =
-            makeH5mdDataSetGuard(H5mdFrameDataSetBuilder<TypeParam>(this->fileid(), "testDataSet")
-                                         .withNumFrames(numFrames)
-                                         .withFrameDimension(frameDimension)
-                                         .build());
-    const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet));
+    constexpr int                    numFrames      = 3;
+    const std::vector<hsize_t>       frameDimension = { 5 };
+    const H5mdDataSetBase<TypeParam> dataSet =
+            H5mdFrameDataSetBuilder<TypeParam>(this->fileid(), "testDataSet")
+                    .withNumFrames(numFrames)
+                    .withFrameDimension(frameDimension)
+                    .build();
+    const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet.id()));
 
     ASSERT_EQ(H5Sget_simple_extent_ndims(dataSpace), 2)
             << "Adding one dimension should result in 2d";
@@ -171,14 +171,14 @@ TYPED_TEST(H5mdNumericPrimitiveFrameDataSetBuilderTest, SetFrameDimensionAddsDim
 
 TYPED_TEST(H5mdNumericPrimitiveFrameDataSetBuilderTest, SetFrameDimensionAddsDimension2)
 {
-    constexpr int              numFrames      = 3;
-    const std::vector<hsize_t> frameDimension = { 5, 7 };
-    const auto [dataSet, dataSetGuard] =
-            makeH5mdDataSetGuard(H5mdFrameDataSetBuilder<TypeParam>(this->fileid(), "testDataSet")
-                                         .withNumFrames(numFrames)
-                                         .withFrameDimension(frameDimension)
-                                         .build());
-    const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet));
+    constexpr int                    numFrames      = 3;
+    const std::vector<hsize_t>       frameDimension = { 5, 7 };
+    const H5mdDataSetBase<TypeParam> dataSet =
+            H5mdFrameDataSetBuilder<TypeParam>(this->fileid(), "testDataSet")
+                    .withNumFrames(numFrames)
+                    .withFrameDimension(frameDimension)
+                    .build();
+    const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet.id()));
 
     ASSERT_EQ(H5Sget_simple_extent_ndims(dataSpace), 3)
             << "Adding two dimensions should result in 3d";
@@ -191,29 +191,29 @@ TYPED_TEST(H5mdNumericPrimitiveFrameDataSetBuilderTest, SetFrameDimensionAddsDim
 
 TYPED_TEST(H5mdBasicVectorFrameDataSetBuilderTest, DataTypeIsCorrect)
 {
-    const auto [dataSet, dataSetGuard] = makeH5mdDataSetGuard(
-            H5mdFrameDataSetBuilder<gmx::BasicVector<TypeParam>>(this->fileid(), "testDataSet").build());
-    const auto [dataType, dataTypeGuard] = makeH5mdTypeGuard(H5Dget_type(dataSet));
+    const H5mdDataSetBase<gmx::BasicVector<TypeParam>> dataSet =
+            H5mdFrameDataSetBuilder<gmx::BasicVector<TypeParam>>(this->fileid(), "testDataSet").build();
+    const auto [dataType, dataTypeGuard] = makeH5mdTypeGuard(H5Dget_type(dataSet.id()));
     EXPECT_TRUE(valueTypeIsDataType<TypeParam>(dataType));
 }
 
 TYPED_TEST(H5mdBasicVectorFrameDataSetBuilderTest, DefaultDimsIs2d)
 {
-    const auto [dataSet, dataSetGuard] = makeH5mdDataSetGuard(
-            H5mdFrameDataSetBuilder<gmx::BasicVector<TypeParam>>(this->fileid(), "testDataSet").build());
-    const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet));
+    const H5mdDataSetBase<gmx::BasicVector<TypeParam>> dataSet =
+            H5mdFrameDataSetBuilder<gmx::BasicVector<TypeParam>>(this->fileid(), "testDataSet").build();
+    const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet.id()));
     EXPECT_EQ(H5Sget_simple_extent_ndims(dataSpace), 2)
             << "BasicVector data sets should be 2d by default";
 }
 
 TYPED_TEST(H5mdBasicVectorFrameDataSetBuilderTest, BasicVectorDimIsInnerDimension)
 {
-    constexpr int numFrames            = 5;
-    const auto [dataSet, dataSetGuard] = makeH5mdDataSetGuard(
+    constexpr int                                      numFrames = 5;
+    const H5mdDataSetBase<gmx::BasicVector<TypeParam>> dataSet =
             H5mdFrameDataSetBuilder<gmx::BasicVector<TypeParam>>(this->fileid(), "testDataSet")
                     .withNumFrames(numFrames)
-                    .build());
-    const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet));
+                    .build();
+    const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet.id()));
     std::vector<hsize_t> dims(2, 0);
     H5Sget_simple_extent_dims(dataSpace, dims.data(), nullptr);
     EXPECT_EQ(dims[0], numFrames) << "Outer dimension should be numFrames for row major order";
@@ -222,14 +222,14 @@ TYPED_TEST(H5mdBasicVectorFrameDataSetBuilderTest, BasicVectorDimIsInnerDimensio
 
 TYPED_TEST(H5mdBasicVectorFrameDataSetBuilderTest, SetFrameDimensionAddsDimensionInCenter1)
 {
-    constexpr int              numFrames      = 3;
-    const std::vector<hsize_t> frameDimension = { 5 };
-    const auto [dataSet, dataSetGuard]        = makeH5mdDataSetGuard(
+    constexpr int                                      numFrames      = 3;
+    const std::vector<hsize_t>                         frameDimension = { 5 };
+    const H5mdDataSetBase<gmx::BasicVector<TypeParam>> dataSet =
             H5mdFrameDataSetBuilder<gmx::BasicVector<TypeParam>>(this->fileid(), "testDataSet")
                     .withNumFrames(numFrames)
                     .withFrameDimension(frameDimension)
-                    .build());
-    const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet));
+                    .build();
+    const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet.id()));
 
     ASSERT_EQ(H5Sget_simple_extent_ndims(dataSpace), 3)
             << "Adding one dimension should result in 3d";
@@ -243,14 +243,14 @@ TYPED_TEST(H5mdBasicVectorFrameDataSetBuilderTest, SetFrameDimensionAddsDimensio
 
 TYPED_TEST(H5mdBasicVectorFrameDataSetBuilderTest, SetFrameDimensionAddsDimensionInCenter2)
 {
-    constexpr int              numFrames      = 3;
-    const std::vector<hsize_t> frameDimension = { 5, 7 };
-    const auto [dataSet, dataSetGuard]        = makeH5mdDataSetGuard(
+    constexpr int                                      numFrames      = 3;
+    const std::vector<hsize_t>                         frameDimension = { 5, 7 };
+    const H5mdDataSetBase<gmx::BasicVector<TypeParam>> dataSet =
             H5mdFrameDataSetBuilder<gmx::BasicVector<TypeParam>>(this->fileid(), "testDataSet")
                     .withNumFrames(numFrames)
                     .withFrameDimension(frameDimension)
-                    .build());
-    const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet));
+                    .build();
+    const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet.id()));
 
     ASSERT_EQ(H5Sget_simple_extent_ndims(dataSpace), 4)
             << "Adding two dimensions should result in 4d";

@@ -47,6 +47,7 @@
 #include <type_traits>
 #include <vector>
 
+#include "gromacs/fileio/h5md/h5md_dataset.h"
 #include "gromacs/fileio/h5md/h5md_error.h"
 #include "gromacs/fileio/h5md/h5md_guard.h"
 #include "gromacs/fileio/h5md/h5md_type.h"
@@ -146,11 +147,11 @@ public:
         return withChunkDimension(ArrayRef<const hsize_t>(chunkDims.begin(), chunkDims.end()));
     }
 
-    //! \brief Finalize all set options, build the data set and return its handle.
+    //! \brief Finalize all set options, then build and return the data set.
     //
     // \throws gmx::FileIOError if any set options are incorrect or incompatible with other
     // options, or if an error occurred when creating the data set.
-    hid_t build()
+    H5mdDataSetBase<ValueType> build()
     {
         // If we ever need the "SCALAR" data set type (HDF5 data sets for single value storage)
         // this is where we branch off
@@ -207,7 +208,8 @@ public:
                 container_, name_.c_str(), dataType, dataSpace, H5P_DEFAULT, creationPropertyList_, accessPropertyList_);
         throwUponInvalidHid(dataSetHandle, "Cannot create data set.");
 
-        return dataSetHandle;
+        // Responsibility for closing `dataSetHandle` is taken by the `H5mdDataSetBase<ValueType>`
+        return H5mdDataSetBase<ValueType>(dataSetHandle);
     }
 
 private:

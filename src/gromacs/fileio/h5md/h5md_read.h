@@ -48,6 +48,13 @@
 namespace gmx
 {
 
+template<typename ValueType>
+class H5mdDataSetBase;
+template<typename ValueType>
+class ArrayRef;
+template<typename ValueType>
+class BasicVector;
+
 /*! \brief Read the value at a given frame index in a data set.
  *
  * \tparam ValueType Type of value.
@@ -56,7 +63,7 @@ namespace gmx
  * \param[out] value Single value buffer to read value into.
  */
 template<typename ValueType>
-void readFrame(const hid_t dataSet, const hsize_t index, ValueType& value);
+void readFrame(const H5mdDataSetBase<ValueType>& dataSet, const hsize_t index, ValueType& value);
 
 /*! \brief Read a list of BasicVectors at a given index in a data set.
  *
@@ -66,19 +73,25 @@ void readFrame(const hid_t dataSet, const hsize_t index, ValueType& value);
  * \param[out] values Array with RVecs to read data into.
  */
 template<typename ValueType>
-void readFrame(const hid_t dataSet, const hsize_t index, const ArrayRef<BasicVector<ValueType>> values);
+void readFrame(const H5mdDataSetBase<BasicVector<ValueType>>& dataSet,
+               const hsize_t                                  index,
+               const ArrayRef<BasicVector<ValueType>>         values);
 
-extern template void readFrame(const hid_t, const hsize_t, float&);
+extern template void readFrame(const H5mdDataSetBase<float>&, const hsize_t, float&);
 
-extern template void readFrame(const hid_t, const hsize_t, double&);
+extern template void readFrame(const H5mdDataSetBase<double>&, const hsize_t, double&);
 
-extern template void readFrame(const hid_t, const hsize_t, int32_t&);
+extern template void readFrame(const H5mdDataSetBase<int32_t>&, const hsize_t, int32_t&);
 
-extern template void readFrame(const hid_t, const hsize_t, int64_t&);
+extern template void readFrame(const H5mdDataSetBase<int64_t>&, const hsize_t, int64_t&);
 
-extern template void readFrame(const hid_t, const hsize_t, const ArrayRef<BasicVector<float>>);
+extern template void readFrame(const H5mdDataSetBase<BasicVector<float>>&,
+                               const hsize_t,
+                               const ArrayRef<BasicVector<float>>);
 
-extern template void readFrame(const hid_t, const hsize_t, const ArrayRef<BasicVector<double>>);
+extern template void readFrame(const H5mdDataSetBase<BasicVector<double>>&,
+                               const hsize_t,
+                               const ArrayRef<BasicVector<double>>);
 
 } // namespace gmx
 

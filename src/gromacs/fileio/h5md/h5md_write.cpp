@@ -61,46 +61,52 @@ namespace gmx
  * TODO: Once we have a proper data set class it becomes easier to verify this
  * inside this function so we should return to this assumption.
  */
-template<typename ValueType, int numDims>
-static void writeFrameData(const hid_t dataSet, const hsize_t index, const ArrayRef<const ValueType> writeBuffer)
+template<typename ValueType, typename T, int numDims>
+static void writeFrameData(const H5mdDataSetBase<T>&       dataSet,
+                           const hsize_t                   index,
+                           const ArrayRef<const ValueType> writeBuffer)
 {
-    const hsize_t numFrames = getNumFrames(dataSet);
-    gmx::throwUponH5mdError(index >= numFrames, "Cannot write frame with index >= numFrames");
-
-    const auto [dataType, dataTypeGuard] = makeH5mdTypeGuard(H5Dget_type(dataSet));
-    gmx::throwUponH5mdError(!valueTypeIsDataType(dataType, writeBuffer),
-                            "Cannot write frame into set with non-matching data type");
+    throwUponH5mdError(index >= getNumFrames(dataSet), "Cannot write frame with index >= numFrames");
+    throwUponH5mdError(!valueTypeIsDataType(dataSet.dataType(), writeBuffer),
+                       "Cannot write frame into set with non-matching data type");
 
     const auto [frameDataSpace, frameDataSpaceGuard] =
             makeH5mdDataSpaceGuard(getFrameDataSpace(dataSet, index));
     const auto [memoryDataSpace, memoryDataSpaceGuard] =
             makeH5mdDataSpaceGuard(getFrameMemoryDataSpace(dataSet));
 
-    gmx::throwUponH5mdError(
-            H5Dwrite(dataSet, dataType, memoryDataSpace, frameDataSpace, H5P_DEFAULT, writeBuffer.data()) < 0,
-            "Error writing frame data.");
+    gmx::throwUponH5mdError(H5Dwrite(dataSet.id(),
+                                     dataSet.dataType(),
+                                     memoryDataSpace,
+                                     frameDataSpace,
+                                     H5P_DEFAULT,
+                                     writeBuffer.data())
+                                    < 0,
+                            "Error writing frame data.");
 }
 
 template<typename ValueType>
-void writeFrame(const hid_t dataSet, const hsize_t index, const ValueType& value)
+void writeFrame(const H5mdDataSetBase<ValueType>& dataSet, const hsize_t index, const ValueType& value)
 {
     constexpr int numDims = 1;
 
-    const DataSetDims dims = getDataSetDims(dataSet);
+    const DataSetDims dims = dataSet.dims();
     throwUponH5mdError(
             dims.size() != numDims,
             gmx::formatString("Expected a 1d data set to write value into, but got a %lud data set",
                               dims.size()));
 
-    writeFrameData<ValueType, numDims>(dataSet, index, ArrayRef(&value, &value + 1));
+    writeFrameData<ValueType, ValueType, numDims>(dataSet, index, ArrayRef(&value, &value + 1));
 }
 
 template<typename ValueType>
-void writeFrame(const hid_t dataSet, const hsize_t index, const ArrayRef<const BasicVector<ValueType>> values)
+void writeFrame(const H5mdDataSetBase<BasicVector<ValueType>>& dataSet,
+                const hsize_t                                  index,
+                const ArrayRef<const BasicVector<ValueType>>   values)
 {
     constexpr int numDims = 3;
 
-    const DataSetDims dims = getDataSetDims(dataSet);
+    const DataSetDims dims = dataSet.dims();
     throwUponH5mdError(dims.size() != numDims,
                        gmx::formatString("Data set must be 3d but is %lud", dims.size()));
     throwUponH5mdError(dims[1] != values.size(),
@@ -113,19 +119,23 @@ void writeFrame(const hid_t dataSet, const hsize_t index, const ArrayRef<const B
     ArrayRef<const ValueType> arrayRef =
             arrayRefFromArray(reinterpret_cast<const ValueType*>(values.data()), numValues);
 
-    writeFrameData<ValueType, numDims>(dataSet, index, arrayRef);
+    writeFrameData<ValueType, BasicVector<ValueType>, numDims>(dataSet, index, arrayRef);
 }
 
-template void writeFrame(const hid_t, const hsize_t, const int32_t&);
+template void writeFrame(const H5mdDataSetBase<int32_t>&, hsize_t, const int32_t&);
 
-template void writeFrame(const hid_t, const hsize_t, const int64_t&);
+template void writeFrame(const H5mdDataSetBase<int64_t>&, hsize_t, const int64_t&);
 
-template void writeFrame(const hid_t, const hsize_t, const float&);
+template void writeFrame(const H5mdDataSetBase<float>&, hsize_t, const float&);
 
-template void writeFrame(const hid_t, const hsize_t, const double&);
+template void writeFrame(const H5mdDataSetBase<double>&, hsize_t, const double&);
 
-template void writeFrame(const hid_t, const hsize_t, const ArrayRef<const BasicVector<float>>);
+template void writeFrame(const H5mdDataSetBase<BasicVector<float>>&,
+                         hsize_t,
+                         const ArrayRef<const BasicVector<float>>);
 
-template void writeFrame(const hid_t, const hsize_t, const ArrayRef<const BasicVector<double>>);
+template void writeFrame(const H5mdDataSetBase<BasicVector<double>>&,
+                         hsize_t,
+                         const ArrayRef<const BasicVector<double>>);
 
 } // namespace gmx

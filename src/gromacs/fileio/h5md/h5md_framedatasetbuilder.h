@@ -100,8 +100,8 @@ public:
         return *this;
     }
 
-    //! \brief Create the data set and return a handle to it.
-    hid_t build()
+    //! \brief Create the data set, then build and return it.
+    H5mdDataSetBase<ValueType> build()
     {
         const std::vector<hsize_t> dims = [&]()
         {

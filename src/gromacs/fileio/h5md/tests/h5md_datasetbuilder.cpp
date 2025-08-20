@@ -201,14 +201,14 @@ TEST_P(Primitive, Works)
 
     if (testParam.expectedResult_)
     {
-        const auto [dataSet, dataSetGuard] = makeH5mdDataSetGuard(builder.build());
+        const H5mdDataSetBase<int32_t> dataSet = builder.build();
 
         // Check in order:
         // data type, data set dimensions, max dimensions and chunk dimensions
-        const auto [dataType, dataTypeGuard] = makeH5mdTypeGuard(H5Dget_type(dataSet));
+        const auto [dataType, dataTypeGuard] = makeH5mdTypeGuard(H5Dget_type(dataSet.id()));
         EXPECT_TRUE(valueTypeIsDataType<int32_t>(dataType)) << "Incorrect data type in data set";
 
-        const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet));
+        const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet.id()));
         EXPECT_EQ(H5Sget_simple_extent_ndims(dataSpace), testParam.dims_.size())
                 << "Incorrect number of dimensions";
         std::vector<hsize_t> dims(testParam.dims_.size(), 0);
@@ -227,7 +227,7 @@ TEST_P(Primitive, Works)
         }
 
         const auto [propertyList, propertyListGuard] =
-                makeH5mdPropertyListGuard(H5Dget_create_plist(dataSet));
+                makeH5mdPropertyListGuard(H5Dget_create_plist(dataSet.id()));
         std::vector<hsize_t> chunkDims(testParam.dims_.size(), 0);
         H5Pget_chunk(propertyList, testParam.dims_.size(), chunkDims.data());
         if (testParam.chunkDims_.empty())
@@ -270,14 +270,14 @@ TEST_P(BasicVector, Works)
 
     if (testParam.expectedResult_)
     {
-        const auto [dataSet, dataSetGuard] = makeH5mdDataSetGuard(builder.build());
+        const H5mdDataSetBase<gmx::BasicVector<float>> dataSet = builder.build();
 
         // Check in order:
         // data type, data set dimensions, max dimensions and chunk dimensions
-        const auto [dataType, dataTypeGuard] = makeH5mdTypeGuard(H5Dget_type(dataSet));
+        const auto [dataType, dataTypeGuard] = makeH5mdTypeGuard(H5Dget_type(dataSet.id()));
         EXPECT_TRUE(valueTypeIsDataType<float>(dataType)) << "Incorrect data type in data set";
 
-        const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet));
+        const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet.id()));
         // Add the extra vector dimension here!
         const size_t expectedNumDims = testParam.dims_.size() + 1;
         EXPECT_EQ(H5Sget_simple_extent_ndims(dataSpace), expectedNumDims)
@@ -307,7 +307,7 @@ TEST_P(BasicVector, Works)
         }
 
         const auto [propertyList, propertyListGuard] =
-                makeH5mdPropertyListGuard(H5Dget_create_plist(dataSet));
+                makeH5mdPropertyListGuard(H5Dget_create_plist(dataSet.id()));
         // And here!
         std::vector<hsize_t> chunkDims(expectedNumDims, 0);
         H5Pget_chunk(propertyList, chunkDims.size(), chunkDims.data());

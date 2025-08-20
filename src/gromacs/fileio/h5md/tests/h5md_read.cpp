@@ -48,8 +48,6 @@
 
 #include "gromacs/fileio/h5md/h5md_dataset.h"
 #include "gromacs/fileio/h5md/h5md_framedatasetbuilder.h"
-#include "gromacs/fileio/h5md/h5md_guard.h"
-#include "gromacs/fileio/h5md/h5md_type.h"
 #include "gromacs/fileio/h5md/tests/h5mdtestbase.h"
 #include "gromacs/utility/exceptions.h"
 
@@ -85,14 +83,14 @@ TYPED_TEST_SUITE(H5mdReadBasicVectorListTest, RealPrimitiveList);
 
 TYPED_TEST(H5mdReadNumericPrimitiveTest, ReadValueFrom1dSetWorks)
 {
-    const std::vector<TypeParam> values = { 9, 3, 1, 0, 6 };
-    const auto [dataSet, dataSetGuard]  = makeH5mdDataSetGuard(
+    const std::vector<TypeParam>     values = { 9, 3, 1, 0, 6 };
+    const H5mdDataSetBase<TypeParam> dataSet =
             H5mdFrameDataSetBuilder<TypeParam>(this->fileid(), "testDataSet")
                     .withNumFrames(values.size()) // enable writing the values above into the data set as frames
-                    .build());
+                    .build();
 
     // Write values to data set in bulk for efficiency
-    H5Dwrite(dataSet, hdf5DataTypeFor<TypeParam>(), H5S_ALL, H5S_ALL, H5P_DEFAULT, values.data());
+    H5Dwrite(dataSet.id(), dataSet.dataType(), H5S_ALL, H5S_ALL, H5P_DEFAULT, values.data());
 
     TypeParam value;
     for (hsize_t frameIndex = 0; frameIndex < values.size(); ++frameIndex)
@@ -104,14 +102,14 @@ TYPED_TEST(H5mdReadNumericPrimitiveTest, ReadValueFrom1dSetWorks)
 
 TYPED_TEST(H5mdReadNumericPrimitiveTest, ReadValueOutsideOfSetBoundsThrows)
 {
-    const std::vector<TypeParam> values = { 9, 3, 1, 0, 6 };
-    const auto [dataSet, dataSetGuard]  = makeH5mdDataSetGuard(
+    const std::vector<TypeParam>     values = { 9, 3, 1, 0, 6 };
+    const H5mdDataSetBase<TypeParam> dataSet =
             H5mdFrameDataSetBuilder<TypeParam>(this->fileid(), "testDataSet")
                     .withNumFrames(values.size()) // enable writing the values above into the data set as frames
-                    .build());
+                    .build();
 
     // Write values to data set in bulk for efficiency
-    H5Dwrite(dataSet, hdf5DataTypeFor<TypeParam>(), H5S_ALL, H5S_ALL, H5P_DEFAULT, values.data());
+    H5Dwrite(dataSet.id(), dataSet.dataType(), H5S_ALL, H5S_ALL, H5P_DEFAULT, values.data());
 
     TypeParam value;
     EXPECT_NO_THROW(readFrame(dataSet, values.size() - 1, value))
@@ -120,71 +118,14 @@ TYPED_TEST(H5mdReadNumericPrimitiveTest, ReadValueOutsideOfSetBoundsThrows)
             << "Must throw when reading out of bounds";
 }
 
-TYPED_TEST(H5mdReadNumericPrimitiveTest, ReadValueOfNonMatchingTypeThrows)
-{
-    const std::vector<TypeParam> values = { 9, 3, 1, 0, 6 };
-    const auto [dataSet, dataSetGuard]  = makeH5mdDataSetGuard(
-            H5mdFrameDataSetBuilder<TypeParam>(this->fileid(), "testDataSet")
-                    .withNumFrames(values.size()) // enable writing the values above into the data set as frames
-                    .build());
-
-    // Write values to data set in bulk for efficiency
-    H5Dwrite(dataSet, hdf5DataTypeFor<TypeParam>(), H5S_ALL, H5S_ALL, H5P_DEFAULT, values.data());
-
-    if (!std::is_same_v<TypeParam, float>)
-    {
-        float value;
-        EXPECT_THROW(readFrame(dataSet, 0, value), gmx::FileIOError);
-    }
-    if (!std::is_same_v<TypeParam, double>)
-    {
-        double value;
-        EXPECT_THROW(readFrame(dataSet, 0, value), gmx::FileIOError);
-    }
-    if (!std::is_same_v<TypeParam, int32_t>)
-    {
-        int32_t value;
-        EXPECT_THROW(readFrame(dataSet, 0, value), gmx::FileIOError);
-    }
-    if (!std::is_same_v<TypeParam, int64_t>)
-    {
-        int64_t value;
-        EXPECT_THROW(readFrame(dataSet, 0, value), gmx::FileIOError);
-    }
-}
-
-TYPED_TEST(H5mdReadNumericPrimitiveTest, ReadValueFromNonValidDataSetThrows)
-{
-    const std::vector<TypeParam> values = { 9, 3, 1, 0, 6 };
-    const auto [dataSet, dataSetGuard] =
-            makeH5mdDataSetGuard(H5mdFrameDataSetBuilder<TypeParam>(this->fileid(), "testDataSet")
-                                         .withNumFrames(values.size())
-                                         .build());
-
-    TypeParam value;
-    {
-        H5Dwrite(dataSet, hdf5DataTypeFor<TypeParam>(), H5S_ALL, H5S_ALL, H5P_DEFAULT, values.data());
-
-        ASSERT_NO_THROW(readFrame(dataSet, 0, value))
-                << "Sanity check failed: reading value from open set must work";
-        H5Dclose(dataSet);
-    }
-
-    EXPECT_THROW(readFrame(dataSet, 0, value), gmx::FileIOError)
-            << "We must throw when trying to read from a closed data set";
-    EXPECT_THROW(readFrame(H5I_INVALID_HID, 0, value), gmx::FileIOError)
-            << "We must throw when trying to read from a non-existing data set";
-}
-
 TYPED_TEST(H5mdReadBasicVectorListTest, ReadFrameWorks)
 {
-    constexpr int numAtoms             = 5;
-    const auto [dataSet, dataSetGuard] = makeH5mdDataSetGuard(
+    constexpr int                                      numAtoms = 5;
+    const H5mdDataSetBase<gmx::BasicVector<TypeParam>> dataSet =
             H5mdFrameDataSetBuilder<gmx::BasicVector<TypeParam>>(this->fileid(), "testDataSet")
                     .withFrameDimension({ numAtoms })
                     .withNumFrames(1) // enable reading and writing with index = 0
-                    .build());
-    const auto [dataType, dataTypeGuard] = makeH5mdTypeGuard(H5Dget_type(dataSet));
+                    .build();
 
     // Write 5 RVecs to the data set (this matches its complete size: 1 frame * 5 atoms * 3 values)
     const std::array<gmx::BasicVector<TypeParam>, numAtoms> rvecListToWrite = {
@@ -194,7 +135,7 @@ TYPED_TEST(H5mdReadBasicVectorListTest, ReadFrameWorks)
         BasicVector<TypeParam>{ 9.0, 10.0, 11.0 },
         BasicVector<TypeParam>{ 12.0, 13.0, 14.0 }
     };
-    H5Dwrite(dataSet, dataType, H5S_ALL, H5S_ALL, H5P_DEFAULT, rvecListToWrite.data());
+    H5Dwrite(dataSet.id(), dataSet.dataType(), H5S_ALL, H5S_ALL, H5P_DEFAULT, rvecListToWrite.data());
 
     // Read back the frame data (5 atoms * 3 values at index = 0) and compare to the original
     std::array<gmx::BasicVector<TypeParam>, numAtoms> readBuffer;
@@ -206,14 +147,13 @@ TYPED_TEST(H5mdReadBasicVectorListTest, ReadFrameWorks)
 
 TYPED_TEST(H5mdReadBasicVectorListTest, ReadingFrameFromNonSequentialIndexWorks)
 {
-    constexpr int     numAtoms         = 5;
-    constexpr hsize_t numFrames        = 5;
-    const auto [dataSet, dataSetGuard] = makeH5mdDataSetGuard(
+    constexpr int                                      numAtoms  = 5;
+    constexpr hsize_t                                  numFrames = 5;
+    const H5mdDataSetBase<gmx::BasicVector<TypeParam>> dataSet =
             H5mdFrameDataSetBuilder<gmx::BasicVector<TypeParam>>(this->fileid(), "testDataSet")
                     .withFrameDimension({ numAtoms })
                     .withNumFrames(numFrames)
-                    .build());
-    const auto [dataType, dataTypeGuard] = makeH5mdTypeGuard(H5Dget_type(dataSet));
+                    .build();
 
     // Prepare a list of numFrames rvec-lists and write it to the data set in bulk
     // Total number of values matches that of the data set: 5 frames * 5 atoms * 3 values
@@ -228,7 +168,7 @@ TYPED_TEST(H5mdReadBasicVectorListTest, ReadingFrameFromNonSequentialIndexWorks)
             perFrameRvecLists[frameIndex][atomIndex][ZZ] = frameValue + atomIndex;
         }
     }
-    H5Dwrite(dataSet, dataType, H5S_ALL, H5S_ALL, H5P_DEFAULT, perFrameRvecLists.data());
+    H5Dwrite(dataSet.id(), dataSet.dataType(), H5S_ALL, H5S_ALL, H5P_DEFAULT, perFrameRvecLists.data());
 
 
     // Check that reading all 5 frames in non-sequential order works fine
@@ -244,12 +184,12 @@ TYPED_TEST(H5mdReadBasicVectorListTest, ReadingFrameFromNonSequentialIndexWorks)
 
 TYPED_TEST(H5mdReadBasicVectorListTest, OutputBufferWithNonMatchingDimensionsThrows)
 {
-    constexpr int numAtoms             = 3;
-    const auto [dataSet, dataSetGuard] = makeH5mdDataSetGuard(
+    constexpr int                                      numAtoms = 3;
+    const H5mdDataSetBase<gmx::BasicVector<TypeParam>> dataSet =
             H5mdFrameDataSetBuilder<gmx::BasicVector<TypeParam>>(this->fileid(), "testDataSet")
                     .withFrameDimension({ numAtoms })
                     .withNumFrames(1) // enable reading and writing with index = 0
-                    .build());
+                    .build();
 
     std::array<BasicVector<TypeParam>, numAtoms> readBufferCorrect;
     ASSERT_NO_THROW(readFrame(dataSet, 0, makeArrayRef(readBufferCorrect)))
@@ -263,13 +203,12 @@ TYPED_TEST(H5mdReadBasicVectorListTest, OutputBufferWithNonMatchingDimensionsThr
 
 TYPED_TEST(H5mdReadBasicVectorListTest, CorrectRowOrderIsUsedForReadingArrayData)
 {
-    constexpr int numAtoms             = 5;
-    const auto [dataSet, dataSetGuard] = makeH5mdDataSetGuard(
+    constexpr int                                      numAtoms = 5;
+    const H5mdDataSetBase<gmx::BasicVector<TypeParam>> dataSet =
             H5mdFrameDataSetBuilder<gmx::BasicVector<TypeParam>>(this->fileid(), "testDataSet")
                     .withFrameDimension({ numAtoms })
                     .withNumFrames(1) // enable reading and writing with index = 0
-                    .build());
-    const auto [dataType, dataTypeGuard] = makeH5mdTypeGuard(H5Dget_type(dataSet));
+                    .build();
 
     // Write a 1d array with values 0..(numAtoms * DIM) to the data set
     std::array<TypeParam, DIM * numAtoms> writeBuffer1d;
@@ -277,7 +216,7 @@ TYPED_TEST(H5mdReadBasicVectorListTest, CorrectRowOrderIsUsedForReadingArrayData
     {
         writeBuffer1d[i] = static_cast<TypeParam>(i);
     }
-    H5Dwrite(dataSet, dataType, H5S_ALL, H5S_ALL, H5P_DEFAULT, writeBuffer1d.data());
+    H5Dwrite(dataSet.id(), dataSet.dataType(), H5S_ALL, H5S_ALL, H5P_DEFAULT, writeBuffer1d.data());
 
     // Ensure that we are consistent when reading it back as a 2d [numAtoms, DIM] array
     std::array<BasicVector<TypeParam>, numAtoms> readBuffer;
@@ -291,34 +230,6 @@ TYPED_TEST(H5mdReadBasicVectorListTest, CorrectRowOrderIsUsedForReadingArrayData
             EXPECT_REAL_EQ(readBuffer[i][d], writeBuffer1d[index1d]);
             index1d++;
         }
-    }
-}
-
-TYPED_TEST(H5mdReadBasicVectorListTest, ReadSingleValueFromBasicVectorListDataSetThrows)
-{
-    const auto [rvecListDataSet, rvecListDataSetGuard] = makeH5mdDataSetGuard(
-            H5mdFrameDataSetBuilder<gmx::BasicVector<TypeParam>>(this->fileid(), "testDataSet")
-                    .withFrameDimension({ 1 })
-                    .withNumFrames(1) // enable reading and writing with index = 0
-                    .build());
-
-    TypeParam readBuffer;
-    EXPECT_THROW(readFrame<TypeParam>(rvecListDataSet, 0, readBuffer), gmx::FileIOError);
-}
-
-TYPED_TEST(H5mdReadNumericPrimitiveTest, ReadBasicVectorListFromSingleValueDataSetThrows)
-{
-    // Only compile when reading ArrayRef<BasicVector<real>> from a data set of <real> type:
-    // reading functions for other ArrayRef<BasicVector<T>> types are not implemented.
-    if constexpr (std::is_same_v<TypeParam, float> || std::is_same_v<TypeParam, double>)
-    {
-        const auto [primitiveValueDataSet, primitiveValueDataSetGuard] = makeH5mdDataSetGuard(
-                H5mdFrameDataSetBuilder<TypeParam>(this->fileid(), "testDataSet")
-                        .withNumFrames(1) // enable reading and writing with index = 0
-                        .build());
-
-        std::array<BasicVector<TypeParam>, 1> readBuffer;
-        EXPECT_THROW(readFrame(primitiveValueDataSet, 0, makeArrayRef(readBuffer)), gmx::FileIOError);
     }
 }
 

@@ -46,7 +46,6 @@
 
 #include "h5md_error.h"
 #include "h5md_guard.h"
-#include "h5md_type.h"
 
 // HDF5 constants use old style casts.
 CLANG_DIAGNOSTIC_IGNORE("-Wold-style-cast")
@@ -55,30 +54,6 @@ namespace
 {
 
 using namespace gmx;
-
-/*! \brief Set the fill value to -1 in a data set creation property list.
- * \tparam ValueType The compiled type of data to set fill value for.
- * \param[in] createPropertyList The ID of the propery list to update.
- * \param[in] dataType The ID of the HDF5 data type of the data set.
- */
-template<typename ValueType>
-static void setNumericFillValue(const hid_t createPropertyList, const hid_t dataType)
-{
-    // For composite types (arrays, records, etc.) we need to get the base data type
-    // for checking against our ValueType below
-    hid_t baseDataType = dataType;
-    switch (H5Tget_class(dataType))
-    {
-        case H5T_ARRAY:
-        case H5T_COMPOUND: baseDataType = H5Tget_super(dataType); break;
-        default: break;
-    }
-    throwUponH5mdError(!valueTypeIsDataType<ValueType>(baseDataType),
-                       "ValueType != baseDataType mismatch when setting fill value for data set");
-
-    constexpr ValueType fillValue = -1;
-    H5Pset_fill_value(createPropertyList, dataType, &fillValue);
-}
 
 /*! \brief Return the per-dimension offset to the data corresponding to a given frame.
  *
@@ -124,54 +99,29 @@ static DataSetDims getFrameChunkDims(const DataSetDims& dataSetDims)
 namespace gmx
 {
 
-hid_t openDataSet(const hid_t container, const std::string& dataSetName)
+template<typename ValueType>
+hsize_t getNumFrames(const H5mdDataSetBase<ValueType>& dataSet)
 {
-    const hid_t dataSet = H5Dopen(container, dataSetName.c_str(), H5P_DEFAULT);
-    throwUponInvalidHid(dataSet, "Could not open data set.");
-
-    return dataSet;
+    return dataSet.dims()[0];
 }
 
-DataSetDims getDataSetDims(const hid_t dataSet)
+template<typename ValueType>
+void setNumFrames(const H5mdDataSetBase<ValueType>& dataSet, hsize_t numFrames)
 {
-    throwUponInvalidHid(dataSet, "Cannot get dimensions from invalid data set handle.");
-    const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet));
-    DataSetDims dataSetDims(H5Sget_simple_extent_ndims(dataSpace), 0);
-    throwUponH5mdError(H5Sget_simple_extent_dims(dataSpace, dataSetDims.data(), nullptr) < 0,
-                       "Could not get dimensions from data set.");
-
-    return dataSetDims;
+    DataSetDims dataSetDims = dataSet.dims();
+    dataSetDims[0]          = numFrames;
+    throwUponH5mdError(H5Dset_extent(dataSet.id(), dataSetDims.data()) < 0,
+                       "Could not change size of data set");
 }
 
-hsize_t getNumFrames(const hid_t dataSet)
+template<typename ValueType>
+hid_t getFrameDataSpace(const H5mdDataSetBase<ValueType>& dataSet, hsize_t frameIndex)
 {
-    throwUponInvalidHid(dataSet, "Cannot get number of frames from invalid data set handle.");
-    const DataSetDims dataSetDims = getDataSetDims(dataSet);
-
-    return dataSetDims[0];
-}
-
-void setNumFrames(const hid_t dataSet, const hsize_t numFrames)
-{
-    const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet));
-    throwUponInvalidHid(dataSpace, "Could not get data space when resizing data set.");
-
-    const hsize_t numDims = H5Sget_simple_extent_ndims(dataSpace);
-    throwUponH5mdError(numDims == 0, "Cannot set number of frames for 0-dimensional data set");
-    std::vector<hsize_t> dataSetDims(numDims, 0);
-    H5Sget_simple_extent_dims(dataSpace, dataSetDims.data(), nullptr);
-
-    dataSetDims[0] = numFrames;
-    H5Dset_extent(dataSet, dataSetDims.data());
-}
-
-hid_t getFrameDataSpace(const hid_t dataSet, const hsize_t frameIndex)
-{
-    const DataSetDims dataSetDims = getDataSetDims(dataSet);
-    const DataSetDims chunkOffset = getFrameChunkOffset(dataSet, frameIndex);
+    const DataSetDims dataSetDims = dataSet.dims();
+    const DataSetDims chunkOffset = getFrameChunkOffset(dataSet.id(), frameIndex);
     const DataSetDims chunkDims   = getFrameChunkDims(dataSetDims);
 
-    const hid_t frameDataSpace = H5Dget_space(dataSet);
+    const hid_t frameDataSpace = H5Dget_space(dataSet.id());
     throwUponH5mdError(
             H5Sselect_hyperslab(
                     frameDataSpace, H5S_SELECT_SET, chunkOffset.data(), nullptr, chunkDims.data(), nullptr)
@@ -181,14 +131,63 @@ hid_t getFrameDataSpace(const hid_t dataSet, const hsize_t frameIndex)
     return frameDataSpace;
 }
 
-hid_t getFrameMemoryDataSpace(const hid_t dataSet)
+template<typename ValueType>
+hid_t getFrameMemoryDataSpace(const H5mdDataSetBase<ValueType>& dataSet)
 {
-    const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet));
-    const DataSetDims dataSetDims          = getDataSetDims(dataSet);
+    const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet.id()));
+    const DataSetDims dataSetDims          = dataSet.dims();
     const DataSetDims chunkDims            = getFrameChunkDims(dataSetDims);
 
     return H5Screate_simple(H5Sget_simple_extent_ndims(dataSpace), chunkDims.data(), nullptr);
 }
+
+template hsize_t getNumFrames(const H5mdDataSetBase<int32_t>&);
+
+template hsize_t getNumFrames(const H5mdDataSetBase<int64_t>&);
+
+template hsize_t getNumFrames(const H5mdDataSetBase<float>&);
+
+template hsize_t getNumFrames(const H5mdDataSetBase<double>&);
+
+template hsize_t getNumFrames(const H5mdDataSetBase<gmx::BasicVector<float>>&);
+
+template hsize_t getNumFrames(const H5mdDataSetBase<gmx::BasicVector<double>>&);
+
+template void setNumFrames(const H5mdDataSetBase<int32_t>&, hsize_t);
+
+template void setNumFrames(const H5mdDataSetBase<int64_t>&, hsize_t);
+
+template void setNumFrames(const H5mdDataSetBase<float>&, hsize_t);
+
+template void setNumFrames(const H5mdDataSetBase<double>&, hsize_t);
+
+template void setNumFrames(const H5mdDataSetBase<gmx::BasicVector<float>>&, hsize_t);
+
+template void setNumFrames(const H5mdDataSetBase<gmx::BasicVector<double>>&, hsize_t);
+
+template hid_t getFrameDataSpace(const H5mdDataSetBase<int32_t>&, hsize_t);
+
+template hid_t getFrameDataSpace(const H5mdDataSetBase<int64_t>&, hsize_t);
+
+template hid_t getFrameDataSpace(const H5mdDataSetBase<float>&, hsize_t);
+
+template hid_t getFrameDataSpace(const H5mdDataSetBase<double>&, hsize_t);
+
+template hid_t getFrameDataSpace(const H5mdDataSetBase<gmx::BasicVector<float>>&, hsize_t);
+
+template hid_t getFrameDataSpace(const H5mdDataSetBase<gmx::BasicVector<double>>&, hsize_t);
+
+template hid_t getFrameMemoryDataSpace(const H5mdDataSetBase<int32_t>&);
+
+template hid_t getFrameMemoryDataSpace(const H5mdDataSetBase<int64_t>&);
+
+template hid_t getFrameMemoryDataSpace(const H5mdDataSetBase<float>&);
+
+template hid_t getFrameMemoryDataSpace(const H5mdDataSetBase<double>&);
+
+template hid_t getFrameMemoryDataSpace(const H5mdDataSetBase<gmx::BasicVector<float>>&);
+
+template hid_t getFrameMemoryDataSpace(const H5mdDataSetBase<gmx::BasicVector<double>>&);
 
 } // namespace gmx
 

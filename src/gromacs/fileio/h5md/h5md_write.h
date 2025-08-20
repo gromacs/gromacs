@@ -48,6 +48,13 @@
 namespace gmx
 {
 
+template<typename ValueType>
+class H5mdDataSetBase;
+template<typename ValueType>
+class ArrayRef;
+template<typename ValueType>
+class BasicVector;
+
 /*! \brief Write a value to a given index in a data set.
  *
  * \tparam ValueType Type of value.
@@ -56,7 +63,7 @@ namespace gmx
  * \param[in] value Single value buffer with value to write.
  */
 template<typename ValueType>
-void writeFrame(const hid_t dataSet, const hsize_t index, const ValueType& value);
+void writeFrame(const H5mdDataSetBase<ValueType>& dataSet, hsize_t index, const ValueType& value);
 
 /*! \brief Write a list of BasicVectors to a given index in a data set.
  *
@@ -66,19 +73,25 @@ void writeFrame(const hid_t dataSet, const hsize_t index, const ValueType& value
  * \param[in] values Array with BasicVectors to write.
  */
 template<typename ValueType>
-void writeFrame(const hid_t dataSet, const hsize_t index, const ArrayRef<const BasicVector<ValueType>> values);
+void writeFrame(const H5mdDataSetBase<BasicVector<ValueType>>& dataSet,
+                hsize_t                                        index,
+                ArrayRef<const BasicVector<ValueType>>         values);
 
-extern template void writeFrame(const hid_t, const hsize_t, const int32_t&);
+extern template void writeFrame(const H5mdDataSetBase<int32_t>&, hsize_t, const int32_t&);
 
-extern template void writeFrame(const hid_t, const hsize_t, const int64_t&);
+extern template void writeFrame(const H5mdDataSetBase<int64_t>&, hsize_t, const int64_t&);
 
-extern template void writeFrame(const hid_t, const hsize_t, const float&);
+extern template void writeFrame(const H5mdDataSetBase<float>&, hsize_t, const float&);
 
-extern template void writeFrame(const hid_t, const hsize_t, const double&);
+extern template void writeFrame(const H5mdDataSetBase<double>&, hsize_t, const double&);
 
-extern template void writeFrame(const hid_t, const hsize_t, const ArrayRef<const BasicVector<float>>);
+extern template void writeFrame(const H5mdDataSetBase<BasicVector<float>>&,
+                                hsize_t,
+                                ArrayRef<const BasicVector<float>>);
 
-extern template void writeFrame(const hid_t, const hsize_t, const ArrayRef<const BasicVector<double>>);
+extern template void writeFrame(const H5mdDataSetBase<BasicVector<double>>&,
+                                hsize_t,
+                                ArrayRef<const BasicVector<double>>);
 
 } // namespace gmx
 

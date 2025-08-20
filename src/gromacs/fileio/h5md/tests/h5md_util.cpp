@@ -71,8 +71,7 @@ TEST_F(H5mdObjectExistsTest, FindsObjectsInFileRoot)
     EXPECT_TRUE(objectExists(fileid(), "testGroup"));
 
     EXPECT_FALSE(objectExists(fileid(), "testDataSet"));
-    const auto [dataSet, dataSetGuard] =
-            makeH5mdDataSetGuard(H5mdFrameDataSetBuilder<float>(fileid(), "testDataSet").build());
+    H5mdFrameDataSetBuilder<float>(fileid(), "testDataSet").build();
     EXPECT_TRUE(objectExists(fileid(), "testDataSet"));
 }
 
@@ -85,8 +84,7 @@ TEST_F(H5mdObjectExistsTest, FindsObjectsInGroups)
     EXPECT_TRUE(objectExists(group, "testSubGroup"));
 
     EXPECT_FALSE(objectExists(group, "testDataSet"));
-    const auto [dataSet, dataSetGuard] =
-            makeH5mdDataSetGuard(H5mdFrameDataSetBuilder<float>(group, "testDataSet").build());
+    H5mdFrameDataSetBuilder<float>(group, "testDataSet").build();
     EXPECT_TRUE(objectExists(group, "testDataSet"));
 }
 
@@ -98,8 +96,7 @@ TEST_F(H5mdObjectExistsTest, DoesNotSearchForObjectInsideSubGroups)
     EXPECT_FALSE(objectExists(fileid(), "testSubGroup")) << "Must not find sub group in root";
     EXPECT_TRUE(objectExists(group, "testSubGroup")) << "Must find sub group inside parent group";
 
-    const auto [dataSet, dataSetGuard] =
-            makeH5mdDataSetGuard(H5mdFrameDataSetBuilder<float>(group, "testDataSet").build());
+    H5mdFrameDataSetBuilder<float>(group, "testDataSet").build();
     EXPECT_FALSE(objectExists(fileid(), "testDataSet")) << "Must not find data set in root";
     EXPECT_TRUE(objectExists(group, "testDataSet")) << "Must find data set inside parent group";
 }
@@ -108,8 +105,7 @@ TEST_F(H5mdObjectExistsTest, SearchesExplicitMultiLevelPath)
 {
     const auto [group, groupGuard] = makeH5mdGroupGuard(createGroup(fileid(), "/path/to/testGroup"));
     const auto [subGroup, subGroupGuard] = makeH5mdGroupGuard(createGroup(group, "testSubGroup"));
-    const auto [dataSet, dataSetGuard] =
-            makeH5mdDataSetGuard(H5mdFrameDataSetBuilder<float>(subGroup, "testDataSet").build());
+    H5mdFrameDataSetBuilder<float>(subGroup, "testDataSet").build();
 
     EXPECT_TRUE(objectExists(subGroup, "testDataSet"));
     EXPECT_TRUE(objectExists(group, "testSubGroup/testDataSet"));
@@ -123,11 +119,11 @@ TEST_F(H5mdHandleIsValidTest, ReturnTrueForValidHandlesToObjects)
     const auto [group, groupGuard] = makeH5mdGroupGuard(createGroup(fileid(), "testGroup"));
     EXPECT_TRUE(handleIsValid(group));
 
-    const auto [dataSet, dataSetGuard] =
-            makeH5mdDataSetGuard(H5mdFrameDataSetBuilder<float>(fileid(), "testDataSet").build());
-    EXPECT_TRUE(handleIsValid(dataSet));
+    const H5mdDataSetBase<float> dataSet =
+            H5mdFrameDataSetBuilder<float>(fileid(), "testDataSet").build();
+    EXPECT_TRUE(handleIsValid(dataSet.id()));
 
-    const auto [dataType, dataTypeGuard] = makeH5mdTypeGuard(H5Dget_type(dataSet));
+    const auto [dataType, dataTypeGuard] = makeH5mdTypeGuard(H5Dget_type(dataSet.id()));
     EXPECT_TRUE(handleIsValid(dataType));
 }
 

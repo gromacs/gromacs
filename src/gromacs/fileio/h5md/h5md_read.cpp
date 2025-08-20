@@ -47,6 +47,7 @@
 #include "gromacs/fileio/h5md/h5md_type.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/vectypes.h"
 
 namespace gmx
 {
@@ -63,21 +64,14 @@ namespace gmx
  * TODO: Once we have a proper data set class it becomes easier to verify this
  * inside this function so we should return to this assumption.
  */
-template<typename ValueType, int numDims>
-static void readFrameData(const hid_t dataSet, const hsize_t index, const ArrayRef<ValueType> readBuffer)
+template<typename ValueType, typename T, int numDims>
+static void readFrameData(const H5mdDataSetBase<T>& dataSet,
+                          const hsize_t             index,
+                          const ArrayRef<ValueType> readBuffer)
 {
-    throwUponInvalidHid(dataSet, "Cannot read data from invalid data set.");
-
-    const hsize_t numFrames = getNumFrames(dataSet);
-    gmx::throwUponH5mdError(index >= numFrames, "Cannot read frame with frameIndex >= numFrames");
-
-    // When reading the data we must consider that the native data type (on the current compiler
-    // target) may not match the native data type that was used when the data was written.
-    // The HDF5 library provides this method to determine the correct (native) type to use.
-    const auto [dataType, dataTypeGuard] = makeH5mdTypeGuard(H5Dget_type(dataSet));
-    const auto [nativeDataType, nativeDataTypeGuard] =
-            makeH5mdTypeGuard(H5Tget_native_type(dataType, H5T_DIR_DEFAULT));
-    throwUponH5mdError(!valueTypeIsDataType(nativeDataType, makeConstArrayRef(readBuffer)),
+    throwUponH5mdError(index >= getNumFrames(dataSet),
+                       "Cannot read frame with frameIndex >= numFrames");
+    throwUponH5mdError(!valueTypeIsDataType(dataSet.nativeDataType(), makeConstArrayRef(readBuffer)),
                        "Cannot read frame from set with non-matching data type");
 
     const auto [frameDataSpace, frameDataSpaceGuard] =
@@ -85,29 +79,36 @@ static void readFrameData(const hid_t dataSet, const hsize_t index, const ArrayR
     const auto [memoryDataSpace, memoryDataSpaceGuard] =
             makeH5mdDataSpaceGuard(getFrameMemoryDataSpace(dataSet));
 
-    H5Dread(dataSet, nativeDataType, memoryDataSpace, frameDataSpace, H5P_DEFAULT, readBuffer.data());
+    H5Dread(dataSet.id(),
+            dataSet.nativeDataType(),
+            memoryDataSpace,
+            frameDataSpace,
+            H5P_DEFAULT,
+            readBuffer.data());
 }
 
 template<typename ValueType>
-void readFrame(const hid_t dataSet, const hsize_t index, ValueType& value)
+void readFrame(const H5mdDataSetBase<ValueType>& dataSet, const hsize_t index, ValueType& value)
 {
     constexpr int numDims = 1;
 
-    const DataSetDims dims = getDataSetDims(dataSet);
+    const DataSetDims dims = dataSet.dims();
     throwUponH5mdError(
             dims.size() != numDims,
             gmx::formatString("Expected a 1d data set to read value from, but got a %lud data set",
                               dims.size()));
 
-    readFrameData<ValueType, numDims>(dataSet, index, ArrayRef(&value, &value + 1));
+    readFrameData<ValueType, ValueType, numDims>(dataSet, index, ArrayRef(&value, &value + 1));
 }
 
 template<typename ValueType>
-void readFrame(const hid_t dataSet, const hsize_t index, const ArrayRef<BasicVector<ValueType>> values)
+void readFrame(const H5mdDataSetBase<BasicVector<ValueType>>& dataSet,
+               const hsize_t                                  index,
+               const ArrayRef<BasicVector<ValueType>>         values)
 {
     constexpr int numDims = 3;
 
-    const DataSetDims dims = getDataSetDims(dataSet);
+    const DataSetDims dims = dataSet.dims();
     throwUponH5mdError(dims.size() != numDims,
                        gmx::formatString("Data set must be 3d but is %lud", dims.size()));
     throwUponH5mdError(dims[1] != values.size(),
@@ -120,19 +121,23 @@ void readFrame(const hid_t dataSet, const hsize_t index, const ArrayRef<BasicVec
     ArrayRef<ValueType> arrayRef =
             arrayRefFromArray(reinterpret_cast<ValueType*>(values.data()), numValues);
 
-    readFrameData<ValueType, numDims>(dataSet, index, arrayRef);
+    readFrameData<ValueType, gmx::BasicVector<ValueType>, numDims>(dataSet, index, arrayRef);
 }
 
-template void readFrame(const hid_t, const hsize_t, int32_t&);
+template void readFrame(const H5mdDataSetBase<float>&, const hsize_t, float&);
 
-template void readFrame(const hid_t, const hsize_t, int64_t&);
+template void readFrame(const H5mdDataSetBase<double>&, const hsize_t, double&);
 
-template void readFrame(const hid_t, const hsize_t, float&);
+template void readFrame(const H5mdDataSetBase<int32_t>&, const hsize_t, int32_t&);
 
-template void readFrame(const hid_t, const hsize_t, double&);
+template void readFrame(const H5mdDataSetBase<int64_t>&, const hsize_t, int64_t&);
 
-template void readFrame(const hid_t, const hsize_t, const ArrayRef<BasicVector<float>>);
+template void readFrame(const H5mdDataSetBase<BasicVector<float>>&,
+                        const hsize_t,
+                        const ArrayRef<BasicVector<float>>);
 
-template void readFrame(const hid_t, const hsize_t, const ArrayRef<BasicVector<double>>);
+template void readFrame(const H5mdDataSetBase<BasicVector<double>>&,
+                        const hsize_t,
+                        const ArrayRef<BasicVector<double>>);
 
 } // namespace gmx
