@@ -914,6 +914,7 @@ if (GMX_NACL)
   # TODO: Is this still necessary with the check for its presence?
   set(GMX_USE_NICE 0)
   set(GMX_NO_RENAME 1)
+  message(WARNING "Native Client builds deprecated since GROMACS 2026")
 endif()
 mark_as_advanced(GMX_NACL)
 

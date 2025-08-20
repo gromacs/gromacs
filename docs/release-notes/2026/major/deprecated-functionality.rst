@@ -15,3 +15,11 @@ Functionality deprecated in |Gromacs| 2026
 
 Generating angle constraints with grompp is deprecated
 """"""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Google Native Client (NaCl) build deprecated
+""""""""""""""""""""""""""""""""""""""""""""
+
+Last release of the sandbox has been 10 years ago
+and the support for NaCl has been removed from LLVM 22.
+Building option ``GMX_NACL`` is now deprecated in |Gromacs|.
+
