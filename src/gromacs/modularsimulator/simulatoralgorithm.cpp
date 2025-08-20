@@ -318,7 +318,7 @@ void ModularSimulatorAlgorithm::postStep(Step step, Time gmx_unused time)
     if (cr_.commMyGroup.isMainRank() && (do_verbose || gmx_got_usr_signal())
         && !(pmeLoadBalanceHelper_ && pmeLoadBalanceHelper_->pmePrinting()))
     {
-        print_time(stderr, wallTimeAccounting_, step, inputRec_, &cr_);
+        print_time(stderr, wallTimeAccounting_, step, inputRec_, cr_.commMySim);
     }
 
     double cycles = wallcycle_stop(wallCycle_, WallCycleCounter::Step);

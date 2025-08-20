@@ -1146,7 +1146,7 @@ static void make_pp_communicator(const gmx::MDLogger&  mdlog,
         /* Get the rank of the DD main,
          * above we made sure that the main node is a PP node.
          */
-        int rank = MAIN(cr) ? dd->rank : 0;
+        int rank = cr->commMySim.isMainRank() ? dd->rank : 0;
         MPI_Allreduce(&rank, &dd->mainrank, 1, MPI_INT, MPI_SUM, dd->mpiComm().comm());
     }
     else if (cartSetup.bCartesianPP)
@@ -1520,7 +1520,7 @@ static void setupGroupCommunication(const MDLogger&     mdlog,
     }
 
     /* We can not use DDMAIN(dd), because dd->mainrank is set later */
-    if (MAIN(cr))
+    if (cr->commMySim.isMainRank())
     {
         dd->ma = std::make_unique<AtomDistribution>(dd->numCells, numAtomsInSystem, numAtomsInSystem);
     }
@@ -2908,7 +2908,7 @@ DomainDecompositionBuilder::Impl::build(t_commrec*                 cr,
     dd->hasPmeDuty = commSetup_.hasPmeDuty;
 
     set_dd_limits(mdlog_,
-                  MAIN(cr) ? DDRole::Main : DDRole::Agent,
+                  cr->commMySim.isMainRank() ? DDRole::Main : DDRole::Agent,
                   dd.get(),
                   options_,
                   ddSettings_,

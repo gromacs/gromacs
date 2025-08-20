@@ -111,7 +111,7 @@ std::unique_ptr<gmx_wallcycle> wallcycle_init(FILE* fplog, int resetstep, const 
 
 
 #if GMX_MPI
-    if (cr != nullptr && PAR(cr) && std::getenv("GMX_CYCLE_BARRIER") != nullptr)
+    if (cr != nullptr && cr->commMySim.isParallel() && std::getenv("GMX_CYCLE_BARRIER") != nullptr)
     {
         if (fplog)
         {
@@ -132,7 +132,7 @@ std::unique_ptr<gmx_wallcycle> wallcycle_init(FILE* fplog, int resetstep, const 
 
     if constexpr (sc_enableWallcycleDebug)
     {
-        wc->isMainRank = (cr == nullptr) || MAIN(cr);
+        wc->isMainRank = (cr == nullptr) || cr->commMySim.isMainRank();
     }
 
 #if GMX_USE_ITT

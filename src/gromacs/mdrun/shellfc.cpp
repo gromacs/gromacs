@@ -783,7 +783,7 @@ static real rms_force(const t_commrec*        cr,
     }
     int ntot = shells.ssize();
 
-    if (PAR(cr))
+    if (cr->commMySim.isParallel())
     {
         buf[1] = ntot;
         buf[2] = *sf_dir;
@@ -1149,7 +1149,7 @@ void relax_shell_flexcon(FILE*                             fplog,
                   posWithPadding[Try].paddedArrayRef().begin());
     }
 
-    if (bVerbose && MAIN(cr))
+    if (bVerbose && cr->commMySim.isMainRank())
     {
         print_epot(stdout, mdstep, 0, Epot[Min], df[Min], nflexcon, sf_dir);
     }
@@ -1298,7 +1298,7 @@ void relax_shell_flexcon(FILE*                             fplog,
             }
         }
 
-        if (bVerbose && MAIN(cr))
+        if (bVerbose && cr->commMySim.isMainRank())
         {
             print_epot(stdout, mdstep, count, Epot[Try], df[Try], nflexcon, sf_dir);
         }
@@ -1335,7 +1335,7 @@ void relax_shell_flexcon(FILE*                             fplog,
     {
         shfc->numConvergedIterations++;
     }
-    if (MAIN(cr) && !(bConverged))
+    if (cr->commMySim.isMainRank() && !(bConverged))
     {
         /* Note that the energies and virial are incorrect when not converged */
         if (fplog)

@@ -433,7 +433,7 @@ void logInitialMultisimStatus(const gmx_multisim_t* ms,
     {
         if (simulationsShareState)
         {
-            if (MAIN(cr))
+            if (cr->commMySim.isMainRank())
             {
                 gmx_fatal(FARGS,
                           "The initial step is not consistent across multi simulations which "

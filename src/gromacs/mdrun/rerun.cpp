@@ -872,7 +872,7 @@ void gmx::LegacySimulator::do_rerun()
             {
                 fprintf(stderr, "\n");
             }
-            print_time(stderr, wallTimeAccounting_, step, ir, cr_);
+            print_time(stderr, wallTimeAccounting_, step, ir, cr_->commMySim);
         }
 
         /* Ion/water position swapping.

@@ -776,7 +776,7 @@ void gmx::LegacySimulator::do_mimic()
             {
                 fprintf(stderr, "\n");
             }
-            print_time(stderr, wallTimeAccounting_, step, ir, cr_);
+            print_time(stderr, wallTimeAccounting_, step, ir, cr_->commMySim);
         }
 
         cycles = wallcycle_stop(wallCycleCounters_, WallCycleCounter::Step);

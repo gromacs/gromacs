@@ -1141,7 +1141,7 @@ void LegacySimulator::do_tpi()
     tpi.checkEnergyGroups(fr_->atomInfoForEachMoleculeBlock, fpLog_);
 
     FILE* fp_tpi = nullptr;
-    if (MAIN(cr_))
+    if (cr_->commMySim.isMainRank())
     {
         fp_tpi = tpi.openOutputFile(opt2fn("-tpi", nFile_, fnm_), oenv_);
     }
@@ -1216,7 +1216,7 @@ void LegacySimulator::do_tpi()
 
         auto sum_UgembU = tpi.sum_UgembU();
 
-        if (PAR(cr_))
+        if (cr_->commMySim.isParallel())
         {
             /* When running in parallel sum the energies over the processes */
             cr_->commMyGroup.sumReduce(1, &sum_embU);
@@ -1281,7 +1281,7 @@ void LegacySimulator::do_tpi()
     auto& bins = tpi.bins();
 
     /* Write the Boltzmann factor histogram */
-    if (PAR(cr_))
+    if (cr_->commMySim.isParallel())
     {
         /* When running in parallel sum the bins over the processes */
         int i = gmx::ssize(bins);
@@ -1289,7 +1289,7 @@ void LegacySimulator::do_tpi()
         bins.resize(i);
         cr_->commMyGroup.sumReduce(bins);
     }
-    if (MAIN(cr_))
+    if (cr_->commMySim.isMainRank())
     {
         fp_tpi   = xvgropen(opt2fn("-tpid", nFile_, fnm_),
                           "TPI energy distribution",

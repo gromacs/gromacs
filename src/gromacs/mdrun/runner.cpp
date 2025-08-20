@@ -1234,7 +1234,7 @@ int Mdrunner::mdrunner()
        the progress.
      */
     int gen_first_step = 0;
-    if (MAIN(cr))
+    if (cr->commMySim.isMainRank())
     {
         gen_first_step = inputrec->init_step;
     }
@@ -1293,7 +1293,7 @@ int Mdrunner::mdrunner()
     }
 
 #if GMX_FAHCORE
-    if (MAIN(cr))
+    if (cr->commMySim.isMainRank())
     {
         fcRegisterSteps(inputrec->nsteps + inputrec->init_step, gen_first_step);
     }
@@ -1663,7 +1663,7 @@ int Mdrunner::mdrunner()
         gpuTaskAssignments.logPerformanceHints(mdlog, numAvailableDevices);
     }
 
-    if (PAR(cr))
+    if (cr->commMySim.isParallel())
     {
         /* After possible communicator splitting in make_dd_communicators.
          * we can set up the intra/inter node hierarchical reductions.
@@ -1744,7 +1744,7 @@ int Mdrunner::mdrunner()
     // Enable Peer access between GPUs where available
     // Only for DD, only main PP rank needs to perform setup, and only if thread MPI plus
     // any of the GPU communication features are active.
-    if (haveDDAtomOrdering(*cr) && MAIN(cr) && thisRankHasPPDuty(cr->dd) && GMX_THREAD_MPI
+    if (haveDDAtomOrdering(*cr) && cr->commMySim.isMainRank() && thisRankHasPPDuty(cr->dd) && GMX_THREAD_MPI
         && (runScheduleWork.simulationWork.useGpuHaloExchange
             || runScheduleWork.simulationWork.useGpuPmePpCommunication))
     {
@@ -1762,7 +1762,7 @@ int Mdrunner::mdrunner()
     std::unique_ptr<gmx_wallcycle> wcycle =
             wallcycle_init(fplog, mdrunOptions.timingOptions.resetStep, cr);
 
-    if (PAR(cr))
+    if (cr->commMySim.isParallel())
     {
         /* Main synchronizes its value of reset_counters with all nodes
          * including PME only nodes */
@@ -1826,13 +1826,13 @@ int Mdrunner::mdrunner()
                     fplog, mtop, *inputrec, ms, globalState.get(), &atomSets);
         }
 
-        deform = buildBoxDeformation(globalState != nullptr
-                                             ? createMatrix3x3FromLegacyMatrix(globalState->box)
-                                             : diagonalMatrix<real>(0.0),
-                                     MAIN(cr) ? DDRole::Main : DDRole::Agent,
-                                     PAR(cr) ? NumRanks::Multiple : NumRanks::Single,
-                                     cr->commMyGroup.comm(),
-                                     *inputrec);
+        deform = buildBoxDeformation(
+                globalState != nullptr ? createMatrix3x3FromLegacyMatrix(globalState->box)
+                                       : diagonalMatrix<real>(0.0),
+                cr->commMySim.isMainRank() ? DDRole::Main : DDRole::Agent,
+                cr->commMySim.isParallel() ? NumRanks::Multiple : NumRanks::Single,
+                cr->commMyGroup.comm(),
+                *inputrec);
 
         // Save a handle to device stream manager to use elsewhere in the code
         // TODO: Forcerec is not a correct place to store it.
@@ -1921,7 +1921,7 @@ int Mdrunner::mdrunner()
         /* With periodic molecules the charge groups should be whole at start up
          * and the virtual sites should not be far from their proper positions.
          */
-        if (!inputrec->bContinuation && MAIN(cr)
+        if (!inputrec->bContinuation && cr->commMySim.isMainRank()
             && !(inputrec->pbcType != PbcType::No && inputrec->bPeriodicMols))
         {
             /* Make molecules whole at start of run */
@@ -2129,7 +2129,7 @@ int Mdrunner::mdrunner()
                 {
                     initPullHistory(pull_work, &observablesHistory);
                 }
-                if (EI_DYNAMICS(inputrec->eI) && MAIN(cr))
+                if (EI_DYNAMICS(inputrec->eI) && cr->commMySim.isMainRank())
                 {
                     init_pull_output_files(
                             pull_work, filenames.size(), filenames.data(), oenv, startingBehavior);
@@ -2206,20 +2206,21 @@ int Mdrunner::mdrunner()
                                  gmx_omp_nthreads_get(ModuleMultiThread::Update));
 
             /* Set up interactive MD (IMD) */
-            auto imdSession = makeImdSession(inputrec.get(),
-                                             cr->commMyGroup,
-                                             cr->dd,
-                                             wcycle.get(),
-                                             &enerd,
-                                             ms,
-                                             mtop,
-                                             mdlog,
-                                             MAIN(cr) ? globalState->x : gmx::ArrayRef<gmx::RVec>{},
-                                             filenames.size(),
-                                             filenames.data(),
-                                             oenv,
-                                             mdrunOptions.imdOptions,
-                                             startingBehavior);
+            auto imdSession = makeImdSession(
+                    inputrec.get(),
+                    cr->commMyGroup,
+                    cr->dd,
+                    wcycle.get(),
+                    &enerd,
+                    ms,
+                    mtop,
+                    mdlog,
+                    cr->commMySim.isMainRank() ? globalState->x : gmx::ArrayRef<gmx::RVec>{},
+                    filenames.size(),
+                    filenames.data(),
+                    oenv,
+                    mdrunOptions.imdOptions,
+                    startingBehavior);
 
             if (haveDDAtomOrdering(*cr))
             {
@@ -2462,7 +2463,7 @@ int Mdrunner::mdrunner()
     /* we need to join all threads. The sub-threads join when they
        exit this function, but the main thread needs to be told to
        wait for that. */
-    if (MAIN(cr))
+    if (cr->commMySim.isMainRank())
     {
         tMPI_Finalize();
     }

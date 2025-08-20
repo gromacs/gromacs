@@ -82,16 +82,6 @@ public:
     gmx_domdec_t* dd = nullptr;
 };
 
-/*! \brief True if this is a simulation with more than 1 rank
- *
- * In particular, this is true for multi-rank runs with TPI and NM, because
- * they use a decomposition that is not the domain decomposition used by
- * other simulation types. */
-#define PAR(cr) ((cr)->commMySim.size() > 1)
-
-//! True of this is the main node
-#define MAIN(cr) ((cr)->commMySim.rank() == 0)
-
 /*! \brief Returns whether the domain decomposition machinery is active and reorders atoms
  *
  * This tells whether atoms are reordered at pair search steps. When the return value

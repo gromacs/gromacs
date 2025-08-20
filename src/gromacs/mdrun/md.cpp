@@ -1453,7 +1453,7 @@ void gmx::LegacySimulator::do_md()
             stopHandler->setSignal();
             resetHandler->setSignal(wallTimeAccounting_);
 
-            if (bGStat || !PAR(cr_))
+            if (bGStat || cr_->commMySim.isSerial())
             {
                 /* In parallel we only have to check for checkpointing in steps
                  * where we do global communication,
@@ -2046,7 +2046,7 @@ void gmx::LegacySimulator::do_md()
             {
                 fprintf(stderr, "\n");
             }
-            print_time(stderr, wallTimeAccounting_, step, ir, cr_);
+            print_time(stderr, wallTimeAccounting_, step, ir, cr_->commMySim);
         }
 
         /* Ion/water position swapping.
@@ -2188,7 +2188,7 @@ void gmx::LegacySimulator::do_md()
     // This is to free PP ranks gpuhaloexchange symmetric buffer `d_recvBuf_`
     // as calling its destruction happens very late causing hang as this is a collective
     // call, the PME side free of the same buffer happens quite early.
-    if (PAR(cr_) && simulationWork.useNvshmem)
+    if (cr_->commMySim.isParallel() && simulationWork.useNvshmem)
     {
         destroyGpuHaloExchangeNvshmemBuf(*cr_);
     }

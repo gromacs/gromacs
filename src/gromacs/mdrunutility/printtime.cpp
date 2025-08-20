@@ -53,14 +53,12 @@ void print_time(FILE*                     out,
                 gmx_walltime_accounting_t walltime_accounting,
                 int64_t                   step,
                 const t_inputrec*         ir,
-                const t_commrec*          cr)
+                const gmx::MpiComm&       mpiCommSimulation)
 {
     std::time_t finish;
     double      dt, elapsed_seconds, time_per_step;
 
-#if !GMX_THREAD_MPI
-    if (!PAR(cr))
-#endif
+    if (GMX_THREAD_MPI || mpiCommSimulation.isSerial())
     {
         fprintf(out, "\r");
     }
@@ -96,14 +94,10 @@ void print_time(FILE*                     out,
             fprintf(out, " performance: %.1f ns/day    ", ir->delta_t / 1000 * 24 * 60 * 60 / time_per_step);
         }
     }
-#if !GMX_THREAD_MPI
-    if (PAR(cr))
+    if (!GMX_THREAD_MPI && mpiCommSimulation.isSerial())
     {
         fprintf(out, "\n");
     }
-#else
-    GMX_UNUSED_VALUE(cr);
-#endif
 
     std::fflush(out);
 }
