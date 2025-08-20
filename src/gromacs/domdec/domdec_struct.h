@@ -54,6 +54,7 @@
 #include "gromacs/topology/idef.h"
 #include "gromacs/utility/defaultinitializationallocator.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/range.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/vectypes.h"
@@ -78,7 +79,6 @@ class LocalAtomSetManager;
 class LocalTopologyChecker;
 class GpuHaloExchange;
 class GpuHaloExchangeNvshmemHelper;
-class MpiComm;
 } // namespace gmx
 
 struct gmx_ddbox_t
@@ -115,11 +115,11 @@ struct UnitCellInfo
 struct gmx_domdec_t
 { //NOLINT(clang-analyzer-optin.performance.Padding)
     //! Constructor, only partial for now
-    gmx_domdec_t(gmx::MpiComm& mpiComm, const t_inputrec& ir, gmx::ArrayRef<const int> ddDims);
+    gmx_domdec_t(const gmx::MpiComm& mpiComm, const t_inputrec& ir, gmx::ArrayRef<const int> ddDims);
     ~gmx_domdec_t();
 
     //! Returns the group MPI communicator, i.e. for the PP or PME ranks
-    const gmx::MpiComm& mpiComm() const { return *mpiComm_; }
+    const gmx::MpiComm& mpiComm() const { return mpiComm_; }
 
     //! Returns the communicator for the whole simulation
     const gmx::MpiComm& mpiCommMySim() const;
@@ -129,8 +129,8 @@ struct gmx_domdec_t
     //! Whether this rank computes PME mesh interactions, also true when PME is not in use
     bool hasPmeDuty = true;
 
-    //! The group MPI communicator, currently still owned by t_commrec
-    gmx::MpiComm* mpiComm_;
+    //! The group MPI communicator, ie. of PP or PME-only ranks
+    gmx::MpiComm mpiComm_;
 
     /* The DD particle-particle nodes only */
     /* The communication setup within the communicator all

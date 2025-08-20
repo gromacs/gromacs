@@ -53,7 +53,6 @@
 struct gmx_domdec_t;
 struct gmx_mtop_t;
 struct gmx_localtop_t;
-struct t_commrec;
 struct t_inputrec;
 class t_state;
 
@@ -112,8 +111,7 @@ public:
      * \p localState is used for printing distances in case bonded interactions can not
      * be assigned. Pass nullptr when multiple local states are used (e.g. during EM).
      */
-    std::unique_ptr<gmx_domdec_t> build(t_commrec*                 cr,
-                                        LocalAtomSetManager*       atomSets,
+    std::unique_ptr<gmx_domdec_t> build(LocalAtomSetManager*       atomSets,
                                         const gmx_localtop_t&      localTopology,
                                         const t_state*             localState,
                                         bool                       haveFillerParticlesInLocalState,

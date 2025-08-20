@@ -39,45 +39,13 @@
 
 #include <utility>
 
-#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/gmxmpi.h"
 
-t_commrec::t_commrec(const gmx::MpiComm& mpiComm) : commMySim(mpiComm), commMyGroup(mpiComm)
+t_commrec::t_commrec(const gmx::MpiComm& mpiCommMySim, const gmx::MpiComm& mpiCommMyGroup, gmx_domdec_t* domdec) :
+    commMySim(mpiCommMySim), commMyGroup(mpiCommMyGroup), dd(domdec)
 {
 #if GMX_LIB_MPI
     GMX_RELEASE_ASSERT(gmx_mpi_initialized(), "Must have initialized MPI before building commrec");
 #endif
-}
-
-t_commrec::~t_commrec()
-{
-#if GMX_MPI
-    // TODO We need to be able to free communicators, but the
-    // structure of the commrec and domdec initialization code makes
-    // it hard to avoid both leaks and double frees.
-    const bool mySimIsMyGroup = (commMySim.comm() == commMyGroup.comm());
-    if (commMySim.comm() != MPI_COMM_NULL && commMySim.comm() != MPI_COMM_WORLD)
-    {
-        // TODO see above
-        // MPI_Comm_free(&cr->mpi_comm_mysim);
-    }
-    if (!mySimIsMyGroup && commMyGroup.comm() != MPI_COMM_NULL && commMyGroup.comm() != MPI_COMM_WORLD)
-    {
-        // TODO see above
-        // MPI_Comm_free(&cr->mpi_comm_mygroup);
-    }
-#endif
-}
-
-void t_commrec::setDD(std::unique_ptr<gmx_domdec_t>&& ddUniquePtr)
-{
-    ddUniquePtr_ = std::move(ddUniquePtr);
-    dd           = ddUniquePtr_.get();
-}
-
-void t_commrec::destroyDD()
-{
-    ddUniquePtr_.reset(nullptr);
-    dd = nullptr;
 }

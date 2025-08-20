@@ -47,18 +47,10 @@ struct gmx_domdec_t;
 struct t_commrec
 {
     //! Constructs a valid object with all communicators set to \p mpiComm
-    t_commrec(const gmx::MpiComm& mpiComm);
-
-    ~t_commrec();
+    t_commrec(const gmx::MpiComm& mpiCommMySim, const gmx::MpiComm& mpiCommMyGroup, gmx_domdec_t* domdec);
 
     //! Returns whether this is the main rank in the simulation, i.e. the rank that does IO
     bool isSimulationMainRank() const { return (commMySim.rank() == 0); }
-
-    //! Transfers the ownership of \p ddUniquePtr and sets \p dd
-    void setDD(std::unique_ptr<gmx_domdec_t>&& ddUniquePtr);
-
-    //! Destroys the dd object
-    void destroyDD();
 
     /* The nodeids in one sim are numbered sequentially from 0.
      * All communication within some simulation should happen
@@ -69,17 +61,12 @@ struct t_commrec
      * Note: other parts of the code may further subset these communicators.
      */
     /* Communicator including all ranks of a single simulation */
-    gmx::MpiComm commMySim;
+    const gmx::MpiComm& commMySim;
     /* Subset of commMySim including only the ranks in the same group (PP or PME) */
-    gmx::MpiComm commMyGroup;
+    const gmx::MpiComm& commMyGroup;
 
-private:
-    //! Storage for the domain decomposition data
-    std::unique_ptr<gmx_domdec_t> ddUniquePtr_;
-
-public:
-    //! C-pointer to ddUniquePtr (should be replaced by a getter)
-    gmx_domdec_t* dd = nullptr;
+    //! Pointer to a domdec struct, can be nullptr
+    gmx_domdec_t* dd;
 };
 
 /*! \brief Returns whether the domain decomposition machinery is active and reorders atoms

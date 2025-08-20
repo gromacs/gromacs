@@ -558,13 +558,13 @@ struct CartesianRankSetup
  */
 struct gmx_domdec_comm_t // NOLINT (clang-analyzer-optin.performance.Padding)
 {
-    gmx_domdec_comm_t(gmx::MpiComm& mpiCommMySim) : mpiCommMySim_(mpiCommMySim) {}
+    gmx_domdec_comm_t(const gmx::MpiComm& mpiCommMySim) : mpiCommMySim_(mpiCommMySim) {}
 
     /**< Constant parameters that control DD behavior */
     DDSettings ddSettings;
 
     /**< Reference to the MPI communicator for the whole simulation */
-    gmx::MpiComm& mpiCommMySim_;
+    gmx::MpiComm mpiCommMySim_;
 
     /**< Information on how the DD ranks are set up */
     DDRankSetup ddRankSetup;

@@ -973,7 +973,7 @@ int Mdrunner::mdrunner()
 
     GMX_RELEASE_ASSERT(!GMX_MPI || ms || simulationCommunicator != MPI_COMM_NULL,
                        "Must have valid communicator unless running a multi-simulation");
-    const MpiComm mpiCommSimulation(simulationCommunicator);
+    MpiComm mpiCommSimulation(simulationCommunicator);
 
     const bool simulationIsParallel = mpiCommSimulation.isParallel();
     const bool isMainSimulationRank = mpiCommSimulation.isMainRank();
@@ -1527,8 +1527,8 @@ int Mdrunner::mdrunner()
     t_state*                 localState;
     gmx_localtop_t           localTopology(mtop.ffparams);
 
-    t_commrec  commRec(mpiCommSimulation);
-    t_commrec* cr = &commRec;
+    std::unique_ptr<gmx_domdec_t> domdec;
+    std::unique_ptr<t_commrec>    commRec;
 
     if (ddBuilder)
     {
@@ -1536,14 +1536,22 @@ int Mdrunner::mdrunner()
         localState         = localStateInstance.get();
         // TODO Pass the GPU streams to ddBuilder to use in buffer
         // transfers (e.g. halo exchange)
-        cr->setDD(ddBuilder->build(cr,
-                                   &atomSets,
-                                   localTopology,
-                                   EI_ENERGY_MINIMIZATION(inputrec->eI) ? nullptr : localState,
-                                   haveFillerParticlesInLocalState,
-                                   &observablesReducerBuilder));
+        domdec = ddBuilder->build(&atomSets,
+                                  localTopology,
+                                  EI_ENERGY_MINIMIZATION(inputrec->eI) ? nullptr : localState,
+                                  haveFillerParticlesInLocalState,
+                                  &observablesReducerBuilder);
         // The builder's job is done, so destruct it
         ddBuilder.reset(nullptr);
+
+        // Report on hierarchical reductions, when active
+        if (const auto mesg = domdec->mpiComm().getHierarchicalReductionsReport(); mesg)
+        {
+            GMX_LOG(mdlog.info).asParagraph().appendText(*mesg);
+        }
+
+        commRec = std::make_unique<t_commrec>(domdec->mpiCommMySim(), domdec->mpiComm_, domdec.get());
+
         // Note that local state still does not exist yet.
     }
     else
@@ -1553,9 +1561,10 @@ int Mdrunner::mdrunner()
         localState = globalState.get();
 
         // DD is inactive, so all ranks have all PP and PME duties
-        cr->commMyGroup = MpiComm(mpiCommSimulation);
-        cr->commMySim   = MpiComm(mpiCommSimulation);
+        commRec = std::make_unique<t_commrec>(mpiCommSimulation, mpiCommSimulation, nullptr);
     }
+
+    t_commrec* cr = commRec.get();
 
     // Ensure that all atoms within the same update group are in the
     // same periodic image. Otherwise, a simulation that did not use
@@ -1661,20 +1670,6 @@ int Mdrunner::mdrunner()
     if (!userGpuTaskAssignment.empty())
     {
         gpuTaskAssignments.logPerformanceHints(mdlog, numAvailableDevices);
-    }
-
-    if (cr->commMySim.isParallel())
-    {
-        /* After possible communicator splitting in make_dd_communicators.
-         * we can set up the intra/inter node hierarchical reductions.
-         */
-        cr->commMyGroup.initializeHierarchicalReductions(gmx_physicalnode_id_hash());
-
-        const auto mesg = cr->commMyGroup.getHierarchicalReductionsReport();
-        if (mesg)
-        {
-            GMX_LOG(mdlog.info).asParagraph().appendText(*mesg);
-        }
     }
 
 #if GMX_MPI
@@ -2375,6 +2370,9 @@ int Mdrunner::mdrunner()
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
 
+    /* Does what it says */
+    print_date_and_time(fplog, cr->commMyGroup.rank(), "Finished mdrun", gmx_gettime());
+
     try
     {
         // Free PME data
@@ -2388,7 +2386,10 @@ int Mdrunner::mdrunner()
         // before we destroy the GPU context(s)
         // Pinned buffers are associated with contexts in CUDA.
         // As soon as we destroy GPU contexts after mdrunner() exits, these lines should go.
-        cr->destroyDD();
+        domdec.reset(nullptr);
+        // Destroy commRec, as it has references to domdec
+        commRec.reset(nullptr);
+        cr = nullptr;
         mdAtoms.reset(nullptr);
         globalState.reset(nullptr);
         localStateInstance.reset(nullptr);
@@ -2440,8 +2441,6 @@ int Mdrunner::mdrunner()
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
 
-    /* Does what it says */
-    print_date_and_time(fplog, cr->commMyGroup.rank(), "Finished mdrun", gmx_gettime());
     walltime_accounting_destroy(walltime_accounting);
 
     // Ensure log file content is written
@@ -2463,7 +2462,7 @@ int Mdrunner::mdrunner()
     /* we need to join all threads. The sub-threads join when they
        exit this function, but the main thread needs to be told to
        wait for that. */
-    if (cr->commMySim.isMainRank())
+    if (mpiCommSimulation.isMainRank())
     {
         tMPI_Finalize();
     }

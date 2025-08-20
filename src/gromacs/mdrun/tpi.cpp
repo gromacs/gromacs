@@ -254,6 +254,8 @@ private:
     //! Notifiers for MDModules
     const MDModulesNotifiers& mdModulesNotifiers_;
 
+    //! A single rank MPI communicator
+    gmx::MpiComm mpiCommSingleRank_ = gmx::MpiComm(gmx::MpiComm::SingleRank{});
     //! A non-parallel commrec for the energy calculations
     const t_commrec cr_;
 
@@ -355,7 +357,7 @@ TestParticleInsertion::TestParticleInsertion(const t_inputrec&         inputRec,
     top_(top),
     mdatoms_(mdatoms),
     mdModulesNotifiers_(mdModulesNotifiers),
-    cr_(MpiComm(MpiComm::SingleRank{})),
+    cr_(mpiCommSingleRank_, mpiCommSingleRank_, nullptr),
     fr_(*forceRec),
     enerd_(*enerd),
     rng_(inputRec.ld_seed, RandomDomain::TestParticleInsertion),
