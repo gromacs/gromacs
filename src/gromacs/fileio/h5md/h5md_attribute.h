@@ -46,10 +46,7 @@
 
 #include <optional>
 #include <string>
-
-#include "h5md_error.h"
-#include "h5md_guard.h"
-#include "h5md_type.h"
+#include <vector>
 
 namespace gmx
 {
@@ -141,74 +138,55 @@ void setAttributeVector<std::string>(const hid_t                     container,
                                      const std::string&              attributeName,
                                      const std::vector<std::string>& value);
 
+extern template std::optional<int32_t> getAttribute(const hid_t container, const std::string& attributeName);
+extern template std::optional<int64_t> getAttribute(const hid_t container, const std::string& attributeName);
+extern template std::optional<uint32_t> getAttribute(const hid_t container, const std::string& attributeName);
+extern template std::optional<uint64_t> getAttribute(const hid_t container, const std::string& attributeName);
+extern template std::optional<float> getAttribute(const hid_t container, const std::string& attributeName);
+extern template std::optional<double> getAttribute(const hid_t container, const std::string& attributeName);
 
-extern template std::optional<int32_t>  getAttribute<int32_t>(const hid_t        container,
-                                                             const std::string& attributeName);
-extern template std::optional<int64_t>  getAttribute<int64_t>(const hid_t        container,
-                                                             const std::string& attributeName);
-extern template std::optional<uint32_t> getAttribute<uint32_t>(const hid_t        container,
-                                                               const std::string& attributeName);
-extern template std::optional<uint64_t> getAttribute<uint64_t>(const hid_t        container,
-                                                               const std::string& attributeName);
-extern template std::optional<float>    getAttribute<float>(const hid_t        container,
-                                                         const std::string& attributeName);
-extern template std::optional<double>   getAttribute<double>(const hid_t        container,
-                                                           const std::string& attributeName);
+extern template std::optional<std::vector<int32_t>>  getAttributeVector(const hid_t container,
+                                                                        const std::string& attributeName);
+extern template std::optional<std::vector<int64_t>>  getAttributeVector(const hid_t container,
+                                                                        const std::string& attributeName);
+extern template std::optional<std::vector<uint32_t>> getAttributeVector(const hid_t container,
+                                                                        const std::string& attributeName);
+extern template std::optional<std::vector<uint64_t>> getAttributeVector(const hid_t container,
+                                                                        const std::string& attributeName);
+extern template std::optional<std::vector<float>>    getAttributeVector(const hid_t container,
+                                                                        const std::string& attributeName);
+extern template std::optional<std::vector<double>>   getAttributeVector(const hid_t container,
+                                                                        const std::string& attributeName);
 
+extern template void setAttribute(const hid_t container, const std::string& attributeName, const int32_t& value);
+extern template void setAttribute(const hid_t container, const std::string& attributeName, const int64_t& value);
+extern template void setAttribute(const hid_t        container,
+                                  const std::string& attributeName,
+                                  const uint32_t&    value);
+extern template void setAttribute(const hid_t        container,
+                                  const std::string& attributeName,
+                                  const uint64_t&    value);
+extern template void setAttribute(const hid_t container, const std::string& attributeName, const float& value);
+extern template void setAttribute(const hid_t container, const std::string& attributeName, const double& value);
 
-extern template std::optional<std::vector<int32_t>>
-getAttributeVector<int32_t>(const hid_t container, const std::string& attributeName);
-extern template std::optional<std::vector<int64_t>>
-getAttributeVector<int64_t>(const hid_t container, const std::string& attributeName);
-extern template std::optional<std::vector<uint32_t>>
-getAttributeVector<uint32_t>(const hid_t container, const std::string& attributeName);
-extern template std::optional<std::vector<uint64_t>>
-getAttributeVector<uint64_t>(const hid_t container, const std::string& attributeName);
-extern template std::optional<std::vector<float>>  getAttributeVector<float>(const hid_t container,
-                                                                            const std::string& attributeName);
-extern template std::optional<std::vector<double>> getAttributeVector<double>(const hid_t container,
-                                                                              const std::string& attributeName);
-
-
-extern template void setAttribute<int32_t>(const hid_t        container,
-                                           const std::string& attributeName,
-                                           const int32_t&     value);
-extern template void setAttribute<int64_t>(const hid_t        container,
-                                           const std::string& attributeName,
-                                           const int64_t&     value);
-extern template void setAttribute<uint32_t>(const hid_t        container,
-                                            const std::string& attributeName,
-                                            const uint32_t&    value);
-extern template void setAttribute<uint64_t>(const hid_t        container,
-                                            const std::string& attributeName,
-                                            const uint64_t&    value);
-extern template void setAttribute<float>(const hid_t        container,
-                                         const std::string& attributeName,
-                                         const float&       value);
-extern template void setAttribute<double>(const hid_t        container,
-                                          const std::string& attributeName,
-                                          const double&      value);
-
-
-extern template void setAttributeVector<int32_t>(const hid_t                 container,
-                                                 const std::string&          attributeName,
-                                                 const std::vector<int32_t>& value);
-extern template void setAttributeVector<int64_t>(const hid_t                 container,
-                                                 const std::string&          attributeName,
-                                                 const std::vector<int64_t>& value);
-extern template void setAttributeVector<uint32_t>(const hid_t                  container,
-                                                  const std::string&           attributeName,
-                                                  const std::vector<uint32_t>& value);
-extern template void setAttributeVector<uint64_t>(const hid_t                  container,
-                                                  const std::string&           attributeName,
-                                                  const std::vector<uint64_t>& value);
-extern template void setAttributeVector<float>(const hid_t               container,
-                                               const std::string&        attributeName,
-                                               const std::vector<float>& value);
-extern template void setAttributeVector<double>(const hid_t                container,
-                                                const std::string&         attributeName,
-                                                const std::vector<double>& value);
-
+extern template void setAttributeVector(const hid_t                 container,
+                                        const std::string&          attributeName,
+                                        const std::vector<int32_t>& value);
+extern template void setAttributeVector(const hid_t                 container,
+                                        const std::string&          attributeName,
+                                        const std::vector<int64_t>& value);
+extern template void setAttributeVector(const hid_t                  container,
+                                        const std::string&           attributeName,
+                                        const std::vector<uint32_t>& value);
+extern template void setAttributeVector(const hid_t                  container,
+                                        const std::string&           attributeName,
+                                        const std::vector<uint64_t>& value);
+extern template void setAttributeVector(const hid_t               container,
+                                        const std::string&        attributeName,
+                                        const std::vector<float>& value);
+extern template void setAttributeVector(const hid_t                container,
+                                        const std::string&         attributeName,
+                                        const std::vector<double>& value);
 
 } // namespace gmx
 

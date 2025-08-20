@@ -49,11 +49,11 @@
 #include <cstring>
 
 #include "gromacs/utility/basedefinitions.h"
-#include "gromacs/utility/unique_cptr.h"
 
 #include "h5md_dataset.h"
 #include "h5md_error.h"
 #include "h5md_guard.h"
+#include "h5md_type.h"
 #include "h5md_util.h"
 
 // HDF5 constants use old style casts.
@@ -310,64 +310,51 @@ void setAttributeVector<std::string>(const hid_t                     container,
     setAttributeVector<const char*>(container, attributeName, strData);
 }
 
+template std::optional<int32_t> getAttribute(const hid_t container, const std::string& attributeName);
+template std::optional<int64_t> getAttribute(const hid_t container, const std::string& attributeName);
+template std::optional<uint32_t> getAttribute(const hid_t container, const std::string& attributeName);
+template std::optional<uint64_t> getAttribute(const hid_t container, const std::string& attributeName);
+template std::optional<float> getAttribute(const hid_t container, const std::string& attributeName);
+template std::optional<double> getAttribute(const hid_t container, const std::string& attributeName);
 
-template std::optional<int32_t>  getAttribute<int32_t>(const hid_t        container,
-                                                      const std::string& attributeName);
-template std::optional<int64_t>  getAttribute<int64_t>(const hid_t        container,
-                                                      const std::string& attributeName);
-template std::optional<uint32_t> getAttribute<uint32_t>(const hid_t        container,
-                                                        const std::string& attributeName);
-template std::optional<uint64_t> getAttribute<uint64_t>(const hid_t        container,
-                                                        const std::string& attributeName);
-template std::optional<float> getAttribute<float>(const hid_t container, const std::string& attributeName);
-template std::optional<double> getAttribute<double>(const hid_t container, const std::string& attributeName);
+template std::optional<std::vector<int32_t>>  getAttributeVector(const hid_t        container,
+                                                                 const std::string& attributeName);
+template std::optional<std::vector<int64_t>>  getAttributeVector(const hid_t        container,
+                                                                 const std::string& attributeName);
+template std::optional<std::vector<uint32_t>> getAttributeVector(const hid_t        container,
+                                                                 const std::string& attributeName);
+template std::optional<std::vector<uint64_t>> getAttributeVector(const hid_t        container,
+                                                                 const std::string& attributeName);
+template std::optional<std::vector<float>>    getAttributeVector(const hid_t        container,
+                                                                 const std::string& attributeName);
+template std::optional<std::vector<double>>   getAttributeVector(const hid_t        container,
+                                                                 const std::string& attributeName);
 
-template std::optional<std::vector<int32_t>>  getAttributeVector<int32_t>(const hid_t container,
-                                                                         const std::string& attributeName);
-template std::optional<std::vector<int64_t>>  getAttributeVector<int64_t>(const hid_t container,
-                                                                         const std::string& attributeName);
-template std::optional<std::vector<uint32_t>> getAttributeVector<uint32_t>(const hid_t container,
-                                                                           const std::string& attributeName);
-template std::optional<std::vector<uint64_t>> getAttributeVector<uint64_t>(const hid_t container,
-                                                                           const std::string& attributeName);
-template std::optional<std::vector<float>>    getAttributeVector<float>(const hid_t container,
-                                                                     const std::string& attributeName);
-template std::optional<std::vector<double>>   getAttributeVector<double>(const hid_t container,
-                                                                       const std::string& attributeName);
+template void setAttribute(const hid_t container, const std::string& attributeName, const int32_t& value);
+template void setAttribute(const hid_t container, const std::string& attributeName, const int64_t& value);
+template void setAttribute(const hid_t container, const std::string& attributeName, const uint32_t& value);
+template void setAttribute(const hid_t container, const std::string& attributeName, const uint64_t& value);
+template void setAttribute(const hid_t container, const std::string& attributeName, const float& value);
+template void setAttribute(const hid_t container, const std::string& attributeName, const double& value);
 
-template void setAttribute<int32_t>(const hid_t        container,
-                                    const std::string& attributeName,
-                                    const int32_t&     value);
-template void setAttribute<int64_t>(const hid_t        container,
-                                    const std::string& attributeName,
-                                    const int64_t&     value);
-template void setAttribute<uint32_t>(const hid_t        container,
-                                     const std::string& attributeName,
-                                     const uint32_t&    value);
-template void setAttribute<uint64_t>(const hid_t        container,
-                                     const std::string& attributeName,
-                                     const uint64_t&    value);
-template void setAttribute<float>(const hid_t container, const std::string& attributeName, const float& value);
-template void setAttribute<double>(const hid_t container, const std::string& attributeName, const double& value);
-
-template void setAttributeVector<int32_t>(const hid_t                 container,
-                                          const std::string&          attributeName,
-                                          const std::vector<int32_t>& values);
-template void setAttributeVector<int64_t>(const hid_t                 container,
-                                          const std::string&          attributeName,
-                                          const std::vector<int64_t>& values);
-template void setAttributeVector<uint32_t>(const hid_t                  container,
-                                           const std::string&           attributeName,
-                                           const std::vector<uint32_t>& values);
-template void setAttributeVector<uint64_t>(const hid_t                  container,
-                                           const std::string&           attributeName,
-                                           const std::vector<uint64_t>& values);
-template void setAttributeVector<float>(const hid_t               container,
-                                        const std::string&        attributeName,
-                                        const std::vector<float>& values);
-template void setAttributeVector<double>(const hid_t                container,
-                                         const std::string&         attributeName,
-                                         const std::vector<double>& values);
+template void setAttributeVector(const hid_t                 container,
+                                 const std::string&          attributeName,
+                                 const std::vector<int32_t>& values);
+template void setAttributeVector(const hid_t                 container,
+                                 const std::string&          attributeName,
+                                 const std::vector<int64_t>& values);
+template void setAttributeVector(const hid_t                  container,
+                                 const std::string&           attributeName,
+                                 const std::vector<uint32_t>& values);
+template void setAttributeVector(const hid_t                  container,
+                                 const std::string&           attributeName,
+                                 const std::vector<uint64_t>& values);
+template void setAttributeVector(const hid_t               container,
+                                 const std::string&        attributeName,
+                                 const std::vector<float>& values);
+template void setAttributeVector(const hid_t                container,
+                                 const std::string&         attributeName,
+                                 const std::vector<double>& values);
 
 
 } // namespace gmx
