@@ -58,6 +58,7 @@
 #include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/mdtypes/awh_history.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/df_history.h"
 #include "gromacs/mdtypes/edsamhistory.h"
 #include "gromacs/mdtypes/energyhistory.h"
 #include "gromacs/mdtypes/imdoutputprovider.h"

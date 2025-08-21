@@ -195,24 +195,20 @@ void dd_distribute_dfhist(gmx_domdec_t* dd, df_history_t* dfhist)
 
     if (dfhist->nlambda > 0)
     {
-        int nlam = dfhist->nlambda;
-        dd_bcast(dd, sizeof(int) * nlam, dfhist->numSamplesAtLambdaForStatistics);
-        dd_bcast(dd, sizeof(int) * nlam, dfhist->numSamplesAtLambdaForEquilibration);
-        dd_bcast(dd, sizeof(real) * nlam, dfhist->wl_histo);
-        dd_bcast(dd, sizeof(real) * nlam, dfhist->sum_weights);
-        dd_bcast(dd, sizeof(real) * nlam, dfhist->sum_dg);
-        dd_bcast(dd, sizeof(real) * nlam, dfhist->sum_minvar);
-        dd_bcast(dd, sizeof(real) * nlam, dfhist->sum_variance);
+        dd_bcast(dd, gmx::makeArrayRef(dfhist->numSamplesAtLambdaForStatistics));
+        dd_bcast(dd, gmx::makeArrayRef(dfhist->numSamplesAtLambdaForEquilibration));
+        dd_bcast(dd, gmx::makeArrayRef(dfhist->wl_histo));
+        dd_bcast(dd, gmx::makeArrayRef(dfhist->sum_weights));
+        dd_bcast(dd, gmx::makeArrayRef(dfhist->sum_dg));
+        dd_bcast(dd, gmx::makeArrayRef(dfhist->sum_minvar));
+        dd_bcast(dd, gmx::makeArrayRef(dfhist->sum_variance));
 
-        for (int i = 0; i < nlam; i++)
-        {
-            dd_bcast(dd, sizeof(real) * nlam, dfhist->accum_p[i]);
-            dd_bcast(dd, sizeof(real) * nlam, dfhist->accum_m[i]);
-            dd_bcast(dd, sizeof(real) * nlam, dfhist->accum_p2[i]);
-            dd_bcast(dd, sizeof(real) * nlam, dfhist->accum_m2[i]);
-            dd_bcast(dd, sizeof(real) * nlam, dfhist->Tij[i]);
-            dd_bcast(dd, sizeof(real) * nlam, dfhist->Tij_empirical[i]);
-        }
+        dd_bcast(dd, dfhist->accum_p.toArrayRef());
+        dd_bcast(dd, dfhist->accum_m.toArrayRef());
+        dd_bcast(dd, dfhist->accum_p2.toArrayRef());
+        dd_bcast(dd, dfhist->accum_m2.toArrayRef());
+        dd_bcast(dd, dfhist->Tij.toArrayRef());
+        dd_bcast(dd, dfhist->Tij_empirical.toArrayRef());
     }
 }
 
@@ -237,9 +233,9 @@ static void dd_distribute_state(gmx_domdec_t* dd, const t_state* state, t_state*
         copy_mat(state->boxv, state_local->boxv);
         copy_mat(state->svir_prev, state_local->svir_prev);
         copy_mat(state->fvir_prev, state_local->fvir_prev);
-        if (state->dfhist != nullptr)
+        if (state->dfhist)
         {
-            copy_df_history(state_local->dfhist, state->dfhist);
+            *state_local->dfhist = *state->dfhist;
         }
         for (int i = 0; i < state_local->ngtc; i++)
         {
@@ -278,7 +274,7 @@ static void dd_distribute_state(gmx_domdec_t* dd, const t_state* state, t_state*
     dd_bcast(dd, ((state_local->nnhpres * nh) * sizeof(double)), state_local->nhpres_vxi.data());
 
     /* communicate df_history -- required for restarting from checkpoint */
-    dd_distribute_dfhist(dd, state_local->dfhist);
+    dd_distribute_dfhist(dd, state_local->dfhist.get());
 
     state_local->changeNumAtoms(dd->comm->atomRanges.numHomeAtoms());
 

@@ -49,6 +49,7 @@
 #include <type_traits>
 #include <vector>
 
+#include "gromacs/math/multidimarray.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
@@ -85,16 +86,47 @@ enum class CheckpointDataOperation
  *
  * \tparam operation  Whether we are reading or writing
  * \tparam T          The type of values stored in the ArrayRef
- * \param container   The container the ArrayRef is referencing to
+ * \param container   The container the ArrayRef is referencing
  * \return            The ArrayRef
  *
  * \see ArrayRef
+ *
+ * This overload suits use cases like
+ *
+ *  serialize(makeCheckpointArrayRef<operation, real>(someVector));
+ *
+ * where the container is an L-value whose lifetime is sufficient for the use case.
  *
  * \ingroup module_modularsimulator
  */
 template<CheckpointDataOperation operation, typename T>
 ArrayRef<std::conditional_t<operation == CheckpointDataOperation::Write || std::is_const_v<T>, const typename T::value_type, typename T::value_type>>
 makeCheckpointArrayRef(T& container)
+{
+    return container;
+}
+
+/*! \internal
+ * \brief Get an ArrayRef whose const-ness is defined by the checkpointing operation
+ *
+ * \tparam operation  Whether we are reading or writing
+ * \tparam T          The type of values stored in the ArrayRef
+ * \param container   The ephemeral container the ArrayRef is referencing
+ * \return            The ArrayRef
+ *
+ * \see ArrayRef
+ *
+ * This overload suits use cases like
+ *
+ *  serialize(makeCheckpointArrayRef<operation, real>(arrayRefFromArray(legacyPtr, n)));
+ *
+ * where the "container" is an R-value whose lifetime is sufficient for the use case.
+ *
+ * \ingroup module_modularsimulator
+ */
+template<CheckpointDataOperation operation, typename T>
+ArrayRef<std::conditional_t<operation == CheckpointDataOperation::Write || std::is_const_v<T>, const typename T::value_type, typename T::value_type>>
+makeCheckpointArrayRef(T&& container)
 {
     return container;
 }

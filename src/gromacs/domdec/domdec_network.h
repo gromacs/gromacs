@@ -123,6 +123,15 @@ void dd_sendrecv2_rvec(const struct gmx_domdec_t* dd,
 /*! \brief Broadcasts \p nbytes from \p data on \p DDMAINRANK to all PP ranks */
 void dd_bcast(const gmx_domdec_t* dd, int nbytes, void* data);
 
+/*! \brief Broadcasts content of  \p values on \p DDMAINRANK to all PP ranks */
+template<typename T>
+void dd_bcast(const gmx_domdec_t* dd, gmx::ArrayRef<T> values);
+
+// Extern instantiations defined in the source file
+extern template void dd_bcast<int>(const gmx_domdec_t*, gmx::ArrayRef<int>);
+extern template void dd_bcast<float>(const gmx_domdec_t*, gmx::ArrayRef<float>);
+extern template void dd_bcast<double>(const gmx_domdec_t*, gmx::ArrayRef<double>);
+
 /*! \brief Scatters \p nbytes from \p src on \p DDMAINRANK to all PP ranks, received in \p dest */
 void dd_scatter(const gmx_domdec_t* dd, int nbytes, const void* src, void* dest);
 

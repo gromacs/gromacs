@@ -524,7 +524,8 @@ void gmx::LegacySimulator::do_md()
             gmx_fatal(FARGS,
                       "With expanded ensemble, nstexpanded should be a multiple of nstcalcenergy");
         }
-        init_expanded_ensemble(startingBehavior_ != StartingBehavior::NewSimulation, ir, state_->dfhist);
+        init_expanded_ensemble(
+                startingBehavior_ != StartingBehavior::NewSimulation, ir, state_->dfhist.get());
     }
 
     if (isMainRank)
@@ -1364,7 +1365,7 @@ void gmx::LegacySimulator::do_md()
                                                   state_,
                                                   &MassQ,
                                                   state_->fep_state,
-                                                  state_->dfhist,
+                                                  state_->dfhist.get(),
                                                   step,
                                                   state_->v.rvec_array(),
                                                   md->homenr,
@@ -1372,7 +1373,7 @@ void gmx::LegacySimulator::do_md()
                 /* history is maintained in state->dfhist, but state_global is what is sent to trajectory and log output */
                 if (isMainRank)
                 {
-                    copy_df_history(stateGlobal_->dfhist, state_->dfhist);
+                    *stateGlobal_->dfhist = *state_->dfhist;
                 }
             }
 
@@ -1957,7 +1958,7 @@ void gmx::LegacySimulator::do_md()
                                           ir->fepvals.get(),
                                           ir->expandedvals.get(),
                                           ir->bSimTemp ? ir->simtempvals.get() : nullptr,
-                                          stateGlobal_->dfhist,
+                                          stateGlobal_->dfhist.get(),
                                           state_->fep_state,
                                           ir->nstlog,
                                           step);

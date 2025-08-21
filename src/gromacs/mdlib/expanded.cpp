@@ -39,6 +39,7 @@
 #include <cmath>
 #include <cstdio>
 
+#include <algorithm>
 #include <array>
 #include <filesystem>
 #include <memory>
@@ -47,6 +48,7 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
+#include "gromacs/mdtypes/df_history.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/group.h"
@@ -119,58 +121,48 @@ static void GenerateGibbsProbabilities(const real* ene, double* p_k, double* pks
     }
 }
 
-static void
-GenerateWeightedGibbsProbabilities(const real* ene, double* p_k, double* pks, int nlim, real* nvals, real delta)
+static void GenerateWeightedGibbsProbabilities(const real*         ene,
+                                               double*             p_k,
+                                               double*             pks,
+                                               gmx::ArrayRef<real> nvals,
+                                               real                delta)
 {
 
-    int   i;
-    real  maxene;
-    real* nene;
     *pks = 0.0;
 
-    snew(nene, nlim);
-    for (i = 0; i < nlim; i++)
+    std::vector<real> nene(nvals.size());
+    std::transform(nvals.begin(),
+                   nvals.end(),
+                   ene,
+                   nene.begin(),
+                   [delta](const real& val, const real& ene)
+                   {
+                       if (val == 0)
+                       {
+                           /* add the delta, since we need to make sure it's greater than zero, and
+                              we need a non-arbitrary number? */
+                           return ene + std::log(val + delta);
+                       }
+                       else
+                       {
+                           return ene + std::log(val);
+                       }
+                   });
+
+    const auto neneMaxElement = std::max_element(nene.begin(), nene.end());
+    // subtract off the maximum, to avoid overflow later
+    for (auto& n : nene)
     {
-        if (nvals[i] == 0)
-        {
-            /* add the delta, since we need to make sure it's greater than zero, and
-               we need a non-arbitrary number? */
-            nene[i] = ene[i] + std::log(nvals[i] + delta);
-        }
-        else
-        {
-            nene[i] = ene[i] + std::log(nvals[i]);
-        }
+        n -= *neneMaxElement;
     }
 
-    /* find the maximum value */
-    maxene = nene[0];
-    for (i = 0; i < nlim; i++)
-    {
-        if (nene[i] > maxene)
-        {
-            maxene = nene[i];
-        }
-    }
-
-    /* subtract off the maximum, avoiding overflow */
-    for (i = 0; i < nlim; i++)
-    {
-        nene[i] -= maxene;
-    }
-
-    /* find the denominator */
-    for (i = 0; i < nlim; i++)
-    {
-        *pks += std::exp(nene[i]);
-    }
-
-    /*numerators*/
-    for (i = 0; i < nlim; i++)
-    {
-        p_k[i] = std::exp(nene[i]) / *pks;
-    }
-    sfree(nene);
+    // find the denominator
+    *pks = std::accumulate(nene.begin(),
+                           nene.end(),
+                           *pks,
+                           [](double sum, const real n) { return sum + std::exp(n); });
+    // find numerators
+    std::transform(nene.begin(), nene.end(), p_k, [pks](const real& n) { return std::exp(n) / *pks; });
 }
 
 static int FindMinimum(const real* min_metric, int N)
@@ -193,38 +185,26 @@ static int FindMinimum(const real* min_metric, int N)
     return min_nval;
 }
 
-static gmx_bool CheckHistogramRatios(int nhisto, const real* histo, real ratio)
+static gmx_bool CheckHistogramRatios(gmx::ArrayRef<const real> histo, real ratio)
 {
-
-    int      i;
-    real     nmean;
-    gmx_bool bIfFlat;
-
-    nmean = 0;
-    for (i = 0; i < nhisto; i++)
-    {
-        nmean += histo[i];
-    }
+    real nmean = std::accumulate(histo.begin(), histo.end(), 0);
 
     if (nmean == 0)
     {
         /* no samples! is bad!*/
-        bIfFlat = FALSE;
-        return bIfFlat;
+        return false;
     }
-    nmean /= static_cast<real>(nhisto);
+    nmean /= histo.size();
 
-    bIfFlat = TRUE;
-    for (i = 0; i < nhisto; i++)
-    {
-        /* make sure that all points are in the ratio < x <  1/ratio range  */
-        if (!((histo[i] / nmean < 1.0 / ratio) && (histo[i] / nmean > ratio)))
-        {
-            bIfFlat = FALSE;
-            break;
-        }
-    }
-    return bIfFlat;
+    // make sure that all points are in the ratio < x < 1/ratio range
+    return std::find_if_not(histo.begin(),
+                            histo.end(),
+                            [nmean, ratio](const real& value)
+                            {
+                                const real scaledValue = value / nmean;
+                                return (scaledValue < 1.0 / ratio) && (scaledValue > ratio);
+                            })
+           == histo.end();
 }
 
 static gmx_bool CheckIfDoneEquilibrating(int nlim, const t_expanded* expand, const df_history_t* dfhist, int64_t step)
@@ -315,15 +295,13 @@ static gmx_bool CheckIfDoneEquilibrating(int nlim, const t_expanded* expand, con
                     /* we want to use flatness -avoiding- the forced-through samples.  Plus, we need
                        to convert to floats for this histogram function. */
 
-                    real* modhisto;
-                    snew(modhisto, nlim);
+                    std::vector<real> modhisto(nlim);
                     for (i = 0; i < nlim; i++)
                     {
                         modhisto[i] =
                                 1.0 * (dfhist->numSamplesAtLambdaForEquilibration[i] - expand->lmc_forced_nstart);
                     }
-                    bIfFlat = CheckHistogramRatios(nlim, modhisto, expand->equil_ratio);
-                    sfree(modhisto);
+                    bIfFlat = CheckHistogramRatios(modhisto, expand->equil_ratio);
                     if (!bIfFlat)
                     {
                         bDoneEquilibrating = FALSE;
@@ -408,8 +386,7 @@ static gmx_bool UpdateWeights(int           nlim,
 
             /* then increment weights (uses count) */
             pks = 0.0;
-            GenerateWeightedGibbsProbabilities(
-                    weighted_lamee, p_k, &pks, nlim, dfhist->wl_histo, dfhist->wl_delta);
+            GenerateWeightedGibbsProbabilities(weighted_lamee, p_k, &pks, dfhist->wl_histo, dfhist->wl_delta);
 
             for (i = 0; i < nlim; i++)
             {
@@ -488,8 +465,8 @@ static gmx_bool UpdateWeights(int           nlim,
                         cnval - (scaled_lamee[fep_state] - scaled_lamee[fep_state - 1]);
                 acceptanceWeight =
                         gmx::calculateAcceptanceWeight(expand->elamstats, lambdaEnergyDifference);
-                dfhist->accum_m[fep_state][nval] += acceptanceWeight;
-                dfhist->accum_m2[fep_state][nval] += acceptanceWeight * acceptanceWeight;
+                dfhist->accum_m(fep_state, nval) += acceptanceWeight;
+                dfhist->accum_m2(fep_state, nval) += acceptanceWeight * acceptanceWeight;
             }
 
             // Compute acceptance criterion weight to transition to the next state
@@ -499,8 +476,8 @@ static gmx_bool UpdateWeights(int           nlim,
                         -cnval + (scaled_lamee[fep_state + 1] - scaled_lamee[fep_state]);
                 acceptanceWeight =
                         gmx::calculateAcceptanceWeight(expand->elamstats, lambdaEnergyDifference);
-                dfhist->accum_p[fep_state][nval] += acceptanceWeight;
-                dfhist->accum_p2[fep_state][nval] += acceptanceWeight * acceptanceWeight;
+                dfhist->accum_p(fep_state, nval) += acceptanceWeight;
+                dfhist->accum_p2(fep_state, nval) += acceptanceWeight * acceptanceWeight;
             }
 
             /* Determination of Metropolis transition and Barker transition weights */
@@ -550,29 +527,29 @@ static gmx_bool UpdateWeights(int           nlim,
 
             if (numObservationsCurrentState > 0)
             {
-                avgAcceptanceCurrentToLower = dfhist->accum_m[fep_state][nval] / numObservationsCurrentState;
+                avgAcceptanceCurrentToLower = dfhist->accum_m(fep_state, nval) / numObservationsCurrentState;
                 avgAcceptanceCurrentToHigher =
-                        dfhist->accum_p[fep_state][nval] / numObservationsCurrentState;
+                        dfhist->accum_p(fep_state, nval) / numObservationsCurrentState;
                 avgAcceptanceCurrentToLowerSquared =
-                        dfhist->accum_m2[fep_state][nval] / numObservationsCurrentState;
+                        dfhist->accum_m2(fep_state, nval) / numObservationsCurrentState;
                 avgAcceptanceCurrentToHigherSquared =
-                        dfhist->accum_p2[fep_state][nval] / numObservationsCurrentState;
+                        dfhist->accum_p2(fep_state, nval) / numObservationsCurrentState;
             }
 
             if ((fep_state > 0) && (numObservationsLowerState > 0))
             {
                 avgAcceptanceLowerToCurrent =
-                        dfhist->accum_p[fep_state - 1][nval] / numObservationsLowerState;
+                        dfhist->accum_p(fep_state - 1, nval) / numObservationsLowerState;
                 avgAcceptanceLowerToCurrentSquared =
-                        dfhist->accum_p2[fep_state - 1][nval] / numObservationsLowerState;
+                        dfhist->accum_p2(fep_state - 1, nval) / numObservationsLowerState;
             }
 
             if ((fep_state < nlim - 1) && (numObservationsHigherState > 0))
             {
                 avgAcceptanceHigherToCurrent =
-                        dfhist->accum_m[fep_state + 1][nval] / numObservationsHigherState;
+                        dfhist->accum_m(fep_state + 1, nval) / numObservationsHigherState;
                 avgAcceptanceHigherToCurrentSquared =
-                        dfhist->accum_m2[fep_state + 1][nval] / numObservationsHigherState;
+                        dfhist->accum_m2(fep_state + 1, nval) / numObservationsHigherState;
             }
             /* These are accumulation of positive values (see definition of acceptance functions
              * above), or of squares of positive values.
@@ -1150,13 +1127,13 @@ static int ChooseNewLambda(int               nlim,
 
         for (ifep = 0; ifep < nlim; ifep++)
         {
-            dfhist->Tij[fep_state][ifep] += propose[ifep] * accept[ifep];
-            dfhist->Tij[fep_state][fep_state] += propose[ifep] * (1.0 - accept[ifep]);
+            dfhist->Tij(fep_state, ifep) += propose[ifep] * accept[ifep];
+            dfhist->Tij(fep_state, fep_state) += propose[ifep] * (1.0 - accept[ifep]);
         }
         fep_state = lamnew;
     }
 
-    dfhist->Tij_empirical[starting_fep_state][lamnew] += 1.0;
+    dfhist->Tij_empirical(starting_fep_state, lamnew) += 1.0;
 
     sfree(propose);
     sfree(accept);
@@ -1320,13 +1297,13 @@ void PrintFreeEnergyInfoToFile(FILE*               outfile,
                     {
                         if (expand->bSymmetrizedTMatrix)
                         {
-                            Tprint = (dfhist->Tij[ifep][jfep] + dfhist->Tij[jfep][ifep])
+                            Tprint = (dfhist->Tij(ifep, jfep) + dfhist->Tij(jfep, ifep))
                                      / (dfhist->numSamplesAtLambdaForStatistics[ifep]
                                         + dfhist->numSamplesAtLambdaForStatistics[jfep]);
                         }
                         else
                         {
-                            Tprint = (dfhist->Tij[ifep][jfep])
+                            Tprint = (dfhist->Tij(ifep, jfep))
                                      / (dfhist->numSamplesAtLambdaForStatistics[ifep]);
                         }
                     }
@@ -1358,13 +1335,13 @@ void PrintFreeEnergyInfoToFile(FILE*               outfile,
                     {
                         if (expand->bSymmetrizedTMatrix)
                         {
-                            Tprint = (dfhist->Tij_empirical[ifep][jfep] + dfhist->Tij_empirical[jfep][ifep])
+                            Tprint = (dfhist->Tij_empirical(ifep, jfep) + dfhist->Tij_empirical(jfep, ifep))
                                      / (dfhist->numSamplesAtLambdaForStatistics[ifep]
                                         + dfhist->numSamplesAtLambdaForStatistics[jfep]);
                         }
                         else
                         {
-                            Tprint = dfhist->Tij_empirical[ifep][jfep]
+                            Tprint = dfhist->Tij_empirical(ifep, jfep)
                                      / (dfhist->numSamplesAtLambdaForStatistics[ifep]);
                         }
                     }
@@ -1536,7 +1513,7 @@ int expandedEnsembleUpdateLambdaState(FILE*                 log,
         }
         else
         {
-            bIfReset = CheckHistogramRatios(nlim, dfhist->wl_histo, expand->wl_ratio);
+            bIfReset = CheckHistogramRatios(dfhist->wl_histo, expand->wl_ratio);
             if (bIfReset)
             {
                 for (i = 0; i < nlim; i++)

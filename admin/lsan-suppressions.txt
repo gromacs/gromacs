@@ -17,8 +17,6 @@ leak:get_zone_pulse_groups
 leak:gmx_check
 leak:gmx_make_edi
 leak:gmx_pme_receive_f
-leak:init_dfhist_state
-leak:init_df_history
 leak:init_disres
 leak:init_edsam
 leak:init_ekinstate

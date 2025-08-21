@@ -906,6 +906,15 @@ static int doRealArrayRef(XdrSerializer* serializer, Enum ecpt, gmx::ArrayRef<re
             serializer, ecpt, vector.size(), &v_real, nullptr, list, CptElementType::realnum);
 }
 
+//! \brief Read/Write an ArrayRef<int>.
+template<typename Enum>
+static int doIntArrayRef(XdrSerializer* serializer, Enum ecpt, gmx::ArrayRef<int> vector, FILE* list)
+{
+    int* v_int = vector.data();
+    return doVectorLow<int, std::allocator<int>>(
+            serializer, ecpt, vector.size(), &v_int, nullptr, list, CptElementType::integer);
+}
+
 //! Convert from view of RVec to view of real.
 static gmx::ArrayRef<real> realArrayRefFromRVecArrayRef(gmx::ArrayRef<gmx::RVec> ofRVecs)
 {
@@ -933,17 +942,6 @@ static int doRvecVector(XdrSerializer* serializer, Enum ecpt, PaddedVectorOfRVec
         return doVectorLow<real, realAllocator>(
                 serializer, ecpt, numReals, nullptr, nullptr, list, CptElementType::realnum);
     }
-}
-
-/* This function stores n along with the reals for reading,
- * but on reading it assumes that n matches the value in the checkpoint file,
- * a fatal error is generated when this is not the case.
- */
-template<typename Enum>
-static int do_cpte_reals(XdrSerializer* serializer, Enum ecpt, int n, real** v, FILE* list)
-{
-    return doVectorLow<real, std::allocator<real>>(
-            serializer, ecpt, n, v, nullptr, list, CptElementType::realnum);
 }
 
 template<typename Enum>
@@ -1003,35 +1001,6 @@ static int do_cpte_matrix(XdrSerializer* serializer, Enum ecpt, matrix v, FILE* 
         pr_rvecs(list, 0, enumValueToString(ecpt), v, DIM);
     }
 
-    return ret;
-}
-
-template<typename Enum>
-static int do_cpte_nmatrix(XdrSerializer* serializer, Enum ecpt, int n, real** v, FILE* list)
-{
-    int  i;
-    int  ret, reti;
-    char name[CPTSTRLEN];
-
-    ret = 0;
-    if (v == nullptr)
-    {
-        snew(v, n);
-    }
-    for (i = 0; i < n; i++)
-    {
-        reti = doVectorLow<real, std::allocator<real>>(
-                serializer, ecpt, n, &(v[i]), nullptr, nullptr, CptElementType::matrix3x3);
-        if (list && reti == 0)
-        {
-            sprintf(name, "%s[%d]", enumValueToString(ecpt), i);
-            pr_reals(list, 0, name, v[i], n);
-        }
-        if (reti != 0)
-        {
-            ret = reti;
-        }
-    }
     return ret;
 }
 
@@ -1918,7 +1887,11 @@ static int doCptPullHist(XdrSerializer* serializer, gmx_bool bRead, int fflags, 
     return ret;
 }
 
-static int do_cpt_df_hist(XdrSerializer* serializer, int fflags, int nlambda, df_history_t** dfhistPtr, FILE* list)
+static int do_cpt_df_hist(XdrSerializer*                 serializer,
+                          int                            fflags,
+                          int                            nlambda,
+                          std::shared_ptr<df_history_t>* dfhistPtr,
+                          FILE*                          list)
 {
     int ret = 0;
 
@@ -1927,15 +1900,11 @@ static int do_cpt_df_hist(XdrSerializer* serializer, int fflags, int nlambda, df
         return 0;
     }
 
-    std::unique_ptr<df_history_t> localDFHistory = nullptr;
-    if (*dfhistPtr == nullptr)
+    if (!*dfhistPtr)
     {
-        localDFHistory        = std::make_unique<df_history_t>();
-        *dfhistPtr            = localDFHistory.get();
-        (*dfhistPtr)->nlambda = nlambda;
-        init_df_history(*dfhistPtr, nlambda);
+        *dfhistPtr = std::make_shared<df_history_t>(nlambda);
     }
-    df_history_t* dfhist = *dfhistPtr;
+    df_history_t* dfhist = dfhistPtr->get();
 
     using StateFlags = gmx::EnumerationArray<StateFepEntry, bool>;
     for (auto i = StateFlags::keys().begin(); (i != StateFlags::keys().end() && ret == 0); i++)
@@ -1948,48 +1917,46 @@ static int do_cpt_df_hist(XdrSerializer* serializer, int fflags, int nlambda, df
                     ret = do_cpte_bool(serializer, *i, &dfhist->bEquil, list);
                     break;
                 case StateFepEntry::NumAtLambdaStats:
-                    ret = do_cpte_ints(
-                            serializer, *i, nlambda, &dfhist->numSamplesAtLambdaForStatistics, list);
+                    ret = doIntArrayRef(serializer, *i, dfhist->numSamplesAtLambdaForStatistics, list);
                     break;
                 case StateFepEntry::NumAtLambdaEquil:
-                    ret = do_cpte_ints(
-                            serializer, *i, nlambda, &dfhist->numSamplesAtLambdaForEquilibration, list);
+                    ret = doIntArrayRef(serializer, *i, dfhist->numSamplesAtLambdaForEquilibration, list);
                     break;
                 case StateFepEntry::WangLandauHistogram:
-                    ret = do_cpte_reals(serializer, *i, nlambda, &dfhist->wl_histo, list);
+                    ret = doRealArrayRef(serializer, *i, dfhist->wl_histo, list);
                     break;
                 case StateFepEntry::WangLandauDelta:
                     ret = do_cpte_real(serializer, *i, &dfhist->wl_delta, list);
                     break;
                 case StateFepEntry::SumWeights:
-                    ret = do_cpte_reals(serializer, *i, nlambda, &dfhist->sum_weights, list);
+                    ret = doRealArrayRef(serializer, *i, dfhist->sum_weights, list);
                     break;
                 case StateFepEntry::SumDG:
-                    ret = do_cpte_reals(serializer, *i, nlambda, &dfhist->sum_dg, list);
+                    ret = doRealArrayRef(serializer, *i, dfhist->sum_dg, list);
                     break;
                 case StateFepEntry::SumMinVar:
-                    ret = do_cpte_reals(serializer, *i, nlambda, &dfhist->sum_minvar, list);
+                    ret = doRealArrayRef(serializer, *i, dfhist->sum_minvar, list);
                     break;
                 case StateFepEntry::SumVar:
-                    ret = do_cpte_reals(serializer, *i, nlambda, &dfhist->sum_variance, list);
+                    ret = doRealArrayRef(serializer, *i, dfhist->sum_variance, list);
                     break;
                 case StateFepEntry::Accump:
-                    ret = do_cpte_nmatrix(serializer, *i, nlambda, dfhist->accum_p, list);
+                    ret = doRealArrayRef(serializer, *i, dfhist->accum_p.toArrayRef(), list);
                     break;
                 case StateFepEntry::Accumm:
-                    ret = do_cpte_nmatrix(serializer, *i, nlambda, dfhist->accum_m, list);
+                    ret = doRealArrayRef(serializer, *i, dfhist->accum_m.toArrayRef(), list);
                     break;
                 case StateFepEntry::Accump2:
-                    ret = do_cpte_nmatrix(serializer, *i, nlambda, dfhist->accum_p2, list);
+                    ret = doRealArrayRef(serializer, *i, dfhist->accum_p2.toArrayRef(), list);
                     break;
                 case StateFepEntry::Accumm2:
-                    ret = do_cpte_nmatrix(serializer, *i, nlambda, dfhist->accum_m2, list);
+                    ret = doRealArrayRef(serializer, *i, dfhist->accum_m2.toArrayRef(), list);
                     break;
                 case StateFepEntry::Tij:
-                    ret = do_cpte_nmatrix(serializer, *i, nlambda, dfhist->Tij, list);
+                    ret = doRealArrayRef(serializer, *i, dfhist->Tij.toArrayRef(), list);
                     break;
                 case StateFepEntry::TijEmp:
-                    ret = do_cpte_nmatrix(serializer, *i, nlambda, dfhist->Tij_empirical, list);
+                    ret = doRealArrayRef(serializer, *i, dfhist->Tij_empirical.toArrayRef(), list);
                     break;
 
                 default:

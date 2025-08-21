@@ -194,14 +194,13 @@ ExpandedEnsembleElement::ExpandedEnsembleElement(bool              isMainRank,
     initialStep_(initialStep),
     frequency_(frequency),
     nextLogWritingStep_(-1),
-    dfhist_(std::make_unique<df_history_t>()),
+    dfhist_(std::make_unique<df_history_t>(inputrec->fepvals->n_lambda)),
     restoredFromCheckpoint_(false),
     energyData_(energyData),
     freeEnergyPerturbationData_(freeEnergyPerturbationData),
     fplog_(fplog),
     inputrec_(inputrec)
 {
-    init_df_history(dfhist_.get(), inputrec_->fepvals->n_lambda);
 }
 
 ExpandedEnsembleElement::~ExpandedEnsembleElement() = default;

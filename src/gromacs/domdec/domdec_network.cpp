@@ -56,6 +56,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/mpicomm.h"
+#include "gromacs/utility/mpitypes.h"
 
 #include "domdec_internal.h"
 
@@ -246,6 +247,25 @@ void dd_bcast(const gmx_domdec_t gmx_unused* dd, int gmx_unused nbytes, void gmx
     }
 #endif
 }
+
+template<typename T>
+void dd_bcast(const gmx_domdec_t* dd, gmx::ArrayRef<T> values)
+{
+#if GMX_MPI
+    if (dd->nnodes > 1)
+    {
+        MPI_Bcast(values.data(), values.size(), gmx::mpiType<T>(), DDMAINRANK(dd), dd->mpiComm().comm());
+    }
+#else
+    GMX_UNUSED_VALUE(dd);
+    GMX_UNUSED_VALUE(values);
+#endif
+}
+
+// Explicit instantiations
+template void dd_bcast<int>(const gmx_domdec_t*, gmx::ArrayRef<int>);
+template void dd_bcast<float>(const gmx_domdec_t*, gmx::ArrayRef<float>);
+template void dd_bcast<double>(const gmx_domdec_t*, gmx::ArrayRef<double>);
 
 void dd_scatter(const gmx_domdec_t gmx_unused* dd, int gmx_unused nbytes, const void gmx_unused* src, void* dest)
 {
