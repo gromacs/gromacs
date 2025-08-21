@@ -49,6 +49,9 @@
 
 namespace gmx
 {
+
+class H5md;
+
 namespace test
 {
 
@@ -61,6 +64,9 @@ public:
 
     //! \brief Return a handle to the open H5md file.
     hid_t fileid();
+
+    //! \brief Return a reference to the open H5md file.
+    H5md& file();
 
 private:
     class Impl;

@@ -69,5 +69,10 @@ hid_t H5mdTestBase::fileid()
     return impl_->file_.fileid();
 }
 
+H5md& H5mdTestBase::file()
+{
+    return impl_->file_;
+}
+
 } // namespace test
 } // namespace gmx
