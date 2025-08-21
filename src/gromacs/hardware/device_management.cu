@@ -48,6 +48,11 @@
 #include "device_management.h"
 
 #include <cassert>
+#include <cstring>
+
+#include <algorithm>
+#include <array>
+#include <optional>
 
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/gpu_utils/device_context.h"
@@ -70,6 +75,23 @@ static const int c_cudaMaxDeviceCount = 32;
 
 /** Dummy kernel used for sanity checking. */
 static __global__ void dummy_kernel() {}
+
+static std::optional<std::array<std::byte, 16>> getCudaDeviceUuid(const cudaDeviceProp& prop)
+{
+    std::array<std::byte, 16> uuidBytes;
+    static_assert(sizeof(prop.uuid.bytes) == sizeof(uuidBytes), "uuid should be 16 bytes");
+    std::memcpy(uuidBytes.data(), prop.uuid.bytes, uuidBytes.size());
+
+    const bool isAllZeros = std::all_of(
+            uuidBytes.begin(), uuidBytes.end(), [](const auto b) { return b == std::byte(0); });
+
+    if (isAllZeros)
+    {
+        return std::nullopt;
+    }
+
+    return uuidBytes;
+}
 
 void warnWhenDeviceNotTargeted(const gmx::MDLogger& mdlog, const DeviceInformation& deviceInfo)
 {
@@ -291,6 +313,8 @@ std::vector<std::unique_ptr<DeviceInformation>> findDevices()
         deviceInfoList[i]->id           = i;
         deviceInfoList[i]->prop         = prop;
         deviceInfoList[i]->deviceVendor = DeviceVendor::Nvidia;
+
+        deviceInfoList[i]->uuid = getCudaDeviceUuid(prop);
 
         deviceInfoList[i]->supportedSubGroupSizes.push_back(32);
 
