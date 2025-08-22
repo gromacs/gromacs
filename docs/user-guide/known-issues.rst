@@ -124,3 +124,16 @@ Building with AdaptiveCpp 24.02 also prevents the problem from arising.
 
 :issue:`4965`
 
+Severe performance regression with SVE and LLVM 20
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+There is a major performance regression on AArch64 CPUs
+when using SVE SIMD and building with LLVM 20.
+
+The problem can be worked around by using LLVM 19
+or setting ``-DGMX_SIMD=ARM_NEON_ASIMD``.
+
+The issue is expected to be fixed in LLVM 21.
+
+:issue:`5390`
+
