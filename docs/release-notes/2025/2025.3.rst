@@ -114,9 +114,13 @@ Fixed a regression where |Gromacs| installed muParser headers, causing conflicts
 the separate muParser package if installed.
 
 :issue:`5282`
+
 Improve heuristics for choice of NBNXM kernel flavor for AMD gfx94x
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 Analytical Ewald kernels are used since these perform better in most common use-cases.
+The exception is :mdp-value:`vdw-modifier=Force-switch` with SYCL backend, where we
+still use tabulated kernels.
 
 :issue:`5329`
+
