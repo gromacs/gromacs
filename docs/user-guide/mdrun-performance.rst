@@ -466,7 +466,7 @@ behavior.
     Alternatively, :ref:`mdrun <gmx mdrun>` will honor the appropriate system
     environment variable (e.g. ``OMP_NUM_THREADS``) if set.
     Note that the maximum number of OpenMP threads (per rank) is,
-    for efficiency reasons, limited to 64. While it is rarely beneficial to use
+    for efficiency reasons, limited to 128. While it is rarely beneficial to use
     a number of threads higher than this, the GMX_OPENMP_MAX_THREADS CMake variable
     can be used to increase the limit.
 
