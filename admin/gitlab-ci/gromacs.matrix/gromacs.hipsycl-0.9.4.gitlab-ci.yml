@@ -53,6 +53,7 @@ gromacs:hipsycl-rocm:test:
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
     GPU_VENDOR: "AMD"
     GPU_COUNT: 1
+    HSA_ENABLE_SDMA: 0  # See #5341
   tags:
     - $GITLAB_RUNNER_TAG_1X_AMD_GPU
   needs:
@@ -71,6 +72,7 @@ gromacs:hipsycl-rocm:regressiontest:
     REGRESSIONTEST_OMP_RANK_NUMBER: 2
     GPU_VENDOR: "AMD"
     GPU_COUNT: 1
+    HSA_ENABLE_SDMA: 0  # See #5341
   tags:
     - $GITLAB_RUNNER_TAG_1X_AMD_GPU
   needs:

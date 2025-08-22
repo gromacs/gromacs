@@ -54,6 +54,7 @@ gromacs:oneapi-2023.2.0-amd-nightly:test:
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
     GPU_VENDOR: "AMD"
     GPU_COUNT: 1
+    HSA_ENABLE_SDMA: 0  # See #5341
   needs:
     - job: gromacs:oneapi-2023.2.0-amd-nightly:build
   tags:
@@ -75,6 +76,7 @@ gromacs:oneapi-2023.2.0-amd-nightly:regressiontest:
     REGRESSIONTEST_OMP_RANK_NUMBER: 1
     GPU_VENDOR: "AMD"
     GPU_COUNT: 1
+    HSA_ENABLE_SDMA: 0  # See #5341
   needs:
     - job: gromacs:oneapi-2023.2.0-amd-nightly:build
     - job: regressiontests:prepare
