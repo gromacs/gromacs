@@ -187,7 +187,7 @@ static int FindMinimum(const real* min_metric, int N)
 
 static gmx_bool CheckHistogramRatios(gmx::ArrayRef<const real> histo, real ratio)
 {
-    real nmean = std::accumulate(histo.begin(), histo.end(), 0);
+    real nmean = std::accumulate(histo.begin(), histo.end(), 0.0_real);
 
     if (nmean == 0)
     {
