@@ -338,7 +338,6 @@ enum class ParrinelloRahmanVelocityScaling
  *
  * \tparam       storeUpdatedVelocities Tells whether we should store the updated velocities
  * \tparam       numTempScaleValues     The number of different T-couple values
- * \tparam       applyPRVScaling        Apply Parrinello-Rahman velocity scaling
  * \tparam       parrinelloRahmanVelocityScaling  The properties of the Parrinello-Rahman velocity scaling matrix
  * \param[in]    start                  Index of first atom to update
  * \param[in]    nrend                  Last atom to update: \p nrend - 1

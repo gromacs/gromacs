@@ -949,7 +949,7 @@ best-tested and supported of these. Linux running on POWER 8/9 and ARM v8
 CPUs also works well.
 
 Experimental support is available for compiling CUDA code, both for host and
-device, using clang (version 6.0 or later).
+device, using clang.
 A CUDA toolkit is still required but it is used only for GPU device code
 generation and to link against the CUDA runtime library.
 The clang CUDA support simplifies compilation and provides benefits for development
@@ -959,7 +959,7 @@ to avoid compatibility issues between the GNU toolchain and the CUDA toolkit.
 clang for CUDA can be triggered using the ``GMX_CLANG_CUDA=ON`` CMake option.
 Target architectures can be selected with  ``GMX_CUDA_TARGET_SM``,
 virtual architecture code is always embedded for all requested architectures
-(hence GMX_CUDA_TARGET_COMPUTE is ignored).
+(hence ``GMX_CUDA_TARGET_COMPUTE`` is ignored).
 Note that this is mainly a developer-oriented feature but its performance is
 generally close to that of code compiled with nvcc.
 

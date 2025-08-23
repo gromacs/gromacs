@@ -272,7 +272,6 @@ void dd_scatter(const gmx_domdec_t gmx_unused* dd, int gmx_unused nbytes, const 
 #if GMX_MPI
     if (dd->nnodes > 1)
     {
-        /* Some MPI implementions don't specify const */
         MPI_Scatter(src, nbytes, MPI_BYTE, dest, nbytes, MPI_BYTE, DDMAINRANK(dd), dd->mpiComm().comm());
     }
     else
@@ -294,7 +293,6 @@ void dd_gather(const gmx_domdec_t gmx_unused* dd,
 #if GMX_MPI
     if (dd->nnodes > 1)
     {
-        /* Some MPI implementions don't specify const */
         MPI_Gather(src, nbytes, MPI_BYTE, dest, nbytes, MPI_BYTE, DDMAINRANK(dd), dd->mpiComm().comm());
     }
     else
@@ -326,7 +324,6 @@ void dd_scatterv(const gmx_domdec_t gmx_unused*      dd,
             /* MPI does not allow NULL pointers */
             rbuf = &dum;
         }
-        /* Some MPI implementations don't specify const */
         MPI_Scatterv(sbuf,
                      scounts.data(),
                      disps.data(),
@@ -388,7 +385,6 @@ void dd_gatherv(const gmx_domdec_t gmx_unused&      dd,
         {
             sendBufferPtr = sendBuffer.data();
         }
-        /* Some MPI implementations don't specify const */
         MPI_Gatherv(sendBufferPtr,
                     sendBuffer.ssize(),
                     mpiDatatype,
