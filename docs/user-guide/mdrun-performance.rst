@@ -249,12 +249,10 @@ Node level parallelization via GPU offloading and thread-MPI
 Multithreading with thread-MPI
 ..............................
 
-The thread-MPI library implements a subset of the MPI 1.1 specification,
-based on the system threading support. Both POSIX pthreads and Windows threads are supported,
-thus providing great portability to most UNIX/Linux and Windows operating systems.
+The thread-MPI library implements a subset of the MPI specification,
+based on the system threading support. Both POSIX pthreads and Windows threads are supported.
 Acting as a drop-in replacement for MPI, thread-MPI enables compiling and running :ref:`mdrun <gmx mdrun>`
-on a single machine (i.e. not across a network) without MPI. Additionally, it not only provides a
-convenient way to use computers with multicore CPU(s), but thread-MPI does in some
+on a single machine (i.e. not across a network) without MPI. Additionally, thread-MPI does in some
 cases make :ref:`mdrun <gmx mdrun>` run slightly faster than with MPI.
 
 Thread-MPI is included in the |Gromacs| source and it is the default parallelization mode,
