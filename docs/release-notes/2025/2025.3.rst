@@ -115,6 +115,14 @@ the separate muParser package if installed.
 
 :issue:`5282`
 
+libgromacs now only links to MPI libraries when explicitly required
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Formerly gmxapi could have erroneously triggered GROMACS to compile and link with an
+MPI library. This is now fixed.
+
+:issue:`5395`
+
 Improve heuristics for choice of NBNXM kernel flavor for AMD gfx94x
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
