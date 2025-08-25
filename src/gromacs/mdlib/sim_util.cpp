@@ -1006,25 +1006,28 @@ static void launchGpuEndOfStepTasks(nonbonded_verlet_t*          nbv,
  *
  * This function return the number of times the event will be consumed based on this step's workload.
  *
- * \param simulationWork Simulation workload flags.
- * \param stepWork Step workload flags.
- * \param domainWork Domain workload flags.
+ * \param simulationWork            Simulation workload flags.
+ * \param stepWork                  Step workload flags.
+ * \param domainWork                Domain workload flags.
  * \param pmeSendCoordinatesFromGpu Whether peer-to-peer communication is used for PME coordinates.
+ * \param domainHasHomeAtoms        Whether this domain has home atoms
  * \return
  */
 static int getExpectedLocalXReadyOnDeviceConsumptionCount(const SimulationWorkload& simulationWork,
                                                           const StepWorkload&       stepWork,
                                                           const DomainLifetimeWorkload& domainWork,
-                                                          bool pmeSendCoordinatesFromGpu)
+                                                          const bool pmeSendCoordinatesFromGpu,
+                                                          const bool domainHasHomeAtoms)
 {
     int result = 0;
     if (stepWork.computeSlowForces)
     {
-        if (pmeSendCoordinatesFromGpu)
+        if (pmeSendCoordinatesFromGpu and domainHasHomeAtoms)
         {
             GMX_ASSERT(simulationWork.haveSeparatePmeRank,
                        "GPU PME PP communications require having a separate PME rank");
-            // Event is consumed by gmx_pme_send_coordinates for GPU PME PP Communications
+            // Event is consumed by gmx_pme_send_coordinates for GPU
+            // PME PP Communications when the domain has home atoms.
             result++;
         }
         if (stepWork.haveGpuPmeOnThisRank)
@@ -1658,9 +1661,8 @@ void do_force(FILE*                         fplog,
     if (stepWork.haveGpuPmeOnThisRank || stepWork.useGpuXBufferOps || pmeSendCoordinatesFromGpu)
     {
         GMX_ASSERT(stateGpu != nullptr, "stateGpu should not be null");
-        const int expectedLocalXReadyOnDeviceConsumptionCount =
-                getExpectedLocalXReadyOnDeviceConsumptionCount(
-                        simulationWork, stepWork, domainWork, pmeSendCoordinatesFromGpu);
+        const int expectedLocalXReadyOnDeviceConsumptionCount = getExpectedLocalXReadyOnDeviceConsumptionCount(
+                simulationWork, stepWork, domainWork, pmeSendCoordinatesFromGpu, mdatoms->homenr > 0);
 
         // We need to copy coordinates when:
         // 1. Update is not offloaded
