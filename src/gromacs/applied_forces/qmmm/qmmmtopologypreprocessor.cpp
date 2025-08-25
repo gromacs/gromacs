@@ -236,7 +236,7 @@ void QMMMTopologyPreprocessor::splitQMblocks(gmx_mtop_t* mtop)
         }
     }
 
-    // Call finalize() to rebuild Block Indicies or else atoms lookup will fail
+    // Call finalize() to rebuild Block Indices or else atoms lookup will fail
     mtop->finalize();
 }
 

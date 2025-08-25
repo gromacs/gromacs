@@ -79,11 +79,11 @@ class QMMMForceProviderTest : public ::testing::Test
 public:
     void setDefaultParameters()
     {
-        parameters_.active_                = true;
-        std::vector<gmx::Index> qmIndicies = { 0, 1, 2 };
-        std::vector<gmx::Index> mmIndicies = { 3, 4, 5 };
-        LocalAtomSet            set1 = atomSetManager_.add(ArrayRef<const gmx::Index>(qmIndicies));
-        LocalAtomSet            set2 = atomSetManager_.add(ArrayRef<const gmx::Index>(mmIndicies));
+        parameters_.active_               = true;
+        std::vector<gmx::Index> qmIndices = { 0, 1, 2 };
+        std::vector<gmx::Index> mmIndices = { 3, 4, 5 };
+        LocalAtomSet            set1 = atomSetManager_.add(ArrayRef<const gmx::Index>(qmIndices));
+        LocalAtomSet            set2 = atomSetManager_.add(ArrayRef<const gmx::Index>(mmIndices));
         qmAtomSet_                   = std::make_unique<LocalAtomSet>(set1);
         mmAtomSet_                   = std::make_unique<LocalAtomSet>(set2);
     }

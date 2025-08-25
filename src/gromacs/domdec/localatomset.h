@@ -69,7 +69,7 @@ class LocalAtomSet
 {
 public:
     friend class LocalAtomSetManager;
-    /*! \brief Maps indices on rank [0..numAtomsLocal_) to global atom indicices.
+    /*! \brief Maps indices on rank [0..numAtomsLocal_) to global atom indices.
      *
      * \returns the collective index.
      */

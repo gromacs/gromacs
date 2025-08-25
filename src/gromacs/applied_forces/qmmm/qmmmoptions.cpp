@@ -245,16 +245,16 @@ void QMMMOptions::setQMMMGroupIndices(const IndexGroupsAndNames& indexGroupsAndN
     // Create temporary index for the whole System
     auto systemIndices = indexGroupsAndNames.indices(std::string("System"));
 
-    // Sort qmindices_ and sindices_
+    // Sort qmIndices_ and systemIndices
     std::sort(parameters_.qmIndices_.begin(), parameters_.qmIndices_.end());
     std::sort(systemIndices.begin(), systemIndices.end());
 
     // Create MM index
     parameters_.mmIndices_.reserve(systemIndices.size());
 
-    // Position in qmindicies_
+    // Position in qmIndices_
     size_t j = 0;
-    // Now loop over sindices_ and write to mmindices_ only the atoms which does not belong to qmindices_
+    // Now loop over systemIndices and write to mmIndices_ only the atoms which does not belong to qmIndices_
     for (size_t i = 0; i < systemIndices.size(); i++)
     {
         if (systemIndices[i] != parameters_.qmIndices_[j])

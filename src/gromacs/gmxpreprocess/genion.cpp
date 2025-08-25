@@ -430,7 +430,7 @@ static std::vector<int> invertIndexGroup(int nrAtoms, std::vector<int> indexGrou
     indexGroup.push_back(nrAtoms);
     std::sort(indexGroup.begin(), indexGroup.end());
 
-    // construct the inverted index group by adding all indicies between two
+    // construct the inverted index group by adding all indices between two
     // indices of indexGroup
     std::vector<int> invertedGroup;
     for (auto indexGroupIt = std::begin(indexGroup); indexGroupIt != std::end(indexGroup) - 1; ++indexGroupIt)
