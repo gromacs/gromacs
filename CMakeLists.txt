@@ -584,6 +584,15 @@ include(gmxManageNNPot)
 ########################################################################
 include(gmxManageSharedLibraries)
 
+# Define option for gmxapi components and docs.
+if(GMX_NATIVE_WINDOWS)
+    # GMXAPI has not been tested in Microsoft environments.
+    # GMXAPI requires position-independent code
+    set(_GMXAPI_DEFAULT OFF)
+else()
+    set(_GMXAPI_DEFAULT ${BUILD_SHARED_LIBS})
+endif()
+option(GMXAPI "Install GROMACS API." ${_GMXAPI_DEFAULT})
 
 ########################################################################
 # Specify install locations

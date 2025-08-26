@@ -118,8 +118,17 @@ the separate muParser package if installed.
 libgromacs now only links to MPI libraries when explicitly required
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-Formerly gmxapi could have erroneously triggered GROMACS to compile and link with an
+Formerly ``gmxapi`` could have erroneously triggered GROMACS to compile and link with an
 MPI library. This is now fixed.
+
+:issue:`5395`
+
+Declared gmxapi option before finding MPI package
+"""""""""""""""""""""""""""""""""""""""""""""""""
+
+Formerly ``gmxapi`` was set up after MPI libraries, which caused a subsequent run of
+CMake to decide to find MPI libraries to help gmxapi even when ``libgromacs`` didn't need
+those libraries. Now the CMake cache does not vary between successive runs in this way.
 
 :issue:`5395`
 
