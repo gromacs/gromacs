@@ -657,9 +657,10 @@ static void push_bondtype(InteractionsOfType*      bt,
     /* Search for earlier duplicates if this entry was not a continuation
        from the previous line.
      */
-    bool addBondType = true;
-    bool haveWarned  = false;
-    bool haveErrored = false;
+    bool addBondType                 = true;
+    bool haveWarned                  = false;
+    bool haveErrored                 = false;
+    bool haveWarnedWithRepeatAllowed = false;
     for (int i = 0; (i < nr); i++)
     {
         gmx::ArrayRef<const int> bParams    = b.atoms();
@@ -675,30 +676,59 @@ static void push_bondtype(InteractionsOfType*      bt,
                                                         bt->interactionTypes[i].forceParam().begin() + nrfp,
                                                         b.forceParam().begin());
 
-            if (!bAllowRepeat || identicalParameters)
+            if (bAllowRepeat)
             {
-                addBondType = false;
-            }
-
-            if (!identicalParameters)
-            {
-                if (bAllowRepeat)
+                /* With dihedral type 9 we only allow for repeating
+                 * of the same parameters with blocks with 1 entry.
+                 * Allowing overriding is too complex to check.
+                 */
+                if (isContinuationOfBlock)
                 {
-                    /* With dihedral type 9 we only allow for repeating
-                     * of the same parameters with blocks with 1 entry.
-                     * Allowing overriding is too complex to check.
-                     */
-                    if (!isContinuationOfBlock && !haveErrored)
+                    if (identicalParameters && !haveWarnedWithRepeatAllowed)
                     {
-                        wi->addError(
+                        std::string mesg =
+                                "Encountered a second line of parameters for dihedral "
+                                "type 9 for the same atom types with the same parameters. "
+                                "Will generate as many dihedral potentials for these atom types "
+                                "as there are parameter line entries. The line is:\n";
+                        mesg += line;
+                        wi->addWarning(mesg);
+                        haveWarnedWithRepeatAllowed = true;
+                    }
+                }
+                else
+                {
+                    if (identicalParameters)
+                    {
+                        /* NOTE: because the charmm27.ff force field files have some blocks
+                         * of dihedraltype 9 repeated in different files, we cannot warn for
+                         * multiple blocks when they contain identical parameters.
+                         * This is the case at least up to release-2025.
+                         * Because of a bug in old code, no error was generated for this case.
+                         * See issue #5333.
+                         */
+                        addBondType = false;
+                    }
+                    else if (!haveErrored)
+                    {
+                        std::string mesg =
                                 "Encountered a second block of parameters for dihedral "
-                                "type 9 for the same atoms, with either different parameters "
+                                "type 9 for the same atom types, with either different parameters "
                                 "and/or the first block has multiple lines. This is not "
-                                "supported.");
+                                "supported. The first line in the second block is:\n";
+                        mesg += line;
+                        wi->addError(mesg);
                         haveErrored = true;
                     }
                 }
-                else if (!haveWarned)
+            }
+            else
+            {
+                // Repeats not allowed
+
+                addBondType = false;
+
+                if (!identicalParameters && !haveWarned)
                 {
                     auto message = gmx::formatString(
                             "Bondtype %s was defined previously (e.g. in the forcefield files), "
@@ -726,17 +756,17 @@ static void push_bondtype(InteractionsOfType*      bt,
 
                     haveWarned = true;
                 }
-            }
 
-            if (!identicalParameters && !bAllowRepeat)
-            {
-                /* Overwrite the parameters with the latest ones */
-                // TODO considering improving the following code by replacing with:
-                // std::copy(b->c, b->c + nrfp, bt->param[i].c);
-                gmx::ArrayRef<const real> forceParam = b.forceParam();
-                for (int j = 0; j < nrfp; j++)
+                if (!identicalParameters)
                 {
-                    bt->interactionTypes[i].setForceParameter(j, forceParam[j]);
+                    /* Overwrite the parameters with the latest ones */
+                    // TODO considering improving the following code by replacing with:
+                    // std::copy(b->c, b->c + nrfp, bt->param[i].c);
+                    gmx::ArrayRef<const real> forceParam = b.forceParam();
+                    for (int j = 0; j < nrfp; j++)
+                    {
+                        bt->interactionTypes[i].setForceParameter(j, forceParam[j]);
+                    }
                 }
             }
         }
