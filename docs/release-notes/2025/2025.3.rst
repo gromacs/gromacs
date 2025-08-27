@@ -37,11 +37,31 @@ Affected versions: 2024.5, 2025.0, 2025.1 and 2025.2.
 
 :issue:`5394`
 
+``gmx mdrun`` now throws with input inconsistent with the modular simulator
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+By default, ``gmx mdrun`` can choose the modular simulator if possible and
+fall back on the legacy simulator if needed. The behaviour can be specified
+with the use of documented environment variables. After this fix, the use of
+``GMX_USE_MODULAR_SIMULATOR`` environment variable is properly honored. If
+the simulation cannot use the modular simulator, an error is given.
+
+:issue:`5339`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+SYCL build now works with BUILD_SHARED_LIBS=off
+"""""""""""""""""""""""""""""""""""""""""""""""
+
+Previously ``gmx`` and some test binaries failed to link to ``libgromacs.a`` because
+the required information to link to the SYCL runtime library is missing in that
+case. Linking of executables in SYCL builds is now more robust.
+
+:issue:`5341`
 
 Fix build with ROCm 7 and newer
 """""""""""""""""""""""""""""""
@@ -49,6 +69,34 @@ Fix build with ROCm 7 and newer
 Building and linking |Gromacs| would fail due to changes in the linking behaviour of the main HIP library.
 
 :issue:`5380`
+
+Building |Gromacs| would fail due to ``__AMDGCN_WAVEFRONT_SIZE``
+macro removal in ROCm 7.
+
+:issue:`5259`
+
+Improved configuration error message with SYCL and VkFFT
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Configuring |Gromacs| with SYCL and VkFFT, targeting Intel devices, would result in an
+error meessage implying using VkFFT with SYCL wasn't suported at all. The message is now
+clarified to include the statement that this lack of support only applies to Intel devices.
+
+:issue:`5401`
+
+Fix detection of unusable MKL GPU offloading library during configuration
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Configuration would previously happily proceed even if development headers of MKL GPU
+offloading library were not found, causing the compilation to fail. This now results
+in an error.
+
+:issue:`5400`
+
+Fix build for NVIDIA sm_101 / sm_110 devices
+""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`5366`
 
 Miscellaneous
 ^^^^^^^^^^^^^
@@ -77,3 +125,30 @@ Fixed a regression where |Gromacs| installed muParser headers, causing conflicts
 the separate muParser package if installed.
 
 :issue:`5282`
+
+libgromacs now only links to MPI libraries when explicitly required
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Formerly ``gmxapi`` could have erroneously triggered GROMACS to compile and link with an
+MPI library. This is now fixed.
+
+:issue:`5395`
+
+Declared gmxapi option before finding MPI package
+"""""""""""""""""""""""""""""""""""""""""""""""""
+
+Formerly ``gmxapi`` was set up after MPI libraries, which caused a subsequent run of
+CMake to decide to find MPI libraries to help gmxapi even when ``libgromacs`` didn't need
+those libraries. Now the CMake cache does not vary between successive runs in this way.
+
+:issue:`5395`
+
+Improve heuristics for choice of NBNXM kernel flavor for AMD gfx94x
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Analytical Ewald kernels are used since these perform better in most common use-cases.
+The exception is :mdp-value:`vdw-modifier=Force-switch` with SYCL backend, where we
+still use tabulated kernels.
+
+:issue:`5329`
+

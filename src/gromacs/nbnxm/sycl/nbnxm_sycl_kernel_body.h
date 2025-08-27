@@ -415,7 +415,7 @@ typename std::enable_if_t<numShuffleReductionSteps != 1, void> static inline red
 
     float fShiftBuf = 0.0F;
 
-#if defined(__SYCL_DEVICE_ONLY__) && defined(__AMDGCN__) && (__AMDGCN_WAVEFRONT_SIZE == 64)
+#if defined(__SYCL_DEVICE_ONLY__) && defined(__AMDGCN__) && (defined(__GFX8__) || defined(__GFX9__))
     // Use AMD's cross-lane DPP reduction only for 64-wide exec
     // can't use static_assert because 32-wide compiler passes will trip on it
     SYCL_ASSERT(numShuffleReductionSteps == 3);
@@ -473,7 +473,7 @@ typename std::enable_if_t<numShuffleReductionSteps != 1, void> static inline red
         }
     }
 
-#else // defined(__SYCL_DEVICE_ONLY__) && defined(__AMDGCN__) && (__AMDGCN_WAVEFRONT_SIZE == 64)
+#else // defined(__SYCL_DEVICE_ONLY__) && defined(__AMDGCN__) && (defined(__GFX8__) || defined(__GFX9__))
 
     // Thread mask to use to select first three threads (in tidxj) in each reduction "tree".
     // Two bits for two steps, three bits for three steps.
@@ -526,7 +526,7 @@ typename std::enable_if_t<numShuffleReductionSteps != 1, void> static inline red
             atomicFetchAdd(a_fShift[shift][(tidxj & threadBitMask)], fShiftBuf);
         }
     }
-#endif // defined(__SYCL_DEVICE_ONLY__) && defined(__AMDGCN__) && (__AMDGCN_WAVEFRONT_SIZE == 64)
+#endif // defined(__SYCL_DEVICE_ONLY__) && defined(__AMDGCN__) && (defined(__GFX8__) || defined(__GFX9__))
 }
 
 /*! \brief \c reduceForceIAndFShiftShuffles specialization for single-step reduction (e.g., Intel iGPUs).

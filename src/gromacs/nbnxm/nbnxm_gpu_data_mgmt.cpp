@@ -111,36 +111,48 @@ static inline void init_ewald_coulomb_force_table(const EwaldCorrectionTables& t
                          deviceStream);
 }
 
-static bool useTabulatedEwaldByDefault(const DeviceInformation& deviceInfo)
+static bool useTabulatedEwaldByDefault(InteractionModifiers vdwModifier, const DeviceInformation& deviceInfo)
 {
     /* By default, use analytical Ewald except:
      *  - NVIDIA CC 7.0 and 8.0,
-     *  - all AMD GPUs (although tested for gfx906 and 908 only).
+     *  - AMD GPUs except MI3xx with SYCL (tested for gfx906, 908, 90a, 942 only).
+     *    - For MI3xx, prefer tabulated for ForceSwitch kernels.
+     *  - AMD GPUs except MI3xx with HIP
      *
      * Note 1: this function does not handle OpenCL.
      * Note 2: for SYCL, the heuristics are taken from CUDA/HIP ports, and were only partially
-     *         verified on oneAPI/hipSYCL themselves on AMD gfx 906/908/90a.
+     *         verified on with oneAPI/ACPP (mainly on AMD CDNA).
      */
 #if GMX_GPU_CUDA
+    GMX_UNUSED_VALUE(vdwModifier);
     return (deviceInfo.prop.major == 7 && deviceInfo.prop.minor == 0)
            || (deviceInfo.prop.major == 8 && deviceInfo.prop.minor == 0);
 #elif GMX_GPU_HIP
-    GMX_UNUSED_VALUE(deviceInfo);
-    return true;
+    GMX_UNUSED_VALUE(vdwModifier);
+    const int  major   = deviceInfo.prop.major;
+    const int  minor   = deviceInfo.prop.minor;
+    const bool isMi300 = (major == 9 && minor == 4);
+    return !isMi300;
 #elif GMX_GPU_SYCL
+    const int major = deviceInfo.hardwareVersionMajor.value_or(-1);
+    const int minor = deviceInfo.hardwareVersionMinor.value_or(-1);
     switch (deviceInfo.deviceVendor)
     {
-        case DeviceVendor::Amd: return true;
+        case DeviceVendor::Amd:
+        {
+            const bool isForceSwitch = vdwModifier == InteractionModifiers::ForceSwitch;
+            const bool isMi300       = (major == 9 && minor == 4);
+            return isMi300 ? isForceSwitch : true;
+        }
         case DeviceVendor::Nvidia:
         {
-            const int major = deviceInfo.hardwareVersionMajor.value_or(-1);
-            const int minor = deviceInfo.hardwareVersionMinor.value_or(-1);
             return ((major == 7 && minor == 0) || (major == 8 && minor == 0));
         }
         default: return false;
     }
 #else
     GMX_UNUSED_VALUE(deviceInfo);
+    GMX_UNUSED_VALUE(vdwModifier);
     return false;
 #endif
 }
@@ -163,7 +175,7 @@ static inline ElecType nbnxn_gpu_pick_ewald_kernel_type(const interaction_const_
                 "requested through environment variables.");
     }
 
-    const bool c_useTabulatedEwaldDefault = useTabulatedEwaldByDefault(deviceInfo);
+    const bool c_useTabulatedEwaldDefault = useTabulatedEwaldByDefault(ic.vdw.modifier, deviceInfo);
     bool       bUseAnalyticalEwald        = !c_useTabulatedEwaldDefault;
     if (forceAnalyticalEwald)
     {

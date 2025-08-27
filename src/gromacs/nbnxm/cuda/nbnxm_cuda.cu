@@ -584,14 +584,21 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const In
 }
 
 /*! Calculates the amount of shared memory required by the CUDA kernel in use. */
-static inline int calc_shmem_required_prune(const int num_threads_z)
+static inline int calc_shmem_required_prune(const int num_threads_z, const DeviceInformation* deviceInfo)
 {
-    int shmem;
+    const int  archMajor = deviceInfo->prop.major;
+    const bool preloadCj = archMajor < 7;
+    int        shmem;
 
     /* i-atom x in shared memory */
     shmem = c_superClusterSize * c_clusterSize * sizeof(float4);
-    /* cj in shared memory, for each warp separately */
-    shmem += num_threads_z * c_clusterSplitSize * c_jGroupSize * sizeof(int);
+    if (preloadCj)
+    {
+        /* cj in shared memory, for each warp separately */
+        shmem += num_threads_z * c_clusterSplitSize * c_jGroupSize * sizeof(int);
+    }
+    /* add 1 int for pruned pair count */
+    shmem += sizeof(int);
 
     return shmem;
 }
@@ -663,11 +670,12 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
     int nblock        = calc_nb_kernel_nblock(numSciInPartMax, &nb->deviceContext_->deviceInfo());
 
     KernelLaunchConfig config;
-    config.blockSize[0]     = c_clusterSize;
-    config.blockSize[1]     = c_clusterSize;
-    config.blockSize[2]     = num_threads_z;
-    config.gridSize[0]      = nblock;
-    config.sharedMemorySize = calc_shmem_required_prune(num_threads_z);
+    config.blockSize[0] = c_clusterSize;
+    config.blockSize[1] = c_clusterSize;
+    config.blockSize[2] = num_threads_z;
+    config.gridSize[0]  = nblock;
+    config.sharedMemorySize =
+            calc_shmem_required_prune(num_threads_z, &nb->deviceContext_->deviceInfo());
 
     if (debug)
     {

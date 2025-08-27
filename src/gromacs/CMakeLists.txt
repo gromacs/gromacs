@@ -248,7 +248,12 @@ if(GMX_GPU_FFT_ONEMATH)
     target_link_libraries(libgromacs PRIVATE ONEMATH::onemath)
 endif()
 
-if (TARGET MPI::MPI_CXX)
+if (GMX_LIB_MPI)
+    # If GROMACS should link against an MPI library, the following
+    # MPI::MPI_CXX CMake target must be defined by the call to
+    # find_package(MPI). MPI::MPI_CXX might be defined also when
+    # GMXAPI wants one, but in that case libgromacs should not link to
+    # it.
     target_link_libraries(libgromacs PRIVATE
         $<$<LINK_LANGUAGE:CXX>:MPI::MPI_CXX>
         $<$<LINK_LANGUAGE:CUDA>:MPI::MPI_CXX>

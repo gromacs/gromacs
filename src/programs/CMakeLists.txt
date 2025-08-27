@@ -74,6 +74,19 @@ else()
                           libgromacs
                           ${GMX_COMMON_LIBRARIES}
                           ${GMX_EXE_LINKER_FLAGS})
+    # Ensure that libsycl is properly linked when libgromacs is a static
+    # library.
+    #
+    # TODO The second predicate is used in release-2025 branch to
+    # maximize stability of the default shared-library build
+    # configuration. After merging to main branch, remove the second
+    # predicate, because it may be useful and seems unlikely to cause
+    # harm.
+    if(GMX_GPU_SYCL AND NOT BUILD_SHARED_LIBS)
+        # There are no source files to gmx that need to compile as
+        # SYCL, so none are provided here.
+        add_sycl_to_target(TARGET gmx)
+    endif()
     # Ensure that on Windows the application code page is set to utf8 mode so the behavior is
     # like Linux. For proper UTF8 console output, the user needs to enable utf8 (chcp 65001).
     if (MSVC)

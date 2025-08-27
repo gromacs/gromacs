@@ -44,6 +44,14 @@ of the second and later chains in the pdb input file.
 
 :issue:`5091`
 
+grompp now warns about identical dihedraltype 9 definitions
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+grompp would silently ignore double, identical dihedraltype definitions with
+function type 9. Now such entries are not ignored and a warning is generated.
+
+:issue:`5333`
+
 Fix out-of-boundary read in gmx sorient
 """""""""""""""""""""""""""""""""""""""
 

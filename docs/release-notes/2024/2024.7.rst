@@ -1,10 +1,10 @@
-GROMACS 2023.6 release notes
+GROMACS 2024.7 release notes
 ----------------------------
 
-This version was released on TODO, 2024. These release notes
+This version was released on TODO, 2025. These release notes
 document the changes that have taken place in |Gromacs| since the
-previous 2023.5 version, to fix known issues. It also incorporates all
-fixes made in version 2022.6 and earlier, which you can find described
+previous 2024.6 version, to fix known issues. It also incorporates all
+fixes made in version 2023.5 and earlier, which you can find described
 in the :ref:`release-notes`.
 
 .. Note to developers!

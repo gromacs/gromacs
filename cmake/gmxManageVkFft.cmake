@@ -83,20 +83,20 @@ function(gmx_manage_vkfft BACKEND_NAME)
     elseif(BACKEND_NAME STREQUAL "HIP")
         target_compile_definitions(VkFFT INTERFACE VKFFT_BACKEND=2)
         # Since ROCm 7.0 the hiprtc symbols are no longer part of amdhip64, so we need
-        # to ensure we pull those in manually for VkFFT in the HIP build as well.
-        if (GMX_SYCL_DPCPP OR GMX_GPU_HIP)
-            # HIP does not include hiprtc CMake config prior to version 5.6
-            # https://github.com/ROCm-Developer-Tools/HIP/issues/3131
-            # Using find_package(HIP) pulls in too many dependencies, in particular clang_rt.
-            # Once we require ROCm 5.6 or newer, we can simply do
-            # find_package(hiprtc REQUIRED)
-            # target_link_libraries(VkFFT INTERFACE hiprtc::hiprtc)
-            # But for now, we use our custom cmake/FindHip.cmake module:
-            find_package(Hip REQUIRED COMPONENTS hiprtc)
-            target_link_libraries(VkFFT INTERFACE Hip::amdhip Hip::hiprtc)
-        endif()
+        # to ensure we pull those in for all builds.
+        # HIP does not include hiprtc CMake config prior to version 5.6
+        # https://github.com/ROCm-Developer-Tools/HIP/issues/3131
+        # Using find_package(HIP) pulls in too many dependencies, in particular clang_rt.
+        # Once we require ROCm 5.6 or newer, we can simply do
+        # find_package(hiprtc REQUIRED)
+        # target_link_libraries(VkFFT INTERFACE hiprtc::hiprtc)
+        # But for now, we use our custom cmake/FindHip.cmake module:
+        find_package(Hip REQUIRED COMPONENTS hiprtc)
+        target_link_libraries(VkFFT INTERFACE Hip::amdhip Hip::hiprtc)
         # hipFree is marked `nodiscard` but VkFFT ignores it
         gmx_target_interface_warning_suppression(VkFFT "-Wno-unused-result" HAS_WARNING_NO_UNUSED_RESULT)
+        # ... and since Clang 20 this warning is called -Wunused-value
+        gmx_target_interface_warning_suppression(VkFFT "-Wno-unused-value" HAS_WARNING_NO_UNUSED_VALUE)
     elseif(BACKEND_NAME STREQUAL "OpenCL")
         target_compile_definitions(VkFFT INTERFACE VKFFT_BACKEND=3)
         # The "-Wcast-qual" warning appears when compiling VkFFT for OpenCL, but not for HIP.
@@ -120,6 +120,6 @@ elseif((GMX_SYCL_ACPP AND GMX_ACPP_HAVE_CUDA_TARGET) OR (GMX_SYCL_DPCPP AND GMX_
 elseif((GMX_SYCL_ACPP AND GMX_ACPP_HAVE_HIP_TARGET) OR (GMX_SYCL_DPCPP AND GMX_DPCPP_HAVE_HIP_TARGET))
     gmx_manage_vkfft("HIP")
 else()
-     message(FATAL_ERROR "VkFFT can only be used with CUDA, HIP or OpenCL backend")
+     message(FATAL_ERROR "VkFFT can only be used with GMX_GPU=SYCL, HIP, or OpenCL; with SYCL, it only supports NVIDIA (CUDA) and AMD (HIP) targets")
 endif()
 
