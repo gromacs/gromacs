@@ -1094,6 +1094,13 @@ int Mdrunner::mdrunner()
                                                               doEssentialDynamics,
                                                               membedHolder.doMembed(),
                                                               updateTarget == TaskTarget::Gpu);
+    if (const bool modularSimulatorExplicitlyTurnedOn = (getenv("GMX_USE_MODULAR_SIMULATOR") != nullptr);
+        modularSimulatorExplicitlyTurnedOn && !useModularSimulator)
+    {
+        GMX_THROW(InconsistentInputError(
+                "Modular simulator was required but cannot be implemented for this simulation. "
+                "Consult the online documentation to learn more about why."));
+    }
 
     // Now the number of ranks is known to all ranks, and each knows
     // the inputrec read by the main rank. The ranks can now all run

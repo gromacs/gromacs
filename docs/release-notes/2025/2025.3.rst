@@ -37,6 +37,17 @@ Affected versions: 2024.5, 2025.0, 2025.1 and 2025.2.
 
 :issue:`5394`
 
+``gmx mdrun`` now throws with input inconsistent with the modular simulator
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+By default, ``gmx mdrun`` can choose the modular simulator if possible and
+fall back on the legacy simulator if needed. The behaviour can be specified
+with the use of documented environment variables. After this fix, the use of
+``GMX_USE_MODULAR_SIMULATOR`` environment variable is properly honored. If
+the simulation cannot use the modular simulator, an error is given.
+
+:issue:`5339`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
