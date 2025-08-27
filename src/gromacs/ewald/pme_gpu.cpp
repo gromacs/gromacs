@@ -108,7 +108,7 @@ int pme_gpu_get_block_size(const gmx_pme_t* pme)
     }
     else
     {
-        return pme_gpu_get_atom_data_block_size();
+        return pme_gpu_get_atom_data_block_size(pme->gpu->programHandle_->warpSize());
     }
 }
 

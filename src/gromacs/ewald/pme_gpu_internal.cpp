@@ -104,22 +104,29 @@ static PmeGpuKernelParams* pme_gpu_get_kernel_params_ptr(const PmeGpu* pmeGpu)
 
 /*! \brief
  * Atom data block size (in terms of number of atoms).
+ *
  * This is the least common multiple of number of atoms processed by
  * a single block/workgroup of the spread and gather kernels.
  * The GPU atom data buffers must be padded, which means that
  * the numbers of atoms used for determining the size of the memory
  * allocation must be divisible by this.
+ *
+ * In case of HIP, we select this at runtime based on the device
+ * \p parallelExecutionSize.
+ *
+ * For the other backends, this is hardcoded.
  */
-#if !GMX_GPU_SYCL
-constexpr int c_pmeAtomDataBlockSize = 64;
-#else
-// Use more padding to support 64-wide warps and ThreadsPerAtom::Order
-constexpr int c_pmeAtomDataBlockSize = 128;
-#endif
-
-int pme_gpu_get_atom_data_block_size()
+int pme_gpu_get_atom_data_block_size(const int parallelExecutionSize)
 {
-    return c_pmeAtomDataBlockSize;
+#if GMX_GPU_HIP
+    return 2 * parallelExecutionSize;
+#elif GMX_GPU_SYCL
+    GMX_UNUSED_VALUE(parallelExecutionSize);
+    return 128;
+#else
+    GMX_UNUSED_VALUE(parallelExecutionSize);
+    return 64;
+#endif
 }
 
 int pme_gpu_get_atoms_per_warp(const PmeGpu* pmeGpu)
@@ -1434,10 +1441,10 @@ void pme_gpu_reinit_atoms(PmeGpu* pmeGpu, const int nAtoms, const real* chargesA
 {
     auto* kernelParamsPtr         = pme_gpu_get_kernel_params_ptr(pmeGpu);
     kernelParamsPtr->atoms.nAtoms = nAtoms;
-    const int  blockSize          = pme_gpu_get_atom_data_block_size();
-    const int  nAtomsNewPadded    = gmx::divideRoundUp(nAtoms, blockSize) * blockSize;
-    const bool haveToRealloc      = (pmeGpu->nAtomsAlloc < nAtomsNewPadded);
-    pmeGpu->nAtomsAlloc           = nAtomsNewPadded;
+    const int  blockSize = pme_gpu_get_atom_data_block_size(pmeGpu->programHandle_->warpSize());
+    const int  nAtomsNewPadded = gmx::divideRoundUp(nAtoms, blockSize) * blockSize;
+    const bool haveToRealloc   = (pmeGpu->nAtomsAlloc < nAtomsNewPadded);
+    pmeGpu->nAtomsAlloc        = nAtomsNewPadded;
 
     const auto atomsPerWarp = pme_gpu_get_atoms_per_warp(pmeGpu);
     const int  nWarps       = gmx::divideRoundUp(nAtoms, atomsPerWarp);
@@ -1880,7 +1887,7 @@ void pme_gpu_spread(PmeGpu*                        pmeGpu,
     // TODO: test varying block sizes on modern arch-s as well
     // TODO: also consider using cudaFuncSetCacheConfig() for preferring shared memory on older architectures
     //(for spline data mostly)
-    GMX_ASSERT(!(c_pmeAtomDataBlockSize % atomsPerBlock),
+    GMX_ASSERT(!(pme_gpu_get_atom_data_block_size(pmeGpu->programHandle_->warpSize()) % atomsPerBlock),
                "inconsistent atom data padding vs. spreading block size");
 
     // Ensure that coordinates are ready on the device before launching spread;
@@ -2470,7 +2477,7 @@ void pme_gpu_gather(PmeGpu*                       pmeGpu,
 
     const int atomsPerBlock = blockSize / threadsPerAtom;
 
-    GMX_ASSERT(!(c_pmeAtomDataBlockSize % atomsPerBlock),
+    GMX_ASSERT(!(pme_gpu_get_atom_data_block_size(pmeGpu->programHandle_->warpSize()) % atomsPerBlock),
                "inconsistent atom data padding vs. gathering block size");
 
     // launch gather only if nAtoms > 0

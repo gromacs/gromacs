@@ -179,7 +179,7 @@ void pme_gpu_clear_energy_virial(const PmeGpu* /* pmeGpu */, bool /* gpuGraphWit
     GMX_RELEASE_ASSERT(false, "HIP PME not implemented yet");
 }
 
-int pme_gpu_get_atom_data_block_size()
+int pme_gpu_get_atom_data_block_size(const int /* parallelExecutionSize */)
 {
     GMX_RELEASE_ASSERT(false, "HIP PME not implemented yet");
     return -1;
