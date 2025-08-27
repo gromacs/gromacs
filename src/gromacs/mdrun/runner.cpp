@@ -1044,8 +1044,7 @@ int Mdrunner::mdrunner()
 
     const PmeRunMode pmeRunMode = determinePmeRunMode(useGpuForPme, pmeFftTarget, *inputrec);
 
-    const bool useModularSimulator = checkUseModularSimulator(false,
-                                                              inputrec.get(),
+    const bool useModularSimulator = checkUseModularSimulator(inputrec.get(),
                                                               doRerun,
                                                               mtop,
                                                               ms,

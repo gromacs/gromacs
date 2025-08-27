@@ -55,6 +55,7 @@
 #include <utility>
 
 #include "gromacs/mdrun/isimulator.h"
+#include "gromacs/utility/message_string_collector.h"
 
 struct CheckpointHeaderContents;
 struct t_fcdata;
@@ -88,17 +89,27 @@ public:
     //! Run the simulator
     void run() override;
 
-    //! Check for disabled functionality
-    static bool isInputCompatible(bool                             exitOnFailure,
-                                  const t_inputrec*                inputrec,
-                                  bool                             doRerun,
-                                  const gmx_mtop_t&                globalTopology,
-                                  const gmx_multisim_t*            ms,
-                                  const ReplicaExchangeParameters& replExParams,
-                                  const t_fcdata*                  fcd,
-                                  bool                             doEssentialDynamics,
-                                  bool                             doMembed,
-                                  bool                             useGpuForUpdate);
+    /*! \brief Describe any incompatibilities because of functionality not
+     * implemented in modular simulator
+     *
+     * Enforces that the use of GMX_USE_MODULAR_SIMULATOR and
+     * GMX_DISABLE_MODULAR_SIMULATOR are consistent.
+     *
+     * Note that
+     * https://gitlab.com/gromacs/gromacs/-/tree/ptmerz-modularsimulator-feature-branch
+     * contains draft implementations for feature support that could
+     * be included here if there is interest.
+     *
+     * \returns A collection of messages describing any incompatibilities identified */
+    static MessageStringCollector getReasonsForIncompatibility(const t_inputrec*     inputrec,
+                                                               bool                  doRerun,
+                                                               const gmx_mtop_t&     globalTopology,
+                                                               const gmx_multisim_t* ms,
+                                                               const ReplicaExchangeParameters& replExParams,
+                                                               const t_fcdata* fcd,
+                                                               bool            doEssentialDynamics,
+                                                               bool            doMembed,
+                                                               bool            useGpuForUpdate);
 
     //! Read everything that can be stored in t_trxframe from a checkpoint file
     static void readCheckpointToTrxFrame(t_trxframe*                     fr,
@@ -131,15 +142,24 @@ private:
  * GMX_DISABLE_MODULAR_SIMULATOR environment variable allows to disable modular simulator for
  * all uses.
  *
- * See ModularSimulator::isInputCompatible() for function signature.
+ * See ModularSimulator::getReasonsForIncompatibility() for function signature.
  *
  * \ingroup module_modularsimulator
  */
 template<typename... Ts>
-auto checkUseModularSimulator(Ts&&... args)
-        -> decltype(ModularSimulator::isInputCompatible(std::forward<Ts>(args)...))
+bool checkUseModularSimulator(const t_inputrec*                inputrec,
+                              const bool                       doRerun,
+                              const gmx_mtop_t&                globalTopology,
+                              const gmx_multisim_t*            ms,
+                              const ReplicaExchangeParameters& replExParams,
+                              const t_fcdata*                  fcd,
+                              const bool                       doEssentialDynamics,
+                              const bool                       doMembed,
+                              const bool                       useGpuForUpdate)
 {
-    return ModularSimulator::isInputCompatible(std::forward<Ts>(args)...)
+    return ModularSimulator::getReasonsForIncompatibility(
+                   inputrec, doRerun, globalTopology, ms, replExParams, fcd, doEssentialDynamics, doMembed, useGpuForUpdate)
+                   .isEmpty()
            && std::getenv("GMX_DISABLE_MODULAR_SIMULATOR") == nullptr;
 }
 
