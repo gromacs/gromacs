@@ -101,6 +101,18 @@ Fix build for NVIDIA sm_101 / sm_110 devices
 Miscellaneous
 ^^^^^^^^^^^^^
 
+Documented that PME tuning in multi-replica simulations can give suprising results
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+PME tuning chooses between nominally equivalent model physics, yet
+there is no guarantee of consistency between (say) the tunings chosen
+for different replicas in a multi-replica simulation, so the fine
+details of comparisons of potential energy can be
+surprising. Disabling PME tuning for e.g.  testing Hamiltonian
+replica-exchange simulations with PLUMED is advised.
+
+:issue:`5278`
+
 mdrun reported double the number of domain decompositions when using GPUs
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
