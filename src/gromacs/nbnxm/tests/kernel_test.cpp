@@ -455,227 +455,219 @@ TEST_P(NbnxmKernelTest, WorksWith)
     KernelOptions                       options_;
     std::unique_ptr<nonbonded_verlet_t> nbv_;
 
-    // TODO remove this indentation in a follow-up change
+    options_.kernelSetup.kernelType = parameters_.kernelType;
+
+    // Coulomb settings
+    options_.kernelSetup.ewaldExclusionType = isTabulated(parameters_.coulombKernelType)
+                                                      ? EwaldExclusionType::Table
+                                                      : EwaldExclusionType::Analytical;
+    options_.coulombType                    = parameters_.coulombKernelType;
+
+    // Van der Waals settings
+    switch (parameters_.vdwKernelType)
     {
-        options_.kernelSetup.kernelType = parameters_.kernelType;
+        case vdwktLJCUT_COMBGEOM: options_.ljCombinationRule = LJCombinationRule::Geometric; break;
+        case vdwktLJCUT_COMBLB:
+            options_.ljCombinationRule = LJCombinationRule::LorentzBerthelot;
+            break;
+        default: options_.ljCombinationRule = LJCombinationRule::None; break;
+    }
+    switch (parameters_.vdwKernelType)
+    {
+        case vdwktLJFORCESWITCH: options_.vdwModifier = InteractionModifiers::ForceSwitch; break;
+        case vdwktLJPOTSWITCH: options_.vdwModifier = InteractionModifiers::PotSwitch; break;
+        default: options_.vdwModifier = InteractionModifiers::PotShift; break;
+    }
+    options_.useLJPme = (parameters_.vdwKernelType == vdwktLJEWALDCOMBGEOM);
 
-        // Coulomb settings
-        options_.kernelSetup.ewaldExclusionType = isTabulated(parameters_.coulombKernelType)
-                                                          ? EwaldExclusionType::Table
-                                                          : EwaldExclusionType::Analytical;
-        options_.coulombType                    = parameters_.coulombKernelType;
+    const bool kernelIsPlainC = kernelTypeIsPlainC(options_.kernelSetup.kernelType);
 
-        // Van der Waals settings
-        switch (parameters_.vdwKernelType)
+    if (referenceDataMode() != ReferenceDataMode::Compare)
+    {
+        // Note that (for simplicity) runs in modes
+        // ReferenceDataMode::CreateMissing or
+        // ReferenceDataMode::UpdateChanged also skips
+        // testing unchanged values that could have been compared.
+        if (!GMX_DOUBLE)
         {
-            case vdwktLJCUT_COMBGEOM:
-                options_.ljCombinationRule = LJCombinationRule::Geometric;
-                break;
-            case vdwktLJCUT_COMBLB:
-                options_.ljCombinationRule = LJCombinationRule::LorentzBerthelot;
-                break;
-            default: options_.ljCombinationRule = LJCombinationRule::None; break;
-        }
-        switch (parameters_.vdwKernelType)
-        {
-            case vdwktLJFORCESWITCH:
-                options_.vdwModifier = InteractionModifiers::ForceSwitch;
-                break;
-            case vdwktLJPOTSWITCH: options_.vdwModifier = InteractionModifiers::PotSwitch; break;
-            default: options_.vdwModifier = InteractionModifiers::PotShift; break;
-        }
-        options_.useLJPme = (parameters_.vdwKernelType == vdwktLJEWALDCOMBGEOM);
-
-        const bool kernelIsPlainC = kernelTypeIsPlainC(options_.kernelSetup.kernelType);
-
-        if (referenceDataMode() != ReferenceDataMode::Compare)
-        {
-            // Note that (for simplicity) runs in modes
-            // ReferenceDataMode::CreateMissing or
-            // ReferenceDataMode::UpdateChanged also skips
-            // testing unchanged values that could have been compared.
-            if (!GMX_DOUBLE)
-            {
-                ADD_FAILURE() << "Reference data can only be created or updated from a "
-                                 "double-precision build of GROMACS";
-            }
-
-            if (kernelIsPlainC)
-            {
-                GTEST_SKIP() << "Plain-C kernels are never used to generate reference data";
-            }
-
-            if (options_.coulombType == CoulombKernelType::Table
-                || options_.coulombType == CoulombKernelType::TableTwin)
-            {
-                GTEST_SKIP() << "Tabulated kernels are never used to generate reference data";
-            }
+            ADD_FAILURE() << "Reference data can only be created or updated from a "
+                             "double-precision build of GROMACS";
         }
 
-        if (!sc_haveNbnxmSimd4xmKernels && parameters_.kernelType == NbnxmKernelType::Cpu4xN_Simd_4xN)
+        if (kernelIsPlainC)
         {
-            GTEST_SKIP()
-                    << "Cannot test or generate data for 4xN kernels without suitable SIMD support";
+            GTEST_SKIP() << "Plain-C kernels are never used to generate reference data";
         }
 
-        if (!sc_haveNbnxmSimd2xmmKernels && parameters_.kernelType == NbnxmKernelType::Cpu4xN_Simd_2xNN)
+        if (options_.coulombType == CoulombKernelType::Table
+            || options_.coulombType == CoulombKernelType::TableTwin)
         {
-            GTEST_SKIP() << "Cannot test or generate data for 2xNN kernels without suitable SIMD "
-                            "support";
+            GTEST_SKIP() << "Tabulated kernels are never used to generate reference data";
         }
+    }
 
-        if (kernelIsPlainC
-            && (options_.coulombType == CoulombKernelType::Ewald
-                || options_.coulombType == CoulombKernelType::EwaldTwin))
+    if (!sc_haveNbnxmSimd4xmKernels && parameters_.kernelType == NbnxmKernelType::Cpu4xN_Simd_4xN)
+    {
+        GTEST_SKIP()
+                << "Cannot test or generate data for 4xN kernels without suitable SIMD support";
+    }
+
+    if (!sc_haveNbnxmSimd2xmmKernels && parameters_.kernelType == NbnxmKernelType::Cpu4xN_Simd_2xNN)
+    {
+        GTEST_SKIP() << "Cannot test or generate data for 2xNN kernels without suitable SIMD "
+                        "support";
+    }
+
+    if (kernelIsPlainC
+        && (options_.coulombType == CoulombKernelType::Ewald
+            || options_.coulombType == CoulombKernelType::EwaldTwin))
+    {
+        GTEST_SKIP()
+                << "Analytical Ewald is not implemented for the plain-C kernel, skip this test";
+    }
+
+    if (kernelIsPlainC
+        && (parameters_.vdwKernelType == vdwktLJCUT_COMBGEOM || parameters_.vdwKernelType == vdwktLJCUT_COMBLB))
+    {
+        GTEST_SKIP() << "There are no combination rule versions of the plain-C kernel";
+    }
+
+    GMX_ASSERT(*std::max_element(sc_numEnergyGroups.begin(), sc_numEnergyGroups.end())
+                       == TestSystem::sc_numEnergyGroups,
+               "The test system should have a sufficient number of energy groups");
+
+    // TODO rename this in a follow-up change to conform to style
+    TestSystem system_(parameters_.vdwKernelType == vdwktLJCUT_COMBGEOM
+                               ? LJCombinationRule::Geometric
+                               : LJCombinationRule::LorentzBerthelot);
+
+    const interaction_const_t ic = setupInteractionConst(options_);
+
+    // Set up test checkers with suitable tolerances
+    //
+    // The reference data for double is generated with 44 accuracy bits,
+    // so we should not compare with more than that accuracy
+    const int  simdAccuracyBits = (GMX_DOUBLE ? std::min(GMX_SIMD_ACCURACY_BITS_DOUBLE, 44)
+                                              : std::min(GMX_SIMD_ACCURACY_BITS_SINGLE, 22));
+    const real simdRealEps      = std::pow(0.5_real, simdAccuracyBits);
+
+    TestReferenceData    refData(makeRefDataFileName());
+    TestReferenceChecker forceChecker(refData.rootChecker());
+    const real           forceMagnitude = 1000;
+    const real           ulpTolerance   = 50;
+    real                 tolerance      = forceMagnitude * simdRealEps * ulpTolerance;
+    if (usingPmeOrEwald(ic.coulomb.type))
+    {
+        real ewaldRelError;
+        if (isTabulated(options_.coulombType))
         {
-            GTEST_SKIP()
-                    << "Analytical Ewald is not implemented for the plain-C kernel, skip this test";
-        }
-
-        if (kernelIsPlainC
-            && (parameters_.vdwKernelType == vdwktLJCUT_COMBGEOM
-                || parameters_.vdwKernelType == vdwktLJCUT_COMBLB))
-        {
-            GTEST_SKIP() << "There are no combination rule versions of the plain-C kernel";
-        }
-
-        GMX_ASSERT(*std::max_element(sc_numEnergyGroups.begin(), sc_numEnergyGroups.end())
-                           == TestSystem::sc_numEnergyGroups,
-                   "The test system should have a sufficient number of energy groups");
-
-        // TODO rename this in a follow-up change to conform to style
-        TestSystem system_(parameters_.vdwKernelType == vdwktLJCUT_COMBGEOM
-                                   ? LJCombinationRule::Geometric
-                                   : LJCombinationRule::LorentzBerthelot);
-
-        const interaction_const_t ic = setupInteractionConst(options_);
-
-        // Set up test checkers with suitable tolerances
-        //
-        // The reference data for double is generated with 44 accuracy bits,
-        // so we should not compare with more than that accuracy
-        const int  simdAccuracyBits = (GMX_DOUBLE ? std::min(GMX_SIMD_ACCURACY_BITS_DOUBLE, 44)
-                                                  : std::min(GMX_SIMD_ACCURACY_BITS_SINGLE, 22));
-        const real simdRealEps      = std::pow(0.5_real, simdAccuracyBits);
-
-        TestReferenceData    refData(makeRefDataFileName());
-        TestReferenceChecker forceChecker(refData.rootChecker());
-        const real           forceMagnitude = 1000;
-        const real           ulpTolerance   = 50;
-        real                 tolerance      = forceMagnitude * simdRealEps * ulpTolerance;
-        if (usingPmeOrEwald(ic.coulomb.type))
-        {
-            real ewaldRelError;
-            if (isTabulated(options_.coulombType))
-            {
-                // The relative energy error for tables is 0.1 times the value at the cut-off.
-                // We assume that for the force this factor is 1.
-                ewaldRelError = options_.ewaldRTol;
-            }
-            else
-            {
-                ewaldRelError = GMX_DOUBLE ? 1e-11 : 1e-6;
-            }
-            const real maxEwaldPairForceError = ic.coulomb.epsfac * ewaldRelError
-                                                * gmx::square(system_.maxCharge() / ic.coulomb.cutoff);
-            // We assume that the total force error is at max 20 times that of one pair
-            tolerance = std::max(tolerance, 20 * maxEwaldPairForceError);
-        }
-        if (ic.vdw.type == VanDerWaalsType::Pme)
-        {
-            const real ulpToleranceExp = 400;
-            tolerance = std::max(tolerance, forceMagnitude * simdRealEps * ulpToleranceExp);
-        }
-        forceChecker.setDefaultTolerance(absoluteTolerance(tolerance));
-
-        TestReferenceChecker ljEnergyChecker(refData.rootChecker());
-        // Energies per atom are more accurate than forces, but there is loss
-        // of precision due to summation over all atoms. The tolerance on
-        // the energy turns out to be the same as on the forces.
-        ljEnergyChecker.setDefaultTolerance(absoluteTolerance(tolerance));
-        TestReferenceChecker coulombEnergyChecker(refData.rootChecker());
-        // Coulomb energy errors are higher
-        coulombEnergyChecker.setDefaultTolerance(absoluteTolerance(10 * tolerance));
-
-        // Finish setting up data structures
-        nbv_ = setupNbnxmForBenchInstance(options_, system_);
-        nbv_->constructPairlist(InteractionLocality::Local, system_.excls, 0, nullptr);
-
-        std::vector<RVec> shiftVecs(c_numShiftVectors);
-        calc_shifts(system_.box, shiftVecs);
-
-        StepWorkload stepWork;
-        stepWork.computeForces = true;
-        stepWork.computeEnergy = options_.energyHandling != EnergyHandling::NoEnergies;
-
-        std::vector<real> vVdw(square(sc_numEnergyGroups[options_.energyHandling]));
-        std::vector<real> vCoulomb(square(sc_numEnergyGroups[options_.energyHandling]));
-
-        // Call the kernel to test
-        nbv_->dispatchNonbondedKernel(
-                InteractionLocality::Local, ic, stepWork, enbvClearFYes, shiftVecs, vVdw, vCoulomb, nullptr);
-
-        const bool atomOrderMatches = nbv_->localAtomOrderMatchesNbnxmOrder();
-
-        // Get and check the forces
-        ArrayRef<const int> atomIndices = nbv_->getLocalAtomOrder();
-        std::vector<RVec> nbnxmForces(atomOrderMatches ? atomIndices.size() : system_.coordinates.size(),
-                                      { 0.0_real, 0.0_real, 0.0_real });
-        nbv_->atomdata_add_nbat_f_to_f(AtomLocality::All, nbnxmForces);
-
-        std::vector<RVec>    forceBuffer;
-        ArrayRef<const RVec> forces;
-        if (atomOrderMatches)
-        {
-            // Copy atoms to a buffer with local atom order
-            forceBuffer.resize(system_.coordinates.size());
-            for (gmx::Index i = 0; i < atomIndices.ssize(); i++)
-            {
-                const int a = atomIndices[i];
-                if (nonbonded_verlet_t::isValidLocalAtom(a))
-                {
-                    forceBuffer[a] = nbnxmForces[i];
-                }
-            }
-
-            forces = forceBuffer;
+            // The relative energy error for tables is 0.1 times the value at the cut-off.
+            // We assume that for the force this factor is 1.
+            ewaldRelError = options_.ewaldRTol;
         }
         else
         {
-            forces = nbnxmForces;
+            ewaldRelError = GMX_DOUBLE ? 1e-11 : 1e-6;
+        }
+        const real maxEwaldPairForceError = ic.coulomb.epsfac * ewaldRelError
+                                            * gmx::square(system_.maxCharge() / ic.coulomb.cutoff);
+        // We assume that the total force error is at max 20 times that of one pair
+        tolerance = std::max(tolerance, 20 * maxEwaldPairForceError);
+    }
+    if (ic.vdw.type == VanDerWaalsType::Pme)
+    {
+        const real ulpToleranceExp = 400;
+        tolerance = std::max(tolerance, forceMagnitude * simdRealEps * ulpToleranceExp);
+    }
+    forceChecker.setDefaultTolerance(absoluteTolerance(tolerance));
+
+    TestReferenceChecker ljEnergyChecker(refData.rootChecker());
+    // Energies per atom are more accurate than forces, but there is loss
+    // of precision due to summation over all atoms. The tolerance on
+    // the energy turns out to be the same as on the forces.
+    ljEnergyChecker.setDefaultTolerance(absoluteTolerance(tolerance));
+    TestReferenceChecker coulombEnergyChecker(refData.rootChecker());
+    // Coulomb energy errors are higher
+    coulombEnergyChecker.setDefaultTolerance(absoluteTolerance(10 * tolerance));
+
+    // Finish setting up data structures
+    nbv_ = setupNbnxmForBenchInstance(options_, system_);
+    nbv_->constructPairlist(InteractionLocality::Local, system_.excls, 0, nullptr);
+
+    std::vector<RVec> shiftVecs(c_numShiftVectors);
+    calc_shifts(system_.box, shiftVecs);
+
+    StepWorkload stepWork;
+    stepWork.computeForces = true;
+    stepWork.computeEnergy = options_.energyHandling != EnergyHandling::NoEnergies;
+
+    std::vector<real> vVdw(square(sc_numEnergyGroups[options_.energyHandling]));
+    std::vector<real> vCoulomb(square(sc_numEnergyGroups[options_.energyHandling]));
+
+    // Call the kernel to test
+    nbv_->dispatchNonbondedKernel(
+            InteractionLocality::Local, ic, stepWork, enbvClearFYes, shiftVecs, vVdw, vCoulomb, nullptr);
+
+    const bool atomOrderMatches = nbv_->localAtomOrderMatchesNbnxmOrder();
+
+    // Get and check the forces
+    ArrayRef<const int> atomIndices = nbv_->getLocalAtomOrder();
+    std::vector<RVec> nbnxmForces(atomOrderMatches ? atomIndices.size() : system_.coordinates.size(),
+                                  { 0.0_real, 0.0_real, 0.0_real });
+    nbv_->atomdata_add_nbat_f_to_f(AtomLocality::All, nbnxmForces);
+
+    std::vector<RVec>    forceBuffer;
+    ArrayRef<const RVec> forces;
+    if (atomOrderMatches)
+    {
+        // Copy atoms to a buffer with local atom order
+        forceBuffer.resize(system_.coordinates.size());
+        for (gmx::Index i = 0; i < atomIndices.ssize(); i++)
+        {
+            const int a = atomIndices[i];
+            if (nonbonded_verlet_t::isValidLocalAtom(a))
+            {
+                forceBuffer[a] = nbnxmForces[i];
+            }
         }
 
-        forceChecker.checkSequence(forces.begin(), forces.end(), "Forces");
+        forces = forceBuffer;
+    }
+    else
+    {
+        forces = nbnxmForces;
+    }
 
-        // Check the energies, as applicable
-        if (options_.energyHandling == EnergyHandling::NoEnergies)
-        {
-            // The force-only kernels can't compare with the reference
-            // data for energies.
-            ljEnergyChecker.disableUnusedEntriesCheck();
-            coulombEnergyChecker.disableUnusedEntriesCheck();
-        }
-        else if (options_.energyHandling == EnergyHandling::Energies)
-        {
-            ljEnergyChecker.checkReal(vVdw[0], "VdW energy");
-            coulombEnergyChecker.checkReal(vCoulomb[0], "Coulomb energy");
-            // The energy kernels can't compare with the reference data
-            // for energy groups.
-            ljEnergyChecker.disableUnusedEntriesCheck();
-            coulombEnergyChecker.disableUnusedEntriesCheck();
-        }
-        else if (options_.energyHandling == EnergyHandling::ThreeEnergyGroups)
-        {
-            // Cross check the sum of group energies with the total energies
-            real vVdwGroupsSum     = std::accumulate(vVdw.begin(), vVdw.end(), 0.0_real);
-            real vCoulombGroupsSum = std::accumulate(vCoulomb.begin(), vCoulomb.end(), 0.0_real);
-            ljEnergyChecker.checkReal(vVdwGroupsSum, "VdW energy");
-            coulombEnergyChecker.checkReal(vCoulombGroupsSum, "Coulomb energy");
+    forceChecker.checkSequence(forces.begin(), forces.end(), "Forces");
 
-            ljEnergyChecker.checkSequence(vVdw.begin(), vVdw.end(), "VdW group pair energy");
-            coulombEnergyChecker.checkSequence(
-                    vCoulomb.begin(), vCoulomb.end(), "Coulomb group pair energy");
-        }
+    // Check the energies, as applicable
+    if (options_.energyHandling == EnergyHandling::NoEnergies)
+    {
+        // The force-only kernels can't compare with the reference
+        // data for energies.
+        ljEnergyChecker.disableUnusedEntriesCheck();
+        coulombEnergyChecker.disableUnusedEntriesCheck();
+    }
+    else if (options_.energyHandling == EnergyHandling::Energies)
+    {
+        ljEnergyChecker.checkReal(vVdw[0], "VdW energy");
+        coulombEnergyChecker.checkReal(vCoulomb[0], "Coulomb energy");
+        // The energy kernels can't compare with the reference data
+        // for energy groups.
+        ljEnergyChecker.disableUnusedEntriesCheck();
+        coulombEnergyChecker.disableUnusedEntriesCheck();
+    }
+    else if (options_.energyHandling == EnergyHandling::ThreeEnergyGroups)
+    {
+        // Cross check the sum of group energies with the total energies
+        real vVdwGroupsSum     = std::accumulate(vVdw.begin(), vVdw.end(), 0.0_real);
+        real vCoulombGroupsSum = std::accumulate(vCoulomb.begin(), vCoulomb.end(), 0.0_real);
+        ljEnergyChecker.checkReal(vVdwGroupsSum, "VdW energy");
+        coulombEnergyChecker.checkReal(vCoulombGroupsSum, "Coulomb energy");
+
+        ljEnergyChecker.checkSequence(vVdw.begin(), vVdw.end(), "VdW group pair energy");
+        coulombEnergyChecker.checkSequence(
+                vCoulomb.begin(), vCoulomb.end(), "Coulomb group pair energy");
     }
 };
 
