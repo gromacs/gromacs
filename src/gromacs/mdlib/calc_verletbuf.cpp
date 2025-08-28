@@ -1310,7 +1310,7 @@ static real pressureError(gmx::ArrayRef<const VerletbufAtomtype> atomTypes,
         {
             fprintf(debug,
                     "Verlet buffer LJ max pressure error relative to average: factor %.2f\n",
-                    forceError * (1 + listLifetime) / forceErrorSum);
+                    forceErrorSum > 0 ? forceError * (1 + listLifetime) / forceErrorSum : 0);
         }
 
         prevStep       = step;
