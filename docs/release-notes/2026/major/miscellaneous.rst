@@ -15,6 +15,16 @@ Support status of CP2K QM/MM, Colvars, Plumed & Neural Network Potential modules
 along with the version of libraries they use are now reported
 in ``md.log`` and ``gmx --version``.
 
+Modular simulator reports why it cannot be used
+"""""""""""""""""""""""""""""""""""""""""""""""
+
+When a Velocity-verlet integrator simulation cannot use the modular
+simulator, the reasons are logged. If the modular simulator was
+required by the user, a fatal error is given along with the reasons
+why it cannot be run.
+
+:issue:`5339`
+
 Invalid ``-nstlist`` value is now an error instead of a warning
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 

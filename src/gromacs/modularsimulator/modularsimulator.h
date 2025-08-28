@@ -34,28 +34,24 @@
 /*! \libinternal \file
  * \brief Provides the modular simulator.
  *
- * Defines the ModularSimulator class. Provides checkUseModularSimulator() utility function
- * to determine whether the ModularSimulator should be used.
+ * Defines the ModularSimulator class. Provides ModularSimulator::isInputCompatible() utility
+ * function to determine whether the ModularSimulator should be used.
  *
  * \author Pascal Merz <pascal.merz@me.com>
  * \ingroup module_modularsimulator
  *
  * This header is currently the only part of the modular simulator module which is exposed.
  * Mdrunner creates an object of type ModularSimulator (via SimulatorBuilder), and calls its
- * run() method. Mdrunner also calls checkUseModularSimulator(...), which in turns calls a
- * static method of ModularSimulator. This could easily become a free function if this requires
- * more exposure than otherwise necessary.
+ * run() method. Mdrunner also calls isInputCompatible(...). This could easily become a
+ * free function if this requires more exposure than otherwise necessary.
  */
 #ifndef GROMACS_MODULARSIMULATOR_MODULARSIMULATOR_H
 #define GROMACS_MODULARSIMULATOR_MODULARSIMULATOR_H
-
-#include <cstdlib>
 
 #include <memory>
 #include <utility>
 
 #include "gromacs/mdrun/isimulator.h"
-#include "gromacs/utility/message_string_collector.h"
 
 struct CheckpointHeaderContents;
 struct t_fcdata;
@@ -67,6 +63,7 @@ struct t_inputrec;
 
 namespace gmx
 {
+class MDLogger;
 class ModularSimulatorAlgorithmBuilder;
 class ReadCheckpointDataHolder;
 
@@ -89,8 +86,7 @@ public:
     //! Run the simulator
     void run() override;
 
-    /*! \brief Describe any incompatibilities because of functionality not
-     * implemented in modular simulator
+    /*! \brief Return whether the modular simulator can be used
      *
      * Enforces that the use of GMX_USE_MODULAR_SIMULATOR and
      * GMX_DISABLE_MODULAR_SIMULATOR are consistent.
@@ -100,16 +96,17 @@ public:
      * contains draft implementations for feature support that could
      * be included here if there is interest.
      *
-     * \returns A collection of messages describing any incompatibilities identified */
-    static MessageStringCollector getReasonsForIncompatibility(const t_inputrec*     inputrec,
-                                                               bool                  doRerun,
-                                                               const gmx_mtop_t&     globalTopology,
-                                                               const gmx_multisim_t* ms,
-                                                               const ReplicaExchangeParameters& replExParams,
-                                                               const t_fcdata* fcd,
-                                                               bool            doEssentialDynamics,
-                                                               bool            doMembed,
-                                                               bool            useGpuForUpdate);
+     * \returns Whether the modular simulator can be used for this input */
+    static bool isInputCompatible(const MDLogger&                  mdlog,
+                                  const t_inputrec*                inputrec,
+                                  bool                             doRerun,
+                                  const gmx_mtop_t&                globalTopology,
+                                  const gmx_multisim_t*            ms,
+                                  const ReplicaExchangeParameters& replExParams,
+                                  const t_fcdata*                  fcd,
+                                  bool                             doEssentialDynamics,
+                                  bool                             doMembed,
+                                  bool                             useGpuForUpdate);
 
     //! Read everything that can be stored in t_trxframe from a checkpoint file
     static void readCheckpointToTrxFrame(t_trxframe*                     fr,
@@ -135,33 +132,6 @@ private:
     //! Input checkpoint data
     std::unique_ptr<ReadCheckpointDataHolder> checkpointDataHolder_;
 };
-
-/*!
- * \brief Whether or not to use the ModularSimulator
- *
- * GMX_DISABLE_MODULAR_SIMULATOR environment variable allows to disable modular simulator for
- * all uses.
- *
- * See ModularSimulator::getReasonsForIncompatibility() for function signature.
- *
- * \ingroup module_modularsimulator
- */
-template<typename... Ts>
-bool checkUseModularSimulator(const t_inputrec*                inputrec,
-                              const bool                       doRerun,
-                              const gmx_mtop_t&                globalTopology,
-                              const gmx_multisim_t*            ms,
-                              const ReplicaExchangeParameters& replExParams,
-                              const t_fcdata*                  fcd,
-                              const bool                       doEssentialDynamics,
-                              const bool                       doMembed,
-                              const bool                       useGpuForUpdate)
-{
-    return ModularSimulator::getReasonsForIncompatibility(
-                   inputrec, doRerun, globalTopology, ms, replExParams, fcd, doEssentialDynamics, doMembed, useGpuForUpdate)
-                   .isEmpty()
-           && std::getenv("GMX_DISABLE_MODULAR_SIMULATOR") == nullptr;
-}
 
 } // namespace gmx
 

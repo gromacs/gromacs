@@ -42,6 +42,8 @@
 
 #include "modularsimulator.h"
 
+#include <cstdlib>
+
 #include <filesystem>
 #include <optional>
 #include <string_view>
@@ -361,15 +363,26 @@ void ModularSimulator::addIntegrationElements(ModularSimulatorAlgorithmBuilder* 
     builder->add<EnergyData::Element>();
 }
 
-MessageStringCollector ModularSimulator::getReasonsForIncompatibility(const t_inputrec* inputrec,
-                                                                      bool              doRerun,
-                                                                      const gmx_mtop_t& globalTopology,
-                                                                      const gmx_multisim_t* ms,
-                                                                      const ReplicaExchangeParameters& replExParams,
-                                                                      const t_fcdata* fcd,
-                                                                      bool doEssentialDynamics,
-                                                                      bool doMembed,
-                                                                      bool useGpuForUpdate)
+namespace
+{
+
+/*! \brief Describe any incompatibilities because of functionality not
+ * implemented in modular simulator
+ *
+ * Note that https://gitlab.com/gromacs/gromacs/-/tree/ptmerz-modularsimulator-feature-branch
+ * contains draft implementations for feature support that could be included here
+ * if there is interest.
+ *
+ * \returns A collection of messages describing any incompatibilities identified */
+MessageStringCollector getReasonsForIncompatibility(const t_inputrec*                inputrec,
+                                                    const bool                       doRerun,
+                                                    const gmx_mtop_t&                globalTopology,
+                                                    const gmx_multisim_t*            ms,
+                                                    const ReplicaExchangeParameters& replExParams,
+                                                    const t_fcdata*                  fcd,
+                                                    const bool doEssentialDynamics,
+                                                    const bool doMembed,
+                                                    const bool useGpuForUpdate)
 {
     MessageStringCollector reasonsForIncompatibility;
     reasonsForIncompatibility.startContext(
@@ -489,6 +502,55 @@ MessageStringCollector ModularSimulator::getReasonsForIncompatibility(const t_in
     }
     reasonsForIncompatibility.finishContext();
     return reasonsForIncompatibility;
+}
+
+} // namespace
+
+bool ModularSimulator::isInputCompatible(const MDLogger&                  mdlog,
+                                         const t_inputrec*                inputrec,
+                                         bool                             doRerun,
+                                         const gmx_mtop_t&                globalTopology,
+                                         const gmx_multisim_t*            ms,
+                                         const ReplicaExchangeParameters& replExParams,
+                                         const t_fcdata*                  fcd,
+                                         bool                             doEssentialDynamics,
+                                         bool                             doMembed,
+                                         bool                             useGpuForUpdate)
+{
+    // Ensure assertions in this function are run even when the
+    // modular simulator is explicitly turned off.
+    const MessageStringCollector reasonsForIncompatibility = getReasonsForIncompatibility(
+            inputrec, doRerun, globalTopology, ms, replExParams, fcd, doEssentialDynamics, doMembed, useGpuForUpdate);
+
+    if (const bool modularSimulatorExplicitlyTurnedOff = (getenv("GMX_DISABLE_MODULAR_SIMULATOR") != nullptr);
+        modularSimulatorExplicitlyTurnedOff)
+    {
+        return false;
+    }
+    if (!reasonsForIncompatibility.isEmpty())
+    {
+        const std::string message = reasonsForIncompatibility.toString();
+        if (const bool modularSimulatorExplicitlyTurnedOn = (getenv("GMX_USE_MODULAR_SIMULATOR") != nullptr);
+            modularSimulatorExplicitlyTurnedOn)
+        {
+            GMX_THROW(InconsistentInputError("Modular simulator was required. " + message));
+        }
+        else
+        {
+            if (inputrec->eI == IntegrationAlgorithm::VV)
+            {
+                // Probably only users using the velocity-Verlet
+                // integrator are interested in the modular simulator,
+                // so we can minimize the noise in the log file and
+                // perhaps subsequent confusion by keeping quiet about
+                // the modular simulator in the other cases.
+                GMX_LOG(mdlog.info).asParagraph().appendText(message);
+            }
+            return false;
+        }
+    }
+    // Modular simulator is compatible and wasn't explicitly turned off, so use it!
+    return true;
 }
 
 ModularSimulator::ModularSimulator(std::unique_ptr<LegacySimulatorData>      legacySimulatorData,
