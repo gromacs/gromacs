@@ -921,13 +921,13 @@ static void make_load_communicator(gmx_domdec_t* dd, int dim_ind, ivec loc)
     {
         loc_c[dim]     = i;
         const int rank = dd_index(dd->numCells, loc_c);
-        if (rank == dd->rank)
+        if (rank == dd->mpiComm().rank())
         {
             /* This process is part of the group */
             bPartOfGroup = TRUE;
         }
     }
-    MPI_Comm_split(dd->mpiComm().comm(), bPartOfGroup ? 0 : MPI_UNDEFINED, dd->rank, &c_row);
+    MPI_Comm_split(dd->mpiComm().comm(), bPartOfGroup ? 0 : MPI_UNDEFINED, dd->mpiComm().rank(), &c_row);
     if (bPartOfGroup)
     {
         dd->comm->mpi_comm_load[dim_ind] = c_row;
@@ -995,8 +995,8 @@ void dd_setup_dlb_resource_sharing(const t_commrec* cr, const int uniqueDeviceId
     // TODO PhysicalNodeCommunicator could be extended/used to handle
     // the need for per-node per-group communicators.
     MPI_Comm mpi_comm_pp_physicalnode;
-    MPI_Comm_split(dd->mpiComm().comm(), physicalnode_id_hash, dd->rank, &mpi_comm_pp_physicalnode);
-    MPI_Comm_split(mpi_comm_pp_physicalnode, uniqueDeviceId, dd->rank, &dd->comm->mpi_comm_gpu_shared);
+    MPI_Comm_split(dd->mpiComm().comm(), physicalnode_id_hash, dd->mpiComm().rank(), &mpi_comm_pp_physicalnode);
+    MPI_Comm_split(mpi_comm_pp_physicalnode, uniqueDeviceId, dd->mpiComm().rank(), &dd->comm->mpi_comm_gpu_shared);
     MPI_Comm_free(&mpi_comm_pp_physicalnode);
     MPI_Comm_size(dd->comm->mpi_comm_gpu_shared, &dd->comm->nrank_gpu_shared);
 
@@ -1085,7 +1085,7 @@ static void setup_neighbor_relations(gmx_domdec_t* dd)
         {
             fprintf(debug,
                     "DD rank %d neighbor ranks in dir %d are + %d - %d\n",
-                    dd->rank,
+                    dd->mpiComm().rank(),
                     dim,
                     dd->neighbor[d][0],
                     dd->neighbor[d][1]);
@@ -1129,21 +1129,19 @@ static void make_pp_communicator(const gmx::MDLogger& mdlog, gmx_domdec_t* dd, b
         dd->mpiComm_ = gmx::MpiComm(comm_cart);
     }
 
-    dd->rank = dd->mpiComm_.rank();
-
     if (cartSetup.bCartesianPP_PME)
     {
         /* Since we want to use the original cartesian setup for sim,
          * and not the one after split, we need to make an index.
          */
         cartSetup.ddindex2ddnodeid.resize(dd->nnodes);
-        cartSetup.ddindex2ddnodeid[dd_index(dd->numCells, dd->ci)] = dd->rank;
+        cartSetup.ddindex2ddnodeid[dd_index(dd->numCells, dd->ci)] = dd->mpiComm().rank();
         dd->mpiComm_.sumReduce(cartSetup.ddindex2ddnodeid);
-        /* Get the rank of the DD main,
-         * above we made sure that the main node is a PP node.
+        /* The main simulation rank should be a PP rank.
+         * In MpiComm, the main rank is always 0. Assert that here.
          */
-        int rank = dd->comm->mpiCommMySim_.isMainRank() ? dd->rank : 0;
-        MPI_Allreduce(&rank, &dd->mainrank, 1, MPI_INT, MPI_SUM, dd->mpiComm().comm());
+        GMX_RELEASE_ASSERT(dd->comm->mpiCommMySim_.isMainRank() == dd->mpiComm_.isMainRank(),
+                           "The simulation main MPI rank should be the same as the PP main rank");
     }
     else if (cartSetup.bCartesianPP)
     {
@@ -1155,7 +1153,7 @@ static void make_pp_communicator(const gmx::MDLogger& mdlog, gmx_domdec_t* dd, b
             dd->comm->mpiCommMySim_ = dd->mpiComm_;
         }
 
-        MPI_Cart_coords(dd->mpiComm_.comm(), dd->rank, DIM, dd->ci);
+        MPI_Cart_coords(dd->mpiComm_.comm(), dd->mpiComm().rank(), DIM, dd->ci);
 
         /* We need to make an index to go from the coordinates
          * to the nodeid of this simulation.
@@ -1182,28 +1180,27 @@ static void make_pp_communicator(const gmx::MDLogger& mdlog, gmx_domdec_t* dd, b
             if (cartSetup.ddindex2simnodeid[i] == 0)
             {
                 ddindex2xyz(dd->numCells, i, dd->main_ci);
-                MPI_Cart_rank(dd->mpiComm().comm(), dd->main_ci, &dd->mainrank);
+                GMX_RELEASE_ASSERT(dd->mpiComm().isMainRank(), "The main MPI rank has to be 0");
             }
         }
         if (debug)
         {
-            fprintf(debug, "The main rank is %d\n", dd->mainrank);
+            fprintf(debug, "The main rank is %d\n", dd->mpiComm().mainRank());
         }
     }
     else
     {
         /* No Cartesian communicators */
         /* We use the rank in dd->comm->all as DD index */
-        ddindex2xyz(dd->numCells, dd->rank, dd->ci);
+        ddindex2xyz(dd->numCells, dd->mpiComm().rank(), dd->ci);
         /* The simulation main nodeid is 0, so the DD main rank is also 0 */
-        dd->mainrank = 0;
         clear_ivec(dd->main_ci);
     }
 #endif
 
     GMX_LOG(mdlog.info)
             .appendTextFormatted("Domain decomposition rank %d, coordinates %d %d %d\n",
-                                 dd->rank,
+                                 dd->mpiComm().rank(),
                                  dd->ci[XX],
                                  dd->ci[YY],
                                  dd->ci[ZZ]);
@@ -1211,7 +1208,7 @@ static void make_pp_communicator(const gmx::MDLogger& mdlog, gmx_domdec_t* dd, b
     {
         fprintf(debug,
                 "Domain decomposition rank %d, coordinates %d %d %d\n\n",
-                dd->rank,
+                dd->mpiComm().rank(),
                 dd->ci[XX],
                 dd->ci[YY],
                 dd->ci[ZZ]);
@@ -2905,7 +2902,7 @@ DomainDecompositionBuilder::Impl::build(LocalAtomSetManager*       atomSets,
 
     // The simulation main rank is the PP rank with rank id 0, check that this matches
     // the main simulation rank in t_commrec
-    const bool isSimulationMainRank = (dd->rank == 0 && dd->hasPPDuty);
+    const bool isSimulationMainRank = (dd->mpiComm().rank() == 0 && dd->hasPPDuty);
     GMX_RELEASE_ASSERT(isSimulationMainRank == dd->comm->mpiCommMySim_.isMainRank(),
                        "The DD build should not change the simulation main rank");
 

@@ -760,7 +760,7 @@ void DomainCommBackward::selectHaloAtoms(const gmx_domdec_t&      dd,
     {
         fprintf(debug,
                 "rank %d #atoms %d zone %d shift %d %d %d pbc %d %d %d sending %d atoms\n",
-                dd.rank,
+                dd.mpiComm().rank(),
                 dd.numHomeAtoms,
                 zone_,
                 domainShift_[0],

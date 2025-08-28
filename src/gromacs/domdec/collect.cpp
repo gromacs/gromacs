@@ -178,8 +178,8 @@ static void dd_collect_vec_sendrecv(gmx_domdec_t*                  dd,
         MPI_Send(lv.data(),
                  numHomeAtoms * sizeof(rvec),
                  MPI_BYTE,
-                 dd->mainrank,
-                 dd->rank,
+                 dd->mpiComm().mainRank(),
+                 dd->mpiComm().rank(),
                  dd->mpiComm().comm());
 #endif
     }
@@ -187,7 +187,7 @@ static void dd_collect_vec_sendrecv(gmx_domdec_t*                  dd,
     {
         AtomDistribution& ma = *dd->ma;
 
-        int rank      = dd->mainrank;
+        int rank      = dd->mpiComm().mainRank();
         int localAtom = 0;
         for (const int& globalAtom : ma.domainGroups[rank].atomGroups)
         {
@@ -200,7 +200,7 @@ static void dd_collect_vec_sendrecv(gmx_domdec_t*                  dd,
 
         for (int rank = 0; rank < dd->nnodes; rank++)
         {
-            if (rank != dd->rank)
+            if (rank != dd->mpiComm().rank())
             {
                 const auto& domainGroups = ma.domainGroups[rank];
 

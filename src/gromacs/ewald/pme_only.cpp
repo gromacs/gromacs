@@ -151,7 +151,7 @@ static std::vector<PpRanks> makePpRanks(const gmx_domdec_t& dd)
 {
     std::vector<PpRanks> ppRanks;
 #if GMX_MPI
-    std::vector<int> ppRankIds = get_pme_ddranks(dd, dd.rank);
+    std::vector<int> ppRankIds = get_pme_ddranks(dd, dd.mpiComm().rank());
     ppRanks.reserve(ppRanks.size());
     for (const auto& ppRankId : ppRankIds)
     {

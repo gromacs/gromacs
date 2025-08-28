@@ -137,11 +137,10 @@ struct gmx_domdec_t
      * defined in dd->comm in domdec.c
      */
     int nnodes = 1;
-    /* The local DD cell index and rank */
-    gmx::IVec ci       = { 0, 0, 0 };
-    int       rank     = 0;
-    gmx::IVec main_ci  = { 0, 0, 0 };
-    int       mainrank = 0;
+    /* The local DD cell index */
+    gmx::IVec ci = { 0, 0, 0 };
+    /* The cell index of the main rank */
+    gmx::IVec main_ci = { 0, 0, 0 };
     /* Communication with the PME only nodes */
     int                   numPmeOnlyRanks      = 0;
     int                   pme_nodeid           = 0;
@@ -272,13 +271,13 @@ static inline bool isValidGlobalAtom(const int globalAtomIndex)
 //! Are we the main node for domain decomposition
 static inline bool DDMAIN(const gmx_domdec_t& dd)
 {
-    return dd.rank == dd.mainrank;
+    return dd.mpiComm().isMainRank();
 };
 
 //! Are we the main node for domain decomposition, deprecated
 static inline bool DDMAIN(const gmx_domdec_t* dd)
 {
-    return dd->rank == dd->mainrank;
+    return dd->mpiComm().isMainRank();
 };
 
 #endif

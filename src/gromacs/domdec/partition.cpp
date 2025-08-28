@@ -588,7 +588,7 @@ static void check_index_consistency(const gmx_domdec_t* dd, int natoms_sys, cons
             {
                 fprintf(stderr,
                         "DD rank %d: global atom %d occurs twice: index %d and %d\n",
-                        dd->rank,
+                        dd->mpiComm().rank(),
                         globalAtomIndex + 1,
                         have[globalAtomIndex],
                         a + 1);
@@ -613,7 +613,7 @@ static void check_index_consistency(const gmx_domdec_t* dd, int natoms_sys, cons
                 fprintf(stderr,
                         "DD rank %d: global atom %d marked as local atom %d, which is larger than "
                         "nat_tot (%d)\n",
-                        dd->rank,
+                        dd->mpiComm().rank(),
                         i + 1,
                         a + 1,
                         numAtomsInZones);
@@ -627,7 +627,7 @@ static void check_index_consistency(const gmx_domdec_t* dd, int natoms_sys, cons
                     fprintf(stderr,
                             "DD rank %d: global atom %d marked as local atom %d, which has global "
                             "atom index %d\n",
-                            dd->rank,
+                            dd->mpiComm().rank(),
                             i + 1,
                             a + 1,
                             dd->globalAtomIndices[a] + 1);
@@ -639,7 +639,12 @@ static void check_index_consistency(const gmx_domdec_t* dd, int natoms_sys, cons
     }
     if (ngl != numAtomsInZones)
     {
-        fprintf(stderr, "DD rank %d, %s: %d global atom indices, %d local atoms\n", dd->rank, where, ngl, numAtomsInZones);
+        fprintf(stderr,
+                "DD rank %d, %s: %d global atom indices, %d local atoms\n",
+                dd->mpiComm().rank(),
+                where,
+                ngl,
+                numAtomsInZones);
     }
     for (int a = 0; a < numAtomsInZones; a++)
     {
@@ -647,7 +652,7 @@ static void check_index_consistency(const gmx_domdec_t* dd, int natoms_sys, cons
         {
             fprintf(stderr,
                     "DD rank %d, %s: local atom %d, global %d has no global index\n",
-                    dd->rank,
+                    dd->mpiComm().rank(),
                     where,
                     a + 1,
                     dd->globalAtomIndices[a] + 1);
@@ -656,7 +661,7 @@ static void check_index_consistency(const gmx_domdec_t* dd, int natoms_sys, cons
 
     if (nerr > 0)
     {
-        gmx_fatal(FARGS, "DD rank %d, %s: %d atom(group) index inconsistencies", dd->rank, where, nerr);
+        gmx_fatal(FARGS, "DD rank %d, %s: %d atom(group) index inconsistencies", dd->mpiComm().rank(), where, nerr);
     }
 }
 

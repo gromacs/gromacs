@@ -62,7 +62,7 @@
 
 
 /*! \brief Returns the MPI rank of the domain decomposition main rank */
-#define DDMAINRANK(dd) ((dd)->mainrank)
+#define DDMAINRANK(dd) ((dd)->mpiComm().mainRank())
 
 
 /*! \brief Move data of type \p T in the communication region one cell along

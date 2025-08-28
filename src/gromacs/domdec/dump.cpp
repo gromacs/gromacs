@@ -186,7 +186,7 @@ void write_dd_pdb(const char*         fn,
         natoms = dd.comm->atomRanges.end(DDAtomRanges::Type::Vsites);
     }
 
-    sprintf(fname, "%s_%s_n%d.pdb", fn, gmx_step_str(step, buf), dd.rank);
+    sprintf(fname, "%s_%s_n%d.pdb", fn, gmx_step_str(step, buf), dd.mpiComm().rank());
 
     out = gmx_fio_fopen(fname, "w");
 

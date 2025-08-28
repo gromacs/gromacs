@@ -87,7 +87,7 @@ static void distributeVecSendrecv(gmx_domdec_t*                  dd,
 
         for (int rank = 0; rank < dd->nnodes; rank++)
         {
-            if (rank != dd->rank)
+            if (rank != dd->mpiComm().rank())
             {
                 const auto& domainGroups = dd->ma->domainGroups[rank];
 
@@ -112,7 +112,7 @@ static void distributeVecSendrecv(gmx_domdec_t*                  dd,
             }
         }
 
-        const auto& domainGroups = dd->ma->domainGroups[dd->mainrank];
+        const auto& domainGroups = dd->ma->domainGroups[dd->mpiComm().mainRank()];
         int         localAtom    = 0;
         for (const int& globalAtom : domainGroups.atomGroups)
         {
@@ -126,7 +126,7 @@ static void distributeVecSendrecv(gmx_domdec_t*                  dd,
         MPI_Recv(localVec.data(),
                  numHomeAtoms * sizeof(gmx::RVec),
                  MPI_BYTE,
-                 dd->mainrank,
+                 dd->mpiComm().mainRank(),
                  MPI_ANY_TAG,
                  dd->mpiComm().comm(),
                  MPI_STATUS_IGNORE);
