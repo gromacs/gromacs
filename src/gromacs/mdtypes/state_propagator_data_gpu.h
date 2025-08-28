@@ -112,14 +112,16 @@ public:
      *
      *  \param[in] deviceStreamManager         Object that owns the DeviceContext and DeviceStreams.
      *  \param[in] transferKind                H2D/D2H transfer call behavior (synchronous or not).
-     *  \param[in] allocationBlockSizeDivisor  Deterines padding size for coordinates buffer.
+     *  \param[in] allocationBlockSizeDivisor  Determines padding size for coordinates buffer.
      *  \param[in] useNvshmem                  Whether to use NVSHMEM for comm
+     *  \param[in] useGpuFBufferOpsWhenAllowed Whether the simulation uses F-buffer ops on the GPU
      *  \param[in] wcycle                      Wall cycle counter data.
      */
     StatePropagatorDataGpu(const DeviceStreamManager& deviceStreamManager,
                            GpuApiCallBehavior         transferKind,
                            int                        allocationBlockSizeDivisor,
                            bool                       useNvshmem,
+                           bool                       useGpuFBufferOpsWhenAllowed,
                            gmx_wallcycle*             wcycle);
 
     /*! \brief Constructor to use in PME-only rank and in tests.
@@ -128,6 +130,9 @@ public:
      *  using a single stream. Any operation on force or velocity buffer as well as copy of
      *  non-local coordinates will exit with assertion failure. Note, that the pmeStream can
      *  not be a nullptr and the constructor will exit with an assertion failure.
+     *
+     *  Since the force buffer is managed externally, a useGpuFBufferOpsWhenAllowed parameter is not
+     *  needed, it's always false.
      *
      *  \todo Currently, unsupported copy operations are blocked by assertion that the stream
      *        not nullptr. This should be improved.

@@ -70,12 +70,14 @@ StatePropagatorDataGpu::Impl::Impl(const DeviceStreamManager& deviceStreamManage
                                    GpuApiCallBehavior         transferKind,
                                    int                        allocationBlockSizeDivisor,
                                    bool                       useNvshmem,
+                                   bool                       useGpuFBufferOpsWhenAllowed,
                                    gmx_wallcycle*             wcycle) :
     deviceContext_(deviceStreamManager.context()),
     transferKind_(transferKind),
     allocationBlockSizeDivisor_(allocationBlockSizeDivisor),
     wcycle_(wcycle),
     useNvshmem_(useNvshmem),
+    useGpuFBufferOpsWhenAllowed_(useGpuFBufferOpsWhenAllowed),
     isPmeRank(false)
 {
     static_assert(
@@ -127,6 +129,7 @@ StatePropagatorDataGpu::Impl::Impl(const DeviceStream*  pmeStream,
     allocationBlockSizeDivisor_(allocationBlockSizeDivisor),
     wcycle_(wcycle),
     useNvshmem_(useNvshmem),
+    useGpuFBufferOpsWhenAllowed_(false),
     isPmeRank(true)
 {
     static_assert(
@@ -243,8 +246,7 @@ void StatePropagatorDataGpu::Impl::reinit(int numAtomsLocal, int numAtomsAll, MP
     // Clearing of the forces can be done in local stream since the nonlocal stream cannot reach
     // the force accumulation stage before syncing with the local stream. Not done for OpenCL,
     // since the force buffer ops are not implemented for it.
-    static constexpr bool sc_haveGpuFBufferOps = GMX_GPU && !GMX_GPU_OPENCL;
-    if (sc_haveGpuFBufferOps)
+    if (useGpuFBufferOpsWhenAllowed_)
     {
         if (isNvshmemBufRegRequired)
         {
@@ -719,8 +721,9 @@ StatePropagatorDataGpu::StatePropagatorDataGpu(const DeviceStreamManager& device
                                                GpuApiCallBehavior         transferKind,
                                                int            allocationBlockSizeDivisor,
                                                bool           useNvshmem,
+                                               bool           useGpuFBufferOpsWhenAllowed,
                                                gmx_wallcycle* wcycle) :
-    impl_(new Impl(deviceStreamManager, transferKind, allocationBlockSizeDivisor, useNvshmem, wcycle))
+    impl_(new Impl(deviceStreamManager, transferKind, allocationBlockSizeDivisor, useNvshmem, useGpuFBufferOpsWhenAllowed, wcycle))
 {
 }
 

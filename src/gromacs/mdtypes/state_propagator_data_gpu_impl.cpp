@@ -78,6 +78,7 @@ StatePropagatorDataGpu::StatePropagatorDataGpu(const DeviceStreamManager& /* dev
                                                GpuApiCallBehavior /* transferKind    */,
                                                int /* allocationBlockSizeDivisor */,
                                                bool /*useNvshmem*/,
+                                               bool /*useGpuFBufferOpsWhenAllowed*/,
                                                gmx_wallcycle* /*   wcycle */) :
     impl_(nullptr)
 {

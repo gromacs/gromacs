@@ -2279,6 +2279,7 @@ int Mdrunner::mdrunner()
                         transferKind,
                         pme_gpu_get_block_size(fr->pmedata),
                         runScheduleWork.simulationWork.useNvshmem,
+                        runScheduleWork.simulationWork.useGpuFBufferOpsWhenAllowed,
                         wcycle.get());
                 fr->stateGpu = stateGpu.get();
             }

@@ -85,12 +85,14 @@ public:
      *  \param[in] transferKind                H2D/D2H transfer call behavior (synchronous or not).
      *  \param[in] allocationBlockSizeDivisor  Determines the padding size for coordinates buffer.
      *  \param[in] useNvshmem                  Whether to use NVSHMEM for comm
+     *  \param[in] useGpuFBufferOpsWhenAllowed Whether the simulation uses F-buffer ops on the GPU
      *  \param[in] wcycle                      Wall cycle counter data.
      */
     Impl(const DeviceStreamManager& deviceStreamManager,
          GpuApiCallBehavior         transferKind,
          int                        allocationBlockSizeDivisor,
          bool                       useNvshmem,
+         bool                       useGpuFBufferOpsWhenAllowed,
          gmx_wallcycle*             wcycle);
 
     /*! \brief Constructor to use in PME-only rank and in tests.
@@ -453,6 +455,8 @@ private:
     gmx_wallcycle* wcycle_;
     //! Whether to use NVSHMEM for data communication
     bool useNvshmem_ = false;
+    //! Whether the simulation uses F-buffer ops on the GPU
+    bool useGpuFBufferOpsWhenAllowed_ = false;
     //! whether it is a PME rank
     bool isPmeRank = false;
 
