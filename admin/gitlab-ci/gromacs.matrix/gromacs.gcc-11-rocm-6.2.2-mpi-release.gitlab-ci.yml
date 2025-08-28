@@ -57,8 +57,6 @@ gromacs:gcc-11-hip-622-mpi:release:test:
   variables:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
     BUILD_DIR: release-builds-gcc-rocm
-    # The following two variables are not used by k8s, since this job runs on a separate host
-    # But it's easier to set them up and use the existing scripts for job preparation that rely on them
     GPU_VENDOR: "AMD"
     GPU_COUNT: 2
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"

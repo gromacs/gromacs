@@ -115,8 +115,6 @@ gromacs:gcc-11-hip-622-mpi-nightly:test:
   image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-gcc-11-rocm-6.2.2-openmpi-5.0.3
   variables:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
-    # The following two variables are not used by k8s, since this job runs on a separate host
-    # But it's easier to set them up and use the existing scripts for job preparation that rely on them
     GPU_VENDOR: "AMD"
     GPU_COUNT: 2
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
