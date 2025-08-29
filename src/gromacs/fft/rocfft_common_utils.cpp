@@ -33,20 +33,20 @@
  */
 
 /*! \internal \file
- *  \brief Implements GPU 3D FFT routines for hipSYCL via rocFFT.
+ *  \brief Helper GPU 3D FFT routines for rocFFT via SYCL and HIP backends.
  *
  *  \author Andrey Alekseenko <al42and@gmail.com>
  *  \author Mark Abraham <mark.j.abraham@gmail.com>
  *
- * For hipSYCL, in order to call FFT APIs from the respective vendors
+ * For AdaptiveCpp, in order to call FFT APIs from the respective vendors
  * using the same DeviceStream as other operations, a vendor extension
- * called "custom operations" is used (see hipSYCL
+ * called "custom operations" is used (see AdaptiveCpp
  * doc/enqueue-custom-operation.md). That effectively enqueues an
  * asynchronous host-side lambda into the same queue. The body of the
  * lambda unpacks the runtime data structures to get the native
  * handles and calls the native FFT APIs.
  *
- * hipSYCL queues operate at a higher level of abstraction than hip
+ * SYCL queues can operate at a higher level of abstraction than hip
  * streams, with the runtime distributing work to the latter to
  * balance load. It is possible to set the HIP stream in
  * rocfft_execution_info, but then there is no guarantee that a

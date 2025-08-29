@@ -265,7 +265,7 @@
 /* Define if SYCL GPU acceleration is compiled */
 #cmakedefine01 GMX_GPU_SYCL
 
-/* Define if AdaptiveCpp (hipSYCL) is used for SYCL support */
+/* Define if AdaptiveCpp is used for SYCL support */
 #cmakedefine01 GMX_SYCL_ACPP
 
 /* Define if Intel oneAPI DPC++ is used for SYCL support */

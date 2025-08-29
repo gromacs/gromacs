@@ -38,4 +38,4 @@ set(GMX_CMAKE_VERSION "@CMAKE_VERSION@" "Version of CMake used to build these CM
 @_gmx_mpi_config@
 @_gmx_osx_config@
 @_gmx_cuda_config@
-@_gmx_hipsycl_config@
+@_gmx_adaptivecpp_config@

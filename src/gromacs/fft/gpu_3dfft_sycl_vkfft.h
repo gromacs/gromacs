@@ -33,7 +33,7 @@
  */
 
 /*
- * VkFFT hipSYCL support to GROMACS was contributed by Advanced Micro Devices, Inc.
+ * VkFFT AdaptiveCpp support to GROMACS was contributed by Advanced Micro Devices, Inc.
  * Copyright (c) 2022, Advanced Micro Devices, Inc.  All rights reserved.
  */
 

@@ -34,9 +34,9 @@
 
 #include <sycl/sycl.hpp>
 
-// Always fail if we are not compiling with AdaptiveCpp/hipSYCL
+// Always fail if we are not compiling with AdaptiveCpp
 #if !defined(__HIPSYCL__) && !defined(__ADAPTIVECPP__)
-#    error "Neither __HIPSYCL__ nor __ADAPTIVECPP__ macro not defined. Please check your AdaptiveCpp/hipSYCL installation."
+#    error "Neither __HIPSYCL__ nor __ADAPTIVECPP__ macro not defined. Please check your AdaptiveCpp installation."
 #endif
 
 /* Next, we check four compile paths and issue a warning is each one is triggered.

@@ -59,11 +59,11 @@ function(_getACppCmakeFlags RETURN_VAR)
 endfunction()
 
 if(NOT GMX_GPU_SYCL OR GMX_SYCL_DPCPP OR NOT GMX_SYCL_ACPP)
-    message(FATAL_ERROR "Internal error: AdaptiveCpp/hipSYCL configuration script was included when it should not")
+    message(FATAL_ERROR "Internal error: AdaptiveCpp configuration script was included when it should not")
 endif()
 
 if (NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND NOT CMAKE_CXX_COMPILER_ID MATCHES "IntelLLVM")
-    message(FATAL_ERROR "AdaptiveCpp/hipSYCL build requires Clang compiler, but ${CMAKE_CXX_COMPILER_ID} is used")
+    message(FATAL_ERROR "AdaptiveCpp build requires Clang compiler, but ${CMAKE_CXX_COMPILER_ID} is used")
 endif()
 set(ACPP_CLANG "${CMAKE_CXX_COMPILER}")
 set(HIPSYCL_CLANG "${ACPP_CLANG}")
@@ -77,6 +77,7 @@ set(ACPP_EXTRA_ARGS "-Wno-unknown-cuda-version -Wno-unknown-attributes ${SYCL_CX
 set(ACPP_EXTRA_COMPILE_OPTIONS -ffast-math)
 
 # Enable instant submission unless _ALLOW_INSTANT_SUBMISSION or _FORCE_INSTANT_SUBMISSION is already set (to 0 or 1)
+# Not necessary since https://github.com/AdaptiveCpp/AdaptiveCpp/pull/179, so should be possible to remove this once we require ACpp 25.10
 if (NOT SYCL_CXX_FLAGS_EXTRA MATCHES "_INSTANT_SUBMISSION")
     list(APPEND ACPP_EXTRA_COMPILE_OPTIONS -DHIPSYCL_ALLOW_INSTANT_SUBMISSION=1) # ACpp 24.02 and earlier
     list(APPEND ACPP_EXTRA_COMPILE_OPTIONS -DACPP_ALLOW_INSTANT_SUBMISSION=1) # ACpp 24.06 and newer
@@ -125,19 +126,19 @@ if (DEFINED GMX_ALL_ACPP_CMAKE_FLAGS_COPY AND "${GMX_ALL_ACPP_CMAKE_FLAGS_COPY}"
     set(_rerun_acpp_try_compile_tests FALSE)
 else()
     # The new value should over-write the previous copy
-    set(GMX_ALL_ACPP_CMAKE_FLAGS_COPY ${_ALL_ACPP_CMAKE_FLAGS} CACHE INTERNAL "Store the list of CMake variables needed for AdaptiveCpp/hipSYCL compilation test projects")
+    set(GMX_ALL_ACPP_CMAKE_FLAGS_COPY ${_ALL_ACPP_CMAKE_FLAGS} CACHE INTERNAL "Store the list of CMake variables needed for AdaptiveCpp compilation test projects")
     set(_rerun_acpp_try_compile_tests TRUE)
 endif()
 
 # Does the AdaptiveCpp compiler work at all for the given targets?
 if (NOT DEFINED GMX_ACPP_COMPILATION_WORKS OR _rerun_acpp_try_compile_tests)
-    message(STATUS "Checking for valid AdaptiveCpp/hipSYCL compiler")
+    message(STATUS "Checking for valid AdaptiveCpp compiler")
     try_compile(GMX_ACPP_COMPILATION_WORKS "${CMAKE_BINARY_DIR}/CMakeTmpAdaptiveCppTest" "${CMAKE_SOURCE_DIR}/cmake/AdaptiveCppTest/" "AdaptiveCppTest"
         OUTPUT_VARIABLE _ACPP_COMPILATION_OUTPUT
         CMAKE_FLAGS ${_ALL_ACPP_CMAKE_FLAGS} -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE})
     file(REMOVE_RECURSE "${CMAKE_BINARY_DIR}/CMakeTmpAdaptiveCppTest")
     if(GMX_ACPP_COMPILATION_WORKS)
-        message(STATUS "Checking for valid AdaptiveCpp/hipSYCL compiler - Success")
+        message(STATUS "Checking for valid AdaptiveCpp compiler - Success")
         foreach (target IN ITEMS CUDA HIP HIP_WAVE32 HIP_WAVE64 SPIRV GENERIC)
             if (_ACPP_COMPILATION_OUTPUT MATCHES "GMX_SYCL_TEST_HAVE_${target}_TARGET")
                 set(GMX_ACPP_HAVE_${target}_TARGET ON CACHE INTERNAL "AdaptiveCpp flags/configuration have ${target} target")
@@ -150,22 +151,22 @@ if (NOT DEFINED GMX_ACPP_COMPILATION_WORKS OR _rerun_acpp_try_compile_tests)
 endif()
 
 if (NOT GMX_ACPP_COMPILATION_WORKS)
-    message(FATAL_ERROR "AdaptiveCpp/hipSYCL compiler not working:\n${_ACPP_COMPILATION_OUTPUT}")
+    message(FATAL_ERROR "AdaptiveCpp compiler not working:\n${_ACPP_COMPILATION_OUTPUT}")
 endif()
 if (GMX_ACPP_HAVE_SPIRV_TARGET)
-    message(FATAL_ERROR "GROMACS does not support LevelZero (SPIR-V) backend of AdaptiveCpp/hipSYCL")
+    message(FATAL_ERROR "GROMACS does not support LevelZero (SPIR-V) backend of AdaptiveCpp")
 endif()
 if(GMX_ACPP_HAVE_GENERIC_TARGET)
-    message(WARNING "The generic/SSCP compilation flow of AdaptiveCpp/hipSYCL is experimental")
+    message(WARNING "The generic/SSCP compilation flow of AdaptiveCpp is experimental")
 endif()
 if(NOT GMX_ACPP_HAVE_CUDA_TARGET AND NOT GMX_ACPP_HAVE_HIP_TARGET AND NOT GMX_ACPP_HAVE_GENERIC_TARGET)
-    message(WARNING "AdaptiveCpp/hipSYCL has no GPU targets set! Please, specify target hardware with -DHIPSYCL_TARGETS CMake option")
+    message(WARNING "AdaptiveCpp has no GPU targets set! Please, specify target hardware with -DACPP_TARGETS CMake option")
 endif()
 if(GMX_ACPP_HAVE_CUDA_TARGET AND GMX_ACPP_HAVE_HIP_TARGET)
-    message(FATAL_ERROR "AdaptiveCpp/hipSYCL cannot have both CUDA and HIP targets active! This would require explicit multipass mode which both decreases performance on NVIDIA devices and is no longer supported in clang. Compile only for either CUDA or HIP targets.")
+    message(FATAL_ERROR "AdaptiveCpp cannot have both CUDA and HIP targets active! This would require explicit multipass mode which both decreases performance on NVIDIA devices and is no longer supported in clang. Compile only for either CUDA or HIP targets.")
 endif()
 if(GMX_ACPP_HAVE_HIP_TARGET AND NOT GMX_ACPP_HAVE_HIP_WAVE64_TARGET AND NOT GMX_ACPP_HAVE_HIP_WAVE32_TARGET)
-    message(FATAL_ERROR "AdaptiveCpp/hipSYCL has a HIP target, but cannot determine its wave size")
+    message(FATAL_ERROR "AdaptiveCpp has a HIP target, but cannot determine its wave size")
 endif()
 unset(_rerun_acpp_try_compile_tests)
 
@@ -186,7 +187,7 @@ else()
     endif()
 endif()
 option(GMX_ENABLE_AMD_RDNA_SUPPORT
-    "Enable compiling kernels for AMD RDNA GPUs (gfx1xxx). When OFF, only CDNA and GCN are supported. Only used with AdaptiveCpp/hipSYCL."
+    "Enable compiling kernels for AMD RDNA GPUs (gfx1xxx). When OFF, only CDNA and GCN are supported. Only used with AdaptiveCpp."
     ${_enable_rdna_support_automatically})
 mark_as_advanced(GMX_ENABLE_AMD_RDNA_SUPPORT)
 
@@ -200,7 +201,7 @@ if (GMX_ACPP_HAVE_HIP_TARGET AND GMX_GPU_FFT_ROCFFT)
     #
     # The AdaptiveCpp find package sets HIPSYCL_SYCLCC/ACPP_COMPILER which we can
     # use to find the JSON configuration file that points to the
-    # default ROCm installation used by hipSYCL, which can be used
+    # default ROCm installation used by AdaptiveCpp, which can be used
     # to find rocFFT.
     #
     # If this is unavailable or does not work, the user will need to
@@ -211,7 +212,7 @@ if (GMX_ACPP_HAVE_HIP_TARGET AND GMX_GPU_FFT_ROCFFT)
         get_filename_component(HIPSYCL_SYCLCC_DIR ${HIPSYCL_SYCLCC} DIRECTORY)
         find_file(ACPP_JSON syclcc.json
             HINTS ${HIPSYCL_SYCLCC_DIR}/../etc/hipSYCL
-            DOC "location of hipSYCL/AdaptiveCpp JSON configuration file"
+            DOC "location of AdaptiveCpp JSON configuration file"
         )
     elseif(ACPP_COMPILER)
         get_filename_component(ACPP_COMPILER_DIR ${ACPP_COMPILER} DIRECTORY)
@@ -220,7 +221,7 @@ if (GMX_ACPP_HAVE_HIP_TARGET AND GMX_GPU_FFT_ROCFFT)
         find_file(ACPP_JSON
             NAMES acpp-rocm.json syclcc.json
             HINTS ${ACPP_COMPILER_DIR}/../etc/AdaptiveCpp ${ACPP_COMPILER_DIR}/../etc/hipSYCL
-            DOC "location of hipSYCL/AdaptiveCpp JSON configuration file"
+            DOC "location of AdaptiveCpp JSON configuration file"
         )
     endif()
     if(HIPSYCL_SYCLCC_ROCM_PATH AND NOT ACPP_ROCM_PATH)
@@ -229,7 +230,7 @@ if (GMX_ACPP_HAVE_HIP_TARGET AND GMX_GPU_FFT_ROCFFT)
     if (ACPP_JSON AND NOT ACPP_ROCM_PATH)
         file(READ "${ACPP_JSON}" ACPP_JSON_CONTENTS)
         string(JSON ACPP_ROCM_PATH_VALUE GET ${ACPP_JSON_CONTENTS} "default-rocm-path")
-        set(ACPP_ROCM_PATH "${ACPP_ROCM_PATH_VALUE}" CACHE PATH "The default ROCm used by AdaptiveCpp/hipSYCL" FORCE)
+        set(ACPP_ROCM_PATH "${ACPP_ROCM_PATH_VALUE}" CACHE PATH "The default ROCm used by AdaptiveCpp" FORCE)
     endif()
 
     if(ACPP_ROCM_PATH)
@@ -246,7 +247,7 @@ if (GMX_ACPP_HAVE_HIP_TARGET AND GMX_GPU_FFT_ROCFFT)
     # Find rocFFT, either from the ROCm used by AdaptiveCpp, or as otherwise found on the system
     find_package(rocfft ${FIND_ROCFFT_QUIETLY} CONFIG HINTS ${ACPP_ROCM_PATH} PATHS /opt/rocm)
     if (NOT rocfft_FOUND)
-        message(FATAL_ERROR "rocFFT is required for the AdaptiveCpp/hipSYCL build, but was not found")
+        message(FATAL_ERROR "rocFFT is requested but was not found")
     endif()
     set(FIND_ROCFFT_QUIETLY "QUIET")
     set(_sycl_has_valid_fft TRUE)

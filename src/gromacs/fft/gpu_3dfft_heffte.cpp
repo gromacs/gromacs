@@ -58,6 +58,7 @@
 
 #if GMX_GPU_SYCL
 #    include "gromacs/gpu_utils/devicebuffer_sycl.h"
+#    include "gromacs/gpu_utils/gmxsycl.h"
 #endif
 
 namespace gmx
@@ -307,7 +308,8 @@ Gpu3dFft::ImplHeFfte<backend_tag>::ImplHeFfte(bool                 allocateRealG
                 .submit(
                         [&, &fftPlanRef = fftPlan_, &workspaceRef = workspace_](sycl::handler& cgh)
                         {
-                            cgh.hipSYCL_enqueue_custom_operation(
+                            gmx::syclEnqueueCustomOp(
+                                    cgh,
                                     [=, &fftPlanRef, &workspaceRef](sycl::interop_handle& h)
                                     {
                                         auto stream = h.get_native_queue<syclBackend<backend_tag>()>();
@@ -348,13 +350,14 @@ Gpu3dFft::ImplHeFfte<backend_tag>::ImplHeFfte(bool                 allocateRealG
 
         // Define 3D FFT plan
 #if GMX_SYCL_ACPP
-        // We need to use hipSYCL_enqueue_custom_operation here to handle cases when ACpp uses
+        // We need to use AdaptiveCpp_enqueue_custom_operation here to handle cases when ACpp uses
         // extra worker thread to submit tasks to the GPU. No need to do this with DPC++.
         pmeRawStream_
                 .submit(
                         [&, &fftPlanRef = fftPlan_, &workspaceRef = workspace_](sycl::handler& cgh)
                         {
-                            cgh.hipSYCL_enqueue_custom_operation(
+                            gmx::syclEnqueueCustomOp(
+                                    cgh,
                                     [=, &fftPlanRef, &workspaceRef](sycl::interop_handle& h)
                                     {
                                         auto stream = h.get_native_queue<syclBackend<backend_tag>()>();

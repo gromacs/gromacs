@@ -50,18 +50,21 @@
 //! \brief Full warp active thread mask used in CUDA warp-level primitives.
 static constexpr unsigned int c_cudaFullWarpMask = 0xffffffff;
 
-// Prior to AdaptiveCpp 24.06, only HIPSYCL_LIBKERNEL_IS_DEVICE_PASS_HIP is defined
+// Prior to AdaptiveCpp 24.06, only HIPSYCL_* are defined
 // TODO: Remove once we have AdaptiveCpp 24.06 as the minimum supported version
 #if GMX_SYCL_ACPP && !defined(ACPP_LIBKERNEL_IS_DEVICE_PASS_HIP) \
         && defined(HIPSYCL_LIBKERNEL_IS_DEVICE_PASS_HIP)
 #    define ACPP_LIBKERNEL_IS_DEVICE_PASS_HIP HIPSYCL_LIBKERNEL_IS_DEVICE_PASS_HIP
+#endif
+#if GMX_SYCL_ACPP && !defined(ACPP_UNIVERSAL_TARGET) && defined(HIPSYCL_UNIVERSAL_TARGET)
+#    define ACPP_UNIVERSAL_TARGET HIPSYCL_UNIVERSAL_TARGET
 #endif
 
 #if defined(SYCL_EXT_ONEAPI_ASSERT) && SYCL_EXT_ONEAPI_ASSERT && !defined(__AMDGCN__)
 #    define SYCL_ASSERT(condition) assert(condition)
 #else
 /* Assertions are not defined in SYCL standard, but they are available as oneAPI extension sycl_ext_oneapi_assert.
- * Technically, asserts should work just fine with hipSYCL, since they are supported by CUDA since sm_20.
+ * Technically, asserts should work just fine with AdaptiveCpp, since they are supported by CUDA since sm_20.
  * But with some settings (Clang 14, hipSYCL 0.9.2, RelWithAssert), CUDA build fails at link time:
  * ptxas fatal   : Unresolved extern function '__assert_fail'
  * So, we just disable kernel asserts unless they are promised to be available.
@@ -70,7 +73,7 @@ static constexpr unsigned int c_cudaFullWarpMask = 0xffffffff;
 #endif
 
 #if GMX_SYCL_ACPP && ACPP_LIBKERNEL_IS_DEVICE_PASS_HIP
-HIPSYCL_UNIVERSAL_TARGET
+ACPP_UNIVERSAL_TARGET
 static inline void atomicAddOptimizedAmd(float gmx_unused* ptr, const float gmx_unused delta)
 {
 #    if defined(__gfx908__) // Special function for AMD MI100
@@ -89,7 +92,7 @@ static inline void atomicAddOptimizedAmd(float gmx_unused* ptr, const float gmx_
 constexpr bool compilingForHost()
 {
     // Skip compiling for CPU. Makes compiling this file ~10% faster for oneAPI/CUDA or
-    // hipSYCL/CUDA. For DPC++, any non-CPU targets must be explicitly allowed in the #if below.
+    // AdaptiveCpp/CUDA. For DPC++, any non-CPU targets must be explicitly allowed in the #if below.
 #if GMX_SYCL_ACPP
 #    if !GMX_ACPP_HAVE_GENERIC_TARGET
     __hipsycl_if_target_host(return true;);

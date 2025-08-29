@@ -340,7 +340,7 @@ string(STRIP "${SYCL_TOOLCHAIN_CXX_FLAGS_STR}" SYCL_TOOLCHAIN_CXX_FLAGS_STR)
 string(REPLACE ";" " " SYCL_TOOLCHAIN_LINKER_FLAGS_STR "${SYCL_TOOLCHAIN_LINKER_FLAGS}")
 string(STRIP "${SYCL_TOOLCHAIN_LINKER_FLAGS_STR}" SYCL_TOOLCHAIN_LINKER_FLAGS_STR)
 
-# Add function wrapper similar to the one used by ComputeCPP and hipSYCL
+# Add function wrapper similar to the one used by AdaptiveCpp
 function(add_sycl_to_target)
     cmake_parse_arguments(
         PARSE_ARGV 0 # No positional arguments

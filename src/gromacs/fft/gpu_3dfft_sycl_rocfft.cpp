@@ -33,20 +33,20 @@
  */
 
 /*! \internal \file
- *  \brief Implements GPU 3D FFT routines for hipSYCL via rocFFT.
+ *  \brief Implements GPU 3D FFT routines for AdaptiveCpp via rocFFT.
  *
  *  \author Andrey Alekseenko <al42and@gmail.com>
  *  \author Mark Abraham <mark.j.abraham@gmail.com>
  *
- * For hipSYCL, in order to call FFT APIs from the respective vendors
+ * For AdaptiveCpp, in order to call FFT APIs from the respective vendors
  * using the same DeviceStream as other operations, a vendor extension
- * called "custom operations" is used (see hipSYCL
+ * called "custom operations" is used (see AdaptiveCpp
  * doc/enqueue-custom-operation.md). That effectively enqueues an
  * asynchronous host-side lambda into the same queue. The body of the
  * lambda unpacks the runtime data structures to get the native
  * handles and calls the native FFT APIs.
  *
- * hipSYCL queues operate at a higher level of abstraction than hip
+ * AdaptiveCpp queues operate at a higher level of abstraction than hip
  * streams, with the runtime distributing work to the latter to
  * balance load. It is possible to set the HIP stream in
  * rocfft_execution_info, but then there is no guarantee that a
@@ -71,7 +71,7 @@
 #include "rocfft_common_utils.h"
 
 #if !defined(__HIPSYCL__) && !defined(__ADAPTIVECPP__)
-#    error This file can only be compiled with AdaptiveCpp/hipSYCL enabled
+#    error This file can only be compiled with AdaptiveCpp enabled
 #endif
 
 namespace gmx
@@ -177,7 +177,7 @@ RocfftPlan makePlan(const std::string&     descriptiveString,
                             });
                 });
     }
-    // Check for errors that happened while running the hipSYCL custom operation.
+    // Check for errors that happened while running the AdaptiveCpp custom operation.
     handleRocFftError(
             resultBuffer.get_host_access()[0], descriptiveString, "rocfft_plan_create failure");
     handleRocFftError(resultBuffer.get_host_access()[1],
@@ -294,7 +294,7 @@ Gpu3dFft::ImplSyclRocfft::Impl::Impl(bool allocateRealGrid,
     realGrid_(*realGrid->buffer_.get()),
     queue_(pmeStream.stream())
 {
-    GMX_RELEASE_ASSERT(performOutOfPlaceFFT, "Only out-of-place FFT is implemented in hipSYCL");
+    GMX_RELEASE_ASSERT(performOutOfPlaceFFT, "Only out-of-place FFT is implemented");
     GMX_RELEASE_ASSERT(allocateRealGrid == false, "Grids need to be pre-allocated");
     GMX_RELEASE_ASSERT(gridSizesInXForEachRank.size() == 1 && gridSizesInYForEachRank.size() == 1,
                        "FFT decomposition not implemented with the SYCL rocFFT backend");
@@ -303,7 +303,7 @@ Gpu3dFft::ImplSyclRocfft::Impl::Impl(bool allocateRealGrid,
 void Gpu3dFft::ImplSyclRocfft::perform3dFft(gmx_fft_direction dir, CommandEvent* /*timingEvent*/)
 {
     GMX_RELEASE_ASSERT((dir == GMX_FFT_REAL_TO_COMPLEX) || (dir == GMX_FFT_COMPLEX_TO_REAL),
-                       "Only real-to-complex and complex-to-real FFTs are implemented in hipSYCL");
+                       "Only real-to-complex and complex-to-real FFTs are implemented");
     FftDirection direction;
     float **     inputGrid = nullptr, **outputGrid = nullptr;
     impl_->complexGrid_ = *complexGrid_.buffer_.get();
@@ -324,7 +324,7 @@ void Gpu3dFft::ImplSyclRocfft::perform3dFft(gmx_fft_direction dir, CommandEvent*
             impl_->queue_,
             [&](sycl::handler& cgh)
             {
-                // Use a hipSYCL custom operation to access the native buffers needed to call rocFFT
+                // Use AdaptiveCpp custom operation to access the native buffers needed to call rocFFT
                 gmx::syclEnqueueCustomOp(
                         cgh,
                         [=](sycl::interop_handle& gmx_unused h)

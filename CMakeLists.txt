@@ -265,7 +265,7 @@ if(GMX_GPU STREQUAL SYCL)
             else()
                 set(GMX_SYCL "ACPP")
                 if (NOT "${GMX_REPORTED_SYCL_BACKEND}" STREQUAL ${GMX_SYCL})
-                    message(STATUS "GROMACS SYCL backend: Setting GMX_SYCL=ACPP (AdaptiveCpp/hipSYCL)")
+                    message(STATUS "GROMACS SYCL backend: Setting GMX_SYCL=ACPP (AdaptiveCpp)")
                 endif()
             endif()
             set(GMX_REPORTED_SYCL_BACKEND ${GMX_SYCL} CACHE INTERNAL "The most recent SYCL backend reported via CMake status message")
@@ -323,7 +323,7 @@ gmx_dependent_option(
 # =================+======================================
 # CUDA             | cuFFT
 # OpenCL           | VkFFT or clFFT according to toolchain
-# SYCL via hipSYCL | VkFFT
+# SYCL via ACpp    | VkFFT
 # SYCL via DPCPP   | MKL
 # HIP              | VkFFT or rocFFT
 # =================+======================================

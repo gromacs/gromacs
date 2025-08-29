@@ -33,12 +33,12 @@
  */
 
 /*
- * VkFFT hipSYCL support to GROMACS was contributed by Advanced Micro Devices, Inc.
+ * VkFFT AdaptiveCpp support to GROMACS was contributed by Advanced Micro Devices, Inc.
  * Copyright (c) 2022, Advanced Micro Devices, Inc.  All rights reserved.
  */
 
 /*! \internal \file
- *  \brief Implements GPU 3D FFT routines for hipSYCL using vkFFT.
+ *  \brief Implements GPU 3D FFT routines for AdaptiveCpp using vkFFT.
  *
  *  \author Bálint Soproni <balint@streamhpc.com>
  *  \author Anton Gorenko <anton@streamhpc.com>
@@ -285,7 +285,7 @@ static void launchVkFft(const DeviceBuffer<float>& realGrid,
 
 void Gpu3dFft::ImplSyclVkfft::perform3dFft(gmx_fft_direction dir, CommandEvent* /*timingEvent*/)
 {
-#if GMX_SYCL_ACPP // use hipSYCL_enqueue_custom_operation
+#if GMX_SYCL_ACPP // use AdaptiveCpp_enqueue_custom_operation
     gmx::syclSubmitWithoutEvent(impl_->queue_,
                                 [&](sycl::handler& cgh)
                                 {

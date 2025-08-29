@@ -67,7 +67,7 @@
 
 static std::optional<std::tuple<int, int>> parseHardwareVersionNvidia(const std::string& archName)
 {
-    // archName could be either '8.6' (DPC++) or 'sm_86' (AdaptiveCpp/hipSYCL)
+    // archName could be either '8.6' (DPC++) or 'sm_86' (AdaptiveCpp)
     try
     {
         if (gmx::startsWith(archName, "sm_"))
@@ -105,7 +105,7 @@ static std::optional<std::tuple<int, int>> parseHardwareVersionNvidia(const std:
 static std::optional<std::tuple<int, int>> getHardwareVersionNvidia(const sycl::device& device)
 {
     /* First, check device::info::version:
-     * - AdaptiveCpp/hipSYCL supports that since AdaptiveCpp 2023.10.0 (merged in July 2023),
+     * - AdaptiveCpp supports that since AdaptiveCpp 2023.10.0 (merged in July 2023),
      * - Intel DPC++ supports that since 2023.2.0 (merged in July 2023).
      * If device::info::version cannot be parsed, fall back on backend-specific solutions.
      * Fallbacks can be removed once we no longer support older versions. */
@@ -115,7 +115,7 @@ static std::optional<std::tuple<int, int>> getHardwareVersionNvidia(const sycl::
         return result;
     }
 #if (GMX_SYCL_ACPP && GMX_ACPP_HAVE_CUDA_TARGET \
-     && !GMX_ACPP_HAVE_GENERIC_TARGET) // hipSYCL uses CUDA Runtime API
+     && !GMX_ACPP_HAVE_GENERIC_TARGET) // AdaptiveCpp uses CUDA Runtime API
     const int             nativeDeviceId = sycl::get_native<sycl::backend::cuda>(device);
     struct cudaDeviceProp prop;
     cudaError_t           status = cudaGetDeviceProperties(&prop, nativeDeviceId);
@@ -181,7 +181,7 @@ static std::optional<std::tuple<int, int, int>> parseHardwareVersionAmd(const st
 static std::optional<std::tuple<int, int, int>> getHardwareVersionAmd(const sycl::device& device)
 {
     /* First, check device::info::version:
-     * - AdaptiveCpp/hipSYCL supports that since AdaptiveCpp 2023.10.0 (merged in July 2023),
+     * - AdaptiveCpp supports that since AdaptiveCpp 2023.10.0 (merged in July 2023),
      * - Intel DPC++ supports that since 2023.2.0 (merged in July 2023).
      * If device::info::version cannot be parsed, fall back to backend-specific solutions.
      * Fallbacks can be removed once we no longer support older versions. */
@@ -482,9 +482,9 @@ static DeviceStatus checkDevice(size_t deviceId, const DeviceInformation& device
  * backend with the most compatible devices. In case of a tie, we choose OpenCL (if
  * present), or some arbitrary backend among those with the most devices.
  *
- * In hipSYCL, this problem is unlikely to manifest. It has (as of 2021-03-03) another
+ * In AdaptiveCpp, this problem is unlikely to manifest. It has (as of 2021-03-03) another
  * issues: D2D copy between different backends is not allowed. We don't use D2D in
- * SYCL yet. Additionally, hipSYCL does not implement the `sycl::platform::get_backend()`
+ * SYCL yet. Additionally, AdaptiveCpp does not implement the `sycl::platform::get_backend()`
  * function.
  * Thus, we only do the backend filtering with DPC++.
  * */
@@ -588,7 +588,7 @@ static std::vector<sycl::device> partitionDevices(const std::vector<sycl::device
     }
     return retVal;
 #else
-    // For hipSYCL, we don't even bother splitting the devices
+    // For AdaptiveCpp, we don't even bother splitting the devices
     return devices;
 #endif
 }

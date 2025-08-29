@@ -74,7 +74,7 @@ constexpr float        c_Pi       = M_PI;
  * - hipSYCL 0.9.4 + Clang 14-15 for AMD (but not NVIDIA),
  * - IntelLLVM 2023-02 for NVIDIA and Arc (but to a much lesser extent PVC).
  *
- * This wrapper avoid dynamic accesses into the array, replacing them
+ * This wrapper avoids dynamic accesses into the array, replacing them
  * with a `switch` instead.
  *
  * Based on the optimization by AMD/StreamHPC for their HIP port.

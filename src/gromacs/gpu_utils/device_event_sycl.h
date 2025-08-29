@@ -95,7 +95,6 @@ public:
     //! Synchronizes the host thread on the marked event.
     inline void wait()
     {
-        // Note: this is not to prevent use-before-marking, but for checking the DPC++ vs hipSYCL consistency
         for (auto& event : events_)
         {
             event.wait_and_throw();

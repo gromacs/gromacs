@@ -1,4 +1,4 @@
-# Test goal: build with AdaptiveCpp/hipSYCL (ROCm backend) to check SYCL code compatibility
+# Test goal: build with AdaptiveCpp (ROCm backend) to check SYCL code compatibility
 # Test intents (should change rarely and conservatively):
 #   OS: Ubuntu newest supported
 #   Compiler: AMD Clang
@@ -24,7 +24,7 @@ gromacs:acpp-rocm:configure:
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX2_128"
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
     CMAKE_GPU_OPTIONS: "-DGMX_GPU=SYCL -DGMX_SYCL=ACPP -DACPP_TARGETS=hip:gfx906,gfx1034 -DGMX_GPU_FFT_LIBRARY=vkFFT"
-    # Unset COMPILER_LAUNCHER (previously set to ccache) because it conflicts with hipSYCL's syclcc-launcher
+    # Unset COMPILER_LAUNCHER (previously set to ccache) because it conflicts with AdaptiveCpp's syclcc-launcher
     CMAKE_EXTRA_OPTIONS: "-DCMAKE_C_COMPILER_LAUNCHER= -DCMAKE_CXX_COMPILER_LAUNCHER= -DGMX_INSTALL_LEGACY_API=ON"
 
 gromacs:acpp-rocm:build:
@@ -90,7 +90,7 @@ gromacs:acpp-rocm-nightly:configure:
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX2_128"
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
     CMAKE_GPU_OPTIONS: "-DGMX_GPU=SYCL -DGMX_SYCL=ACPP -DACPP_TARGETS='hip:gfx906'"
-    # Unset COMPILER_LAUNCHER (previously set to ccache) because it conflicts with hipSYCL's syclcc-launcher
+    # Unset COMPILER_LAUNCHER (previously set to ccache) because it conflicts with AdaptiveCpp's syclcc-launcher
     CMAKE_EXTRA_OPTIONS: "-DCMAKE_C_COMPILER_LAUNCHER= -DCMAKE_CXX_COMPILER_LAUNCHER="
 
 gromacs:acpp-rocm-nightly:build:
@@ -145,4 +145,3 @@ gromacs:acpp-rocm-nightly:regressiontest:
   needs:
     - job: gromacs:acpp-rocm-nightly:build
     - job: regressiontests:prepare
-
