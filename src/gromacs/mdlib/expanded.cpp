@@ -43,6 +43,7 @@
 #include <array>
 #include <filesystem>
 #include <memory>
+#include <numeric>
 #include <vector>
 
 #include "gromacs/math/functions.h"
