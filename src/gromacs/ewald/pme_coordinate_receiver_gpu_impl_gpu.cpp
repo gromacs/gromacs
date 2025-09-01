@@ -77,6 +77,7 @@ PmeCoordinateReceiverGpu::Impl::Impl(MPI_Comm                     comm,
                 std::make_unique<GpuEventSynchronizer>(),
                 { 0, 0 } });
     }
+    sendersThatSentCoordinates_.reserve(ppRanks.size());
 }
 
 PmeCoordinateReceiverGpu::Impl::~Impl() = default;
@@ -112,6 +113,12 @@ void PmeCoordinateReceiverGpu::Impl::reinitCoordinateReceiver(DeviceBuffer<RVec>
 #else
     GMX_UNUSED_VALUE(d_x);
 #endif
+}
+
+void PmeCoordinateReceiverGpu::Impl::prepareToReceiveCoordinates()
+{
+    // Prepare to keep track of which PP indices sent work
+    sendersThatSentCoordinates_.clear();
 }
 
 /*! \brief Receive coordinate synchronizer pointer from the PP ranks. */
@@ -173,6 +180,7 @@ std::tuple<int, GpuEventSynchronizer*> PmeCoordinateReceiverGpu::Impl::receivePp
 #if GMX_MPI
     if (requests_[senderIndex] != MPI_REQUEST_NULL)
     {
+        sendersThatSentCoordinates_.push_back(senderIndex);
         // MPI_Waitany is not available in thread-MPI. However, the
         // MPI_Wait here is not associated with data but is host-side
         // scheduling code to receive a CUDA event, and will be executed
@@ -204,10 +212,19 @@ int PmeCoordinateReceiverGpu::Impl::waitForCoordinatesFromAnyPpRank()
     // that collaborate with this PME rank.
     int senderIndex = -1;
     MPI_Waitany(requests_.size(), requests_.data(), &senderIndex, MPI_STATUS_IGNORE);
+    // Note that coordinates are not sent from empty domains. If so,
+    // such receive requests were never posted, and MPI_Waitany
+    // returns without changing senderIndex.
+    sendersThatSentCoordinates_.push_back(senderIndex);
     return senderIndex;
 #else
     return -1;
 #endif
+}
+
+ArrayRef<const int> PmeCoordinateReceiverGpu::Impl::sendersThatSentCoordinates() const
+{
+    return sendersThatSentCoordinates_;
 }
 
 DeviceStream* PmeCoordinateReceiverGpu::Impl::ppCommStream(int senderIndex)
@@ -246,6 +263,11 @@ void PmeCoordinateReceiverGpu::reinitCoordinateReceiver(DeviceBuffer<RVec> d_x)
     impl_->reinitCoordinateReceiver(d_x);
 }
 
+void PmeCoordinateReceiverGpu::prepareToReceiveCoordinates()
+{
+    impl_->prepareToReceiveCoordinates();
+}
+
 void PmeCoordinateReceiverGpu::receiveCoordinatesSynchronizerFromPpPeerToPeer(int ppRank)
 {
     impl_->receiveCoordinatesSynchronizerFromPpPeerToPeer(ppRank);
@@ -268,6 +290,11 @@ std::tuple<int, GpuEventSynchronizer*> PmeCoordinateReceiverGpu::receivePpCoordi
 int PmeCoordinateReceiverGpu::waitForCoordinatesFromAnyPpRank()
 {
     return impl_->waitForCoordinatesFromAnyPpRank();
+}
+
+ArrayRef<const int> PmeCoordinateReceiverGpu::sendersThatSentCoordinates() const
+{
+    return impl_->sendersThatSentCoordinates();
 }
 
 DeviceStream* PmeCoordinateReceiverGpu::ppCommStream(int senderIndex)

@@ -92,6 +92,10 @@ public:
     void reinitCoordinateReceiver(DeviceBuffer<RVec> d_x);
 
     /*! \brief
+     * Prepare to receive coordinates, must be called every step */
+    void prepareToReceiveCoordinates();
+
+    /*! \brief
      * Receive coordinate synchronizer pointer from the PP ranks.
      * \param[in] ppRank  PP rank to receive the synchronizer from.
      */
@@ -128,6 +132,9 @@ public:
      */
     int waitForCoordinatesFromAnyPpRank();
 
+    /*! \brief Return view of sender PP indices that sent coordinates */
+    ArrayRef<const int> sendersThatSentCoordinates() const;
+
     /*! \brief
      * Return pointer to stream associated with specific PP rank sender index
      * \param[in] senderIndex    Index of sender PP rank.
@@ -157,6 +164,14 @@ private:
     std::vector<MPI_Request> requests_;
     //! Communication manager objects corresponding to multiple sending PP ranks
     std::vector<PpCommManager> ppCommManagers_;
+    /*! \brief Track which spread-pipeline senders contributed work.
+     *
+     * PP ranks that did send particles append their sender index to
+     * this vector. When a PP rank sends no particles, no spread
+     * kernels are launched and thus we should avoid creating stream
+     * dependencies. In such cases, those ranks append values of -1 to
+     * this vector. */
+    std::vector<int> sendersThatSentCoordinates_;
 };
 
 } // namespace gmx

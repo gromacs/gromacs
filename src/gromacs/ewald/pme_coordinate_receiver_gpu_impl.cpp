@@ -90,6 +90,13 @@ void PmeCoordinateReceiverGpu::reinitCoordinateReceiver(DeviceBuffer<RVec> /* d_
                "correct implementation.");
 }
 
+void PmeCoordinateReceiverGpu::prepareToReceiveCoordinates()
+{
+    GMX_ASSERT(!impl_,
+               "A CPU stub for PME-PP GPU communication was called instead of the correct "
+               "implementation.");
+}
+
 void PmeCoordinateReceiverGpu::receiveCoordinatesSynchronizerFromPpPeerToPeer(int /* ppRank */)
 {
     GMX_ASSERT(!impl_,
@@ -123,6 +130,15 @@ int PmeCoordinateReceiverGpu::waitForCoordinatesFromAnyPpRank()
                "implementation.");
     return 0;
 }
+
+ArrayRef<const int> PmeCoordinateReceiverGpu::sendersThatSentCoordinates() const
+{
+    GMX_ASSERT(!impl_,
+               "A CPU stub for PME-PP GPU communication was called instead of the correct "
+               "implementation.");
+    return {};
+}
+
 
 DeviceStream* PmeCoordinateReceiverGpu::ppCommStream(int /* senderIndex */)
 {

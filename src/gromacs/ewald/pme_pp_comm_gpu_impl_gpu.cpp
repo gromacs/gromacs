@@ -191,11 +191,17 @@ void PmePpCommGpu::Impl::receiveForceFromPmePeerToPeer(bool receivePmeForceToGpu
 void PmePpCommGpu::Impl::receiveForceFromPmeGpuAwareMpi(Float3* pmeForcePtr, int recvSize)
 {
 #if GMX_LIB_MPI
+    if (recvSize == 0)
+    {
+        // Nothing to do, no forces can be expected
+        GMX_ASSERT(!coordinateSendRequestIsActive_, "No coordinates were sent");
+        return;
+    }
 
     // Wait on previous non-blocking coordinate send. This already must have completed for PME
-    // forces to be ready, but the wait is necessary to avoid issues with certain MPI libraries.
+    // forces to be ready, but the wait is required by the MPI standard to assure completion.
     GMX_ASSERT(coordinateSendRequestIsActive_,
-               "A coordinate send request should be active before force is recieved");
+               "A coordinate send request should be active before force is received");
     MPI_Wait(&coordinateSendRequest_, MPI_STATUS_IGNORE);
     coordinateSendRequestIsActive_ = false;
 

@@ -337,24 +337,6 @@ TEST_P(PmeTest, Runs)
             GTEST_SKIP() << skipMessages.toString();
         }
 
-        // We need some extra skips while we coordinate code fixes.
-        // We separate them from the other skips for clarity.
-        {
-            const std::string pmeOptionArgument(commandLine.argumentOf("-pme").value());
-            const bool        commandLineTargetsPmeOnCpu = (pmeOptionArgument == "cpu");
-            const std::string npmeOptionArgument(commandLine.argumentOf("-npme").value());
-            const bool        commandLineTargetsPmeOnlyRanks = (std::stoi(npmeOptionArgument) > 0);
-            if (!commandLineTargetsPmeOnCpu && commandLineTargetsPmeOnlyRanks)
-            {
-                if (getNumberOfTestMpiRanks() == 4 && GMX_LIB_MPI)
-                {
-                    GTEST_SKIP()
-                            << "PME coordinate receiver and force reduction don't handle empty "
-                               "domains properly with GPU on PME-only ranks and library MPI";
-                }
-            }
-        }
-
         ASSERT_EQ(0, runner_.callMdrun(commandLine));
 
         if (thisRankChecks)

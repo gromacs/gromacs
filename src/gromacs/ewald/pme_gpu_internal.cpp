@@ -1841,6 +1841,9 @@ static int manageSyncWithPpCoordinateSenderGpu(const PmeGpu* pmeGpu,
     }
     else
     {
+        // If a pipeline stage has no particles, no message was sent
+        // and senderIndex will be < 0. Otherwise, any valid
+        // senderIndex might be returned.
         senderIndex = pmeCoordinateReceiverGpu->waitForCoordinatesFromAnyPpRank();
     }
     return senderIndex;
@@ -2035,12 +2038,18 @@ void pme_gpu_spread(PmeGpu*                        pmeGpu,
                 wallcycle_stop(wcycle, WallCycleCounter::LaunchGpuPme);
             }
             wallcycle_start(wcycle, WallCycleCounter::LaunchGpuPme);
-            // Set dependencies for PME stream on all pipeline streams
-            for (int senderIndex = 0; senderIndex < pmeCoordinateReceiverGpu->ppCommNumSenderRanks();
-                 senderIndex++)
+            // Set up stream dependencies for the streams that
+            // launched kernels.  This is done after all kernels are
+            // launched to avoid delaying launch of any kernel. This
+            // way the dependency-management work will usually overlap
+            // with kernel execution.
+            for (const auto senderIndex : pmeCoordinateReceiverGpu->sendersThatSentCoordinates())
             {
-                pmeCoordinateReceiverGpu->insertAsDependencyIntoStream(
-                        senderIndex, pmeGpu->archSpecific->pmeStream_);
+                if (senderIndex >= 0)
+                {
+                    pmeCoordinateReceiverGpu->insertAsDependencyIntoStream(
+                            senderIndex, pmeGpu->archSpecific->pmeStream_);
+                }
             }
             wallcycle_stop(wcycle, WallCycleCounter::LaunchGpuPme);
         }
