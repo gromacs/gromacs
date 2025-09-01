@@ -130,11 +130,6 @@ struct DeviceInt4
     int4 storage_;
 };
 
-static __device__ __forceinline__ DeviceInt4 loadInt4(const int* input, const int index)
-{
-    return { *(reinterpret_cast<const int4*>(input + 4 * index)) };
-}
-
 //! Convenience alias for global device memory
 template<typename T>
 using DeviceGlobalPtr = T*;
@@ -144,6 +139,11 @@ using DeviceLocalPtr = T*;
 //! Convenience alias for private device memory
 template<typename T>
 using DevicePrivatePtr = T*;
+
+static __device__ __forceinline__ DeviceInt4 loadInt4(const int* __restrict__ input, const int index)
+{
+    return { *(reinterpret_cast<const int4*>(input + 4 * index)) };
+}
 
 /*! \internal \brief
  * GPU kernels scheduling description. This is same in OpenCL/CUDA.

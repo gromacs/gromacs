@@ -72,6 +72,10 @@ using Float3 = gmx::RVec;
 using DeviceFloat3 = gmx::RVec;
 //! Convenience alias for sycl::float2
 using Float2 = sycl::float2;
+//! Convenience alias for sycl::int3
+using Int3 = sycl::int3;
+//! Convenience alias for sycl::int4
+using Int4 = sycl::int4;
 
 //! Convenience alias for 4-wide float in shared device kernels.
 struct DeviceFloat4
@@ -109,6 +113,7 @@ using DeviceLocalPtr = sycl::local_ptr<T>;
 //! Convenience alias for sycl private device memory
 template<typename T>
 using DevicePrivatePtr = sycl::private_ptr<T>;
+
 
 static inline DeviceInt4 loadInt4(DeviceGlobalPtr<const int> input, const int index)
 {

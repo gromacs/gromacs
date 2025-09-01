@@ -47,21 +47,13 @@
 #include "config.h"
 
 #if GMX_GPU_CUDA
-
 #    include "gromacs/gpu_utils/gputraits.cuh"
-
 #elif GMX_GPU_OPENCL
-
 #    include "gromacs/gpu_utils/gputraits_ocl.h"
-
 #elif GMX_GPU_SYCL
-
 #    include "gromacs/gpu_utils/gputraits_sycl.h"
-
 #elif GMX_GPU_HIP
-
 #    include "gromacs/gpu_utils/gputraits_hip.h"
-
 #else
 
 #    define GMX_HOST_ATTRIBUTE

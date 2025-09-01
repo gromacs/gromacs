@@ -189,6 +189,35 @@ static inline void atomicFetchAddLocal(T& val, const T delta)
     atomicFetchAdd<T, sycl::memory_scope::work_group, sycl::access::address_space::local_space>(val, delta);
 }
 
+template<typename T>
+static inline void atomicFetchAddLocal(T* val, const T delta)
+{
+    atomicFetchAddLocal<T>(*val, delta);
+}
+
+// \brief Staggered atomic force component accummulation into global memory to reduce clashes
+//
+// Reduce the number of atomic clashes by a theoretical max 3x by having consecutive threads
+// accumulate different force components at the same time.
+static inline void staggeredAtomicAddForce(sycl::global_ptr<Float3> gm_f, Float3 f, const int localId)
+{
+    __builtin_assume(localId >= 0);
+
+    using Int3  = sycl::int3;
+    Int3 offset = { 0, 1, 2 };
+
+    // Shift force components x (0), y (1), and z (2) left by 2, 1, and 0, respectively
+    // to end up with zxy, yzx, xyz on consecutive threads.
+    f      = (localId % 3 == 0) ? Float3(f[1], f[2], f[0]) : f;
+    offset = (localId % 3 == 0) ? Int3(offset[1], offset[2], offset[0]) : offset;
+    f      = (localId % 3 <= 1) ? Float3(f[1], f[2], f[0]) : f;
+    offset = (localId % 3 <= 1) ? Int3(offset[1], offset[2], offset[0]) : offset;
+
+    atomicFetchAdd(gm_f[0][offset[0]], f[0]);
+    atomicFetchAdd(gm_f[0][offset[1]], f[1]);
+    atomicFetchAdd(gm_f[0][offset[2]], f[2]);
+}
+
 /*! \brief Convenience wrapper to do atomic loads from a global buffer.
  */
 template<typename T, sycl::memory_scope MemoryScope = sycl::memory_scope::device>

@@ -94,5 +94,4 @@ static __forceinline__ __device__ T fetchFromParamLookupTable(const T*          
     return result;
 }
 
-
 #endif /* GMX_GPU_UTILS_CUDA_KERNEL_UTILS_CUH */

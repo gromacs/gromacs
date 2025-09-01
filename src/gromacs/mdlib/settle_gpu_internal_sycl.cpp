@@ -106,14 +106,14 @@ auto settleKernel(sycl::handler& cgh,
             const Float3 xprime_hw3 = gm_xp[indices.hw3];
 
             Float3 dist21;
-            pbcDxAiucSycl(pbcAiuc, x_hw2, x_ow1, dist21);
+            pbcDxAiucGpu(pbcAiuc, x_hw2, x_ow1, dist21);
             Float3 dist31;
-            pbcDxAiucSycl(pbcAiuc, x_hw3, x_ow1, dist31);
+            pbcDxAiucGpu(pbcAiuc, x_hw3, x_ow1, dist31);
             Float3 doh2;
-            pbcDxAiucSycl(pbcAiuc, xprime_hw2, xprime_ow1, doh2);
+            pbcDxAiucGpu(pbcAiuc, xprime_hw2, xprime_ow1, doh2);
 
             Float3 doh3;
-            pbcDxAiucSycl(pbcAiuc, xprime_hw3, xprime_ow1, doh3);
+            pbcDxAiucGpu(pbcAiuc, xprime_hw3, xprime_ow1, doh3);
 
             Float3 a1 = (doh2 + doh3) * (-pars.wh);
 

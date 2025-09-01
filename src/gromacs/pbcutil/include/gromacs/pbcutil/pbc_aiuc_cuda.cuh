@@ -52,6 +52,7 @@
 #ifndef GMX_PBCUTIL_PBC_AIUC_CUDA_CUH
 #define GMX_PBCUTIL_PBC_AIUC_CUDA_CUH
 
+#include "gromacs/gpu_utils/gputraits.h"
 #include "gromacs/gpu_utils/vectype_ops_cuda.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc_aiuc.h"
@@ -94,7 +95,7 @@ static inline __device__ int int3ToShiftIndex(int3 iv)
 template<bool returnShift>
 static __forceinline__ __device__ int
 // NOLINTNEXTLINE(google-runtime-references)
-pbcDxAiuc(const PbcAiuc& pbcAiuc, const float4 r1, const float4 r2, float3& dr)
+pbcDxAiucGpu(const PbcAiuc& pbcAiuc, const float4 r1, const float4 r2, float3& dr)
 {
     dr.x = r1.x - r2.x;
     dr.y = r1.y - r2.y;

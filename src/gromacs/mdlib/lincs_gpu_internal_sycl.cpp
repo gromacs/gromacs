@@ -182,7 +182,7 @@ auto lincsKernel(sycl::handler& cgh,
             xj = gm_x[j];
 
             Float3 dx;
-            pbcDxAiucSycl(pbcAiuc, xi, xj, dx);
+            pbcDxAiucGpu(pbcAiuc, xi, xj, dx);
 
             float rlen = sycl::rsqrt(dx[XX] * dx[XX] + dx[YY] * dx[YY] + dx[ZZ] * dx[ZZ]);
             rc         = rlen * dx;
@@ -226,7 +226,7 @@ auto lincsKernel(sycl::handler& cgh,
         }
 
         Float3 dx;
-        pbcDxAiucSycl(pbcAiuc, xi, xj, dx);
+        pbcDxAiucGpu(pbcAiuc, xi, xj, dx);
 
         float sol = sqrtReducedMass * ((rc[XX] * dx[XX] + rc[YY] * dx[YY] + rc[ZZ] * dx[ZZ]) - targetLength);
 
@@ -303,7 +303,7 @@ auto lincsKernel(sycl::handler& cgh,
             }
 
             Float3 dx;
-            pbcDxAiucSycl(pbcAiuc, xi, xj, dx);
+            pbcDxAiucGpu(pbcAiuc, xi, xj, dx);
 
             float len2  = targetLength * targetLength;
             float dlen2 = 2.0F * len2 - (dx[XX] * dx[XX] + dx[YY] * dx[YY] + dx[ZZ] * dx[ZZ]);
