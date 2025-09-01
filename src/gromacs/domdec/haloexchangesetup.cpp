@@ -352,13 +352,6 @@ void HaloExchange::setup(gmx_domdec_t*         dd,
 
     GMX_RELEASE_ASSERT(!isDlbOn(comm.dlbState), "DLB is not supported here yet");
 
-    /* The naming is not fully consistent here (yet).
-     * But the 2-body bonded interaction cut-off is max(cutoff, cutoff_mbody),
-     * so there is not short and exact naming.
-     */
-    const real cutoffSquaredNonbonded = gmx::square(comm.systemInfo.cutoff);
-    const real cutoffSquaredBonded    = gmx::square(comm.cutoff_mbody);
-
     /* Determine the normals of the zone planes */
     std::array<RVec, 3> normal;
     for (int i = 0; i < DIM; i++)
@@ -421,8 +414,8 @@ void HaloExchange::setup(gmx_domdec_t*         dd,
             // Determine which atoms we need to send
             send.selectHaloAtoms(*dd,
                                  nbv.localGrid(),
-                                 cutoffSquaredNonbonded,
-                                 cutoffSquaredBonded,
+                                 comm.systemInfo.cutoff,
+                                 comm.cutoff_mbody,
                                  localState->box,
                                  ddbox.tric_dir,
                                  normal,

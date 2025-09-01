@@ -127,8 +127,10 @@ public:
      *
      * \param[in] dd                      The domain decomposition struct
      * \param[in] grid                    The local NBNxM pair-search grid
-     * \param[in] cutoffSquaredNonbonded  The cutoff^2 for non-bonded interactions
-     * \param[in] cutoffSquaredBonded     The cutoff^2 for bonded interactions
+     * \param[in] cutoffTwoBody           The cutoff for two-body interactions,
+     *                                    includes 2 maxAtomGroupRadius
+     * \param[in] cutoffMultiBody         The cutoff for multi-body interactions
+     *                                    includes 2 maxAtomGroupRadius
      * \param[in] box                     The box
      * \param[in] dimensionIsTriclinic    Tells whether the dimensions require
      *                                    triclinic distance checks
@@ -139,8 +141,8 @@ public:
      */
     void selectHaloAtoms(const gmx_domdec_t&      dd,
                          const Grid&              grid,
-                         const real               cutoffSquaredNonbonded,
-                         const real               cutoffSquaredBonded,
+                         const real               cutoffTwoBody,
+                         const real               cutoffMultiBody,
                          const matrix             box,
                          const ivec               dimensionIsTriclinic,
                          ArrayRef<const RVec>     normal,

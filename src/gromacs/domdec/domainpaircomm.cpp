@@ -99,7 +99,11 @@ struct GridColumnInfo
     int bbToCellFactor;
 };
 
-//! Returns information on a column of the local grid
+/*! \brief Returns information on a column of the local grid
+ *
+ * Note that the column bounding boxes are computed for the centers of update groups.
+ * Atoms in update groups can stick out by at most grid.dimensions().maxAtomGroupRadius.
+ */
 GridColumnInfo nbnxmGetLocalGridColumn(const Grid& grid, const int columnIndex)
 {
     const GridDimensions& dims = grid.dimensions();
@@ -113,15 +117,12 @@ GridColumnInfo nbnxmGetLocalGridColumn(const Grid& grid, const int columnIndex)
 
     GridColumnInfo gci;
 
-    // Atoms can be at most out of the column by a distance of maxAtomGroupRadius
-    const real magr = grid.dimensions().maxAtomGroupRadius;
-
-    gci.columnBB.lower.x = dims.lowerCorner[XX] + cx * dims.cellSize[XX] - magr;
-    gci.columnBB.upper.x = dims.lowerCorner[XX] + (cx + 1) * dims.cellSize[XX] + magr;
-    gci.columnBB.lower.y = dims.lowerCorner[YY] + cy * dims.cellSize[YY] - magr;
-    gci.columnBB.upper.y = dims.lowerCorner[YY] + (cy + 1) * dims.cellSize[YY] + magr;
-    gci.columnBB.lower.z = dims.lowerCorner[ZZ] - magr;
-    gci.columnBB.upper.z = dims.upperCorner[ZZ] + magr;
+    gci.columnBB.lower.x = dims.lowerCorner[XX] + cx * dims.cellSize[XX];
+    gci.columnBB.upper.x = dims.lowerCorner[XX] + (cx + 1) * dims.cellSize[XX];
+    gci.columnBB.lower.y = dims.lowerCorner[YY] + cy * dims.cellSize[YY];
+    gci.columnBB.upper.y = dims.lowerCorner[YY] + (cy + 1) * dims.cellSize[YY];
+    gci.columnBB.lower.z = dims.lowerCorner[ZZ];
+    gci.columnBB.upper.z = dims.upperCorner[ZZ];
 
     const Grid::Geometry& geometry = grid.geometry();
 
@@ -233,10 +234,14 @@ struct DistanceCalculationInfo
     bool checkMultiBodyDistance = false;
     //! Whether we need to check distances for two-body bonded interactions when selecting cells
     bool checkTwoBodyDistance = false;
-    //! Cut-off squared for non-bonded interaction distances
-    real cutoffSquaredNonbonded;
-    //! Cut-off squared for bonded interaction distances
-    real cutoffSquaredBonded;
+    //! Cut-off squared for 2-body interaction distances, includes one maxAtomGroupRadius
+    real cutoffSquaredTwoBody1;
+    //! Cut-off squared for multi-body interaction distances, includes one maxAtomGroupRadius
+    real cutoffSquaredMultiBody1;
+    //! Cut-off squared for 2-body interaction distances, includes 2 * maxAtomGroupRadius
+    real cutoffSquaredTwoBody2;
+    //! Cut-off squared for multi-body interaction distances, includes 2 *maxAtomGroupRadius
+    real cutoffSquaredMultiBody2;
 
     // Whether to separately filter atoms for communication for long-distance bonded interactions.
     bool filterBondComm = false;
@@ -373,8 +378,12 @@ DistancesSquared cornerToBoundingBoxDistance(const DistanceCalculationInfo& dci,
     }
 }
 
-//! Determines the corner for 2-body, corner_2b, and multi-body, corner_mb, communication distances
-ZoneCorners getZoneCorners(const gmx_domdec_t& dd, const matrix box, const int zone, const real maxAtomGroupRadius)
+/*! \brief Determines the corner for 2-body, corner_2b, and multi-body, corner_mb, communication distances
+ *
+ * Note that the column bounding boxes are computed for the centers of update groups.
+ * Atoms in update groups can stick out by at most grid.dimensions().maxAtomGroupRadius.
+ */
+ZoneCorners getZoneCorners(const gmx_domdec_t& dd, const matrix box, const int zone)
 {
     const DomdecZones& zones = dd.zones;
 
@@ -424,14 +433,6 @@ ZoneCorners getZoneCorners(const gmx_domdec_t& dd, const matrix box, const int z
         }
     }
 
-    // Atoms can be outside the zone boundary by at most a distance of maxAtomGroupRadius
-    for (int d = 0; d < DIM; d++)
-    {
-        zc.twoBody[d] += maxAtomGroupRadius;
-        zc.multiBody[d] += maxAtomGroupRadius;
-        zc.zone[d] += maxAtomGroupRadius;
-    }
-
     if (debug)
     {
         fprintf(debug,
@@ -473,9 +474,9 @@ Range<int> getCellRangeForGridColumn(const Grid&                    grid,
             cornerToBoundingBoxDistance(dci, zoneCorners.twoBody, zoneCorners.multiBody, gci.columnBB);
 
     const bool columnIsInRange =
-            distancesSquared.pair < dci.cutoffSquaredNonbonded
-            || (dci.checkMultiBodyDistance && distancesSquared.multiBody < dci.cutoffSquaredBonded)
-            || (dci.checkTwoBodyDistance && distancesSquared.pair < dci.cutoffSquaredBonded);
+            distancesSquared.pair < dci.cutoffSquaredTwoBody2
+            || (dci.checkMultiBodyDistance && distancesSquared.multiBody < dci.cutoffSquaredMultiBody2)
+            || (dci.checkTwoBodyDistance && distancesSquared.pair < dci.cutoffSquaredMultiBody2);
     if (!columnIsInRange)
     {
         /* This whole column is out of range */
@@ -521,14 +522,14 @@ Range<int> getCellRangeForGridColumn(const Grid&                    grid,
          * The bonded check only triggers communication without bBondComm
          * or when the cell has missing bonded interactions.
          */
-        isInRange = (distancesSquared.pair < dci.cutoffSquaredNonbonded);
+        isInRange = (distancesSquared.pair < dci.cutoffSquaredTwoBody1);
 
         if constexpr (doChecksForBondeds)
         {
             isInRange =
                     isInRange
-                    || (((dci.checkMultiBodyDistance && distancesSquared.multiBody < dci.cutoffSquaredBonded)
-                         || (dci.checkTwoBodyDistance && distancesSquared.pair < dci.cutoffSquaredBonded))
+                    || (((dci.checkMultiBodyDistance && distancesSquared.multiBody < dci.cutoffSquaredMultiBody1)
+                         || (dci.checkTwoBodyDistance && distancesSquared.pair < dci.cutoffSquaredMultiBody1))
                         && (!dci.filterBondComm || isCellMissingLinks[firstCellInColumn + lastCell]));
         }
 
@@ -565,14 +566,14 @@ Range<int> getCellRangeForGridColumn(const Grid&                    grid,
             const auto distancesSquared = cornerToBoundingBoxDistance(
                     dci, zoneCorners.twoBody, zoneCorners.multiBody, *bbPointer);
 
-            isInRange = (distancesSquared.pair < dci.cutoffSquaredNonbonded);
+            isInRange = (distancesSquared.pair < dci.cutoffSquaredTwoBody1);
 
             if constexpr (doChecksForBondeds)
             {
                 isInRange =
                         isInRange
-                        || (((dci.checkMultiBodyDistance && distancesSquared.multiBody < dci.cutoffSquaredBonded)
-                             || (dci.checkTwoBodyDistance && distancesSquared.pair < dci.cutoffSquaredBonded))
+                        || (((dci.checkMultiBodyDistance && distancesSquared.multiBody < dci.cutoffSquaredMultiBody1)
+                             || (dci.checkTwoBodyDistance && distancesSquared.pair < dci.cutoffSquaredMultiBody1))
                             && (!dci.filterBondComm || isCellMissingLinks[firstCellInColumn + firstCell]));
             }
 
@@ -618,8 +619,8 @@ void DomainCommBackward::clear()
 
 void DomainCommBackward::selectHaloAtoms(const gmx_domdec_t&      dd,
                                          const Grid&              grid,
-                                         const real               cutoffSquaredNonbonded,
-                                         const real               cutoffSquaredBonded,
+                                         const real               cutoffTwoBody,
+                                         const real               cutoffMultiBody,
                                          const matrix             box,
                                          const ivec               dimensionIsTriclinic,
                                          ArrayRef<const RVec>     normal,
@@ -640,8 +641,17 @@ void DomainCommBackward::selectHaloAtoms(const gmx_domdec_t&      dd,
 
     DistanceCalculationInfo dci;
 
-    dci.cutoffSquaredNonbonded = cutoffSquaredNonbonded;
-    dci.cutoffSquaredBonded    = cutoffSquaredBonded;
+    GMX_RELEASE_ASSERT(grid.geometry().isSimple_ || grid.dimensions().maxAtomGroupRadius == 0,
+                       "We need need to implement the atom group radius handling for GPU grids");
+    // We add maxAtomGroupRadius for the bouding boxes of the grid for the domain we are
+    // communicating to. For the local grid we use bounding boxes that encompass all atoms
+    // in update groups.
+    // cutoffNonbonded and cutoffBonded already contain 2 * maxAtomGroupRadius,
+    // so we need to subtract to obtain a cut-off with only one maxAtomGroupRadius.
+    dci.cutoffSquaredTwoBody1 = gmx::square(cutoffTwoBody - grid.dimensions().maxAtomGroupRadius);
+    dci.cutoffSquaredMultiBody1 = gmx::square(cutoffMultiBody - grid.dimensions().maxAtomGroupRadius);
+    dci.cutoffSquaredTwoBody2   = gmx::square(cutoffTwoBody);
+    dci.cutoffSquaredMultiBody2 = gmx::square(cutoffMultiBody);
 
     for (int dimIndex = 0; dimIndex < dd.ndim; dimIndex++)
     {
@@ -703,7 +713,7 @@ void DomainCommBackward::selectHaloAtoms(const gmx_domdec_t&      dd,
     }
 
     /* Get the corners for non-bonded and bonded distance calculations */
-    const ZoneCorners zoneCorners = getZoneCorners(dd, box, zone_, grid.dimensions().maxAtomGroupRadius);
+    const ZoneCorners zoneCorners = getZoneCorners(dd, box, zone_);
 
     /* Do we need to determine extra distances for multi-body bondeds?
      * Note that with filterBondComm we might need distances longer than
