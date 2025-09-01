@@ -113,7 +113,7 @@ include(ExternalProject)
 ExternalProject_add(${EXTERNAL_FFTW_BUILD_TARGET}
         URL "${GMX_BUILD_OWN_FFTW_URL}"
         URL_MD5 ${GMX_BUILD_OWN_FFTW_MD5}
-        CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=<INSTALL_DIR> --libdir=<INSTALL_DIR>/lib --disable-fortran
+        CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=<INSTALL_DIR> CC=${CMAKE_C_COMPILER} --libdir=<INSTALL_DIR>/lib --disable-fortran
         ${GMX_BUILD_OWN_FFTW_SHARED_FLAG} ${GMX_BUILD_OWN_FFTW_OPTIMIZATION_CONFIGURATION}
         ${GMX_BUILD_OWN_FFTW_PREC}
         ${GMX_BUILD_OWN_FFTW_TARGET_HOST})

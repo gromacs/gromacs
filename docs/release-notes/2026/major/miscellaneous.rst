@@ -33,3 +33,11 @@ of falling back to the fixed value from the TPR.
 
 :issue:`5365`
 
+FFTW3 now builds with ```CMAKE_C_COMPILER```
+""""""""""""""""""""""""""""""""""""""""""""
+
+Previously, the cmake flag ```-DGMX_BUILD_OWN_FFTW=ON -DGMX_FFT_LIBRARY=fftw3```
+leads to FFTW3 being compiled with the system default compiler. The ```CMAKE_C_COMPILER```
+is now passed to the FFTW3 configure command.
+
+:issue:`5344`
