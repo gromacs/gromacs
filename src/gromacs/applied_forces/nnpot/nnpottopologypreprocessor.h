@@ -78,6 +78,20 @@ public:
      * \param[in,out] mtop Topology that needs to be modified
      */
     void preprocess(gmx_mtop_t* mtop);
+
+    // Override base to get the correct object
+    const QMMMTopologyInfo& topInfo() const;
+
+private:
+    /*! \brief Global indices of NNP atoms;
+     * The dominant operation is search and we also expect the set of nnp atoms to be very small
+     * relative to the rest, so set should outperform unordered set, i.e. unsorted std::vector.
+     */
+    std::set<int> nnpIndices_;
+    //! Vector with atom numbers for the whole system
+    std::vector<int> atomNumbers_;
+    //! Structure with information about modifications made
+    QMMMTopologyInfo topInfo_;
 };
 
 } // namespace gmx

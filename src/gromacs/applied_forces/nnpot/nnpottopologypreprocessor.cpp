@@ -47,7 +47,7 @@ namespace gmx
 {
 
 NNPotTopologyPreprocessor::NNPotTopologyPreprocessor(ArrayRef<const Index> inputIndices) :
-    QMMMTopologyPreprocessor(inputIndices)
+    QMMMTopologyPreprocessor(inputIndices), nnpIndices_(inputIndices.begin(), inputIndices.end())
 {
 }
 
@@ -58,26 +58,31 @@ void NNPotTopologyPreprocessor::preprocess(gmx_mtop_t* mtop)
     // refactored in the future.
 
     // 1) Split molecules containing NNP input atoms from other molecules in blocks
-    splitQMblocks(mtop);
+    std::vector<bool> isNNPBlock = splitQMBlocks(mtop, nnpIndices_, topInfo_);
 
     // 2) Exclude LJ interactions between NNP atoms
     // this also excludes coulomb interactions
-    addQMLJExclusions(mtop);
+    addQMLJExclusions(mtop, nnpIndices_, topInfo_);
 
     // 3) Build atomNumbers vector with atomic numbers of all atoms
-    buildQMMMAtomNumbers(mtop);
+    buildQMMMAtomNumbers(*mtop);
 
     // 4) Make F_CONNBOND between atoms within NNP region
-    modifyQMMMTwoCenterInteractions(mtop);
+    modifyQMMMTwoCenterInteractions(mtop, nnpIndices_, isNNPBlock, topInfo_);
 
     // 5) Remove angles and settles containing 2 or more NNP atoms
-    modifyQMMMThreeCenterInteractions(mtop);
+    modifyQMMMThreeCenterInteractions(mtop, nnpIndices_, isNNPBlock, topInfo_);
 
     // 6) Remove dihedrals containing 3 or more NNP atoms
-    modifyQMMMFourCenterInteractions(mtop);
+    modifyQMMMFourCenterInteractions(mtop, nnpIndices_, isNNPBlock, topInfo_);
 
     // finalize topology
     mtop->finalize();
+}
+
+const QMMMTopologyInfo& NNPotTopologyPreprocessor::topInfo() const
+{
+    return topInfo_;
 }
 
 } // namespace gmx
