@@ -4054,7 +4054,9 @@ constexpr std::array<BondedInteractions, F_NRE> c_bondedInteractionFunctions = {
     BondedInteractions{ unimplemented, -1 },                       // F_CONSTR
     BondedInteractions{ unimplemented, -1 },                       // F_CONSTRNC
     BondedInteractions{ unimplemented, -1 },                       // F_SETTLE
+    BondedInteractions{ unimplemented, -1 },                       // F_VSITE1
     BondedInteractions{ unimplemented, -1 },                       // F_VSITE2
+    BondedInteractions{ unimplemented, -1 },                       // F_VSITE2FD
     BondedInteractions{ unimplemented, -1 },                       // F_VSITE3
     BondedInteractions{ unimplemented, -1 },                       // F_VSITE3FD
     BondedInteractions{ unimplemented, -1 },                       // F_VSITE3FAD
