@@ -53,10 +53,12 @@
 #include "qmmmtypes.h"
 
 struct gmx_mtop_t;
+class WarningHandler;
 
 namespace gmx
 {
 
+class MDLogger;
 
 /*! \internal
  * \brief Contains various information about topology modifications
@@ -108,8 +110,11 @@ public:
      * Builds topInfo_ containing information about topology modifications
      *
      * \param[in,out] mtop Topology that needs to be modified
+     * \param[in] refQ Reference total charge of the system, used for warnings
+     * \param[in] logger MDLogger for logging info about modifications
+     * \param[in] wi WarningHandler for handling warnings
      */
-    void preprocess(gmx_mtop_t* mtop);
+    void preprocess(gmx_mtop_t* mtop, real refQ, const MDLogger& logger, WarningHandler* wi);
 
     //! \brief Returns data about modifications made via QMMMTopologyInfo
     const QMMMTopologyInfo& topInfo() const;
@@ -144,10 +149,9 @@ private:
  * Modifies molblocks in topology \p mtop
  * \param[in,out] mtop topology to be modified
  * \param[in] qmIndices set with global indices of QM atoms
- * \param[in,out] topInfo structure with information about topology modifications
  * \returns vector of flags for QM-containing blocks in modified mtop
  */
-std::vector<bool> splitQMBlocks(gmx_mtop_t* mtop, const std::set<int>& qmIndices, QMMMTopologyInfo& topInfo);
+std::vector<bool> splitQMBlocks(gmx_mtop_t* mtop, const std::set<int>& qmIndices);
 
 /*! \brief Removes classical charges from QM atoms and virtual sites
  *
@@ -157,12 +161,18 @@ std::vector<bool> splitQMBlocks(gmx_mtop_t* mtop, const std::set<int>& qmIndices
  * \param[in] qmIndices set with global indices of QM atoms
  * \param[in] bQMBlock vector with flags for QM-containing blocks
  * \param[in,out] topInfo structure with information about topology modifications
+ * \param[in] refQ reference total charge of the system, used for warning messages
+ * \param[in] logger MDLogger for logging info about modifications
+ * \param[in] wi WarningHandler for handling warnings
  * \returns vector of point charges for all atoms in the modified topology
  */
 std::vector<real> removeQMClassicalCharges(gmx_mtop_t*              mtop,
                                            const std::set<int>&     qmIndices,
                                            const std::vector<bool>& bQMBlock,
-                                           QMMMTopologyInfo&        topInfo);
+                                           QMMMTopologyInfo&        topInfo,
+                                           real                     refQ,
+                                           const MDLogger&          logger,
+                                           WarningHandler*          wi);
 
 /*! \brief Build exclusion list for non-bonded interactions between QM atoms
  *
@@ -170,8 +180,12 @@ std::vector<real> removeQMClassicalCharges(gmx_mtop_t*              mtop,
  * \param[in,out] mtop topology to be modified
  * \param[in] qmIndices set with global indices of QM atoms
  * \param[in,out] topInfo structure with information about topology modifications
+ * \param[in] logger MDLogger for logging info about modifications
  */
-void addQMLJExclusions(gmx_mtop_t* mtop, const std::set<int>& qmIndices, QMMMTopologyInfo& topInfo);
+void addQMLJExclusions(gmx_mtop_t*          mtop,
+                       const std::set<int>& qmIndices,
+                       QMMMTopologyInfo&    topInfo,
+                       const MDLogger&      logger);
 
 /*! \brief Builds and returns a vector of atom numbers for all atoms in \p mtop.
  *
@@ -191,11 +205,13 @@ std::vector<int> buildQMMMAtomNumbers(const gmx_mtop_t& mtop);
  * \param[in] qmIndices set with global indices of QM atoms
  * \param[in] bQMBlock vector with flags for QM-containing blocks
  * \param[in,out] topInfo structure with information about topology modifications
+ * \param[in] logger MDLogger for logging info about modifications
  */
 void modifyQMMMTwoCenterInteractions(gmx_mtop_t*              mtop,
                                      const std::set<int>&     qmIndices,
                                      const std::vector<bool>& bQMBlock,
-                                     QMMMTopologyInfo&        topInfo);
+                                     QMMMTopologyInfo&        topInfo,
+                                     const MDLogger&          logger);
 
 /*! \brief Modifies three-centers interactions (i.e. Angles, Settles)
  *
@@ -207,11 +223,13 @@ void modifyQMMMTwoCenterInteractions(gmx_mtop_t*              mtop,
  * \param[in] qmIndices set with global indices of QM atoms
  * \param[in] bQMBlock vector with flags for QM-containing blocks
  * \param[in,out] topInfo structure with information about topology modifications
+ * \param[in] logger MDLogger for logging info about modifications
  */
 void modifyQMMMThreeCenterInteractions(gmx_mtop_t*              mtop,
                                        const std::set<int>&     qmIndices,
                                        const std::vector<bool>& bQMBlock,
-                                       QMMMTopologyInfo&        topInfo);
+                                       QMMMTopologyInfo&        topInfo,
+                                       const MDLogger&          logger);
 
 /*! \brief Modifies four-centers interactions
  *
@@ -222,11 +240,29 @@ void modifyQMMMThreeCenterInteractions(gmx_mtop_t*              mtop,
  * \param[in] qmIndices set with global indices of QM atoms
  * \param[in] bQMBlock vector with flags for QM-containing blocks
  * \param[in,out] topInfo structure with information about topology modifications
+ * \param[in] logger MDLogger for logging info about modifications
  */
 void modifyQMMMFourCenterInteractions(gmx_mtop_t*              mtop,
                                       const std::set<int>&     qmIndices,
                                       const std::vector<bool>& bQMBlock,
-                                      QMMMTopologyInfo&        topInfo);
+                                      QMMMTopologyInfo&        topInfo,
+                                      const MDLogger&          logger);
+
+/*! \brief Checks for constrained bonds within QM subsystem
+ *
+ * Provides warnings via WarningHandler if any are found.
+ * Separated from buildQMMMLink for better modularity.
+ * \param[in,out] mtop topology to be modified
+ * \param[in] qmIndices set with global indices of QM atoms
+ * \param[in] bQMBlock vector with flags for QM-containing blocks
+ * \param[in,out] topInfo structure with information about topology modifications
+ * \param[in] wi WarningHandler for handling warnings
+ */
+void checkConstrainedBonds(gmx_mtop_t*              mtop,
+                           const std::set<int>&     qmIndices,
+                           const std::vector<bool>& bQMBlock,
+                           QMMMTopologyInfo&        topInfo,
+                           WarningHandler*          wi);
 
 /*! \brief Builds link frontier vector with pairs of atoms indicting broken QM - MM chemical bonds.
  *
@@ -236,12 +272,14 @@ void modifyQMMMFourCenterInteractions(gmx_mtop_t*              mtop,
  * \param[in] qmIndices set with global indices of QM atoms
  * \param[in] bQMBlock vector with flags for QM-containing blocks
  * \param[in,out] topInfo structure with information about topology modifications
+ * \param[in] logger MDLogger for logging info about modifications
  * \returns vector of link atom pairs
  */
 std::vector<LinkFrontier> buildQMMMLink(gmx_mtop_t*              mtop,
                                         const std::set<int>&     qmIndices,
                                         const std::vector<bool>& bQMBlock,
-                                        QMMMTopologyInfo&        topInfo);
+                                        QMMMTopologyInfo&        topInfo,
+                                        const MDLogger&          logger);
 
 } // namespace gmx
 

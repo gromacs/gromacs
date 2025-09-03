@@ -236,68 +236,7 @@ void NNPotOptions::modifyTopology(gmx_mtop_t* top)
     // subclassing the qmmm topology preprocessor as it has virtually the exact functionality we need
     //! \todo separate this from QMMM module as its reused in multiple places now
     NNPotTopologyPreprocessor topPrep(params_.nnpIndices_);
-    topPrep.preprocess(top);
-
-    // Get info about modifications
-    QMMMTopologyInfo topInfo = topPrep.topInfo();
-
-    const MDLogger& theLogger = logger();
-    // Check that logger and warning handler are valid
-    GMX_ASSERT(wi_, "WarningHandler not set.");
-
-    // Inform the user about performed modifications, issue warning if necessary
-    GMX_LOG(theLogger.info)
-            .appendText("Neural network potential Interface is active, topology was modified!");
-
-    GMX_LOG(theLogger.info)
-            .appendTextFormatted("Number of NN input atoms: %d\nNumber of regular atoms: %d",
-                                 topInfo.numQMAtoms,
-                                 topInfo.numMMAtoms);
-
-    if (topInfo.numBondsRemoved > 0)
-    {
-        GMX_LOG(theLogger.info).appendTextFormatted("Bonds removed: %d", topInfo.numBondsRemoved);
-    }
-
-    if (topInfo.numAnglesRemoved > 0)
-    {
-        GMX_LOG(theLogger.info).appendTextFormatted("Angles removed: %d", topInfo.numAnglesRemoved);
-    }
-
-    if (topInfo.numDihedralsRemoved > 0)
-    {
-        GMX_LOG(theLogger.info).appendTextFormatted("Dihedrals removed: %d", topInfo.numDihedralsRemoved);
-    }
-
-    if (topInfo.numSettleRemoved > 0)
-    {
-        GMX_LOG(theLogger.info).appendTextFormatted("Settles removed: %d", topInfo.numSettleRemoved);
-    }
-
-    if (topInfo.numConnBondsAdded > 0)
-    {
-        GMX_LOG(theLogger.info).appendTextFormatted("Connection-only (type 5) bonds added: %d", topInfo.numConnBondsAdded);
-    }
-
-    // Warn in case of broken covalent bonds between NNP input atoms and MM atoms
-    if (topInfo.numLinkBonds > 0)
-    {
-        wi_->addWarning(formatString(
-                "%d broken bonds found between NN input atoms and MM atoms."
-                " This is can lead to unexpected behavior and is discouraged as of now."
-                " Set the -maxwarn option if you want to proceed anyway.",
-                topInfo.numLinkBonds));
-    }
-
-    // If there are many constrained bonds in NNP input region then we should also warn the user
-    if (topInfo.numConstrainedBondsInQMSubsystem > 2)
-    {
-        wi_->addWarning(
-                "Your neural network potential subsystem has a lot of constrained bonds. "
-                "They probably have been generated automatically. "
-                "That could produce artifacts in the simulation. "
-                "Consider constraints = none in the mdp file.");
-    }
+    topPrep.preprocess(top, logger(), wi_);
 }
 
 void NNPotOptions::writeParamsToKvt(KeyValueTreeObjectBuilder treeBuilder)

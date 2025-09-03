@@ -49,6 +49,7 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/warninp.h"
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/mtop_lookup.h"
@@ -56,6 +57,8 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/logger.h"
+#include "gromacs/utility/loggerbuilder.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/textwriter.h"
 #include "gromacs/utility/vec.h"
@@ -154,7 +157,9 @@ TEST_F(QMMMTopologyPreprocessorTest, FourWatersFirstQMNoLink)
     qmIndices_ = { 0, 1, 2 };
 
     QMMMTopologyPreprocessor topPrep(qmIndices_);
-    topPrep.preprocess(&mtop_);
+    MDLogger                 logger;
+    WarningHandler           wi(true, 0);
+    topPrep.preprocess(&mtop_, 0.0, logger, &wi);
 
     // Get data about changes and check it
     QMMMTopologyInfo info = topPrep.topInfo();
@@ -171,7 +176,9 @@ TEST_F(QMMMTopologyPreprocessorTest, FourWatersSeondAndForthQMNoLink)
     qmIndices_ = { 3, 4, 5, 9, 10, 11 };
 
     QMMMTopologyPreprocessor topPrep(qmIndices_);
-    topPrep.preprocess(&mtop_);
+    MDLogger                 logger;
+    WarningHandler           wi(true, 0);
+    topPrep.preprocess(&mtop_, 0.0, logger, &wi);
 
     // Get data about changes and check it
     QMMMTopologyInfo info = topPrep.topInfo();
@@ -188,7 +195,9 @@ TEST_F(QMMMTopologyPreprocessorTest, FourWatersFirstQMWithLink)
     qmIndices_ = { 0, 1 };
 
     QMMMTopologyPreprocessor topPrep(qmIndices_);
-    topPrep.preprocess(&mtop_);
+    MDLogger                 logger;
+    WarningHandler           wi(true, 0);
+    topPrep.preprocess(&mtop_, -0.41, logger, &wi);
 
     // Get data about changes and check it
     QMMMTopologyInfo info = topPrep.topInfo();
@@ -205,7 +214,9 @@ TEST_F(QMMMTopologyPreprocessorTest, AlanineDipeptideWithLinksNoConstraints)
     qmIndices_ = { 8, 9, 10, 11, 12, 13 };
 
     QMMMTopologyPreprocessor topPrep(qmIndices_);
-    topPrep.preprocess(&mtop_);
+    MDLogger                 logger;
+    WarningHandler           wi(true, 0);
+    topPrep.preprocess(&mtop_, 0.1144, logger, &wi);
 
     // Get data about changes and check it
     QMMMTopologyInfo info = topPrep.topInfo();
@@ -222,7 +233,9 @@ TEST_F(QMMMTopologyPreprocessorTest, AlanineDipeptideWithLinksWithConstraints)
     qmIndices_ = { 8, 9, 10, 11, 12, 13 };
 
     QMMMTopologyPreprocessor topPrep(qmIndices_);
-    topPrep.preprocess(&mtop_);
+    MDLogger                 logger;
+    WarningHandler           wi(true, 0);
+    topPrep.preprocess(&mtop_, 0.1144, logger, &wi);
 
     // Get data about changes and check it
     QMMMTopologyInfo info = topPrep.topInfo();
@@ -239,7 +252,9 @@ TEST_F(QMMMTopologyPreprocessorTest, RemovingQMVsites)
     qmIndices_ = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
 
     QMMMTopologyPreprocessor topPrep(qmIndices_);
-    topPrep.preprocess(&mtop_);
+    MDLogger                 logger;
+    WarningHandler           wi(true, 0);
+    topPrep.preprocess(&mtop_, 0.0, logger, &wi);
 
     // Get data about changes and check it
     QMMMTopologyInfo info = topPrep.topInfo();

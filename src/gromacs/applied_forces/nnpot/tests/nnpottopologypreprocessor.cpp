@@ -51,6 +51,7 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/warninp.h"
 #include "gromacs/gmxpreprocess/grompp.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/mtop_lookup.h"
@@ -58,6 +59,8 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/logger.h"
+#include "gromacs/utility/loggerbuilder.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/textwriter.h"
 #include "gromacs/utility/vec.h"
@@ -165,7 +168,9 @@ TEST_F(NNPotTopologyPreprocessorTest, FourWatersFirstInQMRegion)
     makeMtopFromFile("4water", "", &mtop);
 
     NNPotTopologyPreprocessor topPrep(nnpAtomIndices);
-    topPrep.preprocess(&mtop);
+    MDLogger                  logger;
+    WarningHandler            wi(true, 0);
+    topPrep.preprocess(&mtop, logger, &wi);
 
     // Get data about changes and check it
     QMMMTopologyInfo info = topPrep.topInfo();
@@ -184,7 +189,9 @@ TEST_F(NNPotTopologyPreprocessorTest, FourWatersSecondAndFourthInQMRegion)
     makeMtopFromFile("4water", "", &mtop);
 
     NNPotTopologyPreprocessor topPrep(nnpAtomIndices);
-    topPrep.preprocess(&mtop);
+    MDLogger                  logger;
+    WarningHandler            wi(true, 0);
+    topPrep.preprocess(&mtop, logger, &wi);
 
     // Get data about changes and check it
     QMMMTopologyInfo info = topPrep.topInfo();
@@ -201,8 +208,10 @@ TEST_F(NNPotTopologyPreprocessorTest, AlanineDipeptideWithLinkAtomsNoConstraints
     gmx_mtop_t         mtop;
     makeMtopFromFile("alanine_vacuo", "", &mtop);
 
-    QMMMTopologyPreprocessor topPrep(nnpAtomIndices);
-    topPrep.preprocess(&mtop);
+    NNPotTopologyPreprocessor topPrep(nnpAtomIndices);
+    MDLogger                  logger;
+    WarningHandler            wi(true, 0);
+    topPrep.preprocess(&mtop, logger, &wi);
 
     // Get data about changes and check it
     QMMMTopologyInfo info = topPrep.topInfo();
@@ -220,7 +229,9 @@ TEST_F(NNPotTopologyPreprocessorTest, AlanineDipeptideWithLinkAtomsWithConstrain
     makeMtopFromFile("alanine_vacuo", "constraints = all-bonds", &mtop);
 
     NNPotTopologyPreprocessor topPrep(nnpAtomIndices);
-    topPrep.preprocess(&mtop);
+    MDLogger                  logger;
+    WarningHandler            wi(true, 0);
+    topPrep.preprocess(&mtop, logger, &wi);
 
     // Get data about changes and check it
     QMMMTopologyInfo info = topPrep.topInfo();

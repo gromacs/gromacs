@@ -500,7 +500,7 @@ void QMMMOptions::modifyQMMMTopology(gmx_mtop_t* mtop)
 
     // Process topology
     QMMMTopologyPreprocessor topPrep(parameters_.qmIndices_);
-    topPrep.preprocess(mtop);
+    topPrep.preprocess(mtop, parameters_.qmCharge_, logger(), wi_);
 
     // Get atom numbers
     parameters_.atomNumbers_ = copyOf(topPrep.atomNumbers());
@@ -510,89 +510,6 @@ void QMMMOptions::modifyQMMMTopology(gmx_mtop_t* mtop)
 
     // Get Link Frontier
     parameters_.link_ = copyOf(topPrep.linkFrontier());
-
-    // Get info about modifications
-    QMMMTopologyInfo topInfo = topPrep.topInfo();
-
-    // Cast int qmCharge_ to real as further calculations use floating point
-    real qmC = static_cast<real>(parameters_.qmCharge_);
-
-    // Print message to the log about performed modifications
-    std::string msg = "\nQMMM Interface with CP2K is active, topology was modified!\n";
-
-    msg += formatString(
-            "Number of QM atoms: %d\nNumber of MM atoms: %d\n", topInfo.numQMAtoms, topInfo.numMMAtoms);
-
-    msg += formatString("Total charge of the classical system (before modifications): %.5f\n",
-                        topInfo.remainingMMCharge + topInfo.totalClassicalChargeOfQMAtoms);
-
-    msg += formatString("Classical charge removed from QM atoms: %.5f\n",
-                        topInfo.totalClassicalChargeOfQMAtoms);
-
-    if (topInfo.numVirtualSitesModified > 0)
-    {
-        msg += formatString(
-                "Note: There are %d virtual sites found, which are built from QM atoms only. "
-                "Classical charges on them have been removed as well.\n",
-                topInfo.numVirtualSitesModified);
-    }
-
-    msg += formatString("Total charge of QMMM system (after modifications): %.5f\n",
-                        qmC + topInfo.remainingMMCharge);
-
-    if (topInfo.numBondsRemoved > 0)
-    {
-        msg += formatString("Bonds removed: %d\n", topInfo.numBondsRemoved);
-    }
-
-    if (topInfo.numAnglesRemoved > 0)
-    {
-        msg += formatString("Angles removed: %d\n", topInfo.numAnglesRemoved);
-    }
-
-    if (topInfo.numDihedralsRemoved > 0)
-    {
-        msg += formatString("Dihedrals removed: %d\n", topInfo.numDihedralsRemoved);
-    }
-
-    if (topInfo.numSettleRemoved > 0)
-    {
-        msg += formatString("Settles removed: %d\n", topInfo.numSettleRemoved);
-    }
-
-    if (topInfo.numConnBondsAdded > 0)
-    {
-        msg += formatString("F_CONNBONDS (type 5 bonds) added: %d\n", topInfo.numConnBondsAdded);
-    }
-
-    if (topInfo.numLinkBonds > 0)
-    {
-        msg += formatString("QM-MM broken bonds found: %d\n", topInfo.numLinkBonds);
-    }
-
-    appendLog(msg + "\n");
-
-    /* We should warn the user if there is inconsistence between removed classical charges
-     * on QM atoms and total QM charge
-     */
-    if (std::abs(topInfo.totalClassicalChargeOfQMAtoms - qmC) > 1E-5)
-    {
-        msg = formatString(
-                "Total charge of your QMMM system differs from classical system! "
-                "Consider manually spreading %.5lf charge over MM atoms nearby to the QM "
-                "region\n",
-                topInfo.totalClassicalChargeOfQMAtoms - qmC);
-        appendWarning(msg);
-    }
-
-    // If there are many constrained bonds in QM system then we should also warn the user
-    if (topInfo.numConstrainedBondsInQMSubsystem > 2)
-    {
-        msg = "Your QM subsystem has a lot of constrained bonds. They probably have been "
-              "generated automatically. That could produce an artifacts in the simulation. "
-              "Consider constraints = none in the mdp file.\n";
-        appendWarning(msg);
-    }
 }
 
 void QMMMOptions::writeInternalParametersToKvt(KeyValueTreeObjectBuilder treeBuilder)

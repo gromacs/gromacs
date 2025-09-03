@@ -76,8 +76,10 @@ public:
      * containing information about topology modifications.
      *
      * \param[in,out] mtop Topology that needs to be modified
+     * \param[in] logger MDLogger for logging info about modifications
+     * \param[in] wi WarningHandler for handling warnings
      */
-    void preprocess(gmx_mtop_t* mtop);
+    void preprocess(gmx_mtop_t* mtop, const MDLogger& logger, WarningHandler* wi);
 
     // Override base to get the correct object
     const QMMMTopologyInfo& topInfo() const;
