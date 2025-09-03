@@ -13,6 +13,8 @@ if [[ -z "$GMX_TEST_REQUIRED_NUMBER_OF_DEVICES" ]] && [[ -n "$GPU_VENDOR" ]] ; t
     echo "export GMX_TEST_REQUIRED_NUMBER_OF_DEVICES=\"$GPU_COUNT\"";
     export GMX_TEST_REQUIRED_NUMBER_OF_DEVICES="$GPU_COUNT";
 fi
+
+export PARALLEL_TEST_EXECUTION=$KUBERNETES_CPU_LIMIT
 if grep -qF 'NVIDIA' <<< "$GPU_VENDOR"; then
     nvidia-smi -L && nvidia-smi || true;
     if [[ "$GMX_ENABLE_NVSHMEM" != "" ]] && [[ "$GPU_COUNT" -eq "2" ]]; then
@@ -51,6 +53,7 @@ if grep -qF 'AMD' <<< "$GPU_VENDOR"; then
     fi
     export HSA_ENABLE_SDMA=0  # Work around CI issues, Issue #5341
     export GPU_MAX_HW_QUEUES=2  # Prevent "amdgpu: Runlist is getting oversubscribed", Issue #5341
+    export PARALLEL_TEST_EXECUTION=1 # Prevent tests getting stuck
 fi
 if grep -qF 'INTEL' <<< "$GPU_VENDOR"; then
     sycl-ls || true;
@@ -68,7 +71,7 @@ if [[ -n "$GMX_TESTS_TO_RUN_REGEX" ]] ; then
     TESTS_REGEX="--tests-regex $GMX_TESTS_TO_RUN_REGEX"
 fi
 
-ctest -D $CTEST_RUN_MODE $LABEL_REGEX $TESTS_REGEX $EXTRA_FLAGS --parallel $KUBERNETES_CPU_LIMIT --output-on-failure | tee ctestLog.log || true
+ctest -D $CTEST_RUN_MODE $LABEL_REGEX $TESTS_REGEX $EXTRA_FLAGS --parallel $PARALLEL_TEST_EXECUTION --output-on-failure | tee ctestLog.log || true
 
 EXITCODE=$?
 
