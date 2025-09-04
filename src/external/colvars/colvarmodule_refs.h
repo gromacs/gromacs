@@ -137,9 +137,9 @@
     "  author = {Fiorin, Giacomo and Marinelli, Fabrizio and Forrest, Lucy R. and Chen, Haochuan and Chipot, Christophe and Kohlmeyer, Axel and Santuz, Hubert and H{\\'e}nin, J{\\'e}rôme},\n"
     "  title = {Expanded Functionality and Portability for the Colvars Library},\n"
     "  journal = {J. Phys. Chem. {B}},\n"
-    "  volume = {0},\n"
-    "  number = {0},\n"
-    "  pages = {null},\n"
+    "  volume = {128},\n"
+    "  number = {45},\n"
+    "  pages = {11108--11123},\n"
     "  year = {2024},\n"
     "  doi = {10.1021/acs.jpcb.4c05604},\n"
     "  pmid = 39501453,\n"
@@ -545,6 +545,39 @@
   feature_count_[std::string("Multi-Map collective variables")] = 0;
   feature_paper_map_[std::string("Multi-Map collective variables")] = "Fiorin2020";
 
+  feature_count_[std::string("Colvars-GROMACS interface")] = 0;
+  feature_paper_map_[std::string("Colvars-GROMACS interface")] = "Fiorin2024";
+
+  feature_count_[std::string("gspath colvar component")] = 0;
+  feature_paper_map_[std::string("gspath colvar component")] = "Fiorin2024";
+
+  feature_count_[std::string("gzpath colvar component")] = 0;
+  feature_paper_map_[std::string("gzpath colvar component")] = "Fiorin2024";
+
+  feature_count_[std::string("linearCombination colvar component")] = 0;
+  feature_paper_map_[std::string("linearCombination colvar component")] = "Fiorin2024";
+
+  feature_count_[std::string("gspathCV colvar component")] = 0;
+  feature_paper_map_[std::string("gspathCV colvar component")] = "Fiorin2024";
+
+  feature_count_[std::string("gzpathCV colvar component")] = 0;
+  feature_paper_map_[std::string("gzpathCV colvar component")] = "Fiorin2024";
+
+  feature_count_[std::string("aspathCV colvar component")] = 0;
+  feature_paper_map_[std::string("aspathCV colvar component")] = "Fiorin2024";
+
+  feature_count_[std::string("azpathCV colvar component")] = 0;
+  feature_paper_map_[std::string("azpathCV colvar component")] = "Fiorin2024";
+
+  feature_count_[std::string("Custom functions (Lepton)")] = 0;
+  feature_paper_map_[std::string("Custom functions (Lepton)")] = "Fiorin2024";
+
+  feature_count_[std::string("Scripted functions (Tcl)")] = 0;
+  feature_paper_map_[std::string("Scripted functions (Tcl)")] = "Fiorin2024";
+
+  feature_count_[std::string("ABMD bias")] = 0;
+  feature_paper_map_[std::string("ABMD bias")] = "Fiorin2024";
+
   feature_count_[std::string("Updated multiple-walker ABF implementation")] = 0;
   feature_paper_map_[std::string("Updated multiple-walker ABF implementation")] = "Fiorin2024";
 
@@ -620,41 +653,8 @@
   feature_count_[std::string("OPES explore or adaptive kernels")] = 0;
   feature_paper_map_[std::string("OPES explore or adaptive kernels")] = "Invernizzi2022";
 
-  feature_count_[std::string("Colvars-GROMACS interface")] = 0;
-  feature_paper_map_[std::string("Colvars-GROMACS interface")] = "n/a";
-
-  feature_count_[std::string("gspath colvar component")] = 0;
-  feature_paper_map_[std::string("gspath colvar component")] = "n/a";
-
-  feature_count_[std::string("gzpath colvar component")] = 0;
-  feature_paper_map_[std::string("gzpath colvar component")] = "n/a";
-
-  feature_count_[std::string("linearCombination colvar component")] = 0;
-  feature_paper_map_[std::string("linearCombination colvar component")] = "n/a";
-
-  feature_count_[std::string("gspathCV colvar component")] = 0;
-  feature_paper_map_[std::string("gspathCV colvar component")] = "n/a";
-
-  feature_count_[std::string("gzpathCV colvar component")] = 0;
-  feature_paper_map_[std::string("gzpathCV colvar component")] = "n/a";
-
-  feature_count_[std::string("aspathCV colvar component")] = 0;
-  feature_paper_map_[std::string("aspathCV colvar component")] = "n/a";
-
-  feature_count_[std::string("azpathCV colvar component")] = 0;
-  feature_paper_map_[std::string("azpathCV colvar component")] = "n/a";
-
   feature_count_[std::string("coordNum pairlist")] = 0;
   feature_paper_map_[std::string("coordNum pairlist")] = "n/a";
 
-  feature_count_[std::string("Custom functions (Lepton)")] = 0;
-  feature_paper_map_[std::string("Custom functions (Lepton)")] = "n/a";
-
-  feature_count_[std::string("Scripted functions (Tcl)")] = 0;
-  feature_paper_map_[std::string("Scripted functions (Tcl)")] = "n/a";
-
   feature_count_[std::string("torchANN colvar component")] = 0;
   feature_paper_map_[std::string("torchANN colvar component")] = "n/a";
-
-  feature_count_[std::string("ABMD bias")] = 0;
-  feature_paper_map_[std::string("ABMD bias")] = "n/a";

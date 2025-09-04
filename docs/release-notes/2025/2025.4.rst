@@ -30,6 +30,32 @@ is now compatible with XMGrace.
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fixes to the Colvars library
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This release fixes several bugs in the Colvars library, affecting the correctness of applied
+forces for certain variables.
+
+The following is a list of bugfix pull requests in the`Colvars repository
+<https://github.com/Colvars/colvars>`_:
+
+* Tests and fixes to multiple gradients (`Colvars PR 838
+  <https://github.com/Colvars/colvars/pull/838>`_)
+
+* Fixing the orientation sign (`Colvars PR <https://github.com/Colvars/colvars/pull/829>`_)
+
+* Fix the gradients of the eigenvector CVC (`Colvars PR 828
+  <https://github.com/Colvars/colvars/pull/828>`_)
+
+* Fix a potential issue of "fit gradients" for non-scalar components with only centering but not
+  rotating (`Colvars PR 824 <https://github.com/Colvars/colvars/pull/824>`_)
+
+* Fix the calculation of bias factor with off-grid hills (`Colvars PR 808
+  <https://github.com/Colvars/colvars/pull/808>`_)
+
+* Fix indentation of 'Init CVC' message in standard output (`Colvars PR 755
+  <https://github.com/Colvars/colvars/pull/755>`_)
+
+
 Miscellaneous
 ^^^^^^^^^^^^^
-
