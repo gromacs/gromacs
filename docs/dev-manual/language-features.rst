@@ -75,6 +75,23 @@ a release.
   of characters instead of using ``const std::string &``. See also |linkrefstringview|.
   Because null termination expected by some C APIs (e.g. fopen, fputs, fprintf)
   is not guaranteed, string_view should not be used in such cases.
+* Use ``ArrayRef<T>`` or ``ArrayRef<const T>`` (and their padded
+  forms) to express a view over a contiguous range of (respectively)
+  modifiable, or non-modifiable values, particularly as a function
+  parameter. This type is cheap to copy and more expressive than a
+  pair of iterator parameters or pointer and size parameters
+  (albeit that the ``restrict`` qualifier cannot be used directly
+  with ``ArrayRef<T>`). It also
+  provides flexibility for the caller to easily provide values from a
+  C-array, ``array``, ``vector`` (of any allocator type), or something
+  else, without the implementor having to provide a family of overloads
+  (which scales badly with multiple view parameters to the same
+  function). Use e.g. ``const ArrayRef<T>`` in the definition of the
+  function to express that the function implementation will not modify
+  the view, even though it can modifiy the values in the view.  See
+  also |linkrefspan| and |linkrefinoutparams| and other parts of the
+  C++ Core Guidelines. |Gromacs| will adopt the similar C++20 ``span``
+  for this purpose in due course.
 * Use ``optional<T>`` types in situations where there is exactly one,
   reason (that is clear to all parties) for having no value of type T,
   and where the lack of value is as natural as having any regular
@@ -199,6 +216,8 @@ a release.
 .. |linkoptionalboost| replace:: `here <https://www.boost.org/doc/libs/release/libs/optional>`__
 .. |linkoptionalbartek| replace:: `here <https://www.bfilipek.com/2018/05/using-optional.html>`__
 .. |linkoptionalcppref| replace:: `cppreference <https://en.cppreference.com/w/cpp/utility/optional>`__
+.. |linkrefspan| replace:: `here <https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#f24-use-a-spant-or-a-span_pt-to-designate-a-half-open-sequence>`__
+.. |linkrefinoutparams| replace:: `here <https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#f17-for-in-out-parameters-pass-by-reference-to-non-const>`__
 
 .. _implementing exceptions:
 
