@@ -19,6 +19,14 @@ Fixes where mdrun could behave incorrectly
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix DSSP tool
+"""""""""""""
+
+Fixed legend formatting in ``gmx dssp`` tool. Data for plotting a graph from .xvg format
+is now compatible with XMGrace.
+
+:issue:`5409`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
