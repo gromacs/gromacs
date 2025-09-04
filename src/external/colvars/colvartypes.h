@@ -961,11 +961,6 @@ public:
 
   cvm::real q0, q1, q2, q3;
 
-  /// Constructor from a 3-d vector
-  inline quaternion(cvm::real x, cvm::real y, cvm::real z)
-    : q0(0.0), q1(x), q2(y), q3(z)
-  {}
-
   /// Constructor component by component
   inline quaternion(cvm::real const qv[4])
     : q0(qv[0]), q1(qv[1]), q2(qv[2]), q3(qv[3])
@@ -983,50 +978,16 @@ public:
     : q0(v[0]), q1(v[1]), q2(v[2]), q3(v[3])
   {}
 
-  /// "Constructor" after Euler angles (in radians)
-  ///
-  /// http://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
-  inline void set_from_euler_angles(cvm::real phi_in,
-                                    cvm::real theta_in,
-                                    cvm::real psi_in)
-  {
-    q0 = ( (cvm::cos(phi_in/2.0)) * (cvm::cos(theta_in/2.0)) * (cvm::cos(psi_in/2.0)) +
-           (cvm::sin(phi_in/2.0)) * (cvm::sin(theta_in/2.0)) * (cvm::sin(psi_in/2.0)) );
-
-    q1 = ( (cvm::sin(phi_in/2.0)) * (cvm::cos(theta_in/2.0)) * (cvm::cos(psi_in/2.0)) -
-           (cvm::cos(phi_in/2.0)) * (cvm::sin(theta_in/2.0)) * (cvm::sin(psi_in/2.0)) );
-
-    q2 = ( (cvm::cos(phi_in/2.0)) * (cvm::sin(theta_in/2.0)) * (cvm::cos(psi_in/2.0)) +
-           (cvm::sin(phi_in/2.0)) * (cvm::cos(theta_in/2.0)) * (cvm::sin(psi_in/2.0)) );
-
-    q3 = ( (cvm::cos(phi_in/2.0)) * (cvm::cos(theta_in/2.0)) * (cvm::sin(psi_in/2.0)) -
-           (cvm::sin(phi_in/2.0)) * (cvm::sin(theta_in/2.0)) * (cvm::cos(psi_in/2.0)) );
-  }
-
   /// \brief Default constructor
   inline quaternion()
   {
     reset();
   }
 
-  /// \brief Set all components to a scalar
-  inline void set(cvm::real value)
-  {
-    q0 = q1 = q2 = q3 = value;
-  }
-
   /// \brief Set all components to zero (null quaternion)
   inline void reset()
   {
-    set(0.0);
-  }
-
-  /// \brief Set the q0 component to 1 and the others to 0 (quaternion
-  /// representing no rotation)
-  inline void reset_rotation()
-  {
-    q0 = 1.0;
-    q1 = q2 = q3 = 0.0;
+    q0 = q1 = q2 = q3 = 0.0;
   }
 
   /// Tell the number of characters required to print a quaternion, given that of a real number
@@ -1382,7 +1343,7 @@ public:
   bool b_debug_gradients;
 
   /// \brief The rotation itself (implemented as a quaternion)
-  cvm::quaternion q;
+  cvm::quaternion q{1.0, 0.0, 0.0, 0.0};
 
   template <typename T1, typename T2>
   friend struct rotation_derivative;

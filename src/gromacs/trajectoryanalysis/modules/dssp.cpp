@@ -246,12 +246,12 @@ const gmx::EnumerationArray<SecondaryStructureTypes, const char*> c_secondaryStr
       "Breaks",
       "Bends",
       "Turns",
-      "PP_Helices",
-      "π-Helices",
-      "3⏨-Helices",
-      "β-Strands",
-      "β-Bridges",
-      "α-Helices" }
+      "PP\\sII\\N-Helices",
+      "\\xp\\f{}-Helices",
+      "3\\s10\\N-Helices",
+      "\\xb\\f{}-Strands",
+      "\\xb\\f{}-Bridges",
+      "\\xa\\f{}-Helices" }
 };
 
 //! Enum of turns' types.

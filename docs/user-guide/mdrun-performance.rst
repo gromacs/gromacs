@@ -296,14 +296,15 @@ with a GPU do the calculations on the respective domain.
 
 With PME electrostatics, :ref:`mdrun <gmx mdrun>` supports automated CPU-GPU load-balancing by
 shifting workload from the PME mesh calculations, done on the CPU, to the particle-particle
-non-bonded calculations, done on the GPU. At startup, a few iterations of tuning are executed
-during the first 100 to 1000 MD steps. These iterations involve scaling the electrostatics cut-off
+non-bonded calculations, done on the GPU. At startup, a few stages of tuning are executed
+during the first few thousand MD steps. These stages involve scaling the electrostatics cut-off
 and PME grid spacing to determine the value that gives optimal CPU-GPU load balance. The cut-off
 value provided using the :mdp:`rcoulomb` ``=rvdw`` :ref:`mdp` option represents the minimum
 electrostatics cut-off the tuning starts with and therefore should be chosen as small as
 possible (but still reasonable for the physics simulated). The Lennard-Jones cut-off ``rvdw``
 is kept fixed. We do not allow scaling to shorter cut-off as we do not want to change ``rvdw``
-and there would be no performance gain.
+because that would affect the validity of the force-field parameters and there would be no
+performance gain.
 
 While the automated CPU-GPU load balancing always attempts to find the optimal cut-off setting,
 it might not always be possible to balance CPU and GPU workload. This happens when the CPU threads
@@ -782,11 +783,18 @@ There are further command-line parameters that are relevant in these
 cases.
 
 ``-tunepme``
-    Defaults to "on." If "on," a simulation will
-    optimize various aspects of the PME and DD algorithms, shifting
-    load between ranks and/or GPUs to maximize throughput. Some
-    :ref:`mdrun <gmx mdrun>` features are not compatible with this, and these ignore
-    this option.
+    Defaults to "on." If "on," a simulation will optimize
+    :mdp:`rcoulomb` and :mdp:`fourierspacing` parameters for PME by
+    scaling both by the same value. This results in an equivalent
+    model physics that has shifted computational load between ranks
+    and/or GPUs and can be optimized to maximize throughput. Some
+    :ref:`mdrun <gmx mdrun>` features are not compatible with this,
+    and these ignore this option. Note that acceptable equivalence can
+    depend on the use case; multi-replica simulations such as replica
+    exchange can tune PME differently for different replicas and thus
+    compute potential energies that are slightly different depending
+    on the PME parameters in use by that replica, e.g. on a different
+    discrete Fourier-space grid.
 
 ``-dlb``
     Can be set to "auto," "no," or "yes."

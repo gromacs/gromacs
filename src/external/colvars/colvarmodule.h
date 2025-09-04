@@ -84,7 +84,7 @@ private:
   int version_int = 0;
 
   /// Patch version number (non-zero in patch releases of other packages)
-  int patch_version_int = 0;
+  int patch_version_int = 4;
 
 public:
 
