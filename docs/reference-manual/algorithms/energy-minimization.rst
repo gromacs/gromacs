@@ -63,16 +63,9 @@ Conjugate Gradient
 Conjugate gradient is slower than steepest descent in the early stages
 of the minimization, but becomes more efficient closer to the energy
 minimum. The parameters and stop criterion are the same as for steepest
-descent. In |Gromacs| conjugate gradient can not be used with constraints,
-including the SETTLE algorithm for water \ :ref:`47 <refMiyamoto92>`, as
-this has not been implemented. If water is present it must be of a
-flexible model, which can be specified in the :ref:`mdp` file
-by ``define = -DFLEXIBLE``.
-
-This is not really a restriction, since the accuracy of conjugate
-gradient is only required for minimization prior to a normal-mode
-analysis, which cannot be performed with constraints. For most other
-purposes steepest descent is efficient enough.
+descent. The most common use case for conjugate gradient is minimization
+prior to a normal-mode analysis, which requires very small forces.
+For most other purposes steepest descent is efficient enough.
 
 L-BFGS
 ~~~~~~
