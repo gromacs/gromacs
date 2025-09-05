@@ -36,6 +36,7 @@
  * \brief Implements the multi-simulation support routines.
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \author Berk Hess <hess@kth.se>
  * \ingroup module_mdrunutility
  */
 #include "gmxpre.h"
@@ -47,14 +48,17 @@
 #include <cinttypes>
 
 #include <filesystem>
+#include <limits>
 
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/mpitypes.h"
 #include "gromacs/utility/smalloc.h"
 
 std::unique_ptr<gmx_multisim_t> buildMultiSimulation(MPI_Comm                         worldComm,
@@ -169,54 +173,48 @@ gmx_multisim_t::~gmx_multisim_t()
 #endif
 }
 
+//! Sums array \p r of size \p nr over \p mpi_comm, the result is available on all ranks
+template<typename T>
+static void mpiAllSumReduce(const int nr, T r[], MPI_Comm mpi_comm)
+{
 #if GMX_MPI
-static void gmx_sumd_comm(int nr, double r[], MPI_Comm mpi_comm)
-{
-    MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_DOUBLE, MPI_SUM, mpi_comm);
-}
-#endif
-
-#if GMX_MPI
-static void gmx_sumf_comm(int nr, float r[], MPI_Comm mpi_comm)
-{
-    MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_FLOAT, MPI_SUM, mpi_comm);
-}
-#endif
-
-void gmx_sumd_sim(int gmx_unused nr, double gmx_unused r[], const gmx_multisim_t gmx_unused* ms)
-{
-#if !GMX_MPI
-    GMX_RELEASE_ASSERT(false, "Invalid call to gmx_sumd_sim");
+    MPI_Allreduce(MPI_IN_PLACE, r, nr, gmx::mpiType<T>(), MPI_SUM, mpi_comm);
 #else
-    gmx_sumd_comm(nr, r, ms->mainRanksComm_);
+    GMX_RELEASE_ASSERT(false, "Invalid call to mpiAllReduce()");
+
+    GMX_UNUSED_VALUE(nr);
+    GMX_UNUSED_VALUE(r);
+    GMX_UNUSED_VALUE(mpi_comm);
 #endif
 }
 
-void gmx_sumf_sim(int gmx_unused nr, float gmx_unused r[], const gmx_multisim_t gmx_unused* ms)
+//! Sums array \p r over \p mpi_comm, the result is available on all ranks, size of \p r should not exceed MAX_INT
+template<typename T>
+static void mpiAllSumReduce(gmx::ArrayRef<T> r, MPI_Comm mpi_comm)
 {
-#if !GMX_MPI
-    GMX_RELEASE_ASSERT(false, "Invalid call to gmx_sumf_sim");
-#else
-    gmx_sumf_comm(nr, r, ms->mainRanksComm_);
-#endif
+    GMX_RELEASE_ASSERT(r.size() <= std::numeric_limits<int>::max(), "Size should fit in an int");
+
+    mpiAllSumReduce(r.size(), r.data(), mpi_comm);
 }
 
-void gmx_sumi_sim(int gmx_unused nr, int gmx_unused r[], const gmx_multisim_t gmx_unused* ms)
+void gmx_sumd_sim(int nr, double r[], const gmx_multisim_t* ms)
 {
-#if !GMX_MPI
-    GMX_RELEASE_ASSERT(false, "Invalid call to gmx_sumi_sim");
-#else
-    MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_INT, MPI_SUM, ms->mainRanksComm_);
-#endif
+    mpiAllSumReduce(nr, r, ms->mainRanksComm_);
 }
 
-void gmx_sumli_sim(int gmx_unused nr, int64_t gmx_unused r[], const gmx_multisim_t gmx_unused* ms)
+void gmx_sumf_sim(int nr, float r[], const gmx_multisim_t* ms)
 {
-#if !GMX_MPI
-    GMX_RELEASE_ASSERT(false, "Invalid call to gmx_sumli_sim");
-#else
-    MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_INT64_T, MPI_SUM, ms->mainRanksComm_);
-#endif
+    mpiAllSumReduce(nr, r, ms->mainRanksComm_);
+}
+
+void gmx_sumi_sim(int nr, int r[], const gmx_multisim_t* ms)
+{
+    mpiAllSumReduce(nr, r, ms->mainRanksComm_);
+}
+
+void gmx_sumli_sim(gmx::ArrayRef<int64_t> r, const gmx_multisim_t& ms)
+{
+    mpiAllSumReduce(r, ms.mainRanksComm_);
 }
 
 std::vector<int> gatherIntFromMultiSimulation(const gmx_multisim_t* ms, const int localValue)
@@ -240,83 +238,56 @@ std::vector<int> gatherIntFromMultiSimulation(const gmx_multisim_t* ms, const in
     return valuesFromAllRanks;
 }
 
-void check_multi_int(FILE* log, const gmx_multisim_t* ms, int val, const char* name, gmx_bool bQuiet)
+/*! \brief Returns whether \p value is equal on all main ranks in \p ms
+ *
+ * Optionally an external buffer can be passed in \p externaBuffer. This will then hold
+ * values of value of each main rank in \p ms.
+ */
+template<typename T>
+static bool multiSimValuesAllAreEqual(const gmx_multisim_t& ms,
+                                      const T               value,
+                                      std::vector<T>*       externalBuffer = nullptr)
 {
-    int *    ibuf, p;
-    gmx_bool bCompatible;
+    std::vector<T>  localBuffer;
+    std::vector<T>& buffer = externalBuffer ? *externalBuffer : localBuffer;
 
-    if (nullptr != log && !bQuiet)
+    buffer.resize(ms.numSimulations_, 0);
+    /* send our value to all other main ranks, receive all of theirs */
+    buffer[ms.simulationIndex_] = value;
+    mpiAllSumReduce<T>(buffer, ms.mainRanksComm_);
+
+    bool allValuesAreEqual = true;
+    for (int s = 0; s < ms.numSimulations_; s++)
     {
-        fprintf(log, "Multi-checking %s ... ", name);
-    }
-
-    if (ms == nullptr)
-    {
-        gmx_fatal(FARGS, "check_multi_int called with a NULL communication pointer");
-    }
-
-    snew(ibuf, ms->numSimulations_);
-    ibuf[ms->simulationIndex_] = val;
-    gmx_sumi_sim(ms->numSimulations_, ibuf, ms);
-
-    bCompatible = TRUE;
-    for (p = 1; p < ms->numSimulations_; p++)
-    {
-        bCompatible = bCompatible && (ibuf[p - 1] == ibuf[p]);
-    }
-
-    if (bCompatible)
-    {
-        if (nullptr != log && !bQuiet)
+        if (buffer[s] != value)
         {
-            fprintf(log, "OK\n");
+            allValuesAreEqual = false;
+            break;
         }
     }
-    else
-    {
-        if (nullptr != log)
-        {
-            fprintf(log, "\n%s is not equal for all subsystems\n", name);
-            for (p = 0; p < ms->numSimulations_; p++)
-            {
-                fprintf(log, "  subsystem %d: %d\n", p, ibuf[p]);
-            }
-        }
-        gmx_fatal(FARGS, "The %d subsystems are not compatible\n", ms->numSimulations_);
-    }
 
-    sfree(ibuf);
+    return allValuesAreEqual;
 }
 
-void check_multi_int64(FILE* log, const gmx_multisim_t* ms, int64_t val, const char* name, gmx_bool bQuiet)
+/*! \brief Checks whether values \p val are equal on all main ranks of \p ms
+ *
+ * \param[in] log   Pointer to the loga file, can be nullptr
+ * \param[in] ms    Multi-simulation communication setup
+ * \param[in] val   The value to check
+ * \param[in] name  The name to print to log, can be nullptr when \p log==nullptr
+ */
+template<typename T>
+static void checkMultiInt(FILE* log, const gmx_multisim_t& ms, const T val, const char* name)
 {
-    int64_t* ibuf;
-    int      p;
-    gmx_bool bCompatible;
-
-    if (nullptr != log && !bQuiet)
+    if (nullptr != log)
     {
         fprintf(log, "Multi-checking %s ... ", name);
     }
 
-    if (ms == nullptr)
+    std::vector<T> buf;
+    if (multiSimValuesAllAreEqual(ms, val, &buf))
     {
-        gmx_fatal(FARGS, "check_multi_int called with a NULL communication pointer");
-    }
-
-    snew(ibuf, ms->numSimulations_);
-    ibuf[ms->simulationIndex_] = val;
-    gmx_sumli_sim(ms->numSimulations_, ibuf, ms);
-
-    bCompatible = TRUE;
-    for (p = 1; p < ms->numSimulations_; p++)
-    {
-        bCompatible = bCompatible && (ibuf[p - 1] == ibuf[p]);
-    }
-
-    if (bCompatible)
-    {
-        if (nullptr != log && !bQuiet)
+        if (nullptr != log)
         {
             fprintf(log, "OK\n");
         }
@@ -328,18 +299,26 @@ void check_multi_int64(FILE* log, const gmx_multisim_t* ms, int64_t val, const c
         if (nullptr != log)
         {
             fprintf(log, "\n%s is not equal for all subsystems\n", name);
-            for (p = 0; p < ms->numSimulations_; p++)
+            for (int p = 0; p < ms.numSimulations_; p++)
             {
                 char strbuf[255];
                 /* first make the format string */
-                snprintf(strbuf, 255, "  subsystem %%d: %s\n", "%" PRId64);
-                fprintf(log, strbuf, p, ibuf[p]);
+                snprintf(strbuf, 255, "  subsystem %%d: %s\n", std::is_same_v<T, int> ? "%d" : "%" PRId64);
+                fprintf(log, strbuf, p, buf[p]);
             }
         }
-        gmx_fatal(FARGS, "The %d subsystems are not compatible\n", ms->numSimulations_);
+        gmx_fatal(FARGS, "The %d subsystems are not compatible\n", ms.numSimulations_);
     }
+}
 
-    sfree(ibuf);
+void check_multi_int(FILE* log, const gmx_multisim_t& ms, int val, const char* name, bool beQuiet)
+{
+    checkMultiInt(beQuiet ? nullptr : log, ms, val, name);
+}
+
+void check_multi_int64(FILE* log, const gmx_multisim_t& ms, int64_t val, const char* name, bool beQuiet)
+{
+    checkMultiInt(beQuiet ? nullptr : log, ms, val, name);
 }
 
 bool findIsSimulationMainRank(const gmx_multisim_t* ms, MPI_Comm communicator)
@@ -388,40 +367,14 @@ bool isMainSimMainRank(const gmx_multisim_t* ms, const bool isMain)
     return (isMain && isMainSim(ms));
 }
 
-static bool multisim_int_all_are_equal(const gmx_multisim_t* ms, int64_t value)
-{
-    bool     allValuesAreEqual = true;
-    int64_t* buf;
-
-    GMX_RELEASE_ASSERT(ms, "Invalid use of multi-simulation pointer");
-
-    snew(buf, ms->numSimulations_);
-    /* send our value to all other main ranks, receive all of theirs */
-    buf[ms->simulationIndex_] = value;
-    gmx_sumli_sim(ms->numSimulations_, buf, ms);
-
-    for (int s = 0; s < ms->numSimulations_; s++)
-    {
-        if (buf[s] != value)
-        {
-            allValuesAreEqual = false;
-            break;
-        }
-    }
-
-    sfree(buf);
-
-    return allValuesAreEqual;
-}
-
-void logInitialMultisimStatus(const gmx_multisim_t* ms,
+void logInitialMultisimStatus(const gmx_multisim_t& ms,
                               const t_commrec*      cr,
                               const gmx::MDLogger&  mdlog,
                               const bool            simulationsShareState,
                               const int             numSteps,
                               const int             initialStep)
 {
-    if (!multisim_int_all_are_equal(ms, numSteps))
+    if (!multiSimValuesAllAreEqual(ms, numSteps))
     {
         GMX_LOG(mdlog.warning)
                 .appendText(
@@ -429,7 +382,7 @@ void logInitialMultisimStatus(const gmx_multisim_t* ms,
                         "simulations,\n"
                         "but we are proceeding anyway!");
     }
-    if (!multisim_int_all_are_equal(ms, initialStep))
+    if (!multiSimValuesAllAreEqual(ms, initialStep))
     {
         if (simulationsShareState)
         {

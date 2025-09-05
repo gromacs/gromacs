@@ -49,14 +49,15 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxmpi.h"
 
 namespace gmx
 {
+template<typename>
+class ArrayRef;
 class MDLogger;
-}
+} // namespace gmx
 
 struct gmx_multisim_t;
 struct t_commrec;
@@ -120,8 +121,8 @@ struct gmx_multisim_t
 //! Calculate the sum over the simulations of an array of ints
 void gmx_sumi_sim(int nr, int r[], const gmx_multisim_t* ms);
 
-//! Calculate the sum over the simulations of an array of large ints
-void gmx_sumli_sim(int nr, int64_t r[], const gmx_multisim_t* ms);
+//! Calculate the sum over the simulations of an array of large ints, the size of r cannot exceed MAX_INT
+void gmx_sumli_sim(gmx::ArrayRef<int64_t> r, const gmx_multisim_t& ms);
 
 //! Calculate the sum over the simulations of an array of floats
 void gmx_sumf_sim(int nr, float r[], const gmx_multisim_t* ms);
@@ -137,11 +138,11 @@ std::vector<int> gatherIntFromMultiSimulation(const gmx_multisim_t* ms, int loca
  * -multidir run
  *
  * The string name is used to print to the log file and in a fatal error
- * if the val's don't match. If bQuiet is true and the check passes,
+ * if the val's don't match. If beQuiet is true and the check passes,
  * no output is written. */
-void check_multi_int(FILE* log, const gmx_multisim_t* ms, int val, const char* name, gmx_bool bQuiet);
+void check_multi_int(FILE* log, const gmx_multisim_t& ms, int val, const char* name, bool beQuiet);
 /*! \copydoc check_multi_int() */
-void check_multi_int64(FILE* log, const gmx_multisim_t* ms, int64_t val, const char* name, gmx_bool bQuiet);
+void check_multi_int64(FILE* log, const gmx_multisim_t& ms, int64_t val, const char* name, bool beQuiet);
 
 #if GMX_DOUBLE
 //! Convenience define for sum of reals
@@ -182,7 +183,7 @@ bool isMainSimMainRank(const gmx_multisim_t* ms, bool isMain);
  * \param[in]  numSteps               The number of steps in this simulation
  * \param[in]  initialStep            The initial step for this simulation
  */
-void logInitialMultisimStatus(const gmx_multisim_t* ms,
+void logInitialMultisimStatus(const gmx_multisim_t& ms,
                               const t_commrec*      cr,
                               const gmx::MDLogger&  mdlog,
                               bool                  simulationsShareState,

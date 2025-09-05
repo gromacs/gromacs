@@ -310,10 +310,10 @@ t_oriresdata::t_oriresdata(FILE*                     fplog,
                     ms->numSimulations_);
         }
 
-        check_multi_int(fplog, ms, numRestraints, "the number of orientation restraints", FALSE);
+        check_multi_int(fplog, *ms, numRestraints, "the number of orientation restraints", FALSE);
         check_multi_int(
-                fplog, ms, numFitAtoms, "the number of fit atoms for orientation restraining", FALSE);
-        check_multi_int(fplog, ms, ir.nsteps, "nsteps", FALSE);
+                fplog, *ms, numFitAtoms, "the number of fit atoms for orientation restraining", FALSE);
+        check_multi_int(fplog, *ms, ir.nsteps, "nsteps", FALSE);
         /* Copy the reference coordinates from the main to the other nodes */
         gmx_sum_sim(DIM * referenceCoordinates_.size(), as_rvec_array(referenceCoordinates_.data())[0], ms);
     }

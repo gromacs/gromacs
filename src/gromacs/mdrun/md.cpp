@@ -868,7 +868,7 @@ void gmx::LegacySimulator::do_md()
 
     if (isMainRank && isMultiSim(ms_) && !useReplicaExchange)
     {
-        logInitialMultisimStatus(ms_, cr_, mdLog_, simulationsShareState, ir->nsteps, ir->init_step);
+        logInitialMultisimStatus(*ms_, cr_, mdLog_, simulationsShareState, ir->nsteps, ir->init_step);
     }
 
     bool usedMdGpuGraphLastStep = false;

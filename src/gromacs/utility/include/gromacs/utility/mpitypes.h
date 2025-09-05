@@ -64,6 +64,13 @@ std::enable_if_t<std::is_same_v<T, long>, MPI_Datatype> mpiType()
     return MPI_LONG;
 }
 
+//! Returns the MPI data type corresponding to int64_t
+template<typename T>
+std::enable_if_t<std::is_same_v<T, int64_t> && !std::is_same_v<int64_t, long>, MPI_Datatype> mpiType()
+{
+    return MPI_INT64_T;
+}
+
 //! Returns the MPI data type corresponding to float
 template<typename T>
 std::enable_if_t<std::is_same_v<T, float>, MPI_Datatype> mpiType()

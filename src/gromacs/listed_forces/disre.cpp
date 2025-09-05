@@ -233,7 +233,7 @@ void init_disres(FILE*                 fplog,
          * than one processor per simulation system. */
         if (ddRole == DDRole::Main)
         {
-            check_multi_int(fplog, ms, dd->nsystems, "the number of systems per ensemble", FALSE);
+            check_multi_int(fplog, *ms, dd->nsystems, "the number of systems per ensemble", FALSE);
         }
         gmx_bcast(sizeof(int), &dd->nsystems, communicator);
 
@@ -290,7 +290,7 @@ void init_disres(FILE*                 fplog,
          * succeed...) */
         if ((disResRunMode == DisResRunMode::MDRun) && ms && dd->nsystems > 1 && (ddRole == DDRole::Main))
         {
-            check_multi_int(fplog, ms, dd->nres, "the number of distance restraints", FALSE);
+            check_multi_int(fplog, *ms, dd->nres, "the number of distance restraints", FALSE);
         }
         please_cite(fplog, "Tropp80a");
         please_cite(fplog, "Torda89a");

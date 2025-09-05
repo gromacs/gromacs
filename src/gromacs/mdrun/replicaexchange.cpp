@@ -266,21 +266,21 @@ gmx_repl_ex_t init_replica_exchange(FILE*                            fplog,
      * This, of course, do not guarantee that the systems are the same,
      * but it does guarantee that we can perform replica exchange.
      */
-    check_multi_int(fplog, ms, numAtomsInSystem, "the number of atoms", FALSE);
-    check_multi_int(fplog, ms, static_cast<int>(ir->eI), "the integrator", FALSE);
-    check_multi_int64(fplog, ms, ir->init_step + ir->nsteps, "init_step+nsteps", FALSE);
+    check_multi_int(fplog, *ms, numAtomsInSystem, "the number of atoms", FALSE);
+    check_multi_int(fplog, *ms, static_cast<int>(ir->eI), "the integrator", FALSE);
+    check_multi_int64(fplog, *ms, ir->init_step + ir->nsteps, "init_step+nsteps", FALSE);
     const int nst = replExParams.exchangeInterval;
     check_multi_int64(fplog,
-                      ms,
+                      *ms,
                       gmx::divideRoundUp<int64_t>(ir->init_step, nst),
                       "first exchange step: init_step/-replex",
                       FALSE);
-    check_multi_int(fplog, ms, static_cast<int>(ir->etc), "the temperature coupling", FALSE);
-    check_multi_int(fplog, ms, ir->opts.ngtc, "the number of temperature coupling groups", FALSE);
+    check_multi_int(fplog, *ms, static_cast<int>(ir->etc), "the temperature coupling", FALSE);
+    check_multi_int(fplog, *ms, ir->opts.ngtc, "the number of temperature coupling groups", FALSE);
     check_multi_int(
-            fplog, ms, static_cast<int>(ir->pressureCouplingOptions.epc), "the pressure coupling", FALSE);
-    check_multi_int(fplog, ms, static_cast<int>(ir->efep), "free energy", FALSE);
-    check_multi_int(fplog, ms, ir->fepvals->n_lambda, "number of lambda states", FALSE);
+            fplog, *ms, static_cast<int>(ir->pressureCouplingOptions.epc), "the pressure coupling", FALSE);
+    check_multi_int(fplog, *ms, static_cast<int>(ir->efep), "free energy", FALSE);
+    check_multi_int(fplog, *ms, ir->fepvals->n_lambda, "number of lambda states", FALSE);
 
     re->temp = constantEnsembleTemperature(*ir);
     for (i = 1; (i < ir->opts.ngtc); i++)

@@ -47,6 +47,7 @@
 #include "config.h"
 
 #include <algorithm>
+#include <limits>
 #include <set>
 #include <string>
 #include <type_traits>
@@ -233,6 +234,9 @@ void sumOverSimulations(ArrayRef<T>    data,
 #if GMX_MPI
     if (mpiComm.isMainRank())
     {
+        GMX_RELEASE_ASSERT(data.size() < std::numeric_limits<int>::max(),
+                           "The size of data should fit in an int");
+
         MPI_Allreduce(MPI_IN_PLACE, data.data(), data.size(), mpiType<T>(), MPI_SUM, multiSimComm);
     }
     if (broadcastWithinSimulation && mpiComm.isParallel())
