@@ -72,7 +72,7 @@ public:
      */
     NNPotTopologyPreprocessor(ArrayRef<const Index> inputIndices);
 
-    /*! \brief Process mtop topology and builds topInfo_
+    /*! \brief Process mtop topology
      * containing information about topology modifications.
      *
      * \param[in,out] mtop Topology that needs to be modified
@@ -80,9 +80,6 @@ public:
      * \param[in] wi WarningHandler for handling warnings
      */
     void preprocess(gmx_mtop_t* mtop, const MDLogger& logger, WarningHandler* wi);
-
-    // Override base to get the correct object
-    const QMMMTopologyInfo& topInfo() const;
 
 private:
     /*! \brief Global indices of NNP atoms;
@@ -92,8 +89,6 @@ private:
     std::set<int> nnpIndices_;
     //! Vector with atom numbers for the whole system
     std::vector<int> atomNumbers_;
-    //! Structure with information about modifications made
-    QMMMTopologyInfo topInfo_;
 };
 
 } // namespace gmx

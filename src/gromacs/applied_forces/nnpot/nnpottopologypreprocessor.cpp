@@ -61,43 +61,36 @@ void NNPotTopologyPreprocessor::preprocess(gmx_mtop_t* mtop, const MDLogger& log
     GMX_LOG(logger.info)
             .appendText("Neural network potential Interface is active, topology was modified!");
 
-    // Save in topInfo_ number of QM and MM atoms
-    topInfo_.numQMAtoms += gmx::ssize(nnpIndices_);
-    topInfo_.numMMAtoms += mtop->natoms - gmx::ssize(nnpIndices_);
     GMX_LOG(logger.info)
-            .appendTextFormatted("Number of embedded NNP atoms: %d\nNumber of regular atoms: %d\n",
-                                 topInfo_.numQMAtoms,
-                                 topInfo_.numMMAtoms);
+            .appendTextFormatted(
+                    "Number of embedded NNP atoms: %td\nNumber of regular atoms: %td\n",
+                    gmx::ssize(nnpIndices_),
+                    mtop->natoms - gmx::ssize(nnpIndices_));
 
     // 1) Split molecules containing NNP input atoms from other molecules in blocks
     std::vector<bool> isNNPBlock = splitQMBlocks(mtop, nnpIndices_);
 
     // 2) Exclude LJ interactions between NNP atoms
     // this also excludes coulomb interactions
-    addQMLJExclusions(mtop, nnpIndices_, topInfo_, logger);
+    addQMLJExclusions(mtop, nnpIndices_, logger);
 
     // 3) Build atomNumbers vector with atomic numbers of all atoms
     buildQMMMAtomNumbers(*mtop);
 
     // 4) Make F_CONNBOND between atoms within NNP region
-    modifyQMMMTwoCenterInteractions(mtop, nnpIndices_, isNNPBlock, topInfo_, logger);
+    modifyQMMMTwoCenterInteractions(mtop, nnpIndices_, isNNPBlock, logger);
 
     // 5) Remove angles and settles containing 2 or more NNP atoms
-    modifyQMMMThreeCenterInteractions(mtop, nnpIndices_, isNNPBlock, topInfo_, logger);
+    modifyQMMMThreeCenterInteractions(mtop, nnpIndices_, isNNPBlock, logger);
 
     // 6) Remove dihedrals containing 3 or more NNP atoms
-    modifyQMMMFourCenterInteractions(mtop, nnpIndices_, isNNPBlock, topInfo_, logger);
+    modifyQMMMFourCenterInteractions(mtop, nnpIndices_, isNNPBlock, logger);
 
     // 7) Check for constrained bonds in QM subsystem
-    checkConstrainedBonds(mtop, nnpIndices_, isNNPBlock, topInfo_, wi);
+    checkConstrainedBonds(mtop, nnpIndices_, isNNPBlock, wi);
 
     // finalize topology
     mtop->finalize();
-}
-
-const QMMMTopologyInfo& NNPotTopologyPreprocessor::topInfo() const
-{
-    return topInfo_;
 }
 
 } // namespace gmx

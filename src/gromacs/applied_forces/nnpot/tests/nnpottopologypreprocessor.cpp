@@ -67,7 +67,7 @@
 #include "gromacs/utility/vectypes.h"
 
 #include "testutils/cmdlinetest.h"
-#include "testutils/refdata.h"
+#include "testutils/loggertest.h"
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 
@@ -91,11 +91,9 @@ public:
      *
      * \param[in] simulationName Name of the simulation database directory
      * \param[in] mdpContent     Content of the mdp file
-     * \param[out] mtop          gmx_mtop_t struct to load the topology into
      */
-    static void makeMtopFromFile(const std::string& simulationName,
-                                 const std::string& mdpContent,
-                                 gmx_mtop_t*        mtop)
+    static std::unique_ptr<gmx_mtop_t> makeMtopFromFile(const std::string& simulationName,
+                                                        const std::string& mdpContent)
     {
         const std::filesystem::path simData =
                 gmx::test::TestFileManager::getTestSimulationDatabaseDirectory();
@@ -115,42 +113,20 @@ public:
             caller.addOption("-p", (simData / simulationName).replace_extension(".top").string());
             caller.addOption("-c", (simData / simulationName).replace_extension(".gro").string());
             caller.addOption("-o", tprName);
-            ASSERT_EQ(0, gmx_grompp(caller.argc(), caller.argv()));
+            EXPECT_EQ(0, gmx_grompp(caller.argc(), caller.argv()));
         }
 
         // Load topology
-        bool    fullTopology;
-        PbcType pbcType;
-        matrix  box;
-        readConfAndTopology(tprName.c_str(), &fullTopology, mtop, &pbcType, nullptr, nullptr, box);
+        bool                        fullTopology;
+        PbcType                     pbcType;
+        matrix                      box;
+        std::unique_ptr<gmx_mtop_t> mtop(std::make_unique<gmx_mtop_t>());
+        readConfAndTopology(tprName.c_str(), &fullTopology, mtop.get(), &pbcType, nullptr, nullptr, box);
+        return mtop;
     }
 
-    /*! \brief Helper function to check the processed topology.
-     *
-     * \param[in] info    QMMMTopologyInfo struct to check
-     * \param[in] mtop    gmx_mtop_t struct to check modified molblocks
-     * \param[in] checker TestReferenceChecker to use for checking
-     */
-    static void checkTopologyInfo(const QMMMTopologyInfo& info,
-                                  const gmx_mtop_t&       mtop,
-                                  TestReferenceChecker*   checker)
-    {
-        // Tolerance of all charges and vectors should be 1E-3
-        checker->setDefaultTolerance(absoluteTolerance(0.001));
-
-        checker->checkInteger(info.numMMAtoms, "Number of MM atoms");
-        checker->checkInteger(info.numQMAtoms, "Number of NNP atoms");
-        checker->checkReal(info.remainingMMCharge, "MM charge");
-        checker->checkReal(info.totalClassicalChargeOfQMAtoms, "NNP charge");
-        checker->checkInteger(info.numExclusionsMade, "Exclusions Made");
-        checker->checkInteger(info.numBondsRemoved, "Removed bonds");
-        checker->checkInteger(info.numAnglesRemoved, "Removed angles");
-        checker->checkInteger(info.numDihedralsRemoved, "Removed dihedrals");
-        checker->checkInteger(info.numSettleRemoved, "Removed settles");
-        checker->checkInteger(info.numConnBondsAdded, "Generated CONNBONDS");
-        checker->checkInteger(info.numVirtualSitesModified, "Removed vsites");
-        checker->checkInteger(mtop.molblock.size(), "Molblocks in topology");
-    }
+protected:
+    LoggerTestHelper logHelper_;
 };
 
 TEST_F(NNPotTopologyPreprocessorTest, CanConstruct)
@@ -163,82 +139,94 @@ TEST_F(NNPotTopologyPreprocessorTest, FourWatersFirstInQMRegion)
 {
     // Reference input 4x SPCE waters from database 4waters.top
     // First water is NNP input
-    std::vector<Index> nnpAtomIndices = { 0, 1, 2 };
-    gmx_mtop_t         mtop;
-    makeMtopFromFile("4water", "", &mtop);
+    std::vector<Index>          nnpAtomIndices = { 0, 1, 2 };
+    std::unique_ptr<gmx_mtop_t> mtop           = makeMtopFromFile("4water", "");
 
     NNPotTopologyPreprocessor topPrep(nnpAtomIndices);
     MDLogger                  logger;
     WarningHandler            wi(true, 0);
-    topPrep.preprocess(&mtop, logger, &wi);
-
-    // Get data about changes and check it
-    QMMMTopologyInfo info = topPrep.topInfo();
-
-    gmx::test::TestReferenceData data;
-    TestReferenceChecker         checker(data.rootChecker());
-    checkTopologyInfo(info, mtop, &checker);
+    logHelper_.expectEntryMatchingRegex(
+            MDLogger::LogLevel::Info,
+            "Neural network potential Interface is active, topology was modified!");
+    logHelper_.expectEntryMatchingRegex(
+            MDLogger::LogLevel::Info,
+            "Number of embedded NNP atoms: 3\nNumber of regular atoms: 9\n");
+    logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info, "Number of exclusions made: 3\n");
+    logHelper_.expectEntryMatchingRegex(
+            MDLogger::LogLevel::Info,
+            "Number of settles removed: 1 \\(replaced by 2 F_CONNBONDS\\) \n");
+    topPrep.preprocess(mtop.get(), logHelper_.logger(), &wi);
 }
 
 TEST_F(NNPotTopologyPreprocessorTest, FourWatersSecondAndFourthInQMRegion)
 {
     // Reference input 4x SPCE waters from database 4waters.top
     // second and fourth are NNP input
-    std::vector<Index> nnpAtomIndices = { 3, 4, 5, 9, 10, 11 };
-    gmx_mtop_t         mtop;
-    makeMtopFromFile("4water", "", &mtop);
+    std::vector<Index>          nnpAtomIndices = { 3, 4, 5, 9, 10, 11 };
+    std::unique_ptr<gmx_mtop_t> mtop           = makeMtopFromFile("4water", "");
 
     NNPotTopologyPreprocessor topPrep(nnpAtomIndices);
     MDLogger                  logger;
     WarningHandler            wi(true, 0);
-    topPrep.preprocess(&mtop, logger, &wi);
-
-    // Get data about changes and check it
-    QMMMTopologyInfo info = topPrep.topInfo();
-
-    TestReferenceData    data;
-    TestReferenceChecker checker(data.rootChecker());
-    checkTopologyInfo(info, mtop, &checker);
+    logHelper_.expectEntryMatchingRegex(
+            MDLogger::LogLevel::Info,
+            "Neural network potential Interface is active, topology was modified!");
+    logHelper_.expectEntryMatchingRegex(
+            MDLogger::LogLevel::Info,
+            "Number of embedded NNP atoms: 6\nNumber of regular atoms: 6\n");
+    logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info, "Number of exclusions made: 6\n");
+    logHelper_.expectEntryMatchingRegex(
+            MDLogger::LogLevel::Info,
+            "Number of settles removed: 2 \\(replaced by 4 F_CONNBONDS\\) \n");
+    topPrep.preprocess(mtop.get(), logHelper_.logger(), &wi);
 }
 
 TEST_F(NNPotTopologyPreprocessorTest, AlanineDipeptideWithLinkAtomsNoConstraints)
 {
     // Reference input alanine_vacuo.top
     std::vector<Index> nnpAtomIndices = { 8, 9, 10, 11, 12, 13 };
-    gmx_mtop_t         mtop;
-    makeMtopFromFile("alanine_vacuo", "", &mtop);
+    auto               mtop           = makeMtopFromFile("alanine_vacuo", "");
 
     NNPotTopologyPreprocessor topPrep(nnpAtomIndices);
     MDLogger                  logger;
     WarningHandler            wi(true, 0);
-    topPrep.preprocess(&mtop, logger, &wi);
-
-    // Get data about changes and check it
-    QMMMTopologyInfo info = topPrep.topInfo();
-
-    TestReferenceData    data;
-    TestReferenceChecker checker(data.rootChecker());
-    checkTopologyInfo(info, mtop, &checker);
+    logHelper_.expectEntryMatchingRegex(
+            MDLogger::LogLevel::Info,
+            "Neural network potential Interface is active, topology was modified!");
+    logHelper_.expectEntryMatchingRegex(
+            MDLogger::LogLevel::Info,
+            "Number of embedded NNP atoms: 6\nNumber of regular atoms: 16\n");
+    logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info, "Number of exclusions made: 6\n");
+    logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info, "Number of bonds removed: 8\n");
+    logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info,
+                                        "Number of F_CONNBONDS \\(type 5 bonds\\) added: 5\n");
+    logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info, "Number of angles removed: 11\n");
+    logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info,
+                                        "Number of dihedrals removed: 9\n");
+    topPrep.preprocess(mtop.get(), logHelper_.logger(), &wi);
 }
 
 TEST_F(NNPotTopologyPreprocessorTest, AlanineDipeptideWithLinkAtomsWithConstraints)
 {
     // Reference input alanine_vacuo.top with constraints=all-bonds
     std::vector<Index> nnpAtomIndices = { 8, 9, 10, 11, 12, 13 };
-    gmx_mtop_t         mtop;
-    makeMtopFromFile("alanine_vacuo", "constraints = all-bonds", &mtop);
+    auto               mtop = makeMtopFromFile("alanine_vacuo", "constraints = all-bonds");
 
     NNPotTopologyPreprocessor topPrep(nnpAtomIndices);
     MDLogger                  logger;
     WarningHandler            wi(true, 0);
-    topPrep.preprocess(&mtop, logger, &wi);
-
-    // Get data about changes and check it
-    QMMMTopologyInfo info = topPrep.topInfo();
-
-    TestReferenceData    data;
-    TestReferenceChecker checker(data.rootChecker());
-    checkTopologyInfo(info, mtop, &checker);
+    logHelper_.expectEntryMatchingRegex(
+            MDLogger::LogLevel::Info,
+            "Neural network potential Interface is active, topology was modified!");
+    logHelper_.expectEntryMatchingRegex(
+            MDLogger::LogLevel::Info,
+            "Number of embedded NNP atoms: 6\nNumber of regular atoms: 16\n");
+    logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info, "Number of exclusions made: 6\n");
+    logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info, "Number of bonds removed: 3\n");
+    logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info, "Number of angles removed: 11\n");
+    logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info,
+                                        "Number of dihedrals removed: 9\n");
+    topPrep.preprocess(mtop.get(), logHelper_.logger(), &wi);
 }
 
 } // namespace test
