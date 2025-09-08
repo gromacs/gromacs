@@ -834,7 +834,7 @@ void DomainCommForward::setup(const DomainCommBackward& send, const int offsetIn
                   sendBuffer.data(),
                   send.columnsToSend().size(),
                   columnsReceived_.data(),
-                  numAtomsToReceive_,
+                  columnsReceived_.size(),
                   HaloMpiTag::GridColumns);
 }
 
