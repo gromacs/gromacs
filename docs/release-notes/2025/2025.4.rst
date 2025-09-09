@@ -16,6 +16,15 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Direct halo communication could cause mdrun to exit with an MPI error
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The direct halo communication in mdrun, which needs to be enabled by setting
+an environment variable, could case mdrun to stop with an MPI error.
+This is very unlikely to have lead to incorrect results.
+
+:issue:`5418`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
