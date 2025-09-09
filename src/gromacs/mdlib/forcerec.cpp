@@ -47,6 +47,7 @@
 #include <bitset>
 #include <filesystem>
 #include <memory>
+#include <optional>
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/domdec.h"
@@ -464,7 +465,7 @@ static bool set_chargesum(FILE* log, t_forcerec* fr, const gmx_mtop_t& mtop)
  * interactions present for each bonded interaction index found in the
  * topology.
  *
- * \c ftype1 or \c ftype2 may be set to -1 to disable seeking for a
+ * \c ftype2 may be set to std::nullopt to disable seeking for a
  * valid type with that parameter.
  *
  * \c count will be reallocated as necessary to fit the largest bonded
@@ -472,7 +473,11 @@ static bool set_chargesum(FILE* log, t_forcerec* fr, const gmx_mtop_t& mtop)
  * \c ncount. It will contain zero for every bonded interaction index
  * for which no interactions are present in the topology.
  */
-static void count_tables(int ftype1, int ftype2, const gmx_mtop_t& mtop, int* ncount, int** count)
+static void count_tables(const int                ftype1,
+                         const std::optional<int> ftype2,
+                         const gmx_mtop_t&        mtop,
+                         int*                     ncount,
+                         int**                    count)
 {
     int ftype, i, j, tabnr;
 
@@ -483,7 +488,7 @@ static void count_tables(int ftype1, int ftype2, const gmx_mtop_t& mtop, int* nc
         for (ftype = 0; ftype < F_NRE; ftype++)
         {
             // If the current interaction type is one of the types whose tables we're trying to count...
-            if (ftype == ftype1 || ftype == ftype2)
+            if (ftype == ftype1 || (ftype2.has_value() && ftype == ftype2.value()))
             {
                 const InteractionList& il     = molt.ilist[ftype];
                 const int              stride = 1 + NRAL(ftype);
@@ -519,14 +524,14 @@ static void count_tables(int ftype1, int ftype2, const gmx_mtop_t& mtop, int* nc
  * list of filenames passed to mdrun, and make bonded tables from
  * those files.
  *
- * \c ftype1 or \c ftype2 may be set to -1 to disable seeking for a
+ * \c ftype2 may be set to std::nullopt to disable seeking for a
  * valid type with that parameter.
  *
  * A fatal error occurs if no matching filename is found.
  */
 static std::vector<bondedtable_t> make_bonded_tables(FILE*                            fplog,
-                                                     int                              ftype1,
-                                                     int                              ftype2,
+                                                     const int                        ftype1,
+                                                     const std::optional<int>         ftype2,
                                                      const gmx_mtop_t&                mtop,
                                                      gmx::ArrayRef<const std::string> tabbfnm,
                                                      const char*                      tabext)
@@ -563,14 +568,14 @@ static std::vector<bondedtable_t> make_bonded_tables(FILE*                      
                 }
                 if (!madeTable)
                 {
-                    bool isPlural = (ftype2 != -1);
+                    bool isPlural = ftype2.has_value();
                     gmx_fatal(FARGS,
                               "Tabulated interaction of type '%s%s%s' with index %d cannot be used "
                               "because no table file whose name matched '%s' was passed via the "
                               "gmx mdrun -tableb command-line option.",
                               interaction_function[ftype1].longname,
                               isPlural ? "' or '" : "",
-                              isPlural ? interaction_function[ftype2].longname : "",
+                              isPlural ? interaction_function[ftype2.value()].longname : "",
                               i,
                               patternToFind.c_str());
                 }
@@ -1014,8 +1019,9 @@ void init_forcerec(FILE*                            fplog,
         {
             // TODO move these tables into a separate struct and store reference in ListedForces
             fcdata.bondtab = make_bonded_tables(fplog, F_TABBONDS, F_TABBONDSNC, mtop, tabbfnm, "b");
-            fcdata.angletab = make_bonded_tables(fplog, F_TABANGLES, -1, mtop, tabbfnm, "a");
-            fcdata.dihtab   = make_bonded_tables(fplog, F_TABDIHS, -1, mtop, tabbfnm, "d");
+            fcdata.angletab =
+                    make_bonded_tables(fplog, F_TABANGLES, std::nullopt, mtop, tabbfnm, "a");
+            fcdata.dihtab = make_bonded_tables(fplog, F_TABDIHS, std::nullopt, mtop, tabbfnm, "d");
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
     }
