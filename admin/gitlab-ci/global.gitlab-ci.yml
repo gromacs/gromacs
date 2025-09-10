@@ -82,7 +82,6 @@
 # Base definition for using oneAPI.
 .use-oneapi:base:
   variables:
-    # Use the HPC clang-based compiler variants so that OpenMP is active
     CMAKE_COMPILER_SCRIPT: -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icpx -DCMAKE_INCLUDE_PATH=/opt/intel/oneapi/compiler/latest/linux/include/sycl;/opt/intel/oneapi/compiler/latest/include/sycl -DCMAKE_PREFIX_PATH=/opt/intel/oneapi/compiler/latest/linux
     CMAKE_EXTRA_OPTIONS: -DGMX_FFT_LIBRARY=mkl
   before_script:
@@ -98,9 +97,7 @@
 # Base definition for using oneAPI IntelLLVM
 .use-oneapi-intel-llvm:base:
   variables:
-    # We need to add -isystem directories manually for OpenMP to work.
-    # With CMake 3.26+, OpenMP_*_INCLUDE_DIR could be used instead of CMAKE_*_FLAGS
-    CMAKE_COMPILER_SCRIPT: -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_FLAGS=-isystem/opt/intel/oneapi/compiler/latest/opt/compiler/include/ -DCMAKE_CXX_FLAGS=-isystem/opt/intel/oneapi/compiler/latest/opt/compiler/include/
+    CMAKE_COMPILER_SCRIPT: -DCMAKE_C_COMPILER=icx -DCMAKE_CXX_COMPILER=icpx
   before_script:
     # Necessary to override gitlab default 'set -e' which breaks Intel's setvar.sh script
     - set +e

@@ -35,6 +35,8 @@
 #ifndef GMX_GMXPREPROCESS_PGUTIL_H
 #define GMX_GMXPREPROCESS_PGUTIL_H
 
+#include <optional>
+
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
@@ -43,34 +45,39 @@ struct t_atom;
 struct t_atoms;
 
 /*! \brief
- * Search an atom in array of pointers to strings
+ * Search for an atom named \c atomName in \c atoms
  *
- * If \p type starts with '-', start from \p start.
+ * If \p atomName starts with '-', start from \p start.
  * Will search backwards from that.
  *
  * \p bondtype is only used for printing the error/warning string,
  * when \p bondtype ="check" no error/warning is issued.
  * When \p bAllowMissing = FALSE an fatal error is issued, otherwise a warning.
  *
- * \param[in] type             Atom type string to parse
- * \param[in] start            Possible position to begin search from.
+ * \param[in] atomName         Atom name string to match.
+ * \param[in] start            Possible atom index within \c atoms from which to begin search.
  * \param[in] atoms            Global topology atoms information.
  * \param[in] bondtype         Information what kind of bond, used for error messages.
  * \param[in] bAllowMissing    If true, missing bond types are allowed.
  *                             AKA allow cartoon physics.
  * \param[in] cyclicBondsIndex Information about bonds creating cyclic molecules,
  *                             empty if no such bonds exist.
+ * \return Atom index within \c atoms matching \c atomName, or std::nullopt if none found.
  */
-int search_atom(const char*              type,
-                int                      start,
-                const t_atoms*           atoms,
-                const char*              bondtype,
-                bool                     bAllowMissing,
-                gmx::ArrayRef<const int> cyclicBondsIndex);
+std::optional<int> search_atom(const char*              atomName,
+                               int                      start,
+                               const t_atoms*           atoms,
+                               const char*              bondtype,
+                               bool                     bAllowMissing,
+                               gmx::ArrayRef<const int> cyclicBondsIndex);
 
-/* Similar to search_atom, but this routine searches for the specified
- * atom in residue resind.
+/* Similar to search_atom, but this routine searches for the named
+ * atom in residue with index \c resind.
  */
-int search_res_atom(const char* type, int resind, const t_atoms* atoms, const char* bondtype, bool bAllowMissing);
+std::optional<int> search_res_atom(const char*    atomName,
+                                   int            resind,
+                                   const t_atoms* atoms,
+                                   const char*    bondtype,
+                                   bool           bAllowMissing);
 
 #endif

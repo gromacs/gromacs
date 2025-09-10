@@ -45,7 +45,7 @@
 
 #include <vector>
 
-#include "gromacs/math/vec.h"
+#include "gromacs/utility/vec.h"
 
 //! A cubic simulation box matching spc81Coordinates defined below
 static const matrix spc81Box = { { 1.86206, 0.0, 0.0 }, { 0.0, 1.86206, 0.0 }, { 0.0, 0.0, 1.86206 } };

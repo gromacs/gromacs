@@ -42,8 +42,6 @@
 #include <algorithm>
 #include <filesystem>
 
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -55,6 +53,8 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 typedef struct
 {

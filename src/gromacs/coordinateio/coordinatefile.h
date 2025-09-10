@@ -152,8 +152,8 @@
 
 #include "gromacs/coordinateio/ioutputadapter.h"
 #include "gromacs/coordinateio/outputadaptercontainer.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/atoms.h"
+#include "gromacs/utility/vectypes.h"
 
 struct gmx_mtop_t;
 struct t_trxstatus;

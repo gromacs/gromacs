@@ -64,8 +64,7 @@ namespace gmx
 template<typename T>
 class Range
 {
-    // TODO: Use std::is_integral_v when CUDA 11 is a requirement.
-    static_assert(std::is_integral<T>::value, "Range can only be used with integral types");
+    static_assert(std::is_integral_v<T>, "Range can only be used with integral types");
 
     // Note: This class has as invariant: begin_ <= end_
 

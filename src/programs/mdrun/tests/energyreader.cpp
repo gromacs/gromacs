@@ -66,7 +66,7 @@ namespace gmx
 namespace test
 {
 
-EnergyFrameReaderPtr openEnergyFileToReadTerms(const std::string&              filename,
+EnergyFrameReaderPtr openEnergyFileToReadTerms(const std::string& filename,
                                                const std::vector<std::string>& namesOfRequiredEnergyTerms)
 {
     ener_file_ptr energyFile(open_enx(filename.c_str(), "r"));

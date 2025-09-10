@@ -50,6 +50,10 @@
 
 #include "testutils/refdata.h"
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -182,3 +186,5 @@ TEST(ComplexNumberTest, ComplexAbs2)
 }
 
 } // namespace
+} // namespace test
+} // namespace gmx

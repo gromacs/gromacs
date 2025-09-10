@@ -99,8 +99,7 @@ void LastStepSignaller::signal(Step step, Time time)
     {
         return;
     }
-    bool isNSStep           = (step == nextNSStep_);
-    signalledStopCondition_ = stopHandler_->stoppingAfterCurrentStep(isNSStep);
+    signalledStopCondition_ = stopHandler_->stoppingAfterCurrentStep(step);
     if (step == stopStep_ || signalledStopCondition_)
     {
         runAllCallbacks(callbacks_, step, time);

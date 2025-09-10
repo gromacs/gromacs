@@ -34,7 +34,7 @@ wl-ratio                = 0.8 [real between 0 and 1] ratio of lowest to highest 
 symmetrized-transition-matrix=no [yes/no]  Whether to compute a symmetrized version of the transition matrix, by averaging the transpose with the matrix.
 
 lmc-forced-nstart       = 0 [any positive integer] (the number of equilibration steps at each lambda when 
-			    'forcing through', essentially peforming slow growth, to initialize weights
+			    'forcing through', essentially performing slow growth, to initialize weights
 
 mininum-var-min        = 100 [any positive integer] must have this many samples in each state before reweighting to 
                        	 get the number of states per state that minimizes variace.  Preferable to make it 

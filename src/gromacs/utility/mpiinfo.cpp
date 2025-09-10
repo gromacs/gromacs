@@ -47,6 +47,7 @@
 #include "config.h"
 
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/stringutil.h"
 
 #if HAVE_MPI_EXT
 #    include <mpi-ext.h>
@@ -78,8 +79,6 @@ std::string findMpiLibraryVersionString()
 #endif
 }
 
-} // namespace
-
 std::string_view mpiLibraryVersionString()
 {
     // Avoid calling into the MPI library and then making a new
@@ -89,6 +88,8 @@ std::string_view mpiLibraryVersionString()
 
     return cachedVersionString;
 }
+
+} // namespace
 
 bool usingIntelMpi()
 {
@@ -113,7 +114,7 @@ GpuAwareMpiStatus checkMpiCudaAwareSupport()
     GpuAwareMpiStatus status = GpuAwareMpiStatus::NotSupported;
 #endif
 
-    if (status != GpuAwareMpiStatus::Supported && getenv("GMX_FORCE_GPU_AWARE_MPI") != nullptr)
+    if (status != GpuAwareMpiStatus::Supported && std::getenv("GMX_FORCE_GPU_AWARE_MPI") != nullptr)
     {
         status = GpuAwareMpiStatus::Forced;
     }
@@ -132,7 +133,7 @@ GpuAwareMpiStatus checkMpiHipAwareSupport()
     GpuAwareMpiStatus status = GpuAwareMpiStatus::NotSupported;
 #endif
 
-    if (status != GpuAwareMpiStatus::Supported && getenv("GMX_FORCE_GPU_AWARE_MPI") != nullptr)
+    if (status != GpuAwareMpiStatus::Supported && std::getenv("GMX_FORCE_GPU_AWARE_MPI") != nullptr)
     {
         status = GpuAwareMpiStatus::Forced;
     }
@@ -191,11 +192,76 @@ GpuAwareMpiStatus checkMpiZEAwareSupport()
     }
 #endif
 
-    if (status != GpuAwareMpiStatus::Supported && getenv("GMX_FORCE_GPU_AWARE_MPI") != nullptr)
+    if (status != GpuAwareMpiStatus::Supported && std::getenv("GMX_FORCE_GPU_AWARE_MPI") != nullptr)
     {
         status = GpuAwareMpiStatus::Forced;
     }
     return status;
+}
+
+namespace
+{
+
+//! Return a one-line string describing the MPI library
+std::string cleanMpiLibraryVersionString()
+{
+    std::string returnString(gmx::mpiLibraryVersionString());
+    // Replace embedded newlines or tabs with spaces
+    size_t currentPosition = 0;
+    size_t newLinePosition = returnString.find_first_of("\n\t", currentPosition);
+    while (newLinePosition != std::string::npos)
+    {
+        returnString[newLinePosition] = ' ';
+        currentPosition               = newLinePosition;
+        newLinePosition               = returnString.find_first_of("\n\t", currentPosition);
+    }
+    return returnString;
+}
+
+} // namespace
+
+std::unordered_map<std::string, std::string> mpiDescriptions()
+{
+    std::unordered_map<std::string, std::string> descriptions;
+    // Note that these string keys must be kept in sync with
+    // those in mdrun/binary_information.cpp
+    if (GMX_THREAD_MPI)
+    {
+        descriptions["MPI library"] = "thread_mpi";
+        descriptions["MPI version"] = "built in";
+    }
+    else if (GMX_LIB_MPI)
+    {
+        std::vector<std::string> gpuAwareBackendsSupported;
+        if (checkMpiCudaAwareSupport() == GpuAwareMpiStatus::Supported)
+        {
+            gpuAwareBackendsSupported.emplace_back("CUDA");
+        }
+        if (checkMpiHipAwareSupport() == GpuAwareMpiStatus::Supported)
+        {
+            gpuAwareBackendsSupported.emplace_back("HIP");
+        }
+        if (checkMpiZEAwareSupport() == GpuAwareMpiStatus::Supported)
+        {
+            gpuAwareBackendsSupported.emplace_back("LevelZero");
+        }
+        if (!gpuAwareBackendsSupported.empty())
+        {
+            descriptions["MPI library"] = formatString(
+                    "MPI (GPU-aware: %s)", joinStrings(gpuAwareBackendsSupported, ", ").c_str());
+        }
+        else
+        {
+            descriptions["MPI library"] = "MPI";
+        }
+        descriptions["MPI version"] = cleanMpiLibraryVersionString();
+    }
+    else
+    {
+        descriptions["MPI library"] = "none";
+        descriptions["MPI version"] = "none";
+    }
+    return descriptions;
 }
 
 } // namespace gmx

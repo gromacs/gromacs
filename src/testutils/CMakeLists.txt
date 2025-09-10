@@ -55,8 +55,6 @@ elseif (GMX_GPU_HIP)
     target_link_libraries(testutils PRIVATE hip::host)
     if (GMX_GPU_FFT_VKFFT)
         target_link_libraries(testutils PRIVATE VkFFT)
-    elseif(GMX_GPU_FFT_HIPFFT)
-        target_link_libraries(testutils PRIVATE roc::rocfft hip::hipfft)
     elseif(GMX_GPU_FFT_ROCFFT)
         target_link_libraries(testutils PRIVATE roc::rocfft)
     endif()
@@ -80,8 +78,10 @@ target_sources(testutils PRIVATE
                loggertest.cpp
                mpi_printer.cpp
                mpitest.cpp
+               posixmemstream.cpp
                refdata.cpp
                refdata_xml.cpp
+               setenv.cpp
                simulationdatabase.cpp
                stdiohelper.cpp
                stringtest.cpp
@@ -131,5 +131,16 @@ target_link_libraries(testutils PUBLIC common)
 target_link_libraries(testutils PUBLIC legacy_modules)
 target_link_libraries(testutils PUBLIC utility math)
 target_link_libraries(testutils PRIVATE topology)
+
+# Permit having tests of legacy functions using FILE*, which work best
+# when the system supports the POSIX open_memstream() function.
+include(CheckCXXSymbolExists)
+check_cxx_symbol_exists("open_memstream" "cstdio" HAVE_OPEN_MEMSTREAM)
+if (HAVE_OPEN_MEMSTREAM)
+    set(_have_open_memstream_value 1)
+else()
+    set(_have_open_memstream_value 0)
+endif()
+set_source_files_properties(posixmemstream.cpp PROPERTIES COMPILE_DEFINITIONS "-DHAVE_OPEN_MEMSTREAM=${_have_open_memstream_value}")
 
 add_subdirectory(tests)

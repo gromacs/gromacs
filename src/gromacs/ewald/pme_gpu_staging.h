@@ -51,7 +51,7 @@
 #include <array>
 
 #include "gromacs/gpu_utils/hostallocator.h"
-#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/vectypes.h"
 
 //! Number of FEP states
 static constexpr int sc_numFepStates = 2;

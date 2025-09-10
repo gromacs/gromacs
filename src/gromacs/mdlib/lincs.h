@@ -46,16 +46,17 @@
 #include <cstdint>
 #include <cstdio>
 
-#include "gromacs/math/vectypes.h"
+#include "gromacs/topology/idef.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
+struct gmx_domdec_t;
 struct gmx_mtop_t;
 struct gmx_multisim_t;
 struct gmx_wallcycle;
 class InteractionDefinitions;
-struct t_commrec;
 struct t_inputrec;
 struct t_nrnb;
 struct t_pbc;
@@ -94,7 +95,7 @@ void set_lincs(const InteractionDefinitions& idef,
                ArrayRef<const real>          invmass,
                real                          lambda,
                bool                          bDynamics,
-               const t_commrec*              cr,
+               const gmx_domdec_t*           dd,
                Lincs*                        li);
 
 /*! \brief Applies LINCS constraints.
@@ -105,7 +106,7 @@ bool constrain_lincs(bool                            computeRmsd,
                      int64_t                         step,
                      Lincs*                          lincsd,
                      ArrayRef<const real>            invmass,
-                     const t_commrec*                cr,
+                     gmx_domdec_t*                   dd,
                      const gmx_multisim_t*           ms,
                      ArrayRefWithPadding<const RVec> x,
                      ArrayRefWithPadding<RVec>       xprime,
@@ -124,6 +125,15 @@ bool constrain_lincs(bool                            computeRmsd,
                      int                             maxwarn,
                      int*                            warncount,
                      gmx_wallcycle*                  wcycle);
+
+/*! \brief Counts the number of constraint triangles, i.e. triplets of atoms connected by three constraints
+ *
+ * \param[in] ilist   The interaction list to count constraints triangles for
+ * \param[in] at2con  The atom to constraints map
+ *
+ * \returns the number of constraint triangles
+ */
+int count_triangle_constraints(const InteractionLists& ilist, const ListOfLists<int>& at2con);
 
 } // namespace gmx
 

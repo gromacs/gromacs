@@ -8,8 +8,8 @@ Portability considerations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Most |Gromacs| files compile as C++17, but some files remain that compile as C99.
-C++ has a lot of features, but to keep the source code maintainable and easy to read, 
-we will avoid using some of them in |Gromacs| code. The basic principle is to keep things 
+C++ has a lot of features, but to keep the source code maintainable and easy to read,
+we will avoid using some of them in |Gromacs| code. The basic principle is to keep things
 as simple as possible.
 
 * MSVC supports only a subset of C99 and work-arounds are required in those cases.
@@ -48,7 +48,7 @@ a release.
   * Use anonymous namespaces in source files to describe symbols that should
     not have external linkage (see |linkref12|).
   * Use the ``internal`` namespace in header files to denote implementation
-    details that cannot be dependend upon, because anonymous namespaces
+    details that cannot be depended upon, because anonymous namespaces
     cannot be used (see |linkref11|).
   * Otherwise, avoid nested namespaces unless needing to expose a group of
     related free functions in a module header.
@@ -59,7 +59,7 @@ a release.
     importing just those symbols. See also |linkref2|.
 
 * Use STL, but do not use iostreams outside of the unit tests. iostreams can have
-  a negative impact on performance compared to other forms 
+  a negative impact on performance compared to other forms
   of string streams, depending on the use case. Also, they don't always
   play well with using C ``stdio`` routines at the same time, which
   are used extensively in the current code. However, since Google tests
@@ -75,6 +75,23 @@ a release.
   of characters instead of using ``const std::string &``. See also |linkrefstringview|.
   Because null termination expected by some C APIs (e.g. fopen, fputs, fprintf)
   is not guaranteed, string_view should not be used in such cases.
+* Use ``ArrayRef<T>`` or ``ArrayRef<const T>`` (and their padded
+  forms) to express a view over a contiguous range of (respectively)
+  modifiable, or non-modifiable values, particularly as a function
+  parameter. This type is cheap to copy and more expressive than a
+  pair of iterator parameters or pointer and size parameters
+  (albeit that the ``restrict`` qualifier cannot be used directly
+  with ``ArrayRef<T>`). It also
+  provides flexibility for the caller to easily provide values from a
+  C-array, ``array``, ``vector`` (of any allocator type), or something
+  else, without the implementor having to provide a family of overloads
+  (which scales badly with multiple view parameters to the same
+  function). Use e.g. ``const ArrayRef<T>`` in the definition of the
+  function to express that the function implementation will not modify
+  the view, even though it can modifiy the values in the view.  See
+  also |linkrefspan| and |linkrefinoutparams| and other parts of the
+  C++ Core Guidelines. |Gromacs| will adopt the similar C++20 ``span``
+  for this purpose in due course.
 * Use ``optional<T>`` types in situations where there is exactly one,
   reason (that is clear to all parties) for having no value of type T,
   and where the lack of value is as natural as having any regular
@@ -85,7 +102,7 @@ a release.
   no default constructor and are hard to construct.
   Prefer other constructs when the logic requires an explanation of the
   reason why no regular value for T exists, e.g.,  do not use ``optional<T>``
-  for error handling. 
+  for error handling.
   ``optional<T>`` "models an object, not a pointer, even though operator*() and
   operator->() are defined" (|linkoptionalcppref|). No dynamic memory allocation
   ever takes place and forward declaration of objects stored in ``optional<T>``
@@ -133,7 +150,7 @@ a release.
 * Use proper enums for variable whose type can only contain one of a
   limited set of values. C++ is much better than C in catching errors
   in such code. Ideally, all enums should be typed enums, please
-  see |linkref8|. 
+  see |linkref8|.
 * When writing a new class, think whether it will be necessary to make
   copies of that class. If not, declare the copy constructor and the
   assignment operator as private and don't define them, making any
@@ -172,6 +189,13 @@ a release.
   simulation setup tools, and analysis tools have different needs, and
   the trade-off point between correctness vs reviewer time vs
   developer time vs compile time vs run time will differ.
+* Be restrictive when using ``auto`` to define variables. It is fine to
+  use ``auto`` if the variable type is immediately apparent, or completely
+  unnecessary, to a future reader of the code. In some case it may be necessary
+  to use ``auto``, e.g., together with generic templates. It is recommended to
+  use ``auto`` with lengthy types, such as iterators or lambdas, where
+  specifying the type explicitly would reduce readability. If in doubt, avoid
+  using ``auto``.
 
 
 .. |linkref1| replace:: `c++ guidelines <http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines>`__
@@ -192,6 +216,8 @@ a release.
 .. |linkoptionalboost| replace:: `here <https://www.boost.org/doc/libs/release/libs/optional>`__
 .. |linkoptionalbartek| replace:: `here <https://www.bfilipek.com/2018/05/using-optional.html>`__
 .. |linkoptionalcppref| replace:: `cppreference <https://en.cppreference.com/w/cpp/utility/optional>`__
+.. |linkrefspan| replace:: `here <https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#f24-use-a-spant-or-a-span_pt-to-designate-a-half-open-sequence>`__
+.. |linkrefinoutparams| replace:: `here <https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#f17-for-in-out-parameters-pass-by-reference-to-non-const>`__
 
 .. _implementing exceptions:
 
@@ -259,5 +285,5 @@ Preprocessor considerations
   the result looks clearer than without indenting.
 * Please strongly consider a comment repeating the preprocessor condition at the end
   of the region, if a lengthy region is necessary and benefits from
-  that. For long regions this greatly helps in understanding 
+  that. For long regions this greatly helps in understanding
   and debugging the code.

@@ -253,9 +253,9 @@ public:
      */
     bool hasLambdaAxis() const
     {
-        return std::any_of(std::begin(axis_), std::end(axis_), [](const auto& axis) {
-            return axis.isFepLambdaAxis();
-        });
+        return std::any_of(std::begin(axis_),
+                           std::end(axis_),
+                           [](const auto& axis) { return axis.isFepLambdaAxis(); });
     }
 
     /*! \brief
@@ -275,8 +275,6 @@ private:
     std::vector<GridPoint> point_; /**< Points on the grid */
     std::vector<GridAxis>  axis_;  /**< Axes, one for each dimension. */
 };
-
-/*! \endcond */
 
 /*! \brief Convert a multidimensional grid point index to a linear one.
  *

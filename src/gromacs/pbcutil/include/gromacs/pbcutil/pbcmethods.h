@@ -41,7 +41,7 @@ enum class PbcType : int;
 
 #include "gmxpre.h"
 
-#include "gromacs/math/vec.h"
+#include "gromacs/utility/vec.h"
 
 enum
 {

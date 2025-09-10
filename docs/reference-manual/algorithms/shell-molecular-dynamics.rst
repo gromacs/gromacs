@@ -2,12 +2,12 @@ Shell molecular dynamics
 ------------------------
 
 |Gromacs| can simulate polarizability using the shell model of Dick and
-Overhauser \ :ref:`43 <refDick58>`. In such models a shell particle
+Overhauser :ref:`43 <refDick58>`. In such models a shell particle
 representing the electronic degrees of freedom is attached to a nucleus
 by a spring. The potential energy is minimized with respect to the shell
 position at every step of the simulation (see below). Successful
 applications of shell models in |Gromacs| have been published for
-:math:`N_2` :ref:`44 <refJordan95>` and water\ :ref:`45 <refMaaren2001a>`.
+:math:`N_2` :ref:`44 <refJordan95>` and water :ref:`45 <refMaaren2001a>`.
 
 Optimization of the shell positions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

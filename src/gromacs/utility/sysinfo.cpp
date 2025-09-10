@@ -55,8 +55,8 @@
 #    include <sys/time.h>
 #endif
 #if GMX_NATIVE_WINDOWS
-#    include <Windows.h>
 #    include <process.h>
+#    include <windows.h>
 #endif
 #if HAVE_PWD_H
 #    include <pwd.h>
@@ -90,7 +90,7 @@ int gmx_gethostname(char* buf, size_t len)
         return 0;
     }
 #endif
-    strcpy(buf, c_unknown);
+    std::strcpy(buf, c_unknown);
     return -1;
 }
 
@@ -130,18 +130,18 @@ int gmx_getusername(char* buf, size_t len)
         return 0;
     }
 #endif
-    strcpy(buf, c_unknown);
+    std::strcpy(buf, c_unknown);
     return -1;
 }
 
-std::string gmx_ctime_r(const time_t* clock)
+std::string gmx_ctime_r(const std::time_t* clock)
 {
 #ifdef _MSC_VER
     std::array<char, 1024> buf;
     ctime_s(buf.data(), buf.size(), clock);
     return std::string(buf.begin(), buf.end());
 #elif GMX_NATIVE_WINDOWS
-    char* tmpbuf = ctime(clock);
+    char* tmpbuf = std::ctime(clock);
     return tmpbuf;
 #elif (defined(__sun))
     /*Solaris*/
@@ -157,7 +157,7 @@ std::string gmx_ctime_r(const time_t* clock)
 
 std::string gmx_format_current_time()
 {
-    time_t clock = time(nullptr);
+    std::time_t clock = std::time(nullptr);
     return gmx_ctime_r(&clock);
 }
 

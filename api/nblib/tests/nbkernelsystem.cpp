@@ -51,9 +51,9 @@
 
 #include <gtest/gtest.h>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/exclusionblocks.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "nblib/basicdefinitions.h"
 #include "nblib/gmxcalculatorcpu.h"

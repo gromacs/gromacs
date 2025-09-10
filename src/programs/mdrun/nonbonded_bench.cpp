@@ -78,8 +78,8 @@ public:
     int  run() override;
 
 private:
-    int                       sizeFactor_ = 1;
-    Nbnxm::KernelBenchOptions benchmarkOptions_;
+    int                     sizeFactor_ = 1;
+    NbnxmKernelBenchOptions benchmarkOptions_;
 };
 
 void NonbondedBenchmark::initOptions(IOptionsContainer* options, ICommandLineOptionsModuleSettings* settings)
@@ -98,7 +98,7 @@ void NonbondedBenchmark::initOptions(IOptionsContainer* options, ICommandLineOpt
         "in this tool, as that is by far the most common treatment.",
         "And finally, while force output is always necessary, energy output",
         "is only required at certain steps. In total there are",
-        "12 relevant combinations of options. The combinations double to 24",
+        "36 relevant combinations of options. The combinations double to 72",
         "when two different SIMD setups are supported. These combinations",
         "can be run with a single invocation using the [TT]-all[tt] option.",
         "The behavior of each kernel is affected by caching behavior,",
@@ -148,8 +148,9 @@ void NonbondedBenchmark::initOptions(IOptionsContainer* options, ICommandLineOpt
         "architectures are wider and support FMA, we do not use tables by",
         "default. The only exceptions are kernels without SIMD, which only",
         "support tables.",
-        "Options [TT]-coulomb[tt], [TT]-combrule[tt] and [TT]-halflj[tt]",
-        "depend on the force field and composition of the simulated system.",
+        "Options [TT]-coulomb[tt], [TT]-combrule[tt], [TT]-interactmodifier",
+        "and [TT]-halflj[tt] depend on the force field and composition of",
+        "the simulated system.",
         "The optimization of computing Lennard-Jones interactions for only",
         "half of the atoms in a cluster is useful for water, which does not",
         "use Lennard-Jones on hydrogen atoms in most water models.",
@@ -161,45 +162,55 @@ void NonbondedBenchmark::initOptions(IOptionsContainer* options, ICommandLineOpt
 
     settings->setHelpText(desc);
 
-    static const EnumerationArray<Nbnxm::BenchMarkKernels, const char*> c_nbnxmSimdStrings = {
+    static const EnumerationArray<NbnxmBenchMarkKernels, const char*> c_nbnxmSimdStrings = {
         { "auto", "no", "4xm", "2xmm" }
     };
-    static const EnumerationArray<Nbnxm::BenchMarkCombRule, const char*> c_combRuleStrings = {
+    static const EnumerationArray<NbnxmBenchMarkCombRule, const char*> c_combRuleStrings = {
         { "geometric", "lb", "none" }
     };
-    static const EnumerationArray<Nbnxm::BenchMarkCoulomb, const char*> c_coulombTypeStrings = {
+    static const EnumerationArray<NbnxmBenchMarkCoulomb, const char*> c_coulombTypeStrings = {
         { "ewald", "reaction-field" }
     };
 
+    static const EnumerationArray<NbnxmBenchMarkInteractionModifiers, const char*> c_interactionModifierStrings = {
+        { "PotShift", "PotSwitch", "ForceSwitch" }
+    };
     options->addOption(
             IntegerOption("size").store(&sizeFactor_).description("The system size is 3000 atoms times this value"));
     options->addOption(
             IntegerOption("nt").store(&benchmarkOptions_.numThreads).description("The number of OpenMP threads to use"));
-    options->addOption(EnumOption<Nbnxm::BenchMarkKernels>("simd")
+    options->addOption(EnumOption<NbnxmBenchMarkKernels>("simd")
                                .store(&benchmarkOptions_.nbnxmSimd)
                                .enumValue(c_nbnxmSimdStrings)
                                .description("SIMD type, auto runs all supported SIMD setups or no "
                                             "SIMD when SIMD is not supported"));
-    options->addOption(EnumOption<Nbnxm::BenchMarkCoulomb>("coulomb")
+    options->addOption(EnumOption<NbnxmBenchMarkCoulomb>("coulomb")
                                .store(&benchmarkOptions_.coulombType)
                                .enumValue(c_coulombTypeStrings)
                                .description("The functional form for the Coulomb interactions"));
+    options->addOption(EnumOption<NbnxmBenchMarkInteractionModifiers>("interactmodifier")
+                               .store(&benchmarkOptions_.interactionModifier)
+                               .enumValue(c_interactionModifierStrings)
+                               .description("The Coulomb / VdW interaction modifier. Reported "
+                                            "under the 'intmod.' column"));
+
     options->addOption(
             BooleanOption("table")
                     .store(&benchmarkOptions_.useTabulatedEwaldCorr)
                     .description("Use lookup table for Ewald correction instead of analytical"));
-    options->addOption(EnumOption<Nbnxm::BenchMarkCombRule>("combrule")
-                               .store(&benchmarkOptions_.ljCombinationRule)
-                               .enumValue(c_combRuleStrings)
-                               .description("The LJ combination rule"));
-    options->addOption(BooleanOption("halflj")
-                               .store(&benchmarkOptions_.useHalfLJOptimization)
-                               .description("Use optimization for LJ on half of the atoms"));
+    options->addOption(
+            EnumOption<NbnxmBenchMarkCombRule>("combrule")
+                    .store(&benchmarkOptions_.ljCombinationRule)
+                    .enumValue(c_combRuleStrings)
+                    .description("The LJ combination rule. Reported under the 'comb.' column"));
+    options->addOption(
+            BooleanOption("halflj").store(&benchmarkOptions_.useHalfLJOptimization).description("Use optimization for LJ on half of the atoms. Reported under the 'LJ' column"));
     options->addOption(BooleanOption("energy")
                                .store(&benchmarkOptions_.computeVirialAndEnergy)
                                .description("Compute energies in addition to forces"));
+    // TODO update for number of interaction modifiers
     options->addOption(
-            BooleanOption("all").store(&benchmarkOptions_.doAll).description("Run all 12 combinations of options for coulomb, halflj, combrule"));
+            BooleanOption("all").store(&benchmarkOptions_.doAll).description("Run all 36 combinations of options for coulomb, halflj, combrule, interactmodifier"));
     options->addOption(RealOption("cutoff")
                                .store(&benchmarkOptions_.pairlistCutoff)
                                .description("Pair-list and interaction cut-off distance"));
@@ -225,13 +236,13 @@ void NonbondedBenchmark::initOptions(IOptionsContainer* options, ICommandLineOpt
 void NonbondedBenchmark::optionsFinished()
 {
     // We compute the Ewald coefficient here to avoid a dependency of the Nbnxm on the Ewald module
-    const real ewald_rtol          = 1e-5;
+    const real ewald_rtol = 1e-5;
     benchmarkOptions_.ewaldcoeff_q = calc_ewaldcoeff_q(benchmarkOptions_.pairlistCutoff, ewald_rtol);
 }
 
 int NonbondedBenchmark::run()
 {
-    Nbnxm::bench(sizeFactor_, benchmarkOptions_);
+    bench(sizeFactor_, benchmarkOptions_);
 
     return 0;
 }

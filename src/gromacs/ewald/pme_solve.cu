@@ -46,7 +46,9 @@
 
 #include "gromacs/gpu_utils/cuda_arch_utils.cuh"
 
-#include "pme.cuh"
+#include "pme_gpu_constants.h"
+#include "pme_gpu_internal.h"
+#include "pme_gpu_types.h"
 
 /*! \brief
  * PME complex grid solver kernel function.
@@ -58,7 +60,7 @@
  */
 template<GridOrdering gridOrdering, bool computeEnergyAndVirial, const int gridIndex>
 __launch_bounds__(c_solveMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBUTE __global__
-        void pme_solve_kernel(const struct PmeGpuCudaKernelParams kernelParams)
+        void pme_solve_kernel(const struct PmeGpuKernelParams kernelParams)
 {
     /* This kernel supports 2 different grid dimension orderings: YZX and XYZ */
     int majorDim, middleDim, minorDim;
@@ -356,11 +358,11 @@ __launch_bounds__(c_solveMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBUT
 }
 
 //! Kernel instantiations
-template __global__ void pme_solve_kernel<GridOrdering::YZX, true, 0>(const PmeGpuCudaKernelParams);
-template __global__ void pme_solve_kernel<GridOrdering::YZX, false, 0>(const PmeGpuCudaKernelParams);
-template __global__ void pme_solve_kernel<GridOrdering::XYZ, true, 0>(const PmeGpuCudaKernelParams);
-template __global__ void pme_solve_kernel<GridOrdering::XYZ, false, 0>(const PmeGpuCudaKernelParams);
-template __global__ void pme_solve_kernel<GridOrdering::YZX, true, 1>(const PmeGpuCudaKernelParams);
-template __global__ void pme_solve_kernel<GridOrdering::YZX, false, 1>(const PmeGpuCudaKernelParams);
-template __global__ void pme_solve_kernel<GridOrdering::XYZ, true, 1>(const PmeGpuCudaKernelParams);
-template __global__ void pme_solve_kernel<GridOrdering::XYZ, false, 1>(const PmeGpuCudaKernelParams);
+template __global__ void pme_solve_kernel<GridOrdering::YZX, true, 0>(const PmeGpuKernelParams);
+template __global__ void pme_solve_kernel<GridOrdering::YZX, false, 0>(const PmeGpuKernelParams);
+template __global__ void pme_solve_kernel<GridOrdering::XYZ, true, 0>(const PmeGpuKernelParams);
+template __global__ void pme_solve_kernel<GridOrdering::XYZ, false, 0>(const PmeGpuKernelParams);
+template __global__ void pme_solve_kernel<GridOrdering::YZX, true, 1>(const PmeGpuKernelParams);
+template __global__ void pme_solve_kernel<GridOrdering::YZX, false, 1>(const PmeGpuKernelParams);
+template __global__ void pme_solve_kernel<GridOrdering::XYZ, true, 1>(const PmeGpuKernelParams);
+template __global__ void pme_solve_kernel<GridOrdering::XYZ, false, 1>(const PmeGpuKernelParams);

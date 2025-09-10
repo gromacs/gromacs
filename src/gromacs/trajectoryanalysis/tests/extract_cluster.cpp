@@ -124,7 +124,7 @@ ExtractClusterModuleTest::ExtractClusterModuleTest()
         generatedFile.filename = gmx::concatenateBeforeExtension(
                                          "test.g96", gmx::formatString("_Cluster_000%d", fileNumber))
                                          .string();
-        generatedFile.matcher      = TextFileMatch(ExactTextMatch()).createFileMatcher();
+        generatedFile.matcher = TextFileMatch(ExactTextMatch()).createFileMatcher();
         generatedFile.fullFilepath = fileManager().getTemporaryFilePath(generatedFile.filename).string();
         fileNumber++;
     }

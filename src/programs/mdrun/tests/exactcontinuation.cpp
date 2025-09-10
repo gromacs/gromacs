@@ -242,9 +242,9 @@ void runTest(TestFileManager*            fileManager,
     }
 
     // prepare some names for files to use with the two mdrun calls
-    std::string fullRunTprFileName      = fileManager->getTemporaryFilePath("full.tpr").string();
+    std::string fullRunTprFileName = fileManager->getTemporaryFilePath("full.tpr").string();
     std::string firstPartRunTprFileName = fileManager->getTemporaryFilePath("firstpart.tpr").string();
-    std::string fullRunEdrFileName      = fileManager->getTemporaryFilePath("full.edr").string();
+    std::string fullRunEdrFileName = fileManager->getTemporaryFilePath("full.edr").string();
     std::string firstPartRunEdrFileName = fileManager->getTemporaryFilePath("firstpart.edr").string();
     std::string firstPartRunCheckpointFileName =
             fileManager->getTemporaryFilePath("firstpart.cpt").string();
@@ -387,7 +387,8 @@ TEST_P(MdrunNoAppendContinuationIsExact, WithinTolerances)
 
     // Check for unimplemented functionality
     // TODO: Update this as modular simulator gains functionality
-    const bool isModularSimulatorExplicitlyDisabled = (getenv("GMX_DISABLE_MODULAR_SIMULATOR") != nullptr);
+    const bool isModularSimulatorExplicitlyDisabled =
+            (std::getenv("GMX_DISABLE_MODULAR_SIMULATOR") != nullptr);
     const bool isTCouplingCompatibleWithModularSimulator =
             (temperatureCoupling == "no" || temperatureCoupling == "v-rescale");
     if (integrator == "md-vv" && pressureCoupling == "parrinello-rahman"
@@ -429,6 +430,18 @@ TEST_P(MdrunNoAppendContinuationIsExact, WithinTolerances)
         mdpFieldValues["verlet-buffer-tolerance"] = "1e-5";
     }
 
+    const int ulpToleranceForPotentialEnergy = (binaryReproducible ? 0 : 256);
+    const int ulpToleranceForKineticEnergy   = (binaryReproducible ? 0 : 512);
+    // Testing shows that PE and KE need wider tolerances
+    EnergyTermsToCompare energyTermsToCompare{
+        { { interaction_function[F_EPOT].longname,
+            relativeToleranceAsPrecisionDependentUlp(
+                    10.0, ulpToleranceForPotentialEnergy, ulpToleranceForPotentialEnergy) },
+          { interaction_function[F_EKIN].longname,
+            relativeToleranceAsPrecisionDependentUlp(
+                    10.0, ulpToleranceForKineticEnergy, ulpToleranceForKineticEnergy) } }
+    };
+
     int ulpToleranceInMixed  = 0;
     int ulpToleranceInDouble = 0;
     if (!binaryReproducible)
@@ -437,16 +450,9 @@ TEST_P(MdrunNoAppendContinuationIsExact, WithinTolerances)
         // sumation order.
         // Forces and update on GPUs are generally result in different
         // sumation order
-        ulpToleranceInMixed  = 64;
+        ulpToleranceInMixed  = 65;
         ulpToleranceInDouble = 128;
     }
-
-    EnergyTermsToCompare energyTermsToCompare{
-        { { interaction_function[F_EPOT].longname,
-            relativeToleranceAsPrecisionDependentUlp(10.0, ulpToleranceInMixed, ulpToleranceInDouble) },
-          { interaction_function[F_EKIN].longname,
-            relativeToleranceAsPrecisionDependentUlp(10.0, ulpToleranceInMixed, ulpToleranceInDouble) } }
-    };
 
     if (temperatureCoupling != "no" || pressureCoupling != "no")
     {

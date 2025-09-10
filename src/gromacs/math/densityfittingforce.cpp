@@ -48,11 +48,11 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/gausstransform.h"
 #include "gromacs/math/multidimarray.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdspan/extensions.h"
 #include "gromacs/mdspan/extents.h"
 #include "gromacs/mdspan/mdspan.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/vectypes.h"
 
 namespace gmx
 {
@@ -126,8 +126,8 @@ RVec DensityFittingForce::Impl::evaluateForce(const GaussianSpreadKernelParamete
                                 latticeSpreadRange_[ZZ] - closestLatticePoint[ZZ]);
 
     const DVec differenceVectorScale  = { 1. / (square(sigma_[XX])),
-                                         1. / (square(sigma_[YY])),
-                                         1. / (square(sigma_[ZZ])) };
+                                          1. / (square(sigma_[YY])),
+                                          1. / (square(sigma_[ZZ])) };
     const DVec differenceVectorOffset = scaleByVector(
             spreadRange.begin().toDVec() - localParameters.coordinate_.toDVec(), differenceVectorScale);
 

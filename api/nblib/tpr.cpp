@@ -51,7 +51,6 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/listed_forces/listed_forces.h"
 #include "gromacs/math/paddedvector.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -70,6 +69,7 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "nblib/box.h"
 #include "nblib/exception.h"
@@ -91,7 +91,8 @@ TprReader::TprReader(std::string filename)
 
     // init forcerec
     t_forcerec          forceRecord;
-    t_commrec           commrec{};
+    gmx::MpiComm        mpiComm = gmx::MpiComm(gmx::MpiComm::SingleRank{});
+    t_commrec           commrec(mpiComm, mpiComm, nullptr);
     gmx::ForceProviders forceProviders;
     forceRecord.forceProviders = &forceProviders;
     init_forcerec(nullptr,
@@ -101,6 +102,7 @@ TprReader::TprReader(std::string filename)
                   inputRecord,
                   molecularTopology,
                   &commrec,
+                  nullptr,
                   globalState.box,
                   nullptr,
                   nullptr,
@@ -108,6 +110,7 @@ TprReader::TprReader(std::string filename)
                   -1);
 
     nonbondedParameters_ = makeNonBondedParameterLists(molecularTopology.ffparams.atnr,
+                                                       false,
                                                        molecularTopology.ffparams.iparams,
                                                        forceRecord.haveBuckingham);
 

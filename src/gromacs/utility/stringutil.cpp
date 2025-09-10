@@ -61,7 +61,7 @@ namespace gmx
 std::size_t countWords(const char* s)
 {
     std::size_t nWords = 0;
-    // Use length variable to avoid N^2 complexity when executing strlen(s) every iteration
+    // Use length variable to avoid N^2 complexity when executing std::strlen(s) every iteration
     std::size_t length = std::strlen(s);
 
     for (std::size_t i = 0; i < length; i++)
@@ -302,18 +302,24 @@ std::string replaceAllWords(const std::string& input, const std::string& from, c
 bool equalCaseInsensitive(const std::string& source, const std::string& target)
 {
     return source.length() == target.length()
-           && std::equal(source.begin(), source.end(), target.begin(), [](const char& s, const char& t) {
-                  return std::tolower(s) == std::tolower(t);
-              });
+           && std::equal(source.begin(),
+                         source.end(),
+                         target.begin(),
+                         [](const char& s, const char& t)
+                         { return std::tolower(s) == std::tolower(t); });
 }
 
 bool equalIgnoreDash(const std::string& source, const std::string& target)
 {
     return source.length() == target.length()
-           && std::equal(source.begin(), source.end(), target.begin(), [](const char& s, const char& t) {
-                  return ((s == '-' || s == '_') ? toupper(s) : s)
-                         == ((t == '-' || t == '_') ? toupper(t) : t);
-              });
+           && std::equal(source.begin(),
+                         source.end(),
+                         target.begin(),
+                         [](const char& s, const char& t)
+                         {
+                             return ((s == '-' || s == '_') ? std::toupper(s) : s)
+                                    == ((t == '-' || t == '_') ? std::toupper(t) : t);
+                         });
 }
 
 bool equalCaseInsensitive(const std::string& source, const std::string& target, size_t maxLengthOfComparison)
@@ -335,9 +341,10 @@ bool equalCaseInsensitive(const std::string& source, const std::string& target, 
         }
         comparisonEnd = source.begin() + maxLengthOfComparison;
     }
-    return std::equal(source.begin(), comparisonEnd, target.begin(), [](const char& s, const char& t) {
-        return std::tolower(s) == std::tolower(t);
-    });
+    return std::equal(source.begin(),
+                      comparisonEnd,
+                      target.begin(),
+                      [](const char& s, const char& t) { return std::tolower(s) == std::tolower(t); });
 }
 
 std::string toUpperCase(const std::string& text)

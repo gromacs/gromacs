@@ -59,7 +59,8 @@
 
 namespace gmx
 {
-
+namespace test
+{
 namespace
 {
 
@@ -192,5 +193,5 @@ TEST(TabulatedNormalDistributionTableTest, HasValidProperties)
 }
 
 } // namespace
-
+} // namespace test
 } // namespace gmx

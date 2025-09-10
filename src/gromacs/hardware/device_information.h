@@ -46,6 +46,8 @@
 
 #include "config.h"
 
+#include <cstddef>
+
 #include <array>
 #include <optional>
 #include <type_traits>
@@ -83,7 +85,7 @@ enum class DeviceStatus : int
     Nonexistent,
     //! Device is not compatible
     Incompatible,
-    //! OpenCL device has incompatible cluster size for non-bonded kernels.
+    //! OpenCL/SYCL device has incompatible cluster size for non-bonded kernels.
     IncompatibleClusterSize,
     //! There are known issues with OpenCL on NVIDIA Volta and newer.
     IncompatibleNvidiaVolta,
@@ -112,32 +114,19 @@ enum class DeviceStatus : int
 };
 
 /*! \brief Names of the GPU detection/check results
- *
- * Check-source wants to warn about the use of a symbol name that would
- * require an inclusion of config.h. However the use is in a comment, so that
- * is a false warning. So C-style string concatenation is used to fool the
- * naive parser in check-source. That needs a clang-format suppression
- * in order to look reasonable. Also clang-tidy wants to suggest that a comma is
- * missing, so that is suppressed.
  */
-static const gmx::EnumerationArray<DeviceStatus, const char*> c_deviceStateString = {
+static constexpr gmx::EnumerationArray<DeviceStatus, const char*> c_deviceStateString = {
     "compatible",
     "nonexistent",
     "incompatible",
-    // clang-format off
-    // NOLINTNEXTLINE(bugprone-suspicious-missing-comma)
-    "incompatible (please recompile with correct GMX" "_GPU_NB_CLUSTER_SIZE of 4)",
-    // clang-format on
+    "incompatible (please recompile with correct GMX_GPU_NB_CLUSTER_SIZE)",
     "incompatible (please use CUDA build for NVIDIA Volta GPUs or newer)",
-    "not recommended (please use SYCL_DEVICE_FILTER to limit visibility to a single backend)",
+    "not recommended (please use ONEAPI_DEVICE_SELECTOR to limit visibility to a single backend)",
     "non-functional",
     "unavailable",
     "not in set of targeted devices",
     "incompatible (AMD RDNA devices are not supported)", // Issue #4521
-    // clang-format off
-    // NOLINTNEXTLINE(bugprone-suspicious-missing-comma)
-    "incompatible (please recompile with GMX" "_ACPP_ENABLE_AMD_RDNA_SUPPORT)"
-    // clang-format on
+    "incompatible (please recompile with GMX_ENABLE_AMD_RDNA_SUPPORT)"
 };
 
 //! Device vendors
@@ -168,7 +157,7 @@ struct DeviceInformation
 {
     //! Device status.
     DeviceStatus status;
-    //! ID of the device.
+    //! ID of the device, ie. the index into the device order reported by the GPU runtime.
     int id;
     //! Device vendor.
     DeviceVendor deviceVendor;
@@ -186,6 +175,8 @@ struct DeviceInformation
 #elif GMX_GPU_HIP
     //! HIP device properties.
     hipDeviceProp_t prop;
+    //! Manual checking device generation for large register pool
+    bool deviceHasLargeRegisterPool;
 #elif GMX_GPU_OPENCL
     cl_platform_id oclPlatformId;       //!< OpenCL Platform ID.
     cl_device_id   oclDeviceId;         //!< OpenCL Device ID.
@@ -195,16 +186,30 @@ struct DeviceInformation
     int            compute_units;       //!< Number of compute units.
     int            adress_bits;         //!< Number of address bits the device is capable of.
     size_t         maxWorkItemSizes[3]; //!< Workgroup size limits (CL_DEVICE_MAX_WORK_ITEM_SIZES).
-    size_t         maxWorkGroupSize;    //!< Workgroup total size limit (CL_DEVICE_MAX_WORK_GROUP_SIZE).
+    size_t maxWorkGroupSize; //!< Workgroup total size limit (CL_DEVICE_MAX_WORK_GROUP_SIZE).
 #elif GMX_GPU_SYCL
     sycl::device syclDevice;
-    //! CUDA CC major for NVIDIA devices, generation code for AMD (gfx90a -> 9), not set for Intel (yet)
+    //! CUDA CC major for NVIDIA devices, generation code for AMD (gfx90a -> 9), architecture code for Intel (Gen9 -> 9, Xe -> 12)
     std::optional<int> hardwareVersionMajor;
-    //! CUDA CC minor for NVIDIA devices, major architecture(?) code for AMD (gfx90a -> 0), not set for Intel (yet)
+    //! CUDA CC minor for NVIDIA devices, major architecture(?) code for AMD (gfx90a -> 0), release code for Intel
     std::optional<int> hardwareVersionMinor;
-    //! CUDA CC minor for NVIDIA devices, device code for AMD (gfx90a -> a -> 10), not set for Intel (yet)
+    //! CUDA CC minor for NVIDIA devices, device code for AMD (gfx90a -> a -> 10), revision code for Intel
     std::optional<int> hardwareVersionPatch;
+    //! Does the device support SYCL Graph
+    bool supportsSyclGraph;
+    //! Max. work-group shape supported by the device
+    int maxWorkGroupSize;
 #endif
+    /*! \brief UUID of the device, when available
+     *
+     * If device UUIDs are not available, then multi-rank DLB may
+     * not work properly when environment variables restrict
+     * device visibility to each rank.
+     *
+     * Note that even if the device and SDK support UUID queries,
+     * compatibility or version issues mean we need a field that might
+     * not contain a value in practice. */
+    std::optional<std::array<std::byte, 16>> uuid;
 };
 
 //! Whether \ref DeviceInformation can be serialized for sending via MPI.

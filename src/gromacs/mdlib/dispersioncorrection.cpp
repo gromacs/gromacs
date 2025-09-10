@@ -46,7 +46,6 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdlib/forcerec.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
@@ -66,6 +65,7 @@
 #include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/vec.h"
 
 /* Implementation here to avoid other files needing to include the file that defines t_nblists */
 DispersionCorrection::InteractionParams::~InteractionParams() = default;
@@ -89,7 +89,7 @@ DispersionCorrection::TopologyParams::TopologyParams(const gmx_mtop_t& mtop,
 {
     const int ntp = mtop.ffparams.atnr;
 
-    std::vector<real> nbfp = makeNonBondedParameterLists(ntp, mtop.ffparams.iparams, useBuckingham);
+    std::vector<real> nbfp = makeNonBondedParameterLists(ntp, false, mtop.ffparams.iparams, useBuckingham);
 
     /* For LJ-PME, we want to correct for the difference between the
      * actual C6 values and the C6 values used by the LJ-PME based on
@@ -107,6 +107,11 @@ DispersionCorrection::TopologyParams::TopologyParams(const gmx_mtop_t& mtop,
             }
         }
     }
+    else
+    {
+        nbfp = makeNonBondedParameterLists(ntp, false, mtop.ffparams.iparams, useBuckingham);
+    }
+
 
     for (int q = 0; q < (inputrec.efep == FreeEnergyPerturbationType::No ? 1 : 2); q++)
     {
@@ -348,29 +353,29 @@ void DispersionCorrection::setInteractionParameters(InteractionParams*         i
     /* We only need to set the tables at first call, i.e. tableFileName!=nullptr
      * or when we changed the cut-off with LJ-PME tuning.
      */
-    if (tableFileName || usingLJPme(ic.vdwtype))
+    if (tableFileName || usingLJPme(ic.vdw.type))
     {
         iParams->dispersionCorrectionTable_ =
-                makeDispersionCorrectionTable(nullptr, &ic, ic.rvdw, tableFileName);
+                makeDispersionCorrectionTable(nullptr, ic, ic.vdw.cutoff, tableFileName);
     }
 
     InteractionCorrection energy;
     InteractionCorrection virial;
 
-    if ((ic.vdw_modifier == InteractionModifiers::PotShift)
-        || (ic.vdw_modifier == InteractionModifiers::PotSwitch)
-        || (ic.vdw_modifier == InteractionModifiers::ForceSwitch)
-        || (ic.vdwtype == VanDerWaalsType::Shift) || (ic.vdwtype == VanDerWaalsType::Switch))
+    if ((ic.vdw.modifier == InteractionModifiers::PotShift)
+        || (ic.vdw.modifier == InteractionModifiers::PotSwitch)
+        || (ic.vdw.modifier == InteractionModifiers::ForceSwitch)
+        || (ic.vdw.type == VanDerWaalsType::Shift) || (ic.vdw.type == VanDerWaalsType::Switch))
     {
-        if (((ic.vdw_modifier == InteractionModifiers::PotSwitch)
-             || (ic.vdw_modifier == InteractionModifiers::ForceSwitch)
-             || (ic.vdwtype == VanDerWaalsType::Switch))
-            && ic.rvdw_switch == 0)
+        if (((ic.vdw.modifier == InteractionModifiers::PotSwitch)
+             || (ic.vdw.modifier == InteractionModifiers::ForceSwitch)
+             || (ic.vdw.type == VanDerWaalsType::Switch))
+            && ic.vdw.switchDistance == 0)
         {
             gmx_fatal(FARGS,
                       "With dispersion correction rvdw-switch can not be zero "
                       "for vdw-type = %s",
-                      enumValueToString(ic.vdwtype));
+                      enumValueToString(ic.vdw.type));
         }
 
         GMX_ASSERT(iParams->dispersionCorrectionTable_, "We need an initialized table");
@@ -385,8 +390,8 @@ void DispersionCorrection::setInteractionParameters(InteractionParams*         i
         const real* vdwtab = iParams->dispersionCorrectionTable_->data.data();
 
         /* Round the cut-offs to exact table values for precision */
-        int ri0 = static_cast<int>(std::floor(ic.rvdw_switch * scale));
-        int ri1 = static_cast<int>(std::ceil(ic.rvdw * scale));
+        int ri0 = static_cast<int>(std::floor(ic.vdw.switchDistance * scale));
+        int ri1 = static_cast<int>(std::ceil(ic.vdw.cutoff * scale));
 
         /* The code below has some support for handling force-switching, i.e.
          * when the force (instead of potential) is switched over a limited
@@ -404,13 +409,14 @@ void DispersionCorrection::setInteractionParameters(InteractionParams*         i
          * we need to calculate the constant shift up to the point where we
          * start modifying the potential.
          */
-        ri0 = (ic.vdw_modifier == InteractionModifiers::PotShift) ? ri1 : ri0;
+        ri0 = (ic.vdw.modifier == InteractionModifiers::PotShift) ? ri1 : ri0;
 
         const double r0  = ri0 / scale;
         const double rc3 = r0 * r0 * r0;
         const double rc9 = rc3 * rc3 * rc3;
 
-        if ((ic.vdw_modifier == InteractionModifiers::ForceSwitch) || (ic.vdwtype == VanDerWaalsType::Shift))
+        if ((ic.vdw.modifier == InteractionModifiers::ForceSwitch)
+            || (ic.vdw.type == VanDerWaalsType::Shift))
         {
             /* Determine the constant energy shift below rvdw_switch.
              * Table has a scale factor since we have scaled it down to compensate
@@ -419,7 +425,7 @@ void DispersionCorrection::setInteractionParameters(InteractionParams*         i
             iParams->enershiftsix_ = static_cast<real>(-1.0 / (rc3 * rc3)) - 6.0 * vdwtab[8 * ri0];
             iParams->enershifttwelve_ = static_cast<real>(1.0 / (rc9 * rc3)) - 12.0 * vdwtab[8 * ri0 + 4];
         }
-        else if (ic.vdw_modifier == InteractionModifiers::PotShift)
+        else if (ic.vdw.modifier == InteractionModifiers::PotShift)
         {
             iParams->enershiftsix_    = static_cast<real>(-1.0 / (rc3 * rc3));
             iParams->enershifttwelve_ = static_cast<real>(1.0 / (rc9 * rc3));
@@ -457,8 +463,8 @@ void DispersionCorrection::setInteractionParameters(InteractionParams*         i
          */
         addCorrectionBeyondCutoff(&energy, &virial, r0);
     }
-    else if (ic.vdwtype == VanDerWaalsType::Cut || usingLJPme(ic.vdwtype)
-             || ic.vdwtype == VanDerWaalsType::User)
+    else if (ic.vdw.type == VanDerWaalsType::Cut || usingLJPme(ic.vdw.type)
+             || ic.vdw.type == VanDerWaalsType::User)
     {
         /* Note that with LJ-PME, the dispersion correction is multiplied
          * by the difference between the actual C6 and the value of C6
@@ -467,22 +473,22 @@ void DispersionCorrection::setInteractionParameters(InteractionParams*         i
          * can be used here.
          */
 
-        const double rc3 = ic.rvdw * ic.rvdw * ic.rvdw;
+        const double rc3 = ic.vdw.cutoff * ic.vdw.cutoff * ic.vdw.cutoff;
         const double rc9 = rc3 * rc3 * rc3;
-        if (ic.vdw_modifier == InteractionModifiers::PotShift)
+        if (ic.vdw.modifier == InteractionModifiers::PotShift)
         {
             /* Contribution within the cut-off */
             energy.dispersion += -4.0 * M_PI / (3.0 * rc3);
             energy.repulsion += 4.0 * M_PI / (3.0 * rc9);
         }
         /* Contribution beyond the cut-off */
-        addCorrectionBeyondCutoff(&energy, &virial, ic.rvdw);
+        addCorrectionBeyondCutoff(&energy, &virial, ic.vdw.cutoff);
     }
     else
     {
         gmx_fatal(FARGS,
                   "Dispersion correction is not implemented for vdw-type = %s",
-                  enumValueToString(ic.vdwtype));
+                  enumValueToString(ic.vdw.type));
     }
 
     iParams->enerdiffsix_    = energy.dispersion;

@@ -98,27 +98,31 @@ __attribute__((intel_reqd_sub_group_size(SUBGROUP_SIZE)))
 #endif
 #ifdef PRUNE_NBL
 #    ifdef CALC_ENERGIES
-__kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _VF_prune_opencl)
+__kernel void
+NB_KERNEL_FUNC_NAME(nbnxn_kernel, _VF_prune_opencl)
 #    else
-__kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_prune_opencl)
+__kernel void
+NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_prune_opencl)
 #    endif
 #else
 #    ifdef CALC_ENERGIES
-__kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _VF_opencl)
+__kernel void
+NB_KERNEL_FUNC_NAME(nbnxn_kernel, _VF_opencl)
 #    else
-__kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
+__kernel void
+NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
 #    endif
 #endif
         (
 #ifndef LJ_COMB
                 int ntypes, /* IN  */
 #endif
-                cl_nbparam_params_t nbparam_params,         /* IN  */
-                const __global float4* restrict     xq,     /* IN  */
-                __global float* restrict            f,      /* OUT stores float3 values */
-                __global float* restrict gmx_unused e_lj,   /* OUT */
-                __global float* restrict gmx_unused e_el,   /* OUT */
-                __global float* restrict            fshift, /* OUT stores float3 values */
+                cl_nbparam_params_t nbparam_params,       /* IN  */
+                const __global float4* restrict xq,       /* IN  */
+                __global float* restrict f,               /* OUT stores float3 values */
+                __global float* restrict gmx_unused e_lj, /* OUT */
+                __global float* restrict gmx_unused e_el, /* OUT */
+                __global float* restrict fshift,          /* OUT stores float3 values */
 #ifdef LJ_COMB
                 const __global float2* restrict lj_comb, /* IN stores float2 values */
 #else
@@ -128,14 +132,14 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
                 __constant const float2* restrict gmx_unused nbfp, /* IN  */
                 __constant const float2* restrict gmx_unused nbfp_comb,   /* IN  */
                 __constant const float* restrict gmx_unused  coulomb_tab, /* IN  */
-                const __global nbnxn_sci_t* pl_sci,                       /* IN  */
+                const __global nbnxn_sci_t*                  pl_sci,      /* IN  */
 #ifndef PRUNE_NBL
                 const
 #endif
-                __global nbnxn_cj_packed_t* pl_cjPacked,  /* OUT / IN */
+                __global nbnxn_cj_packed_t*  pl_cjPacked, /* OUT / IN */
                 const __global nbnxn_excl_t* excl,        /* IN  */
                 int                          bCalcFshift, /* IN  */
-                __local float4* xqib                      /* Pointer to dyn alloc'ed shmem */
+                __local float4*              xqib         /* Pointer to dyn alloc'ed shmem */
         )
 {
     /* convenience variables */
@@ -194,7 +198,7 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
 #        undef LOCAL_OFFSET
 #        define LOCAL_OFFSET (atib + c_nbnxnGpuNumClusterPerSupercluster * CL_SIZE)
 #    else
-    __local float2* ljcpib      = (__local float2*)(LOCAL_OFFSET);
+    __local float2* ljcpib = (__local float2*)(LOCAL_OFFSET);
 #        undef LOCAL_OFFSET
 #        define LOCAL_OFFSET (ljcpib + c_nbnxnGpuNumClusterPerSupercluster * CL_SIZE)
 #    endif
@@ -206,7 +210,7 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
 #    undef LOCAL_OFFSET
 #    define LOCAL_OFFSET (f_buf + CL_SIZE * CL_SIZE * 3)
 #else
-    __local float* f_buf             = 0;
+    __local float* f_buf = 0;
 #endif
 #if !USE_SUBGROUP_ANY
     /* Local buffer used to implement __any warp vote function from CUDA.
@@ -407,10 +411,10 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
                                 const float2 ljcp_i = ljcpib[i * CL_SIZE + tidxi];
 #    endif
 #else /* IATYPE_SHMEM */
-                                const int   ai     = ci * CL_SIZE + tidxi; /* i atom index */
+                                const int ai = ci * CL_SIZE + tidxi; /* i atom index */
 
 #    ifndef LJ_COMB
-                                const int   typei  = atom_types[ai];
+                                const int typei = atom_types[ai];
 #    else
                                 const float2 ljcp_i = lj_comb[ai];
 #    endif
@@ -423,16 +427,16 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
                                 const float c12 = c6c12.y;
 #else /* LJ_COMB */
 #    ifdef LJ_COMB_GEOM
-                                const float c6     = ljcp_i.x * ljcp_j.x;
-                                const float c12    = ljcp_i.y * ljcp_j.y;
+                                const float c6  = ljcp_i.x * ljcp_j.x;
+                                const float c12 = ljcp_i.y * ljcp_j.y;
 #    else
                                 /* LJ 2^(1/6)*sigma and 12*epsilon */
-                                const float  sigma   = ljcp_i.x + ljcp_j.x;
-                                const float  epsilon = ljcp_i.y * ljcp_j.y;
+                                const float sigma   = ljcp_i.x + ljcp_j.x;
+                                const float epsilon = ljcp_i.y * ljcp_j.y;
 #        if defined CALC_ENERGIES || defined LJ_FORCE_SWITCH || defined LJ_POT_SWITCH
                                 const float2 c6c12 = convert_sigma_epsilon_to_c6_c12(sigma, epsilon);
-                                const float  c6    = c6c12.x;
-                                const float  c12   = c6c12.y;
+                                const float c6  = c6c12.x;
+                                const float c12 = c6c12.y;
 #        endif
 #    endif /* LJ_COMB_GEOM */
 #endif     /* LJ_COMB */

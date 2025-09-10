@@ -40,7 +40,7 @@
  * This backend for OpenCL provides greater performance than clFFT, but
  * its primary purpose is to bypass a clFFT compilation bug and allow
  * GPU-accelerated PME on macOS. OpenCL is deprecated, so we may stop
- * maintaining this backend once hipSYCL runs on Apple GPUs.
+ * maintaining this backend once SYCL runs on Apple GPUs.
  *
  *  \ingroup module_fft
  */

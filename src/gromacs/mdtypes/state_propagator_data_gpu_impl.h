@@ -50,9 +50,9 @@
 
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/gpueventsynchronizer.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/state_propagator_data_gpu.h"
 #include "gromacs/utility/enumerationhelpers.h"
+#include "gromacs/utility/vectypes.h"
 
 struct gmx_wallcycle;
 
@@ -84,11 +84,15 @@ public:
      *  \param[in] deviceStreamManager         Object that owns the DeviceContext and DeviceStreams.
      *  \param[in] transferKind                H2D/D2H transfer call behavior (synchronous or not).
      *  \param[in] allocationBlockSizeDivisor  Determines the padding size for coordinates buffer.
+     *  \param[in] useNvshmem                  Whether to use NVSHMEM for comm
+     *  \param[in] useGpuFBufferOpsWhenAllowed Whether the simulation uses F-buffer ops on the GPU
      *  \param[in] wcycle                      Wall cycle counter data.
      */
     Impl(const DeviceStreamManager& deviceStreamManager,
          GpuApiCallBehavior         transferKind,
          int                        allocationBlockSizeDivisor,
+         bool                       useNvshmem,
+         bool                       useGpuFBufferOpsWhenAllowed,
          gmx_wallcycle*             wcycle);
 
     /*! \brief Constructor to use in PME-only rank and in tests.
@@ -105,12 +109,14 @@ public:
      *  \param[in] deviceContext   Device context.
      *  \param[in] transferKind    H2D/D2H transfer call behavior (synchronous or not).
      *  \param[in] allocationBlockSizeDivisor  Determines the padding size for coordinates buffer.
+     *  \param[in] useNvshmem      Whether to use NVSHMEM for comm
      *  \param[in] wcycle          Wall cycle counter data.
      */
     Impl(const DeviceStream*  pmeStream,
          const DeviceContext& deviceContext,
          GpuApiCallBehavior   transferKind,
          int                  allocationBlockSizeDivisor,
+         bool                 useNvshmem,
          gmx_wallcycle*       wcycle);
 
     ~Impl();
@@ -132,8 +138,9 @@ public:
      *
      *  \param[in] numAtomsLocal  Number of atoms in local domain.
      *  \param[in] numAtomsAll    Total number of atoms to handle.
+     *  \param[in] mpiCommMySim   MPI communicator for the whole simulation
      */
-    void reinit(int numAtomsLocal, int numAtomsAll);
+    void reinit(int numAtomsLocal, int numAtomsAll, MPI_Comm mpiCommMySim);
 
     /*! \brief Returns the range of atoms to be copied based on the copy type (all, local or non-local).
      *
@@ -188,7 +195,12 @@ public:
                                                            GpuEventSynchronizer* gpuCoordinateHaloLaunched = nullptr);
 
     /*! \brief Wait until coordinates are available on the device. */
-    void waitCoordinatesUpdatedOnDevice() { xUpdatedOnDeviceEvent_->waitForEvent(); }
+    void waitCoordinatesUpdatedOnDevice()
+    {
+        wallcycle_start(wcycle_, WallCycleCounter::WaitGpuStatePropagatorData);
+        xUpdatedOnDeviceEvent_->waitForEvent();
+        wallcycle_stop(wcycle_, WallCycleCounter::WaitGpuStatePropagatorData);
+    }
 
     /*! \brief Blocking wait until coordinates are copied to the device.
      *
@@ -419,6 +431,9 @@ private:
     DeviceBuffer<RVec> d_x_;
     //! Number of particles saved in the positions buffer
     int d_xSize_ = -1;
+    //! Max Number of particles saved in the positions buffer
+    // used only for extra total buf size
+    int d_xMaxSize_ = -1;
     //! Allocation size for the positions buffer
     int d_xCapacity_ = -1;
 
@@ -438,6 +453,13 @@ private:
 
     //! \brief Pointer to wallcycle structure.
     gmx_wallcycle* wcycle_;
+    //! Whether to use NVSHMEM for data communication
+    bool useNvshmem_ = false;
+    //! Whether the simulation uses F-buffer ops on the GPU
+    bool useGpuFBufferOpsWhenAllowed_ = false;
+    //! whether it is a PME rank
+    bool isPmeRank = false;
+
 
     /*! \brief Performs the copy of data from host to device buffer.
      *

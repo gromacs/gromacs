@@ -41,8 +41,8 @@
 #include <algorithm>
 
 #include "gromacs/math/functions.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/utility/vec.h"
 
 static void low_rotate_conf(int natom, rvec* x, real alfa, real beta, real gamma)
 {

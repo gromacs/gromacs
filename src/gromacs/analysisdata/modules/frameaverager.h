@@ -80,7 +80,7 @@ public:
     /*! \brief
      * Returns the number of columns in this averager.
      */
-    int columnCount() const { return values_.size(); }
+    size_t columnCount() const { return values_.size(); }
 
     /*! \brief
      * Sets the number of columns in the input data.
@@ -92,14 +92,14 @@ public:
      * Must be called exactly once, before setting calling any other method
      * in the class.
      */
-    void setColumnCount(int columnCount);
+    void setColumnCount(size_t columnCount);
     /*! \brief
      * Adds a single value to the average for a given column.
      *
      * \param[in] index  Index of the column to add the value to.
      * \param[in] value  Value to add to the sample.
      */
-    void addValue(int index, real value);
+    void addValue(size_t index, real value);
     /*! \brief
      * Accumulates data from a given point set into the average.
      *
@@ -126,9 +126,9 @@ public:
      *
      * If called before finish(), the results are undefined.
      */
-    real average(int index) const
+    real average(size_t index) const
     {
-        GMX_ASSERT(index >= 0 && index < columnCount(), "Invalid column index");
+        GMX_ASSERT(index < columnCount(), "Invalid column index");
         GMX_ASSERT(bFinished_, "Values available only after finished() has been called");
         return values_[index].average;
     }
@@ -137,9 +137,9 @@ public:
      *
      * If called before finish(), the results are undefined.
      */
-    real variance(int index) const
+    real variance(size_t index) const
     {
-        GMX_ASSERT(index >= 0 && index < columnCount(), "Invalid column index");
+        GMX_ASSERT(index < columnCount(), "Invalid column index");
         GMX_ASSERT(bFinished_, "Values available only after finished() has been called");
         const AverageItem& item = values_[index];
         return item.samples > 1 ? item.squaredSum / (item.samples - 1) : 0.0;
@@ -149,9 +149,9 @@ public:
      *
      * If called before finish(), the results are undefined.
      */
-    int sampleCount(int index) const
+    size_t sampleCount(size_t index) const
     {
-        GMX_ASSERT(index >= 0 && index <= gmx::ssize(values_), "Invalid column index");
+        GMX_ASSERT(index <= values_.size(), "Invalid column index");
         GMX_ASSERT(bFinished_, "Values available only after finished() has been called");
         return values_[index].samples;
     }
@@ -166,7 +166,7 @@ private:
         //! Sum of squared deviations from the average for values so far.
         double squaredSum;
         //! Number of values so far.
-        int samples;
+        size_t samples;
     };
 
     std::vector<AverageItem> values_;

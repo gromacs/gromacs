@@ -54,10 +54,9 @@
 #include "gromacs/domdec/localatomsetmanager.h"
 #include "gromacs/fileio/checkpoint.h"
 #include "gromacs/gmxlib/network.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdlib/broadcaststructs.h"
 #include "gromacs/mdlib/groupcoord.h"
-#include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -65,9 +64,12 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
+#include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vec.h"
 
 enum class PbcType : int;
 
@@ -89,7 +91,7 @@ const std::string ColvarsForceProviderState::sc_colvarStateFileName_ = "colvarSt
 const std::string ColvarsForceProviderState::sc_colvarStateFileSizeName_ = "colvarStateFileSize";
 
 void ColvarsForceProviderState::writeState(KeyValueTreeObjectBuilder kvtBuilder,
-                                           const std::string&        identifier) const
+                                           std::string_view          identifier) const
 {
     writeKvtCheckpointValue(nColvarsAtoms_, sc_nColvarsAtomsName_, identifier, kvtBuilder);
 
@@ -115,7 +117,7 @@ void ColvarsForceProviderState::writeState(KeyValueTreeObjectBuilder kvtBuilder,
     }
 }
 
-void ColvarsForceProviderState::readState(const KeyValueTreeObject& kvtData, const std::string& identifier)
+void ColvarsForceProviderState::readState(const KeyValueTreeObject& kvtData, std::string_view identifier)
 {
 
     stateRead_ = true;
@@ -167,17 +169,18 @@ void ColvarsForceProviderState::readState(const KeyValueTreeObject& kvtData, con
 ColvarsForceProvider::ColvarsForceProvider(const std::string& colvarsConfigString,
                                            t_atoms            atoms,
                                            PbcType            pbcType,
-                                           const MDLogger*    logger,
+                                           const MDLogger&    logger,
                                            const std::map<std::string, std::string>& inputStrings,
                                            real                             ensembleTemperature,
                                            int                              seed,
                                            LocalAtomSetManager*             localAtomSetManager,
-                                           const t_commrec*                 cr,
+                                           const MpiComm&                   mpiComm,
+                                           const gmx_multisim_t*            ms,
                                            double                           simulationTimeStep,
                                            const std::vector<RVec>&         colvarsCoords,
                                            const std::string&               outputPrefix,
                                            const ColvarsForceProviderState& state) :
-    ColvarProxyGromacs(colvarsConfigString, atoms, pbcType, logger, MAIN(cr), inputStrings, ensembleTemperature, seed),
+    ColvarProxyGromacs(colvarsConfigString, atoms, pbcType, logger, mpiComm.isMainRank(), inputStrings, ensembleTemperature, seed),
     stateToCheckpoint_(state)
 {
 
@@ -205,21 +208,21 @@ ColvarsForceProvider::ColvarsForceProvider(const std::string& colvarsConfigStrin
     // MPI initialisation
 
     // Initialise attributs for the MPI communication
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         // Retrieve the number of colvar atoms
         nColvarsAtoms = atoms_ids.size();
     }
 
-    if (PAR(cr))
+    if (mpiComm.isParallel())
     {
         // Let the other nodes know the number of colvar atoms and their ids to construct a gmx::LocalAtomSet
-        block_bc(cr->mpi_comm_mygroup, nColvarsAtoms);
+        block_bc(mpiComm.comm(), nColvarsAtoms);
         atoms_ids.resize(nColvarsAtoms);
-        nblock_bc(cr->mpi_comm_mygroup, nColvarsAtoms, atoms_ids.data());
+        nblock_bc(mpiComm.comm(), nColvarsAtoms, atoms_ids.data());
 
         // Initialise atoms_new_colvar_forces on non-MAIN nodes
-        if (!MAIN(cr))
+        if (!mpiComm.isMainRank())
         {
             atoms_new_colvar_forces.resize(nColvarsAtoms);
         }
@@ -236,9 +239,20 @@ ColvarsForceProvider::ColvarsForceProvider(const std::string& colvarsConfigStrin
     snew(fColvars, nColvarsAtoms);
     snew(xColvarsOldWhole, nColvarsAtoms);
 
+#if GMX_MPI
+    if (mpiComm.isMainRank())
+    {
+        if (isMultiSim(ms))
+        {
+            colvarproxy::set_replicas_mpi_communicator(ms->mainRanksComm_);
+        }
+    }
+#else
+    GMX_UNUSED_VALUE(ms);
+#endif
 
     // Check state status (did we read a cpt file?)
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         if (stateToCheckpoint_.stateRead_)
         {
@@ -281,13 +295,13 @@ ColvarsForceProvider::ColvarsForceProvider(const std::string& colvarsConfigStrin
 
 
     // // Communicate initial coordinates to all processes
-    if (PAR(cr))
+    if (mpiComm.isParallel())
     {
-        nblock_bc(cr->mpi_comm_mygroup, nColvarsAtoms, xColvarsOldWhole);
+        nblock_bc(mpiComm.comm(), nColvarsAtoms, xColvarsOldWhole);
     }
 
 
-    if (MAIN(cr) && cvm::debug())
+    if (mpiComm.isMainRank() && cvm::debug())
     {
         cvm::log("atoms_ids = " + cvm::to_str(atoms_ids) + "\n");
         cvm::log("atoms_refcount = " + cvm::to_str(atoms_refcount) + "\n");
@@ -298,7 +312,7 @@ ColvarsForceProvider::ColvarsForceProvider(const std::string& colvarsConfigStrin
         log("Done initializing the colvars proxy object.\n");
     }
 
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         cvm::log(cvm::line_marker);
         cvm::log("End colvars Initialization.\n\n");
@@ -326,7 +340,7 @@ void ColvarsForceProvider::calculateForces(const ForceProviderInput& forceProvid
     // Construct t_pbc struct
     set_pbc(&gmxPbc_, pbcType_, forceProviderInput.box_);
 
-    const t_commrec* cr = &(forceProviderInput.cr_);
+    const MpiComm& mpiComm = forceProviderInput.mpiComm_;
     // Local atom coords
     const gmx::ArrayRef<const gmx::RVec> x = forceProviderInput.x_;
     // Local atom coords (coerced into into old gmx type)
@@ -338,7 +352,7 @@ void ColvarsForceProvider::calculateForces(const ForceProviderInput& forceProvid
 
     // Eventually there needs to be an interface to update local data upon neighbor search
     // We could check if by chance all atoms are in one node, and skip communication
-    communicate_group_positions(cr,
+    communicate_group_positions(mpiComm,
                                 xColvars,
                                 xColvarsShifts,
                                 xColvarsEshifts,
@@ -355,7 +369,7 @@ void ColvarsForceProvider::calculateForces(const ForceProviderInput& forceProvid
     // Communicate_group_positions takes care of removing shifts (unwrapping)
     // in single node jobs, communicate_group_positions() is efficient and adds no overhead
 
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         // On non-MAIN nodes, jump directly to applying the forces
 
@@ -399,9 +413,9 @@ void ColvarsForceProvider::calculateForces(const ForceProviderInput& forceProvid
 
 
     // Broadcast the forces to all the nodes
-    if (PAR(cr))
+    if (mpiComm.isParallel())
     {
-        nblock_bc(cr->mpi_comm_mygroup, nColvarsAtoms, fColvars);
+        nblock_bc(mpiComm.comm(), nColvarsAtoms, fColvars);
     }
 
 
@@ -446,7 +460,7 @@ void ColvarsForceProvider::add_energy(cvm::real energy)
 
 
 void ColvarsForceProvider::writeCheckpointData(MDModulesWriteCheckpointData checkpointWriting,
-                                               const std::string&           moduleName)
+                                               std::string_view             moduleName)
 {
     colvars->write_state_buffer(stateToCheckpoint_.colvarStateFile_);
     stateToCheckpoint_.writeState(checkpointWriting.builder_, moduleName);

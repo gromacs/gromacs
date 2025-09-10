@@ -50,8 +50,6 @@
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -66,6 +64,8 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 struct gmx_output_env_t;
 
@@ -383,7 +383,7 @@ int gmx_spol(int argc, char* argv[])
         fprintf(stderr, "Average radial component of the polarization: %f (D)\n", sdinp);
     }
 
-    fp   = xvgropen(opt2fn("-o", NFILE, fnm), "Cumulative solvent distribution", "r (nm)", "molecules", oenv);
+    fp = xvgropen(opt2fn("-o", NFILE, fnm), "Cumulative solvent distribution", "r (nm)", "molecules", oenv);
     nmol = 0;
     for (i = 0; i <= nbin; i++)
     {

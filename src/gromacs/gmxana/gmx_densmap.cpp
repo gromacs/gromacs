@@ -51,8 +51,6 @@
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/index.h"
@@ -65,6 +63,8 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 struct gmx_output_env_t;
 
@@ -147,10 +147,10 @@ int gmx_densmap(int argc, char* argv[])
     gmx_output_env_t* oenv;
     const char*       label[] = { "x (nm)", "y (nm)", "z (nm)" };
     t_filenm          fnm[]   = { { efTRX, "-f", nullptr, ffREAD },
-                       { efTPS, nullptr, nullptr, ffOPTRD },
-                       { efNDX, nullptr, nullptr, ffOPTRD },
-                       { efDAT, "-od", "densmap", ffOPTWR },
-                       { efXPM, "-o", "densmap", ffWRITE } };
+                                  { efTPS, nullptr, nullptr, ffOPTRD },
+                                  { efNDX, nullptr, nullptr, ffOPTRD },
+                                  { efDAT, "-od", "densmap", ffOPTWR },
+                                  { efXPM, "-o", "densmap", ffWRITE } };
 #define NFILE asize(fnm)
     int npargs;
 

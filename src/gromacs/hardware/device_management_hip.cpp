@@ -41,11 +41,18 @@
  *  \author Szilárd Páll <pall.szilard@gmail.com>
  *  \author Artem Zhmurov <zhmurov@gmail.com>
  *  \author Paul Bauer <paul.bauer.q@gmail.com>
- *  \author Julio Maia <julio.maia@amd.com>
  *
  * \ingroup module_hardware
  */
 #include "gmxpre.h"
+
+#include "config.h"
+
+#include <algorithm>
+#include <optional>
+#include <vector>
+
+#include <hip/hip_runtime_api.h>
 
 #include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/device_stream.h"
@@ -58,9 +65,16 @@
 
 #include "device_information.h"
 #include "device_management.h"
+#include "device_management_shared_amd.h"
 
 /** Dummy kernel used for sanity checking. */
 static __global__ void dummy_kernel() {}
+
+//! List of known architectures with large register pool
+static const std::vector<std::string> archsWithLargeRegisterPool = { "gfx90a",
+                                                                     "gfx940",
+                                                                     "gfx941",
+                                                                     "gfx942" };
 
 void warnWhenDeviceNotTargeted(const gmx::MDLogger& mdlog, const DeviceInformation& deviceInfo)
 {
@@ -86,6 +100,38 @@ void warnWhenDeviceNotTargeted(const gmx::MDLogger& mdlog, const DeviceInformati
                     gmx::getProgramContext().displayName(),
                     deviceInfo.id,
                     deviceInfo.prop.gcnArchName)));
+}
+
+/*!
+ * \brief Checks that device \c deviceInfo is compatible with GROMACS pairlist layout..
+ *
+ * \param[in]  deviceInfo              HIP device information.
+ * \returns                            The status enumeration value for the checked device.
+ */
+static DeviceStatus checkDevicePairlistCompatible(const DeviceInformation deviceInfo)
+{
+    if (!GMX_ENABLE_AMD_RDNA_SUPPORT && deviceInfo.supportedSubGroupSizes[0] == 32)
+    {
+        return DeviceStatus::IncompatibleAmdRdnaNotTargeted;
+    }
+    else if (GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT && deviceInfo.supportedSubGroupSizes[0] == 32)
+    {
+        return DeviceStatus::Incompatible;
+    }
+    else
+    {
+        return DeviceStatus::Compatible;
+    }
+}
+
+
+static bool determineIfDeviceHasLargeRegisterPool(std::string deviceArch)
+{
+    auto device = gmx::splitAndTrimDelimitedString(deviceArch, ':')[0];
+    return std::find_if(archsWithLargeRegisterPool.begin(),
+                        archsWithLargeRegisterPool.end(),
+                        [&](const auto& arch) { return gmx::equalCaseInsensitive(arch, device); })
+           != archsWithLargeRegisterPool.end();
 }
 
 /*! \brief Runs GPU compatibility and sanity checks on the indicated device.
@@ -178,7 +224,7 @@ static DeviceStatus checkDeviceStatus(const DeviceInformation& deviceInfo)
         gmx::checkDeviceError(hipGetLastError(), "hipDeviceReset failed");
     }
 
-    return DeviceStatus::Compatible;
+    return checkDevicePairlistCompatible(deviceInfo);
 }
 
 bool isDeviceDetectionFunctional(std::string* errorMessage)
@@ -222,6 +268,10 @@ std::vector<std::unique_ptr<DeviceInformation>> findDevices()
     // We expect to start device support/sanity checks with a clean runtime error state
     gmx::ensureNoPendingDeviceError("Trying to find available HIP devices.");
 
+    const gmx::GpuAwareMpiStatus gpuAwareMpiStatus =
+            GMX_LIB_MPI ? gmx::checkMpiHipAwareSupport() : gmx::GpuAwareMpiStatus::NotSupported;
+
+
     std::vector<std::unique_ptr<DeviceInformation>> deviceInfoList(numDevices);
     for (int i = 0; i < numDevices; i++)
     {
@@ -234,7 +284,14 @@ std::vector<std::unique_ptr<DeviceInformation>> findDevices()
         deviceInfoList[i]->prop         = prop;
         deviceInfoList[i]->deviceVendor = DeviceVendor::Amd;
 
+        deviceInfoList[i]->uuid = getAmdDeviceUuid(i);
+
         deviceInfoList[i]->supportedSubGroupSizes.push_back(deviceInfoList[i]->prop.warpSize);
+
+        deviceInfoList[i]->gpuAwareMpiStatus = gpuAwareMpiStatus;
+
+        deviceInfoList[i]->deviceHasLargeRegisterPool =
+                determineIfDeviceHasLargeRegisterPool(deviceInfoList[i]->prop.gcnArchName);
 
         const DeviceStatus checkResult = (stat != hipSuccess) ? DeviceStatus::NonFunctional
                                                               : checkDeviceStatus(*deviceInfoList[i]);
@@ -321,10 +378,11 @@ std::string getDeviceInformationString(const DeviceInformation& deviceInfo)
     }
     else
     {
-        return gmx::formatString("#%d: AMD %s, gcn: %s, ECC: %3s, stat: %s",
+        return gmx::formatString("#%d: AMD %s, gcn: %s, largeRegisterPool: %3s, ECC: %3s, stat: %s",
                                  deviceInfo.id,
                                  deviceInfo.prop.name,
                                  deviceInfo.prop.gcnArchName,
+                                 deviceInfo.deviceHasLargeRegisterPool ? "yes" : " no",
                                  deviceInfo.prop.ECCEnabled ? "yes" : " no",
                                  c_deviceStateString[deviceInfo.status]);
     }

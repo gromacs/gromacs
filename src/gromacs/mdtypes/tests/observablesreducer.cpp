@@ -117,10 +117,11 @@ TEST(ObservablesReducerTest, CanBuildAndUseWithOneSubscriber)
     ObservablesReducerBuilder::CallbackToRequireReduction callbackToRequireReduction;
     ArrayRef<double>                                      bufferView;
     ObservablesReducerBuilder::CallbackFromBuilder        callbackFromBuilder =
-            [&](ObservablesReducerBuilder::CallbackToRequireReduction&& c, ArrayRef<double> b) {
-                callbackToRequireReduction = std::move(c);
-                bufferView                 = b;
-            };
+            [&](ObservablesReducerBuilder::CallbackToRequireReduction&& c, ArrayRef<double> b)
+    {
+        callbackToRequireReduction = std::move(c);
+        bufferView                 = b;
+    };
 
     ObservablesReducerBuilder::CallbackAfterReduction callbackAfterReduction =
             [&stepUponWhichReductionOccured](Step step) { stepUponWhichReductionOccured = step; };
@@ -220,10 +221,8 @@ public:
     {
         observablesReducerBuilder->addSubscriber(
                 sizeRequired_,
-                [this](ObservablesReducerBuilder::CallbackToRequireReduction callback,
-                       ArrayRef<double>                                      bufferView) {
-                    this->callbackWhenBufferAvailable(std::move(callback), bufferView);
-                },
+                [this](ObservablesReducerBuilder::CallbackToRequireReduction callback, ArrayRef<double> bufferView)
+                { this->callbackWhenBufferAvailable(std::move(callback), bufferView); },
                 [this](Step step) { this->callbackAfterReduction(step); });
     }
 
@@ -263,9 +262,9 @@ public:
         // vary with step and number of ranks.
         std::vector<double> expectedResult(communicationBuffer_.size());
         std::iota(expectedResult.begin(), expectedResult.end(), valueOffset_ + double(step));
-        std::for_each(expectedResult.begin(), expectedResult.end(), [this](auto& v) {
-            v *= this->numRanks_;
-        });
+        std::for_each(expectedResult.begin(),
+                      expectedResult.end(),
+                      [this](auto& v) { v *= this->numRanks_; });
         EXPECT_THAT(communicationBuffer_, testing::Pointwise(testing::Eq(), expectedResult))
                 << "wrong values were reduced";
         // Ensuring that zero is never computed by a reduction helps

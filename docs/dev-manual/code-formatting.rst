@@ -6,15 +6,14 @@ Automatic source code formatting
 .. highlight:: bash
 
 Python sources can be automatically formatted with
-`Black <https://black.readthedocs.io/en/stable/>`__.
+`Black <https://black.readthedocs.io/en/stable/>`__ from Python 3.9.3.
 
 C++ source code can be automatically formatted using clang-format
 since |Gromacs| 2020.
 It automatically applies the guidelines in :doc:`formatting` and in
 :doc:`includestyle`.
 Additionally, other Python scripts are used for a few other automatic
-formatting/checking tasks.  The overview tools page contains a list of these
-tools: :ref:`dev-formatting-tools`.
+formatting/checking tasks.
 This page provides more details for clang-format, clang-tidy and copyright scripts.
 
 Our CI uses these same scripts (in particular, ``clang-format.sh``,
@@ -26,15 +25,15 @@ the code stays invariant under such formatting.
 Setting up clang-format
 -----------------------
 
-|Gromacs| formatting is enforced with clang-format 11.0.1.
+|Gromacs| formatting is enforced with clang-format 18.1.8.
 :command:`clang-format` is one of the core *clang* tools.
 It may be included in a *clang* or *llvm* package from your favorite packaging
 system or you may find a standalone *clang-format* package,
-but you should confirm that the provided command is version 11.0.0 or 11.0.1.
+but you should confirm that the provided command is correct (other 18.1.x versions might be okay too).
 Example::
 
     $ clang-format --version
-    clang-format version 11.0.0
+    clang-format version 18.1.8
 
 If you use a different version of clang-format,
 you will likely get different formatting results than
@@ -43,12 +42,12 @@ and the commits that you push will fail the automated tests.
 
 .. note::
 
-    Refer to `LLVM <http://releases.llvm.org/download.html#11.0.0>`__ for
+    Refer to `LLVM <http://releases.llvm.org/download.html#18.1.8>`__ for
     source and binary downloads.
     If downloading sources, note that you will need to download both the
     *LLVM source code* and the *Clang source code*.
     As per the clang
-    `INSTALL.txt <https://github.com/llvm/llvm-project/blob/release/11.x/clang/INSTALL.txt>`__,
+    `INSTALL.txt <https://github.com/llvm/llvm-project/blob/release/18.x/clang/INSTALL.txt>`__,
     place the expanded clang source into a :file:`tools/clang` subdirectory within
     the expanded llvm archive, then run CMake against the llvm source directory.
 
@@ -74,7 +73,7 @@ clang-format discovers which formatting rules to apply from the
 which will be automatically updated (if necessary) when you :command:`git pull`
 from the |Gromacs| repository.
 For more about the tool and the :file:`.clang-format` configuration file,
-visit https://releases.llvm.org/11.0.1/tools/clang/docs/ClangFormat.html
+visit https://releases.llvm.org/18.1.8/tools/clang/docs/ClangFormat.html
 
 What is automatically formatted?
 --------------------------------
@@ -98,16 +97,16 @@ Setting up clang-tidy
 ---------------------
 
 |Gromacs| source code tidiness checking is enforced with clang-tidy provided
-alongside *clang* compiler version 11.
+alongside *clang* compiler version 18.
 :command:`clang-tidy` is one of the core *clang* tools.
 It may be included in a *clang* or *llvm* package from your favorite packaging
 system or you may find a standalone *clang-tidy* or *clang-tools* package,
-but you should confirm that the provided command is version 11.
+but you should confirm that the provided command is version 18.
 Example::
 
     $ clang-tidy --version
       LLVM (http://llvm.org/):
-        LLVM version 11.0.0
+        LLVM version 18.1.8
 
 If you use a different version of clang-tidy,
 you will likely get different checking results than
@@ -116,12 +115,12 @@ and the commits that you push will fail the automated tests.
 
 .. note::
 
-    Refer to `LLVM <https://releases.llvm.org/download.html#11.0.1>`__ for
+    Refer to `LLVM <https://releases.llvm.org/download.html#18.1.8>`__ for
     source and binary downloads.
     If downloading sources, note that you will need to download both the
     *LLVM source code* and the *Clang source code*.
     As per the clang
-    `INSTALL.txt <https://github.com/llvm/llvm-project/blob/release/11.x/clang/INSTALL.txt>`__,
+    `INSTALL.txt <https://github.com/llvm/llvm-project/blob/release/18.x/clang/INSTALL.txt>`__,
     place the expanded clang source into a :file:`tools/clang` subdirectory within
     the expanded llvm archive, then run CMake against the llvm source directory.
 
@@ -140,7 +139,7 @@ clang-tidy discovers which formatting rules to apply from the
 which will be automatically updated (if necessary) when you :command:`git pull`
 from the |Gromacs| repository.
 For more about the tool and the :file:`.clang-tidy` configuration file,
-visit https://releases.llvm.org/11.0.0/tools/clang/tools/extra/docs/clang-tidy/index.html.
+visit https://releases.llvm.org/18.1.8/tools/clang/tools/extra/docs/clang-tidy/index.html.
 
 Tools
 -----
@@ -230,9 +229,9 @@ between the disk and the index) to make it easy to revert the changes.
 This can be overridden by adding a ``-f``/``--force`` option.
 
 Since the behaviour of clang-format can change between versions even when using the same options,
-only clang-format from Clang 11 will give correct results. The path to the correct ``clang-format``
+only clang-format from Clang 18 will give correct results. The path to the correct ``clang-format``
 binary can be specified via ``CLANG_FORMAT`` environment variable or by running
-``git config hooks.clangformatpath /path/to/clang-format-11`` in the repository root.
+``git config hooks.clangformatpath /path/to/clang-format-18`` in the repository root.
 
 ``clang-tidy.sh``
 ^^^^^^^^^^^^^^^^^

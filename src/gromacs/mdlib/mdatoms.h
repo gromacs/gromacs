@@ -111,12 +111,12 @@ std::unique_ptr<MDAtoms> makeMDAtoms(FILE* fp, const gmx_mtop_t& mtop, const t_i
  * In free-energy runs, update_mdatoms() should be called after atoms2md()
  * to set the masses corresponding to the value of lambda at each step.
  */
-void atoms2md(const gmx_mtop_t&  mtop,
-              const t_inputrec&  inputrec,
-              int                nindex,
-              gmx::ArrayRef<int> index,
-              int                homenr,
-              gmx::MDAtoms*      mdAtoms);
+void atoms2md(const gmx_mtop_t&        mtop,
+              const t_inputrec&        inputrec,
+              int                      nindex,
+              gmx::ArrayRef<const int> index,
+              int                      homenr,
+              gmx::MDAtoms*            mdAtoms);
 
 void update_mdatoms(t_mdatoms* md, real lambda);
 /* When necessary, sets all the mass parameters to values corresponding

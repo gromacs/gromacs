@@ -59,9 +59,9 @@
 #include "listed_forces/dataflow.hpp"
 #include "listed_forces/traits.h"
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
@@ -166,7 +166,7 @@ TEST_F(ListedExampleData, ComputeHarmonicBondEnergies)
     gmx::ArrayRef<const InteractionIndex<HarmonicBondType>> indices =
             pickType<HarmonicBondType>(interactions).indices;
     gmx::ArrayRef<const HarmonicBondType> bonds = pickType<HarmonicBondType>(interactions).parameters;
-    real                                  energy = computeForces(indices, bonds, x, &forces, *pbc);
+    real energy = computeForces(indices, bonds, x, &forces, *pbc);
 
     RefDataChecker vector3DTest(1e-4);
     vector3DTest.testReal(energy, "Bond energy");

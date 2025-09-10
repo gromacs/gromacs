@@ -52,7 +52,7 @@ namespace gmx
 //! fclose wrapper to be used as unique_ptr deleter
 inline void fclose_wrapper(FILE* fp)
 {
-    fclose(fp); // NOLINT(cppcoreguidelines-owning-memory)
+    std::fclose(fp); // NOLINT(cppcoreguidelines-owning-memory)
 }
 
 //! Simple guard pointer which calls fclose. See unique_cptr for details.

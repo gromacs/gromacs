@@ -91,23 +91,23 @@ struct gmx_cpp
 
 static bool is_word_end(char c)
 {
-    return !((isalnum(c) != 0) || c == '_');
+    return !((std::isalnum(c) != 0) || c == '_');
 }
 
 static const char* strstrw(const char* buf, const char* word)
 {
     const char* ptr;
 
-    while ((ptr = strstr(buf, word)) != nullptr)
+    while ((ptr = std::strstr(buf, word)) != nullptr)
     {
         /* Check if we did not find part of a longer word */
-        if (ptr && is_word_end(ptr[strlen(word)])
+        if (ptr && is_word_end(ptr[std::strlen(word)])
             && (((ptr > buf) && is_word_end(ptr[-1])) || (ptr == buf)))
         {
             return ptr;
         }
 
-        buf = ptr + strlen(word);
+        buf = ptr + std::strlen(word);
     }
     return nullptr;
 }
@@ -119,7 +119,7 @@ static const char* strstrw(const char* buf, const char* word)
 static bool find_directive(const char* buf, std::string* name, std::string* val)
 {
     /* Skip initial whitespace */
-    while (isspace(*buf))
+    while (std::isspace(*buf))
     {
         ++buf;
     }
@@ -130,13 +130,13 @@ static bool find_directive(const char* buf, std::string* name, std::string* val)
     }
     /* Skip the hash and any space after it */
     ++buf;
-    while (isspace(*buf))
+    while (std::isspace(*buf))
     {
         ++buf;
     }
     /* Set the name pointer and find the next space */
     name->clear();
-    while (*buf != '\0' && !isspace(*buf))
+    while (*buf != '\0' && !std::isspace(*buf))
     {
         *name += *buf;
         ++buf;
@@ -145,7 +145,7 @@ static bool find_directive(const char* buf, std::string* name, std::string* val)
     if (*buf != '\0')
     {
         ++buf;
-        while (isspace(*buf))
+        while (std::isspace(*buf))
         {
             ++buf;
         }
@@ -155,7 +155,7 @@ static bool find_directive(const char* buf, std::string* name, std::string* val)
     {
         *val = buf;
         // Remove trailing whitespace
-        while (!val->empty() && isspace(val->back()))
+        while (!val->empty() && std::isspace(val->back()))
         {
             val->resize(val->size() - 1);
         }
@@ -243,14 +243,14 @@ static int cpp_open_file(const std::filesystem::path&                         fi
     {
         while (cppopts[i])
         {
-            if (strstr(cppopts[i], "-I") == cppopts[i])
+            if (std::strstr(cppopts[i], "-I") == cppopts[i])
             {
                 add_include(cpp->includes.get(), cppopts[i] + 2);
             }
-            if (strstr(cppopts[i], "-D") == cppopts[i])
+            if (std::strstr(cppopts[i], "-D") == cppopts[i])
             {
                 /* If the option contains a =, split it into name and value. */
-                char* ptr = strchr(cppopts[i], '=');
+                char* ptr = std::strchr(cppopts[i], '=');
                 if (ptr)
                 {
                     std::string buf = cppopts[i] + 2;
@@ -313,7 +313,7 @@ static int cpp_open_file(const std::filesystem::path&                         fi
     cpp->parent = nullptr;
     if (cpp->fp == nullptr)
     {
-        cpp->fp = fopen(cpp->fn.string().c_str(), "r");
+        cpp->fp = std::fopen(cpp->fn.string().c_str(), "r");
     }
     if (cpp->fp == nullptr)
     {
@@ -486,13 +486,13 @@ static int process_directive(gmx_cpp_t* handlep, const std::string& dname, const
         }
         /* Split it into name and value. */
         const char* ptr = dval.c_str();
-        while ((*ptr != '\0') && !isspace(*ptr))
+        while ((*ptr != '\0') && !std::isspace(*ptr))
         {
             ptr++;
         }
         std::string name = dval.substr(0, ptr - dval.c_str());
 
-        while ((*ptr != '\0') && isspace(*ptr))
+        while ((*ptr != '\0') && std::isspace(*ptr))
         {
             ptr++;
         }
@@ -546,7 +546,7 @@ int cpp_read_line(gmx_cpp_t* handlep, int n, char buf[])
         return eCPP_FILE_NOT_OPEN;
     }
 
-    bEOF = (feof(handle->fp) != 0);
+    bEOF = (std::feof(handle->fp) != 0);
     if (!bEOF)
     {
         /* Read the actual line now. */
@@ -555,7 +555,7 @@ int cpp_read_line(gmx_cpp_t* handlep, int n, char buf[])
             /* Recheck EOF, since we could have been at the end before
              * the fgets2 call, but we need to read past the end to know.
              */
-            bEOF = (feof(handle->fp) != 0);
+            bEOF = (std::feof(handle->fp) != 0);
             if (!bEOF)
             {
                 /* Something strange happened, fgets returned NULL,
@@ -618,7 +618,7 @@ int cpp_read_line(gmx_cpp_t* handlep, int n, char buf[])
             while ((ptr = strstrw(ptr, define.name.c_str())) != nullptr)
             {
                 nn++;
-                ptr += strlen(define.name.c_str());
+                ptr += std::strlen(define.name.c_str());
             }
             if (nn > 0)
             {
@@ -642,7 +642,7 @@ int cpp_read_line(gmx_cpp_t* handlep, int n, char buf[])
                 name += ptr;
                 GMX_RELEASE_ASSERT(name.size() < static_cast<size_t>(n),
                                    "The line should fit in buf");
-                strcpy(buf, name.c_str());
+                std::strcpy(buf, name.c_str());
             }
         }
     }
@@ -673,7 +673,7 @@ int cpp_close_file(gmx_cpp_t* handlep)
     {
         return eCPP_FILE_NOT_OPEN;
     }
-    fclose(handle->fp);
+    std::fclose(handle->fp);
 
     if (!handle->cwd.empty())
     {

@@ -62,8 +62,8 @@
 
 struct gmx_walltime_accounting;
 struct ObservablesHistory;
-class t_state;
 struct t_commrec;
+class t_state;
 
 namespace gmx
 {
@@ -111,7 +111,7 @@ public:
                      int                                initStep,
                      TrajectoryElement*                 trajectoryElement,
                      FILE*                              fplog,
-                     t_commrec*                         cr,
+                     const t_commrec*                   cr,
                      ObservablesHistory*                observablesHistory,
                      gmx_walltime_accounting*           walltime_accounting,
                      t_state*                           state_global,
@@ -170,7 +170,7 @@ private:
     //! Handles logging.
     FILE* fplog_;
     //! Handles communication.
-    t_commrec* cr_;
+    const t_commrec* cr_;
     //! History of simulation observables.
     ObservablesHistory* observablesHistory_;
     //! Manages wall time accounting.
@@ -189,7 +189,7 @@ public:
     //! Constructor
     CheckpointHelperBuilder(std::unique_ptr<ReadCheckpointDataHolder> checkpointDataHolder,
                             StartingBehavior                          startingBehavior,
-                            t_commrec*                                cr);
+                            const t_commrec*                          cr);
 
     //! Register checkpointing client
     void registerClient(ICheckpointHelperClient* client);
@@ -211,7 +211,7 @@ private:
     //! The checkpoint handler
     std::unique_ptr<CheckpointHandler> checkpointHandler_;
     //! Handles communication.
-    t_commrec* cr_;
+    const t_commrec* cr_;
     //! Whether the builder accepts registrations.
     ModularSimulatorBuilderState state_;
 };

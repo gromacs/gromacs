@@ -45,7 +45,6 @@
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/math/boxmatrix.h"
 #include "gromacs/math/units.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdlib/coupling.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/stat.h"
@@ -54,6 +53,7 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/boxutilities.h"
+#include "gromacs/utility/vec.h"
 
 #include "energydata.h"
 #include "modularsimulator.h"
@@ -76,7 +76,7 @@ ParrinelloRahmanBarostat::ParrinelloRahmanBarostat(int                  nstpcoup
     offset_(offset),
     couplingTimePeriod_(couplingTimePeriod),
     initStep_(initStep),
-    mu_{ { 0 } },
+    mu_{ 0 },
     boxRel_{ { 0 } },
     boxVelocity_{ { 0 } },
     statePropagatorData_(statePropagatorData),
@@ -87,11 +87,13 @@ ParrinelloRahmanBarostat::ParrinelloRahmanBarostat(int                  nstpcoup
     mdAtoms_(mdAtoms)
 {
     energyData->setParrinelloRahmanBoxVelocities([this]() { return boxVelocity_; });
-    energyData->addConservedEnergyContribution([this](Step gmx_used_in_debug step, Time /*unused*/) {
-        GMX_ASSERT(conservedEnergyContributionStep_ == step,
-                   "Parrinello-Rahman conserved energy step mismatch.");
-        return conservedEnergyContribution_;
-    });
+    energyData->addConservedEnergyContribution(
+            [this](Step gmx_used_in_debug step, Time /*unused*/)
+            {
+                GMX_ASSERT(conservedEnergyContributionStep_ == step,
+                           "Parrinello-Rahman conserved energy step mismatch.");
+                return conservedEnergyContribution_;
+            });
 }
 
 void ParrinelloRahmanBarostat::connectWithMatchingPropagator(const PropagatorConnection& connectionData,
@@ -117,10 +119,12 @@ void ParrinelloRahmanBarostat::scheduleTask(Step                       step,
     if (contributeEnergyThisStep)
     {
         // For compatibility with legacy md, we store this before integrating the box velocities
-        registerRunFunction([this, step]() {
-            conservedEnergyContribution_     = conservedEnergyContribution();
-            conservedEnergyContributionStep_ = step;
-        });
+        registerRunFunction(
+                [this, step]()
+                {
+                    conservedEnergyContribution_     = conservedEnergyContribution();
+                    conservedEnergyContributionStep_ = step;
+                });
     }
     if (scaleOnThisStep)
     {
@@ -304,25 +308,29 @@ void ParrinelloRahmanBarostat::doCheckpointData(CheckpointData<operation>* check
 }
 
 void ParrinelloRahmanBarostat::saveCheckpointState(std::optional<WriteCheckpointData> checkpointData,
-                                                   const t_commrec*                   cr)
+                                                   const MpiComm& mpiComm,
+                                                   gmx_domdec_t*  dd)
 {
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         doCheckpointData<CheckpointDataOperation::Write>(&checkpointData.value());
     }
+
+    GMX_UNUSED_VALUE(dd);
 }
 
 void ParrinelloRahmanBarostat::restoreCheckpointState(std::optional<ReadCheckpointData> checkpointData,
-                                                      const t_commrec*                  cr)
+                                                      const MpiComm& mpiComm,
+                                                      gmx_domdec_t*  dd)
 {
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         doCheckpointData<CheckpointDataOperation::Read>(&checkpointData.value());
     }
-    if (haveDDAtomOrdering(*cr))
+    if (dd)
     {
-        dd_bcast(cr->dd, sizeof(boxVelocity_), boxVelocity_);
-        dd_bcast(cr->dd, sizeof(boxRel_), boxRel_);
+        dd_bcast(dd, sizeof(boxVelocity_), boxVelocity_);
+        dd_bcast(dd, sizeof(boxRel_), boxRel_);
     }
 }
 
@@ -345,8 +353,8 @@ ISimulatorElement* ParrinelloRahmanBarostat::getElementPointerImpl(
         ModularSimulatorAlgorithmBuilderHelper* builderHelper,
         StatePropagatorData*                    statePropagatorData,
         EnergyData*                             energyData,
-        FreeEnergyPerturbationData gmx_unused* freeEnergyPerturbationData,
-        GlobalCommunicationHelper gmx_unused* globalCommunicationHelper,
+        FreeEnergyPerturbationData gmx_unused*  freeEnergyPerturbationData,
+        GlobalCommunicationHelper gmx_unused*   globalCommunicationHelper,
         ObservablesReducer* /*observablesReducer*/,
         Offset               offset,
         const PropagatorTag& propagatorTag)
@@ -364,9 +372,8 @@ ISimulatorElement* ParrinelloRahmanBarostat::getElementPointerImpl(
             legacySimulatorData->mdAtoms_));
     auto* barostat = static_cast<ParrinelloRahmanBarostat*>(element);
     builderHelper->registerTemperaturePressureControl(
-            [barostat, propagatorTag](const PropagatorConnection& connection) {
-                barostat->connectWithMatchingPropagator(connection, propagatorTag);
-            });
+            [barostat, propagatorTag](const PropagatorConnection& connection)
+            { barostat->connectWithMatchingPropagator(connection, propagatorTag); });
     return element;
 }
 

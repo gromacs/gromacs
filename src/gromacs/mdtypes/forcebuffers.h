@@ -51,10 +51,10 @@
 
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/arrayrefwithpadding.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/vectypes.h"
 
 namespace gmx
 {
@@ -106,6 +106,7 @@ public:
     //! Returns a const arrayref to the MTS force buffer without padding
     ArrayRef<const RVec> forceMtsCombined() const
     {
+        GMX_UNUSED_VALUE(useForceMtsCombined_);
         GMX_ASSERT(useForceMtsCombined_, "Need the MTS buffer");
         return forceMtsCombined_.unpaddedConstArrayRef();
     }
@@ -113,6 +114,7 @@ public:
     //! Returns an arrayref to the MTS force buffer without padding
     ArrayRef<RVec> forceMtsCombined()
     {
+        GMX_UNUSED_VALUE(useForceMtsCombined_);
         GMX_ASSERT(useForceMtsCombined_, "Need the MTS buffer");
         return forceMtsCombined_.unpaddedArrayRef();
     }
@@ -120,6 +122,7 @@ public:
     //! Returns an ArrayRefWithPadding to the MTS force buffer
     ArrayRefWithPadding<RVec> forceMtsCombinedWithPadding()
     {
+        GMX_UNUSED_VALUE(useForceMtsCombined_);
         GMX_ASSERT(useForceMtsCombined_, "Need the MTS buffer");
         return forceMtsCombined_;
     }
@@ -129,12 +132,8 @@ private:
     ArrayRefWithPadding<RVec> force_;
     //! The force buffer for combined fast and slow forces with MTS
     ArrayRefWithPadding<RVec> forceMtsCombined_;
-    // GCC 9 complains about unused attribute "unused" as it never warns about unused members,
-    // while clang requires it to avoid -Wunused
-    GCC_DIAGNOSTIC_IGNORE("-Wattributes")
     //! Whether we use forceMtsCombined_
-    gmx_used_in_debug bool useForceMtsCombined_;
-    GCC_DIAGNOSTIC_RESET
+    bool useForceMtsCombined_;
 };
 
 /*! \libinternal \brief Object that holds the force buffers

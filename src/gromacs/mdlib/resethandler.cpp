@@ -48,6 +48,7 @@
 #include <filesystem>
 
 #include "gromacs/domdec/domdec.h"
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/ewald/pme_load_balancing.h"
 #include "gromacs/ewald/pme_pp.h"
@@ -57,6 +58,7 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
 #include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/timing/external_tracing.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
 #include "gromacs/utility/cstringutil.h"
@@ -183,7 +185,7 @@ bool ResetHandler::resetCountersImpl(int64_t                     step,
 
         if (nbv && nbv->useGpu())
         {
-            Nbnxm::gpu_reset_timings(nbv);
+            gpu_reset_timings(nbv);
         }
 
         if (pme_gpu_task_enabled(pme))
@@ -195,6 +197,7 @@ bool ResetHandler::resetCountersImpl(int64_t                     step,
         {
             resetGpuProfiler();
         }
+        resumeIttTracingWhenAppropriate();
 
         wallcycle_stop(wcycle, WallCycleCounter::Run);
         wallcycle_reset_all(wcycle);
@@ -205,13 +208,13 @@ bool ResetHandler::resetCountersImpl(int64_t                     step,
         clear_nrnb(nrnb);
         wallcycle_start(wcycle, WallCycleCounter::Run);
         walltime_accounting_reset_time(walltime_accounting, step);
-        print_date_and_time(fplog, cr->nodeid, "Restarted time", gmx_gettime());
+        print_date_and_time(fplog, cr->commMyGroup.rank(), "Restarted time", gmx_gettime());
 
         wcycle_set_reset_counters(wcycle, -1);
-        if (!thisRankHasDuty(cr, DUTY_PME))
+        if (!thisRankHasPmeDuty(cr->dd))
         {
             /* Tell our PME node to reset its counters */
-            gmx_pme_send_resetcounters(cr, step);
+            gmx_pme_send_resetcounters(cr->commMySim, cr->dd, step);
         }
         /* Reset can only happen once, so clear the triggering flag. */
         signal_.set = static_cast<signed char>(ResetSignal::noSignal);

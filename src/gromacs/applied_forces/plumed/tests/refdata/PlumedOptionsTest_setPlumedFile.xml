@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="Setting the plumed file to &quot;myFile&quot;">myFile</String>
+  <Bool Name="Plumed should be activated when the filename is set">true</Bool>
+</ReferenceData>

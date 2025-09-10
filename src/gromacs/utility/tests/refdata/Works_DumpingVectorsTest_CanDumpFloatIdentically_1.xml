@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="output"><![CDATA[
+  The title (3):
+     The title[-1]= 1.10000e+00
+     The title[-1]= 2.20000e+00
+     The title[-1]= 3.30000e+00
+]]></String>
+</ReferenceData>

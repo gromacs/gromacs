@@ -45,9 +45,9 @@
 
 #include <cstddef>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "nblib/particletype.h"
 #include "nblib/topology.h"

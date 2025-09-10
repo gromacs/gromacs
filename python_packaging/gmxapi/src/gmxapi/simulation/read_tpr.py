@@ -226,8 +226,7 @@ class ResourceFactory(gmxapi.abc.ResourceFactory):
         )
 
     @typing.overload
-    def input_description(self, context: _op.Context) -> _op.InputDescription:
-        ...
+    def input_description(self, context: _op.Context) -> _op.InputDescription: ...
 
     def input_description(self, context: gmxapi.abc.Context):
         """Get an input description usable in the indicated Context.

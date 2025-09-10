@@ -61,6 +61,10 @@
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -239,3 +243,5 @@ TEST(HardwareTopologyTest, NumaCacheSelfconsistency)
 }
 
 } // namespace
+} // namespace test
+} // namespace gmx

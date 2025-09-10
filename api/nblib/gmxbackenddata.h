@@ -102,7 +102,7 @@ public:
     gmx::ListOfLists<int> exclusions_;
 
     //! Non-Bonded Verlet object for force calculation
-    std::unique_ptr<nonbonded_verlet_t> nbv_;
+    std::unique_ptr<gmx::nonbonded_verlet_t> nbv_;
 
     //! Only shift_vec is used
     t_forcerec forcerec_;

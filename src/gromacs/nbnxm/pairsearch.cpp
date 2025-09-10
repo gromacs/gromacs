@@ -46,19 +46,16 @@
 
 #include <cstdlib>
 
-#include "gromacs/mdtypes/nblist.h"
-
+#include "atompairlist.h"
 #include "pairlist.h"
 
-enum class PairlistType;
 enum class PbcType : int;
 namespace gmx
 {
+enum class PairlistType;
 enum class PinningPolicy : int;
-} // namespace gmx
 
-
-void SearchCycleCounting::printCycles(FILE* fp, gmx::ArrayRef<const PairsearchWork> work) const
+void SearchCycleCounting::printCycles(FILE* fp, ArrayRef<const PairsearchWork> work) const
 {
     fprintf(fp, "\n");
     fprintf(fp,
@@ -85,7 +82,7 @@ void SearchCycleCounting::printCycles(FILE* fp, gmx::ArrayRef<const PairsearchWo
 #ifndef DOXYGEN
 
 PairsearchWork::PairsearchWork() :
-    cp0({ { 0 } }), ndistc(0), nbl_fep(std::make_unique<t_nblist>()), cp1({ { 0 } })
+    cp0({ { 0 } }), ndistc(0), nbl_fep(std::make_unique<AtomPairlist>()), cp1({ { 0 } })
 {
 }
 
@@ -93,16 +90,38 @@ PairsearchWork::PairsearchWork() :
 
 PairsearchWork::~PairsearchWork() = default;
 
-PairSearch::PairSearch(const PbcType             pbcType,
-                       const bool                doTestParticleInsertion,
-                       const gmx::IVec*          numDDCells,
-                       const gmx_domdec_zones_t* ddZones,
-                       const PairlistType        pairlistType,
-                       const bool                haveFep,
-                       const int                 maxNumThreads,
-                       gmx::PinningPolicy        pinningPolicy) :
-    gridSet_(pbcType, doTestParticleInsertion, numDDCells, ddZones, pairlistType, haveFep, maxNumThreads, pinningPolicy),
+PairSearch::PairSearch(const PbcType      pbcType,
+                       const bool         doTestParticleInsertion,
+                       const IVec*        numDDCells,
+                       const DomdecZones* ddZones,
+                       const PairlistType pairlistType,
+                       const bool         haveFep,
+                       const bool         localAtomOrderMatchesNbnxmOrder,
+                       const int          maxNumThreads,
+                       PinningPolicy      pinningPolicy) :
+    gridSet_(pbcType,
+             doTestParticleInsertion,
+             numDDCells,
+             ddZones,
+             pairlistType,
+             haveFep,
+             localAtomOrderMatchesNbnxmOrder,
+             maxNumThreads,
+             pinningPolicy),
     work_(maxNumThreads)
 {
-    cycleCounting_.recordCycles_ = (getenv("GMX_NBNXN_CYCLE") != nullptr);
+    cycleCounting_.recordCycles_ = (std::getenv("GMX_NBNXN_CYCLE") != nullptr);
 }
+
+void PairSearch::setNonLocalGrid(const int                           gridIndex,
+                                 const int                           ddZone,
+                                 const GridDimensions&               gridDimensions,
+                                 ArrayRef<const std::pair<int, int>> columns,
+                                 ArrayRef<const int32_t>             atomInfo,
+                                 ArrayRef<const RVec>                x,
+                                 nbnxn_atomdata_t*                   nbat)
+{
+    gridSet_.setNonLocalGrid(gridIndex, ddZone, gridDimensions, columns, atomInfo, x, nbat);
+}
+
+} // namespace gmx

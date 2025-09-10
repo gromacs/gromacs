@@ -51,8 +51,6 @@
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/math/do_fit.h"
 #include "gromacs/math/functions.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/topology.h"
@@ -64,6 +62,8 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 enum class PbcType : int;
 struct gmx_output_env_t;
@@ -141,7 +141,7 @@ static void get_refx(gmx_output_env_t* oenv,
     for (i = 0; i < nfr; i++)
     {
         fprintf(stdout, "\rProcessing frame %d of %d", i, nfr);
-        fflush(stdout);
+        std::fflush(stdout);
         for (j = i + 1; j < nfr; j++)
         {
             calc_fit_R(nfitdim, gnx, w_rls, xi[i], xi[j], R);
@@ -231,10 +231,10 @@ int gmx_rotmat(int argc, char* argv[])
         { "-ref", FALSE, etENUM, { reffit }, "Determine the optimal reference structure" },
         { "-skip", FALSE, etINT, { &skip }, "Use every nr-th frame for [TT]-ref[tt]" },
         { "-fitxy",
-          FALSE,
-          etBOOL,
-          { &bFitXY },
-          "Fit the x/y rotation before determining the rotation" },
+                  FALSE,
+                  etBOOL,
+                  { &bFitXY },
+                  "Fit the x/y rotation before determining the rotation" },
         { "-mw", FALSE, etBOOL, { &bMW }, "Use mass weighted fitting" }
     };
     FILE*                      out;

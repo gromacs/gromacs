@@ -40,5 +40,6 @@ gmx_add_unit_test(MdtypesUnitTest mdtypes-test
         multipletimestepping.cpp
         )
 target_link_libraries(mdtypes-test PRIVATE
-        mdtypes
-        )
+                      mdtypes
+                      serialization
+                      )

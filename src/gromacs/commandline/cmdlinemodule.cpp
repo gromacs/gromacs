@@ -33,7 +33,7 @@
  */
 /*! \internal \file
  * \brief
- * Implements classes from cmdlinemodule.h.
+ * Implements function from cmdlinemodule.h.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_commandline
@@ -46,28 +46,6 @@
 
 namespace gmx
 {
-
-class CommandLineModuleSettings::Impl
-{
-public:
-    Impl() : defaultNiceLevel_(19) {}
-
-    int defaultNiceLevel_;
-};
-
-CommandLineModuleSettings::CommandLineModuleSettings() : impl_(new Impl) {}
-
-CommandLineModuleSettings::~CommandLineModuleSettings() {}
-
-int CommandLineModuleSettings::defaultNiceLevel() const
-{
-    return impl_->defaultNiceLevel_;
-}
-
-void CommandLineModuleSettings::setDefaultNiceLevel(int niceLevel)
-{
-    impl_->defaultNiceLevel_ = niceLevel;
-}
 
 //! \cond libapi
 void writeCommandLineHelpCMain(const CommandLineHelpContext& context,

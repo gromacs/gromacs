@@ -34,10 +34,14 @@
 /*! \internal \file
  * \brief
  * Implements options for Colvars.
+ * Keep a minimal ColvarsOptions implementation in the case Colvars is not activated
+ * to ensure compatbility (with gmx tools for example).
  */
 #include "gmxpre.h"
 
 #include "colvarsoptions.h"
+
+#include "config.h"
 
 #include <cstddef>
 
@@ -46,7 +50,7 @@
 #include <optional>
 
 #include "gromacs/math/arrayrefwithpadding.h"
-#include "gromacs/math/vec.h"
+#include "gromacs/mdtypes/imdpoptionprovider_helpers.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/ioptionscontainerwithsections.h"
 #include "gromacs/options/optionsection.h"
@@ -55,13 +59,16 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/keyvaluetree.h"
-#include "gromacs/utility/keyvaluetreebuilder.h"
-#include "gromacs/utility/keyvaluetreetransform.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/textreader.h"
+#include "gromacs/utility/vec.h"
 
-#include "colvarspreprocessor.h"
+#include "colvarsMDModule.h"
+
+#if GMX_HAVE_COLVARS
+#    include "colvarspreprocessor.h"
+#endif
 
 enum class PbcType : int;
 struct gmx_mtop_t;
@@ -73,29 +80,32 @@ namespace gmx
 namespace
 {
 
-/*! \brief Helper to declare mdp transform rules.
- *
- * Enforces uniform mdp options that are always prepended with the correct
- * string for the colvars mdp options.
- *
- * \tparam ToType type to be transformed to
- * \tparam TransformWithFunctionType type of transformation function to be used
- *
- * \param[in] rules KVT transformation rules
- * \param[in] transformationFunction the function to transform the flat kvt tree
- * \param[in] optionTag string tag that describes the mdp option, appended to the
- *                      default string for the density guided simulation
- */
-template<class ToType, class TransformWithFunctionType>
-void colvarsMdpTransformFromString(IKeyValueTreeTransformRules* rules,
-                                   TransformWithFunctionType    transformationFunction,
-                                   const std::string&           optionTag)
+//! Helper function to make a std::string containing the module name
+std::string moduleName()
 {
-    rules->addRule()
-            .from<std::string>("/" + c_colvarsModuleName + "-" + optionTag)
-            .to<ToType>("/" + c_colvarsModuleName + "/" + optionTag)
-            .transformWith(transformationFunction);
+    return std::string(ColvarsModuleInfo::sc_name);
 }
+
+/*! \brief Following Tags denotes names of parameters from .mdp file
+ * \note Changing this strings will break .tpr backwards compability
+ */
+//! \{
+const std::string c_activeTag_          = "active";
+const std::string c_colvarsFileNameTag_ = "configfile";
+const std::string c_colvarsSeedTag_     = "seed";
+//! \}
+
+
+/*! \brief This tags for parameters which will be generated during grompp
+ * and stored into *.tpr file via KVT
+ */
+//! \{
+const std::string c_inputStreamsTag_   = "inputStreams";
+const std::string c_configStringTag_   = "configString";
+const std::string c_startingCoordsTag_ = "startingCoords";
+const std::string c_ensTempTag_        = "ensTemp";
+
+//! \}
 
 } // namespace
 
@@ -103,40 +113,56 @@ void colvarsMdpTransformFromString(IKeyValueTreeTransformRules* rules,
 void ColvarsOptions::initMdpTransform(IKeyValueTreeTransformRules* rules)
 {
     const auto& stringIdentityTransform = [](std::string s) { return s; };
-    colvarsMdpTransformFromString<bool>(rules, &fromStdString<bool>, c_activeTag_);
-    colvarsMdpTransformFromString<std::string>(rules, stringIdentityTransform, c_colvarsFileNameTag_);
-    colvarsMdpTransformFromString<int>(rules, &fromStdString<int>, c_colvarsSeedTag_);
+    addMdpTransformFromString<bool>(rules, &fromStdString<bool>, ColvarsModuleInfo::sc_name, c_activeTag_);
+    addMdpTransformFromString<std::string>(
+            rules, stringIdentityTransform, ColvarsModuleInfo::sc_name, c_colvarsFileNameTag_);
+    addMdpTransformFromString<int>(rules, &fromStdString<int>, ColvarsModuleInfo::sc_name, c_colvarsSeedTag_);
 }
 
 
 void ColvarsOptions::buildMdpOutput(KeyValueTreeObjectBuilder* builder) const
 {
     // new empty line before writing colvars mdp values
-    builder->addValue<std::string>("comment-" + c_colvarsModuleName + "empty-line", "");
-
-    builder->addValue<std::string>("comment-" + c_colvarsModuleName + "-module", "; Colvars bias");
-    builder->addValue<bool>(c_colvarsModuleName + "-" + c_activeTag_, active_);
+    addMdpOutputComment(builder, ColvarsModuleInfo::sc_name, "empty-line", "");
+    addMdpOutputComment(builder, ColvarsModuleInfo::sc_name, "module", "; Colvars bias");
+    addMdpOutputValue(builder, ColvarsModuleInfo::sc_name, c_activeTag_, active_);
 
     if (active_)
     {
-        builder->addValue<std::string>("comment-" + c_colvarsModuleName + "-" + c_colvarsFileNameTag_,
-                                       "; colvars config file");
-        builder->addValue<std::string>(c_colvarsModuleName + "-" + c_colvarsFileNameTag_, colvarsFileName_);
+        addMdpOutputComment(
+                builder, ColvarsModuleInfo::sc_name, c_colvarsFileNameTag_, "; colvars config file");
+        addMdpOutputValue<std::string>(
+                builder, ColvarsModuleInfo::sc_name, c_colvarsFileNameTag_, colvarsFileName_);
 
-        builder->addValue<std::string>("comment-" + c_colvarsModuleName + "-" + c_colvarsSeedTag_,
-                                       "; Colvars seed");
-        builder->addValue<int>(c_colvarsModuleName + "-" + c_colvarsSeedTag_, colvarsSeed_);
+        addMdpOutputComment(
+                builder, ColvarsModuleInfo::sc_name, c_colvarsSeedTag_, "; Colvars seed");
+        addMdpOutputValue<int>(builder, ColvarsModuleInfo::sc_name, c_colvarsSeedTag_, colvarsSeed_);
     }
 }
 
 
 void ColvarsOptions::initMdpOptions(IOptionsContainerWithSections* options)
 {
-    auto section = options->addSection(OptionSection(c_colvarsModuleName.c_str()));
+    auto section = options->addSection(OptionSection(moduleName().c_str()));
     section.addOption(BooleanOption(c_activeTag_.c_str()).store(&active_));
     section.addOption(StringOption(c_colvarsFileNameTag_.c_str()).store(&colvarsFileName_));
     section.addOption(IntegerOption(c_colvarsSeedTag_.c_str()).store(&colvarsSeed_));
 }
+
+
+bool ColvarsOptions::isActive() const
+{
+    return active_;
+}
+
+//! Get the logger instance
+const MDLogger& ColvarsOptions::logger() const
+{
+    GMX_RELEASE_ASSERT(logger_, "Logger not set for ColvarsOptions.");
+    return *logger_;
+}
+
+#if GMX_HAVE_COLVARS
 
 
 void ColvarsOptions::writeInternalParametersToKvt(KeyValueTreeObjectBuilder treeBuilder)
@@ -149,23 +175,22 @@ void ColvarsOptions::writeInternalParametersToKvt(KeyValueTreeObjectBuilder tree
     }
 
     // Write colvars input file as a string
-    treeBuilder.addValue<std::string>(c_colvarsModuleName + "-" + c_configStringTag_, colvarsConfigString_);
+    treeBuilder.addValue<std::string>(moduleName() + "-" + c_configStringTag_, colvarsConfigString_);
 
 
     ColvarsPreProcessor colvarsPreProcess(
-            colvarsConfigString_, gmxAtoms_, pbc_, logger_, ensembleTemperature_, colvarsSeed_, box_, x_);
+            colvarsConfigString_, gmxAtoms_, pbc_, logger(), ensembleTemperature_, colvarsSeed_, box_, x_);
     //! Vector with colvars atoms coordinates
     colvarsAtomCoords_ = colvarsPreProcess.getColvarsCoords();
 
     // Save other colvars input files into the KVT
-    if (!colvarsPreProcess.inputStreamsToKVT(treeBuilder, c_colvarsModuleName + "-" + c_inputStreamsTag_))
+    if (!colvarsPreProcess.inputStreamsToKVT(treeBuilder, moduleName() + "-" + c_inputStreamsTag_))
     {
         GMX_THROW(InternalError("Cannot save colvars input files into the tpr."));
     }
 
     // Write colvars atoms coords
-    auto DoubleArrayAdder =
-            treeBuilder.addUniformArray<double>(c_colvarsModuleName + "-" + c_startingCoordsTag_);
+    auto DoubleArrayAdder = treeBuilder.addUniformArray<double>(moduleName() + "-" + c_startingCoordsTag_);
     for (const auto& indexValue : colvarsAtomCoords_)
     {
         for (int j = 0; j < DIM; j++)
@@ -175,10 +200,10 @@ void ColvarsOptions::writeInternalParametersToKvt(KeyValueTreeObjectBuilder tree
     }
 
     // Write ensemble temperature
-    treeBuilder.addValue<real>(c_colvarsModuleName + "-" + c_ensTempTag_, ensembleTemperature_);
+    treeBuilder.addValue<real>(moduleName() + "-" + c_ensTempTag_, ensembleTemperature_);
 
     // Write seed
-    treeBuilder.addValue<int>(c_colvarsModuleName + "-" + c_colvarsSeedTag_, colvarsSeed_);
+    treeBuilder.addValue<int>(moduleName() + "-" + c_colvarsSeedTag_, colvarsSeed_);
 }
 
 
@@ -192,33 +217,32 @@ void ColvarsOptions::readInternalParametersFromKvt(const KeyValueTreeObject& tre
 
 
     // Retrieve the content of all inputfiles listed in the KVT as "colvars-inputStreams-filename"
+    const std::string inputStreamsKeySubstring = moduleName() + "-" + c_inputStreamsTag_;
     for (const auto& a : tree.properties())
     {
-        std::size_t pos = a.key().find(c_colvarsModuleName + "-" + c_inputStreamsTag_);
+        std::size_t pos = a.key().find(inputStreamsKeySubstring);
         if (pos != std::string::npos)
         {
-            std::string filename = a.key().substr(
-                    pos + std::string(c_colvarsModuleName + "-" + c_inputStreamsTag_).size() + 1);
-
-            inputFiles_[filename] = tree[a.key()].cast<std::string>();
+            const std::string filename = a.key().substr(pos + inputStreamsKeySubstring.size() + 1);
+            inputFiles_[filename]      = tree[a.key()].cast<std::string>();
         }
     }
 
-    if (!tree.keyExists(c_colvarsModuleName + "-" + c_configStringTag_))
+    if (!tree.keyExists(moduleName() + "-" + c_configStringTag_))
     {
         GMX_THROW(InconsistentInputError(
                 "Cannot find colvars-configString required for colvars simulation."));
     }
-    colvarsConfigString_ = tree[c_colvarsModuleName + "-" + c_configStringTag_].cast<std::string>();
+    colvarsConfigString_ = tree[moduleName() + "-" + c_configStringTag_].cast<std::string>();
 
 
-    if (!tree.keyExists(c_colvarsModuleName + "-" + c_startingCoordsTag_))
+    if (!tree.keyExists(moduleName() + "-" + c_startingCoordsTag_))
     {
         GMX_THROW(InconsistentInputError(
                 "Cannot find colvars-startingCoords required for colvars simulation."));
     }
 
-    auto kvtDoubleArray = tree[c_colvarsModuleName + "-" + c_startingCoordsTag_].asArray().values();
+    auto kvtDoubleArray = tree[moduleName() + "-" + c_startingCoordsTag_].asArray().values();
 
 
     // Make sure the coordinates saved are consistent with the dimensions
@@ -238,20 +262,20 @@ void ColvarsOptions::readInternalParametersFromKvt(const KeyValueTreeObject& tre
         colvarsAtomCoords_.push_back(x);
     }
 
-    if (!tree.keyExists(c_colvarsModuleName + "-" + c_ensTempTag_))
+    if (!tree.keyExists(moduleName() + "-" + c_ensTempTag_))
     {
         GMX_THROW(InconsistentInputError(
                 "Cannot find ensemble temperature required for colvars simulation."));
     }
-    ensembleTemperature_ = tree[c_colvarsModuleName + "-" + c_ensTempTag_].cast<real>();
+    ensembleTemperature_ = tree[moduleName() + "-" + c_ensTempTag_].cast<real>();
 
 
-    if (!tree.keyExists(c_colvarsModuleName + "-" + c_colvarsSeedTag_))
+    if (!tree.keyExists(moduleName() + "-" + c_colvarsSeedTag_))
     {
         GMX_THROW(InconsistentInputError(
                 "Cannot find colvars seed required for colvars simulation."));
     }
-    colvarsSeed_ = tree[c_colvarsModuleName + "-" + c_colvarsSeedTag_].cast<int>();
+    colvarsSeed_ = tree[moduleName() + "-" + c_colvarsSeedTag_].cast<int>();
 }
 
 
@@ -285,8 +309,7 @@ void ColvarsOptions::processEdrFilename(const EdrOutputFilename& filename)
     // Provided name should not be empty
     GMX_RELEASE_ASSERT(!filename.edrOutputFilename_.empty(), "Empty name for the *.edr output file");
 
-    outputPrefix_ =
-            stripExtension(std::filesystem::path(filename.edrOutputFilename_).filename()).string();
+    outputPrefix_ = stripExtension(std::filesystem::path(filename.edrOutputFilename_)).string();
 }
 
 
@@ -300,11 +323,6 @@ void ColvarsOptions::processTemperature(const EnsembleTemperature& temp)
     {
         ensembleTemperature_ = -1;
     }
-}
-
-bool ColvarsOptions::isActive() const
-{
-    return active_;
 }
 
 const std::string& ColvarsOptions::colvarsFileName() const
@@ -358,5 +376,7 @@ void ColvarsOptions::setParameters(const std::string&   colvarsfile,
     ensembleTemperature_ = temperature;
 }
 
+
+#endif // GMX_HAVE_COLVARS
 
 } // namespace gmx

@@ -202,6 +202,13 @@ TEST_P(PullIntegrationTest, WithinTolerances)
                 reportNumbersOfPpRanksSupported(simulationName).c_str());
         return;
     }
+
+    if (isTransformationPullSetup(pullSetup) && !HAVE_MUPARSER)
+    {
+        GTEST_SKIP()
+                << "GROMACS is built without muParser, cannot use transformation pull coordinates";
+    }
+
     auto mdpFieldValues = prepareMdpFieldValues(simulationName.c_str(), "md", "no", "no");
     addBasicMdpValues(&mdpFieldValues);
 

@@ -145,7 +145,7 @@ public:
      */
     struct Package
     {
-        int               id;    //!<  id of this package in hardware topology/system
+        int id;                  //!<  id of this package in hardware topology/system
         std::vector<Core> cores; //!< Cores in this package with processing units on which we can run.
     };
 
@@ -169,10 +169,10 @@ public:
      */
     struct Numa
     {
-        std::vector<NumaNode>           nodes;       //!< Information about each numa node
-        float                           baseLatency; //!< Scale factor for relative latencies
+        std::vector<NumaNode> nodes;                     //!< Information about each numa node
+        float                 baseLatency;               //!< Scale factor for relative latencies
         std::vector<std::vector<float>> relativeLatency; //!< 2D matrix of relative latencies between nodes
-        float                           maxRelativeLatency; //!< Largest relative latency
+        float maxRelativeLatency;                        //!< Largest relative latency
     };
 
     /*! \libinternal \brief Information about a single PCI device.
@@ -186,7 +186,7 @@ public:
         std::uint16_t vendorId;   //!< Vendor identification
         std::uint16_t deviceId;   //!< Vendor-specific device identification
         std::uint16_t classId;    //!< class (high 8 bits) and subclass (low 8 bits)
-        std::uint16_t domain;     //!< Domain, usually 0 for PCI bus
+        std::uint32_t domain;     //!< Domain, usually 0 for PCI bus
         std::uint8_t  bus;        //!< Bus number in domain
         std::uint8_t  dev;        //!< Device on bus
         std::uint8_t  func;       //!< Function id for multi-function devices
@@ -437,6 +437,9 @@ private:
     float        cpuLimit_;     //!< Max practical load as limited by OS
     int          maxThreads_;   //!< Recommended max # threads
 };
+
+//! Returns information for describing the hwloc support
+std::string hwlocDescription();
 
 } // namespace gmx
 

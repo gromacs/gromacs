@@ -35,8 +35,8 @@ Fixes for ``gmx`` tools
 Improve errors and warnings to avoid poor results with gmx msd
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-Fail properly if ```-trestart``` is not divisible by ```-dt``` or if ```-dt```
-> ```-trestart```. A warning is generated if the two values are equal. 
+Fail properly if ``-trestart`` is not divisible by ``-dt`` or if ``-dt``
+> ``-trestart``. A warning is generated if the two values are equal.
 
 :issue:`5051`
 

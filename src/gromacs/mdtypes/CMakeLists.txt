@@ -46,6 +46,7 @@ file(GLOB MDTYPES_SOURCES
     inputrec.cpp
     interaction_const.cpp
     md_enums.cpp
+    mpicomm.cpp
     multipletimestepping.cpp
     observableshistory.cpp
     observablesreducer.cpp
@@ -67,10 +68,10 @@ if(GMX_GPU)
            )
    endif()
    if(GMX_GPU_HIP)
-	  gmx_add_libgromacs_sources(
-		   state_propagator_data_gpu_impl.cpp
+       _gmx_add_files_to_property(HIP_SOURCES
+		   state_propagator_data_gpu_impl_gpu.cpp
 		   )
-	endif()
+   endif()
 else()
     gmx_add_libgromacs_sources(
       state_propagator_data_gpu_impl.cpp

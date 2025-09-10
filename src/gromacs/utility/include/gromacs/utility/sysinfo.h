@@ -95,7 +95,7 @@ int gmx_getusername(char* buf, size_t len);
  *
  * \throws std::bad_alloc when out of memory.
  */
-std::string gmx_ctime_r(const time_t* clock);
+std::string gmx_ctime_r(const std::time_t* clock);
 /*! \brief
  * Gets the current time as a string.
  *

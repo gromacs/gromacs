@@ -47,22 +47,17 @@
 #include "config.h"
 
 #if GMX_GPU_CUDA
-
 #    include "gromacs/gpu_utils/gputraits.cuh"
-
 #elif GMX_GPU_OPENCL
-
 #    include "gromacs/gpu_utils/gputraits_ocl.h"
-
 #elif GMX_GPU_SYCL
-
 #    include "gromacs/gpu_utils/gputraits_sycl.h"
-
 #elif GMX_GPU_HIP
-
 #    include "gromacs/gpu_utils/gputraits_hip.h"
-
 #else
+
+#    define GMX_HOST_ATTRIBUTE
+#    define GMX_DEVICE_ATTRIBUTE
 
 using DeviceTexture = void*;
 
@@ -81,6 +76,10 @@ struct Float4
 };
 
 #endif // GMX_GPU
+
+#define GMX_ALWAYS_INLINE_ATTRIBUTE __attribute__((always_inline))
+#define GMX_FUNC_ATTRIBUTE GMX_HOSTDEVICE_ATTRIBUTE GMX_ALWAYS_INLINE_ATTRIBUTE
+#define GMX_DEVICE_FUNC_ATTRIBUTE GMX_DEVICE_ATTRIBUTE GMX_ALWAYS_INLINE_ATTRIBUTE
 
 namespace gmx
 {

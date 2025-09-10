@@ -43,6 +43,7 @@
 
 #include <memory>
 #include <string>
+#include <string_view>
 
 namespace gmx
 {
@@ -61,9 +62,11 @@ struct ColvarsModuleInfo
      */
     static std::unique_ptr<IMDModule> create();
     //! The name of the module
-    static const std::string name_;
+    static constexpr std::string_view sc_name = "colvars";
 };
 
+//! Returns information for describing the colvars support
+std::string colvarsDescription();
 
 } // namespace gmx
 

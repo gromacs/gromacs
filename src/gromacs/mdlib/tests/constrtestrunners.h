@@ -50,6 +50,7 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 
 #include "testutils/test_device.h"
@@ -84,6 +85,9 @@ public:
      */
     virtual void applyConstraints(ConstraintsTestData* testData, t_pbc pbc) = 0;
 
+    //! Return the algorithm called by this runner
+    virtual ConstraintAlgorithm algorithm() const = 0;
+
     /*! \brief Get the name of the implementation.
      *
      * \return "<algorithm> on <device>", depending on the actual implementation used. E.g., "LINCS on #0: NVIDIA GeForce GTX 1660 SUPER".
@@ -103,6 +107,8 @@ public:
      * \param[in] pbc                  Periodic boundary data.
      */
     void applyConstraints(ConstraintsTestData* testData, t_pbc pbc) override;
+    //! Return the algorithm called by this runner
+    ConstraintAlgorithm algorithm() const override { return ConstraintAlgorithm::Shake; }
     /*! \brief Get the name of the implementation.
      *
      * \return "SHAKE" string;
@@ -122,6 +128,8 @@ public:
      * \param[in] pbc                  Periodic boundary data.
      */
     void applyConstraints(ConstraintsTestData* testData, t_pbc pbc) override;
+    //! Return the algorithm called by this runner
+    ConstraintAlgorithm algorithm() const override { return ConstraintAlgorithm::Lincs; }
     /*! \brief Get the name of the implementation.
      *
      * \return "LINCS" string;
@@ -144,6 +152,8 @@ public:
      * \param[in] pbc                  Periodic boundary data.
      */
     void applyConstraints(ConstraintsTestData* testData, t_pbc pbc) override;
+    //! Return the algorithm called by this runner
+    ConstraintAlgorithm algorithm() const override { return ConstraintAlgorithm::Lincs; }
     /*! \brief Get the name of the implementation.
      *
      * \return "LINCS_GPU" string;

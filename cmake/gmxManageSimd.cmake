@@ -95,6 +95,7 @@ endif()
 if(GMX_SIMD_ACTIVE STREQUAL "NONE")
     # nothing to do configuration-wise
     set(SIMD_STATUS_MESSAGE "SIMD instructions disabled")
+    set(GMX_SIMD_ENUM_VALUE "gmx::SimdType::None")
 elseif(GMX_SIMD_ACTIVE STREQUAL "SSE2")
 
     gmx_find_simd_sse2_flags(SIMD_SSE2_C_SUPPORTED SIMD_SSE2_CXX_SUPPORTED
@@ -109,6 +110,7 @@ elseif(GMX_SIMD_ACTIVE STREQUAL "SSE2")
     string(REPLACE " " ";" SIMD_CXX_FLAGS ${SIMD_SSE2_CXX_FLAGS})
     set(GMX_SIMD_X86_${GMX_SIMD_ACTIVE} 1)
     set(SIMD_STATUS_MESSAGE "Enabling SSE2 SIMD instructions using CXX flags: ${SIMD_SSE2_CXX_FLAGS}")
+    set(GMX_SIMD_ENUM_VALUE "gmx::SimdType::X86_Sse2")
 
 elseif(GMX_SIMD_ACTIVE STREQUAL "SSE4.1")
 
@@ -124,6 +126,7 @@ elseif(GMX_SIMD_ACTIVE STREQUAL "SSE4.1")
     string(REPLACE " " ";" SIMD_CXX_FLAGS ${SIMD_SSE4_1_CXX_FLAGS})
     set(GMX_SIMD_X86_SSE4_1 1)
     set(SIMD_STATUS_MESSAGE "Enabling SSE4.1 SIMD instructions using CXX flags: ${SIMD_SSE4_1_CXX_FLAGS}")
+    set(GMX_SIMD_ENUM_VALUE "gmx::SimdType::X86_Sse4_1")
 
 elseif(GMX_SIMD_ACTIVE STREQUAL "AVX_128_FMA")
 
@@ -139,6 +142,7 @@ elseif(GMX_SIMD_ACTIVE STREQUAL "AVX_128_FMA")
     string(REPLACE " " ";" SIMD_CXX_FLAGS ${SIMD_AVX_128_FMA_CXX_FLAGS})
     set(GMX_SIMD_X86_${GMX_SIMD_ACTIVE} 1)
     set(SIMD_STATUS_MESSAGE "Enabling 128-bit AMD FMA SIMD instructions using CXX flags: ${SIMD_AVX_128_FMA_CXX_FLAGS}")
+    set(GMX_SIMD_ENUM_VALUE "gmx::SimdType::X86_Avx128Fma")
 
 elseif(GMX_SIMD_ACTIVE STREQUAL "AVX_256")
 
@@ -154,6 +158,7 @@ elseif(GMX_SIMD_ACTIVE STREQUAL "AVX_256")
     string(REPLACE " " ";" SIMD_CXX_FLAGS ${SIMD_AVX_CXX_FLAGS})
     set(GMX_SIMD_X86_${GMX_SIMD_ACTIVE} 1)
     set(SIMD_STATUS_MESSAGE "Enabling 256-bit AVX SIMD instructions using CXX flags: ${SIMD_AVX_CXX_FLAGS}")
+    set(GMX_SIMD_ENUM_VALUE "gmx::SimdType::X86_Avx")
 
 elseif(GMX_SIMD_ACTIVE MATCHES "AVX2_")
 
@@ -171,8 +176,10 @@ elseif(GMX_SIMD_ACTIVE MATCHES "AVX2_")
 
     if(GMX_SIMD_ACTIVE STREQUAL "AVX2_128")
         set(SIMD_STATUS_MESSAGE "Enabling 128-bit AVX2 SIMD instructions using CXX flags: ${SIMD_AVX2_CXX_FLAGS}")
+        set(GMX_SIMD_ENUM_VALUE "gmx::SimdType::X86_Avx2_128")
     else()
         set(SIMD_STATUS_MESSAGE "Enabling 256-bit AVX2 SIMD instructions using CXX flags: ${SIMD_AVX2_CXX_FLAGS}")
+        set(GMX_SIMD_ENUM_VALUE "gmx::SimdType::X86_Avx2")
     endif()
 
 elseif(GMX_SIMD_ACTIVE STREQUAL "AVX_512")
@@ -189,22 +196,7 @@ elseif(GMX_SIMD_ACTIVE STREQUAL "AVX_512")
     string(REPLACE " " ";" SIMD_CXX_FLAGS ${SIMD_AVX_512_CXX_FLAGS})
     set(GMX_SIMD_X86_${GMX_SIMD_ACTIVE} 1)
     set(SIMD_STATUS_MESSAGE "Enabling 512-bit AVX-512 SIMD instructions using CXX flags: ${SIMD_AVX_512_CXX_FLAGS}")
-
-elseif(GMX_SIMD_ACTIVE STREQUAL "AVX_512_KNL")
-    message(WARNING "Intel Xeon Phi support is deprecated and will be removed in the future versions.")  # See #4740
-
-    gmx_find_simd_avx_512_knl_flags(SIMD_AVX_512_KNL_C_SUPPORTED SIMD_AVX_512_KNL_CXX_SUPPORTED
-                                    SIMD_AVX_512_KNL_C_FLAGS SIMD_AVX_512_KNL_CXX_FLAGS)
-
-    if(NOT SIMD_AVX_512_KNL_C_SUPPORTED OR NOT SIMD_AVX_512_KNL_CXX_SUPPORTED)
-        gmx_give_fatal_error_when_simd_support_not_found("AVX 512ER" "choose a lower level of SIMD (slower)" "${SUGGEST_BINUTILS_UPDATE}")
-    endif()
-
-    # If multiple flags are neeed, make them into a list
-    string(REPLACE " " ";" SIMD_C_FLAGS ${SIMD_AVX_512_KNL_C_FLAGS})
-    string(REPLACE " " ";" SIMD_CXX_FLAGS ${SIMD_AVX_512_KNL_CXX_FLAGS})
-    set(GMX_SIMD_X86_${GMX_SIMD_ACTIVE} 1)
-    set(SIMD_STATUS_MESSAGE "Enabling 512-bit AVX-512-KNL SIMD instructions using CXX flags: ${SIMD_AVX_512_KNL_CXX_FLAGS}")
+    set(GMX_SIMD_ENUM_VALUE "gmx::SimdType::X86_Avx512")
 
 elseif(GMX_SIMD_ACTIVE STREQUAL "ARM_NEON_ASIMD")
 
@@ -220,6 +212,7 @@ elseif(GMX_SIMD_ACTIVE STREQUAL "ARM_NEON_ASIMD")
     string(REPLACE " " ";" SIMD_CXX_FLAGS ${SIMD_ARM_NEON_ASIMD_CXX_FLAGS})
     set(GMX_SIMD_${GMX_SIMD_ACTIVE} 1)
     set(SIMD_STATUS_MESSAGE "Enabling ARM (AArch64) NEON Advanced SIMD instructions using CXX flags: ${SIMD_ARM_NEON_ASIMD_CXX_FLAGS}")
+    set(GMX_SIMD_ENUM_VALUE "gmx::SimdType::Arm_NeonAsimd")
 
 elseif(GMX_SIMD_ACTIVE STREQUAL "ARM_SVE")
 
@@ -258,6 +251,7 @@ elseif(GMX_SIMD_ACTIVE STREQUAL "ARM_SVE")
     string(REPLACE " " ";" SIMD_CXX_FLAGS ${SIMD_ARM_SVE_CXX_FLAGS})
     set(GMX_SIMD_${GMX_SIMD_ACTIVE} 1)
     set(SIMD_STATUS_MESSAGE "Enabling ARM (AArch64) SVE Advanced SIMD instructions using CXX flags: ${SIMD_ARM_SVE_CXX_FLAGS}")
+    set(GMX_SIMD_ENUM_VALUE "gmx::SimdType::Arm_Sve")
 
 elseif(GMX_SIMD_ACTIVE STREQUAL "IBM_VSX")
 
@@ -265,10 +259,7 @@ elseif(GMX_SIMD_ACTIVE STREQUAL "IBM_VSX")
                                 SIMD_IBM_VSX_C_FLAGS SIMD_IBM_VSX_CXX_FLAGS)
 
     # Usually we check also for the C compiler here, but a C compiler
-    # is not required for SIMD support on this platform. cmake through
-    # at least version 3.7 cannot pass this check with the C compiler
-    # in the latest xlc 13.1.5, but the C++ compiler has different
-    # behaviour and is OK. See Issue #2102.
+    # is not required for SIMD support.
     if(NOT SIMD_IBM_VSX_CXX_SUPPORTED)
         gmx_give_fatal_error_when_simd_support_not_found("IBM VSX" "disable SIMD support (slower)" "${SUGGEST_BINUTILS_UPDATE}")
     endif()
@@ -278,6 +269,7 @@ elseif(GMX_SIMD_ACTIVE STREQUAL "IBM_VSX")
     string(REPLACE " " ";" SIMD_CXX_FLAGS ${SIMD_IBM_VSX_CXX_FLAGS})
     set(GMX_SIMD_${GMX_SIMD_ACTIVE} 1)
     set(SIMD_STATUS_MESSAGE "Enabling IBM VSX SIMD instructions using CXX flags: ${SIMD_IBM_VSX_CXX_FLAGS}")
+    set(GMX_SIMD_ENUM_VALUE "gmx::SimdType::Ibm_Vsx")
 
 elseif(GMX_SIMD_ACTIVE STREQUAL "REFERENCE")
 
@@ -293,6 +285,7 @@ elseif(GMX_SIMD_ACTIVE STREQUAL "REFERENCE")
 
     set(GMX_SIMD_${GMX_SIMD_ACTIVE} 1)
     set(SIMD_STATUS_MESSAGE "Enabling reference (emulated) SIMD instructions without special flags.")
+    set(GMX_SIMD_ENUM_VALUE "gmx::SimdType::Reference")
 
 else()
     gmx_invalid_option_value(GMX_SIMD_ACTIVE)

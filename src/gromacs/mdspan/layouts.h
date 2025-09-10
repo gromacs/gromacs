@@ -175,7 +175,7 @@ public:
         }
 
         /*! \brief Map the multidimensional indices to 1D.
-         * Requires number of indicies have the same dimensionality as the mapping.
+         * Requires number of indices have the same dimensionality as the mapping.
          * \tparam Indices type of the indices to be mapped
          * \param[in] indices the indices to be mapped
          * \returns One-dimensional integer index.

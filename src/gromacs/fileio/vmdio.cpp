@@ -109,13 +109,13 @@
 #endif
 
 #include "gromacs/fileio/gmxfio.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vec.h"
 
 
 typedef int (*initfunc)();
@@ -128,7 +128,7 @@ static int register_cb(void* v, vmdplugin_t* p)
     const char*      key       = p->name;
     gmx_vmdplugin_t* vmdplugin = static_cast<gmx_vmdplugin_t*>(v);
 
-    if (strcmp(key, vmdplugin->filetype.string().c_str()) == 0)
+    if (std::strcmp(key, vmdplugin->filetype.string().c_str()) == 0)
     {
         vmdplugin->api = reinterpret_cast<molfile_plugin_t*>(p);
     }
@@ -297,12 +297,12 @@ static int load_vmd_library(const std::filesystem::path& fn, gmx_vmdplugin_t* vm
      * plugins, then an implicit run-time path, and finally for one
      * given at configure time. This last might be hard-coded to the
      * default for VMD installs. */
-    const char*           pathEnvChar = getenv("VMD_PLUGIN_PATH");
+    const char*           pathEnvChar = std::getenv("VMD_PLUGIN_PATH");
     std::filesystem::path pathenv     = pathEnvChar != nullptr ? pathEnvChar : "";
     std::filesystem::path fallBackPathEnv;
     if (pathenv.empty())
     {
-        pathenv = getenv("VMDDIR");
+        pathenv = std::getenv("VMDDIR");
         if (pathenv.empty())
         {
             printf("\nNeither VMD_PLUGIN_PATH or VMDDIR set. ");
@@ -332,7 +332,7 @@ static int load_vmd_library(const std::filesystem::path& fn, gmx_vmdplugin_t* vm
     {
         /* FIXME: Undefined which plugin is chosen if more than one plugin
            can read a certain file ending. Requires some additional command
-           line option or enviroment variable to specify which plugin should
+           line option or environment variable to specify which plugin should
            be picked.
          */
         ret |= load_sharedlibrary_plugins(globbuf.gl_pathv[i], vmdplugin);

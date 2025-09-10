@@ -50,8 +50,8 @@ to XVG.
 
 :issue:`4812`
 
-`gmxapi.commandline_operation` implicitly converts *input_files* to absolute paths
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+gmxapi.commandline_operation implicitly converts *input_files* to absolute paths
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 Relative paths in the *input_files* mapping are now explicitly relative to the working
 directory of the caller.

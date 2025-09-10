@@ -75,7 +75,8 @@ auto makeSolveKernel(sycl::handler& cgh,
     const int reductionBufferSize = c_solveMaxWarpsPerBlock * stride;
 
     // Help compiler eliminate local buffer when it is unused.
-    auto sm_virialAndEnergy = [&]() {
+    auto sm_virialAndEnergy = [&]()
+    {
         if constexpr (computeEnergyAndVirial)
         {
             return sycl::local_accessor<float, 1>(sycl::range<1>(reductionBufferSize), cgh);
@@ -91,7 +92,7 @@ auto makeSolveKernel(sycl::handler& cgh,
      * depending on the grid contiguous dimension size,
      * that can range from a part of a single gridline to several complete gridlines.
      */
-    return [=](sycl::nd_item<3> itemIdx) [[intel::reqd_sub_group_size(subGroupSize)]]
+    return [=](sycl::nd_item<3> itemIdx) [[sycl::reqd_sub_group_size(subGroupSize)]]
     {
         if constexpr (skipKernelCompilation<subGroupSize>())
         {
@@ -442,15 +443,18 @@ void PmeSolveKernel<gridOrdering, computeEnergyAndVirial, gridIndex, subGroupSiz
 
     sycl::queue q = deviceStream.stream();
 
-    q.submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
-        auto kernel = makeSolveKernel<gridOrdering, computeEnergyAndVirial, subGroupSize>(
-                cgh,
-                gridParams_->d_splineModuli[gridIndex].get_pointer(),
-                solveKernelParams_,
-                constParams_->d_virialAndEnergy[gridIndex].get_pointer(),
-                gridParams_->d_fftComplexGrid[gridIndex].get_pointer());
-        cgh.parallel_for<KernelNameType>(range, kernel);
-    });
+    gmx::syclSubmitWithoutEvent(
+            q,
+            [&](sycl::handler& cgh)
+            {
+                auto kernel = makeSolveKernel<gridOrdering, computeEnergyAndVirial, subGroupSize>(
+                        cgh,
+                        gridParams_->d_splineModuli[gridIndex].get_pointer(),
+                        solveKernelParams_,
+                        constParams_->d_virialAndEnergy[gridIndex].get_pointer(),
+                        gridParams_->d_fftComplexGrid[gridIndex].get_pointer());
+                cgh.parallel_for<KernelNameType>(range, kernel);
+            });
 
     // Delete set args, so we don't forget to set them before the next launch.
     reset();
@@ -480,7 +484,7 @@ CLANG_DIAGNOSTIC_IGNORE("-Wweak-template-vtables")
     template class PmeSolveKernel<GridOrdering::YZX, false, 1, subGroupSize>; \
     template class PmeSolveKernel<GridOrdering::YZX, true, 1, subGroupSize>;
 
-#if GMX_SYCL_DPCPP
+#if GMX_SYCL_DPCPP || GMX_ACPP_HAVE_GENERIC_TARGET
 INSTANTIATE(16);
 #endif
 INSTANTIATE(32);

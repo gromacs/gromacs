@@ -55,7 +55,7 @@ testing. Their implementations can be found in ``cmake/gmxBuildTypeXXX.cmake``.
 **Reference**
   This build type compiles a version of |Gromacs| aimed solely at correctness. All
   parallelization and optimization possibilities are disabled. This build type is
-  compiled with GCC 9 to generate the regression test reference values, against
+  compiled with GCC 11 to generate the regression test reference values, against
   which all other |Gromacs| builds are tested.
 
 **RelWithAssert**
@@ -254,10 +254,6 @@ Variables affecting compilation/linking
    :doc:`Mixed or Double precision </reference-manual/definitions>`
    for further information.
 
-.. cmake:: GMX_EXTRAE
-
-   Add support for tracing using `Extrae <https://tools.bsc.es/extrae>`_.
-
 .. cmake:: GMX_EXTERNAL_BLAS
 
    If not set (the default), CMake will first try to use an external BLAS library,
@@ -333,7 +329,7 @@ Variables affecting compilation/linking
 
 .. cmake:: GMX_THREAD_MPI
 
-   Enable thread-MPI support for inter-node parallelism. Defaults to ``ON``.
+   Enable thread-MPI support for intra-node parallelism. Defaults to ``ON``.
 
 .. cmake:: GMX_USE_RDTSCP
 
@@ -408,11 +404,11 @@ Variables affecting the ``all`` target
 
 .. cmake:: GMX_CLANG_TIDY
 
-  `clang-tidy <https://releases.llvm.org/11.0.0/tools/clang/tools/extra/docs/clang-tidy/index.html>`_
+  `clang-tidy <https://releases.llvm.org/18.0.0/tools/clang/tools/extra/docs/clang-tidy/index.html>`_
   is used for static code analysis and (some) automated fixing of issues detected. clang-tidy is easy to install.
   It is contained in
-  the llvm binary `package <http://releases.llvm.org/download.html#11.0.0>`_. Only
-  version 11.0.* is supported. Others might miss tests or give false positives.
+  the llvm binary `package <http://releases.llvm.org/download.html#18.0.0>`_. Only
+  version 18.0.* is supported. Others might miss tests or give false positives.
   It is run automatically in GitLab CI for each commit. Many checks have fixes which can automatically be
   applied. To run it, the build has to be configured with
   ``cmake -DGMX_CLANG_TIDY=ON -DCMAKE_BUILD_TYPE=Debug``.

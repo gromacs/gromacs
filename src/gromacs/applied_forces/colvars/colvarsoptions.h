@@ -46,13 +46,13 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/mdtypes/imdpoptionprovider.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 enum class PbcType : int;
 struct gmx_mtop_t;
@@ -68,10 +68,6 @@ struct MdRunInputFilename;
 class IKeyValueTreeTransformRules;
 class IOptionsContainerWithSections;
 class KeyValueTreeObjectBuilder;
-
-
-//! Tag with name of the Colvars MDModule
-static const std::string c_colvarsModuleName = "colvars";
 
 
 /*! \internal
@@ -112,6 +108,9 @@ public:
 
     //! Set the MDLogger instance
     void setLogger(const MDLogger& logger);
+
+    //! Get the logger
+    const MDLogger& logger() const;
 
     /*! \brief Process EdrOutputFilename notification during mdrun.
      * Used to set the prefix of Colvars output files based on the .edr filename
@@ -166,35 +165,12 @@ public:
                        const matrix         boxValues,
                        real                 temperature);
 
-
 private:
     //! Indicate if colvars module is active
     bool active_ = false;
 
-    /*! \brief Following Tags denotes names of parameters from .mdp file
-     * \note Changing this strings will break .tpr backwards compability
-     */
-    //! \{
-    const std::string c_activeTag_          = "active";
-    const std::string c_colvarsFileNameTag_ = "configfile";
-    const std::string c_colvarsSeedTag_     = "seed";
-    //! \}
-
-
-    /*! \brief This tags for parameters which will be generated during grompp
-     * and stored into *.tpr file via KVT
-     */
-    //! \{
-    const std::string c_inputStreamsTag_   = "inputStreams";
-    const std::string c_configStringTag_   = "configString";
-    const std::string c_startingCoordsTag_ = "startingCoords";
-    const std::string c_ensTempTag_        = "ensTemp";
-
-    //! \}
-
     //! Colvars config filename
     std::string colvarsFileName_;
-
 
     //! Colvars seed for Langevin integrator
     int colvarsSeed_ = -1;
@@ -216,8 +192,11 @@ private:
 
     real ensembleTemperature_;
 
-
-    //! Logger instance
+    /*! \brief MDLogger during mdrun
+     *
+     * This is a pointer only because we need an "optional reference"
+     * to a const MDLogger before the notification always provides the
+     * actual reference. */
     const MDLogger* logger_ = nullptr;
 
     /*! \brief String containing the prefix for output colvars files

@@ -414,7 +414,7 @@ void gmx_md5_append(md5_state_t* pms, const md5_byte_t* data, int nbytes)
     /* Process a final partial block. */
     if (left)
     {
-        memcpy(pms->buf, p, left);
+        std::memcpy(pms->buf, p, left);
     }
 }
 

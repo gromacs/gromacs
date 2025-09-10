@@ -51,7 +51,7 @@
 // Assert placeholders, to not rip them out from OpenCL implementation - hopefully they come in handy some day with OpenCL 2
 #define assert(a)
 
-#define PmeOpenCLKernelParams PmeGpuKernelParamsBase
+#define PmeOpenCLKernelParams PmeGpuKernelParams
 
 /* SPREAD/SPLINE */
 

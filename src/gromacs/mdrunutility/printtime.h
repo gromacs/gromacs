@@ -49,12 +49,17 @@ struct gmx_walltime_accounting;
 struct t_commrec;
 struct t_inputrec;
 
+namespace gmx
+{
+class MpiComm;
+}
+
 //! Print time to \c out.
 void print_time(FILE*                    out,
                 gmx_walltime_accounting* walltime_accounting,
                 int64_t                  step,
                 const t_inputrec*        ir,
-                const t_commrec*         cr);
+                const gmx::MpiComm&      mpiCommSimulation);
 
 /*! \brief Print date, time, MPI rank and a description of this point
  * in time.

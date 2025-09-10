@@ -26,5 +26,7 @@ the use of |Gromacs| for specific scientific problems.
    membrane-embedding
    density-guided-simulation
    colvars
+   plumed
+   nnpot
 
 

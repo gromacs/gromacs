@@ -142,8 +142,8 @@ of the simulation. We list the approximations below.
       frequency vibrations of covalent bonds should make us worry! The
       statistical mechanics of a classical harmonic oscillator differs
       appreciably from that of a real quantum oscillator when the
-      resonance frequency :math:`\nu` approximates or exceeds
-      :math:`k_BT/h`. Now at room temperature the wavenumber
+      resonance frequency :math:`\nu` approaches or exceeds
+      :math:`k_BT/h`. At room temperature the wavenumber
       :math:`\sigma = 1/\lambda = \nu/c` at which :math:`h
       \nu = k_BT` is approximately 200 cm\ :math:`^{-1}`. Thus, all
       frequencies higher than, say, 100 cm\ :math:`^{-1}` may misbehave
@@ -181,7 +181,7 @@ of the simulation. We list the approximations below.
         +---------------+-------------+------------+
         | CCC           | bending     |  800--1000 |
         +---------------+-------------+------------+
-        | |OHO1|        | libration   |  400--700  |
+        | |OHO1|        | vibration   |  400--700  |
         +---------------+-------------+------------+
         | |OHO1|        | stretch     |   50--200  |
         +---------------+-------------+------------+
@@ -224,7 +224,7 @@ of the simulation. We list the approximations below.
             coverage of configurational space \ :ref:`13 <refGunsteren82>`.
 
 **Electrons are in the ground state**
-      In MD we use a *conservative* force field that is a function of
+      In MD simulations, we use a *conservative* force field that is a function of
       the positions of atoms only. This means that the electronic
       motions are not considered: the electrons are supposed to adjust
       their dynamics instantly when the atomic positions change (the
@@ -247,7 +247,7 @@ of the simulation. We list the approximations below.
       long-range Coulomb forces), it cannot incorporate
       polarizabilities, and it does not contain fine-tuning of bonded
       interactions. This urges the inclusion of some limitations in this
-      list below. For the rest it is quite useful and fairly reliable
+      list below. For the rest, it is quite useful and fairly reliable
       for biologically-relevant macromolecules in aqueous solution!
 
 **The force field is pair-additive**
@@ -269,9 +269,7 @@ of the simulation. We list the approximations below.
       the next item compensates this effect a bit.
 
 **Long-range interactions are cut off**
-      In this version, |Gromacs| always uses a
-      cut-off
-      radius for the Lennard-Jones
+      |Gromacs| commonly uses a cut-off radius for the Lennard-Jones
       interactions and sometimes for the Coulomb interactions as well.
       The “minimum-image convention” used by |Gromacs| requires that only
       one image of each particle in the periodic boundary conditions is
@@ -286,7 +284,7 @@ of the simulation. We list the approximations below.
       :ref:`15 <refEssmann95>`.
 
 **Boundary conditions are unnatural**
-      Since system size is small (even 10,000 particles is small), a
+      Since system size is small (even 100,000 particles is small), a
       cluster of particles will have a lot of unwanted boundary with its
       environment (vacuum). We must avoid this condition if we wish to
       simulate a bulk system. As such, we use periodic boundary
@@ -303,9 +301,9 @@ of the simulation. We list the approximations below.
 Energy Minimization and Search Methods
 --------------------------------------
 
-As mentioned in sec. :ref:`Compchem`, in many cases energy minimization
+As mentioned in :ref:`Compchem`, in many cases energy minimization
 is required. |Gromacs| provides a number of methods for local energy
-minimization, as detailed in sec. :ref:`EM`.
+minimization, as detailed in :ref:`EM`.
 
 The potential energy function of a (macro)molecular system is a very
 complex landscape (or *hypersurface*) in a large number of dimensions.

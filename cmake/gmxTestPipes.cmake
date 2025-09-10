@@ -39,14 +39,14 @@
 #
 #  Remember to have a cmakedefine for it too...
 
-MACRO(GMX_TEST_PIPES VARIABLE)
-    IF(NOT DEFINED ${VARIABLE})
+macro(GMX_TEST_PIPES VARIABLE)
+    if(NOT DEFINED ${VARIABLE})
 
-        MESSAGE(STATUS "Checking for pipe support")
+        message(STATUS "Checking for pipe support")
 
-        TRY_COMPILE(HAVE_PIPES "${CMAKE_BINARY_DIR}"
+        try_compile(HAVE_PIPES "${CMAKE_BINARY_DIR}"
                     "${CMAKE_SOURCE_DIR}/cmake/TestPipes.cpp")
 
-    ENDIF()
-ENDMACRO(GMX_TEST_PIPES VARIABLE)
+    endif()
+endmacro(GMX_TEST_PIPES VARIABLE)
 

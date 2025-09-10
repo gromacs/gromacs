@@ -43,16 +43,8 @@ endif()
 # but may be removed or changed without warning.
 add_subdirectory(legacy)
 
-# Activate targets for new C++ API components and docs.
-if(GMX_NATIVE_WINDOWS)
-    # GMXAPI has not been tested in Microsoft environments.
-    # GMXAPI requires position-independent code
-    set(_GMXAPI_DEFAULT OFF)
-else()
-    set(_GMXAPI_DEFAULT ${BUILD_SHARED_LIBS})
-endif()
-option(GMXAPI "Install GROMACS API." ${_GMXAPI_DEFAULT})
 if (GMXAPI)
+    # Activate targets for gmxapi components and docs.
     if(NOT ${BUILD_SHARED_LIBS})
         # Note: this conditional should check for the existence of a libgromacs target supporting PIC
         # using the POSITION_INDEPENDENT_CODE property, but for now the only facility we have is the global

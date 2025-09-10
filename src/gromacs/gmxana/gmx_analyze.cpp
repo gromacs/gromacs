@@ -58,7 +58,6 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/arraysize.h"
@@ -69,6 +68,7 @@
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vec.h"
 
 struct gmx_output_env_t;
 
@@ -368,7 +368,7 @@ static void average(const char* avfile, int avbar_opt, int n, int nset, real** v
                 {
                     tmp[s] = val[s][i];
                 }
-                qsort(tmp, nset, sizeof(tmp[0]), real_comp);
+                std::qsort(tmp, nset, sizeof(tmp[0]), real_comp);
                 fprintf(fp, " %g %g", tmp[nset - 1 - edge] - av, av - tmp[edge]);
             }
             else
@@ -1316,7 +1316,7 @@ int gmx_analyze(int argc, char* argv[])
                 if (j % 100 == 0)
                 {
                     fprintf(stderr, "\r%d", j);
-                    fflush(stderr);
+                    std::fflush(stderr);
                 }
                 tot = 0;
                 for (i = 0; i < n - j; i++)
@@ -1333,7 +1333,7 @@ int gmx_analyze(int argc, char* argv[])
         }
         xvgrclose(out);
         fprintf(stderr, "\r%d, time=%g\n", j - 1, (j - 1) * dt);
-        fflush(stderr);
+        std::fflush(stderr);
     }
     if (ccfile)
     {

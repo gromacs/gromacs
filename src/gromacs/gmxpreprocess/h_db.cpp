@@ -47,7 +47,6 @@
 
 #include "gromacs/gmxpreprocess/fflibutil.h"
 #include "gromacs/gmxpreprocess/notset.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -56,6 +55,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "hackblock.h"
 
@@ -168,7 +168,7 @@ static void read_h_db_file(const std::filesystem::path& hfn, std::vector<Molecul
         {
             for (int i = 0; (i < nab); i++)
             {
-                if (feof(in))
+                if (std::feof(in))
                 {
                     gmx_fatal(FARGS,
                               "Expected %d lines of hydrogens, found only %d "
@@ -178,7 +178,7 @@ static void read_h_db_file(const std::filesystem::path& hfn, std::vector<Molecul
                               block->name.c_str(),
                               hfn.string().c_str());
                 }
-                if (nullptr == fgets(buf, STRLEN, in))
+                if (nullptr == std::fgets(buf, STRLEN, in))
                 {
                     gmx_fatal(FARGS, "Error reading from file %s", hfn.string().c_str());
                 }
@@ -194,14 +194,15 @@ static void read_h_db_file(const std::filesystem::path& hfn, std::vector<Molecul
         /* Sort the list for searching later */
         std::sort(globalPatches->begin(),
                   globalPatches->end(),
-                  [](const MoleculePatchDatabase& a1, const MoleculePatchDatabase& a2) {
-                      return std::lexicographical_compare(a1.name.begin(),
-                                                          a1.name.end(),
-                                                          a2.name.begin(),
-                                                          a2.name.end(),
-                                                          [](const char& c1, const char& c2) {
-                                                              return std::toupper(c1) < std::toupper(c2);
-                                                          });
+                  [](const MoleculePatchDatabase& a1, const MoleculePatchDatabase& a2)
+                  {
+                      return std::lexicographical_compare(
+                              a1.name.begin(),
+                              a1.name.end(),
+                              a2.name.begin(),
+                              a2.name.end(),
+                              [](const char& c1, const char& c2)
+                              { return std::toupper(c1) < std::toupper(c2); });
                   });
     }
 }
@@ -224,7 +225,8 @@ int read_h_db(const std::filesystem::path& ffdir, std::vector<MoleculePatchDatab
 gmx::ArrayRef<const MoleculePatchDatabase>::iterator
 search_h_db(gmx::ArrayRef<const MoleculePatchDatabase> globalPatches, const char* key)
 {
-    return std::find_if(globalPatches.begin(), globalPatches.end(), [&key](const MoleculePatchDatabase& a) {
-        return gmx::equalCaseInsensitive(key, a.name);
-    });
+    return std::find_if(globalPatches.begin(),
+                        globalPatches.end(),
+                        [&key](const MoleculePatchDatabase& a)
+                        { return gmx::equalCaseInsensitive(key, a.name); });
 }

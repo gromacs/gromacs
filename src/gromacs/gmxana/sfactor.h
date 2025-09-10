@@ -35,8 +35,8 @@
 #define GMX_GMXANA_SFACTOR_H
 
 #include "gromacs/math/gmxcomplex.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 struct gmx_output_env_t;
 struct t_topology;

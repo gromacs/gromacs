@@ -45,7 +45,6 @@
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdlib/coupling.h"
 #include "gromacs/mdlib/stat.h"
 #include "gromacs/mdtypes/commrec.h"
@@ -53,6 +52,7 @@
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/topology/ifunc.h"
+#include "gromacs/utility/vec.h"
 
 #include "energydata.h"
 #include "nosehooverchains.h"
@@ -81,7 +81,7 @@ void MttkData::build(LegacySimulatorData*                    legacySimulatorData
     // TODO: Make sure we have a valid state in statePropagatorData at all times (#3421)
     if (haveDDAtomOrdering(*legacySimulatorData->cr_))
     {
-        if (MAIN(legacySimulatorData->cr_))
+        if (legacySimulatorData->cr_->commMyGroup.isMainRank())
         {
             initialVolume = det(legacySimulatorData->stateGlobal_->box);
         }
@@ -121,15 +121,14 @@ void MttkData::build(LegacySimulatorData*                    legacySimulatorData
                      mttkPropagatorConnection));
     auto* ptrToDataObject = builderHelper->simulationData<MttkData>(MttkData::dataID()).value();
 
-    energyData->addConservedEnergyContribution([ptrToDataObject](Step /*unused*/, Time time) {
-        return ptrToDataObject->temperatureCouplingIntegral(time);
-    });
-    energyData->setParrinelloRahmanBoxVelocities(
-            [ptrToDataObject]() { return ptrToDataObject->boxVelocity_; });
+    energyData->addConservedEnergyContribution(
+            [ptrToDataObject](Step /*unused*/, Time time)
+            { return ptrToDataObject->temperatureCouplingIntegral(time); });
+    energyData->setParrinelloRahmanBoxVelocities([ptrToDataObject]()
+                                                 { return ptrToDataObject->boxVelocity_; });
     builderHelper->registerReferenceTemperatureUpdate(
-            [ptrToDataObject](ArrayRef<const real> temperatures, ReferenceTemperatureChangeAlgorithm algorithm) {
-                ptrToDataObject->updateReferenceTemperature(temperatures[0], algorithm);
-            });
+            [ptrToDataObject](ArrayRef<const real> temperatures, ReferenceTemperatureChangeAlgorithm algorithm)
+            { ptrToDataObject->updateReferenceTemperature(temperatures[0], algorithm); });
 }
 
 std::string MttkData::dataID()
@@ -294,27 +293,33 @@ void MttkData::doCheckpointData(CheckpointData<operation>* checkpointData)
     checkpointData->scalar("integralTime", &integralTime_);
 }
 
-void MttkData::saveCheckpointState(std::optional<WriteCheckpointData> checkpointData, const t_commrec* cr)
+void MttkData::saveCheckpointState(std::optional<WriteCheckpointData> checkpointData,
+                                   const MpiComm&                     mpiComm,
+                                   gmx_domdec_t*                      dd)
 {
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         doCheckpointData<CheckpointDataOperation::Write>(&checkpointData.value());
     }
+
+    GMX_UNUSED_VALUE(dd);
 }
 
-void MttkData::restoreCheckpointState(std::optional<ReadCheckpointData> checkpointData, const t_commrec* cr)
+void MttkData::restoreCheckpointState(std::optional<ReadCheckpointData> checkpointData,
+                                      const MpiComm&                    mpiComm,
+                                      gmx_domdec_t*                     dd)
 {
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         doCheckpointData<CheckpointDataOperation::Read>(&checkpointData.value());
     }
-    if (haveDDAtomOrdering(*cr))
+    if (dd)
     {
-        dd_bcast(cr->dd, int(sizeof(real)), &etaVelocity_);
-        dd_bcast(cr->dd, int(sizeof(real)), &invMass_);
-        dd_bcast(cr->dd, int(sizeof(Time)), &etaVelocityTime_);
-        dd_bcast(cr->dd, int(sizeof(double)), &temperatureCouplingIntegral_);
-        dd_bcast(cr->dd, int(sizeof(Time)), &integralTime_);
+        dd_bcast(dd, int(sizeof(real)), &etaVelocity_);
+        dd_bcast(dd, int(sizeof(real)), &invMass_);
+        dd_bcast(dd, int(sizeof(Time)), &etaVelocityTime_);
+        dd_bcast(dd, int(sizeof(double)), &temperatureCouplingIntegral_);
+        dd_bcast(dd, int(sizeof(Time)), &integralTime_);
     }
 }
 
@@ -355,32 +360,38 @@ void MttkPropagatorConnection::build(ModularSimulatorAlgorithmBuilderHelper* bui
                            .value();
 
     builderHelper->registerTemperaturePressureControl(
-            [object, propagatorTagPrePosition, positionOffset](const PropagatorConnection& connection) {
+            [object, propagatorTagPrePosition, positionOffset](const PropagatorConnection& connection)
+            {
                 object->connectWithPropagatorPositionPreStepScaling(
                         connection, propagatorTagPrePosition, positionOffset);
             });
     builderHelper->registerTemperaturePressureControl(
-            [object, propagatorTagPostPosition, positionOffset](const PropagatorConnection& connection) {
+            [object, propagatorTagPostPosition, positionOffset](const PropagatorConnection& connection)
+            {
                 object->connectWithPropagatorPositionPostStepScaling(
                         connection, propagatorTagPostPosition, positionOffset);
             });
     builderHelper->registerTemperaturePressureControl(
-            [object, propagatorTagPreVelocity1, velocityOffset1](const PropagatorConnection& connection) {
+            [object, propagatorTagPreVelocity1, velocityOffset1](const PropagatorConnection& connection)
+            {
                 object->connectWithPropagatorVelocityPreStepScaling(
                         connection, propagatorTagPreVelocity1, velocityOffset1);
             });
     builderHelper->registerTemperaturePressureControl(
-            [object, propagatorTagPostVelocity1, velocityOffset1](const PropagatorConnection& connection) {
+            [object, propagatorTagPostVelocity1, velocityOffset1](const PropagatorConnection& connection)
+            {
                 object->connectWithPropagatorVelocityPostStepScaling(
                         connection, propagatorTagPostVelocity1, velocityOffset1);
             });
     builderHelper->registerTemperaturePressureControl(
-            [object, propagatorTagPreVelocity2, velocityOffset2](const PropagatorConnection& connection) {
+            [object, propagatorTagPreVelocity2, velocityOffset2](const PropagatorConnection& connection)
+            {
                 object->connectWithPropagatorVelocityPreStepScaling(
                         connection, propagatorTagPreVelocity2, velocityOffset2);
             });
     builderHelper->registerTemperaturePressureControl(
-            [object, propagatorTagPostVelocity2, velocityOffset2](const PropagatorConnection& connection) {
+            [object, propagatorTagPostVelocity2, velocityOffset2](const PropagatorConnection& connection)
+            {
                 object->connectWithPropagatorVelocityPostStepScaling(
                         connection, propagatorTagPostVelocity2, velocityOffset2);
             });
@@ -587,14 +598,14 @@ void MttkElement::scheduleTask(Step step, Time /*unused*/, const RegisterRunFunc
 ISimulatorElement* MttkElement::getElementPointerImpl(
         LegacySimulatorData*                    legacySimulatorData,
         ModularSimulatorAlgorithmBuilderHelper* builderHelper,
-        StatePropagatorData gmx_unused* statePropagatorData,
-        EnergyData*                     energyData,
-        FreeEnergyPerturbationData gmx_unused* freeEnergyPerturbationData,
-        GlobalCommunicationHelper gmx_unused* globalCommunicationHelper,
-        ObservablesReducer gmx_unused*         observablesReducer,
-        Offset                                 offset,
-        ScheduleOnInitStep                     scheduleOnInitStep,
-        const MttkPropagatorConnectionDetails& mttkPropagatorConnectionDetails)
+        StatePropagatorData gmx_unused*         statePropagatorData,
+        EnergyData*                             energyData,
+        FreeEnergyPerturbationData gmx_unused*  freeEnergyPerturbationData,
+        GlobalCommunicationHelper gmx_unused*   globalCommunicationHelper,
+        ObservablesReducer gmx_unused*          observablesReducer,
+        Offset                                  offset,
+        ScheduleOnInitStep                      scheduleOnInitStep,
+        const MttkPropagatorConnectionDetails&  mttkPropagatorConnectionDetails)
 {
     // Data is now owned by the caller of this method, who will handle lifetime (see ModularSimulatorAlgorithm)
     if (!builderHelper->simulationData<MttkData>(MttkData::dataID()))
@@ -662,10 +673,10 @@ ISimulatorElement* MttkBoxScaling::getElementPointerImpl(
         ModularSimulatorAlgorithmBuilderHelper* builderHelper,
         StatePropagatorData*                    statePropagatorData,
         EnergyData*                             energyData,
-        FreeEnergyPerturbationData gmx_unused* freeEnergyPerturbationData,
-        GlobalCommunicationHelper gmx_unused* globalCommunicationHelper,
-        ObservablesReducer gmx_unused*         observablesReducer,
-        const MttkPropagatorConnectionDetails& mttkPropagatorConnectionDetails)
+        FreeEnergyPerturbationData gmx_unused*  freeEnergyPerturbationData,
+        GlobalCommunicationHelper gmx_unused*   globalCommunicationHelper,
+        ObservablesReducer gmx_unused*          observablesReducer,
+        const MttkPropagatorConnectionDetails&  mttkPropagatorConnectionDetails)
 {
     // Data is now owned by the caller of this method, who will handle lifetime (see ModularSimulatorAlgorithm)
     if (!builderHelper->simulationData<MttkData>(MttkData::dataID()))

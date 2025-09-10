@@ -73,7 +73,8 @@ auto settleKernel(sycl::handler& cgh,
                   PbcAiuc pbcAiuc)
 {
     // shmem buffer for i x+q pre-loading
-    auto sm_threadVirial = [&]() {
+    auto sm_threadVirial = [&]()
+    {
         if constexpr (computeVirial)
         {
             return sycl::local_accessor<float, 1>(sycl::range<1>(sc_workGroupSize * 6), cgh);
@@ -84,7 +85,8 @@ auto settleKernel(sycl::handler& cgh,
         }
     }();
 
-    return [=](sycl::nd_item<1> itemIdx) {
+    return [=](sycl::nd_item<1> itemIdx)
+    {
         constexpr float almost_zero = real(1e-12);
         const int       settleIdx   = itemIdx.get_global_linear_id();
         const int       threadIdx = itemIdx.get_local_linear_id(); // Work-item index in work-group
@@ -104,14 +106,14 @@ auto settleKernel(sycl::handler& cgh,
             const Float3 xprime_hw3 = gm_xp[indices.hw3];
 
             Float3 dist21;
-            pbcDxAiucSycl(pbcAiuc, x_hw2, x_ow1, dist21);
+            pbcDxAiucGpu(pbcAiuc, x_hw2, x_ow1, dist21);
             Float3 dist31;
-            pbcDxAiucSycl(pbcAiuc, x_hw3, x_ow1, dist31);
+            pbcDxAiucGpu(pbcAiuc, x_hw3, x_ow1, dist31);
             Float3 doh2;
-            pbcDxAiucSycl(pbcAiuc, xprime_hw2, xprime_ow1, doh2);
+            pbcDxAiucGpu(pbcAiuc, xprime_hw2, xprime_ow1, doh2);
 
             Float3 doh3;
-            pbcDxAiucSycl(pbcAiuc, xprime_hw3, xprime_ow1, doh3);
+            pbcDxAiucGpu(pbcAiuc, xprime_hw3, xprime_ow1, doh3);
 
             Float3 a1 = (doh2 + doh3) * (-pars.wh);
 
@@ -352,11 +354,13 @@ static void launchSettleKernel(const DeviceStream& deviceStream, int numSettles,
     const sycl::nd_range<1> rangeAllSettles(numSettlesRoundedUp, sc_workGroupSize);
     sycl::queue             q = deviceStream.stream();
 
-    q.submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
-        auto kernel = settleKernel<updateVelocities, computeVirial>(
-                cgh, numSettles, std::forward<Args>(args)...);
-        cgh.parallel_for<kernelNameType>(rangeAllSettles, kernel);
-    });
+    gmx::syclSubmitWithoutEvent(q,
+                                [&](sycl::handler& cgh)
+                                {
+                                    auto kernel = settleKernel<updateVelocities, computeVirial>(
+                                            cgh, numSettles, std::forward<Args>(args)...);
+                                    cgh.parallel_for<kernelNameType>(rangeAllSettles, kernel);
+                                });
 }
 
 /*! \brief Select templated kernel and launch it. */

@@ -4,13 +4,16 @@
   <String Name="CommandLine">-trestart 2 -beginfit 5 -endfit 9 -lateral x -sel all</String>
   <OutputFiles Name="Files">
     <File Name="-o">
-      <XvgLegend Name="DiffusionCoefficient"></XvgLegend>
+      <XvgLegend Name="DiffusionCoefficient">
+        <String>       all</String>
+        <Real>5.0364</Real>
+        <Real>0.00</Real>
+      </XvgLegend>
       <XvgLegend Name="Legend">
         <String>title "Mean Squared Displacement"</String>
         <String>xaxis  label "tau (ps)"</String>
         <String>yaxis  label "MSD (nm\\S2\\N)"</String>
         <String>TYPE xy</String>
-        <String>s0 legend "D[       all] = 5.0364 (+/- 0.0000) (1e-5 cm^2/s)"</String>
       </XvgLegend>
       <XvgData Name="Data">
         <Sequence Name="Row0">

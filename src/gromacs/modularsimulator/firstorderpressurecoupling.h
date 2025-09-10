@@ -86,12 +86,16 @@ public:
     //! Setup - initialize relative box matrix
     void elementSetup() override;
     //! No teardown needed
-    void elementTeardown() override{};
+    void elementTeardown() override {};
 
     //! ICheckpointHelperClient write checkpoint implementation
-    void saveCheckpointState(std::optional<WriteCheckpointData> checkpointData, const t_commrec* cr) override;
+    void saveCheckpointState(std::optional<WriteCheckpointData> checkpointData,
+                             const MpiComm&                     mpiComm,
+                             gmx_domdec_t*                      dd) override;
     //! ICheckpointHelperClient read checkpoint implementation
-    void restoreCheckpointState(std::optional<ReadCheckpointData> checkpointData, const t_commrec* cr) override;
+    void restoreCheckpointState(std::optional<ReadCheckpointData> checkpointData,
+                                const MpiComm&                    mpiComm,
+                                gmx_domdec_t*                     dd) override;
     //! ICheckpointHelperClient key implementation
     const std::string& clientID() override;
 
@@ -114,11 +118,11 @@ public:
                           ModularSimulatorAlgorithmBuilderHelper* builderHelper,
                           StatePropagatorData*                    statePropagatorData,
                           EnergyData*                             energyData,
-                          FreeEnergyPerturbationData gmx_unused* freeEnergyPerturbationData,
-                          GlobalCommunicationHelper gmx_unused* globalCommunicationHelper,
-                          ObservablesReducer*                   observablesReducer,
-                          int                                   offset,
-                          ReportPreviousStepConservedEnergy     reportPreviousStepConservedEnergy);
+                          FreeEnergyPerturbationData gmx_unused*  freeEnergyPerturbationData,
+                          GlobalCommunicationHelper gmx_unused*   globalCommunicationHelper,
+                          ObservablesReducer*                     observablesReducer,
+                          int                                     offset,
+                          ReportPreviousStepConservedEnergy reportPreviousStepConservedEnergy);
 
 private:
     //! Calculate the scaling matrix

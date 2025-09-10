@@ -130,7 +130,7 @@ private:
     //! Constructor
     ModularSimulatorAlgorithm(std::string              topologyName,
                               FILE*                    fplog,
-                              t_commrec*               cr,
+                              t_commrec&               cr,
                               const MDLogger&          mdlog,
                               const MdrunOptions&      mdrunOptions,
                               const t_inputrec*        inputrec,
@@ -168,7 +168,7 @@ private:
      * eliminated by rewriting the stop and reset handler to fit the
      * modular simulator approach.
      */
-    void preStep(Step step, Time time, bool isNeighborSearchingStep);
+    void preStep(Step step, Time time);
 
     /*! \brief A function called after every step
      *
@@ -279,8 +279,6 @@ private:
 
     // TODO: This is a hack for stop handler - needs to go once StopHandler
     //       is adapted to the modular simulator
-    //! Whether this is a neighbor-searching step
-    bool stophandlerIsNSStep_ = false;
     //! The current step
     Step stophandlerCurrentStep_ = -1;
 
@@ -290,7 +288,7 @@ private:
     //! Handles logging.
     FILE* fpLog_;
     //! Handles communication.
-    t_commrec* cr_;
+    t_commrec& cr_;
     //! Handles logging.
     const MDLogger& mdLog_;
     //! Contains command-line options to mdrun.
@@ -419,7 +417,7 @@ class ModularSimulatorAlgorithmBuilder final
 {
 public:
     //! Constructor
-    ModularSimulatorAlgorithmBuilder(compat::not_null<LegacySimulatorData*>    legacySimulatorData,
+    ModularSimulatorAlgorithmBuilder(compat::not_null<LegacySimulatorData*> legacySimulatorData,
                                      std::unique_ptr<ReadCheckpointDataHolder> checkpointDataHolder);
     //! Build algorithm
     ModularSimulatorAlgorithm build();
@@ -680,14 +678,14 @@ void ModularSimulatorAlgorithmBuilder::add(Args&&... args)
 
 //! Returns a pointer casted to type Base if the Element is derived from Base
 template<typename Base, typename Element>
-static std::enable_if_t<std::is_base_of<Base, Element>::value, Base*> castOrNull(Element* element)
+static std::enable_if_t<std::is_base_of_v<Base, Element>, Base*> castOrNull(Element* element)
 {
     return static_cast<Base*>(element);
 }
 
 //! Returns a nullptr of type Base if Element is not derived from Base
 template<typename Base, typename Element>
-static std::enable_if_t<!std::is_base_of<Base, Element>::value, Base*> castOrNull(Element gmx_unused* element)
+static std::enable_if_t<!std::is_base_of_v<Base, Element>, Base*> castOrNull(Element gmx_unused* element)
 {
     return nullptr;
 }

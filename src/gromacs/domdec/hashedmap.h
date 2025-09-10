@@ -52,7 +52,6 @@
 #include <utility>
 #include <vector>
 
-#include "gromacs/compat/utility.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 
@@ -116,12 +115,19 @@ public:
     /*! \brief Constructor
      *
      * \param[in] numElementsEstimate  An estimate of the number of elements that will be stored, used for optimizing initial performance
+     * \param[in] numOpenmpThreadsForClearing  The number of OpenMP threads to use for clearing the map, default is 1
      *
      * Note that the estimate of the number of elements is only relevant
      * for the performance up until the first call to clear(), after which
      * table size is optimized based on the actual number of elements.
      */
-    HashedMap(int numElementsEstimate) { resize(numElementsEstimate); }
+    HashedMap(int numElementsEstimate, int numOpenmpThreadsForClearing = 1) :
+        numOpenmpThreadsForClearing_(numOpenmpThreadsForClearing)
+    {
+        GMX_RELEASE_ASSERT(numOpenmpThreadsForClearing_ >= 1, "Need at least one thread");
+
+        resize(numElementsEstimate);
+    }
 
     /*! \brief Returns the number of elements */
     int size() const { return numElements_; }
@@ -137,7 +143,6 @@ private:
      * \param[in] value        The value for the entry
      * \throws InvalidInputError from a debug build when attempting to insert a duplicate key with \p allowAssign=true
      */
-    // cppcheck-suppress unusedPrivateFunction
     template<bool allowAssign>
     void insert_assign(int key, const T& value)
     {
@@ -257,12 +262,10 @@ public:
 
     /*! \brief Returns a pointer to the value for the given key or nullptr when not present
      *
-     * \todo Use std::as_const when CUDA 11 is a requirement.
-     *
      * \param[in] key  The key
      * \return a pointer to value for the given key or nullptr when not present
      */
-    T* find(int key) { return const_cast<T*>(gmx::compat::as_const(*this).find(key)); }
+    T* find(int key) { return const_cast<T*>(std::as_const(*this).find(key)); }
 
     /*! \brief Returns a pointer to the value for the given key or nullptr when not present
      *
@@ -287,11 +290,24 @@ public:
     //! Clear all the entries in the list
     void clear()
     {
-        for (hashEntry& entry : table_)
+        if (numOpenmpThreadsForClearing_ == 1)
         {
-            entry.key  = -1;
-            entry.next = -1;
+            for (hashEntry& entry : table_)
+            {
+                entry.key  = -1;
+                entry.next = -1;
+            }
         }
+        else
+        {
+#pragma omp parallel for num_threads(numOpenmpThreadsForClearing_) schedule(static)
+            for (Index i = 0; i < gmx::ssize(table_); i++)
+            {
+                table_[i].key  = -1;
+                table_[i].next = -1;
+            }
+        }
+
         startIndexForSpaceForListEntry_ = bucket_count();
         numElements_                    = 0;
     }
@@ -320,14 +336,16 @@ public:
     }
 
 private:
-    /*! \brief The hash table list */
+    //! The hash table list
     std::vector<hashEntry> table_;
-    /*! \brief The bit mask for computing the hash of a key */
+    //! The bit mask for computing the hash of a key
     int bitMask_ = 0;
-    /*! \brief Index in table_ at which to start looking for empty space for a new linked list entry */
+    //! Index in table_ at which to start looking for empty space for a new linked list entry
     int startIndexForSpaceForListEntry_ = 0;
-    /*! \brief The number of elements currently stored in the table */
+    //! The number of elements currently stored in the table
     int numElements_ = 0;
+    //! The number of threads to use for clearing the table
+    int numOpenmpThreadsForClearing_;
 };
 
 } // namespace gmx

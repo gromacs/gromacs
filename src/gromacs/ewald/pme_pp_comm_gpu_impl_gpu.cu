@@ -57,8 +57,8 @@
 namespace gmx
 {
 
-void PmePpCommGpu::Impl::sendCoordinatesToPmePeerToPeer(Float3*               sendPtr,
-                                                        int                   sendSize,
+void PmePpCommGpu::Impl::sendCoordinatesToPmePeerToPeer(const Float3* sendPtr,
+                                                        int           sendSize,
                                                         GpuEventSynchronizer* coordinatesReadyOnDeviceEvent)
 {
     // ensure stream waits until coordinate data is available on device
@@ -79,7 +79,7 @@ void PmePpCommGpu::Impl::sendCoordinatesToPmePeerToPeer(Float3*               se
     pmeCoordinatesSynchronizer_.markEvent(pmePpCommStream_);
     GpuEventSynchronizer* pmeSync = &pmeCoordinatesSynchronizer_;
     // NOLINTNEXTLINE(bugprone-sizeof-expression)
-    MPI_Send(&pmeSync, sizeof(GpuEventSynchronizer*), MPI_BYTE, pmeRank_, 0, comm_);
+    MPI_Send(&pmeSync, sizeof(GpuEventSynchronizer*), MPI_BYTE, pmeRank_, eCommType_COORD_GPU_SYNCHRONIZER, comm_);
 #endif
 }
 

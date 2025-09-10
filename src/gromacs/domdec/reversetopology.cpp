@@ -56,8 +56,6 @@
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/domdec_vsite.h"
 #include "gromacs/domdec/options.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdtypes/inputrec.h"
@@ -72,6 +70,8 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 using gmx::ArrayRef;
 using gmx::DDBondedChecking;
@@ -139,6 +139,9 @@ bool dd_check_ftype(const int ftype, const ReverseTopOptions& rtOptions)
 MolecularTopologyAtomIndices globalAtomIndexToMoltypeIndices(const gmx::ArrayRef<const MolblockIndices> molblockIndices,
                                                              const int globalAtomIndex)
 {
+    GMX_ASSERT(isValidGlobalAtom(globalAtomIndex),
+               "We should only look up real atoms (not fillers, value -1)");
+
     // Find the molblock the atom belongs to using bisection
     int start = 0;
     int end   = molblockIndices.size(); /* exclusive */

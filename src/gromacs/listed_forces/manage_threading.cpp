@@ -219,7 +219,7 @@ static void divide_bondeds_over_threads(bonded_threading_t*           bt,
     size_t fTypeGpuIndex = 0;
     for (int fType = 0; fType < F_NRE; fType++)
     {
-        if (!ftype_is_bonded_potential(fType))
+        if (!ftypeIsListedPotential(fType))
         {
             continue;
         }
@@ -312,7 +312,7 @@ static void divide_bondeds_over_threads(bonded_threading_t*           bt,
         fprintf(debug, "Division of bondeds over threads:\n");
         for (f = 0; f < F_NRE; f++)
         {
-            if (ftype_is_bonded_potential(f) && !idef.il[f].empty())
+            if (ftypeIsListedPotential(f) && !idef.il[f].empty())
             {
                 int t;
 
@@ -357,7 +357,7 @@ static void calc_bonded_reduction_mask(int                            natoms,
 
     for (int ftype = 0; ftype < F_NRE; ftype++)
     {
-        if (ftype_is_bonded_potential(ftype))
+        if (ftypeIsListedPotential(ftype))
         {
             int nb = idef.il[ftype].size();
             if (nb > 0)
@@ -414,7 +414,10 @@ void setup_bonded_threading(bonded_threading_t*           bt,
     bt->threadedForceBuffer.setupReduction();
 }
 
-bonded_threading_t::bonded_threading_t(const int numThreads, const int numEnergyGroups, FILE* fplog) :
+bonded_threading_t::bonded_threading_t(const int numThreads,
+                                       const int numEnergyGroups,
+                                       int       numComGroups,
+                                       FILE*     fplog) :
     nthreads(numThreads),
     threadedForceBuffer(numThreads, true, numEnergyGroups),
     haveBondeds(false),
@@ -436,7 +439,7 @@ bonded_threading_t::bonded_threading_t(const int numThreads, const int numEnergy
     const int max_nthread_uniform_default = 4;
     char*     ptr;
 
-    if ((ptr = getenv("GMX_BONDED_NTHREAD_UNIFORM")) != nullptr)
+    if ((ptr = std::getenv("GMX_BONDED_NTHREAD_UNIFORM")) != nullptr)
     {
         sscanf(ptr, "%d", &max_nthread_uniform);
         if (fplog != nullptr)
@@ -449,5 +452,14 @@ bonded_threading_t::bonded_threading_t(const int numThreads, const int numEnergy
     else
     {
         max_nthread_uniform = max_nthread_uniform_default;
+    }
+
+    centersOfMassScaledBuffers_.resize(numThreads);
+#pragma omp parallel for schedule(static)
+    for (int thread = 0; thread < numThreads; thread++)
+    {
+        auto& bufs = centersOfMassScaledBuffers_[thread];
+        bufs.comA_.resize(std::max(numComGroups, 1), { 0.0, 0.0, 0.0 });
+        bufs.comB_.resize(std::max(numComGroups, 1), { 0.0, 0.0, 0.0 });
     }
 }

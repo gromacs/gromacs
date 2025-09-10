@@ -43,8 +43,8 @@
 #ifndef GMX_EWALD_PME_OUTPUT_H
 #define GMX_EWALD_PME_OUTPUT_H
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/vectypes.h"
 
 // TODO There's little value in computing the Coulomb and LJ virial
 // separately, so we should simplify that.

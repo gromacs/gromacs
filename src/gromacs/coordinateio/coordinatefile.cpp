@@ -60,7 +60,6 @@
 #include "gromacs/coordinateio/requirements.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/trxio.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
@@ -68,6 +67,7 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/vec.h"
 
 namespace gmx
 {
@@ -434,7 +434,7 @@ void TrajectoryFrameWriter::prepareAndWriteFrame(const int framenumber, const t_
     }
     else
     {
-        write_trxframe(file_.outputFile(), const_cast<t_trxframe*>(&input), nullptr);
+        write_trxframe(file_.outputFile(), &input, nullptr);
     }
 }
 

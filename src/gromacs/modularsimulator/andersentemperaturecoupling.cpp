@@ -55,7 +55,6 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/math/units.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/stat.h"
@@ -72,6 +71,7 @@
 #include "gromacs/random/uniformrealdistribution.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "compositesimulatorelement.h"
 #include "constraintelement.h"
@@ -173,8 +173,8 @@ ISimulatorElement* AndersenTemperatureCoupling::getElementPointerImpl(
         StatePropagatorData*                    statePropagatorData,
         EnergyData*                             energyData,
         FreeEnergyPerturbationData*             freeEnergyPerturbationData,
-        GlobalCommunicationHelper gmx_unused* globalCommunicationHelper,
-        ObservablesReducer gmx_unused* observablesReducer)
+        GlobalCommunicationHelper gmx_unused*   globalCommunicationHelper,
+        ObservablesReducer gmx_unused*          observablesReducer)
 {
     GMX_RELEASE_ASSERT(legacySimulatorData->inputRec_->etc == TemperatureCoupling::Andersen
                                || legacySimulatorData->inputRec_->etc == TemperatureCoupling::AndersenMassive,
@@ -193,9 +193,8 @@ ISimulatorElement* AndersenTemperatureCoupling::getElementPointerImpl(
     auto* andersenThermostatPtr = andersenThermostat.get();
     builderHelper->registerReferenceTemperatureUpdate(
             [andersenThermostatPtr](ArrayRef<const real>                temperatures,
-                                    ReferenceTemperatureChangeAlgorithm algorithm) {
-                andersenThermostatPtr->updateReferenceTemperature(temperatures, algorithm);
-            });
+                                    ReferenceTemperatureChangeAlgorithm algorithm)
+            { andersenThermostatPtr->updateReferenceTemperature(temperatures, algorithm); });
 
     // T-coupling frequency will be composite element frequency
     const auto frequency = andersenThermostat->frequency();
@@ -220,7 +219,7 @@ ISimulatorElement* AndersenTemperatureCoupling::getElementPointerImpl(
                 statePropagatorData,
                 energyData,
                 freeEnergyPerturbationData,
-                MAIN(legacySimulatorData->cr_),
+                legacySimulatorData->cr_->commMyGroup.isMainRank(),
                 legacySimulatorData->fpLog_,
                 legacySimulatorData->inputRec_,
                 legacySimulatorData->mdAtoms_->mdatoms());

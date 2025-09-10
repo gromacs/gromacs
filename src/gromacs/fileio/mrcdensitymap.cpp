@@ -56,11 +56,11 @@
 #include "gromacs/math/coordinatetransformation.h"
 #include "gromacs/mdspan/extents.h"
 #include "gromacs/mdspan/layouts.h"
+#include "gromacs/serialization/inmemoryserializer.h"
+#include "gromacs/serialization/iserializer.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/utility/inmemoryserializer.h"
-#include "gromacs/utility/iserializer.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "mrcserializer.h"
@@ -93,7 +93,7 @@ std::vector<char> readCharBufferFromFile(const std::filesystem::path& filename)
     gmx_fseek(gmx_fio_getfp(mrcFile), 0, SEEK_SET);
     // Read whole file into buffer the size of the file
     std::vector<char> fileContentBuffer(fileSize);
-    size_t            readSize = fread(
+    size_t            readSize = std::fread(
             fileContentBuffer.data(), sizeof(char), fileContentBuffer.size(), gmx_fio_getfp(mrcFile));
     gmx_fio_close(mrcFile);
 
@@ -191,7 +191,7 @@ MrcDensityMapOfFloatFromFileReader::Impl::Impl(const std::filesystem::path& file
     if (!mrcHeaderIsSane(reader_->header()))
     {
         serializer_ = std::make_unique<InMemoryDeserializer>(buffer_, false, EndianSwapBehavior::Swap);
-        reader_     = std::make_unique<MrcDensityMapOfFloatReader>(serializer_.get());
+        reader_ = std::make_unique<MrcDensityMapOfFloatReader>(serializer_.get());
         if (!mrcHeaderIsSane(reader_->header()))
         {
             GMX_THROW(FileIOError(gmx::formatString(

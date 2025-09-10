@@ -47,7 +47,7 @@
 
 #include <memory>
 
-#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/vectypes.h"
 
 #if GMX_GPU_CUDA || GMX_GPU_HIP
 

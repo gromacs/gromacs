@@ -108,7 +108,7 @@ int tMPI_Scan(const void* sendbuf, void* recvbuf, int count,
         tMPI_Profile_wait_stop(cur, TMPIWAIT_Reduce);
 #endif
 #ifdef TMPI_DEBUG
-        printf("%d: scanning with %d \n", myrank, prev, iteration);
+        printf("%d: scanning with %d\n", myrank, prev);
         fflush(stdout);
 #endif
         /* now do the reduction */

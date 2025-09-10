@@ -49,6 +49,5 @@ gmx_add_unit_test(MathUnitTests math-test
         neldermead.cpp
         optimization.cpp
         paddedvector.cpp
-        vectypes.cpp
         )
 target_link_libraries(math-test PRIVATE math)

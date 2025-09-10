@@ -97,7 +97,7 @@ void testEnergyAccumulator()
 
     constexpr int                     c_numAtoms        = 16;
     const std::array<int, c_numAtoms> energyGroups      = { 4, 2, 3, 3, 0, 1, 4, 1,
-                                                       1, 0, 3, 2, 3, 2, 4, 1 };
+                                                            1, 0, 3, 2, 3, 2, 4, 1 };
     constexpr int                     c_numEnergyGroups = (useEnergyGroups ? 5 : 1);
 
     EnergyAccumulator<useEnergyGroups, true> energyAccumulator =
@@ -115,18 +115,15 @@ void testEnergyAccumulator()
         energyGroupsPerCluster.setEnergyGroups(energyGroups);
     }
 
-    // NOLINTNEXTLINE(readability-misleading-indentation) remove when clang-tidy-13 is required
     if constexpr (useEnergyGroups)
     {
         energyAccumulator.clearEnergiesAndSetEnergyGroupsForJClusters(energyGroupsPerCluster);
     }
 
-    // NOLINTNEXTLINE(readability-misleading-indentation) remove when clang-tidy-13 is required
     for (int iCluster = 0; iCluster < numIClusters; iCluster++)
     {
         energyAccumulator.template initICluster<c_iClusterSize>(iCluster);
 
-        // NOLINTNEXTLINE(readability-misleading-indentation) remove when clang-tidy-13 is required
         for (int jCluster = 0; jCluster < numJClusters; jCluster++)
         {
             AlignedArray<real, GMX_SIMD_REAL_WIDTH> coulombEnergies;
@@ -139,25 +136,21 @@ void testEnergyAccumulator()
                 for (int half = 0; half < c_numIClustersPerRegister; half++)
                 {
                     int iGroup = 0;
-                    // NOLINTNEXTLINE(readability-misleading-indentation) remove when clang-tidy-13 is required
                     if constexpr (useEnergyGroups)
                     {
                         iGroup = energyGroups[iCluster * c_iClusterSize + iRegister * c_numIClustersPerRegister + half];
                     }
 
-                    // NOLINTNEXTLINE(readability-misleading-indentation) remove when clang-tidy-13 is required
                     for (int j = 0; j < c_jClusterSize; j++)
                     {
                         const real coulombEnergy = std::rand() / real(RAND_MAX);
                         const real vdwEnergy     = std::rand() / real(RAND_MAX);
 
                         int jGroup = 0;
-                        // NOLINTNEXTLINE(readability-misleading-indentation) remove when clang-tidy-13 is required
                         if constexpr (useEnergyGroups)
                         {
                             jGroup = energyGroups[jCluster * c_jClusterSize + j];
                         }
-                        // NOLINTNEXTLINE(readability-misleading-indentation) remove when clang-tidy-13 is required
                         refCoulombEnergies[iGroup][jGroup] += coulombEnergy;
                         refVdwEnergies[iGroup][jGroup] += vdwEnergy;
 

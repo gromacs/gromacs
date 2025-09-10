@@ -40,6 +40,8 @@
  */
 #include "gmxpre.h"
 
+#include "config.h"
+
 #include <memory>
 #include <string>
 
@@ -48,13 +50,13 @@
 #include "gromacs/applied_forces/colvars/colvarsMDModule.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/paddedvector.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/iforceprovider.h"
 #include "gromacs/mdtypes/imdmodule.h"
 #include "gromacs/mdtypes/imdpoptionprovider.h"
+#include "gromacs/mdtypes/imdpoptionprovider_test_helper.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/treesupport.h"
@@ -64,6 +66,7 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringcompare.h"
+#include "gromacs/utility/vec.h"
 
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
@@ -80,7 +83,7 @@ class ColvarsTest : public ::testing::Test
 public:
     void addMdpOptionColvarsActive()
     {
-        mdpValueBuilder_.rootObject().addValue("colvars-active", std::string("yes"));
+        mdpValueBuilder_.rootObject().addValue("colvars-active", std::string("true"));
     }
 
     //! build an mdp options tree that sets the options for the Colvars module
@@ -90,18 +93,7 @@ public:
 
         ColvarsModule_ = ColvarsModuleInfo::create();
 
-        // set up options
-        Options ColvarsModuleOptions;
-        ColvarsModule_->mdpOptionProvider()->initMdpOptions(&ColvarsModuleOptions);
-
-        // Add rules to transform mdp inputs to ColvarsModule data
-        KeyValueTreeTransformer transform;
-        transform.rules()->addRule().keyMatchType("/", StringCompareType::CaseAndDashInsensitive);
-        ColvarsModule_->mdpOptionProvider()->initMdpTransform(transform.rules());
-
-        // Execute the transform on the mdpValues
-        auto transformedMdpValues = transform.transform(mdpOptionsTree, nullptr);
-        assignOptionsFromKeyValueTree(&ColvarsModuleOptions, transformedMdpValues.object(), nullptr);
+        test::fillOptionsFromMdpValues(mdpOptionsTree, ColvarsModule_->mdpOptionProvider());
     }
 
     void intializeForceProviders() { ColvarsModule_->initForceProviders(&ColvarsForces_); }
@@ -111,6 +103,8 @@ protected:
     ForceProviders             ColvarsForces_;
     std::unique_ptr<IMDModule> ColvarsModule_;
 };
+
+#if GMX_HAVE_COLVARS
 
 TEST_F(ColvarsTest, ForceProviderLackingInputThrows)
 {
@@ -123,6 +117,36 @@ TEST_F(ColvarsTest, ForceProviderLackingInputThrows)
     // Build the force provider with missing input data
     EXPECT_ANY_THROW(intializeForceProviders());
 }
+
+#else
+
+
+TEST_F(ColvarsTest, ForceProviderWithoutColvars)
+{
+    // Prepare MDP inputs
+    addMdpOptionColvarsActive();
+
+    // Initialize with default options
+    makeColvarsModuleWithSetOptions();
+
+    // Build the force provider without colvars
+    EXPECT_ANY_THROW(intializeForceProviders());
+}
+
+TEST_F(ColvarsTest, PreProcessingWithoutColvars)
+{
+    // Prepare MDP inputs
+    addMdpOptionColvarsActive();
+
+    // Initialize with default options
+    makeColvarsModuleWithSetOptions();
+
+    // Try to subscribe to notifications without colvars
+    MDModulesNotifiers notifiers_;
+    EXPECT_ANY_THROW(ColvarsModule_->subscribeToPreProcessingNotifications(&notifiers_));
+}
+
+#endif // GMX_HAVE_COLVARS
 
 } // namespace
 

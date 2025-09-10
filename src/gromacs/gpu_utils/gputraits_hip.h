@@ -38,14 +38,22 @@
  *  \brief Declares the HIP type traits.
  *
  *  \author Paul Bauer <paul.bauer.q@gmail.com>
- *  \author Julio Maia <julio.maia@amd.com>
  *
  * \inlibraryapi
  * \ingroup module_gpu_utils
  */
 #include <hip/hip_runtime.h>
 
-#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/vectypes.h"
+
+#define GMX_HOST_ATTRIBUTE __host__
+#define GMX_DEVICE_ATTRIBUTE __device__
+#define GMX_HOSTDEVICE_ATTRIBUTE GMX_HOST_ATTRIBUTE GMX_DEVICE_ATTRIBUTE
+#if !defined(NDEBUG)
+#    define GMX_DEVICE_ASSERT(condition) assert(condition)
+#else
+#    define GMX_DEVICE_ASSERT(condition)
+#endif
 
 //! Device texture for fast read-only data fetching
 using DeviceTexture = hipTextureObject_t;
@@ -78,7 +86,6 @@ struct KernelLaunchConfig
 };
 
 //! Sets whether device code can use arrays that are embedded in structs.
-#define c_canEmbedBuffers true
-// TODO this should be constexpr bool
+static constexpr bool c_canEmbedBuffers = true;
 
 #endif

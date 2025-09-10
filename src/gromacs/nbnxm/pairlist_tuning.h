@@ -47,42 +47,38 @@
 
 #include <cstdio>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
-
-namespace gmx
-{
-class CpuInfo;
-class MDLogger;
-} // namespace gmx
+#include "gromacs/utility/vectypes.h"
 
 struct gmx_mtop_t;
 struct interaction_const_t;
-struct PairlistParams;
-struct t_commrec;
 struct t_inputrec;
+
+namespace gmx
+{
+struct PairlistParams;
+class MDLogger;
+class MpiComm;
 
 /*! \brief Try to increase nstlist when using the Verlet cut-off scheme
  *
  * \param[in,out] fplog    Log file
- * \param[in]     cr       The communication record
+ * \param[in]     mpiCommSimulation  MPI communicator for the whole simulation
  * \param[in]     ir       The input parameter record
  * \param[in]     nstlistOnCmdline  The value of nstlist provided on the command line
  * \param[in]     mtop     The global topology
  * \param[in]     box      The unit cell
  * \param[in]     effectiveAtomDensity  The effective atom density
  * \param[in]     useOrEmulateGpuForNonbondeds  Tells if we are using a GPU for non-bondeds
- * \param[in]     cpuinfo  Information about the CPU(s)
  */
-void increaseNstlist(FILE*               fplog,
-                     t_commrec*          cr,
-                     t_inputrec*         ir,
-                     int                 nstlistOnCmdline,
-                     const gmx_mtop_t*   mtop,
-                     const matrix        box,
-                     real                effectiveAtomDensity,
-                     bool                useOrEmulateGpuForNonbondeds,
-                     const gmx::CpuInfo& cpuinfo);
+void increaseNstlist(FILE*             fplog,
+                     const MpiComm&    mpiCommSimulation,
+                     t_inputrec*       ir,
+                     int               nstlistOnCmdline,
+                     const gmx_mtop_t* mtop,
+                     const matrix      box,
+                     real              effectiveAtomDensity,
+                     bool              useOrEmulateGpuForNonbondeds);
 
 /*! \brief Set up the dynamic pairlist pruning
  *
@@ -93,7 +89,7 @@ void increaseNstlist(FILE*               fplog,
  * \param[in]     interactionConst The nonbonded interactions constants
  * \param[in,out] listParams       The list setup parameters
  */
-void setupDynamicPairlistPruning(const gmx::MDLogger&       mdlog,
+void setupDynamicPairlistPruning(const MDLogger&            mdlog,
                                  const t_inputrec&          inputrec,
                                  const gmx_mtop_t&          mtop,
                                  real                       effectiveAtomDensity,
@@ -113,10 +109,12 @@ void setupDynamicPairlistPruning(const gmx::MDLogger&       mdlog,
  * \param[in]     effectiveAtomDensity  The effective atom density of the system
  * \param[in]     listParams       The list setup parameters
  */
-void printNbnxmPressureError(const gmx::MDLogger&  mdlog,
+void printNbnxmPressureError(const MDLogger&       mdlog,
                              const t_inputrec&     inputrec,
                              const gmx_mtop_t&     mtop,
                              real                  effectiveAtomDensity,
                              const PairlistParams& listParams);
+
+} // namespace gmx
 
 #endif /* NBNXM_PAIRLIST_TUNING_H */

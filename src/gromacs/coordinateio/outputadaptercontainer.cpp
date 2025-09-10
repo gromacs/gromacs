@@ -65,8 +65,8 @@ void OutputAdapterContainer::addAdapter(OutputAdapterPointer adapter, Coordinate
 
 bool OutputAdapterContainer::isEmpty() const
 {
-    return std::none_of(outputAdapters_.begin(), outputAdapters_.end(), [](const auto& adapter) {
-        return adapter != nullptr;
-    });
+    return std::none_of(outputAdapters_.begin(),
+                        outputAdapters_.end(),
+                        [](const auto& adapter) { return adapter != nullptr; });
 }
 } // namespace gmx

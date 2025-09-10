@@ -64,8 +64,8 @@
 
 #    if GMX_NATIVE_WINDOWS
 
-#        include <Windows.h>
-#        include <Winsock.h>
+#        include <windows.h>
+#        include <winsock.h>
 
 //! Constant for passing no flags
 constexpr int c_noFlags = 0;
@@ -124,7 +124,7 @@ int imdsock_winsockinit()
 #if GMX_NATIVE_WINDOWS
 #    define ERR_ARGS __FILE__, __LINE__, NULL
 #else
-#    define ERR_ARGS __FILE__, __LINE__, strerror(errno)
+#    define ERR_ARGS __FILE__, __LINE__, std::strerror(errno)
 #endif
 
 
@@ -186,7 +186,7 @@ int imdsock_bind(IMDSocket* sock, int port)
 
 
 #if GMX_IMD
-    memset(&(sock->address), 0, sizeof(sock->address));
+    std::memset(&(sock->address), 0, sizeof(sock->address));
     sock->address.sin_family = PF_INET;
     sock->address.sin_port   = htons(port);
 

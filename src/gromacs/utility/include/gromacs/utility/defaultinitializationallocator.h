@@ -44,6 +44,7 @@
 #define GMX_UTILITY_DEFAULTINITIALIZATIONALLOCATOR_H
 
 #include <memory>
+#include <vector>
 
 namespace gmx
 {
@@ -68,11 +69,9 @@ public:
     using A::A;
 
     /*! \brief Constructs an object and default initializes
-     *
-     * \todo Use std::is_nothrow_default_constructible_v when CUDA 11 is a requirement.
      */
     template<typename U>
-    void construct(U* ptr) noexcept(std::is_nothrow_default_constructible<U>::value)
+    void construct(U* ptr) noexcept(std::is_nothrow_default_constructible_v<U>)
     {
         ::new (static_cast<void*>(ptr)) U;
     }
@@ -84,6 +83,10 @@ public:
         a_t::construct(static_cast<A&>(*this), ptr, std::forward<Args>(args)...);
     }
 };
+
+//! Convenience type for vector that avoids initialization at resize()
+template<typename T>
+using FastVector = std::vector<T, DefaultInitializationAllocator<T>>;
 
 } // namespace gmx
 

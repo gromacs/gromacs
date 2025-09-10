@@ -1,0 +1,114 @@
+; Minimal topology file to test edge-cases for directive parsing
+
+[ defaults ]
+; nbfunc        comb-rule       gen-pairs       fudgeLJ fudgeQQ
+1               2               yes             0.5     0.8333
+
+
+[ atomtypes ]
+; name  bname     at.num  mass  charge ptype  sigma      epsilon
+X                      6  12.011  0.51     A  0.35636    0.46024
+Y                      7  14.007 -0.29     A  0.32963    0.8368
+
+[ cmaptypes ]
+; ai  aj  ak  al  am  func  nx  ny  params
+#ifdef NOT_A_CMAPTYPE
+X Y X Y 1 2 2
+#endif
+#ifdef MATCHING_CMAPTYPE
+X Y X X Y 1 2 2 0.1 0.2 0.3 0.4
+#endif
+#ifdef MATCHING_CMAPTYPE_DOUBLESPACED
+X  Y  X  X  Y  1  2  2  0.1  0.2  0.3  0.4
+#endif
+#ifdef MATCHING_CMAPTYPE_PADDED
+X       Y       X       X       Y       1       2       2       0.1     0.2     0.3     0.4
+#endif
+#ifdef MATCHING_CMAPTYPE_TABBED
+X	Y	X	X	Y	1	2	2	0.1	0.2	0.3	0.4
+#endif
+#ifdef UNKNOWN_ATOMTYPE_IN_CMAPTYPE
+X Y X X Z 1 2 2 1.0 2.0 3.0 4.0
+#endif
+#ifdef TOO_MANY_ATOMTYPES_IN_CMAPTYPE
+X Y X X Y Y 1 2 2 0.1 0.2 0.3 0.4
+#endif
+#ifdef TOO_FEW_ATOMTYPES_IN_CMAPTYPE
+X Y X X 1 2 2 0.1 0.2 0.3 0.4
+#endif
+#ifdef INVALID_FUNCTYPE_IN_CMAPTYPE
+X Y X X Y 4 2 2 0.1 0.2 0.3 0.4
+#endif
+#ifdef RECTANGULAR_GRID_IN_CMAPTYPE
+X Y X X Y 1 2 3 0.1 0.2 0.3 0.4 0.5 0.6
+#endif
+#ifdef UNREAL_GRID_SIZE_IN_CMAPTYPE
+X Y X X Y 1 Tarydium 2 0.1 0.2
+#endif
+#ifdef TOO_FEW_GRID_PARAMETERS_IN_CMAPTYPE
+X Y X X Y 1 2 2 0.1 0.2 0.3
+#endif
+#ifdef TOO_MANY_GRID_PARAMETERS_IN_CMAPTYPE
+X Y X X Y 1 2 2 0.1 0.2 0.3 0.4 0.5
+#endif
+#ifdef UNREAL_GRID_PARAMETER_IN_CMAPTYPE
+X Y X X Y 1 2 2 0.1 0.2 0.3 Tarydium
+#endif
+#ifdef SOME_RESIDUE_NAMES_IN_CMAPTYPE
+X Y-RES X-RES X-RES Y 1 2 2 0.1 0.2 0.3 0.4
+#endif
+#ifdef MATCHING_RESIDUE_STARS_IN_CMAPTYPE
+X-* Y-* X-* X-* Y-* 1 2 2 0.1 0.2 0.3 0.4
+#endif
+#ifdef MATCHING_RESIDUE_NAMES_IN_CMAPTYPE
+X-RES Y-RES X-RES X-RES Y-RES 1 2 2 0.1 0.2 0.3 0.4
+#endif
+#ifdef NONMATCHING_RESIDUE_NAMES_IN_CMAPTYPE
+X-GES Y-MES X-XES X-MES Y-GES 1 2 2 0.1 0.2 0.3 0.4
+X-NULL Y-NULL X-NULL X-NULL Y-NULL 1 4 4 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
+#endif
+X Y X Y Y 1 3 3 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9
+X-RES Y-RES X-RES Y-RES Y-RES 1 3 3 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 1.9
+
+
+[ moleculetype ]
+; Name            nrexcl
+A                    0
+
+[ atoms ]
+;   nr       type  resnr residue  atom   cgnr     charge       mass  typeB    chargeB      massB
+     1          X      1     RES     C      1        0.0     12.011
+     2          Y      1     RES     N      2        0.0     14.007
+     3          X      1     RES     C      2        0.0     12.011
+     4          X      1     RES     C      2        0.0     14.007
+     5          Y      1     RES     N      2        0.0     14.007
+
+[ cmap ]
+;  ai    aj    ak    al    am funct            c0            c1
+#ifdef USER_SPECIFIED_CMAPTYPE_OUT_OF_BOUNDS
+#define CMAPTYPE_NONEXISTENT 3
+    1     2     3     4     5     1    CMAPTYPE_NONEXISTENT
+#else
+#ifdef USER_SPECIFIED_CMAPTYPE
+#define CMAPTYPE_XYXYY 1
+    1     2     3     4     5     1    CMAPTYPE_XYXYY
+#else
+#ifdef NOT_A_CMAP_TORSION
+    1     2     3     1
+#else
+#ifdef INVALID_FUNCTYPE_IN_CMAP_TORSION
+    1     2     3     4     5     4
+#else
+    1     2     3     4     5     1
+#endif
+#endif
+#endif
+#endif
+
+[ system ]
+; Name
+minimal edge case system
+
+[ molecules ]
+; Compound  #mols
+A         1

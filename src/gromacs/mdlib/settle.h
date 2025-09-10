@@ -45,10 +45,10 @@
 
 #include <vector>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 struct gmx_mtop_t;
 struct InteractionList;

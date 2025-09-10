@@ -316,7 +316,7 @@ static inline SimdDouble frexp(SimdDouble value, SimdDInt32* exponent)
     const __m128d mantissaMask =
             _mm_castsi128_pd(_mm_set_epi32(0x800FFFFF, 0xFFFFFFFF, 0x800FFFFF, 0xFFFFFFFF));
     const __m128i exponentBias = _mm_set1_epi32(1022); // add 1 to make our definition identical to frexp()
-    const __m128d half         = _mm_set1_pd(0.5);
+    const __m128d half = _mm_set1_pd(0.5);
 
     __m128i iExponent = _mm_castpd_si128(_mm_and_pd(value.simdInternal_, exponentMask));
     iExponent         = _mm_sub_epi32(_mm_srli_epi64(iExponent, 52), exponentBias);

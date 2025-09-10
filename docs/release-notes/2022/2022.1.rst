@@ -175,7 +175,7 @@ not have influenced any actual clients merely using nblib.
 Workaround for nested MPI-aware code
 """"""""""""""""""""""""""""""""""""
 
-:py:mod:`gmxapi` scripts containing `gmxapi.commandline_operation` tasks could be unusable if a task
+:py:mod:`gmxapi` scripts containing ``gmxapi.commandline_operation`` tasks could be unusable if a task
 executable automatically detects MPI resources and the script is invoked with an MPI launcher.
 
 The workaround is to increase the isolation of the task environment from the parent process by explicitly

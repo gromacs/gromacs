@@ -430,6 +430,10 @@ With this input :ref:`gmx grompp` will produce a commented file with the default
 ``mdout.mdp``. That file will contain the above options, as well as all other
 options not explicitly set, showing their default values.
 
+The mdp sample above was generated using `mdpeditor <https://pypi.org/project/mdpeditor/>`__.
+That tool can help generating mdp files according to best practices based on simple
+instructions.
+
 .. _mtx:
 
 mtx

@@ -42,8 +42,10 @@
 
 #include "iforceprovider.h"
 
+#include <utility>
 #include <vector>
 
+#include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/arrayref.h"
 
 using namespace gmx;
@@ -51,16 +53,25 @@ using namespace gmx;
 class ForceProviders::Impl
 {
 public:
-    std::vector<IForceProvider*> providers_;
+    Impl(gmx_wallcycle* wallCycle) : wallCycle_(wallCycle) {}
+
+    std::vector<std::pair<IForceProvider*, std::optional<WallCycleCounter>>> providers_;
+    gmx_wallcycle*                                                           wallCycle_;
 };
 
-ForceProviders::ForceProviders() : impl_(new Impl) {}
+ForceProviders::ForceProviders(gmx_wallcycle* wallCycle) : impl_(new Impl(wallCycle)) {}
 
 ForceProviders::~ForceProviders() {}
 
-void ForceProviders::addForceProvider(gmx::IForceProvider* provider)
+void ForceProviders::addForceProvider(gmx::IForceProvider* provider, const std::string& cycleCounterName)
 {
-    impl_->providers_.push_back(provider);
+    std::optional<WallCycleCounter> counter;
+    if (impl_->wallCycle_)
+    {
+        counter = impl_->wallCycle_->registerCycleCounter(cycleCounterName);
+    }
+
+    impl_->providers_.emplace_back(provider, counter);
 }
 
 bool ForceProviders::hasForceProvider() const
@@ -71,8 +82,18 @@ bool ForceProviders::hasForceProvider() const
 void ForceProviders::calculateForces(const ForceProviderInput& forceProviderInput,
                                      ForceProviderOutput*      forceProviderOutput) const
 {
-    for (auto* provider : impl_->providers_)
+    for (auto& provider : impl_->providers_)
     {
-        provider->calculateForces(forceProviderInput, forceProviderOutput);
+        if (provider.second)
+        {
+            wallcycle_start(impl_->wallCycle_, provider.second.value());
+        }
+
+        provider.first->calculateForces(forceProviderInput, forceProviderOutput);
+
+        if (provider.second)
+        {
+            wallcycle_stop(impl_->wallCycle_, provider.second.value());
+        }
     }
 }

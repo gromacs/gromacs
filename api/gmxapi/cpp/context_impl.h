@@ -118,7 +118,7 @@ public:
      *
      * \{
      */
-    MpiContextManager(const MpiContextManager&) = delete;
+    MpiContextManager(const MpiContextManager&)            = delete;
     MpiContextManager& operator=(const MpiContextManager&) = delete;
     //! \}
 
@@ -127,7 +127,7 @@ public:
      *
      * \{
      */
-    MpiContextManager(MpiContextManager&& source) noexcept = default;
+    MpiContextManager(MpiContextManager&& source) noexcept            = default;
     MpiContextManager& operator=(MpiContextManager&& source) noexcept = default;
     //! \}
 
@@ -194,7 +194,7 @@ public:
      * which Sessions and Contexts are associated with each other.
      * \{
      */
-    ContextImpl(const ContextImpl&) = delete;
+    ContextImpl(const ContextImpl&)            = delete;
     ContextImpl& operator=(const ContextImpl&) = delete;
     //! \}
 
@@ -206,7 +206,7 @@ public:
      *
      * \{
      */
-    ContextImpl(ContextImpl&&) = delete;
+    ContextImpl(ContextImpl&&)            = delete;
     ContextImpl& operator=(ContextImpl&&) = delete;
     //! \}
 

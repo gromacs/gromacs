@@ -111,7 +111,7 @@ struct SimulationInputHandleImplDeleter
     SimulationInputHandleImplDeleter(SimulationInputHandleImplDeleter&& deleter) noexcept;
     SimulationInputHandleImplDeleter& operator=(const SimulationInputHandleImplDeleter& deleter) noexcept;
     SimulationInputHandleImplDeleter& operator=(SimulationInputHandleImplDeleter&& deleter) noexcept;
-    void                              operator()(SimulationInputHandleImpl* impl) const;
+    void operator()(SimulationInputHandleImpl* impl) const;
     /*! \endcond */
 };
 } // end namespace detail

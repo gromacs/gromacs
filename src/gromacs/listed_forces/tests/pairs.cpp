@@ -67,15 +67,12 @@
 #include "gromacs/listed_forces/listed_forces.h"
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/math/units.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdatom.h"
-#include "gromacs/mdtypes/nblist.h"
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -90,6 +87,8 @@
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringstream.h"
 #include "gromacs/utility/textwriter.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
@@ -189,9 +188,9 @@ public:
 
         // set data in fr
         real tableRange = 2.9;
-        fr_.pairsTable = make_tables(nullptr, fr_.ic.get(), nullptr, tableRange, GMX_MAKETABLES_14ONLY);
-        fr_.efep       = haveFep_;
-        fr_.fudgeQQ          = 0.5;
+        fr_.pairsTable  = make_tables(nullptr, *fr_.ic, nullptr, tableRange, GMX_MAKETABLES_14ONLY);
+        fr_.efep        = haveFep_;
+        fr_.fudgeQQ     = 0.5;
         fr_.use_simd_kernels = useSimd_;
         fr_.bMolPBC          = haveMolPBC_;
     }

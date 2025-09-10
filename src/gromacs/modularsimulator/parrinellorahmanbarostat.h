@@ -44,8 +44,8 @@
 #define GMX_MODULARSIMULATOR_PARRINELLORAHMANBAROSTAT_H
 
 #include "gromacs/math/matrix.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "modularsimulatorinterfaces.h"
 #include "propagator.h"
@@ -107,9 +107,13 @@ public:
                                        const PropagatorTag&        propagatorTag);
 
     //! ICheckpointHelperClient write checkpoint implementation
-    void saveCheckpointState(std::optional<WriteCheckpointData> checkpointData, const t_commrec* cr) override;
+    void saveCheckpointState(std::optional<WriteCheckpointData> checkpointData,
+                             const MpiComm&                     mpiComm,
+                             gmx_domdec_t*                      dd) override;
     //! ICheckpointHelperClient read checkpoint implementation
-    void restoreCheckpointState(std::optional<ReadCheckpointData> checkpointData, const t_commrec* cr) override;
+    void restoreCheckpointState(std::optional<ReadCheckpointData> checkpointData,
+                                const MpiComm&                    mpiComm,
+                                gmx_domdec_t*                     dd) override;
     //! ICheckpointHelperClient key implementation
     const std::string& clientID() override;
 
@@ -132,11 +136,11 @@ public:
                           ModularSimulatorAlgorithmBuilderHelper* builderHelper,
                           StatePropagatorData*                    statePropagatorData,
                           EnergyData*                             energyData,
-                          FreeEnergyPerturbationData gmx_unused* freeEnergyPerturbationData,
-                          GlobalCommunicationHelper gmx_unused* globalCommunicationHelper,
-                          ObservablesReducer*                   observablesReducer,
-                          Offset                                offset,
-                          const PropagatorTag&                  propagatorTag);
+                          FreeEnergyPerturbationData gmx_unused*  freeEnergyPerturbationData,
+                          GlobalCommunicationHelper gmx_unused*   globalCommunicationHelper,
+                          ObservablesReducer*                     observablesReducer,
+                          Offset                                  offset,
+                          const PropagatorTag&                    propagatorTag);
 
 private:
     //! The frequency at which the barostat is applied

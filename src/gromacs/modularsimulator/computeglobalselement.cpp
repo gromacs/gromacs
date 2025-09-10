@@ -52,8 +52,6 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/arrayrefwithpadding.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/md_support.h"
 #include "gromacs/mdlib/mdatoms.h"
@@ -73,6 +71,8 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "freeenergyperturbationdata.h"
 #include "modularsimulator.h"
@@ -111,7 +111,7 @@ ComputeGlobalsElement<algorithm>::ComputeGlobalsElement(StatePropagatorData* sta
     statePropagatorData_(statePropagatorData),
     energyData_(energyData),
     freeEnergyPerturbationData_(freeEnergyPerturbationData),
-    vcm_(global_top.groups, *inputrec),
+    vcm_(global_top.groups, *inputrec, global_top.natoms),
     signals_(signals),
     fplog_(fplog),
     mdlog_(mdlog),
@@ -153,7 +153,7 @@ void ComputeGlobalsElement<algorithm>::elementSetup()
         // At initialization, do not pass x with acceleration-correction mode
         // to avoid (incorrect) correction of the initial coordinates.
         auto x = vcm_.mode == ComRemovalAlgorithm::LinearAccelerationCorrection
-                         ? ArrayRefWithPadding<RVec>()
+                         ? ArrayRefWithPadding<RVec>{}
                          : statePropagatorData_->positionsView();
         process_and_stopcm_grp(
                 fplog_, &vcm_, *mdAtoms_->mdatoms(), x.unpaddedArrayRef(), v.unpaddedArrayRef());
@@ -228,9 +228,8 @@ void ComputeGlobalsElement<algorithm>::scheduleTask(Step                       s
         auto signaller = std::make_shared<SimulationSignaller>(
                 signals_, cr_, nullptr, doInterSimSignal, doIntraSimSignal);
 
-        registerRunFunction([this, step, flags, signaller = std::move(signaller)]() {
-            compute(step, flags, signaller.get(), true);
-        });
+        registerRunFunction([this, step, flags, signaller = std::move(signaller)]()
+                            { compute(step, flags, signaller.get(), true); });
     }
     else if (algorithm == ComputeGlobalsAlgorithm::VelocityVerlet)
     {
@@ -256,8 +255,8 @@ void ComputeGlobalsElement<algorithm>::scheduleTask(Step                       s
                         | (doTemperature ? CGLO_TEMPERATURE : 0) | CGLO_PRESSURE | CGLO_CONSTRAINT
                         | (needComReduction ? CGLO_STOPCM : 0) | CGLO_SCALEEKIN;
 
-            registerRunFunction(
-                    [this, step, flags]() { compute(step, flags, nullSignaller_.get(), false); });
+            registerRunFunction([this, step, flags]()
+                                { compute(step, flags, nullSignaller_.get(), false); });
         }
         else
         {
@@ -284,9 +283,8 @@ void ComputeGlobalsElement<algorithm>::scheduleTask(Step                       s
             auto signaller = std::make_shared<SimulationSignaller>(
                     signals_, cr_, nullptr, doInterSimSignal, doIntraSimSignal);
 
-            registerRunFunction([this, step, flags, signaller = std::move(signaller)]() {
-                compute(step, flags, signaller.get(), true);
-            });
+            registerRunFunction([this, step, flags, signaller = std::move(signaller)]()
+                                { compute(step, flags, signaller.get(), true); });
         }
     }
 }
@@ -305,7 +303,7 @@ void ComputeGlobalsElement<algorithm>::compute(gmx::Step            step,
                                      : statePropagatorData_->constBox();
 
     compute_globals(gstat_,
-                    cr_,
+                    cr_->commMyGroup,
                     inputrec_,
                     fr_,
                     energyData_->ekindata(),
@@ -373,13 +371,12 @@ namespace
 SchedulingFunction registerPostStepSchedulingFunction(ObservablesReducer* observablesReducer)
 {
     SchedulingFunction postStepSchedulingFunction =
-            [observablesReducer](
-                    Step /*step*/, Time /*time*/, const RegisterRunFunction& registerRunFunction) {
-                SimulatorRunFunction completeObservablesReducerStep = [&observablesReducer]() {
-                    observablesReducer->markAsReadyToReduce();
-                };
-                registerRunFunction(completeObservablesReducerStep);
-            };
+            [observablesReducer](Step /*step*/, Time /*time*/, const RegisterRunFunction& registerRunFunction)
+    {
+        SimulatorRunFunction completeObservablesReducerStep = [&observablesReducer]()
+        { observablesReducer->markAsReadyToReduce(); };
+        registerRunFunction(completeObservablesReducerStep);
+    };
     return postStepSchedulingFunction;
 }
 

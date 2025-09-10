@@ -105,40 +105,11 @@ public:
     void checkEnergyCaluclationFrequency(EnergyCalculationFrequencyErrors* energyCalculationFrequencyErrors) const;
 
 private:
-    const std::string c_activeTag_ = "active";
-
-    /*! \brief Denote the .mdp option that defines the group of fit atoms.
-     * \note Changing this string will break .tpr backwards compatibility
-     */
-    const std::string c_groupTag_  = "group";
-    std::string       groupString_ = "protein";
-
-    const std::string c_similarityMeasureTag_ = "similarity-measure";
-
-    const std::string c_amplitudeMethodTag_ = "atom-spreading-weight";
-
-    const std::string c_forceConstantTag_ = "force-constant";
-
-    const std::string c_gaussianTransformSpreadingWidthTag_ = "gaussian-transform-spreading-width";
-    const std::string c_gaussianTransformSpreadingRangeInMultiplesOfWidthTag_ =
-            "gaussian-transform-spreading-range-in-multiples-of-width";
-
-    const std::string c_referenceDensityFileNameTag_ = "reference-density-filename";
-    std::string       referenceDensityFileName_      = "reference.mrc";
-
-    const std::string c_everyNStepsTag_ = "nst";
-
-    const std::string c_normalizeDensitiesTag_ = "normalize-densities";
-
-    const std::string c_adaptiveForceScalingTag_ = "adaptive-force-scaling";
-
-    const std::string c_adaptiveForceScalingTimeConstantTag_ =
-            "adaptive-force-scaling-time-constant";
-
-    const std::string c_translationTag_ = "shift-vector";
-
-    const std::string c_transformationMatrixTag_ = "transformation-matrix";
-
+    //! Group used for fitting
+    std::string groupString_ = "protein";
+    //! Name of the file containing the reference density
+    std::string referenceDensityFileName_ = "reference.mrc";
+    //! Parameter values for force & energy evaluation
     DensityFittingParameters parameters_;
 };
 

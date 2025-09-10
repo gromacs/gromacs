@@ -56,7 +56,6 @@
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
 #include "gromacs/utility/basedefinitions.h"
-#include "gromacs/utility/iserializer.h"
 #include "gromacs/utility/real.h"
 
 #include "replicaexchange.h"
@@ -131,6 +130,7 @@ public:
                                           { efMTX, "-mtx", "nm", ffOPTWR },
                                           { efRND, "-multidir", nullptr, ffOPTRDMULT },
                                           { efXVG, "-awh", "awhinit", ffOPTRD },
+                                          { efDAT, "-plumed", "plumed", ffOPTRD },
                                           { efXVG, "-ramd", "ramd", ffOPTWR },
                                           { efDAT, "-membed", "membed", ffOPTRD },
                                           { efTOP, "-mp", "membed", ffOPTRD },
@@ -153,15 +153,15 @@ public:
     /*! \{ */
     rvec        realddxyz                                                           = { 0, 0, 0 };
     const char* ddrank_opt_choices[static_cast<int>(DdRankOrder::Count) + 1]        = { nullptr,
-                                                                                 "interleave",
-                                                                                 "pp_pme",
-                                                                                 "cartesian",
-                                                                                 nullptr };
+                                                                                        "interleave",
+                                                                                        "pp_pme",
+                                                                                        "cartesian",
+                                                                                        nullptr };
     const char* dddlb_opt_choices[static_cast<int>(DlbOption::Count) + 1]           = { nullptr,
-                                                                              "auto",
-                                                                              "no",
-                                                                              "yes",
-                                                                              nullptr };
+                                                                                        "auto",
+                                                                                        "no",
+                                                                                        "yes",
+                                                                                        nullptr };
     const char* thread_aff_opt_choices[static_cast<int>(ThreadAffinity::Count) + 1] = { nullptr,
                                                                                         "auto",
                                                                                         "on",

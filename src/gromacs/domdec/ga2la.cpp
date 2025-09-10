@@ -46,6 +46,8 @@
 
 #include <new>
 
+#include "gromacs/mdlib/gmx_omp_nthreads.h"
+
 /*! \brief Returns whether to use a direct list only
  *
  * There are two methods implemented for finding the local atom number
@@ -69,15 +71,37 @@ static bool directListIsFaster(int numAtomsTotal, int numAtomsLocal)
             || numAtomsTotal <= numAtomsLocal * c_memoryRatioHashedVersusDirect);
 }
 
-gmx_ga2la_t::gmx_ga2la_t(int numAtomsTotal, int numAtomsLocal) :
-    usingDirect_(directListIsFaster(numAtomsTotal, numAtomsLocal))
+gmx_ga2la_t::gmx_ga2la_t(int numAtomsTotal, int numAtomsLocal)
 {
-    if (usingDirect_)
+    if (directListIsFaster(numAtomsTotal, numAtomsLocal))
     {
-        new (&(data_.direct)) std::vector<Entry>(numAtomsTotal, { -1, -1 });
+        data_ = std::vector<Entry>(numAtomsTotal, { -1, -1 });
     }
     else
     {
-        new (&(data_.hashed)) gmx::HashedMap<Entry>(numAtomsLocal);
+        data_ = gmx::HashedMap<Entry>(numAtomsLocal);
+    }
+}
+
+void gmx_ga2la_t::clear(const bool resizeHashTable)
+{
+    if (usingDirect())
+    {
+        auto& directList = std::get<DirectList>(data_);
+
+        const int gmx_unused numThreads = gmx_omp_nthreads_get(ModuleMultiThread::Domdec);
+#pragma omp parallel for num_threads(numThreads) schedule(static)
+        for (gmx::Index i = 0; i < gmx::ssize(directList); i++)
+        {
+            directList[i].cell = -1;
+        }
+    }
+    else if (resizeHashTable)
+    {
+        std::get<HashedList>(data_).clearAndResizeHashTable();
+    }
+    else
+    {
+        std::get<HashedList>(data_).clear();
     }
 }

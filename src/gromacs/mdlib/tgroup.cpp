@@ -38,11 +38,11 @@
 
 #include <vector>
 
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/coupling.h"
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 
 real sum_ekin(const t_grpopts* opts, gmx_ekindata_t* ekind, real* dekindlambda, bool bEkinAveVel, bool bScaleEkin)

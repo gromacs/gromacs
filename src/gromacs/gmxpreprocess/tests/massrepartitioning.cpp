@@ -54,7 +54,8 @@
 
 namespace gmx
 {
-
+namespace test
+{
 namespace
 {
 
@@ -150,4 +151,5 @@ TEST(MassRepartitioning, LightPartnerGivesError)
 }
 
 } // namespace
+} // namespace test
 } // namespace gmx

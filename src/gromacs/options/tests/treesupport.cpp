@@ -51,13 +51,13 @@
 #include "gromacs/options/options.h"
 #include "gromacs/options/optionsection.h"
 #include "gromacs/options/repeatingsection.h"
+#include "gromacs/serialization/inmemoryserializer.h"
+#include "gromacs/serialization/keyvaluetreeserializer.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/inmemoryserializer.h"
 #include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
-#include "gromacs/utility/keyvaluetreeserializer.h"
 #include "gromacs/utility/stringstream.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
@@ -65,6 +65,10 @@
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -357,9 +361,10 @@ private:
 
     static std::string formatBuffer(const std::vector<char>& buffer)
     {
-        return gmx::formatAndJoin(buffer, " ", [](char c) {
-            return gmx::formatString("%02x", static_cast<unsigned char>(c));
-        });
+        return gmx::formatAndJoin(
+                buffer,
+                " ",
+                [](char c) { return gmx::formatString("%02x", static_cast<unsigned char>(c)); });
     }
 };
 
@@ -420,3 +425,5 @@ TEST_F(TreeValueSupportTest, SupportsEnumOption)
 }
 
 } // namespace
+} // namespace test
+} // namespace gmx

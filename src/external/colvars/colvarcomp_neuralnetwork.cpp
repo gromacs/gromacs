@@ -15,8 +15,17 @@
 
 using namespace neuralnetworkCV;
 
-colvar::neuralNetwork::neuralNetwork(std::string const &conf): linearCombination(conf) {
+
+colvar::neuralNetwork::neuralNetwork()
+{
     set_function_type("neuralNetwork");
+}
+
+
+int colvar::neuralNetwork::init(std::string const &conf)
+{
+    int error_code = linearCombination::init(conf);
+    if (error_code != COLVARS_OK) return error_code;
     // the output of neural network consists of multiple values
     // read "output_component" key to determine it
     get_keyval(conf, "output_component", m_output_index);
@@ -65,8 +74,8 @@ colvar::neuralNetwork::neuralNetwork(std::string const &conf): linearCombination
             std::string function_name;
             get_keyval(conf, lookup_key.c_str(), function_name, std::string(""));
             if (activation_function_map.find(function_name) == activation_function_map.end()) {
-                cvm::error("Unknown activation function name: \"" + function_name + "\".\n");
-                return;
+                return cvm::error("Unknown activation function name: \"" + function_name + "\".\n",
+                               COLVARS_INPUT_ERROR);
             }
             activation_functions.push_back(std::make_pair(false, function_name));
             cvm::log(std::string{"The activation function for layer["} + cvm::to_str(num_activation_functions + 1) + std::string{"] is "} + function_name + '\n');
@@ -85,11 +94,13 @@ colvar::neuralNetwork::neuralNetwork(std::string const &conf): linearCombination
     }
     // expect the three numbers are equal
     if ((num_layers_weight != num_layers_bias) || (num_layers_bias != num_activation_functions)) {
-        cvm::error("Error: the numbers of weights, biases and activation functions do not match.\n");
-        return;
+        return cvm::error(
+            "Error: the numbers of weights, biases and activation functions do not match.\n",
+            COLVARS_INPUT_ERROR);
     }
 //     nn = std::make_unique<neuralnetworkCV::neuralNetworkCompute>();
     // std::make_unique is only available in C++14
+    if (nn) nn.reset();
     nn = std::unique_ptr<neuralnetworkCV::neuralNetworkCompute>(new neuralnetworkCV::neuralNetworkCompute());
     for (size_t i_layer = 0; i_layer < num_layers_weight; ++i_layer) {
         denseLayer d;
@@ -99,8 +110,9 @@ colvar::neuralNetwork::neuralNetwork(std::string const &conf): linearCombination
             try {
                 d = denseLayer(weight_files[i_layer], bias_files[i_layer], activation_functions[i_layer].second);
             } catch (std::exception &ex) {
-                cvm::error("Error on initializing layer " + cvm::to_str(i_layer) + " (" + ex.what() + ")\n", COLVARS_INPUT_ERROR);
-                return;
+                return cvm::error("Error on initializing layer " + cvm::to_str(i_layer) +
+                                           " (" + ex.what() + ")\n",
+                                       COLVARS_INPUT_ERROR);
             }
         } else {
 #endif
@@ -110,8 +122,9 @@ colvar::neuralNetwork::neuralNetwork(std::string const &conf): linearCombination
             try {
                 d = denseLayer(weight_files[i_layer], bias_files[i_layer], f, df);
             } catch (std::exception &ex) {
-                cvm::error("Error on initializing layer " + cvm::to_str(i_layer) + " (" + ex.what() + ")\n", COLVARS_INPUT_ERROR);
-                return;
+                return cvm::error("Error on initializing layer " + cvm::to_str(i_layer) +
+                                           " (" + ex.what() + ")\n",
+                                       COLVARS_INPUT_ERROR);
             }
 #ifdef LEPTON
         }
@@ -129,11 +142,11 @@ colvar::neuralNetwork::neuralNetwork(std::string const &conf): linearCombination
                 }
             }
         } else {
-            cvm::error("Error: error on adding a new dense layer.\n");
-            return;
+            return cvm::error("Error: error on adding a new dense layer.\n", COLVARS_INPUT_ERROR);
         }
     }
     nn->input().resize(cv.size());
+    return error_code;
 }
 
 colvar::neuralNetwork::~neuralNetwork() {
@@ -190,3 +203,25 @@ void colvar::neuralNetwork::apply_force(colvarvalue const &force) {
         }
     }
 }
+
+
+cvm::real colvar::neuralNetwork::dist2(colvarvalue const &x1, colvarvalue const &x2) const
+{
+  return x1.dist2(x2);
+}
+
+
+colvarvalue colvar::neuralNetwork::dist2_lgrad(colvarvalue const &x1, colvarvalue const &x2) const
+{
+  return x1.dist2_grad(x2);
+}
+
+
+colvarvalue colvar::neuralNetwork::dist2_rgrad(colvarvalue const &x1, colvarvalue const &x2) const
+{
+  return x2.dist2_grad(x1);
+}
+
+
+
+void colvar::neuralNetwork::wrap(colvarvalue & /* x_unwrapped */) const {}

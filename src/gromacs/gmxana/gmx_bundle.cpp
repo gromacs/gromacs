@@ -51,8 +51,6 @@
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/index.h"
@@ -64,6 +62,8 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 enum class PbcType : int;
 struct gmx_output_env_t;
@@ -229,11 +229,11 @@ int gmx_bundle(int argc, char* argv[])
     static int      n    = 0;
     static gmx_bool bZ   = FALSE;
     t_pargs         pa[] = { { "-na", FALSE, etINT, { &n }, "Number of axes" },
-                     { "-z",
-                       FALSE,
-                       etBOOL,
-                       { &bZ },
-                       "Use the [IT]z[it]-axis as reference instead of the average axis" } };
+                             { "-z",
+                               FALSE,
+                               etBOOL,
+                               { &bZ },
+                               "Use the [IT]z[it]-axis as reference instead of the average axis" } };
     FILE *          flen, *fdist, *fz, *ftilt, *ftiltr, *ftiltl;
     FILE *          fkink = nullptr, *fkinkr = nullptr, *fkinkl = nullptr;
     t_trxstatus*    status;

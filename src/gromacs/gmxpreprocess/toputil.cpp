@@ -163,7 +163,14 @@ static void print_bt(FILE*                                   out,
     /* print bondtypes */
     for (const auto& parm : bt->interactionTypes)
     {
-        bSwapParity                    = (parm.c0() == NOTSET) && (parm.c1() == -1);
+        if (ftype == F_CMAP)
+        {
+            bSwapParity = false;
+        }
+        else
+        {
+            bSwapParity = (parm.c0() == NOTSET) && (parm.c1() == -1);
+        }
         gmx::ArrayRef<const int> atoms = parm.atoms();
         if (!bDih)
         {
@@ -197,7 +204,7 @@ static void print_bt(FILE*                                   out,
         fprintf(out, "\n");
     }
     fprintf(out, "\n");
-    fflush(out);
+    std::fflush(out);
 }
 
 void print_excl(FILE* out, int natoms, t_excls excls[])
@@ -229,7 +236,7 @@ void print_excl(FILE* out, int natoms, t_excls excls[])
             }
         }
         fprintf(out, "\n");
-        fflush(out);
+        std::fflush(out);
     }
 }
 
@@ -249,7 +256,7 @@ static double get_residue_charge(const t_atoms* atoms, int at)
     return q;
 }
 
-void print_atoms(FILE* out, PreprocessingAtomTypes* atype, t_atoms* at, int* cgnr, bool bRTPresname)
+void print_atoms(FILE* out, PreprocessingAtomTypes* atype, t_atoms* at, bool bRTPresname)
 {
     int         i, ri;
     int         tpA, tpB;
@@ -317,7 +324,7 @@ void print_atoms(FILE* out, PreprocessingAtomTypes* atype, t_atoms* at, int* cgn
                     bRTPresname ? *(at->resinfo[at->atom[i].resind].rtp)
                                 : *(at->resinfo[at->atom[i].resind].name),
                     *(at->atomname[i]),
-                    cgnr[i],
+                    i + 1, // legacy charge group number
                     at->atom[i].q,
                     at->atom[i].m);
             if (PERTURBED(at->atom[i]))
@@ -347,12 +354,12 @@ void print_atoms(FILE* out, PreprocessingAtomTypes* atype, t_atoms* at, int* cgn
             }
             else
             {
-                fputs("\n", out);
+                std::fputs("\n", out);
             }
         }
     }
     fprintf(out, "\n");
-    fflush(out);
+    std::fflush(out);
 }
 
 void print_bondeds(FILE* out, int natoms, Directive d, int ftype, int fsubtype, gmx::ArrayRef<const InteractionsOfType> plist)

@@ -106,11 +106,11 @@ public:
         int bondIndex = pickType<HarmonicBondType>(interactions).parameters.size() - 1;
 
         int nOutliers = nParticles * outlierRatio;
-        srand(42);
+        std::srand(42);
         for (int s = 0; s < nOutliers; ++s)
         {
-            int from = rand() % nParticles;
-            int to   = rand() % nParticles;
+            int from = std::rand() % nParticles;
+            int to   = std::rand() % nParticles;
             if (from != to)
             {
                 pickType<HarmonicBondType>(interactions)

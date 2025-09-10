@@ -139,24 +139,28 @@ void ExpandedEnsembleElement::doCheckpointData(CheckpointData<operation>* checkp
 }
 
 void ExpandedEnsembleElement::saveCheckpointState(std::optional<WriteCheckpointData> checkpointData,
-                                                  const t_commrec*                   cr)
+                                                  const MpiComm&                     mpiComm,
+                                                  gmx_domdec_t*                      dd)
 {
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         doCheckpointData<CheckpointDataOperation::Write>(&checkpointData.value());
     }
+
+    GMX_UNUSED_VALUE(dd);
 }
 
 void ExpandedEnsembleElement::restoreCheckpointState(std::optional<ReadCheckpointData> checkpointData,
-                                                     const t_commrec*                  cr)
+                                                     const MpiComm& mpiComm,
+                                                     gmx_domdec_t*  dd)
 {
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         doCheckpointData<CheckpointDataOperation::Read>(&checkpointData.value());
     }
-    if (haveDDAtomOrdering(*cr))
+    if (dd)
     {
-        dd_distribute_dfhist(cr->dd, dfhist_.get());
+        dd_distribute_dfhist(dd, dfhist_.get());
     }
     restoredFromCheckpoint_ = true;
 }
@@ -178,26 +182,25 @@ std::optional<SignallerCallback> ExpandedEnsembleElement::registerLoggingCallbac
     }
 }
 
-ExpandedEnsembleElement::ExpandedEnsembleElement(bool                              isMainRank,
-                                                 Step                              initialStep,
-                                                 int                               frequency,
-                                                 const EnergyData*                 energyData,
+ExpandedEnsembleElement::ExpandedEnsembleElement(bool              isMainRank,
+                                                 Step              initialStep,
+                                                 int               frequency,
+                                                 const EnergyData* energyData,
                                                  const FreeEnergyPerturbationData* freeEnergyPerturbationData,
-                                                 FILE*                             fplog,
-                                                 const t_inputrec*                 inputrec) :
+                                                 FILE*             fplog,
+                                                 const t_inputrec* inputrec) :
     fepStateSetting_(freeEnergyPerturbationData->enableExternalFepStateSetting()),
     isMainRank_(isMainRank),
     initialStep_(initialStep),
     frequency_(frequency),
     nextLogWritingStep_(-1),
-    dfhist_(std::make_unique<df_history_t>()),
+    dfhist_(std::make_unique<df_history_t>(inputrec->fepvals->n_lambda)),
     restoredFromCheckpoint_(false),
     energyData_(energyData),
     freeEnergyPerturbationData_(freeEnergyPerturbationData),
     fplog_(fplog),
     inputrec_(inputrec)
 {
-    init_df_history(dfhist_.get(), inputrec_->fepvals->n_lambda);
 }
 
 ExpandedEnsembleElement::~ExpandedEnsembleElement() = default;
@@ -205,14 +208,14 @@ ExpandedEnsembleElement::~ExpandedEnsembleElement() = default;
 ISimulatorElement* ExpandedEnsembleElement::getElementPointerImpl(
         LegacySimulatorData*                    legacySimulatorData,
         ModularSimulatorAlgorithmBuilderHelper* builderHelper,
-        StatePropagatorData gmx_unused* statePropagatorData,
-        EnergyData*                     energyData,
-        FreeEnergyPerturbationData*     freeEnergyPerturbationData,
-        GlobalCommunicationHelper gmx_unused* globalCommunicationHelper,
+        StatePropagatorData gmx_unused*         statePropagatorData,
+        EnergyData*                             energyData,
+        FreeEnergyPerturbationData*             freeEnergyPerturbationData,
+        GlobalCommunicationHelper gmx_unused*   globalCommunicationHelper,
         ObservablesReducer* /*observablesReducer*/)
 {
     return builderHelper->storeElement(std::make_unique<ExpandedEnsembleElement>(
-            MAIN(legacySimulatorData->cr_),
+            legacySimulatorData->cr_->commMyGroup.isMainRank(),
             legacySimulatorData->inputRec_->init_step,
             legacySimulatorData->inputRec_->expandedvals->nstexpanded,
             energyData,

@@ -40,11 +40,11 @@
 
 #include <limits>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 struct gmx_mtop_t;
 struct t_inputrec;
@@ -54,13 +54,9 @@ namespace gmx
 template<typename>
 class ArrayRef;
 class RangePartitioning;
+enum class NbnxmKernelType;
+enum class PairlistType;
 } // namespace gmx
-
-namespace Nbnxm
-{
-enum class KernelType;
-} // namespace Nbnxm
-
 
 struct VerletbufListSetup
 {
@@ -82,7 +78,7 @@ static const real verlet_buffer_ratio_NVE_T0     = 0.10;
 
 /* Returns the pair-list setup for the given nbnxn kernel type.
  */
-VerletbufListSetup verletbufGetListSetup(Nbnxm::KernelType nbnxnKernelType);
+VerletbufListSetup verletbufGetListSetup(gmx::NbnxmKernelType nbnxnKernelType);
 
 //! \brief Chance target to use in minCellSizeForAtomDisplacement()
 enum class ChanceTarget
@@ -307,7 +303,10 @@ public:
     {
         GMX_ASSERT(mass != 0, "Mass can not be zero here as we store 1/mass");
 
-        invMass_ = 1 / (mass * invMassScale_) + 0.5_real;
+        const real scaledInvMassToConvert = 1 / (mass * invMassScale_);
+        // Small invMasses are not relevant, but we should avoid 0
+        invMass_ = std::max(static_cast<int16_t>(scaledInvMassToConvert + 0.5_real),
+                            static_cast<int16_t>(1));
         type_    = type;
         charge_  = charge / chargeScale_ + std::copysign(0.5_real, charge);
     }
@@ -324,14 +323,11 @@ public:
 
         if (invMass < constraintInvMass())
         {
-            constraintInvMass_ = invMass / invMassScale_ + 0.5_real;
+            const real scaledInvMassToConvert = invMass / invMassScale_;
+            // Small invMasses are not relevant, but we should avoid 0
+            constraintInvMass_ = std::max(static_cast<int16_t>(scaledInvMassToConvert + 0.5_real),
+                                          static_cast<int16_t>(1));
             constraintLength_  = length / constraintLengthScale_ + 0.5_real;
-
-            // We need to avoid division by zero for extremely high constraint masses
-            if (constraintInvMass_ == 0)
-            {
-                constraintInvMass_ = 1;
-            }
         }
     }
 
@@ -342,7 +338,7 @@ private:
     int type_ = 0;
     // Charge of the atom divided by chargeScale_
     int16_t charge_ = 0;
-    // Inverse mass divided by invMassScale_ of heaviest atom this atom is conneced to by a constraint
+    // Inverse mass divided by invMassScale_ of heaviest atom this atom is connected to by a constraint
     int16_t constraintInvMass_ = std::numeric_limits<int16_t>::max();
     // Constraint length divided by constraintLengthScale_ to the heaviest atom connected by a constraint
     int16_t constraintLength_ = 0;

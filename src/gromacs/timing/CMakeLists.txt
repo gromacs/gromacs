@@ -35,6 +35,7 @@
 add_library(timing INTERFACE)
 set(TIMING_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/cyclecounter.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/external_tracing.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/wallcycle.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/walltime_accounting.cpp
     )
@@ -58,8 +59,8 @@ target_link_libraries(timing INTERFACE
 # Tracing support for NVTX / ROCTX / ITT (with some basic includ/lib detection support,
 # sufficient for most use-cases and this is a dev-feature anyway).
 if(GMX_USE_NVTX)
-    find_package(CUDAToolkit ${REQUIRED_CUDA_VERSION} REQUIRED)
-    target_link_libraries(timing INTERFACE CUDA::nvToolsExt)
+    find_package(CUDAToolkit ${GMX_CUDA_MINIMUM_REQUIRED_VERSION} REQUIRED)
+    target_link_libraries(timing INTERFACE CUDA::nvtx3)
     # As of CUDA 11.8, there are a lot of old-style casts in nvToolsExt.h
     gmx_target_interface_warning_suppression(timing "-Wno-old-style-cast" HAS_WARNING_NO_OLD_STYLE_CAST)
 endif()
@@ -67,13 +68,13 @@ endif()
 if(GMX_USE_ROCTX)
     find_path (ROCTX_INCLUDE_DIR
         NAMES roctracer/roctx.h
-        HINTS ENV ROCM_PATH ENV ROCM_HOME "${HIPSYCL_SYCLCC_ROCM_PATH}" "${HIP_PACKAGE_PREFIX_DIR}"
+        HINTS ENV ROCM_PATH ENV ROCM_HOME "${ACPP_ROCM_PATH}" "${HIP_PACKAGE_PREFIX_DIR}"
         PATH_SUFFIXES include
         REQUIRED
         )
     find_library (ROCTX_LIBRARY
         NAMES libroctx64.so
-        HINTS ENV ROCM_PATH ENV ROCM_HOME "${HIPSYCL_SYCLCC_ROCM_PATH}" "${HIP_PACKAGE_PREFIX_DIR}"
+        HINTS ENV ROCM_PATH ENV ROCM_HOME "${ACPP_ROCM_PATH}" "${HIP_PACKAGE_PREFIX_DIR}"
         PATH_SUFFIXES roctracer/lib64 roctracer/lib lib64 lib
         REQUIRED
         )

@@ -80,7 +80,7 @@ static void check_link(std::vector<int>* links, const int atom)
 }
 
 /*! \brief Creates and return a list of bonded links for all atoms in the system */
-static gmx::ListOfLists<int> genBondedLinks(const gmx_mtop_t&                               mtop,
+static gmx::ListOfLists<int> genBondedLinks(const gmx_mtop_t& mtop,
                                             gmx::ArrayRef<gmx::AtomInfoWithinMoleculeBlock> atomInfoForEachMoleculeBlock)
 {
     gmx::ListOfLists<int> link;

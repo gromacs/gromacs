@@ -41,24 +41,37 @@
  * \ingroup module_nbnxm
  */
 
-#include "gromacs/math/vectypes.h"
+#include "gromacs/nbnxm/nbnxm_enums.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
-
-struct nbnxn_atomdata_t;
-struct NbnxnPairlistCpu;
+#include "gromacs/utility/vectypes.h"
 
 namespace gmx
 {
+struct nbnxn_atomdata_t;
+struct NbnxnPairlistCpu;
 template<typename>
 class ArrayRef;
-}
+
 /*! \brief Prune a single NbnxnPairlistCpu entry with distance \p rlistInner
  *
  * Reads a cluster pairlist \p nbl->ciOuter, \p nbl->cjOuter and writes
  * all cluster pairs within \p rlistInner to \p nbl->ci, \p nbl->cj.
  */
-void nbnxn_kernel_prune_ref(NbnxnPairlistCpu*              nbl,
-                            const nbnxn_atomdata_t*        nbat,
-                            gmx::ArrayRef<const gmx::RVec> shiftvec,
-                            real                           rlistInner);
+template<NbnxmKernelType>
+void nbnxmRefPruneKernel(NbnxnPairlistCpu*       nbl,
+                         const nbnxn_atomdata_t* nbat,
+                         ArrayRef<const RVec>    shiftvec,
+                         real                    rlistInner);
+
+extern template void nbnxmRefPruneKernel<NbnxmKernelType::Cpu4x4_PlainC>(NbnxnPairlistCpu* nbl,
+                                                                         const nbnxn_atomdata_t* nbat,
+                                                                         ArrayRef<const RVec> shiftvec,
+                                                                         real rlistInner);
+
+extern template void nbnxmRefPruneKernel<NbnxmKernelType::Cpu1x1_PlainC>(NbnxnPairlistCpu* nbl,
+                                                                         const nbnxn_atomdata_t* nbat,
+                                                                         ArrayRef<const RVec> shiftvec,
+                                                                         real rlistInner);
+
+} // namespace gmx

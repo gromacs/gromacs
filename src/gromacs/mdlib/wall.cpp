@@ -48,13 +48,11 @@
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdatom.h"
-#include "gromacs/mdtypes/nblist.h"
 #include "gromacs/tables/forcetable.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/topology/topology_enums.h"
@@ -65,6 +63,7 @@
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vec.h"
 
 void make_wall_tables(FILE*                   fplog,
                       const t_inputrec&       ir,
@@ -93,12 +92,12 @@ void make_wall_tables(FILE*                   fplog,
             if (!(fr->egp_flags[egp * ir.opts.ngener + negp_pp + w] & EGP_EXCL))
             {
                 sprintf(buf, "%s", tabfn);
-                sprintf(buf + strlen(tabfn) - strlen(ftp2ext(efXVG)) - 1,
+                sprintf(buf + std::strlen(tabfn) - std::strlen(ftp2ext(efXVG)) - 1,
                         "_%s_%s.%s",
                         *groups->groupNames[nm_ind[egp]],
                         *groups->groupNames[nm_ind[negp_pp + w]],
                         ftp2ext(efXVG));
-                fr->wall_tab[w][egp] = make_tables(fplog, fr->ic.get(), buf, 0, GMX_MAKETABLES_FORCEUSER);
+                fr->wall_tab[w][egp] = make_tables(fplog, *fr->ic, buf, 0, GMX_MAKETABLES_FORCEUSER);
 
                 /* Since wall have no charge, we can compress the table */
                 for (int i = 0; i <= fr->wall_tab[w][egp]->numTablePoints; i++)

@@ -46,7 +46,7 @@
 #include "checkpointdata.h"
 
 //! \cond INTERNAL
-// mirroring the \cond from energyhistory.h to avoid Doxygen errors
+// mirroring the cond from energyhistory.h to avoid Doxygen errors
 
 namespace
 {

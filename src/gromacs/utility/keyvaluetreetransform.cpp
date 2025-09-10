@@ -552,15 +552,15 @@ void KeyValueTreeTransformRuleBuilder::setKeyMatchType(StringCompareType keyMatc
 
 void KeyValueTreeTransformRuleBuilder::addTransformToAny(const std::function<Any(const Any&)>& transform)
 {
-    data_->transform_ = [transform](KeyValueTreeValueBuilder* builder, const KeyValueTreeValue& value) {
-        builder->setAnyValue(transform(value.asAny()));
-    };
+    data_->transform_ = [transform](KeyValueTreeValueBuilder* builder, const KeyValueTreeValue& value)
+    { builder->setAnyValue(transform(value.asAny())); };
 }
 
 void KeyValueTreeTransformRuleBuilder::addTransformToObject(
         const std::function<void(KeyValueTreeObjectBuilder*, const Any&)>& transform)
 {
-    data_->transform_ = [transform](KeyValueTreeValueBuilder* builder, const KeyValueTreeValue& value) {
+    data_->transform_ = [transform](KeyValueTreeValueBuilder* builder, const KeyValueTreeValue& value)
+    {
         KeyValueTreeObjectBuilder obj = builder->createObject();
         transform(&obj, value.asAny());
     };

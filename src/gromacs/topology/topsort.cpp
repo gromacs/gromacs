@@ -42,7 +42,6 @@
 #include <filesystem>
 #include <vector>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/atominfo.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/forcefieldparameters.h"
@@ -53,6 +52,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vectypes.h"
 
 static gmx_bool ip_pert(int ftype, const t_iparams* ip)
 {

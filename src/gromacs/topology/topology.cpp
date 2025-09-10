@@ -45,8 +45,6 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/math/vecdump.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/forcefieldparameters.h"
@@ -65,6 +63,8 @@
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/txtdump.h"
+#include "gromacs/utility/vecdump.h"
+#include "gromacs/utility/vectypes.h"
 
 const char* shortName(SimulationAtomGroupType type)
 {
@@ -147,7 +147,7 @@ void gmx_mtop_t::finalize()
         maxResiduesPerMoleculeToTriggerRenumber_ = 1;
     }
 
-    const char* env = getenv("GMX_MAXRESRENUM");
+    const char* env = std::getenv("GMX_MAXRESRENUM");
     if (env != nullptr)
     {
         sscanf(env, "%d", &maxResiduesPerMoleculeToTriggerRenumber_);

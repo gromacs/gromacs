@@ -59,8 +59,6 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/idef.h"
@@ -75,6 +73,8 @@
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 enum class PbcType : int;
 struct gmx_output_env_t;
@@ -861,7 +861,7 @@ int gmx_rms(int argc, char* argv[])
         {
             axis[i] = time[freq * i];
             fprintf(stderr, "\r element %5d; time %5.2f  ", i, axis[i]);
-            fflush(stderr);
+            std::fflush(stderr);
             if (bMat)
             {
                 snew(rmsd_mat[i], tel_mat2);
@@ -1099,7 +1099,7 @@ int gmx_rms(int argc, char* argv[])
                 fp = ftp2FILE(efDAT, NFILE, fnm, "wb");
                 for (i = 0; i < tel_mat; i++)
                 {
-                    if (static_cast<int>(fwrite(rmsd_mat[i], sizeof(**rmsd_mat), tel_mat2, fp)) != tel_mat2)
+                    if (static_cast<int>(std::fwrite(rmsd_mat[i], sizeof(**rmsd_mat), tel_mat2, fp)) != tel_mat2)
                     {
                         gmx_fatal(FARGS, "Error writing to output file");
                     }

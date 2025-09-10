@@ -79,15 +79,15 @@ class AnalysisDataTestInputPointSet
 {
 public:
     //! Returns zero-based index of this point set in its frame.
-    int index() const { return index_; }
+    size_t index() const { return index_; }
     //! Returns zero-based index of the data set of this point set.
-    int dataSetIndex() const { return dataSetIndex_; }
+    size_t dataSetIndex() const { return dataSetIndex_; }
     //! Returns zero-based index of the first column in this point set.
-    int firstColumn() const { return firstColumn_; }
+    size_t firstColumn() const { return firstColumn_; }
     //! Returns zero-based index of the last column in this point set.
-    int lastColumn() const { return firstColumn_ + size() - 1; }
+    size_t lastColumn() const { return firstColumn_ + size() - 1; }
     //! Returns the number of columns in the point set.
-    int size() const { return values_.size(); }
+    size_t size() const { return values_.size(); }
     //! Returns the value in column \p i.
     real y(int i) const { return values_[i].y_; }
     //! Returns whether the error is present for column \p i.
@@ -97,7 +97,7 @@ public:
     //! Returns whether the value in column \p i is present.
     static bool present(int /*i*/) { return true; }
     //! Returns an AnalysisDataValue for column \p i.
-    AnalysisDataValue value(int i) const
+    AnalysisDataValue value(size_t i) const
     {
         AnalysisDataValue result;
         result.setValue(values_[i].y_);
@@ -115,7 +115,7 @@ public:
 
 private:
     //! Creates an empty point set.
-    AnalysisDataTestInputPointSet(int index, int dataSetIndex, int firstColumn);
+    AnalysisDataTestInputPointSet(size_t index, size_t dataSetIndex, size_t firstColumn);
 
     struct Value
     {
@@ -128,9 +128,9 @@ private:
         bool bError_;
     };
 
-    int                index_;
-    int                dataSetIndex_;
-    int                firstColumn_;
+    size_t             index_;
+    size_t             dataSetIndex_;
+    size_t             firstColumn_;
     std::vector<Value> values_;
 
     //! For constructing new point sets.
@@ -147,14 +147,14 @@ class AnalysisDataTestInputFrame
 {
 public:
     //! Returns zero-based index for the frame.
-    int index() const { return index_; }
+    size_t index() const { return index_; }
     //! Returns x coordinate for the frame.
     real x() const { return x_; }
     //! Returns error in the x coordinate for the frame.
     static real dx() { return 0.0; }
 
     //! Number of individual point sets in the frame.
-    int pointSetCount() const { return pointSets_.size(); }
+    size_t pointSetCount() const { return pointSets_.size(); }
     //! Returns a point set object for a given point set.
     const AnalysisDataTestInputPointSet& pointSet(int index) const
     {
@@ -164,19 +164,19 @@ public:
     }
 
     //! Appends an empty point set to this frame.
-    AnalysisDataTestInputPointSet& addPointSet(int dataSet, int firstColumn);
+    AnalysisDataTestInputPointSet& addPointSet(size_t dataSet, size_t firstColumn);
     //! Adds a point set with given values to this frame.
-    void addPointSetWithValues(int dataSet, int firstColumn, real y1);
+    void addPointSetWithValues(size_t dataSet, size_t firstColumn, real y1);
     //! Adds a point set with given values to this frame.
-    void addPointSetWithValues(int dataSet, int firstColumn, real y1, real y2);
+    void addPointSetWithValues(size_t dataSet, size_t firstColumn, real y1, real y2);
     //! Adds a point set with given values to this frame.
-    void addPointSetWithValues(int dataSet, int firstColumn, real y1, real y2, real y3);
+    void addPointSetWithValues(size_t dataSet, size_t firstColumn, real y1, real y2, real y3);
     //! Adds a point set with given values to this frame.
-    void addPointSetWithValueAndError(int dataSet, int firstColumn, real y1, real e1);
+    void addPointSetWithValueAndError(size_t dataSet, size_t firstColumn, real y1, real e1);
 
 private:
     //! Constructs a new frame object with the given values.
-    AnalysisDataTestInputFrame(int index, real x);
+    AnalysisDataTestInputFrame(size_t index, real x);
 
     int                                        index_;
     real                                       x_;
@@ -209,22 +209,22 @@ public:
      * The column count for each data set must be set with
      * setColumnCount().
      */
-    AnalysisDataTestInput(int dataSetCount, bool bMultipoint);
+    AnalysisDataTestInput(size_t dataSetCount, bool bMultipoint);
     ~AnalysisDataTestInput();
 
     //! Whether the input data is multipoint.
     bool isMultipoint() const { return bMultipoint_; }
     //! Returns the number of data sets in the input data.
-    int dataSetCount() const { return columnCounts_.size(); }
+    size_t dataSetCount() const { return columnCounts_.size(); }
     //! Returns the number of columns in a given data set.
-    int columnCount(int dataSet) const { return columnCounts_[dataSet]; }
+    size_t columnCount(size_t dataSet) const { return columnCounts_[dataSet]; }
     //! Returns the number of frames in the input data.
-    int frameCount() const { return frames_.size(); }
+    size_t frameCount() const { return frames_.size(); }
     //! Returns a frame object for the given input frame.
-    const AnalysisDataTestInputFrame& frame(int index) const;
+    const AnalysisDataTestInputFrame& frame(size_t index) const;
 
     //! Sets the number of columns in a data set.
-    void setColumnCount(int dataSet, int columnCount);
+    void setColumnCount(size_t dataSet, size_t columnCount);
     //! Appends an empty frame to this data.
     AnalysisDataTestInputFrame& addFrame(real x);
     //! Adds a frame with a single point set and the given values.
@@ -237,7 +237,7 @@ public:
     void addFrameWithValueAndError(real x, real y1, real e1);
 
 private:
-    std::vector<int>                        columnCounts_;
+    std::vector<size_t>                     columnCounts_;
     bool                                    bMultipoint_;
     std::vector<AnalysisDataTestInputFrame> frames_;
 };
@@ -459,14 +459,14 @@ void AnalysisDataTestFixture::setupArrayData(const AnalysisDataTestInput& input,
     data->setColumnCount(input.columnCount(0));
     data->setRowCount(input.frameCount());
     data->allocateValues();
-    for (int row = 0; row < input.frameCount(); ++row)
+    for (size_t row = 0; row < input.frameCount(); ++row)
     {
         const AnalysisDataTestInputFrame& frame = input.frame(row);
         EXPECT_FLOAT_EQ(frame.x(), data->xvalue(row));
         GMX_RELEASE_ASSERT(frame.pointSetCount() == 1,
                            "Multiple point sets not supported by array data");
         const AnalysisDataTestInputPointSet& points = frame.pointSet(0);
-        for (int column = 0; column < points.size(); ++column)
+        for (size_t column = 0; column < points.size(); ++column)
         {
             data->value(row, column + points.firstColumn()) = points.value(column);
         }

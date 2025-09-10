@@ -44,7 +44,12 @@
 #define GMX_MDRUNUTILITY_MDMODULESNOTIFIER_H
 
 #include <functional>
+#include <optional>
+#include <type_traits>
 #include <vector>
+
+#include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/gmxassert.h"
 
 namespace gmx
 {
@@ -57,7 +62,7 @@ namespace gmx
  * information is available when the event occurs. Modules \c
  * subscribe() by providing a callback function that accepts a single
  * parameter of such an event type. The code that handles that event
- * has the responsibilty to call \c notify() afterwards. The
+ * has the responsibility to call \c notify() afterwards. The
  * subscribed modules then receive the callback with the requested
  * event type as an argument.
  *
@@ -120,6 +125,25 @@ public:
         callBackFunctions_.emplace_back(callBackFunction);
     }
 
+    /*! \brief Returns whether this notification has any subscribers
+     *
+     * This function is templated on \p CallParameter to enable to call the correct
+     * \p haveSubscribers() by explicitly adding this template parameter at the call point.
+     */
+    template<typename T>
+    bool haveSubscribers() const
+    {
+        // This trick is needed to relay the call to the class with the correct template parameter
+        if constexpr (std::is_same_v<T, CallParameter>)
+        {
+            return !callBackFunctions_.empty();
+        }
+        else
+        {
+            return MDModulesNotifierBase::template haveSubscribers<T>();
+        }
+    }
+
 private:
     std::vector<std::function<void(CallParameter)>> callBackFunctions_;
 };
@@ -152,9 +176,10 @@ struct BuildMDModulesNotifier<>
     {
     public:
         //! Do nothing but provide MDModulesNotifier::notify to derived class
-        void notify() {}
+        void notify() { GMX_RELEASE_ASSERT(false, "This method should never be called"); }
+
         //! Do nothing but provide MDModulesNotifier::subscribe to derived class
-        void subscribe() {}
+        void subscribe() { GMX_RELEASE_ASSERT(false, "This method should never be called"); }
     };
     /*! \brief Defines a type if no notifications are managed.
      *

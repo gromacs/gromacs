@@ -725,7 +725,7 @@ written to additional output files and which are described below.
 | 
 
 .. |VT|      replace:: :math:`V(t)`
-.. |THET|    replace:: :math:`\theta_{	\mathrm{ref}}(t)`
+.. |THET|    replace:: :math:`\theta_{\mathrm{ref}}(t)`
 .. |THETAV|  replace:: :math:`\theta_{\mathrm{av}}(t)`
 .. |THETFIT| replace:: :math:`\theta_{\mathrm{fit}}(t)`, :math:`\theta_{\mathrm{fit}}(t,n)`
 .. |YVEC|    replace:: :math:`\mathbf{y}_{0}(n)`, :math:`\mathbf{x}_{0}(t,n)`

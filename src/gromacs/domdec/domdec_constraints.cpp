@@ -57,8 +57,6 @@
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/ga2la.h"
 #include "gromacs/domdec/hashedmap.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdtypes/atominfo.h"
@@ -73,6 +71,8 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/listoflists.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "domdec_internal.h"
 #include "domdec_specatomcomm.h"
@@ -570,7 +570,8 @@ void init_domdec_constraints(gmx_domdec_t* dd, const gmx_mtop_t& mtop)
      * The number of keys is a rough estimate, it will be optimized later.
      */
     int numKeysEstimate = std::min(mtop.natoms / 20, mtop.natoms / (2 * dd->nnodes));
-    dc->ga2la           = std::make_unique<gmx::HashedMap<int>>(numKeysEstimate);
+    dc->ga2la           = std::make_unique<gmx::HashedMap<int>>(
+            numKeysEstimate, gmx_omp_nthreads_get(ModuleMultiThread::Domdec));
 
     dc->nthread = gmx_omp_nthreads_get(ModuleMultiThread::Domdec);
     dc->ils.resize(dc->nthread);

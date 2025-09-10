@@ -54,13 +54,12 @@
 #include <filesystem>
 #include <vector>
 
-#include "gromacs/math/vec.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/vec.h"
 
 #include "pme_internal.h"
 
@@ -248,10 +247,10 @@ void PmeAtomComm::setNumAtoms(const int numAtoms)
 static void pme_dd_sendrecv(PmeAtomComm gmx_unused* atc,
                             gmx_bool gmx_unused     bBackward,
                             int gmx_unused          shift,
-                            void gmx_unused* buf_s,
-                            int gmx_unused   nbyte_s,
-                            void gmx_unused* buf_r,
-                            int gmx_unused   nbyte_r)
+                            void gmx_unused*        buf_s,
+                            int gmx_unused          nbyte_s,
+                            void gmx_unused*        buf_r,
+                            int gmx_unused          nbyte_r)
 {
 #if GMX_MPI
     int        dest, src;
@@ -477,7 +476,6 @@ void dd_pmeredist_f(struct gmx_pme_t* pme, PmeAtomComm* atc, gmx::ArrayRef<gmx::
 }
 
 void do_redist_pos_coeffs(struct gmx_pme_t*              pme,
-                          const t_commrec*               cr,
                           gmx_bool                       bFirst,
                           gmx::ArrayRef<const gmx::RVec> x,
                           gmx::ArrayRef<const real>      data)
@@ -503,7 +501,7 @@ void do_redist_pos_coeffs(struct gmx_pme_t*              pme,
         atc.pd.resize(xRef.size());
         pme_calc_pidx_wrapper(xRef, pme->recipbox, &atc);
         /* Redistribute x (only once) and qA/c6A or qB/c6B */
-        if (haveDDAtomOrdering(*cr))
+        if (pme->haveDDAtomOrdering)
         {
             dd_pmeredist_pos_coeffs(pme, bFirst, xRef, param_d, &atc);
         }

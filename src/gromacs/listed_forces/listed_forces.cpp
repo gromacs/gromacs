@@ -60,7 +60,6 @@
 #include "gromacs/math/arrayrefwithpadding.h"
 #include "gromacs/mdlib/enerdata_utils.h"
 #include "gromacs/mdlib/force.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
@@ -85,14 +84,19 @@
 
 ListedForces::ListedForces(const gmx_ffparams_t&      ffparams,
                            const int                  numEnergyGroups,
+                           const int                  numComGroups,
                            const int                  numThreads,
                            const InteractionSelection interactionSelection,
+                           const gmx_domdec_t*        domDec,
+                           const gmx_multisim_t*      commMultiSim,
                            FILE*                      fplog) :
     numEnergyGroups_(numEnergyGroups),
     idefSelection_(ffparams),
-    threading_(std::make_unique<bonded_threading_t>(numThreads, numEnergyGroups, fplog)),
+    threading_(std::make_unique<bonded_threading_t>(numThreads, numEnergyGroups, numComGroups, fplog)),
     interactionSelection_(interactionSelection),
-    foreignEnergyGroups_(std::make_unique<gmx_grppairener_t>(numEnergyGroups))
+    foreignEnergyGroups_(std::make_unique<gmx_grppairener_t>(numEnergyGroups)),
+    domDec_(domDec),
+    commMultiSim_(commMultiSim)
 {
 }
 
@@ -148,7 +152,10 @@ static void selectInteractions(InteractionDefinitions*                   idef,
     }
 }
 
-void ListedForces::setup(const InteractionDefinitions& domainIdef, const int numAtomsForce, const bool useGpu)
+void ListedForces::setup(const InteractionDefinitions&             domainIdef,
+                         const int                                 numAtomsForce,
+                         const bool                                useGpu,
+                         const gmx::ArrayRef<const unsigned short> restraintComIndices)
 {
     if (interactionSelection_.all())
     {
@@ -182,6 +189,8 @@ void ListedForces::setup(const InteractionDefinitions& domainIdef, const int num
         forceBufferLambda_.resize(numAtomsForce * sizeof(rvec4) / sizeof(real));
         shiftForceBufferLambda_.resize(gmx::c_numShiftVectors);
     }
+
+    restraintComIndices_ = restraintComIndices;
 }
 
 namespace
@@ -371,10 +380,85 @@ real calc_one_bond(int                                 thread,
 
 } // namespace
 
+//! Computes the position restraint forces, uses OpenMP parallelization
+static void calcPositionRestraintForces(const InteractionDefinitions& idef,
+                                        bonded_threading_t*           bt,
+                                        const bool                    needToClearThreadForceBuffers,
+                                        const rvec                    x[],
+                                        const t_pbc&                  pbc,
+                                        const t_forcerec*             fr,
+                                        const gmx::ArrayRef<const unsigned short> refScaleComIndices,
+                                        gmx::RVec*                virial,
+                                        gmx_enerdata_t*           enerd,
+                                        t_nrnb*                   nrnb,
+                                        gmx::ArrayRef<const real> lambda,
+                                        gmx::ArrayRef<real>       dvdl)
+{
+#pragma omp parallel for num_threads(bt->nthreads) schedule(static)
+    for (int thread = 0; thread < bt->nthreads; thread++)
+    {
+        try
+        {
+            auto& threadBuffer = bt->threadedForceBuffer.threadForceBuffer(thread);
+
+            auto& comBuffers = bt->centersOfMassScaledBuffers_[thread];
+
+            if (needToClearThreadForceBuffers)
+            {
+                threadBuffer.clearForcesAndEnergies();
+            }
+
+            gmx::ArrayRef<rvec4> forces = threadBuffer.forceBuffer();
+            // Thread 0 write directly to the output buffers
+            gmx::ArrayRef<real> epot = (thread == 0 ? enerd->term : threadBuffer.energyTerms());
+            gmx::RVec&          virialRef = (thread == 0 ? *virial : threadBuffer.diagonalVirial());
+            gmx::ArrayRef<real> dvdlRef   = (thread == 0 ? dvdl : threadBuffer.dvdl());
+
+            if (!idef.il[F_POSRES].empty())
+            {
+                int  bound0 = bt->workDivision.bound(F_POSRES, thread);
+                int  bound1 = bt->workDivision.bound(F_POSRES, thread + 1);
+                auto iatoms = gmx::arrayRefFromArray(idef.il[F_POSRES].iatoms.data() + bound0,
+                                                     bound1 - bound0);
+
+                epot[F_POSRES] +=
+                        posres_wrapper(iatoms,
+                                       idef.iparams_posres,
+                                       pbc,
+                                       x,
+                                       lambda,
+                                       fr,
+                                       refScaleComIndices,
+                                       comBuffers.comA_,
+                                       comBuffers.comB_,
+                                       forces,
+                                       &virialRef,
+                                       &dvdlRef[int(FreeEnergyPerturbationCouplingType::Restraint)]);
+            }
+
+            if (!idef.il[F_FBPOSRES].empty())
+            {
+                int  bound0 = bt->workDivision.bound(F_FBPOSRES, thread);
+                int  bound1 = bt->workDivision.bound(F_FBPOSRES, thread + 1);
+                auto iatoms = gmx::arrayRefFromArray(idef.il[F_FBPOSRES].iatoms.data() + bound0,
+                                                     bound1 - bound0);
+
+                epot[F_FBPOSRES] += fbposres_wrapper(
+                        iatoms, idef.iparams_fbposres, pbc, x, fr, refScaleComIndices, comBuffers.comA_, forces, &virialRef);
+            }
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
+    }
+
+    inc_nrnb(nrnb, eNR_POSRES, gmx::exactDiv(idef.il[F_POSRES].size(), 1 + NRAL(F_POSRES)));
+    inc_nrnb(nrnb, eNR_FBPOSRES, gmx::exactDiv(idef.il[F_FBPOSRES].size(), 1 + NRAL(F_FBPOSRES)));
+}
+
 /*! \brief Compute the bonded part of the listed forces, parallelized over threads
  */
 static void calcBondedForces(const InteractionDefinitions&       idef,
                              bonded_threading_t*                 bt,
+                             const bool                          needToClearThreadForceBuffers,
                              const rvec                          x[],
                              const t_forcerec*                   fr,
                              const t_pbc*                        pbc_null,
@@ -404,7 +488,10 @@ static void calcBondedForces(const InteractionDefinitions&       idef,
             gmx::ArrayRef<real> epot;
             gmx_grppairener_t*  grpp;
 
-            threadBuffer.clearForcesAndEnergies();
+            if (needToClearThreadForceBuffers)
+            {
+                threadBuffer.clearForcesAndEnergies();
+            }
 
             rvec4* ft = threadBuffer.forceBuffer().data();
 
@@ -489,6 +576,7 @@ namespace
 void calc_listed(struct gmx_wallcycle*               wcycle,
                  const InteractionDefinitions&       idef,
                  bonded_threading_t*                 bt,
+                 const bool                          needToClearThreadForceBuffers,
                  const rvec                          x[],
                  gmx::ForceOutputs*                  forceOutputs,
                  const t_forcerec*                   fr,
@@ -515,6 +603,7 @@ void calc_listed(struct gmx_wallcycle*               wcycle,
         gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, real> dvdl = { 0 };
         calcBondedForces(idef,
                          bt,
+                         needToClearThreadForceBuffers,
                          x,
                          fr,
                          fr->bMolPBC ? pbc : nullptr,
@@ -650,8 +739,6 @@ void calc_listed_lambda(const InteractionDefinitions&       idef,
 
 void ListedForces::calculate(struct gmx_wallcycle*                     wcycle,
                              const matrix                              box,
-                             const t_commrec*                          cr,
-                             const gmx_multisim_t*                     ms,
                              gmx::ArrayRefWithPadding<const gmx::RVec> coordinates,
                              gmx::ArrayRef<const gmx::RVec>            xWholeMolecules,
                              t_fcdata*                                 fcdata,
@@ -683,37 +770,68 @@ void ListedForces::calculate(struct gmx_wallcycle*                     wcycle,
     const bool calculateRestInteractions =
             interactionSelection_.test(static_cast<int>(ListedForces::InteractionGroup::Rest));
 
-    t_pbc pbc_full; /* Full PBC is needed for position restraints */
+    /* Here we need to treat position restraints differently from other listed interactions.
+     * The virial from position restraints needs to be computed directly, not through shift
+     * forces as done for all other listed interactions. Position restraints also need full PBC.
+     * Thus we need to do two separate thread buffer force reductions when the virial is needed.
+     * When the virial is not needed, we do a single thread force buffer reduction.
+     */
+
+    bool needToClearThreadForceBuffers = true;
+
     if (calculateRestInteractions && haveRestraints(*fcdata))
     {
-        if (!idef.il[F_POSRES].empty() || !idef.il[F_FBPOSRES].empty())
-        {
-            /* Not enough flops to bother counting */
-            set_pbc(&pbc_full, fr->pbcType, box);
-        }
-
-        /* TODO Use of restraints triggers further function calls
-           inside the loop over calc_one_bond(), but those are too
-           awkward to account to this subtimer properly in the present
-           code. We don't test / care much about performance with
-           restraints, anyway. */
         wallcycle_sub_start(wcycle, WallCycleSubCounter::Restraints);
 
-        if (!idef.il[F_POSRES].empty())
+        if (!idef.il[F_POSRES].empty() || !idef.il[F_FBPOSRES].empty())
         {
-            posres_wrapper(nrnb, idef, &pbc_full, x, enerd, lambda, fr, &forceOutputs->forceWithVirial());
-        }
+            // For position restraints we always need full pbc
+            t_pbc pbc;
+            set_pbc(&pbc, fr->pbcType, box);
 
-        if (!idef.il[F_FBPOSRES].empty())
-        {
-            fbposres_wrapper(nrnb, idef, &pbc_full, x, enerd, fr, &forceOutputs->forceWithVirial());
+            gmx::RVec diagonalVirial = { 0.0_real, 0.0_real, 0.0_real };
+            // We need an intermediate array (with real=float) as enerd stores doubles
+            gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, real> dvdl = { 0 };
+            calcPositionRestraintForces(idef,
+                                        threading_.get(),
+                                        needToClearThreadForceBuffers,
+                                        x,
+                                        pbc,
+                                        fr,
+                                        restraintComIndices_,
+                                        &diagonalVirial,
+                                        enerd,
+                                        nrnb,
+                                        lambda,
+                                        dvdl);
+
+            if (stepWork.computeVirial)
+            {
+                forceOutputs->forceWithVirial().addVirialContribution(diagonalVirial);
+
+                threading_->threadedForceBuffer.reduce(
+                        &forceOutputs->forceWithVirial(), enerd->term.data(), &enerd->grpp, dvdl, stepWork, 1);
+
+                if (stepWork.computeDhdl)
+                {
+                    // Note that flat-bottomed posres is not perturbed, so only normal posres is here
+                    enerd->dvdl_nonlin[FreeEnergyPerturbationCouplingType::Restraint] +=
+                            dvdl[FreeEnergyPerturbationCouplingType::Restraint];
+                }
+
+                needToClearThreadForceBuffers = true;
+            }
+            else
+            {
+                needToClearThreadForceBuffers = false;
+            }
         }
 
         /* Do pre force calculation stuff which might require communication */
         if (fcdata->orires)
         {
-            GMX_ASSERT(!xWholeMolecules.empty(), "Need whole molecules for orienation restraints");
-            enerd->term[F_ORIRESDEV] = calc_orires_dev(ms,
+            GMX_ASSERT(!xWholeMolecules.empty(), "Need whole molecules for orientation restraints");
+            enerd->term[F_ORIRESDEV] = calc_orires_dev(commMultiSim_,
                                                        idef.il[F_ORIRES].size(),
                                                        idef.il[F_ORIRES].iatoms.data(),
                                                        idef.iparams.data(),
@@ -724,8 +842,8 @@ void ListedForces::calculate(struct gmx_wallcycle*                     wcycle,
         }
         if (fcdata->disres->nres > 0)
         {
-            calc_disres_R_6(cr,
-                            ms,
+            calc_disres_R_6(domDec_,
+                            commMultiSim_,
                             idef.il[F_DISRES].size(),
                             idef.il[F_DISRES].iatoms.data(),
                             x,
@@ -740,6 +858,7 @@ void ListedForces::calculate(struct gmx_wallcycle*                     wcycle,
     calc_listed(wcycle,
                 idef,
                 threading_.get(),
+                needToClearThreadForceBuffers,
                 x,
                 forceOutputs,
                 fr,
@@ -764,7 +883,19 @@ void ListedForces::calculate(struct gmx_wallcycle*                     wcycle,
         gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, real> dvdl = { 0 };
         if (!idef.il[F_POSRES].empty())
         {
-            posres_wrapper_lambda(wcycle, idef, &pbc_full, x, enerd, lambda, fr);
+            t_pbc pbc;
+            set_pbc(&pbc, fr->pbcType, box);
+
+            posres_wrapper_lambda(wcycle,
+                                  idef,
+                                  pbc,
+                                  x,
+                                  enerd,
+                                  lambda,
+                                  fr,
+                                  restraintComIndices_,
+                                  threading_->centersOfMassScaledBuffers_[0].comA_,
+                                  threading_->centersOfMassScaledBuffers_[0].comB_);
         }
         if (idef.ilsort != ilsortNO_FE)
         {

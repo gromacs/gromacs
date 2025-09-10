@@ -171,7 +171,7 @@ gmx_opencl_inline void calculate_splines(const struct PmeOpenCLKernelParams kern
     float*    splineDataPtr = splineData;
 #    endif
 
-#    define SPLINE_DATA_PTR(i) (splineDataPtr + ((i)*splineDataStride + splineDataIndex))
+#    define SPLINE_DATA_PTR(i) (splineDataPtr + ((i) * splineDataStride + splineDataIndex))
 #    define SPLINE_DATA(i) (*SPLINE_DATA_PTR(i))
 
     const int localCheck = (dimIndex < DIM) && (orderIndex < (PME_GPU_PARALLEL_SPLINE ? order : 1));
@@ -212,7 +212,7 @@ gmx_opencl_inline void calculate_splines(const struct PmeOpenCLKernelParams kern
                 case ZZ:
                     tableIndex = kernelParams.grid.tablesOffsets[ZZ];
                     n          = kernelParams.grid.realGridSizeFP[ZZ];
-                    t          = /*x.x * kernelParams.current.recipbox[dimIndex][XX] + x.y * kernelParams.current.recipbox[dimIndex][YY] + */ x
+                    t = /*x.x * kernelParams.current.recipbox[dimIndex][XX] + x.y * kernelParams.current.recipbox[dimIndex][YY] + */ x
                                 .z
                         * kernelParams.current.recipBox[dimIndex][ZZ];
                     break;

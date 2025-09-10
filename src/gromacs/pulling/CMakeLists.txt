@@ -54,7 +54,6 @@ target_link_libraries(pulling PRIVATE
                       legacy_modules
         math
         utility
-        muparser
         linearalgebra
         timing
         topology
@@ -62,7 +61,9 @@ target_link_libraries(pulling PRIVATE
 )
 
 # pulling needs muparser defines 
-target_link_libraries(pulling INTERFACE muparser::muparser)
+if (HAVE_MUPARSER)
+    target_link_libraries(pulling PUBLIC muparser::muparser)
+endif()
 
 # Public interface for modules, including dependencies and interfaces
 target_include_directories(pulling PUBLIC
@@ -75,15 +76,6 @@ target_link_libraries(pulling INTERFACE
 if (GMX_OPENMP)
     target_link_libraries(pulling PRIVATE OpenMP::OpenMP_CXX)
 endif()
-
-# TODO: when pulling is an OBJECT target
-#target_link_libraries(pulling PUBLIC legacy_api)
-#target_link_libraries(pulling PRIVATE common)
-
-# Source files have the following private module dependencies.
-#target_link_libraries(pulling PRIVATE NOTHING)
-# TODO: Explicitly link specific modules.
-#target_link_libraries(pulling PRIVATE legacy_modules)
 
 if (BUILD_TESTING)
     add_subdirectory(tests)

@@ -244,12 +244,10 @@ public:
     void logPerformanceHints(const MDLogger& mdlog, size_t numAvailableDevicesOnThisNode);
     /*! \brief Return handle to the initialized GPU to use in this rank.
      *
-     * \param[out] deviceId Index of the assigned device.
-     *
      * \returns Device information on the selected device. Returns nullptr if no GPU task
      *          is assigned to this rank.
      */
-    DeviceInformation* initDevice(int* deviceId) const;
+    DeviceInformation* initDevice() const;
     //! Return whether this rank has a PME task running on a GPU
     bool thisRankHasPmeGpuTask() const;
     //! Return whether this rank has any task running on a GPU
@@ -257,6 +255,20 @@ public:
     //! Get the list of unique devices that have been assigned tasks on this physical node
     std::vector<int> deviceIdsAssigned() { return deviceIdsAssigned_; }
 };
+
+/*! \brief Flag for controlling behaviour in cases where performance might be low
+ *
+ * In mdrun, by default we will make an efficient task assignment by
+ * creating as many tasks as available GPUs. If users make a partial
+ * assigment that would likely be inefficient (e.g. using fewer ranks
+ * than GPUs, or like -nb gpu -pme cpu -npme 1), we want users to
+ * think about what they are doing and be fully specific if they
+ * really want to do things their way.
+ *
+ * In tests, we want to be able to cover many code paths on the
+ * available hardware regardless of performance. This setter allows
+ * test code to avoid irrelevant fatal errors about performance. */
+void setThrowForPerformanceProblems(const bool newValue);
 
 } // namespace gmx
 

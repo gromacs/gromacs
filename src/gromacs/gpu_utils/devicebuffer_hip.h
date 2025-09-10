@@ -40,7 +40,6 @@
  *  TODO: the intent is for DeviceBuffer to become a class.
  *
  *  \author Paul Bauer <paul.bauer.q@gmail.com>
- *  \author Julio Maia <julio.maia@amd.com>
  *
  *  \inlibraryapi
  */
@@ -66,9 +65,7 @@ void allocateDeviceBuffer(DeviceBuffer<ValueType>* buffer, size_t numValues, con
 {
     GMX_ASSERT(buffer, "needs a buffer pointer");
     hipError_t stat = hipMalloc(buffer, numValues * sizeof(ValueType));
-    GMX_RELEASE_ASSERT(
-            stat == hipSuccess,
-            ("Allocation of the device buffer failed. " + gmx::getDeviceErrorString(stat)).c_str());
+    gmx::checkDeviceError(stat, "Allocation of the device buffer failed.");
 }
 
 /*! \brief
@@ -86,9 +83,7 @@ void freeDeviceBuffer(DeviceBuffer* buffer)
     if (*buffer)
     {
         hipError_t stat = hipFree(*buffer);
-        GMX_RELEASE_ASSERT(
-                stat == hipSuccess,
-                ("Freeing of the device buffer failed. " + gmx::getDeviceErrorString(stat)).c_str());
+        gmx::checkDeviceError(stat, "Freeing of the device buffer failed.");
     }
 }
 
@@ -129,9 +124,7 @@ void copyToDeviceBuffer(DeviceBuffer<ValueType>* buffer,
                                   bytes,
                                   hipMemcpyHostToDevice,
                                   deviceStream.stream());
-            GMX_RELEASE_ASSERT(
-                    stat == hipSuccess,
-                    ("Asynchronous H2D copy failed. " + gmx::getDeviceErrorString(stat)).c_str());
+            gmx::checkDeviceError(stat, "Asynchronous H2D copy failed.");
             break;
 
         case GpuApiCallBehavior::Sync:
@@ -139,9 +132,7 @@ void copyToDeviceBuffer(DeviceBuffer<ValueType>* buffer,
                              hostBuffer,
                              bytes,
                              hipMemcpyHostToDevice);
-            GMX_RELEASE_ASSERT(
-                    stat == hipSuccess,
-                    ("Synchronous H2D copy failed. " + gmx::getDeviceErrorString(stat)).c_str());
+            gmx::checkDeviceError(stat, "Synchronous H2D copy failed.");
             break;
 
         default: throw;
@@ -187,9 +178,7 @@ void copyFromDeviceBuffer(ValueType*               hostBuffer,
                                   bytes,
                                   hipMemcpyDeviceToHost,
                                   deviceStream.stream());
-            GMX_RELEASE_ASSERT(
-                    stat == hipSuccess,
-                    ("Asynchronous D2H copy failed. " + gmx::getDeviceErrorString(stat)).c_str());
+            gmx::checkDeviceError(stat, "Asynchronous D2H copy failed.");
             break;
 
         case GpuApiCallBehavior::Sync:
@@ -197,9 +186,7 @@ void copyFromDeviceBuffer(ValueType*               hostBuffer,
                              *reinterpret_cast<ValueType**>(buffer) + startingOffset,
                              bytes,
                              hipMemcpyDeviceToHost);
-            GMX_RELEASE_ASSERT(
-                    stat == hipSuccess,
-                    ("Synchronous D2H copy failed. " + gmx::getDeviceErrorString(stat)).c_str());
+            gmx::checkDeviceError(stat, "Synchronous D2H copy failed.");
             break;
 
         default: throw;
@@ -241,16 +228,12 @@ void copyBetweenDeviceBuffers(DeviceBuffer<ValueType>* destinationDeviceBuffer,
                                   bytes,
                                   hipMemcpyDeviceToDevice,
                                   deviceStream.stream());
-            GMX_RELEASE_ASSERT(
-                    stat == hipSuccess,
-                    ("Asynchronous D2D copy failed. " + gmx::getDeviceErrorString(stat)).c_str());
+            gmx::checkDeviceError(stat, "Asynchronous D2D copy failed.");
             break;
 
         case GpuApiCallBehavior::Sync:
             stat = hipMemcpy(*destinationDeviceBuffer, *sourceDeviceBuffer, bytes, hipMemcpyDeviceToDevice);
-            GMX_RELEASE_ASSERT(
-                    stat == hipSuccess,
-                    ("Synchronous D2D copy failed. " + gmx::getDeviceErrorString(stat)).c_str());
+            gmx::checkDeviceError(stat, "Synchronous D2D copy failed.");
             break;
 
         default: throw;
@@ -283,8 +266,7 @@ void clearDeviceBufferAsync(DeviceBuffer<ValueType>* buffer,
     hipError_t stat = hipMemsetAsync(
             *reinterpret_cast<ValueType**>(buffer) + startingOffset, pattern, bytes, deviceStream.stream());
 
-    GMX_RELEASE_ASSERT(stat == hipSuccess,
-                       ("Couldn't clear the device buffer. " + gmx::getDeviceErrorString(stat)).c_str());
+    gmx::checkDeviceError(stat, "Couldn't clear the device buffer.");
 }
 
 /*! \brief Check the validity of the device buffer.
@@ -318,14 +300,16 @@ using DeviceTexture = hipTextureObject_t;
  * \param[out]  deviceBuffer   Device buffer to store data in.
  * \param[in]   hostBuffer     Host buffer to get date from
  * \param[in]   numValues      Number of elements in the buffer.
- * \param[in]   deviceContext  GPU device context.
+ * \param[in]   deviceContext  Device context for memory allocation.
+ * \param[in]   deviceStream   Device stream for initialization.
  */
 template<typename ValueType>
 void initParamLookupTable(DeviceBuffer<ValueType>* deviceBuffer,
                           DeviceTexture* /* deviceTexture */,
                           const ValueType*     hostBuffer,
                           int                  numValues,
-                          const DeviceContext& deviceContext)
+                          const DeviceContext& deviceContext,
+                          const DeviceStream&  deviceStream)
 {
     if (numValues == 0)
     {
@@ -335,13 +319,8 @@ void initParamLookupTable(DeviceBuffer<ValueType>* deviceBuffer,
 
     allocateDeviceBuffer<ValueType>(deviceBuffer, numValues, deviceContext);
 
-    const size_t sizeInBytes = numValues * sizeof(ValueType);
-
-    hipError_t stat = hipMemcpy(
-            *reinterpret_cast<ValueType**>(deviceBuffer), hostBuffer, sizeInBytes, hipMemcpyHostToDevice);
-
-    GMX_RELEASE_ASSERT(stat == hipSuccess,
-                       ("Synchronous H2D copy failed. " + gmx::getDeviceErrorString(stat)).c_str());
+    copyToDeviceBuffer(
+            deviceBuffer, hostBuffer, 0, numValues, deviceStream, GpuApiCallBehavior::Sync, nullptr);
 }
 
 /*! \brief Unbind the texture and release the HIP texture object.
@@ -351,8 +330,7 @@ void initParamLookupTable(DeviceBuffer<ValueType>* deviceBuffer,
  * \param[in,out]  deviceBuffer   Device buffer to store data in.
  */
 template<typename ValueType>
-void destroyParamLookupTable(DeviceBuffer<ValueType>* deviceBuffer,
-                             const DeviceTexture* /* deviceTexture */)
+void destroyParamLookupTable(DeviceBuffer<ValueType>* deviceBuffer, const DeviceTexture* /* deviceTexture */)
 {
     freeDeviceBuffer(deviceBuffer);
 }

@@ -53,10 +53,10 @@
 
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/math/functions.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/vectypes.h"
 
 namespace gmx
 {
@@ -67,7 +67,7 @@ static bool is_multisim_option_set(int argc, const char* const argv[])
 {
     for (int i = 0; i < argc; ++i)
     {
-        if (strcmp(argv[i], "-multidir") == 0)
+        if (std::strcmp(argv[i], "-multidir") == 0)
         {
             return true;
         }
@@ -116,7 +116,7 @@ int LegacyMdrunOptions::updateFromCommandLine(int argc, char** argv, ArrayRef<co
         hw_opt.devicesSelectedByUser = devicesSelectedByUser;
         hw_opt.userGpuTaskAssignment = userGpuTaskAssignment;
 
-        const char* env = getenv("GMX_GPU_ID");
+        const char* env = std::getenv("GMX_GPU_ID");
         if (env != nullptr)
         {
             if (!hw_opt.devicesSelectedByUser.empty())
@@ -126,7 +126,7 @@ int LegacyMdrunOptions::updateFromCommandLine(int argc, char** argv, ArrayRef<co
             hw_opt.devicesSelectedByUser = env;
         }
 
-        env = getenv("GMX_GPUTASKS");
+        env = std::getenv("GMX_GPUTASKS");
         if (env != nullptr)
         {
             if (!hw_opt.userGpuTaskAssignment.empty())

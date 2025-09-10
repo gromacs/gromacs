@@ -223,7 +223,7 @@ void AnalysisDataModuleManager::Impl::presentData(AbstractAnalysisData* data, IA
     module->dataStarted(data);
     const bool bCheckMissing =
             bAllowMissing_ && ((module->flags() & IAnalysisDataModule::efAllowMissing) == 0);
-    for (int i = 0; i < data->frameCount(); ++i)
+    for (size_t i = 0; i < data->frameCount(); ++i)
     {
         AnalysisDataFrameRef frame = data->getDataFrame(i);
         GMX_RELEASE_ASSERT(frame.isValid(), "Invalid data frame returned");
@@ -307,7 +307,7 @@ void AnalysisDataModuleManager::notifyDataStart(AbstractAnalysisData* data)
 {
     GMX_RELEASE_ASSERT(impl_->state_ == Impl::eNotStarted,
                        "notifyDataStart() called more than once");
-    for (int d = 0; d < data->dataSetCount(); ++d)
+    for (size_t d = 0; d < data->dataSetCount(); ++d)
     {
         GMX_RELEASE_ASSERT(data->columnCount(d) > 0, "Data column count is not set");
     }
@@ -332,7 +332,7 @@ void AnalysisDataModuleManager::notifyParallelDataStart(AbstractAnalysisData*   
 {
     GMX_RELEASE_ASSERT(impl_->state_ == Impl::eNotStarted,
                        "notifyDataStart() called more than once");
-    for (int d = 0; d < data->dataSetCount(); ++d)
+    for (size_t d = 0; d < data->dataSetCount(); ++d)
     {
         GMX_RELEASE_ASSERT(data->columnCount(d) > 0, "Data column count is not set");
     }

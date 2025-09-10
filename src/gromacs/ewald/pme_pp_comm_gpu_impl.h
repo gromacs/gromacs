@@ -43,12 +43,13 @@
 #define GMX_PME_PP_COMM_GPU_IMPL_H
 
 #include <atomic>
+#include <optional>
 
 #include "gromacs/ewald/pme_pp_comm_gpu.h"
 #include "gromacs/gpu_utils/gpueventsynchronizer.h"
 #include "gromacs/gpu_utils/gputraits.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/vectypes.h"
 
 
 namespace gmx
@@ -109,17 +110,19 @@ public:
      * \param[in] sendSize Number of elements to send
      * \param[in] coordinatesReadyOnDeviceEvent Event recorded when coordinates are available on device
      */
-    void sendCoordinatesToPme(Float3* sendPtr, int sendSize, GpuEventSynchronizer* coordinatesReadyOnDeviceEvent);
+    void sendCoordinatesToPme(const Float3*         sendPtr,
+                              int                   sendSize,
+                              GpuEventSynchronizer* coordinatesReadyOnDeviceEvent);
 
-    /*! \brief
-     * Return pointer to buffer used for staging PME force on GPU
-     */
-    DeviceBuffer<Float3> getGpuForceStagingPtr();
+    /*! \brief When this PP rank has particles with PME force
+     * contributions expected from its PME-only rank, return pointer
+     * to buffer used for staging PME force on GPU. */
+    std::optional<DeviceBuffer<Float3>> getGpuForceStagingPtr();
 
-    /*! \brief
-     * Return pointer to event recorded when forces are ready
-     */
-    GpuEventSynchronizer* getForcesReadySynchronizer();
+    /*! \brief When this thread-MPI rank has particles with PME force
+     * contribtions expected from its PME-only rank, return pointer to
+     * event recorded when forces are ready. */
+    std::optional<GpuEventSynchronizer*> getForcesReadySynchronizer();
 
     /*! \brief
      * Return pointer to NVSHMEM sync object used for staging PME force on GPU
@@ -151,7 +154,7 @@ private:
      * \param[in] sendSize Number of elements to send
      * \param[in] coordinatesReadyOnDeviceEvent Event recorded when coordinates are available on device
      */
-    void sendCoordinatesToPmePeerToPeer(Float3*               sendPtr,
+    void sendCoordinatesToPmePeerToPeer(const Float3*         sendPtr,
                                         int                   sendSize,
                                         GpuEventSynchronizer* coordinatesReadyOnDeviceEvent);
 
@@ -162,7 +165,7 @@ private:
      * \param[in] sendSize Number of elements to send
      * \param[in] coordinatesReadyOnDeviceEvent Event recorded when coordinates are available on device
      */
-    void sendCoordinatesToPmeGpuAwareMpi(Float3*               sendPtr,
+    void sendCoordinatesToPmeGpuAwareMpi(const Float3*         sendPtr,
                                          int                   sendSize,
                                          GpuEventSynchronizer* coordinatesReadyOnDeviceEvent);
 

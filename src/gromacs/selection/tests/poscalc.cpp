@@ -49,8 +49,6 @@
 
 #include <gtest/gtest.h>
 
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/position.h"
 #include "gromacs/topology/atoms.h"
@@ -59,6 +57,8 @@
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "testutils/refdata.h"
 
@@ -66,6 +66,10 @@
 
 struct gmx_ana_poscalc_t;
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -313,7 +317,7 @@ void PositionCalculationTest::checkPositions(gmx::test::TestReferenceChecker* ch
 {
     gmx::test::TestReferenceChecker compound(checker->checkCompound("Positions", name));
     compound.checkInteger(p->count(), "Count");
-    const char* type = "???";
+    const char* type;
     switch (p->m.type)
     {
         case INDEX_UNKNOWN: type = "unknown"; break;
@@ -321,6 +325,7 @@ void PositionCalculationTest::checkPositions(gmx::test::TestReferenceChecker* ch
         case INDEX_RES: type = "residues"; break;
         case INDEX_MOL: type = "molecules"; break;
         case INDEX_ALL: type = "single"; break;
+        default: type = "???"; break;
     }
     compound.checkString(type, "Type");
     compound.checkSequenceArray(p->count() + 1, p->m.mapb.index, "Block");
@@ -507,3 +512,5 @@ TEST_F(PositionCalculationTest, HandlesOverlappingStaticCalculations)
 // TODO: Check for handling of more multiple calculation cases
 
 } // namespace
+} // namespace test
+} // namespace gmx

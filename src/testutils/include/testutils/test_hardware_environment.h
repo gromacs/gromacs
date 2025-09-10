@@ -84,6 +84,8 @@ private:
 
 public:
     TestHardwareEnvironment();
+    ~TestHardwareEnvironment() override;
+
     //! Get available hardware contexts.
     const std::vector<std::unique_ptr<TestDevice>>& getTestDeviceList() const
     {

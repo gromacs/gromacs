@@ -41,28 +41,37 @@ gmx_add_unit_test(UtilityUnitTests utility-test
         defaultinitializationallocator.cpp
         enumerationhelpers.cpp
         fixedcapacityvector.cpp
-        inmemoryserializer.cpp
-        keyvaluetreeserializer.cpp
         keyvaluetreetransform.cpp
         listoflists.cpp
         logger.cpp
         message_string_collector.cpp
+        mpicomm.cpp
         path.cpp
         physicalnodecommunicator.cpp
         range.cpp
+        scope_guard.cpp
         strconvert.cpp
         stringtoenumvalueconverter.cpp
         stringutil.cpp
         template_mp.cpp
         textreader.cpp
         textwriter.cpp
+        txtdump.cpp
         typetraits.cpp
+        vecdump.cpp
+        vectypes.cpp
         )
 # TODO: Remove `legacy_modules` once specific modules are explicitly linked.
 target_link_libraries(utility-test PRIVATE legacy_modules)
 target_link_libraries(utility-test PRIVATE utility)
 
+gmx_add_mpi_unit_test(MpiCommTests mpicomm-test 4
+    CPP_SOURCE_FILES
+        mpicomm.cpp
+        )
+
 gmx_add_mpi_unit_test(UtilityMpiUnitTests utility-mpi-test 2
     CPP_SOURCE_FILES
+        coordinate_exception_handling.cpp
         physicalnodecommunicator_mpi.cpp
         )

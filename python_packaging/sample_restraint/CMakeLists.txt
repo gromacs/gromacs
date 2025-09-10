@@ -1,4 +1,5 @@
-cmake_minimum_required(VERSION 3.18.4)
+cmake_minimum_required(VERSION 3.28)
+cmake_policy(VERSION 3.28)
 # If you are using this repository as a template, you should probably change the
 # project name and adopt your own versioning scheme.
 project(sample_restraint)
@@ -18,9 +19,6 @@ if(CMAKE_CXX_STANDARD LESS 17)
   message(FATAL_ERROR "C++17 or newer is required")
 endif()
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
-
-# Allow gmxapi_ROOT hint (available with CMake 3.12).
-cmake_policy(SET CMP0074 NEW)
 
 # CMake modules are in a subdirectory to keep this file cleaner
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
@@ -50,7 +48,7 @@ if(GMXAPI_EXTENSION_DOWNLOAD_PYBIND)
     endif()
     add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/pybind-src)
 else()
-    find_package(pybind11 2.6 REQUIRED)
+    find_package(pybind11 2.12 REQUIRED)
 endif()
 
 if(GMXAPI_EXTENSION_MAIN_PROJECT)
@@ -194,7 +192,7 @@ if(BUILD_TESTING AND (NOT DEFINED GMX_BUILD_UNITTESTS OR GMX_BUILD_UNITTESTS))
                 if ("$ENV{CI_PROJECT_NAME}" STREQUAL "gromacs")
                     # We are running in a GitLab CI environment for a gromacs repository.
                     # See also admin/gitlab-ci/api-client.matrix.gitlab-ci.yml
-                    FILE(COPY
+                    file(COPY
                          $ENV{CI_PROJECT_DIR}/src/external/googletest
                          DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/external/
                          )
@@ -228,4 +226,8 @@ if(BUILD_TESTING AND (NOT DEFINED GMX_BUILD_UNITTESTS OR GMX_BUILD_UNITTESTS))
 
     include(GoogleTest)
     add_subdirectory(tests)
+    check_cxx_compiler_flag(-Wno-implicit-int-float-conversion HAVE_NO_IMPLICIT_INT_FLOAT_CONVERSION)
+    if(HAVE_NO_IMPLICIT_FLOAT_SIZE_CONVERSION)
+        target_compile_options(GTest::GTest PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wno-implicit-int-float-conversion)
+    endif()
 endif()

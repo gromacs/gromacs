@@ -48,11 +48,11 @@
 
 struct gmx_hw_opt_t;
 struct gmx_multisim_t;
-struct t_commrec;
 
 namespace gmx
 {
 
+class MpiComm;
 class HardwareTopology;
 class MDLogger;
 class PhysicalNodeCommunicator;
@@ -82,7 +82,7 @@ void analyzeThreadsOnThisNode(const gmx::PhysicalNodeCommunicator& physicalNodeC
  * See analyzeThreadsOnThisNode(), which prepares some of the input.
  *
  * \param[out] mdlog                  Logger.
- * \param[in]  cr                     Communication handler.
+ * \param[in]  mpiCommMySim           Communication handler for the simulation.
  * \param[in]  hw_opt                 Accesses user choices for thread affinity handling.
  * \param[in]  hwTop                  Detected hardware topology.
  * \param[in]  numThreadsOnThisRank   The number of threads on this rank.
@@ -92,7 +92,7 @@ void analyzeThreadsOnThisNode(const gmx::PhysicalNodeCommunicator& physicalNodeC
  * \param[in]  affinityAccess         Interface for low-level access to affinity details.
  */
 void gmx_set_thread_affinity(const gmx::MDLogger&         mdlog,
-                             const t_commrec*             cr,
+                             const gmx::MpiComm&          mpiCommMySim,
                              const gmx_hw_opt_t*          hw_opt,
                              const gmx::HardwareTopology& hwTop,
                              int                          numThreadsOnThisRank,

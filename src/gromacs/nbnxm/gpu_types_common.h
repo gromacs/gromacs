@@ -46,6 +46,7 @@
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/locality.h"
+#include "gromacs/nbnxm/nbnxm_enums.h"
 #include "gromacs/utility/enumerationhelpers.h"
 
 #include "nbnxm.h"
@@ -63,6 +64,13 @@
 #    include "gromacs/gpu_utils/gpuregiontimer_sycl.h"
 #endif
 
+#if GMX_GPU_HIP
+#    include "gromacs/gpu_utils/gpuregiontimer_hip.h"
+#endif
+
+namespace gmx
+{
+
 /*! \brief Number of separate bins used during sorting of plist on gpu
  *
  * Ideally this number would be increased for very large system sizes (the cpu version of sorting
@@ -77,6 +85,7 @@ static constexpr int c_sciHistogramSize = 8192;
  * TODO this is a reasonable default but the number has not been tuned
  */
 static constexpr int c_sciSortingThreadsPerBlock = 256;
+static constexpr int c_sciSortingItemsPerThread  = 16;
 
 /*! \brief Macro definining default for the prune kernel's jPacked processing concurrency.
  *
@@ -88,6 +97,43 @@ static constexpr int c_sciSortingThreadsPerBlock = 256;
 //! Default for the prune kernel's jPacked processing concurrency.
 static constexpr int c_pruneKernelJPackedConcurrency = GMX_NBNXN_PRUNE_KERNEL_JPACKED_CONCURRENCY;
 
+/* Convenience constants */
+/*! \cond */
+/* Convenience defines */
+/*! \brief cluster size = number of atoms per cluster. */
+static constexpr int c_clusterSize = sc_gpuClusterSize(sc_layoutType);
+
+/*! \brief how the clusters are split */
+static constexpr int c_clusterSplitSize = sc_gpuClusterPairSplit(sc_layoutType);
+
+/*! \brief super cluster size */
+static constexpr int c_superClusterSize = sc_gpuClusterPerSuperCluster(sc_layoutType);
+
+/*! \brief How many J groups are used together */
+static constexpr int c_jGroupSize = sc_gpuJgroupSize(sc_layoutType);
+
+/*! \brief Square of cluster size. */
+static const int c_clusterSizeSq = c_clusterSize * c_clusterSize;
+
+/*! \brief j-cluster size after split (4 in the current implementation). */
+static const int c_splitClSize = sc_gpuSplitJClusterSize(sc_layoutType);
+
+/*! \brief Size of exclusion list */
+static constexpr int c_exclSize = sc_gpuExclSize(sc_layoutType);
+
+// i-cluster interaction mask for a super-cluster with all c_nbnxnGpuNumClusterPerSupercluster=8 bits set.
+static constexpr unsigned superClInteractionMask = ((1U << c_superClusterSize) - 1U);
+
+// 1/sqrt(pi), same value as \c M_FLOAT_1_SQRTPI in other NB kernels.
+static constexpr float c_oneOverSqrtPi = 0.564189583547756F;
+
+// 1/6, same value as in other NB kernels.
+static constexpr float c_oneSixth = 0.16666667F;
+
+// 1/12, same value as in other NB kernels.
+static constexpr float c_oneTwelfth = 0.08333333F;
+/*! \endcond */
+
 /*! \internal
  * \brief Staging area for temporary data downloaded from the GPU.
  *
@@ -97,11 +143,11 @@ static constexpr int c_pruneKernelJPackedConcurrency = GMX_NBNXN_PRUNE_KERNEL_JP
 struct NBStagingData
 {
     //! LJ energy
-    gmx::HostVector<float> eLJ;
+    HostVector<float> eLJ;
     //! electrostatic energy
-    gmx::HostVector<float> eElec;
+    HostVector<float> eElec;
     //! shift forces
-    gmx::HostVector<Float3> fShift;
+    HostVector<Float3> fShift;
 };
 
 /** \internal
@@ -149,9 +195,9 @@ struct NBParamGpu
 {
 
     //! type of electrostatics
-    enum Nbnxm::ElecType elecType;
+    enum ElecType elecType;
     //! type of VdW impl.
-    enum Nbnxm::VdwType vdwType;
+    enum VdwType vdwType;
 
     //! charge multiplication factor
     float epsfac;
@@ -208,12 +254,6 @@ struct NBParamGpu
     DeviceTexture coulomb_tab_texobj;
 };
 
-namespace Nbnxm
-{
-
-using gmx::AtomLocality;
-using gmx::InteractionLocality;
-
 /*! \internal
  * \brief GPU region timers used for timing GPU kernels and H2D/D2H transfers.
  *
@@ -257,9 +297,9 @@ struct GpuTimers
     //! timer for atom data transfer (every PS step)
     GpuRegionTimer atdat;
     //! timers for coordinate/force transfers (every step)
-    gmx::EnumerationArray<AtomLocality, XFTransfers> xf;
+    EnumerationArray<AtomLocality, XFTransfers> xf;
     //! timers for interaction related transfers
-    gmx::EnumerationArray<InteractionLocality, Nbnxm::GpuTimers::Interaction> interaction;
+    EnumerationArray<InteractionLocality, GpuTimers::Interaction> interaction;
 };
 
 
@@ -389,6 +429,46 @@ public:
     int d_rollingPruningPartAllocationSize = -1;
 };
 
-} // namespace Nbnxm
+/*! \brief Set of boolean constants mimicking preprocessor macros.
+ *
+ * Those are currently used for SYCL and HIP.
+ */
+template<enum ElecType elecType, enum VdwType vdwType>
+struct EnergyFunctionProperties {
+    static constexpr bool elecCutoff = (elecType == ElecType::Cut); ///< EL_CUTOFF
+    static constexpr bool elecRF     = (elecType == ElecType::RF);  ///< EL_RF
+    static constexpr bool elecEwaldAna =
+            (elecType == ElecType::EwaldAna || elecType == ElecType::EwaldAnaTwin); ///< EL_EWALD_ANA
+    static constexpr bool elecEwaldTab =
+            (elecType == ElecType::EwaldTab || elecType == ElecType::EwaldTabTwin); ///< EL_EWALD_TAB
+    static constexpr bool elecEwaldTwin =
+            (elecType == ElecType::EwaldAnaTwin || elecType == ElecType::EwaldTabTwin); ///< Use twin cut-off.
+    static constexpr bool elecEwald = (elecEwaldAna || elecEwaldTab);  ///< EL_EWALD_ANY
+    static constexpr bool vdwCombLB = (vdwType == VdwType::CutCombLB); ///< LJ_COMB && !LJ_COMB_GEOM
+    static constexpr bool vdwCombGeom = (vdwType == VdwType::CutCombGeom);    ///< LJ_COMB_GEOM
+    static constexpr bool vdwComb     = (vdwCombLB || vdwCombGeom);           ///< LJ_COMB
+    static constexpr bool vdwEwaldCombGeom = (vdwType == VdwType::EwaldGeom); ///< LJ_EWALD_COMB_GEOM
+    static constexpr bool vdwEwaldCombLB = (vdwType == VdwType::EwaldLB);     ///< LJ_EWALD_COMB_LB
+    static constexpr bool vdwEwald       = (vdwEwaldCombGeom || vdwEwaldCombLB); ///< LJ_EWALD
+    static constexpr bool vdwFSwitch     = (vdwType == VdwType::FSwitch); ///< LJ_FORCE_SWITCH
+    static constexpr bool vdwPSwitch     = (vdwType == VdwType::PSwitch); ///< LJ_POT_SWITCH
+};
+
+//! \brief Templated constants to shorten kernel function declaration.
+//@{
+template<enum VdwType vdwType>
+constexpr bool ljComb = EnergyFunctionProperties<ElecType::Count, vdwType>().vdwComb;
+
+template<enum ElecType elecType>
+constexpr bool elecEwald = EnergyFunctionProperties<elecType, VdwType::Count>().elecEwald;
+
+template<enum ElecType elecType>
+constexpr bool elecEwaldTab = EnergyFunctionProperties<elecType, VdwType::Count>().elecEwaldTab;
+
+template<enum VdwType vdwType>
+constexpr bool ljEwald = EnergyFunctionProperties<ElecType::Count, vdwType>().vdwEwald;
+//@}
+
+} // namespace gmx
 
 #endif

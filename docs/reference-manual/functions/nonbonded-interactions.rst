@@ -93,7 +93,8 @@ Buckingham potential
 
 The Buckingham potential has a more flexible and realistic repulsion
 term than the Lennard-Jones interaction, but is also more expensive to
-compute. The potential form is:
+compute. Note that the Buckingham potential is no longer supported by
+:ref:`gmx mdrun`. The potential form is:
 
 .. math:: V_{bh}({r_{ij}}) = A_{ij} \exp(-B_{ij} {r_{ij}}) -
                              \frac{C_{ij}}{{r_{ij}}^6}
@@ -381,5 +382,7 @@ given by:
 
 where :math:`\beta` is a parameter that determines the relative weight
 between the direct space sum and the reciprocal space sum and
-erfc\ :math:`(x)` is the complementary error function. For further
-details on long-range electrostatics, see sec. :ref:`lrelstat`.
+erfc\ :math:`(x)` is the complementary error function. Note that |Gromacs|
+by default shifts this potential by a constant to ensure that the potential
+is zero at the cut-off.
+For further details on long-range electrostatics, see sec. :ref:`lrelstat`.

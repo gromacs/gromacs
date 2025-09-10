@@ -46,19 +46,14 @@
   if: '$CI_PIPELINE_SOURCE == "push"'
   when: never
 
-# Include in all "schedule" pipelines (nightly, weekly, etc)
+# Include in all "schedule" pipelines (nightly, etc)
 .rules-element:if-schedule-then-on-success: &if-schedule-then-on-success
   if: '$CI_PIPELINE_SOURCE == "schedule"'
   when: on_success
 
-# More directly specify schedule jobs, between nightly, weekly, monthly, etc
+# More directly specify schedule jobs, between nightly, monthly, etc
 .rules-element:if-nightly-then-on-success: &if-nightly-then-on-success
   if: '$CI_PIPELINE_SOURCE == "schedule" && $GMX_PIPELINE_SCHEDULE == "nightly"'
-  when: on_success
-
-# More directly specify schedule jobs, between nightly, weekly, monthly, etc
-.rules-element:if-weekly-then-on-success: &if-weekly-then-on-success
-  if: '$CI_PIPELINE_SOURCE == "schedule" && $GMX_PIPELINE_SCHEDULE == "weekly"'
   when: on_success
 
 # Only run this job manual, never automatic
@@ -222,12 +217,3 @@
     - *if-web-then-on-success
     - *if-nightly-then-on-success
 
-# Jobs that run on weekly schedules, but not for merge requests or when GROMACS_RELEASE
-# is set. Excludes non-gromacs projects.
-.rules:weekly-not-for-release:
-  rules:
-    - *if-not-gromacs-then-never
-    - *if-release-then-never
-    - *if-post-merge-acceptance-then-never
-    - *if-web-then-on-success
-    - *if-weekly-then-on-success

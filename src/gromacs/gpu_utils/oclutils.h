@@ -128,10 +128,10 @@ void prepareGpuKernelArgument(cl_kernel                 kernel,
 
     // Assert on types not allowed to be passed to a kernel
     // (as per section 6.9 of the OpenCL spec).
-    static_assert(
-            !std::is_same_v<CurrentArg,
-                            bool> && !std::is_same_v<CurrentArg, size_t> && !std::is_same_v<CurrentArg, ptrdiff_t> && !std::is_same_v<CurrentArg, intptr_t> && !std::is_same_v<CurrentArg, uintptr_t>,
-            "Invalid type passed to OpenCL kernel functions (see OpenCL spec section 6.9).");
+    static_assert(!std::is_same_v<CurrentArg, bool> && !std::is_same_v<CurrentArg, size_t>
+                          && !std::is_same_v<CurrentArg, ptrdiff_t> && !std::is_same_v<CurrentArg, intptr_t>
+                          && !std::is_same_v<CurrentArg, uintptr_t>,
+                  "Invalid type passed to OpenCL kernel functions (see OpenCL spec section 6.9).");
 
     prepareGpuKernelArgument(kernel, config, argIndex + 1, otherArgsPtrs...);
 }

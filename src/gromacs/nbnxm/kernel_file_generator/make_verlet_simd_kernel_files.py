@@ -103,6 +103,10 @@ ElectrostaticsDict["ElecEw"] = {
 ElectrostaticsDict["ElecEwTwinCut"] = {
     "param": "KernelCoulombType::EwaldAnalytical, VdwCutoffCheck::Yes"
 }
+ElectrostaticsDict["ElecNone"] = {
+    "param": "KernelCoulombType::None, VdwCutoffCheck::Yes"
+}
+
 
 # The dict order must match the order of a C enumeration.
 VdwTreatmentDict = collections.OrderedDict()
@@ -175,6 +179,8 @@ for type in VerletKernelTypeDict:
     for ener in EnergiesComputationDict:
         KernelFunctionLookupTable[ener] = ""
         for elec in ElectrostaticsDict:
+            if elec == "ElecNone":
+                KernelFunctionLookupTable[ener] += "#    if GMX_USE_EXT_FMM\n"
             KernelFunctionLookupTable[ener] += "    {\n"
             for ljtreat in VdwTreatmentDict:
                 KernelName = "{0}<{1}, {2}, {3}, {4}>".format(
@@ -192,7 +198,7 @@ for type in VerletKernelTypeDict:
                 KernelDeclarations += "extern template {1}\n        {0}(\n".format(
                     KernelName, EnergiesComputationDict[ener]["function type"]
                 )
-                KernelDeclarations += "        const NbnxnPairlistCpu*    nbl,\n        const nbnxn_atomdata_t*    nbat,\n        const interaction_const_t* ic,\n        const rvec*                shift_vec,\n        nbnxn_atomdata_output_t*   out);\n\n"
+                KernelDeclarations += "        const NbnxnPairlistCpu&    pairlist,\n        const nbnxn_atomdata_t&    nbat,\n        const interaction_const_t& ic,\n        const rvec*                shift_vec,\n        nbnxn_atomdata_output_t*   out);\n\n"
 
                 # Write the file with the kernel definition
                 with open(
@@ -215,6 +221,9 @@ for type in VerletKernelTypeDict:
                 )
 
             KernelFunctionLookupTable[ener] += "    },\n"
+            if elec == "ElecNone":
+                KernelFunctionLookupTable[ener] += "#    endif\n"
+
         KernelDeclarations += "\n"
 
     # Write the header file that declares all the kernel

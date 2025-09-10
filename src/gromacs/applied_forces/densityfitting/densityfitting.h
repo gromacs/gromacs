@@ -35,7 +35,7 @@
 #define GMX_APPLIED_FORCES_DENSITYFITTING_H
 
 #include <memory>
-#include <string>
+#include <string_view>
 
 namespace gmx
 {
@@ -56,7 +56,7 @@ struct DensityFittingModuleInfo
      */
     static std::unique_ptr<IMDModule> create();
     //! The name of the module
-    static const std::string name_;
+    static constexpr std::string_view sc_name = "density-guided-simulation";
 };
 
 } // namespace gmx

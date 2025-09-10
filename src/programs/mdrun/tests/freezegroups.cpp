@@ -52,13 +52,13 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/trajectory/trajectoryframe.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "testutils/mpitest.h"
 #include "testutils/simulationdatabase.h"
@@ -107,7 +107,7 @@ public:
 
         for (auto frameIdx = decltype(trajectorySize){ 0 }; frameIdx < trajectorySize; frameIdx++)
         {
-            SCOPED_TRACE(formatString("Checking frame %lu", frameIdx + 1));
+            SCOPED_TRACE(formatString("Checking frame %zu", frameIdx + 1));
             if (frameIdx > 0)
             {
                 checkFullyFrozenPositions(fullyFrozenPositions[frameIdx],

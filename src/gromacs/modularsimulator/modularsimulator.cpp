@@ -42,6 +42,8 @@
 
 #include "modularsimulator.h"
 
+#include <cstdlib>
+
 #include <filesystem>
 #include <optional>
 #include <string_view>
@@ -55,7 +57,6 @@
 #include "gromacs/fileio/checkpoint.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/listed_forces/listed_forces.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/checkpointhandler.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/coupling.h"
@@ -88,6 +89,8 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/int64_to_int.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/message_string_collector.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "andersentemperaturecoupling.h"
 #include "computeglobalselement.h"
@@ -360,31 +363,39 @@ void ModularSimulator::addIntegrationElements(ModularSimulatorAlgorithmBuilder* 
     builder->add<EnergyData::Element>();
 }
 
-bool ModularSimulator::isInputCompatible(bool                             exitOnFailure,
-                                         const t_inputrec*                inputrec,
-                                         bool                             doRerun,
-                                         const gmx_mtop_t&                globalTopology,
-                                         const gmx_multisim_t*            ms,
-                                         const ReplicaExchangeParameters& replExParams,
-                                         const t_fcdata*                  fcd,
-                                         bool                             doEssentialDynamics,
-                                         bool                             doMembed,
-                                         bool                             useGpuForUpdate)
+namespace
 {
-    auto conditionalAssert = [exitOnFailure](bool condition, const char* message) {
-        if (exitOnFailure)
-        {
-            GMX_RELEASE_ASSERT(condition, message);
-        }
-        return condition;
-    };
+
+/*! \brief Describe any incompatibilities because of functionality not
+ * implemented in modular simulator
+ *
+ * Note that https://gitlab.com/gromacs/gromacs/-/tree/ptmerz-modularsimulator-feature-branch
+ * contains draft implementations for feature support that could be included here
+ * if there is interest.
+ *
+ * \returns A collection of messages describing any incompatibilities identified */
+MessageStringCollector getReasonsForIncompatibility(const t_inputrec*                inputrec,
+                                                    const bool                       doRerun,
+                                                    const gmx_mtop_t&                globalTopology,
+                                                    const gmx_multisim_t*            ms,
+                                                    const ReplicaExchangeParameters& replExParams,
+                                                    const t_fcdata*                  fcd,
+                                                    const bool doEssentialDynamics,
+                                                    const bool doMembed,
+                                                    const bool useGpuForUpdate)
+{
+    MessageStringCollector reasonsForIncompatibility;
+    reasonsForIncompatibility.startContext(
+            "Modular simulator cannot be used because it does not support one or more things "
+            "required by the simulation:");
 
     // GMX_USE_MODULAR_SIMULATOR allows to use modular simulator also for non-standard uses,
     // such as the leap-frog integrator
-    const auto modularSimulatorExplicitlyTurnedOn = (getenv("GMX_USE_MODULAR_SIMULATOR") != nullptr);
+    const auto modularSimulatorExplicitlyTurnedOn = (std::getenv("GMX_USE_MODULAR_SIMULATOR") != nullptr);
     // GMX_USE_MODULAR_SIMULATOR allows to use disable modular simulator for all uses,
     // including the velocity-verlet integrator used by default
-    const auto modularSimulatorExplicitlyTurnedOff = (getenv("GMX_DISABLE_MODULAR_SIMULATOR") != nullptr);
+    const auto modularSimulatorExplicitlyTurnedOff =
+            (std::getenv("GMX_DISABLE_MODULAR_SIMULATOR") != nullptr);
 
     GMX_RELEASE_ASSERT(
             !(modularSimulatorExplicitlyTurnedOn && modularSimulatorExplicitlyTurnedOff),
@@ -401,63 +412,42 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
             "as the Parrinello-Rahman barostat is not implemented in the legacy simulator. Unset "
             "GMX_DISABLE_MODULAR_SIMULATOR or use a different pressure control algorithm.");
 
-    bool isInputCompatible = conditionalAssert(
-            inputrec->eI == IntegrationAlgorithm::MD || inputrec->eI == IntegrationAlgorithm::VV,
+    reasonsForIncompatibility.appendIf(
+            inputrec->eI != IntegrationAlgorithm::MD && inputrec->eI != IntegrationAlgorithm::VV,
             "Only integrators md and md-vv are supported by the modular simulator.");
-    isInputCompatible = isInputCompatible
-                        && conditionalAssert(inputrec->eI != IntegrationAlgorithm::MD
-                                                     || modularSimulatorExplicitlyTurnedOn,
-                                             "Set GMX_USE_MODULAR_SIMULATOR=ON to use the modular "
-                                             "simulator with integrator md.");
-    isInputCompatible =
-            isInputCompatible
-            && conditionalAssert(
-                    !inputrec->useMts,
-                    "Multiple time stepping is not supported by the modular simulator.");
-    isInputCompatible =
-            isInputCompatible
-            && conditionalAssert(!doRerun, "Rerun is not supported by the modular simulator.");
-    isInputCompatible =
-            isInputCompatible
-            && conditionalAssert(!inputrec->useConstantAcceleration && inputrec->cos_accel == 0.0,
-                                 "Acceleration is not supported by the modular simulator.");
-    isInputCompatible =
-            isInputCompatible
-            && conditionalAssert(!inputrecFrozenAtoms(inputrec),
-                                 "Freeze groups are not supported by the modular simulator.");
-    isInputCompatible =
-            isInputCompatible
-            && conditionalAssert(
-                    inputrec->deform[XX][XX] == 0.0 && inputrec->deform[XX][YY] == 0.0
-                            && inputrec->deform[XX][ZZ] == 0.0 && inputrec->deform[YY][XX] == 0.0
-                            && inputrec->deform[YY][YY] == 0.0 && inputrec->deform[YY][ZZ] == 0.0
-                            && inputrec->deform[ZZ][XX] == 0.0 && inputrec->deform[ZZ][YY] == 0.0
-                            && inputrec->deform[ZZ][ZZ] == 0.0,
-                    "Deformation is not supported by the modular simulator.");
-    isInputCompatible =
-            isInputCompatible
-            && conditionalAssert(gmx_mtop_interaction_count(globalTopology, IF_VSITE) == 0,
-                                 "Virtual sites are not supported by the modular simulator.");
-    isInputCompatible = isInputCompatible
-                        && conditionalAssert(!inputrec->bDoAwh,
-                                             "AWH is not supported by the modular simulator.");
-    isInputCompatible =
-            isInputCompatible
-            && conditionalAssert(gmx_mtop_ftype_count(globalTopology, F_DISRES) == 0,
-                                 "Distance restraints are not supported by the modular simulator.");
-    isInputCompatible =
-            isInputCompatible
-            && conditionalAssert(
-                    gmx_mtop_ftype_count(globalTopology, F_ORIRES) == 0,
-                    "Orientation restraints are not supported by the modular simulator.");
-    isInputCompatible =
-            isInputCompatible
-            && conditionalAssert(ms == nullptr,
-                                 "Multi-sim are not supported by the modular simulator.");
-    isInputCompatible =
-            isInputCompatible
-            && conditionalAssert(replExParams.exchangeInterval == 0,
-                                 "Replica exchange is not supported by the modular simulator.");
+    reasonsForIncompatibility.appendIf(
+            inputrec->eI == IntegrationAlgorithm::MD && !modularSimulatorExplicitlyTurnedOn,
+            "Set GMX_USE_MODULAR_SIMULATOR=ON to use the modular "
+            "simulator with integrator md.");
+    reasonsForIncompatibility.appendIf(
+            inputrec->useMts, "Multiple time stepping is not supported by the modular simulator.");
+    reasonsForIncompatibility.appendIf(doRerun, "Rerun is not supported by the modular simulator.");
+    reasonsForIncompatibility.appendIf(inputrec->useConstantAcceleration || inputrec->cos_accel != 0.0,
+                                       "Acceleration is not supported by the modular simulator.");
+    reasonsForIncompatibility.appendIf(inputrecFrozenAtoms(inputrec),
+                                       "Freeze groups are not supported by the modular simulator.");
+    reasonsForIncompatibility.appendIf(
+            inputrec->deform[XX][XX] != 0.0 || inputrec->deform[XX][YY] != 0.0
+                    || inputrec->deform[XX][ZZ] != 0.0 || inputrec->deform[YY][XX] != 0.0
+                    || inputrec->deform[YY][YY] != 0.0 || inputrec->deform[YY][ZZ] != 0.0
+                    || inputrec->deform[ZZ][XX] != 0.0 || inputrec->deform[ZZ][YY] != 0.0
+                    || inputrec->deform[ZZ][ZZ] != 0.0,
+            "Deformation is not supported by the modular simulator.");
+    reasonsForIncompatibility.appendIf(gmx_mtop_interaction_count(globalTopology, IF_VSITE) > 0,
+                                       "Virtual sites are not supported by the modular simulator.");
+    reasonsForIncompatibility.appendIf(inputrec->bDoAwh,
+                                       "AWH is not supported by the modular simulator.");
+    reasonsForIncompatibility.appendIf(
+            gmx_mtop_ftype_count(globalTopology, F_DISRES) > 0,
+            "Distance restraints are not supported by the modular simulator.");
+    reasonsForIncompatibility.appendIf(
+            gmx_mtop_ftype_count(globalTopology, F_ORIRES) > 0,
+            "Orientation restraints are not supported by the modular simulator.");
+    reasonsForIncompatibility.appendIf(ms != nullptr,
+                                       "Multi-sim are not supported by the modular simulator.");
+    reasonsForIncompatibility.appendIf(
+            replExParams.exchangeInterval != 0,
+            "Replica exchange is not supported by the modular simulator.");
 
     int numEnsembleRestraintSystems;
     if (fcd)
@@ -466,57 +456,41 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
     }
     else
     {
-        auto* distantRestraintEnsembleEnvVar = getenv("GMX_DISRE_ENSEMBLE_SIZE");
+        auto* distantRestraintEnsembleEnvVar = std::getenv("GMX_DISRE_ENSEMBLE_SIZE");
         numEnsembleRestraintSystems =
                 (ms != nullptr && distantRestraintEnsembleEnvVar != nullptr)
-                        ? static_cast<int>(strtol(distantRestraintEnsembleEnvVar, nullptr, 10))
+                        ? static_cast<int>(std::strtol(distantRestraintEnsembleEnvVar, nullptr, 10))
                         : 0;
     }
-    isInputCompatible =
-            isInputCompatible
-            && conditionalAssert(numEnsembleRestraintSystems <= 1,
-                                 "Ensemble restraints are not supported by the modular simulator.");
-    isInputCompatible =
-            isInputCompatible
-            && conditionalAssert(!doSimulatedAnnealing(*inputrec),
-                                 "Simulated annealing is not supported by the modular simulator.");
-    isInputCompatible =
-            isInputCompatible
-            && conditionalAssert(!inputrec->bSimTemp,
-                                 "Simulated tempering is not supported by the modular simulator.");
-    isInputCompatible =
-            isInputCompatible
-            && conditionalAssert(!doEssentialDynamics,
-                                 "Essential dynamics is not supported by the modular simulator.");
-    isInputCompatible = isInputCompatible
-                        && conditionalAssert(inputrec->eSwapCoords == SwapType::No,
-                                             "Ion / water position swapping is not supported by "
-                                             "the modular simulator.");
-    isInputCompatible =
-            isInputCompatible
-            && conditionalAssert(!inputrec->bIMD,
-                                 "Interactive MD is not supported by the modular simulator.");
-    isInputCompatible =
-            isInputCompatible
-            && conditionalAssert(!doMembed,
-                                 "Membrane embedding is not supported by the modular simulator.");
+    reasonsForIncompatibility.appendIf(
+            numEnsembleRestraintSystems > 1,
+            "Ensemble restraints are not supported by the modular simulator.");
+    reasonsForIncompatibility.appendIf(
+            doSimulatedAnnealing(*inputrec),
+            "Simulated annealing is not supported by the modular simulator.");
+    reasonsForIncompatibility.appendIf(
+            inputrec->bSimTemp, "Simulated tempering is not supported by the modular simulator.");
+    reasonsForIncompatibility.appendIf(
+            doEssentialDynamics, "Essential dynamics is not supported by the modular simulator.");
+    reasonsForIncompatibility.appendIf(inputrec->eSwapCoords != SwapType::No,
+                                       "Ion / water position swapping is not supported by "
+                                       "the modular simulator.");
+    reasonsForIncompatibility.appendIf(inputrec->bIMD,
+                                       "Interactive MD is not supported by the modular simulator.");
+    reasonsForIncompatibility.appendIf(
+            doMembed, "Membrane embedding is not supported by the modular simulator.");
 
-    isInputCompatible =
-            isInputCompatible
-            && conditionalAssert(
-                    !useGpuForUpdate,
-                    "Integration on the GPU is not supported by the modular simulator.");
+    reasonsForIncompatibility.appendIf(
+            useGpuForUpdate, "Integration on the GPU is not supported by the modular simulator.");
 
     // Modular simulator is centered around NS updates
     // TODO: think how to handle nstlist == 0
-    isInputCompatible = isInputCompatible
-                        && conditionalAssert(inputrec->nstlist != 0,
-                                             "Simulations without neighbor list update are not "
-                                             "supported by the modular simulator.");
-    isInputCompatible = isInputCompatible
-                        && conditionalAssert(!GMX_FAHCORE,
-                                             "GMX_FAHCORE not supported by the modular simulator.");
-    if (!isInputCompatible
+    reasonsForIncompatibility.appendIf(inputrec->nstlist == 0,
+                                       "Simulations without neighbor list update are not "
+                                       "supported by the modular simulator.");
+    reasonsForIncompatibility.appendIf(GMX_FAHCORE,
+                                       "GMX_FAHCORE not supported by the modular simulator.");
+    if (!reasonsForIncompatibility.isEmpty()
         && (inputrec->eI == IntegrationAlgorithm::VV
             && inputrec->pressureCouplingOptions.epc == PressureCoupling::ParrinelloRahman))
     {
@@ -526,7 +500,57 @@ bool ModularSimulator::isInputCompatible(bool                             exitOn
                   "only available in the legacy simulator. Use a different pressure control "
                   "algorithm.");
     }
-    return isInputCompatible;
+    reasonsForIncompatibility.finishContext();
+    return reasonsForIncompatibility;
+}
+
+} // namespace
+
+bool ModularSimulator::isInputCompatible(const MDLogger&                  mdlog,
+                                         const t_inputrec*                inputrec,
+                                         bool                             doRerun,
+                                         const gmx_mtop_t&                globalTopology,
+                                         const gmx_multisim_t*            ms,
+                                         const ReplicaExchangeParameters& replExParams,
+                                         const t_fcdata*                  fcd,
+                                         bool                             doEssentialDynamics,
+                                         bool                             doMembed,
+                                         bool                             useGpuForUpdate)
+{
+    // Ensure assertions in this function are run even when the
+    // modular simulator is explicitly turned off.
+    const MessageStringCollector reasonsForIncompatibility = getReasonsForIncompatibility(
+            inputrec, doRerun, globalTopology, ms, replExParams, fcd, doEssentialDynamics, doMembed, useGpuForUpdate);
+
+    if (const bool modularSimulatorExplicitlyTurnedOff = (getenv("GMX_DISABLE_MODULAR_SIMULATOR") != nullptr);
+        modularSimulatorExplicitlyTurnedOff)
+    {
+        return false;
+    }
+    if (!reasonsForIncompatibility.isEmpty())
+    {
+        const std::string message = reasonsForIncompatibility.toString();
+        if (const bool modularSimulatorExplicitlyTurnedOn = (getenv("GMX_USE_MODULAR_SIMULATOR") != nullptr);
+            modularSimulatorExplicitlyTurnedOn)
+        {
+            GMX_THROW(InconsistentInputError("Modular simulator was required. " + message));
+        }
+        else
+        {
+            if (inputrec->eI == IntegrationAlgorithm::VV)
+            {
+                // Probably only users using the velocity-Verlet
+                // integrator are interested in the modular simulator,
+                // so we can minimize the noise in the log file and
+                // perhaps subsequent confusion by keeping quiet about
+                // the modular simulator in the other cases.
+                GMX_LOG(mdlog.info).asParagraph().appendText(message);
+            }
+            return false;
+        }
+    }
+    // Modular simulator is compatible and wasn't explicitly turned off, so use it!
+    return true;
 }
 
 ModularSimulator::ModularSimulator(std::unique_ptr<LegacySimulatorData>      legacySimulatorData,
@@ -541,16 +565,22 @@ ModularSimulator::~ModularSimulator() = default;
 
 void ModularSimulator::checkInputForDisabledFunctionality()
 {
-    isInputCompatible(true,
-                      legacySimulatorData_->inputRec_,
-                      legacySimulatorData_->mdrunOptions_.rerun,
-                      legacySimulatorData_->topGlobal_,
-                      legacySimulatorData_->ms_,
-                      legacySimulatorData_->replExParams_,
-                      legacySimulatorData_->fr_->fcdata.get(),
-                      opt2bSet("-ei", legacySimulatorData_->nFile_, legacySimulatorData_->fnm_),
-                      legacySimulatorData_->membed_ != nullptr,
-                      false);
+    const MessageStringCollector reasonsForIncompatibility = getReasonsForIncompatibility(
+            legacySimulatorData_->inputRec_,
+            legacySimulatorData_->mdrunOptions_.rerun,
+            legacySimulatorData_->topGlobal_,
+            legacySimulatorData_->ms_,
+            legacySimulatorData_->replExParams_,
+            legacySimulatorData_->fr_->fcdata.get(),
+            opt2bSet("-ei", legacySimulatorData_->nFile_, legacySimulatorData_->fnm_),
+            legacySimulatorData_->membed_ != nullptr,
+            false);
+    const bool simulationIsCompatibleWithModularSimulator = reasonsForIncompatibility.isEmpty();
+    // The reasons should have been explained to the user before
+    // choosing the modular simulator, so assert now.
+    GMX_RELEASE_ASSERT(simulationIsCompatibleWithModularSimulator,
+                       reasonsForIncompatibility.toString().c_str());
+
     if (legacySimulatorData_->observablesHistory_->edsamHistory)
     {
         gmx_fatal(FARGS,

@@ -38,9 +38,8 @@ endif()
 ######################################
 # Output compiler and CFLAGS used
 ######################################
-include(GetCompilerInfo.cmake)
-get_compiler_info(C BUILD_C_COMPILER)
-get_compiler_info(CXX BUILD_CXX_COMPILER)
+set(BUILD_C_COMPILER "${CMAKE_C_COMPILER} ${CMAKE_C_COMPILER_ID} ${CMAKE_C_COMPILER_VERSION}")
+set(BUILD_CXX_COMPILER "${CMAKE_CXX_COMPILER} ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
 if(GMX_GPU_CUDA)
     get_cuda_compiler_info(CUDA_COMPILER_INFO CUDA_DEVICE_COMPILER_FLAGS CUDA_HOST_COMPILER_FLAGS)
 endif()
@@ -126,4 +125,7 @@ configure_file(gmxpre-config.h.cmakein include/gmxpre-config.h)
 set(CMAKE_BUILD_CONFIGURATION_C_FLAGS   ${CMAKE_C_FLAGS_${CMAKE_BUILD_TYPE_UPPER}})
 set(CMAKE_BUILD_CONFIGURATION_CXX_FLAGS ${CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE_UPPER}})
 configure_file(buildinfo.h.cmakein include/buildinfo.h ESCAPE_QUOTES)
+# This can be handled by directly configuring gromacs/gpu_utils/binary_information.cpp
+# when gpu_utils becomes an object library.
+configure_file(gromacs/gpu_utils/gpuinfo.h.cmakein include/gpuinfo.h ESCAPE_QUOTES)
 configure_file(contributors.h.cmakein include/contributors.h)

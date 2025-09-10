@@ -40,16 +40,16 @@
 #  and set the corresponding HAVE_MM_MALLOC_H, HAVE_MALLOC_H, and
 #  HAVE_XMMINTRIN_H if it hasn't already been done outside this file.
 #
-MACRO(GMX_TEST_MM_MALLOC VARIABLE)
-    IF(NOT DEFINED ${VARIABLE})
+macro(GMX_TEST_MM_MALLOC VARIABLE)
+    if(NOT DEFINED ${VARIABLE})
 
         check_include_files(mm_malloc.h HAVE_MM_MALLOC_H)
         check_include_files(malloc.h    HAVE_MALLOC_H)
         check_include_files(xmmintrin.h HAVE_XMMINTRIN_H)
 
-        MESSAGE(STATUS "Checking for _mm_malloc()")
+        message(STATUS "Checking for _mm_malloc()")
 
-        TRY_COMPILE(${VARIABLE} "${CMAKE_BINARY_DIR}"
+        try_compile(${VARIABLE} "${CMAKE_BINARY_DIR}"
                     "${CMAKE_SOURCE_DIR}/cmake/TestMMMalloc.cpp"
                     COMPILE_DEFINITIONS
                     "-DHAVE_MM_MALLOC_H=${HAVE_MM_MALLOC_H}"
@@ -58,15 +58,15 @@ MACRO(GMX_TEST_MM_MALLOC VARIABLE)
                     OUTPUT_VARIABLE MM_MALLOC_COMPILE_OUTPUT)
 
         if(${VARIABLE})
-            MESSAGE(STATUS "Checking for _mm_malloc() - supported")
+            message(STATUS "Checking for _mm_malloc() - supported")
             set(${VARIABLE} 1 CACHE INTERNAL "Result of test for _mm_malloc" FORCE)
         else()
-            MESSAGE(STATUS "Checking for _mm_malloc() - not supported")
+            message(STATUS "Checking for _mm_malloc() - not supported")
             set(${VARIABLE} 0 CACHE INTERNAL "Result of test for _mm_malloc()" FORCE)
         endif()
 
-    ENDIF()
-ENDMACRO(GMX_TEST_MM_MALLOC VARIABLE)
+    endif()
+endmacro(GMX_TEST_MM_MALLOC VARIABLE)
 
 
 

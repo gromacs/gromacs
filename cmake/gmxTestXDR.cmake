@@ -39,25 +39,25 @@
 #
 #  Remember to have a cmakedefine for it too...
 
-MACRO(GMX_TEST_XDR VARIABLE)
-    IF(NOT DEFINED ${VARIABLE})
+macro(GMX_TEST_XDR VARIABLE)
+    if(NOT DEFINED ${VARIABLE})
 
-        MESSAGE(STATUS "Checking for system XDR support")
+        message(STATUS "Checking for system XDR support")
 
         # First check without any special flags
-        TRY_COMPILE(XDR_COMPILE_OK "${CMAKE_BINARY_DIR}"
+        try_compile(XDR_COMPILE_OK "${CMAKE_BINARY_DIR}"
                     "${CMAKE_SOURCE_DIR}/cmake/TestXDR.cpp")
 
         if(XDR_COMPILE_OK)
-            MESSAGE(STATUS "Checking for system XDR support - present")
+            message(STATUS "Checking for system XDR support - present")
         else()
-            MESSAGE(STATUS "Checking for system XDR support - not present")
+            message(STATUS "Checking for system XDR support - not present")
         endif()
 
         set(${VARIABLE} ${XDR_COMPILE_OK} CACHE INTERNAL "Result of test for system XDR support" FORCE)
 
-    ENDIF()
-ENDMACRO(GMX_TEST_XDR VARIABLE)
+    endif()
+endmacro(GMX_TEST_XDR VARIABLE)
 
 
 

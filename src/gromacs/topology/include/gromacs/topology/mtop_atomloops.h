@@ -96,7 +96,7 @@ public:
 
     //! Prefix increment.
     AtomIterator& operator++();
-    using Base::  operator++;
+    using Base::operator++;
 
     //! Equality comparison.
     bool operator==(const AtomIterator& o) const;
@@ -170,7 +170,7 @@ public:
 
     //! Prefix increment.
     IListIterator& operator++();
-    using Base::   operator++;
+    using Base::operator++;
 
     //! Equality comparison.
     bool operator==(const IListIterator& o) const;

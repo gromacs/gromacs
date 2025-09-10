@@ -41,18 +41,18 @@
 #include <filesystem>
 #include <limits>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "gromacs/compat/pointers.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
+#include "gromacs/utility/vectypes.h"
 
 class energyhistory_t;
 struct gmx_file_position_t;
 struct ObservablesHistory;
-struct t_commrec;
 struct t_fileio;
 struct t_inputrec;
 class t_state;
@@ -66,6 +66,7 @@ namespace gmx
 {
 
 struct MDModulesNotifiers;
+class MpiComm;
 class KeyValueTreeObject;
 class ReadCheckpointDataHolder;
 class WriteCheckpointDataHolder;
@@ -88,18 +89,18 @@ static constexpr int64_t sc_checkpointMaxAtomCount = std::numeric_limits<unsigne
  */
 template<typename ValueType>
 void readKvtCheckpointValue(compat::not_null<ValueType*> value,
-                            const std::string&           name,
-                            const std::string&           identifier,
+                            std::string_view             name,
+                            std::string_view             identifier,
                             const KeyValueTreeObject&    kvt);
 //! \copydoc readKvtCheckpointValue
 extern template void readKvtCheckpointValue(compat::not_null<std::int64_t*> value,
-                                            const std::string&              name,
-                                            const std::string&              identifier,
+                                            std::string_view                name,
+                                            std::string_view                identifier,
                                             const KeyValueTreeObject&       kvt);
 //! \copydoc readKvtCheckpointValue
 extern template void readKvtCheckpointValue(compat::not_null<real*>   value,
-                                            const std::string&        name,
-                                            const std::string&        identifier,
+                                            std::string_view          name,
+                                            std::string_view          identifier,
                                             const KeyValueTreeObject& kvt);
 
 /*! \brief Write to a key-value-tree used for checkpointing.
@@ -114,18 +115,18 @@ extern template void readKvtCheckpointValue(compat::not_null<real*>   value,
  */
 template<typename ValueType>
 void writeKvtCheckpointValue(const ValueType&          value,
-                             const std::string&        name,
-                             const std::string&        identifier,
+                             std::string_view          name,
+                             std::string_view          identifier,
                              KeyValueTreeObjectBuilder kvtBuilder);
 //! \copydoc writeKvtCheckpointValue
 extern template void writeKvtCheckpointValue(const std::int64_t&       value,
-                                             const std::string&        name,
-                                             const std::string&        identifier,
+                                             std::string_view          name,
+                                             std::string_view          identifier,
                                              KeyValueTreeObjectBuilder kvtBuilder);
 //! \copydoc writeKvtCheckpointValue
 extern template void writeKvtCheckpointValue(const real&               value,
-                                             const std::string&        name,
-                                             const std::string&        identifier,
+                                             std::string_view          name,
+                                             std::string_view          identifier,
                                              KeyValueTreeObjectBuilder kvtBuilder);
 
 /*! \libinternal
@@ -169,7 +170,7 @@ struct MDModulesWriteCheckpointData
  *
  * The enum helps the code be more self-documenting and ensure merges
  * do not silently resolve when two patches make the same bump. When
- * adding new functionality, add a new element just above Count
+ * changing checkpoint contents, add a new element just above Count
  * in this enumeration, and write code that does the right thing
  * according to the value of file_version.
  */
@@ -268,9 +269,9 @@ struct CheckpointHeaderContents
     //! Which integrator is in use.
     IntegrationAlgorithm eIntegrator;
     //! Which part of the simulation this is.
-    int simulation_part;
+    int simulation_part = 0;
     //! Which step the checkpoint is at.
-    int64_t step;
+    int64_t step = 0;
     //! Current simulation time.
     double t;
     //! Number of nodes used for simulation,
@@ -310,7 +311,7 @@ struct CheckpointHeaderContents
 };
 
 /*! \brief Low-level checkpoint writing function */
-void write_checkpoint_data(t_fileio*                         fp,
+void write_checkpoint_data(const std::filesystem::path&      filename,
                            CheckpointHeaderContents          headerContents,
                            gmx_bool                          bExpanded,
                            LambdaWeightCalculation           elamstats,
@@ -329,8 +330,7 @@ void write_checkpoint_data(t_fileio*                         fp,
  */
 void load_checkpoint(const std::filesystem::path&   fn,
                      t_fileio*                      logfio,
-                     const t_commrec*               cr,
-                     const ivec                     dd_nc,
+                     const gmx::MpiComm&            mpiCommSimulation,
                      t_inputrec*                    ir,
                      t_state*                       state,
                      ObservablesHistory*            observablesHistory,
@@ -339,8 +339,12 @@ void load_checkpoint(const std::filesystem::path&   fn,
                      gmx::ReadCheckpointDataHolder* modularSimulatorCheckpointData,
                      bool                           useModularSimulator);
 
-/* Read everything that can be stored in t_trxframe from a checkpoint file */
-void read_checkpoint_trxframe(struct t_fileio* fp, t_trxframe* fr);
+/*! \brief Read everything that can be stored in t_trxframe from a checkpoint file
+ *
+ * \param[in]  filename         Name of checkpoint file from which to read
+ * \param[out] fr               Trajectory frame into which to read
+ */
+void read_checkpoint_trxframe(const std::filesystem::path& filename, t_trxframe* fr);
 
 /* Print the complete contents of checkpoint file fn to out */
 void list_checkpoint(const std::filesystem::path& fn, FILE* out);
@@ -353,17 +357,17 @@ void list_checkpoint(const std::filesystem::path& fn, FILE* out);
  * \param[out] simulation_part  The part of the simulation that wrote the checkpoint
  * \param[out] step             The final step number of the simulation that wrote the checkpoint
  *
- * The output variables will both contain 0 if filename is NULL, the file
- * does not exist, or is not readable. */
+ * \throws FileIOError if the file cannot be opened */
 void read_checkpoint_part_and_step(const std::filesystem::path& filename, int* simulation_part, int64_t* step);
 
 /*!\brief Return header information from an open checkpoint file.
  *
  * Used by mdrun to handle restarts
  *
- * \param[in]  fp               Handle to open checkpoint file
+ * \param[in]  filename         Name of checkpoint file
  * \param[out] outputfiles      Container of output file names from the previous run. */
 CheckpointHeaderContents
-read_checkpoint_simulation_part_and_filenames(t_fileio* fp, std::vector<gmx_file_position_t>* outputfiles);
+read_checkpoint_simulation_part_and_filenames(const std::filesystem::path&      filename,
+                                              std::vector<gmx_file_position_t>* outputfiles);
 
 #endif

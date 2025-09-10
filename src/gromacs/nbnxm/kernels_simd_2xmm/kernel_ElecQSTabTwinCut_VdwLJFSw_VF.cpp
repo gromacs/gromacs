@@ -58,9 +58,9 @@ template void nbnxmKernelSimd<KernelLayout::r2xMM,
                               LJCombinationRule::None,
                               InteractionModifiers::ForceSwitch,
                               LJEwald::None,
-                              EnergyOutput::System>(const NbnxnPairlistCpu*    nbl,
-                                                    const nbnxn_atomdata_t*    nbat,
-                                                    const interaction_const_t* ic,
+                              EnergyOutput::System>(const NbnxnPairlistCpu&    pairlist,
+                                                    const nbnxn_atomdata_t&    nbat,
+                                                    const interaction_const_t& ic,
                                                     const rvec*                shift_vec,
                                                     nbnxn_atomdata_output_t*   out);
 

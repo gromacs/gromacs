@@ -44,7 +44,7 @@
 
 #include <gtest/gtest.h>
 
-#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "testutils/test_device.h"
 

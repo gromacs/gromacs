@@ -1,10 +1,12 @@
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.28)
+cmake_policy(VERSION 3.28)
+
 project(pybind-download NONE)
 
 include(ExternalProject)
 ExternalProject_Add(pybind11
                     GIT_REPOSITORY    https://github.com/pybind/pybind11.git
-                    GIT_TAG           v2.6
+                    GIT_TAG           v2.12
                     SOURCE_DIR        "${CMAKE_CURRENT_BINARY_DIR}/pybind-src"
                     BINARY_DIR        "${CMAKE_CURRENT_BINARY_DIR}/pybind-build"
                     CONFIGURE_COMMAND ""

@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="Output"><![CDATA[
+Normal text
+  Indented text
+Normal text again
+  Indented text again
+    Further indented text again
+  Indented text again
+Normal text again
+     Very indented text
+Normal text again
+]]></String>
+</ReferenceData>

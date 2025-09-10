@@ -51,8 +51,8 @@
 
 #include "gromacs/domdec/gpuhaloexchange.h"
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/vectypes.h"
 
 class DeviceContext;
 class GpuEventSynchronizer;
@@ -78,8 +78,10 @@ class GpuHaloExchange::Impl
 GpuHaloExchange::GpuHaloExchange(gmx_domdec_t* /* dd */,
                                  int /* dimIndex */,
                                  MPI_Comm /* mpi_comm_mysim */,
+                                 MPI_Comm /* mpi_comm_mysim_world */,
                                  const DeviceContext& /* deviceContext */,
                                  int /*pulse */,
+                                 bool /*useNvshmem*/,
                                  gmx_wallcycle* /*wcycle*/) :
     impl_(nullptr)
 {
@@ -100,6 +102,14 @@ GpuHaloExchange& GpuHaloExchange::operator=(GpuHaloExchange&& other) noexcept
 /*!\brief init halo exhange stub. */
 void GpuHaloExchange::reinitHalo(DeviceBuffer<RVec> /* d_coordinatesBuffer */,
                                  DeviceBuffer<RVec> /* d_forcesBuffer */)
+{
+    GMX_ASSERT(!impl_,
+               "A CPU stub for GPU Halo Exchange was called insted of the correct implementation.");
+}
+
+void GpuHaloExchange::reinitNvshmemSignal(DeviceBuffer<uint64_t> /* d_syncBuffer */,
+                                          const int /* totalPulsesAndDims */,
+                                          const int /* signalObjOffset */)
 {
     GMX_ASSERT(!impl_,
                "A CPU stub for GPU Halo Exchange was called insted of the correct implementation.");
@@ -129,6 +139,54 @@ GpuEventSynchronizer* GpuHaloExchange::getForcesReadyOnDeviceEvent()
     GMX_ASSERT(!impl_,
                "A CPU stub for GPU Halo Exchange was called insted of the correct implementation.");
     return nullptr;
+}
+
+void GpuHaloExchange::destroyGpuHaloExchangeNvshmemBuf()
+{
+    GMX_ASSERT(!impl_,
+               "A CPU stub for GPU Halo Exchange was called insted of the correct implementation.");
+}
+
+GpuHaloExchangeNvshmemHelper::GpuHaloExchangeNvshmemHelper(const gmx_domdec_t&  dd,
+                                                           const DeviceContext& context,
+                                                           const DeviceStream&  stream,
+                                                           const std::optional<int>& /* peerRank */) :
+    dd_(dd), stream_(stream), context_(context)
+{
+    GMX_ASSERT(false,
+               "A CPU stub for GPU Halo Exchange was called insted of the correct implementation.");
+}
+
+GpuHaloExchangeNvshmemHelper::~GpuHaloExchangeNvshmemHelper() = default;
+
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+DeviceBuffer<uint64_t> GpuHaloExchangeNvshmemHelper::getSyncBuffer() const
+{
+    GMX_ASSERT(false,
+               "A CPU stub for GPU Halo Exchange was called insted of the correct implementation.");
+    return DeviceBuffer<uint64_t>{};
+}
+
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+int GpuHaloExchangeNvshmemHelper::totalPulsesAndDims() const
+{
+    GMX_ASSERT(false,
+               "A CPU stub for GPU Halo Exchange was called insted of the correct implementation.");
+    return -1;
+}
+
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+void GpuHaloExchangeNvshmemHelper::allocateAndInitSignalBufs(int /* totalDimsAndPulses */)
+{
+    GMX_ASSERT(false,
+               "A CPU stub for GPU Halo Exchange was called insted of the correct implementation.");
+}
+
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+void GpuHaloExchangeNvshmemHelper::reinit()
+{
+    GMX_ASSERT(false,
+               "A CPU stub for GPU Halo Exchange was called insted of the correct implementation.");
 }
 
 } // namespace gmx

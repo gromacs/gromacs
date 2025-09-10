@@ -50,8 +50,6 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/oenv.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/index.h"
@@ -64,6 +62,8 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 enum class PbcType : int;
 struct gmx_output_env_t;
@@ -1144,7 +1144,7 @@ static void edit_index(int                      natoms,
         }
         printf("\n");
         printf("> ");
-        if (nullptr == fgets(inp_string, STRLEN, stdin))
+        if (nullptr == std::fgets(inp_string, STRLEN, stdin))
         {
             gmx_fatal(FARGS, "Error reading user input");
         }
@@ -1210,7 +1210,7 @@ static void edit_index(int                      natoms,
             if (bVerbose)
             {
                 printf("\npress Enter ");
-                getchar();
+                std::getchar();
             }
         }
         else if (std::strncmp(string, "del", 3) == 0)
@@ -1438,16 +1438,16 @@ int gmx_make_ndx(int argc, char* argv[])
     static gmx_bool bVerbose   = FALSE;
     static gmx_bool bDuplicate = FALSE;
     t_pargs         pa[]       = { { "-natoms",
-                       FALSE,
-                       etINT,
-                       { &natoms },
-                       "set number of atoms (default: read from coordinate or index file)" },
-                     { "-twin",
-                       FALSE,
-                       etBOOL,
-                       { &bDuplicate },
-                       "Duplicate all index groups with an offset of -natoms" },
-                     { "-verbose", FALSE, etBOOL, { &bVerbose }, "HIDDENVerbose output" } };
+                                     FALSE,
+                                     etINT,
+                                     { &natoms },
+                                     "set number of atoms (default: read from coordinate or index file)" },
+                                   { "-twin",
+                                     FALSE,
+                                     etBOOL,
+                                     { &bDuplicate },
+                                     "Duplicate all index groups with an offset of -natoms" },
+                                   { "-verbose", FALSE, etBOOL, { &bVerbose }, "HIDDENVerbose output" } };
 #define NPA asize(pa)
 
     gmx_output_env_t* oenv;
@@ -1459,8 +1459,8 @@ int gmx_make_ndx(int argc, char* argv[])
     PbcType           pbcType;
     matrix            box;
     t_filenm          fnm[] = { { efSTX, "-f", nullptr, ffOPTRD },
-                       { efNDX, "-n", nullptr, ffOPTRDMULT },
-                       { efNDX, "-o", nullptr, ffWRITE } };
+                                { efNDX, "-n", nullptr, ffOPTRDMULT },
+                                { efNDX, "-o", nullptr, ffWRITE } };
 #define NFILE asize(fnm)
 
     if (!parse_common_args(&argc, argv, 0, NFILE, fnm, NPA, pa, asize(desc), desc, 0, nullptr, &oenv))

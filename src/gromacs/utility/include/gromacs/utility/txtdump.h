@@ -46,6 +46,22 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
+namespace gmx
+{
+
+class TextWriter;
+
+static const int sc_indentationIncrement = 3;
+
+/*! \brief Returns true if \c p is non-null, otherwise prints
+ * a message to \c writer and returns false. */
+bool checkIfAvailable(TextWriter* writer, const char* description, const void* p);
+
+/*! \brief Prints a title from the \c description and number of values \c n. */
+void printTitleAndSize(TextWriter* writer, const char* title, const int n);
+
+} // namespace gmx
+
 //! Line width for text dump output.
 #define LINE_WIDTH 80
 //! Right margin for text dump output.

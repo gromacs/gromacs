@@ -50,7 +50,6 @@
 
 #include <string>
 
-#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "gromacs/analysisdata/datamodule.h"
@@ -65,6 +64,10 @@ using gmx::test::AnalysisDataTestInput;
 using gmx::test::MockAnalysisDataModule;
 using gmx::test::MockAnalysisDataModulePointer;
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -433,3 +436,5 @@ TEST(DISABLED_AnalysisDataCommonTest, GenericTests)
 #endif
 
 } // namespace
+} // namespace test
+} // namespace gmx

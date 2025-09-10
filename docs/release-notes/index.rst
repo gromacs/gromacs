@@ -9,20 +9,20 @@ functionality supported, whereas patch releases contain only fixes for
 issues identified in the corresponding major releases.
 
 Two version series of |Gromacs| are under active maintenance and
-within support lifetime at any time. In 2025, they are the 2025 series
-and the 2024 series. In the latter, only highly conservative fixes
+within support lifetime at any time. In 2026, they are the 2026 series
+and the 2025 series. In the latter, only highly conservative fixes
 will be made, and only to address issues that affect scientific
 correctness. Naturally, some of those releases will be made after the
-year 2024 ends, but we keep the year of the original release in the
+year 2025 ends, but we keep the year of the original release in the
 version name so that users understand how up to date their version
 is. Such fixes will also be incorporated into the more recent release
-series, as appropriate. Around the time the 2026 release is made, the
-2024 series will no longer be maintained.
+series, as appropriate. Around the time the 2027 release is made, the
+2025 series will no longer be maintained.
 
 Where issue numbers are reported in these release notes, more details
 can be found on the `issue tracker`_ at that issue number.
 
-|Gromacs| 2025 series
+|Gromacs| 2026 series
 ---------------------
 
 .. todolist::
@@ -31,6 +31,38 @@ Patch releases
 ^^^^^^^^^^^^^^
 .. .. toctree::
    :maxdepth: 1
+
+Major release
+^^^^^^^^^^^^^
+
+.. toctree::
+   :maxdepth: 1
+
+   2026/major/highlights
+   2026/major/features
+   2026/major/performance
+   2026/major/api
+   2026/major/tools
+   2026/major/bugs-fixed
+   2026/major/deprecated-functionality
+   2026/major/removed-functionality
+   2026/major/portability
+   2026/major/miscellaneous
+
+|Gromacs| 2025 series
+---------------------
+
+.. todolist::
+
+Patch releases
+^^^^^^^^^^^^^^
+.. toctree::
+   :maxdepth: 1
+
+   2025/2025.4
+   2025/2025.3
+   2025/2025.2
+   2025/2025.1
 
 Major release
 ^^^^^^^^^^^^^
@@ -49,6 +81,9 @@ Major release
    2025/major/portability
    2025/major/miscellaneous
 
+Older (unmaintained) |Gromacs| series
+-------------------------------------------------------
+
 |Gromacs| 2024 series
 ---------------------
 
@@ -59,6 +94,10 @@ Patch releases
 .. toctree::
    :maxdepth: 1
 
+   2024/2024.7
+   2024/2024.6
+   2024/2024.5
+   2024/2024.4
    2024/2024.3
    2024/2024.2
    2024/2024.1
@@ -81,9 +120,6 @@ Major release
    2024/major/miscellaneous
 
 
-Older (unmaintained) |Gromacs| series
--------------------------------------------------------
-
 |Gromacs| 2023 series
 ---------------------
 
@@ -94,7 +130,6 @@ Patch releases
 .. toctree::
    :maxdepth: 1
 
-   2023/2023.6
    2023/2023.5
    2023/2023.4
    2023/2023.3

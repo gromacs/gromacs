@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Real Name="Energy">3.3333335</Real>
+  <Sequence Name="Forces">
+    <Int Name="Length">6</Int>
+    <Vector>
+      <Real Name="X">0.56900001</Real>
+      <Real Name="Y">1.275</Real>
+      <Real Name="Z">1.165</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.47600001</Real>
+      <Real Name="Y">1.268</Real>
+      <Real Name="Z">1.128</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.57999998</Real>
+      <Real Name="Y">1.364</Real>
+      <Real Name="Z">1.209</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">1.5549999</Real>
+      <Real Name="Y">1.511</Real>
+      <Real Name="Z">0.70300001</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">1.498</Real>
+      <Real Name="Y">1.495</Real>
+      <Real Name="Z">0.78399998</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">1.4960001</Real>
+      <Real Name="Y">1.521</Real>
+      <Real Name="Z">0.62300003</Real>
+    </Vector>
+  </Sequence>
+</ReferenceData>

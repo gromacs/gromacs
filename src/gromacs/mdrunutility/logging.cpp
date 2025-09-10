@@ -47,10 +47,9 @@
 #include <string>
 
 #include "gromacs/fileio/gmxfio.h"
-#include "gromacs/utility/binaryinformation.h"
+#include "gromacs/mdrun/binary_information.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/smalloc.h"
@@ -62,11 +61,6 @@ namespace gmx
 static void prepareLogFile(BinaryInformationSettings settings, FILE* fplog)
 {
     GMX_RELEASE_ASSERT(fplog != nullptr, "Log file must be already open");
-    // TODO This function is writing initial content to the log
-    // file. Preparing the error output handling should happen at some
-    // later point, using this log file, but should not be done at the
-    // same time as writing content. Move this call there.
-    gmx_fatal_set_log_file(fplog);
 
     try
     {
@@ -76,7 +70,7 @@ static void prepareLogFile(BinaryInformationSettings settings, FILE* fplog)
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
     fprintf(fplog, "\n");
 
-    fflush(fplog);
+    std::fflush(fplog);
 }
 
 LogFilePtr openLogFile(const char* lognm, bool appendFiles)
@@ -123,7 +117,6 @@ void closeLogFile(t_fileio* logfio)
 {
     if (logfio)
     {
-        gmx_fatal_set_log_file(nullptr);
         gmx_fio_close(logfio);
     }
 }

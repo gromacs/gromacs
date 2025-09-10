@@ -65,7 +65,6 @@
 #include "gromacs/listed_forces/orires.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/ebin.h"
 #include "gromacs/mdlib/mdebin_bar.h"
@@ -92,6 +91,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/vec.h"
 
 #include "energydrifttracker.h"
 
@@ -160,7 +160,7 @@ EnergyOutput::EnergyOutput(ener_file*                fp_ene,
 {
     const char*        ener_nm[F_NRE];
     static const char* pres_nm[]  = { "Pres-XX", "Pres-XY", "Pres-XZ", "Pres-YX", "Pres-YY",
-                                     "Pres-YZ", "Pres-ZX", "Pres-ZY", "Pres-ZZ" };
+                                      "Pres-YZ", "Pres-ZX", "Pres-ZY", "Pres-ZZ" };
     static const char* surft_nm[] = { "#Surf*SurfTen" };
     static const char* mu_nm[]    = { "Mu-X", "Mu-Y", "Mu-Z" };
     static const char* vcos_nm[]  = { "2CosZ*Vel-X" };
@@ -276,6 +276,11 @@ EnergyOutput::EnergyOutput(ener_file*                fp_ene,
     mdModulesNotifiers.simulationSetupNotifier_.notify(&mdModulesAddOutputToQMMMFieldRequest);
 
     bEner_[F_EQM] = mdModulesAddOutputToQMMMFieldRequest.energyOutputToQMMM_;
+
+    MDModulesEnergyOutputToNNPotRequestChecker mdModulesAddOutputToNNPotFieldRequest;
+    mdModulesNotifiers.simulationSetupNotifier_.notify(&mdModulesAddOutputToNNPotFieldRequest);
+
+    bEner_[F_ENNPOT] = mdModulesAddOutputToNNPotFieldRequest.energyOutputToNNPot_;
 
     // Counting the energy terms that will be printed and saving their names
     f_nre_ = 0;
@@ -1227,8 +1232,8 @@ void EnergyOutput::printStepToEnergyFile(ener_file* fp_ene,
             fr.block[b].sub[0].type = XdrDataType::Float;
             fr.block[b].sub[0].fval = block[b];
 #else
-            fr.block[b].sub[0].type  = XdrDataType::Double;
-            fr.block[b].sub[0].dval  = block[b];
+            fr.block[b].sub[0].type = XdrDataType::Double;
+            fr.block[b].sub[0].dval = block[b];
 #endif
         }
 
@@ -1371,7 +1376,7 @@ void EnergyOutput::printAverages(FILE* log, const SimulationGroups* groups)
 
         if (nE_ > 1)
         {
-            int padding = 8 - strlen(unit_energy);
+            int padding = 8 - std::strlen(unit_energy);
             fprintf(log, "%*sEpot (%s)   ", padding, "", unit_energy);
             for (auto key : keysOf(bEInd_))
             {
@@ -1388,9 +1393,10 @@ void EnergyOutput::printAverages(FILE* log, const SimulationGroups* groups)
                 int ni = groups->groups[SimulationAtomGroupType::EnergyOutput][i];
                 for (int j = i; (j < nEg_); j++)
                 {
-                    int nj = groups->groups[SimulationAtomGroupType::EnergyOutput][j];
-                    int padding =
-                            14 - (strlen(*(groups->groupNames[ni])) + strlen(*(groups->groupNames[nj])));
+                    int nj      = groups->groups[SimulationAtomGroupType::EnergyOutput][j];
+                    int padding = 14
+                                  - (std::strlen(*(groups->groupNames[ni]))
+                                     + std::strlen(*(groups->groupNames[nj])));
                     fprintf(log, "%*s%s-%s", padding, "", *(groups->groupNames[ni]), *(groups->groupNames[nj]));
                     pr_ebin(log, ebin_, igrp_[n], nEc_, nEc_, eprAVER, false);
                     n++;

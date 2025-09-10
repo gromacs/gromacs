@@ -53,16 +53,14 @@
 #include <string>
 
 #include "gromacs/domdec/domdec.h"
-#include "gromacs/hardware/cpuinfo.h"
 #include "gromacs/math/functions.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdlib/calc_verletbuf.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/multipletimestepping.h"
 #include "gromacs/mdtypes/state.h"
+#include "gromacs/nbnxm/nbnxm_enums.h"
 #include "gromacs/nbnxm/pairlistparams.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/topology.h"
@@ -73,11 +71,16 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/vec.h"
 
 #include "nbnxm_geometry.h"
 #include "pairlistsets.h"
+
+namespace gmx
+{
 
 /*! \brief Returns if we can (heuristically) change nstlist and rlist
  *
@@ -118,9 +121,6 @@ const int nstlist_try[] = { 20, 25, 40, 50, 80, 100 };
 // CPU: pair-search is a factor ~1.5 slower than the non-bonded kernel.
 //! Target pair-list size increase ratio for CPU
 static const float c_nbnxnListSizeFactorCpu = 1.25;
-// Intel KNL: pair-search is a factor ~2-3 slower than the non-bonded kernel.
-//! Target pair-list size increase ratio for Intel KNL
-static const float c_nbnxnListSizeFactorIntelXeonPhi = 1.4;
 // GPU: pair-search is a factor 1.5-3 slower than the non-bonded kernel.
 //! Target pair-list size increase ratio for GPU
 static const float c_nbnxnListSizeFactorGPU = 1.4;
@@ -130,21 +130,21 @@ static const float c_nbnxnListSizeFactorMargin = 0.1;
 //! Returns the Verlet buffer pressure tolerance set by an env.var. or from input
 static real getPressureTolerance(const real inputrecVerletBufferPressureTolerance)
 {
-    const char* pressureToleranceString = getenv("GMX_VERLET_BUFFER_PRESSURE_TOLERANCE");
+    const char* pressureToleranceString = std::getenv("GMX_VERLET_BUFFER_PRESSURE_TOLERANCE");
     real        pressureTolerance       = -1;
     if (pressureToleranceString != nullptr)
     {
         if (inputrecVerletBufferPressureTolerance > 0)
         {
-            GMX_THROW(gmx::InvalidInputError(
-                    "GMX_VERLET_BUFFER_PRESSURE_TOLERANCE cannot be used when "
-                    "verlet-buffer-pressure-tolerance is set in the tpr file"));
+            GMX_THROW(
+                    InvalidInputError("GMX_VERLET_BUFFER_PRESSURE_TOLERANCE cannot be used when "
+                                      "verlet-buffer-pressure-tolerance is set in the tpr file"));
         }
 
         pressureTolerance = std::stod(pressureToleranceString);
         if (pressureTolerance <= 0)
         {
-            GMX_THROW(gmx::InvalidInputError("Max pressure error should be positive"));
+            GMX_THROW(InvalidInputError("Max pressure error should be positive"));
         }
     }
     else
@@ -155,15 +155,14 @@ static real getPressureTolerance(const real inputrecVerletBufferPressureToleranc
     return pressureTolerance;
 }
 
-void increaseNstlist(FILE*               fp,
-                     t_commrec*          cr,
-                     t_inputrec*         ir,
-                     int                 nstlist_cmdline,
-                     const gmx_mtop_t*   mtop,
-                     const matrix        box,
-                     const real          effectiveAtomDensity,
-                     bool                useOrEmulateGpuForNonbondeds,
-                     const gmx::CpuInfo& cpuinfo)
+void increaseNstlist(FILE*             fp,
+                     const MpiComm&    mpiCommSimulation,
+                     t_inputrec*       ir,
+                     int               nstlist_cmdline,
+                     const gmx_mtop_t* mtop,
+                     const matrix      box,
+                     const real        effectiveAtomDensity,
+                     bool              useOrEmulateGpuForNonbondeds)
 {
     if (!EI_DYNAMICS(ir->eI))
     {
@@ -187,7 +186,7 @@ void increaseNstlist(FILE*               fp,
      * performed every ir->mtsFactor steps due to multiple time stepping,
      * we scale all nstlist values by this factor.
      */
-    const int mtsFactor = gmx::nonbondedMtsFactor(*ir);
+    const int mtsFactor = nonbondedMtsFactor(*ir);
 
     if (nstlist_cmdline <= 0)
     {
@@ -222,7 +221,7 @@ void increaseNstlist(FILE*               fp,
 
     if (EI_MD(ir->eI) && ir->etc == TemperatureCoupling::No)
     {
-        if (MAIN(cr))
+        if (mpiCommSimulation.isMainRank())
         {
             fprintf(stderr, "%s\n", nve_err);
         }
@@ -243,7 +242,7 @@ void increaseNstlist(FILE*               fp,
 
     if (ir->verletbuf_tol < 0)
     {
-        if (MAIN(cr))
+        if (mpiCommSimulation.isMainRank())
         {
             fprintf(stderr, "%s\n", vbd_err);
         }
@@ -259,11 +258,9 @@ void increaseNstlist(FILE*               fp,
                        "In all cases that do not support dynamic nstlist, we should have returned "
                        "with an appropriate message above");
 
-    const bool  runningOnXeonPhi = (cpuinfo.brandString().find("Xeon Phi") != std::string::npos);
-    const float listfac_ok       = useOrEmulateGpuForNonbondeds ? c_nbnxnListSizeFactorGPU
-                                   : runningOnXeonPhi           ? c_nbnxnListSizeFactorIntelXeonPhi
-                                                                : c_nbnxnListSizeFactorCpu;
-    float       listfac_max      = listfac_ok + c_nbnxnListSizeFactorMargin;
+    const float listfac_ok =
+            useOrEmulateGpuForNonbondeds ? c_nbnxnListSizeFactorGPU : c_nbnxnListSizeFactorCpu;
+    float listfac_max = listfac_ok + c_nbnxnListSizeFactorMargin;
 
     const int nstlist_orig = ir->nstlist;
     if (nstlist_cmdline > 0)
@@ -304,7 +301,7 @@ void increaseNstlist(FILE*               fp,
     nstlist_prev    = nstlist_orig;
     real rlist_prev = ir->rlist;
     real rlist_new  = 0;
-    bool bBox = false, bDD = false, bCont = false;
+    bool bBox = false, bCont = false;
     do
     {
         if (nstlist_cmdline <= 0)
@@ -325,44 +322,18 @@ void increaseNstlist(FILE*               fp,
                                          listSetup);
 
         /* Does rlist fit in the box? */
-        bBox = (gmx::square(rlist_new) < max_cutoff2(ir->pbcType, box));
-        bDD  = true;
-        if (bBox && haveDDAtomOrdering(*cr))
-        {
-            /* Currently (as of July 2020), the code in this if clause is never executed.
-             * increaseNstlist(...) is only called from prepare_verlet_scheme, which in turns
-             * gets called by the runner _before_ setting up DD. haveDDAtomOrdering(*cr) will
-             * therefore always be false here. See #3334.
-             */
-            /* Check if rlist fits in the domain decomposition */
-            if (inputrec2nboundeddim(ir) < DIM)
-            {
-                gmx_incons(
-                        "Changing nstlist with domain decomposition and unbounded dimensions is "
-                        "not implemented yet");
-            }
-            // nstlist tuning happens before GPU DD is initialized so we can't check
-            // whether the new cutoff would conflict with direct GPU communication.
-            const bool checkGpuDdLimitation = false;
-            bDD                             = change_dd_cutoff(
-                    cr, box, gmx::ArrayRef<const gmx::RVec>(), rlist_new, checkGpuDdLimitation);
-        }
+        bBox = (square(rlist_new) < max_cutoff2(ir->pbcType, box));
 
         if (debug)
         {
-            fprintf(debug,
-                    "nstlist %d rlist %.3f bBox %s bDD %s\n",
-                    ir->nstlist,
-                    rlist_new,
-                    gmx::boolToString(bBox),
-                    gmx::boolToString(bDD));
+            fprintf(debug, "nstlist %d rlist %.3f bBox %s\n", ir->nstlist, rlist_new, boolToString(bBox));
         }
 
         bCont = false;
 
         if (nstlist_cmdline <= 0)
         {
-            if (bBox && bDD && rlist_new <= rlist_max)
+            if (bBox && rlist_new <= rlist_max)
             {
                 /* Increase nstlist */
                 nstlist_prev = ir->nstlist;
@@ -375,19 +346,24 @@ void increaseNstlist(FILE*               fp,
                 ir->nstlist = nstlist_prev;
                 rlist_new   = rlist_prev;
                 bBox        = true;
-                bDD         = true;
             }
         }
 
         nstlist_ind++;
     } while (bCont);
 
-    if (!bBox || !bDD)
+    if (!bBox)
     {
-        gmx_warning("%s", !bBox ? box_err : dd_err);
+        const char* const msg = !bBox ? box_err : dd_err;
+        // If the user requested a specific nstlist and we cannot use it, raise a fatal error
+        if (nstlist_cmdline > 0)
+        {
+            gmx_fatal(FARGS, "%s", msg);
+        }
+        gmx_warning("%s", msg);
         if (fp != nullptr)
         {
-            fprintf(fp, "\n%s\n", !bBox ? box_err : dd_err);
+            fprintf(fp, "\n%s\n", msg);
         }
         ir->nstlist = nstlist_orig;
     }
@@ -399,7 +375,7 @@ void increaseNstlist(FILE*               fp,
                 ir->nstlist,
                 ir->rlist,
                 rlist_new);
-        if (MAIN(cr))
+        if (mpiCommSimulation.isMainRank())
         {
             fprintf(stderr, "%s\n\n", buf);
         }
@@ -422,7 +398,7 @@ void increaseNstlist(FILE*               fp,
  * to be 2, which is indirectly asserted when the GPU pruning is dispatched
  * during the force evaluation.
  */
-static const int c_nbnxnGpuRollingListPruningInterval = 2;
+static constexpr int c_nbnxnGpuRollingListPruningInterval = 2;
 
 /*! \brief The minimum nstlist for dynamic pair list pruning on CPUs.
  *
@@ -435,7 +411,7 @@ static const int c_nbnxnCpuDynamicListPruningMinLifetime = 5;
  * In most cases going lower than 4 will lead to a too high pruning cost.
  * This value should be a multiple of \p c_nbnxnGpuRollingListPruningInterval
  */
-static const int c_nbnxnGpuDynamicListPruningMinLifetime = 4;
+static constexpr int c_nbnxnGpuDynamicListPruningMinLifetime = 4;
 
 //! Struct with references for most parameters for calling calcVerletBufferSize()
 struct CalcVerletBufferParameters
@@ -512,7 +488,7 @@ static void setDynamicPairlistPruningParameters(const t_inputrec&          input
      * we only compute them every mtsFactor steps, so all parameters here
      * should be a multiple of mtsFactor.
      */
-    listParams->mtsFactor = gmx::nonbondedMtsFactor(inputrec);
+    listParams->mtsFactor = nonbondedMtsFactor(inputrec);
 
     const int mtsFactor = listParams->mtsFactor;
 
@@ -542,10 +518,10 @@ static void setDynamicPairlistPruningParameters(const t_inputrec&          input
     /* We compute rlistInner and increase nstlist as long as we have
      * a pairlist buffer of length 0 (i.e. rlistInner == cutoff).
      */
-    const real interactionCutoff = std::max(interactionConst.rcoulomb, interactionConst.rvdw);
-    int        nstlistPrune;
-    real       rlistInner;
-    int        tunedNstlistPrune = listParams->nstlistPrune;
+    const real interactionCutoff = std::max(interactionConst.coulomb.cutoff, interactionConst.vdw.cutoff);
+    int  nstlistPrune;
+    real rlistInner;
+    int  tunedNstlistPrune = listParams->nstlistPrune;
     do
     {
         /* Dynamic pruning on the GPU is performed on the list for
@@ -632,15 +608,14 @@ static std::string formatListSetup(const std::string& listName,
     listSetup += "updated every ";
     // Make the shortest int format string that fits nstListForSpacing
     std::string nstListFormat =
-            "%" + gmx::formatString("%zu", gmx::formatString("%d", nstListForSpacing).size()) + "d";
-    listSetup += gmx::formatString(nstListFormat.c_str(), nstList);
-    listSetup += gmx::formatString(
-            " steps, buffer %.3f nm, rlist %.3f nm\n", rList - interactionCutoff, rList);
+            "%" + formatString("%zu", formatString("%d", nstListForSpacing).size()) + "d";
+    listSetup += formatString(nstListFormat.c_str(), nstList);
+    listSetup += formatString(" steps, buffer %.3f nm, rlist %.3f nm\n", rList - interactionCutoff, rList);
 
     return listSetup;
 }
 
-void setupDynamicPairlistPruning(const gmx::MDLogger&       mdlog,
+void setupDynamicPairlistPruning(const MDLogger&            mdlog,
                                  const t_inputrec&          inputrec,
                                  const gmx_mtop_t&          mtop,
                                  const real                 effectiveAtomDensity,
@@ -656,21 +631,22 @@ void setupDynamicPairlistPruning(const gmx::MDLogger&       mdlog,
                                     JClusterSizePerListType[listParams->pairlistType] };
 
     /* Currently emulation mode does not support dual pair-lists */
-    const bool useGpuList = sc_isGpuPairListType[listParams->pairlistType];
+    const bool useGpuList = sc_isGpuSpecificPairlist(listParams->pairlistType);
 
-    if (supportsDynamicPairlistGenerationInterval(inputrec) && getenv("GMX_DISABLE_DYNAMICPRUNING") == nullptr)
+    if (supportsDynamicPairlistGenerationInterval(inputrec)
+        && std::getenv("GMX_DISABLE_DYNAMICPRUNING") == nullptr)
     {
         /* Note that nstlistPrune can have any value independently of nstlist.
          * Actually applying rolling pruning is only useful when
          * nstlistPrune < nstlist -1
          */
-        char* env                 = getenv("GMX_NSTLIST_DYNAMICPRUNING");
+        char* env                 = std::getenv("GMX_NSTLIST_DYNAMICPRUNING");
         bool  userSetNstlistPrune = (env != nullptr);
 
         if (userSetNstlistPrune)
         {
             char* end                = nullptr;
-            listParams->nstlistPrune = strtol(env, &end, 10);
+            listParams->nstlistPrune = std::strtol(env, &end, 10);
             if (!end || (*end != 0)
                 || !(listParams->nstlistPrune > 0 && listParams->nstlistPrune < inputrec.nstlist))
             {
@@ -717,13 +693,18 @@ void setupDynamicPairlistPruning(const gmx::MDLogger&       mdlog,
 
     std::string mesg;
 
-    const real interactionCutoff = std::max(interactionConst.rcoulomb, interactionConst.rvdw);
+    const real interactionCutoff = std::max(interactionConst.coulomb.cutoff, interactionConst.vdw.cutoff);
     if (listParams->useDynamicPruning)
     {
-        mesg += gmx::formatString(
+        /* Even though we are treating the GPU clusters internally such that i and j cluster sizes are equal,
+         * we compute on the actual device appropriate layout by possibly splitting the j clusters such
+         * that they fit into one parallel execution width lane. We want to report this layout to the users
+         * in the log file, so we apply the same splitting here in case of a GPU list.
+         */
+        mesg += formatString(
                 "Using a dual %dx%d pair-list setup updated with dynamic%s pruning:\n",
                 ls.cluster_size_i,
-                ls.cluster_size_j,
+                ls.cluster_size_j / (useGpuList ? gmx::sc_gpuClusterPairSplit(listParams->pairlistType) : 1),
                 listParams->numRollingPruningParts > 1 ? ", rolling" : "");
         mesg += formatListSetup(
                 "outer", inputrec.nstlist, inputrec.nstlist, listParams->rlistOuter, interactionCutoff);
@@ -732,11 +713,13 @@ void setupDynamicPairlistPruning(const gmx::MDLogger&       mdlog,
     }
     else
     {
-        mesg += gmx::formatString("Using a %dx%d pair-list setup:\n", ls.cluster_size_i, ls.cluster_size_j);
+        mesg += formatString("Using a %dx%d pair-list setup:\n", ls.cluster_size_i, ls.cluster_size_j);
         mesg += formatListSetup(
                 "", inputrec.nstlist, inputrec.nstlist, listParams->rlistOuter, interactionCutoff);
     }
-    if (supportsDynamicPairlistGenerationInterval(inputrec))
+    // Conditionally print a comparison of the Verlet buffers(s) with the good old 1x1 pairlist
+    if (supportsDynamicPairlistGenerationInterval(inputrec)
+        && (ls.cluster_size_i > 1 || ls.cluster_size_j > 1))
     {
         const real pressureTolerance = getPressureTolerance(inputrec.verletBufferPressureTolerance);
 
@@ -771,7 +754,7 @@ void setupDynamicPairlistPruning(const gmx::MDLogger&       mdlog,
                                               listSetup1x1);
         }
 
-        mesg += gmx::formatString(
+        mesg += formatString(
                 "At tolerance %g kJ/mol/ps per atom, equivalent classical 1x1 list would be:\n",
                 inputrec.verletbuf_tol);
         if (listParams->useDynamicPruning)
@@ -790,7 +773,7 @@ void setupDynamicPairlistPruning(const gmx::MDLogger&       mdlog,
     GMX_LOG(mdlog.info).asParagraph().appendText(mesg);
 }
 
-void printNbnxmPressureError(const gmx::MDLogger&  mdlog,
+void printNbnxmPressureError(const MDLogger&       mdlog,
                              const t_inputrec&     inputrec,
                              const gmx_mtop_t&     mtop,
                              const real            effectiveAtomDensity,
@@ -804,7 +787,7 @@ void printNbnxmPressureError(const gmx::MDLogger&  mdlog,
     if (listParams.useDynamicPruning)
     {
         /* Currently emulation mode does not support dual pair-lists */
-        const bool useGpuList = sc_isGpuPairListType[listParams.pairlistType];
+        const bool useGpuList = sc_isGpuSpecificPairlist(listParams.pairlistType);
 
         // Add the error due to the pruning of the inner list.
         // The errors are not completely independent, so this results
@@ -820,7 +803,9 @@ void printNbnxmPressureError(const gmx::MDLogger&  mdlog,
 
     GMX_LOG(mdlog.info)
             .asParagraph()
-            .appendText(gmx::formatString("The average pressure is off by at most %.2f bar due to "
-                                          "missing LJ interactions",
-                                          pressureError));
+            .appendText(formatString("The average pressure is off by at most %.2f bar due to "
+                                     "missing LJ interactions",
+                                     pressureError));
 }
+
+} // namespace gmx

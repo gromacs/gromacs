@@ -53,6 +53,7 @@
 #include <string>
 #include <vector>
 
+#include "gromacs/commandline/cmdlinemodulesettings.h"
 #include "gromacs/commandline/cmdlineoptionsmodule.h"
 #include "gromacs/fileio/checkpoint.h"
 #include "gromacs/fileio/enxio.h"
@@ -66,8 +67,6 @@
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/gmxpreprocess/gmxcpp.h"
 #include "gromacs/linearalgebra/sparsematrix.h"
-#include "gromacs/math/vecdump.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdrun/mdmodules.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
@@ -92,6 +91,8 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/txtdump.h"
+#include "gromacs/utility/vecdump.h"
+#include "gromacs/utility/vectypes.h"
 
 namespace gmx
 {
@@ -628,7 +629,10 @@ public:
     Dump() {}
 
     // From ICommandLineOptionsModule
-    void init(CommandLineModuleSettings* /*settings*/) override {}
+    void init(CommandLineModuleSettings* settings) override
+    {
+        outputStream_ = settings->outputStream();
+    }
 
     void initOptions(IOptionsContainer* options, ICommandLineOptionsModuleSettings* settings) override;
 
@@ -654,6 +658,8 @@ private:
     std::string inputMatrixFilename_;
     std::string outputMdpFilename_;
     //! \}
+    //! The output stream to use
+    FILE* outputStream_ = stdout;
 };
 
 void Dump::initOptions(IOptionsContainer* options, ICommandLineOptionsModuleSettings* settings)
@@ -706,10 +712,11 @@ void Dump::initOptions(IOptionsContainer* options, ICommandLineOptionsModuleSett
             BooleanOption("nr").store(&bShowNumbers_).defaultValue(true).description("Show index numbers in output (leaving them out makes comparison easier, but creates a useless topology)"));
     options->addOption(
             BooleanOption("param").store(&bShowParams_).defaultValue(false).description("Show parameters for each bonded interaction (for comparing dumps, it is useful to combine this with -nonr)"));
+    options->addOption(BooleanOption("sys").store(&bSysTop_).defaultValue(false).description(
+            "List the atoms and bonded interactions for the whole system instead of for each "
+            "molecule type"));
     options->addOption(
-            BooleanOption("sys").store(&bShowParams_).defaultValue(false).description("List the atoms and bonded interactions for the whole system instead of for each molecule type"));
-    options->addOption(
-            BooleanOption("orgir").store(&bShowParams_).defaultValue(false).description("Show input parameters from tpr as they were written by the version that produced the file, instead of how the current version reads them"));
+            BooleanOption("orgir").store(&bOriginalInputrec_).defaultValue(false).description("Show input parameters from tpr as they were written by the version that produced the file, instead of how the current version reads them"));
 }
 
 void Dump::optionsFinished()
@@ -740,7 +747,7 @@ int Dump::run()
     }
     else if (!inputCheckpointFilename_.empty())
     {
-        list_checkpoint(inputCheckpointFilename_.c_str(), stdout);
+        list_checkpoint(inputCheckpointFilename_.c_str(), outputStream_);
     }
     else if (!inputTopologyFilename_.empty())
     {

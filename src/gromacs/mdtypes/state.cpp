@@ -42,8 +42,6 @@
 #include <string>
 
 #include "gromacs/math/paddedvector.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/veccompare.h"
 #include "gromacs/mdtypes/awh_history.h"
 #include "gromacs/mdtypes/df_history.h"
 #include "gromacs/mdtypes/group.h"
@@ -57,6 +55,8 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/veccompare.h"
 
 #include "checkpointdata.h"
 
@@ -184,97 +184,15 @@ void t_state::setFlags(const int flags)
     changeNumAtoms(numAtoms_);
 }
 
-namespace
-{
-/*!
- * \brief Enum describing the contents df_history_t writes to modular checkpoint
- *
- * When changing the checkpoint content, add a new element just above Count, and adjust the
- * checkpoint functionality.
- */
-enum class DFHistoryCheckpointVersion
-{
-    Base, //!< First version of modular checkpointing
-    Count //!< Number of entries. Add new versions right above this!
-};
-constexpr auto c_dfHistoryCurrentVersion =
-        DFHistoryCheckpointVersion(int(DFHistoryCheckpointVersion::Count) - 1);
-} // namespace
-
-template<gmx::CheckpointDataOperation operation>
-void df_history_t::doCheckpoint(gmx::CheckpointData<operation> checkpointData, LambdaWeightCalculation elamstats)
-{
-    gmx::checkpointVersion(&checkpointData, "df_history_t version", c_dfHistoryCurrentVersion);
-
-    auto numLambdas = nlambda;
-    checkpointData.scalar("nlambda", &numLambdas);
-    if (operation == gmx::CheckpointDataOperation::Read)
-    {
-        // If this isn't matching, we haven't allocated the right amount of data
-        GMX_RELEASE_ASSERT(numLambdas == nlambda,
-                           "df_history_t checkpoint reading: Lambda vectors size mismatch.");
-    }
-
-    checkpointData.scalar("bEquil", &bEquil);
-    checkpointData.arrayRef("n_at_lam", gmx::makeCheckpointArrayRefFromArray<operation>(n_at_lam, nlambda));
-
-    checkpointData.arrayRef("sum_weights",
-                            gmx::makeCheckpointArrayRefFromArray<operation>(sum_weights, nlambda));
-    checkpointData.arrayRef("sum_dg", gmx::makeCheckpointArrayRefFromArray<operation>(sum_dg, nlambda));
-    for (int idx = 0; idx < nlambda; idx++)
-    {
-        checkpointData.arrayRef(gmx::formatString("Tij[%d]", idx),
-                                gmx::makeCheckpointArrayRefFromArray<operation>(Tij[idx], nlambda));
-        checkpointData.arrayRef(
-                gmx::formatString("Tij_empirical[%d]", idx),
-                gmx::makeCheckpointArrayRefFromArray<operation>(Tij_empirical[idx], nlambda));
-    }
-
-    if (EWL(elamstats))
-    {
-        checkpointData.arrayRef("wl_histo",
-                                gmx::makeCheckpointArrayRefFromArray<operation>(wl_histo, nlambda));
-        checkpointData.scalar("wl_delta", &wl_delta);
-    }
-    if ((elamstats == LambdaWeightCalculation::Minvar) || (elamstats == LambdaWeightCalculation::Barker)
-        || (elamstats == LambdaWeightCalculation::Metropolis))
-    {
-        checkpointData.arrayRef(
-                "sum_minvar", gmx::makeCheckpointArrayRefFromArray<operation>(sum_minvar, nlambda));
-        checkpointData.arrayRef("sum_variance",
-                                gmx::makeCheckpointArrayRefFromArray<operation>(sum_variance, nlambda));
-        for (int idx = 0; idx < nlambda; idx++)
-        {
-            checkpointData.arrayRef(gmx::formatString("accum_p[%d]", idx),
-                                    gmx::makeCheckpointArrayRefFromArray<operation>(accum_p[idx], nlambda));
-            checkpointData.arrayRef(gmx::formatString("accum_m[%d]", idx),
-                                    gmx::makeCheckpointArrayRefFromArray<operation>(accum_m[idx], nlambda));
-            checkpointData.arrayRef(
-                    gmx::formatString("accum_p2[%d]", idx),
-                    gmx::makeCheckpointArrayRefFromArray<operation>(accum_p2[idx], nlambda));
-            checkpointData.arrayRef(
-                    gmx::formatString("accum_m2[%d]", idx),
-                    gmx::makeCheckpointArrayRefFromArray<operation>(accum_m2[idx], nlambda));
-        }
-    }
-}
-
-// explicit template instantiation
-template void df_history_t::doCheckpoint(gmx::CheckpointData<gmx::CheckpointDataOperation::Read> checkpointData,
-                                         LambdaWeightCalculation elamstats);
-template void df_history_t::doCheckpoint(gmx::CheckpointData<gmx::CheckpointDataOperation::Write> checkpointData,
-                                         LambdaWeightCalculation elamstats);
-
 void init_dfhist_state(t_state* state, int dfhistNumLambda)
 {
     if (dfhistNumLambda > 0)
     {
-        snew(state->dfhist, 1);
-        init_df_history(state->dfhist, dfhistNumLambda);
+        state->dfhist = std::make_shared<df_history_t>(dfhistNumLambda);
     }
     else
     {
-        state->dfhist = nullptr;
+        state->dfhist.reset();
     }
 }
 
@@ -379,7 +297,7 @@ t_state::t_state() :
 
     ekinstate(),
     hist(),
-    dfhist(nullptr),
+    dfhist(),
     awhHistory(nullptr),
     ddp_count(0),
     ddp_count_cg_gl(0)

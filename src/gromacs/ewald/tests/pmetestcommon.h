@@ -56,12 +56,12 @@
 #include "gromacs/ewald/pme_gpu_program.h"
 #include "gromacs/ewald/pme_output.h"
 #include "gromacs/math/gmxcomplex.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/state_propagator_data_gpu.h"
 #include "gromacs/utility/message_string_collector.h"
 #include "gromacs/utility/range.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/unique_cptr.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "testutils/test_device.h"
 
@@ -165,7 +165,7 @@ PmeSafePointer pmeInitWrapper(const t_inputrec*    inputRec,
 PmeSafePointer pmeInitEmpty(const t_inputrec* inputRec);
 
 //! Make a GPU state-propagator manager
-std::unique_ptr<StatePropagatorDataGpu> makeStatePropagatorDataGpu(const gmx_pme_t&     pme,
+std::unique_ptr<StatePropagatorDataGpu> makeStatePropagatorDataGpu(const gmx_pme_t& pme,
                                                                    const DeviceContext* deviceContext,
                                                                    const DeviceStream* deviceStream);
 //! PME initialization with atom data and system box

@@ -60,13 +60,13 @@
 
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/paddedvector.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
+struct df_history_t;
 class gmx_ekindata_t;
 struct t_inputrec;
 struct t_lambda;
@@ -75,6 +75,8 @@ enum class FreeEnergyPerturbationType;
 
 namespace gmx
 {
+template<typename T>
+class ArrayRef;
 struct AwhHistory;
 enum class CheckpointDataOperation;
 template<CheckpointDataOperation operation>
@@ -201,42 +203,6 @@ public:
     void doCheckpoint(gmx::CheckpointData<operation> checkpointData);
 };
 
-/*! \brief Free-energy sampling history struct
- *
- * \todo Split out into microstate and observables history.
- */
-struct df_history_t
-{
-    int nlambda; //!< total number of lambda states - for history
-
-    bool  bEquil;   //!< Have we reached equilibration
-    int*  n_at_lam; //!< number of points observed at each lambda
-    real* wl_histo; //!< histogram for WL flatness determination
-    real  wl_delta; //!< current wang-landau delta
-
-    real* sum_weights; //!< weights of the states
-    real* sum_dg; //!< free energies of the states -- not actually used for weighting, but informational
-    real* sum_minvar;   //!< corrections to weights for minimum variance
-    real* sum_variance; //!< variances of the states
-
-    real** accum_p;  //!< accumulated bennett weights for n+1
-    real** accum_m;  //!< accumulated bennett weights for n-1
-    real** accum_p2; //!< accumulated squared bennett weights for n+1
-    real** accum_m2; //!< accumulated squared bennett weights for n-1
-
-    real** Tij;           //!< transition matrix
-    real** Tij_empirical; //!< Empirical transition matrix
-
-    /*! \brief Allows to read and write checkpoint within modular simulator
-     *
-     * \tparam operation  Whether we're reading or writing
-     * \param checkpointData  The CheckpointData object
-     * \param elamstats  How the lambda weights are calculated
-     */
-    template<gmx::CheckpointDataOperation operation>
-    void doCheckpoint(gmx::CheckpointData<operation> checkpointData, LambdaWeightCalculation elamstats);
-};
-
 
 /*! \brief The microstate of the system
  *
@@ -280,7 +246,7 @@ public:
     int nhchainlength; //!< The NH-chain length for temperature coupling and MTTK barostat
     int fep_state;     //!< indicates which of the alchemical states we are in
     gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, real> lambda; //!< Free-energy lambda vector
-    matrix                                                          box; //!< Matrix of box vectors
+    matrix box; //!< Matrix of box vectors
     //! Relative box vectors characteristic of the box shape, used to to preserve that box shape
     matrix              box_rel;
     matrix              boxv;           //!< Box velocities for Parrinello-Rahman P-coupling
@@ -301,9 +267,25 @@ public:
 
     ekinstate_t ekinstate; //!< The state of the kinetic energy
 
-    /* History for special algorithms, should be moved to a history struct */
+    /* History for special algorithms, should be moved to a history
+     * struct.
+     *
+     * std::shared_ptr is used because the implementation of
+     * minimization requires that t_state be copiable. Minimization
+     * requires that aspects of that copy are "deep," e.g. for
+     * coordinates. The copies of std::shared_ptr are shallow, but
+     * fortunately these algorithms with history are not available
+     * during minimization.
+     *
+     * That, and separation of concerns, implies that t_state should
+     * evolve toward a modular design, where active algorithms
+     * register their contributions to the microstate, so that
+     * checkpointing, domain distribution, and copying can have
+     * implementations that are well understood and tested. Note that
+     * the modular simulator already maintains (and checkpoints) its
+     * df_history_t separately. */
     history_t                        hist;       //!< Time history for restraints
-    df_history_t*                    dfhist;     //!< Free-energy history for free energy analysis
+    std::shared_ptr<df_history_t>    dfhist;     //!< Free-energy history for free energy analysis
     std::shared_ptr<gmx::AwhHistory> awhHistory; //!< Accelerated weight histogram history
 
     int              ddp_count;       //!< The DD partitioning count for this state
@@ -322,7 +304,7 @@ struct t_extmass
 {
     std::vector<double> Qinv; /* inverse mass of thermostat -- computed from inputs, but a good place to store */
     std::vector<double> QPinv; /* inverse mass of thermostat for barostat -- computed from inputs, but a good place to store */
-    double              Winv; /* Pressure mass inverse -- computed, not input, but a good place to store. Need to make a matrix later */
+    double Winv; /* Pressure mass inverse -- computed, not input, but a good place to store. Need to make a matrix later */
 };
 
 #endif // DOXYGEN

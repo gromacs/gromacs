@@ -57,6 +57,11 @@ namespace test
 
 void addNWaterMolecules(gmx_mtop_t* mtop, int numWaters)
 {
+    // Target distance between oxygen and hydrogens
+    constexpr real dOH = 0.09572;
+    // Target distance between hydrogens
+    constexpr real dHH = 0.15139;
+
     gmx_moltype_t moltype;
     moltype.atoms.nr             = NRAL(F_SETTLE);
     std::vector<int>& iatoms     = moltype.ilist[F_SETTLE].iatoms;
@@ -73,10 +78,16 @@ void addNWaterMolecules(gmx_mtop_t* mtop, int numWaters)
         mtop->moltype[0].atoms.atom[i].m = (i % 3 == 0) ? 16 : 1;
     }
 
-    mtop->molblock.emplace_back(gmx_molblock_t{});
+    mtop->molblock.emplace_back();
     mtop->molblock.back().type = moleculeTypeIndex;
     mtop->molblock.back().nmol = numWaters;
     mtop->natoms               = moltype.atoms.nr * mtop->molblock.back().nmol;
+
+    // Set up the SETTLE parameters.
+    t_iparams iparams;
+    iparams.settle.doh = dOH;
+    iparams.settle.dhh = dHH;
+    mtop->ffparams.iparams.push_back(iparams);
 }
 
 } // namespace test

@@ -62,15 +62,17 @@
 #include "gromacs/fft/parallel_3dfft.h"
 #include "gromacs/gpu_utils/clfftinitializer.h"
 #include "gromacs/math/gmxcomplex.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 #if GMX_GPU
 #    include "gromacs/gpu_utils/devicebuffer.h"
 #endif
+#include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "testutils/naming.h"
 #include "testutils/refdata.h"
 #include "testutils/test_hardware_environment.h"
 #include "testutils/testasserts.h"
@@ -300,25 +302,10 @@ TEST_F(FFTTest, Real2DLength18_15Test)
 
 using FFTTest3DParameters = std::tuple<int, int, int>;
 
-/*! \brief Help GoogleTest name our tests
- *
- * If changes are needed here, consider making matching changes in
- * makeRefDataFileName(). */
-std::string nameOfTest(const testing::TestParamInfo<FFTTest3DParameters>& info)
-{
-    std::string testName = formatString(
-            "%d_%d_%d", std::get<0>(info.param), std::get<1>(info.param), std::get<2>(info.param));
-
-    // Note that the returned names must be unique and may use only
-    // alphanumeric ASCII characters. It's not supposed to contain
-    // underscores (see the GoogleTest FAQ
-    // why-should-test-suite-names-and-test-names-not-contain-underscore),
-    // but doing so works for now, is likely to remain so, and makes
-    // such test names much more readable.
-    testName = replaceAll(testName, "-", "");
-    testName = replaceAll(testName, " ", "_");
-    return testName;
-}
+//! Tuple of formatters to name the parameterized test cases
+const test::NameOfTestFromTuple<FFTTest3DParameters> sc_testNamer{
+    std::make_tuple(intToString, intToString, intToString)
+};
 
 class ParameterizedFFTTest3D : public FFTTest3D, public ::testing::WithParamInterface<FFTTest3DParameters>
 {
@@ -387,7 +374,7 @@ TEST_P(ParameterizedFFTTest3D, RunsOnHost)
     // Use std::copy to convert from double to real easily
     std::copy(inputdata, inputdata + sizeInReals, in_.begin());
     // Use memcpy to convert to t_complex easily
-    memcpy(rdata, in_.data(), sizeInBytes);
+    std::memcpy(rdata, in_.data(), sizeInBytes);
 
     // Do the forward FFT to compute the complex grid
     gmx_parallel_3dfft_execute(fft_, GMX_FFT_REAL_TO_COMPLEX, 0, nullptr);
@@ -504,7 +491,7 @@ TEST_P(ParameterizedFFTTest3D, RunsOnDevices)
 #        if GMX_GPU_FFT_VKFFT
         const FftBackend backend = FftBackend::HipVkfft;
 #        else
-        const FftBackend backend = FftBackend::Hipfft;
+        const FftBackend backend = FftBackend::HipRocfft;
 #        endif
 #    elif GMX_GPU_OPENCL
 #        if GMX_GPU_FFT_VKFFT
@@ -515,8 +502,8 @@ TEST_P(ParameterizedFFTTest3D, RunsOnDevices)
 #    elif GMX_GPU_SYCL
 #        if GMX_GPU_FFT_MKL
         const FftBackend backend = FftBackend::SyclMkl;
-#        elif GMX_GPU_FFT_ONEMKL
-        const FftBackend backend = FftBackend::SyclOneMkl;
+#        elif GMX_GPU_FFT_ONEMATH
+        const FftBackend backend = FftBackend::SyclOneMath;
 #        elif GMX_GPU_FFT_BBFFT
         const FftBackend backend = FftBackend::SyclBbfft;
 #        elif GMX_GPU_FFT_ROCFFT
@@ -627,13 +614,13 @@ INSTANTIATE_TEST_SUITE_P(ScanWorks,
                          ::testing::Combine(::testing::Range(4, 8, 1),
                                             ::testing::Range(4, 8, 1),
                                             ::testing::Range(4, 8, 1)),
-                         nameOfTest);
+                         sc_testNamer);
 */
 
 INSTANTIATE_TEST_SUITE_P(Works,
                          ParameterizedFFTTest3D,
                          ::testing::Values(FFTTest3DParameters{ 5, 6, 9 }, FFTTest3DParameters{ 5, 5, 10 }),
-                         nameOfTest);
+                         sc_testNamer);
 
 } // namespace
 } // namespace test

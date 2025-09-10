@@ -57,7 +57,6 @@
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/functions.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/trajectory/trajectoryframe.h"
@@ -70,6 +69,7 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/vec.h"
 
 struct gmx_output_env_t;
 
@@ -224,7 +224,7 @@ static void edit_files(gmx::ArrayRef<std::string> files,
             ok = FALSE;
             do
             {
-                if (nullptr == fgets(inputstring, STRLEN - 1, stdin))
+                if (nullptr == std::fgets(inputstring, STRLEN - 1, stdin))
                 {
                     gmx_fatal(FARGS, "Error reading user input");
                 }
@@ -247,7 +247,7 @@ static void edit_files(gmx::ArrayRef<std::string> files,
                 }
                 else
                 {
-                    settime[i] = strtod(inputstring, &chptr) * output_env_get_time_invfactor(oenv);
+                    settime[i] = std::strtod(inputstring, &chptr) * output_env_get_time_invfactor(oenv);
                     if (chptr == inputstring)
                     {
                         fprintf(stderr,
@@ -513,9 +513,9 @@ int gmx_trjcat(int argc, char* argv[])
     gmx_off_t         fpos;
     gmx_output_env_t* oenv;
     t_filenm          fnm[] = { { efTRX, "-f", nullptr, ffRDMULT },
-                       { efTRO, "-o", nullptr, ffWRMULT },
-                       { efNDX, "-n", "index", ffOPTRD },
-                       { efXVG, "-demux", "remd", ffOPTRD } };
+                                { efTRO, "-o", nullptr, ffWRMULT },
+                                { efNDX, "-n", "index", ffOPTRD },
+                                { efXVG, "-demux", "remd", ffOPTRD } };
 
 #define NFILE asize(fnm)
 
@@ -526,7 +526,7 @@ int gmx_trjcat(int argc, char* argv[])
     }
     fprintf(stdout,
             "Note that major changes are planned in future for "
-            "trjcat, to improve usability and utility.");
+            "trjcat, to improve usability and utility.\n");
 
     auto timeUnit = output_env_get_time_unit(oenv);
 
@@ -955,7 +955,7 @@ int gmx_trjcat(int argc, char* argv[])
                                     frame_out,
                                     output_env_conv_time(oenv, frout.time),
                                     timeUnit.c_str());
-                            fflush(stderr);
+                            std::fflush(stderr);
                         }
                     }
                 }

@@ -32,12 +32,6 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 
-#define UNROLLI 4
-#define UNROLLJ 4
-
-static_assert(UNROLLI == Nbnxm::sc_iClusterSize(Nbnxm::KernelType::Cpu4x4_PlainC),
-              "UNROLLI should match the i-cluster size");
-
 /* We could use nbat->xstride and nbat->fstride, but macros might be faster */
 #define X_STRIDE 3
 #define F_STRIDE 3
@@ -55,27 +49,29 @@ static_assert(UNROLLI == Nbnxm::sc_iClusterSize(Nbnxm::KernelType::Cpu4x4_PlainC
 #define CALC_SHIFTFORCES
 
 #ifdef CALC_COUL_RF
-#    define NBK_FUNC_NAME2(ljt, feg) nbnxn_kernel##_ElecRF##ljt##feg##_ref
+#    define NBK_FUNC_NAME2(ui, uj, ljt, feg) nbnxn_kernel_##ui##x##uj##_ElecRF##ljt##feg##_ref
 #endif
 #ifdef CALC_COUL_TAB
 #    ifndef VDW_CUTOFF_CHECK
-#        define NBK_FUNC_NAME2(ljt, feg) nbnxn_kernel##_ElecQSTab##ljt##feg##_ref
+#        define NBK_FUNC_NAME2(ui, uj, ljt, feg) \
+            nbnxn_kernel_##ui##x##uj##_ElecQSTab##ljt##feg##_ref
 #    else
-#        define NBK_FUNC_NAME2(ljt, feg) nbnxn_kernel##_ElecQSTabTwinCut##ljt##feg##_ref
+#        define NBK_FUNC_NAME2(ui, uj, ljt, feg) \
+            nbnxn_kernel_##ui##x##uj##_ElecQSTabTwinCut##ljt##feg##_ref
 #    endif
 #endif
 
 #if defined LJ_CUT && !defined LJ_EWALD
-#    define NBK_FUNC_NAME(feg) NBK_FUNC_NAME2(_VdwLJ, feg)
+#    define NBK_FUNC_NAME(ui, uj, feg) NBK_FUNC_NAME2(ui, uj, _VdwLJ, feg)
 #elif defined LJ_FORCE_SWITCH
-#    define NBK_FUNC_NAME(feg) NBK_FUNC_NAME2(_VdwLJFsw, feg)
+#    define NBK_FUNC_NAME(ui, uj, feg) NBK_FUNC_NAME2(ui, uj, _VdwLJFsw, feg)
 #elif defined LJ_POT_SWITCH
-#    define NBK_FUNC_NAME(feg) NBK_FUNC_NAME2(_VdwLJPsw, feg)
+#    define NBK_FUNC_NAME(ui, uj, feg) NBK_FUNC_NAME2(ui, uj, _VdwLJPsw, feg)
 #elif defined LJ_EWALD
 #    ifdef LJ_EWALD_COMB_GEOM
-#        define NBK_FUNC_NAME(feg) NBK_FUNC_NAME2(_VdwLJEwCombGeom, feg)
+#        define NBK_FUNC_NAME(ui, uj, feg) NBK_FUNC_NAME2(ui, uj, _VdwLJEwCombGeom, feg)
 #    else
-#        define NBK_FUNC_NAME(feg) NBK_FUNC_NAME2(_VdwLJEwCombLB, feg)
+#        define NBK_FUNC_NAME(ui, uj, feg) NBK_FUNC_NAME2(ui, uj, _VdwLJEwCombLB, feg)
 #    endif
 #else
 #    error "No VdW type defined"
@@ -83,22 +79,25 @@ static_assert(UNROLLI == Nbnxm::sc_iClusterSize(Nbnxm::KernelType::Cpu4x4_PlainC
 
 void
 #ifndef CALC_ENERGIES
-        NBK_FUNC_NAME(_F) // NOLINT(misc-definitions-in-headers)
+        NBK_FUNC_NAME(UNROLLI, UNROLLJ, _F) // NOLINT(misc-definitions-in-headers)
 #else
 #    ifndef ENERGY_GROUPS
-        NBK_FUNC_NAME(_VF) // NOLINT(misc-definitions-in-headers)
+        NBK_FUNC_NAME(UNROLLI, UNROLLJ, _VF) // NOLINT(misc-definitions-in-headers)
 #    else
-        NBK_FUNC_NAME(_VgrpF) // NOLINT(misc-definitions-in-headers)
+        NBK_FUNC_NAME(UNROLLI, UNROLLJ, _VgrpF) // NOLINT(misc-definitions-in-headers)
 #    endif
 #endif
 #undef NBK_FUNC_NAME
 #undef NBK_FUNC_NAME2
-        (const NbnxnPairlistCpu*    nbl,
-         const nbnxn_atomdata_t*    nbat,
-         const interaction_const_t* ic,
+        (const NbnxnPairlistCpu&    pairlist,
+         const nbnxn_atomdata_t&    nbat,
+         const interaction_const_t& ic,
          const rvec*                shift_vec,
          nbnxn_atomdata_output_t*   out)
 {
+    GMX_RELEASE_ASSERT(UNROLLI == pairlist.na_ci && UNROLLJ == pairlist.na_cj,
+                       "Kernel and list cluster sizes should match");
+
     /* Unpack pointers for output */
     real* f = out->f.data();
 #ifdef CALC_SHIFTFORCES
@@ -118,65 +117,65 @@ void
 #endif
 
 #ifdef LJ_POT_SWITCH
-    const real swV3 = ic->vdw_switch.c3;
-    const real swV4 = ic->vdw_switch.c4;
-    const real swV5 = ic->vdw_switch.c5;
-    const real swF2 = 3 * ic->vdw_switch.c3;
-    const real swF3 = 4 * ic->vdw_switch.c4;
-    const real swF4 = 5 * ic->vdw_switch.c5;
+    const real swV3 = ic.vdw.switchConstants.c3;
+    const real swV4 = ic.vdw.switchConstants.c4;
+    const real swV5 = ic.vdw.switchConstants.c5;
+    const real swF2 = 3 * ic.vdw.switchConstants.c3;
+    const real swF3 = 4 * ic.vdw.switchConstants.c4;
+    const real swF4 = 5 * ic.vdw.switchConstants.c5;
 #endif
 
-    const nbnxn_atomdata_t::Params& nbatParams = nbat->params();
+    const nbnxn_atomdata_t::Params& nbatParams = nbat.params();
 
 #ifdef LJ_EWALD
-    const real lje_coeff2   = ic->ewaldcoeff_lj * ic->ewaldcoeff_lj;
+    const real lje_coeff2   = gmx::square(ic.vdw.ewaldCoeff);
     const real lje_coeff6_6 = lje_coeff2 * lje_coeff2 * lje_coeff2 / 6.0;
 #    ifdef CALC_ENERGIES
-    const real lje_vc = ic->sh_lj_ewald;
+    const real lje_vc = ic.vdw.ewaldShift;
 #    endif
 
     const real* ljc = nbatParams.nbfp_comb.data();
 #endif
 
 #ifdef CALC_COUL_RF
-    const real k_rf2 = 2 * ic->reactionFieldCoefficient;
+    const real k_rf2 = 2 * ic.coulomb.reactionFieldCoefficient;
 #    ifdef CALC_ENERGIES
-    const real reactionFieldCoefficient = ic->reactionFieldCoefficient;
-    const real reactionFieldShift       = ic->reactionFieldShift;
+    const real reactionFieldCoefficient = ic.coulomb.reactionFieldCoefficient;
+    const real reactionFieldShift       = ic.coulomb.reactionFieldShift;
 #    endif
 #endif
 #ifdef CALC_COUL_TAB
-    const real tab_coul_scale = ic->coulombEwaldTables->scale;
+    const real tab_coul_scale = ic.coulombEwaldTables->scale;
 #    ifdef CALC_ENERGIES
     const real halfsp = 0.5 / tab_coul_scale;
 #    endif
 
 #    if !GMX_DOUBLE
-    const real* tab_coul_FDV0 = ic->coulombEwaldTables->tableFDV0.data();
+    const real* tab_coul_FDV0 = ic.coulombEwaldTables->tableFDV0.data();
 #    else
-    const real* tab_coul_F = ic->coulombEwaldTables->tableF.data();
+    const real* tab_coul_F = ic.coulombEwaldTables->tableF.data();
 #        ifdef CALC_ENERGIES
-    const real* tab_coul_V = ic->coulombEwaldTables->tableV.data();
+    const real* tab_coul_V = ic.coulombEwaldTables->tableV.data();
 #        endif
 #    endif
 #endif
 
-    const real rcut2 = ic->rcoulomb * ic->rcoulomb;
+    const real rcut2 = gmx::square(ic.coulomb.cutoff);
 #ifdef VDW_CUTOFF_CHECK
-    const real rvdw2 = ic->rvdw * ic->rvdw;
+    const real rvdw2 = gmx::square(ic.vdw.cutoff);
 #endif
 
     const int   ntype2   = nbatParams.numTypes * 2;
     const real* nbfp     = nbatParams.nbfp.data();
     const real* q        = nbatParams.q.data();
     const int*  type     = nbatParams.type.data();
-    const real  facel    = ic->epsfac;
+    const real  facel    = ic.coulomb.epsfac;
     const real* shiftvec = shift_vec[0];
-    const real* x        = nbat->x().data();
+    const real* x        = nbat.x().data();
 
-    const nbnxn_cj_t* l_cj = nbl->cj.list_.data();
+    const nbnxn_cj_t* l_cj = pairlist.cj.list_.data();
 
-    for (const nbnxn_ci_t& ciEntry : nbl->ci)
+    for (const nbnxn_ci_t& ciEntry : pairlist.ci)
     {
         const int ish = (ciEntry.shift & NBNXN_CI_SHIFT);
         /* x, f and fshift are assumed to be stored with stride 3 */
@@ -208,7 +207,7 @@ void
         real Vvdw_ci = 0;
         real Vc_ci   = 0;
 #    else
-        int        egp_sh_i[UNROLLI];
+        int egp_sh_i[UNROLLI];
         for (int i = 0; i < UNROLLI; i++)
         {
             egp_sh_i[i] = nbatParams.energyGroupsPerCluster->getEnergyGroup(ci, i) * nbatParams.numEnergyGroups;
@@ -266,8 +265,13 @@ void
         }
 #endif /* CALC_ENERGIES */
 
+        // Without loop vectorization we first loop over all pairs with exclusions and then loop
+        // over the remaining pairs without exclusion without checking for exclusions
         int cjind = cjind0;
-        while (cjind < cjind1 && nbl->cj.excl(cjind) != 0xffff)
+#if VECTORIZE_JLOOP && defined __clang__
+#    pragma clang loop vectorize(assume_safety)
+#endif
+        for (; cjind < cjind1 && (VECTORIZE_JLOOP || pairlist.cj.excl(cjind) != 0xffff); cjind++)
         {
 #define CHECK_EXCLS
             if (half_LJ)
@@ -289,30 +293,32 @@ void
 #include "kernel_ref_inner.h"
             }
 #undef CHECK_EXCLS
-            cjind++;
         }
 
+#if !VECTORIZE_JLOOP
+        // Second part of the j-loop, does not check for exclusions
         for (; (cjind < cjind1); cjind++)
         {
             if (half_LJ)
             {
-#define CALC_COULOMB
-#define HALF_LJ
-#include "kernel_ref_inner.h"
-#undef HALF_LJ
-#undef CALC_COULOMB
+#    define CALC_COULOMB
+#    define HALF_LJ
+#    include "kernel_ref_inner.h"
+#    undef HALF_LJ
+#    undef CALC_COULOMB
             }
             else if (do_coul)
             {
-#define CALC_COULOMB
-#include "kernel_ref_inner.h"
-#undef CALC_COULOMB
+#    define CALC_COULOMB
+#    include "kernel_ref_inner.h"
+#    undef CALC_COULOMB
             }
             else
             {
-#include "kernel_ref_inner.h"
+#    include "kernel_ref_inner.h"
             }
         }
+#endif // !VECTORIZE_JLOOP
 
         /* Add accumulated i-forces to the force array */
         for (int i = 0; i < UNROLLI; i++)
@@ -355,6 +361,3 @@ void
 #undef F_STRIDE
 #undef XI_STRIDE
 #undef FI_STRIDE
-
-#undef UNROLLI
-#undef UNROLLJ

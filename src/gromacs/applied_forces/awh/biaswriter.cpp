@@ -47,7 +47,6 @@
 #include "gromacs/applied_forces/awh/histogramsize.h"
 #include "gromacs/fileio/xdr_datatype.h"
 #include "gromacs/mdtypes/awh_params.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/trajectory/energyframe.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"

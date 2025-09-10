@@ -31,6 +31,10 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
+/*!
+ * \defgroup module_math Module Math
+ * \brief A brief description for Module Math
+ */
 #include "gmxpre.h"
 
 #include "gromacs/math/3dtransforms.h"
@@ -40,10 +44,10 @@
 
 #include <filesystem>
 
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 #define N 4
 

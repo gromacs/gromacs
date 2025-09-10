@@ -50,7 +50,7 @@
 
 #include "gromacs/gpu_utils/hostallocator.h"
 
-namespace Nbnxm
+namespace gmx
 {
 
 /*! \internal
@@ -61,10 +61,10 @@ namespace Nbnxm
  */
 struct GridSetData
 {
-    //! The cell indices for all atoms
-    gmx::HostVector<int> cells;
+    //! The cell indices for all atoms, the cell indices number contiguously over all grids
+    HostVector<int> cells;
     //! The atom indices for all atoms stored in cell order
-    gmx::HostVector<int> atomIndices;
+    HostVector<int> atomIndices;
 };
 
 /*! \internal
@@ -78,6 +78,6 @@ struct GridWork
     std::vector<int> sortBuffer;
 };
 
-} // namespace Nbnxm
+} // namespace gmx
 
 #endif

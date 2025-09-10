@@ -96,4 +96,4 @@ The timestep transfer rate allows adjusting the communication frequency
 between simulation and IMD client. Setting the keep rate loads every
 :math:`N^\mathrm{th}` frame into VMD instead of discarding them when a
 new one is received. The displayed energies are in SI units in contrast
-to energies displayed from NAMD simulations.s
+to energies displayed from NAMD simulations.

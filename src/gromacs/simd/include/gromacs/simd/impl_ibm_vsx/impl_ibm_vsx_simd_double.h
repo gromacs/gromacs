@@ -578,8 +578,8 @@ static inline void gmx_simdcall cvtF2DD(SimdFloat f, SimdDouble* d0, SimdDouble*
     __asm__("xvcvspdp %x0,%x1" : "=wd"(d0->simdInternal_) : "wf"(fA));
     __asm__("xvcvspdp %x0,%x1" : "=wd"(d1->simdInternal_) : "wf"(fB));
 #else
-    d0->simdInternal_ = vec_cvf(fA);               /* 01 */
-    d1->simdInternal_ = vec_cvf(fB);               /* 23 */
+    d0->simdInternal_ = vec_cvf(fA); /* 01 */
+    d1->simdInternal_ = vec_cvf(fB); /* 23 */
 #endif
 }
 
@@ -591,8 +591,8 @@ static inline SimdFloat gmx_simdcall cvtDD2F(SimdDouble d0, SimdDouble d1)
     __asm__("xvcvdpsp %x0,%x1" : "=wf"(fA) : "wd"(d0.simdInternal_));
     __asm__("xvcvdpsp %x0,%x1" : "=wf"(fB) : "wd"(d1.simdInternal_));
 #else
-    fA                = vec_cvf(d0.simdInternal_); /* 0x1x */
-    fB                = vec_cvf(d1.simdInternal_); /* 2x3x */
+    fA = vec_cvf(d0.simdInternal_); /* 0x1x */
+    fB = vec_cvf(d1.simdInternal_); /* 2x3x */
 #endif
     fC = vec_mergeh(fA, fB); /* 02xx */
     fD = vec_mergel(fA, fB); /* 13xx */

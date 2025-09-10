@@ -63,6 +63,10 @@
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -454,3 +458,5 @@ TYPED_TEST(FunctionTestIntegerTypes, DivideRoundUp)
 }
 
 } // namespace
+} // namespace test
+} // namespace gmx

@@ -50,9 +50,9 @@
 
 #include "gromacs/ewald/pme_coordinate_receiver_gpu.h"
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/vectypes.h"
 
 class DeviceContext;
 class DeviceStream;
@@ -90,6 +90,13 @@ void PmeCoordinateReceiverGpu::reinitCoordinateReceiver(DeviceBuffer<RVec> /* d_
                "correct implementation.");
 }
 
+void PmeCoordinateReceiverGpu::prepareToReceiveCoordinates()
+{
+    GMX_ASSERT(!impl_,
+               "A CPU stub for PME-PP GPU communication was called instead of the correct "
+               "implementation.");
+}
+
 void PmeCoordinateReceiverGpu::receiveCoordinatesSynchronizerFromPpPeerToPeer(int /* ppRank */)
 {
     GMX_ASSERT(!impl_,
@@ -108,7 +115,7 @@ void PmeCoordinateReceiverGpu::launchReceiveCoordinatesFromPpGpuAwareMpi(DeviceB
                "implementation.");
 }
 
-std::tuple<int, GpuEventSynchronizer*> PmeCoordinateReceiverGpu::receivePpCoordinateSendEvent(int /* pipelineStage */)
+std::tuple<int, GpuEventSynchronizer*> PmeCoordinateReceiverGpu::receivePpCoordinateSendEvent(int /* requestIndex */)
 {
     GMX_ASSERT(!impl_,
                "A CPU stub for PME-PP GPU communication was called instead of the correct "
@@ -123,6 +130,15 @@ int PmeCoordinateReceiverGpu::waitForCoordinatesFromAnyPpRank()
                "implementation.");
     return 0;
 }
+
+ArrayRef<const int> PmeCoordinateReceiverGpu::sendersThatSentCoordinates() const
+{
+    GMX_ASSERT(!impl_,
+               "A CPU stub for PME-PP GPU communication was called instead of the correct "
+               "implementation.");
+    return {};
+}
+
 
 DeviceStream* PmeCoordinateReceiverGpu::ppCommStream(int /* senderIndex */)
 {

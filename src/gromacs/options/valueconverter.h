@@ -100,9 +100,8 @@ public:
     template<typename InType>
     void addConverter(std::function<OutType(const InType&)> func)
     {
-        converters_[std::type_index(typeid(InType))] = [func](const Any& value) {
-            return func(value.cast<InType>());
-        };
+        converters_[std::type_index(typeid(InType))] = [func](const Any& value)
+        { return func(value.cast<InType>()); };
     }
     /*! \brief
      * Adds a supported conversion from a type that can be directly cast.
@@ -112,9 +111,8 @@ public:
     template<typename InType>
     void addCastConversion()
     {
-        converters_[std::type_index(typeid(InType))] = [](const Any& value) {
-            return static_cast<OutType>(value.cast<InType>());
-        };
+        converters_[std::type_index(typeid(InType))] = [](const Any& value)
+        { return static_cast<OutType>(value.cast<InType>()); };
     }
 
 private:

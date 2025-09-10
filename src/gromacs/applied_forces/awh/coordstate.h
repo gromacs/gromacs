@@ -91,7 +91,6 @@ public:
      * \param[in] step                Step number, needed for the random number generator.
      * \param[in] seed                Random seed.
      * \param[in] indexSeed           Second random seed, should be the bias Index.
-     * \returns the index of the sampled point.
      */
     void sampleUmbrellaGridpoint(const BiasGrid&             grid,
                                  int                         gridpointIndex,
@@ -130,9 +129,9 @@ public:
     void setUmbrellaGridpointToGridpoint();
 
 private:
-    awh_dvec coordValue_;        /**< Current coordinate value in (nm or rad) */
-    int      gridpointIndex_;    /**< The grid point index for the current coordinate value */
-    int      umbrellaGridpoint_; /**< Index for the current reference grid point for the umbrella, only used with umbrella potential type */
+    awh_dvec coordValue_;     /**< Current coordinate value in (nm or rad) */
+    int      gridpointIndex_; /**< The grid point index for the current coordinate value */
+    int umbrellaGridpoint_; /**< Index for the current reference grid point for the umbrella, only used with umbrella potential type */
 };
 
 } // namespace gmx

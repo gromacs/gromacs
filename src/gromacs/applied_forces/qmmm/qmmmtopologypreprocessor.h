@@ -53,55 +53,15 @@
 #include "qmmmtypes.h"
 
 struct gmx_mtop_t;
+class WarningHandler;
 
 namespace gmx
 {
 
-/*! \internal
- * \brief Contains various information about topology modifications
- * Used for statistics during topology pre-processing within QMMMTopologyPreprocessor class
- */
-struct QMMMTopologyInfo
-{
-    //! Total number of MM atoms
-    int numMMAtoms = 0;
-    //! Total number of QM atoms
-    int numQMAtoms = 0;
-    //! Total remaining charge of MM part
-    real remainingMMCharge = 0.0;
-    //! Total classical charge removed from QM atoms
-    real totalClassicalChargeOfQMAtoms = 0.0;
-    //! Total number of Non-bonded (LJ) exclusions made for QM-QM interactions
-    int numExclusionsMade = 0;
-    //! Total number of removed classical Bonds between QM-QM atoms
-    int numBondsRemoved = 0;
-    //! Total number of removed classical Angles between QM-QM atoms
-    int numAnglesRemoved = 0;
-    //! Total number of removed classical Dihedrals between QM-QM atoms
-    int numDihedralsRemoved = 0;
-    //! Total number of removed F_SETTLE between QM-QM atoms
-    int numSettleRemoved = 0;
-    //! Total number of empty chemical bonds (F_CONNBONDS) added between QM-QM atoms
-    int numConnBondsAdded = 0;
-    //! Total number of virtual sites, that consisting of QM atoms only, which charge has been removed
-    int numVirtualSitesModified = 0;
-    //! Total number of constrained bonds within QM subsystem
-    int numConstrainedBondsInQMSubsystem = 0;
-    //! Total number of broken bonds between QM and MM atoms (Link Frontier)
-    int numLinkBonds = 0;
-};
+class MDLogger;
 
 /*! \internal
  * \brief Class implementing gmx_mtop_t QMMM modifications during preprocessing
- * 1) Split QM-containing molecules from other molecules in blocks
- * 2) Nullify charges on all virtual sites consisting of QM only atoms
- * 3) Nullifies charges on all QM atoms
- * 4) Excludes LJ interactions between QM atoms
- * 5) Builds vector with atomic numbers of all atoms
- * 6) Makes F_CONNBOND between atoms within QM region
- * 7) Removes angles and settles containing 2 or more QM atoms
- * 8) Removes dihedrals containing 3 or more QM atoms
- * 9) Builds vector containing pairs of bonded QM - MM atoms (Link frontier)
  */
 class QMMMTopologyPreprocessor
 {
@@ -113,14 +73,13 @@ public:
     QMMMTopologyPreprocessor(ArrayRef<const Index> qmIndices);
 
     /*! \brief Pocesses mtop topology and prepares atomNumbers_ and linkFrontier_ vectors
-     * Builds topInfo_ containing information about topology modifications
      *
      * \param[in,out] mtop Topology that needs to be modified
+     * \param[in] refQ Reference total charge of the system, used for warnings
+     * \param[in] logger MDLogger for logging info about modifications
+     * \param[in] wi WarningHandler for handling warnings
      */
-    void preprocess(gmx_mtop_t* mtop);
-
-    //! \brief Returns data about modifications made via QMMMTopologyInfo
-    const QMMMTopologyInfo& topInfo() const;
+    void preprocess(gmx_mtop_t* mtop, real refQ, const MDLogger& logger, WarningHandler* wi);
 
     //! \brief Returns view of atomic numbers for all atoms in the processed topology
     ArrayRef<const int> atomNumbers() const;
@@ -132,61 +91,6 @@ public:
     ArrayRef<const LinkFrontier> linkFrontier() const;
 
 private:
-    //! Retruns true if globalAtomIndex belongs to QM region
-    bool isQMAtom(Index globalAtomIndex);
-
-    /*! \brief Splits QM containing molecules out of MM blocks in topology
-     * Modifies blocks in topology
-     * Updates bQMBlock vector containing QM flags of all blocks in modified mtop
-     */
-    void splitQMblocks(gmx_mtop_t* mtop);
-
-    /*! \brief Removes classical charges from QM atoms
-     * Provides data about removed charge via topInfo_
-     */
-    void removeQMClassicalCharges(gmx_mtop_t* mtop);
-
-    //! \brief Build exlusion list for LJ interactions between QM atoms
-    void addQMLJExclusions(gmx_mtop_t* mtop);
-
-    /*! \brief Builds atomNumbers_ vector
-     * Provides data about total number of QM and MM atoms via topInfo_
-     */
-    void buildQMMMAtomNumbers(gmx_mtop_t* mtop);
-
-    /*! \brief Modifies pairwise bonded interactions
-     * Removes any other pairwise bonded interactions between QM-QM atoms
-     * Creates F_CONNBOND between QM atoms
-     * Any restraints and constraints will be kept
-     * Provides data about modifications via topInfo_
-     */
-    void modifyQMMMTwoCenterInteractions(gmx_mtop_t* mtop);
-
-    /*! \brief Builds link_ vector with pairs of atoms indicting broken QM - MM chemical bonds.
-     * Also performs search of constrained bonds within QM subsystem.
-     */
-    void buildQMMMLink(gmx_mtop_t* mtop);
-
-    /*! \brief Modifies three-centers interactions (i.e. Angles, Settles)
-     * Removes any other three-centers bonded interactions including 2 or more QM atoms
-     * Any restraints and constraints will be kept
-     * Any F_SETTLE containing QM atoms will be converted to the pair of F_CONNBONDS
-     * Provides data about modifications via topInfo_
-     */
-    void modifyQMMMThreeCenterInteractions(gmx_mtop_t* mtop);
-
-    /*! \brief Modifies four-centers interactions
-     * Removes any other four-centers bonded interactions including 3 or more QM atoms
-     * Any restraints and constraints will be kept
-     * Provides data about modifications via topInfo_
-     */
-    void modifyQMMMFourCenterInteractions(gmx_mtop_t* mtop);
-
-    //! \brief Removes charge from all virtual sites which are consists of only QM atoms
-    void modifyQMMMVirtualSites(gmx_mtop_t* mtop);
-
-    //! Vector indicating which molblocks have QM atoms
-    std::vector<bool> bQMBlock_;
     /*! \brief Global indices of QM atoms;
      * The dominant operation is search and we also expect the set of qm atoms to be very small
      * relative to the rest, so set should outperform unordered set, i.e. unsorted std::vector.
@@ -198,9 +102,122 @@ private:
     std::vector<real> atomCharges_;
     //! Vector with pairs of indices defining broken bonds in QMMM
     std::vector<LinkFrontier> linkFrontier_;
-    //! Structure with information about modifications made
-    QMMMTopologyInfo topInfo_;
 };
+
+/*! \brief Splits QM containing molecules out of MM blocks in topology
+ *
+ * Modifies molblocks in topology \p mtop
+ * \param[in,out] mtop topology to be modified
+ * \param[in] qmIndices set with global indices of QM atoms
+ * \returns vector of flags for QM-containing blocks in modified mtop
+ */
+std::vector<bool> splitQMBlocks(gmx_mtop_t* mtop, const std::set<int>& qmIndices);
+
+/*! \brief Removes classical charges from QM atoms and virtual sites
+ *
+ * Also removes charges from virtual sites built from QM atoms only.
+ * \param[in,out] mtop topology to be modified
+ * \param[in] qmIndices set with global indices of QM atoms
+ * \param[in] bQMBlock vector with flags for QM-containing blocks
+ * \param[in] refQ reference total charge of the system, used for warning messages
+ * \param[in] logger MDLogger for logging info about modifications
+ * \param[in] wi WarningHandler for handling warnings
+ * \returns vector of point charges for all atoms in the modified topology
+ */
+std::vector<real> removeQMClassicalCharges(gmx_mtop_t*              mtop,
+                                           const std::set<int>&     qmIndices,
+                                           const std::vector<bool>& bQMBlock,
+                                           real                     refQ,
+                                           const MDLogger&          logger,
+                                           WarningHandler*          wi);
+
+/*! \brief Build exclusion list for non-bonded interactions between QM atoms
+ *
+ * Adds QM atoms to \c mtop->intermolecularExclusionGroup
+ * \param[in,out] mtop topology to be modified
+ * \param[in] qmIndices set with global indices of QM atoms
+ * \param[in] logger MDLogger for logging info about modifications
+ */
+void addQMLJExclusions(gmx_mtop_t* mtop, const std::set<int>& qmIndices, const MDLogger& logger);
+
+/*! \brief Builds and returns a vector of atom numbers for all atoms in \p mtop.
+ *
+ * \param[in] mtop topology to be processed
+ * \returns vector of atom numbers for all atoms
+ */
+std::vector<int> buildQMMMAtomNumbers(const gmx_mtop_t& mtop);
+
+/*! \brief Modifies pairwise bonded interactions
+ *
+ * Removes any other pairwise bonded interactions between QM-QM atoms
+ * Creates F_CONNBOND between QM atoms
+ * Any restraints and constraints will be kept
+ * \param[in,out] mtop topology to be modified
+ * \param[in] qmIndices set with global indices of QM atoms
+ * \param[in] bQMBlock vector with flags for QM-containing blocks
+ * \param[in] logger MDLogger for logging info about modifications
+ */
+void modifyQMMMTwoCenterInteractions(gmx_mtop_t*              mtop,
+                                     const std::set<int>&     qmIndices,
+                                     const std::vector<bool>& bQMBlock,
+                                     const MDLogger&          logger);
+
+/*! \brief Modifies three-centers interactions (i.e. Angles, Settles)
+ *
+ * Removes any other three-centers bonded interactions including 2 or more QM atoms
+ * Any restraints and constraints will be kept
+ * Any F_SETTLE containing QM atoms will be converted to the pair of F_CONNBONDS
+ * \param[in,out] mtop topology to be modified
+ * \param[in] qmIndices set with global indices of QM atoms
+ * \param[in] bQMBlock vector with flags for QM-containing blocks
+ * \param[in] logger MDLogger for logging info about modifications
+ */
+void modifyQMMMThreeCenterInteractions(gmx_mtop_t*              mtop,
+                                       const std::set<int>&     qmIndices,
+                                       const std::vector<bool>& bQMBlock,
+                                       const MDLogger&          logger);
+
+/*! \brief Modifies four-centers interactions
+ *
+ * Removes any other four-centers bonded interactions including 3 or more QM atoms
+ * Any restraints and constraints will be kept
+ * \param[in,out] mtop topology to be modified
+ * \param[in] qmIndices set with global indices of QM atoms
+ * \param[in] bQMBlock vector with flags for QM-containing blocks
+ * \param[in] logger MDLogger for logging info about modifications
+ */
+void modifyQMMMFourCenterInteractions(gmx_mtop_t*              mtop,
+                                      const std::set<int>&     qmIndices,
+                                      const std::vector<bool>& bQMBlock,
+                                      const MDLogger&          logger);
+
+/*! \brief Checks for constrained bonds within QM subsystem
+ *
+ * Provides warnings via WarningHandler if any are found.
+ * Separated from buildQMMMLink for better modularity.
+ * \param[in,out] mtop topology to be modified
+ * \param[in] qmIndices set with global indices of QM atoms
+ * \param[in] bQMBlock vector with flags for QM-containing blocks
+ * \param[in] wi WarningHandler for handling warnings
+ */
+void checkConstrainedBonds(gmx_mtop_t*              mtop,
+                           const std::set<int>&     qmIndices,
+                           const std::vector<bool>& bQMBlock,
+                           WarningHandler*          wi);
+
+/*! \brief Builds link frontier vector with pairs of atoms indicting broken QM - MM chemical bonds.
+ *
+ * Also performs search of constrained bonds within QM subsystem.
+ * \param[in,out] mtop topology to be modified
+ * \param[in] qmIndices set with global indices of QM atoms
+ * \param[in] bQMBlock vector with flags for QM-containing blocks
+ * \param[in] logger MDLogger for logging info about modifications
+ * \returns vector of link atom pairs
+ */
+std::vector<LinkFrontier> buildQMMMLink(gmx_mtop_t*              mtop,
+                                        const std::set<int>&     qmIndices,
+                                        const std::vector<bool>& bQMBlock,
+                                        const MDLogger&          logger);
 
 } // namespace gmx
 

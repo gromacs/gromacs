@@ -88,6 +88,7 @@ static GpuAwareMpiStatus getGpuAwareMpiStatusForFftBackend(const FftBackend fftB
         case FftBackend::CuFFTMp:
         case FftBackend::HeFFTe_CUDA:
         case FftBackend::HeFFTe_Sycl_cuFFT: return checkMpiCudaAwareSupport();
+        case FftBackend::HeFFTe_HIP:
         case FftBackend::HeFFTe_Sycl_Rocfft: return checkMpiHipAwareSupport();
         case FftBackend::HeFFTe_Sycl_OneMkl: return checkMpiZEAwareSupport();
         default: return GpuAwareMpiStatus::NotSupported;
@@ -214,11 +215,14 @@ public:
         // initialize random input data
         std::vector<real>                in(sizeInReals);
         std::uniform_real_distribution<> dis(-10.0f, 10.0f);
-        std::minstd_rand                 gen(time(NULL) + rank);
-        std::generate(in.begin(), in.end(), [&dis, &gen]() {
-            // random number between -10 to 10
-            return dis(gen);
-        });
+        std::minstd_rand                 gen(std::time(NULL) + rank);
+        std::generate(in.begin(),
+                      in.end(),
+                      [&dis, &gen]()
+                      {
+                          // random number between -10 to 10
+                          return dis(gen);
+                      });
 
         // Transfer the real grid input data for the FFT
         copyToDeviceBuffer(
@@ -264,24 +268,26 @@ std::vector<GpuFftTestGridParams> const inputGrids{ { IVec{ 5, 6, 9 }, 4, 1 },
                                                     { IVec{ 5, 6, 9 }, 2, 2 },
                                                     { IVec{ 5, 5, 10 }, 4, 1 },
                                                     { IVec{ 5, 5, 10 }, 2, 2 } };
-std::vector<FftBackend> const           inputBackends
-{
+std::vector<FftBackend> const           inputBackends{
 #if GMX_USE_Heffte
 #    if GMX_GPU_CUDA
     FftBackend::HeFFTe_CUDA,
 #    endif
 #    if GMX_GPU_SYCL && GMX_GPU_FFT_MKL
-            FftBackend::HeFFTe_Sycl_OneMkl,
+    FftBackend::HeFFTe_Sycl_OneMkl,
 #    endif
 #    if GMX_GPU_SYCL && GMX_GPU_FFT_ROCFFT
-            FftBackend::HeFFTe_Sycl_Rocfft,
+    FftBackend::HeFFTe_Sycl_Rocfft,
 #    endif
 #    if GMX_GPU_SYCL && GMX_GPU_FFT_CUFFT
-            FftBackend::HeFFTe_Sycl_cuFFT,
+    FftBackend::HeFFTe_Sycl_cuFFT,
+#    endif
+#    if GMX_GPU_HIP
+    FftBackend::HeFFTe_HIP,
 #    endif
 #endif
 #if GMX_USE_cuFFTMp
-            FftBackend::CuFFTMp,
+    FftBackend::CuFFTMp,
 #endif
 };
 

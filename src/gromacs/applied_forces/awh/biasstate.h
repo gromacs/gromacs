@@ -56,16 +56,15 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/defaultinitializationallocator.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "coordstate.h"
 #include "dimparams.h"
 #include "histogramsize.h"
-
-struct t_commrec;
 
 namespace gmx
 {
@@ -77,6 +76,7 @@ class BiasParams;
 class BiasGrid;
 class BiasSharing;
 class CorrelationGrid;
+class MpiComm;
 class GridAxis;
 class PointState;
 
@@ -124,9 +124,9 @@ public:
     /*! \brief
      * Broadcast the bias state over the MPI ranks in this simulation.
      *
-     * \param[in] commRecord  Struct for communication.
+     * \param[in] mpiComm  MPI communicator for my group.
      */
-    void broadcast(const t_commrec* commRecord);
+    void broadcast(const MpiComm& mpiComm);
 
     /*! \brief
      * Allocate and initialize a bias history with the given bias state.
@@ -573,6 +573,8 @@ private:
 
     //! Object for sharing biases over multiple simulations, can be nullptr
     const BiasSharing* biasSharing_;
+    //! Buffer for reductions over sharing simulations
+    FastVector<double> biasSharingBuffer_;
 
     /* Correlation tensor time integral, for all points, shared across all ranks (weighted based on
      * the local weight contribution). The structure is [points][correlationTensorIndex].

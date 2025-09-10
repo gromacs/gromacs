@@ -44,7 +44,7 @@
 #ifndef GMX_NBNXM_PAIRLIST_IMASK_H
 #define GMX_NBNXM_PAIRLIST_IMASK_H
 
-namespace Nbnxm
+namespace gmx
 {
 
 /*! \brief Returns a diagonal interaction mask with atoms j<i masked out
@@ -148,6 +148,6 @@ static gmx_unused uint32_t getImask(const bool maskOutSubDiagonal, const int ci,
     }
 }
 
-} // namespace Nbnxm
+} // namespace gmx
 
 #endif // GMX_NBNXM_PAIRLIST_IMASK_H

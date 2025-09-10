@@ -1,0 +1,129 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <OutputFiles Name="Files">
+    <File Name="-evisco">
+      <XvgLegend Name="Legend">
+        <String Name="XvgLegend"><![CDATA[
+title "Shear viscosity using Einstein relation"
+xaxis  label "Time (ps)"
+yaxis  label "(kg m\S-1\N s\S-1\N)"
+TYPE xy
+]]></String>
+      </XvgLegend>
+      <XvgData Name="Data">
+        <Sequence Name="Row0">
+          <Int Name="Length">5</Int>
+          <Real>0.1</Real>
+          <Real>0</Real>
+          <Real>0</Real>
+          <Real>0</Real>
+          <Real>0</Real>
+        </Sequence>
+        <Sequence Name="Row1">
+          <Int Name="Length">5</Int>
+          <Real>0.3</Real>
+          <Real>0.000176958</Real>
+          <Real>0.0001997</Real>
+          <Real>0.000227414</Real>
+          <Real>0.000201357</Real>
+        </Sequence>
+        <Sequence Name="Row2">
+          <Int Name="Length">5</Int>
+          <Real>0.5</Real>
+          <Real>0.00032058</Real>
+          <Real>0.000336305</Real>
+          <Real>0.000523275</Real>
+          <Real>0.000393386</Real>
+        </Sequence>
+        <Sequence Name="Row3">
+          <Int Name="Length">5</Int>
+          <Real>0.7</Real>
+          <Real>0.000438803</Real>
+          <Real>0.000332506</Real>
+          <Real>0.000720448</Real>
+          <Real>0.000497252</Real>
+        </Sequence>
+        <Sequence Name="Row4">
+          <Int Name="Length">5</Int>
+          <Real>0.9</Real>
+          <Real>0.000479678</Real>
+          <Real>0.00026701</Real>
+          <Real>0.000834344</Real>
+          <Real>0.000527011</Real>
+        </Sequence>
+        <Sequence Name="Row5">
+          <Int Name="Length">5</Int>
+          <Real>1.1</Real>
+          <Real>0.000518115</Real>
+          <Real>0.0002171</Real>
+          <Real>0.000888733</Real>
+          <Real>0.000541316</Real>
+        </Sequence>
+      </XvgData>
+    </File>
+    <File Name="-eviscoi">
+      <XvgLegend Name="Legend">
+        <String Name="XvgLegend"><![CDATA[
+title "Shear viscosity integral"
+xaxis  label "Time (ps)"
+yaxis  label "(kg m\S-1\N s\S-1\N ps)"
+TYPE xy
+]]></String>
+      </XvgLegend>
+      <XvgData Name="Data">
+        <Sequence Name="Row0">
+          <Int Name="Length">5</Int>
+          <Real>0</Real>
+          <Real>0</Real>
+          <Real>0</Real>
+          <Real>0</Real>
+          <Real>0</Real>
+        </Sequence>
+        <Sequence Name="Row1">
+          <Int Name="Length">5</Int>
+          <Real>0.2</Real>
+          <Real>3.53916e-05</Real>
+          <Real>3.994e-05</Real>
+          <Real>4.54828e-05</Real>
+          <Real>4.02715e-05</Real>
+        </Sequence>
+        <Sequence Name="Row2">
+          <Int Name="Length">5</Int>
+          <Real>0.4</Real>
+          <Real>9.95076e-05</Real>
+          <Real>0.000107201</Real>
+          <Real>0.000150138</Real>
+          <Real>0.000118949</Real>
+        </Sequence>
+        <Sequence Name="Row3">
+          <Int Name="Length">5</Int>
+          <Real>0.6</Real>
+          <Real>0.000187268</Real>
+          <Real>0.000173702</Real>
+          <Real>0.000294227</Real>
+          <Real>0.000218399</Real>
+        </Sequence>
+        <Sequence Name="Row4">
+          <Int Name="Length">5</Int>
+          <Real>0.8</Real>
+          <Real>0.000283204</Real>
+          <Real>0.000227104</Real>
+          <Real>0.000461096</Real>
+          <Real>0.000323801</Real>
+        </Sequence>
+        <Sequence Name="Row5">
+          <Int Name="Length">5</Int>
+          <Real>1</Real>
+          <Real>0.000386827</Real>
+          <Real>0.000270524</Real>
+          <Real>0.000638843</Real>
+          <Real>0.000432064</Real>
+        </Sequence>
+      </XvgData>
+    </File>
+    <File Name="-vis"></File>
+    <File Name="-o"></File>
+    <File Name="-corr"></File>
+  </OutputFiles>
+</ReferenceData>

@@ -63,6 +63,12 @@ namespace gmx
  * Public accessor methods in this class do not throw, but assert if data is
  * accessed before it is available.
  *
+ * The x axis defaults to one with uniform spacing between values,
+ * which caters to a typical case of e.g. a time series equally spaced
+ * in time across a series of trajectory frames. However, non-uniform
+ * cases are supported via setXAxisValue(), which can be useful when
+ * handling other kinds of data.
+ *
  * \todo
  * Add support for multiple data sets.
  *
@@ -74,7 +80,7 @@ class AbstractAnalysisArrayData : public AbstractAnalysisData
 public:
     ~AbstractAnalysisArrayData() override;
 
-    int frameCount() const override { return bReady_ ? rowCount_ : 0; }
+    size_t frameCount() const override { return bReady_ ? rowCount_ : 0; }
 
     /*! \brief
      * Returns the number of rows in the data array.
@@ -82,28 +88,26 @@ public:
      * This function is identical to frameCount(), except that frameCount()
      * returns 0 before valuesReady() has been called.
      */
-    int rowCount() const { return rowCount_; }
+    size_t rowCount() const { return rowCount_; }
     //! Returns true if values have been allocated.
     bool isAllocated() const { return !value_.empty(); }
-    //! Returns the x value of the first frame.
-    real xstart() const { return xvalue_[0]; }
-    //! Returns the step between frame x values.
+    //! Returns the step between frame x values when the x axis is uniform.
     real xstep() const
     {
         GMX_ASSERT(bUniformX_, "Accessing x step for non-uniform data");
         return xstep_;
     }
     //! Returns the x value of a row.
-    real xvalue(int row) const
+    real xvalue(size_t row) const
     {
-        GMX_ASSERT(row >= 0 && row < rowCount(), "Row index out of range");
+        GMX_ASSERT(row < rowCount(), "Row index out of range");
         return xvalue_[row];
     }
     //! Returns a given array element.
-    const AnalysisDataValue& value(int row, int col) const
+    const AnalysisDataValue& value(size_t row, size_t col) const
     {
-        GMX_ASSERT(row >= 0 && row < rowCount(), "Row index out of range");
-        GMX_ASSERT(col >= 0 && col < columnCount(), "Column index out of range");
+        GMX_ASSERT(row < rowCount(), "Row index out of range");
+        GMX_ASSERT(col < columnCount(), "Column index out of range");
         GMX_ASSERT(isAllocated(), "Data array not allocated");
         return value_[row * columnCount() + col];
     }
@@ -125,7 +129,7 @@ protected:
      *
      * See AbstractAnalysisData::setColumnCount() for exception behavior.
      */
-    void setColumnCount(int ncols);
+    void setColumnCount(size_t ncols);
     /*! \brief
      * Sets the number of rows in the data array.
      *
@@ -133,9 +137,13 @@ protected:
      *
      * Cannot be called after allocateValues().
      *
+     * Cannot be called after setXAxisValues() made a non-uniform X
+     * axis unless \c ncols equals the largest such X-axis value
+     * previously set.
+     *
      * Does not throw.
      */
-    void setRowCount(int rowCount);
+    void setRowCount(size_t rowCount);
     /*! \brief
      * Allocates memory for the values.
      *
@@ -149,6 +157,8 @@ protected:
     /*! \brief
      * Sets the values reported as x values for frames.
      *
+     * Afterwards, the X axis is uniform.
+     *
      * \param[in] start  x value for the first frame.
      * \param[in] step   Step between x values of successive frames.
      *
@@ -161,19 +171,27 @@ protected:
     /*! \brief
      * Sets a single value reported as x value for frames.
      *
+     * Afterwards, the X axis is non-uniform. Can be used to adjust
+     * the values of an X axis created with setXAxis().
+     *
+     * The row count is never changed, and might need to be managed
+     * explicitly with setRowCount() if needed.
+     *
      * \param[in] row    Row/frame for which to set the value.
      * \param[in] value  x value for the frame specified by \p row.
+     *
+     * When the row count is already set, \c row must be in range.
      *
      * Must not be called after valuesReady().
      *
      * Does not throw.
      */
-    void setXAxisValue(int row, real value);
+    void setXAxisValue(size_t row, real value);
     //! Returns a reference to a given array element.
-    AnalysisDataValue& value(int row, int col)
+    AnalysisDataValue& value(size_t row, size_t col)
     {
-        GMX_ASSERT(row >= 0 && row < rowCount(), "Row index out of range");
-        GMX_ASSERT(col >= 0 && col < columnCount(), "Column index out of range");
+        GMX_ASSERT(row < rowCount(), "Row index out of range");
+        GMX_ASSERT(col < columnCount(), "Column index out of range");
         GMX_ASSERT(isAllocated(), "Data array not allocated");
         return value_[row * columnCount() + col];
     }
@@ -201,16 +219,24 @@ protected:
     static void copyContents(const AbstractAnalysisArrayData* src, AbstractAnalysisArrayData* dest);
 
 private:
-    AnalysisDataFrameRef tryGetDataFrameInternal(int index) const override;
-    bool                 requestStorageInternal(int nframes) override;
+    AnalysisDataFrameRef tryGetDataFrameInternal(size_t index) const override;
+    bool                 requestStorageInternal(size_t nframes) override;
 
-    int                            rowCount_;
-    AnalysisDataPointSetInfo       pointSetInfo_;
+    //! The number of rows
+    size_t                   rowCount_;
+    AnalysisDataPointSetInfo pointSetInfo_;
+    //! The values of the columns of data
     std::vector<AnalysisDataValue> value_;
-    std::vector<real>              xvalue_;
-    real                           xstep_;
-    bool                           bUniformX_;
-    bool                           bReady_;
+    //! The values of the X axis
+    std::vector<real> xvalue_;
+    //! Starting value for a uniform X axis
+    real xstart_;
+    //! Interval between x values for a uniform X axis
+    real xstep_;
+    //! Whether the X axis is uniform
+    bool bUniformX_;
+    //! Whether the data set is ready, ie. valuesReady() has been called
+    bool bReady_;
 
     // Copy and assign disallowed by base.
 };

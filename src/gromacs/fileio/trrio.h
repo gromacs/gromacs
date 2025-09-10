@@ -39,9 +39,9 @@
 #include <filesystem>
 #include <limits>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 /**************************************************************
  *

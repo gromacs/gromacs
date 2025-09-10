@@ -523,9 +523,9 @@ TEST_F(SimdFloatingpointTest, cvtDouble2Float)
 {
     alignas(GMX_SIMD_ALIGNMENT) float f[GMX_SIMD_FLOAT_WIDTH];
     alignas(GMX_SIMD_ALIGNMENT) double d[GMX_SIMD_FLOAT_WIDTH]; // Yes, double array length should be same as float
-    int                                i;
-    SimdFloat                          vf;
-    SimdDouble                         vd0;
+    int                    i;
+    SimdFloat              vf;
+    SimdDouble             vd0;
     FloatingPointTolerance tolerance(defaultRealTolerance());
 
     // This fills elements for pd1 too when double width is 2*single width
@@ -541,7 +541,7 @@ TEST_F(SimdFloatingpointTest, cvtDouble2Float)
     SimdDouble vd1 = load<SimdDouble>(d + GMX_SIMD_DOUBLE_WIDTH); // load upper half of data
     vf             = cvtDD2F(vd0, vd1);
 #        elif (GMX_SIMD_FLOAT_WIDTH == GMX_SIMD_DOUBLE_WIDTH)
-    vf  = cvtD2F(vd0);
+    vf = cvtD2F(vd0);
 #        else
 #            error Width of float SIMD must either be identical to double, or twice the width.
 #        endif

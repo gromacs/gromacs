@@ -53,8 +53,6 @@
 
 #include <filesystem>
 
-#include "thread_mpi/lock.h"
-
 #include "gromacs/fileio/xdrf.h"
 
 struct t_fileio
@@ -70,15 +68,6 @@ struct t_fileio
 
     t_fileio *next, *prev; /* next and previous file pointers in the
                               linked list */
-    tMPI_Lock_t mtx;       /* content locking mutex. This is a fast lock
-                              for performance reasons: in some cases every
-                              single byte that gets read/written requires
-                              a lock */
 };
-
-/** lock the mutex associated with a fio  */
-void gmx_fio_lock(t_fileio* fio);
-/** unlock the mutex associated with a fio  */
-void gmx_fio_unlock(t_fileio* fio);
 
 #endif

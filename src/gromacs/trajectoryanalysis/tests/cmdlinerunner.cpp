@@ -65,6 +65,10 @@
 
 struct t_pbc;
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -166,3 +170,5 @@ TEST_F(TrajectoryAnalysisCommandLineRunnerTest, FailsWithTrajectorySubsetWithout
 }
 
 } // namespace
+} // namespace test
+} // namespace gmx

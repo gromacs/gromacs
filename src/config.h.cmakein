@@ -72,8 +72,8 @@
 #cmakedefine01 GMX_GPU_FFT_VKFFT
 /* Use MKL library for FFT on GPUs */
 #cmakedefine01 GMX_GPU_FFT_MKL
-/* Use oneMKL interface library for FFT on GPUs */
-#cmakedefine01 GMX_GPU_FFT_ONEMKL
+/* Use oneMath interface library for FFT on GPUs */
+#cmakedefine01 GMX_GPU_FFT_ONEMATH
 /* Use rocFFT library for FFT on GPUs */
 #cmakedefine01 GMX_GPU_FFT_ROCFFT
 /* Use hipFFT library for FFT on GPUs */
@@ -126,9 +126,6 @@
 /* AVX-512F foundation level instruction SIMD */
 #cmakedefine01 GMX_SIMD_X86_AVX_512
 
-/* AVX-512ER foundation level instruction SIMD */
-#cmakedefine01 GMX_SIMD_X86_AVX_512_KNL
-
 /* ARM (AArch64) NEON Advanced SIMD instruction set level was selected */
 #cmakedefine01 GMX_SIMD_ARM_NEON_ASIMD
 
@@ -143,9 +140,6 @@
 
 /* Reference SIMD implementation for testing */
 #cmakedefine01 GMX_SIMD_REFERENCE
-
-/* String for SIMD instruction choice (for writing to log files and stdout) */
-#define GMX_SIMD_STRING "@GMX_SIMD_ACTIVE@"
 
 /* Calling convention string (if any) for routines with SIMD variable args */
 #define gmx_simdcall @GMX_SIMD_CALLING_CONVENTION@
@@ -171,8 +165,8 @@
 /* Compile to use TNG library */
 #cmakedefine01 GMX_USE_TNG
 
-/* Add support for tracing using Extrae */
-#cmakedefine01 HAVE_EXTRAE
+/* Use (and compile) HDF5 related i/o features (H5MD) */
+#cmakedefine01 GMX_USE_HDF5
 
 /* Enable NVIDIA NVTX instrumentation */
 #cmakedefine01 GMX_USE_NVTX
@@ -256,8 +250,14 @@
 /* Define if CUDA GPU acceleration is compiled */
 #cmakedefine01 GMX_GPU_CUDA
 
-/* Define if CUDA Graphs support is available */
+/* Define if CUDA Graphs or SYCL Graph support is available */
 #cmakedefine01 GMX_HAVE_GPU_GRAPH_SUPPORT
+
+/* Define if sycl::ext::oneapi::experimental::submit and cgh.ext_codeplay_enqueue_native_command should be used */
+#cmakedefine01 GMX_SYCL_ENABLE_EXPERIMENTAL_SUBMIT_API
+
+/* Define if sycl::aspect::ext_oneapi_limited_graph exists */
+#cmakedefine01 HAVE_SYCL_ASPECT_EXT_ONEAPI_LIMITED_GRAPH
 
 /* Define if OpenCL GPU acceleration is compiled */
 #cmakedefine01 GMX_GPU_OPENCL
@@ -265,24 +265,23 @@
 /* Define if SYCL GPU acceleration is compiled */
 #cmakedefine01 GMX_GPU_SYCL
 
-/* Define if AdaptiveCpp (hipSYCL) is used for SYCL support */
+/* Define if AdaptiveCpp is used for SYCL support */
 #cmakedefine01 GMX_SYCL_ACPP
-#define GMX_SYCL_HIPSYCL GMX_SYCL_ACPP
 
 /* Define if Intel oneAPI DPC++ is used for SYCL support */
 #cmakedefine01 GMX_SYCL_DPCPP
 
 // Define if AdaptiveCpp has HIP target(s)
 #cmakedefine01 GMX_ACPP_HAVE_HIP_TARGET
-#define GMX_HIPSYCL_HAVE_HIP_TARGET GMX_ACPP_HAVE_HIP_TARGET
 
 // Define if AdaptiveCpp has CUDA target(s)
 #cmakedefine01 GMX_ACPP_HAVE_CUDA_TARGET
-#define GMX_HIPSYCL_HAVE_CUDA_TARGET GMX_ACPP_HAVE_CUDA_TARGET
 
-// Define if AdaptiveCpp should have AMD RDNA support (32-wide execution)
-#cmakedefine01 GMX_ACPP_ENABLE_AMD_RDNA_SUPPORT
-#define GMX_HIPSYCL_ENABLE_AMD_RDNA_SUPPORT GMX_ACPP_ENABLE_AMD_RDNA_SUPPORT
+// Define if AdaptiveCpp has generic target
+#cmakedefine01 GMX_ACPP_HAVE_GENERIC_TARGET
+
+// Define if AdaptiveCpp/HIP should have AMD RDNA support (32-wide execution)
+#cmakedefine01 GMX_ENABLE_AMD_RDNA_SUPPORT
 
 /* Use a single compilation unit when compiling the CUDA (non-bonded) kernels.  */
 #cmakedefine01 GMX_CUDA_NB_SINGLE_COMPILATION_UNIT
@@ -468,15 +467,6 @@
 /* Define if we have fedisableexcept */
 #cmakedefine01 HAVE_FEDISABLEEXCEPT
 
-/* Define if we have MKL available */
-#cmakedefine01 HAVE_LIBMKL
-
-// Describes the origin of BLAS routines
-#define GMX_DESCRIBE_BLAS "@GMX_DESCRIBE_BLAS@"
-
-// Describes the origin of LAPACK routines
-#define GMX_DESCRIBE_LAPACK "@GMX_DESCRIBE_LAPACK@"
-
 /* Define if we have lmfit support */
 #cmakedefine01 HAVE_LMFIT
 
@@ -484,13 +474,22 @@
 #cmakedefine01 HAVE_MUPARSER
 
 /* Define if we are building with Colvars */
-#cmakedefine01 HAVE_COLVARS
+#cmakedefine01 GMX_HAVE_COLVARS
+
+/* Define if we are building with Torch */
+#cmakedefine01 GMX_TORCH
+
+/* Define if we are building with an external FMM implementation */
+#cmakedefine01 GMX_USE_EXT_FMM
 
 /* Build using clang analyzer */
 #cmakedefine01 GMX_CLANG_ANALYZER
 
 /* Use Interactive Molecular Dynamics */
 #cmakedefine01 GMX_IMD
+
+/* Enable vectorization of the 1x1 non-SIMD non-bonded kernel */
+#cmakedefine01 GMX_ENABLE_NBNXM_CPU_VECTORIZATION
 
 /*! \endcond */
 

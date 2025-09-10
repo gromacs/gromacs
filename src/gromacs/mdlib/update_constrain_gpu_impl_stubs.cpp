@@ -45,11 +45,11 @@
 
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/math/matrix.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/update_constrain_gpu.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 class DeviceContext;
 class DeviceStream;

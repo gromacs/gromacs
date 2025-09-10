@@ -85,7 +85,7 @@ protected:
     t_pbc   gmxPbc_;
 
     // GROMACS logger instance
-    const MDLogger* logger_ = nullptr;
+    const MDLogger& logger_;
 
     //! Activate or not the parsing of the Colvars config file
     bool doParsing_;
@@ -113,7 +113,7 @@ public:
     ColvarProxyGromacs(const std::string&                        colvarsConfigString,
                        t_atoms                                   atoms,
                        PbcType                                   pbcType,
-                       const MDLogger*                           logger,
+                       const MDLogger&                           logger,
                        bool                                      doParsing,
                        const std::map<std::string, std::string>& inputStrings,
                        real                                      ensembleTemperature,

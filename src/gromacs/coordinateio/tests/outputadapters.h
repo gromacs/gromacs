@@ -66,10 +66,10 @@
 #include "gromacs/coordinateio/outputadapters/setvelocities.h"
 #include "gromacs/coordinateio/requirements.h"
 #include "gromacs/coordinateio/tests/coordinate_test.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "testutils/testasserts.h"
 

@@ -52,7 +52,6 @@
 #include "gromacs/math/do_fit.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/nrjac.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/fcdata.h"
@@ -76,6 +75,7 @@
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/vec.h"
 
 using gmx::ArrayRef;
 using gmx::RVec;
@@ -310,10 +310,10 @@ t_oriresdata::t_oriresdata(FILE*                     fplog,
                     ms->numSimulations_);
         }
 
-        check_multi_int(fplog, ms, numRestraints, "the number of orientation restraints", FALSE);
+        check_multi_int(fplog, *ms, numRestraints, "the number of orientation restraints", FALSE);
         check_multi_int(
-                fplog, ms, numFitAtoms, "the number of fit atoms for orientation restraining", FALSE);
-        check_multi_int(fplog, ms, ir.nsteps, "nsteps", FALSE);
+                fplog, *ms, numFitAtoms, "the number of fit atoms for orientation restraining", FALSE);
+        check_multi_int(fplog, *ms, ir.nsteps, "nsteps", FALSE);
         /* Copy the reference coordinates from the main to the other nodes */
         gmx_sum_sim(DIM * referenceCoordinates_.size(), as_rvec_array(referenceCoordinates_.data())[0], ms);
     }
@@ -664,20 +664,20 @@ real calc_orires_dev(const gmx_multisim_t* ms,
     /* Approx. 120*nfa/3 flops */
 }
 
-real orires(int             nfa,
-            const t_iatom   forceatoms[],
-            const t_iparams ip[],
-            const rvec      x[],
-            rvec4           f[],
-            rvec            fshift[],
-            const t_pbc*    pbc,
-            real gmx_unused lambda,
+real orires(int              nfa,
+            const t_iatom    forceatoms[],
+            const t_iparams  ip[],
+            const rvec       x[],
+            rvec4            f[],
+            rvec             fshift[],
+            const t_pbc*     pbc,
+            real gmx_unused  lambda,
             real gmx_unused* dvdlambda,
             gmx::ArrayRef<const real> /*charge*/,
-            t_fcdata gmx_unused* fcd,
+            t_fcdata gmx_unused*     fcd,
             t_disresdata gmx_unused* disresdata,
             t_oriresdata*            oriresdata,
-            int gmx_unused* global_atom_index)
+            int gmx_unused*          global_atom_index)
 {
     int      ex, power, ki = gmx::c_centralShiftIndex;
     real     r2, invr, invr2, fc, smooth_fc, dev, devins, pfac;

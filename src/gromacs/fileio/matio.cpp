@@ -49,7 +49,6 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -193,7 +192,7 @@ static char* fgetline(char** line, int llmax, int* llalloc, FILE* in)
         srenew(*line, llmax + 1);
         *llalloc = llmax;
     }
-    fg = fgets(*line, llmax, in);
+    fg = std::fgets(*line, llmax, in);
     trim(*line);
 
     return fg;
@@ -306,7 +305,7 @@ static t_matrix read_xpm_entry(FILE* in)
         }
     }
 
-    if (!line_buf || strncmp(line_buf, "static", 6) != 0)
+    if (!line_buf || std::strncmp(line_buf, "static", 6) != 0)
     {
         gmx_input("Invalid XPixMap");
     }
@@ -459,7 +458,7 @@ static t_matrix read_xpm_entry(FILE* in)
         }
         bSetLine = TRUE;
         GMX_RELEASE_ASSERT(line, "Need to have valid line to parse");
-        if (strstr(line, "x-axis"))
+        if (std::strstr(line, "x-axis"))
         {
             line = std::strstr(line, "x-axis");
             skipstr(line);

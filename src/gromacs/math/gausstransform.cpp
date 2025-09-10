@@ -55,7 +55,6 @@
 #include "gromacs/math/multidimarray.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdspan/extensions.h"
 #include "gromacs/mdspan/extents.h"
 #include "gromacs/mdspan/layouts.h"
@@ -63,6 +62,7 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 namespace gmx
 {
@@ -75,8 +75,8 @@ class GaussianOn1DLattice::Impl
 {
 public:
     Impl(int numGridPointsForSpreadingHalfWidth, real sigma);
-    ~Impl()                 = default;
-    Impl(const Impl& other) = default;
+    ~Impl()                            = default;
+    Impl(const Impl& other)            = default;
     Impl& operator=(const Impl& other) = default;
 
     /*! \brief evaluate Gaussian function at all lattice points
@@ -126,10 +126,10 @@ GaussianOn1DLattice::Impl::Impl(int numGridPointsForSpreadingHalfWidth, real sig
             std::min(maxEvaluatedSpreadDistance_,
                      static_cast<int>(std::floor(sigma * std::sqrt(-2.0 * c_logMinFloat))) - 1);
 
-    std::generate_n(
-            std::back_inserter(e3_), maxEvaluatedSpreadDistance_ + 1, [sigma, latticeIndex = 0]() mutable {
-                return std::exp(-0.5 * square(latticeIndex++ / sigma));
-            });
+    std::generate_n(std::back_inserter(e3_),
+                    maxEvaluatedSpreadDistance_ + 1,
+                    [sigma, latticeIndex = 0]() mutable
+                    { return std::exp(-0.5 * square(latticeIndex++ / sigma)); });
 
     std::fill(std::begin(spreadingResult_), std::end(spreadingResult_), 0.);
 };
@@ -267,9 +267,10 @@ OuterProductEvaluator::operator()(ArrayRef<const float> x, ArrayRef<const float>
     for (gmx::Index xIndex = 0; xIndex < ssize(x); ++xIndex)
     {
         const auto xValue = x[xIndex];
-        std::transform(std::begin(y), std::end(y), begin(data_.asView()[xIndex]), [xValue](float yValue) {
-            return xValue * yValue;
-        });
+        std::transform(std::begin(y),
+                       std::end(y),
+                       begin(data_.asView()[xIndex]),
+                       [xValue](float yValue) { return xValue * yValue; });
     }
     return data_.asConstView();
 }
@@ -404,7 +405,7 @@ void GaussTransform3D::Impl::add(const GaussianSpreadKernelParameters::PositionA
  * GaussTransform3D
  */
 
-GaussTransform3D::GaussTransform3D(const dynamicExtents3D&                      extent,
+GaussTransform3D::GaussTransform3D(const dynamicExtents3D& extent,
                                    const GaussianSpreadKernelParameters::Shape& kernelShapeParameters) :
     impl_(new Impl(extent, kernelShapeParameters))
 {

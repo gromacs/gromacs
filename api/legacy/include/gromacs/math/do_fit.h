@@ -34,9 +34,9 @@
 #ifndef GMX_MATH_DO_FIT_H
 #define GMX_MATH_DO_FIT_H
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 real calc_similar_ind(gmx_bool bRho, int nind, const int* index, const real mass[], rvec x[], rvec xp[]);
 /* Returns RMSD or Rho (depending on bRho) over all atoms in index */

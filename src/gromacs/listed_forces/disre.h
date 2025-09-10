@@ -43,16 +43,16 @@
 
 #include <cstdio>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
+struct gmx_domdec_t;
 struct gmx_mtop_t;
 struct gmx_multisim_t;
 class history_t;
-struct t_commrec;
 struct t_disresdata;
 struct t_oriresdata;
 struct t_fcdata;
@@ -67,6 +67,7 @@ namespace gmx
 {
 template<typename>
 class ArrayRef;
+class MpiComm;
 } // namespace gmx
 
 //! Whether distance restraints are called from mdrun or from an analysis tool
@@ -102,7 +103,7 @@ void init_disres(FILE*                 fplog,
  * Calculates r and r^-3 (inst. and time averaged) for all pairs
  * and the ensemble averaged r^-6 (inst. and time averaged) for all restraints
  */
-void calc_disres_R_6(const t_commrec*      cr,
+void calc_disres_R_6(const gmx_domdec_t*   dd,
                      const gmx_multisim_t* ms,
                      int                   nfa,
                      const t_iatom*        fa,
@@ -122,10 +123,10 @@ real ta_disres(int                       nfa,
                real                      lambda,
                real*                     dvdlambda,
                gmx::ArrayRef<const real> charge,
-               t_fcdata gmx_unused* fcd,
-               t_disresdata*        disresdata,
-               t_oriresdata gmx_unused* oriresdata,
-               int*                     global_atom_index);
+               t_fcdata gmx_unused*      fcd,
+               t_disresdata*             disresdata,
+               t_oriresdata gmx_unused*  oriresdata,
+               int*                      global_atom_index);
 
 //! Copies the new time averages that have been calculated in calc_disres_R_6.
 void update_disres_history(const t_disresdata& disresdata, history_t* hist);

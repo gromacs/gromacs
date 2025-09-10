@@ -65,8 +65,9 @@
 namespace gmx
 {
 class OptionManagerContainer;
-} // namespace gmx
 
+namespace test
+{
 namespace
 {
 
@@ -144,6 +145,7 @@ public:
 private:
     gmx::AbstractOptionStorage* createStorage(const gmx::OptionManagerContainer& /*managers*/) const override
     {
+        //NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
         return new MockOptionStorage(*this);
     }
 };
@@ -336,3 +338,5 @@ TEST(AbstractOptionStorageTest, AllowsEmptyValues)
 }
 
 } // namespace
+} // namespace test
+} // namespace gmx

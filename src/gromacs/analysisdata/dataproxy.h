@@ -80,7 +80,7 @@ public:
      */
     AnalysisDataProxy(int firstColumn, int columnSpan, AbstractAnalysisData* data);
 
-    int frameCount() const override;
+    size_t frameCount() const override;
 
     int flags() const override;
 
@@ -89,12 +89,12 @@ public:
     void frameStarted(const AnalysisDataFrameHeader& frame) override;
     void pointsAdded(const AnalysisDataPointSetRef& points) override;
     void frameFinished(const AnalysisDataFrameHeader& header) override;
-    void frameFinishedSerial(int frameIndex) override;
+    void frameFinishedSerial(size_t frameIndex) override;
     void dataFinished() override;
 
 private:
-    AnalysisDataFrameRef tryGetDataFrameInternal(int index) const override;
-    bool                 requestStorageInternal(int nframes) override;
+    AnalysisDataFrameRef tryGetDataFrameInternal(size_t index) const override;
+    bool                 requestStorageInternal(size_t nframes) override;
 
     AbstractAnalysisData& source_;
     int                   firstColumn_;

@@ -48,6 +48,24 @@ template<typename>
 class ArrayRef;
 }
 
+//! Whether interactions of type \c ftype should have parameters converted
+bool shouldConvertInteractionType(int ftype);
+
+/*! \brief Convert the raw arrays of parameters read from the topology
+ * file to those which match the interaction type and fill into \c mtop.
+ *
+ * This can involve pre-computation e.g. for G96 interactions.
+ * Interaction parameter sets that are all zero are not added to \c mtop
+ *
+ * \param[in]  atnr    Number of atoms
+ * \param[in]  nbtypes Non-bonded interaction types
+ * \param[in]  mi      Molecule types read from topology file containing bonded-style interactions
+ * \param[in]  intermolecular_interactions  Molecule type for inter-molecular interactions
+ * \param[in]  comb    The combination rule
+ * \param[in]  reppow  The repulsion power
+ * \param[in]  fudgeQQ The 1-4 scaling factor
+ * \param[out] mtop    The molecular topology containing the converted parameters
+ */
 void convertInteractionsOfType(int                                      atnr,
                                gmx::ArrayRef<const InteractionsOfType>  nbtypes,
                                gmx::ArrayRef<const MoleculeInformation> mi,

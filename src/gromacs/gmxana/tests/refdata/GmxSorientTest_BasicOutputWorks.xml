@@ -1,0 +1,206 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <OutputFiles Name="Files">
+    <File Name="-o">
+      <XvgLegend Name="Legend">
+        <String Name="XvgLegend"><![CDATA[
+title "Solvent orientation between 0 and 0.5 nm"
+xaxis  label "cos(\xq\f{}\s1\N)"
+yaxis  label ""
+TYPE xy
+subtitle "average shell size 13.0 molecules"
+]]></String>
+      </XvgLegend>
+      <XvgData Name="Data">
+        <Sequence Name="Row0">
+          <Int Name="Length">2</Int>
+          <Real>-0.75</Real>
+          <Real>0.657825</Real>
+        </Sequence>
+        <Sequence Name="Row1">
+          <Int Name="Length">2</Int>
+          <Real>-0.25</Real>
+          <Real>1.07162</Real>
+        </Sequence>
+        <Sequence Name="Row2">
+          <Int Name="Length">2</Int>
+          <Real>0.25</Real>
+          <Real>1.14589</Real>
+        </Sequence>
+        <Sequence Name="Row3">
+          <Int Name="Length">2</Int>
+          <Real>0.75</Real>
+          <Real>1.12467</Real>
+        </Sequence>
+        <Sequence Name="Row4">
+          <Int Name="Length">2</Int>
+          <Real>1.25</Real>
+          <Real>0</Real>
+        </Sequence>
+      </XvgData>
+    </File>
+    <File Name="-no">
+      <XvgLegend Name="Legend">
+        <String Name="XvgLegend"><![CDATA[
+title "Solvent normal orientation between 0 and 0.5 nm"
+xaxis  label "cos(\xq\f{}\s2\N)"
+yaxis  label ""
+TYPE xy
+subtitle "average shell size 13.0 molecules"
+]]></String>
+      </XvgLegend>
+      <XvgData Name="Data">
+        <Sequence Name="Row0">
+          <Int Name="Length">2</Int>
+          <Real>0.25</Real>
+          <Real>0.912467</Real>
+        </Sequence>
+        <Sequence Name="Row1">
+          <Int Name="Length">2</Int>
+          <Real>0.75</Real>
+          <Real>1.08753</Real>
+        </Sequence>
+        <Sequence Name="Row2">
+          <Int Name="Length">2</Int>
+          <Real>1.25</Real>
+          <Real>0</Real>
+        </Sequence>
+      </XvgData>
+    </File>
+    <File Name="-ro">
+      <XvgLegend Name="Legend">
+        <String Name="XvgLegend"><![CDATA[
+title "Solvent orientation"
+xaxis  label "r (nm)"
+yaxis  label ""
+TYPE xy
+subtitle "as a function of distance"
+s0 legend "<cos(\xq\f{}\s1\N)>"
+s1 legend "<3cos\S2\N(\xq\f{}\s2\N)-1>"
+]]></String>
+      </XvgLegend>
+      <XvgData Name="Data">
+        <Sequence Name="Row0">
+          <Int Name="Length">3</Int>
+          <Real>0.125</Real>
+          <Real>0.508792</Real>
+          <Real>0.827131</Real>
+        </Sequence>
+        <Sequence Name="Row1">
+          <Int Name="Length">3</Int>
+          <Real>0.375</Real>
+          <Real>0.0973174</Real>
+          <Real>0.102756</Real>
+        </Sequence>
+        <Sequence Name="Row2">
+          <Int Name="Length">3</Int>
+          <Real>0.625</Real>
+          <Real>-0.0104949</Real>
+          <Real>0.00963577</Real>
+        </Sequence>
+        <Sequence Name="Row3">
+          <Int Name="Length">3</Int>
+          <Real>0.875</Real>
+          <Real>-0.00460578</Real>
+          <Real>0.0267465</Real>
+        </Sequence>
+        <Sequence Name="Row4">
+          <Int Name="Length">3</Int>
+          <Real>1.125</Real>
+          <Real>-0.00566981</Real>
+          <Real>0.0132193</Real>
+        </Sequence>
+      </XvgData>
+    </File>
+    <File Name="-co">
+      <XvgLegend Name="Legend">
+        <String Name="XvgLegend"><![CDATA[
+title "Cumulative solvent orientation"
+xaxis  label "r (nm)"
+yaxis  label ""
+TYPE xy
+subtitle "as a function of distance"
+s0 legend "cos(\xq\f{}\s1\N)"
+s1 legend "3cos\S2\N(\xq\f{}\s2\N)-1"
+]]></String>
+      </XvgLegend>
+      <XvgData Name="Data">
+        <Sequence Name="Row0">
+          <Int Name="Length">3</Int>
+          <Real>0</Real>
+          <Real>0</Real>
+          <Real>0</Real>
+        </Sequence>
+        <Sequence Name="Row1">
+          <Int Name="Length">3</Int>
+          <Real>0.25</Real>
+          <Real>0.0877228</Real>
+          <Real>0.142609</Real>
+        </Sequence>
+        <Sequence Name="Row2">
+          <Int Name="Length">3</Int>
+          <Real>0.5</Real>
+          <Real>1.33607</Real>
+          <Real>1.46072</Real>
+        </Sequence>
+        <Sequence Name="Row3">
+          <Int Name="Length">3</Int>
+          <Real>0.75</Real>
+          <Real>0.902883</Real>
+          <Real>1.85844</Real>
+        </Sequence>
+        <Sequence Name="Row4">
+          <Int Name="Length">3</Int>
+          <Real>1</Real>
+          <Real>0.54522</Real>
+          <Real>3.93545</Real>
+        </Sequence>
+        <Sequence Name="Row5">
+          <Int Name="Length">3</Int>
+          <Real>1.25</Real>
+          <Real>0.0785363</Real>
+          <Real>5.02353</Real>
+        </Sequence>
+      </XvgData>
+    </File>
+    <File Name="-rc">
+      <XvgLegend Name="Legend">
+        <String Name="XvgLegend"><![CDATA[
+title "Solvent distribution"
+xaxis  label "r (nm)"
+yaxis  label "molecules/nm"
+TYPE xy
+subtitle "as a function of distance"
+]]></String>
+      </XvgLegend>
+      <XvgData Name="Data">
+        <Sequence Name="Row0">
+          <Int Name="Length">2</Int>
+          <Real>0.125</Real>
+          <Real>20</Real>
+        </Sequence>
+        <Sequence Name="Row1">
+          <Int Name="Length">2</Int>
+          <Real>0.375</Real>
+          <Real>1488</Real>
+        </Sequence>
+        <Sequence Name="Row2">
+          <Int Name="Length">2</Int>
+          <Real>0.625</Real>
+          <Real>4788</Real>
+        </Sequence>
+        <Sequence Name="Row3">
+          <Int Name="Length">2</Int>
+          <Real>0.875</Real>
+          <Real>9008</Real>
+        </Sequence>
+        <Sequence Name="Row4">
+          <Int Name="Length">2</Int>
+          <Real>1.125</Real>
+          <Real>9548</Real>
+        </Sequence>
+      </XvgData>
+    </File>
+  </OutputFiles>
+</ReferenceData>

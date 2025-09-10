@@ -57,8 +57,6 @@
 #include "gromacs/analysisdata/modules/plot.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
@@ -80,6 +78,8 @@
 #include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 namespace gmx
 {
@@ -137,7 +137,7 @@ public:
 
     TrajectoryAnalysisModuleDataPointer startFrames(const AnalysisDataParallelOptions& opt,
                                                     const SelectionCollection& selections) override;
-    void                                analyzeFrame(int frnr, const t_trxframe& fr, t_pbc* pbc, TrajectoryAnalysisModuleData* pdata) override;
+    void analyzeFrame(int frnr, const t_trxframe& fr, t_pbc* pbc, TrajectoryAnalysisModuleData* pdata) override;
 
     void finishAnalysis(int nframes) override;
     void writeOutput() override;
@@ -549,7 +549,7 @@ void Rdf::analyzeFrame(int frnr, const t_trxframe& fr, t_pbc* pbc, TrajectoryAna
             {
                 std::fill(surfaceDist2.begin(), surfaceDist2.end(), std::numeric_limits<real>::max());
                 AnalysisNeighborhoodPairSearch pairSearch = nbsearch.startPairSearch(sel[g].position(i));
-                AnalysisNeighborhoodPair       pair;
+                AnalysisNeighborhoodPair pair;
                 while (pairSearch.findNextPair(&pair))
                 {
                     const real r2    = pair.distance2();

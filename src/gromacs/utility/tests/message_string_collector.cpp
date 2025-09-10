@@ -48,7 +48,8 @@
 
 namespace gmx
 {
-
+namespace test
+{
 namespace
 {
 
@@ -207,5 +208,5 @@ TEST(MessageStringCollectorTest, CanMoveAssign)
 }
 
 } // namespace
-
+} // namespace test
 } // namespace gmx

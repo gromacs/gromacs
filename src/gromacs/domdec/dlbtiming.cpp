@@ -185,7 +185,7 @@ static double force_flop_count(const t_nrnb* nrnb)
          * for the normal loops and again half it for water loops.
          */
         const char* name = nrnb_str(i);
-        if (strstr(name, "W3") != nullptr || strstr(name, "W4") != nullptr)
+        if (std::strstr(name, "W3") != nullptr || std::strstr(name, "W4") != nullptr)
         {
             sum += nrnb->n[i] * 0.25 * cost_nrnb(i);
         }
@@ -197,7 +197,7 @@ static double force_flop_count(const t_nrnb* nrnb)
     for (int i = eNR_NBKERNEL_FREE_ENERGY; i <= eNR_NB14; i++)
     {
         const char* name = nrnb_str(i);
-        if (strstr(name, "W3") != nullptr || strstr(name, "W4") != nullptr)
+        if (std::strstr(name, "W3") != nullptr || std::strstr(name, "W4") != nullptr)
         {
             sum += nrnb->n[i] * cost_nrnb(i);
         }

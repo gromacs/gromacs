@@ -41,6 +41,7 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <limits>
 #include <string>
 
 #include "gromacs/commandline/filenm.h"
@@ -56,8 +57,6 @@
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/linearalgebra/eigensolver.h"
 #include "gromacs/math/do_fit.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
@@ -75,6 +74,8 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/sysinfo.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 struct gmx_output_env_t;
 
@@ -157,11 +158,11 @@ int gmx_covar(int argc, char* argv[])
     t_pargs         pa[] = {
         { "-fit", FALSE, etBOOL, { &bFit }, "Fit to a reference structure" },
         { "-ref",
-          FALSE,
-          etBOOL,
-          { &bRef },
-          "Use the deviation from the conformation in the structure file instead of from the "
-          "average" },
+                  FALSE,
+                  etBOOL,
+                  { &bRef },
+                  "Use the deviation from the conformation in the structure file instead of from the "
+                          "average" },
         { "-mwa", FALSE, etBOOL, { &bM }, "Mass-weighted covariance analysis" },
         { "-last", FALSE, etINT, { &end }, "Last eigenvector to write away (-1 is till the last)" },
         { "-pbc", FALSE, etBOOL, { &bPBC }, "Apply corrections for periodic boundary conditions" }
@@ -312,7 +313,8 @@ int gmx_covar(int argc, char* argv[])
     snew(x, natoms);
     snew(xav, natoms);
     ndim = natoms * DIM;
-    if (std::sqrt(static_cast<real>(INT64_MAX)) < static_cast<real>(ndim))
+    // eigensolver() currently takes int for size arguments
+    if (gmx::square<int64_t>(ndim) > std::numeric_limits<int>::max())
     {
         gmx_fatal(FARGS, "Number of degrees of freedoms to large for matrix.\n");
     }
@@ -326,7 +328,7 @@ int gmx_covar(int argc, char* argv[])
         fprintf(stderr,
                 "\nWARNING: number of atoms in structure file (%d) and trajectory (%d) do not "
                 "match\n",
-                natoms,
+                atoms->nr,
                 nat);
     }
     gmx::throwErrorIfIndexOutOfBounds({ ifit, ifit + nfit }, nat, "fitting");
@@ -626,7 +628,7 @@ int gmx_covar(int argc, char* argv[])
 
     std::memcpy(eigenvectors, mat, ndim * ndim * sizeof(real));
     fprintf(stderr, "\nDiagonalizing ...\n");
-    fflush(stderr);
+    std::fflush(stderr);
     eigensolver(eigenvectors, ndim, 0, ndim, eigenvalues, mat);
     sfree(eigenvectors);
 

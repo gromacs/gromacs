@@ -60,6 +60,10 @@
 #include "testutils/textblockmatchers.h"
 #include "testutils/xvgtest.h"
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -199,3 +203,5 @@ TEST_F(MindistTest, matrixWorks)
 // TODO test periodic image - needs a tpr?
 
 } // namespace
+} // namespace test
+} // namespace gmx

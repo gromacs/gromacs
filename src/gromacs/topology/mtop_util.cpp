@@ -49,7 +49,6 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/atominfo.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/block.h"
@@ -70,6 +69,7 @@
 #include "gromacs/utility/range.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vectypes.h"
 
 void gmx_mtop_count_atomtypes(const gmx_mtop_t& mtop, int state, int typecount[])
 {
@@ -202,36 +202,36 @@ static void atomcat(t_atoms* dest, const t_atoms* src, int copies, int maxres_re
     /* residue information */
     for (l = dest->nres, j = 0; (j < copies); j++, l += src->nres)
     {
-        memcpy(reinterpret_cast<char*>(&(dest->resinfo[l])),
-               reinterpret_cast<char*>(&(src->resinfo[0])),
-               static_cast<size_t>(src->nres * sizeof(src->resinfo[0])));
+        std::memcpy(reinterpret_cast<char*>(&(dest->resinfo[l])),
+                    reinterpret_cast<char*>(&(src->resinfo[0])),
+                    static_cast<size_t>(src->nres * sizeof(src->resinfo[0])));
     }
 
     for (l = destnr, j = 0; (j < copies); j++, l += srcnr)
     {
-        memcpy(reinterpret_cast<char*>(&(dest->atom[l])),
-               reinterpret_cast<char*>(&(src->atom[0])),
-               static_cast<size_t>(srcnr * sizeof(src->atom[0])));
-        memcpy(reinterpret_cast<char*>(&(dest->atomname[l])),
-               reinterpret_cast<char*>(&(src->atomname[0])),
-               static_cast<size_t>(srcnr * sizeof(src->atomname[0])));
+        std::memcpy(reinterpret_cast<char*>(&(dest->atom[l])),
+                    reinterpret_cast<char*>(&(src->atom[0])),
+                    static_cast<size_t>(srcnr * sizeof(src->atom[0])));
+        std::memcpy(reinterpret_cast<char*>(&(dest->atomname[l])),
+                    reinterpret_cast<char*>(&(src->atomname[0])),
+                    static_cast<size_t>(srcnr * sizeof(src->atomname[0])));
         if (dest->haveType)
         {
-            memcpy(reinterpret_cast<char*>(&(dest->atomtype[l])),
-                   reinterpret_cast<char*>(&(src->atomtype[0])),
-                   static_cast<size_t>(srcnr * sizeof(src->atomtype[0])));
+            std::memcpy(reinterpret_cast<char*>(&(dest->atomtype[l])),
+                        reinterpret_cast<char*>(&(src->atomtype[0])),
+                        static_cast<size_t>(srcnr * sizeof(src->atomtype[0])));
             if (dest->haveBState)
             {
-                memcpy(reinterpret_cast<char*>(&(dest->atomtypeB[l])),
-                       reinterpret_cast<char*>(&(src->atomtypeB[0])),
-                       static_cast<size_t>(srcnr * sizeof(src->atomtypeB[0])));
+                std::memcpy(reinterpret_cast<char*>(&(dest->atomtypeB[l])),
+                            reinterpret_cast<char*>(&(src->atomtypeB[0])),
+                            static_cast<size_t>(srcnr * sizeof(src->atomtypeB[0])));
             }
         }
         if (dest->havePdbInfo)
         {
-            memcpy(reinterpret_cast<char*>(&(dest->pdbinfo[l])),
-                   reinterpret_cast<char*>(&(src->pdbinfo[0])),
-                   static_cast<size_t>(srcnr * sizeof(src->pdbinfo[0])));
+            std::memcpy(reinterpret_cast<char*>(&(dest->pdbinfo[l])),
+                        reinterpret_cast<char*>(&(src->pdbinfo[0])),
+                        static_cast<size_t>(srcnr * sizeof(src->pdbinfo[0])));
         }
     }
 

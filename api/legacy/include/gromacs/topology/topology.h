@@ -38,7 +38,6 @@
 
 #include <vector>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/forcefieldparameters.h"
@@ -48,6 +47,7 @@
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/unique_cptr.h"
+#include "gromacs/utility/vectypes.h"
 
 /*! \brief Molecules type data: atoms, interactions and exclusions */
 struct gmx_moltype_t

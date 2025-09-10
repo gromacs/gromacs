@@ -50,8 +50,6 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/fileio/filetypes.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/atoms.h"
@@ -60,6 +58,8 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "testutils/stringtest.h"
 #include "testutils/testfilemanager.h"

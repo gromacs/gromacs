@@ -54,6 +54,8 @@
 
 namespace gmx
 {
+namespace test
+{
 namespace
 {
 
@@ -142,4 +144,5 @@ TEST_F(PreprocessingAtomTypesTest, NoNameFromIncorrectTypeNumber)
 }
 
 } // namespace
+} // namespace test
 } // namespace gmx

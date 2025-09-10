@@ -48,14 +48,13 @@
 namespace gmx
 {
 
-void AnalysisDataFrameAverager::setColumnCount(int columnCount)
+void AnalysisDataFrameAverager::setColumnCount(size_t columnCount)
 {
-    GMX_RELEASE_ASSERT(columnCount >= 0, "Invalid column count");
     GMX_RELEASE_ASSERT(values_.empty(), "Cannot initialize multiple times");
     values_.resize(columnCount);
 }
 
-void AnalysisDataFrameAverager::addValue(int index, real value)
+void AnalysisDataFrameAverager::addValue(size_t index, real value)
 {
     AverageItem& item  = values_[index];
     const double delta = value - item.average;

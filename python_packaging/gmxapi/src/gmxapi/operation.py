@@ -234,12 +234,10 @@ class OutputData(typing.Generic[ResultTypeVar]):
             return all(self._member_done)
 
     @typing.overload
-    def data(self) -> typing.List[ResultTypeVar]:
-        ...
+    def data(self) -> typing.List[ResultTypeVar]: ...
 
     @typing.overload
-    def data(self, member: int) -> ResultTypeVar:
-        ...
+    def data(self, member: int) -> ResultTypeVar: ...
 
     def data(self, member: int = None):
         """Access the raw data for localized output for the ensemble or the specified member."""
@@ -996,8 +994,7 @@ class SourceResource(typing.Generic[_OutputDataProxyType, _PublishingDataProxyTy
         return False
 
     @abc.abstractmethod
-    def get(self, name: str) -> "OutputData":
-        ...
+    def get(self, name: str) -> "OutputData": ...
 
     @abc.abstractmethod
     def update_output(self):
@@ -1413,12 +1410,10 @@ class OperationRegistry(collections.UserDict):
     """
 
     @typing.overload
-    def __getitem__(self, item: OperationRegistryKey):
-        ...
+    def __getitem__(self, item: OperationRegistryKey): ...
 
     @typing.overload
-    def __getitem__(self, item: str):
-        ...
+    def __getitem__(self, item: str): ...
 
     def __getitem__(self, *args):
         """Fetch the requested operation registrant.
@@ -2332,9 +2327,9 @@ class DataEdge(object):
                                 ensemble_width = source.description.width
                                 # TODO: subscribe to futures so results can be pushed.
                                 if ensemble_width == 1:
-                                    self.adapters[
-                                        name
-                                    ] = lambda member, source=source: source.result()
+                                    self.adapters[name] = (
+                                        lambda member, source=source: source.result()
+                                    )
                                 else:
                                     self.adapters[
                                         name
@@ -2358,9 +2353,9 @@ class DataEdge(object):
                                             f"Cannot nest {element} with width {source_width} "
                                             f"in parallel data edge with width {sink_terminal.ensemble_width}."
                                         )
-                                    resolvers[
-                                        i
-                                    ] = lambda member, _source=element: _source.result()
+                                    resolvers[i] = (
+                                        lambda member, _source=element: _source.result()
+                                    )
                             self.adapters[name] = lambda member, _resolvers=tuple(
                                 resolvers
                             ): _resolvers[member]()
@@ -2376,13 +2371,13 @@ class DataEdge(object):
                         ensemble_width = source.description.width
                         # TODO: subscribe to futures so results can be pushed.
                         if ensemble_width == 1:
-                            self.adapters[
-                                name
-                            ] = lambda member, source=source: source.result()
+                            self.adapters[name] = (
+                                lambda member, source=source: source.result()
+                            )
                         else:
-                            self.adapters[
-                                name
-                            ] = lambda member, source=source: source.result()[member]
+                            self.adapters[name] = (
+                                lambda member, source=source: source.result()[member]
+                            )
                     else:
                         raise ApiError(
                             f"Input type {sink} cannot accept source {repr(source)}"
@@ -2428,13 +2423,13 @@ class DataEdge(object):
                     ensemble_width = source.description.width
                     # TODO: subscribe to futures so results can be pushed.
                     if ensemble_width == 1:
-                        self.adapters[
-                            name
-                        ] = lambda member, source=source: source.result()
+                        self.adapters[name] = (
+                            lambda member, source=source: source.result()
+                        )
                     else:
-                        self.adapters[
-                            name
-                        ] = lambda member, source=source: source.result()[member]
+                        self.adapters[name] = (
+                            lambda member, source=source: source.result()[member]
+                        )
                 else:
                     raise ApiError(
                         f"Input type {sink} cannot accept source {repr(source)}"
@@ -2475,8 +2470,7 @@ class AbstractRunnerDirector(abc.ABC):
     allow_duplicate: bool = False
 
     @abc.abstractmethod
-    def __call__(self, resources) -> typing.Callable[[], None]:
-        ...
+    def __call__(self, resources) -> typing.Callable[[], None]: ...
 
 
 class PublishingManager(
@@ -2514,9 +2508,9 @@ class PublishingManager(
         self._manager = weakref.ref(resource_manager)
 
         assert callable(publisher_factory)
-        self._factory: typing.Callable[
-            [...], _PublishingDataProxyType
-        ] = publisher_factory
+        self._factory: typing.Callable[[...], _PublishingDataProxyType] = (
+            publisher_factory
+        )
         self._active = False
         self.publishing_data_proxies: typing.Dict[str, _PublishingDataProxyType] = {}
         self._observers: typing.List[typing.Callable[["PublishingManager"], None]] = []
@@ -3554,8 +3548,7 @@ class OperationHandle(AbstractOperation[_OutputDataProxyType]):
 class OperationPlaceholder(AbstractOperation):
     """Placeholder for Operation handle during subgraph definition."""
 
-    def __init__(self, subgraph_resource_manager):
-        ...
+    def __init__(self, subgraph_resource_manager): ...
 
     def run(self):
         raise exceptions.UsageError(

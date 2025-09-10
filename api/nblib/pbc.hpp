@@ -46,10 +46,10 @@
 #ifndef NBLIB_PBC_HPP
 #define NBLIB_PBC_HPP
 
-#include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/pbc_aiuc.h"
+#include "gromacs/utility/vec.h"
 
 #include "nblib/box.h"
 

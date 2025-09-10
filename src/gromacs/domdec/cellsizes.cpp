@@ -57,12 +57,13 @@
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/functions.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/mpicomm.h"
+#include "gromacs/utility/vec.h"
 
 #include "atomdistribution.h"
 #include "domdec_internal.h"
@@ -183,21 +184,22 @@ real grid_jump_limit(const gmx_domdec_comm_t* comm, real cutoff, int dim_ind)
  * comm->cellsize_min, for bonded and initial non-bonded cut-offs,
  * and, possibly, a longer cut-off limit set for PME load balancing.
  */
-static real cellsize_min_dlb(gmx_domdec_comm_t* comm, int dim_ind, int dim)
+static real cellsize_min_dlb(const gmx_domdec_comm_t& comm, int dim_ind, int dim)
 {
-    real cellsize_min = comm->cellsize_min[dim];
+    real cellsize_min = comm.cellsize_min[dim];
 
-    if (!comm->bVacDLBNoLimit)
+    if (!comm.bVacDLBNoLimit)
     {
         /* The cut-off might have changed, e.g. by PME load balacning,
          * from the value used to set comm->cellsize_min, so check it.
          */
-        cellsize_min = std::max(cellsize_min, comm->systemInfo.cutoff / comm->cd[dim_ind].np_dlb);
+        cellsize_min = std::max(cellsize_min, comm.systemInfo.cutoff / comm.maxNumPulsesDlb[dim_ind]);
 
-        if (comm->bPMELoadBalDLBLimits)
+        if (comm.bPMELoadBalDLBLimits)
         {
             /* Check for the cut-off limit set by the PME load balancing */
-            cellsize_min = std::max(cellsize_min, comm->PMELoadBal_max_cutoff / comm->cd[dim_ind].np_dlb);
+            cellsize_min =
+                    std::max(cellsize_min, comm.PMELoadBal_max_cutoff / comm.maxNumPulsesDlb[dim_ind]);
         }
     }
 
@@ -209,8 +211,9 @@ static real cellsize_min_dlb(gmx_domdec_comm_t* comm, int dim_ind, int dim)
  * setmode determine if and where the boundaries are stored, use enum above.
  * Returns the number communication pulses in npulse.
  */
-gmx::ArrayRef<const std::vector<real>>
-set_dd_cell_sizes_slb(gmx_domdec_t* dd, const gmx_ddbox_t* ddbox, int setmode, ivec npulse)
+gmx::ArrayRef<const std::vector<real>> set_dd_cell_sizes_slb(gmx_domdec_t*      dd,
+                                                             const gmx_ddbox_t* ddbox,
+                                                             const int          setmode)
 {
     gmx_domdec_comm_t* comm = dd->comm.get();
 
@@ -224,7 +227,7 @@ set_dd_cell_sizes_slb(gmx_domdec_t* dd, const gmx_ddbox_t* ddbox, int setmode, i
     for (int d = 0; d < DIM; d++)
     {
         cellsize_min[d] = ddbox->box_size[d] * ddbox->skew_fac[d];
-        npulse[d]       = 1;
+        int numPulses   = 1;
         if (dd->numCells[d] == 1 || comm->slb_frac[d].empty())
         {
             /* Uniform grid */
@@ -244,9 +247,9 @@ set_dd_cell_sizes_slb(gmx_domdec_t* dd, const gmx_ddbox_t* ddbox, int setmode, i
                 default: break;
             }
             real cellsize = cell_dx * ddbox->skew_fac[d];
-            while (cellsize * npulse[d] < comm->systemInfo.cutoff)
+            while (cellsize * numPulses < comm->systemInfo.cutoff)
             {
-                npulse[d]++;
+                numPulses++;
             }
             cellsize_min[d] = cellsize;
         }
@@ -274,9 +277,9 @@ set_dd_cell_sizes_slb(gmx_domdec_t* dd, const gmx_ddbox_t* ddbox, int setmode, i
                 real cell_dx  = ddbox->box_size[d] * comm->slb_frac[d][j];
                 cell_x[j + 1] = cell_x[j] + cell_dx;
                 real cellsize = cell_dx * ddbox->skew_fac[d];
-                while (cellsize * npulse[d] < comm->systemInfo.cutoff && npulse[d] < dd->numCells[d] - 1)
+                while (cellsize * numPulses < comm->systemInfo.cutoff && numPulses < dd->numCells[d] - 1)
                 {
-                    npulse[d]++;
+                    numPulses++;
                 }
                 cellsize_min[d] = std::min(cellsize_min[d], cellsize);
             }
@@ -290,7 +293,7 @@ set_dd_cell_sizes_slb(gmx_domdec_t* dd, const gmx_ddbox_t* ddbox, int setmode, i
          * some of its own home charge groups back over the periodic boundary.
          * Double charge groups cause trouble with the global indices.
          */
-        if (d < ddbox->npbcdim && dd->numCells[d] > 1 && npulse[d] >= dd->numCells[d])
+        if (d < ddbox->npbcdim && dd->numCells[d] > 1 && numPulses >= dd->numCells[d])
         {
             char error_string[STRLEN];
 
@@ -308,13 +311,15 @@ set_dd_cell_sizes_slb(gmx_domdec_t* dd, const gmx_ddbox_t* ddbox, int setmode, i
 
             if (setmode == setcellsizeslbLOCAL)
             {
-                gmx_fatal_collective(FARGS, dd->mpi_comm_all, DDMAIN(dd), "%s", error_string);
+                gmx_fatal_collective(FARGS, dd->mpiComm().comm(), DDMAIN(dd), "%s", error_string);
             }
             else
             {
                 gmx_fatal(FARGS, "%s", error_string);
             }
         }
+
+        dd->numPulses[d] = numPulses;
     }
 
     if (!isDlbOn(comm->dlbState))
@@ -524,7 +529,7 @@ static void dd_cell_sizes_dlb_root_enforce_limits(gmx_domdec_t*      dd,
                 {
                     /* rowCoordinator->cellFrac[i] = rowCoordinator->boundMin[i]; */
                     nrange[1] = i; /* only store violation location. There could be a LimLo violation following with an higher index */
-                    bLastHi   = FALSE;
+                    bLastHi = FALSE;
                 }
                 else if (bLimHi && !bLastHi)
                 {
@@ -631,7 +636,7 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t*      dd,
         }
     }
 
-    real cellsize_limit_f = cellsize_min_dlb(comm, d, dim) / ddbox->box_size[dim];
+    real cellsize_limit_f = cellsize_min_dlb(*dd->comm, d, dim) / ddbox->box_size[dim];
     cellsize_limit_f *= DD_CELL_MARGIN;
     real dist_min_f_hard = grid_jump_limit(comm, comm->systemInfo.cutoff, d) / ddbox->box_size[dim];
     real dist_min_f      = dist_min_f_hard * DD_CELL_MARGIN;
@@ -914,28 +919,31 @@ void set_dd_cell_sizes(gmx_domdec_t*      dd,
     }
     else
     {
-        ivec numPulses;
-        set_dd_cell_sizes_slb(dd, ddbox, setcellsizeslbLOCAL, numPulses);
+        set_dd_cell_sizes_slb(dd, ddbox, setcellsizeslbLOCAL);
 
-        /* Check if the change in cell size requires a different number
-         * of communication pulses and if so change the number.
-         */
-        for (int d = 0; d < dd->ndim; d++)
+        // With the new (direct) haloExchange, dd->numPulses is read during setup()
+        if (dd->haloExchange == nullptr)
         {
-            gmx_domdec_comm_dim_t& cd           = comm->cd[d];
-            int                    numPulsesDim = numPulses[dd->dim[d]];
-            if (cd.numPulses() != numPulsesDim)
+            /* Check if the change in cell size requires a different number
+             * of communication pulses and if so change the number.
+             */
+            for (int d = 0; d < dd->ndim; d++)
             {
-                if (debug)
+                gmx_domdec_comm_dim_t& cd           = comm->cd[d];
+                int                    numPulsesDim = dd->numPulses[dd->dim[d]];
+                if (cd.numPulses() != numPulsesDim)
                 {
-                    fprintf(debug,
-                            "Changing the number of halo communication pulses along dim %c from %d "
-                            "to %d\n",
-                            dim2char(dd->dim[d]),
-                            cd.numPulses(),
-                            numPulsesDim);
+                    if (debug)
+                    {
+                        fprintf(debug,
+                                "Changing the number of halo communication pulses along dim %c "
+                                "from %d to %d\n",
+                                dim2char(dd->dim[d]),
+                                cd.numPulses(),
+                                numPulsesDim);
+                    }
+                    cd.ind.resize(numPulsesDim);
                 }
-                cd.ind.resize(numPulsesDim);
             }
         }
     }

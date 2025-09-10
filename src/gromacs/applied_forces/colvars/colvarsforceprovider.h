@@ -48,23 +48,25 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "gromacs/domdec/localatomset.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/mdtypes/iforceprovider.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "colvarproxygromacs.h"
 
 enum class PbcType : int;
-struct t_commrec;
+struct gmx_multisim_t;
 
 
 namespace gmx
 {
+class MpiComm;
 class KeyValueTreeObject;
 class KeyValueTreeObjectBuilder;
 class LocalAtomSetManager;
@@ -123,13 +125,13 @@ struct ColvarsForceProviderState
      *
      * \param[in] identifier denotes the module that is checkpointing the data
      */
-    void writeState(KeyValueTreeObjectBuilder kvtBuilder, const std::string& identifier) const;
+    void writeState(KeyValueTreeObjectBuilder kvtBuilder, std::string_view identifier) const;
 
     /*! \brief Read the internal parameters from the checkpoint file on master
      * \param[in] kvtData holding the checkpoint information
      * \param[in] identifier identifies the data in a key-value-tree
      */
-    void readState(const KeyValueTreeObject& kvtData, const std::string& identifier);
+    void readState(const KeyValueTreeObject& kvtData, std::string_view identifier);
 };
 
 
@@ -181,7 +183,8 @@ public:
      * \param[in] ensembleTemperature the constant ensemble temperature
      * \param[in] seed The colvars seed for random number generator
      * \param[in] localAtomSetManager Atom Manager to retrieve Colvars index atoms
-     * \param[in] cr Communication Record
+     * \param[in] mpiComm Communication object for my group
+     * \param[in] ms Multi-simulation record
      * \param[in] simulationTimeStep The simulation time step
      * \param[in] colvarsCoords The colvars atoms coordinates retrived from the TPR's KVT
      * \param[in] outputPrefix The prefix for output colvars files
@@ -190,12 +193,13 @@ public:
     ColvarsForceProvider(const std::string&                        colvarsConfigString,
                          t_atoms                                   atoms,
                          PbcType                                   pbcType,
-                         const MDLogger*                           logger,
+                         const MDLogger&                           logger,
                          const std::map<std::string, std::string>& inputStrings,
                          real                                      ensembleTemperature,
                          int                                       seed,
                          LocalAtomSetManager*                      localAtomSetManager,
-                         const t_commrec*                          cr,
+                         const MpiComm&                            mpiComm,
+                         const gmx_multisim_t*                     ms,
                          double                                    simulationTimeStep,
                          const std::vector<RVec>&                  colvarsCoords,
                          const std::string&                        outputPrefix,
@@ -222,7 +226,7 @@ public:
      * \note The provided state to checkpoint has to change if checkpointing
      *       is moved before the force provider call in the MD-loop.
      */
-    void writeCheckpointData(MDModulesWriteCheckpointData checkpointWriting, const std::string& moduleName);
+    void writeCheckpointData(MDModulesWriteCheckpointData checkpointWriting, std::string_view moduleName);
 
     /*! \brief Process atomsRedistributedSignal notification during mdrun.
      * \param[in] atomsRedistributedSignal signal recieved

@@ -38,21 +38,21 @@
 #  VARIABLE will be set if SIGUSR1 is present in signal.h
 #
 
-MACRO(GMX_TEST_SIGUSR1 VARIABLE)
-    IF(NOT DEFINED HAVE_${VARIABLE})
+macro(GMX_TEST_SIGUSR1 VARIABLE)
+    if(NOT DEFINED HAVE_${VARIABLE})
 
-        MESSAGE(STATUS "Checking for SIGUSR1")
+        message(STATUS "Checking for SIGUSR1")
 
-        TRY_COMPILE(HAVE_${VARIABLE} "${CMAKE_BINARY_DIR}"
+        try_compile(HAVE_${VARIABLE} "${CMAKE_BINARY_DIR}"
                     "${CMAKE_SOURCE_DIR}/cmake/TestSIGUSR1.cpp")
 
-        IF(HAVE_${VARIABLE})
-            MESSAGE(STATUS "Checking for SIGUSR1 - found")
+        if(HAVE_${VARIABLE})
+            message(STATUS "Checking for SIGUSR1 - found")
             set(${VARIABLE} 1 CACHE INTERNAL "Result of test for SIGUSR1" FORCE)
-        ELSE()
-            MESSAGE(STATUS "Checking for SIGUSR1 - not found")
+        else()
+            message(STATUS "Checking for SIGUSR1 - not found")
             set(${VARIABLE} 0 CACHE INTERNAL "Result of test for SIGUSR1" FORCE)
-        ENDIF()
+        endif()
 
-    ENDIF()
-ENDMACRO(GMX_TEST_SIGUSR1 VARIABLE)
+    endif()
+endmacro(GMX_TEST_SIGUSR1 VARIABLE)

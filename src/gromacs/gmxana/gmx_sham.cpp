@@ -56,8 +56,6 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
@@ -66,6 +64,8 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 struct gmx_output_env_t;
 
@@ -429,7 +429,7 @@ static void pick_minima(const char* logfile, int* ibox, int ndim, int len, real 
             sfree(this_point);
             break;
     }
-    qsort(mm, nmin, sizeof(mm[0]), comp_minima);
+    std::qsort(mm, nmin, sizeof(mm[0]), comp_minima);
     fprintf(fp, "Minima sorted after energy\n");
     for (i = 0; (i < nmin); i++)
     {
@@ -1083,44 +1083,44 @@ int gmx_sham(int argc, char* argv[])
         { "-e", FALSE, etREAL, { &te }, "Last time to read from set" },
         { "-ttol", FALSE, etREAL, { &ttol }, "Tolerance on time in appropriate units (usually ps)" },
         { "-n",
-          FALSE,
-          etINT,
-          { &nsets_in },
-          "Read this number of sets separated by lines containing only an ampersand" },
+                  FALSE,
+                  etINT,
+                  { &nsets_in },
+                  "Read this number of sets separated by lines containing only an ampersand" },
         { "-d", FALSE, etBOOL, { &bDer }, "Use the derivative" },
         { "-sham",
-          FALSE,
-          etBOOL,
-          { &bSham },
-          "Turn off energy weighting even if energies are given" },
+                  FALSE,
+                  etBOOL,
+                  { &bSham },
+                  "Turn off energy weighting even if energies are given" },
         { "-tsham", FALSE, etREAL, { &Tref }, "Temperature for single histogram analysis" },
         { "-pmin",
-          FALSE,
-          etREAL,
-          { &pmin },
-          "Minimum probability. Anything lower than this will be set to zero" },
+                  FALSE,
+                  etREAL,
+                  { &pmin },
+                  "Minimum probability. Anything lower than this will be set to zero" },
         { "-dim",
-          FALSE,
-          etRVEC,
-          { nrdim },
-          "Dimensions for distances, used for volume correction (max 3 values, dimensions > 3 will "
-          "get the same value as the last)" },
+                  FALSE,
+                  etRVEC,
+                  { nrdim },
+                  "Dimensions for distances, used for volume correction (max 3 values, dimensions > 3 will "
+                          "get the same value as the last)" },
         { "-ngrid",
-          FALSE,
-          etRVEC,
-          { nrbox },
-          "Number of bins for energy landscapes (max 3 values, dimensions > 3 will get the same "
-          "value as the last)" },
+                  FALSE,
+                  etRVEC,
+                  { nrbox },
+                  "Number of bins for energy landscapes (max 3 values, dimensions > 3 will get the same "
+                          "value as the last)" },
         { "-xmin",
-          FALSE,
-          etRVEC,
-          { xmin },
-          "Minimum for the axes in energy landscape (see above for > 3 dimensions)" },
+                  FALSE,
+                  etRVEC,
+                  { xmin },
+                  "Minimum for the axes in energy landscape (see above for > 3 dimensions)" },
         { "-xmax",
-          FALSE,
-          etRVEC,
-          { xmax },
-          "Maximum for the axes in energy landscape (see above for > 3 dimensions)" },
+                  FALSE,
+                  etRVEC,
+                  { xmax },
+                  "Maximum for the axes in energy landscape (see above for > 3 dimensions)" },
         { "-pmax", FALSE, etREAL, { &pmax }, "Maximum probability in output, default is calculate" },
         { "-gmax", FALSE, etREAL, { &gmax }, "Maximum free energy in output, default is calculate" },
         { "-emin", FALSE, etREAL, { &emin }, "Minimum enthalpy in output, default is calculate" },

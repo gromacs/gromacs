@@ -47,12 +47,12 @@
 
 #include "gromacs/math/matrix.h"
 #include "gromacs/math/multidimarray.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdspan/extensions.h"
 #include "gromacs/mdspan/extents.h"
 #include "gromacs/mdspan/layouts.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 namespace gmx
 {
@@ -212,7 +212,7 @@ TranslateAndScale& TranslateAndScale::operator=(TranslateAndScale&&) noexcept = 
  * AffineTransformation
  */
 
-AffineTransformation::AffineTransformation(Matrix3x3ConstSpan mat, const RVec& translation) :
+AffineTransformation::AffineTransformation(const Matrix3x3& mat, const RVec& translation) :
     translation_{ translation }
 {
     std::copy(begin(mat), end(mat), begin(matrix_));
@@ -222,8 +222,7 @@ void AffineTransformation::operator()(ArrayRef<RVec> vectors) const
 {
     for (RVec& vector : vectors)
     {
-        matrixVectorMultiply(matrix_.asConstView(), &vector);
-        vector += translation_;
+        vector = (matrix_ * vector) + translation_;
     }
 }
 

@@ -50,7 +50,6 @@
 #include "gromacs/analysisdata/datamodulemanager.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
-#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 
@@ -58,15 +57,14 @@ namespace gmx
 {
 
 AbstractAnalysisArrayData::AbstractAnalysisArrayData() :
-    rowCount_(0), pointSetInfo_(0, 0, 0, 0), xstep_(1.0), bUniformX_(true), bReady_(false)
+    rowCount_(0), pointSetInfo_(0, 0, 0, 0), xstart_(0.0), xstep_(1.0), bUniformX_(true), bReady_(false)
 {
-    xvalue_.push_back(0);
 }
 
 AbstractAnalysisArrayData::~AbstractAnalysisArrayData() {}
 
 
-AnalysisDataFrameRef AbstractAnalysisArrayData::tryGetDataFrameInternal(int index) const
+AnalysisDataFrameRef AbstractAnalysisArrayData::tryGetDataFrameInternal(size_t index) const
 {
     if (!isAllocated())
     {
@@ -78,13 +76,13 @@ AnalysisDataFrameRef AbstractAnalysisArrayData::tryGetDataFrameInternal(int inde
 }
 
 
-bool AbstractAnalysisArrayData::requestStorageInternal(int /*nframes*/)
+bool AbstractAnalysisArrayData::requestStorageInternal(size_t /*nframes*/)
 {
     return true;
 }
 
 
-void AbstractAnalysisArrayData::setColumnCount(int ncols)
+void AbstractAnalysisArrayData::setColumnCount(size_t ncols)
 {
     GMX_RELEASE_ASSERT(!isAllocated(), "Cannot change column count after data has been allocated");
     AbstractAnalysisData::setColumnCount(0, ncols);
@@ -92,18 +90,18 @@ void AbstractAnalysisArrayData::setColumnCount(int ncols)
 }
 
 
-void AbstractAnalysisArrayData::setRowCount(int rowCount)
+void AbstractAnalysisArrayData::setRowCount(size_t rowCount)
 {
     GMX_RELEASE_ASSERT(rowCount > 0, "Invalid number of rows");
     GMX_RELEASE_ASSERT(!isAllocated(), "Cannot change row count after data has been allocated");
-    GMX_RELEASE_ASSERT(bUniformX_ || xvalue_.empty() || rowCount == gmx::ssize(xvalue_),
+    GMX_RELEASE_ASSERT(bUniformX_ || xvalue_.empty() || rowCount == xvalue_.size(),
                        "X axis set with setXAxisValue() does not match the row count");
     xvalue_.resize(rowCount);
     if (bUniformX_ && rowCount > rowCount_)
     {
-        for (int i = rowCount_; i < rowCount; ++i)
+        for (size_t i = rowCount_; i < rowCount; ++i)
         {
-            xvalue_[i] = xvalue_[0] + i * xstep_;
+            xvalue_[i] = xstart_ + i * xstep_;
         }
     }
     rowCount_ = rowCount;
@@ -127,28 +125,29 @@ void AbstractAnalysisArrayData::allocateValues()
 void AbstractAnalysisArrayData::setXAxis(real start, real step)
 {
     GMX_RELEASE_ASSERT(!bReady_, "X axis cannot be set after data is finished");
-    xvalue_[0] = start;
+    xstart_    = start;
     xstep_     = step;
     bUniformX_ = true;
-    for (int i = 0; i < rowCount_; ++i)
+    for (size_t i = 0; i < rowCount_; ++i)
     {
         xvalue_[i] = start + i * xstep_;
     }
 }
 
 
-void AbstractAnalysisArrayData::setXAxisValue(int row, real value)
+void AbstractAnalysisArrayData::setXAxisValue(size_t row, real value)
 {
     GMX_RELEASE_ASSERT(!bReady_, "X axis cannot be set after data is finished");
     if (rowCount_ > 0)
     {
-        GMX_RELEASE_ASSERT(row >= 0 && row < rowCount(), "Row index out of range");
+        GMX_RELEASE_ASSERT(row < rowCount(), "Row index out of range");
     }
-    else if (row >= gmx::ssize(xvalue_))
+    else if (row >= xvalue_.size())
     {
         xvalue_.resize(row + 1);
     }
     bUniformX_   = false;
+    xstart_      = 0.0;
     xstep_       = 0.0;
     xvalue_[row] = value;
 }
@@ -165,7 +164,7 @@ void AbstractAnalysisArrayData::valuesReady()
 
     AnalysisDataModuleManager& modules = moduleManager();
     modules.notifyDataStart(this);
-    for (int i = 0; i < rowCount(); ++i)
+    for (size_t i = 0; i < rowCount(); ++i)
     {
         AnalysisDataFrameHeader header(i, xvalue(i), 0);
         modules.notifyFrameStart(header);
@@ -185,6 +184,7 @@ void AbstractAnalysisArrayData::copyContents(const AbstractAnalysisArrayData* sr
     dest->setColumnCount(src->columnCount());
     dest->setRowCount(src->rowCount());
     dest->allocateValues();
+    dest->xstart_    = src->xstart_;
     dest->xstep_     = src->xstep_;
     dest->bUniformX_ = src->bUniformX_;
     std::copy(src->xvalue_.begin(), src->xvalue_.end(), dest->xvalue_.begin());

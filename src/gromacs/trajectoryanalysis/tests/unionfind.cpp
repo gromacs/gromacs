@@ -50,6 +50,10 @@
 
 #include "gromacs/utility/arrayref.h"
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -140,3 +144,5 @@ TEST(MappedUnionFinderTest, BasicMerges)
 }
 
 } // namespace
+} // namespace test
+} // namespace gmx

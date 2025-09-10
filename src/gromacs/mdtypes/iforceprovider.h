@@ -48,15 +48,17 @@
 #include <cstdint>
 
 #include <memory>
+#include <string>
 
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
+struct gmx_domdec_t;
 struct gmx_enerdata_t;
-struct t_commrec;
+struct gmx_wallcycle;
 struct t_forcerec;
 
 namespace gmx
@@ -65,6 +67,7 @@ namespace gmx
 template<typename T>
 class ArrayRef;
 class ForceWithVirial;
+class MpiComm;
 
 
 /*! \libinternal \brief
@@ -91,7 +94,8 @@ public:
      * \param[in]  time     The current time in the simulation.
      * \param[in]  step     The current step in the simulation
      * \param[in]  box      The simulation box.
-     * \param[in]  cr       Communication record structure.
+     * \param[in]  mpiComm  Communication object for my group.
+     * \param[in]  dd       Domain decomposition object, pass nullptr when DD is not in use.
      */
     ForceProviderInput(ArrayRef<const RVec> x,
                        int                  homenr,
@@ -100,8 +104,9 @@ public:
                        double               time,
                        int64_t              step,
                        const matrix         box,
-                       const t_commrec&     cr) :
-        x_(x), homenr_(homenr), chargeA_(chargeA), massT_(massT), t_(time), step_(step), cr_(cr)
+                       const MpiComm&       mpiComm,
+                       const gmx_domdec_t*  dd) :
+        x_(x), homenr_(homenr), chargeA_(chargeA), massT_(massT), t_(time), step_(step), mpiComm_(mpiComm), dd_(dd)
     {
         copy_mat(box, box_);
     }
@@ -113,7 +118,8 @@ public:
     double               t_;    //!< The current time in the simulation
     int64_t              step_; //!< The current step in the simulation
     matrix               box_ = { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } }; //!< The simulation box
-    const t_commrec&     cr_; //!< Communication record structure
+    const MpiComm&       mpiComm_; //!< Communication object for my group
+    const gmx_domdec_t*  dd_;      //!< Domain decomposition object, deprecated
 };
 
 /*! \brief Take pointer, check if valid, return reference
@@ -190,13 +196,22 @@ protected:
 class ForceProviders
 {
 public:
-    ForceProviders();
+    /*! \brief
+     * Constructor.
+     *
+     * \param[in] wallCycle  Pointer to a wallcycle counter struct, can be nullptr
+     */
+    ForceProviders(gmx_wallcycle* wallCycle = nullptr);
     ~ForceProviders();
 
     /*! \brief
      * Adds a provider.
+     *
+     * \param[in] provider          The force provider callback function
+     * \param[in] cycleCounterName  A non-empty string will add a cycle counter with the given name
+     *                              that registers the time spent in the force provider function
      */
-    void addForceProvider(gmx::IForceProvider* provider);
+    void addForceProvider(gmx::IForceProvider* provider, const std::string& cycleCounterName = "");
 
     //! Whether there are modules added.
     bool hasForceProvider() const;

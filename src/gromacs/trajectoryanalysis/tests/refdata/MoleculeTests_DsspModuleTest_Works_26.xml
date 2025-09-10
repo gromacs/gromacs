@@ -59,12 +59,12 @@ s0 legend "Loops"
 s1 legend "Breaks"
 s2 legend "Bends"
 s3 legend "Turns"
-s4 legend "PP_Helices"
-s5 legend "π-Helices"
-s6 legend "3⏨-Helices"
-s7 legend "β-Strands"
-s8 legend "β-Bridges"
-s9 legend "α-Helices"
+s4 legend "PP\sII\N-Helices"
+s5 legend "\xp\f{}-Helices"
+s6 legend "3\s10\N-Helices"
+s7 legend "\xb\f{}-Strands"
+s8 legend "\xb\f{}-Bridges"
+s9 legend "\xa\f{}-Helices"
 ]]></String>
       </XvgLegend>
       <XvgData Name="Data">

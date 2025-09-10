@@ -57,9 +57,9 @@
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/hardware/device_management.h"
 #include "gromacs/math/tests/testarrayrefs.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "testutils/test_device.h"
 #include "testutils/test_hardware_environment.h"
@@ -124,10 +124,10 @@ void runTest(const DeviceContext& deviceContext, ArrayRef<T> input, ArrayRef<T> 
 struct MoveOnly
 {
     MoveOnly(real x = 0) : x_(x) {}
-    MoveOnly(const MoveOnly&) = delete;
-    MoveOnly(MoveOnly&&)      = default;
+    MoveOnly(const MoveOnly&)            = delete;
+    MoveOnly(MoveOnly&&)                 = default;
     MoveOnly& operator=(const MoveOnly&) = delete;
-    MoveOnly& operator=(MoveOnly&&) = default;
+    MoveOnly& operator=(MoveOnly&&)      = default;
     bool      operator==(const MoveOnly& o) const { return x_ == o.x_; }
     real      operator*=(int scaleFactor) { return x_ *= scaleFactor; }
     real      x_;
@@ -330,9 +330,16 @@ TYPED_TEST(HostAllocatorTestNoMem, Swap)
 TYPED_TEST(HostAllocatorTestNoMem, Comparison)
 {
     using AllocatorType = typename TestFixture::VectorType::allocator_type;
-    EXPECT_EQ(AllocatorType{}, AllocatorType{});
-    // Should be false for different pinning policy
-    EXPECT_NE(AllocatorType{}, AllocatorType{ PinningPolicy::PinnedIfSupported });
+    {
+        SCOPED_TRACE("Allocators with identical policy objects compare equal");
+        EXPECT_EQ(AllocatorType{}, AllocatorType{});
+    }
+    {
+        SCOPED_TRACE("Allocators with different policy objects may or may not compare equal");
+        EXPECT_NE(AllocatorType{}, AllocatorType{ PinningPolicy::PinnedIfSupported });
+        EXPECT_EQ(AllocatorType{ PinningPolicy::PinnedIfSupported },
+                  AllocatorType{ PinningPolicy::PinnedIfSupported });
+    }
 }
 
 #if GMX_GPU_CUDA || GMX_GPU_SYCL || GMX_GPU_HIP
@@ -365,8 +372,7 @@ TYPED_TEST(HostAllocatorTestCopyable, TransfersWithPinningWorkWithDevice)
 template<typename VectorType>
 bool isPinned(const VectorType& v)
 {
-    void* data = const_cast<void*>(static_cast<const void*>(v.data()));
-    return isHostMemoryPinned(data);
+    return isHostMemoryPinned(v.data());
 }
 
 TYPED_TEST(HostAllocatorTestCopyable, ManualPinningOperationsWork)
@@ -411,8 +417,19 @@ TYPED_TEST(HostAllocatorTest, StatefulAllocatorUsesMemory)
 
 TEST(HostAllocatorUntypedTest, Comparison)
 {
-    // Should always be true for the same policy, indpendent of value_type
-    EXPECT_EQ(HostAllocator<float>{}, HostAllocator<double>{});
+    {
+        SCOPED_TRACE(
+                "Allocators with identical policy types compare equal independently of the type of "
+                "object allocated");
+        EXPECT_EQ(HostAllocator<float>{}, HostAllocator<double>{});
+    }
+    {
+        SCOPED_TRACE(
+                "Allocators with different policy types do not compare equal regardless of type of "
+                "object allocated");
+        EXPECT_NE(HostAllocator<float>{}, PageAlignedAllocator<float>{});
+        EXPECT_NE(HostAllocator<float>{}, PageAlignedAllocator<double>{});
+    }
 }
 
 //! Declare allocator types to test.

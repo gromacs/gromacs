@@ -839,7 +839,7 @@ integration step, and serializing the resulting `CheckpointData` after the step.
 This avoids the need to find a single point within the loop at which all clients
 need to be in a state suitable for checkpointing.
 * If, however, we wanted to use the same approach for other, more frequent
-(and hence more perfomance critical) operations such as saving/restoring states
+(and hence more performance critical) operations such as saving/restoring states
 for MC type algorithms or swapping of states between running simulations in
 multi-sim type settings, performance would become more of an issue.
 

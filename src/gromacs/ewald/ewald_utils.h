@@ -44,12 +44,12 @@
 #ifndef GMX_EWALD_UTILS_H
 #define GMX_EWALD_UTILS_H
 
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 /*! \brief Computes the Ewald splitting coefficient for Coulomb
  *

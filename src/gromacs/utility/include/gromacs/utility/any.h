@@ -119,7 +119,7 @@ public:
      *
      * \throws std::bad_alloc if out of memory.
      */
-    template<typename T, typename = std::enable_if_t<!std::is_same<T, Any>::value>>
+    template<typename T, typename = std::enable_if_t<!std::is_same_v<T, Any>>>
     explicit Any(T&& value) :
         content_(new Content<typename std::decay<T>::type>(std::forward<T>(value)))
     {

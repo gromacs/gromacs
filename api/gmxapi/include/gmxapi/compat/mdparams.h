@@ -61,7 +61,7 @@ class GmxMdParams
 public:
     GmxMdParams();
     ~GmxMdParams();
-    GmxMdParams(const GmxMdParams&) = delete;
+    GmxMdParams(const GmxMdParams&)            = delete;
     GmxMdParams& operator=(const GmxMdParams&) = delete;
     GmxMdParams(GmxMdParams&& /*unused*/) noexcept;
     GmxMdParams& operator=(GmxMdParams&& /*unused*/) noexcept;

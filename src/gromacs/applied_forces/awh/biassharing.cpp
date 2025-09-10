@@ -47,6 +47,7 @@
 #include "config.h"
 
 #include <algorithm>
+#include <limits>
 #include <set>
 #include <string>
 #include <type_traits>
@@ -55,11 +56,12 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/mdtypes/awh_params.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/mpicomm.h"
+#include "gromacs/utility/mpitypes.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace gmx
@@ -119,10 +121,13 @@ std::multiset<int> getGlobalShareIndices(ArrayRef<const int> localShareIndices, 
 
 } // namespace
 
-BiasSharing::BiasSharing(const AwhParams& awhParams, const t_commrec& commRecord, MPI_Comm simulationMainComm) :
-    commRecord_(commRecord)
+BiasSharing::BiasSharing(const AwhParams& awhParams, const MpiComm& mpiComm, MPI_Comm simulationMainComm) :
+    mpiComm_(mpiComm)
 {
-    if (MAIN(&commRecord))
+    // Both main and non-main PP ranks need this lookup to be valid
+    multiSimCommPerBias_.resize(awhParams.numBias(), MPI_COMM_NULL);
+
+    if (mpiComm.isMainRank())
     {
         std::vector<int> localShareIndices;
         int              shareGroupPrev = 0;
@@ -154,7 +159,6 @@ BiasSharing::BiasSharing(const AwhParams& awhParams, const t_commrec& commRecord
 
         numSharingSimulations_.resize(awhParams.numBias(), 1);
         sharingSimulationIndices_.resize(awhParams.numBias(), 0);
-        multiSimCommPerBias_.resize(awhParams.numBias(), MPI_COMM_NULL);
 
         for (int shareIndex : globalShareIndices)
         {
@@ -193,11 +197,10 @@ BiasSharing::BiasSharing(const AwhParams& awhParams, const t_commrec& commRecord
     }
 
 #if GMX_MPI
-    if (commRecord.nnodes > 1)
+    if (mpiComm.isParallel())
     {
         numSharingSimulations_.resize(awhParams.numBias());
-        MPI_Bcast(
-                numSharingSimulations_.data(), numSharingSimulations_.size(), MPI_INT, 0, commRecord.mpi_comm_mygroup);
+        MPI_Bcast(numSharingSimulations_.data(), numSharingSimulations_.size(), MPI_INT, 0, mpiComm.comm());
     }
 #endif // GMX_MPI
 }
@@ -212,33 +215,6 @@ BiasSharing::~BiasSharing()
 #endif // GMX_MPI
 }
 
-namespace
-{
-
-#if GMX_MPI
-
-template<typename T>
-std::enable_if_t<std::is_same_v<T, int>, MPI_Datatype> mpiType()
-{
-    return MPI_INT;
-}
-
-template<typename T>
-std::enable_if_t<std::is_same_v<T, long>, MPI_Datatype> mpiType()
-{
-    return MPI_LONG;
-}
-
-template<typename T>
-std::enable_if_t<std::is_same_v<T, double>, MPI_Datatype> mpiType()
-{
-    return MPI_DOUBLE;
-}
-
-#endif // GMX_MPI
-
-} // namespace
-
 /*! \brief
  * Sum an array over all simulations on main ranks or all ranks of each simulation.
  *
@@ -247,26 +223,29 @@ std::enable_if_t<std::is_same_v<T, double>, MPI_Datatype> mpiType()
  * \param[in,out] data          The data to sum.
  * \param[in]     multiSimComm  Communicator for the main ranks of sharing simulations.
  * \param[in]     broadcastWithinSimulation  Broadcast the result to all ranks within the simulation
- * \param[in]     commRecord    Struct for intra-simulation communication.
+ * \param[in]     mpiComm       MPI communicator for intra-simulation communication.
  */
 template<typename T>
-void sumOverSimulations(ArrayRef<T>      data,
-                        MPI_Comm         multiSimComm,
-                        const bool       broadcastWithinSimulation,
-                        const t_commrec& commRecord)
+void sumOverSimulations(ArrayRef<T>    data,
+                        MPI_Comm       multiSimComm,
+                        const bool     broadcastWithinSimulation,
+                        const MpiComm& mpiComm)
 {
 #if GMX_MPI
-    if (MAIN(&commRecord))
+    if (mpiComm.isMainRank())
     {
+        GMX_RELEASE_ASSERT(data.size() < std::numeric_limits<int>::max(),
+                           "The size of data should fit in an int");
+
         MPI_Allreduce(MPI_IN_PLACE, data.data(), data.size(), mpiType<T>(), MPI_SUM, multiSimComm);
     }
-    if (broadcastWithinSimulation && commRecord.nnodes > 1)
+    if (broadcastWithinSimulation && mpiComm.isParallel())
     {
-        gmx_bcast(data.size() * sizeof(T), data.data(), commRecord.mpi_comm_mygroup);
+        gmx_bcast(data.size() * sizeof(T), data.data(), mpiComm.comm());
     }
 #else
     GMX_UNUSED_VALUE(data);
-    GMX_UNUSED_VALUE(commRecord);
+    GMX_UNUSED_VALUE(mpiComm);
     GMX_UNUSED_VALUE(broadcastWithinSimulation);
     GMX_UNUSED_VALUE(multiSimComm);
 #endif // GMX_MPI
@@ -274,27 +253,27 @@ void sumOverSimulations(ArrayRef<T>      data,
 
 void BiasSharing::sumOverSharingMainRanks(ArrayRef<int> data, const int biasIndex) const
 {
-    sumOverSimulations(data, multiSimCommPerBias_[biasIndex], false, commRecord_);
+    sumOverSimulations(data, multiSimCommPerBias_[biasIndex], false, mpiComm_);
 }
 
 void BiasSharing::sumOverSharingMainRanks(ArrayRef<long> data, const int biasIndex) const
 {
-    sumOverSimulations(data, multiSimCommPerBias_[biasIndex], false, commRecord_);
+    sumOverSimulations(data, multiSimCommPerBias_[biasIndex], false, mpiComm_);
 }
 
 void BiasSharing::sumOverSharingMainRanks(ArrayRef<double> data, const int biasIndex) const
 {
-    sumOverSimulations(data, multiSimCommPerBias_[biasIndex], false, commRecord_);
+    sumOverSimulations(data, multiSimCommPerBias_[biasIndex], false, mpiComm_);
 }
 
 void BiasSharing::sumOverSharingSimulations(ArrayRef<int> data, const int biasIndex) const
 {
-    sumOverSimulations(data, multiSimCommPerBias_[biasIndex], true, commRecord_);
+    sumOverSimulations(data, multiSimCommPerBias_[biasIndex], true, mpiComm_);
 }
 
 void BiasSharing::sumOverSharingSimulations(ArrayRef<double> data, const int biasIndex) const
 {
-    sumOverSimulations(data, multiSimCommPerBias_[biasIndex], true, commRecord_);
+    sumOverSimulations(data, multiSimCommPerBias_[biasIndex], true, mpiComm_);
 }
 
 bool haveBiasSharingWithinSimulation(const AwhParams& awhParams)

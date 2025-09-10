@@ -69,6 +69,7 @@
 
 #include "gromacs/hardware/cpuinfo.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/stringutil.h"
 
 #ifdef HAVE_SCHED_H
 #    include <sched.h>
@@ -289,7 +290,7 @@ std::vector<const hwloc_obj*> getHwLocDescendantsByType(const hwloc_topology*  t
  */
 bool parseHwLocPackagesCoresProcessingUnits(hwloc_topology_t topo, HardwareTopology::Machine* machine)
 {
-    const hwloc_obj*              root          = hwloc_get_root_obj(topo);
+    const hwloc_obj* root = hwloc_get_root_obj(topo);
     std::vector<const hwloc_obj*> hwlocPackages = getHwLocDescendantsByType(topo, root, HWLOC_OBJ_PACKAGE);
 
     std::size_t puCount = hwloc_get_nbobjs_by_type(topo, HWLOC_OBJ_PU);
@@ -510,7 +511,7 @@ bool parseHwLocNuma(hwloc_topology_t topo, HardwareTopology::Machine* machine)
         machine->numa.maxRelativeLatency = maxLatency / minLatency;
 
 #    else  // GMX_HWLOC_API_VERSION_IS_2XX == false, hwloc api is 1.x.x
-        const int                       depth = hwloc_get_type_depth(topo, HWLOC_OBJ_NUMANODE);
+        const int depth = hwloc_get_type_depth(topo, HWLOC_OBJ_NUMANODE);
         const struct hwloc_distances_s* dist = hwloc_get_whole_distance_matrix_by_depth(topo, depth);
         if (dist != nullptr && dist->nbobjs == hwlocNumaNodes.size())
         {
@@ -591,7 +592,7 @@ bool parseHwLocNuma(hwloc_topology_t topo, HardwareTopology::Machine* machine)
  */
 bool parseHwLocDevices(hwloc_topology_t topo, HardwareTopology::Machine* machine)
 {
-    const hwloc_obj*              root = hwloc_get_root_obj(topo);
+    const hwloc_obj* root = hwloc_get_root_obj(topo);
     std::vector<const hwloc_obj*> pcidevs = getHwLocDescendantsByType(topo, root, HWLOC_OBJ_PCI_DEVICE);
 
     for (const auto& p : pcidevs)
@@ -1110,8 +1111,8 @@ float detectCpuLimit(const std::string& root = "")
     std::vector<std::string> cgroups2Mounts;
 
     // if /etc/mtab isn't present, std::getline will return 0.
-    std::ifstream mtabStream(root + "/etc/mtab");
-    while (!found && std::getline(mtabStream, line))
+    std::ifstream procMountsStream(root + "/proc/mounts");
+    while (!found && std::getline(procMountsStream, line))
     {
         std::istringstream       lineStream(line);
         std::vector<std::string> columns{ std::istream_iterator<std::string>(lineStream),
@@ -1121,7 +1122,9 @@ float detectCpuLimit(const std::string& root = "")
         {
             continue;
         }
-        // Column 1 is the fs type (we look for cgroup), column 1 the mount path
+        // Column 0 is the fs class (cgroups for either v1 or v2),
+        // and column2 the version (e.g. cgroups or cgroups2).
+        // For either of these, the mount path will be in coloumn 1.
         if (columns[2] == "cgroup2")
         {
             // cgroup2 uses a unified mount, so there will only be one entry
@@ -1315,6 +1318,15 @@ HardwareTopology::HardwareTopology(const std::string&      filesystemRoot,
     {
         supportLevel_ = SupportLevel::LogicalProcessorCount;
     }
+}
+
+std::string hwlocDescription()
+{
+#if GMX_USE_HWLOC
+    return formatString("hwloc-%s", HWLOC_VERSION);
+#else
+    return "disabled";
+#endif
 }
 
 } // namespace gmx

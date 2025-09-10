@@ -7,13 +7,13 @@
 # Note that, ordinarily, build requirements are discovered from pyproject.toml,
 # and run time package dependencies (to be checked during installation) are
 # resolved by setuptools from the `install_requires` in `setup.cfg`.
-cmake>=3.16
+cmake>=3.28
 importlib_metadata;python_version<"3.8"
 networkx>=2.0
 numpy>1.7
 packaging
 pip>=10.1
-pybind11>=2.6
+pybind11>=2.12
 setuptools>=42
 wheel
 # The following packages are not strictly necessary, but allow documentation builds.

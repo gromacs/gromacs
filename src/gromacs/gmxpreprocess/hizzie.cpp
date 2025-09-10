@@ -48,7 +48,6 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/symtab.h"
@@ -57,6 +56,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vec.h"
 
 static int in_strings(char* key, int nstr, const char** str)
 {
@@ -64,7 +64,7 @@ static int in_strings(char* key, int nstr, const char** str)
 
     for (j = 0; (j < nstr); j++)
     {
-        if (strcmp(str[j], key) == 0)
+        if (std::strcmp(str[j], key) == 0)
         {
             return j;
         }
@@ -140,7 +140,8 @@ static bool chk_hbonds(int i, t_atoms* pdba, rvec x[], const bool ad[], bool hbo
         {
             /* Check whether the other atom is on the same ring as well */
             if ((pdba->atom[j].resind != ri)
-                || ((strcmp(*pdba->atomname[j], "ND1") != 0) && (strcmp(*pdba->atomname[j], "NE2") != 0)))
+                || ((std::strcmp(*pdba->atomname[j], "ND1") != 0)
+                    && (std::strcmp(*pdba->atomname[j], "NE2") != 0)))
             {
                 aj = j;
                 d2 = distance2(x[i], x[j]);
@@ -251,23 +252,23 @@ void set_histp(t_atoms* pdba, rvec* x, t_symtab* symtab, real angle, real dist)
                 while (i < natom && pdba->atom[i].resind == hisind)
                 {
                     atomnm = *pdba->atomname[i];
-                    if (strcmp(atomnm, "CD2") == 0)
+                    if (std::strcmp(atomnm, "CD2") == 0)
                     {
                         cd2 = i;
                     }
-                    else if (strcmp(atomnm, "CG") == 0)
+                    else if (std::strcmp(atomnm, "CG") == 0)
                     {
                         cg = i;
                     }
-                    else if (strcmp(atomnm, "CE1") == 0)
+                    else if (std::strcmp(atomnm, "CE1") == 0)
                     {
                         ce1 = i;
                     }
-                    else if (strcmp(atomnm, "ND1") == 0)
+                    else if (std::strcmp(atomnm, "ND1") == 0)
                     {
                         nd1 = i;
                     }
-                    else if (strcmp(atomnm, "NE2") == 0)
+                    else if (std::strcmp(atomnm, "NE2") == 0)
                     {
                         ne2 = i;
                     }

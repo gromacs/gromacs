@@ -45,11 +45,11 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "colvarproxygromacs.h"
 
@@ -82,7 +82,7 @@ public:
     ColvarsPreProcessor(const std::string&   colvarsConfigString,
                         t_atoms              atoms,
                         PbcType              pbcType,
-                        const MDLogger*      logger,
+                        const MDLogger&      logger,
                         real                 ensembleTemperature,
                         int                  seed,
                         const matrix         box,

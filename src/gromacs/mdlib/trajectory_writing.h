@@ -37,9 +37,9 @@
 #include <cstdint>
 #include <cstdio>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/mdoutf.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/vectypes.h"
 
 class gmx_ekindata_t;
 struct gmx_mtop_t;

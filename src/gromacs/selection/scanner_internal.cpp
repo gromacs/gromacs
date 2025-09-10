@@ -95,10 +95,10 @@ static int init_param_token(YYSTYPE* yylval, gmx_ana_selparam_t* param, bool bBo
     {
         GMX_RELEASE_ASSERT(param->name != nullptr,
                            "bBoolNo should only be set for a parameters with a name");
-        snew(yylval->str, strlen(param->name) + 3);
+        snew(yylval->str, std::strlen(param->name) + 3);
         yylval->str[0] = 'n';
         yylval->str[1] = 'o';
-        strcpy(yylval->str + 2, param->name);
+        std::strcpy(yylval->str + 2, param->name);
     }
     else
     {
@@ -226,11 +226,11 @@ int _gmx_sel_lexer_process_identifier(YYSTYPE* yylval, YYLTYPE* yylloc, char* yy
             {
                 /* Skip NULL parameters and too long parameters */
                 if (state->mstack[sp]->param[i].name == nullptr
-                    || strlen(state->mstack[sp]->param[i].name) > yyleng)
+                    || std::strlen(state->mstack[sp]->param[i].name) > yyleng)
                 {
                     continue;
                 }
-                if (!strncmp(state->mstack[sp]->param[i].name, yytext, yyleng))
+                if (!std::strncmp(state->mstack[sp]->param[i].name, yytext, yyleng))
                 {
                     param = &state->mstack[sp]->param[i];
                     break;
@@ -238,7 +238,7 @@ int _gmx_sel_lexer_process_identifier(YYSTYPE* yylval, YYLTYPE* yylloc, char* yy
                 /* Check separately for a 'no' prefix on boolean parameters */
                 if (state->mstack[sp]->param[i].val.type == NO_VALUE && yyleng > 2
                     && yytext[0] == 'n' && yytext[1] == 'o'
-                    && !strncmp(state->mstack[sp]->param[i].name, yytext + 2, yyleng - 2))
+                    && !std::strncmp(state->mstack[sp]->param[i].name, yytext + 2, yyleng - 2))
                 {
                     param   = &state->mstack[sp]->param[i];
                     bBoolNo = true;
@@ -334,14 +334,14 @@ void _gmx_sel_lexer_add_token(YYLTYPE* yylloc, const char* str, int len, gmx_sel
     yylloc->startIndex = yylloc->endIndex = state->pselstr.size();
     /* Do nothing if the string is empty, or if it is a space and there is
      * no other text yet, or if there already is a space. */
-    if (!str || len == 0 || strlen(str) == 0
+    if (!str || len == 0 || std::strlen(str) == 0
         || (str[0] == ' ' && str[1] == 0 && (state->pselstr.empty() || state->pselstr.back() == ' ')))
     {
         return;
     }
     if (len < 0)
     {
-        len = strlen(str);
+        len = std::strlen(str);
     }
     /* Append the token to the stored string */
     state->pselstr.append(str, len);

@@ -1,5 +1,7 @@
 # CMake based on work from @xantares
-cmake_minimum_required (VERSION 3.16.3)
+if(NOT DEFINED CMAKE_MINIMUM_REQUIRED_VERSION)
+  cmake_minimum_required (VERSION 3.28)
+endif()
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -39,7 +41,10 @@ elseif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-long-long -pedantic")
 endif()
 
-FILE(GLOB_RECURSE MUPARSER_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp") #all .cpp
+file(GLOB_RECURSE MUPARSER_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp") #all .cpp
+# The test file produces warnings with MSVC and was recommended for exclusion, see
+# https://github.com/beltoforion/muparser/issues/142#issuecomment-2093561006
+list(REMOVE_ITEM MUPARSER_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/muParserTest.cpp")
 add_library(muparser ${MUPARSER_SOURCES})
 
 # Use the headers in the build-tree or the installed ones
@@ -50,6 +55,16 @@ target_include_directories(muparser SYSTEM PUBLIC
 
 # This compiles the "DLL" interface (C API)
 target_compile_definitions(muparser PRIVATE MUPARSER_DLL)
+
+# Intel LLVM 2021.2 and later defaults to no-finite-math which isn't OK
+if(GMX_INTEL_LLVM)
+    if (WIN32)
+        set (_flag "/fp:precise")
+    else()
+        set(_flag "-fno-finite-math-only")
+    endif()
+    gmx_target_warning_suppression(muparser ${_flag} HAS_NO_FINITE_MATH_ONLY)
+endif()
 
 if (BUILD_SHARED_LIBS)
   target_compile_definitions(muparser PRIVATE MUPARSERLIB_EXPORTS)
@@ -93,15 +108,16 @@ set(INSTALL_CONFIGDIR ${CMAKE_INSTALL_LIBDIR}/cmake/muparser)
 install(TARGETS muparser
     EXPORT muparser-export
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT RuntimeLibraries
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT Development
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT Development EXCLUDE_FROM_ALL
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT RuntimeLibraries
 )
 
-FILE(GLOB_RECURSE MUPARSER_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/include/*.h") #all .h
+file(GLOB_RECURSE MUPARSER_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/include/*.h") #all .h
 install(FILES
     ${MUPARSER_HEADERS}
     DESTINATION include
     COMPONENT Development
+    EXCLUDE_FROM_ALL
 )
 
 # Export the target under the build-tree (no need to install)
@@ -126,12 +142,14 @@ install(EXPORT muparser-export
     FILE muparser-targets.cmake
     NAMESPACE muparser::
     DESTINATION ${INSTALL_CONFIGDIR}
+    EXCLUDE_FROM_ALL
 )
 install(FILES
     ${CMAKE_CURRENT_BINARY_DIR}/muparserConfig.cmake
     ${CMAKE_CURRENT_BINARY_DIR}/muparserConfigVersion.cmake
     DESTINATION ${INSTALL_CONFIGDIR}
     COMPONENT Development
+    EXCLUDE_FROM_ALL
 )
 
 # Define variables for the pkg-config file
@@ -147,6 +165,7 @@ configure_file(
 install(
     FILES ${CMAKE_BINARY_DIR}/muparser.pc
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
+    EXCLUDE_FROM_ALL
 )
 
 include(CTest)

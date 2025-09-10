@@ -46,7 +46,6 @@
 
 #include <filesystem>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/position.h"
 #include "gromacs/selection/selectionenums.h"
@@ -57,6 +56,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "keywords.h"
 #include "mempool.h"

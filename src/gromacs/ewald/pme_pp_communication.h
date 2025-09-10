@@ -46,9 +46,9 @@
 #ifndef GMX_EWALD_PME_PP_COMMUNICATION_H
 #define GMX_EWALD_PME_PP_COMMUNICATION_H
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 /*! \brief MPI Tags used to separate communication of different types of quantities */
 enum
@@ -62,6 +62,15 @@ enum
     eCommType_NR,
     eCommType_COORD,
     eCommType_COORD_GPU,
+    eCommType_COORD_GPU_SYNCHRONIZER,
+    eCommType_COORD_GPU_REMOTE_GPU_PTR,
+    eCommType_FORCES,
+    eCommType_FORCES_GPU,
+    eCommType_FORCES_GPU_SYNCHRONIZER,
+    eCommType_FORCES_GPU_EVENT_RECORDED,
+    eCommType_FORCES_GPU_REMOTE_GPU_PTR,
+    eCommType_FORCES_GPU_REMOTE_CPU_PTR,
+    eCommType_ENERGY_VIRIAL_DVDL,
     eCommType_CNB
 };
 
@@ -122,6 +131,8 @@ struct gmx_pme_comm_n_box_t
     real ewaldcoeff_lj;
     //@}
 };
+static_assert(std::is_trivially_copyable_v<gmx_pme_comm_n_box_t>,
+              "Must be trivially copyable to be sent over MPI");
 
 /*! \internal
  * \brief Helper struct for PP-PME communication of virial and energy.
@@ -143,5 +154,7 @@ struct gmx_pme_comm_vir_ene_t
     float         cycles;    /**< Counter of CPU cycles used */
     StopCondition stop_cond; /**< Flag used in responding to an external signal to terminate */
 };
+static_assert(std::is_trivially_copyable_v<gmx_pme_comm_vir_ene_t>,
+              "Must be trivially copyable to be sent over MPI");
 
 #endif

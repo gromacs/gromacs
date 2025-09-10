@@ -47,10 +47,10 @@
 #include <vector>
 
 #include "gromacs/domdec/domdec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/atominfo.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "domdec_internal.h"
 
@@ -87,8 +87,10 @@ void check_screw_box(const matrix box);
 
 /*! \brief Return the atom information flags for atom a */
 static inline int ddGetAtomInfo(gmx::ArrayRef<const gmx::AtomInfoWithinMoleculeBlock> atomInfoForEachMoleculeBlock,
-                                int                                                   a)
+                                int a)
 {
+    GMX_ASSERT(isValidGlobalAtom(a), "We should only look up real atoms (not fillers, value -1)");
+
     size_t index = 0;
     while (a >= atomInfoForEachMoleculeBlock[index].indexOfLastAtomInMoleculeBlock)
     {

@@ -41,6 +41,7 @@
 
 #include <array>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -74,6 +75,13 @@ enum class WallCycleCounter : int
     LaunchGpuPp,
     MoveX,
     Force,
+    // There are 5 counter reserved for dynamically registered force providers.
+    // After registering 5 such counters, any further counters will be ignored.
+    ForceProvider0,
+    ForceProvider1,
+    ForceProvider2,
+    ForceProvider3,
+    ForceProvider4,
     MoveF,
     PmeMesh,
     PmeGpuMesh, /* PmeGpuMesh is used for GPU code and similar to PmeMesh on CPU. It includes WaitGpuPmePPRecvX cycles too. */
@@ -108,7 +116,10 @@ enum class WallCycleCounter : int
     Traj,
     Update,
     Constr,
+    GpuSetConstr,
+    ComputeEKin,
     MoveE,
+    InterSimulationSignalling,
     Rot,
     RotAdd,
     Swap,
@@ -120,6 +131,7 @@ enum class WallCycleCounter : int
 
 enum class WallCycleSubCounter : int
 {
+    DDAddCogs,
     DDRedist,
     DDGrid,
     DDSetupComm,
@@ -160,6 +172,10 @@ enum class WallCycleSubCounter : int
     MdGpuGraphWaitBeforeLaunch,
     MdGpuGraphLaunch,
     ConstrComm,
+    SetLincs,
+    SetSettle,
+    GpuSetLincs,
+    GpuSetSettle,
     Test,
     Count
 };
@@ -195,6 +211,11 @@ static const char* enumValuetoString(WallCycleCounter enumValue)
         "Launch PP GPU ops.",
         "Comm. coord.",
         "Force",
+        "",
+        "",
+        "",
+        "",
+        "",
         "Wait + Comm. F",
         "PME mesh",
         "PME GPU mesh",
@@ -228,7 +249,10 @@ static const char* enumValuetoString(WallCycleCounter enumValue)
         "Write traj.",
         "Update",
         "Constraints",
+        "GPU constr. setup",
+        "Kinetic energy",
         "Comm. energies",
+        "Inter-sim. signal.",
         "Enforced rotation",
         "Add rot. forces",
         "Position swapping",
@@ -244,6 +268,7 @@ CLANG_DIAGNOSTIC_IGNORE("-Wunneeded-internal-declaration")
 static const char* enumValuetoString(WallCycleSubCounter enumValue)
 {
     constexpr gmx::EnumerationArray<WallCycleSubCounter, const char*> wallCycleSubCounterNames = {
+        "DD update groups",
         "DD redist.",
         "DD NS grid + sort",
         "DD setup comm.",
@@ -284,6 +309,10 @@ static const char* enumValuetoString(WallCycleSubCounter enumValue)
         "Graph wait pre-launch",
         "Graph launch",
         "Constraints Comm.", // constraints communication time, note that this counter will contain load imbalance
+        "LINCS setup",
+        "Settle setup",
+        "GPU LINCS setup",
+        "GPU settle setup",
         "Test subcounter"
     };
     static_assert(checkStringsLengths<22>(wallCycleSubCounterNames));
@@ -316,6 +345,13 @@ struct wallcc_t
 
 struct gmx_wallcycle
 {
+    /*! \brief Registers a counter for a force provider
+     *
+     * \param[in] name  The name of the counter, will be used in the cycle counter table in the log
+     * file \returns the index of the cycle counter or empty when counters are exhausted
+     */
+    std::optional<WallCycleCounter> registerCycleCounter(const std::string& name);
+
     /*! \brief Methods used when debugging wallcycle counting
      *
      *  \todo Make these private when the functions they are called
@@ -334,6 +370,9 @@ public:
     int64_t reset_counters;
     //! Storage for wallcycle subcounters
     gmx::EnumerationArray<WallCycleSubCounter, wallcc_t> wcsc;
+
+    //! List of strings for counters for ForceProviders
+    std::vector<std::string> forceProviderNames;
 
     // The remaining fields are only used in special cases or in
     // printing summary output.
@@ -567,5 +606,15 @@ inline void wallcycle_sub_stop(gmx_wallcycle* wc, WallCycleSubCounter ewcs)
         }
     }
 }
+
+namespace gmx
+{
+
+//! When targeting x86,  returns whether RDTSCP support is present
+std::optional<std::string> rdtscpDescription();
+//! Returns information for describing a possible profiling/instrumentation API
+std::optional<std::string> instrumentationApiDescription();
+
+} // namespace gmx
 
 #endif

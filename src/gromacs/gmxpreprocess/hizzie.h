@@ -35,8 +35,8 @@
 #ifndef GMX_GMXPREPROCESS_HIZZIE_H
 #define GMX_GMXPREPROCESS_HIZZIE_H
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 struct t_atoms;
 struct t_symtab;

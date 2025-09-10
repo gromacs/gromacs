@@ -104,14 +104,14 @@ then
     if [ -z "$RUN_CLANG_TIDY" ]
     then
         echo "Please set the path to run-clang-tidy using the git hook"
-        echo "git config hooks.runclangtidypath /path/to/run-clang-tidy-9.py"
+        echo "git config hooks.runclangtidypath /path/to/run-clang-tidy-18.py"
         echo "or by setting an environment variable, e.g."
-        echo "RUN_CLANG_TIDY=/path/to/run-clang-tidy-11.py"
+        echo "RUN_CLANG_TIDY=/path/to/run-clang-tidy-18.py"
         exit 2
     fi
     if ! which "$RUN_CLANG_TIDY" 1>/dev/null
     then
-        echo "run-clang-tidy-11.py not found: $RUN_CLANG_TIDY"
+        echo "run-clang-tidy-18.py not found: $RUN_CLANG_TIDY"
         exit 2
     fi
 fi

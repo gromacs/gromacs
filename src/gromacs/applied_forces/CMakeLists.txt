@@ -67,6 +67,8 @@ add_subdirectory(awh)
 add_subdirectory(densityfitting)
 add_subdirectory(qmmm)
 add_subdirectory(colvars)
+add_subdirectory(plumed)
+add_subdirectory(nnpot)
 
 if (BUILD_TESTING)
     add_subdirectory(tests)

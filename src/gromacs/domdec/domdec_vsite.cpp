@@ -56,9 +56,7 @@
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/ga2la.h"
 #include "gromacs/domdec/hashedmap.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
-#include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
@@ -66,6 +64,8 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "domdec_specatomcomm.h"
 
@@ -196,7 +196,8 @@ void init_domdec_vsites(gmx_domdec_t* dd, int n_intercg_vsite)
      * The number of keys is a rough estimate, it will be optimized later.
      */
     int numKeysEstimate = std::min(n_intercg_vsite / 20, n_intercg_vsite / (2 * dd->nnodes));
-    dd->ga2la_vsite     = std::make_unique<gmx::HashedMap<int>>(numKeysEstimate);
+    dd->ga2la_vsite     = std::make_unique<gmx::HashedMap<int>>(
+            numKeysEstimate, gmx_omp_nthreads_get(ModuleMultiThread::Domdec));
 
     dd->vsite_comm = std::make_unique<gmx_domdec_specat_comm_t>();
 }

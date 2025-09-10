@@ -140,8 +140,8 @@ std::vector<int> allgather(const int& input, int numRanks, MPI_Comm communicator
         // to compile warning-free with all versions of MPI headers.
         //
         // TODO Make an allgather template to deal with this nonsense.
-        MPI_Gather(const_cast<int*>(&input), 1, MPI_INT, const_cast<int*>(result.data()), 1, MPI_INT, root, communicator);
-        MPI_Bcast(const_cast<int*>(result.data()), result.size(), MPI_INT, root, communicator);
+        MPI_Gather(&input, 1, MPI_INT, result.data(), 1, MPI_INT, root, communicator);
+        MPI_Bcast(result.data(), result.size(), MPI_INT, root, communicator);
 #else
         GMX_UNUSED_VALUE(communicator);
 #endif
@@ -184,20 +184,16 @@ std::vector<GpuTask> allgatherv(ArrayRef<const GpuTask> input,
         // thread-MPI segfaults with 1 rank and with zero totalExtent.
 #if GMX_MPI
         int root = 0;
-        MPI_Gatherv(reinterpret_cast<std::underlying_type_t<GpuTask>*>(const_cast<GpuTask*>(input.data())),
+        MPI_Gatherv(input.data(),
                     input.size(),
                     MPI_INT,
-                    reinterpret_cast<std::underlying_type_t<GpuTask>*>(result.data()),
-                    const_cast<int*>(extentOnEachRank.data()),
-                    const_cast<int*>(displacementForEachRank.data()),
+                    result.data(),
+                    extentOnEachRank.data(),
+                    displacementForEachRank.data(),
                     MPI_INT,
                     root,
                     communicator);
-        MPI_Bcast(reinterpret_cast<std::underlying_type_t<GpuTask>*>(result.data()),
-                  result.size(),
-                  MPI_INT,
-                  root,
-                  communicator);
+        MPI_Bcast(result.data(), result.size(), MPI_INT, root, communicator);
 #else
         GMX_UNUSED_VALUE(communicator);
 #endif

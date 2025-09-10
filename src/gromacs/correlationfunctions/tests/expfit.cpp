@@ -67,7 +67,8 @@ struct gmx_output_env_t;
 
 namespace gmx
 {
-
+namespace test
+{
 namespace
 {
 #if HAVE_LMFIT
@@ -225,5 +226,5 @@ TEST_F(ExpfitTest, EffnPRES)
 #endif
 
 } // namespace
-
+} // namespace test
 } // namespace gmx

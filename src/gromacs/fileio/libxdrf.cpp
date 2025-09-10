@@ -256,7 +256,7 @@ static void sendints(struct DataBuffer* buffer,
                     "match size %u\n",
                     nums[i],
                     sizes[i]);
-            exit(1);
+            std::exit(1);
         }
         /* use one step multiply */
         tmp = nums[i];
@@ -273,6 +273,8 @@ static void sendints(struct DataBuffer* buffer,
         }
         num_of_bytes = bytecnt;
     }
+    // If the caller specified a sufficiently large bit count,
+    // do what they say.
     if (num_of_bits >= num_of_bytes * CHAR_BIT)
     {
         for (i = 0; i < num_of_bytes; i++)
@@ -283,11 +285,15 @@ static void sendints(struct DataBuffer* buffer,
     }
     else
     {
+        // Otherwise send each byte we found
         for (i = 0; i < num_of_bytes - 1; i++)
         {
             sendbits(buffer, CHAR_BIT, bytes[i]);
         }
-        sendbits(buffer, num_of_bits - (num_of_bytes - 1) * CHAR_BIT, bytes[i]);
+        // Then the remaining bits
+        const int numBitsRemaining = num_of_bits - (num_of_bytes - 1) * CHAR_BIT;
+        GMX_ASSERT(numBitsRemaining < CHAR_BIT, "Help clang analyzer understand");
+        sendbits(buffer, numBitsRemaining, bytes[i]);
     }
 }
 
@@ -454,7 +460,7 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision, int magic_num
                 magic_number,
                 XTC_MAGIC,
                 XTC_NEW_MAGIC);
-        exit(1);
+        std::exit(1);
     }
 
     if (*size > XTC_1995_MAX_NATOMS && magic_number != XTC_NEW_MAGIC)
@@ -464,7 +470,7 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision, int magic_num
                 "with %d atoms in a frame without using the new XTC magic number (%d).\n",
                 *size,
                 XTC_NEW_MAGIC);
-        exit(1);
+        std::exit(1);
     }
 
     struct DataBuffer buffer;
@@ -512,12 +518,12 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision, int magic_num
         {
             we_should_free = 1;
             bufsize        = size3 * 1.2;
-            ip             = reinterpret_cast<int*>(malloc(size3 * sizeof(*ip)));
-            buffer.data    = reinterpret_cast<unsigned char*>(malloc(bufsize * XDR_INT_SIZE));
+            ip             = reinterpret_cast<int*>(std::malloc(size3 * sizeof(*ip)));
+            buffer.data    = reinterpret_cast<unsigned char*>(std::malloc(bufsize * XDR_INT_SIZE));
             if (ip == nullptr || buffer.data == nullptr)
             {
                 fprintf(stderr, "malloc failed\n");
-                exit(1);
+                std::exit(1);
             }
         }
 
@@ -621,8 +627,8 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision, int magic_num
         {
             if (we_should_free)
             {
-                free(ip);
-                free(buffer.data);
+                std::free(ip);
+                std::free(buffer.data);
             }
             return 0;
         }
@@ -662,8 +668,8 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision, int magic_num
         {
             if (we_should_free)
             {
-                free(ip);
-                free(buffer.data);
+                std::free(ip);
+                std::free(buffer.data);
             }
             return 0;
         }
@@ -822,8 +828,8 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision, int magic_num
         {
             if (we_should_free)
             {
-                free(ip);
-                free(buffer.data);
+                std::free(ip);
+                std::free(buffer.data);
             }
             return 0;
         }
@@ -848,8 +854,8 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision, int magic_num
 
         if (we_should_free)
         {
-            free(ip);
-            free(buffer.data);
+            std::free(ip);
+            std::free(buffer.data);
         }
         return rc;
     }
@@ -895,12 +901,12 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision, int magic_num
         {
             we_should_free = 1;
             bufsize        = size3 * 1.2;
-            ip             = reinterpret_cast<int*>(malloc(size3 * sizeof(*ip)));
-            buffer.data    = reinterpret_cast<unsigned char*>(malloc(bufsize * XDR_INT_SIZE));
+            ip             = reinterpret_cast<int*>(std::malloc(size3 * sizeof(*ip)));
+            buffer.data    = reinterpret_cast<unsigned char*>(std::malloc(bufsize * XDR_INT_SIZE));
             if (ip == nullptr || buffer.data == nullptr)
             {
                 fprintf(stderr, "malloc failed\n");
-                exit(1);
+                std::exit(1);
             }
         }
 
@@ -914,8 +920,8 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision, int magic_num
         {
             if (we_should_free)
             {
-                free(ip);
-                free(buffer.data);
+                std::free(ip);
+                std::free(buffer.data);
             }
             return 0;
         }
@@ -941,8 +947,8 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision, int magic_num
         {
             if (we_should_free)
             {
-                free(ip);
-                free(buffer.data);
+                std::free(ip);
+                std::free(buffer.data);
             }
             return 0;
         }
@@ -968,8 +974,8 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision, int magic_num
         {
             if (we_should_free)
             {
-                free(ip);
-                free(buffer.data);
+                std::free(ip);
+                std::free(buffer.data);
             }
             return 0;
         }
@@ -991,8 +997,8 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision, int magic_num
         {
             if (we_should_free)
             {
-                free(ip);
-                free(buffer.data);
+                std::free(ip);
+                std::free(buffer.data);
             }
             return 0;
         }
@@ -1108,8 +1114,8 @@ int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision, int magic_num
     }
     if (we_should_free)
     {
-        free(ip);
-        free(buffer.data);
+        std::free(ip);
+        std::free(buffer.data);
     }
     return 1;
 }

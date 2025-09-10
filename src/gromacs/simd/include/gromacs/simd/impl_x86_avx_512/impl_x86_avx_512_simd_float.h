@@ -217,8 +217,6 @@ static inline SimdFloat gmx_simdcall fnms(SimdFloat a, SimdFloat b, SimdFloat c)
     return { _mm512_fnmsub_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_) };
 }
 
-// Override for AVX-512-KNL
-#if GMX_SIMD_X86_AVX_512
 static inline SimdFloat gmx_simdcall rsqrt(SimdFloat x)
 {
     return { _mm512_rsqrt14_ps(x.simdInternal_) };
@@ -228,7 +226,6 @@ static inline SimdFloat gmx_simdcall rcp(SimdFloat x)
 {
     return { _mm512_rcp14_ps(x.simdInternal_) };
 }
-#endif
 
 static inline SimdFloat gmx_simdcall maskAdd(SimdFloat a, SimdFloat b, SimdFBool m)
 {
@@ -245,8 +242,6 @@ static inline SimdFloat gmx_simdcall maskzFma(SimdFloat a, SimdFloat b, SimdFloa
     return { _mm512_maskz_fmadd_ps(m.simdInternal_, a.simdInternal_, b.simdInternal_, c.simdInternal_) };
 }
 
-// Override for AVX-512-KNL
-#if GMX_SIMD_X86_AVX_512
 static inline SimdFloat gmx_simdcall maskzRsqrt(SimdFloat x, SimdFBool m)
 {
     return { _mm512_maskz_rsqrt14_ps(m.simdInternal_, x.simdInternal_) };
@@ -256,7 +251,6 @@ static inline SimdFloat gmx_simdcall maskzRcp(SimdFloat x, SimdFBool m)
 {
     return { _mm512_maskz_rcp14_ps(m.simdInternal_, x.simdInternal_) };
 }
-#endif
 
 static inline SimdFloat gmx_simdcall abs(SimdFloat x)
 {

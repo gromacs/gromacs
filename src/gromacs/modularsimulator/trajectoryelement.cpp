@@ -128,9 +128,9 @@ void TrajectoryElement::scheduleTask(Step step, Time time, const RegisterRunFunc
     const bool writeLogThisStep    = writeLogStep_ == step;
     if (writeEnergyThisStep || writeStateThisStep || writeLogThisStep)
     {
-        registerRunFunction([this, step, time, writeStateThisStep, writeEnergyThisStep, writeLogThisStep]() {
-            write(step, time, writeStateThisStep, writeEnergyThisStep, writeLogThisStep);
-        });
+        registerRunFunction(
+                [this, step, time, writeStateThisStep, writeEnergyThisStep, writeLogThisStep]()
+                { write(step, time, writeStateThisStep, writeEnergyThisStep, writeLogThisStep); });
     }
 }
 

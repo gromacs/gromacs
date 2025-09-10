@@ -45,7 +45,16 @@
  */
 
 #include "gromacs/gpu_utils/gmxopencl.h"
-#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/vectypes.h"
+
+#define GMX_HOST_ATTRIBUTE
+#define GMX_DEVICE_ATTRIBUTE
+#define GMX_HOSTDEVICE_ATTRIBUTE GMX_HOST_ATTRIBUTE GMX_DEVICE_ATTRIBUTE
+#if !defined(NDEBUG)
+#    define GMX_DEVICE_ASSERT(condition) assert(condition)
+#else
+#    define GMX_DEVICE_ASSERT(condition)
+#endif
 
 using DeviceTexture = void*;
 
@@ -79,6 +88,6 @@ struct KernelLaunchConfig
 /*! \brief Sets whether device code can use arrays that are embedded in structs.
  * Note that OpenCL 2.x might be able to do this, but we use 1.2.
  */
-#define c_canEmbedBuffers false
+static constexpr bool c_canEmbedBuffers = false;
 
 #endif

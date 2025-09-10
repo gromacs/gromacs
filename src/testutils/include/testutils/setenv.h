@@ -41,45 +41,20 @@
  * \ingroup module_testutils
  */
 
-#include "config.h"
-
-#include <cstdlib>
-
 #ifndef GMX_TESTUTILS_SETENV_H
-#    define GMX_TESTUTILS_SETENV_H
+#define GMX_TESTUTILS_SETENV_H
 
 namespace gmx
 {
 namespace test
 {
-//! Workaround to make setenv work on Windows
-inline int gmxSetenv(const char* name, const char* value, int overwrite)
-{
-#    if GMX_NATIVE_WINDOWS
-    if (!overwrite)
-    {
-        size_t size  = 0;
-        int    error = getenv_s(&size, nullptr, 0, name);
-        if (error != 0 || size != 0)
-        {
-            return error;
-        }
-    }
-    return _putenv_s(name, value);
-#    else
-    return setenv(name, value, overwrite);
-#    endif
-}
 
-//! Workaround to make unsetenv work on Windows
-inline int gmxUnsetenv(const char* name)
-{
-#    if GMX_NATIVE_WINDOWS
-    return _putenv_s(name, "");
-#    else
-    return unsetenv(name);
-#    endif
-}
+//! Polyfiller to make setenv work on Windows
+int gmxSetenv(const char* name, const char* value, const bool overwrite);
+
+//! Polyfiller to make unsetenv work on Windows
+int gmxUnsetenv(const char* name);
+
 } // namespace test
 } // namespace gmx
 

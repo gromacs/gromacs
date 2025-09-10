@@ -54,17 +54,19 @@ elseif(GMX_GPU_CUDA)
         # Must add these files so they can include device_information.h
         device_management_common.cpp
         detecthardware.cpp
-	    )
+        )
 elseif(GMX_GPU_HIP)
     gmx_add_libgromacs_sources(
         device_management_hip.cpp
+        device_management_shared_amd.cpp
         )
     _gmx_add_files_to_property(HIP_SOURCES
         # Must add these files so they can include device_information.h
         device_management_common.cpp
         device_management_hip.cpp
+        device_management_shared_amd.cpp
         detecthardware.cpp
-	    )
+        )
 elseif(GMX_GPU_SYCL)
     gmx_add_libgromacs_sources(
         device_management_sycl.cpp
@@ -95,7 +97,10 @@ target_link_libraries(hardware INTERFACE
                       legacy_api
                       )
 # The interface conveys transitive dependence on other module(s)
-target_link_libraries(hardware INTERFACE utility)
+target_link_libraries(hardware INTERFACE
+                      serialization
+                      utility
+                      )
 
 # TODO: when hardware is an OBJECT target
 #target_link_libraries(hardware PUBLIC legacy_api)

@@ -46,7 +46,16 @@
 #include <cstddef>
 
 #include "gromacs/gpu_utils/gmxsycl.h"
-#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/vectypes.h"
+
+#define GMX_HOST_ATTRIBUTE
+#define GMX_DEVICE_ATTRIBUTE
+#define GMX_HOSTDEVICE_ATTRIBUTE GMX_HOST_ATTRIBUTE GMX_DEVICE_ATTRIBUTE
+#if defined(SYCL_EXT_ONEAPI_ASSERT) && SYCL_EXT_ONEAPI_ASSERT && !defined(NDEBUG)
+#    define GMX_DEVICE_ASSERT(condition) assert(condition)
+#else
+#    define GMX_DEVICE_ASSERT(condition)
+#endif
 
 //! Type of device texture object. In SYCL, that would be \c sycl::image, but it's not used.
 using DeviceTexture = void*;
@@ -59,8 +68,59 @@ using CommandEvent = void*;
 using Float4 = sycl::float4;
 //! Convenience alias. Not using sycl::float3 due to alignment issues.
 using Float3 = gmx::RVec;
+//! Convenience alias for 3-wide float in shared device kernels
+using DeviceFloat3 = gmx::RVec;
 //! Convenience alias for sycl::float2
 using Float2 = sycl::float2;
+//! Convenience alias for sycl::int3
+using Int3 = sycl::int3;
+//! Convenience alias for sycl::int4
+using Int4 = sycl::int4;
+
+//! Convenience alias for 4-wide float in shared device kernels.
+struct DeviceFloat4
+{
+    DeviceFloat4(sycl::float4 in) : storage_(in) {}
+
+    template<typename Index>
+    float operator[](Index i) const
+    {
+        switch (i)
+        {
+            case 0: return storage_.x();
+            case 1: return storage_.y();
+            case 2: return storage_.z();
+            default: GMX_DEVICE_ASSERT(i == 3); return storage_.w();
+        }
+    }
+    operator sycl::float4() const { return storage_; }
+
+    alignas(16) sycl::float4 storage_;
+};
+
+//! Convenience alias for int3 in shared device kernels
+using DeviceInt3 = sycl::int3;
+
+//! Convenience alias for int4 in shared device kernels
+using DeviceInt4 = sycl::int4;
+
+//! Convenience alias for sycl global device memory
+template<typename T>
+using DeviceGlobalPtr = sycl::global_ptr<T>;
+//! Convenience alias for sycl local device memory
+template<typename T>
+using DeviceLocalPtr = sycl::local_ptr<T>;
+//! Convenience alias for sycl private device memory
+template<typename T>
+using DevicePrivatePtr = sycl::private_ptr<T>;
+
+
+static inline DeviceInt4 loadInt4(DeviceGlobalPtr<const int> input, const int index)
+{
+    DeviceInt4 value;
+    value.load(index, input);
+    return value;
+}
 
 /*! \internal \brief
  * GPU kernels scheduling description.
@@ -90,6 +150,6 @@ struct KernelLaunchConfig
  * with that, so we can pass embedded buffers to them, which is what this
  * constant actually controls.
  */
-#define c_canEmbedBuffers true
+static constexpr bool c_canEmbedBuffers = true;
 
 #endif

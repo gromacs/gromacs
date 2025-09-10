@@ -38,19 +38,18 @@
 
 #include <array>
 #include <string>
+#include <string_view>
 
 #include "gromacs/gpu_utils/device_stream.h"
 #include "gromacs/gpu_utils/gputraits_hip.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 namespace gmx
-{
-namespace
 {
 
 /*! \brief Add the API information on the specific error to the error message.
@@ -74,11 +73,11 @@ inline std::string getDeviceErrorString(const hipError_t deviceError)
  *
  *  \throws InternalError if deviceError is not a success.
  */
-inline void checkDeviceError(const hipError_t deviceError, const std::string& errorMessage)
+inline void checkDeviceError(const hipError_t deviceError, const std::string_view errorMessage)
 {
     if (deviceError != hipSuccess)
     {
-        GMX_THROW(gmx::InternalError(errorMessage + " " + getDeviceErrorString(deviceError)));
+        GMX_THROW(gmx::InternalError(std::string{ errorMessage } + " " + getDeviceErrorString(deviceError)));
     }
 }
 
@@ -90,7 +89,7 @@ inline void checkDeviceError(const hipError_t deviceError, const std::string& er
  *
  * \param[in]  errorMessage  Undecorated error message.
  */
-inline void ensureNoPendingDeviceError(const std::string& errorMessage)
+inline void ensureNoPendingDeviceError(const std::string_view errorMessage)
 {
     // Ensure there is no pending error that would otherwise affect
     // the behaviour of future error handling.
@@ -104,7 +103,8 @@ inline void ensureNoPendingDeviceError(const std::string& errorMessage)
     // what is appropriate to do about it, so assert only for debug
     // builds.
     const std::string fullErrorMessage =
-            errorMessage + " An unhandled error from a previous HIP operation was detected. "
+            std::string{ errorMessage }
+            + " An unhandled error from a previous HIP operation was detected. "
             + gmx::getDeviceErrorString(deviceError);
     GMX_ASSERT(deviceError == hipSuccess, fullErrorMessage.c_str());
     // TODO When we evolve a better logging framework, use that
@@ -112,7 +112,6 @@ inline void ensureNoPendingDeviceError(const std::string& errorMessage)
     gmx_warning("%s", fullErrorMessage.c_str());
 }
 
-} // namespace
 } // namespace gmx
 
 /*! \brief  Returns true if all tasks in \p deviceStream have completed.
@@ -183,8 +182,8 @@ template<typename CurrentArg, typename... RemainingArgs, size_t totalArgsCount, 
 void prepareGpuKernelArgument(KernelPtr                          kernel,
                               std::array<void*, totalArgsCount>* kernelArgsPtr,
                               size_t                             argIndex,
-                              const CurrentArg*                  argPtr,
-                              const RemainingArgs*... otherArgsPtrs)
+                              CurrentArg*                        argPtr,
+                              RemainingArgs*... otherArgsPtrs)
 {
     (*kernelArgsPtr)[argIndex] = const_cast<void*>(static_cast<const void*>(argPtr));
     prepareGpuKernelArgument(kernel, kernelArgsPtr, argIndex + 1, otherArgsPtrs...);
@@ -203,7 +202,7 @@ void prepareGpuKernelArgument(KernelPtr                          kernel,
 template<typename KernelPtr, typename... Args>
 std::array<void*, sizeof...(Args)> prepareGpuKernelArguments(KernelPtr kernel,
                                                              const KernelLaunchConfig& /*config */,
-                                                             const Args*... argsPtrs)
+                                                             Args*... argsPtrs)
 {
     std::array<void*, sizeof...(Args)> kernelArgs;
     prepareGpuKernelArgument(kernel, &kernelArgs, 0, argsPtrs...);

@@ -53,10 +53,10 @@
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/gpu_utils/devicebuffer.cuh"
 #include "gromacs/math/functions.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/vec.h"
 
-#include "pme.cuh"
+#include "pme_gpu_internal.h"
 #include "pme_gpu_types.h"
 #include "pme_gpu_types_host.h"
 #include "pme_gpu_types_host_impl.h"
@@ -802,9 +802,11 @@ static void receiveAndSend(DeviceBuffer<float> sendBuf,
                            MPI_Comm            comm)
 {
     // send data to dest rank and recv from src rank
+#if GMX_MPI
     MPI_Irecv(recvBuf, recvCount, MPI_FLOAT, src, tag, comm, recvRequest);
 
     MPI_Isend(sendBuf, sendCount, MPI_FLOAT, dest, tag, comm, sendRequest);
+#endif
 }
 
 void pmeGpuGridHaloExchange(const PmeGpu* pmeGpu, gmx_wallcycle* wcycle)

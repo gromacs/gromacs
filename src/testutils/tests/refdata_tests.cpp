@@ -220,6 +220,68 @@ TEST(ReferenceDataTest, HandlesSequenceOfCustomData)
     }
 }
 
+TEST(ReferenceDataTest, CheckSequenceArrayRef)
+{
+    const int seq[5] = { -3, 0, 5, 2, 8 };
+
+    const gmx::ArrayRef<const int> ref = arrayRefFromArray(seq, 5);
+
+    {
+        TestReferenceData    data(ReferenceDataMode::UpdateAll);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkSequence(ref, "ref");
+    }
+    {
+        TestReferenceData    data(ReferenceDataMode::Compare);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkSequence(ref, "ref");
+    }
+}
+
+TEST(ReferenceDataTest, CheckSequenceArrayRefHandlesIncorrectData)
+{
+    const int seq[5]     = { -1, 3, 5, 2, 4 };
+    const int seq_mod[5] = { -1, 3, 7, 2, 4 };
+
+    const gmx::ArrayRef<const int> ref       = arrayRefFromArray(seq, 5);
+    const gmx::ArrayRef<const int> ref_mod   = arrayRefFromArray(seq_mod, 5);
+    const gmx::ArrayRef<const int> ref_short = arrayRefFromArray(seq, 4);
+
+
+    {
+        TestReferenceData    data(ReferenceDataMode::UpdateAll);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkSequence(ref, "ref");
+    }
+    {
+        TestReferenceData    data(ReferenceDataMode::Compare);
+        TestReferenceChecker checker(data.rootChecker());
+        EXPECT_NONFATAL_FAILURE(checker.checkSequence(ref_mod, "ref"), "");
+        EXPECT_NONFATAL_FAILURE(checker.checkSequence(ref_short, "ref"), "");
+    }
+}
+
+TEST(ReferenceDataTest, CheckSequenceArrayRefHandlesSequenceOfCustomData)
+{
+    const dvec seq[] = { { -3, 4, 5 }, { -2.3, 5, 0 } };
+    // Modified sequence which should fail when compared to the original
+    const dvec seq_mod[] = { { -3, 4, 5 }, { +2.3, 5, 0 } };
+
+    const gmx::ArrayRef<const dvec> ref     = arrayRefFromArray(seq, 2);
+    const gmx::ArrayRef<const dvec> ref_mod = arrayRefFromArray(seq_mod, 2);
+
+    {
+        TestReferenceData    data(ReferenceDataMode::UpdateAll);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkSequence(ref, "ref", checkCustomVector);
+    }
+    {
+        TestReferenceData    data(ReferenceDataMode::Compare);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkSequence(ref, "ref", checkCustomVector);
+        EXPECT_NONFATAL_FAILURE(checker.checkSequence(ref_mod, "ref"), "");
+    }
+}
 
 TEST(ReferenceDataTest, HandlesIncorrectData)
 {

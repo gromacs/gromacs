@@ -64,6 +64,10 @@
 
 #include "moduletest.h"
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -174,3 +178,5 @@ TEST_F(PairDistanceModuleTest, CoordinateSelectionIsNotOverwrittenWithExplicitGr
 }
 
 } // namespace
+} // namespace test
+} // namespace gmx

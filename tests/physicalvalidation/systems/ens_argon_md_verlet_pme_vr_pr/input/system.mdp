@@ -8,3 +8,4 @@ tau-t                    = 0.1
 pcoupl                   = parrinello-rahman
 ref-p                    = 1.0
 compressibility          = 4.5e-5
+tau-p                    = 1.0

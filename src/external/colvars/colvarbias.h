@@ -10,6 +10,8 @@
 #ifndef COLVARBIAS_H
 #define COLVARBIAS_H
 
+#include <memory>
+
 #include "colvar.h"
 #include "colvarparse.h"
 #include "colvardeps.h"
@@ -91,8 +93,9 @@ public:
   // FIXME this is currently 1D only
   virtual int current_bin();
   //// Give the count at a given bin index.
-  // FIXME this is currently 1D only
   virtual int bin_count(int bin_index);
+  /// Return the average number of samples in a given "radius" around current bin
+  virtual int local_sample_count(int radius);
 
   //// Share information between replicas, whatever it may be.
   virtual int replica_share();
@@ -171,14 +174,14 @@ public:
   /// \param[in,out] os Output stream
   /// \param[in] key  Keyword labeling the header block
   /// \param[in] header  Whether this is the header of a multi-line segment vs a single line
-  std::ostream &write_state_data_key(std::ostream &os, std::string const &key, bool header = true);
+  std::ostream &write_state_data_key(std::ostream &os, std::string const &key, bool header = true) const;
 
   /// Write a keyword header for a data sequence to an unformatted stream
   /// \param[in,out] os Output stream
   /// \param[in] key  Keyword labeling the header block
   /// \param[in] header  Ignored
   cvm::memory_stream &write_state_data_key(cvm::memory_stream &os, std::string const &key,
-                                           bool header = true);
+                                           bool header = true) const;
 
 private:
 
@@ -333,8 +336,6 @@ public:
   colvarbias_ti(char const *key);
   virtual ~colvarbias_ti();
 
-  virtual int clear_state_data();
-
   virtual int init(std::string const &conf);
   virtual int init_grids();
   virtual int update();
@@ -358,10 +359,10 @@ protected:
   std::vector<colvarvalue> ti_system_forces;
 
   /// Averaged system forces
-  colvar_grid_gradient *ti_avg_forces;
+  std::shared_ptr<colvar_grid_gradient> ti_avg_forces;
 
   /// Histogram of sampled data
-  colvar_grid_count *ti_count;
+  std::shared_ptr<colvar_grid_count> ti_count;
 
   /// Because total forces may be from the last simulation step,
   /// store the index of the variables then

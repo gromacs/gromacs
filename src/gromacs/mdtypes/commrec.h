@@ -40,137 +40,34 @@
 
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/mpicomm.h"
 
 struct gmx_domdec_t;
 
-#define DUTY_PP (1U << 0U)
-#define DUTY_PME (1U << 1U)
-
-//! Whether the current DD role is main or slave
-enum class DDRole
-{
-    Main,
-    Agent
-};
-
-//! Whether one or more ranks are used
-enum class NumRanks
-{
-    Single,
-    Multiple
-};
-
-//! Settings and communicators for two-step communication: intra + inter-node
-struct gmx_nodecomm_t
-{
-    bool     bUse       = false;
-    MPI_Comm comm_intra = MPI_COMM_NULL;
-    int      rank_intra = 0;
-    MPI_Comm comm_inter = MPI_COMM_NULL;
-};
-
 struct t_commrec
 {
-    //! Constructs a valid object with one rank and no communicators
-    t_commrec();
+    //! Constructs a valid object with all communicators set to \p mpiComm
+    t_commrec(const gmx::MpiComm& mpiCommMySim, const gmx::MpiComm& mpiCommMyGroup, gmx_domdec_t* domdec);
 
-    ~t_commrec();
-
-    //! Transfers the ownership of \p ddUniquePtr and sets \p dd
-    void setDD(std::unique_ptr<gmx_domdec_t>&& ddUniquePtr);
-
-    //! Destroys the dd object
-    void destroyDD();
+    //! Returns whether this is the main rank in the simulation, i.e. the rank that does IO
+    bool isSimulationMainRank() const { return (commMySim.rank() == 0); }
 
     /* The nodeids in one sim are numbered sequentially from 0.
      * All communication within some simulation should happen
      * in mpi_comm_mysim, or its subset mpi_comm_mygroup.
      */
-    //! The rank-id in mpi_comm_mysim;
-    int sim_nodeid = 0;
-    //! The number of ranks in mpi_comm_mysim
-    int nnodes = 1;
-    //! The number of separate PME ranks, 0 when no separate PME ranks are used
-    int npmenodes = 0;
-
-    //! The rank-id in mpi_comm_mygroup;
-    int nodeid = 0;
 
     /* MPI communicators within a single simulation
      * Note: other parts of the code may further subset these communicators.
      */
-    MPI_Comm mpi_comm_mysim = MPI_COMM_NULL;   /* communicator including all ranks of
-                                  a single simulation */
-    MPI_Comm mpi_comm_mygroup = MPI_COMM_NULL; /* subset of mpi_comm_mysim including only
-                                  the ranks in the same group (PP or PME) */
-    //! The number of ranks in mpi_comm_mygroup
-    int sizeOfMyGroupCommunicator = 1;
+    /* Communicator including all ranks of a single simulation */
+    const gmx::MpiComm& commMySim;
+    /* Subset of commMySim including only the ranks in the same group (PP or PME) */
+    const gmx::MpiComm& commMyGroup;
 
-    //! The communicator used before DD was initialized
-    MPI_Comm mpiDefaultCommunicator    = MPI_COMM_NULL;
-    int      sizeOfDefaultCommunicator = 0;
-    int      rankInDefaultCommunicator = 0;
-
-    gmx_nodecomm_t nc;
-
-private:
-    //! Storage for the domain decomposition data
-    std::unique_ptr<gmx_domdec_t> ddUniquePtr_;
-
-public:
-    //! C-pointer to ddUniquePtr (should be replaced by a getter)
-    gmx_domdec_t* dd = nullptr;
-
-    /* The duties of this node, see the DUTY_ defines above.
-     * This should be read through thisRankHasDuty() or getThisRankDuties().
-     */
-    int duty = 0;
+    //! Pointer to a domdec struct, can be nullptr
+    gmx_domdec_t* dd;
 };
-
-/*! \brief
- * Returns the rank's duty, and asserts that it has been initialized.
- */
-inline int getThisRankDuties(const t_commrec* cr)
-{
-    GMX_ASSERT(cr, "Invalid commrec pointer");
-    GMX_ASSERT(cr->duty != 0, "Commrec duty was not initialized!");
-    return cr->duty;
-}
-
-/*! \brief
- * A convenience getter for the commrec duty assignment;
- * asserts that duty is actually valid (have been initialized).
- *
- * \param[in] cr    Communication structure pointer
- * \param[in] duty  A single duty's corresponding DUTY_ flag. Combinations are not supported.
- *
- * \returns Whether this duty is assigned to this rank.
- */
-inline bool thisRankHasDuty(const t_commrec* cr, int duty)
-{
-    GMX_ASSERT((duty == DUTY_PME) || (duty == DUTY_PP), "Invalid duty type");
-    return (getThisRankDuties(cr) & duty) != 0;
-}
-
-/*! \brief True if this is a simulation with more than 1 rank
- *
- * In particular, this is true for multi-rank runs with TPI and NM, because
- * they use a decomposition that is not the domain decomposition used by
- * other simulation types. */
-#define PAR(cr) ((cr)->sizeOfDefaultCommunicator > 1)
-
-//! True of this is the main node
-#define MAIN(cr) (((cr)->rankInDefaultCommunicator == 0) || !PAR(cr))
-
-// Note that currently, main is always PP main, so this is equivalent to MAIN(cr)
-//! True if this is the particle-particle main
-#define SIMMAIN(cr) ((MAIN(cr) && thisRankHasDuty((cr), DUTY_PP)) || !PAR(cr))
-
-//! The node id for this rank
-#define RANK(cr, nodeid) (nodeid)
-
-//! The node id for the main
-#define MAINRANK(cr) (0)
 
 /*! \brief Returns whether the domain decomposition machinery is active and reorders atoms
  *
@@ -187,22 +84,6 @@ inline bool thisRankHasDuty(const t_commrec* cr, int duty)
 static bool inline haveDDAtomOrdering(const t_commrec& cr)
 {
     return cr.dd != nullptr;
-}
-
-/*! \brief Returns whether we have actual domain decomposition for the particle-particle interactions
- *
- * Will return false when we use 1 rank for PP and 1 for PME
- */
-static bool inline havePPDomainDecomposition(const t_commrec* cr)
-{
-    /* NOTE: It would be better to use cr->dd->nnodes, but we do not want
-     *       to pull in a dependency on domdec.h into this file.
-     */
-    GMX_ASSERT(cr != nullptr, "Invalid call of havePPDomainDecomposition before commrec is made");
-    GMX_ASSERT(cr->npmenodes >= 0,
-               "Invalid call of havePPDomainDecomposition before MPMD automated decomposition was "
-               "chosen.");
-    return (cr->dd != nullptr && cr->nnodes - cr->npmenodes > 1);
 }
 
 #endif

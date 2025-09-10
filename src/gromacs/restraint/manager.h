@@ -52,7 +52,6 @@
 #include "gromacs/restraint/restraintpotential.h"
 #include "gromacs/utility/basedefinitions.h"
 
-struct t_commrec;
 struct t_mdatoms;
 struct pull_t;
 
@@ -86,9 +85,9 @@ public:
      * \brief Client code can access the shared resource by copying or moving a handle.
      * \{
      */
-    RestraintManager(const RestraintManager& /* unused */) = default;
-    RestraintManager& operator=(const RestraintManager& /* unused */) = default;
-    RestraintManager(RestraintManager&&) noexcept                     = default;
+    RestraintManager(const RestraintManager& /* unused */)                = default;
+    RestraintManager& operator=(const RestraintManager& /* unused */)     = default;
+    RestraintManager(RestraintManager&&) noexcept                         = default;
     RestraintManager& operator=(RestraintManager&& /* unused */) noexcept = default;
     /*! \} */
 

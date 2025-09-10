@@ -44,9 +44,14 @@
 
 #include "pairlistset.h"
 
-#include "gromacs/mdtypes/nblist.h"
 #include "gromacs/nbnxm/pairlist.h"
 
+#include "atompairlist.h"
 #include "pairlistwork.h"
 
+namespace gmx
+{
+
 PairlistSet::~PairlistSet() = default;
+
+} // namespace gmx

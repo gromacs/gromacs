@@ -98,8 +98,8 @@ static bool runningOnCompatibleOSForAmd()
 
     sysctl(mib, sizeof(mib) / sizeof(mib[0]), kernelVersion, &len, NULL, 0);
 
-    int major = strtod(kernelVersion, NULL);
-    int minor = strtod(strchr(kernelVersion, '.') + 1, NULL);
+    int major = std::strtod(kernelVersion, NULL);
+    int minor = std::strtod(std::strchr(kernelVersion, '.') + 1, NULL);
 
     // Kernel 14.4 corresponds to OS X 10.10.4
     return (major > 14 || (major == 14 && minor >= 4));
@@ -151,7 +151,7 @@ static FixedCapacityVector<int, 10> fillSupportedSubGroupSizes(const cl_device_i
     {
         case DeviceVendor::Amd:
         {
-            if (getenv("GMX_OCL_FORCE_AMD_WAVEFRONT64"))
+            if (std::getenv("GMX_OCL_FORCE_AMD_WAVEFRONT64"))
             {
                 result.push_back(64);
                 return result;
@@ -249,12 +249,12 @@ static bool runningOnCompatibleHWForAmd(const DeviceInformation& deviceInfo)
  */
 static DeviceStatus isDeviceFunctional(const DeviceInformation& deviceInfo)
 {
-    if (getenv("GMX_GPU_DISABLE_COMPATIBILITY_CHECK") != nullptr)
+    if (std::getenv("GMX_GPU_DISABLE_COMPATIBILITY_CHECK") != nullptr)
     {
         // Assume the device is compatible because checking has been disabled.
         return DeviceStatus::Compatible;
     }
-    if (getenv("GMX_OCL_DISABLE_COMPATIBILITY_CHECK") != nullptr)
+    if (std::getenv("GMX_OCL_DISABLE_COMPATIBILITY_CHECK") != nullptr)
     {
         fprintf(stderr,
                 "Environment variable GMX_OCL_DISABLE_COMPATIBILITY_CHECK is deprecated and will "
@@ -470,7 +470,7 @@ std::vector<std::unique_ptr<DeviceInformation>> findDevices()
 
     ocl_platform_ids = nullptr;
 
-    if (getenv("GMX_OCL_FORCE_CPU") != nullptr)
+    if (std::getenv("GMX_OCL_FORCE_CPU") != nullptr)
     {
         req_dev_type = CL_DEVICE_TYPE_CPU;
     }
@@ -711,3 +711,5 @@ std::string getDeviceInformationString(const DeviceInformation& deviceInfo)
                                  c_deviceStateString[deviceInfo.status]);
     }
 }
+
+void doubleCheckGpuAwareMpiWillWork(const DeviceInformation& /* deviceInfo */) {}

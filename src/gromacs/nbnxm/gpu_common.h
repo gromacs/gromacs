@@ -60,14 +60,18 @@
 #    include "gromacs/gpu_utils/syclutils.h"
 #endif
 
+#if GMX_GPU_HIP
+#    include "hip/nbnxm_hip_types.h"
+#endif
+
 #include "gromacs/gpu_utils/gpu_utils.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/timing/gpu_timing.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/vec.h"
 
 #include "gpu_common_utils.h"
 #include "nbnxm_gpu.h"
@@ -75,10 +79,6 @@
 namespace gmx
 {
 class ListedForcesGpu;
-}
-
-namespace Nbnxm
-{
 
 /*! \brief Count pruning kernel time if either kernel has been triggered
  *
@@ -86,14 +86,14 @@ namespace Nbnxm
  *   - 1st pass prune: ran during the current step (prior to the force kernel);
  *   - rolling prune:  ran at the end of the previous step (prior to the current step H2D xq);
  *
- * Note that the resetting of Nbnxm::GpuTimers::didPrune and Nbnxm::GpuTimers::didRollingPrune
+ * Note that the resetting of GpuTimers::didPrune and GpuTimers::didRollingPrune
  * should happen after calling this function.
  *
  * \param[in] timers   structs with GPU timer objects
  * \param[inout] timings  GPU task timing data
  * \param[in] iloc        interaction locality
  */
-static void countPruneKernelTime(Nbnxm::GpuTimers*          timers,
+static void countPruneKernelTime(GpuTimers*                 timers,
                                  gmx_wallclock_gpu_nbnxn_t* timings,
                                  const InteractionLocality  iloc)
 {
@@ -154,7 +154,7 @@ static inline void gpu_reduce_staged_outputs(const NBStagingData&      nbst,
 
         if (reduceFshift)
         {
-            for (int i = 0; i < gmx::c_numShiftVectors; i++)
+            for (int i = 0; i < c_numShiftVectors; i++)
             {
                 rvec_inc(fshift[i], nbst.fShift[i]);
             }
@@ -184,10 +184,10 @@ static inline void gpu_reduce_staged_outputs(const NBStagingData&      nbst,
  */
 template<typename GpuPairlist>
 static inline void gpu_accumulate_timings(gmx_wallclock_gpu_nbnxn_t* timings,
-                                          Nbnxm::GpuTimers*          timers,
+                                          GpuTimers*                 timers,
                                           const GpuPairlist*         plist,
                                           AtomLocality               atomLocality,
-                                          const gmx::StepWorkload&   stepWork,
+                                          const StepWorkload&        stepWork,
                                           bool                       doTiming)
 {
     /* timing data accumulation */
@@ -250,13 +250,13 @@ static inline void gpu_accumulate_timings(gmx_wallclock_gpu_nbnxn_t* timings,
  * objects.
  */
 //NOLINTNEXTLINE(misc-definitions-in-headers)
-bool gpu_try_finish_task(NbnxmGpu*                nb,
-                         const gmx::StepWorkload& stepWork,
-                         const AtomLocality       aloc,
-                         real*                    e_lj,
-                         real*                    e_el,
-                         gmx::ArrayRef<gmx::RVec> shiftForces,
-                         GpuTaskCompletion        completionKind)
+bool gpu_try_finish_task(NbnxmGpu*           nb,
+                         const StepWorkload& stepWork,
+                         const AtomLocality  aloc,
+                         real*               e_lj,
+                         real*               e_el,
+                         ArrayRef<RVec>      shiftForces,
+                         GpuTaskCompletion   completionKind)
 {
     GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
 
@@ -298,7 +298,7 @@ bool gpu_try_finish_task(NbnxmGpu*                nb,
         // with a future OpenCL implementation, but with CUDA timing is anyway disabled
         // in all cases where we skip the wait.
         gpu_accumulate_timings(
-                nb->timings, nb->timers, nb->plist[iLocality].get(), aloc, stepWork, nb->bDoTime);
+                nb->timings.get(), nb->timers, nb->plist[iLocality].get(), aloc, stepWork, nb->bDoTime);
 
         if (stepWork.computeEnergy || stepWork.computeVirial)
         {
@@ -343,13 +343,13 @@ bool gpu_try_finish_task(NbnxmGpu*                nb,
  * \return            The number of cycles the gpu wait took
  */
 //NOLINTNEXTLINE(misc-definitions-in-headers) TODO: move into source file
-float gpu_wait_finish_task(NbnxmGpu*                nb,
-                           const gmx::StepWorkload& stepWork,
-                           AtomLocality             aloc,
-                           real*                    e_lj,
-                           real*                    e_el,
-                           gmx::ArrayRef<gmx::RVec> shiftForces,
-                           gmx_wallcycle*           wcycle)
+float gpu_wait_finish_task(NbnxmGpu*           nb,
+                           const StepWorkload& stepWork,
+                           AtomLocality        aloc,
+                           real*               e_lj,
+                           real*               e_el,
+                           ArrayRef<RVec>      shiftForces,
+                           gmx_wallcycle*      wcycle)
 {
     auto cycleCounter = (atomToInteractionLocality(aloc) == InteractionLocality::Local)
                                 ? WallCycleCounter::WaitGpuNbL
@@ -362,6 +362,6 @@ float gpu_wait_finish_task(NbnxmGpu*                nb,
     return waitTime;
 }
 
-} // namespace Nbnxm
+} // namespace gmx
 
 #endif

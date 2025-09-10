@@ -120,7 +120,8 @@ void PyContext::addMDModule(const pybind11::object& force_object) const
         auto spec     = getSpec();
         auto holder   = new gmxapi::MDHolder(spec);
         holder->name_ = "pygmx holder";
-        auto deleter  = [](PyObject* o) {
+        auto deleter  = [](PyObject* o)
+        {
             if (PyCapsule_IsValid(o, gmxapi::MDHolder_Name))
             {
                 auto holder_ptr = (gmxapi::MDHolder*)PyCapsule_GetPointer(o, gmxapi::MDHolder_Name);

@@ -79,6 +79,7 @@
 #define GMX_UTILITY_ENUMHELPERS_H
 
 #include <cstddef>
+#include <cstdint>
 
 #include <iterator>
 #include <type_traits>
@@ -116,8 +117,7 @@ class EnumerationIterator final :
     public gmx::boost::stl_interfaces::iterator_interface<EnumerationIterator<EnumType, Last, Step>, std::random_access_iterator_tag, EnumType>
 {
 public:
-    // TODO: Use std::is_enum_v when CUDA 11 is a requirement.
-    static_assert(std::is_enum<EnumType>::value, "Enumeration iterator must be over an enum type.");
+    static_assert(std::is_enum_v<EnumType>, "Enumeration iterator must be over an enum type.");
     //! Convenience alias
     using IntegerType = std::underlying_type_t<EnumType>;
 
@@ -297,6 +297,42 @@ typename EnumerationArrayType::EnumerationWrapperType keysOf(const EnumerationAr
 {
     return EnumerationArrayType::keys();
 }
+
+/*! \brief Helper class to determine whether a template type that is
+ * an enum class has a Count field
+ *
+ * Having that field makes the enum class suitable for default use
+ * with \c EnumerationArray.
+ *
+ * This class uses SFINAE to test whether the type \c EnumToTest has a
+ * Count field. If so, the overload of \c hasCountField returning \c
+ * Yes is declared for EnumToTest. Otherwise the default returning No
+ * is declared. So for all types, hasCountField is declared and has a
+ * characteristic return type. The size of that return type is a
+ * compile-time constant that can be used to implement the \c value
+ * member. Since \c hasCountField is never called, it needs no
+ * definitions.
+ */
+template<class EnumToTest>
+class EnumClassSuitsEnumerationArray
+{
+private:
+    using Yes = int8_t;
+    using No  = int16_t;
+
+    // Selected if E::Count is a valid expression; then hasCountField
+    // has return type Yes.
+    template<class E>
+    static Yes hasCountField(decltype(E::Count)*);
+
+    // Selected by default for all types for which E::Count is not a valid expression;
+    // then hasCountField has return type No.
+    template<class E>
+    static No hasCountField(...);
+
+public:
+    static constexpr bool value = sizeof(hasCountField<EnumToTest>(nullptr)) == sizeof(Yes);
+};
 
 } // namespace gmx
 

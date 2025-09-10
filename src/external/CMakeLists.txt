@@ -54,6 +54,7 @@ if(BUILD_TESTING AND GMX_BUILD_UNITTESTS)
     add_subdirectory(googletest EXCLUDE_FROM_ALL)
     mark_as_advanced(BUILD_GMOCK)
     mark_as_advanced(INSTALL_GTEST)
+    mark_as_advanced(GTEST_HAS_ABSL)
     target_compile_definitions(gmock
         PRIVATE
             _GNU_SOURCE=1
@@ -83,14 +84,22 @@ if(BUILD_TESTING AND GMX_BUILD_UNITTESTS)
         gmx_target_warning_suppression(gmock -Wno-debug-disables-optimization HAVE_NO_DEBUG_DISABLES_OPTIMIZATION)
     endif()
     if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-        # GoogleTest disables this warning for IntelLLVM, but old CMake versions identify it as plain Clang
-        # Remove when CMake 3.20+ is required
-        # https://github.com/google/googletest/issues/4315
-        gmx_target_warning_suppression(gtest -Wno-implicit-float-size-conversion HAVE_NO_IMPLICIT_FLOAT_SIZE_CONVERSION)
         gmx_target_warning_suppression(gtest -Wno-implicit-int-float-conversion HAVE_NO_IMPLICIT_INT_FLOAT_CONVERSION)
+    endif()
+    # Intel LLVM 2021.2 defaults to no-finite-math which isn't OK
+    if(GMX_INTEL_LLVM)
+        if (WIN32)
+            set (_flag "/fp:precise")
+        else()
+            set(_flag "-fno-finite-math-only")
+        endif()
+        gmx_target_warning_suppression(gmock ${_flag} HAS_NO_FINITE_MATH_ONLY)
+        gmx_target_warning_suppression(gtest ${_flag} HAS_NO_FINITE_MATH_ONLY)
     endif()
 
     set(GTEST_IS_THREADSAFE "${GTEST_IS_THREADSAFE}" PARENT_SCOPE)
+
+    add_subdirectory(thread_mpi/test)
 endif()
 add_subdirectory(boost)
 add_subdirectory(rpc_xdr)

@@ -1,0 +1,77 @@
+GROMACS 2024.5 release notes
+----------------------------
+
+This version was released on January 24th, 2025. These release notes
+document the changes that have taken place in |Gromacs| since the
+previous 2024.4 version, to fix known issues. It also incorporates all
+fixes made in version 2023.5 and earlier, which you can find described
+in the :ref:`release-notes`.
+
+.. Note to developers!
+   Please use """"""" to underline the individual entries for fixed issues in the subfolders,
+   otherwise the formatting on the webpage is messed up.
+   Also, please use the syntax :issue:`number` to reference issues on GitLab, without
+   a space between the colon and number!
+
+Fixes where mdrun could behave incorrectly
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Fix crashes with AWH and multi-sim bias sharing
+"""""""""""""""""""""""""""""""""""""""""""""""
+
+``gmx mdrun`` multi-sim AWH with bias sharing might have crashed with
+either 1 PP rank and 1 PME rank, or multiple PP ranks.
+
+Fix issue with fully frozen atoms in T-coupling groups with non-frozen atoms
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+``gmx grompp`` would, incorrectly, subtract 3 degrees of freedom for each
+fully frozen atom that was part of a temperature coupling group that also
+contained non-frozen atoms. This led to too high temperatures being reported
+and too low real temperatures when temperature coupling is used. Note that
+you can not detect the latter issue by looking at the temperature in the
+output, as this would match the temperature of the bath.
+
+:issue:`5261`
+
+Fix crash with modular simulator, md integrator, DD and constraints
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The combination of modular simulator, md integrator, domain decomposition
+and constraints caused illegal memory access and could crash before step 0.
+
+:issue:`5236`
+
+Fixes for ``gmx`` tools
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Handle trajectory reading error in gmx tcaf
+"""""""""""""""""""""""""""""""""""""""""""
+
+``gmx tcaf`` now fails with informative error message when failing to read a trajectory.
+
+:issue:`5238`
+
+
+Fixes that affect portability
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Fix linking error on Windows with Intel oneAPI
+""""""""""""""""""""""""""""""""""""""""""""""
+
+Fix ``LINK : fatal error LNK1181: cannot open input file ‘m.lib’``
+error encountered when using ``icx`` compiler on Windows by using
+dynamically-detected name for the ``m`` library.
+
+:issue:`5240`
+
+Work around the interal compiler error in Visual Studio 2022
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Visual Studio 2022 will fail when compiling ``calc_verletbuf.cpp``.
+This is a bug in the compiler, but we introduce a workaround for it.
+
+:issue:`5252`
+
+Miscellaneous
+^^^^^^^^^^^^^

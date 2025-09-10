@@ -91,10 +91,10 @@ public:
      * Objects of this type should only exist in their Session container.
      * If necessary, ownership can be transferred by owning through a unique_ptr handle.
      */
-    SessionResources(const SessionResources&) = delete;
+    SessionResources(const SessionResources&)            = delete;
     SessionResources& operator=(const SessionResources&) = delete;
     SessionResources(SessionResources&&)                 = delete;
-    SessionResources& operator=(SessionResources&&) = delete;
+    SessionResources& operator=(SessionResources&&)      = delete;
     ///@}
 
     ~SessionResources();

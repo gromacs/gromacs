@@ -43,7 +43,8 @@
 
 #include "gromacs/utility/real.h"
 
-#if HAVE_FEDISABLEEXCEPT || (defined(__i386__) || defined(__x86_64__)) && defined(__APPLE__)
+#if (HAVE_FEDISABLEEXCEPT && !defined(__riscv)) \
+        || (defined(__i386__) || defined(__x86_64__)) && defined(__APPLE__)
 //! Floating point exception set that we use and care about
 constexpr int c_FPexceptions = FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW;
 #endif
@@ -89,10 +90,10 @@ bool check_int_multiply_for_overflow(int64_t a, int64_t b, int64_t* result)
 
 int gmx_feenableexcept()
 {
-    // While the function is present on RISC-V, actually calling it fails for now
+    // RISC-V architecture does not support trapping FPEs and the linker loudly warns about using the function
 #if HAVE_FEENABLEEXCEPT && !defined(__riscv)
 #    if defined(__powerpc__) || defined(__ppc__) || defined(__PPC__)
-    feclearexcept(c_FPexceptions);
+    std::feclearexcept(c_FPexceptions);
 #    endif
     return feenableexcept(c_FPexceptions);
 #elif (defined(__i386__) || defined(__x86_64__)) && defined(__APPLE__)
@@ -102,10 +103,10 @@ int gmx_feenableexcept()
      * Might also work on non-Apple Unix. But should be tested
      * before enabling.
      */
-    static fenv_t fenv;
-    unsigned int  new_excepts = c_FPexceptions & FE_ALL_EXCEPT;
+    static std::fenv_t fenv;
+    unsigned int       new_excepts = c_FPexceptions & FE_ALL_EXCEPT;
 
-    if (fegetenv(&fenv))
+    if (std::fegetenv(&fenv))
     {
         return -1;
     }
@@ -114,7 +115,7 @@ int gmx_feenableexcept()
     fenv.__control &= ~new_excepts;
     fenv.__mxcsr &= ~(new_excepts << 7);
 
-    return fesetenv(&fenv);
+    return std::fesetenv(&fenv);
 #else
     return -1;
 #endif
@@ -122,13 +123,13 @@ int gmx_feenableexcept()
 
 int gmx_fedisableexcept()
 {
-    // While the function is present on RISC-V, actually calling it fails for now
+    // RISC-V architecture does not support trapping FPEs and the linker loudly warns about using the function
 #if HAVE_FEDISABLEEXCEPT && !defined(__riscv)
     return fedisableexcept(c_FPexceptions);
 #elif (defined(__i386__) || defined(__x86_64__)) && defined(__APPLE__)
-    static fenv_t fenv;
-    unsigned int  new_excepts = c_FPexceptions & FE_ALL_EXCEPT;
-    if (fegetenv(&fenv))
+    static std::fenv_t fenv;
+    unsigned int       new_excepts = c_FPexceptions & FE_ALL_EXCEPT;
+    if (std::fegetenv(&fenv))
     {
         return -1;
     }
@@ -137,7 +138,7 @@ int gmx_fedisableexcept()
     fenv.__control |= new_excepts;
     fenv.__mxcsr |= new_excepts << 7;
 
-    return fesetenv(&fenv);
+    return std::fesetenv(&fenv);
 #else
     return -1;
 #endif
@@ -153,6 +154,8 @@ bool gmxShouldEnableFPExceptions()
     return false; // Buggy compiler
 #elif GMX_GPU_SYCL
     return false; // avoid spurious FPE during SYCL JIT
+#elif defined(__riscv)
+    return false; // RISC-V does not support trapping FPEs
 #else
     return true;
 #endif

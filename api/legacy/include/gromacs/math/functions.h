@@ -474,8 +474,8 @@ static inline int64_t roundToInt64(double x)
 }
 
 //! \brief Check whether \p v is an integer power of 2.
-template<typename T, typename = std::enable_if_t<std::is_integral<T>::value>>
-#if defined(__NVCC__) && !defined(__CUDACC_RELAXED_CONSTEXPR__)
+template<typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
+#if (defined(__NVCC__) && !defined(__CUDACC_RELAXED_CONSTEXPR__)) || defined(__HIPCC__)
 /* In CUDA 11, a constexpr function cannot be called from a function with incompatible execution
  * space, unless --expt-relaxed-constexpr flag is set */
 __host__ __device__
@@ -494,12 +494,53 @@ __host__ __device__
  * \warning The sum of \p numerator and \p denominator should fit into \c T
  */
 template<typename T>
-constexpr T divideRoundUp(T numerator, T denominator)
+#if (defined(__NVCC__) && !defined(__CUDACC_RELAXED_CONSTEXPR__)) || defined(__HIPCC__)
+/* In CUDA 11, a constexpr function cannot be called from a function with incompatible execution
+ * space, unless --expt-relaxed-constexpr flag is set */
+__host__ __device__
+#endif
+        constexpr T
+        divideRoundUp(T numerator, T denominator)
 {
     static_assert(std::is_integral_v<T>, "Only integer types are supported");
+    // only check this in a host context, as we don't have GMX_ASSERT for device code
+#if !(defined(__NVCC__)) && !(defined(__HIPCC__)) && !(defined(__SYCL_DEVICE_ONLY__))
     GMX_ASSERT(std::is_unsigned_v<T> || numerator >= 0, "Nominator should be non-negative");
     GMX_ASSERT(denominator > 0, "Denominator should be positive");
+#endif
     return (numerator + denominator - 1) / denominator;
+}
+
+/*! \brief
+ * Return \p x modulo \p period such that it is within the interval [-0.5*period, 0.5*period]
+ *
+ * A shift of +/- 'period' is applied, if needed.
+ *
+ * \param[in] x       Value to correct, should be within the interval [-1.5*period, 1.5*period]
+ * \param[in] period  The period
+ *
+ * \returns \p x modulo \p period that is within the interval [-0.5*period, 0.5*period]
+ */
+template<typename T>
+T makePeriodic(const T x, const T period)
+{
+    static_assert(std::is_floating_point_v<T>, "Only floating point types are supported");
+
+    GMX_ASSERT(x >= -1.5 * period && x <= 1.5 * period,
+               "We should have -1.5*period <= x <= 1.5*period");
+
+    constexpr T half       = 0.5;
+    const T     halfPeriod = half * period;
+
+    if (x > halfPeriod)
+    {
+        return x - period;
+    }
+    else if (x < -halfPeriod)
+    {
+        return x + period;
+    }
+    return x;
 }
 
 } // namespace gmx

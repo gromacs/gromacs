@@ -538,7 +538,7 @@ public:
             gatherLoadUBySimdIntTranspose<numFuncInTable>(
                     derivativeMultiTableData_.data() + funcIndex0, tabIndex, &t0, &t2); // works for scalar T too
             gatherLoadUBySimdIntTranspose<numFuncInTable>(derivativeMultiTableData_.data() + funcIndex0,
-                                                          tabIndex + T(1),
+                                                          tabIndex + decltype(tabIndex)(1),
                                                           &t1,
                                                           &t2); // works for scalar T too
             *derivativeValue1 = fma(t1 - t0, eps, t0);
@@ -546,7 +546,7 @@ public:
             gatherLoadUBySimdIntTranspose<numFuncInTable>(
                     derivativeMultiTableData_.data() + funcIndex1, tabIndex, &t0, &t2); // works for scalar T too
             gatherLoadUBySimdIntTranspose<numFuncInTable>(derivativeMultiTableData_.data() + funcIndex1,
-                                                          tabIndex + T(1),
+                                                          tabIndex + decltype(tabIndex)(1),
                                                           &t1,
                                                           &t2); // works for scalar T too
             *derivativeValue2 = fma(t1 - t0, eps, t0);

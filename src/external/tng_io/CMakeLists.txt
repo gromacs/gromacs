@@ -1,4 +1,6 @@
-cmake_minimum_required(VERSION 3.1)
+if(NOT DEFINED CMAKE_MINIMUM_REQUIRED_VERSION)
+   cmake_minimum_required(VERSION 3.28)
+endif()
 
 project(TNG_IO LANGUAGES C CXX)
 

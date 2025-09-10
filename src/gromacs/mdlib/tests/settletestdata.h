@@ -46,12 +46,12 @@
 #include <vector>
 
 #include "gromacs/math/paddedvector.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 namespace gmx
 {

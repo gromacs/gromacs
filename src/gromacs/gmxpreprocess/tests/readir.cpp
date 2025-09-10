@@ -160,18 +160,18 @@ public:
 TEST_F(GetIrTest, HandlesDifferentKindsOfMdpLines)
 {
     const char*    inputMdpFile[] = { "; File to run my simulation",
-                                   "title = simulation",
-                                   "define = -DBOOLVAR -DVAR=VALUE",
-                                   ";",
-                                   "xtc_grps = System ; was Protein",
-                                   "include = -I/home/me/stuff",
-                                   "",
-                                   "tau-t = 0.1 0.3",
-                                   "ref-t = ;290 290",
-                                   "tinit = 0.3",
-                                   "init_step = 0",
-                                   "nstcomm = 100",
-                                   "integrator = steep" };
+                                      "title = simulation",
+                                      "define = -DBOOLVAR -DVAR=VALUE",
+                                      ";",
+                                      "xtc_grps = System ; was Protein",
+                                      "include = -I/home/me/stuff",
+                                      "",
+                                      "tau-t = 0.1 0.3",
+                                      "ref-t = ;290 290",
+                                      "tinit = 0.3",
+                                      "init_step = 0",
+                                      "nstcomm = 100",
+                                      "integrator = steep" };
     WarningHandler wi{ false, 0 };
     runTest(joinStrings(inputMdpFile, "\n"));
 }
@@ -527,6 +527,22 @@ TEST_F(GetIrTest, lambdaOverOneCheck_LambdaVector_And_ExactlyAsManyStep_negative
                                    "fep_lambdas =  0 0.5 1.0" };
     runTest(joinStrings(inputMdpFile, "\n"), TestBehavior::NoErrorAndDoNotCompareOutput);
 }
+
+TEST_F(GetIrTest, AcceptsFmmOptions)
+{
+    const char* inputMdpFile[] = { "fmm-backend = exafmm",
+                                   "fmm-exafmm-order = 6",
+                                   "fmm-exafmm-direct-range = 2",
+                                   "fmm-exafmm-direct-provider = GROMACS",
+                                   "fmm-fmsolvr-order= 8",
+                                   "fmm-fmsolvr-direct-range = 2",
+                                   "fmm-fmsolvr-direct-provider = FMM",
+                                   "fmm-fmsolvr-dipole-compensation = yes",
+                                   "fmm-fmsolvr-tree-depth = 3",
+                                   "fmm-fmsolvr-sparse = no" };
+    runTest(joinStrings(inputMdpFile, "\n"));
+}
+
 
 #endif // HAVE_MUPARSER
 

@@ -1,0 +1,146 @@
+GROMACS 2025.1 release notes
+----------------------------
+
+This version was released on March 11th. These release notes
+document the changes that have taken place in |Gromacs| since the
+previous 2025.0 version, to fix known issues. It also incorporates all
+fixes made in version 2024.5 and earlier, which you can find described
+in the :ref:`release-notes`.
+
+.. Note to developers!
+   Please use """"""" to underline the individual entries for fixed issues in the subfolders,
+   otherwise the formatting on the webpage is messed up.
+   Also, please use the syntax :issue:`number` to reference issues on GitLab, without
+   a space between the colon and number!
+
+Fixes where mdrun could behave incorrectly
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Prevent "Need at least one thread" error from domain decomposition
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Running domain decomposition with 9 or more ranks could cause mdrun to exit
+with an assertion failure.
+
+:issue:`5289`
+
+Fix force correction for affine transformations in density fitting module
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The force calculation was not correctly updated when doing the transformation.
+Only simulations with non-identity ``density-guided-simulation-transformation-matrix``
+were affected.
+
+:issue:`5298`
+
+Fix PME-PP direct GPU communication with threadMPI
+""""""""""""""""""""""""""""""""""""""""""""""""""
+
+We observed crashes in runs using threadMPI and GPU-direct MPI communication with |Gromacs| 2024,
+and because of this direct GPU communication for PME-PP coordinate and force transfers
+were disabled in |Gromacs| 2025.0 (where GPU-direct communication became the default).
+
+The original issue was caused by missing synchronization with multiple PP ranks and a PME rank,
+only affected systems with 23 thousand particles or less.
+In such cases, after a few hundred steps simulation crashed with thread-MPI errors, so no wrong physics ensued.
+For such small systems PP decomposition is not beneficial, so the crashes were unlikely to be triggered,
+hence these went unnoticed until the direct GPU communication became the default.
+This issue has now been fixed and direct GPU communication is enabled by default, making the
+performance on par or slightly better than |Gromacs| 2024 with ``GMX_ENABLE_DIRECT_GPU_COMM``
+and much better than |Gromacs| 2024 running with the default settings.
+
+:issue:`5283`
+:issue:`5306`
+
+Fix NVSHMEM enabled mdrun hang with a varying number of communication pulses
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+A hang is encountered when the domain decomposition involves increasing and decreasing
+the number of communication pulses involving 1 PME and more than one PP ranks.
+
+:issue:`5303`
+
+Fix host buffer pinning with shell/flexcon and PME on CPU
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+In edge cases it would be possible to crash |Gromacs| when running code with flexible constraints when PME was performed
+on the CPU (or not used) and GPU buffer operations are used.
+
+:issue:`5317`
+
+Fix segmentation fault in NNPot with domain decomposition
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When using the NNPot module with domain decomposition, a segmentation fault could occur.
+
+Fixes for ``gmx`` tools
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Fix parsing of CMAP types with arbitrary number of spaces between elements
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The CMAP type parser assumed there is only a single space between consecutive elements,
+while some tools prefer to add extra whitespace when formatting. Now we happily accept
+arbitrary number of spaces or tabs.
+
+:issue:`5312`
+
+Fixes that affect portability
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Improve handling of muParser
+""""""""""""""""""""""""""""
+
+When building with ``DGMX_USE_MUPARSER`` set to ``EXTERNAL`` or ``NONE``,
+|Gromacs| 2025.0 could have trouble compiling. This is now fixed.
+
+:issue:`5290`
+
+Fix build issues with MSVC and CUDA
+"""""""""""""""""""""""""""""""""""
+
+Building |Gromacs| on Windows using MSVC + CUDA (OpenMP is enabled by default) now works.
+
+:issue:`5294`
+
+Fix build with SYCL and HeFFTe
+""""""""""""""""""""""""""""""
+
+|Gromacs| 2025.0 was failing to build with AdaptiveCpp and HeFFTe due to incomplete refactoring.
+This is now fixed.
+
+:issue:`5314`
+
+Fixed cross-compile for Windows with MinGW GCC on Linux
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Cross-compiling of |Gromacs| 2025.0 for Windows with MinGW GCC on Linux could fail due to
+a missing include and Linux-incompatible case sensitivity of Windows-specific includes.
+This is now fixed.
+
+:issue:`5088`
+
+Miscellaneous
+^^^^^^^^^^^^^
+
+Silence compiler warning when building with ARM SVE
+"""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Silence a few harmless warnings when building with a recent compiler for ARM SVE.
+
+Fix CMake issues when building with Plumed
+""""""""""""""""""""""""""""""""""""""""""
+
+To activate Plumed during compilation CMake had to be run twice. This has now been fixed
+and CMake only requires a single invocation for the build.
+
+:issue:`5292`
+
+No longer suggest SVE over NEON for CPU builds on Neoverse-v2 at run time
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+On Neoverse-v2, the most performant SIMD instruction depends on exact run time
+configuration so the user is now directed to the install guide when running on
+this architecture.
+
+:issue:`5296`

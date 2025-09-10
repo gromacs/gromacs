@@ -287,7 +287,7 @@ typedef __local int* CjType;
  * It is the caller's responsibility to make sure that data is consumed only when
  * it's ready. This function does not call a barrier.
  */
-gmx_opencl_inline void preloadCjPacked(CjType gmx_unused* cjs,
+gmx_opencl_inline void preloadCjPacked(CjType gmx_unused*             cjs,
                                        const __global int gmx_unused* gm_cj,
                                        int gmx_unused                 tidxi,
                                        int gmx_unused                 tidxj,
@@ -305,12 +305,12 @@ gmx_opencl_inline void preloadCjPacked(CjType gmx_unused* cjs,
 gmx_opencl_inline int loadCjPreload(__local int* sm_cjPreload, int jm, int gmx_unused tidxi, int gmx_unused tidxj)
 {
 #    if defined _AMD_SOURCE_
-    int         warpLoadOffset = 0; // TODO: fix by setting c_nbnxnGpuClusterpairSplit properly
+    int warpLoadOffset = 0; // TODO: fix by setting c_nbnxnGpuClusterpairSplit properly
 #    else
-    const int c_clSize = CL_SIZE;
+    const int c_clSize                   = CL_SIZE;
     const int c_nbnxnGpuClusterpairSplit = 2;
-    const int c_splitClSize = c_clSize / c_nbnxnGpuClusterpairSplit;
-    int warpLoadOffset = (tidxj & c_splitClSize) * c_nbnxnGpuJgroupSize / c_splitClSize;
+    const int c_splitClSize              = c_clSize / c_nbnxnGpuClusterpairSplit;
+    int       warpLoadOffset = (tidxj & c_splitClSize) * c_nbnxnGpuJgroupSize / c_splitClSize;
 #    endif
     return sm_cjPreload[jm + warpLoadOffset];
 }
@@ -898,7 +898,7 @@ gmx_opencl_inline void reduce_energy(volatile __local float gmx_unused* buf,
     reduce_energy_shfl(E_lj, E_el, e_lj, e_el, tidx);
 #    else
     /* flush the energies to shmem and reduce them */
-    buf[tidx] = E_lj;
+    buf[tidx]               = E_lj;
     buf[FBUF_STRIDE + tidx] = E_el;
     reduce_energy_pow2(buf + (tidx & WARP_SIZE), e_lj, e_el, tidx & ~WARP_SIZE);
 #    endif

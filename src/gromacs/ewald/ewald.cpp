@@ -54,14 +54,12 @@
 #include <array>
 #include <filesystem>
 
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/ewald/ewald_utils.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/gmxcomplex.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/interaction_const.h"
@@ -69,6 +67,8 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 using cvec = std::array<t_complex, DIM>;
 
@@ -103,7 +103,7 @@ static void tabulateStructureFactors(int natom, gmx::ArrayRef<const gmx::RVec> x
     if (kmax < 1)
     {
         printf("Go away! kmax = %d\n", kmax);
-        exit(1);
+        std::exit(1);
     }
 
     for (i = 0; (i < natom); i++)
@@ -138,7 +138,7 @@ real do_ewald(bool                           havePbcXY2Walls,
               gmx::ArrayRef<const real>      chargeA,
               gmx::ArrayRef<const real>      chargeB,
               const matrix                   box,
-              const t_commrec*               commrec,
+              const gmx_domdec_t*            dd,
               int                            natoms,
               matrix                         lrvir,
               real                           ewaldcoeff,
@@ -154,9 +154,9 @@ real do_ewald(bool                           havePbcXY2Walls,
     cvec** eir;
     bool   bFreeEnergy;
 
-    if (commrec != nullptr)
+    if (dd != nullptr)
     {
-        if (PAR(commrec))
+        if (dd->nnodes > 1)
         {
             gmx_fatal(FARGS, "No parallel Ewald. Use PME instead.\n");
         }
@@ -309,7 +309,7 @@ real do_ewald(bool                           havePbcXY2Walls,
     return energy;
 }
 
-real ewald_charge_correction(const t_commrec*            commrec,
+real ewald_charge_correction(const gmx_domdec_t*         dd,
                              const real                  epsilonR,
                              const real                  ewaldcoeffQ,
                              gmx::ArrayRef<const double> qsum,
@@ -321,7 +321,7 @@ real ewald_charge_correction(const t_commrec*            commrec,
 {
     real enercorr = 0;
 
-    if (MAIN(commrec))
+    if (dd == nullptr || DDMAIN(dd))
     {
         /* Apply charge correction */
         real vol = box[XX][XX] * box[YY][YY] * box[ZZ][ZZ];

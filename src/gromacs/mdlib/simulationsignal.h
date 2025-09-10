@@ -145,6 +145,8 @@ public:
     void setSignals();
     //! Convenience wrapper that calls signalInterSim() then setSignals().
     void finalizeSignals();
+    //! Return whether inter-simulation signalling is active.
+    bool haveInterSimulationSignalling() const { return doInterSim_; }
 
 private:
     //! Source and sink for mdrun signals

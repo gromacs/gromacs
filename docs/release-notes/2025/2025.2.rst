@@ -1,0 +1,84 @@
+GROMACS 2025.2 release notes
+----------------------------
+
+This version was released on May 12th, 2025. These release notes
+document the changes that have taken place in |Gromacs| since the
+previous 2025.1 version, to fix known issues. It also incorporates all
+fixes made in version 2024.5 and earlier, which you can find described
+in the :ref:`release-notes`.
+
+.. Note to developers!
+   Please use """"""" to underline the individual entries for fixed issues in the subfolders,
+   otherwise the formatting on the webpage is messed up.
+   Also, please use the syntax :issue:`number` to reference issues on GitLab, without
+   a space between the colon and number!
+
+Fixes where mdrun could behave incorrectly
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Fix assertion failure with CUDA and HIP builds with empty domains
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+mdrun could exit with an assertion failure when a domain contained
+zero atoms.
+
+:issue:`5322`
+
+Fix mdrun crashes with position restraints + flat-bottomed position restraints + p-coupling with COM refcoord-scaling + OpenMP
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+This combination can lead to (too) high position restraint forces when OpenMP
+threads run slightly out of sync. Simulations will have very likely crashed
+due to too high forces, unless they are very short.
+
+:issue:`5337`
+
+Fixes for ``gmx`` tools
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Fix parsing of pdb files with multiple cyclic and acyclic chains
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+pdb2gmx computed incorrect coordinate distances when checking for cyclicity
+of the second and later chains in the pdb input file.
+
+:issue:`5091`
+
+grompp now warns about identical dihedraltype 9 definitions
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+grompp would silently ignore double, identical dihedraltype definitions with
+function type 9. Now such entries are not ignored and a warning is generated.
+
+:issue:`5333`
+
+Fix out-of-boundary read in gmx sorient
+"""""""""""""""""""""""""""""""""""""""
+
+The outermost (maximum radius) bin in the histograms created for the -o and -no
+output files from this tool added a value which was read from unallocated memory. Only
+values in this bin were affected.
+
+Fixes that affect portability
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Fixed cross-test for Windows on Linux with Wine
+"""""""""""""""""""""""""""""""""""""""""""""""
+
+Cross-testing of |Gromacs| 2025.1 for Windows on Linux with Wine, by setting the
+``CMAKE_CROSSCOMPILING_EMULATOR`` variable to ``wine`` or ``wine64``, could fail
+due to our tests using CMake generator expressions and ignoring the variable
+setting. The tests are now executed using the emulator set in the variable.
+
+:issue:`5342`
+
+Miscellaneous
+^^^^^^^^^^^^^
+
+Intel Xe2/Battlemage documentation
+""""""""""""""""""""""""""""""""""
+
+Expanded the documentation and rephrased a misleading error message.
+
+:issue:`5330`
+

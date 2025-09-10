@@ -102,16 +102,16 @@ TEST_P(Trajectories, ThatDifferInNstxout)
     const auto nstxout = GetParam();
     theMdpFile         = gmx::formatString(
             "integrator = md\n"
-            "nsteps = 6\n"
-            "nstxout = %s\n"
-            "nstvout = 2\n"
-            "nstfout = 4\n"
-            "nstxout-compressed = 5\n"
-            "tcoupl = v-rescale\n"
-            "tc-grps = System\n"
-            "tau-t = 1\n"
-            "ref-t = 298\n"
-            "compressed-x-grps = Sol\n",
+                    "nsteps = 6\n"
+                    "nstxout = %s\n"
+                    "nstvout = 2\n"
+                    "nstfout = 4\n"
+                    "nstxout-compressed = 5\n"
+                    "tcoupl = v-rescale\n"
+                    "tc-grps = System\n"
+                    "tau-t = 1\n"
+                    "ref-t = 298\n"
+                    "compressed-x-grps = Sol\n",
             nstxout.c_str());
     runTest(0);
 }
@@ -126,17 +126,17 @@ TEST_P(NptTrajectories, WithDifferentPcoupl)
     int         maxwarn = (pcouple == "Berendsen") ? 1 : 0;
     theMdpFile          = gmx::formatString(
             "integrator = md\n"
-            "nsteps = 2\n"
-            "nstxout = 2\n"
-            "nstvout = 1\n"
-            "pcoupl = %s\n"
-            "tau-p = 1\n"
-            "ref-p = 1\n"
-            "compressibility = 4.5e-5\n"
-            "tcoupl = v-rescale\n"
-            "tc-grps = System\n"
-            "tau-t = 1\n"
-            "ref-t = 298\n",
+                     "nsteps = 2\n"
+                     "nstxout = 2\n"
+                     "nstvout = 1\n"
+                     "pcoupl = %s\n"
+                     "tau-p = 1\n"
+                     "ref-p = 1\n"
+                     "compressibility = 4.5e-5\n"
+                     "tcoupl = v-rescale\n"
+                     "tc-grps = System\n"
+                     "tau-t = 1\n"
+                     "ref-t = 298\n",
             pcouple.c_str());
     runTest(maxwarn);
 }

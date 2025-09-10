@@ -45,12 +45,12 @@
 #include <memory>
 
 struct gmx_mtop_t;
-struct t_commrec;
 
 namespace gmx
 {
+class MpiComm;
 class ObservablesReducerBuilder;
-}
+} // namespace gmx
 
 /*! \internal \file
  * \brief Has responsibility for checking that the sum of the local number
@@ -67,11 +67,11 @@ class ExclusionChecker
 {
 public:
     /*! \brief Constructor
-     * \param[in]    cr               Communication object
+     * \param[in]    mpiComm          Communication object for my group
      * \param[in]    mtop             Global system topology
      * \param[in]    observablesReducerBuilder  Handle to builder for ObservablesReducer
      */
-    ExclusionChecker(const t_commrec*                cr,
+    ExclusionChecker(const gmx::MpiComm&             mpiComm,
                      const gmx_mtop_t&               mtop,
                      gmx::ObservablesReducerBuilder* observablesReducerBuilder);
     //! Destructor

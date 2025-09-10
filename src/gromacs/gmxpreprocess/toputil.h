@@ -57,7 +57,7 @@ void add_param_to_list(InteractionsOfType* list, const InteractionOfType& b);
 
 /* PRINTING */
 
-void print_atoms(FILE* out, PreprocessingAtomTypes* atype, t_atoms* at, int* cgnr, bool bRTPresname);
+void print_atoms(FILE* out, PreprocessingAtomTypes* atype, t_atoms* at, bool bRTPresname);
 
 void print_bondeds(FILE*                                   out,
                    int                                     natoms,

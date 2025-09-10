@@ -45,6 +45,8 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/mdlib/constr.h"
+
 #include "config.h"
 
 #include <cassert>
@@ -60,14 +62,14 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/math/paddedvector.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "testutils/refdata.h"
 #include "testutils/test_device.h"
@@ -93,7 +95,8 @@ namespace
 {
 
 // Define the set of PBCs to run the test for
-const std::vector<t_pbc> c_pbcs = [] {
+const std::vector<t_pbc> c_pbcs = []
+{
     std::vector<t_pbc> pbcs;
     t_pbc              pbc;
 
@@ -133,6 +136,8 @@ struct ConstraintsTestSystem
      * unique types in constraints vector.
      */
     std::vector<real> constraintsR0;
+    //! Whether the constraint system contains a set of constraints in a triangle
+    bool hasTriangle = false;
     //! Coordinates before integration step.
     std::vector<RVec> x;
     //! Coordinates after integration step, but before constraining.
@@ -164,7 +169,8 @@ void PrintTo(const ConstraintsTestSystem& constraintsTestSystem, std::ostream* o
     *os << constraintsTestSystem.title << " - " << constraintsTestSystem.numAtoms << " atoms";
 }
 
-const std::vector<ConstraintsTestSystem> c_constraintsTestSystemList = [] {
+const std::vector<ConstraintsTestSystem> c_constraintsTestSystemList = []
+{
     std::vector<ConstraintsTestSystem> constraintsTestSystemList;
     {
         ConstraintsTestSystem constraintsTestSystem;
@@ -290,6 +296,7 @@ const std::vector<ConstraintsTestSystem> c_constraintsTestSystemList = [] {
         constraintsTestSystem.numAtoms    = 3;
         constraintsTestSystem.masses      = { 1.0, 1.0, 1.0 };
         constraintsTestSystem.constraints = { 0, 0, 1, 2, 0, 2, 1, 1, 2 };
+        constraintsTestSystem.hasTriangle = true;
         constraintsTestSystem.constraintsR0 = { 0.1, 0.1, 0.1 };
 
         real oneTenthOverSqrtTwo = 0.1_real / std::sqrt(2.0_real);
@@ -378,35 +385,13 @@ const std::vector<ConstraintsTestSystem> c_constraintsTestSystemList = [] {
     return constraintsTestSystemList;
 }();
 
-
-/*! \brief Test fixture for constraints.
- *
- * The fixture uses following test systems:
- * 1. Two atoms, connected with one constraint (e.g. NH).
- * 2. Three atoms, connected consequently with two constraints (e.g. CH2).
- * 3. Three atoms, constrained to the fourth atom (e.g. CH3).
- * 4. Four atoms, connected by two independent constraints.
- * 5. Three atoms, connected by three constraints in a triangle
- *      (e.g. H2O with constrained H-O-H angle).
- * 6. Four atoms, connected by three consequential constraints.
- *
- * For all systems, the final lengths of the constraints are tested against the
- * reference values, the direction of each constraint is checked.
- * Test also verifies that the center of mass has not been
- * shifted by the constraints and that its velocity has not changed.
- * For some systems, the value for scaled virial tensor is checked against
- * pre-computed data.
- */
-class ConstraintsTest : public ::testing::TestWithParam<std::tuple<ConstraintsTestSystem, t_pbc>>
+//! Helper class for checking constraints against reference data
+class ConstraintsVerifier
 {
 public:
-    //! Reference data
-    TestReferenceData refData_;
-    //! Checker for reference data
-    TestReferenceChecker checker_;
+    ConstraintsVerifier() : checker_(refData_.rootChecker()) {}
 
-    ConstraintsTest() : checker_(refData_.rootChecker()) {}
-
+private:
     /*! \brief Test if the final position correspond to the reference data.
      *
      * \param[in] testData        Test data structure.
@@ -615,6 +600,71 @@ public:
         virialScaledRef.checkReal(virialScaled[ZZ][ZZ], "ZZ");
     }
 
+public:
+    //! The workflow for checking whether constraints have been satisfied
+    void check(const ConstraintsTestData& testData, const ConstraintAlgorithm algorithm, t_pbc pbc)
+    {
+        const FloatingPointTolerance positionsTolerance = absoluteTolerance(0.001F);
+        const FloatingPointTolerance velocityTolerance  = absoluteTolerance(0.02F);
+        const FloatingPointTolerance lengthTolerance = relativeToleranceAsFloatingPoint(0.1, 0.002F);
+
+        checker_.setDefaultTolerance(positionsTolerance);
+        checkFinalPositions(testData);
+        checker_.setDefaultTolerance(velocityTolerance);
+        checkFinalVelocities(testData);
+
+        checkConstrainsLength(lengthTolerance, testData, pbc);
+        checkConstrainsDirection(testData, pbc);
+        checkCOMCoordinates(positionsTolerance, testData);
+        checkCOMVelocity(velocityTolerance, testData);
+
+        float virialTrace = 0.0F;
+        for (int d = 0; d < DIM; d++)
+        {
+            virialTrace += testData.virialScaled_[d][d];
+        }
+
+        // The virial tolerance factor can be:
+        // LINCS iter=2, order=4:   0.002
+        // LINCS iter=1, order=4:   0.02
+        // SHAKE tolerance=0.0001:  0.2
+        // SHAKE tolerance=0.00002: 0.1
+        const float virialRelativeTolerance = (algorithm == ConstraintAlgorithm::Shake ? 0.1F : 0.02F);
+        FloatingPointTolerance virialTolerance =
+                absoluteTolerance(fabs(virialTrace) / 3 * virialRelativeTolerance);
+
+        checker_.setDefaultTolerance(virialTolerance);
+        checkVirialTensor(testData);
+    }
+
+private:
+    //! Reference data
+    TestReferenceData refData_;
+    //! Checker for reference data
+    TestReferenceChecker checker_;
+};
+
+/*! \brief Test fixture for constraints.
+ *
+ * The fixture uses following test systems:
+ * 1. Two atoms, connected with one constraint (e.g. NH).
+ * 2. Three atoms, connected consequently with two constraints (e.g. CH2).
+ * 3. Three atoms, constrained to the fourth atom (e.g. CH3).
+ * 4. Four atoms, connected by two independent constraints.
+ * 5. Three atoms, connected by three constraints in a triangle
+ *      (e.g. H2O with constrained H-O-H angle).
+ * 6. Four atoms, connected by three consequential constraints.
+ *
+ * For all systems, the final lengths of the constraints are tested against the
+ * reference values, the direction of each constraint is checked.
+ * Test also verifies that the center of mass has not been
+ * shifted by the constraints and that its velocity has not changed.
+ * For some systems, the value for scaled virial tensor is checked against
+ * pre-computed data.
+ */
+class ConstraintsTest : public ::testing::TestWithParam<std::tuple<ConstraintsTestSystem, t_pbc>>
+{
+public:
     //! Before any test is run, work out whether any compatible GPUs exist.
     static std::vector<std::unique_ptr<IConstraintsTestRunner>> getRunners()
     {
@@ -659,9 +709,7 @@ TEST_P(ConstraintsTest, SatisfiesConstraints)
                                  constraintsTestSystem.lincslincsExpansionOrder,
                                  constraintsTestSystem.lincsWarnAngle);
 
-    FloatingPointTolerance positionsTolerance = absoluteTolerance(0.001F);
-    FloatingPointTolerance velocityTolerance  = absoluteTolerance(0.02F);
-    FloatingPointTolerance lengthTolerance    = relativeToleranceAsFloatingPoint(0.1, 0.002F);
+    ConstraintsVerifier verifier;
 
     // Cycle through all available runners
     for (const auto& runner : getRunners())
@@ -675,36 +723,33 @@ TEST_P(ConstraintsTest, SatisfiesConstraints)
 
         // Apply constraints
         runner->applyConstraints(&testData, pbc);
-
-
-        checker_.setDefaultTolerance(positionsTolerance);
-        checkFinalPositions(testData);
-        checker_.setDefaultTolerance(velocityTolerance);
-        checkFinalVelocities(testData);
-
-        checkConstrainsLength(lengthTolerance, testData, pbc);
-        checkConstrainsDirection(testData, pbc);
-        checkCOMCoordinates(positionsTolerance, testData);
-        checkCOMVelocity(velocityTolerance, testData);
-
-        float virialTrace = 0.0F;
-        for (int d = 0; d < DIM; d++)
-        {
-            virialTrace += testData.virialScaled_[d][d];
-        }
-
-        // The virial tolerance factor can be:
-        // LINCS iter=2, order=4:   0.002
-        // LINCS iter=1, order=4:   0.02
-        // SHAKE tolerance=0.0001:  0.2
-        // SHAKE tolerance=0.00002: 0.1
-        const float virialRelativeTolerance = (runner->name().substr(0, 5) == "SHAKE" ? 0.1F : 0.02F);
-        FloatingPointTolerance virialTolerance =
-                absoluteTolerance(std::fabs(virialTrace) / 3 * virialRelativeTolerance);
-
-        checker_.setDefaultTolerance(virialTolerance);
-        checkVirialTensor(testData);
+        verifier.check(testData, runner->algorithm(), pbc);
     }
+}
+
+TEST_P(ConstraintsTest, TriangleDetectionWorks)
+{
+    const ConstraintsTestSystem& constraintsTestSystem = std::get<0>(GetParam());
+    const ConstraintsTestData    testData(constraintsTestSystem.title,
+                                       constraintsTestSystem.numAtoms,
+                                       constraintsTestSystem.masses,
+                                       constraintsTestSystem.constraints,
+                                       constraintsTestSystem.constraintsR0,
+                                       true,
+                                       false,
+                                       real(0.0),
+                                       real(0.001),
+                                       constraintsTestSystem.x,
+                                       constraintsTestSystem.xPrime,
+                                       constraintsTestSystem.v,
+                                       constraintsTestSystem.shakeTolerance,
+                                       constraintsTestSystem.shakeUseSOR,
+                                       constraintsTestSystem.lincsNIter,
+                                       constraintsTestSystem.lincslincsExpansionOrder,
+                                       constraintsTestSystem.lincsWarnAngle);
+
+    EXPECT_EQ(constraintsTestSystem.hasTriangle,
+              hasTriangleConstraints(testData.mtop_, FlexibleConstraintTreatment::Include));
 }
 
 INSTANTIATE_TEST_SUITE_P(WithParameters,

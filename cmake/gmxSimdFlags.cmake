@@ -263,28 +263,6 @@ function(gmx_find_simd_avx_512_flags C_FLAGS_RESULT CXX_FLAGS_RESULT C_FLAGS_VAR
 endfunction()
 
 
-# AVX-512ER (KNL)
-function(gmx_find_simd_avx_512_knl_flags C_FLAGS_RESULT CXX_FLAGS_RESULT C_FLAGS_VARIABLE CXX_FLAGS_VARIABLE)
-    find_x86_toolchain_flags(TOOLCHAIN_C_FLAGS TOOLCHAIN_CXX_FLAGS)
-
-    gmx_find_flags(SIMD_AVX_512_KNL_C_FLAGS_RESULT SIMD_AVX_512_KNL_CXX_FLAGS_RESULT
-        "#include<immintrin.h>
-        int main(){__m512 y,x=_mm512_set1_ps(0.5);y=_mm512_rsqrt28_ps(x);return (int)_mm512_cmp_ps_mask(x,y,_CMP_LT_OS);}"
-        TOOLCHAIN_C_FLAGS TOOLCHAIN_CXX_FLAGS
-        SIMD_AVX_512_KNL_C_FLAGS SIMD_AVX_512_KNL_CXX_FLAGS
-        "-xMIC-AVX512" "-mavx512er -mfma" "-mavx512er" "/arch:AVX" "-hgnu") # no AVX_512ER flags known for MSVC yet
-
-    if(${SIMD_AVX_512_KNL_C_FLAGS_RESULT})
-        set(${C_FLAGS_VARIABLE} "${TOOLCHAIN_C_FLAGS} ${SIMD_AVX_512_KNL_C_FLAGS}" CACHE INTERNAL "C flags required for AVX-512 for KNL instructions")
-    endif()
-    if(${SIMD_AVX_512_KNL_CXX_FLAGS_RESULT})
-        set(${CXX_FLAGS_VARIABLE} "${TOOLCHAIN_CXX_FLAGS} ${SIMD_AVX_512_KNL_CXX_FLAGS}" CACHE INTERNAL "C++ flags required for AVX-512 for KNL instructions")
-    endif()
-    set(${C_FLAGS_RESULT} ${SIMD_AVX_512_KNL_C_FLAGS_RESULT} CACHE INTERNAL "Result of test for AVX-512 for KNL C flags" FORCE)
-    set(${CXX_FLAGS_RESULT} ${SIMD_AVX_512_KNL_CXX_FLAGS_RESULT} CACHE INTERNAL "Result of test for AVX-512 for KNL C++ flags" FORCE)
-endfunction()
-
-
 # Arm Neon Asimd (64-bit ARM)
 function(gmx_find_simd_arm_neon_asimd_flags C_FLAGS_RESULT CXX_FLAGS_RESULT C_FLAGS_VARIABLE CXX_FLAGS_VARIABLE)
 

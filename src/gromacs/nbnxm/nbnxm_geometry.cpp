@@ -38,11 +38,12 @@
 
 #include <cmath>
 
-#include "gromacs/nbnxm/nbnxm.h"
-#include "gromacs/utility/fatalerror.h"
+#include "gromacs/nbnxm/nbnxm_enums.h"
 #include "gromacs/utility/real.h"
 
-#include "pairlist.h"
+
+namespace gmx
+{
 
 /* Clusters at the cut-off only increase rlist by 60% of their size */
 static constexpr real c_nbnxnRlistIncreaseOutsideFactor = 0.6;
@@ -58,9 +59,9 @@ real nbnxmPairlistVolumeRadiusIncrease(const bool useGpu, const real atomDensity
     int jClusterSize;
     if (useGpu)
     {
-        iClusterSize = c_nbnxnGpuClusterSize;
+        iClusterSize = sc_gpuClusterSize(PairlistType::Hierarchical8x8x8);
         // The most common value is 4 (8 atoms split in 2 halves)
-        jClusterSize = 4;
+        jClusterSize = sc_gpuSplitJClusterSize(PairlistType::Hierarchical8x8x8);
     }
     else
     {
@@ -80,12 +81,14 @@ real nbnxmPairlistVolumeRadiusIncrease(const bool useGpu, const real atomDensity
     return c_nbnxnRlistIncreaseOutsideFactor * std::cbrt(iVolumeIncrease + jVolumeIncrease);
 }
 
-real nbnxn_get_rlist_effective_inc(const int clusterSize, const gmx::RVec& averageClusterBoundingBox)
+real nbnxn_get_rlist_effective_inc(const int clusterSize, const RVec& averageClusterBoundingBox)
 {
     /* The average length of the diagonal of a sub cell */
     const real diagonal = std::sqrt(norm2(averageClusterBoundingBox));
 
     const real volumeRatio = (clusterSize - 1.0_real) / clusterSize;
 
-    return c_nbnxnRlistIncreaseOutsideFactor * gmx::square(volumeRatio) * 0.5_real * diagonal;
+    return c_nbnxnRlistIncreaseOutsideFactor * square(volumeRatio) * 0.5_real * diagonal;
 }
+
+} // namespace gmx

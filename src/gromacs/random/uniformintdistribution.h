@@ -210,7 +210,18 @@ public:
             }
             result = savedRandomBits_;
             savedRandomBits_ >>= rangeBits;
-            result = result - (savedRandomBits_ << rangeBits);
+#ifdef __clang_analyzer__
+            // Clang static analyzer observes that if rangeBits is 64,
+            // the following left shift would overflow the value in
+            // savedRandomBits_, whose type is uint64_t. But in that
+            // case the right shift above already set the value to
+            // zero. So in this case there is no overflow in practice
+            // so none should be warned about.
+            if (rangeBits != std::numeric_limits<decltype(savedRandomBits_)>::digits)
+#endif
+            {
+                result = result - (savedRandomBits_ << rangeBits);
+            }
             savedRandomBitsLeft_ -= rangeBits;
         } while (result > range);
 

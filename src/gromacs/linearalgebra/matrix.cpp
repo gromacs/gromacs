@@ -69,7 +69,7 @@ void free_matrix(double** a)
 }
 
 #define DEBUG_MATRIX
-void matrix_multiply(FILE* fp, int n, int m, double** x, double** y, double** z)
+void matrix_multiply(FILE* fp, int n, int m, const double* const* x, const double* const* y, double* const* z)
 {
     int i, j, k;
 
@@ -103,7 +103,7 @@ void matrix_multiply(FILE* fp, int n, int m, double** x, double** y, double** z)
     }
 }
 
-static void dump_matrix(FILE* fp, const char* title, int n, double** a)
+static void dump_matrix(FILE* fp, const char* title, int n, const double* const* a)
 {
     double d = 1;
     int    i, j;
@@ -185,7 +185,7 @@ int matrix_invert(FILE* fp, int n, double** a)
     return 0;
 }
 
-double multi_regression(FILE* fp, int nrow, double* y, int ncol, double** xx, double* a0)
+double multi_regression(FILE* fp, int nrow, const double* y, int ncol, const double* const* xx, double* a0)
 {
     int    row, i, j;
     double ax, chi2, **a, **at, **ata, *atx;

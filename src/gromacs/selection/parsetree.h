@@ -56,10 +56,10 @@
 #include <string>
 #include <utility>
 
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "selelem.h"
 #include "selvalue.h"

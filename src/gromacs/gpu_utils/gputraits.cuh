@@ -45,7 +45,16 @@
  */
 #include <cuda_runtime.h>
 
-#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/vectypes.h"
+
+#define GMX_HOST_ATTRIBUTE __host__
+#define GMX_DEVICE_ATTRIBUTE __device__
+#define GMX_HOSTDEVICE_ATTRIBUTE GMX_HOST_ATTRIBUTE GMX_DEVICE_ATTRIBUTE
+#if !defined(NDEBUG)
+#    define GMX_DEVICE_ASSERT(condition) assert(condition)
+#else
+#    define GMX_DEVICE_ASSERT(condition)
+#endif
 
 //! Device texture for fast read-only data fetching
 using DeviceTexture = cudaTextureObject_t;
@@ -59,8 +68,82 @@ using Float2 = float2;
 //! Convenience alias for 3-wide float
 using Float3 = gmx::RVec;
 
-//! Convenience alias for 4-wide float.
+//! Convenience alias for 3-wide float in shared device kernels
+using DeviceFloat3 = float3;
+
+//! Convenience alias for 4-wide float
 using Float4 = float4;
+
+//! Convenience alias for 4-wide float in shared device kernels.
+struct DeviceFloat4
+{
+    __device__ __forceinline__ DeviceFloat4(float4 in) : storage_(in) {}
+
+    template<typename Index>
+    __device__ __forceinline__ float operator[](Index i) const
+    {
+        switch (i)
+        {
+            case 0: return storage_.x;
+            case 1: return storage_.y;
+            case 2: return storage_.z;
+            default: GMX_DEVICE_ASSERT(i == 3); return storage_.w;
+        }
+    }
+    __device__ __forceinline__ operator float4() const { return storage_; }
+
+    alignas(16) float4 storage_;
+};
+
+//! Convenience alias for int3 in shared device kernels
+struct DeviceInt3
+{
+    __device__ __forceinline__ DeviceInt3(int x, int y, int z) : storage_{ x, y, z } {}
+    template<typename Index>
+    __device__ __forceinline__ float operator[](Index i) const
+    {
+        switch (i)
+        {
+            case 0: return storage_.x;
+            case 1: return storage_.y;
+            default: GMX_DEVICE_ASSERT(i == 2); return storage_.z;
+        }
+    }
+    int3 storage_;
+};
+
+//! Convenience alias for int4 in shared device kernels
+struct DeviceInt4
+{
+    __device__ __forceinline__ DeviceInt4(int4 in) : storage_(in) {}
+    template<typename Index>
+    __device__ __forceinline__ float operator[](Index i) const
+    {
+        switch (i)
+        {
+            case 0: return storage_.x;
+            case 1: return storage_.y;
+            case 2: return storage_.z;
+            default: GMX_DEVICE_ASSERT(i == 3); return storage_.w;
+        }
+    }
+    int4 storage_;
+};
+
+//! Convenience alias for global device memory
+template<typename T>
+using DeviceGlobalPtr = T*;
+//! Convenience alias for local device memory
+template<typename T>
+using DeviceLocalPtr = T*;
+//! Convenience alias for private device memory
+template<typename T>
+using DevicePrivatePtr = T*;
+
+static __device__ __forceinline__ DeviceInt4 loadInt4(const int* __restrict__ input, const int index)
+{
+    return { *(reinterpret_cast<const int4*>(input + 4 * index)) };
+}
 
 /*! \internal \brief
  * GPU kernels scheduling description. This is same in OpenCL/CUDA.
@@ -78,7 +161,6 @@ struct KernelLaunchConfig
 };
 
 //! Sets whether device code can use arrays that are embedded in structs.
-#define c_canEmbedBuffers true
-// TODO this should be constexpr bool
+static constexpr bool c_canEmbedBuffers = true;
 
 #endif

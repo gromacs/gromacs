@@ -42,7 +42,7 @@
 
 #include <vector>
 
-#include "gromacs/math/vec.h"
+#include "gromacs/utility/vec.h"
 
 //! A cubic simulation box matching coordinates1000 defined below
 static const matrix box1000 = { { 3.107360, 0.0, 0.0 }, { 0.0, 3.107360, 0.0 }, { 0.0, 0.0, 3.107360 } };

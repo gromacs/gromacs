@@ -1,0 +1,72 @@
+GROMACS 2024.6 release notes
+----------------------------
+
+This version was released on August 22, 2025. These release notes
+document the changes that have taken place in |Gromacs| since the
+previous 2024.5 version, to fix known issues. It also incorporates all
+fixes made in version 2023.5 and earlier, which you can find described
+in the :ref:`release-notes`.
+
+.. Note to developers!
+   Please use """"""" to underline the individual entries for fixed issues in the subfolders,
+   otherwise the formatting on the webpage is messed up.
+   Also, please use the syntax :issue:`number` to reference issues on GitLab, without
+   a space between the colon and number!
+
+Fixes where mdrun could behave incorrectly
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+AWH for free-energy lambda coordinate was not active
+""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When using AWH for a free-energy lambda coordinate (and no other dimension),
+the lambda state would remain at the initial state and all resulting
+free energies would be zero. Affected versions: 2024.4, 2024.5.
+
+:issue:`5371`
+
+Fix memory error for NVIDIA Pascal and earlier GPUs
+"""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When running on Pascal (e.g., GeForce GTX 10xx, Tesla P100)
+and earlier NVIDIA GPUs, a memory error was present in the neighbor list
+pruning kernel. It has not been observed to cause any incorrect results,
+but could, theoretically, cause undefined behavior.
+All earlier |Gromacs| versions in the 2024 series are affected.
+
+:issue:`5385`
+
+Fixes for ``gmx`` tools
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Fixes that affect portability
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Fix CUDA PTX generation for new architectures
+"""""""""""""""""""""""""""""""""""""""""""""
+
+The functionality to JIT-compile GPU kernels for new architectures
+was broken in recent releases. Now it should work again.
+
+:issue:`5285`
+
+Avoid launch bounds PTX error for new NVIDIA RTX Blackwell GPUs
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Fix compatibility issue preventing using |Gromacs| 2024 on
+new NVIDIA GPUs.
+
+AWH bias sharing caused error without separate PME ranks
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Using AWH in conjuction with bias sharing between several simulations
+caused mdrun to segfault if more than one rank per simulation was used
+but no separate PME ranks were present. This could not produce incorrect
+results.
+Affected versions: 2024.5, 2025.0, 2025.1 and 2025.2.  
+
+:issue:`5394`
+
+Miscellaneous
+^^^^^^^^^^^^^
+

@@ -89,7 +89,6 @@ def _show_list(title, objlist):
 
 @functools.total_ordering
 class DocType(object):
-
     """Documentation visibility in the generated documentation."""
 
     # Mapping to string representations for the internal integer values
@@ -124,7 +123,6 @@ DocType.public = DocType(3)
 
 
 class Location(object):
-
     """Location of a Doxygen entity.
 
     This class contains the logic to parse a <location> tag in Doxygen XML.
@@ -150,7 +148,6 @@ class Location(object):
 
 @functools.total_ordering
 class BodyLocation(object):
-
     """Body location of a Doxygen entity.
 
     This class contains the logic to parse a body location from a <location>
@@ -200,7 +197,6 @@ class BodyLocation(object):
 
 
 class LocationWithBody(object):
-
     """Location for a Doxygen entity that can have a body location.
 
     This class is used to represent the location of a Doxygen entity that can
@@ -248,7 +244,6 @@ class LocationWithBody(object):
 
 
 class MemberSection(object):
-
     """Section of members within a compound entity."""
 
     def __init__(self, kind):
@@ -274,7 +269,6 @@ class MemberSection(object):
 
 
 class Entity(object):
-
     """Doxygen documentation entity.
 
     This class represents common properties of an entity that can contain
@@ -385,7 +379,6 @@ class Entity(object):
 
 
 class Member(Entity):
-
     """Member entity.
 
     In Doxygen, a member entity is an entity such as a function or an enum that
@@ -619,7 +612,6 @@ class FriendDeclaration(Member):
 
 
 class Compound(Entity):
-
     """Compound entity.
 
     In Doxygen, a compound entity is an entity that has its own documentation
@@ -1127,7 +1119,6 @@ def _get_member_type_from_kind(kind):
 
 
 class DocumentationSet(object):
-
     """Root object for Doxygen XML documentation tree.
 
     On initialization, it reads the index.xml file from the Doxygen XML output,

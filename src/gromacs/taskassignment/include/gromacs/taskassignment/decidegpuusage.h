@@ -42,6 +42,7 @@
 #ifndef GMX_TASKASSIGNMENT_DECIDEGPUUSAGE_H
 #define GMX_TASKASSIGNMENT_DECIDEGPUUSAGE_H
 
+#include <string>
 #include <vector>
 
 struct gmx_hw_info_t;
@@ -52,6 +53,7 @@ enum class PmeRunMode;
 namespace gmx
 {
 
+enum class GpuAwareMpiStatus : int;
 class MDLogger;
 
 //! Record where a compute task is targetted.
@@ -78,11 +80,6 @@ enum class EmulateGpuNonbonded : bool
  */
 struct DevelopmentFeatureFlags
 {
-    //! True if the Buffer ops development feature is enabled
-    // TODO: when the trigger of the buffer ops offload is fully automated this should go away
-    bool enableGpuBufferOps = false;
-    //! True if the GPU-aware MPI can be used for GPU direct communication feature
-    bool canUseGpuAwareMpi = false;
     //! True if GPU PME-decomposition is enabled
     bool enableGpuPmeDecomposition = false;
     //! True if CUDA Graphs are enabled
@@ -93,6 +90,9 @@ struct DevelopmentFeatureFlags
 
 
 class MDAtoms;
+
+
+bool canUseGpusForNonbonded(const t_inputrec& ir, const bool doRerun, std::string* error);
 
 /*! \brief Decide whether this thread-MPI simulation will run
  * nonbonded tasks on GPUs.
@@ -108,10 +108,9 @@ class MDAtoms;
  * \param[in] userGpuTaskAssignment        The user-specified assignment of GPU tasks to device IDs.
  * \param[in] emulateGpuNonbonded          Whether we will emulate GPU calculation of nonbonded
  *                                         interactions.
- * \param[in] buildSupportsNonbondedOnGpu  Whether GROMACS was built with GPU support.
- * \param[in] nonbondedOnGpuIsUseful       Whether computing nonbonded interactions on a GPU is
- *                                         useful for this calculation.
- * \param[in] binaryReproducibilityRequested  Whether binary reprocibility was requested
+ * \param[in] canUseNonbondedOnGpu         Whether GROMACS was built with GPU support and simulation
+ *                                         parameters are compatible.
+ * \param[in] binaryReproducibilityRequested  Whether binary reproducibility was requested
  * \param[in] numRanksPerSimulation        The number of ranks in each simulation.
  *
  * \returns    Whether the simulation will run nonbonded tasks on GPUs.
@@ -122,8 +121,7 @@ bool decideWhetherToUseGpusForNonbondedWithThreadMpi(TaskTarget              non
                                                      bool                    haveAvailableDevices,
                                                      const std::vector<int>& userGpuTaskAssignment,
                                                      EmulateGpuNonbonded     emulateGpuNonbonded,
-                                                     bool buildSupportsNonbondedOnGpu,
-                                                     bool nonbondedOnGpuIsUseful,
+                                                     bool                    canUseNonbondedOnGpu,
                                                      bool binaryReproducibilityRequested,
                                                      int  numRanksPerSimulation);
 
@@ -174,13 +172,14 @@ bool decideWhetherToUseGpusForPmeWithThreadMpi(bool                    useGpuFor
  * decision is made in this routine, along with many more
  * consistency checks.
  *
- * \param[in]  nonbondedTarget             The user's choice for mdrun -nb for where to assign short-ranged nonbonded interaction tasks.
- * \param[in]  userGpuTaskAssignment       The user-specified assignment of GPU tasks to device IDs.
- * \param[in]  emulateGpuNonbonded         Whether we will emulate GPU calculation of nonbonded interactions.
- * \param[in]  buildSupportsNonbondedOnGpu Whether GROMACS was build with GPU support.
- * \param[in]  nonbondedOnGpuIsUseful      Whether computing nonbonded interactions on a GPU is useful for this calculation.
- * \param[in] binaryReproducibilityRequested  Whether binary reprocibility was requested
- * \param[in]  gpusWereDetected            Whether compatible GPUs were detected on any node.
+ * \param[in]  nonbondedTarget         The user's choice for mdrun -nb for where to assign
+ *                                     short-ranged nonbonded interaction tasks.
+ * \param[in]  userGpuTaskAssignment   The user-specified assignment of GPU tasks to device IDs.
+ * \param[in]  emulateGpuNonbonded     Whether we will emulate GPU calculation of nonbonded interactions.
+ * \param[in]  canUseNonbondedOnGpu    Whether GROMACS was build with GPU support and simulation
+ *                                     parameters are compatible.
+ * \param[in]  binaryReproducibilityRequested  Whether binary reproducibility was requested
+ * \param[in]  gpusWereDetected        Whether compatible GPUs were detected on any node.
  *
  * \returns    Whether the simulation will run nonbonded and PME tasks, respectively, on GPUs.
  *
@@ -189,8 +188,7 @@ bool decideWhetherToUseGpusForPmeWithThreadMpi(bool                    useGpuFor
 bool decideWhetherToUseGpusForNonbonded(TaskTarget              nonbondedTarget,
                                         const std::vector<int>& userGpuTaskAssignment,
                                         EmulateGpuNonbonded     emulateGpuNonbonded,
-                                        bool                    buildSupportsNonbondedOnGpu,
-                                        bool                    nonbondedOnGpuIsUseful,
+                                        bool                    canUseNonbondedOnGpu,
                                         bool                    binaryReproducibilityRequested,
                                         bool                    gpusWereDetected);
 
@@ -314,17 +312,19 @@ bool decideWhetherToUseGpuForUpdate(bool                 isDomainDecomposition,
  * The final decision whether the run will use direct communication for either of the features
  * which rely on it is made during task assignment / simulationWorkload initialization.
  *
- * \param[in]  devFlags                     GPU development / experimental feature flags.
+ * \param[in]  mpiStatus                    Information about GPU-aware availability
  * \param[in]  haveMts                      Whether the simulation uses multiple time stepping
+ * \param[in]  useReplicaExchange           Whether replica exchange is used
  * \param[in]  haveSwapCoords               Whether the swap-coords functionality is active
  * \param[in]  mdlog                        MD logger.
  *
  * \returns    Whether the MPI-parallel runs can use direct GPU communication.
  */
-bool decideWhetherDirectGpuCommunicationCanBeUsed(const DevelopmentFeatureFlags& devFlags,
-                                                  bool                           haveMts,
-                                                  bool                           haveSwapCoords,
-                                                  const gmx::MDLogger&           mdlog);
+bool decideWhetherDirectGpuCommunicationCanBeUsed(gmx::GpuAwareMpiStatus mpiStatus,
+                                                  bool                   haveMts,
+                                                  bool                   useReplicaExchange,
+                                                  bool                   haveSwapCoords,
+                                                  const gmx::MDLogger&   mdlog);
 
 /*! \brief Decide whether to use GPU for halo exchange.
  *

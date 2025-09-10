@@ -56,7 +56,6 @@
 #include "gromacs/gmxpreprocess/pgutil.h"
 #include "gromacs/gmxpreprocess/topio.h"
 #include "gromacs/gmxpreprocess/toputil.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/arrayref.h"
@@ -66,6 +65,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vec.h"
 
 #include "hackblock.h"
 #include "resall.h"
@@ -218,14 +218,14 @@ static int n_hydro(gmx::ArrayRef<const int> a, char*** atomname)
     for (auto atom = a.begin(); atom < a.end(); atom += 3)
     {
         const char* aname = *atomname[*atom];
-        char        c0    = toupper(aname[0]);
+        char        c0    = std::toupper(aname[0]);
         if (c0 == 'H')
         {
             nh++;
         }
-        else if ((static_cast<int>(strlen(aname)) > 1) && (c0 >= '0') && (c0 <= '9'))
+        else if ((static_cast<int>(std::strlen(aname)) > 1) && (c0 >= '0') && (c0 <= '9'))
         {
-            char c1 = toupper(aname[1]);
+            char c1 = std::toupper(aname[1]);
             if (c1 == 'H')
             {
                 nh++;
@@ -238,18 +238,19 @@ static int n_hydro(gmx::ArrayRef<const int> a, char*** atomname)
 static bool dihedralIsOnSameBondAsImproper(const InteractionOfType&               dihedral,
                                            gmx::ArrayRef<const InteractionOfType> improperDihedrals)
 {
-    return std::any_of(improperDihedrals.begin(), improperDihedrals.end(), [&dihedral](const auto& improper) {
-        return is_dihedral_on_same_bond(dihedral, improper);
-    });
+    return std::any_of(improperDihedrals.begin(),
+                       improperDihedrals.end(),
+                       [&dihedral](const auto& improper)
+                       { return is_dihedral_on_same_bond(dihedral, improper); });
 }
 
 /* Clean up the dihedrals (both generated and read from the .rtp
  * file). */
 static std::vector<InteractionOfType> clean_dih(gmx::ArrayRef<const InteractionOfType> originalDihedrals,
                                                 gmx::ArrayRef<const InteractionOfType> improperDihedrals,
-                                                t_atoms*                               atoms,
-                                                bool bKeepAllGeneratedDihedrals,
-                                                bool bRemoveDihedralIfWithImproper)
+                                                t_atoms* atoms,
+                                                bool     bKeepAllGeneratedDihedrals,
+                                                bool     bRemoveDihedralIfWithImproper)
 {
     std::vector<InteractionOfType> newDihedrals;
 
@@ -298,18 +299,23 @@ static std::vector<InteractionOfType> clean_dih(gmx::ArrayRef<const InteractionO
         // either is not on the same bond, or another diehdral that was also
         // explicitly set in the RTP.
         const auto beginSameBondIt = dihedralIt++;
-        dihedralIt = std::find_if(dihedralIt, originalDihedrals.end(), [&beginSameBondIt](const auto& dih) {
-            return !is_dihedral_on_same_bond(*beginSameBondIt, dih) || was_dihedral_set_in_rtp(dih);
-        });
+        dihedralIt                 = std::find_if(dihedralIt,
+                                  originalDihedrals.end(),
+                                  [&beginSameBondIt](const auto& dih) {
+                                      return !is_dihedral_on_same_bond(*beginSameBondIt, dih)
+                                             || was_dihedral_set_in_rtp(dih);
+                                  });
 
         // [beginSameBondIt,dihedralIt[ now specifies a range of dihedrals with the same central bond.
         // Find the element (dihedral) with the smallest number of hydrogens in this range.
         // Since the range is non-empty (it includes at least the element beginSameBondIt points
         // to), there will be a valid match.
-        const auto bestMatchIt =
-                std::min_element(beginSameBondIt, dihedralIt, [atoms](const auto& d1, const auto& d2) {
-                    return n_hydro(d1.atoms(), atoms->atomname) < n_hydro(d2.atoms(), atoms->atomname);
-                });
+        const auto bestMatchIt = std::min_element(beginSameBondIt,
+                                                  dihedralIt,
+                                                  [atoms](const auto& d1, const auto& d2) {
+                                                      return n_hydro(d1.atoms(), atoms->atomname)
+                                                             < n_hydro(d2.atoms(), atoms->atomname);
+                                                  });
 
         // If the original candidate (beginSameBondIt) dihedral was not explicitly set in the RTP,
         // we just add the dihedral that is the best match in the sense of fewest hydrogens in
@@ -345,15 +351,17 @@ static std::vector<InteractionOfType> clean_dih(gmx::ArrayRef<const InteractionO
     return newDihedrals;
 }
 
-static std::vector<InteractionOfType> get_impropers(t_atoms*                             atoms,
+static std::vector<InteractionOfType> get_impropers(t_atoms* atoms,
                                                     gmx::ArrayRef<MoleculePatchDatabase> globalPatches,
                                                     bool                     bAllowMissing,
-                                                    gmx::ArrayRef<const int> cyclicBondsIndex)
+                                                    gmx::ArrayRef<const int> cyclicBondsIndex,
+                                                    gmx::ArrayRef<const DisulfideBond> ssbonds)
 {
     std::vector<InteractionOfType> improper;
 
     /* Add all the impropers from the residue database to the list. */
-    int start = 0;
+    int  start = 0;
+    bool stopSearch;
     if (!globalPatches.empty())
     {
         for (int i = 0; (i < atoms->nres); i++)
@@ -361,23 +369,23 @@ static std::vector<InteractionOfType> get_impropers(t_atoms*                    
             BondedInteractionList* impropers = &globalPatches[i].rb[BondedTypes::ImproperDihedrals];
             for (const auto& bondeds : impropers->b)
             {
-                bool             bStop = false;
+                stopSearch = false;
                 std::vector<int> ai;
-                for (int k = 0; (k < 4) && !bStop; k++)
+                for (int k = 0; (k < 4) && !stopSearch; k++)
                 {
-                    const int entry = search_atom(
+                    const std::optional<int> entry = search_atom(
                             bondeds.a[k].c_str(), start, atoms, "improper", bAllowMissing, cyclicBondsIndex);
 
-                    if (entry != -1)
+                    if (entry.has_value())
                     {
-                        ai.emplace_back(entry);
+                        ai.emplace_back(entry.value());
                     }
                     else
                     {
-                        bStop = true;
+                        stopSearch = true;
                     }
                 }
-                if (!bStop)
+                if (!stopSearch)
                 {
                     /* Not broken out */
                     improper.emplace_back(ai, gmx::ArrayRef<const real>{}, bondeds.s);
@@ -390,6 +398,53 @@ static std::vector<InteractionOfType> get_impropers(t_atoms*                    
         }
     }
 
+    /* Search through ssbonds and do atom search based on residue number
+     * which is determined by the number in front of the atom type in the
+     * specbond.dat improper dihedral definition
+     */
+    for (const auto& bond : ssbonds)
+    {
+        stopSearch = false;
+        if (!bond.customImproper.empty())
+        {
+            std::vector<int> ai;
+            for (int k = 0; (k < 4) && !stopSearch; k++)
+            {
+                const char* atom = bond.customImproper[k].c_str();
+                int         specResNum;
+                if (atom[0] == 'A')
+                {
+                    specResNum = bond.firstResidue;
+                }
+                else if (atom[0] == 'B')
+                {
+                    specResNum = bond.secondResidue;
+                }
+                else
+                {
+                    gmx_fatal(FARGS,
+                              "Format of custom improper dihedral atom %s in specbond.dat is "
+                              "incorrect.",
+                              atom);
+                }
+                const std::optional<int> entry =
+                        search_res_atom(atom + 2, specResNum, atoms, "improper", TRUE);
+
+                if (entry.has_value())
+                {
+                    ai.emplace_back(entry.value());
+                }
+                else
+                {
+                    stopSearch = true;
+                }
+            }
+            if (!stopSearch)
+            {
+                improper.emplace_back(ai, gmx::ArrayRef<const real>{}, "", true);
+            }
+        }
+    }
     return improper;
 }
 
@@ -466,21 +521,19 @@ static void gen_excls(t_atoms*                             atoms,
 
             for (const auto& bondeds : hbexcl->b)
             {
-                const char* anm = bondeds.a[0].c_str();
-                int i1 = search_atom(anm, astart, atoms, "exclusion", bAllowMissing, cyclicBondsIndex);
-                anm    = bondeds.a[1].c_str();
-                int i2 = search_atom(anm, astart, atoms, "exclusion", bAllowMissing, cyclicBondsIndex);
-                if (i1 != -1 && i2 != -1)
+                std::optional<int> i1 = search_atom(
+                        bondeds.a[0].c_str(), astart, atoms, "exclusion", bAllowMissing, cyclicBondsIndex);
+                std::optional<int> i2 = search_atom(
+                        bondeds.a[1].c_str(), astart, atoms, "exclusion", bAllowMissing, cyclicBondsIndex);
+                if (i1.has_value() && i2.has_value())
                 {
-                    if (i1 > i2)
+                    if (i1.value() > i2.value())
                     {
-                        int itmp = i1;
-                        i1       = i2;
-                        i2       = itmp;
+                        std::swap(i1, i2);
                     }
-                    srenew(excls[i1].e, excls[i1].nr + 1);
-                    excls[i1].e[excls[i1].nr] = i2;
-                    excls[i1].nr++;
+                    srenew(excls[i1.value()].e, excls[i1.value()].nr + 1);
+                    excls[i1.value()].e[excls[i1.value()].nr] = i2.value();
+                    excls[i1.value()].nr++;
                 }
             }
 
@@ -573,26 +626,14 @@ static void clean_excls(t_nextnb* nnb, int nrexcl, t_excls excls[])
     }
 }
 
-/*! \brief
- * Generate pairs, angles and dihedrals from .rtp settings
- *
- * \param[in,out] atoms            Global information about atoms in topology.
- * \param[in]     rtpFFDB          Residue type database from force field.
- * \param[in,out] plist            Information about listed interactions.
- * \param[in,out] excls            Pair interaction exclusions.
- * \param[in,out] globalPatches    Information about possible residue modifications.
- * \param[in]     bAllowMissing    True if missing interaction information is allowed.
- *                                 AKA allow cartoon physics
- * \param[in]     cyclicBondsIndex Information about bonds creating cyclic molecules.
- *                                 Empty if no such bonds exist.
- */
 void gen_pad(t_atoms*                               atoms,
              gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
              gmx::ArrayRef<InteractionsOfType>      plist,
              t_excls                                excls[],
              gmx::ArrayRef<MoleculePatchDatabase>   globalPatches,
              bool                                   bAllowMissing,
-             gmx::ArrayRef<const int>               cyclicBondsIndex)
+             gmx::ArrayRef<const int>               cyclicBondsIndex,
+             gmx::ArrayRef<const DisulfideBond>     ssbonds)
 {
     t_nextnb nnb;
     init_nnb(&nnb, atoms->nr, 4);
@@ -665,14 +706,14 @@ void gen_pad(t_atoms*                               atoms,
                                 {
                                     if (anm[1] == bondeds.aj())
                                     {
-                                        bool bFound = false;
+                                        bool foundMatch = false;
                                         for (int m = 0; m < 3; m += 2)
                                         {
-                                            bFound = (bFound
-                                                      || ((anm[m] == bondeds.ai())
-                                                          && (anm[2 - m] == bondeds.ak())));
+                                            foundMatch = (foundMatch
+                                                          || ((anm[m] == bondeds.ai())
+                                                              && (anm[2 - m] == bondeds.ak())));
                                         }
-                                        if (bFound)
+                                        if (foundMatch)
                                         {
                                             name = bondeds.s;
                                             /* Mark that we found a match for this entry */
@@ -715,16 +756,16 @@ void gen_pad(t_atoms*                               atoms,
                                                 &globalPatches[res].rb[BondedTypes::ProperDihedrals];
                                         for (auto& bondeds : hbdih->b)
                                         {
-                                            bool bFound = false;
+                                            bool foundMatch = false;
                                             for (int m = 0; m < 2; m++)
                                             {
-                                                bFound = (bFound
-                                                          || ((anm[3 * m] == bondeds.ai())
-                                                              && (anm[1 + m] == bondeds.aj())
-                                                              && (anm[2 - m] == bondeds.ak())
-                                                              && (anm[3 - 3 * m] == bondeds.al())));
+                                                foundMatch = (foundMatch
+                                                              || ((anm[3 * m] == bondeds.ai())
+                                                                  && (anm[1 + m] == bondeds.aj())
+                                                                  && (anm[2 - m] == bondeds.ak())
+                                                                  && (anm[3 - 3 * m] == bondeds.al())));
                                             }
-                                            if (bFound)
+                                            if (foundMatch)
                                             {
                                                 name = bondeds.s;
                                                 /* Mark that we found a match for this entry */
@@ -795,9 +836,9 @@ void gen_pad(t_atoms*                               atoms,
                 }
                 /* Hm - entry not used, let's see if we can find all atoms */
                 std::vector<int>                   atomNumbers;
-                bool                               bFound = true;
+                bool                               foundMatch = true;
                 gmx::ArrayRef<const int>::iterator cyclicBondsIterator;
-                for (int k = 0; k < 3 && bFound; k++)
+                for (int k = 0; k < 3 && foundMatch; k++)
                 {
                     const char* p   = bondeds.a[k].c_str();
                     int         res = i;
@@ -823,11 +864,15 @@ void gen_pad(t_atoms*                               atoms,
                             res = *(--cyclicBondsIterator);
                         }
                     }
-                    atomNumbers.emplace_back(search_res_atom(p, res, atoms, "angle", TRUE));
-                    bFound = (atomNumbers.back() != -1);
+                    const std::optional<int> atomIndex = search_res_atom(p, res, atoms, "angle", TRUE);
+                    foundMatch = atomIndex.has_value();
+                    if (foundMatch)
+                    {
+                        atomNumbers.emplace_back(atomIndex.value());
+                    }
                 }
 
-                if (bFound)
+                if (foundMatch)
                 {
                     bondeds.match = true;
                     /* Incrementing nang means we save this angle */
@@ -846,9 +891,9 @@ void gen_pad(t_atoms*                               atoms,
                 }
                 /* Hm - entry not used, let's see if we can find all atoms */
                 std::vector<int>                   atomNumbers;
-                bool                               bFound = true;
+                bool                               foundMatch = true;
                 gmx::ArrayRef<const int>::iterator cyclicBondsIterator;
-                for (int k = 0; k < 4 && bFound; k++)
+                for (int k = 0; k < 4 && foundMatch; k++)
                 {
                     const char* p   = bondeds.a[k].c_str();
                     int         res = i;
@@ -876,11 +921,15 @@ void gen_pad(t_atoms*                               atoms,
                             res = *(--cyclicBondsIterator);
                         }
                     }
-                    atomNumbers.emplace_back(search_res_atom(p, res, atoms, "dihedral", TRUE));
-                    bFound = (atomNumbers.back() != -1);
+                    const std::optional<int> atomIndex = search_res_atom(p, res, atoms, "dihedral", TRUE);
+                    foundMatch = atomIndex.has_value();
+                    if (foundMatch)
+                    {
+                        atomNumbers.emplace_back(atomIndex.value());
+                    }
                 }
 
-                if (bFound)
+                if (foundMatch)
                 {
                     bondeds.match = true;
                     /* Incrementing ndih means we save this dihedral */
@@ -917,7 +966,7 @@ void gen_pad(t_atoms*                               atoms,
     }
 
     /* Get the impropers from the database */
-    improper = get_impropers(atoms, globalPatches, bAllowMissing, cyclicBondsIndex);
+    improper = get_impropers(atoms, globalPatches, bAllowMissing, cyclicBondsIndex, ssbonds);
 
     /* Sort the impropers */
     sort_id(improper);

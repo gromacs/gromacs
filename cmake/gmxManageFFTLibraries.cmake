@@ -33,6 +33,9 @@
 
 include_guard()
 
+# Set default that we are not using MKL for FFTs.
+set(GMX_FFT_MKL 0)
+
 # Manage setup of the different FFT libraries we can use in Gromacs.
 set(PKG_FFT "")
 set(PKG_FFT_LIBS "")
@@ -64,7 +67,7 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
         find_package(FFTW COMPONENTS ${LOWERFFTW})
 
         if(NOT ${FFTW}_FOUND)
-            MESSAGE(FATAL_ERROR "Cannot find FFTW 3 (with correct precision - libfftw3f for mixed-precision GROMACS or libfftw3 for double-precision GROMACS). Either choose the right precision, choose another FFT(W) library (-DGMX_FFT_LIBRARY), enable the advanced option to let GROMACS build FFTW 3 for you (-DGMX_BUILD_OWN_FFTW=ON), or use the really slow GROMACS built-in fftpack library (-DGMX_FFT_LIBRARY=fftpack).")
+            message(FATAL_ERROR "Cannot find FFTW 3 (with correct precision - libfftw3f for mixed-precision GROMACS or libfftw3 for double-precision GROMACS). Either choose the right precision, choose another FFT(W) library (-DGMX_FFT_LIBRARY), enable the advanced option to let GROMACS build FFTW 3 for you (-DGMX_BUILD_OWN_FFTW=ON), or use the really slow GROMACS built-in fftpack library (-DGMX_FFT_LIBRARY=fftpack).")
         endif()
 
         set(PKG_FFT "${${FFTW}_PKG}")
@@ -110,15 +113,16 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
         message(STATUS "Found MKL at ${MKLROOT}")
     endif()
     add_library(MKL::MKL INTERFACE IMPORTED GLOBAL)
-    if(UNIX)
-        target_link_libraries(MKL::MKL INTERFACE -Wl,--start-group) #only necessary for static but doesn't hurt otherwise. cmake 3.24 has LINK_GROUP
-    endif()
     foreach(_lib mkl_core mkl_sequential mkl_intel_lp64)
         find_library(${_lib}_PATH "${_lib}" PATHS "${MKLROOT}/lib" "${MKLROOT}/lib/intel64" REQUIRED)
-        target_link_libraries(MKL::MKL INTERFACE "${${_lib}_PATH}")
+        if(NOT UNIX)
+            target_link_libraries(MKL::MKL INTERFACE "${${_lib}_PATH}")
+        endif()
     endforeach()
     if(UNIX)
-        target_link_libraries(MKL::MKL INTERFACE -Wl,--end-group -lpthread -lm -ldl)
+        # LINK_GROUP only necessary for static but doesn't hurt otherwise.
+        target_link_libraries(MKL::MKL INTERFACE "$<LINK_GROUP:RESCAN,mkl_core,mkl_sequential,mkl_intel_lp64>")
+        target_link_libraries(MKL::MKL INTERFACE -lpthread -lm -ldl)
     endif()
     target_link_directories(MKL::MKL INTERFACE "${MKLROOT}/lib" "${MKLROOT}/lib/intel64")
     target_include_directories(MKL::MKL INTERFACE "${MKLROOT}/include")
@@ -141,9 +145,8 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
         message(FATAL_ERROR "Linking with MKL was requested, but was not successful: ${MKL_ERROR_MESSAGE}")
     endif()
 
-    # Set variables to signal that we have MKL available and should use it for FFTs.
+    # Set variable to signal that we have MKL available and should use it for FFTs.
     set(GMX_FFT_MKL 1)
-    set(HAVE_LIBMKL 1)
 
     # Hide internal MKL options
     get_cmake_property(_VARS VARIABLES)

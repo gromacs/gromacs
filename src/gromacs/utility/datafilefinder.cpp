@@ -106,7 +106,7 @@ void DataFileFinder::setSearchPathFromEnv(const char* envVarName)
         impl_ = std::make_unique<Impl>();
     }
     impl_->envName_       = envVarName;
-    const char* const lib = getenv(envVarName);
+    const char* const lib = std::getenv(envVarName);
     if (!isNullOrEmpty(lib))
     {
         auto&                              path        = impl_->searchPath_; // convenience

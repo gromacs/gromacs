@@ -45,6 +45,26 @@
 #include <cstdlib>
 
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/textwriter.h"
+
+namespace gmx
+{
+
+bool checkIfAvailable(TextWriter* writer, const char* description, const void* p)
+{
+    if (!p)
+    {
+        writer->writeStringFormatted("%s: not available\n", description);
+    }
+    return (p != nullptr);
+}
+
+void printTitleAndSize(TextWriter* writer, const char* title, const int n)
+{
+    writer->writeStringFormatted("%s (%d):\n", title, n);
+}
+
+} // namespace gmx
 
 int pr_indent(FILE* fp, int n)
 {
@@ -121,7 +141,7 @@ void pr_reals_of_dim(FILE* fp, int indent, const char* title, const real* vec, i
 {
     const char* fshort = "%12.5e";
     const char* flong  = "%15.8e";
-    const char* format = (getenv("GMX_PRINT_LONGFORMAT") != nullptr) ? flong : fshort;
+    const char* format = (std::getenv("GMX_PRINT_LONGFORMAT") != nullptr) ? flong : fshort;
 
     if (available(fp, vec, indent, title))
     {

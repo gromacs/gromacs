@@ -31,35 +31,13 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out https://www.gromacs.org.
 
-# CMake detects Intel compiler (based on LLVM) as Clang
-# Was fixed in Cmake 3.20. When we require 3.20 this can be deleted.
-if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "IntelLLVM")
+if (CMAKE_CXX_COMPILER_ID MATCHES "IntelLLVM")
   try_compile(GMX_INTEL_LLVM "${CMAKE_BINARY_DIR}" SOURCES "${CMAKE_SOURCE_DIR}/cmake/TestIntelLLVM.cpp" OUTPUT_VARIABLE GMX_INTEL_LLVM_VERSION)
   if (GMX_INTEL_LLVM)
     if(GMX_INTEL_LLVM_VERSION MATCHES ": ([0-9]+) ")
       set(GMX_INTEL_LLVM_VERSION ${CMAKE_MATCH_1})
     else()
       message(WARNING "Intel LLVM version detection failed. Output: ${GMX_INTEL_LLVM_VERSION}")
-    endif()
-    # ICPX 2023 has an obnoxious remark in debug mode for every single file. Silence it:
-    if(CMAKE_BUILD_TYPE MATCHES "Debug")
-      include(CheckCCompilerFlag)
-      include(CheckCXXCompilerFlag)
-      include(CheckLinkerFlag)
-      set(flag "-Rno-debug-disables-optimization")
-      check_c_compiler_flag(${flag} C_COMPILER_HAS_REMARK_NO_DEBUG_DISABLES_OPTIMIZATIONS)
-      check_cxx_compiler_flag(${flag} CXX_COMPILER_HAS_REMARK_NO_DEBUG_DISABLES_OPTIMIZATIONS)
-      check_linker_flag(CXX ${flag} CXX_LINKER_HAS_REMARK_NO_DEBUG_DISABLES_OPTIMIZATIONS)
-      if(C_COMPILER_HAS_REMARK_NO_DEBUG_DISABLES_OPTIMIZATIONS)
-        set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} ${flag}")
-      endif()
-      if(CXX_COMPILER_HAS_REMARK_NO_DEBUG_DISABLES_OPTIMIZATIONS)
-        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${flag}")
-      endif()
-      if(CXX_LINKER_HAS_REMARK_NO_DEBUG_DISABLES_OPTIMIZATIONS)
-        set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} ${flag}")
-        set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} ${flag}")
-      endif()
     endif()
   endif()
 endif()

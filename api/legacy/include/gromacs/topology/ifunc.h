@@ -42,7 +42,7 @@
 #define GMX_TOPOLOGY_IFUNC_H
 
 #include "gromacs/libgromacs_export.h"
-#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/vectypes.h"
 
 struct t_fcdata;
 struct t_graph;
@@ -197,6 +197,7 @@ enum
     F_COM_PULL,
     F_DENSITYFITTING,
     F_EQM,
+    F_ENNPOT,
     F_EPOT,
     F_EKIN,
     F_ETOT,

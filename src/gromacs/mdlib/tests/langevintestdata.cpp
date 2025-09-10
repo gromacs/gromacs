@@ -144,7 +144,7 @@ LangevinTestData::LangevinTestData(int        numAtoms,
         inputRecord_.opts.tau_t[i]          = tauT;
     }
     snew(inputRecord_.opts.nFreeze, 1);
-    snew(inputRecord_.opts.acceleration, 1);
+    inputRecord_.opts.acceleration.resize(1);
     for (int d = 0; d < DIM; d++)
     {
         inputRecord_.opts.nFreeze[0][d]      = 0;
@@ -173,9 +173,9 @@ LangevinTestData::LangevinTestData(int        numAtoms,
 
     update_ = std::make_unique<Update>(inputRecord_, kineticEnergyData_, nullptr);
     update_->updateAfterPartition(numAtoms,
-                                  gmx::ArrayRef<const unsigned short>(),
+                                  gmx::ArrayRef<const unsigned short>{},
                                   mdAtoms_.cTC,
-                                  gmx::ArrayRef<const unsigned short>());
+                                  gmx::ArrayRef<const unsigned short>{});
 }
 
 } // namespace test

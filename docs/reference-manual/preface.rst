@@ -23,7 +23,7 @@ Project leaders:
     Uppsala University, Sweden.
 
 
-This manual is not complete and has no pretension to be so due
+This manual is not complete and has no pretension to be so, due
 to lack of time of the contributors -- our first priority is to improve
 the software. It is worked on continuously,
 which in some cases might mean the information is not entirely correct.
@@ -66,7 +66,7 @@ grants, since the package is distributed as free software!
 ----------------------------
 
 The entire |Gromacs| package is available under the GNU Lesser
-General Public License (LGPL), version 2.1. This means it's free as in free
+General Public License (LGPL), version 2.1. This means it is free as in free
 speech, not just that you can use it without paying us money.
 You can redistribute |Gromacs| and/or modify it under the terms of the LGPL
 as published by the Free Software Foundation;
@@ -75,7 +75,7 @@ For details, check the COPYING file in the source code or consult
 `this page <http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html>`__.
 
 The |Gromacs| source code and selected set of binary packages are
-available on our homepage, `www.gromacs.org <http://www.gromacs.org>`__. Have fun.
+available on our homepage, `www.gromacs.org <http://www.gromacs.org>`__. Have fun!
 
 .. raw:: latex
 

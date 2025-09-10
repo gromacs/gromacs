@@ -46,6 +46,7 @@
  */
 #include "gmxpre.h"
 
+#include <climits>
 #include <cstdlib>
 #include <cstring>
 
@@ -56,12 +57,12 @@
 #include <vector>
 
 #include "gromacs/hardware/device_management.h"
+#include "gromacs/serialization/iserializer.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/iserializer.h"
 #include "gromacs/utility/mpiinfo.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -76,7 +77,7 @@ bool isDeviceDetectionEnabled()
 {
     if (c_binarySupportsGpus)
     {
-        return getenv("GMX_DISABLE_GPU_DETECTION") == nullptr;
+        return std::getenv("GMX_DISABLE_GPU_DETECTION") == nullptr;
     }
     else
     {
@@ -88,19 +89,19 @@ DeviceVendor getDeviceVendor(const char* vendorName)
 {
     if (vendorName)
     {
-        if (strstr(vendorName, "NVIDIA"))
+        if (std::strstr(vendorName, "NVIDIA"))
         {
             return DeviceVendor::Nvidia;
         }
-        else if (strstr(vendorName, "AMD") || strstr(vendorName, "Advanced Micro Devices"))
+        else if (std::strstr(vendorName, "AMD") || std::strstr(vendorName, "Advanced Micro Devices"))
         {
             return DeviceVendor::Amd;
         }
-        else if (strstr(vendorName, "Intel"))
+        else if (std::strstr(vendorName, "Intel"))
         {
             return DeviceVendor::Intel;
         }
-        else if (strstr(vendorName, "Apple"))
+        else if (std::strstr(vendorName, "Apple"))
         {
             return DeviceVendor::Apple;
         }
@@ -218,7 +219,7 @@ std::string getDeviceCompatibilityDescription(const gmx::ArrayRef<const std::uni
 }
 
 void serializeDeviceInformations(const std::vector<std::unique_ptr<DeviceInformation>>& deviceInfoList,
-                                 gmx::ISerializer*                                      serializer)
+                                 gmx::ISerializer* serializer)
 {
     GMX_RELEASE_ASSERT(c_canSerializeDeviceInformation,
                        "DeviceInformation for OpenCL/SYCL can not be serialized");
@@ -243,4 +244,61 @@ std::vector<std::unique_ptr<DeviceInformation>> deserializeDeviceInformations(gm
         serializer->doOpaque(reinterpret_cast<char*>(deviceInfoList[i].get()), sizeof(DeviceInformation));
     }
     return deviceInfoList;
+}
+
+namespace
+{
+
+//! Unnecessarily declare the function below, to keep nvcc and clang-tidy happy simultaneously
+size_t hashCombine(size_t seed, std::byte c);
+
+/*! \brief Combine \c seed with \c c to produce a combined hash
+ *
+ * The resulting seed is suitable to pass to a future call to this function.
+ *
+ * Implementation is like that of Boost 1.33. It has been superseded
+ * in Boost, but its simplicity is enough for this use case. The
+ * hexadecimal constant is an arbitrary non-zero value, which avoids
+ * producing zero when all inputs were zero. */
+size_t hashCombine(const size_t seed, std::byte c)
+{
+    return seed ^ (std::hash<std::byte>{}(c) + 0x9e3779b9 + (seed << 6) + (seed >> 2));
+}
+
+//! Functor for hashing an array of \c N bytes
+struct HashAnArray
+{
+    template<size_t N>
+    std::size_t operator()(const std::array<std::byte, N>& a) const noexcept
+    {
+        size_t seed = 0;
+        for (const auto& c : a)
+        {
+            seed = hashCombine(seed, c);
+        }
+        return seed;
+    }
+};
+
+} // namespace
+
+int uniqueDeviceId(const DeviceInformation& deviceInfo)
+{
+    if (deviceInfo.uuid.has_value())
+    {
+        /* We're hashing 128 bit UUID to a 64-bit value and then take the last 31 bits.
+         * This increases the risk of collision, but a positive int is required for MPI_Comm_split,
+         * which is what this function is used for. */
+        HashAnArray hasher;
+        size_t      hash64 = hasher(deviceInfo.uuid.value());
+        size_t      mask   = 0x7f'ff'ff'ff; // 31 least significant bits
+        static_assert(sizeof(int) * CHAR_BIT >= 32, "We assume int is at least 32 bits");
+        return static_cast<int>(hash64 & mask); // get a non-negative integer
+    }
+    return deviceInfo.id;
+}
+
+std::optional<std::array<std::byte, 16>> uuidForDevice(const DeviceInformation& deviceInfo)
+{
+    return deviceInfo.uuid;
 }

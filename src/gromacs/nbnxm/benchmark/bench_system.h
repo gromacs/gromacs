@@ -49,11 +49,10 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/real.h"
-#include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vectypes.h"
 
 namespace gmx
 {

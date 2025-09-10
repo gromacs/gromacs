@@ -78,7 +78,7 @@ PreprocessingAtomTypes read_atype(const std::filesystem::path& ffdir)
     for (const auto& filename : files)
     {
         in = fflib_open(filename);
-        while (!feof(in))
+        while (!std::feof(in))
         {
             /* Skip blank or comment-only lines */
             do
@@ -88,7 +88,7 @@ PreprocessingAtomTypes read_atype(const std::filesystem::path& ffdir)
                     strip_comment(buf);
                     trim(buf);
                 }
-            } while ((feof(in) == 0) && strlen(buf) == 0);
+            } while ((std::feof(in) == 0) && std::strlen(buf) == 0);
 
             if (sscanf(buf, "%s%lf", name, &m) == 2)
             {
@@ -119,11 +119,10 @@ static void print_resatoms(FILE* out, const PreprocessingAtomTypes& atype, const
             gmx_fatal(FARGS, "Incorrect atomtype (%d)", tp);
         }
         fprintf(out,
-                "%6s  %6s  %8.3f  %6d\n",
+                "%6s  %6s  %8.3f\n",
                 *(rtpDBEntry.atomname[j]),
                 tpnm->c_str(),
-                rtpDBEntry.atom[j].q,
-                rtpDBEntry.cgnr[j]);
+                rtpDBEntry.atom[j].q);
     }
 }
 
@@ -136,8 +135,7 @@ static bool read_atoms(FILE* in, char* line, PreprocessResidue* r0, t_symtab* ta
     /* Read Atoms */
     r0->atom.clear();
     r0->atomname.clear();
-    r0->cgnr.clear();
-    while (get_a_line(in, line, STRLEN) && (strchr(line, '[') == nullptr))
+    while (get_a_line(in, line, STRLEN) && (std::strchr(line, '[') == nullptr))
     {
         if (sscanf(line, "%s%s%lf%d", buf, buf1, &q, &cg) != 4)
         {
@@ -146,8 +144,7 @@ static bool read_atoms(FILE* in, char* line, PreprocessResidue* r0, t_symtab* ta
         r0->atomname.push_back(put_symtab(tab, buf));
         r0->atom.emplace_back();
         r0->atom.back().q = q;
-        r0->cgnr.push_back(cg);
-        auto j = atype->atomTypeFromName(buf1);
+        auto j            = atype->atomTypeFromName(buf1);
         if (!j.has_value())
         {
             gmx_fatal(FARGS,
@@ -167,7 +164,7 @@ static bool read_bondeds(BondedTypes bt, FILE* in, char* line, PreprocessResidue
 {
     char str[STRLEN];
 
-    while (get_a_line(in, line, STRLEN) && (strchr(line, '[') == nullptr))
+    while (get_a_line(in, line, STRLEN) && (std::strchr(line, '[') == nullptr))
     {
         int n = 0;
         int ni;
@@ -185,7 +182,7 @@ static bool read_bondeds(BondedTypes bt, FILE* in, char* line, PreprocessResidue
             }
             n += ni;
         }
-        while (isspace(line[n]))
+        while (std::isspace(line[n]))
         {
             n++;
         }
@@ -235,7 +232,7 @@ static void check_rtp(gmx::ArrayRef<const PreprocessResidue> rtpDBEntry,
     }
 }
 
-static std::optional<BondedTypes> get_bt(char* header)
+static std::optional<BondedTypes> get_bt(const char* header)
 {
     gmx::StringToEnumValueConverter<BondedTypes, enumValueToString> converter;
     return converter.valueFrom(header);
@@ -426,7 +423,7 @@ void readResidueDatabase(const std::filesystem::path&    rrdb,
     }
     /* We don't know the current size of rrtp, but simply realloc immediately */
     auto oldArrayEnd = rtpDBEntry->end();
-    while (!feof(in))
+    while (!std::feof(in))
     {
         /* Initialise rtp entry structure */
         rtpDBEntry->push_back(header_settings);
@@ -470,17 +467,17 @@ void readResidueDatabase(const std::filesystem::path&    rrdb,
             {
                 gmx_fatal(FARGS, "in .rtp file in residue %s at line:\n%s\n", res->resname.c_str(), line);
             }
-        } while ((feof(in) == 0) && !bNextResidue);
+        } while ((std::feof(in) == 0) && !bNextResidue);
 
         if (res->natom() == 0)
         {
             gmx_fatal(FARGS, "No atoms found in .rtp file in residue %s\n", res->resname.c_str());
         }
 
-        auto found = std::find_if(
-                rtpDBEntry->begin(), rtpDBEntry->end() - 1, [&res](const PreprocessResidue& entry) {
-                    return gmx::equalCaseInsensitive(entry.resname, res->resname);
-                });
+        auto found = std::find_if(rtpDBEntry->begin(),
+                                  rtpDBEntry->end() - 1,
+                                  [&res](const PreprocessResidue& entry)
+                                  { return gmx::equalCaseInsensitive(entry.resname, res->resname); });
 
         if (found != rtpDBEntry->end() - 1)
         {
@@ -519,14 +516,17 @@ void readResidueDatabase(const std::filesystem::path&    rrdb,
     }
     gmx_ffclose(in);
 
-    std::sort(rtpDBEntry->begin(), rtpDBEntry->end(), [](const PreprocessResidue& a, const PreprocessResidue& b) {
-        return std::lexicographical_compare(
-                a.resname.begin(),
-                a.resname.end(),
-                b.resname.begin(),
-                b.resname.end(),
-                [](const char& c1, const char& c2) { return std::toupper(c1) < std::toupper(c2); });
-    });
+    std::sort(rtpDBEntry->begin(),
+              rtpDBEntry->end(),
+              [](const PreprocessResidue& a, const PreprocessResidue& b)
+              {
+                  return std::lexicographical_compare(a.resname.begin(),
+                                                      a.resname.end(),
+                                                      b.resname.begin(),
+                                                      b.resname.end(),
+                                                      [](const char& c1, const char& c2)
+                                                      { return std::toupper(c1) < std::toupper(c2); });
+              });
 
     check_rtp(*rtpDBEntry, rrdb, logger);
 }
@@ -548,8 +548,8 @@ static int neq_str_sign(const char* a1, const char* a2)
 {
     int l1, l2, lm;
 
-    l1 = static_cast<int>(strlen(a1));
-    l2 = static_cast<int>(strlen(a2));
+    l1 = static_cast<int>(std::strlen(a1));
+    l2 = static_cast<int>(std::strlen(a2));
     lm = std::min(l1, l2);
 
     if (lm >= 1 && ((l1 == l2 + 1 && is_sign(a1[l1 - 1])) || (l2 == l1 + 1 && is_sign(a2[l2 - 1])))
@@ -638,10 +638,10 @@ std::string searchResidueDatabase(const std::string&                     key,
 gmx::ArrayRef<const PreprocessResidue>::const_iterator
 getDatabaseEntry(const std::string& rtpname, gmx::ArrayRef<const PreprocessResidue> rtpDBEntry)
 {
-    auto found = std::find_if(
-            rtpDBEntry.begin(), rtpDBEntry.end(), [&rtpname](const PreprocessResidue& entry) {
-                return gmx::equalCaseInsensitive(rtpname, entry.resname);
-            });
+    auto found = std::find_if(rtpDBEntry.begin(),
+                              rtpDBEntry.end(),
+                              [&rtpname](const PreprocessResidue& entry)
+                              { return gmx::equalCaseInsensitive(rtpname, entry.resname); });
     if (found == rtpDBEntry.end())
     {
         /* This should never happen, since searchResidueDatabase should have been called

@@ -40,11 +40,11 @@
 #include <vector>
 
 #include "gromacs/domdec/localatomset.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 enum class DistanceRestraintWeighting : int;
 class gmx_ga2la_t;

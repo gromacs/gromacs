@@ -37,6 +37,7 @@
 #ifndef GOOGLEMOCK_INCLUDE_GMOCK_GMOCK_FUNCTION_MOCKER_H_
 #define GOOGLEMOCK_INCLUDE_GMOCK_GMOCK_FUNCTION_MOCKER_H_
 
+#include <cstddef>
 #include <type_traits>  // IWYU pragma: keep
 #include <utility>      // IWYU pragma: keep
 
@@ -69,22 +70,22 @@ constexpr bool PrefixOf(const char* a, const char* b) {
   return *a == 0 || (*a == *b && internal::PrefixOf(a + 1, b + 1));
 }
 
-template <int N, int M>
+template <size_t N, size_t M>
 constexpr bool StartsWith(const char (&prefix)[N], const char (&str)[M]) {
   return N <= M && internal::PrefixOf(prefix, str);
 }
 
-template <int N, int M>
+template <size_t N, size_t M>
 constexpr bool EndsWith(const char (&suffix)[N], const char (&str)[M]) {
   return N <= M && internal::PrefixOf(suffix, str + M - N);
 }
 
-template <int N, int M>
+template <size_t N, size_t M>
 constexpr bool Equals(const char (&a)[N], const char (&b)[M]) {
   return N == M && internal::PrefixOf(a, b);
 }
 
-template <int N>
+template <size_t N>
 constexpr bool ValidateSpec(const char (&spec)[N]) {
   return internal::Equals("const", spec) ||
          internal::Equals("override", spec) ||
@@ -180,8 +181,9 @@ using internal::FunctionMocker;
       _Signature)>::Result                                                     \
   GMOCK_INTERNAL_EXPAND(_CallType)                                             \
       _MethodName(GMOCK_PP_REPEAT(GMOCK_INTERNAL_PARAMETER, _Signature, _N))   \
-          GMOCK_PP_IF(_Constness, const, ) _RefSpec _NoexceptSpec              \
-          GMOCK_PP_IF(_Override, override, ) GMOCK_PP_IF(_Final, final, ) {    \
+          GMOCK_PP_IF(_Constness, const, )                                     \
+              _RefSpec _NoexceptSpec GMOCK_PP_IF(_Override, override, )        \
+                  GMOCK_PP_IF(_Final, final, ) {                               \
     GMOCK_MOCKER_(_N, _Constness, _MethodName)                                 \
         .SetOwnerAndName(this, #_MethodName);                                  \
     return GMOCK_MOCKER_(_N, _Constness, _MethodName)                          \

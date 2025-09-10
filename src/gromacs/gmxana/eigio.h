@@ -35,8 +35,8 @@
 #ifndef GMX_GMXANA_EIGIO_H
 #define GMX_GMXANA_EIGIO_H
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 enum
 {

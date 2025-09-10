@@ -44,40 +44,26 @@
 #ifndef GMX_NBNXM_PAIRLISTPARAMS_H
 #define GMX_NBNXM_PAIRLISTPARAMS_H
 
-#include "config.h"
+#include <optional>
 
-#include "gromacs/mdtypes/locality.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
 
-#include "pairlist.h"
+#include "nbnxm_enums.h"
 
-namespace Nbnxm
+namespace gmx
 {
-enum class KernelType;
-}
 
-//! The available pair list types
-enum class PairlistType : int
-{
-    Simple4x2,
-    Simple4x4,
-    Simple4x8,
-    HierarchicalNxN,
-    Count
-};
+enum class NbnxmKernelType;
 
 //! Gives the i-cluster size for each pairlist type
 static constexpr gmx::EnumerationArray<PairlistType, int> IClusterSizePerListType = {
-    { 4, 4, 4, c_nbnxnGpuClusterSize }
+    { 4, 4, 4, sc_gpuClusterSize(PairlistType::Hierarchical8x8x8), 1 }
 };
+
 //! Gives the j-cluster size for each pairlist type
 static constexpr gmx::EnumerationArray<PairlistType, int> JClusterSizePerListType = {
-    { 2, 4, 8, c_nbnxnGpuClusterSize }
-};
-//! True if given pairlist type is used on GPU, false if on CPU.
-static constexpr gmx::EnumerationArray<PairlistType, bool> sc_isGpuPairListType = {
-    { false, false, false, true }
+    { 2, 4, 8, sc_gpuClusterSize(PairlistType::Hierarchical8x8x8), 1 }
 };
 
 /*! \internal
@@ -89,7 +75,11 @@ struct PairlistParams
 {
     /*! \brief Constructor producing a struct with dynamic pruning disabled
      */
-    PairlistParams(Nbnxm::KernelType kernelType, bool haveFep, real rlist, bool haveMultipleDomains);
+    PairlistParams(NbnxmKernelType             kernelType,
+                   std::optional<PairlistType> gpuPairlistType,
+                   bool                        haveFep,
+                   real                        rlist,
+                   bool                        haveMultipleDomains);
 
     //! The type of cluster-pair list
     PairlistType pairlistType;
@@ -112,5 +102,7 @@ struct PairlistParams
     //! Lifetime in steps of the pair-list
     int lifetime;
 };
+
+} // namespace gmx
 
 #endif

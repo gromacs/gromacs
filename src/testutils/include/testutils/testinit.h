@@ -46,6 +46,8 @@
 
 #include <gtest/gtest.h>
 
+#include "naming.h"
+
 namespace gmx
 {
 
@@ -117,6 +119,69 @@ void finalizeTestUtils(bool usesHardwareDetection, bool registersDynamically);
 void registerTestsDynamically();
 
 /*! \brief Register tests dynamically based on the execution context
+ *
+ * This template reduces code duplication across the dynamically
+ * registered tests, letting them register their tests more tersely.
+ *
+ * \tparam TestFixture  The type of the test fixture
+ * \tparam TestCase     The type of the test case (derived from \c TestFixture)
+ * \tparam Combinations The interal GoogleTest type describing the
+ *                        return from \c testing::Combine() intended
+ *                        to generate test parameters of type \c
+ *                        TestFixture::ParamType (which is typically a
+ *                        tuple).
+ *
+ * \param[in] testSuiteName           The name of the test suite that shares the \c TestFixture
+ * \param[in] testNamer               Functor to make the full name of the test case
+ * \param[in] combinations            A generator of test values produced with
+ *                                      \c testing::Combine()
+ *
+ * Note that \c Combinations is actually well defined relative to \c
+ * TestFixture::ParamType, but its concrete type is an internal
+ * GoogleTest type, so we do not want to express it in code. In C++20,
+ * it would be better to declare the function parameter like `const
+ * auto& combinations` to achieve the same effect of hiding the
+ * concrete type. */
+template<typename TestFixture, typename TestCase, typename Combinations>
+void registerTests(const std::string&                                          testSuiteName,
+                   const NameOfTestFromTuple<typename TestFixture::ParamType>& testNamer,
+                   const Combinations&                                         combinations)
+{
+    // It is not good practice to use GoogleTest's internal type here,
+    // but it's a practical alternative that lets us use GoogleTest's Combine
+    // in the code that declares the values passed to registered tests.
+    //
+    // Normally the use of this type is hidden behind a call to a
+    // INSTANTIATE_TEST_SUITE_P macro. If GoogleTest do change things
+    // such that this breaks, it may be simple to fix it. Or if not,
+    // we can always manually build or enumerate the Cartesian product
+    // of values that it generates and use that in the loop below.
+    const auto testParamGenerator =
+            ::testing::internal::ParamGenerator<typename TestFixture::ParamType>(combinations);
+    for (const auto& parameters : testParamGenerator)
+    {
+        ::testing::TestParamInfo<typename TestFixture::ParamType> testParamInfo(parameters, 0);
+        const std::string testName = testNamer(testParamInfo);
+        // This returns a testing::TestInfo object that leaks. That's currently not
+        // a problem for a short-lived test binary. But if it did become one, then we
+        // should fill and return a std::vector<std::unique_ptr<TestInfo>> whose lifetime
+        // is managed in testinit.cpp.
+        ::testing::RegisterTest(testSuiteName.c_str(),
+                                testName.c_str(),
+                                nullptr,
+                                testName.c_str(),
+                                __FILE__,
+                                __LINE__,
+                                // Important to use the fixture type as the return type here, even
+                                // though we construct an object of the derived type.
+                                [=]() -> TestFixture* { return new TestCase(parameters); });
+    }
+}
+
+/*! \brief DEPRECATED Register tests dynamically based on the execution context
+ *
+ * New tests should use the above registerTests method. This method
+ * will be removed as part of #5027.
  *
  * This template reduces code duplication across the dynamically
  * registered tests, letting them register their tests more tersely.

@@ -48,7 +48,6 @@
 #include "gromacs/fileio/xtcio.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/utilities.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdlib/md_support.h"
 #include "gromacs/mdlib/rbin.h"
 #include "gromacs/mdlib/tgroup.h"
@@ -66,6 +65,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vec.h"
 
 struct gmx_global_stat
 {
@@ -146,7 +146,7 @@ static int filter_enerdterm(const real* afrom, gmx_bool bToBuffer, real* ato, gm
 }
 
 void global_stat(const gmx_global_stat&   gs,
-                 const t_commrec*         cr,
+                 const gmx::MpiComm&      mpiComm,
                  gmx_enerdata_t*          enerd,
                  tensor                   fvir,
                  tensor                   svir,
@@ -318,7 +318,7 @@ void global_stat(const gmx_global_stat&   gs,
                 add_bind(rb, observablesReducerBuffer.ssize(), observablesReducerBuffer.data());
     }
 
-    sum_bin(rb, cr);
+    sum_bin(rb, mpiComm);
 
     /* Extract all the data locally */
 

@@ -4,7 +4,7 @@
 
 **Use cases**
 
-(Describe how the feature will make a differece - from a user point of view, not just developers.)
+(Describe how the feature will make a difference - from a user point of view, not just developers.)
 
 **Impact**
 

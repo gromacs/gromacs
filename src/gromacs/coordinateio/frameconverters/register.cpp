@@ -31,13 +31,17 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
-/*!\file
+/*! \file
  * \internal
  * \brief
  * Implements gmx::ProcessFrameConversion.
- *
  * \author Paul Bauer <paul.bauer.q@gmail.com>
  * \ingroup module_coordinateio
+ */
+
+/*!
+ * \defgroup module_coordinatedata Module Coordinate Data
+ * \brief A brief description for Module Coordinate Data
  */
 
 #include "gmxpre.h"

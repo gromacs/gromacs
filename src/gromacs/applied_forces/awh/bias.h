@@ -59,11 +59,11 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "biasgrid.h"
 #include "biasparams.h"
@@ -71,7 +71,6 @@
 #include "biaswriter.h"
 #include "dimparams.h"
 
-struct t_commrec;
 struct t_enxsubblock;
 
 namespace gmx
@@ -86,6 +85,7 @@ class CorrelationGrid;
 class BiasGrid;
 class BiasSharing;
 class GridAxis;
+class MpiComm;
 class PointState;
 
 /*! \internal
@@ -219,7 +219,7 @@ public:
      * \param[in,out] fplog          Log file.
      * \returns a reference to the bias force, size \ref ndim(), valid until the next call of this method or destruction of Bias, whichever comes first.
      */
-    gmx::ArrayRef<const double> calcForceAndUpdateBias(const awh_dvec         coordValue,
+    gmx::ArrayRef<const double> calcForceAndUpdateBias(const awh_dvec coordValue,
                                                        ArrayRef<const double> neighborLambdaEnergies,
                                                        ArrayRef<const double> neighborLambdaDhdl,
                                                        double*                awhPotential,
@@ -248,9 +248,9 @@ public:
      * Restore the bias state from history on the main rank and broadcast it.
      *
      * \param[in] biasHistory  Bias history struct, only allowed to be nullptr on worker ranks.
-     * \param[in] cr           The communication record.
+     * \param[in] mpiComm      MPI communicator.
      */
-    void restoreStateFromHistory(const AwhBiasHistory* biasHistory, const t_commrec* cr);
+    void restoreStateFromHistory(const AwhBiasHistory* biasHistory, const MpiComm& mpiComm);
 
     /*! \brief
      * Allocate and initialize a bias history with the given bias state.
@@ -361,9 +361,9 @@ public:
      */
     bool hasFepLambdaDimension() const
     {
-        return std::any_of(std::begin(dimParams_), std::end(dimParams_), [](const auto& dimParam) {
-            return dimParam.isFepLambdaDimension();
-        });
+        return std::any_of(std::begin(dimParams_),
+                           std::end(dimParams_),
+                           [](const auto& dimParam) { return dimParam.isFepLambdaDimension(); });
     }
 
     /*! \brief
@@ -380,7 +380,7 @@ private:
 
     const BiasParams params_; /**< Constant parameters for the method. */
 
-    BiasState        state_; /**< The state, both global and of the grid points */
+    BiasState state_; /**< The state, both global and of the grid points */
     std::vector<int> updateList_; /**< List of points for update for temporary use (could be made another tempWorkSpace) */
 
     const bool thisRankDoesIO_; /**< Tells whether this MPI rank will do I/O (checkpointing, AWH output) */
@@ -397,7 +397,7 @@ private:
      * These are only here to avoid allocation at every MD step.
      */
     std::vector<double, AlignedAllocator<double>> alignedTempWorkSpace_; /**< Working vector of doubles. */
-    std::vector<double>                           tempForce_; /**< Bias force work buffer. */
+    std::vector<double> tempForce_; /**< Bias force work buffer. */
 
     /* Run-local counter to avoid flooding log with warnings. */
     int numWarningsIssued_; /**< The number of warning issued in the current run. */

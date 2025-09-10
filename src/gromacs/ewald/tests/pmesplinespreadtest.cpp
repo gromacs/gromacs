@@ -58,7 +58,6 @@
 
 #include "gromacs/ewald/pme.h"
 #include "gromacs/ewald/pme_gpu_internal.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state_propagator_data_gpu.h"
@@ -68,6 +67,7 @@
 #include "gromacs/utility/range.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "testutils/refdata.h"
 #include "testutils/test_hardware_environment.h"
@@ -275,10 +275,10 @@ public:
         inputRec.coulombtype = CoulombInteractionType::Pme;
         inputRec.epsilon_r   = 1.0;
 
-        const auto                    pmeTestHardwareContextsAll = getPmeTestHardwareContexts();
+        const auto pmeTestHardwareContextsAll = getPmeTestHardwareContexts();
         const PmeTestHardwareContext& pmeTestHardwareContext = pmeTestHardwareContextsAll[contextIndex];
-        const CodePath                codePath               = pmeTestHardwareContext.codePath();
-        MessageStringCollector        messages = getSkipMessagesIfNecessary(inputRec, codePath);
+        const CodePath         codePath = pmeTestHardwareContext.codePath();
+        MessageStringCollector messages = getSkipMessagesIfNecessary(inputRec, codePath);
         if (!messages.isEmpty())
         {
             GTEST_SKIP() << messages.toString();

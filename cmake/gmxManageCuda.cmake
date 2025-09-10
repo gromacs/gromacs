@@ -31,8 +31,6 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out https://www.gromacs.org.
 
-cmake_minimum_required(VERSION 3.21.2)
-
 set(GMX_GPU_CUDA ON)
 
 option(GMX_CLANG_CUDA "Use clang for CUDA" OFF)
@@ -44,7 +42,7 @@ endif()
 set(CMAKE_CUDA_STANDARD ${CMAKE_CXX_STANDARD})
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
-find_package(CUDAToolkit ${REQUIRED_CUDA_VERSION} REQUIRED)
+find_package(CUDAToolkit ${GMX_CUDA_MINIMUM_REQUIRED_VERSION} REQUIRED)
 
 if(CUDAToolkit_VERSION GREATER_EQUAL 11.1)
   set(GMX_HAVE_GPU_GRAPH_SUPPORT ON)
@@ -76,18 +74,18 @@ macro(get_cuda_compiler_info COMPILER_INFO DEVICE_COMPILER_FLAGS HOST_COMPILER_F
             if (${_nvcc_version_res} EQUAL 0)
                 # Fix multi-line mess: Replace newline with ";" so we can use it in a define
                 string(REPLACE "\n" ";" _nvcc_info_singleline ${_nvcc_version_out})
-                SET(${COMPILER_INFO} "${CUDAToolkit_NVCC_EXECUTABLE} ${_nvcc_info_singleline}")
+                set(${COMPILER_INFO} "${CUDAToolkit_NVCC_EXECUTABLE} ${_nvcc_info_singleline}")
                 string(TOUPPER ${CMAKE_BUILD_TYPE} _build_type)
                 if(CUDA_PROPAGATE_HOST_FLAGS)
                     set(${HOST_COMPILER_FLAGS} BUILD_CXXFLAGS)
                 else()
                     set(${HOST_COMPILER_FLAGS} "")
                 endif()
-                SET(_compiler_flags "${CUDA_NVCC_FLAGS_${_build_type}}")
-                SET(${DEVICE_COMPILER_FLAGS} "${CUDA_NVCC_FLAGS}${CUDA_NVCC_FLAGS_${_build_type}}")
+                set(_compiler_flags "${CUDA_NVCC_FLAGS_${_build_type}}")
+                set(${DEVICE_COMPILER_FLAGS} "${CUDA_NVCC_FLAGS}${CUDA_NVCC_FLAGS_${_build_type}}")
             else()
-                SET(${COMPILER_INFO} "N/A")
-                SET(${COMPILER_FLAGS} "N/A")
+                set(${COMPILER_INFO} "N/A")
+                set(${COMPILER_FLAGS} "N/A")
             endif()
         endif()
     else()

@@ -38,9 +38,9 @@
 #  VARIABLE will be set if dlopen is present in dlfcn.h
 #
 
-MACRO(GMX_TEST_DLOPEN VARIABLE)
-  IF(NOT DEFINED ${VARIABLE})
-    MESSAGE(STATUS "Checking for dlopen")
+macro(GMX_TEST_DLOPEN VARIABLE)
+  if(NOT DEFINED ${VARIABLE})
+    message(STATUS "Checking for dlopen")
 
     set(CMAKE_REQUIRED_INCLUDES "dlfcn.h")
     # TODO Make a proper find_package for dlopen to find
@@ -54,14 +54,14 @@ int main(void) {
   return 0;
 }" ${VARIABLE})
 
-    IF(${VARIABLE})
-      MESSAGE(STATUS "Checking for dlopen - found")
+    if(${VARIABLE})
+      message(STATUS "Checking for dlopen - found")
       set(${VARIABLE} 1 CACHE INTERNAL "Result of test for dlopen" FORCE)
-    ELSE()
-      MESSAGE(STATUS "Checking for dlopen - not found")
+    else()
+      message(STATUS "Checking for dlopen - not found")
       set(${VARIABLE} 0 CACHE INTERNAL "Result of test for dlopen" FORCE)
-    ENDIF()
+    endif()
     set(CMAKE_REQUIRED_INCLUDES)
     set(CMAKE_REQUIRED_LIBRARIES)
-  ENDIF()
-ENDMACRO()
+  endif()
+endmacro()

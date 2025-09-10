@@ -41,11 +41,11 @@
 #include "gromacs/fft/parallel_3dfft.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/simd_math.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/vec.h"
 
 #include "pme_internal.h"
 #include "pme_output.h"

@@ -41,8 +41,6 @@
 
 #include "gromacs/math/functions.h"
 #include "gromacs/math/invertmatrix.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vecdump.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -57,6 +55,8 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vecdump.h"
 
 const char* enumValueToString(ComRemovalAlgorithm enumValue)
 {
@@ -66,7 +66,7 @@ const char* enumValueToString(ComRemovalAlgorithm enumValue)
     return comRemovalAlgorithmNames[enumValue];
 }
 
-t_vcm::t_vcm(const SimulationGroups& groups, const t_inputrec& ir) :
+t_vcm::t_vcm(const SimulationGroups& groups, const t_inputrec& ir, const int numAtoms) :
     integratorConservesMomentum(!EI_RANDOM(ir.eI))
 {
     mode     = (ir.nstcomm > 0) ? ir.comm_mode : ComRemovalAlgorithm::No;
@@ -96,16 +96,22 @@ t_vcm::t_vcm(const SimulationGroups& groups, const t_inputrec& ir) :
             group_w.resize(size);
         }
 
+        const gmx::RVec zero = { 0.0_real, 0.0_real, 0.0_real };
+
         group_name.resize(size);
-        group_p.resize(size);
-        group_v.resize(size);
+        group_p.resize(size, zero);
+        group_v.resize(size, zero);
         group_mass.resize(size);
         group_ndf.resize(size);
         for (int g = 0; (g < nr); g++)
         {
-            group_ndf[g] = ir.opts.nrdf[g];
             group_name[g] =
                     *groups.groupNames[groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval][g]];
+        }
+
+        for (int i = 0; i < numAtoms; i++)
+        {
+            group_ndf[getGroupType(groups, SimulationAtomGroupType::MassCenterVelocityRemoval, i)] += 3;
         }
 
         thread_vcm.resize(gmx_omp_nthreads_get(ModuleMultiThread::Default) * stride);

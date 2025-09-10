@@ -225,5 +225,15 @@ void AbstractTrajectoryAnalysisModuleTestFixture::runTest(const CommandLine& arg
     checkOutputFiles();
 }
 
+void AbstractTrajectoryAnalysisModuleTestFixture::runTestAnticipatingException(const CommandLine& args)
+{
+    CommandLine& cmdline = commandLine();
+    cmdline.merge(args);
+    impl_->ensureModuleCreated();
+    ICommandLineOptionsModulePointer runner(
+            TrajectoryAnalysisCommandLineRunner::createModule(std::move(impl_->module_)));
+    CommandLineTestHelper::runModuleDirect(std::move(runner), &cmdline);
+}
+
 } // namespace test
 } // namespace gmx

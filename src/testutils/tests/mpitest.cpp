@@ -53,6 +53,8 @@
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/gmxmpi.h"
 
+#include "testutils/refdata.h"
+
 namespace gmx
 {
 namespace test
@@ -83,6 +85,36 @@ TEST_F(MpiSelfTest, Runs)
     {
         EXPECT_THAT(reached_, testing::Each(value));
     }
+}
+
+class MpiRefDataTest : public ::testing::Test
+{
+public:
+};
+
+TEST_F(MpiRefDataTest, UsesDifferentReferenceDataOnEachRank)
+{
+    GMX_MPI_TEST(RequireRankCount<2>);
+
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    // Test that one can initialize test reference data as a different
+    // rank.
+    TestReferenceData    refData(rank);
+    TestReferenceChecker rootChecker(refData.rootChecker());
+    // Test that reference data can actually differ between ranks.
+    rootChecker.checkInteger(rank, "MPI rank");
+}
+
+TEST_F(MpiRefDataTest, UsesDifferentReferenceDataOnEachRankWithCustomName)
+{
+    GMX_MPI_TEST(RequireRankCount<2>);
+
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    TestReferenceData    refData("CustomName.xml", rank);
+    TestReferenceChecker rootChecker(refData.rootChecker());
+    rootChecker.checkInteger(rank, "MPI rank");
 }
 
 } // namespace

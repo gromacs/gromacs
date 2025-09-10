@@ -345,7 +345,7 @@ void SynopsisFormatter::formatOption(const OptionInfo& option)
 {
     std::string name, value;
     formatOptionNameAndValue(option, &name, &value);
-    int         totalLength    = name.length() + 4;
+    int totalLength = name.length() + 4;
     std::string fullOptionText = formatString(" [%s-%s", bFormatted_ ? ":strong:`" : "", name.c_str());
     if (!value.empty())
     {

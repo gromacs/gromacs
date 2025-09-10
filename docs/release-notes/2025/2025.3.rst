@@ -1,0 +1,166 @@
+GROMACS 2025.3 release notes
+----------------------------
+
+This version was released on August 29th, 2025. These release notes
+document the changes that have taken place in |Gromacs| since the
+previous 2025.2 version, to fix known issues. It also incorporates all
+fixes made in version 2024.6 and earlier, which you can find described
+in the :ref:`release-notes`.
+
+.. Note to developers!
+   Please use """"""" to underline the individual entries for fixed issues in the subfolders,
+   otherwise the formatting on the webpage is messed up.
+   Also, please use the syntax :issue:`number` to reference issues on GitLab, without
+   a space between the colon and number!
+
+Fixes where mdrun could behave incorrectly
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+AWH for free-energy lambda coordinate was not active
+""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When using AWH for a free-energy lambda coordinate (and no other dimension),
+the lambda state would remain at the initial state and all resulting
+free energies would be zero. Affected versions: 2024.4, 2024.5,  2025.0,
+2025.1 and 2025.2.
+
+:issue:`5371`
+
+AWH bias sharing caused error without separate PME ranks
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Using AWH in conjuction with bias sharing between several simulations
+caused mdrun to segfault if more than one rank per simulation was used
+but no separate PME ranks were present. This could not produce incorrect
+results.
+Affected versions: 2024.5, 2025.0, 2025.1 and 2025.2.  
+
+:issue:`5394`
+
+``gmx mdrun`` now throws with input inconsistent with the modular simulator
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+By default, ``gmx mdrun`` can choose the modular simulator if possible and
+fall back on the legacy simulator if needed. The behaviour can be specified
+with the use of documented environment variables. After this fix, the use of
+``GMX_USE_MODULAR_SIMULATOR`` environment variable is properly honored. If
+the simulation cannot use the modular simulator, an error is given.
+
+:issue:`5339`
+
+Fixes for ``gmx`` tools
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Fixes that affect portability
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+SYCL build now works with BUILD_SHARED_LIBS=off
+"""""""""""""""""""""""""""""""""""""""""""""""
+
+Previously ``gmx`` and some test binaries failed to link to ``libgromacs.a`` because
+the required information to link to the SYCL runtime library is missing in that
+case. Linking of executables in SYCL builds is now more robust.
+
+:issue:`5341`
+
+Fix build with ROCm 7 and newer
+"""""""""""""""""""""""""""""""
+
+Building and linking |Gromacs| would fail due to changes in the linking behaviour of the main HIP library.
+
+:issue:`5380`
+
+Building |Gromacs| would fail due to ``__AMDGCN_WAVEFRONT_SIZE``
+macro removal in ROCm 7.
+
+:issue:`5259`
+
+Improved configuration error message with SYCL and VkFFT
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Configuring |Gromacs| with SYCL and VkFFT, targeting Intel devices, would result in an
+error meessage implying using VkFFT with SYCL wasn't suported at all. The message is now
+clarified to include the statement that this lack of support only applies to Intel devices.
+
+:issue:`5401`
+
+Fix detection of unusable MKL GPU offloading library during configuration
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Configuration would previously happily proceed even if development headers of MKL GPU
+offloading library were not found, causing the compilation to fail. This now results
+in an error.
+
+:issue:`5400`
+
+Fix build for NVIDIA sm_101 / sm_110 devices
+""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`5366`
+
+Miscellaneous
+^^^^^^^^^^^^^
+
+Documented that PME tuning in multi-replica simulations can give suprising results
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+PME tuning chooses between nominally equivalent model physics, yet
+there is no guarantee of consistency between (say) the tunings chosen
+for different replicas in a multi-replica simulation, so the fine
+details of comparisons of potential energy can be
+surprising. Disabling PME tuning for e.g.  testing Hamiltonian
+replica-exchange simulations with PLUMED is advised.
+
+:issue:`5278`
+
+mdrun reported double the number of domain decompositions when using GPUs
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When using GPUs, the cycle count table at the end of the log file reported a number of calls
+for Domain decomp. that was too high by a factor of one plus the number of dimensions that
+were decomposed. The times and cycle counts were correct.
+
+:issue:`5369`
+
+Support added for compilation with NVIDIA CUDA 13 toolkit
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Addition of a compilation option necessary to avoid CUDA build failures when using the NVCC
+compiler from version 13 of the CUDA toolkit.
+
+:issue:`5389`
+
+Avoid installing 3rd party header files
+"""""""""""""""""""""""""""""""""""""""
+
+Fixed a regression where |Gromacs| installed muParser headers, causing conflicts with
+the separate muParser package if installed.
+
+:issue:`5282`
+
+libgromacs now only links to MPI libraries when explicitly required
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Formerly ``gmxapi`` could have erroneously triggered GROMACS to compile and link with an
+MPI library. This is now fixed.
+
+:issue:`5395`
+
+Declared gmxapi option before finding MPI package
+"""""""""""""""""""""""""""""""""""""""""""""""""
+
+Formerly ``gmxapi`` was set up after MPI libraries, which caused a subsequent run of
+CMake to decide to find MPI libraries to help gmxapi even when ``libgromacs`` didn't need
+those libraries. Now the CMake cache does not vary between successive runs in this way.
+
+:issue:`5395`
+
+Improve heuristics for choice of NBNXM kernel flavor for AMD gfx94x
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Analytical Ewald kernels are used since these perform better in most common use-cases.
+The exception is :mdp-value:`vdw-modifier=Force-switch` with SYCL backend, where we
+still use tabulated kernels.
+
+:issue:`5329`
+

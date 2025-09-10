@@ -31,25 +31,25 @@ Protein_chain_X     3
 ;   nr       type  resnr residue  atom   cgnr     charge       mass  typeB    chargeB      massB
 ; residue   1 GLU rtp GLU  q -1.0
      1       MNH3      1    GLU    MN1      1          0     8.5155
-     2       MNH3      1    GLU    MN2      1          0     8.5155
-     3        NH3      1    GLU      N      1       -0.3          0
-     4         HC      1    GLU     H1      2       0.33          0
-     5         HC      1    GLU     H2      3       0.33          0
-     6         HC      1    GLU     H3      4       0.33          0
-     7        CT1      1    GLU     CA      5       0.21     13.019
-     8         HB      1    GLU     HA      6        0.1          0
-     9        CT2      1    GLU     CB      7      -0.18     14.027
-    10         HA      1    GLU    HB1      8       0.09          0
-    11         HA      1    GLU    HB2      9       0.09          0
-    12        CT2      1    GLU     CG     10      -0.28     14.027
-    13         HA      1    GLU    HG1     11       0.09          0
-    14         HA      1    GLU    HG2     12       0.09          0
-    15         CC      1    GLU     CD     13       0.62     12.011
-    16         OC      1    GLU    OE1     14      -0.76     15.999
-    17         OC      1    GLU    OE2     15      -0.76     15.999
-    18         CC      1    GLU      C     16       0.34     12.011
-    19         OC      1    GLU    OT1     17      -0.67    15.9994
-    20         OC      1    GLU    OT2     18      -0.67    15.9994   ; qtot -1
+     2       MNH3      1    GLU    MN2      2          0     8.5155
+     3        NH3      1    GLU      N      3       -0.3          0
+     4         HC      1    GLU     H1      4       0.33          0
+     5         HC      1    GLU     H2      5       0.33          0
+     6         HC      1    GLU     H3      6       0.33          0
+     7        CT1      1    GLU     CA      7       0.21     13.019
+     8         HB      1    GLU     HA      8        0.1          0
+     9        CT2      1    GLU     CB      9      -0.18     14.027
+    10         HA      1    GLU    HB1     10       0.09          0
+    11         HA      1    GLU    HB2     11       0.09          0
+    12        CT2      1    GLU     CG     12      -0.28     14.027
+    13         HA      1    GLU    HG1     13       0.09          0
+    14         HA      1    GLU    HG2     14       0.09          0
+    15         CC      1    GLU     CD     15       0.62     12.011
+    16         OC      1    GLU    OE1     16      -0.76     15.999
+    17         OC      1    GLU    OE2     17      -0.76     15.999
+    18         CC      1    GLU      C     18       0.34     12.011
+    19         OC      1    GLU    OT1     19      -0.67    15.9994
+    20         OC      1    GLU    OT2     20      -0.67    15.9994   ; qtot -1
 
 [ bonds ]
 ;  ai    aj funct            c0            c1            c2            c3

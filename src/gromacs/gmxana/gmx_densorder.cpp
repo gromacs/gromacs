@@ -59,8 +59,7 @@
 #include "gromacs/gmxana/interf.h"
 #include "gromacs/gmxana/powerspect.h"
 #include "gromacs/math/units.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
+#include "gromacs/mdrun/binary_information.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/atoms.h"
@@ -69,13 +68,14 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/basedefinitions.h"
-#include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 enum class PbcType : int;
 struct gmx_output_env_t;
@@ -322,7 +322,7 @@ static void outputfield(const char* fldfn, real**** Densmap, int xslices, int ys
     dim[3] = zslices;
 
     fldH = gmx_ffopen(fldfn, "w");
-    fwrite(dim, sizeof(int), 4, fldH);
+    std::fwrite(dim, sizeof(int), 4, fldH);
     for (n = 0; n < tdim; n++)
     {
         for (i = 0; i < xslices; i++)
@@ -331,7 +331,7 @@ static void outputfield(const char* fldfn, real**** Densmap, int xslices, int ys
             {
                 for (k = 0; k < zslices; k++)
                 {
-                    fwrite(&(Densmap[n][i][j][k]), sizeof(real), 1, fldH);
+                    std::fwrite(&(Densmap[n][i][j][k]), sizeof(real), 1, fldH);
                     totdens += (Densmap[n][i][j][k]);
                 }
             }
@@ -824,7 +824,7 @@ int gmx_densorder(int argc, char* argv[])
     snew(ngx, 1);
 
     /* Calculate axis */
-    axis = toupper(axtitle[0]) - 'X';
+    axis = std::toupper(axtitle[0]) - 'X';
 
     get_index(&top->atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, ngx, index, grpname);
 

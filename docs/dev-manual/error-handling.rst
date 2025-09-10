@@ -52,7 +52,7 @@ Guiding principles
   system. These form the pre-conditions that error handling will rely
   on.
 * Use assertions to validate invariants and pre-conditions. There is value in
-  using a different technique for checking such violations in order to make 
+  using a different technique for checking such violations in order to make
   the reason for the check clear to the maintainer.
 
 Specific rules
@@ -60,7 +60,7 @@ Specific rules
 
 * Use ``static_assert`` wherever possible to detect errors at compile
   time.
-* Throw *exceptions* to indicate that a function can't do its assigned
+* Throw *exceptions* to indicate that a function cannot do its assigned
   task, per the `C++ Core Guidelines E.2
   <https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Re-throw>`_.
   In particular, constructors should throw when they cannot construct
@@ -160,5 +160,5 @@ Specific rules
   This is particularly useful when troubleshooting issues where
   missing test coverage leads users to uncover such errors.
 
-  
+
 For coding guidelines to make this all work, see :ref:`implementing exceptions`.

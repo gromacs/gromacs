@@ -51,8 +51,6 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/math/units.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/atoms.h"
@@ -67,6 +65,8 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 enum class PbcType : int;
 struct gmx_output_env_t;
@@ -107,7 +107,7 @@ static int get_electrons(t_electron** eltab, const char* fn)
         gmx_fatal(FARGS, "Couldn't open %s. Exiting.\n", fn);
     }
 
-    if (nullptr == fgets(buffer, 255, in))
+    if (nullptr == std::fgets(buffer, 255, in))
     {
         gmx_fatal(FARGS, "Error reading from file %s", fn);
     }
@@ -121,7 +121,7 @@ static int get_electrons(t_electron** eltab, const char* fn)
 
     for (i = 0; i < nr; i++)
     {
-        if (fgets(buffer, 255, in) == nullptr)
+        if (std::fgets(buffer, 255, in) == nullptr)
         {
             gmx_fatal(FARGS, "reading datafile. Check your datafile.\n");
         }
@@ -136,7 +136,7 @@ static int get_electrons(t_electron** eltab, const char* fn)
 
     /* sort the list */
     fprintf(stderr, "Sorting list..\n");
-    qsort(*eltab, nr, sizeof(t_electron), compare);
+    std::qsort(*eltab, nr, sizeof(t_electron), compare);
 
     return nr;
 }
@@ -294,7 +294,8 @@ static void calc_electron_density(const char*             fn,
                 sought.atomname = gmx_strdup(*(top->atoms.atomname[index[n][i]]));
 
                 /* now find the number of electrons. This is not efficient. */
-                found = static_cast<t_electron*>(bsearch(&sought, eltab, nr, sizeof(t_electron), compare));
+                found = static_cast<t_electron*>(
+                        std::bsearch(&sought, eltab, nr, sizeof(t_electron), compare));
 
                 if (found == nullptr)
                 {
@@ -306,7 +307,7 @@ static void calc_electron_density(const char*             fn,
                 {
                     (*slDensity)[n][sliceIndex] += (found->nr_el - top->atoms.atom[index[n][i]].q) * invvol;
                 }
-                free(sought.atomname);
+                std::free(sought.atomname);
             }
         }
         nr_frames++;
@@ -525,6 +526,7 @@ static void plot_density(double*                          slDensity[],
         case 'n': ylabel = "Number density (nm\\S-3\\N)"; break;
         case 'c': ylabel = "Charge density (e nm\\S-3\\N)"; break;
         case 'e': ylabel = "Electron density (e nm\\S-3\\N)"; break;
+        default: GMX_RELEASE_ASSERT(false, "Density option case not handled");
     }
 
     den = xvgropen(afile, title, xlabel, ylabel, oenv);
@@ -703,7 +705,7 @@ int gmx_density(int argc, char* argv[])
         bCenter = TRUE;
     }
     /* Calculate axis */
-    axis = toupper(axtitle[0]) - 'X';
+    axis = std::toupper(axtitle[0]) - 'X';
 
     top = read_top(ftp2fn(efTPR, NFILE, fnm), &pbcType); /* read topology file */
 

@@ -33,12 +33,12 @@
  */
 
 /*
- * VkFFT hipSYCL support to GROMACS was contributed by Advanced Micro Devices, Inc.
+ * VkFFT AdaptiveCpp support to GROMACS was contributed by Advanced Micro Devices, Inc.
  * Copyright (c) 2022, Advanced Micro Devices, Inc.  All rights reserved.
  */
 
 /*! \internal \file
- *  \brief Implements GPU 3D FFT routines for hipSYCL using vkFFT.
+ *  \brief Implements GPU 3D FFT routines for AdaptiveCpp using vkFFT.
  *
  *  \author Bálint Soproni <balint@streamhpc.com>
  *  \author Anton Gorenko <anton@streamhpc.com>
@@ -64,14 +64,14 @@
 
 #if VKFFT_BACKEND == 1 // CUDA
 using NativeDevice = int;
-#    if GMX_SYCL_HIPSYCL
+#    if GMX_SYCL_ACPP
 static constexpr auto sc_syclBackend = sycl::backend::cuda;
 #    elif GMX_SYCL_DPCPP
 static constexpr auto sc_syclBackend = sycl::backend::ext_oneapi_cuda;
 #    endif
 #elif VKFFT_BACKEND == 2 // HIP
-using NativeDevice                   = hipDevice_t;
-#    if GMX_SYCL_HIPSYCL
+using NativeDevice = hipDevice_t;
+#    if GMX_SYCL_ACPP
 static constexpr auto sc_syclBackend = sycl::backend::hip;
 #    elif GMX_SYCL_DPCPP
 #        include <sycl/ext/oneapi/backend/hip.hpp>
@@ -156,7 +156,8 @@ Gpu3dFft::ImplSyclVkfft::Impl::Impl(bool allocateGrids,
     GMX_RELEASE_ASSERT(allocateGrids == false, "Grids needs to be pre-allocated");
     GMX_RELEASE_ASSERT(gridSizesInXForEachRank.size() == 1 && gridSizesInYForEachRank.size() == 1,
                        "FFT decomposition not implemented with the SYCL VkFFT backend");
-    GMX_RELEASE_ASSERT(performOutOfPlaceFFT, "Only out-of-place FFT is implemented in hipSYCL");
+    GMX_RELEASE_ASSERT(performOutOfPlaceFFT,
+                       "Only out-of-place FFT is implemented in the SYCL VkFFT backend");
     GMX_RELEASE_ASSERT(realGrid, "Bad (null) input real-space grid");
     GMX_RELEASE_ASSERT(complexGrid, "Bad (null) input complex grid");
 
@@ -195,13 +196,19 @@ Gpu3dFft::ImplSyclVkfft::Impl::Impl(bool allocateGrids,
 #if GMX_SYCL_DPCPP
     VkFFTResult result = initializeVkFFT(&application_, configuration_);
     handleFftError(result, "Initializing VkFFT");
-#elif GMX_SYCL_HIPSYCL
-    queue_.submit([&](sycl::handler& cgh) {
-              cgh.hipSYCL_enqueue_custom_operation([=](sycl::interop_handle& gmx_unused h) {
-                  VkFFTResult result = initializeVkFFT(&application_, configuration_);
-                  handleFftError(result, "Initializing VkFFT");
-              });
-          }).wait();
+#elif GMX_SYCL_ACPP
+    queue_.submit(
+                  [&](sycl::handler& cgh)
+                  {
+                      gmx::syclEnqueueCustomOp(cgh,
+                                               [=](sycl::interop_handle& gmx_unused h)
+                                               {
+                                                   VkFFTResult result = initializeVkFFT(
+                                                           &application_, configuration_);
+                                                   handleFftError(result, "Initializing VkFFT");
+                                               });
+                  })
+            .wait();
 #endif
 }
 
@@ -272,21 +279,28 @@ static void launchVkFft(const DeviceBuffer<float>& realGrid,
         result = VkFFTAppend(application, 1, launchParams);
         handleFftError(result, "VkFFT: Complex to real");
     }
+    // It was a pointer to a stack variable; don't leak it
+    application->configuration.stream = nullptr;
 }
 
 void Gpu3dFft::ImplSyclVkfft::perform3dFft(gmx_fft_direction dir, CommandEvent* /*timingEvent*/)
 {
-#if GMX_SYCL_HIPSYCL // use hipSYCL_enqueue_custom_operation
-    impl_->queue_.submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
-        cgh.hipSYCL_enqueue_custom_operation([=](sycl::interop_handle& h) {
-            launchVkFft(impl_->realGrid_,
-                        complexGrid_,
-                        h.get_native_queue<sc_syclBackend>(),
-                        dir,
-                        &impl_->application_,
-                        &impl_->launchParams_);
-        });
-    });
+#if GMX_SYCL_ACPP // use AdaptiveCpp_enqueue_custom_operation
+    gmx::syclSubmitWithoutEvent(impl_->queue_,
+                                [&](sycl::handler& cgh)
+                                {
+                                    gmx::syclEnqueueCustomOp(
+                                            cgh,
+                                            [=](sycl::interop_handle& h)
+                                            {
+                                                launchVkFft(impl_->realGrid_,
+                                                            complexGrid_,
+                                                            h.get_native_queue<sc_syclBackend>(),
+                                                            dir,
+                                                            &impl_->application_,
+                                                            &impl_->launchParams_);
+                                            });
+                                });
 #elif GMX_SYCL_DPCPP // submit directly
     launchVkFft(impl_->realGrid_,
                 complexGrid_,

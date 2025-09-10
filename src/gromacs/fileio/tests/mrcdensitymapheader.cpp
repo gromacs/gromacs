@@ -53,15 +53,19 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/math/coordinatetransformation.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdspan/extents.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "testutils/testasserts.h"
 #include "testutils/testmatchers.h"
 
 namespace gmx
+{
+namespace test
+{
+namespace
 {
 
 TEST(MrcDensityMapHeaderTest, DataSizeIsZeroForDefaultHeader)
@@ -166,4 +170,6 @@ TEST(MrcDensityMapHeaderTest, IsSane)
     EXPECT_FALSE(mrcHeaderIsSane(header));
 }
 
+} // namespace
+} // namespace test
 } // namespace gmx

@@ -55,7 +55,6 @@
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/pdbio.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -63,6 +62,7 @@
 #include "gromacs/topology/topology_enums.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vec.h"
 
 #include "domdec_internal.h"
 
@@ -167,56 +167,58 @@ void write_dd_grid_pdb(const char* fn, int64_t step, gmx_domdec_t* dd, matrix bo
     }
 }
 
-void write_dd_pdb(const char*       fn,
-                  int64_t           step,
-                  const char*       title,
-                  const gmx_mtop_t& mtop,
-                  const t_commrec*  cr,
-                  int               natoms,
-                  const rvec        x[],
-                  const matrix      box)
+void write_dd_pdb(const char*         fn,
+                  int64_t             step,
+                  const char*         title,
+                  const gmx_mtop_t&   mtop,
+                  const gmx_domdec_t& dd,
+                  int                 natoms,
+                  const rvec          x[],
+                  const matrix        box)
 {
-    char          fname[STRLEN], buf[22];
-    FILE*         out;
-    int           resnr;
-    const char *  atomname, *resname;
-    gmx_domdec_t* dd;
+    char        fname[STRLEN], buf[22];
+    FILE*       out;
+    int         resnr;
+    const char *atomname, *resname;
 
-    dd = cr->dd;
     if (natoms == -1)
     {
-        natoms = dd->comm->atomRanges.end(DDAtomRanges::Type::Vsites);
+        natoms = dd.comm->atomRanges.end(DDAtomRanges::Type::Vsites);
     }
 
-    sprintf(fname, "%s_%s_n%d.pdb", fn, gmx_step_str(step, buf), cr->sim_nodeid);
+    sprintf(fname, "%s_%s_n%d.pdb", fn, gmx_step_str(step, buf), dd.mpiComm().rank());
 
     out = gmx_fio_fopen(fname, "w");
 
     fprintf(out, "TITLE     %s\n", title);
-    gmx_write_pdb_box(out, dd->unitCellInfo.haveScrewPBC ? PbcType::Screw : PbcType::Xyz, box);
+    gmx_write_pdb_box(out, dd.unitCellInfo.haveScrewPBC ? PbcType::Screw : PbcType::Xyz, box);
     int molb = 0;
     for (int i = 0; i < natoms; i++)
     {
-        int ii = dd->globalAtomIndices[i];
+        int ii = dd.globalAtomIndices[i];
+        if (!isValidGlobalAtom(ii))
+        {
+            continue;
+        }
         mtopGetAtomAndResidueName(mtop, ii, &molb, &atomname, &resnr, &resname, nullptr);
         int  c;
         real b;
-        if (i < dd->comm->atomRanges.end(DDAtomRanges::Type::Zones))
+        if (i < dd.comm->atomRanges.end(DDAtomRanges::Type::Zones))
         {
             c = 0;
-            while (i >= dd->comm->zones.cg_range[c + 1])
+            while (i >= *dd.zones.atomRange(c).end())
             {
                 c++;
             }
             b = c;
         }
-        else if (i < dd->comm->atomRanges.end(DDAtomRanges::Type::Vsites))
+        else if (i < dd.comm->atomRanges.end(DDAtomRanges::Type::Vsites))
         {
-            b = dd->comm->zones.n;
+            b = dd.zones.numZones();
         }
         else
         {
-            b = dd->comm->zones.n + 1;
+            b = dd.zones.numZones() + 1;
         }
         gmx_fprintf_pdb_atomline(out,
                                  PdbRecordType::Atom,

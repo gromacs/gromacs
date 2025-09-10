@@ -39,8 +39,8 @@
 #include <array>
 #include <memory>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 struct gmx_mtop_t;
 struct interaction_const_t;

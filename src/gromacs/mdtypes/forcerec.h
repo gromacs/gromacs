@@ -38,7 +38,6 @@
 #include <memory>
 #include <vector>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/atominfo.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/ishift.h"
@@ -46,12 +45,12 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "locality.h"
 
 /* Abstract type for PME that is defined only in the routine that use them. */
 struct gmx_pme_t;
-struct nonbonded_verlet_t;
 struct bonded_threading_t;
 class DispersionCorrection;
 class ListedForces;
@@ -62,6 +61,7 @@ struct interaction_const_t;
 
 namespace gmx
 {
+struct nonbonded_verlet_t;
 class DeviceStreamManager;
 class ListedForcesGpu;
 class GpuForceReduction;
@@ -142,10 +142,10 @@ struct t_forcerec
     //! Tells whether atoms inside a molecule can be in different periodic images,
     //  i.e. whether we need to take into account PBC when computing distances inside molecules.
     //  This determines whether PBC must be considered for e.g. bonded interactions.
-    bool            bMolPBC     = false;
-    RefCoordScaling rc_scaling  = RefCoordScaling::No;
-    gmx::RVec       posres_com  = { 0, 0, 0 };
-    gmx::RVec       posres_comB = { 0, 0, 0 };
+    bool                   bMolPBC    = false;
+    RefCoordScaling        rc_scaling = RefCoordScaling::No;
+    std::vector<gmx::RVec> posresCom;
+    std::vector<gmx::RVec> posresComB;
 
     // Tells whether the box is continuosly deformed
     bool haveBoxDeformation = false;
@@ -197,7 +197,7 @@ struct t_forcerec
     std::unique_ptr<gmx::WholeMoleculeTransform> wholeMoleculeTransform;
 
     /* The Nbnxm Verlet non-bonded machinery */
-    std::unique_ptr<nonbonded_verlet_t> nbv;
+    std::unique_ptr<gmx::nonbonded_verlet_t> nbv;
 
     /* The wall tables (if used) */
     int                                                     nwall = 0;

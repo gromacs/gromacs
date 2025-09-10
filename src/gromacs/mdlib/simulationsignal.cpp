@@ -71,7 +71,12 @@ SimulationSignaller::SimulationSignaller(SimulationSignals*    signals,
                                          const gmx_multisim_t* ms,
                                          bool                  doInterSim,
                                          bool                  doIntraSim) :
-    signals_(signals), cr_(cr), ms_(ms), doInterSim_(doInterSim), doIntraSim_(doInterSim || doIntraSim), mpiBuffer_{}
+    signals_(signals),
+    cr_(cr),
+    ms_(ms),
+    doInterSim_(doInterSim),
+    doIntraSim_(doInterSim || doIntraSim),
+    mpiBuffer_{}
 {
 }
 
@@ -103,7 +108,7 @@ void SimulationSignaller::signalInterSim()
     // error at mdrun time in release mode, so there's no need for a
     // release-mode assertion.
     GMX_ASSERT(isMultiSim(ms_), "Cannot do inter-simulation signalling without a multi-simulation");
-    if (MAIN(cr_))
+    if (cr_->commMySim.isMainRank())
     {
         // Communicate the signals between the simulations.
         gmx_sum_sim(eglsNR, mpiBuffer_.data(), ms_);
@@ -111,7 +116,7 @@ void SimulationSignaller::signalInterSim()
     if (haveDDAtomOrdering(*cr_))
     {
         // Communicate the signals from the main to the others.
-        gmx_bcast(eglsNR * sizeof(mpiBuffer_[0]), mpiBuffer_.data(), cr_->mpi_comm_mygroup);
+        gmx_bcast(eglsNR * sizeof(mpiBuffer_[0]), mpiBuffer_.data(), cr_->commMyGroup.comm());
     }
 }
 

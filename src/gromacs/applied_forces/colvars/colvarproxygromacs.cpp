@@ -46,11 +46,11 @@
 #include <sstream>
 #include <vector>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/random/seed.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/path.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "colvarproxy_gromacs_version.h"
 
@@ -63,7 +63,7 @@ namespace gmx
 ColvarProxyGromacs::ColvarProxyGromacs(const std::string& colvarsConfigString,
                                        t_atoms            atoms,
                                        PbcType            pbcType,
-                                       const MDLogger*    logger,
+                                       const MDLogger&    logger,
                                        bool               doParsing,
                                        const std::map<std::string, std::string>& inputStrings,
                                        real ensembleTemperature,
@@ -156,14 +156,11 @@ cvm::real ColvarProxyGromacs::rand_gaussian()
 
 void ColvarProxyGromacs::log(std::string const& message)
 {
-    if (logger_)
+    std::istringstream is(message);
+    std::string        line;
+    while (std::getline(is, line))
     {
-        std::istringstream is(message);
-        std::string        line;
-        while (std::getline(is, line))
-        {
-            GMX_LOG(logger_->info).appendText("colvars: " + line + "\n");
-        }
+        GMX_LOG(logger_.info).appendText("colvars: " + line + "\n");
     }
 }
 

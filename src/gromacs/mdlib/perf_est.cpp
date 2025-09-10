@@ -43,7 +43,6 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -58,6 +57,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vec.h"
 
 /* Computational cost of bonded, non-bonded and PME calculations.
  * This will be machine dependent.
@@ -149,7 +149,7 @@ static double simd_cycle_factor(gmx_bool bUseSIMD)
         gmx_incons("gmx_cycle_factor() compiled without SIMD called with bUseSIMD=TRUE");
     }
     /* No SIMD, no speedup */
-    speedup                        = 1.0;
+    speedup = 1.0;
 #endif
 
     /* Return speed compared to the reference (Haswell).
@@ -169,7 +169,7 @@ void count_bonded_distances(const gmx_mtop_t& mtop, const t_inputrec& ir, double
 #if GMX_SIMD_HAVE_REAL
     gmx_bool bSimdBondeds = TRUE;
 #else
-    gmx_bool   bSimdBondeds        = FALSE;
+    gmx_bool bSimdBondeds = FALSE;
 #endif
 
     bExcl = (ir.cutoff_scheme == CutoffScheme::Group && inputrecExclForces(&ir)
@@ -327,7 +327,7 @@ static void pp_verlet_load(const gmx_mtop_t& mtop,
     *nlj_tot = nqlj + nlj;
 
     /* Effective radius of a CPU pairlist including the pairs beyond rlist */
-    r_eff = ir.rlist + nbnxmPairlistVolumeRadiusIncrease(false, mtop.natoms / det(box));
+    r_eff = ir.rlist + gmx::nbnxmPairlistVolumeRadiusIncrease(false, mtop.natoms / det(box));
 
     /* The average number of pairs per atom */
     nppa = 0.5 * 4 / 3 * M_PI * r_eff * r_eff * r_eff * mtop.natoms / det(box);

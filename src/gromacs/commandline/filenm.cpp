@@ -68,8 +68,8 @@ static const t_filenm* getFileOption(const char* opt, int nfile, const t_filenm 
 
     for (int i = 0; i < nfile; i++)
     {
-        if ((fnm[i].opt != nullptr && strcmp(opt, fnm[i].opt) == 0)
-            || (fnm[i].opt == nullptr && strcmp(opt, ftp2defopt(fnm[i].ftp)) == 0))
+        if ((fnm[i].opt != nullptr && std::strcmp(opt, fnm[i].opt) == 0)
+            || (fnm[i].opt == nullptr && std::strcmp(opt, ftp2defopt(fnm[i].ftp)) == 0))
         {
             return &fnm[i];
         }

@@ -113,7 +113,8 @@ PYBIND11_MODULE(_gmxapi, m)
     // Module helpers and utilities
     m.def(
             "has_feature",
-            [self = m](const std::string& name) {
+            [self = m](const std::string& name)
+            {
                 py::gil_scoped_acquire lock;
                 bool feature_found = py::cast<py::dict>(self.attr("_named_features")).contains(name);
                 if (!feature_found)

@@ -45,8 +45,6 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/idef.h"
@@ -60,6 +58,8 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 /************************************************************
  *
@@ -211,7 +211,7 @@ void p_graph(FILE* log, const char* title, const t_graph* g)
             fprintf(log, "\n");
         }
     }
-    fflush(log);
+    std::fflush(log);
 }
 
 /* Converts the vector of vector of edges to ListOfLists

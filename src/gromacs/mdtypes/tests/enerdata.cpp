@@ -55,13 +55,15 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/enumerationhelpers.h"
+#include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/real.h"
 
 #include "testutils/testasserts.h"
 
 namespace gmx
 {
-
+namespace test
+{
 namespace
 {
 
@@ -128,7 +130,7 @@ TEST(ForeingLambdaTermsDhdl, AllLinear)
 
     std::vector<double> dummy;
     std::vector<double> dhdl;
-    std::tie(dummy, dhdl) = foreignLambdaTerms.getTerms(nullptr);
+    std::tie(dummy, dhdl) = foreignLambdaTerms.getTerms(MpiComm(MpiComm::SingleRank{}));
 
     for (int i = 0; i < c_numLambdas; i++)
     {
@@ -156,7 +158,7 @@ TEST(ForeingLambdaTermsDhdl, AllLinearNegative)
 
     std::vector<double> dummy;
     std::vector<double> dhdl;
-    std::tie(dummy, dhdl) = foreignLambdaTerms.getTerms(nullptr);
+    std::tie(dummy, dhdl) = foreignLambdaTerms.getTerms(MpiComm(MpiComm::SingleRank{}));
 
     for (int i = 0; i < c_numLambdas; i++)
     {
@@ -185,7 +187,7 @@ TEST(ForeingLambdaTermsDhdl, SeparateVdwCoul)
 
     std::vector<double> dummy;
     std::vector<double> dhdl;
-    std::tie(dummy, dhdl) = foreignLambdaTerms.getTerms(nullptr);
+    std::tie(dummy, dhdl) = foreignLambdaTerms.getTerms(MpiComm(MpiComm::SingleRank{}));
 
     for (int i = 0; i < 2; i++)
     {
@@ -198,4 +200,5 @@ TEST(ForeingLambdaTermsDhdl, SeparateVdwCoul)
     }
 }
 
+} // namespace test
 } // namespace gmx

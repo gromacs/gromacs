@@ -69,7 +69,6 @@
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/boxmatrix.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/locality.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -146,16 +145,27 @@ PmeSafePointer pmeInitWrapper(const t_inputrec*    inputRec,
                               const real           ewaldCoeff_lj)
 {
     const MDLogger dummyLogger;
-    const matrix   dummyBox = { { 0 } };
-    const auto     runMode  = (mode == CodePath::CPU) ? PmeRunMode::CPU : PmeRunMode::Mixed;
-    t_commrec      dummyCommrec;
+    const auto     runMode       = (mode == CodePath::CPU) ? PmeRunMode::CPU : PmeRunMode::Mixed;
     NumPmeDomains  numPmeDomains = { 1, 1 };
     // TODO: Need to use proper value when GPU PME decomposition code path is tested
-    const real     haloExtentForAtomDisplacement = 1.0;
-    gmx_pme_t*     pmeDataRaw                    = gmx_pme_init(&dummyCommrec,
+    const real haloExtentForAtomDisplacement = 1.0;
+
+    // TODO get rid of this with proper matrix type
+    matrix boxTemp;
+    for (int i = 0; i < DIM; i++)
+    {
+        for (int j = 0; j < DIM; j++)
+        {
+            boxTemp[i][j] = box[i * DIM + j];
+        }
+    }
+    const char* boxError = check_box(PbcType::Unset, boxTemp);
+    GMX_RELEASE_ASSERT(boxError == nullptr, boxError);
+
+    gmx_pme_t*     pmeDataRaw = gmx_pme_init(nullptr,
                                          numPmeDomains,
                                          inputRec,
-                                         dummyBox,
+                                         boxTemp,
                                          haloExtentForAtomDisplacement,
                                          false,
                                          false,
@@ -172,26 +182,11 @@ PmeSafePointer pmeInitWrapper(const t_inputrec*    inputRec,
                                          nullptr);
     PmeSafePointer pme(pmeDataRaw); // taking ownership
 
-    // TODO get rid of this with proper matrix type
-    matrix boxTemp;
-    for (int i = 0; i < DIM; i++)
-    {
-        for (int j = 0; j < DIM; j++)
-        {
-            boxTemp[i][j] = box[i * DIM + j];
-        }
-    }
-    const char* boxError = check_box(PbcType::Unset, boxTemp);
-    GMX_RELEASE_ASSERT(boxError == nullptr, boxError);
-
     switch (mode)
     {
         case CodePath::CPU: invertBoxMatrix(boxTemp, pme->recipbox); break;
 
-        case CodePath::GPU:
-            pme_gpu_set_testing(pme->gpu, true);
-            pme_gpu_update_input_box(pme->gpu, boxTemp);
-            break;
+        case CodePath::GPU: pme_gpu_set_testing(pme->gpu, true); break;
 
         default: GMX_THROW(InternalError("Test not implemented for this mode"));
     }
@@ -206,7 +201,7 @@ PmeSafePointer pmeInitEmpty(const t_inputrec* inputRec)
 }
 
 //! Make a GPU state-propagator manager
-std::unique_ptr<StatePropagatorDataGpu> makeStatePropagatorDataGpu(const gmx_pme_t&     pme,
+std::unique_ptr<StatePropagatorDataGpu> makeStatePropagatorDataGpu(const gmx_pme_t& pme,
                                                                    const DeviceContext* deviceContext,
                                                                    const DeviceStream* deviceStream)
 {
@@ -214,7 +209,7 @@ std::unique_ptr<StatePropagatorDataGpu> makeStatePropagatorDataGpu(const gmx_pme
     // TODO: Special constructor for PME-only rank / PME-tests is used here. There should be a mechanism to
     //       restrict one from using other constructor here.
     return std::make_unique<StatePropagatorDataGpu>(
-            deviceStream, *deviceContext, GpuApiCallBehavior::Sync, pme_gpu_get_block_size(&pme), nullptr);
+            deviceStream, *deviceContext, GpuApiCallBehavior::Sync, pme_gpu_get_block_size(&pme), false, nullptr);
 }
 
 //! PME initialization with atom data
@@ -245,7 +240,7 @@ void pmeInitAtoms(gmx_pme_t*               pme,
             atc->setNumAtoms(atomCount);
             gmx_pme_reinit_atoms(pme, atomCount, charges, {});
 
-            stateGpu->reinit(atomCount, atomCount);
+            stateGpu->reinit(atomCount, atomCount, MPI_COMM_NULL);
             stateGpu->copyCoordinatesToGpu(arrayRefFromArray(coordinates.data(), coordinates.size()),
                                            gmx::AtomLocality::Local);
             pme_gpu_set_kernelparam_coordinates(pme->gpu, stateGpu->getCoordinates());
@@ -487,7 +482,7 @@ void pmePerformGather(gmx_pme_t* pme, CodePath mode, ForcesVector& forces)
             }
             copy_fftgrid_to_pmegrid(pme, &grids, pme->nthread, threadIndex);
             unwrap_periodic_pmegrid(pme, pmegrid);
-            gather_f_bsplines(pme, pmegrid, true, atc, &atc->spline[threadIndex], scale);
+            gather_f_bsplines(*pme, pmegrid, true, atc, atc->spline[threadIndex], scale);
             break;
 
 /* The compiler will complain about passing fftgrid (converting double ** to float **) if using
@@ -712,9 +707,9 @@ void pmeSetGridLineIndices(gmx_pme_t* pme, CodePath mode, const GridLineIndicesV
     switch (mode)
     {
         case CodePath::GPU:
-            memcpy(pme_gpu_staging(pme->gpu).h_gridlineIndices.data(),
-                   gridLineIndices.data(),
-                   atomCount * sizeof(gridLineIndices[0]));
+            std::memcpy(pme_gpu_staging(pme->gpu).h_gridlineIndices.data(),
+                        gridLineIndices.data(),
+                        atomCount * sizeof(gridLineIndices[0]));
             break;
 
         case CodePath::CPU:

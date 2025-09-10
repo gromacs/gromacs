@@ -52,8 +52,6 @@
 #include "gromacs/gmxana/princ.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/atoms.h"
@@ -66,6 +64,8 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 enum class PbcType : int;
 struct gmx_output_env_t;
@@ -424,7 +424,7 @@ static void calc_potential(const char*             fn,
             if (bSpherical)
             {
                 (*slPotential)[n][i] = ELC * (*slPotential)[n][i] * -1.0E9 / (EPS0 * i * (*slWidth));
-                (*slField)[n][i]     = ELC * (*slField)[n][i] * 1E18 / (EPS0 * i * (*slWidth));
+                (*slField)[n][i] = ELC * (*slField)[n][i] * 1E18 / (EPS0 * i * (*slWidth));
             }
             else
             {
@@ -642,7 +642,7 @@ int gmx_potential(int argc, char* argv[])
         bSymmetrize = false;
     }
     /* Calculate axis */
-    axis = toupper(axtitle[0]) - 'X';
+    axis = std::toupper(axtitle[0]) - 'X';
 
     top = read_top(ftp2fn(efTPR, NFILE, fnm), &pbcType); /* read topology file */
 

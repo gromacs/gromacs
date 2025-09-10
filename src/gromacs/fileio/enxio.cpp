@@ -49,8 +49,6 @@
 #include "gromacs/fileio/gmxfio_xdr.h"
 #include "gromacs/fileio/xdrf.h"
 #include "gromacs/math/functions.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/state.h"
@@ -65,6 +63,8 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 /* The source code in this file should be thread-safe.
          Please keep it that way. */
@@ -107,7 +107,7 @@ static void enxsubblock_init(t_enxsubblock* sb)
 #if GMX_DOUBLE
     sb->type = XdrDataType::Double;
 #else
-    sb->type                = XdrDataType::Float;
+    sb->type = XdrDataType::Float;
 #endif
     sb->fval       = nullptr;
     sb->dval       = nullptr;
@@ -335,7 +335,7 @@ void add_subblocks_enxblock(t_enxblock* eb, int n)
 
 static void enx_warning(const char* msg)
 {
-    if (getenv("GMX_ENX_NO_FATAL") != nullptr)
+    if (std::getenv("GMX_ENX_NO_FATAL") != nullptr)
     {
         gmx_warning("%s", msg);
     }
@@ -802,8 +802,8 @@ static gmx_bool empty_file(const std::filesystem::path& fn)
     gmx_bool bEmpty;
 
     fp     = gmx_fio_fopen(fn, "r");
-    ret    = fread(&dum, sizeof(dum), 1, fp);
-    bEmpty = (feof(fp) != 0);
+    ret    = std::fread(&dum, sizeof(dum), 1, fp);
+    bEmpty = (std::feof(fp) != 0);
     gmx_fio_fclose(fp);
 
     // bEmpty==TRUE but ret!=0 would likely be some strange I/O error, but at
@@ -986,7 +986,7 @@ gmx_bool do_enx(ener_file_t ef, t_enxframe* fr)
         if (bRead)
         {
             fprintf(stderr, "\rLast energy frame read %d time %8.3f         ", ef->framenr - 1, ef->frametime);
-            fflush(stderr);
+            std::fflush(stderr);
 
             if (!bOK)
             {

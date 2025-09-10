@@ -45,9 +45,9 @@
 
 #include "modularsimulatorinterfaces.h"
 
+struct gmx_domdec_t;
 struct gmx_wallcycle;
 struct pme_load_balancing_t;
-struct t_commrec;
 struct t_forcerec;
 struct t_inputrec;
 
@@ -78,7 +78,7 @@ public:
     PmeLoadBalanceHelper(bool                 isVerbose,
                          StatePropagatorData* statePropagatorData,
                          FILE*                fplog,
-                         t_commrec*           cr,
+                         gmx_domdec_t*        dd,
                          const MDLogger&      mdlog,
                          const t_inputrec*    inputrec,
                          gmx_wallcycle*       wcycle,
@@ -123,8 +123,8 @@ private:
     // Access to ISimulator data
     //! Handles logging.
     FILE* fplog_;
-    //! Handles communication.
-    t_commrec* cr_;
+    //! Handles domain decomposition.
+    gmx_domdec_t* dd_;
     //! Handles logging.
     const MDLogger& mdlog_;
     //! Contains user input mdp options.

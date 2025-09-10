@@ -36,6 +36,17 @@ from pymbar import timeseries
 from . import error as pv_error
 
 
+# Pymbar v4 to v3 interface adapter
+try:
+    timeseries.detectEquilibration
+except AttributeError:
+    timeseries.detectEquilibration = timeseries.detect_equilibration
+try:
+    timeseries.subsampleCorrelatedData
+except AttributeError:
+    timeseries.subsampleCorrelatedData = timeseries.subsample_correlated_data
+
+
 def equilibrate(traj, verbose=False, name=None):
     traj = np.array(traj)
     if traj.ndim == 1:

@@ -76,7 +76,6 @@ def _get_api_type_for_compound(grouplist):
 
 
 class IncludedFile(object):
-
     """Information about an #include directive in a file."""
 
     def __init__(
@@ -136,7 +135,6 @@ class IncludedFile(object):
 
 
 class IncludeBlock(object):
-
     """Block of consequent #include directives in a file."""
 
     def __init__(self, first_included_file):
@@ -160,7 +158,6 @@ class IncludeBlock(object):
 
 
 class File(object):
-
     """Source/header file in the GROMACS tree."""
 
     def __init__(self, abspath, relpath, directory):
@@ -407,7 +404,6 @@ class GeneratorSourceFile(File):
 
 
 class Directory(object):
-
     """(Sub)directory in the GROMACS tree."""
 
     def __init__(self, abspath, relpath, parent):
@@ -488,7 +484,6 @@ class Directory(object):
 
 
 class ModuleDependency(object):
-
     """Dependency between modules."""
 
     def __init__(self, othermodule):
@@ -530,7 +525,6 @@ class ModuleDependency(object):
 
 
 class Module(object):
-
     """Code module in the GROMACS source tree.
 
     Modules are specific subdirectories that host a more or less coherent
@@ -586,7 +580,6 @@ class Module(object):
 
 
 class Namespace(object):
-
     """Namespace in the GROMACS source code."""
 
     def __init__(self, rawdoc):
@@ -597,7 +590,6 @@ class Namespace(object):
 
 
 class Class(object):
-
     """Class/struct/union in the GROMACS source code."""
 
     def __init__(self, rawdoc, files):
@@ -638,7 +630,6 @@ class Class(object):
 
 
 class Member(object):
-
     """Member (in Doxygen terminology) in the GROMACS source tree.
 
     Currently, modeling is limited to the minimal set of properties that the
@@ -678,7 +669,6 @@ class Member(object):
 
 
 class GromacsTree(object):
-
     """Root object for navigating the GROMACS source tree.
 
     On initialization, the list of files and directories is initialized by

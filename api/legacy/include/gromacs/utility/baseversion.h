@@ -42,6 +42,9 @@
 #ifndef GMX_UTILITY_BASEVERSION_H
 #define GMX_UTILITY_BASEVERSION_H
 
+#include <string>
+#include <unordered_map>
+
 /*! \brief
  * Version string, containing the version, date, and abbreviated hash.
  *
@@ -92,16 +95,17 @@ void gmx_is_double_precision();
 
 void gmx_is_single_precision();
 
-/*! \brief Return a string describing what kind of GPU suport was configured in the build.
- *
- * Currently returns correctly for CUDA, OpenCL and SYCL.
- * Needs to be updated when adding new acceleration options.
- */
-const char* getGpuImplementationString();
-
 /*! \brief
  * DOI string, or empty when not a release build.
  */
 const char* gmxDOI();
+
+namespace gmx
+{
+
+//! Returns information for describing the GROMACS version
+std::unordered_map<std::string, std::string> versionDescriptions();
+
+} // namespace gmx
 
 #endif

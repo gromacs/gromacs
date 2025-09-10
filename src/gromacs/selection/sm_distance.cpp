@@ -43,7 +43,6 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/math/vec.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/nbsearch.h"
 #include "gromacs/selection/position.h"
@@ -52,6 +51,7 @@
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vec.h"
 
 #include "selmethod.h"
 #include "selmethod_impl.h"
@@ -104,7 +104,6 @@ static void* init_data_common(int npar, gmx_ana_selparam_t* param);
  * \param   param Method parameters (should point to one of the distance
  *   parameter arrays).
  * \param   data  Pointer to \c t_methoddata_distance to initialize.
- * \returns 0 on success, a non-zero error code on failure.
  *
  * Initializes the neighborhood search data structure
  * (\c t_methoddata_distance::nb).
@@ -119,7 +118,6 @@ static void free_data_common(void* data);
  *
  * \param[in]  context Evaluation context.
  * \param      data    Should point to a \c t_methoddata_distance.
- * \returns    0 on success, a non-zero error code on error.
  *
  * Initializes the neighborhood search for the current frame.
  */

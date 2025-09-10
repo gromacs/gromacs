@@ -41,11 +41,11 @@
 
 #include "gromacs/math/functions.h"
 #include "gromacs/math/nrjac.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vec.h"
 
 #define NDIM 4
 

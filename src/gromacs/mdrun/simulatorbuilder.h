@@ -57,13 +57,13 @@ struct gmx_walltime_accounting;
 struct ObservablesHistory;
 struct pull_t;
 struct ReplicaExchangeParameters;
+class SwapCoords;
 struct t_commrec;
 struct t_filenm;
 struct t_forcerec;
 struct t_inputrec;
 struct t_nrnb;
 class t_state;
-struct t_swap;
 
 namespace gmx
 {
@@ -160,7 +160,12 @@ public:
                  const MDLogger&            logger,
                  gmx_output_env_t*          outputEnv,
                  ObservablesReducerBuilder* observablesReducerBuilder) :
-        fplog_{ fplog }, commRec_{ commRec }, multisimCommRec_{ multisimCommRec }, logger_{ logger }, outputEnv_{ outputEnv }, observablesReducerBuilder_{ observablesReducerBuilder }
+        fplog_{ fplog },
+        commRec_{ commRec },
+        multisimCommRec_{ multisimCommRec },
+        logger_{ logger },
+        outputEnv_{ outputEnv },
+        observablesReducerBuilder_{ observablesReducerBuilder }
     {
     }
 
@@ -287,10 +292,10 @@ class IonSwapping
 {
 public:
     //! Create handle.
-    IonSwapping(t_swap* ionSwap) : ionSwap_(ionSwap) {}
+    IonSwapping(SwapCoords* ionSwap) : ionSwap_(ionSwap) {}
 
     //! Internal storage for handle.
-    t_swap* ionSwap_;
+    SwapCoords* ionSwap_;
 };
 
 /*! \brief

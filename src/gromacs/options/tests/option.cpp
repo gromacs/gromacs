@@ -54,6 +54,10 @@
 
 #include "testutils/testasserts.h"
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -66,3 +70,5 @@ TEST(OptionsTest, FailsOnNonsafeStorage)
 }
 
 } // namespace
+} // namespace test
+} // namespace gmx

@@ -72,9 +72,7 @@ void allocateDeviceBuffer(DeviceBuffer<ValueType>* buffer, size_t numValues, con
 {
     GMX_ASSERT(buffer, "needs a buffer pointer");
     cudaError_t stat = cudaMalloc(buffer, numValues * sizeof(ValueType));
-    GMX_RELEASE_ASSERT(
-            stat == cudaSuccess,
-            ("Allocation of the device buffer failed. " + gmx::getDeviceErrorString(stat)).c_str());
+    gmx::checkDeviceError(stat, "Allocation of the device buffer failed.");
 }
 
 /*! \brief
@@ -108,9 +106,7 @@ void freeDeviceBuffer(DeviceBuffer* buffer)
 #endif
         // *buffer is a CUDA pointer.
         cudaError_t stat = cudaFree(*buffer);
-        GMX_RELEASE_ASSERT(
-                stat == cudaSuccess,
-                ("Freeing of the device buffer failed. " + gmx::getDeviceErrorString(stat)).c_str());
+        gmx::checkDeviceError(stat, "Freeing of the device buffer failed.");
     }
 }
 
@@ -154,9 +150,7 @@ void copyToDeviceBuffer(DeviceBuffer<ValueType>* buffer,
                                    bytes,
                                    cudaMemcpyHostToDevice,
                                    deviceStream.stream());
-            GMX_RELEASE_ASSERT(
-                    stat == cudaSuccess,
-                    ("Asynchronous H2D copy failed. " + gmx::getDeviceErrorString(stat)).c_str());
+            gmx::checkDeviceError(stat, "Asynchronous H2D copy failed.");
             break;
 
         case GpuApiCallBehavior::Sync:
@@ -164,9 +158,7 @@ void copyToDeviceBuffer(DeviceBuffer<ValueType>* buffer,
                               hostBuffer,
                               bytes,
                               cudaMemcpyHostToDevice);
-            GMX_RELEASE_ASSERT(
-                    stat == cudaSuccess,
-                    ("Synchronous H2D copy failed. " + gmx::getDeviceErrorString(stat)).c_str());
+            gmx::checkDeviceError(stat, "Synchronous H2D copy failed.");
             break;
 
         default: throw;
@@ -214,9 +206,7 @@ void copyFromDeviceBuffer(ValueType*               hostBuffer,
                                    bytes,
                                    cudaMemcpyDeviceToHost,
                                    deviceStream.stream());
-            GMX_RELEASE_ASSERT(
-                    stat == cudaSuccess,
-                    ("Asynchronous D2H copy failed. " + gmx::getDeviceErrorString(stat)).c_str());
+            gmx::checkDeviceError(stat, "Asynchronous D2H copy failed.");
             break;
 
         case GpuApiCallBehavior::Sync:
@@ -224,9 +214,7 @@ void copyFromDeviceBuffer(ValueType*               hostBuffer,
                               *reinterpret_cast<ValueType**>(buffer) + startingOffset,
                               bytes,
                               cudaMemcpyDeviceToHost);
-            GMX_RELEASE_ASSERT(
-                    stat == cudaSuccess,
-                    ("Synchronous D2H copy failed. " + gmx::getDeviceErrorString(stat)).c_str());
+            gmx::checkDeviceError(stat, "Synchronous D2H copy failed.");
             break;
 
         default: throw;
@@ -270,16 +258,12 @@ void copyBetweenDeviceBuffers(DeviceBuffer<ValueType>* destinationDeviceBuffer,
                                    bytes,
                                    cudaMemcpyDeviceToDevice,
                                    deviceStream.stream());
-            GMX_RELEASE_ASSERT(
-                    stat == cudaSuccess,
-                    ("Asynchronous D2D copy failed. " + gmx::getDeviceErrorString(stat)).c_str());
+            gmx::checkDeviceError(stat, "Asynchronous D2D copy failed.");
             break;
 
         case GpuApiCallBehavior::Sync:
             stat = cudaMemcpy(*destinationDeviceBuffer, *sourceDeviceBuffer, bytes, cudaMemcpyDeviceToDevice);
-            GMX_RELEASE_ASSERT(
-                    stat == cudaSuccess,
-                    ("Synchronous D2D copy failed. " + gmx::getDeviceErrorString(stat)).c_str());
+            gmx::checkDeviceError(stat, "Synchronous D2D copy failed.");
             break;
 
         default: throw;
@@ -311,8 +295,7 @@ void clearDeviceBufferAsync(DeviceBuffer<ValueType>* buffer,
 
     cudaError_t stat = cudaMemsetAsync(
             *reinterpret_cast<ValueType**>(buffer) + startingOffset, pattern, bytes, deviceStream.stream());
-    GMX_RELEASE_ASSERT(stat == cudaSuccess,
-                       ("Couldn't clear the device buffer. " + gmx::getDeviceErrorString(stat)).c_str());
+    gmx::checkDeviceError(stat, "Couldn't clear the device buffer.");
 }
 
 /*! \brief Check the validity of the device buffer.
@@ -348,14 +331,16 @@ using DeviceTexture = cudaTextureObject_t;
  * \param[out]  deviceTexture  Device texture object to initialize.
  * \param[in]   hostBuffer     Host buffer to get date from
  * \param[in]   numValues      Number of elements in the buffer.
- * \param[in]   deviceContext  GPU device context.
+ * \param[in]   deviceContext  Device context for memory allocation.
+ * \param[in]   deviceStream   Device stream for initialization.
  */
 template<typename ValueType>
 void initParamLookupTable(DeviceBuffer<ValueType>* deviceBuffer,
                           DeviceTexture*           deviceTexture,
                           const ValueType*         hostBuffer,
                           int                      numValues,
-                          const DeviceContext&     deviceContext)
+                          const DeviceContext&     deviceContext,
+                          const DeviceStream&      deviceStream)
 {
     if (numValues == 0)
     {
@@ -365,13 +350,8 @@ void initParamLookupTable(DeviceBuffer<ValueType>* deviceBuffer,
 
     allocateDeviceBuffer(deviceBuffer, numValues, deviceContext);
 
-    const size_t sizeInBytes = numValues * sizeof(ValueType);
-
-    cudaError_t stat = cudaMemcpy(
-            *reinterpret_cast<ValueType**>(deviceBuffer), hostBuffer, sizeInBytes, cudaMemcpyHostToDevice);
-
-    GMX_RELEASE_ASSERT(stat == cudaSuccess,
-                       ("Synchronous H2D copy failed. " + gmx::getDeviceErrorString(stat)).c_str());
+    copyToDeviceBuffer(
+            deviceBuffer, hostBuffer, 0, numValues, deviceStream, GpuApiCallBehavior::Sync, nullptr);
 
     if (!c_disableCudaTextures)
     {
@@ -382,14 +362,12 @@ void initParamLookupTable(DeviceBuffer<ValueType>* deviceBuffer,
         rd.resType                = cudaResourceTypeLinear;
         rd.res.linear.devPtr      = *deviceBuffer;
         rd.res.linear.desc        = cudaCreateChannelDesc<ValueType>();
-        rd.res.linear.sizeInBytes = sizeInBytes;
+        rd.res.linear.sizeInBytes = numValues * sizeof(ValueType);
 
         memset(&td, 0, sizeof(td));
-        td.readMode = cudaReadModeElementType;
-        stat        = cudaCreateTextureObject(deviceTexture, &rd, &td, nullptr);
-        GMX_RELEASE_ASSERT(
-                stat == cudaSuccess,
-                ("Binding of the texture object failed. " + gmx::getDeviceErrorString(stat)).c_str());
+        td.readMode      = cudaReadModeElementType;
+        cudaError_t stat = cudaCreateTextureObject(deviceTexture, &rd, &td, nullptr);
+        gmx::checkDeviceError(stat, "Binding of the texture object failed.");
     }
 }
 
@@ -406,9 +384,7 @@ void destroyParamLookupTable(DeviceBuffer<ValueType>* deviceBuffer, const Device
     if (!c_disableCudaTextures && deviceTexture && deviceBuffer)
     {
         cudaError_t stat = cudaDestroyTextureObject(*deviceTexture);
-        GMX_RELEASE_ASSERT(
-                stat == cudaSuccess,
-                ("Destruction of the texture object failed. " + gmx::getDeviceErrorString(stat)).c_str());
+        gmx::checkDeviceError(stat, "Destruction of the texture object failed.");
     }
     freeDeviceBuffer(deviceBuffer);
 }

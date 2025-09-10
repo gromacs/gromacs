@@ -62,6 +62,7 @@ target_include_directories(taskassignment PUBLIC
 target_link_libraries(taskassignment PRIVATE
                       legacy_api
                       legacy_modules
+                      hardware
                       math
                       pbcutil
                       pulling

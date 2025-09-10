@@ -155,8 +155,8 @@ interactions can be converted to constraints by :ref:`grompp <gmx grompp>`.
 .. |A2| replace:: :math:`a_2`
 .. |A3| replace:: :math:`a_3`
 .. |A4| replace:: :math:`a_4`
-.. |DOH| replace:: :math:`d_{\mbox{\sc oh}}`
-.. |DHH| replace:: :math:`d_{\mbox{\sc hh}}`
+.. |DOH| replace:: :math:`d_{\mathrm{oh}}`
+.. |DHH| replace:: :math:`d_{\mathrm{hh}}`
 .. |AO| replace:: :math:`a`
 .. |BO| replace:: :math:`b`
 .. |CO| replace:: :math:`c`
@@ -245,7 +245,7 @@ interactions can be converted to constraints by :ref:`grompp <gmx grompp>`.
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
             | tabulated dihedral                 | ``dihedrals``              | 4          | 8         | table number (|GE0|); |KO| (|KJM|)                                      | |KO|       |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
-            | proper dihedral (multiple)         | ``dihedrals``              | 4          | 9         | |PHIS| (deg); |KPHI| (|KJM|); multiplicity                              | |PHIK|     |
+            | proper dihedral (multiple) [8]_    | ``dihedrals``              | 4          | 9         | |PHIS| (deg); |KPHI| (|KJM|); multiplicity                              | |PHIK|     |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
             | restricted dihedral                | ``dihedrals``              | 4          | 10        | |PHI0| (deg); |KPHI| (|KJM|)                                            |            |
             +------------------------------------+----------------------------+------------+-----------+-------------------------------------------------------------------------+------------+
@@ -312,11 +312,14 @@ interactions can be converted to constraints by :ref:`grompp <gmx grompp>`.
 .. [5]
    This interaction type can be converted to constraints by :ref:`grompp <gmx grompp>`
 
+.. [6]
+   No connection, and so no exclusions, are generated for this interaction
+
 .. [7]
    The combination rule determines the type of LJ parameters, see :ref:`nbpar`
 
-.. [6]
-   No connection, and so no exclusions, are generated for this interaction
+.. [8]
+   Multiple, consecutive parameter entries will generate multiple dihedral potentials
 
 Description of the file layout:
 
@@ -361,15 +364,14 @@ Description of the file layout:
 
 -  Descriptive comment lines and empty lines are highly recommended
 
--  Starting with |Gromacs| version 3.1.3, all directives at the parameter
-   level can be used multiple times and there are no restrictions on the
-   order, except that an atom type needs to be defined before it can be
-   used in other parameter definitions
+-  All directives at the parameter level can be used multiple times
+   and there are no restrictions on the order, except that an atom type
+   needs to be defined before it can be used in other parameter definitions
 
 -  If parameters for a certain interaction are defined multiple times
    for the same combination of atom types the last definition is used;
-   starting with |Gromacs| version 3.1.3 :ref:`grompp <gmx grompp>` generates
-   a warning for parameter redefinitions with different values
+   `grompp <gmx grompp>` generates a warning for parameter redefinitions
+   with different values, with the exception of ``[dihedraltype]`` 9
 
 -  Using one of the ``[ atoms ]``,
    ``[ bonds ]``, ``[ pairs ]``,
@@ -490,7 +492,7 @@ in use.
 **[ defaults ] :**
 
 -  ``nbfunc`` is the non-bonded function type. Use 1 (Lennard-Jones) or 2
-   (Buckingham)
+   (Buckingham, no longer supported by :ref:`gmx mdrun`)
 
 -  ``comb-rule`` is the number of the combination rule (see :ref:`nbpar`).
 
@@ -617,8 +619,8 @@ example ``urea.itp`` follows:
 ::
 
     [ moleculetype ]
-    ; molname	nrexcl
-    URE		3
+    ; molname   nrexcl
+    URE     3
 
     [ atoms ]
        1  C  1  URE      C      1     0.880229  12.01000   ; amber C  type
@@ -626,9 +628,9 @@ example ``urea.itp`` follows:
        8  H  1  URE    H22      8     0.395055   1.00800   ; amber H  type
 
     [ bonds ]
-        1	2
+        1   2
     ...
-        6	8
+        6   8
     [ dihedrals ]
     ;   ai    aj    ak    al funct  definition
          2     1     3     4   9

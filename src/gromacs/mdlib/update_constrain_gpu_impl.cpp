@@ -185,8 +185,7 @@ void UpdateConstrainGpu::Impl::set(DeviceBuffer<Float3>          d_x,
                                    const InteractionDefinitions& idef,
                                    const t_mdatoms&              md)
 {
-    wallcycle_start_nocount(wcycle_, WallCycleCounter::LaunchGpuPp);
-    wallcycle_sub_start(wcycle_, WallCycleSubCounter::LaunchGpuUpdateConstrain);
+    wallcycle_start(wcycle_, WallCycleCounter::GpuSetConstr);
 
     GMX_ASSERT(d_x, "Coordinates device buffer should not be null.");
     GMX_ASSERT(d_v, "Velocities device buffer should not be null.");
@@ -207,8 +206,12 @@ void UpdateConstrainGpu::Impl::set(DeviceBuffer<Float3>          d_x,
     integrator_->set(numAtoms_, md.invmass, md.cTC);
     if (sc_haveGpuConstraintSupport)
     {
+        wallcycle_sub_start(wcycle_, WallCycleSubCounter::GpuSetLincs);
         lincsGpu_->set(idef, numAtoms_, md.invmass);
+        wallcycle_sub_stop(wcycle_, WallCycleSubCounter::GpuSetLincs);
+        wallcycle_sub_start(wcycle_, WallCycleSubCounter::GpuSetSettle);
         settleGpu_->set(idef);
+        wallcycle_sub_stop(wcycle_, WallCycleSubCounter::GpuSetSettle);
     }
     else
     {
@@ -216,8 +219,7 @@ void UpdateConstrainGpu::Impl::set(DeviceBuffer<Float3>          d_x,
         GMX_ASSERT(idef.il[F_CONSTR].empty(), "LINCS not supported");
     }
 
-    wallcycle_sub_stop(wcycle_, WallCycleSubCounter::LaunchGpuUpdateConstrain);
-    wallcycle_stop(wcycle_, WallCycleCounter::LaunchGpuPp);
+    wallcycle_stop(wcycle_, WallCycleCounter::GpuSetConstr);
 }
 
 void UpdateConstrainGpu::Impl::setPbc(const PbcType pbcType, const matrix box)

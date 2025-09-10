@@ -45,9 +45,9 @@
 
 #include <vector>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "modularsimulatorinterfaces.h"
 
@@ -187,13 +187,13 @@ public:
      */
     static ISimulatorElement* getElementPointerImpl(LegacySimulatorData* legacySimulatorData,
                                                     ModularSimulatorAlgorithmBuilderHelper* builderHelper,
-                                                    StatePropagatorData*        statePropagatorData,
-                                                    EnergyData*                 energyData,
+                                                    StatePropagatorData* statePropagatorData,
+                                                    EnergyData*          energyData,
                                                     FreeEnergyPerturbationData* freeEnergyPerturbationData,
                                                     GlobalCommunicationHelper* globalCommunicationHelper,
-                                                    ObservablesReducer*        observablesReducer,
-                                                    const PropagatorTag&       propagatorTag,
-                                                    TimeStep                   timestep);
+                                                    ObservablesReducer*  observablesReducer,
+                                                    const PropagatorTag& propagatorTag,
+                                                    TimeStep             timestep);
 
     /*! \brief Factory method implementation
      *
@@ -212,12 +212,12 @@ public:
      */
     static ISimulatorElement* getElementPointerImpl(LegacySimulatorData* legacySimulatorData,
                                                     ModularSimulatorAlgorithmBuilderHelper* builderHelper,
-                                                    StatePropagatorData*        statePropagatorData,
-                                                    EnergyData*                 energyData,
+                                                    StatePropagatorData* statePropagatorData,
+                                                    EnergyData*          energyData,
                                                     FreeEnergyPerturbationData* freeEnergyPerturbationData,
                                                     GlobalCommunicationHelper* globalCommunicationHelper,
-                                                    ObservablesReducer*        observablesReducer,
-                                                    const PropagatorTag&       propagatorTag);
+                                                    ObservablesReducer*  observablesReducer,
+                                                    const PropagatorTag& propagatorTag);
 
 private:
     //! The actual propagation
@@ -258,7 +258,7 @@ private:
     Step scalingStepPosition_;
 
     //! The full PR scaling matrix
-    Matrix3x3 matrixPR_ = { { 0._real } };
+    Matrix3x3 matrixPR_ = { 0._real };
     //! The next PR scaling step
     Step scalingStepPR_;
 

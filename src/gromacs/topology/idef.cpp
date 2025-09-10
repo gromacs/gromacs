@@ -31,6 +31,10 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
+/*!
+ * \defgroup module_topology Module Topology
+ * \brief A brief description for Module Topology
+ */
 #include "gmxpre.h"
 
 #include "gromacs/topology/idef.h"
@@ -42,7 +46,6 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/forcefieldparameters.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -52,6 +55,7 @@
 #include "gromacs/utility/stringstream.h"
 #include "gromacs/utility/textwriter.h"
 #include "gromacs/utility/txtdump.h"
+#include "gromacs/utility/vectypes.h"
 
 static void printHarmonicInteraction(gmx::TextWriter* writer,
                                      const t_iparams& iparams,
@@ -76,7 +80,7 @@ void pr_iparams(FILE* fp, t_functype ftype, const t_iparams& iparams)
         gmx::TextWriter writer(&stream);
         printInteractionParameters(&writer, ftype, iparams);
     }
-    fputs(stream.toString().c_str(), fp);
+    std::fputs(stream.toString().c_str(), fp);
 }
 
 void printInteractionParameters(gmx::TextWriter* writer, t_functype ftype, const t_iparams& iparams)

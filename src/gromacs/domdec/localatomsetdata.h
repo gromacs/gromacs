@@ -105,7 +105,7 @@ public:
     void setLocalAndCollectiveIndices(const gmx_ga2la_t& ga2la);
     /*! \brief Global indices of the atoms in this set. */
     const std::vector<int> globalIndex_;
-    /*! \brief Maps indices on this rank [0..num_atoms_local_) to global atom indicices,
+    /*! \brief Maps indices on this rank [0..num_atoms_local_) to global atom indices,
      * so that localIndex[i] identifies the same atom as globalIndex[collectiveIndex[i]].
      *
      * This translation of locally dense atom data to global representation,

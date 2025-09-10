@@ -43,9 +43,9 @@
 #include <vector>
 
 #include "gromacs/math/paddedvector.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/booltype.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 enum class ParticleType : int;
 

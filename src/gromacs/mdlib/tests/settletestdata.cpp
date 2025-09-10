@@ -54,8 +54,6 @@
 
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/math/paddedvector.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/settle.h"
 #include "gromacs/mdlib/tests/watersystem.h"
 #include "gromacs/mdtypes/mdatom.h"
@@ -68,6 +66,8 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/unique_cptr.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "testutils/testasserts.h"
 
@@ -121,7 +121,7 @@ SettleTestData::SettleTestData(int numSettles) :
 
     // Set up the masses.
     mtop_.moltype[0].atoms.atom =
-            static_cast<t_atom*>(calloc(numSettles * atomsPerSettle_, sizeof(t_atom)));
+            static_cast<t_atom*>(std::calloc(numSettles * atomsPerSettle_, sizeof(t_atom)));
     numAtoms_ = numSettles * atomsPerSettle_;
     masses_.resize(numAtoms_);
     inverseMasses_.resize(numAtoms_);

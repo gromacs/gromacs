@@ -53,7 +53,6 @@
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/listed_forces/disre.h"
 #include "gromacs/math/functions.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/trajectory/energyframe.h"
 #include "gromacs/utility/arrayref.h"
@@ -65,6 +64,7 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
+#include "gromacs/utility/vec.h"
 
 struct gmx_output_env_t;
 
@@ -82,7 +82,7 @@ static int* select_it(int nre, gmx_enxnm_t* nm, int* nset)
     int*      set;
     gmx_bool  bVerbose = TRUE;
 
-    if ((getenv("GMX_ENER_VERBOSE")) != nullptr)
+    if ((std::getenv("GMX_ENER_VERBOSE")) != nullptr)
     {
         bVerbose = FALSE;
     }
@@ -202,14 +202,14 @@ static int scan_ene_files(const std::vector<std::string>& files, real* readtime,
                         "\nContinue conversion using only the first %d terms (n/y)?\n"
                         "(you should be sure that the energy terms match)\n",
                         nremin);
-                if (nullptr == fgets(inputstring, STRLEN - 1, stdin))
+                if (nullptr == std::fgets(inputstring, STRLEN - 1, stdin))
                 {
                     gmx_fatal(FARGS, "Error reading user input");
                 }
                 if (inputstring[0] != 'y' && inputstring[0] != 'Y')
                 {
                     fprintf(stderr, "Will not convert\n");
-                    exit(0);
+                    std::exit(0);
                 }
                 nresav = fr->nre;
             }
@@ -268,7 +268,7 @@ static void edit_files(gmx::ArrayRef<std::string> files,
             ok = FALSE;
             do
             {
-                if (nullptr == fgets(inputstring, STRLEN - 1, stdin))
+                if (nullptr == std::fgets(inputstring, STRLEN - 1, stdin))
                 {
                     gmx_fatal(FARGS, "Error reading user input");
                 }
@@ -290,7 +290,7 @@ static void edit_files(gmx::ArrayRef<std::string> files,
                 }
                 else
                 {
-                    settime[i] = strtod(inputstring, &chptr);
+                    settime[i] = std::strtod(inputstring, &chptr);
                     if (chptr == inputstring)
                     {
                         fprintf(stderr, "Try that again: ");

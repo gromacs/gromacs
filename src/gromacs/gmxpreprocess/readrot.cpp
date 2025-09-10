@@ -44,9 +44,6 @@
 #include "gromacs/fileio/trrio.h"
 #include "gromacs/fileio/warninp.h"
 #include "gromacs/gmxpreprocess/readir.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vecdump.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/block.h"
@@ -59,6 +56,9 @@
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vecdump.h"
+#include "gromacs/utility/vectypes.h"
 
 static const std::string RotStr = "Enforced rotation:";
 

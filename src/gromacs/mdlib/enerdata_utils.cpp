@@ -44,7 +44,6 @@
 #include <vector>
 
 #include "gromacs/gmxlib/network.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -53,6 +52,7 @@
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/mpicomm.h"
 
 ForeignLambdaTerms::ForeignLambdaTerms(
         const gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, std::vector<double>>* allLambdas) :
@@ -125,7 +125,7 @@ composeDhdl(const int lambdaIndex,
     return dhdlSum;
 }
 
-std::pair<std::vector<double>, std::vector<double>> ForeignLambdaTerms::getTerms(const t_commrec* cr) const
+std::pair<std::vector<double>, std::vector<double>> ForeignLambdaTerms::getTerms(const gmx::MpiComm& mpiComm) const
 {
     GMX_RELEASE_ASSERT(finalizedPotentialContributions_,
                        "The object needs to be finalized before calling getTerms");
@@ -136,9 +136,9 @@ std::pair<std::vector<double>, std::vector<double>> ForeignLambdaTerms::getTerms
         data[i]               = energies_[1 + i] - energies_[0];
         data[numLambdas_ + i] = composeDhdl(i, *allLambdas_, dhdl_[1 + i]);
     }
-    if (cr && cr->nnodes > 1)
+    if (mpiComm.isParallel())
     {
-        gmx_sumd(data.size(), data.data(), cr);
+        mpiComm.sumReduce(data);
     }
     auto dataMid = data.begin() + numLambdas_;
 
@@ -323,7 +323,7 @@ void accumulatePotentialEnergies(gmx_enerdata_t* enerd, gmx::ArrayRef<const real
 void ForeignLambdaTerms::accumulateKinetic(int listIndex, double energy, double dhdl)
 {
     energies_[listIndex] += energy;
-    dhdl_[listIndex][FreeEnergyPerturbationCouplingType::Temperature] += dhdl;
+    dhdl_[listIndex][FreeEnergyPerturbationCouplingType::Mass] += dhdl;
 }
 
 void ForeignLambdaTerms::finalizeKineticContributions(gmx::ArrayRef<const real> energyTerms,
@@ -336,10 +336,7 @@ void ForeignLambdaTerms::finalizeKineticContributions(gmx::ArrayRef<const real> 
 
     // Treat current lambda, the deltaH contribution is 0 as delta-lambda=0 for the current lambda
     accumulateKinetic(0, 0.0, energyTerms[F_DVDL_CONSTR]);
-    if (!fepvals.separate_dvdl[FreeEnergyPerturbationCouplingType::Mass])
-    {
-        accumulateKinetic(0, 0.0, energyTerms[F_DKDL]);
-    }
+    accumulateKinetic(0, 0.0, dhdlMass);
 
     for (int i = 0; i < fepvals.n_lambda; i++)
     {
@@ -356,11 +353,10 @@ void ForeignLambdaTerms::finalizeKineticContributions(gmx::ArrayRef<const real> 
         const double dlam = fepvals.all_lambda[lambdaIndex][i] - lambda[static_cast<int>(lambdaIndex)];
         accumulateKinetic(1 + i, dlam * energyTerms[F_DVDL_CONSTR], energyTerms[F_DVDL_CONSTR]);
 
-        if (!fepvals.separate_dvdl[FreeEnergyPerturbationCouplingType::Mass])
         {
             const double dlam = fepvals.all_lambda[FreeEnergyPerturbationCouplingType::Mass][i]
                                 - lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Mass)];
-            accumulateKinetic(1 + i, dlam * energyTerms[F_DKDL], energyTerms[F_DKDL]);
+            accumulateKinetic(1 + i, dlam * dhdlMass, dhdlMass);
         }
     }
 }

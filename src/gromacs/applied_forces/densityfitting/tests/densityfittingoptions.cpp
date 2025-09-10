@@ -49,21 +49,17 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/applied_forces/densityfitting/densityfitting.h"
 #include "gromacs/applied_forces/densityfitting/densityfittingamplitudelookup.h"
 #include "gromacs/applied_forces/densityfitting/densityfittingparameters.h"
 #include "gromacs/math/densityfit.h"
-#include "gromacs/options/options.h"
-#include "gromacs/options/treesupport.h"
+#include "gromacs/mdtypes/imdpoptionprovider_test_helper.h"
 #include "gromacs/selection/indexutil.h"
-#include "gromacs/topology/block.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/keyvaluetree.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/keyvaluetreemdpwriter.h"
-#include "gromacs/utility/keyvaluetreetransform.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/stringcompare.h"
 #include "gromacs/utility/stringstream.h"
 #include "gromacs/utility/textwriter.h"
 
@@ -79,31 +75,12 @@ namespace
 class DensityFittingOptionsTest : public ::testing::Test
 {
 public:
-    DensityFittingOptionsTest() { init_blocka(&defaultGroups_); }
-    ~DensityFittingOptionsTest() override { done_blocka(&defaultGroups_); }
-
-    void setFromMdpValues(const KeyValueTreeObject& densityFittingMdpValues)
-    {
-        // set up options
-        Options densityFittingModuleOptions;
-        densityFittingOptions_.initMdpOptions(&densityFittingModuleOptions);
-
-        // Add rules to transform mdp inputs to densityFittingModule data
-        KeyValueTreeTransformer transform;
-        transform.rules()->addRule().keyMatchType("/", StringCompareType::CaseAndDashInsensitive);
-
-        densityFittingOptions_.initMdpTransform(transform.rules());
-
-        // Execute the transform on the mdpValues
-        auto transformedMdpValues = transform.transform(densityFittingMdpValues, nullptr);
-        assignOptionsFromKeyValueTree(&densityFittingModuleOptions, transformedMdpValues.object(), nullptr);
-    }
-
     static KeyValueTreeObject densityFittingSetActiveAsMdpValues()
     {
         // Prepare MDP inputs
         KeyValueTreeBuilder mdpValueBuilder;
-        mdpValueBuilder.rootObject().addValue("density-guided-simulation-active", std::string("yes"));
+        mdpValueBuilder.rootObject().addValue(
+                std::string(DensityFittingModuleInfo::sc_name) + "-active", std::string("yes"));
         return mdpValueBuilder.build();
     }
 
@@ -124,20 +101,12 @@ public:
         indexGroups.push_back({ "A", { 2 } });
         return IndexGroupsAndNames(indexGroups);
     }
-
-    void mangleInternalParameters()
-    {
-        densityFittingOptions_.setFitGroupIndices(differingIndexGroupsAndNames());
-    }
-
-protected:
-    t_blocka              defaultGroups_;
-    DensityFittingOptions densityFittingOptions_;
 };
 
 TEST_F(DensityFittingOptionsTest, DefaultParameters)
 {
-    const auto defaultParameters = densityFittingOptions_.buildParameters();
+    DensityFittingOptions densityFittingOptions;
+    const auto            defaultParameters = densityFittingOptions.buildParameters();
     EXPECT_FALSE(defaultParameters.active_);
     EXPECT_EQ(0, defaultParameters.indices_.size());
     EXPECT_EQ(DensitySimilarityMeasureMethod::innerProduct, defaultParameters.similarityMeasureMethod_);
@@ -149,9 +118,10 @@ TEST_F(DensityFittingOptionsTest, DefaultParameters)
 
 TEST_F(DensityFittingOptionsTest, OptionSetsActive)
 {
-    EXPECT_FALSE(densityFittingOptions_.buildParameters().active_);
-    setFromMdpValues(densityFittingSetActiveAsMdpValues());
-    EXPECT_TRUE(densityFittingOptions_.buildParameters().active_);
+    DensityFittingOptions densityFittingOptions;
+    EXPECT_FALSE(densityFittingOptions.buildParameters().active_);
+    test::fillOptionsFromMdpValues(densityFittingSetActiveAsMdpValues(), &densityFittingOptions);
+    EXPECT_TRUE(densityFittingOptions.buildParameters().active_);
 }
 
 TEST_F(DensityFittingOptionsTest, OutputNoDefaultValuesWhenInactive)
@@ -162,7 +132,8 @@ TEST_F(DensityFittingOptionsTest, OutputNoDefaultValuesWhenInactive)
     KeyValueTreeBuilder       builder;
     KeyValueTreeObjectBuilder builderObject = builder.rootObject();
 
-    densityFittingOptions_.buildMdpOutput(&builderObject);
+    DensityFittingOptions densityFittingOptions;
+    densityFittingOptions.buildMdpOutput(&builderObject);
     {
         TextWriter writer(&stream);
         writeKeyValueTreeAsMdp(&writer, builder.build());
@@ -176,14 +147,15 @@ TEST_F(DensityFittingOptionsTest, OutputNoDefaultValuesWhenInactive)
 
 TEST_F(DensityFittingOptionsTest, OutputDefaultValuesWhenActive)
 {
-    setFromMdpValues(densityFittingSetActiveAsMdpValues());
+    DensityFittingOptions densityFittingOptions;
+    test::fillOptionsFromMdpValues(densityFittingSetActiveAsMdpValues(), &densityFittingOptions);
     // Transform module data into a flat key-value tree for output.
 
     StringOutputStream        stream;
     KeyValueTreeBuilder       builder;
     KeyValueTreeObjectBuilder builderObject = builder.rootObject();
 
-    densityFittingOptions_.buildMdpOutput(&builderObject);
+    densityFittingOptions.buildMdpOutput(&builderObject);
     {
         TextWriter writer(&stream);
         writeKeyValueTreeAsMdp(&writer, builder.build());
@@ -220,13 +192,14 @@ TEST_F(DensityFittingOptionsTest, OutputDefaultValuesWhenActive)
 
 TEST_F(DensityFittingOptionsTest, CanConvertGroupStringToIndexGroup)
 {
-    setFromMdpValues(densityFittingSetActiveAsMdpValues());
+    DensityFittingOptions densityFittingOptions;
+    test::fillOptionsFromMdpValues(densityFittingSetActiveAsMdpValues(), &densityFittingOptions);
 
     const auto indexGroupAndNames = genericIndexGroupsAndNames();
-    densityFittingOptions_.setFitGroupIndices(indexGroupAndNames);
+    densityFittingOptions.setFitGroupIndices(indexGroupAndNames);
 
-    EXPECT_EQ(1, densityFittingOptions_.buildParameters().indices_.size());
-    EXPECT_EQ(1, densityFittingOptions_.buildParameters().indices_[0]);
+    EXPECT_EQ(1, densityFittingOptions.buildParameters().indices_.size());
+    EXPECT_EQ(1, densityFittingOptions.buildParameters().indices_[0]);
 }
 
 TEST_F(DensityFittingOptionsTest, InternalsToKvt)
@@ -245,7 +218,8 @@ TEST_F(DensityFittingOptionsTest, InternalsToKvt)
 
 TEST_F(DensityFittingOptionsTest, KvtToInternal)
 {
-    setFromMdpValues(densityFittingSetActiveAsMdpValues());
+    DensityFittingOptions densityFittingOptions;
+    test::fillOptionsFromMdpValues(densityFittingSetActiveAsMdpValues(), &densityFittingOptions);
 
     KeyValueTreeBuilder builder;
     auto                addedArray =
@@ -254,35 +228,36 @@ TEST_F(DensityFittingOptionsTest, KvtToInternal)
     addedArray.addValue(15);
     const auto tree = builder.build();
 
-    densityFittingOptions_.readInternalParametersFromKvt(tree);
+    densityFittingOptions.readInternalParametersFromKvt(tree);
 
-    EXPECT_EQ(2, densityFittingOptions_.buildParameters().indices_.size());
-    EXPECT_EQ(1, densityFittingOptions_.buildParameters().indices_[0]);
-    EXPECT_EQ(15, densityFittingOptions_.buildParameters().indices_[1]);
+    EXPECT_EQ(2, densityFittingOptions.buildParameters().indices_.size());
+    EXPECT_EQ(1, densityFittingOptions.buildParameters().indices_[0]);
+    EXPECT_EQ(15, densityFittingOptions.buildParameters().indices_[1]);
 }
 
 TEST_F(DensityFittingOptionsTest, RoundTripForInternalsIsIdempotent)
 {
-    setFromMdpValues(densityFittingSetActiveAsMdpValues());
+    DensityFittingOptions densityFittingOptions;
+    test::fillOptionsFromMdpValues(densityFittingSetActiveAsMdpValues(), &densityFittingOptions);
     {
         const IndexGroupsAndNames indexGroupAndNames = genericIndexGroupsAndNames();
-        densityFittingOptions_.setFitGroupIndices(indexGroupAndNames);
+        densityFittingOptions.setFitGroupIndices(indexGroupAndNames);
     }
 
-    DensityFittingParameters parametersBefore = densityFittingOptions_.buildParameters();
+    DensityFittingParameters parametersBefore = densityFittingOptions.buildParameters();
 
     KeyValueTreeBuilder builder;
-    densityFittingOptions_.writeInternalParametersToKvt(builder.rootObject());
+    densityFittingOptions.writeInternalParametersToKvt(builder.rootObject());
     const auto inputTree = builder.build();
 
-    mangleInternalParameters();
+    densityFittingOptions.setFitGroupIndices(differingIndexGroupsAndNames());
 
-    DensityFittingParameters parametersAfter = densityFittingOptions_.buildParameters();
+    DensityFittingParameters parametersAfter = densityFittingOptions.buildParameters();
     EXPECT_NE(parametersBefore, parametersAfter);
 
-    densityFittingOptions_.readInternalParametersFromKvt(inputTree);
+    densityFittingOptions.readInternalParametersFromKvt(inputTree);
 
-    parametersAfter = densityFittingOptions_.buildParameters();
+    parametersAfter = densityFittingOptions.buildParameters();
     EXPECT_EQ(parametersBefore, parametersAfter);
 }
 

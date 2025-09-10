@@ -47,10 +47,10 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/classhelpers.h"
+#include "gromacs/utility/vectypes.h"
 
 //! Forward declaration
 typedef struct gmx_rmpbc* gmx_rmpbc_t;

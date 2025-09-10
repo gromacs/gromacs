@@ -39,7 +39,10 @@
  * \inlibraryapi
  * \ingroup module_mdspan
  */
-
+/*!
+ * \defgroup mdspan MDSpan
+ * \brief A brief description for MDSpan
+ */
 #ifndef GMX_MDSPAN_EXTENSIONS_H_
 #define GMX_MDSPAN_EXTENSIONS_H_
 

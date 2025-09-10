@@ -47,13 +47,13 @@
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdlib/stat.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/strconvert.h"
+#include "gromacs/utility/vec.h"
 
 #include "energydata.h"
 #include "mttk.h"
@@ -234,7 +234,7 @@ void NoseHooverChainsData::build(NhcUsage                                nhcUsag
                         legacySimulatorData->inputRec_->opts.nhchainlength,
                         constArrayRefFromArray(legacySimulatorData->inputRec_->opts.ref_t, 1),
                         constArrayRefFromArray(legacySimulatorData->inputRec_->opts.tau_t, 1),
-                        ArrayRef<real>(),
+                        ArrayRef<real>{},
                         nhcUsage));
     }
     auto* nhcDataPtr =
@@ -242,17 +242,16 @@ void NoseHooverChainsData::build(NhcUsage                                nhcUsag
                     ->simulationData<NoseHooverChainsData>(NoseHooverChainsData::dataID(nhcUsage))
                     .value();
     builderHelper->registerReferenceTemperatureUpdate(
-            [nhcDataPtr](ArrayRef<const real> temperatures, ReferenceTemperatureChangeAlgorithm algorithm) {
-                nhcDataPtr->updateReferenceTemperature(temperatures, algorithm);
-            });
+            [nhcDataPtr](ArrayRef<const real> temperatures, ReferenceTemperatureChangeAlgorithm algorithm)
+            { nhcDataPtr->updateReferenceTemperature(temperatures, algorithm); });
 
     const auto* ptrToDataObject =
             builderHelper
                     ->simulationData<NoseHooverChainsData>(NoseHooverChainsData::dataID(nhcUsage))
                     .value();
-    energyData->addConservedEnergyContribution([ptrToDataObject](Step /*unused*/, Time time) {
-        return ptrToDataObject->temperatureCouplingIntegral(time);
-    });
+    energyData->addConservedEnergyContribution(
+            [ptrToDataObject](Step /*unused*/, Time time)
+            { return ptrToDataObject->temperatureCouplingIntegral(time); });
 }
 
 NoseHooverChainsData::~NoseHooverChainsData() = default;
@@ -273,9 +272,9 @@ inline int NoseHooverChainsData::numTemperatureGroups() const
 
 inline bool NoseHooverChainsData::isAtFullCouplingTimeStep() const
 {
-    return std::all_of(noseHooverGroups_.begin(), noseHooverGroups_.end(), [](const auto& group) {
-        return group.isAtFullCouplingTimeStep();
-    });
+    return std::all_of(noseHooverGroups_.begin(),
+                       noseHooverGroups_.end(),
+                       [](const auto& group) { return group.isAtFullCouplingTimeStep(); });
 }
 
 void NoseHooverGroup::calculateIntegral()
@@ -318,9 +317,9 @@ double NoseHooverChainsData::temperatureCouplingIntegral(Time gmx_used_in_debug 
                             }),
                "NoseHooverChainsData conserved energy time mismatch.");
     double result = 0;
-    std::for_each(noseHooverGroups_.begin(), noseHooverGroups_.end(), [&result](const auto& group) {
-        result += group.integral();
-    });
+    std::for_each(noseHooverGroups_.begin(),
+                  noseHooverGroups_.end(),
+                  [&result](const auto& group) { result += group.integral(); });
     return result;
 }
 
@@ -414,26 +413,30 @@ void NoseHooverGroup::broadcastCheckpointValues(const gmx_domdec_t* dd)
 }
 
 void NoseHooverChainsData::saveCheckpointState(std::optional<WriteCheckpointData> checkpointData,
-                                               const t_commrec*                   cr)
+                                               const MpiComm&                     mpiComm,
+                                               gmx_domdec_t*                      dd)
 {
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         doCheckpointData<CheckpointDataOperation::Write>(&checkpointData.value());
     }
+
+    GMX_UNUSED_VALUE(dd);
 }
 
 void NoseHooverChainsData::restoreCheckpointState(std::optional<ReadCheckpointData> checkpointData,
-                                                  const t_commrec*                  cr)
+                                                  const MpiComm&                    mpiComm,
+                                                  gmx_domdec_t*                     dd)
 {
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         doCheckpointData<CheckpointDataOperation::Read>(&checkpointData.value());
     }
     for (auto& group : noseHooverGroups_)
     {
-        if (haveDDAtomOrdering(*cr))
+        if (dd)
         {
-            group.broadcastCheckpointValues(cr->dd);
+            group.broadcastCheckpointValues(dd);
         }
         group.calculateIntegral();
     }
@@ -710,16 +713,16 @@ void NoseHooverChainsElement::connectWithPropagator(const PropagatorConnection& 
 ISimulatorElement* NoseHooverChainsElement::getElementPointerImpl(
         LegacySimulatorData*                    legacySimulatorData,
         ModularSimulatorAlgorithmBuilderHelper* builderHelper,
-        StatePropagatorData gmx_unused* statePropagatorData,
-        EnergyData*                     energyData,
-        FreeEnergyPerturbationData gmx_unused* freeEnergyPerturbationData,
-        GlobalCommunicationHelper gmx_unused*  globalCommunicationHelper,
-        ObservablesReducer*                    observablesReducer,
-        NhcUsage                               nhcUsage,
-        Offset                                 offset,
-        UseFullStepKE                          useFullStepKE,
-        ScheduleOnInitStep                     scheduleOnInitStep,
-        const MttkPropagatorConnectionDetails& mttkPropagatorConnectionDetails)
+        StatePropagatorData gmx_unused*         statePropagatorData,
+        EnergyData*                             energyData,
+        FreeEnergyPerturbationData gmx_unused*  freeEnergyPerturbationData,
+        GlobalCommunicationHelper gmx_unused*   globalCommunicationHelper,
+        ObservablesReducer*                     observablesReducer,
+        NhcUsage                                nhcUsage,
+        Offset                                  offset,
+        UseFullStepKE                           useFullStepKE,
+        ScheduleOnInitStep                      scheduleOnInitStep,
+        const MttkPropagatorConnectionDetails&  mttkPropagatorConnectionDetails)
 {
     GMX_RELEASE_ASSERT(nhcUsage == NhcUsage::Barostat, "System NHC element needs a propagator tag.");
     if (!builderHelper->simulationData<MttkData>(MttkData::dataID()))
@@ -743,16 +746,16 @@ ISimulatorElement* NoseHooverChainsElement::getElementPointerImpl(
 ISimulatorElement* NoseHooverChainsElement::getElementPointerImpl(
         LegacySimulatorData*                    legacySimulatorData,
         ModularSimulatorAlgorithmBuilderHelper* builderHelper,
-        StatePropagatorData gmx_unused* statePropagatorData,
-        EnergyData*                     energyData,
-        FreeEnergyPerturbationData gmx_unused* freeEnergyPerturbationData,
-        GlobalCommunicationHelper gmx_unused* globalCommunicationHelper,
-        ObservablesReducer gmx_unused* observablesReducer,
-        NhcUsage                       nhcUsage,
-        Offset                         offset,
-        UseFullStepKE                  useFullStepKE,
-        ScheduleOnInitStep             scheduleOnInitStep,
-        const PropagatorTag&           propagatorTag)
+        StatePropagatorData gmx_unused*         statePropagatorData,
+        EnergyData*                             energyData,
+        FreeEnergyPerturbationData gmx_unused*  freeEnergyPerturbationData,
+        GlobalCommunicationHelper gmx_unused*   globalCommunicationHelper,
+        ObservablesReducer gmx_unused*          observablesReducer,
+        NhcUsage                                nhcUsage,
+        Offset                                  offset,
+        UseFullStepKE                           useFullStepKE,
+        ScheduleOnInitStep                      scheduleOnInitStep,
+        const PropagatorTag&                    propagatorTag)
 {
     if (!builderHelper->simulationData<NoseHooverChainsData>(NoseHooverChainsData::dataID(nhcUsage)))
     {
@@ -786,9 +789,8 @@ ISimulatorElement* NoseHooverChainsElement::getElementPointerImpl(
         auto* thermostat = static_cast<NoseHooverChainsElement*>(element);
         // Capturing pointer is safe because caller handles lifetime
         builderHelper->registerTemperaturePressureControl(
-                [thermostat, propagatorTag](const PropagatorConnection& connection) {
-                    thermostat->connectWithPropagator(connection, propagatorTag);
-                });
+                [thermostat, propagatorTag](const PropagatorConnection& connection)
+                { thermostat->connectWithPropagator(connection, propagatorTag); });
     }
     else
     {

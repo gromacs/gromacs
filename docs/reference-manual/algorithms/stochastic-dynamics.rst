@@ -9,9 +9,9 @@ term to Newton’s equations of motion, as
    :label: eqnSDeq
 
 where :math:`\gamma_i` is the friction constant :math:`[1/\mbox{ps}]`
-and :math:`{\stackrel{\circ}{\mathbf{r}}}_i\!\!(t)` is a
+and :math:`{\stackrel{\circ}{\mathbf{r}}}_i(t)` is a
 noise process with
-:math:`\langle {\stackrel{\circ}{r}}_i\!\!(t) {\stackrel{\circ}{r}}_j\!\!(t+s) \rangle = 2 m_i \gamma_i k_B T \delta(s) \delta_{ij}`. When :math:`1/\gamma_i`
+:math:`\langle {\stackrel{\circ}{r}}_i(t) {\stackrel{\circ}{r}}_j(t+s) \rangle = 2 m_i \gamma_i k_B T \delta(s) \delta_{ij}`. When :math:`1/\gamma_i`
 is large compared to the time scales present in the system, one could
 see stochastic dynamics as molecular dynamics with stochastic
 temperature-coupling. But any processes that take longer than
@@ -56,6 +56,8 @@ update :eq:`eqn. %s <eqnsd1xupd>` is split into a normal leap-frog update
 and a :math:`\Delta \mathbf{v}`. After both of these
 updates the constraints are applied to coordinates and velocities.
 
+SD can be chosen as an integrator by :mdp-value:`integrator=sd`. The simulations
+are performed using the :ref:`mdrun <gmx mdrun>` program.
 When using SD as a thermostat, an appropriate value for :math:`\gamma`
 is e.g. 0.5 ps\ :math:`^{-1}`, since this results in a friction that is
 lower than the internal friction of water, while it still provides

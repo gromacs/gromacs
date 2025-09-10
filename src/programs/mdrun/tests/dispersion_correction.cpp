@@ -54,19 +54,9 @@ namespace gmx
 namespace test
 {
 
-class DispersionCorrectionTestFixture : public MdrunTestFixture
+class DispersionCorrectionTest : public MdrunTestFixture
 {
-protected:
-    DispersionCorrectionTestFixture();
-    ~DispersionCorrectionTestFixture() override;
 };
-
-DispersionCorrectionTestFixture::DispersionCorrectionTestFixture() {}
-
-DispersionCorrectionTestFixture::~DispersionCorrectionTestFixture() {}
-
-//! Test fixture for mdrun with dispersion correction
-typedef gmx::test::DispersionCorrectionTestFixture DispersionCorrectionTest;
 
 /* Check whether the dispersion correction function works. */
 TEST_F(DispersionCorrectionTest, DispersionCorrectionCanRun)

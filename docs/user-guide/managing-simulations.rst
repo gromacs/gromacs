@@ -172,7 +172,7 @@ The following factors affect the reproducibility of a simulation, and thus its o
   results may vary from run to run.
 * Random numbers used for instance as a seed for generating velocities
   (in |Gromacs| at the preprocessing stage).
-* Uninitialized variables in the code (but there shouldn't be any)
+* Uninitialized variables in the code (but there should not be any)
 * Dynamic linking to different versions of shared libraries (e.g. for FFTs)
 * Dynamic load balancing, since particles are redistributed to
   processors based on elapsed wallclock time, which will lead to

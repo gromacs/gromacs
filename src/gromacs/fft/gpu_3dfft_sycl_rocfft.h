@@ -33,7 +33,7 @@
  */
 
 /*! \internal \file
- *  \brief Declares the GPU 3D FFT routines for hipSYCL via rocFFT.
+ *  \brief Declares the GPU 3D FFT routines for AdaptiveCpp via rocFFT.
  *
  *  \author Mark Abraham <mark.j.abraham@gmail.com>
  *  \ingroup module_fft
@@ -59,7 +59,7 @@ namespace gmx
 {
 
 /*! \internal \brief A 3D FFT wrapper class for performing R2C/C2R
- * transforms using rocFFT for hipSYCL targetting ROCm devices.
+ * transforms using rocFFT for AdaptiveCpp targeting ROCm devices.
  */
 class Gpu3dFft::ImplSyclRocfft : public Gpu3dFft::Impl
 {

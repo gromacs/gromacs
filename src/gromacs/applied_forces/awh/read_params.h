@@ -46,8 +46,8 @@
 #define GMX_AWH_READPARAMS_H
 
 #include "gromacs/fileio/readinp.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 struct t_grpopts;
 struct t_inputrec;

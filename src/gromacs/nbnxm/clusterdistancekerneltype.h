@@ -50,26 +50,37 @@
 
 #include "pairlistparams.h"
 
+namespace gmx
+{
+
 //! The types of kernel for calculating the distance between pairs of atom clusters
 enum class ClusterDistanceKernelType : int
 {
-    CpuPlainC,    //!< Plain-C for CPU list
-    CpuSimd_4xM,  //!< SIMD for CPU list for j-cluster size matching the SIMD width
-    CpuSimd_2xMM, //!< SIMD for CPU list for j-cluster size matching half the SIMD width
-    Gpu           //!< For GPU list, can be either plain-C or SIMD
+    CpuPlainC_4x4, //!< Plain-C for CPU 4x4 list
+    CpuSimd_4xM,   //!< SIMD for CPU list for j-cluster size matching the SIMD width
+    CpuSimd_2xMM,  //!< SIMD for CPU list for j-cluster size matching half the SIMD width
+    Gpu,           //!< For GPU list, can be either plain-C or SIMD
+    CpuPlainC_1x1  //!< Plain-C for CPU 1x1 list
 };
 
 //! Return the cluster distance kernel type given the pairlist type and atomdata
 static inline ClusterDistanceKernelType getClusterDistanceKernelType(const PairlistType pairlistType,
                                                                      const nbnxn_atomdata_t& atomdata)
 {
-    if (pairlistType == PairlistType::HierarchicalNxN)
+    if (pairlistType == PairlistType::Hierarchical8x8x8)
     {
         return ClusterDistanceKernelType::Gpu;
     }
     else if (atomdata.XFormat == nbatXYZ)
     {
-        return ClusterDistanceKernelType::CpuPlainC;
+        if (pairlistType == PairlistType::Simple4x4)
+        {
+            return ClusterDistanceKernelType::CpuPlainC_4x4;
+        }
+        else if (pairlistType == PairlistType::Simple1x1)
+        {
+            return ClusterDistanceKernelType::CpuPlainC_1x1;
+        }
     }
     else if (pairlistType == PairlistType::Simple4x2)
     {
@@ -103,7 +114,9 @@ static inline ClusterDistanceKernelType getClusterDistanceKernelType(const Pairl
     }
 
     GMX_RELEASE_ASSERT(false, "We should have returned before getting here");
-    return ClusterDistanceKernelType::CpuPlainC;
+    return ClusterDistanceKernelType::CpuPlainC_4x4;
 }
+
+} // namespace gmx
 
 #endif

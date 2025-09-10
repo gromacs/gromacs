@@ -270,8 +270,8 @@ TEST_P(SimulatorComparisonTest, WithinTolerances)
     runGrompp(&runner_);
 
     // Backup current state of both environment variables and unset them
-    const char* environmentVariableBackupOn  = getenv(envVariableModSimOn.c_str());
-    const char* environmentVariableBackupOff = getenv(envVariableModSimOff.c_str());
+    const char* environmentVariableBackupOn  = std::getenv(envVariableModSimOn.c_str());
+    const char* environmentVariableBackupOff = std::getenv(envVariableModSimOff.c_str());
     gmxUnsetenv(envVariableModSimOn.c_str());
     gmxUnsetenv(envVariableModSimOff.c_str());
 
@@ -281,7 +281,7 @@ TEST_P(SimulatorComparisonTest, WithinTolerances)
     runMdrun(&runner_);
 
     // Set tested environment variable
-    const int overWriteEnvironmentVariable = 1;
+    const bool overWriteEnvironmentVariable = true;
     gmxSetenv(environmentVariable.c_str(), "ON", overWriteEnvironmentVariable);
 
     // Do second mdrun

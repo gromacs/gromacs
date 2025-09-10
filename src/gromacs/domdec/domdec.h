@@ -38,8 +38,6 @@
  * ranks to try to distribute work evenly with minimal communication
  * overheads.
  *
- * \todo Get domdec stuff out of mdtypes/commrec.h
- *
  * \author Berk Hess <hess@kth.se>
  *
  */
@@ -62,8 +60,8 @@
 #include <vector>
 
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 struct gmx_domdec_t;
 struct gmx_ddbox_t;
@@ -85,6 +83,7 @@ namespace gmx
 {
 struct AtomInfoWithinMoleculeBlock;
 class DeviceStreamManager;
+class DomdecZones;
 class ForceWithShiftForces;
 class MDLogger;
 class RangePartitioning;
@@ -94,6 +93,23 @@ class ArrayRef;
 template<typename, size_t>
 class FixedCapacityVector;
 } // namespace gmx
+
+//! Whether one or more ranks are used
+enum class NumRanks
+{
+    Single,
+    Multiple
+};
+
+//! Describes a role within the domain decomposition ranks
+enum class DDRole
+{
+    Main,
+    Agent
+};
+
+//! Returns the MPI rank for the PP domain corresponding to \p coord
+int ddRankFromDDCoord(const gmx_domdec_t& dd, const gmx::IVec& coord);
 
 /*! \brief Returns the global topology atom number belonging to local atom index i.
  *
@@ -109,8 +125,8 @@ int ddglatnr(const gmx_domdec_t* dd, int i);
  */
 void dd_store_state(const gmx_domdec_t& dd, t_state* state);
 
-/*! \brief Returns a pointer to the gmx_domdec_zones_t struct */
-struct gmx_domdec_zones_t* domdec_zones(struct gmx_domdec_t* dd);
+/*! \brief Returns a const reference to the gmx::DomdecZones object */
+const gmx::DomdecZones& getDomdecZones(const gmx_domdec_t& dd);
 
 /*! \brief Returns the range for atoms in zones*/
 int dd_numAtomsZones(const gmx_domdec_t& dd);
@@ -137,8 +153,8 @@ struct NumPmeDomains
 /*! \brief Returns the number of PME domains, can be called with dd=NULL */
 NumPmeDomains getNumPmeDomains(const gmx_domdec_t* dd);
 
-/*! \brief Returns the set of DD ranks that communicate with pme node cr->nodeid */
-std::vector<int> get_pme_ddranks(const t_commrec* cr, int pmenodeid);
+/*! \brief Returns the set of DD ranks that communicate with pme node id \p pmenodeid */
+std::vector<int> get_pme_ddranks(const gmx_domdec_t& dd, int pmenodeid);
 
 /*! \brief Returns the maximum shift for coordinate communication in PME, dim x */
 int dd_pme_maxshift_x(const gmx_domdec_t& dd);
@@ -160,27 +176,43 @@ bool dd_bonded_molpbc(const gmx_domdec_t& dd, PbcType pbcType);
  * This could fail when trying to increase the cut-off,
  * then FALSE will be returned and the cut-off is not modified.
  *
- * \param[in] cr               Communication recrod
+ * \param[in] dd               Pointer to the domain decomposition object
  * \param[in] box              Box matrix, used for computing the dimensions of the system
  * \param[in] x                Position vector, used for computing the dimensions of the system
  * \param[in] cutoffRequested  The requested atom to atom cut-off distance, usually the pair-list
  *                             cutoff distance
  * \param[in] checkGpuDdLimitation Whether to check the GPU DD support limitation
  */
-bool change_dd_cutoff(t_commrec*                     cr,
+bool change_dd_cutoff(gmx_domdec_t*                  dd,
                       const matrix                   box,
                       gmx::ArrayRef<const gmx::RVec> x,
                       real                           cutoffRequested,
                       bool                           checkGpuDdLimitation);
 
-/*! \brief Set up communication for averaging GPU wait times over domains
+/*! \brief Set up communication between PP ranks for averaging GPU
+ * wait times over domains.
  *
  * When domains (PP MPI ranks) share a GPU, the individual GPU wait times
  * are meaningless, as it depends on the order in which tasks on the same
  * GPU finish. Therefore there wait times need to be averaged over the ranks
  * sharing the same GPU. This function sets up the communication for that.
+ *
+ * When there is no PP work on this rank or only one rank, no sharing
+ * is set up. It's the caller's responsibility to call this method on
+ * a PP rank only when that rank is using a GPU.
+ *
+ * It is not necessary that \c uniqueDeviceId is globally unique, merely
+ * that its value will be the same on each
+ * rank when a device is shared between ranks, and otherwise
+ * different. An index into the array of devices visible to all ranks
+ * of the same node is sufficient if all such ranks see all devices.
+ * However, that index is unreliable when ranks on the same node see
+ * different subsets of the devices on the node because of different
+ * local environments. In the case where each rank sees only one
+ * device, DLB will behave as if all ranks on the node share the same
+ * device, which will not be optimal.
  */
-void dd_setup_dlb_resource_sharing(const t_commrec* cr, int gpu_id);
+void dd_setup_dlb_resource_sharing(const t_commrec* cr, int uniqueDeviceId);
 
 /*! \brief Cycle counter indices used internally in the domain decomposition */
 enum
@@ -250,10 +282,12 @@ void dd_init_local_state(const gmx_domdec_t& dd, const t_state* state_global, t_
  * \param[in] cr                  The commrec object.
  * \param[in] deviceStreamManager Manager of the GPU context and streams.
  * \param[in] wcycle              The wallclock counter.
+ * \param[in] useNvshmem          Whether NVSHMEM is in use for GPU halo exchange
  */
 void constructGpuHaloExchange(const t_commrec&                cr,
                               const gmx::DeviceStreamManager& deviceStreamManager,
-                              gmx_wallcycle*                  wcycle);
+                              gmx_wallcycle*                  wcycle,
+                              const bool                      useNvshmem);
 
 /*! \brief
  * (Re-) Initialization for GPU halo exchange
@@ -265,6 +299,19 @@ void reinitGpuHaloExchange(const t_commrec&        cr,
                            DeviceBuffer<gmx::RVec> d_coordinatesBuffer,
                            DeviceBuffer<gmx::RVec> d_forcesBuffer);
 
+/*! \brief
+ * (Re-) Initialization for GPU halo exchange with NVSHMEM
+ *
+ * Does global communication and symmetric reallocation
+ *
+ * \param [in] cr                   The commrec object
+ */
+void reinitGpuHaloExchangeNvshmem(const t_commrec& cr);
+
+/*! \brief Destructor for symmetric d_recvBuf used by NVSHMEM.
+ * \param [in] cr                The commrec object
+ */
+void destroyGpuHaloExchangeNvshmemBuf(const t_commrec& cr);
 
 /*! \brief GPU halo exchange of coordinates buffer.
  * \param [in] cr                The commrec object

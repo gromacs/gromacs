@@ -57,14 +57,14 @@
 #include "gromacs/correlationfunctions/polynomials.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/functions.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 /*! \brief Shortcut macro to select modes. */
 #define MODE(x) ((mode & (x)) == (x))
@@ -331,7 +331,7 @@ static void norm_and_scale_vectors(int nframes, real c1[], real scale)
 }
 
 /*! \brief Debugging */
-static void dump_tmp(char* s, int n, real c[])
+static void dump_tmp(const char* s, int n, real c[])
 {
     FILE* fp;
     int   i;
@@ -610,7 +610,7 @@ void low_do_autocorr(const char*             fn,
         if (bVerbose && (((i % 100) == 0) || (i == nitem - 1)))
         {
             fprintf(stderr, "\rThingie %d", i + 1);
-            fflush(stderr);
+            std::fflush(stderr);
         }
 
         if (bFour)
@@ -694,12 +694,12 @@ void low_do_autocorr(const char*             fn,
             }
             Ctav += sum;
             Ct2av += sum * sum;
-            if (debug)
+            if (gp)
             {
                 fprintf(gp, "%5d  %.3f\n", i, sum);
             }
         }
-        if (debug)
+        if (gp)
         {
             xvgrclose(gp);
         }

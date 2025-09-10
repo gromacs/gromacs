@@ -35,6 +35,7 @@ gmx_add_unit_test(SimdUnitTests simd-test
     CPP_SOURCE_FILES
         base.cpp
         bootstrap_loadstore.cpp
+        generate_test_points.cpp
         scalar.cpp
         scalar_util.cpp
         scalar_math.cpp

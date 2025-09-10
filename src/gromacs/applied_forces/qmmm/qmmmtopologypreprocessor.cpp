@@ -47,6 +47,7 @@
 #include <filesystem>
 
 #include "gromacs/applied_forces/qmmm/qmmmtypes.h"
+#include "gromacs/fileio/warninp.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/idef.h"
@@ -57,51 +58,59 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/logger.h"
 
 namespace gmx
 {
+
+static bool isQMAtom(Index globalAtomIndex, const std::set<int>& qmIndices)
+{
+    return (qmIndices.find(globalAtomIndex) != qmIndices.end());
+}
 
 QMMMTopologyPreprocessor::QMMMTopologyPreprocessor(ArrayRef<const Index> qmIndices) :
     qmIndices_(qmIndices.begin(), qmIndices.end())
 {
 }
 
-void QMMMTopologyPreprocessor::preprocess(gmx_mtop_t* mtop)
+void QMMMTopologyPreprocessor::preprocess(gmx_mtop_t* mtop, real refQ, const MDLogger& logger, WarningHandler* wi)
 {
+    GMX_LOG(logger.info).appendText("QMMM Interface with CP2K is active, topology was modified!");
+
+    GMX_LOG(logger.info)
+            .appendTextFormatted("Number of embedded QM atoms: %td\nNumber of regular atoms: %td\n",
+                                 gmx::ssize(qmIndices_),
+                                 mtop->natoms - gmx::ssize(qmIndices_));
+
     // 1) Split QM-containing molecules from other molecules in blocks
-    splitQMblocks(mtop);
+    std::vector<bool> bQMBlock = splitQMBlocks(mtop, qmIndices_);
 
-    // 2) Nullify charges on all virtual sites consisting of QM only atoms
-    modifyQMMMVirtualSites(mtop);
+    // 2) Nullify charges on all QM atoms and virtual sites consisting only of QM atoms
+    atomCharges_ = removeQMClassicalCharges(mtop, qmIndices_, bQMBlock, refQ, logger, wi);
 
-    // 3) Nullify charges on all QM atoms
-    removeQMClassicalCharges(mtop);
+    // 3) Exclude LJ interactions between QM atoms
+    addQMLJExclusions(mtop, qmIndices_, logger);
 
-    // 4) Exclude LJ interactions between QM atoms
-    addQMLJExclusions(mtop);
+    // 4) Build atomNumbers vector with atomic numbers of all atoms
+    atomNumbers_ = buildQMMMAtomNumbers(*mtop);
 
-    // 5) Build atomNumbers vector with atomic numbers of all atoms
-    buildQMMMAtomNumbers(mtop);
+    // 5) Make F_CONNBOND between atoms within QM region
+    modifyQMMMTwoCenterInteractions(mtop, qmIndices_, bQMBlock, logger);
 
-    // 6) Make F_CONNBOND between atoms within QM region
-    modifyQMMMTwoCenterInteractions(mtop);
+    // 6) Remove angles and settles containing 2 or more QM atoms
+    modifyQMMMThreeCenterInteractions(mtop, qmIndices_, bQMBlock, logger);
 
-    // 7) Remove angles and settles containing 2 or more QM atoms
-    modifyQMMMThreeCenterInteractions(mtop);
+    // 7) Remove dihedrals containing 3 or more QM atoms
+    modifyQMMMFourCenterInteractions(mtop, qmIndices_, bQMBlock, logger);
 
-    // 8) Remove dihedrals containing 3 or more QM atoms
-    modifyQMMMFourCenterInteractions(mtop);
+    // 8) Build vector containing pairs of bonded QM - MM atoms (Link frontier)
+    linkFrontier_ = buildQMMMLink(mtop, qmIndices_, bQMBlock, logger);
 
-    // 9) Build vector containing pairs of bonded QM - MM atoms (Link frontier)
-    buildQMMMLink(mtop);
+    // 9) Check for constrained bonds in QM region
+    checkConstrainedBonds(mtop, qmIndices_, bQMBlock, wi);
 
     // finalize topology
     mtop->finalize();
-}
-
-const QMMMTopologyInfo& QMMMTopologyPreprocessor::topInfo() const
-{
-    return topInfo_;
 }
 
 ArrayRef<const int> QMMMTopologyPreprocessor::atomNumbers() const
@@ -119,16 +128,11 @@ ArrayRef<const LinkFrontier> QMMMTopologyPreprocessor::linkFrontier() const
     return linkFrontier_;
 }
 
-bool QMMMTopologyPreprocessor::isQMAtom(Index globalAtomIndex)
+std::vector<bool> splitQMBlocks(gmx_mtop_t* mtop, const std::set<int>& qmIndices)
 {
-    return (qmIndices_.find(globalAtomIndex) != qmIndices_.end());
-}
-
-void QMMMTopologyPreprocessor::splitQMblocks(gmx_mtop_t* mtop)
-{
-
     // Global counter of atoms
-    Index iAt = 0;
+    Index             iAt = 0;
+    std::vector<bool> bQMBlock;
 
     /* Counter of molecules point to the specific moltype
      * i.e molblock 0 has 2 molecules have moltype 0 and molblock 2 has 1 additional molecule of type 0
@@ -147,7 +151,7 @@ void QMMMTopologyPreprocessor::splitQMblocks(gmx_mtop_t* mtop)
     for (size_t molBlockIndex = 0; molBlockIndex < mtop->molblock.size(); molBlockIndex++)
     {
         // Initialize block as non-QM first
-        bQMBlock_.push_back(false);
+        bQMBlock.push_back(false);
 
         // Pointer to current block
         gmx_molblock_t* molBlock = &mtop->molblock[molBlockIndex];
@@ -164,7 +168,7 @@ void QMMMTopologyPreprocessor::splitQMblocks(gmx_mtop_t* mtop)
             bool bQMMM = false;
             for (int i = 0; i < numAtomsInMolecule; i++)
             {
-                if (isQMAtom(iAt))
+                if (isQMAtom(iAt, qmIndices))
                 {
                     bQMMM = true;
                 }
@@ -188,8 +192,8 @@ void QMMMTopologyPreprocessor::splitQMblocks(gmx_mtop_t* mtop)
                         mtop->molblock.insert(pos, mtop->molblock[molBlockIndex]);
                         mtop->molblock[molBlockIndex].nmol = mol;
                         mtop->molblock[molBlockIndex + 1].nmol -= mol;
-                        bQMBlock_[molBlockIndex] = false;
-                        bQMBlock_.push_back(true);
+                        bQMBlock[molBlockIndex] = false;
+                        bQMBlock.push_back(true);
                         molBlockIndex++;
                         molBlock = &mtop->molblock[molBlockIndex];
                     }
@@ -203,12 +207,12 @@ void QMMMTopologyPreprocessor::splitQMblocks(gmx_mtop_t* mtop)
                         molBlock                           = &mtop->molblock[molBlockIndex];
                         mtop->molblock[molBlockIndex].nmol = 1;
                         mtop->molblock[molBlockIndex + 1].nmol -= 1;
-                        bQMBlock_[molBlockIndex] = true;
+                        bQMBlock[molBlockIndex] = true;
                     }
                 }
                 else
                 {
-                    bQMBlock_[molBlockIndex] = true;
+                    bQMBlock[molBlockIndex] = true;
                 }
 
                 // Create a copy of a moltype for a molecule
@@ -235,81 +239,184 @@ void QMMMTopologyPreprocessor::splitQMblocks(gmx_mtop_t* mtop)
             }
         }
     }
-
     // Call finalize() to rebuild Block Indicies or else atoms lookup will fail
     mtop->finalize();
+    return bQMBlock;
 }
 
-void QMMMTopologyPreprocessor::removeQMClassicalCharges(gmx_mtop_t* mtop)
+std::vector<real> removeQMClassicalCharges(gmx_mtop_t*              mtop,
+                                           const std::set<int>&     qmIndices,
+                                           const std::vector<bool>& bQMBlock,
+                                           real                     refQ,
+                                           const MDLogger&          logger,
+                                           WarningHandler*          wi)
 {
     // Loop over all atoms and remove charge if they are QM atoms.
     // Sum-up total removed charge and remaning charge on MM atoms
     // Build atomCharges_ vector
-    int molBlockIndex = 0;
+    int               molBlockIndex               = 0;
+    real              totalClassicalChargeRemoved = 0.0;
+    real              remainingMMCharge           = 0.0;
+    std::vector<real> atomCharges;
     for (int i = 0; i < mtop->natoms; i++)
     {
         int indexInMolecule;
         mtopGetMolblockIndex(*mtop, i, &molBlockIndex, nullptr, &indexInMolecule);
         t_atom* atom = &mtop->moltype[mtop->molblock[molBlockIndex].type].atoms.atom[indexInMolecule];
-        if (isQMAtom(i))
+        if (isQMAtom(i, qmIndices))
         {
-            topInfo_.totalClassicalChargeOfQMAtoms += atom->q;
+            totalClassicalChargeRemoved += atom->q;
             atom->q  = 0.0;
             atom->qB = 0.0;
         }
         else
         {
-            topInfo_.remainingMMCharge += atom->q;
+            remainingMMCharge += atom->q;
         }
 
-        atomCharges_.push_back(atom->q);
+        atomCharges.push_back(atom->q);
     }
+
+    // also remove charges on virtual sites
+    // Loop over all blocks in topology
+    // molBlockIndex - index of current block in mtop
+    int numVirtualSitesModified = 0;
+    for (size_t molBlockIndex = 0; molBlockIndex < mtop->molblock.size(); molBlockIndex++)
+    {
+        // check if current block contains QM atoms
+        if (bQMBlock[molBlockIndex])
+        {
+            // molType - strucutre with current block type
+            gmx_moltype_t* molType = &mtop->moltype[mtop->molblock[molBlockIndex].type];
+
+            // start - global index of the first atom in the current block
+            int start = mtop->moleculeBlockIndices[molBlockIndex].globalAtomStart;
+
+            // loop over all interaction types
+            for (int ftype = 0; ftype < F_NRE; ftype++)
+            {
+                // If this is VSite interaction and ilist is not empty
+                if (IS_VSITE(ftype) && !molType->ilist[ftype].empty())
+                {
+                    // Number of elements in the iatoms array for the current ftype
+                    const int numInteractionElements = NRAL(ftype) + 1;
+
+                    // Loop over all interactions of ftype
+                    for (int j = 0; j < molType->ilist[ftype].size(); j += numInteractionElements)
+                    {
+                        // Calculate number of qm atoms in the interaction
+                        int numQm = 0;
+                        // Here k starts from 2 because first atom in the interaction is an actuall vsite index
+                        for (int k = 2; k <= NRAL(ftype); k++)
+                        {
+                            if (isQMAtom(molType->ilist[ftype].iatoms[j + k] + start, qmIndices))
+                            {
+                                numQm++;
+                            }
+                        }
+
+                        // If all atoms froming that virtual site are QM atoms
+                        // then remove classical charge from that virtual site
+                        if (numQm == (NRAL(ftype) - 1))
+                        {
+                            numVirtualSitesModified++;
+                            totalClassicalChargeRemoved +=
+                                    molType->atoms.atom[molType->ilist[ftype].iatoms[j + 1]].q;
+                            molType->atoms.atom[molType->ilist[ftype].iatoms[j + 1]].q  = 0.0;
+                            molType->atoms.atom[molType->ilist[ftype].iatoms[j + 1]].qB = 0.0;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // avoid negative zero charge
+    real totCharge = remainingMMCharge + totalClassicalChargeRemoved;
+    if (std::abs(totCharge) < 1E-5)
+    {
+        totCharge = 0.0;
+    }
+    // log the modifications
+    GMX_LOG(logger.info)
+            .appendTextFormatted(
+                    "Total charge of the classical system (before modifications): %.5f\n", totCharge);
+    GMX_LOG(logger.info).appendTextFormatted("Classical charge removed from embedded atoms: %.5f\n", totalClassicalChargeRemoved);
+    if (numVirtualSitesModified > 0)
+    {
+        GMX_LOG(logger.info)
+                .appendTextFormatted(
+                        "Note: There are %d virtual sites found, which are built from embedded "
+                        "atoms only. "
+                        "Classical charges on them have been removed as well.\n",
+                        numVirtualSitesModified);
+    }
+
+    // we should warn the user if there is inconsistence between removed classical charges
+    GMX_ASSERT(wi, "WarningHandler not set.");
+    if (std::abs(totalClassicalChargeRemoved - refQ) > 1E-5)
+    {
+        std::string msg = formatString(
+                "Total charge of your embedded system differs from classical system! "
+                "Consider manually spreading %.5lf charge over MM atoms nearby to the embedded "
+                "region\n",
+                totalClassicalChargeRemoved - refQ);
+        wi->addWarning(msg);
+    }
+
+    return atomCharges;
 }
 
-void QMMMTopologyPreprocessor::addQMLJExclusions(gmx_mtop_t* mtop)
+void addQMLJExclusions(gmx_mtop_t* mtop, const std::set<int>& qmIndices, const MDLogger& logger)
 {
     // Add all QM atoms to the mtop->intermolecularExclusionGroup
     mtop->intermolecularExclusionGroup.reserve(mtop->intermolecularExclusionGroup.size()
-                                               + qmIndices_.size());
-    for (auto i : qmIndices_)
+                                               + qmIndices.size());
+    int numExclusionsMade = 0;
+    for (auto i : qmIndices)
     {
         mtop->intermolecularExclusionGroup.push_back(i);
-        topInfo_.numExclusionsMade++;
+        numExclusionsMade++;
     }
+    GMX_LOG(logger.info).appendTextFormatted("Number of exclusions made: %d\n", numExclusionsMade);
 }
 
-void QMMMTopologyPreprocessor::buildQMMMAtomNumbers(gmx_mtop_t* mtop)
+std::vector<int> buildQMMMAtomNumbers(const gmx_mtop_t& mtop)
 {
     // Save to atomNumbers_ atom numbers of all atoms
-    AtomIterator atoms(*mtop);
-    while (atoms->globalAtomNumber() < mtop->natoms)
+    std::vector<int> atomNumbers;
+    AtomIterator     atoms(mtop);
+    while (atoms->globalAtomNumber() < mtop.natoms)
     {
         // Check if we have valid atomnumbers
         if (atoms->atom().atomnumber < 0)
         {
             gmx_fatal(FARGS,
-                      "Atoms %d does not have atomic number needed for QMMM. Check atomtypes "
-                      "section in your topology or forcefield.",
+                      "Atoms %d does not have atomic number needed for embedded subsystem. "
+                      "Check atomtypes section in your topology or forcefield.",
                       atoms->globalAtomNumber());
         }
 
-        atomNumbers_.push_back(atoms->atom().atomnumber);
+        atomNumbers.push_back(atoms->atom().atomnumber);
         atoms++;
     }
 
-    // Save in topInfo_ number of QM and MM atoms
-    topInfo_.numQMAtoms += gmx::ssize(qmIndices_);
-    topInfo_.numMMAtoms += mtop->natoms - gmx::ssize(qmIndices_);
+    return atomNumbers;
 }
 
-void QMMMTopologyPreprocessor::modifyQMMMTwoCenterInteractions(gmx_mtop_t* mtop)
+void modifyQMMMTwoCenterInteractions(gmx_mtop_t*              mtop,
+                                     const std::set<int>&     qmIndices,
+                                     const std::vector<bool>& bQMBlock,
+                                     const MDLogger&          logger)
 {
     // Loop over all blocks in topology
     // molBlockIndex - index of current block in mtop
+    int numBondsRemoved   = 0;
+    int numConnBondsAdded = 0;
     for (size_t molBlockIndex = 0; molBlockIndex < mtop->molblock.size(); molBlockIndex++)
     {
         // check if current block contains QM atoms
-        if (bQMBlock_[molBlockIndex])
+        if (bQMBlock[molBlockIndex])
         {
             // molType - strucutre with current block type
             gmx_moltype_t* molType = &mtop->moltype[mtop->molblock[molBlockIndex].type];
@@ -340,8 +447,8 @@ void QMMMTopologyPreprocessor::modifyQMMMTwoCenterInteractions(gmx_mtop_t* mtop)
                 {
 
                     // If both atoms are QM and it is IF_CHEMBOND then convert it to F_CONNBONDS
-                    if (isQMAtom(molType->ilist[ftype].iatoms[j + 1] + start)
-                        && isQMAtom(molType->ilist[ftype].iatoms[j + 2] + start))
+                    if (isQMAtom(molType->ilist[ftype].iatoms[j + 1] + start, qmIndices)
+                        && isQMAtom(molType->ilist[ftype].iatoms[j + 2] + start, qmIndices))
                     {
 
                         // Add chemical bond to the F_CONNBONDS (bond type 5)
@@ -357,11 +464,11 @@ void QMMMTopologyPreprocessor::modifyQMMMTwoCenterInteractions(gmx_mtop_t* mtop)
                             molType->ilist[F_CONNBONDS].iatoms.push_back(
                                     molType->ilist[ftype].iatoms[j + 2]);
 
-                            topInfo_.numConnBondsAdded++;
+                            numConnBondsAdded++;
                         }
 
                         // Since the current bond is not copied into iatomsBuf it will be removed from the topology
-                        topInfo_.numBondsRemoved++;
+                        numBondsRemoved++;
                     }
                     else
                     {
@@ -378,16 +485,29 @@ void QMMMTopologyPreprocessor::modifyQMMMTwoCenterInteractions(gmx_mtop_t* mtop)
             }
         }
     }
+    if (numBondsRemoved > 0)
+    {
+        GMX_LOG(logger.info).appendTextFormatted("Number of bonds removed: %d\n", numBondsRemoved);
+    }
+    if (numConnBondsAdded > 0)
+    {
+        GMX_LOG(logger.info).appendTextFormatted("Number of F_CONNBONDS (type 5 bonds) added: %d\n", numConnBondsAdded);
+    }
 }
 
-void QMMMTopologyPreprocessor::buildQMMMLink(gmx_mtop_t* mtop)
+std::vector<LinkFrontier> buildQMMMLink(gmx_mtop_t*              mtop,
+                                        const std::set<int>&     qmIndices,
+                                        const std::vector<bool>& bQMBlock,
+                                        const MDLogger&          logger)
 {
     // Loop over all blocks in topology
     // molBlockIndex - index of current block in mtop
+    std::vector<LinkFrontier> linkFrontier;
+    int                       numLinkBonds = 0;
     for (size_t molBlockIndex = 0; molBlockIndex < mtop->molblock.size(); molBlockIndex++)
     {
         // check if current block contains QM atoms
-        if (bQMBlock_[molBlockIndex])
+        if (bQMBlock[molBlockIndex])
         {
             // molType - strucutre with current block type
             gmx_moltype_t* molType = &mtop->moltype[mtop->molblock[molBlockIndex].type];
@@ -417,36 +537,42 @@ void QMMMTopologyPreprocessor::buildQMMMLink(gmx_mtop_t* mtop)
                     int a2 = molType->ilist[ftype].iatoms[j + 2] + start;
 
                     // Update Link Frontier List if one of the atoms QM and one MM
-                    if (isQMAtom(a1) && !isQMAtom(a2))
+                    if (isQMAtom(a1, qmIndices) && !isQMAtom(a2, qmIndices))
                     {
-                        linkFrontier_.push_back({ a1, a2 });
-                        topInfo_.numLinkBonds++;
+                        linkFrontier.push_back({ a1, a2 });
+                        numLinkBonds++;
                     }
-                    if (isQMAtom(a2) && !isQMAtom(a1))
+                    if (isQMAtom(a2, qmIndices) && !isQMAtom(a1, qmIndices))
                     {
-                        linkFrontier_.push_back({ a2, a1 });
-                        topInfo_.numLinkBonds++;
-                    }
-
-                    // Check if it is constrained bond within QM subsystem
-                    if (isQMAtom(a2) && isQMAtom(a1) && (interaction_function[ftype].flags & IF_CONSTRAINT))
-                    {
-                        topInfo_.numConstrainedBondsInQMSubsystem++;
+                        linkFrontier.push_back({ a2, a1 });
+                        numLinkBonds++;
                     }
                 }
             }
         }
     }
+    if (numLinkBonds > 0)
+    {
+        GMX_LOG(logger.info).appendTextFormatted("Number of link bonds added: %d\n", numLinkBonds);
+    }
+
+    return linkFrontier;
 }
 
-void QMMMTopologyPreprocessor::modifyQMMMThreeCenterInteractions(gmx_mtop_t* mtop)
+void modifyQMMMThreeCenterInteractions(gmx_mtop_t*              mtop,
+                                       const std::set<int>&     qmIndices,
+                                       const std::vector<bool>& bQMBlock,
+                                       const MDLogger&          logger)
 {
     // Loop over all blocks in topology
     // molBlockIndex - index of current block in mtop
+    int numConnBondsAdded = 0;
+    int numAnglesRemoved  = 0;
+    int numSettleRemoved  = 0;
     for (size_t molBlockIndex = 0; molBlockIndex < mtop->molblock.size(); molBlockIndex++)
     {
         // check if current block contains QM atoms
-        if (bQMBlock_[molBlockIndex])
+        if (bQMBlock[molBlockIndex])
         {
             // molType - strucutre with current block type
             gmx_moltype_t* molType = &mtop->moltype[mtop->molblock[molBlockIndex].type];
@@ -480,7 +606,7 @@ void QMMMTopologyPreprocessor::modifyQMMMThreeCenterInteractions(gmx_mtop_t* mto
                     int numQm = 0;
                     for (int k = 1; k <= NRAL(ftype); k++)
                     {
-                        if (isQMAtom(molType->ilist[ftype].iatoms[j + k] + start))
+                        if (isQMAtom(molType->ilist[ftype].iatoms[j + k] + start, qmIndices))
                         {
                             numQm++;
                         }
@@ -508,13 +634,13 @@ void QMMMTopologyPreprocessor::modifyQMMMThreeCenterInteractions(gmx_mtop_t* mto
                             molType->ilist[F_CONNBONDS].iatoms.push_back(
                                     molType->ilist[ftype].iatoms[j + 3]);
 
-                            topInfo_.numConnBondsAdded += 2;
-                            topInfo_.numSettleRemoved++;
+                            numConnBondsAdded += 2;
+                            numSettleRemoved++;
                         }
                         else
                         {
                             // If it is normal angle then it should be just removed
-                            topInfo_.numAnglesRemoved++;
+                            numAnglesRemoved++;
                         }
                     }
                     else
@@ -532,17 +658,33 @@ void QMMMTopologyPreprocessor::modifyQMMMThreeCenterInteractions(gmx_mtop_t* mto
             }
         }
     }
+    if (numAnglesRemoved > 0)
+    {
+        GMX_LOG(logger.info).appendTextFormatted("Number of angles removed: %d\n", numAnglesRemoved);
+    }
+    if (numSettleRemoved > 0)
+    {
+        GMX_LOG(logger.info)
+                .appendTextFormatted(
+                        "Number of settles removed: %d (replaced by %d F_CONNBONDS) \n",
+                        numSettleRemoved,
+                        numConnBondsAdded);
+    }
 }
 
 
-void QMMMTopologyPreprocessor::modifyQMMMFourCenterInteractions(gmx_mtop_t* mtop)
+void modifyQMMMFourCenterInteractions(gmx_mtop_t*              mtop,
+                                      const std::set<int>&     qmIndices,
+                                      const std::vector<bool>& bQMBlock,
+                                      const MDLogger&          logger)
 {
     // Loop over all blocks in topology
     // molBlockIndex - index of current block in mtop
+    int numDihedralsRemoved = 0;
     for (size_t molBlockIndex = 0; molBlockIndex < mtop->molblock.size(); molBlockIndex++)
     {
         // check if current block contains QM atoms
-        if (bQMBlock_[molBlockIndex])
+        if (bQMBlock[molBlockIndex])
         {
             // molType - strucutre with current block type
             gmx_moltype_t* molType = &mtop->moltype[mtop->molblock[molBlockIndex].type];
@@ -574,7 +716,7 @@ void QMMMTopologyPreprocessor::modifyQMMMFourCenterInteractions(gmx_mtop_t* mtop
                     int numQm = 0;
                     for (int k = 1; k <= NRAL(ftype); k++)
                     {
-                        if (isQMAtom(molType->ilist[ftype].iatoms[j + k] + start))
+                        if (isQMAtom(molType->ilist[ftype].iatoms[j + k] + start, qmIndices))
                         {
                             numQm++;
                         }
@@ -583,7 +725,7 @@ void QMMMTopologyPreprocessor::modifyQMMMFourCenterInteractions(gmx_mtop_t* mtop
                     // If at least 3 atoms are QM then remove interaction
                     if (numQm >= 3)
                     {
-                        topInfo_.numDihedralsRemoved++;
+                        numDihedralsRemoved++;
                     }
                     else
                     {
@@ -600,60 +742,69 @@ void QMMMTopologyPreprocessor::modifyQMMMFourCenterInteractions(gmx_mtop_t* mtop
             }
         }
     }
+    if (numDihedralsRemoved > 0)
+    {
+        GMX_LOG(logger.info).appendTextFormatted("Number of dihedrals removed: %d\n", numDihedralsRemoved);
+    }
 }
 
-void QMMMTopologyPreprocessor::modifyQMMMVirtualSites(gmx_mtop_t* mtop)
+void checkConstrainedBonds(gmx_mtop_t*              mtop,
+                           const std::set<int>&     qmIndices,
+                           const std::vector<bool>& bQMBlock,
+                           WarningHandler*          wi)
 {
+    int numConstrainedBonds = 0;
     // Loop over all blocks in topology
-    // molBlockIndex - index of current block in mtop
     for (size_t molBlockIndex = 0; molBlockIndex < mtop->molblock.size(); molBlockIndex++)
     {
-        // check if current block contains QM atoms
-        if (bQMBlock_[molBlockIndex])
+        // check if current block contains embedded atoms
+        if (bQMBlock[molBlockIndex])
         {
             // molType - strucutre with current block type
             gmx_moltype_t* molType = &mtop->moltype[mtop->molblock[molBlockIndex].type];
 
-            // start - global index of the first atom in the current block
+            // start - gloabl index of the first atom in the current block
             int start = mtop->moleculeBlockIndices[molBlockIndex].globalAtomStart;
 
             // loop over all interaction types
             for (int ftype = 0; ftype < F_NRE; ftype++)
             {
-                // If this is VSite interaction and ilist is not empty
-                if (IS_VSITE(ftype) && !molType->ilist[ftype].empty())
+                // If not chemical bond interaction or not pair interaction
+                // or no interactions of that type: then skip current ftype
+                if (!(interaction_function[ftype].flags & IF_CHEMBOND) || NRAL(ftype) != 2
+                    || molType->ilist[ftype].empty())
                 {
-                    // Number of elements in the iatoms array for the current ftype
-                    const int numInteractionElements = NRAL(ftype) + 1;
+                    continue;
+                }
 
-                    // Loop over all interactions of ftype
-                    for (int j = 0; j < molType->ilist[ftype].size(); j += numInteractionElements)
+                // Number of elements in the iatoms array for the current ftype
+                const int numInteractionElements = NRAL(ftype) + 1;
+
+                // Loop over all interactions of ftype
+                for (int j = 0; j < molType->ilist[ftype].size(); j += numInteractionElements)
+                {
+                    // Global indexes of atoms involved into the interaction
+                    int a1 = molType->ilist[ftype].iatoms[j + 1] + start;
+                    int a2 = molType->ilist[ftype].iatoms[j + 2] + start;
+
+                    // Check if it is constrained bond within embedded subsystem
+                    if (isQMAtom(a2, qmIndices) && isQMAtom(a1, qmIndices)
+                        && (interaction_function[ftype].flags & IF_CONSTRAINT))
                     {
-                        // Calculate number of qm atoms in the interaction
-                        int numQm = 0;
-                        // Here k starts from 2 because first atom in the interaction is an actuall vsite index
-                        for (int k = 2; k <= NRAL(ftype); k++)
-                        {
-                            if (isQMAtom(molType->ilist[ftype].iatoms[j + k] + start))
-                            {
-                                numQm++;
-                            }
-                        }
-
-                        // If all atoms froming that virtual site are QM atoms
-                        // then remove classical charge from that virtual site
-                        if (numQm == (NRAL(ftype) - 1))
-                        {
-                            topInfo_.numVirtualSitesModified++;
-                            topInfo_.totalClassicalChargeOfQMAtoms +=
-                                    molType->atoms.atom[molType->ilist[ftype].iatoms[j + 1]].q;
-                            molType->atoms.atom[molType->ilist[ftype].iatoms[j + 1]].q  = 0.0;
-                            molType->atoms.atom[molType->ilist[ftype].iatoms[j + 1]].qB = 0.0;
-                        }
+                        numConstrainedBonds++;
                     }
                 }
             }
         }
+    }
+    GMX_ASSERT(wi, "WarningHandler not set.");
+    if (numConstrainedBonds > 2)
+    {
+        std::string msg =
+                "Your embedded subsystem has a lot of constrained bonds. They probably have been "
+                "generated automatically. That could produce an artifacts in the simulation. "
+                "Consider constraints = none in the mdp file.\n";
+        wi->addWarning(msg);
     }
 }
 

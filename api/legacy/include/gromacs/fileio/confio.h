@@ -36,8 +36,8 @@
 
 #include <filesystem>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/vectypes.h"
 
 /* For reading coordinate files it is assumed that enough memory
  * has been allocated beforehand.

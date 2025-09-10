@@ -305,8 +305,8 @@ const real CubicSplineTable::defaultTolerance = 10.0 * GMX_FLOAT_EPS;
 #endif
 
 CubicSplineTable::CubicSplineTable(std::initializer_list<AnalyticalSplineTableInput> analyticalInputList,
-                                   const std::pair<real, real>&                      range,
-                                   real                                              tolerance) :
+                                   const std::pair<real, real>& range,
+                                   real                         tolerance) :
     numFuncInTable_(analyticalInputList.size()), range_(range)
 {
     // Sanity check on input values
@@ -393,8 +393,8 @@ CubicSplineTable::CubicSplineTable(std::initializer_list<AnalyticalSplineTableIn
 
 
 CubicSplineTable::CubicSplineTable(std::initializer_list<NumericalSplineTableInput> numericalInputList,
-                                   const std::pair<real, real>&                     range,
-                                   real                                             tolerance) :
+                                   const std::pair<real, real>& range,
+                                   real                         tolerance) :
     numFuncInTable_(numericalInputList.size()), range_(range)
 {
     // Sanity check on input values

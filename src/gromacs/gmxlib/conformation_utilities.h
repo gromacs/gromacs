@@ -34,9 +34,9 @@
 #ifndef GMX_CONFORMATION_UTILITIES_H
 #define GMX_CONFORMATION_UTILITIES_H
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 void rotate_conf(int natom, rvec* x, rvec* v, real alfa, real beta, real gamma);
 /*rotate() rotates a configuration alfa degrees around the x_axis and beta degrees around the y_axis, *v can be NULL */

@@ -80,12 +80,12 @@
 namespace gmx
 {
 
-constexpr double c_angstrom       = 1e-10;
-constexpr double c_kilo           = 1e3;
-constexpr double c_nano           = 1e-9;
-constexpr double c_pico           = 1e-12;
-constexpr double c_nm2A           = c_nano / c_angstrom;
-constexpr double c_cal2Joule      = 4.184;           /* Exact definition of the calorie */
+constexpr double c_angstrom  = 1e-10;
+constexpr double c_kilo      = 1e3;
+constexpr double c_nano      = 1e-9;
+constexpr double c_pico      = 1e-12;
+constexpr double c_nm2A      = c_nano / c_angstrom;
+constexpr double c_cal2Joule = 4.184;                /* Exact definition of the calorie */
 constexpr double c_electronCharge = 1.602176634e-19; /* Exact definition, Coulomb NIST 2018 CODATA */
 
 constexpr double c_amu       = 1.66053906660e-27; /* kg, NIST 2018 CODATA  */
@@ -102,8 +102,7 @@ constexpr double c_epsilon0Si = 8.8541878128e-12; /* F/m,  NIST 2018 CODATA */
 constexpr double c_epsilon0 =
         ((c_epsilon0Si * c_nano * c_kilo) / (c_electronCharge * c_electronCharge * c_avogadro));
 
-constexpr double c_speedOfLight =
-        2.99792458e05; /* units of nm/ps, Exact definition, NIST 2018 CODATA */
+constexpr double c_speedOfLight = 2.99792458e05; /* units of nm/ps, Exact definition, NIST 2018 CODATA */
 
 constexpr double c_rydberg = 1.0973731568160e-02; /* nm^-1, NIST 2018 CODATA */
 

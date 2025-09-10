@@ -35,7 +35,6 @@
  *  \brief Implements a DeviceEvent class for HIP.
  *
  *  \author Paul Bauer <paul.bauer.q@gmail.com>
- *  \author Julio Maia <julio.maia@amd.com>
  *  \inlibraryapi
  */
 #ifndef GMX_GPU_UTILS_DEVICE_EVENT_HIP_H
@@ -61,8 +60,8 @@ public:
     // Disable copy, move, and assignment. Move can be allowed, but not needed yet.
     DeviceEvent& operator=(const DeviceEvent&) = delete;
     DeviceEvent(const DeviceEvent&)            = delete;
-    DeviceEvent& operator=(DeviceEvent&&) = delete;
-    DeviceEvent(DeviceEvent&&)            = delete;
+    DeviceEvent& operator=(DeviceEvent&&)      = delete;
+    DeviceEvent(DeviceEvent&&)                 = delete;
 
     /*! \brief Marks the synchronization point in the \p stream.
      * Should be followed by waitForEvent().

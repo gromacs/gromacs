@@ -42,7 +42,6 @@
 #include <string>
 
 #include "gromacs/fileio/gmxfio.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/symtab.h"
@@ -51,6 +50,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vec.h"
 
 static int get_espresso_word(FILE* fp, char word[])
 {
@@ -61,7 +61,7 @@ static int get_espresso_word(FILE* fp, char word[])
 
     do
     {
-        i = fgetc(fp);
+        i = std::fgetc(fp);
         if (i != EOF)
         {
             if (i == ' ' || i == '\n' || i == '\t')
@@ -212,7 +212,7 @@ void gmx_espresso_read_conf(const std::filesystem::path& infile,
                 bFoundProp = FALSE;
                 for (p = 0; p < espNR; p++)
                 {
-                    if (strcmp(word, esp_prop[p]) == 0)
+                    if (std::strcmp(word, esp_prop[p]) == 0)
                     {
                         bFoundProp    = TRUE;
                         prop[nprop++] = p;
@@ -408,7 +408,7 @@ int get_espresso_coordnum(const std::filesystem::path& infile)
     level           = 0;
     while ((r = get_espresso_word(fp, word)) && !bFoundParticles)
     {
-        if (level == 1 && strcmp(word, "particles") == 0 && !bFoundParticles)
+        if (level == 1 && std::strcmp(word, "particles") == 0 && !bFoundParticles)
         {
             bFoundParticles = TRUE;
             level += check_open_parenthesis(fp, r, infile, "particles");

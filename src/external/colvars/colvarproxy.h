@@ -13,6 +13,7 @@
 #include "colvarmodule.h"
 #include "colvartypes.h"
 #include "colvarproxy_io.h"
+#include "colvarproxy_replicas.h"
 #include "colvarproxy_system.h"
 #include "colvarproxy_tcl.h"
 #include "colvarproxy_volmaps.h"
@@ -73,27 +74,6 @@ public:
   /// \brief Used by the atom class destructor: rather than deleting the array slot
   /// (costly) set the corresponding atoms_refcount to zero
   virtual void clear_atom(int index);
-
-  /// \brief Read a selection of atom IDs from a coordinate file (only PDB is supported)
-  /// \param[in] filename name of the file
-  /// \param[in,out] atoms array into which atoms will be read from "filename"
-  /// \param[in] pdb_field if the file is a PDB and this string is non-empty,
-  /// select atoms for which this field is non-zero
-  /// \param[in] pdb_field_value if non-zero, select only atoms whose pdb_field equals this
-  virtual int load_atoms(char const *filename, cvm::atom_group &atoms, std::string const &pdb_field,
-                         double pdb_field_value);
-
-  /// \brief Load a set of coordinates from a file (PDB or XYZ)
-  /// \param[in] filename name of the file
-  /// \param[in,out] pos array of coordinates; if not empty, the number of its elements must match
-  /// the number of entries in "filename"
-  /// \param[in] sorted_ids array of sorted internal IDs, used to loop through the file only once
-  /// \param[in] pdb_field if the file is a PDB and this string is non-empty, only atoms for which
-  /// this field is non-zero will be processed
-  /// \param[in] pdb_field_value if non-zero, process only atoms whose pdb_field equals this
-  virtual int load_coords(char const *filename, std::vector<cvm::atom_pos> &pos,
-                          std::vector<int> const &sorted_ids, std::string const &pdb_field,
-                          double pdb_field_value);
 
   /// Clear atomic data
   int reset();
@@ -512,38 +492,6 @@ protected:
 };
 
 
-/// \brief Methods for multiple-replica communication
-class colvarproxy_replicas {
-
-public:
-
-  /// Constructor
-  colvarproxy_replicas();
-
-  /// Destructor
-  virtual ~colvarproxy_replicas();
-
-  /// \brief Indicate if multi-replica support is available and active
-  virtual int replica_enabled();
-
-  /// \brief Index of this replica
-  virtual int replica_index();
-
-  /// \brief Total number of replicas
-  virtual int num_replicas();
-
-  /// \brief Synchronize replica with others
-  virtual void replica_comm_barrier();
-
-  /// \brief Receive data from other replica
-  virtual int replica_comm_recv(char* msg_data, int buf_len, int src_rep);
-
-  /// \brief Send data to other replica
-  virtual int replica_comm_send(char* msg_data, int msg_len, int dest_rep);
-
-};
-
-
 /// Methods for scripting language interface (Tcl or Python)
 class colvarproxy_script {
 
@@ -625,6 +573,26 @@ public:
 
   /// (Re)initialize the module
   virtual int parse_module_config();
+
+  /// \brief Read a selection of atom IDs from a PDB coordinate file
+  /// \param[in] filename name of the file
+  /// \param[in,out] atoms array into which atoms will be read from "filename"
+  /// \param[in] pdb_field if the file is a PDB and this string is non-empty,
+  /// select atoms for which this field is non-zero
+  /// \param[in] pdb_field_value if non-zero, select only atoms whose pdb_field equals this
+  virtual int load_atoms_pdb(char const *filename, cvm::atom_group &atoms,
+                             std::string const &pdb_field, double pdb_field_value);
+
+  /// \brief Load a set of coordinates from a PDB file
+  /// \param[in] filename name of the file
+  /// \param[in,out] pos array of coordinates to fill; if not empty, the number of its elements must match
+  /// the number of entries in "filename"
+  /// \param[in] sorted_ids array of sorted internal IDs, used to loop through the file only once
+  /// \param[in] pdb_field if non-empty, only atoms for which this field is non-zero will be processed
+  /// \param[in] pdb_field_value if non-zero, process only atoms whose pdb_field equals this
+  virtual int load_coords_pdb(char const *filename, std::vector<cvm::atom_pos> &pos,
+                              std::vector<int> const &sorted_ids, std::string const &pdb_field,
+                              double pdb_field_value);
 
   /// (Re)initialize required member data (called after the module)
   virtual int setup();

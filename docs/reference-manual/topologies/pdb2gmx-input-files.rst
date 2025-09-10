@@ -64,7 +64,7 @@ standard input for :ref:`pdb2gmx <gmx pdb2gmx>`, but if changes are needed make 
 directory as explained in sec. :ref:`pdb2gmxfiles`. Defining topologies
 of new small molecules is probably easier by writing an include topology
 file :ref:`itp` directly. This will be discussed in section :ref:`molitp`.
-When adding a new protein residue to the database, don’t forget to add
+When adding a new protein residue to the database, do not forget to add
 the residue name to the residuetypes.dat file, so that :ref:`grompp <gmx grompp>`, :ref:`make_ndx <gmx make_ndx>`
 and analysis tools can recognize the residue as a protein residue (see
 :ref:`defaultgroups`).
@@ -88,8 +88,8 @@ way:
 
     [ GLY ]  ; mandatory
 
-     [ atoms ]  ; mandatory 
-    ; name  type  charge  chargegroup 
+     [ atoms ]  ; mandatory
+    ; name  type  charge  chargegroup
          N     N  -0.280     0
          H     H   0.280     0
         CA   CH2   0.000     1
@@ -270,7 +270,7 @@ If more than one hydrogen atom is connected to the same atom, a number
 will be added to the end of the hydrogen atom name. For example, adding
 two hydrogen atoms to ``ND2`` (in asparagine), the hydrogen atoms will
 be named ``HD21`` and ``HD22``. This is important since atom naming in
-the :ref:`rtp` file (see :ref:`rtp`) must be the same. The format of the
+the :ref:`rtp` file must be the same. The format of the
 hydrogen database is as follows:
 
 ::
@@ -505,7 +505,7 @@ all atoms in the side chain. This information is specified in the
 there is one such file for each class of residues in the
 :ref:`rtp` file.
 
-The virtual site database is not really a very simple list of
+The virtual site database is a simple list of
 information. The first couple of sections specify which mass centers
 (typically called MCH\ :math:`_3`/MNH\ :math:`_3`) to use for
 CH\ :math:`_3`, NH\ :math:`_3`, and NH\ :math:`_2` groups. Depending on
@@ -560,11 +560,13 @@ chains.
 The first line of ``specbond.dat`` indicates the number of
 entries that are in the file. If you add a new entry, be sure to
 increment this number. The remaining lines in the file provide the
-specifications for creating bonds. The format of the lines is as
-follows:
+specifications for creating bonds. For these bonds, you can also
+optionally specify a custom improper dihedral associated with the
+new bond. The format of the lines, with optional entries in [], is
+as follows:
 
 ``resA atomA nbondsA resB atomB nbondsB length newresA
-newresB``
+newresB [atomI atomJ atomK atomL]``
 
 The columns indicate:
 
@@ -596,3 +598,13 @@ The columns indicate:
    linkage.
 
 #. ``newresB`` The new name of residue B, likewise.
+
+#. ``atomI`` Custom improper dihedral atom i of i-j-k-l. Has format
+    [specbond residue]-[atom name] (e.g. B-SG). The letter is either
+    A or B corresponding to resA or resB, respectively.
+
+#. ``atomJ`` Custom improper dihedral atom j of i-j-k-l.
+
+#. ``atomK`` Custom improper dihedral atom k of i-j-k-l.
+
+#. ``atomL`` Custom improper dihedral atom l of i-j-k-l.

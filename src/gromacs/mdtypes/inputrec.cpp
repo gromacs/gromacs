@@ -50,9 +50,6 @@
 #include <vector>
 
 #include "gromacs/applied_forces/awh/read_params.h"
-#include "gromacs/math/veccompare.h"
-#include "gromacs/math/vecdump.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/vcm.h"
 #include "gromacs/mdtypes/awh_params.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -75,6 +72,9 @@
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
 #include "gromacs/utility/txtdump.h"
+#include "gromacs/utility/veccompare.h"
+#include "gromacs/utility/vecdump.h"
+#include "gromacs/utility/vectypes.h"
 
 //! Macro to select a bool name
 #define EBOOL(e) gmx::boolToString(e)
@@ -299,21 +299,6 @@ static void done_t_rot(t_rot* rot)
     }
 }
 
-static void done_t_swapCoords(t_swapcoords* swapCoords)
-{
-    if (swapCoords == nullptr)
-    {
-        return;
-    }
-    for (int i = 0; i < swapCoords->ngrp; i++)
-    {
-        sfree(swapCoords->grp[i].ind);
-        sfree(swapCoords->grp[i].molname);
-    }
-    sfree(swapCoords->grp);
-    sfree(swapCoords);
-}
-
 void done_inputrec(t_inputrec* ir)
 {
     sfree(ir->opts.nrdf);
@@ -328,11 +313,9 @@ void done_inputrec(t_inputrec* ir)
     sfree(ir->opts.anneal_time);
     sfree(ir->opts.anneal_temp);
     sfree(ir->opts.tau_t);
-    sfree(ir->opts.acceleration);
     sfree(ir->opts.nFreeze);
     sfree(ir->opts.egp_flags);
 
-    done_t_swapCoords(ir->swap);
     done_t_rot(ir->rot.get());
     delete ir->params;
 }
@@ -406,11 +389,11 @@ static void pr_grp_opts(FILE* out, int indent, const char* title, const t_grpopt
 
     pr_indent(out, indent);
     fprintf(out, "acc:\t");
-    for (i = 0; (i < opts->ngacc); i++)
+    for (const gmx::RVec& a : opts->acceleration)
     {
         for (m = 0; (m < DIM); m++)
         {
-            fprintf(out, "  %10g", opts->acceleration[i][m]);
+            fprintf(out, "  %10g", a[m]);
         }
     }
     fprintf(out, "\n");
@@ -438,7 +421,7 @@ static void pr_grp_opts(FILE* out, int indent, const char* title, const t_grpopt
         fprintf(out, "\n");
     }
 
-    fflush(out);
+    std::fflush(out);
 }
 
 static void pr_matrix(FILE* fp, int indent, const char* title, const rvec* m, gmx_bool bMDPformat)
@@ -552,8 +535,9 @@ static void pr_expandedvals(FILE* fp, int indent, const t_expanded* expand, int 
     PS("wl-oneovert", EBOOL(expand->bWLoneovert));
 
     pr_indent(fp, indent);
-    pr_rvec(fp, indent, "init-lambda-weights", expand->init_lambda_weights.data(), n_lambda, TRUE);
-    PS("init-weights", EBOOL(expand->bInit_weights));
+    pr_rvec(fp, indent, "init-lambda-weights", expand->initLambdaWeights.data(), n_lambda, TRUE);
+    pr_rvec(fp, indent, "init-lambda-counts", expand->initLambdaCounts.data(), n_lambda, TRUE);
+    pr_rvec(fp, indent, "init-wl-histogram-counts", expand->initWlHistogramCounts.data(), n_lambda, TRUE);
 }
 
 static void pr_fepvals(FILE* fp, int indent, const t_lambda* fep, gmx_bool bMDPformat)
@@ -776,8 +760,6 @@ static void pr_rot(FILE* fp, int indent, const t_rot* rot)
 
 static void pr_swap(FILE* fp, int indent, const t_swapcoords* swap)
 {
-    char str[STRLEN];
-
     /* Enums for better readability of the code */
     enum
     {
@@ -789,31 +771,29 @@ static void pr_swap(FILE* fp, int indent, const t_swapcoords* swap)
     PI("swap-frequency", swap->nstswap);
 
     /* The split groups that define the compartments */
-    for (int j = 0; j < 2; j++)
     {
-        snprintf(str, STRLEN, "massw_split%d", j);
-        PS(str, EBOOL(swap->massw_split[j]));
-        snprintf(str, STRLEN, "split atoms group %d", j);
-        pr_ivec_block(fp, indent, str, swap->grp[j].ind, swap->grp[j].nat, TRUE);
+        PS("massw_split0", EBOOL(swap->massw_split[0]));
+        const t_swapGroup& group = swap->requiredGroup(SwapGroupSplittingType::Split0);
+        pr_ivec_block(fp, indent, "split atoms group 0", group.ind.data(), group.ind.size(), TRUE);
+    }
+    {
+        PS("massw_split1", EBOOL(swap->massw_split[1]));
+        const t_swapGroup& group = swap->requiredGroup(SwapGroupSplittingType::Split1);
+        pr_ivec_block(fp, indent, "split atoms group 1", group.ind.data(), group.ind.size(), TRUE);
     }
 
     /* The solvent group */
-    snprintf(str,
-             STRLEN,
-             "solvent group %s",
-             swap->grp[static_cast<int>(SwapGroupSplittingType::Solvent)].molname);
-    pr_ivec_block(fp,
-                  indent,
-                  str,
-                  swap->grp[static_cast<int>(SwapGroupSplittingType::Solvent)].ind,
-                  swap->grp[static_cast<int>(SwapGroupSplittingType::Solvent)].nat,
-                  TRUE);
+    {
+        const t_swapGroup& group = swap->requiredGroup(SwapGroupSplittingType::Solvent);
+        pr_ivec_block(
+                fp, indent, ("solvent group " + group.molname).c_str(), group.ind.data(), group.ind.size(), TRUE);
+    }
 
     /* Now print the indices for all the ion groups: */
-    for (int ig = static_cast<int>(SwapGroupSplittingType::Count); ig < swap->ngrp; ig++)
+    for (const t_swapGroup& group : swap->ionGroups())
     {
-        snprintf(str, STRLEN, "ion group %s", swap->grp[ig].molname);
-        pr_ivec_block(fp, indent, str, swap->grp[ig].ind, swap->grp[ig].nat, TRUE);
+        pr_ivec_block(
+                fp, indent, ("ion group " + group.molname).c_str(), group.ind.data(), group.ind.size(), TRUE);
     }
 
     PR("cyl0-r", swap->cyl0r);
@@ -825,12 +805,14 @@ static void pr_swap(FILE* fp, int indent, const t_swapcoords* swap)
     PI("coupl-steps", swap->nAverage);
 
     /* Print the requested ion counts for both compartments */
-    for (int ic = eCompA; ic <= eCompB; ic++)
+    for (char ic = eCompA; ic <= eCompB; ic++)
     {
-        for (int ig = static_cast<int>(SwapGroupSplittingType::Count); ig < swap->ngrp; ig++)
+        const char  label = 'A' + ic;
+        std::string suffix("-in-");
+        suffix += label;
+        for (const t_swapGroup& group : swap->ionGroups())
         {
-            snprintf(str, STRLEN, "%s-in-%c", swap->grp[ig].molname, 'A' + ic);
-            PI(str, swap->grp[ig].nmolReq[ic]);
+            PI((group.molname + suffix).c_str(), group.nmolReq[ic]);
         }
     }
 
@@ -991,16 +973,8 @@ void pr_inputrec(FILE* fp, int indent, const char* title, const t_inputrec* ir, 
         // Refcoord-scaling is also needed for other algorithms that affect the box
         PS("refcoord-scaling", enumValueToString(ir->pressureCouplingOptions.refcoord_scaling));
 
-        if (bMDPformat)
-        {
-            fprintf(fp, "posres-com  = %g %g %g\n", ir->posres_com[XX], ir->posres_com[YY], ir->posres_com[ZZ]);
-            fprintf(fp, "posres-comB = %g %g %g\n", ir->posres_comB[XX], ir->posres_comB[YY], ir->posres_comB[ZZ]);
-        }
-        else
-        {
-            pr_rvec(fp, indent, "posres-com", ir->posres_com, DIM, TRUE);
-            pr_rvec(fp, indent, "posres-comB", ir->posres_comB, DIM, TRUE);
-        }
+        prRVecs(fp, indent, "posres-com", ir->posresCom);
+        prRVecs(fp, indent, "posres-comB", ir->posresComB);
 
         /* QMMM */
         PS("QMMM", EBOOL(ir->bQMMM));
@@ -1102,7 +1076,7 @@ void pr_inputrec(FILE* fp, int indent, const char* title, const t_inputrec* ir, 
         PS("swapcoords", enumValueToString(ir->eSwapCoords));
         if (ir->eSwapCoords != SwapType::No)
         {
-            pr_swap(fp, indent, ir->swap);
+            pr_swap(fp, indent, ir->swap.get());
         }
 
         /* USER-DEFINED THINGIES */
@@ -1154,7 +1128,6 @@ static void cmp_grpopts(FILE* fp, const t_grpopts* opt1, const t_grpopts* opt2, 
     char buf1[256], buf2[256];
 
     cmp_int(fp, "inputrec->grpopts.ngtc", -1, opt1->ngtc, opt2->ngtc);
-    cmp_int(fp, "inputrec->grpopts.ngacc", -1, opt1->ngacc, opt2->ngacc);
     cmp_int(fp, "inputrec->grpopts.ngfrz", -1, opt1->ngfrz, opt2->ngfrz);
     cmp_int(fp, "inputrec->grpopts.ngener", -1, opt1->ngener, opt2->ngener);
     for (i = 0; (i < std::min(opt1->ngtc, opt2->ngtc)); i++)
@@ -1186,9 +1159,16 @@ static void cmp_grpopts(FILE* fp, const t_grpopts* opt1, const t_grpopts* opt2, 
             }
         }
     }
-    for (i = 0; (i < std::min(opt1->ngacc, opt2->ngacc)); i++)
+    cmp_int(fp, "Number of acceleration groups", -1, opt1->acceleration.size(), opt2->acceleration.size());
+    for (std::size_t i = 0; (i < std::min(opt1->acceleration.size(), opt2->acceleration.size())); i++)
     {
-        cmp_rvec(fp, "inputrec->grpopts.acceleration", i, opt1->acceleration[i], opt2->acceleration[i], ftol, abstol);
+        cmp_rvec(fp,
+                 "inputrec->grpopts.acceleration",
+                 i,
+                 opt1->acceleration[i].as_vec(),
+                 opt2->acceleration[i].as_vec(),
+                 ftol,
+                 abstol);
     }
     for (i = 0; (i < std::min(opt1->ngfrz, opt2->ngfrz)); i++)
     {
@@ -1353,20 +1333,38 @@ static void cmp_expandedvals(FILE*             fp,
 {
     int i;
 
-    cmp_bool(fp, "inputrec->fepvals->bInit_weights", -1, expand1->bInit_weights, expand2->bInit_weights);
     cmp_bool(fp, "inputrec->fepvals->bWLoneovert", -1, expand1->bWLoneovert, expand2->bWLoneovert);
 
     for (i = 0; i < n_lambda; i++)
     {
         cmp_real(fp,
-                 "inputrec->expandedvals->init_lambda_weights",
+                 "inputrec->expandedvals->initLambdaWeights",
                  -1,
-                 expand1->init_lambda_weights[i],
-                 expand2->init_lambda_weights[i],
+                 expand1->initLambdaWeights[i],
+                 expand2->initLambdaWeights[i],
                  ftol,
                  abstol);
     }
 
+    for (i = 0; i < n_lambda; i++)
+    {
+        cmp_int(fp,
+                "inputrec->expandedvals->initLambdaCounts",
+                -1,
+                expand1->initLambdaCounts[i],
+                expand2->initLambdaCounts[i]);
+    }
+
+    for (i = 0; i < n_lambda; i++)
+    {
+        cmp_real(fp,
+                 "inputrec->expandedvals->initWlHistogramCounts",
+                 -1,
+                 expand1->initWlHistogramCounts[i],
+                 expand2->initWlHistogramCounts[i],
+                 ftol,
+                 abstol);
+    }
     cmpEnum(fp, "inputrec->expandedvals->lambda-stats", expand1->elamstats, expand2->elamstats);
     cmpEnum(fp, "inputrec->expandedvals->lambda-mc-move", expand1->elmcmove, expand2->elmcmove);
     cmp_int(fp, "inputrec->expandedvals->lmc-repeats", -1, expand1->lmc_repeats, expand2->lmc_repeats);
@@ -1553,8 +1551,12 @@ void cmp_inputrec(FILE* fp, const t_inputrec* ir1, const t_inputrec* ir2, real f
             "refcoord_scaling",
             ir1->pressureCouplingOptions.refcoord_scaling,
             ir2->pressureCouplingOptions.refcoord_scaling);
-    cmp_rvec(fp, "inputrec->posres_com", -1, ir1->posres_com, ir2->posres_com, ftol, abstol);
-    cmp_rvec(fp, "inputrec->posres_comB", -1, ir1->posres_comB, ir2->posres_comB, ftol, abstol);
+    cmp_int(fp, "inputrec->numPosresCom", -1, gmx::ssize(ir1->posresCom), gmx::ssize(ir2->posresCom));
+    if (!ir1->posresCom.empty() && gmx::ssize(ir1->posresCom) == gmx::ssize(ir2->posresCom))
+    {
+        cmpRVecs(fp, "inputrec->posresCom", ir1->posresCom, ir2->posresCom, false, ftol, abstol);
+        cmpRVecs(fp, "inputrec->posresComB", ir1->posresComB, ir2->posresComB, false, ftol, abstol);
+    }
     cmp_real(fp, "inputrec->verletbuf_tol", -1, ir1->verletbuf_tol, ir2->verletbuf_tol, ftol, abstol);
     cmp_real(fp,
              "inputrec->verlet-buffer-pressure-tolerance",

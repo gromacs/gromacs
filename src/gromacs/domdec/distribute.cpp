@@ -55,8 +55,6 @@
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/math/functions.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/df_history.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -69,7 +67,10 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "atomdistribution.h"
 #include "cellsizes.h"
@@ -86,7 +87,7 @@ static void distributeVecSendrecv(gmx_domdec_t*                  dd,
 
         for (int rank = 0; rank < dd->nnodes; rank++)
         {
-            if (rank != dd->rank)
+            if (rank != dd->mpiComm().rank())
             {
                 const auto& domainGroups = dd->ma->domainGroups[rank];
 
@@ -101,12 +102,17 @@ static void distributeVecSendrecv(gmx_domdec_t*                  dd,
                                    "The index count and number of indices should match");
 
 #if GMX_MPI
-                MPI_Send(buffer.data(), domainGroups.numAtoms * sizeof(gmx::RVec), MPI_BYTE, rank, rank, dd->mpi_comm_all);
+                MPI_Send(buffer.data(),
+                         domainGroups.numAtoms * sizeof(gmx::RVec),
+                         MPI_BYTE,
+                         rank,
+                         rank,
+                         dd->mpiComm().comm());
 #endif
             }
         }
 
-        const auto& domainGroups = dd->ma->domainGroups[dd->mainrank];
+        const auto& domainGroups = dd->ma->domainGroups[dd->mpiComm().mainRank()];
         int         localAtom    = 0;
         for (const int& globalAtom : domainGroups.atomGroups)
         {
@@ -120,9 +126,9 @@ static void distributeVecSendrecv(gmx_domdec_t*                  dd,
         MPI_Recv(localVec.data(),
                  numHomeAtoms * sizeof(gmx::RVec),
                  MPI_BYTE,
-                 dd->mainrank,
+                 dd->mpiComm().mainRank(),
                  MPI_ANY_TAG,
-                 dd->mpi_comm_all,
+                 dd->mpiComm().comm(),
                  MPI_STATUS_IGNORE);
 #endif
     }
@@ -189,23 +195,20 @@ void dd_distribute_dfhist(gmx_domdec_t* dd, df_history_t* dfhist)
 
     if (dfhist->nlambda > 0)
     {
-        int nlam = dfhist->nlambda;
-        dd_bcast(dd, sizeof(int) * nlam, dfhist->n_at_lam);
-        dd_bcast(dd, sizeof(real) * nlam, dfhist->wl_histo);
-        dd_bcast(dd, sizeof(real) * nlam, dfhist->sum_weights);
-        dd_bcast(dd, sizeof(real) * nlam, dfhist->sum_dg);
-        dd_bcast(dd, sizeof(real) * nlam, dfhist->sum_minvar);
-        dd_bcast(dd, sizeof(real) * nlam, dfhist->sum_variance);
+        dd_bcast(dd, gmx::makeArrayRef(dfhist->numSamplesAtLambdaForStatistics));
+        dd_bcast(dd, gmx::makeArrayRef(dfhist->numSamplesAtLambdaForEquilibration));
+        dd_bcast(dd, gmx::makeArrayRef(dfhist->wl_histo));
+        dd_bcast(dd, gmx::makeArrayRef(dfhist->sum_weights));
+        dd_bcast(dd, gmx::makeArrayRef(dfhist->sum_dg));
+        dd_bcast(dd, gmx::makeArrayRef(dfhist->sum_minvar));
+        dd_bcast(dd, gmx::makeArrayRef(dfhist->sum_variance));
 
-        for (int i = 0; i < nlam; i++)
-        {
-            dd_bcast(dd, sizeof(real) * nlam, dfhist->accum_p[i]);
-            dd_bcast(dd, sizeof(real) * nlam, dfhist->accum_m[i]);
-            dd_bcast(dd, sizeof(real) * nlam, dfhist->accum_p2[i]);
-            dd_bcast(dd, sizeof(real) * nlam, dfhist->accum_m2[i]);
-            dd_bcast(dd, sizeof(real) * nlam, dfhist->Tij[i]);
-            dd_bcast(dd, sizeof(real) * nlam, dfhist->Tij_empirical[i]);
-        }
+        dd_bcast(dd, dfhist->accum_p.toArrayRef());
+        dd_bcast(dd, dfhist->accum_m.toArrayRef());
+        dd_bcast(dd, dfhist->accum_p2.toArrayRef());
+        dd_bcast(dd, dfhist->accum_m2.toArrayRef());
+        dd_bcast(dd, dfhist->Tij.toArrayRef());
+        dd_bcast(dd, dfhist->Tij_empirical.toArrayRef());
     }
 }
 
@@ -230,9 +233,9 @@ static void dd_distribute_state(gmx_domdec_t* dd, const t_state* state, t_state*
         copy_mat(state->boxv, state_local->boxv);
         copy_mat(state->svir_prev, state_local->svir_prev);
         copy_mat(state->fvir_prev, state_local->fvir_prev);
-        if (state->dfhist != nullptr)
+        if (state->dfhist)
         {
-            copy_df_history(state_local->dfhist, state->dfhist);
+            *state_local->dfhist = *state->dfhist;
         }
         for (int i = 0; i < state_local->ngtc; i++)
         {
@@ -271,21 +274,21 @@ static void dd_distribute_state(gmx_domdec_t* dd, const t_state* state, t_state*
     dd_bcast(dd, ((state_local->nnhpres * nh) * sizeof(double)), state_local->nhpres_vxi.data());
 
     /* communicate df_history -- required for restarting from checkpoint */
-    dd_distribute_dfhist(dd, state_local->dfhist);
+    dd_distribute_dfhist(dd, state_local->dfhist.get());
 
     state_local->changeNumAtoms(dd->comm->atomRanges.numHomeAtoms());
 
     if (state_local->hasEntry(StateEntry::X))
     {
-        distributeVec(dd, DDMAIN(dd) ? state->x : gmx::ArrayRef<const gmx::RVec>(), state_local->x);
+        distributeVec(dd, DDMAIN(dd) ? state->x : gmx::ArrayRef<const gmx::RVec>{}, state_local->x);
     }
     if (state_local->hasEntry(StateEntry::V))
     {
-        distributeVec(dd, DDMAIN(dd) ? state->v : gmx::ArrayRef<const gmx::RVec>(), state_local->v);
+        distributeVec(dd, DDMAIN(dd) ? state->v : gmx::ArrayRef<const gmx::RVec>{}, state_local->v);
     }
     if (state_local->hasEntry(StateEntry::Cgp))
     {
-        distributeVec(dd, DDMAIN(dd) ? state->cg_p : gmx::ArrayRef<const gmx::RVec>(), state_local->cg_p);
+        distributeVec(dd, DDMAIN(dd) ? state->cg_p : gmx::ArrayRef<const gmx::RVec>{}, state_local->cg_p);
     }
 }
 
@@ -422,8 +425,7 @@ static std::vector<std::vector<int>> getAtomGroupDistribution(const gmx::MDLogge
     matrix triclinicCorrectionMatrix;
     make_tric_corr_matrix(dd->unitCellInfo.npbcdim, box, triclinicCorrectionMatrix);
 
-    ivec       npulse;
-    const auto cellBoundaries = set_dd_cell_sizes_slb(dd, &ddbox, setcellsizeslbMAIN, npulse);
+    const auto cellBoundaries = set_dd_cell_sizes_slb(dd, &ddbox, setcellsizeslbMAIN);
 
     std::vector<std::vector<int>> indices(dd->nnodes);
 
@@ -541,7 +543,8 @@ static void distributeAtomGroups(const gmx::MDLogger& mdlog,
     }
     dd_scatter(dd, 2 * sizeof(int), ibuf, buf2);
 
-    dd->numHomeAtoms = buf2[0];
+    dd->numHomeAtoms                     = buf2[0];
+    dd->comm->numHomeAtomsWithoutFillers = buf2[0];
     dd->comm->atomRanges.setEnd(DDAtomRanges::Type::Home, buf2[1]);
     dd->globalAtomIndices.resize(dd->numHomeAtoms);
 
@@ -566,9 +569,9 @@ static void distributeAtomGroups(const gmx::MDLogger& mdlog,
     }
 
     dd_scatterv(dd,
-                bMain ? gmx::makeArrayRef(ma->intBuffer).subArray(0, dd->nnodes) : gmx::ArrayRef<int>(),
+                bMain ? gmx::makeArrayRef(ma->intBuffer).subArray(0, dd->nnodes) : gmx::ArrayRef<int>{},
                 bMain ? gmx::makeArrayRef(ma->intBuffer).subArray(dd->nnodes, dd->nnodes)
-                      : gmx::ArrayRef<int>(),
+                      : gmx::ArrayRef<int>{},
                 bMain ? ma->atomGroups.data() : nullptr,
                 dd->numHomeAtoms,
                 dd->globalAtomIndices.data());

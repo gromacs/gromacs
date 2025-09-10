@@ -2,17 +2,17 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <Energy Name="Potential">
-    <Real Name="Time 0.000000 Step 0 in frame 0">-8933.2061</Real>
-    <Real Name="Time 1.000000 Step 1 in frame 1">-9308.2471</Real>
-    <Real Name="Time 2.000000 Step 2 in frame 2">-9760.4707</Real>
-    <Real Name="Time 3.000000 Step 3 in frame 3">-10304.425</Real>
-    <Real Name="Time 4.000000 Step 4 in frame 4">-10955.273</Real>
+    <Real Name="Time 0.000000 Step 0 in frame 0">-4411.7817</Real>
+    <Real Name="Time 1.000000 Step 1 in frame 1">-4617.2334</Real>
+    <Real Name="Time 2.000000 Step 2 in frame 2">-4860.8081</Real>
+    <Real Name="Time 3.000000 Step 3 in frame 3">-5146.167</Real>
+    <Real Name="Time 4.000000 Step 4 in frame 4">-5473.9321</Real>
   </Energy>
   <Energy Name="Dens. fitting">
-    <Real Name="Time 0.000000 Step 0 in frame 0">-8932.1885</Real>
-    <Real Name="Time 1.000000 Step 1 in frame 1">-9307.208</Real>
-    <Real Name="Time 2.000000 Step 2 in frame 2">-9759.4893</Real>
-    <Real Name="Time 3.000000 Step 3 in frame 3">-10303.734</Real>
-    <Real Name="Time 4.000000 Step 4 in frame 4">-10955.57</Real>
+    <Real Name="Time 0.000000 Step 0 in frame 0">-4410.7642</Real>
+    <Real Name="Time 1.000000 Step 1 in frame 1">-4616.2158</Real>
+    <Real Name="Time 2.000000 Step 2 in frame 2">-4859.7905</Real>
+    <Real Name="Time 3.000000 Step 3 in frame 3">-5145.1494</Real>
+    <Real Name="Time 4.000000 Step 4 in frame 4">-5472.9141</Real>
   </Energy>
 </ReferenceData>

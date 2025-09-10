@@ -46,7 +46,6 @@
 #include <type_traits>
 
 #include "gromacs/ewald/ewald_utils.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/interaction_const.h"
@@ -64,6 +63,7 @@
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/range.h"
+#include "gromacs/utility/vec.h"
 
 #include "nblib/exception.h"
 #include "nblib/kerneloptions.h"
@@ -169,10 +169,10 @@ void GmxNBForceCalculatorCpu::CpuImpl::updatePairlist(gmx::ArrayRef<gmx::RVec> c
                                   upperCorner,
                                   nullptr,
                                   { 0, int(coordinates.size()) },
+                                  coordinates.size(),
                                   particleDensity,
                                   system_.particleInfo_,
                                   coordinates,
-                                  0,
                                   nullptr);
 
     backend_.nbv_->constructPairlist(
@@ -219,7 +219,7 @@ void GmxNBForceCalculatorCpu::CpuImpl::compute(gmx::ArrayRef<const gmx::RVec> co
             gmx::InteractionLocality::Local,
             backend_.interactionConst_,
             backend_.stepWork_,
-            enbvClearFYes,
+            gmx::enbvClearFYes,
             backend_.forcerec_.shift_vec,
             backend_.enerd_.grpp.energyGroupPairTerms[backend_.forcerec_.haveBuckingham ? NonBondedEnergyTerms::BuckinghamSR
                                                                                         : NonBondedEnergyTerms::LJSR],

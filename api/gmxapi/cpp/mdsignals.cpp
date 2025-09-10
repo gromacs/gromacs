@@ -59,7 +59,7 @@ namespace gmxapi
 {
 
 //! \cond
-Signal::Signal(Signal&&) noexcept = default;
+Signal::Signal(Signal&&) noexcept            = default;
 Signal& Signal::operator=(Signal&&) noexcept = default;
 
 Signal::Signal(std::unique_ptr<SignalImpl> impl) : impl_{ std::move(impl) } {}
@@ -130,9 +130,9 @@ public:
         auto& callCounter = manager_->called_.at(name_);
         callCounter.store(true);
         using pairType = typename decltype(manager_->called_)::value_type;
-        if (std::all_of(manager_->called_.cbegin(), manager_->called_.cend(), [](const pairType& p) {
-                return p.second.load();
-            }))
+        if (std::all_of(manager_->called_.cbegin(),
+                        manager_->called_.cend(),
+                        [](const pairType& p) { return p.second.load(); }))
         {
             *manager_->state_ = gmx::StopSignal::stopAtNextNSStep;
         }

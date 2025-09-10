@@ -47,11 +47,11 @@
 #include <filesystem>
 #include <vector>
 
+#include "gromacs/domdec/domdec.h"
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/functions.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdrunutility/multisim.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -68,8 +68,10 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vec.h"
 
 void init_disres(FILE*                 fplog,
                  const gmx_mtop_t&     mtop,
@@ -216,7 +218,7 @@ void init_disres(FILE*                 fplog,
     snew(dd->Rt_6, 2 * dd->nres);
     dd->Rtav_6 = &(dd->Rt_6[dd->nres]);
 
-    ptr = getenv("GMX_DISRE_ENSEMBLE_SIZE");
+    ptr = std::getenv("GMX_DISRE_ENSEMBLE_SIZE");
     if ((disResRunMode == DisResRunMode::MDRun) && ms != nullptr && ptr != nullptr && !bIsREMD)
     {
 #if GMX_MPI
@@ -226,12 +228,12 @@ void init_disres(FILE*                 fplog,
         {
             fprintf(fplog, "Found GMX_DISRE_ENSEMBLE_SIZE set to %d systems per ensemble\n", dd->nsystems);
         }
-        /* This check is only valid on MAIN(cr), so probably
+        /* This check is only valid on the main rank, so probably
          * ensemble-averaged distance restraints are broken on more
          * than one processor per simulation system. */
         if (ddRole == DDRole::Main)
         {
-            check_multi_int(fplog, ms, dd->nsystems, "the number of systems per ensemble", FALSE);
+            check_multi_int(fplog, *ms, dd->nsystems, "the number of systems per ensemble", FALSE);
         }
         gmx_bcast(sizeof(int), &dd->nsystems, communicator);
 
@@ -288,14 +290,14 @@ void init_disres(FILE*                 fplog,
          * succeed...) */
         if ((disResRunMode == DisResRunMode::MDRun) && ms && dd->nsystems > 1 && (ddRole == DDRole::Main))
         {
-            check_multi_int(fplog, ms, dd->nres, "the number of distance restraints", FALSE);
+            check_multi_int(fplog, *ms, dd->nres, "the number of distance restraints", FALSE);
         }
         please_cite(fplog, "Tropp80a");
         please_cite(fplog, "Torda89a");
     }
 }
 
-void calc_disres_R_6(const t_commrec*      cr,
+void calc_disres_R_6(const gmx_domdec_t*   domdec,
                      const gmx_multisim_t* ms,
                      int                   nfa,
                      const t_iatom         forceatoms[],
@@ -380,9 +382,9 @@ void calc_disres_R_6(const t_commrec*      cr,
     }
 
     /* NOTE: Rt_6 and Rtav_6 are stored consecutively in memory */
-    if (cr && haveDDAtomOrdering(*cr))
+    if (domdec)
     {
-        gmx_sum(2 * dd->nres, dd->Rt_6, cr);
+        domdec->mpiComm().sumReduce(2 * dd->nres, dd->Rt_6);
     }
 
     if (dd->nsystems > 1)
@@ -396,12 +398,12 @@ void calc_disres_R_6(const t_commrec*      cr,
             Rtav_6[res] *= invn;
         }
 
-        GMX_ASSERT(cr != nullptr && ms != nullptr, "We need multisim with nsystems>1");
+        GMX_ASSERT(ms != nullptr, "We need multisim with nsystems>1");
         gmx_sum_sim(2 * dd->nres, dd->Rt_6, ms);
 
-        if (haveDDAtomOrdering(*cr))
+        if (domdec)
         {
-            gmx_bcast(2 * dd->nres, dd->Rt_6, cr->mpi_comm_mygroup);
+            gmx_bcast(2 * dd->nres, dd->Rt_6, domdec->mpiComm().comm());
         }
     }
 
@@ -424,10 +426,10 @@ real ta_disres(int              nfa,
                real gmx_unused  lambda,
                real gmx_unused* dvdlambda,
                gmx::ArrayRef<const real> /*charge*/,
-               t_fcdata gmx_unused* fcd,
-               t_disresdata*        disresdata,
+               t_fcdata gmx_unused*     fcd,
+               t_disresdata*            disresdata,
                t_oriresdata gmx_unused* oriresdata,
-               int gmx_unused* global_atom_index)
+               int gmx_unused*          global_atom_index)
 {
     const real seven_three = 7.0 / 3.0;
 
@@ -478,9 +480,9 @@ real ta_disres(int              nfa,
         if (ip[type].disres.type != 2)
         {
             bConservative = (dr_weighting == DistanceRestraintWeighting::Conservative) && (npair > 1);
-            bMixed        = dr_bMixed;
-            Rt            = gmx::invsixthroot(Rt_6[res]);
-            Rtav          = gmx::invsixthroot(Rtav_6[res]);
+            bMixed = dr_bMixed;
+            Rt     = gmx::invsixthroot(Rt_6[res]);
+            Rtav   = gmx::invsixthroot(Rtav_6[res]);
         }
         else
         {

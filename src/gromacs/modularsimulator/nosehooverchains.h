@@ -128,9 +128,13 @@ public:
     bool isAtFullCouplingTimeStep() const;
 
     //! ICheckpointHelperClient write checkpoint implementation
-    void saveCheckpointState(std::optional<WriteCheckpointData> checkpointData, const t_commrec* cr) override;
+    void saveCheckpointState(std::optional<WriteCheckpointData> checkpointData,
+                             const MpiComm&                     mpiComm,
+                             gmx_domdec_t*                      dd) override;
     //! ICheckpointHelperClient read checkpoint implementation
-    void restoreCheckpointState(std::optional<ReadCheckpointData> checkpointData, const t_commrec* cr) override;
+    void restoreCheckpointState(std::optional<ReadCheckpointData> checkpointData,
+                                const MpiComm&                    mpiComm,
+                                gmx_domdec_t*                     dd) override;
     //! ICheckpointHelperClient key implementation
     const std::string& clientID() override;
 
@@ -253,16 +257,16 @@ public:
      */
     static ISimulatorElement* getElementPointerImpl(LegacySimulatorData* legacySimulatorData,
                                                     ModularSimulatorAlgorithmBuilderHelper* builderHelper,
-                                                    StatePropagatorData*        statePropagatorData,
-                                                    EnergyData*                 energyData,
+                                                    StatePropagatorData* statePropagatorData,
+                                                    EnergyData*          energyData,
                                                     FreeEnergyPerturbationData* freeEnergyPerturbationData,
                                                     GlobalCommunicationHelper* globalCommunicationHelper,
-                                                    ObservablesReducer*        observablesReducer,
-                                                    NhcUsage                   nhcUsage,
-                                                    Offset                     offset,
-                                                    UseFullStepKE              useFullStepKE,
-                                                    ScheduleOnInitStep         scheduleOnInitStep,
-                                                    const PropagatorTag&       propagatorTag);
+                                                    ObservablesReducer*  observablesReducer,
+                                                    NhcUsage             nhcUsage,
+                                                    Offset               offset,
+                                                    UseFullStepKE        useFullStepKE,
+                                                    ScheduleOnInitStep   scheduleOnInitStep,
+                                                    const PropagatorTag& propagatorTag);
 
 private:
     //! Propagate the NHC degrees of freedom

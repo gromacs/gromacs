@@ -68,6 +68,10 @@ mark_as_advanced(GMX_USE_SIMD_KERNELS)
 # pulling is using the muparser target as well, so detect it early
 gmx_manage_muparser()
 
+# The following functions and macros called here sets up the "module_x_active" variable before
+# including the directories with their own modules
+gmx_manage_plumed()
+
 # Add these contents first because linking their tests can take a lot
 # of time, so we want lots of parallel work still available after
 # linking starts.
@@ -82,6 +86,7 @@ add_subdirectory(commandline)
 add_subdirectory(domdec)
 add_subdirectory(ewald)
 add_subdirectory(fft)
+add_subdirectory(fmm)
 add_subdirectory(gpu_utils)
 add_subdirectory(hardware)
 add_subdirectory(linearalgebra)
@@ -95,6 +100,7 @@ add_subdirectory(options)
 add_subdirectory(pbcutil)
 add_subdirectory(random)
 add_subdirectory(restraint)
+add_subdirectory(serialization)
 add_subdirectory(tables)
 add_subdirectory(taskassignment)
 add_subdirectory(timing)
@@ -132,12 +138,22 @@ tmpi_get_source_list(THREAD_MPI_SOURCES ${PROJECT_SOURCE_DIR}/src/external/threa
 add_library(thread_mpi OBJECT ${THREAD_MPI_SOURCES})
 target_compile_definitions(thread_mpi PRIVATE HAVE_CONFIG_H)
 target_compile_definitions(thread_mpi PRIVATE TMPI_EXPORTS TMPI_USE_VISIBILITY)
+option(GMX_TMPI_DEBUG "On for debugging output from thread-MPI" OFF)
+mark_as_advanced(GMX_TMPI_DEBUG)
+if (GMX_TMPI_DEBUG)
+    target_compile_definitions(thread_mpi PRIVATE TMPI_DEBUG)
+endif()
+option(GMX_TMPI_TRACE "On for tracing of MPI calls from thread-MPI" OFF)
+mark_as_advanced(GMX_TMPI_TRACE)
+if (GMX_TMPI_TRACE)
+    target_compile_definitions(thread_mpi PRIVATE TMPI_TRACE)
+endif()
 if(CYGWIN)
     # Needs POSIX-isms for strdup, not just std-isms
     target_compile_definitions(thread_mpi PRIVATE _POSIX_C_SOURCE=200809L)
 endif()
 gmx_target_compile_options(thread_mpi)
-if (WIN32)
+if (MSVC)
     gmx_target_warning_suppression(thread_mpi /wd4996 HAS_NO_MSVC_UNSAFE_FUNCTION)
 endif()
 list(APPEND libgromacs_object_library_dependencies thread_mpi)
@@ -171,7 +187,6 @@ if (GMX_GPU_CUDA)
     if(GMX_USE_cuFFTMp)
         target_include_directories(libgromacs PRIVATE ${cuFFTMp_INCLUDE_DIR})
         target_link_libraries(libgromacs PRIVATE ${cuFFTMp_LIBRARY})
-        target_include_directories(libgromacs PRIVATE ${cuFFTMp_INCLUDE_DIR})
     else()
         target_link_libraries(libgromacs PRIVATE CUDA::cufft)
     endif()
@@ -223,9 +238,6 @@ if (TARGET Heffte::Heffte)
     target_link_libraries(libgromacs PRIVATE Heffte::Heffte)
 endif()
 
-if(GMX_GPU_FFT_HIPFFT)
-    target_link_libraries(libgromacs PRIVATE roc::rocfft hip::hipfft)
-endif()
 if(GMX_GPU_FFT_VKFFT)
     target_link_libraries(libgromacs PRIVATE VkFFT)
 endif()
@@ -233,26 +245,22 @@ if(GMX_GPU_FFT_ROCFFT)
     target_link_libraries(libgromacs PRIVATE roc::rocfft)
 endif()
 
-if(GMX_GPU_FFT_ONEMKL)
-    # Availability of targets was checked in gmxManageOneMKL.cmake.
-    # Linking directly against backend library to avoid double-free issue
-    # encountered with cufft backend and urTearDown for the DPC++ runtime.
-    # See #5000.
-    if("${SYCL_CXX_FLAGS_EXTRA}" MATCHES "fsycl-targets=.*(nvptx64|nvidia_gpu)")
-        target_link_libraries(libgromacs PRIVATE MKL::onemkl_dft_cufft)
-        target_compile_definitions(libgromacs PRIVATE ONEMKL_USING_CUFFT_BACKEND)
-    elseif("${SYCL_CXX_FLAGS_EXTRA}" MATCHES "fsycl-targets=.*(amdgcn|amd_gpu)")
-        target_link_libraries(libgromacs PRIVATE MKL::onemkl_dft_rocfft)
-        target_compile_definitions(libgromacs PRIVATE ONEMKL_USING_ROCFFT_BACKEND)
-    else()
-        target_link_libraries(libgromacs PRIVATE MKL::onemkl_dft_mklgpu)
-        target_compile_definitions(libgromacs PRIVATE ONEMKL_USING_MKLGPU_BACKEND)
-    endif()
-    # Linking directly against the backend seems to additionally require
-    # manually including the required headers.
-    get_target_property(ONEMKL_DFT_INCLUDE_DIR MKL::onemkl INTERFACE_INCLUDE_DIRECTORIES)
-    target_include_directories(libgromacs PRIVATE ${ONEMKL_DFT_INCLUDE_DIR})
+if(GMX_GPU_FFT_ONEMATH)
+    target_link_libraries(libgromacs PRIVATE ONEMATH::onemath)
 endif()
+
+if (GMX_LIB_MPI)
+    # If GROMACS should link against an MPI library, the following
+    # MPI::MPI_CXX CMake target must be defined by the call to
+    # find_package(MPI). MPI::MPI_CXX might be defined also when
+    # GMXAPI wants one, but in that case libgromacs should not link to
+    # it.
+    target_link_libraries(libgromacs PRIVATE
+        $<$<LINK_LANGUAGE:CXX>:MPI::MPI_CXX>
+        $<$<LINK_LANGUAGE:CUDA>:MPI::MPI_CXX>
+        $<$<LINK_LANGUAGE:HIP>:MPI::MPI_CXX>
+        )
+endif ()
 
 target_link_libraries(libgromacs PRIVATE $<BUILD_INTERFACE:common>)
 # As long as the libgromacs target has source files that reference headers from
@@ -343,10 +351,8 @@ endif()
 # TODO Perhaps generalize this for all headers from src/external
 target_include_directories(libgromacs SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/src/external)
 
-if(SIMD_AVX_512_CXX_SUPPORTED AND NOT ("${GMX_SIMD_ACTIVE}" STREQUAL "AVX_512_KNL"))
+if(SIMD_AVX_512_CXX_SUPPORTED)
     # Since we might be overriding -march=core-avx2, add a flag so we don't warn for this specific file.
-    # On KNL this can cause illegal instruction because the compiler might use non KNL AVX instructions
-    # with the SIMD_AVX_512_CXX_FLAGS flags.
     set_source_files_properties(hardware/identifyavx512fmaunits.cpp PROPERTIES COMPILE_FLAGS "${SIMD_AVX_512_CXX_FLAGS} ${CXX_NO_UNUSED_OPTION_WARNING_FLAGS}")
 endif()
 
@@ -387,9 +393,13 @@ if (GMX_INTERNAL_XDR)
     target_include_directories(libgromacs SYSTEM PRIVATE ${_xdr_dir})
 endif()
 
+# This can move to a suitable OBJECT target when one exists
+set_source_files_properties(hardware/simd_support.cpp PROPERTIES COMPILE_FLAGS
+    "-DGMX_SIMD_ENUM_VALUE=\"${GMX_SIMD_ENUM_VALUE}\""
+    )
+
 target_link_libraries(libgromacs
                       PRIVATE
-                      ${EXTRAE_LIBRARIES}
                       ${GMX_EXTRA_LIBRARIES}
                       ${GMX_COMMON_LIBRARIES}
                       ${FFT_LIBRARIES} ${LINEAR_ALGEBRA_LIBRARIES}
@@ -417,6 +427,7 @@ target_link_libraries(libgromacs PRIVATE
                       $<BUILD_INTERFACE:ewald>
                       $<BUILD_INTERFACE:fft>
                       $<BUILD_INTERFACE:fileio>
+                      $<BUILD_INTERFACE:fmm>
                       $<BUILD_INTERFACE:gmxana>
                       $<BUILD_INTERFACE:gmxlib>
                       $<BUILD_INTERFACE:gmxpreprocess>
@@ -442,6 +453,7 @@ target_link_libraries(libgromacs PRIVATE
                       $<BUILD_INTERFACE:random>
                       $<BUILD_INTERFACE:restraint>
                       $<BUILD_INTERFACE:selection>
+                      $<BUILD_INTERFACE:serialization>
                       $<BUILD_INTERFACE:simd>
                       $<BUILD_INTERFACE:statistics>
                       $<BUILD_INTERFACE:swap>
@@ -465,9 +477,12 @@ set_target_properties(libgromacs PROPERTIES
 
 gmx_manage_lmfit()
 target_link_libraries(libgromacs PRIVATE lmfit)
-target_link_libraries(libgromacs PRIVATE muparser::muparser)
+if (HAVE_MUPARSER)
+    target_link_libraries(libgromacs PRIVATE muparser::muparser)
+endif()
 gmx_manage_colvars()
 target_link_libraries(libgromacs PRIVATE colvars)
+target_link_libraries(libgromacs PRIVATE plumedgmx)
 
 # Make sure we fix "everything" found by compilers that support that
 gmx_warn_on_everything(libgromacs)
@@ -498,6 +513,16 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
      /wd6246  #hides declaration
      >
    )
+endif()
+# Intel LLVM 2021.2 and later defaults to no-finite-math which isn't OK
+# for GROMACS and its dependencies (muParser and GTest).
+if(GMX_INTEL_LLVM)
+    if (WIN32)
+        set (_flag "/fp:precise")
+    else()
+        set(_flag "-fno-finite-math-only")
+    endif()
+    gmx_target_warning_suppression(libgromacs ${_flag} HAS_NO_FINITE_MATH_ONLY)
 endif()
 
 if (GMX_CLANG_TIDY)

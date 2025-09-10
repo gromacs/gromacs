@@ -6,25 +6,35 @@ clang-tidy:configure-mr:
     - .use-clang:base
   rules:
     - !reference [.rules:merge-requests, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.4.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-llvm-18-cuda-12.1.0
   variables:
-    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
-    COMPILER_MAJOR_VERSION: 11
+    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
+    COMPILER_MAJOR_VERSION: 18
     BUILD_DIR: build-clang-tidy
     CMAKE_EXTRA_OPTIONS: -DCLANG_TIDY=clang-tidy-$COMPILER_MAJOR_VERSION -DGMX_CLANG_TIDY=ON -DGMX_COMPILER_WARNINGS=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
+# This configuration prepares to test "all" files in a GROMACS build
+# with clang-tidy.  Such runs take a long time, so we deliberately
+# configure this post-merge per-commit configuration without many
+# "external" things and SIMD kernels. Those change rarely. When we do
+# change them, the pre-submit clang-tidy build will check them.
+#
+# TODO: rebuild lint container with system XDR so this configuration
+#       avoids compiling the internal version
+# TODO: GROMACS currently builds and links all of thread-MPI even
+#       when configured without it. Reduce this footprint.
 clang-tidy:configure-schedule:
   extends:
     - .gromacs:base:configure
     - .use-clang:base
   rules:
     - !reference [.rules:post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.4.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-llvm-18-cuda-12.1.0
   variables:
-    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
-    COMPILER_MAJOR_VERSION: 11
+    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
+    COMPILER_MAJOR_VERSION: 18
     BUILD_DIR: build-clang-tidy
-    CMAKE_EXTRA_OPTIONS: -DCLANG_TIDY=clang-tidy-$COMPILER_MAJOR_VERSION -DGMX_CLANG_TIDY=ON -DGMX_COMPILER_WARNINGS=ON
+    CMAKE_EXTRA_OPTIONS: -DCLANG_TIDY=clang-tidy-$COMPILER_MAJOR_VERSION -DGMX_CLANG_TIDY=ON -DGMX_COMPILER_WARNINGS=ON -DGMX_THREAD_MPI=off -DGMX_USE_LMFIT=none -DGMX_USE_COLVARS=none -DGMX_USE_MUPARSER=none -DGMX_USE_TNG=off -DGMX_USE_SIMD_KERNELS=off
 
 clang-tidy:configure-schedule-cuda:
   extends:
@@ -33,12 +43,12 @@ clang-tidy:configure-schedule-cuda:
     - .use-cuda
   rules:
     - !reference [.rules:post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.4.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-llvm-18-cuda-12.1.0
   variables:
-    CMAKE: cmake
-    COMPILER_MAJOR_VERSION: 11
+    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
+    COMPILER_MAJOR_VERSION: 18
     BUILD_DIR: build-clang-tidy
-    CMAKE_EXTRA_OPTIONS: -DCLANG_TIDY=clang-tidy-$COMPILER_MAJOR_VERSION -DGMX_CLANG_TIDY=ON -DGMX_COMPILER_WARNINGS=ON -DGMX_CLANG_CUDA=ON
+    CMAKE_EXTRA_OPTIONS: -DCLANG_TIDY=clang-tidy-$COMPILER_MAJOR_VERSION -DGMX_CLANG_TIDY=ON -DGMX_COMPILER_WARNINGS=ON -DGMX_CLANG_CUDA=ON -DGMX_USE_SIMD_KERNELS=OFF
 
 clang-tidy:build:
   extends:
@@ -47,11 +57,11 @@ clang-tidy:build:
   stage: source-check
   rules:
     - !reference [.rules:post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.4.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-llvm-18-cuda-12.1.0
   needs:
     - job: clang-tidy:configure-schedule
   variables:
-    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
+    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     BUILD_DIR: build-clang-tidy
 
 clang-tidy:build-cuda:
@@ -61,13 +71,24 @@ clang-tidy:build-cuda:
   stage: source-check
   rules:
     - !reference [.rules:post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.4.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-llvm-18-cuda-12.1.0
   needs:
     - job: clang-tidy:configure-schedule-cuda
   variables:
-    CMAKE: cmake
+    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     BUILD_DIR: build-clang-tidy
+  script:
+    # Don't use the standard build script because clang-18 can't compile
+    # several of our source files. Since we don't need the clang-tidy+cuda
+    # build to link, we omit those files and also don't link any executables
+    - set -e
+    - cd $BUILD_DIR
+    - $CMAKE --build . --target libgromacs -- -j$KUBERNETES_CPU_LIMIT
+    # Remove object files to minimize artifact size
+    - find . -mindepth 1 -name '*.o' ! -type l -printf '%p\n' -delete 2>&1 > remove-build-objects.log
 
+# This test has logic so that only the files changed in this merge request
+# are examined by clang-tidy
 clang-tidy:test:
   extends:
     - .gromacs:base:build
@@ -75,12 +96,12 @@ clang-tidy:test:
     - !reference [.rules:merge-requests, rules]
   allow_failure: true
   stage: source-check
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.4.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-llvm-18-cuda-12.1.0
   needs:
     - job: clang-tidy:configure-mr
   variables:
-    CMAKE: /usr/local/cmake-3.18.4/bin/cmake
-    COMPILER_MAJOR_VERSION: 11
+    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
+    COMPILER_MAJOR_VERSION: 18
     BUILD_DIR: build-clang-tidy
     KUBERNETES_CPU_LIMIT: 4
     KUBERNETES_CPU_REQUEST: 2
@@ -110,9 +131,9 @@ clang-format:
     - !reference [.rules:merge-requests, rules]
   cache: {}
   stage: pre-build
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.4.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-llvm-18-cuda-12.1.0
   variables:
-    COMPILER_MAJOR_VERSION: 11
+    COMPILER_MAJOR_VERSION: 18
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
     KUBERNETES_MEMORY_REQUEST: 2Gi
@@ -146,9 +167,9 @@ python-format:
     - !reference [.rules:merge-requests, rules]
   cache: {}
   stage: pre-build
-  image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-llvm-9-docs
+  image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-24.04-llvm-19-docs
   variables:
-    COMPILER_MAJOR_VERSION: 9
+    COMPILER_MAJOR_VERSION: 19
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
     KUBERNETES_MEMORY_REQUEST: 2Gi
@@ -173,7 +194,7 @@ copyright-check:
     - !reference [.rules:merge-requests, rules]
   cache: {}
   stage: pre-build
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-20.04-llvm-11-cuda-11.4.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-24.04-llvm-19-docs
   variables:
     KUBERNETES_CPU_LIMIT: 1
     KUBERNETES_CPU_REQUEST: 1
@@ -243,6 +264,8 @@ linkchecker:
   rules:
     - !reference [.rules:nightly-not-for-release, rules]
   dependencies:
+    - webpage:build
+  needs:
     - webpage:build
   variables:
     KUBERNETES_CPU_LIMIT: 1

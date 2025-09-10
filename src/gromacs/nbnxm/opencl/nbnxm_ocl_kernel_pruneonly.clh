@@ -64,15 +64,15 @@ nbnxn_kernel_prune_rolling_opencl
 #endif
         (cl_nbparam_params_t nbparam_params,
          const __global float4* restrict xq,
-         const __global float* restrict  shift_vec,
+         const __global float* restrict shift_vec,
          const __global nbnxn_sci_t* pl_sci,
          __global nbnxn_cj_packed_t* pl_cjPacked,
 #if !defined HAVE_FRESH_LIST
          const
 #endif
          __global unsigned int* restrict prePrunedImask,
-         int                             numParts,
-         int                             part,
+         int             numParts,
+         int             part,
          __local float4* xib)
 {
     /* convenience variables */
@@ -88,7 +88,7 @@ nbnxn_kernel_prune_rolling_opencl
 #if NTHREAD_Z == 1
     const int tidxz = 0;
 #else
-    const int          tidxz         = get_local_id(2);
+    const int tidxz = get_local_id(2);
 #endif
     const int bidx = get_group_id(0);
     const int widx = tidx / WARP_SIZE;
@@ -96,7 +96,7 @@ nbnxn_kernel_prune_rolling_opencl
 #ifdef HAVE_FRESH_LIST
     const bool haveFreshList = true;
 #else
-    const bool         haveFreshList = false;
+    const bool haveFreshList = false;
 #endif
 
     // TODO move these consts to utils and unify their use with the nonbonded kernels
@@ -132,8 +132,8 @@ nbnxn_kernel_prune_rolling_opencl
         warp_any[warpVoteSlot] = 0;
     }
 #else
-    __local int* const warp_any      = 0;
-    const int          warpVoteSlot  = 0;
+    __local int* const warp_any     = 0;
+    const int          warpVoteSlot = 0;
 #endif
 #undef LOCAL_OFFSET
 

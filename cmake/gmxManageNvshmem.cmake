@@ -55,18 +55,17 @@ if(GMX_NVSHMEM)
     target_link_libraries(nvshmem_host_lib INTERFACE CUDA::nvml CUDA::cuda_driver)
 
     add_library(nvshmem_device_lib STATIC IMPORTED GLOBAL)
-    # cuda separable compilation is properly supported from 3.20.1
-    # fix - https://gitlab.kitware.com/cmake/cmake/-/merge_requests/5962
-    cmake_minimum_required(VERSION 3.20.1)
     set_target_properties(nvshmem_device_lib PROPERTIES IMPORTED_LOCATION ${NVSHMEM_DEVICE_LIBS})
     target_include_directories(nvshmem_device_lib INTERFACE $<BUILD_INTERFACE:${NVSHMEM_INCLUDE}>)
-    target_include_directories(nvshmem_device_lib INTERFACE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
     set_target_properties(nvshmem_device_lib PROPERTIES IMPORTED_LINK_INTERFACE_LANGUAGES CUDA)
 
-    # NVSHMEM only supports SM 60+ so we filter all the archs below SM 60 from GMX_CUDA_NVCC_GENCODE_FLAGS
+    # Since NVSHMEM 3.06, minium device support is Volta (SM 70+) so
+    # we filter all the archs below SM 70 from GMX_CUDA_NVCC_GENCODE_FLAGS
     string(REPLACE "35;" ""  GMX_CUDA_NVCC_GENCODE_FLAGS "${GMX_CUDA_NVCC_GENCODE_FLAGS}")
     string(REPLACE "37;" ""  GMX_CUDA_NVCC_GENCODE_FLAGS "${GMX_CUDA_NVCC_GENCODE_FLAGS}")
     string(REPLACE "50;" ""  GMX_CUDA_NVCC_GENCODE_FLAGS "${GMX_CUDA_NVCC_GENCODE_FLAGS}")
     string(REPLACE "52;" ""  GMX_CUDA_NVCC_GENCODE_FLAGS "${GMX_CUDA_NVCC_GENCODE_FLAGS}")
     string(REPLACE "53;" ""  GMX_CUDA_NVCC_GENCODE_FLAGS "${GMX_CUDA_NVCC_GENCODE_FLAGS}")
+    string(REPLACE "60;" ""  GMX_CUDA_NVCC_GENCODE_FLAGS "${GMX_CUDA_NVCC_GENCODE_FLAGS}")
+    string(REPLACE "61;" ""  GMX_CUDA_NVCC_GENCODE_FLAGS "${GMX_CUDA_NVCC_GENCODE_FLAGS}")
 endif()

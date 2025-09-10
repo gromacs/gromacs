@@ -58,7 +58,6 @@
 #include "gromacs/fileio/writeps.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/math/functions.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -71,6 +70,7 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/vectypes.h"
 
 struct gmx_output_env_t;
 
@@ -475,7 +475,7 @@ static void draw_boxes(t_psdata* ps, real x0, real y0, real w, gmx::ArrayRef<t_m
         if (!psr->bYonce || m == halfway)
         {
             std::string mylab;
-            if (strlen(psr->Y.label) > 0)
+            if (std::strlen(psr->Y.label) > 0)
             {
                 mylab = psr->Y.label;
             }
@@ -497,7 +497,7 @@ static void draw_boxes(t_psdata* ps, real x0, real y0, real w, gmx::ArrayRef<t_m
     }
     /* Label on X-axis */
     std::string mylab;
-    if (strlen(psr->X.label) > 0)
+    if (std::strlen(psr->X.label) > 0)
     {
         mylab = psr->X.label;
     }
@@ -1513,28 +1513,28 @@ int gmx_xpm2ps(int argc, char* argv[])
         { "-diag", FALSE, etENUM, { diag }, "Diagonal" },
         { "-size", FALSE, etREAL, { &size }, "Horizontal size of the matrix in ps units" },
         { "-bx",
-          FALSE,
-          etREAL,
-          { &boxx },
-          "Element x-size, overrides [TT]-size[tt] (also y-size when [TT]-by[tt] is not set)" },
+              FALSE,
+              etREAL,
+              { &boxx },
+              "Element x-size, overrides [TT]-size[tt] (also y-size when [TT]-by[tt] is not set)" },
         { "-by", FALSE, etREAL, { &boxy }, "Element y-size" },
         { "-rainbow", FALSE, etENUM, { rainbow }, "Rainbow colors, convert white to" },
         { "-gradient",
-          FALSE,
-          etRVEC,
-          { grad },
-          "Re-scale colormap to a smooth gradient from white {1,1,1} to {r,g,b}" },
+              FALSE,
+              etRVEC,
+              { grad },
+              "Re-scale colormap to a smooth gradient from white {1,1,1} to {r,g,b}" },
         { "-skip", FALSE, etINT, { &skip }, "only write out every nr-th row and column" },
         { "-zeroline",
-          FALSE,
-          etBOOL,
-          { &bZeroLine },
-          "insert line in [REF].xpm[ref] matrix where axis label is zero" },
+              FALSE,
+              etBOOL,
+              { &bZeroLine },
+              "insert line in [REF].xpm[ref] matrix where axis label is zero" },
         { "-legoffset",
-          FALSE,
-          etINT,
-          { &mapoffset },
-          "Skip first N colors from [REF].xpm[ref] file for the legend" },
+              FALSE,
+              etINT,
+              { &mapoffset },
+              "Skip first N colors from [REF].xpm[ref] file for the legend" },
         { "-combine", FALSE, etENUM, { combine }, "Combine two matrices" },
         { "-cmin", FALSE, etREAL, { &cmin }, "Minimum for combination output" },
         { "-cmax", FALSE, etREAL, { &cmax }, "Maximum for combination output" }

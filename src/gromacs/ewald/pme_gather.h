@@ -47,13 +47,35 @@ template<typename T>
 class ArrayRef;
 }
 
-void gather_f_bsplines(const struct gmx_pme_t*   pme,
+/*! Gather the forces from the grid
+ *
+ * \param[in] pme          General PME settings
+ * \param[in] grid         The grid with potential values to gather the forces from
+ * \param[in] clearForces  Whether the forces in \p atc should be cleared (set instead of accumulate)
+ * \param[in,out] atc      Contains atom indices, charges and force output buffer
+ * \param[in] spline       The spline coefficients for the atoms
+ * \param[in] scaleFactor  Factor to scale the forces with
+ */
+void gather_f_bsplines(const gmx_pme_t&          pme,
                        gmx::ArrayRef<const real> grid,
-                       gmx_bool                  bClearF,
-                       const PmeAtomComm*        atc,
-                       const splinedata_t*       spline,
-                       real                      scale);
+                       bool                      clearForces,
+                       PmeAtomComm*              atc,
+                       const splinedata_t&       spline,
+                       real                      scaleFactor);
 
-real gather_energy_bsplines(struct gmx_pme_t* pme, gmx::ArrayRef<const real> grid, PmeAtomComm* atc);
+/*! Computes and returns the potential energy of the PME mesh part
+ *
+ * Computes and return the potential energy of the PME mesh part using the potential values
+ * stored in \p pme and the charges \p atc. This is only useful when the charges in \p atc
+ * are different from those used to compute the potential (otherwise is simpler and
+ * computationally cheaper to get the potential from the solve function).
+ *
+ * \note: Does not support MPI or OpenMP parallelization (is asserted)
+ *
+ * \param[in] pme   General PME settings
+ * \param[in] grid  The grid with potential values to gather the forces from
+ * \param[in] atc   Contains atom indices, charges and force output buffer
+ */
+real gather_energy_bsplines(const gmx_pme_t& pme, gmx::ArrayRef<const real> grid, const PmeAtomComm& atc);
 
 #endif

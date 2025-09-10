@@ -68,48 +68,26 @@ void gmx_is_double_precision() {}
 void gmx_is_single_precision() {}
 #endif
 
-const char* getGpuImplementationString()
+namespace gmx
 {
-    // Some flavors of clang complain about unreachable returns.
-    CLANG_DIAGNOSTIC_IGNORE("-Wunreachable-code-return")
-    if (GMX_GPU)
+
+std::unordered_map<std::string, std::string> versionDescriptions()
+{
+    std::unordered_map<std::string, std::string> descriptions;
+    // Note that these string keys must be kept in sync with
+    // those in mdrun/binary_information.cpp
+    descriptions["GROMACS version"] = gmx_version();
+    const char* const git_hash      = gmx_version_git_full_hash();
+    if (git_hash[0] != '\0')
     {
-        if (GMX_GPU_CUDA)
-        {
-            return "CUDA";
-        }
-        else if (GMX_GPU_OPENCL)
-        {
-            return "OpenCL";
-        }
-        else if (GMX_GPU_HIP)
-        {
-            return "HIP (not implemented yet}";
-        }
-        else if (GMX_GPU_SYCL)
-        {
-            if (GMX_SYCL_DPCPP)
-            {
-                return "SYCL (DPCPP)";
-            }
-            else if (GMX_SYCL_HIPSYCL)
-            {
-                return "SYCL (hipSYCL)";
-            }
-            else
-            {
-                return "SYCL (unknown)";
-            }
-        }
-        else
-        {
-            GMX_RELEASE_ASSERT(false, "Unknown GPU configuration");
-            return "impossible";
-        }
+        descriptions["GIT SHA1 hash"] = git_hash;
     }
-    else
+    const char* const base_hash = gmx_version_git_central_base_hash();
+    if (base_hash[0] != '\0')
     {
-        return "disabled";
+        descriptions["Branched from"] = base_hash;
     }
-    CLANG_DIAGNOSTIC_RESET
+    return descriptions;
 }
+
+} // namespace gmx

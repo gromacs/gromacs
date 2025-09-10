@@ -52,9 +52,7 @@
 #include <filesystem>
 #include <vector>
 
-#include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/functions.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/forcerec.h"
@@ -69,6 +67,7 @@
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/vec.h"
 
 struct gmx_wallcycle;
 
@@ -77,18 +76,18 @@ namespace
 
 /*! \brief returns dx, rdist, and dpdl for functions posres() and fbposres()
  */
-void posres_dx(const rvec      x,
-               const rvec      pos0A,
-               const rvec      pos0B,
-               const rvec      comA_sc,
-               const rvec      comB_sc,
-               real            lambda,
-               const t_pbc*    pbc,
-               RefCoordScaling refcoord_scaling,
-               int             npbcdim,
-               rvec            dx,
-               rvec            rdist,
-               rvec            dpdl)
+void posres_dx(const rvec       x,
+               const rvec       pos0A,
+               const rvec       pos0B,
+               const gmx::RVec& centerOfMassAScaled,
+               const gmx::RVec& centerOfMassBScaled,
+               real             lambda,
+               const t_pbc&     pbc,
+               RefCoordScaling  refcoord_scaling,
+               int              npbcdim,
+               rvec             dx,
+               rvec             rdist,
+               rvec             dpdl)
 {
     int  m, d;
     real posA, posB, L1, ref = 0.;
@@ -111,22 +110,22 @@ void posres_dx(const rvec      x,
                     break;
                 case RefCoordScaling::All:
                     /* Box relative coordinates are stored for dimensions with pbc */
-                    posA *= pbc->box[m][m];
-                    posB *= pbc->box[m][m];
+                    posA *= pbc.box[m][m];
+                    posB *= pbc.box[m][m];
                     assert(npbcdim <= DIM);
                     for (d = m + 1; d < npbcdim && d < DIM; d++)
                     {
-                        posA += pos0A[d] * pbc->box[d][m];
-                        posB += pos0B[d] * pbc->box[d][m];
+                        posA += pos0A[d] * pbc.box[d][m];
+                        posB += pos0B[d] * pbc.box[d][m];
                     }
                     ref      = L1 * posA + lambda * posB;
                     rdist[m] = 0;
                     dpdl[m]  = posB - posA;
                     break;
                 case RefCoordScaling::Com:
-                    ref      = L1 * comA_sc[m] + lambda * comB_sc[m];
+                    ref      = L1 * centerOfMassAScaled[m] + lambda * centerOfMassBScaled[m];
                     rdist[m] = L1 * posA + lambda * posB;
-                    dpdl[m]  = comB_sc[m] - comA_sc[m] + posB - posA;
+                    dpdl[m]  = centerOfMassBScaled[m] - centerOfMassAScaled[m] + posB - posA;
                     break;
                 default: gmx_fatal(FARGS, "No such scaling method implemented");
             }
@@ -144,14 +143,7 @@ void posres_dx(const rvec      x,
         pos[m] = ref + rdist[m];
     }
 
-    if (pbc)
-    {
-        pbc_dx(pbc, x, pos, dx);
-    }
-    else
-    {
-        rvec_sub(x, pos, dx);
-    }
+    pbc_dx(&pbc, x, pos, dx);
 }
 
 /*! \brief Computes forces and potential for flat-bottom cylindrical restraints.
@@ -194,54 +186,62 @@ real do_fbposres_cylinder(int fbdim, rvec fm, rvec dx, real rfb, real kk, gmx_bo
  *
  * Returns the flat-bottomed potential. Same PBC treatment as in
  * normal position restraints */
-real fbposres(int                   nbonds,
-              const t_iatom         forceatoms[],
-              const t_iparams       forceparams[],
-              const rvec            x[],
-              gmx::ForceWithVirial* forceWithVirial,
-              const t_pbc*          pbc,
-              RefCoordScaling       refcoord_scaling,
-              PbcType               pbcType,
-              const rvec            com)
+real fbposres(int                                       nbonds,
+              const t_iatom                             forceatoms[],
+              const t_iparams                           forceparams[],
+              const rvec                                x[],
+              rvec4*                                    forces,
+              gmx::RVec*                                virial,
+              const t_pbc&                              pbc,
+              RefCoordScaling                           refcoord_scaling,
+              PbcType                                   pbcType,
+              const gmx::ArrayRef<const gmx::RVec>      centersOfMass,
+              const gmx::ArrayRef<const unsigned short> refScaleComIndices,
+              gmx::ArrayRef<gmx::RVec>                  centersOfMassScaled)
 /* compute flat-bottomed positions restraints */
 {
-    int              i, ai, m, d, type, npbcdim = 0, fbdim;
-    const t_iparams* pr;
-    real             kk, v;
-    real             dr, dr2, rfb, rfb2, fact;
-    rvec             com_sc, rdist, dx, dpdl, fm;
-    gmx_bool         bInvert;
+    int  fbdim;
+    real kk, v;
+    real dr, dr2, rfb, rfb2, fact;
+    rvec rdist, dx, dpdl, fm;
+    bool bInvert;
 
-    npbcdim = numPbcDimensions(pbcType);
-    GMX_ASSERT((pbcType == PbcType::No) == (npbcdim == 0), "");
+    const int npbcdim = numPbcDimensions(pbcType);
+
     if (refcoord_scaling == RefCoordScaling::Com)
     {
-        clear_rvec(com_sc);
-        for (m = 0; m < npbcdim; m++)
         {
-            assert(npbcdim <= DIM);
-            for (d = m; d < npbcdim; d++)
+            for (gmx::Index comGroup = 0; comGroup < gmx::ssize(centersOfMass); ++comGroup)
             {
-                com_sc[m] += com[d] * pbc->box[d][m];
+                for (int m = 0; m < npbcdim; m++)
+                {
+                    centersOfMassScaled[comGroup][m] = 0;
+                    for (int d = m; d < npbcdim; d++)
+                    {
+                        centersOfMassScaled[comGroup][m] += centersOfMass[comGroup][d] * pbc.box[d][m];
+                    }
+                }
             }
         }
     }
 
-    rvec* f      = as_rvec_array(forceWithVirial->force_.data());
-    real  vtot   = 0.0;
-    rvec  virial = { 0 };
-    for (i = 0; (i < nbonds);)
+    real vtot = 0.0;
+    for (int i = 0; (i < nbonds);)
     {
-        type = forceatoms[i++];
-        ai   = forceatoms[i++];
-        pr   = &forceparams[type];
+        const int        type = forceatoms[i++];
+        const int        ai   = forceatoms[i++];
+        const t_iparams& pr   = forceparams[type];
+
+        const auto comGroup = refScaleComIndices.empty() ? 0 : refScaleComIndices[ai];
+        GMX_ASSERT(comGroup <= gmx::ssize(centersOfMassScaled),
+                   "We need sufficient centers of mass, even when not used");
 
         /* same calculation as for normal posres, but with identical A and B states, and lambda==0 */
         posres_dx(x[ai],
                   forceparams[type].fbposres.pos0,
                   forceparams[type].fbposres.pos0,
-                  com_sc,
-                  com_sc,
+                  centersOfMassScaled[comGroup],
+                  centersOfMassScaled[comGroup],
                   0.0,
                   pbc,
                   refcoord_scaling,
@@ -253,8 +253,8 @@ real fbposres(int                   nbonds,
         clear_rvec(fm);
         v = 0.0;
 
-        kk   = pr->fbposres.k;
-        rfb  = pr->fbposres.r;
+        kk   = pr.fbposres.k;
+        rfb  = pr.fbposres.r;
         rfb2 = gmx::square(rfb);
 
         /* with rfb<0, push particle out of the sphere/cylinder/layer */
@@ -265,7 +265,7 @@ real fbposres(int                   nbonds,
             rfb     = -rfb;
         }
 
-        switch (pr->fbposres.geom)
+        switch (pr.fbposres.geom)
         {
             case efbposresSPHERE:
                 /* spherical flat-bottom posres */
@@ -299,7 +299,7 @@ real fbposres(int                   nbonds,
             case efbposresY: /* fbdim=YY */
             case efbposresZ: /* fbdim=ZZ */
                 /* 1D flat-bottom potential */
-                fbdim = pr->fbposres.geom - efbposresX;
+                fbdim = pr.fbposres.geom - efbposresX;
                 dr    = dx[fbdim];
                 if ((dr > rfb && !bInvert) || (0 < dr && dr < rfb && bInvert))
                 {
@@ -316,15 +316,13 @@ real fbposres(int                   nbonds,
 
         vtot += v;
 
-        for (m = 0; (m < DIM); m++)
+        for (int m = 0; (m < DIM); m++)
         {
-            f[ai][m] += fm[m];
+            forces[ai][m] += fm[m];
             /* Here we correct for the pbc_dx which included rdist */
-            virial[m] -= 0.5 * (dx[m] + rdist[m]) * fm[m];
+            (*virial)[m] -= 0.5 * (dx[m] + rdist[m]) * fm[m];
         }
     }
-
-    forceWithVirial->addVirialContribution(virial);
 
     return vtot;
 }
@@ -335,64 +333,71 @@ real fbposres(int                   nbonds,
  * Note that position restraints require a different pbc treatment
  * from other bondeds */
 template<bool computeForce>
-real posres(int                   nbonds,
-            const t_iatom         forceatoms[],
-            const t_iparams       forceparams[],
-            const rvec            x[],
-            gmx::ForceWithVirial* forceWithVirial,
-            const struct t_pbc*   pbc,
-            real                  lambda,
-            real*                 dvdlambda,
-            RefCoordScaling       refcoord_scaling,
-            PbcType               pbcType,
-            const rvec            comA,
-            const rvec            comB)
+real posres(int                                       nbonds,
+            const t_iatom                             forceatoms[],
+            const t_iparams                           forceparams[],
+            const rvec                                x[],
+            rvec4*                                    forces,
+            gmx::RVec*                                virial,
+            const struct t_pbc&                       pbc,
+            real                                      lambda,
+            real*                                     dvdlambda,
+            RefCoordScaling                           refcoord_scaling,
+            const gmx::ArrayRef<const gmx::RVec>      centersOfMassA,
+            const gmx::ArrayRef<const gmx::RVec>      centersOfMassB,
+            const gmx::ArrayRef<const unsigned short> refScaleComIndices,
+            gmx::ArrayRef<gmx::RVec>                  centersOfMassAScaled,
+            gmx::ArrayRef<gmx::RVec>                  centersOfMassBScaled)
 {
-    int              i, ai, m, d, type, npbcdim = 0;
-    const t_iparams* pr;
-    real             kk, fm;
-    rvec             comA_sc, comB_sc, rdist, dpdl, dx;
+    real kk, fm;
+    rvec rdist, dpdl, dx;
 
-    npbcdim = numPbcDimensions(pbcType);
-    GMX_ASSERT((pbcType == PbcType::No) == (npbcdim == 0), "");
+    const int npbcdim = numPbcDimensions(pbc.pbcType);
+
     if (refcoord_scaling == RefCoordScaling::Com)
     {
-        clear_rvec(comA_sc);
-        clear_rvec(comB_sc);
-        for (m = 0; m < npbcdim; m++)
         {
-            assert(npbcdim <= DIM);
-            for (d = m; d < npbcdim; d++)
+            for (gmx::Index comGroup = 0; comGroup < gmx::ssize(centersOfMassA); ++comGroup)
             {
-                comA_sc[m] += comA[d] * pbc->box[d][m];
-                comB_sc[m] += comB[d] * pbc->box[d][m];
+                for (int m = 0; m < npbcdim; m++)
+                {
+                    centersOfMassAScaled[comGroup][m] = 0;
+                    centersOfMassBScaled[comGroup][m] = 0;
+                    for (int d = m; d < npbcdim; d++)
+                    {
+                        centersOfMassAScaled[comGroup][m] += centersOfMassA[comGroup][d] * pbc.box[d][m];
+                        centersOfMassBScaled[comGroup][m] += centersOfMassB[comGroup][d] * pbc.box[d][m];
+                    }
+                }
             }
         }
     }
 
     const real L1 = 1.0 - lambda;
 
-    rvec* f;
     if (computeForce)
     {
-        GMX_ASSERT(forceWithVirial != nullptr, "When forces are requested we need a force object");
-        f = as_rvec_array(forceWithVirial->force_.data());
+        GMX_ASSERT(nbonds == 0 || forces != nullptr,
+                   "When forces are requested we need a force object");
     }
     real vtot = 0.0;
-    /* Use intermediate virial buffer to reduce reduction rounding errors */
-    rvec virial = { 0 };
-    for (i = 0; (i < nbonds);)
+    for (int i = 0; (i < nbonds);)
     {
-        type = forceatoms[i++];
-        ai   = forceatoms[i++];
-        pr   = &forceparams[type];
+        const int        type = forceatoms[i++];
+        const int        ai   = forceatoms[i++];
+        const t_iparams& pr   = forceparams[type];
+
+        const auto comGroup = refScaleComIndices.empty() ? 0 : refScaleComIndices[ai];
+        GMX_ASSERT(comGroup <= gmx::ssize(centersOfMassAScaled)
+                           && comGroup <= gmx::ssize(centersOfMassBScaled),
+                   "We need sufficient centers of mass, even when not used");
 
         /* return dx, rdist, and dpdl */
         posres_dx(x[ai],
                   forceparams[type].posres.pos0A,
                   forceparams[type].posres.pos0B,
-                  comA_sc,
-                  comB_sc,
+                  centersOfMassAScaled[comGroup],
+                  centersOfMassBScaled[comGroup],
                   lambda,
                   pbc,
                   refcoord_scaling,
@@ -401,25 +406,20 @@ real posres(int                   nbonds,
                   rdist,
                   dpdl);
 
-        for (m = 0; (m < DIM); m++)
+        for (int m = 0; (m < DIM); m++)
         {
-            kk = L1 * pr->posres.fcA[m] + lambda * pr->posres.fcB[m];
+            kk = L1 * pr.posres.fcA[m] + lambda * pr.posres.fcB[m];
             fm = -kk * dx[m];
             vtot += 0.5 * kk * dx[m] * dx[m];
-            *dvdlambda += 0.5 * (pr->posres.fcB[m] - pr->posres.fcA[m]) * dx[m] * dx[m] + fm * dpdl[m];
+            *dvdlambda += 0.5 * (pr.posres.fcB[m] - pr.posres.fcA[m]) * dx[m] * dx[m] + fm * dpdl[m];
 
             /* Here we correct for the pbc_dx which included rdist */
             if (computeForce)
             {
-                f[ai][m] += fm;
-                virial[m] -= 0.5 * (dx[m] + rdist[m]) * fm;
+                forces[ai][m] += fm;
+                (*virial)[m] -= 0.5 * (dx[m] + rdist[m]) * fm;
             }
         }
-    }
-
-    if (computeForce)
-    {
-        forceWithVirial->addVirialContribution(virial);
     }
 
     return vtot;
@@ -427,45 +427,46 @@ real posres(int                   nbonds,
 
 } // namespace
 
-void posres_wrapper(t_nrnb*                       nrnb,
-                    const InteractionDefinitions& idef,
-                    const struct t_pbc*           pbc,
-                    const rvec*                   x,
-                    gmx_enerdata_t*               enerd,
-                    gmx::ArrayRef<const real>     lambda,
-                    const t_forcerec*             fr,
-                    gmx::ForceWithVirial*         forceWithVirial)
+real posres_wrapper(gmx::ArrayRef<const int>                  iatoms,
+                    gmx::ArrayRef<const t_iparams>            iparamsPosres,
+                    const t_pbc&                              pbc,
+                    const rvec*                               x,
+                    gmx::ArrayRef<const real>                 lambda,
+                    const t_forcerec*                         fr,
+                    const gmx::ArrayRef<const unsigned short> refScaleComIndices,
+                    gmx::ArrayRef<gmx::RVec>                  centersOfMassScaledBuffer,
+                    gmx::ArrayRef<gmx::RVec>                  centersOfMassBScaledBuffer,
+                    gmx::ArrayRef<rvec4>                      forces,
+                    gmx::RVec*                                virial,
+                    real*                                     dvdl)
 {
-    real v, dvdl;
-
-    dvdl = 0;
-    v    = posres<true>(idef.il[F_POSRES].size(),
-                     idef.il[F_POSRES].iatoms.data(),
-                     idef.iparams_posres.data(),
-                     x,
-                     forceWithVirial,
-                     fr->pbcType == PbcType::No ? nullptr : pbc,
-                     lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Restraint)],
-                     &dvdl,
-                     fr->rc_scaling,
-                     fr->pbcType,
-                     fr->posres_com,
-                     fr->posres_comB);
-    enerd->term[F_POSRES] += v;
-    /* If just the force constant changes, the FEP term is linear,
-     * but if k changes, it is not.
-     */
-    enerd->dvdl_nonlin[FreeEnergyPerturbationCouplingType::Restraint] += dvdl;
-    inc_nrnb(nrnb, eNR_POSRES, gmx::exactDiv(idef.il[F_POSRES].size(), 2));
+    return posres<true>(iatoms.size(),
+                        iatoms.data(),
+                        iparamsPosres.data(),
+                        x,
+                        forces.data(),
+                        virial,
+                        pbc,
+                        lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Restraint)],
+                        dvdl,
+                        fr->rc_scaling,
+                        fr->posresCom,
+                        fr->posresComB,
+                        refScaleComIndices,
+                        centersOfMassScaledBuffer,
+                        centersOfMassBScaledBuffer);
 }
 
-void posres_wrapper_lambda(struct gmx_wallcycle*         wcycle,
-                           const InteractionDefinitions& idef,
-                           const struct t_pbc*           pbc,
-                           const rvec                    x[],
-                           gmx_enerdata_t*               enerd,
-                           gmx::ArrayRef<const real>     lambda,
-                           const t_forcerec*             fr)
+void posres_wrapper_lambda(struct gmx_wallcycle*                     wcycle,
+                           const InteractionDefinitions&             idef,
+                           const t_pbc&                              pbc,
+                           const rvec                                x[],
+                           gmx_enerdata_t*                           enerd,
+                           gmx::ArrayRef<const real>                 lambda,
+                           const t_forcerec*                         fr,
+                           const gmx::ArrayRef<const unsigned short> refScaleComIndices,
+                           gmx::ArrayRef<gmx::RVec>                  centersOfMassScaledBuffer,
+                           gmx::ArrayRef<gmx::RVec>                  centersOfMassBScaledBuffer)
 {
     wallcycle_sub_start_nocount(wcycle, WallCycleSubCounter::Restraints);
 
@@ -477,19 +478,22 @@ void posres_wrapper_lambda(struct gmx_wallcycle*         wcycle,
         const real lambda_dum =
                 (i == 0 ? lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Restraint)]
                         : enerd->foreignLambdaTerms.foreignLambdas(
-                                FreeEnergyPerturbationCouplingType::Restraint)[i - 1]);
+                                  FreeEnergyPerturbationCouplingType::Restraint)[i - 1]);
         const real v = posres<false>(idef.il[F_POSRES].size(),
                                      idef.il[F_POSRES].iatoms.data(),
                                      idef.iparams_posres.data(),
                                      x,
                                      nullptr,
-                                     fr->pbcType == PbcType::No ? nullptr : pbc,
+                                     nullptr,
+                                     pbc,
                                      lambda_dum,
                                      &dvdl,
                                      fr->rc_scaling,
-                                     fr->pbcType,
-                                     fr->posres_com,
-                                     fr->posres_comB);
+                                     fr->posresCom,
+                                     fr->posresComB,
+                                     refScaleComIndices,
+                                     centersOfMassScaledBuffer,
+                                     centersOfMassBScaledBuffer);
         foreignTerms.accumulate(i, FreeEnergyPerturbationCouplingType::Restraint, v, dvdl);
     }
     wallcycle_sub_stop(wcycle, WallCycleSubCounter::Restraints);
@@ -497,25 +501,26 @@ void posres_wrapper_lambda(struct gmx_wallcycle*         wcycle,
 
 /*! \brief Helper function that wraps calls to fbposres for
     free-energy perturbation */
-void fbposres_wrapper(t_nrnb*                       nrnb,
-                      const InteractionDefinitions& idef,
-                      const struct t_pbc*           pbc,
-                      const rvec*                   x,
-                      gmx_enerdata_t*               enerd,
-                      const t_forcerec*             fr,
-                      gmx::ForceWithVirial*         forceWithVirial)
+real fbposres_wrapper(gmx::ArrayRef<const int>                  iatoms,
+                      gmx::ArrayRef<const t_iparams>            iparamsFBPosres,
+                      const t_pbc&                              pbc,
+                      const rvec*                               x,
+                      const t_forcerec*                         fr,
+                      const gmx::ArrayRef<const unsigned short> refScaleComIndices,
+                      gmx::ArrayRef<gmx::RVec>                  centersOfMassScaledBuffer,
+                      gmx::ArrayRef<rvec4>                      forces,
+                      gmx::RVec*                                virial)
 {
-    real v;
-
-    v = fbposres(idef.il[F_FBPOSRES].size(),
-                 idef.il[F_FBPOSRES].iatoms.data(),
-                 idef.iparams_fbposres.data(),
-                 x,
-                 forceWithVirial,
-                 fr->pbcType == PbcType::No ? nullptr : pbc,
-                 fr->rc_scaling,
-                 fr->pbcType,
-                 fr->posres_com);
-    enerd->term[F_FBPOSRES] += v;
-    inc_nrnb(nrnb, eNR_FBPOSRES, gmx::exactDiv(idef.il[F_FBPOSRES].size(), 2));
+    return fbposres(iatoms.size(),
+                    iatoms.data(),
+                    iparamsFBPosres.data(),
+                    x,
+                    forces.data(),
+                    virial,
+                    pbc,
+                    fr->rc_scaling,
+                    fr->pbcType,
+                    fr->posresCom,
+                    refScaleComIndices,
+                    centersOfMassScaledBuffer);
 }

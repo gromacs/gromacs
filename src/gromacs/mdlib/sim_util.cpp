@@ -56,6 +56,7 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/gpuhaloexchange.h"
+#include "gromacs/domdec/haloexchange.h"
 #include "gromacs/domdec/partition.h"
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/ewald/pme.h"
@@ -63,8 +64,6 @@
 #include "gromacs/ewald/pme_pp.h"
 #include "gromacs/ewald/pme_pp_comm_gpu.h"
 #include "gromacs/gmxlib/network.h"
-#include "gromacs/gmxlib/nonbonded/nb_free_energy.h"
-#include "gromacs/gmxlib/nonbonded/nonbonded.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
@@ -76,9 +75,6 @@
 #include "gromacs/math/arrayrefwithpadding.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vecdump.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/calcmu.h"
 #include "gromacs/mdlib/calcvir.h"
 #include "gromacs/mdlib/constr.h"
@@ -142,6 +138,9 @@
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/sysinfo.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vecdump.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "gpuforcereduction.h"
 
@@ -153,21 +152,14 @@ struct gmx_pme_t;
 struct interaction_const_t;
 struct pull_t;
 
-using gmx::ArrayRef;
-using gmx::AtomLocality;
-using gmx::DomainLifetimeWorkload;
-using gmx::ForceOutputs;
-using gmx::ForceWithShiftForces;
-using gmx::InteractionLocality;
-using gmx::RVec;
-using gmx::SimulationWorkload;
-using gmx::StepWorkload;
+namespace gmx
+{
 
 // TODO: this environment variable allows us to verify before release
 // that on less common architectures the total cost of polling is not larger than
 // a blocking wait (so polling does not introduce overhead when the static
 // PME-first ordering would suffice).
-static const bool c_disableAlternatingWait = (getenv("GMX_DISABLE_ALTERNATING_GPU_WAIT") != nullptr);
+static const bool c_disableAlternatingWait = (std::getenv("GMX_DISABLE_ALTERNATING_GPU_WAIT") != nullptr);
 
 static void sum_forces(ArrayRef<RVec> f, ArrayRef<const RVec> forceToAdd)
 {
@@ -182,21 +174,21 @@ static void sum_forces(ArrayRef<RVec> f, ArrayRef<const RVec> forceToAdd)
     }
 }
 
-static void calc_virial(int                              start,
-                        int                              homenr,
-                        const rvec                       x[],
-                        const gmx::ForceWithShiftForces& forceWithShiftForces,
-                        tensor                           vir_part,
-                        const matrix                     box,
-                        t_nrnb*                          nrnb,
-                        const t_forcerec*                fr,
-                        PbcType                          pbcType)
+static void calc_virial(int                         start,
+                        int                         homenr,
+                        const rvec                  x[],
+                        const ForceWithShiftForces& forceWithShiftForces,
+                        tensor                      vir_part,
+                        const matrix                box,
+                        t_nrnb*                     nrnb,
+                        const t_forcerec*           fr,
+                        PbcType                     pbcType)
 {
     /* The short-range virial from surrounding boxes */
     const rvec* fshift          = as_rvec_array(forceWithShiftForces.shiftForces().data());
     const rvec* shiftVecPointer = as_rvec_array(fr->shift_vec.data());
-    calc_vir(gmx::c_numShiftVectors, shiftVecPointer, fshift, vir_part, pbcType == PbcType::Screw, box);
-    inc_nrnb(nrnb, eNR_VIRIAL, gmx::c_numShiftVectors);
+    calc_vir(c_numShiftVectors, shiftVecPointer, fshift, vir_part, pbcType == PbcType::Screw, box);
+    inc_nrnb(nrnb, eNR_VIRIAL, c_numShiftVectors);
 
     /* Calculate partial virial, for local atoms only, based on short range.
      * Total virial is computed in global_stat, called from do_md
@@ -211,16 +203,16 @@ static void calc_virial(int                              start,
     }
 }
 
-static void pull_potential_wrapper(const t_commrec*               cr,
-                                   const t_inputrec&              ir,
-                                   const matrix                   box,
-                                   gmx::ArrayRef<const gmx::RVec> x,
-                                   const t_mdatoms*               mdatoms,
-                                   gmx_enerdata_t*                enerd,
-                                   pull_t*                        pull_work,
-                                   const real*                    lambda,
-                                   double                         t,
-                                   gmx_wallcycle*                 wcycle)
+static void pull_potential_wrapper(const MpiComm&       mpiComm,
+                                   const t_inputrec&    ir,
+                                   const matrix         box,
+                                   ArrayRef<const RVec> x,
+                                   const t_mdatoms*     mdatoms,
+                                   gmx_enerdata_t*      enerd,
+                                   pull_t*              pull_work,
+                                   const real*          lambda,
+                                   double               t,
+                                   gmx_wallcycle*       wcycle)
 {
     t_pbc pbc;
     real  dvdl;
@@ -235,7 +227,7 @@ static void pull_potential_wrapper(const t_commrec*               cr,
             pull_potential(pull_work,
                            mdatoms->massT,
                            pbc,
-                           cr,
+                           mpiComm,
                            t,
                            lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Restraint)],
                            x,
@@ -244,19 +236,19 @@ static void pull_potential_wrapper(const t_commrec*               cr,
     wallcycle_stop(wcycle, WallCycleCounter::PullPot);
 }
 
-static void pme_receive_force_ener(t_forcerec*           fr,
-                                   const t_commrec*      cr,
-                                   gmx::ForceWithVirial* forceWithVirial,
-                                   gmx_enerdata_t*       enerd,
-                                   bool                  useGpuPmePpComms,
-                                   bool                  receivePmeForceToGpu,
-                                   gmx_wallcycle*        wcycle)
+static void pme_receive_force_ener(t_forcerec*      fr,
+                                   gmx_domdec_t*    dd,
+                                   ForceWithVirial* forceWithVirial,
+                                   gmx_enerdata_t*  enerd,
+                                   bool             useGpuPmePpComms,
+                                   bool             receivePmeForceToGpu,
+                                   gmx_wallcycle*   wcycle)
 {
     real  e_q, e_lj, dvdl_q, dvdl_lj;
     float cycles_ppdpme, cycles_seppme;
 
     cycles_ppdpme = wallcycle_stop(wcycle, WallCycleCounter::PpDuringPme);
-    dd_cycles_add(cr->dd, cycles_ppdpme, ddCyclPPduringPME);
+    dd_cycles_add(dd, cycles_ppdpme, ddCyclPPduringPME);
 
     /* In case of node-splitting, the PP nodes receive the long-range
      * forces, virial and energy from the PME nodes here.
@@ -265,7 +257,7 @@ static void pme_receive_force_ener(t_forcerec*           fr,
     dvdl_q  = 0;
     dvdl_lj = 0;
     gmx_pme_receive_f(fr->pmePpCommGpu.get(),
-                      cr,
+                      dd,
                       forceWithVirial,
                       &e_q,
                       &e_lj,
@@ -281,21 +273,21 @@ static void pme_receive_force_ener(t_forcerec*           fr,
 
     if (wcycle)
     {
-        dd_cycles_add(cr->dd, cycles_seppme, ddCyclPME);
+        dd_cycles_add(dd, cycles_seppme, ddCyclPME);
     }
     wallcycle_stop(wcycle, WallCycleCounter::PpPmeWaitRecvF);
 }
 
 static void print_large_forces(FILE*                fp,
                                const t_mdatoms*     md,
-                               const t_commrec*     cr,
+                               const gmx_domdec_t*  dd,
                                int64_t              step,
                                real                 forceTolerance,
                                ArrayRef<const RVec> x,
                                ArrayRef<const RVec> f)
 {
-    real       force2Tolerance = gmx::square(forceTolerance);
-    gmx::Index numNonFinite    = 0;
+    real  force2Tolerance = square(forceTolerance);
+    Index numNonFinite    = 0;
     for (int i = 0; i < md->homenr; i++)
     {
         real force2    = norm2(f[i]);
@@ -305,7 +297,7 @@ static void print_large_forces(FILE*                fp,
             fprintf(fp,
                     "step %" PRId64 " atom %6d  x %8.3f %8.3f %8.3f  force %12.5e\n",
                     step,
-                    ddglatnr(cr->dd, i),
+                    ddglatnr(dd, i),
                     x[i][XX],
                     x[i][YY],
                     x[i][ZZ],
@@ -327,16 +319,16 @@ static void print_large_forces(FILE*                fp,
 }
 
 //! When necessary, spreads forces on vsites and computes the virial for \p forceOutputs->forceWithShiftForces()
-static void postProcessForceWithShiftForces(t_nrnb*                   nrnb,
-                                            gmx_wallcycle*            wcycle,
-                                            const matrix              box,
-                                            ArrayRef<const RVec>      x,
-                                            ForceOutputs*             forceOutputs,
-                                            tensor                    vir_force,
-                                            const t_mdatoms&          mdatoms,
-                                            const t_forcerec&         fr,
-                                            gmx::VirtualSitesHandler* vsite,
-                                            const StepWorkload&       stepWork)
+static void postProcessForceWithShiftForces(t_nrnb*              nrnb,
+                                            gmx_wallcycle*       wcycle,
+                                            const matrix         box,
+                                            ArrayRef<const RVec> x,
+                                            ForceOutputs*        forceOutputs,
+                                            tensor               vir_force,
+                                            const t_mdatoms&     mdatoms,
+                                            const t_forcerec&    fr,
+                                            VirtualSitesHandler* vsite,
+                                            const StepWorkload&  stepWork)
 {
     ForceWithShiftForces& forceWithShiftForces = forceOutputs->forceWithShiftForces();
 
@@ -346,7 +338,7 @@ static void postProcessForceWithShiftForces(t_nrnb*                   nrnb,
      */
     if (vsite && (!forceOutputs->haveForceWithVirial() || stepWork.computeVirial))
     {
-        using VirialHandling = gmx::VirtualSitesHandler::VirialHandling;
+        using VirialHandling = VirtualSitesHandler::VirialHandling;
 
         auto                 f      = forceWithShiftForces.force();
         auto                 fshift = forceWithShiftForces.shiftForces();
@@ -365,18 +357,18 @@ static void postProcessForceWithShiftForces(t_nrnb*                   nrnb,
 }
 
 //! Spread, compute virial for and sum forces, when necessary
-static void postProcessForces(const t_commrec*          cr,
-                              int64_t                   step,
-                              t_nrnb*                   nrnb,
-                              gmx_wallcycle*            wcycle,
-                              const matrix              box,
-                              ArrayRef<const RVec>      x,
-                              ForceOutputs*             forceOutputs,
-                              tensor                    vir_force,
-                              const t_mdatoms*          mdatoms,
-                              const t_forcerec*         fr,
-                              gmx::VirtualSitesHandler* vsite,
-                              const StepWorkload&       stepWork)
+static void postProcessForces(const gmx_domdec_t*  dd,
+                              int64_t              step,
+                              t_nrnb*              nrnb,
+                              gmx_wallcycle*       wcycle,
+                              const matrix         box,
+                              ArrayRef<const RVec> x,
+                              ForceOutputs*        forceOutputs,
+                              tensor               vir_force,
+                              const t_mdatoms*     mdatoms,
+                              const t_forcerec*    fr,
+                              VirtualSitesHandler* vsite,
+                              const StepWorkload&  stepWork)
 {
     // Extract the final output force buffer, which is also the buffer for forces with shift forces
     ArrayRef<RVec> f = forceOutputs->forceWithShiftForces().force();
@@ -398,9 +390,9 @@ static void postProcessForces(const t_commrec*          cr,
                                || forceOutputs->forceWithShiftForces().haveSpreadVsiteForces(),
                        "We should spread the force with shift forces separately when computing "
                        "the virial");
-            const gmx::VirtualSitesHandler::VirialHandling virialHandling =
-                    (stepWork.computeVirial ? gmx::VirtualSitesHandler::VirialHandling::NonLinear
-                                            : gmx::VirtualSitesHandler::VirialHandling::None);
+            const VirtualSitesHandler::VirialHandling virialHandling =
+                    (stepWork.computeVirial ? VirtualSitesHandler::VirialHandling::NonLinear
+                                            : VirtualSitesHandler::VirialHandling::None);
             matrix virial = { { 0 } };
             vsite->spreadForces(x, forceWithVirial.force_, virialHandling, {}, virial, nrnb, box, wcycle);
             forceWithVirial.addVirialContribution(virial);
@@ -431,7 +423,7 @@ static void postProcessForces(const t_commrec*          cr,
 
     if (fr->print_force >= 0)
     {
-        print_large_forces(stderr, mdatoms, cr, step, fr->print_force, x, f);
+        print_large_forces(stderr, mdatoms, dd, step, fr->print_force, x, f);
     }
 }
 
@@ -500,7 +492,7 @@ static inline void clearRVecs(ArrayRef<RVec> v, const bool useOpenmpThreading)
     else
     {
 #pragma omp parallel for num_threads(nth) schedule(static)
-        for (gmx::Index i = 0; i < v.ssize(); i++)
+        for (Index i = 0; i < v.ssize(); i++)
         {
             clear_rvec(v[i]);
         }
@@ -521,7 +513,7 @@ static real averageKineticEnergyEstimate(const t_grpopts& groupOptions)
         if (groupOptions.tau_t[g] >= 0)
         {
             nrdfCoupled += groupOptions.nrdf[g];
-            kineticEnergy += groupOptions.nrdf[g] * 0.5 * groupOptions.ref_t[g] * gmx::c_boltz;
+            kineticEnergy += groupOptions.nrdf[g] * 0.5 * groupOptions.ref_t[g] * c_boltz;
         }
         else
         {
@@ -580,7 +572,7 @@ static void checkPotentialEnergyValidity(int64_t step, const gmx_enerdata_t& ene
     if (energyIsNotFinite
         || (averageKineticEnergy > 0 && enerd.term[F_EPOT] > c_thresholdFactor * averageKineticEnergy))
     {
-        GMX_THROW(gmx::InternalError(gmx::formatString(
+        GMX_THROW(InternalError(formatString(
                 "Step %" PRId64
                 ": The total potential energy is %g, which is %s. The LJ and electrostatic "
                 "contributions to the energy are %g and %g, respectively. A %s potential energy "
@@ -608,7 +600,8 @@ static void checkPotentialEnergyValidity(int64_t step, const gmx_enerdata_t& ene
  * are as close together as possible.
  *
  * \param[in]     fplog            The log file
- * \param[in]     cr               The communication record
+ * \param[in]     mpiComm          The communication object for my group
+ * \param[in]     dd               Pointer to the domdec object, is nullptr when DD is not in use
  * \param[in]     inputrec         The input record
  * \param[in]     awh              The Awh module (nullptr if none in use).
  * \param[in]     enforcedRotation Enforced rotation module.
@@ -627,32 +620,34 @@ static void checkPotentialEnergyValidity(int64_t step, const gmx_enerdata_t& ene
  * \param[in,out] forceWithVirialMtsLevel1  Force and virial for MTS level1 forces, can be nullptr
  * \param[in,out] enerd            Energy buffer
  * \param[in,out] ed               Essential dynamics pointer
- * \param[in]     didNeighborSearch Tells if we did neighbor searching this step, used for ED sampling
+ * \param[in]     didNeighborSearch  Tells if we did neighbor searching this step,
+ *                                   used for ED sampling
  *
  * \todo Remove didNeighborSearch, which is used incorrectly.
  * \todo Convert all other algorithms called here to ForceProviders.
  */
-static void computeSpecialForces(FILE*                          fplog,
-                                 const t_commrec*               cr,
-                                 const t_inputrec&              inputrec,
-                                 gmx::Awh*                      awh,
-                                 gmx_enfrot*                    enforcedRotation,
-                                 gmx::ImdSession*               imdSession,
-                                 pull_t*                        pull_work,
-                                 int64_t                        step,
-                                 double                         t,
-                                 gmx_wallcycle*                 wcycle,
-                                 gmx::ForceProviders*           forceProviders,
-                                 const matrix                   box,
-                                 gmx::ArrayRef<const gmx::RVec> x,
-                                 const t_mdatoms*               mdatoms,
-                                 gmx::ArrayRef<const real>      lambda,
-                                 const StepWorkload&            stepWork,
-                                 gmx::ForceWithVirial*          forceWithVirialMtsLevel0,
-                                 gmx::ForceWithVirial*          forceWithVirialMtsLevel1,
-                                 gmx_enerdata_t*                enerd,
-                                 gmx_edsam*                     ed,
-                                 bool                           didNeighborSearch)
+static void computeSpecialForces(FILE*                fplog,
+                                 const MpiComm&       mpiComm,
+                                 const gmx_domdec_t*  dd,
+                                 const t_inputrec&    inputrec,
+                                 Awh*                 awh,
+                                 gmx_enfrot*          enforcedRotation,
+                                 ImdSession*          imdSession,
+                                 pull_t*              pull_work,
+                                 int64_t              step,
+                                 double               t,
+                                 gmx_wallcycle*       wcycle,
+                                 ForceProviders*      forceProviders,
+                                 const matrix         box,
+                                 ArrayRef<const RVec> x,
+                                 const t_mdatoms*     mdatoms,
+                                 ArrayRef<const real> lambda,
+                                 const StepWorkload&  stepWork,
+                                 ForceWithVirial*     forceWithVirialMtsLevel0,
+                                 ForceWithVirial*     forceWithVirialMtsLevel1,
+                                 gmx_enerdata_t*      enerd,
+                                 gmx_edsam*           ed,
+                                 bool                 didNeighborSearch)
 {
     // RAMD: Pull forces must be applied before ForceProviders
     if ((inputrec.bRAMD) && pull_have_potential(*pull_work))
@@ -669,32 +664,35 @@ static void computeSpecialForces(FILE*                          fplog,
      */
     if (stepWork.computeForces)
     {
-        gmx::ForceProviderInput forceProviderInput(
-                x,
-                mdatoms->homenr,
-                gmx::makeArrayRef(mdatoms->chargeA).subArray(0, mdatoms->homenr),
-                gmx::makeArrayRef(mdatoms->massT).subArray(0, mdatoms->homenr),
-                t,
-                step,
-                box,
-                *cr);
-        gmx::ForceProviderOutput forceProviderOutput(forceWithVirialMtsLevel0, enerd);
+        ForceProviderInput  forceProviderInput(x,
+                                              mdatoms->homenr,
+                                              makeArrayRef(mdatoms->chargeA).subArray(0, mdatoms->homenr),
+                                              makeArrayRef(mdatoms->massT).subArray(0, mdatoms->homenr),
+                                              t,
+                                              step,
+                                              box,
+                                              mpiComm,
+                                              dd);
+        ForceProviderOutput forceProviderOutput(forceWithVirialMtsLevel0, enerd);
 
         /* Collect forces from modules */
         forceProviders->calculateForces(forceProviderInput, &forceProviderOutput);
     }
 
-    const int  pullMtsLevel = forceGroupMtsLevel(inputrec.mtsLevels, gmx::MtsForceGroups::Pull);
+    const int  pullMtsLevel = forceGroupMtsLevel(inputrec.mtsLevels, MtsForceGroups::Pull);
     const bool doPulling    = (inputrec.bPull && pull_have_potential(*pull_work)
                             && (pullMtsLevel == 0 || stepWork.computeSlowForces));
 
     /* pull_potential_wrapper(), awh->applyBiasForcesAndUpdateBias(), pull_apply_forces()
      * have to be called in this order
      */
+    // Note: this condition is mirrored in haveSpecialForces()
     if (doPulling)
     {
-        pull_potential_wrapper(cr, inputrec, box, x, mdatoms, enerd, pull_work, lambda.data(), t, wcycle);
+        pull_potential_wrapper(
+                mpiComm, inputrec, box, x, mdatoms, enerd, pull_work, lambda.data(), t, wcycle);
     }
+    // Note: the awh condition is mirrored in haveSpecialForces()
     if (awh && (pullMtsLevel == 0 || stepWork.computeSlowForces))
     {
         const bool          needForeignEnergyDifferences = awh->needForeignEnergyDifferences(step);
@@ -703,29 +701,32 @@ static void computeSpecialForces(FILE*                          fplog,
         {
             enerd->foreignLambdaTerms.finalizePotentialContributions(
                     enerd->dvdl_lin, lambda, *inputrec.fepvals);
-            std::tie(foreignLambdaDeltaH, foreignLambdaDhDl) = enerd->foreignLambdaTerms.getTerms(cr);
+            std::tie(foreignLambdaDeltaH, foreignLambdaDhDl) = enerd->foreignLambdaTerms.getTerms(mpiComm);
         }
 
         enerd->term[F_COM_PULL] += awh->applyBiasForcesAndUpdateBias(
                 inputrec.pbcType, foreignLambdaDeltaH, foreignLambdaDhDl, box, t, step, wcycle, fplog);
     }
+    // Note: this condition is mirrored in haveSpecialForces()
     if (doPulling || inputrec.bRAMD)
     {
         wallcycle_start_nocount(wcycle, WallCycleCounter::PullPot);
         auto& forceWithVirial = (pullMtsLevel == 0) ? forceWithVirialMtsLevel0 : forceWithVirialMtsLevel1;
-        pull_apply_forces(pull_work, mdatoms->massT, cr, forceWithVirial);
+        pull_apply_forces(pull_work, mdatoms->massT, mpiComm, forceWithVirial);
         wallcycle_stop(wcycle, WallCycleCounter::PullPot);
     }
 
     /* Add the forces from enforced rotation potentials (if any) */
+    // Note: this condition is mirrored in haveSpecialForces()
     if (inputrec.bRot)
     {
         wallcycle_start(wcycle, WallCycleCounter::RotAdd);
         enerd->term[F_COM_PULL] +=
-                add_rot_forces(enforcedRotation, forceWithVirialMtsLevel0->force_, cr, step, t);
+                add_rot_forces(enforcedRotation, forceWithVirialMtsLevel0->force_, mpiComm, step, t);
         wallcycle_stop(wcycle, WallCycleCounter::RotAdd);
     }
 
+    // Note: this condition is mirrored in haveSpecialForces()
     if (ed)
     {
         /* Note that since init_edsam() is called after the initialization
@@ -733,10 +734,11 @@ static void computeSpecialForces(FILE*                          fplog,
          * Thus if no other algorithm (e.g. PME) requires it, the forces
          * here will contribute to the virial.
          */
-        do_flood(cr, inputrec, x, forceWithVirialMtsLevel0->force_, ed, box, step, didNeighborSearch);
+        do_flood(mpiComm, inputrec, x, forceWithVirialMtsLevel0->force_, ed, box, step, didNeighborSearch);
     }
 
     /* Add forces from interactive molecular dynamics (IMD), if any */
+    // Note: this condition is mirrored in haveSpecialForces()
     if (inputrec.bIMD && stepWork.computeForces)
     {
         imdSession->applyForces(forceWithVirialMtsLevel0->force_);
@@ -747,24 +749,26 @@ static void computeSpecialForces(FILE*                          fplog,
  *
  * \param[in]  pmedata              The PME structure
  * \param[in]  box                  The box matrix
+ * \param[in]  simulationWork       Simulation schedule flags
  * \param[in]  stepWork             Step schedule flags
  * \param[in]  xReadyOnDevice       Event synchronizer indicating that the coordinates are ready in the device memory.
  * \param[in]  lambdaQ              The Coulomb lambda of the current state.
  * \param[in]  useMdGpuGraph        Whether MD GPU Graph is in use.
  * \param[in]  wcycle               The wallcycle structure
  */
-static inline void launchPmeGpuSpread(gmx_pme_t*            pmedata,
-                                      const matrix          box,
-                                      const StepWorkload&   stepWork,
-                                      GpuEventSynchronizer* xReadyOnDevice,
-                                      const real            lambdaQ,
-                                      bool                  useMdGpuGraph,
-                                      gmx_wallcycle*        wcycle)
+static inline void launchPmeGpuSpread(gmx_pme_t*                pmedata,
+                                      const matrix              box,
+                                      const SimulationWorkload& simulationWork,
+                                      const StepWorkload&       stepWork,
+                                      GpuEventSynchronizer*     xReadyOnDevice,
+                                      const real                lambdaQ,
+                                      bool                      useMdGpuGraph,
+                                      gmx_wallcycle*            wcycle)
 {
     wallcycle_start(wcycle, WallCycleCounter::PmeGpuMesh);
-    pme_gpu_prepare_computation(pmedata, box, wcycle, stepWork);
-    bool                           useGpuDirectComm         = false;
-    gmx::PmeCoordinateReceiverGpu* pmeCoordinateReceiverGpu = nullptr;
+    pme_gpu_prepare_computation(pmedata, box, simulationWork.haveDynamicBox, stepWork);
+    bool                      useGpuDirectComm         = false;
+    PmeCoordinateReceiverGpu* pmeCoordinateReceiverGpu = nullptr;
     pme_gpu_launch_spread(
             pmedata, xReadyOnDevice, wcycle, lambdaQ, useGpuDirectComm, pmeCoordinateReceiverGpu, useMdGpuGraph);
     wallcycle_stop(wcycle, WallCycleCounter::PmeGpuMesh);
@@ -779,10 +783,10 @@ static inline void launchPmeGpuSpread(gmx_pme_t*            pmedata,
  * \param[in]  wcycle         The wallcycle structure
  * \param[in]  stepWork       Step schedule flags
  */
-static void launchPmeGpuFftAndGather(gmx_pme_t*               pmedata,
-                                     const real               lambdaQ,
-                                     gmx_wallcycle*           wcycle,
-                                     const gmx::StepWorkload& stepWork)
+static void launchPmeGpuFftAndGather(gmx_pme_t*          pmedata,
+                                     const real          lambdaQ,
+                                     gmx_wallcycle*      wcycle,
+                                     const StepWorkload& stepWork)
 {
     wallcycle_start_nocount(wcycle, WallCycleCounter::PmeGpuMesh);
     pme_gpu_launch_complex_transforms(pmedata, wcycle, stepWork);
@@ -801,12 +805,12 @@ static void launchPmeGpuFftAndGather(gmx_pme_t*               pmedata,
  * \param[out] enerd           The output energies
  * \param[in]  lambdaQ         The Coulomb lambda to use when calculating the results.
  */
-static void pmeGpuWaitAndReduce(gmx_pme_t*               pme,
-                                const gmx::StepWorkload& stepWork,
-                                gmx_wallcycle*           wcycle,
-                                gmx::ForceWithVirial*    forceWithVirial,
-                                gmx_enerdata_t*          enerd,
-                                const real               lambdaQ)
+static void pmeGpuWaitAndReduce(gmx_pme_t*          pme,
+                                const StepWorkload& stepWork,
+                                gmx_wallcycle*      wcycle,
+                                ForceWithVirial*    forceWithVirial,
+                                gmx_enerdata_t*     enerd,
+                                const real          lambdaQ)
 {
     wallcycle_start_nocount(wcycle, WallCycleCounter::PmeGpuMesh);
 
@@ -835,8 +839,8 @@ static void pmeGpuWaitAndReduce(gmx_pme_t*               pme,
  */
 static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t* nbv,
                                         gmx_pme_t*          pmedata,
-                                        gmx::ForceOutputs*  forceOutputsNonbonded,
-                                        gmx::ForceOutputs*  forceOutputsPme,
+                                        ForceOutputs*       forceOutputsNonbonded,
+                                        ForceOutputs*       forceOutputsPme,
                                         gmx_enerdata_t*     enerd,
                                         const real          lambdaQ,
                                         const StepWorkload& stepWork,
@@ -845,7 +849,7 @@ static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t* nbv,
     bool isPmeGpuDone = false;
     bool isNbGpuDone  = false;
 
-    gmx::ArrayRef<const gmx::RVec> pmeGpuForces;
+    ArrayRef<const RVec> pmeGpuForces;
 
     while (!isPmeGpuDone || !isNbGpuDone)
     {
@@ -869,7 +873,7 @@ static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t* nbv,
             // start/stop to increment.
             // GpuTaskCompletion::Wait mode the timing is expected to be done in the caller.
             wallcycle_start_nocount(wcycle, WallCycleCounter::WaitGpuNbL);
-            isNbGpuDone = Nbnxm::gpu_try_finish_task(
+            isNbGpuDone = gpu_try_finish_task(
                     nbv->gpuNbv(),
                     stepWork,
                     AtomLocality::Local,
@@ -899,15 +903,15 @@ static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t* nbv,
  *
  * \returns                             Cleared force output structure
  */
-static ForceOutputs setupForceOutputs(ForceHelperBuffers*                 forceHelperBuffers,
-                                      gmx::ArrayRefWithPadding<gmx::RVec> force,
-                                      const DomainLifetimeWorkload&       domainWork,
-                                      const StepWorkload&                 stepWork,
-                                      const bool                          havePpDomainDecomposition,
-                                      gmx_wallcycle*                      wcycle)
+static ForceOutputs setupForceOutputs(ForceHelperBuffers*           forceHelperBuffers,
+                                      ArrayRefWithPadding<RVec>     force,
+                                      const DomainLifetimeWorkload& domainWork,
+                                      const StepWorkload&           stepWork,
+                                      const bool                    havePpDomainDecomposition,
+                                      gmx_wallcycle*                wcycle)
 {
     /* NOTE: We assume fr->shiftForces is all zeros here */
-    gmx::ForceWithShiftForces forceWithShiftForces(
+    ForceWithShiftForces forceWithShiftForces(
             force, stepWork.computeVirial, forceHelperBuffers->shiftForces());
 
     if (stepWork.computeForces
@@ -932,10 +936,10 @@ static ForceOutputs setupForceOutputs(ForceHelperBuffers*                 forceH
             (stepWork.computeForces
              && (stepWork.computeVirial && forceHelperBuffers->haveDirectVirialContributions()));
     /* forceWithVirial uses the local atom range only */
-    gmx::ForceWithVirial forceWithVirial(
-            useSeparateForceWithVirialBuffer ? forceHelperBuffers->forceBufferForDirectVirialContributions()
-                                             : force.unpaddedArrayRef(),
-            stepWork.computeVirial);
+    ForceWithVirial forceWithVirial(useSeparateForceWithVirialBuffer
+                                            ? forceHelperBuffers->forceBufferForDirectVirialContributions()
+                                            : force.unpaddedArrayRef(),
+                                    stepWork.computeVirial);
 
     if (useSeparateForceWithVirialBuffer)
     {
@@ -957,13 +961,13 @@ static ForceOutputs setupForceOutputs(ForceHelperBuffers*                 forceH
 /* \brief Launch end-of-step GPU tasks: buffer clearing and rolling pruning.
  *
  */
-static void launchGpuEndOfStepTasks(nonbonded_verlet_t*               nbv,
-                                    gmx::ListedForcesGpu*             listedForcesGpu,
-                                    gmx_pme_t*                        pmedata,
-                                    gmx_enerdata_t*                   enerd,
-                                    const gmx::MdrunScheduleWorkload& runScheduleWork,
-                                    int64_t                           step,
-                                    gmx_wallcycle*                    wcycle)
+static void launchGpuEndOfStepTasks(nonbonded_verlet_t*          nbv,
+                                    ListedForcesGpu*             listedForcesGpu,
+                                    gmx_pme_t*                   pmedata,
+                                    gmx_enerdata_t*              enerd,
+                                    const MdrunScheduleWorkload& runScheduleWork,
+                                    int64_t                      step,
+                                    gmx_wallcycle*               wcycle)
 {
     if (runScheduleWork.simulationWork.useGpuNonbonded && runScheduleWork.stepWork.computeNonbondedForces)
     {
@@ -979,7 +983,7 @@ static void launchGpuEndOfStepTasks(nonbonded_verlet_t*               nbv,
         /* now clear the GPU outputs while we finish the step on the CPU */
         wallcycle_start_nocount(wcycle, WallCycleCounter::LaunchGpuPp);
         wallcycle_sub_start_nocount(wcycle, WallCycleSubCounter::LaunchGpuNonBonded);
-        Nbnxm::gpu_clear_outputs(nbv->gpuNbv(), runScheduleWork.stepWork.computeVirial);
+        gpu_clear_outputs(nbv->gpuNbv(), runScheduleWork.stepWork.computeVirial);
         wallcycle_sub_stop(wcycle, WallCycleSubCounter::LaunchGpuNonBonded);
         wallcycle_stop(wcycle, WallCycleCounter::LaunchGpuPp);
     }
@@ -988,7 +992,7 @@ static void launchGpuEndOfStepTasks(nonbonded_verlet_t*               nbv,
     {
         wallcycle_start_nocount(wcycle, WallCycleCounter::PmeGpuMesh);
         bool gpuGraphWithSeparatePmeRank = false;
-        pme_gpu_reinit_computation(pmedata, gpuGraphWithSeparatePmeRank, wcycle);
+        pme_gpu_finish_step(pmedata, gpuGraphWithSeparatePmeRank, wcycle);
         wallcycle_stop(wcycle, WallCycleCounter::PmeGpuMesh);
     }
 
@@ -1015,23 +1019,28 @@ static void launchGpuEndOfStepTasks(nonbonded_verlet_t*               nbv,
  *
  * This function return the number of times the event will be consumed based on this step's workload.
  *
- * \param simulationWork Simulation workload flags.
- * \param stepWork Step workload flags.
+ * \param simulationWork            Simulation workload flags.
+ * \param stepWork                  Step workload flags.
+ * \param domainWork                Domain workload flags.
  * \param pmeSendCoordinatesFromGpu Whether peer-to-peer communication is used for PME coordinates.
+ * \param domainHasHomeAtoms        Whether this domain has home atoms
  * \return
  */
-static int getExpectedLocalXReadyOnDeviceConsumptionCount(gmx_used_in_debug const SimulationWorkload& simulationWork,
-                                                          const StepWorkload& stepWork,
-                                                          bool pmeSendCoordinatesFromGpu)
+static int getExpectedLocalXReadyOnDeviceConsumptionCount(const SimulationWorkload& simulationWork,
+                                                          const StepWorkload&       stepWork,
+                                                          const DomainLifetimeWorkload& domainWork,
+                                                          const bool pmeSendCoordinatesFromGpu,
+                                                          const bool domainHasHomeAtoms)
 {
     int result = 0;
     if (stepWork.computeSlowForces)
     {
-        if (pmeSendCoordinatesFromGpu)
+        if (pmeSendCoordinatesFromGpu and domainHasHomeAtoms)
         {
             GMX_ASSERT(simulationWork.haveSeparatePmeRank,
                        "GPU PME PP communications require having a separate PME rank");
-            // Event is consumed by gmx_pme_send_coordinates for GPU PME PP Communications
+            // Event is consumed by gmx_pme_send_coordinates for GPU
+            // PME PP Communications when the domain has home atoms.
             result++;
         }
         if (stepWork.haveGpuPmeOnThisRank)
@@ -1058,6 +1067,17 @@ static int getExpectedLocalXReadyOnDeviceConsumptionCount(gmx_used_in_debug cons
     {
         // Event is consumed by force clearing which waits for the update to complete
         result++;
+    }
+    if (simulationWork.useGpuUpdate && domainWork.haveCpuLocalForceWork)
+    {
+        // Event is consumed when waiting for it on the CPU prior to CPU force buffer clearing.
+        // The actual data dependency does not involve coordinates, but we use this event
+        // as an "end-of-step" mark.
+        if (!(stepWork.doNeighborSearch || simulationWork.useCpuHaloExchange
+              || (stepWork.computePmeOnSeparateRank && !pmeSendCoordinatesFromGpu)))
+        {
+            result++;
+        }
     }
     return result;
 }
@@ -1104,22 +1124,22 @@ static int getExpectedLocalFReadyOnDeviceConsumptionCount(const SimulationWorklo
 struct DipoleData
 {
     //! Dipole staging for fast summing over MPI
-    gmx::DVec muStaging[2] = { { 0.0, 0.0, 0.0 } };
+    DVec muStaging[2] = { { 0.0, 0.0, 0.0 } };
     //! Dipole staging for states A and B (index 0 and 1 resp.)
-    gmx::RVec muStateAB[2] = { { 0.0_real, 0.0_real, 0.0_real } };
+    RVec muStateAB[2] = { { 0.0_real, 0.0_real, 0.0_real } };
 };
 
 
 static void reduceAndUpdateMuTot(DipoleData*                   dipoleData,
-                                 const t_commrec*              cr,
+                                 const MpiComm&                mpiComm,
                                  const bool                    haveFreeEnergy,
-                                 gmx::ArrayRef<const real>     lambda,
+                                 ArrayRef<const real>          lambda,
                                  rvec                          muTotal,
                                  const DDBalanceRegionHandler& ddBalanceRegionHandler)
 {
-    if (PAR(cr))
+    if (mpiComm.isParallel())
     {
-        gmx_sumd(2 * DIM, dipoleData->muStaging[0], cr);
+        mpiComm.sumReduce(2 * DIM, dipoleData->muStaging[0]);
         ddBalanceRegionHandler.reopenRegionCpu();
     }
     for (int i = 0; i < 2; i++)
@@ -1179,13 +1199,13 @@ static void combineMtsForces(const int      numAtoms,
  * \param [in] pmedata             PME data object
  * \param [in] dd                  Domain decomposition object
  */
-static void setupLocalGpuForceReduction(const gmx::MdrunScheduleWorkload& runScheduleWork,
-                                        nonbonded_verlet_t*               nbv,
-                                        gmx::StatePropagatorDataGpu*      stateGpu,
-                                        gmx::GpuForceReduction*           gpuForceReduction,
-                                        gmx::PmePpCommGpu*                pmePpCommGpu,
-                                        const gmx_pme_t*                  pmedata,
-                                        const gmx_domdec_t*               dd)
+static void setupLocalGpuForceReduction(const MdrunScheduleWorkload& runScheduleWork,
+                                        nonbonded_verlet_t*          nbv,
+                                        StatePropagatorDataGpu*      stateGpu,
+                                        GpuForceReduction*           gpuForceReduction,
+                                        PmePpCommGpu*                pmePpCommGpu,
+                                        const gmx_pme_t*             pmedata,
+                                        const gmx_domdec_t*          dd)
 {
     GMX_ASSERT(!runScheduleWork.simulationWork.useMts,
                "GPU force reduction is not compatible with MTS");
@@ -1202,11 +1222,11 @@ static void setupLocalGpuForceReduction(const gmx::MdrunScheduleWorkload& runSch
                               stateGpu->fReducedOnDevice(AtomLocality::Local));
 
     // register forces and add dependencies
-    gpuForceReduction->registerNbnxmForce(Nbnxm::gpu_get_f(nbv->gpuNbv()));
+    gpuForceReduction->registerNbnxmForce(gpu_get_f(nbv->gpuNbv()));
 
-    DeviceBuffer<gmx::RVec> pmeForcePtr;
-    GpuEventSynchronizer*   pmeSynchronizer     = nullptr;
-    bool                    havePmeContribution = false;
+    DeviceBuffer<RVec>    pmeForcePtr;
+    GpuEventSynchronizer* pmeSynchronizer     = nullptr;
+    bool                  havePmeContribution = false;
 
     if (runScheduleWork.simulationWork.haveGpuPmeOnPpRank())
     {
@@ -1219,13 +1239,17 @@ static void setupLocalGpuForceReduction(const gmx::MdrunScheduleWorkload& runSch
     }
     else if (runScheduleWork.simulationWork.useGpuPmePpCommunication)
     {
-        pmeForcePtr = pmePpCommGpu->getGpuForceStagingPtr();
-        GMX_ASSERT(pmeForcePtr, "PME force for reduction has no data");
-        if (GMX_THREAD_MPI)
+        std::optional<DeviceBuffer<RVec>> pmeStagingPtr = pmePpCommGpu->getGpuForceStagingPtr();
+        if (pmeStagingPtr)
         {
-            pmeSynchronizer = pmePpCommGpu->getForcesReadySynchronizer();
+            pmeForcePtr = pmeStagingPtr.value();
+            GMX_ASSERT(pmeForcePtr, "PME force for reduction has no data");
+            if (GMX_THREAD_MPI)
+            {
+                pmeSynchronizer = pmePpCommGpu->getForcesReadySynchronizer().value();
+            }
+            havePmeContribution = true;
         }
-        havePmeContribution = true;
     }
 
     if (havePmeContribution)
@@ -1266,11 +1290,11 @@ static void setupLocalGpuForceReduction(const gmx::MdrunScheduleWorkload& runSch
  * \param [in] gpuForceReduction   GPU force reduction object
  * \param [in] dd                  Domain decomposition object
  */
-static void setupNonLocalGpuForceReduction(const gmx::MdrunScheduleWorkload& runScheduleWork,
-                                           nonbonded_verlet_t*               nbv,
-                                           gmx::StatePropagatorDataGpu*      stateGpu,
-                                           gmx::GpuForceReduction*           gpuForceReduction,
-                                           const gmx_domdec_t*               dd)
+static void setupNonLocalGpuForceReduction(const MdrunScheduleWorkload& runScheduleWork,
+                                           nonbonded_verlet_t*          nbv,
+                                           StatePropagatorDataGpu*      stateGpu,
+                                           GpuForceReduction*           gpuForceReduction,
+                                           const gmx_domdec_t*          dd)
 {
     // (re-)initialize non-local GPU force reduction
     const bool accumulate = runScheduleWork.domainWork.haveCpuNonLocalForceWork;
@@ -1283,7 +1307,7 @@ static void setupNonLocalGpuForceReduction(const gmx::MdrunScheduleWorkload& run
                               stateGpu->fReducedOnDevice(AtomLocality::NonLocal));
 
     // register forces and add dependencies
-    gpuForceReduction->registerNbnxmForce(Nbnxm::gpu_get_f(nbv->gpuNbv()));
+    gpuForceReduction->registerNbnxmForce(gpu_get_f(nbv->gpuNbv()));
 
     if (runScheduleWork.domainWork.haveCpuNonLocalForceWork)
     {
@@ -1303,37 +1327,45 @@ static int getLocalAtomCount(const gmx_domdec_t* dd, const t_mdatoms& mdatoms, b
 
 /*! \brief Does pair search and closely related activities required on search steps.
  */
-static void doPairSearch(const t_commrec*                    cr,
-                         const t_inputrec&                   inputrec,
-                         const gmx::MDModulesNotifiers&      mdModulesNotifiers,
-                         int64_t                             step,
-                         t_nrnb*                             nrnb,
-                         gmx_wallcycle*                      wcycle,
-                         const gmx_localtop_t&               top,
-                         const matrix                        box,
-                         gmx::ArrayRefWithPadding<gmx::RVec> x,
-                         gmx::ArrayRef<gmx::RVec>            v,
-                         const t_mdatoms&                    mdatoms,
-                         t_forcerec*                         fr,
-                         const gmx::MdrunScheduleWorkload&   runScheduleWork)
+static void doPairSearch(const t_commrec*             cr,
+                         const t_inputrec&            inputrec,
+                         const MDModulesNotifiers&    mdModulesNotifiers,
+                         int64_t                      step,
+                         t_nrnb*                      nrnb,
+                         gmx_wallcycle*               wcycle,
+                         const gmx_localtop_t&        top,
+                         const matrix                 box,
+                         ArrayRefWithPadding<RVec>    x,
+                         ArrayRef<RVec>               v,
+                         const t_mdatoms&             mdatoms,
+                         t_forcerec*                  fr,
+                         const MdrunScheduleWorkload& runScheduleWork)
 {
     nonbonded_verlet_t* nbv = fr->nbv.get();
 
-    gmx::StatePropagatorDataGpu* stateGpu = fr->stateGpu;
+    StatePropagatorDataGpu* stateGpu = fr->stateGpu;
 
     const SimulationWorkload& simulationWork = runScheduleWork.simulationWork;
     const StepWorkload&       stepWork       = runScheduleWork.stepWork;
 
-    if (gmx::needStateGpu(simulationWork))
+    if (needStateGpu(simulationWork))
     {
         // TODO refactor this to do_md, after partitioning.
+        //
+        // Does global communication and symmetric reallocation with NVSHMEM
         stateGpu->reinit(mdatoms.homenr,
-                         getLocalAtomCount(cr->dd, mdatoms, simulationWork.havePpDomainDecomposition));
+                         getLocalAtomCount(cr->dd, mdatoms, simulationWork.havePpDomainDecomposition),
+                         cr->commMySim.comm());
+        if (simulationWork.useGpuHaloExchange && runScheduleWork.simulationWork.useNvshmem)
+        {
+            // Does global communication and symmetric reallocation
+            reinitGpuHaloExchangeNvshmem(*cr);
+        }
     }
 
     if (simulationWork.haveGpuPmeOnPpRank())
     {
-        GMX_ASSERT(gmx::needStateGpu(simulationWork), "StatePropagatorDataGpu is needed");
+        GMX_ASSERT(needStateGpu(simulationWork), "StatePropagatorDataGpu is needed");
         // TODO: This should be moved into PME setup function ( pme_gpu_prepare_computation(...) )
         pme_gpu_set_device_x(fr->pmedata, stateGpu->getCoordinates());
     }
@@ -1348,7 +1380,7 @@ static void doPairSearch(const t_commrec*                    cr,
                                  fr->haveBoxDeformation,
                                  inputrec.deform,
                                  x.unpaddedArrayRef().subArray(0, mdatoms.homenr),
-                                 v.empty() ? ArrayRef<RVec>() : v.subArray(0, mdatoms.homenr),
+                                 v.empty() ? ArrayRef<RVec>{} : v.subArray(0, mdatoms.homenr),
                                  gmx_omp_nthreads_get(ModuleMultiThread::Default));
             inc_nrnb(nrnb, eNR_SHIFTX, mdatoms.homenr);
         }
@@ -1356,9 +1388,9 @@ static void doPairSearch(const t_commrec*                    cr,
         if (!haveDDAtomOrdering(*cr))
         {
             // Atoms might have changed periodic image, signal MDModules
-            gmx::MDModulesAtomsRedistributedSignal mdModulesAtomsRedistributedSignal(
-                    box, x.unpaddedArrayRef().subArray(0, mdatoms.homenr));
-            mdModulesNotifiers.simulationSetupNotifier_.notify(mdModulesAtomsRedistributedSignal);
+            MDModulesAtomsRedistributedSignal mdModulesAtomsRedistributedSignal(
+                    box, x.unpaddedArrayRef().subArray(0, mdatoms.homenr), std::nullopt);
+            mdModulesNotifiers.simulationRunNotifier_.notify(mdModulesAtomsRedistributedSignal);
         }
     }
 
@@ -1373,14 +1405,27 @@ static void doPairSearch(const t_commrec*                    cr,
         const rvec vzero       = { 0.0_real, 0.0_real, 0.0_real };
         const rvec boxDiagonal = { box[XX][XX], box[YY][YY], box[ZZ][ZZ] };
         wallcycle_sub_start(wcycle, WallCycleSubCounter::NBSGridLocal);
-        nbv->putAtomsOnGrid(
-                box, 0, vzero, boxDiagonal, nullptr, { 0, mdatoms.homenr }, -1, fr->atomInfo, x.unpaddedArrayRef(), 0, nullptr);
+        nbv->putAtomsOnGrid(box,
+                            0,
+                            vzero,
+                            boxDiagonal,
+                            nullptr,
+                            { 0, mdatoms.homenr },
+                            mdatoms.homenr,
+                            -1,
+                            fr->atomInfo,
+                            x.unpaddedArrayRef(),
+                            nullptr);
         wallcycle_sub_stop(wcycle, WallCycleSubCounter::NBSGridLocal);
     }
     else
     {
         wallcycle_sub_start(wcycle, WallCycleSubCounter::NBSGridNonLocal);
-        nbnxn_put_on_grid_nonlocal(nbv, domdec_zones(cr->dd), fr->atomInfo, x.unpaddedArrayRef());
+        if (!nbv->localAtomOrderMatchesNbnxmOrder())
+        {
+            nbnxn_put_on_grid_nonlocal(nbv, getDomdecZones(*cr->dd), fr->atomInfo, x.unpaddedArrayRef());
+        }
+        nbv->convertCoordinates(AtomLocality::NonLocal, x.unpaddedArrayRef());
         wallcycle_sub_stop(wcycle, WallCycleSubCounter::NBSGridNonLocal);
     }
 
@@ -1394,7 +1439,7 @@ static void doPairSearch(const t_commrec*                    cr,
         // Note: cycle counting only nononbondeds, GPU listed forces counts internally
         wallcycle_start_nocount(wcycle, WallCycleCounter::LaunchGpuPp);
         wallcycle_sub_start_nocount(wcycle, WallCycleSubCounter::LaunchGpuNonBonded);
-        Nbnxm::gpu_init_atomdata(nbv->gpuNbv(), &nbv->nbat());
+        gpu_init_atomdata(nbv->gpuNbv(), &nbv->nbat());
         wallcycle_sub_stop(wcycle, WallCycleSubCounter::LaunchGpuNonBonded);
         wallcycle_stop(wcycle, WallCycleCounter::LaunchGpuPp);
 
@@ -1409,7 +1454,7 @@ static void doPairSearch(const t_commrec*                    cr,
             // resources, so they should be maintained by a
             // higher-level object than the nb module.
             fr->listedForcesGpu->updateInteractionListsAndDeviceBuffers(
-                    nbv->getGridIndices(), top.idef, Nbnxm::gpuGetNBAtomData(nbv->gpuNbv()));
+                    nbv->getGridIndices(), top.idef, gpuGetNBAtomData(nbv->gpuNbv()));
         }
     }
 
@@ -1438,7 +1483,7 @@ static void doPairSearch(const t_commrec*                    cr,
             setupLocalGpuForceReduction(runScheduleWork,
                                         nbv,
                                         stateGpu,
-                                        fr->gpuForceReduction[gmx::AtomLocality::Local].get(),
+                                        fr->gpuForceReduction[AtomLocality::Local].get(),
                                         fr->pmePpCommGpu.get(),
                                         fr->pmedata,
                                         cr->dd);
@@ -1449,7 +1494,7 @@ static void doPairSearch(const t_commrec*                    cr,
             setupNonLocalGpuForceReduction(runScheduleWork,
                                            nbv,
                                            stateGpu,
-                                           fr->gpuForceReduction[gmx::AtomLocality::NonLocal].get(),
+                                           fr->gpuForceReduction[AtomLocality::NonLocal].get(),
                                            cr->dd);
         }
     }
@@ -1469,6 +1514,8 @@ static void doPairSearch(const t_commrec*                    cr,
         // to location in do_md where GPU halo exchange is
         // constructed at partitioning, after above stateGpu
         // re-initialization has similarly been refactored
+        // because with NVSHMEM the ordering of synchronous
+        // global operations must be preserved.
         if (simulationWork.useGpuHaloExchange)
         {
             reinitGpuHaloExchange(*cr, stateGpu->getCoordinates(), stateGpu->getForces());
@@ -1485,36 +1532,35 @@ static void doPairSearch(const t_commrec*                    cr,
     }
 }
 
-void do_force(FILE*                               fplog,
-              const t_commrec*                    cr,
-              const gmx_multisim_t*               ms,
-              const t_inputrec&                   inputrec,
-              const gmx::MDModulesNotifiers&      mdModulesNotifiers,
-              gmx::Awh*                           awh,
-              gmx_enfrot*                         enforcedRotation,
-              gmx::ImdSession*                    imdSession,
-              pull_t*                             pull_work,
-              int64_t                             step,
-              t_nrnb*                             nrnb,
-              gmx_wallcycle*                      wcycle,
-              const gmx_localtop_t*               top,
-              const matrix                        box,
-              gmx::ArrayRefWithPadding<gmx::RVec> x,
-              gmx::ArrayRef<gmx::RVec>            v,
-              const history_t*                    hist,
-              gmx::ForceBuffersView*              forceView,
-              tensor                              vir_force,
-              const t_mdatoms*                    mdatoms,
-              gmx_enerdata_t*                     enerd,
-              gmx::ArrayRef<const real>           lambda,
-              t_forcerec*                         fr,
-              const gmx::MdrunScheduleWorkload&   runScheduleWork,
-              gmx::VirtualSitesHandler*           vsite,
-              rvec                                muTotal,
-              double                              t,
-              gmx_edsam*                          ed,
-              CpuPpLongRangeNonbondeds*           longRangeNonbondeds,
-              const DDBalanceRegionHandler&       ddBalanceRegionHandler)
+void do_force(FILE*                         fplog,
+              const t_commrec*              cr,
+              const t_inputrec&             inputrec,
+              const MDModulesNotifiers&     mdModulesNotifiers,
+              Awh*                          awh,
+              gmx_enfrot*                   enforcedRotation,
+              ImdSession*                   imdSession,
+              pull_t*                       pull_work,
+              int64_t                       step,
+              t_nrnb*                       nrnb,
+              gmx_wallcycle*                wcycle,
+              const gmx_localtop_t*         top,
+              const matrix                  box,
+              ArrayRefWithPadding<RVec>     x,
+              ArrayRef<RVec>                v,
+              const history_t*              hist,
+              ForceBuffersView*             forceView,
+              tensor                        vir_force,
+              const t_mdatoms*              mdatoms,
+              gmx_enerdata_t*               enerd,
+              ArrayRef<const real>          lambda,
+              t_forcerec*                   fr,
+              const MdrunScheduleWorkload&  runScheduleWork,
+              VirtualSitesHandler*          vsite,
+              rvec                          muTotal,
+              double                        t,
+              gmx_edsam*                    ed,
+              CpuPpLongRangeNonbondeds*     longRangeNonbondeds,
+              const DDBalanceRegionHandler& ddBalanceRegionHandler)
 {
     auto force = forceView->forceWithPadding();
     GMX_ASSERT(force.unpaddedArrayRef().ssize() >= fr->natoms_force_constr,
@@ -1524,13 +1570,39 @@ void do_force(FILE*                               fplog,
     nonbonded_verlet_t*  nbv = fr->nbv.get();
     interaction_const_t* ic  = fr->ic.get();
 
-    gmx::StatePropagatorDataGpu* stateGpu = fr->stateGpu;
+    StatePropagatorDataGpu* stateGpu = fr->stateGpu;
 
     const SimulationWorkload& simulationWork = runScheduleWork.simulationWork;
 
-    const gmx::DomainLifetimeWorkload& domainWork = runScheduleWork.domainWork;
+    const DomainLifetimeWorkload& domainWork = runScheduleWork.domainWork;
 
     const StepWorkload& stepWork = runScheduleWork.stepWork;
+
+    const bool pmeSendCoordinatesFromGpu =
+            simulationWork.useGpuPmePpCommunication && !stepWork.doNeighborSearch;
+
+    const bool reinitGpuPmePpComms = simulationWork.useGpuPmePpCommunication && stepWork.doNeighborSearch;
+    if (stepWork.computePmeOnSeparateRank && stepWork.doNeighborSearch)
+    {
+        // We call the gmx_pme_send_coordinates early for reinit case
+        // in order for nvshmem collective calls in StatePropagatorDataGpu::Impl::reinit
+        // to be in sync with PME-PP
+        gmx_pme_send_coordinates(fr,
+                                 cr->dd,
+                                 box,
+                                 x.unpaddedArrayRef(),
+                                 lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)],
+                                 lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Vdw)],
+                                 (stepWork.computeVirial || stepWork.computeEnergy),
+                                 step,
+                                 simulationWork.useGpuPmePpCommunication,
+                                 reinitGpuPmePpComms,
+                                 pmeSendCoordinatesFromGpu,
+                                 stepWork.useGpuPmeFReduction,
+                                 nullptr,
+                                 simulationWork.useMdGpuGraph,
+                                 wcycle);
+    }
 
     if (stepWork.doNeighborSearch)
     {
@@ -1543,12 +1615,10 @@ void do_force(FILE*                               fplog,
         ddBalanceRegionHandler.openBeforeForceComputationCpu(DdAllowBalanceRegionReopen::yes);
     }
 
-    const bool pmeSendCoordinatesFromGpu =
-            simulationWork.useGpuPmePpCommunication && !stepWork.doNeighborSearch;
     auto* localXReadyOnDevice = (stepWork.haveGpuPmeOnThisRank || stepWork.useGpuXBufferOps
                                  || simulationWork.useGpuUpdate || pmeSendCoordinatesFromGpu)
                                         ? stateGpu->getCoordinatesReadyOnDeviceEvent(
-                                                AtomLocality::Local, simulationWork, stepWork)
+                                                  AtomLocality::Local, simulationWork, stepWork)
                                         : nullptr;
 
     if (stepWork.clearGpuFBufferEarly)
@@ -1569,12 +1639,12 @@ void do_force(FILE*                               fplog,
         /* Compute shift vectors every step,
          * because of pressure coupling or box deformation!
          */
-        if (stepWork.haveDynamicBox && stepWork.stateChanged)
+        if (simulationWork.haveDynamicBox && stepWork.stateChanged)
         {
             calc_shifts(box, fr->shift_vec);
         }
     }
-    nbnxn_atomdata_copy_shiftvec(stepWork.haveDynamicBox, fr->shift_vec, &nbv->nbat());
+    nbnxn_atomdata_copy_shiftvec(simulationWork.haveDynamicBox, fr->shift_vec, &nbv->nbat());
 
 
     GMX_ASSERT(simulationWork.useGpuHaloExchange
@@ -1604,9 +1674,8 @@ void do_force(FILE*                               fplog,
     if (stepWork.haveGpuPmeOnThisRank || stepWork.useGpuXBufferOps || pmeSendCoordinatesFromGpu)
     {
         GMX_ASSERT(stateGpu != nullptr, "stateGpu should not be null");
-        const int expectedLocalXReadyOnDeviceConsumptionCount =
-                getExpectedLocalXReadyOnDeviceConsumptionCount(
-                        simulationWork, stepWork, pmeSendCoordinatesFromGpu);
+        const int expectedLocalXReadyOnDeviceConsumptionCount = getExpectedLocalXReadyOnDeviceConsumptionCount(
+                simulationWork, stepWork, domainWork, pmeSendCoordinatesFromGpu, mdatoms->homenr > 0);
 
         // We need to copy coordinates when:
         // 1. Update is not offloaded
@@ -1624,20 +1693,18 @@ void do_force(FILE*                               fplog,
         }
     }
 
-    if (stepWork.computePmeOnSeparateRank)
+    if (stepWork.computePmeOnSeparateRank && !stepWork.doNeighborSearch)
     {
         /* Send particle coordinates to the pme nodes */
-        if (!pmeSendCoordinatesFromGpu && !stepWork.doNeighborSearch && simulationWork.useGpuUpdate)
+        if (!pmeSendCoordinatesFromGpu && simulationWork.useGpuUpdate)
         {
             GMX_ASSERT(haveCopiedXFromGpu,
                        "a wait should only be triggered if copy has been scheduled");
             stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
         }
 
-        const bool reinitGpuPmePpComms =
-                simulationWork.useGpuPmePpCommunication && stepWork.doNeighborSearch;
         gmx_pme_send_coordinates(fr,
-                                 cr,
+                                 cr->dd,
                                  box,
                                  x.unpaddedArrayRef(),
                                  lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)],
@@ -1663,7 +1730,7 @@ void do_force(FILE*                               fplog,
             setupLocalGpuForceReduction(runScheduleWork,
                                         fr->nbv.get(),
                                         stateGpu,
-                                        fr->gpuForceReduction[gmx::AtomLocality::Local].get(),
+                                        fr->gpuForceReduction[AtomLocality::Local].get(),
                                         fr->pmePpCommGpu.get(),
                                         fr->pmedata,
                                         cr->dd);
@@ -1674,6 +1741,7 @@ void do_force(FILE*                               fplog,
     {
         launchPmeGpuSpread(fr->pmedata,
                            box,
+                           simulationWork,
                            stepWork,
                            localXReadyOnDevice,
                            lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Coul)],
@@ -1708,10 +1776,10 @@ void do_force(FILE*                               fplog,
 
         wallcycle_start(wcycle, WallCycleCounter::LaunchGpuPp);
         wallcycle_sub_start(wcycle, WallCycleSubCounter::LaunchGpuNonBonded);
-        Nbnxm::gpu_upload_shiftvec(nbv->gpuNbv(), &nbv->nbat());
+        gpu_upload_shiftvec(nbv->gpuNbv(), &nbv->nbat());
         if (!stepWork.useGpuXBufferOps)
         {
-            Nbnxm::gpu_copy_xq_to_gpu(nbv->gpuNbv(), &nbv->nbat(), AtomLocality::Local);
+            gpu_copy_xq_to_gpu(nbv->gpuNbv(), &nbv->nbat(), AtomLocality::Local);
         }
         wallcycle_sub_stop(wcycle, WallCycleSubCounter::LaunchGpuNonBonded);
         wallcycle_stop(wcycle, WallCycleCounter::LaunchGpuPp);
@@ -1747,9 +1815,9 @@ void do_force(FILE*                               fplog,
     /* Communicate coordinates and sum dipole if necessary */
     if (simulationWork.havePpDomainDecomposition)
     {
+        GpuEventSynchronizer* gpuCoordinateHaloLaunched = nullptr;
         if (!stepWork.doNeighborSearch)
         {
-            GpuEventSynchronizer* gpuCoordinateHaloLaunched = nullptr;
             if (stepWork.useGpuXHalo)
             {
                 // The following must be called after local setCoordinates (which records an event
@@ -1776,30 +1844,40 @@ void do_force(FILE*                               fplog,
                         stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
                     }
                 }
-                dd_move_x(cr->dd, box, x.unpaddedArrayRef(), wcycle);
-            }
 
-            if (stepWork.useGpuXBufferOps)
-            {
-                if (!stepWork.useGpuXHalo)
+                if (cr->dd->haloExchange)
                 {
-                    stateGpu->copyCoordinatesToGpu(x.unpaddedArrayRef(), AtomLocality::NonLocal);
+                    wallcycle_start(wcycle, WallCycleCounter::MoveX);
+                    cr->dd->haloExchange->moveX(box, x.unpaddedArrayRef());
+                    wallcycle_stop(wcycle, WallCycleCounter::MoveX);
                 }
-                GpuEventSynchronizer* xReadyOnDeviceEvent = stateGpu->getCoordinatesReadyOnDeviceEvent(
-                        AtomLocality::NonLocal, simulationWork, stepWork, gpuCoordinateHaloLaunched);
-                if (stepWork.useGpuXHalo && domainWork.haveCpuNonLocalForceWork)
+                else
                 {
-                    /* We already enqueued an event for Gpu Halo exchange completion into the
-                     * NonLocal stream when D2H copying the coordinates. */
-                    xReadyOnDeviceEvent = nullptr;
+                    dd_move_x(cr->dd, box, x.unpaddedArrayRef(), wcycle);
                 }
-                nbv->convertCoordinatesGpu(
-                        AtomLocality::NonLocal, stateGpu->getCoordinates(), xReadyOnDeviceEvent);
             }
-            else
+        }
+
+        if (stepWork.useGpuXBufferOps)
+        {
+            if (!stepWork.useGpuXHalo)
             {
-                nbv->convertCoordinates(AtomLocality::NonLocal, x.unpaddedArrayRef());
+                stateGpu->copyCoordinatesToGpu(x.unpaddedArrayRef(), AtomLocality::NonLocal);
             }
+            GpuEventSynchronizer* xReadyOnDeviceEvent = stateGpu->getCoordinatesReadyOnDeviceEvent(
+                    AtomLocality::NonLocal, simulationWork, stepWork, gpuCoordinateHaloLaunched);
+            if (stepWork.useGpuXHalo && domainWork.haveCpuNonLocalForceWork)
+            {
+                /* We already enqueued an event for Gpu Halo exchange completion into the
+                 * NonLocal stream when D2H copying the coordinates. */
+                xReadyOnDeviceEvent = nullptr;
+            }
+            nbv->convertCoordinatesGpu(
+                    AtomLocality::NonLocal, stateGpu->getCoordinates(), xReadyOnDeviceEvent);
+        }
+        else if (!stepWork.doNeighborSearch)
+        {
+            nbv->convertCoordinates(AtomLocality::NonLocal, x.unpaddedArrayRef());
         }
 
         if (simulationWork.useGpuNonbonded)
@@ -1809,7 +1887,7 @@ void do_force(FILE*                               fplog,
             {
                 wallcycle_start(wcycle, WallCycleCounter::LaunchGpuPp);
                 wallcycle_sub_start(wcycle, WallCycleSubCounter::LaunchGpuNonBonded);
-                Nbnxm::gpu_copy_xq_to_gpu(nbv->gpuNbv(), &nbv->nbat(), AtomLocality::NonLocal);
+                gpu_copy_xq_to_gpu(nbv->gpuNbv(), &nbv->nbat(), AtomLocality::NonLocal);
                 wallcycle_sub_stop(wcycle, WallCycleSubCounter::LaunchGpuNonBonded);
                 wallcycle_stop(wcycle, WallCycleCounter::LaunchGpuPp);
             }
@@ -1836,9 +1914,9 @@ void do_force(FILE*                               fplog,
 
         if (simulationWork.havePpDomainDecomposition)
         {
-            Nbnxm::gpu_launch_cpyback(nbv->gpuNbv(), &nbv->nbat(), stepWork, AtomLocality::NonLocal);
+            gpu_launch_cpyback(nbv->gpuNbv(), &nbv->nbat(), stepWork, AtomLocality::NonLocal);
         }
-        Nbnxm::gpu_launch_cpyback(nbv->gpuNbv(), &nbv->nbat(), stepWork, AtomLocality::Local);
+        gpu_launch_cpyback(nbv->gpuNbv(), &nbv->nbat(), stepWork, AtomLocality::Local);
         wallcycle_sub_stop(wcycle, WallCycleSubCounter::LaunchGpuNonBonded);
 
         if (domainWork.haveGpuBondedWork && stepWork.computeEnergy)
@@ -1848,67 +1926,25 @@ void do_force(FILE*                               fplog,
         wallcycle_stop(wcycle, WallCycleCounter::LaunchGpuPp);
     }
 
-    gmx::ArrayRef<const gmx::RVec> xWholeMolecules;
+    ArrayRef<const RVec> xWholeMolecules;
     if (fr->wholeMoleculeTransform)
     {
         xWholeMolecules = fr->wholeMoleculeTransform->wholeMoleculeCoordinates(x.unpaddedArrayRef(), box);
     }
 
-    // For the rest of the CPU tasks that depend on GPU-update produced coordinates,
-    // this wait ensures that the D2H transfer is complete.
-    if (simulationWork.useGpuUpdate && !stepWork.doNeighborSearch)
+    // The CPU force buffer force clearing needs to happen after the previous step
+    // force reduction has already completed. To minimize the cross-step dependencies
+    // we wait on the coordinates to be updated on the device which is sufficient but
+    // a later event than what we strictly need to synchronize with.
+    if (simulationWork.useGpuUpdate && domainWork.haveCpuLocalForceWork)
     {
-        const bool needCoordsOnHost = (runScheduleWork.domainWork.haveCpuLocalForceWork
-                                       || stepWork.computeVirial || simulationWork.computeMuTot);
-        const bool haveAlreadyWaited =
-                simulationWork.useCpuHaloExchange
+        const bool coordinatesAlreadyUpdatedOnDevice =
+                stepWork.doNeighborSearch || simulationWork.useCpuHaloExchange
                 || (stepWork.computePmeOnSeparateRank && !pmeSendCoordinatesFromGpu);
-        if (needCoordsOnHost && !haveAlreadyWaited)
+        if (!coordinatesAlreadyUpdatedOnDevice)
         {
-            GMX_ASSERT(haveCopiedXFromGpu,
-                       "a wait should only be triggered if copy has been scheduled");
-            stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
+            stateGpu->waitCoordinatesUpdatedOnDevice();
         }
-    }
-
-    DipoleData dipoleData;
-
-    if (simulationWork.computeMuTot)
-    {
-        const int start = 0;
-
-        /* Calculate total (local) dipole moment in a temporary common array.
-         * This makes it possible to sum them over nodes faster.
-         */
-        gmx::ArrayRef<const gmx::RVec> xRef =
-                (xWholeMolecules.empty() ? x.unpaddedArrayRef() : xWholeMolecules);
-        calc_mu(start,
-                mdatoms->homenr,
-                xRef,
-                mdatoms->chargeA,
-                mdatoms->chargeB,
-                mdatoms->nChargePerturbed != 0,
-                dipoleData.muStaging[0],
-                dipoleData.muStaging[1]);
-
-        reduceAndUpdateMuTot(
-                &dipoleData, cr, (fr->efep != FreeEnergyPerturbationType::No), lambda, muTotal, ddBalanceRegionHandler);
-    }
-
-    /* Reset energies */
-    reset_enerdata(enerd);
-
-    if (haveDDAtomOrdering(*cr) && simulationWork.haveSeparatePmeRank)
-    {
-        wallcycle_start(wcycle, WallCycleCounter::PpDuringPme);
-        dd_force_flop_start(cr->dd, nrnb);
-    }
-
-    if (inputrec.bRot)
-    {
-        wallcycle_start(wcycle, WallCycleCounter::Rot);
-        do_rotation(cr, enforcedRotation, box, x.unpaddedConstArrayRef(), t, step, stepWork.doNeighborSearch);
-        wallcycle_stop(wcycle, WallCycleCounter::Rot);
     }
 
     /* Start the force cycle counter.
@@ -1922,12 +1958,6 @@ void do_force(FILE*                               fplog,
      * forceOutNonbonded: non-bonded forces
      * Without multiple time stepping all point to the same object.
      * With multiple time-stepping the use is different for MTS fast (level0 only) and slow steps.
-     *
-     * Note that CPU force buffer clearing needs to happen after the completion of the
-     * previous step's CPU force H2D transfer (prior to force reduction).
-     * In the current code this is ensured by the earlier waitCoordinatesReadyOnHost()
-     * which is sufficient, but it is suboptimal as it prevents overlap of the force clearing
-     * with independent GPU work (integration/constraints, x D2H copy).
      */
     ForceOutputs forceOutMtsLevel0 = setupForceOutputs(
             &fr->forceHelperBuffers[0], force, domainWork, stepWork, simulationWork.havePpDomainDecomposition, wcycle);
@@ -1955,8 +1985,67 @@ void do_force(FILE*                               fplog,
     {
         clear_pull_forces(pull_work);
     }
-
     wallcycle_stop(wcycle, WallCycleCounter::Force);
+
+    // For the rest of the CPU tasks that depend on GPU-update produced coordinates,
+    // this wait ensures that the D2H transfer is complete.
+    if (simulationWork.useGpuUpdate && !stepWork.doNeighborSearch)
+    {
+        const bool needCoordsOnHost = (runScheduleWork.domainWork.haveCpuLocalForceWork
+                                       || stepWork.computeVirial || simulationWork.computeMuTot);
+        const bool haveAlreadyWaited =
+                simulationWork.useCpuHaloExchange
+                || (stepWork.computePmeOnSeparateRank && !pmeSendCoordinatesFromGpu);
+        if (needCoordsOnHost && !haveAlreadyWaited)
+        {
+            GMX_ASSERT(haveCopiedXFromGpu,
+                       "a wait should only be triggered if copy has been scheduled");
+            stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
+        }
+    }
+
+    DipoleData dipoleData;
+
+    if (simulationWork.computeMuTot)
+    {
+        const int start = 0;
+
+        /* Calculate total (local) dipole moment in a temporary common array.
+         * This makes it possible to sum them over nodes faster.
+         */
+        ArrayRef<const RVec> xRef = (xWholeMolecules.empty() ? x.unpaddedArrayRef() : xWholeMolecules);
+        calc_mu(start,
+                mdatoms->homenr,
+                xRef,
+                mdatoms->chargeA,
+                mdatoms->chargeB,
+                mdatoms->nChargePerturbed != 0,
+                dipoleData.muStaging[0],
+                dipoleData.muStaging[1]);
+
+        reduceAndUpdateMuTot(&dipoleData,
+                             cr->commMyGroup,
+                             (fr->efep != FreeEnergyPerturbationType::No),
+                             lambda,
+                             muTotal,
+                             ddBalanceRegionHandler);
+    }
+
+    /* Reset energies */
+    reset_enerdata(enerd);
+
+    if (haveDDAtomOrdering(*cr) && simulationWork.haveSeparatePmeRank)
+    {
+        wallcycle_start(wcycle, WallCycleCounter::PpDuringPme);
+        dd_force_flop_start(cr->dd, nrnb);
+    }
+
+    if (inputrec.bRot)
+    {
+        wallcycle_start(wcycle, WallCycleCounter::Rot);
+        do_rotation(cr->commMyGroup, cr->dd, enforcedRotation, box, x.unpaddedConstArrayRef(), t, step, stepWork.doNeighborSearch);
+        wallcycle_stop(wcycle, WallCycleCounter::Rot);
+    }
 
     /* We calculate the non-bonded forces, when done on the CPU, here.
      * We do this before calling do_force_lowlevel, because in that
@@ -2084,8 +2173,6 @@ void do_force(FILE*                               fplog,
             ForceOutputs& forceOut     = (mtsIndex == 0 ? forceOutMtsLevel0 : *forceOutMtsLevel1);
             listedForces.calculate(wcycle,
                                    box,
-                                   cr,
-                                   ms,
                                    x,
                                    xWholeMolecules,
                                    fr->fcdata.get(),
@@ -2123,7 +2210,8 @@ void do_force(FILE*                               fplog,
     wallcycle_stop(wcycle, WallCycleCounter::Force);
 
     // VdW dispersion correction, only computed on main rank to avoid double counting
-    if ((stepWork.computeEnergy || stepWork.computeVirial) && fr->dispersionCorrection && MAIN(cr))
+    if ((stepWork.computeEnergy || stepWork.computeVirial) && fr->dispersionCorrection
+        && cr->commMySim.isMainRank())
     {
         // Calculate long range corrections to pressure and energy
         const DispersionCorrection::Correction correction = fr->dispersionCorrection->calculate(
@@ -2142,7 +2230,7 @@ void do_force(FILE*                               fplog,
         }
     }
 
-    const bool needToReceivePmeResultsFromSeparateRank = (PAR(cr) && stepWork.computePmeOnSeparateRank);
+    const bool needToReceivePmeResultsFromSeparateRank = stepWork.computePmeOnSeparateRank;
     const bool needToReceivePmeResults =
             (stepWork.haveGpuPmeOnThisRank || needToReceivePmeResultsFromSeparateRank);
 
@@ -2168,7 +2256,7 @@ void do_force(FILE*                               fplog,
              * forces, virial and energy from the PME nodes here.
              */
             pme_receive_force_ener(fr,
-                                   cr,
+                                   cr->dd,
                                    &forceOutMtsLevel1->forceWithVirial(),
                                    enerd,
                                    simulationWork.useGpuPmePpCommunication,
@@ -2177,27 +2265,34 @@ void do_force(FILE*                               fplog,
         }
     }
 
-    computeSpecialForces(fplog,
-                         cr,
-                         inputrec,
-                         awh,
-                         enforcedRotation,
-                         imdSession,
-                         pull_work,
-                         step,
-                         t,
-                         wcycle,
-                         fr->forceProviders,
-                         box,
-                         x.unpaddedArrayRef(),
-                         mdatoms,
-                         lambda,
-                         stepWork,
-                         &forceOutMtsLevel0.forceWithVirial(),
-                         forceOutMtsLevel1 ? &forceOutMtsLevel1->forceWithVirial() : nullptr,
-                         enerd,
-                         ed,
-                         stepWork.doNeighborSearch);
+    if (domainWork.haveSpecialForces)
+    {
+        // Communication often happens for special forces, so we should close the balancing region here
+        ddBalanceRegionHandler.closeAfterForceComputationCpu();
+
+        computeSpecialForces(fplog,
+                             cr->commMyGroup,
+                             cr->dd,
+                             inputrec,
+                             awh,
+                             enforcedRotation,
+                             imdSession,
+                             pull_work,
+                             step,
+                             t,
+                             wcycle,
+                             fr->forceProviders,
+                             box,
+                             x.unpaddedArrayRef(),
+                             mdatoms,
+                             lambda,
+                             stepWork,
+                             &forceOutMtsLevel0.forceWithVirial(),
+                             forceOutMtsLevel1 ? &forceOutMtsLevel1->forceWithVirial() : nullptr,
+                             enerd,
+                             ed,
+                             stepWork.doNeighborSearch);
+    }
 
     if (simulationWork.havePpDomainDecomposition && stepWork.computeForces && stepWork.useGpuFHalo
         && domainWork.haveCpuLocalForceWork)
@@ -2221,7 +2316,7 @@ void do_force(FILE*                               fplog,
         {
             if (simulationWork.useGpuNonbonded)
             {
-                cycles_wait_gpu += Nbnxm::gpu_wait_finish_task(
+                cycles_wait_gpu += gpu_wait_finish_task(
                         nbv->gpuNbv(),
                         stepWork,
                         AtomLocality::NonLocal,
@@ -2247,7 +2342,7 @@ void do_force(FILE*                               fplog,
                 }
 
 
-                fr->gpuForceReduction[gmx::AtomLocality::NonLocal]->execute();
+                fr->gpuForceReduction[AtomLocality::NonLocal]->execute();
 
                 if (!stepWork.useGpuFHalo)
                 {
@@ -2309,6 +2404,7 @@ void do_force(FILE*                               fplog,
          * We will now communicate the non-local forces.
          * If we use a GPU this will overlap with GPU work, so in that case
          * we do not close the DD force balancing region here.
+         * With special forces we closed this region already before computing the special forces.
          */
         ddBalanceRegionHandler.closeAfterForceComputationCpu();
 
@@ -2319,7 +2415,7 @@ void do_force(FILE*                               fplog,
             {
                 // If there exist CPU forces, data from halo exchange should accumulate into these
                 bool accumulateForces = domainWork.haveCpuLocalForceWork;
-                gmx::FixedCapacityVector<GpuEventSynchronizer*, 2> gpuForceHaloDependencies;
+                FixedCapacityVector<GpuEventSynchronizer*, 2> gpuForceHaloDependencies;
                 // completion of both H2D copy and clearing is signaled by fReadyOnDevice
                 if (domainWork.haveCpuLocalForceWork || stepWork.clearGpuFBufferEarly)
                 {
@@ -2382,7 +2478,7 @@ void do_force(FILE*                               fplog,
          * of the step time.
          */
         const float gpuWaitApiOverheadMargin = 2e6F; /* cycles */
-        const float waitCycles               = Nbnxm::gpu_wait_finish_task(
+        const float waitCycles               = gpu_wait_finish_task(
                 nbv->gpuNbv(),
                 stepWork,
                 AtomLocality::Local,
@@ -2435,7 +2531,7 @@ void do_force(FILE*                               fplog,
          * forces, virial and energy from the PME nodes here.
          */
         pme_receive_force_ener(fr,
-                               cr,
+                               cr->dd,
                                &forceOutMtsLevel1->forceWithVirial(),
                                enerd,
                                simulationWork.useGpuPmePpCommunication,
@@ -2452,13 +2548,13 @@ void do_force(FILE*                               fplog,
     {
         if (stepWork.useGpuFBufferOps)
         {
-            ArrayRef<gmx::RVec> forceWithShift = forceOutNonbonded->forceWithShiftForces().force();
+            ArrayRef<RVec> forceWithShift = forceOutNonbonded->forceWithShiftForces().force();
 
             // TODO: move these steps as early as possible:
             // - CPU f H2D should be as soon as all CPU-side forces are done
             // - wait for force reduction does not need to block host (at least not here, it's sufficient to wait
             //   before the next CPU task that consumes the forces: vsite spread or update)
-            // - copy is not perfomed if GPU force halo exchange is active, because it would overwrite the result
+            // - copy is not performed if GPU force halo exchange is active, because it would overwrite the result
             //   of the halo exchange. In that case the copy is instead performed above, before the exchange.
             //   These should be unified.
             if (domainWork.haveLocalForceContribInCpuBuffer && !stepWork.useGpuFHalo)
@@ -2468,7 +2564,7 @@ void do_force(FILE*                               fplog,
 
             if (stepWork.computeNonbondedForces)
             {
-                fr->gpuForceReduction[gmx::AtomLocality::Local]->execute();
+                fr->gpuForceReduction[AtomLocality::Local]->execute();
             }
 
             // Copy forces to host if they are needed for update or if virtual sites are enabled.
@@ -2494,7 +2590,7 @@ void do_force(FILE*                               fplog,
         }
         else if (stepWork.computeNonbondedForces)
         {
-            ArrayRef<gmx::RVec> forceWithShift = forceOutNonbonded->forceWithShiftForces().force();
+            ArrayRef<RVec> forceWithShift = forceOutNonbonded->forceWithShiftForces().force();
             nbv->atomdata_add_nbat_f_to_f(AtomLocality::Local, forceWithShift);
         }
     }
@@ -2537,7 +2633,7 @@ void do_force(FILE*                               fplog,
          * forces, virial and energy from the PME nodes here.
          */
         pme_receive_force_ener(fr,
-                               cr,
+                               cr->dd,
                                &forceOutMtsLevel1->forceWithVirial(),
                                enerd,
                                simulationWork.useGpuPmePpCommunication,
@@ -2553,12 +2649,22 @@ void do_force(FILE*                               fplog,
          */
         ForceOutputs& forceOutCombined = (haveCombinedMtsForces ? forceOutMts.value() : forceOutMtsLevel0);
         postProcessForces(
-                cr, step, nrnb, wcycle, box, x.unpaddedArrayRef(), &forceOutCombined, vir_force, mdatoms, fr, vsite, stepWork);
+                cr->dd, step, nrnb, wcycle, box, x.unpaddedArrayRef(), &forceOutCombined, vir_force, mdatoms, fr, vsite, stepWork);
 
         if (simulationWork.useMts && stepWork.computeSlowForces && !haveCombinedMtsForces)
         {
-            postProcessForces(
-                    cr, step, nrnb, wcycle, box, x.unpaddedArrayRef(), forceOutMtsLevel1, vir_force, mdatoms, fr, vsite, stepWork);
+            postProcessForces(cr->dd,
+                              step,
+                              nrnb,
+                              wcycle,
+                              box,
+                              x.unpaddedArrayRef(),
+                              forceOutMtsLevel1,
+                              vir_force,
+                              mdatoms,
+                              fr,
+                              vsite,
+                              stepWork);
 
             combineMtsForces(mdatoms->homenr,
                              force.unpaddedArrayRef(),
@@ -2586,3 +2692,5 @@ void do_force(FILE*                               fplog,
      */
     ddBalanceRegionHandler.openBeforeForceComputationCpu(DdAllowBalanceRegionReopen::no);
 }
+
+} // namespace gmx

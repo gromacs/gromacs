@@ -102,6 +102,18 @@ public:
     virtual void buildMdpOutput(KeyValueTreeObjectBuilder* builder) const = 0;
 
 protected:
+    /*! \brief Default constructors and assignment operators
+     *
+     * This permits derived types to implement these, so that they
+     * can be value types, if needed. */
+    //! \{
+    IMdpOptionProvider()                                         = default;
+    IMdpOptionProvider(const IMdpOptionProvider&)                = default;
+    IMdpOptionProvider& operator=(const IMdpOptionProvider&)     = default;
+    IMdpOptionProvider(IMdpOptionProvider&&) noexcept            = default;
+    IMdpOptionProvider& operator=(IMdpOptionProvider&&) noexcept = default;
+    //! \}
+
     virtual ~IMdpOptionProvider() {}
 };
 

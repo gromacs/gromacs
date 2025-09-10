@@ -34,7 +34,7 @@
 #ifndef GMX_PBCUTIL_ISHIFT_H
 #define GMX_PBCUTIL_ISHIFT_H
 
-#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/vectypes.h"
 
 namespace gmx
 {
@@ -60,6 +60,12 @@ static inline int xyzToShiftIndex(int x, int y, int z)
 {
     return (detail::c_nBoxX * (detail::c_nBoxY * ((z) + gmx::c_dBoxZ) + (y) + gmx::c_dBoxY) + (x)
             + gmx::c_dBoxX);
+}
+
+//! Convert grid coordinates to shift index
+static inline int ivecToShiftIndex(const gmx::IVec& iv)
+{
+    return (xyzToShiftIndex(iv[XX], iv[YY], iv[ZZ]));
 }
 
 //! Convert grid coordinates to shift index

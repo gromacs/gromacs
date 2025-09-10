@@ -42,6 +42,8 @@
 #ifndef GMX_APPLIED_FORCES_QMMMFORCEPROVIDER_H
 #define GMX_APPLIED_FORCES_QMMMFORCEPROVIDER_H
 
+#include <string>
+
 #include "gromacs/domdec/localatomset.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/iforceprovider.h"
@@ -91,9 +93,9 @@ private:
     bool isQMAtom(Index globalAtomIndex);
 
     /*!\brief Initialization of QM program.
-     * \param[in] cr connection record structure
+     * \param[in] mpiComm communication object
      */
-    void initCP2KForceEnvironment(const t_commrec& cr);
+    void initCP2KForceEnvironment(const MpiComm& mpiComm);
 
     const QMMMParameters& parameters_;
     const LocalAtomSet&   qmAtoms_;
@@ -112,6 +114,9 @@ private:
 };
 
 CLANG_DIAGNOSTIC_RESET
+
+//! Returns information for describing the CP2K QM/MM support
+std::string qmmmDescription();
 
 } // namespace gmx
 

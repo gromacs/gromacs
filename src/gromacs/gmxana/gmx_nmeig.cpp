@@ -59,9 +59,6 @@
 #include "gromacs/linearalgebra/sparsematrix.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vecdump.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_util.h"
@@ -75,6 +72,9 @@
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vecdump.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "thermochemistry.h"
 
@@ -172,7 +172,7 @@ static void nma_full_hessian(real*                    hess,
     /* call diagonalization routine. */
 
     fprintf(stderr, "\nDiagonalizing to find vectors %d through %d...\n", begin, end);
-    fflush(stderr);
+    std::fflush(stderr);
 
     eigensolver(hess, ndim, begin - 1, end - 1, eigenvalues, eigenvectors);
 
@@ -237,7 +237,7 @@ static void nma_sparse_hessian(gmx_sparsematrix_t*      sparse_hessian,
         }
     }
     fprintf(stderr, "\nDiagonalizing to find eigenvectors 1 through %d...\n", neig);
-    fflush(stderr);
+    std::fflush(stderr);
 
     sparse_eigensolver(sparse_hessian, neig, eigenvalues, eigenvectors, 10000000);
 
@@ -523,8 +523,7 @@ int gmx_nmeig(int argc, char* argv[])
     real                       qcvtot, qutot, qcv, qu;
     int                        i, j, k;
     real                       value, omega, nu;
-    real                       factor_gmx_to_omega2;
-    real                       factor_omega_to_wavenumber;
+    real                       factorOmegaToWavenumber;
     real*                      spectrum = nullptr;
     real                       wfac;
     gmx_output_env_t*          oenv;
@@ -740,8 +739,8 @@ int gmx_nmeig(int argc, char* argv[])
      * light. Do this by first converting to omega^2 (units 1/s), take the square
      * root, and finally divide by the speed of light (nm/ps in gromacs).
      */
-    factor_gmx_to_omega2       = 1.0E21 / (gmx::c_avogadro * gmx::c_amu);
-    factor_omega_to_wavenumber = 1.0E-5 / (2.0 * M_PI * gmx::c_speedOfLight);
+
+    factorOmegaToWavenumber = 1.0E-5 / (2.0 * M_PI * gmx::c_speedOfLight);
 
     value = 0;
     for (i = begin; (i <= end); i++)
@@ -751,9 +750,9 @@ int gmx_nmeig(int argc, char* argv[])
         {
             value = 0;
         }
-        omega = std::sqrt(value * factor_gmx_to_omega2);
+        omega = eigenvalueToFrequency(value);
         nu    = 1e-12 * omega / (2 * M_PI);
-        value = omega * factor_omega_to_wavenumber;
+        value = omega * factorOmegaToWavenumber;
         fprintf(out, "%6d %15g\n", i, value);
         if (nullptr != spec)
         {

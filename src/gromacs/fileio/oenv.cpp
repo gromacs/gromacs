@@ -115,8 +115,8 @@ void output_env_init(gmx_output_env_t**          oenvp,
         oenv->view                    = view;
         oenv->xvgFormat               = xvgFormat;
         oenv->verbosity               = verbosity;
-        const char* env               = getenv("GMX_TRAJECTORY_IO_VERBOSITY");
-        oenv->trajectory_io_verbosity = (env != nullptr ? strtol(env, nullptr, 10) : 1);
+        const char* env               = std::getenv("GMX_TRAJECTORY_IO_VERBOSITY");
+        oenv->trajectory_io_verbosity = (env != nullptr ? std::strtol(env, nullptr, 10) : 1);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
 }

@@ -33,7 +33,7 @@ it is performed in.
 Users should cite the JCTC paper: Shirts, M. R. "Simple Quantitative
 Tests to Validate Sampling from Thermodynamic Ensembles",
 J. Chem. Theory Comput., 2013, 9 (2), pp 909-926,
-http://dx.doi.org/10.1021/ct300688p
+https://doi.org/10.1021/ct300688p
 """
 
 import numpy as np

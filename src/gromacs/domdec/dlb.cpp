@@ -77,7 +77,7 @@ void set_dlb_limits(gmx_domdec_t* dd)
     for (int d = 0; d < dd->ndim; d++)
     {
         /* Set the number of pulses to the value for DLB */
-        dd->comm->cd[d].ind.resize(dd->comm->cd[d].np_dlb);
+        dd->comm->cd[d].ind.resize(dd->comm->maxNumPulsesDlb[d]);
 
         dd->comm->cellsize_min[dd->dim[d]] = dd->comm->cellsize_min_dlb[dd->dim[d]];
     }
@@ -135,7 +135,7 @@ gmx_bool dd_dlb_get_should_check_whether_to_turn_dlb_on(gmx_domdec_t* dd)
         return TRUE;
     }
     /* We check whether we should use DLB every c_checkTurnDlbOnInterval
-     * partitionings (we do not do this every partioning, so that we
+     * partitionings (we do not do this every partitioning, so that we
      * avoid excessive communication). */
     return dd->comm->n_load_have % c_checkTurnDlbOnInterval == c_checkTurnDlbOnInterval - 1;
 }

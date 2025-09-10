@@ -50,7 +50,6 @@
 #include "gromacs/fileio/readinp.h"
 #include "gromacs/fileio/warninp.h"
 #include "gromacs/gmxlib/network.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -75,6 +74,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/vec.h"
 
 /* information about scaling center */
 typedef struct
@@ -932,7 +932,7 @@ static void top_update(const char* topfile, rm_t* rm_p, gmx_mtop_t* mtop)
     char  temporary_filename[STRLEN];
 
     fpin = gmx_ffopen(topfile, "r");
-    strncpy(temporary_filename, "temp.topXXXXXX", STRLEN);
+    std::strncpy(temporary_filename, "temp.topXXXXXX", STRLEN);
     gmx_tmpnam(temporary_filename);
     fpout = gmx_ffopen(temporary_filename, "w");
 
@@ -942,12 +942,12 @@ static void top_update(const char* topfile, rm_t* rm_p, gmx_mtop_t* mtop)
         nmol_rm[rm_p->block[i]]++;
     }
 
-    while (fgets(buf, STRLEN, fpin))
+    while (std::fgets(buf, STRLEN, fpin))
     {
         if (buf[0] != ';')
         {
-            strcpy(buf2, buf);
-            if ((temp = strchr(buf2, '\n')) != nullptr)
+            std::strcpy(buf2, buf);
+            if ((temp = std::strchr(buf2, '\n')) != nullptr)
             {
                 temp[0] = '\0';
             }
@@ -955,14 +955,14 @@ static void top_update(const char* topfile, rm_t* rm_p, gmx_mtop_t* mtop)
             if (buf2[0] == '[')
             {
                 buf2[0] = ' ';
-                if ((temp = strchr(buf2, '\n')) != nullptr)
+                if ((temp = std::strchr(buf2, '\n')) != nullptr)
                 {
                     temp[0] = '\0';
                 }
                 rtrim(buf2);
-                if (buf2[strlen(buf2) - 1] == ']')
+                if (buf2[std::strlen(buf2) - 1] == ']')
                 {
-                    buf2[strlen(buf2) - 1] = '\0';
+                    buf2[std::strlen(buf2) - 1] = '\0';
                     ltrim(buf2);
                     rtrim(buf2);
                     if (gmx_strcasecmp(buf2, "molecules") == 0)
@@ -1001,7 +1001,7 @@ static void top_update(const char* topfile, rm_t* rm_p, gmx_mtop_t* mtop)
     /* use gmx_ffopen to generate backup of topinout */
     fpout = gmx_ffopen(topfile, "w");
     gmx_ffclose(fpout);
-    rename(temporary_filename, topfile);
+    std::rename(temporary_filename, topfile);
 }
 
 void rescale_membed(int step_rel, gmx_membed_t* membed, rvec* x)
@@ -1070,7 +1070,7 @@ gmx_membed_t* init_membed(FILE*          fplog,
     snew(ins_at, 1);
     snew(pos_ins, 1);
 
-    if (MAIN(cr))
+    if (cr->commMySim.isMainRank())
     {
         fprintf(fplog,
                 "Note: it is expected that in future gmx mdrun -membed will not be the "
@@ -1098,7 +1098,7 @@ gmx_membed_t* init_membed(FILE*          fplog,
             gmx_input("Change integrator to a dynamics integrator in mdp file (e.g. md or sd).");
         }
 
-        if (PAR(cr))
+        if (cr->commMySim.isParallel())
         {
             gmx_input("Sorry, parallel membed is not yet fully functional.");
         }
@@ -1123,9 +1123,10 @@ gmx_membed_t* init_membed(FILE*          fplog,
         fprintf(stderr, "\nSelect a group to embed in the membrane:\n");
         get_index(&atoms, opt2fn_null("-mn", nfile, fnm), 1, &(ins_at->nr), &(ins_at->index), &ins);
 
-        auto found = std::find_if(gnames.begin(), gnames.end(), [&ins](const auto& name) {
-            return gmx::equalCaseInsensitive(ins, name);
-        });
+        auto found = std::find_if(gnames.begin(),
+                                  gnames.end(),
+                                  [&ins](const auto& name)
+                                  { return gmx::equalCaseInsensitive(ins, name); });
 
         if (found == gnames.end())
         {

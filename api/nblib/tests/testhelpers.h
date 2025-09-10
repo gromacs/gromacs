@@ -43,8 +43,8 @@
 #ifndef NBLIB_TESTHELPERS_H
 #define NBLIB_TESTHELPERS_H
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "testutils/conftest.h"
 #include "testutils/refdata.h"

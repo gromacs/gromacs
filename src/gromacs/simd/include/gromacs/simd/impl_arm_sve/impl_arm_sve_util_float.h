@@ -60,9 +60,9 @@ static inline void gmx_simdcall
 gatherLoadBySimdIntTranspose(const float* base, SimdFInt32 offset, SimdFloat* v0, SimdFloat* v1)
 {
     // Base pointer must be aligned to the smaller of 2 elements and float SIMD width
-    assert(std::size_t(base) % 8 == 0);
+    assert(std::size_t(base) % (std::min(GMX_SIMD_FLOAT_WIDTH, 2) * sizeof(float)) == 0);
     // align parameter must also be a multiple of the above alignment requirement
-    assert(align % 2 == 0);
+    assert(align % std::min(GMX_SIMD_FLOAT_WIDTH, 2) == 0);
 
     if (align < 2)
     {
@@ -77,9 +77,9 @@ gatherLoadBySimdIntTranspose(const float* base, SimdFInt32 offset, SimdFloat* v0
     {
         svbool_t    pg    = svptrue_b32();
         svfloat32_t t0    = svreinterpret_f32_u64(svld1_gather_s64index_u64(
-                svunpklo_b(pg), (uint64_t*)base, svunpklo_s64(offset.simdInternal_)));
+                svunpklo_b(pg), reinterpret_cast<const uint64_t*>(base), svunpklo_s64(offset.simdInternal_)));
         svfloat32_t t1    = svreinterpret_f32_u64(svld1_gather_s64index_u64(
-                svunpkhi_b(pg), (uint64_t*)base, svunpkhi_s64(offset.simdInternal_)));
+                svunpkhi_b(pg), reinterpret_cast<const uint64_t*>(base), svunpkhi_s64(offset.simdInternal_)));
         v0->simdInternal_ = svuzp1(t0, t1);
         v1->simdInternal_ = svuzp2(t0, t1);
     }
@@ -87,12 +87,12 @@ gatherLoadBySimdIntTranspose(const float* base, SimdFInt32 offset, SimdFloat* v0
     {
         svbool_t    pg      = svptrue_b32();
         svint32_t   offsets = svmul_n_s32_x(pg, offset.simdInternal_, align / 2);
-        svfloat32_t t0      = svreinterpret_f32_u64(
-                svld1_gather_s64index_u64(svunpklo_b(pg), (uint64_t*)base, svunpklo_s64(offsets)));
-        svfloat32_t t1 = svreinterpret_f32_u64(
-                svld1_gather_s64index_u64(svunpkhi_b(pg), (uint64_t*)base, svunpkhi_s64(offsets)));
-        v0->simdInternal_ = svuzp1(t0, t1);
-        v1->simdInternal_ = svuzp2(t0, t1);
+        svfloat32_t t0      = svreinterpret_f32_u64(svld1_gather_s64index_u64(
+                svunpklo_b(pg), reinterpret_cast<const uint64_t*>(base), svunpklo_s64(offsets)));
+        svfloat32_t t1      = svreinterpret_f32_u64(svld1_gather_s64index_u64(
+                svunpkhi_b(pg), reinterpret_cast<const uint64_t*>(base), svunpkhi_s64(offsets)));
+        v0->simdInternal_   = svuzp1(t0, t1);
+        v1->simdInternal_   = svuzp2(t0, t1);
     }
 }
 
@@ -104,9 +104,12 @@ static inline void gmx_simdcall gatherLoadTranspose(const float*       base,
                                                     SimdFloat*         v2,
                                                     SimdFloat*         v3)
 {
-    assert(std::size_t(offset) % 16 == 0);
-    assert(std::size_t(base) % 16 == 0);
-    assert(align % 4 == 0);
+    // Offset list must be aligned for SIMD FINT32
+    assert(std::size_t(offset) % (GMX_SIMD_FINT32_WIDTH * sizeof(std::int32_t)) == 0);
+    // Base pointer must be aligned to the smaller of 4 elements and float SIMD width
+    assert(std::size_t(base) % (std::min(GMX_SIMD_FLOAT_WIDTH, 4) * sizeof(float)) == 0);
+    // align parameter must also be a multiple of the above alignment requirement
+    assert(align % std::min(GMX_SIMD_FLOAT_WIDTH, 4) == 0);
 
     svint32_t offsets;
     offsets = svld1_s32(svptrue_b32(), offset);
@@ -117,9 +120,12 @@ template<int align>
 static inline void gmx_simdcall
 gatherLoadTranspose(const float* base, const std::int32_t offset[], SimdFloat* v0, SimdFloat* v1)
 {
-    assert(std::size_t(offset) % 64 == 0);
-    assert(std::size_t(base) % 8 == 0);
-    assert(align % 2 == 0);
+    // Offset list must be aligned for SIMD FINT32
+    assert(std::size_t(offset) % (GMX_SIMD_FINT32_WIDTH * sizeof(std::int32_t)) == 0);
+    // Base pointer must be aligned to the smaller of 2 elements and float SIMD width
+    assert(std::size_t(base) % (std::min(GMX_SIMD_FLOAT_WIDTH, 2) * sizeof(float)) == 0);
+    // align parameter must also be a multiple of the above alignment requirement
+    assert(align % std::min(GMX_SIMD_FLOAT_WIDTH, 2) == 0);
 
     SimdFInt32 offsets;
     svbool_t   pg         = svptrue_b32();
@@ -136,7 +142,8 @@ static inline void gmx_simdcall gatherLoadUTranspose(const float*       base,
                                                      SimdFloat*         v1,
                                                      SimdFloat*         v2)
 {
-    assert(std::size_t(offset) % 16 == 0);
+    // Offset list must be aligned for SIMD FINT32
+    assert(std::size_t(offset) % (GMX_SIMD_FINT32_WIDTH * sizeof(std::int32_t)) == 0);
 
     svint32_t offsets;
     svbool_t  pg      = svptrue_b32();
@@ -153,7 +160,8 @@ template<int align>
 static inline void gmx_simdcall
 transposeScatterStoreU(float* base, const std::int32_t offset[], SimdFloat v0, SimdFloat v1, SimdFloat v2)
 {
-    assert(std::size_t(offset) % 16 == 0);
+    // Offset list must be aligned for SIMD FINT32
+    assert(std::size_t(offset) % (GMX_SIMD_FINT32_WIDTH * sizeof(std::int32_t)) == 0);
 
     svint32_t offsets;
     svbool_t  pg = svptrue_b32();
@@ -170,7 +178,8 @@ template<int align>
 static inline void gmx_simdcall
 transposeScatterIncrU(float* base, const std::int32_t offset[], SimdFloat v0, SimdFloat v1, SimdFloat v2)
 {
-    assert(std::size_t(offset) % 64 == 0);
+    // Offset list must be aligned for SIMD FINT32
+    assert(std::size_t(offset) % (GMX_SIMD_FINT32_WIDTH * sizeof(std::int32_t)) == 0);
 
     svbool_t                          pg = svptrue_b32();
     svfloat32x3_t                     v;
@@ -191,7 +200,8 @@ template<int align>
 static inline void gmx_simdcall
 transposeScatterDecrU(float* base, const std::int32_t offset[], SimdFloat v0, SimdFloat v1, SimdFloat v2)
 {
-    assert(std::size_t(offset) % 16 == 0);
+    // Offset list must be aligned for SIMD FINT32
+    assert(std::size_t(offset) % (GMX_SIMD_FINT32_WIDTH * sizeof(std::int32_t)) == 0);
 
     svbool_t                          pg = svptrue_b32();
     svfloat32x3_t                     v;
@@ -215,8 +225,8 @@ static inline void gmx_simdcall expandScalarsToTriplets(SimdFloat  scalar,
 {
     assert(GMX_SIMD_FLOAT_WIDTH <= 16);
     uint32_t   ind[48] = { 0,  0,  0,  1,  1,  1,  2,  2,  2,  3,  3,  3,  4,  4,  4,  5,
-                         5,  5,  6,  6,  6,  7,  7,  7,  8,  8,  8,  9,  9,  9,  10, 10,
-                         10, 11, 11, 11, 12, 12, 12, 13, 13, 13, 14, 14, 14, 15, 15, 15 };
+                           5,  5,  6,  6,  6,  7,  7,  7,  8,  8,  8,  9,  9,  9,  10, 10,
+                           10, 11, 11, 11, 12, 12, 12, 13, 13, 13, 14, 14, 14, 15, 15, 15 };
     svbool_t   pg;
     svuint32_t idx;
 
@@ -237,8 +247,10 @@ static inline void gmx_simdcall gatherLoadBySimdIntTranspose(const float* base,
                                                              SimdFloat*   v2,
                                                              SimdFloat*   v3)
 {
-    assert(std::size_t(base) % 16 == 0);
-    assert(align % 4 == 0);
+    // Base pointer must be aligned to the smaller of 4 elements and float SIMD width
+    assert(std::size_t(base) % (std::min(GMX_SIMD_FLOAT_WIDTH, 4) * sizeof(float)) == 0);
+    // align parameter must also be a multiple of the above alignment requirement
+    assert(align % std::min(GMX_SIMD_FLOAT_WIDTH, 4) == 0);
 
     svbool_t pg          = svptrue_b32();
     offset.simdInternal_ = svmul_n_s32_x(pg, offset.simdInternal_, align);
@@ -265,7 +277,9 @@ gatherLoadUBySimdIntTranspose(const float* base, SimdFInt32 offset, SimdFloat* v
 
 static inline float gmx_simdcall reduceIncr4ReturnSum(float* m, SimdFloat v0, SimdFloat v1, SimdFloat v2, SimdFloat v3)
 {
-    assert(std::size_t(m) % 16 == 0);
+    // Make sure the memory pointer is aligned to the smaller of 4 elements and float SIMD width
+    assert(std::size_t(m) % (std::min(GMX_SIMD_FLOAT_WIDTH, 4) * sizeof(float)) == 0);
+
     svbool_t    pg = svptrue_b32();
     svfloat32_t _m, _s;
     float32_t   sum[4];
@@ -377,14 +391,18 @@ static inline void gmx_simdcall gatherLoadTransposeHsimd(const float*       base
     svfloat32_t _v0, _v1;
     if (2 == align)
     {
-        _v0 = svreinterpret_f32_f64(svld1_gather_s64index_f64(SVE_DOUBLE_MASK, (double*)base0, offsets));
-        _v1 = svreinterpret_f32_f64(svld1_gather_s64index_f64(SVE_DOUBLE_MASK, (double*)base1, offsets));
+        _v0 = svreinterpret_f32_f64(svld1_gather_s64index_f64(
+                SVE_DOUBLE_MASK, reinterpret_cast<const double*>(base0), offsets));
+        _v1 = svreinterpret_f32_f64(svld1_gather_s64index_f64(
+                SVE_DOUBLE_MASK, reinterpret_cast<const double*>(base1), offsets));
     }
     else
     {
         offsets = svmul_n_s64_x(svptrue_b64(), offsets, align * 4);
-        _v0 = svreinterpret_f32_f64(svld1_gather_s64offset_f64(SVE_DOUBLE_MASK, (double*)base0, offsets));
-        _v1 = svreinterpret_f32_f64(svld1_gather_s64offset_f64(SVE_DOUBLE_MASK, (double*)base1, offsets));
+        _v0     = svreinterpret_f32_f64(svld1_gather_s64offset_f64(
+                SVE_DOUBLE_MASK, reinterpret_cast<const double*>(base0), offsets));
+        _v1     = svreinterpret_f32_f64(svld1_gather_s64offset_f64(
+                SVE_DOUBLE_MASK, reinterpret_cast<const double*>(base1), offsets));
     }
     v0->simdInternal_ = svuzp1(_v0, _v1);
     v1->simdInternal_ = svuzp2(_v0, _v1);

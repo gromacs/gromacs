@@ -56,7 +56,8 @@
 
 namespace gmx
 {
-
+namespace test
+{
 namespace
 {
 
@@ -205,5 +206,5 @@ TEST(DISABLED_ArrayRefWithPaddingTest, GenericTests)
 #endif // GTEST_HAS_TYPED_TEST
 
 } // namespace
-
+} // namespace test
 } // namespace gmx

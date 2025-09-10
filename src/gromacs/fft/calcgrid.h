@@ -36,8 +36,8 @@
 
 #include <cstdio>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 real calcFftGrid(FILE* fp, const matrix box, real gridSpacing, int minGridPointsPerDim, int* nx, int* ny, int* nz);
 /* Sets the number of grid points for each zero n* to the first reasonable

@@ -205,9 +205,8 @@ std::vector<CoordinateIndex<B>> sequenceIDs(const std::vector<std::tuple<Molecul
     auto callSequencer = [&particleSequencer](const MoleculeName& moleculeName,
                                               int                 i,
                                               const ResidueName&  residueName,
-                                              const ParticleName& particleName) {
-        return particleSequencer(moleculeName, i, residueName, particleName);
-    };
+                                              const ParticleName& particleName)
+    { return particleSequencer(moleculeName, i, residueName, particleName); };
 
     // loop over all molecules
     for (const auto& molNumberTuple : molecules)

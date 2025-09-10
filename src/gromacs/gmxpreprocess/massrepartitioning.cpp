@@ -219,7 +219,7 @@ void repartitionAtomMasses(gmx_mtop_t* mtop, const bool useFep, const real massF
     {
         wi->addError(
                 "Light atoms are bound to at least one atom that has a too low mass for "
-                "repartioning");
+                "repartitioning");
     }
     if (numUnboundLightAtoms > 0)
     {

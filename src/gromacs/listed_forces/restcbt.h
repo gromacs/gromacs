@@ -48,10 +48,10 @@
 #ifndef GMX_LISTED_FORCES_RESTCBT_H
 #define GMX_LISTED_FORCES_RESTCBT_H
 
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 /*! \brief This function computes factors needed for restricted angle potentials.
  *

@@ -59,7 +59,6 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdlib/calc_verletbuf.h"
 #include "gromacs/mdlib/vcm.h"
 #include "gromacs/mdrun/mdmodules.h"
@@ -104,6 +103,7 @@
 #include "gromacs/utility/stringcompare.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
+#include "gromacs/utility/vec.h"
 
 #define NOGID 255
 
@@ -124,9 +124,11 @@ struct gmx_inputrec_strings
             orirefitgrp[STRLEN], egptable[STRLEN], egpexcl[STRLEN], wall_atomtype[STRLEN],
             wall_density[STRLEN], deform[STRLEN], QMMM[STRLEN], imd_grp[STRLEN];
     gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, std::string> fep_lambda;
-    char                                                                   lambda_weights[STRLEN];
-    std::vector<std::string>                                               pullGroupNames;
-    std::vector<std::string>                                               rotateGroupNames;
+    char                                                                   lambdaWeights[STRLEN];
+    char                                                                   lambdaCounts[STRLEN];
+    char                     wlHistogramCounts[STRLEN];
+    std::vector<std::string> pullGroupNames;
+    std::vector<std::string> rotateGroupNames;
     char anneal[STRLEN], anneal_npoints[STRLEN], anneal_time[STRLEN], anneal_temp[STRLEN];
 };
 
@@ -290,6 +292,12 @@ void check_ir(const char*                    mdparin,
     {
         wi->addError("rvdw should be >= 0");
     }
+    if (ir->cutoff_scheme == CutoffScheme::Verlet && ir->rcoulomb == 0 && ir->rvdw == 0)
+    {
+        wi->addError(
+                "At least one cutoff radius (rcoulomb or rvdw) should be > 0 when using the Verlet "
+                "cutoff scheme");
+    }
     if (ir->rlist < 0 && !(ir->cutoff_scheme == CutoffScheme::Verlet && ir->verletbuf_tol > 0))
     {
         wi->addError("rlist should be >= 0");
@@ -369,10 +377,11 @@ void check_ir(const char*                    mdparin,
             wi->addError("With Verlet lists only cut-off and PME LJ interactions are supported");
         }
         if (!(ir->coulombtype == CoulombInteractionType::Cut || usingRF(ir->coulombtype)
-              || usingPme(ir->coulombtype) || ir->coulombtype == CoulombInteractionType::Ewald))
+              || usingPme(ir->coulombtype) || ir->coulombtype == CoulombInteractionType::Ewald
+              || ir->coulombtype == CoulombInteractionType::Fmm))
         {
             wi->addError(
-                    "With Verlet lists only cut-off, reaction-field, PME and Ewald "
+                    "With Verlet lists only cut-off, reaction-field, PME, Ewald, and FMM"
                     "electrostatics are supported");
         }
         if (!(ir->coulomb_modifier == InteractionModifiers::None
@@ -395,12 +404,12 @@ void check_ir(const char*                    mdparin,
             wi->addError("With Verlet lists nstlist should be larger than 0");
         }
 
-        if (ir->nstlist < 10)
+        if (ir->nstlist <= 10 && ir->verletbuf_tol <= 0)
         {
             wi->addNote(
-                    "With Verlet lists the optimal nstlist is >= 10, with GPUs >= 20. Note "
-                    "that with the Verlet scheme, nstlist has no effect on the accuracy of "
-                    "your simulation.");
+                    "With Verlet lists and no buffer tolerance, the optimal nstlist "
+                    "is >= 10, with GPUs >= 20. Note that with the Verlet scheme, "
+                    "nstlist has no effect on the accuracy of your simulation.");
         }
 
         rc_max = std::max(ir->rvdw, ir->rcoulomb);
@@ -1536,11 +1545,8 @@ void check_ir(const char*                    mdparin,
         CHECK(usingFullElectrostatics(ir->coulombtype));
     }
 
-    if (getenv("GMX_DO_GALACTIC_DYNAMICS") == nullptr)
-    {
-        sprintf(err_buf, "epsilon-r must be >= 0 instead of %g\n", ir->epsilon_r);
-        CHECK(ir->epsilon_r < 0);
-    }
+    sprintf(err_buf, "epsilon-r must be >= 0 instead of %g\n", ir->epsilon_r);
+    CHECK(ir->epsilon_r < 0);
 
     if (usingRF(ir->coulombtype))
     {
@@ -1827,11 +1833,13 @@ static std::vector<real> parse_n_real(const std::string& str, int* n, WarningHan
 
 static void do_fep_params(t_inputrec*                ir,
                           gmx::ArrayRef<std::string> fep_lambda,
-                          char                       weights[STRLEN],
+                          const char                 lambdaWeights[STRLEN],
+                          const char                 lambdaCounts[STRLEN],
+                          const char                 wlHistogramCounts[STRLEN],
                           WarningHandler*            wi)
 {
 
-    int         i, j, max_n_lambda, nweights;
+    int         i, j, max_n_lambda;
     t_lambda*   fep    = ir->fepvals.get();
     t_expanded* expand = ir->expandedvals.get();
     gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, std::vector<real>> count_fep_lambdas;
@@ -1959,19 +1967,67 @@ static void do_fep_params(t_inputrec*                ir,
     }
 
 
-    /* now read in the weights */
-    expand->init_lambda_weights = parse_n_real(weights, &nweights, wi);
-    if (nweights == 0)
+    int nWeights;
+    /* now read in any initial weights the user is providing via the mdp*/
+    expand->initLambdaWeights = parse_n_real(lambdaWeights, &nWeights, wi);
+    if (nWeights == 0)
     {
-        expand->init_lambda_weights.resize(fep->n_lambda); /* initialize to zero */
+        expand->initLambdaWeights.resize(fep->n_lambda, 0); /* initialize to zero */
     }
-    else if (nweights != fep->n_lambda)
+    else if (nWeights != fep->n_lambda)
     {
         gmx_fatal(FARGS,
                   "Number of weights (%d) is not equal to number of lambda values (%d)",
-                  nweights,
+                  nWeights,
                   fep->n_lambda);
     }
+
+    /* now read in the lambda counts */
+    int nCounts;
+    expand->initLambdaCounts = parse_n_real(lambdaCounts, &nCounts, wi);
+    if (nCounts == 0)
+    {
+        expand->initLambdaCounts.resize(fep->n_lambda, 0);
+    }
+    else if (nCounts != fep->n_lambda)
+    {
+        gmx_fatal(FARGS,
+                  "Number of counts at each lambda state (%d) is not equal to number of lambda "
+                  "values (%d)",
+                  nCounts,
+                  fep->n_lambda);
+    }
+
+    /* Since there is no parsing for ints implemented here, we read in reals, but check that
+       when we cast to integers, we don't change the value. */
+    for (int i = 0; i < fep->n_lambda; i++)
+    {
+        if (!gmx_within_tol(static_cast<real>(std::lround(expand->initLambdaCounts[i])),
+                            expand->initLambdaCounts[i],
+                            GMX_REAL_EPS))
+        {
+            gmx_fatal(FARGS,
+                      "init-lambda-counts entry (%d) is not an integer, instead is (%g)",
+                      i,
+                      expand->initLambdaCounts[i]);
+        }
+    }
+
+    /* now read in the histogram counts */
+    expand->initWlHistogramCounts = parse_n_real(wlHistogramCounts, &nCounts, wi);
+    if (nCounts == 0)
+    {
+        expand->initWlHistogramCounts.resize(fep->n_lambda, 0); /* initialize to zero */
+    }
+    else if (nCounts != fep->n_lambda)
+    {
+        gmx_fatal(FARGS,
+                  "Number of counts in Wang-Landa equilibration histogram (%d) is not equal to "
+                  "number of lambda values (%d)",
+                  nCounts,
+                  fep->n_lambda);
+    }
+
     if ((expand->nstexpanded < 0) && (ir->efep != FreeEnergyPerturbationType::No))
     {
         expand->nstexpanded = fep->nstdhdl;
@@ -2033,34 +2089,51 @@ static void convertReals(WarningHandler* wi, gmx::ArrayRef<const std::string> in
     }
 }
 
-static void convertRvecs(WarningHandler* wi, gmx::ArrayRef<const std::string> inputs, const char* name, rvec* outputs)
+static std::vector<gmx::RVec> convertGroupRvecs(WarningHandler*                  wi,
+                                                gmx::ArrayRef<const std::string> inputs,
+                                                const char*                      name,
+                                                const int                        numGroupsRequired)
 {
-    int i = 0, d = 0;
-    for (const auto& input : inputs)
+    GMX_RELEASE_ASSERT(gmx::ssize(inputs) == (numGroupsRequired - 1) * DIM,
+                       "Input size must match output size (including rest group)");
+    GMX_RELEASE_ASSERT(inputs.size() % DIM == 0, "Need one input per dimension");
+    std::vector<gmx::RVec> values;
+    values.reserve(numGroupsRequired);
+    for (std::size_t g = 0; g < inputs.size(); g += DIM)
     {
-        try
+        gmx::RVec v;
+        for (int d = 0; d < DIM; ++d)
         {
-            outputs[i][d] = gmx::fromString<real>(input);
+            try
+            {
+                v[d] = gmx::fromString<real>(inputs[g + d]);
+            }
+            catch (gmx::GromacsException&)
+            {
+                auto message = gmx::formatString(
+                        "Invalid value for mdp option %s. %s should only consist of real numbers "
+                        "separated by spaces.",
+                        name,
+                        name);
+                wi->addError(message);
+                // Keep uninitialized-value checkers happy
+                v[d] = 0;
+            }
         }
-        catch (gmx::GromacsException&)
-        {
-            auto message = gmx::formatString(
-                    "Invalid value for mdp option %s. %s should only consist of real numbers "
-                    "separated by spaces.",
-                    name,
-                    name);
-            wi->addError(message);
-        }
-        ++d;
-        if (d == DIM)
-        {
-            d = 0;
-            ++i;
-        }
+        values.push_back(v);
     }
+    // Ensure that the "rest" group has zero values
+    values.push_back(gmx::RVec{ 0, 0, 0 });
+    GMX_RELEASE_ASSERT(gmx::ssize(values) == numGroupsRequired,
+                       "Could not fill required group count");
+    return values;
 }
 
-static void do_wall_params(t_inputrec* ir, char* wall_atomtype, char* wall_density, t_gromppopts* opts, WarningHandler* wi)
+static void do_wall_params(t_inputrec*     ir,
+                           const char*     wall_atomtype,
+                           const char*     wall_density,
+                           t_gromppopts*   opts,
+                           WarningHandler* wi)
 {
     opts->wall_atomtype[0] = nullptr;
     opts->wall_atomtype[1] = nullptr;
@@ -2633,7 +2706,9 @@ void get_ir(const char*     mdparin,
     inputrecStrings->fep_lambda[FreeEnergyPerturbationCouplingType::Temperature] =
             setStringEntry(&inp, "temperature-lambdas", "");
     fep->lambda_neighbors = get_eint(&inp, "calc-lambda-neighbors", 1, wi);
-    setStringEntry(&inp, "init-lambda-weights", inputrecStrings->lambda_weights, nullptr);
+    setStringEntry(&inp, "init-lambda-weights", inputrecStrings->lambdaWeights, nullptr);
+    setStringEntry(&inp, "init-lambda-counts", inputrecStrings->lambdaCounts, nullptr);
+    setStringEntry(&inp, "init-wl-histogram-counts", inputrecStrings->wlHistogramCounts, nullptr);
     fep->edHdLPrintEnergy        = getEnum<FreeEnergyPrintEnergy>(&inp, "dhdl-print-energy", wi);
     fep->softcoreFunction        = getEnum<SoftcoreType>(&inp, "sc-function", wi);
     fep->sc_alpha                = get_ereal(&inp, "sc-alpha", 0.0, wi);
@@ -2700,35 +2775,25 @@ void get_ir(const char*     mdparin,
     ir->eSwapCoords = getEnum<SwapType>(&inp, "swapcoords", wi);
     if (ir->eSwapCoords != SwapType::No)
     {
-        char buf[STRLEN];
-        int  nIonTypes;
-
-
-        snew(ir->swap, 1);
+        ir->swap = std::make_unique<t_swapcoords>();
         printStringNoNewline(&inp, "Swap attempt frequency");
         ir->swap->nstswap = get_eint(&inp, "swap-frequency", 1, wi);
         printStringNoNewline(&inp, "Number of ion types to be controlled");
-        nIonTypes = get_eint(&inp, "iontypes", 1, wi);
+        int nIonTypes = get_eint(&inp, "iontypes", 1, wi);
         if (nIonTypes < 1)
         {
             wi->addError("You need to provide at least one ion type for position exchanges.");
         }
-        ir->swap->ngrp = nIonTypes + static_cast<int>(SwapGroupSplittingType::Count);
-        snew(ir->swap->grp, ir->swap->ngrp);
-        for (i = 0; i < ir->swap->ngrp; i++)
-        {
-            snew(ir->swap->grp[i].molname, STRLEN);
-        }
+        ir->swap->groups.resize(t_swapcoords::sc_numRequiredGroups + nIonTypes);
         printStringNoNewline(&inp,
                              "Two index groups that contain the compartment-partitioning atoms");
-        setStringEntry(&inp,
-                       "split-group0",
-                       ir->swap->grp[static_cast<int>(SwapGroupSplittingType::Split0)].molname,
-                       nullptr);
-        setStringEntry(&inp,
-                       "split-group1",
-                       ir->swap->grp[static_cast<int>(SwapGroupSplittingType::Split1)].molname,
-                       nullptr);
+        ir->swap->requiredGroup(SwapGroupSplittingType::Split0).molname =
+                setStringEntry(&inp,
+                               "split-group0",
+
+                               "");
+        ir->swap->requiredGroup(SwapGroupSplittingType::Split1).molname =
+                setStringEntry(&inp, "split-group1", "");
         printStringNoNewline(&inp,
                              "Use center of mass of split groups (yes/no), otherwise center of "
                              "geometry is used");
@@ -2736,10 +2801,8 @@ void get_ir(const char*     mdparin,
         ir->swap->massw_split[1] = (getEnum<Boolean>(&inp, "massw-split1", wi) != Boolean::No);
 
         printStringNoNewline(&inp, "Name of solvent molecules");
-        setStringEntry(&inp,
-                       "solvent-group",
-                       ir->swap->grp[static_cast<int>(SwapGroupSplittingType::Solvent)].molname,
-                       nullptr);
+        ir->swap->requiredGroup(SwapGroupSplittingType::Solvent).molname =
+                setStringEntry(&inp, "solvent-group", "");
 
         printStringNoNewline(&inp,
                              "Split cylinder: radius, upper and lower extension (nm) (this will "
@@ -2767,16 +2830,14 @@ void get_ir(const char*     mdparin,
         printStringNoNewline(
                 &inp, "and the requested number of ions of this type in compartments A and B");
         printStringNoNewline(&inp, "-1 means fix the numbers as found in step 0");
-        for (i = 0; i < nIonTypes; i++)
+        for (size_t ig = 0; ig != ir->swap->ionGroups().size(); ig++)
         {
-            int ig = static_cast<int>(SwapGroupSplittingType::Count) + i;
-
-            sprintf(buf, "iontype%d-name", i);
-            setStringEntry(&inp, buf, ir->swap->grp[ig].molname, nullptr);
-            sprintf(buf, "iontype%d-in-A", i);
-            ir->swap->grp[ig].nmolReq[0] = get_eint(&inp, buf, -1, wi);
-            sprintf(buf, "iontype%d-in-B", i);
-            ir->swap->grp[ig].nmolReq[1] = get_eint(&inp, buf, -1, wi);
+            ir->swap->ionGroup(ig).molname =
+                    setStringEntry(&inp, gmx::formatString("iontype%zu-name", ig), "");
+            ir->swap->ionGroup(ig).nmolReq[0] =
+                    get_eint(&inp, gmx::formatString("iontype%zu-in-A", ig).c_str(), -1, wi);
+            ir->swap->ionGroup(ig).nmolReq[1] =
+                    get_eint(&inp, gmx::formatString("iontype%zu-in-B", ig).c_str(), -1, wi);
         }
 
         printStringNoNewline(
@@ -2936,7 +2997,7 @@ void get_ir(const char*     mdparin,
     }
 
     opts->couple_moltype = nullptr;
-    if (strlen(inputrecStrings->couple_moltype) > 0)
+    if (std::strlen(inputrecStrings->couple_moltype) > 0)
     {
         if (ir->efep != FreeEnergyPerturbationType::No)
         {
@@ -2997,7 +3058,12 @@ void get_ir(const char*     mdparin,
         {
             ir->bExpanded = TRUE;
         }
-        do_fep_params(ir, inputrecStrings->fep_lambda, inputrecStrings->lambda_weights, wi);
+        do_fep_params(ir,
+                      inputrecStrings->fep_lambda,
+                      inputrecStrings->lambdaWeights,
+                      inputrecStrings->lambdaCounts,
+                      inputrecStrings->wlHistogramCounts,
+                      wi);
         if (ir->bSimTemp) /* done after fep params */
         {
             do_simtemp_params(ir);
@@ -3057,7 +3123,7 @@ void get_ir(const char*     mdparin,
                          &(dumdub[0][5]),
                          &canary);
 
-    if (strlen(inputrecStrings->deform) > 0 && ndeform != 6)
+    if (std::strlen(inputrecStrings->deform) > 0 && ndeform != 6)
     {
         wi->addError(gmx::formatString(
                 "Cannot parse exactly 6 box deformation velocities from string '%s'",
@@ -3559,8 +3625,18 @@ static void calc_nrdf(const gmx_mtop_t* mtop, t_inputrec* ir, gmx::ArrayRef<cons
             {
                 if (getGroupType(groups, SimulationAtomGroupType::TemperatureCoupling, ai) == i)
                 {
-                    na_vcm[getGroupType(groups, SimulationAtomGroupType::MassCenterVelocityRemoval, ai)]++;
-                    na_tot++;
+                    // Check whether atom ai is fully frozen, if so don't count it for DOFs
+                    const int freezeGroup = getGroupType(groups, SimulationAtomGroupType::Freeze, ai);
+                    int numFrozenDims = 0;
+                    for (int d = 0; d < DIM; d++)
+                    {
+                        numFrozenDims += opts->nFreeze[freezeGroup][d];
+                    }
+                    if (numFrozenDims < DIM)
+                    {
+                        na_vcm[getGroupType(groups, SimulationAtomGroupType::MassCenterVelocityRemoval, ai)]++;
+                        na_tot++;
+                    }
                 }
             }
             /* Correct for VCM removal according to the fraction of each VCM
@@ -3572,7 +3648,7 @@ static void calc_nrdf(const gmx_mtop_t* mtop, t_inputrec* ir, gmx::ArrayRef<cons
                  j < gmx::ssize(groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval]) + 1;
                  j++)
             {
-                if (nrdf_vcm[j] > nrdf_vcm_sub[j])
+                if (na_vcm[j] > 0 && nrdf_vcm[j] > nrdf_vcm_sub[j])
                 {
                     nrdf_tc[i] += nrdf_uc * (static_cast<double>(na_vcm[j]) / static_cast<double>(na_tot))
                                   * (nrdf_vcm[j] - nrdf_vcm_sub[j]) / nrdf_vcm[j];
@@ -3658,47 +3734,38 @@ static bool do_egp_flag(t_inputrec* ir, SimulationGroups* groups, const char* op
 
 static void make_swap_groups(t_swapcoords* swap, gmx::ArrayRef<const IndexGroup> indexGroups)
 {
-    int          ig = -1, i = 0, gind;
-    t_swapGroup* swapg;
-
-
     /* Just a quick check here, more thorough checks are in mdrun */
-    if (strcmp(swap->grp[static_cast<int>(SwapGroupSplittingType::Split0)].molname,
-               swap->grp[static_cast<int>(SwapGroupSplittingType::Split1)].molname)
-        == 0)
+    if (swap->requiredGroup(SwapGroupSplittingType::Split0).molname
+        == swap->requiredGroup(SwapGroupSplittingType::Split1).molname)
     {
         gmx_fatal(FARGS,
                   "The split groups can not both be '%s'.",
-                  swap->grp[static_cast<int>(SwapGroupSplittingType::Split0)].molname);
+                  swap->requiredGroup(SwapGroupSplittingType::Split0).molname.c_str());
     }
 
     /* Get the index atoms of the split0, split1, solvent, and swap groups */
-    for (ig = 0; ig < swap->ngrp; ig++)
+    for (int ig = 0; ig != gmx::ssize(swap->groups); ++ig)
     {
-        swapg      = &swap->grp[ig];
-        gind       = getGroupIndex(swap->grp[ig].molname, indexGroups);
-        swapg->nat = gmx::ssize(indexGroups[gind].particleIndices);
-
-        if (swapg->nat > 0)
+        t_swapGroup& swapg    = swap->groups[ig];
+        const char*  name     = (ig < t_swapcoords::sc_numRequiredGroups)
+                                        ? enumValueToString(SwapGroupSplittingType{ ig })
+                                        : "Swap";
+        const int    gind     = getGroupIndex(swapg.molname, indexGroups);
+        const int    numAtoms = gmx::ssize(indexGroups[gind].particleIndices);
+        if (numAtoms > 0)
         {
-            fprintf(stderr,
-                    "%s group '%s' contains %d atoms.\n",
-                    ig < 3 ? enumValueToString(static_cast<SwapGroupSplittingType>(ig)) : "Swap",
-                    swap->grp[ig].molname,
-                    swapg->nat);
-            snew(swapg->ind, swapg->nat);
-            for (i = 0; i < swapg->nat; i++)
-            {
-                swapg->ind[i] = indexGroups[gind].particleIndices[i];
-            }
+            fprintf(stderr, "%s group '%s' contains %d atoms.\n", name, swapg.molname.c_str(), numAtoms);
+            swapg.ind.resize(numAtoms);
+            std::copy(indexGroups[gind].particleIndices.begin(),
+                      indexGroups[gind].particleIndices.end(),
+                      swapg.ind.begin());
         }
         else
         {
-            gmx_fatal(FARGS, "Swap group %s does not contain any atoms.", swap->grp[ig].molname);
+            gmx_fatal(FARGS, "Swap group %s does not contain any atoms.", swapg.molname.c_str());
         }
-    }
+    };
 }
-
 
 static void make_IMD_group(t_IMD* IMDgroup, const char* IMDgname, gmx::ArrayRef<const IndexGroup> indexGroups)
 {
@@ -4305,7 +4372,7 @@ void do_index(const char*                                 mdparin,
 
     if (ir->eSwapCoords != SwapType::No)
     {
-        make_swap_groups(ir->swap, defaultIndexGroups);
+        make_swap_groups(ir->swap.get(), defaultIndexGroups);
     }
 
     /* Make indices for IMD session */
@@ -4335,11 +4402,8 @@ void do_index(const char*                                 mdparin,
                  GroupCoverage::AllGenerateRest,
                  bVerbose,
                  wi);
-    nr = groups->groups[SimulationAtomGroupType::Acceleration].size();
-    snew(ir->opts.acceleration, nr);
-    ir->opts.ngacc = nr;
-
-    convertRvecs(wi, accelerations, "accelerations", ir->opts.acceleration);
+    nr                    = groups->groups[SimulationAtomGroupType::Acceleration].size();
+    ir->opts.acceleration = convertGroupRvecs(wi, accelerations, "accelerations", nr);
 
     auto freezeDims       = gmx::splitString(inputrecStrings->frdim);
     auto freezeGroupNames = gmx::splitString(inputrecStrings->freeze);
@@ -4534,6 +4598,63 @@ void do_index(const char*                                 mdparin,
     processEnsembleTemperature(ir, allAtomsAreTCoupled, wi);
 }
 
+void processConstantAcceleration(t_inputrec* ir, const gmx_mtop_t& sys)
+{
+    const int numGroups = sys.groups.groups[SimulationAtomGroupType::Acceleration].size();
+
+    ir->useConstantAcceleration = false;
+    for (int g = 0; g < numGroups; g++)
+    {
+        if (norm2(ir->opts.acceleration[g]) != 0)
+        {
+            ir->useConstantAcceleration = true;
+        }
+    }
+
+    if (ir->useConstantAcceleration)
+    {
+        gmx::RVec         acceleration = { 0.0_real, 0.0_real, 0.0_real };
+        std::vector<real> groupMasses(numGroups, 0.0_real);
+        for (const AtomProxy atomP : AtomRange(sys))
+        {
+            const t_atom& local = atomP.atom();
+            int           i     = atomP.globalAtomNumber();
+            groupMasses[getGroupType(sys.groups, SimulationAtomGroupType::Acceleration, i)] += local.m;
+        }
+        double sumGroupMasses = 0.0;
+        for (int g = 0; g < numGroups; g++)
+        {
+            for (int m = 0; m < DIM; m++)
+            {
+                acceleration[m] += ir->opts.acceleration[g][m] * groupMasses[g];
+            }
+            sumGroupMasses += groupMasses[g];
+        }
+
+        const bool haveComVelocityRemoval = (ir->comm_mode != ComRemovalAlgorithm::No);
+
+        for (int d = 0; d < DIM; d++)
+        {
+            if (std::fabs(acceleration[d]) > 1e-6)
+            {
+                const char* dim[DIM] = { "X", "Y", "Z" };
+                fprintf(stderr,
+                        "Net Acceleration in %s direction, %s be corrected\n",
+                        dim[d],
+                        haveComVelocityRemoval ? "will" : "will not");
+                // With COM velocity removal, correct the group accelerations such that the system COM is not accelerated
+                if (haveComVelocityRemoval && d < ndof_com(ir))
+                {
+                    acceleration[d] /= sumGroupMasses;
+                    for (int g = 0; g < numGroups; g++)
+                    {
+                        ir->opts.acceleration[g][d] -= acceleration[d];
+                    }
+                }
+            }
+        }
+    }
+}
 
 static void check_disre(const gmx_mtop_t& mtop)
 {
@@ -4667,7 +4788,7 @@ static void check_combination_rule_differences(const gmx_mtop_t& mtop,
      * force-field floating point parameters.
      */
     tol = 1e-5;
-    ptr = getenv("GMX_LJCOMB_TOL");
+    ptr = std::getenv("GMX_LJCOMB_TOL");
     if (ptr != nullptr)
     {
         double            dbl;
@@ -4732,13 +4853,13 @@ static void check_combination_rule_differences(const gmx_mtop_t& mtop,
     sfree(typecount);
 }
 
-static void check_combination_rules(const t_inputrec* ir, const gmx_mtop_t& mtop, WarningHandler* wi)
+static void check_combination_rules(const t_inputrec& ir, const gmx_mtop_t& mtop, WarningHandler* wi)
 {
     bool bLBRulesPossible, bC6ParametersWorkWithGeometricRules, bC6ParametersWorkWithLBRules;
 
     check_combination_rule_differences(
             mtop, 0, &bC6ParametersWorkWithGeometricRules, &bC6ParametersWorkWithLBRules, &bLBRulesPossible);
-    if (ir->ljpme_combination_rule == LongRangeVdW::LB)
+    if (ir.ljpme_combination_rule == LongRangeVdW::LB)
     {
         if (!bC6ParametersWorkWithLBRules || !bLBRulesPossible)
         {
@@ -4752,7 +4873,7 @@ static void check_combination_rules(const t_inputrec* ir, const gmx_mtop_t& mtop
     {
         if (!bC6ParametersWorkWithGeometricRules)
         {
-            if (ir->eDispCorr != DispersionCorrectionType::No)
+            if (ir.eDispCorr != DispersionCorrectionType::No)
             {
                 wi->addNote(
                         "You are using geometric combination rules in "
@@ -4875,21 +4996,17 @@ static void checksForFepLambaLargerOne(const t_inputrec& ir, const gmx_mtop_t& m
     }
 }
 
-void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, WarningHandler* wi)
+void triple_check(const char* mdparin, const t_inputrec& ir, const gmx_mtop_t& sys, WarningHandler* wi)
 {
     // Not meeting MTS requirements should have resulted in a fatal error, so we can assert here
-    GMX_ASSERT(gmx::checkMtsRequirements(*ir).empty(), "All MTS requirements should be met here");
+    GMX_ASSERT(gmx::checkMtsRequirements(ir).empty(), "All MTS requirements should be met here");
 
-    char                      err_buf[STRLEN];
-    int                       i, m, c, nmol;
-    bool                      bCharge;
-    real *                    mgrp, mt;
-    gmx_mtop_atomloop_block_t aloopb;
-    char                      warn_buf[STRLEN];
+    char err_buf[STRLEN];
+    char warn_buf[STRLEN];
 
     wi->setFileAndLineNumber(mdparin, -1);
 
-    if (ir->comm_mode != ComRemovalAlgorithm::No && allTrue(havePositionRestraints(*sys)))
+    if (ir.comm_mode != ComRemovalAlgorithm::No && allTrue(havePositionRestraints(sys)))
     {
         wi->addNote(
                 "Removing center of mass motion in the presence of position restraints might "
@@ -4897,9 +5014,9 @@ void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, WarningH
                 "macro-molecule, the artifacts are usually negligible.");
     }
 
-    if (ir->cutoff_scheme == CutoffScheme::Verlet && ir->verletbuf_tol > 0 && ir->nstlist > 1
-        && ((EI_MD(ir->eI) || EI_SD(ir->eI))
-            && (ir->etc == TemperatureCoupling::VRescale || ir->etc == TemperatureCoupling::Berendsen)))
+    if (ir.cutoff_scheme == CutoffScheme::Verlet && ir.verletbuf_tol > 0 && ir.nstlist > 1
+        && ((EI_MD(ir.eI) || EI_SD(ir.eI))
+            && (ir.etc == TemperatureCoupling::VRescale || ir.etc == TemperatureCoupling::Berendsen)))
     {
         /* Check if a too small Verlet buffer might potentially
          * cause more drift than the thermostat can couple off.
@@ -4909,15 +5026,13 @@ void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, WarningH
         const real T_error_suggest = 0.001;
         /* For safety: 2 DOF per atom (typical with constraints) */
         const real nrdf_at = 2;
-        real       T, tau, max_T_error;
-        int        i;
 
-        T   = 0;
-        tau = 0;
-        for (i = 0; i < ir->opts.ngtc; i++)
+        real T   = 0;
+        real tau = 0;
+        for (int i = 0; i < ir.opts.ngtc; i++)
         {
-            T   = std::max(T, ir->opts.ref_t[i]);
-            tau = std::max(tau, ir->opts.tau_t[i]);
+            T   = std::max(T, ir.opts.ref_t[i]);
+            tau = std::max(tau, ir.opts.tau_t[i]);
         }
         if (T > 0)
         {
@@ -4926,7 +5041,7 @@ void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, WarningH
              * of errors. The factor 0.5 is because energy distributes
              * equally over Ekin and Epot.
              */
-            max_T_error = 0.5 * tau * ir->verletbuf_tol / (nrdf_at * gmx::c_boltz * T);
+            real max_T_error = 0.5 * tau * ir.verletbuf_tol / (nrdf_at * gmx::c_boltz * T);
             if (max_T_error > T_error_warn)
             {
                 sprintf(warn_buf,
@@ -4934,91 +5049,89 @@ void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, WarningH
                         "of %g and a tau_t of %g, your temperature might be off by up to %.1f%%. "
                         "To ensure the error is below %.1f%%, decrease verlet-buffer-tolerance to "
                         "%.0e or decrease tau_t.",
-                        ir->verletbuf_tol,
+                        ir.verletbuf_tol,
                         T,
                         tau,
                         100 * max_T_error,
                         100 * T_error_suggest,
-                        ir->verletbuf_tol * T_error_suggest / max_T_error);
+                        ir.verletbuf_tol * T_error_suggest / max_T_error);
                 wi->addWarning(warn_buf);
             }
         }
     }
 
-    if (ETC_ANDERSEN(ir->etc))
+    if (ETC_ANDERSEN(ir.etc))
     {
-        int i;
-
-        for (i = 0; i < ir->opts.ngtc; i++)
+        for (int i = 0; i < ir.opts.ngtc; i++)
         {
             sprintf(err_buf,
                     "all tau_t must currently be equal using Andersen temperature control, "
                     "violated for group %d",
                     i);
-            CHECK(ir->opts.tau_t[0] != ir->opts.tau_t[i]);
+            CHECK(ir.opts.tau_t[0] != ir.opts.tau_t[i]);
             sprintf(err_buf,
                     "all tau_t must be positive using Andersen temperature control, "
                     "tau_t[%d]=%10.6f",
                     i,
-                    ir->opts.tau_t[i]);
-            CHECK(ir->opts.tau_t[i] < 0);
+                    ir.opts.tau_t[i]);
+            CHECK(ir.opts.tau_t[i] < 0);
         }
 
-        if (ir->etc == TemperatureCoupling::AndersenMassive && ir->comm_mode != ComRemovalAlgorithm::No)
+        if (ir.etc == TemperatureCoupling::AndersenMassive && ir.comm_mode != ComRemovalAlgorithm::No)
         {
-            for (i = 0; i < ir->opts.ngtc; i++)
+            for (int i = 0; i < ir.opts.ngtc; i++)
             {
-                int nsteps = gmx::roundToInt(ir->opts.tau_t[i] / ir->delta_t);
+                int nsteps = gmx::roundToInt(ir.opts.tau_t[i] / ir.delta_t);
                 sprintf(err_buf,
                         "tau_t/delta_t for group %d for temperature control method %s must be a "
                         "multiple of nstcomm (%d), as velocities of atoms in coupled groups are "
                         "randomized every time step. The input tau_t (%8.3f) leads to %d steps per "
                         "randomization",
                         i,
-                        enumValueToString(ir->etc),
-                        ir->nstcomm,
-                        ir->opts.tau_t[i],
+                        enumValueToString(ir.etc),
+                        ir.nstcomm,
+                        ir.opts.tau_t[i],
                         nsteps);
-                CHECK(nsteps % ir->nstcomm != 0);
+                CHECK(nsteps % ir.nstcomm != 0);
             }
         }
     }
 
-    if (EI_DYNAMICS(ir->eI) && !EI_SD(ir->eI) && ir->eI != IntegrationAlgorithm::BD
-        && ir->comm_mode == ComRemovalAlgorithm::No
-        && !(allTrue(haveAbsoluteReference(*ir)) || allTrue(havePositionRestraints(*sys)) || ir->nsteps <= 10)
-        && !ETC_ANDERSEN(ir->etc))
+    if (EI_DYNAMICS(ir.eI) && !EI_SD(ir.eI) && ir.eI != IntegrationAlgorithm::BD
+        && ir.comm_mode == ComRemovalAlgorithm::No
+        && !(allTrue(haveAbsoluteReference(ir)) || allTrue(havePositionRestraints(sys)) || ir.nsteps <= 10)
+        && !ETC_ANDERSEN(ir.etc))
     {
         wi->addWarning(
                 "You are not using center of mass motion removal (mdp option comm-mode), numerical "
                 "rounding errors can lead to build up of kinetic energy of the center of mass");
     }
 
-    if (ir->pressureCouplingOptions.epc == PressureCoupling::CRescale && !haveEnsembleTemperature(*ir))
+    if (ir.pressureCouplingOptions.epc == PressureCoupling::CRescale && !haveEnsembleTemperature(ir))
     {
         sprintf(warn_buf,
                 "Can not use the %s barostat without an ensemble temperature for the system",
-                enumValueToString(ir->pressureCouplingOptions.epc));
+                enumValueToString(ir.pressureCouplingOptions.epc));
         wi->addError(warn_buf);
     }
 
-    if (ir->pressureCouplingOptions.epc == PressureCoupling::ParrinelloRahman
-        && ir->etc == TemperatureCoupling::NoseHoover)
+    if (ir.pressureCouplingOptions.epc == PressureCoupling::ParrinelloRahman
+        && ir.etc == TemperatureCoupling::NoseHoover)
     {
         real tau_t_max = 0;
-        for (int g = 0; g < ir->opts.ngtc; g++)
+        for (int g = 0; g < ir.opts.ngtc; g++)
         {
-            tau_t_max = std::max(tau_t_max, ir->opts.tau_t[g]);
+            tau_t_max = std::max(tau_t_max, ir.opts.tau_t[g]);
         }
-        if (ir->pressureCouplingOptions.tau_p < 1.9 * tau_t_max)
+        if (ir.pressureCouplingOptions.tau_p < 1.9 * tau_t_max)
         {
             std::string message = gmx::formatString(
                     "With %s T-coupling and %s p-coupling, "
                     "%s (%g) should be at least twice as large as %s (%g) to avoid resonances",
-                    enumValueToString(ir->etc),
-                    enumValueToString(ir->pressureCouplingOptions.epc),
+                    enumValueToString(ir.etc),
+                    enumValueToString(ir.pressureCouplingOptions.epc),
                     "tau-p",
-                    ir->pressureCouplingOptions.tau_p,
+                    ir.pressureCouplingOptions.tau_p,
                     "tau-t",
                     tau_t_max);
             wi->addWarning(message);
@@ -5026,14 +5139,14 @@ void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, WarningH
     }
 
     /* Check for pressure coupling with absolute position restraints */
-    if (ir->pressureCouplingOptions.epc != PressureCoupling::No
-        && ir->pressureCouplingOptions.refcoord_scaling == RefCoordScaling::No)
+    if (ir.pressureCouplingOptions.epc != PressureCoupling::No
+        && ir.pressureCouplingOptions.refcoord_scaling == RefCoordScaling::No)
     {
-        const BasicVector<bool> havePosres = havePositionRestraints(*sys);
+        const BasicVector<bool> havePosres = havePositionRestraints(sys);
         {
-            for (m = 0; m < DIM; m++)
+            for (int m = 0; m < DIM; m++)
             {
-                if (havePosres[m] && norm2(ir->pressureCouplingOptions.compress[m]) > 0)
+                if (havePosres[m] && norm2(ir.pressureCouplingOptions.compress[m]) > 0)
                 {
                     wi->addWarning(
                             "You are using pressure coupling with absolute position restraints, "
@@ -5044,17 +5157,18 @@ void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, WarningH
         }
     }
 
-    if (ir->pressureCouplingOptions.epc == PressureCoupling::Mttk && !haveConstantEnsembleTemperature(*ir))
+    if (ir.pressureCouplingOptions.epc == PressureCoupling::Mttk && !haveConstantEnsembleTemperature(ir))
     {
         sprintf(warn_buf,
                 "The %s barostat requires a constant ensemble temperature for the system",
-                enumValueToString(ir->pressureCouplingOptions.epc));
+                enumValueToString(ir.pressureCouplingOptions.epc));
         wi->addError(warn_buf);
     }
 
-    bCharge = FALSE;
-    aloopb  = gmx_mtop_atomloop_block_init(*sys);
-    const t_atom* atom;
+    bool                      bCharge = FALSE;
+    gmx_mtop_atomloop_block_t aloopb  = gmx_mtop_atomloop_block_init(sys);
+    const t_atom*             atom;
+    int                       nmol;
     while (gmx_mtop_atomloop_block_next(aloopb, &atom, &nmol))
     {
         if (atom->q != 0 || atom->qB != 0)
@@ -5065,20 +5179,20 @@ void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, WarningH
 
     if (!bCharge)
     {
-        if (usingFullElectrostatics(ir->coulombtype))
+        if (usingFullElectrostatics(ir.coulombtype))
         {
             sprintf(err_buf,
                     "You are using full electrostatics treatment %s for a system without charges.\n"
                     "This costs a lot of performance for just processing zeros, consider using %s "
                     "instead.\n",
-                    enumValueToString(ir->coulombtype),
+                    enumValueToString(ir.coulombtype),
                     enumValueToString(CoulombInteractionType::Cut));
             wi->addWarning(err_buf);
         }
     }
     else
     {
-        if (ir->coulombtype == CoulombInteractionType::Cut && ir->rcoulomb > 0)
+        if (ir.coulombtype == CoulombInteractionType::Cut && ir.rcoulomb > 0)
         {
             sprintf(err_buf,
                     "You are using a plain Coulomb cut-off, which might produce artifacts.\n"
@@ -5089,13 +5203,13 @@ void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, WarningH
     }
 
     /* Check if combination rules used in LJ-PME are the same as in the force field */
-    if (usingLJPme(ir->vdwtype))
+    if (usingLJPme(ir.vdwtype))
     {
-        check_combination_rules(ir, *sys, wi);
+        check_combination_rules(ir, sys, wi);
     }
 
     /* Generalized reaction field */
-    if (ir->coulombtype == CoulombInteractionType::GRFNotused)
+    if (ir.coulombtype == CoulombInteractionType::GRFNotused)
     {
         wi->addError(
                 "Generalized reaction-field electrostatics is no longer supported. "
@@ -5103,84 +5217,33 @@ void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, WarningH
                 "constant by hand.");
     }
 
-    ir->useConstantAcceleration = false;
-    for (int i = 0; (i < gmx::ssize(sys->groups.groups[SimulationAtomGroupType::Acceleration])); i++)
-    {
-        if (norm2(ir->opts.acceleration[i]) != 0)
-        {
-            ir->useConstantAcceleration = true;
-        }
-    }
-    if (ir->useConstantAcceleration)
-    {
-        gmx::RVec acceleration = { 0.0_real, 0.0_real, 0.0_real };
-        snew(mgrp, sys->groups.groups[SimulationAtomGroupType::Acceleration].size());
-        for (const AtomProxy atomP : AtomRange(*sys))
-        {
-            const t_atom& local = atomP.atom();
-            int           i     = atomP.globalAtomNumber();
-            mgrp[getGroupType(sys->groups, SimulationAtomGroupType::Acceleration, i)] += local.m;
-        }
-        mt = 0.0;
-        for (i = 0; (i < gmx::ssize(sys->groups.groups[SimulationAtomGroupType::Acceleration])); i++)
-        {
-            for (m = 0; (m < DIM); m++)
-            {
-                acceleration[m] += ir->opts.acceleration[i][m] * mgrp[i];
-            }
-            mt += mgrp[i];
-        }
-        for (m = 0; (m < DIM); m++)
-        {
-            if (std::fabs(acceleration[m]) > 1e-6)
-            {
-                const char* dim[DIM] = { "X", "Y", "Z" };
-                fprintf(stderr,
-                        "Net Acceleration in %s direction, will %s be corrected\n",
-                        dim[m],
-                        ir->nstcomm != 0 ? "" : "not");
-                if (ir->nstcomm != 0 && m < ndof_com(ir))
-                {
-                    acceleration[m] /= mt;
-                    for (i = 0;
-                         (i < gmx::ssize(sys->groups.groups[SimulationAtomGroupType::Acceleration]));
-                         i++)
-                    {
-                        ir->opts.acceleration[i][m] -= acceleration[m];
-                    }
-                }
-            }
-        }
-        sfree(mgrp);
-    }
-
     /* Checks related to FEP and slow growth */
-    if (ir->efep != FreeEnergyPerturbationType::No)
+    if (ir.efep != FreeEnergyPerturbationType::No)
     {
-        if (ir->fepvals->sc_alpha != 0 && !gmx_within_tol(sys->ffparams.reppow, 12.0, 10 * GMX_DOUBLE_EPS))
+        if (ir.fepvals->sc_alpha != 0 && !gmx_within_tol(sys.ffparams.reppow, 12.0, 10 * GMX_DOUBLE_EPS))
         {
             gmx_fatal(FARGS,
                       "Soft-core interactions are only supported with VdW repulsion power 12");
         }
 
-        checksForFepLambaLargerOne(*ir, *sys, wi);
+        checksForFepLambaLargerOne(ir, sys, wi);
     }
 
-    if (ir->bPull)
+    if (ir.bPull)
     {
         bool bWarned;
 
         bWarned = FALSE;
-        for (i = 0; i < ir->pull->ncoord && !bWarned; i++)
+        for (int i = 0; i < ir.pull->ncoord && !bWarned; i++)
         {
-            if (ir->pull->coord[i].eGeom != PullGroupGeometry::Transformation
-                && (ir->pull->coord[i].group[0] == 0 || ir->pull->coord[i].group[1] == 0))
+            if (ir.pull->coord[i].eGeom != PullGroupGeometry::Transformation
+                && (ir.pull->coord[i].group[0] == 0 || ir.pull->coord[i].group[1] == 0))
             {
-                const auto absRef     = haveAbsoluteReference(*ir);
-                const auto havePosres = havePositionRestraints(*sys);
-                for (m = 0; m < DIM; m++)
+                const auto absRef     = haveAbsoluteReference(ir);
+                const auto havePosres = havePositionRestraints(sys);
+                for (int m = 0; m < DIM; m++)
                 {
-                    if (ir->pull->coord[i].dim[m] && !(absRef[m] || havePosres[m]))
+                    if (ir.pull->coord[i].dim[m] && !(absRef[m] || havePosres[m]))
                     {
                         wi->addWarning(
                                 "You are using an absolute reference for pulling, but the rest of "
@@ -5193,23 +5256,23 @@ void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, WarningH
             }
         }
 
-        for (i = 0; i < 3; i++)
+        for (int i = 0; i < 3; i++)
         {
-            for (m = 0; m <= i; m++)
+            for (int m = 0; m <= i; m++)
             {
-                if ((ir->pressureCouplingOptions.epc != PressureCoupling::No
-                     && ir->pressureCouplingOptions.compress[i][m] != 0)
-                    || ir->deform[i][m] != 0)
+                if ((ir.pressureCouplingOptions.epc != PressureCoupling::No
+                     && ir.pressureCouplingOptions.compress[i][m] != 0)
+                    || ir.deform[i][m] != 0)
                 {
-                    for (c = 0; c < ir->pull->ncoord; c++)
+                    for (int c = 0; c < ir.pull->ncoord; c++)
                     {
-                        if (ir->pull->coord[c].eGeom == PullGroupGeometry::DirectionPBC
-                            && ir->pull->coord[c].vec[m] != 0)
+                        if (ir.pull->coord[c].eGeom == PullGroupGeometry::DirectionPBC
+                            && ir.pull->coord[c].vec[m] != 0)
                         {
                             gmx_fatal(FARGS,
                                       "Can not have dynamic box while using pull geometry '%s' "
                                       "(dim %c)",
-                                      enumValueToString(ir->pull->coord[c].eGeom),
+                                      enumValueToString(ir.pull->coord[c].eGeom),
                                       'x' + m);
                         }
                     }
@@ -5218,15 +5281,15 @@ void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, WarningH
         }
     }
 
-    if (ir->bDoAwh && !haveConstantEnsembleTemperature(*ir))
+    if (ir.bDoAwh && !haveConstantEnsembleTemperature(ir))
     {
         wi->addError("With AWH a constant ensemble temperature is required");
     }
 
-    if (ir_haveBoxDeformation(*ir))
+    if (ir_haveBoxDeformation(ir))
     {
-        if (EI_DYNAMICS(ir->eI) && ir->eI != IntegrationAlgorithm::MD
-            && (EI_SD(ir->eI) || ir->etc != TemperatureCoupling::No))
+        if (EI_DYNAMICS(ir.eI) && ir.eI != IntegrationAlgorithm::MD
+            && (EI_SD(ir.eI) || ir.etc != TemperatureCoupling::No))
         {
             sprintf(warn_buf,
                     "With all integrators except for %s, the whole velocity including the flow "
@@ -5237,22 +5300,22 @@ void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, WarningH
             wi->addNote(warn_buf);
         }
 
-        if (ir->opts.ngtc != 1)
+        if (ir.opts.ngtc != 1)
         {
             wi->addError("With box deformation, a single temperature coupling group is required");
         }
     }
 
     int numAccelerationAlgorithms = 0;
-    if (ir->useConstantAcceleration)
+    if (ir.useConstantAcceleration)
     {
         numAccelerationAlgorithms++;
     }
-    if (ir->cos_accel != 0)
+    if (ir.cos_accel != 0)
     {
         numAccelerationAlgorithms++;
     }
-    if (ir_haveBoxDeformation(*ir))
+    if (ir_haveBoxDeformation(ir))
     {
         numAccelerationAlgorithms++;
     }
@@ -5263,7 +5326,7 @@ void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, WarningH
                 "constant acceleration groups, cosine acceleration, box deformation");
     }
 
-    check_disre(*sys);
+    check_disre(sys);
 }
 
 void double_check(t_inputrec* ir, matrix box, bool bHasNormalConstraints, bool bHasAnyConstraints, WarningHandler* wi)

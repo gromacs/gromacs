@@ -57,6 +57,10 @@
 #include "testutils/cmdlinetest.h"
 #include "testutils/testasserts.h"
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -262,3 +266,5 @@ TEST_F(CommandLineParserTest, CannotHavePositionalArgumentsAfterOptions)
 }
 
 } // namespace
+} // namespace test
+} // namespace gmx

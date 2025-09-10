@@ -91,7 +91,7 @@ typedef std::unique_ptr<EnergyFrameReader> EnergyFrameReaderPtr;
  *
  * This function is intended to have the main responsibility for
  * making EnergyFrameReader objects. */
-EnergyFrameReaderPtr openEnergyFileToReadTerms(const std::string&              filename,
+EnergyFrameReaderPtr openEnergyFileToReadTerms(const std::string& filename,
                                                const std::vector<std::string>& requiredEnergyTermNames);
 
 //! Convenience smart pointer typedef

@@ -42,7 +42,6 @@
 
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gpu_utils/hostallocator.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/enerdata_utils.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
@@ -53,7 +52,6 @@
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdatom.h"
-#include "gromacs/mdtypes/nblist.h"
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
@@ -69,15 +67,18 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "kernel_common.h"
+#include "nbnxm_enums.h"
 #include "nbnxm_geometry.h"
 #include "nbnxm_gpu.h"
 #include "nbnxm_simd.h"
 #include "pairlistset.h"
 #include "pairlistsets.h"
 #define INCLUDE_KERNELFUNCTION_TABLES
-#include "kernels_reference/kernel_ref.h"
+#include "kernels_reference/kernel_ref_1x1.h"
+#include "kernels_reference/kernel_ref_4x4.h"
 #if GMX_HAVE_NBNXM_SIMD_2XMM
 #    include "kernels_simd_2xmm/kernels.h"
 #endif
@@ -90,11 +91,10 @@
 namespace gmx
 {
 enum class InteractionLocality : int;
-} // namespace gmx
 
-CoulombKernelType getCoulombKernelType(const Nbnxm::EwaldExclusionType ewaldExclusionType,
-                                       const CoulombInteractionType    coulombInteractionType,
-                                       const bool                      haveEqualCoulombVwdRadii)
+CoulombKernelType getCoulombKernelType(const EwaldExclusionType     ewaldExclusionType,
+                                       const CoulombInteractionType coulombInteractionType,
+                                       const bool                   haveEqualCoulombVwdRadii)
 {
 
     if (usingRF(coulombInteractionType) || coulombInteractionType == CoulombInteractionType::Cut)
@@ -103,7 +103,7 @@ CoulombKernelType getCoulombKernelType(const Nbnxm::EwaldExclusionType ewaldExcl
     }
     else
     {
-        if (ewaldExclusionType == Nbnxm::EwaldExclusionType::Table)
+        if (ewaldExclusionType == EwaldExclusionType::Table)
         {
             if (haveEqualCoulombVwdRadii)
             {
@@ -128,7 +128,7 @@ CoulombKernelType getCoulombKernelType(const Nbnxm::EwaldExclusionType ewaldExcl
     }
 }
 
-int getVdwKernelType(const Nbnxm::KernelType    kernelType,
+int getVdwKernelType(const NbnxmKernelType      kernelType,
                      const LJCombinationRule    ljCombinationRule,
                      const VanDerWaalsType      vanDerWaalsType,
                      const InteractionModifiers interactionModifiers,
@@ -166,7 +166,7 @@ int getVdwKernelType(const Nbnxm::KernelType    kernelType,
         else
         {
             /* At setup we (should have) selected the C reference kernel */
-            GMX_RELEASE_ASSERT(kernelType == Nbnxm::KernelType::Cpu4x4_PlainC,
+            GMX_RELEASE_ASSERT(kernelTypeIsPlainC(kernelType),
                                "Only the C reference nbnxn SIMD kernel supports LJ-PME with LB "
                                "combination rules");
             return vdwktLJEWALDCOMBLB;
@@ -199,7 +199,7 @@ int getVdwKernelType(const Nbnxm::KernelType    kernelType,
  * \param[in]     wcycle        Pointer to cycle counting data structure.
  */
 static void nbnxn_kernel_cpu(const PairlistSet&             pairlistSet,
-                             const Nbnxm::KernelSetup&      kernelSetup,
+                             const NbnxmKernelSetup&        kernelSetup,
                              nbnxn_atomdata_t*              nbat,
                              const interaction_const_t&     ic,
                              gmx::ArrayRef<const gmx::RVec> shiftVectors,
@@ -211,19 +211,22 @@ static void nbnxn_kernel_cpu(const PairlistSet&             pairlistSet,
 {
     const nbnxn_atomdata_t::Params& nbatParams = nbat->params();
 
-    GMX_ASSERT(ic.vdwtype != VanDerWaalsType::Pme
-                       || ((ic.ljpme_comb_rule == LongRangeVdW::Geom
+    GMX_ASSERT(ic.vdw.type != VanDerWaalsType::Pme
+                       || ((ic.vdw.pmeCombinationRule == LongRangeVdW::Geom
                             && nbatParams.ljCombinationRule == LJCombinationRule::Geometric)
-                           || (ic.ljpme_comb_rule == LongRangeVdW::LB
+                           || (ic.vdw.pmeCombinationRule == LongRangeVdW::LB
                                && nbatParams.ljCombinationRule == LJCombinationRule::LorentzBerthelot)),
                "nbat combination rule parameters should match those for LJ-PME");
 
     const int coulkt = static_cast<int>(getCoulombKernelType(
-            kernelSetup.ewaldExclusionType, ic.eeltype, (ic.rcoulomb == ic.rvdw)));
-    const int vdwkt  = getVdwKernelType(
-            kernelSetup.kernelType, nbatParams.ljCombinationRule, ic.vdwtype, ic.vdw_modifier, ic.ljpme_comb_rule);
+            kernelSetup.ewaldExclusionType, ic.coulomb.type, (ic.coulomb.cutoff == ic.vdw.cutoff)));
+    const int vdwkt  = getVdwKernelType(kernelSetup.kernelType,
+                                       nbatParams.ljCombinationRule,
+                                       ic.vdw.type,
+                                       ic.vdw.modifier,
+                                       ic.vdw.pmeCombinationRule);
 
-    const bool usingSimdKernel = (kernelSetup.kernelType != Nbnxm::KernelType::Cpu4x4_PlainC);
+    const bool usingSimdKernel = kernelTypeIsSimd(kernelSetup.kernelType);
 
     gmx::ArrayRef<const NbnxnPairlistCpu> pairlists = pairlistSet.cpuLists();
 
@@ -252,28 +255,31 @@ static void nbnxn_kernel_cpu(const PairlistSet&             pairlistSet,
         }
 
         // TODO: Change to reference
-        const NbnxnPairlistCpu* pairlist = &pairlists[nb];
+        const NbnxnPairlistCpu& pairlist = pairlists[nb];
 
         if (!stepWork.computeEnergy)
         {
             /* Don't calculate energies */
             switch (kernelSetup.kernelType)
             {
-                case Nbnxm::KernelType::Cpu4x4_PlainC:
-                    nbnxn_kernel_noener_ref[coulkt][vdwkt](pairlist, nbat, &ic, shiftVecPointer, &out);
+                case NbnxmKernelType::Cpu4x4_PlainC:
+                    nbnxn_kernel_4x4_noener_ref[coulkt][vdwkt](pairlist, *nbat, ic, shiftVecPointer, &out);
                     break;
 #if GMX_HAVE_NBNXM_SIMD_2XMM
-                case Nbnxm::KernelType::Cpu4xN_Simd_2xNN:
+                case NbnxmKernelType::Cpu4xN_Simd_2xNN:
                     gmx::nbnxmKernelNoenerSimd2xmm[coulkt][vdwkt](
-                            pairlist, nbat, &ic, shiftVecPointer, &out);
+                            pairlist, *nbat, ic, shiftVecPointer, &out);
                     break;
 #endif
 #if GMX_HAVE_NBNXM_SIMD_4XM
-                case Nbnxm::KernelType::Cpu4xN_Simd_4xN:
+                case NbnxmKernelType::Cpu4xN_Simd_4xN:
                     gmx::nbnxmKernelNoenerSimd4xm[coulkt][vdwkt](
-                            pairlist, nbat, &ic, shiftVecPointer, &out);
+                            pairlist, *nbat, ic, shiftVecPointer, &out);
                     break;
 #endif
+                case NbnxmKernelType::Cpu1x1_PlainC:
+                    nbnxn_kernel_1x1_noener_ref[coulkt][vdwkt](pairlist, *nbat, ic, shiftVecPointer, &out);
+                    break;
                 default: GMX_RELEASE_ASSERT(false, "Unsupported kernel architecture");
             }
         }
@@ -293,19 +299,22 @@ static void nbnxn_kernel_cpu(const PairlistSet&             pairlistSet,
 
             switch (kernelSetup.kernelType)
             {
-                case Nbnxm::KernelType::Cpu4x4_PlainC:
-                    nbnxn_kernel_ener_ref[coulkt][vdwkt](pairlist, nbat, &ic, shiftVecPointer, &out);
+                case NbnxmKernelType::Cpu4x4_PlainC:
+                    nbnxn_kernel_4x4_ener_ref[coulkt][vdwkt](pairlist, *nbat, ic, shiftVecPointer, &out);
                     break;
 #if GMX_HAVE_NBNXM_SIMD_2XMM
-                case Nbnxm::KernelType::Cpu4xN_Simd_2xNN:
-                    gmx::nbnxmKernelEnerSimd2xmm[coulkt][vdwkt](pairlist, nbat, &ic, shiftVecPointer, &out);
+                case NbnxmKernelType::Cpu4xN_Simd_2xNN:
+                    gmx::nbnxmKernelEnerSimd2xmm[coulkt][vdwkt](pairlist, *nbat, ic, shiftVecPointer, &out);
                     break;
 #endif
 #if GMX_HAVE_NBNXM_SIMD_4XM
-                case Nbnxm::KernelType::Cpu4xN_Simd_4xN:
-                    gmx::nbnxmKernelEnerSimd4xm[coulkt][vdwkt](pairlist, nbat, &ic, shiftVecPointer, &out);
+                case NbnxmKernelType::Cpu4xN_Simd_4xN:
+                    gmx::nbnxmKernelEnerSimd4xm[coulkt][vdwkt](pairlist, *nbat, ic, shiftVecPointer, &out);
                     break;
 #endif
+                case NbnxmKernelType::Cpu1x1_PlainC:
+                    nbnxn_kernel_1x1_ener_ref[coulkt][vdwkt](pairlist, *nbat, ic, shiftVecPointer, &out);
+                    break;
                 default: GMX_RELEASE_ASSERT(false, "Unsupported kernel architecture");
             }
 
@@ -331,21 +340,24 @@ static void nbnxn_kernel_cpu(const PairlistSet&             pairlistSet,
 
             switch (kernelSetup.kernelType)
             {
-                case Nbnxm::KernelType::Cpu4x4_PlainC:
-                    nbnxn_kernel_energrp_ref[coulkt][vdwkt](pairlist, nbat, &ic, shiftVecPointer, &out);
+                case NbnxmKernelType::Cpu4x4_PlainC:
+                    nbnxn_kernel_4x4_energrp_ref[coulkt][vdwkt](pairlist, *nbat, ic, shiftVecPointer, &out);
                     break;
 #if GMX_HAVE_NBNXM_SIMD_2XMM
-                case Nbnxm::KernelType::Cpu4xN_Simd_2xNN:
+                case NbnxmKernelType::Cpu4xN_Simd_2xNN:
                     gmx::nbnxmKernelEnergrpSimd2xmm[coulkt][vdwkt](
-                            pairlist, nbat, &ic, shiftVecPointer, &out);
+                            pairlist, *nbat, ic, shiftVecPointer, &out);
                     break;
 #endif
 #if GMX_HAVE_NBNXM_SIMD_4XM
-                case Nbnxm::KernelType::Cpu4xN_Simd_4xN:
+                case NbnxmKernelType::Cpu4xN_Simd_4xN:
                     gmx::nbnxmKernelEnergrpSimd4xm[coulkt][vdwkt](
-                            pairlist, nbat, &ic, shiftVecPointer, &out);
+                            pairlist, *nbat, ic, shiftVecPointer, &out);
                     break;
 #endif
+                case NbnxmKernelType::Cpu1x1_PlainC:
+                    nbnxn_kernel_1x1_energrp_ref[coulkt][vdwkt](pairlist, *nbat, ic, shiftVecPointer, &out);
+                    break;
                 default: GMX_RELEASE_ASSERT(false, "Unsupported kernel architecture");
             }
 
@@ -372,12 +384,12 @@ static void accountFlops(t_nrnb*                    nrnb,
     const bool usingGpuKernels = nbv.useGpu();
 
     int enr_nbnxn_kernel_ljc = eNRNB;
-    if (usingRF(ic.eeltype) || ic.eeltype == CoulombInteractionType::Cut)
+    if (usingRF(ic.coulomb.type) || ic.coulomb.type == CoulombInteractionType::Cut)
     {
         enr_nbnxn_kernel_ljc = eNR_NBNXN_LJ_RF;
     }
-    else if ((!usingGpuKernels && nbv.kernelSetup().ewaldExclusionType == Nbnxm::EwaldExclusionType::Analytical)
-             || (usingGpuKernels && Nbnxm::gpu_is_kernel_ewald_analytical(nbv.gpuNbv())))
+    else if ((!usingGpuKernels && nbv.kernelSetup().ewaldExclusionType == EwaldExclusionType::Analytical)
+             || (usingGpuKernels && gpu_is_kernel_ewald_analytical(nbv.gpuNbv())))
     {
         enr_nbnxn_kernel_ljc = eNR_NBNXN_LJ_EWALD;
     }
@@ -398,21 +410,21 @@ static void accountFlops(t_nrnb*                    nrnb,
     /* The Coulomb-only kernels are offset -eNR_NBNXN_LJ_RF+eNR_NBNXN_RF */
     inc_nrnb(nrnb, enr_nbnxn_kernel_ljc - eNR_NBNXN_LJ_RF + eNR_NBNXN_RF, pairlistSet.natpair_q_);
 
-    if (ic.vdw_modifier == InteractionModifiers::ForceSwitch)
+    if (ic.vdw.modifier == InteractionModifiers::ForceSwitch)
     {
         /* We add up the switch cost separately */
         inc_nrnb(nrnb,
                  eNR_NBNXN_ADD_LJ_FSW + (stepWork.computeEnergy ? 1 : 0),
                  pairlistSet.natpair_ljq_ + pairlistSet.natpair_lj_);
     }
-    if (ic.vdw_modifier == InteractionModifiers::PotSwitch)
+    if (ic.vdw.modifier == InteractionModifiers::PotSwitch)
     {
         /* We add up the switch cost separately */
         inc_nrnb(nrnb,
                  eNR_NBNXN_ADD_LJ_PSW + (stepWork.computeEnergy ? 1 : 0),
                  pairlistSet.natpair_ljq_ + pairlistSet.natpair_lj_);
     }
-    if (ic.vdwtype == VanDerWaalsType::Pme)
+    if (ic.vdw.type == VanDerWaalsType::Pme)
     {
         /* We add up the LJ Ewald cost separately */
         inc_nrnb(nrnb,
@@ -434,9 +446,10 @@ void nonbonded_verlet_t::dispatchNonbondedKernel(gmx::InteractionLocality       
 
     switch (kernelSetup().kernelType)
     {
-        case Nbnxm::KernelType::Cpu4x4_PlainC:
-        case Nbnxm::KernelType::Cpu4xN_Simd_4xN:
-        case Nbnxm::KernelType::Cpu4xN_Simd_2xNN:
+        case NbnxmKernelType::Cpu4x4_PlainC:
+        case NbnxmKernelType::Cpu4xN_Simd_4xN:
+        case NbnxmKernelType::Cpu4xN_Simd_2xNN:
+        case NbnxmKernelType::Cpu1x1_PlainC:
             nbnxn_kernel_cpu(pairlistSet,
                              kernelSetup(),
                              nbat_.get(),
@@ -449,14 +462,12 @@ void nonbonded_verlet_t::dispatchNonbondedKernel(gmx::InteractionLocality       
                              wcycle_);
             break;
 
-        case Nbnxm::KernelType::Gpu8x8x8:
-            Nbnxm::gpu_launch_kernel(gpuNbv_, stepWork, iLocality);
-            break;
+        case NbnxmKernelType::Gpu8x8x8: gpu_launch_kernel(gpuNbv_, stepWork, iLocality); break;
 
-        case Nbnxm::KernelType::Cpu8x8x8_PlainC:
+        case NbnxmKernelType::Cpu8x8x8_PlainC:
             nbnxn_kernel_gpu_ref(pairlistSet.gpuList(),
                                  nbat_.get(),
-                                 &ic,
+                                 ic,
                                  shiftvec,
                                  stepWork,
                                  clearF,
@@ -474,3 +485,5 @@ void nonbonded_verlet_t::dispatchNonbondedKernel(gmx::InteractionLocality       
         accountFlops(nrnb, pairlistSet, *this, ic, stepWork);
     }
 }
+
+} // namespace gmx

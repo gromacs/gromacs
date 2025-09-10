@@ -48,11 +48,11 @@
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/nrama.h"
 #include "gromacs/math/units.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vec.h"
 
 struct gmx_output_env_t;
 
@@ -82,8 +82,8 @@ int gmx_rama(int argc, char* argv[])
     t_xrama*          xr;
     gmx_output_env_t* oenv;
     t_filenm          fnm[] = { { efTRX, "-f", nullptr, ffREAD },
-                       { efTPR, nullptr, nullptr, ffREAD },
-                       { efXVG, nullptr, "rama", ffWRITE } };
+                                { efTPR, nullptr, nullptr, ffREAD },
+                                { efXVG, nullptr, "rama", ffWRITE } };
 #define NFILE asize(fnm)
 
     if (!parse_common_args(

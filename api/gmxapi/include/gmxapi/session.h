@@ -101,7 +101,7 @@ public:
      * For shared ownership of a session, use a shared pointer.
      * \{
      */
-    Session(const Session&) = delete;
+    Session(const Session&)            = delete;
     Session& operator=(const Session&) = delete;
     //! \}
 
@@ -110,7 +110,7 @@ public:
      *
      * \{
      */
-    Session(Session&&) noexcept = default;
+    Session(Session&&) noexcept            = default;
     Session& operator=(Session&&) noexcept = default;
     //! \}
 

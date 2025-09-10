@@ -40,7 +40,7 @@
  */
 
 #include "gromacs/gpu_utils/syclutils.h"
-#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "pme_gpu_internal.h"
 #include "pme_gpu_types.h"

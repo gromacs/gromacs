@@ -46,8 +46,6 @@
 #ifndef GMX_AWH_CORRELATIONHISTORY_H
 #define GMX_AWH_CORRELATIONHISTORY_H
 
-struct t_commrec;
-
 namespace gmx
 {
 class CorrelationGrid;

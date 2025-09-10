@@ -115,6 +115,27 @@ Index ssize(const T& t)
 #    endif
 #endif
 
+/*! \def gmx_inline
+ *  \brief Function attribute to hint inlining.
+ *
+ * Since C++ does not have a standard way to ensure a function is inlined
+ * we use compiler-specific attributes (or combinations of attributes) to
+ * to make sure that the various compilers will most likely inline functions
+ * we intend to be inlined.
+ *
+ * \note g++-13 uses an extreme amount of memory with RelWithAssert builds.
+ * To avoid this we fall back to plain inline attribute when NDEBUG is not defined with gcc 13,
+ * since the performance is not critical in this case (not "Release" build).
+ */
+#if defined(__GNUC__) && !defined(__clang__) && (__GNUC__ != 13 || defined(NDEBUG))
+#    define gmx_inline __attribute__((__gnu_inline__, __always_inline__)) inline
+#elif defined(__clang__)
+#    define gmx_inline __attribute__((always_inline)) inline
+#else
+#    define gmx_inline inline
+#endif
+
+
 /*! \brief Attribute to explicitly indicate that a parameter or
  * locally scoped variable is used just in debug mode.
  *
@@ -141,7 +162,7 @@ Index ssize(const T& t)
 #define GMX_UNUSED_VALUE(value) (void)value
 
 #if defined(__GNUC__) && !defined(__clang__)
-#    define DO_PRAGMA(x) _Pragma(#    x)
+#    define DO_PRAGMA(x) _Pragma(#x)
 #    define GCC_DIAGNOSTIC_IGNORE(warning) \
         _Pragma("GCC diagnostic push") DO_PRAGMA(GCC diagnostic ignored warning)
 #    define GCC_DIAGNOSTIC_RESET _Pragma("GCC diagnostic pop")
@@ -153,7 +174,7 @@ Index ssize(const T& t)
 #endif
 
 #if defined(__clang__) && !defined(DO_PRAGMA)
-#    define DO_PRAGMA(x) _Pragma(#    x)
+#    define DO_PRAGMA(x) _Pragma(#x)
 #    define CLANG_DIAGNOSTIC_IGNORE(warning) \
         _Pragma("clang diagnostic push") DO_PRAGMA(clang diagnostic ignored warning)
 #    define CLANG_DIAGNOSTIC_RESET _Pragma("clang diagnostic pop")

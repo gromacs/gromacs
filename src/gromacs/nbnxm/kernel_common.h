@@ -44,11 +44,12 @@
 #ifndef GMX_NBXNM_KERNEL_COMMON_H
 #define GMX_NBXNM_KERNEL_COMMON_H
 
-#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/vectypes.h"
 /* nbnxn_atomdata_t and nbnxn_pairlist_t could be forward declared, but that requires modifications in all SIMD kernel files */
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/utility/real.h"
 
+#include "nbnxm_enums.h"
 #include "pairlist.h"
 
 struct interaction_const_t;
@@ -57,56 +58,22 @@ enum class VanDerWaalsType : int;
 enum class InteractionModifiers : int;
 enum class LongRangeVdW : int;
 
-namespace Nbnxm
+namespace gmx
 {
 enum class EwaldExclusionType : int;
-enum class KernelType;
-} // namespace Nbnxm
-
-//! \brief Kinds of electrostatic treatments in SIMD Verlet kernels
-enum class CoulombKernelType : int
-{
-    ReactionField,
-    Table,
-    TableTwin,
-    Ewald,
-    EwaldTwin,
-    Count
-};
-
-//! \brief Whether have a separate cut-off check for VDW interactions
-enum class VdwCutoffCheck : int
-{
-    No,
-    Yes
-};
-
-//! \brief Kind of Lennard-Jones Ewald treatments in NBNxM SIMD kernels
-enum class LJEwald : int
-{
-    None,
-    CombGeometric
-};
-
-enum class EnergyOutput : int
-{
-    None,
-    System,
-    GroupPairs
-};
 
 /*! \brief Pair-interaction kernel type that also calculates energies.
  */
-typedef void(NbnxmKernelFunc)(const NbnxnPairlistCpu*    nbl,
-                              const nbnxn_atomdata_t*    nbat,
-                              const interaction_const_t* ic,
+typedef void(NbnxmKernelFunc)(const NbnxnPairlistCpu&    nbl,
+                              const nbnxn_atomdata_t&    nbat,
+                              const interaction_const_t& ic,
                               const rvec*                shift_vec,
                               nbnxn_atomdata_output_t*   out);
 
 //! \brief Lookup function for Coulomb kernel type
-CoulombKernelType getCoulombKernelType(Nbnxm::EwaldExclusionType ewaldExclusionType,
-                                       CoulombInteractionType    coulombInteractionType,
-                                       bool                      haveEqualCoulombVwdRadii);
+CoulombKernelType getCoulombKernelType(EwaldExclusionType     ewaldExclusionType,
+                                       CoulombInteractionType coulombInteractionType,
+                                       bool                   haveEqualCoulombVwdRadii);
 
 /*! \brief Kinds of Van der Waals treatments in NBNxM SIMD kernels
  *
@@ -131,7 +98,7 @@ enum
 };
 
 //! \brief Lookup function for Vdw kernel type
-int getVdwKernelType(Nbnxm::KernelType    kernelType,
+int getVdwKernelType(NbnxmKernelType      kernelType,
                      LJCombinationRule    ljCombinationRule,
                      VanDerWaalsType      vanDerWaalsType,
                      InteractionModifiers interactionModifiers,
@@ -144,5 +111,7 @@ void clear_fshift(real* fshift);
 /*! \brief Reduces the collected energy terms over the pair-lists/threads.
  */
 void reduce_energies_over_lists(const nbnxn_atomdata_t* nbat, int nlist, real* Vvdw, real* Vc);
+
+} // namespace gmx
 
 #endif

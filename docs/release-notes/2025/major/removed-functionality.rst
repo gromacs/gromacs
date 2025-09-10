@@ -7,3 +7,11 @@ Removed functionality
    Also, please use the syntax :issue:`number` to reference issues on GitLab, without
    a space between the colon and number!
 
+Removed support for planetary simulations
+"""""""""""""""""""""""""""""""""""""""""
+
+``GMX_DO_GALACTIC_DYNAMICS`` setting is removed.
+Setting a negative :mdp:`epsilon-r` value now always raises an error.
+
+:issue:`5223`
+

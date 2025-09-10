@@ -130,7 +130,7 @@ public:
      *
      * \{
      */
-    Context(const Context&) = default;
+    Context(const Context&)            = default;
     Context& operator=(const Context&) = default;
     //! \}
 
@@ -139,7 +139,7 @@ public:
      *
      * \{
      */
-    Context(Context&&) = default;
+    Context(Context&&)            = default;
     Context& operator=(Context&&) = default;
     //! \}
 

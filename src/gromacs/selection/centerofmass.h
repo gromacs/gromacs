@@ -73,7 +73,7 @@
 #ifndef GMX_SELECTION_CENTEROFMASS_H
 #define GMX_SELECTION_CENTEROFMASS_H
 
-#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/vectypes.h"
 
 struct gmx_mtop_t;
 struct t_block;

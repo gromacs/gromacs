@@ -40,7 +40,7 @@ CI pipeline jobs.
 Example::
 
     $ python3 -m utility --llvm --doxygen
-    gromacs/ci-ubuntu-20.04-llvm-9-docs
+    gromacs/ci-ubuntu-24.04-llvm-14-docs
 
 See Also:
     :file:`buildall.sh`
@@ -92,7 +92,7 @@ parser.add_argument(
     "--cmake",
     nargs="*",
     type=str,
-    default=["3.28.0", "3.29.3"],
+    default=["3.28.0", "3.29.8", "3.30.3"],
     help="Selection of CMake version to provide to base image. (default: %(default)s)",
 )
 
@@ -100,7 +100,7 @@ compiler_group = parser.add_mutually_exclusive_group()
 compiler_group.add_argument(
     "--gcc",
     type=int,
-    default=9,
+    default=11,
     help="Select GNU compiler tool chain. (default: %(default)s) "
     "Some checking is implemented to avoid incompatible combinations",
 )
@@ -108,7 +108,7 @@ compiler_group.add_argument(
     "--llvm",
     type=str,
     nargs="?",
-    const="9",
+    const="14",
     default=None,
     help="Select LLVM compiler tool chain. "
     "Some checking is implemented to avoid incompatible combinations",
@@ -120,7 +120,7 @@ compiler_group.add_argument(
     "--oneapi",
     type=str,
     nargs="?",
-    const="2022.1.0",
+    const="2024.0.0",
     default=None,
     help="Select Intel oneAPI package version.",
 )
@@ -138,8 +138,8 @@ linux_group.add_argument(
     "--ubuntu",
     type=str,
     nargs="?",
-    const="20.04",
-    default="20.04",
+    const="24.04",
+    default="24.04",
     help="Select Ubuntu Linux base image. (default: %(default)s)",
 )
 linux_group.add_argument(
@@ -155,7 +155,7 @@ parser.add_argument(
     "--cuda",
     type=str,
     nargs="?",
-    const="11.0",
+    const="12.1",
     default=None,
     help="Select a CUDA version for a base Linux image from NVIDIA.",
 )
@@ -179,11 +179,11 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--hipsycl",
+    "--adaptivecpp",
     type=str,
     nargs="?",
     default=None,
-    help="Select hipSYCL repository tag/commit/branch.",
+    help="Select AdaptiveCpp repository tag/commit/branch.",
 )
 
 parser.add_argument(
@@ -254,13 +254,46 @@ parser.add_argument(
     "--cp2k",
     type=str,
     nargs="?",
-    const="8.2",
+    const="9.1",
     default=None,
     help="Add build environment for CP2K QM/MM support",
 )
 
+parser.add_argument(
+    "--hdf5",
+    action="store_true",
+    default=False,
+    help="Install an HDF5 library.",
+)
+
+parser.add_argument(
+    "--plumed",
+    action="store_true",
+    default=False,
+    help="Install PLUMED library.",
+)
+
+parser.add_argument(
+    "--cross",
+    type=str,
+    nargs="?",
+    const="aarch64",
+    default=None,
+    choices=["aarch64", "riscv64"],
+    help="Add cross-compilation support for the specified architecture with QEMU emulation",
+)
+
+parser.add_argument(
+    "--libtorch",
+    type=str,
+    nargs="?",
+    const="2.4.0",
+    default=None,
+    help="Add build environment for LibTorch support",
+)
+
 # Supported Python versions for maintained branches.
-_python_versions = ["3.7.13", "3.10.5"]
+_python_versions = ["3.9.13", "3.12.5"]
 parser.add_argument(
     "--venvs",
     nargs="*",
@@ -297,15 +330,14 @@ def image_name(configuration: argparse.Namespace) -> str:
             )
             elements.append(compiler + "-" + version)
             break
-    for gpusdk in ("cuda", "hipsycl"):
+    for gpusdk in ("cuda", "adaptivecpp"):
         version = getattr(configuration, gpusdk, None)
         if version is not None:
             elements.append(gpusdk + "-" + version)
     if configuration.intel_compute_runtime:
         elements.append("intel-compute-runtime")
     if configuration.rocm is not None:
-        if configuration.rocm != "3.5.1":
-            elements.append("rocm-" + configuration.rocm)
+        elements.append("rocm-" + configuration.rocm)
     if configuration.cp2k is not None:
         elements.append("cp2k-" + configuration.cp2k)
 
@@ -317,6 +349,10 @@ def image_name(configuration: argparse.Namespace) -> str:
         value = getattr(configuration, attr, None)
         if value is not None:
             elements.append(cases[attr])
+
+    # Add cross-compilation target if specified
+    if configuration.cross is not None:
+        elements.append(f"cross-{configuration.cross}")
     slug = "-".join(elements)
     # we are using the GitLab container registry to store the images
     # to get around issues with pulling them repeatedly from DockerHub

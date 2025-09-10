@@ -37,9 +37,9 @@
 
 #include <gtest/gtest.h>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/restraint/restraintpotential.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "programs/mdrun/tests/moduletest.h"
 

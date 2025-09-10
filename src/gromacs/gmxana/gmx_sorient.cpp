@@ -51,8 +51,6 @@
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/gmxana/gstat.h"
 #include "gromacs/math/functions.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
@@ -65,6 +63,8 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 struct gmx_output_env_t;
 
@@ -193,11 +193,11 @@ int gmx_sorient(int argc, char* argv[])
         { "-cbin", FALSE, etREAL, { &binwidth }, "Binwidth for the cosine" },
         { "-rbin", FALSE, etREAL, { &rbinw }, "Binwidth for r (nm)" },
         { "-pbc",
-          FALSE,
-          etBOOL,
-          { &bPBC },
-          "Check PBC for the center of mass calculation. Only necessary when your reference group "
-          "consists of several molecules." }
+                    FALSE,
+                    etBOOL,
+                    { &bPBC },
+                    "Check PBC for the center of mass calculation. Only necessary when your reference group "
+                              "consists of several molecules." }
     };
 
     t_filenm fnm[] = { { efTRX, nullptr, nullptr, ffREAD },  { efTPS, nullptr, nullptr, ffREAD },
@@ -266,8 +266,8 @@ int gmx_sorient(int argc, char* argv[])
 
     invrbw = 1 / rbinw;
 
-    snew(hist1, nbin1);
-    snew(hist2, nbin2);
+    snew(hist1, nbin1 + 1);
+    snew(hist2, nbin2 + 1);
     nrbin = 1 + static_cast<int>(rcut / rbinw);
     if (nrbin == 0)
     {

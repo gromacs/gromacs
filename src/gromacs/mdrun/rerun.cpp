@@ -74,8 +74,6 @@
 #include "gromacs/listed_forces/listed_forces_gpu.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/checkpointhandler.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/ebin.h"
@@ -144,6 +142,8 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "legacysimulator.h"
 #include "replicaexchange.h"
@@ -168,7 +168,7 @@ static void prepareRerunState(const t_trxframe&          rerunFrame,
                               bool                       constructVsites,
                               const VirtualSitesHandler* vsite)
 {
-    auto x      = makeArrayRef(globalState->x);
+    auto x = makeArrayRef(globalState->x);
     auto rerunX = arrayRefFromArray(reinterpret_cast<gmx::RVec*>(rerunFrame.x), globalState->numAtoms());
     std::copy(rerunX.begin(), rerunX.end(), x.begin());
     copy_mat(rerunFrame.box, globalState->box);
@@ -183,6 +183,8 @@ static void prepareRerunState(const t_trxframe&          rerunFrame,
 
 void gmx::LegacySimulator::do_rerun()
 {
+    const bool isMainRank = cr_->commMyGroup.isMainRank();
+
     // TODO Historically, the EM and MD "integrators" used different
     // names for the t_inputrec *parameter, but these must have the
     // same name, now that it's a member of a struct. We use this ir
@@ -208,7 +210,7 @@ void gmx::LegacySimulator::do_rerun()
                        "Update groups are not supported with rerun");
 
     SimulationSignals signals;
-    // Most global communnication stages don't propagate mdrun
+    // Most global communication stages don't propagate mdrun
     // signals, and will use this object to achieve that.
     SimulationSignaller nullSignaller(nullptr, nullptr, nullptr, false, false);
 
@@ -255,9 +257,9 @@ void gmx::LegacySimulator::do_rerun()
     {
         gmx_fatal(FARGS, "Multiple simulations not supported by rerun.");
     }
-    if (std::any_of(ir->opts.annealing, ir->opts.annealing + ir->opts.ngtc, [](SimulatedAnnealing i) {
-            return i != SimulatedAnnealing::No;
-        }))
+    if (std::any_of(ir->opts.annealing,
+                    ir->opts.annealing + ir->opts.ngtc,
+                    [](SimulatedAnnealing i) { return i != SimulatedAnnealing::No; }))
     {
         gmx_fatal(FARGS, "Simulated annealing not supported by rerun.");
     }
@@ -265,8 +267,8 @@ void gmx::LegacySimulator::do_rerun()
     /* Rerun can't work if an output file name is the same as the input file name.
      * If this is the case, the user will get an error telling them what the issue is.
      */
-    if (strcmp(opt2fn("-rerun", nFile_, fnm_), opt2fn("-o", nFile_, fnm_)) == 0
-        || strcmp(opt2fn("-rerun", nFile_, fnm_), opt2fn("-x", nFile_, fnm_)) == 0)
+    if (std::strcmp(opt2fn("-rerun", nFile_, fnm_), opt2fn("-o", nFile_, fnm_)) == 0
+        || std::strcmp(opt2fn("-rerun", nFile_, fnm_), opt2fn("-x", nFile_, fnm_)) == 0)
     {
         gmx_fatal(FARGS,
                   "When using mdrun -rerun, the name of the input trajectory file "
@@ -294,10 +296,10 @@ void gmx::LegacySimulator::do_rerun()
         auto* nonConstGlobalTopology                         = const_cast<gmx_mtop_t*>(&topGlobal_);
         nonConstGlobalTopology->intermolecularExclusionGroup = genQmmmIndices(topGlobal_);
     }
-    int*                fep_state = MAIN(cr_) ? &stateGlobal_->fep_state : nullptr;
-    gmx::ArrayRef<real> lambda    = MAIN(cr_) ? stateGlobal_->lambda : gmx::ArrayRef<real>();
+    int*                fep_state = isMainRank ? &stateGlobal_->fep_state : nullptr;
+    gmx::ArrayRef<real> lambda    = isMainRank ? stateGlobal_->lambda : gmx::ArrayRef<real>{};
     initialize_lambdas(
-            fpLog_, ir->efep, ir->bSimTemp, *ir->fepvals, ir->simtempvals->temperatures, ekind_, MAIN(cr_), fep_state, lambda);
+            fpLog_, ir->efep, ir->bSimTemp, *ir->fepvals, ir->simtempvals->temperatures, ekind_, isMainRank, fep_state, lambda);
     const bool        simulationsShareState = false;
     gmx_mdoutf*       outf                  = init_mdoutf(fpLog_,
                                    nFile_,
@@ -325,13 +327,19 @@ void gmx::LegacySimulator::do_rerun()
 
     gstat = global_stat_init(ir);
 
+    const auto& simulationWork = runScheduleWork_->simulationWork;
+    const bool  useGpuForPme   = simulationWork.useGpuPme;
+    const bool  useGpuForBufferOps =
+            simulationWork.useGpuXBufferOpsWhenAllowed || simulationWork.useGpuFBufferOpsWhenAllowed;
+
+
     /* Check for polarizable models and flexible constraints */
     shellfc = init_shell_flexcon(fpLog_,
                                  topGlobal_,
                                  constr_ ? constr_->numFlexibleConstraints() : 0,
                                  ir->nstcalcenergy,
                                  haveDDAtomOrdering(*cr_),
-                                 runScheduleWork_->simulationWork.useGpuPme);
+                                 useGpuForPme || useGpuForBufferOps);
 
     if (haveDDAtomOrdering(*cr_))
     {
@@ -342,7 +350,7 @@ void gmx::LegacySimulator::do_rerun()
         dd_partition_system(fpLog_,
                             mdLog_,
                             ir->init_step,
-                            cr_,
+                            cr_->dd,
                             TRUE,
                             stateGlobal_,
                             topGlobal_,
@@ -367,7 +375,7 @@ void gmx::LegacySimulator::do_rerun()
         state_ = stateGlobal_;
 
         mdAlgorithmsSetupAtomData(
-                cr_, *ir, topGlobal_, top_, fr_, &f, mdAtoms_, constr_, virtualSites_, shellfc);
+                cr_->dd, *ir, topGlobal_, top_, fr_, &f, mdAtoms_, constr_, virtualSites_, shellfc);
     }
 
     auto* mdatoms = mdAtoms_->mdatoms();
@@ -393,7 +401,7 @@ void gmx::LegacySimulator::do_rerun()
         bool   bSumEkinhOld = false;
         t_vcm* vcm          = nullptr;
         compute_globals(gstat,
-                        cr_,
+                        cr_->commMyGroup,
                         ir,
                         fr_,
                         ekind_,
@@ -419,7 +427,7 @@ void gmx::LegacySimulator::do_rerun()
         observablesReducer.markAsReadyToReduce();
     }
 
-    if (MAIN(cr_))
+    if (isMainRank)
     {
         fprintf(stderr,
                 "starting md rerun '%s', reading coordinates from"
@@ -454,7 +462,7 @@ void gmx::LegacySimulator::do_rerun()
     }
 
     rerun_fr.natoms = 0;
-    if (MAIN(cr_))
+    if (isMainRank)
     {
         isLastStep = !read_first_frame(oenv_, &status, opt2fn("-rerun", nFile_, fnm_), &rerun_fr, TRX_NEED_X);
         if (rerun_fr.natoms != topGlobal_.natoms)
@@ -495,9 +503,9 @@ void gmx::LegacySimulator::do_rerun()
                     "Rerun does not report kinetic energy, total energy, temperature, virial and "
                     "pressure.");
 
-    if (PAR(cr_))
+    if (cr_->commMyGroup.isParallel())
     {
-        rerun_parallel_comm(cr_, &rerun_fr, &isLastStep);
+        rerun_parallel_comm(cr_->commMyGroup, &rerun_fr, &isLastStep);
     }
 
     if (ir->pbcType != PbcType::No)
@@ -511,21 +519,19 @@ void gmx::LegacySimulator::do_rerun()
     auto stopHandler = stopHandlerBuilder_->getStopHandlerMD(
             compat::not_null<SimulationSignal*>(&signals[eglsSTOPCOND]),
             false,
-            MAIN(cr_),
-            ir->nstlist,
+            isMainRank,
+            1, // rerun constructs the pairlist for each frame
             mdrunOptions_.reproducible,
             nstglobalcomm,
             mdrunOptions_.maximumHoursToRun,
-            ir->nstlist == 0,
             fpLog_,
             step,
-            bNS,
             wallTimeAccounting_);
 
     // we don't do counter resetting in rerun - finish will always be valid
     walltime_accounting_set_valid_finish(wallTimeAccounting_);
 
-    const DDBalanceRegionHandler ddBalanceRegionHandler(cr_);
+    const DDBalanceRegionHandler ddBalanceRegionHandler(cr_->dd);
 
     /* and stop now if we should */
     isLastStep = (isLastStep || (ir->nsteps >= 0 && step_rel > ir->nsteps));
@@ -547,7 +553,7 @@ void gmx::LegacySimulator::do_rerun()
             t = step;
         }
 
-        if (ir->efep != FreeEnergyPerturbationType::No && MAIN(cr_))
+        if (ir->efep != FreeEnergyPerturbationType::No && isMainRank)
         {
             if (rerun_fr.bLambda)
             {
@@ -564,7 +570,7 @@ void gmx::LegacySimulator::do_rerun()
             stateGlobal_->lambda = currentLambdas(step, *(ir->fepvals), state_->fep_state);
         }
 
-        if (MAIN(cr_))
+        if (isMainRank)
         {
             const bool constructVsites =
                     ((virtualSites_ != nullptr) && mdrunOptions_.rerunConstructVsites);
@@ -578,7 +584,7 @@ void gmx::LegacySimulator::do_rerun()
             prepareRerunState(rerun_fr, stateGlobal_, constructVsites, virtualSites_);
         }
 
-        isLastStep = isLastStep || stopHandler->stoppingAfterCurrentStep(bNS);
+        isLastStep = isLastStep || stopHandler->stoppingAfterCurrentStep(step);
 
         if (haveDDAtomOrdering(*cr_))
         {
@@ -587,7 +593,7 @@ void gmx::LegacySimulator::do_rerun()
             dd_partition_system(fpLog_,
                                 mdLog_,
                                 step,
-                                cr_,
+                                cr_->dd,
                                 bMainState,
                                 stateGlobal_,
                                 topGlobal_,
@@ -607,7 +613,7 @@ void gmx::LegacySimulator::do_rerun()
                                 mdrunOptions_.verbose);
         }
 
-        if (MAIN(cr_))
+        if (isMainRank)
         {
             EnergyOutput::printHeader(fpLog_, step, t); /* can we improve the information printed here? */
         }
@@ -619,9 +625,10 @@ void gmx::LegacySimulator::do_rerun()
 
         fr_->longRangeNonbondeds->updateAfterPartition(*mdatoms);
 
-        force_flags = (GMX_FORCE_STATECHANGED | GMX_FORCE_DYNAMICBOX | GMX_FORCE_ALLFORCES
-                       | GMX_FORCE_VIRIAL | // TODO: Get rid of this once #2649 and #3400 are solved
-                       GMX_FORCE_ENERGY | (doFreeEnergyPerturbation ? GMX_FORCE_DHDL : 0));
+        force_flags = (GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES
+                       | GMX_FORCE_VIRIAL
+                       // TODO: Get rid of this once #2649 and #3400 are solved
+                       | GMX_FORCE_ENERGY | (doFreeEnergyPerturbation ? GMX_FORCE_DHDL : 0));
 
         const int shellfcFlags     = force_flags | (mdrunOptions_.verbose ? GMX_FORCE_ENERGY : 0);
         const int legacyForceFlags = ((shellfc) ? shellfcFlags : force_flags) | GMX_FORCE_NS;
@@ -650,7 +657,6 @@ void gmx::LegacySimulator::do_rerun()
             /* Now is the time to relax the shells */
             relax_shell_flexcon(fpLog_,
                                 cr_,
-                                ms_,
                                 mdrunOptions_.verbose,
                                 enforcedRotation_,
                                 step,
@@ -695,7 +701,6 @@ void gmx::LegacySimulator::do_rerun()
             {
                 do_force(fpLog_,
                          cr_,
-                         ms_,
                          *ir,
                          mdModulesNotifiers_,
                          awh,
@@ -777,7 +782,7 @@ void gmx::LegacySimulator::do_rerun()
 
             int cglo_flags = CGLO_GSTAT | CGLO_ENERGY;
             compute_globals(gstat,
-                            cr_,
+                            cr_->commMyGroup,
                             ir,
                             fr_,
                             ekind_,
@@ -809,7 +814,7 @@ void gmx::LegacySimulator::do_rerun()
            generate the new shake_vir, but test the veta value for convergence.  This will take some thought. */
 
         /* Output stuff */
-        if (MAIN(cr_))
+        if (isMainRank)
         {
             const bool bCalcEnerStep = true;
             energyOutput.addDataAtEnergyStep(doFreeEnergyPerturbation,
@@ -855,7 +860,7 @@ void gmx::LegacySimulator::do_rerun()
 
             if (do_per_step(step, ir->nstlog))
             {
-                if (fflush(fpLog_) != 0)
+                if (std::fflush(fpLog_) != 0)
                 {
                     gmx_fatal(FARGS, "Cannot flush logfile - maybe you are out of disk space?");
                 }
@@ -863,13 +868,13 @@ void gmx::LegacySimulator::do_rerun()
         }
 
         /* Print the remaining wall clock time for the run */
-        if (isMainSimMainRank(ms_, MAIN(cr_)) && (mdrunOptions_.verbose || gmx_got_usr_signal()))
+        if (isMainSimMainRank(ms_, isMainRank) && (mdrunOptions_.verbose || gmx_got_usr_signal()))
         {
             if (shellfc)
             {
                 fprintf(stderr, "\n");
             }
-            print_time(stderr, wallTimeAccounting_, step, ir, cr_);
+            print_time(stderr, wallTimeAccounting_, step, ir, cr_->commMySim);
         }
 
         /* Ion/water position swapping.
@@ -879,27 +884,27 @@ void gmx::LegacySimulator::do_rerun()
             && do_per_step(step, ir->swap->nstswap))
         {
             const bool doRerun = true;
-            do_swapcoords(cr_,
+            do_swapcoords(cr_->commMyGroup,
                           step,
                           t,
                           ir,
                           swap_,
                           wallCycleCounters_,
-                          rerun_fr.x,
+                          gmx::arrayRefFromArray(reinterpret_cast<gmx::RVec*>(rerun_fr.x), rerun_fr.natoms),
                           rerun_fr.box,
-                          MAIN(cr_) && mdrunOptions_.verbose,
+                          isMainRank && mdrunOptions_.verbose,
                           doRerun);
         }
 
-        if (MAIN(cr_))
+        if (isMainRank)
         {
             /* read next frame from input trajectory */
             isLastStep = !read_next_frame(oenv_, status, &rerun_fr);
         }
 
-        if (PAR(cr_))
+        if (cr_->commMyGroup.isParallel())
         {
-            rerun_parallel_comm(cr_, &rerun_fr, &isLastStep);
+            rerun_parallel_comm(cr_->commMyGroup, &rerun_fr, &isLastStep);
         }
 
         cycles = wallcycle_stop(wallCycleCounters_, WallCycleCounter::Step);
@@ -925,15 +930,15 @@ void gmx::LegacySimulator::do_rerun()
     /* Stop measuring walltime */
     walltime_accounting_end_time(wallTimeAccounting_);
 
-    if (MAIN(cr_))
+    if (isMainRank)
     {
         close_trx(status);
     }
 
-    if (!thisRankHasDuty(cr_, DUTY_PME))
+    if (!thisRankHasPmeDuty(cr_->dd))
     {
         /* Tell the PME only node to finish */
-        gmx_pme_send_finish(cr_);
+        gmx_pme_send_finish(cr_->dd);
     }
 
     done_mdoutf(outf);

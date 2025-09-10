@@ -54,6 +54,10 @@
 #include "testutils/textblockmatchers.h"
 #include "testutils/xvgtest.h"
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -108,3 +112,5 @@ const char* const trajectoryFileNames[] = { "spc2-traj.trr", "spc2-traj.xtc", "s
 INSTANTIATE_TEST_SUITE_P(NoFatalErrorWhenWritingFrom, GmxTraj, ::testing::ValuesIn(trajectoryFileNames));
 
 } // namespace
+} // namespace test
+} // namespace gmx

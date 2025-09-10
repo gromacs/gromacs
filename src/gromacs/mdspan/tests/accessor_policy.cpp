@@ -49,6 +49,10 @@
 
 namespace gmx
 {
+namespace test
+{
+namespace
+{
 
 class BasicAccessorPolicy : public ::testing::Test
 {
@@ -94,4 +98,6 @@ TEST_F(BasicAccessorPolicy, CopyAccessor)
     }
 }
 
+} // namespace
+} // namespace test
 } // namespace gmx

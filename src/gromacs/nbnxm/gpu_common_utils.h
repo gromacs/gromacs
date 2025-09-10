@@ -47,7 +47,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/range.h"
 
-namespace Nbnxm
+namespace gmx
 {
 
 /*! \brief An early return condition for empty NB GPU workloads
@@ -69,27 +69,27 @@ static inline bool canSkipNonbondedWork(const NbnxmGpu& nb, InteractionLocality 
  * \param[in] atomLocality Atom locality specifier
  * \returns Range of indexes for selected locality.
  */
-static inline gmx::Range<int> getGpuAtomRange(const NBAtomDataGpu* atomData, const AtomLocality atomLocality)
+static inline Range<int> getGpuAtomRange(const NBAtomDataGpu* atomData, const AtomLocality atomLocality)
 {
     assert(atomData);
 
     /* calculate the atom data index range based on locality */
     if (atomLocality == AtomLocality::Local)
     {
-        return gmx::Range<int>(0, atomData->numAtomsLocal);
+        return Range<int>(0, atomData->numAtomsLocal);
     }
     else if (atomLocality == AtomLocality::NonLocal)
     {
-        return gmx::Range<int>(atomData->numAtomsLocal, atomData->numAtoms);
+        return Range<int>(atomData->numAtomsLocal, atomData->numAtoms);
     }
     else
     {
         GMX_THROW(
-                gmx::InconsistentInputError("Only Local and NonLocal atom localities can be used "
-                                            "to get atom ranges in NBNXM."));
+                InconsistentInputError("Only Local and NonLocal atom localities can be used "
+                                       "to get atom ranges in NBNXM."));
     }
 }
 
-} // namespace Nbnxm
+} // namespace gmx
 
 #endif

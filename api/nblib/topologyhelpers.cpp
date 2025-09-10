@@ -59,9 +59,8 @@ std::vector<gmx::ExclusionBlock> toGmxExclusionBlock(const std::vector<std::tupl
 {
     std::vector<gmx::ExclusionBlock> ret;
 
-    auto firstLowerThan = [](auto const& tup1, auto const& tup2) {
-        return std::get<0>(tup1) < std::get<0>(tup2);
-    };
+    auto firstLowerThan = [](auto const& tup1, auto const& tup2)
+    { return std::get<0>(tup1) < std::get<0>(tup2); };
 
     // Note this is a programming error as all particles should exclude at least themselves and empty topologies are not allowed.
     // Note also that this is also checked in the parent function with a more informative error message.

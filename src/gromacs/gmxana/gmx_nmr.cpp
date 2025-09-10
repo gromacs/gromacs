@@ -57,7 +57,6 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/math/functions.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/energyoutput.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -79,6 +78,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/vectypes.h"
 
 struct gmx_output_env_t;
 
@@ -120,7 +120,7 @@ static int* select_it(int nre, gmx::ArrayRef<const std::string> nm, int* nset)
     int*      set;
     gmx_bool  bVerbose = TRUE;
 
-    if ((getenv("GMX_ENER_VERBOSE")) != nullptr)
+    if ((std::getenv("GMX_ENER_VERBOSE")) != nullptr)
     {
         bVerbose = FALSE;
     }
@@ -404,11 +404,11 @@ int gmx_nmr(int argc, char* argv[])
         { "-dp", FALSE, etBOOL, { &bDp }, "Print energies in high precision" },
         { "-skip", FALSE, etINT, { &skip }, "Skip number of frames between data points" },
         { "-aver",
-          FALSE,
-          etBOOL,
-          { &bPrAll },
-          "Also print the exact average and rmsd stored in the energy frames (only when 1 term is "
-          "requested)" },
+                  FALSE,
+                  etBOOL,
+                  { &bPrAll },
+                  "Also print the exact average and rmsd stored in the energy frames (only when 1 term is "
+                          "requested)" },
         { "-orinst", FALSE, etBOOL, { &bOrinst }, "Analyse instantaneous orientation data" },
         { "-ovec", FALSE, etBOOL, { &bOvec }, "Also plot the eigenvectors with [TT]-oten[tt]" }
     };

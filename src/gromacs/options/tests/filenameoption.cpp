@@ -54,6 +54,10 @@
 
 #include "testutils/testasserts.h"
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -259,3 +263,5 @@ TEST(FileNameOptionTest, HandlesRequiredCsvOptionWithoutValue)
 }
 
 } // namespace
+} // namespace test
+} // namespace gmx

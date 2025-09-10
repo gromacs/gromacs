@@ -31,6 +31,10 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
+/*!
+ * \defgroup module_compat Module Compat
+ * \brief AA brief description for Module Compat
+ */
 #include "gmxpre.h"
 
 #include "gromacs/compat/mp11.h"
@@ -107,9 +111,9 @@ TEST(TemplateMPTest, MpWithIndexEnum)
 {
     int five           = 5;
     int two1plus2plus5 = mp_with_index<static_cast<size_t>(Options::Count)>(
-            static_cast<size_t>(Options::Op2), [=](auto i) {
-                return testEnumTwoIPlusJPlusK<Options::Op1, static_cast<Options>(size_t(i))>(five);
-            });
+            static_cast<size_t>(Options::Op2),
+            [=](auto i)
+            { return testEnumTwoIPlusJPlusK<Options::Op1, static_cast<Options>(size_t(i))>(five); });
     EXPECT_EQ(two1plus2plus5, 9);
 }
 

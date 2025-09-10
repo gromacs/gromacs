@@ -76,13 +76,16 @@ public:
     MOCK_METHOD1(frameStarted, void(const AnalysisDataFrameHeader& header));
     MOCK_METHOD1(pointsAdded, void(const AnalysisDataPointSetRef& points));
     MOCK_METHOD1(frameFinished, void(const AnalysisDataFrameHeader& header));
-    MOCK_METHOD1(frameFinishedSerial, void(int frameIndex));
+    MOCK_METHOD1(frameFinishedSerial, void(size_t frameIndex));
     MOCK_METHOD0(dataFinished, void());
 
     void setupStaticCheck(const AnalysisDataTestInput& data, AbstractAnalysisData* source, bool bParallel);
-    void setupStaticColumnCheck(const AnalysisDataTestInput& data, int firstcol, int n, AbstractAnalysisData* source);
+    void setupStaticColumnCheck(const AnalysisDataTestInput& data,
+                                size_t                       firstcol,
+                                size_t                       n,
+                                AbstractAnalysisData*        source);
     void setupStaticStorageCheck(const AnalysisDataTestInput& data,
-                                 int                          storageCount,
+                                 size_t                       storageCount,
                                  AbstractAnalysisData*        source);
     void setupReferenceCheck(const TestReferenceChecker& checker, AbstractAnalysisData* source);
 

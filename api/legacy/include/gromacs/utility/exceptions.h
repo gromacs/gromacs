@@ -83,10 +83,10 @@ class IExceptionInfo
 {
 public:
     virtual ~IExceptionInfo();
-    IExceptionInfo()                          = default;
-    IExceptionInfo(const IExceptionInfo&)     = default;
-    IExceptionInfo(IExceptionInfo&&) noexcept = default;
-    IExceptionInfo& operator=(const IExceptionInfo&) = default;
+    IExceptionInfo()                                     = default;
+    IExceptionInfo(const IExceptionInfo&)                = default;
+    IExceptionInfo(IExceptionInfo&&) noexcept            = default;
+    IExceptionInfo& operator=(const IExceptionInfo&)     = default;
     IExceptionInfo& operator=(IExceptionInfo&&) noexcept = default;
 };
 
@@ -252,10 +252,10 @@ public:
     // about missing noexcept otherwise.
     ~GromacsException() noexcept override {}
 
-    GromacsException()                            = default;
-    GromacsException(const GromacsException&)     = default;
-    GromacsException(GromacsException&&) noexcept = default;
-    GromacsException& operator=(const GromacsException&) = default;
+    GromacsException()                                       = default;
+    GromacsException(const GromacsException&)                = default;
+    GromacsException(GromacsException&&) noexcept            = default;
+    GromacsException& operator=(const GromacsException&)     = default;
     GromacsException& operator=(GromacsException&&) noexcept = default;
 
     /*! \brief
@@ -376,11 +376,9 @@ private:
  * other overloads of `operator<<` for ExceptionInfo objects, in case someone
  * would like to declare those.  But currently we do not have such overloads, so
  * if the enable_if causes problems with some compilers, it can be removed.
- *
- * \todo Use std::is_base_of_v when CUDA 11 is a requirement.
  */
 template<class Exception, class Tag, class T>
-inline std::enable_if_t<std::is_base_of<GromacsException, Exception>::value, Exception>
+inline std::enable_if_t<std::is_base_of_v<GromacsException, Exception>, Exception>
 operator<<(Exception ex, const ExceptionInfo<Tag, T>& item)
 {
     ex.setInfo(item);
@@ -740,8 +738,11 @@ int processExceptionAtExit(const std::exception& ex);
    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
    \endcode
  */
-#define GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR \
-    catch (const std::exception& ex) { ::gmx::processExceptionAsFatalError(ex); }
+#define GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR  \
+    catch (const std::exception& ex)             \
+    {                                            \
+        ::gmx::processExceptionAsFatalError(ex); \
+    }
 
 //! \}
 

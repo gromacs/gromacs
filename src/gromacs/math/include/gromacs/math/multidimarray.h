@@ -55,17 +55,13 @@ namespace gmx
 
 namespace detail
 {
-//! Same as std::void_t from C++17
-template<class...>
-using void_t = void;
-
 template<typename T, typename = void>
 struct is_resizable : std::false_type
 {
 };
 
 template<typename T>
-struct is_resizable<T, void_t<decltype(std::declval<T>().resize(size_t(0)))>> : std::true_type
+struct is_resizable<T, std::void_t<decltype(std::declval<T>().resize(size_t(0)))>> : std::true_type
 {
 };
 

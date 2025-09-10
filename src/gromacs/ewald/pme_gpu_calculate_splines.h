@@ -46,7 +46,7 @@
 
 #include <cassert>
 
-#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/vectypes.h"
 
 struct PmeGpu;
 

@@ -54,8 +54,6 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/topology.h"
@@ -67,6 +65,8 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 enum class PbcType : int;
 struct gmx_output_env_t;
@@ -433,7 +433,14 @@ int gmx_tcaf(int argc, char* argv[])
         sysmass += top.atoms.atom[i].m;
     }
 
-    read_first_frame(oenv, &status, ftp2fn(efTRN, NFILE, fnm), &fr, TRX_NEED_X | TRX_NEED_V);
+    bool ok = read_first_frame(oenv, &status, ftp2fn(efTRN, NFILE, fnm), &fr, TRX_NEED_X | TRX_NEED_V);
+    if (!ok)
+    {
+        gmx_fatal(FARGS,
+                  "Could not read first frame of the trajectory. Note that both coordinates and "
+                  "velocities are mandatory for TCAF computation, and might be missing from this "
+                  "trajectory file.\n");
+    }
     t0 = fr.time;
 
     n_alloc = 0;

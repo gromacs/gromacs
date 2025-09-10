@@ -577,7 +577,7 @@ int tMPI_Barrier(tMPI_Comm comm)
 #endif
 
 #ifdef TMPI_TRACE
-    tMPI_Trace_print("tMPI_Barrier(%p, %d, %p, %d, %d, %p, %p)", comm);
+    tMPI_Trace_print("tMPI_Barrier(%p)", comm);
 #endif
 
     if (!comm)

@@ -161,7 +161,7 @@ public:
     reference operator*() const;
     //! Moves the iterator to the next symbol.
     SelectionParserSymbolIterator& operator++();
-    using Base::                   operator++;
+    using Base::operator++;
 
 private:
     class Impl;

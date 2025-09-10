@@ -46,13 +46,12 @@
 
 #include <libcp2k.h>
 
-#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/units.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/filestream.h"
+#include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace gmx
@@ -119,7 +118,7 @@ void QMMMForceProvider::appendLog(const std::string& msg)
     GMX_LOG(logger_.info).asParagraph().appendText(msg);
 }
 
-void QMMMForceProvider::initCP2KForceEnvironment(const t_commrec& cr)
+void QMMMForceProvider::initCP2KForceEnvironment(const MpiComm& mpiComm)
 {
     // Check that we have filename either defined in KVT or deduced from *.tpr name
     GMX_RELEASE_ASSERT(!parameters_.qmFileNameBase_.empty(),
@@ -132,7 +131,7 @@ void QMMMForceProvider::initCP2KForceEnvironment(const t_commrec& cr)
     const std::string cp2kOutputName = parameters_.qmFileNameBase_ + ".out";
 
     // Write CP2K input if we are Main
-    if (MAIN(&cr))
+    if (mpiComm.isMainRank())
     {
         // In the CP2K Input we need to substitute placeholder with the actuall *.pdb file name
         writeStringToFile(cp2kInputName, formatString(parameters_.qmInput_.c_str(), cp2kPdbName.c_str()));
@@ -154,14 +153,14 @@ void QMMMForceProvider::initCP2KForceEnvironment(const t_commrec& cr)
         // TODO: Probably there should be more elegant solution
 #if GMX_LIB_MPI
         cp2k_create_force_env_comm(
-                &force_env_, cp2kInputName.c_str(), cp2kOutputName.c_str(), MPI_Comm_c2f(cr.mpi_comm_mysim));
+                &force_env_, cp2kInputName.c_str(), cp2kOutputName.c_str(), MPI_Comm_c2f(mpiComm.comm()));
 #endif
     }
     else
     {
 
-        // If we have thread-MPI or no-MPI then we should initialize CP2P differently
-        if (cr.nnodes > 1)
+        // If we have thread-MPI or no-MPI then we should initialize CP2K differently
+        if (mpiComm.isParallel())
         {
             // CP2K could not use thread-MPI parallelization. In case -ntmpi > 1 throw an error.
             std::string msg =
@@ -203,7 +202,7 @@ void QMMMForceProvider::calculateForces(const ForceProviderInput& fInput, ForceP
     {
         try
         {
-            initCP2KForceEnvironment(fInput.cr_);
+            initCP2KForceEnvironment(fInput.mpiComm_);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
@@ -230,10 +229,7 @@ void QMMMForceProvider::calculateForces(const ForceProviderInput& fInput, ForceP
     }
 
     // If we are in MPI / DD conditions then gather coordinates over nodes
-    if (havePPDomainDecomposition(&fInput.cr_))
-    {
-        gmx_sum(3 * numAtoms, x.data()->as_vec(), &fInput.cr_);
-    }
+    fInput.mpiComm_.sumReduce(3 * numAtoms, x.data()->as_vec());
 
     // Put all atoms into the central box (they might be shifted out of it because of the translation)
     put_atoms_in_box(pbcType_, fInput.box_, ArrayRef<RVec>(x));
@@ -273,7 +269,7 @@ void QMMMForceProvider::calculateForces(const ForceProviderInput& fInput, ForceP
      */
 
     // Only main process should add QM + QMMM energy
-    if (MAIN(&fInput.cr_))
+    if (fInput.mpiComm_.isMainRank())
     {
         double qmEner = 0.0;
         cp2k_get_potential_energy(force_env_, &qmEner);
@@ -316,5 +312,12 @@ void QMMMForceProvider::calculateForces(const ForceProviderInput& fInput, ForceP
                 * c_hartreeBohr2Md;
     }
 };
+
+std::string qmmmDescription()
+{
+    std::vector<char> cp2kVersion(100);
+    cp2k_get_version(cp2kVersion.data(), 100);
+    return cp2kVersion[0] != '\0' ? formatString("enabled (version %s)", cp2kVersion.data()) : "enabled";
+}
 
 } // namespace gmx

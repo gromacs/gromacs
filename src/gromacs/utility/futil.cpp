@@ -133,11 +133,11 @@ void gmx_set_max_backup_count(int count)
 {
     if (count < 0)
     {
-        const char* env = getenv("GMX_MAXBACKUP");
+        const char* env = std::getenv("GMX_MAXBACKUP");
         if (env != nullptr)
         {
             // TODO: Check that the value is converted properly.
-            count = strtol(env, nullptr, 10);
+            count = std::strtol(env, nullptr, 10);
             if (count < 0)
             {
                 count = 0;
@@ -198,7 +198,7 @@ int gmx_ffclose(FILE* fp)
     {
         if (fp != nullptr)
         {
-            ret = fclose(fp);
+            ret = std::fclose(fp);
         }
     }
     else if (ps->fp == fp)
@@ -230,7 +230,7 @@ int gmx_ffclose(FILE* fp)
         {
             if (fp != nullptr)
             {
-                ret = fclose(fp);
+                ret = std::fclose(fp);
             }
         }
     }
@@ -253,7 +253,7 @@ void frewind(FILE* fp)
         }
         ps = ps->prev;
     }
-    rewind(fp);
+    std::rewind(fp);
 }
 
 int gmx_fseek(FILE* stream, gmx_off_t offset, int whence)
@@ -264,7 +264,7 @@ int gmx_fseek(FILE* stream, gmx_off_t offset, int whence)
 #    if HAVE__FSEEKI64
     return _fseeki64(stream, offset, whence);
 #    else
-    return fseek(stream, offset, whence);
+    return std::fseek(stream, offset, whence);
 #    endif
 #endif
 }
@@ -281,7 +281,7 @@ gmx_off_t gmx_ftell(FILE* stream)
     return ftello64(stream);
 #        endif
 #    else
-    return ftell(stream);
+    return std::ftell(stream);
 #    endif
 #endif
 }
@@ -409,7 +409,7 @@ FILE* gmx_ffopen(const std::filesystem::path& file, const char* mode)
     bool bRead = (mode[0] == 'r' && mode[1] != '+');
     if (!bRead || gmx_fexist(file))
     {
-        if ((ff = fopen(file.string().c_str(), mode)) == nullptr)
+        if ((ff = std::fopen(file.string().c_str(), mode)) == nullptr)
         {
             gmx_file(file.string());
         }
@@ -417,20 +417,20 @@ FILE* gmx_ffopen(const std::filesystem::path& file, const char* mode)
          * (for debugging)
          */
         const char* bufsize = nullptr;
-        if (bUnbuffered || ((bufsize = getenv("GMX_LOG_BUFFER")) != nullptr))
+        if (bUnbuffered || ((bufsize = std::getenv("GMX_LOG_BUFFER")) != nullptr))
         {
             /* Check whether to use completely unbuffered */
-            const int bs = bUnbuffered ? 0 : strtol(bufsize, nullptr, 10);
+            const int bs = bUnbuffered ? 0 : std::strtol(bufsize, nullptr, 10);
             if (bs <= 0)
             {
-                setbuf(ff, nullptr);
+                std::setbuf(ff, nullptr);
             }
             else
             {
                 // Note: this leaks memory, because one has to free ptr after closing the file.
                 char* ptr = nullptr;
                 snew(ptr, bs + 8);
-                if (setvbuf(ff, ptr, _IOFBF, bs) != 0)
+                if (std::setvbuf(ff, ptr, _IOFBF, bs) != 0)
                 {
                     gmx_file("Buffering File");
                 }
@@ -502,7 +502,7 @@ static int makeTemporaryFilename(char* buf)
 {
     int len = 0;
 
-    if ((len = strlen(buf)) < 7)
+    if ((len = std::strlen(buf)) < 7)
     {
         gmx_fatal(FARGS, "Buf passed to gmx_tmpnam must be at least 7 bytes long");
     }
@@ -518,7 +518,7 @@ static int makeTemporaryFilename(char* buf)
     _mktemp(buf);
     if (buf == NULL)
     {
-        gmx_fatal(FARGS, "Error creating temporary file %s: %s", buf, strerror(errno));
+        gmx_fatal(FARGS, "Error creating temporary file %s: %s", buf, std::strerror(errno));
     }
     int fd = 0;
 #else
@@ -531,7 +531,7 @@ static int makeTemporaryFilename(char* buf)
 
     if (fd < 0)
     {
-        gmx_fatal(FARGS, "Error creating temporary file %s: %s", buf, strerror(errno));
+        gmx_fatal(FARGS, "Error creating temporary file %s: %s", buf, std::strerror(errno));
     }
 #endif
     return fd;
@@ -552,7 +552,7 @@ FILE* gmx_fopen_temporary(char* buf)
     int   fd    = makeTemporaryFilename(buf);
 
 #if GMX_NATIVE_WINDOWS
-    if ((fpout = fopen(buf, "w")) == NULL)
+    if ((fpout = std::fopen(buf, "w")) == NULL)
     {
         gmx_fatal(FARGS, "Cannot open temporary file %s", buf);
     }

@@ -89,8 +89,8 @@ if (GMX_LIB_MPI)
                 "MPI_CXX_COMPILER to the MPI compiler wrapper (often called mpicxx or mpic++), "
                 "set CMAKE_CXX_COMPILER to a default-MPI-enabled compiler, "
                 "or set the variables reported missing for MPI_CXX above.")
-    elseif (MPI_CXX_VERSION VERSION_LESS 2.0)
-        message(FATAL_ERROR "MPI version 2.0 or higher is required. Please update your MPI library.")
+    elseif (MPI_CXX_VERSION VERSION_LESS 3.0)
+        message(FATAL_ERROR "MPI version 3.0 or higher is required. Please update your MPI library.")
     endif ()
     #TODO(#3672, #3776): These should be acquired through the MPI::MPI_CXX target.
     include_directories(SYSTEM ${MPI_CXX_INCLUDE_PATH})
@@ -116,21 +116,14 @@ endif ()
 # Test for and warn about unsuitable OpenMPI versions.
 # TODO(#4093): Update tests with respect to required (compatible) OpenMPI versions.
 if (GMX_LIB_MPI AND OPENMPI_VERSION)
-    if (OPENMPI_VERSION VERSION_LESS "1.4.1")
-        MESSAGE(WARNING
-                "CMake found OpenMPI version ${OPENMPI_VERSION} on your system. "
-                "There are known problems with GROMACS and OpenMPI version < 1.4.1. "
-                "Please consider updating your OpenMPI if your MPI wrapper compilers "
-                "are using the above OpenMPI version.")
-    endif ()
     if (OPENMPI_VERSION VERSION_EQUAL "1.8.6")
-        MESSAGE(WARNING
+        message(WARNING
                 "CMake found OpenMPI version ${OPENMPI_VERSION} on your system. "
                 "This OpenMPI version is known to leak memory with GROMACS,"
                 "please update to a more recent version. ")
     endif ()
     if (NOT MPI_FIND_QUIETLY)
-        MESSAGE(STATUS "GROMACS library will use OpenMPI ${OPENMPI_VERSION}")
+        message(STATUS "GROMACS library will use OpenMPI ${OPENMPI_VERSION}")
     endif ()
 endif ()
 
@@ -139,14 +132,14 @@ endif ()
 if (GMX_LIB_MPI AND MVAPICH2_VERSION)
     if (MVAPICH2_VERSION VERSION_LESS "1.5")
         # This test works correctly even with 1.5a1
-        MESSAGE(WARNING
+        message(WARNING
                 "CMake found MVAPICH2 version ${MVAPICH2_VERSION} on your system. "
                 "There are known problems with GROMACS and MVAPICH2 version < 1.5. "
                 "Please consider updating your MVAPICH2 if your MPI wrapper compilers "
                 "are using the above MVAPICH2 version.")
     endif ()
     if (NOT MPI_FIND_QUIETLY)
-        MESSAGE(STATUS "GROMACS library will use MVAPICH2 ${MVAPICH2_VERSION}")
+        message(STATUS "GROMACS library will use MVAPICH2 ${MVAPICH2_VERSION}")
     endif ()
 endif ()
 
@@ -166,3 +159,20 @@ if (NOT MPIEXEC_EXECUTABLE)
     set(MPIEXEC_MAX_NUMPROCS "2" CACHE STRING "Maximum number of processors available to run MPI applications.")
     mark_as_advanced(MPIEXEC MPIEXEC_NUMPROC_FLAG MPIEXEC_PREFLAGS MPIEXEC_POSTFLAGS MPIEXEC_MAX_NUMPROCS)
 endif ()
+
+# MPI library headers tend to be written to compile in either C or
+# C++ mode, so both use C-style casts directly and in preprocessor
+# defines that then get expanded in GROMACS code. To avoid hiding
+# important warnings in the noise, we suppress warnings about
+# old-style casts in such builds, relying on other build
+# configurations to encourage us to avoid adding C-style casts to
+# the code.
+if (TARGET MPI::MPI_CXX)
+    gmx_target_interface_warning_suppression(MPI::MPI_CXX "-Wno-old-style-cast" HAS_WARNING_NO_OLD_STYLE_CAST)
+    # These next four are similar and only needed by colvars, but
+    # can't yet be moved there.
+    gmx_target_interface_warning_suppression(MPI::MPI_CXX "-Wno-cast-qual" HAS_WARNING_NO_CAST_QUAL)
+    gmx_target_interface_warning_suppression(MPI::MPI_CXX "-Wno-suggest-override" HAS_WARNING_NO_SUGGEST_OVERRIDE)
+    gmx_target_interface_warning_suppression(MPI::MPI_CXX "-Wno-suggest-destructor-override" HAS_WARNING_NO_SUGGEST_DESTRUCTOR_OVERRIDE)
+    gmx_target_interface_warning_suppression(MPI::MPI_CXX "-Wno-zero-as-null-pointer-constant" HAS_WARNING_NO_ZERO_AS_NULL_POINTER_CONSTANT)
+endif()

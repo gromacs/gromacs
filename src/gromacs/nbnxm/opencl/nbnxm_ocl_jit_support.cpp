@@ -59,6 +59,9 @@
 
 #include "nbnxm_ocl_types.h"
 
+namespace gmx
+{
+
 /*! \brief Array of the defines needed to generate a specific eel flavour
  *
  * The twin-cutoff entries are not normally used, because those setups are
@@ -117,11 +120,8 @@ static const char* kernel_VdW_family_definitions[] = {
  *
  * \throws std::bad_alloc if out of memory
  */
-static std::string makeDefinesForKernelTypes(bool                 bFastGen,
-                                             enum Nbnxm::ElecType elecType,
-                                             enum Nbnxm::VdwType  vdwType)
+static std::string makeDefinesForKernelTypes(bool bFastGen, enum ElecType elecType, enum VdwType vdwType)
 {
-    using Nbnxm::ElecType;
     std::string defines_for_kernel_types;
 
     if (bFastGen)
@@ -161,7 +161,7 @@ static std::string makeDefinesForKernelTypes(bool                 bFastGen,
  */
 void nbnxn_gpu_compile_kernels(NbnxmGpu* nb)
 {
-    gmx_bool   bFastGen = TRUE;
+    bool       bFastGen = TRUE;
     cl_program program  = nullptr;
 
     if (std::getenv("GMX_OCL_NOFASTGEN") != nullptr)
@@ -190,10 +190,10 @@ void nbnxn_gpu_compile_kernels(NbnxmGpu* nb)
                 " -Dc_nbnxnGpuJgroupSize=%d"
                 " -Dc_centralShiftIndex=%d"
                 "%s",
-                c_nbnxnGpuClusterSize,
+                sc_gpuClusterSize(sc_layoutType),
                 c_nbnxnMinDistanceSquared,
-                c_nbnxnGpuNumClusterPerSupercluster,
-                c_nbnxnGpuJgroupSize,
+                sc_gpuClusterPerSuperCluster(sc_layoutType),
+                sc_gpuJgroupSize(sc_layoutType),
                 gmx::c_centralShiftIndex,
                 (nb->bPrefetchLjParam) ? " -DIATYPE_SHMEM" : "");
         try
@@ -221,3 +221,5 @@ void nbnxn_gpu_compile_kernels(NbnxmGpu* nb)
 
     nb->dev_rundata->program = program;
 }
+
+} // namespace gmx

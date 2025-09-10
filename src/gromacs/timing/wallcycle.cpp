@@ -47,6 +47,7 @@
 #include <string>
 #include <vector>
 
+#include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/timing/cyclecounter.h"
@@ -110,7 +111,7 @@ std::unique_ptr<gmx_wallcycle> wallcycle_init(FILE* fplog, int resetstep, const 
 
 
 #if GMX_MPI
-    if (cr != nullptr && PAR(cr) && getenv("GMX_CYCLE_BARRIER") != nullptr)
+    if (cr != nullptr && cr->commMySim.isParallel() && std::getenv("GMX_CYCLE_BARRIER") != nullptr)
     {
         if (fplog)
         {
@@ -120,7 +121,7 @@ std::unique_ptr<gmx_wallcycle> wallcycle_init(FILE* fplog, int resetstep, const 
     }
 #endif
 
-    if (getenv("GMX_CYCLE_ALL") != nullptr)
+    if (std::getenv("GMX_CYCLE_ALL") != nullptr)
     {
         if (fplog)
         {
@@ -129,10 +130,9 @@ std::unique_ptr<gmx_wallcycle> wallcycle_init(FILE* fplog, int resetstep, const 
         wc->wcc_all.resize(sc_numWallCycleCountersSquared);
     }
 
-    // NOLINTNEXTLINE(readability-misleading-indentation)
     if constexpr (sc_enableWallcycleDebug)
     {
-        wc->isMainRank = (cr == nullptr) || MAIN(cr);
+        wc->isMainRank = (cr == nullptr) || cr->commMySim.isMainRank();
     }
 
 #if GMX_USE_ITT
@@ -154,9 +154,25 @@ std::unique_ptr<gmx_wallcycle> wallcycle_init(FILE* fplog, int resetstep, const 
 CLANG_DIAGNOSTIC_RESET
 #endif
 
+std::optional<WallCycleCounter> gmx_wallcycle::registerCycleCounter(const std::string& name)
+{
+    constexpr size_t c_numForceProviderCounters =
+            static_cast<size_t>(WallCycleCounter::ForceProvider4)
+            - static_cast<size_t>(WallCycleCounter::ForceProvider0) + 1;
+
+    if (forceProviderNames.size() >= c_numForceProviderCounters)
+    {
+        return {};
+    }
+
+    forceProviderNames.emplace_back(name);
+
+    return static_cast<WallCycleCounter>(static_cast<size_t>(WallCycleCounter::ForceProvider0)
+                                         + forceProviderNames.size() - 1);
+}
+
 void gmx_wallcycle::checkStart(WallCycleCounter ewc)
 {
-    // NOLINTNEXTLINE(readability-misleading-indentation)
     if constexpr (sc_enableWallcycleDebug)
     {
         // NOLINTNEXTLINE(misc-redundant-expression)
@@ -177,7 +193,6 @@ void gmx_wallcycle::checkStart(WallCycleCounter ewc)
 
 void gmx_wallcycle::checkStop(WallCycleCounter ewc)
 {
-    // NOLINTNEXTLINE(readability-misleading-indentation)
     if constexpr (sc_enableWallcycleDebug)
     {
         if (sc_debugPrintDepth && (!sc_onlyMainDebugPrints || isMainRank))
@@ -213,7 +228,6 @@ void wallcycle_get(gmx_wallcycle* wc, WallCycleCounter ewc, int* n, double* c)
 
 void wallcycle_sub_get(gmx_wallcycle* wc, WallCycleSubCounter ewcs, int* n, double* c)
 {
-    // NOLINTNEXTLINE(readability-misleading-indentation)
     if constexpr (sc_useCycleSubcounters)
     {
         if (wc != nullptr)
@@ -247,7 +261,6 @@ void wallcycle_reset_all(gmx_wallcycle* wc)
         }
     }
 
-    // NOLINTNEXTLINE(readability-misleading-indentation)
     if constexpr (sc_useCycleSubcounters)
     {
         for (auto& counter : wc->wcsc)
@@ -273,7 +286,7 @@ void wallcycleBarrier(gmx_wallcycle* wc)
 #if GMX_MPI
     if (wc->wc_barrier)
     {
-        MPI_Barrier(wc->cr->mpi_comm_mygroup);
+        MPI_Barrier(wc->cr->commMyGroup.comm());
     }
 #else
     GMX_UNUSED_VALUE(wc);
@@ -336,7 +349,6 @@ void wallcycle_scale_by_num_threads(gmx_wallcycle* wc, bool isPmeRank, int nthre
             }
         }
     }
-    // NOLINTNEXTLINE(readability-misleading-indentation)
     if constexpr (sc_useCycleSubcounters)
     {
         if (!isPmeRank)
@@ -386,7 +398,7 @@ WallcycleCounts wallcycle_sum(const t_commrec* cr, gmx_wallcycle* wc)
 
     subtract_cycles(wcc, WallCycleCounter::PmeFft, WallCycleCounter::PmeFftComm);
 
-    if (cr->npmenodes == 0)
+    if (cr->dd && cr->dd->numPmeOnlyRanks == 0)
     {
         /* All nodes do PME (or no PME at all) */
         subtract_cycles(wcc, WallCycleCounter::Force, WallCycleCounter::PmeMesh);
@@ -426,7 +438,6 @@ WallcycleCounts wallcycle_sum(const t_commrec* cr, gmx_wallcycle* wc)
 #endif
         cyclesMain[key] = static_cast<double>(wcc[key].c);
     }
-    // NOLINTNEXTLINE(readability-misleading-indentation)
     if constexpr (sc_useCycleSubcounters)
     {
         for (auto key : keysOf(wc->wcsc))
@@ -439,7 +450,7 @@ WallcycleCounts wallcycle_sum(const t_commrec* cr, gmx_wallcycle* wc)
     }
 
 #if GMX_MPI
-    if (cr->nnodes > 1)
+    if (cr->commMySim.isParallel())
     {
         gmx::EnumerationArray<WallCycleCounter, double>    bufMain;
         gmx::EnumerationArray<WallCycleSubCounter, double> bufSub;
@@ -449,19 +460,27 @@ WallcycleCounts wallcycle_sum(const t_commrec* cr, gmx_wallcycle* wc)
         // wallcycle_print, and avoid bugs
         double haveInvalidCount = (wc->haveInvalidCount ? 1 : 0);
         // TODO Use MPI_Reduce
-        MPI_Allreduce(cyclesMainOnNode.data(), bufMain.data(), bufMain.size(), MPI_DOUBLE, MPI_MAX, cr->mpi_comm_mysim);
-        // NOLINTNEXTLINE(readability-misleading-indentation)
+        MPI_Allreduce(cyclesMainOnNode.data(),
+                      bufMain.data(),
+                      bufMain.size(),
+                      MPI_DOUBLE,
+                      MPI_MAX,
+                      cr->commMySim.comm());
         if constexpr (sc_useCycleSubcounters)
         {
-            MPI_Allreduce(cyclesSubOnNode.data(), bufSub.data(), bufSub.size(), MPI_DOUBLE, MPI_MAX, cr->mpi_comm_mysim);
+            MPI_Allreduce(cyclesSubOnNode.data(),
+                          bufSub.data(),
+                          bufSub.size(),
+                          MPI_DOUBLE,
+                          MPI_MAX,
+                          cr->commMySim.comm());
         }
-        MPI_Allreduce(MPI_IN_PLACE, &haveInvalidCount, 1, MPI_DOUBLE, MPI_MAX, cr->mpi_comm_mysim);
+        MPI_Allreduce(MPI_IN_PLACE, &haveInvalidCount, 1, MPI_DOUBLE, MPI_MAX, cr->commMySim.comm());
         for (auto key : keysOf(wcc))
         {
             wcc[key].n = gmx::roundToInt(bufMain[key]);
         }
         wc->haveInvalidCount = (haveInvalidCount > 0);
-        // NOLINTNEXTLINE(readability-misleading-indentation)
         if constexpr (sc_useCycleSubcounters)
         {
             for (auto key : keysOf(wc->wcsc))
@@ -471,8 +490,12 @@ WallcycleCounts wallcycle_sum(const t_commrec* cr, gmx_wallcycle* wc)
         }
 
         // TODO Use MPI_Reduce
-        MPI_Allreduce(cyclesMain.data(), cycles_sum.data(), cyclesMain.size(), MPI_DOUBLE, MPI_SUM, cr->mpi_comm_mysim);
-        // NOLINTNEXTLINE(readability-misleading-indentation)
+        MPI_Allreduce(cyclesMain.data(),
+                      cycles_sum.data(),
+                      cyclesMain.size(),
+                      MPI_DOUBLE,
+                      MPI_SUM,
+                      cr->commMySim.comm());
         if constexpr (sc_useCycleSubcounters)
         {
             MPI_Allreduce(cyclesSub.data(),
@@ -480,7 +503,7 @@ WallcycleCounts wallcycle_sum(const t_commrec* cr, gmx_wallcycle* wc)
                           cyclesSub.size(),
                           MPI_DOUBLE,
                           MPI_SUM,
-                          cr->mpi_comm_mysim);
+                          cr->commMySim.comm());
         }
 
         if (!wc->wcc_all.empty())
@@ -498,7 +521,7 @@ WallcycleCounts wallcycle_sum(const t_commrec* cr, gmx_wallcycle* wc)
                           sc_numWallCycleCountersSquared,
                           MPI_DOUBLE,
                           MPI_SUM,
-                          cr->mpi_comm_mysim);
+                          cr->commMySim.comm());
             for (int i = 0; i < sc_numWallCycleCountersSquared; i++)
             {
                 wc->wcc_all[i].c = static_cast<gmx_cycles_t>(buf_all[i]);
@@ -512,7 +535,6 @@ WallcycleCounts wallcycle_sum(const t_commrec* cr, gmx_wallcycle* wc)
         {
             cycles_sum[static_cast<int>(key)] = cyclesMain[key];
         }
-        // NOLINTNEXTLINE(readability-misleading-indentation)
         if constexpr (sc_useCycleSubcounters)
         {
             for (auto key : keysOf(cyclesSub))
@@ -754,14 +776,21 @@ void wallcycle_print(FILE*                            fplog,
         {
             /* Print timing information when it is for a PP or PP+PME
                node */
-            print_cycles(fplog,
-                         c2t_pp,
-                         enumValuetoString(*key),
-                         npp,
-                         nth_pp,
-                         wc->wcc[*key].n,
-                         cyc_sum[static_cast<int>(*key)],
-                         tot);
+            const char* name = enumValuetoString(*key);
+            // For active ForceProvider counters we need to look up the counter name
+            if (*key >= WallCycleCounter::ForceProvider0 && *key <= WallCycleCounter::ForceProvider4
+                && wc->wcc[*key].n > 0)
+            {
+                const int index =
+                        static_cast<int>(*key) - static_cast<int>(WallCycleCounter::ForceProvider0);
+                GMX_ASSERT(index < gmx::ssize(wc->forceProviderNames), "index should be in range");
+                if (index < gmx::ssize(wc->forceProviderNames))
+                {
+                    name = wc->forceProviderNames[index].c_str();
+                }
+            }
+            print_cycles(
+                    fplog, c2t_pp, name, npp, nth_pp, wc->wcc[*key].n, cyc_sum[static_cast<int>(*key)], tot);
             tot_for_pp += cyc_sum[static_cast<int>(*key)];
         }
     }
@@ -834,7 +863,6 @@ void wallcycle_print(FILE*                            fplog,
         }
     }
 
-    // NOLINTNEXTLINE(readability-misleading-indentation)
     if constexpr (sc_useCycleSubcounters)
     {
         fprintf(fplog, " Breakdown of PP / PME activities\n");
@@ -851,6 +879,16 @@ void wallcycle_print(FILE*                            fplog,
                          tot);
         }
         fprintf(fplog, "%s\n", hline);
+    }
+
+    if (npme > 0)
+    {
+        fprintf(fplog,
+                " Note that the cycle count and %% columns are weighted by the number of ranks,\n"
+                " while walltimes are not. Hence, with separate PME ranks, the fraction of each\n"
+                " activity's walltime does not correspond to the cycle %%.\n"
+                "%s\n",
+                hline);
     }
 
     /* print GPU timing summary */
@@ -1072,3 +1110,31 @@ void wcycle_set_reset_counters(gmx_wallcycle* wc, int64_t reset_counters)
     }
     wc->reset_counters = reset_counters;
 }
+
+namespace gmx
+{
+
+std::optional<std::string> rdtscpDescription()
+{
+    if (GMX_TARGET_X86)
+    {
+        return GMX_USE_RDTSCP ? "enabled" : "disabled";
+    }
+    return std::nullopt;
+}
+
+std::optional<std::string> instrumentationApiDescription()
+{
+#if GMX_USE_NVTX
+    return "NVTX";
+#elif GMX_USE_ROCTX
+    return "ROCTX";
+#elif GMX_USE_ITT
+    return "ITT";
+#else
+    // This registry entry is optional
+    return std::nullopt;
+#endif
+}
+
+} // namespace gmx

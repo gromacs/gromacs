@@ -31,176 +31,176 @@ Protein             3
 ;   nr       type  resnr residue  atom   cgnr     charge       mass  typeB    chargeB      massB
 ; residue  50 LYS rtp LYSH q +2.0
      1       MNH3     50    LYS    MN1      1          0    8.51535
-     2       MNH3     50    LYS    MN2      1          0    8.51535
-     3         NL     50    LYS      N      1      0.129          0
-     4          H     50    LYS     H1      1      0.248          0
-     5          H     50    LYS     H2      1      0.248          0
-     6          H     50    LYS     H3      1      0.248          0
-     7        CH1     50    LYS     CA      2      0.127     13.019
-     8        CH2     50    LYS     CB      2          0     14.027
-     9        CH2     50    LYS     CG      3          0     14.027
-    10        CH2     50    LYS     CD      3          0     14.027
-    11        CH2     50    LYS     CE      4      0.127     14.027
-    12       MNH3     50    LYS   MNZ1      4          0    8.51535
-    13       MNH3     50    LYS   MNZ2      4          0    8.51535
-    14         NL     50    LYS     NZ      4      0.129          0
-    15          H     50    LYS    HZ1      4      0.248          0
-    16          H     50    LYS    HZ2      4      0.248          0
-    17          H     50    LYS    HZ3      4      0.248          0
-    18          C     50    LYS      C      5       0.45     12.011
-    19          O     50    LYS      O      5      -0.45    15.9994   ; qtot 2
+     2       MNH3     50    LYS    MN2      2          0    8.51535
+     3         NL     50    LYS      N      3      0.129          0
+     4          H     50    LYS     H1      4      0.248          0
+     5          H     50    LYS     H2      5      0.248          0
+     6          H     50    LYS     H3      6      0.248          0
+     7        CH1     50    LYS     CA      7      0.127     13.019
+     8        CH2     50    LYS     CB      8          0     14.027
+     9        CH2     50    LYS     CG      9          0     14.027
+    10        CH2     50    LYS     CD     10          0     14.027
+    11        CH2     50    LYS     CE     11      0.127     14.027
+    12       MNH3     50    LYS   MNZ1     12          0    8.51535
+    13       MNH3     50    LYS   MNZ2     13          0    8.51535
+    14         NL     50    LYS     NZ     14      0.129          0
+    15          H     50    LYS    HZ1     15      0.248          0
+    16          H     50    LYS    HZ2     16      0.248          0
+    17          H     50    LYS    HZ3     17      0.248          0
+    18          C     50    LYS      C     18       0.45     12.011
+    19          O     50    LYS      O     19      -0.45    15.9994   ; qtot 2
 ; residue  51 SER rtp SER  q  0.0
-    20          N     51    SER      N      6      -0.31    15.0147
-    21          H     51    SER      H      6       0.31          0
-    22        CH1     51    SER     CA      7          0     13.019
-    23        CH2     51    SER     CB      8      0.266     14.027
-    24         OA     51    SER     OG      8     -0.674    15.9994
-    25          H     51    SER     HG      8      0.408      1.008
-    26          C     51    SER      C      9       0.45     12.011
-    27          O     51    SER      O      9      -0.45    15.9994   ; qtot 2
+    20          N     51    SER      N     20      -0.31    15.0147
+    21          H     51    SER      H     21       0.31          0
+    22        CH1     51    SER     CA     22          0     13.019
+    23        CH2     51    SER     CB     23      0.266     14.027
+    24         OA     51    SER     OG     24     -0.674    15.9994
+    25          H     51    SER     HG     25      0.408      1.008
+    26          C     51    SER      C     26       0.45     12.011
+    27          O     51    SER      O     27      -0.45    15.9994   ; qtot 2
 ; residue  52 GLY rtp GLY  q  0.0
-    28          N     52    GLY      N     10      -0.31    15.0147
-    29          H     52    GLY      H     10       0.31          0
-    30        CH2     52    GLY     CA     11          0     14.027
-    31          C     52    GLY      C     12       0.45     12.011
-    32          O     52    GLY      O     12      -0.45    15.9994   ; qtot 2
+    28          N     52    GLY      N     28      -0.31    15.0147
+    29          H     52    GLY      H     29       0.31          0
+    30        CH2     52    GLY     CA     30          0     14.027
+    31          C     52    GLY      C     31       0.45     12.011
+    32          O     52    GLY      O     32      -0.45    15.9994   ; qtot 2
 ; residue  53 TYR rtp TYR  q  0.0
-    33          N     53    TYR      N     13      -0.31    15.0147
-    34          H     53    TYR      H     13       0.31          0
-    35        CH1     53    TYR     CA     14          0     13.019
-    36        CH2     53    TYR     CB     14          0     14.027
-    37          C     53    TYR     CG     14          0     12.011
-    38          C     53    TYR    CD1     15      -0.14     13.019
-    39         HC     53    TYR    HD1     15       0.14          0
-    40          C     53    TYR    CD2     16      -0.14     13.019
-    41         HC     53    TYR    HD2     16       0.14          0
-    42          C     53    TYR    CE1     17      -0.14     13.019
-    43         HC     53    TYR    HE1     17       0.14          0
-    44          C     53    TYR    CE2     18      -0.14     13.019
-    45         HC     53    TYR    HE2     18       0.14          0
-    46          C     53    TYR     CZ     19      0.203     12.011
-    47         OA     53    TYR     OH     19     -0.611    15.9994
-    48          H     53    TYR     HH     19      0.408      1.008
-    49          C     53    TYR      C     20       0.45     12.011
-    50          O     53    TYR      O     20      -0.45    15.9994   ; qtot 2
+    33          N     53    TYR      N     33      -0.31    15.0147
+    34          H     53    TYR      H     34       0.31          0
+    35        CH1     53    TYR     CA     35          0     13.019
+    36        CH2     53    TYR     CB     36          0     14.027
+    37          C     53    TYR     CG     37          0     12.011
+    38          C     53    TYR    CD1     38      -0.14     13.019
+    39         HC     53    TYR    HD1     39       0.14          0
+    40          C     53    TYR    CD2     40      -0.14     13.019
+    41         HC     53    TYR    HD2     41       0.14          0
+    42          C     53    TYR    CE1     42      -0.14     13.019
+    43         HC     53    TYR    HE1     43       0.14          0
+    44          C     53    TYR    CE2     44      -0.14     13.019
+    45         HC     53    TYR    HE2     45       0.14          0
+    46          C     53    TYR     CZ     46      0.203     12.011
+    47         OA     53    TYR     OH     47     -0.611    15.9994
+    48          H     53    TYR     HH     48      0.408      1.008
+    49          C     53    TYR      C     49       0.45     12.011
+    50          O     53    TYR      O     50      -0.45    15.9994   ; qtot 2
 ; residue  54 ASP rtp ASP  q -1.0
-    51          N     54    ASP      N     21      -0.31    15.0147
-    52          H     54    ASP      H     21       0.31          0
-    53        CH1     54    ASP     CA     22          0     13.019
-    54        CH2     54    ASP     CB     22          0     14.027
-    55          C     54    ASP     CG     23       0.27     12.011
-    56         OM     54    ASP    OD1     23     -0.635    15.9994
-    57         OM     54    ASP    OD2     23     -0.635    15.9994
-    58          C     54    ASP      C     24       0.45     12.011
-    59          O     54    ASP      O     24      -0.45    15.9994   ; qtot 1
+    51          N     54    ASP      N     51      -0.31    15.0147
+    52          H     54    ASP      H     52       0.31          0
+    53        CH1     54    ASP     CA     53          0     13.019
+    54        CH2     54    ASP     CB     54          0     14.027
+    55          C     54    ASP     CG     55       0.27     12.011
+    56         OM     54    ASP    OD1     56     -0.635    15.9994
+    57         OM     54    ASP    OD2     57     -0.635    15.9994
+    58          C     54    ASP      C     58       0.45     12.011
+    59          O     54    ASP      O     59      -0.45    15.9994   ; qtot 1
 ; residue  55 ALA rtp ALA  q  0.0
-    60          N     55    ALA      N     25      -0.31    15.0147
-    61          H     55    ALA      H     25       0.31          0
-    62        CH1     55    ALA     CA     26          0     13.019
-    63        CH3     55    ALA     CB     26          0     15.035
-    64          C     55    ALA      C     27       0.45     12.011
-    65          O     55    ALA      O     27      -0.45    15.9994   ; qtot 1
+    60          N     55    ALA      N     60      -0.31    15.0147
+    61          H     55    ALA      H     61       0.31          0
+    62        CH1     55    ALA     CA     62          0     13.019
+    63        CH3     55    ALA     CB     63          0     15.035
+    64          C     55    ALA      C     64       0.45     12.011
+    65          O     55    ALA      O     65      -0.45    15.9994   ; qtot 1
 ; residue  56 PRO rtp PRO  q  0.0
-    66          N     56    PRO      N     28          0    14.0067
-    67        CH1     56    PRO     CA     29          0     13.019
-    68       CH2r     56    PRO     CB     29          0     14.027
-    69       CH2r     56    PRO     CG     30          0     14.027
-    70       CH2r     56    PRO     CD     30          0     14.027
-    71          C     56    PRO      C     31       0.45     12.011
-    72          O     56    PRO      O     31      -0.45    15.9994   ; qtot 1
+    66          N     56    PRO      N     66          0    14.0067
+    67        CH1     56    PRO     CA     67          0     13.019
+    68       CH2r     56    PRO     CB     68          0     14.027
+    69       CH2r     56    PRO     CG     69          0     14.027
+    70       CH2r     56    PRO     CD     70          0     14.027
+    71          C     56    PRO      C     71       0.45     12.011
+    72          O     56    PRO      O     72      -0.45    15.9994   ; qtot 1
 ; residue  57 PHE rtp PHE  q  0.0
-    73          N     57    PHE      N     32      -0.31    15.0147
-    74          H     57    PHE      H     32       0.31          0
-    75        CH1     57    PHE     CA     33          0     13.019
-    76        CH2     57    PHE     CB     33          0     14.027
-    77          C     57    PHE     CG     33          0     12.011
-    78          C     57    PHE    CD1     34      -0.14     13.019
-    79         HC     57    PHE    HD1     34       0.14          0
-    80          C     57    PHE    CD2     35      -0.14     13.019
-    81         HC     57    PHE    HD2     35       0.14          0
-    82          C     57    PHE    CE1     36      -0.14     13.019
-    83         HC     57    PHE    HE1     36       0.14          0
-    84          C     57    PHE    CE2     37      -0.14     13.019
-    85         HC     57    PHE    HE2     37       0.14          0
-    86          C     57    PHE     CZ     38      -0.14     13.019
-    87         HC     57    PHE     HZ     38       0.14          0
-    88          C     57    PHE      C     39       0.45     12.011
-    89          O     57    PHE      O     39      -0.45    15.9994   ; qtot 1
+    73          N     57    PHE      N     73      -0.31    15.0147
+    74          H     57    PHE      H     74       0.31          0
+    75        CH1     57    PHE     CA     75          0     13.019
+    76        CH2     57    PHE     CB     76          0     14.027
+    77          C     57    PHE     CG     77          0     12.011
+    78          C     57    PHE    CD1     78      -0.14     13.019
+    79         HC     57    PHE    HD1     79       0.14          0
+    80          C     57    PHE    CD2     80      -0.14     13.019
+    81         HC     57    PHE    HD2     81       0.14          0
+    82          C     57    PHE    CE1     82      -0.14     13.019
+    83         HC     57    PHE    HE1     83       0.14          0
+    84          C     57    PHE    CE2     84      -0.14     13.019
+    85         HC     57    PHE    HE2     85       0.14          0
+    86          C     57    PHE     CZ     86      -0.14     13.019
+    87         HC     57    PHE     HZ     87       0.14          0
+    88          C     57    PHE      C     88       0.45     12.011
+    89          O     57    PHE      O     89      -0.45    15.9994   ; qtot 1
 ; residue  58 THR rtp THR  q  0.0
-    90          N     58    THR      N     40      -0.31    15.0147
-    91          H     58    THR      H     40       0.31          0
-    92        CH1     58    THR     CA     41          0     13.019
-    93        CH1     58    THR     CB     42      0.266     13.019
-    94         OA     58    THR    OG1     42     -0.674    15.9994
-    95          H     58    THR    HG1     42      0.408      1.008
-    96        CH3     58    THR    CG2     43          0     15.035
-    97          C     58    THR      C     44       0.45     12.011
-    98          O     58    THR      O     44      -0.45    15.9994   ; qtot 1
+    90          N     58    THR      N     90      -0.31    15.0147
+    91          H     58    THR      H     91       0.31          0
+    92        CH1     58    THR     CA     92          0     13.019
+    93        CH1     58    THR     CB     93      0.266     13.019
+    94         OA     58    THR    OG1     94     -0.674    15.9994
+    95          H     58    THR    HG1     95      0.408      1.008
+    96        CH3     58    THR    CG2     96          0     15.035
+    97          C     58    THR      C     97       0.45     12.011
+    98          O     58    THR      O     98      -0.45    15.9994   ; qtot 1
 ; residue  59 ILE rtp ILE  q  0.0
-    99          N     59    ILE      N     45      -0.31    15.0147
-   100          H     59    ILE      H     45       0.31          0
-   101        CH1     59    ILE     CA     46          0     13.019
-   102        CH1     59    ILE     CB     47          0     13.019
-   103        CH2     59    ILE    CG1     47          0     14.027
-   104        CH3     59    ILE    CG2     47          0     15.035
-   105        CH3     59    ILE     CD     47          0     15.035
-   106          C     59    ILE      C     48       0.45     12.011
-   107          O     59    ILE      O     48      -0.45    15.9994   ; qtot 1
+    99          N     59    ILE      N     99      -0.31    15.0147
+   100          H     59    ILE      H    100       0.31          0
+   101        CH1     59    ILE     CA    101          0     13.019
+   102        CH1     59    ILE     CB    102          0     13.019
+   103        CH2     59    ILE    CG1    103          0     14.027
+   104        CH3     59    ILE    CG2    104          0     15.035
+   105        CH3     59    ILE     CD    105          0     15.035
+   106          C     59    ILE      C    106       0.45     12.011
+   107          O     59    ILE      O    107      -0.45    15.9994   ; qtot 1
 ; residue  60 HIS rtp HISB q  0.0
-   108          N     60    HIS      N     49      -0.31    15.0147
-   109          H     60    HIS      H     49       0.31          0
-   110        CH1     60    HIS     CA     50          0     13.019
-   111        CH2     60    HIS     CB     50          0     14.027
-   112          C     60    HIS     CG     51          0     12.011
-   113         NR     60    HIS    ND1     51      -0.54    14.0067
-   114          C     60    HIS    CD2     51          0     13.019
-   115         HC     60    HIS    HD2     51       0.14          0
-   116          C     60    HIS    CE1     51          0     13.019
-   117         HC     60    HIS    HE1     51       0.14          0
-   118         NR     60    HIS    NE2     51      -0.05    15.0147
-   119          H     60    HIS    HE2     51       0.31          0
-   120          C     60    HIS      C     52       0.45     12.011
-   121          O     60    HIS      O     52      -0.45    15.9994   ; qtot 1
+   108          N     60    HIS      N    108      -0.31    15.0147
+   109          H     60    HIS      H    109       0.31          0
+   110        CH1     60    HIS     CA    110          0     13.019
+   111        CH2     60    HIS     CB    111          0     14.027
+   112          C     60    HIS     CG    112          0     12.011
+   113         NR     60    HIS    ND1    113      -0.54    14.0067
+   114          C     60    HIS    CD2    114          0     13.019
+   115         HC     60    HIS    HD2    115       0.14          0
+   116          C     60    HIS    CE1    116          0     13.019
+   117         HC     60    HIS    HE1    117       0.14          0
+   118         NR     60    HIS    NE2    118      -0.05    15.0147
+   119          H     60    HIS    HE2    119       0.31          0
+   120          C     60    HIS      C    120       0.45     12.011
+   121          O     60    HIS      O    121      -0.45    15.9994   ; qtot 1
 ; residue  61 VAL rtp VAL  q  0.0
-   122          N     61    VAL      N     53      -0.31    15.0147
-   123          H     61    VAL      H     53       0.31          0
-   124        CH1     61    VAL     CA     54          0     13.019
-   125        CH1     61    VAL     CB     54          0     13.019
-   126        CH3     61    VAL    CG1     54          0     15.035
-   127        CH3     61    VAL    CG2     54          0     15.035
-   128          C     61    VAL      C     55       0.45     12.011
-   129          O     61    VAL      O     55      -0.45    15.9994   ; qtot 1
+   122          N     61    VAL      N    122      -0.31    15.0147
+   123          H     61    VAL      H    123       0.31          0
+   124        CH1     61    VAL     CA    124          0     13.019
+   125        CH1     61    VAL     CB    125          0     13.019
+   126        CH3     61    VAL    CG1    126          0     15.035
+   127        CH3     61    VAL    CG2    127          0     15.035
+   128          C     61    VAL      C    128       0.45     12.011
+   129          O     61    VAL      O    129      -0.45    15.9994   ; qtot 1
 ; residue  62 CYS rtp CYSH q  0.0
-   130          N     62    CYS      N     56      -0.31    15.0147
-   131          H     62    CYS      H     56       0.31          0
-   132        CH1     62    CYS     CA     57          0     13.019
-   133        CH2     62    CYS     CB     58       0.15     14.027
-   134          S     62    CYS     SG     58      -0.37      32.06
-   135          H     62    CYS     HG     58       0.22      1.008
-   136          C     62    CYS      C     59       0.45     12.011
-   137          O     62    CYS      O     59      -0.45    15.9994   ; qtot 1
+   130          N     62    CYS      N    130      -0.31    15.0147
+   131          H     62    CYS      H    131       0.31          0
+   132        CH1     62    CYS     CA    132          0     13.019
+   133        CH2     62    CYS     CB    133       0.15     14.027
+   134          S     62    CYS     SG    134      -0.37      32.06
+   135          H     62    CYS     HG    135       0.22      1.008
+   136          C     62    CYS      C    136       0.45     12.011
+   137          O     62    CYS      O    137      -0.45    15.9994   ; qtot 1
 ; residue  63 GLY rtp GLY  q  0.0
-   138          N     63    GLY      N     60      -0.31    15.0147
-   139          H     63    GLY      H     60       0.31          0
-   140        CH2     63    GLY     CA     61          0     14.027
-   141          C     63    GLY      C     62       0.45     12.011
-   142          O     63    GLY      O     62      -0.45    15.9994   ; qtot 1
+   138          N     63    GLY      N    138      -0.31    15.0147
+   139          H     63    GLY      H    139       0.31          0
+   140        CH2     63    GLY     CA    140          0     14.027
+   141          C     63    GLY      C    141       0.45     12.011
+   142          O     63    GLY      O    142      -0.45    15.9994   ; qtot 1
 ; residue  64 ALA rtp ALA  q  0.0
-   143          N     64    ALA      N     63      -0.31    15.0147
-   144          H     64    ALA      H     63       0.31          0
-   145        CH1     64    ALA     CA     64          0     13.019
-   146        CH3     64    ALA     CB     64          0     15.035
-   147          C     64    ALA      C     65       0.45     12.011
-   148          O     64    ALA      O     65      -0.45    15.9994   ; qtot 1
+   143          N     64    ALA      N    143      -0.31    15.0147
+   144          H     64    ALA      H    144       0.31          0
+   145        CH1     64    ALA     CA    145          0     13.019
+   146        CH3     64    ALA     CB    146          0     15.035
+   147          C     64    ALA      C    147       0.45     12.011
+   148          O     64    ALA      O    148      -0.45    15.9994   ; qtot 1
 ; residue  65 PRO rtp PRO  q -1.0
-   149          N     65    PRO      N     66          0    14.0067
-   150        CH1     65    PRO     CA     67          0     13.019
-   151       CH2r     65    PRO     CB     67          0     14.027
-   152       CH2r     65    PRO     CG     68          0     14.027
-   153       CH2r     65    PRO     CD     68          0     14.027
-   154          C     65    PRO      C     69       0.27     12.011
-   155         OM     65    PRO     O1     69     -0.635    15.9994
-   156         OM     65    PRO     O2     69     -0.635    15.9994   ; qtot 0
+   149          N     65    PRO      N    149          0    14.0067
+   150        CH1     65    PRO     CA    150          0     13.019
+   151       CH2r     65    PRO     CB    151          0     14.027
+   152       CH2r     65    PRO     CG    152          0     14.027
+   153       CH2r     65    PRO     CD    153          0     14.027
+   154          C     65    PRO      C    154       0.27     12.011
+   155         OM     65    PRO     O1    155     -0.635    15.9994
+   156         OM     65    PRO     O2    156     -0.635    15.9994   ; qtot 0
 
 [ bonds ]
 ;  ai    aj funct            c0            c1            c2            c3

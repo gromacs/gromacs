@@ -47,11 +47,11 @@
 #include <tuple>
 
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/mdtypes/state_propagator_data_gpu.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/vectypes.h"
 
 class DeviceContext;
 class DeviceStream;
@@ -63,8 +63,10 @@ class DeviceStreamManager;
 enum class AtomLocality : int;
 } // namespace gmx
 struct gmx_wallcycle;
+struct gmx_domdec_t;
+struct t_commrec;
 
-#if !GMX_GPU || GMX_GPU_HIP
+#if !GMX_GPU
 namespace gmx
 {
 
@@ -75,6 +77,8 @@ class StatePropagatorDataGpu::Impl
 StatePropagatorDataGpu::StatePropagatorDataGpu(const DeviceStreamManager& /* deviceStreamManager */,
                                                GpuApiCallBehavior /* transferKind    */,
                                                int /* allocationBlockSizeDivisor */,
+                                               bool /*useNvshmem*/,
+                                               bool /*useGpuFBufferOpsWhenAllowed*/,
                                                gmx_wallcycle* /*   wcycle */) :
     impl_(nullptr)
 {
@@ -84,6 +88,7 @@ StatePropagatorDataGpu::StatePropagatorDataGpu(const DeviceStream* /* pmeStream 
                                                const DeviceContext& /* deviceContext   */,
                                                GpuApiCallBehavior /* transferKind    */,
                                                int /* allocationBlockSizeDivisor */,
+                                               bool /*useNvshmem*/,
                                                gmx_wallcycle* /*   wcycle */) :
     impl_(nullptr)
 {
@@ -95,7 +100,7 @@ StatePropagatorDataGpu& StatePropagatorDataGpu::operator=(StatePropagatorDataGpu
 
 StatePropagatorDataGpu::~StatePropagatorDataGpu() = default;
 
-void StatePropagatorDataGpu::reinit(int /* numAtomsLocal */, int /* numAtomsAll   */)
+void StatePropagatorDataGpu::reinit(int /* numAtomsLocal */, int /* numAtomsAll*/, MPI_Comm /*mpiCommMySim*/)
 {
     GMX_ASSERT(!impl_,
                "A CPU stub method from GPU state propagator data was called instead of one from "
@@ -336,4 +341,4 @@ void StatePropagatorDataGpu::waitCoordinatesUpdatedOnDevice()
 
 } // namespace gmx
 
-#endif // !GMX_GPU || GMX_GPU_HIP
+#endif // !GMX_GPU

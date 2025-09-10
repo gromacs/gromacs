@@ -74,14 +74,15 @@ enum class FftBackend
     HeFFTe_Sycl_OneMkl, //!< supports only multi-gpu
     HeFFTe_Sycl_Rocfft, //!< supports only multi-gpu
     HeFFTe_Sycl_cuFFT,  //!< supports only multi-gpu
+    HeFFTe_HIP,         //!< supports only multi-gpu
     SyclMkl,            //!< supports only single-GPU
-    SyclOneMkl,         //!< supports only single-GPU
+    SyclOneMath,        //!< supports only single-GPU
     SyclRocfft,         //!< supports only single-GPU
     SyclVkfft,          //!< supports only single-GPU
     SyclBbfft,          //!< supports only single-GPU
     Sycl,               //!< stubs for not supported configurations
-    Hipfft,             //!< supports only single-GPU
     HipVkfft,           //!< supports only single-GPU
+    HipRocfft,          //!< supports only single-GPU
     Count
 };
 
@@ -141,13 +142,13 @@ private:
     class ImplOclVkfft;
     class ImplOcl;
     class ImplSyclMkl;
-    // oneMKL has an identical interface to MKL, so uses the ImplSyclMkl implemenation.
+    // oneMath has an identical interface to MKL, so uses the ImplSyclMkl implemenation.
     class ImplSyclBbfft;
     class ImplSyclRocfft;
     class ImplSyclVkfft;
     class ImplSycl;
-    class ImplHipFft;
     class ImplHipVkFft;
+    class ImplHipRocfft;
 
     template<typename backend_tag>
     class ImplHeFfte;

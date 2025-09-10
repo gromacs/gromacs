@@ -1,0 +1,281 @@
+GROMACS 2024.4 release notes
+----------------------------
+
+This version was released on October 31st, 2024. These release notes
+document the changes that have taken place in |Gromacs| since the
+previous 2024.3 version, to fix known issues. It also incorporates all
+fixes made in version 2023.5 and earlier, which you can find described
+in the :ref:`release-notes`.
+
+.. Note to developers!
+   Please use """"""" to underline the individual entries for fixed issues in the subfolders,
+   otherwise the formatting on the webpage is messed up.
+   Also, please use the syntax :issue:`number` to reference issues on GitLab, without
+   a space between the colon and number!
+
+Fixes where mdrun could behave incorrectly
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+Fix missing non-bonded interactions close to cut-off with GPUs
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The GPU rolling pruning employed with the dual pair list setup used
+an incorrect list part calculation. This caused a few parlist entries
+not to be updated after the initial pruning, leading to a small number
+of missing pair interactions. Unless the pair list lifetime ``nstlist``
+was very large, these interactions were close to the cut-off and therefore
+the errors were small.
+
+Affected simulations: all GPU accelerated runs using |Gromacs| versions
+starting with the 2018 release with dual pair list enabled.
+This is enabled automatically with default Verlet buffering, but
+it is disabled if the Verlet buffer is manually set
+(or if the ``GMX_DISABLE_DYNAMICPRUNING`` environment variable is set).
+
+Impact: Our analysis shows that the error caused by the missing interactions
+does not have a measurable effect on either forces or energy conservation
+in most atomistic simulations with default simulation settings.
+While a manually increased ``nstlist``, hence increased (outer) pair list lifetime,
+leads to an increase in the number of missing interactions, for useful value of
+``nstlist`` the effect is still negligible.
+There can be measurable effects in systems with vacuum, gas, or with
+excessively large ``nstlist`` values. In our testing we could not detect artifacts
+apart from systems crashing, so the chance of undetected incorrect results is small.
+
+:issue:`5138`
+
+Add effect of perturbed masses to foreign Hamiltonian differences
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The effect of perturbed masses was missing from the foreign Hamiltonian
+differences. This meant that effects of perturbed masses were ignored
+by ``gmx bar``. Note that perturbed masses did contribute to dH/dlambda.
+
+:issue:`5195`
+
+Fix illegal memory access with more VCM than T-coupling groups
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When there were more center of mass motion removal groups than
+temperature coupling groups, mdrun could crash due to illegal
+memory access. This bug did not affect the simulation results.
+
+:issue:`5167`
+
+Fix crashes when some atoms are not part of a VCM group
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Uninitialized memory was read when some atoms were not part of
+a center of mass motion removal group. Often this memory contained
+zero and everything would work as it should. But when this memory
+was not zero, the simulation would crash within a few steps.
+
+:issue:`5181`
+
+Fix parameter handling for coarse-grained bonded potentials
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Free-energy perturbation has never been supported for restraint angle,
+restraint dihedral, and combined bending-torsion potentials sometimes
+used in coarse-grained force fields. This led to the hypothetical
+B-state parameters being incorrectly handled in ``gmx grompp`` and
+then incorrectly serialized to/from the .tpr file.
+
+This was generally benign, even when such functional forms were in
+use. However, when other interactions were perturbed, the incorrect
+parameter handling made it look like the interactions with wrongly
+implemented parameters were intended to be perturbed.  This condition
+was sometimes achieved when using alchemical-embedding
+system-preparation workflows.
+
+Now the hypothetical B-state parameters are handled correctly, so
+FEP-based workflows can succeed. Perturbation of the above-mentioned
+interaction types is still not supported, however.
+
+:issue:`5129`
+:issue:`5144`
+:issue:`5147`
+
+Fix Colvars output files always written to the working directory.
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Colvars output files are now written in the same folder as edr file.
+
+:issue:`5122`
+
+Forbid the usage of triangle constraints with -update gpu
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Prevent using update on GPU if there are triangle constraints.
+
+:issue:`5123`
+
+``gmx_mpi mdrun`` could hang when using GPUs and separate PME ranks 
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+A logic error in task assignment for ``-nb gpu -pme cpu`` and separate PME ranks
+made the (default) ``-ddorder interleave`` hang. Now it works.
+
+:issue:`4345`
+
+Dynamic load balancing was ineffective when special forces were present
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The timing for DLB included the calculation of special forces, e.g. pull code
+and rotation. As these require communication, imbalance might not have been
+measured. Now special forces are excluded from the timings.
+
+:issue:`5188`
+
+Fix incorrect memory access with perturbed non-bonded and OpenMP
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Old, invalid indices could be flagged for reduction of force buffers
+over OpenMP threads for perturbed non-bonded interactions. This could
+never lead to incorrect results or crashes. But performance might
+be improved now.
+
+:issue:`5220`
+       
+Fixes for ``gmx`` tools
+^^^^^^^^^^^^^^^^^^^^^^^
+
+grompp checked incorrect B-state charges with free-energy decoupling
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When the :mdp:`couple-moltype` options was used, ``gmx grompp`` would check the
+A-state charges instead of the B-state charges. This would lead to incorrect
+or no warnings when B-state of the system had non-zero net charge.
+
+:issue:`5200`
+
+grompp, and mdrun, could exit with large mass differences
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When masses of atoms differed more than a factor 327, both ``gmx grompp``
+and ``gmx mdrun`` could exit with an assertion failure about an infinite
+enery drift estimate.
+
+:issue:`5222`
+
+
+Fix dump crash with Colvars values
+""""""""""""""""""""""""""""""""""
+
+Fix ``gmx dump`` crash when trying to output the binary Colvars state file.
+
+:issue:`5034`
+
+Fix element and atom number deduction in during preprocessing
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Two-letter atom names like BR or CL were not correctly handled in the preprocessing
+during  ``gmx editconf``, ``gmx pdb2gmx`` and ``gmx grompp``, leading to incorrect element
+and  atom number assignment. This could lead to incorrect element names in output files
+and possibly incorrect behaviour in QMMM simulations.
+
+:issue:`5182`
+
+Fix hang observed with NVSHMEM enabled PME-PP force transfers
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+A hang in PME-PP force transfers during NVSHMEM runs was resolved, occurring in certain
+conditions. It should also be noted that the NVSHMEM enabled PME-PP force transfers
+does not support charge perturbation.
+
+:issue:`5136`
+
+Fixes that affect portability
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Fix physical validation with Pymbar version 4
+"""""""""""""""""""""""""""""""""""""""""""""
+
+Pymbar version 4 has a different API compared to version 3. Now we support
+using either of those versions and internally handle the API differences.
+
+:issue:`5130` 
+
+Fix compatibility with VkFFT 1.3.5
+""""""""""""""""""""""""""""""""""
+
+Fix crash on |Gromacs| shutdown when external VkFFT 1.3.5
+is used.
+
+:issue:`5184`
+
+Miscellaneous
+^^^^^^^^^^^^^
+
+Work around FetchContent warnings in CMake 3.30 and newer
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+CMake 3.30 began to complain about |Gromacs| use of FetchContent, so
+now we tell such new versions to use the old policy.
+
+:issue:`5140`
+
+Fix various crashes when GMX_USE_COLVARS=NONE
+"""""""""""""""""""""""""""""""""""""""""""""
+
+Colvars MDModule did not defined the Colvars custom mdp variables
+when the Colvars library was not compiled, preventing tools
+read correctly a tpr file generated with a |Gromacs|-Colvars version.
+Prevent also the creation of a tpr file if Colvars module is activated
+whereas |Gromacs| was not compiled with Colvars.
+Proper exit if a Colvars simulation is launched whereas |Gromacs| was not
+compiled with Colvars.
+
+:issue:`5055`
+
+Fix reading cgroups in some kubernetes containers
+"""""""""""""""""""""""""""""""""""""""""""""""""
+
+Modern versions of kubernetes/docker do not appear to mount /etc/mtab in
+the containers, and if we did not find cgroups we would not detect CPU
+limits set through cgroups. Fixed by reading /proc/mounts instead.
+This will only influence performance when running in (some) containers.
+
+:issue:`5148`
+
+Collected fixes in the Colvars library
+""""""""""""""""""""""""""""""""""""""
+
+Several bugs, both recent and long-standing, have recently been fixed in the
+Colvars library: in the list below, the links corresponds to issues or pull
+request in the `Colvars repository <https://github.com/Colvars/colvars>`_.
+
+* Fixed undefined behavior when getting the current working directory from
+  ``std::filesystem``, which could have affected multiple-walkers
+  metadynamics runs (`Colvars PR 728
+  <https://github.com/Colvars/colvars/pull/728>`_).
+* Fixed the gradients and the metric functions of collective variables of
+  ``distanceDir`` type (`Colvars PR 724
+  <https://github.com/Colvars/colvars/pull/724>`_).
+* Fixed the definition of an ``orientation`` type collective variable in a
+  rotated frame of reference (`Colvars PR 715
+  <https://github.com/Colvars/colvars/pull/715>`_).
+* Implemented the contribution of fitting to the forces applied onto of
+  variables with vector values defined in a rotated fram (`Colvars PR 713
+  <https://github.com/Colvars/colvars/pull/713>`_).
+* Fixed a crash in certain metadynamics simulations without using
+  interpolating grids (`Colvars PR 706
+  <https://github.com/Colvars/colvars/pull/706>`_).
+* More consistent behavior when defining multiple biases and running with
+  more than one thread per task (`Colvars PR 694
+  <https://github.com/Colvars/colvars/pull/694>`_).
+* Prevented the creation of spurious output files for runtime histograms
+  (`Colvars PR 675 <https://github.com/Colvars/colvars/pull/675>`_).
+
+Enable NVCC flags checks for Windows
+""""""""""""""""""""""""""""""""""""
+
+When building GROMACS for Windows with CUDA support, the checks for testing
+compatible compute architectures were disabled. Hence, GROMACS 
+was trying to compile for all of them which can induced failed builds when 
+CUDA is not compatible anymore with old compute architectures.
+
+:issue:`5152`
+
+

@@ -62,9 +62,6 @@ struct MdRunInputFilename;
 struct CoordinatesAndBoxPreprocessed;
 struct QMInputFileName;
 
-//! Tag with name of the QMMM with CP2K MDModule
-static const std::string c_qmmmCP2KModuleName = "qmmm-cp2k";
-
 /*! \internal
  * \brief Input data storage for QM/MM
  */
@@ -132,6 +129,9 @@ public:
     //! Set the MDLogger instance
     void setLogger(const MDLogger& logger);
 
+    //! Get the logger instance
+    const MDLogger& logger() const;
+
     //! Set the warninp instance
     void setWarninp(WarningHandler* wi);
 
@@ -151,33 +151,11 @@ private:
      */
     void processExternalInputFile();
 
-    /*! \brief Following Tags denotes names of parameters from .mdp file
-     * \note Changing this strings will break .tpr backwards compatibility
-     */
-    //! \{
-    const std::string c_activeTag_              = "active";
-    const std::string c_qmGroupTag_             = "qmgroup";
-    const std::string c_qmChargeTag_            = "qmcharge";
-    const std::string c_qmMultTag_              = "qmmultiplicity";
-    const std::string c_qmMethodTag_            = "qmmethod";
-    const std::string c_qmUserInputFileNameTag_ = "qmfilenames";
-    //! \}
-
-    /*! \brief This tags for parameters which will be generated during grompp
-     * and stored into *.tpr file via KVT
-     */
-    //! \{
-    const std::string c_atomNumbersTag_ = "atomnumbers";
-    const std::string c_mmGroupTag_     = "mmgroup";
-    const std::string c_qmLinkTag_      = "qmlink";
-    const std::string c_mmLinkTag_      = "mmlink";
-    const std::string c_qmInputTag_     = "qminput";
-    const std::string c_qmPdbTag_       = "qmpdb";
-    const std::string c_qmBoxTag_       = "qmbox";
-    const std::string c_qmTransTag_     = "qmtrans";
-    //! \}
-
-    //! Logger instance
+    /*! \brief MDLogger during preprocessing
+     *
+     * This is a pointer only because we need an "optional reference"
+     * to a const MDLogger before the notification always provides the
+     * actual reference. */
     const MDLogger* logger_ = nullptr;
 
     //! Instance of warning bookkeeper

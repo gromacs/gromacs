@@ -61,8 +61,8 @@
 #include <sys/stat.h>
 
 #if GMX_NATIVE_WINDOWS
-#    include <Windows.h>
 #    include <direct.h>
+#    include <windows.h>
 #else
 #    ifdef HAVE_UNISTD_H
 #        include <unistd.h>

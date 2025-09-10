@@ -47,6 +47,7 @@
 #include <bitset>
 #include <filesystem>
 #include <memory>
+#include <optional>
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/domdec/domdec.h"
@@ -55,7 +56,6 @@
 #include "gromacs/ewald/pme_pp_comm_gpu.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/gmxlib/network.h"
-#include "gromacs/gmxlib/nonbonded/nonbonded.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/listed_forces/listed_forces.h"
@@ -63,7 +63,6 @@
 #include "gromacs/listed_forces/pairs.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/utilities.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdlib/dispersioncorrection.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
@@ -80,7 +79,6 @@
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/multipletimestepping.h"
-#include "gromacs/mdtypes/nblist.h"
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/pbcutil/ishift.h"
@@ -108,6 +106,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/vec.h"
 
 #include "gpuforcereduction.h"
 #include "mdgraph_gpu.h"
@@ -126,38 +125,42 @@ void ForceHelperBuffers::resize(int numAtoms)
     }
 }
 
-std::vector<real> makeNonBondedParameterLists(const int                      numAtomTypes,
+std::vector<real> makeNonBondedParameterLists(const int                      numMtopAtomTypes,
+                                              const bool                     addFillerAtomType,
                                               gmx::ArrayRef<const t_iparams> iparams,
                                               bool                           useBuckinghamPotential)
 {
+    // We add an atom type with index numMtopAtomTypes for filler particles
+    const int numMdrunAtomTypes = numMtopAtomTypes + (addFillerAtomType ? 1 : 0);
+
     std::vector<real> nbfp;
 
     if (useBuckinghamPotential)
     {
-        nbfp.resize(3 * numAtomTypes * numAtomTypes);
+        nbfp.resize(3 * numMdrunAtomTypes * numMdrunAtomTypes, 0.0_real);
         int k = 0;
-        for (int i = 0; (i < numAtomTypes); i++)
+        for (int i = 0; i < numMtopAtomTypes; i++)
         {
-            for (int j = 0; (j < numAtomTypes); j++, k++)
+            for (int j = 0; j < numMtopAtomTypes; j++, k++)
             {
-                BHAMA(nbfp, numAtomTypes, i, j) = iparams[k].bham.a;
-                BHAMB(nbfp, numAtomTypes, i, j) = iparams[k].bham.b;
+                BHAMA(nbfp, numMdrunAtomTypes, i, j) = iparams[k].bham.a;
+                BHAMB(nbfp, numMdrunAtomTypes, i, j) = iparams[k].bham.b;
                 /* nbfp now includes the 6.0 derivative prefactor */
-                BHAMC(nbfp, numAtomTypes, i, j) = iparams[k].bham.c * 6.0;
+                BHAMC(nbfp, numMdrunAtomTypes, i, j) = iparams[k].bham.c * 6.0;
             }
         }
     }
     else
     {
-        nbfp.resize(2 * numAtomTypes * numAtomTypes);
+        nbfp.resize(2 * numMdrunAtomTypes * numMdrunAtomTypes, 0.0_real);
         int k = 0;
-        for (int i = 0; (i < numAtomTypes); i++)
+        for (int i = 0; i < numMtopAtomTypes; i++)
         {
-            for (int j = 0; (j < numAtomTypes); j++, k++)
+            for (int j = 0; j < numMtopAtomTypes; j++, k++)
             {
                 /* nbfp now includes the 6.0/12.0 derivative prefactors */
-                C6(nbfp, numAtomTypes, i, j)  = iparams[k].lj.c6 * 6.0;
-                C12(nbfp, numAtomTypes, i, j) = iparams[k].lj.c12 * 12.0;
+                C6(nbfp, numMdrunAtomTypes, i, j)  = iparams[k].lj.c6 * 6.0;
+                C12(nbfp, numMdrunAtomTypes, i, j) = iparams[k].lj.c12 * 12.0;
             }
         }
     }
@@ -462,7 +465,7 @@ static bool set_chargesum(FILE* log, t_forcerec* fr, const gmx_mtop_t& mtop)
  * interactions present for each bonded interaction index found in the
  * topology.
  *
- * \c ftype1 or \c ftype2 may be set to -1 to disable seeking for a
+ * \c ftype2 may be set to std::nullopt to disable seeking for a
  * valid type with that parameter.
  *
  * \c count will be reallocated as necessary to fit the largest bonded
@@ -470,7 +473,11 @@ static bool set_chargesum(FILE* log, t_forcerec* fr, const gmx_mtop_t& mtop)
  * \c ncount. It will contain zero for every bonded interaction index
  * for which no interactions are present in the topology.
  */
-static void count_tables(int ftype1, int ftype2, const gmx_mtop_t& mtop, int* ncount, int** count)
+static void count_tables(const int                ftype1,
+                         const std::optional<int> ftype2,
+                         const gmx_mtop_t&        mtop,
+                         int*                     ncount,
+                         int**                    count)
 {
     int ftype, i, j, tabnr;
 
@@ -481,7 +488,7 @@ static void count_tables(int ftype1, int ftype2, const gmx_mtop_t& mtop, int* nc
         for (ftype = 0; ftype < F_NRE; ftype++)
         {
             // If the current interaction type is one of the types whose tables we're trying to count...
-            if (ftype == ftype1 || ftype == ftype2)
+            if (ftype == ftype1 || (ftype2.has_value() && ftype == ftype2.value()))
             {
                 const InteractionList& il     = molt.ilist[ftype];
                 const int              stride = 1 + NRAL(ftype);
@@ -517,14 +524,14 @@ static void count_tables(int ftype1, int ftype2, const gmx_mtop_t& mtop, int* nc
  * list of filenames passed to mdrun, and make bonded tables from
  * those files.
  *
- * \c ftype1 or \c ftype2 may be set to -1 to disable seeking for a
+ * \c ftype2 may be set to std::nullopt to disable seeking for a
  * valid type with that parameter.
  *
  * A fatal error occurs if no matching filename is found.
  */
 static std::vector<bondedtable_t> make_bonded_tables(FILE*                            fplog,
-                                                     int                              ftype1,
-                                                     int                              ftype2,
+                                                     const int                        ftype1,
+                                                     const std::optional<int>         ftype2,
                                                      const gmx_mtop_t&                mtop,
                                                      gmx::ArrayRef<const std::string> tabbfnm,
                                                      const char*                      tabext)
@@ -549,7 +556,7 @@ static std::vector<bondedtable_t> make_bonded_tables(FILE*                      
                 // before the file type extension, and avoids table 13
                 // being recognized and used for table 1.
                 std::string patternToFind = gmx::formatString("_%s%d.%s", tabext, i, ftp2ext(efXVG));
-                bool        madeTable     = false;
+                bool madeTable = false;
                 for (gmx::Index j = 0; j < tabbfnm.ssize() && !madeTable; ++j)
                 {
                     if (gmx::endsWith(tabbfnm[j], patternToFind))
@@ -561,14 +568,14 @@ static std::vector<bondedtable_t> make_bonded_tables(FILE*                      
                 }
                 if (!madeTable)
                 {
-                    bool isPlural = (ftype2 != -1);
+                    bool isPlural = ftype2.has_value();
                     gmx_fatal(FARGS,
                               "Tabulated interaction of type '%s%s%s' with index %d cannot be used "
                               "because no table file whose name matched '%s' was passed via the "
                               "gmx mdrun -tableb command-line option.",
                               interaction_function[ftype1].longname,
                               isPlural ? "' or '" : "",
-                              isPlural ? interaction_function[ftype2].longname : "",
+                              isPlural ? interaction_function[ftype2.value()].longname : "",
                               i,
                               patternToFind.c_str());
                 }
@@ -603,8 +610,8 @@ static void init_ewald_f_table(const interaction_const_t& ic,
                                EwaldCorrectionTables*     coulombTables,
                                EwaldCorrectionTables*     vdwTables)
 {
-    const bool useCoulombTable = (usingPmeOrEwald(ic.eeltype) && coulombTables != nullptr);
-    const bool useVdwTable     = (usingLJPme(ic.vdwtype) && vdwTables != nullptr);
+    const bool useCoulombTable = (usingPmeOrEwald(ic.coulomb.type) && coulombTables != nullptr);
+    const bool useVdwTable     = (usingLJPme(ic.vdw.type) && vdwTables != nullptr);
 
     /* Get the Ewald table spacing based on Coulomb and/or LJ
      * Ewald coefficients and rtol.
@@ -613,7 +620,7 @@ static void init_ewald_f_table(const interaction_const_t& ic,
 
     const bool havePerturbedNonbondeds = (ic.softCoreParameters != nullptr);
 
-    real tableLen = ic.rcoulomb;
+    real tableLen = ic.coulomb.cutoff;
     if ((useCoulombTable || useVdwTable) && havePerturbedNonbondeds && rlist + tabext > 0.0)
     {
         /* TODO: Ideally this should also check if couple-intramol == no, but that isn't
@@ -628,25 +635,25 @@ static void init_ewald_f_table(const interaction_const_t& ic,
 
     if (useCoulombTable)
     {
-        *coulombTables =
-                generateEwaldCorrectionTables(tableSize, tableScale, ic.ewaldcoeff_q, v_q_ewald_lr);
+        *coulombTables = generateEwaldCorrectionTables(
+                tableSize, tableScale, ic.coulomb.ewaldCoeff, v_q_ewald_lr);
     }
 
     if (useVdwTable)
     {
-        *vdwTables = generateEwaldCorrectionTables(tableSize, tableScale, ic.ewaldcoeff_lj, v_lj_ewald_lr);
+        *vdwTables = generateEwaldCorrectionTables(tableSize, tableScale, ic.vdw.ewaldCoeff, v_lj_ewald_lr);
     }
 }
 
 void init_interaction_const_tables(FILE* fp, interaction_const_t* ic, const real rlist, const real tableExtensionLength)
 {
-    if (usingPmeOrEwald(ic->eeltype) || usingLJPme(ic->vdwtype))
+    if (usingPmeOrEwald(ic->coulomb.type) || usingLJPme(ic->vdw.type))
     {
         init_ewald_f_table(
                 *ic, rlist, tableExtensionLength, ic->coulombEwaldTables.get(), ic->vdwEwaldTables.get());
         if (fp != nullptr)
         {
-            if (usingPmeOrEwald(ic->eeltype))
+            if (usingPmeOrEwald(ic->coulomb.type))
             {
                 fprintf(fp,
                         "Initialized non-bonded Coulomb Ewald tables, spacing: %.2e size: %zu\n\n",
@@ -674,6 +681,7 @@ void init_forcerec(FILE*                            fplog,
                    const t_inputrec&                inputrec,
                    const gmx_mtop_t&                mtop,
                    const t_commrec*                 commrec,
+                   const gmx_multisim_t*            commMultiSim,
                    matrix                           box,
                    const char*                      tabfn,
                    const char*                      tabpfn,
@@ -730,7 +738,8 @@ void init_forcerec(FILE*                            fplog,
     /* Free energy */
     forcerec->efep = inputrec.efep;
 
-    if ((getenv("GMX_DISABLE_SIMD_KERNELS") != nullptr) || (getenv("GMX_NOOPTIMIZEDKERNELS") != nullptr))
+    if ((std::getenv("GMX_DISABLE_SIMD_KERNELS") != nullptr)
+        || (std::getenv("GMX_NOOPTIMIZEDKERNELS") != nullptr))
     {
         forcerec->use_simd_kernels = FALSE;
         if (fplog != nullptr)
@@ -764,10 +773,10 @@ void init_forcerec(FILE*                            fplog,
         const bool moleculesAreAlwaysWhole =
                 (haveDDAtomOrdering(*commrec) && dd_moleculesAreAlwaysWhole(*commrec->dd));
         // WholeMoleculeTransform is only supported with a single PP rank
-        if (!moleculesAreAlwaysWhole && !havePPDomainDecomposition(commrec)
+        if (!moleculesAreAlwaysWhole && !havePPDomainDecomposition(commrec->dd)
             && (useEwaldSurfaceCorrection || haveOrientationRestraints))
         {
-            if (havePPDomainDecomposition(commrec))
+            if (havePPDomainDecomposition(commrec->dd))
             {
                 gmx_fatal(FARGS,
                           "You requested Ewald surface correction or orientation restraints, "
@@ -791,8 +800,8 @@ void init_forcerec(FILE*                            fplog,
     }
 
     forcerec->rc_scaling = inputrec.pressureCouplingOptions.refcoord_scaling;
-    copy_rvec(inputrec.posres_com, forcerec->posres_com);
-    copy_rvec(inputrec.posres_comB, forcerec->posres_comB);
+    forcerec->posresCom  = inputrec.posresCom;
+    forcerec->posresComB = inputrec.posresComB;
 
     forcerec->haveBoxDeformation = ir_haveBoxDeformation(inputrec);
 
@@ -810,7 +819,7 @@ void init_forcerec(FILE*                            fplog,
     const interaction_const_t* interactionConst = forcerec->ic.get();
 
     /* Electrostatics: Translate from interaction-setting-in-mdp-file to kernel interaction format */
-    switch (interactionConst->eeltype)
+    switch (interactionConst->coulomb.type)
     {
         case CoulombInteractionType::Cut:
             forcerec->nbkernel_elec_interaction = NbkernelElecType::Coulomb;
@@ -836,15 +845,19 @@ void init_forcerec(FILE*                            fplog,
             forcerec->nbkernel_elec_interaction = NbkernelElecType::Ewald;
             break;
 
+        case CoulombInteractionType::Fmm:
+            GMX_RELEASE_ASSERT(false, "FMM is not yet supported by mdrun");
+            break;
+
         default:
             gmx_fatal(FARGS,
                       "Unsupported electrostatic interaction: %s",
-                      enumValueToString(interactionConst->eeltype));
+                      enumValueToString(interactionConst->coulomb.type));
     }
-    forcerec->nbkernel_elec_modifier = interactionConst->coulomb_modifier;
+    forcerec->nbkernel_elec_modifier = interactionConst->coulomb.modifier;
 
     /* Vdw: Translate from mdp settings to kernel format */
-    switch (interactionConst->vdwtype)
+    switch (interactionConst->vdw.type)
     {
         case VanDerWaalsType::Cut:
             if (forcerec->haveBuckingham)
@@ -867,18 +880,20 @@ void init_forcerec(FILE*                            fplog,
             break;
 
         default:
-            gmx_fatal(FARGS, "Unsupported vdw interaction: %s", enumValueToString(interactionConst->vdwtype));
+            gmx_fatal(FARGS,
+                      "Unsupported vdw interaction: %s",
+                      enumValueToString(interactionConst->vdw.type));
     }
-    forcerec->nbkernel_vdw_modifier = interactionConst->vdw_modifier;
+    forcerec->nbkernel_vdw_modifier = interactionConst->vdw.modifier;
 
-    if (!gmx_within_tol(interactionConst->reppow, 12.0, 10 * GMX_DOUBLE_EPS))
+    if (!gmx_within_tol(interactionConst->vdw.repulsionPower, 12.0, 10 * GMX_DOUBLE_EPS))
     {
         gmx_fatal(FARGS, "Only LJ repulsion power 12 is supported");
     }
     /* Older tpr files can contain Coulomb user tables with the Verlet cutoff-scheme,
      * while mdrun does not (and never did) support this.
      */
-    if (usingUserTableElectrostatics(forcerec->ic->eeltype))
+    if (usingUserTableElectrostatics(forcerec->ic->coulomb.type))
     {
         gmx_fatal(FARGS,
                   "Electrostatics type %s is currently not supported",
@@ -898,8 +913,8 @@ void init_forcerec(FILE*                            fplog,
             forcerec->forceProviders->hasForceProvider() || gmx_mtop_ftype_count(mtop, F_POSRES) > 0
             || gmx_mtop_ftype_count(mtop, F_FBPOSRES) > 0 || inputrec.nwall > 0 || inputrec.bPull
             || inputrec.bRot || inputrec.bIMD;
-    const bool haveDirectVirialContributionsSlow = usingFullElectrostatics(interactionConst->eeltype)
-                                                   || usingLJPme(interactionConst->vdwtype);
+    const bool haveDirectVirialContributionsSlow = usingFullElectrostatics(interactionConst->coulomb.type)
+                                                   || usingLJPme(interactionConst->vdw.type);
     for (int i = 0; i < (simulationWork.useMts ? 2 : 1); i++)
     {
         bool haveDirectVirialContributions =
@@ -914,10 +929,11 @@ void init_forcerec(FILE*                            fplog,
     }
 
     GMX_ASSERT(forcerec->nbfp.empty(), "The nonbonded force parameters should not be set up yet.");
-    forcerec->ntype = mtop.ffparams.atnr;
+    // We add one atom type at the end for filler particles
+    forcerec->ntype = mtop.ffparams.atnr + 1;
     forcerec->nbfp  = makeNonBondedParameterLists(
-            mtop.ffparams.atnr, mtop.ffparams.iparams, forcerec->haveBuckingham);
-    if (usingLJPme(interactionConst->vdwtype))
+            mtop.ffparams.atnr, true, mtop.ffparams.iparams, forcerec->haveBuckingham);
+    if (usingLJPme(interactionConst->vdw.type))
     {
         forcerec->ljpme_c6grid = makeLJPmeC6GridCorrectionParameters(
                 mtop.ffparams.atnr, mtop.ffparams.iparams, forcerec->ljpme_combination_rule);
@@ -927,34 +943,34 @@ void init_forcerec(FILE*                            fplog,
     forcerec->egp_flags = inputrec.opts.egp_flags;
 
     /* Van der Waals stuff */
-    if ((interactionConst->vdwtype != VanDerWaalsType::Cut)
-        && (interactionConst->vdwtype != VanDerWaalsType::User) && !forcerec->haveBuckingham)
+    if ((interactionConst->vdw.type != VanDerWaalsType::Cut)
+        && (interactionConst->vdw.type != VanDerWaalsType::User) && !forcerec->haveBuckingham)
     {
-        if (interactionConst->rvdw_switch >= interactionConst->rvdw)
+        if (interactionConst->vdw.switchDistance >= interactionConst->vdw.cutoff)
         {
             gmx_fatal(FARGS,
                       "rvdw_switch (%f) must be < rvdw (%f)",
-                      interactionConst->rvdw_switch,
-                      interactionConst->rvdw);
+                      interactionConst->vdw.switchDistance,
+                      interactionConst->vdw.cutoff);
         }
         if (fplog)
         {
             fprintf(fplog,
                     "Using %s Lennard-Jones, switch between %g and %g nm\n",
-                    (interactionConst->eeltype == CoulombInteractionType::Switch) ? "switched" : "shifted",
-                    interactionConst->rvdw_switch,
-                    interactionConst->rvdw);
+                    (interactionConst->coulomb.type == CoulombInteractionType::Switch) ? "switched" : "shifted",
+                    interactionConst->vdw.switchDistance,
+                    interactionConst->vdw.cutoff);
         }
     }
 
-    if (forcerec->haveBuckingham && usingLJPme(interactionConst->vdwtype))
+    if (forcerec->haveBuckingham && usingLJPme(interactionConst->vdw.type))
     {
         gmx_fatal(FARGS, "LJ PME not supported with Buckingham");
     }
 
     if (forcerec->haveBuckingham
-        && (interactionConst->vdwtype == VanDerWaalsType::Shift
-            || interactionConst->vdwtype == VanDerWaalsType::Switch))
+        && (interactionConst->vdw.type == VanDerWaalsType::Shift
+            || interactionConst->vdw.type == VanDerWaalsType::Switch))
     {
         gmx_fatal(FARGS, "Switch/shift interaction not supported with Buckingham");
     }
@@ -982,7 +998,7 @@ void init_forcerec(FILE*                            fplog,
     if (gmx_mtop_ftype_count(mtop, F_LJ14) > 0 || gmx_mtop_ftype_count(mtop, F_LJC14_Q) > 0
         || gmx_mtop_ftype_count(mtop, F_LJC_PAIRS_NB) > 0)
     {
-        forcerec->pairsTable = make_tables(fplog, interactionConst, tabpfn, rtab, GMX_MAKETABLES_14ONLY);
+        forcerec->pairsTable = make_tables(fplog, *interactionConst, tabpfn, rtab, GMX_MAKETABLES_14ONLY);
     }
 
     /* Wall stuff */
@@ -1003,8 +1019,9 @@ void init_forcerec(FILE*                            fplog,
         {
             // TODO move these tables into a separate struct and store reference in ListedForces
             fcdata.bondtab = make_bonded_tables(fplog, F_TABBONDS, F_TABBONDSNC, mtop, tabbfnm, "b");
-            fcdata.angletab = make_bonded_tables(fplog, F_TABANGLES, -1, mtop, tabbfnm, "a");
-            fcdata.dihtab   = make_bonded_tables(fplog, F_TABDIHS, -1, mtop, tabbfnm, "d");
+            fcdata.angletab =
+                    make_bonded_tables(fplog, F_TABANGLES, std::nullopt, mtop, tabbfnm, "a");
+            fcdata.dihtab = make_bonded_tables(fplog, F_TABDIHS, std::nullopt, mtop, tabbfnm, "d");
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
     }
@@ -1047,8 +1064,11 @@ void init_forcerec(FILE*                            fplog,
             forcerec->listedForces.emplace_back(
                     mtop.ffparams,
                     mtop.groups.groups[SimulationAtomGroupType::EnergyOutput].size(),
+                    inputrec.posresCom.size(),
                     gmx_omp_nthreads_get(ModuleMultiThread::Bonded),
                     interactionSelection,
+                    commrec->dd,
+                    commMultiSim,
                     fplog);
         }
     }
@@ -1058,8 +1078,11 @@ void init_forcerec(FILE*                            fplog,
         forcerec->listedForces.emplace_back(
                 mtop.ffparams,
                 mtop.groups.groups[SimulationAtomGroupType::EnergyOutput].size(),
+                inputrec.posresCom.size(),
                 gmx_omp_nthreads_get(ModuleMultiThread::Bonded),
                 ListedForces::interactionSelectionAll(),
+                commrec->dd,
+                commMultiSim,
                 fplog);
     }
 

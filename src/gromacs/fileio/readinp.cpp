@@ -42,8 +42,8 @@
 #include <algorithm>
 #include <string_view>
 
+#include "gromacs/mdrun/binary_information.h"
 #include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/exceptions.h"
@@ -433,7 +433,7 @@ double get_ereal(std::vector<t_inpfile>* inp, const char* name, double def, Warn
     }
     else
     {
-        double ret = strtod(inpRef[ii].value_.c_str(), &ptr);
+        double ret = std::strtod(inpRef[ii].value_.c_str(), &ptr);
         if (*ptr != '\0')
         {
             wi->addError(gmx::formatString(

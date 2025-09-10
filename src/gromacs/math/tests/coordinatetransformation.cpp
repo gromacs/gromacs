@@ -51,11 +51,11 @@
 
 #include "gromacs/math/matrix.h"
 #include "gromacs/math/multidimarray.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdspan/extents.h"
 #include "gromacs/mdspan/layouts.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "testutils/testasserts.h"
 #include "testutils/testmatchers.h"
@@ -73,10 +73,10 @@ protected:
     RVec              identityScale_       = { 1, 1, 1 };
     RVec              identityTranslation_ = { 0, 0, 0 };
     std::vector<RVec> testVectors_         = { { 0, 0, 0 },
-                                       { 1, 0, 0 },
-                                       { 0, -1, -1 },
-                                       { 1e10, 1e1, 1e-2 },
-                                       { 3, -6, 2.5 } };
+                                               { 1, 0, 0 },
+                                               { 0, -1, -1 },
+                                               { 1e10, 1e1, 1e-2 },
+                                               { 3, -6, 2.5 } };
 };
 
 class AffineTransformationTest : public ::testing::Test
@@ -202,7 +202,7 @@ TEST_F(TranslateAndScaleTest, scalingInverseWithOneScaleDimensionZeroSingleVecto
 
 TEST_F(AffineTransformationTest, identityTransformYieldsSameVectors)
 {
-    const AffineTransformation identityTransformation(identityMatrix<real, 3>(), { 0, 0, 0 });
+    const AffineTransformation identityTransformation(identityMatrix<real>(), { 0, 0, 0 });
     for (const auto& vector : testVectors_)
     {
         RVec vectorTransformed = vector;

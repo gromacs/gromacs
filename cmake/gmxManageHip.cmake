@@ -38,6 +38,14 @@ endif()
 set(CMAKE_HIP_STANDARD ${CMAKE_CXX_STANDARD})
 set(CMAKE_HIP_STANDARD_REQUIRED ON)
 
+# We need to set the gpu targets to a dummy value before looking up the ROCM library to avoid the "feature" to autodetect
+# this, which is broken if building on a machine without devices. The value here is ignored later on.
+# We also need to set both the legacy AMDGPU_TARGETS and GPU_TARGETS, because we only know after the finding HIP
+# which version we have, but need them defined before. Sigh
+set(CMAKE_HIP_ARCHITECTURES "gfx90a")
+set(AMDGPU_TARGETS "gfx90a")
+set(GPU_TARGETS "gfx90a")
+
 # Using the required version directly doesn't work due to the way the versioning is implemented in HIP
 find_package(HIP REQUIRED CONFIG PATHS $ENV{ROCM_PATH} "/opt/rocm")
 if (${HIP_VERSION} VERSION_LESS ${REQUIRED_HIP_VERSION})
@@ -47,15 +55,11 @@ endif()
 enable_language(HIP)
 set(GMX_GPU_HIP ON)
 
-
 find_package(rocprim REQUIRED CONFIG HINTS ${HIP_PACKAGE_PREFIX_DIR})
 
 if(GMX_GPU_FFT_VKFFT)
     include(gmxManageVkFft)
-elseif(GMX_GPU_FFT_HIPFFT OR GMX_GPU_FFT_ROCFFT OR GMX_USE_Heffte)
-    if (GMX_GPU_FFT_HIPFFT)
-        find_package(hipfft REQUIRED CONFIG HINTS ${HIP_PACKAGE_PREFIX_DIR})
-    endif()
+elseif(GMX_GPU_FFT_ROCFFT OR GMX_USE_Heffte)
     find_package(rocfft REQUIRED CONFIG HINTS ${HIP_PACKAGE_PREFIX_DIR})
 else()
     message(FATAL_ERROR "The configured GPU FFT library ${GMX_GPU_FFT_LIBRARY} can not be used together with the HIP backend") 
@@ -88,6 +92,3 @@ endmacro()
 
 set(GMX_HIPCC_EXTRA_FLAGS "" CACHE STRING "Extra GROMACS specific HIPCC compiler flags")
 include(gmxManageHipccConfig)
-
-option(GMX_HIP_NB_SINGLE_COMPILATION_UNIT "Whether to compile the HIP non-bonded module using a single compilation unit." OFF)
-mark_as_advanced(GMX_HIP_NB_SINGLE_COMPILATION_UNIT)

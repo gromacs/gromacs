@@ -55,14 +55,15 @@
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/gputraits.h"
 #include "gromacs/math/functions.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/constraint_gpu_helpers.h"
+#include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/lincs_gpu_internal.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/listoflists.h"
+#include "gromacs/utility/vec.h"
 
 
 namespace gmx
@@ -291,6 +292,9 @@ void LincsGpu::set(const InteractionDefinitions& idef, int numAtoms, const Array
     std::fill(constraintsHost.begin(), constraintsHost.end(), pair);
     constraintsTargetLengthsHost.resize(kernelParams_.numConstraintsThreads, 0.0);
     std::fill(constraintsTargetLengthsHost.begin(), constraintsTargetLengthsHost.end(), 0.0);
+
+    const int gmx_unused numOmpThreads = gmx_omp_nthreads_get(ModuleMultiThread::Lincs);
+#pragma omp parallel for num_threads(numOmpThreads) schedule(static)
     for (int c = 0; c < numConstraints; c++)
     {
         int a1   = iatoms[stride * c + 1];
@@ -314,7 +318,14 @@ void LincsGpu::set(const InteractionDefinitions& idef, int numAtoms, const Array
     // array --- a number, greater then total number of constraints, taking into account the splits
     // in the constraints array due to the GPU block borders. This number can be adjusted to improve
     // memory access pattern. Mass factors are saved in a similar data structure.
-    bool maxCoupledConstraintsHasIncreased = false;
+    const int prevMaxCoupledConstraints = maxCoupledConstraints_;
+#ifndef _MSC_VER
+#    pragma omp parallel for num_threads(numOmpThreads) schedule(static) \
+            reduction(max : maxCoupledConstraints_)
+#else
+// Nothing done. I think is not a good ideal to use '#pragma omp critical' in openmp 2.0
+// It caused threads blocking, performance testing is required
+#endif
     for (int c = 0; c < numConstraints; c++)
     {
         int a1 = iatoms[stride * c + 1];
@@ -325,10 +336,10 @@ void LincsGpu::set(const InteractionDefinitions& idef, int numAtoms, const Array
 
         if (nCoupledConstraints > maxCoupledConstraints_)
         {
-            maxCoupledConstraints_            = nCoupledConstraints;
-            maxCoupledConstraintsHasIncreased = true;
+            maxCoupledConstraints_ = nCoupledConstraints;
         }
     }
+    const bool maxCoupledConstraintsHasIncreased = (maxCoupledConstraints_ > prevMaxCoupledConstraints);
 
     kernelParams_.haveCoupledConstraints = (maxCoupledConstraints_ > 0);
 
@@ -336,6 +347,7 @@ void LincsGpu::set(const InteractionDefinitions& idef, int numAtoms, const Array
     coupledConstraintsIndicesHost.resize(maxCoupledConstraints_ * kernelParams_.numConstraintsThreads, -1);
     massFactorsHost.resize(maxCoupledConstraints_ * kernelParams_.numConstraintsThreads, -1);
 
+#pragma omp parallel for num_threads(numOmpThreads) schedule(static)
     for (int c1 = 0; c1 < numConstraints; c1++)
     {
         coupledConstraintsCountsHost[splitMap[c1]] = 0;

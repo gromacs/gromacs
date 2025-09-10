@@ -51,7 +51,6 @@ certain messages.
 
 @functools.total_ordering
 class Location(object):
-
     """Location for a reported message."""
 
     def __init__(self, filename, line):
@@ -100,7 +99,6 @@ class Location(object):
 
 @functools.total_ordering
 class Message(object):
-
     """Single reported message.
 
     This class stores the contents of a reporter message for later output to
@@ -137,7 +135,6 @@ class Message(object):
 
 
 class Filter(object):
-
     """Filter expression to exclude messages."""
 
     def __init__(self, filterline):
@@ -172,7 +169,6 @@ class Filter(object):
 
 
 class Reporter(object):
-
     """Collect and write out issues found by checker scripts."""
 
     def __init__(self, logfile=None, quiet=False):

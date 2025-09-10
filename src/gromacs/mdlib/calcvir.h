@@ -34,7 +34,7 @@
 #ifndef GMX_MDLIB_CALCVIR_H
 #define GMX_MDLIB_CALCVIR_H
 
-#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/vectypes.h"
 
 struct t_pbc;
 

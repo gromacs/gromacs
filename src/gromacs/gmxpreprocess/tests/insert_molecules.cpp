@@ -55,6 +55,10 @@
 #include "testutils/refdata.h"
 #include "testutils/textblockmatchers.h"
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -139,3 +143,5 @@ TEST_F(InsertMoleculesTest, InsertsMoleculesIntoFixedPositions)
 }
 
 } // namespace
+} // namespace test
+} // namespace gmx

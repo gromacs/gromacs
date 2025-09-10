@@ -142,7 +142,7 @@ void* _gmx_sel_mempool_alloc(gmx_sel_mempool_t* mp, size_t size)
     }
     else
     {
-        ptr = malloc(size);
+        ptr = std::malloc(size);
         if (!ptr)
         {
             throw std::bad_alloc();
@@ -199,7 +199,7 @@ void _gmx_sel_mempool_reserve(gmx_sel_mempool_t* mp, size_t size)
     {
         size = mp->maxsize;
     }
-    mp->buffer = static_cast<char*>(malloc(size));
+    mp->buffer = static_cast<char*>(std::malloc(size));
     if (!mp->buffer)
     {
         throw std::bad_alloc();

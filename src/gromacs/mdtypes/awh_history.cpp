@@ -31,11 +31,14 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
-
 /*! \internal \file
  * \brief Defines functions of the AWH history used by modular checkpointing
  *
  * \author Pascal Merz <pascal.merz@me.com>
+ */
+/*!
+ * \defgroup module_mdspan Module MdSpan
+ * \brief A brief description for Module MdSpan
  */
 
 #include "gmxpre.h"

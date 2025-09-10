@@ -53,7 +53,6 @@
 #include "gromacs/math/arrayrefwithpadding.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/invertmatrix.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/ishift.h"
@@ -71,6 +70,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/vec.h"
 
 namespace gmx
 {
@@ -156,7 +156,7 @@ settleParameters(const real mO, const real mH, const real invmO, const real invm
 }
 
 SettleData::SettleData(const gmx_mtop_t& mtop) :
-    useSimd_(getenv("GMX_DISABLE_SIMD_KERNELS") == nullptr)
+    useSimd_(std::getenv("GMX_DISABLE_SIMD_KERNELS") == nullptr)
 {
     /* Check that we have only one settle type */
     int       settle_type = -1;

@@ -31,6 +31,10 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
+/*!
+ * \defgroup module_hardware Module Hardware
+ * \brief A brief description for Module Hardware
+ */
 #ifndef GMX_HARDWARE_HWINFO_H
 #define GMX_HARDWARE_HWINFO_H
 
@@ -62,7 +66,7 @@ struct gmx_hw_info_t
 
     /* Data for our local physical node */
 
-    std::unique_ptr<gmx::CpuInfo>          cpuInfo; /* Information about CPU capabilities */
+    std::unique_ptr<gmx::CpuInfo> cpuInfo; /* Information about CPU capabilities */
     std::unique_ptr<gmx::HardwareTopology> hardwareTopology; /* Information about hardware topology */
     std::vector<std::unique_ptr<DeviceInformation>> deviceInfoList; /* Information about GPUs detected on this physical node */
 
@@ -86,7 +90,7 @@ struct gmx_hw_info_t
     int simd_suggest_max; /* Highest SIMD instruction set supported by at least one rank */
 
     gmx_bool bIdenticalGPUs; /* TRUE if all ranks have the same type(s) and order of GPUs */
-    bool     haveAmdZen1Cpu; /* TRUE when at least one CPU in any of the nodes is AMD Zen of the first generation */
+    bool haveAmdZen1Cpu; /* TRUE when at least one CPU in any of the nodes is AMD Zen of the first generation */
     gmx::GpuAwareMpiStatus minGpuAwareMpiStatus; /* Lowest support level for GPU-aware MPI (Supported > Forced > Not supported) across all detected devices */
 
     //! Container of warning strings to log later when that is possible.

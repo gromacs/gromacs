@@ -37,12 +37,14 @@
 #include <cstdio>
 
 #include <memory>
+#include <string>
 #include <vector>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 #define EGP_EXCL (1 << 0)
 #define EGP_TABLE (1 << 1)
@@ -68,8 +70,6 @@ struct t_grpopts
     int ngtc = 0;
     //! Number of of Nose-Hoover chains per group
     int nhchainlength = 0;
-    //! Number of Accelerate groups
-    int ngacc;
     //! Number of Freeze groups
     int ngfrz = 0;
     //! Number of Energy groups
@@ -89,7 +89,7 @@ struct t_grpopts
     //! Tau coupling time
     real* tau_t = nullptr;
     //! Acceleration per group
-    rvec* acceleration = nullptr;
+    std::vector<gmx::RVec> acceleration;
     //! Whether the group will be frozen in each direction
     ivec* nFreeze = nullptr;
     //! Exclusions/tables of energy group pairs
@@ -227,12 +227,32 @@ struct t_expanded
     real init_wl_delta = 0;
     //! Use one over t convergence for Wang-Landau when the delta get sufficiently small
     bool bWLoneovert = false;
-    //! Did we initialize the weights? TODO: REMOVE FOR 5.0, no longer needed with new logic
-    bool bInit_weights = false;
     //! To override the main temperature, or define it if it's not defined
     real mc_temp = 0;
-    //! User-specified initial weights to start with
-    std::vector<real> init_lambda_weights;
+    //! User-specified initial lambda-dependent weights to start with
+    std::vector<real> initLambdaWeights;
+    /*! \brief User-specified initial visitation counts at each lambda state.
+     *
+     * This is used for a few different algorithms for equilibration detection (i.e. when to stop
+     * incrementing weights anymore). If a series of short runs is performed, then
+     * if the values from the previous simulation are not carried over into the next
+     * simulation via entering them in the mdp, the equilibration checks might never
+     * be triggered. These are integers, though we define a vector of reals because
+     * there is currently no good way to read a vector of ints in the mdp; we instead
+     * check that integers are entered after reading. */
+    std::vector<real> initLambdaCounts;
+    /*! \brief User-specified initial Wang-Landau histogram counts.
+     *
+     * This is the histogram (wl_histo) that is monitored for deciding when the sampling is
+     * sufficiently flat in lambda space, and that therefore the Wang-Landau incrementor
+     * (wl_delta) used to increment the weights for each state should be decreased.
+     * If standard Wang-Landau incremeting is done, it is an array of integers, but if using
+     * the Gibbs transition probability, it will be non-integer, so we define it as real.
+     * The reason to reinitialize wl_histo between short runs using the mdp is that as
+     * wl_delta gets smaller, the time taken to flatten wl_histo gets longer, so it will get
+     * gradually longer than the simulation time, and one has to then has to accumulate
+     * wl_histo each iteration, so wl_delta never decreases. */
+    std::vector<real> initWlHistogramCounts;
 };
 
 struct t_rotgrp
@@ -290,11 +310,9 @@ struct t_IMD
 struct t_swapGroup
 {
     //! Name of the swap group, e.g. NA, CL, SOL
-    char* molname;
-    //! Number of atoms in this group
-    int nat;
+    std::string molname;
     //! The global ion group atoms numbers
-    int* ind;
+    std::vector<int> ind;
     //! Requested number of molecules of this type per compartment
     gmx::EnumerationArray<Compartment, int> nmolReq;
 };
@@ -319,10 +337,34 @@ struct t_swapcoords
     real threshold;
     //! Offset of the swap layer (='bulk') with respect to the compartment-defining layers
     gmx::EnumerationArray<Compartment, real> bulkOffset;
-    //! Number of groups to be controlled
-    int ngrp;
-    //! All swap groups, including split and solvent
-    t_swapGroup* grp;
+    //! Groups for two channels, solvent and (user-defined) ions
+    std::vector<t_swapGroup> groups;
+    //! Three required groups: channel0, channel1, solvent
+    static constexpr int sc_numRequiredGroups = static_cast<int>(SwapGroupSplittingType::Count);
+    //! Return an ArrayRef to the ion groups
+    gmx::ArrayRef<t_swapGroup> ionGroups()
+    {
+        return { groups.data() + sc_numRequiredGroups, groups.data() + groups.size() };
+    }
+    //! Return an ArrayRef-to-const to the ion groups
+    gmx::ArrayRef<const t_swapGroup> ionGroups() const
+    {
+        return { groups.data() + sc_numRequiredGroups, groups.data() + groups.size() };
+    }
+    //! Return a reference to the split or solvent group \c groupType
+    t_swapGroup& requiredGroup(SwapGroupSplittingType groupType)
+    {
+        return groups[static_cast<int>(groupType)];
+    }
+    //! Return a const reference to the split or solvent group \c groupType
+    const t_swapGroup& requiredGroup(SwapGroupSplittingType groupType) const
+    {
+        return groups[static_cast<int>(groupType)];
+    }
+    //! Return a reference to the ion group \c index (i.e within the set of ion groups)
+    t_swapGroup& ionGroup(size_t index) { return groups[index + sc_numRequiredGroups]; }
+    //! Return a const reference to the ion group \c index (i.e within the set of ion groups)
+    const t_swapGroup& ionGroup(size_t index) const { return groups[index + sc_numRequiredGroups]; }
 };
 
 struct PressureCouplingOptions
@@ -346,7 +388,7 @@ struct PressureCouplingOptions
 struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
 {
     t_inputrec();
-    explicit t_inputrec(const t_inputrec&) = delete;
+    explicit t_inputrec(const t_inputrec&)   = delete;
     t_inputrec& operator=(const t_inputrec&) = delete;
     ~t_inputrec();
 
@@ -436,10 +478,10 @@ struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
     bool bPrintNHChains = false;
     //! Pressure coupling
     PressureCouplingOptions pressureCouplingOptions;
-    //! The COM of the posres atoms
-    rvec posres_com = { 0, 0, 0 };
-    //! The B-state COM of the posres atoms
-    rvec posres_comB = { 0, 0, 0 };
+    //! The vector of COMs of the posres atoms
+    std::vector<gmx::RVec> posresCom;
+    //! The vector of COMs of the B-state posres atoms
+    std::vector<gmx::RVec> posresComB;
     //! Random seed for Andersen thermostat (obsolete)
     int andersen_seed = 0;
     //! Per atom pair energy drift tolerance (kJ/mol/ps/atom) for the pairlist buffer
@@ -574,7 +616,7 @@ struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
     //! Whether to do ion/water position exchanges (CompEL)
     SwapType eSwapCoords = SwapType::Default;
     //! Swap data structure.
-    t_swapcoords* swap = nullptr;
+    std::unique_ptr<t_swapcoords> swap;
 
     //! Whether the tpr makes an interactive MD session possible.
     bool bIMD = false;

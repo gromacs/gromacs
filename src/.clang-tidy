@@ -41,6 +41,58 @@
 #
 #         -performance-type-promotion-in-math-fn
 # Those warnings are in the gpu code and we shouldn't to worry about them.
+#
+#         -performance-enum-size
+# We tend not to store a lot of enum values, so don't suffer much performance
+# penalty from this.
+#
+#         -readability-identifier-length
+# We use a lot of single-character identifiers (e.g. loop variables) and some
+# others have domain significance (x, v, f, M, mu, phi, p, q) so we are never
+# going to want to do the work to conform with this
+#
+#         -bugprone-assignment-in-if-condition
+#         -bugprone-easily-swappable-parameters
+#         -bugprone-empty-catch
+#         -bugprone-implicit-widening-of-multiplication-result
+#         -bugprone-multi-level-implicit-pointer-conversion
+#         -bugprone-unchecked-optional-access
+#         -bugprone-unsafe-functions
+#         -bugprone-suspicious-memory-comparison
+#         -bugprone-switch-missing-default-case
+#         -bugprone-throw-keyword-missing
+#         -bugprone-unused-return-value
+#         -cppcoreguidelines-avoid-const-or-ref-data-members
+#         -cppcoreguidelines-avoid-do-while
+#         -cppcoreguidelines-macro-to-enum
+#         -cppcoreguidelines-owning-memory
+#         -cppcoreguidelines-prefer-member-initializer
+#         -cppcoreguidelines-rvalue-reference-param-not-moved
+#         -cppcoreguidelines-use-default-member-init
+#         -google-readability-casting
+#         -misc-header-include-cycle
+#         -misc-include-cleaner
+#         -misc-confusable-identifiers
+#         -misc-const-correctness
+#         -misc-use-anonymous-namespace
+#         -modernize-use-emplace
+#         -performance-avoid-endl
+#         -performance-no-int-to-ptr
+#         -readability-avoid-nested-conditional-operator
+#         -readability-avoid-unconditional-preprocessor-if
+#         -readability-cognitive-complexity
+#         -readability-container-data-pointer
+#         -readability-function-cognitive-complexity
+#         -readability-make-member-function-const
+#         -readability-non-const-parameter
+#         -readability-redundant-casting
+#         -readability-redundant-member-init
+#         -readability-simplify-boolean-expr
+#         -readability-static-definition-in-anonymous-namespace
+#         -readability-suspicious-call-argument
+#         -readability-uppercase-literal-suffix
+# Bulk suppressions while updating to clang-tidy-18. Hopefully we can relax
+# some of these later.
 Checks:  clang-diagnostic-*,-clang-analyzer-*,-clang-analyzer-security.insecureAPI.strcpy,
          bugprone-*,misc-*,readability-*,performance-*,mpi-*,
          -readability-inconsistent-declaration-parameter-name,
@@ -68,7 +120,49 @@ Checks:  clang-diagnostic-*,-clang-analyzer-*,-clang-analyzer-security.insecureA
          -cppcoreguidelines-init-variables,
          -misc-no-recursion,
          -readability-static-accessed-through-instance,
-         -performance-type-promotion-in-math-fn
+         -performance-type-promotion-in-math-fn,
+         -performance-enum-size,
+         -readability-identifier-length,
+         -bugprone-assignment-in-if-condition,
+         -bugprone-easily-swappable-parameters,
+         -bugprone-empty-catch,
+         -bugprone-implicit-widening-of-multiplication-result,
+         -bugprone-multi-level-implicit-pointer-conversion,
+         -bugprone-unchecked-optional-access,
+         -bugprone-unsafe-functions,
+         -bugprone-suspicious-memory-comparison,
+         -bugprone-switch-missing-default-case,
+         -bugprone-throw-keyword-missing,
+         -bugprone-unused-return-value,
+         -cppcoreguidelines-avoid-const-or-ref-data-members,
+         -cppcoreguidelines-avoid-do-while,
+         -cppcoreguidelines-macro-to-enum,
+         -cppcoreguidelines-owning-memory,
+         -cppcoreguidelines-prefer-member-initializer,
+         -cppcoreguidelines-rvalue-reference-param-not-moved,
+         -cppcoreguidelines-use-default-member-init,
+         -google-readability-casting,
+         -misc-header-include-cycle,
+         -misc-include-cleaner,
+         -misc-confusable-identifiers,
+         -misc-const-correctness,
+         -misc-use-anonymous-namespace,
+         -modernize-use-emplace,
+         -performance-avoid-endl,
+         -performance-no-int-to-ptr,
+         -readability-avoid-nested-conditional-operator,
+         -readability-avoid-unconditional-preprocessor-if,
+         -readability-cognitive-complexity,
+         -readability-container-data-pointer,
+         -readability-function-cognitive-complexity,
+         -readability-make-member-function-const,
+         -readability-non-const-parameter,
+         -readability-redundant-casting,
+         -readability-redundant-member-init,
+         -readability-simplify-boolean-expr,
+         -readability-static-definition-in-anonymous-namespace,
+         -readability-suspicious-call-argument,
+         -readability-uppercase-literal-suffix
 HeaderFilterRegex: .*
 CheckOptions:
   - key:           cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor

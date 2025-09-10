@@ -52,23 +52,20 @@ function(gmx_manage_muparser)
         # particular, it sets up an easy call to add_subdirectory().
         include(FetchContent)
         FetchContent_Declare(muparser SOURCE_DIR ${CMAKE_SOURCE_DIR}/src/external/muparser)
-        if (NOT muparser_POPULATED)
-            if (OpenMP_CXX_FLAGS)
-                set(OpenMP_FIND_QUIETLY ON)
-            endif()
-            FetchContent_Populate(muparser)
+        if (OpenMP_CXX_FLAGS)
+            set(OpenMP_FIND_QUIETLY ON)
         endif()
         set(ENABLE_SAMPLES OFF)
         set(ENABLE_OPENMP ${GMX_OPENMP})
         set(ENABLE_WIDE_CHAR OFF)
         set(BUILD_TESTING OFF)
-        add_subdirectory(${muparser_SOURCE_DIR} ${muparser_BINARY_DIR} EXCLUDE_FROM_ALL)
+        FetchContent_MakeAvailable(muparser)
         if (BUILD_SHARED_LIBS)
             # Ensure muparser is in the export set called libgromacs,
             # so that it gets installed along with libgromacs.
             install(TARGETS muparser EXPORT libgromacs)
         endif()
-        if (WIN32)
+        if (MSVC)
             gmx_target_warning_suppression(muparser /wd4310 HAS_NO_MSVC_CAST_TRUNCATES_CONSTANT_VALUE)
         endif()
 
@@ -90,13 +87,6 @@ function(gmx_manage_muparser)
             message(FATAL_ERROR "External muParser library with wide char enabled not supported.")
         endif()
     else()
-        # Create a dummy link target so the calling code doesn't need to know
-        # whether muparser support is being compiled.
-        add_library(muparser::muparser INTERFACE)
-        # Add the muparser interface library to the libgromacs Export name, even though
-        # we will not be installing any content.
-        install(TARGETS muparser EXPORT libgromacs)
-
         set(HAVE_MUPARSER 0 CACHE INTERNAL "Is muparser found?")
     endif()
     mark_as_advanced(HAVE_MUPARSER)

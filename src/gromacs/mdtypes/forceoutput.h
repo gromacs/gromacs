@@ -52,8 +52,8 @@
 #define GMX_MDTYPES_FORCEOUTPUT_H
 
 #include "gromacs/math/arrayrefwithpadding.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/vectypes.h"
 
 namespace gmx
 {
@@ -80,7 +80,7 @@ public:
                          const gmx::ArrayRef<gmx::RVec>&            shiftForces) :
         force_(force),
         computeVirial_(computeVirial),
-        shiftForces_(computeVirial ? shiftForces : gmx::ArrayRef<gmx::RVec>())
+        shiftForces_(computeVirial ? shiftForces : gmx::ArrayRef<gmx::RVec>{})
     {
         GMX_ASSERT(!computeVirial || !shiftForces.empty(),
                    "We need a valid shift force buffer when computing the virial");
@@ -139,6 +139,9 @@ public:
         }
     }
 
+    //! Returns the force buffer
+    gmx::ArrayRef<RVec> force() { return force_; }
+
     /*! \brief Adds a virial contribution
      *
      * \note Can be called with \p computeVirial=false.
@@ -186,8 +189,8 @@ public:
      */
     const matrix& getVirial() const { return virial_; }
 
-    const ArrayRef<RVec> force_;         //!< Force accumulation buffer reference
-    const bool           computeVirial_; //!< True when algorithms are required to provide their virial contribution (for the current force evaluation)
+    const ArrayRef<RVec> force_; //!< Force accumulation buffer reference
+    const bool computeVirial_; //!< True when algorithms are required to provide their virial contribution (for the current force evaluation)
 private:
     matrix virial_; //!< Virial accumulation buffer
 };

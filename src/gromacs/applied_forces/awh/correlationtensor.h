@@ -184,7 +184,7 @@ private:
     double sumOverBlocksSquareBlockWeight_; /**< Sum over all blocks in the simulation of block weight^2. */
     double sumOverBlocksBlockSquareWeight_; /**< Sum over all blocks in the simulation of weight^2. */
     double blockLength_; /**< The length of each block used for block averaging */
-    int    previousBlockIndex_; /**< The last block index data was added to (needed only for block length in terms of time). */
+    int previousBlockIndex_; /**< The last block index data was added to (needed only for block length in terms of time). */
 
     /* Sums for each coordinate dimension. */
     std::vector<CoordData> coordData_; /**< Array with sums for each coordinate dimension. */

@@ -50,13 +50,17 @@
 
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/arrayrefwithpadding.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "testutils/testasserts.h"
 
 namespace gmx
+{
+namespace test
+{
+namespace
 {
 
 const std::array<RVec, 2> c_forces = { { { 0.5, 0.1, 1.2 }, { -2.1, 0.2, 0.3 } } };
@@ -136,4 +140,6 @@ TEST(ForceBuffers, CopyDoesNotPin)
     EXPECT_EQ(forceBuffersCopy.pinningPolicy(), PinningPolicy::CannotBePinned);
 }
 
+} // namespace
+} // namespace test
 } // namespace gmx

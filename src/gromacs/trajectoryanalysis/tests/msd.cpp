@@ -44,6 +44,7 @@
 
 #include <filesystem>
 #include <memory>
+#include <regex>
 #include <string>
 #include <utility>
 #include <vector>
@@ -95,6 +96,17 @@ void checkXvgDataPoint(TestReferenceChecker* checker, const std::string& value)
     checker->checkRealFromString(value, nullptr);
 }
 
+void checkDiffusionCoefficientDataPoint(TestReferenceChecker* checker, const std::string& value)
+{
+    // Regex matches "D[%10s] = %.4g (+/- %.2f) (1e-5 cm^2/s)"
+    const std::string regex = "D\\[([^\\]]+)\\] = ([^ ]+) \\(\\+/- ([^ ]+)\\) \\(1e-5 cm\\^2/s\\)";
+    std::smatch       match;
+    ASSERT_TRUE(std::regex_search(value, match, std::regex(regex))) << "Invalid D line format: " << value;
+    checker->checkString(match[1].str(), nullptr);
+    checker->checkRealFromString(match[2].str(), nullptr);
+    checker->checkRealFromString(match[3].str(), nullptr);
+}
+
 /*! \brief MsdMatcher is effectively an extension of XvgMatcher for gmx msd results.
  *
  * In addition to the usual fields XvgMatcher checks, MsdMatcher checks for properly reported
@@ -111,6 +123,7 @@ public:
                 gmx::test::FloatingPointTolerance(gmx::test::absoluteTolerance(1.0e-5)));
         TestReferenceChecker dCoefficientChecker(
                 checker->checkCompound("XvgLegend", "DiffusionCoefficient"));
+        dCoefficientChecker.setDefaultTolerance(gmx::test::absoluteTolerance(1.0e-2));
         TestReferenceChecker legendChecker(checker->checkCompound("XvgLegend", "Legend"));
         TestReferenceChecker dataChecker(checker->checkCompound("XvgData", "Data"));
         std::string          line;
@@ -120,6 +133,12 @@ public:
             // Legend and titles.
             if (isRelevantXvgHeader(line))
             {
+                if (contains(line, "D["))
+                {
+                    checkDiffusionCoefficientDataPoint(&dCoefficientChecker, stripString(line));
+                    continue;
+                }
+
                 legendChecker.checkString(stripString(line.substr(1)), nullptr);
                 continue;
             }
@@ -243,21 +262,6 @@ TEST_F(MsdModuleTest, oneDimensionalDiffusionWithMaxTau)
     runTest(CommandLine(cmdline));
 }
 
-TEST_F(MsdModuleTest, roundingFail)
-{
-    // Check that a proper exception is throws when a trajectory is saved too often, #4694
-    setInputFile("-f", "msd_traj_rounding_fail.xtc");
-    setInputFile("-s", "msd_coords.gro");
-    setInputFile("-n", "msd.ndx");
-    CommandLine cmdline = commandLine();
-    cmdline.addOption("-sel", "0");
-
-    ICommandLineOptionsModulePointer runner(
-            TrajectoryAnalysisCommandLineRunner::createModule(createModule()));
-
-    EXPECT_THROW(CommandLineTestHelper::runModuleDirect(std::move(runner), &cmdline), gmx::ToleranceError);
-}
-
 
 // -------------------------------------------------------------------------
 // These tests operate on a more realistic trajectory, with a solvated protein,
@@ -275,12 +279,31 @@ TEST_F(MsdModuleTest, multipleGroupsWork)
     runTest(CommandLine(cmdline));
 }
 
+// Identical to above, but using a trajectory with dt of 100 fs instead of 2 ps. Since the
+// distances are the same, these atoms appear to move 20 slower and the resulting coefficients
+// calculated have that relative difference.
+TEST_F(MsdModuleTest, subPicosecondTrajectoryWorks)
+{
+    const std::string prefix = "alanine_vsite_solvated";
+    setInputFile("-f", prefix + "_100fs.xtc");
+    setInputFile("-n", prefix + ".ndx");
+    createTpr(prefix + ".gro", prefix + ".top", prefix + ".ndx");
+
+    const char* const cmdline[] = {
+        "-trestart",
+        "0.1",
+        "-sel",
+        "1;2",
+    };
+    runTest(CommandLine(cmdline));
+}
+
 // Disabled in release-2024 branch, to be fixed in main branch by !4263
-TEST_F(MsdModuleTest, DISABLED_trestartLessThanDt)
+TEST_F(MsdModuleTest, trestartLessThanDt)
 {
     setAllInputs("alanine_vsite_solvated");
     const char* const cmdline[] = { "-trestart", "1", "-sel", "2" };
-    runTest(CommandLine(cmdline));
+    EXPECT_THROW_GMX(runTestAnticipatingException(CommandLine(cmdline)), gmx::InconsistentInputError);
 }
 
 TEST_F(MsdModuleTest, trestartGreaterThanDt)
@@ -288,6 +311,13 @@ TEST_F(MsdModuleTest, trestartGreaterThanDt)
     setAllInputs("alanine_vsite_solvated");
     const char* const cmdline[] = { "-trestart", "10", "-sel", "2" };
     runTest(CommandLine(cmdline));
+}
+
+TEST_F(MsdModuleTest, trestartGreaterThanDtAndNotAMultipleOfDt)
+{
+    setAllInputs("alanine_vsite_solvated"); // -dt is deduced as 2 from the file
+    const char* const cmdline[] = { "-trestart", "7", "-sel", "2" };
+    EXPECT_THROW_GMX(runTestAnticipatingException(CommandLine(cmdline)), gmx::InconsistentInputError);
 }
 
 TEST_F(MsdModuleTest, molTest)

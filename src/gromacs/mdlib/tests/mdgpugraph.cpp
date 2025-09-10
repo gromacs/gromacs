@@ -92,6 +92,12 @@ TEST(MdGraphTest, MdGpuGraphExecutesActivities)
     }
     for (const auto& testDevice : testDeviceList)
     {
+#    if GMX_GPU_SYCL
+        if (!testDevice->deviceInfo().supportsSyclGraph)
+        {
+            GTEST_SKIP() << "Device does not support GPU Graphs";
+        }
+#    endif
         const auto& deviceContext = testDevice->deviceContext();
 
         // Initialize required structures
@@ -215,6 +221,12 @@ TEST(MdGraphTest, MdGpuGraphCaptureAndUsageConsistency)
     }
     for (const auto& testDevice : testDeviceList)
     {
+#    if GMX_GPU_SYCL
+        if (!testDevice->deviceInfo().supportsSyclGraph)
+        {
+            GTEST_SKIP() << "Device does not support GPU Graphs";
+        }
+#    endif
         const auto& deviceContext = testDevice->deviceContext();
 
         // Initialize required structures

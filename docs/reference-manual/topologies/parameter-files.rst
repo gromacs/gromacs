@@ -38,7 +38,7 @@ Non-bonded parameters
 ~~~~~~~~~~~~~~~~~~~~~
 
 The non-bonded parameters consist of the van der Waals parameters V (``c6``
-or :math:`\sigma`, depending on the combination rule) and W (``c12`` or
+or :math:`\sigma`, depending on the combination rule, see :ref:`lj`) and W (``c12`` or
 :math:`\epsilon`), as listed in the file ``ffnonbonded.itp``, where ``ptype`` is
 the particle type (see :numref:`Table %s <tab-ptype>`). As with the bonded
 parameters, entries in ``[ *type ]`` directives are applied to their counterparts in

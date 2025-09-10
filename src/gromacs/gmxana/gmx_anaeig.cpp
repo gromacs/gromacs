@@ -59,8 +59,6 @@
 #include "gromacs/gmxana/gmx_ana.h"
 #include "gromacs/math/do_fit.h"
 #include "gromacs/math/functions.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/atoms.h"
@@ -77,6 +75,8 @@
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "thermochemistry.h"
 
@@ -1098,27 +1098,27 @@ int gmx_anaeig(int argc, char* argv[])
         { "-last", FALSE, etINT, { &last }, "Last eigenvector for analysis (-1 is till the last)" },
         { "-skip", FALSE, etINT, { &skip }, "Only analyse every nr-th frame" },
         { "-max",
-          FALSE,
-          etREAL,
-          { &max },
-          "Maximum for projection of the eigenvector on the average structure, "
-          "max=0 gives the extremes" },
+                  FALSE,
+                  etREAL,
+                  { &max },
+                  "Maximum for projection of the eigenvector on the average structure, "
+                          "max=0 gives the extremes" },
         { "-nframes", FALSE, etINT, { &nextr }, "Number of frames for the extremes output" },
         { "-split", FALSE, etBOOL, { &bSplit }, "Split eigenvector projections where time is zero" },
         { "-entropy",
-          FALSE,
-          etBOOL,
-          { &bEntropy },
-          "Compute entropy according to the Quasiharmonic formula or Schlitter's method." },
+                  FALSE,
+                  etBOOL,
+                  { &bEntropy },
+                  "Compute entropy according to the Quasiharmonic formula or Schlitter's method." },
         { "-temp", FALSE, etREAL, { &temp }, "Temperature for entropy calculations" },
         { "-nevskip",
-          FALSE,
-          etINT,
-          { &nskip },
-          "Number of eigenvalues to skip when computing the entropy due to the quasi harmonic "
-          "approximation. When you do a rotational and/or translational fit prior to the "
-          "covariance analysis, you get 3 or 6 eigenvalues that are very close to zero, and which "
-          "should not be taken into account when computing the entropy." }
+                  FALSE,
+                  etINT,
+                  { &nskip },
+                  "Number of eigenvalues to skip when computing the entropy due to the quasi harmonic "
+                          "approximation. When you do a rotational and/or translational fit prior to the "
+                          "covariance analysis, you get 3 or 6 eigenvalues that are very close to zero, and which "
+                          "should not be taken into account when computing the entropy." }
     };
 #define NPA asize(pa)
 
@@ -1249,6 +1249,23 @@ int gmx_anaeig(int argc, char* argv[])
 
     if (bEntropy)
     {
+        std::vector<real> invEigenvalue1(neig1);
+        for (i = 0; i < neig1; i++)
+        {
+            /* Converting eigenvalues from the trajectory covariance values into the expected units.
+             * GROMACS units expected for eigenvalues of the Hessian are kJ/(mol*nm*nm*amu).
+             * Refer to gmx_nmeig.cpp where Hessian is diagonalized.
+             *
+             * In gmx_anaeig.cpp, the input eigenvalues are from the covariance matrix of
+             * trajectories, such that they need to be unit-coverted for consistency.
+             *
+             * This requires establishment of an energy scale (kT), a scaling to the standard
+             * GROMACS energy units (kJ/mol), and inversion of the given eigenvalue.
+             * */
+            invEigenvalue1[i] = (gmx::c_boltz * temp) / eigval1[i];
+        }
+
+
         if (bDMA1)
         {
             gmx_fatal(FARGS,
@@ -1258,7 +1275,7 @@ int gmx_anaeig(int argc, char* argv[])
         printf("The Entropy due to the Schlitter formula is %g J/mol K\n",
                calcSchlitterEntropy(gmx::arrayRefFromArray(eigval1, neig1), temp, FALSE));
         printf("The Entropy due to the Quasiharmonic analysis is %g J/mol K\n",
-               calcQuasiHarmonicEntropy(gmx::arrayRefFromArray(eigval1, neig1), temp, FALSE, 1.0));
+               calcQuasiHarmonicEntropy(invEigenvalue1, temp, FALSE, 1.0));
     }
 
     if (bVec2)

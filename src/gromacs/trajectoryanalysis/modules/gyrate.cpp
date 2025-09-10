@@ -53,8 +53,6 @@
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/analysisdata/modules/average.h"
 #include "gromacs/analysisdata/modules/plot.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/ioptionscontainer.h"
@@ -71,6 +69,8 @@
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 namespace gmx
 {

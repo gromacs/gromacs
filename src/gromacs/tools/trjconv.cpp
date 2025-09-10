@@ -65,8 +65,6 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/do_fit.h"
 #include "gromacs/math/functions.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/pbcmethods.h"
@@ -85,6 +83,8 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 struct gmx_output_env_t;
 
@@ -1620,7 +1620,7 @@ int gmx_trjconv(int argc, char* argv[])
                             char c[255];
                             sprintf(c, "%s  %d", exec_command, file_nr - 1);
                             /*fprintf(stderr,"Executing '%s'\n",c);*/
-                            if (0 != system(c))
+                            if (0 != std::system(c))
                             {
                                 gmx_fatal(FARGS, "Error executing command: %s", c);
                             }
@@ -1632,7 +1632,7 @@ int gmx_trjconv(int argc, char* argv[])
                                     " ->  frame %6d time %8.3f      \r",
                                     frameNumberToPrint,
                                     output_env_conv_time(oenv, frameTimeToPrint));
-                            fflush(stderr);
+                            std::fflush(stderr);
                             bFrameReadHasPrinted = false;
                         }
                     }

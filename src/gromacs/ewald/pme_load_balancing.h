@@ -45,11 +45,11 @@
 #ifndef GMX_EWALD_PME_LOAD_BALANCING_H
 #define GMX_EWALD_PME_LOAD_BALANCING_H
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/vectypes.h"
 
-struct nonbonded_verlet_t;
-struct t_commrec;
+
+struct gmx_domdec_t;
 struct t_forcerec;
 struct t_inputrec;
 struct interaction_const_t;
@@ -58,6 +58,7 @@ class t_state;
 
 namespace gmx
 {
+struct nonbonded_verlet_t;
 class MDLogger;
 template<typename T>
 class ArrayRef;
@@ -69,22 +70,22 @@ struct pme_load_balancing_t;
 /*! \brief Return whether PME load balancing is active */
 bool pme_loadbal_is_active(const pme_load_balancing_t* pme_lb);
 
-/*! \brief Initialize the PP-PME load balacing data and infrastructure
+/*! \brief Initialize the PP-PME load balancing data and infrastructure
  *
- * Initialize the PP-PME load balacing data and infrastructure.
+ * Initialize the PP-PME load balancing data and infrastructure.
  * The actual load balancing might start right away, later or never.
  * The PME grid in pmedata is reused for smaller grids to lower the memory
  * usage.
  */
-void pme_loadbal_init(pme_load_balancing_t**     pme_lb_p,
-                      t_commrec*                 cr,
-                      const gmx::MDLogger&       mdlog,
-                      const t_inputrec&          ir,
-                      const matrix               box,
-                      const interaction_const_t& ic,
-                      const nonbonded_verlet_t&  nbv,
-                      gmx_pme_t*                 pmedata,
-                      gmx_bool                   bUseGPU);
+void pme_loadbal_init(pme_load_balancing_t**         pme_lb_p,
+                      gmx_domdec_t*                  dd,
+                      const gmx::MDLogger&           mdlog,
+                      const t_inputrec&              ir,
+                      const matrix                   box,
+                      const interaction_const_t&     ic,
+                      const gmx::nonbonded_verlet_t& nbv,
+                      gmx_pme_t*                     pmedata,
+                      gmx_bool                       bUseGPU);
 
 /*! \brief Process cycles and PME load balance when necessary
  *
@@ -94,7 +95,6 @@ void pme_loadbal_init(pme_load_balancing_t**     pme_lb_p,
  * Returns if the load balancing is printing to fp_err.
  */
 void pme_loadbal_do(pme_load_balancing_t*          pme_lb,
-                    struct t_commrec*              cr,
                     FILE*                          fp_err,
                     FILE*                          fp_log,
                     const gmx::MDLogger&           mdlog,

@@ -43,13 +43,13 @@
 
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/selection/nbsearch.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vec.h"
 
 using namespace gmx;
 
@@ -57,7 +57,7 @@ using namespace gmx;
 #define UNSP_ICO_ARC 10
 
 #define FOURPI (4. * M_PI)
-#define TORAD(A) ((A)*0.017453293)
+#define TORAD(A) ((A) * 0.017453293)
 #define DP_TOL 0.001
 
 static real safe_asin(real f)
@@ -317,10 +317,10 @@ static std::vector<real> ico_dot_arc(int densit)
                             xus[2 + 3 * tn] = z / d;
                             tn++;
                         } /* cycle tl2 */
-                    }     /* cycle tl */
-                }         /* cycle k */
-            }             /* cycle j */
-        }                 /* cycle i */
+                    } /* cycle tl */
+                } /* cycle k */
+            } /* cycle j */
+        } /* cycle i */
         GMX_ASSERT(tn == ndot, "Inconsistent precomputed surface dot count");
     } /* end of if (tess > 1) */
 
@@ -561,10 +561,10 @@ static std::vector<real> ico_dot_dod(int densit)
                             xus[2 + 3 * tn] = z / d;
                             tn++;
                         } /* cycle tl2 */
-                    }     /* cycle tl */
-                }         /* cycle k */
-            }             /* cycle j */
-        }                 /* cycle i */
+                    } /* cycle tl */
+                } /* cycle k */
+            } /* cycle j */
+        } /* cycle i */
         GMX_ASSERT(tn == ndot, "Inconsistent precomputed surface dot count");
     } /* end of if (tess > 1) */
 
@@ -694,8 +694,8 @@ static std::vector<real> make_unsp(int densit, int cubus)
                 }
                 *(ico_wk.data() + ijk) = tl;
             } /* cycle k */
-        }     /* cycle j */
-    }         /* cycle i */
+        } /* cycle j */
+    } /* cycle i */
 
     return xus;
 }

@@ -118,7 +118,7 @@ public:
     void signal(Step step, Time time) override;
 
     //! Do nothing at setup time
-    void setup() override{};
+    void setup() override {};
 
     //! Allow builder to construct
     friend class SignallerBuilder<NeighborSearchSignaller>;
@@ -477,7 +477,7 @@ template<>
 template<typename... Args>
 std::unique_ptr<EnergySignaller> SignallerBuilder<EnergySignaller>::build(Args&&... args)
 {
-    state_                        = ModularSimulatorBuilderState::NotAcceptingClientRegistrations;
+    state_ = ModularSimulatorBuilderState::NotAcceptingClientRegistrations;
     auto calculateEnergyCallbacks = buildCallbackVector(EnergySignallerEvent::EnergyCalculationStep);
     auto calculateVirialCallbacks = buildCallbackVector(EnergySignallerEvent::VirialCalculationStep);
     auto calculateFreeEnergyCallbacks =
@@ -498,7 +498,7 @@ std::vector<SignallerCallback> SignallerBuilder<Signaller>::buildCallbackVector(
     // Allow clients to register their callbacks
     for (auto& client : signallerClients_)
     {
-        if (auto callback = getSignallerCallback(client, std::forward<Args>(args)...)) // don't register nullptr
+        if (auto callback = getSignallerCallback(client, args...)) // don't register nullptr
         {
             callbacks.emplace_back(std::move(*callback));
         }

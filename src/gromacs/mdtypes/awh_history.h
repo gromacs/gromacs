@@ -80,14 +80,14 @@ struct AwhPointStateHistory
 //! The global AWH bias history state, contains most data of the corresponding struct in awh.h.
 struct AwhBiasStateHistory
 {
-    int     umbrellaGridpoint; /**< Index for the current umbrella reference coordinate point (for umbrella potential type) */
-    int     origin_index_updatelist; /**< Point index of the origin of the subgrid that has been touched since last update. */
-    int     end_index_updatelist; /**< Point index of the end of the subgrid that has been touched since last update. */
-    bool    in_initial;           /**< True if in the initial stage. */
-    bool    equilibrateHistogram; /**< True if histogram needs equilibration. */
-    double  histSize;             /**< Size of reference weight histogram. */
-    double  logScaledSampleWeight; /**< The log of the current sample weight, scaled because of the histogram rescaling. */
-    double  maxLogScaledSampleWeight; /**< Maximum sample weight obtained for previous (smaller) histogram sizes. */
+    int umbrellaGridpoint; /**< Index for the current umbrella reference coordinate point (for umbrella potential type) */
+    int origin_index_updatelist; /**< Point index of the origin of the subgrid that has been touched since last update. */
+    int end_index_updatelist; /**< Point index of the end of the subgrid that has been touched since last update. */
+    bool   in_initial;           /**< True if in the initial stage. */
+    bool   equilibrateHistogram; /**< True if histogram needs equilibration. */
+    double histSize;             /**< Size of reference weight histogram. */
+    double logScaledSampleWeight; /**< The log of the current sample weight, scaled because of the histogram rescaling. */
+    double maxLogScaledSampleWeight; /**< Maximum sample weight obtained for previous (smaller) histogram sizes. */
     int64_t numUpdates; /**< The number of updates. */
 
     /*! \brief Constructor. */

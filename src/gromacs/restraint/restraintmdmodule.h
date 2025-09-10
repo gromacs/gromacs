@@ -93,6 +93,9 @@ public:
     static std::unique_ptr<RestraintMDModule> create(std::shared_ptr<gmx::IRestraintPotential> restraint,
                                                      const std::vector<int>& sites);
 
+    //! The name of the module
+    static constexpr std::string_view sc_name = "restraint-potential";
+
     /*!
      * \brief Implement IMDModule interface
      *
@@ -121,6 +124,8 @@ public:
 
     //! Subscribe to simulation setup notifications
     void subscribeToSimulationSetupNotifications(MDModulesNotifiers* notifiers) override;
+    //! Subscribe to simulation run notifications
+    void subscribeToSimulationRunNotifications(MDModulesNotifiers* notifiers) override;
     //! Subscribe to pre processing notifications
     void subscribeToPreProcessingNotifications(MDModulesNotifiers* notifiers) override;
 

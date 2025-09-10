@@ -31,17 +31,17 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out https://www.gromacs.org.
 
-SET(CTEST_PROJECT_NAME "Gromacs")
-SET(CTEST_NIGHTLY_START_TIME "00:00:00 EST")
-SET(CTEST_COVERAGE_COMMAND "gcov")
+set(CTEST_PROJECT_NAME "Gromacs")
+set(CTEST_NIGHTLY_START_TIME "00:00:00 EST")
+set(CTEST_COVERAGE_COMMAND "gcov")
 
-IF(NOT DEFINED CTEST_DROP_METHOD)
-  SET(CTEST_DROP_METHOD "http")
-ENDIF()
+if(NOT DEFINED CTEST_DROP_METHOD)
+  set(CTEST_DROP_METHOD "http")
+endif()
 
-IF(CTEST_DROP_METHOD STREQUAL "http")
-  SET(CTEST_DROP_SITE "cdash.gromacs.org")
-  SET(CTEST_DROP_LOCATION "/submit.php?project=Gromacs")
-  SET(CTEST_DROP_SITE_CDASH TRUE)
-ENDIF()
+if(CTEST_DROP_METHOD STREQUAL "http")
+  set(CTEST_DROP_SITE "cdash.gromacs.org")
+  set(CTEST_DROP_LOCATION "/submit.php?project=Gromacs")
+  set(CTEST_DROP_SITE_CDASH TRUE)
+endif()
 

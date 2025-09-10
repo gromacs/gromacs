@@ -69,8 +69,6 @@
 #include "gromacs/math/arrayrefwithpadding.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/dispersioncorrection.h"
 #include "gromacs/mdlib/energyoutput.h"
@@ -124,6 +122,8 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "legacysimulator.h"
 
@@ -133,11 +133,11 @@ namespace gmx
 {
 
 //! Global max algorithm
-static void global_max(t_commrec* cr, int* n)
+static void global_max(const MpiComm& mpiComm, int* n)
 {
-    std::vector<int> sum(cr->nnodes);
-    sum[cr->nodeid] = *n;
-    gmx_sumi(cr->nnodes, sum.data(), cr);
+    std::vector<int> sum(mpiComm.size());
+    sum[mpiComm.rank()] = *n;
+    mpiComm.sumReduce(sum);
     *n = *std::max_element(sum.begin(), sum.end());
 }
 
@@ -152,17 +152,17 @@ static real reactionFieldExclusionCorrection(gmx::ArrayRef<const gmx::RVec> x,
     for (int i = beginAtom; i < mdatoms.homenr; i++)
     {
         const real qi = mdatoms.chargeA[i];
-        energy -= 0.5 * qi * qi * ic.reactionFieldShift;
+        energy -= 0.5 * qi * qi * ic.coulomb.reactionFieldShift;
 
         for (int j = i + 1; j < mdatoms.homenr; j++)
         {
             const real qj  = mdatoms.chargeA[j];
             const real rsq = distance2(x[i], x[j]);
-            energy += qi * qj * (ic.reactionFieldCoefficient * rsq - ic.reactionFieldShift);
+            energy += qi * qj * (ic.coulomb.reactionFieldCoefficient * rsq - ic.coulomb.reactionFieldShift);
         }
     }
 
-    return ic.epsfac * energy;
+    return ic.coulomb.epsfac * energy;
 }
 
 //! The limit in kT for the histogram of insertion energies
@@ -254,6 +254,8 @@ private:
     //! Notifiers for MDModules
     const MDModulesNotifiers& mdModulesNotifiers_;
 
+    //! A single rank MPI communicator
+    gmx::MpiComm mpiCommSingleRank_ = gmx::MpiComm(gmx::MpiComm::SingleRank{});
     //! A non-parallel commrec for the energy calculations
     const t_commrec cr_;
 
@@ -326,9 +328,12 @@ namespace
 //! Returns whether there are electrostatic contributions to the insertion energy
 bool haveElectrostatics(const t_mdatoms& mdatoms, const Range<int>& testAtomsRange)
 {
-    return std::any_of(testAtomsRange.begin(), testAtomsRange.end(), [mdatoms](int i) {
-        return mdatoms.chargeA[i] != 0 || (!mdatoms.chargeB.empty() && mdatoms.chargeB[i] != 0);
-    });
+    return std::any_of(testAtomsRange.begin(),
+                       testAtomsRange.end(),
+                       [mdatoms](int i) {
+                           return mdatoms.chargeA[i] != 0
+                                  || (!mdatoms.chargeB.empty() && mdatoms.chargeB[i] != 0);
+                       });
 }
 
 } // namespace
@@ -352,6 +357,7 @@ TestParticleInsertion::TestParticleInsertion(const t_inputrec&         inputRec,
     top_(top),
     mdatoms_(mdatoms),
     mdModulesNotifiers_(mdModulesNotifiers),
+    cr_(mpiCommSingleRank_, mpiCommSingleRank_, nullptr),
     fr_(*forceRec),
     enerd_(*enerd),
     rng_(inputRec.ld_seed, RandomDomain::TestParticleInsertion),
@@ -408,7 +414,7 @@ TestParticleInsertion::TestParticleInsertion(const t_inputrec&         inputRec,
     /* The GMX_TPI_DUMP environment variable can be set to dump all configurations
      * to pdb with an insertion energy <= the value of GMX_TPI_DUMP.
      */
-    const char* dumpPdbString = getenv("GMX_TPI_DUMP");
+    const char* dumpPdbString = std::getenv("GMX_TPI_DUMP");
     dumpPdbs_                 = (dumpPdbString != nullptr);
     if (dumpPdbs_)
     {
@@ -488,7 +494,7 @@ std::pair<double, double> TestParticleInsertion::performSingleInsertion(const do
                                                                         t_state*    stateGlobal,
                                                                         MdrunScheduleWorkload* runScheduleWork,
                                                                         gmx_wallcycle* wallCycleCounters,
-                                                                        t_nrnb*        nrnb)
+                                                                        t_nrnb* nrnb)
 {
     /* Add random displacement uniformly distributed in a sphere
      * of radius rtpi. We don't need to do this is we generate
@@ -571,7 +577,6 @@ std::pair<double, double> TestParticleInsertion::performSingleInsertion(const do
     rvec mu_tot;
     do_force(nullptr,
              &cr_,
-             nullptr,
              inputRec_,
              mdModulesNotifiers_,
              nullptr,
@@ -602,22 +607,7 @@ std::pair<double, double> TestParticleInsertion::performSingleInsertion(const do
     std::feclearexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
     std::feupdateenv(&floatingPointEnvironment);
 
-    if (fr_.dispersionCorrection)
-    {
-        /* Calculate long range corrections to pressure and energy */
-        const DispersionCorrection::Correction correction =
-                fr_.dispersionCorrection->calculate(stateGlobal->box, 0);
-        /* figure out how to rearrange the next 4 lines MRS 8/4/2009 */
-        enerd_.term[F_DISPCORR] = correction.energy;
-        enerd_.term[F_EPOT] += correction.energy;
-        enerd_.term[F_PRES] += correction.pressure;
-        enerd_.term[F_DVDL] += correction.dvdl;
-    }
-    else
-    {
-        enerd_.term[F_DISPCORR] = 0;
-    }
-    if (usingRF(fr_.ic->eeltype))
+    if (usingRF(fr_.ic->coulomb.type))
     {
         enerd_.term[F_EPOT] += rfExclusionEnergy_;
     }
@@ -697,7 +687,7 @@ std::pair<double, double> TestParticleInsertion::performSingleInsertion(const do
             {
                 sum_UgembU_[e++] += rfExclusionEnergy_ * embU;
             }
-            if (usingFullElectrostatics(fr_.ic->eeltype))
+            if (usingFullElectrostatics(fr_.ic->coulomb.type))
             {
                 sum_UgembU_[e++] += enerd_.term[F_COUL_RECIP] * embU;
             }
@@ -826,7 +816,7 @@ double TestParticleInsertion::insertIntoFrame(const double           t,
 
             /* Put the inserted molecule on it's own search grid */
             fr_.nbv->putAtomsOnGrid(
-                    box, 1, xInit, xInit, nullptr, testAtomsRange_, -1, fr_.atomInfo, x, 0, nullptr);
+                    box, 1, xInit, xInit, nullptr, testAtomsRange_, testAtomsRange_.size(), -1, fr_.atomInfo, x, nullptr);
 
             /* TODO: Avoid updating all atoms at every bNS step */
             fr_.nbv->setAtomProperties(mdatoms_.typeA, mdatoms_.chargeA, fr_.atomInfo);
@@ -902,7 +892,7 @@ void LegacySimulator::do_tpi()
     std::vector<real> massesDefiningCavity;
     if (insertIntoCavity)
     {
-        char* ptr = getenv("GMX_TPIC_MASSES");
+        char* ptr = std::getenv("GMX_TPIC_MASSES");
         if (ptr == nullptr)
         {
             // With a single atom the masses doesn't matter as long as it is !=0
@@ -987,7 +977,7 @@ void LegacySimulator::do_tpi()
 
     auto x = makeArrayRef(stateGlobal_->x);
 
-    if (usingPme(fr_->ic->eeltype))
+    if (usingPme(fr_->ic->coulomb.type))
     {
         gmx_pme_reinit_atoms(fr_->pmedata, *testAtomsRange.begin(), {}, {});
     }
@@ -997,7 +987,7 @@ void LegacySimulator::do_tpi()
      * for the inserted molecule.
      */
     real rfExclusionEnergy = 0;
-    if (usingRF(fr_->ic->eeltype))
+    if (usingRF(fr_->ic->coulomb.type))
     {
         rfExclusionEnergy =
                 reactionFieldExclusionCorrection(x, *mdatoms, *fr_->ic, *testAtomsRange.begin());
@@ -1107,7 +1097,7 @@ void LegacySimulator::do_tpi()
     const InteractionDefinitions emptyInteractionDefinitions(emptyFFParams);
     for (auto& listedForces : fr_->listedForces)
     {
-        listedForces.setup(emptyInteractionDefinitions, 0, false);
+        listedForces.setup(emptyInteractionDefinitions, 0, false, mdatoms->cVCM);
     }
 
     double V_all     = 0;
@@ -1147,13 +1137,13 @@ void LegacySimulator::do_tpi()
                               beta,
                               rfExclusionEnergy,
                               det(rerun_fr.box),
-                              cr_->nnodes,
-                              cr_->nodeid);
+                              cr_->commMyGroup.size(),
+                              cr_->commMyGroup.rank());
 
     tpi.checkEnergyGroups(fr_->atomInfoForEachMoleculeBlock, fpLog_);
 
     FILE* fp_tpi = nullptr;
-    if (MAIN(cr_))
+    if (cr_->commMySim.isMainRank())
     {
         fp_tpi = tpi.openOutputFile(opt2fn("-tpi", nFile_, fnm_), oenv_);
     }
@@ -1187,8 +1177,17 @@ void LegacySimulator::do_tpi()
         /* Put all atoms except for the inserted ones on the grid */
         rvec vzero       = { 0, 0, 0 };
         rvec boxDiagonal = { box[XX][XX], box[YY][YY], box[ZZ][ZZ] };
-        fr_->nbv->putAtomsOnGrid(
-                box, 0, vzero, boxDiagonal, nullptr, { 0, *testAtomsRange.begin() }, -1, fr_->atomInfo, x, 0, nullptr);
+        fr_->nbv->putAtomsOnGrid(box,
+                                 0,
+                                 vzero,
+                                 boxDiagonal,
+                                 nullptr,
+                                 { 0, *testAtomsRange.begin() },
+                                 *testAtomsRange.begin(),
+                                 -1,
+                                 fr_->atomInfo,
+                                 x,
+                                 nullptr);
 
         gmx_edsam* const ed = nullptr;
 
@@ -1205,7 +1204,7 @@ void LegacySimulator::do_tpi()
         runScheduleWork_->domainWork = setupDomainLifetimeWorkload(
                 *inputRec_, *fr_, pullWork_, ed, *mdatoms, runScheduleWork_->simulationWork);
 
-        const int64_t step = cr_->nodeid * tpi.stepBlockSize();
+        const int64_t step = cr_->commMyGroup.rank() * tpi.stepBlockSize();
 
         double sum_embU = tpi.insertIntoFrame(
                 rerun_fr.time,
@@ -1219,11 +1218,11 @@ void LegacySimulator::do_tpi()
 
         auto sum_UgembU = tpi.sum_UgembU();
 
-        if (PAR(cr_))
+        if (cr_->commMySim.isParallel())
         {
             /* When running in parallel sum the energies over the processes */
-            gmx_sumd(1, &sum_embU, cr_);
-            gmx_sumd(gmx::ssize(sum_UgembU), sum_UgembU.data(), cr_);
+            cr_->commMyGroup.sumReduce(1, &sum_embU);
+            cr_->commMyGroup.sumReduce(sum_UgembU);
         }
 
         frame++;
@@ -1252,7 +1251,7 @@ void LegacySimulator::do_tpi()
                 fprintf(fp_tpi, " %12.5e", e / nsteps);
             }
             fprintf(fp_tpi, "\n");
-            fflush(fp_tpi);
+            std::fflush(fp_tpi);
         }
 
         isNotLastFrame = read_next_frame(oenv_, status, &rerun_fr);
@@ -1284,15 +1283,15 @@ void LegacySimulator::do_tpi()
     auto& bins = tpi.bins();
 
     /* Write the Boltzmann factor histogram */
-    if (PAR(cr_))
+    if (cr_->commMySim.isParallel())
     {
         /* When running in parallel sum the bins over the processes */
         int i = gmx::ssize(bins);
-        global_max(cr_, &i);
+        global_max(cr_->commMyGroup, &i);
         bins.resize(i);
-        gmx_sumd(gmx::ssize(bins), bins.data(), cr_);
+        cr_->commMyGroup.sumReduce(bins);
     }
-    if (MAIN(cr_))
+    if (cr_->commMySim.isMainRank())
     {
         fp_tpi   = xvgropen(opt2fn("-tpid", nFile_, fnm_),
                           "TPI energy distribution",

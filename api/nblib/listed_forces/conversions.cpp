@@ -481,9 +481,8 @@ convertToGmxInteractions(const ListedInteractionData& interactions)
     gmx_ffparams_t&         ffparams = *ffparamsHolder;
     InteractionDefinitions& idef     = *idefHolder;
 
-    auto copyParamsOneType = [&ffparams](const auto& interactionElement) {
-        detail::transferParameters(interactionElement, ffparams);
-    };
+    auto copyParamsOneType = [&ffparams](const auto& interactionElement)
+    { detail::transferParameters(interactionElement, ffparams); };
     for_each_tuple(copyParamsOneType, interactions);
 
     // since gmx_ffparams_t.iparams is a flattened vector over all interaction types,
@@ -491,7 +490,8 @@ convertToGmxInteractions(const ListedInteractionData& interactions)
     // in the flattened iparams vectors
     int                                                       acc = 0;
     std::array<int, std::tuple_size_v<ListedInteractionData>> indexOffsets{ 0 };
-    auto extractNIndices = [&indexOffsets, &acc](const auto& interactionElement) {
+    auto extractNIndices = [&indexOffsets, &acc](const auto& interactionElement)
+    {
         constexpr int elementIndex =
                 FindIndex<std::decay_t<decltype(interactionElement)>, ListedInteractionData>::value;
         indexOffsets[elementIndex] = acc;
@@ -499,7 +499,8 @@ convertToGmxInteractions(const ListedInteractionData& interactions)
     };
     for_each_tuple(extractNIndices, interactions);
 
-    auto copyIndicesOneType = [&idef, &indexOffsets](const auto& interactionElement) {
+    auto copyIndicesOneType = [&idef, &indexOffsets](const auto& interactionElement)
+    {
         constexpr int elementIndex =
                 FindIndex<std::decay_t<decltype(interactionElement)>, ListedInteractionData>::value;
         detail::transferIndices(interactionElement, idef, indexOffsets[elementIndex]);

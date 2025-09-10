@@ -35,10 +35,12 @@
 add_library(fileio INTERFACE)
 file(GLOB FILEIO_SOURCES *.cpp)
 
+add_subdirectory(h5md)
+
 if(GMX_USE_PLUGINS)
     add_library(vmddlopen OBJECT ${CMAKE_SOURCE_DIR}/src/external/vmd_molfile/vmddlopen.cpp)
     gmx_target_compile_options(vmddlopen)
-    if (WIN32)
+    if (MSVC)
         gmx_target_warning_suppression(vmddlopen /wd4996 HAS_NO_MSVC_UNSAFE_FUNCTION)
     endif()
     list(APPEND libgromacs_object_library_dependencies vmddlopen)
@@ -65,6 +67,7 @@ gmx_target_interface_warning_suppression(fileio "-Wno-cast-function-type-strict"
 #                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 #target_link_libraries(fileio PUBLIC
 target_link_libraries(fileio INTERFACE
+                      h5md
                       legacy_api
                       math
                       )
@@ -77,8 +80,10 @@ target_link_libraries(fileio INTERFACE
 # fileio interfaces convey transitive dependence on these modules.
 #target_link_libraries(fileio PUBLIC
 target_link_libraries(fileio INTERFACE
+                      serialization
                       utility
                       )
+
 # Source files have the following private module dependencies.
 #target_link_libraries(fileio PRIVATE tng_io)
 # TODO: Explicitly link specific modules.

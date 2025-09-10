@@ -51,7 +51,7 @@
 #include "gromacs/gpu_utils/devicebuffer.cuh"
 #include "gromacs/gpu_utils/gputraits.h"
 #include "gromacs/gpu_utils/typecasts_cuda_hip.h"
-#include "gromacs/gpu_utils/vectype_ops.cuh"
+#include "gromacs/gpu_utils/vectype_ops_cuda.h"
 #include "gromacs/mdlib/lincs_gpu.h"
 #include "gromacs/pbcutil/pbc_aiuc_cuda.cuh"
 
@@ -260,7 +260,7 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__
         float3 dx = pbcDxAiuc(pbcAiuc, xi, xj);
 
         float len2  = targetLength * targetLength;
-        float dlen2 = 2.0F * len2 - norm2(dx);
+        float dlen2 = 2.0F * len2 - gmxDeviceNorm2(dx);
 
         // TODO A little bit more effective but slightly less readable version of the below would be:
         //      float proj = sqrtReducedMass*(targetLength - (dlen2 > 0.0f ? 1.0f : 0.0f)*dlen2*rsqrt(dlen2));

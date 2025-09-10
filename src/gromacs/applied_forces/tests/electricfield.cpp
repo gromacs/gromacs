@@ -50,9 +50,7 @@
 
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/math/paddedvector.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/forcerec.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/iforceprovider.h"
@@ -67,10 +65,12 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/keyvaluetreetransform.h"
+#include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringcompare.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "testutils/testasserts.h"
 
@@ -91,7 +91,7 @@ public:
     static void test(int dim, real E0, real omega, real t0, real sigma, real expectedValue)
     {
         // Make the electric field module
-        auto module = createElectricFieldModule();
+        auto module = ElectricFieldModuleInfo::create();
 
         // Fill the module as if from .mdp inputs
         {
@@ -112,10 +112,11 @@ public:
         }
 
         // Prepare a ForceProviderInput
-        std::vector<real> chargeA{ 1 };
-        t_commrec         cr;
-        matrix            boxDummy = { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } };
-        ForceProviderInput forceProviderInput({}, gmx::ssize(chargeA), chargeA, {}, 0.0, 0, boxDummy, cr);
+        std::vector<real>  chargeA{ 1 };
+        matrix             boxDummy = { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } };
+        MpiComm            mpiComm(MpiComm::SingleRank{});
+        ForceProviderInput forceProviderInput(
+                {}, gmx::ssize(chargeA), chargeA, {}, 0.0, 0, boxDummy, mpiComm, nullptr);
 
         // Prepare a ForceProviderOutput
         PaddedVector<RVec>  f = { { 0, 0, 0 } };

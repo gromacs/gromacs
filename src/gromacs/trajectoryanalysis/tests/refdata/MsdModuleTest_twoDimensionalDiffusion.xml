@@ -4,13 +4,16 @@
   <String Name="CommandLine">-trestart 200 -lateral z -sel 0</String>
   <OutputFiles Name="Files">
     <File Name="-o">
-      <XvgLegend Name="DiffusionCoefficient"></XvgLegend>
+      <XvgLegend Name="DiffusionCoefficient">
+        <String> particles</String>
+        <Real>6.0000</Real>
+        <Real>0.00</Real>
+      </XvgLegend>
       <XvgLegend Name="Legend">
         <String>title "Mean Squared Displacement"</String>
         <String>xaxis  label "tau (ps)"</String>
         <String>yaxis  label "MSD (nm\\S2\\N)"</String>
         <String>TYPE xy</String>
-        <String>s0 legend "D[ particles] = 6.0000 (+/- 0.0000) (1e-5 cm^2/s)"</String>
       </XvgLegend>
       <XvgData Name="Data">
         <Sequence Name="Row0">

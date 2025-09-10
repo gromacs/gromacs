@@ -47,47 +47,56 @@
 #include <unordered_set>
 
 // Based on PRODUCT_CONFIG enum from
-// https://github.com/intel/compute-runtime/blob/330fb4010718420cb7d2e2b1f8013bd49817c7b9/third_party/aot_config_headers/platforms.h
+// https://github.com/intel/compute-runtime/blob/f03550487fdb40dc4d0a027f7659570c254c9bc7/third_party/aot_config_headers/platforms.h
 enum class IntelProductConfig : unsigned int
 {
-    BDW        = 0x02000000, //! Broadwell (Gen8), 8.0.0
-    SKL        = 0x02400009, //! Skylake (Gen9), 9.0.9
-    KBL        = 0x02404009, //! Kaby Lake (Gen9p5), 9.1.9
-    CFL        = 0x02408009, //! Coffee Lake, 9.2.9
-    APL        = 0x0240c000, //! Apollo Lake (Gen9LP) 9.3.0
-    GLK        = 0x02410000, //! Gemini Lake (Gen9LP) 9.4.0
-    WHL        = 0x02414000,
-    AML        = 0x02418000,
-    CML        = 0x0241c000,
-    ICL        = 0x02c00000, //! Ice Lake (Gen11), 11.0.0
-    LKF        = 0x02c04000,
-    EHL        = 0x02c08000,
-    TGL        = 0x03000000, //! Tiger Lake (Gen12), 12.0.0
-    RKL        = 0x03004000,
-    RPL_S      = 0x03008000,
-    ADL_S      = 0x03008000, //! Alder Lake S (Gen12), 12.2.0
-    ADL_P      = 0x0300c000,
-    ADL_N      = 0x03010000,
-    DG1        = 0x03028000, //! DG1 (XeLP), 12.10.0
-    XEHP_SDV   = 0x030c8004, //! XeHP SDV, 12.50.4
-    DG2_G10_A0 = 0x030dc000, //! DG2 G10 (Arc, Xe-HPG), 12.55.0
-    DG2_G10_A1 = 0x030dc001,
-    DG2_G10_B0 = 0x030dc004,
-    DG2_G10_C0 = 0x030dc008,
-    DG2_G11_A0 = 0x030e0000, //! DG2 G11 (Arc, Xe-HPG), 12.56.0
-    DG2_G11_B0 = 0x030e0004,
-    DG2_G11_B1 = 0x030e0005,
-    DG2_G12_A0 = 0x030e4000, //! DG2 G12(Arc, Xe-HPG), 12.57.0
-    PVC_XL_A0  = 0x030f0000, //! Ponte Vecchio (Xe-HPC), 12.60.0
-    PVC_XL_A0P = 0x030f0001,
-    PVC_XT_A0  = 0x030f0003,
-    PVC_XT_B0  = 0x030f0005,
-    PVC_XT_B1  = 0x030f0006,
-    PVC_XT_C0  = 0x030f0007,
-    MTL_M_A0   = 0x03118000, //! Meteor Lake (Xe-LPG), 12.70.0
-    MTL_M_B0   = 0x03118004,
-    MTL_P_A0   = 0x0311c000,
-    MTL_P_B0   = 0x0311c004,
+    BDW          = 0x02000000, //! Broadwell (Gen8), 8.0.0
+    SKL          = 0x02400009, //! Skylake (Gen9), 9.0.9
+    KBL          = 0x02404009, //! Kaby Lake (Gen9p5), 9.1.9
+    CFL          = 0x02408009, //! Coffee Lake, 9.2.9
+    APL          = 0x0240c000, //! Apollo Lake (Gen9LP) 9.3.0
+    GLK          = 0x02410000, //! Gemini Lake (Gen9LP) 9.4.0
+    WHL          = 0x02414000,
+    AML          = 0x02418000,
+    CML          = 0x0241c000,
+    ICL          = 0x02c00000, //! Ice Lake (Gen11), 11.0.0
+    LKF          = 0x02c04000,
+    EHL          = 0x02c08000,
+    TGL          = 0x03000000, //! Tiger Lake (Gen12), 12.0.0
+    RKL          = 0x03004000,
+    RPL_S        = 0x03008000,
+    ADL_S        = 0x03008000, //! Alder Lake S (Gen12), 12.2.0
+    ADL_P        = 0x0300c000,
+    ADL_N        = 0x03010000,
+    DG1          = 0x03028000, //! DG1 (XeLP), 12.10.0
+    XEHP_SDV     = 0x030c8004, //! XeHP SDV, 12.50.4
+    DG2_G10_A0   = 0x030dc000, //! DG2 G10 (Arc, Xe-HPG), 12.55.0
+    DG2_G10_A1   = 0x030dc001,
+    DG2_G10_B0   = 0x030dc004,
+    DG2_G10_C0   = 0x030dc008,
+    DG2_G11_A0   = 0x030e0000, //! DG2 G11 (Arc, Xe-HPG), 12.56.0
+    DG2_G11_B0   = 0x030e0004,
+    DG2_G11_B1   = 0x030e0005,
+    DG2_G12_A0   = 0x030e4000, //! DG2 G12 (Arc, Xe-HPG), 12.57.0
+    PVC_XL_A0    = 0x030f0000, //! Ponte Vecchio (Xe-HPC), 12.60.0
+    PVC_XL_A0P   = 0x030f0001,
+    PVC_XT_A0    = 0x030f0003,
+    PVC_XT_B0    = 0x030f0005,
+    PVC_XT_B1    = 0x030f0006,
+    PVC_XT_C0    = 0x030f0007,
+    PVC_XT_C0_VG = 0x030f4007, //! Ponte Vecchio VG (Xe-HPC), 12.61.7
+    MTL_U_A0     = 0x03118000, //! Meteor Lake (Xe-LPG), 12.70.0
+    MTL_U_B0     = 0x03118004,
+    MTL_H_A0     = 0x0311c000, //! Meteor Lake (Xe-LPG), 12.71.0
+    MTL_H_B0     = 0x0311c004,
+    ARL_H_A0     = 0x03128000, //! Arrow Lake (Xe-HPG), 12.74.0
+    ARL_H_B0     = 0x03128004,
+    BMG_G21_A0   = 0x05004000, //! G21 (Battlemage, Xe2-HPG), 20.1.0
+    BMG_G21_A1   = 0x05004001,
+    BMG_G21_B0   = 0x05004004,
+    LNL_A0       = 0x05010000, //! Lunar Lake (Xe2-HPG), 20.4.0
+    LNL_A1       = 0x05010001,
+    LNL_B0       = 0x05010004,
 };
 
 // Map from IntelProductConfig to list of PCIE IDs
@@ -113,7 +122,7 @@ std::ostream& operator<<(std::ostream& os, const std::vector<short unsigned int>
 #define DEVICE_CONFIG(type, a, list, ...) \
   std::cout << "{ IntelProductConfig::" << #type << ", { " << NEO::list << "} }," << std::endl;
 EOF
-for i in $(find ./shared/source/ -name 'device_ids_configs_*.h'); do
+for i in $(find ./shared/source/ -name 'device_ids_configs_*.*'); do
    grep -v 'include\|pragma' $i >> "${SRC}"
    echo >> "${SRC}"
 done
@@ -127,6 +136,49 @@ rm ${SRC} ${BIN}
  * to generate the list below
  */
 static const std::unordered_map<IntelProductConfig, std::unordered_set<unsigned int>> c_pciExpressIdsForProduct = {
+    { IntelProductConfig::BMG_G21_A0,
+      {
+              0xe202,
+              0xe20b,
+              0xe20c,
+              0xe20d,
+              0xe212,
+      } },
+    { IntelProductConfig::BMG_G21_A1,
+      {
+              0xe202,
+              0xe20b,
+              0xe20c,
+              0xe20d,
+              0xe212,
+      } },
+    { IntelProductConfig::BMG_G21_B0,
+      {
+              0xe202,
+              0xe20b,
+              0xe20c,
+              0xe20d,
+              0xe212,
+      } },
+    { IntelProductConfig::LNL_A0,
+      {
+              0x6420,
+              0x64a0,
+              0x64b0,
+      } },
+    { IntelProductConfig::LNL_A1,
+      {
+              0x6420,
+              0x64a0,
+              0x64b0,
+      } },
+    { IntelProductConfig::LNL_B0,
+      {
+              0x6420,
+              0x64a0,
+              0x64b0,
+      } },
+
     { IntelProductConfig::PVC_XL_A0,
       {
               0x0bd0,
@@ -145,6 +197,7 @@ static const std::unordered_map<IntelProductConfig, std::unordered_set<unsigned 
               0x0bda,
               0x0bdb,
               0x0b69,
+              0x0b6e,
       } },
     { IntelProductConfig::PVC_XT_B0,
       {
@@ -156,6 +209,7 @@ static const std::unordered_map<IntelProductConfig, std::unordered_set<unsigned 
               0x0bda,
               0x0bdb,
               0x0b69,
+              0x0b6e,
       } },
     { IntelProductConfig::PVC_XT_B1,
       {
@@ -167,6 +221,7 @@ static const std::unordered_map<IntelProductConfig, std::unordered_set<unsigned 
               0x0bda,
               0x0bdb,
               0x0b69,
+              0x0b6e,
       } },
     { IntelProductConfig::PVC_XT_C0,
       {
@@ -178,31 +233,38 @@ static const std::unordered_map<IntelProductConfig, std::unordered_set<unsigned 
               0x0bda,
               0x0bdb,
               0x0b69,
+              0x0b6e,
       } },
-    { IntelProductConfig::MTL_M_A0,
+    { IntelProductConfig::PVC_XT_C0_VG,
+      {
+              0x0bd4,
+      } },
+
+    { IntelProductConfig::MTL_U_A0,
       {
               0x7d40,
               0x7d45,
-              0x7d60,
               0x7d67,
+              0x7d41,
       } },
-    { IntelProductConfig::MTL_M_B0,
+    { IntelProductConfig::MTL_U_B0,
       {
               0x7d40,
               0x7d45,
-              0x7d60,
               0x7d67,
+              0x7d41,
       } },
-    { IntelProductConfig::MTL_P_A0,
+    { IntelProductConfig::MTL_H_A0,
       {
               0x7d55,
               0x7dd5,
       } },
-    { IntelProductConfig::MTL_P_B0,
+    { IntelProductConfig::MTL_H_B0,
       {
               0x7d55,
               0x7dd5,
       } },
+
     { IntelProductConfig::DG2_G10_A0,
       {
               0x4f80,
@@ -217,6 +279,9 @@ static const std::unordered_map<IntelProductConfig, std::unordered_set<unsigned 
               0x56a1,
               0x56a2,
               0x56c0,
+              0x56c2,
+              0x56be,
+              0x56bf,
       } },
     { IntelProductConfig::DG2_G10_A1,
       {
@@ -232,6 +297,9 @@ static const std::unordered_map<IntelProductConfig, std::unordered_set<unsigned 
               0x56a1,
               0x56a2,
               0x56c0,
+              0x56c2,
+              0x56be,
+              0x56bf,
       } },
     { IntelProductConfig::DG2_G10_B0,
       {
@@ -247,6 +315,9 @@ static const std::unordered_map<IntelProductConfig, std::unordered_set<unsigned 
               0x56a1,
               0x56a2,
               0x56c0,
+              0x56c2,
+              0x56be,
+              0x56bf,
       } },
     { IntelProductConfig::DG2_G10_C0,
       {
@@ -262,6 +333,9 @@ static const std::unordered_map<IntelProductConfig, std::unordered_set<unsigned 
               0x56a1,
               0x56a2,
               0x56c0,
+              0x56c2,
+              0x56be,
+              0x56bf,
       } },
     { IntelProductConfig::DG2_G11_A0,
       {
@@ -274,6 +348,10 @@ static const std::unordered_map<IntelProductConfig, std::unordered_set<unsigned 
               0x56a6,
               0x56b0,
               0x56b1,
+              0x56ba,
+              0x56bb,
+              0x56bc,
+              0x56bd,
               0x56c1,
       } },
     { IntelProductConfig::DG2_G11_B0,
@@ -287,6 +365,10 @@ static const std::unordered_map<IntelProductConfig, std::unordered_set<unsigned 
               0x56a6,
               0x56b0,
               0x56b1,
+              0x56ba,
+              0x56bb,
+              0x56bc,
+              0x56bd,
               0x56c1,
       } },
     { IntelProductConfig::DG2_G11_B1,
@@ -300,6 +382,10 @@ static const std::unordered_map<IntelProductConfig, std::unordered_set<unsigned 
               0x56a6,
               0x56b0,
               0x56b1,
+              0x56ba,
+              0x56bb,
+              0x56bc,
+              0x56bd,
               0x56c1,
       } },
     { IntelProductConfig::DG2_G12_A0,
@@ -313,6 +399,18 @@ static const std::unordered_map<IntelProductConfig, std::unordered_set<unsigned 
               0x4f85,
               0x4f86,
       } },
+
+    { IntelProductConfig::ARL_H_A0,
+      {
+              0x7d51,
+              0x7dd1,
+      } },
+    { IntelProductConfig::ARL_H_B0,
+      {
+              0x7d51,
+              0x7dd1,
+      } },
+
     { IntelProductConfig::XEHP_SDV,
       {
               0x0201,
@@ -334,7 +432,6 @@ static const std::unordered_map<IntelProductConfig, std::unordered_set<unsigned 
       } },
     { IntelProductConfig::TGL,
       {
-              0xff20,
               0x9a49,
               0x9a40,
               0x9a59,
@@ -349,6 +446,7 @@ static const std::unordered_map<IntelProductConfig, std::unordered_set<unsigned 
               0x4906,
               0x4907,
               0x4908,
+              0x4909,
       } },
     { IntelProductConfig::RKL,
       {
@@ -359,12 +457,14 @@ static const std::unordered_map<IntelProductConfig, std::unordered_set<unsigned 
               0x4c90,
               0x4c9a,
       } },
+
     { IntelProductConfig::ADL_S,
       {
               0x4680,
               0x4682,
               0x4688,
               0x468a,
+              0x468b,
               0x4690,
               0x4692,
               0x4693,
@@ -374,20 +474,25 @@ static const std::unordered_map<IntelProductConfig, std::unordered_set<unsigned 
               0xa783,
               0xa788,
               0xa789,
+              0xa78a,
               0xa78b,
       } },
     { IntelProductConfig::ADL_P,
       {
-              0x46a0, 0x46b0, 0x46a1, 0x46a2, 0x46a3, 0x46a6, 0x46a8, 0x46aa,
-              0x462a, 0x4626, 0x4628, 0x46b1, 0x46b2, 0x46b3, 0x46c0, 0x46c1,
-              0x46c2, 0x46c3, 0xa7a0, 0xa720, 0xa7a8, 0xa7a1, 0xa721, 0xa7a9,
+              0x46a0, 0x46b0, 0x46a1, 0x46a3, 0x46a6, 0x46a8, 0x46aa, 0x462a, 0x4626,
+              0x4628, 0x46b1, 0x46b3, 0x46c0, 0x46c1, 0x46c3, 0xa7a0, 0xa720, 0xa7a8,
+              0xa7a1, 0xa721, 0xa7a9, 0xa7aa, 0xa7ab, 0xa7ac, 0xa7ad,
       } },
+
     { IntelProductConfig::ADL_N,
       {
               0x46d0,
               0x46d1,
               0x46d2,
+              0x46d3,
+              0x46d4,
       } },
+
     { IntelProductConfig::ICL,
       {
               0xff05,

@@ -32,15 +32,81 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 
-#ifndef GMX_GMXLIB_DF_HISTORY_H
-#define GMX_GMXLIB_DF_HISTORY_H
+#ifndef GMX_MDTYPES_DF_HISTORY_H
+#define GMX_MDTYPES_DF_HISTORY_H
 
-struct df_history_t;
+#include <vector>
 
-void init_df_history(df_history_t* dfhist, int nlambda);
+#include "gromacs/math/multidimarray.h"
+#include "gromacs/mdtypes/checkpointdata.h"
+#include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/utility/real.h"
 
-void done_df_history(df_history_t* dfhist);
+namespace gmx
+{
+enum class CheckpointDataOperation;
+template<CheckpointDataOperation operation>
+class CheckpointData;
+} // namespace gmx
 
-void copy_df_history(df_history_t* df_dest, df_history_t* df_source);
+using TwoDLambdaArray =
+        gmx::MultiDimArray<std::vector<real>, gmx::extents<gmx::dynamic_extent, gmx::dynamic_extent>>;
+
+/*! \brief Free-energy sampling history struct
+ *
+ * Note that an intended invariant of this structure is that all
+ * vectors (and the dimensions of the matrices) have the same size,
+ * ie. nlambda.
+ *
+ * \todo Split out into microstate and observables history.
+ */
+struct df_history_t
+{
+    explicit df_history_t(int numLambdaValues);
+    //! Default copy constructor.
+    df_history_t(const df_history_t& src) = default;
+    //! Default copy assignment operator.
+    df_history_t& operator=(const df_history_t& v) = default;
+    //! Default move constructor.
+    df_history_t(df_history_t&& src) noexcept = default;
+    //! Default move assignment operator.
+    df_history_t& operator=(df_history_t&& v) noexcept = default;
+
+    int nlambda = 0; //!< total number of lambda states - useful to history as the number of lambdas determines the size of arrays.
+
+    bool bEquil = false; //!< Have we reached equilibration yet, where the weights stop updating?
+    std::vector<int> numSamplesAtLambdaForStatistics; //!< The number of points observed at each lambda up to the current time, in this simulation, for calculating statistics
+    std::vector<int> numSamplesAtLambdaForEquilibration; //!< The number of points observed at each lambda up to the current time, over a set of simulations, for determining equilibration
+    std::vector<real> wl_histo; //!< The histogram for WL flatness determination.  Can be preserved between simulations with input options.
+    real wl_delta; //!< The current wang-landau delta, used to increment each state when visited.
+
+    std::vector<real> sum_weights; //!< Sum of weights of each state over all states.
+    std::vector<real> sum_dg; //!< Sum of the free energies of the states -- not actually used for weighting, but informational
+    std::vector<real> sum_minvar;   //!< corrections to weights for minimum variance
+    std::vector<real> sum_variance; //!< variances of the states
+
+    TwoDLambdaArray accum_p;  //!< accumulated bennett weights for n+1
+    TwoDLambdaArray accum_m;  //!< accumulated bennett weights for n-1
+    TwoDLambdaArray accum_p2; //!< accumulated squared bennett weights for n+1
+    TwoDLambdaArray accum_m2; //!< accumulated squared bennett weights for n-1
+
+    TwoDLambdaArray Tij; //!< Transition matrix, estimated from probabilities of transitions.
+    TwoDLambdaArray Tij_empirical; //!< Empirical transition matrix, estimated from only counts of transitions.
+
+    /*! \brief Allows to read and write checkpoint within modular simulator
+     *
+     * \tparam operation  Whether we're reading or writing
+     * \param checkpointData  The CheckpointData object
+     * \param elamstats  How the lambda weights are calculated
+     */
+    template<gmx::CheckpointDataOperation operation>
+    void doCheckpoint(gmx::CheckpointData<operation> checkpointData, LambdaWeightCalculation elamstats);
+};
+
+// extern template declarations, defined in source file
+extern template void df_history_t::doCheckpoint(gmx::CheckpointData<gmx::CheckpointDataOperation::Read> checkpointData,
+                                                LambdaWeightCalculation elamstats);
+extern template void df_history_t::doCheckpoint(gmx::CheckpointData<gmx::CheckpointDataOperation::Write> checkpointData,
+                                                LambdaWeightCalculation elamstats);
 
 #endif

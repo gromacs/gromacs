@@ -40,7 +40,6 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/math/vec.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/position.h"
 #include "gromacs/selection/selparam.h"
@@ -50,6 +49,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vec.h"
 
 #include "selmethod.h"
 #include "selmethod_impl.h"
@@ -78,7 +78,6 @@ static void* init_data_merge(int npar, gmx_ana_selparam_t* param);
  * \param[in] npar  Not used (should be 2 or 3).
  * \param[in] param Method parameters (should point to \ref smparams_merge).
  * \param[in] data  Should point to a \p t_methoddata_merge.
- * \returns   0 if everything is successful, -1 on error.
  */
 static void init_merge(const gmx_mtop_t* top, int npar, gmx_ana_selparam_t* param, void* data);
 /** Initializes output for the \p merge selection modifier. */

@@ -162,3 +162,20 @@ all browsers.  For the same reason, the XSLT files must be in the same folder
 as the XML files.  For cases where the XSLT files are shared between multiple
 modules, `src/testutils/copy_xsl.sh` takes care to synchronize the files after
 a main copy is edited.
+
+By default, the name of the reference data derives from the unique name
+GoogleTest constructs for each test. It is possible to customize this
+when you create the gmx::test::TestReferenceData object, which is
+sometimes useful when parameterized tests need unique names but can
+share common reference data.
+
+Testing across multiple MPI ranks
+=================================
+
+Sometimes the correctness of the code is determined by values found on
+different ranks. One option is to share that data with all MPI ranks
+(or a designated MPI rank) and test the reference data there. This can
+be cumbersome, so it is also possible to create a
+gmx::test::TestReferenceData object that is specific to the rank
+running the test. Note that when testing results on multiple ranks,
+the details of the results may be hard to understand when tests fail.

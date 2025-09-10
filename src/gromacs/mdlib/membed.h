@@ -37,8 +37,8 @@
 
 #include <cstdio>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 struct gmx_membed_t;
 struct gmx_mtop_t;

@@ -35,6 +35,7 @@
 add_library(fft INTERFACE)
 
 gmx_add_libgromacs_sources(
+     binary_information.cpp
      calcgrid.cpp
      fft.cpp
      fft5d.cpp
@@ -45,6 +46,8 @@ if (GMX_FFT_FFTPACK)
     gmx_add_libgromacs_sources(
         fft_fftpack.cpp
         ${CMAKE_SOURCE_DIR}/src/external/fftpack/fftpack.cpp)
+    # Silence a warning from fftpack
+    gmx_target_interface_warning_suppression(fft "-Wno-array-parameter" HAS_WARNING_NO_ARRAY_PARAMETER)
 endif()
 if (GMX_FFT_FFTW3 OR GMX_FFT_ARMPL_FFTW3)
     gmx_add_libgromacs_sources(fft_fftw3.cpp)
@@ -57,6 +60,9 @@ if(GMX_USE_Heffte)
     if (GMX_GPU_SYCL)
         _gmx_add_files_to_property(SYCL_SOURCES gpu_3dfft_heffte.cpp)
     endif()
+    if (GMX_GPU_HIP)
+        _gmx_add_files_to_property(HIP_SOURCES gpu_3dfft_heffte.cpp)
+    endif()
 endif()
 if (GMX_GPU_CUDA)
     if(GMX_USE_cuFFTMp)
@@ -68,17 +74,6 @@ if (GMX_GPU_CUDA)
         gpu_3dfft_impl.cpp
         gpu_3dfft.cpp
         )
-    _gmx_add_files_to_property(CUDA_SOURCES
-        # Must add these files so they can include cuda_runtime.h
-        gpu_3dfft.cpp
-        gpu_3dfft_impl.cpp
-        )
-    if(GMX_USE_cuFFTMp)
-        _gmx_add_files_to_property(CUDA_SOURCES
-            # Must add this files as it requires path set in cuda_include_directories
-            gpu_3dfft_cufftmp.cpp
-        )
-    endif()
 elseif (GMX_GPU_HIP)
     if (GMX_GPU_FFT_VKFFT)
         gmx_add_libgromacs_sources(
@@ -87,20 +82,28 @@ elseif (GMX_GPU_HIP)
             gpu_3dfft_impl.cpp
             gpu_3dfft.cpp
             )
-    elseif(GMX_GPU_FFT_HIPFFT)
+    _gmx_add_files_to_property(HIP_SOURCES
+        # Must add these files so they can include hip_runtime.h
+        gpu_3dfft_hip_vkfft.cpp
+        )
+    elseif(GMX_GPU_FFT_ROCFFT)
         gmx_add_libgromacs_sources(
             # HIP-specific sources
-            gpu_3dfft_hipfft.cpp
+            gpu_3dfft_hip_rocfft.cpp
             gpu_3dfft_impl.cpp
             gpu_3dfft.cpp
+            rocfft_common_utils.cpp 
             )
+    _gmx_add_files_to_property(HIP_SOURCES
+        # Must add these files so they can include hip_runtime.h
+        gpu_3dfft_hip_rocfft.cpp
+        rocfft_common_utils.cpp 
+        )
     endif()
     _gmx_add_files_to_property(HIP_SOURCES
         # Must add these files so they can include hip_runtime.h
         gpu_3dfft.cpp
         gpu_3dfft_impl.cpp
-        gpu_3dfft_hip_vkfft.cpp
-        gpu_3dfft_hipfft.cpp
         )
 elseif (GMX_GPU_OPENCL)
     if (GMX_GPU_FFT_VKFFT)
@@ -118,12 +121,12 @@ elseif (GMX_GPU_OPENCL)
     endif()
 elseif (GMX_GPU_SYCL)
     set(_sycl_fft_sources gpu_3dfft.cpp gpu_3dfft_impl.cpp gpu_3dfft_sycl.cpp)
-    if (GMX_GPU_FFT_MKL OR GMX_GPU_FFT_ONEMKL)
+    if (GMX_GPU_FFT_MKL OR GMX_GPU_FFT_ONEMATH)
         list(APPEND _sycl_fft_sources gpu_3dfft_sycl_mkl.cpp)
     elseif(GMX_GPU_FFT_BBFFT)
         list(APPEND _sycl_fft_sources gpu_3dfft_sycl_bbfft.cpp)
     elseif(GMX_GPU_FFT_ROCFFT)
-        list(APPEND _sycl_fft_sources gpu_3dfft_sycl_rocfft.cpp)
+        list(APPEND _sycl_fft_sources gpu_3dfft_sycl_rocfft.cpp rocfft_common_utils.cpp)
     elseif(GMX_GPU_FFT_VKFFT)
         list(APPEND _sycl_fft_sources gpu_3dfft_sycl_vkfft.cpp)
     endif()

@@ -31,6 +31,10 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
+/*!
+ * \defgroup module_preprocessing Module Preprocessing
+ * \brief A brief description for Module Preprocessing
+ */
 #include "gmxpre.h"
 
 #include "gpp_atomtype.h"
@@ -51,7 +55,6 @@
 #include "gromacs/gmxpreprocess/notset.h"
 #include "gromacs/gmxpreprocess/topdirs.h"
 #include "gromacs/gmxpreprocess/toputil.h"
-#include "gromacs/math/vecdump.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/forcefieldparameters.h"
 #include "gromacs/topology/ifunc.h"
@@ -62,6 +65,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vecdump.h"
 
 struct AtomTypeData
 {
@@ -355,7 +359,7 @@ void PreprocessingAtomTypes::renumberTypes(gmx::ArrayRef<InteractionsOfType> pli
         int mi = typelist[i];
         for (int j = 0; (j < nat); j++)
         {
-            int                      mj              = typelist[j];
+            int mj = typelist[j];
             const InteractionOfType& interactionType = plist[ftype].interactionTypes[ntype * mi + mj];
             nbsnew.emplace_back(interactionType.atoms(),
                                 interactionType.forceParam(),

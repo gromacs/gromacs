@@ -79,7 +79,6 @@ static const std::string& simdString(SimdType s)
                                                           { SimdType::X86_Avx2, "AVX2_256" },
                                                           { SimdType::X86_Avx2_128, "AVX2_128" },
                                                           { SimdType::X86_Avx512, "AVX_512" },
-                                                          { SimdType::X86_Avx512Knl, "AVX_512_KNL" },
                                                           { SimdType::Arm_NeonAsimd,
                                                             "ARM_NEON_ASIMD" },
                                                           { SimdType::Arm_Sve, "ARM_SVE" },
@@ -97,11 +96,7 @@ SimdType simdSuggested(const CpuInfo& c)
         switch (c.vendor())
         {
             case CpuInfo::Vendor::Intel:
-                if (c.feature(CpuInfo::Feature::X86_Avx512ER))
-                {
-                    suggested = SimdType::X86_Avx512Knl;
-                }
-                else if (c.feature(CpuInfo::Feature::X86_Avx512F))
+                if (c.feature(CpuInfo::Feature::X86_Avx512F))
                 {
                     // If we could not identify the number of AVX512 FMA units we assume 2
                     suggested = (identifyAvx512FmaUnits() == 1) ? SimdType::X86_Avx2 : SimdType::X86_Avx512;
@@ -198,9 +193,7 @@ SimdType simdSuggested(const CpuInfo& c)
 
 static SimdType simdCompiled()
 {
-#if GMX_SIMD_X86_AVX_512_KNL
-    return SimdType::X86_Avx512Knl;
-#elif GMX_SIMD_X86_AVX_512
+#if GMX_SIMD_X86_AVX_512
     return SimdType::X86_Avx512;
 #elif GMX_SIMD_X86_AVX2_256
     return SimdType::X86_Avx2;
@@ -292,8 +285,8 @@ bool simdCheck(const CpuInfo& cpuInfo, gmx::SimdType wanted, FILE* log, bool war
         // in that scenario.
         logMsg  = wrapper.wrapToString(formatString(
                 "Likely fastest SIMD instructions supported by all nodes: %s\n"
-                "SIMD instructions selected at compile time:              %s\n"
-                "For Intel CPUs with only 1x AVX-512 FMA unit, AVX2 is a little faster.",
+                 "SIMD instructions selected at compile time:              %s\n"
+                 "For Intel CPUs with only 1x AVX-512 FMA unit, AVX2 is a little faster.",
                 simdString(wanted).c_str(),
                 simdString(compiled).c_str()));
         warnMsg = wrapper.wrapToString(
@@ -327,9 +320,21 @@ bool simdCheck(const CpuInfo& cpuInfo, gmx::SimdType wanted, FILE* log, bool war
     {
         logMsg  = wrapper.wrapToString(formatString(
                 "Likely fastest SIMD instructions supported by all nodes: %s\n"
-                "SIMD instructions selected at compile time:              %s\n"
-                "AMD's early FMA4 AVX extensions do not work on modern CPUs; program might crash.",
+                 "SIMD instructions selected at compile time:              %s\n"
+                 "AMD's early FMA4 AVX extensions do not work on modern CPUs; program might crash.",
                 simdString(wanted).c_str(),
+                simdString(compiled).c_str()));
+        warnMsg = logMsg;
+    }
+    else if (cpuInfo.feature(CpuInfo::Feature::Arm_Sve)
+             && cpuInfo.feature(CpuInfo::Feature::Arm_NeonAsimd) && cpuIsNeoverseV2(cpuInfo))
+    {
+        // On neoverse, best perf is dependent on exact run time/compiler configuration
+        logMsg  = wrapper.wrapToString(formatString(
+                "There are multiple SIMD instruction sets that are supported by all nodes "
+                 "but the best cannot be determined. Check the install guide "
+                 "SIMD Support section for recommendations for your particular case. \n"
+                 "SIMD instructions selected at compile time: %s",
                 simdString(compiled).c_str()));
         warnMsg = logMsg;
     }
@@ -351,10 +356,10 @@ bool simdCheck(const CpuInfo& cpuInfo, gmx::SimdType wanted, FILE* log, bool war
     {
         logMsg  = wrapper.wrapToString(formatString(
                 "Longest SVE length supported by all nodes in run: %d\n"
-                "SVE length selected at compile time:               %ld\n"
-                "This program was compiled for different hardware than you are running on, "
-                "which will lead to incorrect behavior.\n"
-                "Aborting",
+                 "SVE length selected at compile time:               %ld\n"
+                 "This program was compiled for different hardware than you are running on, "
+                 "which will lead to incorrect behavior.\n"
+                 "Aborting",
                 GMX_SIMD_ARM_SVE_LENGTH_VALUE,
                 svcntb() * 8));
         warnMsg = wrapper.wrapToString(
@@ -383,5 +388,11 @@ bool simdCheck(const CpuInfo& cpuInfo, gmx::SimdType wanted, FILE* log, bool war
 }
 
 /*! \endcond */
+
+std::string simdDescription()
+{
+    static const std::string& sc_simdDescription = gmx::simdString(GMX_SIMD_ENUM_VALUE);
+    return sc_simdDescription;
+}
 
 } // namespace gmx

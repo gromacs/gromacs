@@ -52,6 +52,10 @@
 
 #include "cmdlinemodulemanagertest.h"
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -156,3 +160,5 @@ TEST_F(CommandLineModuleManagerTest, HandlesConflictingBinaryAndModuleNames)
 }
 
 } // namespace
+} // namespace test
+} // namespace gmx

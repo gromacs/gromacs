@@ -39,10 +39,10 @@
 #include <filesystem>
 #include <vector>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 struct gmx_mtop_t;
 struct t_atoms;

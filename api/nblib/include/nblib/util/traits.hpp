@@ -300,7 +300,7 @@ struct Contains
  * struct Contains<T, TL<Ts...>> : std::bool_constant<FindIndex<T, TL<Ts...>>{} < sizeof...(Ts)>
  */
 template<class T, template<class...> class TL, class... Ts>
-        struct Contains<T, TL<Ts...>> : std::bool_constant < FindIndex<T, TL<Ts...>>{}<sizeof...(Ts)>
+struct Contains<T, TL<Ts...>> : std::bool_constant<FindIndex<T, TL<Ts...>>{} < sizeof...(Ts)>
 {
 };
 

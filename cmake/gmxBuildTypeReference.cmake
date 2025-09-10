@@ -46,8 +46,9 @@ if("${CMAKE_BUILD_TYPE}" STREQUAL "Reference")
     set(GMX_FFT_LIBRARY "fftpack" CACHE STRING "Use fftpack for regressiontests reference builds" FORCE)
     set(GMX_THREAD_MPI OFF CACHE BOOL "Disabled for regressiontests reference builds" FORCE)
 
-    if(NOT "${CMAKE_C_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_C_COMPILER_VERSION}" VERSION_GREATER_EQUAL "10")
+    math(EXPR _major_version_too_high "${GMX_GCC_MINIMUM_REQUIRED_VERSION}+1")
+    if(NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMPILER_VERSION}" VERSION_GREATER_EQUAL ${_major_version_too_high})
         message(WARNING "Reference values for regressiontests should use GROMACS compiled with "
-            "gcc 9.x, but your configuration is using ${CMAKE_C_COMPILER_ID}-${CMAKE_C_COMPILER_VERSION}.")
+            "gcc ${GMX_GCC_MINIMUM_REQUIRED_VERSION}.x, but your configuration is using ${CMAKE_CXX_COMPILER_ID}-${CMAKE_CXX_COMPILER_VERSION}.")
     endif()
 endif()

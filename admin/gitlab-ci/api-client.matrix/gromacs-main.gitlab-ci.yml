@@ -14,28 +14,28 @@
 #   GROMACS branch: merge request target branch
 #   gmxapi Python package: according to merge request target branch
 #   sample code: according to merge request target branch
-#   compiler: clang-9
+#   compiler: clang-14
 
 sample_taf:tmpi:
   extends:
     - .sample_taf
   rules:
     - !reference [.rules:merge-requests, rules]
-  image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-22.04-llvm-15-cuda-11.7.1-hipsycl-0.9.4-rocm-5.3.3
+  image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-22.04-gcc-11-adaptivecpp-23.10.0-rocm-5.7.1
   variables:
-    CMAKE: /usr/local/cmake-3.21.2/bin/cmake
+    CMAKE: /usr/local/cmake-3.29.8/bin/cmake
   needs:
-    - job: gromacs:hipsycl-rocm:build
+    - job: gromacs:acpp-rocm:build
 
 sample_restraint:tmpi:
   extends:
     - .sample_restraint:clang
   rules:
     - !reference [.rules:merge-requests, rules]
-  image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-20.04-llvm-9-cuda-11.0.3
+  image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-22.04-llvm-14-cuda-12.1.0
   variables:
-    VENVPATH: "/root/venv/py3.7"
-    COMPILER_MAJOR_VERSION: 9
+    VENVPATH: "/root/venv/py3.10"
+    COMPILER_MAJOR_VERSION: 14
   needs:
-    - job: gromacs:clang-9:build
+    - job: gromacs:clang-14:build
       artifacts: true

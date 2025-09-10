@@ -54,6 +54,26 @@ was executed on a GPU.
 
 :issue:`4974`
 
+Add checks for the combination of multiple time stepping and SD integrator
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The documentation says that this combination is not supported, but the check
+for this in grompp was lost. Now both grompp and mdrun will exit with an error.
+
+:issue:`3775`
+:issue:`5053`
+
+Correct dH/dlambda with MTS and perturbed constraints
+"""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When doing free-energy calculations with multiple time stepping and perturbed
+constraint lengths, the slow force contributions to dH/dlambda were incorrectly
+multiplied by the MTS factor. The effect of this is usually rather small
+when only integrating the PME grid part less frequently, but can be substantial
+when the non-bonded pair interactions are not integrated at every step.
+
+:issue:`5060`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 

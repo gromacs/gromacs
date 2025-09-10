@@ -94,7 +94,7 @@ public:
      * If both the first and last bins are specified, either this value or
      * binWidth() is required.
      */
-    AnalysisHistogramSettingsInitializer& binCount(int binCount)
+    AnalysisHistogramSettingsInitializer& binCount(size_t binCount)
     {
         binCount_ = binCount;
         return *this;
@@ -170,13 +170,13 @@ public:
     }
 
 private:
-    real min_;
-    real max_;
-    real binWidth_;
-    int  binCount_;
-    bool bIntegerBins_;
-    bool bRoundRange_;
-    bool bIncludeAll_;
+    real   min_;
+    real   max_;
+    real   binWidth_;
+    size_t binCount_;
+    bool   bIntegerBins_;
+    bool   bRoundRange_;
+    bool   bIncludeAll_;
 
     friend class AnalysisHistogramSettings;
 };
@@ -200,7 +200,7 @@ inline AnalysisHistogramSettingsInitializer histogramFromRange(real min, real ma
  *
  * \inpublicapi
  */
-inline AnalysisHistogramSettingsInitializer histogramFromBins(real start, int nbins, real binwidth)
+inline AnalysisHistogramSettingsInitializer histogramFromBins(real start, size_t nbins, real binwidth)
 {
     return AnalysisHistogramSettingsInitializer().start(start).binCount(nbins).binWidth(binwidth);
 }
@@ -237,21 +237,21 @@ public:
     //! Returns the right edge of the first bin.
     real lastEdge() const { return lastEdge_; }
     //! Returns the number of bins in the histogram.
-    int binCount() const { return binCount_; }
+    size_t binCount() const { return binCount_; }
     //! Returns the width of a bin in the histogram.
     real binWidth() const { return binWidth_; }
     //! Whether values beyond the edges are mapped to the edge bins.
     bool includeAll() const { return bAll_; }
     //! Returns a zero-based bin index for a value, or -1 if not in range.
-    int findBin(real y) const;
+    size_t findBin(real y) const;
 
 private:
-    real firstEdge_;
-    real lastEdge_;
-    real binWidth_;
-    real inverseBinWidth_;
-    int  binCount_;
-    bool bAll_;
+    real   firstEdge_;
+    real   lastEdge_;
+    real   binWidth_;
+    real   inverseBinWidth_;
+    size_t binCount_;
+    bool   bAll_;
 };
 
 
@@ -320,7 +320,7 @@ public:
      */
     void makeCumulative();
     //! Scales a single histogram by a uniform scaling factor.
-    void scaleSingle(int index, real factor);
+    void scaleSingle(size_t index, real factor);
     //! Scales all histograms by a uniform scaling factor.
     void scaleAll(real factor);
     //! Scales the value of each bin by a different scaling factor.
@@ -406,7 +406,7 @@ public:
     //! Returns bin properties for the histogram.
     const AnalysisHistogramSettings& settings() const;
 
-    int frameCount() const override;
+    size_t frameCount() const override;
 
     int flags() const override;
 
@@ -414,12 +414,12 @@ public:
     void frameStarted(const AnalysisDataFrameHeader& header) override;
     void pointsAdded(const AnalysisDataPointSetRef& points) override;
     void frameFinished(const AnalysisDataFrameHeader& header) override;
-    void frameFinishedSerial(int frameIndex) override;
+    void frameFinishedSerial(size_t frameIndex) override;
     void dataFinished() override;
 
 private:
-    AnalysisDataFrameRef tryGetDataFrameInternal(int index) const override;
-    bool                 requestStorageInternal(int nframes) override;
+    AnalysisDataFrameRef tryGetDataFrameInternal(size_t index) const override;
+    bool                 requestStorageInternal(size_t nframes) override;
 
     class Impl;
 
@@ -468,7 +468,7 @@ public:
     //! \copydoc AnalysisDataSimpleHistogramModule::settings()
     const AnalysisHistogramSettings& settings() const;
 
-    int frameCount() const override;
+    size_t frameCount() const override;
 
     int flags() const override;
 
@@ -476,12 +476,12 @@ public:
     void frameStarted(const AnalysisDataFrameHeader& header) override;
     void pointsAdded(const AnalysisDataPointSetRef& points) override;
     void frameFinished(const AnalysisDataFrameHeader& header) override;
-    void frameFinishedSerial(int frameIndex) override;
+    void frameFinishedSerial(size_t frameIndex) override;
     void dataFinished() override;
 
 private:
-    AnalysisDataFrameRef tryGetDataFrameInternal(int index) const override;
-    bool                 requestStorageInternal(int nframes) override;
+    AnalysisDataFrameRef tryGetDataFrameInternal(size_t index) const override;
+    bool                 requestStorageInternal(size_t nframes) override;
 
     class Impl;
 

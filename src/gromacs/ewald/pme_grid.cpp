@@ -42,9 +42,9 @@
 
 #include "gromacs/ewald/pme.h"
 #include "gromacs/fft/parallel_3dfft.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/vec.h"
 
 #include "pme_internal.h"
 
@@ -674,7 +674,7 @@ static void make_subgrid_division(const ivec n, int ovl, int nthread, ivec nsub)
         }
     }
 
-    env = getenv("GMX_PME_THREAD_DIVISION");
+    env = std::getenv("GMX_PME_THREAD_DIVISION");
     if (env != nullptr)
     {
         sscanf(env, "%20d %20d %20d", &nsub[XX], &nsub[YY], &nsub[ZZ]);

@@ -431,12 +431,19 @@ void please_cite(FILE* fp, const char* key)
           "Protein J.",
           2023,
           "10.1007/s10930-023-10137-1" },
-        { "Gorelov2024",
+        { "Gorelov2024a",
           "S. Gorelov, A. Titov, O. Tolicheva, A. Konevega, A. Shvetsov",
           "DSSP in GROMACS: Tool for Defining Secondary Structures of Proteins in Trajectories",
           "Journal of Chemical Information and Modeling",
           2024,
           "10.1021/acs.jcim.3c01344" },
+        { "Gorelov2024b",
+          "S. Gorelov, A. Titov, O. Tolicheva, A. Konevega, A. Shvetsov",
+          "Determination of Hydrogen Bonds in GROMACS: A New Implementation to Overcome Memory "
+          "Limitation",
+          "Journal of Chemical Information and Modeling",
+          2024,
+          "10.1021/acs.jcim.3c02087" },
     };
 #define NSTR static_cast<int>(asize(citedb))
 
@@ -446,7 +453,7 @@ void please_cite(FILE* fp, const char* key)
     }
 
     int index = 0;
-    for (; index < NSTR && (strcmp(citedb[index].key, key) != 0); index++) {}
+    for (; index < NSTR && (std::strcmp(citedb[index].key, key) != 0); index++) {}
 
     fprintf(fp, "\n++++ PLEASE READ AND CITE THE FOLLOWING REFERENCE ++++\n");
     if (index < NSTR)
@@ -469,7 +476,7 @@ void please_cite(FILE* fp, const char* key)
         fprintf(fp, "Entry %s not found in citation database\n", key);
     }
     fprintf(fp, "-------- -------- --- Thank You --- -------- --------\n\n");
-    fflush(fp);
+    std::fflush(fp);
 }
 
 namespace
@@ -482,7 +489,7 @@ void writeSourceDoi(FILE* fp)
      * TODO The check should properly target something else than
      * the string being empty
      */
-    if (strlen(gmxDOI()) == 0)
+    if (std::strlen(gmxDOI()) == 0)
     {
         /* Not a release build, return without printing anything */
         return;
@@ -499,7 +506,7 @@ void writeSourceDoi(FILE* fp)
     fprintf(fp, "\n++++ PLEASE CITE THE DOI FOR THIS VERSION OF GROMACS ++++\n");
     fprintf(fp, "%s%s\n", "https://doi.org/", doiString.c_str());
     fprintf(fp, "-------- -------- --- Thank You --- -------- --------\n\n");
-    fflush(fp);
+    std::fflush(fp);
 }
 
 } // namespace

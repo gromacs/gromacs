@@ -64,6 +64,10 @@
 
 struct gmx_mtop_t;
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -717,3 +721,5 @@ TEST_F(IndexGroupsAndNamesTest, groupIndicesCorrect)
 
 
 } // namespace
+} // namespace test
+} // namespace gmx

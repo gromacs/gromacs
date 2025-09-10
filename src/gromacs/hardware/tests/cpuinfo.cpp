@@ -50,6 +50,10 @@
 
 #include <gtest/gtest.h>
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -93,3 +97,5 @@ TEST(CpuInfoTest, SupportLevel)
 }
 
 } // namespace
+} // namespace test
+} // namespace gmx

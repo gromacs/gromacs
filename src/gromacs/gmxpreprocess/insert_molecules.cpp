@@ -54,8 +54,6 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
@@ -85,6 +83,8 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 namespace gmx
 {
@@ -294,7 +294,7 @@ static void insert_mols(int                  nmol_insrt,
             offset_x[ZZ] = rpos[ZZ][mol] + deltaR[ZZ] * (2 * dist(rng) - 1);
         }
         fprintf(stderr, "\rTry %d", ++trial);
-        fflush(stderr);
+        std::fflush(stderr);
 
         generate_trial_conf(x_insrt, offset_x, enum_rot, &rng, &x_n);
         gmx::AnalysisNeighborhoodPositions pos(*x);

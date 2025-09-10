@@ -42,14 +42,14 @@
 
 #include "propagator.h"
 
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "modularsimulator.h"
 #include "simulatoralgorithm.h"
@@ -67,24 +67,29 @@ constexpr EnumerationArray<IntegrationStage, const char*> integrationStepNames =
 };
 } // namespace
 
-//! Update velocities
+/*! \brief Update velocities
+ *
+ * To maximize the ability of the compiler to optimize, all the arrays
+ * of RVec should be annotated with gmx_restrict, so the compiler knows
+ * there is no aliasing, and for the same reason we do not use
+ * ArrayRef<RVec> for them. */
 template<NumVelocityScalingValues        numStartVelocityScalingValues,
          ParrinelloRahmanVelocityScaling parrinelloRahmanVelocityScaling,
          NumVelocityScalingValues        numEndVelocityScalingValues>
-static void inline updateVelocities(int                        a,
-                                    real                       dt,
-                                    real                       lambdaStart,
-                                    real                       lambdaEnd,
-                                    const ArrayRef<const RVec> invMassPerDim,
-                                    rvec* gmx_restrict         v,
-                                    const rvec* gmx_restrict   f,
-                                    const RVec&                diagPR,
-                                    const Matrix3x3&           matrixPR)
+static void inline updateVelocities(int                      a,
+                                    real                     dt,
+                                    real                     lambdaStart,
+                                    real                     lambdaEnd,
+                                    const RVec* gmx_restrict invMassPerDim,
+                                    RVec* gmx_restrict       v,
+                                    const RVec* gmx_restrict f,
+                                    const RVec&              diagPR,
+                                    const Matrix3x3&         matrixPR)
 {
     RVec parrinelloRahmanScaledVelocity;
     if (parrinelloRahmanVelocityScaling == ParrinelloRahmanVelocityScaling::Anisotropic)
     {
-        parrinelloRahmanScaledVelocity = multiplyVectorByMatrix(matrixPR, v[a]);
+        parrinelloRahmanScaledVelocity = matrixPR * v[a];
     }
     for (int d = 0; d < DIM; d++)
     {
@@ -122,12 +127,17 @@ static void inline updateVelocities(int                        a,
     }
 }
 
-//! Update positions
+/*! \brief Update positions
+ *
+ * To maximize the ability of the compiler to optimize, all the arrays
+ * of RVec should be annotated with gmx_restrict, so the compiler knows
+ * there is no aliasing, and for the same reason we do not use
+ * ArrayRef<RVec> for them. */
 static void inline updatePositions(int                      a,
                                    real                     dt,
-                                   const rvec* gmx_restrict x,
-                                   rvec* gmx_restrict       xprime,
-                                   const rvec* gmx_restrict v)
+                                   const RVec* gmx_restrict x,
+                                   RVec* gmx_restrict       xprime,
+                                   const RVec* gmx_restrict v)
 {
     for (int d = 0; d < DIM; d++)
     {
@@ -135,9 +145,14 @@ static void inline updatePositions(int                      a,
     }
 }
 
-//! Scale velocities
+/*! \brief Scale velocities
+ *
+ * To maximize the ability of the compiler to optimize, all the arrays
+ * of RVec should be annotated with gmx_restrict, so the compiler knows
+ * there is no aliasing, and for the same reason we do not use
+ * ArrayRef<RVec> for them. */
 template<NumVelocityScalingValues numStartVelocityScalingValues>
-static void inline scaleVelocities(int a, real lambda, rvec* gmx_restrict v)
+static void inline scaleVelocities(int a, real lambda, RVec* gmx_restrict v)
 {
     if (numStartVelocityScalingValues != NumVelocityScalingValues::None)
     {
@@ -148,9 +163,14 @@ static void inline scaleVelocities(int a, real lambda, rvec* gmx_restrict v)
     }
 }
 
-//! Scale positions
+/*! \brief Scale positions
+ *
+ * To maximize the ability of the compiler to optimize, all the arrays
+ * of RVec should be annotated with gmx_restrict, so the compiler knows
+ * there is no aliasing, and for the same reason we do not use
+ * ArrayRef<RVec> for them. */
 template<NumPositionScalingValues numPositionScalingValues>
-static void inline scalePositions(int a, real lambda, rvec* gmx_restrict x)
+static void inline scalePositions(int a, real lambda, RVec* gmx_restrict x)
 {
     if (numPositionScalingValues != NumPositionScalingValues::None)
     {
@@ -185,9 +205,9 @@ void Propagator<IntegrationStage::PositionsOnly>::run()
 {
     wallcycle_start(wcycle_, WallCycleCounter::Update);
 
-    auto*       xp = as_rvec_array(statePropagatorData_->positionsView().paddedArrayRef().data());
-    const auto* x = as_rvec_array(statePropagatorData_->constPositionsView().paddedArrayRef().data());
-    const auto* v = as_rvec_array(statePropagatorData_->constVelocitiesView().paddedArrayRef().data());
+    RVec*       xp = statePropagatorData_->positionsView().paddedArrayRef().data();
+    const RVec* x  = statePropagatorData_->constPositionsView().paddedArrayRef().data();
+    const RVec* v  = statePropagatorData_->constVelocitiesView().paddedArrayRef().data();
 
     int nth    = gmx_omp_nthreads_get(ModuleMultiThread::Update);
     int homenr = mdAtoms_->mdatoms()->homenr;
@@ -220,7 +240,7 @@ void Propagator<IntegrationStage::ScalePositions>::run()
 {
     wallcycle_start(wcycle_, WallCycleCounter::Update);
 
-    auto* x = as_rvec_array(statePropagatorData_->positionsView().paddedArrayRef().data());
+    RVec* x = statePropagatorData_->positionsView().paddedArrayRef().data();
 
     const real lambda =
             (numPositionScalingValues == NumPositionScalingValues::Single) ? positionScaling_[0] : 1.0;
@@ -262,8 +282,8 @@ void Propagator<IntegrationStage::VelocitiesOnly>::run()
 {
     wallcycle_start(wcycle_, WallCycleCounter::Update);
 
-    auto*       v = as_rvec_array(statePropagatorData_->velocitiesView().paddedArrayRef().data());
-    const auto* f = as_rvec_array(statePropagatorData_->constForcesView().force().data());
+    RVec*                      v = statePropagatorData_->velocitiesView().paddedArrayRef().data();
+    const RVec*                f = statePropagatorData_->constForcesView().force().data();
     const ArrayRef<const RVec> invMassPerDim = mdAtoms_->mdatoms()->invMassPerDim;
 
     const real lambdaStart = (numStartVelocityScalingValues == NumVelocityScalingValues::Single)
@@ -302,7 +322,7 @@ void Propagator<IntegrationStage::VelocitiesOnly>::run()
                             numEndVelocityScalingValues == NumVelocityScalingValues::Multiple
                                     ? endVelocityScaling_[mdAtoms_->mdatoms()->cTC[a]]
                                     : lambdaEnd,
-                            invMassPerDim,
+                            invMassPerDim.data(),
                             v,
                             f,
                             diagonalOfPRScalingMatrix,
@@ -319,7 +339,7 @@ void Propagator<IntegrationStage::VelocitiesOnly>::run()
                             numEndVelocityScalingValues == NumVelocityScalingValues::Multiple
                                     ? endVelocityScaling_[mdAtoms_->mdatoms()->cTC[a]]
                                     : lambdaEnd,
-                            invMassPerDim,
+                            invMassPerDim.data(),
                             v,
                             f,
                             diagonalOfPRScalingMatrix,
@@ -342,10 +362,10 @@ void Propagator<IntegrationStage::LeapFrog>::run()
 {
     wallcycle_start(wcycle_, WallCycleCounter::Update);
 
-    auto*       xp = as_rvec_array(statePropagatorData_->positionsView().paddedArrayRef().data());
-    const auto* x = as_rvec_array(statePropagatorData_->constPositionsView().paddedArrayRef().data());
-    auto*       v = as_rvec_array(statePropagatorData_->velocitiesView().paddedArrayRef().data());
-    const auto* f = as_rvec_array(statePropagatorData_->constForcesView().force().data());
+    RVec*       xp = statePropagatorData_->positionsView().paddedArrayRef().data();
+    const RVec* x  = statePropagatorData_->constPositionsView().paddedArrayRef().data();
+    RVec*       v  = statePropagatorData_->velocitiesView().paddedArrayRef().data();
+    const RVec* f  = statePropagatorData_->constForcesView().force().data();
     const ArrayRef<const RVec> invMassPerDim = mdAtoms_->mdatoms()->invMassPerDim;
 
     const real lambdaStart = (numStartVelocityScalingValues == NumVelocityScalingValues::Single)
@@ -362,7 +382,8 @@ void Propagator<IntegrationStage::LeapFrog>::run()
     const int nth    = gmx_omp_nthreads_get(ModuleMultiThread::Update);
     const int homenr = mdAtoms_->mdatoms()->homenr;
 
-#pragma omp parallel for num_threads(nth) schedule(static) default(none) shared(x, xp, v, f, invMassPerDim) \
+#pragma omp parallel for num_threads(nth) schedule(static) default(none) \
+        shared(x, xp, v, f, invMassPerDim)                               \
         firstprivate(nth, homenr, lambdaStart, lambdaEnd, treatPRScalingMatrixAsDiagonal, diagonalOfPRScalingMatrix)
     for (int th = 0; th < nth; th++)
     {
@@ -384,7 +405,7 @@ void Propagator<IntegrationStage::LeapFrog>::run()
                             numEndVelocityScalingValues == NumVelocityScalingValues::Multiple
                                     ? endVelocityScaling_[mdAtoms_->mdatoms()->cTC[a]]
                                     : lambdaEnd,
-                            invMassPerDim,
+                            invMassPerDim.data(),
                             v,
                             f,
                             diagonalOfPRScalingMatrix,
@@ -401,7 +422,7 @@ void Propagator<IntegrationStage::LeapFrog>::run()
                             numEndVelocityScalingValues == NumVelocityScalingValues::Multiple
                                     ? endVelocityScaling_[mdAtoms_->mdatoms()->cTC[a]]
                                     : lambdaEnd,
-                            invMassPerDim,
+                            invMassPerDim.data(),
                             v,
                             f,
                             diagonalOfPRScalingMatrix,
@@ -425,10 +446,10 @@ void Propagator<IntegrationStage::VelocityVerletPositionsAndVelocities>::run()
 {
     wallcycle_start(wcycle_, WallCycleCounter::Update);
 
-    auto*       xp = as_rvec_array(statePropagatorData_->positionsView().paddedArrayRef().data());
-    const auto* x = as_rvec_array(statePropagatorData_->constPositionsView().paddedArrayRef().data());
-    auto*       v = as_rvec_array(statePropagatorData_->velocitiesView().paddedArrayRef().data());
-    const auto* f = as_rvec_array(statePropagatorData_->constForcesView().force().data());
+    RVec*       xp = statePropagatorData_->positionsView().paddedArrayRef().data();
+    const RVec* x  = statePropagatorData_->constPositionsView().paddedArrayRef().data();
+    RVec*       v  = statePropagatorData_->velocitiesView().paddedArrayRef().data();
+    const RVec* f  = statePropagatorData_->constForcesView().force().data();
     const ArrayRef<const RVec> invMassPerDim = mdAtoms_->mdatoms()->invMassPerDim;
 
     const real lambdaStart = (numStartVelocityScalingValues == NumVelocityScalingValues::Single)
@@ -445,7 +466,8 @@ void Propagator<IntegrationStage::VelocityVerletPositionsAndVelocities>::run()
     const int nth    = gmx_omp_nthreads_get(ModuleMultiThread::Update);
     const int homenr = mdAtoms_->mdatoms()->homenr;
 
-#pragma omp parallel for num_threads(nth) schedule(static) default(none) shared(x, xp, v, f, invMassPerDim) \
+#pragma omp parallel for num_threads(nth) schedule(static) default(none) \
+        shared(x, xp, v, f, invMassPerDim)                               \
         firstprivate(nth, homenr, lambdaStart, lambdaEnd, treatPRScalingMatrixAsDiagonal, diagonalOfPRScalingMatrix)
     for (int th = 0; th < nth; th++)
     {
@@ -467,7 +489,7 @@ void Propagator<IntegrationStage::VelocityVerletPositionsAndVelocities>::run()
                             numEndVelocityScalingValues == NumVelocityScalingValues::Multiple
                                     ? endVelocityScaling_[mdAtoms_->mdatoms()->cTC[a]]
                                     : lambdaEnd,
-                            invMassPerDim,
+                            invMassPerDim.data(),
                             v,
                             f,
                             diagonalOfPRScalingMatrix,
@@ -484,7 +506,7 @@ void Propagator<IntegrationStage::VelocityVerletPositionsAndVelocities>::run()
                             numEndVelocityScalingValues == NumVelocityScalingValues::Multiple
                                     ? endVelocityScaling_[mdAtoms_->mdatoms()->cTC[a]]
                                     : lambdaEnd,
-                            invMassPerDim,
+                            invMassPerDim.data(),
                             v,
                             f,
                             diagonalOfPRScalingMatrix,
@@ -512,7 +534,7 @@ void Propagator<IntegrationStage::ScaleVelocities>::run()
     }
     wallcycle_start(wcycle_, WallCycleCounter::Update);
 
-    auto* v = as_rvec_array(statePropagatorData_->velocitiesView().paddedArrayRef().data());
+    RVec* v = statePropagatorData_->velocitiesView().paddedArrayRef().data();
 
     const real lambdaStart = (numStartVelocityScalingValues == NumVelocityScalingValues::Single)
                                      ? startVelocityScaling_[0]
@@ -558,7 +580,7 @@ Propagator<integrationStage>::Propagator(double               timestep,
     doSingleEndVelocityScaling_(false),
     doGroupEndVelocityScaling_(false),
     scalingStepVelocity_(-1),
-    matrixPR_{ { 0 } },
+    matrixPR_{ 0 },
     scalingStepPR_(-1),
     mdAtoms_(mdAtoms),
     wcycle_(wcycle)
@@ -596,21 +618,25 @@ void Propagator<integrationStage>::scheduleTask(Step                       step,
         // is implemented we handle it here to avoid enlarging the decision tree below.
         if (doSinglePositionScaling_)
         {
-            registerRunFunction([this]() {
-                run<NumVelocityScalingValues::None,
-                    ParrinelloRahmanVelocityScaling::No,
-                    NumVelocityScalingValues::None,
-                    NumPositionScalingValues::Single>();
-            });
+            registerRunFunction(
+                    [this]()
+                    {
+                        run<NumVelocityScalingValues::None,
+                            ParrinelloRahmanVelocityScaling::No,
+                            NumVelocityScalingValues::None,
+                            NumPositionScalingValues::Single>();
+                    });
         }
         else if (doGroupPositionScaling_)
         {
-            registerRunFunction([this]() {
-                run<NumVelocityScalingValues::None,
-                    ParrinelloRahmanVelocityScaling::No,
-                    NumVelocityScalingValues::None,
-                    NumPositionScalingValues::Multiple>();
-            });
+            registerRunFunction(
+                    [this]()
+                    {
+                        run<NumVelocityScalingValues::None,
+                            ParrinelloRahmanVelocityScaling::No,
+                            NumVelocityScalingValues::None,
+                            NumPositionScalingValues::Multiple>();
+                    });
         }
     }
 
@@ -622,42 +648,50 @@ void Propagator<integrationStage>::scheduleTask(Step                       step,
         {
             if (doSingleEndVelocityScaling_)
             {
-                registerRunFunction([this]() {
-                    run<NumVelocityScalingValues::Single,
-                        ParrinelloRahmanVelocityScaling::Anisotropic,
-                        NumVelocityScalingValues::Single,
-                        NumPositionScalingValues::None>();
-                });
+                registerRunFunction(
+                        [this]()
+                        {
+                            run<NumVelocityScalingValues::Single,
+                                ParrinelloRahmanVelocityScaling::Anisotropic,
+                                NumVelocityScalingValues::Single,
+                                NumPositionScalingValues::None>();
+                        });
             }
             else
             {
-                registerRunFunction([this]() {
-                    run<NumVelocityScalingValues::Single,
-                        ParrinelloRahmanVelocityScaling::Anisotropic,
-                        NumVelocityScalingValues::None,
-                        NumPositionScalingValues::None>();
-                });
+                registerRunFunction(
+                        [this]()
+                        {
+                            run<NumVelocityScalingValues::Single,
+                                ParrinelloRahmanVelocityScaling::Anisotropic,
+                                NumVelocityScalingValues::None,
+                                NumPositionScalingValues::None>();
+                        });
             }
         }
         else
         {
             if (doSingleEndVelocityScaling_)
             {
-                registerRunFunction([this]() {
-                    run<NumVelocityScalingValues::Single,
-                        ParrinelloRahmanVelocityScaling::No,
-                        NumVelocityScalingValues::Single,
-                        NumPositionScalingValues::None>();
-                });
+                registerRunFunction(
+                        [this]()
+                        {
+                            run<NumVelocityScalingValues::Single,
+                                ParrinelloRahmanVelocityScaling::No,
+                                NumVelocityScalingValues::Single,
+                                NumPositionScalingValues::None>();
+                        });
             }
             else
             {
-                registerRunFunction([this]() {
-                    run<NumVelocityScalingValues::Single,
-                        ParrinelloRahmanVelocityScaling::No,
-                        NumVelocityScalingValues::None,
-                        NumPositionScalingValues::None>();
-                });
+                registerRunFunction(
+                        [this]()
+                        {
+                            run<NumVelocityScalingValues::Single,
+                                ParrinelloRahmanVelocityScaling::No,
+                                NumVelocityScalingValues::None,
+                                NumPositionScalingValues::None>();
+                        });
             }
         }
     }
@@ -667,42 +701,50 @@ void Propagator<integrationStage>::scheduleTask(Step                       step,
         {
             if (doGroupEndVelocityScaling_)
             {
-                registerRunFunction([this]() {
-                    run<NumVelocityScalingValues::Multiple,
-                        ParrinelloRahmanVelocityScaling::Anisotropic,
-                        NumVelocityScalingValues::Multiple,
-                        NumPositionScalingValues::None>();
-                });
+                registerRunFunction(
+                        [this]()
+                        {
+                            run<NumVelocityScalingValues::Multiple,
+                                ParrinelloRahmanVelocityScaling::Anisotropic,
+                                NumVelocityScalingValues::Multiple,
+                                NumPositionScalingValues::None>();
+                        });
             }
             else
             {
-                registerRunFunction([this]() {
-                    run<NumVelocityScalingValues::Multiple,
-                        ParrinelloRahmanVelocityScaling::Anisotropic,
-                        NumVelocityScalingValues::None,
-                        NumPositionScalingValues::None>();
-                });
+                registerRunFunction(
+                        [this]()
+                        {
+                            run<NumVelocityScalingValues::Multiple,
+                                ParrinelloRahmanVelocityScaling::Anisotropic,
+                                NumVelocityScalingValues::None,
+                                NumPositionScalingValues::None>();
+                        });
             }
         }
         else
         {
             if (doGroupEndVelocityScaling_)
             {
-                registerRunFunction([this]() {
-                    run<NumVelocityScalingValues::Multiple,
-                        ParrinelloRahmanVelocityScaling::No,
-                        NumVelocityScalingValues::Multiple,
-                        NumPositionScalingValues::None>();
-                });
+                registerRunFunction(
+                        [this]()
+                        {
+                            run<NumVelocityScalingValues::Multiple,
+                                ParrinelloRahmanVelocityScaling::No,
+                                NumVelocityScalingValues::Multiple,
+                                NumPositionScalingValues::None>();
+                        });
             }
             else
             {
-                registerRunFunction([this]() {
-                    run<NumVelocityScalingValues::Multiple,
-                        ParrinelloRahmanVelocityScaling::No,
-                        NumVelocityScalingValues::None,
-                        NumPositionScalingValues::None>();
-                });
+                registerRunFunction(
+                        [this]()
+                        {
+                            run<NumVelocityScalingValues::Multiple,
+                                ParrinelloRahmanVelocityScaling::No,
+                                NumVelocityScalingValues::None,
+                                NumPositionScalingValues::None>();
+                        });
             }
         }
     }
@@ -710,21 +752,25 @@ void Propagator<integrationStage>::scheduleTask(Step                       step,
     {
         if (doParrinelloRahmanThisStep)
         {
-            registerRunFunction([this]() {
-                run<NumVelocityScalingValues::None,
-                    ParrinelloRahmanVelocityScaling::Anisotropic,
-                    NumVelocityScalingValues::None,
-                    NumPositionScalingValues::None>();
-            });
+            registerRunFunction(
+                    [this]()
+                    {
+                        run<NumVelocityScalingValues::None,
+                            ParrinelloRahmanVelocityScaling::Anisotropic,
+                            NumVelocityScalingValues::None,
+                            NumPositionScalingValues::None>();
+                    });
         }
         else
         {
-            registerRunFunction([this]() {
-                run<NumVelocityScalingValues::None,
-                    ParrinelloRahmanVelocityScaling::No,
-                    NumVelocityScalingValues::None,
-                    NumPositionScalingValues::None>();
-            });
+            registerRunFunction(
+                    [this]()
+                    {
+                        run<NumVelocityScalingValues::None,
+                            ParrinelloRahmanVelocityScaling::No,
+                            NumVelocityScalingValues::None,
+                            NumPositionScalingValues::None>();
+                    });
         }
     }
 }
@@ -878,58 +924,47 @@ PropagatorCallback Propagator<integrationStage>::prScalingCallback()
 }
 
 template<IntegrationStage integrationStage>
-static PropagatorConnection getConnection(Propagator<integrationStage> gmx_unused* propagator,
-                                          const PropagatorTag&                     propagatorTag)
+static PropagatorConnection getConnection(Propagator<integrationStage>* propagator,
+                                          const PropagatorTag&          propagatorTag)
 {
-    // gmx_unused is needed because gcc-9 can't see that propagator is
-    // used for all IntegrationState options.
     PropagatorConnection propagatorConnection{ propagatorTag };
 
     if constexpr (hasStartVelocityScaling<integrationStage>() || hasEndVelocityScaling<integrationStage>())
     {
         propagatorConnection.setNumVelocityScalingVariables =
-                [propagator](int num, ScaleVelocities scaleVelocities) {
-                    propagator->setNumVelocityScalingVariables(num, scaleVelocities);
-                };
-        propagatorConnection.getVelocityScalingCallback = [propagator]() {
-            return propagator->velocityScalingCallback();
-        };
+                [propagator](int num, ScaleVelocities scaleVelocities)
+        { propagator->setNumVelocityScalingVariables(num, scaleVelocities); };
+        propagatorConnection.getVelocityScalingCallback = [propagator]()
+        { return propagator->velocityScalingCallback(); };
     }
-    if constexpr (hasStartVelocityScaling<integrationStage>()) // NOLINT(readability-misleading-indentation)
+    if constexpr (hasStartVelocityScaling<integrationStage>())
     {
-        propagatorConnection.getViewOnStartVelocityScaling = [propagator]() {
-            return propagator->viewOnStartVelocityScaling();
-        };
+        propagatorConnection.getViewOnStartVelocityScaling = [propagator]()
+        { return propagator->viewOnStartVelocityScaling(); };
     }
-    if constexpr (hasEndVelocityScaling<integrationStage>()) // NOLINT(readability-misleading-indentation)
+    if constexpr (hasEndVelocityScaling<integrationStage>())
     {
-        propagatorConnection.getViewOnEndVelocityScaling = [propagator]() {
-            return propagator->viewOnEndVelocityScaling();
-        };
+        propagatorConnection.getViewOnEndVelocityScaling = [propagator]()
+        { return propagator->viewOnEndVelocityScaling(); };
     }
-    if constexpr (hasPositionScaling<integrationStage>()) // NOLINT(readability-misleading-indentation)
+    if constexpr (hasPositionScaling<integrationStage>())
     {
-        propagatorConnection.setNumPositionScalingVariables = [propagator](int num) {
-            propagator->setNumPositionScalingVariables(num);
-        };
-        propagatorConnection.getViewOnPositionScaling = [propagator]() {
-            return propagator->viewOnPositionScaling();
-        };
-        propagatorConnection.getPositionScalingCallback = [propagator]() {
-            return propagator->positionScalingCallback();
-        };
+        propagatorConnection.setNumPositionScalingVariables = [propagator](int num)
+        { propagator->setNumPositionScalingVariables(num); };
+        propagatorConnection.getViewOnPositionScaling = [propagator]()
+        { return propagator->viewOnPositionScaling(); };
+        propagatorConnection.getPositionScalingCallback = [propagator]()
+        { return propagator->positionScalingCallback(); };
     }
-    if constexpr (hasParrinelloRahmanScaling<integrationStage>()) // NOLINT(readability-misleading-indentation)
+    if constexpr (hasParrinelloRahmanScaling<integrationStage>())
     {
-        propagatorConnection.getViewOnPRScalingMatrix = [propagator]() {
-            return propagator->viewOnPRScalingMatrix();
-        };
-        propagatorConnection.getPRScalingCallback = [propagator]() {
-            return propagator->prScalingCallback();
-        };
+        propagatorConnection.getViewOnPRScalingMatrix = [propagator]()
+        { return propagator->viewOnPRScalingMatrix(); };
+        propagatorConnection.getPRScalingCallback = [propagator]()
+        { return propagator->prScalingCallback(); };
     }
 
-    return propagatorConnection; // NOLINT(readability-misleading-indentation)
+    return propagatorConnection;
 }
 
 // doxygen is confused by the two definitions
@@ -939,9 +974,9 @@ ISimulatorElement* Propagator<integrationStage>::getElementPointerImpl(
         LegacySimulatorData*                    legacySimulatorData,
         ModularSimulatorAlgorithmBuilderHelper* builderHelper,
         StatePropagatorData*                    statePropagatorData,
-        EnergyData gmx_unused*     energyData,
-        FreeEnergyPerturbationData gmx_unused* freeEnergyPerturbationData,
-        GlobalCommunicationHelper gmx_unused* globalCommunicationHelper,
+        EnergyData gmx_unused*                  energyData,
+        FreeEnergyPerturbationData gmx_unused*  freeEnergyPerturbationData,
+        GlobalCommunicationHelper gmx_unused*   globalCommunicationHelper,
         ObservablesReducer* /* observablesReducer */,
         const PropagatorTag& propagatorTag,
         TimeStep             timestep)

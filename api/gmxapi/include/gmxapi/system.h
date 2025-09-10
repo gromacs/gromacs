@@ -95,7 +95,7 @@ public:
      * Some sort of prototype or clone idiom could be useful, but
      * needs to explicitly identify any expensive operations.
      */
-    System(const System&) = delete;
+    System(const System&)            = delete;
     System& operator=(const System&) = delete;
     /*! \} */
 

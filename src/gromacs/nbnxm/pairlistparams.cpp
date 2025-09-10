@@ -44,16 +44,20 @@
 
 #include "pairlistparams.h"
 
-#include "gromacs/nbnxm/nbnxm.h"
+#include <optional>
+
 #include "gromacs/utility/gmxassert.h"
 
 #include "nbnxm_geometry.h"
 
+namespace gmx
+{
 
-PairlistParams::PairlistParams(const Nbnxm::KernelType kernelType,
-                               const bool              haveFep,
-                               const real              rlist,
-                               const bool              haveMultipleDomains) :
+PairlistParams::PairlistParams(const NbnxmKernelType             kernelType,
+                               const std::optional<PairlistType> gpuPairlistType,
+                               const bool                        haveFep,
+                               const real                        rlist,
+                               const bool                        haveMultipleDomains) :
     haveFep_(haveFep),
     rlistOuter(rlist),
     rlistInner(rlist),
@@ -64,14 +68,17 @@ PairlistParams::PairlistParams(const Nbnxm::KernelType kernelType,
     numRollingPruningParts(1),
     lifetime(-1)
 {
-    if (!Nbnxm::kernelTypeUsesSimplePairlist(kernelType))
+    if (!kernelTypeUsesSimplePairlist(kernelType))
     {
-        pairlistType = PairlistType::HierarchicalNxN;
+        GMX_RELEASE_ASSERT(gpuPairlistType.has_value(),
+                           "Need to have a valid GPU pairlist type at this point");
+        pairlistType = gpuPairlistType.value();
     }
     else
     {
-        switch (Nbnxm::sc_jClusterSize(kernelType))
+        switch (sc_jClusterSize(kernelType))
         {
+            case 1: pairlistType = PairlistType::Simple1x1; break;
             case 2: pairlistType = PairlistType::Simple4x2; break;
             case 4: pairlistType = PairlistType::Simple4x4; break;
             case 8: pairlistType = PairlistType::Simple4x8; break;
@@ -79,3 +86,5 @@ PairlistParams::PairlistParams(const Nbnxm::KernelType kernelType,
         }
     }
 }
+
+} // namespace gmx

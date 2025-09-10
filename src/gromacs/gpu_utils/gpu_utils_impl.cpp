@@ -32,9 +32,12 @@
  * the research papers on the package. Check out https://www.gromacs.org.
  */
 /*! \internal \file
- *  \brief Function stubs for build types that don't implement methods
- *
- *  \author Paul Bauer <paul.bauer.q@gmail.com>
+ * \brief Function stubs for build types that don't implement methods
+ * \author Paul Bauer <paul.bauer.q@gmail.com>
+ */
+/*!
+ * \defgroup module_gpu_utils Module GPU Utils
+ * \brief A brief description for Module GPU Utils
  */
 #include "gmxpre.h"
 

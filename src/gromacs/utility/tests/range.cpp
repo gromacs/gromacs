@@ -57,7 +57,8 @@
 
 namespace gmx
 {
-
+namespace test
+{
 namespace
 {
 
@@ -114,5 +115,5 @@ TEST(Range, IteratorWorks)
 }
 
 } // namespace
-
+} // namespace test
 } // namespace gmx

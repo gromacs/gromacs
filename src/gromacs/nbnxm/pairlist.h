@@ -37,34 +37,27 @@
 
 #include "config.h"
 
-#include <cstddef>
-
 #include <algorithm>
 #include <iterator>
 #include <memory>
 #include <vector>
 
 #include "gromacs/gpu_utils/hostallocator.h"
-#include "gromacs/math/vectypes.h"
-#include "gromacs/mdtypes/locality.h"
-#include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/defaultinitializationallocator.h"
-#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
+
+#include "nbnxm_enums.h"
+
+namespace gmx
+{
+class AtomPairlist;
+
+//! Currently hard coded default GPU pairlist layout
+static constexpr auto sc_layoutType = PairlistType::Hierarchical8x8x8;
 
 struct NbnxmPairlistCpuWork;
 struct NbnxmPairlistGpuWork;
-struct t_nblist;
-
-
-//! Convenience type for vector with aligned memory
-template<typename T>
-using AlignedVector = std::vector<T, gmx::AlignedAllocator<T>>;
-
-//! Convenience type for vector that avoids initialization at resize()
-template<typename T>
-using FastVector = std::vector<T, gmx::DefaultInitializationAllocator<T>>;
 
 /*! \brief Cache-line protection buffer
  *
@@ -109,11 +102,11 @@ public:
     //! Return the exclusion mask for \c index
     unsigned int& excl(int index) { return list_[index].excl; }
     //! Return the size of the list (not the number of packed elements)
-    gmx::Index size() const noexcept { return list_.size(); }
+    Index size() const noexcept { return list_.size(); }
     //! Return whether the list is empty
     bool empty() const noexcept { return size() == 0; }
     //! Resize the list
-    void resize(gmx::Index count) { list_.resize(count); }
+    void resize(Index count) { list_.resize(count); }
     //! Add a new element to the list
     void push_back(const decltype(list_)::value_type& value) { list_.push_back(value); }
 };
@@ -158,63 +151,13 @@ constexpr double c_nbnxnMinDistanceSquared = 1.0e-36;
 #else
 // The worst intermediate value we might evaluate is r^-12, which
 // means we should ensure r^2 stays above pow(GMX_FLOAT_MAX,-1.0/6.0)*1.01 (some margin)
-constexpr float      c_nbnxnMinDistanceSquared  = 3.82e-07F; // r > 6.2e-4
+constexpr float c_nbnxnMinDistanceSquared = 3.82e-07F; // r > 6.2e-4
 #endif
-
-//! The i- and j-cluster size for GPU lists, 8 atoms for CUDA, set at configure time for OpenCL and SYCL
-#if GMX_GPU_OPENCL || GMX_GPU_SYCL
-static constexpr int c_nbnxnGpuClusterSize = GMX_GPU_NB_CLUSTER_SIZE;
-#else
-static constexpr int c_nbnxnGpuClusterSize      = 8;
-#endif
-
-/*! \brief The number of clusters along a direction in a pair-search grid cell for GPU lists
- *
- * Typically all 2, but X can be 1 when targeting Intel Ponte Vecchio */
-//! \{
-static constexpr int c_gpuNumClusterPerCellZ = GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Z;
-static constexpr int c_gpuNumClusterPerCellY = GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Y;
-static constexpr int c_gpuNumClusterPerCellX = GMX_GPU_NB_NUM_CLUSTER_PER_CELL_X;
-//! \}
-//! The number of clusters in a pair-search grid cell for GPU lists
-static constexpr int c_gpuNumClusterPerCell =
-        c_gpuNumClusterPerCellZ * c_gpuNumClusterPerCellY * c_gpuNumClusterPerCellX;
-
-/*! \brief The number of clusters in a super-cluster, used for GPU
- *
- * Configured via GMX_GPU_NB_NUM_CLUSTER_PER_CELL_[XYZ] CMake options.
- * Typically 8 (2*2*2), but can be 4 (1*2*2) when targeting Intel Ponte Vecchio. */
-constexpr int c_nbnxnGpuNumClusterPerSupercluster =
-        c_gpuNumClusterPerCellX * c_gpuNumClusterPerCellY * c_gpuNumClusterPerCellZ;
-
-/*! \brief With GPU kernels we group cluster pairs in 4 to optimize memory usage
- * of integers containing 32 bits.
- */
-constexpr int c_nbnxnGpuJgroupSize = (32 / c_nbnxnGpuNumClusterPerSupercluster);
-
-/*! \brief The number of sub-parts used for data storage for a GPU cluster pair
- *
- * In CUDA the number of threads in a warp is 32 and we have cluster pairs
- * of 8*8=64 atoms, so it's convenient to store data for cluster pair halves,
- * i.e. split in 2.
- *
- * On architectures with 64-wide execution however it is better to avoid splitting
- * (e.g. AMD GCN, CDNA and later).
- */
-#if GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT
-static constexpr int c_nbnxnGpuClusterpairSplit = 1;
-#else
-static constexpr int c_nbnxnGpuClusterpairSplit = 2;
-#endif
-
-//! The fixed size of the exclusion mask array for a half GPU cluster pair
-static constexpr int c_nbnxnGpuExclSize =
-        c_nbnxnGpuClusterSize * c_nbnxnGpuClusterSize / c_nbnxnGpuClusterpairSplit;
 
 //! Whether we want to use GPU for neighbour list sorting
 constexpr bool nbnxmSortListsOnGpu()
 {
-    return (GMX_GPU_CUDA || GMX_GPU_SYCL);
+    return (GMX_GPU && !GMX_GPU_OPENCL);
 }
 
 /*! \internal
@@ -273,9 +216,9 @@ struct nbnxn_im_ei_t
 struct nbnxn_cj_packed_t
 {
     //! The packed j-clusters
-    int cj[c_nbnxnGpuJgroupSize];
+    int cj[sc_gpuJgroupSize(sc_layoutType)];
     //! The i-cluster mask data for 2 warps
-    nbnxn_im_ei_t imei[c_nbnxnGpuClusterpairSplit];
+    nbnxn_im_ei_t imei[sc_gpuClusterPairSplit(sc_layoutType)];
     //! Check if two instances are the same.
     bool operator==(const nbnxn_cj_packed_t& other) const
     {
@@ -291,28 +234,25 @@ struct nbnxn_cj_packed_t
 class PackedJClusterList
 {
 public:
-    explicit PackedJClusterList(const gmx::PinningPolicy pinningPolicy) :
-        list_({}, { pinningPolicy })
-    {
-    }
+    explicit PackedJClusterList(const PinningPolicy pinningPolicy) : list_({}, { pinningPolicy }) {}
     //! The list of packed j-cluster groups
-    gmx::HostVector<nbnxn_cj_packed_t> list_;
+    HostVector<nbnxn_cj_packed_t> list_;
     //! Return the j-cluster index for \c index from the pack list
     int cj(const int index) const
     {
-        return list_[index / c_nbnxnGpuJgroupSize].cj[index & (c_nbnxnGpuJgroupSize - 1)];
+        return list_[index / sc_gpuJgroupSize(sc_layoutType)].cj[index & (sc_gpuJgroupSize(sc_layoutType) - 1)];
     }
     //! Return the i-cluster interaction mask for the first cluster in \c index
     unsigned int imask0(const int index) const
     {
-        return list_[index / c_nbnxnGpuJgroupSize].imei[0].imask;
+        return list_[index / sc_gpuJgroupSize(sc_layoutType)].imei[0].imask;
     }
     //! Return the size of the list (not the number of packed elements)
-    gmx::Index size() const noexcept { return list_.size(); }
+    Index size() const noexcept { return list_.size(); }
     //! Return whether the list is empty
     bool empty() const noexcept { return size() == 0; }
     //! Resize the packed list
-    void resize(gmx::Index count) { list_.resize(count); }
+    void resize(Index count) { list_.resize(count); }
     //! Add a new element to the packed list
     void push_back(const decltype(list_)::value_type& value) { list_.push_back(value); }
 };
@@ -332,7 +272,7 @@ struct nbnxn_excl_t
     MSVC_DIAGNOSTIC_RESET
 
     //! Topology exclusion interaction bits per warp
-    unsigned int pair[c_nbnxnGpuExclSize];
+    unsigned int pair[sc_gpuExclSize(sc_layoutType)];
     //! Check if two instances are the same.
     bool operator==(const nbnxn_excl_t& other) const
     {
@@ -385,7 +325,7 @@ struct NbnxnPairlistGpu
      *
      * \param[in] pinningPolicy  Sets the pinning policy for all buffers used on the GPU
      */
-    NbnxnPairlistGpu(gmx::PinningPolicy pinningPolicy);
+    NbnxnPairlistGpu(PinningPolicy pinningPolicy);
 
     //! Cache protection
     gmx_cache_protect_t cp0;
@@ -399,11 +339,11 @@ struct NbnxnPairlistGpu
     //! The radius for constructing the list
     real rlist;
     //! The i-super-cluster list, indexes into cjPacked list;
-    gmx::HostVector<nbnxn_sci_t> sci;
+    HostVector<nbnxn_sci_t> sci;
     //! The list of packed j-cluster groups
     PackedJClusterList cjPacked;
     //! Atom interaction bits (non-exclusions)
-    gmx::HostVector<nbnxn_excl_t> excl;
+    HostVector<nbnxn_excl_t> excl;
     //! The total number of i-clusters
     int nci_tot;
 
@@ -413,5 +353,7 @@ struct NbnxnPairlistGpu
     //! Cache protection
     gmx_cache_protect_t cp1;
 };
+
+} // namespace gmx
 
 #endif

@@ -108,7 +108,7 @@ int pme_gpu_get_block_size(const gmx_pme_t* pme)
     }
     else
     {
-        return pme_gpu_get_atom_data_block_size();
+        return pme_gpu_get_atom_data_block_size(pme->gpu->programHandle_->warpSize());
     }
 }
 
@@ -148,45 +148,20 @@ void inline parallel_3dfft_execute_gpu_wrapper(gmx_pme_t*             pme,
     }
 }
 
-/* The PME computation code split into a few separate functions. */
-
 void pme_gpu_prepare_computation(gmx_pme_t*               pme,
                                  const matrix             box,
-                                 gmx_wallcycle*           wcycle,
+                                 const bool               updateBox,
                                  const gmx::StepWorkload& stepWork)
 {
     GMX_ASSERT(pme_gpu_active(pme), "This should be a GPU run of PME but it is not enabled.");
     GMX_ASSERT(pme->nnodes > 0, "");
     GMX_ASSERT(pme->nnodes == 1 || pme->ndecompdim > 0, "");
 
-    PmeGpu* pmeGpu = pme->gpu;
-    // TODO these flags are only here to honor the CPU PME code, and probably should be removed
-    pmeGpu->settings.useGpuForceReduction = stepWork.useGpuPmeFReduction;
+    pme->gpu->settings.useGpuForceReduction = stepWork.useGpuPmeFReduction;
 
-    bool shouldUpdateBox = false;
-    for (int i = 0; i < DIM; ++i)
+    if (updateBox)
     {
-        for (int j = 0; j <= i; ++j)
-        {
-            shouldUpdateBox |= (pmeGpu->common->previousBox[i][j] != box[i][j]);
-            pmeGpu->common->previousBox[i][j] = box[i][j];
-        }
-    }
-
-    if (stepWork.haveDynamicBox || shouldUpdateBox) // || is to make the first computation always update
-    {
-        wallcycle_start(wcycle, WallCycleCounter::LaunchGpuPme);
-        pme_gpu_update_input_box(pmeGpu, box);
-        wallcycle_stop(wcycle, WallCycleCounter::LaunchGpuPme);
-
-        if (!pme_gpu_settings(pmeGpu).performGPUSolve)
-        {
-            // TODO remove code duplication and add test coverage
-            matrix scaledBox;
-            pmeGpu->common->boxScaler->scaleBox(box, scaledBox);
-            gmx::invertBoxMatrix(scaledBox, pme->recipbox);
-            pme->boxVolume = scaledBox[XX][XX] * scaledBox[YY][YY] * scaledBox[ZZ][ZZ];
-        }
+        pme_gpu_update_input_box(pme, box);
     }
 }
 
@@ -424,7 +399,7 @@ void pme_gpu_wait_and_reduce(gmx_pme_t*               pme,
     pme_gpu_reduce_outputs(computeEnergyAndVirial, output, wcycle, forceWithVirial, enerd);
 }
 
-void pme_gpu_reinit_computation(const gmx_pme_t* pme, const bool gpuGraphWithSeparatePmeRank, gmx_wallcycle* wcycle)
+void pme_gpu_finish_step(const gmx_pme_t* pme, const bool gpuGraphWithSeparatePmeRank, gmx_wallcycle* wcycle)
 {
     GMX_ASSERT(pme_gpu_active(pme), "This should be a GPU run of PME but it is not enabled.");
 

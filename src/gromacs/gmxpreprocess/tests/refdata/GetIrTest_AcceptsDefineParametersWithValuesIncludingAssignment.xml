@@ -257,6 +257,8 @@ restraint-lambdas        =
 temperature-lambdas      = 
 calc-lambda-neighbors    = 1
 init-lambda-weights      = 
+init-lambda-counts       = 
+init-wl-histogram-counts = 
 dhdl-print-energy        = no
 sc-function              = beutler
 sc-alpha                 = 0
@@ -320,5 +322,11 @@ qmmm-cp2k-active         = false
 
 ; Colvars bias
 colvars-active           = false
+
+; Neural Network potential
+nnpot-active             = false
+
+; Fast Multipole Method
+fmm-backend              = inactive
 </String>
 </ReferenceData>

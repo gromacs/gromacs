@@ -68,8 +68,6 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -94,6 +92,8 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 struct gmx_output_env_t;
 
@@ -136,10 +136,10 @@ static gmx_bool bDebug = FALSE;
 #define HB_NR (1 << 2)
 static constexpr int sc_maxNumHydrogens = 4;
 
-#define ISHB(h) ((h)&2)
-#define ISDIST(h) ((h)&1)
-#define ISDON(h) ((h)&c_donorMask)
-#define ISINGRP(h) ((h)&c_inGroupMask)
+#define ISHB(h) ((h) & 2)
+#define ISDIST(h) ((h) & 1)
+#define ISDON(h) ((h) & c_donorMask)
+#define ISINGRP(h) ((h) & c_inGroupMask)
 
 struct HydrogenCellType
 {
@@ -1417,7 +1417,7 @@ static void merge_hb(HydrogenBondData* hb, gmx_bool bTwo, gmx_bool bContact)
     for (i = 0; (i < gmx::ssize(hb->d.don)); i++)
     {
         fprintf(stderr, "\r%d/%zu", i + 1, hb->d.don.size());
-        fflush(stderr);
+        std::fflush(stderr);
         id = hb->d.don[i];
         ii = hb->a.aptr[id];
         for (j = 0; (j < gmx::ssize(hb->a.acc)); j++)
@@ -1962,7 +1962,7 @@ static void do_hbac(const char*             fn,
 
     acType = AC_LUZAR;
     printf("according to the theory of Luzar and Chandler.\n");
-    fflush(stdout);
+    std::fflush(stdout);
     /* build hbexist matrix in reals for autocorr */
     /* Allocate memory for computing ACF (rhbex) and aggregating the ACF (ct) */
     n2 = 1;
@@ -1998,7 +1998,7 @@ static void do_hbac(const char*             fn,
         printf("ACF calculations parallelized with OpenMP using %i threads.\n"
                "Expect close to linear scaling over this donor-loop.\n",
                nThreads);
-        fflush(stdout);
+        std::fflush(stdout);
     }
 
 
@@ -2051,7 +2051,7 @@ static void do_hbac(const char*             fn,
                     if ((((nhbonds + 1) % 10) == 0) || (nhbonds + 1 == nrint))
                     {
                         fprintf(stderr, "\rACF %d/%d", nhbonds + 1, nrint);
-                        fflush(stderr);
+                        std::fflush(stderr);
                     }
                     nhbonds++;
                     for (j = 0; (j < nframes); j++)
@@ -2660,7 +2660,7 @@ int gmx_hbond(int argc, char* argv[])
                 grpnames_spec[0],
                 isize[0]);
     }
-    free(datable);
+    std::free(datable);
 
     /* search donors and acceptors in groups */
     snew(datable, top.atoms.nr);
@@ -2792,7 +2792,7 @@ int gmx_hbond(int argc, char* argv[])
 
         gmx_omp_set_num_threads(actual_nThreads);
         printf("Frame loop parallelized with OpenMP using %i threads.\n", actual_nThreads);
-        fflush(stdout);
+        std::fflush(stdout);
 
         p_hb.reserve(actual_nThreads);
         snew(p_adist, actual_nThreads);
@@ -2813,7 +2813,7 @@ int gmx_hbond(int argc, char* argv[])
      * instead of forking anew at every frame. */
 
 #pragma omp parallel firstprivate(i, h, dist, ang) private( \
-        j, xi, yi, zi, xj, yj, zj, ogrp, ai, aj, xjj, yjj, zjj, ihb, resdist, k, bTric, bEdge_xjj, bEdge_yjj) default(shared)
+                j, xi, yi, zi, xj, yj, zj, ogrp, ai, aj, xjj, yjj, zjj, ihb, resdist, k, bTric, bEdge_xjj, bEdge_yjj) default(shared)
     { /* Start of parallel region */
         const int threadNr = (bOMP) ? gmx_omp_get_thread_num() : 0;
 
@@ -2996,12 +2996,12 @@ int gmx_hbond(int argc, char* argv[])
                                                         }
                                                     }
                                                 } /* for aj  */
-                                            }     /* for xjj */
-                                        }         /* for yjj */
-                                    }             /* for zjj */
-                                }                 /* for ai  */
-                            }                     /* for grp */
-                        }                         /* for xi,yi,zi */
+                                            } /* for xjj */
+                                        } /* for yjj */
+                                    } /* for zjj */
+                                } /* for ai  */
+                            } /* for grp */
+                        } /* for xi,yi,zi */
                     }
                 }
                 GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR

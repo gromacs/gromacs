@@ -16,8 +16,7 @@
 #include "colvarcomp.h"
 
 
-colvar::alch_lambda::alch_lambda(std::string const &conf)
-  : cvc(conf)
+colvar::alch_lambda::alch_lambda()
 {
   set_function_type("alchLambda");
 
@@ -55,12 +54,9 @@ void colvar::alch_lambda::apply_force(colvarvalue const & /* force */)
   cvm::proxy->set_alch_lambda(x.real_value);
 }
 
-simple_scalar_dist_functions(alch_lambda)
 
 
-
-colvar::alch_Flambda::alch_Flambda(std::string const &conf)
-  : cvc(conf)
+colvar::alch_Flambda::alch_Flambda()
 {
   set_function_type("alch_Flambda");
 
@@ -102,4 +98,3 @@ void colvar::alch_Flambda::apply_force(colvarvalue const &force)
   cvm::proxy->indirect_lambda_biasing_force += d2E_dlambda2 * f;
 }
 
-simple_scalar_dist_functions(alch_Flambda)

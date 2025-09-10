@@ -59,13 +59,13 @@ AnalysisDataProxy::AnalysisDataProxy(int firstColumn, int columnSpan, AbstractAn
 }
 
 
-int AnalysisDataProxy::frameCount() const
+size_t AnalysisDataProxy::frameCount() const
 {
     return source_.frameCount();
 }
 
 
-AnalysisDataFrameRef AnalysisDataProxy::tryGetDataFrameInternal(int index) const
+AnalysisDataFrameRef AnalysisDataProxy::tryGetDataFrameInternal(size_t index) const
 {
     AnalysisDataFrameRef frame = source_.tryGetDataFrame(index);
     if (!frame.isValid())
@@ -76,7 +76,7 @@ AnalysisDataFrameRef AnalysisDataProxy::tryGetDataFrameInternal(int index) const
 }
 
 
-bool AnalysisDataProxy::requestStorageInternal(int nframes)
+bool AnalysisDataProxy::requestStorageInternal(size_t nframes)
 {
     return source_.requestStorage(nframes);
 }
@@ -92,7 +92,7 @@ void AnalysisDataProxy::dataStarted(AbstractAnalysisData* data)
 {
     GMX_RELEASE_ASSERT(data == &source_, "Source data mismatch");
     setDataSetCount(data->dataSetCount());
-    for (int i = 0; i < data->dataSetCount(); ++i)
+    for (size_t i = 0; i < data->dataSetCount(); ++i)
     {
         setColumnCount(i, columnSpan_);
     }
@@ -105,7 +105,7 @@ bool AnalysisDataProxy::parallelDataStarted(AbstractAnalysisData*              d
 {
     GMX_RELEASE_ASSERT(data == &source_, "Source data mismatch");
     setDataSetCount(data->dataSetCount());
-    for (int i = 0; i < data->dataSetCount(); ++i)
+    for (size_t i = 0; i < data->dataSetCount(); ++i)
     {
         setColumnCount(i, columnSpan_);
     }
@@ -157,7 +157,7 @@ void AnalysisDataProxy::frameFinished(const AnalysisDataFrameHeader& header)
     }
 }
 
-void AnalysisDataProxy::frameFinishedSerial(int frameIndex)
+void AnalysisDataProxy::frameFinishedSerial(size_t frameIndex)
 {
     if (bParallel_)
     {

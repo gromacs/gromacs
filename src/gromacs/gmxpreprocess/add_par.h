@@ -46,9 +46,38 @@ template<typename>
 class ArrayRef;
 }
 
+/*!
+ * \brief Adds an interaction to the list of interactions.
+ *
+ * \param ps List of interactions.
+ * \param ai First atom.
+ * \param aj Second atom.
+ * \param c Interaction parameters.
+ * \param s Interaction name.
+ */
 void add_param(InteractionsOfType* ps, int ai, int aj, gmx::ArrayRef<const real> c, const char* s);
 
-void add_cmap_param(InteractionsOfType* ps, int ai, int aj, int ak, int al, int am, const char* s);
+/*!
+ * \brief Adds a CMAP interaction to the list of interactions.
+ *
+ * \param ps List of interactions.
+ * \param ai First atom.
+ * \param aj Second atom.
+ * \param ak Third atom.
+ * \param al Fourth atom.
+ * \param am Fifth atom.
+ * \param c Two CMAP types: if specified, first is used to override the default for state A, second
+ * for state B.
+ * \param s Interaction name.
+ */
+void add_cmap_param(InteractionsOfType*       ps,
+                    int                       ai,
+                    int                       aj,
+                    int                       ak,
+                    int                       al,
+                    int                       am,
+                    gmx::ArrayRef<const real> c,
+                    const char*               s);
 
 void add_vsite3_atoms(InteractionsOfType* ps, int ai, int aj, int ak, int al, bool bSwapParity);
 

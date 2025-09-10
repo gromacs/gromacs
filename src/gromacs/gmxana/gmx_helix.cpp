@@ -53,8 +53,6 @@
 #include "gromacs/gmxana/gstat.h"
 #include "gromacs/gmxana/hxprops.h"
 #include "gromacs/math/utilities.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
@@ -63,6 +61,8 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 enum class PbcType : int;
 struct gmx_output_env_t;
@@ -206,12 +206,12 @@ int gmx_helix(int argc, char* argv[])
     for (i = 0; (i < efhNR); i++)
     {
         sprintf(buf, "%s.xvg", xf[i].filenm);
-        remove(buf);
+        std::remove(buf);
         xf[i].fp = xvgropen(buf, xf[i].title, xf[i].xaxis ? xf[i].xaxis : "Time (ps)", xf[i].yaxis, oenv);
         if (xf[i].bfp2)
         {
             sprintf(buf, "%s.out", xf[i].filenm);
-            remove(buf);
+            std::remove(buf);
             xf[i].fp2 = gmx_ffopen(buf, "w");
         }
     }
@@ -236,7 +236,7 @@ int gmx_helix(int argc, char* argv[])
         if ((teller++ % 10) == 0)
         {
             fprintf(stderr, "\rt=%.2f", t);
-            fflush(stderr);
+            std::fflush(stderr);
         }
         gmx_rmpbc_apply(gpbc, natoms, box, x);
 

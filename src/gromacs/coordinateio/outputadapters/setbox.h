@@ -45,8 +45,8 @@
 #include <memory>
 
 #include "gromacs/coordinateio/ioutputadapter.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/trajectory/trajectoryframe.h"
+#include "gromacs/utility/vec.h"
 
 namespace gmx
 {

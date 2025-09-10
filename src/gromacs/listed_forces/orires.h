@@ -43,9 +43,9 @@
 
 #include <cstdio>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 struct gmx_mtop_t;
 struct gmx_multisim_t;
@@ -86,7 +86,7 @@ real calc_orires_dev(const gmx_multisim_t*          ms,
                      t_oriresdata*                  oriresdata);
 
 /*! \brief
- * Diagonalizes the order tensor(s) of the orienation restraints.
+ * Diagonalizes the order tensor(s) of the orientation restraints.
  *
  * For each experiment eig containts first 3 eigenvalues and then
  * the 3 eigenvectors. The eigenvalues are ordered on magnitude.

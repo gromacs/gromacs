@@ -75,7 +75,7 @@ void MembedHolder::initializeMembed(FILE*          fplog,
 {
     if (doMembed_)
     {
-        if (MAIN(cr))
+        if (cr->commMySim.isMainRank())
         {
             fprintf(stderr, "Initializing membed");
         }

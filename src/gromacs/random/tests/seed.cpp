@@ -49,7 +49,8 @@
 
 namespace gmx
 {
-
+namespace test
+{
 namespace
 {
 
@@ -70,5 +71,5 @@ TEST(SeedTest, makeRandomSeed)
 }
 
 } // namespace
-
+} // namespace test
 } // namespace gmx

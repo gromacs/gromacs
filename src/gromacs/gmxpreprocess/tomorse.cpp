@@ -116,7 +116,7 @@ static int nequal(const char* a1, const char* a2)
      */
     for (i = 0; (a1[i] != '\0') && (a2[i] != '\0'); i++)
     {
-        if (toupper(a1[i]) != toupper(a2[i]))
+        if (std::toupper(a1[i]) != std::toupper(a2[i]))
         {
             break;
         }

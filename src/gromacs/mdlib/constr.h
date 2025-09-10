@@ -49,11 +49,12 @@
 #include <memory>
 #include <vector>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
+struct gmx_domdec_t;
 struct gmx_edsam;
 struct gmx_localtop_t;
 struct gmx_moltype_t;
@@ -61,7 +62,6 @@ struct gmx_mtop_t;
 struct gmx_multisim_t;
 struct gmx_wallcycle;
 struct pull_t;
-struct t_commrec;
 struct t_ilist;
 struct t_inputrec;
 struct t_nrnb;
@@ -72,6 +72,7 @@ namespace gmx
 {
 template<typename T>
 class ArrayRefWithPadding;
+class MpiComm;
 template<typename>
 class ListOfLists;
 class ObservablesReducerBuilder;
@@ -104,7 +105,8 @@ private:
                 const t_inputrec&          ir,
                 pull_t*                    pull_work,
                 FILE*                      log,
-                const t_commrec*           cr,
+                const MpiComm&             mpiComm,
+                gmx_domdec_t*              dd,
                 bool                       useUpdateGroups,
                 const gmx_multisim_t*      ms,
                 t_nrnb*                    nrnb,
@@ -299,7 +301,6 @@ inline const int* constr_iatomptr(gmx::ArrayRef<const int> iatom_constr,
 void do_constrain_first(FILE*                     log,
                         gmx::Constraints*         constr,
                         const t_inputrec&         inputrec,
-                        int                       numAtoms,
                         int                       numHomeAtoms,
                         ArrayRefWithPadding<RVec> x,
                         ArrayRefWithPadding<RVec> v,
@@ -349,6 +350,9 @@ void constrain_coordinates(gmx::Constraints*         constr,
                            real*                     dhdlambda,
                            bool                      computeVirial,
                            tensor                    constraintsVirial);
+
+/*! \brief Returns True if there is at least one triangular constraint. */
+bool hasTriangleConstraints(const gmx_mtop_t& mtop, FlexibleConstraintTreatment flexibleConstraintTreatment);
 
 } // namespace gmx
 

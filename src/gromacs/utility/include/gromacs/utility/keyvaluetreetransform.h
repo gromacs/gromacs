@@ -192,9 +192,9 @@ public:
          */
         void transformWith(std::function<ToType(const FromType&)> transform)
         {
-            builder_->addTransformToAny([transform](const Any& value) {
-                return Any::create<ToType>(transform(value.cast<FromType>()));
-            });
+            builder_->addTransformToAny(
+                    [transform](const Any& value)
+                    { return Any::create<ToType>(transform(value.cast<FromType>())); });
         }
     };
 
@@ -219,9 +219,8 @@ public:
          */
         void transformWith(std::function<void(KeyValueTreeObjectBuilder*, const FromType&)> transform)
         {
-            builder_->addTransformToObject([transform](KeyValueTreeObjectBuilder* builder, const Any& value) {
-                transform(builder, value.cast<FromType>());
-            });
+            builder_->addTransformToObject([transform](KeyValueTreeObjectBuilder* builder, const Any& value)
+                                           { transform(builder, value.cast<FromType>()); });
         }
     };
 

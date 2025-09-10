@@ -48,11 +48,11 @@
 #include <unordered_map>
 #include <vector>
 
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "isotope.h"
 #include "scatteringfactors.h"

@@ -70,11 +70,11 @@ bool decideGpuTimingsUsage()
          *
          * SYCL: compilers and runtimes change rapidly, so we disable timings by default
          * to avoid any possible overhead. */
-        return (getenv("GMX_ENABLE_GPU_TIMING") != nullptr);
+        return (std::getenv("GMX_ENABLE_GPU_TIMING") != nullptr);
     }
     else if (GMX_GPU_OPENCL)
     {
-        return (getenv("GMX_DISABLE_GPU_TIMING") == nullptr);
+        return (std::getenv("GMX_DISABLE_GPU_TIMING") == nullptr);
     }
     else
     {

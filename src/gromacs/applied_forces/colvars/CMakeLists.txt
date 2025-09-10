@@ -36,6 +36,7 @@
 if(NOT GMX_USE_COLVARS STREQUAL "INTERNAL")
     gmx_add_libgromacs_sources(
         colvarsMDModule_stub.cpp
+        colvarsoptions.cpp
         )
 else()
     gmx_add_libgromacs_sources(
@@ -46,8 +47,8 @@ else()
         colvarsforceprovider.cpp
         colvarproxygromacs.cpp
         )
+endif()
 
-    if (BUILD_TESTING)
-        add_subdirectory(tests)
-    endif()
+if (BUILD_TESTING)
+    add_subdirectory(tests)
 endif()

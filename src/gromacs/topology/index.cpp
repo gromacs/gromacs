@@ -71,7 +71,7 @@ static gmx_bool gmx_ask_yesno(gmx_bool bASK)
     {
         do
         {
-            c = toupper(fgetc(stdin));
+            c = std::toupper(std::fgetc(stdin));
         } while ((c != 'Y') && (c != 'N'));
 
         return (c == 'Y');
@@ -243,9 +243,10 @@ static void analyse_other(gmx::ArrayRef<std::string> restype,
                 && gmx_strcasecmp(restype[resind].c_str(), "RNA")
                 && gmx_strcasecmp(restype[resind].c_str(), "Water"))
             {
-                auto found = std::find_if(restp.begin(), restp.end(), [rname](const auto& entry) {
-                    return strcmp(entry.rname, rname) == 0;
-                });
+                auto found = std::find_if(restp.begin(),
+                                          restp.end(),
+                                          [rname](const auto& entry)
+                                          { return std::strcmp(entry.rname, rname) == 0; });
                 if (found == restp.end())
                 {
                     restp.emplace_back();
@@ -262,8 +263,8 @@ static void analyse_other(gmx::ArrayRef<std::string> restype,
             for (int j = 0; (j < atoms->nr); j++)
             {
                 const char* rname = *atoms->resinfo[atoms->atom[j].resind].name;
-                if ((strcmp(restp[i].rname, rname) == 0 && !restp[i].bNeg)
-                    || (strcmp(restp[i].rname, rname) != 0 && restp[i].bNeg))
+                if ((std::strcmp(restp[i].rname, rname) == 0 && !restp[i].bNeg)
+                    || (std::strcmp(restp[i].rname, rname) != 0 && restp[i].bNeg))
                 {
                     aid.push_back(j);
                 }
@@ -272,16 +273,17 @@ static void analyse_other(gmx::ArrayRef<std::string> restype,
             if (bASK)
             {
                 printf("split %s into atoms (y/n) ? ", restp[i].gname);
-                fflush(stdout);
+                std::fflush(stdout);
                 if (gmx_ask_yesno(bASK))
                 {
                     std::vector<const char*> attp;
                     for (size_t k = 0; (k < aid.size()); k++)
                     {
                         const char* aname = *atoms->atomname[aid[k]];
-                        auto found = std::find_if(attp.begin(), attp.end(), [aname](const char* entry) {
-                            return strcmp(aname, entry) == 0;
-                        });
+                        auto        found = std::find_if(attp.begin(),
+                                                  attp.end(),
+                                                  [aname](const char* entry)
+                                                  { return std::strcmp(aname, entry) == 0; });
                         if (found == attp.end())
                         {
                             attp.emplace_back(aname);
@@ -296,7 +298,7 @@ static void analyse_other(gmx::ArrayRef<std::string> restype,
                             for (size_t k = 0; (k < aid.size()); k++)
                             {
                                 const char* aname = *atoms->atomname[aid[k]];
-                                if (strcmp(aname, attp[l]) == 0)
+                                if (std::strcmp(aname, attp[l]) == 0)
                                 {
                                     aaid.push_back(aid[k]);
                                 }
@@ -399,7 +401,7 @@ static void analyse_prot(gmx::ArrayRef<const std::string> restype,
                 {
                     /* skip digits at beginning of atomname, e.g. 1H */
                     char* atnm = *atoms->atomname[n];
-                    while (isdigit(atnm[0]))
+                    while (std::isdigit(atnm[0]))
                     {
                         atnm++;
                     }
@@ -415,7 +417,7 @@ static void analyse_prot(gmx::ArrayRef<const std::string> restype,
                         if (0
                             == gmx_strncasecmp(constructing_data[i].defining_atomnames[j],
                                                atnm,
-                                               strlen(constructing_data[i].defining_atomnames[j])))
+                                               std::strlen(constructing_data[i].defining_atomnames[j])))
                         {
                             match = true;
                         }
@@ -492,13 +494,13 @@ static void analyse_prot(gmx::ArrayRef<const std::string> restype,
                 int hold   = -1;
                 for (; ((n < atoms->nr) && (atoms->atom[n].resind == resind)); n++)
                 {
-                    if (strcmp("CA", *atoms->atomname[n]) == 0)
+                    if (std::strcmp("CA", *atoms->atomname[n]) == 0)
                     {
                         aid.push_back(n);
                         hold = aid.size();
                         aid.resize(aid.size() + 3);
                     }
-                    else if (strcmp("C", *atoms->atomname[n]) == 0)
+                    else if (std::strcmp("C", *atoms->atomname[n]) == 0)
                     {
                         if (hold == -1)
                         {
@@ -506,7 +508,7 @@ static void analyse_prot(gmx::ArrayRef<const std::string> restype,
                         }
                         aid[hold] = n;
                     }
-                    else if (strcmp("O", *atoms->atomname[n]) == 0)
+                    else if (std::strcmp("O", *atoms->atomname[n]) == 0)
                     {
                         if (hold == -1)
                         {
@@ -514,7 +516,7 @@ static void analyse_prot(gmx::ArrayRef<const std::string> restype,
                         }
                         aid[hold + 1] = n;
                     }
-                    else if (strcmp("O1", *atoms->atomname[n]) == 0)
+                    else if (std::strcmp("O1", *atoms->atomname[n]) == 0)
                     {
                         if (hold == -1)
                         {
@@ -731,8 +733,8 @@ std::vector<IndexGroup> init_index(const char* gfile)
             char* pt = line;
             while (sscanf(pt, "%s", str) == 1)
             {
-                atomListPtr->push_back(strtol(str, nullptr, 10) - 1);
-                pt = strstr(pt, str) + strlen(str);
+                atomListPtr->push_back(std::strtol(str, nullptr, 10) - 1);
+                pt = std::strstr(pt, str) + std::strlen(str);
             }
         }
     }
@@ -757,7 +759,7 @@ std::vector<IndexGroup> init_index(const char* gfile)
 
 static void minstring(char* str)
 {
-    for (int i = 0; (i < static_cast<int>(strlen(str))); i++)
+    for (int i = 0; (i < static_cast<int>(std::strlen(str))); i++)
     {
         if (str[i] == '-')
         {
@@ -782,7 +784,7 @@ static int findGroupTemplated(const char* s, gmx::ArrayRef<T> indexGroups)
 {
     char      string[STRLEN];
     bool      bMultiple = false;
-    const int n         = strlen(s);
+    const int n         = std::strlen(s);
     int       aa        = -1;
     /* first look for whole name match */
     {
@@ -817,16 +819,16 @@ static int findGroupTemplated(const char* s, gmx::ArrayRef<T> indexGroups)
     if (aa == -1)
     {
         char key[STRLEN];
-        strncpy(key, s, sizeof(key) - 1);
+        std::strncpy(key, s, sizeof(key) - 1);
         key[STRLEN - 1] = '\0';
         upstring(key);
         minstring(key);
         for (gmx::Index i = 0; i < indexGroups.ssize(); i++)
         {
-            strncpy(string, indexGroupName(indexGroups[i]), STRLEN - 1);
+            std::strncpy(string, indexGroupName(indexGroups[i]), STRLEN - 1);
             upstring(string);
             minstring(string);
-            if (strstr(string, key) != nullptr)
+            if (std::strstr(string, key) != nullptr)
             {
                 if (aa != -1)
                 {
@@ -849,7 +851,7 @@ int find_group(const char* s, gmx::ArrayRef<const IndexGroup> indexGroups)
     return findGroupTemplated(s, indexGroups);
 }
 
-int find_group(const char* s, int ngrps, char** grpname)
+int find_group(const char* s, int ngrps, const char* const* grpname)
 {
     return findGroupTemplated(s, gmx::constArrayRefFromArray<const char*>(grpname, ngrps));
 }
@@ -871,8 +873,8 @@ static int qgroup(gmx::ArrayRef<const IndexGroup> indexGroups)
                 gmx_fatal(FARGS, "Cannot read from input");
             }
             trim(s); /* remove spaces */
-        } while (strlen(s) == 0);
-        aa = strtol(s, &end, 10);
+        } while (std::strlen(s) == 0);
+        aa = std::strtol(s, &end, 10);
         if (aa == 0 && end[0] != '\0') /* string entered */
         {
             aa = find_group(s, indexGroups);

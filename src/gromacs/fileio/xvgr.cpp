@@ -47,12 +47,11 @@
 
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/oenv.h"
-#include "gromacs/math/vec.h"
+#include "gromacs/mdrun/binary_information.h"
 #include "gromacs/mdspan/layouts.h"
 #include "gromacs/mdspan/mdspan.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
-#include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/coolstuff.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
@@ -60,6 +59,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/sysinfo.h"
+#include "gromacs/utility/vec.h"
 
 gmx_bool output_env_get_print_xvgr_codes(const gmx_output_env_t* oenv)
 {
@@ -72,7 +72,7 @@ static char* xvgrstr(const std::string& gmx, const gmx_output_env_t* oenv, char*
 {
     /* Supported greek letter names and corresponding xmgrace/xmgr symbols */
     const char* sym[]  = { "beta",  "chi", "delta", "eta", "lambda", "mu",
-                          "omega", "phi", "psi",   "rho", "theta",  nullptr };
+                           "omega", "phi", "psi",   "rho", "theta",  nullptr };
     const char  symc[] = { 'b', 'c', 'd', 'h', 'l', 'm', 'w', 'f', 'y', 'r', 'q', '\0' };
     gmx_bool    bXVGR;
     int         g, b, i;
@@ -152,7 +152,7 @@ static char* xvgrstr(const std::string& gmx, const gmx_output_env_t* oenv, char*
                     default: buf[b] = '\0'; break;
                 }
                 g++;
-                b = strlen(buf);
+                b = std::strlen(buf);
             }
             else if (gmx[g] == '8')
             {
@@ -462,21 +462,21 @@ static char* fgets3(FILE* fp, char** ptr, int* len, int maxlen)
                 curp          = 0;
             }
         }
-        if (fgets(*ptr + curp, len_remaining, fp) == nullptr)
+        if (std::fgets(*ptr + curp, len_remaining, fp) == nullptr)
         {
             /* if last line, skip */
             return nullptr;
         }
         curp += len_remaining - 1; /* overwrite the nul char in next iteration */
         len_remaining = 1;
-    } while ((std::strchr(*ptr, '\n') == nullptr) && (feof(fp) == 0));
+    } while ((std::strchr(*ptr, '\n') == nullptr) && (std::feof(fp) == 0));
 
     if (*len + STRLEN >= maxlen)
     {
         return nullptr; /* this line was too long */
     }
 
-    if (feof(fp))
+    if (std::feof(fp))
     {
         /* We reached EOF before '\n', skip this last line. */
         return nullptr;
@@ -834,7 +834,7 @@ readXvgTimeSeries(const std::filesystem::path& fn, std::optional<real> startTime
     const int numRows    = fullDataSet.extent(0);
     const int numColumns = fullDataSet.extent(1);
     gmx::MultiDimArray<std::vector<double>, gmx::dynamicExtents2D> reducedDataSet(numRows, numColumns);
-    int                                                            reducedRows = 0;
+    int reducedRows = 0;
     for (std::ptrdiff_t row = 0; row < numRows; ++row)
     {
         const bool timeLargerThanStartTime = !startTime.has_value() || (fullDataSet(row, 0) > *startTime);
@@ -919,7 +919,7 @@ real** read_xvg_time(const std::filesystem::path& fn,
         }
         n         = 0;
         bEndOfSet = FALSE;
-        while (!bEndOfSet && fgets(line0, MAXLINELEN, fp))
+        while (!bEndOfSet && std::fgets(line0, MAXLINELEN, fp))
         {
             line = line0;
             /* Remove whitespace */
@@ -1027,7 +1027,7 @@ real** read_xvg_time(const std::filesystem::path& fn,
                     a++;
                     line += nchar;
                 }
-                if (line0[strlen(line0) - 1] != '\n')
+                if (line0[std::strlen(line0) - 1] != '\n')
                 {
                     fprintf(stderr,
                             "File %s does not end with a newline, ignoring the last line\n",

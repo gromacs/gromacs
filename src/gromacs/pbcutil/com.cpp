@@ -47,8 +47,6 @@
 #include <iterator>
 #include <vector>
 
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/pbcenums.h"
 #include "gromacs/topology/mtop_util.h"
@@ -57,6 +55,8 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/range.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 enum class PbcType : int;
 

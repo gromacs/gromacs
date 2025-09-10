@@ -55,7 +55,6 @@
 #include "gromacs/math/arrayrefwithpadding.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/ishift.h"
-#include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/booltype.h"
 
@@ -95,11 +94,10 @@ ListedGmxCalculator::ListedGmxCalculator(const ListedInteractionData& interactio
     disres_.nres   = 0;
     fcdata_.disres = &disres_;
 
-    gmxListedForces_ =
-            std::make_unique<ListedForces>(*ffparams, 1, numThreads, interactionSelection, nullptr);
-    gmxListedForces_->setup(*idef, nP, false);
+    gmxListedForces_ = std::make_unique<ListedForces>(
+            *ffparams, 1, 0, numThreads, interactionSelection, nullptr, nullptr, nullptr);
+    gmxListedForces_->setup(*idef, nP, false, mdatoms_.cVCM);
 
-    wcycle = wallcycle_init(nullptr, 0, &cr);
     set_pbc(&pbc, PbcType::Xyz, box_.legacyMatrix());
 
     stepWork.computeForces       = true;
@@ -143,10 +141,8 @@ void ListedGmxCalculator::compute(gmx::ArrayRef<const gmx::RVec>     x,
     std::fill(forceBuffer.begin(), forceBuffer.end(), gmx::RVec{ 0, 0, 0 });
     std::fill(shiftBuffer.begin(), shiftBuffer.end(), gmx::RVec{ 0, 0, 0 });
 
-    gmxListedForces_->calculate(wcycle.get(),
+    gmxListedForces_->calculate(nullptr,
                                 box_.legacyMatrix(),
-                                &cr,
-                                nullptr,
                                 { x.data(), x.data() + x.size(), x.data() + x.size() },
                                 gmx::ArrayRef<const gmx::RVec>{},
                                 &fcdata_,
@@ -165,7 +161,8 @@ void ListedGmxCalculator::compute(gmx::ArrayRef<const gmx::RVec>     x,
                                 nullptr,
                                 stepWork);
 
-    auto transferEnergy = [&energies, this](auto& interactionElement) {
+    auto transferEnergy = [&energies, this](auto& interactionElement)
+    {
         using InteractionType = typename std::decay_t<decltype(interactionElement)>::type;
         if constexpr (ListedTypeIsImplemented<InteractionType>{})
         {

@@ -32,7 +32,7 @@
 # the research papers on the package. Check out https://www.gromacs.org.
 
 add_executable(template template.cpp)
-if (WIN32)
+if (MSVC)
     gmx_target_warning_suppression(template /wd4244 HAS_NO_MSVC_LOSSY_CONVERSION_DOUBLE_TO_REAL)
     gmx_target_warning_suppression(template /wd4267 HAS_NO_MSVC_LOSSY_CONVERSION_SIZE_T_TO_INT)
 endif()
@@ -40,6 +40,20 @@ endif()
 # with CMake 3.12, #3290
 target_include_directories(template SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/src/external)
 target_link_libraries(template PRIVATE libgromacs legacy_modules legacy_api ${GMX_EXE_LINKER_FLAGS})
+
+# Ensure that libsycl is properly linked when libgromacs is a static
+# library.
+#
+# TODO The second predicate is used in release-2025 branch to
+# maximize stability of the default shared-library build
+# configuration. After merging to main branch, remove the second
+# predicate, because it may be useful and seems unlikely to cause
+# harm.
+if(GMX_GPU_SYCL AND NOT BUILD_SHARED_LIBS)
+    # There are no source files to gmx that need to compile as
+    # SYCL, so none are provided here.
+    add_sycl_to_target(TARGET template)
+endif()
 
 set(DOCUMENTATION_HTTP_URL_BASE
     https://manual.gromacs.org/nightly/index.html)

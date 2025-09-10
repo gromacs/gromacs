@@ -57,7 +57,7 @@
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/gpu_utils/gpueventsynchronizer.h"
 #include "gromacs/gpu_utils/typecasts_cuda_hip.h"
-#include "gromacs/gpu_utils/vectype_ops.cuh"
+#include "gromacs/gpu_utils/vectype_ops_cuda.h"
 #include "gromacs/hardware/device_information.h"
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/nbnxm/atomdata.h"
@@ -66,12 +66,14 @@
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
 #include "gromacs/nbnxm/grid.h"
 #include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/nbnxm/nbnxm_gpu_data_mgmt.h"
 #include "gromacs/nbnxm/pairlist.h"
 #include "gromacs/timing/gpu_timing.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/gmxassert.h"
 
 #include "nbnxm_cuda.h"
+#include "nbnxm_cuda_kernel_utils.cuh"
 #include "nbnxm_cuda_types.h"
 
 /***** The kernel declarations/definitions come here *****/
@@ -117,7 +119,7 @@
 
 #include "nbnxm_cuda_kernel_sci_sort.cuh"
 
-namespace Nbnxm
+namespace gmx
 {
 
 /*! Nonbonded kernel function pointer type */
@@ -348,10 +350,10 @@ static const nbnxn_cu_kfunc_ptr_t nb_kfunc_ener_prune_ptr[c_numElecTypes][c_numV
 };
 
 /*! Return a pointer to the kernel version to be executed at the current step. */
-static inline nbnxn_cu_kfunc_ptr_t select_nbnxn_kernel(enum ElecType           elecType,
-                                                       enum VdwType            vdwType,
-                                                       bool                    bDoEne,
-                                                       bool                    bDoPrune,
+static inline nbnxn_cu_kfunc_ptr_t select_nbnxn_kernel(enum ElecType elecType,
+                                                       enum VdwType  vdwType,
+                                                       bool          bDoEne,
+                                                       bool          bDoPrune,
                                                        const DeviceInformation gmx_unused* deviceInfo)
 {
     const int elecTypeIdx = static_cast<int>(elecType);
@@ -363,8 +365,7 @@ static inline nbnxn_cu_kfunc_ptr_t select_nbnxn_kernel(enum ElecType           e
                "The VdW type requested is not implemented in the CUDA kernels.");
 
     /* assert assumptions made by the kernels */
-    GMX_ASSERT(c_nbnxnGpuClusterSize * c_nbnxnGpuClusterSize / c_nbnxnGpuClusterpairSplit
-                       == deviceInfo->prop.warpSize,
+    GMX_ASSERT(c_clusterSize * c_clusterSize / c_clusterSplitSize == deviceInfo->prop.warpSize,
                "The CUDA kernels require the "
                "cluster_size_i*cluster_size_j/nbnxn_gpu_clusterpair_split to match the warp size "
                "of the architecture targeted.");
@@ -394,7 +395,7 @@ static inline nbnxn_cu_kfunc_ptr_t select_nbnxn_kernel(enum ElecType           e
 }
 
 /*! \brief Calculates the amount of shared memory required by the nonbonded kernel in use. */
-static inline int calc_shmem_required_nonbonded(const int               num_threads_z,
+static inline int calc_shmem_required_nonbonded(const int                           num_threads_z,
                                                 const DeviceInformation gmx_unused* deviceInfo,
                                                 const NBParamGpu*                   nbp)
 {
@@ -405,19 +406,19 @@ static inline int calc_shmem_required_nonbonded(const int               num_thre
     /* size of shmem (force-buffers/xq/atom type preloading) */
     /* NOTE: with the default kernel on sm3.0 we need shmem only for pre-loading */
     /* i-atom x+q in shared memory */
-    shmem = c_nbnxnGpuNumClusterPerSupercluster * c_clSize * sizeof(float4);
+    shmem = c_superClusterSize * c_clusterSize * sizeof(float4);
     /* cj in shared memory, for each warp separately */
-    shmem += num_threads_z * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize * sizeof(int);
+    shmem += num_threads_z * c_clusterSplitSize * c_jGroupSize * sizeof(int);
 
     if (nbp->vdwType == VdwType::CutCombGeom || nbp->vdwType == VdwType::CutCombLB)
     {
         /* i-atom LJ combination parameters in shared memory */
-        shmem += c_nbnxnGpuNumClusterPerSupercluster * c_clSize * sizeof(float2);
+        shmem += c_superClusterSize * c_clusterSize * sizeof(float2);
     }
     else
     {
         /* i-atom types in shared memory */
-        shmem += c_nbnxnGpuNumClusterPerSupercluster * c_clSize * sizeof(int);
+        shmem += c_superClusterSize * c_clusterSize * sizeof(int);
     }
     /* for reducing prunedPairListCount over all warps in the block, to be used in plist sorting */
     shmem += 1 * sizeof(int);
@@ -433,14 +434,7 @@ static inline int calc_shmem_required_nonbonded(const int               num_thre
  * itself, which causes a performance degredation of 1-10% for that initial call */
 static inline void gpuLaunchKernelSciSort(GpuPairlist* plist, const DeviceStream& deviceStream)
 {
-    size_t scanTemporarySize = static_cast<size_t>(plist->sorting.nscanTemporary);
-
-    cub::DeviceScan::ExclusiveSum(plist->sorting.scanTemporary,
-                                  scanTemporarySize,
-                                  plist->sorting.sciHistogram,
-                                  plist->sorting.sciOffset,
-                                  c_sciHistogramSize,
-                                  deviceStream.stream());
+    performExclusiveScan(plist->sorting.nscanTemporary, plist->sorting.scanTemporary, plist, deviceStream);
 
     KernelLaunchConfig configSortSci;
     configSortSci.blockSize[0]     = c_sciSortingThreadsPerBlock;
@@ -479,7 +473,7 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const In
     NBAtomDataGpu*      adat         = nb->atdat;
     NBParamGpu*         nbp          = nb->nbparam;
     auto*               plist        = nb->plist[iloc].get();
-    Nbnxm::GpuTimers*   timers       = nb->timers;
+    GpuTimers*          timers       = nb->timers;
     const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
 
     bool bDoTime = nb->bDoTime;
@@ -535,8 +529,8 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const In
 
 
     KernelLaunchConfig config;
-    config.blockSize[0] = c_clSize;
-    config.blockSize[1] = c_clSize;
+    config.blockSize[0] = c_clusterSize;
+    config.blockSize[1] = c_clusterSize;
     config.blockSize[2] = num_threads_z;
     config.gridSize[0]  = nblock;
     config.sharedMemorySize =
@@ -553,8 +547,8 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const In
                 config.blockSize[2],
                 config.gridSize[0],
                 config.gridSize[1],
-                plist->numSci * c_nbnxnGpuNumClusterPerSupercluster,
-                c_nbnxnGpuNumClusterPerSupercluster,
+                plist->numSci * c_superClusterSize,
+                c_superClusterSize,
                 plist->numAtomsPerCluster,
                 config.sharedMemorySize);
     }
@@ -590,14 +584,21 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const In
 }
 
 /*! Calculates the amount of shared memory required by the CUDA kernel in use. */
-static inline int calc_shmem_required_prune(const int num_threads_z)
+static inline int calc_shmem_required_prune(const int num_threads_z, const DeviceInformation* deviceInfo)
 {
-    int shmem;
+    const int  archMajor = deviceInfo->prop.major;
+    const bool preloadCj = archMajor < 7;
+    int        shmem;
 
     /* i-atom x in shared memory */
-    shmem = c_nbnxnGpuNumClusterPerSupercluster * c_clSize * sizeof(float4);
-    /* cj in shared memory, for each warp separately */
-    shmem += num_threads_z * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize * sizeof(int);
+    shmem = c_superClusterSize * c_clusterSize * sizeof(float4);
+    if (preloadCj)
+    {
+        /* cj in shared memory, for each warp separately */
+        shmem += num_threads_z * c_clusterSplitSize * c_jGroupSize * sizeof(int);
+    }
+    /* add 1 int for pruned pair count */
+    shmem += sizeof(int);
 
     return shmem;
 }
@@ -607,7 +608,7 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
     NBAtomDataGpu*      adat         = nb->atdat;
     NBParamGpu*         nbp          = nb->nbparam;
     auto*               plist        = nb->plist[iloc].get();
-    Nbnxm::GpuTimers*   timers       = nb->timers;
+    GpuTimers*          timers       = nb->timers;
     const DeviceStream& deviceStream = *nb->deviceStreams[iloc];
 
     bool bDoTime = nb->bDoTime;
@@ -637,7 +638,7 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
      * Also note that this CUDA implementation (parts tracking on device) differs from the
      * other backends (parts tracking on host, passed as kernel argument).
      */
-    int numSciInPartMax = (plist->numSci) / numParts;
+    const int numSciInPartMax = (plist->numSci + numParts - 1) / numParts;
 
     /* Don't launch the kernel if there is no work to do (not allowed with CUDA) */
     if (numSciInPartMax <= 0)
@@ -669,11 +670,12 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
     int nblock        = calc_nb_kernel_nblock(numSciInPartMax, &nb->deviceContext_->deviceInfo());
 
     KernelLaunchConfig config;
-    config.blockSize[0]     = c_clSize;
-    config.blockSize[1]     = c_clSize;
-    config.blockSize[2]     = num_threads_z;
-    config.gridSize[0]      = nblock;
-    config.sharedMemorySize = calc_shmem_required_prune(num_threads_z);
+    config.blockSize[0] = c_clusterSize;
+    config.blockSize[1] = c_clusterSize;
+    config.blockSize[2] = num_threads_z;
+    config.gridSize[0]  = nblock;
+    config.sharedMemorySize =
+            calc_shmem_required_prune(num_threads_z, &nb->deviceContext_->deviceInfo());
 
     if (debug)
     {
@@ -686,8 +688,8 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
                 config.blockSize[2],
                 config.gridSize[0],
                 config.gridSize[1],
-                numSciInPartMax * c_nbnxnGpuNumClusterPerSupercluster,
-                c_nbnxnGpuNumClusterPerSupercluster,
+                numSciInPartMax * c_superClusterSize,
+                c_superClusterSize,
                 plist->numAtomsPerCluster,
                 config.sharedMemorySize);
     }
@@ -748,4 +750,4 @@ void cuda_set_cacheconfig()
     }
 }
 
-} // namespace Nbnxm
+} // namespace gmx

@@ -60,6 +60,7 @@
 
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
+#include "gromacs/mdrun/binary_information.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/topology.h"
@@ -315,7 +316,7 @@ void gmx_tng_add_mtop(gmx_tng_trajectory_t gmx_tng, const gmx_mtop_t* mtop)
 #    if GMX_DOUBLE
     datatype = TNG_DOUBLE_DATA;
 #    else
-    datatype                                               = TNG_FLOAT_DATA;
+    datatype = TNG_FLOAT_DATA;
 #    endif
 
     atomCharges.reserve(mtop->natoms);
@@ -822,7 +823,7 @@ void gmx_fwrite_tng(gmx_tng_trajectory_t gmx_tng,
 #    if GMX_DOUBLE
     static write_data_func_pointer write_data = tng_util_generic_with_time_double_write;
 #    else
-    static write_data_func_pointer    write_data           = tng_util_generic_with_time_write;
+    static write_data_func_pointer write_data = tng_util_generic_with_time_write;
 #    endif
     double  elapsedSeconds = elapsedPicoSeconds * gmx::c_pico;
     int64_t nParticles;
@@ -1228,7 +1229,7 @@ void convert_array_to_real_array(void*       from,
             {
                 if (fact == 1)
                 {
-                    memcpy(to, from, nValues * sizeof(real) * nAtoms);
+                    std::memcpy(to, from, nValues * sizeof(real) * nAtoms);
                 }
                 else
                 {
@@ -1266,7 +1267,7 @@ void convert_array_to_real_array(void*       from,
             {
                 if (fact == 1)
                 {
-                    memcpy(to, from, nValues * sizeof(real) * nAtoms);
+                    std::memcpy(to, from, nValues * sizeof(real) * nAtoms);
                 }
                 else
                 {
@@ -1925,3 +1926,13 @@ int gmx_tng_get_lambda_output_interval(gmx_tng_trajectory_t gmx_tng)
     return -1;
 #endif
 }
+
+namespace gmx
+{
+
+std::string tngDescription()
+{
+    return GMX_USE_TNG ? "enabled" : "disabled";
+}
+
+} // namespace gmx

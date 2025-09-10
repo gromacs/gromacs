@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Bool Name="If the temperature is not constant, its optional value should not be set">false</Bool>
+  <Bool Name="Plumed should be deactivated by default">false</Bool>
+</ReferenceData>

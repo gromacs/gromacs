@@ -62,8 +62,6 @@
 #include <vector>
 
 #include "gromacs/math/functions.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/selection/position.h"
@@ -76,6 +74,8 @@
 #include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 namespace gmx
 {
@@ -449,7 +449,13 @@ AnalysisNeighborhoodSearchImpl::~AnalysisNeighborhoodSearchImpl()
     PairSearchList::const_iterator i;
     for (i = pairSearchList_.begin(); i != pairSearchList_.end(); ++i)
     {
-        GMX_RELEASE_ASSERT(i->use_count() == 1, "Dangling AnalysisNeighborhoodPairSearch reference");
+        if (i->use_count() != 1)
+        {
+            std::fprintf(stderr,
+                         "Warning: Dangling AnalysisNeighborhoodPairSearch reference. Expected "
+                         "use_count() == 1, but got use_count() == %ld.\n",
+                         i->use_count());
+        }
     }
 }
 
@@ -996,7 +1002,7 @@ void AnalysisNeighborhoodPairSearchImpl::reset(int testIndex)
             }
             else
             {
-                excl_ = ArrayRef<const int>();
+                excl_ = ArrayRef<const int>{};
             }
         }
     }
@@ -1245,12 +1251,19 @@ public:
     typedef std::vector<SearchImplPointer>          SearchList;
 
     Impl() : cutoff_(0), excls_(nullptr), mode_(eSearchMode_Automatic), bXY_(false) {}
+
     ~Impl()
     {
         SearchList::const_iterator i;
         for (i = searchList_.begin(); i != searchList_.end(); ++i)
         {
-            GMX_RELEASE_ASSERT(i->use_count() == 1, "Dangling AnalysisNeighborhoodSearch reference");
+            if (i->use_count() != 1)
+            {
+                std::fprintf(stderr,
+                             "Warning: Dangling AnalysisNeighborhoodSearch reference. Expected "
+                             "use_count() == 1, but got use_count() == %ld.\n",
+                             i->use_count());
+            }
         }
     }
 

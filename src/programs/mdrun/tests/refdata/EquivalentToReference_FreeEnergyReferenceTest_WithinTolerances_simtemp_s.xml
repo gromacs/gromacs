@@ -2,27 +2,27 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <Energy Name="Potential">
-    <Real Name="Time 0.000000 Step 0 in frame 0">-1540.8595</Real>
-    <Real Name="Time 0.001000 Step 1 in frame 1">-1538.6833</Real>
-    <Real Name="Time 0.002000 Step 2 in frame 2">-1535.1133</Real>
-    <Real Name="Time 0.003000 Step 3 in frame 3">-1530.3499</Real>
-    <Real Name="Time 0.004000 Step 4 in frame 4">-1524.764</Real>
-    <Real Name="Time 0.005000 Step 5 in frame 5">-1518.8235</Real>
-    <Real Name="Time 0.006000 Step 6 in frame 6">-1513.2145</Real>
-    <Real Name="Time 0.007000 Step 7 in frame 7">-1508.2859</Real>
-    <Real Name="Time 0.008000 Step 8 in frame 8">-1504.241</Real>
-    <Real Name="Time 0.009000 Step 9 in frame 9">-1501.0817</Real>
-    <Real Name="Time 0.010000 Step 10 in frame 10">-1498.6368</Real>
-    <Real Name="Time 0.011000 Step 11 in frame 11">-1496.6323</Real>
-    <Real Name="Time 0.012000 Step 12 in frame 12">-1494.7946</Real>
-    <Real Name="Time 0.013000 Step 13 in frame 13">-1492.9298</Real>
-    <Real Name="Time 0.014000 Step 14 in frame 14">-1490.9951</Real>
-    <Real Name="Time 0.015000 Step 15 in frame 15">-1489.115</Real>
-    <Real Name="Time 0.016000 Step 16 in frame 16">-1487.2795</Real>
-    <Real Name="Time 0.017000 Step 17 in frame 17">-1485.6947</Real>
-    <Real Name="Time 0.018000 Step 18 in frame 18">-1484.662</Real>
+    <Real Name="Time 0.000000 Step 0 in frame 0">-1540.8597</Real>
+    <Real Name="Time 0.001000 Step 1 in frame 1">-1538.6824</Real>
+    <Real Name="Time 0.002000 Step 2 in frame 2">-1535.1117</Real>
+    <Real Name="Time 0.003000 Step 3 in frame 3">-1530.3496</Real>
+    <Real Name="Time 0.004000 Step 4 in frame 4">-1524.7646</Real>
+    <Real Name="Time 0.005000 Step 5 in frame 5">-1518.8254</Real>
+    <Real Name="Time 0.006000 Step 6 in frame 6">-1513.2135</Real>
+    <Real Name="Time 0.007000 Step 7 in frame 7">-1508.2852</Real>
+    <Real Name="Time 0.008000 Step 8 in frame 8">-1504.24</Real>
+    <Real Name="Time 0.009000 Step 9 in frame 9">-1501.0815</Real>
+    <Real Name="Time 0.010000 Step 10 in frame 10">-1498.6375</Real>
+    <Real Name="Time 0.011000 Step 11 in frame 11">-1496.6331</Real>
+    <Real Name="Time 0.012000 Step 12 in frame 12">-1494.796</Real>
+    <Real Name="Time 0.013000 Step 13 in frame 13">-1492.9297</Real>
+    <Real Name="Time 0.014000 Step 14 in frame 14">-1490.9955</Real>
+    <Real Name="Time 0.015000 Step 15 in frame 15">-1489.1163</Real>
+    <Real Name="Time 0.016000 Step 16 in frame 16">-1487.28</Real>
+    <Real Name="Time 0.017000 Step 17 in frame 17">-1485.6948</Real>
+    <Real Name="Time 0.018000 Step 18 in frame 18">-1484.6627</Real>
     <Real Name="Time 0.019000 Step 19 in frame 19">-1484.4108</Real>
-    <Real Name="Time 0.020000 Step 20 in frame 20">-1485.0343</Real>
+    <Real Name="Time 0.020000 Step 20 in frame 20">-1485.0338</Real>
   </Energy>
   <XvgLegend Name="Legend">
     <String Name="XvgLegend"><![CDATA[
@@ -45,18 +45,18 @@ s6 legend "\xD\f{}H \xl\f{} to T = 350 (K)"
       <Int Name="Length">8</Int>
       <Real>0.0000</Real>
       <Real>1</Real>
-      <Real>-1101.8300</Real>
-      <Real>-16.597310</Real>
+      <Real>-1101.8303</Real>
+      <Real>-16.597309</Real>
       <Real>0.0000000</Real>
-      <Real>17.249396</Real>
-      <Real>35.176548</Real>
-      <Real>53.808043</Real>
+      <Real>17.249395</Real>
+      <Real>35.176545</Real>
+      <Real>53.808039</Real>
     </Sequence>
     <Sequence Name="Row1">
       <Int Name="Length">8</Int>
       <Real>0.0050</Real>
       <Real>1</Real>
-      <Real>-1101.5885</Real>
+      <Real>-1101.5905</Real>
       <Real>-15.773378</Real>
       <Real>0.0000000</Real>
       <Real>16.393093</Real>
@@ -67,34 +67,34 @@ s6 legend "\xD\f{}H \xl\f{} to T = 350 (K)"
       <Int Name="Length">8</Int>
       <Real>0.0100</Real>
       <Real>0</Real>
-      <Real>-1117.1106</Real>
+      <Real>-1117.1108</Real>
       <Real>0.0000000</Real>
-      <Real>14.990100</Real>
-      <Real>30.569184</Real>
-      <Real>46.760359</Real>
-      <Real>63.587682</Real>
+      <Real>14.990117</Real>
+      <Real>30.569219</Real>
+      <Real>46.760411</Real>
+      <Real>63.587753</Real>
     </Sequence>
     <Sequence Name="Row3">
       <Int Name="Length">8</Int>
       <Real>0.0150</Real>
       <Real>0</Real>
-      <Real>-1116.7891</Real>
+      <Real>-1116.7898</Real>
       <Real>0.0000000</Real>
-      <Real>14.628623</Real>
-      <Real>29.832028</Real>
-      <Real>45.632763</Real>
-      <Real>62.054306</Real>
+      <Real>14.628645</Real>
+      <Real>29.832072</Real>
+      <Real>45.632830</Real>
+      <Real>62.054398</Real>
     </Sequence>
     <Sequence Name="Row4">
       <Int Name="Length">8</Int>
       <Real>0.0200</Real>
       <Real>2</Real>
-      <Real>-1086.4629</Real>
-      <Real>-29.565963</Real>
-      <Real>-15.067789</Real>
+      <Real>-1086.4634</Real>
+      <Real>-29.565891</Real>
+      <Real>-15.067752</Real>
       <Real>0.0000000</Real>
-      <Real>15.659854</Real>
-      <Real>31.934959</Real>
+      <Real>15.659815</Real>
+      <Real>31.934881</Real>
     </Sequence>
   </XvgData>
 </ReferenceData>

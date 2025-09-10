@@ -128,7 +128,8 @@ ResidueName Molecule::residueName(const ParticleIdentifier& particleIdentifier)
 template<class ListedVariant, class... ParticleIdentifiers>
 void Molecule::addInteractionImpl(const ListedVariant& interaction, const ParticleIdentifiers&... particles)
 {
-    auto storeInteraction = [&](const auto& interaction_) {
+    auto storeInteraction = [&](const auto& interaction_)
+    {
         using Interaction = std::decay_t<decltype(interaction_)>;
 
         auto& interactionContainer = pickType<Interaction>(interactionData_);
@@ -287,7 +288,8 @@ std::vector<std::tuple<int, int>> Molecule::getExclusions() const
     ret.reserve(exclusions_.size() + exclusionsByName_.size());
 
     // normal operator<, except ignore third element
-    auto sortKey = [](const auto& tup1, const auto& tup2) {
+    auto sortKey = [](const auto& tup1, const auto& tup2)
+    {
         if (std::get<0>(tup1) < std::get<0>(tup2))
         {
             return true;

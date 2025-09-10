@@ -49,9 +49,9 @@
 
 #include <algorithm>
 
-#include "gromacs/math/vec.h"
+#include "gromacs/utility/vec.h"
 
-namespace Nbnxm
+namespace gmx
 {
 
 /*! \internal
@@ -117,6 +117,6 @@ struct BoundingBox
     Corner upper;
 };
 
-} // namespace Nbnxm
+} // namespace gmx
 
 #endif // GMX_NBNXM_BOUNDINGBOX_H

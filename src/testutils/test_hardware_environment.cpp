@@ -119,5 +119,7 @@ void TestHardwareEnvironment::gmxTearDown()
     s_testHardwareEnvironment->hardwareInfo_.reset();
 }
 
+TestHardwareEnvironment::~TestHardwareEnvironment() = default;
+
 } // namespace test
 } // namespace gmx

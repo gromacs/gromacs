@@ -92,25 +92,25 @@ TEST(NbnxmSetupTest, findNumEnergyGroups)
 TEST(NbnxmSetupTest, canTranslateBenchmarkEnumAuto)
 {
     auto kernel = SimdKernels::SimdAuto;
-    EXPECT_EQ(translateBenchmarkEnum(kernel), Nbnxm::KernelType::NotSet);
+    EXPECT_EQ(translateBenchmarkEnum(kernel), gmx::NbnxmKernelType::NotSet);
 }
 
 TEST(NbnxmSetupTest, canTranslateBenchmarkEnumNo)
 {
     auto kernel = SimdKernels::SimdNo;
-    EXPECT_EQ(translateBenchmarkEnum(kernel), Nbnxm::KernelType::Cpu4x4_PlainC);
+    EXPECT_EQ(translateBenchmarkEnum(kernel), gmx::NbnxmKernelType::Cpu4x4_PlainC);
 }
 
 TEST(NbnxmSetupTest, canTranslateBenchmarkEnum2XM)
 {
     auto kernel = SimdKernels::Simd2XMM;
-    EXPECT_EQ(translateBenchmarkEnum(kernel), Nbnxm::KernelType::Cpu4xN_Simd_2xNN);
+    EXPECT_EQ(translateBenchmarkEnum(kernel), gmx::NbnxmKernelType::Cpu4xN_Simd_2xNN);
 }
 
 TEST(NbnxmSetupTest, canTranslateBenchmarkEnum4XM)
 {
     auto kernel = SimdKernels::Simd4XM;
-    EXPECT_EQ(translateBenchmarkEnum(kernel), Nbnxm::KernelType::Cpu4xN_Simd_4xN);
+    EXPECT_EQ(translateBenchmarkEnum(kernel), gmx::NbnxmKernelType::Cpu4xN_Simd_4xN);
 }
 
 TEST(NbnxmSetupTest, CheckKernelSetupThrowsAuto)
@@ -127,10 +127,10 @@ TEST(NbnxmSetupTest, canCreateKernelSetupPlain)
 {
     NBKernelOptions nbKernelOptions;
     nbKernelOptions.nbnxmSimd = SimdKernels::SimdNo;
-    Nbnxm::KernelSetup kernelSetup =
+    gmx::NbnxmKernelSetup kernelSetup =
             createKernelSetupCPU(nbKernelOptions.nbnxmSimd, nbKernelOptions.useTabulatedEwaldCorr);
-    EXPECT_EQ(kernelSetup.kernelType, Nbnxm::KernelType::Cpu4x4_PlainC);
-    EXPECT_EQ(kernelSetup.ewaldExclusionType, Nbnxm::EwaldExclusionType::Table);
+    EXPECT_EQ(kernelSetup.kernelType, gmx::NbnxmKernelType::Cpu4x4_PlainC);
+    EXPECT_EQ(kernelSetup.ewaldExclusionType, gmx::EwaldExclusionType::Table);
 }
 
 TEST(NbnxmSetupTest, canCreateParticleInfoAllVdv)
@@ -209,10 +209,10 @@ TEST(NbnxmSetupTest, CanCreateNbnxmCPU)
 #if GMX_GPU_CUDA
 TEST(NbnxmSetupTest, canCreateKernelSetupGPU)
 {
-    NBKernelOptions    nbKernelOptions;
-    Nbnxm::KernelSetup kernelSetup = createKernelSetupGPU(nbKernelOptions.useTabulatedEwaldCorr);
-    EXPECT_EQ(kernelSetup.kernelType, Nbnxm::KernelType::Gpu8x8x8);
-    EXPECT_EQ(kernelSetup.ewaldExclusionType, Nbnxm::EwaldExclusionType::Analytical);
+    NBKernelOptions       nbKernelOptions;
+    gmx::NbnxmKernelSetup kernelSetup = createKernelSetupGPU(nbKernelOptions.useTabulatedEwaldCorr);
+    EXPECT_EQ(kernelSetup.kernelType, gmx::NbnxmKernelType::Gpu8x8x8);
+    EXPECT_EQ(kernelSetup.ewaldExclusionType, gmx::EwaldExclusionType::Analytical);
 }
 
 TEST(NbnxmSetupTest, CanCreateDeviceStreamManager)

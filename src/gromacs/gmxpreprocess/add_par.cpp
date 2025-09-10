@@ -65,10 +65,18 @@ void add_param(InteractionsOfType* ps, int ai, int aj, gmx::ArrayRef<const real>
     ps->interactionTypes.emplace_back(atoms, forceParm, s ? s : "");
 }
 
-void add_cmap_param(InteractionsOfType* ps, int ai, int aj, int ak, int al, int am, const char* s)
+void add_cmap_param(InteractionsOfType*       ps,
+                    int                       ai,
+                    int                       aj,
+                    int                       ak,
+                    int                       al,
+                    int                       am,
+                    gmx::ArrayRef<const real> c,
+                    const char*               s)
 {
-    std::vector<int> atoms = { ai, aj, ak, al, am };
-    ps->interactionTypes.emplace_back(atoms, gmx::ArrayRef<const real>{}, s ? s : "");
+    std::vector<int>  atoms = { ai, aj, ak, al, am };
+    std::vector<real> forceParm(c.begin(), c.end());
+    ps->interactionTypes.emplace_back(atoms, forceParm, s ? s : "");
 }
 
 void add_vsite2_param(InteractionsOfType* ps, int ai, int aj, int ak, real c0)
@@ -108,11 +116,11 @@ int search_jtype(const PreprocessResidue& localPpResidue, const char* name, bool
     size_t k, kmax, minstrlen;
     char * rtpname, searchname[12];
 
-    strcpy(searchname, name);
+    std::strcpy(searchname, name);
 
     /* Do a best match comparison */
     /* for protein N-terminus, allow renaming of H1, H2 and H3 to H */
-    if (bNterm && (strlen(searchname) == 2) && (searchname[0] == 'H')
+    if (bNterm && (std::strlen(searchname) == 2) && (searchname[0] == 'H')
         && ((searchname[1] == '1') || (searchname[1] == '2') || (searchname[1] == '3')))
     {
         niter = 2;
@@ -136,12 +144,12 @@ int search_jtype(const PreprocessResidue& localPpResidue, const char* name, bool
             if (gmx_strcasecmp(searchname, rtpname) == 0)
             {
                 jmax = j;
-                kmax = strlen(searchname);
+                kmax = std::strlen(searchname);
                 break;
             }
             if (iter == niter - 1)
             {
-                minstrlen = std::min(strlen(searchname), strlen(rtpname));
+                minstrlen = std::min(std::strlen(searchname), std::strlen(rtpname));
                 for (k = 0; k < minstrlen; k++)
                 {
                     if (searchname[k] != rtpname[k])
@@ -164,7 +172,7 @@ int search_jtype(const PreprocessResidue& localPpResidue, const char* name, bool
                   searchname,
                   localPpResidue.resname.c_str());
     }
-    if (kmax != strlen(searchname))
+    if (kmax != std::strlen(searchname))
     {
         gmx_fatal(FARGS,
                   "Atom %s not found in rtp database in residue %s, "

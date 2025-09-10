@@ -76,24 +76,27 @@ function (do_cmake_config)
     get_filename_component(GROMACS_CXX_COMPILER ${CMAKE_CXX_COMPILER} REALPATH)
     if (CMAKE_OSX_DEPLOYMENT_TARGET OR CMAKE_OSX_ARCHITECTURES)
         set(_gmx_osx_config
-"SET(CMAKE_OSX_DEPLOYMENT_TARGET \"${CMAKE_OSX_DEPLOYMENT_TARGET}\" CACHE STRING \"GROMACS Deployment target.\")
-SET(CMAKE_OSX_ARCHITECTURES \"${CMAKE_OSX_ARCHITECTURES}\" CACHE STRING \"GROMACS architectures.\")")
+"set(CMAKE_OSX_DEPLOYMENT_TARGET \"${CMAKE_OSX_DEPLOYMENT_TARGET}\" CACHE STRING \"GROMACS Deployment target.\")
+set(CMAKE_OSX_ARCHITECTURES \"${CMAKE_OSX_ARCHITECTURES}\" CACHE STRING \"GROMACS architectures.\")")
     endif ()
 
     if (GMX_LIB_MPI)
         set(_gmx_mpi_config
-"SET(MPI_C_COMPILER \"${MPI_C_COMPILER}\" CACHE FILEPATH \"FindMPI C compiler hint.\")
-SET(MPI_CXX_COMPILER \"${MPI_CXX_COMPILER}\" CACHE FILEPATH \"FindMPI CXX compiler hint.\")")
+"set(MPI_C_COMPILER \"${MPI_C_COMPILER}\" CACHE FILEPATH \"FindMPI C compiler hint.\")
+set(MPI_CXX_COMPILER \"${MPI_CXX_COMPILER}\" CACHE FILEPATH \"FindMPI CXX compiler hint.\")")
     endif ()
 
     if(CMAKE_CUDA_COMPILER)
         set(_gmx_cuda_config
-"SET(CMAKE_CUDA_COMPILER \"${CMAKE_CUDA_COMPILER}\" CACHE FILEPATH \"Hint for enable_language(CUDA).\")")
+"set(CMAKE_CUDA_COMPILER \"${CMAKE_CUDA_COMPILER}\" CACHE FILEPATH \"Hint for enable_language(CUDA).\")")
     endif ()
 
-    if (hipsycl_FOUND)
-        set(_gmx_hipsycl_config
-            "SET(hipsycl_ROOT ${hipsycl_DIR} CACHE FILEPATH \"Hint for find_package(hipsycl)\")")
+    if (adaptivecpp_FOUND)
+        set(_gmx_adaptivecpp_config
+          "set(adaptivecpp_ROOT ${adaptivecpp_DIR} CACHE FILEPATH \"Hint for find_package(adaptivecpp)\")")
+    elseif (hipsycl_FOUND)
+        set(_gmx_adaptivecpp_config
+            "set(hipsycl_ROOT ${hipsycl_DIR} CACHE FILEPATH \"Hint for find_package(hipsycl)\")")
     endif ()
 
     configure_file(gromacs-config.cmake.cmakein
@@ -105,7 +108,7 @@ SET(MPI_CXX_COMPILER \"${MPI_CXX_COMPILER}\" CACHE FILEPATH \"FindMPI CXX compil
     unset(_gmx_cuda_config)
     unset(_gmx_mpi_config)
     unset(_gmx_osx_config)
-    unset(_gmx_hipsycl_config)
+    unset(_gmx_adaptivecpp_config)
     option(GMX_REQUIRE_VALID_CMAKE_HINTS "Force CMake error if generated hints are not usable." OFF)
     mark_as_advanced(GMX_REQUIRE_VALID_CMAKE_HINTS)
     if (GMX_REQUIRE_VALID_CMAKE_HINTS)
@@ -132,7 +135,7 @@ SET(MPI_CXX_COMPILER \"${MPI_CXX_COMPILER}\" CACHE FILEPATH \"FindMPI CXX compil
             # encountered, we can add additional checks here.
             message(STATUS "Verified usability of gromacs-hints.cmake")
             # We clean up after ourselves
-            FILE(REMOVE_RECURSE ${TEMPDIR})
+            file(REMOVE_RECURSE ${TEMPDIR})
         endif ()
     endif ()
 

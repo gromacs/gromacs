@@ -127,17 +127,21 @@ void FirstOrderPressureCoupling::scheduleTask(Step step, Time /*unused*/, const 
     {
         if (pressureCouplingType_ == PressureCoupling::Berendsen)
         {
-            registerRunFunction([this, step]() {
-                calculateScalingMatrix<PressureCoupling::Berendsen>(step);
-                scaleBoxAndCoordinates<PressureCoupling::Berendsen>();
-            });
+            registerRunFunction(
+                    [this, step]()
+                    {
+                        calculateScalingMatrix<PressureCoupling::Berendsen>(step);
+                        scaleBoxAndCoordinates<PressureCoupling::Berendsen>();
+                    });
         }
         else if (pressureCouplingType_ == PressureCoupling::CRescale)
         {
-            registerRunFunction([this, step]() {
-                calculateScalingMatrix<PressureCoupling::CRescale>(step);
-                scaleBoxAndCoordinates<PressureCoupling::CRescale>();
-            });
+            registerRunFunction(
+                    [this, step]()
+                    {
+                        calculateScalingMatrix<PressureCoupling::CRescale>(step);
+                        scaleBoxAndCoordinates<PressureCoupling::CRescale>();
+                    });
         }
     }
 }
@@ -190,26 +194,30 @@ void FirstOrderPressureCoupling::doCheckpointData(CheckpointData<operation>* che
 }
 
 void FirstOrderPressureCoupling::saveCheckpointState(std::optional<WriteCheckpointData> checkpointData,
-                                                     const t_commrec*                   cr)
+                                                     const MpiComm& mpiComm,
+                                                     gmx_domdec_t*  dd)
 {
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         doCheckpointData<CheckpointDataOperation::Write>(&checkpointData.value());
     }
+
+    GMX_UNUSED_VALUE(dd);
 }
 
 void FirstOrderPressureCoupling::restoreCheckpointState(std::optional<ReadCheckpointData> checkpointData,
-                                                        const t_commrec*                  cr)
+                                                        const MpiComm& mpiComm,
+                                                        gmx_domdec_t*  dd)
 {
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         doCheckpointData<CheckpointDataOperation::Read>(&checkpointData.value());
     }
-    if (haveDDAtomOrdering(*cr))
+    if (dd)
     {
-        dd_bcast(cr->dd, sizeof(conservedEnergyContribution_), &conservedEnergyContribution_);
-        dd_bcast(cr->dd, sizeof(conservedEnergyContributionStep_), &conservedEnergyContributionStep_);
-        dd_bcast(cr->dd, sizeof(boxRel_), boxRel_);
+        dd_bcast(dd, sizeof(conservedEnergyContribution_), &conservedEnergyContribution_);
+        dd_bcast(dd, sizeof(conservedEnergyContributionStep_), &conservedEnergyContributionStep_);
+        dd_bcast(dd, sizeof(boxRel_), boxRel_);
     }
 }
 
@@ -232,7 +240,7 @@ FirstOrderPressureCoupling::FirstOrderPressureCoupling(int                  coup
     couplingTimeStep_(couplingTimeStep),
     couplingFrequency_(couplingFrequency),
     couplingOffset_(couplingOffset),
-    boxScalingMatrix_{ { 0 } },
+    boxScalingMatrix_{ 0 },
     boxRel_{ { 0 } },
     conservedEnergyContribution_(0),
     previousStepConservedEnergyContribution_(0),
@@ -246,8 +254,8 @@ FirstOrderPressureCoupling::FirstOrderPressureCoupling(int                  coup
     nrnb_(nrnb),
     identifier_("FirstOrderPressureCoupling-" + std::string(enumValueToString(pressureCouplingType_)))
 {
-    energyData->addConservedEnergyContribution(
-            [this](Step step, Time /*unused*/) { return conservedEnergyContribution(step); });
+    energyData->addConservedEnergyContribution([this](Step step, Time /*unused*/)
+                                               { return conservedEnergyContribution(step); });
 }
 
 ISimulatorElement* FirstOrderPressureCoupling::getElementPointerImpl(
@@ -255,8 +263,8 @@ ISimulatorElement* FirstOrderPressureCoupling::getElementPointerImpl(
         ModularSimulatorAlgorithmBuilderHelper* builderHelper,
         StatePropagatorData*                    statePropagatorData,
         EnergyData*                             energyData,
-        FreeEnergyPerturbationData gmx_unused* freeEnergyPerturbationData,
-        GlobalCommunicationHelper gmx_unused* globalCommunicationHelper,
+        FreeEnergyPerturbationData gmx_unused*  freeEnergyPerturbationData,
+        GlobalCommunicationHelper gmx_unused*   globalCommunicationHelper,
         ObservablesReducer* /*observablesReducer*/,
         int                               offset,
         ReportPreviousStepConservedEnergy reportPreviousStepConservedEnergy)

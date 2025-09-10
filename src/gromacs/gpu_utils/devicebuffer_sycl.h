@@ -262,9 +262,8 @@ void copyToDeviceBuffer(DeviceBuffer<ValueType>* buffer,
     }
     else
     {
-        deviceStream.stream().submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
-            cgh.memcpy(dstPtr, hostBuffer, size);
-        });
+        gmx::syclSubmitWithoutEvent(deviceStream.stream(),
+                                    [&](sycl::handler& cgh) { cgh.memcpy(dstPtr, hostBuffer, size); });
     }
 }
 
@@ -320,9 +319,8 @@ void copyFromDeviceBuffer(ValueType*               hostBuffer,
     }
     else
     {
-        deviceStream.stream().submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
-            cgh.memcpy(hostBuffer, srcPtr, size);
-        });
+        gmx::syclSubmitWithoutEvent(deviceStream.stream(),
+                                    [&](sycl::handler& cgh) { cgh.memcpy(hostBuffer, srcPtr, size); });
     }
 }
 
@@ -355,9 +353,8 @@ void copyBetweenDeviceBuffers(DeviceBuffer<ValueType>* destinationDeviceBuffer,
     }
     else
     {
-        deviceStream.stream().submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
-            cgh.memcpy(dstPtr, srcPtr, size);
-        });
+        gmx::syclSubmitWithoutEvent(deviceStream.stream(),
+                                    [&](sycl::handler& cgh) { cgh.memcpy(dstPtr, srcPtr, size); });
     }
 }
 
@@ -385,9 +382,10 @@ void clearDeviceBufferAsync(DeviceBuffer<ValueType>* buffer,
     GMX_ASSERT(checkDeviceBuffer(*buffer, startingOffset + numValues),
                "buffer too small or not initialized");
 
-    deviceStream.stream().submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
-        cgh.memset(buffer->buffer_->ptr_ + startingOffset, 0, numValues * sizeof(ValueType));
-    });
+    gmx::syclSubmitWithoutEvent(
+            deviceStream.stream(),
+            [&](sycl::handler& cgh)
+            { cgh.memset(buffer->buffer_->ptr_ + startingOffset, 0, numValues * sizeof(ValueType)); });
 }
 
 /*! \brief Create a texture object for an array of type ValueType.
@@ -401,24 +399,23 @@ void clearDeviceBufferAsync(DeviceBuffer<ValueType>* buffer,
  * \param[out]  deviceBuffer   Device buffer to store data in.
  * \param[in]   hostBuffer     Host buffer to get date from.
  * \param[in]   numValues      Number of elements in the buffer.
- * \param[in]   deviceContext  GPU device context.
+ * \param[in]   deviceContext  Device context for memory allocation.
+ * \param[in]   deviceStream   Device stream for initialization.
  */
 template<typename ValueType>
 void initParamLookupTable(DeviceBuffer<ValueType>* deviceBuffer,
                           DeviceTexture* /* deviceTexture */,
                           const ValueType*     hostBuffer,
                           int                  numValues,
-                          const DeviceContext& deviceContext)
+                          const DeviceContext& deviceContext,
+                          const DeviceStream&  deviceStream)
 {
     GMX_ASSERT(hostBuffer, "Host buffer should be specified.");
     GMX_ASSERT(deviceBuffer, "Device buffer should be specified.");
 
     allocateDeviceBuffer<ValueType>(deviceBuffer, numValues, deviceContext);
-    /* Not perfect, but we call this function only on simulation initialization, so the
-     * overhead of a queue creation should be manageable. */
-    DeviceStream temporaryStream(deviceContext, DeviceStreamPriority::Normal, false);
     copyToDeviceBuffer(
-            deviceBuffer, hostBuffer, 0, numValues, temporaryStream, GpuApiCallBehavior::Sync, nullptr);
+            deviceBuffer, hostBuffer, 0, numValues, deviceStream, GpuApiCallBehavior::Sync, nullptr);
 }
 
 /*! \brief Release the underlying device allocations.

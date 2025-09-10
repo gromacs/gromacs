@@ -125,10 +125,10 @@ private:
 
 template<class T>
 template<int numFuncInTable, int funcIndex>
-void SplineTableTest<T>::testSplineTableAgainstFunctions(const std::string&                   desc,
+void SplineTableTest<T>::testSplineTableAgainstFunctions(const std::string& desc,
                                                          const std::function<double(double)>& refFunc,
                                                          const std::function<double(double)>& refDer,
-                                                         const T&                             table,
+                                                         const T&                     table,
                                                          const std::pair<real, real>& testRange)
 {
     real dx = (testRange.second - testRange.first) / s_testPoints_;

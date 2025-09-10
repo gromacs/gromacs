@@ -31,6 +31,10 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
+/*!
+ * \defgroup module_pulling Module Pulling
+ * \brief A brief description for Module Pulling
+ */
 #include "gmxpre.h"
 
 #include "gromacs/pulling/pull.h"
@@ -62,10 +66,7 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -86,11 +87,14 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 namespace gmx
 {
@@ -129,11 +133,6 @@ static int groupPbcFromParams(const t_pull_group& params, bool setPbcRefToPrevSt
     }
 }
 
-/* NOTE: The params initialization currently copies pointers.
- *       So the lifetime of the source, currently always inputrec,
- *       should not end before that of this object.
- *       This will be fixed when the pointers are replacted by std::vector.
- */
 pull_group_work_t::pull_group_work_t(const t_pull_group& params,
                                      gmx::LocalAtomSet   atomSet,
                                      bool                bSetPbcRefToPrevStepCOM,
@@ -141,15 +140,9 @@ pull_group_work_t::pull_group_work_t(const t_pull_group& params,
     params_(params),
     epgrppbc(groupPbcFromParams(params, bSetPbcRefToPrevStepCOM)),
     maxNumThreads_(maxNumThreads),
-    needToCalcCom(false),
-    atomSet_(atomSet),
-    mwscale(0),
-    wscale(0),
-    invtm(0)
+    atomSet_(atomSet)
 {
-    clear_dvec(x);
-    clear_dvec(xp);
-};
+}
 
 static bool pull_coordinate_is_directional(const t_pull_coord& pcrd)
 {
@@ -1600,7 +1593,7 @@ static void do_pull_pot_coord(const pull_t&      pull,
 real pull_potential(struct pull_t*       pull,
                     ArrayRef<const real> masses,
                     const t_pbc&         pbc,
-                    const t_commrec*     cr,
+                    const gmx::MpiComm&  mpiComm,
                     const double         t,
                     const real           lambda,
                     ArrayRef<const RVec> x,
@@ -1620,7 +1613,7 @@ real pull_potential(struct pull_t*       pull,
     {
         real dVdl = 0;
 
-        pull_calc_coms(cr, pull, masses, pbc, t, x, {});
+        pull_calc_coms(mpiComm, pull, masses, pbc, t, x, {});
 
         /* Evaluating coordinates needs to loop forward because transformation coordinates
          * values depend on the values of coordinates of lower index.
@@ -1641,7 +1634,7 @@ real pull_potential(struct pull_t*       pull,
             }
         }
 
-        if (MAIN(cr))
+        if (mpiComm.isMainRank())
         {
             *dvdlambda += dVdl;
         }
@@ -1652,12 +1645,12 @@ real pull_potential(struct pull_t*       pull,
     /* All external pull potentials still need to be applied */
     pull->numExternalPotentialsStillToBeAppliedThisStep = pull->numCoordinatesWithExternalPotential;
 
-    return (MAIN(cr) ? V : 0.0);
+    return (mpiComm.isMainRank() ? V : 0.0);
 }
 
 void pull_apply_forces(struct pull_t*        pull,
                        ArrayRef<const real>  masses,
-                       const t_commrec*      cr,
+                       const gmx::MpiComm&   mpiComm,
                        gmx::ForceWithVirial* force)
 {
     GMX_ASSERT(pull != nullptr, "Need a valid pull struct");
@@ -1668,7 +1661,7 @@ void pull_apply_forces(struct pull_t*        pull,
         return;
     }
 
-    const bool computeVirial = (force != nullptr && force->computeVirial_ && MAIN(cr));
+    const bool computeVirial = (force != nullptr && force->computeVirial_ && mpiComm.isMainRank());
     matrix     virial        = { { 0 } };
 
     /* Applying forces needs to loop backward to apply transformation coordinate forces */
@@ -1711,7 +1704,7 @@ void pull_apply_forces(struct pull_t*        pull,
 void pull_constraint(struct pull_t*       pull,
                      ArrayRef<const real> masses,
                      const t_pbc&         pbc,
-                     const t_commrec*     cr,
+                     const gmx::MpiComm&  mpiComm,
                      double               dt,
                      double               t,
                      ArrayRef<RVec>       x,
@@ -1723,19 +1716,16 @@ void pull_constraint(struct pull_t*       pull,
 
     if (pull->comm.bParticipate)
     {
-        pull_calc_coms(cr, pull, masses, pbc, t, x, xp);
+        pull_calc_coms(mpiComm, pull, masses, pbc, t, x, xp);
 
-        do_constraint(pull, pbc, xp, v, MAIN(cr), vir, dt, t);
+        do_constraint(pull, pbc, xp, v, mpiComm.isMainRank(), vir, dt, t);
     }
 }
 
-void dd_make_local_pull_groups(const t_commrec* cr, struct pull_t* pull)
+void dd_make_local_pull_groups(const gmx::MpiComm& mpiComm, gmx_domdec_t* dd, pull_t* pull)
 {
-    gmx_domdec_t* dd;
-    pull_comm_t*  comm;
-    gmx_bool      bMustParticipate;
-
-    dd = cr->dd;
+    pull_comm_t* comm;
+    gmx_bool     bMustParticipate;
 
     comm = &pull->comm;
 
@@ -1776,7 +1766,6 @@ void dd_make_local_pull_groups(const t_commrec* cr, struct pull_t* pull)
          */
         const int64_t history_count = 20;
         gmx_bool      bWillParticipate;
-        int           count[2];
 
         /* Increase the decomposition counter for the current call */
         comm->setup_count++;
@@ -1794,11 +1783,12 @@ void dd_make_local_pull_groups(const t_commrec* cr, struct pull_t* pull)
         {
             fprintf(debug,
                     "Our DD rank (%3d) pull #atoms>0 or main: %s, will be part %s\n",
-                    dd->rank,
+                    dd->mpiComm().rank(),
                     gmx::boolToString(bMustParticipate),
                     gmx::boolToString(bWillParticipate));
         }
 
+        std::array<int, 2> count;
         if (bWillParticipate)
         {
             /* Count the number of ranks that we want to have participating */
@@ -1815,7 +1805,7 @@ void dd_make_local_pull_groups(const t_commrec* cr, struct pull_t* pull)
         /* The cost of this global operation will be less that the cost
          * of the extra MPI_Comm_split calls that we can avoid.
          */
-        gmx_sumi(2, count, cr);
+        mpiComm.sumReduce(count);
 
         /* If we are missing ranks or if we have 20% more ranks than needed
          * we make a new sub-communicator.
@@ -1837,7 +1827,7 @@ void dd_make_local_pull_groups(const t_commrec* cr, struct pull_t* pull)
              * to avoid this splitting as much as possible.
              */
             assert(dd != nullptr);
-            MPI_Comm_split(dd->mpi_comm_all, bWillParticipate ? 0 : 1, dd->rank, &comm->mpi_comm_com);
+            MPI_Comm_split(dd->mpiComm().comm(), bWillParticipate ? 0 : 1, dd->mpiComm().rank(), &comm->mpi_comm_com);
 #endif
 
             comm->bParticipate = bWillParticipate;
@@ -1850,12 +1840,12 @@ void dd_make_local_pull_groups(const t_commrec* cr, struct pull_t* pull)
             {
                 if (group.epgrppbc == epgrppbcPREVSTEPCOM)
                 {
-                    GMX_ASSERT(comm->bParticipate || !MAIN(cr),
+                    GMX_ASSERT(comm->bParticipate || !mpiComm.isMainRank(),
                                "The main rank has to participate, as it should pass an up to "
                                "date prev. COM "
                                "to bcast here as well as to e.g. checkpointing");
 
-                    gmx_bcast(sizeof(dvec), group.x_prev_step, cr->mpi_comm_mygroup);
+                    gmx_bcast(sizeof(group.x_prev_step), group.x_prev_step, mpiComm.comm());
                 }
             }
         }
@@ -1865,15 +1855,15 @@ void dd_make_local_pull_groups(const t_commrec* cr, struct pull_t* pull)
     pull->bSetPBCatoms = TRUE;
 }
 
-static void init_pull_group_index(FILE*              fplog,
-                                  const t_commrec*   cr,
-                                  int                g,
-                                  pull_group_work_t* pg,
-                                  gmx_bool           bConstraint,
-                                  const ivec         pulldim_con,
-                                  const gmx_mtop_t&  mtop,
-                                  const t_inputrec*  ir,
-                                  real               lambda)
+static void init_pull_group_index(FILE*               fplog,
+                                  const gmx::MpiComm& mpiComm,
+                                  int                 g,
+                                  pull_group_work_t*  pg,
+                                  gmx_bool            bConstraint,
+                                  const ivec          pulldim_con,
+                                  const gmx_mtop_t&   mtop,
+                                  const t_inputrec*   ir,
+                                  real                lambda)
 {
     /* With EM and BD there are no masses in the integrator.
      * But we still want to have the correct mass-weighted COMs.
@@ -1883,7 +1873,7 @@ static void init_pull_group_index(FILE*              fplog,
                              || ir->eI == IntegrationAlgorithm::BD);
 
     /* In parallel, store we need to extract localWeights from weights at DD time */
-    std::vector<real>& weights = ((cr && PAR(cr)) ? pg->globalWeights : pg->localWeights);
+    std::vector<real>& weights = (mpiComm.isParallel() ? pg->globalWeights : pg->localWeights);
 
     const SimulationGroups& groups = mtop.groups;
 
@@ -2025,7 +2015,8 @@ struct pull_t* init_pull(FILE*                     fplog,
                          const pull_params_t*      pull_params,
                          const t_inputrec*         ir,
                          const gmx_mtop_t&         mtop,
-                         const t_commrec*          cr,
+                         const gmx::MpiComm&       mpiComm,
+                         gmx_domdec_t*             dd,
                          gmx::LocalAtomSetManager* atomSets,
                          real                      lambda)
 {
@@ -2051,7 +2042,9 @@ struct pull_t* init_pull(FILE*                     fplog,
                                  maxNumThreads);
     }
 
-    if (cr != nullptr && haveDDAtomOrdering(*cr))
+    pull->haveDDAtomOrdering = (dd != nullptr);
+
+    if (pull->haveDDAtomOrdering)
     {
         /* Set up the global to local atom mapping for PBC atoms */
         for (pull_group_work_t& group : pull->group)
@@ -2360,7 +2353,7 @@ struct pull_t* init_pull(FILE*                     fplog,
             }
 
             /* Set the indices */
-            init_pull_group_index(fplog, cr, g, pgrp, bConstraint, pulldim_con, mtop, ir, lambda);
+            init_pull_group_index(fplog, mpiComm, g, pgrp, bConstraint, pulldim_con, mtop, ir, lambda);
         }
         else
         {
@@ -2401,15 +2394,15 @@ struct pull_t* init_pull(FILE*                     fplog,
      * when we have an external pull potential, since then the external
      * potential provider expects each rank to have the coordinate.
      */
-    comm->bParticipateAll = (cr == nullptr || !haveDDAtomOrdering(*cr) || cr->dd->nnodes <= 32
-                             || pull->numCoordinatesWithExternalPotential > 0
-                             || getenv("GMX_PULL_PARTICIPATE_ALL") != nullptr);
+    comm->bParticipateAll =
+            (dd == nullptr || dd->nnodes <= 32 || pull->numCoordinatesWithExternalPotential > 0
+             || std::getenv("GMX_PULL_PARTICIPATE_ALL") != nullptr);
     /* This sub-commicator is not used with comm->bParticipateAll,
      * so we can always initialize it to NULL.
      */
     comm->mpi_comm_com = MPI_COMM_NULL;
     comm->nparticipate = 0;
-    comm->isMainRank   = (cr == nullptr || MAIN(cr));
+    comm->isMainRank   = mpiComm.isMainRank();
 #else
     /* No MPI: 1 rank: all ranks pull */
     comm->bParticipateAll = TRUE;
@@ -2452,7 +2445,7 @@ static void destroy_pull(struct pull_t* pull)
     delete pull;
 }
 
-void preparePrevStepPullComNewSimulation(const t_commrec*                       cr,
+void preparePrevStepPullComNewSimulation(const gmx::MpiComm&                    mpiComm,
                                          pull_t*                                pull_work,
                                          ArrayRef<const real>                   masses,
                                          ArrayRef<const RVec>                   x,
@@ -2462,7 +2455,7 @@ void preparePrevStepPullComNewSimulation(const t_commrec*                       
 {
     t_pbc pbc;
     set_pbc(&pbc, pbcType, box);
-    initPullComFromPrevStep(cr, pull_work, masses, pbc, x);
+    initPullComFromPrevStep(mpiComm, pull_work, masses, pbc, x);
     updatePrevStepPullCom(pull_work, comPreviousStep);
 }
 
@@ -2471,7 +2464,7 @@ void preparePrevStepPullCom(const t_inputrec*    ir,
                             ArrayRef<const real> masses,
                             t_state*             state,
                             const t_state*       state_global,
-                            const t_commrec*     cr,
+                            const gmx::MpiComm&  mpiComm,
                             bool                 startingFromCheckpoint)
 {
     if (!ir->pull || !ir->pull->bSetPbcRefToPrevStepCOM)
@@ -2481,22 +2474,22 @@ void preparePrevStepPullCom(const t_inputrec*    ir,
     allocStatePrevStepPullCom(state, pull_work);
     if (startingFromCheckpoint)
     {
-        if (MAIN(cr))
+        if (mpiComm.isMainRank())
         {
             state->pull_com_prev_step = state_global->pull_com_prev_step;
         }
-        if (PAR(cr))
+        if (mpiComm.isParallel())
         {
             /* Only the main rank has the checkpointed COM from the previous step */
             gmx_bcast(sizeof(double) * state->pull_com_prev_step.size(),
                       &state->pull_com_prev_step[0],
-                      cr->mpi_comm_mygroup);
+                      mpiComm.comm());
         }
         setPrevStepPullComFromState(pull_work, state);
     }
     else
     {
-        preparePrevStepPullComNewSimulation(cr,
+        preparePrevStepPullComNewSimulation(mpiComm,
                                             pull_work,
                                             masses,
                                             state->x.arrayRefWithPadding().unpaddedArrayRef(),

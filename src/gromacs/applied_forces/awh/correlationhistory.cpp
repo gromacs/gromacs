@@ -54,7 +54,6 @@
 #include "gromacs/applied_forces/awh/correlationtensor.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdtypes/awh_correlation_history.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"

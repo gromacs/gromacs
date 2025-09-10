@@ -181,9 +181,10 @@
             {
                 if constexpr (c_needToCheckExclusions)
                 {
-                    vCoulombCorrectionV = genArr<nR>([&](int i) {
-                        return vCoulombCorrectionV[i] + selectByMask(ewaldShift, interactV[i]);
-                    });
+                    vCoulombCorrectionV = genArr<nR>(
+                            [&](int i) {
+                                return vCoulombCorrectionV[i] + selectByMask(ewaldShift, interactV[i]);
+                            });
                 }
                 else
                 {
@@ -193,8 +194,8 @@
             }
 
             /* Combine Coulomb and correction terms */
-            vCoulombV = genArr<nR>(
-                    [&](int i) { return qqV[i] * (rInvExclV[i] - vCoulombCorrectionV[i]); });
+            vCoulombV = genArr<nR>([&](int i)
+                                   { return qqV[i] * (rInvExclV[i] - vCoulombCorrectionV[i]); });
 
             /* Mask energy for cut-off and diagonal */
             vCoulombV =
@@ -309,9 +310,11 @@
         if constexpr (calculateEnergies)
         {
             /* The potential shift should be removed for pairs beyond cut-off */
-            vLJV = genArr<c_nRLJ>([&](int i) {
-                return selectByMask(vLJV[i], haveVdwCutoffCheck ? withinVdwCutoffV[i] : withinCutoffV[i]);
-            });
+            vLJV = genArr<c_nRLJ>(
+                    [&](int i) {
+                        return selectByMask(
+                                vLJV[i], haveVdwCutoffCheck ? withinVdwCutoffV[i] : withinCutoffV[i]);
+                    });
         }
 
     } // calculateLJInteractions
@@ -323,9 +326,10 @@
     {
         if constexpr (c_calculateCoulombInteractions)
         {
-            fScalarV = genArr<nR>([&](int i) {
-                return rInvSquaredV[i] * (i < c_nRLJ ? frCoulombV[i] + frLJV[i] : frCoulombV[i]);
-            });
+            fScalarV = genArr<nR>(
+                    [&](int i) {
+                        return rInvSquaredV[i] * (i < c_nRLJ ? frCoulombV[i] + frLJV[i] : frCoulombV[i]);
+                    });
         }
         else
         {

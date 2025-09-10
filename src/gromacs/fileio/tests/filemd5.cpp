@@ -75,9 +75,9 @@ public:
         std::vector<char> data(lengthInBytes);
         std::iota(data.begin(), data.end(), 1);
         // Binary mode ensures it works the same on all OS
-        FILE* fp = fopen(filename_.string().c_str(), "wb");
-        fwrite(data.data(), sizeof(char), data.size(), fp);
-        fclose(fp);
+        FILE* fp = std::fopen(filename_.string().c_str(), "wb");
+        std::fwrite(data.data(), sizeof(char), data.size(), fp);
+        std::fclose(fp);
     }
     ~FileMD5Test() override
     {

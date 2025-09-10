@@ -110,42 +110,47 @@
 #define GMX_NBNXM_NBNXM_H
 
 #include <memory>
+#include <optional>
+#include <string>
 
 #include "gromacs/gpu_utils/devicebuffer_datatype.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/locality.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
+
+#include "nbnxm_enums.h"
 
 struct DeviceInformation;
 class ExclusionChecker;
-class FreeEnergyDispatch;
-struct gmx_domdec_zones_t;
+struct gmx_domdec_t;
 struct gmx_enerdata_t;
 struct gmx_hw_info_t;
 struct gmx_mtop_t;
-struct NbnxmGpu;
 struct gmx_wallcycle;
 struct interaction_const_t;
 enum class LJCombinationRule;
-struct nbnxn_atomdata_t;
-struct nonbonded_verlet_t;
-class PairSearch;
-class PairlistSets;
-struct t_commrec;
 struct t_nrnb;
 struct t_forcerec;
 struct t_inputrec;
 struct gmx_grppairener_t;
-
 class GpuEventSynchronizer;
 
 namespace gmx
 {
+class FreeEnergyDispatch;
+class MpiComm;
+class Grid;
+struct GridDimensions;
+struct NbnxmGpu;
+struct nbnxn_atomdata_t;
+class PairSearch;
+class PairlistSets;
 template<typename>
 class ArrayRefWithPadding;
 class DeviceStreamManager;
+class DomdecZones;
 class ForceWithShiftForces;
 class ListedForcesGpu;
 template<typename>
@@ -156,103 +161,15 @@ template<typename>
 class Range;
 class StepWorkload;
 class UpdateGroupsCog;
-} // namespace gmx
-
-//! Namespace for non-bonded kernels
-namespace Nbnxm
-{
-enum class KernelType;
-
-/*! \brief Nbnxm electrostatic GPU kernel flavors.
- *
- *  Types of electrostatics implementations available in the GPU non-bonded
- *  force kernels. These represent both the electrostatics types implemented
- *  by the kernels (cut-off, RF, and Ewald - a subset of what's defined in
- *  enums.h) as well as encode implementation details analytical/tabulated
- *  and single or twin cut-off (for Ewald kernels).
- *  Note that the cut-off and RF kernels have only analytical flavor and unlike
- *  in the CPU kernels, the tabulated kernels are ATM Ewald-only.
- *
- *  The row-order of pointers to different electrostatic kernels defined in
- *  nbnxn_cuda.cu by the nb_*_kfunc_ptr function pointer table
- *  should match the order of enumerated types below.
- */
-enum class ElecType : int
-{
-    Cut,          //!< Plain cut-off
-    RF,           //!< Reaction field
-    EwaldTab,     //!< Tabulated Ewald with single cut-off
-    EwaldTabTwin, //!< Tabulated Ewald with twin cut-off
-    EwaldAna,     //!< Analytical Ewald with single cut-off
-    EwaldAnaTwin, //!< Analytical Ewald with twin cut-off
-    Count         //!< Number of valid values
-};
-
-//! Number of possible \ref ElecType values.
-constexpr int c_numElecTypes = static_cast<int>(ElecType::Count);
-
-/*! \brief Nbnxm VdW GPU kernel flavors.
- *
- * The enumerates values correspond to the LJ implementations in the GPU non-bonded
- * kernels.
- *
- * The column-order of pointers to different electrostatic kernels defined in
- * nbnxn_cuda_ocl.cpp/.cu by the nb_*_kfunc_ptr function pointer table
- * should match the order of enumerated types below.
- */
-enum class VdwType : int
-{
-    Cut,         //!< Plain cut-off
-    CutCombGeom, //!< Cut-off with geometric combination rules
-    CutCombLB,   //!< Cut-off with Lorentz-Berthelot combination rules
-    FSwitch,     //!< Smooth force switch
-    PSwitch,     //!< Smooth potential switch
-    EwaldGeom,   //!< Ewald with geometric combination rules
-    EwaldLB,     //!< Ewald with Lorentz-Berthelot combination rules
-    Count        //!< Number of valid values
-};
-
-//! Number of possible \ref VdwType values.
-constexpr int c_numVdwTypes = static_cast<int>(VdwType::Count);
-
-/*! \brief Nonbonded NxN kernel types: plain C, CPU SIMD, GPU, GPU emulation */
-enum class KernelType : int
-{
-    NotSet = 0,
-    Cpu4x4_PlainC,
-    Cpu4xN_Simd_4xN,
-    Cpu4xN_Simd_2xNN,
-    Gpu8x8x8,
-    Cpu8x8x8_PlainC,
-    Count
-};
-
-/*! \brief Ewald exclusion types */
-enum class EwaldExclusionType : int
-{
-    NotSet = 0,
-    Table,
-    Analytical,
-    DecidedByGpuModule
-};
 
 /* \brief The non-bonded setup, also affects the pairlist construction kernel */
-struct KernelSetup
+struct NbnxmKernelSetup
 {
     //! The non-bonded type, also affects the pairlist construction kernel
-    KernelType kernelType = KernelType::NotSet;
+    NbnxmKernelType kernelType = NbnxmKernelType::NotSet;
     //! Ewald exclusion computation handling type, currently only used for CPU
     EwaldExclusionType ewaldExclusionType = EwaldExclusionType::NotSet;
 };
-
-/*! \brief Return a string identifying the kernel type.
- *
- * \param [in] kernelType   nonbonded kernel type, takes values from the nbnxn_kernel_type enum
- * \returns                 a string identifying the kernel corresponding to the type passed as argument
- */
-const char* lookup_kernel_name(Nbnxm::KernelType kernelType);
-
-} // namespace Nbnxm
 
 /*! \brief Flag to tell the nonbonded kernels whether to clear the force output buffers */
 enum
@@ -279,7 +196,7 @@ public:
     nonbonded_verlet_t(std::unique_ptr<PairlistSets>     pairlistSets,
                        std::unique_ptr<PairSearch>       pairSearch,
                        std::unique_ptr<nbnxn_atomdata_t> nbat,
-                       const Nbnxm::KernelSetup&         kernelSetup,
+                       const NbnxmKernelSetup&           kernelSetup,
                        std::unique_ptr<ExclusionChecker> exclusionChecker,
                        NbnxmGpu*                         gpu_nbv,
                        gmx_wallcycle*                    wcycle);
@@ -295,22 +212,22 @@ public:
     nonbonded_verlet_t(std::unique_ptr<PairlistSets>     pairlistSets,
                        std::unique_ptr<PairSearch>       pairSearch,
                        std::unique_ptr<nbnxn_atomdata_t> nbat,
-                       const Nbnxm::KernelSetup&         kernelSetup,
+                       const NbnxmKernelSetup&           kernelSetup,
                        NbnxmGpu*                         gpu_nbv);
 
     ~nonbonded_verlet_t();
 
     //! Returns whether a GPU is use for the non-bonded calculations
-    bool useGpu() const { return kernelSetup_.kernelType == Nbnxm::KernelType::Gpu8x8x8; }
+    bool useGpu() const { return isGpuKernelType(kernelSetup_.kernelType); }
 
     //! Returns whether a GPU is emulated for the non-bonded calculations
-    bool emulateGpu() const
-    {
-        return kernelSetup_.kernelType == Nbnxm::KernelType::Cpu8x8x8_PlainC;
-    }
+    bool emulateGpu() const { return kernelSetup_.kernelType == NbnxmKernelType::Cpu8x8x8_PlainC; }
 
     //! Return whether the pairlist is of simple, CPU type
     bool pairlistIsSimple() const { return !useGpu() && !emulateGpu(); }
+
+    //! Returns whether the local atom order matches the NBNxM atom order
+    bool localAtomOrderMatchesNbnxmOrder() const;
 
     /*! \brief Put the atoms on the pair search grid.
      *
@@ -328,36 +245,50 @@ public:
      *
      * \param[in]     box          Box used for periodic distance calculations
      * \param[in]     gridIndex    The index of the grid to spread to, always 0 except with test
-     * particle insertion \param[in]     lowerCorner  Atom groups to be gridded should have
-     * coordinates >= this corner \param[in]     upperCorner  Atom groups to be gridded should have
-     * coordinates <= this corner \param[in]     updateGroupsCog  Centers of geometry for update
-     * groups, pass nullptr when not using update groups \param[in]     atomRange    Range of atoms
-     * to grid \param[in]     atomDensity  An estimate of the atom density, used for peformance
-     * optimization and only with \p gridIndex = 0 \param[in]     atomInfo     Atom information
-     * flags \param[in]     x            Coordinates for atoms to grid \param[in]     numAtomsMoved
-     * The number of atoms that will move to another domain, pass 0 without DD \param[in]     move
-     * Move flags for atoms, pass nullptr without DD
+     *                             particle insertion
+     * \param[in]     lowerCorner  Atom groups to be gridded should have coordinates >= this corner
+     * \param[in]     upperCorner  Atom groups to be gridded should have coordinates <= this corner
+     * \param[in]     updateGroupsCog  Centers of geometry for update groups,
+     *                                 pass nullptr when not using update groups
+     * \param[in]     atomRange    Range of atoms to grid
+     * \param[in]     numAtomsWithoutFillers  The number of atoms that are not filler particles
+                                              and will not be moved to another domain by DD
+     * \param[in]     atomDensity  An estimate of the atom density, used for performance optimization,
+     *                             only used with \p gridIndex = 0
+     * \param[in]     atomInfo     Atom information flags
+     * \param[in]     x            Coordinates for atoms to grid
+     * \param[in]     move         Move flags for atoms, pass nullptr without DD
      */
-    void putAtomsOnGrid(const matrix                   box,
-                        int                            gridIndex,
-                        const gmx::RVec&               lowerCorner,
-                        const gmx::RVec&               upperCorner,
-                        const gmx::UpdateGroupsCog*    updateGroupsCog,
-                        gmx::Range<int>                atomRange,
-                        real                           atomDensity,
-                        gmx::ArrayRef<const int32_t>   atomInfo,
-                        gmx::ArrayRef<const gmx::RVec> x,
-                        int                            numAtomsMoved,
-                        const int*                     move);
+    void putAtomsOnGrid(const matrix            box,
+                        int                     gridIndex,
+                        const RVec&             lowerCorner,
+                        const RVec&             upperCorner,
+                        const UpdateGroupsCog*  updateGroupsCog,
+                        Range<int>              atomRange,
+                        int                     numAtomsWithoutFillers,
+                        real                    atomDensity,
+                        ArrayRef<const int32_t> atomInfo,
+                        ArrayRef<const RVec>    x,
+                        const int*              move);
 
     //! Returns the order of the local atoms on the grid
-    gmx::ArrayRef<const int> getLocalAtomOrder() const;
+    ArrayRef<const int> getLocalAtomOrder() const;
+
+    //! Return whether \p localAtomIndex is a valid local atom (and not a filler particle)
+    static bool isValidLocalAtom(const int localAtomIndex) { return localAtomIndex >= 0; }
 
     //! Sets the order of the local atoms to the order grid atom ordering
     void setLocalAtomOrder() const;
 
     //! Returns the index position of the atoms on the search grid
-    gmx::ArrayRef<const int> getGridIndices() const;
+    ArrayRef<const int> getGridIndices() const;
+
+    /*! \brief Returns the number of atoms for each column of the local grid
+     *
+     * When fillers are not part of the local state, returns the number of real atoms.
+     * When fillers are part of the local state, returns number of atoms plus fillers.
+     */
+    ArrayRef<const int> getLocalGridNumAtomsPerColumn() const;
 
     /*! \brief Constructs the pairlist for the given locality
      *
@@ -371,15 +302,15 @@ public:
      * \param[in] step        Used to set the list creation step
      * \param[in,out] nrnb    Flop accounting struct, can be nullptr
      */
-    void constructPairlist(gmx::InteractionLocality     iLocality,
-                           const gmx::ListOfLists<int>& exclusions,
-                           int64_t                      step,
-                           t_nrnb*                      nrnb) const;
+    void constructPairlist(InteractionLocality     iLocality,
+                           const ListOfLists<int>& exclusions,
+                           int64_t                 step,
+                           t_nrnb*                 nrnb) const;
 
     //! Updates all the atom properties in Nbnxm
-    void setAtomProperties(gmx::ArrayRef<const int>     atomTypes,
-                           gmx::ArrayRef<const real>    atomCharges,
-                           gmx::ArrayRef<const int32_t> atomInfo) const;
+    void setAtomProperties(ArrayRef<const int>     atomTypes,
+                           ArrayRef<const real>    atomCharges,
+                           ArrayRef<const int32_t> atomInfo) const;
 
     /*!\brief Convert the coordinates to NBNXM format for the given locality.
      *
@@ -389,7 +320,7 @@ public:
      *                         transformed.
      * \param[in] coordinates  Coordinates in plain rvec format to be transformed.
      */
-    void convertCoordinates(gmx::AtomLocality locality, gmx::ArrayRef<const gmx::RVec> coordinates);
+    void convertCoordinates(AtomLocality locality, ArrayRef<const RVec> coordinates);
 
     /*!\brief Convert the coordinates to NBNXM format on the GPU for the given locality
      *
@@ -399,9 +330,7 @@ public:
      * \param[in] d_x             GPU coordinates buffer in plain rvec format to be transformed.
      * \param[in] xReadyOnDevice  Event synchronizer indicating that the coordinates are ready in the device memory.
      */
-    void convertCoordinatesGpu(gmx::AtomLocality       locality,
-                               DeviceBuffer<gmx::RVec> d_x,
-                               GpuEventSynchronizer*   xReadyOnDevice);
+    void convertCoordinatesGpu(AtomLocality locality, DeviceBuffer<RVec> d_x, GpuEventSynchronizer* xReadyOnDevice);
 
     //! Init for GPU version of setup coordinates in Nbnxm
     void atomdata_init_copy_x_to_nbat_x_gpu() const;
@@ -416,55 +345,54 @@ public:
     bool isDynamicPruningStepGpu(int64_t step) const;
 
     //! Dispatches the dynamic pruning kernel for the given locality, for CPU lists
-    void dispatchPruneKernelCpu(gmx::InteractionLocality       iLocality,
-                                gmx::ArrayRef<const gmx::RVec> shift_vec) const;
+    void dispatchPruneKernelCpu(InteractionLocality iLocality, ArrayRef<const RVec> shift_vec) const;
 
     //! Dispatches the dynamic pruning kernel for GPU lists
     void dispatchPruneKernelGpu(int64_t step);
 
     //! \brief Executes the non-bonded kernel of the GPU or launches it on the GPU
-    void dispatchNonbondedKernel(gmx::InteractionLocality       iLocality,
-                                 const interaction_const_t&     ic,
-                                 const gmx::StepWorkload&       stepWork,
-                                 int                            clearF,
-                                 gmx::ArrayRef<const gmx::RVec> shiftvec,
-                                 gmx::ArrayRef<real>            repulsionDispersionSR,
-                                 gmx::ArrayRef<real>            CoulombSR,
-                                 t_nrnb*                        nrnb) const;
+    void dispatchNonbondedKernel(InteractionLocality        iLocality,
+                                 const interaction_const_t& ic,
+                                 const StepWorkload&        stepWork,
+                                 int                        clearF,
+                                 ArrayRef<const RVec>       shiftvec,
+                                 ArrayRef<real>             repulsionDispersionSR,
+                                 ArrayRef<real>             CoulombSR,
+                                 t_nrnb*                    nrnb) const;
 
     //! Executes the non-bonded free-energy kernels, local + non-local, always runs on the CPU
-    void dispatchFreeEnergyKernels(const gmx::ArrayRefWithPadding<const gmx::RVec>& coords,
-                                   gmx::ForceWithShiftForces*     forceWithShiftForces,
-                                   bool                           useSimd,
-                                   int                            ntype,
-                                   const interaction_const_t&     ic,
-                                   gmx::ArrayRef<const gmx::RVec> shiftvec,
-                                   gmx::ArrayRef<const real>      nbfp,
-                                   gmx::ArrayRef<const real>      nbfp_grid,
-                                   gmx::ArrayRef<const real>      chargeA,
-                                   gmx::ArrayRef<const real>      chargeB,
-                                   gmx::ArrayRef<const int>       typeA,
-                                   gmx::ArrayRef<const int>       typeB,
-                                   gmx::ArrayRef<const real>      lambda,
-                                   gmx_enerdata_t*                enerd,
-                                   const gmx::StepWorkload&       stepWork,
-                                   t_nrnb*                        nrnb);
+    void dispatchFreeEnergyKernels(const ArrayRefWithPadding<const RVec>& coords,
+                                   ForceWithShiftForces*                  forceWithShiftForces,
+                                   bool                                   useSimd,
+                                   int                                    ntype,
+                                   const interaction_const_t&             ic,
+                                   ArrayRef<const RVec>                   shiftvec,
+                                   ArrayRef<const real>                   nbfp,
+                                   ArrayRef<const real>                   nbfp_grid,
+                                   ArrayRef<const real>                   chargeA,
+                                   ArrayRef<const real>                   chargeB,
+                                   ArrayRef<const int>                    typeA,
+                                   ArrayRef<const int>                    typeB,
+                                   ArrayRef<const real>                   lambda,
+                                   gmx_enerdata_t*                        enerd,
+                                   const StepWorkload&                    stepWork,
+                                   t_nrnb*                                nrnb);
 
     /*! \brief Add the forces stored in nbat to f, zeros the forces in nbat
      * \param [in] locality         Local or non-local
      * \param [inout] force         Force to be added to
      */
-    void atomdata_add_nbat_f_to_f(gmx::AtomLocality locality, gmx::ArrayRef<gmx::RVec> force);
+    void atomdata_add_nbat_f_to_f(AtomLocality locality, ArrayRef<RVec> force);
 
     /*! \brief Get the number of atoms for a given locality
      *
      * \param [in] locality   Local or non-local
      * \returns               The number of atoms for given locality
      */
-    int getNumAtoms(gmx::AtomLocality locality) const;
+    int getNumAtoms(AtomLocality locality) const;
 
     //! Return the kernel setup
-    const Nbnxm::KernelSetup& kernelSetup() const { return kernelSetup_; }
+    const NbnxmKernelSetup& kernelSetup() const { return kernelSetup_; }
 
     //! Returns the outer radius for the pair list
     real pairlistInnerRadius() const;
@@ -476,8 +404,7 @@ public:
     void changePairlistRadii(real rlistOuter, real rlistInner) const;
 
     //! Set up internal flags that indicate what type of short-range work there is.
-    void setupGpuShortRangeWork(const gmx::ListedForcesGpu* listedForcesGpu,
-                                gmx::InteractionLocality    iLocality) const;
+    void setupGpuShortRangeWork(const ListedForcesGpu* listedForcesGpu, InteractionLocality iLocality) const;
 
     void setupFepThreadedForceBuffer(int numAtomsForce);
 
@@ -490,6 +417,15 @@ public:
     //! Returns a pointer to the NbnxmGpu object, can return nullptr
     NbnxmGpu* gpuNbv() { return gpuNbv_; }
 
+    const Grid& localGrid() const;
+
+    void setNonLocalGrid(int                                 gridIndex,
+                         int                                 ddZone,
+                         const GridDimensions&               gridDimensions,
+                         ArrayRef<const std::pair<int, int>> columns,
+                         ArrayRef<const int32_t>             atomInfo,
+                         ArrayRef<const RVec>                x);
+
 private:
     //! All data related to the pair lists
     std::unique_ptr<PairlistSets> pairlistSets_;
@@ -499,7 +435,7 @@ private:
     std::unique_ptr<nbnxn_atomdata_t> nbat_;
 
     //! The non-bonded setup, also affects the pairlist construction kernel
-    Nbnxm::KernelSetup kernelSetup_;
+    NbnxmKernelSetup kernelSetup_;
 
     //! \brief The non-bonded free-energy kernel dispatcher
     std::unique_ptr<FreeEnergyDispatch> freeEnergyDispatch_;
@@ -514,40 +450,36 @@ private:
     NbnxmGpu* gpuNbv_;
 };
 
-namespace Nbnxm
-{
-
 /*! \brief Creates an Nbnxm object */
-std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
-                                                   const t_inputrec&    inputrec,
-                                                   const t_forcerec&    forcerec,
-                                                   const t_commrec*     commrec,
-                                                   const gmx_hw_info_t& hardwareInfo,
-                                                   bool                 useGpuForNonbonded,
-                                                   const gmx::DeviceStreamManager* deviceStreamManager,
-                                                   const gmx_mtop_t&               mtop,
-                                                   gmx::ObservablesReducerBuilder* observablesReducerBuilder,
-                                                   gmx::ArrayRef<const gmx::RVec> coordinates,
-                                                   matrix                         box,
-                                                   gmx_wallcycle*                 wcycle);
-
-} // namespace Nbnxm
+std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const MDLogger&            mdlog,
+                                                   const t_inputrec&          inputrec,
+                                                   const t_forcerec&          forcerec,
+                                                   const MpiComm&             mpiComm,
+                                                   const gmx_domdec_t*        dd,
+                                                   const gmx_hw_info_t&       hardwareInfo,
+                                                   bool                       useGpuForNonbonded,
+                                                   const DeviceStreamManager* deviceStreamManager,
+                                                   const gmx_mtop_t&          mtop,
+                                                   bool localAtomOrderMatchesNbnxmOrder,
+                                                   ObservablesReducerBuilder* observablesReducerBuilder,
+                                                   ArrayRef<const RVec> coordinates,
+                                                   matrix               box,
+                                                   gmx_wallcycle*       wcycle);
 
 /*! \brief As nbnxn_put_on_grid, but for the non-local atoms
  *
  * with domain decomposition. Should be called after calling
  * nbnxn_search_put_on_grid for the local atoms / home zone.
  */
-void nbnxn_put_on_grid_nonlocal(nonbonded_verlet_t*              nb_verlet,
-                                const struct gmx_domdec_zones_t* zones,
-                                gmx::ArrayRef<const int32_t>     atomInfo,
-                                gmx::ArrayRef<const gmx::RVec>   x);
+void nbnxn_put_on_grid_nonlocal(nonbonded_verlet_t*     nb_verlet,
+                                const gmx::DomdecZones& zones,
+                                ArrayRef<const int32_t> atomInfo,
+                                ArrayRef<const RVec>    x);
 
-/*! \brief Check if GROMACS has been built with GPU support.
- *
- * \param[in] error Pointer to error string or nullptr.
- * \todo Move this to NB module once it exists.
- */
-bool buildSupportsNonbondedOnGpu(std::string* error);
+/*! \brief Returns information for describing the NBNXM GPU clustering
+ * support, if applicable to the build. */
+std::optional<std::string> nbnxmGpuClusteringDescription();
+
+} // namespace gmx
 
 #endif // GMX_NBNXM_NBNXM_H

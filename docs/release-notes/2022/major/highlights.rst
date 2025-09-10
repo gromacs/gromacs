@@ -21,7 +21,7 @@ simulations and hardware. The new features are:
 * grompp performance improvements
 * `Cool quotes music playlist <https://open.spotify.com/playlist/4oj41X9tgIAJuLgfWPq6ZX>`_
 * Additional features were ported to modular simulator
-* Added AMD GPU support with SYCL via hipSYCL_
+* Added AMD GPU support with SYCL via AdaptiveCpp_ (hipSYCL)
 * More GPU offload features supported with SYCL (PME, GPU update). 
 * Improved parallelization with GPU-accelerated runs using CUDA and extended GPU direct communication to support multi-node simulation using CUDA-aware MPI.
 

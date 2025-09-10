@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Bool Name="active">false</Bool>
+  <String Name="modelFileName">model.pt</String>
+  <String Name="inputGroup">System</String>
+  <String Name="modelInput1"></String>
+  <String Name="modelInput2"></String>
+  <String Name="modelInput3"></String>
+  <String Name="modelInput4"></String>
+</ReferenceData>

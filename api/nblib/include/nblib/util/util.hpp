@@ -133,22 +133,18 @@ inline bool operator>(const StrongType<T, Phantom>& lhs, const StrongType<T, Pha
 template<class F, class... Ts>
 void for_each_tuple(F&& func, std::tuple<Ts...>& tuple_)
 {
-    std::apply(
-            [f = func](auto&... args) {
-                [[maybe_unused]] auto list = std::initializer_list<int>{ (f(args), 0)... };
-            },
-            tuple_);
+    std::apply([f = func](auto&... args)
+               { [[maybe_unused]] auto list = std::initializer_list<int>{ (f(args), 0)... }; },
+               tuple_);
 }
 
 //! \brief Utility to call function with each element in tuple_ with const guarantee
 template<class F, class... Ts>
 void for_each_tuple(F&& func, const std::tuple<Ts...>& tuple_)
 {
-    std::apply(
-            [f = func](auto&... args) {
-                [[maybe_unused]] auto list = std::initializer_list<int>{ (f(args), 0)... };
-            },
-            tuple_);
+    std::apply([f = func](auto&... args)
+               { [[maybe_unused]] auto list = std::initializer_list<int>{ (f(args), 0)... }; },
+               tuple_);
 }
 
 //! \brief Format strings for use in error messages
@@ -158,7 +154,8 @@ std::string formatString(std::string fmt, Args... args)
     std::ostringstream os;
     std::string        delimiter = "{}";
 
-    auto next_token = [](std::string& s, const std::string& delimiter_) {
+    auto next_token = [](std::string& s, const std::string& delimiter_)
+    {
         std::string token = s.substr(0, s.find(delimiter_));
 
         std::size_t next = s.find(delimiter_);

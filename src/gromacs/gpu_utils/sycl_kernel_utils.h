@@ -37,6 +37,10 @@
 
 #include "gmxsycl.h"
 
+#if defined(__AMDGCN__)
+#    include "hip_sycl_kernel_utils.h"
+#endif
+
 /*! \file
  *  \brief SYCL kernel helper functions.
  *
@@ -46,11 +50,21 @@
 //! \brief Full warp active thread mask used in CUDA warp-level primitives.
 static constexpr unsigned int c_cudaFullWarpMask = 0xffffffff;
 
+// Prior to AdaptiveCpp 24.06, only HIPSYCL_* are defined
+// TODO: Remove once we have AdaptiveCpp 24.06 as the minimum supported version
+#if GMX_SYCL_ACPP && !defined(ACPP_LIBKERNEL_IS_DEVICE_PASS_HIP) \
+        && defined(HIPSYCL_LIBKERNEL_IS_DEVICE_PASS_HIP)
+#    define ACPP_LIBKERNEL_IS_DEVICE_PASS_HIP HIPSYCL_LIBKERNEL_IS_DEVICE_PASS_HIP
+#endif
+#if GMX_SYCL_ACPP && !defined(ACPP_UNIVERSAL_TARGET) && defined(HIPSYCL_UNIVERSAL_TARGET)
+#    define ACPP_UNIVERSAL_TARGET HIPSYCL_UNIVERSAL_TARGET
+#endif
+
 #if defined(SYCL_EXT_ONEAPI_ASSERT) && SYCL_EXT_ONEAPI_ASSERT && !defined(__AMDGCN__)
 #    define SYCL_ASSERT(condition) assert(condition)
 #else
 /* Assertions are not defined in SYCL standard, but they are available as oneAPI extension sycl_ext_oneapi_assert.
- * Technically, asserts should work just fine with hipSYCL, since they are supported by CUDA since sm_20.
+ * Technically, asserts should work just fine with AdaptiveCpp, since they are supported by CUDA since sm_20.
  * But with some settings (Clang 14, hipSYCL 0.9.2, RelWithAssert), CUDA build fails at link time:
  * ptxas fatal   : Unresolved extern function '__assert_fail'
  * So, we just disable kernel asserts unless they are promised to be available.
@@ -58,8 +72,8 @@ static constexpr unsigned int c_cudaFullWarpMask = 0xffffffff;
 #    define SYCL_ASSERT(condition)
 #endif
 
-#if GMX_SYCL_HIPSYCL && HIPSYCL_LIBKERNEL_IS_DEVICE_PASS_HIP
-HIPSYCL_UNIVERSAL_TARGET
+#if GMX_SYCL_ACPP && ACPP_LIBKERNEL_IS_DEVICE_PASS_HIP
+ACPP_UNIVERSAL_TARGET
 static inline void atomicAddOptimizedAmd(float gmx_unused* ptr, const float gmx_unused delta)
 {
 #    if defined(__gfx908__) // Special function for AMD MI100
@@ -67,7 +81,7 @@ static inline void atomicAddOptimizedAmd(float gmx_unused* ptr, const float gmx_
     atomicAddNoRet(ptr, delta);
     CLANG_DIAGNOSTIC_RESET
 #    elif defined(__gfx90a__) // Special function for AMD MI200
-    unsafeAtomicAdd(ptr, delta); // Not checked on real hardware, see #4465
+    unsafeAtomicAdd(ptr, delta);
 #    else
     atomicAdd(ptr, delta);
 #    endif
@@ -78,9 +92,13 @@ static inline void atomicAddOptimizedAmd(float gmx_unused* ptr, const float gmx_
 constexpr bool compilingForHost()
 {
     // Skip compiling for CPU. Makes compiling this file ~10% faster for oneAPI/CUDA or
-    // hipSYCL/CUDA. For DPC++, any non-CPU targets must be explicitly allowed in the #if below.
-#if GMX_SYCL_HIPSYCL
+    // AdaptiveCpp/CUDA. For DPC++, any non-CPU targets must be explicitly allowed in the #if below.
+#if GMX_SYCL_ACPP
+#    if !GMX_ACPP_HAVE_GENERIC_TARGET
     __hipsycl_if_target_host(return true;);
+#    else
+    return false;
+#    endif
 #endif
     // We need to list all valid device targets here
 #if GMX_SYCL_DPCPP \
@@ -96,9 +114,11 @@ constexpr bool compilingForSubGroupSize()
 #if defined(__SYCL_DEVICE_ONLY__) && defined(__NVPTX__)
     return expectedSubGroupSize == 32;
 #elif defined(__SYCL_DEVICE_ONLY__) && defined(__AMDGCN__)
-    return expectedSubGroupSize == __AMDGCN_WAVEFRONT_SIZE;
+    return expectedSubGroupSize == deviceWavefrontSize();
 #elif defined(__SYCL_DEVICE_ONLY__) && (defined(__SPIR__) || defined(__SPIRV__))
     return true; // Assume that we have set reqd_sub_group_size attribute for the kernel
+#elif GMX_ACPP_HAVE_GENERIC_TARGET
+    return true;
 #else
     return false; // Unknown architecture
 #endif
@@ -117,7 +137,7 @@ constexpr bool skipKernelCompilation()
     }
     /* Currently, the only SPIR-V target is Intel; for this we don't need 64-wide kernels.
      * This will require changing if we ever have other SPIR-V targets. */
-#if defined(__SYCL_DEVICE_ONLY__) && (defined(__SPIR__) || defined(__SPIRV__))
+#if (defined(__SYCL_DEVICE_ONLY__) && (defined(__SPIR__) || defined(__SPIRV__))) && !GMX_ACPP_HAVE_GENERIC_TARGET
     if constexpr (expectedSubGroupSize > 32)
     {
         return true;
@@ -143,9 +163,9 @@ static inline void atomicFetchAdd(T& val, const T delta)
 {
     using sycl::access::address_space;
     // Check if we need/can call the optimized atomicAdd for AMD devices, see #4465.
-    if constexpr (GMX_SYCL_HIPSYCL && std::is_same_v<T, float> && AddressSpace == address_space::global_space)
+    if constexpr (GMX_SYCL_ACPP && std::is_same_v<T, float> && AddressSpace == address_space::global_space)
     {
-#if GMX_SYCL_HIPSYCL && HIPSYCL_LIBKERNEL_IS_DEVICE_PASS_HIP
+#if GMX_SYCL_ACPP && ACPP_LIBKERNEL_IS_DEVICE_PASS_HIP
         atomicAddOptimizedAmd(&val, delta);
 #else
         atomicAddDefault<T, MemoryScope, AddressSpace>(val, delta);
@@ -169,12 +189,41 @@ static inline void atomicFetchAddLocal(T& val, const T delta)
     atomicFetchAdd<T, sycl::memory_scope::work_group, sycl::access::address_space::local_space>(val, delta);
 }
 
+template<typename T>
+static inline void atomicFetchAddLocal(T* val, const T delta)
+{
+    atomicFetchAddLocal<T>(*val, delta);
+}
+
+// \brief Staggered atomic force component accummulation into global memory to reduce clashes
+//
+// Reduce the number of atomic clashes by a theoretical max 3x by having consecutive threads
+// accumulate different force components at the same time.
+static inline void staggeredAtomicAddForce(sycl::global_ptr<Float3> gm_f, Float3 f, const int localId)
+{
+    __builtin_assume(localId >= 0);
+
+    using Int3  = sycl::int3;
+    Int3 offset = { 0, 1, 2 };
+
+    // Shift force components x (0), y (1), and z (2) left by 2, 1, and 0, respectively
+    // to end up with zxy, yzx, xyz on consecutive threads.
+    f      = (localId % 3 == 0) ? Float3(f[1], f[2], f[0]) : f;
+    offset = (localId % 3 == 0) ? Int3(offset[1], offset[2], offset[0]) : offset;
+    f      = (localId % 3 <= 1) ? Float3(f[1], f[2], f[0]) : f;
+    offset = (localId % 3 <= 1) ? Int3(offset[1], offset[2], offset[0]) : offset;
+
+    atomicFetchAdd(gm_f[0][offset[0]], f[0]);
+    atomicFetchAdd(gm_f[0][offset[1]], f[1]);
+    atomicFetchAdd(gm_f[0][offset[2]], f[2]);
+}
+
 /*! \brief Convenience wrapper to do atomic loads from a global buffer.
  */
 template<typename T, sycl::memory_scope MemoryScope = sycl::memory_scope::device>
 static inline T atomicLoad(T& val)
 {
-#if GMX_SYCL_HIPSYCL && GMX_HIPSYCL_HAVE_CUDA_TARGET
+#if GMX_SYCL_ACPP && GMX_ACPP_HAVE_CUDA_TARGET
     /* Some versions of Clang do not support atomicLoad in NVPTX backend, and die with ICE,
      * e.g. Clang 14, hipSYCL 0.9.2, CUDA 11.5, Debug:
      * fatal error: error in backend: Cannot select: 0xd870450: i32,ch = AtomicLoad<(load seq_cst (s32) from %ir.27)>.
@@ -201,51 +250,14 @@ static inline T atomicLoad(T& val)
 template<int Dim>
 static inline void subGroupBarrier(const sycl::nd_item<Dim> itemIdx)
 {
-#if GMX_SYCL_HIPSYCL
+#if GMX_SYCL_ACPP
     sycl::group_barrier(itemIdx.get_sub_group(), sycl::memory_scope::sub_group);
 #else
     itemIdx.get_sub_group().barrier();
 #endif
 }
 
-#if defined(__SYCL_DEVICE_ONLY__) && defined(__AMDGCN__)
-/* !\brief Cross-lane move operation using AMD DPP (Data-Parallel Primitives).
- *
- * Uses the __builtin_amdgcn_update_dpp intrinsic which expressed the data
- * movement but the compiler will combine these with subsequent instructions
- * if possible.
- *
- * Note that this is a generic implementation for any type T (for current use
- * it could be more simple).
- *
- * Ref: https://gpuopen.com/learn/amd-gcn-assembly-cross-lane-operations
- */
-template<class T, int dppCtrl, int rowMask = 0xf, int bankMask = 0xf, bool boundCtrl = true>
-#    if GMX_SYCL_HIPSYCL
-__device__ __host__
-#    endif
-        __attribute__((always_inline)) T
-        amdDppUpdateShfl(const T& input)
-{
-    constexpr int c_wordCount = (sizeof(T) + sizeof(int) - 1) / sizeof(int);
-
-    struct V
-    {
-        int word[c_wordCount];
-    };
-    V wordList = __builtin_bit_cast(V, input);
-#    pragma unroll
-    for (int i = 0; i < c_wordCount; i++)
-    {
-        wordList.word[i] =
-                __builtin_amdgcn_update_dpp(0, wordList.word[i], dppCtrl, rowMask, bankMask, boundCtrl);
-    }
-
-    return __builtin_bit_cast(T, wordList);
-}
-#endif
-
-#if GMX_SYCL_HIPSYCL && !(defined(ACPP_VERSION_MAJOR) && ACPP_VERSION_MAJOR >= 24)
+#if GMX_SYCL_ACPP && !(defined(ACPP_VERSION_MAJOR) && ACPP_VERSION_MAJOR >= 24)
 namespace sycl
 {
 /*! \brief Popcount instruction for SYCL

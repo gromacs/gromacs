@@ -60,11 +60,11 @@
 
 #include "gromacs/hardware/device_management.h"
 #include "gromacs/math/paddedvector.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "testutils/refdata.h"
 #include "testutils/test_device.h"

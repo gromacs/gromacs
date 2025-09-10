@@ -46,12 +46,12 @@
 #include <numeric>
 #include <vector>
 
-#include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/atominfo.h"
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/listoflists.h"
+#include "gromacs/utility/vec.h"
 
 #include "spc81_coords.h"
 

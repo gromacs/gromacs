@@ -48,6 +48,11 @@
 #include "device_management.h"
 
 #include <cassert>
+#include <cstring>
+
+#include <algorithm>
+#include <array>
+#include <optional>
 
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/gpu_utils/device_context.h"
@@ -71,6 +76,23 @@ static const int c_cudaMaxDeviceCount = 32;
 /** Dummy kernel used for sanity checking. */
 static __global__ void dummy_kernel() {}
 
+static std::optional<std::array<std::byte, 16>> getCudaDeviceUuid(const cudaDeviceProp& prop)
+{
+    std::array<std::byte, 16> uuidBytes;
+    static_assert(sizeof(prop.uuid.bytes) == sizeof(uuidBytes), "uuid should be 16 bytes");
+    std::memcpy(uuidBytes.data(), prop.uuid.bytes, uuidBytes.size());
+
+    const bool isAllZeros = std::all_of(
+            uuidBytes.begin(), uuidBytes.end(), [](const auto b) { return b == std::byte(0); });
+
+    if (isAllZeros)
+    {
+        return std::nullopt;
+    }
+
+    return uuidBytes;
+}
+
 void warnWhenDeviceNotTargeted(const gmx::MDLogger& mdlog, const DeviceInformation& deviceInfo)
 {
     if (deviceInfo.status != DeviceStatus::DeviceNotTargeted)
@@ -85,7 +107,7 @@ void warnWhenDeviceNotTargeted(const gmx::MDLogger& mdlog, const DeviceInformati
                     "WARNING: The %s binary does not include support for the CUDA architecture of "
                     "the GPU ID #%d (compute capability %d.%d) detected during detection. "
                     "By default, GROMACS supports all architectures of compute "
-                    "capability >= 3.5, so your GPU "
+                    "capability >= 5.0, so your GPU "
                     "might be rare, or some architectures were disabled in the build. "
                     "Consult the install guide for how to use the GMX_CUDA_TARGET_SM and "
                     "GMX_CUDA_TARGET_COMPUTE CMake variables to add this architecture.",
@@ -121,7 +143,7 @@ static DeviceStatus checkDeviceStatus(const DeviceInformation& deviceInfo)
     cudaError_t cu_err;
 
     // Is the generation of the device supported?
-    if (deviceInfo.prop.major < 3)
+    if (deviceInfo.prop.major < 5)
     {
         return DeviceStatus::Incompatible;
     }
@@ -292,6 +314,8 @@ std::vector<std::unique_ptr<DeviceInformation>> findDevices()
         deviceInfoList[i]->prop         = prop;
         deviceInfoList[i]->deviceVendor = DeviceVendor::Nvidia;
 
+        deviceInfoList[i]->uuid = getCudaDeviceUuid(prop);
+
         deviceInfoList[i]->supportedSubGroupSizes.push_back(32);
 
         deviceInfoList[i]->gpuAwareMpiStatus = gpuAwareMpiStatus;
@@ -390,3 +414,5 @@ std::string getDeviceInformationString(const DeviceInformation& deviceInfo)
                                  c_deviceStateString[deviceInfo.status]);
     }
 }
+
+void doubleCheckGpuAwareMpiWillWork(const DeviceInformation& /* deviceInfo */) {}

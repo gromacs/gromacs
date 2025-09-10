@@ -31,6 +31,11 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out https://www.gromacs.org.
  */
+/*!
+ * \defgroup module_fft Module FFT
+ * \brief A brief description for Module FFT
+ */
+
 #include "gmxpre.h"
 
 #include "fft.h"
@@ -72,7 +77,7 @@ int gmx_fft_init_many_1d(gmx_fft_t* pfft, int nx, int howmany, gmx_fft_flag flag
     }
     *pfft = nullptr;
 
-    if ((fft = static_cast<gmx_many_fft_t>(malloc(sizeof(struct gmx_many_fft)))) == nullptr)
+    if ((fft = static_cast<gmx_many_fft_t>(std::malloc(sizeof(struct gmx_many_fft)))) == nullptr)
     {
         return ENOMEM;
     }
@@ -95,7 +100,7 @@ int gmx_fft_init_many_1d_real(gmx_fft_t* pfft, int nx, int howmany, gmx_fft_flag
     }
     *pfft = nullptr;
 
-    if ((fft = static_cast<gmx_many_fft_t>(malloc(sizeof(struct gmx_many_fft)))) == nullptr)
+    if ((fft = static_cast<gmx_many_fft_t>(std::malloc(sizeof(struct gmx_many_fft)))) == nullptr)
     {
         return ENOMEM;
     }
@@ -152,7 +157,7 @@ void gmx_many_fft_destroy(gmx_fft_t fft)
         {
             gmx_fft_destroy(mfft->fft);
         }
-        free(mfft);
+        std::free(mfft);
     }
 }
 
@@ -177,7 +182,7 @@ int gmx_fft_transpose_2d(t_complex* in_data, t_complex* out_data, int nx, int ny
     {
         if (in_data != out_data)
         {
-            memcpy(out_data, in_data, sizeof(t_complex) * nx * ny);
+            std::memcpy(out_data, in_data, sizeof(t_complex) * nx * ny);
         }
         return 0;
     }

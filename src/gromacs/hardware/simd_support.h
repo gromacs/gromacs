@@ -47,6 +47,8 @@
 
 #include <cstdio>
 
+#include <string>
+
 namespace gmx
 {
 
@@ -67,7 +69,6 @@ enum class SimdType
     X86_Avx2,      //!< AVX2
     X86_Avx2_128,  //!< 128-bit AVX2, better than 256-bit for AMD Ryzen
     X86_Avx512,    //!< AVX_512
-    X86_Avx512Knl, //!< AVX_512_KNL
     Arm_NeonAsimd, //!< 64-bit ARM AArch64 Advanced SIMD
     Arm_Sve,       //!< ARM Scalable Vector Extensions
     Ibm_Vsx        //!< IBM VSX SIMD (Power7 and later)
@@ -88,6 +89,9 @@ SimdType simdSuggested(const CpuInfo& c);
 bool simdCheck(const CpuInfo& cpuInfo, SimdType wanted, FILE* log, bool warnToStdErr);
 
 /*! \endcond */
+
+//! Return a string describing the SIMD support
+std::string simdDescription();
 
 } // namespace gmx
 

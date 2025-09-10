@@ -50,8 +50,6 @@
 #include "gromacs/ewald/pme.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vecdump.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/enerdata.h"
@@ -69,6 +67,8 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vecdump.h"
 
 using gmx::ArrayRef;
 using gmx::RVec;
@@ -164,7 +164,7 @@ void CpuPpLongRangeNonbondeds::calculate(gmx_pme_t*                     pmedata,
                                          const DDBalanceRegionHandler&  ddBalanceRegionHandler)
 {
     const bool computePmeOnCpu = (usingPme(coulombInteractionType_) || usingLJPme(vanDerWaalsType_))
-                                 && thisRankHasDuty(commrec, DUTY_PME)
+                                 && thisRankHasPmeDuty(commrec->dd)
                                  && (pme_run_mode(pmedata) == PmeRunMode::CPU);
 
     /* Do long-range electrostatics and/or LJ-PME
@@ -207,7 +207,7 @@ void CpuPpLongRangeNonbondeds::calculate(gmx_pme_t*                     pmedata,
                          */
                         ewald_LRcorrection(
                                 homenr_,
-                                commrec,
+                                commrec->commMyGroup,
                                 nthreads,
                                 t,
                                 epsilonR_,
@@ -241,7 +241,7 @@ void CpuPpLongRangeNonbondeds::calculate(gmx_pme_t*                     pmedata,
                 /* This is not in a subcounter because it takes a
                    negligible and constant-sized amount of time */
                 ewaldOutput.Vcorr_q += ewald_charge_correction(
-                        commrec,
+                        commrec->dd,
                         epsilonR_,
                         ewaldCoeffQ_,
                         chargeC6Sum_,
@@ -275,7 +275,6 @@ void CpuPpLongRangeNonbondeds::calculate(gmx_pme_t*                     pmedata,
                             sigmaA_,
                             sigmaB_,
                             box,
-                            commrec,
                             haveDDAtomOrdering(*commrec) ? dd_pme_maxshift_x(*commrec->dd) : 0,
                             haveDDAtomOrdering(*commrec) ? dd_pme_maxshift_y(*commrec->dd) : 0,
                             nrnb_,
@@ -327,7 +326,7 @@ void CpuPpLongRangeNonbondeds::calculate(gmx_pme_t*                     pmedata,
                              chargeA_,
                              chargeB_,
                              box,
-                             commrec,
+                             commrec->dd,
                              homenr_,
                              ewaldOutput.vir_q,
                              ewaldCoeffQ_,

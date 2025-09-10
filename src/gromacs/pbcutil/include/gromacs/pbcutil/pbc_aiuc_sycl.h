@@ -80,7 +80,7 @@ static constexpr int xyzToShiftIndex(int x, int y, int z)
  */
 template<bool returnShift>
 // NOLINTNEXTLINE(google-runtime-references)
-int pbcDxAiucSycl(const PbcAiuc& pbcAiuc, const sycl::float4& r1, const sycl::float4& r2, Float3& dr)
+int pbcDxAiucGpu(const PbcAiuc& pbcAiuc, const sycl::float4& r1, const sycl::float4& r2, Float3& dr)
 {
     dr[XX] = r1[XX] - r2[XX];
     dr[YY] = r1[YY] - r2[YY];
@@ -135,7 +135,7 @@ int pbcDxAiucSycl(const PbcAiuc& pbcAiuc, const sycl::float4& r1, const sycl::fl
  * \param[in]  r2       Coordinates of the second point.
  * \param[out]    dr       Resulting distance.
  */
-static void pbcDxAiucSycl(const PbcAiuc& pbcAiuc, const rvec& r1, const rvec& r2, rvec dr)
+static void pbcDxAiucGpu(const PbcAiuc& pbcAiuc, const rvec& r1, const rvec& r2, rvec dr)
 {
     dr[XX] = r1[XX] - r2[XX];
     dr[YY] = r1[YY] - r2[YY];

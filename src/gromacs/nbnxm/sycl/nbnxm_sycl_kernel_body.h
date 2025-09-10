@@ -40,9 +40,10 @@
  */
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/gmxsycl.h"
-#include "gromacs/gpu_utils/packed_float.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/mdtypes/simulation_workload.h"
+#include "gromacs/nbnxm/nbnxm_enums.h"
+#include "gromacs/nbnxm/nbnxm_kernel_utils.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/utility/template_mp.h"
 
@@ -50,8 +51,11 @@
 #include "nbnxm_sycl_kernel_utils.h"
 #include "nbnxm_sycl_types.h"
 
+namespace gmx
+{
+
 //! \brief Class name for NBNXM kernel
-template<bool doPruneNBL, bool doCalcEnergies, enum Nbnxm::ElecType elecType, enum Nbnxm::VdwType vdwType, int subGroupSize>
+template<bool doPruneNBL, bool doCalcEnergies, enum ElecType elecType, enum VdwType vdwType, int subGroupSize>
 class NbnxmKernel;
 
 /*! \brief Macro to control the enablement of manually-packed Float3 structure.
@@ -73,46 +77,6 @@ using FCiFloat3 = AmdPackedFloat3;
 using FCiFloat3 = Float3;
 #endif
 
-namespace Nbnxm
-{
-
-//! \brief Set of boolean constants mimicking preprocessor macros.
-template<enum ElecType elecType, enum VdwType vdwType>
-struct EnergyFunctionProperties {
-    static constexpr bool elecCutoff = (elecType == ElecType::Cut); ///< EL_CUTOFF
-    static constexpr bool elecRF     = (elecType == ElecType::RF);  ///< EL_RF
-    static constexpr bool elecEwaldAna =
-            (elecType == ElecType::EwaldAna || elecType == ElecType::EwaldAnaTwin); ///< EL_EWALD_ANA
-    static constexpr bool elecEwaldTab =
-            (elecType == ElecType::EwaldTab || elecType == ElecType::EwaldTabTwin); ///< EL_EWALD_TAB
-    static constexpr bool elecEwaldTwin =
-            (elecType == ElecType::EwaldAnaTwin || elecType == ElecType::EwaldTabTwin); ///< Use twin cut-off.
-    static constexpr bool elecEwald = (elecEwaldAna || elecEwaldTab);  ///< EL_EWALD_ANY
-    static constexpr bool vdwCombLB = (vdwType == VdwType::CutCombLB); ///< LJ_COMB && !LJ_COMB_GEOM
-    static constexpr bool vdwCombGeom      = (vdwType == VdwType::CutCombGeom); ///< LJ_COMB_GEOM
-    static constexpr bool vdwComb          = (vdwCombLB || vdwCombGeom);        ///< LJ_COMB
-    static constexpr bool vdwEwaldCombGeom = (vdwType == VdwType::EwaldGeom); ///< LJ_EWALD_COMB_GEOM
-    static constexpr bool vdwEwaldCombLB   = (vdwType == VdwType::EwaldLB);   ///< LJ_EWALD_COMB_LB
-    static constexpr bool vdwEwald         = (vdwEwaldCombGeom || vdwEwaldCombLB); ///< LJ_EWALD
-    static constexpr bool vdwFSwitch       = (vdwType == VdwType::FSwitch); ///< LJ_FORCE_SWITCH
-    static constexpr bool vdwPSwitch       = (vdwType == VdwType::PSwitch); ///< LJ_POT_SWITCH
-};
-
-//! \brief Templated constants to shorten kernel function declaration.
-//@{
-template<enum VdwType vdwType>
-constexpr bool ljComb = EnergyFunctionProperties<ElecType::Count, vdwType>().vdwComb;
-
-template<enum ElecType elecType>
-constexpr bool elecEwald = EnergyFunctionProperties<elecType, VdwType::Count>().elecEwald;
-
-template<enum ElecType elecType>
-constexpr bool elecEwaldTab = EnergyFunctionProperties<elecType, VdwType::Count>().elecEwaldTab;
-
-template<enum VdwType vdwType>
-constexpr bool ljEwald = EnergyFunctionProperties<ElecType::Count, vdwType>().vdwEwald;
-//@}
-
 /*! \brief Should we avoid FP atomics to the same location from the same work-group?
  *
  * Intel GPUs without native floating-point operations emulate them via CAS-loop,
@@ -120,215 +84,13 @@ constexpr bool ljEwald = EnergyFunctionProperties<ElecType::Count, vdwType>().vd
  * global location. We don't specialize the kernels by vendor, so we use c_clSize == 4
  * as a proxy to detect such devices.
  */
-constexpr bool c_avoidFloatingPointAtomics = (c_clSize == 4);
+constexpr bool c_avoidFloatingPointAtomics(PairlistType layoutType)
+{
+    return (sc_gpuClusterSize(layoutType) == 4);
+}
 
 using sycl::access::fence_space;
 using mode = sycl::access_mode;
-
-//! \brief Convert \p sigma and \p epsilon VdW parameters to \c c6,c12 pair.
-static inline Float2 convertSigmaEpsilonToC6C12(const float sigma, const float epsilon)
-{
-    const float sigma2 = sigma * sigma;
-    const float sigma6 = sigma2 * sigma2 * sigma2;
-    const float c6     = epsilon * sigma6;
-    const float c12    = c6 * sigma6;
-
-    return { c6, c12 };
-}
-
-//! \brief Calculate force and energy for a pair of atoms, VdW force-switch flavor.
-template<bool doCalcEnergies>
-static inline void ljForceSwitch(const shift_consts_t     dispersionShift,
-                                 const shift_consts_t     repulsionShift,
-                                 const float              rVdwSwitch,
-                                 const float              c6,
-                                 const float              c12,
-                                 const float              rInv,
-                                 const float              r2,
-                                 sycl::private_ptr<float> fInvR,
-                                 sycl::private_ptr<float> eLJ)
-{
-    /* force switch constants */
-    const float dispShiftV2 = dispersionShift.c2;
-    const float dispShiftV3 = dispersionShift.c3;
-    const float repuShiftV2 = repulsionShift.c2;
-    const float repuShiftV3 = repulsionShift.c3;
-
-    const float r       = r2 * rInv;
-    const float rSwitch = sycl::fdim(r, rVdwSwitch); // max(r - rVdwSwitch, 0)
-
-    *fInvR += -c6 * (dispShiftV2 + dispShiftV3 * rSwitch) * rSwitch * rSwitch * rInv
-              + c12 * (repuShiftV2 + repuShiftV3 * rSwitch) * rSwitch * rSwitch * rInv;
-
-    if constexpr (doCalcEnergies)
-    {
-        const float dispShiftF2 = dispShiftV2 / 3.0F;
-        const float dispShiftF3 = dispShiftV3 / 4.0F;
-        const float repuShiftF2 = repuShiftV2 / 3.0F;
-        const float repuShiftF3 = repuShiftV3 / 4.0F;
-        *eLJ += c6 * (dispShiftF2 + dispShiftF3 * rSwitch) * rSwitch * rSwitch * rSwitch
-                - c12 * (repuShiftF2 + repuShiftF3 * rSwitch) * rSwitch * rSwitch * rSwitch;
-    }
-}
-
-//! \brief Fetch C6 grid contribution coefficients and return the product of these.
-template<enum VdwType vdwType>
-static inline float calculateLJEwaldC6Grid(const sycl::global_ptr<const Float2> a_nbfpComb,
-                                           const int                            typeI,
-                                           const int                            typeJ)
-{
-    if constexpr (vdwType == VdwType::EwaldGeom)
-    {
-        return a_nbfpComb[typeI][0] * a_nbfpComb[typeJ][0];
-    }
-    else
-    {
-        static_assert(vdwType == VdwType::EwaldLB);
-        /* sigma and epsilon are scaled to give 6*C6 */
-        const Float2 c6c12_i = a_nbfpComb[typeI];
-        const Float2 c6c12_j = a_nbfpComb[typeJ];
-
-        const float sigma   = c6c12_i[0] + c6c12_j[0];
-        const float epsilon = c6c12_i[1] * c6c12_j[1];
-
-        const float sigma2 = sigma * sigma;
-        return epsilon * sigma2 * sigma2 * sigma2;
-    }
-}
-
-//! Calculate LJ-PME grid force contribution with geometric or LB combination rule.
-template<bool doCalcEnergies, enum VdwType vdwType>
-static inline void ljEwaldComb(const sycl::global_ptr<const Float2> a_nbfpComb,
-                               const float                          sh_lj_ewald,
-                               const int                            typeI,
-                               const int                            typeJ,
-                               const float                          r2,
-                               const float                          r2Inv,
-                               const float                          lje_coeff2,
-                               const float                          lje_coeff6_6,
-                               const float                          int_bit,
-                               sycl::private_ptr<float>             fInvR,
-                               sycl::private_ptr<float>             eLJ)
-{
-    const float c6grid = calculateLJEwaldC6Grid<vdwType>(a_nbfpComb, typeI, typeJ);
-
-    /* Recalculate inv_r6 without exclusion mask */
-    const float inv_r6_nm = r2Inv * r2Inv * r2Inv;
-    const float cr2       = lje_coeff2 * r2;
-    const float expmcr2   = sycl::exp(-cr2);
-    const float poly      = 1.0F + cr2 + 0.5F * cr2 * cr2;
-
-    /* Subtract the grid force from the total LJ force */
-    *fInvR += c6grid * (inv_r6_nm - expmcr2 * (inv_r6_nm * poly + lje_coeff6_6)) * r2Inv;
-
-    if constexpr (doCalcEnergies)
-    {
-        /* Shift should be applied only to real LJ pairs */
-        const float sh_mask = sh_lj_ewald * int_bit;
-        *eLJ += c_oneSixth * c6grid * (inv_r6_nm * (1.0F - expmcr2 * poly) + sh_mask);
-    }
-}
-
-/*! \brief Apply potential switch. */
-template<bool doCalcEnergies>
-static inline void ljPotentialSwitch(const switch_consts_t    vdwSwitch,
-                                     const float              rVdwSwitch,
-                                     const float              rInv,
-                                     const float              r2,
-                                     sycl::private_ptr<float> fInvR,
-                                     sycl::private_ptr<float> eLJ)
-{
-    /* potential switch constants */
-    const float switchV3 = vdwSwitch.c3;
-    const float switchV4 = vdwSwitch.c4;
-    const float switchV5 = vdwSwitch.c5;
-    const float switchF2 = 3.0F * vdwSwitch.c3;
-    const float switchF3 = 4.0F * vdwSwitch.c4;
-    const float switchF4 = 5.0F * vdwSwitch.c5;
-
-    const float r       = r2 * rInv;
-    const float rSwitch = r - rVdwSwitch;
-
-    if (rSwitch > 0.0F)
-    {
-        const float sw =
-                1.0F + (switchV3 + (switchV4 + switchV5 * rSwitch) * rSwitch) * rSwitch * rSwitch * rSwitch;
-        const float dsw = (switchF2 + (switchF3 + switchF4 * rSwitch) * rSwitch) * rSwitch * rSwitch;
-
-        *fInvR = (*fInvR) * sw - rInv * (*eLJ) * dsw;
-        if constexpr (doCalcEnergies)
-        {
-            *eLJ *= sw;
-        }
-    }
-}
-
-
-/*! \brief Calculate analytical Ewald correction term. */
-static inline float pmeCorrF(const float z2)
-{
-    constexpr float FN6 = -1.7357322914161492954e-8F;
-    constexpr float FN5 = 1.4703624142580877519e-6F;
-    constexpr float FN4 = -0.000053401640219807709149F;
-    constexpr float FN3 = 0.0010054721316683106153F;
-    constexpr float FN2 = -0.019278317264888380590F;
-    constexpr float FN1 = 0.069670166153766424023F;
-    constexpr float FN0 = -0.75225204789749321333F;
-
-    constexpr float FD4 = 0.0011193462567257629232F;
-    constexpr float FD3 = 0.014866955030185295499F;
-    constexpr float FD2 = 0.11583842382862377919F;
-    constexpr float FD1 = 0.50736591960530292870F;
-    constexpr float FD0 = 1.0F;
-
-    const float z4 = z2 * z2;
-
-    float       polyFD0 = FD4 * z4 + FD2;
-    const float polyFD1 = FD3 * z4 + FD1;
-    polyFD0             = polyFD0 * z4 + FD0;
-    polyFD0             = polyFD1 * z2 + polyFD0;
-
-    polyFD0 = 1.0F / polyFD0;
-
-    float polyFN0 = FN6 * z4 + FN4;
-    float polyFN1 = FN5 * z4 + FN3;
-    polyFN0       = polyFN0 * z4 + FN2;
-    polyFN1       = polyFN1 * z4 + FN1;
-    polyFN0       = polyFN0 * z4 + FN0;
-    polyFN0       = polyFN1 * z2 + polyFN0;
-
-    return polyFN0 * polyFD0;
-}
-
-/*! \brief Linear interpolation using exactly two FMA operations.
- *
- *  Implements numeric equivalent of: (1-t)*d0 + t*d1.
- */
-template<typename T>
-static inline T lerp(T d0, T d1, T t)
-{
-    return sycl::fma(t, d1, sycl::fma(-t, d0, d0));
-}
-
-/*! \brief Interpolate Ewald coulomb force correction using the F*r table. */
-static inline float interpolateCoulombForceR(const sycl::global_ptr<const float> a_coulombTab,
-                                             const float                         coulombTabScale,
-                                             const float                         r)
-{
-    const float normalized = coulombTabScale * r;
-    const int   index      = static_cast<int>(normalized);
-#if defined(__SYCL_DEVICE_ONLY__) && defined(__AMDGCN__)
-    // TODO: up to ROCm v5.3 compiler does not do this transformation. Remove when this is no longer the case.
-    const float fraction = __builtin_amdgcn_fractf(normalized);
-#else
-    const float fraction = normalized - index;
-#endif
-
-    const float left  = a_coulombTab[index];
-    const float right = a_coulombTab[index + 1];
-
-    return lerp(left, right, fraction); // TODO: sycl::mix
-}
 
 #if defined(__SYCL_DEVICE_ONLY__) && defined(__AMDGCN__)
 /*! \brief Reduce c_clSize j-force components using AMD DPP instruction and atomically accumulate into a_f.
@@ -341,7 +103,8 @@ static inline float interpolateCoulombForceR(const sycl::global_ptr<const float>
  */
 static inline void reduceForceJAmdDpp(Float3 f, const int tidxi, const int aidx, sycl::global_ptr<Float3> a_f)
 {
-    static_assert(c_clSize == 8);
+    constexpr int c_clSize = sc_gpuClusterSize(sc_layoutType);
+    static_assert(c_clSize == 8 || c_clSize == 4);
 
     f[0] += amdDppUpdateShfl<float, /* row_shl:1 */ 0x101>(f[0]);
     f[1] += amdDppUpdateShfl<float, /* row_shr:1 */ 0x111>(f[1]);
@@ -364,7 +127,8 @@ static inline void reduceForceJAmdDpp(Float3 f, const int tidxi, const int aidx,
 
     if (tidxi < 3)
     {
-        atomicFetchAdd(a_f[aidx][tidxi], f[0]);
+        float* ptr = indexedAddress(reinterpret_cast<float*>(a_f.get()), 3 * aidx + tidxi);
+        atomicFetchAdd(*ptr, f[0]);
     }
 }
 #endif
@@ -380,6 +144,7 @@ static inline void reduceForceJShuffle(Float3                   f,
                                        const int                aidx,
                                        sycl::global_ptr<Float3> a_f)
 {
+    constexpr int c_clSize = sc_gpuClusterSize(sc_layoutType);
     static_assert(c_clSize == 8 || c_clSize == 4);
     sycl::sub_group sg = itemIdx.get_sub_group();
 
@@ -466,7 +231,8 @@ static inline void reduceForceJGeneric(sycl::local_ptr<float>   sm_buf,
                                        const int                aidx,
                                        sycl::global_ptr<Float3> a_f)
 {
-    static constexpr int sc_fBufferStride = c_clSizeSq;
+    constexpr int        c_clSize         = sc_gpuClusterSize(sc_layoutType);
+    static constexpr int sc_fBufferStride = c_clSize * c_clSize;
     int                  tidx             = tidxi + tidxj * c_clSize;
     sm_buf[0 * sc_fBufferStride + tidx]   = f[0];
     sm_buf[1 * sc_fBufferStride + tidx]   = f[1];
@@ -534,14 +300,16 @@ static inline void reduceForceIAndFShiftGeneric(sycl::local_ptr<float>   sm_buf,
                                                 sycl::global_ptr<Float3> a_f,
                                                 sycl::global_ptr<Float3> a_fShift)
 {
-    static constexpr int bufStride  = c_clSize * c_clSize;
-    static constexpr int clSizeLog2 = gmx::StaticLog2<c_clSize>::value;
-    const int            tidx       = tidxi + tidxj * c_clSize;
-    float                fShiftBuf  = 0.0F;
-#pragma unroll c_nbnxnGpuNumClusterPerSupercluster
-    for (int ciOffset = 0; ciOffset < c_nbnxnGpuNumClusterPerSupercluster; ciOffset++)
+    constexpr int        c_clSize           = sc_gpuClusterSize(sc_layoutType);
+    constexpr int        c_superClusterSize = sc_gpuClusterPerSuperCluster(sc_layoutType);
+    static constexpr int bufStride          = c_clSize * c_clSize;
+    static constexpr int clSizeLog2         = gmx::StaticLog2<c_clSize>::value;
+    const int            tidx               = tidxi + tidxj * c_clSize;
+    float                fShiftBuf          = 0.0F;
+#pragma unroll c_superClusterSize
+    for (int ciOffset = 0; ciOffset < c_superClusterSize; ciOffset++)
     {
-        const int aidx = (sci * c_nbnxnGpuNumClusterPerSupercluster + ciOffset) * c_clSize + tidxi;
+        const int aidx = (sci * c_superClusterSize + ciOffset) * c_clSize + tidxi;
         // Store i-forces in local memory
         sm_buf[tidx]                 = fCiBufX(ciOffset);
         sm_buf[bufStride + tidx]     = fCiBufY(ciOffset);
@@ -586,7 +354,7 @@ static inline void reduceForceIAndFShiftGeneric(sycl::local_ptr<float>   sm_buf,
            storing the reduction result above. */
         if (tidxj < 3)
         {
-            if constexpr (c_avoidFloatingPointAtomics)
+            if constexpr (c_avoidFloatingPointAtomics(sc_layoutType))
             {
                 /* Intel Xe (Gen12LP) and earlier GPUs implement floating-point atomics via
                  * a compare-and-swap (CAS) loop. It has particularly poor performance when
@@ -638,21 +406,23 @@ typename std::enable_if_t<numShuffleReductionSteps != 1, void> static inline red
         sycl::global_ptr<Float3> a_f,
         sycl::global_ptr<Float3> a_fShift)
 {
-    const sycl::sub_group sg = itemIdx.get_sub_group();
+    constexpr int         c_superClusterSize = sc_gpuClusterPerSuperCluster(sc_layoutType);
+    constexpr int         c_clSize           = sc_gpuClusterSize(sc_layoutType);
+    const sycl::sub_group sg                 = itemIdx.get_sub_group();
     static_assert(numShuffleReductionSteps == 2 || numShuffleReductionSteps == 3);
     SYCL_ASSERT(sg.get_max_local_range()[0] >= 4 * c_clSize
                 && "Subgroup too small for two-step shuffle reduction, use 1-step");
 
     float fShiftBuf = 0.0F;
 
-#if defined(__SYCL_DEVICE_ONLY__) && defined(__AMDGCN__) && (__AMDGCN_WAVEFRONT_SIZE == 64)
+#if defined(__SYCL_DEVICE_ONLY__) && defined(__AMDGCN__) && (defined(__GFX8__) || defined(__GFX9__))
     // Use AMD's cross-lane DPP reduction only for 64-wide exec
     // can't use static_assert because 32-wide compiler passes will trip on it
     SYCL_ASSERT(numShuffleReductionSteps == 3);
-#    pragma unroll c_nbnxnGpuNumClusterPerSupercluster
-    for (int ciOffset = 0; ciOffset < c_nbnxnGpuNumClusterPerSupercluster; ciOffset++)
+#    pragma unroll c_superClusterSize
+    for (int ciOffset = 0; ciOffset < c_superClusterSize; ciOffset++)
     {
-        const int aidx = (sci * c_nbnxnGpuNumClusterPerSupercluster + ciOffset) * c_clSize + tidxj;
+        const int aidx = (sci * c_superClusterSize + ciOffset) * c_clSize + tidxj;
         float     fx   = fCiBufX(ciOffset);
         float     fy   = fCiBufY(ciOffset);
         float     fz   = fCiBufZ(ciOffset);
@@ -684,7 +454,8 @@ typename std::enable_if_t<numShuffleReductionSteps != 1, void> static inline red
         // Threads 0,1,2 increment X, Y, Z for their sub-groups
         if (tidxi < 3)
         {
-            atomicFetchAdd(a_f[aidx][(tidxi)], fx);
+            float* ptr = indexedAddress(reinterpret_cast<float*>(a_f.get()), 3 * aidx + tidxi);
+            atomicFetchAdd(*ptr, fx);
 
             if (calcFShift)
             {
@@ -697,20 +468,21 @@ typename std::enable_if_t<numShuffleReductionSteps != 1, void> static inline red
     {
         if ((tidxi) < 3)
         {
-            atomicFetchAdd(a_fShift[shift][(tidxi)], fShiftBuf);
+            float* ptr = indexedAddress(reinterpret_cast<float*>(a_fShift.get()), 3 * shift + tidxi);
+            atomicFetchAdd(*ptr, fShiftBuf);
         }
     }
 
-#else // GMX_SYCL_HIPSYCL && HIPSYCL_LIBKERNEL_IS_DEVICE_PASS_HIP
+#else // defined(__SYCL_DEVICE_ONLY__) && defined(__AMDGCN__) && (defined(__GFX8__) || defined(__GFX9__))
 
     // Thread mask to use to select first three threads (in tidxj) in each reduction "tree".
     // Two bits for two steps, three bits for three steps.
     constexpr int threadBitMask = (1U << numShuffleReductionSteps) - 1;
 
-#    pragma unroll c_nbnxnGpuNumClusterPerSupercluster
-    for (int ciOffset = 0; ciOffset < c_nbnxnGpuNumClusterPerSupercluster; ciOffset++)
+#    pragma unroll c_superClusterSize
+    for (int ciOffset = 0; ciOffset < c_superClusterSize; ciOffset++)
     {
-        const int aidx = (sci * c_nbnxnGpuNumClusterPerSupercluster + ciOffset) * c_clSize + tidxi;
+        const int aidx = (sci * c_superClusterSize + ciOffset) * c_clSize + tidxi;
         float     fx   = fCiBufX(ciOffset);
         float     fy   = fCiBufY(ciOffset);
         float     fz   = fCiBufZ(ciOffset);
@@ -754,7 +526,7 @@ typename std::enable_if_t<numShuffleReductionSteps != 1, void> static inline red
             atomicFetchAdd(a_fShift[shift][(tidxj & threadBitMask)], fShiftBuf);
         }
     }
-#endif // GMX_SYCL_HIPSYCL && HIPSYCL_LIBKERNEL_IS_DEVICE_PASS_HIP
+#endif // defined(__SYCL_DEVICE_ONLY__) && defined(__AMDGCN__) && (defined(__GFX8__) || defined(__GFX9__))
 }
 
 /*! \brief \c reduceForceIAndFShiftShuffles specialization for single-step reduction (e.g., Intel iGPUs).
@@ -784,17 +556,19 @@ typename std::enable_if_t<numShuffleReductionSteps == 1, void> static inline red
         sycl::global_ptr<Float3> a_f,
         sycl::global_ptr<Float3> a_fShift)
 {
-    const sycl::sub_group sg = itemIdx.get_sub_group();
+    constexpr int         c_superClusterSize = sc_gpuClusterPerSuperCluster(sc_layoutType);
+    constexpr int         c_clSize           = sc_gpuClusterSize(sc_layoutType);
+    const sycl::sub_group sg                 = itemIdx.get_sub_group();
     SYCL_ASSERT(sg.get_max_local_range()[0] >= 2 * c_clSize
                 && "Subgroup too small even for 1-step shuffle reduction");
     SYCL_ASSERT(sg.get_max_local_range()[0] < 4 * c_clSize
                 && "One-step shuffle reduction inefficient, use two-step version");
     float fShiftBufXY = 0.0F;
     float fShiftBufZ  = 0.0F;
-#pragma unroll c_nbnxnGpuNumClusterPerSupercluster
-    for (int ciOffset = 0; ciOffset < c_nbnxnGpuNumClusterPerSupercluster; ciOffset++)
+#pragma unroll c_superClusterSize
+    for (int ciOffset = 0; ciOffset < c_superClusterSize; ciOffset++)
     {
-        const int aidx = (sci * c_nbnxnGpuNumClusterPerSupercluster + ciOffset) * c_clSize + tidxi;
+        const int aidx = (sci * c_superClusterSize + ciOffset) * c_clSize + tidxi;
         float     fx   = fCiBufX(ciOffset);
         float     fy   = fCiBufY(ciOffset);
         float     fz   = fCiBufZ(ciOffset);
@@ -859,8 +633,8 @@ static inline void reduceForceIAndFShift(sycl::local_ptr<float>   sm_buf,
                                          sycl::global_ptr<Float3> a_fShift)
 {
     // must have power of two elements in fCiBuf
-    static_assert(gmx::isPowerOfTwo(c_nbnxnGpuNumClusterPerSupercluster));
-
+    static_assert(gmx::isPowerOfTwo(sc_gpuClusterPerSuperCluster(sc_layoutType)));
+    constexpr int c_clSize = sc_gpuClusterSize(sc_layoutType);
     if constexpr (useShuffleReduction)
     {
         constexpr int numSteps = gmx::StaticLog2<subGroupSize / c_clSize>::value;
@@ -917,6 +691,13 @@ static auto nbnxmKernel(sycl::handler& cgh,
 {
     static constexpr EnergyFunctionProperties<elecType, vdwType> props;
 
+    constexpr int          c_clSize               = sc_gpuClusterSize(sc_layoutType);
+    constexpr int          c_clSizeSq             = c_clSize * c_clSize;
+    constexpr int          c_splitClSize          = sc_gpuSplitJClusterSize(sc_layoutType);
+    constexpr int          c_superClusterSize     = sc_gpuClusterPerSuperCluster(sc_layoutType);
+    constexpr int          c_nbnxnGpuJgroupSize   = sc_gpuJgroupSize(sc_layoutType);
+    constexpr unsigned int superClInteractionMask = sc_superClInteractionMask(sc_layoutType);
+
     // The post-prune j-i cluster-pair organization is linked to how exclusion and interaction mask
     // data is stored. Currently, this is ideally suited for 32-wide subgroup size but slightly less
     // so for others, e.g. subGroupSize > prunedClusterPairSize on AMD GCN / CDNA.
@@ -934,17 +715,16 @@ static auto nbnxmKernel(sycl::handler& cgh,
     constexpr bool useShuffleReductionForceI =
             (numReductionSteps <= 3) && (c_clSize == 8 || c_clSize == 4)
             && !(numReductionSteps == 1 && c_avoidFloatingPointAtomics);
-    constexpr bool useShuffleReductionForceJ = gmx::isPowerOfTwo(c_nbnxnGpuNumClusterPerSupercluster);
+    constexpr bool useShuffleReductionForceJ = gmx::isPowerOfTwo(c_superClusterSize);
 
     // Local memory buffer for i x+q pre-loading
-    sycl::local_accessor<Float4, 1> sm_xq(
-            sycl::range<1>(c_nbnxnGpuNumClusterPerSupercluster * c_clSize), cgh);
+    sycl::local_accessor<Float4, 1> sm_xq(sycl::range<1>(c_superClusterSize * c_clSize), cgh);
 
-    auto sm_atomTypeI = [&]() {
+    auto sm_atomTypeI = [&]()
+    {
         if constexpr (!props.vdwComb)
         {
-            return sycl::local_accessor<int, 1>(
-                    sycl::range<1>(c_nbnxnGpuNumClusterPerSupercluster * c_clSize), cgh);
+            return sycl::local_accessor<int, 1>(sycl::range<1>(c_superClusterSize * c_clSize), cgh);
         }
         else
         {
@@ -952,11 +732,11 @@ static auto nbnxmKernel(sycl::handler& cgh,
         }
     }();
 
-    auto sm_ljCombI = [&]() {
+    auto sm_ljCombI = [&]()
+    {
         if constexpr (props.vdwComb)
         {
-            return sycl::local_accessor<Float2, 1>(
-                    sycl::range<1>(c_nbnxnGpuNumClusterPerSupercluster * c_clSize), cgh);
+            return sycl::local_accessor<Float2, 1>(sycl::range<1>(c_superClusterSize * c_clSize), cgh);
         }
         else
         {
@@ -976,11 +756,12 @@ static auto nbnxmKernel(sycl::handler& cgh,
     // need one element for energy reduction (or dummy for DPCPP, https://github.com/intel/llvm/issues/4969)
     constexpr bool needExtraElementForReduction = doCalcEnergies || (GMX_SYCL_DPCPP != 0);
     constexpr int  sm_reductionBufferSize       = haveAnyLocalMemoryForceReduction
-                                                          ? c_clSize * c_clSize * DIM
+                                                          ? c_clSizeSq * DIM
                                                           : (needExtraElementForReduction ? 1 : 0);
     sycl::local_accessor<float, 1> sm_reductionBuffer(sycl::range<1>(sm_reductionBufferSize), cgh);
 
-    auto sm_prunedPairCount = [&]() {
+    auto sm_prunedPairCount = [&]()
+    {
         if constexpr (doPruneNBL && nbnxmSortListsOnGpu())
         {
             return sycl::local_accessor<int, 1>(sycl::range<1>(1), cgh);
@@ -997,7 +778,7 @@ static auto nbnxmKernel(sycl::handler& cgh,
             (props.elecEwald || props.elecRF || props.vdwEwald || (props.elecCutoff && doCalcEnergies));
 
 
-    return [=](sycl::nd_item<3> itemIdx) [[intel::reqd_sub_group_size(subGroupSize)]]
+    return [=](sycl::nd_item<3> itemIdx) [[sycl::reqd_sub_group_size(subGroupSize)]]
     {
         if constexpr (skipKernelCompilation<subGroupSize>())
         {
@@ -1008,7 +789,7 @@ static auto nbnxmKernel(sycl::handler& cgh,
         const unsigned tidxj = itemIdx.get_local_id(1);
         const unsigned tidx  = tidxj * c_clSize + tidxi;
 
-        const unsigned bidx = itemIdx.get_group(0);
+        const unsigned bidx = itemIdx.get_group(2);
 
         const sycl::sub_group sg = itemIdx.get_sub_group();
         // Could use sg.get_group_range to compute the imask & exclusion Idx, but too much of the logic relies on it anyway
@@ -1016,8 +797,8 @@ static auto nbnxmKernel(sycl::handler& cgh,
         const unsigned imeiIdx = tidx / prunedClusterPairSize;
 
 #if defined(__SYCL_DEVICE_ONLY__) && defined(__AMDGCN__)
-        FCiFloat3 fCiBuf_[c_nbnxnGpuNumClusterPerSupercluster]; // i force buffer
-        for (int i = 0; i < c_nbnxnGpuNumClusterPerSupercluster; i++)
+        FCiFloat3 fCiBuf_[c_superClusterSize]; // i force buffer
+        for (int i = 0; i < c_superClusterSize; i++)
         {
             fCiBuf_[i] = { 0.0F, 0.0F, 0.0F };
         }
@@ -1025,12 +806,12 @@ static auto nbnxmKernel(sycl::handler& cgh,
         auto fCiBufY = [&](auto i) -> float& { return fCiBuf_[i][YY]; };
         auto fCiBufZ = [&](auto i) -> float& { return fCiBuf_[i][ZZ]; };
 #else
-        float fCiBufX_[c_nbnxnGpuNumClusterPerSupercluster] = { 0.0F }; // i force buffer
-        float fCiBufY_[c_nbnxnGpuNumClusterPerSupercluster] = { 0.0F }; // i force buffer
-        float fCiBufZ_[c_nbnxnGpuNumClusterPerSupercluster] = { 0.0F }; // i force buffer
-        auto  fCiBufX = [&](auto i) -> float& { return fCiBufX_[i]; };
-        auto  fCiBufY = [&](auto i) -> float& { return fCiBufY_[i]; };
-        auto  fCiBufZ = [&](auto i) -> float& { return fCiBufZ_[i]; };
+        float fCiBufX_[c_superClusterSize] = { 0.0F }; // i force buffer
+        float fCiBufY_[c_superClusterSize] = { 0.0F }; // i force buffer
+        float fCiBufZ_[c_superClusterSize] = { 0.0F }; // i force buffer
+        auto  fCiBufX                      = [&](auto i) -> float& { return fCiBufX_[i]; };
+        auto  fCiBufY                      = [&](auto i) -> float& { return fCiBufY_[i]; };
+        auto  fCiBufZ                      = [&](auto i) -> float& { return fCiBufZ_[i]; };
 #endif
 
         const nbnxn_sci_t nbSci          = gm_plistSci[bidx];
@@ -1044,13 +825,13 @@ static auto nbnxmKernel(sycl::handler& cgh,
 
         // We may need only a subset of threads active for preloading i-atoms
         // depending on the super-cluster and cluster / thread-block size.
-        constexpr bool c_loadUsingAllXYThreads = (c_clSize == c_nbnxnGpuNumClusterPerSupercluster);
-        if (c_loadUsingAllXYThreads || tidxj < c_nbnxnGpuNumClusterPerSupercluster)
+        constexpr bool c_loadUsingAllXYThreads = (c_clSize == c_superClusterSize);
+        if (c_loadUsingAllXYThreads || tidxj < c_superClusterSize)
         {
-            for (int i = 0; i < c_nbnxnGpuNumClusterPerSupercluster; i += c_clSize)
+            for (int i = 0; i < c_superClusterSize; i += c_clSize)
             {
                 /* Pre-load i-atom x and q into shared memory */
-                const int ci       = sci * c_nbnxnGpuNumClusterPerSupercluster + tidxj + i;
+                const int ci       = sci * c_superClusterSize + tidxj + i;
                 const int ai       = ci * c_clSize + tidxi;
                 const int cacheIdx = (tidxj + i) * c_clSize + tidxi;
 
@@ -1099,10 +880,10 @@ static auto nbnxmKernel(sycl::handler& cgh,
         if constexpr (doCalcEnergies && doExclusionForces)
         {
             if (nbSci.shift == gmx::c_centralShiftIndex
-                && gm_plistCJPacked[cijPackedBegin].cj[0] == sci * c_nbnxnGpuNumClusterPerSupercluster)
+                && gm_plistCJPacked[cijPackedBegin].cj[0] == sci * c_superClusterSize)
             {
                 // we have the diagonal: add the charge and LJ self interaction energy term
-                for (int i = 0; i < c_nbnxnGpuNumClusterPerSupercluster; i++)
+                for (int i = 0; i < c_superClusterSize; i++)
                 {
                     // TODO: Are there other options?
                     if constexpr (props.elecEwald || props.elecRF || props.elecCutoff)
@@ -1112,9 +893,8 @@ static auto nbnxmKernel(sycl::handler& cgh,
                     }
                     if constexpr (props.vdwEwald)
                     {
-                        energyVdw +=
-                                gm_nbfp[gm_atomTypes[(sci * c_nbnxnGpuNumClusterPerSupercluster + i) * c_clSize + tidxi]
-                                        * (numTypes + 1)][0];
+                        energyVdw += gm_nbfp[gm_atomTypes[(sci * c_superClusterSize + i) * c_clSize + tidxi]
+                                             * (numTypes + 1)][0];
                     }
                 }
                 /* divide the self term(s) equally over the j-threads, then multiply with the coefficients. */
@@ -1133,10 +913,10 @@ static auto nbnxmKernel(sycl::handler& cgh,
                 {
                     // Correct for epsfac^2 due to adding qi^2 */
                     energyElec /= epsFac * c_clSize;
-                    energyElec *= -ewaldBeta * c_OneOverSqrtPi; /* last factor 1/sqrt(pi) */
+                    energyElec *= -ewaldBeta * c_oneOverSqrtPi; /* last factor 1/sqrt(pi) */
                 }
             } // (nbSci.shift == gmx::c_centralShiftIndex && a_plistCJPacked[cijPackedBegin].cj[0] == sci * c_nbnxnGpuNumClusterPerSupercluster)
-        }     // (doCalcEnergies && doExclusionForces)
+        } // (doCalcEnergies && doExclusionForces)
 
         // Only needed if (doExclusionForces)
         // Note that we use & instead of && for performance (benchmarked in 2017)
@@ -1145,47 +925,38 @@ static auto nbnxmKernel(sycl::handler& cgh,
         // loop over the j clusters = seen by any of the atoms in the current super-cluster
         for (int jPacked = cijPackedBegin; jPacked < cijPackedEnd; jPacked += 1)
         {
-            unsigned imask = UNIFORM_LOAD_CLUSTER_PAIR_DATA(gm_plistCJPacked[jPacked].imei[imeiIdx].imask);
+            nbnxn_cj_packed_t* plistCJPacked = indexedAddress(gm_plistCJPacked, jPacked);
+            unsigned imask = UNIFORM_LOAD_CLUSTER_PAIR_DATA(plistCJPacked->imei[imeiIdx].imask);
             if (!doPruneNBL && !imask)
             {
                 continue;
             }
-            const int wexclIdx =
-                    UNIFORM_LOAD_CLUSTER_PAIR_DATA(gm_plistCJPacked[jPacked].imei[imeiIdx].excl_ind);
+            const int wexclIdx = UNIFORM_LOAD_CLUSTER_PAIR_DATA(plistCJPacked->imei[imeiIdx].excl_ind);
 
             static_assert(gmx::isPowerOfTwo(prunedClusterPairSize));
-            const unsigned wexcl = gm_plistExcl[wexclIdx].pair[tidx & (prunedClusterPairSize - 1)];
+            const unsigned wexcl =
+                    (*indexedAddress(gm_plistExcl, wexclIdx)).pair[tidx & (prunedClusterPairSize - 1)];
             // Unrolling has been verified to improve performance on AMD and Nvidia
 #if defined(__AMDGCN__)
             constexpr int unrollFactor =
                     c_nbnxnGpuJgroupSize; // Unrolling has been verified to improve performance on AMD
 #elif defined(__SYCL_CUDA_ARCH__) && __SYCL_CUDA_ARCH__ >= 800
             // Unrolling parameters follow CUDA implementation for Ampere and later.
-            constexpr int unrollFactor = [=]() {
+            constexpr int unrollFactor = [=]()
+            {
                 if constexpr (!doCalcEnergies && !doPruneNBL)
                 {
-                    if constexpr (props.elecCutoff || props.elecRF
-                                  || (props.elecEwald && !props.vdwFSwitch && !props.vdwPSwitch
-                                      && (props.vdwCombLB || __SYCL_CUDA_ARCH__ == 800)))
-                    {
-                        return 4;
-                    }
-                    else
-                    {
-                        return 2;
-                    }
+                    return (props.elecCutoff || props.elecRF
+                            || (props.elecEwald && !props.vdwFSwitch && !props.vdwPSwitch
+                                && (props.vdwCombLB || __SYCL_CUDA_ARCH__ == 800)))
+                                   ? 4
+                                   : 2;
                 }
                 else
                 {
-                    if constexpr (props.elecCutoff
-                                  || (props.elecRF && !props.vdwFSwitch && !props.vdwPSwitch))
-                    {
-                        return 2;
-                    }
-                    else
-                    {
-                        return 1;
-                    }
+                    return (props.elecCutoff || (props.elecRF && !props.vdwFSwitch && !props.vdwPSwitch))
+                                   ? 2
+                                   : 1;
                 }
             }();
 #else
@@ -1195,18 +966,17 @@ static auto nbnxmKernel(sycl::handler& cgh,
 #pragma unroll unrollFactor
             for (int jm = 0; jm < c_nbnxnGpuJgroupSize; jm++)
             {
-                const bool maskSet =
-                        imask & (superClInteractionMask << (jm * c_nbnxnGpuNumClusterPerSupercluster));
+                const bool maskSet = imask & (superClInteractionMask << (jm * c_superClusterSize));
                 if (!maskSet)
                 {
                     continue;
                 }
-                unsigned  maskJI = (1U << (jm * c_nbnxnGpuNumClusterPerSupercluster));
-                const int cj     = gm_plistCJPacked[jPacked].cj[jm];
+                unsigned  maskJI = (1U << (jm * c_superClusterSize));
+                const int cj     = *indexedAddress(gm_plistCJPacked[jPacked].cj, jm);
                 const int aj     = cj * c_clSize + tidxj;
 
                 // load j atom data
-                const Float4 xqj = gm_xq[aj];
+                const Float4 xqj = *indexedAddress(gm_xq, aj);
 
                 const Float3 xj(xqj[0], xqj[1], xqj[2]);
                 const float  qj = xqj[3];
@@ -1214,22 +984,22 @@ static auto nbnxmKernel(sycl::handler& cgh,
                 Float2       ljCombJ;   // Only needed if (props.vdwComb)
                 if constexpr (props.vdwComb)
                 {
-                    ljCombJ = gm_ljComb[aj];
+                    ljCombJ = *indexedAddress(gm_ljComb, aj);
                 }
                 else
                 {
-                    atomTypeJ = gm_atomTypes[aj];
+                    atomTypeJ = *indexedAddress(gm_atomTypes, aj);
                 }
 
                 Float3 fCjBuf(0.0F, 0.0F, 0.0F);
 
-#pragma unroll c_nbnxnGpuNumClusterPerSupercluster
-                for (int i = 0; i < c_nbnxnGpuNumClusterPerSupercluster; i++)
+#pragma unroll c_superClusterSize
+                for (int i = 0; i < c_superClusterSize; i++)
                 {
                     if (imask & maskJI)
                     {
                         // i cluster index
-                        const int ci = sci * c_nbnxnGpuNumClusterPerSupercluster + i;
+                        const int ci = sci * c_superClusterSize + i;
                         // all threads load an atom from i cluster ci into shmem!
                         const Float4 xqi = sm_xq[i * c_clSize + tidxi];
                         const Float3 xi(xqi[0], xqi[1], xqi[2]);
@@ -1273,7 +1043,7 @@ static auto nbnxmKernel(sycl::handler& cgh,
                             {
                                 /* LJ 6*C6 and 12*C12 */
                                 atomTypeI = sm_atomTypeI[i * c_clSize + tidxi];
-                                c6c12     = gm_nbfp[numTypes * atomTypeI + atomTypeJ];
+                                c6c12 = *indexedAddress(gm_nbfp, numTypes * atomTypeI + atomTypeJ);
                             }
                             else
                             {
@@ -1293,7 +1063,7 @@ static auto nbnxmKernel(sycl::handler& cgh,
                                         c6c12 = convertSigmaEpsilonToC6C12(sigma, epsilon);
                                     }
                                 } // props.vdwCombGeom
-                            }     // !props.vdwComb
+                            } // !props.vdwComb
 
                             // c6 and c12 are unused and garbage iff props.vdwCombLB && !doCalcEnergies
                             const float c6  = c6c12[0];
@@ -1301,7 +1071,7 @@ static auto nbnxmKernel(sycl::handler& cgh,
 
                             // Ensure distance do not become so small that r^-12 overflows
                             r2 = sycl::max(r2, c_nbnxnMinDistanceSquared);
-#if GMX_SYCL_HIPSYCL
+#if GMX_SYCL_ACPP
                             // No fast/native functions in some compilation passes
                             const float rInv = sycl::rsqrt(r2);
 #else
@@ -1440,7 +1210,7 @@ static auto nbnxmKernel(sycl::handler& cgh,
                             fCiBufZ(i) += forceIJ[2];
 #endif
                         } // (r2 < rCoulombSq) && notExcluded
-                    }     // (imask & maskJI)
+                    } // (imask & maskJI)
                     /* shift the mask bit by 1 */
                     maskJI += maskJI;
                 } // for (int i = 0; i < c_nbnxnGpuNumClusterPerSupercluster; i++)
@@ -1452,7 +1222,7 @@ static auto nbnxmKernel(sycl::handler& cgh,
             {
                 /* Update the imask with the new one which does not contain the
                  * out of range clusters anymore. */
-                gm_plistCJPacked[jPacked].imei[imeiIdx].imask = imask;
+                plistCJPacked->imei[imeiIdx].imask = imask;
                 if constexpr (nbnxmSortListsOnGpu())
                 {
                     prunedPairCount += sycl::popcount(imask);
@@ -1514,18 +1284,22 @@ static void launchNbnxmKernel(const DeviceStream& deviceStream, const int numSci
      *   and j-cluster concurrency, in x, y, and z, respectively.
      * - The 1D block-grid contains as many blocks as super-clusters.
      */
+    constexpr int           c_clSize  = sc_gpuClusterSize(sc_layoutType);
     const int               numBlocks = numSci;
     const sycl::range<3>    blockSize{ 1, c_clSize, c_clSize };
-    const sycl::range<3>    globalSize{ numBlocks * blockSize[0], blockSize[1], blockSize[2] };
+    const sycl::range<3>    globalSize{ blockSize[0], blockSize[1], numBlocks * blockSize[2] };
     const sycl::nd_range<3> range{ globalSize, blockSize };
 
     sycl::queue q = deviceStream.stream();
 
-    q.submit(GMX_SYCL_DISCARD_EVENT[&](sycl::handler & cgh) {
-        auto kernel = nbnxmKernel<subGroupSize, doPruneNBL, doCalcEnergies, elecType, vdwType>(
-                cgh, std::forward<Args>(args)...);
-        cgh.parallel_for<kernelNameType>(range, kernel);
-    });
+    gmx::syclSubmitWithoutEvent(
+            q,
+            [&](sycl::handler& cgh)
+            {
+                auto kernel = nbnxmKernel<subGroupSize, doPruneNBL, doCalcEnergies, elecType, vdwType>(
+                        cgh, std::forward<Args>(args)...);
+                cgh.parallel_for<kernelNameType>(range, kernel);
+            });
 }
 
 //! \brief Select templated kernel and launch it.
@@ -1533,7 +1307,8 @@ template<int subGroupSize, bool doPruneNBL, bool doCalcEnergies, class... Args>
 void chooseAndLaunchNbnxmKernel(enum ElecType elecType, enum VdwType vdwType, Args&&... args)
 {
     gmx::dispatchTemplatedFunction(
-            [&](auto elecType_, auto vdwType_) {
+            [&](auto elecType_, auto vdwType_)
+            {
                 return launchNbnxmKernel<subGroupSize, doPruneNBL, doCalcEnergies, elecType_, vdwType_>(
                         std::forward<Args>(args)...);
             },
@@ -1593,4 +1368,4 @@ void launchNbnxmKernelHelper(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, co
             stepWork.computeVirial);
 }
 
-} // namespace Nbnxm
+} // namespace gmx

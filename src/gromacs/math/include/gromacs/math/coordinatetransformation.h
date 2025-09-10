@@ -44,7 +44,7 @@
 
 #include <memory>
 
-#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "matrix.h"
 
@@ -140,7 +140,7 @@ private:
 /*! \libinternal
  * \brief Affine transformation of three-dimensional coordinates.
  *
- * Perfoms in-place coordinate transformations.
+ * Performs in-place coordinate transformations.
  *
  * Coordinates are first multiplied by a matrix, then translated.
  */
@@ -151,7 +151,7 @@ public:
      * \param[in] mat to be applied to the vectors
      * \param[in] translation to be performed on the vectors
      */
-    AffineTransformation(Matrix3x3ConstSpan mat, const RVec& translation);
+    AffineTransformation(const Matrix3x3& mat, const RVec& translation);
 
     /*! \brief Perform an affine transformation on input vectors.
      * \param[in,out] vectors to be transformed in-place

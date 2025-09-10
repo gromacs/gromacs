@@ -56,21 +56,9 @@ namespace gmx
 namespace test
 {
 
-class ImdTestFixture : public MdrunTestFixture, public ::testing::WithParamInterface<const char*>
+class ImdTest : public MdrunTestFixture, public ::testing::WithParamInterface<const char*>
 {
-protected:
-    ImdTestFixture();
-    ~ImdTestFixture() override;
 };
-
-
-ImdTestFixture::ImdTestFixture() {}
-
-ImdTestFixture::~ImdTestFixture() {}
-
-
-//! Test fixture for mdrun with IMD settings
-typedef gmx::test::ImdTestFixture ImdTest;
 
 /* This test checks
  * - whether the IMD-group parameter from the .mdp file is understood,

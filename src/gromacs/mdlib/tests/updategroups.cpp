@@ -63,7 +63,8 @@
 
 namespace gmx
 {
-
+namespace test
+{
 namespace
 {
 
@@ -541,5 +542,5 @@ TEST_F(UpdateGroupsTest, LogsWhenUpdateGroupsAreNotUseful)
 
 
 } // namespace
-
+} // namespace test
 } // namespace gmx

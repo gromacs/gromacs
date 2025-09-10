@@ -577,7 +577,7 @@ static inline float gmx_simdcall reduceIncr4ReturnSum(float* m, SimdFloat v0, Si
     v0.simdInternal_ = _mm256_hadd_ps(v0.simdInternal_, v1.simdInternal_);
     v2.simdInternal_ = _mm256_hadd_ps(v2.simdInternal_, v3.simdInternal_);
     v0.simdInternal_ = _mm256_hadd_ps(v0.simdInternal_, v2.simdInternal_);
-    t0               = _mm_add_ps(_mm256_castps256_ps128(v0.simdInternal_), _mm256_extractf128_ps(v0.simdInternal_, 0x1));
+    t0 = _mm_add_ps(_mm256_castps256_ps128(v0.simdInternal_), _mm256_extractf128_ps(v0.simdInternal_, 0x1));
 
     t2 = _mm_add_ps(t0, _mm_load_ps(m));
     _mm_store_ps(m, t2);

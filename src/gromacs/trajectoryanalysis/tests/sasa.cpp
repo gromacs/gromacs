@@ -62,6 +62,10 @@
 
 #include "moduletest.h"
 
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
@@ -162,3 +166,5 @@ TEST_F(SasaModuleTest, HandlesDynamicCalculationGroup)
 }
 
 } // namespace
+} // namespace test
+} // namespace gmx

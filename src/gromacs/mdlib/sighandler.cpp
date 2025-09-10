@@ -63,9 +63,9 @@ static const char* const gmx_signal_name[] = {
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
 static volatile StopCondition stop_condition = StopCondition::None;
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
-static volatile sig_atomic_t last_signal_name = 0;
+static volatile std::sig_atomic_t last_signal_name = 0;
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
-static volatile sig_atomic_t usr_condition = 0;
+static volatile std::sig_atomic_t usr_condition = 0;
 
 void gmx_reset_stop_condition()
 {
@@ -104,7 +104,7 @@ static void signal_handler(int n)
             }
             if (stop_condition >= StopCondition::Abort)
             {
-                abort();
+                std::abort();
             }
             break;
 #if HAVE_SIGUSR1
@@ -123,13 +123,13 @@ static void gmx_signal(int signum)
     act.sa_flags = SA_RESTART;
     sigaction(signum, &act, nullptr);
 #else
-    signal(signum, signal_handler);
+    std::signal(signum, signal_handler);
 #endif
 }
 
 void signal_handler_install()
 {
-    if (getenv("GMX_NO_TERM") == nullptr)
+    if (std::getenv("GMX_NO_TERM") == nullptr)
     {
         if (debug)
         {
@@ -137,7 +137,7 @@ void signal_handler_install()
         }
         gmx_signal(SIGTERM);
     }
-    if (getenv("GMX_NO_INT") == nullptr)
+    if (std::getenv("GMX_NO_INT") == nullptr)
     {
         if (debug)
         {
@@ -146,7 +146,7 @@ void signal_handler_install()
         gmx_signal(SIGINT);
     }
 #if HAVE_SIGUSR1
-    if (getenv("GMX_NO_USR1") == nullptr)
+    if (std::getenv("GMX_NO_USR1") == nullptr)
     {
         if (debug)
         {

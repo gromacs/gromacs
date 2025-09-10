@@ -317,6 +317,9 @@ std::istream & colvar_grid<T>::read_multicol(std::istream &is, bool add)
       for (size_t i = 0; i < nd; i++ ) {
         if ( !(is >> x) ) end_of_file = true;
         bin[i] = value_to_bin_scalar(x, i);
+        // if x is out of bounds and we are using PBC, wrap it
+        // Ignore out of bounds points in non-PBC
+        wrap_detect_edge(bin);
       }
       if (end_of_file) break;
 

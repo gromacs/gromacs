@@ -60,7 +60,7 @@ int continuing(char* s)
     assert(s);
 
     rtrim(s);
-    int sl = strlen(s);
+    int sl = std::strlen(s);
     if ((sl > 0) && (s[sl - 1] == CONTINUE))
     {
         s[sl - 1] = 0;
@@ -76,11 +76,11 @@ int continuing(char* s)
 char* fgets2(char* line, int n, FILE* stream)
 {
     char* c = nullptr;
-    if (fgets(line, n, stream) == nullptr)
+    if (std::fgets(line, n, stream) == nullptr)
     {
         return nullptr;
     }
-    if ((c = strchr(line, '\n')) != nullptr)
+    if ((c = std::strchr(line, '\n')) != nullptr)
     {
         *c = '\0';
     }
@@ -90,7 +90,7 @@ char* fgets2(char* line, int n, FILE* stream)
          * or because of n being too small.
          * Since both cases occur very infrequently, we can check for EOF.
          */
-        if (!feof(stream))
+        if (!std::feof(stream))
         {
             gmx_fatal(FARGS,
                       "An input file contains a line longer than %d characters, while the buffer "
@@ -100,7 +100,7 @@ char* fgets2(char* line, int n, FILE* stream)
                       line);
         }
     }
-    if ((c = strchr(line, '\r')) != nullptr)
+    if ((c = std::strchr(line, '\r')) != nullptr)
     {
         *c = '\0';
     }
@@ -118,7 +118,7 @@ void strip_comment(char* line)
     }
 
     /* search for a comment mark and replace it by a zero */
-    if ((c = strchr(line, COMMENTSIGN)) != nullptr)
+    if ((c = std::strchr(line, COMMENTSIGN)) != nullptr)
     {
         (*c) = 0;
     }
@@ -130,9 +130,9 @@ void upstring(char* str)
     {
         return;
     }
-    for (size_t i = 0; i < strlen(str); i++)
+    for (size_t i = 0; i < std::strlen(str); i++)
     {
-        str[i] = toupper(str[i]);
+        str[i] = std::toupper(str[i]);
     }
 }
 
@@ -144,7 +144,7 @@ void ltrim(char* str)
     }
 
     int c = 0;
-    while (('\0' != str[c]) && isspace(str[c]))
+    while (('\0' != str[c]) && std::isspace(str[c]))
     {
         c++;
     }
@@ -166,7 +166,7 @@ void rtrim(char* str)
         return;
     }
 
-    int nul = strlen(str) - 1;
+    int nul = std::strlen(str) - 1;
     while ((nul >= 0) && ((str[nul] == ' ') || (str[nul] == '\t')))
     {
         str[nul] = '\0';
@@ -188,11 +188,11 @@ int gmx_strcasecmp_min(const char* str1, const char* str2)
     {
         do
         {
-            ch1 = toupper(*(str1++));
+            ch1 = std::toupper(*(str1++));
         } while ((ch1 == '-') || (ch1 == '_'));
         do
         {
-            ch2 = toupper(*(str2++));
+            ch2 = std::toupper(*(str2++));
         } while ((ch2 == '-') || (ch2 == '_'));
 
         if (ch1 != ch2)
@@ -213,11 +213,11 @@ int gmx_strncasecmp_min(const char* str1, const char* str2, int n)
     {
         do
         {
-            ch1 = toupper(*(str1++));
+            ch1 = std::toupper(*(str1++));
         } while ((ch1 == '-') || (ch1 == '_'));
         do
         {
-            ch2 = toupper(*(str2++));
+            ch2 = std::toupper(*(str2++));
         } while ((ch2 == '-') || (ch2 == '_'));
 
         if (ch1 != ch2)
@@ -234,8 +234,8 @@ int gmx_strcasecmp(const char* str1, const char* str2)
 
     do
     {
-        ch1 = toupper(*(str1++));
-        ch2 = toupper(*(str2++));
+        ch1 = std::toupper(*(str1++));
+        ch2 = std::toupper(*(str2++));
         if (ch1 != ch2)
         {
             return (ch1 - ch2);
@@ -255,8 +255,8 @@ int gmx_strncasecmp(const char* str1, const char* str2, int n)
 
     do
     {
-        ch1 = toupper(*(str1++));
-        ch2 = toupper(*(str2++));
+        ch1 = std::toupper(*(str1++));
+        ch2 = std::toupper(*(str2++));
         if (ch1 != ch2)
         {
             return (ch1 - ch2);
@@ -270,7 +270,7 @@ char* gmx_strdup(const char* src)
 {
     char* dest = nullptr;
 
-    auto length = strlen(src) + 1;
+    auto length = std::strlen(src) + 1;
     snew(dest, length);
     std::strncpy(dest, src, length);
 
@@ -281,13 +281,13 @@ char* gmx_strndup(const char* src, int n)
 {
     char* dest = nullptr;
 
-    int len = strlen(src);
+    int len = std::strlen(src);
     if (len > n)
     {
         len = n;
     }
     snew(dest, len + 1);
-    strncpy(dest, src, len);
+    std::strncpy(dest, src, len);
     dest[len] = 0;
     return dest;
 }
@@ -313,9 +313,9 @@ unsigned int gmx_string_hash_func(const char* s, unsigned int hash_init)
 {
     int c = 0;
 
-    while ((c = toupper(*s++)) != '\0')
+    while ((c = std::toupper(*s++)) != '\0')
     {
-        if (isalnum(c))
+        if (std::isalnum(c))
         {
             hash_init = ((hash_init << 5) + hash_init) ^ c; /* (hash * 33) xor c */
         }
@@ -403,7 +403,7 @@ char* wrap_lines(const char* buf, int line_width, int indent, gmx_bool bIndentFi
      */
 
     char* b2    = nullptr;
-    int   b2len = strlen(buf) + 1 + indent;
+    int   b2len = std::strlen(buf) + 1 + indent;
     snew(b2, b2len);
     int i0 = 0;
     int i2 = 0;
@@ -491,11 +491,21 @@ char* wrap_lines(const char* buf, int line_width, int indent, gmx_bool bIndentFi
 int64_t str_to_int64_t(const char* str, char** endptr)
 {
 #ifndef _MSC_VER
-    return strtoll(str, endptr, 10);
+    return std::strtoll(str, endptr, 10);
 #else
     return _strtoi64(str, endptr, 10);
 #endif
 }
+
+uint64_t str_to_uint64_t(const char* str, char** endptr)
+{
+#ifndef _MSC_VER
+    return std::strtoull(str, endptr, 10);
+#else
+    return _strtoui64(str, endptr, 10);
+#endif
+}
+
 
 char* gmx_step_str(int64_t i, char* buf)
 {

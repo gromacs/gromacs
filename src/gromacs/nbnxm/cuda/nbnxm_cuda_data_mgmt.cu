@@ -56,12 +56,12 @@
 #include "gromacs/gpu_utils/gpueventsynchronizer.h"
 #include "gromacs/hardware/device_information.h"
 #include "gromacs/hardware/device_management.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/force_flags.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
+#include "gromacs/nbnxm/gpu_types_common.h"
 #include "gromacs/nbnxm/gridset.h"
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/nbnxm/nbnxm_gpu.h"
@@ -73,7 +73,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/real.h"
-#include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "nbnxm_cuda.h"
 /* Required to stop gcc emitting multiple definition warnings as cuda_fp16.h, which is included by
@@ -81,7 +81,7 @@
  * device_atomic_functions.h used by nbnxm_cuda_types.h. Seen in cuda 10 and 11 with gcc-11. */
 #undef __WSB_DEPRECATION_MESSAGE
 
-namespace Nbnxm
+namespace gmx
 {
 
 /* This is a heuristically determined parameter for the Kepler
@@ -120,16 +120,37 @@ int gpu_min_ci_balanced(NbnxmGpu* nb)
                          : 0;
 }
 
-/* Calculate size of working memory required for exclusive sum, part of sorting the neighbour list,
- * by calling exclusive sum with nullptr */
-void getExclusiveScanWorkingArraySize(size_t& scan_size, GpuPairlist* d_plist, const DeviceStream& deviceStream)
+namespace
 {
-    cub::DeviceScan::ExclusiveSum(nullptr,
-                                  scan_size,
+
+size_t cudaCubWrapper(size_t              temporaryBufferSize,
+                      char*               temporaryBuffer,
+                      GpuPairlist*        d_plist,
+                      const DeviceStream& deviceStream)
+{
+    size_t size = temporaryBufferSize;
+    cub::DeviceScan::ExclusiveSum(temporaryBuffer,
+                                  size,
                                   d_plist->sorting.sciHistogram,
                                   d_plist->sorting.sciOffset,
                                   c_sciHistogramSize,
                                   deviceStream.stream());
+    return size;
 }
 
-} // namespace Nbnxm
+} // namespace
+
+size_t getExclusiveScanWorkingArraySize(GpuPairlist* plist, const DeviceStream& deviceStream)
+{
+    return cudaCubWrapper(0, nullptr, plist, deviceStream);
+}
+
+void performExclusiveScan(size_t              temporaryBufferSize,
+                          char*               temporaryBuffer,
+                          GpuPairlist*        plist,
+                          const DeviceStream& deviceStream)
+{
+    std::ignore = cudaCubWrapper(temporaryBufferSize, temporaryBuffer, plist, deviceStream);
+}
+
+} // namespace gmx

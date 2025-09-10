@@ -42,7 +42,6 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdspan/mdspan.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
@@ -53,9 +52,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/vec.h"
 
-static const double bohr =
-        0.529177249; /* conversion factor to compensate for VMD plugin conversion... */
+static const double bohr = 0.529177249; /* conversion factor to compensate for VMD plugin conversion... */
 
 int gmx_spatial(int argc, char* argv[])
 {
@@ -285,7 +284,7 @@ int gmx_spatial(int argc, char* argv[])
                        fr.x[index[i]][XX],
                        fr.x[index[i]][YY],
                        fr.x[index[i]][ZZ]);
-                exit(1);
+                std::exit(1);
             }
 
             bin[x][y][z]++;

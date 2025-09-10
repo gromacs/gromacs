@@ -49,7 +49,7 @@
 namespace gmx
 {
 
-void PmePpCommGpu::Impl::sendCoordinatesToPmePeerToPeer(Float3* /*sendPtr*/,
+void PmePpCommGpu::Impl::sendCoordinatesToPmePeerToPeer(const Float3* /*sendPtr*/,
                                                         int /*sendSize*/,
                                                         GpuEventSynchronizer* /*coordinatesReadyOnDeviceEvent*/)
 {

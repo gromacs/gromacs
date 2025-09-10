@@ -67,7 +67,7 @@ static inline float gmx_simdcall reduceIncr4ReturnSum(float* m, SimdFloat v0, Si
     _mm_store_ps(m, v2.simdInternal_);
 
     __m128 b = _mm_add_ps(v0.simdInternal_, _mm_permute_ps(v0.simdInternal_, _MM_SHUFFLE(1, 0, 3, 2)));
-    b        = _mm_add_ss(b, _mm_permute_ps(b, _MM_SHUFFLE(0, 3, 2, 1)));
+    b = _mm_add_ss(b, _mm_permute_ps(b, _MM_SHUFFLE(0, 3, 2, 1)));
     return *reinterpret_cast<float*>(&b);
 }
 

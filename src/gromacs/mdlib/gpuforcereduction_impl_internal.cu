@@ -47,7 +47,7 @@
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/typecasts_cuda_hip.h"
-#include "gromacs/gpu_utils/vectype_ops.cuh"
+#include "gromacs/gpu_utils/vectype_ops_cuda.h"
 
 #if GMX_NVSHMEM
 #    include <nvshmemx.h>

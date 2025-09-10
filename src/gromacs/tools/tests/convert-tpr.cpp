@@ -52,12 +52,12 @@
 #include "gromacs/commandline/cmdlineoptionsmodule.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/math/functions.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/tools/convert_tpr.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
@@ -91,9 +91,9 @@ TEST_F(ConvertTprTest, ExtendRuntimeExtensionTest)
     TestFileManager             fileManager;
     const std::filesystem::path outTprFilename = fileManager.getTemporaryFilePath("extended.tpr");
     const std::string           command[]      = { "convert-tpr",           "-s",
-                                    tprFileHandle.tprName(), "-o",
-                                    outTprFilename.string(), "-extend",
-                                    extendByString };
+                                                   tprFileHandle.tprName(), "-o",
+                                                   outTprFilename.string(), "-extend",
+                                                   extendByString };
     CommandLine                 cmdline(command);
 
     gmx::test::CommandLineTestHelper::runModuleFactory(&gmx::ConvertTprInfo::create, &cmdline);

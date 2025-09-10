@@ -46,11 +46,11 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 namespace gmx
 {
@@ -110,7 +110,7 @@ struct QMMMParameters
     std::vector<Index> qmIndices_;
     //! Indices of the atoms that are part of the MM region (default no MM atoms)
     std::vector<Index> mmIndices_;
-    //! Vector with pairs of indicies defining broken bonds in QMMM (default determined from topology)
+    //! Vector with pairs of indices defining broken bonds in QMMM (default determined from topology)
     std::vector<LinkFrontier> link_;
     //! Vector with atomic numbers of all atoms in the system (default determined from topology)
     std::vector<int> atomNumbers_;
@@ -138,8 +138,6 @@ struct QMMMParameters
         qmBox_{ { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 } }, qmTrans_{ 0.0, 0.0, 0.0 }
     {
     }
-
-    GMX_DISALLOW_COPY_AND_ASSIGN(QMMMParameters);
 };
 
 } // namespace gmx

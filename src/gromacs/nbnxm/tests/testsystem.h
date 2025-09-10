@@ -42,13 +42,12 @@
 
 #include <vector>
 
-#include "gromacs/math/vec.h"
 #include "gromacs/utility/listoflists.h"
-
-enum class LJCombinationRule : int;
+#include "gromacs/utility/vec.h"
 
 namespace gmx
 {
+enum class LJCombinationRule : int;
 
 namespace test
 {

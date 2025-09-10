@@ -43,8 +43,6 @@
 #include "energydata.h"
 
 #include "gromacs/gmxlib/network.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/mdlib/compute_io.h"
 #include "gromacs/mdlib/enerdata_utils.h"
 #include "gromacs/mdlib/energyoutput.h"
 #include "gromacs/mdlib/mdatoms.h"
@@ -61,6 +59,7 @@
 #include "gromacs/mdtypes/observableshistory.h"
 #include "gromacs/mdtypes/pullhistory.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/vec.h"
 
 #include "freeenergyperturbationdata.h"
 #include "modularsimulator.h"
@@ -137,9 +136,10 @@ void EnergyData::Element::scheduleTask(Step step, Time time, const RegisterRunFu
             (freeEnergyCalculationStep_ == step) && do_per_step(step, freeEnergyCalculationPeriod_);
     if (isEnergyCalculationStep || writeEnergy)
     {
-        registerRunFunction([this, step, time, isEnergyCalculationStep, isFreeEnergyCalculationStep]() {
-            energyData_->doStep(step, time, isEnergyCalculationStep, isFreeEnergyCalculationStep);
-        });
+        registerRunFunction(
+                [this, step, time, isEnergyCalculationStep, isFreeEnergyCalculationStep]() {
+                    energyData_->doStep(step, time, isEnergyCalculationStep, isFreeEnergyCalculationStep);
+                });
     }
     else
     {
@@ -180,14 +180,6 @@ void EnergyData::setup(gmx_mdoutf* outf)
 
     initializeEnergyHistory(startingBehavior_, observablesHistory_, energyOutput_.get());
 
-    // TODO: This probably doesn't really belong here...
-    //       but we have all we need in this element,
-    //       so we'll leave it here for now!
-    double io = compute_io(inputrec_, top_global_.natoms, *groups_, energyOutput_->numEnergyTerms(), 1);
-    if ((io > 2000) && isMainRank_)
-    {
-        fprintf(stderr, "\nWARNING: This run will generate roughly %.0f Mb of data\n\n", io);
-    }
     if (!inputrec_->bContinuation)
     {
         real temp = enerd_->term[F_TEMP];
@@ -206,9 +198,8 @@ std::optional<ITrajectoryWriterCallback> EnergyData::Element::registerTrajectory
 {
     if (event == TrajectoryEvent::EnergyWritingStep && isMainRank_)
     {
-        return [this](gmx_mdoutf* mdoutf, Step step, Time time, bool writeTrajectory, bool writeLog) {
-            energyData_->write(mdoutf, step, time, writeTrajectory, writeLog);
-        };
+        return [this](gmx_mdoutf* mdoutf, Step step, Time time, bool writeTrajectory, bool writeLog)
+        { energyData_->write(mdoutf, step, time, writeTrajectory, writeLog); };
     }
     return std::nullopt;
 }
@@ -413,16 +404,18 @@ void EnergyData::Element::doCheckpointData(CheckpointData<operation>* checkpoint
 }
 
 void EnergyData::Element::saveCheckpointState(std::optional<WriteCheckpointData> checkpointData,
-                                              const t_commrec*                   cr)
+                                              const MpiComm&                     mpiComm,
+                                              gmx_domdec_t*                      dd)
 {
     // Here we always store the ekinstate, even when it might be not be used at this step.
     // It would be cleaner make it conditional on when it is used (and thus up to date).
-    update_ekinstate(MAIN(cr) ? &energyData_->ekinstate_ : nullptr,
+    update_ekinstate(mpiComm.isMainRank() ? &energyData_->ekinstate_ : nullptr,
                      energyData_->ekind_,
                      energyData_->needToSumEkinhOld_,
-                     cr);
+                     mpiComm,
+                     dd);
 
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         energyData_->ekinstate_.bUpToDate = true;
 
@@ -430,27 +423,33 @@ void EnergyData::Element::saveCheckpointState(std::optional<WriteCheckpointData>
                 energyData_->observablesHistory_->energyHistory.get());
         doCheckpointData<CheckpointDataOperation::Write>(&checkpointData.value());
     }
+
+    GMX_UNUSED_VALUE(dd);
 }
 
 void EnergyData::Element::restoreCheckpointState(std::optional<ReadCheckpointData> checkpointData,
-                                                 const t_commrec*                  cr)
+                                                 const MpiComm&                    mpiComm,
+                                                 gmx_domdec_t*                     dd)
 {
-    if (MAIN(cr))
+    if (mpiComm.isMainRank())
     {
         doCheckpointData<CheckpointDataOperation::Read>(&checkpointData.value());
     }
-    energyData_->hasReadEkinFromCheckpoint_ = MAIN(cr) ? energyData_->ekinstate_.bUpToDate : false;
-    if (PAR(cr))
+    energyData_->hasReadEkinFromCheckpoint_ =
+            mpiComm.isMainRank() ? energyData_->ekinstate_.bUpToDate : false;
+    if (mpiComm.isParallel())
     {
         gmx_bcast(sizeof(hasReadEkinFromCheckpoint_),
                   &energyData_->hasReadEkinFromCheckpoint_,
-                  cr->mpi_comm_mygroup);
+                  mpiComm.comm());
     }
     if (energyData_->hasReadEkinFromCheckpoint_)
     {
         // this takes care of broadcasting from main to agents
-        restore_ekinstate_from_state(cr, energyData_->ekind_, &energyData_->ekinstate_);
+        restore_ekinstate_from_state(mpiComm, energyData_->ekind_, &energyData_->ekinstate_);
     }
+
+    GMX_UNUSED_VALUE(dd);
 }
 
 const std::string& EnergyData::Element::clientID()
@@ -548,12 +547,12 @@ EnergyData::Element::Element(EnergyData* energyData, bool isMainRank, int freeEn
 }
 
 ISimulatorElement* EnergyData::Element::getElementPointerImpl(
-        LegacySimulatorData gmx_unused*        legacySimulatorData,
+        LegacySimulatorData gmx_unused*                    legacySimulatorData,
         ModularSimulatorAlgorithmBuilderHelper gmx_unused* builderHelper,
-        StatePropagatorData gmx_unused* statePropagatorData,
-        EnergyData*                     energyData,
-        FreeEnergyPerturbationData gmx_unused* freeEnergyPerturbationData,
-        GlobalCommunicationHelper gmx_unused* globalCommunicationHelper,
+        StatePropagatorData gmx_unused*                    statePropagatorData,
+        EnergyData*                                        energyData,
+        FreeEnergyPerturbationData gmx_unused*             freeEnergyPerturbationData,
+        GlobalCommunicationHelper gmx_unused*              globalCommunicationHelper,
         ObservablesReducer* /*observablesReducer*/)
 {
     return energyData->element();

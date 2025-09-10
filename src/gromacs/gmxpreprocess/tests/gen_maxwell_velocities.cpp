@@ -49,7 +49,6 @@
 #include <gtest/gtest-param-test.h>
 #include <gtest/gtest.h>
 
-#include "gromacs/math/vectypes.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
@@ -57,6 +56,7 @@
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/textreader.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/conftest.h"

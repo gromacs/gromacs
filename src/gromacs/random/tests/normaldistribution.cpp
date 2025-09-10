@@ -55,7 +55,8 @@
 
 namespace gmx
 {
-
+namespace test
+{
 namespace
 {
 
@@ -137,5 +138,5 @@ TEST(NormalDistributionTest, AltParam)
 }
 
 } // namespace
-
+} // namespace test
 } // namespace gmx

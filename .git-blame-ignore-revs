@@ -8,6 +8,12 @@
 #
 # $ git config blame.ignoreRevsFile .git-blame-ignore-revs
 
+# Bump clang-format to version 18
+3d2a4c1ae37a68a824a91f35b8aa07d1f01adf47
+
+# Apply clang-format to nblib *.hpp files
+0c5644d839bb80ac38f778e5e9e258e662a83642
+
 # Fixed source formatting artifacts/leftovers
 cd348c8aa928409650f92e4ffdbce2230595472a
 

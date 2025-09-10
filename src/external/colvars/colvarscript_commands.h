@@ -541,6 +541,15 @@ CVSCRIPT(cv_printframe,
          return COLVARS_OK;
          )
 
+CVSCRIPT(cv_patchversion,
+         "Get the Colvars patch version number (used for bugfixes only)\n"
+         "version : string - Colvars version",
+         0, 0,
+         "",
+         script->set_result_int(cvm::main()->patch_version_number());
+         return COLVARS_OK;
+         )
+
 CVSCRIPT(cv_printframelabels,
          "Return the labels that would be written to colvars.traj\n"
          "Labels : string - The labels",
@@ -656,7 +665,7 @@ CVSCRIPT(cv_update,
          )
 
 CVSCRIPT(cv_version,
-         "Get the Colvars Module version string\n"
+         "Get the Colvars version string\n"
          "version : string - Colvars version",
          0, 0,
          "",

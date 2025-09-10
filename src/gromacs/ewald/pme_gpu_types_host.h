@@ -56,8 +56,8 @@
 #include "gromacs/ewald/pme_gpu_program.h"
 #include "gromacs/gpu_utils/clfftinitializer.h"
 #include "gromacs/gpu_utils/hostallocator.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/vectypes.h"
 
 #include "pme_force_sender_gpu.h"
 #include "pme_gpu_settings.h"
@@ -72,14 +72,8 @@ typedef int PmeGpuSpecific;
 typedef int PmeGpuHaloExchange;
 #endif
 
-#if GMX_GPU_CUDA
-struct PmeGpuCudaKernelParams;
-/*! \brief A typedef for including the GPU kernel arguments data by pointer */
-typedef PmeGpuCudaKernelParams PmeGpuKernelParams;
-#elif GMX_GPU_OPENCL || GMX_GPU_SYCL
-struct PmeGpuKernelParamsBase;
-/*! \brief A typedef for including the GPU kernel arguments data by pointer */
-typedef PmeGpuKernelParamsBase PmeGpuKernelParams;
+#if GMX_GPU && !GMX_GPU_HIP
+struct PmeGpuKernelParams;
 #else
 /*! \brief A dummy typedef for the GPU kernel arguments data placeholder on non-GPU builds */
 typedef int PmeGpuKernelParams;
@@ -133,11 +127,6 @@ struct PmeShared
     bool isRankPmeOnly;
     /*! \brief The box scaler based on inputrec - created in pme_init and managed by CPU structure */
     class EwaldBoxZScaler* boxScaler;
-    /*! \brief The previous computation box to know if we even need to update the current box params.
-     * \todo Manage this on higher level.
-     * \todo Alternatively, when this structure is used by CPU PME code, make use of this field there as well.
-     */
-    matrix previousBox;
 
     /*! \brief The The number of decomposition dimensions */
     int ndecompdim;

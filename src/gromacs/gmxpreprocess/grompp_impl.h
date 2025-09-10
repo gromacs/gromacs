@@ -61,7 +61,8 @@ public:
     //! Constructor that initializes vectors.
     InteractionOfType(gmx::ArrayRef<const int>  atoms,
                       gmx::ArrayRef<const real> params,
-                      const std::string&        name = "");
+                      const std::string&        name    = "",
+                      bool                      special = false);
     /*!@{*/
     //! Access the individual elements set for the parameter.
     const int& ai() const;
@@ -122,6 +123,8 @@ private:
     std::array<real, MAXFORCEPARAM> forceParam_;
     //! Used with forcefields whose .rtp files name the interaction types (e.g. GROMOS), rather than look them up from the atom names.
     std::string interactionTypeName_;
+    //! boolean used to identify if dihedral was defined in the specbond.dat file
+    bool specbond_;
 };
 
 /*! \libinternal \brief
@@ -145,6 +148,8 @@ struct InteractionsOfType
     std::vector<real> cmap;
     //! The five atomtypes followed by a number that identifies the type.
     std::vector<int> cmapAtomTypes;
+    //! The five residue types followed by empty string for alignment with \link cmapAtomTypes \endlink.
+    std::vector<std::string> cmapResTypes_;
 
     //! Number of parameters.
     size_t size() const { return interactionTypes.size(); }
@@ -172,7 +177,7 @@ struct MoleculeInformation
     int nrexcl = 0;
     //! Has the mol been processed.
     bool bProcessed = false;
-    //! Atoms in the moelcule.
+    //! Atoms in the molecule.
     t_atoms atoms;
     //! Molecules separated in datastructure.
     t_block mols;

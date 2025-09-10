@@ -164,7 +164,7 @@ public:
     AnalysisDataFrameAverageModule();
     ~AnalysisDataFrameAverageModule() override;
 
-    int frameCount() const override;
+    size_t frameCount() const override;
 
     int flags() const override;
 
@@ -175,8 +175,8 @@ public:
     void dataFinished() override;
 
 private:
-    AnalysisDataFrameRef tryGetDataFrameInternal(int index) const override;
-    bool                 requestStorageInternal(int nframes) override;
+    AnalysisDataFrameRef tryGetDataFrameInternal(size_t index) const override;
+    bool                 requestStorageInternal(size_t nframes) override;
 
     class Impl;
 

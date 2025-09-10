@@ -2300,7 +2300,7 @@ static gmx_bool read_lambda_compvec(const char*                str,
                     else
                     {
                         /* add a vector component to lv */
-                        lv->val[n] = strtod(val_start, &strtod_end);
+                        lv->val[n] = std::strtod(val_start, &strtod_end);
                         if (val_start == strtod_end)
                         {
                             gmx_fatal(FARGS, "Error reading lambda vector in %s", fn);
@@ -2473,7 +2473,7 @@ static gmx_bool legend2lambda(const char* fn, const char* legend, lambda_vec_t* 
                 gmx_fatal(FARGS, "dhdl legend '%s' %s faulty", legend, fn);
             }
             /* now backtrack to the start of the identifier */
-            while (isspace(*ptr))
+            while (std::isspace(*ptr))
             {
                 end = ptr;
                 ptr--;
@@ -3457,10 +3457,10 @@ int gmx_bar(int argc, char* argv[])
         { "-nbmax", FALSE, etINT, { &nbmax }, "Maximum number of blocks for error estimation" },
         { "-nbin", FALSE, etINT, { &nbin }, "Number of bins for histogram output" },
         { "-extp",
-          FALSE,
-          etBOOL,
-          { &use_dhdl },
-          "Whether to linearly extrapolate dH/dl values to use as energies" }
+                  FALSE,
+                  etBOOL,
+                  { &use_dhdl },
+                  "Whether to linearly extrapolate dH/dl values to use as energies" }
     };
 
     t_filenm fnm[] = { { efXVG, "-f", "dhdl", ffOPTRDMULT },

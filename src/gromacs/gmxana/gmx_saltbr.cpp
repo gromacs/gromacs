@@ -48,8 +48,6 @@
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/gmxana/gmx_ana.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/topology.h"
@@ -60,6 +58,8 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 enum class PbcType : int;
 struct gmx_output_env_t;
@@ -123,15 +123,15 @@ int gmx_saltbr(int argc, char* argv[])
     static gmx_bool bSep     = FALSE;
     static real     truncate = 1000.0;
     t_pargs         pa[]     = { { "-t",
-                       FALSE,
-                       etREAL,
-                       { &truncate },
-                       "Groups that are never closer than this distance are not plotted" },
-                     { "-sep",
-                       FALSE,
-                       etBOOL,
-                       { &bSep },
-                       "Use separate files for each interaction (may be MANY)" } };
+                                   FALSE,
+                                   etREAL,
+                                   { &truncate },
+                                   "Groups that are never closer than this distance are not plotted" },
+                                 { "-sep",
+                                   FALSE,
+                                   etBOOL,
+                                   { &bSep },
+                                   "Use separate files for each interaction (may be MANY)" } };
     t_filenm        fnm[]    = {
         { efTRX, "-f", nullptr, ffREAD },
         { efTPR, nullptr, nullptr, ffREAD },
@@ -303,7 +303,7 @@ int gmx_saltbr(int argc, char* argv[])
             xvgrclose(out[m]);
             if (nset[m] == 0)
             {
-                remove(fn[m]);
+                std::remove(fn[m]);
             }
         }
     }

@@ -45,12 +45,12 @@
 #include "gromacs/math/nrjac.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/vec.h"
+#include "gromacs/utility/vectypes.h"
 
 real calc_similar_ind(gmx_bool bRho, int nind, const int* index, const real mass[], rvec x[], rvec xp[])
 {

@@ -40,10 +40,23 @@ mark_as_advanced(GMX_USE_COLVARS)
 
 function(gmx_manage_colvars)
     if(GMX_USE_COLVARS STREQUAL "INTERNAL")
+
         # Create an object library for the colvars sources
         set(COLVARS_DIR "${CMAKE_SOURCE_DIR}/src/external/colvars")
         file(GLOB COLVARS_SOURCES ${COLVARS_DIR}/*.cpp)
         add_library(colvars_objlib OBJECT ${COLVARS_SOURCES})
+        if(GMX_LIB_MPI)
+            target_compile_definitions(colvars_objlib PRIVATE -DCOLVARS_MPI)
+        endif()
+        if(GMX_OPENMP)
+            target_link_libraries(colvars_objlib PRIVATE OpenMP::OpenMP_CXX)
+        endif()
+        if(GMX_TORCH)
+            target_compile_options(colvars_objlib PRIVATE ${TORCH_CXX_FLAGS})
+            target_include_directories(colvars_objlib PRIVATE ${TORCH_INCLUDE_DIRS})
+            target_compile_definitions(colvars_objlib PRIVATE -DCOLVARS_TORCH)
+        endif()
+
         # Set correctly the value of __cplusplus, which MSVC doesn't do by default
         target_compile_options(colvars_objlib PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/Zc:__cplusplus>)
         # Ensure that colvars_objlib can be used in both STATIC and SHARED libraries.
@@ -53,15 +66,21 @@ function(gmx_manage_colvars)
         add_library(colvars INTERFACE)
         target_sources(colvars INTERFACE $<TARGET_OBJECTS:colvars_objlib>)
         target_include_directories(colvars SYSTEM INTERFACE $<BUILD_INTERFACE:${COLVARS_DIR}>)
-
-        if(GMX_OPENMP)
-            target_compile_options(colvars_objlib PRIVATE ${OpenMP_CXX_FLAGS})
-            target_link_libraries(colvars_objlib PRIVATE OpenMP::OpenMP_CXX)
+        if(GMX_LIB_MPI)
+            target_compile_definitions(colvars INTERFACE -DCOLVARS_MPI)
         endif()
+        if(GMX_TORCH)
+            target_compile_definitions(colvars INTERFACE -DCOLVARS_TORCH)
+        endif()
+
+        set(GMX_HAVE_COLVARS 1 CACHE INTERNAL "Is colvars found?")
 
     else()
         # Create a dummy link target so the calling code doesn't need to know
         # whether colvars support is being compiled.
         add_library(colvars INTERFACE)
+
+        set(GMX_HAVE_COLVARS 0 CACHE INTERNAL "Is colvars found?")
     endif()
+    mark_as_advanced(GMX_HAVE_COLVARS)
 endfunction()

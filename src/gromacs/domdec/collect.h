@@ -42,7 +42,7 @@
 #ifndef GMX_DOMDEC_COLLECT_H
 #define GMX_DOMDEC_COLLECT_H
 
-#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/vectypes.h"
 
 namespace gmx
 {

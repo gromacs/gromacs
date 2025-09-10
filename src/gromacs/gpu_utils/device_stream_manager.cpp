@@ -90,6 +90,7 @@ DeviceStreamManager::Impl::Impl(const DeviceInformation& deviceInfo,
                                 const bool               useTiming) :
     context_(deviceInfo), havePpDomainDecomposition_(simulationWork.havePpDomainDecomposition)
 {
+    context_.activate();
     try
     {
         streams_[DeviceStreamType::NonBondedLocal] =

@@ -54,7 +54,6 @@ namespace gmx
 /*! \cond internal */
 namespace internal
 {
-
 void assertHandler(const char* condition, const char* msg, const char* func, const char* file, int line)
 {
     printFatalErrorHeader(stderr, "Assertion failed", func, file, line);

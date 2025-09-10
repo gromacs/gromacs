@@ -39,3 +39,7 @@ gmx_add_unit_test(HardwareUnitTests hardware-test
     GPU_CPP_SOURCE_FILES
         device_management.cpp
         )
+
+target_link_libraries(hardware-test PRIVATE
+                      serialization
+                      )

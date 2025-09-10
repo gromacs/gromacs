@@ -494,8 +494,8 @@ L190:
     return;
 }
 
-static void F77_FUNC(dgetv0, DGETV0)(int*        ido,
-                                     const char* bmat,
+static void F77_FUNC(dgetv0, DGETV0)(int*            ido,
+                                     const char*     bmat,
                                      int gmx_unused* itry,
                                      int*            initv,
                                      int*            n,
@@ -1717,15 +1717,15 @@ L9000:
 }
 
 
-static void F77_FUNC(dsaup2, DSAUP2)(int*        ido,
-                                     const char* bmat,
-                                     int*        n,
-                                     const char* which,
-                                     int*        nev,
-                                     int*        np,
-                                     double*     tol,
-                                     double*     resid,
-                                     int*        mode,
+static void F77_FUNC(dsaup2, DSAUP2)(int*            ido,
+                                     const char*     bmat,
+                                     int*            n,
+                                     const char*     which,
+                                     int*            nev,
+                                     int*            np,
+                                     double*         tol,
+                                     double*         resid,
+                                     int*            mode,
                                      int gmx_unused* iupd,
                                      int*            ishift,
                                      int*            mxiter,
@@ -2757,9 +2757,7 @@ void F77_FUNC(dseupd, DSEUPD)(int*        rvec,
         F77_FUNC(dorm2r, DORM2R)
         ("Left", "Transpose", ncv, &c__1, &nconv, &workl[iq], &ldq, &workl[iw + *ncv], &workl[ihb], ncv, &temp, &ierr);
     }
-    else if (*rvec && *howmny == 'S')
-    {
-    }
+    else if (*rvec && *howmny == 'S') {}
 
     if (!std::strncmp(type__, "REGULR", 6) && *rvec)
     {
@@ -3287,8 +3285,8 @@ L190:
     return;
 }
 
-static void F77_FUNC(sgetv0, SGETV0)(int*        ido,
-                                     const char* bmat,
+static void F77_FUNC(sgetv0, SGETV0)(int*            ido,
+                                     const char*     bmat,
                                      int gmx_unused* itry,
                                      int*            initv,
                                      int*            n,
@@ -4111,9 +4109,9 @@ static void F77_FUNC(ssconv, SSCONV)(int* n, float* ritz, float* bounds, float* 
 }
 
 
-static void F77_FUNC(
-        sseigt,
-        SSEIGT)(float* rnorm, int* n, float* h__, int* ldh, float* eig, float* bounds, float* workl, int* ierr)
+static void
+F77_FUNC(sseigt,
+         SSEIGT)(float* rnorm, int* n, float* h__, int* ldh, float* eig, float* bounds, float* workl, int* ierr)
 {
     int c__1 = 1;
     int h_dim1, h_offset, i__1;
@@ -4505,15 +4503,15 @@ L9000:
 }
 
 
-static void F77_FUNC(ssaup2, SSAUP2)(int*        ido,
-                                     const char* bmat,
-                                     int*        n,
-                                     const char* which,
-                                     int*        nev,
-                                     int*        np,
-                                     float*      tol,
-                                     float*      resid,
-                                     int*        mode,
+static void F77_FUNC(ssaup2, SSAUP2)(int*            ido,
+                                     const char*     bmat,
+                                     int*            n,
+                                     const char*     which,
+                                     int*            nev,
+                                     int*            np,
+                                     float*          tol,
+                                     float*          resid,
+                                     int*            mode,
                                      int gmx_unused* iupd,
                                      int*            ishift,
                                      int*            mxiter,
@@ -5546,9 +5544,7 @@ void F77_FUNC(sseupd, SSEUPD)(int*        rvec,
         F77_FUNC(sorm2r, SORM2R)
         ("Left", "Transpose", ncv, &c__1, &nconv, &workl[iq], &ldq, &workl[iw + *ncv], &workl[ihb], ncv, &temp, &ierr);
     }
-    else if (*rvec && *howmny == 'S')
-    {
-    }
+    else if (*rvec && *howmny == 'S') {}
 
     if (!std::strncmp(type__, "REGULR", 6) && *rvec)
     {

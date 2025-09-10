@@ -256,7 +256,7 @@ TEST_P(ReplicaExchangeTest, Works)
             checkTrajectoryAgainstReferenceData(trajectoryFileName, trajectoryComparison, &simulationChecker);
 
         } // end loop over simulations
-    }     // end testing simulations on one rank
+    } // end testing simulations on one rank
 
 #if GMX_LIB_MPI
     // Make sure testing is complete before returning - ranks delete temporary files on exit

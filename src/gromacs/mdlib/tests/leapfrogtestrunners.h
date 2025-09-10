@@ -49,7 +49,7 @@
 
 #include <string>
 
-#include "gromacs/math/vec.h"
+#include "gromacs/utility/vec.h"
 
 #include "testutils/test_device.h"
 

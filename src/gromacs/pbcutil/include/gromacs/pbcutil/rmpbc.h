@@ -34,7 +34,7 @@
 #ifndef GMX_PBCUTIL_RMPBC_H
 #define GMX_PBCUTIL_RMPBC_H
 
-#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/vectypes.h"
 
 class InteractionDefinitions;
 struct t_atoms;

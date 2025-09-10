@@ -53,12 +53,12 @@
 #include "gromacs/fileio/tngio.h"
 #include "gromacs/fileio/trrio.h"
 #include "gromacs/fileio/xtcio.h"
-#include "gromacs/math/vec.h"
 #include "gromacs/mdlib/energyoutput.h"
 #include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/mdtypes/awh_history.h"
 #include "gromacs/mdtypes/commrec.h"
+#include "gromacs/mdtypes/df_history.h"
 #include "gromacs/mdtypes/edsamhistory.h"
 #include "gromacs/mdtypes/energyhistory.h"
 #include "gromacs/mdtypes/imdoutputprovider.h"
@@ -84,6 +84,7 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/sysinfo.h"
+#include "gromacs/utility/vec.h"
 
 struct gmx_mdoutf
 {
@@ -159,7 +160,7 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
         of->mainRanksComm = ms->mainRanksComm_;
     }
 
-    if (MAIN(cr))
+    if (cr->commMyGroup.isMainRank())
     {
         of->bKeepAndNumCPT = mdrunOptions.checkpointOptions.keepAndNumberCheckpointFiles;
 
@@ -249,7 +250,7 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
             }
         }
 
-        if (ir->nstfout && haveDDAtomOrdering(*cr))
+        if (ir->nstfout && cr->dd != nullptr)
         {
             snew(of->f_global, top_global.natoms);
         }
@@ -314,15 +315,14 @@ static void write_checkpoint(const char*                     fn,
                              bool                            applyMpiBarrierBeforeRename,
                              MPI_Comm                        mpiBarrierCommunicator)
 {
-    t_fileio* fp;
     char*     fntemp; /* the temporary checkpoint file name */
     int       npmenodes;
     char      buf[1024], suffix[5 + STEPSTRSIZE], sbuf[STEPSTRSIZE];
     t_fileio* ret;
 
-    if (haveDDAtomOrdering(*cr))
+    if (cr->dd)
     {
-        npmenodes = cr->npmenodes;
+        npmenodes = cr->dd->numPmeOnlyRanks;
     }
     else
     {
@@ -351,10 +351,12 @@ static void write_checkpoint(const char*                     fn,
         fprintf(fplog, "Writing checkpoint, step %s at %s\n\n", gmx_step_str(step, buf), timebuf.c_str());
     }
 
-    /* Get offsets for open files */
+    // Get offsets for open files
+    //
+    // Note that TNG file positions and md5 sums are not stored to the
+    // checkpoint properly (see
+    // https://gitlab.com/gromacs/gromacs/-/issues/5358)
     auto outputfiles = gmx_fio_get_output_file_positions();
-
-    fp = gmx_fio_open(fntemp, "w");
 
     /* We can check many more things now (CPU, acceleration, etc), but
      * it is highly unlikely to have two separate builds with exactly
@@ -406,7 +408,7 @@ static void write_checkpoint(const char*                     fn,
         copy_ivec(domdecCells, headerContents.dd_nc);
     }
 
-    write_checkpoint_data(fp,
+    write_checkpoint_data(fntemp,
                           headerContents,
                           bExpanded,
                           elamstats,
@@ -416,10 +418,9 @@ static void write_checkpoint(const char*                     fn,
                           &outputfiles,
                           modularSimulatorCheckpointData);
 
-    /* we really, REALLY, want to make sure to physically write the checkpoint,
-       and all the files it depends on, out to disk. Because we've
-       opened the checkpoint with gmx_fio_open(), it's in our list
-       of open files.  */
+    /* we really, REALLY, want to make sure to physically write
+       all the files the checkpoint depends on, out to disk. */
+    // Note that TNG files are flushed by the caller
     ret = gmx_fio_all_output_fsync();
 
     if (ret)
@@ -429,7 +430,7 @@ static void write_checkpoint(const char*                     fn,
                 "Cannot fsync '%s'; maybe you are out of disk space?",
                 gmx_fio_getname(ret).string().c_str());
 
-        if (getenv(GMX_IGNORE_FSYNC_FAILURE_ENV) == nullptr)
+        if (std::getenv(GMX_IGNORE_FSYNC_FAILURE_ENV) == nullptr)
         {
             gmx_file(buf);
         }
@@ -437,11 +438,6 @@ static void write_checkpoint(const char*                     fn,
         {
             gmx_warning("%s", buf);
         }
-    }
-
-    if (gmx_fio_close(fp) != 0)
-    {
-        gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of disk space?");
     }
 
     /* we don't move the checkpoint if the user specified they didn't want it,
@@ -538,8 +534,8 @@ void mdoutf_write_checkpoint(gmx_mdoutf_t                    of,
                      of->bKeepAndNumCPT,
                      fplog,
                      cr,
-                     haveDDAtomOrdering(*cr) ? cr->dd->numCells : one_ivec,
-                     haveDDAtomOrdering(*cr) ? cr->dd->nnodes : cr->nnodes,
+                     cr->dd ? cr->dd->numCells : one_ivec,
+                     cr->dd ? cr->dd->nnodes : cr->commMySim.size(),
                      of->eIntegrator,
                      of->simulation_part,
                      of->bExpanded,
@@ -554,19 +550,21 @@ void mdoutf_write_checkpoint(gmx_mdoutf_t                    of,
                      of->mainRanksComm);
 }
 
-void mdoutf_write_to_trajectory_files(FILE*                           fplog,
-                                      const t_commrec*                cr,
-                                      gmx_mdoutf_t                    of,
-                                      int                             mdof_flags,
-                                      int                             natoms,
-                                      int64_t                         step,
-                                      double                          t,
-                                      t_state*                        state_local,
-                                      t_state*                        state_global,
-                                      ObservablesHistory*             observablesHistory,
-                                      gmx::ArrayRef<const gmx::RVec>  f_local,
+void mdoutf_write_to_trajectory_files(FILE*                          fplog,
+                                      const t_commrec*               cr,
+                                      gmx_mdoutf_t                   of,
+                                      int                            mdof_flags,
+                                      int                            natoms,
+                                      int64_t                        step,
+                                      double                         t,
+                                      t_state*                       state_local,
+                                      t_state*                       state_global,
+                                      ObservablesHistory*            observablesHistory,
+                                      gmx::ArrayRef<const gmx::RVec> f_local,
                                       gmx::WriteCheckpointDataHolder* modularSimulatorCheckpointData)
 {
+    const bool isMainRank = cr->commMyGroup.isMainRank();
+
     const rvec* f_global;
 
     if (haveDDAtomOrdering(*cr))
@@ -579,7 +577,7 @@ void mdoutf_write_to_trajectory_files(FILE*                           fplog,
         {
             if (mdof_flags & (MDOF_X | MDOF_X_COMPRESSED))
             {
-                auto globalXRef = MAIN(cr) ? state_global->x : gmx::ArrayRef<gmx::RVec>();
+                auto globalXRef = isMainRank ? state_global->x : gmx::ArrayRef<gmx::RVec>{};
                 dd_collect_vec(cr->dd,
                                state_local->ddp_count,
                                state_local->ddp_count_cg_gl,
@@ -589,7 +587,7 @@ void mdoutf_write_to_trajectory_files(FILE*                           fplog,
             }
             if (mdof_flags & MDOF_V)
             {
-                auto globalVRef = MAIN(cr) ? state_global->v : gmx::ArrayRef<gmx::RVec>();
+                auto globalVRef = isMainRank ? state_global->v : gmx::ArrayRef<gmx::RVec>{};
                 dd_collect_vec(cr->dd,
                                state_local->ddp_count,
                                state_local->ddp_count_cg_gl,
@@ -601,9 +599,10 @@ void mdoutf_write_to_trajectory_files(FILE*                           fplog,
         f_global = of->f_global;
         if (mdof_flags & MDOF_F)
         {
-            auto globalFRef = MAIN(cr) ? gmx::arrayRefFromArray(
-                                      reinterpret_cast<gmx::RVec*>(of->f_global), of->natoms_global)
-                                       : gmx::ArrayRef<gmx::RVec>();
+            auto globalFRef =
+                    isMainRank ? gmx::arrayRefFromArray(reinterpret_cast<gmx::RVec*>(of->f_global),
+                                                        of->natoms_global)
+                               : gmx::ArrayRef<gmx::RVec>{};
             dd_collect_vec(cr->dd,
                            state_local->ddp_count,
                            state_local->ddp_count_cg_gl,
@@ -620,7 +619,7 @@ void mdoutf_write_to_trajectory_files(FILE*                           fplog,
         f_global = as_rvec_array(f_local.data());
     }
 
-    if (MAIN(cr))
+    if (isMainRank)
     {
         if (mdof_flags & MDOF_CPT)
         {

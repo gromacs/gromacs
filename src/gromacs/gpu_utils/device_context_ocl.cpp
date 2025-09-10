@@ -77,7 +77,7 @@ DeviceContext::DeviceContext(const DeviceInformation& deviceInfo) : deviceInfo_(
     contextProperties.emplace_back(CL_CONTEXT_PLATFORM);
     contextProperties.emplace_back(reinterpret_cast<cl_context_properties>(platformId));
 
-    if (getenv("GMX_OCL_SHOW_DIAGNOSTICS"))
+    if (std::getenv("GMX_OCL_SHOW_DIAGNOSTICS"))
     {
         contextProperties.emplace_back(CL_CONTEXT_SHOW_DIAGNOSTICS_INTEL);
         contextProperties.emplace_back(CL_CONTEXT_DIAGNOSTICS_LEVEL_BAD_INTEL
@@ -104,9 +104,10 @@ DeviceContext::~DeviceContext()
     if (context_)
     {
         clError = clReleaseContext(context_);
-        GMX_RELEASE_ASSERT(
-                clError == CL_SUCCESS,
-                gmx::formatString("Failed to release OpenCL context (OpenCL error ID %d).", clError).c_str());
+        if (clError != CL_SUCCESS)
+        {
+            std::fprintf(stderr, "Failed to release OpenCL context (OpenCL error ID %d).\n", clError);
+        }
         context_ = nullptr;
     }
 }

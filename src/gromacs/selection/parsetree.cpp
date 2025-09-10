@@ -335,13 +335,13 @@ namespace gmx
 SelectionParserValue::SelectionParserValue(e_selvalue_t type, const SelectionLocation& location) :
     type_(type), location_(location)
 {
-    memset(&u, 0, sizeof(u));
+    std::memset(&u, 0, sizeof(u));
 }
 
 SelectionParserValue::SelectionParserValue(const SelectionTreeElementPointer& expr) :
     type_(expr->v.type), expr_(expr), location_(expr->location())
 {
-    memset(&u, 0, sizeof(u));
+    std::memset(&u, 0, sizeof(u));
 }
 
 /********************************************************************
@@ -499,7 +499,7 @@ void _gmx_selelem_init_method_params(const gmx::SelectionTreeElementPointer& sel
     snew(param, nparams);
     if (nparams > 0)
     {
-        memcpy(param, orgparam, nparams * sizeof(gmx_ana_selparam_t));
+        std::memcpy(param, orgparam, nparams * sizeof(gmx_ana_selparam_t));
     }
     for (i = 0; i < nparams; ++i)
     {
@@ -521,7 +521,7 @@ void _gmx_selelem_init_method_params(const gmx::SelectionTreeElementPointer& sel
                 ++n;
             }
             _gmx_selvalue_reserve(&param[i].val, n + 1);
-            memcpy(param[i].val.u.s, orgparam[i].val.u.s, (n + 1) * sizeof(param[i].val.u.s[0]));
+            std::memcpy(param[i].val.u.s, orgparam[i].val.u.s, (n + 1) * sizeof(param[i].val.u.s[0]));
         }
     }
     mdata = nullptr;
@@ -555,7 +555,7 @@ void _gmx_selelem_set_method(const gmx::SelectionTreeElementPointer& sel,
     _gmx_selelem_set_vtype(sel, method->type);
     sel->setName(method->name);
     snew(sel->u.expr.method, 1);
-    memcpy(sel->u.expr.method, method, sizeof(gmx_ana_selmethod_t));
+    std::memcpy(sel->u.expr.method, method, sizeof(gmx_ana_selmethod_t));
     _gmx_selelem_init_method_params(sel, scanner);
 }
 

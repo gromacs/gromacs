@@ -675,7 +675,7 @@ estimate used by AWH to initialize :math:`N` in terms of more meaningful
 quantities
 
 .. math:: \frac{1}{N_0} = \frac{1}{N_0(\varepsilon_0, D)} = \Delta
-	  t_\mathrm{sample} \max_d \frac{2D_d}{L_d^2} \varepsilon_0^2
+      t_\mathrm{sample} \max_d \frac{2D_d}{L_d^2} \varepsilon_0^2
           :label: eqawhn0
 
 where :math:`L_d` is the length of the interval and :math:`D_d` is

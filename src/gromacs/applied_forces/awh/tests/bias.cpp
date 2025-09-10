@@ -59,7 +59,6 @@
 #include "gromacs/mdtypes/awh_params.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/inmemoryserializer.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
 
