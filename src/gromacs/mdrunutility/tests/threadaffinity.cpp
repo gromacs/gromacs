@@ -199,6 +199,7 @@ TEST_F(ThreadAffinityTest, HandlesPinningFailureWithOneThreadFailing)
     helper_.setAffinityOption(ThreadAffinity::On);
     helper_.setLogicalProcessorCount(2);
     helper_.expectPinningMessage(false, 1);
+    helper_.expectWarningMatchingRegex("Affinity setting for 1/2 threads failed");
     helper_.expectGenericFailureMessage();
     helper_.expectAffinitySet(0);
     helper_.expectAffinitySetThatFails(1);

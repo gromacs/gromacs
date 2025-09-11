@@ -109,37 +109,41 @@ static bool invalidWithinSimulation(const gmx::MpiComm& mpiCommMySim, bool inval
     return invalidLocally;
 }
 
-static bool get_thread_affinity_layout(const gmx::MDLogger&         mdlog,
-                                       const gmx::MpiComm&          mpiCommMySim,
-                                       const gmx::HardwareTopology& hwTop,
-                                       int                          threads,
-                                       bool  affinityIsAutoAndNumThreadsIsNotAuto,
-                                       int   pin_offset,
-                                       int*  pin_stride,
-                                       int** localityOrder,
-                                       bool* issuedWarning)
+struct ThreadAffinityLayout
 {
-    bool        bPickPinStride;
-    bool        haveTopology;
-    bool        invalidValue;
-    int         hwMaxThreads  = hwTop.maxThreads();
-    std::size_t maxSmtPerCore = 1;
+    std::vector<int> localityOrder;
+    int              pinStride;
+    int              pinOffset;
+    bool             issuedWarning;
+    bool             isValid;
+};
 
-    haveTopology = (hwTop.supportLevel() >= gmx::HardwareTopology::SupportLevel::Basic);
-
-    if (pin_offset < 0)
+static ThreadAffinityLayout get_thread_affinity_layout(const gmx::MDLogger&         mdlog,
+                                                       const gmx::MpiComm&          mpiCommMySim,
+                                                       const gmx::HardwareTopology& hwTop,
+                                                       const int                    threads,
+                                                       const bool affinityIsAutoAndNumThreadsIsNotAuto,
+                                                       const int pinOffset,
+                                                       const int pinStrideRequested)
+{
+    if (pinOffset < 0)
     {
         gmx_fatal(FARGS, "Negative thread pinning offset requested");
     }
-    if (*pin_stride < 0)
+    if (pinStrideRequested < 0)
     {
         gmx_fatal(FARGS, "Negative thread pinning stride requested");
     }
 
+    const int   hwMaxThreads  = hwTop.maxThreads();
+    std::size_t maxSmtPerCore = 1;
+
+    const bool haveTopology = (hwTop.supportLevel() >= gmx::HardwareTopology::SupportLevel::Basic);
+    ThreadAffinityLayout layout;
+
     if (haveTopology)
     {
-        snew(*localityOrder, hwTop.machine().logicalProcessors.size());
-        int i = 0;
+        layout.localityOrder.reserve(hwTop.machine().logicalProcessors.size());
         for (const auto& s : hwTop.machine().packages)
         {
             for (const auto& c : s.cores)
@@ -147,164 +151,119 @@ static bool get_thread_affinity_layout(const gmx::MDLogger&         mdlog,
                 maxSmtPerCore = std::max(maxSmtPerCore, c.processingUnits.size());
                 for (const auto& pu : c.processingUnits)
                 {
-                    (*localityOrder)[i++] = pu.osId;
+                    layout.localityOrder.emplace_back(pu.osId);
                 }
             }
         }
+        GMX_RELEASE_ASSERT(layout.localityOrder.size() == hwTop.machine().logicalProcessors.size(),
+                           "Hardware topology disagrees with itself about how many CPUs we have");
     }
-    else
-    {
-        /* topology information not available or invalid, ignore it */
-        *localityOrder = nullptr;
-    }
+
     // Only warn about the first problem per node.  Otherwise, the first test
     // failing would essentially always cause also the other problems get
     // reported, leading to bogus warnings.  The order in the conditionals
     // with this variable is important, since the MPI_Reduce() in
     // invalidWithinSimulation() needs to always happen.
-    bool alreadyWarned = false;
-    invalidValue       = (hwMaxThreads <= 0);
-    if (invalidWithinSimulation(mpiCommMySim, invalidValue))
+    auto validateWithWarning = [&](bool condition, const char* warningMessage)
     {
-        /* We don't know anything about the hardware, don't pin */
-        GMX_LOG(mdlog.warning)
-                .asParagraph()
-                .appendText(
-                        "NOTE: No information on available logical cpus, thread pinning disabled.");
-        alreadyWarned = true;
-    }
-    bool validLayout = !invalidValue;
+        if (invalidWithinSimulation(mpiCommMySim, condition) && !layout.issuedWarning)
+        {
+            GMX_LOG(mdlog.warning).asParagraph().appendText(warningMessage);
+            layout.issuedWarning = true;
+        }
+        layout.isValid = layout.isValid && !condition;
+    };
+    // Initialize validLayout to true at the start
+    layout.isValid       = true;
+    layout.issuedWarning = false;
 
+    validateWithWarning(hwMaxThreads <= 0,
+                        "NOTE: No information on available logical cpus, thread pinning disabled.");
     if (haveTopology)
     {
-        invalidValue = (hwMaxThreads < static_cast<int>(hwTop.machine().logicalProcessors.size()));
-        if (invalidWithinSimulation(mpiCommMySim, invalidValue) && !alreadyWarned)
-        {
-            // Don't pin on things that look like containers with shared resources
-            // where we are limited to only using a fraction of them
-            GMX_LOG(mdlog.warning)
-                    .asParagraph()
-                    .appendText(
-                            "NOTE: OS CPU limit is lower than logical cpu count, thread pinning "
-                            "disabled.");
-            alreadyWarned = true;
-        }
-        validLayout = validLayout && !invalidValue;
+        validateWithWarning(
+                hwMaxThreads < static_cast<int>(hwTop.machine().logicalProcessors.size()),
+                "NOTE: OS CPU limit is lower than logical cpu count, thread pinning disabled.");
     }
-
     if (affinityIsAutoAndNumThreadsIsNotAuto)
     {
-        invalidValue = (threads != hwMaxThreads);
-        bool warn    = (invalidValue && threads > 1 && threads < hwMaxThreads);
-        if (invalidWithinSimulation(mpiCommMySim, warn) && !alreadyWarned)
-        {
-            GMX_LOG(mdlog.warning)
-                    .asParagraph()
-                    .appendText(
-                            "NOTE: The number of threads is not equal to the number of (logical) "
-                            "cpus\n"
-                            "      and the -pin option is set to auto: will not pin threads to "
-                            "cpus.\n"
-                            "      This can lead to significant performance degradation.\n"
-                            "      Consider using -pin on (and -pinoffset in case you run multiple "
-                            "jobs).");
-            alreadyWarned = true;
-        }
-        validLayout = validLayout && !invalidValue;
+        bool notAllCoresUsed = (threads != hwMaxThreads);
+        bool warn            = (notAllCoresUsed && threads > 1 && threads < hwMaxThreads);
+        validateWithWarning(
+                warn,
+                "NOTE: The number of threads is not equal to the number of (logical) cpus\n"
+                "      and the -pin option is set to auto: will not pin threads to cpus.\n"
+                "      This can lead to significant performance degradation.\n"
+                "      Consider using -pin on (and -pinoffset in case you run multiple jobs).");
+        layout.isValid = layout.isValid && !notAllCoresUsed;
     }
 
-    invalidValue = (threads > hwMaxThreads);
-    if (invalidWithinSimulation(mpiCommMySim, invalidValue) && !alreadyWarned)
-    {
-        GMX_LOG(mdlog.warning)
-                .asParagraph()
-                .appendText("NOTE: Oversubscribing available/permitted CPUs, will not pin threads");
-        alreadyWarned = true;
-    }
-    validLayout = validLayout && !invalidValue;
+    validateWithWarning(threads > hwMaxThreads,
+                        "NOTE: Oversubscribing available/permitted CPUs, will not pin threads");
 
-    invalidValue = (pin_offset + threads > hwMaxThreads);
-    if (invalidWithinSimulation(mpiCommMySim, invalidValue) && !alreadyWarned)
-    {
-        GMX_LOG(mdlog.warning)
-                .asParagraph()
-                .appendText(
+    validateWithWarning(pinOffset + threads > hwMaxThreads,
                         "WARNING: Requested offset too large for available logical cpus, thread "
-                        "pinning "
-                        "disabled.");
-        alreadyWarned = true;
-    }
-    validLayout = validLayout && !invalidValue;
+                        "pinning disabled.");
 
-    invalidValue = false;
+
+    layout.pinOffset = pinOffset;
+
     /* do we need to choose the pinning stride? */
-    bPickPinStride = (*pin_stride == 0);
-
-    if (bPickPinStride)
+    const bool pickPinStride = (pinStrideRequested == 0);
+    bool       invalidStride = false;
+    if (pickPinStride)
     {
         // Strides get REALLY yucky on modern hybrid CPUs that might combine
         // performance cores having SMT with efficiency ones that don't.
         // For now we simply start by testing if we can stride it with the maxSmt
-        if (haveTopology && pin_offset + threads * static_cast<int>(maxSmtPerCore) <= hwMaxThreads)
+        if (haveTopology && pinOffset + threads * static_cast<int>(maxSmtPerCore) <= hwMaxThreads)
         {
             // If all cores are uniform, this will get place one thread per core.
             // If they are not, we hope the performance cores come first, which
             // should get us one thread per those cores at least - and then we
             // might waste some efficiency cores.
-            *pin_stride = maxSmtPerCore;
+            layout.pinStride = maxSmtPerCore;
         }
         else
         {
             /* We don't know if we have SMT, and if we do, we don't know
              * if hw threads in the same physical core are consecutive.
              * Without SMT the pinning layout should not matter too much.
-             * so we assume a consecutive layout and maximally spread out"
+             * so we assume a consecutive layout and maximally spread out
              * the threads at equal threads per core.
              * Note that IBM is the major non-x86 case with cpuid support
              * and probably threads are already pinned by the queuing system,
              * so we wouldn't end up here in the first place.
              */
-            *pin_stride = (hwMaxThreads - pin_offset) / threads;
+            layout.pinStride = (hwMaxThreads - pinOffset) / threads;
         }
     }
     else
     {
+        layout.pinStride = pinStrideRequested;
         /* Check the placement of the thread with the largest index to make sure
          * that the offset & stride doesn't cause pinning beyond the last hardware thread. */
-        invalidValue = (pin_offset + (threads - 1) * (*pin_stride) >= hwMaxThreads);
+        invalidStride = (pinOffset + (threads - 1) * (pinStrideRequested) >= hwMaxThreads);
     }
-    if (invalidWithinSimulation(mpiCommMySim, invalidValue) && !alreadyWarned)
-    {
-        /* We are oversubscribing, don't pin */
-        GMX_LOG(mdlog.warning)
-                .asParagraph()
-                .appendText(
+    validateWithWarning(invalidStride,
                         "WARNING: Requested stride too large for available logical cpus, thread "
-                        "pinning "
-                        "disabled.");
-        alreadyWarned = true;
-    }
-    validLayout = validLayout && !invalidValue;
+                        "pinning disabled.");
 
-    if (validLayout)
+    if (layout.isValid)
     {
         GMX_LOG(mdlog.info)
                 .appendTextFormatted("Pinning threads with a%s logical cpu stride of %d",
-                                     bPickPinStride ? "n auto-selected" : " user-specified",
-                                     *pin_stride);
+                                     pickPinStride ? "n auto-selected" : " user-specified",
+                                     layout.pinStride);
     }
 
-    *issuedWarning = alreadyWarned;
-
-    return validLayout;
+    return layout;
 }
-
-static bool set_affinity(const gmx::MpiComm&         mpiCommMySim,
+static bool set_affinity(const gmx::MDLogger&        mdlog,
+                         const gmx::MpiComm&         mpiCommMySim,
                          int                         nthread_local,
                          int                         intraNodeThreadOffset,
-                         int                         offset,
-                         int                         core_pinning_stride,
-                         const int*                  localityOrder,
+                         const ThreadAffinityLayout& layout,
                          gmx::IThreadAffinityAccess* affinityAccess)
 {
     // Set the per-thread affinity. In order to be able to check the success
@@ -321,15 +280,14 @@ static bool set_affinity(const gmx::MpiComm&         mpiCommMySim,
     {
         try
         {
-            int thread_id, thread_id_node;
-            int index, core;
+            int core;
 
-            thread_id      = gmx_omp_get_thread_num();
-            thread_id_node = intraNodeThreadOffset + thread_id;
-            index          = offset + thread_id_node * core_pinning_stride;
-            if (localityOrder != nullptr)
+            const int thread_id      = gmx_omp_get_thread_num();
+            const int thread_id_node = intraNodeThreadOffset + thread_id;
+            const int index          = layout.pinOffset + thread_id_node * layout.pinStride;
+            if (!layout.localityOrder.empty())
             {
-                core = localityOrder[index];
+                core = layout.localityOrder[index];
             }
             else
             {
@@ -372,33 +330,24 @@ static bool set_affinity(const gmx::MpiComm&         mpiCommMySim,
     const bool allAffinitiesSet = (nth_affinity_set == nthread_local);
     if (!allAffinitiesSet)
     {
-        char sbuf1[STRLEN], sbuf2[STRLEN];
-
-        /* sbuf1 contains rank info, while sbuf2 OpenMP thread info */
-        sbuf1[0] = sbuf2[0] = '\0';
+        std::string prefix{};
         /* Only add rank info if we have more than one rank. */
         if (mpiCommMySim.isParallel())
         {
-#if GMX_MPI
-#    if GMX_THREAD_MPI
-            sprintf(sbuf1, "In tMPI thread #%d: ", mpiCommMySim.rank());
-#    else /* GMX_LIB_MPI */
-            sprintf(sbuf1, "In MPI process #%d: ", mpiCommMySim.rank());
-#    endif
-#endif /* GMX_MPI */
+            prefix = gmx::formatString(
+                    "In %s #%d: ", GMX_THREAD_MPI ? "tMPI thread" : "MPI process", mpiCommMySim.rank());
         }
 
+        std::string threadCount{};
         if (nthread_local > 1)
         {
-            sprintf(sbuf2,
-                    "for %d/%d thread%s ",
-                    nthread_local - nth_affinity_set,
-                    nthread_local,
-                    nthread_local > 1 ? "s" : "");
+            threadCount = gmx::formatString(
+                    "for %d/%d threads ", nthread_local - nth_affinity_set, nthread_local);
         }
 
-        // TODO: This output should also go through mdlog.
-        fprintf(stderr, "NOTE: %sAffinity setting %sfailed.\n", sbuf1, sbuf2);
+        GMX_LOG(mdlog.warning)
+                .asParagraph()
+                .appendTextFormatted("%sAffinity setting %sfailed", prefix.c_str(), threadCount.c_str());
     }
     return allAffinitiesSet;
 }
@@ -445,8 +394,6 @@ void gmx_set_thread_affinity(const gmx::MDLogger&         mdlog,
                              int                          intraNodeThreadOffset,
                              gmx::IThreadAffinityAccess*  affinityAccess)
 {
-    int* localityOrder = nullptr;
-
     if (hw_opt->threadAffinity == ThreadAffinity::Off)
     {
         /* Nothing to do */
@@ -463,7 +410,7 @@ void gmx_set_thread_affinity(const gmx::MDLogger&         mdlog,
      * want to support. */
     if (!affinityAccess->isThreadAffinitySupported())
     {
-        /* we know Mac OS does not support setting thread affinity, so there's
+        /* we know macOS does not support setting thread affinity, so there's
            no point in warning the user in that case. In any other case
            the user might be able to do something about it. */
 #if !defined(__APPLE__)
@@ -474,44 +421,29 @@ void gmx_set_thread_affinity(const gmx::MDLogger&         mdlog,
         return;
     }
 
-    int offset              = hw_opt->core_pinning_offset;
-    int core_pinning_stride = hw_opt->core_pinning_stride;
+    const int offset              = hw_opt->core_pinning_offset;
+    const int core_pinning_stride = hw_opt->core_pinning_stride;
     if (offset != 0)
     {
         GMX_LOG(mdlog.warning).appendTextFormatted("Applying core pinning offset %d", offset);
     }
 
-    bool affinityIsAutoAndNumThreadsIsNotAuto =
+    const bool affinityIsAutoAndNumThreadsIsNotAuto =
             (hw_opt->threadAffinity == ThreadAffinity::Auto && !hw_opt->totNumThreadsIsAuto);
-    bool                   issuedWarning;
-    bool                   validLayout = get_thread_affinity_layout(mdlog,
-                                                  mpiCommMySim,
-                                                  hwTop,
-                                                  numThreadsOnThisNode,
-                                                  affinityIsAutoAndNumThreadsIsNotAuto,
-                                                  offset,
-                                                  &core_pinning_stride,
-                                                  &localityOrder,
-                                                  &issuedWarning);
-    const gmx::sfree_guard localityOrderGuard(localityOrder);
-
+    const ThreadAffinityLayout layout = get_thread_affinity_layout(
+            mdlog, mpiCommMySim, hwTop, numThreadsOnThisNode, affinityIsAutoAndNumThreadsIsNotAuto, offset, core_pinning_stride);
     bool allAffinitiesSet;
-    if (validLayout)
+    if (layout.isValid)
     {
-        allAffinitiesSet = set_affinity(mpiCommMySim,
-                                        numThreadsOnThisRank,
-                                        intraNodeThreadOffset,
-                                        offset,
-                                        core_pinning_stride,
-                                        localityOrder,
-                                        affinityAccess);
+        allAffinitiesSet = set_affinity(
+                mdlog, mpiCommMySim, numThreadsOnThisRank, intraNodeThreadOffset, layout, affinityAccess);
     }
     else
     {
         // Produce the warning if any rank fails.
         allAffinitiesSet = false;
     }
-    if (invalidWithinSimulation(mpiCommMySim, !allAffinitiesSet) && !issuedWarning)
+    if (invalidWithinSimulation(mpiCommMySim, !allAffinitiesSet) && !layout.issuedWarning)
     {
         GMX_LOG(mdlog.warning).asParagraph().appendText("NOTE: Thread affinity was not set.");
     }
@@ -531,8 +463,7 @@ static bool detectDefaultAffinityMask(const int maxThreads, MPI_Comm world)
 #if HAVE_SCHED_AFFINITY
     cpu_set_t mask_current;
     CPU_ZERO(&mask_current);
-    int ret;
-    if ((ret = sched_getaffinity(0, sizeof(cpu_set_t), &mask_current)) != 0)
+    if (int ret = sched_getaffinity(0, sizeof(cpu_set_t), &mask_current); ret != 0)
     {
         /* failed to query affinity mask, will just return */
         if (debug)
