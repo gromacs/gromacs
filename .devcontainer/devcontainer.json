@@ -1,0 +1,39 @@
+{
+    "name": "C++/Python",
+	"build": {
+		"dockerfile": "Dockerfile"
+	},
+    "runArgs": [
+		"--gpus=all",
+		"--cap-add=SYS_PTRACE",
+		"--security-opt",
+		"seccomp=unconfined"
+    ],
+
+    // Add the IDs of extensions you want installed when the container is created.
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "alefragnani.numbered-bookmarks",
+                "mechatroner.rainbow-csv",
+                "mhutchie.git-graph",
+                "ms-vscode.cpptools-extension-pack",
+                "streetsidesoftware.code-spell-checker"
+            ]
+        }
+    },
+
+    // Use 'forwardPorts' to make a list of ports inside the container available locally.
+    // "forwardPorts": [],
+
+    // Use 'postCreateCommand' to run commands after the container is created.
+    // "postCreateCommand": []
+
+    // Comment out connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.
+    "remoteUser": "vscode"
+
+    // Mount external data volume for debugging purposes
+    // "mounts": [
+    //     "source=/hits/fast/its/doserbd/data/gromacs-ramd,target=/data,type=bind,consistency=cached"
+    // ]
+}
