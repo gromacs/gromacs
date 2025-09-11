@@ -573,7 +573,7 @@ static void pme_load_balance(pme_load_balancing_t*          pme_lb,
                              double                         cycles,
                              interaction_const_t*           ic,
                              gmx::nonbonded_verlet_t*       nbv,
-                             struct gmx_pme_t**             pmedata,
+                             gmx_pme_t**                    pmedata,
                              int64_t                        step)
 {
     gmx_bool     OK;
@@ -585,8 +585,8 @@ static void pme_load_balance(pme_load_balancing_t*          pme_lb,
 
     if (dd && dd->nnodes > 1)
     {
-        (*pmedata)->mpiComm.sumReduce(1, &cycles);
-        cycles /= (*pmedata)->mpiComm.size();
+        pme_lb->dd->mpiComm().sumReduce(1, &cycles);
+        cycles /= pme_lb->dd->mpiComm().size();
     }
 
     set = &pme_lb->setup[pme_lb->cur];
