@@ -655,7 +655,7 @@ static void computeSpecialForces(FILE*                fplog,
         const int mtsLevel = forceGroupMtsLevel(inputrec.mtsLevels, gmx::MtsForceGroups::Pull);
         if (mtsLevel == 0 || stepWork.computeSlowForces)
         {
-            pull_potential_wrapper(cr, inputrec, box, x, mdatoms, enerd, pull_work, lambda.data(), t, wcycle);
+            pull_potential_wrapper(mpiComm, inputrec, box, x, mdatoms, enerd, pull_work, lambda.data(), t, wcycle);
         }
     }
 
