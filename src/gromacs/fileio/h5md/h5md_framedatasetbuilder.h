@@ -58,7 +58,8 @@ namespace gmx
  * and withMaxNumFrames().
  *
  * By default data sets are created with 0 initial frames and an unlimited maximum
- * number of frames.
+ * number of frames. The default frame dimensions are empty (identical to calling
+ * withFrameDimension({})), which means that each frame contains a scalar value.
  *
  * See also the documentation for H5mdDataSetBuilder.
  *
