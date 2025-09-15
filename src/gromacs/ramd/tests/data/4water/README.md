@@ -1,5 +1,6 @@
 # Generate tpr file
 
 ```
-gmx grompp -f ramd.mdp -c ../../../../../../src/testutils/simulationdatabase/4water.gro -p ../../../../../../src/testutils/simulationdatabase/4water.top -n ../../../../../../src/testutils/simulationdatabase/4water.ndx -o topol.tpr
+cd /workspaces/gromacs-ramd/src/gromacs/ramd/tests/data/4water
+/workspaces/gromacs-ramd/build/bin/gmx grompp -f ramd.mdp -c /workspaces/gromacs-ramd/src/testutils/simulationdatabase/4water.gro -p /workspaces/gromacs-ramd/src/testutils/simulationdatabase/4water.top -n /workspaces/gromacs-ramd/src/testutils/simulationdatabase/4water.ndx -o topol.tpr
 ```
