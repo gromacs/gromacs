@@ -59,7 +59,7 @@ public:
      * \param[in,out] pull                Pointer to pull object.
      * \param[in]     startingBehavior    Describes whether this is a restart
      *                                    appending to output files.
-     * \param[in]     cr                  Struct for communication, can be nullptr.
+     * \param[in]     mpiComm             MPI communication.
      * \param[in]     nfile               Number of files.
      * \param[in]     fnm                 Filename struct.
      * \param[in]     oenv                The output environment information.
@@ -68,7 +68,7 @@ public:
     RAMD(const RAMDParams&           params,
          pull_t*                     pull,
          const gmx::StartingBehavior startingBehavior,
-         const t_commrec*            cr,
+         const MpiComm&              mpiComm,
          int                         nfile,
          const t_filenm              fnm[],
          const gmx_output_env_t*     oenv,
@@ -110,7 +110,7 @@ private:
     FILE* out;
 
     /// MPI communicator
-    const t_commrec* cr;
+    const MpiComm& mpiComm;
 
     /// Has the ligand left his binding site?
     std::vector<int> ligand_exited;

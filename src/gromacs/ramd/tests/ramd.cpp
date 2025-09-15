@@ -80,16 +80,16 @@ TEST(RAMDTest, CalculateForces)
 
     t_filenm fnm[] = { { efXVG, "-ramd", "ramd", ffOPTWR } };
 
-    auto cr   = std::make_unique<t_commrec>();
+    MpiComm mpiComm(MPI_COMM_NULL);
     auto ramd = std::make_unique<RAMD>(
-            *ir.ramdParams, pull, StartingBehavior::NewSimulation, cr.get(), 1, fnm, nullptr);
+            *ir.ramdParams, pull, StartingBehavior::NewSimulation, mpiComm, 1, fnm, nullptr);
 
     ASSERT_NEAR(0.0, pull->coord[0].scalarForce, 1e-6);
 
     PaddedVector<RVec> x = { { 0, 0, 0 } };
     std::vector<real>  chargeA{ 1 };
     matrix             box = { { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 } };
-    ForceProviderInput forceProviderInput(x, ssize(chargeA), chargeA, {}, 0.0, 0, box, *cr);
+    ForceProviderInput forceProviderInput(x, ssize(chargeA), chargeA, {}, 0.0, 0, box, mpiComm, nullptr);
 
     PaddedVector<RVec>  f = { { 0, 0, 0 } };
     ForceWithVirial     forceWithVirial(f, true);

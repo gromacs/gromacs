@@ -56,7 +56,7 @@ namespace gmx
 RAMD::RAMD(const RAMDParams&           params,
            pull_t*                     pull,
            const gmx::StartingBehavior startingBehavior,
-           const t_commrec*            cr,
+           const MpiComm&              mpiComm,
            int                         nfile,
            const t_filenm              fnm[],
            const gmx_output_env_t*     oenv,
@@ -68,7 +68,7 @@ RAMD::RAMD(const RAMDParams&           params,
     com_rec_prev(params.ngroup),
     com_lig_prev(params.ngroup),
     out(nullptr),
-    cr(cr),
+    mpiComm(mpiComm),
     ligand_exited(params.ngroup, 0),
     write_trajectory(false),
     log(log)
@@ -81,7 +81,7 @@ RAMD::RAMD(const RAMDParams&           params,
         direction[g] = random_spherical_direction_generator();
     }
 
-    if (cr->commMyGroup.isMainRank() and opt2bSet("-ramd", nfile, fnm))
+    if (mpiComm.isMainRank() and opt2bSet("-ramd", nfile, fnm))
     {
         auto filename = std::string(opt2fn("-ramd", nfile, fnm));
 
@@ -112,7 +112,7 @@ void RAMD::calculateForces(const ForceProviderInput&             forceProviderIn
     set_pbc(&pbc, pull->pbcType, forceProviderInput.box_);
 
     auto step = forceProviderInput.step_;
-    if (cr->commMyGroup.isMainRank() and out and (step % params.eval_freq == 0))
+    if (mpiComm.isMainRank() and out and (step % params.eval_freq == 0))
     {
         fprintf(out, "%.4f", forceProviderInput.t_);
     }
@@ -125,7 +125,7 @@ void RAMD::calculateForces(const ForceProviderInput&             forceProviderIn
             com_rec_prev[g] = pull->group[g * 2 + 1].x;
             com_lig_prev[g] = pull->group[g * 2 + 2].x;
 
-            if (cr->commMyGroup.isMainRank() and out)
+            if (mpiComm.isMainRank() and out)
             {
                 DVec curr_dist_vect;
                 pbc_dx_d(&pbc, com_lig_prev[g], com_rec_prev[g], curr_dist_vect);
@@ -136,7 +136,7 @@ void RAMD::calculateForces(const ForceProviderInput&             forceProviderIn
     }
     else if (step % params.eval_freq == 0)
     {
-        if (cr->commMyGroup.isMainRank() and debug)
+        if (mpiComm.isMainRank() and debug)
         {
             fprintf(debug, "==== RAMD ==== evaluation %ld\n", step);
         }
@@ -148,7 +148,7 @@ void RAMD::calculateForces(const ForceProviderInput&             forceProviderIn
             pbc_dx_d(&pbc, com_lig_curr, com_rec_curr, curr_dist_vect);
             auto curr_dist = std::sqrt(curr_dist_vect.norm2());
 
-            if (cr->commMyGroup.isMainRank() and debug)
+            if (mpiComm.isMainRank() and debug)
             {
                 fprintf(debug, "==== RAMD ==== group %d\n", g);
                 fprintf(debug,
@@ -166,7 +166,7 @@ void RAMD::calculateForces(const ForceProviderInput&             forceProviderIn
                         curr_dist);
             }
 
-            if (cr->commMyGroup.isMainRank() and out)
+            if (mpiComm.isMainRank() and out)
             {
                 fprintf(out, "\t%g", curr_dist);
             }
@@ -178,7 +178,7 @@ void RAMD::calculateForces(const ForceProviderInput&             forceProviderIn
                 {
                     direction[g] = DVec(0.0, 0.0, 0.0);
                 }
-                if (cr->commMyGroup.isMainRank())
+                if (mpiComm.isMainRank())
                 {
                     fprintf(this->log,
                             "==== RAMD ==== RAMD group %d has exited the binding site in step "
@@ -197,7 +197,7 @@ void RAMD::calculateForces(const ForceProviderInput&             forceProviderIn
             pbc_dx_d(&pbc, com_lig_curr - com_rec_curr, com_lig_prev[g] - com_rec_prev[g], walk_dist_vect);
             auto walk_dist = std::sqrt(walk_dist_vect.norm2());
 
-            if (cr->commMyGroup.isMainRank() and debug)
+            if (mpiComm.isMainRank() and debug)
             {
                 fprintf(debug,
                         "==== RAMD ==== Previous COM ligand position at [%g, %g, %g]\n",
@@ -219,7 +219,7 @@ void RAMD::calculateForces(const ForceProviderInput&             forceProviderIn
             if (walk_dist < params.group[0].r_min_dist)
             {
                 direction[g] = random_spherical_direction_generator();
-                if (cr->commMyGroup.isMainRank() and debug)
+                if (mpiComm.isMainRank() and debug)
                 {
                     fprintf(debug,
                             "==== RAMD ==== New random direction is [%g, %g, %g]\n",
@@ -236,7 +236,7 @@ void RAMD::calculateForces(const ForceProviderInput&             forceProviderIn
 
     if (step % params.eval_freq == 0)
     {
-        if (cr->commMyGroup.isMainRank() and out)
+        if (mpiComm.isMainRank() and out)
         {
             fprintf(out, "\n");
             fflush(out);
@@ -245,7 +245,7 @@ void RAMD::calculateForces(const ForceProviderInput&             forceProviderIn
         // Exit if all ligand-receptor COM distances are larger than max_dist
         if (std::accumulate(ligand_exited.begin(), ligand_exited.end(), 0) == params.ngroup)
         {
-            if (cr->commMyGroup.isMainRank())
+            if (mpiComm.isMainRank())
             {
                 fprintf(this->log, "==== RAMD ==== GROMACS will be stopped after %ld steps.\n", step);
             }
