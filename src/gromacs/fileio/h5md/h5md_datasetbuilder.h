@@ -43,6 +43,7 @@
 #include <hdf5.h>
 
 #include <initializer_list>
+#include <optional>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -147,6 +148,28 @@ public:
         return withChunkDimension(ArrayRef<const hsize_t>(chunkDims.begin(), chunkDims.end()));
     }
 
+    //! \brief Set the data set to use a fixed size string with maximum length \p maxLength.
+    //
+    // \note The max length must be positive and count the null-terminator character.
+    // If neither withMaxStringLength() nor withVariableStringLength() is called,
+    // the default is variable-length strings for string data sets.
+    H5mdDataSetBuilder& withMaxStringLength(const int maxLength)
+    {
+        // Use int to prevent the integer overflow if passed a negative value
+        throwUponH5mdError(
+                maxLength <= 0,
+                "Cannot create fixed-size string data set with non-positive maximum length");
+        maxStringLength_ = static_cast<size_t>(maxLength);
+        return *this;
+    }
+
+    //! \brief Set the data set to use variable length strings.
+    H5mdDataSetBuilder& withVariableStringLength()
+    {
+        maxStringLength_ = std::nullopt;
+        return *this;
+    }
+
     //! \brief Finalize all set options, then build and return the data set.
     //
     // \throws gmx::FileIOError if any set options are incorrect or incompatible with other
@@ -230,6 +253,17 @@ private:
             appendDimension(DIM);
             return hdf5DataTypeFor<double>();
         }
+        else if constexpr (std::is_same_v<ValueType, std::string> || std::is_same_v<ValueType, char*>)
+        {
+            if (maxStringLength_.has_value())
+            {
+                return hdf5DataTypeForFixedSizeString(maxStringLength_.value());
+            }
+            else
+            {
+                return hdf5DataTypeForVariableSizeString();
+            }
+        }
         else
         {
             return hdf5DataTypeFor<ValueType>();
@@ -255,6 +289,9 @@ private:
 
     //!< Name of data set.
     std::string name_;
+
+    //!< When set, the maximum length of a string data set (default: variable-length string)
+    std::optional<size_t> maxStringLength_ = std::nullopt;
 
     //!< Dimensions to create data set with.
     std::vector<hsize_t> dims_;

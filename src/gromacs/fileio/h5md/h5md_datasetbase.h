@@ -140,6 +140,8 @@ extern template class H5mdDataSetBase<BasicVector<float>>;
 
 extern template class H5mdDataSetBase<BasicVector<double>>;
 
+extern template class H5mdDataSetBase<std::string>;
+
 } // namespace gmx
 
 #endif // GMX_FILEIO_H5MD_DATASETBASE_H

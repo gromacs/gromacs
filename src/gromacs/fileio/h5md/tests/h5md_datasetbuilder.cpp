@@ -205,8 +205,8 @@ TEST_P(Primitive, Works)
 
         // Check in order:
         // data type, data set dimensions, max dimensions and chunk dimensions
-        const auto [dataType, dataTypeGuard] = makeH5mdTypeGuard(H5Dget_type(dataSet.id()));
-        EXPECT_TRUE(valueTypeIsDataType<int32_t>(dataType)) << "Incorrect data type in data set";
+        EXPECT_TRUE(valueTypeIsDataType<int32_t>(dataSet.dataType()))
+                << "Incorrect data type in data set";
 
         const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet.id()));
         EXPECT_EQ(H5Sget_simple_extent_ndims(dataSpace), testParam.dims_.size())
@@ -274,8 +274,8 @@ TEST_P(BasicVector, Works)
 
         // Check in order:
         // data type, data set dimensions, max dimensions and chunk dimensions
-        const auto [dataType, dataTypeGuard] = makeH5mdTypeGuard(H5Dget_type(dataSet.id()));
-        EXPECT_TRUE(valueTypeIsDataType<float>(dataType)) << "Incorrect data type in data set";
+        EXPECT_TRUE(valueTypeIsDataType<float>(dataSet.dataType()))
+                << "Incorrect data type in data set";
 
         const auto [dataSpace, dataSpaceGuard] = makeH5mdDataSpaceGuard(H5Dget_space(dataSet.id()));
         // Add the extra vector dimension here!
@@ -441,6 +441,62 @@ INSTANTIATE_TEST_SUITE_P(H5mdDataSetBuilderInvalidDimCombinations,
 
 //! \brief Test fixture for data set builder.
 using H5mdDataSetBuilderTest = H5mdTestBase;
+
+TEST_F(H5mdDataSetBuilderTest, MakeStringDataset)
+{
+    {
+        SCOPED_TRACE("Check the builder for fixed sized string data set");
+
+        EXPECT_NO_THROW(H5mdDataSetBuilder<std::string>(fileid(), "withMaxLength")
+                                .withMaxStringLength(256)
+                                .withDimension({ 0 })
+                                .build());
+
+        // Check data type
+        const auto dataSet = H5mdDataSetBase<std::string>(fileid(), "withMaxLength");
+        EXPECT_EQ(H5Tget_class(dataSet.dataType()), H5T_STRING);
+        EXPECT_EQ(H5Tget_size(dataSet.dataType()), 256)
+                << "Data type should be fixed size string with length 256";
+    }
+
+    {
+        SCOPED_TRACE("Check the builder for variable sized string data set");
+
+        EXPECT_NO_THROW(H5mdDataSetBuilder<std::string>(fileid(), "withVariableLength")
+                                .withVariableStringLength()
+                                .withDimension({ 0 })
+                                .build());
+
+        // Check data type
+        const auto dataSet = H5mdDataSetBase<std::string>(fileid(), "withVariableLength");
+        EXPECT_EQ(H5Tget_class(dataSet.dataType()), H5T_STRING);
+        EXPECT_TRUE(H5Tis_variable_str(dataSet.dataType()))
+                << "Data type should be variable length string";
+    }
+}
+
+TEST_F(H5mdDataSetBuilderTest, NoThrowForDefaultStringType)
+{
+    EXPECT_NO_THROW(H5mdDataSetBuilder<std::string>(fileid(), "NoMaxLength").withDimension({ 0 }).build());
+    const auto dataSet = H5mdDataSetBase<std::string>(fileid(), "NoMaxLength");
+    EXPECT_TRUE(H5Tis_variable_str(dataSet.dataType())) << "By default, use variable length string";
+}
+
+TEST_F(H5mdDataSetBuilderTest, ThrowsForNonPositiveMaxStringLength)
+{
+    // NOTE: H5Tset_size accepts only positive values for fixed-size strings.
+    EXPECT_THROW(H5mdDataSetBuilder<std::string>(fileid(), "ZeroMaxLength")
+                         .withMaxStringLength(0)
+                         .withDimension({ 0 })
+                         .build(),
+                 gmx::FileIOError);
+
+    EXPECT_THROW(H5mdDataSetBuilder<std::string>(fileid(), "NegativeMaxLength")
+                         .withMaxStringLength(-1)
+                         .withDimension({ 0 })
+                         .build(),
+                 gmx::FileIOError);
+}
 
 TEST_F(H5mdDataSetBuilderTest, ThrowsForUnsetDimension)
 {

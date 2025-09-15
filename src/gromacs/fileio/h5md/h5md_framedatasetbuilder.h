@@ -101,6 +101,28 @@ public:
         return *this;
     }
 
+    //! \brief Set the frame data set to use a fixed size string with maximum length \p maxLength.
+    //
+    // \note The max length must be positive and count the null-terminator character.
+    // If neither withMaxStringLength() nor withVariableStringLength() is called,
+    // the default is variable-length strings for string data sets.
+    H5mdFrameDataSetBuilder& withMaxStringLength(const int maxLength)
+    {
+        // Use int to prevent the integer overflow if passed a negative value
+        throwUponH5mdError(
+                maxLength <= 0,
+                "Cannot create fixed-size string data set with non-positive maximum length");
+        Base::withMaxStringLength(maxLength);
+        return *this;
+    }
+
+    //! \brief Set the frame data set to use variable length strings.
+    H5mdFrameDataSetBuilder& withVariableStringLength()
+    {
+        Base::withVariableStringLength();
+        return *this;
+    }
+
     //! \brief Create the data set, then build and return it.
     H5mdDataSetBase<ValueType> build()
     {

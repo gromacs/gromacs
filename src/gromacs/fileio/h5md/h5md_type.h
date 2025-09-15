@@ -138,6 +138,16 @@ inline hid_t hdf5DataTypeForFixedSizeString(const hsize_t maxStringLength)
     return dataType;
 }
 
+/*! \brief Return a handle to a HDF5 data type for variable-size strings.
+ */
+inline hid_t hdf5DataTypeForVariableSizeString()
+{
+    const hid_t dataType = H5Tcopy(H5T_C_S1_g);
+    H5Tset_cset(dataType, H5T_CSET_UTF8);
+    H5Tset_size(dataType, H5T_VARIABLE);
+    return dataType;
+}
+
 /*! \brief Return true if the template value type matches the HDF5 data type.
  *
  * \tparam ValueType Type of value to check.

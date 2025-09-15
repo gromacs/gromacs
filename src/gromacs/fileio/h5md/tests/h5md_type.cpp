@@ -132,6 +132,28 @@ TYPED_TEST(H5mdTypeTest, ValueTypeIsDataTypeWorksForAllTypes)
     }
 }
 
+TEST(H5mdTypeTest, hdf5TypeForVariableStringWorks)
+{
+    const auto [dataType, dataTypeGuard] = makeH5mdTypeGuard(hdf5DataTypeForVariableSizeString());
+
+    EXPECT_EQ(H5Tget_class(dataType), H5T_STRING) << "String data set must be of string class";
+    EXPECT_EQ(H5Tget_cset(dataType), H5T_CSET_UTF8) << "Strings must be UTF8";
+    EXPECT_EQ(H5Tget_strpad(dataType), H5T_STR_NULLTERM) << "Strings must be null-terminated";
+    EXPECT_GT(H5Tis_variable_str(dataType), 0) << "Variable-size string was created as fixed";
+}
+
+TEST(H5mdTypeTest, ValueTypeIsDataTypeWorksForVariableSizeStrings)
+{
+    const auto [dataType, dataTypeGuard] = makeH5mdTypeGuard(hdf5DataTypeForVariableSizeString());
+    EXPECT_TRUE(valueTypeIsDataType<const char*>(dataType));
+    EXPECT_FALSE(valueTypeIsDataType<int32_t>(dataType));
+    EXPECT_FALSE(valueTypeIsDataType<int64_t>(dataType));
+    EXPECT_FALSE(valueTypeIsDataType<uint32_t>(dataType));
+    EXPECT_FALSE(valueTypeIsDataType<uint64_t>(dataType));
+    EXPECT_FALSE(valueTypeIsDataType<float>(dataType));
+    EXPECT_FALSE(valueTypeIsDataType<double>(dataType));
+}
+
 TEST(H5mdTypeTest, hdf5TypeForFixedStringWorks)
 {
     constexpr hsize_t maxStringLength = 9;

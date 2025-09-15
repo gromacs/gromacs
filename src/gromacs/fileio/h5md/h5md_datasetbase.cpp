@@ -221,6 +221,8 @@ template class H5mdDataSetBase<gmx::BasicVector<float>>;
 
 template class H5mdDataSetBase<gmx::BasicVector<double>>;
 
+template class H5mdDataSetBase<std::string>;
+
 } // namespace gmx
 
 CLANG_DIAGNOSTIC_RESET
