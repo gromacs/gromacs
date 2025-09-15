@@ -42,6 +42,7 @@
 #include "h5md_framedataset.h"
 
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/vectypes.h"
@@ -121,8 +122,12 @@ hid_t H5mdFrameDataSet<ValueType>::FrameDescription::fileDataSpaceForFrame(const
     // We now select the hyperslab inside a copy of the data space for the data set.
     // The hyperslab size is given by the dimensions of a single frame, i.e. the data
     // set dimensions with the major axis value = 1 frame.
-    const hid_t  fileDataSpace = H5Dget_space(dataSetHandle);
-    const herr_t ret           = H5Sselect_hyperslab(
+    const hid_t fileDataSpace = H5Dget_space(dataSetHandle);
+    // Reading or writing frames require their own error handling. So instead of always
+    // checking for an (unlikely) error here and throwing we leave this task to the caller.
+    // We still check the return value in debug mode to allow for some granularity in
+    // error handling.
+    const herr_t gmx_used_in_debug ret = H5Sselect_hyperslab(
             fileDataSpace, H5S_SELECT_SET, frameOffset_.data(), nullptr, frameDimsPrimitive_.data(), nullptr);
     GMX_ASSERT(ret >= 0, "Could not select hyperslab for given frame index within file");
 

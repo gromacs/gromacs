@@ -204,6 +204,11 @@ private:
          * This corresponds to `file_space_id` in the hdf5 documentation.
          *
          * \note The returned handle must be closed by the caller to avoid leaking resources.
+         *
+         * \warning This function does not throw if the file data space cannot be selected.
+         * A failure here results in the returned handle being invalid. Appropriate error
+         * handling must be chosen by the caller, since subsequent read/write operations
+         * will also fail.
          */
         hid_t fileDataSpaceForFrame(hsize_t frameIndex, hid_t dataSetHandle) noexcept;
 
