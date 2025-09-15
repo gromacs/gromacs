@@ -170,7 +170,7 @@ const DataSetDims& H5mdFrameDataSet<ValueType>::extentForNumFrames(const hsize_t
 }
 
 template<typename ValueType>
-hsize_t H5mdFrameDataSet<ValueType>::numFrames() const
+hsize_t H5mdFrameDataSet<ValueType>::numFrames() const noexcept
 {
     return numFrames_;
 }

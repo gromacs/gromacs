@@ -128,11 +128,8 @@ public:
      *  Number of frames refers to the size of the major axis of the data set. For example,
      *  a 1d data set with dimensions [30] obviously has 30 frames. A 3d data set with
      *  dimensions [30, 150, 3] also has 30 frames.
-     *
-     *  \throws gmx::FileIOError if the data set is 0-dimensional or if there was an error
-     *      reading the dimensions.
      */
-    hsize_t numFrames() const;
+    hsize_t numFrames() const noexcept;
 
     /*! \brief Read data from frame at \p index into \p values.
      *
