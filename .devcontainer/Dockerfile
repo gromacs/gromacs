@@ -22,7 +22,7 @@ RUN apt-get update \
  && export DEBIAN_FRONTEND=noninteractive \
  && apt-get -y install --no-install-recommends \
        doxygen \
-      #  libomp-14-dev \
+       gdb \
        python3-pip \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
