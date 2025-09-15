@@ -385,6 +385,13 @@ void HaloExchange::setup(gmx_domdec_t*         dd,
     zones.setAtomRangeEnd(0, dd->numHomeAtoms, true);
     comm.atomRanges.setEnd(DDAtomRanges::Type::Home, dd->numHomeAtoms);
 
+    // We need to call getZoneCorners() outside the next loop, as it does MPI communication
+    // and this can not be done OpenMP parallel
+    for (DomainPairComm& dpc : domainPairComm_)
+    {
+        dpc.backward().getTargetZoneCorners(*dd, localState->box, dpc);
+    }
+
     /* Here we distribute the comm setup calculation over threads.
      * Note that selectHaloAtomsForDomainPair() is actually not very time consuming.
      * Alternatively we could overlap selectHaloAtomsForZone() with comm_zone_comm_setup
@@ -412,14 +419,8 @@ void HaloExchange::setup(gmx_domdec_t*         dd,
         if (domainIsInRange)
         {
             // Determine which atoms we need to send
-            send.selectHaloAtoms(*dd,
-                                 nbv.localGrid(),
-                                 comm.systemInfo.cutoff,
-                                 comm.cutoff_mbody,
-                                 localState->box,
-                                 ddbox.tric_dir,
-                                 normal,
-                                 missingLinkInCells);
+            send.selectHaloAtoms(
+                    *dd, nbv.localGrid(), comm.systemInfo.cutoff, comm.cutoff_mbody, ddbox.tric_dir, normal, missingLinkInCells);
         }
         else
         {

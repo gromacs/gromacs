@@ -65,6 +65,8 @@ struct gmx_domdec_t;
 namespace gmx
 {
 
+class DomainPairComm;
+
 /*! \brief MPI tags for non-blocking x and f communication.
  *
  * With the current call order we don't need this.
@@ -75,10 +77,24 @@ enum class HaloMpiTag
 {
     X,              //!< Coordinates
     F,              //!< Forces
+    ZoneCorners,    //!< The corners of the zone
     GridCounts,     //! The number of grid columns
     GridColumns,    //! The contents of the grid column
     GridDimensions, //! The dimensions of the grid
     AtomIndices     //! Global atom indices
+};
+
+//! The upper corners of a zone, used for computing which halo cell need to be sent
+struct ZoneCorners
+{
+    //! Corner for two-body interations, involves all pair-interacting zones
+    RVec twoBody = { 0.0_real, 0.0_real, 0.0_real };
+    //! Corner for multi-body interactions, involves all zones
+    RVec multiBody = { 0.0_real, 0.0_real, 0.0_real };
+    //! The corner of our own zone
+    RVec zone = { 0.0_real, 0.0_real, 0.0_real };
+    //! Whether \p twoBody and \p multiBody differ
+    bool cornersDiffer = false;
 };
 
 /*! \brief Setup for selecting halo atoms to be sent and sending coordinates to another domain
@@ -123,7 +139,22 @@ public:
     //! Clears this communication, set no columns and atoms to send
     void clear();
 
+    /*! \brief Determines the corner for 2-body, corner_2b, and multi-body, corner_mb, communication distances
+     *
+     * Communicates the computed corners between domain pairs
+     *
+     * Note that the column bounding boxes are computed for the centers of update groups.
+     * Atoms in update groups can stick out by at most grid.dimensions().maxAtomGroupRadius.
+     *
+     * \param[in] dd              The domain decomposition struct
+     * \param[in] box             The system unit cell
+     * \param[in] domainPairComm  Communication setup for a domain pair
+     */
+    void getTargetZoneCorners(const gmx_domdec_t& dd, const matrix box, const DomainPairComm& domainPairComm);
+
     /*! \brief Determine which NBNxM grid cells (and atoms) we need to send
+     *
+     * Should be called after calling \c getTargetZoneCorners().
      *
      * \param[in] dd                      The domain decomposition struct
      * \param[in] grid                    The local NBNxM pair-search grid
@@ -131,7 +162,6 @@ public:
      *                                    includes 2 maxAtomGroupRadius
      * \param[in] cutoffMultiBody         The cutoff for multi-body interactions
      *                                    includes 2 maxAtomGroupRadius
-     * \param[in] box                     The box
      * \param[in] dimensionIsTriclinic    Tells whether the dimensions require
      *                                    triclinic distance checks
      * \param[in] normal                  The normal vectors to planes separating domains along
@@ -143,7 +173,6 @@ public:
                          const Grid&              grid,
                          const real               cutoffTwoBody,
                          const real               cutoffMultiBody,
-                         const matrix             box,
                          const ivec               dimensionIsTriclinic,
                          ArrayRef<const RVec>     normal,
                          const std::vector<bool>& isCellMissingLinks);
@@ -211,6 +240,8 @@ private:
     bool shiftMultipleDomains_;
     //! The number of atoms per cell, note that this is max over i/j, unlike Grid which uses i
     int numAtomsPerCell_;
+    //! The corners of the zone we communicate coordinates to
+    ZoneCorners targetZoneCorners_;
     //! The cell ranges to commnicate
     FastVector<ColumnInfo> columnsToSend_;
     //! The number of atoms to send (or receive in case of forces)

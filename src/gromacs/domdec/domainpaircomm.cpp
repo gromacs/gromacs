@@ -74,19 +74,6 @@ namespace gmx
 namespace
 {
 
-//! The upper corners of a zone, used for computing which halo cell need to be sent
-struct ZoneCorners
-{
-    //! Corner for two-body interations, involves all pair-interacting zones
-    RVec twoBody = { 0.0_real, 0.0_real, 0.0_real };
-    //! Corner for multi-body interactions, involves all zones
-    RVec multiBody = { 0.0_real, 0.0_real, 0.0_real };
-    //! The corner of our own zone
-    RVec zone = { 0.0_real, 0.0_real, 0.0_real };
-    //! Whether \p twoBody and \p multiBody differ
-    bool cornersDiffer = false;
-};
-
 struct GridColumnInfo
 {
     //! The bounding box of the column
@@ -378,12 +365,11 @@ DistancesSquared cornerToBoundingBoxDistance(const DistanceCalculationInfo& dci,
     }
 }
 
-/*! \brief Determines the corner for 2-body, corner_2b, and multi-body, corner_mb, communication distances
- *
- * Note that the column bounding boxes are computed for the centers of update groups.
- * Atoms in update groups can stick out by at most grid.dimensions().maxAtomGroupRadius.
- */
-ZoneCorners getZoneCorners(const gmx_domdec_t& dd, const matrix box, const int zone)
+} // namespace
+
+void DomainCommBackward::getTargetZoneCorners(const gmx_domdec_t&   dd,
+                                              const matrix          box,
+                                              const DomainPairComm& domainPairComm)
 {
     const DomdecZones& zones = dd.zones;
 
@@ -394,7 +380,7 @@ ZoneCorners getZoneCorners(const gmx_domdec_t& dd, const matrix box, const int z
         /* Make a list of i-zones that see our zone on the receiving end */
         for (int iZone = 0; iZone < zones.numIZones(); iZone++)
         {
-            if (zones.jZoneRange(iZone).isInRange(zone))
+            if (zones.jZoneRange(iZone).isInRange(zone_))
             {
                 interactingIZones.push_back(iZone);
             }
@@ -407,12 +393,12 @@ ZoneCorners getZoneCorners(const gmx_domdec_t& dd, const matrix box, const int z
 
     for (int dim = 0; dim < DIM; dim++)
     {
-        /* This is the zone corner (simple, no staggering) */
-        const real corner_z_d = dd.comm->cell_x0[dim];
+        // This is our right/upper zone corner
+        const real corner_z_d = dd.comm->cell_x1[dim];
 
-        /* No staggering, all bounds are equal to our local bounds */
-        const real corner_2b_d = dd.comm->cell_x0[dim];
-        const real corner_mb_d = dd.comm->cell_x0[dim];
+        // No staggering supported yet, all bounds are for now equal to our local bounds
+        const real corner_2b_d = dd.comm->cell_x1[dim];
+        const real corner_mb_d = dd.comm->cell_x1[dim];
 
         zc.cornersDiffer = (corner_mb_d != corner_2b_d);
 
@@ -438,10 +424,10 @@ ZoneCorners getZoneCorners(const gmx_domdec_t& dd, const matrix box, const int z
         fprintf(debug,
                 "halo corners home %5.2f %5.2f %5.2f zone %d 2b %5.2f %5.2f %5.2f mb %5.2f %5.2f "
                 "%5.2f\n",
-                dd.comm->cell_x0[XX],
-                dd.comm->cell_x0[YY],
-                dd.comm->cell_x0[ZZ],
-                zone,
+                dd.comm->cell_x1[XX],
+                dd.comm->cell_x1[YY],
+                dd.comm->cell_x1[ZZ],
+                zone_,
                 zc.twoBody[XX],
                 zc.twoBody[YY],
                 zc.twoBody[ZZ],
@@ -450,8 +436,32 @@ ZoneCorners getZoneCorners(const gmx_domdec_t& dd, const matrix box, const int z
                 zc.multiBody[ZZ]);
     }
 
-    return zc;
+    // Correct corners for PBC jumps before sending them to our paired rank
+    for (int dimIndex = 0; dimIndex < dd.ndim; dimIndex++)
+    {
+        const int dim = dd.dim[dimIndex];
+
+        if (dd.ci[dim] >= dd.numCells[dim] - domainShift_[dim])
+        {
+            zc.twoBody -= box[dim];
+            zc.multiBody -= box[dim];
+            zc.zone -= box[dim];
+        }
+    }
+
+    // Send our computed zone corners, receive from out target rank
+    ddSendReceive(domainPairComm.backward(),
+                  domainPairComm.forward(),
+                  dddirForward,
+                  &zc,
+                  1,
+                  &targetZoneCorners_,
+                  1,
+                  HaloMpiTag::ZoneCorners);
 }
+
+namespace
+{
 
 //! Computes and sets the cell range we will communicatie for grid column \p columnIndex
 template<bool doChecksForBondeds>
@@ -621,7 +631,6 @@ void DomainCommBackward::selectHaloAtoms(const gmx_domdec_t&      dd,
                                          const Grid&              grid,
                                          const real               cutoffTwoBody,
                                          const real               cutoffMultiBody,
-                                         const matrix             box,
                                          const ivec               dimensionIsTriclinic,
                                          ArrayRef<const RVec>     normal,
                                          const std::vector<bool>& isCellMissingLinks)
@@ -712,16 +721,13 @@ void DomainCommBackward::selectHaloAtoms(const gmx_domdec_t&      dd,
         }
     }
 
-    /* Get the corners for non-bonded and bonded distance calculations */
-    const ZoneCorners zoneCorners = getZoneCorners(dd, box, zone_);
-
     /* Do we need to determine extra distances for multi-body bondeds?
      * Note that with filterBondComm we might need distances longer than
-     * the non-bonded cut-off, but with a grid without staggering (zoneCorners.cornersDiffer)
+     * the non-bonded cut-off, but with a grid without staggering (targetZoneCorners_.cornersDiffer)
      * this check is indentical to the one triggered by checkTwoBodyDistance below.
      */
     dci.checkMultiBodyDistance =
-            (comm.systemInfo.haveInterDomainMultiBodyBondeds && zoneCorners.cornersDiffer);
+            (comm.systemInfo.haveInterDomainMultiBodyBondeds && targetZoneCorners_.cornersDiffer);
 
     /* Do we need to determine extra distances for only two-body bondeds? */
     dci.checkTwoBodyDistance = (filterBondComm && !dci.checkMultiBodyDistance);
@@ -751,12 +757,12 @@ void DomainCommBackward::selectHaloAtoms(const gmx_domdec_t&      dd,
         if (checkBondedDistances)
         {
             cellRange = getCellRangeForGridColumn<true>(
-                    grid, columnIndex, zoneCorners, dci, isCellMissingLinks);
+                    grid, columnIndex, targetZoneCorners_, dci, isCellMissingLinks);
         }
         else
         {
             cellRange = getCellRangeForGridColumn<false>(
-                    grid, columnIndex, zoneCorners, dci, isCellMissingLinks);
+                    grid, columnIndex, targetZoneCorners_, dci, isCellMissingLinks);
         }
         if (!cellRange.empty())
         {
