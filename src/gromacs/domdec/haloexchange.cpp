@@ -150,9 +150,9 @@ void packCoordinatesTemplated(const DomainCommBackward& domainComm,
     const int numAtomsPerCell = domainComm.numAtomsPerCell();
 
     int j = 0;
-    for (const DomainCommBackward::ColumnInfo& columnInfo : domainComm.columnsToSend())
+    for (const DomainCommBackward::GridCellRange& gridCellRange : domainComm.cellRangesToSend())
     {
-        for (int cell : columnInfo.cellRange)
+        for (int cell : gridCellRange.cellRange)
         {
             for (int i = 0; i < numAtomsPerCell; i++)
             {
@@ -307,9 +307,9 @@ void accumulateReceivedForcesTemplated(const DomainCommBackward& domainComm,
     ArrayRef<const RVec> receivedForces = domainComm.rvecBuffer();
 
     int j = 0;
-    for (const auto& columnInfo : domainComm.columnsToSend())
+    for (const auto& cellRange : domainComm.cellRangesToSend())
     {
-        for (int cell : columnInfo.cellRange)
+        for (int cell : cellRange.cellRange)
         {
             for (int i = 0; i < numAtomsPerCell; i++)
             {

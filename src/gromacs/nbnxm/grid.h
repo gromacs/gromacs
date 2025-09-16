@@ -317,8 +317,9 @@ public:
      *
      * \param[in] ddZone      The domain decomposition zone this grid belongs to
      * \param[in] dimensions  The dimensions of the grid
-     * \param[in] columns     A list of column indices and number of cells for a column,
-     *                        the list should be ordered on column index
+     * \param[in] cellRanges  A list of column indices and number of cells for a column,
+     *                        the list should be ordered on column index, the same column
+     *                        index can appear multiple times
      * \param[in] cellOffset  The offset of this grid in the list of cells over all grids
      * \param[in] atomInfo    A list of information for all local and non-local atoms
      * \param[in] x           The coordinates for all local and non-local atoms
@@ -327,7 +328,7 @@ public:
      */
     void setNonLocalGrid(int                                 ddZone,
                          const GridDimensions&               dimensions,
-                         ArrayRef<const std::pair<int, int>> columns,
+                         ArrayRef<const std::pair<int, int>> cellRanges,
                          int                                 cellOffset,
                          ArrayRef<const int32_t>             atomInfo,
                          ArrayRef<const RVec>                x,

@@ -464,12 +464,19 @@ namespace
 {
 
 //! Computes and sets the cell range we will communicatie for grid column \p columnIndex
+/*! \brief Computes and adds the cell ranges we will communicatie for grid column \p columnIndex
+ *
+ * The cell ranges are added to \p columnInfo.
+ *
+ * \returns the number of cells added
+ */
 template<bool doChecksForBondeds>
-Range<int> getCellRangeForGridColumn(const Grid&                    grid,
-                                     const int                      columnIndex,
-                                     const ZoneCorners&             zoneCorners,
-                                     const DistanceCalculationInfo& dci,
-                                     const std::vector<bool>&       isCellMissingLinks)
+int addCellRangesForGridColumn(const Grid&                                    grid,
+                               const int                                      columnIndex,
+                               const ZoneCorners&                             zoneCorners,
+                               const DistanceCalculationInfo&                 dci,
+                               const std::vector<bool>&                       isCellMissingLinks,
+                               FastVector<DomainCommBackward::GridCellRange>* gridCellRanges)
 {
     const GridColumnInfo gci = nbnxmGetLocalGridColumn(grid, columnIndex);
 
@@ -477,7 +484,7 @@ Range<int> getCellRangeForGridColumn(const Grid&                    grid,
     if (numCellsInColumn == 0)
     {
         /* Empty column */
-        return {};
+        return 0;
     }
 
     const auto distancesSquared =
@@ -507,19 +514,18 @@ Range<int> getCellRangeForGridColumn(const Grid&                    grid,
     // so we need to convert the size used in grid, which is always of the i-cells
     const int firstCellInColumn = grid.firstCellInColumn(columnIndex) / gci.bbToCellFactor;
 
-    int  firstCell = 0;
-    int  lastCell  = numCellsInColumn - 1;
-    bool isInRange;
-    do
+    int numCellsAdded    = 0;
+    int firstCellInRange = -1;
+    for (int cell = 0; cell < numCellsInColumn; cell++)
     {
         if (useColumnBBForXY)
         {
-            bbFull.lower.z = gci.cellBBsZonly[lastCell].lower;
-            bbFull.upper.z = gci.cellBBsZonly[lastCell].upper;
+            bbFull.lower.z = gci.cellBBsZonly[cell].lower;
+            bbFull.upper.z = gci.cellBBsZonly[cell].upper;
         }
         else
         {
-            bbPointer = &gci.cellBBs[lastCell];
+            bbPointer = &gci.cellBBs[cell];
         }
 
         const auto distancesSquared = cornerToBoundingBoxDistance(
@@ -532,7 +538,7 @@ Range<int> getCellRangeForGridColumn(const Grid&                    grid,
          * The bonded check only triggers communication without bBondComm
          * or when the cell has missing bonded interactions.
          */
-        isInRange = (distancesSquared.pair < dci.cutoffSquaredTwoBody1);
+        bool isInRange = (distancesSquared.pair < dci.cutoffSquaredTwoBody1);
 
         if constexpr (doChecksForBondeds)
         {
@@ -540,63 +546,32 @@ Range<int> getCellRangeForGridColumn(const Grid&                    grid,
                     isInRange
                     || (((dci.checkMultiBodyDistance && distancesSquared.multiBody < dci.cutoffSquaredMultiBody1)
                          || (dci.checkTwoBodyDistance && distancesSquared.pair < dci.cutoffSquaredMultiBody1))
-                        && (!dci.filterBondComm || isCellMissingLinks[firstCellInColumn + lastCell]));
+                        && (!dci.filterBondComm || isCellMissingLinks[firstCellInColumn + cell]));
         }
 
-        // NOLINTNEXTLINE(readability-misleading-indentation) remove when clang-tidy-13 is required
-        if (!isInRange)
+        if (firstCellInRange < 0 && isInRange)
         {
-            lastCell--;
+            // This cell is in range and the previous, if present, is not: start a new range
+            firstCellInRange = cell;
         }
-    } while (lastCell >= firstCell && !isInRange);
 
-    /* For rectangular grids without bondcomm we do not try to eliminate
-     * cells from the bottom, since if lastCell is within range,
-     * there is a high chance that firstCell=0 is also in range.
-     */
-    if ((dci.isTriclinic || dci.filterBondComm) && lastCell > firstCell)
-    {
-        /* This loop is a copy of the one above with lastCell replaced
-         * by firstCell. Putting it in a function would be cleaner,
-         * but this would require 20 parameters.
-         */
-        bool isInRange;
-        do
+        // We should add a range when a range finished or we are at the end of the column
+        if (firstCellInRange >= 0 && (!isInRange || cell == numCellsInColumn - 1))
         {
-            if (!gci.cellBBs.empty())
-            {
-                bbPointer = &gci.cellBBs[firstCell];
-            }
-            else
-            {
-                bbFull.lower.z = gci.cellBBsZonly[firstCell].lower;
-                bbFull.upper.z = gci.cellBBsZonly[firstCell].upper;
-            }
+            const int lastCellInRange = (isInRange ? cell : cell - 1);
 
-            const auto distancesSquared = cornerToBoundingBoxDistance(
-                    dci, zoneCorners.twoBody, zoneCorners.multiBody, *bbPointer);
+            gridCellRanges->push_back(
+                    { columnIndex,
+                      { (firstCellInColumn + firstCellInRange) * gci.bbToCellFactor,
+                        (firstCellInColumn + lastCellInRange + 1) * gci.bbToCellFactor } });
+            numCellsAdded += gridCellRanges->back().cellRange.size();
 
-            isInRange = (distancesSquared.pair < dci.cutoffSquaredTwoBody1);
-
-            if constexpr (doChecksForBondeds)
-            {
-                isInRange =
-                        isInRange
-                        || (((dci.checkMultiBodyDistance && distancesSquared.multiBody < dci.cutoffSquaredMultiBody1)
-                             || (dci.checkTwoBodyDistance && distancesSquared.pair < dci.cutoffSquaredMultiBody1))
-                            && (!dci.filterBondComm || isCellMissingLinks[firstCellInColumn + firstCell]));
-            }
-
-            // NOLINTNEXTLINE(readability-misleading-indentation) remove when clang-tidy-13 is required
-            if (!isInRange)
-            {
-                firstCell++;
-            }
-        } while (firstCell < lastCell && !isInRange);
+            // Mark that we no longer have an open cell range that is in range
+            firstCellInRange = -1;
+        }
     }
 
-    return { (firstCellInColumn + firstCell) * gci.bbToCellFactor,
-             (firstCellInColumn + lastCell + 1) * gci.bbToCellFactor };
+    return numCellsAdded;
 }
 
 } // namespace
@@ -623,7 +598,7 @@ DomainCommBackward::DomainCommBackward(int         rank,
 
 void DomainCommBackward::clear()
 {
-    columnsToSend_.clear();
+    cellRangesToSend_.clear();
     numAtomsToSend_ = 0;
 }
 
@@ -752,24 +727,20 @@ void DomainCommBackward::selectHaloAtoms(const gmx_domdec_t&      dd,
             (!shiftMultipleDomains_ && (dci.checkMultiBodyDistance || dci.checkTwoBodyDistance));
     for (int columnIndex = 0; columnIndex < grid.numColumns(); columnIndex++)
     {
-        Range<int> cellRange;
+        int numCellsAdded;
 
         if (checkBondedDistances)
         {
-            cellRange = getCellRangeForGridColumn<true>(
-                    grid, columnIndex, targetZoneCorners_, dci, isCellMissingLinks);
+            numCellsAdded = addCellRangesForGridColumn<true>(
+                    grid, columnIndex, targetZoneCorners_, dci, isCellMissingLinks, &cellRangesToSend_);
         }
         else
         {
-            cellRange = getCellRangeForGridColumn<false>(
-                    grid, columnIndex, targetZoneCorners_, dci, isCellMissingLinks);
+            numCellsAdded = addCellRangesForGridColumn<false>(
+                    grid, columnIndex, targetZoneCorners_, dci, isCellMissingLinks, &cellRangesToSend_);
         }
-        if (!cellRange.empty())
-        {
-            columnsToSend_.push_back({ columnIndex, cellRange });
 
-            numAtomsToSend_ += cellRange.size() * numAtomsPerCell_;
-        }
+        numAtomsToSend_ += numCellsAdded * numAtomsPerCell_;
     }
 
     if (debug)
@@ -793,7 +764,7 @@ void DomainCommBackward::selectHaloAtoms(const gmx_domdec_t&      dd,
 
     // Copy the global atom indices to the send buffer
     globalAtomIndices_.clear();
-    for (const auto& columnInfo : columnsToSend_)
+    for (const auto& columnInfo : cellRangesToSend_)
     {
         const int at_start = *columnInfo.cellRange.begin() * numAtomsPerCell_;
         const int at_end   = *columnInfo.cellRange.end() * numAtomsPerCell_;
@@ -809,10 +780,10 @@ FastVector<std::pair<int, int>> DomainCommBackward::makeColumnsSendBuffer() cons
 {
     // Store the grid info with only index and cell count per column
     FastVector<std::pair<int, int>> sendBuffer;
-    sendBuffer.reserve(columnsToSend_.size());
-    for (const auto& columnInfo : columnsToSend_)
+    sendBuffer.reserve(cellRangesToSend_.size());
+    for (const auto& cellRange : cellRangesToSend_)
     {
-        sendBuffer.emplace_back(columnInfo.index, columnInfo.cellRange.size());
+        sendBuffer.emplace_back(cellRange.index, cellRange.cellRange.size());
     }
 
     return sendBuffer;
@@ -825,7 +796,7 @@ DomainCommForward::DomainCommForward(int rank, int zone, MPI_Comm mpiCommAll) :
 
 void DomainCommForward::setup(const DomainCommBackward& send, const int offsetInCoordinateBuffer)
 {
-    std::array<int, 2> sendSizes = { int(send.columnsToSend().size()), send.numAtoms() };
+    std::array<int, 2> sendSizes = { int(send.cellRangesToSend().size()), send.numAtoms() };
     std::array<int, 2> receiveSizes;
 
     ddSendReceive(send, *this, dddirBackward, sendSizes.data(), 2, receiveSizes.data(), 2, HaloMpiTag::GridCounts);
@@ -839,18 +810,18 @@ void DomainCommForward::setup(const DomainCommBackward& send, const int offsetIn
         fprintf(debug, "For zone %d, receiving %d atoms\n", zone_, numAtoms());
     }
 
-    // Store the grid info with only index and cell count per column
+    // Store the grid info with only pairs of column indices and cell counts
     const FastVector<std::pair<int, int>> sendBuffer = send.makeColumnsSendBuffer();
 
-    columnsReceived_.resize(receiveSizes[0]);
+    cellRangesReceived_.resize(receiveSizes[0]);
 
     ddSendReceive(send,
                   *this,
                   dddirBackward,
                   sendBuffer.data(),
-                  send.columnsToSend().size(),
-                  columnsReceived_.data(),
-                  columnsReceived_.size(),
+                  send.cellRangesToSend().size(),
+                  cellRangesReceived_.data(),
+                  cellRangesReceived_.size(),
                   HaloMpiTag::GridColumns);
 }
 

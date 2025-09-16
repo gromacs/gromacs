@@ -109,8 +109,8 @@ struct ZoneCorners
 class DomainCommBackward
 {
 public:
-    //! Struct for collecting information on grid columns
-    struct ColumnInfo
+    //! Struct for storing a cell range for a grid column
+    struct GridCellRange
     {
         //! The index of the grid column
         int index;
@@ -202,7 +202,7 @@ public:
     int numAtomsPerCell() const { return numAtomsPerCell_; }
 
     //! Returns the list of all columns to send with column information
-    ArrayRef<const ColumnInfo> columnsToSend() const { return columnsToSend_; }
+    ArrayRef<const GridCellRange> cellRangesToSend() const { return cellRangesToSend_; }
 
     //! Returns the number of atoms to send
     int numAtoms() const { return numAtomsToSend_; }
@@ -243,7 +243,7 @@ private:
     //! The corners of the zone we communicate coordinates to
     ZoneCorners targetZoneCorners_;
     //! The cell ranges to commnicate
-    FastVector<ColumnInfo> columnsToSend_;
+    FastVector<GridCellRange> cellRangesToSend_;
     //! The number of atoms to send (or receive in case of forces)
     int numAtomsToSend_;
     //! Buffer for communicating global atom indices
@@ -286,7 +286,7 @@ public:
     int zone() const { return zone_; }
 
     //! Returns the list of pairs of column indices and cell counts that we receive
-    ArrayRef<const std::pair<int, int>> columnsReceived() const { return columnsReceived_; }
+    ArrayRef<const std::pair<int, int>> cellRangesReceived() const { return cellRangesReceived_; }
 
     //! The number of atoms to receive
     int numAtoms() const { return numAtomsToReceive_; }
@@ -303,7 +303,7 @@ private:
     //! The zone this part of the halo belongs to
     int zone_;
     //! Pairs of column indices and cell counts (matching the Grid cell size definition)
-    FastVector<std::pair<int, int>> columnsReceived_;
+    FastVector<std::pair<int, int>> cellRangesReceived_;
     //! The number of atoms to receive
     int numAtomsToReceive_;
 

@@ -499,7 +499,7 @@ void HaloExchange::setup(gmx_domdec_t*         dd,
         nbv.setNonLocalGrid(nbnxmGridIndex,
                             receive.zone(),
                             gridDimensions,
-                            receive.columnsReceived(),
+                            receive.cellRangesReceived(),
                             fr->atomInfo,
                             localState->x);
         nbnxmGridIndex++;
