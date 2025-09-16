@@ -57,6 +57,11 @@ a release.
     namespace gmx`` and similar. If only a small number of ``gmx``
     namespace symbols needed in a not-yet-updated file, consider
     importing just those symbols. See also |linkref2|.
+  * Generally avoid using the ``gmx::`` prefix when working inside that namespace.
+    Do use it when clarity or correctness are an issue, e.g. to differentiate
+    between the same name in different namespaces.
+  * With the exception of basic types such as ``int64_t`` or ``size_t``, generally use
+    the ``std::`` prefix for symbols in STL.
 
 * Use STL, but do not use iostreams outside of the unit tests. iostreams can have
   a negative impact on performance compared to other forms
