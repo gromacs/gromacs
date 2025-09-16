@@ -132,7 +132,8 @@ static bool useTabulatedEwaldByDefault(InteractionModifiers vdwModifier, const D
     const int  major   = deviceInfo.prop.major;
     const int  minor   = deviceInfo.prop.minor;
     const bool isMi300 = (major == 9 && minor == 4);
-    return !isMi300;
+    const bool isMi350 = (major == 9 && minor == 5);
+    return !isMi300 && !isMi350;
 #elif GMX_GPU_SYCL
     const int major = deviceInfo.hardwareVersionMajor.value_or(-1);
     const int minor = deviceInfo.hardwareVersionMinor.value_or(-1);
