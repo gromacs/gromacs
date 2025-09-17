@@ -94,7 +94,7 @@ void print_time(FILE*                     out,
             fprintf(out, " performance: %.1f ns/day    ", ir->delta_t / 1000 * 24 * 60 * 60 / time_per_step);
         }
     }
-    if (!GMX_THREAD_MPI && mpiCommSimulation.isSerial())
+    if (!GMX_THREAD_MPI && mpiCommSimulation.isParallel())
     {
         fprintf(out, "\n");
     }
