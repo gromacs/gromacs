@@ -17,11 +17,13 @@
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/logger.h"
 
+#include "ramdparameters.h"
+
 namespace gmx
 {
 
 /*! \internal \brief
- * Implements IForceProvider for RAMD.
+ * Declares IForceProvider for RAMD.
  */
 class RAMDForceProvider final : public IForceProvider
 {
@@ -38,6 +40,12 @@ public:
      * \param[out] fOutput output for force provider
      */
     void calculateForces(const ForceProviderInput& fInput, ForceProviderOutput* fOutput) override;
+
+private:
+
+    const RAMDParameters& parameters_;
+    const PbcType         pbcType_;
+    const MDLogger&       logger_;
 
 };
 
