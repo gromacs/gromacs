@@ -48,26 +48,6 @@ public:
     //! Report if this set of options is active
     bool active() const;
 
-    //! Process input options to parameters, including input file reading.
-    const RAMDParameters& buildParameters();
-
-    /*! \brief Evaluate and store atom indices.
-     *
-     * During pre-processing, use the group string from the options to
-     * evaluate the indices of the atoms to be subject to forces from this
-     * module.
-     */
-    void setFitGroupIndices(const IndexGroupsAndNames& indexGroupsAndNames);
-
-    //! Store the paramers that are not mdp options in the tpr file
-    void writeInternalParametersToKvt(KeyValueTreeObjectBuilder treeBuilder);
-
-    //! Set the internal parameters that are stored in the tpr file
-    void readInternalParametersFromKvt(const KeyValueTreeObject& tree);
-
-    //! Check if input parameters are consistent with other simulation parameters
-    void checkEnergyCaluclationFrequency(EnergyCalculationFrequencyErrors* energyCalculationFrequencyErrors) const;
-
 private:
 
     //! Parameter values for force & energy evaluation

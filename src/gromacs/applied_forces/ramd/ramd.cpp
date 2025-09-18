@@ -8,6 +8,7 @@
 
 #include "ramd.h"
 #include "ramdoptions.h"
+#include "ramdoutputprovider.h"
 #include "gromacs/mdtypes/imdmodule.h"
 #include "gromacs/utility/classhelpers.h"
 
@@ -159,7 +160,7 @@ public:
     //! Returns an interface for handling mdp input (and tpr I/O).
     IMdpOptionProvider* mdpOptionProvider() override { return &RAMDOptions_; }
     //! Returns an interface for handling output files during simulation.
-    IMDOutputProvider* outputProvider() override {}
+    IMDOutputProvider* outputProvider() override { return &RAMDOutputProvider_; }
     //! Initializes force providers from this module.
     void initForceProviders(ForceProviders* forceProviders) override {}
     //! Subscribe to pre processing notifications
@@ -171,7 +172,7 @@ public:
 
 private:
     //! The output provider
-    // RAMDOutputProvider RAMDOutputProvider_;
+    RAMDOutputProvider RAMDOutputProvider_;
 
     //! The options provided for RAMD
     RAMDOptions RAMDOptions_;

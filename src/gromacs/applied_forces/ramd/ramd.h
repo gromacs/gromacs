@@ -18,7 +18,7 @@ struct RAMDModuleInfo
     //! Creates a module for applying forces according to a RAMD.
     static std::unique_ptr<IMDModule> create();
     //! The name of the module
-    static const std::string name_;
+    static constexpr std::string_view sc_name = "ramd";
 };
 
 } // namespace gmx
