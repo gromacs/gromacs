@@ -1,5 +1,15 @@
+/*! \internal \file
+ * \brief
+ * Implements RAMD class that implements IMDModule interface
+ *
+ * \author Bernd Doser <bernd.doser@h-its.org>
+ * \ingroup module_applied_forces
+ */
+
 #include "ramd.h"
+#include "ramdoptions.h"
 #include "gromacs/mdtypes/imdmodule.h"
+#include "gromacs/utility/classhelpers.h"
 
 namespace gmx
 {
@@ -146,11 +156,8 @@ public:
 //     //! No subscriptions to run notifications
 //     void subscribeToSimulationRunNotifications(MDModulesNotifiers* /* notifiers */) override {}
 
-//     //! From IMDModule
-//     IMdpOptionProvider* mdpOptionProvider() override { return &RAMDOptions_; }
-
     //! Returns an interface for handling mdp input (and tpr I/O).
-    IMdpOptionProvider* mdpOptionProvider() override {}
+    IMdpOptionProvider* mdpOptionProvider() override { return &RAMDOptions_; }
     //! Returns an interface for handling output files during simulation.
     IMDOutputProvider* outputProvider() override {}
     //! Initializes force providers from this module.
@@ -162,19 +169,21 @@ public:
     //! Subscribe to simulation run notifications
     void subscribeToSimulationRunNotifications(MDModulesNotifiers* notifiers) override {}
 
-// private:
-//     //! The output provider
-//     RAMDOutputProvider RAMDOutputProvider_;
-//     //! The options provided for RAMD
-//     RAMDOptions RAMDOptions_;
-//     //! Object that evaluates the forces
-//     std::unique_ptr<RAMDForceProvider> forceProvider_;
-//     /*! \brief Parameters for RAMD that become available at
-//      * simulation setup time.
-//      */
-//     RAMDSimulationParameterSetup RAMDSimulationParameters_;
+private:
+    //! The output provider
+    // RAMDOutputProvider RAMDOutputProvider_;
 
-    // GMX_DISALLOW_COPY_AND_ASSIGN(RAMD);
+    //! The options provided for RAMD
+    RAMDOptions RAMDOptions_;
+
+    //! Object that evaluates the forces
+    // std::unique_ptr<RAMDForceProvider> forceProvider_;
+    /*! \brief Parameters for RAMD that become available at
+     * simulation setup time.
+     */
+    // RAMDSimulationParameterSetup RAMDSimulationParameters_;
+
+    GMX_DISALLOW_COPY_AND_ASSIGN(RAMD);
 };
 
 } // namespace 

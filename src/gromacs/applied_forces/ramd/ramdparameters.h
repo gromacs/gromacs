@@ -9,9 +9,11 @@
 #define GMX_APPLIED_FORCES_RAMDPARAMETERS_H
 
 #include <cstdint>
-
 #include <string>
 #include <vector>
+
+#include "gromacs/utility/real.h"
+#include "gromacs/utility/basedefinitions.h"
 
 namespace gmx
 {
