@@ -20,7 +20,6 @@ lib*.pc
 .python-version
 .tox
 .cproject
-.vscode
 build
 /*build*
 _build
