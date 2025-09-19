@@ -59,4 +59,9 @@ bool RAMDOptions::active() const
     return parameters_.active_;
 }
 
+const RAMDParameters& RAMDOptions::parameters()
+{
+    return parameters_;
+}
+
 } // namespace gmx

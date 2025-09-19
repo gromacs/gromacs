@@ -40,13 +40,17 @@ struct RAMDParameters
     //! Indicate if density fitting is active
     bool active_ = false;
 
-    int64_t                seed_;      ///< Initialization number for pseudo random number generator
-    int                    ngroup_;    ///< Number of RAMD groups
-    std::vector<RAMDGroup> group_;     ///< List of RAMD receptor-ligand pairs
-    int                    eval_freq_; ///< Number of MD steps in one RAMD step
-    int         force_out_freq_;       ///< Every 'force_out_freq' steps detailed output of forces will be written
-    gmx_bool    old_angle_dist_;       ///< Use old angle distribution
-    gmx_bool    connected_ligands_;    ///< Behavior of re-entering ligands into the dissociation radius
+    //! Initialization number for pseudo random number generator
+    int64_t seed_ = 1234;
+    
+    //! Number of MD steps in one RAMD step
+    int eval_freq_ = 50;
+
+    // int                    ngroup_;    ///< Number of RAMD groups
+    // std::vector<RAMDGroup> group_;     ///< List of RAMD receptor-ligand pairs
+    // int         force_out_freq_;       ///< Every 'force_out_freq' steps detailed output of forces will be written
+    // gmx_bool    old_angle_dist_;       ///< Use old angle distribution
+    // gmx_bool    connected_ligands_;    ///< Behavior of re-entering ligands into the dissociation radius
 };
 
 } // namespace gmx

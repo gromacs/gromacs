@@ -46,5 +46,10 @@
         "print": "cpp",
         "filesystem": "cpp",
         "complex": "cpp"
-    }
+    },
+    "cSpell.words": [
+        "Bernd",
+        "RAMD",
+        "RAMDPARAMETERS"
+    ]
 }

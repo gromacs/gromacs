@@ -48,6 +48,9 @@ public:
     //! Report if this set of options is active
     bool active() const;
 
+    //! Get parameters_ instance
+    const RAMDParameters& parameters();
+
 private:
 
     //! Parameter values for force & energy evaluation
