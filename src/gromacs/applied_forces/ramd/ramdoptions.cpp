@@ -32,19 +32,26 @@ std::string moduleName()
 }
 
 const std::string c_activeTag = "active";
+const std::string c_seedTag = "seed";
+const std::string c_evalFreqTag = "eval-freq";
 
 } // namespace
 
 void RAMDOptions::initMdpTransform(IKeyValueTreeTransformRules* rules)
 {
-
+    addMdpTransformFromString<bool>(
+        rules, &fromStdString<bool>, RAMDModuleInfo::sc_name, c_activeTag);
+    addMdpTransformFromString<std::int64_t>(
+        rules, &fromStdString<std::int64_t>, RAMDModuleInfo::sc_name, c_seedTag);
+    addMdpTransformFromString<int>(
+        rules, &fromStdString<int>, RAMDModuleInfo::sc_name, c_evalFreqTag);
 }
 
 void RAMDOptions::buildMdpOutput(KeyValueTreeObjectBuilder* builder) const
 {
     addMdpOutputComment(builder, RAMDModuleInfo::sc_name, "empty-line", "");
     addMdpOutputComment(
-            builder, RAMDModuleInfo::sc_name, "module", "; Density guided simulation");
+        builder, RAMDModuleInfo::sc_name, "module", "; Density guided simulation");
     addMdpOutputValue(builder, RAMDModuleInfo::sc_name, c_activeTag, parameters_.active_);
 }
 
