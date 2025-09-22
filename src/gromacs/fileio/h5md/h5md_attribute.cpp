@@ -50,7 +50,6 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
-#include "h5md_dataset.h"
 #include "h5md_error.h"
 #include "h5md_guard.h"
 #include "h5md_type.h"

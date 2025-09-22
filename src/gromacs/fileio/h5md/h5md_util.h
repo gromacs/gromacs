@@ -42,8 +42,14 @@
 
 #include <hdf5.h>
 
+#include <vector>
+
 namespace gmx
 {
+
+/*! \brief Dimensions of HDF5 data sets and spaces.
+ */
+using DataSetDims = std::vector<hsize_t>;
 
 /*! \brief Return whether object \p name exists in the given HDF5 \p container.
  *
