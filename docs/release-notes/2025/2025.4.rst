@@ -16,6 +16,15 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+PME tuning could exit with an assertion failure
+"""""""""""""""""""""""""""""""""""""""""""""""
+
+When using OpenMP threading and an unlucky combination of PME grid dimensions,
+mdrun could exit during PME tuning with an assertion failure for gridSize.
+
+:issue:`5406`
+:issue:`5417`
+
 Direct halo communication could cause mdrun to exit with an MPI error
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 

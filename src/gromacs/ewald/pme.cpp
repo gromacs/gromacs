@@ -1146,7 +1146,7 @@ real gmx_pme_calc_energy(gmx_pme_t* pme, gmx::ArrayRef<const gmx::RVec> x, gmx::
     /* Only calculate the spline coefficients, don't actually spread */
     spread_on_grid(pme, atc, &grids, true, false, false);
 
-    return gather_energy_bsplines(pme, grids.pmeGrids.grid.grid, atc);
+    return gather_energy_bsplines(pme, grids.pmeGrids.grid.grid(), atc);
 }
 
 /*! \brief Calculate initial Lorentz-Berthelot coefficients for LJ-PME */
@@ -1302,7 +1302,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
         }
         inc_nrnb(nrnb, eNR_SPREADBSP, pme->pme_order * pme->pme_order * pme->pme_order * atc.numAtoms());
 
-        gmx::ArrayRef<real> grid = pmegrid.grid.grid;
+        gmx::ArrayRef<real> grid = pmegrid.grid.grid();
 
         if (!pme->bUseThreads)
         {
@@ -1436,7 +1436,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
                 try
                 {
                     gather_f_bsplines(pme,
-                                      pmegrid.grid.grid,
+                                      pmegrid.grid.grid(),
                                       bClearF,
                                       &atc,
                                       &atc.spline[thread],
@@ -1542,10 +1542,10 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
             for (PmeAndFftGrids& grids : pme->gridsLJ)
             {
                 /* Unpack structure */
-                const pmegrids_t*    pmegrid    = &grids.pmeGrids;
+                pmegrids_t*          pmegrid    = &grids.pmeGrids;
                 gmx_parallel_3dfft_t pfft_setup = grids.pfft_setup.get();
                 calc_next_lb_coeffs(coefficientBuffer, local_sigma);
-                gmx::ArrayRef<real> grid = pmegrid->grid.grid;
+                gmx::ArrayRef<real> grid = pmegrid->grid.grid();
 
                 wallcycle_start(wcycle, WallCycleCounter::PmeSpread);
                 /* Spread the c6 on a grid */
@@ -1638,7 +1638,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
                 /* Unpack structure */
                 pmegrids_t&          pmegrid    = grids.pmeGrids;
                 gmx_parallel_3dfft_t pfft_setup = grids.pfft_setup.get();
-                gmx::ArrayRef<real>  grid       = pmegrid.grid.grid;
+                gmx::ArrayRef<real>  grid       = pmegrid.grid.grid();
                 calc_next_lb_coeffs(coefficientBuffer, local_sigma);
 #pragma omp parallel num_threads(pme->nthread)
                 {
@@ -1692,7 +1692,7 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
                         try
                         {
                             gather_f_bsplines(pme,
-                                              pmegrid.grid.grid,
+                                              pmegrid.grid.grid(),
                                               bClearF,
                                               &pme->atc[0],
                                               &pme->atc[0].spline[thread],

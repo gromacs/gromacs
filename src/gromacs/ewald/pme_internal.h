@@ -288,7 +288,33 @@ struct pmegrid_t
     int  order;  /* PME spreading order                       */
     ivec s;      /* The allocated size of *grid, s >= n       */
     // The local grid, used size n. Data owned by gmx_pme_t::pmeGridsStorage.
-    gmx::ArrayRef<real> grid;
+
+    //! Returns a view to the grid
+    gmx::ArrayRef<real> grid()
+    {
+        return gmx::arrayRefFromArray(gridStoragePtr_->data(), gridSize_);
+    }
+
+    //! Returns a const view to the grid
+    gmx::ArrayRef<const real> grid() const
+    {
+        return gmx::constArrayRefFromArray(gridStoragePtr_->data(), gridSize_);
+    }
+
+    //! Sets the grid storage to point to \p gridStoragePtr, using \p gridSize elements
+    void setGridStorage(AlignedVector<real>* gridStoragePtr, size_t gridSize)
+    {
+        GMX_RELEASE_ASSERT(gridStoragePtr->size() >= gridSize, "We should have sufficient storage");
+
+        gridStoragePtr_ = gridStoragePtr;
+        gridSize_       = gridSize;
+    }
+
+private:
+    //! Pointer to the vector used for storing the grid
+    AlignedVector<real>* gridStoragePtr_ = nullptr;
+    //! The actual number of grid entries used here
+    size_t gridSize_;
 };
 
 /*! \brief Data structures for PME grids */
