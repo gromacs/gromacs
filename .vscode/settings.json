@@ -45,7 +45,8 @@
         "locale": "cpp",
         "print": "cpp",
         "filesystem": "cpp",
-        "complex": "cpp"
+        "complex": "cpp",
+        "optional": "cpp"
     },
     "cSpell.words": [
         "Bernd",

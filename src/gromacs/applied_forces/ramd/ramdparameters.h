@@ -23,11 +23,16 @@ namespace gmx
  */
 struct RAMDGroup
 {
-    real force_;      ///< Force to be applied in kcal/mol/Angstrom
-    real max_dist_;   ///< Specifies the distance in Angstrom between the COMs of the ligand
-                      ///  and the receptor when the simulation is stopped
-    real r_min_dist_; ///< Specifies the minimum distance in Angstrom
-                      ///  to be traveled by the ligand in one RAMD step
+    //! Force to be applied in kcal/mol/Angstrom
+    real force_;
+    
+    //! Specifies the distance in Angstrom between the COMs of the ligand
+    //! and the receptor when the simulation is stopped
+    real max_dist_;
+
+    //! Specifies the minimum distance in Angstrom
+    //! to be traveled by the ligand in one RAMD step
+    real r_min_dist_;
 };
 
 /*! \internal
@@ -46,11 +51,20 @@ struct RAMDParameters
     //! Number of MD steps in one RAMD step
     int eval_freq_ = 50;
 
-    // int                    ngroup_;    ///< Number of RAMD groups
-    // std::vector<RAMDGroup> group_;     ///< List of RAMD receptor-ligand pairs
-    // int         force_out_freq_;       ///< Every 'force_out_freq' steps detailed output of forces will be written
-    // gmx_bool    old_angle_dist_;       ///< Use old angle distribution
-    // gmx_bool    connected_ligands_;    ///< Behavior of re-entering ligands into the dissociation radius
+    //! Number of RAMD groups
+    int ngroups_ = 0;
+
+    //! List of RAMD receptor-ligand pairs
+    std::vector<RAMDGroup> groups_;
+
+    //! Every 'force_out_freq' steps detailed output of forces will be written
+    int force_out_freq_ = 100;
+
+    //! Use old angle distribution
+    bool old_angle_dist_ = false;
+
+    //! Behavior of re-entering ligands into the dissociation radius
+    bool connected_ligands_ = false;
 };
 
 } // namespace gmx
