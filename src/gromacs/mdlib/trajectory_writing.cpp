@@ -80,14 +80,13 @@ void do_md_trajectory_writing(FILE*                          fplog,
                               gmx_bool                       bRerunMD,
                               gmx_bool                       bLastStep,
                               gmx_bool                       bDoConfOut,
-                              const EkindataState            ekindataState,
-                              gmx_bool                       bRAMDTraj)
+                              const EkindataState            ekindataState)
 {
     int   mdof_flags;
     rvec* x_for_confout = nullptr;
 
     mdof_flags = 0;
-    if (do_per_step(step, ir->nstxout) or bRAMDTraj)
+    if (do_per_step(step, ir->nstxout))
     {
         mdof_flags |= MDOF_X;
     }

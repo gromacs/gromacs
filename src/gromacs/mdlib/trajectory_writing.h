@@ -96,7 +96,6 @@ void do_md_trajectory_writing(FILE*                          fplog,
                               gmx_bool                       bRerunMD,
                               gmx_bool                       bLastStep,
                               gmx_bool                       bDoConfOut,
-                              EkindataState                  ekindataState,
-                              gmx_bool                       bRAMDTraj);
+                              EkindataState                  ekindataState);
 
 #endif

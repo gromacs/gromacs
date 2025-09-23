@@ -2029,7 +2029,7 @@ struct pull_t* init_pull(FILE*                     fplog,
     pull->params = *pull_params;
 
     /* We do not allow transformation coordinates to depend on time when using AWH */
-    pull->allowTimeAsTransformationVariable = !ir->bDoAwh && !ir->bRAMD;
+    pull->allowTimeAsTransformationVariable = !ir->bDoAwh;
 
     /* The gmx_omp_nthreads module might not be initialized here, so max(1,) */
     const int maxNumThreads = std::max(1, gmx_omp_nthreads_get(ModuleMultiThread::Default));

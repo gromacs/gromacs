@@ -133,7 +133,6 @@ target_link_libraries(mdlib INTERFACE
                       legacy_api
                       pbcutil
                       pulling
-                      ramd
                       topology
                       timing
                       )

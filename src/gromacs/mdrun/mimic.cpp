@@ -625,7 +625,6 @@ void gmx::LegacySimulator::do_mimic()
             const bool isCheckpointingStep = false;
             const bool doRerun             = false;
             const bool bSumEkinhOld        = false;
-            const bool bRAMDTraj           = false;
             do_md_trajectory_writing(fpLog_,
                                      cr_,
                                      nFile_,
@@ -648,8 +647,7 @@ void gmx::LegacySimulator::do_mimic()
                                      isLastStep,
                                      mdrunOptions_.writeConfout,
                                      bSumEkinhOld ? EkindataState::UsedNeedToReduce
-                                                  : EkindataState::UsedDoNotNeedToReduce,
-                                     bRAMDTraj);
+                                                  : EkindataState::UsedDoNotNeedToReduce);
         }
 
         stopHandler->setSignal();

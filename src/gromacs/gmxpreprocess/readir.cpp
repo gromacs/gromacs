@@ -2606,7 +2606,7 @@ void get_ir(const char*     mdparin,
     /* COM pulling */
     printStringNewline(&inp, "COM PULLING");
     ir->bPull = (getEnum<Boolean>(&inp, "pull", wi) != Boolean::No);
-    if (ir->bPull || ir->bRAMD)
+    if (ir->bPull)
     {
         ir->pull                        = std::make_unique<pull_params_t>();
         inputrecStrings->pullGroupNames = read_pullparams(&inp, ir->pull.get(), wi);
@@ -4351,7 +4351,7 @@ void do_index(const char*                                 mdparin,
         }
     }
 
-    if (ir->bPull || ir->bRAMD)
+    if (ir->bPull)
     {
         for (int i = 1; i < ir->pull->ngroup; i++)
         {

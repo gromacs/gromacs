@@ -1662,7 +1662,7 @@ static void do_inputrec(gmx::ISerializer* serializer, t_inputrec* ir, int file_v
                 default: GMX_RELEASE_ASSERT(false, "Unhandled old pull algorithm");
             }
         }
-        if (ir->bPull || ir->bRAMD)
+        if (ir->bPull)
         {
             if (serializer->reading())
             {
