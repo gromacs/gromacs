@@ -88,6 +88,12 @@ const int c_minimumStepsPerTau = 5;
  */
 const int c_minimumStepsPerPeriod = 20;
 
+/* The minimum number of integration steps per period
+ * for reasonably accurate integration of the Parrinello-Rahman barostat.
+ * The PR-barostat needs extremely many steps per period to avoid resonances.
+ */
+const int c_minimumStepsPerPeriodParrinelloRahman = 200;
+
 /* Default values for T- and P- coupling intervals, used when the are no other
  * restrictions.
  */
@@ -181,7 +187,7 @@ int pcouple_min_integration_steps(PressureCoupling epc)
         case PressureCoupling::CRescale:
         case PressureCoupling::Isotropic: n = c_minimumStepsPerTau; break;
         case PressureCoupling::ParrinelloRahman:
-        case PressureCoupling::Mttk: n = c_minimumStepsPerPeriod; break;
+        case PressureCoupling::Mttk: n = c_minimumStepsPerPeriodParrinelloRahman; break;
         default: gmx_incons("Unknown epc value");
     }
 
