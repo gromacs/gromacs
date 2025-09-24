@@ -77,7 +77,11 @@ struct Float4
 
 #endif // GMX_GPU
 
-#define GMX_ALWAYS_INLINE_ATTRIBUTE __attribute__((always_inline))
+#if defined(_MSC_VER) // MSVC does not support __attribute__ and always_inline
+#    define GMX_ALWAYS_INLINE_ATTRIBUTE __forceinline
+#else
+#    define GMX_ALWAYS_INLINE_ATTRIBUTE __attribute__((always_inline))
+#endif
 #define GMX_FUNC_ATTRIBUTE GMX_HOSTDEVICE_ATTRIBUTE GMX_ALWAYS_INLINE_ATTRIBUTE
 #define GMX_DEVICE_FUNC_ATTRIBUTE GMX_DEVICE_ATTRIBUTE GMX_ALWAYS_INLINE_ATTRIBUTE
 
