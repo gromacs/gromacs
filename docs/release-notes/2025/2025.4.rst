@@ -16,15 +16,6 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-PME tuning could exit with an assertion failure
-"""""""""""""""""""""""""""""""""""""""""""""""
-
-When using OpenMP threading and an unlucky combination of PME grid dimensions,
-mdrun could exit during PME tuning with an assertion failure for gridSize.
-
-:issue:`5406`
-:issue:`5417`
-
 The Parrinello-Rahman barostat can give too large volume fluctutations
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -36,6 +27,27 @@ is solved by requiring at least 200 integration steps per period (tau_p)
 for the Parrinello-Rahman barostat.
 
 :issue:`5424`
+
+The C-rescale barostat can give too large volume fluctutations
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The increase of the default :mdp:`nstpcouple` value in the |Gromacs| 2023 release
+can cause too large fluctuations of the volume of the simulation box.
+The average volume is not affected. The is only an issue when tau_p is smaller
+than the recommended value of 5 ps, in combination with a timestep of 2 fs or larger.
+This is solved by requiring at least 25 integration steps per period (tau_p)
+for the C-rescale barostat.
+
+:issue:`5425`
+
+PME tuning could exit with an assertion failure
+"""""""""""""""""""""""""""""""""""""""""""""""
+
+When using OpenMP threading and an unlucky combination of PME grid dimensions,
+mdrun could exit during PME tuning with an assertion failure for gridSize.
+
+:issue:`5406`
+:issue:`5417`
 
 Direct halo communication could cause mdrun to exit with an MPI error
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
