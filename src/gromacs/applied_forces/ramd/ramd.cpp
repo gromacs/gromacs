@@ -10,6 +10,7 @@
 #include "ramdoptions.h"
 #include "ramdoutputprovider.h"
 #include "ramdforceprovider.h"
+#include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/mdtypes/imdmodule.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/exceptions.h"
@@ -110,13 +111,31 @@ public:
     }
 
     //! Subscribe to pre processing notifications
-    void subscribeToPreProcessingNotifications(MDModulesNotifiers* notifiers) override {}
+    void subscribeToPreProcessingNotifications(MDModulesNotifiers* notifiers) override
+    {
+        if (!ramdOptions_.active())
+        {
+            return;
+        }
+    }
 
     //! Subscribe to simulation setup notifications
-    void subscribeToSimulationSetupNotifications(MDModulesNotifiers* notifiers) override {}
+    void subscribeToSimulationSetupNotifications(MDModulesNotifiers* notifiers) override
+    {
+        if (!ramdOptions_.active())
+        {
+            return;
+        }
+        
+        // Reading PBC parameters during simulation setup
+        const auto setPeriodicBoundaryContionsFunction = [this](const PbcType& pbc)
+        { this->ramdSimulationParameters_.setPeriodicBoundaryConditionType(pbc); };
+        notifiers->simulationSetupNotifier_.subscribe(setPeriodicBoundaryContionsFunction);
+    }
 
     //! Subscribe to simulation run notifications
-    void subscribeToSimulationRunNotifications(MDModulesNotifiers* notifiers) override {}
+    void subscribeToSimulationRunNotifications(MDModulesNotifiers* notifiers) override
+    {}
 
 private:
     //! The output provider

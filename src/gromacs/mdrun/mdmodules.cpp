@@ -47,6 +47,7 @@
 #include "gromacs/applied_forces/nnpot/nnpot.h"
 #include "gromacs/applied_forces/plumed/plumedMDModule.h"
 #include "gromacs/applied_forces/qmmm/qmmm.h"
+#include "gromacs/applied_forces/ramd/ramd.h"
 #include "gromacs/fmm/fmm_mdmodule.h"
 #include "gromacs/imd/imd.h"
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
@@ -86,6 +87,7 @@ public:
         modules_[std::string(PlumedModuleInfo::sc_name)]  = PlumedModuleInfo::create();
         modules_[std::string(NNPotModuleInfo::sc_name)]   = NNPotModuleInfo::create();
         modules_[std::string(FmmModuleInfo::sc_name)]     = FmmModuleInfo::create();
+        modules_[std::string(RAMDModuleInfo::sc_name)]     = RAMDModuleInfo::create();
     }
 
     void makeModuleOptions(Options* options) const
@@ -102,7 +104,8 @@ public:
                                              DensityFittingModuleInfo::sc_name,
                                              QMMMModuleInfo::sc_name,
                                              ColvarsModuleInfo::sc_name,
-                                             NNPotModuleInfo::sc_name })
+                                             NNPotModuleInfo::sc_name,
+                                             RAMDModuleInfo::sc_name })
         {
             IMDModule*          module            = modules_.at(std::string(moduleName)).get();
             IMdpOptionProvider* mdpOptionProvider = module->mdpOptionProvider();
@@ -167,7 +170,8 @@ void MDModules::initMdpTransform(IKeyValueTreeTransformRules* rules)
                                          DensityFittingModuleInfo::sc_name,
                                          QMMMModuleInfo::sc_name,
                                          ColvarsModuleInfo::sc_name,
-                                         NNPotModuleInfo::sc_name })
+                                         NNPotModuleInfo::sc_name,
+                                         RAMDModuleInfo::sc_name })
     {
         IMDModule*          module            = impl_->modules_.at(std::string(moduleName)).get();
         IMdpOptionProvider* mdpOptionProvider = module->mdpOptionProvider();
@@ -191,7 +195,8 @@ void MDModules::buildMdpOutput(KeyValueTreeObjectBuilder* builder)
                                          DensityFittingModuleInfo::sc_name,
                                          QMMMModuleInfo::sc_name,
                                          ColvarsModuleInfo::sc_name,
-                                         NNPotModuleInfo::sc_name })
+                                         NNPotModuleInfo::sc_name,
+                                         RAMDModuleInfo::sc_name })
     {
         IMDModule*                module = impl_->modules_.at(std::string(moduleName)).get();
         const IMdpOptionProvider* mdpOptionProvider = module->mdpOptionProvider();

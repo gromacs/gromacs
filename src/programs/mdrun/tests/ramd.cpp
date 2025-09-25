@@ -88,31 +88,28 @@ const std::string water4_mdp_base = R"(
     Tcoupl                   = no
     Pcoupl                   = no
 
-    ramd                     = yes
-    ramd-seed                = 1234
-    ramd-eval-freq           = 10
-    ramd-force-out-freq      = 10
-    ramd-old-angle-dist      = no
-    ramd-ngroups             = 2
-    ramd-group1-receptor     = 1SOL
-    ramd-group1-ligand       = 2SOL
-    ramd-group1-force        = 100
-    ramd-group1-max-dist     = 1.0
-    ramd-group1-r-min-dist   = 0.0025
-    ramd-group2-receptor     = 1SOL
-    ramd-group2-ligand       = 3SOL
-    ramd-group2-force        = 100
-    ramd-group2-max-dist     = 1.0
-    ramd-group2-r-min-dist   = 0.0025
+    ramd-active              = yes
+    ramd-seed                = 42
 )";
+    // ramd-eval-freq           = 10
+    // ramd-force-out-freq      = 10
+    // ramd-old-angle-dist      = no
+    // ramd-ngroups             = 2
+    // ramd-group1-receptor     = 1SOL
+    // ramd-group1-ligand       = 2SOL
+    // ramd-group1-force        = 100
+    // ramd-group1-max-dist     = 1.0
+    // ramd-group1-r-min-dist   = 0.0025
+    // ramd-group2-receptor     = 1SOL
+    // ramd-group2-ligand       = 3SOL
+    // ramd-group2-force        = 100
+    // ramd-group2-max-dist     = 1.0
+    // ramd-group2-r-min-dist   = 0.0025
 
 TEST_F(RAMDTest, RAMD_connected_ligands)
 {
     runner_.useTopGroAndNdxFromDatabase("4water");
-    auto mdpContents = water4_mdp_base + R"(
-        ramd-connected-ligands = no
-    )";
-    runner_.useStringAsMdpFile(mdpContents);
+    runner_.useStringAsMdpFile(water4_mdp_base);
 
     CommandLine caller;
     caller.addOption("-ramd");

@@ -53,12 +53,21 @@ void RAMDOptions::buildMdpOutput(KeyValueTreeObjectBuilder* builder) const
     addMdpOutputComment(
         builder, RAMDModuleInfo::sc_name, "module", "; Density guided simulation");
     addMdpOutputValue(builder, RAMDModuleInfo::sc_name, c_activeTag, parameters_.active_);
+
+    if (parameters_.active_)
+    {
+        // Seed
+        addMdpOutputComment(
+                builder, RAMDModuleInfo::sc_name, c_seedTag, "; Seed");
+        addMdpOutputValue(builder, RAMDModuleInfo::sc_name, c_seedTag, parameters_.seed_);
+    }
 }
 
 void RAMDOptions::initMdpOptions(IOptionsContainerWithSections* options)
 {
     auto section = options->addSection(OptionSection(moduleName().c_str()));
     section.addOption(BooleanOption(c_activeTag.c_str()).store(&parameters_.active_));
+    section.addOption(Int64Option(c_seedTag.c_str()).store(&parameters_.seed_));
 }
 
 bool RAMDOptions::active() const
