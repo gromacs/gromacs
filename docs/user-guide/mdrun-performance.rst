@@ -8,7 +8,106 @@ The aim is to provide an understanding of the underlying mechanisms that make |G
 fastest molecular dynamics simulation packages. The information presented
 should help choosing appropriate parallelization options, run configuration,
 as well as acceleration options to achieve optimal simulation performance.
+We start with quick checklist. That is followed by more detailed discussions
+of different aspects affecting performance.
 
+Performance checklist
+---------------------
+
+There are many different aspects that affect the performance of simulations in
+|Gromacs|. Most simulations require a lot of computational resources, therefore
+it can be worthwhile to optimize the use of those resources. Several issues
+mentioned in the list below could lead to a performance difference of a factor
+of 2. So it can be useful go through the checklist.
+
+|Gromacs| configuration
+^^^^^^^^^^^^^^^^^^^^^^^
+
+* Do not use double precision unless you are absolutely sure you need it.
+* Compile the FFTW library (yourself) with the correct flags on x86 (in most
+  cases, the correct flags are automatically configured).
+* On x86, use gcc as the compiler (not icc, pgi or the Cray compiler).
+* On POWER, use gcc instead of IBM's xlc.
+* Use a new compiler version.
+* MPI library: OpenMPI usually has good performance and causes little trouble.
+* Make sure your compiler supports OpenMP (some versions of Clang do not).
+* If you have GPUs that support either CUDA, OpenCL, SYCL or HIP use them.
+
+  * Configure with ``-DGMX_GPU=CUDA``, ``-DGMX_GPU=OpenCL``, or ``-DGMX_GPU=SYCL``.
+  * For GPUs, use the newest available SDK for your GPU to take advantage of the
+    latest performance enhancements.
+  * Use a recent GPU driver.
+  * Make sure you use an :ref:`gmx mdrun` with ``GMX_SIMD`` appropriate for the CPU
+    architecture; the log file will contain a warning note if suboptimal setting is used.
+    However, prefer ``AVX2`` over ``AVX512`` in GPU or highly parallel MPI runs (for more
+    information see the :ref:`intra-core parallelization information <intra-core-parallelization>`).
+  * If compiling on a cluster head node, make sure that ``GMX_SIMD``
+    is appropriate for the compute nodes.
+
+Run setup
+^^^^^^^^^
+
+* For an approximately spherical solute, use a rhombic dodecahedron unit cell.
+* When using a time-step of <=2.5 fs, use :mdp-value:`constraints=h-bonds`
+  (and not :mdp-value:`constraints=all-bonds`), since:
+
+  * this is faster, especially with GPUs;
+  * it is necessary in order to be able to use GPU-resident mode;
+  * and most force fields have been parametrized with only bonds involving hydrogens constrained.
+
+* When running on CPUs only or with GPUs but integration on the CPU, you can
+  use  multiple time stepping to perform the PME mesh calculations every second
+  step: set :mdp-value:`mts` to ``yes``.
+* You can often increase the time-step to 4 fs by repartitioning hydrogen
+  masses using the :mdp-value:`mass-repartition-factor` mdp option. This does not
+  affect equilibrium distributions, but makes dynamics slightly slower.
+* For massively parallel runs with PME, you might need to try different numbers
+  of PME ranks (``gmx mdrun -npme ???``) to achieve best performance;
+  :ref:`gmx tune_pme` can help automate this search.
+* For massively parallel runs (also ``gmx mdrun -multidir``), or with a slow
+  network, global communication can become a bottleneck and you can reduce it
+  by choosing larger periods for algorithms such as temperature and
+  pressure coupling).
+
+Checking and improving performance
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+* Look at the end of the ``md.log`` file to see the performance and the cycle
+  counters and wall-clock time for different parts of the MD calculation. The
+  PP/PME load ratio is also printed, with a warning when a lot of performance is
+  lost due to imbalance.
+* Adjust the number of PME ranks and/or the cut-off and PME grid-spacing when
+  there is a large PP/PME imbalance. Note that even with a small reported
+  imbalance, the automated PME-tuning might have reduced the initial imbalance.
+  You could still gain performance by changing the mdp parameters or increasing
+  the number of PME ranks.
+* (Especially) In GPU-resident runs (``-update gpu``):
+
+  * Frequent virial or energy computation can have a large overhead (and this will not show up in the cycle counters).
+    To reduce this overhead, increase ``nstcalcenergy``;
+  * Frequent temperature or pressure coupling can have significant overhead;
+    to reduce this, make sure to have as infrequent coupling as your algorithms allow (typically >=50-100 steps).
+
+* If the neighbor searching and/or domain decomposition takes a lot of time, increase ``nstlist``. If a Verlet
+  buffer tolerance is used, this is done automatically by :ref:`gmx mdrun`
+  and the pair-list buffer is increased to keep the energy drift constant.
+
+    * especially with multi-GPU runs, the automatic increasing of ``nstlist`` at ``mdrun``
+      startup can be conservative and larger value is often be optimal
+      (e.g. ``nstlist=200-300`` with PME and default Verlet buffer tolerance).
+
+    * odd values of nstlist should be avoided when using CUDA Graphs
+      to minimize the overhead associated with graph instantiation.
+
+* If ``Comm. energies`` takes a lot of time (a note will be printed in the log
+  file), increase ``nstcalcenergy``.
+* If all communication takes a lot of time, you might be running on too many
+  cores, or you could try running combined MPI/OpenMP parallelization with 2
+  or 4 OpenMP threads per MPI process.
+* In multi-GPU runs, avoid using as many ranks as cores (or hardware threads) since
+  this introduces a major inefficiency due to overheads associated to GPUs sharing by several MPI ranks.
+  Use at most a few ranks per GPU, 1-3 ranks is generally optimal;
+  with GPU-resident mode and direct GPU communication typically 1 rank/GPU is best.
 
 The |Gromacs| build system and the :ref:`gmx mdrun` tool have a lot of built-in
 and configurable intelligence to detect your hardware and make pretty
@@ -1476,102 +1575,3 @@ version of the ROCm toolkit and check the :ref:`AMD HIP installation guide <AMD-
 
 If you are using CDNA hardware, please ensure that your |Gromacs| build has been configured to use 64-wide
 execution on the device.
-
-Performance checklist
----------------------
-
-There are many different aspects that affect the performance of simulations in
-|Gromacs|. Most simulations require a lot of computational resources, therefore
-it can be worthwhile to optimize the use of those resources. Several issues
-mentioned in the list below could lead to a performance difference of a factor
-of 2. So it can be useful go through the checklist.
-
-|Gromacs| configuration
-^^^^^^^^^^^^^^^^^^^^^^^
-
-* Do not use double precision unless you are absolutely sure you need it.
-* Compile the FFTW library (yourself) with the correct flags on x86 (in most
-  cases, the correct flags are automatically configured).
-* On x86, use gcc as the compiler (not icc, pgi or the Cray compiler).
-* On POWER, use gcc instead of IBM's xlc.
-* Use a new compiler version, especially for gcc (e.g. from version 5 to 6
-  the performance of the compiled code improved a lot).
-* MPI library: OpenMPI usually has good performance and causes little trouble.
-* Make sure your compiler supports OpenMP (some versions of Clang do not).
-* If you have GPUs that support either CUDA, OpenCL, or SYCL, use them.
-
-  * Configure with ``-DGMX_GPU=CUDA``, ``-DGMX_GPU=OpenCL``, or ``-DGMX_GPU=SYCL``.
-  * For GPUs, use the newest available SDK for your GPU to take advantage of the
-    latest performance enhancements.
-  * Use a recent GPU driver.
-  * Make sure you use an :ref:`gmx mdrun` with ``GMX_SIMD`` appropriate for the CPU
-    architecture; the log file will contain a warning note if suboptimal setting is used.
-    However, prefer ``AVX2`` over ``AVX512`` in GPU or highly parallel MPI runs (for more
-    information see the :ref:`intra-core parallelization information <intra-core-parallelization>`).
-  * If compiling on a cluster head node, make sure that ``GMX_SIMD``
-    is appropriate for the compute nodes.
-
-Run setup
-^^^^^^^^^
-
-* For an approximately spherical solute, use a rhombic dodecahedron unit cell.
-* When using a time-step of <=2.5 fs, use :mdp-value:`constraints=h-bonds`
-  (and not :mdp-value:`constraints=all-bonds`), since:
-
-  * this is faster, especially with GPUs;
-  * it is necessary in order to be able to use GPU-resident mode;
-  * and most force fields have been parametrized with only bonds involving hydrogens constrained.
-
-* You can often increase the time-step to 4 fs by repartitioning hydrogen
-  masses using the ``mass-repartition-factor`` mdp option. This does not
-  affect equilibrium distributions, but makes dynamics slightly slower.
-* You can increase the time-step to 4 or 5 fs when using virtual interaction
-  sites (``gmx pdb2gmx -vsite h``).
-* For massively parallel runs with PME, you might need to try different numbers
-  of PME ranks (``gmx mdrun -npme ???``) to achieve best performance;
-  :ref:`gmx tune_pme` can help automate this search.
-* For massively parallel runs (also ``gmx mdrun -multidir``), or with a slow
-  network, global communication can become a bottleneck and you can reduce it
-  by choosing larger periods for algorithms such as temperature and
-  pressure coupling).
-
-Checking and improving performance
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-* Look at the end of the ``md.log`` file to see the performance and the cycle
-  counters and wall-clock time for different parts of the MD calculation. The
-  PP/PME load ratio is also printed, with a warning when a lot of performance is
-  lost due to imbalance.
-* Adjust the number of PME ranks and/or the cut-off and PME grid-spacing when
-  there is a large PP/PME imbalance. Note that even with a small reported
-  imbalance, the automated PME-tuning might have reduced the initial imbalance.
-  You could still gain performance by changing the mdp parameters or increasing
-  the number of PME ranks.
-* (Especially) In GPU-resident runs (``-update gpu``):
-
-  * Frequent virial or energy computation can have a large overhead (and this will not show up in the cycle counters).
-    To reduce this overhead, increase ``nstcalcenergy``;
-  * Frequent temperature or pressure coupling can have significant overhead;
-    to reduce this, make sure to have as infrequent coupling as your algorithms allow (typically >=50-100 steps).
-
-* If the neighbor searching and/or domain decomposition takes a lot of time, increase ``nstlist``. If a Verlet
-  buffer tolerance is used, this is done automatically by :ref:`gmx mdrun`
-  and the pair-list buffer is increased to keep the energy drift constant.
-
-    * especially with multi-GPU runs, the automatic increasing of ``nstlist`` at ``mdrun``
-      startup can be conservative and larger value is often be optimal
-      (e.g. ``nstlist=200-300`` with PME and default Verlet buffer tolerance).
-
-    * odd values of nstlist should be avoided when using CUDA Graphs
-      to minimize the overhead associated with graph instantiation.
-
-* If ``Comm. energies`` takes a lot of time (a note will be printed in the log
-  file), increase ``nstcalcenergy``.
-* If all communication takes a lot of time, you might be running on too many
-  cores, or you could try running combined MPI/OpenMP parallelization with 2
-  or 4 OpenMP threads per MPI process.
-* In multi-GPU runs, avoid using as many ranks as cores (or hardware threads) since
-  this introduces a major inefficiency due to overheads associated to GPUs sharing by several MPI ranks.
-  Use at most a few ranks per GPU, 1-3 ranks is generally optimal;
-  with GPU-resident mode and direct GPU communication typically 1 rank/GPU is best.
-
