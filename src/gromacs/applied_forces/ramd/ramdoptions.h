@@ -17,10 +17,9 @@
 namespace gmx
 {
 
-class EnergyCalculationFrequencyErrors;
-class IndexGroupsAndNames;
 class KeyValueTreeObject;
 class KeyValueTreeBuilder;
+class MDLogger;
 
 /*! \internal
  * \brief Input data storage for RAMD
@@ -51,10 +50,23 @@ public:
     //! Get parameters_ instance
     const RAMDParameters& parameters();
 
+    //! Set the MDLogger instance
+    void setLogger(const MDLogger& logger);
+
+    //! Get the logger instance
+    const MDLogger& logger() const;
+
 private:
 
     //! Parameter values for force & energy evaluation
     RAMDParameters parameters_;
+
+    /*! \brief MDLogger during preprocessing
+     *
+     * This is a pointer only because we need an "optional reference"
+     * to a const MDLogger before the notification always provides the
+     * actual reference. */
+    const MDLogger* logger_ = nullptr;
 
 };
 

@@ -80,4 +80,21 @@ const RAMDParameters& RAMDOptions::parameters()
     return parameters_;
 }
 
+void RAMDOptions::setLogger(const MDLogger& logger)
+{
+    // Exit if RAMD module is not active
+    if (!parameters_.active_)
+    {
+        return;
+    }
+
+    logger_ = &logger;
+}
+
+const MDLogger& RAMDOptions::logger() const
+{
+    GMX_RELEASE_ASSERT(logger_, "Logger not set for RAMDOptions.");
+    return *logger_;
+}
+
 } // namespace gmx

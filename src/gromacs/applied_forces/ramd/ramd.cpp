@@ -117,6 +117,11 @@ public:
         {
             return;
         }
+
+        // Set Logger during pre-processing
+        const auto setLoggerFunction = [this](const MDLogger& logger)
+        { ramdOptions_.setLogger(logger); };
+        notifiers->preProcessingNotifier_.subscribe(setLoggerFunction);
     }
 
     //! Subscribe to simulation setup notifications
@@ -131,10 +136,15 @@ public:
         const auto setPeriodicBoundaryContionsFunction = [this](const PbcType& pbc)
         { this->ramdSimulationParameters_.setPeriodicBoundaryConditionType(pbc); };
         notifiers->simulationSetupNotifier_.subscribe(setPeriodicBoundaryContionsFunction);
+
+        // Saving MDLogger during simulation setup
+        const auto setLoggerFunction = [this](const MDLogger& logger)
+        { this->ramdSimulationParameters_.setLogger(logger); };
+        notifiers->simulationSetupNotifier_.subscribe(setLoggerFunction);
     }
 
     //! Subscribe to simulation run notifications
-    void subscribeToSimulationRunNotifications(MDModulesNotifiers* notifiers) override
+    void subscribeToSimulationRunNotifications(MDModulesNotifiers* /* notifiers */) override
     {}
 
 private:
