@@ -30,26 +30,34 @@ void RAMDForceProvider::calculateForces(const ForceProviderInput& fInput,
     t_pbc pbc;
     set_pbc(&pbc, this->pbcType_, fInput.box_);
 
-    int64_t step = fInput.step_;
-    if (fInput.mpiComm_.isMainRank() and (step % parameters_.eval_freq_ == 0))
+    if (fInput.mpiComm_.isMainRank())
     {
-        GMX_LOG(logger_.warning).appendTextFormatted("%.4f", fInput.t_);
+        if (fInput.step_ == 0)
+        {
+            GMX_LOG(logger_.warning).appendText("==== RAMD ==== Initial COM calculation");
+        }
+        // if (fInput.step_ % parameters_.eval_freq_ == 0)
+        // {
+        //     GMX_LOG(fOutput->ramdFile).appendTextFormatted("%.4f", fInput.t_);
+        // }
     }
 
-    // if (step == 0)
+    // if (fInput.step_ == 0)
     // {
+    //     GMX_LOG(logger_.warning).appendText("==== RAMD ==== Initial COM calculation");
     //     // Store COM positions for first evaluation
-    //     for (int g = 0; g < params.ngroup; ++g)
+    //     for (int g = 0; g < parameters_.ngroups_; ++g)
     //     {
     //         com_rec_prev[g] = pull->group[g * 2 + 1].x;
     //         com_lig_prev[g] = pull->group[g * 2 + 2].x;
 
-    //         if (mpiComm.isMainRank() and out)
+    //         if (fInput.mpiComm_.isMainRank())
     //         {
     //             DVec curr_dist_vect;
     //             pbc_dx_d(&pbc, com_lig_prev[g], com_rec_prev[g], curr_dist_vect);
     //             auto dist = std::sqrt(curr_dist_vect.norm2());
     //             fprintf(out, "\t%g", dist);
+    //             GMX_LOG(logger_.warning).appendTextFormat("\t==== RAMD ==== Initial COM calculation");
     //         }
     //     }
     // }

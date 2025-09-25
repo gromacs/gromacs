@@ -32,6 +32,11 @@ public:
                     const gmx_output_env_t* /*oenv*/) override;
     //! Finalizes output from a simulation run.
     void finishOutput() override;
+
+private:
+
+    FILE* ramdFile;
+    
 };
 
 } // namespace gmx

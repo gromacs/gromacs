@@ -45,43 +45,17 @@ namespace gmx
 namespace
 {
 
-class RAMDTest : public ::testing::Test
+TEST(RAMDTest, ForceProviderLackingInputThrows)
 {
-public:
-    void addMdpOptionRAMDActive()
-    {
-        mdpValueBuilder_.rootObject().addValue("ramd-active", std::string("yes"));
-    }
+    KeyValueTreeBuilder mdpValueBuilder;
+    mdpValueBuilder.rootObject().addValue("ramd-active", std::string("yes"));
+    KeyValueTreeObject mdpOptionsTree = mdpValueBuilder.build();
 
-    void makeRAMDModuleWithSetOptions()
-    {
-        KeyValueTreeObject mdpOptionsTree = mdpValueBuilder_.build();
+    std::unique_ptr<IMDModule> ramdModule = RAMDModuleInfo::create();
+    test::fillOptionsFromMdpValues(mdpOptionsTree, ramdModule->mdpOptionProvider());
 
-        ramdModule_ = RAMDModuleInfo::create();
-
-        test::fillOptionsFromMdpValues(mdpOptionsTree, ramdModule_->mdpOptionProvider());
-    }
-
-    void initializeForceProviders()
-    {
-        ramdModule_->initForceProviders(&ramdForces_);
-    }
-
-protected:
-    KeyValueTreeBuilder        mdpValueBuilder_;
-    ForceProviders             ramdForces_;
-    std::unique_ptr<IMDModule> ramdModule_;
-};
-
-TEST_F(RAMDTest, ForceProviderLackingInputThrows)
-{
-    // Prepare MDP inputs
-    addMdpOptionRAMDActive();
-
-    makeRAMDModuleWithSetOptions();
-
-    // Build the force provider, once all input data is gathered
-    EXPECT_ANY_THROW(initializeForceProviders());
+    ForceProviders ramdForces;
+    EXPECT_ANY_THROW(ramdModule->initForceProviders(&ramdForces));
 }
 
 } // namespace

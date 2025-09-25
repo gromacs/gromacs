@@ -73,7 +73,8 @@
         "semaphore": "cpp",
         "span": "cpp",
         "stop_token": "cpp",
-        "thread": "cpp"
+        "thread": "cpp",
+        "__config": "cpp"
     },
     "cSpell.words": [
         "Bernd",
