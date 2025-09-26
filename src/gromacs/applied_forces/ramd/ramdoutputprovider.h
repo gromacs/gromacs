@@ -25,17 +25,17 @@ class RAMDOutputProvider final : public IMDOutputProvider
 {
 public:
     //! Initialize output
-    void initOutput(FILE* /*fplog*/,
-                    int /*nfile*/,
-                    const t_filenm /*fnm*/[],
-                    bool /*bAppendFiles*/,
-                    const gmx_output_env_t* /*oenv*/) override;
+    void initOutput(FILE* fplog,
+                    int nfile,
+                    const t_filenm fnm[],
+                    bool bAppendFiles,
+                    const gmx_output_env_t* oenv) override;
     //! Finalizes output from a simulation run.
     void finishOutput() override;
 
 private:
 
-    FILE* ramdFile;
+    FILE* fpRAMD_;
     
 };
 

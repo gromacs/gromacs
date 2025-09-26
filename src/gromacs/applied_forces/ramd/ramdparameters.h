@@ -42,7 +42,7 @@ struct RAMDGroup
  */
 struct RAMDParameters
 {
-    //! Indicate if density fitting is active
+    //! Indicate if RAMD is active
     bool active_ = false;
 
     //! Initialization number for pseudo random number generator
