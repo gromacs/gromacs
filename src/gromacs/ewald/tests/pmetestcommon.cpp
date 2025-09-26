@@ -348,7 +348,7 @@ void pmePerformSplineAndSpread(gmx_pme_t* pme,
             spread_on_grid(pme, atc, &grids, computeSplines, spreadCharges, computeSplinesForZeroCharges);
             if (spreadCharges && !pme->bUseThreads)
             {
-                wrap_periodic_pmegrid(pme, grids.pmeGrids.grid.grid);
+                wrap_periodic_pmegrid(pme, grids.pmeGrids.grid.grid());
                 copy_pmegrid_to_fftgrid(pme, &grids);
             }
             break;
@@ -469,7 +469,7 @@ void pmePerformGather(gmx_pme_t* pme, CodePath mode, ForcesVector& forces)
     const size_t    threadIndex = 0;
     const size_t    gridIndex   = 0;
     PmeAndFftGrids& grids       = pme->gridsCoulomb[gridIndex];
-    ArrayRef<real>  pmegrid     = grids.pmeGrids.grid.grid;
+    ArrayRef<real>  pmegrid     = grids.pmeGrids.grid.grid();
 
     switch (mode)
     {

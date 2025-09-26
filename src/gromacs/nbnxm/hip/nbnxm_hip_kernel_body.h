@@ -673,7 +673,7 @@ __launch_bounds__(c_clSizeSq<pairlistType>* nthreadZ, minBlocksPerMp) __global__
         constexpr bool doExclusionForces = (props.elecEwald || props.elecRF || props.vdwEwald
                                             || (props.elecCutoff && doCalcEnergies));
 
-        std::array<AmdPackedFloat3, c_clusterPerSuperCluster> fCiBuffer; // i force buffer
+        AmdPackedFloat3 fCiBuffer[c_clusterPerSuperCluster]; // i force buffer
         for (int i = 0; i < c_clusterPerSuperCluster; i++)
         {
             fCiBuffer[i] = { 0.0F, 0.0F, 0.0F };
@@ -1063,12 +1063,12 @@ __launch_bounds__(c_clSizeSq<pairlistType>* nthreadZ, minBlocksPerMp) __global__
         if (doCalcShift && nbSci.shift != c_centralShiftIndex)
         {
             reduceForceI<true, pairlistType>(
-                    fCiBuffer.data(), gm_f, tidxi, tidxj, tidx, sci, gm_fShift, nbSci.shift);
+                    fCiBuffer, gm_f, tidxi, tidxj, tidx, sci, gm_fShift, nbSci.shift);
         }
         else
         {
             reduceForceI<false, pairlistType>(
-                    fCiBuffer.data(), gm_f, tidxi, tidxj, tidx, sci, gm_fShift, nbSci.shift);
+                    fCiBuffer, gm_f, tidxi, tidxj, tidx, sci, gm_fShift, nbSci.shift);
         }
 
         if constexpr (doCalcEnergies)

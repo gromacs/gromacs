@@ -81,12 +81,23 @@
 /* The minimum number of integration steps per decay time tau required
  * to stay reasonable close to the target value.
  */
-const int c_minimumStepsPerTau = 5;
+const int c_minimumStepsPerTauFirstOrderTemperatureCoupling = 5;
+
+/* The minimum number of integration steps per period
+ * for reasonably accurate integration of the C-rescale barostat.
+ */
+const int c_minimumStepsPerTauFirstOrderPressureCoupling = 25;
 
 /* The minimum number of integration steps per period
  * for reasonably accurate integration of second order coupling algorithms.
  */
-const int c_minimumStepsPerPeriod = 20;
+const int c_minimumStepsPerPeriodNoseHoover = 20;
+
+/* The minimum number of integration steps per period
+ * for reasonably accurate integration of the Parrinello-Rahman barostat.
+ * The PR-barostat needs extremely many steps per period to avoid resonances.
+ */
+const int c_minimumStepsPerPeriodParrinelloRahman = 200;
 
 /* Default values for T- and P- coupling intervals, used when the are no other
  * restrictions.
@@ -117,9 +128,9 @@ int tcouple_min_integration_steps(TemperatureCoupling etc)
         case TemperatureCoupling::Yes:
         case TemperatureCoupling::VRescale:
             /* V-rescale supports instantaneous rescaling */
-            n = c_minimumStepsPerTau;
+            n = c_minimumStepsPerTauFirstOrderTemperatureCoupling;
             break;
-        case TemperatureCoupling::NoseHoover: n = c_minimumStepsPerPeriod; break;
+        case TemperatureCoupling::NoseHoover: n = c_minimumStepsPerPeriodNoseHoover; break;
         case TemperatureCoupling::Andersen:
         case TemperatureCoupling::AndersenMassive: n = 1; break;
         default: gmx_incons("Unknown etc value");
@@ -179,9 +190,9 @@ int pcouple_min_integration_steps(PressureCoupling epc)
         case PressureCoupling::No: n = 0; break;
         case PressureCoupling::Berendsen:
         case PressureCoupling::CRescale:
-        case PressureCoupling::Isotropic: n = c_minimumStepsPerTau; break;
+        case PressureCoupling::Isotropic: n = c_minimumStepsPerTauFirstOrderPressureCoupling; break;
         case PressureCoupling::ParrinelloRahman:
-        case PressureCoupling::Mttk: n = c_minimumStepsPerPeriod; break;
+        case PressureCoupling::Mttk: n = c_minimumStepsPerPeriodParrinelloRahman; break;
         default: gmx_incons("Unknown epc value");
     }
 
