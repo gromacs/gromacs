@@ -23,3 +23,5 @@ schedule static max chunk size is computed prior to pragma omp parallel.
 
 Disabled compilation of muparser test code, because it produces
 warnings with MSVC.
+
+Directed CMake to only look for C++ OpenMP flags.

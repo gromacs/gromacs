@@ -80,6 +80,14 @@ is now compatible with XMGrace.
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix CUDA build on Windows
+"""""""""""""""""""""""""
+
+Building |Gromacs| with CUDA on Windows would sometimes fail at CMake
+stage with ``Could NOT find OpenMP_CUDA`` error. Added a workaround for that.
+
+:issue:`5431`
+
 Fixes to the Colvars library
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -105,7 +113,6 @@ The following is a list of bugfix pull requests in the`Colvars repository
 
 * Fix indentation of 'Init CVC' message in standard output (`Colvars PR 755
   <https://github.com/Colvars/colvars/pull/755>`_)
-
 
 Miscellaneous
 ^^^^^^^^^^^^^

@@ -25,7 +25,7 @@ option(ENABLE_WIDE_CHAR "Enable wide character support" OFF)
 option(BUILD_SHARED_LIBS "Build shared/static libs" ON)
 
 if(ENABLE_OPENMP)
-    find_package(OpenMP REQUIRED)
+    find_package(OpenMP REQUIRED COMPONENTS CXX)
 endif()
 
 # Credit: https://stackoverflow.com/questions/2368811/how-to-set-warning-level-in-cmake/3818084
