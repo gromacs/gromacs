@@ -182,7 +182,7 @@ void gpuHalo(gmx_domdec_t* dd, matrix box, HostVector<RVec>* h_x, int numAtomsTo
     copyFromDeviceBuffer(
             h_x->data(), &d_x, 0, numAtomsTotal, deviceStream, GpuApiCallBehavior::Sync, nullptr);
 
-    freeDeviceBuffer(d_x);
+    freeDeviceBuffer(&d_x);
 #else
     GMX_UNUSED_VALUE(dd);
     GMX_UNUSED_VALUE(box);

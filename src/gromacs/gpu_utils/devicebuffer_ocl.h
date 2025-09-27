@@ -86,8 +86,8 @@ void allocateDeviceBuffer(DeviceBuffer<ValueType>* buffer, size_t numValues, con
  *
  * \param[in] buffer  Pointer to the buffer to free.
  */
-template<typename DeviceBuffer>
-void freeDeviceBuffer(DeviceBuffer* buffer)
+template<typename ValueType>
+void freeDeviceBuffer(DeviceBuffer<ValueType>* buffer)
 {
     GMX_ASSERT(buffer, "needs a buffer pointer");
     if (*buffer)
