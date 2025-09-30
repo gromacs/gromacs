@@ -12,16 +12,31 @@
 
 #include "gromacs/mdtypes/imdoutputprovider.h"
 
+struct gmx_output_env_t;
+struct t_filenm;
+
 namespace gmx
 {
 
 /*! \internal
  * \brief Handle file output for density guided simulations.
  */
-class RAMDOutputProvider : public IMDOutputProvider
+class RAMDOutputProvider final : public IMDOutputProvider
 {
-protected:
+public:
+    //! Initialize output
+    void initOutput(FILE* fplog,
+                    int nfile,
+                    const t_filenm fnm[],
+                    bool bAppendFiles,
+                    const gmx_output_env_t* oenv) override;
+    //! Finalizes output from a simulation run.
+    void finishOutput() override;
+
+private:
+
     FILE* fpRAMD_;
+    
 };
 
 } // namespace gmx

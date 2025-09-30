@@ -14,9 +14,6 @@
 #include "gromacs/mdtypes/imdmodule.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/commandline/filenm.h"
-#include "gromacs/fileio/gmxfio.h"
-#include "gromacs/fileio/xvgr.h"
 
 namespace gmx
 {
@@ -86,7 +83,7 @@ private:
 /*! \internal
  * \brief RAMD module
  */
-class RAMD final : public IMDModule, public RAMDOutputProvider
+class RAMD final : public IMDModule
 {
 public:
     //! \brief Construct the RAMD module.
@@ -96,7 +93,7 @@ public:
     IMdpOptionProvider* mdpOptionProvider() override { return &ramdOptions_; }
 
     //! Returns an interface for handling output files during simulation.
-    IMDOutputProvider* outputProvider() override { return this; }
+    IMDOutputProvider* outputProvider() override { return &ramdOutputProvider_; }
 
     //! Initializes force providers from this module.
     void initForceProviders(ForceProviders* forceProviders) override
@@ -112,10 +109,6 @@ public:
             forceProviders->addForceProvider(forceProvider_.get(), "RAMD");
         }
     }
-
-    // From IMDOutputProvider
-    void initOutput(FILE* fplog, int nfile, const t_filenm fnm[], bool bAppendFiles, const gmx_output_env_t* oenv) override;
-    void finishOutput() override;
 
     //! Subscribe to pre processing notifications
     void subscribeToPreProcessingNotifications(MDModulesNotifiers* notifiers) override
@@ -156,7 +149,7 @@ public:
 
 private:
     //! The output provider
-    // RAMDOutputProvider ramdOutputProvider_;
+    RAMDOutputProvider ramdOutputProvider_;
 
     //! The options provided for RAMD
     RAMDOptions ramdOptions_;
@@ -171,38 +164,6 @@ private:
 
     GMX_DISALLOW_COPY_AND_ASSIGN(RAMD);
 };
-
-void RAMD::initOutput(FILE* /*fplog*/,
-                      int nfile,
-                      const t_filenm fnm[],
-                      bool bAppendFiles,
-                      const gmx_output_env_t* oenv)
-{
-    if (opt2bSet("-ramd", nfile, fnm))
-    {
-        std::string filename = opt2fn("-ramd", nfile, fnm);
-        if (bAppendFiles)
-        {
-            fpRAMD_ = gmx_fio_fopen(filename.c_str(), "a+");
-        }
-        else
-        {
-            fpRAMD_ = xvgropen(filename.c_str(),
-                               "Test RAMD Ligand-receptor COM distance",
-                               "Time (ps)",
-                               "Distance (nm)",
-                               oenv);
-            std::vector<std::string> setnames;
-            for (int g = 1; g <= this->ramdOptions_.parameters().ngroups_; ++g)
-            {
-                setnames.push_back(std::to_string(g));
-            }
-            xvgrLegend(fpRAMD_, setnames, oenv);
-        }
-    }
-}
-
-void RAMD::finishOutput() {}
 
 } // namespace 
 
