@@ -15,10 +15,12 @@ namespace gmx
 
 RAMDForceProvider::RAMDForceProvider(const RAMDParameters& parameters,
                                      PbcType               pbcType,
-                                     const MDLogger&       logger) :
+                                     const MDLogger&       logger,
+                                     RAMDOutputProvider&   ramdOutputProvider) :
     parameters_(parameters),
     pbcType_(pbcType),
-    logger_(logger)
+    logger_(logger),
+    ramdOutputProvider_(ramdOutputProvider)
 {}
 
 RAMDForceProvider::~RAMDForceProvider()
@@ -36,10 +38,10 @@ void RAMDForceProvider::calculateForces(const ForceProviderInput& fInput,
         {
             GMX_LOG(logger_.warning).appendText("==== RAMD ==== Initial COM calculation");
         }
-        // if (fInput.step_ % parameters_.eval_freq_ == 0)
-        // {
-        //     GMX_LOG(fOutput->ramdFile).appendTextFormatted("%.4f", fInput.t_);
-        // }
+        if (fInput.step_ % parameters_.eval_freq_ == 0)
+        {
+            ramdOutputProvider_.addTimePoint(fInput.t_);
+        }
     }
 
     // if (fInput.step_ == 0)

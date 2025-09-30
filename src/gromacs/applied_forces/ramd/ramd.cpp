@@ -104,7 +104,8 @@ public:
             forceProvider_ = std::make_unique<RAMDForceProvider>(
                 parameters,
                 ramdSimulationParameters_.periodicBoundaryConditionType(),
-                ramdSimulationParameters_.logger()
+                ramdSimulationParameters_.logger(),
+                ramdOutputProvider_
             );
             forceProviders->addForceProvider(forceProvider_.get(), "RAMD");
         }

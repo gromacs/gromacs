@@ -48,6 +48,14 @@ void RAMDOutputProvider::initOutput(FILE* fplog,
     }
 }
 
+void RAMDOutputProvider::addTimePoint(double time)
+{
+    if (fpRAMD_)
+    {
+        fprintf(fpRAMD_, "%.4f", time);
+    }
+}
+
 void RAMDOutputProvider::finishOutput() {}
 
 } // namespace gmx

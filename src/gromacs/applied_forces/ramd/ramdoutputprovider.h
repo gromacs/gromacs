@@ -30,6 +30,10 @@ public:
                     const t_filenm fnm[],
                     bool bAppendFiles,
                     const gmx_output_env_t* oenv) override;
+
+    //! Add a time point to the RAMD output file
+    void addTimePoint(double time);
+
     //! Finalizes output from a simulation run.
     void finishOutput() override;
 

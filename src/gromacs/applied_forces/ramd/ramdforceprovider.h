@@ -17,6 +17,7 @@
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/logger.h"
 
+#include "ramdoutputprovider.h"
 #include "ramdparameters.h"
 
 namespace gmx
@@ -30,7 +31,8 @@ class RAMDForceProvider final : public IForceProvider
 public:
     RAMDForceProvider(const RAMDParameters& parameters,
                       PbcType               pbcType,
-                      const MDLogger&       logger);
+                      const MDLogger&       logger,
+                      RAMDOutputProvider&   ramdOutputProvider);
 
     //! Destruct force provider for RAMD
     ~RAMDForceProvider();
@@ -46,6 +48,7 @@ private:
     const RAMDParameters& parameters_;
     const PbcType         pbcType_;
     const MDLogger&       logger_;
+    RAMDOutputProvider&   ramdOutputProvider_;
 
 };
 
