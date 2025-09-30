@@ -356,14 +356,14 @@ bool simdCheck(const CpuInfo& cpuInfo, gmx::SimdType wanted, FILE* log, bool war
     {
         logMsg  = wrapper.wrapToString(formatString(
                 "Longest SVE length supported by all nodes in run: %d\n"
-                 "SVE length selected at compile time:               %ld\n"
+                 "SVE length selected at compile time:               %lu\n"
                  "This program was compiled for different hardware than you are running on, "
                  "which will lead to incorrect behavior.\n"
                  "Aborting",
                 GMX_SIMD_ARM_SVE_LENGTH_VALUE,
                 svcntb() * 8));
         warnMsg = wrapper.wrapToString(
-                formatString("Compiled SVE Length is %d, but CPU requires %ld (see log).",
+                formatString("Compiled SVE Length is %d, but CPU requires %lu (see log).",
                              GMX_SIMD_ARM_SVE_LENGTH_VALUE,
                              svcntb() * 8));
 #endif
