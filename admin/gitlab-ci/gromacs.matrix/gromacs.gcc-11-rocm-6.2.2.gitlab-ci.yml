@@ -6,7 +6,7 @@
 #   Scope: configure, build
 # Test implementation choices (free to change as needed):
 #   OS: Ubuntu 24.04
-#   Build type: RelWithAssert
+#   Build type: Release (to avoid code gen issues)
 #   Compiler: gcc-11
 #   MPI: threadMPI (AMD build)
 #   SIMD: AVX2_256
@@ -22,7 +22,7 @@ gromacs:gcc-11-hip-622:configure:
   variables:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX2_256"
-    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
+    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=Release"
     CMAKE_EXTRA_OPTIONS: "-DGMX_HIP_TARGET_ARCH=gfx1034 -DGMX_USE_PLUMED=ON"
     COMPILER_MAJOR_VERSION: 11
 
@@ -93,7 +93,7 @@ gromacs:gcc-11-hip-622-nightly:configure:
   variables:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX2_128"
-    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
+    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=Release"
     CMAKE_EXTRA_OPTIONS: "-DGMX_HIP_TARGET_ARCH=gfx906 -DGMX_GPU_FFT_LIBRARY=ROCFFT"
     COMPILER_MAJOR_VERSION: 11
 

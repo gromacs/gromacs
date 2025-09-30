@@ -6,7 +6,7 @@
 #   Scope: configure, build
 # Test implementation choices (free to change as needed):
 #   OS: Ubuntu 22.04
-#   Build type: RelWithAssert
+#   Build type: Release (to avoid code gen issues)
 #   Compiler: amdclang
 #   MPI: threadMPI (AMD build)
 #   SIMD: AVX2_256
@@ -22,7 +22,7 @@ gromacs:amdclang-hip-571:configure:
   variables:
     CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX2_256"
-    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
+    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=Release"
     CMAKE_EXTRA_OPTIONS: "-DGMX_HIP_TARGET_ARCH=gfx1034"
     COMPILER_MAJOR_VERSION: 15
 
