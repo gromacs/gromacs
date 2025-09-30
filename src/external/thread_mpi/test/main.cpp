@@ -173,6 +173,7 @@ static void tester(const void* arg)
             {
                 printf("ERROR: MPI_Send error");
                 fflush(0);
+                exit(1);
             }
         }
         else
@@ -191,12 +192,14 @@ static void tester(const void* arg)
                 {
                     printf("ERROR: MPI_Recv error");
                     fflush(0);
+                    exit(1);
                 }
                 if (status.MPI_ERROR != MPI_SUCCESS)
                 {
                     printf("ERROR: got receive status error on rank %d",
                            myrank);
                     fflush(0);
+                    exit(1);
                 }
                 printf("Received: '%s'\n", message);
             }
@@ -223,11 +226,13 @@ static void tester(const void* arg)
         {
             printf("ERROR: MPI_Sendrecv error");
             fflush(0);
+            exit(1);
         }
         if (status.MPI_ERROR != MPI_SUCCESS)
         {
             printf("ERROR: got receive status error on rank %d", myrank);
             fflush(0);
+            exit(1);
         }
         if (myrank == 0)
         {
@@ -361,6 +366,7 @@ static void tester(const void* arg)
                 MPI_SUCCESS)
             {
                 printf("MPI_Gather returned error\n"); fflush(0);
+                exit(1);
             }
 
             if (myrank == k)
@@ -402,6 +408,7 @@ static void tester(const void* arg)
             MPI_SUCCESS)
         {
             printf("MPI_Scatter returned error\n"); fflush(0);
+            exit(1);
         }
 
         /* now receive messages back */
@@ -453,6 +460,7 @@ static void tester(const void* arg)
             MPI_SUCCESS)
         {
             printf("MPI_Alltoall returned error\n"); fflush(0);
+            exit(1);
         }
 
         /* now receive messages back */
@@ -563,7 +571,7 @@ int main(int argc, char *argv[])
     {
         fprintf(stderr, "thread_mpi test program.\n");
         fprintf(stderr, "Usage: mpithreads -nt <nthreads>\n");
-        exit(0);
+        exit(1);
     }
     else
     {

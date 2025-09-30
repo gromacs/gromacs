@@ -142,23 +142,23 @@ void send_recv_data_tester(void)
             if (MPI_Isend(buf, MSG_SIZE, MPI_INT, left, testnr,
                           MPI_COMM_WORLD, &(reqs[send_left])) != MPI_SUCCESS)
             {
-                fprintf(stderr, "ERROR in MPI_send"); exit(0);
+                fprintf(stderr, "ERROR in MPI_send"); exit(1);
             }
             if (MPI_Isend(buf, MSG_SIZE, MPI_INT, right, testnr,
                           MPI_COMM_WORLD, &(reqs[send_right])) != MPI_SUCCESS)
             {
-                fprintf(stderr, "ERROR in MPI_send"); exit(0);
+                fprintf(stderr, "ERROR in MPI_send"); exit(1);
             }
             /* and receive from left and right */
             if (MPI_Irecv(buf_left, MSG_SIZE, MPI_INT, left, testnr,
                           MPI_COMM_WORLD, &(reqs[recv_left])) != MPI_SUCCESS)
             {
-                fprintf(stderr, "ERROR in MPI_send"); exit(0);
+                fprintf(stderr, "ERROR in MPI_send"); exit(1);
             }
             if (MPI_Irecv(buf_right, MSG_SIZE, MPI_INT, right, testnr,
                           MPI_COMM_WORLD, &(reqs[recv_right])) != MPI_SUCCESS)
             {
-                fprintf(stderr, "ERROR in MPI_send"); exit(0);
+                fprintf(stderr, "ERROR in MPI_send"); exit(1);
             }
 
             unique_array(left, N, testnr, MSG_SIZE, expect_left);

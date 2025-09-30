@@ -80,7 +80,7 @@ static void tester(const void* arg)
         {
             printf("MPI not initialized:\n");
             printf("was '-np threadnr' specified on cmd line?\n");
-            /*exit(1);*/
+            exit(1);
         }
     }
 
@@ -123,11 +123,13 @@ static void tester(const void* arg)
         {
             printf("ERROR: MPI_Sendrecv error");
             fflush(0);
+            exit(1);
         }
         if (status.MPI_ERROR != MPI_SUCCESS)
         {
             printf("ERROR: got receive status error on rank %d", myrank);
             fflush(0);
+            exit(1);
         }
         if (myrank == 0)
         {
@@ -191,6 +193,7 @@ static void tester(const void* arg)
                 MPI_SUCCESS)
             {
                 printf("MPI_Gather returned error\n"); fflush(0);
+                exit(1);
             }
 
             if (myrank == k)
@@ -221,7 +224,7 @@ int main(int argc, char *argv[])
     {
         fprintf(stderr, "alloc_check test program.\n");
         fprintf(stderr, "Usage: alloc_check -nt <nthreads>\n");
-        exit(0);
+        exit(1);
     }
     else
     {
