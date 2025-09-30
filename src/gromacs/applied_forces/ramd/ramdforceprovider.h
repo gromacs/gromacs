@@ -19,6 +19,7 @@
 
 #include "ramdoutputprovider.h"
 #include "ramdparameters.h"
+#include "randomsphericaldirectiongenerator.h"
 
 namespace gmx
 {
@@ -49,6 +50,18 @@ private:
     const PbcType         pbcType_;
     const MDLogger&       logger_;
     RAMDOutputProvider&   ramdOutputProvider_;
+
+        /// Random pull direction
+    RandomSphericalDirectionGenerator random_spherical_direction_generator;
+
+    /// Current pull direction
+    std::vector<DVec> direction;
+
+    /// COM of receptor of last RAMD evaluation step
+    std::vector<DVec> com_rec_prev;
+
+    /// COM of ligand of last RAMD evaluation step
+    std::vector<DVec> com_lig_prev;
 
 };
 

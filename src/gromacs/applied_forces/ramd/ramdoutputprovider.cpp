@@ -56,6 +56,14 @@ void RAMDOutputProvider::addTimePoint(double time)
     }
 }
 
+void RAMDOutputProvider::addCOMDistance(double distance)
+{
+    if (fpRAMD_)
+    {
+        fprintf(fpRAMD_, "\t%g", distance);
+    }
+}
+
 void RAMDOutputProvider::finishOutput() {}
 
 } // namespace gmx

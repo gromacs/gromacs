@@ -20,7 +20,11 @@ RAMDForceProvider::RAMDForceProvider(const RAMDParameters& parameters,
     parameters_(parameters),
     pbcType_(pbcType),
     logger_(logger),
-    ramdOutputProvider_(ramdOutputProvider)
+    ramdOutputProvider_(ramdOutputProvider),    
+    random_spherical_direction_generator(parameters.seed_, parameters.old_angle_dist_),
+    direction(parameters.ngroups_),
+    com_rec_prev(parameters.ngroups_),
+    com_lig_prev(parameters.ngroups_)
 {}
 
 RAMDForceProvider::~RAMDForceProvider()
@@ -44,25 +48,25 @@ void RAMDForceProvider::calculateForces(const ForceProviderInput& fInput,
         }
     }
 
-    // if (fInput.step_ == 0)
-    // {
-    //     GMX_LOG(logger_.warning).appendText("==== RAMD ==== Initial COM calculation");
-    //     // Store COM positions for first evaluation
-    //     for (int g = 0; g < parameters_.ngroups_; ++g)
-    //     {
-    //         com_rec_prev[g] = pull->group[g * 2 + 1].x;
-    //         com_lig_prev[g] = pull->group[g * 2 + 2].x;
+    // Store COM positions for first evaluation
+    if (fInput.step_ == 0)
+    {
+        for (int g = 0; g < parameters_.ngroups_; ++g)
+        {
+            // com_rec_prev[g] = pull->group[g * 2 + 1].x;
+            // com_lig_prev[g] = pull->group[g * 2 + 2].x;
+            com_rec_prev[g] = DVec(0.0, 0.0, 0.0);
+            com_lig_prev[g] = DVec(0.0, 0.0, 0.0);
 
-    //         if (fInput.mpiComm_.isMainRank())
-    //         {
-    //             DVec curr_dist_vect;
-    //             pbc_dx_d(&pbc, com_lig_prev[g], com_rec_prev[g], curr_dist_vect);
-    //             auto dist = std::sqrt(curr_dist_vect.norm2());
-    //             fprintf(out, "\t%g", dist);
-    //             GMX_LOG(logger_.warning).appendTextFormat("\t==== RAMD ==== Initial COM calculation");
-    //         }
-    //     }
-    // }
+            if (fInput.mpiComm_.isMainRank())
+            {
+                DVec curr_dist_vect;
+                pbc_dx_d(&pbc, com_lig_prev[g], com_rec_prev[g], curr_dist_vect);
+                auto dist = std::sqrt(curr_dist_vect.norm2());
+                ramdOutputProvider_.addCOMDistance(dist);
+            }
+        }
+    }
     // else if (step % params.eval_freq == 0)
     // {
     //     if (mpiComm.isMainRank() and debug)

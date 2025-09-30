@@ -34,6 +34,9 @@ public:
     //! Add a time point to the RAMD output file
     void addTimePoint(double time);
 
+    //! Add a COM distance to the RAMD output file
+    void addCOMDistance(double distance);
+
     //! Finalizes output from a simulation run.
     void finishOutput() override;
 
