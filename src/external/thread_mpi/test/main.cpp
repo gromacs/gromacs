@@ -298,9 +298,16 @@ static void tester(const void* arg)
             memcpy(buf[send_left], buf[recv_right], MSG_SIZE);
         }
     }
+
     MPI_Barrier(MPI_COMM_WORLD);
 
-    send_recv_data_tester();
+    // Run with MPI_Waitall
+    send_recv_data_tester(true);
+
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    // Run with MPI_Waitany
+    send_recv_data_tester(false);
 
     MPI_Barrier(MPI_COMM_WORLD);
 #endif

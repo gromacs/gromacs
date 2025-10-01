@@ -233,6 +233,7 @@ typedef tMPI_Op MPI_Op;
 #define MPI_Test                    tMPI_Test
 #define MPI_Wait                    tMPI_Wait
 #define MPI_Waitall                 tMPI_Waitall
+#define MPI_Waitany                 tMPI_Waitany
 
 #define MPI_Barrier                 tMPI_Barrier
 

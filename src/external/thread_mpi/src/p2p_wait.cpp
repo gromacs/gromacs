@@ -171,10 +171,12 @@ int tMPI_Test(tMPI_Request *request, int *flag, tMPI_Status *status)
    checking for their completion. Used in tMPI_{Test|Wait}{all|any|some}
 
    wait = whether to wait for incoming events
-   blocking = whether to block until all reqs are completed */
+   blocking_all = whether to block until all reqs are completed
+   blocking_any = whether to block until the first completed req
+*/
 static void tMPI_Test_multi_req(struct tmpi_thread *cur,
                                 int count, tMPI_Request *array_of_requests,
-                                tmpi_bool wait, tmpi_bool blocking)
+                                tmpi_bool wait, tmpi_bool blocking_all, tmpi_bool blocking_any)
 {
     int               i;
     struct tmpi_req_ *first = NULL, *last = NULL;
@@ -210,8 +212,13 @@ static void tMPI_Test_multi_req(struct tmpi_thread *cur,
     /* and wait for our request */
     do
     {
-        if (tMPI_Test_multi(cur, first, NULL))
+        tmpi_bool any_done = FALSE;
+        tmpi_bool all_done = tMPI_Test_multi(cur, first, &any_done);
+        if (all_done)
         {
+            break;
+        }
+        if (!blocking_all && any_done) {
             break;
         }
         if (wait)
@@ -219,7 +226,7 @@ static void tMPI_Test_multi_req(struct tmpi_thread *cur,
             tMPI_Wait_process_incoming(cur);
         }
     }
-    while (blocking && wait);
+    while ((blocking_any || blocking_all) && wait);
 }
 
 
@@ -238,7 +245,7 @@ int tMPI_Waitall(int count, tMPI_Request *array_of_requests,
     tMPI_Trace_print("tMPI_Waitall(%d, %p, %p)", count, array_of_requests,
                      array_of_statuses);
 #endif
-    tMPI_Test_multi_req(cur, count, array_of_requests, TRUE, TRUE);
+    tMPI_Test_multi_req(cur, count, array_of_requests, TRUE, TRUE, TRUE);
 
     /* deallocate the now finished requests */
     for (i = 0; i < count; i++)
@@ -278,7 +285,7 @@ int tMPI_Testall(int count, tMPI_Request *array_of_requests,
     tMPI_Trace_print("tMPI_Testall(%d, %p, %p, %p)", count, array_of_requests,
                      flag, array_of_statuses);
 #endif
-    tMPI_Test_multi_req(cur, count, array_of_requests, FALSE, TRUE);
+    tMPI_Test_multi_req(cur, count, array_of_requests, FALSE, TRUE, TRUE);
 
     if (flag)
     {
@@ -333,9 +340,14 @@ int tMPI_Waitany(int count, tMPI_Request *array_of_requests, int *index,
                      index, status);
 #endif
 
-    tMPI_Test_multi_req(cur, count, array_of_requests, TRUE, FALSE);
+    if (index)
+    {
+        *index = TMPI_UNDEFINED; // To be used when we have no active requests
+    }
 
-    /* deallocate the possibly finished requests */
+    tMPI_Test_multi_req(cur, count, array_of_requests, TRUE, FALSE, TRUE);
+
+    /* deallocate the finished request */
     for (i = 0; i < count; i++)
     {
         if (array_of_requests[i] && array_of_requests[i]->finished)
@@ -379,7 +391,7 @@ int tMPI_Testany(int count, tMPI_Request *array_of_requests, int *index,
                      array_of_requests, flag, index, status);
 #endif
 
-    tMPI_Test_multi_req(cur, count, array_of_requests, FALSE, FALSE);
+    tMPI_Test_multi_req(cur, count, array_of_requests, FALSE, FALSE, TRUE);
 
     if (flag)
     {
@@ -389,7 +401,7 @@ int tMPI_Testany(int count, tMPI_Request *array_of_requests, int *index,
     {
         *index = TMPI_UNDEFINED;
     }
-    /* deallocate the possibly finished requests */
+    /* deallocate the finished request */
     for (i = 0; i < count; i++)
     {
         if (array_of_requests[i] && array_of_requests[i]->finished)
@@ -438,7 +450,7 @@ int tMPI_Waitsome(int incount, tMPI_Request *array_of_requests,
                      array_of_requests, outcount, array_of_indices,
                      array_of_statuses);
 #endif
-    tMPI_Test_multi_req(cur, incount, array_of_requests, TRUE, FALSE);
+    tMPI_Test_multi_req(cur, incount, array_of_requests, TRUE, FALSE, TRUE);
 
     (*outcount) = 0;
     /* deallocate the possibly finished requests */
@@ -483,7 +495,7 @@ int tMPI_Testsome(int incount, tMPI_Request *array_of_requests,
                      array_of_requests, outcount, array_of_indices,
                      array_of_statuses);
 #endif
-    tMPI_Test_multi_req(cur, incount, array_of_requests, FALSE, TRUE);
+    tMPI_Test_multi_req(cur, incount, array_of_requests, FALSE, TRUE, TRUE);
 
     (*outcount) = 0;
     /* deallocate the possibly finished requests */

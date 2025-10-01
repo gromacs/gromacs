@@ -105,7 +105,7 @@ void print_match_err(int myrank, int *buf_recv, int *buf_expt, int size)
     abort();
 }
 
-void send_recv_data_tester(void)
+void send_recv_data_tester(bool waitall)
 {
     int         myrank, N;
     int         i, j;
@@ -164,24 +164,64 @@ void send_recv_data_tester(void)
             unique_array(left, N, testnr, MSG_SIZE, expect_left);
             unique_array(right, N, testnr, MSG_SIZE, expect_right);
 
-            MPI_Waitall(4, reqs, 0);
-            /*
-               MPI_Wait(&reqs[0], 0);
-               MPI_Wait(&reqs[1], 0);
-               MPI_Wait(&reqs[2], 0);
-               MPI_Wait(&reqs[3], 0);*/
-
-            if (!check_arrays(expect_left, buf_left, MSG_SIZE))
+            if (waitall)
             {
-                print_match_err(myrank, buf_left, expect_left, MSG_SIZE);
-                /*fprintf(stderr, "%d: Left array did not match!\n",myrank);
-                   exit(0);*/
+                MPI_Waitall(4, reqs, 0);
+                if (!check_arrays(expect_left, buf_left, MSG_SIZE))
+                {
+                    print_match_err(myrank, buf_left, expect_left, MSG_SIZE);
+                    /*fprintf(stderr, "%d: Left array did not match!\n",myrank);
+                       exit(0);*/
+                }
+                if (!check_arrays(expect_right, buf_right, MSG_SIZE))
+                {
+                    print_match_err(myrank, buf_right, expect_right, MSG_SIZE);
+                    /*fprintf(stderr, "%d: Right array did not match!\n",myrank);
+                       exit(0);*/
+                }
             }
-            if (!check_arrays(expect_right, buf_right, MSG_SIZE))
+            else
             {
-                print_match_err(myrank, buf_right, expect_right, MSG_SIZE);
-                /*fprintf(stderr, "%d: Right array did not match!\n",myrank);
-                   exit(0);*/
+                int completed[4] = {0, 0, 0, 0};
+                for (int k = 0; k < 4; k++)
+                {
+                    int n;
+                    MPI_Status status;
+                    MPI_Waitany(4, reqs, &n, &status);
+                    if (n < 0 || n >= 4)
+                    {
+                        fprintf(stderr, "ERROR Invalid index returned from MPI_Waitany"); exit(-1);
+                    }
+                    if (status.MPI_ERROR != MPI_SUCCESS)
+                    {
+                        fprintf(stderr, "ERROR Error status in request %d", n); exit(-1);
+                    }
+                    completed[n]++;
+                    if (n == recv_left && !check_arrays(expect_left, buf_left, MSG_SIZE))
+                    {
+                        print_match_err(myrank, buf_left, expect_left, MSG_SIZE);
+                    }
+                    if (n == recv_right && !check_arrays(expect_right, buf_right, MSG_SIZE))
+                    {
+                        print_match_err(myrank, buf_right, expect_right, MSG_SIZE);
+                    }
+                }
+                {
+                    int n = 0;
+                    MPI_Status status;
+                    MPI_Waitany(4, reqs, &n, &status);
+                    if (n != MPI_UNDEFINED)
+                    {
+                        fprintf(stderr, "ERROR Expected MPI_UNDEFINED after all requests have been processed"); exit(-1);
+                    }
+                }
+                for (int k = 0; k < 4; k++)
+                {
+                    if (completed[k] != 1)
+                    {
+                        fprintf(stderr, "ERROR Request %d never completed", k); exit(-1);
+                    }
+                }
             }
             testnr++;
         }
