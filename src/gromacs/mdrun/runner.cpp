@@ -1540,11 +1540,7 @@ int Mdrunner::mdrunner()
         localState         = localStateInstance.get();
         // TODO Pass the GPU streams to ddBuilder to use in buffer
         // transfers (e.g. halo exchange)
-        domdec = ddBuilder->build(&atomSets,
-                                  localTopology,
-                                  EI_ENERGY_MINIMIZATION(inputrec->eI) ? nullptr : localState,
-                                  haveFillerParticlesInLocalState,
-                                  &observablesReducerBuilder);
+        domdec = ddBuilder->build(&atomSets, haveFillerParticlesInLocalState, &observablesReducerBuilder);
         // The builder's job is done, so destruct it
         ddBuilder.reset(nullptr);
 

@@ -380,14 +380,12 @@ class LocalTopologyChecker::Impl
 {
 public:
     //! Constructor
-    Impl(const MDLogger&       mdlog,
-         const MpiComm&        mpiComm,
-         const gmx_domdec_t&   dd,
-         const gmx_mtop_t&     mtop,
-         DDBondedChecking      ddBondedChecking,
-         const gmx_localtop_t& localTopology,
-         const t_state*        localState,
-         bool                  useUpdateGroups);
+    Impl(const MDLogger&     mdlog,
+         const MpiComm&      mpiComm,
+         const gmx_domdec_t& dd,
+         const gmx_mtop_t&   mtop,
+         DDBondedChecking    ddBondedChecking,
+         bool                useUpdateGroups);
     //! Objects used when reporting that interactions are missing
     //! {
     //! Logger
@@ -399,7 +397,7 @@ public:
     //! Global system topology
     const gmx_mtop_t& mtop_;
     //! Local topology
-    const gmx_localtop_t& localTopology_;
+    const gmx_localtop_t* localTopology_;
     //! Local state, optional
     const t_state* localState_;
     //! }
@@ -452,15 +450,11 @@ LocalTopologyChecker::Impl::Impl(const MDLogger&        mdlog,
                                  const gmx_domdec_t&    dd,
                                  const gmx_mtop_t&      mtop,
                                  const DDBondedChecking ddBondedChecking,
-                                 const gmx_localtop_t&  localTopology,
-                                 const t_state*         localState,
                                  bool                   useUpdateGroups) :
     mdlog_(mdlog),
     mpiComm_(mpiComm),
     dd_(dd),
     mtop_(mtop),
-    localTopology_(localTopology),
-    localState_(localState),
     expectedNumGlobalBondedInteractions_(
             computeExpectedNumGlobalBondedInteractions(mtop, ddBondedChecking, useUpdateGroups))
 {
@@ -471,11 +465,9 @@ LocalTopologyChecker::LocalTopologyChecker(const MDLogger&            mdlog,
                                            const gmx_domdec_t&        dd,
                                            const gmx_mtop_t&          mtop,
                                            const DDBondedChecking     ddBondedChecking,
-                                           const gmx_localtop_t&      localTopology,
-                                           const t_state*             localState,
                                            const bool                 useUpdateGroups,
                                            ObservablesReducerBuilder* observablesReducerBuilder) :
-    impl_(std::make_unique<Impl>(mdlog, mpiComm, dd, mtop, ddBondedChecking, localTopology, localState, useUpdateGroups))
+    impl_(std::make_unique<Impl>(mdlog, mpiComm, dd, mtop, ddBondedChecking, useUpdateGroups))
 {
     Impl*                                          impl = impl_.get();
     ObservablesReducerBuilder::CallbackFromBuilder callbackFromBuilder =
@@ -500,7 +492,7 @@ LocalTopologyChecker::LocalTopologyChecker(const MDLogger&            mdlog,
                     numTotalBondedInteractionsFound,
                     impl->expectedNumGlobalBondedInteractions_,
                     impl->mtop_,
-                    impl->localTopology_,
+                    *impl->localTopology_,
                     impl->localState_ ? makeArrayRef(impl->localState_->x) : ArrayRef<RVec>{},
                     impl->localState_ ? impl->localState_->box : nullptr); // Does not return
         }
@@ -520,7 +512,9 @@ LocalTopologyChecker& LocalTopologyChecker::operator=(LocalTopologyChecker&& oth
     return *this;
 }
 
-void LocalTopologyChecker::scheduleCheckOfLocalTopology(const int numBondedInteractionsToReduce)
+void LocalTopologyChecker::scheduleCheckOfLocalTopology(const gmx_localtop_t& localTopology,
+                                                        const int numBondedInteractionsToReduce,
+                                                        const t_state* localState)
 {
     // When we have a single domain, we don't need to reduce and we algorithmically can not miss
     // any interactions, so we can assert here.
@@ -532,6 +526,9 @@ void LocalTopologyChecker::scheduleCheckOfLocalTopology(const int numBondedInter
     }
     else
     {
+        impl_->localTopology_ = &localTopology;
+        impl_->localState_    = localState;
+
         // Fill the reduction buffer with the value from this domain to reduce
         impl_->reductionBuffer_[0] = double(numBondedInteractionsToReduce);
 

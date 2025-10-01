@@ -2723,8 +2723,6 @@ public:
 
     //! Build the resulting DD manager
     std::unique_ptr<gmx_domdec_t> build(LocalAtomSetManager*       atomSets,
-                                        const gmx_localtop_t&      localTopology,
-                                        const t_state*             localState,
                                         bool                       haveFillerParticlesInLocalState,
                                         ObservablesReducerBuilder* observablesReducerBuilder);
 
@@ -2866,8 +2864,6 @@ DomainDecompositionBuilder::Impl::Impl(const MDLogger&           mdlog,
 
 std::unique_ptr<gmx_domdec_t>
 DomainDecompositionBuilder::Impl::build(LocalAtomSetManager*       atomSets,
-                                        const gmx_localtop_t&      localTopology,
-                                        const t_state*             localState,
                                         const bool                 haveFillerParticlesInLocalState,
                                         ObservablesReducerBuilder* observablesReducerBuilder)
 {
@@ -2933,8 +2929,6 @@ DomainDecompositionBuilder::Impl::build(LocalAtomSetManager*       atomSets,
                                                                       *dd,
                                                                       mtop_,
                                                                       options_.ddBondedChecking,
-                                                                      localTopology,
-                                                                      localState,
                                                                       dd->comm->systemInfo.useUpdateGroups,
                                                                       observablesReducerBuilder);
 
@@ -2983,14 +2977,11 @@ DomainDecompositionBuilder::DomainDecompositionBuilder(const MDLogger&          
 {
 }
 
-std::unique_ptr<gmx_domdec_t> DomainDecompositionBuilder::build(LocalAtomSetManager*  atomSets,
-                                                                const gmx_localtop_t& localTopology,
-                                                                const t_state*        localState,
+std::unique_ptr<gmx_domdec_t> DomainDecompositionBuilder::build(LocalAtomSetManager* atomSets,
                                                                 const bool haveFillerParticlesInLocalState,
                                                                 ObservablesReducerBuilder* observablesReducerBuilder)
 {
-    return impl_->build(
-            atomSets, localTopology, localState, haveFillerParticlesInLocalState, observablesReducerBuilder);
+    return impl_->build(atomSets, haveFillerParticlesInLocalState, observablesReducerBuilder);
 }
 
 DomainDecompositionBuilder::~DomainDecompositionBuilder() = default;
