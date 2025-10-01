@@ -52,6 +52,7 @@
 
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/ewald/pme.h"
+#include "gromacs/gpu_utils/capabilities.h"
 #include "gromacs/listed_forces/listed_forces.h"
 #include "gromacs/listed_forces/listed_forces_gpu.h"
 #include "gromacs/mdlib/force_flags.h"
@@ -142,10 +143,10 @@ SimulationWorkload createSimulationWorkload(const gmx::MDLogger& mdlog,
     }
     // x/f transform is done on GPU by default unless it is not unsupported (with MTS) or disabled (with the env. var.)
     simulationWorkload.useGpuXBufferOpsWhenAllowed =
-            GMX_GPU && !GMX_GPU_OPENCL && useGpuForNonbonded && !inputrec.useMts
+            GpuConfigurationCapabilities::BufferOps && useGpuForNonbonded && !inputrec.useMts
             && !(useReplicaExchange && !useGpuForUpdate) && !disableGpuBufferOps;
     simulationWorkload.useGpuFBufferOpsWhenAllowed =
-            GMX_GPU && !GMX_GPU_OPENCL && useGpuForNonbonded && !inputrec.useMts
+            GpuConfigurationCapabilities::BufferOps && useGpuForNonbonded && !inputrec.useMts
             && !(useReplicaExchange && !useGpuForUpdate) && !disableGpuBufferOps;
     if (featuresRequireGpuBufferOps)
     {

@@ -82,6 +82,7 @@
 #include "gromacs/fileio/trrio.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/gpu_utils/capabilities.h"
 #include "gromacs/gpu_utils/device_stream_manager.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/gpu_utils/gpueventsynchronizer_helpers.h"
@@ -238,7 +239,7 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
 
     if (std::getenv("GMX_CUDA_GRAPH") != nullptr)
     {
-        if (GMX_HAVE_GPU_GRAPH_SUPPORT)
+        if (GpuConfigurationCapabilities::GpuGraph)
         {
             devFlags.enableCudaGraphs = true;
             GMX_LOG(mdlog.warning)
@@ -312,9 +313,9 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
             && ((numRanksPerSimulation > 1 && numPmeRanksPerSimulation == 0)
                 || numPmeRanksPerSimulation > 1);
     const bool pmeGpuDecompositionSupported =
-            (canUseGpuAwareMpi && (GMX_GPU_CUDA || GMX_GPU_SYCL)
-             && ((pmeRunMode == PmeRunMode::GPU && (GMX_USE_Heffte || GMX_USE_cuFFTMp))
-                 || pmeRunMode == PmeRunMode::Mixed));
+            canUseGpuAwareMpi
+            && ((GpuConfigurationCapabilities::PmeDecomposition && pmeRunMode == PmeRunMode::GPU)
+                || (GpuConfigurationCapabilities::Pme && pmeRunMode == PmeRunMode::Mixed));
 
     const bool forcePmeGpuDecomposition = std::getenv("GMX_GPU_PME_DECOMPOSITION") != nullptr;
 

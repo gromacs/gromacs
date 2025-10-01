@@ -64,6 +64,7 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/ewald/pme.h"
+#include "gromacs/gpu_utils/capabilities.h"
 #include "gromacs/hardware/device_management.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/taskassignment/taskassignment.h"
@@ -282,12 +283,7 @@ MessageStringCollector PmeTest::getSkipMessagesIfNecessary(const CommandLine& co
         const bool                      commandLineTargetsPmeFftOnGpu =
                 !pmeFftOptionArgument.has_value() || pmeFftOptionArgument.value() == "gpu";
 
-        static constexpr bool sc_gpuBuildSyclWithoutGpuFft =
-                // NOLINTNEXTLINE(misc-redundant-expression)
-                (GMX_GPU_SYCL != 0) && (GMX_GPU_FFT_MKL == 0) && (GMX_GPU_FFT_ROCFFT == 0)
-                && (GMX_GPU_FFT_VKFFT == 0) && (GMX_GPU_FFT_BBFFT == 0)
-                && (GMX_GPU_FFT_ONEMATH == 0); // NOLINT(misc-redundant-expression)
-        messages.appendIf(commandLineTargetsPmeFftOnGpu && sc_gpuBuildSyclWithoutGpuFft,
+        messages.appendIf(commandLineTargetsPmeFftOnGpu && !GpuConfigurationCapabilities::Fft,
                           "it targets GPU execution of FFT work, which is not supported in the "
                           "current build");
 

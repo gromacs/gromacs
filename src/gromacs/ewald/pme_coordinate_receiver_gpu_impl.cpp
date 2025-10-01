@@ -59,8 +59,6 @@ class DeviceStream;
 class GpuEventSynchronizer;
 struct PpRanks;
 
-#if !GMX_GPU_CUDA && !GMX_GPU_SYCL
-
 namespace gmx
 {
 
@@ -172,5 +170,3 @@ void PmeCoordinateReceiverGpu::insertAsDependencyIntoStream(int /*senderIndex*/,
 }
 
 } // namespace gmx
-
-#endif // !GMX_GPU_CUDA

@@ -46,6 +46,7 @@
 
 #include "gromacs/ewald/pme_force_sender_gpu.h"
 #include "gromacs/ewald/pme_pp_communication.h"
+#include "gromacs/gpu_utils/capabilities.h"
 #include "gromacs/gpu_utils/device_stream.h"
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/gpueventsynchronizer.h"
@@ -97,9 +98,9 @@ void PmeCoordinateReceiverGpu::Impl::reinitCoordinateReceiver(DeviceBuffer<RVec>
         // Skip receiving x buffer pointer when the PP domain is empty (the matching call in `pmePpCommGpu->reinit(n)` is also conditional)
         if (GMX_THREAD_MPI && (ppCommManager.ppRank.numAtoms > 0))
         {
-            GMX_RELEASE_ASSERT(
-                    GMX_GPU_CUDA,
-                    "Direct PME-PP communication with threadMPI is only supported with CUDA.");
+            GMX_RELEASE_ASSERT(GpuConfigurationCapabilities::ThreadMpiCommunication,
+                               "Direct PME-PP communication with threadMPI needs to be supported "
+                               "by the backend.");
             // Data will be transferred directly from GPU.
             void* sendBuf = reinterpret_cast<void*>(asMpiPointer(d_x) + indStart);
             MPI_Send(&sendBuf,
@@ -127,8 +128,9 @@ void PmeCoordinateReceiverGpu::Impl::receiveCoordinatesSynchronizerFromPpPeerToP
     GMX_ASSERT(GMX_THREAD_MPI,
                "receiveCoordinatesSynchronizerFromPpPeerToPeer is expected to be called only for "
                "Thread-MPI");
-    GMX_ASSERT(!GMX_GPU_SYCL,
-               "Direct PME-PP communication not supported with SYCL and threadMPI; use libMPI "
+    GMX_ASSERT(GpuConfigurationCapabilities::ThreadMpiCommunication,
+               "Direct PME-PP communication not supported with with the backend and threadMPI; use "
+               "libMPI "
                "instead.");
 
     // Data will be pushed directly from PP task

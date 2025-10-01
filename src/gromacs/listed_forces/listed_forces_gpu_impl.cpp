@@ -50,6 +50,7 @@
 #include <string>
 #include <vector>
 
+#include "gromacs/gpu_utils/capabilities.h"
 #include "gromacs/listed_forces/listed_forces_gpu.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -113,9 +114,8 @@ bool buildSupportsListedForcesGpu(std::string* error)
     // Before changing the prefix string, make sure that it is not searched for in regression tests.
     errorReasons.startContext("Bonded interactions on GPU are not supported in:");
     errorReasons.appendIf(GMX_DOUBLE, "Double precision build of GROMACS");
-    errorReasons.appendIf(GMX_GPU_OPENCL, "OpenCL build of GROMACS");
+    errorReasons.appendIf(!GpuConfigurationCapabilities::Bonded, "Current GPU backend");
     errorReasons.appendIf(!GMX_GPU, "CPU-only build of GROMACS");
-    errorReasons.appendIf(GMX_GPU_HIP, "HIP listed forces not implemented yet");
     errorReasons.finishContext();
     if (error != nullptr)
     {

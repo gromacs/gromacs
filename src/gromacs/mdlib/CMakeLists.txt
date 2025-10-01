@@ -37,6 +37,7 @@ file(GLOB MDLIB_SOURCES *.cpp)
 # To avoid listing all the necessary files manually, we will remove SYCL-specific files here:
 list(REMOVE_ITEM MDLIB_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/gpuforcereduction_impl.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/gpuforcereduction_impl_stubs.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gpuforcereduction_impl_internal_hip.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/gpuforcereduction_impl_internal_sycl.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/leapfrog_gpu.cpp
@@ -47,6 +48,7 @@ list(REMOVE_ITEM MDLIB_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/settle_gpu.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/settle_gpu_internal_sycl.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/update_constrain_gpu_impl.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/update_constrain_gpu_impl_stubs.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/update_constrain_gpu_internal_sycl.cpp)
 
 set(MDLIB_SOURCES ${MDLIB_SOURCES} PARENT_SCOPE)
@@ -76,18 +78,18 @@ if(GMX_GPU_CUDA)
        settle_gpu.cpp
        update_constrain_gpu_impl.cpp
        )
-endif()
-if(GMX_GPU_HIP)
+elseif(GMX_GPU_HIP)
     gmx_add_libgromacs_sources(
        gpuforcereduction_impl.cpp
        gpuforcereduction_impl_internal_hip.cpp
+       update_constrain_gpu_impl_stubs.cpp
        )
     _gmx_add_files_to_property(HIP_SOURCES
        gpuforcereduction_impl.cpp
        gpuforcereduction_impl_internal_hip.cpp
+       update_constrain_gpu_impl_stubs.cpp
        )
-endif()
-if(GMX_GPU_SYCL)
+elseif(GMX_GPU_SYCL)
     gmx_add_libgromacs_sources(
         gpuforcereduction_impl.cpp
         gpuforcereduction_impl_internal_sycl.cpp
@@ -109,14 +111,19 @@ if(GMX_GPU_SYCL)
         leapfrog_gpu_internal_sycl.cpp
         lincs_gpu.cpp
         lincs_gpu_internal_sycl.cpp
+        mdgraph_gpu_impl.cpp
         mdgraph_gpu_impl_sycl.cpp
         settle_gpu.cpp
         settle_gpu_internal_sycl.cpp
         update_constrain_gpu_impl.cpp
         update_constrain_gpu_internal_sycl.cpp
     )
+else()
+    gmx_add_libgromacs_sources(
+        gpuforcereduction_impl_stubs.cpp
+        update_constrain_gpu_impl_stubs.cpp
+    )
 endif()
-
 # Source files have the following private module dependencies.
 target_link_libraries(mdlib PRIVATE
 #                      gmxlib

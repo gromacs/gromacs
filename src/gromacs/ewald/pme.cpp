@@ -92,6 +92,7 @@
 #include "gromacs/fileio/pdbio.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/gpu_utils/capabilities.h"
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/math/boxmatrix.h"
@@ -152,7 +153,7 @@ bool pme_gpu_supports_build(std::string* error)
 #    endif
 #endif
     errorReasons.appendIf(!GMX_GPU, "Non-GPU build of GROMACS.");
-    errorReasons.appendIf(GMX_GPU_HIP, "HIP API not supported yet");
+    errorReasons.appendIf(!gmx::GpuConfigurationCapabilities::Pme, "Current GPU backend.");
     errorReasons.finishContext();
     if (error != nullptr)
     {

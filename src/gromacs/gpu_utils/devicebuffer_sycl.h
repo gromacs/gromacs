@@ -436,4 +436,10 @@ ValueType* asMpiPointer(DeviceBuffer<ValueType>& buffer)
     return buffer.get_pointer();
 }
 
+template<typename ValueType>
+void setMpiPointer(DeviceBuffer<ValueType>& buffer, ValueType* ptr)
+{
+    buffer.setPointer(ptr);
+}
+
 #endif // GMX_GPU_UTILS_DEVICEBUFFER_SYCL_H

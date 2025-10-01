@@ -54,6 +54,7 @@
 
 #include <algorithm>
 
+#include "gromacs/gpu_utils/capabilities.h"
 #include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/device_stream.h"
 #include "gromacs/gpu_utils/devicebuffer.h"
@@ -65,8 +66,6 @@
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/mtop_util.h"
-
-static constexpr bool sc_haveGpuConstraintSupport = (GMX_GPU_CUDA != 0) || (GMX_GPU_SYCL != 0);
 
 namespace gmx
 {
@@ -98,7 +97,7 @@ void UpdateConstrainGpu::Impl::integrate(GpuEventSynchronizer*             fRead
         // d_x_ is updated by integration and constraints.
         integrator_->integrate(
                 d_x_, d_x0_, d_v_, d_f_, dt, doTemperatureScaling, tcstat, doParrinelloRahman, dtPressureCouple, prVelocityScalingMatrix);
-        if (sc_haveGpuConstraintSupport)
+        if constexpr (GpuConfigurationCapabilities::Update)
         {
             lincsGpu_->apply(d_x0_, d_x_, updateVelocities, d_v_, 1.0 / dt, computeVirial, virial, pbcAiuc_);
             settleGpu_->apply(d_x0_, d_x_, updateVelocities, d_v_, 1.0 / dt, computeVirial, virial, pbcAiuc_);
@@ -166,7 +165,7 @@ UpdateConstrainGpu::Impl::Impl(const t_inputrec&    ir,
     deviceContext_(deviceContext), deviceStream_(deviceStream), wcycle_(wcycle)
 {
     integrator_ = std::make_unique<LeapFrogGpu>(deviceContext_, deviceStream_, numTempScaleValues);
-    if (sc_haveGpuConstraintSupport)
+    if constexpr (GpuConfigurationCapabilities::Update)
     {
         lincsGpu_ = std::make_unique<LincsGpu>(ir.nLincsIter, ir.nProjOrder, deviceContext_, deviceStream_);
         settleGpu_ = std::make_unique<SettleGpu>(mtop, deviceContext_, deviceStream_);
@@ -204,7 +203,7 @@ void UpdateConstrainGpu::Impl::set(DeviceBuffer<Float3>          d_x,
 
     // Integrator should also update something, but it does not even have a method yet
     integrator_->set(numAtoms_, md.invmass, md.cTC);
-    if (sc_haveGpuConstraintSupport)
+    if constexpr (GpuConfigurationCapabilities::Update)
     {
         wallcycle_sub_start(wcycle_, WallCycleSubCounter::GpuSetLincs);
         lincsGpu_->set(idef, numAtoms_, md.invmass);
@@ -304,7 +303,7 @@ bool UpdateConstrainGpu::isNumCoupledConstraintsSupported(const gmx_mtop_t& mtop
 
 bool UpdateConstrainGpu::areConstraintsSupported()
 {
-    return sc_haveGpuConstraintSupport;
+    return GpuConfigurationCapabilities::Update;
 }
 
 } // namespace gmx

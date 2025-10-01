@@ -53,6 +53,7 @@
 #include <vector>
 
 #include "gromacs/ewald/pme.h"
+#include "gromacs/gpu_utils/capabilities.h"
 #include "gromacs/hardware/cpuinfo.h"
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/hardware/hardwaretopology.h"
@@ -132,14 +133,6 @@ const char* const g_specifyEverythingFormatString =
 
 } // namespace
 
-// The conditions below must be in sync with getSkipMessagesIfNecessary check in src/programs/mdrun/tests/pmetest.cpp
-constexpr bool c_gpuBuildSyclWithoutGpuFft =
-        // NOLINTNEXTLINE(misc-redundant-expression)
-        (GMX_GPU_SYCL != 0) && (GMX_GPU_FFT_MKL == 0) && (GMX_GPU_FFT_ROCFFT == 0)
-        && (GMX_GPU_FFT_VKFFT == 0) && (GMX_GPU_FFT_BBFFT == 0)
-        && (GMX_GPU_FFT_ONEMATH == 0); // NOLINT(misc-redundant-expression)
-
-
 bool decideWhetherToUseGpusForNonbondedWithThreadMpi(const TaskTarget        nonbondedTarget,
                                                      const bool              haveAvailableDevices,
                                                      const std::vector<int>& userGpuTaskAssignment,
@@ -184,7 +177,7 @@ bool decideWhetherToUseGpusForNonbondedWithThreadMpi(const TaskTarget        non
 static bool decideWhetherToUseGpusForPmeFft(const TaskTarget pmeFftTarget)
 {
     const bool useCpuFft = (pmeFftTarget == TaskTarget::Cpu)
-                           || (pmeFftTarget == TaskTarget::Auto && c_gpuBuildSyclWithoutGpuFft);
+                           || (pmeFftTarget == TaskTarget::Auto && !GpuConfigurationCapabilities::Fft);
     return !useCpuFft;
 }
 
@@ -243,7 +236,6 @@ static bool canUseGpusForPme(const bool        useGpuForNonbonded,
     // Before changing the prefix string, make sure that it is not searched for in regression tests.
     errorReasons.startContext("Cannot compute PME interactions on a GPU, because:");
     errorReasons.appendIf(!useGpuForNonbonded, "Nonbonded interactions must also run on GPUs.");
-    errorReasons.appendIf(GMX_GPU_HIP, "PME with HIP not implemented yet");
     errorReasons.appendIf(!pme_gpu_supports_build(&tempString), tempString);
     errorReasons.appendIf(!pme_gpu_supports_input(inputrec, &tempString), tempString);
     if (!decideWhetherToUseGpusForPmeFft(pmeFftTarget))
@@ -561,11 +553,12 @@ PmeRunMode determinePmeRunMode(const bool useGpuForPme, const TaskTarget& pmeFft
 
     if (useGpuForPme)
     {
-        if (c_gpuBuildSyclWithoutGpuFft && pmeFftTarget == TaskTarget::Gpu)
+        if (!GpuConfigurationCapabilities::Fft && pmeFftTarget == TaskTarget::Gpu)
         {
-            GMX_THROW(NotImplementedError(
-                    "GROMACS is built without SYCL GPU FFT library. Please do not use -pmefft "
-                    "gpu."));
+            GMX_THROW(
+                    NotImplementedError("GROMACS is built without compatible GPU FFT library. "
+                                        "Please do not use -pmefft "
+                                        "gpu."));
         }
         if (!decideWhetherToUseGpusForPmeFft(pmeFftTarget))
         {
@@ -741,9 +734,9 @@ bool decideWhetherToUseGpuForUpdate(const bool           isDomainDecomposition,
         errorReasons.append("Compatible GPUs must have been found.");
         silenceWarningMessageWithUpdateAuto = true;
     }
-    if (!(GMX_GPU_CUDA || GMX_GPU_SYCL))
+    if (!GpuConfigurationCapabilities::Update)
     {
-        errorReasons.append("Only CUDA and SYCL builds are supported.");
+        errorReasons.append("Backend doesn't support GPU update+constraints.");
         // Silence clang-analyzer deadcode.DeadStores warning about ignoring the previous assignments
         GMX_UNUSED_VALUE(silenceWarningMessageWithUpdateAuto);
         silenceWarningMessageWithUpdateAuto = true;
@@ -826,8 +819,9 @@ bool decideWhetherDirectGpuCommunicationCanBeUsed(gmx::GpuAwareMpiStatus gpuAwar
                                                   const gmx::MDLogger&   mdlog)
 {
     // Decide if we have either a supported library MPI build or thread-MPI build
-    const bool isSupportedLibMpiBuild    = (GMX_GPU_CUDA || GMX_GPU_SYCL) && GMX_LIB_MPI;
-    const bool isSupportedThreadMpiBuild = GMX_GPU_CUDA && GMX_THREAD_MPI;
+    const bool isSupportedLibMpiBuild = GMX_LIB_MPI && GpuConfigurationCapabilities::LibraryMpiCommunication;
+    const bool isSupportedThreadMpiBuild =
+            GMX_THREAD_MPI && GpuConfigurationCapabilities::ThreadMpiCommunication;
     // Direct GPU communication is used by default in supported configurations.
     const bool isSupportedByBuild = isSupportedLibMpiBuild || isSupportedThreadMpiBuild;
 

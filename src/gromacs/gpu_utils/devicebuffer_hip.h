@@ -341,4 +341,10 @@ ValueType* asMpiPointer(DeviceBuffer<ValueType>& buffer)
     return buffer;
 }
 
+template<typename ValueType>
+void setMpiPointer(DeviceBuffer<ValueType>& buffer, ValueType* ptr)
+{
+    buffer = ptr;
+}
+
 #endif

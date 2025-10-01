@@ -48,8 +48,6 @@
 
 #include <memory>
 
-#include "gromacs/utility/gmxassert.h"
-
 #include "pme_gpu_program_impl.h"
 
 PmeGpuProgram::PmeGpuProgram(const DeviceContext& deviceContext) :

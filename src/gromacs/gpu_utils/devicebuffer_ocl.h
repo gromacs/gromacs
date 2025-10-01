@@ -387,4 +387,9 @@ ValueType* asMpiPointer(DeviceBuffer<ValueType>& /*buffer*/)
     return nullptr;
 }
 
+template<typename ValueType>
+void setMpiPointer(DeviceBuffer<ValueType>& /* buffer */, ValueType* /* ptr */)
+{
+    assert(false);
+}
 #endif

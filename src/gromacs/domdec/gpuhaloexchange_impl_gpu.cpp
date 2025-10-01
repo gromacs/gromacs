@@ -57,6 +57,7 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/gpuhaloexchange.h"
+#include "gromacs/gpu_utils/capabilities.h"
 #include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/gpueventsynchronizer.h"
@@ -70,9 +71,10 @@
 
 // NOLINTNEXTLINE(misc-redundant-expression)
 constexpr bool supportedLibMpiBuild =
-        ((GMX_LIB_MPI != 0) && ((GMX_GPU_CUDA != 0) || (GMX_GPU_SYCL != 0)));
+        ((GMX_LIB_MPI != 0) && gmx::GpuConfigurationCapabilities::LibraryMpiCommunication);
 // NOLINTNEXTLINE(misc-redundant-expression)
-constexpr bool supportedThreadMpiBuild = ((GMX_THREAD_MPI != 0) && (GMX_GPU_CUDA != 0));
+constexpr bool supportedThreadMpiBuild =
+        ((GMX_THREAD_MPI != 0) && gmx::GpuConfigurationCapabilities::ThreadMpiCommunication);
 
 namespace gmx
 {

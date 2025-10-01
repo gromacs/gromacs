@@ -58,8 +58,6 @@ class DeviceStream;
 class GpuEventSynchronizer;
 struct gmx_wallcycle;
 
-#if !HAVE_GPU_FORCE_REDUCTION
-
 namespace gmx
 {
 
@@ -119,5 +117,3 @@ void GpuForceReduction::execute()
 GpuForceReduction::~GpuForceReduction() = default;
 
 } // namespace gmx
-
-#endif /* !HAVE_GPU_FORCE_REDUCTION */

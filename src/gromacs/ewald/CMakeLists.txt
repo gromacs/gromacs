@@ -48,11 +48,7 @@ gmx_add_libgromacs_sources(
     pme_solve.cpp
     pme_spline_work.cpp
     pme_spread.cpp
-    # Files that implement stubs
     pme_gpu_program.cpp
-    pme_pp_comm_gpu_impl.cpp
-    pme_coordinate_receiver_gpu_impl.cpp
-    pme_force_sender_gpu_impl.cpp
     )
 if (GMX_GPU_CUDA)
     gmx_add_libgromacs_sources(
@@ -91,6 +87,9 @@ elseif (GMX_GPU_OPENCL)
         # OpenCL-specific sources
         pme_gpu_program_impl_ocl.cpp
         pme_gpu_ocl_stubs.cpp
+        pme_pp_comm_gpu_impl.cpp
+        pme_coordinate_receiver_gpu_impl.cpp
+        pme_force_sender_gpu_impl.cpp
         # GPU-specific sources
         pme_gpu.cpp
         pme_gpu_internal.cpp
@@ -135,6 +134,9 @@ elseif (GMX_GPU_HIP)
         pme_gpu.cpp
         pme_gpu_hip_stubs.cpp
         pme_gpu_program_impl_hip.cpp
+        pme_pp_comm_gpu_impl.cpp
+        pme_coordinate_receiver_gpu_impl.cpp
+        pme_force_sender_gpu_impl.cpp
         )
     _gmx_add_files_to_property(HIP_SOURCES
         pme_gpu.cpp
@@ -149,6 +151,9 @@ else()
     gmx_add_libgromacs_sources(
         # Files that implement stubs
         pme_gpu_program_impl.cpp
+        pme_pp_comm_gpu_impl.cpp
+        pme_coordinate_receiver_gpu_impl.cpp
+        pme_force_sender_gpu_impl.cpp
         )
 endif()
 

@@ -60,7 +60,8 @@
 #include "gromacs/domdec/atomdistribution.h"
 #include "gromacs/domdec/domdec_internal.h"
 #include "gromacs/domdec/gpuhaloexchange.h"
-#if GMX_GPU_CUDA
+#include "gromacs/gpu_utils/capabilities.h"
+#if GMX_GPU
 #    include "gromacs/gpu_utils/device_stream.h"
 #    include "gromacs/gpu_utils/devicebuffer.h"
 #endif
@@ -121,7 +122,7 @@ void initHaloData(RVec* x, const int numHomeAtoms, const int numAtomsTotal)
  */
 void gpuHalo(gmx_domdec_t* dd, matrix box, HostVector<RVec>* h_x, int numAtomsTotal)
 {
-#if (GMX_GPU_CUDA && GMX_THREAD_MPI)
+#if GMX_GPU
     // pin memory if possible
     changePinningPolicy(h_x, PinningPolicy::PinnedIfSupported);
     // Set up GPU hardware environment and assign this MPI rank to a device
@@ -554,7 +555,7 @@ TEST(HaloExchangeTest, Coordinates1dHaloWith1Pulse)
     // Check results
     checkResults1dHaloWith1Pulse(h_x.data(), &dd, numHomeAtoms);
 
-    if (GMX_GPU_CUDA && GMX_THREAD_MPI) // repeat with GPU halo codepath
+    if constexpr (GMX_THREAD_MPI && GpuConfigurationCapabilities::ThreadMpiCommunication) // repeat with GPU halo codepath
     {
         // early return if no devices are available.
         if (getTestHardwareEnvironment()->getTestDeviceList().empty())
@@ -610,7 +611,7 @@ TEST(HaloExchangeTest, Coordinates1dHaloWith2Pulses)
     // Check results
     checkResults1dHaloWith2Pulses(h_x.data(), &dd, numHomeAtoms);
 
-    if (GMX_GPU_CUDA && GMX_THREAD_MPI) // repeat with GPU halo codepath
+    if constexpr (GMX_THREAD_MPI && GpuConfigurationCapabilities::ThreadMpiCommunication) // repeat with GPU halo codepath
     {
         // early return if no devices are available.
         if (getTestHardwareEnvironment()->getTestDeviceList().empty())
@@ -667,7 +668,7 @@ TEST(HaloExchangeTest, Coordinates2dHaloWith1PulseInEachDim)
     // Check results
     checkResults2dHaloWith1PulseInEachDim(h_x.data(), &dd, numHomeAtoms);
 
-    if (GMX_GPU_CUDA && GMX_THREAD_MPI) // repeat with GPU halo codepath
+    if constexpr (GMX_THREAD_MPI && GpuConfigurationCapabilities::ThreadMpiCommunication) // repeat with GPU halo codepath
     {
         // early return if no devices are available.
         if (getTestHardwareEnvironment()->getTestDeviceList().empty())
@@ -723,7 +724,7 @@ TEST(HaloExchangeTest, Coordinates2dHaloWith2PulsesInDim1)
     // Check results
     checkResults2dHaloWith2PulsesInDim1(h_x.data(), &dd, numHomeAtoms);
 
-    if (GMX_GPU_CUDA && GMX_THREAD_MPI) // repeat with GPU halo codepath
+    if constexpr (GMX_THREAD_MPI && GpuConfigurationCapabilities::ThreadMpiCommunication) // repeat with GPU halo codepath
     {
         // early return if no devices are available.
         if (getTestHardwareEnvironment()->getTestDeviceList().empty())

@@ -64,8 +64,6 @@ class FixedCapacityVector;
 struct gmx_domdec_t;
 struct gmx_wallcycle;
 
-#if !GMX_GPU_CUDA && !GMX_GPU_SYCL
-
 namespace gmx
 {
 
@@ -190,5 +188,3 @@ void GpuHaloExchangeNvshmemHelper::reinit()
 }
 
 } // namespace gmx
-
-#endif // !GMX_GPU_CUDA && !GMX_GPU_SYCL

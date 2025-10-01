@@ -45,6 +45,7 @@
 #include "config.h"
 
 #include "gromacs/ewald/pme_pp_communication.h"
+#include "gromacs/gpu_utils/capabilities.h"
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/gpueventsynchronizer.h"
 #include "gromacs/utility/gmxmpi.h"
@@ -90,64 +91,63 @@ void PmeForceSenderGpu::Impl::setForceSendBuffer(DeviceBuffer<Float3> d_f)
     {
         return;
     }
-    GMX_ASSERT(!GMX_GPU_SYCL,
-               "PmeForceSenderGpu does not support SYCL with threadMPI; use libMPI instead.");
+    GMX_ASSERT(GpuConfigurationCapabilities::ThreadMpiCommunication,
+               "PmeForceSenderGpu does not support current GPU backend with threadMPI; use libMPI "
+               "instead.");
 
-#if GMX_MPI && GMX_GPU_CUDA
-
-    int ind_start = 0;
-    int ind_end   = 0;
-    int i         = 0;
-    for (const auto& receiver : ppRanks_)
+    if constexpr (GMX_MPI && GpuConfigurationCapabilities::ThreadMpiCommunication)
     {
-        ind_start = ind_end;
-        ind_end   = ind_start + receiver.numAtoms;
 
-        if (receiver.numAtoms > 0)
+        int ind_start = 0;
+        int ind_end   = 0;
+        int i         = 0;
+        for (const auto& receiver : ppRanks_)
         {
-            ppCommManagers_[i].localForcePtr = &d_f[ind_start];
-            // NOLINTNEXTLINE(bugprone-sizeof-expression)
-            MPI_Recv(&ppCommManagers_[i].pmeRemoteGpuForcePtr,
-                     sizeof(Float3*),
-                     MPI_BYTE,
-                     receiver.rankId,
-                     eCommType_FORCES_GPU_REMOTE_GPU_PTR,
-                     comm_,
-                     MPI_STATUS_IGNORE);
-            // NOLINTNEXTLINE(bugprone-sizeof-expression)
-            MPI_Recv(&ppCommManagers_[i].pmeRemoteCpuForcePtr,
-                     sizeof(Float3*),
-                     MPI_BYTE,
-                     receiver.rankId,
-                     eCommType_FORCES_GPU_REMOTE_CPU_PTR,
-                     comm_,
-                     MPI_STATUS_IGNORE);
-            // Send address of event and associated flag to PP rank, to allow remote enqueueing
-            // NOLINTNEXTLINE(bugprone-sizeof-expression)
-            MPI_Send(&ppCommManagers_[i].event,
-                     sizeof(GpuEventSynchronizer*),
-                     MPI_BYTE,
-                     receiver.rankId,
-                     eCommType_FORCES_GPU_SYNCHRONIZER,
-                     comm_);
+            ind_start = ind_end;
+            ind_end   = ind_start + receiver.numAtoms;
 
-            std::atomic<bool>* tmpPpCommEventRecordedPtr =
-                    reinterpret_cast<std::atomic<bool>*>((ppCommManagers_[i].eventRecorded.get()));
-            tmpPpCommEventRecordedPtr->store(false, std::memory_order_release);
-            // NOLINTNEXTLINE(bugprone-sizeof-expression)
-            MPI_Send(&tmpPpCommEventRecordedPtr,
-                     sizeof(std::atomic<bool>*),
-                     MPI_BYTE,
-                     receiver.rankId,
-                     eCommType_FORCES_GPU_EVENT_RECORDED,
-                     comm_);
+            if (receiver.numAtoms > 0)
+            {
+                setMpiPointer(ppCommManagers_[i].localForcePtr, asMpiPointer(d_f) + ind_start);
+                // NOLINTNEXTLINE(bugprone-sizeof-expression)
+                MPI_Recv(&ppCommManagers_[i].pmeRemoteGpuForcePtr,
+                         sizeof(Float3*),
+                         MPI_BYTE,
+                         receiver.rankId,
+                         eCommType_FORCES_GPU_REMOTE_GPU_PTR,
+                         comm_,
+                         MPI_STATUS_IGNORE);
+                // NOLINTNEXTLINE(bugprone-sizeof-expression)
+                MPI_Recv(&ppCommManagers_[i].pmeRemoteCpuForcePtr,
+                         sizeof(Float3*),
+                         MPI_BYTE,
+                         receiver.rankId,
+                         eCommType_FORCES_GPU_REMOTE_CPU_PTR,
+                         comm_,
+                         MPI_STATUS_IGNORE);
+                // Send address of event and associated flag to PP rank, to allow remote enqueueing
+                // NOLINTNEXTLINE(bugprone-sizeof-expression)
+                MPI_Send(&ppCommManagers_[i].event,
+                         sizeof(GpuEventSynchronizer*),
+                         MPI_BYTE,
+                         receiver.rankId,
+                         eCommType_FORCES_GPU_SYNCHRONIZER,
+                         comm_);
+
+                std::atomic<bool>* tmpPpCommEventRecordedPtr =
+                        reinterpret_cast<std::atomic<bool>*>((ppCommManagers_[i].eventRecorded.get()));
+                tmpPpCommEventRecordedPtr->store(false, std::memory_order_release);
+                // NOLINTNEXTLINE(bugprone-sizeof-expression)
+                MPI_Send(&tmpPpCommEventRecordedPtr,
+                         sizeof(std::atomic<bool>*),
+                         MPI_BYTE,
+                         receiver.rankId,
+                         eCommType_FORCES_GPU_EVENT_RECORDED,
+                         comm_);
+            }
+            i++;
         }
-        i++;
     }
-
-#else
-    GMX_UNUSED_VALUE(d_f);
-#endif
 }
 
 /*! \brief Send PME data directly using GPU-aware MPI */
