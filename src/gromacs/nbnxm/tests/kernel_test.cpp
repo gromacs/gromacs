@@ -258,7 +258,7 @@ std::unique_ptr<nonbonded_verlet_t> setupNbnxmForBenchInstance(const KernelOptio
                         system.coordinates,
                         nullptr);
 
-    nbv->constructPairlist(gmx::InteractionLocality::Local, system.excls, 0, nullptr);
+    nbv->constructPairlist(gmx::InteractionLocality::Local, system.excls, false, 0, nullptr);
 
     nbv->setAtomProperties(system.atomTypes, system.charges, system.atomInfo);
 
@@ -537,9 +537,9 @@ TEST_P(NbnxmKernelTest, WorksWith)
                "The test system should have a sufficient number of energy groups");
 
     // TODO rename this in a follow-up change to conform to style
-    TestSystem system_(parameters_.vdwKernelType == vdwktLJCUT_COMBGEOM
-                               ? LJCombinationRule::Geometric
-                               : LJCombinationRule::LorentzBerthelot);
+    TestSystem system_(parameters_.vdwKernelType == vdwktLJCUT_COMBGEOM ? LJCombinationRule::Geometric
+                                                                        : LJCombinationRule::LorentzBerthelot,
+                       true);
 
     const interaction_const_t ic = setupInteractionConst(options_);
 
@@ -592,7 +592,7 @@ TEST_P(NbnxmKernelTest, WorksWith)
 
     // Finish setting up data structures
     nbv_ = setupNbnxmForBenchInstance(options_, system_);
-    nbv_->constructPairlist(InteractionLocality::Local, system_.excls, 0, nullptr);
+    nbv_->constructPairlist(InteractionLocality::Local, system_.excls, false, 0, nullptr);
 
     std::vector<RVec> shiftVecs(c_numShiftVectors);
     calc_shifts(system_.box, shiftVecs);

@@ -66,8 +66,13 @@ struct TestSystem
      * It assigns energy groups in round-robin style based on the largest number of
      * energy groups that might be being tested. This is not general enough to work
      * if we would extend the number of energy-group cases that we test.
+     *
+     * \param[in] ljCombinationRule  Sets the LJ parameter combination rule
+     * \param[in] oneThirdNoChargeAndOneThirdAllLJ  Sets whether the first third of the molecules
+     *                                              don't have charge and the last third LJ on
+     *                                              all atoms
      */
-    TestSystem(LJCombinationRule ljCombinationRule);
+    TestSystem(LJCombinationRule ljCombinationRule, bool oneThirdNoChargeAndOneThirdAllLJ);
 
     //! Returns the absolute value of the largest partial charge of the atoms in the system
     static real maxCharge();

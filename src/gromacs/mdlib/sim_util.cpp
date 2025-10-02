@@ -1448,7 +1448,7 @@ static void doPairSearch(const t_commrec*             cr,
     wallcycle_start_nocount(wcycle, WallCycleCounter::NS);
     wallcycle_sub_start(wcycle, WallCycleSubCounter::NBSSearchLocal);
     /* Note that with a GPU the launch overhead of the list transfer is not timed separately */
-    nbv->constructPairlist(InteractionLocality::Local, top.excls, step, nrnb);
+    nbv->constructPairlist(InteractionLocality::Local, top.excls, false, step, nrnb);
 
     nbv->setupGpuShortRangeWork(fr->listedForcesGpu.get(), InteractionLocality::Local);
 
@@ -1492,7 +1492,7 @@ static void doPairSearch(const t_commrec*             cr,
         wallcycle_start_nocount(wcycle, WallCycleCounter::NS);
         wallcycle_sub_start(wcycle, WallCycleSubCounter::NBSSearchNonLocal);
         /* Note that with a GPU the launch overhead of the list transfer is not timed separately */
-        nbv->constructPairlist(InteractionLocality::NonLocal, top.excls, step, nrnb);
+        nbv->constructPairlist(InteractionLocality::NonLocal, top.excls, false, step, nrnb);
 
         nbv->setupGpuShortRangeWork(fr->listedForcesGpu.get(), InteractionLocality::NonLocal);
         wallcycle_sub_stop(wcycle, WallCycleSubCounter::NBSSearchNonLocal);

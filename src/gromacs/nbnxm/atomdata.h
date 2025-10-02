@@ -390,7 +390,9 @@ void nbnxn_atomdata_set(nbnxn_atomdata_t*       nbat,
                         ArrayRef<const int32_t> atomInfo);
 
 //! Copy the shift vectors to nbat
-void nbnxn_atomdata_copy_shiftvec(bool dynamic_box, ArrayRef<RVec> shift_vec, nbnxn_atomdata_t* nbat);
+void nbnxn_atomdata_copy_shiftvec(std::optional<bool>  haveDynamicBox,
+                                  ArrayRef<const RVec> shiftVectors,
+                                  nbnxn_atomdata_t*    nbat);
 
 /*! \brief Transform coordinates to xbat layout
  *
@@ -427,6 +429,47 @@ void nbnxn_atomdata_x_to_nbat_x_gpu(const GridSet&        gridSet,
 
 //! Add the fshift force stored in nbat to fshift
 void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t& nbat, ArrayRef<RVec> fshift);
+
+//! Returns the coordinates of atoms \p a
+static inline RVec getCoordinate(const nbnxn_atomdata_t& nbat, const int a)
+{
+    RVec x;
+
+    switch (nbat.XFormat)
+    {
+        case nbatXYZQ:
+            x[XX] = nbat.x()[a * STRIDE_XYZQ];
+            x[YY] = nbat.x()[a * STRIDE_XYZQ + 1];
+            x[ZZ] = nbat.x()[a * STRIDE_XYZQ + 2];
+            break;
+        case nbatXYZ:
+            x[XX] = nbat.x()[a * STRIDE_XYZ];
+            x[YY] = nbat.x()[a * STRIDE_XYZ + 1];
+            x[ZZ] = nbat.x()[a * STRIDE_XYZ + 2];
+            break;
+        case nbatX4:
+        {
+            const int i = atom_to_x_index<c_packX4>(a);
+
+            x[XX] = nbat.x()[i + XX * c_packX4];
+            x[YY] = nbat.x()[i + YY * c_packX4];
+            x[ZZ] = nbat.x()[i + ZZ * c_packX4];
+            break;
+        }
+        case nbatX8:
+        {
+            const int i = atom_to_x_index<c_packX8>(a);
+
+            x[XX] = nbat.x()[i + XX * c_packX8];
+            x[YY] = nbat.x()[i + YY * c_packX8];
+            x[ZZ] = nbat.x()[i + ZZ * c_packX8];
+            break;
+        }
+        default: GMX_ASSERT(false, "Unsupported nbnxn_atomdata_t format");
+    }
+
+    return x;
+}
 
 } // namespace gmx
 

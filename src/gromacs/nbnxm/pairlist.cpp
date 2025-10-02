@@ -1134,46 +1134,6 @@ static void setExclusionsForIEntry(const GridSet&          gridSet,
     }
 }
 
-static RVec getCoordinate(const nbnxn_atomdata_t& nbat, const int a)
-{
-    RVec x;
-
-    switch (nbat.XFormat)
-    {
-        case nbatXYZQ:
-            x[XX] = nbat.x()[a * STRIDE_XYZQ];
-            x[YY] = nbat.x()[a * STRIDE_XYZQ + 1];
-            x[ZZ] = nbat.x()[a * STRIDE_XYZQ + 2];
-            break;
-        case nbatXYZ:
-            x[XX] = nbat.x()[a * STRIDE_XYZ];
-            x[YY] = nbat.x()[a * STRIDE_XYZ + 1];
-            x[ZZ] = nbat.x()[a * STRIDE_XYZ + 2];
-            break;
-        case nbatX4:
-        {
-            const int i = atom_to_x_index<c_packX4>(a);
-
-            x[XX] = nbat.x()[i + XX * c_packX4];
-            x[YY] = nbat.x()[i + YY * c_packX4];
-            x[ZZ] = nbat.x()[i + ZZ * c_packX4];
-            break;
-        }
-        case nbatX8:
-        {
-            const int i = atom_to_x_index<c_packX8>(a);
-
-            x[XX] = nbat.x()[i + XX * c_packX8];
-            x[YY] = nbat.x()[i + YY * c_packX8];
-            x[ZZ] = nbat.x()[i + ZZ * c_packX8];
-            break;
-        }
-        default: GMX_ASSERT(false, "Unsupported nbnxn_atomdata_t format");
-    }
-
-    return x;
-}
-
 //! Returns the j/i cluster size ratio for the geometry of a grid
 static KernelLayoutClusterRatio layoutClusterRatio(const Grid::Geometry& geometry)
 {
@@ -1449,13 +1409,6 @@ static inline int cj_to_cjPacked(int cj)
     return cj / sc_gpuJgroupSize(layoutType);
 }
 
-/* Return the index of an j-atom within a warp */
-template<PairlistType layoutType>
-static inline int a_mod_wj(int a)
-{
-    return a & (sc_gpuSplitJClusterSize(layoutType) - 1);
-}
-
 /* As make_fep_list above, but for super/sub lists. */
 template<PairlistType layoutType>
 static void make_fep_list(ArrayRef<const int>     atomIndices,
@@ -1548,7 +1501,8 @@ static void make_fep_list(ArrayRef<const int>     atomIndices,
                                     const int jHalf = j / sc_gpuSplitJClusterSize(layoutType);
                                     auto&     excl  = get_exclusion_mask(nbl, cjPacked_ind, jHalf);
 
-                                    int excl_pair = a_mod_wj<layoutType>(j) * nbl->na_ci + i;
+                                    int excl_pair =
+                                            atomIndexInClusterpairSplit<layoutType>(j) * nbl->na_ci + i;
                                     unsigned int excl_bit =
                                             (1U << (gcj * sc_gpuNumClusterPerCell(layoutType) + c));
 
@@ -1697,7 +1651,7 @@ static void setExclusionsForIEntry(const GridSet&          gridSet,
                             auto& interactionMask =
                                     get_exclusion_mask(nbl, cj_to_cjPacked<layoutType>(index), jHalf);
 
-                            interactionMask.pair[a_mod_wj<layoutType>(innerJ) * c_clusterSize + innerI] &=
+                            interactionMask.pair[atomIndexInClusterpairSplit<layoutType>(innerJ) * c_clusterSize + innerI] &=
                                     ~pairMask;
                         }
                     }
@@ -2837,6 +2791,7 @@ static void nbnxn_make_pairlist_part(const GridSet&          gridSet,
                                      PairsearchWork*         work,
                                      const nbnxn_atomdata_t* nbat,
                                      const ListOfLists<int>& exclusions,
+                                     const bool              includeAllPairs,
                                      real                    rlist,
                                      const PairlistType      pairlistType,
                                      bool                    bFBufferFlag,
@@ -2980,8 +2935,9 @@ static void nbnxn_make_pairlist_part(const GridSet&          gridSet,
          * With perturbed atoms, we can not skip clusters, as we check the exclusion
          * count of perturbed interactions, including those with zero coefficients.
          */
-        if (c_listIsSimple && !haveFep && flags_i[ci] == 0)
+        if (c_listIsSimple && !haveFep && !includeAllPairs && flags_i[ci] == 0)
         {
+            // This i-cluster has no non-bonded interactions
             continue;
         }
         const int ncj_old_i = getNumSimpleJClustersInList(*nbl);
@@ -3679,6 +3635,7 @@ void PairlistSet::constructPairlists(InteractionLocality      locality,
                                      ArrayRef<PairsearchWork> searchWork,
                                      nbnxn_atomdata_t*        nbat,
                                      const ListOfLists<int>&  exclusions,
+                                     const bool               includeAllPairs,
                                      const int                minimumIlistCountForGpuBalancing,
                                      t_nrnb*                  nrnb,
                                      SearchCycleCounting*     searchCycleCounting)
@@ -3796,6 +3753,7 @@ void PairlistSet::constructPairlists(InteractionLocality      locality,
                                                  &work,
                                                  nbat,
                                                  exclusions,
+                                                 includeAllPairs,
                                                  rlist,
                                                  params_.pairlistType,
                                                  nbat->useBufferFlags(),
@@ -3815,6 +3773,7 @@ void PairlistSet::constructPairlists(InteractionLocality      locality,
                                                  &work,
                                                  nbat,
                                                  exclusions,
+                                                 includeAllPairs,
                                                  rlist,
                                                  params_.pairlistType,
                                                  nbat->useBufferFlags(),
@@ -4001,9 +3960,12 @@ void PairlistSets::construct(const InteractionLocality iLocality,
                              PairSearch*               pairSearch,
                              nbnxn_atomdata_t*         nbat,
                              const ListOfLists<int>&   exclusions,
+                             const bool                includeAllPairs,
                              const int64_t             step,
                              t_nrnb*                   nrnb)
 {
+    includesAllPairs_ = includeAllPairs;
+
     const auto& gridSet = pairSearch->gridSet();
     const auto* ddZones = gridSet.domainSetup().zones;
 
@@ -4022,6 +3984,7 @@ void PairlistSets::construct(const InteractionLocality iLocality,
                                               pairSearch->work(),
                                               nbat,
                                               exclusions,
+                                              includeAllPairs,
                                               minimumIlistCountForGpuBalancing_,
                                               nrnb,
                                               &pairSearch->cycleCounting_);
@@ -4050,12 +4013,15 @@ void PairlistSets::construct(const InteractionLocality iLocality,
 
 void nonbonded_verlet_t::constructPairlist(const InteractionLocality iLocality,
                                            const ListOfLists<int>&   exclusions,
+                                           const bool                includeAllPairs,
                                            int64_t                   step,
                                            t_nrnb*                   nrnb) const
 {
-    pairlistSets_->construct(iLocality, pairSearch_.get(), nbat_.get(), exclusions, step, nrnb);
+    pairlistSets_->construct(
+            iLocality, pairSearch_.get(), nbat_.get(), exclusions, includeAllPairs, step, nrnb);
 
-    if (useGpu())
+    // For tests it is convenient to allow gpuNbv_==nullptr and skip GPU calls
+    if (useGpu() && gpuNbv_ != nullptr)
     {
         /* Launch the transfer of the pairlist to the GPU.
          *

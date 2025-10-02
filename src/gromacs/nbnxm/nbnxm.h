@@ -178,6 +178,22 @@ enum
     enbvClearFYes
 };
 
+/*! \brief A plain pairlist that can contain both normal and excluded pairs
+ *
+ * The first element of each entry is the atom pair, the second is the shift vector index.
+ * The distance vector is then given by: x[first.first] - x[first.second] + shiftVector[second]
+ */
+struct PlainPairlist
+{
+    using ParticlePair  = std::pair<int, int>;
+    using PairlistEntry = std::pair<ParticlePair, int>;
+
+    //! List of normal pairs
+    std::vector<PairlistEntry> pairs;
+    //! List of excluded atom pairs
+    std::vector<PairlistEntry> excludedPairs;
+};
+
 /*! \libinternal
  *  \brief Top-level non-bonded data structure for the Verlet-type cut-off scheme. */
 struct nonbonded_verlet_t
@@ -297,13 +313,19 @@ public:
      * of atoms when not using DD, or the total number of atoms in the i-zones
      * when using DD.
      *
-     * \param[in] iLocality   The interaction locality: local or non-local
-     * \param[in] exclusions  Lists of exclusions for every atom.
-     * \param[in] step        Used to set the list creation step
-     * \param[in,out] nrnb    Flop accounting struct, can be nullptr
+     * For normal MD simulations, pairs involving atoms with zero LJ parameters
+     * and charge do not need to be included. When a complete pairlist is required,
+     * the \p includeAllPairs argument should be set to \p true.
+     *
+     * \param[in] iLocality        The interaction locality: local or non-local
+     * \param[in] exclusions       Lists of exclusions for every atom.
+     * \param[in] includeAllPairs  Whether also non-interacting pairs should be part of the list
+     * \param[in] step             Used to set the list creation step
+     * \param[in,out] nrnb         Flop accounting struct, can be nullptr
      */
     void constructPairlist(InteractionLocality     iLocality,
                            const ListOfLists<int>& exclusions,
+                           bool                    includeAllPairs,
                            int64_t                 step,
                            t_nrnb*                 nrnb) const;
 
@@ -417,14 +439,27 @@ public:
     //! Returns a pointer to the NbnxmGpu object, can return nullptr
     NbnxmGpu* gpuNbv() { return gpuNbv_; }
 
+
+    //! Returns the local grid
     const Grid& localGrid() const;
 
+    //! Sets the non-local grid usig dimensions and columns received from a halo-domain
     void setNonLocalGrid(int                                 gridIndex,
                          int                                 ddZone,
                          const GridDimensions&               gridDimensions,
                          ArrayRef<const std::pair<int, int>> columns,
                          ArrayRef<const int32_t>             atomInfo,
                          ArrayRef<const RVec>                x);
+    /*! \brief Returns a plain pairlist
+     *
+     * When running with domain decomposition, the union of the pairlist returned
+     * on the domains contains all pairs in the system
+     *
+     * \param[in] range  Range of the pairlist in nm, should not be larger than the range
+     *                   of the normal pairlist (is release-asserted)
+     * \param[in] shiftVectors  List of shift vectors
+     */
+    const PlainPairlist& plainPairlist(real range, ArrayRef<const RVec> shiftVectors);
 
 private:
     //! All data related to the pair lists

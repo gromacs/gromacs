@@ -49,6 +49,7 @@
 #include <memory>
 
 #include "gromacs/mdtypes/locality.h"
+#include "gromacs/nbnxm/nbnxm.h"
 
 #include "pairlistparams.h"
 
@@ -79,6 +80,7 @@ public:
                    PairSearch*             pairSearch,
                    nbnxn_atomdata_t*       nbat,
                    const ListOfLists<int>& exclusions,
+                   bool                    includeAllPairs,
                    int64_t                 step,
                    t_nrnb*                 nrnb);
 
@@ -133,6 +135,9 @@ public:
         }
     }
 
+    //! Returns a plain pairlist containing all pairs in the lists on this domain except for exclusions
+    const PlainPairlist& plainPairlist(real range, const nbnxn_atomdata_t& nbat, ArrayRef<const int> atomIndices);
+
 private:
     //! Returns the pair-list set for the given locality
     PairlistSet& pairlistSet(InteractionLocality iLocality)
@@ -156,8 +161,13 @@ private:
     std::unique_ptr<PairlistSet> localSet_;
     //! Non-local pairlist set
     std::unique_ptr<PairlistSet> nonlocalSet_;
+    //! Whether also non-interacting pairs are included in the list
+    bool includesAllPairs_ = false;
     //! MD step at with the outer lists in pairlistSets_ were created
-    int64_t outerListCreationStep_;
+    int64_t outerListCreationStep_ = -1;
+
+    //! Storage for returning a plain pairlist
+    PlainPairlist plainPairlist_;
 };
 
 } // namespace gmx

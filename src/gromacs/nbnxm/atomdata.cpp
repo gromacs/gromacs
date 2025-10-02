@@ -988,10 +988,17 @@ void nbnxn_atomdata_set(nbnxn_atomdata_t*       nbat,
 }
 
 /* Copies the shift vector array to nbnxn_atomdata_t */
-void nbnxn_atomdata_copy_shiftvec(gmx_bool bDynamicBox, ArrayRef<RVec> shift_vec, nbnxn_atomdata_t* nbat)
+void nbnxn_atomdata_copy_shiftvec(std::optional<bool>  haveDynamicBox,
+                                  ArrayRef<const RVec> shiftVectors,
+                                  nbnxn_atomdata_t*    nbat)
 {
-    nbat->bDynamicBox = bDynamicBox;
-    std::copy(shift_vec.begin(), shift_vec.end(), nbat->shift_vec.begin());
+    GMX_ASSERT(shiftVectors.size() == nbat->shift_vec.size(), "Shift vector sizes should match");
+
+    if (haveDynamicBox.has_value())
+    {
+        nbat->bDynamicBox = haveDynamicBox.value();
+    }
+    std::copy(shiftVectors.begin(), shiftVectors.end(), nbat->shift_vec.begin());
 }
 
 // Returns the used range of grids for the given locality

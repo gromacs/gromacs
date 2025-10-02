@@ -64,13 +64,14 @@ struct t_nrnb;
 namespace gmx
 {
 class AtomPairlist;
-struct SearchCycleCounting;
+class GridSet;
+template<typename>
+class ListOfLists;
 struct nbnxn_atomdata_t;
 struct PairlistParams;
 struct PairsearchWork;
-template<typename>
-class ListOfLists;
-class GridSet;
+struct PlainPairlist;
+struct SearchCycleCounting;
 
 /*! \internal
  * \brief An object that holds the local or non-local pairlists
@@ -89,6 +90,7 @@ public:
                             ArrayRef<PairsearchWork> searchWork,
                             nbnxn_atomdata_t*        nbat,
                             const ListOfLists<int>&  exclusions,
+                            bool                     includeAllPairs,
                             int                      minimumIlistCountForGpuBalancing,
                             t_nrnb*                  nrnb,
                             SearchCycleCounting*     searchCycleCounting);
@@ -117,6 +119,15 @@ public:
 
     //! Returns the number of perturbed excluded pairs that are within distance rlist
     int numPerturbedExclusionsWithinRlist() const { return numPerturbedExclusionsWithinRlist_; }
+
+    /*! \brief Appends the contents of our pairlists, except for exclusions, to \p plainPairlist
+     *
+     * The atom indices in the plain list are normal, not NBNxM order, atom indices.
+     */
+    void appendPlainPairlist(PlainPairlist*          plainPairlist,
+                             real                    range,
+                             const nbnxn_atomdata_t& nbat,
+                             ArrayRef<const int>     atomIndices);
 
 private:
     //! List of pairlists in CPU layout

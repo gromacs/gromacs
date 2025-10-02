@@ -293,6 +293,15 @@ std::optional<std::string> nbnxmGpuClusteringDescription()
 #endif
 }
 
+const PlainPairlist& nonbonded_verlet_t::plainPairlist(const real range, ArrayRef<const RVec> shiftVectors)
+{
+    // This might lead to copying twice during pair-search steps, but the cost of this
+    // compared with generating the (plain) pairlist is negligible
+    nbnxn_atomdata_copy_shiftvec(std::nullopt, shiftVectors, nbat_.get());
+
+    return pairlistSets_->plainPairlist(range, *nbat_, pairSearch_->gridSet().atomIndices());
+}
+
 } // namespace gmx
 
 /*! \endcond */
