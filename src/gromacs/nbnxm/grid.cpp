@@ -1665,7 +1665,7 @@ real generateAndFill2DGrid(Grid*                  grid,
 
 void Grid::setNonLocalGrid(const int                           ddZone,
                            const GridDimensions&               dimensions,
-                           ArrayRef<const std::pair<int, int>> cellRanges,
+                           ArrayRef<const std::pair<int, int>> clusterRanges,
                            const int                           cellOffset,
                            ArrayRef<const int32_t>             atomInfo,
                            ArrayRef<const RVec>                x,
@@ -1682,32 +1682,48 @@ void Grid::setNonLocalGrid(const int                           ddZone,
 
     cellOffset_ = cellOffset;
 
-    const int numAtomsPerCell = geometry_.numAtomsPerCell_;
+    // There are two types of cluster here:
+    // - the clusters on the grid, these have size geometry_.numAtomsICluster_
+    // - the clusters as passed in clusterRanges, these have size numAtomsPerCluster
+    const int numAtomsPerCluster = std::max(geometry_.numAtomsICluster_, geometry_.numAtomsJCluster_);
+    const int numAtomsPerCell    = geometry_.numAtomsPerCell_;
+    const int numClustersPerCell = numAtomsPerCell / geometry_.numAtomsICluster_;
+
+    // Conversion factor from clusterRanges to grid clusters
+    const int clusterFactor = numAtomsPerCluster / geometry_.numAtomsICluster_;
 
     // Set the cluster counts for the columns in the range of communicated columns
     int lastColumnIndex = -1;
-    int cellIndex       = 0;
+    int clusterIndex    = 0;
     numCellsColumnMax_  = 0;
-    for (const auto& cellRange : cellRanges)
+    for (const auto& clusterRange : clusterRanges)
     {
-        const int columnIndex = cellRange.first;
+        const int columnIndex = clusterRange.first;
 
         GMX_ASSERT(columnIndex >= lastColumnIndex, "The input columns should be ordered");
 
+        GMX_ASSERT(columnIndex == lastColumnIndex || clusterIndex % numClustersPerCell == 0,
+                   "The number of clusters in a column should be a multiple of the "
+                   "numClustersPerCell");
+
         // When we skipped columns this fills those with appropriate values.
+        // Note that the clusterIndex might not be a multiple of numClustersPerCell when
+        // this is not the last range added for this column. We assert the counts for whole columns
+        // just here above.
         // Also fill the current column.
         cxy_na_.resize(columnIndex + 1, 0);
-        cxy_ind_.resize(columnIndex + 2, cellIndex);
+        cxy_ind_.resize(columnIndex + 2, clusterIndex / numClustersPerCell);
         numClusters_.resize(columnIndex, 0);
 
-        const int numCellsInColumn = cellRange.second;
-        const int numAtomsInColumn = cxy_na_[columnIndex] + numCellsInColumn * numAtomsPerCell;
+        const int numClustersInColumn = clusterRange.second;
+        const int numAtomsInColumn = cxy_na_[columnIndex] + numClustersInColumn * numAtomsPerCluster;
 
-        cellIndex += numCellsInColumn;
+        clusterIndex += numClustersInColumn * clusterFactor;
         cxy_na_[columnIndex]      = numAtomsInColumn;
-        cxy_ind_[columnIndex + 1] = cellIndex;
+        cxy_ind_[columnIndex + 1] = clusterIndex / numClustersPerCell;
 
-        numCellsColumnMax_ = std::max(numCellsColumnMax_, numAtomsInColumn);
+        numCellsColumnMax_ =
+                std::max(numCellsColumnMax_, cxy_ind_[columnIndex + 1] - cxy_ind_[columnIndex]);
 
         lastColumnIndex = columnIndex;
     }
@@ -1727,7 +1743,7 @@ void Grid::setNonLocalGrid(const int                           ddZone,
 
     // Set the data for the remaining, empty, columns
     cxy_na_.resize(numColumns(), 0);
-    cxy_ind_.resize(numColumns() + 1, cellIndex);
+    cxy_ind_.resize(numColumns() + 1, clusterIndex / numClustersPerCell);
     numClusters_.resize(numColumns(), 0);
 
     numCellsTotal_ = cxy_ind_.back() - cxy_ind_[0];

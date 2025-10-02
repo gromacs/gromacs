@@ -84,7 +84,7 @@ enum class HaloMpiTag
     AtomIndices     //! Global atom indices
 };
 
-//! The upper corners of a zone, used for computing which halo cell need to be sent
+//! The upper corners of a zone, used for computing which halo clusters need to be sent
 struct ZoneCorners
 {
     //! Corner for two-body interations, involves all pair-interacting zones
@@ -102,20 +102,20 @@ struct ZoneCorners
  * Also used for receiving forces.
  *
  * This object is used for communicating with a domain that resides in backward direction along
- * the domain decomposition grid. This object holds the NBNxM grid cell indices that needs to
+ * the domain decomposition grid. This object holds the NBNxM grid cluster indices that needs to
  * be sent and does the packing of coordinates into a buffer in this object. It also does
  * the reverse indexing for the halo force reduction of forces received.
  */
 class DomainCommBackward
 {
 public:
-    //! Struct for storing a cell range for a grid column
-    struct GridCellRange
+    //! Struct for storing a cluster range for a grid column
+    struct GridClusterRange
     {
         //! The index of the grid column
         int index;
-        //! The cell range to communicate
-        gmx::Range<int> cellRange;
+        //! The cluster range to communicate
+        gmx::Range<int> clusterRange;
     };
 
     /*! \brief Constructor
@@ -152,7 +152,7 @@ public:
      */
     void getTargetZoneCorners(const gmx_domdec_t& dd, const matrix box, const DomainPairComm& domainPairComm);
 
-    /*! \brief Determine which NBNxM grid cells (and atoms) we need to send
+    /*! \brief Determine which NBNxM grid clusters (and atoms) we need to send
      *
      * Should be called after calling \c getTargetZoneCorners().
      *
@@ -177,7 +177,7 @@ public:
                          ArrayRef<const RVec>     normal,
                          const std::vector<bool>& isCellMissingLinks);
 
-    //! Creates and returns a buffer with column indices and cell counts to be sent
+    //! Creates and returns a buffer with column indices and cluster counts to be sent
     FastVector<std::pair<int, int>> makeColumnsSendBuffer() const;
 
     //! Copies the coordinates to commnicate to the send buffer
@@ -198,11 +198,11 @@ public:
     //! Returns whether the domain shift is more than one domain along at least one dimension
     bool shiftMultipleDomains() const { return shiftMultipleDomains_; }
 
-    //! Returns the number of atoms per cell
-    int numAtomsPerCell() const { return numAtomsPerCell_; }
+    //! Returns the number of atoms per cluster
+    int numAtomsPerCluster() const { return numAtomsPerCluster_; }
 
     //! Returns the list of all columns to send with column information
-    ArrayRef<const GridCellRange> cellRangesToSend() const { return cellRangesToSend_; }
+    ArrayRef<const GridClusterRange> clusterRangesToSend() const { return clusterRangesToSend_; }
 
     //! Returns the number of atoms to send
     int numAtoms() const { return numAtomsToSend_; }
@@ -238,12 +238,12 @@ private:
     int pbcForceShiftIndex_;
     //! Whether the domain shift is more than one domain along at least one dimension
     bool shiftMultipleDomains_;
-    //! The number of atoms per cell, note that this is max over i/j, unlike Grid which uses i
-    int numAtomsPerCell_;
+    //! The number of atoms per cluster, note that this is max over i/j, unlike Grid which uses i
+    int numAtomsPerCluster_;
     //! The corners of the zone we communicate coordinates to
     ZoneCorners targetZoneCorners_;
-    //! The cell ranges to commnicate
-    FastVector<GridCellRange> cellRangesToSend_;
+    //! The cluster ranges to communicate
+    FastVector<GridClusterRange> clusterRangesToSend_;
     //! The number of atoms to send (or receive in case of forces)
     int numAtomsToSend_;
     //! Buffer for communicating global atom indices
@@ -285,8 +285,11 @@ public:
     //! Return the zone this domain pair resides in
     int zone() const { return zone_; }
 
-    //! Returns the list of pairs of column indices and cell counts that we receive
-    ArrayRef<const std::pair<int, int>> cellRangesReceived() const { return cellRangesReceived_; }
+    //! Returns the list of pairs of column indices and cluster counts that we receive
+    ArrayRef<const std::pair<int, int>> clusterRangesReceived() const
+    {
+        return clusterRangesReceived_;
+    }
 
     //! The number of atoms to receive
     int numAtoms() const { return numAtomsToReceive_; }
@@ -302,8 +305,8 @@ private:
     int rank_;
     //! The zone this part of the halo belongs to
     int zone_;
-    //! Pairs of column indices and cell counts (matching the Grid cell size definition)
-    FastVector<std::pair<int, int>> cellRangesReceived_;
+    //! Pairs of column indices and cluster counts
+    FastVector<std::pair<int, int>> clusterRangesReceived_;
     //! The number of atoms to receive
     int numAtomsToReceive_;
 

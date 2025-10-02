@@ -82,8 +82,10 @@ struct GridColumnInfo
     ArrayRef<const BoundingBox> cellBBs;
     //! Bounding boxes along Z only, used with GPU grids, otherwise empty
     ArrayRef<const BoundingBox1D> cellBBsZonly;
-    //! The number of i-cells per bounding box
+    //! The number of cells per bounding box
     int bbToCellFactor;
+    //! The number of clusters per bounding box
+    int bbToClusterFactor;
 };
 
 /*! \brief Returns information on a column of the local grid
@@ -113,7 +115,8 @@ GridColumnInfo nbnxmGetLocalGridColumn(const Grid& grid, const int columnIndex)
 
     const Grid::Geometry& geometry = grid.geometry();
 
-    gci.bbToCellFactor = 1;
+    gci.bbToCellFactor    = 1;
+    gci.bbToClusterFactor = geometry.numAtomsPerCell_ / geometry.numAtomsICluster_;
 
     if (geometry.isSimple_)
     {
@@ -126,8 +129,8 @@ GridColumnInfo nbnxmGetLocalGridColumn(const Grid& grid, const int columnIndex)
         else
         {
             GMX_ASSERT(geometry.numAtomsJCluster_ == 2 * geometry.numAtomsICluster_,
-                       "Currently only equal i/j cells and j-cell size double i-cell size are "
-                       "supported");
+                       "Currently only equal i/j clusters and j-cluster size double i-cluster size "
+                       "are supported");
             // We have 2 i-cells per bounding box
             gci.bbToCellFactor = 2;
             // j-clusters are twice as large as i, need to divide counts by 2
@@ -217,9 +220,9 @@ struct DistanceCalculationInfo
     ArrayRef<const RVec> normal;
     //! Whether we should take into account non-orthogonal normals of faces
     IVec sumSquares = { 0, 0, 0 };
-    //! Whether we need to check distances for multi-body interactions when selecting cells
+    //! Whether we need to check distances for multi-body interactions when selecting clusters
     bool checkMultiBodyDistance = false;
-    //! Whether we need to check distances for two-body bonded interactions when selecting cells
+    //! Whether we need to check distances for two-body bonded interactions when selecting clusters
     bool checkTwoBodyDistance = false;
     //! Cut-off squared for 2-body interaction distances, includes one maxAtomGroupRadius
     real cutoffSquaredTwoBody1;
@@ -463,20 +466,19 @@ void DomainCommBackward::getTargetZoneCorners(const gmx_domdec_t&   dd,
 namespace
 {
 
-//! Computes and sets the cell range we will communicatie for grid column \p columnIndex
-/*! \brief Computes and adds the cell ranges we will communicatie for grid column \p columnIndex
+/*! \brief Computes and adds the cluster ranges we will communicatie for grid column \p columnIndex
  *
- * The cell ranges are added to \p columnInfo.
+ * The cluster ranges are added to \p columnInfo.
  *
- * \returns the number of cells added
+ * \returns the number of clusters added
  */
 template<bool doChecksForBondeds>
-int addCellRangesForGridColumn(const Grid&                                    grid,
-                               const int                                      columnIndex,
-                               const ZoneCorners&                             zoneCorners,
-                               const DistanceCalculationInfo&                 dci,
-                               const std::vector<bool>&                       isCellMissingLinks,
-                               FastVector<DomainCommBackward::GridCellRange>* gridCellRanges)
+int addClusterRangesForGridColumn(const Grid&                    grid,
+                                  const int                      columnIndex,
+                                  const ZoneCorners&             zoneCorners,
+                                  const DistanceCalculationInfo& dci,
+                                  const std::vector<bool>&       isCellMissingLinks,
+                                  FastVector<DomainCommBackward::GridClusterRange>* gridClusterRanges)
 {
     const GridColumnInfo gci = nbnxmGetLocalGridColumn(grid, columnIndex);
 
@@ -514,7 +516,7 @@ int addCellRangesForGridColumn(const Grid&                                    gr
     // so we need to convert the size used in grid, which is always of the i-cells
     const int firstCellInColumn = grid.firstCellInColumn(columnIndex) / gci.bbToCellFactor;
 
-    int numCellsAdded    = 0;
+    int numClustersAdded = 0;
     int firstCellInRange = -1;
     for (int cell = 0; cell < numCellsInColumn; cell++)
     {
@@ -560,18 +562,18 @@ int addCellRangesForGridColumn(const Grid&                                    gr
         {
             const int lastCellInRange = (isInRange ? cell : cell - 1);
 
-            gridCellRanges->push_back(
+            gridClusterRanges->push_back(
                     { columnIndex,
-                      { (firstCellInColumn + firstCellInRange) * gci.bbToCellFactor,
-                        (firstCellInColumn + lastCellInRange + 1) * gci.bbToCellFactor } });
-            numCellsAdded += gridCellRanges->back().cellRange.size();
+                      { (firstCellInColumn + firstCellInRange) * gci.bbToClusterFactor,
+                        (firstCellInColumn + lastCellInRange + 1) * gci.bbToClusterFactor } });
+            numClustersAdded += gridClusterRanges->back().clusterRange.size();
 
             // Mark that we no longer have an open cell range that is in range
             firstCellInRange = -1;
         }
     }
 
-    return numCellsAdded;
+    return numClustersAdded;
 }
 
 } // namespace
@@ -598,7 +600,7 @@ DomainCommBackward::DomainCommBackward(int         rank,
 
 void DomainCommBackward::clear()
 {
-    cellRangesToSend_.clear();
+    clusterRangesToSend_.clear();
     numAtomsToSend_ = 0;
 }
 
@@ -717,7 +719,7 @@ void DomainCommBackward::selectHaloAtoms(const gmx_domdec_t&      dd,
                 static_cast<int>(dci.checkTwoBodyDistance));
     }
 
-    numAtomsPerCell_ = grid.geometry().numAtomsPerCell_;
+    numAtomsPerCluster_ = std::max(grid.geometry().numAtomsICluster_, grid.geometry().numAtomsJCluster_);
 
     // Clear the send counts
     clear();
@@ -727,20 +729,20 @@ void DomainCommBackward::selectHaloAtoms(const gmx_domdec_t&      dd,
             (!shiftMultipleDomains_ && (dci.checkMultiBodyDistance || dci.checkTwoBodyDistance));
     for (int columnIndex = 0; columnIndex < grid.numColumns(); columnIndex++)
     {
-        int numCellsAdded;
+        int numClustersAdded;
 
         if (checkBondedDistances)
         {
-            numCellsAdded = addCellRangesForGridColumn<true>(
-                    grid, columnIndex, targetZoneCorners_, dci, isCellMissingLinks, &cellRangesToSend_);
+            numClustersAdded = addClusterRangesForGridColumn<true>(
+                    grid, columnIndex, targetZoneCorners_, dci, isCellMissingLinks, &clusterRangesToSend_);
         }
         else
         {
-            numCellsAdded = addCellRangesForGridColumn<false>(
-                    grid, columnIndex, targetZoneCorners_, dci, isCellMissingLinks, &cellRangesToSend_);
+            numClustersAdded = addClusterRangesForGridColumn<false>(
+                    grid, columnIndex, targetZoneCorners_, dci, isCellMissingLinks, &clusterRangesToSend_);
         }
 
-        numAtomsToSend_ += numCellsAdded * numAtomsPerCell_;
+        numAtomsToSend_ += numClustersAdded * numAtomsPerCluster_;
     }
 
     if (debug)
@@ -764,10 +766,10 @@ void DomainCommBackward::selectHaloAtoms(const gmx_domdec_t&      dd,
 
     // Copy the global atom indices to the send buffer
     globalAtomIndices_.clear();
-    for (const auto& columnInfo : cellRangesToSend_)
+    for (const auto& columnInfo : clusterRangesToSend_)
     {
-        const int at_start = *columnInfo.cellRange.begin() * numAtomsPerCell_;
-        const int at_end   = *columnInfo.cellRange.end() * numAtomsPerCell_;
+        const int at_start = *columnInfo.clusterRange.begin() * numAtomsPerCluster_;
+        const int at_end   = *columnInfo.clusterRange.end() * numAtomsPerCluster_;
         globalAtomIndices_.insert(globalAtomIndices_.end(),
                                   dd.globalAtomIndices.begin() + at_start,
                                   dd.globalAtomIndices.begin() + at_end);
@@ -780,10 +782,10 @@ FastVector<std::pair<int, int>> DomainCommBackward::makeColumnsSendBuffer() cons
 {
     // Store the grid info with only index and cell count per column
     FastVector<std::pair<int, int>> sendBuffer;
-    sendBuffer.reserve(cellRangesToSend_.size());
-    for (const auto& cellRange : cellRangesToSend_)
+    sendBuffer.reserve(clusterRangesToSend_.size());
+    for (const auto& clusterRange : clusterRangesToSend_)
     {
-        sendBuffer.emplace_back(cellRange.index, cellRange.cellRange.size());
+        sendBuffer.emplace_back(clusterRange.index, clusterRange.clusterRange.size());
     }
 
     return sendBuffer;
@@ -796,7 +798,7 @@ DomainCommForward::DomainCommForward(int rank, int zone, MPI_Comm mpiCommAll) :
 
 void DomainCommForward::setup(const DomainCommBackward& send, const int offsetInCoordinateBuffer)
 {
-    std::array<int, 2> sendSizes = { int(send.cellRangesToSend().size()), send.numAtoms() };
+    std::array<int, 2> sendSizes = { int(send.clusterRangesToSend().size()), send.numAtoms() };
     std::array<int, 2> receiveSizes;
 
     ddSendReceive(send, *this, dddirBackward, sendSizes.data(), 2, receiveSizes.data(), 2, HaloMpiTag::GridCounts);
@@ -813,15 +815,15 @@ void DomainCommForward::setup(const DomainCommBackward& send, const int offsetIn
     // Store the grid info with only pairs of column indices and cell counts
     const FastVector<std::pair<int, int>> sendBuffer = send.makeColumnsSendBuffer();
 
-    cellRangesReceived_.resize(receiveSizes[0]);
+    clusterRangesReceived_.resize(receiveSizes[0]);
 
     ddSendReceive(send,
                   *this,
                   dddirBackward,
                   sendBuffer.data(),
-                  send.cellRangesToSend().size(),
-                  cellRangesReceived_.data(),
-                  cellRangesReceived_.size(),
+                  send.clusterRangesToSend().size(),
+                  clusterRangesReceived_.data(),
+                  clusterRangesReceived_.size(),
                   HaloMpiTag::GridColumns);
 }
 

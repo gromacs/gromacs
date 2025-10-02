@@ -147,16 +147,16 @@ void packCoordinatesTemplated(const DomainCommBackward& domainComm,
                               ArrayRef<const RVec>      x,
                               ArrayRef<RVec>            sendBuffer)
 {
-    const int numAtomsPerCell = domainComm.numAtomsPerCell();
+    const int numAtomsPerCluster = domainComm.numAtomsPerCluster();
 
     int j = 0;
-    for (const DomainCommBackward::GridCellRange& gridCellRange : domainComm.cellRangesToSend())
+    for (const DomainCommBackward::GridClusterRange& gridClusterRange : domainComm.clusterRangesToSend())
     {
-        for (int cell : gridCellRange.cellRange)
+        for (int cluster : gridClusterRange.clusterRange)
         {
-            for (int i = 0; i < numAtomsPerCell; i++)
+            for (int i = 0; i < numAtomsPerCluster; i++)
             {
-                sendBuffer[j] = x[cell * numAtomsPerCell + i];
+                sendBuffer[j] = x[cluster * numAtomsPerCluster + i];
 
                 if constexpr (usesScrewPbc)
                 {
@@ -302,27 +302,27 @@ void accumulateReceivedForcesTemplated(const DomainCommBackward& domainComm,
                                        ArrayRef<RVec>            forces,
                                        RVec gmx_unused*          shiftForce)
 {
-    const int numAtomsPerCell = domainComm.numAtomsPerCell();
+    const int numAtomsPerCluster = domainComm.numAtomsPerCluster();
 
     ArrayRef<const RVec> receivedForces = domainComm.rvecBuffer();
 
     int j = 0;
-    for (const auto& cellRange : domainComm.cellRangesToSend())
+    for (const auto& clusterRange : domainComm.clusterRangesToSend())
     {
-        for (int cell : cellRange.cellRange)
+        for (int cluster : clusterRange.clusterRange)
         {
-            for (int i = 0; i < numAtomsPerCell; i++)
+            for (int i = 0; i < numAtomsPerCluster; i++)
             {
                 if constexpr (!usesScrewPbc)
                 {
-                    forces[cell * numAtomsPerCell + i] += receivedForces[j];
+                    forces[cluster * numAtomsPerCluster + i] += receivedForces[j];
                 }
                 else
                 {
                     // Accumulate the forces after rotating them
-                    forces[cell * numAtomsPerCell + i][XX] += receivedForces[j][XX];
-                    forces[cell * numAtomsPerCell + i][YY] -= receivedForces[j][YY];
-                    forces[cell * numAtomsPerCell + i][ZZ] -= receivedForces[j][ZZ];
+                    forces[cluster * numAtomsPerCluster + i][XX] += receivedForces[j][XX];
+                    forces[cluster * numAtomsPerCluster + i][YY] -= receivedForces[j][YY];
+                    forces[cluster * numAtomsPerCluster + i][ZZ] -= receivedForces[j][ZZ];
                 }
 
                 if constexpr (haveShiftForces)
