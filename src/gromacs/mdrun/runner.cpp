@@ -1404,6 +1404,7 @@ int Mdrunner::mdrunner()
                                                          inputrec->useMts,
                                                          replExParams.exchangeInterval > 0,
                                                          (inputrec->eSwapCoords != SwapType::No),
+                                                         gpusWereDetected,
                                                          mdlog);
 
     // Initialize development feature flags that enabled by environment variable

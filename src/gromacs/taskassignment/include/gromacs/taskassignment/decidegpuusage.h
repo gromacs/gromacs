@@ -316,6 +316,7 @@ bool decideWhetherToUseGpuForUpdate(bool                 isDomainDecomposition,
  * \param[in]  haveMts                      Whether the simulation uses multiple time stepping
  * \param[in]  useReplicaExchange           Whether replica exchange is used
  * \param[in]  haveSwapCoords               Whether the swap-coords functionality is active
+ * \param[in]  gpusWereDetected             Whether we have any GPUs
  * \param[in]  mdlog                        MD logger.
  *
  * \returns    Whether the MPI-parallel runs can use direct GPU communication.
@@ -324,6 +325,7 @@ bool decideWhetherDirectGpuCommunicationCanBeUsed(gmx::GpuAwareMpiStatus mpiStat
                                                   bool                   haveMts,
                                                   bool                   useReplicaExchange,
                                                   bool                   haveSwapCoords,
+                                                  bool                   gpusWereDetected,
                                                   const gmx::MDLogger&   mdlog);
 
 /*! \brief Decide whether to use GPU for halo exchange.

@@ -816,6 +816,7 @@ bool decideWhetherDirectGpuCommunicationCanBeUsed(gmx::GpuAwareMpiStatus gpuAwar
                                                   bool                   haveMts,
                                                   bool                   useReplicaExchange,
                                                   bool                   haveSwapCoords,
+                                                  bool                   gpusWereDetected,
                                                   const gmx::MDLogger&   mdlog)
 {
     // Decide if we have either a supported library MPI build or thread-MPI build
@@ -827,6 +828,10 @@ bool decideWhetherDirectGpuCommunicationCanBeUsed(gmx::GpuAwareMpiStatus gpuAwar
 
     // If the build does not support using the feature, no point in continuing down any further.
     if (!isSupportedByBuild)
+    {
+        return false;
+    }
+    if (!gpusWereDetected)
     {
         return false;
     }
