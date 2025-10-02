@@ -52,6 +52,7 @@
 #include <string>
 #include <vector>
 
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 
@@ -495,6 +496,60 @@ std::vector<std::string> TextLineWrapper::wrapToVector(const std::string& input)
         lineStart = nextLineStart;
     }
     return result;
+}
+
+std::string prettyPrintListAsRange(ArrayRef<const int> list)
+{
+    if (list.empty())
+    {
+        return "";
+    }
+    if (list.size() == 1)
+    {
+        return std::to_string(list[0]);
+    }
+
+    std::vector<std::string> parts;
+    size_t                   i = 0;
+
+    while (i < list.size())
+    {
+        size_t start = i;
+
+        // Try to find an arithmetic sequence starting at position i
+        if (i + 1 < list.size())
+        {
+            int    step = list[i + 1] - list[i];
+            size_t end  = i + 1;
+
+            // Extend the sequence as far as possible
+            while (end + 1 < list.size() && list[end + 1] - list[end] == step)
+            {
+                ++end;
+            }
+
+            // If we found a sequence of at least 3 elements, format it
+            if (end - start >= 2 && step > 0)
+            {
+                if (step == 1)
+                {
+                    parts.push_back(gmx::formatString("%d-%d", list[start], list[end]));
+                }
+                else
+                {
+                    parts.push_back(gmx::formatString("%d-%d:%d", list[start], list[end], step));
+                }
+                i = end + 1;
+                continue;
+            }
+        }
+
+        // Not a sequence (or too short), just add the single element
+        parts.push_back(std::to_string(list[i]));
+        ++i;
+    }
+
+    return gmx::joinStrings(parts, ",");
 }
 
 } // namespace gmx
