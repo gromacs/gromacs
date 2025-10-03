@@ -25,3 +25,5 @@ Disabled compilation of muparser test code, because it produces
 warnings with MSVC.
 
 Used some finite-math flags needed for suitable compilation with icpx
+
+Directed CMake to only look for C++ OpenMP flags.

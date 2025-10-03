@@ -685,7 +685,7 @@ void gmx::LegacySimulator::do_md()
                         state_->box,
                         &bSumEkinhOld,
                         cglo_flags_iteration,
-                        step,
+                        step - 1, // Pass step-1 to signal that v is from minus a half step
                         &observablesReducer);
         // Clean up after pre-step use of compute_globals()
         observablesReducer.markAsReadyToReduce();
@@ -1089,7 +1089,7 @@ void gmx::LegacySimulator::do_md()
                             state_->box,
                             &bSumEkinhOld,
                             cglo_flags,
-                            step,
+                            step - 1, // Pass step-1 to indicate that v is from minus half a step
                             &observablesReducer);
         }
         clear_mat(force_vir);

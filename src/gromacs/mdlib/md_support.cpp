@@ -473,6 +473,9 @@ void compute_globals(gmx_global_stat*               gstat,
 
     /* ########## Kinetic energy  ############## */
 
+    const bool haveLeapFrog = (ir->eI == IntegrationAlgorithm::MD || EI_SD(ir->eI));
+    const bool haveEkinhOld = (haveLeapFrog && step == ekind->lastComputeGlobalsStep + 1);
+
     if (bTemp)
     {
         if (!bReadEkin)
@@ -513,7 +516,7 @@ void compute_globals(gmx_global_stat*               gstat,
                             ekind,
                             bStopCM ? vcm : nullptr,
                             signalBuffer,
-                            *bSumEkinhOld,
+                            *bSumEkinhOld && haveEkinhOld,
                             flags,
                             step,
                             observablesReducer);
@@ -552,10 +555,28 @@ void compute_globals(gmx_global_stat*               gstat,
            bEkinAveVel: If TRUE, we simply multiply ekin by ekinscale to get a full step kinetic energy.
            If FALSE, we average ekinh_old and ekinh*ekinscale_nhc to get an averaged half step kinetic energy.
          */
+        if (haveLeapFrog && !haveEkinhOld && step >= ir->init_step)
+        {
+            /* We need to compute the average kinetic energy over the previous
+             * and the current step, but we do not have the previous value.
+             * This should only happen when a run is interrupted.
+             * As an emergency measure, copy the new values to the old.
+             * In this way we obtain the current half step kinetic energy
+             * instead of the average of the previous and the current.
+             */
+            // We would like to assert here on step % ir->nstcalcenergy != 0,
+            // but for that we need to pass extra information to compute_globals().
+            for (auto& tcstat : ekind->tcstat)
+            {
+                copy_mat(tcstat.ekinh, tcstat.ekinh_old);
+            }
+        }
         enerd->term[F_TEMP] = sum_ekin(&(ir->opts), ekind, &dvdl_ekin, bEkinAveVel, bScaleEkin);
         enerd->dvdl_lin[FreeEnergyPerturbationCouplingType::Mass] = static_cast<double>(dvdl_ekin);
 
         enerd->term[F_EKIN] = trace(ekind->ekin);
+
+        ekind->lastComputeGlobalsStep = step;
     }
 
     /* ########## Now pressure ############## */

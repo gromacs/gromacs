@@ -49,6 +49,17 @@ mdrun could exit during PME tuning with an assertion failure for gridSize.
 :issue:`5406`
 :issue:`5417`
 
+mdrun would report incorrect kinetic energy values when interrupted
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When mdrun was interrupted and did not stop at a step that was a multiple
+of :mdp:`nstcalcenergy`, the kinetic energy, temperature, pressure and
+energy drift reported for the last step were incorrect when using the
+leap-frog integrator. Note that such an incorrect frame was removed
+when the simulation was continued with concatenation of output files.
+
+:issue:`5433`
+
 Direct halo communication could cause mdrun to exit with an MPI error
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -80,6 +91,14 @@ is now compatible with XMGrace.
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix CUDA build on Windows
+"""""""""""""""""""""""""
+
+Building |Gromacs| with CUDA on Windows would sometimes fail at CMake
+stage with ``Could NOT find OpenMP_CUDA`` error. Added a workaround for that.
+
+:issue:`5431`
+
 Fixes to the Colvars library
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -105,7 +124,6 @@ The following is a list of bugfix pull requests in the`Colvars repository
 
 * Fix indentation of 'Init CVC' message in standard output (`Colvars PR 755
   <https://github.com/Colvars/colvars/pull/755>`_)
-
 
 Miscellaneous
 ^^^^^^^^^^^^^
