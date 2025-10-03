@@ -404,8 +404,38 @@ static void set_lj_parameter_data(nbnxn_atomdata_t::Params* params, gmx_bool bSI
     }
 }
 
-nbnxn_atomdata_t::SimdMasks::SimdMasks(const NbnxmKernelType gmx_unused kernelType)
+//! Allocates and sets the SIMD exclusion filters
+template<typename T>
+gmx_unused static void setExclusionFilters(AlignedVector<T>* exclusionFilters, const NbnxmKernelType kernelType)
 {
+    /* We use up to 32 bits for exclusion masking.
+     * The same masks are used for the 4xN and 2x(N+N) kernels.
+     * The masks are read either into integer SIMD registers or into
+     * real SIMD registers (together with a cast).
+     * In single precision this means the real and integer SIMD registers
+     * are of equal size.
+     */
+    const int numExclusionFilters = sc_iClusterSize(kernelType) * sc_jClusterSize(kernelType);
+    GMX_RELEASE_ASSERT(size_t(numExclusionFilters) <= sizeof(T) * 8,
+                       "The filters should fit in the type");
+
+    exclusionFilters->resize(numExclusionFilters);
+
+    // Set the consecutive bits for masking pair exclusions
+    constexpr T c_one = 1;
+    for (int j = 0; j < numExclusionFilters; j++)
+    {
+        (*exclusionFilters)[j] = (c_one << j);
+    }
+}
+
+nbnxn_atomdata_t::SimdMasks::SimdMasks(const NbnxmKernelType kernelType)
+{
+    if (!kernelTypeIsSimd(kernelType))
+    {
+        return;
+    }
+
 #if GMX_SIMD
     constexpr int simd_width = GMX_SIMD_REAL_WIDTH;
     /* Set the diagonal cluster pair exclusion mask setup data.
@@ -430,30 +460,14 @@ nbnxn_atomdata_t::SimdMasks::SimdMasks(const NbnxmKernelType gmx_unused kernelTy
         diagonal_2xnn_j_minus_i[simd_width / 2 + j] = j - 1 - 0.5;
     }
 
-    /* We use up to 32 bits for exclusion masking.
-     * The same masks are used for the 4xN and 2x(N+N) kernels.
-     * The masks are read either into integer SIMD registers or into
-     * real SIMD registers (together with a cast).
-     * In single precision this means the real and integer SIMD registers
-     * are of equal size.
-     */
-    const int simd_excl_size = sc_iClusterSize(kernelType) * simd_width;
-#    if GMX_DOUBLE && !GMX_SIMD_HAVE_INT32_LOGICAL
-    exclusion_filter64.resize(simd_excl_size);
-#    else
-    exclusion_filter.resize(simd_excl_size);
-#    endif
-
-    for (int j = 0; j < simd_excl_size; j++)
+    if constexpr (GMX_DOUBLE && !GMX_SIMD_HAVE_INT32_LOGICAL)
     {
-        /* Set the consecutive bits for masking pair exclusions */
-#    if GMX_DOUBLE && !GMX_SIMD_HAVE_INT32_LOGICAL
-        exclusion_filter64[j] = (1U << j);
-#    else
-        exclusion_filter[j] = (1U << j);
-#    endif
+        setExclusionFilters(&exclusion_filter64, kernelType);
     }
-
+    else
+    {
+        setExclusionFilters(&exclusion_filter, kernelType);
+    }
 #endif // GMX_SIMD
 }
 
