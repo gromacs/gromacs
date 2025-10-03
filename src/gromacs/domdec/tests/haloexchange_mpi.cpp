@@ -95,15 +95,13 @@ float encodedValue(const int sendRank, const int atomNumber, const int spatial3d
 
 /*! \brief Initialize halo array
  *
- * \param [in] x              Atom coordinate data array
- * \param [in] numHomeAtoms   Number of home atoms
- * \param [in] numAtomsTotal  Total number of atoms, including halo
+ * \param [in]  rank           Rank within MPI communicator
+ * \param [out] x              Atom coordinate data array
+ * \param [in]  numHomeAtoms   Number of home atoms
+ * \param [in]  numAtomsTotal  Total number of atoms, including halo
  */
-void initHaloData(RVec* x, const int numHomeAtoms, const int numAtomsTotal)
+void initHaloData(const int rank, RVec* x, const int numHomeAtoms, const int numAtomsTotal)
 {
-    int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
     for (int i = 0; i < numAtomsTotal; i++)
     {
         for (int j = 0; j < DIM; j++)
@@ -123,13 +121,14 @@ void initHaloData(RVec* x, const int numHomeAtoms, const int numAtomsTotal)
 void gpuHalo(gmx_domdec_t* dd, matrix box, HostVector<RVec>* h_x, int numAtomsTotal)
 {
 #if GMX_GPU
+    // get communicator
+    const MpiComm& mpiComm = dd->mpiComm();
     // pin memory if possible
     changePinningPolicy(h_x, PinningPolicy::PinnedIfSupported);
     // Set up GPU hardware environment and assign this MPI rank to a device
-    int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     int         numDevices = getTestHardwareEnvironment()->getTestDeviceList().size();
-    const auto& testDevice = getTestHardwareEnvironment()->getTestDeviceList()[rank % numDevices];
+    const auto& testDevice =
+            getTestHardwareEnvironment()->getTestDeviceList()[mpiComm.rank() % numDevices];
     const auto& deviceContext = testDevice->deviceContext();
     deviceContext.activate();
     DeviceStream deviceStream(deviceContext, DeviceStreamPriority::Normal, false);
@@ -161,7 +160,7 @@ void gpuHalo(gmx_domdec_t* dd, matrix box, HostVector<RVec>* h_x, int numAtomsTo
         for (int pulse = 0; pulse < dd->comm->cd[d].numPulses(); pulse++)
         {
             gpuHaloExchange[d].push_back(GpuHaloExchange(
-                    dd, d, MPI_COMM_WORLD, MPI_COMM_WORLD, deviceContext, pulse, false, nullptr));
+                    dd, d, mpiComm.comm(), mpiComm.comm(), deviceContext, pulse, false, nullptr));
         }
     }
 
@@ -175,7 +174,7 @@ void gpuHalo(gmx_domdec_t* dd, matrix box, HostVector<RVec>* h_x, int numAtomsTo
         }
     }
     // Barrier is needed to avoid other threads using events after its owner has exited and destroyed the context.
-    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(mpiComm.comm());
 
     deviceStream.synchronize();
 
@@ -194,16 +193,14 @@ void gpuHalo(gmx_domdec_t* dd, matrix box, HostVector<RVec>* h_x, int numAtomsTo
 
 /*! \brief Define 1D rank topology with 4 MPI tasks
  *
- * \param [in] dd  Domain decomposition object
+ * \param [in]  rank  Rank within MPI communicator
+ * \param [in]  size  Size of MPI communicator
+ * \param [out] dd    Domain decomposition object
  */
-void define1dRankTopology(gmx_domdec_t* dd)
+void define1dRankTopology(const int rank, const int size, gmx_domdec_t* dd)
 {
-    int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-    const int numRanks = getNumberOfTestMpiRanks();
-    dd->neighbor[0][0] = (rank + 1) % numRanks;
-    dd->neighbor[0][1] = (rank == 0) ? (numRanks - 1) : rank - 1;
+    dd->neighbor[0][0] = (rank + 1) % size;
+    dd->neighbor[0][1] = (rank == 0) ? (size - 1) : rank - 1;
 }
 
 /*! \brief Define 2D rank topology with 4 MPI tasks
@@ -213,14 +210,11 @@ void define1dRankTopology(gmx_domdec_t* dd)
  *   | 0 1 |
  *    -----
  *
- * \param [in] dd  Domain decomposition object
+ * \param [in]  rank  Rank within MPI communicator
+ * \param [out] dd    Domain decomposition object
  */
-void define2dRankTopology(gmx_domdec_t* dd)
+void define2dRankTopology(const int rank, const int /* size */, gmx_domdec_t* dd)
 {
-
-    int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
     switch (rank)
     {
         case 0:
@@ -252,15 +246,15 @@ void define2dRankTopology(gmx_domdec_t* dd)
 
 /*! \brief Define a 1D halo with 1 pulses
  *
- * \param [in] dd      Domain decomposition object
- * \param [in] indvec  Vector of index vectors
+ * \param [in]  rank    Rank within MPI communicator
+ * \param [out] dd      Domain decomposition object
+ * \param [out] indvec  Vector of index vectors
  */
-void define1dHaloWith1Pulse(gmx_domdec_t* dd, std::vector<gmx_domdec_ind_t>* indvec)
+void define1dHaloWith1Pulse(const int rank,
+                            const int /* size */,
+                            gmx_domdec_t*                  dd,
+                            std::vector<gmx_domdec_ind_t>* indvec)
 {
-
-    int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
     FastVector<int>  indexvec;
     gmx_domdec_ind_t ind;
 
@@ -290,15 +284,15 @@ void define1dHaloWith1Pulse(gmx_domdec_t* dd, std::vector<gmx_domdec_ind_t>* ind
 
 /*! \brief Define a 1D halo with 2 pulses
  *
- * \param [in] dd      Domain decomposition object
- * \param [in] indvec  Vector of index vectors
+ * \param [in]  rank    Rank within MPI communicator
+ * \param [out] dd      Domain decomposition object
+ * \param [out] indvec  Vector of index vectors
  */
-void define1dHaloWith2Pulses(gmx_domdec_t* dd, std::vector<gmx_domdec_ind_t>* indvec)
+void define1dHaloWith2Pulses(const int rank,
+                             const int /* size */,
+                             gmx_domdec_t*                  dd,
+                             std::vector<gmx_domdec_ind_t>* indvec)
 {
-
-    int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
     FastVector<int>  indexvec;
     gmx_domdec_ind_t ind;
 
@@ -340,15 +334,15 @@ void define1dHaloWith2Pulses(gmx_domdec_t* dd, std::vector<gmx_domdec_ind_t>* in
 
 /*! \brief Define a 2D halo with 1 pulse in each dimension
  *
- * \param [in] dd      Domain decomposition object
- * \param [in] indvec  Vector of index vectors
+ * \param [in]  rank    Rank within MPI communicator
+ * \param [out] dd      Domain decomposition object
+ * \param [out] indvec  Vector of index vectors
  */
-void define2dHaloWith1PulseInEachDim(gmx_domdec_t* dd, std::vector<gmx_domdec_ind_t>* indvec)
+void define2dHaloWith1PulseInEachDim(const int rank,
+                                     const int /*size*/,
+                                     gmx_domdec_t*                  dd,
+                                     std::vector<gmx_domdec_ind_t>* indvec)
 {
-
-    int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
     FastVector<int>  indexvec;
     gmx_domdec_ind_t ind;
 
@@ -382,15 +376,15 @@ void define2dHaloWith1PulseInEachDim(gmx_domdec_t* dd, std::vector<gmx_domdec_in
 
 /*! \brief Define a 2D halo with 2 pulses in the first dimension
  *
- * \param [in] dd      Domain decomposition object
- * \param [in] indvec  Vector of index vectors
+ * \param [in]  rank    Rank within MPI communicator
+ * \param [out] dd      Domain decomposition object
+ * \param [out] indvec  Vector of index vectors
  */
-void define2dHaloWith2PulsesInDim1(gmx_domdec_t* dd, std::vector<gmx_domdec_ind_t>* indvec)
+void define2dHaloWith2PulsesInDim1(const int rank,
+                                   const int /* size */,
+                                   gmx_domdec_t*                  dd,
+                                   std::vector<gmx_domdec_ind_t>* indvec)
 {
-
-    int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
     FastVector<int>  indexvec;
     gmx_domdec_ind_t ind;
 
@@ -518,230 +512,124 @@ void checkResults2dHaloWith2PulsesInDim1(const RVec* x, const gmx_domdec_t* dd, 
     }
 }
 
-TEST(HaloExchangeTest, Coordinates1dHaloWith1Pulse)
+//! Parameters over which halo exchange is tested
+struct HaloExchangeTestParameters
 {
+    //! Human-readable description for scoped traces
+    std::string description;
+    //! Number of home atoms
+    const int numHomeAtoms;
+    //! Number of halo atoms
+    const int numHaloAtoms;
+    //! The dimensions of the domain decomposition
+    std::vector<int> ddDims;
+    //! The DD topology setup function to use
+    void (*domainTopologySetupFunction)(int, int, gmx_domdec_t*);
+    //! The DD pulse-structure setup function to use
+    void (*pulseSetupFunction)(int, int, gmx_domdec_t*, std::vector<gmx_domdec_ind_t>*);
+    //! The results-checking funciton to use
+    void (*checkResults)(const RVec*, const gmx_domdec_t*, const int);
+};
+
+/*! \brief Data used in test body for halo exchange
+ *
+ * This data cannot be a member of the test fixture class because with
+ * thread-MPI then they would be shared across all ranks, which can't
+ * work. */
+class HaloExchangeTestData
+{
+public:
+    HaloExchangeTestData(const HaloExchangeTestParameters& parameters) :
+        dd_{ mpiComm_, ir_, parameters.ddDims },
+        numAtomsTotal_{ parameters.numHomeAtoms + parameters.numHaloAtoms }
+    {
+        SCOPED_TRACE("Testing " + parameters.description);
+        dd_.comm                      = std::make_unique<gmx_domdec_comm_t>(mpiComm_);
+        dd_.unitCellInfo.haveScrewPBC = false;
+
+        DDAtomRanges atomRanges;
+        atomRanges.setEnd(DDAtomRanges::Type::Home, parameters.numHomeAtoms);
+        dd_.comm->atomRanges = atomRanges;
+
+        parameters.domainTopologySetupFunction(mpiComm_.rank(), mpiComm_.size(), &dd_);
+        parameters.pulseSetupFunction(mpiComm_.rank(), mpiComm_.size(), &dd_, &indvec_);
+    }
+    //! MPI communicator
+    MpiComm mpiComm_{ MPI_COMM_WORLD };
+    //! Input record
+    t_inputrec ir_;
+    //! DD manager
+    gmx_domdec_t dd_;
+    //! Describes DD pulse structure
+    std::vector<gmx_domdec_ind_t> indvec_;
+    //! Total number of atoms known to each domain
+    int numAtomsTotal_;
+    //! Position coordinates
+    HostVector<RVec> h_x_{ static_cast<size_t>(numAtomsTotal_) };
+};
+
+//! Test fixture for halo exchange
+class HaloExchangeTest : public ::testing::TestWithParam<HaloExchangeTestParameters>
+{
+public:
+    //! Box matrix (unused by halo exchange in practice)
+    matrix box_ = { { 0., 0., 0. } };
+};
+
+TEST_P(HaloExchangeTest, WithParametersOnCpu)
+{
+    SCOPED_TRACE("Testing " + GetParam().description);
     GMX_MPI_TEST(RequireRankCount<4>);
 
-    // Set up atom data
-    const int        numHomeAtoms  = 10;
-    const int        numHaloAtoms  = 2;
-    const int        numAtomsTotal = numHomeAtoms + numHaloAtoms;
-    HostVector<RVec> h_x;
-    h_x.resize(numAtomsTotal);
-
-    initHaloData(h_x.data(), numHomeAtoms, numAtomsTotal);
-
-    // Set up dd
-    MpiComm            mpiComm(MPI_COMM_WORLD);
-    t_inputrec         ir;
-    std::array<int, 1> ddDims = { 0 };
-    gmx_domdec_t       dd(mpiComm, ir, ddDims);
-    dd.comm                      = std::make_unique<gmx_domdec_comm_t>(mpiComm);
-    dd.unitCellInfo.haveScrewPBC = false;
-
-    DDAtomRanges atomRanges;
-    atomRanges.setEnd(DDAtomRanges::Type::Home, numHomeAtoms);
-    dd.comm->atomRanges = atomRanges;
-
-    define1dRankTopology(&dd);
-
-    std::vector<gmx_domdec_ind_t> indvec;
-    define1dHaloWith1Pulse(&dd, &indvec);
-
-    // Perform halo exchange
-    matrix box = { { 0., 0., 0. } };
-    dd_move_x(&dd, box, static_cast<ArrayRef<RVec>>(h_x), nullptr);
-
-    // Check results
-    checkResults1dHaloWith1Pulse(h_x.data(), &dd, numHomeAtoms);
-
-    if constexpr (GMX_THREAD_MPI && GpuConfigurationCapabilities::ThreadMpiCommunication) // repeat with GPU halo codepath
-    {
-        // early return if no devices are available.
-        if (getTestHardwareEnvironment()->getTestDeviceList().empty())
-        {
-            return;
-        }
-
-        // Re-initialize input
-        initHaloData(h_x.data(), numHomeAtoms, numAtomsTotal);
-
-        // Perform GPU halo exchange
-        gpuHalo(&dd, box, &h_x, numAtomsTotal);
-
-        // Check results
-        checkResults1dHaloWith1Pulse(h_x.data(), &dd, numHomeAtoms);
-    }
+    HaloExchangeTestData data(GetParam());
+    const int            numHomeAtoms = GetParam().numHomeAtoms;
+    initHaloData(data.mpiComm_.rank(), data.h_x_.data(), numHomeAtoms, data.numAtomsTotal_);
+    dd_move_x(&data.dd_, box_, static_cast<ArrayRef<RVec>>(data.h_x_), nullptr);
+    GetParam().checkResults(data.h_x_.data(), &data.dd_, numHomeAtoms);
 }
 
-TEST(HaloExchangeTest, Coordinates1dHaloWith2Pulses)
+TEST_P(HaloExchangeTest, WithParametersOnGpu)
 {
+    SCOPED_TRACE("Testing " + GetParam().description);
     GMX_MPI_TEST(RequireRankCount<4>);
 
-    // Set up atom data
-    const int        numHomeAtoms  = 10;
-    const int        numHaloAtoms  = 5;
-    const int        numAtomsTotal = numHomeAtoms + numHaloAtoms;
-    HostVector<RVec> h_x;
-    h_x.resize(numAtomsTotal);
-
-    initHaloData(h_x.data(), numHomeAtoms, numAtomsTotal);
-
-    // Set up dd
-    MpiComm            mpiComm(MPI_COMM_WORLD);
-    t_inputrec         ir;
-    std::array<int, 1> ddDims = { 0 };
-    gmx_domdec_t       dd(mpiComm, ir, ddDims);
-    dd.comm                      = std::make_unique<gmx_domdec_comm_t>(mpiComm);
-    dd.unitCellInfo.haveScrewPBC = false;
-
-    DDAtomRanges atomRanges;
-    atomRanges.setEnd(DDAtomRanges::Type::Home, numHomeAtoms);
-    dd.comm->atomRanges = atomRanges;
-
-    define1dRankTopology(&dd);
-
-    std::vector<gmx_domdec_ind_t> indvec;
-    define1dHaloWith2Pulses(&dd, &indvec);
-
-    // Perform halo exchange
-    matrix box = { { 0., 0., 0. } };
-    dd_move_x(&dd, box, static_cast<ArrayRef<RVec>>(h_x), nullptr);
-
-    // Check results
-    checkResults1dHaloWith2Pulses(h_x.data(), &dd, numHomeAtoms);
-
-    if constexpr (GMX_THREAD_MPI && GpuConfigurationCapabilities::ThreadMpiCommunication) // repeat with GPU halo codepath
+    if (!(GMX_THREAD_MPI && GpuConfigurationCapabilities::ThreadMpiCommunication))
     {
-        // early return if no devices are available.
-        if (getTestHardwareEnvironment()->getTestDeviceList().empty())
-        {
-            return;
-        }
-
-        // Re-initialize input
-        initHaloData(h_x.data(), numHomeAtoms, numAtomsTotal);
-
-        // Perform GPU halo exchange
-        gpuHalo(&dd, box, &h_x, numAtomsTotal);
-
-        // Check results
-        checkResults1dHaloWith2Pulses(h_x.data(), &dd, numHomeAtoms);
+        GTEST_SKIP() << "GPU halo exchange testing only supported in build configuration with CUDA "
+                        "and thread-MPI";
     }
+    if (getTestHardwareEnvironment()->getTestDeviceList().empty())
+    {
+        GTEST_SKIP() << "No GPUs detected";
+    }
+
+    HaloExchangeTestData data(GetParam());
+    const int            numHomeAtoms = GetParam().numHomeAtoms;
+    initHaloData(data.mpiComm_.rank(), data.h_x_.data(), numHomeAtoms, data.numAtomsTotal_);
+    gpuHalo(&data.dd_, box_, &data.h_x_, data.numAtomsTotal_);
+    GetParam().checkResults(data.h_x_.data(), &data.dd_, numHomeAtoms);
 }
 
+static const std::vector<HaloExchangeTestParameters> c_testSetups = {
+    { "1D halo with 1 pulse", 10, 2, { 0 }, define1dRankTopology, define1dHaloWith1Pulse, checkResults1dHaloWith1Pulse },
+    { "1D halo with 2 pulses", 10, 5, { 0 }, define1dRankTopology, define1dHaloWith2Pulses, checkResults1dHaloWith2Pulses },
+    { "2D halo with 1 pulse in each dimension",
+      10,
+      4,
+      { 0, 1 },
+      define2dRankTopology,
+      define2dHaloWith1PulseInEachDim,
+      checkResults2dHaloWith1PulseInEachDim },
+    { "2D halo with 2 pulses in first dimension",
+      10,
+      7,
+      { 0, 1 },
+      define2dRankTopology,
+      define2dHaloWith2PulsesInDim1,
+      checkResults2dHaloWith2PulsesInDim1 },
+};
 
-TEST(HaloExchangeTest, Coordinates2dHaloWith1PulseInEachDim)
-{
-    GMX_MPI_TEST(RequireRankCount<4>);
-
-    // Set up atom data
-    const int        numHomeAtoms  = 10;
-    const int        numHaloAtoms  = 4;
-    const int        numAtomsTotal = numHomeAtoms + numHaloAtoms;
-    HostVector<RVec> h_x;
-    h_x.resize(numAtomsTotal);
-
-    initHaloData(h_x.data(), numHomeAtoms, numAtomsTotal);
-
-    // Set up dd
-    MpiComm            mpiComm(MPI_COMM_WORLD);
-    t_inputrec         ir;
-    std::array<int, 2> ddDims = { 0, 1 };
-    gmx_domdec_t       dd(mpiComm, ir, ddDims);
-    dd.comm                      = std::make_unique<gmx_domdec_comm_t>(mpiComm);
-    dd.unitCellInfo.haveScrewPBC = false;
-
-    DDAtomRanges atomRanges;
-    atomRanges.setEnd(DDAtomRanges::Type::Home, numHomeAtoms);
-    dd.comm->atomRanges = atomRanges;
-
-    define2dRankTopology(&dd);
-
-    std::vector<gmx_domdec_ind_t> indvec;
-    define2dHaloWith1PulseInEachDim(&dd, &indvec);
-
-    // Perform halo exchange
-    matrix box = { { 0., 0., 0. } };
-    dd_move_x(&dd, box, static_cast<ArrayRef<RVec>>(h_x), nullptr);
-
-    // Check results
-    checkResults2dHaloWith1PulseInEachDim(h_x.data(), &dd, numHomeAtoms);
-
-    if constexpr (GMX_THREAD_MPI && GpuConfigurationCapabilities::ThreadMpiCommunication) // repeat with GPU halo codepath
-    {
-        // early return if no devices are available.
-        if (getTestHardwareEnvironment()->getTestDeviceList().empty())
-        {
-            return;
-        }
-
-        // Re-initialize input
-        initHaloData(h_x.data(), numHomeAtoms, numAtomsTotal);
-
-        // Perform GPU halo exchange
-        gpuHalo(&dd, box, &h_x, numAtomsTotal);
-
-        // Check results
-        checkResults2dHaloWith1PulseInEachDim(h_x.data(), &dd, numHomeAtoms);
-    }
-}
-
-TEST(HaloExchangeTest, Coordinates2dHaloWith2PulsesInDim1)
-{
-    GMX_MPI_TEST(RequireRankCount<4>);
-
-    // Set up atom data
-    const int        numHomeAtoms  = 10;
-    const int        numHaloAtoms  = 7;
-    const int        numAtomsTotal = numHomeAtoms + numHaloAtoms;
-    HostVector<RVec> h_x;
-    h_x.resize(numAtomsTotal);
-
-    initHaloData(h_x.data(), numHomeAtoms, numAtomsTotal);
-
-    // Set up dd
-    MpiComm            mpiComm(MPI_COMM_WORLD);
-    t_inputrec         ir;
-    std::array<int, 2> ddDims = { 0, 1 };
-    gmx_domdec_t       dd(mpiComm, ir, ddDims);
-    dd.comm                      = std::make_unique<gmx_domdec_comm_t>(mpiComm);
-    dd.unitCellInfo.haveScrewPBC = false;
-
-    DDAtomRanges atomRanges;
-    atomRanges.setEnd(DDAtomRanges::Type::Home, numHomeAtoms);
-    dd.comm->atomRanges = atomRanges;
-
-    define2dRankTopology(&dd);
-
-    std::vector<gmx_domdec_ind_t> indvec;
-    define2dHaloWith2PulsesInDim1(&dd, &indvec);
-
-    // Perform halo exchange
-    matrix box = { { 0., 0., 0. } };
-    dd_move_x(&dd, box, static_cast<ArrayRef<RVec>>(h_x), nullptr);
-
-    // Check results
-    checkResults2dHaloWith2PulsesInDim1(h_x.data(), &dd, numHomeAtoms);
-
-    if constexpr (GMX_THREAD_MPI && GpuConfigurationCapabilities::ThreadMpiCommunication) // repeat with GPU halo codepath
-    {
-        // early return if no devices are available.
-        if (getTestHardwareEnvironment()->getTestDeviceList().empty())
-        {
-            return;
-        }
-
-        // Re-initialize input
-        initHaloData(h_x.data(), numHomeAtoms, numAtomsTotal);
-
-        // Perform GPU halo exchange
-        gpuHalo(&dd, box, &h_x, numAtomsTotal);
-
-        // Check results
-        checkResults2dHaloWith2PulsesInDim1(h_x.data(), &dd, numHomeAtoms);
-    }
-}
+INSTANTIATE_TEST_SUITE_P(Works, HaloExchangeTest, ::testing::ValuesIn(c_testSetups));
 
 } // namespace
 } // namespace test
