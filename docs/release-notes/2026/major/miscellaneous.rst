@@ -41,3 +41,13 @@ leads to FFTW3 being compiled with the system default compiler. The ```CMAKE_C_C
 is now passed to the FFTW3 configure command.
 
 :issue:`5344`
+
+Removed duplicate dihedral type definitions in the CHARMM27 force field
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The CHARMM27 force fields files contained duplicates of definitions of dihedral
+types for atom types CPH1 and CPH2. This did not affect correctness, but was
+confusing and prevented strict error checking by ``gmx grompp``.
+
+:issue:`5333`
+
