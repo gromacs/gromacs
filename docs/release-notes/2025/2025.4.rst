@@ -49,6 +49,17 @@ mdrun could exit during PME tuning with an assertion failure for gridSize.
 :issue:`5406`
 :issue:`5417`
 
+mdrun would report incorrect kinetic energy values when interrupted
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When mdrun was interrupted and did not stop at a step that was a multiple
+of :mdp:`nstcalcenergy`, the kinetic energy, temperature, pressure and
+energy drift reported for the last step were incorrect when using the
+leap-frog integrator. Note that such an incorrect frame was removed
+when the simulation was continued with concatenation of output files.
+
+:issue:`5433`
+
 Direct halo communication could cause mdrun to exit with an MPI error
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
