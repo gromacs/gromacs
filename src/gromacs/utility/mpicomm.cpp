@@ -396,4 +396,50 @@ std::optional<std::string> MpiComm::getHierarchicalReductionsReport() const
     }
 }
 
+
+std::vector<std::string> MpiComm::collectStrings(const std::string_view myString) const
+{
+#if GMX_MPI
+    const int myStringLength = myString.size();
+    if (!isMainRank())
+    {
+        GMX_RELEASE_ASSERT(size_ > 1, "I'm alone but not the main rank");
+        MPI_Gather(&myStringLength, 1, MPI_INT, nullptr, 1, MPI_INT, 0, comm_);
+        if (myStringLength > 0)
+        {
+            MPI_Send(myString.data(), myStringLength, MPI_CHAR, 0, 0, comm_);
+        }
+        return {};
+    }
+    else
+    {
+        std::vector<std::string> collectedStrings;
+        collectedStrings.reserve(size_);
+        collectedStrings.emplace_back(myString);
+        if (size_ > 1)
+        {
+            std::vector<int> stringLengths(size_, 0);
+            MPI_Gather(&myStringLength, 1, MPI_INT, stringLengths.data(), 1, MPI_INT, 0, comm_);
+            GMX_RELEASE_ASSERT(stringLengths[0] == myStringLength, "Error in MPI_Gather");
+            for (int rank = 1; rank < size_; rank++)
+            {
+                if (stringLengths[rank] > 0)
+                {
+                    std::vector<char> receivedString(stringLengths[rank] + 1, '\0');
+                    MPI_Recv(receivedString.data(), stringLengths[rank], MPI_CHAR, rank, 0, comm_, MPI_STATUS_IGNORE);
+                    collectedStrings.emplace_back(receivedString.data());
+                }
+                else
+                {
+                    collectedStrings.emplace_back();
+                }
+            }
+        }
+        return collectedStrings;
+    }
+#else
+    return { std::string(myString) };
+#endif
+}
+
 } // namespace gmx

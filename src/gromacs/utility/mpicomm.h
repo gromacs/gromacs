@@ -48,6 +48,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <vector>
 
 #include "gromacs/utility/gmxmpi.h"
 
@@ -159,6 +160,9 @@ public:
 
     //! Reduce doubles over all ranks, results on all ranks, can use hierarchical reduction
     void sumReduce(std::size_t nr, double* data) const;
+
+    //! Collect strings from all ranks onto the main
+    std::vector<std::string> collectStrings(std::string_view myString) const;
 
 private:
     //! Machinery for hierarchical reductions over physical nodes
