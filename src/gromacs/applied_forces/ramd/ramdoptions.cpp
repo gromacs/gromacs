@@ -34,6 +34,13 @@ std::string moduleName()
 const std::string c_activeTag = "active";
 const std::string c_seedTag = "seed";
 const std::string c_evalFreqTag = "eval-freq";
+const std::string c_ngroupsTag = "ngroups";
+
+const std::string c_groupReceptorTag = "receptor";
+const std::string c_groupLigandTag = "ligand";
+const std::string c_groupForceTag = "force";
+const std::string c_groupMaxDistTag = "max-dist";
+const std::string c_groupRMinDistTag = "r-min-dist";
 
 } // namespace
 
@@ -45,6 +52,8 @@ void RAMDOptions::initMdpTransform(IKeyValueTreeTransformRules* rules)
         rules, &fromStdString<std::int64_t>, RAMDModuleInfo::sc_name, c_seedTag);
     addMdpTransformFromString<int>(
         rules, &fromStdString<int>, RAMDModuleInfo::sc_name, c_evalFreqTag);
+    addMdpTransformFromString<int>(
+        rules, &fromStdString<int>, RAMDModuleInfo::sc_name, c_ngroupsTag);
 }
 
 void RAMDOptions::buildMdpOutput(KeyValueTreeObjectBuilder* builder) const

@@ -50,12 +50,12 @@
 #include <vector>
 
 #include "gromacs/applied_forces/awh/read_params.h"
+#include "gromacs/applied_forces/ramd/ramdparameters.h"
 #include "gromacs/mdlib/vcm.h"
 #include "gromacs/mdtypes/awh_params.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/multipletimestepping.h"
 #include "gromacs/mdtypes/pull_params.h"
-#include "gromacs/mdtypes/ramd_params.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -631,23 +631,23 @@ static void pr_ramd_group(FILE* fp, int indent, int g, const gmx::RAMDGroup& grp
     pr_indent(fp, indent);
     fprintf(fp, "ramd-group %d:\n", g);
     indent += 2;
-    PR("force", grp.force);
-    PR("max_dist", grp.max_dist);
-    PR("r_min_dist", grp.r_min_dist);
+    PR("force", grp.force_);
+    PR("max_dist", grp.max_dist_);
+    PR("r_min_dist", grp.r_min_dist_);
 }
 
-static void pr_ramd(FILE* fp, int indent, const gmx::RAMDParams& ramd)
+static void pr_ramd(FILE* fp, int indent, const gmx::RAMDParameters& ramd)
 {
-    PI("ramd-seed", ramd.seed);
-    PI("ramd-ngroup", ramd.ngroup);
-    for (int g = 0; g < ramd.ngroup; g++)
+    PI("ramd-seed", ramd.seed_);
+    PI("ramd-ngroups", ramd.ngroups_);
+    for (int g = 0; g < ramd.ngroups_; g++)
     {
-        pr_ramd_group(fp, indent, g, ramd.group[g]);
+        pr_ramd_group(fp, indent, g, ramd.groups_[g]);
     }
-    PI("ramd-eval-freq", ramd.eval_freq);
-    PI("ramd-force-out-freq", ramd.force_out_freq);
-    PS("ramd-old-angle-dist", EBOOL(ramd.old_angle_dist));
-    PS("ramd-connected-ligands", EBOOL(ramd.connected_ligands));
+    PI("ramd-eval-freq", ramd.eval_freq_);
+    PI("ramd-force-out-freq", ramd.force_out_freq_);
+    PS("ramd-old-angle-dist", EBOOL(ramd.old_angle_dist_));
+    PS("ramd-connected-ligands", EBOOL(ramd.connected_ligands_));
 }
 
 static void pr_awh_bias_dim(FILE* fp, int indent, const gmx::AwhDimParams& awhDimParams, const char* prefix)

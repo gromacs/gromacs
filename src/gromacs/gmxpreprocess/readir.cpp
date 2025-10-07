@@ -52,6 +52,7 @@
 #include <string_view>
 
 #include "gromacs/applied_forces/awh/read_params.h"
+#include "gromacs/applied_forces/ramd/read_params.h"
 #include "gromacs/fileio/readinp.h"
 #include "gromacs/fileio/warninp.h"
 #include "gromacs/gmxlib/network.h"
@@ -68,7 +69,6 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/multipletimestepping.h"
 #include "gromacs/mdtypes/pull_params.h"
-#include "gromacs/mdtypes/ramd_params.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/treesupport.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -2599,8 +2599,8 @@ void get_ir(const char*     mdparin,
     ir->bRAMD = getEnum<Boolean>(&inp, "ramd", wi) != Boolean::No;
     if (ir->bRAMD)
     {
-        ir->ramdParams = std::make_unique<gmx::RAMDParams>();
-        read_ramdparams(&inp, ir->ramdParams.get(), wi);
+        ir->ramdParams = std::make_unique<gmx::RAMDParameters>();
+        read_params(&inp, ir->ramdParams.get(), wi);
     }
 
     /* COM pulling */

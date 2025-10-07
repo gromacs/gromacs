@@ -3,6 +3,7 @@ gmx_add_libgromacs_sources(
     ramdforceprovider.cpp
     ramdoptions.cpp
     ramdoutputprovider.cpp
+    read_params.cpp
 )
 
 if (BUILD_TESTING)

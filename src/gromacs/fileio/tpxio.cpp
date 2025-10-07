@@ -63,6 +63,7 @@
 #include <vector>
 
 #include "gromacs/applied_forces/awh/read_params.h"
+#include "gromacs/applied_forces/ramd/ramdparameters.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/xdr_serializer.h"
@@ -73,7 +74,6 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/multipletimestepping.h"
 #include "gromacs/mdtypes/pull_params.h"
-#include "gromacs/mdtypes/ramd_params.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/pbcutil/boxutilities.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -1607,24 +1607,24 @@ static void do_inputrec(gmx::ISerializer* serializer, t_inputrec* ir, int file_v
             {
                 if (serializer->reading())
                 {
-                    ir->ramdParams = std::make_unique<gmx::RAMDParams>();
+                    ir->ramdParams = std::make_unique<gmx::RAMDParameters>();
                 }
-                serializer->doInt64(&ir->ramdParams->seed);
-                serializer->doInt(&ir->ramdParams->ngroup);
+                serializer->doInt64(&ir->ramdParams->seed_);
+                serializer->doInt(&ir->ramdParams->ngroups_);
                 if (serializer->reading())
                 {
-                    ir->ramdParams->group.resize(ir->ramdParams->ngroup);
+                    ir->ramdParams->groups_.resize(ir->ramdParams->ngroups_);
                 }
-                for (int g = 0; g < ir->ramdParams->ngroup; g++)
+                for (int g = 0; g < ir->ramdParams->ngroups_; g++)
                 {
-                    serializer->doReal(&ir->ramdParams->group[g].force);
-                    serializer->doReal(&ir->ramdParams->group[g].max_dist);
-                    serializer->doReal(&ir->ramdParams->group[g].r_min_dist);
+                    serializer->doReal(&ir->ramdParams->groups_[g].force_);
+                    serializer->doReal(&ir->ramdParams->groups_[g].max_dist_);
+                    serializer->doReal(&ir->ramdParams->groups_[g].r_min_dist_);
                 }
-                serializer->doInt(&ir->ramdParams->eval_freq);
-                serializer->doInt(&ir->ramdParams->force_out_freq);
-                serializer->doBool(&ir->ramdParams->old_angle_dist);
-                serializer->doBool(&ir->ramdParams->connected_ligands);
+                serializer->doInt(&ir->ramdParams->eval_freq_);
+                serializer->doInt(&ir->ramdParams->force_out_freq_);
+                serializer->doBool(&ir->ramdParams->old_angle_dist_);
+                serializer->doBool(&ir->ramdParams->connected_ligands_);
             }
         }
     }

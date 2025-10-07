@@ -37,32 +37,41 @@
 #include "gromacs/fileio/warninp.h"
 #include "gromacs/gmxpreprocess/readir.h"
 #include "gromacs/mdtypes/inputrec.h"
-#include "gromacs/mdtypes/ramd_params.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/smalloc.h"
 
-void read_ramdparams(std::vector<t_inpfile>* inp, gmx::RAMDParams* ramdparams, WarningHandler* wi)
-{
-    ramdparams->seed   = get_eint(inp, "ramd-seed", 1234, wi);
-    ramdparams->ngroup = get_eint(inp, "ramd-ngroups", 1, wi);
-    ramdparams->group.resize(ramdparams->ngroup);
+#include "read_params.h"
+#include "ramdparameters.h"
 
-    for (int i = 0; i < ramdparams->ngroup; i++)
+namespace gmx
+{
+
+void read_params(std::vector<t_inpfile>* inp, gmx::RAMDParameters* ramdparams, WarningHandler* wi)
+{
+    ramdparams->seed_   = get_eint(inp, "ramd-seed", 1234, wi);
+    ramdparams->ngroups_ = get_eint(inp, "ramd-ngroups", 1, wi);
+    ramdparams->groups_.resize(ramdparams->ngroups_);
+
+    for (int i = 0; i < ramdparams->ngroups_; i++)
     {
-        auto* ramdgrp      = &ramdparams->group[i];
+        auto* ramdgrp      = &ramdparams->groups_[i];
         auto  ramd_prefix  = std::string("ramd-group") + std::to_string(i + 1);
-        ramdgrp->force      = get_ereal(inp, ramd_prefix + "-force", 600, wi);
-        ramdgrp->r_min_dist = get_ereal(inp, ramd_prefix + "-r-min-dist", 0.0025, wi);
-        ramdgrp->max_dist   = get_ereal(inp, ramd_prefix + "-max-dist", 4.0, wi);
+        ramdgrp->force_      = get_ereal(inp, ramd_prefix + "-force", 600, wi);
+        ramdgrp->r_min_dist_ = get_ereal(inp, ramd_prefix + "-r-min-dist", 0.0025, wi);
+        ramdgrp->max_dist_   = get_ereal(inp, ramd_prefix + "-max-dist", 4.0, wi);
+        ramdgrp->receptor_group_ = get_estr(inp, ramd_prefix + "-receptor", "Protein");
+        ramdgrp->ligand_group_   = get_estr(inp, ramd_prefix + "-ligand", "Ligand");
         get_estr(inp, ramd_prefix + "-receptor", "Protein");
         get_estr(inp, ramd_prefix + "-receptor-pbcatom", "0");
         get_estr(inp, ramd_prefix + "-ligand", "Ligand");
         get_estr(inp, ramd_prefix + "-ligand-pbcatom", "0");
     }
 
-    ramdparams->eval_freq      = get_eint(inp, "ramd-eval-freq", 50, wi);
-    ramdparams->force_out_freq = get_eint(inp, "ramd-force-out-freq", 100, wi);
-    ramdparams->old_angle_dist = getEnum<Boolean>(inp, "ramd-old-angle-dist", wi) != Boolean::No;
-    ramdparams->connected_ligands = getEnum<Boolean>(inp, "ramd-connected-ligands", wi) != Boolean::No;
+    ramdparams->eval_freq_      = get_eint(inp, "ramd-eval-freq", 50, wi);
+    ramdparams->force_out_freq_ = get_eint(inp, "ramd-force-out-freq", 100, wi);
+    ramdparams->old_angle_dist_ = getEnum<Boolean>(inp, "ramd-old-angle-dist", wi) != Boolean::No;
+    ramdparams->connected_ligands_ = getEnum<Boolean>(inp, "ramd-connected-ligands", wi) != Boolean::No;
 }
+
+} // namespace gmx

@@ -60,7 +60,7 @@ class AwhParams;
 template<typename T1, typename T2, T1 U>
 struct EnumerationArray;
 class KeyValueTreeObject;
-struct RAMDParams;
+struct RAMDParameters;
 struct MtsLevel;
 } // namespace gmx
 
@@ -599,7 +599,7 @@ struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
     //! Do we do RAMD?
     bool bRAMD = false;
     //! RAMD parameters
-    std::unique_ptr<gmx::RAMDParams> ramdParams;
+    std::unique_ptr<gmx::RAMDParameters> ramdParams;
 
     /* AWH bias data */
     //! Whether to use AWH biasing for PMF calculations
