@@ -17,6 +17,7 @@
 namespace gmx
 {
 
+class IndexGroupsAndNames;
 class KeyValueTreeObject;
 class KeyValueTreeBuilder;
 class MDLogger;
@@ -55,6 +56,9 @@ public:
 
     //! Get the logger instance
     const MDLogger& logger() const;
+
+    //! Set atom groups
+    void setInputGroupIndices(const IndexGroupsAndNames&);
 
 private:
 

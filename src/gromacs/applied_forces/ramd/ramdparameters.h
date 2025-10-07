@@ -25,6 +25,9 @@ struct RAMDGroup
 {
     //! Force to be applied in kcal/mol/Angstrom
     real force_;
+     
+    std::string receptor_group_ = "System";
+    std::vector<Index> receptor_indices_;
     
     //! Specifies the distance in Angstrom between the COMs of the ligand
     //! and the receptor when the simulation is stopped

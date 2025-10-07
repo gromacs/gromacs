@@ -14,17 +14,19 @@ namespace gmx
 {
 
 RAMDForceProvider::RAMDForceProvider(const RAMDParameters& parameters,
-                                     PbcType               pbcType,
-                                     const MDLogger&       logger,
-                                     RAMDOutputProvider&   ramdOutputProvider) :
+                                     const std::vector<std::unique_ptr<LocalAtomSet>>& localAtoms,
+                                     PbcType pbcType,
+                                     const MDLogger& logger,
+                                     RAMDOutputProvider& ramdOutputProvider) :
     parameters_(parameters),
+    localAtoms_(localAtoms),
     pbcType_(pbcType),
     logger_(logger),
-    ramdOutputProvider_(ramdOutputProvider),    
+    ramdOutputProvider_(ramdOutputProvider),
     random_spherical_direction_generator(parameters.seed_, parameters.old_angle_dist_),
-    direction(parameters.ngroups_),
-    com_rec_prev(parameters.ngroups_),
-    com_lig_prev(parameters.ngroups_)
+    direction_(parameters.ngroups_),
+    com_rec_prev_(parameters.ngroups_),
+    com_lig_prev_(parameters.ngroups_)
 {}
 
 RAMDForceProvider::~RAMDForceProvider()
@@ -55,13 +57,13 @@ void RAMDForceProvider::calculateForces(const ForceProviderInput& fInput,
         {
             // com_rec_prev[g] = pull->group[g * 2 + 1].x;
             // com_lig_prev[g] = pull->group[g * 2 + 2].x;
-            com_rec_prev[g] = DVec(0.0, 0.0, 0.0);
-            com_lig_prev[g] = DVec(0.0, 0.0, 0.0);
+            com_rec_prev_[g] = DVec(0.0, 0.0, 0.0);
+            com_lig_prev_[g] = DVec(0.0, 0.0, 0.0);
 
             if (fInput.mpiComm_.isMainRank())
             {
                 DVec curr_dist_vect;
-                pbc_dx_d(&pbc, com_lig_prev[g], com_rec_prev[g], curr_dist_vect);
+                pbc_dx_d(&pbc, com_lig_prev_[g], com_rec_prev_[g], curr_dist_vect);
                 auto dist = std::sqrt(curr_dist_vect.norm2());
                 ramdOutputProvider_.addCOMDistance(dist);
             }
@@ -187,14 +189,20 @@ void RAMDForceProvider::calculateForces(const ForceProviderInput& fInput,
     //     }
     // }
 
-    // for (int g = 0; g < params.ngroup; ++g)
-    // {
-    //     for (int i = 0; i < 3; ++i)
-    //     {
-    //         get_pull_coord_value(pull, g * 3 + i, pbc);
-    //         apply_external_pull_coord_force(pull, g * 3 + i, direction[g][i] * params.group[g].force);
-    //     }
-    // }
+    for (int g = 0; g < parameters_.ngroups_; ++g)
+    {
+        // for (int i = 0; i < 3; ++i)
+        // {
+            // get_pull_coord_value(pull, g * 3 + i, pbc);
+            // apply_external_pull_coord_force(pull, g * 3 + i, direction[g][i] * params.group[g].force);
+        // }
+        for (size_t i = 0; i < localAtoms_[g]->numAtomsLocal(); ++i)
+        {
+            fOutput->forceWithVirial_.force_[localAtoms_[g]->localIndex()[i]][XX] += direction_[g][XX] * parameters_.groups_[g].force_;
+            fOutput->forceWithVirial_.force_[localAtoms_[g]->localIndex()[i]][YY] += direction_[g][YY] * parameters_.groups_[g].force_;
+            fOutput->forceWithVirial_.force_[localAtoms_[g]->localIndex()[i]][ZZ] += direction_[g][ZZ] * parameters_.groups_[g].force_;
+        }
+    }
 }
 
 } // namespace gmx

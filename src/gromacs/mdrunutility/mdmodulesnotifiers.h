@@ -391,7 +391,7 @@ struct MDModulesNotifiers
      *                              wrote to .tpr files
      * \tparam LocalAtomSetManager* Enables modules to add atom indices to local atom sets
      *                              to be managed
-     * \tparam StartingBehavio&     Provides modules with the starting behavior of the simulation
+     * \tparam StartingBehavior&    Provides modules with the starting behavior of the simulation
      * \tparam MDLogger&            Allows MdModule to use standard logging class for messages
      *                              output
      * \tparam gmx_mtop_t&          Provides the topology of the system to the modules

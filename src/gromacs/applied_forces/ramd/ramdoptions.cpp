@@ -97,4 +97,52 @@ const MDLogger& RAMDOptions::logger() const
     return *logger_;
 }
 
+void RAMDOptions::setInputGroupIndices(const IndexGroupsAndNames& indexGroupsAndNames)
+{
+    // Exit if RAMD module is not active
+    if (!parameters_.active_)
+    {
+        return;
+    }
+
+    // Create input index
+    parameters_.groups_[0].receptor_indices_ = indexGroupsAndNames.indices(parameters_.groups_[0].receptor_group_);
+
+    // // Check that group is not empty
+    // if (params_.nnpIndices_.empty())
+    // {
+    //     GMX_THROW(InconsistentInputError(
+    //             formatString("Group %s defining NN potential input atoms should not be empty.",
+    //                          params_.inputGroup_.c_str())));
+    // }
+
+    // // Create temporary index for the whole System
+    // auto systemIndices = indexGroupsAndNames.indices("System");
+
+    // // Sort nnpIndices_ and sysIndices_
+    // std::sort(params_.nnpIndices_.begin(), params_.nnpIndices_.end());
+    // std::sort(systemIndices.begin(), systemIndices.end());
+
+    // // Create MM index
+    // params_.mmIndices_.reserve(systemIndices.size());
+
+    // // Position in nnpIndices_
+    // size_t j = 0;
+    // // Write to mmIndices_ only the atoms which do not belong to NNP input region
+    // for (size_t i = 0; i < systemIndices.size(); i++)
+    // {
+    //     if (systemIndices[i] != params_.nnpIndices_[j])
+    //     {
+    //         params_.mmIndices_.push_back(systemIndices[i]);
+    //     }
+    //     else
+    //     {
+    //         if (j < params_.nnpIndices_.size() - 1)
+    //         {
+    //             j++;
+    //         }
+    //     }
+    // }
+}
+
 } // namespace gmx

@@ -10,6 +10,7 @@
 
 #include <string>
 
+#include "gromacs/domdec/localatomset.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/iforceprovider.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -31,6 +32,7 @@ class RAMDForceProvider final : public IForceProvider
 {
 public:
     RAMDForceProvider(const RAMDParameters& parameters,
+                      const std::vector<std::unique_ptr<LocalAtomSet>>& localAtoms,
                       PbcType               pbcType,
                       const MDLogger&       logger,
                       RAMDOutputProvider&   ramdOutputProvider);
@@ -47,21 +49,25 @@ public:
 private:
 
     const RAMDParameters& parameters_;
+
+    //! Reference to local atom sets
+    const std::vector<std::unique_ptr<LocalAtomSet>>& localAtoms_;
+
     const PbcType         pbcType_;
     const MDLogger&       logger_;
     RAMDOutputProvider&   ramdOutputProvider_;
 
-        /// Random pull direction
+    //! Random pull direction
     RandomSphericalDirectionGenerator random_spherical_direction_generator;
 
-    /// Current pull direction
-    std::vector<DVec> direction;
+    //! Current pull direction
+    std::vector<DVec> direction_;
 
-    /// COM of receptor of last RAMD evaluation step
-    std::vector<DVec> com_rec_prev;
+    //! COM of receptor of last RAMD evaluation step
+    std::vector<DVec> com_rec_prev_;
 
-    /// COM of ligand of last RAMD evaluation step
-    std::vector<DVec> com_lig_prev;
+    //! COM of ligand of last RAMD evaluation step
+    std::vector<DVec> com_lig_prev_;
 
 };
 

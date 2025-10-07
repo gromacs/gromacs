@@ -6,14 +6,18 @@
  * \ingroup module_applied_forces
  */
 
-#include "ramd.h"
-#include "ramdoptions.h"
-#include "ramdoutputprovider.h"
-#include "ramdforceprovider.h"
+#include "gromacs/domdec/localatomset.h"
+#include "gromacs/domdec/localatomsetmanager.h"
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/mdtypes/imdmodule.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/logger.h"
+
+#include "ramd.h"
+#include "ramdoptions.h"
+#include "ramdoutputprovider.h"
+#include "ramdforceprovider.h"
 
 namespace gmx
 {
@@ -66,15 +70,37 @@ public:
         return *logger_;
     }
 
+    //! Set the local atom sets
+    void setLocalAtomSets(const LocalAtomSet& localAtomSet)
+    {
+        localAtomSets_.emplace_back(std::make_unique<LocalAtomSet>(localAtomSet));
+    }
+
+    /*! \brief Return local atom sets
+     * \throws InternalError if local atom set is not set
+     */
+    const std::vector<std::unique_ptr<LocalAtomSet>>& localAtomSets() const
+    {
+        if (localAtomSets_.empty())
+        {
+            GMX_THROW(InternalError("Local atom sets are not set for RAMD."));
+        }
+        return localAtomSets_;
+    }
+
 private:
     //! The type of periodic boundary conditions in the simulation
     std::unique_ptr<PbcType> pbcType_;
+
     /*! \brief MDLogger during mdrun
      *
      * This is a pointer only because we need an "optional reference"
      * to a const MDLogger before the notification always provides the
      * actual reference. */
     const MDLogger* logger_ = nullptr;
+
+    //! The local atom sets to act on
+    std::vector<std::unique_ptr<LocalAtomSet>> localAtomSets_;
 
     GMX_DISALLOW_COPY_AND_ASSIGN(RAMDSimulationParameterSetup);
 };
@@ -103,6 +129,7 @@ public:
             const auto& parameters = ramdOptions_.parameters();
             forceProvider_ = std::make_unique<RAMDForceProvider>(
                 parameters,
+                ramdSimulationParameters_.localAtomSets(),
                 ramdSimulationParameters_.periodicBoundaryConditionType(),
                 ramdSimulationParameters_.logger(),
                 ramdOutputProvider_
@@ -123,6 +150,10 @@ public:
         const auto setLoggerFunction = [this](const MDLogger& logger)
         { ramdOptions_.setLogger(logger); };
         notifiers->preProcessingNotifier_.subscribe(setLoggerFunction);
+
+        const auto setInputGroupIndicesFunction = [this](const IndexGroupsAndNames& indexGroupsAndNames)
+        { ramdOptions_.setInputGroupIndices(indexGroupsAndNames); };
+        notifiers->preProcessingNotifier_.subscribe(setInputGroupIndicesFunction);
     }
 
     //! Subscribe to simulation setup notifications
@@ -132,6 +163,14 @@ public:
         {
             return;
         }
+
+        // Constructing local atom sets during simulation setup
+        const auto setLocalAtomSetFunction = [this](LocalAtomSetManager* localAtomSetManager)
+        {
+            LocalAtomSet atomSet = localAtomSetManager->add(ramdOptions_.parameters().groups_[0].receptor_indices_);
+            this->ramdSimulationParameters_.setLocalAtomSets(atomSet);
+        };
+        notifiers->simulationSetupNotifier_.subscribe(setLocalAtomSetFunction);
         
         // Reading PBC parameters during simulation setup
         const auto setPeriodicBoundaryContionsFunction = [this](const PbcType& pbc)
@@ -158,9 +197,7 @@ private:
     //! Object that evaluates the forces
     std::unique_ptr<RAMDForceProvider> forceProvider_;
 
-    /*! \brief Parameters for RAMD that become available at
-     * simulation setup time.
-     */
+    //! RAMD Parameters that become available at simulation setup time.
     RAMDSimulationParameterSetup ramdSimulationParameters_;
 
     GMX_DISALLOW_COPY_AND_ASSIGN(RAMD);
