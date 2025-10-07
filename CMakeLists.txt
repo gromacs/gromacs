@@ -575,11 +575,6 @@ include(gmxManageMimic)
 include(gmxManageCP2K)
 
 ########################################################################
-#Process NNPot settings
-########################################################################
-include(gmxManageNNPot)
-
-########################################################################
 #Process shared/static library settings
 ########################################################################
 include(gmxManageSharedLibraries)
@@ -709,7 +704,6 @@ include(gmxManageSimd)
 gmx_manage_simd()
 
 if(GMX_GPU)
-
     string(TOUPPER "${GMX_GPU}" _gmx_gpu_uppercase)
     if(${_gmx_gpu_uppercase} STREQUAL "CUDA")
         include(gmxManageCuda)
@@ -838,6 +832,12 @@ endif()
 
 # Set NVSHMEM host and device libs
 include(gmxManageNvshmem)
+
+
+########################################################################
+#Process NNPot settings (do it after our GPU detection)
+########################################################################
+include(gmxManageNNPot)
 
 if(WIN32)
     set(GMX_NATIVE_WINDOWS 1)

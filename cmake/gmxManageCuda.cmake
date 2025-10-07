@@ -43,79 +43,110 @@ set(CMAKE_CUDA_STANDARD ${CMAKE_CXX_STANDARD})
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
 find_package(CUDAToolkit ${GMX_CUDA_MINIMUM_REQUIRED_VERSION} REQUIRED)
+set(GMX_HAVE_GPU_GRAPH_SUPPORT ON)
 
-if(CUDAToolkit_VERSION GREATER_EQUAL 11.1)
-  set(GMX_HAVE_GPU_GRAPH_SUPPORT ON)
+if(NOT CMAKE_CUDA_HOST_COMPILER)
+    set(CMAKE_CUDA_HOST_COMPILER "${CMAKE_CXX_COMPILER}")
 endif()
-
-# Try to execute ${CUDAToolkit_NVCC_EXECUTABLE} --version and set the output
-# (or an error string) in the argument variable.
-# Note that semicolon is used as separator for nvcc.
-#
-# Parameters:
-#   COMPILER_INFO         - [output variable] string with compiler path, ID and
-#                           some compiler-provided information
-#   DEVICE_COMPILER_FLAGS - [output variable] device flags for the compiler
-#   HOST_COMPILER_FLAGS   - [output variable] host flags for the compiler, if propagated
-#
-
-macro(get_cuda_compiler_info COMPILER_INFO DEVICE_COMPILER_FLAGS HOST_COMPILER_FLAGS)
-    if(NOT GMX_CLANG_CUDA)
-        if(CUDAToolkit_NVCC_EXECUTABLE)
-
-            # Get the nvcc version string. This is multi-line, but since it is only 4 lines
-            # and might change in the future it is better to store than trying to parse out
-            # the version from the current format.
-            execute_process(COMMAND ${CUDAToolkit_NVCC_EXECUTABLE} --version
-                RESULT_VARIABLE _nvcc_version_res
-                OUTPUT_VARIABLE _nvcc_version_out
-                ERROR_VARIABLE  _nvcc_version_err
-                OUTPUT_STRIP_TRAILING_WHITESPACE)
-            if (${_nvcc_version_res} EQUAL 0)
-                # Fix multi-line mess: Replace newline with ";" so we can use it in a define
-                string(REPLACE "\n" ";" _nvcc_info_singleline ${_nvcc_version_out})
-                set(${COMPILER_INFO} "${CUDAToolkit_NVCC_EXECUTABLE} ${_nvcc_info_singleline}")
-                string(TOUPPER ${CMAKE_BUILD_TYPE} _build_type)
-                if(CUDA_PROPAGATE_HOST_FLAGS)
-                    set(${HOST_COMPILER_FLAGS} BUILD_CXXFLAGS)
-                else()
-                    set(${HOST_COMPILER_FLAGS} "")
-                endif()
-                set(_compiler_flags "${CUDA_NVCC_FLAGS_${_build_type}}")
-                set(${DEVICE_COMPILER_FLAGS} "${CUDA_NVCC_FLAGS}${CUDA_NVCC_FLAGS_${_build_type}}")
-            else()
-                set(${COMPILER_INFO} "N/A")
-                set(${COMPILER_FLAGS} "N/A")
-            endif()
-        endif()
-    else()
-        # CXX compiler is the CUDA compiler
-        set(${COMPILER_INFO} "${CMAKE_CXX_COMPILER}  ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
-        # there are some extra flags
-        set(${COMPILER_FLAGS} "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${_build_type}} ${GMX_CUDA_CLANG_FLAGS}")
-    endif()
-endmacro ()
-
 if(GMX_CLANG_CUDA)
-    include(gmxManageClangCudaConfig)
-    list(APPEND GMX_EXTRA_LIBRARIES ${GMX_CUDA_CLANG_LINK_LIBS})
-    link_directories("${GMX_CUDA_CLANG_LINK_DIRS}")
+    if(NOT CMAKE_CUDA_COMPILER)
+        set(CMAKE_CUDA_COMPILER "${CMAKE_CXX_COMPILER}")
+    endif()
 else()
     # Using NVIDIA compiler
     if(NOT CUDAToolkit_NVCC_EXECUTABLE)
         message(FATAL_ERROR "nvcc is required for a CUDA build, please set CUDAToolkit_ROOT appropriately")
     endif()
-    if(NOT CMAKE_CUDA_HOST_COMPILER)
-        set(CMAKE_CUDA_HOST_COMPILER ${CMAKE_CXX_COMPILER})
+    if (NOT CMAKE_CUDA_COMPILER)
+        set(CMAKE_CUDA_COMPILER "${CUDAToolkit_NVCC_EXECUTABLE}")
     endif()
-    # set up nvcc options
-    include(gmxManageNvccConfig)
 endif()
 
-# We make sure to call get_cuda_compiler_info() before reaching this line,
-# so we report errors related to host compiler / nvcc mismatch
-# before the call to enable_language(CUDA).
+# We do this before enable_language(CUDA) to avoid CMAKE_CUDA_ARCHITECTURES being set to whatever enable_language(CUDA) autodetects
+# But if we _do_ want to use the autodetected architectures, we move enable_language(CUDA) before this block
+if(NOT GMX_CUDA_ARCHITECTURES)
+    if (GMX_CUDA_TARGET_SM OR GMX_CUDA_TARGET_COMPUTE)
+        message(WARNING "GMX_CUDA_TARGET_SM and GMX_CUDA_TARGET_COMPUTE are deprecated, use CMAKE_CUDA_ARCHITECTURES instead")
+        set(GMX_CUDA_ARCHITECTURES ${GMX_CUDA_TARGET_SM})
+        set(_target_compute_list ${GMX_CUDA_TARGET_COMPUTE})
+        foreach(_target ${_target_compute_list})
+            list(APPEND GMX_CUDA_ARCHITECTURES "${_target}-virtual")
+        endforeach()
+    elseif(NOT CMAKE_CUDA_ARCHITECTURES)
+        set(GMX_CUDA_ARCHITECTURES "all")
+    else()
+        set(GMX_CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}")
+    endif()
+endif()
+
 enable_language(CUDA)
+
+# CMAKE_CUDA_ARCHITECTURES_ALL is set by enable_language(CUDA)
+# We expand the list so that it can be pruned down later if NVSHMEM is enabled
+if(GMX_CUDA_ARCHITECTURES STREQUAL "all")
+    set(GMX_CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES_ALL}")
+endif()
+
+set(GMX_CUDA_ARCHITECTURES "${GMX_CUDA_ARCHITECTURES}" CACHE STRING "GROMACS-specific CUDA architectures")
+mark_as_advanced(GMX_CUDA_ARCHITECTURES)
+
+set(_cuda_arch_message "Compiling GROMACS for CUDA architectures: ${GMX_CUDA_ARCHITECTURES}")
+string(SHA1 _cuda_arch_message_hash "${_cuda_arch_message}")
+if(NOT CUDA_MESSAGE_${_cuda_arch_message_hash}_ALREADY_PRINTED)
+    message(STATUS "${_cuda_arch_message}")
+    set(CUDA_MESSAGE_${_cuda_arch_message_hash}_ALREADY_PRINTED 1 CACHE INTERNAL "Whether the CUDA architecture message has already been printed")
+endif()
+
+if (GMX_OPENMP AND CMAKE_VERSION VERSION_GREATER_EQUAL 3.31)
+    # Re-run OpenMP detection to add OpenMP::OpenMP_CUDA target
+    if (OpenMP_CUDA_FIND_QUIETLY_AFTER_FIRST_RUN AND OpenMP_CXX_FIND_QUIETLY_AFTER_FIRST_RUN)
+        set (OpenMP_FIND_QUIETLY TRUE)
+    else()
+        set (OpenMP_FIND_QUIETLY FALSE)
+    endif()
+    find_package(OpenMP REQUIRED COMPONENTS CXX CUDA)
+    set(OpenMP_CXX_FIND_QUIETLY_AFTER_FIRST_RUN TRUE CACHE INTERNAL "Be quiet during future attempts to find OpenMP_CXX")
+    set(OpenMP_CUDA_FIND_QUIETLY_AFTER_FIRST_RUN TRUE CACHE INTERNAL "Be quiet during future attempts to find OpenMP_CUDA")
+endif()
+
+# Tests a single flag to use with CUDA compiler.
+#
+# If the flags are accepted, they are appended to the variable named
+# in the first argument. The cache variable named in the second
+# argument is used to avoid rerunning the check in future invocations
+# of cmake. The list of flags to check follows these two required
+# arguments.
+#
+# Note that a space-separated string of flags, or a flag-value pair
+# separated by spaces will not work. Use the single-argument forms
+# accepted by nvcc, like "--arg=value".
+include(CheckCompilerFlag)
+function(gmx_add_cuda_flag_if_supported _flags_cache_variable_name)
+    check_compiler_flag(CUDA "${ARGN}" ${_flags_cache_variable_name})
+    if (${_flags_cache_variable_name})
+        list(APPEND GMX_CUDA_FLAGS ${ARGN})
+        set(GMX_CUDA_FLAGS "${GMX_CUDA_FLAGS}" PARENT_SCOPE)
+    endif()
+endfunction()
+
+set(GMX_CUDA_FLAGS)
+if(GMX_CLANG_CUDA)
+    include(gmxManageClangCudaConfig)
+else()
+    include(gmxManageNvccConfig)
+endif()
+set(GMX_CUDA_FLAGS "${GMX_CUDA_FLAGS}" CACHE STRING "GROMACS-specific CUDA flags")
+mark_as_advanced(GMX_CUDA_FLAGS)
 
 option(GMX_CUDA_NB_SINGLE_COMPILATION_UNIT "Whether to compile the CUDA non-bonded module using a single compilation unit." OFF)
 mark_as_advanced(GMX_CUDA_NB_SINGLE_COMPILATION_UNIT)
+
+macro(get_cuda_compiler_info COMPILER_INFO COMPILER_FLAGS COMPILER_ARCHITECTURES)
+    string(TOUPPER "${CMAKE_BUILD_TYPE}" _cmake_build_type)
+    # CXX compiler is the CUDA compiler
+    set(${COMPILER_INFO} "${CMAKE_CUDA_COMPILER} (${CMAKE_CUDA_COMPILER_ID} ${CMAKE_CUDA_COMPILER_VERSION})")
+    # there are some extra flags
+    list(JOIN GMX_CUDA_FLAGS " " GMX_CUDA_FLAGS_STR)
+    set(${COMPILER_FLAGS} "${CMAKE_CUDA_FLAGS} ${CMAKE_CUDA_FLAGS_${_cmake_build_type}} ${GMX_CUDA_FLAGS_STR}")
+    set(${COMPILER_ARCHITECTURES} ${GMX_CUDA_ARCHITECTURES})
+endmacro ()

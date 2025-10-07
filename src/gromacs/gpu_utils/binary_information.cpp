@@ -223,6 +223,7 @@ std::unordered_map<std::string, std::string> gpuDescriptions()
     descriptions["CUDA compiler"] = CUDA_COMPILER_INFO;
     descriptions["CUDA compiler flags"] =
             std::string(CUDA_COMPILER_FLAGS) + " " + CMAKE_BUILD_CONFIGURATION_CXX_FLAGS;
+    descriptions["CUDA targets"] = std::string(CUDA_COMPILER_ARCHITECTURES);
     descriptions["CUDA driver"]  = getCudaDriverVersionString();
     descriptions["CUDA runtime"] = getCudaRuntimeVersionString();
 #    if GMX_NVSHMEM

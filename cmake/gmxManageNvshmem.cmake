@@ -60,12 +60,9 @@ if(GMX_NVSHMEM)
     set_target_properties(nvshmem_device_lib PROPERTIES IMPORTED_LINK_INTERFACE_LANGUAGES CUDA)
 
     # Since NVSHMEM 3.06, minium device support is Volta (SM 70+) so
-    # we filter all the archs below SM 70 from GMX_CUDA_NVCC_GENCODE_FLAGS
-    string(REPLACE "35;" ""  GMX_CUDA_NVCC_GENCODE_FLAGS "${GMX_CUDA_NVCC_GENCODE_FLAGS}")
-    string(REPLACE "37;" ""  GMX_CUDA_NVCC_GENCODE_FLAGS "${GMX_CUDA_NVCC_GENCODE_FLAGS}")
-    string(REPLACE "50;" ""  GMX_CUDA_NVCC_GENCODE_FLAGS "${GMX_CUDA_NVCC_GENCODE_FLAGS}")
-    string(REPLACE "52;" ""  GMX_CUDA_NVCC_GENCODE_FLAGS "${GMX_CUDA_NVCC_GENCODE_FLAGS}")
-    string(REPLACE "53;" ""  GMX_CUDA_NVCC_GENCODE_FLAGS "${GMX_CUDA_NVCC_GENCODE_FLAGS}")
-    string(REPLACE "60;" ""  GMX_CUDA_NVCC_GENCODE_FLAGS "${GMX_CUDA_NVCC_GENCODE_FLAGS}")
-    string(REPLACE "61;" ""  GMX_CUDA_NVCC_GENCODE_FLAGS "${GMX_CUDA_NVCC_GENCODE_FLAGS}")
+    # we filter all the archs below SM 70 from GMX_CUDA_ARCHITECTURES
+    foreach(_old_arch 35 37 50 52 53 60 61 62)
+        list(REMOVE_ITEM GMX_CUDA_ARCHITECTURES "${_old_arch}" "${_old_arch}-real" "${_old_arch}-virtual")
+    endforeach()
+    message(STATUS "Updated list of CUDA architectures: ${GMX_CUDA_ARCHITECTURES}")
 endif()

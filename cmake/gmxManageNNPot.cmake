@@ -44,6 +44,21 @@ endif()
 
 set(GMX_TORCH OFF)
 if(NOT GMX_NNPOT STREQUAL "OFF")
+    if(GMX_GPU_CUDA AND NOT TORCH_CUDA_ARCH_LIST)
+        set(TORCH_CUDA_ARCH_LIST)
+        foreach(_arch IN LISTS GMX_CUDA_ARCHITECTURES)
+            if(_arch MATCHES "^[0-9]+[a-z]?(-virtual)?$")
+                # Convert _arch from 75 or 75-virtual to 7.5+PTX
+                string(REGEX REPLACE "^([0-9]+)([0-9][a-z]?)(-virtual)?$" "\\1.\\2+PTX" arch_ptx "${_arch}")
+            elseif(_arch MATCHES "^[0-9]+[a-z]?-real$")
+                # Convert _arch from 75-real to 7.5
+                string(REGEX REPLACE "^([0-9]+)([0-9][a-z]?)-real$" "\\1.\\2" arch_ptx "${_arch}")
+            else()
+                message(FATAL_ERROR "Unknown CUDA architecture: ${_arch}")
+            endif()
+            set(TORCH_CUDA_ARCH_LIST "${TORCH_CUDA_ARCH_LIST} ${arch_ptx}")
+        endforeach()
+    endif()
 
     find_package(Torch 2.0.0 QUIET)
     set(TORCH_ALREADY_SEARCHED TRUE CACHE BOOL "True if a search for libtorch has already been done")

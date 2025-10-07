@@ -38,7 +38,12 @@
 if(GMX_OPENMP)
     # We should do OpenMP detection if we get here
     # OpenMP check must come before other CFLAGS!
-    find_package(OpenMP)
+    if (OpenMP_CXX_FIND_QUIETLY_AFTER_FIRST_RUN)
+        set (OpenMP_FIND_QUIETLY TRUE)
+    else()
+        set (OpenMP_FIND_QUIETLY FALSE)
+    endif()
+    find_package(OpenMP COMPONENTS CXX)
     if(NOT OPENMP_FOUND)
         if(CMAKE_CXX_COMPILER_ID MATCHES "AppleClang")
             message(FATAL_ERROR "The compiler you are using does not support OpenMP parallelism, "
@@ -52,6 +57,8 @@ if(GMX_OPENMP)
                 "Try using a more recent version, or a different compiler. "
                 "If you don't want to use OpenMP, disable it explicitly with -DGMX_OPENMP=OFF")
         endif()
+    else()
+        set(OpenMP_CXX_FIND_QUIETLY_AFTER_FIRST_RUN TRUE CACHE INTERNAL "Be quiet during future attempts to find OpenMP_CXX")
     endif()
 endif()
 gmx_dependent_cache_variable(GMX_OPENMP_MAX_THREADS

@@ -924,11 +924,11 @@ If you have the CUDA_ Toolkit installed, you can use ``cmake`` with:
 
 ::
 
-    cmake .. -DGMX_GPU=CUDA -DCUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda
+    cmake .. -DGMX_GPU=CUDA -DCUDAToolkit_ROOT=/usr/local/cuda
 
 (or whichever path has your installation). In some cases, you might
 need to specify manually which of your C++ compilers should be used,
-e.g. with the advanced option ``CUDA_HOST_COMPILER``.
+e.g. with the advanced option ``CMAKE_CUDA_HOST_COMPILER``.
 
 By default, code will be generated for the most common CUDA architectures.
 However, to reduce build time and binary size we do not generate code for
@@ -936,16 +936,15 @@ every single possible architecture, which in rare cases (say, Tegra systems)
 can result in the default build not being able to use some GPUs.
 If this happens, or if you want to remove some architectures to reduce
 binary size and build time, you can alter the target CUDA architectures.
-This can be done either with the ``GMX_CUDA_TARGET_SM`` or
-``GMX_CUDA_TARGET_COMPUTE`` CMake variables, which take a semicolon delimited
-string with the two digit suffixes of CUDA (virtual) architectures names, for
-instance "60;75;86". For details, see the `"Options for steering GPU
-code generation" section of the nvcc documentation
-<https://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/#options-for-steering-cuda-compilation>`_.
+This can be done with the ``CMAKE_CUDA_ARCHITECTURES`` CMake variable,
+which takes a semicolon delimited string with the two or three digit suffixes of CUDA
+architectures names, for instance "60;75;86". For details, see the
+`"CUDA_ARCHITECTURES" section of the CMake documentation
+<https://cmake.org/cmake/help/v3.28/prop_tgt/CUDA_ARCHITECTURES.html>`_.
 
 The GPU acceleration has been tested on AMD64/x86-64 platforms with
-Linux, Mac OS X and Windows operating systems, but Linux is the
-best-tested and supported of these. Linux running on POWER 8/9 and ARM v8
+Linux and Windows operating systems, but Linux is the
+best-tested and supported of these. Linux running on POWER 8/9 and ARM
 CPUs also works well.
 
 Experimental support is available for compiling CUDA code, both for host and
@@ -957,9 +956,6 @@ The clang CUDA support simplifies compilation and provides benefits for developm
 Additionally, using clang for both CPU and GPU compilation can be beneficial
 to avoid compatibility issues between the GNU toolchain and the CUDA toolkit.
 clang for CUDA can be triggered using the ``GMX_CLANG_CUDA=ON`` CMake option.
-Target architectures can be selected with  ``GMX_CUDA_TARGET_SM``,
-virtual architecture code is always embedded for all requested architectures
-(hence ``GMX_CUDA_TARGET_COMPUTE`` is ignored).
 Note that this is mainly a developer-oriented feature but its performance is
 generally close to that of code compiled with nvcc.
 

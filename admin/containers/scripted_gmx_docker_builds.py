@@ -736,7 +736,7 @@ def get_adaptivecpp(args):
 
     if args.cuda is not None:
         cmake_opts += [
-            "-DCUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda",
+            "-DCUDAToolkit_ROOT=/usr/local/cuda",
             "-DWITH_CUDA_BACKEND=ON",
         ]
 

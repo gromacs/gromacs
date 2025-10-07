@@ -190,13 +190,8 @@ if (GMX_GPU_CUDA)
         target_link_libraries(libgromacs PRIVATE CUDA::cufft)
     endif()
 
-    if (GMX_CLANG_CUDA)
-        set_target_properties(libgromacs PROPERTIES CUDA_ARCHITECTURES "${_CUDA_CLANG_GENCODE_FLAGS}")
-        target_compile_options(libgromacs PRIVATE "$<$<COMPILE_LANGUAGE:CUDA>:${GMX_CUDA_CLANG_FLAGS}>")
-    else()
-        target_compile_options(libgromacs PRIVATE "$<$<COMPILE_LANGUAGE:CUDA>:${GMX_CUDA_NVCC_FLAGS}>")
-        set_target_properties(libgromacs PROPERTIES CUDA_ARCHITECTURES "${GMX_CUDA_NVCC_GENCODE_FLAGS}")
-    endif()
+    target_compile_options(libgromacs PRIVATE "$<$<COMPILE_LANGUAGE:CUDA>:${GMX_CUDA_FLAGS}>")
+    set_target_properties(libgromacs PROPERTIES CUDA_ARCHITECTURES "${GMX_CUDA_ARCHITECTURES}")
 
     if (GMX_NVSHMEM)
         set_target_properties(libgromacs PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
@@ -355,20 +350,6 @@ if(SIMD_AVX_512_CXX_SUPPORTED)
     set_source_files_properties(hardware/identifyavx512fmaunits.cpp PROPERTIES COMPILE_FLAGS "${SIMD_AVX_512_CXX_FLAGS} ${CXX_NO_UNUSED_OPTION_WARNING_FLAGS}")
 endif()
 
-# Do any special handling needed for .cpp files that use
-# CUDA runtime headers
-if (GMX_GPU_CUDA AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    foreach(_compile_flag ${NVCC_CLANG_SUPPRESSIONS_CXXFLAGS})
-        set(GMX_CUDA_CLANG_FLAGS "${GMX_CUDA_CLANG_FLAGS} ${_compile_flag}")
-    endforeach()
-    if (NOT GMX_CLANG_CUDA)
-        get_property(CUDA_SOURCES GLOBAL PROPERTY CUDA_SOURCES)
-        if (GMX_CUDA_CLANG_FLAGS)
-            set_source_files_properties(${CUDA_SOURCES} PROPERTIES COMPILE_FLAGS ${GMX_CUDA_CLANG_FLAGS})
-        endif()
-    endif()
-endif()
-
 if (GMX_GPU_HIP)
     get_property(HIP_SOURCES GLOBAL PROPERTY HIP_SOURCES)
     set_source_files_properties(${HIP_SOURCES} PROPERTIES COMPILE_FLAGS "${HIP_CXX_FLAGS}")
@@ -466,6 +447,10 @@ target_link_libraries(libgromacs PRIVATE
     )
 if (GMX_OPENMP)
     target_link_libraries(libgromacs PUBLIC OpenMP::OpenMP_CXX)
+    if (GMX_GPU_CUDA AND CMAKE_VERSION VERSION_GREATER_EQUAL 3.31)
+        # Since CMake 3.31, OpenMP::OpenMP_CUDA is needed for files with LANGUAGE CUDA
+        target_link_libraries(libgromacs PUBLIC OpenMP::OpenMP_CUDA)
+    endif()
 endif()
 set_target_properties(libgromacs PROPERTIES
                       OUTPUT_NAME "gromacs${GMX_LIBS_SUFFIX}"

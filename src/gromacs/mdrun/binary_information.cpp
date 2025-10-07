@@ -285,6 +285,7 @@ void writeExtendedInfo(gmx::TextWriter* writer)
     writeOptionalLineFromMap(writer, "OpenCL version", gpuDescriptionStrings);
     writeOptionalLineFromMap(writer, "CUDA compiler", gpuDescriptionStrings);
     writeOptionalLineFromMap(writer, "CUDA compiler flags", gpuDescriptionStrings);
+    writeOptionalLineFromMap(writer, "CUDA targets", gpuDescriptionStrings);
     writeOptionalLineFromMap(writer, "CUDA driver", gpuDescriptionStrings);
     writeOptionalLineFromMap(writer, "CUDA runtime", gpuDescriptionStrings);
     writeOptionalLineFromMap(writer, "NVSHMEM", gpuDescriptionStrings);
