@@ -2074,11 +2074,13 @@ int Mdrunner::mdrunner()
          */
         gmx_check_thread_affinity_set(
                 mdlog, &hw_opt, hwinfo_->hardwareTopology->maxThreads(), TRUE, libraryWorldCommunicator);
-
+    }
+    {
+        /* We always call gmx_set_thread_affinity since it might want to write things to log
+         * even with ThreadAffinity::Off */
         int numThreadsOnThisNode, intraNodeThreadOffset;
         analyzeThreadsOnThisNode(
                 physicalNodeComm, numThreadsOnThisRank, &numThreadsOnThisNode, &intraNodeThreadOffset);
-
         /* Set the CPU affinity */
         gmx_set_thread_affinity(mdlog,
                                 cr->commMySim,

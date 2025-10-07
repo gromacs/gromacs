@@ -204,12 +204,13 @@ public:
      */
     struct LogicalProcessor
     {
-        int puId;                     //!< Index of PU in hardware topology
-        int osId;                     //!<  index assigned by the operating system
-        int packageRankInTopology;    //!<  index of package in machine
-        int coreRankInPackage;        //!<  index of core in package
-        int processingUnitRankInCore; //!<  index of processing unit in core
-        int numaNodeId;               //!< Index of numa node
+        int  puId;                     //!< Index of PU in hardware topology
+        int  osId;                     //!<  index assigned by the operating system
+        int  packageRankInTopology;    //!<  index of package in machine
+        int  coreRankInPackage;        //!<  index of core in package
+        int  processingUnitRankInCore; //!<  index of processing unit in core
+        int  numaNodeId;               //!< Index of numa node
+        bool isAssignedToProcess;      //!< Whether this PU is a part of process affinity set
     };
 
     /*! \libinternal \brief Hardware topology information about the entire machine

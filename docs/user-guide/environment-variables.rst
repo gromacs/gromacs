@@ -427,6 +427,11 @@ Performance and Run Control
 ``GMX_PULL_PARTICIPATE_ALL``
         disable the default heuristic for when to use a separate pull MPI communicator (at >=32 ranks).
 
+``GMX_REPORT_CPU_AFFINITY``
+        print to the log file the CPU affinity of each MPI rank at startup. This prints the effective
+        affinity mask of the main thread before OpenMP and GPU offload are initialized (unless they
+        do so on library load, as is the case with ``libgomp``).
+
 ``GMX_REQUIRE_SHELL_INIT``
         require that shell positions are initiated.
 

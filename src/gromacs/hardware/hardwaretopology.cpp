@@ -92,6 +92,30 @@ namespace gmx
 namespace
 {
 
+// Returns empty on failure
+std::unordered_set<int> getAffinityList()
+{
+#if HAVE_SCHED_AFFINITY
+    cpu_set_t cpuSet;
+    int       ret = sched_getaffinity(0, sizeof(cpu_set_t), &cpuSet);
+    if (ret != 0)
+    {
+        return {};
+    }
+    std::unordered_set<int> affinitySet;
+    for (int cpu = 0; cpu < CPU_SETSIZE; ++cpu)
+    {
+        if (CPU_ISSET(cpu, &cpuSet) != 0)
+        {
+            affinitySet.insert(cpu);
+        }
+    }
+    return affinitySet;
+#else
+    return {};
+#endif
+}
+
 /*****************************************************************************
  *                                                                           *
  *   Utility functions for extracting hardware topology from CpuInfo object  *
@@ -164,6 +188,9 @@ void translateCpuInfoLogicalProcessorsToMachine(const std::vector<CpuInfo::Logic
         machine->packages[newPkg].cores[newCore].processingUnits.push_back({ -1, p.osId });
     }
 
+    const std::unordered_set<int> processAffinityList = getAffinityList();
+    const bool                    haveAffinityList    = !processAffinityList.empty();
+
     // Fill linear structure of logical processors and assign global core/PU id in tree
     for (int pkg = 0, coreId = 0, puId = 0; static_cast<std::size_t>(pkg) < machine->packages.size(); pkg++)
     {
@@ -175,8 +202,11 @@ void translateCpuInfoLogicalProcessorsToMachine(const std::vector<CpuInfo::Logic
                  pu++)
             {
                 int osId = machine->packages[pkg].cores[core].processingUnits[pu].osId;
-                // No numa info, set it to -1.
-                machine->logicalProcessors.push_back({ puId, osId, pkg, core, pu, -1 });
+                // If we don't have an affinity list, assume things are ok
+                bool isInAffinityList = !haveAffinityList
+                                        || processAffinityList.find(osId) != processAffinityList.end();
+                // No numa info here, set it to -1
+                machine->logicalProcessors.push_back({ puId, osId, pkg, core, pu, -1, isInAffinityList });
                 machine->osIdToPuId.insert({ osId, puId });
                 machine->packages[pkg].cores[core].processingUnits[pu].id = puId++; // global PU id
             }
@@ -293,6 +323,17 @@ bool parseHwLocPackagesCoresProcessingUnits(hwloc_topology_t topo, HardwareTopol
     const hwloc_obj* root = hwloc_get_root_obj(topo);
     std::vector<const hwloc_obj*> hwlocPackages = getHwLocDescendantsByType(topo, root, HWLOC_OBJ_PACKAGE);
 
+    hwloc_cpuset_t cpuset = hwloc_bitmap_alloc();
+    if (cpuset)
+    {
+        int ret = hwloc_get_cpubind(topo, cpuset, HWLOC_CPUBIND_PROCESS);
+        if (ret != 0 || hwloc_bitmap_iszero(cpuset))
+        {
+            hwloc_bitmap_free(cpuset);
+            cpuset = nullptr;
+        }
+    }
+
     std::size_t puCount = hwloc_get_nbobjs_by_type(topo, HWLOC_OBJ_PU);
     machine->logicalProcessors.resize(puCount);
     machine->packages.resize(hwlocPackages.size());
@@ -335,6 +376,9 @@ bool parseHwLocPackagesCoresProcessingUnits(hwloc_topology_t topo, HardwareTopol
                 machine->logicalProcessors[puId].coreRankInPackage        = static_cast<int>(j);
                 machine->logicalProcessors[puId].processingUnitRankInCore = static_cast<int>(k);
                 machine->logicalProcessors[puId].numaNodeId               = -1;
+                machine->logicalProcessors[puId].isAssignedToProcess =
+                        (cpuset == nullptr)
+                        || (hwloc_bitmap_intersects(cpuset, hwlocPUs[k]->cpuset) != 0);
 
                 // Use a convenience map so we can easily find the internal logical
                 // processing unit id based on the OS-provided one if necessary.
@@ -342,7 +386,13 @@ bool parseHwLocPackagesCoresProcessingUnits(hwloc_topology_t topo, HardwareTopol
             }
         }
     }
-    return true; // for now we can't really fail cleanly, but keep the option to signal failed detection
+    if (cpuset)
+    {
+        hwloc_bitmap_free(cpuset);
+    }
+
+    // for now we can't really fail cleanly, but keep the option to signal failed detection
+    return true;
 }
 
 /*! \brief Read cache information from hwloc topology
@@ -821,7 +871,7 @@ std::vector<int> parseCpuString(const std::string& cpuString)
  *                    processor indices on which we are allowed to run.
  *
  * This is a poor man's version of the much fancier topology detection
- * available from hwloc, but given the compilcations of modern hardware
+ * available from hwloc, but given the complications of modern hardware
  * we are critically dependent on being able to understand at least
  * how many sockets/cores/threads we have, even when Gromacs is compiled
  * without hwloc support.
