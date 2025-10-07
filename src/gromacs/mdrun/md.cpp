@@ -1067,7 +1067,7 @@ void gmx::LegacySimulator::do_md()
             /* We need the kinetic energy at minus the half step for determining
              * the full step kinetic energy and possibly for T-coupling.*/
             /* This may not be quite working correctly yet . . . . */
-            int cglo_flags = CGLO_GSTAT | CGLO_TEMPERATURE;
+            int cglo_flags = CGLO_GSTAT | CGLO_COMPUTEEKIN;
             compute_globals(gstat,
                             cr_->commMyGroup,
                             ir,

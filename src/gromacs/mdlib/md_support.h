@@ -68,6 +68,8 @@ class SimulationSignaller;
  * passed to compute_globals in md.c and global_stat.
  */
 
+/* Compute the kinetic energy of groups, implied by CGLO_TEMPERATURE */
+#define CGLO_COMPUTEEKIN (1u << 1u)
 /* we are computing the kinetic energy from average velocities */
 #define CGLO_EKINAVEVEL (1u << 2u)
 /* we are removing the center of mass momenta */
@@ -76,7 +78,7 @@ class SimulationSignaller;
 #define CGLO_GSTAT (1u << 4u)
 /* Sum the energy terms in global computation */
 #define CGLO_ENERGY (1u << 6u)
-/* Sum the kinetic energy terms in global computation */
+/* Sum the kinetic energy terms in global computation, implies CGLO_COMPUTEEKINH */
 #define CGLO_TEMPERATURE (1u << 7u)
 /* Sum the kinetic energy terms in global computation */
 #define CGLO_PRESSURE (1u << 8u)

@@ -462,6 +462,8 @@ void compute_globals(gmx_global_stat*               gstat,
     bPres      = ((flags & CGLO_PRESSURE) != 0);
     bConstrain = ((flags & CGLO_CONSTRAINT) != 0);
 
+    const bool computeEkin = bTemp || ((flags & CGLO_COMPUTEEKIN) != 0);
+
     /* we calculate a full state kinetic energy either with full-step velocity verlet
        or half step where we need the pressure */
 
@@ -476,7 +478,7 @@ void compute_globals(gmx_global_stat*               gstat,
     const bool haveLeapFrog = (ir->eI == IntegrationAlgorithm::MD || EI_SD(ir->eI));
     const bool haveEkinhOld = (haveLeapFrog && step == ekind->lastComputeGlobalsStep + 1);
 
-    if (bTemp)
+    if (computeEkin)
     {
         if (!bReadEkin)
         {
@@ -492,7 +494,8 @@ void compute_globals(gmx_global_stat*               gstat,
         calc_vcm_grp(*mdatoms, x, v, vcm);
     }
 
-    if (bTemp || bStopCM || bPres || bEner || bConstrain || observablesReducer->isReductionRequired())
+    if (computeEkin || bTemp || bStopCM || bPres || bEner || bConstrain
+        || observablesReducer->isReductionRequired())
     {
         if (!bGStat)
         {
@@ -564,8 +567,9 @@ void compute_globals(gmx_global_stat*               gstat,
              * In this way we obtain the current half step kinetic energy
              * instead of the average of the previous and the current.
              */
-            // We would like to assert here on step % ir->nstcalcenergy != 0,
-            // but for that we need to pass extra information to compute_globals().
+            GMX_ASSERT(step % ir->nstcalcenergy != 0,
+                       "We should only ignore ekinh_old when terminating mdrun at a "
+                       "non-nstcalcenergy step");
             for (auto& tcstat : ekind->tcstat)
             {
                 copy_mat(tcstat.ekinh, tcstat.ekinh_old);
