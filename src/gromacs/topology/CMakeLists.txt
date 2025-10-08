@@ -38,6 +38,7 @@ set(TOPOLOGY_SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/atoms.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/atomsbuilder.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/block.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/embedded_system_preprocessing.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/exclusionblocks.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/forcefieldparameters.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/idef.cpp

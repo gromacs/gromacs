@@ -42,23 +42,29 @@
 
 #include "gmxpre.h"
 
-#include "gromacs/applied_forces/nnpot/nnpottopologypreprocessor.h"
-
 #include <filesystem>
 #include <string>
 #include <vector>
 
 #include <gtest/gtest.h>
 
+#include "gromacs/applied_forces/nnpot/nnpot.h"
+#include "gromacs/applied_forces/nnpot/nnpotoptions.h"
+#include "gromacs/domdec/localatomset.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/warninp.h"
 #include "gromacs/gmxpreprocess/grompp.h"
+#include "gromacs/mdtypes/imdpoptionprovider_test_helper.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/selection/indexutil.h"
+#include "gromacs/topology/index.h"
 #include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/keyvaluetree.h"
+#include "gromacs/utility/keyvaluetreebuilder.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/loggerbuilder.h"
 #include "gromacs/utility/path.h"
@@ -125,29 +131,55 @@ public:
         return mtop;
     }
 
+    //! \brief Generates a default mdp values for NNPotOptions
+    static KeyValueTreeObject nnpotBuildDefaultMdpValues()
+    {
+        // Prepare MDP inputs
+        KeyValueTreeBuilder mdpValueBuilder;
+        mdpValueBuilder.rootObject().addValue(std::string(NNPotModuleInfo::sc_name) + "-active",
+                                              std::string("true"));
+        return mdpValueBuilder.build();
+    }
+
+    //! \brief Creates an IndexGroupsAndNames object with the given atom indices
+    static IndexGroupsAndNames indexGroupsAndNames(const std::vector<int>& nnpAtomIndices)
+    {
+        // Create an IndexGroupsAndNames object
+        std::vector<IndexGroup> indexGroups;
+        // "System" is the default group name for NNPot
+        indexGroups.push_back({ "System", nnpAtomIndices });
+        return IndexGroupsAndNames(indexGroups);
+    }
+
+    //! \brief Helper function to create an NNPotOptions object
+    NNPotOptions buildDefaultOptions(const std::vector<int>& nnpAtomIndices, WarningHandler* wi)
+    {
+        NNPotOptions options;
+        test::fillOptionsFromMdpValues(nnpotBuildDefaultMdpValues(), &options);
+        options.setLogger(logHelper_.logger());
+        options.setWarninp(wi);
+        options.setInputGroupIndices(indexGroupsAndNames(nnpAtomIndices));
+        return options;
+    }
+
 protected:
     LoggerTestHelper logHelper_;
 };
 
-TEST_F(NNPotTopologyPreprocessorTest, CanConstruct)
-{
-    std::vector<Index> nnpIndices = { 0, 1, 2 };
-    EXPECT_NO_THROW(NNPotTopologyPreprocessor topPrep(nnpIndices));
-}
-
-TEST_F(NNPotTopologyPreprocessorTest, FourWatersFirstInQMRegion)
+TEST_F(NNPotTopologyPreprocessorTest, FourWatersFirstInNNPRegion)
 {
     // Reference input 4x SPCE waters from database 4waters.top
     // First water is NNP input
-    std::vector<Index>          nnpAtomIndices = { 0, 1, 2 };
+    std::vector<int>            nnpAtomIndices = { 0, 1, 2 };
     std::unique_ptr<gmx_mtop_t> mtop           = makeMtopFromFile("4water", "");
 
-    NNPotTopologyPreprocessor topPrep(nnpAtomIndices);
-    MDLogger                  logger;
-    WarningHandler            wi(true, 0);
+    // Create NNPotOptions object and set required things
+    WarningHandler wi(true, 0);
+    NNPotOptions   options = buildDefaultOptions(nnpAtomIndices, &wi);
+
     logHelper_.expectEntryMatchingRegex(
             MDLogger::LogLevel::Info,
-            "Neural network potential Interface is active, topology was modified!");
+            "Neural network potential interface is active, topology was modified!");
     logHelper_.expectEntryMatchingRegex(
             MDLogger::LogLevel::Info,
             "Number of embedded NNP atoms: 3\nNumber of regular atoms: 9\n");
@@ -155,22 +187,22 @@ TEST_F(NNPotTopologyPreprocessorTest, FourWatersFirstInQMRegion)
     logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info,
                                         "Number of settles removed: 1 \\(replaced by 2 "
                                         "InteractionFunction::ConnectBonds\\) \n");
-    topPrep.preprocess(mtop.get(), logHelper_.logger(), &wi);
+    EXPECT_NO_THROW(options.modifyTopology(mtop.get()));
 }
 
-TEST_F(NNPotTopologyPreprocessorTest, FourWatersSecondAndFourthInQMRegion)
+TEST_F(NNPotTopologyPreprocessorTest, FourWatersSecondAndFourthInNNPRegion)
 {
     // Reference input 4x SPCE waters from database 4waters.top
     // second and fourth are NNP input
-    std::vector<Index>          nnpAtomIndices = { 3, 4, 5, 9, 10, 11 };
+    std::vector<int>            nnpAtomIndices = { 3, 4, 5, 9, 10, 11 };
     std::unique_ptr<gmx_mtop_t> mtop           = makeMtopFromFile("4water", "");
 
-    NNPotTopologyPreprocessor topPrep(nnpAtomIndices);
-    MDLogger                  logger;
-    WarningHandler            wi(true, 0);
+    WarningHandler wi(true, 0);
+    NNPotOptions   options = buildDefaultOptions(nnpAtomIndices, &wi);
+
     logHelper_.expectEntryMatchingRegex(
             MDLogger::LogLevel::Info,
-            "Neural network potential Interface is active, topology was modified!");
+            "Neural network potential interface is active, topology was modified!");
     logHelper_.expectEntryMatchingRegex(
             MDLogger::LogLevel::Info,
             "Number of embedded NNP atoms: 6\nNumber of regular atoms: 6\n");
@@ -178,21 +210,22 @@ TEST_F(NNPotTopologyPreprocessorTest, FourWatersSecondAndFourthInQMRegion)
     logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info,
                                         "Number of settles removed: 2 \\(replaced by 4 "
                                         "InteractionFunction::ConnectBonds\\) \n");
-    topPrep.preprocess(mtop.get(), logHelper_.logger(), &wi);
+    EXPECT_NO_THROW(options.modifyTopology(mtop.get()));
 }
 
 TEST_F(NNPotTopologyPreprocessorTest, AlanineDipeptideWithLinkAtomsNoConstraints)
 {
     // Reference input alanine_vacuo.top
-    std::vector<Index> nnpAtomIndices = { 8, 9, 10, 11, 12, 13 };
-    auto               mtop           = makeMtopFromFile("alanine_vacuo", "");
+    std::vector<int> nnpAtomIndices = { 8, 9, 10, 11, 12, 13 };
+    auto             mtop           = makeMtopFromFile("alanine_vacuo", "");
 
-    NNPotTopologyPreprocessor topPrep(nnpAtomIndices);
-    MDLogger                  logger;
-    WarningHandler            wi(true, 0);
+    // Create NNPotOptions object and set required things
+    WarningHandler wi(true, 0);
+    NNPotOptions   options = buildDefaultOptions(nnpAtomIndices, &wi);
+
     logHelper_.expectEntryMatchingRegex(
             MDLogger::LogLevel::Info,
-            "Neural network potential Interface is active, topology was modified!");
+            "Neural network potential interface is active, topology was modified!");
     logHelper_.expectEntryMatchingRegex(
             MDLogger::LogLevel::Info,
             "Number of embedded NNP atoms: 6\nNumber of regular atoms: 16\n");
@@ -204,21 +237,22 @@ TEST_F(NNPotTopologyPreprocessorTest, AlanineDipeptideWithLinkAtomsNoConstraints
     logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info, "Number of angles removed: 11\n");
     logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info,
                                         "Number of dihedrals removed: 9\n");
-    topPrep.preprocess(mtop.get(), logHelper_.logger(), &wi);
+    EXPECT_NO_THROW(options.modifyTopology(mtop.get()));
 }
 
 TEST_F(NNPotTopologyPreprocessorTest, AlanineDipeptideWithLinkAtomsWithConstraints)
 {
     // Reference input alanine_vacuo.top with constraints=all-bonds
-    std::vector<Index> nnpAtomIndices = { 8, 9, 10, 11, 12, 13 };
-    auto               mtop = makeMtopFromFile("alanine_vacuo", "constraints = all-bonds");
+    std::vector<int> nnpAtomIndices = { 8, 9, 10, 11, 12, 13 };
+    auto             mtop           = makeMtopFromFile("alanine_vacuo", "constraints = all-bonds");
 
-    NNPotTopologyPreprocessor topPrep(nnpAtomIndices);
-    MDLogger                  logger;
-    WarningHandler            wi(true, 0);
+    // Create NNPotOptions object and set required things
+    WarningHandler wi(true, 0);
+    NNPotOptions   options = buildDefaultOptions(nnpAtomIndices, &wi);
+
     logHelper_.expectEntryMatchingRegex(
             MDLogger::LogLevel::Info,
-            "Neural network potential Interface is active, topology was modified!");
+            "Neural network potential interface is active, topology was modified!");
     logHelper_.expectEntryMatchingRegex(
             MDLogger::LogLevel::Info,
             "Number of embedded NNP atoms: 6\nNumber of regular atoms: 16\n");
@@ -227,7 +261,10 @@ TEST_F(NNPotTopologyPreprocessorTest, AlanineDipeptideWithLinkAtomsWithConstrain
     logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info, "Number of angles removed: 11\n");
     logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info,
                                         "Number of dihedrals removed: 9\n");
-    topPrep.preprocess(mtop.get(), logHelper_.logger(), &wi);
+    EXPECT_NO_THROW(options.modifyTopology(mtop.get()));
+
+    // expect one warning about constrained bonds
+    ASSERT_EQ(wi.warningCount(), 1);
 }
 
 } // namespace test

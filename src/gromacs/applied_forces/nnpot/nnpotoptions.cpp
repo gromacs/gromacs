@@ -52,6 +52,7 @@
 #include "gromacs/options/optionsection.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/selection/indexutil.h"
+#include "gromacs/topology/embedded_system_preprocessing.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/logger.h"
@@ -59,7 +60,6 @@
 #include "gromacs/utility/stringutil.h"
 
 #include "nnpot.h"
-#include "nnpottopologypreprocessor.h"
 
 #if GMX_TORCH
 #    include "gromacs/applied_forces/nnpot/torchmodel.h"
@@ -100,6 +100,46 @@ const std::string c_modelInput2Tag_ = "model-input2";
 const std::string c_modelInput3Tag_ = "model-input3";
 const std::string c_modelInput4Tag_ = "model-input4";
 //! \}
+
+//! \brief Helper function to preprocess topology for NNP
+void preprocessTopology(gmx_mtop_t* mtop, ArrayRef<const Index> nnpIndices, const MDLogger& logger, WarningHandler* wi)
+{
+    // convert nnpIndices to set for faster lookup
+    std::set<int> nnpIndicesSet(nnpIndices.begin(), nnpIndices.end());
+    const int     numNNPAtoms     = nnpIndices.size();
+    const int     numRegularAtoms = mtop->natoms - numNNPAtoms;
+
+    GMX_LOG(logger.info)
+            .appendText("Neural network potential interface is active, topology was modified!");
+    GMX_LOG(logger.info)
+            .appendTextFormatted("Number of embedded NNP atoms: %d\nNumber of regular atoms: %d\n",
+                                 numNNPAtoms,
+                                 numRegularAtoms);
+
+    // 1) Split QM-containing molecules from other molecules in blocks
+    std::vector<bool> isNNPBlock = splitEmbeddedBlocks(mtop, nnpIndicesSet);
+
+    // 2) Exclude non-bonded interactions between QM atoms
+    addEmbeddedNBExclusions(mtop, nnpIndicesSet, logger);
+
+    // 3) Build atomNumbers vector with atomic numbers of all atoms
+    std::vector<int> atomNumbers = buildEmbeddedAtomNumbers(*mtop);
+
+    // 4) Make F_CONNBOND between atoms within QM region
+    modifyEmbeddedTwoCenterInteractions(mtop, nnpIndicesSet, isNNPBlock, logger);
+
+    // 5) Remove angles and settles containing 2 or more QM atoms
+    modifyEmbeddedThreeCenterInteractions(mtop, nnpIndicesSet, isNNPBlock, logger);
+
+    // 6) Remove dihedrals containing 3 or more QM atoms
+    modifyEmbeddedFourCenterInteractions(mtop, nnpIndicesSet, isNNPBlock, logger);
+
+    // 7) Check for constrained bonds in subsystem
+    checkConstrainedBonds(mtop, nnpIndicesSet, isNNPBlock, wi);
+
+    // finalize topology
+    mtop->finalize();
+}
 
 } // namespace
 
@@ -233,10 +273,7 @@ void NNPotOptions::modifyTopology(gmx_mtop_t* top)
         return;
     }
 
-    // subclassing the qmmm topology preprocessor as it has virtually the exact functionality we need
-    //! \todo separate this from QMMM module as its reused in multiple places now
-    NNPotTopologyPreprocessor topPrep(params_.nnpIndices_);
-    topPrep.preprocess(top, logger(), wi_);
+    preprocessTopology(top, params_.nnpIndices_, logger(), wi_);
 }
 
 void NNPotOptions::writeParamsToKvt(KeyValueTreeObjectBuilder treeBuilder)

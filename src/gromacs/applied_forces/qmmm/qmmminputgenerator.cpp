@@ -304,7 +304,7 @@ std::string QMMMInputGenerator::generateQMMMSection() const
     for (size_t i = 0; i < parameters_.link_.size(); i++)
     {
         res += "    &LINK\n";
-        res += formatString("      QM_INDEX %d\n", static_cast<int>(parameters_.link_[i].qm) + 1);
+        res += formatString("      QM_INDEX %d\n", static_cast<int>(parameters_.link_[i].embedded) + 1);
         res += formatString("      MM_INDEX %d\n", static_cast<int>(parameters_.link_[i].mm) + 1);
         res += "    &END LINK\n";
     }

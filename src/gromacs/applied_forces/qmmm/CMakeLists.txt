@@ -33,7 +33,6 @@
 
 gmx_add_libgromacs_sources(
     qmmminputgenerator.cpp
-    qmmmtopologypreprocessor.cpp
     qmmmoptions.cpp
     qmmm.cpp
     )

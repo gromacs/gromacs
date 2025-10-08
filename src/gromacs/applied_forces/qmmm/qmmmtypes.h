@@ -46,6 +46,7 @@
 #include <string>
 #include <vector>
 
+#include "gromacs/topology/embedded_system_preprocessing.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/enumerationhelpers.h"
@@ -54,18 +55,6 @@
 
 namespace gmx
 {
-
-/*! \internal
- * \brief Helper structure with indexes of broken bonds between QM and MM
- * Used to determine and store pair of QM and MM atoms between which chemical bond is broken
- */
-struct LinkFrontier
-{
-    //! Global index of QM atom at Frontier
-    Index qm;
-    //! Global index of MM atom at Frontier
-    Index mm;
-};
 
 /*! \brief Enumerator for supported QM methods
  * Also could be INPUT which means external input file provided

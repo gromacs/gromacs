@@ -237,7 +237,6 @@ public:
      *     key-value-tree during pre-processing by a function taking a
      *     KeyValueTreeObjectBuilder as parameter
      *   - Modify topology according to QMMM rules using gmx_mtop_t notification
-     *     and utilizing QMMMTopologyPreprocessor class
      *   - Access MDLogger for notifications output
      *   - Access warninp for for grompp warnings output
      *   - Coordinates, PBC and box for CP2K input generation

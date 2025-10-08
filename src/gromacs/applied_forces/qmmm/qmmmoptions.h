@@ -109,7 +109,7 @@ public:
      */
     void processCoordinates(const CoordinatesAndBoxPreprocessed& coord);
 
-    /*! \brief Modifies topology in case of active QMMM module using QMMMTopologyPreprocessor
+    /*! \brief Modifies topology in case of active QMMM module
      * \param[in,out] mtop topology to modify for QMMM
      */
     void modifyQMMMTopology(gmx_mtop_t* mtop);
