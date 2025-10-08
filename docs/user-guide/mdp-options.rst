@@ -2116,18 +2116,25 @@ AWH adaptive biasing
 
 .. mdp:: awh1-equilibrate-histogram
 
-   .. mdp-value:: no
-
-      Do not equilibrate the histogram.
-
    .. mdp-value:: yes
 
       Before entering the initial stage (see :mdp-value:`awh1-growth=exp-linear`), make sure the
       histogram of sampled weights is following the target distribution closely enough (specifically,
-      at least 80% of the target region needs to have a local relative error of less than 20%). This
-      option would typically only be used when :mdp:`awh1-share-group` > 0
-      and the initial configurations poorly represent the target
+      at least 80% of the target region needs to have a local relative error of less than
+      :mdp-value:`awh1-histogram-tolerance`). This option is particularly important when
+      :mdp:`awh1-share-group` > 0 and the initial configurations poorly represent the target
       distribution.
+
+   .. mdp-value:: no
+
+      Do not equilibrate the histogram.
+
+.. mdp:: awh1-histogram-tolerance
+
+    (0.5) []
+    The relative tolerance for the histogram of sampled weigths, used with
+    :mdp-value:`awh1-equilibrate-histogram=yes`. The value of 0.5 is sufficiently large to not
+    slow down the convergence, even when a single walker is used.
 
 .. mdp:: awh1-target
 

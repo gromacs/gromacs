@@ -180,7 +180,10 @@ public:
     //! Constructor from input file.
     AwhBiasParams(std::vector<t_inpfile>* inp, const std::string& prefix, WarningHandler* wi, bool bComment);
     //! Constructor to generate from file reading.
-    explicit AwhBiasParams(ISerializer* serializer, bool tprWithoutGrowthFactor, bool tprWithoutTargetMetricScaling);
+    explicit AwhBiasParams(ISerializer* serializer,
+                           bool         tprWithoutGrowthFactor,
+                           bool         tprWithoutTargetMetricScaling,
+                           bool         tprWithoutHistogramTolerance);
 
     //! Move constructor.
     AwhBiasParams(AwhBiasParams&&) = default;
@@ -215,6 +218,8 @@ public:
     double targetMetricScalingLimit() const { return targetMetricScalingLimit_; }
     //! If the simulation starts with equilibrating histogram.
     bool equilibrateHistogram() const { return equilibrateHistogram_; }
+    //! The fraction by which the histogram is allowed to deviate, over 80% of the range
+    double histogramTolerance() const { return histogramTolerance_; }
     //! Access to dimension parameters.
     ArrayRef<AwhDimParams> dimParams() { return dimParams_; }
     //! Access to dimension parameters for a specific dimension.
@@ -251,6 +256,8 @@ private:
     int shareGroup_;
     //! True if the simulation starts out by equilibrating the histogram.
     bool equilibrateHistogram_;
+    //! The fraction by which the histogram is allowed to deviate, over 80% of the range
+    double histogramTolerance_;
 };
 /*! \internal
  * \brief Structure holding parameter information for AWH.
@@ -261,7 +268,10 @@ public:
     //! Constructor from input file.
     AwhParams(std::vector<t_inpfile>* inp, WarningHandler* wi);
     //! Constructor used to generate awh parameter from file reading.
-    explicit AwhParams(ISerializer* serializer, bool tprWithoutGrowthFactor, bool tprWithoutTargetMetricScaling);
+    explicit AwhParams(ISerializer* serializer,
+                       bool         tprWithoutGrowthFactor,
+                       bool         tprWithoutTargetMetricScaling,
+                       bool         tprWithoutHistogramTolerance);
 
     //! Move constructor.
     AwhParams(AwhParams&&) = default;

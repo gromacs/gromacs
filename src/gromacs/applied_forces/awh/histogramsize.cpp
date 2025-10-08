@@ -71,6 +71,7 @@ HistogramSize::HistogramSize(const AwhBiasParams& awhBiasParams, double histogra
     inInitialStage_(awhBiasParams.growthType() == AwhHistogramGrowthType::ExponentialLinear),
     growthFactor_(awhBiasParams.growthFactor()),
     equilibrateHistogram_(awhBiasParams.equilibrateHistogram()),
+    histogramTolerance_(awhBiasParams.histogramTolerance()),
     logScaledSampleWeight_(0),
     maxLogScaledSampleWeight_(0),
     havePrintedAboutCovering_(false)
@@ -145,10 +146,11 @@ namespace
  * the target region, the relative error of the sampled weight relative
  * to the target is less than a tolerance value.
  *
- * \param[in] pointStates  The state of the bias points.
+ * \param[in] pointStates     The state of the bias points.
+ * \param[in] errorTolerance  The histogram needs to be within this tolerance over 80% of the range
  * \returns true if the histogram is equilibrated.
  */
-bool histogramIsEquilibrated(ArrayRef<const PointState> pointStates)
+bool histogramIsEquilibrated(ArrayRef<const PointState> pointStates, const double errorTolerance)
 {
     /* Get the total weight of the total weight histogram; needed for normalization. */
     double totalWeight     = 0;
@@ -168,9 +170,6 @@ bool histogramIsEquilibrated(ArrayRef<const PointState> pointStates)
     /* Points with target weight below a certain cutoff are ignored. */
     static const double minTargetCutoff = 0.05;
     double              minTargetWeight = 1. / numTargetPoints * minTargetCutoff;
-
-    /* Points with error less than this tolerance pass the check.*/
-    static const double errorTolerance = 0.2;
 
     /* Sum up weight of points that do or don't pass the check. */
     double equilibratedWeight    = 0;
@@ -219,7 +218,7 @@ double HistogramSize::newHistogramSize(const BiasParams&          params,
         if (equilibrateHistogram_ && covered)
         {
             /* The histogram is equilibrated at most once. */
-            equilibrateHistogram_ = !histogramIsEquilibrated(pointStates);
+            equilibrateHistogram_ = !histogramIsEquilibrated(pointStates, histogramTolerance_);
 
             if (fplog != nullptr)
             {

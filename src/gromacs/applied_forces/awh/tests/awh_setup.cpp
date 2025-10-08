@@ -127,6 +127,7 @@ static std::vector<char> awhBiasParamSerialized(AwhHistogramGrowthType eawhgrowt
     bool                   bUserData                = inputUserData;
     double                 errorInitial             = inputErrorScaling / beta;
     bool                   equilibrateHistogram     = false;
+    double                 histogramTolerance       = 0.2;
     double                 targetMetricScalingLimit = 10;
 
     gmx::InMemorySerializer serializer;
@@ -143,6 +144,7 @@ static std::vector<char> awhBiasParamSerialized(AwhHistogramGrowthType eawhgrowt
     serializer.doInt(&ndim);
     serializer.doInt(&shareGroup);
     serializer.doBool(&equilibrateHistogram);
+    serializer.doDouble(&histogramTolerance);
 
     auto awhDimBuffer  = awhDimParamSerialized();
     auto awhBiasBuffer = serializer.finishAndGetBuffer();
@@ -210,7 +212,8 @@ static std::vector<char> awhParamSerialized(AwhHistogramGrowthType eawhgrowth,
     return awhParamBuffer;
 }
 
-AwhTestParameters::AwhTestParameters(ISerializer* serializer) : awhParams(serializer, false, false)
+AwhTestParameters::AwhTestParameters(ISerializer* serializer) :
+    awhParams(serializer, false, false, false)
 {
 }
 /*! \brief
@@ -287,7 +290,7 @@ TEST(SerializationTest, CanSerializeBiasParams)
     auto awhBiasBuffer  = awhBiasParamSerialized(
             AwhHistogramGrowthType::ExponentialLinear, 0.4, 0.5, awhDimArrayRef, 0, false, AwhTargetType::Constant, false);
     gmx::InMemoryDeserializer deserializer(awhBiasBuffer, false);
-    AwhBiasParams             awhBiasParams(&deserializer, false, false);
+    AwhBiasParams             awhBiasParams(&deserializer, false, false, false);
     EXPECT_EQ(awhBiasParams.ndim(), 1);
     EXPECT_EQ(awhBiasParams.targetDistribution(), AwhTargetType::Constant);
     EXPECT_FLOAT_EQ(awhBiasParams.targetBetaScaling(), 0);
@@ -299,6 +302,7 @@ TEST(SerializationTest, CanSerializeBiasParams)
     EXPECT_FLOAT_EQ(awhBiasParams.initialErrorEstimate(), 0.5 / 0.4);
     EXPECT_EQ(awhBiasParams.shareGroup(), 0);
     EXPECT_EQ(awhBiasParams.equilibrateHistogram(), false);
+    EXPECT_EQ(awhBiasParams.histogramTolerance(), 0.2);
     const auto& awhDimParams = awhBiasParams.dimParams(0);
     EXPECT_EQ(awhDimParams.coordinateProvider(), AwhCoordinateProviderType::Pull);
     EXPECT_EQ(awhDimParams.coordinateIndex(), 0);
@@ -330,7 +334,7 @@ TEST(SerializationTest, CanSerializeAwhParams)
                                              AwhTargetType::Constant,
                                              false);
     gmx::InMemoryDeserializer deserializer(awhParamBuffer, false);
-    AwhParams                 awhParams(&deserializer, false, false);
+    AwhParams                 awhParams(&deserializer, false, false, false);
     EXPECT_EQ(awhParams.numBias(), 1);
     EXPECT_EQ(awhParams.seed(), 1337);
     EXPECT_EQ(awhParams.nstout(), 0);
@@ -348,6 +352,7 @@ TEST(SerializationTest, CanSerializeAwhParams)
     EXPECT_FLOAT_EQ(awhBiasParams.initialErrorEstimate(), 0.5 / 0.4);
     EXPECT_EQ(awhBiasParams.shareGroup(), 0);
     EXPECT_EQ(awhBiasParams.equilibrateHistogram(), false);
+    EXPECT_EQ(awhBiasParams.histogramTolerance(), 0.2);
     const auto& awhDimParams = awhBiasParams.dimParams(0);
     EXPECT_EQ(awhDimParams.coordinateProvider(), AwhCoordinateProviderType::Pull);
     EXPECT_EQ(awhDimParams.coordinateIndex(), 0);

@@ -801,7 +801,16 @@ AwhBiasParams::AwhBiasParams(std::vector<t_inpfile>* inp, const std::string& pre
                              "distribution: no or yes");
     }
     opt                   = prefix + "-equilibrate-histogram";
-    equilibrateHistogram_ = (getEnum<Boolean>(inp, opt.c_str(), wi) != Boolean::No);
+    equilibrateHistogram_ = (getEnum<YesNoType>(inp, opt.c_str(), wi) == YesNoType::Yes);
+
+    if (bComment)
+    {
+        printStringNoNewline(inp,
+                             "Allow histogram to deviate by this fraction over 80% of the range "
+                             "when equilibrating");
+    }
+    opt                 = prefix + "-histogram-tolerance";
+    histogramTolerance_ = get_ereal(inp, opt, 0.5, wi);
 
     if (bComment)
     {
@@ -906,7 +915,8 @@ AwhBiasParams::AwhBiasParams(std::vector<t_inpfile>* inp, const std::string& pre
 
 AwhBiasParams::AwhBiasParams(ISerializer* serializer,
                              const bool   tprWithoutGrowthFactor,
-                             const bool   tprWithoutTargetMetricScaling)
+                             const bool   tprWithoutTargetMetricScaling,
+                             const bool   tprWithoutHistogramTolerance)
 {
     GMX_RELEASE_ASSERT(serializer->reading(),
                        "Can not use writing serializer to create datastructure");
@@ -941,6 +951,14 @@ AwhBiasParams::AwhBiasParams(ISerializer* serializer,
     serializer->doInt(&numDimensions);
     serializer->doInt(&shareGroup_);
     serializer->doBool(&equilibrateHistogram_);
+    if (tprWithoutHistogramTolerance)
+    {
+        histogramTolerance_ = 0.2;
+    }
+    else
+    {
+        serializer->doDouble(&histogramTolerance_);
+    }
 
     for (int k = 0; k < numDimensions; k++)
     {
@@ -966,6 +984,7 @@ void AwhBiasParams::serialize(ISerializer* serializer)
     serializer->doInt(&numDimensions);
     serializer->doInt(&shareGroup_);
     serializer->doBool(&equilibrateHistogram_);
+    serializer->doDouble(&histogramTolerance_);
 
     for (int k = 0; k < numDimensions; k++)
     {
@@ -1031,7 +1050,10 @@ AwhParams::AwhParams(std::vector<t_inpfile>* inp, WarningHandler* wi)
     checkInputConsistencyAwh(*this, wi);
 }
 
-AwhParams::AwhParams(ISerializer* serializer, const bool tprWithoutGrowthFactor, const bool tprWithoutTargetMetricScaling)
+AwhParams::AwhParams(ISerializer* serializer,
+                     const bool   tprWithoutGrowthFactor,
+                     const bool   tprWithoutTargetMetricScaling,
+                     const bool   tprWithoutHistogramTolerance)
 {
     GMX_RELEASE_ASSERT(serializer->reading(),
                        "Can not use writing serializer to read AWH parameters");
@@ -1048,7 +1070,10 @@ AwhParams::AwhParams(ISerializer* serializer, const bool tprWithoutGrowthFactor,
     {
         for (int k = 0; k < numberOfBiases; k++)
         {
-            awhBiasParams_.emplace_back(serializer, tprWithoutGrowthFactor, tprWithoutTargetMetricScaling);
+            awhBiasParams_.emplace_back(serializer,
+                                        tprWithoutGrowthFactor,
+                                        tprWithoutTargetMetricScaling,
+                                        tprWithoutHistogramTolerance);
         }
     }
 }

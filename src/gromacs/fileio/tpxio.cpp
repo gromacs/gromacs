@@ -199,7 +199,8 @@ enum tpxv
     tpxv_RefScaleMultipleCOMs, /**< Add multiple COM groups for refcoord-scale */
     tpxv_InputHistogramCounts, /**< Provide input histogram counts for current expanded ensemble state */
     tpxv_NNPotIFuncType,       /**< Add interaction function type for neural network potential */
-    tpxv_Count                 /**< the total number of tpxv versions */
+    tpxv_AwhHistogramTolerance, /**< Add AWH histogram tolerance */
+    tpxv_Count                  /**< the total number of tpxv versions */
 };
 
 /*! \brief Version number of the file format written to run input
@@ -1650,7 +1651,8 @@ static void do_inputrec(gmx::ISerializer* serializer, t_inputrec* ir, int file_v
                 ir->awhParams =
                         std::make_unique<gmx::AwhParams>(serializer,
                                                          file_version < tpxv_AwhGrowthFactor,
-                                                         file_version < tpxv_AwhTargetMetricScaling);
+                                                         file_version < tpxv_AwhTargetMetricScaling,
+                                                         file_version < tpxv_AwhHistogramTolerance);
             }
             else
             {

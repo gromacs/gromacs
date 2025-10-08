@@ -58,6 +58,17 @@
 #include "gromacs/utility/textreader.h"
 #include "gromacs/utility/textwriter.h"
 
+namespace gmx
+{
+
+const char* enumValueToString(YesNoType enumValue)
+{
+    constexpr EnumerationArray<YesNoType, const char*> yesNoTypeNames = { "yes", "no" };
+    return yesNoTypeNames[enumValue];
+}
+
+} // namespace gmx
+
 std::vector<t_inpfile> read_inpfile(gmx::TextInputStream*        stream,
                                     const std::filesystem::path& fn,
                                     WarningHandler*              wi)

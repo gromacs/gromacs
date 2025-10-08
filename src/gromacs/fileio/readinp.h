@@ -56,6 +56,19 @@ class ArrayRef;
 class KeyValueTreeObject;
 class TextInputStream;
 class TextOutputStream;
+
+//! Enum class for boolean that should be true by default
+enum class YesNoType
+{
+    Yes,
+    No,
+    Count,
+    Default = Yes
+};
+
+//! Strings for \c YesNoType
+const char* enumValueToString(YesNoType enumValue);
+
 } // namespace gmx
 
 /* !\brief Input file structure that is populated with entries read from a file.
