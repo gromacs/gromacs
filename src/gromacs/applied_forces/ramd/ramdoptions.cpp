@@ -36,7 +36,7 @@ const std::string c_seedTag = "seed";
 const std::string c_evalFreqTag = "eval-freq";
 const std::string c_ngroupsTag = "ngroups";
 
-const std::string c_groupReceptorTag = "receptor";
+const std::string c_groupReceptorTag = "group1-receptor";
 const std::string c_groupLigandTag = "ligand";
 const std::string c_groupForceTag = "force";
 const std::string c_groupMaxDistTag = "max-dist";
@@ -46,6 +46,7 @@ const std::string c_groupRMinDistTag = "r-min-dist";
 
 void RAMDOptions::initMdpTransform(IKeyValueTreeTransformRules* rules)
 {
+    const auto& stringIdentityTransform = [](std::string s) { return s; };
     addMdpTransformFromString<bool>(
         rules, &fromStdString<bool>, RAMDModuleInfo::sc_name, c_activeTag);
     addMdpTransformFromString<std::int64_t>(
@@ -54,6 +55,8 @@ void RAMDOptions::initMdpTransform(IKeyValueTreeTransformRules* rules)
         rules, &fromStdString<int>, RAMDModuleInfo::sc_name, c_evalFreqTag);
     addMdpTransformFromString<int>(
         rules, &fromStdString<int>, RAMDModuleInfo::sc_name, c_ngroupsTag);
+    // addMdpTransformFromString<std::string>(
+    //     rules, stringIdentityTransform, RAMDModuleInfo::sc_name, c_groupReceptorTag);
 }
 
 void RAMDOptions::buildMdpOutput(KeyValueTreeObjectBuilder* builder) const
@@ -68,6 +71,13 @@ void RAMDOptions::buildMdpOutput(KeyValueTreeObjectBuilder* builder) const
         addMdpOutputComment(
                 builder, RAMDModuleInfo::sc_name, c_seedTag, "; Seed");
         addMdpOutputValue(builder, RAMDModuleInfo::sc_name, c_seedTag, parameters_.seed_);
+        addMdpOutputValue(builder, RAMDModuleInfo::sc_name, c_ngroupsTag, parameters_.ngroups_);
+
+        // for (int i = 1; i <= parameters_.ngroups_; ++i)
+        // {
+        //     addMdpOutputComment(builder, RAMDModuleInfo::sc_name, "group" + std::to_string(i) + "-receptor", "; Group " + std::to_string(i) + " receptor");
+        //     addMdpOutputValue(builder, RAMDModuleInfo::sc_name, "group" + std::to_string(i) + "-receptor", parameters_.groups_[i - 1].receptor_group_);
+        // }
     }
 }
 
@@ -76,6 +86,8 @@ void RAMDOptions::initMdpOptions(IOptionsContainerWithSections* options)
     auto section = options->addSection(OptionSection(moduleName().c_str()));
     section.addOption(BooleanOption(c_activeTag.c_str()).store(&parameters_.active_));
     section.addOption(Int64Option(c_seedTag.c_str()).store(&parameters_.seed_));
+    section.addOption(IntegerOption(c_ngroupsTag.c_str()).store(&parameters_.ngroups_));
+    // section.addOption(StringOption(c_groupReceptorTag.c_str()).store(&parameters_.groups_[0].receptor_group_));
 }
 
 bool RAMDOptions::active() const

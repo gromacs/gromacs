@@ -7,7 +7,12 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/applied_forces/ramd/ramd.h"
 #include "gromacs/applied_forces/ramd/ramdoptions.h"
+#include "gromacs/mdtypes/imdpoptionprovider_test_helper.h"
+#include "gromacs/utility/keyvaluetree.h"
+#include "gromacs/utility/keyvaluetreebuilder.h"
+#include "gromacs/utility/keyvaluetreemdpwriter.h"
 
 #include <cstdint>
 
@@ -21,11 +26,31 @@
 
 namespace gmx
 {
-
 namespace
 {
 
-TEST(RAMDOptionsTest, DefaultParameters)
+class RAMDOptionsTest : public ::testing::Test
+{
+public:
+    static KeyValueTreeObject ramdBuildDefaultMdpValues()
+    {
+        // Prepare MDP inputs
+        KeyValueTreeBuilder mdpValueBuilder;
+        mdpValueBuilder.rootObject().addValue(std::string(RAMDModuleInfo::sc_name) + "-active",
+                                              std::string("true"));
+        return mdpValueBuilder.build();
+    }
+};
+
+TEST_F(RAMDOptionsTest, OptionSetsActive)
+{
+    RAMDOptions ramdOptions;
+    EXPECT_FALSE(ramdOptions.parameters().active_);
+    test::fillOptionsFromMdpValues(ramdBuildDefaultMdpValues(), &ramdOptions);
+    EXPECT_TRUE(ramdOptions.parameters().active_);
+}
+
+TEST_F(RAMDOptionsTest, DefaultParameters)
 {
     RAMDOptions ramdOptions;
     const auto defaultParameters = ramdOptions.parameters();
@@ -37,6 +62,5 @@ TEST(RAMDOptionsTest, DefaultParameters)
 }
 
 
-} // namespace
-
+} // namespace anonymous
 } // namespace gmx
