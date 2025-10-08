@@ -141,7 +141,6 @@ bool threadMpiTestRunner(std::function<void()> testBody);
     if (!RankRequirement::conditionSatisfied(numRanks))                                       \
     {                                                                                         \
         GTEST_SKIP() << std::string("Test skipped because ") + RankRequirement::s_skipReason; \
-        return;                                                                               \
     }                                                                                         \
     GMX_MPI_TEST_INNER;
 
