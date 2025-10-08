@@ -70,6 +70,7 @@
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/hardware/device_information.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/utility/message_string_collector.h"
 #include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/mpiinfo.h"
 #include "gromacs/utility/stringutil.h"
@@ -143,14 +144,16 @@ bool valueIsCommonOnAllRanks(const GpuAwareMpiStatus status, const MpiComm& comm
  * \param [in] box            Box matrix
  * \param [in] h_x            Atom coordinate data array on host
  * \param [in] numAtomsTotal  Total number of atoms, including halo
+ *
+ * \returns A collection of messages explaining why the halo exchange
+ * needs to be skipped, which is empty when the halo exchange was run.
  */
-void gpuHalo(gmx_domdec_t* dd, matrix box, HostVector<RVec>* h_x, int numAtomsTotal)
+MessageStringCollector gpuHalo(gmx_domdec_t* dd, matrix box, HostVector<RVec>* h_x, int numAtomsTotal)
 {
+    MessageStringCollector errorReasons;
 #if GMX_GPU
     // get communicator
     const MpiComm& mpiComm = dd->mpiComm();
-    // pin memory if possible
-    changePinningPolicy(h_x, PinningPolicy::PinnedIfSupported);
     // Set up GPU hardware environment and assign this MPI rank to a device
     const int         numDevices = getTestHardwareEnvironment()->getTestDeviceList().size();
     const TestDevice* testDevice =
@@ -163,19 +166,23 @@ void gpuHalo(gmx_domdec_t* dd, matrix box, HostVector<RVec>* h_x, int numAtomsTo
 
     if (GMX_LIB_MPI)
     {
-        if (!valueIsCommonOnAllRanks(status, mpiComm))
-        {
-            GTEST_SKIP() << formatString(
-                    "This rank had GPU-aware MPI support level '%s', but some other rank did not. "
-                    "Skipping tests unless all ranks have the same support level.",
-                    enumValueToString(status));
-        }
-        if (status == GpuAwareMpiStatus::NotSupported)
-        {
-            GTEST_SKIP() << "GPU-aware MPI not supported, so GPU halo exchange cannot be tested";
-        }
+        errorReasons.appendIf(
+                !valueIsCommonOnAllRanks(status, mpiComm),
+                formatString(
+                        "This rank had GPU-aware MPI support level '%s', but some other rank "
+                        "did not. Skipping tests unless all ranks have the same support level.",
+                        enumValueToString(status)));
+        errorReasons.appendIf(status == GpuAwareMpiStatus::NotSupported,
+                              "GPU-aware MPI not supported, so GPU halo exchange cannot be tested");
+    }
+    // Skip the halo exchange if it cannot work
+    if (!errorReasons.isEmpty())
+    {
+        return errorReasons;
     }
 
+    // pin memory if possible
+    changePinningPolicy(h_x, PinningPolicy::PinnedIfSupported);
     // Set up GPU buffer and copy input data from host
     DeviceBuffer<RVec> d_x;
     int                d_x_size       = -1;
@@ -232,6 +239,7 @@ void gpuHalo(gmx_domdec_t* dd, matrix box, HostVector<RVec>* h_x, int numAtomsTo
     GMX_UNUSED_VALUE(h_x);
     GMX_UNUSED_VALUE(numAtomsTotal);
 #endif
+    return errorReasons;
 }
 
 /*! \brief Define 1D rank topology with 4 MPI tasks
@@ -636,9 +644,13 @@ TEST_P(HaloExchangeTest, WithParametersOnGpu)
     SCOPED_TRACE("Testing " + GetParam().description);
     GMX_MPI_TEST(RequireRankCount<4>);
 
-    if (!(GMX_THREAD_MPI && GpuConfigurationCapabilities::ThreadMpiCommunication))
+    if (GMX_THREAD_MPI && !GpuConfigurationCapabilities::ThreadMpiCommunication)
     {
         GTEST_SKIP() << "With thread-MPI, GPU halo exchange is only supported on CUDA";
+    }
+    if (GMX_LIB_MPI && !GpuConfigurationCapabilities::LibraryMpiCommunication)
+    {
+        GTEST_SKIP() << "With library MPI, GPU halo exchange is not supported for this build";
     }
     if (getTestHardwareEnvironment()->getTestDeviceList().empty())
     {
@@ -648,8 +660,16 @@ TEST_P(HaloExchangeTest, WithParametersOnGpu)
     HaloExchangeTestData data(GetParam());
     const int            numHomeAtoms = GetParam().numHomeAtoms;
     initHaloData(data.mpiComm_.rank(), data.h_x_.data(), numHomeAtoms, data.numAtomsTotal_);
-    gpuHalo(&data.dd_, box_, &data.h_x_, data.numAtomsTotal_);
-    GetParam().checkResults(data.h_x_.data(), &data.dd_, numHomeAtoms);
+    MessageStringCollector skipReasons = gpuHalo(&data.dd_, box_, &data.h_x_, data.numAtomsTotal_);
+    if (skipReasons.isEmpty())
+    {
+        // Halo exchange ran, so check the results
+        GetParam().checkResults(data.h_x_.data(), &data.dd_, numHomeAtoms);
+    }
+    else
+    {
+        GTEST_SKIP() << skipReasons.toString();
+    }
 }
 
 static const std::vector<HaloExchangeTestParameters> c_testSetups = {
