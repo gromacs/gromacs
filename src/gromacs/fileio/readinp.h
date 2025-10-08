@@ -254,8 +254,6 @@ void setStringEntry(std::vector<t_inpfile>* inp, const char* name, char* newName
  * Returns a string value and sets the value in \p inp
  *
  * The value is either from \p inp when \p name is found or \p def otherwise.
- *
- * \note this is a wrapper function for g_estr()
  */
 std::string setStringEntry(std::vector<t_inpfile>* inp, const std::string& name, const std::string& def);
 

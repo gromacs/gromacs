@@ -179,9 +179,6 @@ Performance and Run Control
         to the :ref:`log` file. The resulting output is the way performance summary is reported in versions
         4.5.x and thus may be useful for anyone using scripts to parse :ref:`log` files or standard output.
 
-``GMX_DISABLE_CUDA_TIMING``
-        Deprecated. Use ``GMX_DISABLE_GPU_TIMING`` instead.
-
 ``GMX_DISABLE_DYNAMICPRUNING``
         disables dynamic pair-list pruning. Note that :ref:`gmx mdrun` will
         still tune nstlist to the optimal value picked assuming dynamic pruning. Thus

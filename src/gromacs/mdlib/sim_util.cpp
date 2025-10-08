@@ -837,8 +837,6 @@ static void alternatePmeNbGpuWaitReduce(nonbonded_verlet_t* nbv,
     bool isPmeGpuDone = false;
     bool isNbGpuDone  = false;
 
-    ArrayRef<const RVec> pmeGpuForces;
-
     while (!isPmeGpuDone || !isNbGpuDone)
     {
         if (!isPmeGpuDone)

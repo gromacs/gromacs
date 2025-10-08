@@ -153,7 +153,6 @@ struct gmx_domdec_t
     UnitCellInfo unitCellInfo;
 
     /* The communication setup, identical for each cell, cartesian index */
-    //! Todo: refactor nbnxm to not rely on this sometimes being a nullptr so this can be IVec
     gmx::IVec numCells = { 0, 0, 0 };
     int       ndim     = 0;
     gmx::IVec dim      = { 0, 0, 0 }; /* indexed by 0 to ndim */
