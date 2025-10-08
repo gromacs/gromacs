@@ -28,9 +28,11 @@ struct RAMDGroup
      
     std::string receptor_group_ = "Protein";
     std::vector<Index> receptor_indices_;
+    int receptor_group_pbcatom_ = 0;
      
     std::string ligand_group_ = "Ligand";
     std::vector<Index> ligand_indices_;
+    int ligand_group_pbcatom_ = 0;
     
     //! Specifies the distance in Angstrom between the COMs of the ligand
     //! and the receptor when the simulation is stopped
