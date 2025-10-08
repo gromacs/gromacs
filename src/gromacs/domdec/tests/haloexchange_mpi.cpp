@@ -53,6 +53,7 @@
 
 #include <array>
 #include <numeric>
+#include <type_traits>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -67,8 +68,11 @@
 #endif
 #include "gromacs/gpu_utils/gpueventsynchronizer.h"
 #include "gromacs/gpu_utils/hostallocator.h"
+#include "gromacs/hardware/device_information.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/utility/mpicomm.h"
+#include "gromacs/utility/mpiinfo.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "testutils/mpitest.h"
 #include "testutils/test_hardware_environment.h"
@@ -111,6 +115,28 @@ void initHaloData(const int rank, RVec* x, const int numHomeAtoms, const int num
     }
 }
 
+#if GMX_GPU
+//! Return whether the given value is the same on all ranks of \c comm
+bool valueIsCommonOnAllRanks(const GpuAwareMpiStatus status, const MpiComm& comm)
+{
+#    if GMX_MPI
+    static_assert(
+            std::is_same_v<int, std::underlying_type_t<decltype(status)>>,
+            "MPI operation expects GPU-aware MPI status enum to use int as the underlying type");
+    // Use standard trick to have one collective operation effectively
+    // provide the minimum and maximum values across all MPI ranks to
+    // each rank, by reducing both the value and its negation separately.
+    int valuesToReduce[2] = { -static_cast<int>(status), static_cast<int>(status) };
+    MPI_Allreduce(MPI_IN_PLACE, valuesToReduce, 2, MPI_INT, MPI_MIN, comm.comm());
+    return valuesToReduce[0] == -valuesToReduce[1];
+#    else
+    GMX_UNUSED_VALUE(status);
+    GMX_UNUSED_VALUE(comm);
+    return true
+#    endif
+}
+#endif
+
 /*! \brief Perform GPU halo exchange, including required setup and data transfers
  *
  * \param [in] dd             Domain decomposition object
@@ -126,12 +152,29 @@ void gpuHalo(gmx_domdec_t* dd, matrix box, HostVector<RVec>* h_x, int numAtomsTo
     // pin memory if possible
     changePinningPolicy(h_x, PinningPolicy::PinnedIfSupported);
     // Set up GPU hardware environment and assign this MPI rank to a device
-    int         numDevices = getTestHardwareEnvironment()->getTestDeviceList().size();
-    const auto& testDevice =
-            getTestHardwareEnvironment()->getTestDeviceList()[mpiComm.rank() % numDevices];
-    const auto& deviceContext = testDevice->deviceContext();
+    const int         numDevices = getTestHardwareEnvironment()->getTestDeviceList().size();
+    const TestDevice* testDevice =
+            getTestHardwareEnvironment()->getTestDeviceList()[mpiComm.rank() % numDevices].get();
+    const DeviceContext&     deviceContext = testDevice->deviceContext();
+    const DeviceInformation& deviceInfo    = testDevice->deviceInfo();
+    const GpuAwareMpiStatus  status        = deviceInfo.gpuAwareMpiStatus;
     deviceContext.activate();
     DeviceStream deviceStream(deviceContext, DeviceStreamPriority::Normal, false);
+
+    if (GMX_LIB_MPI)
+    {
+        if (!valueIsCommonOnAllRanks(status, mpiComm))
+        {
+            GTEST_SKIP() << formatString(
+                    "This rank had GPU-aware MPI support level '%s', but some other rank did not. "
+                    "Skipping tests unless all ranks have the same support level.",
+                    enumValueToString(status));
+        }
+        if (status == GpuAwareMpiStatus::NotSupported)
+        {
+            GTEST_SKIP() << "GPU-aware MPI not supported, so GPU halo exchange cannot be tested";
+        }
+    }
 
     // Set up GPU buffer and copy input data from host
     DeviceBuffer<RVec> d_x;
@@ -595,8 +638,7 @@ TEST_P(HaloExchangeTest, WithParametersOnGpu)
 
     if (!(GMX_THREAD_MPI && GpuConfigurationCapabilities::ThreadMpiCommunication))
     {
-        GTEST_SKIP() << "GPU halo exchange testing only supported in build configuration with CUDA "
-                        "and thread-MPI";
+        GTEST_SKIP() << "With thread-MPI, GPU halo exchange is only supported on CUDA";
     }
     if (getTestHardwareEnvironment()->getTestDeviceList().empty())
     {

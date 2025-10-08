@@ -49,7 +49,11 @@ enum class GpuAwareMpiStatus : int
     NotSupported = 0, //!< GPU-aware support NOT available or not known.
     Forced,           //!< GPU-aware support forced using env variable
     Supported,        //!< GPU-aware support available.
+    Count,            //!< Conventional final enum value
 };
+
+//! Helper function to pretty-print GPU-aware status values
+const char* enumValueToString(const GpuAwareMpiStatus status);
 
 //! Return whether GROMACS is linked against an MPI library describing itself as Intel MPI
 bool usingIntelMpi();

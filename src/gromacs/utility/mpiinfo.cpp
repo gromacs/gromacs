@@ -46,6 +46,7 @@
 // need to include gmxapi.h here as mpi.h needs to be included before mpi-ext.h
 #include "config.h"
 
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -55,6 +56,14 @@
 
 namespace gmx
 {
+
+const char* enumValueToString(const GpuAwareMpiStatus status)
+{
+    constexpr EnumerationArray<GpuAwareMpiStatus, const char*> names = { "not supported",
+                                                                         "forced",
+                                                                         "supported" };
+    return names[status];
+};
 
 namespace
 {
