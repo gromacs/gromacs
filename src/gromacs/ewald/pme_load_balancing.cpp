@@ -551,6 +551,125 @@ static void switch_to_stage1(pme_load_balancing_t* pme_lb)
     pme_lb->cur = pme_lb->end;
 }
 
+//! Updates all the mdrun machinery for \p setup, setup->pmedata might be updated
+static void applySetup(pme_setup_t*             setup,
+                       gmx_pme_t*               pmedataOfSetup0,
+                       const t_inputrec&        ir,
+                       interaction_const_t*     ic,
+                       gmx::nonbonded_verlet_t* nbv,
+                       gmx_domdec_t*            dd)
+{
+    ic->coulomb.cutoff = setup->rcut_coulomb;
+    nbv->changePairlistRadii(setup->rlistOuter, setup->rlistInner);
+    ic->coulomb.ewaldCoeff = setup->ewaldcoeff_q;
+    /* TODO: centralize the code that sets the potentials shifts */
+    if (ic->coulomb.modifier == InteractionModifiers::PotShift)
+    {
+        GMX_RELEASE_ASSERT(ic->coulomb.cutoff != 0, "Cutoff radius cannot be zero");
+        ic->coulomb.ewaldShift =
+                std::erfc(ic->coulomb.ewaldCoeff * ic->coulomb.cutoff) / ic->coulomb.cutoff;
+    }
+    if (usingLJPme(ic->vdw.type))
+    {
+        /* We have PME for both Coulomb and VdW, set rvdw equal to rcoulomb */
+        ic->vdw.cutoff     = setup->rcut_coulomb;
+        ic->vdw.ewaldCoeff = setup->ewaldcoeff_lj;
+        if (ic->vdw.modifier == InteractionModifiers::PotShift)
+        {
+            ic->vdw.dispersionShift.cpot = -1.0 / gmx::power6(static_cast<double>(ic->vdw.cutoff));
+            ic->vdw.repulsionShift.cpot  = -1.0 / gmx::power12(static_cast<double>(ic->vdw.cutoff));
+            real crc2                    = gmx::square(ic->vdw.ewaldCoeff * ic->vdw.cutoff);
+            ic->vdw.ewaldShift           = (std::exp(-crc2) * (1 + crc2 + 0.5 * crc2 * crc2) - 1)
+                                 / gmx::power6(ic->vdw.cutoff);
+        }
+    }
+
+    /* We always re-initialize the tables whether they are used or not */
+    init_interaction_const_tables(nullptr, ic, setup->rlistOuter, ir.tabext);
+
+    gpu_pme_loadbal_update_param(nbv, *ic);
+
+    if (dd == nullptr || dd->hasPmeDuty)
+    {
+        /* FIXME:
+         * CPU PME keeps a list of allocated pmedata's, that's why setups_[currentSetup_].pmedata is not always nullptr.
+         * GPU PME, however, currently needs the gmx_pme_reinit always called on load balancing
+         * (pme_gpu_reinit might be not sufficiently decoupled from gmx_pme_init).
+         * This can lead to a lot of reallocations for PME GPU.
+         * Would be nicer if the allocated grid list was hidden within a single pmedata structure.
+         */
+        if (setup->pmedata == nullptr || pme_gpu_task_enabled(setup->pmedata))
+        {
+            gmx_pme_t* newPmeData;
+            // Generate a new PME data structure, copying part of the old pointers.
+            gmx_pme_reinit(
+                    &newPmeData, dd, pmedataOfSetup0, &ir, setup->grid, setup->ewaldcoeff_q, setup->ewaldcoeff_lj);
+            // Destroy the old structure. Must be done after gmx_pme_reinit in case currenSetup_==0.
+            if (setup->pmedata != nullptr)
+            {
+                gmx_pme_destroy(setup->pmedata, false);
+            }
+            setup->pmedata = newPmeData;
+        }
+    }
+    else
+    {
+        /* Tell our PME-only rank to switch grid */
+        gmx_pme_send_switchgrid(*dd, setup->grid, setup->ewaldcoeff_q, setup->ewaldcoeff_lj);
+    }
+}
+
+/*! \brief Checks the cycles and adds them to \p *set
+ *
+ * \returns whether we should increase the number of stages by 1.
+ */
+static bool processCycles(FILE*         fp_err,
+                          FILE*         fp_log,
+                          const double  cycles,
+                          const int64_t step,
+                          const bool    isInLastStage,
+                          pme_setup_t*  set)
+{
+    bool increaseNumStages = false;
+
+    const auto buf = gmx::formatString("step %4" PRId64 ": ", step);
+    print_grid(fp_err, fp_log, buf.c_str(), "timed with", set, cycles);
+
+    GMX_RELEASE_ASSERT(set->count > c_numPostSwitchTuningIntervalSkip, "We should skip cycles");
+    if (set->count == (c_numPostSwitchTuningIntervalSkip + 1))
+    {
+        set->cycles = cycles;
+    }
+    else
+    {
+        if (cycles * maxFluctuationAccepted < set->cycles && isInLastStage)
+        {
+            /* The performance went up a lot (due to e.g. DD load balancing).
+             * Add a stage, keep the minima, but rescan all setups.
+             */
+            increaseNumStages = true;
+
+            if (debug)
+            {
+                fprintf(debug,
+                        "The performance for grid %d %d %d went from %.3f to %.1f M-cycles, this "
+                        "is more than %f\n"
+                        "Will increase the number stages to by 1"
+                        " and ignoring the previous performance\n",
+                        set->grid[XX],
+                        set->grid[YY],
+                        set->grid[ZZ],
+                        set->cycles * 1e-6,
+                        cycles * 1e-6,
+                        maxFluctuationAccepted);
+            }
+        }
+        set->cycles = std::min(set->cycles, cycles);
+    }
+
+    return increaseNumStages;
+}
+
 /*! \brief Process the timings and try to adjust the PME grid and Coulomb cut-off
  *
  * The adjustment is done to generate a different non-bonded PP and PME load.
@@ -579,7 +698,6 @@ static void pme_load_balance(pme_load_balancing_t*          pme_lb,
     gmx_bool     OK;
     pme_setup_t* set;
     double       cycles_fast;
-    char         buf[STRLEN], sbuf[22];
 
     gmx_domdec_t* dd = pme_lb->dd;
 
@@ -600,40 +718,12 @@ static void pme_load_balance(pme_load_balancing_t*          pme_lb,
         return;
     }
 
-    sprintf(buf, "step %4s: ", gmx_step_str(step, sbuf));
-    print_grid(fp_err, fp_log, buf, "timed with", set, cycles);
+    const bool increaseNumStages =
+            processCycles(fp_err, fp_log, cycles, step, pme_lb->stage == pme_lb->nstage - 1, set);
 
-    GMX_RELEASE_ASSERT(set->count > c_numPostSwitchTuningIntervalSkip, "We should skip cycles");
-    if (set->count == (c_numPostSwitchTuningIntervalSkip + 1))
+    if (increaseNumStages)
     {
-        set->cycles = cycles;
-    }
-    else
-    {
-        if (cycles * maxFluctuationAccepted < set->cycles && pme_lb->stage == pme_lb->nstage - 1)
-        {
-            /* The performance went up a lot (due to e.g. DD load balancing).
-             * Add a stage, keep the minima, but rescan all setups.
-             */
-            pme_lb->nstage++;
-
-            if (debug)
-            {
-                fprintf(debug,
-                        "The performance for grid %d %d %d went from %.3f to %.1f M-cycles, this "
-                        "is more than %f\n"
-                        "Increased the number stages to %d"
-                        " and ignoring the previous performance\n",
-                        set->grid[XX],
-                        set->grid[YY],
-                        set->grid[ZZ],
-                        set->cycles * 1e-6,
-                        cycles * 1e-6,
-                        maxFluctuationAccepted,
-                        pme_lb->nstage);
-            }
-        }
-        set->cycles = std::min(set->cycles, cycles);
+        pme_lb->nstage++;
     }
 
     if (set->cycles < pme_lb->setup[pme_lb->fastest].cycles)
@@ -822,72 +912,14 @@ static void pme_load_balance(pme_load_balancing_t*          pme_lb,
         }
     }
 
-    /* Change the Coulomb cut-off and the PME grid */
-
     set = &pme_lb->setup[pme_lb->cur];
 
-    ic->coulomb.cutoff = set->rcut_coulomb;
-    nbv->changePairlistRadii(set->rlistOuter, set->rlistInner);
-    ic->coulomb.ewaldCoeff = set->ewaldcoeff_q;
-    /* TODO: centralize the code that sets the potentials shifts */
-    if (ic->coulomb.modifier == InteractionModifiers::PotShift)
-    {
-        GMX_RELEASE_ASSERT(ic->coulomb.cutoff != 0, "Cutoff radius cannot be zero");
-        ic->coulomb.ewaldShift =
-                std::erfc(ic->coulomb.ewaldCoeff * ic->coulomb.cutoff) / ic->coulomb.cutoff;
-    }
-    if (usingLJPme(ic->vdw.type))
-    {
-        /* We have PME for both Coulomb and VdW, set rvdw equal to rcoulomb */
-        ic->vdw.cutoff     = set->rcut_coulomb;
-        ic->vdw.ewaldCoeff = set->ewaldcoeff_lj;
-        if (ic->vdw.modifier == InteractionModifiers::PotShift)
-        {
-            real crc2;
-
-            ic->vdw.dispersionShift.cpot = -1.0 / gmx::power6(static_cast<double>(ic->vdw.cutoff));
-            ic->vdw.repulsionShift.cpot  = -1.0 / gmx::power12(static_cast<double>(ic->vdw.cutoff));
-            crc2                         = gmx::square(ic->vdw.ewaldCoeff * ic->vdw.cutoff);
-            ic->vdw.ewaldShift           = (std::exp(-crc2) * (1 + crc2 + 0.5 * crc2 * crc2) - 1)
-                                 / gmx::power6(ic->vdw.cutoff);
-        }
-    }
-
-    /* We always re-initialize the tables whether they are used or not */
-    init_interaction_const_tables(nullptr, ic, set->rlistOuter, ir.tabext);
-
-    gmx::gpu_pme_loadbal_update_param(nbv, *ic);
+    /* Change the Coulomb cut-off and the PME grid */
+    applySetup(set, pme_lb->setup[0].pmedata, ir, ic, nbv, dd);
 
     if (!pme_lb->bSepPMERanks)
     {
-        /* FIXME:
-         * CPU PME keeps a list of allocated pmedata's, that's why pme_lb->setup[pme_lb->cur].pmedata is not always nullptr.
-         * GPU PME, however, currently needs the gmx_pme_reinit always called on load balancing
-         * (pme_gpu_reinit might be not sufficiently decoupled from gmx_pme_init).
-         * This can lead to a lot of reallocations for PME GPU.
-         * Would be nicer if the allocated grid list was hidden within a single pmedata structure.
-         */
-        if ((pme_lb->setup[pme_lb->cur].pmedata == nullptr)
-            || pme_gpu_task_enabled(pme_lb->setup[pme_lb->cur].pmedata))
-        {
-            gmx_pme_t* newPmeData;
-            // Generate a new PME data structure, copying part of the old pointers.
-            gmx_pme_reinit(
-                    &newPmeData, dd, pme_lb->setup[0].pmedata, &ir, set->grid, set->ewaldcoeff_q, set->ewaldcoeff_lj);
-            // Destroy the old structure. Must be done after gmx_pme_reinit in case pme_lb->cur is 0.
-            if (set->pmedata != nullptr)
-            {
-                gmx_pme_destroy(set->pmedata, false);
-            }
-            set->pmedata = newPmeData;
-        }
         *pmedata = set->pmedata;
-    }
-    else
-    {
-        /* Tell our PME-only rank to switch grid */
-        GMX_ASSERT(dd != nullptr, "Can only have separate PME ranks with DD");
-        gmx_pme_send_switchgrid(*dd, set->grid, set->ewaldcoeff_q, set->ewaldcoeff_lj);
     }
 
     if (debug)
