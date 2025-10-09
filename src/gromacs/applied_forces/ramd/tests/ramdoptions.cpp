@@ -40,15 +40,18 @@ public:
                                               std::string("true"));
         return mdpValueBuilder.build();
     }
-};
 
-TEST_F(RAMDOptionsTest, OptionSetsActive)
-{
-    RAMDOptions ramdOptions;
-    EXPECT_FALSE(ramdOptions.parameters().active_);
-    test::fillOptionsFromMdpValues(ramdBuildDefaultMdpValues(), &ramdOptions);
-    EXPECT_TRUE(ramdOptions.parameters().active_);
-}
+    static KeyValueTreeObject ramdBuildMdpValues()
+    {
+        // Prepare MDP inputs
+        KeyValueTreeBuilder mdpValueBuilder;
+        mdpValueBuilder.rootObject().addValue(std::string(RAMDModuleInfo::sc_name) + "-active",
+                                              std::string("true"));
+        mdpValueBuilder.rootObject().addValue(std::string(RAMDModuleInfo::sc_name) + "-ngroups",
+                                              std::string("1"));
+        return mdpValueBuilder.build();
+    }
+};
 
 TEST_F(RAMDOptionsTest, DefaultParameters)
 {
@@ -57,9 +60,17 @@ TEST_F(RAMDOptionsTest, DefaultParameters)
     EXPECT_FALSE(defaultParameters.active_);
     EXPECT_EQ(1234, defaultParameters.seed_);
     EXPECT_EQ(0, defaultParameters.ngroups_);
+}
 
+TEST_F(RAMDOptionsTest, OptionSetsActive)
+{
+    RAMDOptions ramdOptions;
+    test::fillOptionsFromMdpValues(ramdBuildMdpValues(), &ramdOptions);
+    EXPECT_TRUE(ramdOptions.parameters().active_);
+    EXPECT_EQ(1, ramdOptions.parameters().ngroups_);
     // EXPECT_REAL_EQ(0.0025, defaultParameters.groups_[0].r_min_dist_);
 }
+
 
 
 } // namespace anonymous
