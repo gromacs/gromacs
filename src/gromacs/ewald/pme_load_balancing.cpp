@@ -182,7 +182,7 @@ struct Cutoffs
  *
  * The states the algorithm can reside in:
  *
- * - isActive_ == false: inactive, either from the beginning or after tuning has finished
+ * - isActive_ == false: inactive, after tuning has finished
  *
  * - isActive_ == true:
  *   - isInBalancingPhase == false: only timing and checking for imbalance,
@@ -313,15 +313,13 @@ private:
     const MDLogger& mdlog_; /**< Reference to the mdlogger */
 };
 
-//! Returns whether it might be useful to do PME tuning
-static bool pmeTuningIsUseful(const SimulationWorkload& simulationWork)
+bool pmeTuningIsSupported(const CoulombInteractionType coulombInteractionType,
+                          const bool                   reproducibilityRequested,
+                          const SimulationWorkload&    simulationWork)
 {
-    /* Tune with GPUs and/or separate PME ranks.
-     * When running only on a CPU without PME ranks, PME tuning will only help
-     * with small numbers of atoms in the cut-off sphere.
-     * Disable PME tuning with GPU PME decomposition.
-     */
-    return wallcycle_have_counter()
+    // Note that we would like to quit with an error message when the user actively requested PME tuning
+    // but we do not support. But currently -tunepme is a boolean option with default true; we would need auto.
+    return usingPme(coulombInteractionType) && !reproducibilityRequested
            && (simulationWork.useCpuNonbonded || simulationWork.haveSeparatePmeRank)
            && !simulationWork.useGpuPmeDecomposition;
 }
@@ -369,15 +367,15 @@ PmeLoadBalancing::Impl::Impl(gmx_domdec_t*              dd,
     haveSepPMERanks_(simulationWork.haveSeparatePmeRank),
     useGpuForNonbondeds_(simulationWork.useGpuNonbonded),
     useGpuPmePpCommunication_(simulationWork.useGpuPmePpCommunication),
-    isActive_(pmeTuningIsUseful(simulationWork)),
+    isActive_(true),
     cutoffs_(getCutoffs(ir, box, ic, nbv)),
     ir_(ir),
     dd_(*dd),
     mdlog_(mdlog)
 {
-    // Note that we don't (yet) support PME load balancing with LJ-PME only.
-    GMX_RELEASE_ASSERT(usingPme(ir.coulombtype),
-                       "pme_loadbal_init called without PME electrostatics");
+    // Check that the coloumbtype and task assignment conditions are fulfilled
+    GMX_RELEASE_ASSERT(pmeTuningIsSupported(ir.coulombtype, false, simulationWork),
+                       "PME tuning should be supported");
     // To avoid complexity, we require a single cut-off with PME for q+LJ.
     // This is checked by grompp, but it doesn't hurt to check again.
     GMX_RELEASE_ASSERT(!(usingPme(ir.coulombtype) && usingLJPme(ir.vdwtype) && ir.rcoulomb != ir.rvdw),

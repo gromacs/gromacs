@@ -572,7 +572,8 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::build()
 
     // Build PME load balance helper
     if (PmeLoadBalanceHelper::doPmeLoadBalancing(legacySimulatorData_->mdrunOptions_,
-                                                 legacySimulatorData_->fr_))
+                                                 legacySimulatorData_->fr_,
+                                                 legacySimulatorData_->runScheduleWork_->simulationWork))
     {
         algorithm.pmeLoadBalanceHelper_ = std::make_unique<PmeLoadBalanceHelper>(
                 legacySimulatorData_->mdrunOptions_.verbose,

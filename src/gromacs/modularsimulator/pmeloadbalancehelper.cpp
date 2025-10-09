@@ -56,9 +56,12 @@
 
 namespace gmx
 {
-bool PmeLoadBalanceHelper::doPmeLoadBalancing(const MdrunOptions& mdrunOptions, const t_forcerec* fr)
+bool PmeLoadBalanceHelper::doPmeLoadBalancing(const MdrunOptions&       mdrunOptions,
+                                              const t_forcerec*         fr,
+                                              const SimulationWorkload& simWorkload)
 {
-    return (mdrunOptions.tunePme && usingPme(fr->ic->coulomb.type) && !mdrunOptions.reproducible);
+    return (mdrunOptions.tunePme
+            && pmeTuningIsSupported(fr->ic->coulomb.type, mdrunOptions.reproducible, simWorkload));
 }
 
 PmeLoadBalanceHelper::PmeLoadBalanceHelper(bool                      isVerbose,

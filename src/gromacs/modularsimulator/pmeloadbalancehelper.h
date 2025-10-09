@@ -95,7 +95,9 @@ public:
     bool pmePrinting() const;
 
     //! Whether we're doing PME load balancing
-    static bool doPmeLoadBalancing(const MdrunOptions& mdrunOptions, const t_forcerec* fr);
+    static bool doPmeLoadBalancing(const MdrunOptions&       mdrunOptions,
+                                   const t_forcerec*         fr,
+                                   const SimulationWorkload& simWorkload);
 
     //! Direct access to the load balancing object - used by reset counter
     const PmeLoadBalancing& loadBalancingObject();

@@ -52,6 +52,7 @@
 #include "gromacs/utility/vectypes.h"
 
 
+enum class CoulombInteractionType;
 struct gmx_domdec_t;
 struct t_forcerec;
 struct t_inputrec;
@@ -67,6 +68,11 @@ template<typename T>
 class ArrayRef;
 class SimulationWorkload;
 
+//! Returns whether PME tuning is supported
+bool pmeTuningIsSupported(CoulombInteractionType    coulombInteractionType,
+                          bool                      reproducibilityRequested,
+                          const SimulationWorkload& simulationWork);
+
 /*! \brief Object to manage PME load balancing */
 class PmeLoadBalancing
 {
@@ -78,6 +84,8 @@ public:
      * The PME grid in \p pmedata is reused for smaller grids to lower the memory
      * usage. The memory passed in \p pmedata needs to be freed after destructing
      * PmeLoadBalancing object.
+     *
+     * \note This constructor should only be called when \c pmeTuningIsSupported() returns true.
      */
     PmeLoadBalancing(gmx_domdec_t*              dd,
                      const MDLogger&            mdlog,

@@ -555,8 +555,8 @@ void gmx::LegacySimulator::do_md()
 
     // PME tuning is only supported with PME for Coulomb. It is not supported with only LJ PME
     std::unique_ptr<PmeLoadBalancing> pmeLoadBal;
-    if (mdrunOptions_.tunePme && usingPme(fr_->ic->coulomb.type) && !mdrunOptions_.reproducible
-        && !simulationWork.useGpuPmeDecomposition)
+    if (mdrunOptions_.tunePme
+        && pmeTuningIsSupported(fr_->ic->coulomb.type, mdrunOptions_.reproducible, simulationWork))
     {
         pmeLoadBal = std::make_unique<PmeLoadBalancing>(
                 cr_->dd, mdLog_, *ir, state_->box, *fr_->ic, *fr_->nbv, fr_->pmedata, simulationWork);
