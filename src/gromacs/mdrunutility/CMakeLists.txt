@@ -38,6 +38,7 @@ gmx_add_libgromacs_sources(
     logging.cpp
     mdmodulesnotifiers.cpp
     multisim.cpp
+    plainpairlistranges.cpp
     printtime.cpp
     threadaffinity.cpp
     )

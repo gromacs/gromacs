@@ -55,6 +55,17 @@ constexpr int c_numIvecs = detail::c_nBoxZ * detail::c_nBoxY * detail::c_nBoxX;
 constexpr int c_centralShiftIndex = detail::c_numIvecs / 2;
 constexpr int c_numShiftVectors   = detail::c_numIvecs;
 
+//! Convert shift index to periodic cell shifts
+static inline IVec shiftIndexToXYZ(int shiftIndex)
+{
+    const int divZ = shiftIndex / (detail::c_nBoxY * detail::c_nBoxX);
+    shiftIndex -= divZ * (detail::c_nBoxY * detail::c_nBoxX);
+    const int divY = shiftIndex / detail::c_nBoxX;
+    shiftIndex -= divY * detail::c_nBoxX;
+
+    return { shiftIndex - c_dBoxX, divY - c_dBoxY, divZ - c_dBoxZ };
+}
+
 //! Convert grid coordinates to shift index
 static inline int xyzToShiftIndex(int x, int y, int z)
 {

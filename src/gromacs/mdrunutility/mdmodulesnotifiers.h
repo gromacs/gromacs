@@ -77,6 +77,7 @@ class SeparatePmeRanksPermitted;
 struct MDModulesCheckpointReadingDataOnMain;
 struct MDModulesCheckpointReadingBroadcast;
 struct MDModulesWriteCheckpointData;
+class PlainPairlistRanges;
 enum class StartingBehavior;
 
 /*! \libinternal \brief Notification that atoms may have been redistributed
@@ -109,6 +110,48 @@ struct MDModulesAtomsRedistributedSignal
      * is the preferred and more convenient way to manage atom indices of groups.
      */
     std::optional<gmx::ArrayRef<const int>> globalAtomIndices_;
+};
+
+/*! \libinternal \brief Notification that the atom pair list has be (re)constructed
+ *
+ * This notification is emitted after the atom pair list has been reconstructed.
+ * The returned pair list is valid until the next notification. Two lists are returned.
+ * One is the list of interating pairs. The other is a list of pairs that are explicitly
+ * excluded from interacting in the topology. This list does not include self-pairs.
+ * A pairlist is returned on each PP-MPI-rank / domain. Together these pairlists
+ * contain all pairs in the system that are within the pairlist cut-off.
+ *
+ * Both lists have entries that consist of a pair where the first pair in the pair
+ * of atom indices and the second a shift index that indicates the periodic shift.
+ * The distance vector between a pair of particles is:
+ *   x[first.first] - x[first.second] + shiftVector[second]
+ * The composition in terms of box vectors of shiftVector is given by shiftIndexToXYZ()
+ * which is declared and defined in gromacs/pbcutil/ishift.h.
+ *
+ * At the time of construction, the pairlist contains all interacting atom pairs within
+ * the pairlist cut-off \p rlist. But within the next \p nstlist steps where this pairlist
+ * is used, atoms move around. Then nearly all pairs within \p max(rvdw, rcoulomb) are
+ * guaranteed to be in the returned pairlist. Thus this is the maximum cut-off distances
+ * one should use with the returned pairlist.
+ */
+struct MDModulesPairlistConstructedSignal
+{
+    using ParticlePair  = std::pair<int, int>;
+    using PairlistEntry = std::pair<ParticlePair, int>;
+
+    MDModulesPairlistConstructedSignal(ArrayRef<const PairlistEntry> pairlist,
+                                       ArrayRef<const PairlistEntry> excludedPairlist,
+                                       ArrayRef<const int>           atomTypes) :
+        pairlist_(pairlist), excludedPairlist_(excludedPairlist), atomTypes_(atomTypes)
+    {
+    }
+
+    //! The list of interacting atom pairs
+    ArrayRef<const PairlistEntry> pairlist_;
+    //! The list of excluded atom pairs
+    ArrayRef<const PairlistEntry> excludedPairlist_;
+    //! The list of atom types for all atoms occuring in the pairlist
+    ArrayRef<const int> atomTypes_;
 };
 
 /*! \libinternal \brief Check if module outputs energy to a specific field.
@@ -422,6 +465,7 @@ struct MDModulesNotifiers
      *                              This ensures that the output and checkpoints of ensemble
      *                              simulations are consistent and that ensemble simulations
      *                              can be continued.
+     * \tparam PlainPairlistRanges* Allows modules to request a range for the plain pairlist
      * \tparam MdRunInputFilename&  Allows modules to know .tpr filename during mdrun
      * \tparam EdrOutputFilename&   Allows modules to know .edr filename during mdrun
      * \tparam PlumedInputFilename& Allows modules to know the optional .dat filename to be read by plumed
@@ -440,6 +484,7 @@ struct MDModulesNotifiers
                            const EnsembleTemperature&,
                            const MpiComm&,
                            const gmx_multisim_t*,
+                           PlainPairlistRanges*,
                            const MdRunInputFilename&,
                            const EdrOutputFilename&,
                            const PlumedInputFilename&>::type simulationSetupNotifier_;
@@ -449,8 +494,10 @@ struct MDModulesNotifiers
      * These callbacks are called after calling all simulation setup notifications.
      *
      * \tparam MDModulesAtomsRedistributedSignal  Allows modules to react on atom redistribution
+     * \tparam MDModulesPairlistConstructedSignal  Enables access to the pairlist
      */
-    BuildMDModulesNotifier<const MDModulesAtomsRedistributedSignal&>::type simulationRunNotifier_;
+    BuildMDModulesNotifier<const MDModulesAtomsRedistributedSignal&,
+                           const MDModulesPairlistConstructedSignal&>::type simulationRunNotifier_;
 };
 
 } // namespace gmx

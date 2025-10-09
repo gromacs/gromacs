@@ -127,6 +127,7 @@
 #include "gromacs/mdrunutility/logging.h"
 #include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/mdrunutility/multisim.h"
+#include "gromacs/mdrunutility/plainpairlistranges.h"
 #include "gromacs/mdrunutility/printtime.h"
 #include "gromacs/mdrunutility/threadaffinity.h"
 #include "gromacs/mdtypes/atominfo.h"
@@ -1792,10 +1793,8 @@ int Mdrunner::mdrunner()
         setupNotifier.notify(SimulationTimeStep{ inputrec->delta_t });
         setupNotifier.notify(startingBehavior);
         setupNotifier.notify(EnsembleTemperature{ *inputrec });
-
-        // Now that all simulation setup notifications have been emitted,
-        // set up the simulation run notification subscriptions
-        mdModules_->subscribeToSimulationRunNotifications();
+        PlainPairlistRanges plainPairlistRanges(mtop, *inputrec);
+        setupNotifier.notify(&plainPairlistRanges);
 
         /* Initiate forcerecord */
         fr                 = std::make_unique<t_forcerec>();
@@ -1819,6 +1818,33 @@ int Mdrunner::mdrunner()
         {
             fr->fcdata->orires = std::make_unique<t_oriresdata>(
                     fplog, mtop, *inputrec, ms, globalState.get(), &atomSets);
+        }
+
+        // Now that all simulation setup notifications have been emitted,
+        // set up the simulation run notification subscriptions
+        mdModules_->subscribeToSimulationRunNotifications();
+
+        if (mdModules_->notifiers().simulationRunNotifier_.haveSubscribers<const MDModulesPairlistConstructedSignal&>())
+        {
+            if (plainPairlistRanges.ranges().empty())
+            {
+                GMX_THROW(gmx::APIError(
+                        "At least one MDModule has subscribed to the pairlist construction signal, "
+                        "but no MDModules requested a range for the plain pairlist"));
+            }
+
+            fr->plainPairlistRange = *std::max_element(plainPairlistRanges.ranges().begin(),
+                                                       plainPairlistRanges.ranges().end());
+            if (fr->plainPairlistRange.value() > inputrec->rlist)
+            {
+                // This is not nice. We could consider increasing rlist instead.
+                const std::string mesg = gmx::formatString(
+                        "MDModules request a plain pairlist with a range of %f nm, which is larger "
+                        "than the normal pairlist range of %f nm",
+                        fr->plainPairlistRange.value(),
+                        inputrec->rlist);
+                GMX_THROW(gmx::APIError(mesg));
+            }
         }
 
         deform = buildBoxDeformation(

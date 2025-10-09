@@ -1447,7 +1447,8 @@ static void doPairSearch(const t_commrec*             cr,
     wallcycle_start_nocount(wcycle, WallCycleCounter::NS);
     wallcycle_sub_start(wcycle, WallCycleSubCounter::NBSSearchLocal);
     /* Note that with a GPU the launch overhead of the list transfer is not timed separately */
-    nbv->constructPairlist(InteractionLocality::Local, top.excls, false, step, nrnb);
+    const bool alsoMakePlainPairlist = fr->plainPairlistRange.has_value();
+    nbv->constructPairlist(InteractionLocality::Local, top.excls, alsoMakePlainPairlist, step, nrnb);
 
     nbv->setupGpuShortRangeWork(fr->listedForcesGpu.get(), InteractionLocality::Local);
 
@@ -1491,7 +1492,7 @@ static void doPairSearch(const t_commrec*             cr,
         wallcycle_start_nocount(wcycle, WallCycleCounter::NS);
         wallcycle_sub_start(wcycle, WallCycleSubCounter::NBSSearchNonLocal);
         /* Note that with a GPU the launch overhead of the list transfer is not timed separately */
-        nbv->constructPairlist(InteractionLocality::NonLocal, top.excls, false, step, nrnb);
+        nbv->constructPairlist(InteractionLocality::NonLocal, top.excls, alsoMakePlainPairlist, step, nrnb);
 
         nbv->setupGpuShortRangeWork(fr->listedForcesGpu.get(), InteractionLocality::NonLocal);
         wallcycle_sub_stop(wcycle, WallCycleSubCounter::NBSSearchNonLocal);
@@ -1515,6 +1516,14 @@ static void doPairSearch(const t_commrec*             cr,
         wallcycle_sub_start(wcycle, WallCycleSubCounter::NonbondedFep);
         nbv->setupFepThreadedForceBuffer(fr->natoms_force_constr);
         wallcycle_sub_stop(wcycle, WallCycleSubCounter::NonbondedFep);
+    }
+
+    if (alsoMakePlainPairlist)
+    {
+        const auto& plainPairlist = nbv->plainPairlist(fr->plainPairlistRange.value(), fr->shift_vec);
+        MDModulesPairlistConstructedSignal mdModulesPairlistConstructedSignal(
+                plainPairlist.pairs, plainPairlist.excludedPairs, mdatoms.typeA);
+        mdModulesNotifiers.simulationRunNotifier_.notify(mdModulesPairlistConstructedSignal);
     }
 }
 
