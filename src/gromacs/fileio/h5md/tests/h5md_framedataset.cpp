@@ -371,6 +371,122 @@ TEST_P(WithFrameDims, ReadFrameThrowsForInvalidFrameIndexVector)
 }
 /**@}*/
 
+/**@{
+ * \brief Test H5mdScalarFrameDataSet<T> constructors for int32_t and BasicVector<float>
+ */
+TEST_P(WithFrameDims, H5mdScalarFrameDataSetWorksForEmptyFrameDimensionPrimitive)
+{
+    using ValueType                      = int32_t;
+    const std::vector<hsize_t> frameDims = GetParam().frameDims_;
+
+    auto builder = H5mdFrameDataSetBuilder<ValueType>(this->fileid(), "testDataSet");
+    builder.withFrameDimension(frameDims);
+
+    {
+        // Construct an H5mdFrameDataSet and close it at the end of this scope to test both constructors
+        H5mdFrameDataSetBuilder<ValueType>(this->fileid(), "closedDataSet")
+                .withFrameDimension(frameDims)
+                .build();
+    }
+
+    if (frameDims.empty())
+    {
+        H5mdScalarFrameDataSet<ValueType> dataSet{ builder.build() };
+        EXPECT_EQ(dataSet.numFrames(), 0);
+        H5mdScalarFrameDataSet<ValueType> dataSetReopen(this->fileid(), "closedDataSet");
+        EXPECT_EQ(dataSetReopen.numFrames(), 0);
+    }
+    else
+    {
+        EXPECT_THROW(H5mdScalarFrameDataSet<ValueType>(builder.build()), gmx::FileIOError);
+        EXPECT_THROW(H5mdScalarFrameDataSet<ValueType>(this->fileid(), "closedDataSet"), gmx::FileIOError);
+    }
+}
+TEST_P(WithFrameDims, H5mdScalarFrameDataSetWorksForEmptyFrameDimensionVector)
+{
+    using ValueType                      = gmx::BasicVector<float>;
+    const std::vector<hsize_t> frameDims = GetParam().frameDims_;
+
+    auto builder = H5mdFrameDataSetBuilder<ValueType>(this->fileid(), "testDataSet");
+    builder.withFrameDimension(frameDims);
+
+    {
+        // Construct an H5mdFrameDataSet and close it at the end of this scope to test both constructors
+        H5mdFrameDataSetBuilder<ValueType>(this->fileid(), "closedDataSet")
+                .withFrameDimension(frameDims)
+                .build();
+    }
+
+    if (frameDims.empty())
+    {
+        H5mdScalarFrameDataSet<ValueType> dataSet{ builder.build() };
+        EXPECT_EQ(dataSet.numFrames(), 0);
+        H5mdScalarFrameDataSet<ValueType> dataSetReopen(this->fileid(), "closedDataSet");
+        EXPECT_EQ(dataSetReopen.numFrames(), 0);
+    }
+    else
+    {
+        EXPECT_THROW(H5mdScalarFrameDataSet<ValueType>(builder.build()), gmx::FileIOError);
+        EXPECT_THROW(H5mdScalarFrameDataSet<ValueType>(this->fileid(), "closedDataSet"), gmx::FileIOError);
+    }
+}
+/**@}*/
+
+/**@{
+ * \brief Test H5mdScalarFrameDataSet<T>.writeNextFrame() and .readFrame() for int32_t and BasicVector<float>
+ */
+TEST_P(WithFrameDims, ReadAndWriteFrameWorksForScalarFrameDataSetPrimitive)
+{
+    using ValueType                      = int32_t;
+    const std::vector<hsize_t> frameDims = GetParam().frameDims_;
+
+    auto builder = H5mdFrameDataSetBuilder<ValueType>(this->fileid(), "testDataSet");
+    builder.withFrameDimension(frameDims);
+
+    // Only run actual test for empty frame dimensions (required for scalar data sets)
+    if (frameDims.empty())
+    {
+        H5mdScalarFrameDataSet<ValueType> dataSet{ builder.build() };
+        const int32_t                     value0 = 5;
+        const int32_t                     value1 = 13;
+        dataSet.writeNextFrame(value0);
+        dataSet.writeNextFrame(value1);
+        EXPECT_EQ(dataSet.numFrames(), 2);
+
+        int32_t readBuffer;
+        dataSet.readFrame(0, &readBuffer);
+        EXPECT_EQ(readBuffer, value0);
+        dataSet.readFrame(1, &readBuffer);
+        EXPECT_EQ(readBuffer, value1);
+    }
+}
+TEST_P(WithFrameDims, ReadAndWriteScalarFrameWorksForScalarFrameDataSetVector)
+{
+    using ValueType                      = gmx::BasicVector<float>;
+    const std::vector<hsize_t> frameDims = GetParam().frameDims_;
+
+    auto builder = H5mdFrameDataSetBuilder<ValueType>(this->fileid(), "testDataSet");
+    builder.withFrameDimension(frameDims);
+
+    // Only run actual test for empty frame dimensions (required for scalar data sets)
+    if (frameDims.empty())
+    {
+        H5mdScalarFrameDataSet<ValueType> dataSet{ builder.build() };
+        const gmx::BasicVector<float>     vector0 = { 5.0, 7.0, 13.0 };
+        const gmx::BasicVector<float>     vector1 = { 23.0, 3.0, 1.0 };
+        dataSet.writeNextFrame(vector0);
+        dataSet.writeNextFrame(vector1);
+        EXPECT_EQ(dataSet.numFrames(), 2);
+
+        gmx::BasicVector<float> readBuffer = { -1.0, -1.0, -1.0 };
+        dataSet.readFrame(0, &readBuffer);
+        EXPECT_EQ(readBuffer, vector0);
+        dataSet.readFrame(1, &readBuffer);
+        EXPECT_EQ(readBuffer, vector1);
+    }
+}
+/**@}*/
+
 //! \brief Set of frame dimension parameters to instantiate test suite for.
 const TestFrameDimensions g_testFrameDims[] = { {},    // scalar data set: no frame dimensions
                                                 { 5 }, // single frame dimension, e.g. T[numAtoms]

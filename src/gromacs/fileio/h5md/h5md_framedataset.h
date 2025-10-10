@@ -289,6 +289,50 @@ private:
     hsize_t numFrames_;
 };
 
+/*! \brief Class which provides an interface for reading and writing scalar frame data to H5mdDataSetBase objects.
+ *
+ * Scalar frame data is a 1d array of the templated type, e.g. float[numFrames] or RVec[numFrames].
+ * This class is a specializion of H5mdFrameDataSet for such data sets and provides a simpler
+ * I/O interface for reading and writing single values from/into the data sets.
+ *
+ * \tparam ValueType Type of values stored in data set (not limited to base primitives).
+ */
+template<typename ValueType>
+class H5mdScalarFrameDataSet : private H5mdFrameDataSet<ValueType>
+{
+public:
+    using H5mdFrameDataSet<ValueType>::numFrames;
+
+    /*! \brief Constructor to manage a given \p dataSet.
+     *
+     * \throws gmx::FileIOError if the data set frame dimensions is not empty.
+     */
+    H5mdScalarFrameDataSet(H5mdFrameDataSet<ValueType>&& dataSet);
+
+    /*! \brief Constructor to open an existing data set (called \p name, in \p container).
+     *
+     * \throws gmx::FileIOError if the data set frame dimensions is not empty.
+     */
+    H5mdScalarFrameDataSet(hid_t container, const char* name);
+
+    /*! \brief Read data from frame at \p index into \p value.
+     *
+     * \param[in]  frameIndex Frame index to read data from.
+     * \param[out] value Value into which to read data.
+     *
+     * \throws gmx::FileIOError if an error occurred when reading the data.
+     */
+    void readFrame(hsize_t frameIndex, ValueType* value);
+
+    /*! \brief Write data from \p values into the next frame.
+     *
+     * \param[in] value Value to write.
+     *
+     * \throws gmx::FileIOError if an error occurred when writing the data.
+     */
+    void writeNextFrame(const ValueType& value);
+};
+
 extern template class H5mdFrameDataSet<int32_t>;
 
 extern template class H5mdFrameDataSet<int64_t>;
@@ -300,6 +344,18 @@ extern template class H5mdFrameDataSet<double>;
 extern template class H5mdFrameDataSet<BasicVector<float>>;
 
 extern template class H5mdFrameDataSet<BasicVector<double>>;
+
+extern template class H5mdScalarFrameDataSet<int32_t>;
+
+extern template class H5mdScalarFrameDataSet<int64_t>;
+
+extern template class H5mdScalarFrameDataSet<float>;
+
+extern template class H5mdScalarFrameDataSet<double>;
+
+extern template class H5mdScalarFrameDataSet<BasicVector<float>>;
+
+extern template class H5mdScalarFrameDataSet<BasicVector<double>>;
 
 } // namespace gmx
 
