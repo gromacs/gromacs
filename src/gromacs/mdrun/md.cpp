@@ -212,10 +212,6 @@ void gmx::LegacySimulator::do_md()
     t_extmass MassQ;
     char      sbuf[STEPSTRSIZE], sbuf2[STEPSTRSIZE];
 
-    /* PME load balancing data for GPU kernels */
-    gmx_bool bPMETune         = FALSE;
-    gmx_bool bPMETunePrinting = FALSE;
-
     bool bInteractiveMDstep = false;
 
     SimulationSignals signals;
@@ -556,17 +552,14 @@ void gmx::LegacySimulator::do_md()
     {
         repl_ex = init_replica_exchange(fpLog_, ms_, topGlobal_.natoms, ir, replExParams_);
     }
-    /* PME tuning is only supported in the Verlet scheme, with PME for
-     * Coulomb. It is not supported with only LJ PME.
-     * Disable PME tuning with GPU PME decomposition */
-    bPMETune = (mdrunOptions_.tunePme && usingPme(fr_->ic->coulomb.type) && !mdrunOptions_.reproducible
-                && ir->cutoff_scheme != CutoffScheme::Group && !simulationWork.useGpuPmeDecomposition);
 
-    pme_load_balancing_t* pme_loadbal = nullptr;
-    if (bPMETune)
+    // PME tuning is only supported with PME for Coulomb. It is not supported with only LJ PME
+    std::unique_ptr<PmeLoadBalancing> pmeLoadBal;
+    if (mdrunOptions_.tunePme && usingPme(fr_->ic->coulomb.type) && !mdrunOptions_.reproducible
+        && !simulationWork.useGpuPmeDecomposition)
     {
-        pme_loadbal_init(
-                &pme_loadbal, cr_->dd, mdLog_, *ir, state_->box, *fr_->ic, *fr_->nbv, fr_->pmedata, fr_->nbv->useGpu());
+        pmeLoadBal = std::make_unique<PmeLoadBalancing>(
+                cr_->dd, mdLog_, *ir, state_->box, *fr_->ic, *fr_->nbv, fr_->pmedata, simulationWork);
     }
 
     if (!ir->bContinuation)
@@ -879,7 +872,7 @@ void gmx::LegacySimulator::do_md()
         /* Determine if this is a neighbor search step */
         const bool bNStList = (ir->nstlist > 0 && step % ir->nstlist == 0);
 
-        if (bPMETune && bNStList)
+        if (pmeLoadBal && bNStList)
         {
             // This has to be here because PME load balancing is called so early.
             // TODO: Move to after all booleans are defined.
@@ -889,19 +882,13 @@ void gmx::LegacySimulator::do_md()
                 stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
             }
             /* PME grid + cut-off optimization with GPUs or PME nodes */
-            pme_loadbal_do(pme_loadbal,
-                           (mdrunOptions_.verbose && isMainRank) ? stderr : nullptr,
-                           fpLog_,
-                           mdLog_,
-                           *ir,
-                           fr_,
-                           state_->box,
-                           state_->x,
-                           wallCycleCounters_,
-                           step,
-                           step_rel,
-                           &bPMETunePrinting,
-                           simulationWork.useGpuPmePpCommunication);
+            pmeLoadBal->addCycles((mdrunOptions_.verbose && isMainRank) ? stderr : nullptr,
+                                  fr_,
+                                  state_->box,
+                                  state_->x,
+                                  wallCycleCounters_,
+                                  step,
+                                  step_rel);
         }
 
         wallcycle_start(wallCycleCounters_, WallCycleCounter::Step);
@@ -1036,7 +1023,7 @@ void gmx::LegacySimulator::do_md()
                                     constr_,
                                     nrnb_,
                                     wallCycleCounters_,
-                                    do_verbose && !bPMETunePrinting);
+                                    do_verbose && !(pmeLoadBal && pmeLoadBal->isPrintingLoad()));
                 upd.updateAfterPartition(state_->numAtoms(), md->cFREEZE, md->cTC, md->cACC);
                 fr_->longRangeNonbondeds->updateAfterPartition(*md);
             }
@@ -1732,7 +1719,7 @@ void gmx::LegacySimulator::do_md()
                 // or with an odd nstlist, since the odd/even step
                 // pruning pattern will change
                 bool forceGraphReinstantiation =
-                        pme_loadbal_is_active(pme_loadbal) || ((ir->nstlist % 2) == 1);
+                        (pmeLoadBal && pmeLoadBal->isActive()) || ((ir->nstlist % 2) == 1);
                 mdGraph->createExecutableGraph(forceGraphReinstantiation);
             }
             if (mdGraph->useGraphThisStep())
@@ -2044,7 +2031,8 @@ void gmx::LegacySimulator::do_md()
             state_->fep_state = awh->fepLambdaState();
         }
         /* Print the remaining wall clock time for the run */
-        if (isMainSimMainRank(ms_, isMainRank) && (do_verbose || gmx_got_usr_signal()) && !bPMETunePrinting)
+        if (isMainSimMainRank(ms_, isMainRank) && (do_verbose || gmx_got_usr_signal())
+            && !(pmeLoadBal && pmeLoadBal->isPrintingLoad()))
         {
             if (shellfc)
             {
@@ -2160,8 +2148,17 @@ void gmx::LegacySimulator::do_md()
         }
 #endif
 
-        resetHandler->resetCounters(
-                step, step_rel, mdLog_, fpLog_, cr_, fr_->nbv.get(), nrnb_, fr_->pmedata, pme_loadbal, wallCycleCounters_, wallTimeAccounting_);
+        resetHandler->resetCounters(step,
+                                    step_rel,
+                                    mdLog_,
+                                    fpLog_,
+                                    cr_,
+                                    fr_->nbv.get(),
+                                    nrnb_,
+                                    fr_->pmedata,
+                                    pmeLoadBal.get(),
+                                    wallCycleCounters_,
+                                    wallTimeAccounting_);
 
         /* If bIMD is TRUE, the main updates the IMD energy record and sends positions to VMD client */
         imdSession_->updateEnergyRecordAndSendPositionsAndEnergies(bInteractiveMDstep, step, bCalcEner);
@@ -2209,9 +2206,10 @@ void gmx::LegacySimulator::do_md()
     }
     done_mdoutf(outf);
 
-    if (bPMETune)
+    if (pmeLoadBal)
     {
-        pme_loadbal_done(pme_loadbal, fpLog_, mdLog_, fr_->nbv->useGpu());
+        pmeLoadBal->printSettings();
+        pmeLoadBal.reset(nullptr);
     }
 
     done_shellfc(fpLog_, shellfc, step_rel);

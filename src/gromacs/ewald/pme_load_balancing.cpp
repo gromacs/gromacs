@@ -33,9 +33,7 @@
  */
 /*! \internal \file
  *
- * \brief This file contains function definitions necessary for
- * managing automatic load balance of PME calculations (Coulomb and
- * LJ).
+ * \brief This file implements the PmeLoadBalancing class
  *
  * \author Berk Hess <hess@kth.se>
  * \ingroup module_ewald
@@ -65,6 +63,7 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
 #include "gromacs/nbnxm/nbnxm.h"
@@ -82,6 +81,9 @@
 
 #include "pme_internal.h"
 #include "pme_pp.h"
+
+namespace gmx
+{
 
 /*! \brief Parameters and settings for one PP-PME setup */
 struct pme_setup_t
@@ -153,7 +155,7 @@ enum class PmeLoadBalancingLimit : int
 /*! \brief Descriptive strings for PmeLoadBalancingLimit \c enumValue */
 static const char* enumValueToString(PmeLoadBalancingLimit enumValue)
 {
-    constexpr gmx::EnumerationArray<PmeLoadBalancingLimit, const char*> pmeLoadBalancingLimitNames = {
+    constexpr EnumerationArray<PmeLoadBalancingLimit, const char*> pmeLoadBalancingLimitNames = {
         "no",
         "box size",
         "domain decomposition",
@@ -163,59 +165,215 @@ static const char* enumValueToString(PmeLoadBalancingLimit enumValue)
     return pmeLoadBalancingLimitNames[enumValue];
 }
 
-struct pme_load_balancing_t
+//! Struct for holding information on initial cut-off distances and the box
+struct Cutoffs
 {
-    gmx_bool bSepPMERanks;  /**< do we have separate PME ranks? */
-    gmx_bool bActive;       /**< is PME tuning active? */
-    int64_t  step_rel_stop; /**< stop the tuning after this value of step_rel */
-    gmx_bool bTriggerOnDLB; /**< trigger balancing only on DD DLB */
-    gmx_bool bBalance;      /**< are we in the balancing phase, i.e. trying different setups? */
-    int      nstage;        /**< the current maximum number of stages */
-    bool startupTimeDelayElapsed; /**< Has the c_startupTimeDelay elapsed indicating that the balancing can start. */
-
-    real                     cut_spacing;        /**< the minimum cutoff / PME grid spacing ratio */
-    real                     rcut_vdw;           /**< Vdw cutoff (does not change) */
-    real                     rcut_coulomb_start; /**< Initial electrostatics cutoff */
-    real                     rbufOuter_coulomb;  /**< the outer pairlist buffer size */
-    real                     rbufOuter_vdw;      /**< the outer pairlist buffer size */
-    real                     rbufInner_coulomb;  /**< the inner pairlist buffer size */
-    real                     rbufInner_vdw;      /**< the inner pairlist buffer size */
-    matrix                   box_start;          /**< the initial simulation box */
-    std::vector<pme_setup_t> setup;              /**< the PME+cutoff setups */
-    int                      cur;                /**< the index (in setup) of the current setup */
-    int                      fastest;            /**< index of the fastest setup up till now */
-    int                      lower_limit;        /**< don't go below this setup index */
-    int                      start;    /**< start of setup index range to consider in stage>0 */
-    int                      end;      /**< end   of setup index range to consider in stage>0 */
-    PmeLoadBalancingLimit    elimited; /**< was the balancing limited, uses enum above */
-    CutoffScheme             cutoff_scheme; /**< Verlet or group cut-offs */
-
-    int stage; /**< the current stage */
-
-    int    cycles_n;  /**< step cycle counter cumulative count */
-    double cycles_c;  /**< step cycle counter cumulative cycles */
-    double startTime; /**< time stamp when the balancing was started on the main rank (relative to the UNIX epoch start).*/
-
-    gmx_domdec_t* dd;
+    real   cutoffDivSpacing;   /**< the minimum cutoff / PME grid spacing ratio */
+    real   rcut_vdw;           /**< Vdw cutoff (does not change) */
+    real   rcut_coulomb_start; /**< Initial electrostatics cutoff */
+    real   rbufOuter_coulomb;  /**< the outer pairlist buffer size */
+    real   rbufOuter_vdw;      /**< the outer pairlist buffer size */
+    real   rbufInner_coulomb;  /**< the inner pairlist buffer size */
+    real   rbufInner_vdw;      /**< the inner pairlist buffer size */
+    matrix startBox;           /**< the initial simulation box */
 };
 
-/* TODO The code in this file should call this getter, rather than
- * read bActive anywhere */
-bool pme_loadbal_is_active(const pme_load_balancing_t* pme_lb)
+/*! \brief Impl class for PmeLoadBalancing
+ *
+ * The states the algorithm can reside in:
+ *
+ * - isActive_ == false: inactive, either from the beginning or after tuning has finished
+ *
+ * - isActive_ == true:
+ *   - isInBalancingPhase == false: only timing and checking for imbalance,
+ *                                  sufficient imbalance will trigger the balancing phase
+ *   - isInBalancingPhase == true:
+ *     - stage == 0: generate and step coarsely through a range of grid to get an initial grid range
+ *                   and rough timings
+ *     - stage > 0:  time grids within a sub-range of interest, this sub-range can be extended
+ *                   when the timings change a lot from the initial ones
+ *
+ *   Will, permanently, move to isActive_ = false when no imbalance is observed over many steps
+ *   or when the balancing has finished.
+ */
+class PmeLoadBalancing::Impl
 {
-    return pme_lb != nullptr && pme_lb->bActive;
+public:
+    Impl(gmx_domdec_t*              dd,
+         const MDLogger&            mdlog,
+         const t_inputrec&          ir,
+         const matrix               box,
+         const interaction_const_t& ic,
+         const nonbonded_verlet_t&  nbv,
+         gmx_pme_t*                 pmedata,
+         const SimulationWorkload&  simulationWork);
+
+    ~Impl();
+
+    bool isActive() const { return isActive_; }
+
+    bool isPrintingLoad() const { return isInBalancingPhase_; }
+
+    //! Returns one index past the last setup that will be covered during balancing
+    int setupEnd() const
+    {
+        /* In the initial stage only n is set; end is not set yet */
+        if (endSetup_ > 0)
+        {
+            return endSetup_;
+        }
+        else
+        {
+            return setups_.size();
+        }
+    }
+
+    //! Attempts to increase the cutoff, returns true when a setup has been added to the list
+    bool increaseCutoff();
+
+    /*! \brief Switch load balancing to stage 1
+     *
+     * In this stage, only sufficiently fast setups are run again.
+     */
+    void switchToStage1();
+
+    /*! \brief Process the timings and try to adjust the PME grid and Coulomb cut-off
+     *
+     * The adjustment is done to generate a different non-bonded PP and PME load.
+     * With separate PME ranks (PP and PME on different processes) or with
+     * a GPU (PP on GPU, PME on CPU), PP and PME run on different resources
+     * and changing the load will affect the load balance and performance.
+     * The total time for a set of integration steps is monitored and a range
+     * of grid/cut-off setups is scanned. After calling pme_load_balance many
+     * times and acquiring enough statistics, the best performing setup is chosen.
+     * Here we try to take into account fluctuations and changes due to external
+     * factors as well as DD load balancing.
+     */
+    void balance(FILE*                fp_err,
+                 const matrix         box,
+                 ArrayRef<const RVec> x,
+                 double               cycles,
+                 interaction_const_t* ic,
+                 nonbonded_verlet_t*  nbv,
+                 gmx_pme_t**          pmedata,
+                 int64_t              step);
+
+    /*! \brief Prepare for another round of PME load balancing
+     *
+     * \param[in]     dlbWasUnlocked  Pass true when DLB was locked and is now unlocked
+     *
+     * If the conditions (e.g. DLB off/on, CPU/GPU throttling etc.) changed,
+     * the PP/PME balance might change and re-balancing can improve performance.
+     * This function adds 2 stages and adjusts the considered setup range.
+     */
+    void addTwoStages(bool dlbWasUnlocked);
+
+    void addCycles(FILE*                fp_err,
+                   t_forcerec*          fr,
+                   const matrix         box,
+                   ArrayRef<const RVec> x,
+                   const gmx_wallcycle* wcycle,
+                   int64_t              step,
+                   int64_t              step_rel);
+
+    void printSettings() const;
+
+private:
+    const bool haveSepPMERanks_;          /**< do we have separate PME ranks? */
+    const bool useGpuForNonbondeds_;      /**< do we use a GPU for, at least, the non-bondes? */
+    const bool useGpuPmePpCommunication_; /**< do we perform PME-PP communication on GPUs? */
+
+    bool    isActive_;        /**< is PME tuning active? */
+    int64_t stepRelStop_;     /**< stop the tuning after this value of step_rel */
+    bool    triggerOnDLB_;    /**< trigger balancing only on DD DLB */
+    bool isInBalancingPhase_; /**< are we in the balancing phase, i.e. trying different setups? */
+    int  numStages_;          /**< the current maximum number of stages */
+    bool startupTimeDelayElapsed_; /**< Has the c_startupTimeDelay elapsed indicating that the balancing can start. */
+
+    const Cutoffs cutoffs_; /**< Information on and settings for cutoffs */
+
+    const t_inputrec& ir_; /**< Reference to the input record */
+
+    std::vector<pme_setup_t> setups_;       /**< the PME+cutoff setups */
+    int                      currentSetup_; /**< the index (in setup) of the current setup */
+    int                      fastestSetup_; /**< index of the fastest setup up till now */
+    int                      lowerLimit_; /**< don't go below this setup index (seems not needed) */
+    int                      startSetup_; /**< start of setup index range to consider in stage>0 */
+    int                      endSetup_;   /**< end   of setup index range to consider in stage>0 */
+    PmeLoadBalancingLimit    limited_;    /**< was the balancing limited, uses enum above */
+
+    int stage_; /**< the current stage */
+
+    int    cyclesNumber_;  /**< step cycle counter cumulative count */
+    double cyclesCounter_; /**< step cycle counter cumulative cycles */
+    double startTime_; /**< time stamp when the balancing was started on the main rank (relative to the UNIX epoch start).*/
+
+    gmx_domdec_t& dd_; /**< Reference to the domain decomposition object */
+
+    const MDLogger& mdlog_; /**< Reference to the mdlogger */
+};
+
+//! Returns whether it might be useful to do PME tuning
+static bool pmeTuningIsUseful(const SimulationWorkload& simulationWork)
+{
+    /* Tune with GPUs and/or separate PME ranks.
+     * When running only on a CPU without PME ranks, PME tuning will only help
+     * with small numbers of atoms in the cut-off sphere.
+     * Disable PME tuning with GPU PME decomposition.
+     */
+    return wallcycle_have_counter()
+           && (simulationWork.useCpuNonbonded || simulationWork.haveSeparatePmeRank)
+           && !simulationWork.useGpuPmeDecomposition;
 }
 
-// TODO Return a unique_ptr to pme_load_balancing_t
-void pme_loadbal_init(pme_load_balancing_t**         pme_lb_p,
-                      gmx_domdec_t*                  dd,
-                      const gmx::MDLogger&           mdlog,
-                      const t_inputrec&              ir,
-                      const matrix                   box,
-                      const interaction_const_t&     ic,
-                      const gmx::nonbonded_verlet_t& nbv,
-                      gmx_pme_t*                     pmedata,
-                      gmx_bool                       bUseGPU)
+//! Computes and returns initially set cutoffs and box
+static Cutoffs getCutoffs(const t_inputrec&          ir,
+                          const matrix               box,
+                          const interaction_const_t& ic,
+                          const nonbonded_verlet_t&  nbv)
+{
+    Cutoffs cutoffs;
+
+    cutoffs.rbufOuter_coulomb = nbv.pairlistOuterRadius() - ic.coulomb.cutoff;
+    cutoffs.rbufOuter_vdw     = nbv.pairlistOuterRadius() - ic.vdw.cutoff;
+    cutoffs.rbufInner_coulomb = nbv.pairlistInnerRadius() - ic.coulomb.cutoff;
+    cutoffs.rbufInner_vdw     = nbv.pairlistInnerRadius() - ic.vdw.cutoff;
+
+    /* Scale box with Ewald wall factor; note that we pmedata->boxScaler
+     * can't always usedd as it's not available with separate PME ranks.
+     */
+    EwaldBoxZScaler boxScaler(inputrecPbcXY2Walls(&ir), ir.wall_ewald_zfac);
+    boxScaler.scaleBox(box, cutoffs.startBox);
+
+    cutoffs.rcut_vdw           = ic.vdw.cutoff;
+    cutoffs.rcut_coulomb_start = ir.rcoulomb;
+
+    real fourierSpacing = ir.fourier_spacing;
+    if (fourierSpacing == 0)
+    {
+        fourierSpacing = getGridSpacingFromBox(cutoffs.startBox, IVec(ir.nkx, ir.nky, ir.nkz));
+    }
+    cutoffs.cutoffDivSpacing = ir.rcoulomb / fourierSpacing;
+
+    return cutoffs;
+}
+
+PmeLoadBalancing::Impl::Impl(gmx_domdec_t*              dd,
+                             const MDLogger&            mdlog,
+                             const t_inputrec&          ir,
+                             const matrix               box,
+                             const interaction_const_t& ic,
+                             const nonbonded_verlet_t&  nbv,
+                             gmx_pme_t*                 pmedata,
+                             const SimulationWorkload&  simulationWork) :
+    haveSepPMERanks_(simulationWork.haveSeparatePmeRank),
+    useGpuForNonbondeds_(simulationWork.useGpuNonbonded),
+    useGpuPmePpCommunication_(simulationWork.useGpuPmePpCommunication),
+    isActive_(pmeTuningIsUseful(simulationWork)),
+    cutoffs_(getCutoffs(ir, box, ic, nbv)),
+    ir_(ir),
+    dd_(*dd),
+    mdlog_(mdlog)
 {
     // Note that we don't (yet) support PME load balancing with LJ-PME only.
     GMX_RELEASE_ASSERT(usingPme(ir.coulombtype),
@@ -225,78 +383,47 @@ void pme_loadbal_init(pme_load_balancing_t**         pme_lb_p,
     GMX_RELEASE_ASSERT(!(usingPme(ir.coulombtype) && usingLJPme(ir.vdwtype) && ir.rcoulomb != ir.rvdw),
                        "With Coulomb and LJ PME, rcoulomb should be equal to rvdw");
 
-    pme_load_balancing_t* pme_lb = new pme_load_balancing_t;
-
-    pme_lb->dd = dd;
-
-    pme_lb->bSepPMERanks = !thisRankHasPmeDuty(dd);
-
     /* Initially we turn on balancing directly on based on PP/PME imbalance */
-    pme_lb->bTriggerOnDLB = FALSE;
+    triggerOnDLB_ = false;
 
     /* Any number of stages >= 2 is supported */
-    pme_lb->nstage = 2;
+    numStages_ = 2;
 
-    pme_lb->cutoff_scheme = ir.cutoff_scheme;
+    setups_.resize(1);
 
-    pme_lb->rbufOuter_coulomb = nbv.pairlistOuterRadius() - ic.coulomb.cutoff;
-    pme_lb->rbufOuter_vdw     = nbv.pairlistOuterRadius() - ic.vdw.cutoff;
-    pme_lb->rbufInner_coulomb = nbv.pairlistInnerRadius() - ic.coulomb.cutoff;
-    pme_lb->rbufInner_vdw     = nbv.pairlistInnerRadius() - ic.vdw.cutoff;
+    currentSetup_            = 0;
+    setups_[0].rcut_coulomb  = ic.coulomb.cutoff;
+    setups_[0].rlistOuter    = nbv.pairlistOuterRadius();
+    setups_[0].rlistInner    = nbv.pairlistInnerRadius();
+    setups_[0].grid[XX]      = ir.nkx;
+    setups_[0].grid[YY]      = ir.nky;
+    setups_[0].grid[ZZ]      = ir.nkz;
+    setups_[0].ewaldcoeff_q  = ic.coulomb.ewaldCoeff;
+    setups_[0].ewaldcoeff_lj = ic.vdw.ewaldCoeff;
 
-    /* Scale box with Ewald wall factor; note that we pmedata->boxScaler
-     * can't always usedd as it's not available with separate PME ranks.
-     */
-    EwaldBoxZScaler boxScaler(inputrecPbcXY2Walls(&ir), ir.wall_ewald_zfac);
-    boxScaler.scaleBox(box, pme_lb->box_start);
-
-    pme_lb->setup.resize(1);
-
-    pme_lb->rcut_vdw           = ic.vdw.cutoff;
-    pme_lb->rcut_coulomb_start = ir.rcoulomb;
-
-    pme_lb->cur                    = 0;
-    pme_lb->setup[0].rcut_coulomb  = ic.coulomb.cutoff;
-    pme_lb->setup[0].rlistOuter    = nbv.pairlistOuterRadius();
-    pme_lb->setup[0].rlistInner    = nbv.pairlistInnerRadius();
-    pme_lb->setup[0].grid[XX]      = ir.nkx;
-    pme_lb->setup[0].grid[YY]      = ir.nky;
-    pme_lb->setup[0].grid[ZZ]      = ir.nkz;
-    pme_lb->setup[0].ewaldcoeff_q  = ic.coulomb.ewaldCoeff;
-    pme_lb->setup[0].ewaldcoeff_lj = ic.vdw.ewaldCoeff;
-
-    if (!pme_lb->bSepPMERanks)
+    if (!haveSepPMERanks_)
     {
         GMX_RELEASE_ASSERT(pmedata, "On ranks doing both PP and PME we need a valid pmedata object");
-        pme_lb->setup[0].pmedata = pmedata;
+        setups_[0].pmedata = pmedata;
     }
 
-    pme_lb->setup[0].spacing = getGridSpacingFromBox(pme_lb->box_start, pme_lb->setup[0].grid);
+    setups_[0].spacing = getGridSpacingFromBox(cutoffs_.startBox, setups_[0].grid);
 
-    if (ir.fourier_spacing > 0)
-    {
-        pme_lb->cut_spacing = ir.rcoulomb / ir.fourier_spacing;
-    }
-    else
-    {
-        pme_lb->cut_spacing = ir.rcoulomb / pme_lb->setup[0].spacing;
-    }
+    stage_ = 0;
 
-    pme_lb->stage = 0;
+    fastestSetup_ = 0;
+    lowerLimit_   = 0;
+    startSetup_   = 0;
+    endSetup_     = 0;
+    limited_      = PmeLoadBalancingLimit::No;
 
-    pme_lb->fastest     = 0;
-    pme_lb->lower_limit = 0;
-    pme_lb->start       = 0;
-    pme_lb->end         = 0;
-    pme_lb->elimited    = PmeLoadBalancingLimit::No;
-
-    pme_lb->cycles_n = 0;
-    pme_lb->cycles_c = 0;
+    cyclesNumber_  = 0;
+    cyclesCounter_ = 0;
     // only main ranks do timing
     if (pmedata == nullptr || !pmedata->simulationIsParallel
         || (pmedata->haveDDAtomOrdering && DDMAIN(dd)))
     {
-        pme_lb->startTime = gmx_gettime();
+        startTime_ = gmx_gettime();
     }
 
     if (!wallcycle_have_counter())
@@ -308,22 +435,16 @@ void pme_loadbal_init(pme_load_balancing_t**         pme_lb_p,
                         "PME-PP balancing.");
     }
 
-    /* Tune with GPUs and/or separate PME ranks.
-     * When running only on a CPU without PME ranks, PME tuning will only help
-     * with small numbers of atoms in the cut-off sphere.
-     */
-    pme_lb->bActive = (wallcycle_have_counter() && (bUseGPU || pme_lb->bSepPMERanks));
-
     /* With GPUs and no separate PME ranks we can't measure the PP/PME
      * imbalance, so we start balancing right away.
      * Otherwise we only start balancing after we observe imbalance.
      */
-    pme_lb->bBalance = (pme_lb->bActive && (bUseGPU && !pme_lb->bSepPMERanks));
+    isInBalancingPhase_ = (isActive_ && (useGpuForNonbondeds_ && !haveSepPMERanks_));
 
-    pme_lb->step_rel_stop = PMETunePeriod * ir.nstlist;
+    stepRelStop_ = PMETunePeriod * ir_.nstlist;
 
     /* Delay DD load balancing when GPUs are used */
-    if (pme_lb->bActive && dd != nullptr && dd->nnodes > 1 && bUseGPU)
+    if (isActive_ && dd != nullptr && dd->nnodes > 1 && useGpuForNonbondeds_)
     {
         /* Lock DLB=auto to off (does nothing when DLB=yes/no.
          * With GPUs and separate PME nodes, we want to first
@@ -339,26 +460,40 @@ void pme_loadbal_init(pme_load_balancing_t**         pme_lb_p,
                     .appendText("NOTE: DLB will not turn on during the first phase of PME tuning");
         }
     }
-
-    *pme_lb_p = pme_lb;
 }
 
-/*! \brief Try to increase the cutoff during load balancing */
-static gmx_bool pme_loadbal_increase_cutoff(pme_load_balancing_t* pme_lb, int pme_order, const gmx_domdec_t* dd)
+PmeLoadBalancing::Impl::~Impl()
 {
-    real fac, sp;
-    real tmpr_coulomb, tmpr_vdw;
-    int  d;
-    bool grid_ok;
+    for (int i = 0; i < gmx::ssize(setups_); i++)
+    {
+        // current element is stored in forcerec and free'd in Mdrunner::mdrunner, together with shared data
+        if (i != currentSetup_)
+        {
+            gmx_pme_destroy(setups_[i].pmedata, false);
+        }
+    }
+}
 
+/*! \brief Return product of the number of PME grid points in each dimension */
+static int numPmeGridPoints(const pme_setup_t& setup)
+{
+    return setup.grid[XX] * setup.grid[YY] * setup.grid[ZZ];
+}
+
+bool PmeLoadBalancing::Impl::increaseCutoff()
+{
     /* Try to add a new setup with next larger cut-off to the list */
     pme_setup_t set;
 
     set.pmedata = nullptr;
 
-    NumPmeDomains numPmeDomains = getNumPmeDomains(dd);
+    const NumPmeDomains numPmeDomains = getNumPmeDomains(&dd_);
 
-    fac = 1;
+    const pme_setup_t& currentSetup = setups_[currentSetup_];
+
+    real fac = 1;
+    real sp;
+    bool grid_ok;
     do
     {
         /* Avoid infinite while loop, which can occur at the minimum grid size.
@@ -368,71 +503,64 @@ static gmx_bool pme_loadbal_increase_cutoff(pme_load_balancing_t* pme_lb, int pm
          */
         if (fac > 2.1)
         {
-            return FALSE;
+            return false;
         }
 
         fac *= 1.01;
         clear_ivec(set.grid);
         sp = calcFftGrid(nullptr,
-                         pme_lb->box_start,
-                         fac * pme_lb->setup[pme_lb->cur].spacing,
-                         minimalPmeGridSize(pme_order),
+                         cutoffs_.startBox,
+                         fac * currentSetup.spacing,
+                         minimalPmeGridSize(ir_.pme_order),
                          &set.grid[XX],
                          &set.grid[YY],
                          &set.grid[ZZ]);
 
         /* As here we can't easily check if one of the PME ranks
          * uses threading, we do a conservative grid check.
-         * This means we can't use pme_order or less grid lines
+         * This means we can't use PME order or less grid lines
          * per PME rank along x, which is not a strong restriction.
          */
-        grid_ok = gmx_pme_check_restrictions(
-                pme_order, set.grid[XX], set.grid[YY], set.grid[ZZ], numPmeDomains.x, numPmeDomains.y, 0, false, true, false);
-    } while (sp <= 1.001 * pme_lb->setup[pme_lb->cur].spacing || !grid_ok);
+        grid_ok = gmx_pme_check_restrictions(ir_.pme_order,
+                                             set.grid[XX],
+                                             set.grid[YY],
+                                             set.grid[ZZ],
+                                             numPmeDomains.x,
+                                             numPmeDomains.y,
+                                             0,
+                                             false,
+                                             true,
+                                             false);
+    } while (sp <= 1.001 * currentSetup.spacing || !grid_ok);
 
-    set.rcut_coulomb = pme_lb->cut_spacing * sp;
-    if (set.rcut_coulomb < pme_lb->rcut_coulomb_start)
+    set.rcut_coulomb = cutoffs_.cutoffDivSpacing * sp;
+    if (set.rcut_coulomb < cutoffs_.rcut_coulomb_start)
     {
         /* This is unlikely, but can happen when e.g. continuing from
          * a checkpoint after equilibration where the box shrank a lot.
          * We want to avoid rcoulomb getting smaller than rvdw
          * and there might be more issues with decreasing rcoulomb.
          */
-        set.rcut_coulomb = pme_lb->rcut_coulomb_start;
+        set.rcut_coulomb = cutoffs_.rcut_coulomb_start;
     }
 
-    if (pme_lb->cutoff_scheme == CutoffScheme::Verlet)
-    {
-        /* Never decrease the Coulomb and VdW list buffers */
-        set.rlistOuter = std::max(set.rcut_coulomb + pme_lb->rbufOuter_coulomb,
-                                  pme_lb->rcut_vdw + pme_lb->rbufOuter_vdw);
-        set.rlistInner = std::max(set.rcut_coulomb + pme_lb->rbufInner_coulomb,
-                                  pme_lb->rcut_vdw + pme_lb->rbufInner_vdw);
-    }
-    else
-    {
-        /* TODO Remove these lines and pme_lb->cutoff_scheme */
-        tmpr_coulomb = set.rcut_coulomb + pme_lb->rbufOuter_coulomb;
-        tmpr_vdw     = pme_lb->rcut_vdw + pme_lb->rbufOuter_vdw;
-        /* Two (known) bugs with cutoff-scheme=group here:
-         * - This modification of rlist results in incorrect DD comunication.
-         * - We should set fr->bTwinRange = (fr->rlistlong > fr->rlist).
-         */
-        set.rlistOuter = std::min(tmpr_coulomb, tmpr_vdw);
-        set.rlistInner = set.rlistOuter;
-    }
+    /* Never decrease the Coulomb and VdW list buffers */
+    set.rlistOuter = std::max(set.rcut_coulomb + cutoffs_.rbufOuter_coulomb,
+                              cutoffs_.rcut_vdw + cutoffs_.rbufOuter_vdw);
+    set.rlistInner = std::max(set.rcut_coulomb + cutoffs_.rbufInner_coulomb,
+                              cutoffs_.rcut_vdw + cutoffs_.rbufInner_vdw);
 
     set.spacing = sp;
     /* The grid efficiency is the size wrt a grid with uniform x/y/z spacing */
     set.grid_efficiency = 1;
-    for (d = 0; d < DIM; d++)
+    for (int d = 0; d < DIM; d++)
     {
-        set.grid_efficiency *= (set.grid[d] * sp) / norm(pme_lb->box_start[d]);
+        set.grid_efficiency *= (set.grid[d] * sp) / norm(cutoffs_.startBox[d]);
     }
     /* The Ewald coefficient is inversly proportional to the cut-off */
-    set.ewaldcoeff_q = pme_lb->setup[0].ewaldcoeff_q * pme_lb->setup[0].rcut_coulomb / set.rcut_coulomb;
+    set.ewaldcoeff_q = setups_[0].ewaldcoeff_q * setups_[0].rcut_coulomb / set.rcut_coulomb;
     /* We set ewaldcoeff_lj in set, even when LJ-PME is not used */
-    set.ewaldcoeff_lj = pme_lb->setup[0].ewaldcoeff_lj * pme_lb->setup[0].rcut_coulomb / set.rcut_coulomb;
+    set.ewaldcoeff_lj = setups_[0].ewaldcoeff_lj * setups_[0].rcut_coulomb / set.rcut_coulomb;
 
     set.count  = 0;
     set.cycles = 0;
@@ -446,118 +574,104 @@ static gmx_bool pme_loadbal_increase_cutoff(pme_load_balancing_t* pme_lb, int pm
                 set.grid[ZZ],
                 set.rcut_coulomb);
     }
-    pme_lb->setup.push_back(set);
-    return TRUE;
+
+    setups_.push_back(set);
+
+    return true;
 }
 
 /*! \brief Print the PME grid */
-static void print_grid(FILE* fp_err, FILE* fp_log, const char* pre, const char* desc, const pme_setup_t* set, double cycles)
+static void printGrid(FILE*              fp_err,
+                      const MDLogger&    mdlog,
+                      const char*        pre,
+                      const char*        desc,
+                      const pme_setup_t& set,
+                      double             cycles)
 {
-    auto buf = gmx::formatString("%-11s%10s pme grid %d %d %d, coulomb cutoff %.3f",
-                                 pre,
-                                 desc,
-                                 set->grid[XX],
-                                 set->grid[YY],
-                                 set->grid[ZZ],
-                                 set->rcut_coulomb);
+    auto buf = formatString("%-11s%10s pme grid %d %d %d, coulomb cutoff %.3f",
+                            pre,
+                            desc,
+                            set.grid[XX],
+                            set.grid[YY],
+                            set.grid[ZZ],
+                            set.rcut_coulomb);
     if (cycles >= 0)
     {
-        buf += gmx::formatString(": %.1f M-cycles", cycles * 1e-6);
+        buf += formatString(": %.1f M-cycles", cycles * 1e-6);
     }
     if (fp_err != nullptr)
     {
         fprintf(fp_err, "\r%s\n", buf.c_str());
         std::fflush(fp_err);
     }
-    if (fp_log != nullptr)
-    {
-        fprintf(fp_log, "%s\n", buf.c_str());
-    }
-}
-
-/*! \brief Return the index of the last setup used in PME load balancing */
-static int pme_loadbal_end(pme_load_balancing_t* pme_lb)
-{
-    /* In the initial stage only n is set; end is not set yet */
-    if (pme_lb->end > 0)
-    {
-        return pme_lb->end;
-    }
-    else
-    {
-        return pme_lb->setup.size();
-    }
+    GMX_LOG(mdlog.info).appendText(buf);
 }
 
 /*! \brief Print descriptive string about what limits PME load balancing */
-static void print_loadbal_limited(FILE* fp_err, FILE* fp_log, int64_t step, pme_load_balancing_t* pme_lb)
+static void printLoadBalLimited(FILE*                       fp_err,
+                                const MDLogger&             mdlog,
+                                int64_t                     step,
+                                const PmeLoadBalancingLimit limited,
+                                const pme_setup_t&          setup)
 {
-    auto buf = gmx::formatString(
+    auto buf = formatString(
             "step %4s: the %s limits the PME load balancing to a coulomb cut-off of %.3f",
-            gmx::int64ToString(step).c_str(),
-            enumValueToString(pme_lb->elimited),
-            pme_lb->setup[pme_loadbal_end(pme_lb) - 1].rcut_coulomb);
+            int64ToString(step).c_str(),
+            enumValueToString(limited),
+            setup.rcut_coulomb);
     if (fp_err != nullptr)
     {
         fprintf(fp_err, "\r%s\n", buf.c_str());
         std::fflush(fp_err);
     }
-    if (fp_log != nullptr)
-    {
-        fprintf(fp_log, "%s\n", buf.c_str());
-    }
+    GMX_LOG(mdlog.info).appendText(buf);
 }
 
-/*! \brief Switch load balancing to stage 1
- *
- * In this stage, only reasonably fast setups are run again. */
-static void switch_to_stage1(pme_load_balancing_t* pme_lb)
+void PmeLoadBalancing::Impl::switchToStage1()
 {
     /* Increase start until we find a setup that is not slower than
      * maxRelativeSlowdownAccepted times the fastest setup.
      */
-    pme_lb->start = pme_lb->lower_limit;
-    while (pme_lb->start + 1 < gmx::ssize(pme_lb->setup)
-           && (pme_lb->setup[pme_lb->start].count == 0
-               || pme_lb->setup[pme_lb->start].cycles
-                          > pme_lb->setup[pme_lb->fastest].cycles * maxRelativeSlowdownAccepted))
+    startSetup_ = lowerLimit_;
+    while (startSetup_ + 1 < gmx::ssize(setups_)
+           && (setups_[startSetup_].count == 0
+               || setups_[startSetup_].cycles > setups_[fastestSetup_].cycles * maxRelativeSlowdownAccepted))
     {
-        pme_lb->start++;
+        startSetup_++;
     }
     /* While increasing start, we might have skipped setups that we did not
      * time during stage 0. We want to extend the range for stage 1 to include
      * any skipped setups that lie between setups that were measured to be
      * acceptably fast and too slow.
      */
-    while (pme_lb->start > pme_lb->lower_limit && pme_lb->setup[pme_lb->start - 1].count == 0)
+    while (startSetup_ > lowerLimit_ && setups_[startSetup_].count == 0)
     {
-        pme_lb->start--;
+        startSetup_--;
     }
 
     /* Decrease end only with setups that we timed and that are slow. */
-    pme_lb->end = pme_lb->setup.size();
-    if (pme_lb->setup[pme_lb->end - 1].count > 0
-        && pme_lb->setup[pme_lb->end - 1].cycles
-                   > pme_lb->setup[pme_lb->fastest].cycles * maxRelativeSlowdownAccepted)
+    endSetup_ = setups_.size();
+    if (setups_[endSetup_ - 1].count > 0
+        && setups_[endSetup_ - 1].cycles > setups_[fastestSetup_].cycles * maxRelativeSlowdownAccepted)
     {
-        pme_lb->end--;
+        endSetup_--;
     }
 
-    pme_lb->stage = 1;
+    stage_ = 1;
 
-    /* Next we want to choose setup pme_lb->end-1, but as we will decrease
-     * pme_lb->cur by one right after returning, we set cur to end.
+    /* Next we want to choose setup endSetup_-1, but as we will decrease
+     * currentSetup_ by one right after returning, we set cur to endSetup_.
      */
-    pme_lb->cur = pme_lb->end;
+    currentSetup_ = endSetup_;
 }
 
 //! Updates all the mdrun machinery for \p setup, setup->pmedata might be updated
-static void applySetup(pme_setup_t*             setup,
-                       gmx_pme_t*               pmedataOfSetup0,
-                       const t_inputrec&        ir,
-                       interaction_const_t*     ic,
-                       gmx::nonbonded_verlet_t* nbv,
-                       gmx_domdec_t*            dd)
+static void applySetup(pme_setup_t*         setup,
+                       gmx_pme_t*           pmedataOfSetup0,
+                       const t_inputrec&    ir,
+                       interaction_const_t* ic,
+                       nonbonded_verlet_t*  nbv,
+                       gmx_domdec_t*        dd)
 {
     ic->coulomb.cutoff = setup->rcut_coulomb;
     nbv->changePairlistRadii(setup->rlistOuter, setup->rlistInner);
@@ -576,11 +690,11 @@ static void applySetup(pme_setup_t*             setup,
         ic->vdw.ewaldCoeff = setup->ewaldcoeff_lj;
         if (ic->vdw.modifier == InteractionModifiers::PotShift)
         {
-            ic->vdw.dispersionShift.cpot = -1.0 / gmx::power6(static_cast<double>(ic->vdw.cutoff));
-            ic->vdw.repulsionShift.cpot  = -1.0 / gmx::power12(static_cast<double>(ic->vdw.cutoff));
-            real crc2                    = gmx::square(ic->vdw.ewaldCoeff * ic->vdw.cutoff);
-            ic->vdw.ewaldShift           = (std::exp(-crc2) * (1 + crc2 + 0.5 * crc2 * crc2) - 1)
-                                 / gmx::power6(ic->vdw.cutoff);
+            ic->vdw.dispersionShift.cpot = -1.0 / power6(static_cast<double>(ic->vdw.cutoff));
+            ic->vdw.repulsionShift.cpot  = -1.0 / power12(static_cast<double>(ic->vdw.cutoff));
+            real crc2                    = square(ic->vdw.ewaldCoeff * ic->vdw.cutoff);
+            ic->vdw.ewaldShift =
+                    (std::exp(-crc2) * (1 + crc2 + 0.5 * crc2 * crc2) - 1) / power6(ic->vdw.cutoff);
         }
     }
 
@@ -589,7 +703,7 @@ static void applySetup(pme_setup_t*             setup,
 
     gpu_pme_loadbal_update_param(nbv, *ic);
 
-    if (dd == nullptr || dd->hasPmeDuty)
+    if (dd->hasPmeDuty)
     {
         /* FIXME:
          * CPU PME keeps a list of allocated pmedata's, that's why setups_[currentSetup_].pmedata is not always nullptr.
@@ -623,17 +737,17 @@ static void applySetup(pme_setup_t*             setup,
  *
  * \returns whether we should increase the number of stages by 1.
  */
-static bool processCycles(FILE*         fp_err,
-                          FILE*         fp_log,
-                          const double  cycles,
-                          const int64_t step,
-                          const bool    isInLastStage,
-                          pme_setup_t*  set)
+static bool processCycles(FILE*           fp_err,
+                          const MDLogger& mdlog,
+                          const double    cycles,
+                          const int64_t   step,
+                          const bool      isInLastStage,
+                          pme_setup_t*    set)
 {
     bool increaseNumStages = false;
 
     const auto buf = gmx::formatString("step %4" PRId64 ": ", step);
-    print_grid(fp_err, fp_log, buf.c_str(), "timed with", set, cycles);
+    printGrid(fp_err, mdlog, buf.c_str(), "timed with", *set, cycles);
 
     GMX_RELEASE_ASSERT(set->count > c_numPostSwitchTuningIntervalSkip, "We should skip cycles");
     if (set->count == (c_numPostSwitchTuningIntervalSkip + 1))
@@ -682,55 +796,45 @@ static bool processCycles(FILE*         fp_err,
  * Here we try to take into account fluctuations and changes due to external
  * factors as well as DD load balancing.
  */
-static void pme_load_balance(pme_load_balancing_t*          pme_lb,
-                             FILE*                          fp_err,
-                             FILE*                          fp_log,
-                             const gmx::MDLogger&           mdlog,
-                             const t_inputrec&              ir,
-                             const matrix                   box,
-                             gmx::ArrayRef<const gmx::RVec> x,
-                             double                         cycles,
-                             interaction_const_t*           ic,
-                             gmx::nonbonded_verlet_t*       nbv,
-                             gmx_pme_t**                    pmedata,
-                             int64_t                        step)
+void PmeLoadBalancing::Impl::balance(FILE*                fp_err,
+                                     const matrix         box,
+                                     ArrayRef<const RVec> x,
+                                     double               cycles,
+                                     interaction_const_t* ic,
+                                     nonbonded_verlet_t*  nbv,
+                                     gmx_pme_t**          pmedata,
+                                     int64_t              step)
 {
-    gmx_bool     OK;
-    pme_setup_t* set;
-    double       cycles_fast;
-
-    gmx_domdec_t* dd = pme_lb->dd;
-
-    if (dd && dd->nnodes > 1)
+    if (dd_.nnodes > 1)
     {
-        pme_lb->dd->mpiComm().sumReduce(1, &cycles);
-        cycles /= pme_lb->dd->mpiComm().size();
+        // Average the cycles over all PP ranks
+        dd_.mpiComm().sumReduce(1, &cycles);
+        cycles /= dd_.mpiComm().size();
     }
 
-    set = &pme_lb->setup[pme_lb->cur];
-    set->count++;
+    setups_[currentSetup_].count++;
 
     /* Skip the first c_numPostSwitchTuningIntervalSkip cycles because the first step
      * after a switch is much slower due to allocation and/or caching effects.
      */
-    if (set->count % (c_numPostSwitchTuningIntervalSkip + 1) != 0)
+    if (setups_[currentSetup_].count % (c_numPostSwitchTuningIntervalSkip + 1) != 0)
     {
         return;
     }
 
-    const bool increaseNumStages =
-            processCycles(fp_err, fp_log, cycles, step, pme_lb->stage == pme_lb->nstage - 1, set);
+    const bool increaseNumStages = processCycles(
+            fp_err, mdlog_, cycles, step, stage_ == numStages_ - 1, &setups_[currentSetup_]);
 
     if (increaseNumStages)
     {
-        pme_lb->nstage++;
+        numStages_++;
     }
 
-    if (set->cycles < pme_lb->setup[pme_lb->fastest].cycles)
+    if (setups_[currentSetup_].cycles < setups_[fastestSetup_].cycles)
     {
-        pme_lb->fastest = pme_lb->cur;
+        fastestSetup_ = currentSetup_;
 
-        if (haveDDAtomOrdering(dd))
+        if (haveDDAtomOrdering(&dd_))
         {
             /* We found a new fastest setting, ensure that with subsequent
              * shorter cut-off's the dynamic load balancing does not make
@@ -744,106 +848,113 @@ static void pme_load_balance(pme_load_balancing_t*          pme_lb,
              * better overal performance can be obtained with a slightly
              * shorter cut-off and better DD load balancing.
              */
-            set_dd_dlb_max_cutoff(dd, pme_lb->setup[pme_lb->fastest].rlistOuter);
+            set_dd_dlb_max_cutoff(&dd_, setups_[fastestSetup_].rlistOuter);
         }
     }
-    cycles_fast = pme_lb->setup[pme_lb->fastest].cycles;
+    const double cyclesFastest = setups_[fastestSetup_].cycles;
 
     /* Check in stage 0 if we should stop scanning grids.
      * Stop when the time is more than maxRelativeSlowDownAccepted longer than the fastest.
      */
-    if (pme_lb->stage == 0 && pme_lb->cur > 0
-        && cycles > pme_lb->setup[pme_lb->fastest].cycles * maxRelativeSlowdownAccepted)
+    if (stage_ == 0 && currentSetup_ > 0 && cycles > setups_[fastestSetup_].cycles * maxRelativeSlowdownAccepted)
     {
-        pme_lb->setup.resize(pme_lb->cur + 1);
+        setups_.resize(currentSetup_ + 1);
         /* Done with scanning, go to stage 1 */
-        switch_to_stage1(pme_lb);
+        switchToStage1();
     }
 
-    if (pme_lb->stage == 0)
+    if (stage_ == 0)
     {
-        int gridsize_start;
+        const int gridsizeStart = numPmeGridPoints(setups_[currentSetup_]);
 
-        gridsize_start = set->grid[XX] * set->grid[YY] * set->grid[ZZ];
-
+        bool continueToNextSetup;
         do
         {
-            if (pme_lb->cur + 1 < gmx::ssize(pme_lb->setup))
+            bool haveNextSetup;
+
+            if (currentSetup_ + 1 < gmx::ssize(setups_))
             {
                 /* We had already generated the next setup */
-                OK = TRUE;
+                haveNextSetup = true;
             }
             else
             {
-                /* Find the next setup */
-                OK = pme_loadbal_increase_cutoff(pme_lb, ir.pme_order, dd);
+                /* Find the next setup, when possible */
+                haveNextSetup = increaseCutoff();
 
-                if (!OK)
+                if (!haveNextSetup)
                 {
-                    pme_lb->elimited = PmeLoadBalancingLimit::PmeGrid;
+                    limited_ = PmeLoadBalancingLimit::PmeGrid;
                 }
             }
 
-            if (OK
-                && pme_lb->setup[pme_lb->cur + 1].spacing > c_maxSpacingScaling * pme_lb->setup[0].spacing)
+            if (haveNextSetup
+                && setups_[currentSetup_ + 1].spacing > c_maxSpacingScaling * setups_[0].spacing)
             {
-                OK               = FALSE;
-                pme_lb->elimited = PmeLoadBalancingLimit::MaxScaling;
+                haveNextSetup = false;
+                limited_      = PmeLoadBalancingLimit::MaxScaling;
             }
 
-            if (OK && ir.pbcType != PbcType::No)
+            if (haveNextSetup && ir_.pbcType != PbcType::No)
             {
-                OK = (gmx::square(pme_lb->setup[pme_lb->cur + 1].rlistOuter)
-                      <= max_cutoff2(ir.pbcType, box));
-                if (!OK)
+                haveNextSetup =
+                        (square(setups_[currentSetup_ + 1].rlistOuter) <= max_cutoff2(ir_.pbcType, box));
+                if (!haveNextSetup)
                 {
-                    pme_lb->elimited = PmeLoadBalancingLimit::Box;
+                    limited_ = PmeLoadBalancingLimit::Box;
                 }
             }
 
-            if (OK)
+            if (haveNextSetup)
             {
-                pme_lb->cur++;
+                currentSetup_++;
 
-                if (haveDDAtomOrdering(dd))
+                if (haveDDAtomOrdering(&dd_))
                 {
                     const bool checkGpuDdLimitation = true;
-                    OK                              = change_dd_cutoff(
-                            dd, box, x, pme_lb->setup[pme_lb->cur].rlistOuter, checkGpuDdLimitation);
-                    if (!OK)
+                    haveNextSetup                   = change_dd_cutoff(
+                            &dd_, box, x, setups_[currentSetup_].rlistOuter, checkGpuDdLimitation);
+                    if (!haveNextSetup)
                     {
                         /* Failed: do not use this setup */
-                        pme_lb->cur--;
-                        pme_lb->elimited = PmeLoadBalancingLimit::DD;
+                        currentSetup_--;
+                        limited_ = PmeLoadBalancingLimit::DD;
                     }
                 }
             }
-            if (!OK)
+            if (!haveNextSetup)
             {
                 /* We hit the upper limit for the cut-off,
-                 * the setup should not go further than cur.
+                 * the setup should not go further than currentSetup_.
                  */
-                pme_lb->setup.resize(pme_lb->cur + 1);
-                print_loadbal_limited(fp_err, fp_log, step, pme_lb);
+                setups_.resize(currentSetup_ + 1);
+                printLoadBalLimited(fp_err, mdlog_, step, limited_, setups_[setupEnd() - 1]);
                 /* Switch to the next stage */
-                switch_to_stage1(pme_lb);
+                switchToStage1();
             }
-        } while (OK
-                 && !(pme_lb->setup[pme_lb->cur].grid[XX] * pme_lb->setup[pme_lb->cur].grid[YY]
-                                      * pme_lb->setup[pme_lb->cur].grid[ZZ]
-                              < gridsize_start * gridpointsScaleFactor
-                      && pme_lb->setup[pme_lb->cur].grid_efficiency
-                                 < pme_lb->setup[pme_lb->cur - 1].grid_efficiency * relativeEfficiencyFactor));
+
+            continueToNextSetup = haveNextSetup;
+            if (continueToNextSetup)
+            {
+                const auto cs = setups_[currentSetup_];
+
+                // Skip this setup when it is not sufficiently coarser or more efficient
+                continueToNextSetup =
+                        !(cs.grid[XX] * cs.grid[YY] * cs.grid[ZZ] < gridsizeStart * gridpointsScaleFactor
+                          && cs.grid_efficiency < setups_[currentSetup_ - 1].grid_efficiency
+                                                          * relativeEfficiencyFactor);
+            }
+        } while (continueToNextSetup);
     }
 
-    if (pme_lb->stage > 0 && pme_lb->end == 1)
+    if (stage_ > 0 && endSetup_ == 1)
     {
-        pme_lb->cur   = pme_lb->lower_limit;
-        pme_lb->stage = pme_lb->nstage;
+        currentSetup_ = lowerLimit_;
+        stage_        = numStages_;
     }
-    else if (pme_lb->stage > 0 && pme_lb->end > 1)
+    else if (stage_ > 0 && endSetup_ > 1)
     {
-        /* If stage = nstage-1:
+        /* If stage_ = numStages_-1:
          *   scan over all setups, rerunning only those setups
          *   which are not much slower than the fastest
          * else:
@@ -854,172 +965,145 @@ static void pme_load_balance(pme_load_balancing_t*          pme_lb,
          */
         do
         {
-            if (pme_lb->cur > pme_lb->start)
+            if (currentSetup_ > startSetup_)
             {
-                pme_lb->cur--;
+                currentSetup_--;
             }
             else
             {
-                pme_lb->stage++;
+                stage_++;
 
-                pme_lb->cur = pme_lb->end - 1;
+                currentSetup_ = endSetup_ - 1;
             }
-        } while (pme_lb->stage == pme_lb->nstage - 1 && pme_lb->setup[pme_lb->cur].count > 0
-                 && pme_lb->setup[pme_lb->cur].cycles > cycles_fast * maxRelativeSlowdownAccepted);
+        } while (stage_ == numStages_ - 1 && setups_[currentSetup_].count > 0
+                 && setups_[currentSetup_].cycles > cyclesFastest * maxRelativeSlowdownAccepted);
 
-        if (pme_lb->stage == pme_lb->nstage)
+        if (stage_ == numStages_)
         {
             /* We are done optimizing, use the fastest setup we found */
-            pme_lb->cur = pme_lb->fastest;
+            currentSetup_ = fastestSetup_;
         }
     }
 
-    if (haveDDAtomOrdering(dd) && pme_lb->stage > 0)
+    if (haveDDAtomOrdering(&dd_) && stage_ > 0)
     {
         const bool checkGpuDdLimitation = true;
-        OK = change_dd_cutoff(dd, box, x, pme_lb->setup[pme_lb->cur].rlistOuter, checkGpuDdLimitation);
-        if (!OK)
+
+        const bool cutoffIsAllowed =
+                change_dd_cutoff(&dd_, box, x, setups_[currentSetup_].rlistOuter, checkGpuDdLimitation);
+        if (!cutoffIsAllowed)
         {
             /* For some reason the chosen cut-off is incompatible with DD.
              * We should continue scanning a more limited range of cut-off's.
              */
-            if (pme_lb->cur > 1 && pme_lb->stage == pme_lb->nstage)
+            if (currentSetup_ > 1 && stage_ == numStages_)
             {
-                /* stage=nstage says we're finished, but we should continue
-                 * balancing, so we set back stage which was just incremented.
+                /* stage_=numStages_ says we're finished, but we should continue
+                 * balancing, so we set back stage_ which was just incremented.
                  */
-                pme_lb->stage--;
+                stage_--;
             }
-            if (pme_lb->cur <= pme_lb->fastest)
+            if (currentSetup_ <= fastestSetup_)
             {
                 /* This should not happen, as we set limits on the DLB bounds.
                  * But we implement a complete failsafe solution anyhow.
                  */
-                GMX_LOG(mdlog.warning)
+                GMX_LOG(mdlog_.warning)
                         .asParagraph()
                         .appendTextFormatted(
-                                "The fastest PP/PME load balancing setting (cutoff %.3d nm) is no "
+                                "The fastest PP/PME load balancing setting (cutoff %.3f nm) is no "
                                 "longer available due to DD DLB or box size limitations",
-                                pme_lb->fastest);
-                pme_lb->fastest = pme_lb->lower_limit;
-                pme_lb->start   = pme_lb->lower_limit;
+                                setups_[fastestSetup_].rcut_coulomb);
+                fastestSetup_ = lowerLimit_;
+                startSetup_   = lowerLimit_;
             }
             /* Limit the range to below the current cut-off, scan from start */
-            pme_lb->end      = pme_lb->cur;
-            pme_lb->cur      = pme_lb->start;
-            pme_lb->elimited = PmeLoadBalancingLimit::DD;
-            print_loadbal_limited(fp_err, fp_log, step, pme_lb);
+            endSetup_     = currentSetup_;
+            currentSetup_ = startSetup_;
+            limited_      = PmeLoadBalancingLimit::DD;
+            printLoadBalLimited(fp_err, mdlog_, step, limited_, setups_[setupEnd() - 1]);
         }
     }
 
-    set = &pme_lb->setup[pme_lb->cur];
+    pme_setup_t& setup = setups_[currentSetup_];
 
     /* Change the Coulomb cut-off and the PME grid */
-    applySetup(set, pme_lb->setup[0].pmedata, ir, ic, nbv, dd);
+    applySetup(&setup, setups_[0].pmedata, ir_, ic, nbv, &dd_);
 
-    if (!pme_lb->bSepPMERanks)
+    if (!haveSepPMERanks_)
     {
-        *pmedata = set->pmedata;
+        *pmedata = setup.pmedata;
     }
 
-    if (debug)
+    if (stage_ == numStages_)
     {
-        print_grid(nullptr, debug, "", "switched to", set, -1);
-    }
-
-    if (pme_lb->stage == pme_lb->nstage)
-    {
-        print_grid(fp_err, fp_log, "", "optimal", set, -1);
+        printGrid(fp_err, mdlog_, "", "optimal", setup, -1);
     }
 }
 
-/*! \brief Prepare for another round of PME load balancing
- *
- * \param[in,out] pme_lb       Pointer to PME load balancing struct
- * \param[in]     bDlbUnlocked TRUE is DLB was locked and is now unlocked
- *
- * If the conditions (e.g. DLB off/on, CPU/GPU throttling etc.) changed,
- * the PP/PME balance might change and re-balancing can improve performance.
- * This function adds 2 stages and adjusts the considered setup range.
- */
-static void continue_pme_loadbal(pme_load_balancing_t* pme_lb, gmx_bool bDlbUnlocked)
+void PmeLoadBalancing::Impl::addTwoStages(const bool dlbWasUnlocked)
 {
     /* Add 2 tuning stages, keep the detected end of the setup range */
-    pme_lb->nstage += 2;
-    if (bDlbUnlocked && pme_lb->bSepPMERanks)
+    numStages_ += 2;
+    if (dlbWasUnlocked && haveSepPMERanks_)
     {
         /* With separate PME ranks, DLB should always lower the PP load and
          * can only increase the PME load (more communication and imbalance),
          * so we only need to scan longer cut-off's.
          */
-        pme_lb->lower_limit = pme_lb->cur;
+        lowerLimit_ = currentSetup_;
     }
-    pme_lb->start = pme_lb->lower_limit;
+    startSetup_ = lowerLimit_;
 }
 
-void pme_loadbal_do(pme_load_balancing_t*          pme_lb,
-                    FILE*                          fp_err,
-                    FILE*                          fp_log,
-                    const gmx::MDLogger&           mdlog,
-                    const t_inputrec&              ir,
-                    t_forcerec*                    fr,
-                    const matrix                   box,
-                    gmx::ArrayRef<const gmx::RVec> x,
-                    gmx_wallcycle*                 wcycle,
-                    int64_t                        step,
-                    int64_t                        step_rel,
-                    gmx_bool*                      bPrinting,
-                    bool                           useGpuPmePpCommunication)
+void PmeLoadBalancing::Impl::addCycles(FILE*                fp_err,
+                                       t_forcerec*          fr,
+                                       const matrix         box,
+                                       ArrayRef<const RVec> x,
+                                       const gmx_wallcycle* wcycle,
+                                       int64_t              step,
+                                       int64_t              step_rel)
 {
-    int    n_prev;
-    double cycles_prev;
-
-    assert(pme_lb != nullptr);
-
-    if (!pme_lb->bActive)
+    if (!isActive_)
     {
         return;
     }
 
-    n_prev      = pme_lb->cycles_n;
-    cycles_prev = pme_lb->cycles_c;
-    wallcycle_get(wcycle, WallCycleCounter::Step, &pme_lb->cycles_n, &pme_lb->cycles_c);
-
-    gmx_domdec_t* dd = pme_lb->dd;
+    const int    cyclesNumberPrev  = cyclesNumber_;
+    const double cyclesCounterPrev = cyclesCounter_;
+    wallcycle_get(wcycle, WallCycleCounter::Step, &cyclesNumber_, &cyclesCounter_);
 
     /* Before the first step we haven't done any steps yet.
-     * Also handle cases where ir.init_step % ir.nstlist != 0.
+     * Also handle cases where ir.init_step % nstlist != 0.
      * We also want to skip a number of steps and seconds while
      * the CPU and GPU, when used, performance stabilizes.
      */
-    if (dd == nullptr || (haveDDAtomOrdering(dd) && DDMAIN(dd)))
+    if (haveDDAtomOrdering(&dd_) && DDMAIN(&dd_))
     {
-        pme_lb->startupTimeDelayElapsed = (gmx_gettime() - pme_lb->startTime < c_startupTimeDelay);
+        startupTimeDelayElapsed_ = (gmx_gettime() - startTime_ < c_startupTimeDelay);
     }
-    if (haveDDAtomOrdering(dd))
+    if (haveDDAtomOrdering(&dd_))
     {
-        dd_bcast(dd, sizeof(bool), &pme_lb->startupTimeDelayElapsed);
+        dd_bcast(&dd_, sizeof(bool), &startupTimeDelayElapsed_);
     }
 
-    if (pme_lb->cycles_n == 0 || step_rel < c_numFirstTuningIntervalSkip * ir.nstlist
-        || pme_lb->startupTimeDelayElapsed)
+    if (cyclesNumber_ == 0 || step_rel < c_numFirstTuningIntervalSkip * ir_.nstlist || startupTimeDelayElapsed_)
     {
-        *bPrinting = FALSE;
         return;
     }
     /* Sanity check, we expect nstlist cycle counts */
-    if (pme_lb->cycles_n - n_prev != ir.nstlist)
+    if (cyclesNumber_ - cyclesNumberPrev != ir_.nstlist)
     {
         /* We could return here, but it's safer to issue an error and quit */
         gmx_incons("pme_loadbal_do called at an interval != nstlist");
     }
 
     /* PME grid + cut-off optimization with GPUs or PME ranks */
-    if (!pme_lb->bBalance && pme_lb->bSepPMERanks)
+    if (!isInBalancingPhase_ && haveSepPMERanks_)
     {
-        if (pme_lb->bTriggerOnDLB)
+        if (triggerOnDLB_)
         {
-            pme_lb->bBalance = dd_dlb_is_on(dd);
+            isInBalancingPhase_ = dd_dlb_is_on(&dd_);
         }
         /* We should ignore the first timing to avoid timing allocation
          * overhead. And since the PME load balancing is called just
@@ -1027,178 +1111,170 @@ void pme_loadbal_do(pme_load_balancing_t*          pme_lb,
          * is not over the last nstlist steps, but the nstlist steps before
          * that. So the first useful ratio is available at step_rel=3*nstlist.
          */
-        else if (step_rel >= c_numFirstTuningIntervalSkipWithSepPme * ir.nstlist)
+        else if (step_rel >= c_numFirstTuningIntervalSkipWithSepPme * ir_.nstlist)
         {
-            GMX_ASSERT(haveDDAtomOrdering(dd), "Domain decomposition should be active here");
-            if (DDMAIN(dd))
+            GMX_ASSERT(haveDDAtomOrdering(&dd_), "Domain decomposition should be active here");
+            if (DDMAIN(&dd_))
             {
                 /* If PME rank load is too high, start tuning. If
                    PME-PP direct GPU communication is active,
                    unconditionally start tuning since ratio will be
                    unreliable due to CPU-GPU asynchronicity in codepath */
-                pme_lb->bBalance = useGpuPmePpCommunication
-                                           ? true
-                                           : (dd_pme_f_ratio(dd) >= loadBalanceTriggerFactor);
+                isInBalancingPhase_ = useGpuPmePpCommunication_
+                                              ? true
+                                              : (dd_pme_f_ratio(&dd_) >= loadBalanceTriggerFactor);
             }
-            dd_bcast(dd, sizeof(gmx_bool), &pme_lb->bBalance);
+            dd_bcast(&dd_, sizeof(bool), &isInBalancingPhase_);
         }
 
-        pme_lb->bActive = (pme_lb->bBalance || step_rel <= pme_lb->step_rel_stop);
+        isActive_ = (isInBalancingPhase_ || step_rel <= stepRelStop_);
     }
 
     /* The location in the code of this balancing termination is strange.
      * You would expect to have it after the call to pme_load_balance()
-     * below, since there pme_lb->stage is updated.
+     * below, since there stage_ is updated.
      * But when terminating directly after deciding on and selecting the
      * optimal setup, DLB will turn on right away if it was locked before.
      * This might be due to PME reinitialization. So we check stage here
      * to allow for another nstlist steps with DLB locked to stabilize
      * the performance.
      */
-    if (pme_lb->bBalance && pme_lb->stage == pme_lb->nstage)
+    if (isInBalancingPhase_ && stage_ == numStages_)
     {
-        pme_lb->bBalance = FALSE;
+        isInBalancingPhase_ = false;
 
-        if (haveDDAtomOrdering(dd) && dd_dlb_is_locked(dd))
+        if (haveDDAtomOrdering(&dd_) && dd_dlb_is_locked(&dd_))
         {
             /* Unlock the DLB=auto, DLB is allowed to activate */
-            dd_dlb_unlock(dd);
-            GMX_LOG(mdlog.warning)
+            dd_dlb_unlock(&dd_);
+            GMX_LOG(mdlog_.warning)
                     .asParagraph()
                     .appendText("NOTE: DLB can now turn on, when beneficial");
 
             /* We don't deactivate the tuning yet, since we will balance again
              * after DLB gets turned on, if it does within PMETune_period.
              */
-            continue_pme_loadbal(pme_lb, TRUE);
-            pme_lb->bTriggerOnDLB = TRUE;
-            pme_lb->step_rel_stop = step_rel + PMETunePeriod * ir.nstlist;
+            addTwoStages(true);
+            triggerOnDLB_ = true;
+            stepRelStop_  = step_rel + PMETunePeriod * ir_.nstlist;
         }
         else
         {
             /* We're completely done with PME tuning */
-            pme_lb->bActive = FALSE;
+            isActive_ = false;
         }
 
-        if (haveDDAtomOrdering(dd))
+        if (haveDDAtomOrdering(&dd_))
         {
             /* Set the cut-off limit to the final selected cut-off,
              * so we don't have artificial DLB limits.
              * This also ensures that we won't disable the currently
              * optimal setting during a second round of PME balancing.
              */
-            set_dd_dlb_max_cutoff(dd, fr->nbv->pairlistOuterRadius());
+            set_dd_dlb_max_cutoff(&dd_, fr->nbv->pairlistOuterRadius());
         }
     }
 
-    if (pme_lb->bBalance)
+    if (isInBalancingPhase_)
     {
         /* We might not have collected nstlist steps in cycles yet,
          * since init_step might not be a multiple of nstlist,
          * but the first data collected is skipped anyhow.
          */
-        pme_load_balance(pme_lb,
-                         fp_err,
-                         fp_log,
-                         mdlog,
-                         ir,
-                         box,
-                         x,
-                         pme_lb->cycles_c - cycles_prev,
-                         fr->ic.get(),
-                         fr->nbv.get(),
-                         &fr->pmedata,
-                         step);
+        balance(fp_err, box, x, cyclesCounter_ - cyclesCounterPrev, fr->ic.get(), fr->nbv.get(), &fr->pmedata, step);
 
         /* Update deprecated rlist in forcerec to stay in sync with fr->nbv */
         fr->rlist = fr->nbv->pairlistOuterRadius();
 
-        if (ir.eDispCorr != DispersionCorrectionType::No)
+        if (fr->dispersionCorrection)
         {
             fr->dispersionCorrection->setParameters(*fr->ic);
         }
     }
 
-    if (!pme_lb->bBalance && (!pme_lb->bSepPMERanks || step_rel > pme_lb->step_rel_stop))
+    if (!isInBalancingPhase_ && (!haveSepPMERanks_ || step_rel > stepRelStop_))
     {
         /* We have just deactivated the balancing and we're not measuring PP/PME
          * imbalance during the first steps of the run: deactivate the tuning.
          */
-        pme_lb->bActive = FALSE;
+        isActive_ = false;
     }
 
-    if (!(pme_lb->bActive) && haveDDAtomOrdering(dd) && dd_dlb_is_locked(dd))
+    if (!isActive_ && haveDDAtomOrdering(&dd_) && dd_dlb_is_locked(&dd_))
     {
         /* Make sure DLB is allowed when we deactivate PME tuning */
-        dd_dlb_unlock(dd);
-        GMX_LOG(mdlog.warning)
+        dd_dlb_unlock(&dd_);
+        GMX_LOG(mdlog_.warning)
                 .asParagraph()
                 .appendText("NOTE: DLB can now turn on, when beneficial");
     }
-
-    *bPrinting = pme_lb->bBalance;
-}
-
-/*! \brief Return product of the number of PME grid points in each dimension */
-static int pme_grid_points(const pme_setup_t* setup)
-{
-    return setup->grid[XX] * setup->grid[YY] * setup->grid[ZZ];
 }
 
 /*! \brief Print one load-balancing setting */
-static void print_pme_loadbal_setting(FILE* fplog, const char* name, const pme_setup_t* setup)
+static void printLoadBalSetup(const MDLogger& mdlog, const char* name, const pme_setup_t& setup)
 {
-    fprintf(fplog,
-            "   %-7s %6.3f nm %6.3f nm     %3d %3d %3d   %5.3f nm  %5.3f nm\n",
-            name,
-            setup->rcut_coulomb,
-            setup->rlistInner,
-            setup->grid[XX],
-            setup->grid[YY],
-            setup->grid[ZZ],
-            setup->spacing,
-            1 / setup->ewaldcoeff_q);
+    GMX_LOG(mdlog.info)
+            .appendTextFormatted("   %-7s %6.3f nm %6.3f nm     %3d %3d %3d   %5.3f nm  %5.3f nm",
+                                 name,
+                                 setup.rcut_coulomb,
+                                 setup.rlistInner,
+                                 setup.grid[XX],
+                                 setup.grid[YY],
+                                 setup.grid[ZZ],
+                                 setup.spacing,
+                                 1 / setup.ewaldcoeff_q);
 }
 
 /*! \brief Print all load-balancing settings */
-static void print_pme_loadbal_settings(pme_load_balancing_t* pme_lb,
-                                       FILE*                 fplog,
-                                       const gmx::MDLogger&  mdlog,
-                                       gmx_bool              bNonBondedOnGPU)
+static void printLoadBalSettings(const PmeLoadBalancingLimit limited,
+                                 const bool                  currentSetupIsLastSetup,
+                                 const pme_setup_t&          currentSetup,
+                                 const pme_setup_t&          originalSetup,
+                                 const bool                  useGpuForNonbondeds,
+                                 const MDLogger&             mdlog)
 {
     double pp_ratio, grid_ratio;
     real   pp_ratio_temporary;
 
-    pp_ratio_temporary = pme_lb->setup[pme_lb->cur].rlistInner / pme_lb->setup[0].rlistInner;
-    pp_ratio           = gmx::power3(pp_ratio_temporary);
-    grid_ratio         = pme_grid_points(&pme_lb->setup[pme_lb->cur])
-                 / static_cast<double>(pme_grid_points(&pme_lb->setup[0]));
+    pp_ratio_temporary = currentSetup.rlistInner / originalSetup.rlistInner;
+    pp_ratio           = power3(pp_ratio_temporary);
+    grid_ratio = numPmeGridPoints(currentSetup) / static_cast<double>(numPmeGridPoints(originalSetup));
 
-    fprintf(fplog, "\n");
-    fprintf(fplog, "       P P   -   P M E   L O A D   B A L A N C I N G\n");
-    fprintf(fplog, "\n");
+    GMX_LOG(mdlog.info)
+            .appendText(
+                    "\n"
+                    "       P P   -   P M E   L O A D   B A L A N C I N G\n"
+                    "\n");
     /* Here we only warn when the optimal setting is the last one */
-    if (pme_lb->elimited != PmeLoadBalancingLimit::No && pme_lb->cur == pme_loadbal_end(pme_lb) - 1)
+    if (limited != PmeLoadBalancingLimit::No && currentSetupIsLastSetup)
     {
-        fprintf(fplog,
-                " NOTE: The PP/PME load balancing was limited by the %s,\n",
-                enumValueToString(pme_lb->elimited));
-        fprintf(fplog, "       you might not have reached a good load balance.\n");
-        if (pme_lb->elimited == PmeLoadBalancingLimit::DD)
+        GMX_LOG(mdlog.info)
+                .appendTextFormatted(
+                        " NOTE: The PP/PME load balancing was limited by the %s,\n"
+                        "       you might not have reached a good load balance.",
+                        enumValueToString(limited));
+        if (limited == PmeLoadBalancingLimit::DD)
         {
-            fprintf(fplog, "       Try different mdrun -dd settings or lower the -dds value.\n");
+            GMX_LOG(mdlog.info)
+                    .appendText("       Try different mdrun -dd settings or lower the -dds value.");
         }
-        fprintf(fplog, "\n");
+        // Add empty line
+        GMX_LOG(mdlog.info).appendText("");
     }
-    fprintf(fplog, " PP/PME load balancing changed the cut-off and PME settings:\n");
-    fprintf(fplog, "           particle-particle                    PME\n");
-    fprintf(fplog, "            rcoulomb  rlist            grid      spacing   1/beta\n");
-    print_pme_loadbal_setting(fplog, "initial", &pme_lb->setup[0]);
-    print_pme_loadbal_setting(fplog, "final", &pme_lb->setup[pme_lb->cur]);
-    fprintf(fplog, " cost-ratio           %4.2f             %4.2f\n", pp_ratio, grid_ratio);
-    fprintf(fplog, " (note that these numbers concern only part of the total PP and PME load)\n");
+    GMX_LOG(mdlog.info)
+            .appendText(
+                    " PP/PME load balancing changed the cut-off and PME settings:\n"
+                    "           particle-particle                    PME\n"
 
-    if (pp_ratio > 1.5 && !bNonBondedOnGPU)
+                    "            rcoulomb  rlist            grid      spacing   1/beta");
+    printLoadBalSetup(mdlog, "initial", originalSetup);
+    printLoadBalSetup(mdlog, "final", currentSetup);
+    GMX_LOG(mdlog.info).appendTextFormatted(" cost-ratio           %4.2f             %4.2f", pp_ratio, grid_ratio);
+    GMX_LOG(mdlog.info)
+            .appendText(
+                    " (note that these numbers concern only part of the total PP and PME load)");
+
+    if (pp_ratio > 1.5 && !useGpuForNonbondeds)
     {
         GMX_LOG(mdlog.warning)
                 .asParagraph()
@@ -1211,24 +1287,59 @@ static void print_pme_loadbal_settings(pme_load_balancing_t* pme_lb,
     }
     else
     {
-        fprintf(fplog, "\n");
+        // Add empty line
+        GMX_LOG(mdlog.info).appendText("");
     }
 }
 
-void pme_loadbal_done(pme_load_balancing_t* pme_lb, FILE* fplog, const gmx::MDLogger& mdlog, gmx_bool bNonBondedOnGPU)
+void PmeLoadBalancing::Impl::printSettings() const
 {
-    if (fplog != nullptr && (pme_lb->cur > 0 || pme_lb->elimited != PmeLoadBalancingLimit::No))
-    {
-        print_pme_loadbal_settings(pme_lb, fplog, mdlog, bNonBondedOnGPU);
-    }
-    for (int i = 0; i < gmx::ssize(pme_lb->setup); i++)
-    {
-        // current element is stored in forcerec and free'd in Mdrunner::mdruner, together with shared data
-        if (i != pme_lb->cur)
-        {
-            gmx_pme_destroy(pme_lb->setup[i].pmedata, false);
-        }
-    }
-
-    delete pme_lb;
+    printLoadBalSettings(limited_,
+                         currentSetup_ == setupEnd() - 1,
+                         setups_[currentSetup_],
+                         setups_[0],
+                         useGpuForNonbondeds_,
+                         mdlog_);
 }
+
+PmeLoadBalancing::PmeLoadBalancing(gmx_domdec_t*              dd,
+                                   const MDLogger&            mdlog,
+                                   const t_inputrec&          ir,
+                                   const matrix               box,
+                                   const interaction_const_t& ic,
+                                   const nonbonded_verlet_t&  nbv,
+                                   gmx_pme_t*                 pmedata,
+                                   const SimulationWorkload&  simulationWork) :
+    impl_(std::make_unique<Impl>(dd, mdlog, ir, box, ic, nbv, pmedata, simulationWork))
+{
+}
+
+PmeLoadBalancing::~PmeLoadBalancing() = default;
+
+bool PmeLoadBalancing::isActive() const
+{
+    return impl_->isActive();
+}
+
+bool PmeLoadBalancing::isPrintingLoad() const
+{
+    return impl_->isPrintingLoad();
+}
+
+void PmeLoadBalancing::addCycles(FILE*                fp_err,
+                                 t_forcerec*          fr,
+                                 const matrix         box,
+                                 ArrayRef<const RVec> x,
+                                 const gmx_wallcycle* wcycle,
+                                 int64_t              step,
+                                 int64_t              step_rel)
+{
+    impl_->addCycles(fp_err, fr, box, x, wcycle, step, step_rel);
+}
+
+void PmeLoadBalancing::printSettings() const
+{
+    impl_->printSettings();
+}
+
+} // namespace gmx

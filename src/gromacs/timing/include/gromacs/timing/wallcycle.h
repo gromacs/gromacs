@@ -551,7 +551,7 @@ inline void wallcycle_increment_event_count(gmx_wallcycle* wc, WallCycleCounter 
 }
 
 //! Returns the cumulative count and cycle count for ewc
-void wallcycle_get(gmx_wallcycle* wc, WallCycleCounter ewc, int* n, double* c);
+void wallcycle_get(const gmx_wallcycle* wc, WallCycleCounter ewc, int* n, double* c);
 
 //! Resets all cycle counters to zero
 void wallcycle_reset_all(gmx_wallcycle* wc);

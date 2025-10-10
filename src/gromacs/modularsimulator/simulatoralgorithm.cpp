@@ -327,17 +327,18 @@ void ModularSimulatorAlgorithm::postStep(Step step, Time gmx_unused time)
         dd_cycles_add(cr_.dd, static_cast<float>(cycles), ddCyclStep);
     }
 
-    resetHandler_->resetCounters(step,
-                                 step - inputRec_->init_step,
-                                 mdLog_,
-                                 fpLog_,
-                                 &cr_,
-                                 fr_->nbv.get(),
-                                 nrnb_,
-                                 fr_->pmedata,
-                                 pmeLoadBalanceHelper_ ? pmeLoadBalanceHelper_->loadBalancingObject() : nullptr,
-                                 wallCycle_,
-                                 wallTimeAccounting_);
+    resetHandler_->resetCounters(
+            step,
+            step - inputRec_->init_step,
+            mdLog_,
+            fpLog_,
+            &cr_,
+            fr_->nbv.get(),
+            nrnb_,
+            fr_->pmedata,
+            pmeLoadBalanceHelper_ ? &pmeLoadBalanceHelper_->loadBalancingObject() : nullptr,
+            wallCycle_,
+            wallTimeAccounting_);
 }
 
 void ModularSimulatorAlgorithm::populateTaskQueue()
@@ -571,20 +572,21 @@ ModularSimulatorAlgorithm ModularSimulatorAlgorithmBuilder::build()
 
     // Build PME load balance helper
     if (PmeLoadBalanceHelper::doPmeLoadBalancing(legacySimulatorData_->mdrunOptions_,
-                                                 legacySimulatorData_->inputRec_,
-                                                 legacySimulatorData_->fr_,
-                                                 legacySimulatorData_->runScheduleWork_->simulationWork))
+                                                 legacySimulatorData_->fr_))
     {
-        algorithm.pmeLoadBalanceHelper_ =
-                std::make_unique<PmeLoadBalanceHelper>(legacySimulatorData_->mdrunOptions_.verbose,
-                                                       algorithm.statePropagatorData_.get(),
-                                                       legacySimulatorData_->fpLog_,
-                                                       legacySimulatorData_->cr_->dd,
-                                                       legacySimulatorData_->mdLog_,
-                                                       legacySimulatorData_->inputRec_,
-                                                       legacySimulatorData_->wallCycleCounters_,
-                                                       legacySimulatorData_->fr_);
-        registerWithInfrastructureAndSignallers(algorithm.pmeLoadBalanceHelper_.get());
+        algorithm.pmeLoadBalanceHelper_ = std::make_unique<PmeLoadBalanceHelper>(
+                legacySimulatorData_->mdrunOptions_.verbose,
+                algorithm.statePropagatorData_.get(),
+                legacySimulatorData_->cr_->dd,
+                legacySimulatorData_->mdLog_,
+                legacySimulatorData_->inputRec_,
+                legacySimulatorData_->wallCycleCounters_,
+                legacySimulatorData_->fr_,
+                legacySimulatorData_->runScheduleWork_->simulationWork);
+        if (algorithm.pmeLoadBalanceHelper_)
+        {
+            registerWithInfrastructureAndSignallers(algorithm.pmeLoadBalanceHelper_.get());
+        }
     }
 
     // Build trajectory element

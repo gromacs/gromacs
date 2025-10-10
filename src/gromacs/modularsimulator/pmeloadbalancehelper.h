@@ -43,11 +43,12 @@
 #ifndef GMX_MODULARSIMULATOR_PMELOADBALANCEHELPER_H
 #define GMX_MODULARSIMULATOR_PMELOADBALANCEHELPER_H
 
+#include "gromacs/ewald/pme_load_balancing.h"
+
 #include "modularsimulatorinterfaces.h"
 
 struct gmx_domdec_t;
 struct gmx_wallcycle;
-struct pme_load_balancing_t;
 struct t_forcerec;
 struct t_inputrec;
 
@@ -75,14 +76,14 @@ class PmeLoadBalanceHelper final : public INeighborSearchSignallerClient
 {
 public:
     //! Constructor
-    PmeLoadBalanceHelper(bool                 isVerbose,
-                         StatePropagatorData* statePropagatorData,
-                         FILE*                fplog,
-                         gmx_domdec_t*        dd,
-                         const MDLogger&      mdlog,
-                         const t_inputrec*    inputrec,
-                         gmx_wallcycle*       wcycle,
-                         t_forcerec*          fr);
+    PmeLoadBalanceHelper(bool                      isVerbose,
+                         StatePropagatorData*      statePropagatorData,
+                         gmx_domdec_t*             dd,
+                         const MDLogger&           mdlog,
+                         const t_inputrec*         inputrec,
+                         gmx_wallcycle*            wcycle,
+                         t_forcerec*               fr,
+                         const SimulationWorkload& simWorkload);
 
     //! Initialize the load balancing object
     void setup();
@@ -94,17 +95,14 @@ public:
     bool pmePrinting() const;
 
     //! Whether we're doing PME load balancing
-    static bool doPmeLoadBalancing(const MdrunOptions&       mdrunOptions,
-                                   const t_inputrec*         inputrec,
-                                   const t_forcerec*         fr,
-                                   const SimulationWorkload& simWorkload);
+    static bool doPmeLoadBalancing(const MdrunOptions& mdrunOptions, const t_forcerec* fr);
 
     //! Direct access to the load balancing object - used by reset counter
-    const pme_load_balancing_t* loadBalancingObject();
+    const PmeLoadBalancing& loadBalancingObject();
 
 private:
     //! The PME load balancing object - used by reset counter
-    pme_load_balancing_t* pme_loadbal_;
+    PmeLoadBalancing pme_loadbal_;
 
     //! INeighborSearchSignallerClient implementation
     std::optional<SignallerCallback> registerNSCallback() override;
@@ -113,20 +111,14 @@ private:
     Step nextNSStep_;
     //! Whether we're being verbose
     const bool isVerbose_;
-    //! Whether PME load balancing printing is active \todo Check this!
-    bool bPMETunePrinting_;
 
     // TODO: Clarify relationship to data objects and find a more robust alternative to raw pointers (#3583)
     //! Pointer to the micro state
     StatePropagatorData* statePropagatorData_;
 
     // Access to ISimulator data
-    //! Handles logging.
-    FILE* fplog_;
     //! Handles domain decomposition.
     gmx_domdec_t* dd_;
-    //! Handles logging.
-    const MDLogger& mdlog_;
     //! Contains user input mdp options.
     const t_inputrec* inputrec_;
     //! Manages wall cycle accounting.

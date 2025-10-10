@@ -56,31 +56,24 @@
 
 namespace gmx
 {
-bool PmeLoadBalanceHelper::doPmeLoadBalancing(const MdrunOptions&       mdrunOptions,
-                                              const t_inputrec*         inputrec,
-                                              const t_forcerec*         fr,
-                                              const SimulationWorkload& simWorkload)
+bool PmeLoadBalanceHelper::doPmeLoadBalancing(const MdrunOptions& mdrunOptions, const t_forcerec* fr)
 {
-    return (mdrunOptions.tunePme && usingPme(fr->ic->coulomb.type) && !mdrunOptions.reproducible
-            && inputrec->cutoff_scheme != CutoffScheme::Group && !simWorkload.useGpuPmeDecomposition);
+    return (mdrunOptions.tunePme && usingPme(fr->ic->coulomb.type) && !mdrunOptions.reproducible);
 }
 
-PmeLoadBalanceHelper::PmeLoadBalanceHelper(bool                 isVerbose,
-                                           StatePropagatorData* statePropagatorData,
-                                           FILE*                fplog,
-                                           gmx_domdec_t*        dd,
-                                           const MDLogger&      mdlog,
-                                           const t_inputrec*    inputrec,
-                                           gmx_wallcycle*       wcycle,
-                                           t_forcerec*          fr) :
-    pme_loadbal_(nullptr),
+PmeLoadBalanceHelper::PmeLoadBalanceHelper(bool                      isVerbose,
+                                           StatePropagatorData*      statePropagatorData,
+                                           gmx_domdec_t*             dd,
+                                           const MDLogger&           mdlog,
+                                           const t_inputrec*         inputrec,
+                                           gmx_wallcycle*            wcycle,
+                                           t_forcerec*               fr,
+                                           const SimulationWorkload& simWorkload) :
+    pme_loadbal_(dd, mdlog, *inputrec, statePropagatorData->constBox(), *fr->ic, *fr->nbv, fr->pmedata, simWorkload),
     nextNSStep_(-1),
     isVerbose_(isVerbose),
-    bPMETunePrinting_(false),
     statePropagatorData_(statePropagatorData),
-    fplog_(fplog),
     dd_(dd),
-    mdlog_(mdlog),
     inputrec_(inputrec),
     wcycle_(wcycle),
     fr_(fr)
@@ -92,8 +85,6 @@ void PmeLoadBalanceHelper::setup()
     const auto* box = statePropagatorData_->constBox();
     GMX_RELEASE_ASSERT(box[0][0] != 0 && box[1][1] != 0 && box[2][2] != 0,
                        "PmeLoadBalanceHelper cannot be initialized with zero box.");
-    pme_loadbal_init(
-            &pme_loadbal_, dd_, mdlog_, *inputrec_, box, *fr_->ic, *fr_->nbv, fr_->pmedata, fr_->nbv->useGpu());
 }
 
 void PmeLoadBalanceHelper::run(gmx::Step step, gmx::Time gmx_unused time)
@@ -106,32 +97,26 @@ void PmeLoadBalanceHelper::run(gmx::Step step, gmx::Time gmx_unused time)
     // PME grid + cut-off optimization with GPUs or PME nodes
     // TODO pass SimulationWork object into this function, such that last argument can be set as
     // simulationWork.useGpuPmePpCommunication as is done in main MD loop.
-    pme_loadbal_do(pme_loadbal_,
-                   (isVerbose_ && (dd_ == nullptr || DDMAIN(*dd_))) ? stderr : nullptr,
-                   fplog_,
-                   mdlog_,
-                   *inputrec_,
-                   fr_,
-                   statePropagatorData_->constBox(),
-                   statePropagatorData_->constPositionsView().paddedArrayRef(),
-                   wcycle_,
-                   step,
-                   step - inputrec_->init_step,
-                   &bPMETunePrinting_,
-                   false);
+    pme_loadbal_.addCycles((isVerbose_ && (dd_ == nullptr || DDMAIN(*dd_))) ? stderr : nullptr,
+                           fr_,
+                           statePropagatorData_->constBox(),
+                           statePropagatorData_->constPositionsView().paddedArrayRef(),
+                           wcycle_,
+                           step,
+                           step - inputrec_->init_step);
 }
 
 void PmeLoadBalanceHelper::teardown()
 {
-    pme_loadbal_done(pme_loadbal_, fplog_, mdlog_, fr_->nbv->useGpu());
+    pme_loadbal_.printSettings();
 }
 
 bool PmeLoadBalanceHelper::pmePrinting() const
 {
-    return bPMETunePrinting_;
+    return pme_loadbal_.isPrintingLoad();
 }
 
-const pme_load_balancing_t* PmeLoadBalanceHelper::loadBalancingObject()
+const PmeLoadBalancing& PmeLoadBalanceHelper::loadBalancingObject()
 {
     return pme_loadbal_;
 }

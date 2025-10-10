@@ -139,23 +139,23 @@ bool ResetHandler::setSignalImpl(gmx_walltime_accounting_t walltime_accounting)
     return false;
 }
 
-bool ResetHandler::resetCountersImpl(int64_t                     step,
-                                     int64_t                     step_rel,
-                                     const MDLogger&             mdlog,
-                                     FILE*                       fplog,
-                                     const t_commrec*            cr,
-                                     nonbonded_verlet_t*         nbv,
-                                     t_nrnb*                     nrnb,
-                                     const gmx_pme_t*            pme,
-                                     const pme_load_balancing_t* pme_loadbal,
-                                     gmx_wallcycle*              wcycle,
-                                     gmx_walltime_accounting_t   walltime_accounting)
+bool ResetHandler::resetCountersImpl(int64_t                   step,
+                                     int64_t                   step_rel,
+                                     const MDLogger&           mdlog,
+                                     FILE*                     fplog,
+                                     const t_commrec*          cr,
+                                     nonbonded_verlet_t*       nbv,
+                                     t_nrnb*                   nrnb,
+                                     const gmx_pme_t*          pme,
+                                     const PmeLoadBalancing*   pme_loadbal,
+                                     gmx_wallcycle*            wcycle,
+                                     gmx_walltime_accounting_t walltime_accounting)
 {
     /* Reset either if signal has been passed, or if reset step has been reached */
     if (convertToResetSignal(signal_.set) == ResetSignal::doResetCounters
         || step_rel == wcycle_get_reset_counters(wcycle))
     {
-        if (pme_loadbal_is_active(pme_loadbal))
+        if (pme_loadbal && pme_loadbal->isActive())
         {
             /* Do not permit counter reset while PME load
              * balancing is active. The only purpose for resetting
