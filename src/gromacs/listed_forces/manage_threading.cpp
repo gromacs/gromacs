@@ -229,7 +229,7 @@ static void divide_bondeds_over_threads(bonded_threading_t*           bt,
         const InteractionList& il                     = idef.il[fType];
         int                    nrToAssignToCpuThreads = il.size();
 
-        if (useGpuForBondeds && fTypeGpuIndex < gmx::fTypesOnGpu.size()
+        if (useGpuForBondeds && fTypeGpuIndex < gmx::numFTypesOnGpu
             && gmx::fTypesOnGpu[fTypeGpuIndex] == fType)
         {
             fTypeGpuIndex++;

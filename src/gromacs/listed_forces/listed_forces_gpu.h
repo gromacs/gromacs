@@ -81,16 +81,14 @@ static constexpr int numFTypesOnGpu = 8;
  * \note The function types in the list are ordered on increasing value.
  * \note Currently bonded are only supported with CUDA and SYCL, not with OpenCL.
  */
-constexpr std::array<InteractionFunction, numFTypesOnGpu> fTypesOnGpu = {
-    InteractionFunction::Bonds,
-    InteractionFunction::Angles,
-    InteractionFunction::UreyBradleyPotential,
-    InteractionFunction::ProperDihedrals,
-    InteractionFunction::RyckaertBellemansDihedrals,
-    InteractionFunction::ImproperDihedrals,
-    InteractionFunction::PeriodicImproperDihedrals,
-    InteractionFunction::LennardJones14
-};
+constexpr InteractionFunction fTypesOnGpu[numFTypesOnGpu] = { InteractionFunction::Bonds,
+                                                              InteractionFunction::Angles,
+                                                              InteractionFunction::UreyBradleyPotential,
+                                                              InteractionFunction::ProperDihedrals,
+                                                              InteractionFunction::RyckaertBellemansDihedrals,
+                                                              InteractionFunction::ImproperDihedrals,
+                                                              InteractionFunction::PeriodicImproperDihedrals,
+                                                              InteractionFunction::LennardJones14 };
 
 /*! \brief Checks whether the GROMACS build allows to compute bonded interactions on a GPU.
  *
