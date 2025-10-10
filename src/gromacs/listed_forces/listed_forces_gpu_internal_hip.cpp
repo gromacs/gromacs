@@ -84,7 +84,8 @@ __launch_bounds__(c_threadsBondedPerBlock) __global__
     GMX_DEVICE_ASSERT(blockDim.y == 1 && blockDim.z == 1);
     const int tid          = blockIdx.x * blockDim.x + threadIdx.x;
     float     vtot_loc     = 0.0F;
-    float     vtotElec_loc = 0.0F; // Used only for InteractionFunction::LennardJones14
+    float     vtotVdw_loc  = 0.0F;
+    float     vtotElec_loc = 0.0F;
 
     extern __shared__ float3 sm_dynamicShmem[];
     float3*                  sm_fShiftLoc = sm_dynamicShmem;
@@ -101,27 +102,23 @@ __launch_bounds__(c_threadsBondedPerBlock) __global__
         __syncthreads();
     }
 
-    InteractionFunction fType;
-    bool                threadComputedPotential = false;
+    int fType_shared_index = -1;
 #pragma unroll
     for (int j = 0; j < numFTypesOnGpu; j++)
     {
-        if (tid >= kernelParams.fTypeRangeStart[j] && tid <= kernelParams.fTypeRangeEnd[j])
+        const int                 numBonds = kernelParams.numFTypeBonds[j];
+        const int                 fTypeTid = tid - kernelParams.fTypeRangeStart[j];
+        const t_iatom*            iatoms   = kernelBuffers.d_iatoms[j];
+        const InteractionFunction fType    = fTypesOnGpu[j];
+        const int                 start    = kernelParams.fTypeRangeStart[j];
+        const int                 end      = kernelParams.fTypeRangeEnd[j];
+        if (tid >= start && tid <= end)
         {
-            const int      numBonds = kernelParams.numFTypeBonds[j];
-            int            fTypeTid = tid - kernelParams.fTypeRangeStart[j];
-            const t_iatom* iatoms   = kernelBuffers.d_iatoms[j];
-            fType                   = kernelParams.fTypesOnGpu[j];
-            if (calcEner)
-            {
-                threadComputedPotential = true;
-            }
-
             if (fTypeTid >= numBonds)
             {
                 break;
             }
-
+            fType_shared_index = j;
 
             switch (fType)
             {
@@ -213,35 +210,41 @@ __launch_bounds__(c_threadsBondedPerBlock) __global__
         }
     }
 
-    if (threadComputedPotential)
+    if constexpr (calcEner)
     {
-        float* vtot = kernelBuffers.d_vTot + static_cast<ptrdiff_t>(fType);
-        float* vtotElec = kernelBuffers.d_vTot + static_cast<ptrdiff_t>(InteractionFunction::Coulomb14);
+#pragma unroll
+        for (int j = 0; j < numFTypesOnGpu; j++)
+        {
+            InteractionFunction fType = fTypesOnGpu[j];
+            if (__any(j == fType_shared_index))
+            {
+                float vtot_shuffle = j == fType_shared_index ? vtot_loc : 0.0f;
+#pragma unroll
+                for (unsigned int offset = (warpSize >> 1); offset > 0; offset >>= 1)
+                {
+                    vtot_shuffle += __shfl_down(vtot_shuffle, offset);
+                }
+                if ((threadIdx.x & (warpSize - 1)) == 0)
+                {
+                    atomicAdd((kernelBuffers.d_vTot + static_cast<ptrdiff_t>(fType)), vtot_shuffle);
+                }
+            }
+        }
+        float vtotVdw_shuffle  = vtotVdw_loc;
+        float vtotElec_shuffle = vtotElec_loc;
+#pragma unroll
+        for (unsigned int offset = (warpSize >> 1); offset > 0; offset >>= 1)
+        {
+            vtotVdw_shuffle += __shfl_down(vtotVdw_shuffle, offset);
+            vtotElec_shuffle += __shfl_down(vtotElec_shuffle, offset);
+        }
 
-        // Perform warp-local reduction
-        // We are using the __shfl_down/up operations here, as the __shfl_down/up_sync
-        // methods are not available by default (at least up to ROCm 7), and they
-        // operate the same when expecting a full warp mask
-        vtot_loc += __shfl_down(vtot_loc, 1);
-        vtotElec_loc += __shfl_up(vtotElec_loc, 1);
-        if (threadIdx.x & 1)
-        {
-            vtot_loc = vtotElec_loc;
-        }
-#pragma unroll 4
-        for (int i = 2; i < warpSize; i *= 2)
-        {
-            vtot_loc += __shfl_down(vtot_loc, i);
-        }
-
-        // Write reduced warp results into global memory
-        if (threadIdx.x % warpSize == 0)
-        {
-            atomicAdd(vtot, vtot_loc);
-        }
-        else if ((threadIdx.x % warpSize == 1) && (fType == InteractionFunction::LennardJones14))
-        {
-            atomicAdd(vtotElec, vtot_loc);
+        if ((threadIdx.x & (warpSize - 1)) == 0)
+        { // One thread per warp accumulates partial sum into global sum
+            atomicAdd(kernelBuffers.d_vTot + static_cast<ptrdiff_t>(InteractionFunction::LennardJones14),
+                      vtotVdw_shuffle);
+            atomicAdd(kernelBuffers.d_vTot + static_cast<ptrdiff_t>(InteractionFunction::Coulomb14),
+                      vtotElec_shuffle);
         }
     }
     /* Accumulate shift vectors from shared memory to global memory on the first c_numShiftVectors threads of the block. */
@@ -250,7 +253,7 @@ __launch_bounds__(c_threadsBondedPerBlock) __global__
         __syncthreads();
         if (threadIdx.x < c_numShiftVectors)
         {
-            staggeredAtomicAddForce(gm_fShift, sm_fShiftLoc[threadIdx.x], threadIdx.x, threadIdx.x);
+            atomicAdd(&gm_fShift[threadIdx.x], sm_fShiftLoc[threadIdx.x]);
         }
     }
 }
