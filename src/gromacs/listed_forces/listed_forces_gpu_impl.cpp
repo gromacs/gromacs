@@ -81,8 +81,8 @@ static bool someInteractionsCanRunOnGpu(const InteractionLists& ilists)
     // very unlikely to occur, and has little run-time cost,
     // so we don't complicate the code by catering for it
     // here.
-    return std::any_of(fTypesOnGpu.begin(),
-                       fTypesOnGpu.end(),
+    return std::any_of(std::begin(fTypesOnGpu),
+                       std::end(fTypesOnGpu),
                        [ilists](InteractionFunction fType)
                        { return !ilists[static_cast<int>(fType)].iatoms.empty(); });
 }
