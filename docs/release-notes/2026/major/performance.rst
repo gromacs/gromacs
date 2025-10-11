@@ -1,6 +1,13 @@
 Performance improvements
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
+Optimized PME force transfers for multi-GPU runs with GPU-aware MPI
+===================================================================
+
+When using a GPU build with an (external) GPU-aware MPI library, the transfer of PME force data between
+GPUs has been optimized to use non-blocking MPI calls, improving performance by up to around 5%.
+
+
 .. Note to developers!
    Please use """"""" to underline the individual entries for fixed issues in the subfolders,
    otherwise the formatting on the webpage is messed up.

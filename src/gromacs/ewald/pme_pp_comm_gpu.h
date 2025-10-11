@@ -97,19 +97,25 @@ public:
     void receiveForceFromPme(RVec* recvPtr, int recvSize, bool recvPmeForceToGpu);
 
     /*! \brief Push coordinates buffer directly to GPU memory on PME task
+     * Note that, when using GPU-aware MPI with staged communication and not using NVSHMEM
+     * for GPU force receives, this method also posts a non-blocking force receive request
+     * to overlap communication with computation.
      * \param[in] sendPtr Buffer with coordinate data
      * \param[in] sendSize Number of elements to send
-     * \param[in] coordinatesReadyOnDeviceEvent Event recorded when coordinates are available on device
+     * \param[in] coordinatesReadyOnDeviceEvent Event recorded when coords available on device
+     * \param[in] receiveForcesToGpu Whether PME forces will be received to GPU
      */
     void sendCoordinatesToPmeFromGpu(DeviceBuffer<RVec>    sendPtr,
                                      int                   sendSize,
-                                     GpuEventSynchronizer* coordinatesReadyOnDeviceEvent);
+                                     GpuEventSynchronizer* coordinatesReadyOnDeviceEvent,
+                                     bool                  receiveForcesToGpu);
 
     /*! \brief Push coordinates buffer from host memory directly to GPU memory on PME task
      * \param[in] sendPtr Buffer with coordinate data
      * \param[in] sendSize Number of elements to send
+     * \param[in] receiveForcesToGpu Whether PME forces will be received to GPU
      */
-    void sendCoordinatesToPmeFromCpu(const RVec* sendPtr, int sendSize);
+    void sendCoordinatesToPmeFromCpu(const RVec* sendPtr, int sendSize, bool receiveForcesToGpu);
 
     /*! \brief When this PP rank has particles with PME force
      * contributions expected from its PME-only rank, return pointer

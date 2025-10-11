@@ -103,7 +103,8 @@ void PmePpCommGpu::receiveForceFromPme(RVec* /* recvPtr */, int /* recvSize */, 
 //NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 void PmePpCommGpu::sendCoordinatesToPmeFromGpu(DeviceBuffer<RVec> /* sendPtr */,
                                                int /* sendSize */,
-                                               GpuEventSynchronizer* /* coordinatesOnDeviceEvent */)
+                                               GpuEventSynchronizer* /* coordinatesOnDeviceEvent */,
+                                               bool /* receiveForcesToGpu */)
 {
     GMX_ASSERT(!impl_,
                "A CPU stub for PME-PP GPU communication was called instead of the correct "
@@ -111,7 +112,7 @@ void PmePpCommGpu::sendCoordinatesToPmeFromGpu(DeviceBuffer<RVec> /* sendPtr */,
 }
 
 //NOLINTNEXTLINE(readability-convert-member-functions-to-static)
-void PmePpCommGpu::sendCoordinatesToPmeFromCpu(const RVec* /* sendPtr */, int /* sendSize */)
+void PmePpCommGpu::sendCoordinatesToPmeFromCpu(const RVec* /* sendPtr */, int /* sendSize */, bool /* receiveForcesToGpu */)
 {
     GMX_ASSERT(!impl_,
                "A CPU stub for PME-PP GPU communication was called instead of the correct "

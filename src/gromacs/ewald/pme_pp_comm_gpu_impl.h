@@ -108,11 +108,13 @@ public:
      * before commencing PME force calculations.
      * \param[in] sendPtr Buffer with coordinate data
      * \param[in] sendSize Number of elements to send
-     * \param[in] coordinatesReadyOnDeviceEvent Event recorded when coordinates are available on device
+     * \param[in] coordinatesReadyOnDeviceEvent Event recorded when coords available on device
+     * \param[in] receiveForcesToGpu Whether PME forces will be received to GPU
      */
     void sendCoordinatesToPme(const Float3*         sendPtr,
                               int                   sendSize,
-                              GpuEventSynchronizer* coordinatesReadyOnDeviceEvent);
+                              GpuEventSynchronizer* coordinatesReadyOnDeviceEvent,
+                              bool                  receiveForcesToGpu);
 
     /*! \brief When this PP rank has particles with PME force
      * contributions expected from its PME-only rank, return pointer
@@ -144,15 +146,16 @@ private:
      * is used with process-MPI.
      * \param[out] recvPtr CPU or GPU buffer to receive PME force data into
      * \param[in] recvSize Number of elements to receive
+     * \param[in] receivePmeForceToGpu Whether receive is to GPU, otherwise CPU
      */
-    void receiveForceFromPmeGpuAwareMpi(Float3* recvPtr, int recvSize);
+    void receiveForceFromPmeGpuAwareMpi(Float3* recvPtr, int recvSize, bool receivePmeForceToGpu);
 
     /*! \brief Push coordinates buffer directly to GPU memory on PME
      * task, from either GPU or CPU memory on PP task using CUDA Memory copy.
      * This method is used with Thread-MPI.
      * \param[in] sendPtr Buffer with coordinate data
      * \param[in] sendSize Number of elements to send
-     * \param[in] coordinatesReadyOnDeviceEvent Event recorded when coordinates are available on device
+     * \param[in] coordinatesReadyOnDeviceEvent Event recorded when coords available on device
      */
     void sendCoordinatesToPmePeerToPeer(const Float3*         sendPtr,
                                         int                   sendSize,
@@ -160,14 +163,19 @@ private:
 
     /*! \brief Push coordinates buffer directly to GPU memory on PME
      * task, from either GPU or CPU memory on PP task using GPU-aware MPI.
-     * This method is used with process-MPI.
+     * This method is used with process-MPI. When using GPU-aware MPI with
+     * staged communication and not using NVSHMEM for GPU force receives,
+     * this method also posts a non-blocking force receive request to
+     * overlap communication with computation.
      * \param[in] sendPtr Buffer with coordinate data
      * \param[in] sendSize Number of elements to send
-     * \param[in] coordinatesReadyOnDeviceEvent Event recorded when coordinates are available on device
+     * \param[in] coordinatesReadyOnDeviceEvent Event recorded when coords available on device
+     * \param[in] receivePmeForceToGpu Whether PME forces will be received to GPU
      */
     void sendCoordinatesToPmeGpuAwareMpi(const Float3*         sendPtr,
                                          int                   sendSize,
-                                         GpuEventSynchronizer* coordinatesReadyOnDeviceEvent);
+                                         GpuEventSynchronizer* coordinatesReadyOnDeviceEvent,
+                                         bool                  receivePmeForceToGpu);
 
     //! Device context handle
     const DeviceContext& deviceContext_;
@@ -213,8 +221,12 @@ private:
     bool stageLibMpiGpuCpuComm_ = true;
     // MPI Request associated with non-blocking coordinate send
     MPI_Request coordinateSendRequest_;
+    // MPI Request associated with non-blocking force receive
+    MPI_Request forceRecvRequest_;
     // Flag on whether a non-blocking coordinate send is active
     bool coordinateSendRequestIsActive_ = false;
+    // Flag on whether a non-blocking force receive is active
+    bool forceRecvRequestIsActive_ = false;
     // Flag on whether to use NVSHMEM for GPU communication
     bool useNvshmem_ = false;
 };

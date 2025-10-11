@@ -277,11 +277,11 @@ static void gmx_pme_send_coeffs_coords(t_forcerec*                    fr,
                                "When sending coordinates from GPU, a synchronization event should "
                                "be provided");
                     fr->pmePpCommGpu->sendCoordinatesToPmeFromGpu(
-                            fr->stateGpu->getCoordinates(), n, coordinatesReadyOnDeviceEvent);
+                            fr->stateGpu->getCoordinates(), n, coordinatesReadyOnDeviceEvent, receiveForcesToGpu);
                 }
                 else
                 {
-                    fr->pmePpCommGpu->sendCoordinatesToPmeFromCpu(x.data(), n);
+                    fr->pmePpCommGpu->sendCoordinatesToPmeFromCpu(x.data(), n, receiveForcesToGpu);
                 }
             }
             else
