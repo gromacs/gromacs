@@ -9,6 +9,7 @@
 #define GMX_APPLIED_FORCES_RAMDOUTPUTPROVIDER_H
 
 #include <cstdio>
+#include <string>
 
 #include "gromacs/mdtypes/imdoutputprovider.h"
 
@@ -36,6 +37,9 @@ public:
 
     //! Add a COM distance to the RAMD output file
     void addCOMDistance(double distance);
+
+    //! Add a string to the RAMD output file
+    void addLine(const std::string& str);
 
     //! Finalizes output from a simulation run.
     void finishOutput() override;

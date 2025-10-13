@@ -69,6 +69,12 @@ private:
     //! COM of ligand of last RAMD evaluation step
     std::vector<DVec> com_lig_prev_;
 
+    /// Has the ligand left his binding site?
+    std::vector<int> ligand_exited_;
+
+    /// Control trajectory output
+    gmx_bool write_trajectory_;
+
 };
 
 } // namespace gmx

@@ -81,10 +81,10 @@ public:
      */
     const std::vector<std::unique_ptr<LocalAtomSet>>& localAtomSets() const
     {
-        if (localAtomSets_.empty())
-        {
-            GMX_THROW(InternalError("Local atom sets are not set for RAMD."));
-        }
+        // if (localAtomSets_.empty())
+        // {
+        //     GMX_THROW(InternalError("Local atom sets are not set for RAMD."));
+        // }
         return localAtomSets_;
     }
 

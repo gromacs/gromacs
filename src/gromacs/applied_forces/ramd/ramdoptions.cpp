@@ -70,6 +70,7 @@ void RAMDOptions::buildMdpOutput(KeyValueTreeObjectBuilder* builder) const
         // Seed
         addMdpOutputComment(builder, RAMDModuleInfo::sc_name, c_seedTag, "; Seed");
         addMdpOutputValue(builder, RAMDModuleInfo::sc_name, c_seedTag, parameters_.seed_);
+        addMdpOutputValue(builder, RAMDModuleInfo::sc_name, c_evalFreqTag, parameters_.eval_freq_);
         addMdpOutputValue(builder, RAMDModuleInfo::sc_name, c_ngroupsTag, parameters_.ngroups_);
 
         // for (int i = 1; i <= parameters_.ngroups_; ++i)
@@ -85,6 +86,7 @@ void RAMDOptions::initMdpOptions(IOptionsContainerWithSections* options)
     auto section = options->addSection(OptionSection(moduleName().c_str()));
     section.addOption(BooleanOption(c_activeTag.c_str()).store(&parameters_.active_));
     section.addOption(Int64Option(c_seedTag.c_str()).store(&parameters_.seed_));
+    section.addOption(IntegerOption(c_evalFreqTag.c_str()).store(&parameters_.eval_freq_));
     section.addOption(IntegerOption(c_ngroupsTag.c_str()).store(&parameters_.ngroups_));
     // section.addOption(StringOption(c_groupReceptorTag.c_str()).store(&parameters_.groups_[0].receptor_group_));
 }

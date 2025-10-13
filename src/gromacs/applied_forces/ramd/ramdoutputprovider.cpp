@@ -64,6 +64,14 @@ void RAMDOutputProvider::addCOMDistance(double distance)
     }
 }
 
+void RAMDOutputProvider::addLine(const std::string& str)
+{
+    if (fpRAMD_)
+    {
+        fprintf(fpRAMD_, "%s", str.c_str());
+    }
+}
+
 void RAMDOutputProvider::finishOutput() {}
 
 } // namespace gmx

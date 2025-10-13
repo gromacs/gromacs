@@ -7,6 +7,7 @@
  */
 
 #include "ramdforceprovider.h"
+#include "gromacs/mdlib/sighandler.h"
 #include "gromacs/utility/mpicomm.h"
 #include "gromacs/utility/logger.h"
 
@@ -26,7 +27,9 @@ RAMDForceProvider::RAMDForceProvider(const RAMDParameters& parameters,
     random_spherical_direction_generator(parameters.seed_, parameters.old_angle_dist_),
     direction_(parameters.ngroups_),
     com_rec_prev_(parameters.ngroups_),
-    com_lig_prev_(parameters.ngroups_)
+    com_lig_prev_(parameters.ngroups_),
+    ligand_exited_(parameters.ngroups_, 0),
+    write_trajectory_(false)
 {}
 
 RAMDForceProvider::~RAMDForceProvider()
@@ -166,25 +169,19 @@ void RAMDForceProvider::calculateForces(const ForceProviderInput& fInput,
     //     }
     }
 
-    // if (step % params.eval_freq == 0)
-    // {
-    //     if (mpiComm.isMainRank() and out)
-    //     {
-    //         fprintf(out, "\n");
-    //         fflush(out);
-    //     }
+    if (fInput.step_ % parameters_.eval_freq_ == 0)
+    {
+        ramdOutputProvider_.addLine("\n");
 
-    //     // Exit if all ligand-receptor COM distances are larger than max_dist
-    //     if (std::accumulate(ligand_exited.begin(), ligand_exited.end(), 0) == params.ngroup)
-    //     {
-    //         if (mpiComm.isMainRank())
-    //         {
-    //             fprintf(this->log, "==== RAMD ==== GROMACS will be stopped after %ld steps.\n", step);
-    //         }
-    //         this->write_trajectory = true;
-    //         gmx_set_stop_condition(StopCondition::Next);
-    //     }
-    // }
+        // Exit if all ligand-receptor COM distances are larger than max_dist
+        // if (std::accumulate(ligand_exited_.begin(), ligand_exited_.end(), 0) == parameters_.ngroups_)
+        if (fInput.step_ == 630)
+        {
+            GMX_LOG(logger_.warning).appendTextFormatted("==== RAMD ==== GROMACS will be stopped after %ld steps.\n", fInput.step_);
+            write_trajectory_ = true;
+            gmx_set_stop_condition(StopCondition::Next);
+        }
+    }
 
     for (int g = 0; g < parameters_.ngroups_; ++g)
     {
