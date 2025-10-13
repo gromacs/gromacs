@@ -32,12 +32,6 @@ public:
                     bool bAppendFiles,
                     const gmx_output_env_t* oenv) override;
 
-    //! Add a time point to the RAMD output file
-    void addTimePoint(double time);
-
-    //! Add a COM distance to the RAMD output file
-    void addCOMDistance(double distance);
-
     //! Add a string to the RAMD output file
     void addLine(const std::string& str);
 

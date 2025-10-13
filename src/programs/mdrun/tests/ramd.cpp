@@ -137,25 +137,15 @@ TEST_F(RAMDTest, RAMD_connected_ligands)
     }
     EXPECT_EQ(number_of_steps, 630);
 
-    // TextReader reader_pullx(fileManager_.getTemporaryFilePath("state_pullx.xvg"));
-    // // std::cout << reader_pullx.readAll();
-    // while (reader_pullx.readLine(&line))
-    // {
-    //     if (line.rfind("0.000", 0) != std::string::npos)
-    //     {
-    //         EXPECT_EQ(std::string("0.0593702"), gmx::splitString(line)[1]);
-    //     }
-    // }
-
-    // TextReader reader_ramd(fileManager_.getTemporaryFilePath("state.xvg"));
-    // // std::cout << reader_ramd.readAll();
-    // while (reader_ramd.readLine(&line))
-    // {
-    //     if (line.rfind("0.000", 0) != std::string::npos)
-    //     {
-    //         EXPECT_EQ(std::string("0.423961"), gmx::splitString(line)[1]);
-    //     }
-    // }
+    TextReader reader_ramd(fileManager_.getTemporaryFilePath("state.xvg"));
+    // std::cout << reader_ramd.readAll();
+    while (reader_ramd.readLine(&line))
+    {
+        if (line.rfind("0.0000", 0) != std::string::npos)
+        {
+            EXPECT_EQ(std::string("0.423961"), gmx::splitString(line)[1]);
+        }
+    }
 }
 
 } // namespace test

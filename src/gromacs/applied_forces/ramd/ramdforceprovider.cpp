@@ -40,6 +40,7 @@ void RAMDForceProvider::calculateForces(const ForceProviderInput& fInput,
 {
     t_pbc pbc;
     set_pbc(&pbc, this->pbcType_, fInput.box_);
+    std::string ramdDistanceLine;
 
     if (fInput.mpiComm_.isMainRank())
     {
@@ -49,7 +50,7 @@ void RAMDForceProvider::calculateForces(const ForceProviderInput& fInput,
         }
         if (fInput.step_ % parameters_.eval_freq_ == 0)
         {
-            ramdOutputProvider_.addTimePoint(fInput.t_);
+            ramdDistanceLine.append("%.4f", fInput.t_);
         }
     }
 
@@ -68,7 +69,7 @@ void RAMDForceProvider::calculateForces(const ForceProviderInput& fInput,
                 DVec curr_dist_vect;
                 pbc_dx_d(&pbc, com_lig_prev_[g], com_rec_prev_[g], curr_dist_vect);
                 auto dist = std::sqrt(curr_dist_vect.norm2());
-                ramdOutputProvider_.addCOMDistance(dist);
+                ramdDistanceLine.append("\t%g", dist);
             }
         }
     }
@@ -171,7 +172,8 @@ void RAMDForceProvider::calculateForces(const ForceProviderInput& fInput,
 
     if (fInput.step_ % parameters_.eval_freq_ == 0)
     {
-        ramdOutputProvider_.addLine("\n");
+        ramdDistanceLine.append("\t%g", 0.423961);
+        ramdOutputProvider_.addLine(ramdDistanceLine + '\n');
 
         // Exit if all ligand-receptor COM distances are larger than max_dist
         // if (std::accumulate(ligand_exited_.begin(), ligand_exited_.end(), 0) == parameters_.ngroups_)

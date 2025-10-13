@@ -48,22 +48,6 @@ void RAMDOutputProvider::initOutput(FILE* fplog,
     }
 }
 
-void RAMDOutputProvider::addTimePoint(double time)
-{
-    if (fpRAMD_)
-    {
-        fprintf(fpRAMD_, "%.4f", time);
-    }
-}
-
-void RAMDOutputProvider::addCOMDistance(double distance)
-{
-    if (fpRAMD_)
-    {
-        fprintf(fpRAMD_, "\t%g", distance);
-    }
-}
-
 void RAMDOutputProvider::addLine(const std::string& str)
 {
     if (fpRAMD_)
