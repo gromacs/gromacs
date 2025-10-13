@@ -45,4 +45,12 @@ if grep -qF 'INTEL' <<< "$GPU_VENDOR"; then
     export SYCL_CACHE_PERSISTENT=1  # Issue #4218
 fi
 
+# Avoid that Intel MPI intra-node SHM protocol uses /dev/shm because
+# by default that is too small in a k8s+docker setup. See
+# https://www.intel.com/content/www/us/en/docs/mpi-library/developer-guide-linux/2021-16/problem-mpi-limitation-for-docker.html 
+GMX_IMPI_SHM_MOUNT_POINT=/tmp/impi-shm
+mkdir -p $GMX_IMPI_SHM_MOUNT_POINT
+export I_MPI_SHM_FILE_PREFIX_4K=$GMX_IMPI_SHM_MOUNT_POINT
+
+
 perl gmxtest.pl $REGRESSIONTEST_PARALLEL $REGRESSIONTEST_TOTAL_RANK_NUMBER -ntomp $REGRESSIONTEST_OMP_RANK_NUMBER -npme $REGRESSIONTEST_PME_RANK_NUMBER $REGRESSIONTEST_DOUBLE $REGRESSIONTEST_MPI_RUN_COMMAND -xml all
