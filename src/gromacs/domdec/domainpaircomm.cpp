@@ -612,6 +612,8 @@ void DomainCommBackward::selectHaloAtoms(const gmx_domdec_t&      dd,
                                          ArrayRef<const RVec>     normal,
                                          const std::vector<bool>& isCellMissingLinks)
 {
+    numAtomsPerCluster_ = std::max(grid.geometry().numAtomsICluster_, grid.geometry().numAtomsJCluster_);
+
     if (pbcType_ == PbcType::XY && pbcCoordinateShift_[ZZ] != 0)
     {
         clear();
@@ -718,8 +720,6 @@ void DomainCommBackward::selectHaloAtoms(const gmx_domdec_t&      dd,
                 static_cast<int>(dci.checkMultiBodyDistance),
                 static_cast<int>(dci.checkTwoBodyDistance));
     }
-
-    numAtomsPerCluster_ = std::max(grid.geometry().numAtomsICluster_, grid.geometry().numAtomsJCluster_);
 
     // Clear the send counts
     clear();

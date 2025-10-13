@@ -68,6 +68,36 @@ HaloExchange::~HaloExchange() = default;
 namespace
 {
 
+/*! \brief Enum used for templating the buffer operations on cluster size
+ *
+ * \note: Don't use static_cast<int> to convert to integer!
+ */
+enum class NumAtomsPerCluster : int
+{
+    Four,
+    Eight,
+    Count
+};
+
+//! Return the enum value given the number of atoms per cluster
+constexpr NumAtomsPerCluster numAtomsPerClusterFromInt(const int numAtomsPerCluster)
+{
+    GMX_ASSERT(numAtomsPerCluster == 4 || numAtomsPerCluster == 8, "Only 4 and 8 are implemented");
+
+    return numAtomsPerCluster == 4 ? NumAtomsPerCluster::Four : NumAtomsPerCluster::Eight;
+}
+
+//! Return the int value given the enum value of the number of atoms per cluster
+constexpr int numAtomsPerClusterToInt(const NumAtomsPerCluster numAtomsPerCluster)
+{
+    GMX_ASSERT(numAtomsPerCluster == NumAtomsPerCluster::Four
+                       || numAtomsPerCluster == NumAtomsPerCluster::Eight,
+               "Only 4 and 8 are implemented");
+
+    return numAtomsPerCluster == NumAtomsPerCluster::Four ? 4 : 8;
+}
+
+
 /*! \brief Initiates a non-blocking send to another domain
  *
  * \param[in] send         The domain pair communication setup
@@ -140,23 +170,27 @@ void ddIreceiveDomain(const DomainPairComm&     receive,
 }
 
 //! Templated version of \p packCoordinateSendBuffer()
-template<bool commOverPbc, bool usesScrewPbc>
+template<bool commOverPbc, bool usesScrewPbc, NumAtomsPerCluster numAtomsPerCluster>
 void packCoordinatesTemplated(const DomainCommBackward& domainComm,
                               const matrix              box,
                               const RVec&               shiftVec,
                               ArrayRef<const RVec>      x,
                               ArrayRef<RVec>            sendBuffer)
 {
-    const int numAtomsPerCluster = domainComm.numAtomsPerCluster();
+    static_assert(numAtomsPerCluster == NumAtomsPerCluster::Four
+                          || numAtomsPerCluster == NumAtomsPerCluster::Eight,
+                  "Extra check to get a compile time error with problems with NumAtomsPerCluster");
+
+    constexpr int c_numAtomsPerCluster = numAtomsPerClusterToInt(numAtomsPerCluster);
 
     int j = 0;
     for (const DomainCommBackward::GridClusterRange& gridClusterRange : domainComm.clusterRangesToSend())
     {
         for (int cluster : gridClusterRange.clusterRange)
         {
-            for (int i = 0; i < numAtomsPerCluster; i++)
+            for (int i = 0; i < c_numAtomsPerCluster; i++)
             {
-                sendBuffer[j] = x[cluster * numAtomsPerCluster + i];
+                sendBuffer[j] = x[cluster * c_numAtomsPerCluster + i];
 
                 if constexpr (usesScrewPbc)
                 {
@@ -217,12 +251,17 @@ void DomainCommBackward::packCoordinateSendBuffer(const matrix         box,
         }
     }
 
+    const NumAtomsPerCluster numAtomsPerCluster = numAtomsPerClusterFromInt(numAtomsPerCluster_);
+
     dispatchTemplatedFunction(
-            [&](auto commOverPbc, auto usesScrewPbc) {
-                packCoordinatesTemplated<commOverPbc, usesScrewPbc>(*this, box, shiftVec, x, sendBuffer);
+            [&](auto commOverPbc, auto usesScrewPbc, auto numAtomsPerCluster)
+            {
+                packCoordinatesTemplated<commOverPbc, usesScrewPbc, numAtomsPerCluster>(
+                        *this, box, shiftVec, x, sendBuffer);
             },
             commOverPbc_,
-            usesScrewPbc_);
+            usesScrewPbc_,
+            numAtomsPerCluster);
 }
 
 void HaloExchange::initiateReceiveX(ArrayRef<RVec> x)
@@ -297,12 +336,12 @@ namespace
 {
 
 //! Templated version of \p packCoordinateSendBuffer()
-template<bool usesScrewPbc, bool haveShiftForces>
+template<bool usesScrewPbc, bool haveShiftForces, NumAtomsPerCluster numAtomsPerCluster>
 void accumulateReceivedForcesTemplated(const DomainCommBackward& domainComm,
                                        ArrayRef<RVec>            forces,
                                        RVec gmx_unused*          shiftForce)
 {
-    const int numAtomsPerCluster = domainComm.numAtomsPerCluster();
+    constexpr int c_numAtomsPerCluster = numAtomsPerClusterToInt(numAtomsPerCluster);
 
     ArrayRef<const RVec> receivedForces = domainComm.rvecBuffer();
 
@@ -311,18 +350,18 @@ void accumulateReceivedForcesTemplated(const DomainCommBackward& domainComm,
     {
         for (int cluster : clusterRange.clusterRange)
         {
-            for (int i = 0; i < numAtomsPerCluster; i++)
+            for (int i = 0; i < c_numAtomsPerCluster; i++)
             {
                 if constexpr (!usesScrewPbc)
                 {
-                    forces[cluster * numAtomsPerCluster + i] += receivedForces[j];
+                    forces[cluster * c_numAtomsPerCluster + i] += receivedForces[j];
                 }
                 else
                 {
                     // Accumulate the forces after rotating them
-                    forces[cluster * numAtomsPerCluster + i][XX] += receivedForces[j][XX];
-                    forces[cluster * numAtomsPerCluster + i][YY] -= receivedForces[j][YY];
-                    forces[cluster * numAtomsPerCluster + i][ZZ] -= receivedForces[j][ZZ];
+                    forces[cluster * c_numAtomsPerCluster + i][XX] += receivedForces[j][XX];
+                    forces[cluster * c_numAtomsPerCluster + i][YY] -= receivedForces[j][YY];
+                    forces[cluster * c_numAtomsPerCluster + i][ZZ] -= receivedForces[j][ZZ];
                 }
 
                 if constexpr (haveShiftForces)
@@ -347,12 +386,17 @@ void DomainCommBackward::accumulateReceivedForces(ArrayRef<RVec> forces, ArrayRe
 
     RVec* shiftForce = (haveShiftForces ? &shiftForces[pbcForceShiftIndex_] : nullptr);
 
+    const NumAtomsPerCluster numAtomsPerCluster = numAtomsPerClusterFromInt(numAtomsPerCluster_);
+
     dispatchTemplatedFunction(
-            [&](auto usesScrewPbc, auto haveShiftForces) {
-                accumulateReceivedForcesTemplated<usesScrewPbc, haveShiftForces>(*this, forces, shiftForce);
+            [&](auto usesScrewPbc, auto haveShiftForces, auto numAtomsPerCluster)
+            {
+                accumulateReceivedForcesTemplated<usesScrewPbc, haveShiftForces, numAtomsPerCluster>(
+                        *this, forces, shiftForce);
             },
             usesScrewPbc_,
-            haveShiftForces);
+            haveShiftForces,
+            numAtomsPerCluster);
 }
 
 void HaloExchange::initiateReceiveF()
