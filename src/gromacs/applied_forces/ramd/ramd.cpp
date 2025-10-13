@@ -167,8 +167,11 @@ public:
         // Constructing local atom sets during simulation setup
         const auto setLocalAtomSetFunction = [this](LocalAtomSetManager* localAtomSetManager)
         {
-            LocalAtomSet atomSet = localAtomSetManager->add(ramdOptions_.parameters().groups_[0].receptor_indices_);
-            this->ramdSimulationParameters_.setLocalAtomSets(atomSet);
+            for (int g = 0; g < ramdOptions_.parameters().ngroups_; ++g)
+            {
+                LocalAtomSet atomSet = localAtomSetManager->add(ramdOptions_.parameters().groups_[g].ligand_indices_);
+                this->ramdSimulationParameters_.setLocalAtomSets(atomSet);
+            }
         };
         notifiers->simulationSetupNotifier_.subscribe(setLocalAtomSetFunction);
         

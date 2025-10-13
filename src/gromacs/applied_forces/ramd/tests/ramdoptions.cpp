@@ -68,6 +68,7 @@ TEST_F(RAMDOptionsTest, OptionSetsActive)
     test::fillOptionsFromMdpValues(ramdBuildMdpValues(), &ramdOptions);
     EXPECT_TRUE(ramdOptions.parameters().active_);
     EXPECT_EQ(1, ramdOptions.parameters().ngroups_);
+    EXPECT_EQ(1, ramdOptions.parameters().groups_.size());
     // EXPECT_REAL_EQ(0.0025, defaultParameters.groups_[0].r_min_dist_);
 }
 

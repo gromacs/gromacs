@@ -69,12 +69,9 @@ void RAMDForceProvider::calculateForces(const ForceProviderInput& fInput,
             }
         }
     }
-    // else if (step % params.eval_freq == 0)
-    // {
-    //     if (mpiComm.isMainRank() and debug)
-    //     {
-    //         fprintf(debug, "==== RAMD ==== evaluation %ld\n", step);
-    //     }
+    else if (fInput.step_ % parameters_.eval_freq_ == 0)
+    {
+        GMX_LOG(logger_.debug).appendText("==== RAMD ==== evaluation ").appendText(std::to_string(fInput.step_));
     //     for (int g = 0; g < params.ngroup; ++g)
     //     {
     //         DVec com_rec_curr = pull->group[g * 2 + 1].x;
@@ -167,7 +164,7 @@ void RAMDForceProvider::calculateForces(const ForceProviderInput& fInput,
     //         com_lig_prev[g] = com_lig_curr;
     //         com_rec_prev[g] = com_rec_curr;
     //     }
-    // }
+    }
 
     // if (step % params.eval_freq == 0)
     // {

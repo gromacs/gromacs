@@ -46,7 +46,7 @@ const std::string c_groupRMinDistTag = "r-min-dist";
 
 void RAMDOptions::initMdpTransform(IKeyValueTreeTransformRules* rules)
 {
-    const auto& stringIdentityTransform = [](std::string s) { return s; };
+    // const auto& stringIdentityTransform = [](std::string s) { return s; };
     addMdpTransformFromString<bool>(
         rules, &fromStdString<bool>, RAMDModuleInfo::sc_name, c_activeTag);
     addMdpTransformFromString<std::int64_t>(
@@ -68,8 +68,7 @@ void RAMDOptions::buildMdpOutput(KeyValueTreeObjectBuilder* builder) const
     if (parameters_.active_)
     {
         // Seed
-        addMdpOutputComment(
-                builder, RAMDModuleInfo::sc_name, c_seedTag, "; Seed");
+        addMdpOutputComment(builder, RAMDModuleInfo::sc_name, c_seedTag, "; Seed");
         addMdpOutputValue(builder, RAMDModuleInfo::sc_name, c_seedTag, parameters_.seed_);
         addMdpOutputValue(builder, RAMDModuleInfo::sc_name, c_ngroupsTag, parameters_.ngroups_);
 
@@ -126,7 +125,25 @@ void RAMDOptions::setInputGroupIndices(const IndexGroupsAndNames& indexGroupsAnd
     }
 
     // Create input index
-    parameters_.groups_[0].receptor_indices_ = indexGroupsAndNames.indices(parameters_.groups_[0].receptor_group_);
+    for (int g = 0; g < parameters_.ngroups_; ++g)
+    {
+        parameters_.groups_[g].ligand_indices_ = indexGroupsAndNames.indices(parameters_.groups_[g].ligand_group_);
+        parameters_.groups_[g].receptor_indices_ = indexGroupsAndNames.indices(parameters_.groups_[g].receptor_group_);
+
+        // Check that group is not empty
+        if (parameters_.groups_[g].ligand_indices_.empty())
+        {
+            GMX_THROW(InconsistentInputError(
+                formatString("Group %s defining RAMD ligand atoms should not be empty.",
+                             parameters_.groups_[g].ligand_group_.c_str())));
+        }
+        if (parameters_.groups_[g].receptor_indices_.empty())
+        {
+            GMX_THROW(InconsistentInputError(
+                formatString("Group %s defining RAMD receptor atoms should not be empty.",
+                             parameters_.groups_[g].receptor_group_.c_str())));
+        }
+    }
 
     // // Check that group is not empty
     // if (params_.nnpIndices_.empty())

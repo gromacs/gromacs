@@ -90,9 +90,9 @@ const std::string water4_mdp_base = R"(
 
     ramd-active              = yes
     ramd-seed                = 42
-    ramd-ngroups             = 1
-    ramd-group1-receptor     = 1SOL
+    ramd-ngroups             = 0
 )";
+    // ramd-group1-receptor     = 1SOL
     // ramd-group1-ligand       = 2SOL
     // ramd-group1-force        = 100
 
