@@ -104,7 +104,7 @@ const std::string c_qmTransTag_     = "qmtrans";
 //! \}
 
 //! \brief Helper function to preprocess topology for QMMM
-std::tuple<std::vector<int>, std::vector<real>, std::vector<LinkFrontier>>
+std::tuple<std::vector<int>, std::vector<real>, std::vector<LinkFrontierAtom>>
 preprocessTopology(gmx_mtop_t* mtop, ArrayRef<const Index> qmIndices, real qmC, const MDLogger& logger, WarningHandler* wi)
 {
     // convert qmIndices to set for faster lookup
@@ -141,7 +141,7 @@ preprocessTopology(gmx_mtop_t* mtop, ArrayRef<const Index> qmIndices, real qmC, 
     modifyEmbeddedFourCenterInteractions(mtop, qmIndicesSet, isQMBlock, logger);
 
     // 9) Build vector containing pairs of bonded QM - MM atoms (Link frontier)
-    std::vector<LinkFrontier> linkFrontier = buildLinkFrontier(mtop, qmIndicesSet, isQMBlock, logger);
+    std::vector<LinkFrontierAtom> linkFrontier = buildLinkFrontier(mtop, qmIndicesSet, isQMBlock, logger);
 
     // 10) Check for constrained bonds in QM subsystem
     checkConstrainedBonds(mtop, qmIndicesSet, isQMBlock, wi);
@@ -579,12 +579,12 @@ void QMMMOptions::writeInternalParametersToKvt(KeyValueTreeObjectBuilder treeBui
     GroupIndexAdder = treeBuilder.addUniformArray<std::int64_t>(moduleName() + "-" + c_qmLinkTag_);
     for (const auto& indexValue : parameters_.link_)
     {
-        GroupIndexAdder.addValue(indexValue.embedded);
+        GroupIndexAdder.addValue(indexValue.getEmbeddedIndex());
     }
     GroupIndexAdder = treeBuilder.addUniformArray<std::int64_t>(moduleName() + "-" + c_mmLinkTag_);
     for (const auto& indexValue : parameters_.link_)
     {
-        GroupIndexAdder.addValue(indexValue.mm);
+        GroupIndexAdder.addValue(indexValue.getMMIndex());
     }
 
     // Write CP2K input file content
@@ -691,11 +691,10 @@ void QMMMOptions::readInternalParametersFromKvt(const KeyValueTreeObject& tree)
                    std::begin(mmLink),
                    [](const KeyValueTreeValue& val) { return val.cast<std::int64_t>(); });
 
-    parameters_.link_.resize(qmLink.size());
+    parameters_.link_.reserve(qmLink.size());
     for (size_t i = 0; i < qmLink.size(); i++)
     {
-        parameters_.link_[i].embedded = qmLink[i];
-        parameters_.link_[i].mm       = mmLink[i];
+        parameters_.link_.emplace_back(qmLink[i], mmLink[i]);
     }
 
     // Try to read CP2K input and pdb strings from *.tpr

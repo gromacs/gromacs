@@ -43,6 +43,7 @@
 #include "gromacs/topology/embedded_system_preprocessing.h"
 
 #include "gromacs/fileio/warninp.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/idef.h"
@@ -62,6 +63,87 @@ namespace gmx
 static bool isEmbeddedAtom(Index globalAtomIndex, const std::set<int>& embeddedIndices)
 {
     return (embeddedIndices.find(globalAtomIndex) != embeddedIndices.end());
+}
+
+LinkFrontierAtom::LinkFrontierAtom(int embeddedIndex, int mmIndex) :
+    embeddedIndex_(embeddedIndex), mmIndex_(mmIndex)
+{
+}
+
+int LinkFrontierAtom::getEmbeddedIndex() const
+{
+    return embeddedIndex_;
+}
+
+int LinkFrontierAtom::getMMIndex() const
+{
+    return mmIndex_;
+}
+
+void LinkFrontierAtom::setInputIndices(int inputIndexEmb, int inputIndexMM)
+{
+    inputIndexEmb_ = inputIndexEmb;
+    inputIndexMM_  = inputIndexMM;
+}
+
+int LinkFrontierAtom::getInputIndexEmb() const
+{
+    return inputIndexEmb_;
+}
+
+int LinkFrontierAtom::getInputIndexMM() const
+{
+    return inputIndexMM_;
+}
+
+void LinkFrontierAtom::setPositions(const RVec& posEmb, const RVec& posMM)
+{
+    posEmb_ = posEmb;
+    posMM_  = posMM;
+
+    // Calculate position of link atom
+    posLink_ = posEmb + linkDistance_ * unitVector(posMM - posEmb);
+}
+
+RVec LinkFrontierAtom::getLinkPosition() const
+{
+    return posLink_;
+}
+
+real LinkFrontierAtom::linkDistance() const
+{
+    return linkDistance_;
+}
+
+void LinkFrontierAtom::setLinkDistance(const real& linkDistance)
+{
+    linkDistance_ = linkDistance;
+}
+
+int LinkFrontierAtom::linkAtomNumber() const
+{
+    return linkAtomNumber_;
+}
+
+void LinkFrontierAtom::setLinkAtomNumber(const int& linkAtomNumber)
+{
+    linkAtomNumber_ = linkAtomNumber;
+}
+
+std::tuple<RVec, RVec> LinkFrontierAtom::spreadForce(const RVec& forceOnLink, const t_pbc& pbc) const
+{
+    // adapted from vsite.cpp::spread_vsite2FD()
+    RVec forceOnEmbedded, forceOnMM, distance;
+
+    pbc_dx_aiuc(&pbc, posMM_, posEmb_, distance);
+    const real invDist        = 1. / norm(distance);
+    const real b              = linkDistance_ * invDist;
+    const real projectedForce = dot(distance, forceOnLink) * invDist * invDist;
+
+    forceOnMM       = b * (forceOnLink - projectedForce * distance);
+    forceOnEmbedded = forceOnLink - forceOnMM;
+
+    return { forceOnEmbedded, forceOnMM };
 }
 
 std::vector<bool> splitEmbeddedBlocks(gmx_mtop_t* mtop, const std::set<int>& embeddedIndices)
@@ -437,15 +519,15 @@ void modifyEmbeddedTwoCenterInteractions(gmx_mtop_t*              mtop,
     }
 }
 
-std::vector<LinkFrontier> buildLinkFrontier(gmx_mtop_t*              mtop,
-                                            const std::set<int>&     embeddedIndices,
-                                            const std::vector<bool>& isEmbeddedBlock,
-                                            const MDLogger&          logger)
+std::vector<LinkFrontierAtom> buildLinkFrontier(gmx_mtop_t*              mtop,
+                                                const std::set<int>&     embeddedIndices,
+                                                const std::vector<bool>& isEmbeddedBlock,
+                                                const MDLogger&          logger)
 {
     // Loop over all blocks in topology
     // molBlockIndex - index of current block in mtop
-    std::vector<LinkFrontier> linkFrontier;
-    int                       numLinkBonds = 0;
+    std::vector<LinkFrontierAtom> linkFrontier;
+    int                           numLinkBonds = 0;
     for (size_t molBlockIndex = 0; molBlockIndex < mtop->molblock.size(); molBlockIndex++)
     {
         // check if current block contains embedded atoms

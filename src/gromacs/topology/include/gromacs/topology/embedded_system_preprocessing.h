@@ -48,9 +48,11 @@
 
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
+#include "gromacs/utility/vectypes.h"
 
 struct gmx_mtop_t;
 class WarningHandler;
+struct t_pbc;
 
 namespace gmx
 {
@@ -58,15 +60,67 @@ namespace gmx
 class MDLogger;
 
 /*! \internal
- * \brief Helper structure with indexes of broken bonds between embedded and MM
- * Used to determine and store pair of embedded and MM atoms between which chemical bond is broken
+ * \brief Helper class with indexes of broken bonds between embedded and MM
+ *
+ * Used to determine and store pair of embedded and MM atoms between which chemical bond is broken.
+ * Also stores the positions of those atoms, and calculates the position of a link atom.
+ *
  */
-struct LinkFrontier
+class LinkFrontierAtom
 {
-    //! Global index of embedded atom at Frontier
-    Index embedded;
-    //! Global index of MM atom at Frontier
-    Index mm;
+public:
+    LinkFrontierAtom(int embeddedAtomIndex, int mmAtomIndex);
+
+    //! Get global index of embedded atom
+    int getEmbeddedIndex() const;
+    //! Get global index of MM atom
+    int getMMIndex() const;
+
+    //! Set input indices of embedded and MM atoms in the index space of the embedded system
+    void setInputIndices(int inputIndexEmb, int inputIndexMM);
+    //! Get input index of embedded atom in the index space of the embedded system
+    int getInputIndexEmb() const;
+    //! Get input index of MM atom in the index space of the embedded system
+    int getInputIndexMM() const;
+
+    //! Set positions of embedded and MM atoms and calculate position of link atom
+    void setPositions(const RVec& posEmb, const RVec& posMM);
+    //! Get position of link atom
+    RVec getLinkPosition() const;
+
+    //! Redistribute force on link atom to embedded and MM atoms
+    std::tuple<RVec, RVec> spreadForce(const RVec& fl, const t_pbc& pbc) const;
+
+    real linkDistance() const;
+    void setLinkDistance(const real& linkDistance);
+
+    int  linkAtomNumber() const;
+    void setLinkAtomNumber(const int& linkAtomNumber);
+
+private:
+    //! Global index of embedded atom
+    int embeddedIndex_;
+    //! Global index of MM atom
+    int mmIndex_;
+
+    /*! Indices of embedded and MM atoms in the index space of the embedded system
+     *
+     * Needed for redistribution of forces on the link atom back to the embedded and MM atoms
+     */
+    int inputIndexEmb_;
+    int inputIndexMM_;
+
+    //! Position of embedded atom
+    RVec posEmb_;
+    //! Position of MM atom
+    RVec posMM_;
+    //! Position of link atom
+    RVec posLink_;
+
+    //! Distance between embedded atom and link atom (default 0.1 nm)
+    real linkDistance_ = 0.1;
+    //! atomic number of link atom type (default hydrogen)
+    int linkAtomNumber_ = 1;
 };
 
 /*! \brief Splits embedded atom containing molecules out of MM blocks in topology
@@ -179,10 +233,10 @@ void checkConstrainedBonds(gmx_mtop_t*              mtop,
  * \param[in] logger MDLogger for logging info about modifications
  * \returns vector of link atom pairs
  */
-std::vector<LinkFrontier> buildLinkFrontier(gmx_mtop_t*              mtop,
-                                            const std::set<int>&     embeddedIndices,
-                                            const std::vector<bool>& isEmbeddedBlock,
-                                            const MDLogger&          logger);
+std::vector<LinkFrontierAtom> buildLinkFrontier(gmx_mtop_t*              mtop,
+                                                const std::set<int>&     embeddedIndices,
+                                                const std::vector<bool>& isEmbeddedBlock,
+                                                const MDLogger&          logger);
 
 
 } // namespace gmx
