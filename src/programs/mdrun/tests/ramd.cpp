@@ -91,8 +91,9 @@ const std::string water4_mdp_base = R"(
     ramd-active              = yes
     ramd-seed                = 42
     ramd-eval-freq           = 10
-    ramd-ngroups             = 0
+    ramd-groups-file         = ramd_groups.in
 )";
+    // ramd-ngroups             = 0
     // ramd-group1-receptor     = 1SOL
     // ramd-group1-ligand       = 2SOL
     // ramd-group1-force        = 100
@@ -120,6 +121,7 @@ TEST_F(RAMDTest, RAMD_connected_ligands)
     CommandLine caller;
     caller.addOption("-ramd");
     caller.addOption("-reprod");
+    caller.addOption("-v");
 
     EXPECT_EQ(0, runner_.callGrompp());
     ASSERT_EQ(2, runner_.callMdrun(caller));

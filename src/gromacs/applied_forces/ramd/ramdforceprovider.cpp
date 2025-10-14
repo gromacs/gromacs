@@ -62,6 +62,10 @@ void RAMDForceProvider::calculateForces(const ForceProviderInput& fInput,
         for (int g = 0; g < parameters_.ngroups_; ++g)
         {
             com_rec_prev_[g] = calc_com(fInput.x_, parameters_.groups_[g].receptor_indices_);
+            GMX_LOG(logger_.warning).appendText("==== RAMD ==== com_rec_prev_" + std::to_string(g) + " = [" +
+                                               std::to_string(com_rec_prev_[g][0]) + ", " +
+                                               std::to_string(com_rec_prev_[g][1]) + ", " +
+                                               std::to_string(com_rec_prev_[g][2]) + "]");
 
             // com_rec_prev[g] = pull->group[g * 2 + 1].x;
             // com_lig_prev[g] = pull->group[g * 2 + 2].x;
@@ -79,7 +83,7 @@ void RAMDForceProvider::calculateForces(const ForceProviderInput& fInput,
     }
     else if (fInput.step_ % parameters_.eval_freq_ == 0)
     {
-        GMX_LOG(logger_.debug).appendText("==== RAMD ==== evaluation ").appendText(std::to_string(fInput.step_));
+        GMX_LOG(logger_.info).appendText("==== RAMD ==== evaluation ").appendText(std::to_string(fInput.step_));
     //     for (int g = 0; g < params.ngroup; ++g)
     //     {
     //         DVec com_rec_curr = pull->group[g * 2 + 1].x;

@@ -59,11 +59,13 @@ struct RAMDParameters
     //! Number of MD steps in one RAMD step
     int eval_freq_ = 50;
 
+    std::string groupsFile_ = "";
+
     //! Number of RAMD groups
     int ngroups_ = 0;
 
     //! List of RAMD receptor-ligand pairs
-    std::vector<RAMDGroup> groups_;
+    std::vector<RAMDGroup> groups_ = {};
 
     //! Every 'force_out_freq' steps detailed output of forces will be written
     int force_out_freq_ = 100;

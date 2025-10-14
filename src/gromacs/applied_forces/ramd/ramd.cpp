@@ -13,6 +13,7 @@
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/logger.h"
+#include "gromacs/utility/keyvaluetreebuilder.h"
 
 #include "ramd.h"
 #include "ramdoptions.h"
@@ -166,6 +167,11 @@ public:
         {
             return;
         }
+
+        // Writing internal parameters during pre-processing
+        const auto writeInternalParametersFunction = [this](KeyValueTreeObjectBuilder treeBuilder)
+        { ramdOptions_.writeInternalParametersToKvt(treeBuilder); };
+        notifiers->preProcessingNotifier_.subscribe(writeInternalParametersFunction);
 
         // Set Logger during pre-processing
         const auto setLoggerFunction = [this](const MDLogger& logger)

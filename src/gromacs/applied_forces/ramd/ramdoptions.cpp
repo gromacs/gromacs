@@ -34,29 +34,25 @@ std::string moduleName()
 const std::string c_activeTag = "active";
 const std::string c_seedTag = "seed";
 const std::string c_evalFreqTag = "eval-freq";
-const std::string c_ngroupsTag = "ngroups";
+const std::string c_groupsFileTag = "groups-file";
 
-const std::string c_groupReceptorTag = "group1-receptor";
-const std::string c_groupLigandTag = "ligand";
-const std::string c_groupForceTag = "force";
-const std::string c_groupMaxDistTag = "max-dist";
-const std::string c_groupRMinDistTag = "r-min-dist";
+
+// const std::string c_ngroupsTag = "ngroups";
+// const std::string c_groupReceptorTag = "group1-receptor";
+// const std::string c_groupLigandTag = "group1-ligand";
+// const std::string c_groupForceTag = "group1-force";
+// const std::string c_groupMaxDistTag = "group1-max-dist";
+// const std::string c_groupRMinDistTag = "group1-r-min-dist";
 
 } // namespace
 
 void RAMDOptions::initMdpTransform(IKeyValueTreeTransformRules* rules)
 {
-    // const auto& stringIdentityTransform = [](std::string s) { return s; };
-    addMdpTransformFromString<bool>(
-        rules, &fromStdString<bool>, RAMDModuleInfo::sc_name, c_activeTag);
-    addMdpTransformFromString<std::int64_t>(
-        rules, &fromStdString<std::int64_t>, RAMDModuleInfo::sc_name, c_seedTag);
-    addMdpTransformFromString<int>(
-        rules, &fromStdString<int>, RAMDModuleInfo::sc_name, c_evalFreqTag);
-    addMdpTransformFromString<int>(
-        rules, &fromStdString<int>, RAMDModuleInfo::sc_name, c_ngroupsTag);
-    // addMdpTransformFromString<std::string>(
-    //     rules, stringIdentityTransform, RAMDModuleInfo::sc_name, c_groupReceptorTag);
+    const auto& stringIdentityTransform = [](std::string s) { return s; };
+    addMdpTransformFromString<bool>(rules, &fromStdString<bool>, RAMDModuleInfo::sc_name, c_activeTag);
+    addMdpTransformFromString<std::int64_t>(rules, &fromStdString<std::int64_t>, RAMDModuleInfo::sc_name, c_seedTag);
+    addMdpTransformFromString<int>(rules, &fromStdString<int>, RAMDModuleInfo::sc_name, c_evalFreqTag);
+    addMdpTransformFromString<std::string>(rules, stringIdentityTransform, RAMDModuleInfo::sc_name, c_groupsFileTag);
 }
 
 void RAMDOptions::buildMdpOutput(KeyValueTreeObjectBuilder* builder) const
@@ -67,17 +63,9 @@ void RAMDOptions::buildMdpOutput(KeyValueTreeObjectBuilder* builder) const
 
     if (parameters_.active_)
     {
-        // Seed
-        addMdpOutputComment(builder, RAMDModuleInfo::sc_name, c_seedTag, "; Seed");
         addMdpOutputValue(builder, RAMDModuleInfo::sc_name, c_seedTag, parameters_.seed_);
         addMdpOutputValue(builder, RAMDModuleInfo::sc_name, c_evalFreqTag, parameters_.eval_freq_);
-        addMdpOutputValue(builder, RAMDModuleInfo::sc_name, c_ngroupsTag, parameters_.ngroups_);
-
-        // for (int i = 1; i <= parameters_.ngroups_; ++i)
-        // {
-        //     addMdpOutputComment(builder, RAMDModuleInfo::sc_name, "group" + std::to_string(i) + "-receptor", "; Group " + std::to_string(i) + " receptor");
-        //     addMdpOutputValue(builder, RAMDModuleInfo::sc_name, "group" + std::to_string(i) + "-receptor", parameters_.groups_[i - 1].receptor_group_);
-        // }
+        addMdpOutputValue(builder, RAMDModuleInfo::sc_name, c_groupsFileTag, parameters_.groupsFile_);
     }
 }
 
@@ -87,8 +75,7 @@ void RAMDOptions::initMdpOptions(IOptionsContainerWithSections* options)
     section.addOption(BooleanOption(c_activeTag.c_str()).store(&parameters_.active_));
     section.addOption(Int64Option(c_seedTag.c_str()).store(&parameters_.seed_));
     section.addOption(IntegerOption(c_evalFreqTag.c_str()).store(&parameters_.eval_freq_));
-    section.addOption(IntegerOption(c_ngroupsTag.c_str()).store(&parameters_.ngroups_));
-    // section.addOption(StringOption(c_groupReceptorTag.c_str()).store(&parameters_.groups_[0].receptor_group_));
+    section.addOption(StringOption(c_groupsFileTag.c_str()).store(&parameters_.groupsFile_));
 }
 
 bool RAMDOptions::active() const
@@ -116,6 +103,47 @@ const MDLogger& RAMDOptions::logger() const
 {
     GMX_RELEASE_ASSERT(logger_, "Logger not set for RAMDOptions.");
     return *logger_;
+}
+
+void RAMDOptions::writeInternalParametersToKvt(KeyValueTreeObjectBuilder treeBuilder)
+{
+
+    // // Copy the content of the colvars input file into a string for latter save in KVT
+    // if (!parameters_.groupsFile_.empty())
+    // {
+    //     colvarsConfigString_ = TextReader::readFileToString(parameters_.groupsFile_);
+    // }
+
+    // // Write colvars input file as a string
+    // treeBuilder.addValue<std::string>(moduleName() + "-" + c_configStringTag_, colvarsConfigString_);
+
+
+    // ColvarsPreProcessor colvarsPreProcess(
+    //         colvarsConfigString_, gmxAtoms_, pbc_, logger(), ensembleTemperature_, colvarsSeed_, box_, x_);
+    // //! Vector with colvars atoms coordinates
+    // colvarsAtomCoords_ = colvarsPreProcess.getColvarsCoords();
+
+    // // Save other colvars input files into the KVT
+    // if (!colvarsPreProcess.inputStreamsToKVT(treeBuilder, moduleName() + "-" + c_inputStreamsTag_))
+    // {
+    //     GMX_THROW(InternalError("Cannot save colvars input files into the tpr."));
+    // }
+
+    // // Write colvars atoms coords
+    // auto DoubleArrayAdder = treeBuilder.addUniformArray<double>(moduleName() + "-" + c_startingCoordsTag_);
+    // for (const auto& indexValue : colvarsAtomCoords_)
+    // {
+    //     for (int j = 0; j < DIM; j++)
+    //     {
+    //         DoubleArrayAdder.addValue(static_cast<double>(indexValue[j]));
+    //     }
+    // }
+
+    // // Write ensemble temperature
+    // treeBuilder.addValue<real>(moduleName() + "-" + c_ensTempTag_, ensembleTemperature_);
+
+    // // Write seed
+    // treeBuilder.addValue<int>(moduleName() + "-" + c_colvarsSeedTag_, colvarsSeed_);
 }
 
 void RAMDOptions::setInputGroupIndices(const IndexGroupsAndNames& indexGroupsAndNames)

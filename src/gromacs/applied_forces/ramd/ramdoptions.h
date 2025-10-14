@@ -57,6 +57,9 @@ public:
     //! Get the logger instance
     const MDLogger& logger() const;
 
+    //! Store the parameters that are not mdp options in the tpr file
+    void writeInternalParametersToKvt(KeyValueTreeObjectBuilder treeBuilder);
+
     //! Set atom groups
     void setInputGroupIndices(const IndexGroupsAndNames&);
 
