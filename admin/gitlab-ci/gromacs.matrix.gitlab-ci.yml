@@ -177,6 +177,16 @@
   artifacts:
     paths:
       - regressiontests/gmxtest.xml
+      - regressiontests/*/grompp.warn
+      - regressiontests/*/grompp.out
+      - regressiontests/*/grompp.err
+      - regressiontests/*/mdrun.out
+      - regressiontests/*/mdrun.err
+      - regressiontests/*/check*.out
+      - regressiontests/*/check*.err
+      - regressiontests/*/make_edi.out
+      - regressiontests/*/make_edi.err
+
     when: always
     expire_in: 1 week
 
