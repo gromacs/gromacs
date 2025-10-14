@@ -156,8 +156,8 @@ TEST_F(ConvertTprTest, UntilRuntimeExtensionTest)
     {
         gmx_mtop_t top_after;
         t_inputrec ir_after;
-        t_state    state;
-        read_tpx_state(outTprFilename, &ir_after, &state, &top_after);
+        t_state    state_after;
+        read_tpx_state(outTprFilename, &ir_after, &state_after, &top_after);
 
         EXPECT_EQ(ir_after.nsteps, originalNStep + gmx::roundToInt64(untilPs / ir.delta_t));
     }

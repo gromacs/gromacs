@@ -87,15 +87,15 @@ SettleTestData::SettleTestData(int numSettles) :
     // "update," and where there is definitely constraining
     // work to do.
     const real deltas[] = { 0.01, -0.01, +0.02, -0.02 };
-    int        i        = 0;
+    int        idx      = 0;
     for (auto& xPrime : xPrime_)
     {
-        xPrime[XX] += deltas[i % 4];
-        ++i;
-        xPrime[YY] += deltas[i % 4];
-        ++i;
-        xPrime[ZZ] += deltas[i % 4];
-        ++i;
+        xPrime[XX] += deltas[idx % 4];
+        ++idx;
+        xPrime[YY] += deltas[idx % 4];
+        ++idx;
+        xPrime[ZZ] += deltas[idx % 4];
+        ++idx;
     }
     std::fill(v_.begin(), v_.end(), RVec{ 0.0, 0.0, 0.0 });
 

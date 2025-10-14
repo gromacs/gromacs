@@ -172,7 +172,7 @@ TEST_F(TextWriterTest, ScopedIndenterWritesIndentedLines)
         ScopedIndenter indenter = writer_.addScopedIndentation(2);
         writer_.writeLine("Indented text again");
         {
-            ScopedIndenter indenter = writer_.addScopedIndentation(2);
+            ScopedIndenter furtherIndenter = writer_.addScopedIndentation(2);
             writer_.writeLine("Further indented text again");
         }
         writer_.writeLine("Indented text again");

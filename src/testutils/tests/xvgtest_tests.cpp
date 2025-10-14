@@ -97,13 +97,13 @@ TEST(XvgTests, CheckMissing)
         checkXvgFile(&sis, &checker, XvgMatchSettings());
     }
     {
-        const char* const input[] = { "0     2905.86    -410.199",
-                                      "0.2     6656.67    -430.437",
-                                      "0.4     5262.44    -409.399" };
+        const char* const missingInput[] = { "0     2905.86    -410.199",
+                                             "0.2     6656.67    -430.437",
+                                             "0.4     5262.44    -409.399" };
         // Now check with missing data
         TestReferenceData      data(ReferenceDataMode::Compare);
         TestReferenceChecker   checker(data.rootChecker());
-        gmx::StringInputStream sis(input);
+        gmx::StringInputStream sis(missingInput);
         EXPECT_NONFATAL_FAILURE(checkXvgFile(&sis, &checker, XvgMatchSettings()),
                                 "not used in test");
     }
@@ -120,14 +120,16 @@ TEST(XvgTests, CheckExtra)
         checkXvgFile(&sis, &checker, XvgMatchSettings());
     }
     {
-        const char* const input[] = { "0     2905.86    -410.199",   "0.2     6656.67    -430.437",
-                                      "0.4     5262.44    -409.399", "0.6     5994.69    -405.763",
-                                      "0.8     5941.37    -408.337", "1     5869.87    -411.124",
-                                      "1.2     5889.87    -413.124" };
+        const char* const extraInput[] = {
+            "0     2905.86    -410.199",   "0.2     6656.67    -430.437",
+            "0.4     5262.44    -409.399", "0.6     5994.69    -405.763",
+            "0.8     5941.37    -408.337", "1     5869.87    -411.124",
+            "1.2     5889.87    -413.124"
+        };
         // Now check with missing data
         TestReferenceData      data(ReferenceDataMode::Compare);
         TestReferenceChecker   checker(data.rootChecker());
-        gmx::StringInputStream sis(input);
+        gmx::StringInputStream sis(extraInput);
         EXPECT_NONFATAL_FAILURE(checkXvgFile(&sis, &checker, XvgMatchSettings()), "Row6");
     }
 }
@@ -143,13 +145,15 @@ TEST(XvgTests, ReadIncorrect)
         checkXvgFile(&sis, &checker, XvgMatchSettings());
     }
     {
-        const char* const input[] = { "0     2905.86    -410.199",   "0.2     6656.67    -430.437",
-                                      "0.4     5262.44    -409.399", "0.6     5994.69    -405.763",
-                                      "0.8     5941.37    -408.337", "1     5869.87    -421.124" };
+        const char* const incorrectInput[] = {
+            "0     2905.86    -410.199",   "0.2     6656.67    -430.437",
+            "0.4     5262.44    -409.399", "0.6     5994.69    -405.763",
+            "0.8     5941.37    -408.337", "1     5869.87    -421.124"
+        };
         // Now check with incorrect data
         TestReferenceData      data(ReferenceDataMode::Compare);
         TestReferenceChecker   checker(data.rootChecker());
-        gmx::StringInputStream sis(input);
+        gmx::StringInputStream sis(incorrectInput);
         EXPECT_NONFATAL_FAILURE(checkXvgFile(&sis, &checker, XvgMatchSettings()), "-411");
     }
 }

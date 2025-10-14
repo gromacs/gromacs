@@ -111,11 +111,11 @@ TEST(ForceBuffers, CopyWorks)
 
     forceBuffers.resize(2);
     auto  force = forceBuffers.view().force();
-    Index i     = 0;
+    Index idx   = 0;
     for (RVec& v : force)
     {
-        v = c_forces[i];
-        i++;
+        v = c_forces[idx];
+        idx++;
     }
 
     ForceBuffers forceBuffersCopy;
