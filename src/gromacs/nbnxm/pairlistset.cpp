@@ -182,7 +182,8 @@ void appendPlainPairlistGpu(PlainPairlist*          plainPairlist,
 
             for (int jInPack = 0; jInPack < sc_gpuJgroupSize(sc_layoutType); jInPack++)
             {
-                GMX_ASSERT(jPack.imei[0].imask == jPack.imei[1].imask,
+                GMX_ASSERT(sc_gpuClusterPairSplit(sc_layoutType) == 1
+                                   || jPack.imei[0].imask == jPack.imei[1].imask,
                            "This code assumed that the pairlist is not pruned and contains whole "
                            "cluster pairs");
 
