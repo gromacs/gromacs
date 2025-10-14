@@ -16,11 +16,13 @@ namespace gmx
 
 RAMDForceProvider::RAMDForceProvider(const RAMDParameters& parameters,
                                      const std::vector<std::unique_ptr<LocalAtomSet>>& localAtoms,
+                                     const gmx_mtop_t& topology,
                                      PbcType pbcType,
                                      const MDLogger& logger,
                                      RAMDOutputProvider& ramdOutputProvider) :
     parameters_(parameters),
     localAtoms_(localAtoms),
+    topology_(topology),
     pbcType_(pbcType),
     logger_(logger),
     ramdOutputProvider_(ramdOutputProvider),
@@ -59,6 +61,8 @@ void RAMDForceProvider::calculateForces(const ForceProviderInput& fInput,
     {
         for (int g = 0; g < parameters_.ngroups_; ++g)
         {
+            com_rec_prev_[g] = calc_com(fInput.x_, parameters_.groups_[g].receptor_indices_);
+
             // com_rec_prev[g] = pull->group[g * 2 + 1].x;
             // com_lig_prev[g] = pull->group[g * 2 + 2].x;
             com_rec_prev_[g] = DVec(0.0, 0.0, 0.0);

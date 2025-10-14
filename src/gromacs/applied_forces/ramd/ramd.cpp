@@ -88,6 +88,23 @@ public:
         return localAtomSets_;
     }
 
+    /*! \brief Set the topology for RAMD during mdrun
+     * \param[in] top The topology of the system
+     */
+    void setTopology(const gmx_mtop_t& top) { top_ = &top; }
+
+    /*! \brief Get the topology of the system
+     * \throws InternalError if topology is not set
+     */
+    const gmx_mtop_t& topology() const
+    {
+        if (top_ == nullptr)
+        {
+            GMX_THROW(InternalError("Topology not set for RAMD."));
+        }
+        return *top_;
+    }
+
 private:
     //! The type of periodic boundary conditions in the simulation
     std::unique_ptr<PbcType> pbcType_;
@@ -101,6 +118,9 @@ private:
 
     //! The local atom sets to act on
     std::vector<std::unique_ptr<LocalAtomSet>> localAtomSets_;
+
+    //! The topology of the system
+    const gmx_mtop_t* top_ = nullptr;
 
     GMX_DISALLOW_COPY_AND_ASSIGN(RAMDSimulationParameterSetup);
 };
@@ -130,6 +150,7 @@ public:
             forceProvider_ = std::make_unique<RAMDForceProvider>(
                 parameters,
                 ramdSimulationParameters_.localAtomSets(),
+                ramdSimulationParameters_.topology(),
                 ramdSimulationParameters_.periodicBoundaryConditionType(),
                 ramdSimulationParameters_.logger(),
                 ramdOutputProvider_
@@ -174,7 +195,12 @@ public:
             }
         };
         notifiers->simulationSetupNotifier_.subscribe(setLocalAtomSetFunction);
-        
+
+        // Reading topology during simulation setup
+        const auto setTopologyFunction = [this](const gmx_mtop_t& top)
+        { this->ramdSimulationParameters_.setTopology(top); };
+        notifiers->simulationSetupNotifier_.subscribe(setTopologyFunction);
+
         // Reading PBC parameters during simulation setup
         const auto setPeriodicBoundaryContionsFunction = [this](const PbcType& pbc)
         { this->ramdSimulationParameters_.setPeriodicBoundaryConditionType(pbc); };

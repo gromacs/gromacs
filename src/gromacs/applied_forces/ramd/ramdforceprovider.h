@@ -14,6 +14,7 @@
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/mdtypes/iforceprovider.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/logger.h"
@@ -33,9 +34,10 @@ class RAMDForceProvider final : public IForceProvider
 public:
     RAMDForceProvider(const RAMDParameters& parameters,
                       const std::vector<std::unique_ptr<LocalAtomSet>>& localAtoms,
-                      PbcType               pbcType,
-                      const MDLogger&       logger,
-                      RAMDOutputProvider&   ramdOutputProvider);
+                      const gmx_mtop_t& topology,
+                      PbcType pbcType,
+                      const MDLogger& logger,
+                      RAMDOutputProvider& ramdOutputProvider);
 
     //! Destruct force provider for RAMD
     ~RAMDForceProvider();
@@ -48,10 +50,35 @@ public:
 
 private:
 
+    DVec calc_com(ArrayRef<const RVec> x, const std::vector<Index>& indices)
+    {
+        DVec com = DVec(0.0, 0.0, 0.0);
+        real total_mass = 0.0;
+        int molb = 0;
+        for (auto idx : indices)
+        {
+            const real mass = mtopGetAtomMass(topology_, idx, &molb);
+            for (int j = 0; j < DIM; ++j)
+            {
+                com[j] += mass * x[idx][j];
+            }
+            total_mass += mass;
+        }
+        if (total_mass > 0.0)
+        {
+            com /= total_mass;
+        }
+        return com;
+    }
+
+    //! The parameters for RAMD
     const RAMDParameters& parameters_;
 
     //! Reference to local atom sets
     const std::vector<std::unique_ptr<LocalAtomSet>>& localAtoms_;
+
+    //! Reference to topology
+    const gmx_mtop_t& topology_;
 
     const PbcType         pbcType_;
     const MDLogger&       logger_;
@@ -69,10 +96,10 @@ private:
     //! COM of ligand of last RAMD evaluation step
     std::vector<DVec> com_lig_prev_;
 
-    /// Has the ligand left his binding site?
+    //! Has the ligand left his binding site?
     std::vector<int> ligand_exited_;
 
-    /// Control trajectory output
+    //! Control trajectory output
     gmx_bool write_trajectory_;
 
 };

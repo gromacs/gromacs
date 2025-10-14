@@ -74,7 +74,9 @@
         "span": "cpp",
         "stop_token": "cpp",
         "thread": "cpp",
-        "__config": "cpp"
+        "__config": "cpp",
+        "queue": "cpp",
+        "stack": "cpp"
     },
     "cSpell.words": [
         "Bernd",
