@@ -60,6 +60,8 @@ class MpiComm;
 class INNPotModel
 {
 public:
+    virtual ~INNPotModel() = default;
+
     /*! \brief Evaluate NN model.
      *
      * Includes the preparation of inputs, calling inference of the model, and retrieval of outputs.

@@ -165,8 +165,6 @@ TorchModel::TorchModel(const std::string& fileName, const MDLogger& logger) :
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
 
-TorchModel::~TorchModel() {}
-
 void TorchModel::prepareAtomPositions(ArrayRef<RVec>& positions)
 {
     int N = positions.size();

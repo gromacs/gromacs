@@ -81,8 +81,6 @@ public:
      */
     TorchModel(const std::string& filename, const MDLogger& logger);
 
-    ~TorchModel();
-
     /*! Call inference on NN model and retrieve outputs
      * \param[in] indexLookup lookup table for local atom indices
      * \param[out] enerd energy data struct
