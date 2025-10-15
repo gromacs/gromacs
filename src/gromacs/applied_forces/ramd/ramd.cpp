@@ -191,6 +191,11 @@ public:
             return;
         }
 
+        // Reading internal parameters during simulation setup
+        const auto readInternalParametersFunction = [this](const KeyValueTreeObject& tree)
+        { ramdOptions_.readInternalParametersFromKvt(tree); };
+        notifiers->simulationSetupNotifier_.subscribe(readInternalParametersFunction);
+
         // Constructing local atom sets during simulation setup
         const auto setLocalAtomSetFunction = [this](LocalAtomSetManager* localAtomSetManager)
         {

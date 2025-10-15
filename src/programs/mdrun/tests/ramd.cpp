@@ -71,57 +71,38 @@ RAMDTestFixture::~RAMDTestFixture() {}
 typedef gmx::test::RAMDTestFixture RAMDTest;
 
 const std::string water4_mdp_base = R"(
-    integrator               = md
-    dt                       = 0.001
-    nsteps                   = 100000
-    nstlog                   = 10
-    rlist                    = 1.0
-    coulombtype              = Cut-off
-    rcoulomb-switch          = 0
-    rcoulomb                 = 1.0
-    epsilon-r                = 1
-    epsilon-rf               = 1
-    vdw-type                 = Cut-off
-    rvdw-switch              = 0
-    rvdw                     = 1.0
-    DispCorr                 = no
-    Tcoupl                   = no
-    Pcoupl                   = no
-
-    ramd-active              = yes
-    ramd-seed                = 42
-    ramd-eval-freq           = 10
-    ramd-groups-file         = ramd_groups.in
+    integrator      = md
+    dt              = 0.001
+    nsteps          = 100000
+    nstlog          = 10
+    rlist           = 1.0
+    coulombtype     = Cut-off
+    rcoulomb-switch = 0
+    rcoulomb        = 1.0
+    epsilon-r       = 1
+    epsilon-rf      = 1
+    vdw-type        = Cut-off
+    rvdw-switch     = 0
+    rvdw            = 1.0
+    DispCorr        = no
+    Tcoupl          = no
+    Pcoupl          = no
 )";
-    // ramd-ngroups             = 0
-    // ramd-group1-receptor     = 1SOL
-    // ramd-group1-ligand       = 2SOL
-    // ramd-group1-force        = 100
-
-    // ramd-eval-freq           = 10
-    // ramd-force-out-freq      = 10
-    // ramd-old-angle-dist      = no
-    // ramd-ngroups             = 2
-    // ramd-group1-receptor     = 1SOL
-    // ramd-group1-ligand       = 2SOL
-    // ramd-group1-force        = 100
-    // ramd-group1-max-dist     = 1.0
-    // ramd-group1-r-min-dist   = 0.0025
-    // ramd-group2-receptor     = 1SOL
-    // ramd-group2-ligand       = 3SOL
-    // ramd-group2-force        = 100
-    // ramd-group2-max-dist     = 1.0
-    // ramd-group2-r-min-dist   = 0.0025
 
 TEST_F(RAMDTest, RAMD_connected_ligands)
 {
+    const std::string ramdValues = formatString(
+        "ramd-active      = yes\n"
+        "ramd-seed        = 42\n"
+        "ramd-eval-freq   = 10\n"
+        "ramd-groups-file = %s\n",
+        TestFileManager::getInputFilePath("4water_ramd_groups.in").string().c_str());
     runner_.useTopGroAndNdxFromDatabase("4water");
-    runner_.useStringAsMdpFile(water4_mdp_base);
+    runner_.useStringAsMdpFile(water4_mdp_base + ramdValues);
 
     CommandLine caller;
     caller.addOption("-ramd");
     caller.addOption("-reprod");
-    caller.addOption("-v");
 
     EXPECT_EQ(0, runner_.callGrompp());
     ASSERT_EQ(2, runner_.callMdrun(caller));

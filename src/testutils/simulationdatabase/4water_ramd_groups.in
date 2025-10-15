@@ -1,0 +1,5 @@
+receptor     = 1SOL
+ligand       = 2SOL
+force        = 100
+max-dist     = 1.0
+r-min-dist   = 0.0025

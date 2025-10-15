@@ -60,6 +60,9 @@ public:
     //! Store the parameters that are not mdp options in the tpr file
     void writeInternalParametersToKvt(KeyValueTreeObjectBuilder treeBuilder);
 
+    //! Set the internal parameters that are stored in the tpr file
+    void readInternalParametersFromKvt(const KeyValueTreeObject& tree);
+
     //! Set atom groups
     void setInputGroupIndices(const IndexGroupsAndNames&);
 
@@ -74,6 +77,12 @@ private:
      * to a const MDLogger before the notification always provides the
      * actual reference. */
     const MDLogger* logger_ = nullptr;
+
+    //! RAMD groups input file
+    std::string groupsFile_;
+
+    //! Content of the RAMD groups file
+    std::string groupsString_;
 
 };
 

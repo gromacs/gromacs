@@ -59,8 +59,6 @@ struct RAMDParameters
     //! Number of MD steps in one RAMD step
     int eval_freq_ = 50;
 
-    std::string groupsFile_ = "";
-
     //! Number of RAMD groups
     int ngroups_ = 0;
 

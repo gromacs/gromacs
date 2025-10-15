@@ -18,6 +18,7 @@
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/textreader.h"
 
 namespace gmx
 {
@@ -35,6 +36,7 @@ const std::string c_activeTag = "active";
 const std::string c_seedTag = "seed";
 const std::string c_evalFreqTag = "eval-freq";
 const std::string c_groupsFileTag = "groups-file";
+const std::string c_groupsStringTag = "groups-string";
 
 
 // const std::string c_ngroupsTag = "ngroups";
@@ -65,7 +67,7 @@ void RAMDOptions::buildMdpOutput(KeyValueTreeObjectBuilder* builder) const
     {
         addMdpOutputValue(builder, RAMDModuleInfo::sc_name, c_seedTag, parameters_.seed_);
         addMdpOutputValue(builder, RAMDModuleInfo::sc_name, c_evalFreqTag, parameters_.eval_freq_);
-        addMdpOutputValue(builder, RAMDModuleInfo::sc_name, c_groupsFileTag, parameters_.groupsFile_);
+        addMdpOutputValue(builder, RAMDModuleInfo::sc_name, c_groupsFileTag, groupsFile_);
     }
 }
 
@@ -75,7 +77,7 @@ void RAMDOptions::initMdpOptions(IOptionsContainerWithSections* options)
     section.addOption(BooleanOption(c_activeTag.c_str()).store(&parameters_.active_));
     section.addOption(Int64Option(c_seedTag.c_str()).store(&parameters_.seed_));
     section.addOption(IntegerOption(c_evalFreqTag.c_str()).store(&parameters_.eval_freq_));
-    section.addOption(StringOption(c_groupsFileTag.c_str()).store(&parameters_.groupsFile_));
+    section.addOption(StringOption(c_groupsFileTag.c_str()).store(&groupsFile_));
 }
 
 bool RAMDOptions::active() const
@@ -107,43 +109,33 @@ const MDLogger& RAMDOptions::logger() const
 
 void RAMDOptions::writeInternalParametersToKvt(KeyValueTreeObjectBuilder treeBuilder)
 {
+    // Copy the content of the colvars input file into a string for latter save in KVT
+    if (!groupsFile_.empty())
+    {
+        groupsString_ = TextReader::readFileToString(groupsFile_);
+    }
 
-    // // Copy the content of the colvars input file into a string for latter save in KVT
-    // if (!parameters_.groupsFile_.empty())
-    // {
-    //     colvarsConfigString_ = TextReader::readFileToString(parameters_.groupsFile_);
-    // }
+    // Write groups input file as a string
+    treeBuilder.addValue<std::string>(moduleName() + "-" + c_groupsStringTag, groupsString_);
+}
 
-    // // Write colvars input file as a string
-    // treeBuilder.addValue<std::string>(moduleName() + "-" + c_configStringTag_, colvarsConfigString_);
+void RAMDOptions::readInternalParametersFromKvt(const KeyValueTreeObject& tree)
+{
+    // Check if active
+    if (!parameters_.active_)
+    {
+        return;
+    }
 
+    if (!tree.keyExists(moduleName() + "-" + c_groupsStringTag))
+    {
+        GMX_THROW(InconsistentInputError(
+                "Cannot find ramd-groups-string required for colvars simulation."));
+    }
+    groupsString_ = tree[moduleName() + "-" + c_groupsStringTag].cast<std::string>();
 
-    // ColvarsPreProcessor colvarsPreProcess(
-    //         colvarsConfigString_, gmxAtoms_, pbc_, logger(), ensembleTemperature_, colvarsSeed_, box_, x_);
-    // //! Vector with colvars atoms coordinates
-    // colvarsAtomCoords_ = colvarsPreProcess.getColvarsCoords();
-
-    // // Save other colvars input files into the KVT
-    // if (!colvarsPreProcess.inputStreamsToKVT(treeBuilder, moduleName() + "-" + c_inputStreamsTag_))
-    // {
-    //     GMX_THROW(InternalError("Cannot save colvars input files into the tpr."));
-    // }
-
-    // // Write colvars atoms coords
-    // auto DoubleArrayAdder = treeBuilder.addUniformArray<double>(moduleName() + "-" + c_startingCoordsTag_);
-    // for (const auto& indexValue : colvarsAtomCoords_)
-    // {
-    //     for (int j = 0; j < DIM; j++)
-    //     {
-    //         DoubleArrayAdder.addValue(static_cast<double>(indexValue[j]));
-    //     }
-    // }
-
-    // // Write ensemble temperature
-    // treeBuilder.addValue<real>(moduleName() + "-" + c_ensTempTag_, ensembleTemperature_);
-
-    // // Write seed
-    // treeBuilder.addValue<int>(moduleName() + "-" + c_colvarsSeedTag_, colvarsSeed_);
+    parameters_.ngroups_ = 1;
+    parameters_.groups_.resize(parameters_.ngroups_);
 }
 
 void RAMDOptions::setInputGroupIndices(const IndexGroupsAndNames& indexGroupsAndNames)
