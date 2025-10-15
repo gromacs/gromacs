@@ -64,5 +64,12 @@ if(GMX_NVSHMEM)
     foreach(_old_arch 35 37 50 52 53 60 61 62)
         list(REMOVE_ITEM GMX_CUDA_ARCHITECTURES "${_old_arch}" "${_old_arch}-real" "${_old_arch}-virtual")
     endforeach()
-    message(STATUS "Updated list of CUDA architectures: ${GMX_CUDA_ARCHITECTURES}")
+
+    set(_cuda_arch_message "${GMX_CUDA_ARCHITECTURES}")
+    string(SHA1 _cuda_arch_message_hash "${_cuda_arch_message}")
+    # Don't report the list of architectures if it's the same as reported before here or in the main CUDA module
+    if(NOT LAST_REPORTED_CUDA_ARCH_MESSAGE_HASH_NVSHMEM STREQUAL _cuda_arch_message_hash AND NOT LAST_REPORTED_CUDA_ARCH_MESSAGE_HASH_CUDA STREQUAL _cuda_arch_message_hash)
+        message(STATUS "Updated list of CUDA architectures: ${_cuda_arch_message}")
+        set(LAST_REPORTED_CUDA_ARCH_MESSAGE_HASH_NVSHMEM "${_cuda_arch_message_hash}" CACHE INTERNAL "The hash of the last reported CUDA architecture list, after NVSHMEM detection")
+    endif()
 endif()
