@@ -101,24 +101,46 @@ public:
      *   - gmx_mtop_t: Provides the topology, could be need for setting up exclusions in the FMM direct interactions.
      *   - PbcType : Supplies periodic boundary condition type used during simulation.
      *   - MDLogger: Provides access to the simulation logger for diagnostic or status messages.
+     *   - MDModulesDirectProvider: Indicates if FMM handles short-range coulomb interactions.
      */
     void subscribeToSimulationSetupNotifications(MDModulesNotifiers* notifiers) override
     {
+        fmmNotifiedDirectProvider_ = false;
         if (fmmMdpOptions_.activeFmmBackend() == ActiveFmmBackend::Inactive)
         {
             return;
         }
 
         fmmForceProviderBuilder_.subscribeToSimulationSetupNotifications(notifiers);
+
+
+        FmmDirectProvider directProvider = fmmMdpOptions_.directProvider();
+        // Subscribe to coulomb short range handler notification to indicate if FMM handles short-range coulomb interactions.
+        const auto setCoulombDirectProviderFlag =
+                [directProvider, this](MDModulesDirectProvider* coulombDirectProvider)
+        {
+            coulombDirectProvider->isDirectProvider = (directProvider == FmmDirectProvider::Fmm);
+            fmmNotifiedDirectProvider_              = true;
+        };
+        notifiers->simulationSetupNotifier_.subscribe(setCoulombDirectProviderFlag);
     }
 
     void subscribeToSimulationRunNotifications(MDModulesNotifiers* /* notifiers */) override {}
 
     void initForceProviders(ForceProviders* forceProviders) override
     {
-        if (fmmMdpOptions_.activeFmmBackend() == ActiveFmmBackend::Inactive)
+
+        const ActiveFmmBackend fmmBackend = fmmMdpOptions_.activeFmmBackend();
+        if (fmmBackend == ActiveFmmBackend::Inactive)
         {
             return;
+        }
+
+        if (!fmmNotifiedDirectProvider_)
+        {
+            GMX_THROW(
+                    InternalError("FMM module must be notified about direct provider before force "
+                                  "provider initialization"));
         }
 
         fmmForceProviderBuilder_.setFmmOptions(fmmMdpOptions_.activeFmmOptions());
@@ -138,6 +160,7 @@ private:
     FmmMdpOptions                     fmmMdpOptions_;
     std::unique_ptr<FmmMdpValidator>  fmmMdpValidator_;
     FmmForceProviderBuilder           fmmForceProviderBuilder_;
+    bool                              fmmNotifiedDirectProvider_ = false;
 };
 
 } // namespace

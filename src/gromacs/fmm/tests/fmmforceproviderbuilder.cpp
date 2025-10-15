@@ -82,9 +82,10 @@ protected:
     MDModulesNotifiers         notifiers_;
 
     // default settings
-    MDLogger   logger_;
-    PbcType    pbcType_ = PbcType::Xyz;
-    gmx_mtop_t mtop_;
+    MDLogger                logger_;
+    PbcType                 pbcType_ = PbcType::Xyz;
+    gmx_mtop_t              mtop_;
+    MDModulesDirectProvider mdModuleCoulombDirectProvider;
 };
 
 TEST_F(FmmForceProviderBuilderTest, ThrowsIfBuilderNotReady)
@@ -117,6 +118,8 @@ TEST_F(FmmForceProviderBuilderTest, BuildsWithMinimalSetup)
     fmmModule_ = FmmModuleInfo::create();
     fillOptionsFromMdpValues(mdpOptionsTree, fmmModule_->mdpOptionProvider());
     notifyFmmModuleSimulationSetup();
+    mdModuleCoulombDirectProvider.isDirectProvider = true;
+    notifiers_.simulationSetupNotifier_.notify(&mdModuleCoulombDirectProvider);
 
     if (GMX_USE_EXT_FMM)
     {
@@ -129,6 +132,26 @@ TEST_F(FmmForceProviderBuilderTest, BuildsWithMinimalSetup)
         EXPECT_THROW(initializeForceProviders(), InternalError);
     }
 }
+
+TEST_F(FmmForceProviderBuilderTest, ThrowIfFmmNotNotifiedDirectProvider)
+{
+    KeyValueTreeBuilder mdpValueBuilder;
+    std::string         fmmActiveBackendKey;
+    fmmActiveBackendKey.append(FmmModuleInfo::sc_name);
+    fmmActiveBackendKey.append("-");
+    fmmActiveBackendKey.append(c_fmmActiveOptionName);
+    mdpValueBuilder.rootObject().addValue(fmmActiveBackendKey, fmmBackendName(ActiveFmmBackend::ExaFmm));
+    KeyValueTreeObject mdpOptionsTree = mdpValueBuilder.build();
+
+    fmmModule_ = FmmModuleInfo::create();
+    fillOptionsFromMdpValues(mdpOptionsTree, fmmModule_->mdpOptionProvider());
+    notifyFmmModuleSimulationSetup();
+
+    // Throws InternalError: either FMM module not notified about direct provider
+    // (when GMX_USE_EXT_FMM is ON) or from stub if built without external FMM
+    EXPECT_THROW(initializeForceProviders(), InternalError);
+}
+
 
 } // namespace test
 

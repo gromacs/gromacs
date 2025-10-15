@@ -184,6 +184,21 @@ struct MDModulesEnergyOutputToNNPotRequestChecker
     bool energyOutputToNNPot_ = false;
 };
 
+/*!
+ * \brief Indicates whether an MD module is a direct (short-range coulomb interactions) provider.
+ *
+ * std::optional lets the NB module know if a module provides
+ * direct interactions, or if no choice was made.
+ */
+struct MDModulesDirectProvider
+{
+    /*! \brief Whether an MD module is a direct provider
+     *
+     * If std::nullopt, no module reported a choice (defaults to NBNxM kernels) */
+    std::optional<bool> isDirectProvider = std::nullopt;
+};
+
+
 /*! \libinternal
  * \brief Collect errors for the energy calculation frequency.
  *
@@ -468,6 +483,9 @@ struct MDModulesNotifiers
      * \tparam PlainPairlistRanges* Allows modules to request a range for the plain pairlist
      * \tparam MdRunInputFilename&  Allows modules to know .tpr filename during mdrun
      * \tparam EdrOutputFilename&   Allows modules to know .edr filename during mdrun
+     * \tparam MDModulesDirectProvider*
+     *                              Allows a modules to indicate whether it
+     *                              handle short-range coulomb interactions
      * \tparam PlumedInputFilename& Allows modules to know the optional .dat filename to be read by plumed
      */
     BuildMDModulesNotifier<const KeyValueTreeObject&,
@@ -487,6 +505,7 @@ struct MDModulesNotifiers
                            PlainPairlistRanges*,
                            const MdRunInputFilename&,
                            const EdrOutputFilename&,
+                           MDModulesDirectProvider*,
                            const PlumedInputFilename&>::type simulationSetupNotifier_;
 
     /*! \brief Handles subscribing and calling callbacks during a running simulation.

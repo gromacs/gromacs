@@ -70,7 +70,11 @@ std::string moduleName()
 FmmMdpOptions::FmmMdpOptions() :
     exaFmmOptions_(),
     fmSolvrOptions_(),
-    activeOptionLookup_{ { nullptr, &exaFmmOptions_, &fmSolvrOptions_ } }
+    activeOptionLookup_{ nullptr, &exaFmmOptions_, &fmSolvrOptions_ },
+    directProviderLookup_{ FmmDirectProvider::Gromacs,
+                           exaFmmOptions_.directProvider,
+                           fmSolvrOptions_.directProvider }
+
 {
 }
 
@@ -139,6 +143,11 @@ const FMSolvrOptions& FmmMdpOptions::fmSolvrOptions() const
 const IFmmOptions* FmmMdpOptions::activeFmmOptions() const
 {
     return activeOptionLookup_[activeFmmBackend()];
+}
+
+FmmDirectProvider FmmMdpOptions::directProvider() const
+{
+    return directProviderLookup_[activeFmmBackend()];
 }
 
 } // namespace gmx

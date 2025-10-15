@@ -349,7 +349,9 @@ interaction_const_t setupInteractionConst(const KernelOptions& options)
     mtop.ffparams.functype.resize(1);
     mtop.ffparams.functype[0] = InteractionFunction::LennardJonesShortRange;
 
-    interaction_const_t ic = init_interaction_const(nullptr, ir, mtop, false);
+    interaction_const_t ic = init_interaction_const(nullptr, ir, mtop, false, std::nullopt);
+
+
     init_interaction_const_tables(nullptr, &ic, options.pairlistCutoff, 0);
 
     return ic;

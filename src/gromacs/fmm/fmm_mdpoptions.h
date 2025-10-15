@@ -113,6 +113,12 @@ public:
      */
     const IFmmOptions* activeFmmOptions() const;
 
+    /**
+     * \brief Returns who handles direct interactions for the active FMM backend.
+     *
+     * Indicates whether GROMACS or the FMM backend computes direct interactions.
+     */
+    FmmDirectProvider directProvider() const;
 
 private:
     ExaFmmOptions  exaFmmOptions_;  ///< Options specific to the ExaFMM backend
@@ -120,6 +126,8 @@ private:
     ActiveFmmBackend activeFmmBackend_ = ActiveFmmBackend::Inactive; ///< Currently selected FMM backend
     //! Lookup table for backend-specific FMM options
     const EnumerationArray<ActiveFmmBackend, const IFmmOptions*> activeOptionLookup_;
+    //! Lookup table for direct provider
+    const EnumerationArray<ActiveFmmBackend, FmmDirectProvider> directProviderLookup_;
 };
 
 } // namespace gmx

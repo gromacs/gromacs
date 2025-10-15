@@ -1795,10 +1795,13 @@ int Mdrunner::mdrunner()
         setupNotifier.notify(EnsembleTemperature{ *inputrec });
         PlainPairlistRanges plainPairlistRanges(mtop, *inputrec);
         setupNotifier.notify(&plainPairlistRanges);
+        MDModulesDirectProvider mdModuleCoulombDirectProvider;
+        setupNotifier.notify(&mdModuleCoulombDirectProvider);
 
         /* Initiate forcerecord */
         fr                 = std::make_unique<t_forcerec>();
         fr->forceProviders = mdModules_->initForceProviders(wcycle.get());
+        std::optional<bool> anMDModuleProvidesDirectCoulomb = mdModuleCoulombDirectProvider.isDirectProvider;
         init_forcerec(fplog,
                       mdlog,
                       runScheduleWork.simulationWork,
@@ -1811,7 +1814,9 @@ int Mdrunner::mdrunner()
                       opt2fn("-table", filenames.size(), filenames.data()),
                       opt2fn("-tablep", filenames.size(), filenames.data()),
                       opt2fns("-tableb", filenames.size(), filenames.data()),
-                      pforce);
+                      pforce,
+                      anMDModuleProvidesDirectCoulomb);
+
         // Dirty hack, for fixing disres and orires should be made mdmodules
         fr->fcdata->disres = disresdata;
         if (gmx_mtop_ftype_count(mtop, InteractionFunction::OrientationRestraints) > 0)

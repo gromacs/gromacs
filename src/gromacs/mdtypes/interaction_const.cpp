@@ -35,6 +35,8 @@
 
 #include "interaction_const.h"
 
+#include "config.h"
+
 #include <cmath>
 #include <cstdio>
 
@@ -45,6 +47,7 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 #include "gromacs/mdlib/rf_util.h"
+#include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/topology/atoms.h"
@@ -202,7 +205,11 @@ static void potential_switch_constants(real rsw, real rc, switch_consts_t* sc)
 }
 
 
-interaction_const_t init_interaction_const(FILE* fp, const t_inputrec& ir, const gmx_mtop_t& mtop, bool systemHasNetCharge)
+interaction_const_t init_interaction_const(FILE*               fp,
+                                           const t_inputrec&   ir,
+                                           const gmx_mtop_t&   mtop,
+                                           bool                systemHasNetCharge,
+                                           std::optional<bool> anMDModuleProvidesDirectCoulomb)
 {
     interaction_const_t interactionConst;
 
@@ -322,6 +329,21 @@ interaction_const_t init_interaction_const(FILE* fp, const t_inputrec& ir, const
         GMX_RELEASE_ASSERT(ir.fepvals, "ir.fepvals should be set with free-energy");
         interactionConst.softCoreParameters =
                 std::make_unique<interaction_const_t::SoftCoreParameters>(*ir.fepvals);
+    }
+
+    if (GMX_USE_EXT_FMM)
+    {
+        // Override the default only if the MDModule has specified it
+        if (anMDModuleProvidesDirectCoulomb.has_value())
+        {
+            interactionConst.nbnxmIsDirectCoulombProvider = !anMDModuleProvidesDirectCoulomb.value();
+        }
+    }
+    else
+    {
+        GMX_RELEASE_ASSERT(!anMDModuleProvidesDirectCoulomb.has_value(),
+                           "No MDModule may specify a direct Coulomb provider when an external FMM "
+                           "module is not enabled");
     }
 
     return interactionConst;

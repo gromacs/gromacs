@@ -37,6 +37,7 @@
 #include <cstdio>
 
 #include <memory>
+#include <optional>
 #include <vector>
 
 #include "gromacs/mdtypes/md_enums.h"
@@ -212,6 +213,12 @@ struct interaction_const_t
 
     // Free-energy parameters, only present when free-energy calculations are requested
     std::unique_ptr<SoftCoreParameters> softCoreParameters;
+
+    /**
+     * Indicates whether the NBNxM module handles short-range coulomb interactions.
+     * Set to false if another module chooses to handle them.
+     */
+    bool nbnxmIsDirectCoulombProvider = true;
 };
 
 /*! \brief Construct interaction constants
@@ -220,9 +227,10 @@ struct interaction_const_t
  * short-range interactions. Many of these are constant for the whole
  * simulation; some are constant only after PME tuning completes.
  */
-interaction_const_t init_interaction_const(FILE*             fp,
-                                           const t_inputrec& ir,
-                                           const gmx_mtop_t& mtop,
-                                           bool              systemHasNetCharge);
+interaction_const_t init_interaction_const(FILE*               fp,
+                                           const t_inputrec&   ir,
+                                           const gmx_mtop_t&   mtop,
+                                           bool                systemHasNetCharge,
+                                           std::optional<bool> anMDModuleProvidesDirectCoulomb);
 
 #endif

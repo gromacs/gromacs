@@ -686,7 +686,8 @@ void init_forcerec(FILE*                            fplog,
                    const char*                      tabfn,
                    const char*                      tabpfn,
                    gmx::ArrayRef<const std::string> tabbfnm,
-                   real                             print_force)
+                   real                             print_force,
+                   std::optional<bool>              anMDModuleProvidesDirectCoulomb)
 {
     /* The CMake default turns SIMD kernels on, but it might be turned off further down... */
     forcerec->use_simd_kernels = GMX_USE_SIMD_KERNELS;
@@ -813,8 +814,8 @@ void init_forcerec(FILE*                            fplog,
     bool systemHasNetCharge = set_chargesum(fplog, forcerec, mtop);
 
     /* Make data structure used by kernels */
-    forcerec->ic = std::make_unique<interaction_const_t>(
-            init_interaction_const(fplog, inputrec, mtop, systemHasNetCharge));
+    forcerec->ic = std::make_unique<interaction_const_t>(init_interaction_const(
+            fplog, inputrec, mtop, systemHasNetCharge, anMDModuleProvidesDirectCoulomb));
     init_interaction_const_tables(fplog, forcerec->ic.get(), forcerec->rlist, inputrec.tabext);
 
     const interaction_const_t* interactionConst = forcerec->ic.get();
