@@ -407,11 +407,11 @@ NbnxnPairlistGpu::NbnxnPairlistGpu(PinningPolicy pinningPolicy) :
     excl.resize(1);
 }
 
-static std::vector<NbnxnPairlistGpu> createGpuPairlists(int numLists)
+static std::vector<NbnxnPairlistGpu> createGpuPairlists(int numLists, PinningPolicy pinPolicy)
 {
     auto lists = std::vector<NbnxnPairlistGpu>();
     /* Only list 0 is used on the GPU, use normal allocation for i>0 */
-    lists.emplace_back(NbnxnPairlistGpu{ PinningPolicy::PinnedIfSupported });
+    lists.emplace_back(NbnxnPairlistGpu{ pinPolicy });
     /* Lists 0 to numLists are use for constructing lists in parallel
      * on the CPU using numLists threads (and then merged into list 0).
      */
@@ -424,7 +424,7 @@ static std::vector<NbnxnPairlistGpu> createGpuPairlists(int numLists)
 
 
 // TODO: Move to pairlistset.cpp
-PairlistSet::PairlistSet(const PairlistParams& pairlistParams) :
+PairlistSet::PairlistSet(const PairlistParams& pairlistParams, PinningPolicy pinPolicy) :
     params_(pairlistParams),
     combineLists_(sc_isGpuSpecificPairlist(pairlistParams.pairlistType)), // Currently GPU lists are always combined
     isCpuType_(!sc_isGpuSpecificPairlist(pairlistParams.pairlistType))
@@ -461,7 +461,7 @@ PairlistSet::PairlistSet(const PairlistParams& pairlistParams) :
     }
     else
     {
-        gpuLists_ = createGpuPairlists(numLists);
+        gpuLists_ = createGpuPairlists(numLists, pinPolicy);
     }
     if (params_.haveFep_)
     {

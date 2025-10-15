@@ -316,7 +316,7 @@ std::unique_ptr<gmx::nonbonded_verlet_t> createNbnxmCPU(const size_t           n
 
     gmx::PairlistParams pairlistParams(kernelSetup.kernelType, {}, false, options.pairlistCutoff, false);
 
-    auto pairlistSets = std::make_unique<gmx::PairlistSets>(pairlistParams, false, 0);
+    auto pairlistSets = std::make_unique<gmx::PairlistSets>(pairlistParams, false, 0, pinPolicy);
     auto pairSearch   = std::make_unique<gmx::PairSearch>(
             PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false, false, numThreads, pinPolicy);
 
@@ -378,8 +378,8 @@ std::unique_ptr<gmx::nonbonded_verlet_t> createNbnxmGPU(const size_t           n
     // minimum iList count for GPU balancing
     int iListCount = gmx::gpu_min_ci_balanced(nbnxmGpu);
 
-    auto pairlistSets = std::make_unique<gmx::PairlistSets>(pairlistParams, false, iListCount);
-    auto pairSearch   = std::make_unique<gmx::PairSearch>(
+    auto pairlistSets = std::make_unique<gmx::PairlistSets>(pairlistParams, false, iListCount, pinPolicy);
+    auto pairSearch = std::make_unique<gmx::PairSearch>(
             PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false, false, options.numOpenMPThreads, pinPolicy);
 
     // Put everything together

@@ -146,7 +146,8 @@ diagonalPairlist(const NbnxmKernelType kernelType, const int numAtoms)
                       nullptr,
                       nbat.get());
 
-    std::unique_ptr<PairlistSet> pairlistSet = std::make_unique<PairlistSet>(pairlistParams);
+    std::unique_ptr<PairlistSet> pairlistSet =
+            std::make_unique<PairlistSet>(pairlistParams, PinningPolicy::CannotBePinned);
 
     std::vector<PairsearchWork> searchWork(1);
 

@@ -63,6 +63,7 @@ namespace gmx
 class PairlistSet;
 enum class PairlistType;
 class PairSearch;
+enum class PinningPolicy;
 template<typename>
 class ListOfLists;
 
@@ -73,7 +74,8 @@ public:
     //! Constructor
     PairlistSets(const PairlistParams& pairlistParams,
                  bool                  haveMultipleDomains,
-                 int                   minimumIlistCountForGpuBalancing);
+                 int                   minimumIlistCountForGpuBalancing,
+                 PinningPolicy         pinPolicy);
 
     //! Construct the pairlist set for the given locality
     void construct(InteractionLocality     iLocality,

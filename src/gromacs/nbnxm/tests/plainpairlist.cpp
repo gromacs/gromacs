@@ -132,9 +132,9 @@ std::unique_ptr<nonbonded_verlet_t> setupNbnxmForBenchInstance(const KernelOptio
     gmx_omp_nthreads_set(ModuleMultiThread::Pairsearch, options.numThreads);
     gmx_omp_nthreads_set(ModuleMultiThread::Nonbonded, options.numThreads);
 
-    const auto pinPolicy =
-            (options.useGpu ? PinningPolicy::PinnedIfSupported : PinningPolicy::CannotBePinned);
-    const int numThreads = options.numThreads;
+    // Don't try pinning buffers; we don't need that in this test
+    const auto pinPolicy  = PinningPolicy::CannotBePinned;
+    const int  numThreads = options.numThreads;
 
     PairlistParams pairlistParams(
             options.kernelSetup.kernelType, sc_layoutType, false, options.rlist, false);
@@ -142,7 +142,7 @@ std::unique_ptr<nonbonded_verlet_t> setupNbnxmForBenchInstance(const KernelOptio
     GridSet gridSet(
             PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false, false, numThreads, pinPolicy);
 
-    auto pairlistSets = std::make_unique<PairlistSets>(pairlistParams, false, 0);
+    auto pairlistSets = std::make_unique<PairlistSets>(pairlistParams, false, 0, pinPolicy);
 
     auto pairSearch = std::make_unique<PairSearch>(
             PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false, false, numThreads, pinPolicy);

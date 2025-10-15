@@ -80,7 +80,7 @@ class PairlistSet
 {
 public:
     //! Constructor: initializes the pairlist set as empty
-    PairlistSet(const PairlistParams& listParams);
+    PairlistSet(const PairlistParams& listParams, PinningPolicy pinPolicy);
 
     ~PairlistSet();
 

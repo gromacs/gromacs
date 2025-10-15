@@ -365,14 +365,15 @@ static NbnxmKernelSetup pick_nbnxn_kernel(const gmx::MDLogger&     mdlog,
 
 PairlistSets::PairlistSets(const PairlistParams& pairlistParams,
                            const bool            haveMultipleDomains,
-                           const int             minimumIlistCountForGpuBalancing) :
+                           const int             minimumIlistCountForGpuBalancing,
+                           PinningPolicy         pinPolicy) :
     params_(pairlistParams), minimumIlistCountForGpuBalancing_(minimumIlistCountForGpuBalancing)
 {
-    localSet_ = std::make_unique<PairlistSet>(params_);
+    localSet_ = std::make_unique<PairlistSet>(params_, pinPolicy);
 
     if (haveMultipleDomains)
     {
-        nonlocalSet_ = std::make_unique<PairlistSet>(params_);
+        nonlocalSet_ = std::make_unique<PairlistSet>(params_, pinPolicy);
     }
 }
 
@@ -562,7 +563,7 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger& mdlog,
     }
 
     auto pairlistSets = std::make_unique<PairlistSets>(
-            pairlistParams, haveMultipleDomains, minimumIlistCountForGpuBalancing);
+            pairlistParams, haveMultipleDomains, minimumIlistCountForGpuBalancing, pinPolicy);
 
     auto pairSearch = std::make_unique<PairSearch>(inputrec.pbcType,
                                                    EI_TPI(inputrec.eI),
