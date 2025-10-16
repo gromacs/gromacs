@@ -257,6 +257,8 @@ void split_tester(int N, int myrank)
                 printf("SUB: I am process %d, new rank %d, new coords (%d), comm=%p\n",
                        myrank, nnewrank, ncoord[0], (void*)newcomm);
             }
+
+            MPI_Type_free(&dt);
         }
         else
         {

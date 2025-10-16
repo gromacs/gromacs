@@ -2932,11 +2932,6 @@ DomainDecompositionBuilder::Impl::build(LocalAtomSetManager*       atomSets,
                                                                       dd->comm->systemInfo.useUpdateGroups,
                                                                       observablesReducerBuilder);
 
-#if GMX_MPI
-    MPI_Type_contiguous(DIM, GMX_MPI_REAL, &dd->comm->mpiRVec);
-    MPI_Type_commit(&dd->comm->mpiRVec);
-#endif
-
     return dd;
 }
 
@@ -3269,3 +3264,22 @@ void putUpdateGroupAtomsInSamePeriodicImage(const gmx_domdec_t&      dd,
         }
     }
 }
+
+/*! \cond INTERNAL */
+
+gmx_domdec_comm_t::gmx_domdec_comm_t(const gmx::MpiComm& mpiCommMySim) : mpiCommMySim_(mpiCommMySim)
+{
+#if GMX_MPI
+    MPI_Type_contiguous(DIM, GMX_MPI_REAL, &mpiRVec);
+    MPI_Type_commit(&mpiRVec);
+#endif
+}
+
+gmx_domdec_comm_t::~gmx_domdec_comm_t()
+{
+#if GMX_MPI
+    MPI_Type_free(&mpiRVec);
+#endif
+}
+
+/*! \endcond */

@@ -50,6 +50,7 @@
 #include "gromacs/mdlib/updategroupscog.h"
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/topology/block.h"
+#include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/defaultinitializationallocator.h"
 #include "gromacs/utility/fixedcapacityvector.h"
 #include "gromacs/utility/listoflists.h"
@@ -558,7 +559,8 @@ struct CartesianRankSetup
  */
 struct gmx_domdec_comm_t // NOLINT (clang-analyzer-optin.performance.Padding)
 {
-    gmx_domdec_comm_t(const gmx::MpiComm& mpiCommMySim) : mpiCommMySim_(mpiCommMySim) {}
+    gmx_domdec_comm_t(const gmx::MpiComm& mpiCommMySim);
+    ~gmx_domdec_comm_t();
 
     /**< Constant parameters that control DD behavior */
     DDSettings ddSettings;
@@ -759,6 +761,8 @@ struct gmx_domdec_comm_t // NOLINT (clang-analyzer-optin.performance.Padding)
 
     /** The last partition step */
     int64_t partition_step = INT_MIN;
+
+    GMX_DISALLOW_COPY_MOVE_AND_ASSIGN(gmx_domdec_comm_t);
 };
 
 /*! \brief DD zone permutation

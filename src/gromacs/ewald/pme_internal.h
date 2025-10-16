@@ -373,9 +373,6 @@ struct gmx_pme_t
     const gmx::MpiComm& mpiComm;
 
     MPI_Comm mpi_comm_d[2]; /* Indexed on dimension, 0=x, 1=y */
-#if GMX_MPI
-    MPI_Datatype rvec_mpi; /* the pme vector's MPI type */
-#endif
 
     bool bUseThreads; /* Does any of the PME ranks have nthread>1 ?  */
     int  nthread;     /* The number of threads doing PME on our rank */

@@ -114,6 +114,7 @@ typedef tMPI_Op MPI_Op;
 #define MPI_ERR_REQUESTS            TMPI_ERR_REQUESTS
 #define MPI_ERR_IN_STATUS           TMPI_ERR_IN_STATUS
 #define MPI_FAILURE                 TMPI_FAILURE
+#define MPI_ERR_TYPE                TMPI_ERR_TYPE
 #define MPI_ERR_UNKNOWN             TMPI_ERR_UNKNOWN
 #define N_MPI_ERR                   N_TMPI_ERR
 
@@ -222,6 +223,7 @@ typedef tMPI_Op MPI_Op;
 
 #define MPI_Type_contiguous         tMPI_Type_contiguous
 #define MPI_Type_commit             tMPI_Type_commit
+#define MPI_Type_free               tMPI_Type_free
 
 #define MPI_Send                    tMPI_Send
 #define MPI_Recv                    tMPI_Recv

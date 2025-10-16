@@ -853,11 +853,6 @@ gmx_pme_t* gmx_pme_init(const gmx_domdec_t*              dd,
     {
         double imbal;
 
-#if GMX_MPI
-        MPI_Type_contiguous(DIM, GMX_MPI_REAL, &(pme->rvec_mpi));
-        MPI_Type_commit(&(pme->rvec_mpi));
-#endif
-
         /* Note that the coefficient spreading and force gathering, which usually
          * takes about the same amount of time as FFT+solve_pme,
          * is always fully load balanced
