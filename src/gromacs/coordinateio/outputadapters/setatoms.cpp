@@ -61,7 +61,7 @@ void SetAtoms::checkAbilityDependencies(unsigned long abilities) const
         std::string errorMessage =
                 "Output file type does not support writing atom information. "
                 "You need to use PDB, GRO or TNG as the file type for this.";
-        GMX_THROW(InconsistentInputError(errorMessage.c_str()));
+        GMX_THROW(InconsistentInputError(errorMessage));
     }
 }
 

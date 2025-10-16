@@ -194,17 +194,17 @@ TEST_P(FreeEnergyReferenceTest, WithinTolerances)
     if (testTwoTrajectoryFrames)
     {
         checkTrajectoryAgainstReferenceData(
-                simulationTrajectoryFileName.string(), trajectoryComparison, &rootChecker, MaxNumFrames(2));
+                simulationTrajectoryFileName, trajectoryComparison, &rootChecker, MaxNumFrames(2));
     }
     else if (testOneTrajectoryFrame)
     {
         checkTrajectoryAgainstReferenceData(
-                simulationTrajectoryFileName.string(), trajectoryComparison, &rootChecker, MaxNumFrames(1));
+                simulationTrajectoryFileName, trajectoryComparison, &rootChecker, MaxNumFrames(1));
     }
     else
     {
         checkTrajectoryAgainstReferenceData(
-                simulationTrajectoryFileName.string(), trajectoryComparison, &rootChecker, MaxNumFrames(0));
+                simulationTrajectoryFileName, trajectoryComparison, &rootChecker, MaxNumFrames(0));
     }
     if (File::exists(simulationDhdlFileName, File::returnFalseOnError))
     {

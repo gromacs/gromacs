@@ -168,7 +168,7 @@ void QMMMForceProvider::initCP2KForceEnvironment(const MpiComm& mpiComm)
                     "with an MPI library or to use a single thread-MPI rank (-ntmpi 1). "
                     "In the latter case, manual use of -ntomp is also advisable when "
                     "the node has many cores to fill them with threads.";
-            GMX_THROW(NotImplementedError(msg.c_str()));
+            GMX_THROW(NotImplementedError(msg));
         }
 
         // Attempt to init CP2K and create force environment

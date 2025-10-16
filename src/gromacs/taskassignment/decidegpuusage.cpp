@@ -600,7 +600,7 @@ bool decideWhetherToUseGpusForBonded(bool              useGpuForNonbonded,
     {
         if (bondedTarget == TaskTarget::Gpu)
         {
-            GMX_THROW(InconsistentInputError(errorMessage.c_str()));
+            GMX_THROW(InconsistentInputError(errorMessage));
         }
 
         return false;
@@ -610,7 +610,7 @@ bool decideWhetherToUseGpusForBonded(bool              useGpuForNonbonded,
     {
         if (bondedTarget == TaskTarget::Gpu)
         {
-            GMX_THROW(InconsistentInputError(errorMessage.c_str()));
+            GMX_THROW(InconsistentInputError(errorMessage));
         }
 
         return false;
@@ -803,7 +803,7 @@ bool decideWhetherToUseGpuForUpdate(const bool           isDomainDecomposition,
         }
         else if (updateTarget == TaskTarget::Gpu)
         {
-            GMX_THROW(InconsistentInputError(errorReasons.toString().c_str()));
+            GMX_THROW(InconsistentInputError(errorReasons.toString()));
         }
         return false;
     }

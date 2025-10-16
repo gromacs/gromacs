@@ -60,7 +60,7 @@ void SetForces::checkAbilityDependencies(unsigned long abilities) const
         std::string errorMessage =
                 "Output file type does not support writing forces. "
                 "Only TNG and TRR support this output.";
-        GMX_THROW(InconsistentInputError(errorMessage.c_str()));
+        GMX_THROW(InconsistentInputError(errorMessage));
     }
 }
 

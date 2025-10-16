@@ -224,7 +224,7 @@ TEST_P(CheckpointCoordinatesSanityChecks, WithinTolerances)
             ASSERT_EQ(0, gmx_trjconv(commandLine.argc(), commandLine.argv()));
         }
 
-        TrajectoryFrameReader reader(outputFile.string());
+        TrajectoryFrameReader reader(outputFile);
         reader.readNextFrame();
         {
             TrajectoryFrame frame = reader.frame();
@@ -250,7 +250,7 @@ TEST_P(CheckpointCoordinatesSanityChecks, WithinTolerances)
             ASSERT_EQ(0, gmx_trjconv(commandLine.argc(), commandLine.argv()));
         }
 
-        TrajectoryFrameReader reader(dumpedFrame.string());
+        TrajectoryFrameReader reader(dumpedFrame);
         reader.readNextFrame();
         {
             TrajectoryFrame frame = reader.frame();

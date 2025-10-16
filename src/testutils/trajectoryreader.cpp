@@ -85,7 +85,7 @@ void done_trxframe(t_trxframe* fr)
     sfree(fr);
 }
 
-TrajectoryFrameReader::TrajectoryFrameReader(const std::string& filename) :
+TrajectoryFrameReader::TrajectoryFrameReader(const std::filesystem::path& filename) :
     filename_(filename),
     trajectoryFileGuard_(nullptr),
     trxframeGuard_(make_trxframe()),
@@ -96,6 +96,11 @@ TrajectoryFrameReader::TrajectoryFrameReader(const std::string& filename) :
     gmx_output_env_t* oenv;
     output_env_init_default(&oenv);
     oenvGuard_.reset(oenv);
+}
+
+TrajectoryFrameReader::TrajectoryFrameReader(const std::string& filename) :
+    TrajectoryFrameReader(std::filesystem::path(filename))
+{
 }
 
 bool TrajectoryFrameReader::readNextFrame()
@@ -122,10 +127,10 @@ bool TrajectoryFrameReader::readNextFrame()
         t_trxstatus* trajectoryFile;
         int          flags = TRX_READ_X | TRX_READ_V | TRX_READ_F;
         nextFrameExists_   = read_first_frame(
-                oenvGuard_.get(), &trajectoryFile, filename_.c_str(), trxframeGuard_.get(), flags);
+                oenvGuard_.get(), &trajectoryFile, filename_, trxframeGuard_.get(), flags);
         if (!trajectoryFile)
         {
-            GMX_THROW(FileIOError("Could not open trajectory file " + filename_ + " for reading"));
+            GMX_THROW(FileIOError("Could not open trajectory file " + filename_.string() + " for reading"));
         }
         trajectoryFileGuard_.reset(trajectoryFile);
         haveReadFirstFrame_ = true;

@@ -46,6 +46,7 @@
 #ifndef GMX_PROGRAMS_MDRUN_TESTS_TRAJECTORYREADER_H
 #define GMX_PROGRAMS_MDRUN_TESTS_TRAJECTORYREADER_H
 
+#include <filesystem>
 #include <memory>
 #include <string>
 
@@ -111,10 +112,14 @@ public:
      *
      * \param[in] filename  Name of trajectory file to open and read. */
     explicit TrajectoryFrameReader(const std::string& filename);
+    /*! \brief Constructor
+     *
+     * \param[in] filename  Name of trajectory file to open and read. */
+    explicit TrajectoryFrameReader(const std::filesystem::path& filename);
 
 private:
     //! Name of trajectory file to open and read
-    std::string filename_;
+    std::filesystem::path filename_;
     //! Owning handle of output environment object
     oenv_ptr oenvGuard_;
     //! Owning handle of an open trajectory file ready to read frames.

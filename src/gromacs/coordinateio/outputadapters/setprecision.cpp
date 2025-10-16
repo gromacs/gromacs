@@ -61,7 +61,7 @@ void SetPrecision::checkAbilityDependencies(unsigned long abilities) const
         std::string errorMessage =
                 "Output file type does not support writing variable precision. "
                 "Only XTC and TNG support variable precision.";
-        GMX_THROW(InconsistentInputError(errorMessage.c_str()));
+        GMX_THROW(InconsistentInputError(errorMessage));
     }
 }
 

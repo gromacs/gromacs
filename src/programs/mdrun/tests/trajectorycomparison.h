@@ -43,6 +43,7 @@
 #ifndef GMX_PROGRAMS_MDRUN_TESTS_TRAJECTORYCOMPARISON_H
 #define GMX_PROGRAMS_MDRUN_TESTS_TRAJECTORYCOMPARISON_H
 
+#include <filesystem>
 #include <string>
 
 #include "testutils/testasserts.h"
@@ -171,13 +172,13 @@ private:
  * simulation, e.g. to avoid failures due to numerical divergence.
  */
 //! \{
-void checkTrajectoryAgainstReferenceData(const std::string&          trajectoryFilename,
-                                         const TrajectoryComparison& trajectoryComparison,
-                                         TestReferenceChecker*       checker);
-void checkTrajectoryAgainstReferenceData(const std::string&          trajectoryFilename,
-                                         const TrajectoryComparison& trajectoryComparison,
-                                         TestReferenceChecker*       checker,
-                                         MaxNumFrames                maxNumFrames);
+void checkTrajectoryAgainstReferenceData(const std::filesystem::path& trajectoryFilename,
+                                         const TrajectoryComparison&  trajectoryComparison,
+                                         TestReferenceChecker*        checker);
+void checkTrajectoryAgainstReferenceData(const std::filesystem::path& trajectoryFilename,
+                                         const TrajectoryComparison&  trajectoryComparison,
+                                         TestReferenceChecker*        checker,
+                                         MaxNumFrames                 maxNumFrames);
 //! \}
 
 } // namespace test
