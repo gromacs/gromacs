@@ -158,8 +158,7 @@ constexpr float c_nbnxnMinDistanceSquared = 3.82e-07F; // r > 6.2e-4
 template<PairlistType layoutType>
 static inline int atomIndexInClusterpairSplit(const int atomIndex)
 {
-    constexpr int c_nbnxmClusterpairSplitSize =
-            detail::c_nbnxnGpuClusterSize / sc_gpuClusterPairSplit(layoutType);
+    constexpr int c_nbnxmClusterpairSplitSize = gmx::sc_gpuSplitJClusterSize(layoutType);
 
     return atomIndex & (c_nbnxmClusterpairSplitSize - 1);
 }
@@ -367,12 +366,6 @@ struct NbnxnPairlistGpu
     //! Cache protection
     gmx_cache_protect_t cp1;
 };
-
-template<typename T>
-constexpr PairlistType getPairlistTypeFromGpuPairlist()
-{
-    return PairlistType::Hierarchical8x8x8;
-}
 
 } // namespace gmx
 
