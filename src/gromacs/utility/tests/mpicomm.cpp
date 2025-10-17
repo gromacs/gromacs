@@ -168,7 +168,9 @@ TEST(MpiComm, CreatesHierarchicalReducer4Ranks4Nodes)
     GMX_MPI_TEST(RequireRankCount<4>);
 
     int rank = 0;
+#if GMX_MPI
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
 
     testMpiComm(MPI_COMM_WORLD, rank, false);
 }
@@ -179,7 +181,9 @@ TEST(MpiComm, CreatesHierarchicalReducer4Ranks2EqualNodes)
     GMX_MPI_TEST(RequireRankCount<4>);
 
     int rank = 0;
+#if GMX_MPI
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
 
     testMpiComm(MPI_COMM_WORLD, rank / 2, true);
 }
@@ -190,7 +194,9 @@ TEST(MpiComm, CreatesHierarchicalReducer4Ranks2UnequalNodes)
     GMX_MPI_TEST(RequireRankCount<4>);
 
     int rank = 0;
+#if GMX_MPI
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
 
     testMpiComm(MPI_COMM_WORLD, rank == 0 ? 0 : 1, true);
 }
@@ -199,8 +205,10 @@ TEST(MpiComm, ConstructorThrowsOnNull)
 {
     GMX_MPI_TEST(RequireRankCount<4>);
 
-    int isInitialized;
+    int isInitialized = 0;
+#if GMX_MPI
     MPI_Initialized(&isInitialized);
+#endif
     ASSERT_EQ(isInitialized == 0, false);
 
     EXPECT_THROW_GMX(MpiComm(MPI_COMM_NULL), InvalidInputError);

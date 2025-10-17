@@ -108,6 +108,7 @@ void PmeForceSenderGpu::Impl::setForceSendBuffer(DeviceBuffer<Float3> d_f)
 
             if (receiver.numAtoms > 0)
             {
+#if GMX_MPI
                 setMpiPointer(ppCommManagers_[i].localForcePtr, asMpiPointer(d_f) + ind_start);
                 // NOLINTNEXTLINE(bugprone-sizeof-expression)
                 MPI_Recv(&ppCommManagers_[i].pmeRemoteGpuForcePtr,
@@ -144,6 +145,7 @@ void PmeForceSenderGpu::Impl::setForceSendBuffer(DeviceBuffer<Float3> d_f)
                          receiver.rankId,
                          eCommType_FORCES_GPU_EVENT_RECORDED,
                          comm_);
+#endif
             }
             i++;
         }
