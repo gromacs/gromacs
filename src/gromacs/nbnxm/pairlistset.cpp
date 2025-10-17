@@ -260,23 +260,9 @@ void PairlistSet::appendPlainPairlist(PlainPairlist*          plainPairlist,
 
     if (sc_isGpuSpecificPairlist(params_.pairlistType))
     {
-        gmx::dispatchTemplatedFunction(
-                [&](auto pairlist_)
-                {
-                    if constexpr (sc_isGpuSpecificPairlist(pairlist_))
-                    {
-                        using T                     = std::decay_t<decltype(pairlist_)>;
-                        constexpr auto pairlistType = getPairlistTypeFromGpuPairlist<T>();
-
-                        appendPlainPairlistGpu(
-                                plainPairlist,
-                                std::get<std::vector<NbnxnPairlistGpu<pairlistType>>>(gpuList())[0],
-                                range,
-                                nbat,
-                                atomIndices);
-                    }
-                },
-                params_.pairlistType);
+        std::visit([&](const auto& pairlist)
+                   { appendPlainPairlistGpu(plainPairlist, pairlist[0], range, nbat, atomIndices); },
+                   gpuList());
     }
     else
     {
