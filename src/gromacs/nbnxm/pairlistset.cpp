@@ -50,7 +50,6 @@
 #include "gromacs/nbnxm/pairlist.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/template_mp.h"
 
 #include "atompairlist.h"
 #include "pairlist.h"
