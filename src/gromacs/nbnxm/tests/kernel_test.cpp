@@ -464,6 +464,7 @@ TEST_P(NbnxmKernelTest, WorksWith)
                                                       ? EwaldExclusionType::Table
                                                       : EwaldExclusionType::Analytical;
     options_.coulombType                    = parameters_.coulombKernelType;
+    options_.energyHandling                 = parameters_.energyHandling;
 
     // Van der Waals settings
     switch (parameters_.vdwKernelType)
