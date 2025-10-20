@@ -117,10 +117,10 @@ public:
         FmmDirectProvider directProvider = fmmMdpOptions_.directProvider();
         // Subscribe to coulomb short range handler notification to indicate if FMM handles short-range coulomb interactions.
         const auto setCoulombDirectProviderFlag =
-                [directProvider, this](MDModulesDirectProvider* coulombDirectProvider)
+                [directProvider, this](MDModulesDirectProvider* mdModulesCoulombDirectProvider)
         {
-            coulombDirectProvider->isDirectProvider = (directProvider == FmmDirectProvider::Fmm);
-            fmmNotifiedDirectProvider_              = true;
+            mdModulesCoulombDirectProvider->isDirectProvider = (directProvider == FmmDirectProvider::Fmm);
+            fmmNotifiedDirectProvider_ = true;
         };
         notifiers->simulationSetupNotifier_.subscribe(setCoulombDirectProviderFlag);
     }
@@ -138,9 +138,9 @@ public:
 
         if (!fmmNotifiedDirectProvider_)
         {
-            GMX_THROW(
-                    InternalError("FMM module must be notified about direct provider before force "
-                                  "provider initialization"));
+            GMX_THROW(MDModuleSetupError(
+                    "FMM module must be notified about direct provider before force "
+                    "provider initialization"));
         }
 
         fmmForceProviderBuilder_.setFmmOptions(fmmMdpOptions_.activeFmmOptions());

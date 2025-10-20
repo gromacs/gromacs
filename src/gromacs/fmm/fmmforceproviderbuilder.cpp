@@ -77,7 +77,7 @@ std::unique_ptr<FmmForceProvider> FmmForceProviderBuilder::build()
 {
     if (!fmmOptions_ || !mtop_ || !pbcType_ || !logger_)
     {
-        GMX_THROW(InternalError(
+        GMX_THROW(MDModuleSetupError(
                 "FmmForceProviderBuilder: Cannot build FmmForceProvider, one or more required "
                 "inputs are missing (fmmOptions, mtop, pbcType, logger)"));
     }

@@ -1801,7 +1801,23 @@ int Mdrunner::mdrunner()
         /* Initiate forcerecord */
         fr                 = std::make_unique<t_forcerec>();
         fr->forceProviders = mdModules_->initForceProviders(wcycle.get());
+
         std::optional<bool> anMDModuleProvidesDirectCoulomb = mdModuleCoulombDirectProvider.isDirectProvider;
+        if (setupNotifier.haveSubscribers<MDModulesDirectProvider*>()
+            && !anMDModuleProvidesDirectCoulomb.has_value())
+        {
+            GMX_THROW(gmx::APIError(
+                    "At least one MD module subscribed to the direct provider notification, "
+                    "but none reported whether it provides direct interactions."));
+        }
+        if (!setupNotifier.haveSubscribers<MDModulesDirectProvider*>()
+            && anMDModuleProvidesDirectCoulomb.has_value())
+        {
+            GMX_THROW(
+                    gmx::APIError("No MD module subscribed to the direct provider notification, "
+                                  "but direct interactions provider is reported."));
+        }
+
         init_forcerec(fplog,
                       mdlog,
                       runScheduleWork.simulationWork,

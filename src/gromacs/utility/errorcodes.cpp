@@ -73,6 +73,7 @@ const char* const error_names[] = {
     "Range checking error (possible bug)",
     "Communication (parallel processing) problem",
     "Modular simulator error",
+    "MD module setup error",
 
     "Unknown error",
 };

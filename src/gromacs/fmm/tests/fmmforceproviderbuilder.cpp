@@ -66,6 +66,8 @@ namespace test
 class FmmForceProviderBuilderTest : public ::testing::Test
 {
 public:
+    FmmForceProviderBuilderTest() {}
+
     void notifyFmmModuleSimulationSetup()
     {
         fmmModule_->subscribeToSimulationSetupNotifications(&notifiers_);
@@ -100,9 +102,8 @@ TEST_F(FmmForceProviderBuilderTest, ThrowsIfBuilderNotReady)
 
     fmmModule_ = FmmModuleInfo::create();
     fillOptionsFromMdpValues(mdpOptionsTree, fmmModule_->mdpOptionProvider());
-
     // Throws (internal error) because FmmForceProviderBuilder is not ready
-    EXPECT_THROW(initializeForceProviders(), InternalError);
+    EXPECT_THROW(initializeForceProviders(), MDModuleSetupError);
 }
 
 TEST_F(FmmForceProviderBuilderTest, BuildsWithMinimalSetup)
@@ -133,7 +134,7 @@ TEST_F(FmmForceProviderBuilderTest, BuildsWithMinimalSetup)
     }
 }
 
-TEST_F(FmmForceProviderBuilderTest, ThrowIfFmmNotNotifiedDirectProvider)
+TEST_F(FmmForceProviderBuilderTest, ThrowIfFmmNotNotifiedOfDirectProvider)
 {
     KeyValueTreeBuilder mdpValueBuilder;
     std::string         fmmActiveBackendKey;
@@ -147,11 +148,9 @@ TEST_F(FmmForceProviderBuilderTest, ThrowIfFmmNotNotifiedDirectProvider)
     fillOptionsFromMdpValues(mdpOptionsTree, fmmModule_->mdpOptionProvider());
     notifyFmmModuleSimulationSetup();
 
-    // Throws InternalError: either FMM module not notified about direct provider
-    // (when GMX_USE_EXT_FMM is ON) or from stub if built without external FMM
-    EXPECT_THROW(initializeForceProviders(), InternalError);
+    // Expect MDModuleSetupError because the FMM backend was not notified about any direct provider at all
+    EXPECT_THROW(initializeForceProviders(), MDModuleSetupError);
 }
-
 
 } // namespace test
 
