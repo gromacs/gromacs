@@ -216,14 +216,14 @@ void TorchModel::preparePbcType(PbcType* pbcType)
     inputs_.push_back(pbcTensor);
 }
 
-void TorchModel::evaluateModel(gmx_enerdata_t*              enerd,
-                               const ArrayRef<RVec>&        forces,
-                               ArrayRef<const int>&         indexLookup,
-                               ArrayRef<const std::string>& inputs,
-                               ArrayRef<RVec>&              positions,
-                               ArrayRef<int>&               atomNumbers,
-                               matrix*                      box /* = nullptr*/,
-                               PbcType*                     pbcType /* = nullptr*/)
+void TorchModel::evaluateModel(gmx_enerdata_t*             enerd,
+                               ArrayRef<RVec>              forces,
+                               ArrayRef<const int>         indexLookup,
+                               ArrayRef<const std::string> inputs,
+                               ArrayRef<RVec>              positions,
+                               ArrayRef<int>               atomNumbers,
+                               matrix*                     box /* = nullptr*/,
+                               PbcType*                    pbcType /* = nullptr*/)
 {
     // prepare inputs for NN model
     // order in input vector is the same as in mdp file

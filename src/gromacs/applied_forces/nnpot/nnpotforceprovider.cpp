@@ -110,18 +110,14 @@ void NNPotForceProvider::calculateForces(const ForceProviderInput& fInput, Force
         t_pbc pbc;
         set_pbc(&pbc, *(params_.pbcType_), box_);
     }
-    // prepare inputs for NN model
 
-    auto idxLookupRef = makeConstArrayRef(idxLookup_);
-    auto inputs       = makeConstArrayRef(params_.modelInput_);
-    auto posRef       = makeArrayRef(positions_);
-    auto atomNumRef   = makeArrayRef(atomNumbers_);
+    // prepare inputs for NN model
     model_->evaluateModel(&(fOutput->enerd_),
                           fOutput->forceWithVirial_.force_,
-                          idxLookupRef,
-                          inputs,
-                          posRef,
-                          atomNumRef,
+                          idxLookup_,
+                          params_.modelInput_,
+                          positions_,
+                          atomNumbers_,
                           &box_,
                           params_.pbcType_.get());
 }

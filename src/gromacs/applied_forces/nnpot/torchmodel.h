@@ -82,7 +82,6 @@ public:
     TorchModel(const std::string& filename, const MDLogger& logger);
 
     /*! Call inference on NN model and retrieve outputs
-     * \param[in] indexLookup lookup table for local atom indices
      * \param[out] enerd energy data struct
      * \param[out] forces forces on atoms
      * \param[in] indexLookup lookup table for atom indices
@@ -92,14 +91,14 @@ public:
      * \param[in] box simulation box
      * \param[in] pbcType periodic boundary conditions
      */
-    void evaluateModel(gmx_enerdata_t*              enerd,
-                       const ArrayRef<RVec>&        forces,
-                       ArrayRef<const int>&         indexLookup,
-                       ArrayRef<const std::string>& inputs,
-                       ArrayRef<RVec>&              positions,
-                       ArrayRef<int>&               atomNumbers,
-                       matrix*                      box     = nullptr,
-                       PbcType*                     pbcType = nullptr) override;
+    void evaluateModel(gmx_enerdata_t*             enerd,
+                       ArrayRef<RVec>              forces,
+                       ArrayRef<const int>         indexLookup,
+                       ArrayRef<const std::string> inputs,
+                       ArrayRef<RVec>              positions,
+                       ArrayRef<int>               atomNumbers,
+                       matrix*                     box     = nullptr,
+                       PbcType*                    pbcType = nullptr) override;
 
     //! Set communication object for possible communication of input/output data between ranks
     void setComm(const MpiComm& mpiComm) override;

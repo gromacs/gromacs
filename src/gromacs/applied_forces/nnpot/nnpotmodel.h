@@ -71,14 +71,14 @@ public:
      *   - box (matrix): simulation box vectors
      *   - pbc type (PbcType): boolean flags for periodic boundary conditions in x, y, z
      */
-    virtual void evaluateModel(gmx_enerdata_t*,
-                               const ArrayRef<RVec>&,
-                               ArrayRef<const int>&,
-                               ArrayRef<const std::string>&,
-                               ArrayRef<RVec>&,
-                               ArrayRef<int>&,
-                               matrix*,
-                               PbcType*) = 0;
+    virtual void evaluateModel(gmx_enerdata_t* /* enerData */,
+                               ArrayRef<RVec> /* forces */,
+                               ArrayRef<const int> /* idxLookup */,
+                               ArrayRef<const std::string> /* inputs */,
+                               ArrayRef<RVec> /* positions */,
+                               ArrayRef<int> /* atomNumbers */,
+                               matrix* /* box */,
+                               PbcType* /* pbcType */) = 0;
 
     //! set communication object for possible communication of input/output data between ranks
     virtual void setComm(const MpiComm&) = 0;
