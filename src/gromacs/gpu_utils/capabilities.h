@@ -57,6 +57,18 @@ struct GpuConfigurationCapabilities
     static constexpr bool BufferOps = GMX_GPU && !GMX_GPU_OPENCL;
     //! Whether this configuration supports running PME kernels on the device
     static constexpr bool Pme = GMX_GPU && !GMX_GPU_HIP;
+    //! Whether this configuration supports querying device stream for completion of all submitted tasks
+    static constexpr bool StreamQuery = GMX_GPU_CUDA || GMX_GPU_HIP;
+    //! Whether this configuration supports using the param lookup table
+    static constexpr bool PmeParamLookupTable = GMX_GPU_CUDA || GMX_GPU_HIP;
+    //! Whether this configuration supports PME pipelining
+    static constexpr bool PmePipelining = GMX_GPU && !GMX_GPU_OPENCL;
+    //! Whether this configuration supports PME ThreadsPerAtomOrder
+    static constexpr bool PmeSupportsThreadsPerAtomOrder = GMX_GPU && !GMX_GPU_OPENCL;
+    //! Whether this configuration supports PME max gridsize setting
+    static constexpr bool PmeDynamicMaxGridSize = GMX_GPU_CUDA || GMX_GPU_HIP;
+    //! Whether this configuration supports PME solve kernels with less than 4 warps
+    static constexpr bool PmeSolveNeedsAtLeastFourWarps = GMX_GPU && !GMX_GPU_OPENCL;
     //! Whether this configuration supports running FFT kernels on the device
     static constexpr bool Fft =
             GMX_GPU
@@ -80,6 +92,7 @@ struct GpuConfigurationCapabilities
     static constexpr bool PmeDecomposition = (GMX_GPU_CUDA && (GMX_USE_Heffte || GMX_USE_cuFFTMp))
                                              || (GMX_GPU_SYCL && GMX_USE_Heffte)
                                              || (GMX_GPU_HIP && GMX_USE_Heffte);
+    static constexpr bool TwoDPmeDecomposition = PmeDecomposition && GMX_GPU_CUDA;
 };
 
 } // namespace gmx

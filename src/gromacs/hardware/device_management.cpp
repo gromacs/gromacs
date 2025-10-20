@@ -53,12 +53,19 @@
 
 std::vector<std::unique_ptr<DeviceInformation>> findDevices()
 {
+    GMX_RELEASE_ASSERT(false, "Use of GPU specific function in CPU only build");
     return {};
 }
 
-void setActiveDevice(const DeviceInformation& /* deviceInfo */) {}
+void setActiveDevice(const DeviceInformation& /* deviceInfo */)
+{
+    GMX_RELEASE_ASSERT(false, "Use of GPU specific function in CPU only build");
+}
 
-void releaseDevice() {}
+void releaseDevice()
+{
+    GMX_RELEASE_ASSERT(false, "Use of GPU specific function in CPU only build");
+}
 
 std::string getDeviceInformationString(const DeviceInformation& /* deviceInfo */)
 {
@@ -67,7 +74,17 @@ std::string getDeviceInformationString(const DeviceInformation& /* deviceInfo */
 
 bool isDeviceDetectionFunctional(std::string* /* errorMessage */)
 {
+    GMX_RELEASE_ASSERT(false, "Use of GPU specific function in CPU only build");
     return false;
 }
 
-void doubleCheckGpuAwareMpiWillWork(const DeviceInformation& /* deviceInfo */) {}
+void doubleCheckGpuAwareMpiWillWork(const DeviceInformation& /* deviceInfo */)
+{
+    GMX_RELEASE_ASSERT(false, "Use of GPU specific function in CPU only build");
+}
+
+int maximumGridSize(const DeviceInformation& /* deviceInfo */)
+{
+    GMX_RELEASE_ASSERT(false, "Use of GPU specific function in CPU only build");
+    return -1;
+}

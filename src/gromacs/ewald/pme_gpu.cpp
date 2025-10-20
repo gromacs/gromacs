@@ -49,6 +49,7 @@
 #include "gromacs/ewald/pme.h"
 #include "gromacs/ewald/pme_coordinate_receiver_gpu.h"
 #include "gromacs/fft/parallel_3dfft.h"
+#include "gromacs/gpu_utils/capabilities.h"
 #include "gromacs/math/boxmatrix.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdtypes/enerdata.h"
@@ -317,11 +318,10 @@ bool pme_gpu_try_finish_task(gmx_pme_t*               pme,
     // completed, and return fast if not. Accumulate to wcycle the
     // time needed for that checking, but do not yet record that the
     // gather has occurred.
-    bool           needToSynchronize      = true;
-    constexpr bool c_streamQuerySupported = GMX_GPU_CUDA;
+    bool needToSynchronize = true;
 
-    // TODO: implement c_streamQuerySupported with an additional GpuEventSynchronizer per stream (#2521)
-    if ((completionKind == GpuTaskCompletion::Check) && c_streamQuerySupported)
+    // TODO: implement StreamQuery with an additional GpuEventSynchronizer per stream (#2521)
+    if ((completionKind == GpuTaskCompletion::Check) && gmx::GpuConfigurationCapabilities::StreamQuery)
     {
         wallcycle_start_nocount(wcycle, WallCycleCounter::WaitGpuPmeGather);
         // Query the PME stream for completion of all tasks enqueued and

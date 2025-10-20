@@ -783,3 +783,9 @@ void doubleCheckGpuAwareMpiWillWork(const DeviceInformation& deviceInfo)
     GMX_UNUSED_VALUE(deviceInfo);
 #endif
 }
+
+int maximumGridSize(const DeviceInformation& /* deviceInfo */)
+{
+    GMX_RELEASE_ASSERT(false, "Use of non-implemented method in SYCL");
+    return -1;
+}

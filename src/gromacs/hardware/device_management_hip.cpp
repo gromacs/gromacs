@@ -387,3 +387,8 @@ std::string getDeviceInformationString(const DeviceInformation& deviceInfo)
                                  c_deviceStateString[deviceInfo.status]);
     }
 }
+
+int maximumGridSize(const DeviceInformation& deviceInfo)
+{
+    return deviceInfo.prop.maxGridSize[0];
+}

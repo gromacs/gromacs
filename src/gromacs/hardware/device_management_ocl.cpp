@@ -713,3 +713,9 @@ std::string getDeviceInformationString(const DeviceInformation& deviceInfo)
 }
 
 void doubleCheckGpuAwareMpiWillWork(const DeviceInformation& /* deviceInfo */) {}
+
+int maximumGridSize(const DeviceInformation& /* deviceInfo */)
+{
+    GMX_RELEASE_ASSERT(false, "Use of non-implemented method in OpenCL");
+    return -1;
+}

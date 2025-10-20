@@ -56,6 +56,7 @@
 
 #include "gromacs/ewald/ewald_utils.h"
 #include "gromacs/fft/gpu_3dfft.h"
+#include "gromacs/gpu_utils/capabilities.h"
 #include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/device_stream.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
@@ -656,15 +657,18 @@ void pme_gpu_realloc_and_copy_fract_shifts(PmeGpu* pmeGpu)
 void pme_gpu_free_fract_shifts(const PmeGpu* pmeGpu)
 {
     auto* kernelParamsPtr = pmeGpu->kernelParams.get();
-#if GMX_GPU_CUDA
-    destroyParamLookupTable(&kernelParamsPtr->grid.d_fractShiftsTable,
-                            &kernelParamsPtr->fractShiftsTableTexture);
-    destroyParamLookupTable(&kernelParamsPtr->grid.d_gridlineIndicesTable,
-                            &kernelParamsPtr->gridlineIndicesTableTexture);
-#elif GMX_GPU_OPENCL || GMX_GPU_SYCL
-    freeDeviceBuffer(&kernelParamsPtr->grid.d_fractShiftsTable);
-    freeDeviceBuffer(&kernelParamsPtr->grid.d_gridlineIndicesTable);
-#endif
+    if constexpr (gmx::GpuConfigurationCapabilities::PmeParamLookupTable)
+    {
+        destroyParamLookupTable(&kernelParamsPtr->grid.d_fractShiftsTable,
+                                &kernelParamsPtr->fractShiftsTableTexture);
+        destroyParamLookupTable(&kernelParamsPtr->grid.d_gridlineIndicesTable,
+                                &kernelParamsPtr->gridlineIndicesTableTexture);
+    }
+    else
+    {
+        freeDeviceBuffer(&kernelParamsPtr->grid.d_fractShiftsTable);
+        freeDeviceBuffer(&kernelParamsPtr->grid.d_gridlineIndicesTable);
+    }
 }
 
 bool pme_gpu_stream_query(const PmeGpu* pmeGpu)
@@ -787,18 +791,22 @@ static void pme_gpu_init_internal(PmeGpu* pmeGpu, const DeviceContext& deviceCon
      * TODO: PME could also try to pick up nice grid sizes (with factors of 2, 3, 5, 7).
      */
 
-#if GMX_GPU_CUDA || GMX_GPU_SYCL
-    pmeGpu->kernelParams->usePipeline       = char(false);
-    pmeGpu->kernelParams->pipelineAtomStart = 0;
-    pmeGpu->kernelParams->pipelineAtomEnd   = 0;
-#endif
-#if GMX_GPU_CUDA
-    pmeGpu->maxGridWidthX = deviceContext.deviceInfo().prop.maxGridSize[0];
-#else
-    // Use this path for any non-CUDA GPU acceleration
-    // TODO: is there no really global work size limit in OpenCL?
-    pmeGpu->maxGridWidthX = INT32_MAX / 2;
-#endif
+    if constexpr (gmx::GpuConfigurationCapabilities::PmePipelining)
+    {
+        pmeGpu->kernelParams->usePipeline       = char(false);
+        pmeGpu->kernelParams->pipelineAtomStart = 0;
+        pmeGpu->kernelParams->pipelineAtomEnd   = 0;
+    }
+
+    if constexpr (gmx::GpuConfigurationCapabilities::PmeDynamicMaxGridSize)
+    {
+        pmeGpu->maxGridWidthX = maximumGridSize(deviceContext.deviceInfo());
+    }
+    else
+    {
+        // Use this path for any other GPU acceleration
+        pmeGpu->maxGridWidthX = INT32_MAX / 2;
+    }
 
     if (pmeGpu->settings.useDecomposition)
     {
@@ -1302,7 +1310,7 @@ static void pme_gpu_copy_common_data_from(const gmx_pme_t* pme)
  */
 static void pme_gpu_select_best_performing_pme_spreadgather_kernels(PmeGpu* pmeGpu)
 {
-    if (((GMX_GPU_CUDA != 0) || (GMX_GPU_SYCL != 0))
+    if (gmx::GpuConfigurationCapabilities::PmeSupportsThreadsPerAtomOrder
         && pmeGpu->kernelParams->atoms.nAtoms > pmeGpu->minParticleCountToRecalculateSplines)
     {
         pmeGpu->settings.threadsPerAtom     = ThreadsPerAtom::Order;
@@ -2243,8 +2251,9 @@ void pme_gpu_solve(PmeGpu* pmeGpu, const int gridIndex, t_complex* h_grid, GridO
     const int warpSize  = pmeGpu->programHandle_->warpSize();
     const int blockSize = gmx::divideRoundUp(cellsPerBlock, warpSize) * warpSize;
 
-    static_assert(!GMX_GPU_CUDA || c_solveMaxWarpsPerBlock / 2 >= 4,
-                  "The CUDA solve energy kernels needs at least 4 warps. "
+    static_assert(!gmx::GpuConfigurationCapabilities::PmeSolveNeedsAtLeastFourWarps
+                          || c_solveMaxWarpsPerBlock / 2 >= 4,
+                  "Except for OpenCL, the solve energy kernels needs at least 4 warps. "
                   "Here we launch at least half of the max warps.");
 
     KernelLaunchConfig config;

@@ -416,3 +416,8 @@ std::string getDeviceInformationString(const DeviceInformation& deviceInfo)
 }
 
 void doubleCheckGpuAwareMpiWillWork(const DeviceInformation& /* deviceInfo */) {}
+
+int maximumGridSize(const DeviceInformation& deviceInfo)
+{
+    return deviceInfo.prop.maxGridSize[0];
+}

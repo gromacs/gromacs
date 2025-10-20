@@ -2456,21 +2456,24 @@ int Mdrunner::mdrunner()
             physicalNodeComm.barrier();
         }
 
-        const bool haveDetectedOrForcedCudaAwareMpi =
-                (gmx::checkMpiCudaAwareSupport() == gmx::GpuAwareMpiStatus::Supported
-                 || gmx::checkMpiCudaAwareSupport() == gmx::GpuAwareMpiStatus::Forced);
-        const bool haveDetectedOrForcedHipAwareMpi =
-                (gmx::checkMpiHipAwareSupport() == gmx::GpuAwareMpiStatus::Supported
-                 || gmx::checkMpiHipAwareSupport() == gmx::GpuAwareMpiStatus::Forced);
-
-        if (!haveDetectedOrForcedCudaAwareMpi && !haveDetectedOrForcedHipAwareMpi)
+        if (GMX_GPU)
         {
-            // Don't reset GPU in case of GPU-AWARE MPI
-            // UCX creates GPU buffers which are cleaned-up as part of MPI_Finalize()
-            // resetting the device before MPI_Finalize() results in crashes inside UCX
-            // This can also cause issues in tests that invoke mdrunner() multiple
-            // times in the same process; ref #3952.
-            releaseDevice();
+            const bool haveDetectedOrForcedCudaAwareMpi =
+                    (gmx::checkMpiCudaAwareSupport() == gmx::GpuAwareMpiStatus::Supported
+                     || gmx::checkMpiCudaAwareSupport() == gmx::GpuAwareMpiStatus::Forced);
+            const bool haveDetectedOrForcedHipAwareMpi =
+                    (gmx::checkMpiHipAwareSupport() == gmx::GpuAwareMpiStatus::Supported
+                     || gmx::checkMpiHipAwareSupport() == gmx::GpuAwareMpiStatus::Forced);
+
+            if (!haveDetectedOrForcedCudaAwareMpi && !haveDetectedOrForcedHipAwareMpi)
+            {
+                // Don't reset GPU in case of GPU-AWARE MPI
+                // UCX creates GPU buffers which are cleaned-up as part of MPI_Finalize()
+                // resetting the device before MPI_Finalize() results in crashes inside UCX
+                // This can also cause issues in tests that invoke mdrunner() multiple
+                // times in the same process; ref #3952.
+                releaseDevice();
+            }
         }
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
