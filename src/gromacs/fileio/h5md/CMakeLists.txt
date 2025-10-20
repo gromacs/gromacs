@@ -42,6 +42,7 @@ if(GMX_USE_HDF5)
         h5md_attribute.cpp
         h5md_datasetbase.cpp
         h5md_error.cpp
+        h5md_fixeddataset.cpp
         h5md_framedataset.cpp
         h5md_group.cpp
         h5md_guard.cpp
