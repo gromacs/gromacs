@@ -67,7 +67,8 @@ namespace gmx
 
 class DomainPairComm;
 
-/*! \brief MPI tags for non-blocking x and f communication.
+/*! \internal
+ * \brief MPI tags for non-blocking x and f communication.
  *
  * With the current call order we don't need this.
  * But it's safer to have them, in case one would e.g. like to post
@@ -97,7 +98,8 @@ struct ZoneCorners
     bool cornersDiffer = false;
 };
 
-/*! \brief Setup for selecting halo atoms to be sent and sending coordinates to another domain
+/*! \internal
+ * \brief Setup for selecting halo atoms to be sent and sending coordinates to another domain
  *
  * Also used for receiving forces.
  *
@@ -166,7 +168,7 @@ public:
      *                                    triclinic distance checks
      * \param[in] normal                  The normal vectors to planes separating domains along
      *                                    the triclinic dimensions
-     * \param[in] isCellMissingLinks      Tells whether cells are missing bonded interactions,
+     * \param[in] isClusterMissingLinks   Tells whether clusters are missing bonded interactions,
      *                                    only used when filtering bonded communication
      */
     void selectHaloAtoms(const gmx_domdec_t&      dd,
@@ -175,7 +177,7 @@ public:
                          const real               cutoffMultiBody,
                          const ivec               dimensionIsTriclinic,
                          ArrayRef<const RVec>     normal,
-                         const std::vector<bool>& isCellMissingLinks);
+                         const std::vector<bool>& isClusterMissingLinks);
 
     //! Creates and returns a buffer with column indices and cluster counts to be sent
     FastVector<std::pair<int, int>> makeColumnsSendBuffer() const;
@@ -255,7 +257,8 @@ private:
     MPI_Comm mpiCommAll_;
 };
 
-/*! \brief Setup for receiving halo coordinates from another domain and sending halo forces
+/*! \internal
+ *  \brief Setup for receiving halo coordinates from another domain and sending halo forces
  *
  * This object is used for communicating with a domain that resides in forward direction along
  * the domain decomposition grid. The coordinates are received in place in the coordinate
@@ -317,7 +320,8 @@ private:
     MPI_Comm mpiCommAll_;
 };
 
-/*! \brief Setup for communication between pairs of domains, both backward and forward along the DD grid
+/*! \internal
+ * \brief Setup for communication between pairs of domains, both backward and forward along the DD grid
  *
  * This object is a holder a DomainCommBackward and DomainCommForward object. Both objects communicate
  * along the same DD-grid displacement vector but with opposite direction.

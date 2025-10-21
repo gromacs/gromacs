@@ -315,11 +315,15 @@ public:
 
     /*! \brief Sets a non-local grid using data communicated from a different domain
      *
+     * \note The cluster indices passed in \p clusterRanges use a size of the maximum
+     *       of the i- and j-cluster size in atoms, whereas \c Grid use the i-cluster size.
+     *
      * \param[in] ddZone      The domain decomposition zone this grid belongs to
      * \param[in] dimensions  The dimensions of the grid
      * \param[in] clusterRanges  A list of column indices and number of clusters for a column,
      *                           the list should be ordered on column index, the same column
-     *                           index can appear multiple times
+     *                           index can appear multiple times; note that the clusters
+     *                           here have size of the maximum of the i- and j-sizes
      * \param[in] cellOffset  The offset of this grid in the list of cells over all grids
      * \param[in] atomInfo    A list of information for all local and non-local atoms
      * \param[in] x           The coordinates for all local and non-local atoms
