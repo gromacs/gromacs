@@ -71,6 +71,15 @@ gmx_add_unit_test(GpuUtilsUnitTests gpu_utils-test HARDWARE_DETECTION
 target_link_libraries(gpu_utils-test PRIVATE gpu_utils)
 target_link_libraries(gpu_utils-test PRIVATE math)
 
+if (GMX_LIB_MPI)
+    gmx_add_mpi_unit_test(GpuUtilsMpiTests gpu_utils-mpi-test 2 HARDWARE_DETECTION MPI
+    GPU_CPP_SOURCE_FILES
+        gpu_aware_mpi.cpp
+    )
+
+    target_link_libraries(gpu_utils-mpi-test PRIVATE gpu_utils utility)
+endif()
+
 if (GMX_NVSHMEM)
     gmx_add_mpi_unit_test(NvshmemTests nvshmem-test 2 HARDWARE_DETECTION NVSHMEM
     CUDA_CU_SOURCE_FILES
