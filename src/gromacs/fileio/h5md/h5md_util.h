@@ -42,6 +42,8 @@
 
 #include <hdf5.h>
 
+#include <optional>
+#include <string>
 #include <vector>
 
 namespace gmx
@@ -74,6 +76,53 @@ inline bool handleIsValid(const hid_t handle) noexcept
 {
     // Return value: <0 = error, 0 = invalid, >0 = valid
     return H5Iis_valid(handle) > 0;
+}
+
+/*! \brief Return the full name (HDF-path) of an HDF5 \p handle.
+ *
+ * \param[in] handle HDF5 handle to get the name of.
+ * \returns The full name of the handle, or \c std::nullopt if the handle is invalid.
+ */
+inline std::optional<std::string> getHandlePath(const hid_t handle)
+{
+    int size = static_cast<int>(H5Iget_name(handle, nullptr, 0));
+
+    if (size > 0)
+    {
+        std::vector<char> buffer(size + 1, '\0');
+        H5Iget_name(handle, buffer.data(), size + 1);
+        return std::string(buffer.data());
+    }
+    else
+    {
+        return std::nullopt;
+    }
+}
+
+/*! \brief Return the base name (last component of the HDF-path) of an HDF5 \p handle.
+ *
+ * \param[in] handle HDF5 handle to get the base name of.
+ * \returns The base name of the handle, the full name if no '/' found in its paths,
+ *          or \c std::nullopt on error.
+ */
+inline std::optional<std::string> getHandleBaseName(const hid_t handle)
+{
+    std::optional<std::string> fullName = getHandlePath(handle);
+    if (!fullName.has_value())
+    {
+        return std::nullopt;
+    }
+    size_t pos = fullName.value().find_last_of('/');
+    if (pos != std::string::npos)
+    {
+        // Return empty string for root group
+        return fullName.value().substr(pos + 1);
+    }
+    else
+    {
+        // If no '/' found, return the full name
+        return fullName;
+    }
 }
 
 } // namespace gmx

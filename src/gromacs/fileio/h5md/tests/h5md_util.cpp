@@ -64,6 +64,9 @@ using H5mdObjectExistsTest = H5mdTestBase;
 //! \brief Test fixture alias for functions asserting HDF5 handles.
 using H5mdHandleIsValidTest = H5mdTestBase;
 
+//! \brief Test fixture alias for handle name utilities.
+using H5mdPathsOfHandleTest = H5mdTestBase;
+
 TEST_F(H5mdObjectExistsTest, FindsObjectsInFileRoot)
 {
     EXPECT_FALSE(objectExists(fileid(), "testGroup"));
@@ -142,6 +145,117 @@ TEST_F(H5mdHandleIsValidTest, ReturnFalseForHandlesToClosedObjects)
                 << "Sanity check: must be valid before scope guard exits scope";
     }
     EXPECT_FALSE(handleIsValid(handleToClose));
+}
+
+TEST_F(H5mdPathsOfHandleTest, HandlePathOfGroups)
+{
+    {
+        const auto [handleTest, guard] = makeH5mdGroupGuard(createGroup(fileid(), "testGroup"));
+        const auto path                = getHandlePath(handleTest);
+        ASSERT_TRUE(path.has_value());
+        EXPECT_EQ(path.value(), "/testGroup");
+    }
+
+    {
+        SCOPED_TRACE("Test long path");
+        const auto [handleTest, guard] = makeH5mdGroupGuard(
+                createGroup(fileid(), "/This/is/a/extremely/long/path/to/a/testgp"));
+        const auto path = getHandlePath(handleTest);
+        ASSERT_TRUE(path.has_value());
+        EXPECT_EQ(path.value(), "/This/is/a/extremely/long/path/to/a/testgp");
+    }
+
+    {
+        SCOPED_TRACE("Test path with trailing slash");
+        const auto [handleTest, guard] =
+                makeH5mdGroupGuard(createGroup(fileid(), "slash/in/the/end/"));
+        const auto path = getHandlePath(handleTest);
+        ASSERT_TRUE(path.has_value());
+        EXPECT_EQ(path.value(), "/slash/in/the/end");
+    }
+}
+
+TEST_F(H5mdPathsOfHandleTest, BaseNameOfGroups)
+{
+    {
+        const auto [handleTest, guard] = makeH5mdGroupGuard(createGroup(fileid(), "testGroup"));
+        EXPECT_EQ(getHandleBaseName(handleTest).value_or("NoAName"), "testGroup");
+    }
+
+    {
+        SCOPED_TRACE("Test long path");
+        const auto [handleTest, guard] = makeH5mdGroupGuard(
+                createGroup(fileid(), "/This/is/a/extremely/long/path/to/a/testgp"));
+        EXPECT_EQ(getHandleBaseName(handleTest).value_or("NoAName"), "testgp");
+    }
+
+    {
+        SCOPED_TRACE("Test path with trailing slash");
+        const auto [handleTest, guard] =
+                makeH5mdGroupGuard(createGroup(fileid(), "slash/in/the/end/"));
+        EXPECT_EQ(getHandleBaseName(handleTest).value_or("NoAName"), "end");
+    }
+}
+
+TEST_F(H5mdPathsOfHandleTest, HandleNameOfDatasets)
+{
+    const auto [grpHandle, guard] = makeH5mdGroupGuard(createGroup(fileid(), "testGroup"));
+    const H5mdDataSetBase<float> dataSet =
+            H5mdFrameDataSetBuilder<float>(grpHandle, "testDataSet").build();
+    const auto datasetPath = getHandlePath(dataSet.id());
+    ASSERT_TRUE(datasetPath.has_value());
+    EXPECT_EQ(datasetPath.value(), "/testGroup/testDataSet");
+}
+
+TEST_F(H5mdPathsOfHandleTest, BaseNameOfDatasets)
+{
+    const auto [grpHandle, guard] = makeH5mdGroupGuard(createGroup(fileid(), "testGroup"));
+    const H5mdDataSetBase<float> dataSet =
+            H5mdFrameDataSetBuilder<float>(grpHandle, "testDataSet").build();
+    EXPECT_EQ(getHandleBaseName(dataSet.id()).value_or("NoAName"), "testDataSet");
+}
+
+TEST_F(H5mdPathsOfHandleTest, ReturnEmptyForInvalidHandle)
+{
+    {
+        SCOPED_TRACE("Test invalid HDF5 handle");
+        EXPECT_EQ(getHandlePath(H5I_INVALID_HID), std::nullopt);
+        EXPECT_EQ(getHandleBaseName(H5I_INVALID_HID), std::nullopt);
+    }
+
+    {
+        SCOPED_TRACE("Test uninitialized HDF5 handle");
+        hid_t handleTest = 1;
+        EXPECT_EQ(getHandlePath(handleTest), std::nullopt);
+        EXPECT_EQ(getHandleBaseName(handleTest), std::nullopt);
+    }
+
+    {
+        SCOPED_TRACE("Test closed HDF5 handle");
+        hid_t handleTest;
+        {
+            // Within the Scope guard, the handle is valid
+            auto resource = makeH5mdGroupGuard(createGroup(fileid(), "testGroup"));
+            handleTest    = resource.first;
+            ASSERT_EQ(getHandlePath(handleTest).value_or("NotAPath"), "/testGroup")
+                    << "Sanity check: must be valid before scope guard exits scope";
+        }
+        EXPECT_EQ(getHandlePath(handleTest), std::nullopt);
+        EXPECT_EQ(getHandleBaseName(handleTest), std::nullopt);
+    }
+}
+
+TEST_F(H5mdPathsOfHandleTest, NameOfRoot)
+{
+    {
+        SCOPED_TRACE("The full name of the root group should be /");
+        EXPECT_EQ(getHandlePath(fileid()).value_or("NotAPath"), "/");
+    }
+
+    {
+        SCOPED_TRACE("The base name of the root group should be an empty string");
+        EXPECT_EQ(getHandleBaseName(fileid()).value_or("NoAName"), "");
+    }
 }
 
 } // namespace
