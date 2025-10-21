@@ -340,6 +340,10 @@ function (gmx_register_gtest_test NAME EXENAME)
                 list(APPEND _cmd -ntmpi ${ARG_MPI_RANKS})
             endif()
             math(EXPR _nproc "${_nproc} * ${ARG_MPI_RANKS}")
+	elseif(GMX_MPI)
+                set(_cmd
+                    ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 1
+                    ${MPIEXEC_PREFLAGS} ${_cmd} ${MPIEXEC_POSTFLAGS})
         endif()
         if (CMAKE_CROSSCOMPILING_EMULATOR)
             set(_cmd ${CMAKE_CROSSCOMPILING_EMULATOR} ${_cmd})
