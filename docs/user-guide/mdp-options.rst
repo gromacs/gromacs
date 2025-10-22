@@ -2131,9 +2131,9 @@ AWH adaptive biasing
 
 .. mdp:: awh1-histogram-tolerance
 
-    (0.5) []
+    (0.3) []
     The relative tolerance for the histogram of sampled weigths, used with
-    :mdp-value:`awh1-equilibrate-histogram=yes`. The value of 0.5 is sufficiently large to not
+    :mdp-value:`awh1-equilibrate-histogram=yes`. The value of 0.3 is sufficiently large to not
     slow down the convergence, even when a single walker is used.
 
 .. mdp:: awh1-target

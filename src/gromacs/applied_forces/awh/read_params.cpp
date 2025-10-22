@@ -810,7 +810,7 @@ AwhBiasParams::AwhBiasParams(std::vector<t_inpfile>* inp, const std::string& pre
                              "when equilibrating");
     }
     opt                 = prefix + "-histogram-tolerance";
-    histogramTolerance_ = get_ereal(inp, opt, 0.5, wi);
+    histogramTolerance_ = get_ereal(inp, opt, 0.3, wi);
 
     if (bComment)
     {
