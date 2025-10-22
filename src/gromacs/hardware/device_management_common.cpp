@@ -124,7 +124,7 @@ int getDeviceComputeUnitFactor(const DeviceInformation& deviceInfo)
             // There are 16 XVEs per XC on Gen9-Gen12 and Xe
             return 16;
         case DeviceVendor::Nvidia:
-        case DeviceVendor::Apple: return 1;
+        case DeviceVendor::Apple:
         case DeviceVendor::PoclCpu: return 1;
         default:
             // Unknown vendor, we don't know any better.
