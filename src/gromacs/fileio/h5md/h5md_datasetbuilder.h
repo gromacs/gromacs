@@ -45,9 +45,11 @@
 #include <initializer_list>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <type_traits>
 #include <vector>
 
+#include "gromacs/fileio/h5md/h5md_attribute.h"
 #include "gromacs/fileio/h5md/h5md_datasetbase.h"
 #include "gromacs/fileio/h5md/h5md_error.h"
 #include "gromacs/fileio/h5md/h5md_guard.h"
@@ -170,6 +172,13 @@ public:
         return *this;
     }
 
+    //! \brief Set \p unit attribute for data set values.
+    H5mdDataSetBuilder& withUnit(std::string_view unit)
+    {
+        unit_ = unit;
+        return *this;
+    }
+
     //! \brief Finalize all set options, then build and return the data set.
     //
     // \throws gmx::FileIOError if any set options are incorrect or incompatible with other
@@ -230,6 +239,11 @@ public:
         const hid_t dataSetHandle = H5Dcreate(
                 container_, name_.c_str(), dataType, dataSpace, H5P_DEFAULT, creationPropertyList_, accessPropertyList_);
         throwUponInvalidHid(dataSetHandle, "Cannot create data set.");
+
+        if (!unit_.empty())
+        {
+            setAttribute(dataSetHandle, c_unitAttributeKey, unit_.c_str());
+        }
 
         // Responsibility for closing `dataSetHandle` is taken by the `H5mdDataSetBase<ValueType>`
         return H5mdDataSetBase<ValueType>(dataSetHandle);
@@ -307,6 +321,9 @@ private:
 
     //!< Property list for creation options to create data set with.
     hid_t creationPropertyList_;
+
+    //!< Unit for values in data set.
+    std::string unit_;
 };
 
 } // namespace gmx

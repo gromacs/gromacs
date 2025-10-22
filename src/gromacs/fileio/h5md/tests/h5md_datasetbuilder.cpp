@@ -45,9 +45,12 @@
 #include <hdf5.h>
 
 #include <iostream>
+#include <optional>
+#include <string>
 
 #include <gtest/gtest.h>
 
+#include "gromacs/fileio/h5md/h5md_attribute.h"
 #include "gromacs/fileio/h5md/h5md_guard.h"
 #include "gromacs/fileio/h5md/h5md_type.h"
 #include "gromacs/fileio/h5md/tests/h5mdtestbase.h"
@@ -521,6 +524,48 @@ TEST_F(H5mdDataSetBuilderTest, ThrowsForInvalidContainer)
 {
     EXPECT_THROW(H5mdDataSetBuilder<int32_t>(H5I_INVALID_HID, "testDataSet").withDimension({ 0 }).build(),
                  gmx::FileIOError);
+}
+
+TEST_F(H5mdDataSetBuilderTest, UnitAttributeNotSetByDefault)
+{
+    const H5mdDataSetBase<int32_t> dataSet =
+            H5mdDataSetBuilder<int32_t>(fileid(), "testDataSet").withDimension({ 0 }).build();
+
+    EXPECT_FALSE(getAttribute<std::string>(dataSet.id(), "unit").has_value());
+}
+
+TEST_F(H5mdDataSetBuilderTest, WithUnitAttribute)
+{
+    constexpr char unit[] = "cm+2 s-1";
+
+    {
+        SCOPED_TRACE("Unit as std::string");
+        const H5mdDataSetBase<int32_t> dataSet =
+                H5mdDataSetBuilder<int32_t>(fileid(), "testDataSetString")
+                        .withDimension({ 0 })
+                        .withUnit("unused unit") // ensure that only the last .withUnit() value is used
+                        .withUnit(std::string{ unit })
+                        .build();
+
+        const std::optional<std::string> unitAttribute =
+                getAttribute<std::string>(dataSet.id(), "unit");
+        ASSERT_TRUE(unitAttribute.has_value()) << "Unit attribute was not set";
+        EXPECT_EQ(unitAttribute.value(), unit) << "Incorrect unit attribute";
+    }
+    {
+        SCOPED_TRACE("Unit as const char*");
+        const H5mdDataSetBase<int32_t> dataSet =
+                H5mdDataSetBuilder<int32_t>(fileid(), "testDataSetChar*")
+                        .withDimension({ 0 })
+                        .withUnit("unused unit") // ensure that only the last .withUnit() value is used
+                        .withUnit(unit)
+                        .build();
+
+        const std::optional<std::string> unitAttribute =
+                getAttribute<std::string>(dataSet.id(), "unit");
+        ASSERT_TRUE(unitAttribute.has_value()) << "Unit attribute was not set";
+        EXPECT_EQ(unitAttribute.value(), unit) << "Incorrect unit attribute";
+    }
 }
 
 } // namespace

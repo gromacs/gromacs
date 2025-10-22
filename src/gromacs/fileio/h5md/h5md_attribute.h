@@ -50,6 +50,9 @@
 
 namespace gmx
 {
+
+constexpr char c_unitAttributeKey[] = "unit";
+
 /*! \brief Read an attribute of a given data type
  *
  * \tparam ValueType The type of the attribute to read

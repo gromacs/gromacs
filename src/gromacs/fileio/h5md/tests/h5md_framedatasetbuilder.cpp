@@ -46,6 +46,7 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/fileio/h5md/h5md_attribute.h"
 #include "gromacs/fileio/h5md/h5md_datasetbase.h"
 #include "gromacs/fileio/h5md/h5md_guard.h"
 #include "gromacs/fileio/h5md/h5md_type.h"
@@ -361,6 +362,28 @@ TYPED_TEST(H5mdBasicVectorFrameDataSetBuilderTest, SetFrameDimensionAddsDimensio
     EXPECT_EQ(dims[2], frameDimension[1])
             << "Frame dimension 1 should be in center for row major order";
     EXPECT_EQ(dims[3], DIM) << "Inner dimension should be DIM for row major order";
+}
+
+TYPED_TEST(H5mdFrameDataSetBuilderTest, UnitAttributeNotSetByDefault)
+{
+    const H5mdDataSetBase<TypeParam> dataSet =
+            H5mdFrameDataSetBuilder<TypeParam>(this->fileid(), "testDataSet").build();
+
+    EXPECT_FALSE(getAttribute<std::string>(dataSet.id(), "unit").has_value());
+}
+
+TYPED_TEST(H5mdFrameDataSetBuilderTest, WithUnitAttribute)
+{
+    constexpr char                   unit[] = "cm+2 s-1";
+    const H5mdDataSetBase<TypeParam> dataSet =
+            H5mdFrameDataSetBuilder<TypeParam>(this->fileid(), "testDataSet")
+                    .withUnit("unused unit") // ensure that only the last .withUnit() value is used
+                    .withUnit(unit)
+                    .build();
+
+    const std::optional<std::string> unitAttribute = getAttribute<std::string>(dataSet.id(), "unit");
+    ASSERT_TRUE(unitAttribute.has_value()) << "Unit attribute was not set";
+    EXPECT_EQ(unitAttribute.value(), unit) << "Incorrect unit attribute";
 }
 
 } // namespace

@@ -42,6 +42,7 @@
 
 #include <hdf5.h>
 
+#include <string_view>
 #include <vector>
 
 #include "gromacs/fileio/h5md/h5md_datasetbuilder.h"
@@ -120,6 +121,13 @@ public:
     H5mdFrameDataSetBuilder& withVariableStringLength()
     {
         Base::withVariableStringLength();
+        return *this;
+    }
+
+    //! \copydoc H5mdDataSetBuilder::withUnit()
+    H5mdFrameDataSetBuilder& withUnit(std::string_view unit)
+    {
+        Base::withUnit(unit);
         return *this;
     }
 
