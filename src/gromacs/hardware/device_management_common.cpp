@@ -105,6 +105,10 @@ DeviceVendor getDeviceVendor(const char* vendorName)
         {
             return DeviceVendor::Apple;
         }
+        else if (std::strstr(vendorName, "Portable Computing Language"))
+        {
+            return DeviceVendor::PoclCpu;
+        }
     }
     return DeviceVendor::Unknown;
 }
@@ -121,6 +125,7 @@ int getDeviceComputeUnitFactor(const DeviceInformation& deviceInfo)
             return 16;
         case DeviceVendor::Nvidia:
         case DeviceVendor::Apple: return 1;
+        case DeviceVendor::PoclCpu: return 1;
         default:
             // Unknown vendor, we don't know any better.
             GMX_ASSERT(false, "Vendor not supported");

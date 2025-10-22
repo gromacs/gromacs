@@ -142,8 +142,10 @@ enum class DeviceVendor : int
     Intel = 3,
     //! Apple
     Apple = 4,
+    //! PoclCpu, any CPU vendor with PoCL CPU driver
+    PoclCpu = 5,
     //! Enumeration size
-    Count = 5
+    Count = 6
 };
 
 
@@ -164,9 +166,9 @@ struct DeviceInformation
     /*! \brief Warp/sub-group sizes supported by the device.
      *
      * \ref DeviceInformation must be serializable in CUDA, so we cannot use \c std::vector here.
-     * Arbitrarily limiting to 10.
+     * Limiting to 12 as the minimum needed for PoCL CPU.
      */
-    gmx::FixedCapacityVector<int, 10> supportedSubGroupSizes;
+    gmx::FixedCapacityVector<int, 12> supportedSubGroupSizes;
 
     gmx::GpuAwareMpiStatus gpuAwareMpiStatus;
 #if GMX_GPU_CUDA

@@ -54,6 +54,7 @@
 #include "gromacs/gpu_utils/gmxsycl.h"
 #include "gromacs/hardware/device_management.h"
 #include "gromacs/hardware/device_management_sycl_intel_device_ids.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -64,6 +65,8 @@
 
 #include "device_information.h"
 
+
+static constexpr const char* sc_poclPlatformString = "Portable Computing Language";
 
 static std::optional<std::tuple<int, int>> parseHardwareVersionNvidia(const std::string& archName)
 {
@@ -368,6 +371,11 @@ static DeviceStatus isDeviceCompatible(const sycl::device&           syclDevice,
         {
             return DeviceStatus::Compatible;
         }
+        else if (deviceVendor == DeviceVendor::PoclCpu)
+        {
+            // PoCL CPU not yet tested with ACPP, only allow DPCPP for now.
+            return GMX_SYCL_DPCPP ? DeviceStatus::Compatible : DeviceStatus::Incompatible;
+        }
         else
         {
             return DeviceStatus::Incompatible;
@@ -596,7 +604,10 @@ static std::vector<sycl::device> partitionDevices(const std::vector<sycl::device
 std::vector<std::unique_ptr<DeviceInformation>> findDevices()
 {
     std::vector<std::unique_ptr<DeviceInformation>> deviceInfos(0);
-    std::vector<sycl::device> allDevices = sycl::device::get_devices(sycl::info::device_type::gpu);
+    std::vector<sycl::device>                       allDevices;
+
+    allDevices = sycl::device::get_devices();
+
     const std::vector<sycl::device> devices = partitionDevices(std::move(allDevices));
     deviceInfos.reserve(devices.size());
     for (const auto& syclDevice : devices)
@@ -630,20 +641,40 @@ std::vector<std::unique_ptr<DeviceInformation>> findDevices()
         }
         deviceInfos[i]->id         = i;
         deviceInfos[i]->syclDevice = syclDevice;
-        deviceInfos[i]->deviceVendor =
-                getDeviceVendor(syclDevice.get_info<sycl::info::device::vendor>().c_str());
+
+        // In case we have PoCL as SYCL backend and the device is CPU, set the 'special' PoCL vendor.
+        // This way we can use any CPU under the PoCL vendor.
+        // If we have PoCL and GPU (for example PoCL->L0->Intel GPU), we will use the actual device vendor.
+        if (syclDevice.is_cpu()
+            && syclDevice.get_platform().get_info<sycl::info::platform::name>() == sc_poclPlatformString)
+        {
+            deviceInfos[i]->deviceVendor = DeviceVendor::PoclCpu;
+        }
+        else
+        {
+            deviceInfos[i]->deviceVendor =
+                    getDeviceVendor(syclDevice.get_info<sycl::info::device::vendor>().c_str());
+        }
 
         deviceInfos[i]->gpuAwareMpiStatus = getDeviceGpuAwareMpiStatus(syclDevice.get_backend());
 
         deviceInfos[i]->supportedSubGroupSizes.clear();
+
         try
         {
             const auto sgSizes = syclDevice.get_info<sycl::info::device::sub_group_sizes>();
-            GMX_RELEASE_ASSERT(sgSizes.size() <= deviceInfos[i]->supportedSubGroupSizes.capacity(),
-                               "Device supports too many subgroup sizes");
+
             for (int sgSize : sgSizes)
             {
-                deviceInfos[i]->supportedSubGroupSizes.push_back(sgSize);
+                // Some implementations (like PoCL) may report arbitrary subgroup sizes.
+                // Ignore any size that is not a power of two.
+                if (gmx::isPowerOfTwo(sgSize))
+                {
+                    GMX_RELEASE_ASSERT(deviceInfos[i]->supportedSubGroupSizes.size()
+                                               < deviceInfos[i]->supportedSubGroupSizes.capacity(),
+                                       "Device supports too many subgroup sizes");
+                    deviceInfos[i]->supportedSubGroupSizes.push_back(sgSize);
+                }
             }
         }
         catch (std::exception)
