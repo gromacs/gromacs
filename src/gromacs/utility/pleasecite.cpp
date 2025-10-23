@@ -246,7 +246,7 @@ void please_cite(FILE* fp, const char* key)
           "10.1002/prot.20310" },
         { "Okabe2001a",
           "T. Okabe, M. Kawata, Y. Okamoto, M. Mikami",
-          "Replica-exchange {M}onte {C}arlo method for the isobaric-isothermal ensemble",
+          "Replica-exchange Monte Carlo method for the isobaric-isothermal ensemble",
           "Chem. Phys. Lett.",
           2001,
           "10.1016/S0009-2614(01)00055-0" },
@@ -382,7 +382,7 @@ void please_cite(FILE* fp, const char* key)
           2009,
           "10.1063/1.3216473" },
         { "Hub2014a",
-          "J. S. Hub, B. L. de Groot, H. Grubmueller, G. Groenhof",
+          "J. S. Hub, B. L. de Groot, H. Grubmüller, G. Groenhof",
           "Quantifying Artifacts in Ewald Simulations of Inhomogeneous Systems with a Net Charge",
           "J. Chem. Theory Comput.",
           2014,
@@ -462,7 +462,7 @@ void please_cite(FILE* fp, const char* key)
         char* author = wrap_lines(citedb[index].author, sc_lineWidth, 0, FALSE);
         char* title  = wrap_lines(citedb[index].title, sc_lineWidth, 0, FALSE);
         fprintf(fp,
-                "%s\n%s\n%s (%d)\nDOI: %s\n",
+                "%s\n%s\n%s (%d)\nhttps://doi.org/%s\n",
                 author,
                 title,
                 citedb[index].journal,
