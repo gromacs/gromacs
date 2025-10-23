@@ -203,8 +203,15 @@ void print_flop(FILE* out, t_nrnb* nrnb, double* nbfs, double* mflop);
  * When out!=NULL also prints the full count table.
  */
 
-void print_perf(FILE* out, double nodetime, double realtime, int64_t nsteps, double delta_t, double nbfs, double mflop);
-/* Prints the performance, nbfs and mflop come from print_flop */
+void print_perf(FILE*         out,
+                const double  timePerThread,
+                const double  timePerNode,
+                const int64_t nrSteps,
+                const double  timeStep,
+                const double  nbfs,
+                const double  mFlop,
+                const int64_t nrAtoms);
+/* Prints the performance, nbfs and mFlop come from print_flop */
 
 int cost_nrnb(int enr);
 /* Cost in i860 cycles of this component of MD */

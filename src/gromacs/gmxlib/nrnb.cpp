@@ -38,6 +38,8 @@
 #include <cstdlib>
 #include <cstring>
 
+#include "gromacs/utility/stringutil.h"
+
 typedef struct
 {
     const char* name;
@@ -395,83 +397,76 @@ void print_flop(FILE* out, t_nrnb* nrnb, double* nbfs, double* mflop)
     }
 }
 
-void print_perf(FILE*   out,
-                double  time_per_thread,
-                double  time_per_node,
-                int64_t nsteps,
-                double  delta_t,
-                double  nbfs,
-                double  mflop)
+void print_perf(FILE*         out,
+                const double  timePerThread,
+                const double  timePerNode,
+                const int64_t nrSteps,
+                const double  timeStep,
+                const double  nbfs,
+                const double  mFlop,
+                const int64_t nrAtoms)
 {
-    double wallclocktime;
-
     fprintf(out, "\n");
 
-    if (time_per_node > 0)
+    if (timePerNode > 0)
     {
         fprintf(out, "%12s %12s %12s %10s\n", "", "Core t (s)", "Wall t (s)", "(%)");
-        fprintf(out, "%12s %12.3f %12.3f %10.1f\n", "Time:", time_per_thread, time_per_node, 100.0 * time_per_thread / time_per_node);
-        /* only print day-hour-sec format if time_per_node is more than 30 min */
-        if (time_per_node > 30 * 60)
+        fprintf(out, "%12s %12.3f %12.3f %10.1f\n", "Time:", timePerThread, timePerNode, 100.0 * timePerThread / timePerNode);
+        /* only print day-hour-sec format if timePerNode is more than 30 min */
+        if (timePerNode > 30 * 60)
         {
             fprintf(out, "%12s %12s", "", "");
-            pr_difftime(out, time_per_node);
+            pr_difftime(out, timePerNode);
         }
-        if (delta_t > 0)
-        {
-            mflop         = mflop / time_per_node;
-            wallclocktime = nsteps * delta_t;
 
-            if (std::getenv("GMX_DETAILED_PERF_STATS") == nullptr)
+        std::string unitInfo = gmx::formatString("%12s ", "");
+        std::string perfInfo = gmx::formatString("%12s ", "Performance:");
+        if (timeStep > 0)
+        {
+            const double mFlops        = mFlop / timePerNode;
+            const double wallClockTime = nrSteps * timeStep;
+
+            if (std::getenv("GMX_DETAILED_PERF_STATS") != nullptr)
             {
-                fprintf(out, "%12s %12s %12s\n", "", "(ns/day)", "(hour/ns)");
-                fprintf(out,
-                        "%12s %12.3f %12.3f\n",
-                        "Performance:",
-                        wallclocktime * 24 * 3.6 / time_per_node,
-                        1000 * time_per_node / (3600 * wallclocktime));
+                unitInfo += gmx::formatString(
+                        "%12s %12s ", "(Mnbf/s)", (mFlops > 1000) ? "(GFlops)" : "(MFlops)");
+                perfInfo += gmx::formatString(
+                        "%12.3f %12.3f ", nbfs / timePerNode, (mFlops > 1000) ? (mFlops / 1000) : mFlops);
             }
-            else
-            {
-                fprintf(out,
-                        "%12s %12s %12s %12s %12s\n",
-                        "",
-                        "(Mnbf/s)",
-                        (mflop > 1000) ? "(GFlops)" : "(MFlops)",
-                        "(ns/day)",
-                        "(hour/ns)");
-                fprintf(out,
-                        "%12s %12.3f %12.3f %12.3f %12.3f\n",
-                        "Performance:",
-                        nbfs / time_per_node,
-                        (mflop > 1000) ? (mflop / 1000) : mflop,
-                        wallclocktime * 24 * 3.6 / time_per_node,
-                        1000 * time_per_node / (3600 * wallclocktime));
-            }
+
+            unitInfo += gmx::formatString("%12s %12s ", "(ns/day)", "(hour/ns)");
+            perfInfo += gmx::formatString("%12.3f %12.3f ",
+                                          wallClockTime * 24 * 3.6 / timePerNode,
+                                          1000 * timePerNode / (3600 * wallClockTime));
         }
         else
         {
-            if (std::getenv("GMX_DETAILED_PERF_STATS") == nullptr)
+            if (std::getenv("GMX_DETAILED_PERF_STATS") != nullptr)
             {
-                fprintf(out, "%12s %14s\n", "", "(steps/hour)");
-                fprintf(out, "%12s %14.1f\n", "Performance:", nsteps * 3600.0 / time_per_node);
+                unitInfo += gmx::formatString(
+                        "%12s %12s ", "(Mnbf/s)", (mFlop > 1000) ? "(GFlops)" : "(MFlops)");
+                perfInfo += gmx::formatString(
+                        "%12.3f %12.3f ", nbfs / timePerNode, (mFlop > 1000) ? (mFlop / 1000) : mFlop);
             }
-            else
-            {
-                fprintf(out,
-                        "%12s %12s %12s %14s\n",
-                        "",
-                        "(Mnbf/s)",
-                        (mflop > 1000) ? "(GFlops)" : "(MFlops)",
-                        "(steps/hour)");
-                fprintf(out,
-                        "%12s %12.3f %12.3f %14.1f\n",
-                        "Performance:",
-                        nbfs / time_per_node,
-                        (mflop > 1000) ? (mflop / 1000) : mflop,
-                        nsteps * 3600.0 / time_per_node);
-            }
+            unitInfo += gmx::formatString("%14s ", "(steps/hour)");
+            perfInfo += gmx::formatString("%14.1f ", nrSteps * 3600.0 / timePerNode);
         }
+
+        /* Two metrics for the absolute performance:
+         * - ms/step: the average time per step in milliseconds for developers to evaluate the code performance
+         * - Megaatom-step/s (kiloatom-step/s): the number of actions (nrAtoms * nrSteps) per second for application
+         *   scientists to evaluate the throughput of specific hardware
+         */
+        if (nrSteps > 0)
+        {
+            const double msPerStep    = 1000.0 * timePerNode / nrSteps;
+            const double masPerSecond = (nrSteps * nrAtoms) / (1e6 * timePerNode);
+            unitInfo += gmx::formatString("%12s %16s ", "(ms/step)", "(Matom*steps/s)");
+            perfInfo += gmx::formatString("%12.3f %16.3f ", msPerStep, masPerSecond);
+        }
+
+        fprintf(out, "%s\n", unitInfo.c_str());
+        fprintf(out, "%s\n", perfInfo.c_str());
     }
 }
 

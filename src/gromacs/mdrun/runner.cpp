@@ -640,6 +640,7 @@ static void finish_run(FILE*                     fplog,
                        gmx_walltime_accounting_t walltime_accounting,
                        nonbonded_verlet_t*       nbv,
                        const gmx_pme_t*          pme,
+                       const int                 nratoms,
                        gmx_bool                  bWriteStat)
 {
     double delta_t = 0;
@@ -765,7 +766,8 @@ static void finish_run(FILE*                     fplog,
                        walltime_accounting_get_nsteps_done_since_reset(walltime_accounting),
                        delta_t,
                        nbfs,
-                       mflop);
+                       mflop,
+                       nratoms);
         }
         if (bWriteStat)
         {
@@ -775,7 +777,8 @@ static void finish_run(FILE*                     fplog,
                        walltime_accounting_get_nsteps_done_since_reset(walltime_accounting),
                        delta_t,
                        nbfs,
-                       mflop);
+                       mflop,
+                       nratoms);
         }
     }
 }
@@ -2416,6 +2419,7 @@ int Mdrunner::mdrunner()
                    walltime_accounting,
                    fr ? fr->nbv.get() : nullptr,
                    pmedata,
+                   mtop.natoms,
                    EI_DYNAMICS(inputrec->eI) && !isMultiSim(ms));
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
