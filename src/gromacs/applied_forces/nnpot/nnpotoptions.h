@@ -48,6 +48,7 @@
 
 #include "gromacs/mdtypes/imdpoptionprovider.h"
 #include "gromacs/topology/atoms.h"
+#include "gromacs/topology/embedded_system_preprocessing.h"
 #include "gromacs/utility/vectypes.h"
 
 // some forward declarations
@@ -98,6 +99,13 @@ struct NNPotParameters
     //! stores all (global) atom info
     t_atoms atoms_;
     int     numAtoms_;
+
+    //! Stores the link frontier information
+    std::vector<LinkFrontierAtom> linkFrontier_;
+    //! Type of link atom to use (default "H", hydrogen)
+    std::string linkType_ = "H";
+    //! Distance between link atom and embedded atom (default 0.1 nm)
+    real linkDistance_ = 0.1;
 
     bool modelNeedsInput(const std::string& input) const
     {

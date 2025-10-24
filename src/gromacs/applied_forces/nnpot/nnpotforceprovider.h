@@ -53,6 +53,7 @@ struct NNPotParameters;
 class INNPotModel;
 class MDLogger;
 class MpiComm;
+class LinkFrontierAtom;
 
 /*! \brief \internal
  * NNPotForceProvider class
@@ -81,6 +82,9 @@ public:
     //! Gather atom positions for NN input.
     void gatherAtomPositions(ArrayRef<const RVec> pos);
 
+    //! Gather link frontier information.
+    std::vector<LinkFrontierAtom> constructLinkFrontier(const std::vector<LinkFrontierAtom>& linkFrontier);
+
 private:
     //! reference to NNPot parameters
     const NNPotParameters& params_;
@@ -94,8 +98,10 @@ private:
     //! vector storing all atomic numbers
     std::vector<int> atomNumbers_;
 
-    //! global index lookup table to map indices from model input to global atom indices
-    std::vector<int> idxLookup_;
+    //! lookup table to map model input indices [0...numInput) to local atom indices [0...numLocal)
+    std::vector<int> inputToLocalIndex_;
+    //! lookup table to map model input indices [0...numInput) to global atom indices [0...numGlobal)
+    std::vector<int> inputToGlobalIndex_;
 
     //! local copy of simulation box
     matrix box_;

@@ -50,6 +50,7 @@ enum class PbcType;
 namespace gmx
 {
 class MpiComm;
+class LinkFrontierAtom;
 
 /*! \brief NNPot Module
  *
@@ -77,6 +78,7 @@ public:
                                ArrayRef<const std::string> /* inputs */,
                                ArrayRef<RVec> /* positions */,
                                ArrayRef<int> /* atomNumbers */,
+                               ArrayRef<const LinkFrontierAtom> /* linkFrontier */,
                                matrix* /* box */,
                                PbcType* /* pbcType */) = 0;
 

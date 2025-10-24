@@ -52,6 +52,7 @@
 #include "gromacs/options/optionsection.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/selection/indexutil.h"
+#include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/embedded_system_preprocessing.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
@@ -77,15 +78,15 @@ std::string moduleName()
     return std::string(NNPotModuleInfo::sc_name);
 }
 
-/*! \brief Following Tags denotes names of parameters from .mdp file
- * \note Changing this strings will break .tpr backwards compability
+/*! \brief Following Tags denote names of parameters from .mdp file
+ * \note Changing these strings will break .tpr backwards compability
  */
 //! \{
 const std::string c_activeTag_        = "active";
 const std::string c_modelFileNameTag_ = "modelfile";
 const std::string c_inputGroupTag_    = "input-group";
-//! complement to input_group, needed to write to tpr
-const std::string c_mmGroupTag_ = "mm-group";
+const std::string c_linkTypeTag_      = "link-type";
+const std::string c_linkDistanceTag_  = "link-distance";
 
 /*! \brief User defined input to NN model.
  *
@@ -101,8 +102,21 @@ const std::string c_modelInput3Tag_ = "model-input3";
 const std::string c_modelInput4Tag_ = "model-input4";
 //! \}
 
+/*! \brief Following tags are needed to write parameters generated
+ * during preprocessing (grompp) to the .tpr file via KVT
+ */
+//! \{
+const std::string c_mmGroupTag_ = "mm-group";
+const std::string c_nnpLinkTag_ = "nnp-link";
+const std::string c_mmLinkTag_  = "mm-link";
+
+//! \}
+
 //! \brief Helper function to preprocess topology for NNP
-void preprocessTopology(gmx_mtop_t* mtop, ArrayRef<const Index> nnpIndices, const MDLogger& logger, WarningHandler* wi)
+std::vector<LinkFrontierAtom> preprocessTopology(gmx_mtop_t*           mtop,
+                                                 ArrayRef<const Index> nnpIndices,
+                                                 const MDLogger&       logger,
+                                                 WarningHandler*       wi)
 {
     // convert nnpIndices to set for faster lookup
     std::set<int> nnpIndicesSet(nnpIndices.begin(), nnpIndices.end());
@@ -137,8 +151,14 @@ void preprocessTopology(gmx_mtop_t* mtop, ArrayRef<const Index> nnpIndices, cons
     // 7) Check for constrained bonds in subsystem
     checkConstrainedBonds(mtop, nnpIndicesSet, isNNPBlock, wi);
 
+    // 8) Build link frontier information
+    std::vector<LinkFrontierAtom> linkFrontier =
+            buildLinkFrontier(mtop, nnpIndicesSet, isNNPBlock, logger);
+
     // finalize topology
     mtop->finalize();
+
+    return linkFrontier;
 }
 
 } // namespace
@@ -151,6 +171,10 @@ void NNPotOptions::initMdpTransform(IKeyValueTreeTransformRules* rules)
             rules, stringIdentityTransform, NNPotModuleInfo::sc_name, c_modelFileNameTag_);
     addMdpTransformFromString<std::string>(
             rules, stringIdentityTransform, NNPotModuleInfo::sc_name, c_inputGroupTag_);
+    addMdpTransformFromString<std::string>(
+            rules, stringIdentityTransform, NNPotModuleInfo::sc_name, c_linkTypeTag_);
+    addMdpTransformFromString<real>(
+            rules, &fromStdString<real>, NNPotModuleInfo::sc_name, c_linkDistanceTag_);
     addMdpTransformFromString<std::string>(
             rules, stringIdentityTransform, NNPotModuleInfo::sc_name, c_modelInput1Tag_);
     addMdpTransformFromString<std::string>(
@@ -167,6 +191,8 @@ void NNPotOptions::initMdpOptions(IOptionsContainerWithSections* options)
     section.addOption(BooleanOption(c_activeTag_.c_str()).store(&params_.active_));
     section.addOption(StringOption(c_modelFileNameTag_.c_str()).store(&params_.modelFileName_));
     section.addOption(StringOption(c_inputGroupTag_.c_str()).store(&params_.inputGroup_));
+    section.addOption(StringOption(c_linkTypeTag_.c_str()).store(&params_.linkType_));
+    section.addOption(RealOption(c_linkDistanceTag_.c_str()).store(&params_.linkDistance_));
     section.addOption(StringOption(c_modelInput1Tag_.c_str()).store(&params_.modelInput_[0]));
     section.addOption(StringOption(c_modelInput2Tag_.c_str()).store(&params_.modelInput_[1]));
     section.addOption(StringOption(c_modelInput3Tag_.c_str()).store(&params_.modelInput_[2]));
@@ -186,6 +212,8 @@ void NNPotOptions::buildMdpOutput(KeyValueTreeObjectBuilder* builder) const
                 builder, NNPotModuleInfo::sc_name, c_modelFileNameTag_, params_.modelFileName_);
         addMdpOutputValue<std::string>(
                 builder, NNPotModuleInfo::sc_name, c_inputGroupTag_, params_.inputGroup_);
+        addMdpOutputValue<std::string>(builder, NNPotModuleInfo::sc_name, c_linkTypeTag_, params_.linkType_);
+        addMdpOutputValue<real>(builder, NNPotModuleInfo::sc_name, c_linkDistanceTag_, params_.linkDistance_);
         addMdpOutputValue<std::string>(
                 builder, NNPotModuleInfo::sc_name, c_modelInput1Tag_, params_.modelInput_[0]);
         addMdpOutputValue<std::string>(
@@ -273,7 +301,7 @@ void NNPotOptions::modifyTopology(gmx_mtop_t* top)
         return;
     }
 
-    preprocessTopology(top, params_.nnpIndices_, logger(), wi_);
+    params_.linkFrontier_ = preprocessTopology(top, params_.nnpIndices_, logger(), wi_);
 }
 
 void NNPotOptions::writeParamsToKvt(KeyValueTreeObjectBuilder treeBuilder)
@@ -297,6 +325,18 @@ void NNPotOptions::writeParamsToKvt(KeyValueTreeObjectBuilder treeBuilder)
     for (const auto& indexValue : params_.mmIndices_)
     {
         GroupIndexAdder.addValue(indexValue);
+    }
+
+    // Write link
+    GroupIndexAdder = treeBuilder.addUniformArray<std::int64_t>(moduleName() + "-" + c_nnpLinkTag_);
+    for (const auto& link : params_.linkFrontier_)
+    {
+        GroupIndexAdder.addValue(link.getEmbeddedIndex());
+    }
+    GroupIndexAdder = treeBuilder.addUniformArray<std::int64_t>(moduleName() + "-" + c_mmLinkTag_);
+    for (const auto& link : params_.linkFrontier_)
+    {
+        GroupIndexAdder.addValue(link.getMMIndex());
     }
 
     // check that the model and model inputs are valid
@@ -340,6 +380,56 @@ void NNPotOptions::readParamsFromKvt(const KeyValueTreeObject& tree)
                    std::end(kvtIndexArray),
                    std::begin(params_.mmIndices_),
                    [](const KeyValueTreeValue& val) { return val.cast<std::int64_t>(); });
+
+    // Try to read Link Frontier (two separate vectors and then combine)
+    std::vector<Index> nnpLink;
+    std::vector<Index> mmLink;
+
+    if (!tree.keyExists(moduleName() + "-" + c_nnpLinkTag_))
+    {
+        GMX_THROW(
+                InconsistentInputError("Cannot find NNP Link Frontier vector required for QM/MM "
+                                       "simulation.\nThis could be "
+                                       "caused by incompatible or corrupted tpr input file."));
+    }
+    kvtIndexArray = tree[moduleName() + "-" + c_nnpLinkTag_].asArray().values();
+    nnpLink.resize(kvtIndexArray.size());
+    std::transform(std::begin(kvtIndexArray),
+                   std::end(kvtIndexArray),
+                   std::begin(nnpLink),
+                   [](const KeyValueTreeValue& val) { return val.cast<std::int64_t>(); });
+
+    if (!tree.keyExists(moduleName() + "-" + c_mmLinkTag_))
+    {
+        GMX_THROW(InconsistentInputError(
+                "Cannot find MM Link Frontier vector required for QM/MM simulation.\nThis could be "
+                "caused by incompatible or corrupted tpr input file."));
+    }
+    kvtIndexArray = tree[moduleName() + "-" + c_mmLinkTag_].asArray().values();
+    mmLink.resize(kvtIndexArray.size());
+    std::transform(std::begin(kvtIndexArray),
+                   std::end(kvtIndexArray),
+                   std::begin(mmLink),
+                   [](const KeyValueTreeValue& val) { return val.cast<std::int64_t>(); });
+
+    params_.linkFrontier_.reserve(nnpLink.size());
+    for (size_t i = 0; i < nnpLink.size(); i++)
+    {
+        params_.linkFrontier_.emplace_back(nnpLink[i], mmLink[i]);
+        params_.linkFrontier_.back().setLinkDistance(params_.linkDistance_);
+        AtomProperties atomProp;
+        const int      linkAtomNumber = atomProp.atomNumberFromElement(params_.linkType_.c_str());
+        GMX_RELEASE_ASSERT(
+                linkAtomNumber != -1,
+                formatString("Unrecognized link atom type symbol: %s", params_.linkType_.c_str()).c_str());
+        params_.linkFrontier_.back().setLinkAtomNumber(linkAtomNumber);
+    }
+
+    // add MM link atoms to nnp index
+    for (const auto& link : params_.linkFrontier_)
+    {
+        params_.nnpIndices_.push_back(link.getMMIndex());
+    }
 }
 
 const NNPotParameters& NNPotOptions::parameters()
@@ -408,13 +498,23 @@ void NNPotOptions::checkNNPotModel()
         GMX_THROW(FileIOError("Unrecognized extension for model file: " + params_.modelFileName_));
     }
 
+    // check that link atom type is valid
+    AtomProperties atomProp;
+    const int      linkAtomNumber = atomProp.atomNumberFromElement(params_.linkType_.c_str());
+    if (linkAtomNumber == -1)
+    {
+        GMX_THROW(InconsistentInputError(
+                formatString("Unrecognized link atom type symbol: %s", params_.linkType_.c_str())));
+    }
+
     // check if model accepts inputs
     // prepare dummy inputs for NN model
     std::vector<RVec> positions(1, RVec({ 0.0, 0.0, 0.0 }));
-    std::vector<int>  atomNumbers(1, 1);
-    matrix            box = { { 1.0, 0.0, 0.0 }, { 0.0, 1.0, 0.0 }, { 0.0, 0.0, 1.0 } };
-    PbcType           pbc = PbcType();
-    MpiComm           comm(MpiComm::SingleRank{});
+    std::vector<int> atomNumbers(1, linkAtomNumber); // to check that the model can accept the link atom type
+    matrix                        box = { { 1.0, 0.0, 0.0 }, { 0.0, 1.0, 0.0 }, { 0.0, 0.0, 1.0 } };
+    PbcType                       pbc = PbcType();
+    std::vector<LinkFrontierAtom> link;
+    MpiComm                       comm(MpiComm::SingleRank{});
     model->setComm(comm);
 
     // check that inputs are not empty
@@ -440,7 +540,8 @@ void NNPotOptions::checkNNPotModel()
         auto inputs     = makeConstArrayRef(params_.modelInput_);
         auto posRef     = makeArrayRef(positions);
         auto atomNumRef = makeArrayRef(atomNumbers);
-        model->evaluateModel(&enerd, forces, indicesRef, inputs, posRef, atomNumRef, &box, &pbc);
+        auto linkRef    = makeArrayRef(link);
+        model->evaluateModel(&enerd, forces, indicesRef, inputs, posRef, atomNumRef, linkRef, &box, &pbc);
 
         // check if model outputs forces after forward pass
         modelOutputsForces = model->outputsForces();

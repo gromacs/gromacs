@@ -59,7 +59,7 @@ NNPotForceProvider::NNPotForceProvider(const NNPotParameters& nnpotParameters,
     params_(nnpotParameters),
     positions_(params_.numAtoms_, RVec({ 0.0, 0.0, 0.0 })),
     atomNumbers_(params_.numAtoms_, -1),
-    idxLookup_(params_.numAtoms_, -1),
+    inputToLocalIndex_(params_.numAtoms_, -1),
     box_{ { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 } },
     logger_(logger),
     mpiComm_(mpiComm)

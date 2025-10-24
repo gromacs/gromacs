@@ -49,6 +49,7 @@
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/embedded_system_preprocessing.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/mpicomm.h"
@@ -57,6 +58,22 @@
 #include "nnpotmodel.h"
 #include "nnpotoptions.h"
 #include "torchmodel.h"
+
+/*! \internal Helper function to find the index of a value in a vector
+ *
+ * Returns the index of the first occurrence of \p val in \p vec, or -1 if not found.
+ * \param[in] vec vector to search in
+ * \param[in] val value to search for
+ */
+static std::optional<ptrdiff_t> indexOf(gmx::ArrayRef<const int> vec, const int val)
+{
+    auto it = std::find(vec.begin(), vec.end(), val);
+    if (it == vec.end())
+    {
+        return std::nullopt;
+    }
+    return std::distance(vec.begin(), it);
+}
 
 namespace gmx
 {
@@ -67,7 +84,7 @@ NNPotForceProvider::NNPotForceProvider(const NNPotParameters& nnpotParameters,
     params_(nnpotParameters),
     positions_(params_.numAtoms_, RVec({ 0.0, 0.0, 0.0 })),
     atomNumbers_(params_.numAtoms_, -1),
-    idxLookup_(params_.numAtoms_, -1),
+    inputToLocalIndex_(params_.numAtoms_, -1),
     box_{ { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 }, { 0.0, 0.0, 0.0 } },
     logger_(logger),
     mpiComm_(mpiComm)
@@ -100,24 +117,20 @@ void NNPotForceProvider::calculateForces(const ForceProviderInput& fInput, Force
     {
         gatherAtomPositions(fInput.x_);
     }
-    if (params_.modelNeedsInput("box"))
-    {
-        copy_mat(fInput.box_, box_);
-    }
-    if (params_.modelNeedsInput("pbc"))
-    {
-        copy_mat(fInput.box_, box_);
-        t_pbc pbc;
-        set_pbc(&pbc, *(params_.pbcType_), box_);
-    }
+    // copy box
+    copy_mat(fInput.box_, box_);
+
+    // get link atom info
+    std::vector<LinkFrontierAtom> linkFrontier(constructLinkFrontier(params_.linkFrontier_));
 
     // prepare inputs for NN model
     model_->evaluateModel(&(fOutput->enerd_),
                           fOutput->forceWithVirial_.force_,
-                          idxLookup_,
+                          inputToLocalIndex_,
                           params_.modelInput_,
                           positions_,
                           atomNumbers_,
+                          linkFrontier,
                           &box_,
                           params_.pbcType_.get());
 }
@@ -130,7 +143,8 @@ void NNPotForceProvider::gatherAtomNumbersIndices()
     // create lookup table for local atom indices needed for hybrid ML/MM
     // -1 is used as a flag for atoms that are not local / not in the input
     // used to distribute forces to correct local indices as the NN input tensor does not contain all atoms
-    idxLookup_.assign(params_.numAtoms_, -1);
+    inputToLocalIndex_.assign(params_.numAtoms_, -1);
+    inputToGlobalIndex_.assign(params_.numAtoms_, -1);
     atomNumbers_.assign(params_.numAtoms_, 0);
 
     int lIdx, gIdx;
@@ -139,39 +153,52 @@ void NNPotForceProvider::gatherAtomNumbersIndices()
         lIdx = params_.nnpAtoms_->localIndex()[i];
         gIdx = params_.nnpAtoms_->globalIndex()[params_.nnpAtoms_->collectiveIndex()[i]];
         // TODO: make sure that atom number indexing is correct
-        atomNumbers_[gIdx] = params_.atoms_.atom[gIdx].atomnumber;
-        idxLookup_[gIdx]   = lIdx;
+        atomNumbers_[gIdx]       = params_.atoms_.atom[gIdx].atomnumber;
+        inputToLocalIndex_[gIdx] = lIdx;
+        // adding comm size to preserve correct indices after sumReduce
+        inputToGlobalIndex_[gIdx] = gIdx + mpiComm_.size() - 1;
     }
 
     // distribute atom numbers to all ranks
     if (mpiComm_.isParallel())
     {
         mpiComm_.sumReduce(atomNumbers_);
+        mpiComm_.sumReduce(inputToGlobalIndex_);
     }
 
-    // remove unused elements in atomNumbers_, and idxLookup
-    auto atIt  = atomNumbers_.begin();
-    auto idxIt = idxLookup_.begin();
-    while (atIt != atomNumbers_.end() && idxIt != idxLookup_.end())
+    // remove unused elements in atomNumbers_, and inputToLocalIndex_
+    GMX_RELEASE_ASSERT(atomNumbers_.size() == inputToLocalIndex_.size()
+                               && atomNumbers_.size() == inputToGlobalIndex_.size(),
+                       "Inconsistent atom number and index sizes");
+    auto atIt   = atomNumbers_.begin();
+    auto idxIt  = inputToLocalIndex_.begin();
+    auto gIdxIt = inputToGlobalIndex_.begin();
+    while (atIt != atomNumbers_.end())
     {
         if (*atIt == 0)
         {
-            atIt  = atomNumbers_.erase(atIt);
-            idxIt = idxLookup_.erase(idxIt);
+            atIt   = atomNumbers_.erase(atIt);
+            idxIt  = inputToLocalIndex_.erase(idxIt);
+            gIdxIt = inputToGlobalIndex_.erase(gIdxIt);
         }
         else
         {
             ++atIt;
             ++idxIt;
+            ++gIdxIt;
         }
     }
+    // sanity check
+    GMX_RELEASE_ASSERT(atomNumbers_.size() == inputToLocalIndex_.size()
+                               && atomNumbers_.size() == inputToGlobalIndex_.size(),
+                       "Inconsistent atom number and index sizes");
 }
 
 void NNPotForceProvider::gatherAtomPositions(ArrayRef<const RVec> pos)
 {
     // collect atom positions
     // at this point, we already have the atom numbers and indices, so we can fill the positions
-    size_t numInput = idxLookup_.size();
+    size_t numInput = inputToLocalIndex_.size();
 
     // reset positions to zero, because we might not have all atoms in the input
     positions_.assign(numInput, RVec({ 0.0, 0.0, 0.0 }));
@@ -179,9 +206,9 @@ void NNPotForceProvider::gatherAtomPositions(ArrayRef<const RVec> pos)
     for (size_t i = 0; i < numInput; i++)
     {
         // if value in lookup table is -1, the atom is not local to this rank
-        if (idxLookup_[i] != -1)
+        if (inputToLocalIndex_[i] != -1)
         {
-            positions_[i] = pos[idxLookup_[i]];
+            positions_[i] = pos[inputToLocalIndex_[i]];
         }
     }
 
@@ -190,6 +217,40 @@ void NNPotForceProvider::gatherAtomPositions(ArrayRef<const RVec> pos)
     {
         mpiComm_.sumReduce(3 * numInput, positions_.data()->as_vec());
     }
+}
+
+std::vector<LinkFrontierAtom>
+NNPotForceProvider::constructLinkFrontier(const std::vector<LinkFrontierAtom>& inputLinkFrontier)
+{
+    std::vector<LinkFrontierAtom> linkFrontier;
+    linkFrontier.reserve(inputLinkFrontier.size());
+    // the MM atom of the link is part of the input
+    // we replace it with the link atom
+    for (auto& ilink : inputLinkFrontier)
+    {
+        const int        globalIdxMM  = ilink.getMMIndex();
+        const int        globalIdxNNP = ilink.getEmbeddedIndex();
+        LinkFrontierAtom link(globalIdxNNP, globalIdxMM);
+
+        // save input indices for force redistribution later
+        const std::optional<ptrdiff_t> inputIdxMM  = indexOf(inputToGlobalIndex_, globalIdxMM);
+        const std::optional<ptrdiff_t> inputIdxNNP = indexOf(inputToGlobalIndex_, globalIdxNNP);
+        GMX_RELEASE_ASSERT(inputIdxNNP.has_value() && inputIdxMM.has_value(),
+                           "Link frontier atoms must be part of the NNPot atom set");
+        link.setInputIndices(inputIdxNNP.value(), inputIdxMM.value());
+
+        // calculate and set link atom position
+        const RVec posMM  = positions_[inputIdxMM.value()];
+        const RVec posNNP = positions_[inputIdxNNP.value()];
+        link.setPositions(posNNP, posMM);
+        // update position of MM atom to link atom position
+        positions_[inputIdxMM.value()] = link.getLinkPosition();
+
+        // overwrite atomic number of MM atom
+        atomNumbers_[inputIdxMM.value()] = ilink.linkAtomNumber();
+        linkFrontier.push_back(link);
+    }
+    return linkFrontier;
 }
 
 } // namespace gmx

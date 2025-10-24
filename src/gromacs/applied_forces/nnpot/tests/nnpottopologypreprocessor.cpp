@@ -237,6 +237,7 @@ TEST_F(NNPotTopologyPreprocessorTest, AlanineDipeptideWithLinkAtomsNoConstraints
     logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info, "Number of angles removed: 11\n");
     logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info,
                                         "Number of dihedrals removed: 9\n");
+    logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info, "Number of link bonds added: 2\n");
     EXPECT_NO_THROW(options.modifyTopology(mtop.get()));
 }
 
@@ -261,6 +262,7 @@ TEST_F(NNPotTopologyPreprocessorTest, AlanineDipeptideWithLinkAtomsWithConstrain
     logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info, "Number of angles removed: 11\n");
     logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info,
                                         "Number of dihedrals removed: 9\n");
+    logHelper_.expectEntryMatchingRegex(MDLogger::LogLevel::Info, "Number of link bonds added: 2\n");
     EXPECT_NO_THROW(options.modifyTopology(mtop.get()));
 
     // expect one warning about constrained bonds

@@ -49,6 +49,7 @@
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/topology/embedded_system_preprocessing.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/mpicomm.h"
@@ -216,14 +217,15 @@ void TorchModel::preparePbcType(PbcType* pbcType)
     inputs_.push_back(pbcTensor);
 }
 
-void TorchModel::evaluateModel(gmx_enerdata_t*             enerd,
-                               ArrayRef<RVec>              forces,
-                               ArrayRef<const int>         indexLookup,
-                               ArrayRef<const std::string> inputs,
-                               ArrayRef<RVec>              positions,
-                               ArrayRef<int>               atomNumbers,
-                               matrix*                     box /* = nullptr*/,
-                               PbcType*                    pbcType /* = nullptr*/)
+void TorchModel::evaluateModel(gmx_enerdata_t*                  enerd,
+                               ArrayRef<RVec>                   forces,
+                               ArrayRef<const int>              indexLookup,
+                               ArrayRef<const std::string>      inputs,
+                               ArrayRef<RVec>                   positions,
+                               ArrayRef<int>                    atomNumbers,
+                               ArrayRef<const LinkFrontierAtom> linkFrontier,
+                               matrix*                          box /* = nullptr*/,
+                               PbcType*                         pbcType /* = nullptr*/)
 {
     // prepare inputs for NN model
     // order in input vector is the same as in mdp file
@@ -311,16 +313,40 @@ void TorchModel::evaluateModel(gmx_enerdata_t*             enerd,
 
     // accumulate forces only on local atoms
     auto forceAccessor = forceTensor.accessor<real, 2>();
-    for (int m = 0; m < DIM; ++m)
+    // redistribute forces on link atoms: force on link atom becomes force on MM atom
+    t_pbc pbc;
+    if (!linkFrontier.empty())
     {
-        for (int i = 0; i < N; ++i)
+        GMX_RELEASE_ASSERT(box && pbcType,
+                           "PBC information required when using link atoms with NNP");
+        // set pbc struct
+        set_pbc(&pbc, *pbcType, *box);
+    }
+    for (const auto& link : linkFrontier)
+    {
+        // distribute force on link atom to the two adjacent atoms
+        RVec fL, fNNP, fMM;
+        for (int d = 0; d < DIM; ++d)
         {
-            // if value in lookup table is -1, the atom is not local
-            if (indexLookup[i] == -1)
-            {
-                continue;
-            }
-            forces[indexLookup[i]][m] += forceAccessor[i][m];
+            fL[d] = forceAccessor[link.getInputIndexMM()][d];
+        }
+        std::tie(fNNP, fMM) = link.spreadForce(fL, pbc);
+        for (int d = 0; d < DIM; ++d)
+        {
+            forceAccessor[link.getInputIndexEmb()][d] += fNNP[d];
+            forceAccessor[link.getInputIndexMM()][d] = fMM[d];
+        }
+    }
+    for (int i = 0; i < N; ++i)
+    {
+        // if value in lookup table is -1, the atom is not local
+        if (indexLookup[i] == -1)
+        {
+            continue;
+        }
+        for (int d = 0; d < DIM; ++d)
+        {
+            forces[indexLookup[i]][d] += forceAccessor[i][d];
         }
     }
 

@@ -6,6 +6,8 @@
 nnpot-active             = true
 nnpot-modelfile          = model.pt
 nnpot-input-group        = System
+nnpot-link-type          = H
+nnpot-link-distance      = 0.1
 nnpot-model-input1       = 
 nnpot-model-input2       = 
 nnpot-model-input3       = 

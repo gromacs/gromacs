@@ -58,7 +58,6 @@
 
 namespace gmx
 {
-class MpiComm;
 
 /*! \brief Define the torch datatype according to GMX_DOUBLE.
  *
@@ -66,7 +65,9 @@ class MpiComm;
  */
 static constexpr auto torchRealType = GMX_DOUBLE ? torch::kFloat64 : torch::kFloat32;
 
+class MpiComm;
 class MDLogger;
+class LinkFrontierAtom;
 
 /*! \brief
  * Class responsible for loading and evaluating a TorchScript-compiled neural network model.
@@ -88,17 +89,19 @@ public:
      * \param[in] inputs list of strings specifying input data
      * \param[in] positions atom positions
      * \param[in] atomNumbers atom numbers
+     * \param[in] linkFrontier link frontier atoms
      * \param[in] box simulation box
      * \param[in] pbcType periodic boundary conditions
      */
-    void evaluateModel(gmx_enerdata_t*             enerd,
-                       ArrayRef<RVec>              forces,
-                       ArrayRef<const int>         indexLookup,
-                       ArrayRef<const std::string> inputs,
-                       ArrayRef<RVec>              positions,
-                       ArrayRef<int>               atomNumbers,
-                       matrix*                     box     = nullptr,
-                       PbcType*                    pbcType = nullptr) override;
+    void evaluateModel(gmx_enerdata_t*                  enerd,
+                       ArrayRef<RVec>                   forces,
+                       ArrayRef<const int>              indexLookup,
+                       ArrayRef<const std::string>      inputs,
+                       ArrayRef<RVec>                   positions,
+                       ArrayRef<int>                    atomNumbers,
+                       ArrayRef<const LinkFrontierAtom> linkFrontier,
+                       matrix*                          box     = nullptr,
+                       PbcType*                         pbcType = nullptr) override;
 
     //! Set communication object for possible communication of input/output data between ranks
     void setComm(const MpiComm& mpiComm) override;
