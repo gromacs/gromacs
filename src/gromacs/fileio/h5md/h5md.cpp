@@ -146,7 +146,7 @@ void H5md::setAuthor(const std::string& authorName)
 #if GMX_USE_HDF5
     const auto [authorGroup, groupGuard] =
             makeH5mdGroupGuard(openOrCreateGroup(file_, "h5md/author"));
-    setAttribute<std::string>(authorGroup, "name", authorName);
+    setAttribute(authorGroup, "name", authorName);
 #else
     GMX_UNUSED_VALUE(authorName);
 #endif
@@ -178,7 +178,7 @@ void H5md::setCreatorProgramName(const std::string& creatorName)
 #if GMX_USE_HDF5
     const auto [creatorGroup, groupGuard] =
             makeH5mdGroupGuard(openOrCreateGroup(file_, "h5md/creator"));
-    setAttribute<std::string>(creatorGroup, "name", creatorName);
+    setAttribute(creatorGroup, "name", creatorName);
 #else
     GMX_UNUSED_VALUE(creatorName);
 #endif
@@ -210,7 +210,7 @@ void H5md::setCreatorProgramVersion(const std::string& version)
 #if GMX_USE_HDF5
     const auto [creatorGroup, groupGuard] =
             makeH5mdGroupGuard(openOrCreateGroup(file_, "h5md/creator"));
-    setAttribute<std::string>(creatorGroup, "version", version);
+    setAttribute(creatorGroup, "version", version);
 #else
     GMX_UNUSED_VALUE(version);
 #endif

@@ -35,6 +35,7 @@
  * \brief Tests for H5MD utility functions.
  *
  * \author Petter Johansson <pettjoha@kth.se>
+ * \author Yang Zhang <yang.zhang@scilifelab.se>
  * \ingroup module_fileio
  */
 
@@ -255,6 +256,92 @@ TEST_F(H5mdPathsOfHandleTest, NameOfRoot)
     {
         SCOPED_TRACE("The base name of the root group should be an empty string");
         EXPECT_EQ(getHandleBaseName(fileid()).value_or("NoAName"), "");
+    }
+}
+
+
+TEST(H5mdStringBuffer, EstimateSizeOfStringBuffer)
+{
+    {
+        SCOPED_TRACE("Empty string vector");
+
+        std::vector<std::string> empty_strings = { "", "", "", "" };
+        auto [maxLength, strCount]             = estimateBufferSize(empty_strings.begin(),
+                                                        empty_strings.end(),
+                                                        [](const auto& it) { return it->c_str(); });
+        EXPECT_EQ(maxLength, 0) << "Max length should be 0 for empty strings";
+        EXPECT_EQ(strCount, empty_strings.size()) << "String count should match sequence size";
+    }
+
+    {
+        SCOPED_TRACE("String vector with same length");
+
+        std::vector<std::string> sequence = { "ALA", "SER", "ARG", "MET", "ACE", "NH2" };
+        auto [maxLength, strCount]        = estimateBufferSize(
+                sequence.begin(), sequence.end(), [](const auto& it) { return it->c_str(); });
+        EXPECT_EQ(maxLength, 3) << "Max length should be 3 for uniform strings";
+        EXPECT_EQ(strCount, sequence.size()) << "String count should match sequence size";
+    }
+
+    {
+        SCOPED_TRACE("String vector with varied length");
+
+        std::vector<std::string> strings = { "one",      "two",      "three",   "four",
+                                             "five",     "six",      "seven",   "eight",
+                                             "nine",     "ten",      "eleven",  "twelve",
+                                             "thirteen", "fourteen", "fifteen", "sixteen" };
+        auto [maxLength, strCount]       = estimateBufferSize(
+                strings.begin(), strings.end(), [](const auto& it) { return it->c_str(); });
+        // Maximum length 8 ("thirteen" and "fourteen")
+        EXPECT_EQ(maxLength, 8) << "Max length should be 8 for varied strings";
+        EXPECT_EQ(strCount, strings.size()) << "String count should match sequence size";
+    }
+}
+
+TEST(H5mdStringBuffer, PackStringsInSameLength)
+{
+    std::vector<std::string> sequence = { "ALA", "SER", "ARG", "MET", "ACE", "NH2" };
+
+    auto [maxLength, strCount] = estimateBufferSize(
+            sequence.begin(), sequence.end(), [](const auto& it) { return it->c_str(); });
+    std::vector<char> buffer(sequence.size() * (maxLength + 1), '\0');
+    buffer = packBufferViaIterator(sequence.begin(),
+                                   sequence.end(),
+                                   std::move(buffer),
+                                   maxLength,
+                                   [](const auto& it) { return it->c_str(); });
+
+    EXPECT_EQ(buffer.size(), strCount * (maxLength + 1))
+            << "Buffer size should match the strCount x (maxLength + 1)";
+    for (size_t i = 0; i < sequence.size(); ++i)
+    {
+        EXPECT_EQ(std::string(buffer.data() + i * (maxLength + 1)), sequence[i])
+                << "Buffer content should match the original string";
+    }
+}
+
+TEST(H5mdStringBuffer, PackStringsInVariedLength)
+{
+    std::vector<std::string> strings = { "one",      "two",      "three",   "four",
+                                         "five",     "six",      "seven",   "eight",
+                                         "nine",     "ten",      "eleven",  "twelve",
+                                         "thirteen", "fourteen", "fifteen", "sixteen" };
+
+    auto [maxLength, strCount] = estimateBufferSize(
+            strings.begin(), strings.end(), [](const auto& it) { return it->c_str(); });
+    std::vector<char> buffer(strings.size() * (maxLength + 1), '\0');
+    buffer = packBufferViaIterator(strings.begin(),
+                                   strings.end(),
+                                   std::move(buffer),
+                                   maxLength,
+                                   [](const auto& it) { return it->c_str(); });
+
+    EXPECT_EQ(buffer.size(), strCount * (maxLength + 1))
+            << "Buffer size should match the strCount x (maxLength + 1)";
+    for (size_t i = 0; i < strings.size(); ++i)
+    {
+        EXPECT_EQ(std::string(buffer.data() + i * (maxLength + 1)), strings[i])
+                << "Buffer content should match the original string";
     }
 }
 

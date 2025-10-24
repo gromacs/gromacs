@@ -35,6 +35,7 @@
 /*! \brief Declarations of H5md utility functions.
  *
  * \author Petter Johansson <pettjoha@kth.se>
+ * \author Yang Zhang <yang.zhang@scilifelab.se>
  */
 
 #ifndef GMX_FILEIO_H5MD_UTIL_H
@@ -42,9 +43,13 @@
 
 #include <hdf5.h>
 
+#include <cstring>
+
 #include <optional>
 #include <string>
 #include <vector>
+
+#include "gromacs/utility/gmxassert.h"
 
 namespace gmx
 {
@@ -123,6 +128,70 @@ inline std::optional<std::string> getHandleBaseName(const hid_t handle)
         // If no '/' found, return the full name
         return fullName;
     }
+}
+
+
+/*! \brief Iterate over a list of objects and calculate the maximum string length via a callback function.
+ *
+ * \tparam    Iterator The type of the iterator of the source strings.
+ * \tparam    Callback The type of the callback function to convert iterator to C-string.
+ * \param[in] begin    Iterator to the beginning of the source vector of strings.
+ * \param[in] end      Iterator to the end of the source vector of strings.
+ * \param[in] cStringFromIterator The callback function to convert iterator to C-string.
+ * \returns The maximum length of the strings and the number of strings in the vector.
+ */
+template<typename Iterator, typename Callback>
+std::pair<size_t, size_t> estimateBufferSize(Iterator begin, Iterator end, Callback cStringFromIterator)
+{
+    size_t maxLength = 0;
+    size_t count     = 0;
+    for (auto it = begin; it != end; ++it)
+    {
+        maxLength = std::max(maxLength, std::strlen(cStringFromIterator(it)));
+        ++count;
+    }
+    return std::make_pair(maxLength, count);
+}
+
+/*! \brief Pack a string buffer from a range of iterators and a callback function.
+ *
+ * Caller that knows about their problem domain can pass in a buffer
+ * whose *capacity* meets that needed. Otherwise we fall back on the
+ * standard vector approach of resizing logarithmically
+ *
+ * Registering a callback function avoids the H5md interface adding overloads and
+ * explicit specializations for multiple string types and multiple collection types
+ *
+ * \tparam    Iterator      The type of the iterator to write.
+ * \tparam    Callback      The type of the callback function to convert iterator to C-string.
+ * \param[in] begin         The beginning iterator of the data to write.
+ * \param[in] end           The ending iterator of the data to write.
+ * \param[in] packingBuffer The buffer to write the strings into.
+ * \param[in] maxStrLength  The maximum length of the strings in the attribute.
+ * \param[in] cStringFromIterator The callback function to convert iterator to C-string.
+ * \returns The packed buffer containing the strings.
+ */
+template<typename Iterator, typename Callback>
+std::vector<char> packBufferViaIterator(Iterator            begin,
+                                        Iterator            end,
+                                        std::vector<char>&& packingBuffer,
+                                        const size_t        maxStrLength,
+                                        Callback            cStringFromIterator)
+{
+    const size_t maxStrLengthWithNull = maxStrLength + 1;
+    packingBuffer.resize(0);
+    for (auto it = begin; it != end; ++it)
+    {
+        const char*  cString               = cStringFromIterator(it);
+        const size_t numCharactersInString = std::strlen(cString);
+        auto         newBufferEnd =
+                packingBuffer.insert(packingBuffer.end(), cString, cString + numCharactersInString)
+                + numCharactersInString;
+
+        GMX_ASSERT(numCharactersInString <= maxStrLengthWithNull, "Error in string handling");
+        packingBuffer.insert(newBufferEnd, maxStrLengthWithNull - numCharactersInString, '\0');
+    }
+    return packingBuffer;
 }
 
 } // namespace gmx

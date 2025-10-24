@@ -54,4 +54,7 @@ else()
         )
 endif()
 
-target_link_libraries(h5md-test PRIVATE h5md)
+target_link_libraries(h5md-test PRIVATE 
+    h5md
+    topology
+)
