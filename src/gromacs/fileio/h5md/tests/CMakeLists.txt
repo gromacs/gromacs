@@ -44,6 +44,7 @@ if (GMX_USE_HDF5)
             h5md_framedatasetbuilder.cpp
             h5md_group.cpp
             h5md_guard.cpp
+            h5md_timedatablock.cpp
             h5md_type.cpp
             h5md_util.cpp
         )
