@@ -355,9 +355,9 @@ static void nb_free_energy_kernel(const AtomPairlist&                    nlist,
 #define STATE_B 1
 #define NSTATES 2
 
-    using RealType = typename DataTypes::RealType;
-    using IntType  = typename DataTypes::IntType;
-    using BoolType = typename DataTypes::BoolType;
+    using KernelRealType = typename DataTypes::RealType;
+    using KernelIntType  = typename DataTypes::IntType;
+    using KernelBoolType = typename DataTypes::BoolType;
 
     // We need the scalar force to compute the Beutler soft-core contribution to dV/dlambda
     constexpr bool computeScalarForce = computeForces || softcoreType == KernelSoftcoreType::Beutler;
@@ -479,12 +479,12 @@ static void nb_free_energy_kernel(const AtomPairlist&                    nlist,
      * and apply the soft-core only to the full 1/r (- shift) pair contribution.
      */
 
-    const RealType            minDistanceSquared(c_minDistanceSquared);
-    const RealType            maxRInvSix(c_maxRInvSix);
-    const RealType gmx_unused floatMin(GMX_FLOAT_MIN);
+    const KernelRealType            minDistanceSquared(c_minDistanceSquared);
+    const KernelRealType            maxRInvSix(c_maxRInvSix);
+    const KernelRealType gmx_unused floatMin(GMX_FLOAT_MIN);
 
-    RealType dvdlCoul{ zero };
-    RealType dvdlVdw{ zero };
+    KernelRealType dvdlCoul{ zero };
+    KernelRealType dvdlVdw{ zero };
 
     /* Lambda factor for state A, 1-lambda*/
     real lambdaFactorCoul[NSTATES], lambdaFactorVdw[NSTATES];
@@ -533,7 +533,7 @@ static void nb_free_energy_kernel(const AtomPairlist&                    nlist,
     }
 
     // Used with reaction-field only
-    BoolType haveExcludedPairsBeyondCutoff = false;
+    KernelBoolType haveExcludedPairsBeyondCutoff = false;
 
     for (Index n = 0; n < iList.ssize(); n++)
     {
@@ -546,20 +546,20 @@ static void nb_free_energy_kernel(const AtomPairlist&                    nlist,
 
         ArrayRef<const AtomPairlist::JEntry> jList = nlist.jList(n);
 
-        const int  ii   = iList[n].atom;
-        const int  ii3  = 3 * ii;
-        const real ix   = shX + x[ii3 + 0];
-        const real iy   = shY + x[ii3 + 1];
-        const real iz   = shZ + x[ii3 + 2];
-        const real iqA  = elecEpsilonFactor * chargeA[ii];
-        const real iqB  = elecEpsilonFactor * chargeB[ii];
-        const int  ntiA = ntype * typeA[ii];
-        const int  ntiB = ntype * typeB[ii];
-        RealType   vCoulTot(zero);
-        RealType   vVdwTot(zero);
-        RealType   fIX(zero);
-        RealType   fIY(zero);
-        RealType   fIZ(zero);
+        const int      ii   = iList[n].atom;
+        const int      ii3  = 3 * ii;
+        const real     ix   = shX + x[ii3 + 0];
+        const real     iy   = shY + x[ii3 + 1];
+        const real     iz   = shZ + x[ii3 + 2];
+        const real     iqA  = elecEpsilonFactor * chargeA[ii];
+        const real     iqB  = elecEpsilonFactor * chargeB[ii];
+        const int      ntiA = ntype * typeA[ii];
+        const int      ntiB = ntype * typeB[ii];
+        KernelRealType vCoulTot(zero);
+        KernelRealType vVdwTot(zero);
+        KernelRealType fIX(zero);
+        KernelRealType fIY(zero);
+        KernelRealType fIZ(zero);
 
 #if GMX_SIMD_HAVE_REAL
         alignas(GMX_SIMD_ALIGNMENT) int            preloadIi[DataTypes::simdRealWidth];
@@ -573,11 +573,11 @@ static void nb_free_energy_kernel(const AtomPairlist&                    nlist,
             preloadIi[i] = ii;
             preloadIs[i] = iList[n].shiftIndex;
         }
-        IntType ii_s = load<IntType>(preloadIi);
+        KernelIntType ii_s = load<KernelIntType>(preloadIi);
 
         for (Index k = 0; k < jList.ssize(); k += DataTypes::simdRealWidth)
         {
-            RealType r, rInv;
+            KernelRealType r, rInv;
 
 #if GMX_SIMD_HAVE_REAL
             alignas(GMX_SIMD_ALIGNMENT) real    preloadPairIsValid[DataTypes::simdRealWidth];
@@ -724,20 +724,20 @@ static void nb_free_energy_kernel(const AtomPairlist&                    nlist,
                 }
             }
 
-            RealType jx, jy, jz;
+            KernelRealType jx, jy, jz;
             gatherLoadUTranspose<3>(reinterpret_cast<const real*>(x), preloadJnr, &jx, &jy, &jz);
 
-            const RealType pairIsValid   = load<RealType>(preloadPairIsValid);
-            const RealType pairIncluded  = load<RealType>(preloadPairIncluded);
-            const BoolType bPairIncluded = (pairIncluded != zero);
-            const BoolType bPairExcluded = (pairIncluded == zero && pairIsValid != zero);
+            const KernelRealType pairIsValid   = load<KernelRealType>(preloadPairIsValid);
+            const KernelRealType pairIncluded  = load<KernelRealType>(preloadPairIncluded);
+            const KernelBoolType bPairIncluded = (pairIncluded != zero);
+            const KernelBoolType bPairExcluded = (pairIncluded == zero && pairIsValid != zero);
 
-            const RealType dX  = ix - jx;
-            const RealType dY  = iy - jy;
-            const RealType dZ  = iz - jz;
-            RealType       rSq = dX * dX + dY * dY + dZ * dZ;
+            const KernelRealType dX  = ix - jx;
+            const KernelRealType dY  = iy - jy;
+            const KernelRealType dZ  = iz - jz;
+            KernelRealType       rSq = dX * dX + dY * dY + dZ * dZ;
 
-            BoolType withinCutoffMask = (rSq < rCutoffMaxSq);
+            KernelBoolType withinCutoffMask = (rSq < rCutoffMaxSq);
 
             if (!anyTrue(withinCutoffMask || bPairExcluded))
             {
@@ -756,42 +756,42 @@ static void nb_free_energy_kernel(const AtomPairlist&                    nlist,
                 havePairsWithinCutoff = true;
             }
 
-            const IntType  jnr_s    = load<IntType>(preloadJnr);
-            const BoolType bIiEqJnr = cvtIB2B(ii_s == jnr_s);
+            const KernelIntType  jnr_s    = load<KernelIntType>(preloadJnr);
+            const KernelBoolType bIiEqJnr = cvtIB2B(ii_s == jnr_s);
 
-            RealType            c6[NSTATES];
-            RealType            c12[NSTATES];
-            RealType gmx_unused sigma6[NSTATES];
-            RealType            qq[NSTATES];
-            RealType gmx_unused ljPmeC6Grid[NSTATES];
-            RealType gmx_unused alphaVdwEff;
-            RealType gmx_unused alphaCoulEff;
-            RealType gmx_unused gapsysScaleLinpointVdWEff;
-            RealType gmx_unused gapsysScaleLinpointCoulEff;
-            RealType gmx_unused gapsysSigma6VdWEff[NSTATES];
+            KernelRealType            c6[NSTATES];
+            KernelRealType            c12[NSTATES];
+            KernelRealType gmx_unused sigma6[NSTATES];
+            KernelRealType            qq[NSTATES];
+            KernelRealType gmx_unused ljPmeC6Grid[NSTATES];
+            KernelRealType gmx_unused alphaVdwEff;
+            KernelRealType gmx_unused alphaCoulEff;
+            KernelRealType gmx_unused gapsysScaleLinpointVdWEff;
+            KernelRealType gmx_unused gapsysScaleLinpointCoulEff;
+            KernelRealType gmx_unused gapsysSigma6VdWEff[NSTATES];
             for (int i = 0; i < NSTATES; i++)
             {
                 gatherLoadTranspose<2>(nbfp.data(), typeIndices[i], &c6[i], &c12[i]);
-                qq[i]          = load<RealType>(preloadQq[i]);
-                ljPmeC6Grid[i] = load<RealType>(preloadLjPmeC6Grid[i]);
+                qq[i]          = load<KernelRealType>(preloadQq[i]);
+                ljPmeC6Grid[i] = load<KernelRealType>(preloadLjPmeC6Grid[i]);
                 if constexpr (softcoreType == KernelSoftcoreType::Beutler)
                 {
-                    sigma6[i] = load<RealType>(preloadSigma6[i]);
+                    sigma6[i] = load<KernelRealType>(preloadSigma6[i]);
                 }
                 if constexpr (softcoreType == KernelSoftcoreType::Gapsys)
                 {
-                    gapsysSigma6VdWEff[i] = load<RealType>(preloadGapsysSigma6VdW[i]);
+                    gapsysSigma6VdWEff[i] = load<KernelRealType>(preloadGapsysSigma6VdW[i]);
                 }
             }
             if constexpr (softcoreType == KernelSoftcoreType::Beutler)
             {
-                alphaVdwEff  = load<RealType>(preloadAlphaVdwEff);
-                alphaCoulEff = load<RealType>(preloadAlphaCoulEff);
+                alphaVdwEff  = load<KernelRealType>(preloadAlphaVdwEff);
+                alphaCoulEff = load<KernelRealType>(preloadAlphaCoulEff);
             }
             if constexpr (softcoreType == KernelSoftcoreType::Gapsys)
             {
-                gapsysScaleLinpointVdWEff  = load<RealType>(preloadGapsysScaleLinpointVdW);
-                gapsysScaleLinpointCoulEff = load<RealType>(preloadGapsysScaleLinpointCoul);
+                gapsysScaleLinpointVdWEff  = load<KernelRealType>(preloadGapsysScaleLinpointVdW);
+                gapsysScaleLinpointCoulEff = load<KernelRealType>(preloadGapsysScaleLinpointCoul);
             }
 
             // Avoid overflow of r^-12 at distances near zero
@@ -799,7 +799,7 @@ static void nb_free_energy_kernel(const AtomPairlist&                    nlist,
             rInv = gmx::invsqrt(rSq);
             r    = rSq * rInv;
 
-            RealType gmx_unused rp, rpm2;
+            KernelRealType gmx_unused rp, rpm2;
             if constexpr (softcoreType == KernelSoftcoreType::Beutler)
             {
                 rpm2 = rSq * rSq;  /* r4 */
@@ -815,15 +815,15 @@ static void nb_free_energy_kernel(const AtomPairlist&                    nlist,
                 rp   = one;
             }
 
-            RealType scalarForcePerDistance(0);
+            KernelRealType scalarForcePerDistance(0);
 
             /* The following block is masked to only calculate values having bPairIncluded. If
              * bPairIncluded is true then withinCutoffMask must also be true. */
             if (anyTrue(withinCutoffMask && bPairIncluded))
             {
-                RealType gmx_unused scalarForcePerDistanceCoul[NSTATES],
+                KernelRealType gmx_unused scalarForcePerDistanceCoul[NSTATES],
                         scalarForcePerDistanceVdw[NSTATES];
-                RealType vCoul[NSTATES], vVdw[NSTATES];
+                KernelRealType vCoul[NSTATES], vVdw[NSTATES];
                 for (int i = 0; i < NSTATES; i++)
                 {
                     scalarForcePerDistanceCoul[i] = zero;
@@ -831,26 +831,26 @@ static void nb_free_energy_kernel(const AtomPairlist&                    nlist,
                     vCoul[i]                      = zero;
                     vVdw[i]                       = zero;
 
-                    RealType gmx_unused rInvC, rInvV, rC, rV, rPInvC, rPInvV;
+                    KernelRealType gmx_unused rInvC, rInvV, rC, rV, rPInvC, rPInvV;
 
                     /* The following block is masked to require (qq[i] != 0 || c6[i] != 0 || c12[i]
                      * != 0) in addition to bPairIncluded, which in turn requires withinCutoffMask. */
-                    BoolType nonZeroState = ((qq[i] != zero || c6[i] != zero || c12[i] != zero)
-                                             && bPairIncluded && withinCutoffMask);
+                    KernelBoolType nonZeroState = ((qq[i] != zero || c6[i] != zero || c12[i] != zero)
+                                                   && bPairIncluded && withinCutoffMask);
                     if (anyTrue(nonZeroState))
                     {
                         if constexpr (softcoreType == KernelSoftcoreType::Beutler)
                         {
-                            RealType divisor =
+                            KernelRealType divisorCoul =
                                     (alphaCoulEff * softcoreLambdaFactorCoul[i] * sigma6[i] + rp);
-                            rPInvC = inv(divisor);
+                            rPInvC = inv(divisorCoul);
                             sixthRoot(rPInvC, &rInvC, &rC);
 
                             if constexpr (scLambdasOrAlphasDiffer)
                             {
-                                RealType divisor =
+                                KernelRealType divisorVdw =
                                         (alphaVdwEff * softcoreLambdaFactorVdw[i] * sigma6[i] + rp);
-                                rPInvV = inv(divisor);
+                                rPInvV = inv(divisorVdw);
                                 sixthRoot(rPInvV, &rInvV, &rV);
                             }
                             else
@@ -876,7 +876,7 @@ static void nb_free_energy_kernel(const AtomPairlist&                    nlist,
                          * include all entries in the list (no cutoff
                          * used in the kernel), or if we are within the cutoff.
                          */
-                        BoolType computeElecInteraction;
+                        KernelBoolType computeElecInteraction;
                         if constexpr (elecInteractionTypeIsEwald)
                         {
                             computeElecInteraction = (r < rCoulomb && qq[i] != zero && bPairIncluded);
@@ -953,7 +953,7 @@ static void nb_free_energy_kernel(const AtomPairlist&                    nlist,
                          * include all entries in the list (no cutoff used
                          * in the kernel), or if we are within the cutoff.
                          */
-                        BoolType computeVdwInteraction;
+                        KernelBoolType computeVdwInteraction;
                         if constexpr (ljKernelType == LJKernelType::Ewald)
                         {
                             computeVdwInteraction =
@@ -966,7 +966,7 @@ static void nb_free_energy_kernel(const AtomPairlist&                    nlist,
                         }
                         if (anyTrue(computeVdwInteraction))
                         {
-                            RealType rInv6;
+                            KernelRealType rInv6;
                             if constexpr (softcoreType == KernelSoftcoreType::Beutler)
                             {
                                 rInv6 = rPInvV;
@@ -992,8 +992,8 @@ static void nb_free_energy_kernel(const AtomPairlist&                    nlist,
                             // is <= rvdw-switch.
                             if constexpr (ljKernelType != LJKernelType::ForceSwitch)
                             {
-                                RealType vVdw6  = calculateVdw6(c6[i], rInv6);
-                                RealType vVdw12 = calculateVdw12(c12[i], rInv6);
+                                KernelRealType vVdw6  = calculateVdw6(c6[i], rInv6);
+                                KernelRealType vVdw12 = calculateVdw12(c12[i], rInv6);
 
                                 vVdw[i] = lennardJonesPotential(
                                         vVdw6, vVdw12, c6[i], c12[i], repulsionShift, dispersionShift, oneSixth, oneTwelfth);
@@ -1005,9 +1005,9 @@ static void nb_free_energy_kernel(const AtomPairlist&                    nlist,
                             else
                             {
                                 // LJ force switch
-                                RealType rSwitched;
-                                RealType rSwitchedSquared;
-                                RealType rSwitchedSquaredTimesR;
+                                KernelRealType rSwitched;
+                                KernelRealType rSwitchedSquared;
+                                KernelRealType rSwitchedSquaredTimesR;
                                 computeForceSwitchVariables(
                                         rV, rVdwSwitch, &rSwitched, &rSwitchedSquared, &rSwitchedSquaredTimesR);
 
@@ -1022,7 +1022,7 @@ static void nb_free_energy_kernel(const AtomPairlist&                    nlist,
                                 vVdw[i] =
                                         vVdw[i]
                                         + c12[i]
-                                                  * (oneTwelfth * (rInv6 * rInv6 + RealType(repulsionShift))
+                                                  * (oneTwelfth * (rInv6 * rInv6 + KernelRealType(repulsionShift))
                                                      + forceSwitchPotentialMod(rSwitched,
                                                                                rSwitchedSquared,
                                                                                minusRepulsionShift2Div3,
@@ -1082,17 +1082,18 @@ static void nb_free_energy_kernel(const AtomPairlist&                    nlist,
 
                             if constexpr (ljKernelType == LJKernelType::PotentialSwitch)
                             {
-                                RealType d             = rV - rVdwSwitch;
-                                BoolType zeroMask      = zero < d;
-                                BoolType potSwitchMask = rV < rVdw;
-                                d                      = selectByMask(d, zeroMask);
-                                const RealType d2      = d * d;
-                                const RealType sw =
+                                KernelRealType d             = rV - rVdwSwitch;
+                                KernelBoolType zeroMask      = zero < d;
+                                KernelBoolType potSwitchMask = rV < rVdw;
+                                d                            = selectByMask(d, zeroMask);
+                                const KernelRealType d2      = d * d;
+                                const KernelRealType sw =
                                         one + d2 * d * (vdw_swV3 + d * (vdw_swV4 + d * vdw_swV5));
 
                                 if constexpr (computeScalarForce)
                                 {
-                                    const RealType dsw = d2 * (vdw_swF2 + d * (vdw_swF3 + d * vdw_swF4));
+                                    const KernelRealType dsw =
+                                            d2 * (vdw_swF2 + d * (vdw_swF3 + d * vdw_swF4));
                                     scalarForcePerDistanceVdw[i] = potSwitchScalarForceMod(
                                             scalarForcePerDistanceVdw[i], vVdw[i], sw, rV, dsw, potSwitchMask);
                                 }
@@ -1121,7 +1122,7 @@ static void nb_free_energy_kernel(const AtomPairlist&                    nlist,
                 } // end for (int i = 0; i < NSTATES; i++)
 
                 /* Assemble A and B states. */
-                BoolType assembleStates = (bPairIncluded && withinCutoffMask);
+                KernelBoolType assembleStates = (bPairIncluded && withinCutoffMask);
                 if (anyTrue(assembleStates))
                 {
                     for (int i = 0; i < NSTATES; i++)
@@ -1164,19 +1165,19 @@ static void nb_free_energy_kernel(const AtomPairlist&                    nlist,
                     // With RF do not allow excluded pairs beyond the Coulomb cut-off, check this here.
                     // We'd like to use !withinCutoffMask, but there is no negation operator for SimdFBool.
                     // We need to use <= as this is the exact negation of the cutoff check.
-                    const BoolType beyondCutoff = (rCutoffCoul * rCutoffCoul <= rSq);
+                    const KernelBoolType beyondCutoff = (rCutoffCoul * rCutoffCoul <= rSq);
                     haveExcludedPairsBeyondCutoff =
                             haveExcludedPairsBeyondCutoff || (bPairExcluded && beyondCutoff);
 
-                    const BoolType computeReactionField = bPairExcluded;
+                    const KernelBoolType computeReactionField = bPairExcluded;
 
                     if (anyTrue(computeReactionField))
                     {
                         /* For excluded pairs we don't use soft-core.
                          * As there is no singularity, there is no need for soft-core.
                          */
-                        const RealType FF = -two * reactionFieldCoefficient;
-                        RealType       VV = reactionFieldCoefficient * rSq - reactionFieldShift;
+                        const KernelRealType FF = -two * reactionFieldCoefficient;
+                        KernelRealType VV = reactionFieldCoefficient * rSq - reactionFieldShift;
 
                         /* If ii == jnr the i particle (ii) has itself (jnr)
                          * in its neighborlist. This corresponds to a self-interaction
@@ -1199,7 +1200,7 @@ static void nb_free_energy_kernel(const AtomPairlist&                    nlist,
                 }
             }
 
-            const BoolType computeElecEwaldInteraction = (bPairExcluded || r < rCoulomb);
+            const KernelBoolType computeElecEwaldInteraction = (bPairExcluded || r < rCoulomb);
             if (elecInteractionTypeIsEwald && anyTrue(computeElecEwaldInteraction))
             {
                 /* See comment in the preamble. When using Ewald interactions
@@ -1210,7 +1211,7 @@ static void nb_free_energy_kernel(const AtomPairlist&                    nlist,
                  * the softcore to the entire electrostatic interaction,
                  * including the reciprocal-space component.
                  */
-                RealType v_lr, f_lr;
+                KernelRealType v_lr, f_lr;
 
                 pmeCoulombCorrectionVF<computeForces>(rSq, ewaldBeta, &v_lr, &f_lr);
                 if constexpr (computeForces)
@@ -1245,7 +1246,7 @@ static void nb_free_energy_kernel(const AtomPairlist&                    nlist,
                 }
             }
 
-            const BoolType computeVdwEwaldInteraction = (bPairExcluded || r < rVdw);
+            const KernelBoolType computeVdwEwaldInteraction = (bPairExcluded || r < rVdw);
             if (ljKernelType == LJKernelType::Ewald && anyTrue(computeVdwEwaldInteraction))
             {
                 /* See comment in the preamble. When using LJ-Ewald interactions
@@ -1257,7 +1258,7 @@ static void nb_free_energy_kernel(const AtomPairlist&                    nlist,
                  * including the reciprocal-space component.
                  */
 
-                RealType v_lr, f_lr;
+                KernelRealType v_lr, f_lr;
                 pmeLJCorrectionVF<computeForces>(
                         rInv, rSq, ewaldLJCoeffSq, ewaldLJCoeffSixDivSix, &v_lr, &f_lr, computeVdwEwaldInteraction, bIiEqJnr);
                 v_lr = v_lr * oneSixth;
@@ -1281,12 +1282,12 @@ static void nb_free_energy_kernel(const AtomPairlist&                    nlist,
 
             if (computeForces && anyTrue(scalarForcePerDistance != zero))
             {
-                const RealType tX = scalarForcePerDistance * dX;
-                const RealType tY = scalarForcePerDistance * dY;
-                const RealType tZ = scalarForcePerDistance * dZ;
-                fIX               = fIX + tX;
-                fIY               = fIY + tY;
-                fIZ               = fIZ + tZ;
+                const KernelRealType tX = scalarForcePerDistance * dX;
+                const KernelRealType tY = scalarForcePerDistance * dY;
+                const KernelRealType tZ = scalarForcePerDistance * dZ;
+                fIX                     = fIX + tX;
+                fIY                     = fIY + tY;
+                fIZ                     = fIZ + tZ;
 
                 transposeScatterDecrU<3>(forceRealPtr, preloadJnr, tX, tY, tZ);
             }

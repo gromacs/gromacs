@@ -388,9 +388,9 @@ static void clust_size(const char*             ndx,
                 {
                     GMX_RELEASE_ASSERT(mols.numBlocks() > 0,
                                        "Cannot access index[] from empty mols");
-                    for (int j : mols.block(i))
+                    for (int l : mols.block(i))
                     {
-                        fprintf(fp, "%d\n", j + 1);
+                        fprintf(fp, "%d\n", l + 1);
                     }
                 }
                 else

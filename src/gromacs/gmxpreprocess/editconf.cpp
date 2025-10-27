@@ -743,13 +743,13 @@ int gmx_editconf(int argc, char* argv[])
     FILE*             out;
     const char*       infile;
     const char*       outfile;
-    int               outftp, inftp, natom, i, j, n_bfac, itype, ntype;
+    int               outftp, inftp, natom, j, n_bfac, itype, ntype;
     double *          bfac    = nullptr, c6, c12;
     int*              bfac_nr = nullptr;
     t_topology*       top     = nullptr;
     char *            grpname, *sgrpname, *agrpname;
     int               isize, ssize, numAlignmentAtoms;
-    int *             index, *sindex, *aindex;
+    int *             sindex, *aindex;
     rvec *            x, *v, gc, rmin, rmax, size;
     PbcType           pbcType;
     matrix            box, rotmatrix, trans;
@@ -879,7 +879,7 @@ int gmx_editconf(int argc, char* argv[])
         }
         snew(atoms.pdbinfo, top->atoms.nr);
         ntype = top->idef.atnr;
-        for (i = 0; (i < atoms.nr); i++)
+        for (int i = 0; (i < atoms.nr); i++)
         {
             /* Determine the Van der Waals radius from the force field */
             if (bReadVDW)
@@ -931,7 +931,7 @@ int gmx_editconf(int argc, char* argv[])
         }
     }
     bHaveV = FALSE;
-    for (i = 0; (i < natom) && !bHaveV; i++)
+    for (int i = 0; (i < natom) && !bHaveV; i++)
     {
         for (j = 0; (j < DIM) && !bHaveV; j++)
         {
@@ -1049,7 +1049,7 @@ int gmx_editconf(int argc, char* argv[])
         {
             numAlignmentAtoms = atoms.nr;
             snew(aindex, numAlignmentAtoms);
-            for (i = 0; i < numAlignmentAtoms; i++)
+            for (int i = 0; i < numAlignmentAtoms; i++)
             {
                 aindex[i] = i;
             }
@@ -1064,7 +1064,7 @@ int gmx_editconf(int argc, char* argv[])
                aligncenter[YY],
                aligncenter[ZZ]);
         /*subtract out pivot point*/
-        for (i = 0; i < numAlignmentAtoms; i++)
+        for (int i = 0; i < numAlignmentAtoms; i++)
         {
             rvec_dec(x[aindex[i]], aligncenter);
         }
@@ -1080,14 +1080,14 @@ int gmx_editconf(int argc, char* argv[])
         calc_rotmatrix(tmpvec, targetvec, rotmatrix);
         /* rotmatrix finished */
 
-        for (i = 0; i < numAlignmentAtoms; ++i)
+        for (int i = 0; i < numAlignmentAtoms; ++i)
         {
             mvmul(rotmatrix, x[aindex[i]], tmpvec);
             copy_rvec(tmpvec, x[aindex[i]]);
         }
 
         /*add pivot point back*/
-        for (i = 0; i < numAlignmentAtoms; i++)
+        for (int i = 0; i < numAlignmentAtoms; i++)
         {
             rvec_inc(x[aindex[i]], aligncenter);
         }
@@ -1117,14 +1117,14 @@ int gmx_editconf(int argc, char* argv[])
                translation[ZZ]);
         if (sindex)
         {
-            for (i = 0; i < ssize; i++)
+            for (int i = 0; i < ssize; i++)
             {
                 rvec_inc(x[sindex[i]], translation);
             }
         }
         else
         {
-            for (i = 0; i < natom; i++)
+            for (int i = 0; i < natom; i++)
             {
                 rvec_inc(x[i], translation);
             }
@@ -1137,7 +1137,7 @@ int gmx_editconf(int argc, char* argv[])
                rotangles[XX],
                rotangles[YY],
                rotangles[ZZ]);
-        for (i = 0; i < DIM; i++)
+        for (int i = 0; i < DIM; i++)
         {
             rotangles[i] *= gmx::c_deg2Rad;
         }
@@ -1160,7 +1160,7 @@ int gmx_editconf(int argc, char* argv[])
         pbcType = PbcType::Xyz;
         if (!(bSetSize || bDist))
         {
-            for (i = 0; i < DIM; i++)
+            for (int i = 0; i < DIM; i++)
             {
                 newbox[i] = norm(box[i]);
             }
@@ -1172,7 +1172,7 @@ int gmx_editconf(int argc, char* argv[])
             case 't':
                 if (bDist)
                 {
-                    for (i = 0; i < DIM; i++)
+                    for (int i = 0; i < DIM; i++)
                     {
                         newbox[i] = size[i] + 2 * dist;
                     }
@@ -1201,7 +1201,7 @@ int gmx_editconf(int argc, char* argv[])
                 }
                 if (btype[0][0] == 'c')
                 {
-                    for (i = 0; i < DIM; i++)
+                    for (int i = 0; i < DIM; i++)
                     {
                         box[i][i] = d;
                     }
@@ -1294,6 +1294,7 @@ int gmx_editconf(int argc, char* argv[])
     if (bIndex)
     {
         fprintf(stderr, "\nSelect a group for output:\n");
+        int* index;
         get_index(&atoms, opt2path_optional("-n", NFILE, fnm), 1, &isize, &index, &grpname);
 
         if (resnr_start >= 0)
@@ -1303,7 +1304,7 @@ int gmx_editconf(int argc, char* argv[])
 
         if (opt2parg_bSet("-label", NPA, pa))
         {
-            for (i = 0; (i < atoms.nr); i++)
+            for (int i = 0; (i < atoms.nr); i++)
             {
                 atoms.resinfo[atoms.atom[i].resind].chainid = label[0];
             }
@@ -1364,7 +1365,7 @@ int gmx_editconf(int argc, char* argv[])
             }
             if (opt2parg_bSet("-label", NPA, pa))
             {
-                for (i = 0; (i < atoms.nr); i++)
+                for (int i = 0; (i < atoms.nr); i++)
                 {
                     atoms.resinfo[atoms.atom[i].resind].chainid = label[0];
                 }

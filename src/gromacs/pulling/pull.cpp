@@ -849,7 +849,7 @@ static void do_constraint(struct pull_t* pull,
     double   inpr;
     double   lambda, rm, invdt = 0;
     gmx_bool bConverged_all, bConverged = FALSE;
-    int      niter = 0, ii, j, m, max_iter = 100;
+    int      niter = 0, ii, m, max_iter = 100;
     double   a;
     dvec     tmp, tmp3;
 
@@ -1207,7 +1207,7 @@ static void do_constraint(struct pull_t* pull,
             /* We have already checked above that r_ij[c] != 0 */
             f_invr = pcrd->scalarForce / dnorm(r_ij[c]);
 
-            for (j = 0; j < DIM; j++)
+            for (int j = 0; j < DIM; j++)
             {
                 for (m = 0; m < DIM; m++)
                 {

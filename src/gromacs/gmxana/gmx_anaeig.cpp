@@ -697,12 +697,12 @@ static void project(const char*             trajfile,
     if (threedplotfile)
     {
         t_atoms  atoms3D;
-        rvec*    x;
+        rvec*    x3D;
         real*    b = nullptr;
-        matrix   box;
+        matrix   box3D;
         char *   resnm, *atnm;
         gmx_bool bPDB, b4D;
-        FILE*    out;
+        FILE*    out3D;
 
         if (noutvec < 3)
         {
@@ -711,8 +711,8 @@ static void project(const char*             trajfile,
 
         /* initialize */
         bPDB = fn2ftp(threedplotfile) == efPDB;
-        clear_mat(box);
-        box[XX][XX] = box[YY][YY] = box[ZZ][ZZ] = 1;
+        clear_mat(box3D);
+        box3D[XX][XX] = box3D[YY][YY] = box3D[ZZ][ZZ] = 1;
 
         b4D = bPDB && (noutvec >= 4);
         if (b4D)
@@ -737,7 +737,7 @@ static void project(const char*             trajfile,
                     eignr[outvec[2]] + 1);
         }
         init_t_atoms(&atoms3D, nframes, FALSE);
-        snew(x, nframes);
+        snew(x3D, nframes);
         snew(b, nframes);
         atnm  = gmx_strdup("C");
         resnm = gmx_strdup("PRJ");
@@ -758,9 +758,9 @@ static void project(const char*             trajfile,
             atoms3D.resinfo[i].name = &resnm;
             atoms3D.resinfo[i].nr   = static_cast<int>(std::ceil(i * fact));
             atoms3D.resinfo[i].ic   = ' ';
-            x[i][XX]                = inprod[0][i];
-            x[i][YY]                = inprod[1][i];
-            x[i][ZZ]                = inprod[2][i];
+            x3D[i][XX]              = inprod[0][i];
+            x3D[i][YY]              = inprod[1][i];
+            x3D[i][ZZ]              = inprod[2][i];
             if (b4D)
             {
                 b[i] = inprod[3][i];
@@ -771,21 +771,21 @@ static void project(const char*             trajfile,
             GMX_RELEASE_ASSERT(inprod != nullptr,
                                "inprod must be non-NULL with 4D or split PDB output options");
 
-            out = gmx_ffopen(threedplotfile, "w");
-            fprintf(out, "HEADER    %s\n", str);
+            out3D = gmx_ffopen(threedplotfile, "w");
+            fprintf(out3D, "HEADER    %s\n", str);
             if (b4D)
             {
-                fprintf(out, "REMARK    %s\n", "fourth dimension plotted as B-factor");
+                fprintf(out3D, "REMARK    %s\n", "fourth dimension plotted as B-factor");
             }
             j = 0;
             for (i = 0; i < atoms3D.nr; i++)
             {
                 if (j > 0 && bSplit && std::abs(inprod[noutvec][i]) < 1e-5)
                 {
-                    fprintf(out, "TER\n");
+                    fprintf(out3D, "TER\n");
                     j = 0;
                 }
-                gmx_fprintf_pdb_atomline(out,
+                gmx_fprintf_pdb_atomline(out3D,
                                          PdbRecordType::Atom,
                                          i + 1,
                                          "C",
@@ -794,24 +794,24 @@ static void project(const char*             trajfile,
                                          ' ',
                                          j + 1,
                                          ' ',
-                                         10 * x[i][XX],
-                                         10 * x[i][YY],
-                                         10 * x[i][ZZ],
+                                         10 * x3D[i][XX],
+                                         10 * x3D[i][YY],
+                                         10 * x3D[i][ZZ],
                                          1.0,
                                          10 * b[i],
                                          "");
                 if (j > 0)
                 {
-                    fprintf(out, "CONECT%5d%5d\n", i, i + 1);
+                    fprintf(out3D, "CONECT%5d%5d\n", i, i + 1);
                 }
                 j++;
             }
-            fprintf(out, "TER\n");
-            gmx_ffclose(out);
+            fprintf(out3D, "TER\n");
+            gmx_ffclose(out3D);
         }
         else
         {
-            write_sto_conf(threedplotfile, str, &atoms3D, x, nullptr, pbcType, box);
+            write_sto_conf(threedplotfile, str, &atoms3D, x3D, nullptr, pbcType, box3D);
         }
         done_atom(&atoms3D);
     }

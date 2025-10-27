@@ -706,8 +706,8 @@ bool Constraints::Impl::apply(const bool                computeRmsd,
 
             if (bSettleErrorHasOccurred0)
             {
-                char buf[STRLEN];
-                sprintf(buf,
+                char msgBuf[STRLEN];
+                sprintf(msgBuf,
                         "\nstep "
                         "%" PRId64
                         ": One or more water molecules can not be settled.\n"
@@ -715,9 +715,9 @@ bool Constraints::Impl::apply(const bool                computeRmsd,
                         step);
                 if (log)
                 {
-                    fprintf(log, "%s", buf);
+                    fprintf(log, "%s", msgBuf);
                 }
-                fprintf(stderr, "%s", buf);
+                fprintf(stderr, "%s", msgBuf);
                 warncount_settle++;
                 if (warncount_settle > maxwarn)
                 {

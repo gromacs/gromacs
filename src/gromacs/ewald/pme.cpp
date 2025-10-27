@@ -636,7 +636,7 @@ static void initGrids(gmx::ArrayRef<PmeAndFftGrids>                   gridsSet,
 
 gmx_pme_t::gmx_pme_t(const gmx::MpiComm* mpiComm) :
     mpiCommSingleRank(gmx::MpiComm::SingleRank{}),
-    mpiComm(mpiComm ? *mpiComm : gmx_pme_t::mpiCommSingleRank)
+    mpiComm_(mpiComm ? *mpiComm : gmx_pme_t::mpiCommSingleRank)
 {
 }
 
@@ -686,8 +686,8 @@ gmx_pme_t* gmx_pme_init(const gmx_domdec_t*              dd,
 
     pme->bPPnode = true;
 
-    pme->nnodes = pme->mpiComm.size();
-    pme->nodeid = pme->mpiComm.rank();
+    pme->nnodes = pme->mpiComm_.size();
+    pme->nodeid = pme->mpiComm_.rank();
 
     pme->nnodes_major = numPmeDomains.x;
     pme->nnodes_minor = numPmeDomains.y;
@@ -707,7 +707,7 @@ gmx_pme_t* gmx_pme_init(const gmx_domdec_t*              dd,
     {
         if (numPmeDomains.y == 1)
         {
-            pme->mpi_comm_d[0] = pme->mpiComm.comm();
+            pme->mpi_comm_d[0] = pme->mpiComm_.comm();
             pme->mpi_comm_d[1] = MPI_COMM_NULL;
             pme->ndecompdim    = 1;
             pme->nodeid_major  = pme->nodeid;
@@ -716,7 +716,7 @@ gmx_pme_t* gmx_pme_init(const gmx_domdec_t*              dd,
         else if (numPmeDomains.x == 1)
         {
             pme->mpi_comm_d[0] = MPI_COMM_NULL;
-            pme->mpi_comm_d[1] = pme->mpiComm.comm();
+            pme->mpi_comm_d[1] = pme->mpiComm_.comm();
             pme->ndecompdim    = 1;
             pme->nodeid_major  = 0;
             pme->nodeid_minor  = pme->nodeid;
@@ -732,11 +732,11 @@ gmx_pme_t* gmx_pme_init(const gmx_domdec_t*              dd,
             pme->ndecompdim = 2;
 
 #if GMX_MPI
-            MPI_Comm_split(pme->mpiComm.comm(),
+            MPI_Comm_split(pme->mpiComm_.comm(),
                            pme->nodeid % numPmeDomains.y,
                            pme->nodeid,
                            &pme->mpi_comm_d[0]); /* My communicator along major dimension */
-            MPI_Comm_split(pme->mpiComm.comm(),
+            MPI_Comm_split(pme->mpiComm_.comm(),
                            pme->nodeid / numPmeDomains.y,
                            pme->nodeid,
                            &pme->mpi_comm_d[1]); /* My communicator along minor dimension */
@@ -758,7 +758,7 @@ gmx_pme_t* gmx_pme_init(const gmx_domdec_t*              dd,
     int use_threads = (pme->nthread > 1 ? 1 : 0);
     if (pme->nnodes > 1)
     {
-        pme->mpiComm.sumReduce(1, &use_threads);
+        pme->mpiComm_.sumReduce(1, &use_threads);
     }
     pme->bUseThreads = (use_threads > 0);
 
@@ -1212,8 +1212,8 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
         atc.pd.resize(coordinates.ssize());
         for (int d = pme->ndecompdim - 1; d >= 0; d--)
         {
-            PmeAtomComm& atc = pme->atc[d];
-            atc.maxshift     = (atc.dimind == 0 ? maxshift_x : maxshift_y);
+            PmeAtomComm& atcD = pme->atc[d];
+            atcD.maxshift     = (atcD.dimind == 0 ? maxshift_x : maxshift_y);
         }
     }
     else

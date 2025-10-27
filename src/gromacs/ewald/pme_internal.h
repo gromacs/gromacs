@@ -370,7 +370,7 @@ struct gmx_pme_t
     const gmx::MpiComm mpiCommSingleRank;
 
     // Communicator for PME ranks (same as PP when no separate PME ranks are in use)
-    const gmx::MpiComm& mpiComm;
+    const gmx::MpiComm& mpiComm_;
 
     MPI_Comm mpi_comm_d[2]; /* Indexed on dimension, 0=x, 1=y */
 

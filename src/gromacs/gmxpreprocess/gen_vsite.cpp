@@ -1677,7 +1677,7 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue>                          r
                const std::filesystem::path&                                    ffdir)
 {
 #define MAXATOMSPERRESIDUE 16
-    int     k, m, i0, ni0, whatres, add_shift, nvsite, nadd;
+    int     m, i0, ni0, whatres, add_shift, nvsite, nadd;
     int     ai, aj, ak, al;
     int     nrfound = 0, needed, nrbonds, nrHatoms, Heavy, nrheavies, tpM, tpHeavy;
     int     Hatoms[4], heavies[4];
@@ -1852,6 +1852,7 @@ void do_vsites(gmx::ArrayRef<const PreprocessResidue>                          r
                     whatres = j;
                     /* get atoms we will be needing for the conversion */
                     nrfound = 0;
+                    int k;
                     for (k = 0; atnms[j][k]; k++)
                     {
                         ats[k] = NOTSET;

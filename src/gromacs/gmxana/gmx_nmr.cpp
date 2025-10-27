@@ -209,7 +209,6 @@ static void get_orires_parms(const char* topnm, t_inputrec* ir, int* nor, int* n
 
 static int get_bounds(real** bounds, int** index, int** dr_pair, int* npairs, const InteractionDefinitions& idef)
 {
-    int                 i, j, k, type, natom;
     InteractionFunction ftype;
     real*               b;
     int *               ind, *pair;
@@ -250,6 +249,7 @@ static int get_bounds(real** bounds, int** index, int** dr_pair, int* npairs, co
     label1                          = -1;
     const InteractionList&   disres = idef.il[InteractionFunction::DistanceRestraints];
     gmx::ArrayRef<const int> iatom  = disres.iatoms;
+    int                      i, j, k, type, natom;
     for (i = j = k = 0; (i < disres.size());)
     {
         type  = iatom[i];

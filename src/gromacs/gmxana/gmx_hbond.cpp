@@ -2665,36 +2665,36 @@ int gmx_hbond(int argc, char* argv[])
     /* search donors and acceptors in groups */
     snew(datable, top.atoms.nr);
     gmx::EnumerationWrapper<HydrogenExchangeGroup> iter;
-    for (auto i : iter)
+    for (auto g : iter)
     {
-        if ((i == HydrogenExchangeGroup::GroupZero) || ((i == HydrogenExchangeGroup::GroupOne) && bTwo))
+        if ((g == HydrogenExchangeGroup::GroupZero) || ((g == HydrogenExchangeGroup::GroupOne) && bTwo))
         {
-            int iValue = static_cast<int>(i);
-            gen_datable(index[i], isize[i], datable, top.atoms.nr);
+            int iValue = static_cast<int>(g);
+            gen_datable(index[g], isize[g], datable, top.atoms.nr);
             if (bContact)
             {
                 search_acceptors(&top,
-                                 isize[i],
-                                 index[i],
+                                 isize[g],
+                                 index[g],
                                  &hb.a,
                                  iValue,
                                  bNitAcc,
                                  TRUE,
-                                 (bTwo && (i == HydrogenExchangeGroup::GroupZero)) || !bTwo,
+                                 (bTwo && (g == HydrogenExchangeGroup::GroupZero)) || !bTwo,
                                  datable);
                 search_donors(&top,
-                              isize[i],
-                              index[i],
+                              isize[g],
+                              index[g],
                               &hb.d,
                               iValue,
                               TRUE,
-                              (bTwo && (i == HydrogenExchangeGroup::GroupOne)) || !bTwo,
+                              (bTwo && (g == HydrogenExchangeGroup::GroupOne)) || !bTwo,
                               datable);
             }
             else
             {
-                search_acceptors(&top, isize[i], index[i], &hb.a, iValue, bNitAcc, FALSE, TRUE, datable);
-                search_donors(&top, isize[i], index[i], &hb.d, iValue, FALSE, TRUE, datable);
+                search_acceptors(&top, isize[g], index[g], &hb.a, iValue, bNitAcc, FALSE, TRUE, datable);
+                search_donors(&top, isize[g], index[g], &hb.d, iValue, FALSE, TRUE, datable);
             }
             if (bTwo)
             {
@@ -3284,7 +3284,7 @@ int gmx_hbond(int argc, char* argv[])
         if (opt2bSet("-hbm", NFILE, fnm))
         {
             t_matrix mat;
-            int      id, ia, hh, x, y;
+            int      id, ia, hh, ix, iy;
             mat.flags = 0;
 
             if ((nframes > 0) && (hb.nrhb > 0))
@@ -3298,7 +3298,7 @@ int gmx_hbond(int argc, char* argv[])
                 {
                     value = 0;
                 }
-                y = 0;
+                iy = 0;
                 for (id = 0; (id < gmx::ssize(hb.d.don)); id++)
                 {
                     for (ia = 0; (ia < gmx::ssize(hb.a.acc)); ia++)
@@ -3309,14 +3309,14 @@ int gmx_hbond(int argc, char* argv[])
                             {
                                 if (ISHB(hb.hbmap[id][ia]->history[hh]))
                                 {
-                                    for (x = 0; (x <= hb.hbmap[id][ia]->nframes); x++)
+                                    for (ix = 0; (ix <= hb.hbmap[id][ia]->nframes); ix++)
                                     {
                                         int nn0 = hb.hbmap[id][ia]->n0;
-                                        range_check(y, 0, mat.ny);
-                                        mat.matrix(x + nn0, y) = static_cast<t_matelmt>(
-                                                is_hb(hb.hbmap[id][ia]->h[hh], x));
+                                        range_check(iy, 0, mat.ny);
+                                        mat.matrix(ix + nn0, iy) = static_cast<t_matelmt>(
+                                                is_hb(hb.hbmap[id][ia]->h[hh], ix));
                                     }
-                                    y++;
+                                    iy++;
                                 }
                             }
                         }
@@ -3332,13 +3332,13 @@ int gmx_hbond(int argc, char* argv[])
                 mat.bDiscrete = true;
                 mat.map.resize(2);
                 {
-                    int i = 0;
+                    int l = 0;
                     for (auto& m : mat.map)
                     {
-                        m.code.c1 = hbmap[i];
-                        m.desc    = hbdesc[i];
-                        m.rgb     = hbrgb[i];
-                        i++;
+                        m.code.c1 = hbmap[l];
+                        m.desc    = hbdesc[l];
+                        m.rgb     = hbrgb[l];
+                        l++;
                     }
                 }
                 fp = opt2FILE("-hbm", NFILE, fnm, "w");
@@ -3356,7 +3356,7 @@ int gmx_hbond(int argc, char* argv[])
 
     if (hb.bDAnr)
     {
-        int                      i, nleg;
+        int                      l, nleg;
         std::vector<std::string> legnames;
 
 #define USE_THIS_GROUP(j) \
@@ -3368,29 +3368,29 @@ int gmx_hbond(int argc, char* argv[])
                       "Count",
                       oenv);
         nleg = (bTwo ? 2 : 1) * 2;
-        i    = 0;
-        for (auto j : gmx::EnumerationWrapper<HydrogenExchangeGroup>())
+        l    = 0;
+        for (auto g : gmx::EnumerationWrapper<HydrogenExchangeGroup>())
         {
-            if (USE_THIS_GROUP(j))
+            if (USE_THIS_GROUP(g))
             {
-                legnames.emplace_back(gmx::formatString("Donors %s", grpnames_spec[static_cast<int>(j)]));
+                legnames.emplace_back(gmx::formatString("Donors %s", grpnames_spec[static_cast<int>(g)]));
                 legnames.emplace_back(
-                        gmx::formatString("Acceptors %s", grpnames_spec[static_cast<int>(j)]));
+                        gmx::formatString("Acceptors %s", grpnames_spec[static_cast<int>(g)]));
             }
         }
-        if (i != nleg)
+        if (l != nleg)
         {
             gmx_incons("number of legend entries");
         }
         xvgrLegend(fp, legnames, oenv);
-        for (i = 0; i < nframes; i++)
+        for (l = 0; l < nframes; l++)
         {
-            fprintf(fp, "%10g", hb.time[i]);
-            for (auto j : gmx::EnumerationWrapper<HydrogenExchangeGroup>())
+            fprintf(fp, "%10g", hb.time[l]);
+            for (auto g : gmx::EnumerationWrapper<HydrogenExchangeGroup>())
             {
-                if (USE_THIS_GROUP(j))
+                if (USE_THIS_GROUP(g))
                 {
-                    fprintf(fp, " %6d", hb.danr[i][j]);
+                    fprintf(fp, " %6d", hb.danr[l][g]);
                 }
             }
             fprintf(fp, "\n");

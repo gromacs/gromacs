@@ -2266,21 +2266,21 @@ int pdb2gmx::run()
 
     /* set all the water blocks at the end of the chain */
     std::vector<int> swap_index(numChains);
-    int              j = 0;
+    int              jj = 0;
     for (int i = 0; i < numChains; i++)
     {
         if (!pdb_ch[i].bAllWat)
         {
-            swap_index[j] = i;
-            j++;
+            swap_index[jj] = i;
+            jj++;
         }
     }
     for (int i = 0; i < numChains; i++)
     {
         if (pdb_ch[i].bAllWat)
         {
-            swap_index[j] = i;
-            j++;
+            swap_index[jj] = i;
+            jj++;
         }
     }
     if (nwaterchain > 1)
@@ -2308,7 +2308,7 @@ int pdb2gmx::run()
 
         snew(chains[i].pdba, 1);
         init_t_atoms(chains[i].pdba, pdb_ch[si].natom, true);
-        for (j = 0; j < chains[i].pdba->nr; j++)
+        for (int j = 0; j < chains[i].pdba->nr; j++)
         {
             chains[i].pdba->atom[j] = pdba_all.atom[pdb_ch[si].start + j];
             chains[i].pdba->atomname[j] = put_symtab(&symtab, *pdba_all.atomname[pdb_ch[si].start + j]);
@@ -2455,7 +2455,7 @@ int pdb2gmx::run()
                       rtprename);
 
         cc->chainstart[cc->nterpairs] = pdba->nres;
-        j                             = 0;
+        int j                         = 0;
         for (int i = 0; i < cc->nterpairs; i++)
         {
             find_nc_ter(pdba,
@@ -2688,9 +2688,9 @@ int pdb2gmx::run()
 
             /* Check if there have been previous chains with the same id */
             int nid_used = 0;
-            for (int k = 0; k < chain; k++)
+            for (int c = 0; c < chain; c++)
             {
-                if (cc->chainid == chains[k].chainid)
+                if (cc->chainid == chains[c].chainid)
                 {
                     nid_used++;
                 }

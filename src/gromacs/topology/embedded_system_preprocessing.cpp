@@ -272,12 +272,12 @@ std::vector<real> removeEmbeddedClassicalCharges(gmx_mtop_t*              mtop,
     // Loop over all atoms and remove charge if they are embedded atoms.
     // Sum-up total removed charge and remaning charge on MM atoms
     // Build atomCharges_ vector
-    int               molBlockIndex               = 0;
     real              totalClassicalChargeRemoved = 0.0;
     real              remainingMMCharge           = 0.0;
     std::vector<real> atomCharges;
     for (int i = 0; i < mtop->natoms; i++)
     {
+        int molBlockIndex = 0;
         int indexInMolecule;
         mtopGetMolblockIndex(*mtop, i, &molBlockIndex, nullptr, &indexInMolecule);
         t_atom* atom = &mtop->moltype[mtop->molblock[molBlockIndex].type].atoms.atom[indexInMolecule];

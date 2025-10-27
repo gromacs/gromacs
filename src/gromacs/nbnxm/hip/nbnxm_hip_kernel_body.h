@@ -685,7 +685,7 @@ __launch_bounds__(c_clSizeSq<pairlistType>* nthreadZ, minBlocksPerMp) __global__
         const int         cijPackedEnd   = nbSci.cjPackedEnd;
 
         /*! i-cluster interaction mask for a super-cluster with all c_clusterPerSuperCluster bits set */
-        constexpr int superClInteractionMask = ((1U << c_clusterPerSuperCluster) - 1U);
+        constexpr int perSuperClInteractionMask = ((1U << c_clusterPerSuperCluster) - 1U);
 
         // Only needed if props.elecEwaldAna
         const float beta2 = ewaldBeta * ewaldBeta;
@@ -808,7 +808,8 @@ __launch_bounds__(c_clSizeSq<pairlistType>* nthreadZ, minBlocksPerMp) __global__
 #pragma unroll c_gpuJGroupSize
             for (int jm = 0; jm < c_gpuJGroupSize; jm++)
             {
-                const bool maskSet = imask & (superClInteractionMask << (jm * c_clusterPerSuperCluster));
+                const bool maskSet =
+                        imask & (perSuperClInteractionMask << (jm * c_clusterPerSuperCluster));
                 if (!maskSet)
                 {
                     continue;

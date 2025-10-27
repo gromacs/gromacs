@@ -593,11 +593,12 @@ DispersionCorrection::Correction DispersionCorrection::calculate(const matrix bo
     }
     if (bCorrAll)
     {
-        const real enerdiff = numCorr * (density * iParams_.enerdifftwelve_ - iParams_.enershifttwelve_);
-        corr.energy += avctwelve * enerdiff;
+        const real enerDiffCorrectionAll =
+                numCorr * (density * iParams_.enerdifftwelve_ - iParams_.enershifttwelve_);
+        corr.energy += avctwelve * enerDiffCorrectionAll;
         if (eFep_ != FreeEnergyPerturbationType::No)
         {
-            dvdlambda += (topParams_.avctwelve_[1] - topParams_.avctwelve_[0]) * enerdiff;
+            dvdlambda += (topParams_.avctwelve_[1] - topParams_.avctwelve_[0]) * enerDiffCorrectionAll;
         }
     }
 

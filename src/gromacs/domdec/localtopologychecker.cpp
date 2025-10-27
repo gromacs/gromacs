@@ -206,22 +206,22 @@ static std::string printMissingInteractionsMolblock(const MpiComm&           mpi
                                 numMissingToPrint);
                     }
                     log.writeStringFormatted("%20s atoms", interaction_function[ftype].longname);
-                    int a = 0;
-                    for (; a < nral; a++)
+                    int a1 = 0;
+                    for (; a1 < nral; a1++)
                     {
-                        log.writeStringFormatted(" %6d", ril.il[j_mol + 2 + a] + 1);
+                        log.writeStringFormatted(" %6d", ril.il[j_mol + 2 + a1] + 1);
                     }
-                    while (a < 4)
+                    while (a1 < 4)
                     {
                         log.writeString("       ");
-                        a++;
+                        a1++;
                     }
                     log.writeString(" global");
-                    for (int a = 0; a < nral; a++)
+                    for (int a2 = 0; a2 < nral; a2++)
                     {
                         log.writeStringFormatted(" %6d",
                                                  atomRange.begin() + mol * numAtomsPerMolecule
-                                                         + ril.il[j_mol + 2 + a] + 1);
+                                                         + ril.il[j_mol + 2 + a2] + 1);
                     }
                     log.ensureLineBreak();
                 }

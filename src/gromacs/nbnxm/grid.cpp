@@ -1801,16 +1801,17 @@ void Grid::setNonLocalGrid(const int                           ddZone,
         }
         else
         {
-            const int numAtomsPerCluster = geometry_.numAtomsICluster_;
+            const int numAtomsPerClusterNonSimple = geometry_.numAtomsICluster_;
 
-            numClustersInCell = divideRoundUp(atomEnd - atomOffsetCell, numAtomsPerCluster);
+            numClustersInCell = divideRoundUp(atomEnd - atomOffsetCell, numAtomsPerClusterNonSimple);
 
             bbcz_[cell].lower = x[atomOffsetCell][ZZ];
             bbcz_[cell].upper = x[atomOffsetCell][ZZ];
             for (int c = 0; c < numClustersInCell; c++)
             {
-                const int atomClusterStart = atomOffsetCell + c * numAtomsPerCluster;
-                const int atomClusterEnd = std::min(atomClusterStart + numAtomsPerCluster, atomEnd);
+                const int atomClusterStart = atomOffsetCell + c * numAtomsPerClusterNonSimple;
+                const int atomClusterEnd =
+                        std::min(atomClusterStart + numAtomsPerClusterNonSimple, atomEnd);
                 fillCell(gridSetData, nbat, atomClusterStart, atomClusterEnd, atomInfo, x);
 
 #if GMX_DOUBLE

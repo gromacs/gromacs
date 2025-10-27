@@ -176,7 +176,7 @@ int gmx_g_angle(int argc, char* argv[])
     real          maxang, S2, norm_fac, maxstat;
     unsigned long mode;
     int           nframes, maxangstat, mult, *angstat;
-    int           i, j, nangles, first, last;
+    int           nangles, first, last;
     gmx_bool      bAver, bRb, bPeriodic, bFrac, /* calculate fraction too?  */
             bTrans,                             /* worry about transtions too? */
             bCorr;                              /* correlation function ? */
@@ -314,12 +314,12 @@ int gmx_g_angle(int argc, char* argv[])
     {
         sprintf(title, "Average Angle: %s", grpname);
         out = xvgropen(opt2fn("-ov", NFILE, fnm), title, "Time (ps)", "Angle (degrees)", oenv);
-        for (i = 0; (i < nframes); i++)
+        for (int i = 0; (i < nframes); i++)
         {
             fprintf(out, "%10.5f  %8.3f", time[i], aver_angle[i] * gmx::c_rad2Deg);
             if (bALL)
             {
-                for (j = 0; (j < nangles); j++)
+                for (int j = 0; (j < nangles); j++)
                 {
                     if (bPBC)
                     {
@@ -346,7 +346,7 @@ int gmx_g_angle(int argc, char* argv[])
         sprintf(title, "Trans fraction: %s", grpname);
         out   = xvgropen(opt2fn("-of", NFILE, fnm), title, "Time (ps)", "Fraction", oenv);
         tfrac = 0.0;
-        for (i = 0; (i < nframes); i++)
+        for (int i = 0; (i < nframes); i++)
         {
             fprintf(out, "%10.5f  %10.3f\n", time[i], trans_frac[i]);
             tfrac += trans_frac[i];
@@ -379,9 +379,9 @@ int gmx_g_angle(int argc, char* argv[])
                 real     dval, sixty = gmx::c_deg2Rad * 60;
                 gmx_bool bTest;
 
-                for (i = 0; (i < nangles); i++)
+                for (int i = 0; (i < nangles); i++)
                 {
-                    for (j = 0; (j < nframes); j++)
+                    for (int j = 0; (j < nframes); j++)
                     {
                         dval = dih[i][j];
                         if (bRb)
@@ -450,7 +450,7 @@ int gmx_g_angle(int argc, char* argv[])
     else
     { /* Incorrect  for Std. Dev. */
         real delta, b_aver = aver_angle[0];
-        for (i = 0; (i < nframes); i++)
+        for (int i = 0; (i < nframes); i++)
         {
             delta = correctRadianAngleRange(aver_angle[i] - b_aver);
             b_aver += delta;
@@ -486,7 +486,7 @@ int gmx_g_angle(int argc, char* argv[])
     if (bPeriodic)
     {
         maxstat = 0;
-        for (i = first; (i <= last); i++)
+        for (int i = first; (i <= last); i++)
         {
             maxstat = std::max(maxstat, angstat[i] * norm_fac);
         }
@@ -503,7 +503,7 @@ int gmx_g_angle(int argc, char* argv[])
             fprintf(out, "@    yaxis  tick minor 0.0025\n");
         }
     }
-    for (i = first; (i <= last); i++)
+    for (int i = first; (i <= last); i++)
     {
         fprintf(out, "%10g  %10f\n", i * binwidth + 180.0 - maxang, angstat[i] * norm_fac);
     }

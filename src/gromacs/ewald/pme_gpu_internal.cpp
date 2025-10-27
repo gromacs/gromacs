@@ -1300,7 +1300,7 @@ static void pme_gpu_copy_common_data_from(const gmx_pme_t* pme)
     pmeGpu->common->boxScaler     = pme->boxScaler.get();
     pmeGpu->common->mpiCommX      = pme->mpi_comm_d[0];
     pmeGpu->common->mpiCommY      = pme->mpi_comm_d[1];
-    pmeGpu->common->mpiComm       = pme->mpiComm.comm();
+    pmeGpu->common->mpiComm       = pme->mpiComm_.comm();
 }
 
 /*! \libinternal \brief
@@ -2010,12 +2010,12 @@ void pme_gpu_spread(PmeGpu*                        pmeGpu,
                 // set kernel configuration options specific to this stage of the pipeline
                 std::tie(kernelParamsPtr->pipelineAtomStart, kernelParamsPtr->pipelineAtomEnd) =
                         pmeCoordinateReceiverGpu->ppCommAtomRange(senderIndex);
-                const int blockCount = static_cast<int>(std::ceil(
+                const int pipelineBlockCount = static_cast<int>(std::ceil(
                         static_cast<float>(kernelParamsPtr->pipelineAtomEnd - kernelParamsPtr->pipelineAtomStart)
                         / atomsPerBlock));
-                auto      dimGrid    = pmeGpuCreateGrid(pmeGpu, blockCount);
-                config.gridSize[0]   = dimGrid.first;
-                config.gridSize[1]   = dimGrid.second;
+                auto      pipelineDimGrid    = pmeGpuCreateGrid(pmeGpu, pipelineBlockCount);
+                config.gridSize[0]           = pipelineDimGrid.first;
+                config.gridSize[1]           = pipelineDimGrid.second;
 
                 const auto kernelArgs = [&]()
                 {
@@ -2568,17 +2568,21 @@ void pme_gpu_gather(PmeGpu*                       pmeGpu,
                 kernelPtr, config, pmeGpu->archSpecific->pmeStream_, timingEvent, "PME gather", kernelArgs);
         if (!computeVirial && pmeGpu->useNvshmem)
         {
-            KernelLaunchConfig config;
-            config.blockSize[0] = 128;
-            config.blockSize[1] = 1;
-            config.blockSize[2] = 1;
-            config.gridSize[0]  = 1;
-            config.gridSize[1]  = 1;
-            auto kernelPtr_     = pmeGpu->programHandle_->impl_->nvshmemSignalKern;
+            KernelLaunchConfig nvshmemConfig;
+            nvshmemConfig.blockSize[0] = 128;
+            nvshmemConfig.blockSize[1] = 1;
+            nvshmemConfig.blockSize[2] = 1;
+            nvshmemConfig.gridSize[0]  = 1;
+            nvshmemConfig.gridSize[1]  = 1;
+            auto kernelPtr_            = pmeGpu->programHandle_->impl_->nvshmemSignalKern;
 
-            const auto kernelArgs_ = prepareGpuKernelArguments(kernelPtr_, config, kernelParamsPtr);
-            launchGpuKernel(
-                    kernelPtr_, config, pmeGpu->archSpecific->pmeStream_, timingEvent, "PME gather", kernelArgs_);
+            const auto kernelArgs_ = prepareGpuKernelArguments(kernelPtr_, nvshmemConfig, kernelParamsPtr);
+            launchGpuKernel(kernelPtr_,
+                            nvshmemConfig,
+                            pmeGpu->archSpecific->pmeStream_,
+                            timingEvent,
+                            "PME gather",
+                            kernelArgs_);
         }
         pme_gpu_stop_timing(pmeGpu, timingId);
     }

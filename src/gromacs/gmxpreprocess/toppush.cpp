@@ -599,8 +599,8 @@ void push_at(PreprocessingAtomTypes*    at,
         auto newAtomType = at->setType(*atomType, *atom, type, interactionType, batype_nr, atomnr);
         if (!newAtomType.has_value())
         {
-            auto message = gmx::formatString("Replacing atomtype %s failed", type);
-            warning_error_and_exit(wi, message, FARGS);
+            auto errorMessage = gmx::formatString("Replacing atomtype %s failed", type);
+            warning_error_and_exit(wi, errorMessage, FARGS);
         }
     }
     else
@@ -874,7 +874,7 @@ void push_bt(Directive                                                       d,
                                             "%*s%*s%*s%*s%*s%*s",
                                             "%*s%*s%*s%*s%*s%*s%*s" };
     const char* formlf                  = "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf";
-    int         i, ft, nn, nrfp, nrfpA;
+    int         ft, nn, nrfp, nrfpA;
     char        f1[STRLEN];
     char        alc[MAXATOMLIST + 1][20];
     /* One force parameter more, so we can check if we read too many */
@@ -922,7 +922,7 @@ void push_bt(Directive                                                       d,
             {
                 wi->addError("Too many parameters");
             }
-            for (i = nn; (i < nrfp); i++)
+            for (int i = nn; (i < nrfp); i++)
             {
                 c[i] = 0.0;
             }
@@ -969,7 +969,7 @@ void push_dihedraltype(Directive                                                
         "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf",
         "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf",
     };
-    int    i, ft, nn, nrfp, nrfpA, nral;
+    int    ft, nn, nrfp, nrfpA, nral;
     char   f1[STRLEN];
     char   alc[MAXATOMLIST + 1][20];
     double c[MAXFORCEPARAM];
@@ -1070,7 +1070,7 @@ void push_dihedraltype(Directive                                                
             {
                 wi->addError("Too many parameters");
             }
-            for (i = nn; (i < nrfp); i++)
+            for (int i = nn; (i < nrfp); i++)
             {
                 c[i] = 0.0;
             }
@@ -2522,10 +2522,10 @@ void push_bond(Directive                                                       d
         {
             /* Advance pointer! */
             foundAParameter += 2;
-            gmx::ArrayRef<const real> forceParam = foundAParameter->forceParam();
+            gmx::ArrayRef<const real> forceParamProperDihedral = foundAParameter->forceParam();
             for (int j = 0; j < (NRFPA(ftype) + NRFPB(ftype)); j++)
             {
-                param.setForceParameter(j, forceParam[j]);
+                param.setForceParameter(j, forceParamProperDihedral[j]);
             }
             /* And push the next term for this torsion */
             add_param_to_list(&bond[ftype], param);

@@ -254,9 +254,9 @@ void DomainCommBackward::packCoordinateSendBuffer(const matrix         box,
     const NumAtomsPerCluster numAtomsPerCluster = numAtomsPerClusterFromInt(numAtomsPerCluster_);
 
     dispatchTemplatedFunction(
-            [&](auto commOverPbc, auto usesScrewPbc, auto numAtomsPerCluster)
+            [&](auto commOverPbc, auto usesScrewPbc, auto numAtomsPerClusterArg)
             {
-                packCoordinatesTemplated<commOverPbc, usesScrewPbc, numAtomsPerCluster>(
+                packCoordinatesTemplated<commOverPbc, usesScrewPbc, numAtomsPerClusterArg>(
                         *this, box, shiftVec, x, sendBuffer);
             },
             commOverPbc_,
@@ -389,9 +389,9 @@ void DomainCommBackward::accumulateReceivedForces(ArrayRef<RVec> forces, ArrayRe
     const NumAtomsPerCluster numAtomsPerCluster = numAtomsPerClusterFromInt(numAtomsPerCluster_);
 
     dispatchTemplatedFunction(
-            [&](auto usesScrewPbc, auto haveShiftForces, auto numAtomsPerCluster)
+            [&](auto usesScrewPbc, auto haveShiftForcesArg, auto numAtomsPerClusterArg)
             {
-                accumulateReceivedForcesTemplated<usesScrewPbc, haveShiftForces, numAtomsPerCluster>(
+                accumulateReceivedForcesTemplated<usesScrewPbc, haveShiftForcesArg, numAtomsPerClusterArg>(
                         *this, forces, shiftForce);
             },
             usesScrewPbc_,

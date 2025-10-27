@@ -1452,16 +1452,16 @@ int count_triangle_constraints(const InteractionLists& ilist, const ListOfLists<
     for (int c0 = 0; c0 < ncon_tot; c0++)
     {
         bool       bTriangle = FALSE;
-        const int* iap       = constr_iatomptr(ia1, ia2, c0);
-        const int  a00       = iap[1];
-        const int  a01       = iap[2];
+        const int* iap0      = constr_iatomptr(ia1, ia2, c0);
+        const int  a00       = iap0[1];
+        const int  a01       = iap0[2];
         for (const int c1 : at2con[a01])
         {
             if (c1 != c0)
             {
-                const int* iap = constr_iatomptr(ia1, ia2, c1);
-                const int  a10 = iap[1];
-                const int  a11 = iap[2];
+                const int* iap1 = constr_iatomptr(ia1, ia2, c1);
+                const int  a10  = iap1[1];
+                const int  a11  = iap1[2];
                 int        ac1;
                 if (a10 == a01)
                 {
@@ -1475,9 +1475,9 @@ int count_triangle_constraints(const InteractionLists& ilist, const ListOfLists<
                 {
                     if (c2 != c0 && c2 != c1)
                     {
-                        const int* iap = constr_iatomptr(ia1, ia2, c2);
-                        const int  a20 = iap[1];
-                        const int  a21 = iap[2];
+                        const int* iap2 = constr_iatomptr(ia1, ia2, c2);
+                        const int  a20  = iap2[1];
+                        const int  a21  = iap2[2];
                         if (a20 == a00 || a21 == a00)
                         {
                             bTriangle = TRUE;

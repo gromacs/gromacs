@@ -1094,13 +1094,14 @@ static void clean_vsite_bonds(gmx::EnumerationArray<InteractionFunction, Interac
                         {
                             for (int m = 0; (m < vsnral) && !bKeep; m++)
                             {
-                                const int* atoms;
+                                const int* nonFirstAtoms;
 
                                 bool bPresent = false;
-                                atoms = plist[iftype].interactionTypes[interactionIndex].atoms().data() + 1;
+                                nonFirstAtoms =
+                                        plist[iftype].interactionTypes[interactionIndex].atoms().data() + 1;
                                 for (int n = 0; (n < vsnral) && !bPresent; n++)
                                 {
-                                    if (atoms[m] == first_atoms[n])
+                                    if (nonFirstAtoms[m] == first_atoms[n])
                                     {
                                         bPresent = true;
                                     }
@@ -1255,7 +1256,6 @@ static void clean_vsite_angles(gmx::EnumerationArray<InteractionFunction, Intera
                                gmx::ArrayRef<const Atom2VsiteConnection>               at2vc,
                                const gmx::MDLogger&                                    logger)
 {
-    int                 atom, at1, at2;
     InteractionsOfType* ps;
 
     ps          = &(plist[cftype]);
@@ -1336,7 +1336,7 @@ static void clean_vsite_angles(gmx::EnumerationArray<InteractionFunction, Intera
         bool bFirstTwo = true;
         for (int k = 0; (k < 3) && !bKeep; k++) /* for all atoms in the angle */
         {
-            atom = atoms[k];
+            int atom = atoms[k];
             if (!vsite_type[atom].has_value())
             {
                 bool bUsed = false;
@@ -1364,8 +1364,8 @@ static void clean_vsite_angles(gmx::EnumerationArray<InteractionFunction, Intera
             /* check if all constructing atoms are constrained together */
             for (int m = 0; m < vsnral && !bKeep; m++) /* all constr. atoms */
             {
-                at1           = first_atoms[m];
-                at2           = first_atoms[(m + 1) % vsnral];
+                int  at1      = first_atoms[m];
+                int  at2      = first_atoms[(m + 1) % vsnral];
                 bool bPresent = false;
                 auto found    = std::find(at2vc[at1].begin(), at2vc[at1].end(), at2);
                 if (found != at2vc[at1].end())

@@ -134,7 +134,6 @@ static void do_ac_core(int nframes, int nout, real corr[], real c1[], int nresta
 {
     int  j, k, j3, jk3, m, n;
     real ccc, cth;
-    rvec xj, xk;
 
     if (nrestart < 1)
     {
@@ -183,6 +182,7 @@ static void do_ac_core(int nframes, int nout, real corr[], real c1[], int nresta
             {
                 unsigned int mmm;
 
+                rvec xj, xk;
                 for (m = 0; (m < DIM); m++)
                 {
                     xj[m] = c1[j3 + m];
@@ -227,6 +227,7 @@ static void do_ac_core(int nframes, int nout, real corr[], real c1[], int nresta
             }
             else if (MODE(eacVector))
             {
+                rvec xj, xk;
                 for (m = 0; (m < DIM); m++)
                 {
                     xj[m] = c1[j3 + m];
@@ -553,7 +554,6 @@ void low_do_autocorr(const char*             fn,
                      int                     eFitFn)
 {
     FILE *   fp, *gp = nullptr;
-    int      i;
     real*    csum;
     real *   ctmp, *fit;
     real     sum, Ct2av, Ctav;
@@ -673,7 +673,7 @@ void low_do_autocorr(const char*             fn,
         {
             gp = xvgropen("ct-distr.xvg", "Correlation times", "item", "time (ps)", oenv);
         }
-        for (i = 0; i < nitem; i++)
+        for (int i = 0; i < nitem; i++)
         {
             if (bNormalize)
             {

@@ -628,7 +628,7 @@ static void new_status(const char*                                 topfile,
                        const gmx::MDLogger&                                            logger)
 {
     std::vector<gmx_molblock_t> molblock;
-    int                         i, nmismatch;
+    int                         nmismatch;
     bool                        ffParametrizedWithHBondConstraints;
 
     /* TOPOLOGY processing */
@@ -692,7 +692,7 @@ static void new_status(const char*                                 topfile,
 
     if (ir->eDisre == DistanceRestraintRefinement::None)
     {
-        i = rm_interactions(InteractionFunction::DistanceRestraints, *mi);
+        int i = rm_interactions(InteractionFunction::DistanceRestraints, *mi);
         if (i > 0)
         {
             wi->setFileAndLineNumber("unknown", -1);
@@ -703,7 +703,7 @@ static void new_status(const char*                                 topfile,
     }
     if (!opts->bOrire)
     {
-        i = rm_interactions(InteractionFunction::OrientationRestraints, *mi);
+        int i = rm_interactions(InteractionFunction::OrientationRestraints, *mi);
         if (i > 0)
         {
             wi->setFileAndLineNumber("unknown", -1);
@@ -831,8 +831,10 @@ static void new_status(const char*                                 topfile,
     }
     else if (EI_STATE_VELOCITY(ir->eI))
     {
-        bool velocitiesAreZero = !std::any_of(
-                state->v.begin(), state->v.end(), [](const auto& v) { return norm2(v) > 0; });
+        bool velocitiesAreZero =
+                !std::any_of(state->v.begin(),
+                             state->v.end(),
+                             [](const auto& velocity) { return norm2(velocity) > 0; });
         GMX_LOG(logger.info)
                 .asParagraph()
                 .appendTextFormatted("Taking velocities from '%s'%s",
@@ -2425,47 +2427,48 @@ int gmx_grompp(int argc, char* argv[])
             wi.addNote(warningMessage);
         }
 
-        const char* fn = opt2fn("-r", NFILE, fnm);
-        const char* fnB;
+        const char* fnRestraint = opt2fn("-r", NFILE, fnm);
+        const char* fnRestraintB;
 
-        if (!gmx_fexist(fn))
+        if (!gmx_fexist(fnRestraint))
         {
             gmx_fatal(FARGS,
                       "Cannot find position restraint file %s (option -r).\n"
                       "From GROMACS-2018, you need to specify the position restraint "
                       "coordinate files explicitly to avoid mistakes, although you can "
                       "still use the same file as you specify for the -c option.",
-                      fn);
+                      fnRestraint);
         }
 
         if (opt2bSet("-rb", NFILE, fnm))
         {
-            fnB = opt2fn("-rb", NFILE, fnm);
-            if (!gmx_fexist(fnB))
+            fnRestraintB = opt2fn("-rb", NFILE, fnm);
+            if (!gmx_fexist(fnRestraintB))
             {
                 gmx_fatal(FARGS,
                           "Cannot find B-state position restraint file %s (option -rb).\n"
                           "From GROMACS-2018, you need to specify the position restraint "
                           "coordinate files explicitly to avoid mistakes, although you can "
                           "still use the same file as you specify for the -c option.",
-                          fnB);
+                          fnRestraintB);
             }
         }
         else
         {
-            fnB = fn;
+            fnRestraintB = fnRestraint;
         }
 
         if (bVerbose)
         {
-            std::string message = gmx::formatString("Reading position restraint coords from %s", fn);
-            if (std::strcmp(fn, fnB) != 0)
+            std::string message =
+                    gmx::formatString("Reading position restraint coords from %s", fnRestraint);
+            if (std::strcmp(fnRestraint, fnRestraintB) != 0)
             {
-                message += gmx::formatString(" and %s", fnB);
+                message += gmx::formatString(" and %s", fnRestraintB);
             }
             GMX_LOG(logger.info).asParagraph().appendText(message);
         }
-        gen_posres(&sys, mi, fn, fnB, ir->pressureCouplingOptions.refcoord_scaling, ir->pbcType, &wi);
+        gen_posres(&sys, mi, fnRestraint, fnRestraintB, ir->pressureCouplingOptions.refcoord_scaling, ir->pbcType, &wi);
     }
 
     /* If we are using CMAP, setup the pre-interpolation grid */

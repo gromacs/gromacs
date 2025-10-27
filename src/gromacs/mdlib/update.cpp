@@ -760,27 +760,27 @@ static void do_update_md(int                                  start,
                                                                                        : zero;
 
         dispatchTemplatedFunction(
-                [=](auto stepAccelerationType)
+                [=](auto accelerationType)
                 {
-                    return updateMDLeapfrogGeneral<stepAccelerationType>(start,
-                                                                         nrend,
-                                                                         doNoseHoover,
-                                                                         dt,
-                                                                         dtPressureCouple,
-                                                                         cTC,
-                                                                         cAcceleration,
-                                                                         acceleration.data(),
-                                                                         boxDeformation,
-                                                                         invMassPerDim,
-                                                                         ekind,
-                                                                         box,
-                                                                         x,
-                                                                         xprime,
-                                                                         v,
-                                                                         f,
-                                                                         nh_vxi,
-                                                                         nsttcouple,
-                                                                         parrinelloRahmanMToUseThisStep);
+                    return updateMDLeapfrogGeneral<accelerationType>(start,
+                                                                     nrend,
+                                                                     doNoseHoover,
+                                                                     dt,
+                                                                     dtPressureCouple,
+                                                                     cTC,
+                                                                     cAcceleration,
+                                                                     acceleration.data(),
+                                                                     boxDeformation,
+                                                                     invMassPerDim,
+                                                                     ekind,
+                                                                     box,
+                                                                     x,
+                                                                     xprime,
+                                                                     v,
+                                                                     f,
+                                                                     nh_vxi,
+                                                                     nsttcouple,
+                                                                     parrinelloRahmanMToUseThisStep);
                 },
                 stepAccelerationType);
     }
@@ -812,9 +812,9 @@ static void do_update_md(int                                  start,
             };
 
             dispatchTemplatedFunction(
-                    [=](auto numTempScaleValues, auto parrinelloRahmanVelocityScaling)
+                    [=](auto numValues, auto velocityScaling)
                     {
-                        return updateMDLeapfrogSimple<StoreUpdatedVelocities::Yes, numTempScaleValues, parrinelloRahmanVelocityScaling>(
+                        return updateMDLeapfrogSimple<StoreUpdatedVelocities::Yes, numValues, velocityScaling>(
                                 start, nrend, dt, dtPressureCouple, invMassPerDim.data(), tcstat, cTC, diagM, x, xprime, v, f);
                     },
                     numTempScaleValues,
@@ -843,7 +843,7 @@ static void do_update_md(int                                  start,
             else
             {
                 dispatchTemplatedFunction(
-                        [=](auto numTempScaleValues)
+                        [=](auto numValues)
                         {
                             /* Note that modern compilers are pretty good at vectorizing
                              * updateMDLeapfrogSimple(). But the SIMD version will still
@@ -851,7 +851,7 @@ static void do_update_md(int                                  start,
                              * compared to invMassPerDim.
                              */
                             {
-                                updateMDLeapfrogSimple<StoreUpdatedVelocities::Yes, numTempScaleValues, ParrinelloRahmanVelocityScaling::No>(
+                                updateMDLeapfrogSimple<StoreUpdatedVelocities::Yes, numValues, ParrinelloRahmanVelocityScaling::No>(
                                         start,
                                         nrend,
                                         dt,

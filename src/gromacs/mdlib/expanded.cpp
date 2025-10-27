@@ -122,7 +122,7 @@ static void GenerateGibbsProbabilities(const real* ene, double* p_k, double* pks
     }
 }
 
-static void GenerateWeightedGibbsProbabilities(const real*         ene,
+static void GenerateWeightedGibbsProbabilities(const real*         energy,
                                                double*             p_k,
                                                double*             pks,
                                                gmx::ArrayRef<real> nvals,
@@ -134,7 +134,7 @@ static void GenerateWeightedGibbsProbabilities(const real*         ene,
     std::vector<real> nene(nvals.size());
     std::transform(nvals.begin(),
                    nvals.end(),
-                   ene,
+                   energy,
                    nene.begin(),
                    [delta](const real& val, const real& ene)
                    {

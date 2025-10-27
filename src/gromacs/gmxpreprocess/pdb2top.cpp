@@ -1544,7 +1544,7 @@ void pdb2top(FILE*                                  top_file,
 {
     gmx::EnumerationArray<InteractionFunction, InteractionsOfType> plist;
     t_excls*                                                       excls;
-    int                                                            i, nmissat;
+    int                                                            nmissat;
     gmx::EnumerationArray<BondedTypes, int>                        bts;
 
     ResidueTypeMap residueTypeMap = residueTypeMapFromLibraryFile("residuetypes.dat");
@@ -1655,7 +1655,7 @@ void pdb2top(FILE*                                  top_file,
 
     if (bRenumRes)
     {
-        for (i = 0; i < atoms->nres; i++)
+        for (int i = 0; i < atoms->nres; i++)
         {
             atoms->resinfo[i].nr = i + 1;
             atoms->resinfo[i].ic = ' ';
@@ -1686,7 +1686,7 @@ void pdb2top(FILE*                                  top_file,
 
 
     /* we should clean up hb and restp here, but that is a *L*O*T* of work! */
-    for (i = 0; i < atoms->nr; i++)
+    for (int i = 0; i < atoms->nr; i++)
     {
         sfree(excls[i].e);
     }

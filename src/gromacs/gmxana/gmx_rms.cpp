@@ -214,7 +214,7 @@ int gmx_rms(int argc, char* argv[])
         { "-aver", FALSE, etINT, { &avl }, "HIDDENAverage over this distance in the RMSD matrix" }
     };
     int natoms_trx, natoms_trx2, natoms;
-    int i, j, m;
+    int j, m;
 #define NFRAME 5000
     int        maxframe = NFRAME, maxframe2 = NFRAME;
     real       t, *w_rls, *w_rms, *w_rls_m = nullptr, *w_rms_m = nullptr;
@@ -380,7 +380,7 @@ int gmx_rms(int argc, char* argv[])
         }
 
         bMass = FALSE;
-        for (i = 0; i < ifit; i++)
+        for (int i = 0; i < ifit; i++)
         {
             if (bMassWeighted)
             {
@@ -395,7 +395,7 @@ int gmx_rms(int argc, char* argv[])
         if (bMassWeighted && !bMass)
         {
             fprintf(stderr, "All masses in the fit group are 0, using masses of 1\n");
-            for (i = 0; i < ifit; i++)
+            for (int i = 0; i < ifit; i++)
             {
                 w_rls[ind_fit[i]] = 1;
             }
@@ -435,7 +435,7 @@ int gmx_rms(int argc, char* argv[])
     for (j = 0; j < nrms; j++)
     {
         bMass = FALSE;
-        for (i = 0; i < irms[j]; i++)
+        for (int i = 0; i < irms[j]; i++)
         {
             if (bMassWeighted)
             {
@@ -450,7 +450,7 @@ int gmx_rms(int argc, char* argv[])
         if (bMassWeighted && !bMass)
         {
             fprintf(stderr, "All masses in group %d are 0, using masses of 1\n", j);
-            for (i = 0; i < irms[j]; i++)
+            for (int i = 0; i < irms[j]; i++)
             {
                 w_rms[ind_rms[j][i]] = 1;
             }
@@ -470,7 +470,7 @@ int gmx_rms(int argc, char* argv[])
     {
         /* generate reference structure mirror image: */
         snew(xm, top.atoms.nr);
-        for (i = 0; i < top.atoms.nr; i++)
+        for (int i = 0; i < top.atoms.nr; i++)
         {
             copy_rvec(xp[i], xm[i]);
             xm[i][XX] = -xm[i][XX];
@@ -501,12 +501,12 @@ int gmx_rms(int argc, char* argv[])
         {
             /* Check which atoms we need (fit/rms) */
             snew(bInMat, natoms);
-            for (i = 0; i < ifit; i++)
+            for (int i = 0; i < ifit; i++)
             {
                 bInMat[ind_fit[i]] = TRUE;
             }
             n_ind_m = ifit;
-            for (i = 0; i < irms[0]; i++)
+            for (int i = 0; i < irms[0]; i++)
             {
                 if (!bInMat[ind_rms[0][i]])
                 {
@@ -519,7 +519,7 @@ int gmx_rms(int argc, char* argv[])
         snew(ind_m, n_ind_m);
         snew(rev_ind_m, natoms);
         j = 0;
-        for (i = 0; i < natoms; i++)
+        for (int i = 0; i < natoms; i++)
         {
             if (bPrev || bInMat[i])
             {
@@ -531,11 +531,11 @@ int gmx_rms(int argc, char* argv[])
         snew(w_rls_m, n_ind_m);
         snew(ind_rms_m, irms[0]);
         snew(w_rms_m, n_ind_m);
-        for (i = 0; i < ifit; i++)
+        for (int i = 0; i < ifit; i++)
         {
             w_rls_m[rev_ind_m[ind_fit[i]]] = w_rls[ind_fit[i]];
         }
-        for (i = 0; i < irms[0]; i++)
+        for (int i = 0; i < irms[0]; i++)
         {
             ind_rms_m[i]          = rev_ind_m[ind_rms[0][i]];
             w_rms_m[ind_rms_m[i]] = w_rms[ind_rms[0][i]];
@@ -563,7 +563,7 @@ int gmx_rms(int argc, char* argv[])
             {
                 iatom = top.idef.il[k].iatoms;
                 ncons = top.idef.il[k].nr / 3;
-                for (i = 0; i < ncons; i++)
+                for (int i = 0; i < ncons; i++)
                 {
                     bA1 = FALSE;
                     bA2 = FALSE;
@@ -630,7 +630,7 @@ int gmx_rms(int argc, char* argv[])
                     srenew(mat_x, tel_mat + 1);
                 }
                 snew(mat_x[tel_mat], n_ind_m);
-                for (i = 0; i < n_ind_m; i++)
+                for (int i = 0; i < n_ind_m; i++)
                 {
                     copy_rvec(x[ind_m[i]], mat_x[tel_mat][i]);
                 }
@@ -645,7 +645,7 @@ int gmx_rms(int argc, char* argv[])
                 {
                     j = 0;
                 }
-                for (i = 0; i < n_ind_m; i++)
+                for (int i = 0; i < n_ind_m; i++)
                 {
                     copy_rvec(mat_x[j][i], xp[ind_m[i]]);
                 }
@@ -759,7 +759,7 @@ int gmx_rms(int argc, char* argv[])
                         srenew(mat_x2, tel_mat2 + 1);
                     }
                     snew(mat_x2[tel_mat2], n_ind_m);
-                    for (i = 0; i < n_ind_m; i++)
+                    for (int i = 0; i < n_ind_m; i++)
                     {
                         copy_rvec(x[ind_m[i]], mat_x2[tel_mat2][i]);
                     }
@@ -857,7 +857,7 @@ int gmx_rms(int argc, char* argv[])
         {
             snew(mat_x2_j, natoms);
         }
-        for (i = 0; i < tel_mat; i++)
+        for (int i = 0; i < tel_mat; i++)
         {
             axis[i] = time[freq * i];
             fprintf(stderr, "\r element %5d; time %5.2f  ", i, axis[i]);
@@ -948,7 +948,7 @@ int gmx_rms(int argc, char* argv[])
             rmsd_avg = 0.0;
             for (j = 0; j < tel_mat - 1; j++)
             {
-                for (i = j + 1; i < tel_mat; i++)
+                for (int i = j + 1; i < tel_mat; i++)
                 {
                     av_tot     = 0;
                     weight_tot = 0;
@@ -1028,7 +1028,7 @@ int gmx_rms(int argc, char* argv[])
                 snew(delta_tot, delta_xsize);
                 for (j = 0; j < tel_mat - 1; j++)
                 {
-                    for (i = j + 1; i < tel_mat; i++)
+                    for (int i = j + 1; i < tel_mat; i++)
                     {
                         mx = i - j;
                         if (mx < tel_mat / 2)
@@ -1047,7 +1047,7 @@ int gmx_rms(int argc, char* argv[])
                     }
                 }
                 delta_max = 0;
-                for (i = 0; i < delta_xsize; i++)
+                for (int i = 0; i < delta_xsize; i++)
                 {
                     if (delta_tot[i] > 0.0)
                     {
@@ -1065,11 +1065,11 @@ int gmx_rms(int argc, char* argv[])
                 fprintf(stderr, "Maximum in delta matrix: %f\n", delta_max);
                 snew(del_xaxis, delta_xsize);
                 snew(del_yaxis, del_lev + 1);
-                for (i = 0; i < delta_xsize; i++)
+                for (int i = 0; i < delta_xsize; i++)
                 {
                     del_xaxis[i] = axis[i] - axis[0];
                 }
-                for (i = 0; i < del_lev + 1; i++)
+                for (int i = 0; i < del_lev + 1; i++)
                 {
                     del_yaxis[i] = delta_maxy * static_cast<real>(i) / static_cast<real>(del_lev);
                 }
@@ -1097,7 +1097,7 @@ int gmx_rms(int argc, char* argv[])
             {
                 /* NB: File must be binary if we use fwrite */
                 fp = ftp2FILE(efDAT, NFILE, fnm, "wb");
-                for (i = 0; i < tel_mat; i++)
+                for (int i = 0; i < tel_mat; i++)
                 {
                     if (static_cast<int>(std::fwrite(rmsd_mat[i], sizeof(**rmsd_mat), tel_mat2, fp)) != tel_mat2)
                     {
@@ -1182,7 +1182,7 @@ int gmx_rms(int argc, char* argv[])
     {
         xvgrLegend(fp, names, oenv);
     }
-    for (i = 0; (i < teller); i++)
+    for (int i = 0; (i < teller); i++)
     {
         if (bSplit && i > 0 && std::abs(time[bPrev ? freq * i : i] / output_env_get_time_factor(oenv)) < 1e-5)
         {
@@ -1222,7 +1222,7 @@ int gmx_rms(int argc, char* argv[])
             }
             xvgrLegend(fp, names, oenv);
         }
-        for (i = 0; (i < teller); i++)
+        for (int i = 0; (i < teller); i++)
         {
             if (bSplit && i > 0 && std::abs(time[i]) < 1e-5)
             {

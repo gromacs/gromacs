@@ -425,18 +425,18 @@ static void write_checkpoint(const char*                     fn,
 
     if (ret)
     {
-        char buf[STRLEN];
-        sprintf(buf,
+        char msgBuf[STRLEN];
+        sprintf(msgBuf,
                 "Cannot fsync '%s'; maybe you are out of disk space?",
                 gmx_fio_getname(ret).string().c_str());
 
         if (std::getenv(GMX_IGNORE_FSYNC_FAILURE_ENV) == nullptr)
         {
-            gmx_file(buf);
+            gmx_file(msgBuf);
         }
         else
         {
-            gmx_warning("%s", buf);
+            gmx_warning("%s", msgBuf);
         }
     }
 

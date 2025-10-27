@@ -1519,10 +1519,10 @@ gmx_bool gmx_read_next_tng_frame(gmx_tng_trajectory_t gmx_tng_input,
                     case TNG_DOUBLE_DATA: size = sizeof(double); break;
                     default: gmx_incons("Illegal datatype of box shape values!");
                 }
-                for (int i = 0; i < DIM; i++)
+                for (int d = 0; d < DIM; d++)
                 {
-                    convert_array_to_real_array(reinterpret_cast<char*>(values) + size * i * DIM,
-                                                reinterpret_cast<real*>(fr->box[i]),
+                    convert_array_to_real_array(reinterpret_cast<char*>(values) + size * d * DIM,
+                                                reinterpret_cast<real*>(fr->box[d]),
                                                 getDistanceScaleFactor(gmx_tng_input),
                                                 1,
                                                 DIM,

@@ -134,7 +134,7 @@ public:
     //! \brief Create the data set, then build and return it.
     H5mdDataSetBase<ValueType> build()
     {
-        const std::vector<hsize_t> dims = [&]()
+        const std::vector<hsize_t> dimensions = [&]()
         {
             std::vector<hsize_t> dims = { numFrames_ };
             for (const hsize_t d : frameDims_)
@@ -143,23 +143,23 @@ public:
             }
             return dims;
         }();
-        Base::withDimension(dims);
+        Base::withDimension(dimensions);
 
-        const std::vector<hsize_t> maxDims = [&]()
+        const std::vector<hsize_t> maxDimensions = [&]()
         {
-            std::vector<hsize_t> maxDims = dims;
+            std::vector<hsize_t> maxDims = dimensions;
             maxDims[0]                   = maxNumFrames_;
             return maxDims;
         }();
-        Base::withMaxDimension(maxDims);
+        Base::withMaxDimension(maxDimensions);
 
-        const std::vector<hsize_t> chunkDims = [&]()
+        const std::vector<hsize_t> chunkDimensions = [&]()
         {
-            std::vector<hsize_t> chunkDims = dims;
+            std::vector<hsize_t> chunkDims = dimensions;
             chunkDims[0]                   = frameChunkSize_;
             return chunkDims;
         }();
-        Base::withChunkDimension(chunkDims);
+        Base::withChunkDimension(chunkDimensions);
 
         return Base::build();
     }

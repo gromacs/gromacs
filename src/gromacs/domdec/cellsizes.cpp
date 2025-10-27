@@ -422,13 +422,13 @@ static void dd_cell_sizes_dlb_root_enforce_limits(gmx_domdec_t*      dd,
         GMX_ASSERT(nmin < range[1] - range[0], "We can not have all cells limited");
     } while (nmin > nmin_old);
 
-    const int i  = range[1] - 1;
-    cell_size[i] = rowCoordinator->cellFrac[i + 1] - rowCoordinator->cellFrac[i];
+    const int iLast  = range[1] - 1;
+    cell_size[iLast] = rowCoordinator->cellFrac[iLast + 1] - rowCoordinator->cellFrac[iLast];
     /* For this check we should not use DD_CELL_MARGIN,
      * but a slightly smaller factor,
      * since rounding could get use below the limit.
      */
-    if (dimHasPbc && cell_size[i] < cellsize_limit_f * DD_CELL_MARGIN2 / DD_CELL_MARGIN)
+    if (dimHasPbc && cell_size[iLast] < cellsize_limit_f * DD_CELL_MARGIN2 / DD_CELL_MARGIN)
     {
         char buf[22];
         gmx_fatal(FARGS,

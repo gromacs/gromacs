@@ -318,11 +318,11 @@ gmx_shellfc_t* init_shell_flexcon(FILE*                          fplog,
     nshell = 0;
     for (const AtomProxy atomP : AtomRange(mtop))
     {
-        const t_atom& local = atomP.atom();
-        int           i     = atomP.globalAtomNumber();
+        const t_atom& local  = atomP.atom();
+        int           atomNr = atomP.globalAtomNumber();
         if (local.ptype == ParticleType::Shell)
         {
-            shell_index[i] = nshell++;
+            shell_index[atomNr] = nshell++;
         }
     }
 

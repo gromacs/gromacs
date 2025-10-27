@@ -1463,24 +1463,24 @@ static void generate_qmexcl_moltype(gmx_moltype_t*       molt,
     qmexcl.nra = qm_nr * (qm_nr + link_nr) + link_nr * qm_nr;
     snew(qmexcl.index, qmexcl.nr + 1);
     snew(qmexcl.a, qmexcl.nra);
-    int j = 0;
+    int l = 0;
     for (int i = 0; i < qmexcl.nr; i++)
     {
-        qmexcl.index[i] = j;
+        qmexcl.index[i] = l;
         if (bQMMM[i])
         {
             for (int k = 0; k < qm_nr; k++)
             {
-                qmexcl.a[k + j] = qm_arr[k];
+                qmexcl.a[k + l] = qm_arr[k];
             }
             for (int k = 0; k < link_nr; k++)
             {
-                qmexcl.a[qm_nr + k + j] = link_arr[k];
+                qmexcl.a[qm_nr + k + l] = link_arr[k];
             }
-            j += (qm_nr + link_nr);
+            l += (qm_nr + link_nr);
         }
     }
-    qmexcl.index[qmexcl.nr] = j;
+    qmexcl.index[qmexcl.nr] = l;
 
     /* and merging with the exclusions already present in sys.
      */

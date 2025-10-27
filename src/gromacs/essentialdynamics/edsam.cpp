@@ -2607,7 +2607,7 @@ static void write_edo_legend(gmx_edsam* ed, int nED, const gmx_output_env_t* oen
     /* The flooding-related legend entries, if flooding is done */
     if (EssentialDynamicsType::Flooding == ed->eEDtype)
     {
-        auto edi = ed->edpar.begin();
+        auto ediFlood = ed->edpar.begin();
         for (int nr_edi = 1; nr_edi <= nED; nr_edi++)
         {
             /* Always write out the projection on the flooding EVs. Of course, this can also
@@ -2616,40 +2616,40 @@ static void write_edo_legend(gmx_edsam* ed, int nED, const gmx_output_env_t* oen
              * which is not necessary when doing flooding only. */
             nice_legend(&setname, &LegendStr, "RMSD to ref", "nm", get_EDgroupChar(nr_edi, nED));
 
-            for (int i = 0; i < edi->flood.vecs.neig; i++)
+            for (int i = 0; i < ediFlood->flood.vecs.neig; i++)
             {
-                auto buf = gmx::formatString("EV%dprjFLOOD", edi->flood.vecs.ieig[i]);
+                auto buf = gmx::formatString("EV%dprjFLOOD", ediFlood->flood.vecs.ieig[i]);
                 nice_legend(&setname, &LegendStr, buf, "nm", get_EDgroupChar(nr_edi, nED));
 
                 /* Output the current reference projection if it changes with time;
                  * this can happen when flooding is used as harmonic restraint */
-                if (edi->flood.bHarmonic && edi->flood.referenceProjectionSlope[i] != 0.0)
+                if (ediFlood->flood.bHarmonic && ediFlood->flood.referenceProjectionSlope[i] != 0.0)
                 {
-                    auto buf = gmx::formatString("EV%d ref.prj.", edi->flood.vecs.ieig[i]);
-                    nice_legend(&setname, &LegendStr, buf, "nm", get_EDgroupChar(nr_edi, nED));
+                    auto bufHarm = gmx::formatString("EV%d ref.prj.", ediFlood->flood.vecs.ieig[i]);
+                    nice_legend(&setname, &LegendStr, bufHarm, "nm", get_EDgroupChar(nr_edi, nED));
                 }
 
                 /* For flooding we also output Efl, Vfl, deltaF, and the flooding forces */
-                if (0 != edi->flood.tau) /* only output Efl for adaptive flooding (constant otherwise) */
+                if (0 != ediFlood->flood.tau) /* only output Efl for adaptive flooding (constant otherwise) */
                 {
-                    auto buf = gmx::formatString("EV%d-Efl", edi->flood.vecs.ieig[i]);
-                    nice_legend(&setname, &LegendStr, buf, "kJ/mol", get_EDgroupChar(nr_edi, nED));
+                    auto bufEfl = gmx::formatString("EV%d-Efl", ediFlood->flood.vecs.ieig[i]);
+                    nice_legend(&setname, &LegendStr, bufEfl, "kJ/mol", get_EDgroupChar(nr_edi, nED));
                 }
 
-                buf = gmx::formatString("EV%d-Vfl", edi->flood.vecs.ieig[i]);
+                buf = gmx::formatString("EV%d-Vfl", ediFlood->flood.vecs.ieig[i]);
                 nice_legend(&setname, &LegendStr, buf, "kJ/mol", get_EDgroupChar(nr_edi, nED));
 
-                if (0 != edi->flood.tau) /* only output deltaF for adaptive flooding (zero otherwise) */
+                if (0 != ediFlood->flood.tau) /* only output deltaF for adaptive flooding (zero otherwise) */
                 {
-                    auto buf = gmx::formatString("EV%d-deltaF", edi->flood.vecs.ieig[i]);
-                    nice_legend(&setname, &LegendStr, buf, "kJ/mol", get_EDgroupChar(nr_edi, nED));
+                    auto bufDeltaF = gmx::formatString("EV%d-deltaF", ediFlood->flood.vecs.ieig[i]);
+                    nice_legend(&setname, &LegendStr, bufDeltaF, "kJ/mol", get_EDgroupChar(nr_edi, nED));
                 }
 
-                buf = gmx::formatString("EV%d-FLforces", edi->flood.vecs.ieig[i]);
+                buf = gmx::formatString("EV%d-FLforces", ediFlood->flood.vecs.ieig[i]);
                 nice_legend(&setname, &LegendStr, buf, "kJ/mol/nm", get_EDgroupChar(nr_edi, nED));
             }
 
-            ++edi;
+            ++ediFlood;
         } /* End of flooding-related legend entries */
     }
     n_flood = setname.size();

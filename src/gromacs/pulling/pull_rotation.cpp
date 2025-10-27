@@ -466,7 +466,7 @@ static inline gmx_bool bSlabTau(const gmx_enfrot* er, const t_rotgrp* rotg, int6
 /* Output rotation energy, torques, etc. for each rotation group */
 static void reduce_output(const gmx::MpiComm& mpiComm, gmx_enfrot* er, real t, int64_t step)
 {
-    int      i, islab, nslabs = 0;
+    int      islab, nslabs = 0;
     int      count; /* MPI element counter                               */
     real     fitangle;
     gmx_bool bFlex;
@@ -489,14 +489,14 @@ static void reduce_output(const gmx::MpiComm& mpiComm, gmx_enfrot* er, real t, i
 
             if (bPotAngle(er, rotg, step))
             {
-                for (i = 0; i < rotg->PotAngle_nstep; i++)
+                for (int i = 0; i < rotg->PotAngle_nstep; i++)
                 {
                     er->mpi_inbuf[count++] = erg->PotAngleFit->V[i];
                 }
             }
             if (bSlabTau(er, rotg, step))
             {
-                for (i = 0; i < nslabs; i++)
+                for (int i = 0; i < nslabs; i++)
                 {
                     er->mpi_inbuf[count++] = erg->slab_torque_v[i];
                 }

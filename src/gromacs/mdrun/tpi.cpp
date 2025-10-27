@@ -1163,16 +1163,16 @@ void LegacySimulator::do_tpi()
         frame_step_prev = frame_step;
 
         /* Copy the coordinates from the input trajectory */
-        auto x = makeArrayRef(stateGlobal_->x);
+        auto xFrame = makeArrayRef(stateGlobal_->x);
         for (int i = 0; i < rerun_fr.natoms; i++)
         {
-            copy_rvec(rerun_fr.x[i], x[i]);
+            copy_rvec(rerun_fr.x[i], xFrame[i]);
         }
         copy_mat(rerun_fr.box, stateGlobal_->box);
         const matrix& box    = stateGlobal_->box;
         const double  volume = det(box);
 
-        put_atoms_in_box(fr_->pbcType, box, x);
+        put_atoms_in_box(fr_->pbcType, box, xFrame);
 
         /* Put all atoms except for the inserted ones on the grid */
         rvec vzero       = { 0, 0, 0 };
@@ -1186,7 +1186,7 @@ void LegacySimulator::do_tpi()
                                  *testAtomsRange.begin(),
                                  -1,
                                  fr_->atomInfo,
-                                 x,
+                                 xFrame,
                                  nullptr);
 
         gmx_edsam* const ed = nullptr;

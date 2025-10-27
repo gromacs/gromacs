@@ -538,7 +538,7 @@ int addClusterRangesForGridColumn(const Grid&                    grid,
     int firstClusterInRange = -1;
     for (int cluster = 0; cluster < numClustersInColumn; cluster++)
     {
-        const auto distancesSquared = cornerToBoundingBoxDistance(
+        const auto distancesSquaredCluster = cornerToBoundingBoxDistance(
                 dci, zoneCorners.twoBody, zoneCorners.multiBody, gci.clusterBB(cluster));
 
         /* Here we check:
@@ -548,14 +548,14 @@ int addClusterRangesForGridColumn(const Grid&                    grid,
          * The bonded check only triggers communication without bBondComm
          * or when the cluster has missing bonded interactions.
          */
-        bool isInRange = (distancesSquared.pair < dci.cutoffSquaredTwoBody1);
+        bool isInRange = (distancesSquaredCluster.pair < dci.cutoffSquaredTwoBody1);
 
         if constexpr (doChecksForBondeds)
         {
             isInRange =
                     isInRange
-                    || (((dci.checkMultiBodyDistance && distancesSquared.multiBody < dci.cutoffSquaredMultiBody1)
-                         || (dci.checkTwoBodyDistance && distancesSquared.pair < dci.cutoffSquaredMultiBody1))
+                    || (((dci.checkMultiBodyDistance && distancesSquaredCluster.multiBody < dci.cutoffSquaredMultiBody1)
+                         || (dci.checkTwoBodyDistance && distancesSquaredCluster.pair < dci.cutoffSquaredMultiBody1))
                         && (!dci.filterBondComm || isClusterMissingLinks[firstClusterInColumn + cluster]));
         }
 

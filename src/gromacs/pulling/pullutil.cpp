@@ -480,10 +480,10 @@ static void sum_com_part_cosweight(const pull_group_work_t* pgrp,
 
         if (!xp.empty())
         {
-            real cw = std::cos(xp[ii][cosdim] * twopi_box);
-            real sw = std::sin(xp[ii][cosdim] * twopi_box);
-            sum_cmp += static_cast<double>(cw * m);
-            sum_smp += static_cast<double>(sw * m);
+            real cwUpdated = std::cos(xp[ii][cosdim] * twopi_box);
+            real swUpdated = std::sin(xp[ii][cosdim] * twopi_box);
+            sum_cmp += static_cast<double>(cwUpdated * m);
+            sum_smp += static_cast<double>(swUpdated * m);
         }
     }
 

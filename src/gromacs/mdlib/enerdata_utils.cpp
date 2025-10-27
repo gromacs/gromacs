@@ -375,9 +375,10 @@ void ForeignLambdaTerms::finalizeKineticContributions(const gmx::EnumerationArra
                           energyTerms[InteractionFunction::dHdLambdaConstraint]);
 
         {
-            const double dlam = fepvals.all_lambda[FreeEnergyPerturbationCouplingType::Mass][i]
-                                - lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Mass)];
-            accumulateKinetic(1 + i, dlam * dhdlMass, dhdlMass);
+            const double dLambdaMass =
+                    fepvals.all_lambda[FreeEnergyPerturbationCouplingType::Mass][i]
+                    - lambda[static_cast<int>(FreeEnergyPerturbationCouplingType::Mass)];
+            accumulateKinetic(1 + i, dLambdaMass * dhdlMass, dhdlMass);
         }
     }
 }

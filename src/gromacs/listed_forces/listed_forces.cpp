@@ -801,8 +801,8 @@ void ListedForces::calculate(struct gmx_wallcycle*                     wcycle,
             || !idef.il[InteractionFunction::FlatBottomedPositionRestraints].empty())
         {
             // For position restraints we always need full pbc
-            t_pbc pbc;
-            set_pbc(&pbc, fr->pbcType, box);
+            t_pbc pbcPositionRestraints;
+            set_pbc(&pbcPositionRestraints, fr->pbcType, box);
 
             gmx::RVec diagonalVirial = { 0.0_real, 0.0_real, 0.0_real };
             // We need an intermediate array (with real=float) as enerd stores doubles
@@ -811,7 +811,7 @@ void ListedForces::calculate(struct gmx_wallcycle*                     wcycle,
                                         threading_.get(),
                                         needToClearThreadForceBuffers,
                                         x,
-                                        pbc,
+                                        pbcPositionRestraints,
                                         fr,
                                         restraintComIndices_,
                                         &diagonalVirial,
@@ -899,12 +899,12 @@ void ListedForces::calculate(struct gmx_wallcycle*                     wcycle,
         gmx::EnumerationArray<FreeEnergyPerturbationCouplingType, real> dvdl = { 0 };
         if (!idef.il[InteractionFunction::PositionRestraints].empty())
         {
-            t_pbc pbc;
-            set_pbc(&pbc, fr->pbcType, box);
+            t_pbc pbcPositionRestraints;
+            set_pbc(&pbcPositionRestraints, fr->pbcType, box);
 
             posres_wrapper_lambda(wcycle,
                                   idef,
-                                  pbc,
+                                  pbcPositionRestraints,
                                   x,
                                   enerd,
                                   lambda,

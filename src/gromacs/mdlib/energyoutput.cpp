@@ -672,7 +672,7 @@ FILE* open_dhdl(const char* filename, const t_inputrec* ir, const gmx_output_env
     FILE*       fp;
     const char *dhdl = "dH/d\\lambda", *deltag = "\\DeltaH", *lambda = "\\lambda",
                *lambdastate = "\\lambda state";
-    int       i, nsets, nsets_de, nsetsbegin;
+    int       nsets, nsets_de, nsetsbegin;
     int       n_lambda_terms = 0;
     t_lambda* fep            = ir->fepvals.get(); /* for simplicity */
     char      lambda_vec_str[STRLEN], lambda_name_str[STRLEN];
@@ -832,27 +832,27 @@ FILE* open_dhdl(const char* filename, const t_inputrec* ir, const gmx_output_env
         }
         nsetsbegin += nsets_dhdl;
 
-        for (i = fep->lambda_start_n; i < fep->lambda_stop_n; i++)
+        for (int i = fep->lambda_start_n; i < fep->lambda_stop_n; i++)
         {
             print_lambda_vector(fep, i, false, false, lambda_vec_str);
-            std::string buf;
+            std::string lambdaBuf;
             if ((fep->init_lambda_without_states >= 0) && (n_lambda_terms == 1))
             {
                 /* for compatible dhdl.xvg files */
-                buf = gmx::formatString("%s %s %s", deltag, lambda, lambda_vec_str);
+                lambdaBuf = gmx::formatString("%s %s %s", deltag, lambda, lambda_vec_str);
             }
             else
             {
-                buf = gmx::formatString("%s %s to %s", deltag, lambda, lambda_vec_str);
+                lambdaBuf = gmx::formatString("%s %s to %s", deltag, lambda, lambda_vec_str);
             }
 
             if (ir->bSimTemp)
             {
                 /* print the temperature for this state if doing simulated annealing */
-                buf += gmx::formatString(
+                lambdaBuf += gmx::formatString(
                         "T = %g (%s)", ir->simtempvals->temperatures[s - (nsetsbegin)], unit_temp_K);
             }
-            setname[s++] = buf;
+            setname[s++] = lambdaBuf;
         }
         if (write_pV)
         {
@@ -1416,11 +1416,11 @@ void EnergyOutput::printAverages(FILE* log, const SimulationGroups* groups)
                 int ni = groups->groups[SimulationAtomGroupType::EnergyOutput][i];
                 for (int j = i; (j < nEg_); j++)
                 {
-                    int nj      = groups->groups[SimulationAtomGroupType::EnergyOutput][j];
-                    int padding = 14
-                                  - (std::strlen(*(groups->groupNames[ni]))
-                                     + std::strlen(*(groups->groupNames[nj])));
-                    fprintf(log, "%*s%s-%s", padding, "", *(groups->groupNames[ni]), *(groups->groupNames[nj]));
+                    int nj           = groups->groups[SimulationAtomGroupType::EnergyOutput][j];
+                    int groupPadding = 14
+                                       - (std::strlen(*(groups->groupNames[ni]))
+                                          + std::strlen(*(groups->groupNames[nj])));
+                    fprintf(log, "%*s%s-%s", groupPadding, "", *(groups->groupNames[ni]), *(groups->groupNames[nj]));
                     pr_ebin(log, ebin_, igrp_[n], nEc_, nEc_, eprAVER, false);
                     n++;
                 }

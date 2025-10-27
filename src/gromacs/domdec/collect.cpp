@@ -187,15 +187,15 @@ static void dd_collect_vec_sendrecv(gmx_domdec_t*                  dd,
     {
         AtomDistribution& ma = *dd->ma;
 
-        int rank      = dd->mpiComm().mainRank();
-        int localAtom = 0;
-        for (const int& globalAtom : ma.domainGroups[rank].atomGroups)
+        int mainRank          = dd->mpiComm().mainRank();
+        int localAtomMainRank = 0;
+        for (const int& globalAtom : ma.domainGroups[mainRank].atomGroups)
         {
             if (isValidGlobalAtom(globalAtom))
             {
-                copy_rvec(lv[localAtom], v[globalAtom]);
+                copy_rvec(lv[localAtomMainRank], v[globalAtom]);
             }
-            localAtom++;
+            localAtomMainRank++;
         }
 
         for (int rank = 0; rank < dd->nnodes; rank++)

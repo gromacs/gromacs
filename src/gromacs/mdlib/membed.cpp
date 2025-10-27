@@ -567,7 +567,7 @@ static int gen_rm_list(rm_t*             rm_p,
                        int               low_up_rm,
                        gmx_bool          bALLOW_ASYMMETRY)
 {
-    int      i, j, k, l, at, at2, mol_id;
+    int      i, j, at, at2, mol_id;
     int      type = 0, block = 0;
     int      nrm, nupper, nlower;
     real     r_min_rad, z_lip, min_norm;
@@ -594,7 +594,7 @@ static int gen_rm_list(rm_t*             rm_p,
             {
                 mol_id = get_mol_id(at2, mtop, &type, &block);
                 bRM    = TRUE;
-                for (l = 0; l < nrm; l++)
+                for (int l = 0; l < nrm; l++)
                 {
                     if (rm_p->mol[l] == mol_id)
                     {
@@ -608,7 +608,7 @@ static int gen_rm_list(rm_t*             rm_p,
                     rm_p->block[nrm] = block;
                     nrm++;
                     z_lip = 0.0;
-                    for (l = 0; l < mem_p->nmol; l++)
+                    for (int l = 0; l < mem_p->nmol; l++)
                     {
                         if (mol_id == mem_p->mol_id[l])
                         {
@@ -645,7 +645,7 @@ static int gen_rm_list(rm_t*             rm_p,
             {
                 /*minimum dr value*/
                 min_norm = norm2(dr);
-                for (k = 1; k < pos_ins->pieces; k++)
+                for (int k = 1; k < pos_ins->pieces; k++)
                 {
                     pbc_dx(pbc, r[at], pos_ins->geom_cent[k], dr_tmp);
                     if (norm2(dr_tmp) < min_norm)
@@ -671,7 +671,7 @@ static int gen_rm_list(rm_t*             rm_p,
             mol_id = mem_p->mol_id[order[i]];
             block  = get_molblock(mol_id, mtop.molblock);
             bRM    = TRUE;
-            for (l = 0; l < nrm; l++)
+            for (int l = 0; l < nrm; l++)
             {
                 if (rm_p->mol[l] == mol_id)
                 {
@@ -932,7 +932,7 @@ static void top_update(const char* topfile, rm_t* rm_p, gmx_mtop_t* mtop)
     int   bMolecules = 0;
     FILE *fpin, *fpout;
     char  buf[STRLEN], buf2[STRLEN], *temp;
-    int   i, *nmol_rm, nmol;
+    int * nmol_rm, nmol;
     char  temporary_filename[STRLEN];
 
     fpin = gmx_ffopen(topfile, "r");
@@ -941,7 +941,7 @@ static void top_update(const char* topfile, rm_t* rm_p, gmx_mtop_t* mtop)
     fpout = gmx_ffopen(temporary_filename, "w");
 
     snew(nmol_rm, mtop->moltype.size());
-    for (i = 0; i < rm_p->nr; i++)
+    for (int i = 0; i < rm_p->nr; i++)
     {
         nmol_rm[rm_p->block[i]]++;
     }
@@ -1033,8 +1033,8 @@ gmx_membed_t* init_membed(FILE*          fplog,
                           real*          cpt)
 {
     char*             ins;
-    int               i, rm_bonded_at, fr_id, fr_i = 0, tmp_id, warn = 0;
-    int               ng, j, max_lip_rm, ins_grp_id, ntype, lip_rm;
+    int               rm_bonded_at, fr_id, fr_i = 0, tmp_id, warn = 0;
+    int               ng, max_lip_rm, ins_grp_id, ntype, lip_rm;
     real              prot_area;
     rvec*             r_ins = nullptr;
     t_block *         ins_at, *rest_at;
@@ -1226,7 +1226,7 @@ gmx_membed_t* init_membed(FILE*          fplog,
             gmx_fatal(FARGS, "You did not specify \"%s\" as a freezegroup.", ins);
         }
 
-        for (i = 0; i < inputrec->opts.ngfrz; i++)
+        for (int i = 0; i < inputrec->opts.ngfrz; i++)
         {
             tmp_id = mtop->groups.groups[SimulationAtomGroupType::Freeze][i];
             if (ins_grp_id == tmp_id)
@@ -1241,7 +1241,7 @@ gmx_membed_t* init_membed(FILE*          fplog,
             gmx_fatal(FARGS, "\"%s\" not as freezegroup defined in the mdp-file.", ins);
         }
 
-        for (i = 0; i < DIM; i++)
+        for (int i = 0; i < DIM; i++)
         {
             if (inputrec->opts.nFreeze[fr_i][i] != 1)
             {
@@ -1257,9 +1257,9 @@ gmx_membed_t* init_membed(FILE*          fplog,
                     "freeze group");
         }
 
-        for (i = 0; i < ng; i++)
+        for (int i = 0; i < ng; i++)
         {
-            for (j = 0; j < ng; j++)
+            for (int j = 0; j < ng; j++)
             {
                 if (inputrec->opts.egp_flags[ng * i + j] == EGP_EXCL)
                 {
@@ -1359,7 +1359,7 @@ gmx_membed_t* init_membed(FILE*          fplog,
 
         if (fplog)
         {
-            for (i = 0; i < rm_p->nr; i++)
+            for (int i = 0; i < rm_p->nr; i++)
             {
                 fprintf(fplog, "rm mol %d\n", rm_p->mol[i]);
             }
@@ -1368,7 +1368,7 @@ gmx_membed_t* init_membed(FILE*          fplog,
         for (size_t i = 0; i < mtop->molblock.size(); i++)
         {
             ntype = 0;
-            for (j = 0; j < rm_p->nr; j++)
+            for (int j = 0; j < rm_p->nr; j++)
             {
                 if (rm_p->block[j] == static_cast<int>(i))
                 {
