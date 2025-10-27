@@ -62,7 +62,12 @@ class DeviceStreamManager;
 /*! \libinternal
 
  * \brief Manages communication related to GPU buffers between this
- * PME rank and its PP rank. */
+ * PP rank and its PME rank.
+ *
+ * Note that the coordinates and forces are transferred between each on each
+ * step, even from empty domains. However the long-range forces only
+ * participate in the subsequent reduction phase when the domain has
+ * particles. */
 class PmePpCommGpu
 {
 
@@ -89,7 +94,7 @@ public:
     void reinit(int size);
 
     /*! \brief
-     * Pull data from PME GPU directly using CUDA Memory copy.
+     * Pull data from PME GPU directly using GPU Memory copy.
      * \param[out] recvPtr  Buffer to receive PME force data
      * \param[in] recvSize Number of elements to receive
      * \param[in] recvPmeForceToGpu Whether receive is to GPU, otherwise CPU

@@ -68,7 +68,10 @@ template<typename T>
 class ArrayRef;
 
 /*! \libinternal
- * \brief Manages sending forces from PME-only ranks to their PP ranks. */
+ * \brief Manages sending forces from PME-only ranks to their PP ranks.
+ *
+ * Note that the PME rank always transfers forces to each PP rank each
+ * step, even from empty domains. */
 class PmeForceSenderGpu
 {
 

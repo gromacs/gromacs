@@ -499,44 +499,43 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
             int senderCount = 0;
             for (const auto& sender : pme_pp->ppRanks)
             {
-                if (sender.numAtoms > 0)
+                // With direct-GPU PME-PP communication, coordinates and
+                // forces are always transferred each step, even for empty domains.
+                if (pme_pp->useGpuPmePpCommunication)
                 {
-                    if (pme_pp->useGpuPmePpCommunication)
+                    if (GMX_THREAD_MPI)
                     {
-                        if (GMX_THREAD_MPI)
-                        {
-                            pme_pp->pmeCoordinateReceiverGpu->receiveCoordinatesSynchronizerFromPpPeerToPeer(
-                                    sender.rankId);
-                        }
-                        else
-                        {
-                            pme_pp->pmeCoordinateReceiverGpu->launchReceiveCoordinatesFromPpGpuAwareMpi(
-                                    stateGpu->getCoordinates(),
-                                    nat,
-                                    sender.numAtoms * sizeof(rvec),
-                                    sender.rankId,
-                                    senderCount);
-                        }
+                        pme_pp->pmeCoordinateReceiverGpu->receiveCoordinatesSynchronizerFromPpPeerToPeer(
+                                sender.rankId);
                     }
                     else
                     {
-                        MPI_Irecv(pme_pp->x[nat],
-                                  sender.numAtoms * sizeof(rvec),
-                                  MPI_BYTE,
-                                  sender.rankId,
-                                  eCommType_COORD,
-                                  pme_pp->mpi_comm_mysim,
-                                  &pme_pp->req[messages++]);
-                    }
-                    nat += sender.numAtoms;
-                    if (debug)
-                    {
-                        fprintf(debug,
-                                "Received from PP rank %d: %d "
-                                "coordinates\n",
+                        pme_pp->pmeCoordinateReceiverGpu->launchReceiveCoordinatesFromPpGpuAwareMpi(
+                                stateGpu->getCoordinates(),
+                                nat,
+                                sender.numAtoms * sizeof(rvec),
                                 sender.rankId,
-                                sender.numAtoms);
+                                senderCount);
                     }
+                }
+                else if (sender.numAtoms > 0)
+                {
+                    MPI_Irecv(pme_pp->x[nat],
+                              sender.numAtoms * sizeof(rvec),
+                              MPI_BYTE,
+                              sender.rankId,
+                              eCommType_COORD,
+                              pme_pp->mpi_comm_mysim,
+                              &pme_pp->req[messages++]);
+                }
+                nat += sender.numAtoms;
+                if (debug)
+                {
+                    fprintf(debug,
+                            "Received from PP rank %d: %d "
+                            "coordinates\n",
+                            sender.rankId,
+                            sender.numAtoms);
                 }
                 senderCount++;
             }
@@ -599,7 +598,9 @@ static void gmx_pme_send_force_vir_ener(const gmx_pme_t& pme,
     messages = 0;
     ind_end  = 0;
 
-    /* Now the evaluated forces have to be transferred to the PP ranks */
+    // Now the evaluated forces have to be transferred to the PP
+    // ranks. With all kinds of PME-PP communication, forces are
+    // always returned each step, even to empty domains.
     if (pme_pp->useGpuPmePpCommunication && GMX_THREAD_MPI)
     {
         int numPpRanks = static_cast<int>(pme_pp->ppRanks.size());

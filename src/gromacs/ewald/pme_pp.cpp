@@ -256,40 +256,49 @@ static void gmx_pme_send_coeffs_coords(t_forcerec*                    fr,
                       comm,
                       &dd->req_pme[dd->nreq_pme++]);
         }
-        if (flags & PP_PME_COORD)
+    }
+    if (flags & PP_PME_COORD)
+    {
+        // With direct-GPU PME-PP communication, coordinates and
+        // forces are always transferred each step, even for empty
+        // domains.
+        if (reinitGpuPmePpComms)
         {
-            if (reinitGpuPmePpComms)
-            {
-                changePinningPolicy(&dd->pmeForceReceiveBuffer, gmx::PinningPolicy::PinnedIfSupported);
-                dd->pmeForceReceiveBuffer.resize(n);
-                fr->pmePpCommGpu->reinit(n);
-            }
+            changePinningPolicy(&dd->pmeForceReceiveBuffer, gmx::PinningPolicy::PinnedIfSupported);
+            dd->pmeForceReceiveBuffer.resize(n);
+            fr->pmePpCommGpu->reinit(n);
+        }
 
-            if (useGpuPmePpComms && (fr != nullptr))
+        // Ensure that with GPU PME-PP comms, even empty domains still
+        // have the chance to post a possible non-blocking matching
+        // force receive, since the PME rank always transfers
+        // forces to each PP rank.
+        if (useGpuPmePpComms && (fr != nullptr))
+        {
+            if (sendCoordinatesFromGpu)
             {
-                if (sendCoordinatesFromGpu)
-                {
-                    GMX_ASSERT(coordinatesReadyOnDeviceEvent != nullptr,
-                               "When sending coordinates from GPU, a synchronization event should "
-                               "be provided");
-                    fr->pmePpCommGpu->sendCoordinatesToPmeFromGpu(
-                            fr->stateGpu->getCoordinates(), n, coordinatesReadyOnDeviceEvent, receiveForcesToGpu);
-                }
-                else
-                {
-                    fr->pmePpCommGpu->sendCoordinatesToPmeFromCpu(x.data(), n, receiveForcesToGpu);
-                }
+                GMX_ASSERT(coordinatesReadyOnDeviceEvent != nullptr,
+                           "When sending coordinates from GPU, a synchronization event should "
+                           "be provided");
+                fr->pmePpCommGpu->sendCoordinatesToPmeFromGpu(
+                        fr->stateGpu->getCoordinates(), n, coordinatesReadyOnDeviceEvent, receiveForcesToGpu);
             }
             else
             {
-                MPI_Isend(x.data(),
-                          n * sizeof(rvec),
-                          MPI_BYTE,
-                          dd->pme_nodeid,
-                          eCommType_COORD,
-                          comm,
-                          &dd->req_pme[dd->nreq_pme++]);
+                fr->pmePpCommGpu->sendCoordinatesToPmeFromCpu(x.data(), n, receiveForcesToGpu);
             }
+        }
+        else if (n > 0)
+        {
+            // With CPU PME-PP comms, coordinate messages are only
+            // sent for non-empty domains.
+            MPI_Isend(x.data(),
+                      n * sizeof(rvec),
+                      MPI_BYTE,
+                      dd->pme_nodeid,
+                      eCommType_COORD,
+                      comm,
+                      &dd->req_pme[dd->nreq_pme++]);
         }
     }
 #else
@@ -553,6 +562,8 @@ static void recvFFromPme(gmx::PmePpCommGpu*  pmePpCommGpu,
                          bool                useGpuPmePpComms,
                          bool                receivePmeForceToGpu)
 {
+    // With all kinds of PME-PP communication, forces are always
+    // returned each step, even to empty domains.
     if (useGpuPmePpComms)
     {
         GMX_ASSERT(pmePpCommGpu != nullptr, "Need valid pmePpCommGpu");

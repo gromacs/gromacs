@@ -115,6 +115,9 @@ public:
      * Return PP co-ordinate transfer event received from PP
      * rank determined from \c senderIndex, for consumer to enqueue
      *
+     * The returned sender index corresponds to a PP rank that
+     * transferred particles this step.
+     *
      * \param[in]  senderIndex   Index of the sender within the set of PP ranks
      * \returns                  tuple with index of sending PP rank (or -1 when no
      *                           event was sent (from a PP rank with no particles)

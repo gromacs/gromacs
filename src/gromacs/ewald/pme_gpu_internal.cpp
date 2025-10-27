@@ -1847,9 +1847,10 @@ static auto selectSpreadKernelPtr(const PmeGpu*  pmeGpu,
 
 /*! \brief
  * Manages synchronization with remote GPU's PP coordinate sender, for a stage of the communication operation.
+ *
  * For thread-MPI, an event associated with a stage of the operation is enqueued to the GPU stream that will be used by the consumer.
  * For lib-MPI, the CPU task executing this function will wait for a stage to be completed.
- * In each case, the rank of the sender associated with the corresponding stage is returned.
+ * In each case, the index of the sending PP rank associated with the corresponding stage is returned.
  *
  * \param[in]  pmeGpu                    The PME GPU structure.
  * \param[in]  pmeCoordinateReceiverGpu  The PME coordinate receiver GPU object
@@ -1857,9 +1858,8 @@ static auto selectSpreadKernelPtr(const PmeGpu*  pmeGpu,
  * \param[in]  senderIndex               Index of the sender within the set of PP ranks (when
  *                                       \p usePipeline is false) or pipeline stage (otherwise)
  *
- * \return An index of a sender within the set of PP ranks (which is always
- * \c senderIndex for non-empty domains with thread-MPI), or < 0 when no particles are
- * expected because the matching domain is empty.
+ * \return An index of a sender within the set of PP ranks that is transferring
+ * a non-zero amount of particles this step.
  */
 static int manageSyncWithPpCoordinateSenderGpu(const PmeGpu* pmeGpu,
                                                gmx::PmeCoordinateReceiverGpu* pmeCoordinateReceiverGpu,
@@ -1869,29 +1869,19 @@ static int manageSyncWithPpCoordinateSenderGpu(const PmeGpu* pmeGpu,
     if (GMX_THREAD_MPI)
     {
         GpuEventSynchronizer* event;
-        const int             oldSenderIndex = senderIndex;
-        std::tie(senderIndex, event) =
-                pmeCoordinateReceiverGpu->receivePpCoordinateSendEvent(oldSenderIndex);
-        // If a pipeline stage has no particles, no send event will be
-        // sent and senderIndex will be < 0.
-        if (senderIndex >= 0)
+        std::tie(senderIndex, event) = pmeCoordinateReceiverGpu->receivePpCoordinateSendEvent(senderIndex);
+        GMX_ASSERT(senderIndex >= 0, "Must get a useful sender index back");
+        if (usePipeline)
         {
-            GMX_ASSERT(senderIndex == oldSenderIndex, "Must get same sender index back");
-            if (usePipeline)
-            {
-                event->enqueueWaitEvent(*(pmeCoordinateReceiverGpu->ppCommStream(senderIndex)));
-            }
-            else
-            {
-                event->enqueueWaitEvent(pmeGpu->archSpecific->pmeStream_);
-            }
+            event->enqueueWaitEvent(*(pmeCoordinateReceiverGpu->ppCommStream(senderIndex)));
+        }
+        else
+        {
+            event->enqueueWaitEvent(pmeGpu->archSpecific->pmeStream_);
         }
     }
     else
     {
-        // If a pipeline stage has no particles, no message was sent
-        // and senderIndex will be < 0. Otherwise, any valid
-        // senderIndex might be returned.
         senderIndex = pmeCoordinateReceiverGpu->waitForCoordinatesFromAnyPpRank();
     }
     return senderIndex;
@@ -2032,12 +2022,6 @@ void pme_gpu_spread(PmeGpu*                        pmeGpu,
                 wallcycle_start(wcycle, WallCycleCounter::WaitGpuPmePPRecvX);
                 const int senderIndex =
                         manageSyncWithPpCoordinateSenderGpu(pmeGpu, pmeCoordinateReceiverGpu, true, i);
-                if (senderIndex < 0)
-                {
-                    // A pipeline stage with no coordinates was reached
-                    wallcycle_stop(wcycle, WallCycleCounter::WaitGpuPmePPRecvX);
-                    continue;
-                }
                 wallcycle_stop(wcycle, WallCycleCounter::WaitGpuPmePPRecvX);
 
                 wallcycle_start(wcycle, WallCycleCounter::LaunchGpuPme);
@@ -2050,6 +2034,8 @@ void pme_gpu_spread(PmeGpu*                        pmeGpu,
                 // set kernel configuration options specific to this stage of the pipeline
                 std::tie(kernelParamsPtr->pipelineAtomStart, kernelParamsPtr->pipelineAtomEnd) =
                         pmeCoordinateReceiverGpu->ppCommAtomRange(senderIndex);
+                GMX_RELEASE_ASSERT(kernelParamsPtr->pipelineAtomStart != kernelParamsPtr->pipelineAtomEnd,
+                                   "Cannot launch pipelined PME spread kernel with zero particles");
                 const int pipelineBlockCount = static_cast<int>(std::ceil(
                         static_cast<float>(kernelParamsPtr->pipelineAtomEnd - kernelParamsPtr->pipelineAtomStart)
                         / atomsPerBlock));

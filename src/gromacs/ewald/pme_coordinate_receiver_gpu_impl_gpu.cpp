@@ -97,8 +97,7 @@ void PmeCoordinateReceiverGpu::Impl::reinitCoordinateReceiver(DeviceBuffer<RVec>
         ppCommManager.atomRange = std::make_tuple(indStart, indEnd);
 
         // Need to send address to PP rank only for thread-MPI as PP rank pushes data using cudamemcpy
-        // Skip receiving x buffer pointer when the PP domain is empty (the matching call in `pmePpCommGpu->reinit(n)` is also conditional)
-        if (GMX_THREAD_MPI && (ppCommManager.ppRank.numAtoms > 0))
+        if (GMX_THREAD_MPI)
         {
             GMX_RELEASE_ASSERT(GpuConfigurationCapabilities::PpPmeDirectComm,
                                "Direct PME-PP communication with threadMPI needs to be supported "
@@ -176,7 +175,9 @@ void PmeCoordinateReceiverGpu::Impl::launchReceiveCoordinatesFromPpGpuAwareMpi(D
 std::tuple<int, GpuEventSynchronizer*> PmeCoordinateReceiverGpu::Impl::receivePpCoordinateSendEvent(int senderIndex)
 {
 #if GMX_MPI
-    if (requests_[senderIndex] != MPI_REQUEST_NULL)
+    // Loop until a message is received from a PP rank that transferred
+    // a non-zero number of atoms.
+    do
     {
         // MPI_Waitany is not available in thread-MPI. However, the
         // MPI_Wait here is not associated with data but is host-side
@@ -185,13 +186,22 @@ std::tuple<int, GpuEventSynchronizer*> PmeCoordinateReceiverGpu::Impl::receivePp
         // receive in order of pipeline stage, still allowing the
         // scheduled GPU-direct comms to initiate out-of-order in their
         // respective streams.
+
+        // Loop until we find a request that has not yet been
+        // waited upon.
+        while (requests_[senderIndex] == MPI_REQUEST_NULL)
+        {
+            ++senderIndex;
+        }
         MPI_Wait(&(requests_[senderIndex]), MPI_STATUS_IGNORE);
-        return std::make_tuple(senderIndex, ppCommManagers_[senderIndex].sync);
-    }
-    else
-    {
-        return std::make_tuple(-1, nullptr);
-    }
+        // Ensure that future calls to this method for later pipeline
+        // stages of the same step will not wait upon the same sender.
+        requests_[senderIndex] = MPI_REQUEST_NULL;
+    } while (ppCommManagers_[senderIndex].ppRank.numAtoms == 0);
+
+    // Return a send event from a PP rank that transferred a non-zero
+    // number of atoms.
+    return std::make_tuple(senderIndex, ppCommManagers_[senderIndex].sync);
 #else
     GMX_UNUSED_VALUE(senderIndex);
     return std::make_tuple(-1, nullptr);
@@ -202,16 +212,22 @@ std::tuple<int, GpuEventSynchronizer*> PmeCoordinateReceiverGpu::Impl::receivePp
 int PmeCoordinateReceiverGpu::Impl::waitForCoordinatesFromAnyPpRank()
 {
 #if GMX_LIB_MPI
-    // Wait on data from any one of the PP sender GPUs.
-    //
-    // MPI_Waitany fills this in with the index of one of the
-    // requests, i.e. the index of the sender within the set of PP ranks
-    // that collaborate with this PME rank.
+    // Loop until a message is received from a PP rank that is sending
+    // a non-zero number of atoms.
     int senderIndex = -1;
-    MPI_Waitany(requests_.size(), requests_.data(), &senderIndex, MPI_STATUS_IGNORE);
-    // Note that coordinates are not sent from empty domains. If so,
-    // such receive requests were never posted, and MPI_Waitany
-    // returns without changing senderIndex.
+    do
+    {
+        // Wait on data from any one of the PP sender GPUs.
+        //
+        // MPI_Waitany returns in senderIndex the index of one of the
+        // requests, i.e. the index of the sender within the set of PP
+        // ranks that collaborate with this PME rank.
+        MPI_Waitany(requests_.size(), requests_.data(), &senderIndex, MPI_STATUS_IGNORE);
+        // Note that coordinates are always transferred, even from
+        // empty domains. Thus senderIndex must be non-negative after
+        // MPI_Waitany returns.
+        GMX_ASSERT(senderIndex >= 0, "Sender index must be valid");
+    } while (ppCommManagers_[senderIndex].ppRank.numAtoms == 0);
     return senderIndex;
 #else
     return -1;
