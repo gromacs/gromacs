@@ -440,18 +440,12 @@ static void init_em(FILE*                        fplog,
     {
         GMX_ASSERT(shellfc != nullptr, "With NM we always support shells");
 
-        const auto& simulationWork     = runScheduleWork.simulationWork;
-        const bool  useGpuForPme       = simulationWork.useGpuPme;
-        const bool  useGpuForBufferOps = simulationWork.useGpuXBufferOpsWhenAllowed
-                                        || simulationWork.useGpuFBufferOpsWhenAllowed;
-
-
         *shellfc = init_shell_flexcon(stdout,
                                       top_global,
                                       constr ? constr->numFlexibleConstraints() : 0,
                                       ir->nstcalcenergy,
                                       haveDDAtomOrdering(*cr),
-                                      useGpuForPme || useGpuForBufferOps);
+                                      runScheduleWork.simulationWork);
     }
     else
     {

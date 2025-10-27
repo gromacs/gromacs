@@ -771,6 +771,8 @@ bool decideWhetherToUseGpuForUpdate(const bool           isDomainDecomposition,
                           "Free energy perturbation for mass and constraints are not supported.");
     const auto particleTypes = gmx_mtop_particletype_count(mtop);
     errorReasons.appendIf((particleTypes[ParticleType::Shell] > 0), "Shells are not supported.");
+    errorReasons.appendIf(gmx_mtop_flexible_constraint_count(mtop) > 0,
+                          "Flexible constraints are not supported.");
     errorReasons.appendIf(inputrec.eSwapCoords != SwapType::No,
                           "Swapping the coordinates is not supported.");
     errorReasons.appendIf(useModularSimulator, "The modular simulator is not supported.");

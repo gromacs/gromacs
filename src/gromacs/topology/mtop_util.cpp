@@ -136,6 +136,40 @@ int gmx_mtop_interaction_count(const gmx_mtop_t& mtop, const int unsigned if_fla
     return n;
 }
 
+int countFlexibleConstraints(const gmx::EnumerationArray<InteractionFunction, InteractionList>& ilist,
+                             gmx::ArrayRef<const t_iparams> iparams)
+{
+    int numFlexCon = 0;
+    for (InteractionFunction ftype :
+         { InteractionFunction::Constraints, InteractionFunction::ConstraintsNoCoupling })
+    {
+        const int numIatomsPerConstraint = 3;
+        for (int i = 0; i < ilist[ftype].size(); i += numIatomsPerConstraint)
+        {
+            const int type = ilist[ftype].iatoms[i];
+            if (iparams[type].constr.dA == 0 && iparams[type].constr.dB == 0)
+            {
+                numFlexCon++;
+            }
+        }
+    }
+
+    return numFlexCon;
+}
+
+int gmx_mtop_flexible_constraint_count(const gmx_mtop_t& mtop)
+{
+    const auto& iparams = mtop.ffparams.iparams;
+
+    int numFlexCon = 0;
+    for (const gmx_molblock_t& molblock : mtop.molblock)
+    {
+        numFlexCon += molblock.nmol * countFlexibleConstraints(mtop.moltype[molblock.type].ilist, iparams);
+    }
+
+    return numFlexCon;
+}
+
 gmx::EnumerationArray<ParticleType, int> gmx_mtop_particletype_count(const gmx_mtop_t& mtop)
 {
     gmx::EnumerationArray<ParticleType, int> count = { { 0 } };

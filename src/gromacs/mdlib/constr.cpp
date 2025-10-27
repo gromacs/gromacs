@@ -957,28 +957,6 @@ ListOfLists<int> make_at2con(const gmx_moltype_t&           moltype,
     return makeAtomsToConstraintsList(moltype.atoms.nr, moltype.ilist, iparams, flexibleConstraintTreatment);
 }
 
-//! Return the number of flexible constraints in the \c ilist and \c iparams.
-int countFlexibleConstraints(const gmx::EnumerationArray<InteractionFunction, InteractionList>& ilist,
-                             ArrayRef<const t_iparams> iparams)
-{
-    int nflexcon = 0;
-    for (InteractionFunction ftype :
-         { InteractionFunction::Constraints, InteractionFunction::ConstraintsNoCoupling })
-    {
-        const int numIatomsPerConstraint = 3;
-        for (int i = 0; i < ilist[ftype].size(); i += numIatomsPerConstraint)
-        {
-            const int type = ilist[ftype].iatoms[i];
-            if (iparams[type].constr.dA == 0 && iparams[type].constr.dB == 0)
-            {
-                nflexcon++;
-            }
-        }
-    }
-
-    return nflexcon;
-}
-
 //! Returns the index of the settle to which each atom belongs.
 static std::vector<int> make_at2settle(int natoms, const InteractionList& ilist)
 {
@@ -1169,11 +1147,7 @@ Constraints::Impl::Impl(const gmx_mtop_t&          mtop_p,
     {
         at2con_mt = makeAtomToConstraintMappings(mtop, flexibleConstraintTreatment(EI_DYNAMICS(ir.eI)));
 
-        for (const gmx_molblock_t& molblock : mtop.molblock)
-        {
-            int count = countFlexibleConstraints(mtop.moltype[molblock.type].ilist, mtop.ffparams.iparams);
-            nflexcon += molblock.nmol * count;
-        }
+        nflexcon = gmx_mtop_flexible_constraint_count(mtop);
 
         if (nflexcon > 0)
         {

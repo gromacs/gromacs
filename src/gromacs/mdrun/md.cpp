@@ -355,8 +355,6 @@ void gmx::LegacySimulator::do_md()
     const bool  useGpuForPme       = simulationWork.useGpuPme;
     const bool  useGpuForNonbonded = simulationWork.useGpuNonbonded;
     const bool  useGpuForUpdate    = simulationWork.useGpuUpdate;
-    const bool  useGpuForBufferOps =
-            simulationWork.useGpuXBufferOpsWhenAllowed || simulationWork.useGpuFBufferOpsWhenAllowed;
 
     /* Check for polarizable models and flexible constraints */
     gmx_shellfc_t* shellfc = init_shell_flexcon(fpLog_,
@@ -364,7 +362,7 @@ void gmx::LegacySimulator::do_md()
                                                 constr_ ? constr_->numFlexibleConstraints() : 0,
                                                 ir->nstcalcenergy,
                                                 haveDDAtomOrdering(*cr_),
-                                                useGpuForPme || useGpuForBufferOps);
+                                                simulationWork);
 
     ObservablesReducer observablesReducer = observablesReducerBuilder_->build();
 

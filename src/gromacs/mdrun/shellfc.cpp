@@ -241,12 +241,12 @@ static void predict_shells(FILE*                     fplog,
     }
 }
 
-gmx_shellfc_t* init_shell_flexcon(FILE*             fplog,
-                                  const gmx_mtop_t& mtop,
-                                  int               nflexcon,
-                                  int               nstcalcenergy,
-                                  bool              usingDomainDecomposition,
-                                  bool              haveGpuCoordinates)
+gmx_shellfc_t* init_shell_flexcon(FILE*                          fplog,
+                                  const gmx_mtop_t&              mtop,
+                                  const int                      nflexcon,
+                                  const int                      nstcalcenergy,
+                                  const bool                     usingDomainDecomposition,
+                                  const gmx::SimulationWorkload& simulationWork)
 {
     gmx_shellfc_t* shfc;
 
@@ -538,9 +538,14 @@ gmx_shellfc_t* init_shell_flexcon(FILE*             fplog,
         }
     }
 
+    GMX_RELEASE_ASSERT(!simulationWork.useGpuUpdate,
+                       "GPU update is not supported with shells or flexible constraints");
+
     /* shfc->x is used as a coordinate buffer for the sim_util's `do_force` function, and
      * must be pinned if coordinates are on the GPU (e.g. for PME or GPU buffer ops). */
-    if (haveGpuCoordinates)
+    const bool useGpuForBufferOps =
+            simulationWork.useGpuXBufferOpsWhenAllowed || simulationWork.useGpuFBufferOpsWhenAllowed;
+    if (simulationWork.useGpuPme || useGpuForBufferOps)
     {
         for (i = 0; i < 2; i++)
         {

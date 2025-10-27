@@ -277,10 +277,6 @@ ListOfLists<int> make_at2con(int numAtoms,
                              ArrayRef<const t_iparams>   iparams,
                              FlexibleConstraintTreatment flexibleConstraintTreatment);
 
-//! Return the number of flexible constraints in the \c ilist and \c iparams.
-int countFlexibleConstraints(const gmx::EnumerationArray<InteractionFunction, InteractionList>& ilist,
-                             ArrayRef<const t_iparams> iparams);
-
 /*! \brief Returns the constraint iatoms for a constraint number con
  * which comes from a list where InteractionFunction::Constraints and
  * InteractionFunction::ConstraintsNoCoupling constraints are concatenated. */

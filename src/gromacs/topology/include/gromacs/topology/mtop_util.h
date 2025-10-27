@@ -87,6 +87,13 @@ int gmx_mtop_ftype_count(const gmx_mtop_t& mtop, InteractionFunction ftype);
 /* Returns the total number of interactions in the system with all interaction flags that are set in \p if_flags set */
 int gmx_mtop_interaction_count(const gmx_mtop_t& mtop, int unsigned if_flags);
 
+//! Returns the number of flexible constraints in the \c ilist and \c iparams.
+int countFlexibleConstraints(const gmx::EnumerationArray<InteractionFunction, InteractionList>& ilist,
+                             gmx::ArrayRef<const t_iparams> iparams);
+
+/* Returns the total number of flexible constraints in the system */
+int gmx_mtop_flexible_constraint_count(const gmx_mtop_t& mtop);
+
 /* Returns the count of atoms for each particle type */
 gmx::EnumerationArray<ParticleType, int> gmx_mtop_particletype_count(const gmx_mtop_t& mtop);
 
