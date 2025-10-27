@@ -98,27 +98,31 @@ static sycl::property_list makeQueuePropertyList(const bool                 enab
     int lowPrioValue    = 0;
     int normalPrioValue = 0;
 
+#    if defined(ACPP_EXT_QUEUE_PROPERTY_PRIORITY_RANGE) // Merged in October 2025
+    std::tie(lowPrioValue, highPrioValue) =
+            deviceContext.deviceInfo().syclDevice.get_info<sycl::info::device::AdaptiveCpp_priority_range>();
+#    else
     if (deviceContext.deviceInfo().deviceVendor == DeviceVendor::Nvidia)
     {
-#    if GMX_ACPP_HAVE_CUDA_TARGET
+#        if GMX_ACPP_HAVE_CUDA_TARGET
         const auto status = cudaDeviceGetStreamPriorityRange(&highPrioValue, &lowPrioValue);
         if (status != cudaSuccess)
         {
             GMX_THROW(gmx::InternalError("cudaDeviceGetStreamPriorityRange failed"));
         }
-#    endif
+#        endif
     }
     else if (deviceContext.deviceInfo().deviceVendor == DeviceVendor::Amd)
     {
-#    if GMX_ACPP_HAVE_HIP_TARGET
+#        if GMX_ACPP_HAVE_HIP_TARGET
         const auto status = hipDeviceGetStreamPriorityRange(&highPrioValue, &lowPrioValue);
         if (status != hipSuccess)
         {
             GMX_THROW(gmx::InternalError("hipDeviceGetStreamPriorityRange failed"));
         }
-#    endif
+#        endif
     }
-
+#    endif
     normalPrioValue = (highPrioValue + lowPrioValue) / 2;
 
     int chosenPrioValue;
