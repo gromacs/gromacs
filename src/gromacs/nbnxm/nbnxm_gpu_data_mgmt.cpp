@@ -298,8 +298,14 @@ GpuFeplist::~GpuFeplist()
 }
 
 template GpuPairlist<PairlistType::Hierarchical8x8x8>::GpuPairlist();
+template GpuPairlist<PairlistType::Hierarchical8x8x8_nosplit>::GpuPairlist();
+template GpuPairlist<PairlistType::Hierarchical8x4x4>::GpuPairlist();
+template GpuPairlist<PairlistType::Hierarchical4x8x8>::GpuPairlist();
 
 template GpuPairlist<PairlistType::Hierarchical8x8x8>::~GpuPairlist();
+template GpuPairlist<PairlistType::Hierarchical8x8x8_nosplit>::~GpuPairlist();
+template GpuPairlist<PairlistType::Hierarchical8x4x4>::~GpuPairlist();
+template GpuPairlist<PairlistType::Hierarchical4x8x8>::~GpuPairlist();
 
 static inline void init_timings(gmx_wallclock_gpu_nbnxn_t* t)
 {
@@ -893,6 +899,21 @@ void gpu_init_pairlist(NbnxmGpu* nb, const NbnxnPairlistGpu<pairlistType>* h_pli
 template void gpu_init_pairlist<PairlistType::Hierarchical8x8x8>(
         NbnxmGpu*                                                nb,
         const NbnxnPairlistGpu<PairlistType::Hierarchical8x8x8>* h_plist,
+        const InteractionLocality                                iloc);
+
+template void gpu_init_pairlist<PairlistType::Hierarchical8x8x8_nosplit>(
+        NbnxmGpu*                                                        nb,
+        const NbnxnPairlistGpu<PairlistType::Hierarchical8x8x8_nosplit>* h_plist,
+        const InteractionLocality                                        iloc);
+
+template void gpu_init_pairlist<PairlistType::Hierarchical8x4x4>(
+        NbnxmGpu*                                                nb,
+        const NbnxnPairlistGpu<PairlistType::Hierarchical8x4x4>* h_plist,
+        const InteractionLocality                                iloc);
+
+template void gpu_init_pairlist<PairlistType::Hierarchical4x8x8>(
+        NbnxmGpu*                                                nb,
+        const NbnxnPairlistGpu<PairlistType::Hierarchical4x8x8>* h_plist,
         const InteractionLocality                                iloc);
 
 void gpu_init_feppairlist(NbnxmGpu*                 nb,

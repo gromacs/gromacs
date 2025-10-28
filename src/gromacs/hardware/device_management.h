@@ -58,6 +58,7 @@
 #include <string>
 #include <vector>
 
+#include "gromacs/nbnxm/nbnxm_enums.h"
 #include "gromacs/utility/basedefinitions.h"
 
 struct DeviceInformation;
@@ -308,5 +309,12 @@ void doubleCheckGpuAwareMpiWillWork(const DeviceInformation& deviceInfo);
 
 //! Get maximum grid size if backend supports it.
 int maximumGridSize(const DeviceInformation& deviceInfo);
+
+/*! \brief Report Nbnxm kernel layout for device.
+ *
+ * \param[in] deviceInfo Information about device to base decision on.
+ * \returns The specific kernel layout according to current knowledge.
+ */
+gmx::PairlistType getDeviceSpecificGpuPairlistLayout(const DeviceInformation& deviceInfo);
 
 #endif // GMX_HARDWARE_DEVICE_MANAGEMENT_H

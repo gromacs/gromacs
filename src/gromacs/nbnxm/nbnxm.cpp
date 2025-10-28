@@ -47,7 +47,9 @@
 #include "gromacs/domdec/domdec_zones.h"
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/message_string_collector.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "nbnxm_gpu.h"
 #include "pairlistsets.h"
@@ -291,12 +293,21 @@ void nonbonded_verlet_t::setNonLocalGrid(const int                           gri
 std::optional<std::string> nbnxmGpuClusteringDescription()
 {
 #if GMX_GPU
-    return formatString("super-cluster %dx%dx%d / cluster %d (cluster-pair splitting %s)",
-                        GMX_GPU_NB_NUM_CLUSTER_PER_CELL_X,
-                        GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Y,
-                        GMX_GPU_NB_NUM_CLUSTER_PER_CELL_Z,
-                        GMX_GPU_NB_CLUSTER_SIZE,
-                        GMX_GPU_NB_DISABLE_CLUSTER_PAIR_SPLIT ? "off" : "on");
+    std::string availableClustering = gmx::formatString("Available GPU clustering options\n");
+    for (auto pairlistType : gmx::EnumerationWrapper<PairlistType>{})
+    {
+        if (sc_isGpuSpecificPairlist(pairlistType))
+        {
+            availableClustering.append(formatString(
+                    "super-cluster %dx%dx%d / cluster %d (cluster-pair splitting %s)\n",
+                    sc_gpuNumClusterPerCellX(pairlistType),
+                    sc_gpuNumClusterPerCellY(pairlistType),
+                    sc_gpuNumClusterPerCellZ(pairlistType),
+                    sc_gpuClusterSize(pairlistType),
+                    sc_gpuPairlistHasSplitJCluster(pairlistType) ? "off" : "on"));
+        }
+    }
+    return availableClustering;
 #else
     return std::nullopt;
 #endif

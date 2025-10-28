@@ -142,6 +142,16 @@ template void performExclusiveScan<PairlistType::Hierarchical8x8x8>(
         GpuPairlist<PairlistType::Hierarchical8x8x8>* plist,
         const DeviceStream&                           deviceStream);
 
+template size_t getExclusiveScanWorkingArraySize<PairlistType::Hierarchical8x8x8_nosplit>(
+        GpuPairlist<PairlistType::Hierarchical8x8x8_nosplit>* plist,
+        const DeviceStream&                                   deviceStream);
+
+template void performExclusiveScan<PairlistType::Hierarchical8x8x8_nosplit>(
+        size_t                                                temporaryBufferSize,
+        char*                                                 temporaryBuffer,
+        GpuPairlist<PairlistType::Hierarchical8x8x8_nosplit>* plist,
+        const DeviceStream&                                   deviceStream);
+
 // reset our custom defines
 #if __GFX10__ || __GFX11__ || __GFX12__
 #    undef ROCPRIM_DISABLE_DPP
