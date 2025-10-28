@@ -582,7 +582,7 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const In
                             config.blockSize[2],
                             config.blockSize[0] * config.gridSize[0],
                             config.blockSize[1] * config.gridSize[1],
-                            plist->numSci * c_superClusterSize,
+                            plist->numSci * c_perSuperClusterSize,
                             c_perSuperClusterSize,
                             plist->numAtomsPerCluster);
                 }
@@ -792,7 +792,7 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
                             config.blockSize[2],
                             config.blockSize[0] * config.gridSize[0],
                             config.blockSize[1] * config.gridSize[1],
-                            plist->numSci * c_superClusterSize,
+                            plist->numSci * c_perSuperClusterSize,
                             c_perSuperClusterSize,
                             plist->numAtomsPerCluster,
                             config.sharedMemorySize);
