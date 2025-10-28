@@ -42,7 +42,15 @@ endif()
 set(CMAKE_CUDA_STANDARD ${CMAKE_CXX_STANDARD})
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 
+if (CUDAToolkit_FIND_QUIETLY_AFTER_FIRST_RUN)
+    # Keep quiet on subsequent runs of cmake
+    set (CUDAToolkit_FIND_QUIETLY TRUE)
+else()
+    set (CUDAToolkit_FIND_QUIETLY FALSE)
+endif()
 find_package(CUDAToolkit ${GMX_CUDA_MINIMUM_REQUIRED_VERSION} REQUIRED)
+set(CUDAToolkit_FIND_QUIETLY_AFTER_FIRST_RUN TRUE CACHE INTERNAL "Be quiet during future attempts to find CUDAToolkit")
+
 set(GMX_HAVE_GPU_GRAPH_SUPPORT ON)
 
 if(NOT CMAKE_CUDA_HOST_COMPILER)

@@ -47,7 +47,7 @@ if(cuFFTMp_INCLUDE_DIR)
   set (cuFFTMp_FIND_QUIETLY TRUE)
 endif()
 
-find_package(PkgConfig)
+find_package(PkgConfig QUIET)
 pkg_check_modules(PC_cuFFTMp QUIET cuFFTMp)
 
 find_path(cuFFTMp_ROOT_DIR

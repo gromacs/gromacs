@@ -60,6 +60,7 @@ if(NOT GMX_NNPOT STREQUAL "OFF")
         endforeach()
     endif()
 
+    # When we require at least CMake 4.1, finding Torch with OPTIONAL might be a good approach
     find_package(Torch 2.0.0 QUIET)
     set(TORCH_ALREADY_SEARCHED TRUE CACHE BOOL "True if a search for libtorch has already been done")
     mark_as_advanced(TORCH_ALREADY_SEARCHED)

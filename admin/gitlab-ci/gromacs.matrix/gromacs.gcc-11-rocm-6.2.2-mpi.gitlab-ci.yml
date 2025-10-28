@@ -24,7 +24,8 @@ gromacs:gcc-11-hip-622-mpi:configure:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX2_256"
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=Release"
-    CMAKE_EXTRA_OPTIONS: "-DGMX_HIP_TARGET_ARCH=gfx1034"
+    # Use VkFFT because ROCFFT does not work with this device arch
+    CMAKE_EXTRA_OPTIONS: "-DGMX_HIP_TARGET_ARCH=gfx1034 -DGMX_GPU_FFT_LIBRARY=VkFFT"
     COMPILER_MAJOR_VERSION: 11
 
 gromacs:gcc-11-hip-622-mpi:build:

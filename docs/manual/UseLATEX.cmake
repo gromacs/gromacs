@@ -291,7 +291,13 @@ MACRO(LATEX_SETUP_VARIABLES)
     CACHE PATH "If non empty, specifies the location to place LaTeX output."
     )
 
+  if (LATEX_FIND_QUIETLY_AFTER_FIRST_RUN)
+    set (LATEX_FIND_QUIETLY TRUE)
+  else()
+    set (LATEX_FIND_QUIETLY FALSE)
+  endif()
   FIND_PACKAGE(LATEX)
+  set(LATEX_FIND_QUIETLY_AFTER_FIRST_RUN TRUE CACHE INTERNAL "Be quiet during future attempts to find LaTeX")
 
   MARK_AS_ADVANCED(CLEAR
     LATEX_COMPILER

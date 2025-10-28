@@ -51,7 +51,7 @@ if(clFFT_INCLUDE_DIR)
   set (clFFT_FIND_QUIETLY TRUE)
 endif()
 
-find_package(PkgConfig)
+find_package(PkgConfig QUIET)
 pkg_check_modules(PC_clFFT QUIET clFFT)
 
 find_path(clFFT_ROOT_DIR

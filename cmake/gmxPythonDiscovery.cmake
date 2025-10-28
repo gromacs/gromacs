@@ -43,10 +43,11 @@ option(Python3_ARTIFACTS_INTERACTIVE TRUE
 # Note: If necessary, the Python location can be hinted with Python3_ROOT_DIR
 # For additional parameters affecting Python installation discovery, see
 # https://cmake.org/cmake/help/latest/module/FindPython3.html#hints
-if(FIND_PACKAGE_MESSAGE_DETAILS_Python3)
+if (Python3_FIND_QUIETLY_AFTER_FIRST_RUN)
     # Keep quiet on subsequent runs of cmake
-    set(Python3_FIND_QUIETLY ON)
-    set(PythonInterp_FIND_QUIETLY ON)
+    set (Python3_FIND_QUIETLY TRUE)
+else()
+    set (Python3_FIND_QUIETLY FALSE)
 endif()
 if (NOT Python3_FIND_STRATEGY)
     # If the user provides a hint for the Python installation with Python3_ROOT_DIR,
@@ -64,6 +65,7 @@ if (GMX_PYTHON_PACKAGE AND (NOT Python3_FOUND OR NOT Python3_Development_FOUND))
     message(FATAL_ERROR "Could not locate Python development requirements. \
             Provide appropriate CMake hints or set GMX_PYTHON_PACKAGE=OFF")
 endif ()
+set(Python3_FIND_QUIETLY_AFTER_FIRST_RUN TRUE CACHE INTERNAL "Be quiet during future attempts to find Python3")
 
 # Provide hints for other Python detection that may occur later.
 #
@@ -76,3 +78,7 @@ endif ()
 # may call find_package(PythonInterp) later on.
 set(Python3_FIND_QUIETLY ON)
 set(PythonInterp_FIND_QUIETLY ON)
+
+# The standard FindPython3.cmake is not fully reproducible when run a second time in the
+# same build tree, so we work around that here
+unset(_Python3_Interpreter_REASON_FAILURE CACHE)

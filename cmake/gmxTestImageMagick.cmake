@@ -43,6 +43,13 @@
 #  if convert is working or not.
 
 function(GMX_TEST_IMAGEMAGICK VARIABLE)
+    # Do nothing and keep quiet if detection has already been run
+    if(DEFINED ${VARIABLE})
+        # Ensure that ${VARIABLE} is always an advanced CMake cache variable
+        mark_as_advanced(${VARIABLE})
+        return()
+    endif()
+
     if (GMX_BUILD_MANUAL)
         set(failure_level_ "WARNING")
     else()
@@ -50,11 +57,9 @@ function(GMX_TEST_IMAGEMAGICK VARIABLE)
     endif()
 
     if(NOT ImageMagick_convert_FOUND)
-        if(NOT DEFINED ${VARIABLE})
-            message(${failure_level_} "No image conversion possible without ImageMagick")
-        endif()
+        message(${failure_level_} "No image conversion possible without ImageMagick")
         set(value_ OFF)
-    elseif(NOT DEFINED ${VARIABLE})
+    else()
         set(TEMPDIR "${CMAKE_CURRENT_BINARY_DIR}/imagemagicktmp")
         file(MAKE_DIRECTORY ${TEMPDIR})
         set(SAMPLE_INPUT "${CMAKE_CURRENT_SOURCE_DIR}/cmake/TestImageMagickConvert.pdf")
@@ -73,8 +78,7 @@ function(GMX_TEST_IMAGEMAGICK VARIABLE)
         endif()
         file(REMOVE_RECURSE ${TEMPDIR})
     endif()
-    if(NOT DEFINED ${VARIABLE})
-        set(${VARIABLE} ${value_} CACHE INTERNAL "Test if image conversion works")
-        mark_as_advanced(${VARIABLE})
-    endif()
+
+    set(${VARIABLE} ${value_} CACHE INTERNAL "Test if image conversion works")
+    mark_as_advanced(${VARIABLE})
 endfunction()

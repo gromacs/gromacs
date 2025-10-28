@@ -75,4 +75,3 @@ gmx_add_cuda_flag_if_supported(NVCC_HAS_PTXAS_WERROR -Xptxas=-Werror)
 # Disable cudafe warnings with nvc++ as a host compiler - warning #177-D
 gmx_add_cuda_flag_if_supported(NVCC_HAS_DIAG_SUPPRESS_177 -diag-suppress=177)
 
-gmx_check_if_changed(_cuda_nvcc_executable_or_flags_changed CMAKE_CUDA_COMPILER GMX_CUDA_FLAGS)

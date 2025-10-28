@@ -32,7 +32,14 @@
 .use-hip:
   variables:
     CMAKE_PRECISION_OPTIONS: "-DGMX_DOUBLE=OFF"
-    CMAKE_GPU_OPTIONS: -DGMX_GPU=HIP -DCMAKE_PREFIX_PATH=/opt/rocm -DCMAKE_HIP_COMPILER=/opt/rocm/bin/amdclang++
+    # The CMake config files distributed with ROCm require a minimum
+    # CMake version that has subsequently been deprecated by Kitware,
+    # and leads to warnings. This is suppressed by the use of
+    # CMAKE_WARN_DEPRECATED=OFF. This can be removed when the config
+    # files distributed with the minimum required ROCm version
+    # themselves require a minimum CMake version that current CMake
+    # does not consider deprecated.
+    CMAKE_GPU_OPTIONS: -DGMX_GPU=HIP -DCMAKE_PREFIX_PATH=/opt/rocm -DCMAKE_HIP_COMPILER=/opt/rocm/bin/amdclang++ -DCMAKE_WARN_DEPRECATED=off
 
 .use-mpi:
   variables:
