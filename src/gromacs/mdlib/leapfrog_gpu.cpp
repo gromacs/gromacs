@@ -80,7 +80,7 @@ void LeapFrogGpu::integrate(DeviceBuffer<Float3>              d_x,
         GMX_ASSERT(checkDeviceBuffer(d_lambdas_, numTempScaleValues_),
                    "Number of temperature scaling factors changed since it was set for the "
                    "last time.");
-        GMX_ASSERT(numTempScaleValues_ == ssize(h_lambdas_),
+        GMX_ASSERT(numTempScaleValues_ == gmx::ssize(h_lambdas_),
                    "Number of temperature scaling factors changed since it was set for the "
                    "last time.");
 
