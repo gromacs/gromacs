@@ -211,7 +211,7 @@ TEST(NbnxmSetupTest, canCreateKernelSetupGPU)
 {
     NBKernelOptions       nbKernelOptions;
     gmx::NbnxmKernelSetup kernelSetup = createKernelSetupGPU(nbKernelOptions.useTabulatedEwaldCorr);
-    EXPECT_EQ(kernelSetup.kernelType, gmx::NbnxmKernelType::Gpu8x8x8);
+    EXPECT_EQ(kernelSetup.kernelType, gmx::NbnxmKernelType::GpuSxNxM);
     EXPECT_EQ(kernelSetup.ewaldExclusionType, gmx::EwaldExclusionType::Analytical);
 }
 

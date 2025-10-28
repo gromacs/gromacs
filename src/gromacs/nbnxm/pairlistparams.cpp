@@ -46,6 +46,7 @@
 
 #include <optional>
 
+#include "gromacs/nbnxm/nbnxm_enums.h"
 #include "gromacs/utility/gmxassert.h"
 
 #include "nbnxm_geometry.h"

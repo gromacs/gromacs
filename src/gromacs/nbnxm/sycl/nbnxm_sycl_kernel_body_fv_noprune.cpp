@@ -44,19 +44,7 @@
 
 namespace gmx
 {
-#if SYCL_NBNXM_SUPPORTS_SUBGROUP_SIZE_8
-template void launchNbnxmKernelHelper<8, false, true>(NbnxmGpu*                 nb,
-                                                      const gmx::StepWorkload&  stepWork,
-                                                      const InteractionLocality iloc);
-#endif
-#if SYCL_NBNXM_SUPPORTS_SUBGROUP_SIZE_32
-template void launchNbnxmKernelHelper<32, false, true>(NbnxmGpu*                 nb,
-                                                       const gmx::StepWorkload&  stepWork,
-                                                       const InteractionLocality iloc);
-#endif
-#if SYCL_NBNXM_SUPPORTS_SUBGROUP_SIZE_64
-template void launchNbnxmKernelHelper<64, false, true>(NbnxmGpu*                 nb,
-                                                       const gmx::StepWorkload&  stepWork,
-                                                       const InteractionLocality iloc);
-#endif
+template void launchNbnxmKernelHelper<false, true>(NbnxmGpu*                 nb,
+                                                   const gmx::StepWorkload&  stepWork,
+                                                   const InteractionLocality iloc);
 } // namespace gmx

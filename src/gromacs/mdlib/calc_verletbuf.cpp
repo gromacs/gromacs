@@ -138,7 +138,7 @@ VerletbufListSetup verletbufGetListSetup(gmx::NbnxmKernelType nbnxnKernelType)
      */
     VerletbufListSetup listSetup;
 
-    if (nbnxnKernelType == gmx::NbnxmKernelType::Gpu8x8x8)
+    if (nbnxnKernelType == gmx::NbnxmKernelType::GpuSxNxM)
     {
         // Use the default GPU 8x8x8 pairlist layout here, as the results are
         // identical for anything above a cluster size of 4. This is asserted on later
@@ -166,7 +166,7 @@ VerletbufListSetup verletbufGetSafeListSetup(ListSetupType listType)
 
     if (listType == ListSetupType::Gpu)
     {
-        nbnxnKernelType = gmx::NbnxmKernelType::Gpu8x8x8;
+        nbnxnKernelType = gmx::NbnxmKernelType::GpuSxNxM;
     }
 #if GMX_SIMD && GMX_USE_SIMD_KERNELS
     else if (listType == ListSetupType::CpuSimdWhenSupported)

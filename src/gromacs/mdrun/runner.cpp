@@ -1521,8 +1521,13 @@ int Mdrunner::mdrunner()
     // when no task is assigned.
     DeviceInformation* deviceInfo = gpuTaskAssignments.initDevice();
 
-    // We will later get the pairlist type from the device information here, for now we hard code it.
-    const auto deviceSpecificPairlistType = PairlistType::Hierarchical8x8x8;
+    // Only get the pairlist specific information if we use GPU and the current rank has PP duties
+    const auto deviceSpecificPairlistType =
+            emulateGpuNonbonded == EmulateGpuNonbonded::Yes ? PairlistType::Hierarchical8x8x8
+            : (useGpuForNonbonded && (ddBuilder ? ddBuilder->thisRankHasPPDuty() : true))
+                    ? getDeviceSpecificGpuPairlistLayout(*deviceInfo)
+                    : PairlistType::Count;
+
     GMX_RELEASE_ASSERT(sc_gpuClusterSize(deviceSpecificPairlistType) >= 4,
                        "The verlet scheme setup relies on the GPU cluster size to be at least 4");
 
