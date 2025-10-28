@@ -47,6 +47,8 @@
 #ifndef GMX_LISTED_FORCES_LISTED_FORCES_GPU_IMPL_H
 #define GMX_LISTED_FORCES_LISTED_FORCES_GPU_IMPL_H
 
+#include "config.h"
+
 #include "gromacs/gpu_utils/gputraits.h"
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/listed_forces/listed_forces_gpu.h"
@@ -60,6 +62,9 @@
 
 struct gmx_ffparams_t;
 class DeviceContext;
+
+// Number of GPU threads in a block
+constexpr static int c_threadsBondedPerBlock = GMX_GPU_HIP ? 64 : 256;
 
 namespace gmx
 {

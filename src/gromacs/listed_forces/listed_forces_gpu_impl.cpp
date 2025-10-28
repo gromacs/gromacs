@@ -149,7 +149,7 @@ bool inputSupportsListedForcesGpu(const t_inputrec& ir, const gmx_mtop_t& mtop, 
     return errorReasons.isEmpty();
 }
 
-#if !GMX_GPU_CUDA && !GMX_GPU_SYCL
+#if !GMX_GPU_CUDA && !GMX_GPU_SYCL && !GMX_GPU_HIP
 
 class ListedForcesGpu::Impl
 {
@@ -199,6 +199,6 @@ void ListedForcesGpu::waitAccumulateEnergyTerms(gmx_enerdata_t* /* enerd */) {}
 
 void ListedForcesGpu::clearEnergies() {}
 
-#endif // !GMX_GPU_CUDA
+#endif // !GMX_GPU_CUDA && !GMX_GPU_SYCL && !GMX_GPU_HIP
 
 } // namespace gmx

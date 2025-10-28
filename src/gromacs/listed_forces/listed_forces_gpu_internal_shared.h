@@ -57,6 +57,10 @@
 #    include "gromacs/gpu_utils/sycl_kernel_utils.h"
 #    include "gromacs/gpu_utils/vectype_ops_sycl.h"
 #    include "gromacs/pbcutil/pbc_aiuc_sycl.h"
+#elif GMX_GPU_HIP
+#    include "gromacs/gpu_utils/hip_kernel_utils.h"
+#    include "gromacs/gpu_utils/vectype_ops_hip.h"
+#    include "gromacs/pbcutil/pbc_aiuc_hip.h"
 #else
 #    error Building GPU bonded for unsupported backend
 #endif
@@ -98,7 +102,7 @@ struct FTypeArray
         data{ in[0], in[1], in[2], in[3], in[4], in[5], in[6], in[7] }
     {
     }
-    constexpr T operator[](int idx) const
+    GMX_DEVICE_FUNC_ATTRIBUTE constexpr T operator[](int idx) const
     {
         switch (idx)
         {

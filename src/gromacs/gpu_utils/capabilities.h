@@ -76,7 +76,7 @@ struct GpuConfigurationCapabilities
                 || (GMX_GPU_FFT_BBFFT != 0) || (GMX_GPU_FFT_ONEMATH != 0)
                 || (GMX_GPU_FFT_VKFFT != 0) || (GMX_GPU_FFT_CUFFT != 0) || (GMX_GPU_FFT_CLFFT != 0));
     //! Whether this configuration supports running bonded kernels on the device
-    static constexpr bool Bonded = GMX_GPU_CUDA || GMX_GPU_SYCL;
+    static constexpr bool Bonded = GMX_GPU && !GMX_GPU_OPENCL;
     //! Whether this configuration supports running update+LINCS+SETTLE kernels on the device
     static constexpr bool Update = GMX_GPU_CUDA || GMX_GPU_SYCL;
     //! Whether this configuration supports running the direct GPU communication path with thread-MPI
