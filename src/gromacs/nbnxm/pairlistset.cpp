@@ -225,7 +225,7 @@ void appendPlainPairlistGpu(PlainPairlist*                        plainPairlist,
                             const int atomJ      = atomIndices[jAtomIndex];
 
                             const int exclPair =
-                                    atomIndexInClusterpairSplit<sc_layoutType>(j) * c_clSize + i;
+                                    atomIndexInClusterpairSplit<pairlistType>(j) * c_clSize + i;
 
                             if (atomJ >= 0 && norm2(xI[localI] - getCoordinate(nbat, jAtomIndex)) < rangeSquared)
                             {

@@ -533,7 +533,7 @@ void nbnxn_put_on_grid_nonlocal(nonbonded_verlet_t*     nb_verlet,
                                 ArrayRef<const int32_t> atomInfo,
                                 ArrayRef<const RVec>    x);
 
-/*! \brief Returns information for describing the NBNXM GPU clustering
+/*! \brief Returns information for describing the available NBNXM GPU clustering
  * support, if applicable to the build. */
 std::optional<std::string> nbnxmGpuClusteringDescription();
 
