@@ -26,7 +26,7 @@ gromacs:oneapi-2025.0-nvidia-nightly:configure:
     CMAKE: /usr/local/cmake-3.28.0/bin/cmake
     CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=RelWithAssert"
     # Disable GPU FFT pendind resolution of #5503 (need CUDA 12.8 for NVRTC to handle Blackwell)
-    CMAKE_EXTRA_OPTIONS: "-DSYCL_CXX_FLAGS_EXTRA=-fsycl-targets=nvptx64-nvidia-cuda -DGMX_GPU_NB_CLUSTER_SIZE=8 -DGMX_GPU_FFT_LIBRARY=none -DGMX_SYCL_ENABLE_GRAPHS=ON"
+    CMAKE_EXTRA_OPTIONS: "-DSYCL_CXX_FLAGS_EXTRA=-fsycl-targets=nvptx64-nvidia-cuda -DGMX_GPU_FFT_LIBRARY=none -DGMX_SYCL_ENABLE_GRAPHS=ON"
     COMPILER_MAJOR_VERSION: 2025
 
 gromacs:oneapi-2025.0-nvidia-nightly:build:
