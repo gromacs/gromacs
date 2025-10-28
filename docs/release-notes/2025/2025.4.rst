@@ -99,6 +99,14 @@ stage with ``Could NOT find OpenMP_CUDA`` error. Added a workaround for that.
 
 :issue:`5431`
 
+Enable ``-Wpointer-arith`` flag for LLVM-based compilers
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Building |Gromacs| with LLVM-based compilers would get the ``-Wpointer-arith`` flag tested,
+but the result of the test wasn't used. This is now fixed.
+
+:issue:`5447`
+
 Fixes to the Colvars library
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
