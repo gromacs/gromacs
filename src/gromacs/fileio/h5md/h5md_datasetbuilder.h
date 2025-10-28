@@ -62,6 +62,17 @@
 namespace gmx
 {
 
+//! \brief Data set compression options
+enum class H5mdCompression : int
+{
+    Uncompressed,      //!< No compression
+    LosslessNoShuffle, //!< Lossless, only gzip (deflate)
+    LosslessShuffle    //!< Lossless, byte shuffle followed by gzip (deflate)
+};
+
+// gzip (deflate) compression level: 1 = fastest, 9 = highest compression
+constexpr int c_h5mdDeflateCompressionLevel = 1;
+
 /*! \brief Builder class for H5md data sets.
  *
  * This class facilitates setting various options such as dimensions for a data set.
@@ -106,6 +117,23 @@ public:
     }
 
     GMX_DISALLOW_COPY_MOVE_AND_ASSIGN(H5mdDataSetBuilder);
+
+    //! \brief Set \p compression for data set.
+    H5mdDataSetBuilder& withCompression(const H5mdCompression compression)
+    {
+        switch (compression)
+        {
+            case H5mdCompression::Uncompressed: break;
+            case H5mdCompression::LosslessShuffle:
+                H5Pset_shuffle(creationPropertyList_);
+                [[fallthrough]];
+            case H5mdCompression::LosslessNoShuffle:
+                H5Pset_deflate(creationPropertyList_, c_h5mdDeflateCompressionLevel);
+                break;
+        }
+
+        return *this;
+    }
 
     //! \brief Set data set dimensions (required).
     H5mdDataSetBuilder& withDimension(ArrayRef<const hsize_t> dims)

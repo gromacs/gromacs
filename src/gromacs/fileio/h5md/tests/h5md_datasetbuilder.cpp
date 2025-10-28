@@ -568,6 +568,64 @@ TEST_F(H5mdDataSetBuilderTest, WithUnitAttribute)
     }
 }
 
+TEST_F(H5mdDataSetBuilderTest, UncompressedByDefault)
+{
+    const H5mdDataSetBase<int32_t> dataSet =
+            H5mdDataSetBuilder<int32_t>(fileid(), "testDataSet").withDimension({ 0 }).build();
+
+    const auto [propertyList, propertyListGuard] =
+            makeH5mdPropertyListGuard(H5Dget_create_plist(dataSet.id()));
+
+    EXPECT_EQ(H5Pget_nfilters(propertyList), 0);
+    // H5Pget_filter_by_id2 returns: >=0 if the filter (second argument) is set, else <0
+    EXPECT_LT(H5Pget_filter_by_id2(
+                      propertyList, H5Z_FILTER_DEFLATE, nullptr, nullptr, nullptr, 0, nullptr, nullptr),
+              0);
+    EXPECT_LT(H5Pget_filter_by_id2(
+                      propertyList, H5Z_FILTER_SHUFFLE, nullptr, nullptr, nullptr, 0, nullptr, nullptr),
+              0);
+}
+
+TEST_F(H5mdDataSetBuilderTest, WithLosslessCompression)
+{
+    const H5mdDataSetBase<int32_t> dataSet = H5mdDataSetBuilder<int32_t>(fileid(), "testDataSet")
+                                                     .withDimension({ 0 })
+                                                     .withCompression(H5mdCompression::LosslessNoShuffle)
+                                                     .build();
+
+    const auto [propertyList, propertyListGuard] =
+            makeH5mdPropertyListGuard(H5Dget_create_plist(dataSet.id()));
+
+    EXPECT_EQ(H5Pget_nfilters(propertyList), 1);
+    // H5Pget_filter_by_id2 returns: >=0 if the filter (second argument) is set, else <0
+    EXPECT_GE(H5Pget_filter_by_id2(
+                      propertyList, H5Z_FILTER_DEFLATE, nullptr, nullptr, nullptr, 0, nullptr, nullptr),
+              0);
+    EXPECT_LT(H5Pget_filter_by_id2(
+                      propertyList, H5Z_FILTER_SHUFFLE, nullptr, nullptr, nullptr, 0, nullptr, nullptr),
+              0);
+}
+
+TEST_F(H5mdDataSetBuilderTest, WithLosslessShuffleCompression)
+{
+    const H5mdDataSetBase<int32_t> dataSet = H5mdDataSetBuilder<int32_t>(fileid(), "testDataSet")
+                                                     .withDimension({ 0 })
+                                                     .withCompression(H5mdCompression::LosslessShuffle)
+                                                     .build();
+
+    const auto [propertyList, propertyListGuard] =
+            makeH5mdPropertyListGuard(H5Dget_create_plist(dataSet.id()));
+
+    EXPECT_EQ(H5Pget_nfilters(propertyList), 2);
+    // H5Pget_filter_by_id2 returns: >=0 if the filter (second argument) is set, else <0
+    EXPECT_GE(H5Pget_filter_by_id2(
+                      propertyList, H5Z_FILTER_DEFLATE, nullptr, nullptr, nullptr, 0, nullptr, nullptr),
+              0);
+    EXPECT_GE(H5Pget_filter_by_id2(
+                      propertyList, H5Z_FILTER_SHUFFLE, nullptr, nullptr, nullptr, 0, nullptr, nullptr),
+              0);
+}
+
 } // namespace
 } // namespace test
 } // namespace gmx

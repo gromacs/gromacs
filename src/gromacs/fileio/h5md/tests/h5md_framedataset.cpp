@@ -487,6 +487,138 @@ TEST_P(WithFrameDims, ReadAndWriteScalarFrameWorksForScalarFrameDataSetVector)
 }
 /**@}*/
 
+/**@{
+ * \brief Test lossless compression for int32_t and BasicVector<float> data sets.
+ */
+TEST_P(WithFrameDims, LosslessCompressionWorksPrimitive)
+{
+    using ValueType                      = int32_t;
+    const std::vector<hsize_t> frameDims = GetParam().frameDims_;
+    constexpr int              numFrames = 5;
+
+    H5mdFrameDataSet<ValueType> dataSet = H5mdFrameDataSetBuilder<ValueType>(fileid(), "testDataSet")
+                                                  .withFrameDimension(frameDims)
+                                                  .withCompression(H5mdCompression::LosslessNoShuffle)
+                                                  .build();
+
+    std::vector<std::vector<ValueType>> valuesPerFrame;
+    for (int frameIndex = 0; frameIndex < numFrames; ++frameIndex)
+    {
+        std::vector<ValueType> values(GetParam().numValuesPerFrame_, 0);
+        std::iota(values.begin(), values.end(), 1000 * frameIndex);
+        valuesPerFrame.push_back(values);
+        dataSet.writeNextFrame(values);
+    }
+
+    std::vector<ValueType> readBuffer(GetParam().numValuesPerFrame_, 1);
+    for (int frameIndex = 0; frameIndex < numFrames; ++frameIndex)
+    {
+        dataSet.readFrame(frameIndex, readBuffer);
+        EXPECT_EQ(readBuffer, valuesPerFrame[frameIndex]);
+    }
+}
+TEST_P(WithFrameDims, LosslessCompressionWorksVector)
+{
+    using ValueType                      = BasicVector<float>;
+    const std::vector<hsize_t> frameDims = GetParam().frameDims_;
+    constexpr int              numFrames = 5;
+
+    H5mdFrameDataSet<ValueType> dataSet = H5mdFrameDataSetBuilder<ValueType>(fileid(), "testDataSet")
+                                                  .withFrameDimension(frameDims)
+                                                  .withCompression(H5mdCompression::LosslessNoShuffle)
+                                                  .build();
+
+    std::vector<std::vector<ValueType>> valuesPerFrame;
+    for (int frameIndex = 0; frameIndex < numFrames; ++frameIndex)
+    {
+        std::vector<ValueType> values;
+        values.reserve(GetParam().numValuesPerFrame_);
+        for (int i = 0; i < GetParam().numValuesPerFrame_; ++i)
+        {
+            values.push_back({ static_cast<float>((1000 * frameIndex) + (100 * i)),
+                               static_cast<float>((1000 * frameIndex) + (10 * i)),
+                               static_cast<float>((1000 * frameIndex) + i) });
+        }
+
+        valuesPerFrame.push_back(values);
+        dataSet.writeNextFrame(values);
+    }
+
+    std::vector<ValueType> readBuffer(GetParam().numValuesPerFrame_, { 0.0, 0.0, 0.0 });
+    for (int frameIndex = 0; frameIndex < numFrames; ++frameIndex)
+    {
+        dataSet.readFrame(frameIndex, readBuffer);
+        EXPECT_EQ(readBuffer, valuesPerFrame[frameIndex]);
+    }
+}
+/**@}*/
+
+/**@{
+ * \brief Test lossless compression with shuffle for int32_t and BasicVector<float> data sets.
+ */
+TEST_P(WithFrameDims, LosslessCompressionWithShuffleWorksPrimitive)
+{
+    using ValueType                      = int32_t;
+    const std::vector<hsize_t> frameDims = GetParam().frameDims_;
+    constexpr int              numFrames = 5;
+
+    H5mdFrameDataSet<ValueType> dataSet = H5mdFrameDataSetBuilder<ValueType>(fileid(), "testDataSet")
+                                                  .withFrameDimension(frameDims)
+                                                  .withCompression(H5mdCompression::LosslessShuffle)
+                                                  .build();
+
+    std::vector<std::vector<ValueType>> valuesPerFrame;
+    for (int frameIndex = 0; frameIndex < numFrames; ++frameIndex)
+    {
+        std::vector<ValueType> values(GetParam().numValuesPerFrame_, 0);
+        std::iota(values.begin(), values.end(), 1000 * frameIndex);
+        valuesPerFrame.push_back(values);
+        dataSet.writeNextFrame(values);
+    }
+
+    std::vector<ValueType> readBuffer(GetParam().numValuesPerFrame_, 1);
+    for (int frameIndex = 0; frameIndex < numFrames; ++frameIndex)
+    {
+        dataSet.readFrame(frameIndex, readBuffer);
+        EXPECT_EQ(readBuffer, valuesPerFrame[frameIndex]);
+    }
+}
+TEST_P(WithFrameDims, LosslessCompressionWithShuffleWorksVector)
+{
+    using ValueType                      = BasicVector<float>;
+    const std::vector<hsize_t> frameDims = GetParam().frameDims_;
+    constexpr int              numFrames = 5;
+
+    H5mdFrameDataSet<ValueType> dataSet = H5mdFrameDataSetBuilder<ValueType>(fileid(), "testDataSet")
+                                                  .withFrameDimension(frameDims)
+                                                  .withCompression(H5mdCompression::LosslessShuffle)
+                                                  .build();
+
+    std::vector<std::vector<ValueType>> valuesPerFrame;
+    for (int frameIndex = 0; frameIndex < numFrames; ++frameIndex)
+    {
+        std::vector<ValueType> values;
+        values.reserve(GetParam().numValuesPerFrame_);
+        for (int i = 0; i < GetParam().numValuesPerFrame_; ++i)
+        {
+            values.push_back({ static_cast<float>((1000 * frameIndex) + (100 * i)),
+                               static_cast<float>((1000 * frameIndex) + (10 * i)),
+                               static_cast<float>((1000 * frameIndex) + i) });
+        }
+
+        valuesPerFrame.push_back(values);
+        dataSet.writeNextFrame(values);
+    }
+
+    std::vector<ValueType> readBuffer(GetParam().numValuesPerFrame_, { 0.0, 0.0, 0.0 });
+    for (int frameIndex = 0; frameIndex < numFrames; ++frameIndex)
+    {
+        dataSet.readFrame(frameIndex, readBuffer);
+        EXPECT_EQ(readBuffer, valuesPerFrame[frameIndex]);
+    }
+}
+/**@}*/
+
 //! \brief Set of frame dimension parameters to instantiate test suite for.
 const TestFrameDimensions g_testFrameDims[] = { {},    // scalar data set: no frame dimensions
                                                 { 5 }, // single frame dimension, e.g. T[numAtoms]
@@ -591,7 +723,6 @@ TEST_F(H5mdFrameDataSetTest, WriteAfterMaxNumFramesThrowsAfterReopen)
                 << "Must throw when writing more than maxNumFrames to a data set";
     }
 }
-
 
 } // namespace
 } // namespace test

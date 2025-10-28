@@ -75,6 +75,13 @@ public:
     // Inherit constructor with no further changes
     using Base::Base;
 
+    //! \copydoc H5mdDataSetBuilder::withCompression()
+    H5mdFrameDataSetBuilder& withCompression(const H5mdCompression compression)
+    {
+        Base::withCompression(compression);
+        return *this;
+    }
+
     //! \brief Set dimension for a single frame in the data set.
     H5mdFrameDataSetBuilder& withFrameDimension(ArrayRef<const hsize_t> dims)
     {
