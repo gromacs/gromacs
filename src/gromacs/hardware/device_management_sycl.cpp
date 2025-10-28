@@ -54,6 +54,7 @@
 #include "gromacs/gpu_utils/gmxsycl.h"
 #include "gromacs/hardware/device_management.h"
 #include "gromacs/hardware/device_management_sycl_intel_device_ids.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/nbnxm/nbnxm_enums.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
@@ -262,10 +263,12 @@ bool isDeviceDetectionFunctional(std::string* errorMessage)
  * \brief Checks that device \c deviceInfo is compatible with GROMACS.
  *
  * \param[in]  syclDevice              SYCL device handle.
+ * \param[in]  deviceVendor            Device vendor.
  * \param[in]  supportedSubGroupSizes  List of supported sub-group sizes as reported by the device.
  * \returns                            The status enumeration value for the checked device.
  */
 static DeviceStatus isDeviceCompatible(const sycl::device&      syclDevice,
+                                       const DeviceVendor gmx_unused deviceVendor,
                                        gmx::ArrayRef<const int> supportedSubGroupSizes)
 {
     try
@@ -387,8 +390,8 @@ static bool isDeviceFunctional(const sycl::device& syclDevice, std::string* erro
 static DeviceStatus checkDevice(size_t deviceId, const DeviceInformation& deviceInfo)
 {
 
-    DeviceStatus supportStatus =
-            isDeviceCompatible(deviceInfo.syclDevice, deviceInfo.supportedSubGroupSizes);
+    DeviceStatus supportStatus = isDeviceCompatible(
+            deviceInfo.syclDevice, deviceInfo.deviceVendor, deviceInfo.supportedSubGroupSizes);
     if (supportStatus != DeviceStatus::Compatible)
     {
         return supportStatus;
