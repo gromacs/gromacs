@@ -75,8 +75,8 @@ __device__ __forceinline__ void spread_charges(const PmeGpuKernelParams kernelPa
     float* __restrict__ gm_grid = kernelParams.grid.d_realGrid[gridIndex];
 
     // Number of atoms processed by a single warp in spread and gather
-    const int threadsPerAtomValue = (threadsPerAtom == ThreadsPerAtom::Order) ? order : order * order;
-    const int atomsPerWarp = warp_size / threadsPerAtomValue;
+    constexpr int threadsPerAtomValue = (threadsPerAtom == ThreadsPerAtom::Order) ? order : order * order;
+    constexpr int atomsPerWarp = warp_size / threadsPerAtomValue;
 
     const int nx  = kernelParams.grid.realGridSize[XX];
     const int ny  = kernelParams.grid.realGridSize[YY];
@@ -88,7 +88,7 @@ __device__ __forceinline__ void spread_charges(const PmeGpuKernelParams kernelPa
 
     const int atomIndexLocal = threadIdx.z;
 
-    const int chargeCheck = pme_gpu_check_atom_charge(*atomCharge);
+    const bool chargeCheck = pme_gpu_check_atom_charge(*atomCharge);
     if (chargeCheck)
     {
         // Spline Z coordinates
@@ -169,10 +169,10 @@ template<int order, bool computeSplines, bool spreadCharges, bool wrapX, bool wr
 __launch_bounds__(c_spreadMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBUTE __global__
         void pme_spline_and_spread_kernel(const PmeGpuKernelParams kernelParams)
 {
-    const int threadsPerAtomValue = (threadsPerAtom == ThreadsPerAtom::Order) ? order : order * order;
-    const int atomsPerBlock = c_spreadMaxThreadsPerBlock / threadsPerAtomValue;
+    constexpr int threadsPerAtomValue = (threadsPerAtom == ThreadsPerAtom::Order) ? order : order * order;
+    constexpr int atomsPerBlock = c_spreadMaxThreadsPerBlock / threadsPerAtomValue;
     // Number of atoms processed by a single warp in spread and gather
-    const int atomsPerWarp = warp_size / threadsPerAtomValue;
+    constexpr int atomsPerWarp = warp_size / threadsPerAtomValue;
     // Gridline indices, ivec
     __shared__ int sm_gridlineIndices[atomsPerBlock * DIM];
     // Charges
@@ -208,7 +208,7 @@ __launch_bounds__(c_spreadMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBU
         return;
     }
     /* Charges, required for both spline and spread */
-    if (c_useAtomDataPrefetch)
+    if constexpr (c_useAtomDataPrefetch)
     {
         pme_gpu_stage_atom_data<float, atomsPerBlock, 1>(
                 sm_coefficients, &kernelParams.atoms.d_coefficients[0][kernelParams.pipelineAtomStart]);
@@ -220,10 +220,10 @@ __launch_bounds__(c_spreadMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBU
         atomCharge = kernelParams.atoms.d_coefficients[0][atomIndexGlobal];
     }
 
-    if (computeSplines)
+    if constexpr (computeSplines)
     {
         const float3* __restrict__ gm_coordinates = asFloat3(kernelParams.atoms.d_coordinates);
-        if (c_useAtomDataPrefetch)
+        if constexpr (c_useAtomDataPrefetch)
         {
             // Coordinates
             __shared__ float3 sm_coordinates[atomsPerBlock];
@@ -258,19 +258,19 @@ __launch_bounds__(c_spreadMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBU
     }
 
     /* Spreading */
-    if (spreadCharges && atomIndexGlobal < kernelParams.atoms.nAtoms)
+    if constexpr (spreadCharges)
     {
-
-        if (!kernelParams.usePipeline || (atomIndexGlobal < kernelParams.pipelineAtomEnd))
+        if (atomIndexGlobal < kernelParams.atoms.nAtoms
+            && (!kernelParams.usePipeline || (atomIndexGlobal < kernelParams.pipelineAtomEnd)))
         {
             spread_charges<order, wrapX, wrapY, 0, threadsPerAtom>(
                     kernelParams, &atomCharge, sm_gridlineIndices, sm_theta);
         }
     }
-    if (numGrids == 2)
+    if constexpr (numGrids == 2)
     {
         __syncthreads();
-        if (c_useAtomDataPrefetch)
+        if constexpr (c_useAtomDataPrefetch)
         {
             pme_gpu_stage_atom_data<float, atomsPerBlock, 1>(
                     sm_coefficients, &kernelParams.atoms.d_coefficients[1][kernelParams.pipelineAtomStart]);
@@ -281,9 +281,10 @@ __launch_bounds__(c_spreadMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBU
         {
             atomCharge = kernelParams.atoms.d_coefficients[1][atomIndexGlobal];
         }
-        if (spreadCharges && atomIndexGlobal < kernelParams.atoms.nAtoms)
+        if constexpr (spreadCharges)
         {
-            if (!kernelParams.usePipeline || (atomIndexGlobal < kernelParams.pipelineAtomEnd))
+            if (atomIndexGlobal < kernelParams.atoms.nAtoms
+                && (!kernelParams.usePipeline || (atomIndexGlobal < kernelParams.pipelineAtomEnd)))
             {
                 spread_charges<order, wrapX, wrapY, 1, threadsPerAtom>(
                         kernelParams, &atomCharge, sm_gridlineIndices, sm_theta);

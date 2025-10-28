@@ -555,7 +555,7 @@ __launch_bounds__(c_gatherMaxThreadsPerBlock, c_gatherMinBlocksPerMP) __global__
     {
         const float3* __restrict__ gm_coordinates = asFloat3(kernelParams.atoms.d_coordinates);
         /* Recalculate  Splines  */
-        if (c_useAtomDataPrefetch)
+        if constexpr (c_useAtomDataPrefetch)
         {
             // charges
             __shared__ float sm_coefficients[atomsPerBlock];
