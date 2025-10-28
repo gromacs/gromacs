@@ -98,7 +98,7 @@ struct KernelOptions
 {
     //! Constructor
     KernelOptions(NbnxmKernelType kernelType) :
-        useGpu(kernelType == NbnxmKernelType::Gpu8x8x8),
+        useGpu(kernelType == NbnxmKernelType::GpuSxNxM),
         numThreads(GMX_OPENMP && !useGpu ? g_numOpenMPThreads : 1),
         kernelSetup({ kernelType, EwaldExclusionType::NotSet })
     {
@@ -136,8 +136,11 @@ std::unique_ptr<nonbonded_verlet_t> setupNbnxmForBenchInstance(const KernelOptio
     const auto pinPolicy  = PinningPolicy::CannotBePinned;
     const int  numThreads = options.numThreads;
 
-    PairlistParams pairlistParams(
-            options.kernelSetup.kernelType, sc_layoutType, false, options.rlist, false);
+    PairlistParams pairlistParams(options.kernelSetup.kernelType,
+                                  options.useGpu ? PairlistType::Hierarchical8x8x8 : PairlistType::Count,
+                                  false,
+                                  options.rlist,
+                                  false);
 
     GridSet gridSet(
             PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false, false, numThreads, pinPolicy);
@@ -274,7 +277,7 @@ INSTANTIATE_TEST_SUITE_P(WithParameters,
                          ::testing::Values(NbnxmKernelType::Cpu4x4_PlainC,
                                            NbnxmKernelType::Cpu4xN_Simd_4xN,
                                            NbnxmKernelType::Cpu4xN_Simd_2xNN,
-                                           NbnxmKernelType::Gpu8x8x8));
+                                           NbnxmKernelType::GpuSxNxM));
 
 } // namespace test
 

@@ -39,6 +39,7 @@
 #include "../nbnxm_geometry.h"
 
 #include "gromacs/nbnxm/atomdata.h"
+#include "gromacs/nbnxm/nbnxm_enums.h"
 #include "gromacs/nbnxm/pairlist.h"
 #include "gromacs/utility/gmxassert.h"
 

@@ -106,8 +106,6 @@ enum class DeviceStatus : int
     DeviceNotTargeted,
     //! \brief AMD RDNA devices (gfx10xx, gfx11xx) with 32-wide execution are not supported with OpenCL,
     IncompatibleOclAmdRdna,
-    //! \brief RDNA not targeted (SYCL)
-    IncompatibleAmdRdnaNotTargeted,
     //! Enumeration size
     Count
 };
@@ -125,7 +123,6 @@ static constexpr gmx::EnumerationArray<DeviceStatus, const char*> c_deviceStateS
     "unavailable",
     "not in set of targeted devices",
     "incompatible (AMD RDNA devices are not supported)", // Issue #4521
-    "incompatible (please recompile with GMX_ENABLE_AMD_RDNA_SUPPORT)"
 };
 
 //! Device vendors

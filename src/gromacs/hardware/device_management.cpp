@@ -88,3 +88,8 @@ int maximumGridSize(const DeviceInformation& /* deviceInfo */)
     GMX_RELEASE_ASSERT(false, "Use of GPU specific function in CPU only build");
     return -1;
 }
+
+gmx::PairlistType getDeviceSpecificGpuPairlistLayout(const DeviceInformation& /* deviceInfo */)
+{
+    return gmx::PairlistType::Count;
+}

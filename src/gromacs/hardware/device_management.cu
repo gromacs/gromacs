@@ -482,3 +482,9 @@ int maximumGridSize(const DeviceInformation& deviceInfo)
 {
     return deviceInfo.prop.maxGridSize[0];
 }
+
+gmx::PairlistType getDeviceSpecificGpuPairlistLayout(const DeviceInformation& /* deviceInfo */)
+{
+    // only one kernel type supported for CUDA devices.
+    return gmx::PairlistType::Hierarchical8x8x8;
+}

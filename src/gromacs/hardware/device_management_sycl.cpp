@@ -54,7 +54,7 @@
 #include "gromacs/gpu_utils/gmxsycl.h"
 #include "gromacs/hardware/device_management.h"
 #include "gromacs/hardware/device_management_sycl_intel_device_ids.h"
-#include "gromacs/math/functions.h"
+#include "gromacs/nbnxm/nbnxm_enums.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -262,13 +262,11 @@ bool isDeviceDetectionFunctional(std::string* errorMessage)
  * \brief Checks that device \c deviceInfo is compatible with GROMACS.
  *
  * \param[in]  syclDevice              SYCL device handle.
- * \param[in]  deviceVendor            Device vendor.
  * \param[in]  supportedSubGroupSizes  List of supported sub-group sizes as reported by the device.
  * \returns                            The status enumeration value for the checked device.
  */
-static DeviceStatus isDeviceCompatible(const sycl::device&           syclDevice,
-                                       const DeviceVendor gmx_unused deviceVendor,
-                                       gmx::ArrayRef<const int>      supportedSubGroupSizes)
+static DeviceStatus isDeviceCompatible(const sycl::device&      syclDevice,
+                                       gmx::ArrayRef<const int> supportedSubGroupSizes)
 {
     try
     {
@@ -284,19 +282,7 @@ static DeviceStatus isDeviceCompatible(const sycl::device&           syclDevice,
             return DeviceStatus::Incompatible;
         }
 
-// Ensure any changes are in sync with nbnxm_sycl_kernel.h
-#if GMX_GPU_NB_CLUSTER_SIZE == 4
-        const std::vector<int> compiledNbnxmSubGroupSizes{ 8 };
-#elif GMX_GPU_NB_CLUSTER_SIZE == 8
-#    if GMX_SYCL_ACPP && !(GMX_ACPP_HAVE_HIP_TARGET) && !GMX_ACPP_HAVE_GENERIC_TARGET
-        const std::vector<int> compiledNbnxmSubGroupSizes{ 32 }; // Only NVIDIA
-#    elif GMX_SYCL_ACPP && (GMX_ACPP_HAVE_HIP_TARGET && !GMX_ENABLE_AMD_RDNA_SUPPORT) && !GMX_ACPP_HAVE_GENERIC_TARGET
-        const std::vector<int> compiledNbnxmSubGroupSizes{ 64 }; // Only AMD GCN and CDNA
-#    else
-        const std::vector<int> compiledNbnxmSubGroupSizes{ 32, 64 };
-#    endif
-#endif
-
+        const std::vector<int> compiledNbnxmSubGroupSizes{ 8, 32, 64 };
         const auto subGroupSizeSupportedByDevice = [&supportedSubGroupSizes](const int sgSize) -> bool
         {
             return std::find(supportedSubGroupSizes.begin(), supportedSubGroupSizes.end(), sgSize)
@@ -306,13 +292,6 @@ static DeviceStatus isDeviceCompatible(const sycl::device&           syclDevice,
                          compiledNbnxmSubGroupSizes.end(),
                          subGroupSizeSupportedByDevice))
         {
-#if GMX_SYCL_ACPP && GMX_ACPP_HAVE_HIP_TARGET && !GMX_ENABLE_AMD_RDNA_SUPPORT
-            if (supportedSubGroupSizes.size() == 1 && supportedSubGroupSizes[0] == 32
-                && deviceVendor == DeviceVendor::Amd)
-            {
-                return DeviceStatus::IncompatibleAmdRdnaNotTargeted;
-            }
-#endif
             return DeviceStatus::IncompatibleClusterSize;
         }
 
@@ -408,8 +387,8 @@ static bool isDeviceFunctional(const sycl::device& syclDevice, std::string* erro
 static DeviceStatus checkDevice(size_t deviceId, const DeviceInformation& deviceInfo)
 {
 
-    DeviceStatus supportStatus = isDeviceCompatible(
-            deviceInfo.syclDevice, deviceInfo.deviceVendor, deviceInfo.supportedSubGroupSizes);
+    DeviceStatus supportStatus =
+            isDeviceCompatible(deviceInfo.syclDevice, deviceInfo.supportedSubGroupSizes);
     if (supportStatus != DeviceStatus::Compatible)
     {
         return supportStatus;
@@ -763,4 +742,25 @@ int maximumGridSize(const DeviceInformation& /* deviceInfo */)
 {
     GMX_RELEASE_ASSERT(false, "Use of non-implemented method in SYCL");
     return -1;
+}
+
+gmx::PairlistType getDeviceSpecificGpuPairlistLayout(const DeviceInformation& deviceInfo)
+{
+    switch (deviceInfo.deviceVendor)
+    {
+        case DeviceVendor::Nvidia: return gmx::PairlistType::Hierarchical8x8x8;
+        case DeviceVendor::Amd:
+            return deviceInfo.supportedSubGroupSizes[0] == 64 ? gmx::PairlistType::Hierarchical8x8x8_nosplit
+                                                              : gmx::PairlistType::Hierarchical8x8x8;
+        case DeviceVendor::Intel:
+            if (deviceInfo.supportedSubGroupSizes[0] == 8)
+            {
+                return gmx::PairlistType::Hierarchical8x4x4;
+            }
+            GMX_RELEASE_ASSERT(deviceInfo.supportedSubGroupSizes[0] == 32,
+                               "Unsupported parallel execution size");
+            // default to same as CUDA kernels, but with size 4 super clusters
+            return gmx::PairlistType::Hierarchical4x8x8;
+        default: return gmx::PairlistType::Count;
+    }
 }

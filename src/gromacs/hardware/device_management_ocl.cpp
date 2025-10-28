@@ -45,6 +45,8 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/nbnxm/nbnxm_enums.h"
+
 #ifdef __APPLE__
 #    include <sys/sysctl.h>
 #endif
@@ -63,6 +65,7 @@
 #include "gromacs/gpu_utils/oclutils.h"
 #include "gromacs/hardware/device_management.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/mpiinfo.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
@@ -294,8 +297,6 @@ static DeviceStatus isDeviceFunctional(const DeviceInformation& deviceInfo)
                                                             : DeviceStatus::IncompatibleOclAmdRdna)
                                                  : DeviceStatus::Incompatible;
         case DeviceVendor::Intel:
-            return GMX_GPU_NB_CLUSTER_SIZE == 4 ? DeviceStatus::Compatible
-                                                : DeviceStatus::IncompatibleClusterSize;
         case DeviceVendor::Apple: return DeviceStatus::Compatible;
         default: return DeviceStatus::Incompatible;
     }
@@ -718,4 +719,27 @@ int maximumGridSize(const DeviceInformation& /* deviceInfo */)
 {
     GMX_RELEASE_ASSERT(false, "Use of non-implemented method in OpenCL");
     return -1;
+}
+
+gmx::PairlistType getDeviceSpecificGpuPairlistLayout(const DeviceInformation& deviceInfo)
+{
+    if (deviceInfo.deviceVendor == DeviceVendor::Intel)
+    {
+        if (deviceInfo.supportedSubGroupSizes[0] == 32)
+        {
+            return gmx::PairlistType::Hierarchical4x8x8;
+        }
+        else
+        {
+            GMX_RELEASE_ASSERT(deviceInfo.supportedSubGroupSizes[0] == 8,
+                               "Unsupported sub group size");
+            return gmx::PairlistType::Hierarchical8x4x4;
+        }
+    }
+    else
+    {
+        // OpenCL assumes the default layout also for AMD devices and works around the
+        // different pairlist layouts in the kernels. I'm not bothering to fix that.
+        return gmx::PairlistType::Hierarchical8x8x8;
+    }
 }
