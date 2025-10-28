@@ -267,9 +267,9 @@ bool isDeviceDetectionFunctional(std::string* errorMessage)
  * \param[in]  supportedSubGroupSizes  List of supported sub-group sizes as reported by the device.
  * \returns                            The status enumeration value for the checked device.
  */
-static DeviceStatus isDeviceCompatible(const sycl::device&      syclDevice,
+static DeviceStatus isDeviceCompatible(const sycl::device&           syclDevice,
                                        const DeviceVendor gmx_unused deviceVendor,
-                                       gmx::ArrayRef<const int> supportedSubGroupSizes)
+                                       gmx::ArrayRef<const int>      supportedSubGroupSizes)
 {
     try
     {
