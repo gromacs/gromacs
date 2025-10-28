@@ -53,6 +53,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/pbc_aiuc_cuda.cuh"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/template_mp.h"
 #include "gromacs/utility/vec.h"
 
 namespace gmx
@@ -92,16 +93,16 @@ constexpr static int c_maxThreadsPerBlock = c_threadsPerBlock;
  */
 template<NumTempScaleValues numTempScaleValues, ParrinelloRahmanVelocityScaling parrinelloRahmanVelocityScaling>
 __launch_bounds__(c_maxThreadsPerBlock) __global__
-        void leapfrog_kernel(const int numAtoms,
-                             float3* __restrict__ gm_x,
-                             float3* __restrict__ gm_x0,
-                             float3* __restrict__ gm_v,
-                             const float3* __restrict__ gm_f,
-                             const float* __restrict__ gm_inverseMasses,
-                             const float dt,
-                             const float* __restrict__ gm_lambdas,
-                             const unsigned short* __restrict__ gm_tempScaleGroups,
-                             const float3 prVelocityScalingMatrixDiagonal)
+        void leapFrogKernel(const int numAtoms,
+                            float3* __restrict__ gm_x,
+                            float3* __restrict__ gm_x0,
+                            float3* __restrict__ gm_v,
+                            const float3* __restrict__ gm_f,
+                            const float* __restrict__ gm_inverseMasses,
+                            const float dt,
+                            const float* __restrict__ gm_lambdas,
+                            const unsigned short* __restrict__ gm_tempScaleGroups,
+                            const float3 prVelocityScalingMatrixDiagonal)
 {
     int threadIndex = blockIdx.x * blockDim.x + threadIdx.x;
     if (threadIndex < numAtoms)
@@ -114,19 +115,19 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__
 
         gm_x0[threadIndex] = x;
 
-        if (numTempScaleValues != NumTempScaleValues::None
-            || parrinelloRahmanVelocityScaling != ParrinelloRahmanVelocityScaling::No)
+        if constexpr (numTempScaleValues != NumTempScaleValues::None
+                      || parrinelloRahmanVelocityScaling != ParrinelloRahmanVelocityScaling::No)
         {
             float3 vp = v;
 
-            if (numTempScaleValues != NumTempScaleValues::None)
+            if constexpr (numTempScaleValues != NumTempScaleValues::None)
             {
                 float lambda = 1.0F;
-                if (numTempScaleValues == NumTempScaleValues::Single)
+                if constexpr (numTempScaleValues == NumTempScaleValues::Single)
                 {
                     lambda = gm_lambdas[0];
                 }
-                else if (numTempScaleValues == NumTempScaleValues::Multiple)
+                else if constexpr (numTempScaleValues == NumTempScaleValues::Multiple)
                 {
                     int tempScaleGroup = gm_tempScaleGroups[threadIndex];
                     lambda             = gm_lambdas[tempScaleGroup];
@@ -134,7 +135,7 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__
                 vp *= lambda;
             }
 
-            if (parrinelloRahmanVelocityScaling == ParrinelloRahmanVelocityScaling::Diagonal)
+            if constexpr (parrinelloRahmanVelocityScaling == ParrinelloRahmanVelocityScaling::Diagonal)
             {
                 vp.x -= prVelocityScalingMatrixDiagonal.x * v.x;
                 vp.y -= prVelocityScalingMatrixDiagonal.y * v.y;
@@ -152,65 +153,26 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__
     }
 }
 
-/*! \brief Select templated kernel.
- *
- * Returns pointer to a CUDA kernel based on the number of temperature coupling groups and
- * whether or not the temperature and(or) pressure coupling is enabled.
- *
- * \param[in]  doTemperatureScaling   If the kernel with temperature coupling velocity scaling
- *                                    should be selected.
- * \param[in]  numTempScaleValues     Number of temperature coupling groups in the system.
- * \param[in]  parrinelloRahmanVelocityScaling  Type of the Parrinello-Rahman velocity scaling.
- *
- * \return                         Pointer to CUDA kernel
- */
-inline auto selectLeapFrogKernelPtr(bool                            doTemperatureScaling,
-                                    int                             numTempScaleValues,
-                                    ParrinelloRahmanVelocityScaling parrinelloRahmanVelocityScaling)
+//! Convert \p doTemperatureScaling and \p numTempScaleValues to \ref NumTempScaleValues.
+static NumTempScaleValues getTempScalingType(bool doTemperatureScaling, int numTempScaleValues)
 {
-    // Check input for consistency: if there is temperature coupling, at least one coupling group should be defined.
-    GMX_ASSERT(!doTemperatureScaling || (numTempScaleValues > 0),
-               "Temperature coupling was requested with no temperature coupling groups.");
-    auto kernelPtr = leapfrog_kernel<NumTempScaleValues::None, ParrinelloRahmanVelocityScaling::No>;
-
-    if (parrinelloRahmanVelocityScaling == ParrinelloRahmanVelocityScaling::No)
+    if (!doTemperatureScaling)
     {
-        if (!doTemperatureScaling)
-        {
-            kernelPtr = leapfrog_kernel<NumTempScaleValues::None, ParrinelloRahmanVelocityScaling::No>;
-        }
-        else if (numTempScaleValues == 1)
-        {
-            kernelPtr = leapfrog_kernel<NumTempScaleValues::Single, ParrinelloRahmanVelocityScaling::No>;
-        }
-        else if (numTempScaleValues > 1)
-        {
-            kernelPtr = leapfrog_kernel<NumTempScaleValues::Multiple, ParrinelloRahmanVelocityScaling::No>;
-        }
+        return NumTempScaleValues::None;
     }
-    else if (parrinelloRahmanVelocityScaling == ParrinelloRahmanVelocityScaling::Diagonal)
+    else if (numTempScaleValues == 1)
     {
-        if (!doTemperatureScaling)
-        {
-            kernelPtr = leapfrog_kernel<NumTempScaleValues::None, ParrinelloRahmanVelocityScaling::Diagonal>;
-        }
-        else if (numTempScaleValues == 1)
-        {
-            kernelPtr = leapfrog_kernel<NumTempScaleValues::Single, ParrinelloRahmanVelocityScaling::Diagonal>;
-        }
-        else if (numTempScaleValues > 1)
-        {
-            kernelPtr = leapfrog_kernel<NumTempScaleValues::Multiple, ParrinelloRahmanVelocityScaling::Diagonal>;
-        }
+        return NumTempScaleValues::Single;
+    }
+    else if (numTempScaleValues > 1)
+    {
+        return NumTempScaleValues::Multiple;
     }
     else
     {
-        GMX_RELEASE_ASSERT(false,
-                           "Only isotropic Parrinello-Rahman pressure coupling is supported.");
+        gmx_incons("Temperature coupling was requested with no temperature coupling groups.");
     }
-    return kernelPtr;
 }
-
 
 void launchLeapFrogKernel(const int                             numAtoms,
                           DeviceBuffer<Float3>                  d_x,
@@ -238,22 +200,28 @@ void launchLeapFrogKernel(const int                             numAtoms,
     kernelLaunchConfig.blockSize[2]     = 1;
     kernelLaunchConfig.sharedMemorySize = 0;
 
-    auto kernelPtr = selectLeapFrogKernelPtr(
-            doTemperatureScaling, numTempScaleValues, parrinelloRahmanVelocityScaling);
+    gmx::dispatchTemplatedFunction(
+            [&](auto tempScalingType_, auto pressureScalingType_)
+            {
+                auto kernelPtr = leapFrogKernel<tempScalingType_, pressureScalingType_>;
 
-    const auto kernelArgs = prepareGpuKernelArguments(kernelPtr,
-                                                      kernelLaunchConfig,
-                                                      &numAtoms,
-                                                      asFloat3Pointer(&d_x),
-                                                      asFloat3Pointer(&d_xp),
-                                                      asFloat3Pointer(&d_v),
-                                                      asFloat3Pointer(&d_f),
-                                                      &d_inverseMasses,
-                                                      &dt,
-                                                      &d_lambdas,
-                                                      &d_tempScaleGroups,
-                                                      &prVelocityScalingMatrixDiagonal);
-    launchGpuKernel(kernelPtr, kernelLaunchConfig, deviceStream, nullptr, "leapfrog_kernel", kernelArgs);
+                const auto kernelArgs = prepareGpuKernelArguments(kernelPtr,
+                                                                  kernelLaunchConfig,
+                                                                  &numAtoms,
+                                                                  asFloat3Pointer(&d_x),
+                                                                  asFloat3Pointer(&d_xp),
+                                                                  asFloat3Pointer(&d_v),
+                                                                  asFloat3Pointer(&d_f),
+                                                                  &d_inverseMasses,
+                                                                  &dt,
+                                                                  &d_lambdas,
+                                                                  &d_tempScaleGroups,
+                                                                  &prVelocityScalingMatrixDiagonal);
+                launchGpuKernel(
+                        kernelPtr, kernelLaunchConfig, deviceStream, nullptr, "leapfrog_kernel", kernelArgs);
+            },
+            getTempScalingType(doTemperatureScaling, numTempScaleValues),
+            parrinelloRahmanVelocityScaling);
 }
 
 } // namespace gmx

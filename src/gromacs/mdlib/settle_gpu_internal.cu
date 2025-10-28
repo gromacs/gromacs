@@ -59,6 +59,7 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/pbc_aiuc_cuda.cuh"
+#include "gromacs/utility/template_mp.h"
 #include "gromacs/utility/vec.h"
 
 namespace gmx
@@ -90,15 +91,15 @@ constexpr static int sc_maxThreadsPerBlock = sc_threadsPerBlock;
  */
 template<bool updateVelocities, bool computeVirial>
 __launch_bounds__(sc_maxThreadsPerBlock) __global__
-        void settle_kernel(const int numSettles,
-                           const WaterMolecule* __restrict__ gm_settles,
-                           const SettleParameters pars,
-                           const float3* __restrict__ gm_x,
-                           float3* __restrict__ gm_xprime,
-                           float invdt,
-                           float3* __restrict__ gm_v,
-                           float* __restrict__ gm_virialScaled,
-                           const PbcAiuc pbcAiuc)
+        void settleKernel(const int numSettles,
+                          const WaterMolecule* __restrict__ gm_settles,
+                          const SettleParameters pars,
+                          const float3* __restrict__ gm_x,
+                          float3* __restrict__ gm_xprime,
+                          float invdt,
+                          float3* __restrict__ gm_v,
+                          float* __restrict__ gm_virialScaled,
+                          const PbcAiuc pbcAiuc)
 {
     /* ******************************************************************* */
     /*                                                                  ** */
@@ -273,7 +274,7 @@ __launch_bounds__(sc_maxThreadsPerBlock) __global__
         gm_xprime[indices.hw2] = xprime_hw2 + dxHw2;
         gm_xprime[indices.hw3] = xprime_hw3 + dxHw3;
 
-        if (updateVelocities)
+        if constexpr (updateVelocities)
         {
             float3 v_ow1 = gm_v[indices.ow1];
             float3 v_hw2 = gm_v[indices.hw2];
@@ -289,7 +290,7 @@ __launch_bounds__(sc_maxThreadsPerBlock) __global__
             gm_v[indices.hw3] = v_hw3;
         }
 
-        if (computeVirial)
+        if constexpr (computeVirial)
         {
             float3 mdb = pars.mH * dxHw2;
             float3 mdc = pars.mH * dxHw3;
@@ -312,7 +313,7 @@ __launch_bounds__(sc_maxThreadsPerBlock) __global__
     else
     {
         // Filling data for dummy threads with zeroes
-        if (computeVirial)
+        if constexpr (computeVirial)
         {
             for (int d = 0; d < 6; d++)
             {
@@ -322,7 +323,7 @@ __launch_bounds__(sc_maxThreadsPerBlock) __global__
     }
     // Basic reduction for the values inside single thread block
     // TODO what follows should be separated out as a standard virial reduction subroutine
-    if (computeVirial)
+    if constexpr (computeVirial)
     {
         // This is to ensure that all threads saved the data before reduction starts
         __syncthreads();
@@ -362,38 +363,6 @@ __launch_bounds__(sc_maxThreadsPerBlock) __global__
     }
 }
 
-/*! \brief Select templated kernel.
- *
- * Returns pointer to a CUDA kernel based on provided booleans.
- *
- * \param[in] updateVelocities  If the velocities should be constrained.
- * \param[in] computeVirial     If virial should be updated.
- *
- * \return                      Pointer to CUDA kernel
- */
-inline auto getSettleKernelPtr(const bool updateVelocities, const bool computeVirial)
-{
-
-    auto kernelPtr = settle_kernel<true, true>;
-    if (updateVelocities && computeVirial)
-    {
-        kernelPtr = settle_kernel<true, true>;
-    }
-    else if (updateVelocities && !computeVirial)
-    {
-        kernelPtr = settle_kernel<true, false>;
-    }
-    else if (!updateVelocities && computeVirial)
-    {
-        kernelPtr = settle_kernel<false, true>;
-    }
-    else if (!updateVelocities && !computeVirial)
-    {
-        kernelPtr = settle_kernel<false, false>;
-    }
-    return kernelPtr;
-}
-
 void launchSettleGpuKernel(const int                          numSettles,
                            const DeviceBuffer<WaterMolecule>& d_atomIds,
                            const SettleParameters&            settleParameters,
@@ -411,8 +380,6 @@ void launchSettleGpuKernel(const int                          numSettles,
             gmx::isPowerOfTwo(sc_threadsPerBlock),
             "Number of threads per block should be a power of two in order for reduction to work.");
 
-    auto kernelPtr = getSettleKernelPtr(updateVelocities, computeVirial);
-
     KernelLaunchConfig config;
     config.blockSize[0] = sc_threadsPerBlock;
     config.blockSize[1] = 1;
@@ -421,34 +388,42 @@ void launchSettleGpuKernel(const int                          numSettles,
     config.gridSize[1]  = 1;
     config.gridSize[2]  = 1;
 
-    // Shared memory is only used for virial reduction
-    if (computeVirial)
-    {
-        config.sharedMemorySize = sc_threadsPerBlock * 6 * sizeof(float);
-    }
-    else
-    {
-        config.sharedMemorySize = 0;
-    }
+    gmx::dispatchTemplatedFunction(
+            [&](auto updateVelocities_, auto computeVirial_)
+            {
+                // Shared memory is only used for virial reduction
+                if constexpr (computeVirial_)
+                {
+                    config.sharedMemorySize = sc_threadsPerBlock * 6 * sizeof(float);
+                }
+                else
+                {
+                    config.sharedMemorySize = 0;
+                }
 
-    const auto kernelArgs = prepareGpuKernelArguments(kernelPtr,
-                                                      config,
-                                                      &numSettles,
-                                                      &d_atomIds,
-                                                      &settleParameters,
-                                                      asFloat3Pointer(&d_x),
-                                                      asFloat3Pointer(&d_xp),
-                                                      &invdt,
-                                                      asFloat3Pointer(&d_v),
-                                                      &virialScaled,
-                                                      &pbcAiuc);
+                auto kernelPtr = settleKernel<updateVelocities_, computeVirial_>;
 
-    launchGpuKernel(kernelPtr,
-                    config,
-                    deviceStream,
-                    nullptr,
-                    "settle_kernel<updateVelocities, computeVirial>",
-                    kernelArgs);
+                const auto kernelArgs = prepareGpuKernelArguments(kernelPtr,
+                                                                  config,
+                                                                  &numSettles,
+                                                                  &d_atomIds,
+                                                                  &settleParameters,
+                                                                  asFloat3Pointer(&d_x),
+                                                                  asFloat3Pointer(&d_xp),
+                                                                  &invdt,
+                                                                  asFloat3Pointer(&d_v),
+                                                                  &virialScaled,
+                                                                  &pbcAiuc);
+
+                launchGpuKernel(kernelPtr,
+                                config,
+                                deviceStream,
+                                nullptr,
+                                "settle_kernel<updateVelocities, computeVirial>",
+                                kernelArgs);
+            },
+            updateVelocities,
+            computeVirial);
 }
 
 } // namespace gmx

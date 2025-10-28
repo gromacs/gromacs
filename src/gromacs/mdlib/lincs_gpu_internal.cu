@@ -54,6 +54,7 @@
 #include "gromacs/gpu_utils/vectype_ops_cuda.h"
 #include "gromacs/mdlib/lincs_gpu.h"
 #include "gromacs/pbcutil/pbc_aiuc_cuda.cuh"
+#include "gromacs/utility/template_mp.h"
 
 namespace gmx
 {
@@ -88,12 +89,11 @@ constexpr static int c_maxThreadsPerBlock = c_threadsPerBlock;
  * \param[in]     invdt         Inverse timestep (needed to update velocities).
  */
 template<bool updateVelocities, bool computeVirial>
-__launch_bounds__(c_maxThreadsPerBlock) __global__
-        void lincs_kernel(LincsGpuKernelParameters kernelParams,
-                          const float3* __restrict__ gm_x,
-                          float3*     gm_xp,
-                          float3*     gm_v,
-                          const float invdt)
+__launch_bounds__(c_maxThreadsPerBlock) __global__ void lincsKernel(LincsGpuKernelParameters kernelParams,
+                                                                    const float3* __restrict__ gm_x,
+                                                                    float3*     gm_xp,
+                                                                    float3*     gm_v,
+                                                                    const float invdt)
 {
     const PbcAiuc pbcAiuc                                 = kernelParams.pbcAiuc;
     const int     numConstraintsThreads                   = kernelParams.numConstraintsThreads;
@@ -135,7 +135,7 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__
     float3 rc;
 
     // i == -1 indicates dummy constraint at the end of the thread block.
-    bool isDummyThread = (i == -1);
+    const bool isDummyThread = (i == -1);
 
     // Everything computed for these dummies will be equal to zero
     if (isDummyThread)
@@ -312,15 +312,19 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__
     }
 
     // Updating particle velocities for all but dummy threads
-    if (updateVelocities && !isDummyThread)
+    if constexpr (updateVelocities)
     {
-        float3 tmp = rc * invdt * lagrangeScaled;
-        atomicAdd(&gm_v[i], -tmp * inverseMassi);
-        atomicAdd(&gm_v[j], tmp * inverseMassj);
+        if (!isDummyThread)
+        {
+            float3 tmp = rc * invdt * lagrangeScaled;
+            // we don't stall on these, so just leave it like that
+            atomicAdd(&gm_v[i], -tmp * inverseMassi);
+            atomicAdd(&gm_v[j], tmp * inverseMassj);
+        }
     }
 
 
-    if (computeVirial)
+    if constexpr (computeVirial)
     {
         // Virial is computed from Lagrange multiplier (lagrangeScaled), target constrain length
         // (targetLength) and the normalized vector connecting constrained atoms before
@@ -384,38 +388,6 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__
     }
 }
 
-/*! \brief Select templated kernel.
- *
- * Returns pointer to a CUDA kernel based on provided booleans.
- *
- * \param[in] updateVelocities  If the velocities should be constrained.
- * \param[in] computeVirial     If virial should be updated.
- *
- * \return                      Pointer to CUDA kernel
- */
-inline auto getLincsKernelPtr(const bool updateVelocities, const bool computeVirial)
-{
-
-    auto kernelPtr = lincs_kernel<true, true>;
-    if (updateVelocities && computeVirial)
-    {
-        kernelPtr = lincs_kernel<true, true>;
-    }
-    else if (updateVelocities && !computeVirial)
-    {
-        kernelPtr = lincs_kernel<true, false>;
-    }
-    else if (!updateVelocities && computeVirial)
-    {
-        kernelPtr = lincs_kernel<false, true>;
-    }
-    else if (!updateVelocities && !computeVirial)
-    {
-        kernelPtr = lincs_kernel<false, false>;
-    }
-    return kernelPtr;
-}
-
 void launchLincsGpuKernel(LincsGpuKernelParameters*   kernelParams,
                           const DeviceBuffer<Float3>& d_x,
                           DeviceBuffer<Float3>        d_xp,
@@ -426,8 +398,6 @@ void launchLincsGpuKernel(LincsGpuKernelParameters*   kernelParams,
                           const DeviceStream&         deviceStream)
 {
 
-    auto kernelPtr = getLincsKernelPtr(updateVelocities, computeVirial);
-
     KernelLaunchConfig config;
     config.blockSize[0] = c_threadsPerBlock;
     config.blockSize[1] = 1;
@@ -436,36 +406,45 @@ void launchLincsGpuKernel(LincsGpuKernelParameters*   kernelParams,
     config.gridSize[1]  = 1;
     config.gridSize[2]  = 1;
 
-    // Shared memory is used to store:
-    // -- Current coordinates (3 floats per thread)
-    // -- Right-hand-sides for matrix inversion (2 floats per thread)
-    // -- Virial tensor components (6 floats per thread)
-    // Since none of these three are needed simultaneously, they can be saved at the same shared memory address
-    // (i.e. correspondent arrays are intentionally overlapped in address space). Consequently, only
-    // max{3, 2, 6} = 6 floats per thread are needed in case virial is computed, or max{3, 2} = 3 if not.
-    if (computeVirial)
-    {
-        config.sharedMemorySize = c_threadsPerBlock * 6 * sizeof(float);
-    }
-    else
-    {
-        config.sharedMemorySize = c_threadsPerBlock * 3 * sizeof(float);
-    }
+    gmx::dispatchTemplatedFunction(
+            [&](auto updateVelocities_, auto computeVirial_)
+            {
+                auto kernelPtr = lincsKernel<updateVelocities_, computeVirial_>;
 
-    const auto kernelArgs = prepareGpuKernelArguments(kernelPtr,
-                                                      config,
-                                                      kernelParams,
-                                                      asFloat3Pointer(&d_x),
-                                                      asFloat3Pointer(&d_xp),
-                                                      asFloat3Pointer(&d_v),
-                                                      &invdt);
 
-    launchGpuKernel(kernelPtr,
-                    config,
-                    deviceStream,
-                    nullptr,
-                    "lincs_kernel<updateVelocities, computeVirial>",
-                    kernelArgs);
+                // Shared memory is used to store:
+                // -- Current coordinates (3 floats per thread)
+                // -- Right-hand-sides for matrix inversion (2 floats per thread)
+                // -- Virial tensor components (6 floats per thread)
+                // Since none of these three are needed simultaneously, they can be saved at the same shared memory address
+                // (i.e. correspondent arrays are intentionally overlapped in address space). Consequently, only
+                // max{3, 2, 6} = 6 floats per thread are needed in case virial is computed, or max{3, 2} = 3 if not.
+                if constexpr (computeVirial_)
+                {
+                    config.sharedMemorySize = c_threadsPerBlock * 6 * sizeof(float);
+                }
+                else
+                {
+                    config.sharedMemorySize = c_threadsPerBlock * 3 * sizeof(float);
+                }
+
+                const auto kernelArgs = prepareGpuKernelArguments(kernelPtr,
+                                                                  config,
+                                                                  kernelParams,
+                                                                  asFloat3Pointer(&d_x),
+                                                                  asFloat3Pointer(&d_xp),
+                                                                  asFloat3Pointer(&d_v),
+                                                                  &invdt);
+
+                launchGpuKernel(kernelPtr,
+                                config,
+                                deviceStream,
+                                nullptr,
+                                "lincs_kernel<updateVelocities, computeVirial>",
+                                kernelArgs);
+            },
+            updateVelocities,
+            computeVirial);
 }
 
 } // namespace gmx
