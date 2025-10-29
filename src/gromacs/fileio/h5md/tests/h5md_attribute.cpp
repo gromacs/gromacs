@@ -48,7 +48,6 @@
 
 #include <gtest/gtest.h>
 
-#include "gromacs/fileio/h5md/h5md.h"
 #include "gromacs/fileio/h5md/h5md_group.h"
 #include "gromacs/fileio/h5md/h5md_guard.h"
 #include "gromacs/fileio/h5md/h5md_util.h"
@@ -56,9 +55,6 @@
 #include "gromacs/topology/mtop_atomloops.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arrayref.h"
-
-#include "testutils/testasserts.h"
-#include "testutils/testfilemanager.h"
 
 namespace gmx
 {
@@ -225,6 +221,58 @@ TEST_F(H5mdAttributeTest, StringAttributeViaArrayRef)
         EXPECT_EQ(ret1.value(), refSeq);
         EXPECT_EQ(ret2.value(), refSeq);
     }
+}
+
+TEST_F(H5mdAttributeTest, VectorOfStringsNoReuse)
+{
+    constexpr char                 attributeName[] = "operators";
+    const std::vector<std::string> stringsToWrite  = { "Margaret Nearl", "Lee", "Sona" };
+    setAttributeVector(fileid(), attributeName, stringsToWrite);
+
+    ASSERT_TRUE(getAttributeVector<std::string>(fileid(), attributeName).has_value());
+    EXPECT_EQ(getAttributeVector<std::string>(fileid(), attributeName).value(), stringsToWrite);
+}
+
+TEST_F(H5mdAttributeTest, VectorOfCStringsNoReuse)
+{
+    constexpr char                 attributeName[] = "operators";
+    const std::vector<const char*> stringsToWrite  = { "Margaret Nearl", "Lee", "Sona" };
+    setAttributeVector(fileid(), attributeName, stringsToWrite);
+
+    std::optional<std::vector<std::string>> readStrings =
+            getAttributeVector<std::string>(fileid(), attributeName);
+    ASSERT_TRUE(readStrings.has_value());
+    EXPECT_EQ(readStrings->size(), stringsToWrite.size());
+    for (int i = 0; i < gmx::ssize(stringsToWrite); ++i)
+    {
+        EXPECT_EQ(readStrings.value()[i], stringsToWrite[i]);
+    }
+}
+
+TEST_F(H5mdAttributeTest, CharPtrPtrNoReuse)
+{
+    constexpr char           attributeName[]  = "operators";
+    std::vector<std::string> referenceStrings = { "Margaret Nearl", "Lee", "Sona" };
+
+    char** stringsToWrite;
+    snew(stringsToWrite, referenceStrings.size());
+    for (int i = 0; i < gmx::ssize(referenceStrings); ++i)
+    {
+        stringsToWrite[i] = referenceStrings[i].data();
+    }
+    setAttributeVector(
+            fileid(), attributeName, arrayRefFromArray(stringsToWrite, referenceStrings.size()));
+
+    std::optional<std::vector<std::string>> readStrings =
+            getAttributeVector<std::string>(fileid(), attributeName);
+    ASSERT_TRUE(readStrings.has_value());
+    EXPECT_EQ(readStrings->size(), referenceStrings.size());
+    for (int i = 0; i < gmx::ssize(referenceStrings); ++i)
+    {
+        EXPECT_EQ(readStrings.value()[i], stringsToWrite[i]);
+    }
+
+    sfree(stringsToWrite);
 }
 
 TEST_F(H5mdAttributeTest, StringBufferReuse)

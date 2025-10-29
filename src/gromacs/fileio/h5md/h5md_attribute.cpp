@@ -288,6 +288,17 @@ void setAttributeVector(const hid_t container, const char* attributeName, ArrayR
                        formatString("Failed to write vector attribute: %s", attributeName));
 }
 
+void setAttributeVector(const hid_t container, const char* attributeName, ArrayRef<const std::string> values)
+{
+    std::vector<char> buffer;
+    setAttributeStringVector(container, attributeName, std::move(buffer), values.begin(), values.end());
+}
+
+void setAttributeVector(const hid_t container, const char* attributeName, ArrayRef<const char* const> values)
+{
+    std::vector<char> buffer;
+    setAttributeStringVector(container, attributeName, std::move(buffer), values.begin(), values.end());
+}
 
 template<typename Iterator>
 std::vector<char> setAttributeStringVector(const hid_t         container,

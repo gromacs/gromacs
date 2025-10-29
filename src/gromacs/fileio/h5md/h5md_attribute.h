@@ -120,6 +120,22 @@ void setAttribute(const hid_t container, const char* attributeName, const std::s
 template<typename ValueType>
 void setAttributeVector(const hid_t container, const char* attributeName, ArrayRef<const ValueType> value);
 
+/*! \brief Write a vector-like attribute of strings.
+ *
+ * \param[in] container     The path of the group or dataset to write the attribute to.
+ * \param[in] attributeName The name of the attribute to write.
+ * \param[in] values        The 1D-vector to write, provided as an ArrayRef.
+ */
+void setAttributeVector(hid_t container, const char* attributeName, ArrayRef<const std::string> values);
+
+/*! \brief Write a vector-like attribute of C-strings.
+ *
+ * \param[in] container     The path of the group or dataset to write the attribute to.
+ * \param[in] attributeName The name of the attribute to write.
+ * \param[in] values        The 1D-vector to write, provided as an ArrayRef.
+ */
+void setAttributeVector(hid_t container, const char* attributeName, ArrayRef<const char* const> values);
+
 /*! \brief Write a vector-like string attribute via iterators
  * String data type is treated specially because of the HDF5 requirements for
  * contiguous memory storage for fixed-size strings. A reusable character buffer
