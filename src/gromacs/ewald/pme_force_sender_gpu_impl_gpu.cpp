@@ -95,9 +95,8 @@ void PmeForceSenderGpu::Impl::setForceSendBuffer(DeviceBuffer<Float3> d_f)
                "PmeForceSenderGpu does not support current GPU backend with threadMPI; use libMPI "
                "instead.");
 
-    if constexpr (GMX_MPI && GpuConfigurationCapabilities::ThreadMpiCommunication)
+    if constexpr (GpuConfigurationCapabilities::ThreadMpiCommunication)
     {
-
         int ind_start = 0;
         int ind_end   = 0;
         int i         = 0;

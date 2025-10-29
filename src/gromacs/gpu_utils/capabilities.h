@@ -45,9 +45,12 @@
 
 #include "config.h"
 
+#include "gromacs/utility/basedefinitions.h"
+
 namespace gmx
 {
 
+CLANG_DIAGNOSTIC_IGNORE("-Wconstant-logical-operand")
 //! Collection of GPU capabilities for this configuration
 struct GpuConfigurationCapabilities
 {
@@ -70,11 +73,10 @@ struct GpuConfigurationCapabilities
     //! Whether this configuration supports PME solve kernels with less than 4 warps
     static constexpr bool PmeSolveNeedsAtLeastFourWarps = GMX_GPU && !GMX_GPU_OPENCL;
     //! Whether this configuration supports running FFT kernels on the device
-    static constexpr bool Fft =
-            GMX_GPU
-            && ((GMX_GPU_FFT_MKL != 0) || (GMX_GPU_FFT_ROCFFT != 0) || (GMX_GPU_FFT_HIPFFT != 0)
-                || (GMX_GPU_FFT_BBFFT != 0) || (GMX_GPU_FFT_ONEMATH != 0)
-                || (GMX_GPU_FFT_VKFFT != 0) || (GMX_GPU_FFT_CUFFT != 0) || (GMX_GPU_FFT_CLFFT != 0));
+    static constexpr bool Fft = GMX_GPU
+                                && (GMX_GPU_FFT_MKL || GMX_GPU_FFT_ROCFFT || GMX_GPU_FFT_HIPFFT
+                                    || GMX_GPU_FFT_BBFFT || GMX_GPU_FFT_ONEMATH || GMX_GPU_FFT_VKFFT
+                                    || GMX_GPU_FFT_CUFFT || GMX_GPU_FFT_CLFFT);
     //! Whether this configuration supports running bonded kernels on the device
     static constexpr bool Bonded = GMX_GPU && !GMX_GPU_OPENCL;
     //! Whether this configuration supports running update+LINCS+SETTLE kernels on the device
@@ -94,6 +96,7 @@ struct GpuConfigurationCapabilities
                                              || (GMX_GPU_HIP && GMX_USE_Heffte);
     static constexpr bool TwoDPmeDecomposition = PmeDecomposition && GMX_GPU_CUDA;
 };
+CLANG_DIAGNOSTIC_RESET
 
 } // namespace gmx
 
