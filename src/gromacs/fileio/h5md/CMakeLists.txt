@@ -62,6 +62,7 @@ target_link_libraries(h5md PRIVATE
     legacy_api
     legacy_modules
     math
+    topology
     utility
 )
 

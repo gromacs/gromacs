@@ -47,8 +47,18 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/h5md/h5md_attribute.h"
+#include "gromacs/fileio/h5md/h5md_group.h"
+#include "gromacs/fileio/h5md/tests/h5mdtestbase.h"
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/topology/mtop_util.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/utility/exceptions.h"
+
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
+#include "testutils/tprfilegenerator.h"
 
 namespace gmx
 {
@@ -57,10 +67,13 @@ namespace test
 namespace
 {
 
+//! \brief Test fixture which sets up an empty H5md file.
+using H5mdIoTest = H5mdTestBase;
+
 /*! \brief Test that opening (creating a new), closing, re-opening and closing
  * an H5MD file works
  */
-TEST(H5mdIoTest, CanCreateAndCloseH5mdFile)
+TEST(H5mdFileTest, CanCreateAndCloseH5mdFile)
 {
     TestFileManager       fileManager;
     std::filesystem::path filename = fileManager.getTemporaryFilePath("ref.h5md");
@@ -78,7 +91,7 @@ TEST(H5mdIoTest, CanCreateAndCloseH5mdFile)
 /*! \brief Test that writing attributes work, before closing the file and
  * after re-opening it.
  */
-TEST(H5mdIoTest, CanWriteAndReadH5mdFileMetaData)
+TEST(H5mdFileTest, CanWriteAndReadH5mdFileMetaData)
 {
     TestFileManager       fileManager;
     std::filesystem::path filename = fileManager.getTemporaryFilePath("ref.h5md");
@@ -123,6 +136,286 @@ TEST(H5mdIoTest, CanWriteAndReadH5mdFileMetaData)
         ASSERT_TRUE(testCreatorProgramVersion.has_value());
         EXPECT_EQ(referenceCreatorProgramVersion, testCreatorProgramVersion.value());
     }
+}
+
+TEST_F(H5mdIoTest, SetupFileFromInputCreatesParticlesGroup)
+{
+    gmx_mtop_t mtop;
+    mtop.natoms = 1;
+    t_inputrec inputRecord;
+
+    file().setupFileFromInput(mtop, inputRecord);
+    EXPECT_NO_THROW(openGroup(fileid(), "/particles/system"));
+}
+
+TEST_F(H5mdIoTest, SetupFileFromInputThrowsForNoAtoms)
+{
+    gmx_mtop_t mtop;
+    mtop.natoms = 0;
+    t_inputrec inputRecord;
+    inputRecord.nstxout = 1; // Trajectory writing is enabled for nstout >0
+    inputRecord.nstvout = 1;
+    inputRecord.nstfout = 1;
+
+    EXPECT_THROW(file().setupFileFromInput(mtop, inputRecord), gmx::FileIOError);
+}
+
+TEST_F(H5mdIoTest, SetupFileFromInputCreatesNoTrajectoryGroupsIfNoOutput)
+{
+    gmx_mtop_t mtop;
+    mtop.natoms = 1;
+    t_inputrec inputRecord;
+    inputRecord.nstxout = 0; // Trajectory writing is not enabled for <=0
+    inputRecord.nstvout = 0;
+    inputRecord.nstfout = 0;
+
+    file().setupFileFromInput(mtop, inputRecord);
+    EXPECT_NO_THROW(openGroup(fileid(), "/particles/system"));
+    EXPECT_THROW(openGroup(fileid(), "/particles/system/position"), gmx::FileIOError);
+    EXPECT_THROW(openGroup(fileid(), "/particles/system/velocity"), gmx::FileIOError);
+    EXPECT_THROW(openGroup(fileid(), "/particles/system/force"), gmx::FileIOError);
+}
+
+TEST_F(H5mdIoTest, SetupFileFromInputCreatesPositionGroupIfSet)
+{
+    gmx_mtop_t mtop;
+    mtop.natoms = 1;
+    t_inputrec inputRecord;
+    // Trajectory writing is enabled for nstout >0: only enable positions here to ensure independence
+    inputRecord.nstxout = 1;
+    inputRecord.nstvout = 0;
+    inputRecord.nstfout = 0;
+
+    file().setupFileFromInput(mtop, inputRecord);
+    EXPECT_NO_THROW(openGroup(fileid(), "/particles/system/position"));
+    EXPECT_THROW(openGroup(fileid(), "/particles/system/velocity"), gmx::FileIOError);
+    EXPECT_THROW(openGroup(fileid(), "/particles/system/force"), gmx::FileIOError);
+
+    EXPECT_NO_THROW(openGroup(fileid(), "/particles/system/box"))
+            << "Box group must always be created";
+    EXPECT_NO_THROW(openGroup(fileid(), "/particles/system/box/edges"))
+            << "Edges group must only be created if position data is output";
+}
+
+TEST_F(H5mdIoTest, SetupFileFromInputCreatesVelocityGroupIfSet)
+{
+    gmx_mtop_t mtop;
+    mtop.natoms = 1;
+    t_inputrec inputRecord;
+    // Trajectory writing is enabled for nstout >0: only enable velocities here to ensure independence
+    inputRecord.nstxout = 0;
+    inputRecord.nstvout = 1;
+    inputRecord.nstfout = 0;
+
+    file().setupFileFromInput(mtop, inputRecord);
+    EXPECT_THROW(openGroup(fileid(), "/particles/system/position"), gmx::FileIOError);
+    EXPECT_NO_THROW(openGroup(fileid(), "/particles/system/velocity"));
+    EXPECT_THROW(openGroup(fileid(), "/particles/system/force"), gmx::FileIOError);
+
+    EXPECT_NO_THROW(openGroup(fileid(), "/particles/system/box"))
+            << "Box group must always be created";
+    EXPECT_THROW(openGroup(fileid(), "/particles/system/box/edges"), gmx::FileIOError)
+            << "Edges group must only be created if position data is output";
+}
+
+TEST_F(H5mdIoTest, SetupFileFromInputCreatesForceGroupIfSet)
+{
+    gmx_mtop_t mtop;
+    mtop.natoms = 1;
+    t_inputrec inputRecord;
+    // Trajectory writing is enabled for nstout >0: only enable forces here to ensure independence
+    inputRecord.nstxout = 0;
+    inputRecord.nstvout = 0;
+    inputRecord.nstfout = 1;
+
+    file().setupFileFromInput(mtop, inputRecord);
+    EXPECT_THROW(openGroup(fileid(), "/particles/system/position"), gmx::FileIOError);
+    EXPECT_THROW(openGroup(fileid(), "/particles/system/velocity"), gmx::FileIOError);
+    EXPECT_NO_THROW(openGroup(fileid(), "/particles/system/force"));
+
+    EXPECT_NO_THROW(openGroup(fileid(), "/particles/system/box"))
+            << "Box group must always be created";
+    EXPECT_THROW(openGroup(fileid(), "/particles/system/box/edges"), gmx::FileIOError)
+            << "Edges group must only be created if position data is output";
+}
+
+TEST_F(H5mdIoTest, SetupFileFromInputIgnoresNstxoutCompressed)
+{
+    gmx_mtop_t mtop;
+    mtop.natoms = 1;
+    t_inputrec inputRecord;
+    // Trajectory writing is enabled for nstout >0: only enable compressed output here
+    // to assert that this does not create the position group
+    inputRecord.nstxout            = 0;
+    inputRecord.nstvout            = 0;
+    inputRecord.nstfout            = 0;
+    inputRecord.nstxout_compressed = 1;
+
+    file().setupFileFromInput(mtop, inputRecord);
+    EXPECT_THROW(openGroup(fileid(), "/particles/system/position"), gmx::FileIOError);
+    EXPECT_THROW(openGroup(fileid(), "/particles/system/velocity"), gmx::FileIOError);
+    EXPECT_THROW(openGroup(fileid(), "/particles/system/force"), gmx::FileIOError);
+
+    EXPECT_NO_THROW(openGroup(fileid(), "/particles/system/box"))
+            << "Box group must always be created";
+    EXPECT_THROW(openGroup(fileid(), "/particles/system/box/edges"), gmx::FileIOError)
+            << "Edges group must not be created for compressed output";
+}
+
+TEST_F(H5mdIoTest, SetupFileFromInputSetsCorrectDataSetDims)
+{
+    t_inputrec inputRecord;
+    inputRecord.nstxout = 1;
+    inputRecord.nstvout = 1;
+    inputRecord.nstfout = 1;
+
+    // Read the topology from a test system in our simulation data base
+    const std::string fileNameBase = "spc2-traj";
+    TprAndFileManager tprFileHandle(fileNameBase);
+    bool              haveTopology;
+    gmx_mtop_t        mtop;
+    readConfAndTopology(tprFileHandle.tprName(), &haveTopology, &mtop, nullptr, nullptr, nullptr, nullptr);
+    const hsize_t numAtoms = static_cast<hsize_t>(mtop.natoms);
+
+    file().setupFileFromInput(mtop, inputRecord);
+    const H5mdFrameDataSet<RVec> position(fileid(), "/particles/system/position/value");
+    EXPECT_EQ(position.numFrames(), 0);
+    EXPECT_EQ(position.frameDims(), DataSetDims{ numAtoms });
+    const H5mdFrameDataSet<RVec> velocity(fileid(), "/particles/system/velocity/value");
+    EXPECT_EQ(velocity.numFrames(), 0);
+    EXPECT_EQ(velocity.frameDims(), DataSetDims{ numAtoms });
+    const H5mdFrameDataSet<RVec> force(fileid(), "/particles/system/force/value");
+    EXPECT_EQ(force.numFrames(), 0);
+    EXPECT_EQ(force.frameDims(), DataSetDims{ numAtoms });
+}
+
+TEST_F(H5mdIoTest, BoxGroupForPbcXyz)
+{
+    t_inputrec inputRecord;
+    inputRecord.nstxout = 1;
+    inputRecord.pbcType = PbcType::Xyz;
+
+    const hsize_t numAtoms = 6;
+    gmx_mtop_t    mtop;
+    mtop.natoms = numAtoms;
+
+    file().setupFileFromInput(mtop, inputRecord);
+    const auto [group, groupGuard] =
+            makeH5mdGroupGuard(openGroup(fileid(), "/particles/system/box"));
+
+    EXPECT_EQ(getAttribute<int32_t>(group, "dimension"), DIM)
+            << "Dimension attribute must be 3 for all kinds of PBC";
+    EXPECT_EQ(getAttributeVector<std::string>(group, "boundary"),
+              (std::vector<std::string>{ "periodic", "periodic", "periodic" }))
+            << "For PBC=Xyz all boundaries are periodic";
+
+    const H5mdFrameDataSet<real> dataSet(fileid(), "/particles/system/box/edges/value");
+    EXPECT_EQ(dataSet.frameDims(), (DataSetDims{ DIM, DIM }));
+}
+
+TEST_F(H5mdIoTest, BoxGroupAttributesPbcXy)
+{
+    t_inputrec inputRecord;
+    inputRecord.nstxout = 1;
+    inputRecord.pbcType = PbcType::XY;
+
+    const hsize_t numAtoms = 6;
+    gmx_mtop_t    mtop;
+    mtop.natoms = numAtoms;
+
+    file().setupFileFromInput(mtop, inputRecord);
+    const auto [group, groupGuard] =
+            makeH5mdGroupGuard(openGroup(fileid(), "/particles/system/box"));
+
+    EXPECT_EQ(getAttribute<int32_t>(group, "dimension"), DIM)
+            << "Dimension attribute must be 3 for all kinds of PBC";
+    EXPECT_EQ(getAttributeVector<std::string>(group, "boundary"),
+              std::vector<std::string>({ "periodic", "periodic", "none" }))
+            << "For PBC=XY the Z value is none";
+
+    const H5mdFrameDataSet<real> dataSet(fileid(), "/particles/system/box/edges/value");
+    EXPECT_EQ(dataSet.frameDims(), (DataSetDims{ DIM, DIM }));
+}
+
+TEST_F(H5mdIoTest, BoxGroupAttributesPbcNo)
+{
+    t_inputrec inputRecord;
+    inputRecord.nstxout = 1;
+    inputRecord.pbcType = PbcType::No;
+
+    const hsize_t numAtoms = 6;
+    gmx_mtop_t    mtop;
+    mtop.natoms = numAtoms;
+
+    file().setupFileFromInput(mtop, inputRecord);
+    const auto [group, groupGuard] =
+            makeH5mdGroupGuard(openGroup(fileid(), "/particles/system/box"));
+
+    EXPECT_EQ(getAttribute<int32_t>(group, "dimension"), DIM)
+            << "Dimension attribute must be 3 for all kinds of PBC";
+    EXPECT_EQ(getAttributeVector<std::string>(group, "boundary"),
+              std::vector<std::string>({ "none", "none", "none" }))
+            << "For PBC=no all values are none";
+
+    const H5mdFrameDataSet<real> dataSet(fileid(), "/particles/system/box/edges/value");
+    EXPECT_EQ(dataSet.frameDims(), (DataSetDims{ DIM, DIM }));
+}
+
+TEST_F(H5mdIoTest, BoxGroupAttributesPbcScrew)
+{
+    t_inputrec inputRecord;
+    inputRecord.nstxout = 1;
+    inputRecord.pbcType = PbcType::Screw;
+
+    const hsize_t numAtoms = 6;
+    gmx_mtop_t    mtop;
+    mtop.natoms = numAtoms;
+
+    file().setupFileFromInput(mtop, inputRecord);
+    const auto [group, groupGuard] =
+            makeH5mdGroupGuard(openGroup(fileid(), "/particles/system/box"));
+
+    EXPECT_EQ(getAttribute<int32_t>(group, "dimension"), DIM)
+            << "Dimension attribute must be 3 for all kinds of PBC";
+    EXPECT_EQ(getAttributeVector<std::string>(group, "boundary"),
+              std::vector<std::string>({ "none", "none", "none" }))
+            << "For PBC=screw all values are none";
+
+    const H5mdFrameDataSet<real> dataSet(fileid(), "/particles/system/box/edges/value");
+    EXPECT_EQ(dataSet.frameDims(), (DataSetDims{ DIM, DIM }));
+}
+
+TEST_F(H5mdIoTest, BoxStepAndTimeDataSetsAreHardLinkedToPosition)
+{
+    t_inputrec inputRecord;
+    inputRecord.nstxout = 1;
+    inputRecord.pbcType = PbcType::Xyz;
+
+    const hsize_t numAtoms = 6;
+    gmx_mtop_t    mtop;
+    mtop.natoms = numAtoms;
+
+    file().setupFileFromInput(mtop, inputRecord);
+
+    H5mdScalarFrameDataSet<int64_t> stepInPositionGroup(fileid(), "/particles/system/position/step");
+    H5mdScalarFrameDataSet<double> timeInPositionGroup(fileid(), "/particles/system/position/time");
+
+    const int64_t stepToWrite = 51;
+    stepInPositionGroup.writeNextFrame(stepToWrite);
+    const double timeToWrite = -501.5;
+    timeInPositionGroup.writeNextFrame(timeToWrite);
+
+    H5mdScalarFrameDataSet<int64_t> stepInBoxGroup(fileid(), "/particles/system/box/edges/step");
+    int64_t                         readStepBuffer;
+    stepInBoxGroup.readFrame(0, &readStepBuffer);
+    EXPECT_EQ(readStepBuffer, stepToWrite)
+            << "Step written to position block must exist in the box block";
+
+    H5mdScalarFrameDataSet<double> timeInBoxGroup(fileid(), "/particles/system/box/edges/time");
+    double                         readTimeBuffer;
+    timeInBoxGroup.readFrame(0, &readTimeBuffer);
+    EXPECT_EQ(readTimeBuffer, timeToWrite)
+            << "Time written to position block must exist in the box block";
 }
 
 } // namespace

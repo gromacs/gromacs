@@ -34,6 +34,7 @@
 
 /*! \brief I/o interface to H5MD HDF5 files.
  *
+ * \author Petter Johansson <pettjoha@kth.se>
  * \author Magnus Lundborg <lundborg.magnus@gmail.com>
  */
 
@@ -47,15 +48,24 @@
 #include <optional>
 #include <string>
 
+#include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/selection/selection.h"
+#include "gromacs/topology/mtop_util.h"
+#include "gromacs/topology/topology.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/stringutil.h"
 
 #if GMX_USE_HDF5
 #    include <hdf5.h>
 
 #    include "h5md_attribute.h"
 #    include "h5md_error.h"
+#    include "h5md_framedatasetbuilder.h"
 #    include "h5md_group.h"
 #    include "h5md_guard.h"
+#    include "h5md_particleblock.h"
+#    include "h5md_timedatablock.h"
 #    include "h5md_util.h"
 CLANG_DIAGNOSTIC_IGNORE("-Wold-style-cast")
 #else
@@ -64,6 +74,34 @@ CLANG_DIAGNOSTIC_IGNORE("-Wmissing-noreturn")
 
 namespace gmx
 {
+
+// Only declare these variables if they will be used (i.e. if we're using HDF5)
+#if GMX_USE_HDF5
+//! \brief Name of particle block group in the H5md specification.
+constexpr char c_particlesGroupPath[] = "particles";
+//! \brief Name of position group inside the particle block in the H5md specification.
+constexpr char c_positionGroupPath[] = "position";
+//! \brief Name of velocity group inside the particle block in the H5md specification.
+constexpr char c_velocityGroupPath[] = "velocity";
+//! \brief Name of force group inside the particle block in the H5md specification.
+constexpr char c_forceGroupPath[] = "force";
+//! \brief Name of box group inside the particle block in the H5md specification.
+constexpr char c_boxGroupPath[] = "box";
+//! \brief Group name for all atoms in system.
+constexpr char c_fullSystemGroupName[] = "system";
+//! \brief Name of group inside the simulation box groups which contains the box size data.
+constexpr char c_boxSizeName[] = "edges";
+//! \brief Attribute name for number of dimensions of simulation box.
+constexpr char c_boxDimensionAttribute[] = "dimension";
+//! \brief Attribute name for periodic boundary definition of simulation box.
+constexpr char c_boxBoundaryAttribute[] = "boundary";
+//! \brief Name of the value data set in H5mdTimeDataBlock groups.
+constexpr char c_valueName[] = "value";
+//! \brief Name of the step data set in H5mdTimeDataBlock groups.
+constexpr char c_stepName[] = "step";
+//! \brief Name of the time data set in H5mdTimeDataBlock groups.
+constexpr char c_timeName[] = "time";
+#endif
 
 H5md::H5md(const std::filesystem::path& fileName, const H5mdFileMode mode)
 {
@@ -233,6 +271,152 @@ std::optional<std::string> H5md::creatorProgramVersion()
 #else
     throw gmx::NotImplementedError(
             "GROMACS was compiled without HDF5 support, cannot handle this file type");
+#endif
+}
+
+#if GMX_USE_HDF5
+/*! \brief Create and link the simulation box data sets inside \p selectionGroup.
+ *
+ * Per the H5md specification, if position data is stored we also store the box size
+ * of the system. This data is stored in a subgroup similar to a `H5mdTimeDataBlock`
+ * but with its step and time data sets hard linked to those of the position data set.
+ *
+ * This function creates a new data set for storing a box matrix (type: real[DIM][DIM])
+ * and assigns it to the simulation box container in \p particleBlock. It then sets up
+ * links to the step and time data sets of the position data set in \p selectionGroup.
+ *
+ * \warning Must be called after the position group has been set up.
+ *
+ * \param[in]  selectionGroup Handle to selection group inside /particles.
+ * \param[out] blockBuilder   Builder to assign the simulation box data set to.
+ *
+ * \throws gmx::FileIOError if there was an error setting up the links to the position
+ * step or time data sets.
+ */
+static void setupSimulationBoxDataSet(const hid_t selectionGroup, H5mdParticleBlockBuilder& blockBuilder)
+{
+    // Per the H5md spec we should write the box only once if it is constant.
+    // At the time of writing we don't have access to the box values when the H5md
+    // object is setup, so we'll return to this later and for now only set up
+    // to write one box per frame.
+    // const bool boxIsConstant = inputRecord.pressureCouplingOptions.epc == PressureCoupling::No;
+
+    // Additionally, per the H5md spec we should write cubic boxes as RVecs
+    // and non-cubic as matrix. Can we infer this at this point? For now we always
+    // write the full matrix.
+    // const bool boxIsCubic = (box[XX][YY] == 0.0) && (box[XX][ZZ] == 0.0) && (box[YY][XX] == 0.0)
+    //                         && (box[YY][ZZ] == 0.0) && (box[ZZ][XX] == 0.0) && (box[ZZ][YY] == 0.0);
+    const auto [boxGroup, boxGroupGuard] = makeH5mdGroupGuard(openGroup(selectionGroup, c_boxGroupPath));
+    const auto [edgesGroup, edgesGroupGuard] = makeH5mdGroupGuard(createGroup(boxGroup, c_boxSizeName));
+
+    // Matrices are stored as real[DIM][DIM], which is the data set frame dimension
+    blockBuilder.setBox(
+            H5mdFrameDataSetBuilder<real>(edgesGroup, c_valueName).withFrameDimension({ DIM, DIM }).build());
+
+    const auto [positionGroup, positionGroupGuard] =
+            makeH5mdGroupGuard(openGroup(selectionGroup, c_positionGroupPath));
+    throwUponH5mdError(
+            H5Lcreate_hard(positionGroup, c_stepName, edgesGroup, c_stepName, H5P_DEFAULT, H5P_DEFAULT) < 0,
+            "Could not create hard link from position/step to box/edges/step");
+    throwUponH5mdError(
+            H5Lcreate_hard(positionGroup, c_timeName, edgesGroup, c_timeName, H5P_DEFAULT, H5P_DEFAULT) < 0,
+            "Could not create hard link from position/time to box/edges/time");
+}
+
+/*! \brief Create the simulation box group inside \p selectionGroup.
+ *
+ * The simulation box attributes "dimension" and "boundary" are written to the box group.
+ *
+ * \warning Must be called after the position group has been set up.
+ *
+ * \param[in] selectionGroup Handle to group in which to create the box group.
+ * \param[in] inputRecord    Simulation input record.
+ */
+static void setupSimulationBoxGroup(const hid_t selectionGroup, const t_inputrec& inputRecord)
+{
+    const auto [boxGroup, boxGroupGuard] =
+            makeH5mdGroupGuard(createGroup(selectionGroup, c_boxGroupPath));
+
+    const std::vector<std::string> boundary = [&]() -> std::vector<std::string>
+    {
+        constexpr char periodicValue[] = "periodic";
+        constexpr char noneValue[]     = "none";
+        switch (inputRecord.pbcType)
+        {
+            case PbcType::Xyz: return { periodicValue, periodicValue, periodicValue };
+            case PbcType::XY: return { periodicValue, periodicValue, noneValue };
+            default: return { noneValue, noneValue, noneValue };
+        }
+    }();
+
+    std::vector<char>                 outputBuffer;
+    const ArrayRef<const std::string> boundaryRef = makeConstArrayRef(boundary);
+    setAttributeStringVector(boxGroup,
+                             c_boxBoundaryAttribute,
+                             std::move(outputBuffer),
+                             boundaryRef.begin(),
+                             boundaryRef.end());
+    setAttribute(boxGroup, c_boxDimensionAttribute, static_cast<int32_t>(boundary.size()));
+}
+#endif
+
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+void H5md::setupParticleBlockForGroup(const gmx_mtop_t&   topology,
+                                      ArrayRef<const int> selectionIndices,
+                                      const std::string&  selectionName,
+                                      const t_inputrec&   inputRecord)
+{
+#if GMX_USE_HDF5
+    const auto [particlesGroup, particlesGroupGuard] =
+            makeH5mdGroupGuard(createGroup(file_, c_particlesGroupPath));
+    const auto [selectionGroup, selectionGroupGuard] =
+            makeH5mdGroupGuard(createGroup(particlesGroup, selectionName.c_str()));
+    setupSimulationBoxGroup(selectionGroup, inputRecord);
+
+    const hsize_t numAtoms = selectionIndices.empty() ? topology.natoms : selectionIndices.size();
+    throwUponH5mdError(
+            numAtoms == 0,
+            formatString("Cannot setup particle group '%s': no atoms in group", selectionName.c_str()));
+
+    const DataSetDims frameDims = numAtoms > 0 ? DataSetDims{ numAtoms } : DataSetDims{};
+
+    H5mdParticleBlockBuilder blockBuilder;
+    if (inputRecord.nstxout > 0)
+    {
+        blockBuilder.setPosition(H5mdTimeDataBlockBuilder<RVec>(selectionGroup, c_positionGroupPath)
+                                         .withFrameDimension(frameDims)
+                                         .build());
+        setupSimulationBoxDataSet(selectionGroup, blockBuilder);
+    }
+    if (inputRecord.nstvout > 0)
+    {
+        blockBuilder.setVelocity(H5mdTimeDataBlockBuilder<RVec>(selectionGroup, c_velocityGroupPath)
+                                         .withFrameDimension(frameDims)
+                                         .build());
+    }
+    if (inputRecord.nstfout > 0)
+    {
+        blockBuilder.setForce(H5mdTimeDataBlockBuilder<RVec>(selectionGroup, c_forceGroupPath)
+                                      .withFrameDimension(frameDims)
+                                      .build());
+    }
+    particleBlocks_.insert({ selectionName, TrajectoryReadCursor(blockBuilder.build()) });
+#else
+    GMX_UNUSED_VALUE(topology);
+    GMX_UNUSED_VALUE(selectionIndices);
+    GMX_UNUSED_VALUE(selectionName);
+    GMX_UNUSED_VALUE(inputRecord);
+#endif
+}
+
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+void H5md::setupFileFromInput(const gmx_mtop_t& topology, const t_inputrec& inputRecord)
+{
+#if GMX_USE_HDF5
+    setupParticleBlockForGroup(topology, {}, c_fullSystemGroupName, inputRecord);
+#else
+    GMX_UNUSED_VALUE(topology);
+    GMX_UNUSED_VALUE(inputRecord);
 #endif
 }
 

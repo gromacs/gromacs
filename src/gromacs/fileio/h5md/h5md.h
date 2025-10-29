@@ -34,6 +34,7 @@
 
 /*! \brief Declares the i/o interface to H5MD HDF5 files.
  *
+ * \author Petter Johansson <pettjoha@kth.se>
  * \author Magnus Lundborg <lundborg.magnus@gmail.com>
  */
 
@@ -44,16 +45,26 @@
 
 #if GMX_USE_HDF5
 #    include <hdf5.h>
+
+#    include "h5md_particleblock.h"
 #endif
 
 #include <filesystem>
 #include <optional>
 #include <string>
+#include <unordered_map>
 
 enum class PbcType : int;
 
+struct gmx_mtop_t;
+struct t_atoms;
+struct t_inputrec;
+
 namespace gmx
 {
+
+template<typename T>
+class ArrayRef;
 
 #if !GMX_USE_HDF5
 // Backup typedefs to be used when we are not compiling with the HDF5 library enabled.
@@ -81,6 +92,31 @@ class H5md
 private:
     hid_t file_;            //!< The HDF5 identifier of the file. This is the H5MD root.
     H5mdFileMode filemode_; //!< Whether the file is open for reading ('r'), writing ('w') or appending ('a')
+
+    /*! \brief Cursor for reading trajectory data from a particle block.
+     *
+     * Writing trajectory data always appends frames to the respective data sets. When reading
+     * we want more up front control over the index to facilitate things like seeking. This
+     * cursor will faciliate this behavior.
+     *
+     * TODO: This class is only sketched out for now. Expand functionality as needed
+     * when implementing reading.
+     */
+    class TrajectoryReadCursor
+    {
+    public:
+        //! \brief Constructor.
+        TrajectoryReadCursor(H5mdParticleBlock&& block) : block_{ std::move(block) } {}
+        //! \brief Return the particle block.
+        H5mdParticleBlock& block() { return block_; }
+
+    private:
+        //! \brief Particle block.
+        H5mdParticleBlock block_;
+    };
+
+    //! \brief List of particle blocks in /particles/, with the key being the block name
+    std::unordered_map<std::string, TrajectoryReadCursor> particleBlocks_;
 #endif
 
 public:
@@ -90,7 +126,7 @@ public:
      * \param[in] mode        The mode to open the file.
      * \throws FileIOError if fileName is specified and the file cannot be opened.
      */
-    H5md(const std::filesystem::path& fileName, const H5mdFileMode mode);
+    H5md(const std::filesystem::path& fileName, H5mdFileMode mode);
 
     ~H5md();
 
@@ -148,6 +184,26 @@ public:
      * \returns the version if the attribute was set.
      */
     std::optional<std::string> creatorProgramVersion();
+
+    /*! \brief Set up the file from input data.
+     *
+     * \param[in] topology    Topology data of system.
+     * \param[in] inputRecord Simulation parameters.
+     */
+    void setupFileFromInput(const gmx_mtop_t& topology, const t_inputrec& inputRecord);
+
+private:
+    /*! \brief Set up particle blocks for trajectory writing according to the H5md specification.
+     *
+     * \param[in] topology         Molecular topology for the simulated system.
+     * \param[in] selectionIndices Global indices for all atoms in the group.
+     * \param[in] selectionName    Name of group.
+     * \param[in] inputRecord      Simulation input record.
+     */
+    void setupParticleBlockForGroup(const gmx_mtop_t&   topology,
+                                    ArrayRef<const int> selectionIndices,
+                                    const std::string&  selectionName,
+                                    const t_inputrec&   inputRecord);
 };
 
 } // namespace gmx
