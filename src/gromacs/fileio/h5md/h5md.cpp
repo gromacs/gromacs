@@ -53,8 +53,10 @@
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/sysinfo.h"
 
 #if GMX_USE_HDF5
 #    include <hdf5.h>
@@ -77,30 +79,44 @@ namespace gmx
 
 // Only declare these variables if they will be used (i.e. if we're using HDF5)
 #if GMX_USE_HDF5
-//! \brief Name of particle block group in the H5md specification.
-constexpr char c_particlesGroupPath[] = "particles";
+//! \brief Path to particle block group from the file root.
+constexpr char c_particlesGroupPath[] = "/particles";
 //! \brief Name of position group inside the particle block in the H5md specification.
-constexpr char c_positionGroupPath[] = "position";
+constexpr char c_positionGroupName[] = "position";
 //! \brief Name of velocity group inside the particle block in the H5md specification.
-constexpr char c_velocityGroupPath[] = "velocity";
+constexpr char c_velocityGroupName[] = "velocity";
 //! \brief Name of force group inside the particle block in the H5md specification.
-constexpr char c_forceGroupPath[] = "force";
+constexpr char c_forceGroupName[] = "force";
 //! \brief Name of box group inside the particle block in the H5md specification.
-constexpr char c_boxGroupPath[] = "box";
+constexpr char c_boxGroupName[] = "box";
 //! \brief Group name for all atoms in system.
 constexpr char c_fullSystemGroupName[] = "system";
 //! \brief Name of group inside the simulation box groups which contains the box size data.
 constexpr char c_boxSizeName[] = "edges";
 //! \brief Attribute name for number of dimensions of simulation box.
-constexpr char c_boxDimensionAttribute[] = "dimension";
+constexpr char c_boxDimensionAttributeKey[] = "dimension";
 //! \brief Attribute name for periodic boundary definition of simulation box.
-constexpr char c_boxBoundaryAttribute[] = "boundary";
+constexpr char c_boxBoundaryAttributeKey[] = "boundary";
 //! \brief Name of the value data set in H5mdTimeDataBlock groups.
 constexpr char c_valueName[] = "value";
 //! \brief Name of the step data set in H5mdTimeDataBlock groups.
 constexpr char c_stepName[] = "step";
 //! \brief Name of the time data set in H5mdTimeDataBlock groups.
 constexpr char c_timeName[] = "time";
+//! \brief Version of H5MD specification used for this file ({ majorVersion, minorVersion }).
+const std::vector<int> c_h5mdSpecificationVersion = { 1, 1 };
+//! \brief Path to H5MD metadata group from the file root.
+constexpr char c_h5mdMetaDataGroupName[] = "/h5md";
+//! \brief Name of author group in the H5MD metadata group.
+constexpr char c_h5mdAuthorGroupName[] = "author";
+//! \brief Name of creator (program) group in the H5MD metadata group.
+constexpr char c_h5mdCreatorGroupName[] = "creator";
+//! \brief Attribute name for the author or creator (program) name.
+constexpr char c_h5mdNameAttributeKey[] = "name";
+//! \brief Attribute name for a version specification.
+constexpr char c_h5mdVersionAttributeKey[] = "version";
+//! \brief Maximum length of author names (used to allocate memory).
+constexpr int c_maxUserNameLength = 4096;
 #endif
 
 H5md::H5md(const std::filesystem::path& fileName, const H5mdFileMode mode)
@@ -306,7 +322,7 @@ static void setupSimulationBoxDataSet(const hid_t selectionGroup, H5mdParticleBl
     // write the full matrix.
     // const bool boxIsCubic = (box[XX][YY] == 0.0) && (box[XX][ZZ] == 0.0) && (box[YY][XX] == 0.0)
     //                         && (box[YY][ZZ] == 0.0) && (box[ZZ][XX] == 0.0) && (box[ZZ][YY] == 0.0);
-    const auto [boxGroup, boxGroupGuard] = makeH5mdGroupGuard(openGroup(selectionGroup, c_boxGroupPath));
+    const auto [boxGroup, boxGroupGuard] = makeH5mdGroupGuard(openGroup(selectionGroup, c_boxGroupName));
     const auto [edgesGroup, edgesGroupGuard] = makeH5mdGroupGuard(createGroup(boxGroup, c_boxSizeName));
 
     // Matrices are stored as real[DIM][DIM], which is the data set frame dimension
@@ -314,7 +330,7 @@ static void setupSimulationBoxDataSet(const hid_t selectionGroup, H5mdParticleBl
             H5mdFrameDataSetBuilder<real>(edgesGroup, c_valueName).withFrameDimension({ DIM, DIM }).build());
 
     const auto [positionGroup, positionGroupGuard] =
-            makeH5mdGroupGuard(openGroup(selectionGroup, c_positionGroupPath));
+            makeH5mdGroupGuard(openGroup(selectionGroup, c_positionGroupName));
     throwUponH5mdError(
             H5Lcreate_hard(positionGroup, c_stepName, edgesGroup, c_stepName, H5P_DEFAULT, H5P_DEFAULT) < 0,
             "Could not create hard link from position/step to box/edges/step");
@@ -335,7 +351,7 @@ static void setupSimulationBoxDataSet(const hid_t selectionGroup, H5mdParticleBl
 static void setupSimulationBoxGroup(const hid_t selectionGroup, const t_inputrec& inputRecord)
 {
     const auto [boxGroup, boxGroupGuard] =
-            makeH5mdGroupGuard(createGroup(selectionGroup, c_boxGroupPath));
+            makeH5mdGroupGuard(createGroup(selectionGroup, c_boxGroupName));
 
     const std::vector<std::string> boundary = [&]() -> std::vector<std::string>
     {
@@ -352,11 +368,11 @@ static void setupSimulationBoxGroup(const hid_t selectionGroup, const t_inputrec
     std::vector<char>                 outputBuffer;
     const ArrayRef<const std::string> boundaryRef = makeConstArrayRef(boundary);
     setAttributeStringVector(boxGroup,
-                             c_boxBoundaryAttribute,
+                             c_boxBoundaryAttributeKey,
                              std::move(outputBuffer),
                              boundaryRef.begin(),
                              boundaryRef.end());
-    setAttribute(boxGroup, c_boxDimensionAttribute, static_cast<int32_t>(boundary.size()));
+    setAttribute(boxGroup, c_boxDimensionAttributeKey, static_cast<int32_t>(boundary.size()));
 }
 #endif
 
@@ -383,20 +399,20 @@ void H5md::setupParticleBlockForGroup(const gmx_mtop_t&   topology,
     H5mdParticleBlockBuilder blockBuilder;
     if (inputRecord.nstxout > 0)
     {
-        blockBuilder.setPosition(H5mdTimeDataBlockBuilder<RVec>(selectionGroup, c_positionGroupPath)
+        blockBuilder.setPosition(H5mdTimeDataBlockBuilder<RVec>(selectionGroup, c_positionGroupName)
                                          .withFrameDimension(frameDims)
                                          .build());
         setupSimulationBoxDataSet(selectionGroup, blockBuilder);
     }
     if (inputRecord.nstvout > 0)
     {
-        blockBuilder.setVelocity(H5mdTimeDataBlockBuilder<RVec>(selectionGroup, c_velocityGroupPath)
+        blockBuilder.setVelocity(H5mdTimeDataBlockBuilder<RVec>(selectionGroup, c_velocityGroupName)
                                          .withFrameDimension(frameDims)
                                          .build());
     }
     if (inputRecord.nstfout > 0)
     {
-        blockBuilder.setForce(H5mdTimeDataBlockBuilder<RVec>(selectionGroup, c_forceGroupPath)
+        blockBuilder.setForce(H5mdTimeDataBlockBuilder<RVec>(selectionGroup, c_forceGroupName)
                                       .withFrameDimension(frameDims)
                                       .build());
     }
@@ -410,9 +426,33 @@ void H5md::setupParticleBlockForGroup(const gmx_mtop_t&   topology,
 }
 
 // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+void H5md::setupMetadataGroup()
+{
+#if GMX_USE_HDF5
+    const auto [group, groupGuard] = makeH5mdGroupGuard(createGroup(file_, c_h5mdMetaDataGroupName));
+    setAttributeVector<int>(group, c_h5mdVersionAttributeKey, c_h5mdSpecificationVersion);
+
+    const auto [authorGroup, authorGroupGuard] =
+            makeH5mdGroupGuard(createGroup(group, c_h5mdAuthorGroupName));
+    std::string username(c_maxUserNameLength, '\0');
+    if (gmx_getusername(username.data(), c_maxUserNameLength) != 0)
+    {
+        username = "<unknown author>";
+    }
+    setAttribute(authorGroup, c_h5mdNameAttributeKey, username);
+
+    const auto [creatorGroup, creatorGroupGuard] =
+            makeH5mdGroupGuard(createGroup(group, c_h5mdCreatorGroupName));
+    setAttribute(creatorGroup, c_h5mdNameAttributeKey, "GROMACS");
+    setAttribute(creatorGroup, c_h5mdVersionAttributeKey, gmx_version());
+#endif
+}
+
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 void H5md::setupFileFromInput(const gmx_mtop_t& topology, const t_inputrec& inputRecord)
 {
 #if GMX_USE_HDF5
+    setupMetadataGroup();
     setupParticleBlockForGroup(topology, {}, c_fullSystemGroupName, inputRecord);
 #else
     GMX_UNUSED_VALUE(topology);

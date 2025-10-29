@@ -204,6 +204,25 @@ private:
                                     ArrayRef<const int> selectionIndices,
                                     const std::string&  selectionName,
                                     const t_inputrec&   inputRecord);
+
+    /*! \brief Set up the H5MD metadata group according to the H5md specification.
+     *
+     * \note Call this before adding any H5MD module information.
+     *
+     * Creates the following groups and attributes (relative to the HDF5 root):
+     *
+     * /h5md            (H5md metadata group)
+     * \++ version      (H5md specification version attribute)
+     * \-- /author      (author group)
+     *     \++ name     (current username, or a dummy name if we cannot get it)
+     * \-- /creator     (creator group)
+     *     \++ name     (GROMACS)
+     *     \++ version  (GROMACS version)
+     *
+     * These groups and attributes are required by the H5MD specification to exist
+     * in the file. After setting these up we can proceed with the rest of the file.
+     */
+    void setupMetadataGroup();
 };
 
 } // namespace gmx

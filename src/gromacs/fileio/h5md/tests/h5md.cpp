@@ -54,6 +54,7 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/exceptions.h"
 
 #include "testutils/testasserts.h"
@@ -136,6 +137,33 @@ TEST(H5mdFileTest, CanWriteAndReadH5mdFileMetaData)
         ASSERT_TRUE(testCreatorProgramVersion.has_value());
         EXPECT_EQ(referenceCreatorProgramVersion, testCreatorProgramVersion.value());
     }
+}
+
+TEST_F(H5mdIoTest, SetupFileFromInputWritesMetadataGroup)
+{
+    gmx_mtop_t mtop;
+    mtop.natoms = 1;
+    t_inputrec inputRecord;
+
+    file().setupFileFromInput(mtop, inputRecord);
+
+    const auto [group, groupGuard] = makeH5mdGroupGuard(openGroup(fileid(), "h5md"));
+
+    EXPECT_TRUE(getAttributeVector<int>(group, "version").has_value())
+            << "H5md specification version attribute must be written";
+    EXPECT_EQ(getAttributeVector<int>(group, "version").value(), (std::vector<int>{ 1, 1 }))
+            << "H5md specification version should be 1.1";
+
+    const auto [authorGroup, authorGroupGuard] = makeH5mdGroupGuard(openGroup(group, "author"));
+    EXPECT_TRUE(getAttribute<std::string>(authorGroup, "name").has_value())
+            << "Author name must be written";
+
+    const auto [creatorGroup, creatorGroupGuard] = makeH5mdGroupGuard(openGroup(group, "creator"));
+    EXPECT_EQ(getAttribute<std::string>(creatorGroup, "name").value_or(""), "GROMACS")
+            << "Creator name must be GROMACS";
+
+    EXPECT_EQ(getAttribute<std::string>(creatorGroup, "version").value_or(""), gmx_version())
+            << "Program version must match";
 }
 
 TEST_F(H5mdIoTest, SetupFileFromInputCreatesParticlesGroup)
