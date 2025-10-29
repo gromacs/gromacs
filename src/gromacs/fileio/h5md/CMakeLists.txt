@@ -46,6 +46,7 @@ if(GMX_USE_HDF5)
         h5md_framedataset.cpp
         h5md_group.cpp
         h5md_guard.cpp
+        h5md_particleblock.cpp
         h5md_timedatablock.cpp
     )
 
@@ -61,7 +62,8 @@ target_link_libraries(h5md PRIVATE
     legacy_api
     legacy_modules
     math
-    utility)
+    utility
+)
 
 if (BUILD_SHARED_LIBS)
     set_target_properties(h5md PROPERTIES POSITION_INDEPENDENT_CODE ON)

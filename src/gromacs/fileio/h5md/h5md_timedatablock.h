@@ -110,6 +110,9 @@ public:
     //! \brief Return whether or not this block manages a time data set.
     bool hasTime() const { return timeDataSet_.has_value(); }
 
+    //! \brief Return the frame dimensions of the value data set.
+    const DataSetDims& frameDims() const { return valueDataSet_.frameDims(); }
+
     /*! \brief Return the number of frames written to the managed data sets.
      */
     int64_t numFrames() const { return numFrames_; }
