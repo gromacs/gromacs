@@ -255,7 +255,7 @@ Supported hardware:
 Requirements:
 
 * oneAPI DPC++ compiler: 2024.0 or newer (Codeplay plugin required for NVIDIA/AMD Support), or
-* AdaptiveCpp: 23.10 or newer.
+* AdaptiveCpp: 24.02 or newer.
 
 Limitations:
 
@@ -1098,7 +1098,7 @@ SYCL GPU acceleration for AMD GPUs
 """"""""""""""""""""""""""""""""""
 
 Using `AdaptiveCpp 24.02.0 <https://github.com/AdaptiveCpp/AdaptiveCpp/releases/tag/v24.02.0>`_
-and ROCm 5.7-6.2 is recommended. The earliest supported version is AdaptiveCpp 23.10.
+and ROCm 5.7-6.2 is recommended. The earliest supported version is AdaptiveCpp 24.02.
 
 We strongly recommend using the clang compiler bundled
 with ROCm for building both AdaptiveCpp and |Gromacs|. Mainline Clang releases can also work.
@@ -1766,7 +1766,7 @@ clang versions including 14, 18, and 19,
 CUDA versions 12.1, 12.5.1, and 12.6,
 nvcxx version 24.7
 HIP version 5.7.1 and 6.2.2
-AdaptiveCPP 23.10 and 24.02 with ROCm 5.7.1 and 6.2 (respectively),
+AdaptiveCPP 24.02 and 24.10 with ROCm 5.7.1 and 6.2 (respectively),
 and
 oneAPI version 2024.0 and 2024.2 (including CUDA 12.0.1 and ROCm 6.1.3 backends).
 

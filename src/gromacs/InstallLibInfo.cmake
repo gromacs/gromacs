@@ -94,9 +94,6 @@ set(MPI_CXX_COMPILER \"${MPI_CXX_COMPILER}\" CACHE FILEPATH \"FindMPI CXX compil
     if (adaptivecpp_FOUND)
         set(_gmx_adaptivecpp_config
           "set(adaptivecpp_ROOT ${adaptivecpp_DIR} CACHE FILEPATH \"Hint for find_package(adaptivecpp)\")")
-    elseif (hipsycl_FOUND)
-        set(_gmx_adaptivecpp_config
-            "set(hipsycl_ROOT ${hipsycl_DIR} CACHE FILEPATH \"Hint for find_package(hipsycl)\")")
     endif ()
 
     configure_file(gromacs-config.cmake.cmakein

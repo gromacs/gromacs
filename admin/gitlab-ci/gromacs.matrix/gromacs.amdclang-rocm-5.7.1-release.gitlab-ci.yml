@@ -18,7 +18,7 @@ gromacs:amdclang-hip-571:release:configure:
     - .use-hip
   rules:
     - !reference [.rules:nightly-only-for-release, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-11-adaptivecpp-23.10.0-rocm-5.7.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-11-adaptivecpp-24.02.0-rocm-5.7.1
   variables:
     CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX2_256"
@@ -40,7 +40,7 @@ gromacs:amdclang-hip-571:release:build:
   stage: release-build
   rules:
     - !reference [.rules:nightly-only-for-release, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-11-adaptivecpp-23.10.0-rocm-5.7.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-11-adaptivecpp-24.02.0-rocm-5.7.1
   variables:
     CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     BUILD_DIR: release-builds-amdclang
@@ -54,7 +54,7 @@ gromacs:amdclang-hip-571:release:test:
     - !reference [.rules:skip-if-single-amd-gpu-unavailable, rules]    
     - !reference [.rules:nightly-only-for-release, rules]                 
   stage: release-tests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-11-adaptivecpp-23.10.0-rocm-5.7.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-11-adaptivecpp-24.02.0-rocm-5.7.1
   variables:
     CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
@@ -74,7 +74,7 @@ gromacs:amdclang-hip-571:release:regressiontest:
     - !reference [.rules:skip-if-single-amd-gpu-unavailable, rules]        
     - !reference [.rules:nightly-only-for-release, rules]                     
   stage: release-tests
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-11-adaptivecpp-23.10.0-rocm-5.7.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-11-adaptivecpp-24.02.0-rocm-5.7.1
   variables:
     CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     REGRESSIONTEST_PME_RANK_NUMBER: 0

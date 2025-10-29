@@ -18,7 +18,7 @@ gromacs:acpp-rocm:configure:
     - .use-sycl
   rules:
     - !reference [.rules:merge-and-post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-11-adaptivecpp-23.10.0-rocm-5.7.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-11-adaptivecpp-24.02.0-rocm-5.7.1
   variables:
     CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX2_128"
@@ -34,7 +34,7 @@ gromacs:acpp-rocm:build:
     # Not using ccache because it plays poorly with syclcc-launcher
   rules:
     - !reference [.rules:merge-and-post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-11-adaptivecpp-23.10.0-rocm-5.7.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-11-adaptivecpp-24.02.0-rocm-5.7.1
   variables:
     CMAKE: /usr/local/cmake-3.29.8/bin/cmake
   needs:
@@ -46,7 +46,7 @@ gromacs:acpp-rocm:test:
   rules:
     - !reference [.rules:skip-if-single-amd-gpu-unavailable, rules]
     - !reference [.rules:post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-11-adaptivecpp-23.10.0-rocm-5.7.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-11-adaptivecpp-24.02.0-rocm-5.7.1
   variables:
     CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
@@ -63,7 +63,7 @@ gromacs:acpp-rocm:regressiontest:
   rules:
     - !reference [.rules:skip-if-single-amd-gpu-unavailable, rules]
     - !reference [.rules:post-merge-acceptance, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-11-adaptivecpp-23.10.0-rocm-5.7.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-11-adaptivecpp-24.02.0-rocm-5.7.1
   variables:
     CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     GPU_VENDOR: "AMD"
@@ -84,7 +84,7 @@ gromacs:acpp-rocm-nightly:configure:
     - .use-sycl
   rules:
     - !reference [.rules:nightly-not-for-release, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-11-adaptivecpp-23.10.0-rocm-5.7.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-11-adaptivecpp-24.02.0-rocm-5.7.1
   variables:
     CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=AVX2_128"
@@ -100,7 +100,7 @@ gromacs:acpp-rocm-nightly:build:
     # Not using ccache because it plays poorly with syclcc-launcher
   rules:
     - !reference [.rules:nightly-not-for-release, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-11-adaptivecpp-23.10.0-rocm-5.7.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-11-adaptivecpp-24.02.0-rocm-5.7.1
   variables:
     CMAKE: /usr/local/cmake-3.29.8/bin/cmake
   needs:
@@ -115,7 +115,7 @@ gromacs:acpp-rocm-nightly:test:
     - .gromacs:base:test
   rules:
     - !reference [.rules:nightly-not-for-release, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-11-adaptivecpp-23.10.0-rocm-5.7.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-11-adaptivecpp-24.02.0-rocm-5.7.1
   variables:
     CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     GMX_TEST_LABELS: "QuickGpuTest|SlowGpuTest"
@@ -132,7 +132,7 @@ gromacs:acpp-rocm-nightly:regressiontest:
     - .gromacs:base:regressiontest
   rules:
     - !reference [.rules:nightly-not-for-release, rules]
-  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-11-adaptivecpp-23.10.0-rocm-5.7.1
+  image: ${CI_REGISTRY}/gromacs/gromacs/ci-ubuntu-22.04-gcc-11-adaptivecpp-24.02.0-rocm-5.7.1
   variables:
     CMAKE: /usr/local/cmake-3.29.8/bin/cmake
     REGRESSIONTEST_TOTAL_RANK_NUMBER: 2

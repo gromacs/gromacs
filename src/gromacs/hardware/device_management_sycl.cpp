@@ -110,35 +110,13 @@ static std::optional<std::tuple<int, int>> getHardwareVersionNvidia(const sycl::
     /* First, check device::info::version:
      * - AdaptiveCpp supports that since AdaptiveCpp 2023.10.0 (merged in July 2023),
      * - Intel DPC++ supports that since 2023.2.0 (merged in July 2023).
-     * If device::info::version cannot be parsed, fall back on backend-specific solutions.
-     * Fallbacks can be removed once we no longer support older versions. */
+     */
     const std::string deviceVersion = device.get_info<sycl::info::device::version>();
     if (auto result = parseHardwareVersionNvidia(deviceVersion); result.has_value())
     {
         return result;
     }
-#if (GMX_SYCL_ACPP && GMX_ACPP_HAVE_CUDA_TARGET \
-     && !GMX_ACPP_HAVE_GENERIC_TARGET) // AdaptiveCpp uses CUDA Runtime API
-    const int             nativeDeviceId = sycl::get_native<sycl::backend::cuda>(device);
-    struct cudaDeviceProp prop;
-    cudaError_t           status = cudaGetDeviceProperties(&prop, nativeDeviceId);
-    if (status == cudaSuccess)
-    {
-        return std::make_tuple(prop.major, prop.minor);
-    }
-    else
-    {
-        return std::nullopt;
-    }
-#elif (GMX_SYCL_DPCPP && defined(SYCL_EXT_ONEAPI_BACKEND_CUDA))
-    // oneAPI uses CUDA Driver API, but does not link the application to it
-    // Instead, we have to use info::device::backend_version, and parse it
-    const std::string ccStr = device.get_info<sycl::info::device::backend_version>();
-    return parseHardwareVersionNvidia(ccStr);
-#else
-    GMX_UNUSED_VALUE(device);
     return std::nullopt;
-#endif
 }
 
 static std::optional<std::tuple<int, int, int>> parseHardwareVersionAmd(const std::string& archName)
@@ -186,33 +164,13 @@ static std::optional<std::tuple<int, int, int>> getHardwareVersionAmd(const sycl
     /* First, check device::info::version:
      * - AdaptiveCpp supports that since AdaptiveCpp 2023.10.0 (merged in July 2023),
      * - Intel DPC++ supports that since 2023.2.0 (merged in July 2023).
-     * If device::info::version cannot be parsed, fall back to backend-specific solutions.
-     * Fallbacks can be removed once we no longer support older versions. */
+     */
     const std::string deviceVersion = device.get_info<sycl::info::device::version>();
     if (auto result = parseHardwareVersionAmd(deviceVersion); result.has_value())
     {
         return result;
     }
-#if (GMX_SYCL_ACPP && GMX_ACPP_HAVE_HIP_TARGET && !GMX_ACPP_HAVE_GENERIC_TARGET)
-    // Fall back on the native device query
-    const int              nativeDeviceId = sycl::get_native<sycl::backend::hip>(device);
-    struct hipDeviceProp_t prop;
-    hipError_t             status = hipGetDeviceProperties(&prop, nativeDeviceId);
-    if (status != hipSuccess)
-    {
-        return std::nullopt;
-    }
-    // prop.major and prop.minor indicate the closest CUDA CC
-    // gcnArch is deprecated, so we have to parse gcnArchName
-    return parseHardwareVersionAmd(prop.gcnArchName);
-#elif (GMX_SYCL_DPCPP)
-    // Device name might contain the desired string, but it depends on the ROCm version
-    const std::string deviceName = device.get_info<sycl::info::device::version>();
-    return parseHardwareVersionAmd(deviceName);
-#else
-    GMX_UNUSED_VALUE(device);
     return std::nullopt;
-#endif
 }
 
 static std::optional<std::tuple<int, int, int>> getHardwareVersionIntel(const sycl::device& device)

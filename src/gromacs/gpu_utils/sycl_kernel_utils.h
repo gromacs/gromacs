@@ -257,28 +257,4 @@ static inline void subGroupBarrier(const sycl::nd_item<Dim> itemIdx)
 #endif
 }
 
-#if GMX_SYCL_ACPP && !(defined(ACPP_VERSION_MAJOR) && ACPP_VERSION_MAJOR >= 24)
-namespace sycl
-{
-/*! \brief Popcount instruction for SYCL
- *
- * sycl::popcount is missing in AdaptiveCpp prior to 24.02.0.
- * This is very basic version using Clang built-in.
- */
-template<typename T>
-T popcount(T x)
-{
-    if constexpr (sizeof(T) == 4)
-    {
-        return __builtin_popcount(x);
-    }
-    else
-    {
-        static_assert(sizeof(T) == 8);
-        return __builtin_popcountll(x);
-    }
-}
-} // namespace sycl
-#endif
-
 #endif /* GMX_GPU_UTILS_SYCL_KERNEL_UTILS_H */

@@ -21,7 +21,7 @@ sample_taf:tmpi:
     - .sample_taf
   rules:
     - !reference [.rules:merge-requests, rules]
-  image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-22.04-gcc-11-adaptivecpp-23.10.0-rocm-5.7.1
+  image: ${CI_REGISTRY_IMAGE}/ci-ubuntu-22.04-gcc-11-adaptivecpp-24.02.0-rocm-5.7.1
   variables:
     CMAKE: /usr/local/cmake-3.29.8/bin/cmake
   needs:

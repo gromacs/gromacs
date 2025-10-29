@@ -33,20 +33,16 @@
 
 include(gmxFindFlagsForSource)
 
-# This file has a lot of duplication in order to handle both hipSYCL 0.9.4 and future versions of
-# AdaptiveCpp. It all can be simplified once backward compatibility is no loger required.
-# See #4720
-
-# Return all current CMake variables with name starting with "hipsycl" or "acpp" (case-insensitive).
+# Return all current CMake variables with name starting with "acpp" (case-insensitive).
 # Result is in the form of a list of flags ("-Dfoo=bar;-Dbaz=true").
-# Semicolons in values are escaped (needed for ACPP_TARGETS/HIPSYCL_TARGETS).
+# Semicolons in values are escaped (needed for ACPP_TARGETS).
 function(_getACppCmakeFlags RETURN_VAR)
     get_cmake_property(_VARS VARIABLES)
     list (SORT _VARS)
     set(RESULT "")
     foreach (_VARNAME ${_VARS})
         string(TOLOWER "${_VARNAME}" _VARNAME_LOWER)
-        if (${_VARNAME_LOWER} MATCHES "^hipsycl" OR ${_VARNAME_LOWER} MATCHES "^acpp")
+        if (${_VARNAME_LOWER} MATCHES "^acpp")
             # Escape semicolon. The number of backslashes was determined empirically.
             string(REPLACE ";" "\\\\\\;" _VARVALUE "${${_VARNAME}}")
             list(APPEND
@@ -66,7 +62,6 @@ if (NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND NOT CMAKE_CXX_COMPILER_ID MATC
     message(FATAL_ERROR "AdaptiveCpp build requires Clang compiler, but ${CMAKE_CXX_COMPILER_ID} is used")
 endif()
 set(ACPP_CLANG "${CMAKE_CXX_COMPILER}")
-set(HIPSYCL_CLANG "${ACPP_CLANG}")
 
 # -Wno-unknown-cuda-version because Clang often complains about the newest CUDA, despite working fine with it.
 # -Wno-unknown-attributes because AdaptiveCpp does not support reqd_sub_group_size (because it can only do some sub group sizes).
@@ -97,36 +92,27 @@ if(${CXXFLAGS_NO_DEPRECATED_DECLARATIONS})
     list(APPEND ACPP_EXTRA_COMPILE_OPTIONS -Wno-deprecated-declarations)
 endif()
 
-
-# Backward-compatibility with hipSYCL 0.9.4
-if (DEFINED HIPSYCL_TARGETS AND NOT DEFINED ACPP_TARGETS)
-    set(ACPP_TARGETS "${HIPSYCL_TARGETS}")
-endif()
-
 # Must be called before find_package to capture all user-set CMake variables, but not those set automatically
 _getACppCmakeFlags(_ALL_ACPP_CMAKE_FLAGS)
 
-find_package(adaptivecpp QUIET)
-if(NOT adaptivecpp_FOUND)
-    set(HIPSYCL_SYCLCC_EXTRA_ARGS "${ACPP_EXTRA_ARGS}")
-    set(HIPSYCL_SYCLCC_EXTRA_COMPILE_OPTIONS ${ACPP_EXTRA_COMPILE_OPTIONS})
-    find_package(hipsycl REQUIRED)
-    # Ensure the try_compile projects below find the same hipsycl)
-    list(APPEND _ALL_ACPP_CMAKE_FLAGS -Dhipsycl_DIR=${hipsycl_DIR})
-else()
-    # Ensure the try_compile projects below find the same adaptivecpp)
-    list(APPEND _ALL_ACPP_CMAKE_FLAGS -Dadaptivecpp_DIR=${adaptivecpp_DIR})
-endif()
+if (adaptivecpp_FIND_QUETLY_AFTER_FIRST_RUN)
+    set (adaptivecpp_FIND_QUETLY ON)
+else ()
+    set (adaptivecpp_FIND_QUETLY OFF)
+endif ()
+find_package(adaptivecpp REQUIRED)
+set (adaptivecpp_FIND_QUETLY_AFTER_FIRST_RUN TRUE CACHE INTERNAL "Be quiet during future attempts to find AdaptiveCpp")
+# Ensure the try_compile projects below find the same adaptivecpp
+list(APPEND _ALL_ACPP_CMAKE_FLAGS -Dadaptivecpp_DIR=${adaptivecpp_DIR})
 
-# If the user-set CMake variables change (e.g. because the user
-# changed HIPSYCL_TARGETS/ACPP_TARGETS), then the try_compile tests below need
-# to be re-run. Set and use an internal cache variable to detect
-# the change and set a flag to rerun the tests.
-if (DEFINED GMX_ALL_ACPP_CMAKE_FLAGS_COPY AND "${GMX_ALL_ACPP_CMAKE_FLAGS_COPY}" STREQUAL "${_ALL_ACPP_CMAKE_FLAGS}")
+# If the user-set CMake variables change (e.g. because the user changed ACPP_TARGETS), then the try_compile tests
+# below need to be re-run. Set and use an internal cache variable to detect the change and set a flag to rerun the tests.
+string(SHA1 _ALL_ACPP_CMAKE_FLAGS_HASH "${_ALL_ACPP_CMAKE_FLAGS}")
+if (DEFINED GMX_ALL_ACPP_CMAKE_FLAGS_HASH AND "${GMX_ALL_ACPP_CMAKE_FLAGS_HASH}" STREQUAL "${_ALL_ACPP_CMAKE_FLAGS_HASH}")
     set(_rerun_acpp_try_compile_tests FALSE)
 else()
     # The new value should over-write the previous copy
-    set(GMX_ALL_ACPP_CMAKE_FLAGS_COPY ${_ALL_ACPP_CMAKE_FLAGS} CACHE INTERNAL "Store the list of CMake variables needed for AdaptiveCpp compilation test projects")
+    set(GMX_ALL_ACPP_CMAKE_FLAGS_HASH ${_ALL_ACPP_CMAKE_FLAGS_HASH} CACHE INTERNAL "Store the hash of list of CMake variables needed for AdaptiveCpp compilation test projects")
     set(_rerun_acpp_try_compile_tests TRUE)
 endif()
 
@@ -215,25 +201,12 @@ if (GMX_ACPP_HAVE_HIP_TARGET AND GMX_GPU_FFT_ROCFFT)
     # set CMAKE_PREFIX_PATH so CMake is able to find the dependencies
     # of rocFFT (namely hip, AMDDeviceLibs, amd_comgr, hsa-runtime64,
     # ROCclr).
-    if (HIPSYCL_SYCLCC)
-        get_filename_component(HIPSYCL_SYCLCC_DIR ${HIPSYCL_SYCLCC} DIRECTORY)
-        find_file(ACPP_JSON syclcc.json
-            HINTS ${HIPSYCL_SYCLCC_DIR}/../etc/hipSYCL
-            DOC "location of AdaptiveCpp JSON configuration file"
-        )
-    elseif(ACPP_COMPILER)
-        get_filename_component(ACPP_COMPILER_DIR ${ACPP_COMPILER} DIRECTORY)
-        # As of AdaptiveCpp 23.10, the file is still called "etc/hipSYCL/syclcc.json"
-        # Starting from AdaptiveCpp 24.02, the file is "etc/AdaptiveCpp/acpp-rocm.json"
-        find_file(ACPP_JSON
-            NAMES acpp-rocm.json syclcc.json
-            HINTS ${ACPP_COMPILER_DIR}/../etc/AdaptiveCpp ${ACPP_COMPILER_DIR}/../etc/hipSYCL
-            DOC "location of AdaptiveCpp JSON configuration file"
-        )
-    endif()
-    if(HIPSYCL_SYCLCC_ROCM_PATH AND NOT ACPP_ROCM_PATH)
-        set(ACPP_ROCM_PATH ${HIPSYCL_SYCLCC_ROCM_PATH})
-    endif()
+    get_filename_component(ACPP_COMPILER_DIR ${ACPP_COMPILER} DIRECTORY)
+    find_file(ACPP_JSON
+        NAMES acpp-rocm.json
+        HINTS ${ACPP_COMPILER_DIR}/../etc/AdaptiveCpp ${ACPP_COMPILER_DIR}/../etc/hipSYCL
+        DOC "location of AdaptiveCpp JSON configuration file"
+    )
     if (ACPP_JSON AND NOT ACPP_ROCM_PATH)
         file(READ "${ACPP_JSON}" ACPP_JSON_CONTENTS)
         string(JSON ACPP_ROCM_PATH_VALUE GET ${ACPP_JSON_CONTENTS} "default-rocm-path")
@@ -260,23 +233,14 @@ if (GMX_ACPP_HAVE_HIP_TARGET AND GMX_GPU_FFT_ROCFFT)
     set(_sycl_has_valid_fft TRUE)
 endif()
 
-# Set new variables for use in buildinfo.h.cmakein
-if (hipsycl_FOUND)
-    set(ACPP_COMPILER_LAUNCHER "${HIPSYCL_SYCLCC_LAUNCHER}")
-    set(ACPP_EXTRA_ARGS "${HIPSYCL_SYCLCC_EXTRA_ARGS}")
-    set(ACPP_EXTRA_COMPILE_OPTIONS "${HIPSYCL_SYCLCC_EXTRA_COMPILE_OPTIONS}")
-    set(ACPP_TARGETS "${HIPSYCL_TARGETS}")
-endif()
-
 string(REPLACE ";" " " ACPP_EXTRA_COMPILE_OPTIONS_STR "${ACPP_EXTRA_COMPILE_OPTIONS}")
 string(STRIP "${ACPP_EXTRA_COMPILE_OPTIONS_STR}" ACPP_EXTRA_COMPILE_OPTIONS_STR)
 
 # Mark AdaptiveCpp-related CMake options as "advanced"
 get_cmake_property(_VARS VARIABLES)
 foreach (_VARNAME ${_VARS})
-    if (_VARNAME MATCHES "^HIPSYCL" OR _VARNAME MATCHES "^ACPP")
+    if (_VARNAME MATCHES "^ACPP")
         mark_as_advanced(${_VARNAME})
     endif()
 endforeach()
-mark_as_advanced(CLEAR HIPSYCL_TARGETS)
 mark_as_advanced(CLEAR ACPP_TARGETS)

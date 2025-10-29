@@ -216,7 +216,7 @@ include:
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.gcc-11-cp2k-9.1-nightly.gitlab-ci.yml'
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.gcc-14-cp2k-2024.2-nightly.gitlab-ci.yml'
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.acpp-24.10.gitlab-ci.yml'
-  - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.acpp-23.10.gitlab-ci.yml'
+  - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.acpp-24.02.gitlab-ci.yml'
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.oneapi-2025.1-sycl-impi-gitlab-ci.yml'
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.oneapi-2025.1-opencl-release.gitlab-ci.yml'
   - local: '/admin/gitlab-ci/gromacs.matrix/gromacs.oneapi-2025.1-sycl.gitlab-ci.yml'
