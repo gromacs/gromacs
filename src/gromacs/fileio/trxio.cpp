@@ -404,6 +404,7 @@ int write_trxframe_indexed(t_trxstatus* status, const t_trxframe* fr, int nind, 
     switch (status->fileType)
     {
         case efTNG: gmx_write_tng_from_trxframe(status->tng, fr, nind); break;
+        case efH5MD: throw gmx::NotImplementedError("H5MD reading/writing not yet implemented");
         case efXTC: write_xtc(status->fio, nind, fr->step, fr->time, fr->box, xout, prec); break;
         case efTRR:
             gmx_trr_write_frame(
@@ -570,6 +571,7 @@ int write_trxframe(t_trxstatus* status, const t_trxframe* fr, gmx_conect gc)
                                 fr->bV ? fr->v : nullptr,
                                 fr->bF ? fr->f : nullptr);
             break;
+        case efH5MD: throw gmx::NotImplementedError("H5MD reading/writing not yet implemented");
         case efGRO:
         case efPDB:
         case efBRK:
@@ -876,6 +878,7 @@ bool read_next_frame(const gmx_output_env_t* oenv, t_trxstatus* status, t_trxfra
                 }
                 break;
             case efTNG: bRet = gmx_read_next_tng_frame(status->tng, fr, nullptr, 0); break;
+            case efH5MD: throw gmx::NotImplementedError("H5MD reading/writing not yet implemented");
             case efPDB: bRet = pdb_next_x(status, gmx_fio_getfp(status->fio), fr); break;
             case efGRO: bRet = gro_next_x_or_v(gmx_fio_getfp(status->fio), fr); break;
             default:
@@ -954,6 +957,10 @@ bool read_first_frame(const gmx_output_env_t*      oenv,
         /* Special treatment for TNG files */
         gmx_tng_open(fn, 'r', &(*status)->tng);
     }
+    else if (efH5MD == (*status)->fileType)
+    {
+        throw gmx::NotImplementedError("H5MD reading/writing not yet implemented");
+    }
     else if ((*status)->fileType != efCPT)
     {
         fio = (*status)->fio = gmx_fio_open(fn, "r");
@@ -1028,6 +1035,7 @@ bool read_first_frame(const gmx_output_env_t*      oenv,
             }
             bFirst = FALSE;
             break;
+        case efH5MD: throw gmx::NotImplementedError("H5MD reading/writing not yet implemented");
         case efPDB:
             pdb_first_x(*status, gmx_fio_getfp(fio), fr);
             if (fr->natoms)

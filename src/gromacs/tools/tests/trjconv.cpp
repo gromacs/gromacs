@@ -58,6 +58,7 @@
 #include "testutils/cmdlinetest.h"
 #include "testutils/simulationdatabase.h"
 #include "testutils/stdiohelper.h"
+#include "testutils/testasserts.h"
 #include "testutils/textblockmatchers.h"
 #include "testutils/trajectoryreader.h"
 
@@ -90,6 +91,20 @@ TEST_P(TrjconvWithDifferentInputFormats, WithIndexGroupSubset)
     StdioTestHelper stdioHelper(&fileManager());
     stdioHelper.redirectStringToStdin("SecondWaterMolecule\n");
 
+    // Until H5MD reading is implemented trjconv will throw, so we handle the case
+    // for .h5md input files here separately. Since we expect a throw here there
+    // will be lost memory so we also disable this test for the address sanitizer build.
+    if (std::strstr(GetParam(), ".h5md") != nullptr)
+    {
+#if defined(__has_feature)
+#    if !__has_feature(address_sanitizer)
+        EXPECT_THROW(gmx_trjconv(cmdline.argc(), cmdline.argv()), gmx::NotImplementedError);
+        return;
+#    else
+        GTEST_SKIP() << "Test disabled for ASAN build until H5md reading is implemented";
+#    endif
+#endif
+    }
     ASSERT_EQ(0, gmx_trjconv(cmdline.argc(), cmdline.argv()));
 
     TrajectoryFrameReader reader(outputFile);
@@ -117,6 +132,20 @@ TEST_P(TrjconvWithDifferentInputFormats, WithoutTopologyFile)
     StdioTestHelper stdioHelper(&fileManager());
     stdioHelper.redirectStringToStdin("SecondWaterMolecule\n");
 
+    // Until H5MD reading is implemented trjconv will throw, so we handle the case
+    // for .h5md input files here separately. Since we expect a throw here there
+    // will be lost memory so we also disable this test for the address sanitizer build.
+    if (std::strstr(GetParam(), ".h5md") != nullptr)
+    {
+#if defined(__has_feature)
+#    if !__has_feature(address_sanitizer)
+        EXPECT_THROW(gmx_trjconv(cmdline.argc(), cmdline.argv()), gmx::NotImplementedError);
+        return;
+#    else
+        GTEST_SKIP() << "Test disabled for ASAN build until H5md reading is implemented";
+#    endif
+#endif
+    }
     ASSERT_EQ(0, gmx_trjconv(cmdline.argc(), cmdline.argv()));
 
     TrajectoryFrameReader reader(outputFile);
@@ -134,7 +163,8 @@ TEST_P(TrjconvWithDifferentInputFormats, WithoutTopologyFile)
  * molecules, which were generated via trjconv from the .gro
  * version. */
 const char* const trajectoryFileNames[] = { "spc2-traj.trr", "spc2-traj.tng", "spc2-traj.xtc",
-                                            "spc2-traj.gro", "spc2-traj.pdb", "spc2-traj.g96" };
+                                            "spc2-traj.gro", "spc2-traj.pdb", "spc2-traj.g96",
+                                            "spc2-traj.h5md" };
 //! Help GoogleTest name our test cases
 std::string nameOfTrjconvWithDifferentInputFormatsTest(const testing::TestParamInfo<const char*>& info)
 {
@@ -178,6 +208,20 @@ TEST_P(TrjconvDumpTest, DumpsFrame)
     cmdline.addOption("-dump", std::to_string(dumpTime));
     std::string outputFile = setOutputFile("-o", "dumped-frame.trr", gmx::test::NoTextMatch());
 
+    // Until H5MD reading is implemented trjconv will throw, so we handle the case
+    // for .h5md input files here separately. Since we expect a throw here there
+    // will be lost memory so we also disable this test for the address sanitizer build.
+    if (std::strstr(std::get<0>(GetParam()), ".h5md") != nullptr)
+    {
+#if defined(__has_feature)
+#    if !__has_feature(address_sanitizer)
+        EXPECT_THROW(gmx_trjconv(cmdline.argc(), cmdline.argv()), gmx::NotImplementedError);
+        return;
+#    else
+        GTEST_SKIP() << "Test disabled for ASAN build until H5md reading is implemented";
+#    endif
+#endif
+    }
     ASSERT_EQ(0, gmx_trjconv(cmdline.argc(), cmdline.argv()));
 
     // This relies on the input trajectories having frames with times

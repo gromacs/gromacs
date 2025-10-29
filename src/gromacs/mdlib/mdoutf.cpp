@@ -210,6 +210,8 @@ gmx_mdoutf_t init_mdoutf(FILE*                          fplog,
                     }
                     bCiteTng = TRUE;
                     break;
+                case efH5MD:
+                    throw gmx::NotImplementedError("H5MD reading/writing not yet implemented");
                 default: gmx_incons("Invalid full precision file format");
             }
         }

@@ -151,7 +151,7 @@ Options to specify input files:
  -tableb [&lt;.xvg&gt; [...]]     (table.xvg)      (Opt.)
            xvgr/xmgr file
  -rerun  [&lt;.xtc/.trr/...&gt;]  (rerun.xtc)      (Opt.)
-           Trajectory: xtc trr cpt gro g96 pdb tng
+           Trajectory: xtc trr cpt gro g96 pdb tng h5md
  -ei     [&lt;.edi&gt;]           (sam.edi)        (Opt.)
            ED sampling input
  -multidir [&lt;dir&gt; [...]]    (rundir)         (Opt.)
@@ -170,7 +170,7 @@ Options to specify input files:
 Options to specify output files:
 
  -o      [&lt;.trr/.cpt/...&gt;]  (traj.trr)
-           Full precision trajectory: trr cpt tng
+           Full precision trajectory: trr cpt tng h5md
  -x      [&lt;.xtc/.tng&gt;]      (traj_comp.xtc)  (Opt.)
            Compressed trajectory (tng format or portable xdr format)
  -cpo    [&lt;.cpt&gt;]           (state.cpt)      (Opt.)

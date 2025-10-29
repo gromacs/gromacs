@@ -14,9 +14,9 @@ OPTIONS
 Options to specify input files:
 
  -f      [<.xtc/.trr/...>]  (traj.xtc)
-           Input file description: xtc trr cpt gro g96 pdb tng
+           Input file description: xtc trr cpt gro g96 pdb tng h5md
  -mult   [<.xtc/.trr/...> [...]] (traj.xtc)  (Opt.)
-           Multiple file description: xtc trr cpt gro g96 pdb tng
+           Multiple file description: xtc trr cpt gro g96 pdb tng h5md
  -lib    [<.dat>]           (libdata.dat)    (Opt., Lib.)
            Library file description
 

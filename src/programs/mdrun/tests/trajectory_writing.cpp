@@ -49,8 +49,12 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/options/filenameoption.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "testutils/cmdlinetest.h"
+#include "testutils/mpitest.h"
+#include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 
 #include "moduletest.h"
@@ -149,6 +153,49 @@ INSTANTIATE_TEST_SUITE_P(MdrunCanWrite,
                          NptTrajectories,
                          ::testing::Values("no", "Berendsen", "Parrinello-Rahman"));
 
-#endif
+#endif // GMX_USE_TNG
+
+//! Test fixture for mdrun H5md trajectory writing
+class H5mdTrajectoryWritingTest : public gmx::test::MdrunTestFixture
+{
+public:
+    //! The file name of the MDP file
+    std::string theMdpFile;
+
+    //! Execute the trajectory writing test
+    void runTest()
+    {
+        runner_.useStringAsMdpFile(theMdpFile);
+        runner_.useTopGroAndNdxFromDatabase("spc-and-methanol");
+        EXPECT_EQ(0, runner_.callGrompp());
+
+        runner_.fullPrecisionTrajectoryFileName_ =
+                fileManager_.getTemporaryFilePath("spc-and-methanol.h5md").string();
+        // We're not yet ready for H5md compressed output
+        // runner_.reducedPrecisionTrajectoryFileName_ =
+        //         fileManager_.getTemporaryFilePath("spc-and-methanol-reduced.h5md").string();
+        ASSERT_EQ(0, runner_.callMdrun());
+        // TODO When there is a way to sense something like the
+        // output of gmx check, compare the result with that from
+        // writing .trr and .xtc and assert the behaviour is
+        // correct.
+    }
+};
+
+TEST_F(H5mdTrajectoryWritingTest, FatalErrorUntilImplemented)
+{
+    if (gmx::test::getNumberOfTestMpiRanks() != 1 || gmx::test::getNumberOfTestOpenMPThreads() != 1)
+    {
+        GTEST_SKIP() << "Only run death tests on one thread";
+    }
+
+    theMdpFile =
+            "integrator = md\n"
+            "nsteps = 6\n"
+            "nstxout = 5\n"
+            "nstvout = 2\n"
+            "nstfout = 4\n";
+    GMX_EXPECT_DEATH_IF_SUPPORTED(runTest(), "H5MD reading/writing not yet implemented");
+}
 
 } // namespace
