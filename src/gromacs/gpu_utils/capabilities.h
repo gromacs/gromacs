@@ -56,7 +56,7 @@ struct GpuConfigurationCapabilities
     //! Whether this configuration supports running buffer operation kernels on the device
     static constexpr bool BufferOps = GMX_GPU && !GMX_GPU_OPENCL;
     //! Whether this configuration supports running PME kernels on the device
-    static constexpr bool Pme = GMX_GPU && !GMX_GPU_HIP;
+    static constexpr bool Pme = GMX_GPU;
     //! Whether this configuration supports querying device stream for completion of all submitted tasks
     static constexpr bool StreamQuery = GMX_GPU_CUDA || GMX_GPU_HIP;
     //! Whether this configuration supports using the param lookup table

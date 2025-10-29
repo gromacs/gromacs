@@ -875,6 +875,46 @@ static gmx::FftBackend getFftBackend(const PmeGpu* pmeGpu)
             return gmx::FftBackend::Ocl;
         }
     }
+    else if (GMX_GPU_HIP)
+    {
+        if (GMX_GPU_FFT_VKFFT)
+        {
+            if (!pmeGpu->settings.useDecomposition)
+            {
+                return gmx::FftBackend::HipVkfft;
+            }
+            else
+            {
+                GMX_THROW(gmx::NotImplementedError(
+                        "GROMACS must be build with rocFFT and HeFFTe to enable fully "
+                        "GPU offloaded PME decomposition on ROCM-compatible GPUs"));
+            }
+        }
+        else if (GMX_GPU_FFT_ROCFFT)
+        {
+            if (!pmeGpu->settings.useDecomposition)
+            {
+                return gmx::FftBackend::HipRocfft;
+            }
+            else if (GMX_USE_Heffte)
+            {
+                return gmx::FftBackend::HeFFTe_HIP;
+            }
+            else
+            {
+                GMX_THROW(gmx::NotImplementedError(
+                        "GROMACS must be build with rocFFT and HeFFTe to enable fully "
+                        "GPU offloaded PME decomposition on ROCM-compatible GPUs"));
+            }
+        }
+        else
+        {
+            GMX_RELEASE_ASSERT(false,
+                               "Only VkFFT and rocFFT are compatible GPU FFT backends when "
+                               "building GROMACS with HIP as the GPU backend");
+            return gmx::FftBackend::Count;
+        }
+    }
     else if (GMX_GPU_SYCL)
     {
         if (GMX_GPU_FFT_MKL)
@@ -2248,8 +2288,8 @@ void pme_gpu_solve(PmeGpu* pmeGpu, const int gridIndex, t_complex* h_grid, GridO
     {
         cellsPerBlock = gmx::divideRoundUp(gridLineSize, blocksPerGridLine);
     }
-    const int warpSize  = pmeGpu->programHandle_->warpSize();
-    const int blockSize = gmx::divideRoundUp(cellsPerBlock, warpSize) * warpSize;
+    const int waveFrontSize = pmeGpu->programHandle_->warpSize();
+    const int blockSize     = gmx::divideRoundUp(cellsPerBlock, waveFrontSize) * waveFrontSize;
 
     static_assert(!gmx::GpuConfigurationCapabilities::PmeSolveNeedsAtLeastFourWarps
                           || c_solveMaxWarpsPerBlock / 2 >= 4,

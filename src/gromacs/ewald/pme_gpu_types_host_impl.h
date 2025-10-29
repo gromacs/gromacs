@@ -55,6 +55,8 @@
 #    include "gromacs/gpu_utils/gpuregiontimer.cuh"
 #elif GMX_GPU_OPENCL
 #    include "gromacs/gpu_utils/gpuregiontimer_ocl.h"
+#elif GMX_GPU_HIP
+#    include "gromacs/gpu_utils/gpuregiontimer_hip.h"
 #elif GMX_GPU_SYCL
 #    include "gromacs/gpu_utils/gpuregiontimer_sycl.h"
 #endif

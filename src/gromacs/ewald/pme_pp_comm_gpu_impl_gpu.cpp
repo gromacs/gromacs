@@ -55,6 +55,10 @@
 #    include "gromacs/gpu_utils/cudautils.cuh"
 #    include "gromacs/gpu_utils/typecasts_cuda_hip.h"
 #endif
+#if GMX_GPU_HIP
+#    include "gromacs/gpu_utils/hiputils.h"
+#    include "gromacs/gpu_utils/typecasts_cuda_hip.h"
+#endif
 #if GMX_GPU_SYCL
 #    include "gromacs/gpu_utils/gmxsycl.h"
 #endif
