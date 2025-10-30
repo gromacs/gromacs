@@ -124,6 +124,8 @@ extern template class H5mdFixedDataSet<BasicVector<float>>;
 
 extern template class H5mdFixedDataSet<BasicVector<double>>;
 
+extern template class H5mdFixedDataSet<std::string>;
+
 } // namespace gmx
 
 #endif // GMX_FILEIO_H5MD_FIXEDDATASET_H
