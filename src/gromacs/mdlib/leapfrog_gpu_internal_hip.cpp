@@ -156,27 +156,6 @@ __launch_bounds__(c_threadsPerBlock) __global__
     }
 }
 
-//! Convert \p doTemperatureScaling and \p numTempScaleValues to \ref NumTempScaleValues.
-static NumTempScaleValues getTempScalingType(bool doTemperatureScaling, int numTempScaleValues)
-{
-    if (!doTemperatureScaling)
-    {
-        return NumTempScaleValues::None;
-    }
-    else if (numTempScaleValues == 1)
-    {
-        return NumTempScaleValues::Single;
-    }
-    else if (numTempScaleValues > 1)
-    {
-        return NumTempScaleValues::Multiple;
-    }
-    else
-    {
-        gmx_incons("Temperature coupling was requested with no temperature coupling groups.");
-    }
-}
-
 void launchLeapFrogKernel(const int                             numAtoms,
                           DeviceBuffer<Float3>                  d_x,
                           DeviceBuffer<Float3>                  d_xp,

@@ -167,27 +167,6 @@ static void launchLeapFrogKernel(const DeviceStream& deviceStream, int numAtoms,
             });
 }
 
-//! Convert \p doTemperatureScaling and \p numTempScaleValues to \ref NumTempScaleValues.
-static NumTempScaleValues getTempScalingType(bool doTemperatureScaling, int numTempScaleValues)
-{
-    if (!doTemperatureScaling)
-    {
-        return NumTempScaleValues::None;
-    }
-    else if (numTempScaleValues == 1)
-    {
-        return NumTempScaleValues::Single;
-    }
-    else if (numTempScaleValues > 1)
-    {
-        return NumTempScaleValues::Multiple;
-    }
-    else
-    {
-        gmx_incons("Temperature coupling was requested with no temperature coupling groups.");
-    }
-}
-
 /*! \brief Select templated kernel and launch it. */
 template<class... Args>
 static inline void launchLeapFrogKernel(NumTempScaleValues tempScalingType,

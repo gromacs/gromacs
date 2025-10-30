@@ -60,6 +60,7 @@
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/matrix.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/gmxassert.h"
 
 class DeviceContext;
 class DeviceStream;
@@ -81,6 +82,30 @@ enum class NumTempScaleValues
     Multiple = 2, //!< Multiple T-scaling values, need to use T-group indices
     Count    = 3  //!< Number of valid values
 };
+
+
+//! Convert \p doTemperatureScaling and \p numTempScaleValues to \ref NumTempScaleValues.
+inline NumTempScaleValues getTempScalingType(bool doTemperatureScaling, int numTempScaleValues)
+{
+    if (!doTemperatureScaling)
+    {
+        return NumTempScaleValues::None;
+    }
+    else if (numTempScaleValues == 1)
+    {
+        return NumTempScaleValues::Single;
+    }
+    else if (numTempScaleValues > 1)
+    {
+        return NumTempScaleValues::Multiple;
+    }
+    else
+    {
+        GMX_RELEASE_ASSERT(
+                false, "Temperature coupling was requested with no temperature coupling groups.");
+        return NumTempScaleValues::Count;
+    }
+}
 
 // Avoid check-source warnings about the duplicate class enum
 #ifndef DOXYGEN
