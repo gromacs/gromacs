@@ -82,9 +82,9 @@ struct GpuConfigurationCapabilities
     //! Whether this configuration supports running update+LINCS+SETTLE kernels on the device
     static constexpr bool Update = GMX_GPU && !GMX_GPU_OPENCL;
     //! Whether this configuration supports running the direct GPU communication path with thread-MPI
-    static constexpr bool ThreadMpiCommunication = GMX_GPU_CUDA;
+    static constexpr bool ThreadMpiCommunication = GMX_GPU_CUDA || GMX_GPU_HIP;
     //! Whether this configuration supports running the direct GPU communication path with library-MPI
-    static constexpr bool LibraryMpiCommunication = GMX_GPU_CUDA || GMX_GPU_SYCL;
+    static constexpr bool LibraryMpiCommunication = GMX_GPU && !GMX_GPU_OPENCL;
     //! Whether this configuration supports running the direct GPU communication path for the current build type
     static constexpr bool MpiCommunication =
             (GMX_THREAD_MPI && ThreadMpiCommunication) || (GMX_LIB_MPI && LibraryMpiCommunication);
