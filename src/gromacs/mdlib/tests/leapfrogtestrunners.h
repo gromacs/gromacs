@@ -55,11 +55,6 @@
 
 #include "leapfrogtestdata.h"
 
-/*
- * LeapFrog is available with CUDA and SYCL.
- */
-#define GPU_LEAPFROG_SUPPORTED (GMX_GPU_CUDA || GMX_GPU_SYCL)
-
 namespace gmx
 {
 namespace test

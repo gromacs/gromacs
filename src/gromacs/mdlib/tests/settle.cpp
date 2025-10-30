@@ -81,6 +81,7 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/gpu_utils/capabilities.h"
 #include "gromacs/hardware/device_management.h"
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/mdlib/tests/watersystem.h"
@@ -318,8 +319,7 @@ TEST_P(SettleTest, SatisfiesConstraints)
     // Add runners for CPU version
     runners.emplace_back(std::make_unique<SettleHostTestRunner>());
     // If supported, add runners for the GPU version for each available GPU
-    const bool addGpuRunners = GPU_SETTLE_SUPPORTED;
-    if (addGpuRunners)
+    if (GpuConfigurationCapabilities::Update)
     {
         for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
         {

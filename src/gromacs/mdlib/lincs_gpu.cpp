@@ -54,6 +54,7 @@
 
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/gputraits.h"
+#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/constraint_gpu_helpers.h"
@@ -127,8 +128,7 @@ LincsGpu::LincsGpu(int                  numIterations,
                    const DeviceStream&  deviceStream) :
     deviceContext_(deviceContext), deviceStream_(deviceStream)
 {
-    GMX_RELEASE_ASSERT(bool(GMX_GPU_CUDA) || bool(GMX_GPU_SYCL),
-                       "LINCS GPU is only implemented in CUDA and SYCL.");
+    GMX_RELEASE_ASSERT(GMX_GPU && !GMX_GPU_OPENCL, "LINCS GPU is not implemented in OPENCL.");
     kernelParams_.numIterations  = numIterations;
     kernelParams_.expansionOrder = expansionOrder;
 
@@ -223,8 +223,7 @@ void LincsGpu::set(const InteractionDefinitions& idef, int numAtoms, const Array
     GMX_ASSERT(!(numAtoms == 0 && !idef.il[InteractionFunction::Constraints].empty()),
                "The number of atoms needs to be > 0 if there are constraints in the domain.");
 
-    GMX_RELEASE_ASSERT(bool(GMX_GPU_CUDA) || bool(GMX_GPU_SYCL),
-                       "LINCS GPU is only implemented in CUDA and SYCL.");
+    GMX_RELEASE_ASSERT(GMX_GPU && !GMX_GPU_OPENCL, "LINCS GPU is not implemented in OPENCL.");
     // List of constrained atoms (CPU memory)
     std::vector<AtomPair> constraintsHost;
     // Equilibrium distances for the constraints (CPU)
@@ -301,10 +300,10 @@ void LincsGpu::set(const InteractionDefinitions& idef, int numAtoms, const Array
         int a2   = iatoms[stride * c + 2];
         int type = iatoms[stride * c];
 
-        AtomPair pair;
-        pair.i                                    = a1;
-        pair.j                                    = a2;
-        constraintsHost[splitMap[c]]              = pair;
+        AtomPair localPair;
+        localPair.i                               = a1;
+        localPair.j                               = a2;
+        constraintsHost[splitMap[c]]              = localPair;
         constraintsTargetLengthsHost[splitMap[c]] = idef.iparams[type].constr.dA;
     }
 

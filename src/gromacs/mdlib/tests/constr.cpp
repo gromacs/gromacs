@@ -61,6 +61,7 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/gpu_utils/capabilities.h"
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -673,8 +674,7 @@ public:
         runners.emplace_back(std::make_unique<ShakeConstraintsRunner>());
         runners.emplace_back(std::make_unique<LincsConstraintsRunner>());
         // If supported, add runners for the GPU version of LINCS for each available GPU
-        const bool addGpuRunners = GPU_CONSTRAINTS_SUPPORTED;
-        if (addGpuRunners)
+        if (GpuConfigurationCapabilities::Update)
         {
             for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
             {

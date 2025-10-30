@@ -80,7 +80,7 @@ struct GpuConfigurationCapabilities
     //! Whether this configuration supports running bonded kernels on the device
     static constexpr bool Bonded = GMX_GPU && !GMX_GPU_OPENCL;
     //! Whether this configuration supports running update+LINCS+SETTLE kernels on the device
-    static constexpr bool Update = GMX_GPU_CUDA || GMX_GPU_SYCL;
+    static constexpr bool Update = GMX_GPU && !GMX_GPU_OPENCL;
     //! Whether this configuration supports running the direct GPU communication path with thread-MPI
     static constexpr bool ThreadMpiCommunication = GMX_GPU_CUDA;
     //! Whether this configuration supports running the direct GPU communication path with library-MPI

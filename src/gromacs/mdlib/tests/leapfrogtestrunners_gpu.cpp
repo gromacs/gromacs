@@ -49,7 +49,7 @@
 
 #include "leapfrogtestrunners.h"
 
-#if GPU_LEAPFROG_SUPPORTED
+#if GMX_GPU
 #    include "gromacs/gpu_utils/devicebuffer.h"
 #endif
 #include "gromacs/gpu_utils/gputraits.h"
@@ -62,7 +62,10 @@ namespace test
 {
 class LeapFrogTestData;
 
-#if GPU_LEAPFROG_SUPPORTED
+
+// We would like to do this just with the GpuConfigurationCapabilities,
+// but those methods are lacking the appropriate implementation stubs
+#if GMX_GPU && !GMX_GPU_OPENCL
 
 void LeapFrogDeviceTestRunner::integrate(LeapFrogTestData* testData, int numSteps)
 {
@@ -123,7 +126,7 @@ void LeapFrogDeviceTestRunner::integrate(LeapFrogTestData* testData, int numStep
     freeDeviceBuffer(&d_f);
 }
 
-#else // GPU_LEAPFROG_SUPPORTED
+#else // GMX_GPU
 
 void LeapFrogDeviceTestRunner::integrate(LeapFrogTestData* /* testData */, int /* numSteps */)
 {
@@ -131,7 +134,7 @@ void LeapFrogDeviceTestRunner::integrate(LeapFrogTestData* /* testData */, int /
     FAIL() << "Dummy Leap-Frog GPU function was called instead of the real one.";
 }
 
-#endif // GPU_LEAPFROG_SUPPORTED
+#endif // GMX_GPU
 
 } // namespace test
 } // namespace gmx

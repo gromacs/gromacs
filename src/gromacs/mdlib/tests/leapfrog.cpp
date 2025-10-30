@@ -58,6 +58,7 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/gpu_utils/capabilities.h"
 #include "gromacs/hardware/device_management.h"
 #include "gromacs/math/paddedvector.h"
 #include "gromacs/mdtypes/mdatom.h"
@@ -214,8 +215,7 @@ TEST_P(LeapFrogTest, SimpleIntegration)
     // Add runners for CPU version
     runners.emplace_back(std::make_unique<LeapFrogHostTestRunner>());
     // If supported, add runners for the GPU version for each available GPU
-    const bool addGpuRunners = GPU_LEAPFROG_SUPPORTED;
-    if (addGpuRunners)
+    if (GpuConfigurationCapabilities::Update)
     {
         for (const auto& testDevice : getTestHardwareEnvironment()->getTestDeviceList())
         {
