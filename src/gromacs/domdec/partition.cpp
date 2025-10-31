@@ -3229,7 +3229,8 @@ void dd_partition_system(FILE*                     fplog,
     MDModulesAtomsRedistributedSignal mdModulesAtomsRedistributedSignal(
             state_local->box,
             gmx::makeConstArrayRef(state_local->x).subArray(0, comm->atomRanges.numHomeAtoms()),
-            gmx::makeConstArrayRef(dd->globalAtomIndices).subArray(0, comm->atomRanges.numHomeAtoms()));
+            gmx::makeConstArrayRef(dd->globalAtomIndices)
+                    .subArray(0, comm->atomRanges.end(DDAtomRanges::Type::Zones)));
     mdModulesNotifiers.simulationRunNotifier_.notify(mdModulesAtomsRedistributedSignal);
 
     wallcycle_stop(wcycle, WallCycleCounter::Domdec);
