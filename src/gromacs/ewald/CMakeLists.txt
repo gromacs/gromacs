@@ -50,6 +50,7 @@ gmx_add_libgromacs_sources(
     pme_spread.cpp
     pme_gpu_program.cpp
     )
+
 if (GMX_GPU_CUDA)
     gmx_add_libgromacs_sources(
         # CUDA-specific sources
@@ -68,20 +69,20 @@ if (GMX_GPU_CUDA)
     # Clang-18 seems to emit bad ptx for these files, so we omit it from
     # the CI build that does clang-tidy analysis of a CUDA build.
     if (NOT GMX_CLANG_TIDY)
-        gmx_add_libgromacs_sources(
-            pme_gather.cu
-            pme_solve.cu
-            pme_spread.cu
-        )
+        if(GMX_NVSHMEM)
+            # For NVSHMEM builds, exclude pme_gather.cu from normal compilation
+            gmx_add_libgromacs_sources(
+                pme_solve.cu
+                pme_spread.cu
+            )
+        else()
+            gmx_add_libgromacs_sources(
+                pme_gather.cu
+                pme_solve.cu
+                pme_spread.cu
+            )
+        endif()
     endif()
-    _gmx_add_files_to_property(CUDA_SOURCES
-        # Must add these files so they can include device_information.h
-        pme_gpu_internal.cpp
-        pme_gpu_timings.cpp
-        pme_pp_comm_gpu_impl_gpu.cpp
-        pme_force_sender_gpu_impl_gpu.cpp
-        pme_coordinate_receiver_gpu_impl_gpu.cpp
-        )
 elseif (GMX_GPU_OPENCL)
     gmx_add_libgromacs_sources(
         # OpenCL-specific sources
@@ -202,6 +203,25 @@ target_link_libraries(ewald INTERFACE
 #target_link_libraries(ewald PRIVATE tng_io)
 # TODO: Explicitly link specific modules.
 #target_link_libraries(ewald PRIVATE legacy_modules)
+
+# NVSHMEM-specific separable compilation
+if(GMX_NVSHMEM AND GMX_GPU_CUDA)
+    # Create a separate library for pme_gather.cu with separable compilation
+    # Clang-18 seems to emit bad ptx for these files, so we omit it from
+    # the CI build that does clang-tidy analysis of a CUDA build.
+    if (NOT GMX_CLANG_TIDY)
+        gmx_add_library_for_nvshmem(
+            TARGET_NAME ewald_pme_gather_gpu
+            STATIC
+            SOURCES pme_gather.cu
+            PRIVATE_TARGET_DEPENDENCIES
+                utility
+                math
+        )
+        # Link the separable library to the main ewald library
+        target_link_libraries(ewald INTERFACE ewald_pme_gather_gpu)
+    endif()
+endif()
 
 if (BUILD_TESTING)
     add_subdirectory(tests)
