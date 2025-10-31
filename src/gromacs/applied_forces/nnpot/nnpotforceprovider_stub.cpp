@@ -80,7 +80,7 @@ void NNPotForceProvider::calculateForces(const ForceProviderInput& /*fInput*/, F
 }
 
 // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
-void NNPotForceProvider::gatherAtomNumbersIndices()
+void NNPotForceProvider::gatherAtomNumbersIndices(const MDModulesAtomsRedistributedSignal& /*signal*/)
 {
     GMX_THROW(InternalError(
             "Libtorch/NN backend is not linked into GROMACS, NNPot simulation is not possible."

@@ -46,6 +46,7 @@
 
 #include "gromacs/domdec/localatomset.h"
 #include "gromacs/gmxlib/network.h"
+#include "gromacs/mdrunutility/mdmodulesnotifiers.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/forceoutput.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -62,6 +63,7 @@
 /*! \internal Helper function to find the index of a value in a vector
  *
  * Returns the index of the first occurrence of \p val in \p vec, or -1 if not found.
+ * Can be used as an inversion for the index lookup tables.
  * \param[in] vec vector to search in
  * \param[in] val value to search for
  */
@@ -135,63 +137,60 @@ void NNPotForceProvider::calculateForces(const ForceProviderInput& fInput, Force
                           params_.pbcType_.get());
 }
 
-void NNPotForceProvider::gatherAtomNumbersIndices()
+void NNPotForceProvider::gatherAtomNumbersIndices(const MDModulesAtomsRedistributedSignal& signal)
 {
-    // this might not be the most efficient solution, since we are throwing away most of the
-    // vectors here in case of NNP/MM
-
     // create lookup table for local atom indices needed for hybrid ML/MM
-    // -1 is used as a flag for atoms that are not local / not in the input
+    // -1 is used as a flag for atoms that are not local / part of the NN input
     // used to distribute forces to correct local indices as the NN input tensor does not contain all atoms
-    inputToLocalIndex_.assign(params_.numAtoms_, -1);
-    inputToGlobalIndex_.assign(params_.numAtoms_, -1);
-    atomNumbers_.assign(params_.numAtoms_, 0);
+    const int numInput = params_.nnpAtoms_->numAtomsGlobal();
 
-    int lIdx, gIdx;
-    for (size_t i = 0; i < params_.nnpAtoms_->numAtomsLocal(); i++)
-    {
-        lIdx = params_.nnpAtoms_->localIndex()[i];
-        gIdx = params_.nnpAtoms_->globalIndex()[params_.nnpAtoms_->collectiveIndex()[i]];
-        // TODO: make sure that atom number indexing is correct
-        atomNumbers_[gIdx]       = params_.atoms_.atom[gIdx].atomnumber;
-        inputToLocalIndex_[gIdx] = lIdx;
-        // adding comm size to preserve correct indices after sumReduce
-        inputToGlobalIndex_[gIdx] = gIdx + mpiComm_.size() - 1;
-    }
+    inputToLocalIndex_.assign(numInput, -1);
+    atomNumbers_.assign(numInput, 0);
 
-    // distribute atom numbers to all ranks
     if (mpiComm_.isParallel())
     {
-        mpiComm_.sumReduce(atomNumbers_);
-        mpiComm_.sumReduce(inputToGlobalIndex_);
-    }
+        GMX_RELEASE_ASSERT(signal.globalAtomIndices_.has_value(),
+                           "Global atom indices must be provided when using domain decomposition.");
+        auto      globalAtomIndices = signal.globalAtomIndices_.value();
+        const int numLocalPlusHalo  = globalAtomIndices.size(); // includes halo atoms
+        const int numLocal          = signal.x_.size();         // only local atoms on this rank
+        localToInputIndex_.assign(numLocalPlusHalo, -1);
 
-    // remove unused elements in atomNumbers_, and inputToLocalIndex_
-    GMX_RELEASE_ASSERT(atomNumbers_.size() == inputToLocalIndex_.size()
-                               && atomNumbers_.size() == inputToGlobalIndex_.size(),
-                       "Inconsistent atom number and index sizes");
-    auto atIt   = atomNumbers_.begin();
-    auto idxIt  = inputToLocalIndex_.begin();
-    auto gIdxIt = inputToGlobalIndex_.begin();
-    while (atIt != atomNumbers_.end())
-    {
-        if (*atIt == 0)
+        for (int i = 0; i < numLocalPlusHalo; i++)
         {
-            atIt   = atomNumbers_.erase(atIt);
-            idxIt  = inputToLocalIndex_.erase(idxIt);
-            gIdxIt = inputToGlobalIndex_.erase(gIdxIt);
+            int globalIdx = globalAtomIndices[i];
+            for (int j = 0; j < numInput; j++)
+            {
+                if (params_.nnpAtoms_->globalIndex()[j] == globalIdx)
+                {
+                    // only map input indices for home atoms
+                    if (i < numLocal)
+                    {
+                        inputToLocalIndex_[j] = i;
+                        atomNumbers_[j]       = params_.atoms_.atom[globalIdx].atomnumber;
+                    }
+                    localToInputIndex_[i] = j;
+                    break;
+                }
+            }
         }
-        else
+        mpiComm_.sumReduce(numInput, atomNumbers_.data());
+    }
+    else
+    {
+        localToInputIndex_.assign(params_.numAtoms_, -1);
+        for (int i = 0; i < numInput; i++)
         {
-            ++atIt;
-            ++idxIt;
-            ++gIdxIt;
+            int localIndex = params_.nnpAtoms_->localIndex()[i];
+            int globalIdx = params_.nnpAtoms_->globalIndex()[params_.nnpAtoms_->collectiveIndex()[i]];
+            inputToLocalIndex_[i]          = localIndex;
+            localToInputIndex_[localIndex] = i;
+            atomNumbers_[i]                = params_.atoms_.atom[globalIdx].atomnumber;
         }
     }
-    // sanity check
-    GMX_RELEASE_ASSERT(atomNumbers_.size() == inputToLocalIndex_.size()
-                               && atomNumbers_.size() == inputToGlobalIndex_.size(),
-                       "Inconsistent atom number and index sizes");
+    // sanity check: make sure all atom numbers have been set
+    GMX_RELEASE_ASSERT(std::count(atomNumbers_.begin(), atomNumbers_.end(), 0) == 0,
+                       "Some atom numbers have not been set correctly.");
 }
 
 void NNPotForceProvider::gatherAtomPositions(ArrayRef<const RVec> pos)

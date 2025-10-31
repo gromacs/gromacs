@@ -54,6 +54,7 @@ class INNPotModel;
 class MDLogger;
 class MpiComm;
 class LinkFrontierAtom;
+struct MDModulesAtomsRedistributedSignal;
 
 /*! \brief \internal
  * NNPotForceProvider class
@@ -77,7 +78,7 @@ public:
     void calculateForces(const ForceProviderInput& fInput, ForceProviderOutput* fOutput) override;
 
     //! Gather atom numbers and indices. Triggered on AtomsRedistributed signal.
-    void gatherAtomNumbersIndices();
+    void gatherAtomNumbersIndices(const MDModulesAtomsRedistributedSignal& signal);
 
     //! Gather atom positions for NN input.
     void gatherAtomPositions(ArrayRef<const RVec> pos);
@@ -100,6 +101,8 @@ private:
 
     //! lookup table to map model input indices [0...numInput) to local atom indices [0...numLocal)
     std::vector<int> inputToLocalIndex_;
+    //! lookup table to map local atom indices [0...numLocal) to model input indices [0...numInput)
+    std::vector<int> localToInputIndex_;
     //! lookup table to map model input indices [0...numInput) to global atom indices [0...numGlobal)
     std::vector<int> inputToGlobalIndex_;
 

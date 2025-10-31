@@ -191,8 +191,8 @@ public:
         }
 
         // subscribe to DD notification to trigger atom number and index gathering
-        const auto notifyDDFunction = [this](const MDModulesAtomsRedistributedSignal& /*signal*/)
-        { nnpotForceProvider_->gatherAtomNumbersIndices(); };
+        const auto notifyDDFunction = [this](const MDModulesAtomsRedistributedSignal& signal)
+        { nnpotForceProvider_->gatherAtomNumbersIndices(signal); };
         notifiers->simulationRunNotifier_.subscribe(notifyDDFunction);
     }
 
